@@ -253,7 +253,8 @@ private:
     // Baro sensor instance index of the external water pressure sensor
     uint8_t depth_sensor_idx;
 
-    AP_Motors6DOF motors;
+    AP_Motors6DOF *motors;
+    const struct AP_Param::GroupInfo *motors_var_info;
 
     // Auto
     AutoMode auto_mode;   // controls which auto controller is run
@@ -335,17 +336,17 @@ private:
     // Inertial Navigation
     AP_InertialNav_NavEKF inertial_nav;
 
-    AP_AHRS_View ahrs_view;
+    AP_AHRS_View *ahrs_view;
 
     // Attitude, Position and Waypoint navigation objects
     // To-Do: move inertial nav up or other navigation variables down here
-    AC_AttitudeControl_Sub attitude_control;
+    AC_AttitudeControl_Sub *attitude_control;
 
-    AC_PosControl_Sub pos_control;
+    AC_PosControl_Sub *pos_control;
 
-    AC_WPNav wp_nav;
-    AC_Loiter loiter_nav;
-    AC_Circle circle_nav;
+    AC_WPNav *wp_nav;
+    AC_Loiter *loiter_nav;
+    AC_Circle *circle_nav;
 
     // Camera
 #if CAMERA == ENABLED
@@ -555,6 +556,7 @@ private:
     void terrain_update();
     void terrain_logging();
     void init_ardupilot() override;
+    void allocate_motors(void);
     void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
                              uint8_t &task_count,
                              uint32_t &log_bit) override;

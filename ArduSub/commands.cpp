@@ -9,7 +9,7 @@ void Sub::update_home_from_EKF()
     }
 
     // special logic if home is set in-flight
-    if (motors.armed()) {
+    if (motors->armed()) {
         set_home_to_current_location_inflight();
     } else {
         // move home to current ekf location (this will set home_state to HOME_SET)

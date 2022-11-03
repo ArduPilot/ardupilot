@@ -26,7 +26,8 @@ public:
         SUB_FRAME_SIMPLEROV_3,
         SUB_FRAME_SIMPLEROV_4,
         SUB_FRAME_SIMPLEROV_5,
-        SUB_FRAME_CUSTOM
+        SUB_FRAME_CUSTOM,
+        SUB_FRAME_SCRIPTING
     } sub_frame_t;
 
     const char* get_frame_string() const override { return _frame_class_string; };

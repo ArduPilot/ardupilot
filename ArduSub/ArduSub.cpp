@@ -101,7 +101,7 @@ void Sub::fast_loop()
     //don't run rate controller in manual or motordetection modes
     if (control_mode != MANUAL && control_mode != MOTOR_DETECT) {
         // run low level rate controllers that only require IMU data
-        attitude_control.rate_controller_run();
+        attitude_control->rate_controller_run();
     }
 
     // send outputs to the motors library
@@ -166,7 +166,7 @@ void Sub::update_batt_compass()
 
     if (AP::compass().enabled()) {
         // update compass with throttle value - used for compassmot
-        compass.set_throttle(motors.get_throttle());
+        compass.set_throttle(motors->get_throttle());
         compass.read();
     }
 }
@@ -178,12 +178,12 @@ void Sub::ten_hz_logging_loop()
     // log attitude data if we're not already logging at the higher rate
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
-        ahrs_view.Write_Rate(motors, attitude_control, pos_control);
+        ahrs_view->Write_Rate(*motors, *attitude_control, *pos_control);
         if (should_log(MASK_LOG_PID)) {
-            logger.Write_PID(LOG_PIDR_MSG, attitude_control.get_rate_roll_pid().get_pid_info());
-            logger.Write_PID(LOG_PIDP_MSG, attitude_control.get_rate_pitch_pid().get_pid_info());
-            logger.Write_PID(LOG_PIDY_MSG, attitude_control.get_rate_yaw_pid().get_pid_info());
-            logger.Write_PID(LOG_PIDA_MSG, pos_control.get_accel_z_pid().get_pid_info());
+            logger.Write_PID(LOG_PIDR_MSG, attitude_control->get_rate_roll_pid().get_pid_info());
+            logger.Write_PID(LOG_PIDP_MSG, attitude_control->get_rate_pitch_pid().get_pid_info());
+            logger.Write_PID(LOG_PIDY_MSG, attitude_control->get_rate_yaw_pid().get_pid_info());
+            logger.Write_PID(LOG_PIDA_MSG, pos_control->get_accel_z_pid().get_pid_info());
         }
     }
     if (should_log(MASK_LOG_MOTBATT)) {
@@ -196,13 +196,13 @@ void Sub::ten_hz_logging_loop()
         logger.Write_RCOUT();
     }
     if (should_log(MASK_LOG_NTUN) && (mode_requires_GPS(control_mode) || !mode_has_manual_throttle(control_mode))) {
-        pos_control.write_log();
+        pos_control->write_log();
     }
     if (should_log(MASK_LOG_IMU) || should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW)) {
         AP::ins().Write_Vibration();
     }
     if (should_log(MASK_LOG_CTUN)) {
-        attitude_control.control_monitor_log();
+        attitude_control->control_monitor_log();
     }
 }
 
@@ -212,12 +212,12 @@ void Sub::twentyfive_hz_logging()
 {
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
-        ahrs_view.Write_Rate(motors, attitude_control, pos_control);
+        ahrs_view->Write_Rate(*motors, *attitude_control, *pos_control);
         if (should_log(MASK_LOG_PID)) {
-            logger.Write_PID(LOG_PIDR_MSG, attitude_control.get_rate_roll_pid().get_pid_info());
-            logger.Write_PID(LOG_PIDP_MSG, attitude_control.get_rate_pitch_pid().get_pid_info());
-            logger.Write_PID(LOG_PIDY_MSG, attitude_control.get_rate_yaw_pid().get_pid_info());
-            logger.Write_PID(LOG_PIDA_MSG, pos_control.get_accel_z_pid().get_pid_info());
+            logger.Write_PID(LOG_PIDR_MSG, attitude_control->get_rate_roll_pid().get_pid_info());
+            logger.Write_PID(LOG_PIDP_MSG, attitude_control->get_rate_pitch_pid().get_pid_info());
+            logger.Write_PID(LOG_PIDY_MSG, attitude_control->get_rate_yaw_pid().get_pid_info());
+            logger.Write_PID(LOG_PIDA_MSG, pos_control->get_accel_z_pid().get_pid_info());
         }
     }
 
@@ -259,17 +259,17 @@ void Sub::one_hz_loop()
     ap.pre_arm_check = arm_check;
     AP_Notify::flags.pre_arm_check = arm_check;
     AP_Notify::flags.pre_arm_gps_check = position_ok();
-    AP_Notify::flags.flying = motors.armed();
+    AP_Notify::flags.flying = motors->armed();
 
     if (should_log(MASK_LOG_ANY)) {
         Log_Write_Data(LogDataID::AP_STATE, ap.value);
     }
 
-    if (!motors.armed()) {
+    if (!motors->armed()) {
         // make it possible to change ahrs orientation at runtime during initial config
         ahrs.update_orientation();
 
-        motors.update_throttle_range();
+        motors->update_throttle_range();
     }
 
     // update assigned functions and enable auxiliary servos
@@ -292,7 +292,7 @@ void Sub::read_AHRS()
     //-----------------------------------------------
     // <true> tells AHRS to skip INS update as we have already done it in fast_loop()
     ahrs.update(true);
-    ahrs_view.update(true);
+    ahrs_view->update(true);
 }
 
 // read baro and rangefinder altitude at 10hz
@@ -329,7 +329,7 @@ bool Sub::control_check_barometer()
 bool Sub::get_wp_distance_m(float &distance) const
 {
     // see GCS_MAVLINK_Sub::send_nav_controller_output()
-    distance = sub.wp_nav.get_wp_distance_to_destination() * 0.01;
+    distance = sub.wp_nav->get_wp_distance_to_destination() * 0.01;
     return true;
 }
 
@@ -337,7 +337,7 @@ bool Sub::get_wp_distance_m(float &distance) const
 bool Sub::get_wp_bearing_deg(float &bearing) const
 {
     // see GCS_MAVLINK_Sub::send_nav_controller_output()
-    bearing = sub.wp_nav.get_wp_bearing_to_destination() * 0.01;
+    bearing = sub.wp_nav->get_wp_bearing_to_destination() * 0.01;
     return true;
 }
 

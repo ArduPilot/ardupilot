@@ -14,15 +14,15 @@ bool Sub::althold_init()
 
     // initialize vertical maximum speeds and acceleration
     // sets the maximum speed up and down returned by position controller
-    attitude_control.set_throttle_out(0.75, true, 100.0);
-    pos_control.init_z_controller();
-    pos_control.set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    pos_control.set_correction_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    attitude_control.relax_attitude_controllers();
+    attitude_control->set_throttle_out(0.75, true, 100.0);
+    pos_control->init_z_controller();
+    pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    pos_control->set_correction_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    attitude_control->relax_attitude_controllers();
     // initialise position and desired velocity
     float pos = stopping_distance();
     float zero = 0;
-    pos_control.input_pos_vel_accel_z(pos, zero, zero);
+    pos_control->input_pos_vel_accel_z(pos, zero, zero);
 
     if(prev_control_mode != control_mode_t::STABILIZE) {
         last_roll = 0;
@@ -47,8 +47,8 @@ void Sub::handle_attitude()
     uint32_t tnow = AP_HAL::millis();
 
     // initialize vertical speeds and acceleration
-    pos_control.set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+    pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // get pilot desired lean angles
     float target_roll, target_pitch, target_yaw;
@@ -68,10 +68,10 @@ void Sub::handle_attitude()
         last_roll = target_roll;
         last_pitch = target_pitch;
         last_pilot_heading = target_yaw;
-        attitude_control.input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, target_yaw, true);
+        attitude_control->input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, target_yaw, true);
     } else {
         // If we don't have a mavlink attitude target, we use the pilot's input instead
-        get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control.get_althold_lean_angle_max());
+        get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control->get_althold_lean_angle_max());
         float yaw_input =  channel_yaw->pwm_to_angle_dz_trim(channel_yaw->get_dead_zone() * gain, channel_yaw->get_radio_trim());
         target_yaw = get_pilot_desired_yaw_rate(yaw_input);
         if (abs(target_roll) > 50 || abs(target_pitch) > 50 || abs(target_yaw) > 50) {
@@ -79,13 +79,13 @@ void Sub::handle_attitude()
             last_pitch = ahrs.pitch_sensor;
             last_pilot_heading = ahrs.yaw_sensor;
             last_input_ms = tnow;
-            attitude_control.input_rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
+            attitude_control->input_rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
         } else if (tnow < last_input_ms + 250) {
             // just brake for a few mooments so we don't bounce
-            attitude_control.input_rate_bf_roll_pitch_yaw(0, 0, 0);
+            attitude_control->input_rate_bf_roll_pitch_yaw(0, 0, 0);
         } else {
             // Lock attitude
-            attitude_control.input_euler_angle_roll_pitch_yaw(last_roll, last_pitch, last_pilot_heading, true);
+            attitude_control->input_euler_angle_roll_pitch_yaw(last_roll, last_pitch, last_pilot_heading, true);
         }
     }
 }
@@ -95,15 +95,15 @@ void Sub::handle_attitude()
 void Sub::althold_run()
 {
     // When unarmed, disable motors and stabilization
-    if (!motors.armed()) {
-        motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+    if (!motors->armed()) {
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when not auto-armed (i.e. on the ground, pilot has never raised throttle)
-        attitude_control.set_throttle_out(0.75,true,100.0);
-        pos_control.init_z_controller();
+        attitude_control->set_throttle_out(0.75,true,100.0);
+        pos_control->init_z_controller();
         // initialise position and desired velocity
         float pos = stopping_distance();
         float zero = 0;
-        pos_control.input_pos_vel_accel_z(pos, zero, zero);
+        pos_control->input_pos_vel_accel_z(pos, zero, zero);
         last_roll = 0;
         last_pitch = 0;
         last_pilot_heading = ahrs.yaw_sensor;
@@ -121,23 +121,23 @@ void Sub::control_depth() {
     Vector3f earth_frame_rc_inputs = ahrs.get_rotation_body_to_ned() * Vector3f(-channel_forward->norm_input(), -channel_lateral->norm_input(), (2.0f*(-0.5f+channel_throttle->norm_input())));
     float target_climb_rate_cm_s = get_pilot_desired_climb_rate(500 + g.pilot_speed_up * earth_frame_rc_inputs.z);
 
-    bool surfacing = ap.at_surface || pos_control.get_pos_target_z_cm() > g.surface_depth;
+    bool surfacing = ap.at_surface || pos_control->get_pos_target_z_cm() > g.surface_depth;
     float upper_speed_limit = surfacing ? 0 : g.pilot_speed_up;
     float lower_speed_limit = ap.at_bottom ? 0 : -get_pilot_speed_dn();
     target_climb_rate_cm_s = constrain_float(target_climb_rate_cm_s, lower_speed_limit, upper_speed_limit);
-    pos_control.set_pos_target_z_from_climb_rate_cm(target_climb_rate_cm_s);
+    pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate_cm_s);
 
     if (surfacing) {
-        pos_control.set_alt_target_with_slew(MIN(pos_control.get_pos_target_z_cm(), g.surface_depth - 5.0f)); // set target to 5 cm below surface level
+        pos_control->set_alt_target_with_slew(MIN(pos_control->get_pos_target_z_cm(), g.surface_depth - 5.0f)); // set target to 5 cm below surface level
     } else if (ap.at_bottom) {
-        pos_control.set_alt_target_with_slew(MAX(inertial_nav.get_altitude() + 10.0f, pos_control.get_pos_target_z_cm())); // set target to 10 cm above bottom
+        pos_control->set_alt_target_with_slew(MAX(inertial_nav.get_altitude() + 10.0f, pos_control->get_pos_target_z_cm())); // set target to 10 cm above bottom
     }
-    pos_control.update_z_controller();
+    pos_control->update_z_controller();
     // Read the output of the z controller and rotate it so it always points up
-    Vector3f throttle_vehicle_frame = ahrs.get_rotation_body_to_ned().transposed() * Vector3f(0, 0, motors.get_throttle_in_bidirectional());
+    Vector3f throttle_vehicle_frame = ahrs.get_rotation_body_to_ned().transposed() * Vector3f(0, 0, motors->get_throttle_in_bidirectional());
     //TODO: scale throttle with the ammount of thrusters in the given direction
     float raw_throttle_factor = (ahrs.get_rotation_body_to_ned() * Vector3f(0, 0, 1.0)).xy().length();
-    motors.set_throttle(throttle_vehicle_frame.z + raw_throttle_factor * channel_throttle->norm_input());
-    motors.set_forward(-throttle_vehicle_frame.x + channel_forward->norm_input());
-    motors.set_lateral(-throttle_vehicle_frame.y + channel_lateral->norm_input());
+    motors->set_throttle(throttle_vehicle_frame.z + raw_throttle_factor * channel_throttle->norm_input());
+    motors->set_forward(-throttle_vehicle_frame.x + channel_forward->norm_input());
+    motors->set_lateral(-throttle_vehicle_frame.y + channel_lateral->norm_input());
 }

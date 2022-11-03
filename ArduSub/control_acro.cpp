@@ -9,7 +9,7 @@
 bool Sub::acro_init()
 {
     // set target altitude to zero for reporting
-    pos_control.set_pos_target_z_cm(0);
+    pos_control->set_pos_target_z_cm(0);
 
     // attitude hold inputs become thrust inputs in acro mode
     // set to neutral to prevent chaotic behavior (esp. roll/pitch)
@@ -25,28 +25,28 @@ void Sub::acro_run()
     float target_roll, target_pitch, target_yaw;
 
     // if not armed set throttle to zero and exit immediately
-    if (!motors.armed()) {
-        motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
-        attitude_control.set_throttle_out(0,true,g.throttle_filt);
-        attitude_control.relax_attitude_controllers();
+    if (!motors->armed()) {
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+        attitude_control->set_throttle_out(0,true,g.throttle_filt);
+        attitude_control->relax_attitude_controllers();
         return;
     }
 
-    motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // convert the input to the desired body frame rate
     get_pilot_desired_angle_rates(channel_roll->get_control_in(), channel_pitch->get_control_in(), channel_yaw->get_control_in(), target_roll, target_pitch, target_yaw);
 
     // run attitude controller
-    attitude_control.input_rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
+    attitude_control->input_rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
 
     // output pilot's throttle without angle boost
-    attitude_control.set_throttle_out(channel_throttle->norm_input(), false, g.throttle_filt);
+    attitude_control->set_throttle_out(channel_throttle->norm_input(), false, g.throttle_filt);
 
     //control_in is range 0-1000
     //radio_in is raw pwm value
-    motors.set_forward(channel_forward->norm_input());
-    motors.set_lateral(channel_lateral->norm_input());
+    motors->set_forward(channel_forward->norm_input());
+    motors->set_lateral(channel_lateral->norm_input());
 }
 
 
@@ -125,7 +125,7 @@ void Sub::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16
         }
 
         // convert earth-frame level rates to body-frame level rates
-        attitude_control.euler_rate_to_ang_vel(attitude_control.get_att_target_euler_cd()*radians(0.01f), rate_ef_level, rate_bf_level);
+        attitude_control->euler_rate_to_ang_vel(attitude_control->get_att_target_euler_cd()*radians(0.01f), rate_ef_level, rate_bf_level);
 
         // combine earth frame rate corrections with rate requests
         if (g.acro_trainer == ACRO_TRAINER_LIMITED) {

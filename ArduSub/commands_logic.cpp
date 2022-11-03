@@ -299,7 +299,7 @@ void Sub::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
     if (target_loc.lat == 0 && target_loc.lng == 0) {
         // To-Do: make this simpler
         Vector3f temp_pos;
-        wp_nav.get_wp_stopping_point_xy(temp_pos.xy());
+        wp_nav->get_wp_stopping_point_xy(temp_pos.xy());
         const Location temp_loc(temp_pos, Location::AltFrame::ABOVE_ORIGIN);
         target_loc.lat = temp_loc.lat;
         target_loc.lng = temp_loc.lng;
@@ -419,7 +419,7 @@ void Sub::do_guided_limits(const AP_Mission::Mission_Command& cmd)
 bool Sub::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
     // check if we have reached the waypoint
-    if (!wp_nav.reached_wp_destination()) {
+    if (!wp_nav->reached_wp_destination()) {
         return false;
     }
 
@@ -448,7 +448,7 @@ bool Sub::verify_surface(const AP_Mission::Mission_Command& cmd)
     switch (auto_surface_state) {
         case AUTO_SURFACE_STATE_GO_TO_LOCATION:
             // check if we've reached the location
-            if (wp_nav.reached_wp_destination()) {
+            if (wp_nav->reached_wp_destination()) {
                 // Set target to current xy and zero depth
                 // TODO get xy target from current wp destination, because current location may be acceptance-radius away from original destination
                 Location target_location(cmd.content.location.lat, cmd.content.location.lng, 0, Location::AltFrame::ABOVE_HOME);
@@ -461,7 +461,7 @@ bool Sub::verify_surface(const AP_Mission::Mission_Command& cmd)
             break;
 
         case AUTO_SURFACE_STATE_ASCEND:
-            if (wp_nav.reached_wp_destination()) {
+            if (wp_nav->reached_wp_destination()) {
                 retval = true;
             }
             break;
@@ -478,7 +478,7 @@ bool Sub::verify_surface(const AP_Mission::Mission_Command& cmd)
 }
 
 bool Sub::verify_RTL() {
-    return wp_nav.reached_wp_destination();
+    return wp_nav->reached_wp_destination();
 }
 
 bool Sub::verify_loiter_unlimited()
@@ -490,7 +490,7 @@ bool Sub::verify_loiter_unlimited()
 bool Sub::verify_loiter_time()
 {
     // return immediately if we haven't reached our destination
-    if (!wp_nav.reached_wp_destination()) {
+    if (!wp_nav->reached_wp_destination()) {
         return false;
     }
 
@@ -508,7 +508,7 @@ bool Sub::verify_circle(const AP_Mission::Mission_Command& cmd)
 {
     // check if we've reached the edge
     if (auto_mode == Auto_CircleMoveToEdge) {
-        if (wp_nav.reached_wp_destination()) {
+        if (wp_nav->reached_wp_destination()) {
             Vector3f curr_pos = inertial_nav.get_position();
             Vector3f circle_center = pv_location_to_vector(cmd.content.location);
 
@@ -530,7 +530,7 @@ bool Sub::verify_circle(const AP_Mission::Mission_Command& cmd)
     }
 
     // check if we have completed circling
-    return fabsf(circle_nav.get_angle_total()/M_2PI) >= LOWBYTE(cmd.p1);
+    return fabsf(circle_nav->get_angle_total()/M_2PI) >= LOWBYTE(cmd.p1);
 }
 
 #if NAV_GUIDED == ENABLED
@@ -597,7 +597,7 @@ bool Sub::verify_wait_delay()
 
 bool Sub::verify_within_distance()
 {
-    if (wp_nav.get_wp_distance_to_destination() < (uint32_t)MAX(condition_value,0)) {
+    if (wp_nav->get_wp_distance_to_destination() < (uint32_t)MAX(condition_value,0)) {
         condition_value = 0;
         return true;
     }
@@ -651,7 +651,7 @@ bool Sub::do_guided(const AP_Mission::Mission_Command& cmd)
 void Sub::do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.content.speed.target_ms > 0) {
-        wp_nav.set_speed_xy(cmd.content.speed.target_ms * 100.0f);
+        wp_nav->set_speed_xy(cmd.content.speed.target_ms * 100.0f);
     }
 }
 

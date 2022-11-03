@@ -59,31 +59,35 @@ fi
 
 # Checking Ubuntu release to adapt software version to install
 RELEASE_CODENAME=$(lsb_release -c -s)
-PYTHON_V="python"  # starting from ubuntu 20.04, python isn't symlink to default python interpreter
-PIP=pip2
+PYTHON_V="python3"  # starting from ubuntu 20.04, python isn't symlink to default python interpreter
+PIP=pip3
 
-if [ ${RELEASE_CODENAME} == 'xenial' ]; then
-    SITLFML_VERSION="2.3v5"
-    SITLCFML_VERSION="2.3"
-elif [ ${RELEASE_CODENAME} == 'disco' ]; then
+if [ ${RELEASE_CODENAME} == 'bionic' ] ; then
+    SITLFML_VERSION="2.4"
+    SITLCFML_VERSION="2.4"
+    PYTHON_V="python"
+    PIP=pip2
+elif [ ${RELEASE_CODENAME} == 'buster' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
-elif [ ${RELEASE_CODENAME} == 'eoan' ]; then
-    SITLFML_VERSION="2.5"
-    SITLCFML_VERSION="2.5"
+    PYTHON_V="python"
+    PIP=pip2
 elif [ ${RELEASE_CODENAME} == 'focal' ] || [ ${RELEASE_CODENAME} == 'ulyssa' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
     PIP=pip3
-elif [ ${RELEASE_CODENAME} == 'groovy' ] || [ ${RELEASE_CODENAME} == 'hirsute' ]; then
+elif [ ${RELEASE_CODENAME} == 'jammy' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
     PIP=pip3
-elif [ ${RELEASE_CODENAME} == 'trusty' ]; then
-    SITLFML_VERSION="2"
-    SITLCFML_VERSION="2"
+elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
+         [ ${RELEASE_CODENAME} == 'bullseye' ]; then
+    SITLFML_VERSION="2.5"
+    SITLCFML_VERSION="2.5"
+    PYTHON_V="python3"
+    PIP=pip3
 else
     # We assume APT based system, so let's try with apt-cache first.
     SITLCFML_VERSION=$(apt-cache search -n '^libcsfml-audio' | cut -d" " -f1 | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?')
@@ -107,10 +111,10 @@ fi
 if [ "$ARM_PKG_CONFIG_NOT_PRESENT" -eq 1 ]; then
     INSTALL_PKG_CONFIG=""
     # No need to install Ubuntu's pkg-config-arm-linux-gnueabihf, instead install the base pkg-config.
-    sudo apt-get install pkg-config
+    $APT_GET install pkg-config
     if [ -f /usr/share/pkg-config-crosswrapper ]; then
         # We are on non-Ubuntu so simulate effect of installing pkg-config-arm-linux-gnueabihf.
-        sudo ln -s /usr/share/pkg-config-crosswrapper /usr/bin/arm-linux-gnueabihf-pkg-config
+        sudo ln -sf /usr/share/pkg-config-crosswrapper /usr/bin/arm-linux-gnueabihf-pkg-config
     else
         echo "Warning: unable to link to pkg-config-crosswrapper"
     fi
@@ -121,10 +125,20 @@ fi
 
 # Lists of packages to install
 BASE_PKGS="build-essential ccache g++ gawk git make wget"
-PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8 geocoder"
+if [ ${RELEASE_CODENAME} == 'bionic' ]; then
+    # use fixed version for package that drop python2 support
+    PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8==3.7.9 requests==2.27.1 monotonic==1.6 geocoder empy configparser==4.0.2 click==7.1.2 decorator==4.4.2 dronecan"
+else
+    PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8 geocoder empy dronecan"
+fi
+
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
 if [[ $SKIP_AP_EXT_ENV -ne 1 ]]; then
-  PYTHON_PKGS="$PYTHON_PKGS pygame intelhex"
+    if [ ${RELEASE_CODENAME} == 'bionic' ]; then
+        PYTHON_PKGS="$PYTHON_PKGS pygame==2.0.3 intelhex"
+    else
+        PYTHON_PKGS="$PYTHON_PKGS pygame intelhex"
+    fi
 fi
 ARM_LINUX_PKGS="g++-arm-linux-gnueabihf $INSTALL_PKG_CONFIG"
 # python-wxgtk packages are added to SITL_PKGS below
@@ -140,27 +154,50 @@ fi
 
 # ArduPilot official Toolchain for STM32 boards
 function install_arm_none_eabi_toolchain() {
-  # GNU Tools for ARM Embedded Processors
-  # (see https://launchpad.net/gcc-arm-embedded/)
-  ARM_ROOT="gcc-arm-none-eabi-6-2017-q2-update"
-  ARM_TARBALL="$ARM_ROOT-linux.tar.bz2"
-  ARM_TARBALL_URL="https://firmware.ardupilot.org/Tools/STM32-tools/$ARM_TARBALL"
-  if [ ! -d $OPT/$ARM_ROOT ]; then
-    (
-        cd $OPT;
-        heading "Installing toolchain for STM32 Boards"
-        echo "Downloading from ArduPilot server"
-        sudo wget $ARM_TARBALL_URL
-        echo "Installing..."
-        sudo tar xjf ${ARM_TARBALL}
-        echo "... Cleaning"
-        sudo rm ${ARM_TARBALL};
-    )
-  fi
-  echo "Registering STM32 Toolchain for ccache"
-  sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
-  sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
-  echo "Done!"
+    # GNU Tools for ARM Embedded Processors
+    # (see https://launchpad.net/gcc-arm-embedded/)
+    ARM_ROOT="gcc-arm-none-eabi-10-2020-q4-major"
+    case $(uname -m) in
+        x86_64)
+            if [ ! -d $OPT/$ARM_ROOT ]; then
+                (
+                    cd $OPT
+                    heading "Installing toolchain for STM32 Boards"
+                    echo "Installing toolchain for STM32 Boards"
+                    echo "Downloading from ArduPilot server"
+                    sudo wget --progress=dot:giga https://firmware.ardupilot.org/Tools/STM32-tools/gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
+                    echo "Installing..."
+                    sudo chmod -R 777 gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
+                    sudo tar xjf gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
+                    echo "... Cleaning"
+                    sudo rm gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
+                )
+            fi
+            echo "Registering STM32 Toolchain for ccache"
+            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
+            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
+            echo "Done!";;
+
+        aarch64)
+            if [ ! -d $OPT/$ARM_ROOT ]; then
+                (
+                    cd $OPT
+                    heading "Installing toolchain for STM32 Boards"
+                    echo "Installing toolchain for STM32 Boards"
+                    echo "Downloading from ArduPilot server"
+                    sudo wget --progress=dot:giga https://firmware.ardupilot.org/Tools/STM32-tools/gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
+                    echo "Installing..."
+                    sudo chmod -R 777 gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
+                    sudo tar xjf gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
+                    echo "... Cleaning"
+                    sudo rm gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
+                )
+            fi
+            echo "Registering STM32 Toolchain for ccache"
+            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
+            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
+            echo "Done!";;
+    esac
 }
 
 function maybe_prompt_user() {
@@ -181,10 +218,14 @@ sudo usermod -a -G dialout $USER
 echo "Done!"
 
 # Add back python symlink to python interpreter on Ubuntu >= 20.04
-if [ ${RELEASE_CODENAME} == 'focal' ] || [ ${RELEASE_CODENAME} == 'ulyssa' ]; then
+if [ ${RELEASE_CODENAME} == 'focal' ] ||
+       [ ${RELEASE_CODENAME} == 'ulyssa' ];
+then
     BASE_PKGS+=" python-is-python3"
     SITL_PKGS+=" libpython3-stdlib" # for argparse
-elif [ ${RELEASE_CODENAME} == 'groovy' ] || [ ${RELEASE_CODENAME} == 'hirsute' ]; then
+elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
+         [ ${RELEASE_CODENAME} == 'bullseye' ] ||
+         [ ${RELEASE_CODENAME} == 'jammy' ]; then
     BASE_PKGS+=" python-is-python3"
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 else
@@ -193,18 +234,29 @@ fi
 
 # Check for graphical package for MAVProxy
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
-  if [ ${RELEASE_CODENAME} == 'groovy' ] || [ ${RELEASE_CODENAME} == 'hirsute' ]; then
-    SITL_PKGS+=" python3-wxgtk4.0"
-    SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libjpeg8-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
-  elif [ ${RELEASE_CODENAME} == 'focal' ] || [ ${RELEASE_CODENAME} == 'ulyssa' ]; then
-    SITL_PKGS+=" python3-wxgtk4.0"
-    SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libjpeg8-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
+  if [ ${RELEASE_CODENAME} == 'bullseye' ]; then
+    SITL_PKGS+=" libjpeg62-turbo-dev"
+  elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
+           [ ${RELEASE_CODENAME} == 'focal' ] ||
+           [ ${RELEASE_CODENAME} == 'ulyssa'  ]; then
+    SITL_PKGS+=" libjpeg8-dev"
   elif apt-cache search python-wxgtk3.0 | grep wx; then
       SITL_PKGS+=" python-wxgtk3.0"
+  elif apt-cache search python3-wxgtk4.0 | grep wx; then
+      # see below
+      :
   else
       # we only support back to trusty:
       SITL_PKGS+=" python-wxgtk2.8"
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libjpeg8-dev libpng12-0 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
+  fi
+  if [ ${RELEASE_CODENAME} == 'bullseye' ] ||
+         [ ${RELEASE_CODENAME} == 'groovy' ] ||
+         [ ${RELEASE_CODENAME} == 'focal' ] ||
+         [ ${RELEASE_CODENAME} == 'ulyssa' ] ||
+         [ ${RELEASE_CODENAME} == 'jammy' ]; then
+    SITL_PKGS+=" python3-wxgtk4.0"
+    SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   fi
 fi
 
@@ -222,15 +274,23 @@ fi
 
 # Install all packages
 $APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $ARM_LINUX_PKGS $COVERAGE_PKGS
+# Update Pip and Setuptools on old distro
+if [ ${RELEASE_CODENAME} == 'bionic' ]; then
+    # use fixed version for package that drop python2 support
+    $PIP install --user -U pip==20.3 setuptools==44.0.0
+fi
 $PIP install --user -U $PYTHON_PKGS
 
 if [[ -z "${DO_AP_STM_ENV}" ]] && maybe_prompt_user "Install ArduPilot STM32 toolchain [N/y]?" ; then
     DO_AP_STM_ENV=1
 fi
 
-heading "Removing modemmanager package that could conflict with firmware uploading"
+heading "Removing modemmanager and brltty package that could conflict with firmware uploading"
 if package_is_installed "modemmanager"; then
     $APT_GET remove modemmanager
+fi
+if package_is_installed "brltty"; then
+    $APT_GET remove brltty
 fi
 echo "Done!"
 
@@ -249,13 +309,16 @@ echo "Done!"
 SHELL_LOGIN=".profile"
 if $IS_DOCKER; then
     echo "Inside docker, we add the tools path into .bashrc directly"
-    SHELL_LOGIN=".bashrc"
+    SHELL_LOGIN=".ardupilot_env"
+    echo "# ArduPilot env file. Need to be loaded by your Shell." > ~/$SHELL_LOGIN
 fi
 
 heading "Adding ArduPilot Tools to environment"
 
 SCRIPT_DIR=$(dirname $(realpath ${BASH_SOURCE[0]}))
 ARDUPILOT_ROOT=$(realpath "$SCRIPT_DIR/../../")
+
+if [[ $DO_AP_STM_ENV -eq 1 ]]; then
 exportline="export PATH=$OPT/$ARM_ROOT/bin:\$PATH";
 grep -Fxq "$exportline" ~/$SHELL_LOGIN 2>/dev/null || {
     if maybe_prompt_user "Add $OPT/$ARM_ROOT/bin to your PATH [N/y]?" ; then
@@ -265,6 +328,7 @@ grep -Fxq "$exportline" ~/$SHELL_LOGIN 2>/dev/null || {
         echo "Skipping adding $OPT/$ARM_ROOT/bin to PATH."
     fi
 }
+fi
 
 exportline2="export PATH=$ARDUPILOT_ROOT/$ARDUPILOT_TOOLS:\$PATH";
 grep -Fxq "$exportline2" ~/$SHELL_LOGIN 2>/dev/null || {
@@ -307,4 +371,10 @@ if [[ $SKIP_AP_GIT_CHECK -ne 1 ]]; then
     echo "Done!"
   fi
 fi
+
+if $IS_DOCKER; then
+    echo "Finalizing ArduPilot env for Docker"
+    echo "source ~/.ardupilot_env">> ~/.bashrc
+fi
+
 echo "---------- $0 end ----------"

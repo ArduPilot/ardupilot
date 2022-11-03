@@ -47,7 +47,7 @@ MAV_MODE GCS_MAVLINK_Sub::base_mode() const
     // override if stick mixing is enabled
     _base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
 
-    if (sub.motors.armed()) {
+    if (sub.motors->armed()) {
         _base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
@@ -69,7 +69,7 @@ MAV_STATE GCS_MAVLINK_Sub::vehicle_system_status() const
         return MAV_STATE_CRITICAL;
     }
 
-    if (sub.motors.armed()) {
+    if (sub.motors->armed()) {
         return MAV_STATE_ACTIVE;
     }
 
@@ -79,27 +79,27 @@ MAV_STATE GCS_MAVLINK_Sub::vehicle_system_status() const
 void GCS_MAVLINK_Sub::send_banner()
 {
     GCS_MAVLINK::send_banner();
-    send_text(MAV_SEVERITY_INFO, "Frame: %s", sub.motors.get_frame_string());
+    send_text(MAV_SEVERITY_INFO, "Frame: %s", sub.motors->get_frame_string());
 }
 
 void GCS_MAVLINK_Sub::send_nav_controller_output() const
 {
-    const Vector3f &targets = sub.attitude_control.get_att_target_euler_cd();
+    const Vector3f &targets = sub.attitude_control->get_att_target_euler_cd();
     mavlink_msg_nav_controller_output_send(
         chan,
         targets.x * 1.0e-2f,
         targets.y * 1.0e-2f,
         targets.z * 1.0e-2f,
-        sub.wp_nav.get_wp_bearing_to_destination() * 1.0e-2f,
-        MIN(sub.wp_nav.get_wp_distance_to_destination() * 1.0e-2f, UINT16_MAX),
-        sub.pos_control.get_pos_error_z_cm() * 1.0e-2f,
+        sub.wp_nav->get_wp_bearing_to_destination() * 1.0e-2f,
+        MIN(sub.wp_nav->get_wp_distance_to_destination() * 1.0e-2f, UINT16_MAX),
+        sub.pos_control->get_pos_error_z_cm() * 1.0e-2f,
         0,
         0);
 }
 
 int16_t GCS_MAVLINK_Sub::vfr_hud_throttle() const
 {
-    return (int16_t)(sub.motors.get_throttle() * 100);
+    return (int16_t)(sub.motors->get_throttle() * 100);
 }
 
 // Work around to get temperature sensor data out
@@ -160,11 +160,10 @@ void GCS_MAVLINK_Sub::send_pid_tuning()
 {
     const Parameters &g = sub.g;
     AP_AHRS &ahrs = AP::ahrs();
-    AC_AttitudeControl_Sub &attitude_control = sub.attitude_control;
 
     const Vector3f &gyro = ahrs.get_gyro();
     if (g.gcs_pid_mask & 1) {
-        const AP_Logger::PID_Info &pid_info = attitude_control.get_rate_roll_pid().get_pid_info();
+        const AP_Logger::PID_Info &pid_info = sub.attitude_control->get_rate_roll_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_ROLL,
                                     pid_info.target*0.01f,
                                     degrees(gyro.x),
@@ -177,7 +176,7 @@ void GCS_MAVLINK_Sub::send_pid_tuning()
         }
     }
     if (g.gcs_pid_mask & 2) {
-        const AP_Logger::PID_Info &pid_info = attitude_control.get_rate_pitch_pid().get_pid_info();
+        const AP_Logger::PID_Info &pid_info = sub.attitude_control->get_rate_pitch_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_PITCH,
                                     pid_info.target*0.01f,
                                     degrees(gyro.y),
@@ -190,7 +189,7 @@ void GCS_MAVLINK_Sub::send_pid_tuning()
         }
     }
     if (g.gcs_pid_mask & 4) {
-        const AP_Logger::PID_Info &pid_info = attitude_control.get_rate_yaw_pid().get_pid_info();
+        const AP_Logger::PID_Info &pid_info = sub.attitude_control->get_rate_yaw_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_YAW,
                                     pid_info.target*0.01f,
                                     degrees(gyro.z),
@@ -203,7 +202,7 @@ void GCS_MAVLINK_Sub::send_pid_tuning()
         }
     }
     if (g.gcs_pid_mask & 8) {
-        const AP_Logger::PID_Info &pid_info = sub.pos_control.get_accel_z_pid().get_pid_info();
+        const AP_Logger::PID_Info &pid_info = sub.pos_control->get_accel_z_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_ACCZ,
                                     pid_info.target*0.01f,
                                     -(ahrs.get_accel_ef_blended().z + GRAVITY_MSS),
@@ -421,7 +420,7 @@ void GCS_MAVLINK_Sub::handle_change_alt_request(AP_Mission::Mission_Command &cmd
 
 MAV_RESULT GCS_MAVLINK_Sub::_handle_command_preflight_calibration_baro()
 {
-    if (sub.motors.armed()) {
+    if (sub.motors->armed()) {
         gcs().send_text(MAV_SEVERITY_INFO, "Disarm before calibration.");
         return MAV_RESULT_FAILED;
     }
@@ -497,13 +496,13 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_long_packet(const mavlink_command_lon
         // param3 : unused
         // param4 : unused
         if (packet.param2 > 0.0f) {
-            sub.wp_nav.set_speed_xy(packet.param2 * 100.0f);
+            sub.wp_nav->set_speed_xy(packet.param2 * 100.0f);
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
 
     case MAV_CMD_MISSION_START:
-        if (sub.motors.armed() && sub.set_mode(AUTO, ModeReason::GCS_COMMAND)) {
+        if (sub.motors->armed() && sub.set_mode(AUTO, ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
@@ -549,7 +548,7 @@ void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
         break;
     }
 
-    
+
     case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET: { // MAV ID: 82
         // decode packet
         mavlink_set_attitude_target_t packet;
@@ -573,10 +572,10 @@ void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
             climb_rate_cms = 0.0f;
         } else if (packet.thrust > 0.5f) {
             // climb at up to WPNAV_SPEED_UP
-            climb_rate_cms = (packet.thrust - 0.5f) * 2.0f * sub.wp_nav.get_default_speed_up();
+            climb_rate_cms = (packet.thrust - 0.5f) * 2.0f * sub.wp_nav->get_default_speed_up();
         } else {
             // descend at up to WPNAV_SPEED_DN
-            climb_rate_cms = (packet.thrust - 0.5f) * 2.0f * sub.wp_nav.get_default_speed_down();
+            climb_rate_cms = (packet.thrust - 0.5f) * 2.0f * sub.wp_nav->get_default_speed_down();
         }
         sub.guided_set_angle(Quaternion(packet.q[0],packet.q[1],packet.q[2],packet.q[3]), climb_rate_cms);
         break;
@@ -679,7 +678,7 @@ void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
          */
 
         if (!pos_ignore && sub.control_mode == ALT_HOLD) { // Control only target depth when in ALT_HOLD
-            sub.pos_control.set_pos_target_z_cm(packet.alt*100);
+            sub.pos_control->set_pos_target_z_cm(packet.alt*100);
             break;
         }
 

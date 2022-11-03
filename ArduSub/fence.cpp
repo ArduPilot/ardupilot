@@ -9,7 +9,7 @@
 void Sub::fence_check()
 {
     // ignore any fence activity when not armed
-    if (!motors.armed()) {
+    if (!motors->armed()) {
         return;
     }
 

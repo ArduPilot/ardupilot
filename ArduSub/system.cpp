@@ -61,11 +61,16 @@ void Sub::init_ardupilot()
     log_init();
 #endif
 
+
+    init_rc_in();               // sets up rc channels from radio
+
+    allocate_motors();          // allocate the motors class
+
     // initialise rc channels including setting mode
     rc().init();
 
-    init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up motors and output to escs
+
     init_joystick();            // joystick initialization
 
     relay.init();
@@ -86,7 +91,7 @@ void Sub::init_ardupilot()
     // init Location class
 #if AP_TERRAIN_AVAILABLE && AC_TERRAIN
     Location::set_terrain(&terrain);
-    wp_nav.set_terrain(&terrain);
+    wp_nav->set_terrain(&terrain);
 #endif
 
 #if OPTFLOW == ENABLED
@@ -217,7 +222,7 @@ bool Sub::ekf_position_ok()
     nav_filter_status filt_status = inertial_nav.get_filter_status();
 
     // if disarmed we accept a predicted horizontal position
-    if (!motors.armed()) {
+    if (!motors->armed()) {
         return ((filt_status.flags.horiz_pos_abs || filt_status.flags.pred_horiz_pos_abs));
     }
 
@@ -253,7 +258,7 @@ bool Sub::optflow_position_ok()
     nav_filter_status filt_status = inertial_nav.get_filter_status();
 
     // if disarmed we accept a predicted horizontal relative position
-    if (!motors.armed()) {
+    if (!motors->armed()) {
         return (filt_status.flags.pred_horiz_pos_rel);
     }
     return (filt_status.flags.horiz_pos_rel && !filt_status.flags.const_pos_mode);
@@ -283,3 +288,85 @@ AP_AdvancedFailsafe *AP::advancedfailsafe() { return nullptr; }
 // dummy method to avoid linking AP_Avoidance
 AP_Avoidance *AP::ap_avoidance() { return nullptr; }
 #endif
+
+
+/*
+  allocate the motors class
+ */
+void Sub::allocate_motors(void)
+{
+    switch ((AP_Motors6DOF::sub_frame_t)g.frame_configuration.get()) {
+        case AP_Motors6DOF::SUB_FRAME_BLUEROV1:
+        case AP_Motors6DOF::SUB_FRAME_VECTORED:
+        case AP_Motors6DOF::SUB_FRAME_VECTORED_6DOF:
+        case AP_Motors6DOF::SUB_FRAME_VECTORED_6DOF_90DEG:
+        case AP_Motors6DOF::SUB_FRAME_SIMPLEROV_3:
+        case AP_Motors6DOF::SUB_FRAME_SIMPLEROV_4:
+        case AP_Motors6DOF::SUB_FRAME_SIMPLEROV_5:
+        case AP_Motors6DOF::SUB_FRAME_CUSTOM:
+        default:
+            motors = new AP_Motors6DOF(sub.scheduler.get_loop_rate_hz());
+            motors_var_info = AP_Motors6DOF::var_info;
+            break;
+        case AP_Motors6DOF::SUB_FRAME_SCRIPTING:
+#ifdef ENABLE_SCRIPTING
+            // motors = new AP_MotorsMatrix_6DoF_ScriptingSub(sub.scheduler.get_loop_rate_hz());
+            // motors_var_info = AP_MotorsMatrix_6DoF_ScriptingSub::var_info;
+#endif // ENABLE_SCRIPTING
+            break;
+    }
+
+    if (motors == nullptr) {
+        AP_BoardConfig::config_error("Unable to allocate FRAME_CLASS=%u", (unsigned)g.frame_configuration.get());
+    }
+    AP_Param::load_object_from_eeprom(motors, motors_var_info);
+
+    ahrs_view = ahrs.create_view(ROTATION_NONE);
+    if (ahrs_view == nullptr) {
+        AP_BoardConfig::config_error("Unable to allocate AP_AHRS_View");
+    }
+
+    const struct AP_Param::GroupInfo *ac_var_info;
+
+    attitude_control = new AC_AttitudeControl_Sub(*ahrs_view, aparm, *motors, scheduler.get_loop_period_s());
+    ac_var_info = AC_AttitudeControl_Sub::var_info;
+
+    if (attitude_control == nullptr) {
+        AP_BoardConfig::config_error("Unable to allocate AttitudeControl");
+    }
+    AP_Param::load_object_from_eeprom(attitude_control, ac_var_info);
+
+    pos_control = new AC_PosControl_Sub(*ahrs_view, inertial_nav, *motors, *attitude_control, scheduler.get_loop_period_s());
+    if (pos_control == nullptr) {
+        AP_BoardConfig::config_error("Unable to allocate PosControl");
+    }
+    AP_Param::load_object_from_eeprom(pos_control, pos_control->var_info);
+
+    wp_nav = new AC_WPNav(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
+    if (wp_nav == nullptr) {
+        AP_BoardConfig::config_error("Unable to allocate WPNav");
+    }
+    AP_Param::load_object_from_eeprom(wp_nav, wp_nav->var_info);
+
+    loiter_nav = new AC_Loiter(inertial_nav, *ahrs_view, *pos_control, *attitude_control);
+    if (loiter_nav == nullptr) {
+        AP_BoardConfig::config_error("Unable to allocate LoiterNav");
+    }
+    AP_Param::load_object_from_eeprom(loiter_nav, loiter_nav->var_info);
+
+    circle_nav = new AC_Circle(inertial_nav, *ahrs_view, *pos_control);
+    if (circle_nav == nullptr) {
+        AP_BoardConfig::config_error("Unable to allocate CircleNav");
+    }
+    AP_Param::load_object_from_eeprom(circle_nav, circle_nav->var_info);
+
+    // reload lines from the defaults file that may now be accessible
+    AP_Param::reload_defaults_file(true);
+
+    // upgrade parameters. This must be done after allocating the objects
+    convert_old_parameters();
+
+    // param count could have changed
+    AP_Param::invalidate_count();
+
+}

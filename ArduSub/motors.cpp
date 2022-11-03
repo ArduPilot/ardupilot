@@ -3,7 +3,7 @@
 // enable_motor_output() - enable and output lowest possible value to motors
 void Sub::enable_motor_output()
 {
-    motors.output_min();
+    motors->output_min();
 }
 
 // motors_output - send output to motors library which will adjust and send to ESCs and servos
@@ -17,8 +17,8 @@ void Sub::motors_output()
     if (ap.motor_test) {
         verify_motor_test();
     } else {
-        motors.set_interlock(true);
-        motors.output();
+        motors->set_interlock(true);
+        motors->output();
     }
 }
 
@@ -43,7 +43,7 @@ bool Sub::init_motor_test()
     }
 
     // Make sure we are on the ground
-    if (!motors.armed()) {
+    if (!motors->armed()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Arm motors before testing motors.");
         return false;
     }
@@ -117,13 +117,13 @@ bool Sub::handle_do_motor_test(mavlink_command_long_t command) {
     }
 
     if (is_equal(throttle_type, (float)MOTOR_TEST_THROTTLE_PWM)) {
-        return motors.output_test_num(motor_number, throttle); // true if motor output is set
+        return motors->output_test_num(motor_number, throttle); // true if motor output is set
     }
 
     if (is_equal(throttle_type, (float)MOTOR_TEST_THROTTLE_PERCENT)) {
         throttle = constrain_float(throttle, 0.0f, 100.0f);
         throttle = channel_throttle->get_radio_min() + throttle / 100.0f * (channel_throttle->get_radio_max() - channel_throttle->get_radio_min());
-        return motors.output_test_num(motor_number, throttle); // true if motor output is set
+        return motors->output_test_num(motor_number, throttle); // true if motor output is set
     }
 
     return false;
@@ -134,11 +134,11 @@ bool Sub::handle_do_motor_test(mavlink_command_long_t command) {
 void Sub::translate_wpnav_rp(float &lateral_out, float &forward_out)
 {
     // get roll and pitch targets in centidegrees
-    int32_t lateral = wp_nav.get_roll();
-    int32_t forward = -wp_nav.get_pitch(); // output is reversed
+    int32_t lateral = wp_nav->get_roll();
+    int32_t forward = -wp_nav->get_pitch(); // output is reversed
 
     // constrain target forward/lateral values
-    // The outputs of wp_nav.get_roll and get_pitch should already be constrained to these values
+    // The outputs of wp_nav->get_roll and get_pitch should already be constrained to these values
     lateral = constrain_int16(lateral, -aparm.angle_max, aparm.angle_max);
     forward = constrain_int16(forward, -aparm.angle_max, aparm.angle_max);
 
@@ -151,8 +151,8 @@ void Sub::translate_wpnav_rp(float &lateral_out, float &forward_out)
 void Sub::translate_circle_nav_rp(float &lateral_out, float &forward_out)
 {
     // get roll and pitch targets in centidegrees
-    int32_t lateral = circle_nav.get_roll();
-    int32_t forward = -circle_nav.get_pitch(); // output is reversed
+    int32_t lateral = circle_nav->get_roll();
+    int32_t forward = -circle_nav->get_pitch(); // output is reversed
 
     // constrain target forward/lateral values
     lateral = constrain_int16(lateral, -aparm.angle_max, aparm.angle_max);
@@ -167,8 +167,8 @@ void Sub::translate_circle_nav_rp(float &lateral_out, float &forward_out)
 void Sub::translate_pos_control_rp(float &lateral_out, float &forward_out)
 {
     // get roll and pitch targets in centidegrees
-    int32_t lateral = pos_control.get_roll_cd();
-    int32_t forward = -pos_control.get_pitch_cd(); // output is reversed
+    int32_t lateral = pos_control->get_roll_cd();
+    int32_t forward = -pos_control->get_pitch_cd(); // output is reversed
 
     // constrain target forward/lateral values
     lateral = constrain_int16(lateral, -aparm.angle_max, aparm.angle_max);
