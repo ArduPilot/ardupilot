@@ -2092,9 +2092,14 @@ void RCOutput::safety_update(void)
     }
 #elif HAL_WITH_IO_MCU
     safety_state = _safety_switch_state();
-    iomcu.set_safety_mask(safety_mask);
 #endif
 
+#if HAL_WITH_IO_MCU
+    // regardless of if we have a FMU safety pin, if we have an IOMCU we need
+    // to pass the BRD_SAFETY_MASK to the IOMCU
+    iomcu.set_safety_mask(safety_mask);
+#endif
+    
 #ifdef HAL_GPIO_PIN_LED_SAFETY
     led_counter = (led_counter+1) % 16;
     const uint16_t led_pattern = safety_state==AP_HAL::Util::SAFETY_DISARMED?0x5500:0xFFFF;
