@@ -177,6 +177,7 @@ void ModePosHold::run()
         get_wind_comp_lean_angles(wind_comp_roll, wind_comp_pitch);
     }
 
+    bool braking = false;
     // Roll state machine
     //  Each state (aka mode) is responsible for:
     //      1. dealing with pilot input
@@ -197,6 +198,10 @@ void ModePosHold::run()
                 brake.angle_max_roll = 0.0f;        // reset brake_angle_max so we can detect when vehicle begins to flatten out during braking
                 brake.timeout_roll = POSHOLD_BRAKE_TIME_ESTIMATE_MAX; // number of cycles the brake will be applied, updated during braking mode.
                 brake.time_updated_roll = false;   // flag the braking time can be re-estimated
+                Vector2f stop_point;
+                loiter_nav->get_stopping_point_xy(stop_point);
+                loiter_nav->init_target(stop_point);
+                braking = true;
             }
 
             // final lean angle should be pilot input plus wind compensation
@@ -205,38 +210,11 @@ void ModePosHold::run()
 
         case RPMode::BRAKE:
         case RPMode::BRAKE_READY_TO_LOITER:
-            // calculate brake.roll angle to counter-act velocity
-            update_brake_angle_from_velocity(brake.roll, vel_right);
-
-            // update braking time estimate
-            if (!brake.time_updated_roll) {
-                // check if brake angle is increasing
-                if (fabsf(brake.roll) >= brake.angle_max_roll) {
-                    brake.angle_max_roll = fabsf(brake.roll);
-                } else {
-                    // braking angle has started decreasing so re-estimate braking time
-                    brake.timeout_roll = 1+(uint16_t)(LOOP_RATE_FACTOR*15L*(int32_t)(fabsf(brake.roll))/(10L*(int32_t)g.poshold_brake_rate));  // the 1.2 (12/10) factor has to be tuned in flight, here it means 120% of the "normal" time.
-                    brake.time_updated_roll = true;
-                }
-            }
-
-            // if velocity is very low reduce braking time to 0.5seconds
-            if ((fabsf(vel_right) <= POSHOLD_SPEED_0) && (brake.timeout_roll > 50*LOOP_RATE_FACTOR)) {
-                brake.timeout_roll = 50*LOOP_RATE_FACTOR;
-            }
-
-            // reduce braking timer
-            if (brake.timeout_roll > 0) {
-                brake.timeout_roll--;
-            } else {
-                // indicate that we are ready to move to Loiter.
-                // Loiter will only actually be engaged once both roll_mode and pitch_mode are changed to RPMode::BRAKE_READY_TO_LOITER
-                //  logic for engaging loiter is handled below the roll and pitch mode switch statements
-                roll_mode = RPMode::BRAKE_READY_TO_LOITER;
-            }
-
-            // final lean angle is braking angle + wind compensation angle
-            roll = brake.roll + wind_comp_roll;
+            loiter_nav->clear_pilot_desired_acceleration();
+            loiter_nav->update(false);
+            braking = true;
+            roll = loiter_nav->get_roll();
+            if (fabsf(vel_right) <= POSHOLD_SPEED_0) roll_mode = RPMode::BRAKE_READY_TO_LOITER;
 
             // check for pilot input
             if (!is_zero(target_roll)) {
@@ -291,6 +269,9 @@ void ModePosHold::run()
                 brake.angle_max_pitch = 0.0f;       // reset brake_angle_max so we can detect when vehicle begins to flatten out during braking
                 brake.timeout_pitch = POSHOLD_BRAKE_TIME_ESTIMATE_MAX; // number of cycles the brake will be applied, updated during braking mode.
                 brake.time_updated_pitch = false;   // flag the braking time can be re-estimated
+                Vector2f stop_point;
+                loiter_nav->get_stopping_point_xy(stop_point);
+                if (!braking) loiter_nav->init_target(stop_point);
             }
 
             // final lean angle should be pilot input plus wind compensation
@@ -299,38 +280,12 @@ void ModePosHold::run()
 
         case RPMode::BRAKE:
         case RPMode::BRAKE_READY_TO_LOITER:
-            // calculate brake_pitch angle to counter-act velocity
-            update_brake_angle_from_velocity(brake.pitch, -vel_fw);
-
-            // update braking time estimate
-            if (!brake.time_updated_pitch) {
-                // check if brake angle is increasing
-                if (fabsf(brake.pitch) >= brake.angle_max_pitch) {
-                    brake.angle_max_pitch = fabsf(brake.pitch);
-                } else {
-                    // braking angle has started decreasing so re-estimate braking time
-                    brake.timeout_pitch = 1+(uint16_t)(LOOP_RATE_FACTOR*15L*(int32_t)(fabsf(brake.pitch))/(10L*(int32_t)g.poshold_brake_rate));  // the 1.2 (12/10) factor has to be tuned in flight, here it means 120% of the "normal" time.
-                    brake.time_updated_pitch = true;
-                }
+            if (!braking) {
+                loiter_nav->clear_pilot_desired_acceleration();
+                loiter_nav->update(false);
             }
-
-            // if velocity is very low reduce braking time to 0.5seconds
-            if ((fabsf(vel_fw) <= POSHOLD_SPEED_0) && (brake.timeout_pitch > 50*LOOP_RATE_FACTOR)) {
-                brake.timeout_pitch = 50*LOOP_RATE_FACTOR;
-            }
-
-            // reduce braking timer
-            if (brake.timeout_pitch > 0) {
-                brake.timeout_pitch--;
-            } else {
-                // indicate that we are ready to move to Loiter.
-                // Loiter will only actually be engaged once both pitch_mode and pitch_mode are changed to RPMode::BRAKE_READY_TO_LOITER
-                //  logic for engaging loiter is handled below the pitch and pitch mode switch statements
-                pitch_mode = RPMode::BRAKE_READY_TO_LOITER;
-            }
-
-            // final lean angle is braking angle + wind compensation angle
-            pitch = brake.pitch + wind_comp_pitch;
+            pitch = loiter_nav->get_pitch();
+            if (fabsf(vel_fw) <= POSHOLD_SPEED_0) pitch_mode = RPMode::BRAKE_READY_TO_LOITER;
 
             // check for pilot input
             if (!is_zero(target_pitch)) {
