@@ -14,8 +14,27 @@ Elfin-Wing v1 is an open-source and self-made flight controller. [Elfin-Wing](ht
 
 ## Pinout
 
-![Elfin-Wing v1](Elfin-Wing_v1_Board_top.png "Elfin-Wing v1")
+#### Flight Controller Top:
+
+<img src="Elfin-Wing_v1_Board_top.png" alt="Elfin-Wing v1" title="Elfin-Wing v1" style="zoom:75%;" />
+
+
+
+#### Flight Controller Bottom: 
+
 ![Elfin-Wing v1](Elfin-Wing_v1_Board_bottom.png "Elfin-Wing v1")
+
+#### Power Top:
+
+<img src="Elfin-Wing_v1_Power_top.png" alt="Power Top" style="zoom:75%;" />
+
+#### Power Bottom:
+
+<img src="Elfin-Wing_v1_Power_bottom.png" alt="Power" style="zoom:75%;" />
+
+#### Top Board:
+
+<img src="Elfin-Wing_v1_TopBoard.png" style="zoom:75%;" />
 
 ## Default UART
 
@@ -31,7 +50,7 @@ Elfin-Wing v1 is an open-source and self-made flight controller. [Elfin-Wing](ht
 ## RC Input
 
 RC input is configured on the R2 (UART2_RX) pin for most RC unidirectional protocols except SBUS which should be applied at the SBUS pin. PPM is not supported.
-  
+
 ## OSD Support
 
 The Elfin-Wing v1 supports OSD using OSD_TYPE 1 (MAX7456 driver).
