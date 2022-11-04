@@ -2,6 +2,8 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_BattMonitor_Analog.h"
+#include <GCS_MAVLink/GCS.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -89,8 +91,16 @@ AP_BattMonitor_Analog::read()
         _state.healthy &= _curr_pin_analog_source->set_pin(_curr_pin);
 
         // read current
-        _state.current_amps = (_curr_pin_analog_source->voltage_average() - _curr_amp_offset) * _curr_amp_per_volt;
 
+        if (!(uint32_t(_params._options.get()) & uint32_t(AP_BattMonitor_Params::Options::Synthetic_Current_Sensor))) {
+            _state.current_amps = (_curr_pin_analog_source->voltage_average() - _curr_amp_offset) * _curr_amp_per_volt;            
+        } 
+#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+          else {
+              _state.current_amps = (gcs().get_hud_throttle() * 0.01)* _curr_amp_per_volt + _curr_amp_offset ;
+        }
+#endif // no synthetic current sensor in AP_Periph builds
+        
         update_consumed(_state, dt_us);
 
         // record time
