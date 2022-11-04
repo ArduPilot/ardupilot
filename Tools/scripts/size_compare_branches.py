@@ -102,6 +102,15 @@ class SizeCompareBranches(object):
         return self.run_program("SCB-GIT", cmd_list)
 
     def run_waf(self, args, compiler=None):
+        # try to modify the environment so we can consistent builds:
+        consistent_build_envs = {
+            "CHIBIOS_GIT_VERSION": "12345678",
+            "GIT_VERSION": "abcdef",
+            "GIT_VERSION_INT": "15",
+        }
+        for (n, v) in consistent_build_envs.items():
+            os.environ[n] = v
+
         if os.path.exists("waf"):
             waf = "./waf"
         else:
