@@ -253,7 +253,7 @@ private:
     // Baro sensor instance index of the external water pressure sensor
     uint8_t depth_sensor_idx;
 
-    AP_Motors6DOF *motors;
+    AP_MotorsMatrix *motors;
     const struct AP_Param::GroupInfo *motors_var_info;
 
     // Auto

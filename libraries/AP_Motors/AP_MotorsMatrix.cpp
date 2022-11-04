@@ -1119,5 +1119,12 @@ void AP_MotorsMatrix::disable_yaw_torque(void)
     }
 }
 
+bool AP_MotorsMatrix::motor_is_enabled(int motor_number) {
+    if (motor_number < 0 || motor_number >= AP_MOTORS_MAX_NUM_MOTORS) {
+        return false;
+    }
+    return motor_enabled[motor_number];
+}
+
 // singleton instance
 AP_MotorsMatrix *AP_MotorsMatrix::_singleton;

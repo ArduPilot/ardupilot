@@ -84,6 +84,16 @@ public:
     // add_motor using raw roll, pitch, throttle and yaw factors
     void                add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order, float throttle_factor = 1.0f);
 
+    // This allows us to read back the output of the altidude controllers
+    // The controllers are in charge of the throttle input, so this gives vehicle access/visibility to the output of those controllers
+    virtual float get_throttle_in_bidirectional() const {return 0.0f;};
+
+    // returns true if motor is enabled
+    bool motor_is_enabled(int motor_number);
+
+    virtual Vector3f get_motor_angular_factors(int motor_number){return Vector3f(0,0,0);};
+
+    virtual bool set_reversed(int motor_number, bool reversed) {return false;};
 protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing() override;
