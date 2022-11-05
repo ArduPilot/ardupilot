@@ -24,7 +24,7 @@ AUTO missions.
 | 3  | Horizontal Rectangle     | length | width       | radius     | bank angle | No         |
 | 4  | Climbing Circle          | radius | height      | bank angle |            | No         |
 | 5  | vertical Box             | length | height      | radius     |            | No         |
-| 6  | Unused                   |        |             |            |            | No         |
+| 6  | Immelmann (FastRoll)     | radius |             |            |            | Yes        |
 | 7  | Straight Roll            | length | num rolls   |            |            | No         |
 | 8  | Rolling Circle           | radius | num rolls   |            |            | No         |
 | 9  | Half Cuban Eight         | radius |             |            |            | Yes        |
@@ -41,7 +41,9 @@ AUTO missions.
 | 20 | Procedure Turn           | radius | bank angle  | step-out   |            | Yes        |
 | 21 | Derry Turn               | radius | bank angle  |            |            | No         |
 | 22 | Two Point Roll           | length |             |            |            | No         |
-| 23 | Half Climbing Circle     | radius | height      | bank angle |            | Yes         |
+| 23 | Half Climbing Circle     | radius | height      | bank angle |            | Yes        |
+| 24 | Crossbox Humpty          | radius | height      |            |            | Yes        |
+| 25 | Laydown Humpty           | radius | height      |            |            | Yes        |
 
 Note: In the script you will find other (specialised) manouvers which do not appear in the 
 'command table'. These tend to be specialised manouvers which may expect an inverted entry or 
@@ -54,12 +56,13 @@ The following table gives the available pre-defined schedules. Each schedule has
 an ID number which is used in the AUTO mission or in the TRIKn_ID
 parameters (described below).
 
-| ID  | Name                   
-| --  | ------------------------ 
-| 200 | Test Suite (dont fly!)   
-| 201 | NZ Clubman Schedule      
-| 202 | FAI F3A P-23 (left to right)             
-| 203 | FAI F3C Scale Example (left to right)   
+| ID  | Name
+| --  | ------------------------
+| 200 | Test Suite (dont fly!)
+| 201 | NZ Clubman Schedule
+| 202 | FAI F3A P-23 (left to right)
+| 203 | FAI F3C Scale Example (left to right)
+| 204 | AirShow
 
 Note: ID's 202-203 are best flown with a mission start point 150m out from the pilot, with the prior and subsequent mission waypoints in a straight line with the model starting teh script flying down wind. ID 201 is best started in teh same manner, but the model positioned 100m out from the pilot.
 

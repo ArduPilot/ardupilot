@@ -1195,7 +1195,7 @@ struct PACKED log_VER {
 // @Field: TimeUS: Time since system startup
 // @Field: Name: script name
 // @Field: Runtime: run time
-// @Field: Total_mem: total memory usage
+// @Field: Total_mem: total memory usage of all scripts
 // @Field: Run_mem: run memory usage
 
 // @LoggerMessage: MOTB

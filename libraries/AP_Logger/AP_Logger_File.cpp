@@ -20,6 +20,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_RTC/AP_RTC.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>

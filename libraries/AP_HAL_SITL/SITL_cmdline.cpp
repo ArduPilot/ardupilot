@@ -38,6 +38,8 @@
 #include <SITL/SIM_Blimp.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
 #include <signal.h>
 #include <stdio.h>
 #include <time.h>
