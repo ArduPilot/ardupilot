@@ -10,6 +10,7 @@
 
 #include <SITL/SIM_Multicopter.h>
 #include <SITL/SIM_Plane.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include <AP_Baro/AP_Baro.h>
 
