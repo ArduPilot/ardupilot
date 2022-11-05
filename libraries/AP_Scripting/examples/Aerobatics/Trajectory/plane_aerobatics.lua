@@ -17,8 +17,8 @@ function bind_add_param(name, idx, default_value)
 end
 
 AEROM_ANG_ACCEL = bind_add_param('ANG_ACCEL', 1, 6000)
-AEROM_ANG_TC = bind_add_param('ANG_TC', 2, 0.2)
-AEROM_KE_ANG = bind_add_param('KE_ANG', 3, 15)
+AEROM_ANG_TC = bind_add_param('ANG_TC', 2, 0.1)
+AEROM_KE_ANG = bind_add_param('KE_ANG', 3, 0)
 THR_PIT_FF = bind_add_param('THR_PIT_FF', 4, 80)
 SPD_P = bind_add_param('SPD_P', 5, 5)
 SPD_I = bind_add_param('SPD_I', 6, 25)
@@ -1761,7 +1761,9 @@ function do_path()
       path_var.filtered_angular_velocity = Vector3f()
 
       path_var.last_time = now - 1.0/LOOP_RATE
-      path_var.sideslip_angle_rad = 0.0
+      path_var.sideslip_angle_rad = { 0.0, 0.0 }
+      path_var.ff_yaw_rate_rads = 0.0
+      path_var.last_q_change_t = 1.0 / LOOP_RATE
       path_var.last_ang_rate_dps = ahrs:get_gyro():scale(math.deg(1))
 
       path_var.path_t = 0.0
@@ -1978,17 +1980,24 @@ function do_path()
    local specific_force_g_ef = g_force - makeVector3f(0,0,-1)
    local specific_force_g_bf = specific_force_g_ef:copy()
    orientation_rel_ef_with_roll_angle:earth_to_body(specific_force_g_bf)
-   local airspeed_scaling = 1.0 -- SCALING_SPEED:get()/airspeed_constrained
+   local airspeed_scaling = SCALING_SPEED:get()/airspeed_constrained
 
    local sideslip_rad = specific_force_g_bf:y() * (airspeed_scaling*airspeed_scaling) * math.rad(AEROM_KE_ANG:get())
-   local ff_yaw_rate_rads = -(sideslip_rad - path_var.sideslip_angle_rad) / q_change_t
-
-   path_var.sideslip_angle_rad = sideslip_rad
+   local ff_yaw_rate_rads1 = -(sideslip_rad - path_var.sideslip_angle_rad[2]) / q_change_t
+   local ff_yaw_rate_rads2 = -(path_var.sideslip_angle_rad[2] - path_var.sideslip_angle_rad[1]) / path_var.last_q_change_t
+   local ff_yaw_rate_rads = 0.5 * (ff_yaw_rate_rads1 + ff_yaw_rate_rads2)
 
    if path_var.count <= 2 then
       -- prevent an initialisation issue
       ff_yaw_rate_rads = 0.0
    end
+
+   ff_yaw_rate_rads = 0.8 * path_var.ff_yaw_rate_rads + 0.2 * ff_yaw_rate_rads
+   path_var.ff_yaw_rate_rads = ff_yaw_rate_rads
+
+   path_var.sideslip_angle_rad[1] = path_var.sideslip_angle_rad[2]
+   path_var.sideslip_angle_rad[2] = sideslip_rad
+   path_var.last_q_change_t = q_change_t
 
    local sideslip_rate_bf_dps = makeVector3f(0, 0, ff_yaw_rate_rads):scale(math.deg(1))
 
