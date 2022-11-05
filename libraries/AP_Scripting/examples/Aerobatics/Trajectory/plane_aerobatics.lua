@@ -42,6 +42,8 @@ ACRO_ROLL_RATE = Parameter("ACRO_ROLL_RATE")
 ARSPD_FBW_MIN = Parameter("ARSPD_FBW_MIN")
 SCALING_SPEED = Parameter("SCALING_SPEED")
 
+local GRAVITY_MSS = 9.80665
+
 --[[
    Aerobatic tricks on a switch support - allows for tricks to be initiated outside AUTO mode
 --]]
@@ -1825,6 +1827,9 @@ function do_path()
 
    path_var.path_t = path_var.path_t + path_t_delta
 
+   -- get the real world time corresponding to the quaternion change
+   local q_change_t = path_t_delta * path_var.total_time
+
    -- tangents needs to be recalculated
    tangent2_ef = p1 - p0
    tv_unit = tangent2_ef:copy()
@@ -1886,11 +1891,17 @@ function do_path()
       cor_ang_vel_bf_dps = Vector3f()
    end
 
+   --[[
+      get the quaternion rotation between tangent1_ef and tangent2_ef
+   --]]
+   local q_delta = vectors_to_quat_rotation(tangent1_ef, tangent2_ef)
 
    --[[
       work out body frame path rate, this is based on two adjacent tangents on the path
    --]]
-   local path_rate_ef_rads = vectors_to_angular_rate(tangent1_ef, tangent2_ef, actual_dt)
+   local path_rate_ef_rads = Vector3f()
+   q_delta:to_axis_angle(path_rate_ef_rads)
+   path_rate_ef_rads:scale(1.0/q_change_t)
    if Vec3IsNaN(path_rate_ef_rads) then
       gcs:send_text(0,string.format("path_rate_ef_rads: NaN"))
       path_rate_ef_rads = makeVector3f(0,0,0)
@@ -1903,15 +1914,13 @@ function do_path()
    local path_rate_bf_dps = ahrs:earth_to_body(path_rate_ef_dps)
 
    -- set the path roll rate
-   path_rate_bf_dps:x(math.deg(wrap_pi(r1 - r0)/actual_dt))
+   path_rate_bf_dps:x(math.deg(wrap_pi(r1 - r0)/q_change_t))
 
 
    --[[
       calculate body frame roll rate to achieved the desired roll
       angle relative to the maneuver path
    --]]
-   local q_delta = vectors_to_quat_rotation(tangent1_ef, tangent2_ef)
-
    path_var.accumulated_orientation_rel_ef = q_delta*path_var.accumulated_orientation_rel_ef
    path_var.accumulated_orientation_rel_ef:normalize()
    
@@ -1938,11 +1947,15 @@ function do_path()
    --[[
       calculate an additional yaw rate to get us to the right angle of sideslip for knifeedge
    --]]
-   local current_orient = orientation_rel_ef_with_roll_angle
-   local y_proj = quat_projection_ground_plane(current_orient)
+   local g_force = (path_rate_ef_rads:cross(v)):scale(1.0/GRAVITY_MSS)
+   local specific_force_g_ef = g_force - makeVector3f(0,0,-1)
+   local specific_force_g_bf = specific_force_g_ef:copy()
+   orientation_rel_ef_with_roll_angle:earth_to_body(specific_force_g_bf)
+   --local specific_force_g_bf = ahrs:earth_to_body(specific_force_g_ef)
    local airspeed_scaling = SCALING_SPEED:get()/path_var.target_speed
-   local sideslip_rad = y_proj * (airspeed_scaling*airspeed_scaling) * math.rad(AEROM_KE_ANG:get())
-   local ff_yaw_rate_rads = -(sideslip_rad - path_var.sideslip_angle_rad) / target_dt
+
+   local sideslip_rad = specific_force_g_bf:y() * (airspeed_scaling*airspeed_scaling) * math.rad(AEROM_KE_ANG:get())
+   local ff_yaw_rate_rads = -(sideslip_rad - path_var.sideslip_angle_rad) / q_change_t
 
    path_var.sideslip_angle_rad = sideslip_rad
 
