@@ -182,6 +182,7 @@ private:
     bool heli_demix;
     bool rev4_servos;
     bool controller_started;
+    uint32_t glitch_count;
     uint64_t frame_counter;
     uint64_t activation_frame_counter;
     uint64_t socket_frame_counter;

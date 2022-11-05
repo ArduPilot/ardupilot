@@ -530,7 +530,18 @@ void FlightAxis::update(const struct sitl_input &input)
             time_now_us = new_time_us;
         }
     } else {
-        time_now_us = new_time_us;
+        uint64_t dt_us = new_time_us - time_now_us;
+        const uint64_t glitch_threshold_us = 50000;
+        const uint64_t glitch_max_us = 2000000;
+        if (dt_us > glitch_threshold_us && dt_us < glitch_max_us) {
+            // we've had a network glitch, compensate by advancing initial time
+            float adjustment_s = (dt_us-glitch_threshold_us)*1.0e-6;
+            initial_time_s += adjustment_s;
+            printf("glitch %.2fs\n", adjustment_s);
+            dt_us = glitch_threshold_us;
+            glitch_count++;
+        }
+        time_now_us += dt_us;
     }
 
     last_time_s = state.m_currentPhysicsTime_SEC;
@@ -553,8 +564,8 @@ void FlightAxis::report_FPS(void)
             uint64_t frames = socket_frame_counter - last_socket_frame_counter;
             last_socket_frame_counter = socket_frame_counter;
             double dt = state.m_currentPhysicsTime_SEC - last_frame_count_s;
-            printf("%.2f/%.2f FPS avg=%.2f\n",
-                   frames / dt, 1000 / dt, 1.0/average_frame_time_s);
+            printf("%.2f/%.2f FPS avg=%.2f glitches=%u\n",
+                   frames / dt, 1000 / dt, 1.0/average_frame_time_s, unsigned(glitch_count));
         } else {
             printf("Initial position %f %f %f\n", position.x, position.y, position.z);
         }
