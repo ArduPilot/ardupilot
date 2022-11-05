@@ -1,0 +1,8 @@
+include ../CubeOrange/hwdef.dat
+
+define AP_CUSTOM_FIRMWARE_STRING "IF1200A 4.3"
+
+# enable and enforce OpenDroneID
+define AP_OPENDRONEID_ENABLED 1
+
+
