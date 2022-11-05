@@ -86,6 +86,7 @@ class SizeCompareBranches(object):
             "blimp"     : "blimp",
             "antennatracker" : "antennatracker",
             "AP_Periph" : "AP_Periph",
+            "iofirmware": "iofirmware",
         }
 
         if all_boards:
