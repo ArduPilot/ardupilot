@@ -1433,14 +1433,14 @@ end
 
 function air_show1()
    return path_composer("AirShow", {
-         { loop,                      {  25, 0, 1 }},
-         { straight_align,            { 100, 0 } },
+         { loop,                      {  25, 0, 1 }, message="Loop"},
+         { straight_align,            {  80, 0 } },
          { half_reverse_cuban_eight,  {  25       }, message="HalfReverseCubanEight" },
          { straight_align,            {  80 } },
          { scale_figure_eight,        { -40, -30 },  message="ScaleFigureEight" },
          { immelmann_turn,            {  30       }, message="Immelmann" },
-         { straight_align,            { -60, 0 } },
-         { straight_roll,             { 120, 2 },    message="Roll" },
+         { straight_align,            { -40, 0 } },
+         { straight_roll,             {  80, 2 },    message="Roll" },
          { straight_align,            { 120, 0 } },
          { split_s,                   {  30       }, message="Split-S"},
          { straight_align,            {   0 } },
@@ -1449,6 +1449,19 @@ function air_show1()
          { humpty_bump,               {  20, 60 },   message="HumptyBump" },
          { straight_align,            {  80, 0 } },
          { half_cuban_eight,          {  25       }, message="HalfCubanEight" },
+         { straight_align,            {  75, 0 } },
+         { upline_45,                 {  30, 50 },   message="Upline45", },
+         { downline_45,               {  30, 50 },   message="Downline45" },
+         { half_reverse_cuban_eight,  {  25       }, message="HalfReverseCubanEight" },
+         { straight_align,            {   0 } },
+   })
+end
+
+function air_show3()
+   return path_composer("AirShow3", {
+           { air_show1, {}, message="AirShowPt1" },
+           { air_show1, {}, message="AirShowPt2" },
+           { air_show1, {}, message="AirShowPt3" },
    })
 end
 
@@ -2007,6 +2020,7 @@ command_table[202] = PathFunction(f3a_p23_l_r, "FAI F3A P23 L to R")
 command_table[203] = PathFunction(f4c_example_l_r, "FAI F4C Example L to R")
 command_table[204] = PathFunction(air_show1, "AirShow")
 command_table[205] = PathFunction(fai_f3a_box_l_r, "FAI F3A Aerobatic Box Demonstration")
+command_table[206] = PathFunction(air_show3, "AirShow3")
 
 -- get a location structure from a waypoint number
 function get_location(i)
@@ -2272,8 +2286,9 @@ function update()
       AUTO_MIS:set_and_save(0)
    end
 
-   check_auto_mission()
-   if TRICKS ~= nil and vehicle:get_mode() ~= MODE_AUTO then
+   if vehicle:get_mode() == MODE_AUTO then
+      check_auto_mission()
+   elseif TRICKS ~= nil then
       check_trick()
    end
 
