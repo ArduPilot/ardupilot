@@ -17,7 +17,7 @@ function bind_add_param(name, idx, default_value)
 end
 
 AEROM_ANG_ACCEL = bind_add_param('ANG_ACCEL', 1, 6000)
-HGT_I = bind_add_param('HGT_I', 2, 2)
+AEROM_ANG_TC = bind_add_param('ANG_TC', 2, 0.2)
 AEROM_KE_ANG = bind_add_param('KE_ANG', 3, 15)
 THR_PIT_FF = bind_add_param('THR_PIT_FF', 4, 80)
 SPD_P = bind_add_param('SPD_P', 5, 5)
@@ -34,8 +34,11 @@ AEROM_THR_LKAHD = bind_add_param('THR_LKAHD', 15, 1)
 AEROM_DEBUG = bind_add_param('DEBUG', 16, 0)
 
 -- cope with old param values
-if AEROM_ANG_ACCEL:get() < 100 then
+if AEROM_ANG_ACCEL:get() < 100 and AEROM_ANG_ACCEL:get() > 0 then
    AEROM_ANG_ACCEL:set_and_save(3000)
+end
+if AEROM_ANG_TC:get() > 1.0 then
+   AEROM_ANG_TC:set_and_save(0.2)
 end
 
 ACRO_ROLL_RATE = Parameter("ACRO_ROLL_RATE")
@@ -148,6 +151,16 @@ function wrap_2pi(angle)
    local angle_wrapped = wrap_360(angle_deg)
    return math.rad(angle_wrapped)
 end
+
+
+--[[
+   calculate an alpha for a first order low pass filter
+--]]
+function calc_lowpass_alpha(dt, time_constant)
+   local rc = time_constant/(math.pi*2)
+   return dt/(dt+rc)
+end
+
 
 -- a PI controller implemented as a Lua object
 local function PI_controller(kP,kI,iMax)
@@ -1482,7 +1495,7 @@ function air_show1()
          { straight_align,            {  80, 0 } },
          { half_reverse_cuban_eight,  {  25       }, message="HalfReverseCubanEight" },
          { straight_align,            {  80 } },
-         { scale_figure_eight,        { -40, -30 },  message="ScaleFigureEight" },
+         { scale_figure_eight,        { -40, -45 },  message="ScaleFigureEight" },
          { immelmann_turn,            {  30       }, message="Immelmann" },
          { straight_align,            { -40, 0 } },
          { straight_roll,             {  80, 2 },    message="Roll" },
@@ -1825,20 +1838,13 @@ function do_path()
                             constrain(path_var.path_t + path_t_delta, 0, 1),
                             path_var.initial_ori, path_var.initial_ef_pos)
 
+   local last_path_t = path_var.path_t
    path_var.path_t = path_var.path_t + path_t_delta
-
-   -- get the real world time corresponding to the quaternion change
-   local q_change_t = path_t_delta * path_var.total_time
 
    -- tangents needs to be recalculated
    tangent2_ef = p1 - p0
    tv_unit = tangent2_ef:copy()
    tv_unit:normalize()
-
-   path_var.tangent = tangent2_ef:copy()
-   path_var.pos = p1:copy()
-   path_var.roll = r1
-   path_var.speed = s1
 
    -- error in position versus current point on the path
    local pos_error_ef = current_measured_pos_ef - p1
@@ -1858,6 +1864,28 @@ function do_path()
 
    -- correct time to bring us back into sync
    path_var.path_t = path_var.path_t + TIME_CORR_P:get() * path_err_t
+
+   -- get the path again with the corrected time
+   p1, r1, s1 = rotate_path(path,
+                            constrain(path_var.path_t, 0, 1),
+                            path_var.initial_ori, path_var.initial_ef_pos)
+
+   -- recalculate the tangent to match the amount we advanced the path time
+   tangent2_ef = p1 - p0
+
+   -- get the real world time corresponding to the quaternion change
+   local q_change_t = (path_var.path_t - last_path_t) * path_var.total_time
+
+   -- low pass filter the demanded roll angle
+   r1 = path_var.roll + wrap_pi(r1 - path_var.roll)
+   local alpha = calc_lowpass_alpha(q_change_t, AEROM_ANG_TC:get())
+   r1 = (1.0 - alpha) * path_var.roll + alpha * r1
+   r1 = wrap_pi(r1)
+
+   path_var.tangent = tangent2_ef:copy()
+   path_var.pos = p1:copy()
+   path_var.roll = r1
+   path_var.speed = s1
 
    
    --[[
@@ -1901,7 +1929,7 @@ function do_path()
    --]]
    local path_rate_ef_rads = Vector3f()
    q_delta:to_axis_angle(path_rate_ef_rads)
-   path_rate_ef_rads:scale(1.0/q_change_t)
+   path_rate_ef_rads = path_rate_ef_rads:scale(1.0/q_change_t)
    if Vec3IsNaN(path_rate_ef_rads) then
       gcs:send_text(0,string.format("path_rate_ef_rads: NaN"))
       path_rate_ef_rads = makeVector3f(0,0,0)
@@ -1915,7 +1943,6 @@ function do_path()
 
    -- set the path roll rate
    path_rate_bf_dps:x(math.deg(wrap_pi(r1 - r0)/q_change_t))
-
 
    --[[
       calculate body frame roll rate to achieved the desired roll
@@ -1951,8 +1978,7 @@ function do_path()
    local specific_force_g_ef = g_force - makeVector3f(0,0,-1)
    local specific_force_g_bf = specific_force_g_ef:copy()
    orientation_rel_ef_with_roll_angle:earth_to_body(specific_force_g_bf)
-   --local specific_force_g_bf = ahrs:earth_to_body(specific_force_g_ef)
-   local airspeed_scaling = SCALING_SPEED:get()/path_var.target_speed
+   local airspeed_scaling = 1.0 -- SCALING_SPEED:get()/airspeed_constrained
 
    local sideslip_rad = specific_force_g_bf:y() * (airspeed_scaling*airspeed_scaling) * math.rad(AEROM_KE_ANG:get())
    local ff_yaw_rate_rads = -(sideslip_rad - path_var.sideslip_angle_rad) / q_change_t
@@ -1975,7 +2001,7 @@ function do_path()
       apply angular accel limit
    --]]
    local ang_rate_diff_dps = tot_ang_vel_bf_dps - path_var.last_ang_rate_dps
-   local max_delta_dps = AEROM_ANG_ACCEL:get() * actual_dt
+   local max_delta_dps = AEROM_ANG_ACCEL:get() * q_change_t
    if max_delta_dps > 0 then
       ang_rate_diff_dps:x(constrain(ang_rate_diff_dps:x(), -max_delta_dps, max_delta_dps))
       ang_rate_diff_dps:y(constrain(ang_rate_diff_dps:y(), -max_delta_dps, max_delta_dps))
@@ -1991,18 +2017,21 @@ function do_path()
    log_pose('POSM', current_measured_pos_ef, ahrs:get_quaternion())
    log_pose('POST', p1, orientation_rel_ef_with_roll_angle)
 
-   logger.write('AETM', 'T,Terr','ff',
+   logger.write('AETM', 'T,Terr,QCt,Adt','ffff',
                 path_var.path_t,
-                path_err_t)
+                path_err_t,
+                q_change_t,
+                actual_dt)
 
-   logger.write('AERT','Cx,Cy,Cz,Px,Py,Pz,Ex,Tx,Ty,Tz,Perr,Aerr,Yff', 'fffffffffffff',
+   logger.write('AERT','Cx,Cy,Cz,Px,Py,Pz,Ex,Tx,Ty,Tz,Perr,Aerr,Yff,SS', 'ffffffffffffff',
                 cor_ang_vel_bf_dps:x(), cor_ang_vel_bf_dps:y(), cor_ang_vel_bf_dps:z(),
                 path_rate_bf_dps:x(), path_rate_bf_dps:y(), path_rate_bf_dps:z(),
                 err_angle_rate_bf_dps:x(),
                 tot_ang_vel_bf_dps:x(), tot_ang_vel_bf_dps:y(), tot_ang_vel_bf_dps:z(),
                 pos_error_ef:length(),
                 wrap_180(math.deg(err_angle_rad)),
-                math.deg(ff_yaw_rate_rads))
+                math.deg(ff_yaw_rate_rads),
+                math.deg(sideslip_rad))
 
    --log_pose('POSB', p1, path_var.accumulated_orientation_rel_ef)
 
