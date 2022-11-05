@@ -16,9 +16,9 @@ function bind_add_param(name, idx, default_value)
     return Parameter(PARAM_TABLE_PREFIX .. name)
 end
 
-HGT_P = bind_add_param('HGT_P', 1, 1)
+AEROM_ANG_ACCEL = bind_add_param('ANG_ACCEL', 1, 3000)
 HGT_I = bind_add_param('HGT_I', 2, 2)
-HGT_KE_BIAS = bind_add_param('HGT_KE_ADD', 3, 20) -- unused
+AEROM_KE_ANG = bind_add_param('KE_ANG', 3, 15)
 THR_PIT_FF = bind_add_param('THR_PIT_FF', 4, 80)
 SPD_P = bind_add_param('SPD_P', 5, 5)
 SPD_I = bind_add_param('SPD_I', 6, 25)
@@ -32,7 +32,15 @@ ERR_CORR_D = bind_add_param('ERR_COR_D', 13, 2.8)
 AEROM_ENTRY_RATE = bind_add_param('ENTRY_RATE', 14, 60)
 AEROM_THR_LKAHD = bind_add_param('THR_LKAHD', 15, 1)
 AEROM_DEBUG = bind_add_param('DEBUG', 16, 0)
+
+-- cope with old param values
+if AEROM_ANG_ACCEL:get() < 100 then
+   AEROM_ANG_ACCEL:set_and_save(3000)
+end
+
 ACRO_ROLL_RATE = Parameter("ACRO_ROLL_RATE")
+ARSPD_FBW_MIN = Parameter("ARSPD_FBW_MIN")
+SCALING_SPEED = Parameter("SCALING_SPEED")
 
 --[[
    Aerobatic tricks on a switch support - allows for tricks to be initiated outside AUTO mode
@@ -98,7 +106,7 @@ local NAV_SCRIPT_TIME = 42702
 
 local MODE_AUTO = 10
 
-local LOOP_RATE = 20
+local LOOP_RATE = 50
 local DO_JUMP = 177
 local k_throttle = 70
 local NAME_FLOAT_RATE = 2
@@ -444,6 +452,7 @@ function path_vertical_arc(_radius, _angle)
    function self.get_final_orientation()
       local q = Quaternion()
       q:from_axis_angle(makeVector3f(0,1,0), sgn(radius)*math.rad(wrap_180(angle)))
+      q:normalize()
       return q
    end
    return self
@@ -607,6 +616,7 @@ function path_composer(_name, _subpaths)
       orientation:earth_to_body(spos)
       pos = pos + spos
       orientation = orientation * sp.get_final_orientation()
+      orientation:normalize()
       angle = angle + sp.get_roll(1.0, lengths[i]/speed)
 
       start_speed[i] = speed
@@ -620,6 +630,7 @@ function path_composer(_name, _subpaths)
          q = Quaternion()
          q:from_axis_angle(makeVector3f(1,0,0), math.rad(sp.roll_ref))
          orientation = orientation * q
+         orientation:normalize()
       end
    end
 
@@ -1622,6 +1633,15 @@ function qIsNaN(q)
    return isNaN(q:q1()) or isNaN(q:q2()) or isNaN(q:q3()) or isNaN(q:q4())
 end
 
+--[[
+   return the body y projection down, this is the c.y element of the equivalent rotation matrix
+--]]
+function quat_projection_ground_plane(q)
+   local q1q2 = q:q1() * q:q2()
+   local q3q4 = q:q3() * q:q4()
+   return 2.0 * (q3q4 + q1q2)
+end
+
 path_var.count = 0
 path_var.initial_ori = Quaternion()
 path_var.initial_maneuver_to_earth = Quaternion()
@@ -1677,6 +1697,8 @@ function do_path()
       path_var.last_time = now
       path_var.average_dt = target_dt
       path_var.scaled_dt = target_dt
+      path_var.sideslip_angle_rad = 0.0
+      path_var.last_ang_rate_dps = Vector3f()
 
       path_var.path_t = 0
       return true
@@ -1688,6 +1710,9 @@ function do_path()
    local actual_dt = now - path_var.last_time
 
    local local_n_dt = actual_dt/path_var.total_time
+
+   -- airspeed, assume we don't go below min
+   local airspeed_constrained = math.max(ARSPD_FBW_MIN:get(), ahrs:airspeed_estimate())
 
    path_var.last_time = now
 
@@ -1788,7 +1813,7 @@ function do_path()
 
    local acc_err_bf = ahrs:earth_to_body(acc_err_ef)
 
-   local TAS = constrain(ahrs:get_EAS2TAS()*ahrs:airspeed_estimate(), 3, 100)
+   local TAS = constrain(ahrs:get_EAS2TAS()*airspeed_constrained, 3, 100)
    local corr_rate_bf_y_rads = -acc_err_bf:z()/TAS
    local corr_rate_bf_z_rads = acc_err_bf:y()/TAS
 
@@ -1797,6 +1822,10 @@ function do_path()
       cor_ang_vel_bf_rads = makeVector3f(0,0,0)
    end
    local cor_ang_vel_bf_dps = cor_ang_vel_bf_rads:scale(math.deg(1))
+
+   if path_var.count < 2 then
+      cor_ang_vel_bf_dps = Vector3f()
+   end
 
 
    --[[
@@ -1845,9 +1874,40 @@ function do_path()
    err_angle_rate_bf_dps:z(0)
 
    --[[
+      calculate an additional yaw rate to get us to the right angle of sideslip for knifeedge
+   --]]
+   local current_orient = orientation_rel_ef_with_roll_angle
+   local y_proj = quat_projection_ground_plane(current_orient)
+   local airspeed_scaling = SCALING_SPEED:get()/path_var.target_speed
+   local sideslip_rad = y_proj * (airspeed_scaling*airspeed_scaling) * math.rad(AEROM_KE_ANG:get())
+   local ff_yaw_rate_rads = -(sideslip_rad - path_var.sideslip_angle_rad) / target_dt
+
+   path_var.sideslip_angle_rad = sideslip_rad
+
+   if path_var.count <= 2 then
+      -- prevent an initialisation issue
+      ff_yaw_rate_rads = 0.0
+   end
+
+   local sideslip_rate_bf_dps = makeVector3f(0, 0, ff_yaw_rate_rads):scale(math.deg(1))
+
+   --[[
       total angular rate is sum of path rate, correction rate and roll correction rate
    --]]
-   local tot_ang_vel_bf_dps = path_rate_bf_dps + cor_ang_vel_bf_dps + err_angle_rate_bf_dps
+   local tot_ang_vel_bf_dps = path_rate_bf_dps + cor_ang_vel_bf_dps + err_angle_rate_bf_dps + sideslip_rate_bf_dps
+
+   --[[
+      apply angular accel limit
+   --]]
+   local ang_rate_diff_dps = tot_ang_vel_bf_dps - path_var.last_ang_rate_dps
+   local max_delta_dps = AEROM_ANG_ACCEL:get() * actual_dt
+   if max_delta_dps > 0 then
+      ang_rate_diff_dps:x(constrain(ang_rate_diff_dps:x(), -max_delta_dps, max_delta_dps))
+      ang_rate_diff_dps:y(constrain(ang_rate_diff_dps:y(), -max_delta_dps, max_delta_dps))
+      ang_rate_diff_dps:z(constrain(ang_rate_diff_dps:z(), -max_delta_dps, max_delta_dps))
+      tot_ang_vel_bf_dps = path_var.last_ang_rate_dps + ang_rate_diff_dps
+   end
+   path_var.last_ang_rate_dps = tot_ang_vel_bf_dps
 
 
    --[[
@@ -1860,13 +1920,14 @@ function do_path()
                 path_var.path_t,
                 path_err_t)
 
-   logger.write('AERT','Cx,Cy,Cz,Px,Py,Pz,Ex,Tx,Ty,Tz,Perr,Aerr', 'ffffffffffff',
+   logger.write('AERT','Cx,Cy,Cz,Px,Py,Pz,Ex,Tx,Ty,Tz,Perr,Aerr,Yff', 'fffffffffffff',
                 cor_ang_vel_bf_dps:x(), cor_ang_vel_bf_dps:y(), cor_ang_vel_bf_dps:z(),
                 path_rate_bf_dps:x(), path_rate_bf_dps:y(), path_rate_bf_dps:z(),
                 err_angle_rate_bf_dps:x(),
                 tot_ang_vel_bf_dps:x(), tot_ang_vel_bf_dps:y(), tot_ang_vel_bf_dps:z(),
                 pos_error_ef:length(),
-                wrap_180(math.deg(err_angle_rad)))
+                wrap_180(math.deg(err_angle_rad)),
+                math.deg(ff_yaw_rate_rads))
 
    --log_pose('POSB', p1, path_var.accumulated_orientation_rel_ef)
 
