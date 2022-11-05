@@ -86,7 +86,7 @@ class SizeCompareBranches(object):
             "blimp"     : "blimp",
             "antennatracker" : "antennatracker",
             "AP_Periph" : "AP_Periph",
-            "iofirmware": "iofirmware",
+            "iofirmware": "iofirmware_highpolh",  # FIXME: lowpolh?
         }
 
         if all_boards:
@@ -268,7 +268,6 @@ class SizeCompareBranches(object):
             else:
                 if board_info.is_ap_periph:
                     continue
-
                 if vehicle.lower() not in [x.lower() for x in board_info.autobuild_targets]:
                     continue
             vehicles_to_build.append(vehicle)
