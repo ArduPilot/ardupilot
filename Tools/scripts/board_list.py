@@ -136,7 +136,6 @@ class BoardList(object):
 
             # bdshot
             "fmuv3-bdshot",
-            "OMNIBUSF7V2-bdshot",
 
             # renamed to KakuteH7Mini-Nand
             "KakuteH7Miniv2",
