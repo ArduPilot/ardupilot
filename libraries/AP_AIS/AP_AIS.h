@@ -22,7 +22,6 @@
 // 2 compiled in with dummy methods, none functional, except rover which never uses dummy methods functionality
 
 #include <AP_Param/AP_Param.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Common/AP_ExpandingArray.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
