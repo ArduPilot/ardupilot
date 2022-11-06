@@ -27,7 +27,7 @@
 #include <AP_MSP/msp.h>
 #include <AP_Baro/AP_Baro.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AC_Fence/AC_Fence.h>
+#include <AC_Fence/AC_Fence_config.h>
 
 #ifndef OSD_ENABLED
 #define OSD_ENABLED !HAL_MINIMIZE_FEATURES
