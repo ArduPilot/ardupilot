@@ -111,7 +111,7 @@ local NAV_SCRIPT_TIME = 42702
 
 local MODE_AUTO = 10
 
-local LOOP_RATE = 50
+local LOOP_RATE = 20
 local DO_JUMP = 177
 local k_throttle = 70
 local NAME_FLOAT_RATE = 2
@@ -1795,7 +1795,6 @@ function do_path()
       calculate positions and angles at previous, current and next time steps
    --]]
 
-   next_target_pos_ef = next_target_pos_ef
    local p0 = path_var.pos:copy()
    local r0 = path_var.roll
    local s0 = path_var.speed
@@ -1931,7 +1930,8 @@ function do_path()
    --]]
    local path_rate_ef_rads = Vector3f()
    q_delta:to_axis_angle(path_rate_ef_rads)
-   path_rate_ef_rads = path_rate_ef_rads:scale(1.0/q_change_t)
+   path_rate_ef_rads = path_rate_ef_rads:scale(1.0/actual_dt)
+
    if Vec3IsNaN(path_rate_ef_rads) then
       gcs:send_text(0,string.format("path_rate_ef_rads: NaN"))
       path_rate_ef_rads = makeVector3f(0,0,0)
@@ -1944,14 +1944,18 @@ function do_path()
    local path_rate_bf_dps = ahrs:earth_to_body(path_rate_ef_dps)
 
    -- set the path roll rate
-   path_rate_bf_dps:x(math.deg(wrap_pi(r1 - r0)/q_change_t))
+   path_rate_bf_dps:x(math.deg(wrap_pi(r1 - r0)/actual_dt))
+
 
    --[[
       calculate body frame roll rate to achieved the desired roll
       angle relative to the maneuver path
    --]]
-   path_var.accumulated_orientation_rel_ef = q_delta*path_var.accumulated_orientation_rel_ef
+   local zero_roll_angle_delta = Quaternion()
+   zero_roll_angle_delta:from_angular_velocity(path_rate_ef_rads, actual_dt)
+   path_var.accumulated_orientation_rel_ef = zero_roll_angle_delta*path_var.accumulated_orientation_rel_ef
    path_var.accumulated_orientation_rel_ef:normalize()
+
    
    local mf_axis = makeVector3f(1, 0, 0)
    path_var.accumulated_orientation_rel_ef:earth_to_body(mf_axis)
@@ -2010,7 +2014,7 @@ function do_path()
       apply angular accel limit
    --]]
    local ang_rate_diff_dps = tot_ang_vel_bf_dps - path_var.last_ang_rate_dps
-   local max_delta_dps = AEROM_ANG_ACCEL:get() * q_change_t
+   local max_delta_dps = AEROM_ANG_ACCEL:get() * actual_dt
    if max_delta_dps > 0 then
       ang_rate_diff_dps:x(constrain(ang_rate_diff_dps:x(), -max_delta_dps, max_delta_dps))
       ang_rate_diff_dps:y(constrain(ang_rate_diff_dps:y(), -max_delta_dps, max_delta_dps))
