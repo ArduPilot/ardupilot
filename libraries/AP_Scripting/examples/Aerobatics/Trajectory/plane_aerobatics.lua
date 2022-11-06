@@ -455,6 +455,24 @@ function PathComponent()
 end
 
 --[[
+   rotate a vector by a quaternion
+--]]
+function quat_earth_to_body(quat, v)
+   local v = v:copy()
+   quat:earth_to_body(v)
+   return v
+end
+
+--[[
+   rotate a vector by a inverse quaternion
+--]]
+function quat_body_to_earth(quat, v)
+   local v = v:copy()
+   quat:inverse():earth_to_body(v)
+   return v
+end
+
+--[[
    path component that does a straight horizontal line
 --]]
 function path_straight(_distance)
@@ -648,8 +666,8 @@ function path_composer(_name, _subpaths)
       lengths[i] = sp.get_length()
       total_length = total_length + lengths[i]
 
-      local spos = sp.get_pos(1.0)
-      orientation:earth_to_body(spos)
+      local spos = quat_earth_to_body(orientation, sp.get_pos(1.0))
+
       pos = pos + spos
       orientation = orientation * sp.get_final_orientation()
       orientation:normalize()
@@ -713,9 +731,7 @@ function path_composer(_name, _subpaths)
    function self.get_pos(t)
       local subpath_t, i = self.get_subpath_t(t)
       local sp = self.subpath(i)
-      pos   = sp.get_pos(subpath_t)
-      start_orientation[i]:earth_to_body(pos)
-      return pos + start_pos[i]
+      return quat_earth_to_body(start_orientation[i], sp.get_pos(subpath_t)) + start_pos[i]
    end
 
    -- return angle for the composed path at time t
@@ -801,8 +817,7 @@ end
 --]]
 function straight_align(distance, arg2, arg3, arg4, start_pos, start_orientation)
    local d2 = distance - start_pos:x()
-   local v = makeVector3f(d2, 0, 0)
-   start_orientation:earth_to_body(v)
+   local v = quat_earth_to_body(start_orientation, makeVector3f(d2, 0, 0))
    local len = math.max(v:x(),0.01)
    return make_paths("straight_align", {
          { path_straight(len), roll_angle(0) },
@@ -1606,11 +1621,11 @@ end
 --  orientation: maneuver frame orientation
 --returns: requested position, angle and speed in maneuver frame
 function rotate_path(path_f, t, orientation, offset)
-   t = constrain(t, 0, 1)
-   point = path_f.get_pos(t)
-   angle = path_f.get_roll(t)
-   speed = path_f.get_speed(t)
-   orientation:earth_to_body(point)
+   local t = constrain(t, 0, 1)
+   local point = path_f.get_pos(t)
+   local angle = path_f.get_roll(t)
+   local speed = path_f.get_speed(t)
+   local point = quat_earth_to_body(orientation, point)
    return point+offset, math.rad(angle), speed
 end
 
@@ -1618,20 +1633,20 @@ end
 --If vec1 and vec2 are already parallel, returns a zero vector and zero angle
 --Note that the rotation will not be unique.
 function vectors_to_rotation(vector1, vector2)
-   axis = vector1:cross(vector2)
+   local axis = vector1:cross(vector2)
    if axis:length() < 0.00001 then
       local vec = Vector3f()
       vec:x(1)
       return vec, 0
    end
    axis:normalize()
-   angle = vector1:angle(vector2)
+   local angle = vector1:angle(vector2)
    return axis, angle
 end
 
 --returns Quaternion
 function vectors_to_rotation_w_roll(vector1, vector2, roll)
-   axis, angle = vectors_to_rotation(vector1, vector2)
+   local axis, angle = vectors_to_rotation(vector1, vector2)
    local vector_rotation = Quaternion()
    vector_rotation:from_axis_angle(axis, angle)
 
@@ -1645,14 +1660,14 @@ end
 --Given vec1, vec2, returns an angular velocity  tuple that rotates vec1 to be parallel to vec2
 --If vec1 and vec2 are already parallel, returns a zero vector and zero angle 
 function vectors_to_angular_rate(vector1, vector2, time_constant)
-   axis, angle = vectors_to_rotation(vector1, vector2)
-   angular_velocity = angle/time_constant
+   local axis, angle = vectors_to_rotation(vector1, vector2)
+   local angular_velocity = angle/time_constant
    return axis:scale(angular_velocity)
 end
 
 function vectors_to_angular_rate_w_roll(vector1, vector2, time_constant, roll)
-   axis, angle = vectors_to_rotation_w_roll(vector1, vector2, roll)
-   angular_velocity = angle/time_constant
+   local axis, angle = vectors_to_rotation_w_roll(vector1, vector2, roll)
+   local angular_velocity = angle/time_constant
    return axis:scale(angular_velocity)
 end
 
@@ -1660,7 +1675,7 @@ end
 function to_axis_and_angle(quat)
    local axis_angle = Vector3f()
    quat:to_axis_angle(axis_angle)
-   angle = axis_angle:length() 
+   local angle = axis_angle:length()
    if angle < 0.00001 then
       return makeVector3f(1.0, 0.0, 0.0), 0.0
    end
@@ -1717,6 +1732,16 @@ path_var.count = 0
 
 function do_path()
    local now = millis():tofloat() * 0.001
+   local ahrs_pos_NED = ahrs:get_relative_position_NED_origin()
+   local ahrs_pos = ahrs:get_position()
+   local ahrs_gyro = ahrs:get_gyro()
+   local ahrs_velned = ahrs:get_velocity_NED()
+   local ahrs_airspeed = ahrs:airspeed_estimate()
+   --[[
+      ahrs_quat is the quaterion which when used with quat_earth_to_body() rotates a vector
+      from earth to body frame. It needs to be the inverse of ahrs:get_quaternion()
+   --]]
+   local ahrs_quat = ahrs:get_quaternion():inverse()
 
    path_var.count = path_var.count + 1
    local target_dt = 1.0/LOOP_RATE
@@ -1742,13 +1767,9 @@ function do_path()
       path_var.initial_ori:from_euler(0, 0, math.rad(initial_yaw_deg))
       path_var.initial_ori:normalize()
 
-      path_var.initial_maneuver_to_earth = Quaternion()
-      path_var.initial_maneuver_to_earth:from_euler(0, 0, -math.rad(initial_yaw_deg))
-      path_var.initial_maneuver_to_earth:normalize()
+      path_var.initial_ef_pos = ahrs_pos_NED:copy()
 
-      path_var.initial_ef_pos = ahrs:get_relative_position_NED_origin()
-
-      path_var.start_pos = ahrs:get_position()
+      path_var.start_pos = ahrs_pos:copy()
       path_var.path_int = path_var.start_pos:copy()
 
       speed_PI.reset()
@@ -1764,11 +1785,10 @@ function do_path()
       path_var.sideslip_angle_rad = { 0.0, 0.0 }
       path_var.ff_yaw_rate_rads = 0.0
       path_var.last_q_change_t = 1.0 / LOOP_RATE
-      path_var.last_ang_rate_dps = ahrs:get_gyro():scale(math.deg(1))
+      path_var.last_ang_rate_dps = ahrs_gyro:scale(math.deg(1))
 
       path_var.path_t = 0.0
-      path_var.tangent = makeVector3f(1,0,0)
-      path_var.initial_maneuver_to_earth:inverse():earth_to_body(path_var.tangent)
+      path_var.tangent = quat_body_to_earth(path_var.initial_ori, makeVector3f(1,0,0))
 
       path_var.pos = path_var.initial_ef_pos:copy()
       path_var.roll = 0.0
@@ -1776,7 +1796,7 @@ function do_path()
       return true
    end
    
-   local vel_length = ahrs:get_velocity_NED():length()
+   local vel_length = ahrs_velned:length()
 
    local actual_dt = now - path_var.last_time
    path_var.last_time = now
@@ -1789,7 +1809,7 @@ function do_path()
    end
 
    -- airspeed, assume we don't go below min
-   local airspeed_constrained = math.max(ARSPD_FBW_MIN:get(), ahrs:airspeed_estimate())
+   local airspeed_constrained = math.max(ARSPD_FBW_MIN:get(), ahrs_airspeed)
 
    --[[
       calculate positions and angles at previous, current and next time steps
@@ -1801,7 +1821,7 @@ function do_path()
    local p1, r1, s1 = rotate_path(path, path_var.path_t + local_n_dt,
                                   path_var.initial_ori, path_var.initial_ef_pos)
 
-   local current_measured_pos_ef = ahrs:get_relative_position_NED_origin()
+   local current_measured_pos_ef = ahrs_pos_NED:copy()
 
    --[[
       get tangents to the path
@@ -1819,7 +1839,7 @@ function do_path()
       use actual vehicle velocity to calculate how far along the
       path we have progressed
    --]]
-   local v = ahrs:get_velocity_NED()
+   local v = ahrs_velned:copy()
    local path_dist = v:dot(tv_unit)*actual_dt
    if path_dist < 0 then
       gcs:send_text(0, string.format("aborting %.2f at %d tv=(%.2f,%.2f,%.2f) vx=%.2f adt=%.2f",
@@ -1835,9 +1855,9 @@ function do_path()
    --[[
       recalculate the current path position and angle based on actual delta time
    --]]
-   p1, r1, s1 = rotate_path(path,
-                            constrain(path_var.path_t + path_t_delta, 0, 1),
-                            path_var.initial_ori, path_var.initial_ef_pos)
+   local p1, r1, s1 = rotate_path(path,
+                                  constrain(path_var.path_t + path_t_delta, 0, 1),
+                                  path_var.initial_ori, path_var.initial_ef_pos)
 
    local last_path_t = path_var.path_t
    path_var.path_t = path_var.path_t + path_t_delta
@@ -1904,7 +1924,7 @@ function do_path()
    -- gains for error correction.
    local acc_err_ef = B:scale(ERR_CORR_P:get()) + B_dot:scale(ERR_CORR_D:get())
 
-   local acc_err_bf = ahrs:earth_to_body(acc_err_ef)
+   local acc_err_bf = quat_earth_to_body(ahrs_quat, acc_err_ef)
 
    local TAS = constrain(ahrs:get_EAS2TAS()*airspeed_constrained, 3, 100)
    local corr_rate_bf_y_rads = -acc_err_bf:z()/TAS
@@ -1941,7 +1961,7 @@ function do_path()
       -- cope with small initial misalignment
       path_rate_ef_dps:z(0)
    end
-   local path_rate_bf_dps = ahrs:earth_to_body(path_rate_ef_dps)
+   local path_rate_bf_dps = quat_earth_to_body(ahrs_quat, path_rate_ef_dps)
 
    -- set the path roll rate
    path_rate_bf_dps:x(math.deg(wrap_pi(r1 - r0)/actual_dt))
@@ -1956,9 +1976,7 @@ function do_path()
    path_var.accumulated_orientation_rel_ef = zero_roll_angle_delta*path_var.accumulated_orientation_rel_ef
    path_var.accumulated_orientation_rel_ef:normalize()
 
-   
-   local mf_axis = makeVector3f(1, 0, 0)
-   path_var.accumulated_orientation_rel_ef:earth_to_body(mf_axis)
+   local mf_axis = quat_earth_to_body(path_var.accumulated_orientation_rel_ef, makeVector3f(1, 0, 0))
 
    local orientation_rel_mf_with_roll_angle = Quaternion()
    orientation_rel_mf_with_roll_angle:from_axis_angle(mf_axis, r1)
@@ -1967,12 +1985,12 @@ function do_path()
    --[[
       calculate the error correction for the roll versus the desired roll
    --]]
-   local roll_error = orientation_rel_ef_with_roll_angle*ahrs:get_quaternion():inverse()
+   local roll_error = orientation_rel_ef_with_roll_angle * ahrs_quat
    roll_error:normalize()
    local err_axis_ef, err_angle_rad = to_axis_and_angle(roll_error)
    local time_const_roll = ROLL_CORR_TC:get()
    local err_angle_rate_ef_rads = err_axis_ef:scale(err_angle_rad/time_const_roll)
-   local err_angle_rate_bf_dps = ahrs:earth_to_body(err_angle_rate_ef_rads):scale(math.deg(1))
+   local err_angle_rate_bf_dps = quat_earth_to_body(ahrs_quat,err_angle_rate_ef_rads):scale(math.deg(1))
    -- zero any non-roll components
    err_angle_rate_bf_dps:y(0)
    err_angle_rate_bf_dps:z(0)
@@ -1982,8 +2000,7 @@ function do_path()
    --]]
    local g_force = (path_rate_ef_rads:cross(v)):scale(1.0/GRAVITY_MSS)
    local specific_force_g_ef = g_force - makeVector3f(0,0,-1)
-   local specific_force_g_bf = specific_force_g_ef:copy()
-   orientation_rel_ef_with_roll_angle:earth_to_body(specific_force_g_bf)
+   local specific_force_g_bf = quat_earth_to_body(orientation_rel_ef_with_roll_angle, specific_force_g_ef)
    local airspeed_scaling = SCALING_SPEED:get()/airspeed_constrained
 
    local sideslip_rad = specific_force_g_bf:y() * (airspeed_scaling*airspeed_scaling) * math.rad(AEROM_KE_ANG:get())
@@ -2027,7 +2044,7 @@ function do_path()
    --[[
       log POSM is pose-measured, POST is pose-track, POSB is pose-track without the roll
    --]]
-   log_pose('POSM', current_measured_pos_ef, ahrs:get_quaternion())
+   log_pose('POSM', current_measured_pos_ef, ahrs_quat:inverse())
    log_pose('POST', p1, orientation_rel_ef_with_roll_angle)
 
    logger.write('AETM', 'T,Terr,QCt,Adt','ffff',
@@ -2064,7 +2081,7 @@ function do_path()
    local qnew = qchange * orientation_rel_ef_with_roll_angle
    local anticipated_pitch_rad = math.max(qnew:get_euler_pitch(), orientation_rel_ef_with_roll_angle:get_euler_pitch())
 
-   throttle = speed_PI.update(s1, anticipated_pitch_rad)
+   local throttle = speed_PI.update(s1, anticipated_pitch_rad)
    throttle = constrain(throttle, 0, 100.0)
 
    if isNaN(throttle) or Vec3IsNaN(tot_ang_vel_bf_dps) then
