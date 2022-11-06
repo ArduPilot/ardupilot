@@ -124,8 +124,8 @@ class Bisect(object):
         while True:
             x = p.stdout.readline()
             if len(x) == 0:
-                returncode = os.waitpid(p.pid, 0)
-                if returncode:
+                waitpid_result = os.waitpid(p.pid, 0)
+                if waitpid_result:
                     break
                     # select not available on Windows... probably...
                 time.sleep(0.1)
@@ -135,12 +135,12 @@ class Bisect(object):
             self.program_output += x
             x = x.rstrip()
             print("%s: %s" % (prefix, x))
-        (_, status) = returncode
+        (pid, status) = waitpid_result
         if status != 0:
             self.progress("Process failed (%s)" %
-                          str(returncode))
+                          str(waitpid_result))
             raise subprocess.CalledProcessError(
-                returncode, cmd_list)
+                status, cmd_list)
 
     def build(self):
         '''run ArduCopter build.  May exit with skip or fail'''
