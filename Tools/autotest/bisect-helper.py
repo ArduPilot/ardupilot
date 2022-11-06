@@ -170,6 +170,13 @@ class Bisect(object):
             else:
                 self.exit_fail()
 
+    def update_submodules(self):
+        try:
+            self.run_program("Update submodules",
+                             ["git", "submodule", "update", "--init", "--recursive"])
+        except subprocess.CalledProcessError:
+            self.exit_abort()
+
 
 class BisectBuild(Bisect):
 
@@ -177,6 +184,7 @@ class BisectBuild(Bisect):
         super(BisectBuild, self).__init__(opts)
 
     def run(self):
+        self.update_submodules()
         self.build()  # may exit with skip or fail
         self.exit_pass()
 
@@ -211,11 +219,7 @@ class BisectCITest(Bisect):
         if self.opts.autotest_branch is None:
             raise ValueError("expected autotest branch")
 
-        try:
-            self.run_program("Update submodules",
-                             ["git", "submodule", "update", "--init", "--recursive"])
-        except subprocess.CalledProcessError:
-            self.exit_abort()
+        self.update_submodules()
 
         try:
             self.run_program("Check autotest directory out from master",
