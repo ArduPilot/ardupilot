@@ -175,11 +175,27 @@ void SITL_State::_fdm_input_step(void)
 
 void SITL_State::wait_clock(uint64_t wait_time_usec)
 {
+    float speedup = sitl_model->get_speedup();
+    if (speedup < 1) {
+        // for purposes of sleeps treat low speedups as 1
+        speedup = 1.0;
+    }
     while (AP_HAL::micros64() < wait_time_usec) {
         if (hal.scheduler->in_main_thread() ||
             Scheduler::from(hal.scheduler)->semaphore_wait_hack_required()) {
             _fdm_input_step();
         } else {
+#ifdef CYGWIN_BUILD
+            if (speedup > 2) {
+                // this effectively does a yield of the CPU. The
+                // granularity of sleeps on cygwin is very high, so
+                // this is needed for good thread performance. We
+                // don't do this at low speedups as it causes the cpu
+                // to run hot
+                usleep(0);
+                continue;
+            }
+#endif
             usleep(1000);
         }
     }
@@ -187,7 +203,7 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
     // MAVProxy/pymavlink take too long to process packets and it ends
     // up seeing traffic well into our past and hits time-out
     // conditions.
-    if (sitl_model->get_speedup() > 1) {
+    if (speedup > 1 && hal.scheduler->in_main_thread()) {
         while (true) {
             const int queue_length = ((HALSITL::UARTDriver*)hal.serial(0))->get_system_outqueue_length();
             // ::fprintf(stderr, "queue_length=%d\n", (signed)queue_length);
