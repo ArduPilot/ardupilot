@@ -1768,7 +1768,7 @@ function do_path()
 
       path_var.path_t = 0.0
       path_var.tangent = makeVector3f(1,0,0)
-      path_var.initial_maneuver_to_earth:earth_to_body(path_var.tangent)
+      path_var.initial_maneuver_to_earth:inverse():earth_to_body(path_var.tangent)
 
       path_var.pos = path_var.initial_ef_pos:copy()
       path_var.roll = 0.0
