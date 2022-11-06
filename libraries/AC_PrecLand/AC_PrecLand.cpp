@@ -441,7 +441,7 @@ bool AC_PrecLand::get_target_velocity_relative_cms(Vector2f& ret)
 // get the absolute velocity of the vehicle
 void AC_PrecLand::get_target_velocity_cms(const Vector2f& vehicle_velocity_cms, Vector2f& target_vel_cms)
 {
-    if (!(_options & PLND_OPTION_MOVING_TARGET)) {
+    if (!option_enabled(Option::MOVING_TARGET)) {
         // the target should not be moving
         target_vel_cms.zero();
         return;

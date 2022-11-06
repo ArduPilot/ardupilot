@@ -127,9 +127,9 @@ private:
         SITL = 4,
     };
 
-    enum PLndOptions {
-        PLND_OPTION_DISABLED = 0,
-        PLND_OPTION_MOVING_TARGET = (1 << 0),
+    // enum for PLND_OPTIONS
+    enum class Option : uint8_t {
+        MOVING_TARGET = (1U << 0),
     };
 
     // check the status of the target
@@ -175,7 +175,7 @@ private:
     AP_Int8                     _retry_behave;      // Action to do when trying a landing retry
     AP_Float                    _sensor_min_alt;     // PrecLand minimum height required for detecting target
     AP_Float                    _sensor_max_alt;     // PrecLand maximum height the sensor can detect target
-    AP_Int16                    _options;            // Bitmask for extra options
+    AP_Int8                     _options;            // Bitmask for extra options
     AP_Enum<Rotation>           _orient;             // Orientation of camera/sensor
 
     uint32_t                    _last_update_ms;    // system time in millisecond when update was last called
@@ -221,6 +221,10 @@ private:
     // write out PREC message to log:
     void Write_Precland();
     uint32_t last_log_ms;  // last time we logged
+
+    bool option_enabled(Option option) const {
+        return (_options.get() & uint8_t(option)) != 0;
+    }
 
     static AC_PrecLand *_singleton; //singleton
 };
