@@ -22,9 +22,9 @@
 
 
 typedef struct {
-    uint16_t voltage;
-    int16_t temperature;
-    int16_t bus_current;
+    float voltage;
+    float temperature;
+    float bus_current;
     uint16_t reserved1;
     uint32_t rpm;
     uint16_t input_duty;

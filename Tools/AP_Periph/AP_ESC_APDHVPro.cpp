@@ -67,13 +67,13 @@ bool AP_ESC_APDHVPro::parse_ESC_telemetry_data() {
 
     int check_fletch = check_flectcher16();
 
-    decoded.voltage = (uint16_t)(((raw_buffer[1] << 8) + raw_buffer[0])/100);
+    decoded.voltage = (float)(((raw_buffer[1] << 8) + raw_buffer[0])/100);
     
     float rntc = (TEMPERATURE_MAX_RESOLUTION/(float)((raw_buffer[3] << 8) + raw_buffer[2])) - 1;
     float temperature1 = (logF((SERIESRESISTOR / rntc) / (float)NOMINAL_RESISTANCE)) / BCOEFFICIENT;
-    decoded.temperature = (int16_t)(1 / ((1 / ((float)NOMINAL_RESISTANCE + (float)273.15)) + temperature1)) - (float)273.15;
+    decoded.temperature = (float)(1 / ((1 / ((float)NOMINAL_RESISTANCE + (float)273.15)) + temperature1)) - (float)273.15;
 
-    decoded.bus_current = (int16_t)(((raw_buffer[5] << 8) + raw_buffer[4]) / CURRENT_COEFFICIENT);
+    decoded.bus_current = (float)(((raw_buffer[5] << 8) + raw_buffer[4]) / CURRENT_COEFFICIENT);
     decoded.reserved1 = (uint16_t)((raw_buffer[7] << 8) + raw_buffer[6]);
     decoded.rpm = ((uint32_t)((raw_buffer[11] << 24) + (raw_buffer[10] << 16) + (raw_buffer[9] << 8) + raw_buffer[8])) / POLECOUNT;
     decoded.input_duty = (uint16_t)((raw_buffer[13] << 8) + raw_buffer[12]) / 10;
