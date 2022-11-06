@@ -33,6 +33,7 @@
 #include "AP_RangeFinder_TeraRanger_Serial.h"
 #include "AP_RangeFinder_VL53L0X.h"
 #include "AP_RangeFinder_VL53L1X.h"
+#include "AP_RangeFinder_VL53L4X.h"
 #include "AP_RangeFinder_NMEA.h"
 #include "AP_RangeFinder_Wasp.h"
 #include "AP_RangeFinder_Benewake_TF02.h"
@@ -187,6 +188,7 @@ void RangeFinder::init(enum Rotation orientation_default)
         // init called a 2nd time?
         return;
     }
+
     init_done = true;
 
     // set orientation defaults
@@ -348,6 +350,15 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
                 }
 #endif
             }
+        break;
+    case Type::VL53L4X:
+#if AP_RANGEFINDER_VL53L4X_ENABLED
+        FOREACH_I2C(i) {
+            if (_add_backend(AP_RangeFinder_VL53L4X::detect(state[instance], params[instance], hal.i2c_mgr->get_device(i, params[instance].address)), instance)) {
+                break;
+            }
+        }
+#endif
         break;
     case Type::BenewakeTFminiPlus: {
 #if AP_RANGEFINDER_BENEWAKE_TFMINIPLUS_ENABLED
