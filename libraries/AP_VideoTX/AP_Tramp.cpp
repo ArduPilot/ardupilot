@@ -19,6 +19,7 @@
 #include <AP_Math/crc.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_HAL/utility/sparse-endian.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 #if AP_TRAMP_ENABLED
 

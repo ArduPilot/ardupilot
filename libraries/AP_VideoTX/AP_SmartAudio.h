@@ -24,7 +24,6 @@
 #if HAL_SMARTAUDIO_ENABLED
 
 #include <AP_Param/AP_Param.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include "AP_VideoTX.h"
 
