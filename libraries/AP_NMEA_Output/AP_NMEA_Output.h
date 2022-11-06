@@ -31,8 +31,6 @@
 #define NMEA_MAX_OUTPUTS 3
 #endif
 
-#include <AP_SerialManager/AP_SerialManager.h>
-
 class AP_NMEA_Output {
 
 public:
