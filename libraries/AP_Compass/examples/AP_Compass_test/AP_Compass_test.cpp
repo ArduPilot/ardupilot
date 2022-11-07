@@ -24,6 +24,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
