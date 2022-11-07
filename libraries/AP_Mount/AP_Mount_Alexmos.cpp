@@ -2,9 +2,6 @@
 
 #if HAL_MOUNT_ALEXMOS_ENABLED
 #include <AP_SerialManager/AP_SerialManager.h>
-#include <AP_AHRS/AP_AHRS.h>
-
-extern const AP_HAL::HAL& hal;
 
 void AP_Mount_Alexmos::init()
 {

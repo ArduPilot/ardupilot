@@ -2,6 +2,7 @@
 
 #if HAL_MOUNT_GREMSY_ENABLED
 
+#include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
