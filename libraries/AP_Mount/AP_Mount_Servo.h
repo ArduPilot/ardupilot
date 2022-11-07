@@ -13,8 +13,6 @@
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <SRV_Channel/SRV_Channel.h>
 
 class AP_Mount_Servo : public AP_Mount_Backend
