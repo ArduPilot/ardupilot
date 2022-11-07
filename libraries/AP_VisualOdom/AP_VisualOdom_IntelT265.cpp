@@ -19,6 +19,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 
 #define VISUALODOM_RESET_IGNORE_DURATION_MS 1000    // sensor data is ignored for 1sec after a position reset
