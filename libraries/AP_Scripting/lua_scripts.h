@@ -20,7 +20,7 @@
 
 #include <AP_Filesystem/posix_compat.h>
 #include <AP_Scripting/AP_Scripting.h>
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_HAL/Semaphores.h>
 
 #include "lua/src/lua.hpp"
