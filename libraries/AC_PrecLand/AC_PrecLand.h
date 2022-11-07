@@ -6,6 +6,7 @@
 #include "PosVelEKF.h"
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AC_PrecLand/AC_PrecLand_StateMachine.h>
+#include "AC_PrecLand_config.h"
 
 // declare backend classes
 class AC_PrecLand_Backend;

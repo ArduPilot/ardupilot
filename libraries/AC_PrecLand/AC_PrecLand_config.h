@@ -1,0 +1,6 @@
+#pragma once
+
+#ifndef PRECISION_LANDING
+    #define PRECISION_LANDING !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
+#endif
+
