@@ -125,11 +125,38 @@ AP_Vehicle& vehicle = *AP_Vehicle::get_singleton();
 extern AP_Vehicle& vehicle;
 #endif
 
+#if defined(HAL_GPIO_PIN_WDO)
+static int cnt = 0;
+static bool _sw = false;
+void AP_Vehicle::timer_update(void)
+{
+    if (cnt == 50)
+    {
+        cnt = 0;
+    	if (_sw == true)
+	    {
+            palSetLine(HAL_GPIO_PIN_WDO);
+    		_sw = false;
+	    }
+    	else
+	    {
+            palClearLine(HAL_GPIO_PIN_WDO);
+    		_sw = true;
+	    }
+    }
+    cnt++;
+}
+#endif
+
 /*
   setup is called when the sketch starts
  */
 void AP_Vehicle::setup()
 {
+#if defined(HAL_GPIO_PIN_WDO)
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Vehicle::timer_update, void));        
+#endif
+
     // load the default values of variables listed in var_info[]
     AP_Param::setup_sketch_defaults();
 
