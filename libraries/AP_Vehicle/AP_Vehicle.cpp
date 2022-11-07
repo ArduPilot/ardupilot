@@ -114,6 +114,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(temperature_sensor, "TEMP", 16, AP_Vehicle, AP_TemperatureSensor),
 #endif
 
+#if PRECISION_LANDING
+    // @Group: PLND_
+    // @Path: ../AC_PrecLand/AC_PrecLand.cpp
+    AP_SUBGROUPINFO(precland, "PLND_", 17, AP_Vehicle, AC_PrecLand),
+#endif
+
     AP_GROUPEND
 };
 
@@ -267,6 +273,10 @@ void AP_Vehicle::setup()
 
 #if AP_FENCE_ENABLED
     fence.init();
+#endif
+
+#if PRECISION_LANDING
+    precland.init(AP::scheduler().get_loop_rate_hz());
 #endif
 
     custom_rotations.init();
@@ -557,7 +567,7 @@ void AP_Vehicle::update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch)
             } else {
                 notch.update_freq_hz(MAX(ref_freq, AP::esc_telem().get_average_motor_frequency_hz() * ref));
             }
-            break;
+            break; 
 #endif
 #if HAL_GYROFFT_ENABLED
         case HarmonicNotchDynamicMode::UpdateGyroFFT: // FFT based tracking

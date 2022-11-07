@@ -57,6 +57,7 @@
 #include <AP_AIS/AP_AIS.h>
 #include <AC_Fence/AC_Fence.h>
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
+#include <AC_PrecLand/AC_PrecLand.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -366,6 +367,10 @@ protected:
 
 #if AP_OPENDRONEID_ENABLED
     AP_OpenDroneID opendroneid;
+#endif
+
+#if PRECISION_LANDING
+    AC_PrecLand precland;
 #endif
 
 #if HAL_MSP_ENABLED
