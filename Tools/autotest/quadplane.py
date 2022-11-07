@@ -805,7 +805,6 @@ class AutoTestQuadPlane(AutoTest):
             defaults_filepath=self.model_defaults_filepath(model),
             wipe=False)
 
-        self.reboot_sitl()
         self.wait_ready_to_arm()
         self.wait_rpm(1, 0, 0, minimum_duration=1)
         self.arm_vehicle()
@@ -829,6 +828,16 @@ class AutoTestQuadPlane(AutoTest):
         # ICE provides forward thrust, which can make us think we're flying:
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
+
+        self.start_subtest("Testing throttle out in manual mode")
+        self.change_mode('MANUAL')
+        self.set_rc(3, 1700)
+        self.wait_servo_channel_value(3, 2000)
+        self.set_parameter("ICE_OPTIONS", 4)
+        # remember that throttle is reversed!
+        self.wait_servo_channel_value(3, 1300)
+        self.change_mode('FBWA')
+        self.wait_servo_channel_value(3, 2000)
 
     def ICEngineMission(self):
         '''Test ICE Engine Mission support'''
