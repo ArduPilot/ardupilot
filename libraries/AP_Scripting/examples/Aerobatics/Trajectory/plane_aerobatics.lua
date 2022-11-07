@@ -1765,6 +1765,7 @@ function do_path()
       --deliberately only want yaw component, because the maneuver should be performed relative to the earth, not relative to the initial orientation
       path_var.initial_ori = Quaternion()
       path_var.initial_ori:from_euler(0, 0, math.rad(initial_yaw_deg))
+      path_var.initial_ori = path_var.initial_ori
       path_var.initial_ori:normalize()
 
       path_var.initial_ef_pos = ahrs_pos_NED:copy()
@@ -1788,11 +1789,15 @@ function do_path()
       path_var.last_ang_rate_dps = ahrs_gyro:scale(math.deg(1))
 
       path_var.path_t = 0.0
-      path_var.tangent = quat_body_to_earth(path_var.initial_ori, makeVector3f(1,0,0))
 
       path_var.pos = path_var.initial_ef_pos:copy()
       path_var.roll = 0.0
       path_var.speed = nil
+
+      -- get initial tangent
+      local p1, r1, s1 = rotate_path(path, path_var.path_t + 0.1/(path_var.total_time*LOOP_RATE),
+                                     path_var.initial_ori, path_var.initial_ef_pos)
+      path_var.tangent = p1 - path_var.pos
       return true
    end
    
@@ -2008,7 +2013,7 @@ function do_path()
    local ff_yaw_rate_rads2 = -(path_var.sideslip_angle_rad[2] - path_var.sideslip_angle_rad[1]) / path_var.last_q_change_t
    local ff_yaw_rate_rads = 0.5 * (ff_yaw_rate_rads1 + ff_yaw_rate_rads2)
 
-   if path_var.count <= 2 then
+   if path_var.count <= 4 then
       -- prevent an initialisation issue
       ff_yaw_rate_rads = 0.0
    end
