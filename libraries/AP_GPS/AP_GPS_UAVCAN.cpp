@@ -355,6 +355,14 @@ AP_GPS_UAVCAN* AP_GPS_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t n
                 tempslot = _detected_modules[j];
                 _detected_modules[j] = _detected_modules[j-1];
                 _detected_modules[j-1] = tempslot;
+                // also fix the _detected_module in the driver so that RTCM injection
+                // can determine if it has the bus to itself
+                if (_detected_modules[j].driver) {
+                    _detected_modules[j].driver->_detected_module = j;
+                }
+                if (_detected_modules[j-1].driver) {
+                    _detected_modules[j-1].driver->_detected_module = j-1;
+                }
             }
         }
     }
@@ -804,11 +812,13 @@ bool AP_GPS_UAVCAN::is_configured(void) const
  */
 void AP_GPS_UAVCAN::inject_data(const uint8_t *data, uint16_t len)
 {
-    // we only handle this if we are the first UAVCAN GPS, as we send
-    // the data as broadcast on all UAVCAN devive ports and we don't
-    // want to send duplicates
-    if (_detected_module == 0) {
-        _detected_modules[0].ap_uavcan->send_RTCMStream(data, len);
+    // we only handle this if we are the first UAVCAN GPS or we are
+    // using a different uavcan instance than the first GPS, as we
+    // send the data as broadcast on all UAVCAN devive ports and we
+    // don't want to send duplicates
+    if (_detected_module == 0 ||
+        _detected_modules[_detected_module].ap_uavcan != _detected_modules[0].ap_uavcan) {
+        _detected_modules[_detected_module].ap_uavcan->send_RTCMStream(data, len);
     }
 }
 
