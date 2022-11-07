@@ -25,6 +25,7 @@
 #include "tailsitter.h"
 #include "tiltrotor.h"
 #include "transition.h"
+#include "config.h"
 
 /*
   QuadPlane specific functionality
@@ -79,7 +80,14 @@ public:
     void update_land_positioning(void);
 
     void update_throttle_mix(void);
-    
+
+    // precision landing horizontal controller. Ensure Precision Landing is active before calling this
+    void run_precland_horizontal_controller();
+    bool precland_active(void);
+#if PRECISION_LANDING == ENABLED
+    void set_precision_loiter_enabled(bool value) { _precision_loiter_enabled = value; }
+#endif
+
     // update transition handling
     void update(void);
 
@@ -433,6 +441,9 @@ private:
     */
     bool guided_wait_takeoff;
     bool guided_wait_takeoff_on_mode_enter;
+
+    bool land_repo_active;
+    bool _precision_loiter_enabled;
 
     struct {
         // time when motors reached lower limit

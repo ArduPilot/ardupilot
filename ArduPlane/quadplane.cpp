@@ -1210,8 +1210,38 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground)
             } else {
                 ret *= (thresh2 - thr_in)*scaling;
             }
-        }    
+        }
     }
+
+#if PRECISION_LANDING == ENABLED
+    if (precland_active()) {
+        // prec landing is active
+        Vector2f target_pos;
+        float target_error_cm = 0.0f;
+        if (plane.precland.get_target_position_cm(target_pos)) {
+            const Vector2f current_pos = inertial_nav.get_position_xy_cm();
+            // target is this many cm away from the vehicle
+            target_error_cm = (target_pos - current_pos).length();
+        }
+        // check if we should descend or not
+        const float max_horiz_pos_error_cm = plane.precland.get_max_xy_error_before_descending_cm();
+        Vector3f target_pos_meas;
+        plane.precland.get_target_position_measurement_cm(target_pos_meas);
+        if (target_error_cm > max_horiz_pos_error_cm && !is_zero(max_horiz_pos_error_cm)) {
+            // doing precland but too far away from the obstacle
+            // do not descend
+            ret = 0.0f;
+        } else if (target_pos_meas.z > 35.0f && target_pos_meas.z < 200.0f) {
+            // very close to the ground and doing prec land, lets slow down to make sure we land on target
+            // compute desired descent velocity
+            const float precland_acceptable_error_cm = 15.0f;
+            const float precland_min_descent_speed_cms = 10.0f;
+            const float max_descent_speed_cms = abs(wp_nav->get_default_speed_down())*0.5f;
+            const float land_slowdown = MAX(0.0f, target_error_cm*(max_descent_speed_cms/precland_acceptable_error_cm));
+            ret = MAX(precland_min_descent_speed_cms, max_descent_speed_cms-land_slowdown);
+        }
+    }
+#endif
 
     if (poscontrol.pilot_correction_active) {
         // stop descent when repositioning
@@ -2646,10 +2676,13 @@ void QuadPlane::vtol_position_controller(void)
         /*
           for final land repositioning and descent we run the position controller
          */
-        Vector2f zero;
-        Vector2f vel_cms = poscontrol.target_vel_cms.xy() + landing_velocity*100;
-        pos_control->input_pos_vel_accel_xy(poscontrol.target_cm.xy(), vel_cms, zero);
-
+        if (precland_active()) {
+            run_precland_horizontal_controller();
+        } else {
+            Vector2f zero;
+            Vector2f vel_cms = poscontrol.target_vel_cms.xy() + landing_velocity*100;
+            pos_control->input_pos_vel_accel_xy(poscontrol.target_cm.xy(), vel_cms, zero);
+        }
         // also run fixed wing navigation
         plane.nav_controller->update_waypoint(plane.current_loc, loc);
 
@@ -2679,6 +2712,9 @@ void QuadPlane::vtol_position_controller(void)
         // relax when close to the ground
         if (should_relax()) {
             pos_control->relax_velocity_controller_xy();
+        } else if (precland_active()) {
+            // precland beacon in sight
+            run_precland_horizontal_controller();
         } else {
             Vector2f zero;
             Vector2f vel_cms = poscontrol.target_vel_cms.xy() + landing_velocity*100;
@@ -2955,6 +2991,53 @@ void QuadPlane::takeoff_controller(void)
     }
 
     run_z_controller();
+}
+
+// precision landing horizontal controller. Ensure Precision Landing is active before calling this
+void QuadPlane::run_precland_horizontal_controller()
+{
+#if PRECISION_LANDING == ENABLED
+    // run precision landing
+    if (precland_active()) {
+        Vector2f target_pos, target_vel;
+        if (!plane.precland.get_target_position_cm(target_pos)) {
+            target_pos = inertial_nav.get_position_xy_cm();
+        }
+         // get the velocity of the target
+        plane.precland.get_target_velocity_cms(inertial_nav.get_velocity_xy_cms(), target_vel);
+
+        const Vector2f zero;
+        Vector2p landing_pos = target_pos.topostype();
+        // target vel will remain zero if landing target is stationary
+        pos_control->input_pos_vel_accel_xy(landing_pos, target_vel, zero);
+    } else {
+        // should never happen since the caller of this funtion should already check if precland is active
+        Vector2f zero;
+        pos_control->input_vel_accel_xy(zero, zero);
+
+    }
+#endif
+}
+
+bool QuadPlane::precland_active(void)
+{
+#if PRECISION_LANDING == ENABLED
+    const bool manual_control_active = (plane.channel_roll->get_control_in() != 0) || (plane.channel_pitch->get_control_in() !=  0);
+    if (manual_control_active) {
+        land_repo_active = true;
+    }
+
+    if (plane.control_mode == &plane.mode_qland && !land_repo_active) {
+        return plane.precland.target_acquired();
+    } else if (plane.control_mode == &plane.mode_qloiter && _precision_loiter_enabled) {
+        if (manual_control_active) {
+            // user is trying to reposition the vehicle
+            return false;
+        }
+        return plane.precland.target_acquired();
+    }
+#endif
+    return false;
 }
 
 /*

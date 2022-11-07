@@ -83,6 +83,7 @@
 #include <AP_Landing/AP_Landing.h>
 #include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
 #include <AP_Follow/AP_Follow.h>
+#include <AC_PrecLand/AC_PrecLand.h>
 
 #include "GCS_Mavlink.h"
 #include "GCS_Plane.h"
@@ -1110,6 +1111,11 @@ private:
     // soaring.cpp
 #if HAL_SOARING_ENABLED
     void update_soaring();
+#endif
+
+
+#if PRECISION_LANDING ==ENABLED
+    void update_precland();
 #endif
 
     // RC_Channel.cpp

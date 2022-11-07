@@ -43,6 +43,8 @@ bool ModeQRTL::_enter()
         }
     }
 
+    quadplane.land_repo_active = false;
+
     // use do_RTL() to setup next_WP_loc
     plane.do_RTL(RTL_alt_abs_cm);
     quadplane.poscontrol_init_approach();
