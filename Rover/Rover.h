@@ -144,9 +144,7 @@ private:
 #if OSD_ENABLED || OSD_PARAM_ENABLED
     AP_OSD osd;
 #endif
-#if PRECISION_LANDING == ENABLED
-    AC_PrecLand precland;
-#endif
+
     // GCS handling
     GCS_Rover _gcs;  // avoid using this; use gcs()
     GCS_Rover &gcs() { return _gcs; }

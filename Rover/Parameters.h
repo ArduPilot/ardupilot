@@ -54,9 +54,7 @@ public:
         k_param_rssi_pin = 20,  // unused, replaced by rssi_ library parameters
         k_param_battery_volt_pin,
         k_param_battery_curr_pin,
-
-        k_param_precland = 24,
-
+        
         // braking
         k_param_braking_percent_old = 30,   // unused
         k_param_braking_speederr_old,       // unused
