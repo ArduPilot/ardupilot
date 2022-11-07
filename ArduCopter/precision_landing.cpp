@@ -6,11 +6,6 @@
 
 #if PRECISION_LANDING == ENABLED
 
-void Copter::init_precland()
-{
-    copter.precland.init(400);
-}
-
 void Copter::update_precland()
 {
     // alt will be unused if we pass false through as the second parameter:

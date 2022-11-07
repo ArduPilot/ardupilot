@@ -677,12 +677,6 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(optflow,   "FLOW", AP_OpticalFlow),
 #endif
 
-#if PRECISION_LANDING == ENABLED
-    // @Group: PLND_
-    // @Path: ../libraries/AC_PrecLand/AC_PrecLand.cpp
-    GOBJECT(precland, "PLND_", AC_PrecLand),
-#endif
-
 #if AP_RPM_ENABLED
     // @Group: RPM
     // @Path: ../libraries/AP_RPM/AP_RPM.cpp
@@ -1260,6 +1254,10 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_compass_enabled_deprecated,    0,      AP_PARAM_INT8, "COMPASS_ENABLE" },
     // PARAMETER_CONVERSION - Added: Jul-2019
     { Parameters::k_param_arming,             2,     AP_PARAM_INT16,  "ARMING_CHECK" },
+    // PARAMETER_CONVERSION - Added: Oct-2022
+    { Parameters::k_param_precland,             0,     AP_PARAM_INT8,  "ARMING_CHECK" },
+
+
 };
 
 void Copter::load_parameters(void)
@@ -1308,6 +1306,10 @@ void Copter::load_parameters(void)
     // PARAMETER_CONVERSION - Added: Mar-2022
 #if AP_FENCE_ENABLED
     AP_Param::convert_class(g.k_param_fence_old, &fence, fence.var_info, 0, 0, true);
+#endif
+
+#if PRECISION_LANDING
+    AP_Param::convert_class(g.k_param_precland, &precland, precland.var_info, 0, 0, true);
 #endif
 
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));

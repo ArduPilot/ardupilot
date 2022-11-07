@@ -127,11 +127,6 @@ void Copter::init_ardupilot()
     camera_mount.init();
 #endif
 
-#if PRECISION_LANDING == ENABLED
-    // initialise precision landing
-    init_precland();
-#endif
-
 #if LANDING_GEAR_ENABLED == ENABLED
     // initialise landing gear position
     landinggear.init();

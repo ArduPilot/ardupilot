@@ -527,7 +527,6 @@ private:
 
     // Precision Landing
 #if PRECISION_LANDING == ENABLED
-    AC_PrecLand precland;
     AC_PrecLand_StateMachine precland_statemachine;
 #endif
 
@@ -876,7 +875,6 @@ private:
     void convert_fs_options_params(void) const;
 
     // precision_landing.cpp
-    void init_precland();
     void update_precland();
 
     // radio.cpp
