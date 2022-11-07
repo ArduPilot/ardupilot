@@ -13,8 +13,6 @@
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
-#include <RC_Channel/RC_Channel.h>
-#include <AP_AHRS/AP_AHRS.h>
 
 class AP_Mount_SToRM32 : public AP_Mount_Backend
 {

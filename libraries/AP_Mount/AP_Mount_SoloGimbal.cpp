@@ -1,5 +1,3 @@
-#include <AP_HAL/AP_HAL.h>
-#include <AP_AHRS/AP_AHRS.h>
 #include "AP_Mount_SoloGimbal.h"
 #if HAL_SOLO_GIMBAL_ENABLED
 
@@ -7,8 +5,6 @@
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
-
-extern const AP_HAL::HAL& hal;
 
 AP_Mount_SoloGimbal::AP_Mount_SoloGimbal(AP_Mount &frontend, AP_Mount_Params &params, uint8_t instance) :
     AP_Mount_Backend(frontend, params, instance),
