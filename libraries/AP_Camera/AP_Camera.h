@@ -127,6 +127,7 @@ private:
     AP_Int16        _min_interval;      // Minimum time between shots required by camera
     AP_Int16        _max_roll;          // Maximum acceptable roll angle when trigging camera
     uint32_t        _last_photo_time;   // last time a photo was taken
+    bool            _trigger_pending;   // true when we have delayed take_picture
     struct Location _last_location;
     uint16_t        _image_index;       // number of pictures taken since boot
 
