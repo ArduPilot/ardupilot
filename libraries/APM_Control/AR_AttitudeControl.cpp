@@ -319,7 +319,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
     // @Param: _BAL_FLTT
     // @DisplayName: Pitch control Target filter frequency in Hz
-    // @Description: Target filter frequency in Hz
+    // @Description: Pitch control Target filter frequency in Hz
     // @Range: 0.000 100.000
     // @Increment: 0.1
     // @Units: Hz
@@ -327,7 +327,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
     // @Param: _BAL_FLTE
     // @DisplayName: Pitch control Error filter frequency in Hz
-    // @Description: Error filter frequency in Hz
+    // @Description: Pitch control Error filter frequency in Hz
     // @Range: 0.000 100.000
     // @Increment: 0.1
     // @Units: Hz
@@ -335,7 +335,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
     // @Param: _BAL_FLTD
     // @DisplayName: Pitch control Derivative term filter frequency in Hz
-    // @Description: Derivative filter frequency in Hz
+    // @Description: Pitch control Derivative filter frequency in Hz
     // @Range: 0.000 100.000
     // @Increment: 0.1
     // @Units: Hz
@@ -343,7 +343,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
     // @Param: _BAL_SMAX
     // @DisplayName: Pitch control slew rate limit
-    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
+    // @Description: Pitch control upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
     // @Range: 0 200
     // @Increment: 0.5
     // @User: Advanced
