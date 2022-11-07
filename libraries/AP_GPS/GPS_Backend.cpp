@@ -298,9 +298,12 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
         state.last_corrected_gps_time_us = local_us;
         state.corrected_timestamp_updated = true;
 
+#ifndef HAL_BUILD_AP_PERIPH
         // look for lagged data from the GPS. This is meant to detect
         // the case that the GPS is trying to push more data into the
         // UART than can fit (eg. with GPS_RAW_DATA at 115200).
+        // This is disabled on AP_Periph as it is better to catch missed packet rate at the flight
+        // controller level
         float expected_lag;
         if (gps.get_lag(state.instance, expected_lag)) {
             float lag_s = (now - (state.last_corrected_gps_time_us/1000U)) * 0.001;
@@ -311,6 +314,8 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
                 state.lagged_sample_count = 0;
             }
         }
+#endif // HAL_BUILD_AP_PERIPH
+
         if (state.status >= AP_GPS::GPS_OK_FIX_2D) {
             // we must have a decent fix to calculate difference between itow and pseudo-itow
             _pseudo_itow_delta_ms = itow - (_pseudo_itow/1000ULL);
