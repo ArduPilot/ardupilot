@@ -379,9 +379,9 @@ void AP_Camera::update()
 
     const AP_AHRS &ahrs = AP::ahrs();
     Location current_loc;
-    if (!ahrs.get_location(current_loc)) {
-        // completely ignore this failure!  AHRS will provide its best guess.
-    }
+
+    // ignore failure - AHRS will provide its best guess
+    IGNORE_RETURN(ahrs.get_location(current_loc));
 
     if (_last_location.lat == 0 && _last_location.lng == 0) {
         _last_location = current_loc;
@@ -405,15 +405,7 @@ void AP_Camera::update()
         return;
     }
 
-    uint32_t tnow = AP_HAL::millis();
-    if (tnow - _last_photo_time < (unsigned) _min_interval) {
-        return;
-    }
-
     take_picture();
-
-    _last_location = current_loc;
-    _last_photo_time = tnow;
 }
 
 /*
@@ -498,6 +490,17 @@ void AP_Camera::log_picture()
 // take_picture - take a picture
 void AP_Camera::take_picture()
 {
+    uint32_t tnow = AP_HAL::millis();
+    if (tnow - _last_photo_time < (unsigned) _min_interval) {
+        _trigger_pending = true;
+        return;
+    }
+    _trigger_pending = false;
+
+    IGNORE_RETURN(AP::ahrs().get_location(_last_location));
+
+    _last_photo_time = tnow;
+    
     // take a local picture:
     trigger_pic();
 
@@ -593,6 +596,9 @@ void AP_Camera::prep_mavlink_msg_camera_feedback(uint64_t timestamp_us)
  */
 void AP_Camera::update_trigger()
 {
+    if (_trigger_pending) {
+        take_picture();
+    }
     trigger_pic_cleanup();
     
     if (_camera_trigger_logged != _camera_trigger_count) {
