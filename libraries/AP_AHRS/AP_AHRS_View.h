@@ -16,7 +16,12 @@
  */
 
 /*
- *  AHRS View class - for creating a 2nd view of the vehicle attitude
+ *  AHRS View class - for creating a 2nd view of the vehicle attitude.
+ *
+ *  This class allows some parts of the code to see a rotated view of the
+ *  aircraft attitude. This allows the AC_AttitudeControl code to see a view
+ *  rotated by 90 degrees in pitch from the view seen by the fixed wing code.
+ *  This is required to support the tailsitter frame type in quadplanes.
  *
  */
 

@@ -21,6 +21,7 @@
  *
  */
 
+#include "AP_AHRS_Base.h"
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/Semaphores.h>
 
@@ -57,7 +58,7 @@ class AP_AHRS_View;
 // fwd declare GSF estimator
 class EKFGSF_yaw;
 
-class AP_AHRS {
+class AP_AHRS : public AP_AHRS_Base {
     friend class AP_AHRS_View;
 public:
 
@@ -91,7 +92,7 @@ public:
     }
 
     // return the smoothed gyro vector corrected for drift
-    const Vector3f &get_gyro(void) const;
+    const Vector3f &get_gyro(void) const override;
 
     // return the current drift correction integrator value
     const Vector3f &get_gyro_drift(void) const;
@@ -104,7 +105,7 @@ public:
     void            reset();
 
     // dead-reckoning support
-    bool get_location(struct Location &loc) const;
+    bool get_location(struct Location &loc) const override;
 
     // get latest altitude estimate above ground level in meters and validity flag
     bool get_hagl(float &hagl) const WARN_IF_UNUSED;
@@ -210,7 +211,7 @@ public:
     bool set_origin(const Location &loc) WARN_IF_UNUSED;
 
     // returns the inertial navigation origin in lat/lon/alt
-    bool get_origin(Location &ret) const WARN_IF_UNUSED;
+    bool get_origin(Location &origin) const override WARN_IF_UNUSED;
 
     bool have_inertial_nav() const;
 
@@ -446,6 +447,13 @@ public:
      * home-related functionality
      */
 
+    // get the home location
+    bool get_home(struct Location &home) const override {
+        if (_home_is_set) {
+            home = _home;
+        }
+        return _home_is_set;
+    }
     // get the home location. This is const to prevent any changes to
     // home without telling AHRS about the change
     const struct Location &get_home(void) const {
@@ -480,27 +488,27 @@ public:
     float pitch;
     float yaw;
 
-    float get_roll() const { return roll; }
-    float get_pitch() const { return pitch; }
-    float get_yaw() const { return yaw; }
+    float get_roll() const override { return roll; }
+    float get_pitch() const override { return pitch; }
+    float get_yaw() const override { return yaw; }
 
     // helper trig value accessors
-    float cos_roll() const  {
+    float cos_roll() const override {
         return _cos_roll;
     }
-    float cos_pitch() const {
+    float cos_pitch() const override {
         return _cos_pitch;
     }
-    float cos_yaw() const   {
+    float cos_yaw() const override {
         return _cos_yaw;
     }
-    float sin_roll() const  {
+    float sin_roll() const override {
         return _sin_roll;
     }
-    float sin_pitch() const {
+    float sin_pitch() const override {
         return _sin_pitch;
     }
-    float sin_yaw() const   {
+    float sin_yaw() const override {
         return _sin_yaw;
     }
 
@@ -509,7 +517,7 @@ public:
     int32_t pitch_sensor;
     int32_t yaw_sensor;
 
-    const Matrix3f &get_rotation_body_to_ned(void) const;
+    const Matrix3f &get_rotation_body_to_ned(void) const override;
 
     // return a Quaternion representing our current attitude in NED frame
     void get_quat_body_to_ned(Quaternion &quat) const {
