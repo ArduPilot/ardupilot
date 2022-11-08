@@ -24,7 +24,10 @@
 #include <AP_Param/AP_Param.h>
 #include "AP_SLCANIface.h"
 #include "AP_CANDriver.h"
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_config.h>
+#if HAL_GCS_ENABLED
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#endif
 
 class AP_CANManager
 {
