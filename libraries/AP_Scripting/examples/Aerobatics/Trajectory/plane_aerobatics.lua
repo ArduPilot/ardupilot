@@ -24,8 +24,7 @@ SPD_P = bind_add_param('SPD_P', 5, 5)
 SPD_I = bind_add_param('SPD_I', 6, 25)
 ERR_CORR_TC = bind_add_param('ERR_COR_TC', 7, 3)
 ROLL_CORR_TC = bind_add_param('ROL_COR_TC', 8, 0.25)
-AUTO_MIS = bind_add_param('AUTO_MIS', 9, 0)
-AUTO_RAD = bind_add_param('AUTO_RAD', 10, 40)
+-- removed 9 and 10
 TIME_CORR_P = bind_add_param('TIME_COR_P', 11, 1.0)
 ERR_CORR_P = bind_add_param('ERR_COR_P', 12, 2.0)
 ERR_CORR_D = bind_add_param('ERR_COR_D', 13, 2.8)
@@ -2148,122 +2147,6 @@ command_table[204] = PathFunction(air_show1, "AirShow")
 command_table[205] = PathFunction(fai_f3a_box_l_r, "FAI F3A Aerobatic Box Demonstration")
 command_table[206] = PathFunction(air_show3, "AirShow3")
 
--- get a location structure from a waypoint number
-function get_location(i)
-   local m = mission:get_item(i)
-   local loc = Location()
-   loc:lat(m:x())
-   loc:lng(m:y())
-   loc:relative_alt(true)
-   loc:terrain_alt(false)
-   loc:origin_alt(false)
-   loc:alt(math.floor(m:z()*100))
-   return loc
-end
-
--- set wp location
-function wp_setloc(wp, loc)
-   wp:x(loc:lat())
-   wp:y(loc:lng())
-   wp:z(loc:alt()*0.01)
-end
-
--- add a waypoint to the end of the mission
-function wp_add(loc,ctype,param1,param2)
-   local wp = mavlink_mission_item_int_t()
-   wp_setloc(wp,loc)
-   wp:command(ctype)
-   local seq = mission:num_commands()
-   wp:seq(seq)
-   wp:param1(param1)
-   wp:param2(param2)
-   wp:frame(3) -- global position, relative alt
-   mission:set_item(seq, wp)
-end
-
--- add a NAV_SCRIPT_TIME waypoint to the end of the mission
-function wp_add_nav_script(cmdid,arg1,arg2,arg3,arg4)
-   local wp = mavlink_mission_item_int_t()
-   wp:command(NAV_SCRIPT_TIME)
-   local seq = mission:num_commands()
-   wp:seq(seq)
-   wp:param1(cmdid)
-   wp:param2(0) -- timeout
-   wp:param3(arg1)
-   wp:param4(arg2)
-   wp:x(arg3)
-   wp:y(arg4)
-   mission:set_item(seq, wp)
-end
-
---[[
-   create auto mission 1
---]]
-function create_auto_mission1()
-   local N = mission:num_commands()
-   if N ~= 4 then
-      gcs:send_text(0,string.format("Auto mission needs takeoff and 2 WPs (got %u)", N))
-      return
-   end
-   local takeoff_m = mission:get_item(1)
-   if takeoff_m:command() ~= NAV_TAKEOFF then
-      gcs:send_text(0,string.format("First WP needs to be takeoff"))
-      return
-   end
-   local wp1 = get_location(2)
-   local wp2 = get_location(3)
-
-   local wp_dist = wp1:get_distance(wp2)
-   local wp_bearing = math.deg(wp1:get_bearing(wp2))
-   local radius = AUTO_RAD:get()
-
-   gcs:send_text(0, string.format("WP Distance %.0fm bearing %.1fdeg", wp_dist, wp_bearing))
-
-   -- find mid-point, 25% and 75% points
-   local wp_mid = wp1:copy()
-   wp_mid:offset_bearing(wp_bearing, wp_dist*0.5)
-
-   local wp_25pct = wp1:copy()
-   wp_25pct:offset_bearing(wp_bearing, wp_dist*0.25)
-
-   local wp_75pct = wp1:copy()
-   wp_75pct:offset_bearing(wp_bearing, wp_dist*0.75)
-   
-   gcs:send_text(0,"Adding half cuban eight")
-   wp_add_nav_script(9, radius, 0, 0, 0)
-
-   gcs:send_text(0,"Adding loop")
-   wp_add(wp_mid, NAV_WAYPOINT, 0, 1)
-   wp_add_nav_script(2, radius, 0, 0, 0)
-
-   gcs:send_text(0,"Adding half reverse cuban eight")
-   wp_add(wp1, NAV_WAYPOINT, 0, 0)
-   wp_add_nav_script(10, radius, 0, 0, 0)
-
-   gcs:send_text(0,"Adding axial roll")
-   wp_add(wp_25pct, NAV_WAYPOINT, 0, 1)
-   wp_add_nav_script(7, wp_dist*0.5, 1, 0, 0)
-   
-   gcs:send_text(0,"Adding humpty bump")
-   wp_add(wp2, NAV_WAYPOINT, 0, 1)
-   wp_add_nav_script(12, radius*0.25, 0.5*radius, 0, 0)
-
-   gcs:send_text(0,"Adding cuban eight")
-   wp_add(wp_mid, NAV_WAYPOINT, 0, 0)
-   wp_add_nav_script(11, radius, 0, 0, 0)
-
-   wp_add(wp1, NAV_WAYPOINT, 0, 0)
-
-end
-
-function create_auto_mission()
-   if AUTO_MIS:get() == 1 then
-      create_auto_mission1()
-   else
-      gcs:send_text(0, string.format("Unknown auto mission", AUTO_MIS:get()))
-   end
-end
-
 
 --[[
    a table of function available in loadable tricks
@@ -2496,12 +2379,6 @@ function check_trick()
 end
 
 function update()
-
-   -- check if we should create a mission
-   if AUTO_MIS:get() > 0 then
-      create_auto_mission()
-      AUTO_MIS:set_and_save(0)
-   end
 
    if vehicle:get_mode() == MODE_AUTO then
       check_auto_mission()
