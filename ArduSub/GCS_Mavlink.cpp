@@ -175,56 +175,57 @@ void GCS_MAVLINK_Sub::send_pid_tuning()
 {
     const Parameters &g = sub.g;
     AP_AHRS &ahrs = AP::ahrs();
+    const AP_Logger::PID_Info *pid_info = nullptr;
 
     const Vector3f &gyro = ahrs.get_gyro();
     if (g.gcs_pid_mask & 1) {
-        const AP_Logger::PID_Info &pid_info = sub.attitude_control->get_rate_roll_pid().get_pid_info();
+        pid_info =  &sub.attitude_control->get_rate_roll_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_ROLL,
-                                    pid_info.target*0.01f,
+                                    pid_info->target*0.01f,
                                     degrees(gyro.x),
-                                    pid_info.FF*0.01f,
-                                    pid_info.P*0.01f,
-                                    pid_info.I*0.01f,
-                                    pid_info.D*0.01f);
+                                    pid_info->FF*0.01f,
+                                    pid_info->P*0.01f,
+                                    pid_info->I*0.01f,
+                                    pid_info->D*0.01f);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
     }
     if (g.gcs_pid_mask & 2) {
-        const AP_Logger::PID_Info &pid_info = sub.attitude_control->get_rate_pitch_pid().get_pid_info();
+        pid_info = &sub.attitude_control->get_rate_pitch_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_PITCH,
-                                    pid_info.target*0.01f,
+                                    pid_info->target*0.01f,
                                     degrees(gyro.y),
-                                    pid_info.FF*0.01f,
-                                    pid_info.P*0.01f,
-                                    pid_info.I*0.01f,
-                                    pid_info.D*0.01f);
+                                    pid_info->FF*0.01f,
+                                    pid_info->P*0.01f,
+                                    pid_info->I*0.01f,
+                                    pid_info->D*0.01f);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
     }
     if (g.gcs_pid_mask & 4) {
-        const AP_Logger::PID_Info &pid_info = sub.attitude_control->get_rate_yaw_pid().get_pid_info();
+        pid_info = &sub.attitude_control->get_rate_yaw_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_YAW,
-                                    pid_info.target*0.01f,
+                                    pid_info->target*0.01f,
                                     degrees(gyro.z),
-                                    pid_info.FF*0.01f,
-                                    pid_info.P*0.01f,
-                                    pid_info.I*0.01f,
-                                    pid_info.D*0.01f);
+                                    pid_info->FF*0.01f,
+                                    pid_info->P*0.01f,
+                                    pid_info->I*0.01f,
+                                    pid_info->D*0.01f);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
     }
     if (g.gcs_pid_mask & 8) {
-        const AP_Logger::PID_Info &pid_info = sub.pos_control->get_accel_z_pid().get_pid_info();
+        pid_info = &sub.pos_control->get_accel_z_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_ACCZ,
-                                    pid_info.target*0.01f,
+                                    pid_info->target*0.01f,
                                     -(ahrs.get_accel_ef_blended().z + GRAVITY_MSS),
-                                    pid_info.FF*0.01f,
-                                    pid_info.P*0.01f,
-                                    pid_info.I*0.01f,
-                                    pid_info.D*0.01f);
+                                    pid_info->FF*0.01f,
+                                    pid_info->P*0.01f,
+                                    pid_info->I*0.01f,
+                                    pid_info->D*0.01f);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
