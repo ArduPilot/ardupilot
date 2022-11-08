@@ -17,6 +17,8 @@
  */
 #include "PCA9685LED_I2C.h"
 
+#if AP_NOTIFY_PCA9685_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 
 #define NAVIO_LED_BRIGHT 0x0    // full brightness
@@ -110,3 +112,5 @@ void PCA9685LED_I2C::_timer(void)
 
     _dev->transfer(transaction, sizeof(transaction), nullptr, 0);
 }
+
+#endif // AP_NOTIFY_PCA9685_ENABLED
