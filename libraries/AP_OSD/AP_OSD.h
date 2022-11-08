@@ -22,11 +22,13 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <RC_Channel/RC_Channel.h>
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_config.h>
 #include <AP_OLC/AP_OLC.h>
 #include <AP_MSP/msp.h>
 #include <AP_Baro/AP_Baro.h>
+#if HAL_GCS_ENABLED
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#endif
 #include <AC_Fence/AC_Fence_config.h>
 
 #ifndef OSD_ENABLED
@@ -410,8 +412,8 @@ public:
     void draw(void) override;
 #endif
 #if HAL_GCS_ENABLED
-    void handle_write_msg(const mavlink_osd_param_config_t& packet, const GCS_MAVLINK& link);
-    void handle_read_msg(const mavlink_osd_param_show_config_t& packet, const GCS_MAVLINK& link);
+    void handle_write_msg(const mavlink_osd_param_config_t& packet, const class GCS_MAVLINK& link);
+    void handle_read_msg(const mavlink_osd_param_show_config_t& packet, const class GCS_MAVLINK& link);
 #endif
     // get a setting and associated metadata
     AP_OSD_ParamSetting* get_setting(uint8_t param_idx);
@@ -595,7 +597,7 @@ public:
 #endif
     // handle OSD parameter configuration
 #if HAL_GCS_ENABLED
-    void handle_msg(const mavlink_message_t &msg, const GCS_MAVLINK& link);
+    void handle_msg(const mavlink_message_t &msg, const class GCS_MAVLINK& link);
 #endif
 
     // allow threads to lock against OSD update

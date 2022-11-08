@@ -22,6 +22,8 @@
 
 #if HAL_WITH_MSP_DISPLAYPORT
 
+#include <GCS_MAVLink/GCS.h>
+
 static const struct AP_Param::defaults_table_struct defaults_table[] = {
     /*
     { "PARAM_NAME",       value_float }

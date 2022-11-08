@@ -23,6 +23,7 @@
 
 #include "AP_OSD.h"
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <GCS_MAVLink/GCS.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <ctype.h>
 
