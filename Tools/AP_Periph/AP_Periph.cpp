@@ -486,6 +486,10 @@ void AP_Periph_FW::update()
                     break;
                 }
                 dronecan_serial[i]->begin(0); // baudrate doesn't matter
+                if (!hal.serial(i)->is_initialized()) {
+                    // just start with default baud of 115200
+                    hal.serial(i)->begin(115200);
+                }
                 // set passthrough port
                 hal.serial(i)->set_passthrough(dronecan_serial[i]);
                 can_printf("UART[%d] is passed through to Tunnel[%d]: Manual", i, g.serial_chan_id[i]);

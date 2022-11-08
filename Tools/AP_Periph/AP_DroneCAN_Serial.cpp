@@ -89,9 +89,6 @@ size_t AP_DroneCAN_Serial::write(const uint8_t *buffer, size_t size)
 
 void AP_DroneCAN_Serial::send_data()
 {
-    if (_writebuf.available() == 0) {
-        return;
-    }
     int16_t ret;
     while (_writebuf.available()) {
         uavcan_tunnel_Broadcast msg;
