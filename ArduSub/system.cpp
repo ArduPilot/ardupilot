@@ -73,6 +73,9 @@ void Sub::init_ardupilot()
 
     init_joystick();            // joystick initialization
 
+    // motors initialised so parameters can be sent
+    ap.initialised_params = true;
+
     relay.init();
 
     /*

@@ -76,6 +76,18 @@ MAV_STATE GCS_MAVLINK_Sub::vehicle_system_status() const
     return MAV_STATE_STANDBY;
 }
 
+bool GCS_MAVLINK_Sub::params_ready() const
+{
+    if (AP_BoardConfig::in_config_error()) {
+        // we may never have parameters "initialised" in this case
+        return true;
+    }
+    // if we have not yet initialised (including allocating the motors
+    // object) we drop this request. That prevents the GCS from getting
+    // a confusing parameter count during bootup
+    return sub.ap.initialised_params;
+}
+
 void GCS_MAVLINK_Sub::send_banner()
 {
     GCS_MAVLINK::send_banner();
