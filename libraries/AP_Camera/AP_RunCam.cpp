@@ -34,7 +34,7 @@ const AP_Param::GroupInfo AP_RunCam::var_info[] = {
     // @Param: TYPE
     // @DisplayName: RunCam device type
     // @Description: RunCam deviee type used to determine OSD menu structure and shutter options.
-    // @Values: 0:Disabled, 1:RunCam Split Micro/RunCam with UART, 2:RunCam Split, 3:RunCam Split4 4k, 4:RunCam Hybrid
+    // @Values: 0:Disabled, 1:RunCam Split Micro/RunCam with UART, 2:RunCam Split, 3:RunCam Split4 4k, 4:RunCam Hybrid/RunCam Thumb Pro
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_RunCam, _cam_type, int(DeviceType::Disabled), AP_PARAM_FLAG_ENABLE),
 
     // @Param: FEATURES
@@ -142,6 +142,7 @@ void AP_RunCam::init()
           without a runcam
          */
         _cam_type.set_default(int8_t(DeviceType::SplitMicro));
+        AP_Param::invalidate_count();
     }
     if (_cam_type.get() == int8_t(DeviceType::Disabled)) {
         uart = nullptr;
@@ -498,15 +499,17 @@ AP_RunCam::Event AP_RunCam::map_rc_input_to_event() const
     } else if (_osd_option == OSDOption::ENTER
         && _cam_control_option & uint8_t(ControlOption::TWO_POS_SWITCH)) {
         result = Event::ENTER_MENU;
-    } else if (_osd_option == OSDOption::OPTION
+    } else if ((_osd_option == OSDOption::OPTION || _osd_option == OSDOption::ENTER)
         && _cam_control_option & uint8_t(ControlOption::THREE_POS_SWITCH)) {
         result = Event::ENTER_MENU;
     } else if (_osd_option == OSDOption::EXIT
         && _cam_control_option & uint8_t(ControlOption::TWO_POS_SWITCH)) {
         result = Event::EXIT_MENU;
-    } else if (_osd_option == OSDOption::NO_OPTION
+    } else if ((_osd_option == OSDOption::NO_OPTION || _osd_option == OSDOption::EXIT)
         && _cam_control_option & uint8_t(ControlOption::THREE_POS_SWITCH)) {
         result = Event::EXIT_MENU;
+    } else {
+        debug("map_rc_input_to_event(): nothing selected\n");
     }
     return result;
 }
