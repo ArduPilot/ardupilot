@@ -30,6 +30,7 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
