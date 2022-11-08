@@ -21,6 +21,8 @@
 #include "AC_AutoTune.h"
 #include <AP_Math/chirp.h>
 
+#include <AP_Scheduler/AP_Scheduler.h>
+
 class AC_AutoTune_Heli : public AC_AutoTune
 {
 public:

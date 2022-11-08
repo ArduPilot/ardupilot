@@ -1,6 +1,8 @@
 #include "AC_AutoTune_Multi.h"
 
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Scheduler/AP_Scheduler.h>
+#include <GCS_MAVLink/GCS.h>
 
 /*
  * autotune support for multicopters

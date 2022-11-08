@@ -20,6 +20,7 @@
 #include "AC_AutoTune_Heli.h"
 
 #include <AP_Logger/AP_Logger.h>
+#include <GCS_MAVLink/GCS.h>
 
 #define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   5000U     // timeout for tuning mode's testing step
 
