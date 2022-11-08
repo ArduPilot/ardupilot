@@ -30,7 +30,7 @@
 #include <dronecan/remoteid/System.hpp>
 #include <dronecan/remoteid/ArmStatus.hpp>
 
-#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <GCS_MAVLink/GCS.h>
 
 static uavcan::Publisher<dronecan::remoteid::Location>* dc_location[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 static uavcan::Publisher<dronecan::remoteid::BasicID>* dc_basic_id[HAL_MAX_CAN_PROTOCOL_DRIVERS];

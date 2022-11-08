@@ -33,8 +33,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <GCS_MAVLink/GCS.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_AHRS/AP_AHRS.h>
