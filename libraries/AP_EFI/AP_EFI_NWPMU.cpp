@@ -18,6 +18,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS.h>
 
 #include "AP_EFI_NWPMU.h"
 
