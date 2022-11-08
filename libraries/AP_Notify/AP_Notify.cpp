@@ -307,9 +307,11 @@ void AP_Notify::add_backends(void)
                 }
                 break;
 #endif
+#if AP_NOTIFY_PCA9685_ENABLED
             case Notify_LED_PCA9685LED_I2C_External:
                 ADD_BACKEND(new PCA9685LED_I2C());
                 break;
+#endif
             case Notify_LED_NeoPixel:
                 ADD_BACKEND(new NeoPixel());
                 break;
