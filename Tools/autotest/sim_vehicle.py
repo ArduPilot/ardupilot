@@ -743,7 +743,7 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         path += "," + os.path.join(autotest_dir, "default_params/msposd.parm")
         subprocess.Popen([os.path.join(root_dir, "libraries/AP_MSP/Tools/msposd.py")])
 
-    if path is not None:
+    if path is not None and len(path) > 0:
         cmd.extend(["--defaults", path])
 
     if cmd_opts.start_time is not None:
