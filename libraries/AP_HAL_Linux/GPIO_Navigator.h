@@ -14,7 +14,10 @@ public:
     uint8_t read(uint8_t pin) override;
     void    write(uint8_t pin, uint8_t value) override;
 private:
-    uint8_t AllowedGPIOS[1] = {RPI_GPIO_<26>()};
+    uint8_t AllowedGPIOS[2] = {
+        RPI_GPIO_<26>(), // Aux Output for PWMs
+        RPI_GPIO_<27>()  // Leak detection
+    };
     bool    pinAllowed(uint8_t pin);
 };
 
