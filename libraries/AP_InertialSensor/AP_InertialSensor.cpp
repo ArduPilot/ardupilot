@@ -8,15 +8,16 @@
 #include <AP_HAL/DSP.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Notify/AP_Notify.h>
-#include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_AHRS/AP_AHRS_View.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #if !APM_BUILD_TYPE(APM_BUILD_Rover)
 #include <AP_Motors/AP_Motors_Class.h>
 #endif
+#include <GCS_MAVLink/GCS.h>
 
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_BMI160.h"
