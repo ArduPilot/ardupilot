@@ -97,6 +97,8 @@ void Sub::init_ardupilot()
     wp_nav->set_terrain(&terrain);
 #endif
 
+    attitude_control->parameter_sanity_check();
+
 #if OPTFLOW == ENABLED
     // initialise optical flow sensor
     optflow.init(MASK_LOG_OPTFLOW);
@@ -313,8 +315,8 @@ void Sub::allocate_motors(void)
             break;
         case AP_Motors6DOF::SUB_FRAME_SCRIPTING:
 #ifdef ENABLE_SCRIPTING
-            // motors = new AP_MotorsMatrix_6DoF_ScriptingSub(sub.scheduler.get_loop_rate_hz());
-            // motors_var_info = AP_MotorsMatrix_6DoF_ScriptingSub::var_info;
+            motors = new AP_MotorsMatrix_6DoF_Scripting(sub.scheduler.get_loop_rate_hz());
+            motors_var_info = AP_MotorsMatrix_6DoF_Scripting::var_info;
 #endif // ENABLE_SCRIPTING
             break;
     }
@@ -329,15 +331,12 @@ void Sub::allocate_motors(void)
         AP_BoardConfig::config_error("Unable to allocate AP_AHRS_View");
     }
 
-    const struct AP_Param::GroupInfo *ac_var_info;
-
     attitude_control = new AC_AttitudeControl_Sub(*ahrs_view, aparm, *motors, scheduler.get_loop_period_s());
-    ac_var_info = AC_AttitudeControl_Sub::var_info;
 
     if (attitude_control == nullptr) {
         AP_BoardConfig::config_error("Unable to allocate AttitudeControl");
     }
-    AP_Param::load_object_from_eeprom(attitude_control, ac_var_info);
+    AP_Param::load_object_from_eeprom(attitude_control, attitude_control->var_info);
 
     pos_control = new AC_PosControl_Sub(*ahrs_view, inertial_nav, *motors, *attitude_control, scheduler.get_loop_period_s());
     if (pos_control == nullptr) {
