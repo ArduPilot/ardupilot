@@ -2114,7 +2114,7 @@ function PathFunction(fn, name)
    return self
 end
 
-command_table = {}
+local command_table = {}
 command_table[1] = PathFunction(figure_eight, "Figure Eight")
 command_table[2] = PathFunction(loop, "Loop")
 command_table[3] = PathFunction(horizontal_rectangle, "Horizontal Rectangle")
@@ -2264,9 +2264,97 @@ function create_auto_mission()
    end
 end
 
+
+--[[
+   a table of function available in loadable tricks
+--]]
+local load_table = {}
+load_table["loop"] = loop
+load_table["horizontal_rectangle"] = horizontal_rectangle
+load_table["climbing_circle"] = climbing_circle
+load_table["vertical_aerobatic_box"] = vertical_aerobatic_box
+load_table["immelmann_turn_fast"] = immelmann_turn_fast
+load_table["straight_roll"] = straight_roll
+load_table["rolling_circle"] = rolling_circle
+load_table["half_cuban_eight"] = half_cuban_eight
+load_table["half_reverse_cuban_eight"] = half_reverse_cuban_eight
+load_table["cuban_eight"] = cuban_eight
+load_table["humpty_bump"] = humpty_bump
+load_table["straight_flight"] = straight_flight
+load_table["scale_figure_eight"] = scale_figure_eight
+load_table["immelmann_turn"] = immelmann_turn
+load_table["split_s"] = split_s
+load_table["upline_45"] = upline_45
+load_table["downline_45"] = downline_45
+load_table["stall_turn"] = stall_turn
+load_table["procedure_turn"] = procedure_turn
+load_table["derry_turn"] = derry_turn
+load_table["two_point_roll"] = two_point_roll
+load_table["half_climbing_circle"] = half_climbing_circle
+load_table["crossbox_humpty"] = crossbox_humpty
+load_table["laydown_humpty"] = laydown_humpty
+load_table["straight_align"] = straight_align
+
+
+
+--[[
+   load a trick description from a text file
+--]]
+function load_trick(id)
+   if command_table[id] ~= nil then
+      -- already have it
+      return
+   end
+   local fname = string.format("trick%u.txt", id)
+   local file = io.open(fname)
+   if file == nil then
+      gcs:send_text(0,string.format("Failed to open %s", fname))
+      return
+   end
+   local name = string.format("Trick%u", id)
+   local paths = {}
+   local message = nil
+   while true do
+      local line = file:read()
+      if not line then
+         break
+      end
+      local _, _, cmd, arg1, arg2, arg3, arg4 = string.find(line, "^([%w_:]+)%s*([-.%d]*)%s*([-.%d]*)%s*([-.%d]*)%s*([-.%d]*)")
+      if cmd == "" or cmd == nil or string.sub(cmd,1,1) == "#" then
+         -- ignore comments
+      elseif cmd == "name:" then
+         _, _, name = string.find(line, "^name:%s*([%w_]+)$")
+      elseif cmd == "message:" then
+         _, _, message = string.find(line, "^message:%s*(.+)$")
+      elseif cmd ~= nil then
+         arg1 = tonumber(arg1) or 0
+         arg2 = tonumber(arg2) or 0
+         arg3 = tonumber(arg3) or 0
+         arg4 = tonumber(arg4) or 0
+         local f = load_table[cmd]
+         if f == nil then
+            gcs:send_text(0,string.format("Unknown command '%s' in %s", cmd, fname))
+            return
+         end
+         paths[#paths+1] = { f, { arg1, arg2, arg3, arg4 }}
+         if message ~= nil then
+            paths[#paths].message = message
+            message = nil
+         end
+      end
+   end
+   local pc = path_composer(name, paths)
+   gcs:send_text(0, string.format("Loaded trick%u '%s'", id, name))
+   command_table[id] = PathFunction(pc, name)
+end
+
 function PathTask(fn, name, id, initial_yaw_deg, arg1, arg2, arg3, arg4)
    self = {}
-   self.fn = fn(arg1, arg2, arg3, arg4)
+   if type(fn) == "table" then
+      self.fn = fn
+   else
+      self.fn = fn(arg1, arg2, arg3, arg4)
+   end
    self.name = name
    self.id = id
    self.initial_yaw_deg = initial_yaw_deg
@@ -2285,6 +2373,7 @@ function check_auto_mission()
       current_task = nil
       last_id = id
       local initial_yaw_deg = get_ground_course_deg()
+      load_trick(cmd)
       gcs:send_text(0, string.format("Starting %s!", command_table[cmd].name ))
 
       -- work out yaw between previous WP and next WP
@@ -2355,6 +2444,7 @@ function check_trick()
    end
    if action == 1 and selection ~= last_trick_selection then
       local id = TRICKS[selection].id:get()
+      load_trick(id)
       if command_table[id] ~= nil then
          local cmd = command_table[id]
          gcs:send_text(0, string.format("Trick %u selected (%s)", selection, cmd.name))
@@ -2374,6 +2464,7 @@ function check_trick()
          return
       end
       local id = TRICKS[selection].id:get()
+      load_trick(id)
       if command_table[id] == nil then
          gcs:send_text(0, string.format("Invalid trick ID %u", id))
          return
