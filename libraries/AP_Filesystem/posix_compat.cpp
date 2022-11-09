@@ -83,6 +83,10 @@ APFS_FILE *apfs_fopen(const char *pathname, const char *mode)
         return nullptr;
     }
     f->fd = AP::FS().open(pathname, posix_fopen_modes_to_open(mode));
+    if (f->fd == -1) {
+        delete f;
+        return nullptr;
+    }
     f->unget = -1;
     return f;
 }
