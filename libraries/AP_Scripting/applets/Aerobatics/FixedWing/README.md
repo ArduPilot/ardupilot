@@ -13,9 +13,11 @@ an appropriate aircraft, and be ready to take manual control if necessary!
 
 The following table gives the available manoeuvres. Each manoeuvre has
 an ID number which is used in the AUTO mission or in the TRIKn_ID
-parameters (described below). The "Turnaround" column indicates if the 
-manoeuvre results in a course reversal, which impacts how it is used in 
-AUTO missions.
+parameters (described below). The present ground track is used as the track for the trick.
+The "Turnaround" column indicates if the manoeuvre results in a course reversal, which impacts how it is used in 
+AUTO missions. Once the trick is completed, the mode that was being used at the start of the trick is restored. If the mode is CRUISE, its
+track and altitude are reset to the values present when the mode is restored. Tricks in AUTO missions require that they be performed between two waypoints to establish
+the ground track.
 
 | ID | Name                     | Arg1   | Arg2        | Arg3       | Arg4       | Turnaround |
 | -- | ------------------------ | ------ | ----------  | -------    | ---------- | ---------- |
@@ -50,11 +52,13 @@ Note: In the script you will find other (specialised) manouvers which do not app
 finish inverted as well - so will not end well if started upright at a low altitude! These 
 manouvers are used in some of the schedules defined below. 
 
+
 ## Available Schedules (pre-defined sequences of manouvers)
 
 The following table gives the available pre-defined schedules. Each schedule has
 an ID number which is used in the AUTO mission or in the TRIKn_ID
-parameters (described below).
+parameters (described below). Entry ground track orientation is maintained throughout the schedule (except for tricks which 
+modify it during the trick, like rolling circles and figure eights)
 
 | ID  | Name
 | --  | ------------------------
@@ -64,7 +68,15 @@ parameters (described below).
 | 203 | FAI F3C Scale Example (left to right)
 | 204 | AirShow
 
-Note: ID's 202-203 are best flown with a mission start point 150m out from the pilot, with the prior and subsequent mission waypoints in a straight line with the model starting teh script flying down wind. ID 201 is best started in teh same manner, but the model positioned 100m out from the pilot.
+Note: ID's 202-203 are best flown with a mission start point 150m out from the pilot, with the prior and subsequent mission waypoints in a straight line with the model starting the script flying down wind. ID 201 is best started in the same manner, but the model positioned 100m out from the pilot.
+
+## Adding Schedules
+
+Schedules can be added to those above by creating a text file in the /scripts directory or the root directory on the SD card where the plane_aerobatics.lua script is stored.
+An example for the "Airshow" schedule is included as trick72.txt and would be executed as TRIK_ID = 72 via switch or in an AUTO mission command. The schedule will display its "name" when started, and as each trick begins the "message" will sent to the GCS to indicate its start.
+
+Note, that the "straight_align" command is not a trick, but rather a command as to when the next trick is to begin. Its parameter is meters from the
+schedules initial entry point. Positive numbers are meters away from that point in the entry direction on the ground track, while negative numbers are in the opposite direction on the track line. If the aircraft is already past that point in the desired direction along the track, the trick will begin immediately.
 
 ## Loading the script
 
@@ -93,7 +105,9 @@ around 90 degrees/second is reasonable.
 
 You need to tune the yaw rate controller by flying in AUTOTUNE mode
 and moving the rudder stick from side to side until the yaw rate
-tuning is reported as being finished.
+tuning is reported as being finished. For optimal results, log examination and manual adjustment
+of axis tuning will sometimes be required, especially pitch and yaw tuning in order to get precise rolling circles. A future 
+video on this optimization will be produced and posted in the ArduPilot YouTube channel.
 
 ## Use In AUTO Missions
 
@@ -105,10 +119,9 @@ NAV_SCRIPT_TIME elements (shown as SCRIPT_TIME in MissionPlanner). These mission
  - up to four arguments as shown in the above table
 
 The aerobatics system will use the location of the previous and next
-waypoints to line up the manoeuvre. You need to plane a normal
+waypoints to line up the manoeuvre. You need to plan a normal
 waypoint just before the location where you want to start the
-manoeuvre, then the NAV_SCRIPT_TIME and then a normal waypoint after
-the manoeuvre.
+manoeuvre, then the NAV_SCRIPT_TIME with the trick or schedule ID, a timeout that is long enough to allow the trick or schedule, and then a normal waypoint after the manoeuvre.
 
 ## Use with "tricks on a switch"
 
@@ -142,6 +155,9 @@ you will now have 5 parameters per trick.
 
 The ID parameter is the manoeuvre from the above table, and the arguments are the arguments to each manoeuvre.
 
+Note: these parameters, if being loaded from a file, will not be present until scripting is enabled, the the LUA script has been
+actually run, since they are created via the script, not the firmware.
+
 Now you need to setup your two control channels. You should have one 3
 position switch for activating tricks, and one knob or switch to
 select tricks. It is best to use a knob for the trick selector so you can have up to 11 tricks.
@@ -157,7 +173,7 @@ Then work out what RC input channel you want to use for selection and set
 ## Flying with tricks
 
 When the activation channel (the one marked with option 300) is in the
-middle position then when you move the knob it will display the
+middle position then when you move the knob the GCS will display the
 currently selected trick.
 
 To activate a trick you move the activation channel to the top
