@@ -2188,8 +2188,16 @@ function load_trick(id)
       -- already have it
       return
    end
+   -- look in 3 possible locations for the trick, coping with SITL and real boards
+   local trickdirs = { "APM/scripts/", "scripts/", "./" }
+   local file = nil
    local fname = string.format("trick%u.txt", id)
-   local file = io.open(fname)
+   for i = 1, #trickdirs do
+      file = io.open(trickdirs[i] .. fname, "r")
+      if file then
+         break
+      end
+   end
    if file == nil then
       gcs:send_text(0,string.format("Failed to open %s", fname))
       return
