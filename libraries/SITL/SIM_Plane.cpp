@@ -85,6 +85,9 @@ Plane::Plane(const char *frame_str) :
     if (strstr(frame_str, "-3d")) {
         aerobatic = true;
         thrust_scale *= 1.5;
+        // setup parameters for plane-3d
+        AP_Param::load_defaults_file("@ROMFS/models/plane.parm", false);
+        AP_Param::load_defaults_file("@ROMFS/models/plane-3d.parm", false);
     }
     
     if (strstr(frame_str, "-ice")) {
