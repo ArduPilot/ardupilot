@@ -186,14 +186,19 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
             _fdm_input_step();
         } else {
 #ifdef CYGWIN_BUILD
-            if (speedup > 2) {
-                // this effectively does a yield of the CPU. The
-                // granularity of sleeps on cygwin is very high, so
-                // this is needed for good thread performance. We
-                // don't do this at low speedups as it causes the cpu
-                // to run hot
-                usleep(0);
-                continue;
+            if (speedup > 2 && hal.util->get_soft_armed()) {
+                const char *current_thread = Scheduler::from(hal.scheduler)->get_current_thread_name();
+                if (current_thread && strcmp(current_thread, "Scripting") == 0) {
+                    // this effectively does a yield of the CPU. The
+                    // granularity of sleeps on cygwin is very high,
+                    // so this is needed for good thread performance
+                    // in scripting. We don't do this at low speedups
+                    // as it causes the cpu to run hot
+                    // We also don't do it while disarmed, as lua performance is less
+                    // critical while disarmed
+                    usleep(0);
+                    continue;
+                }
             }
 #endif
             usleep(1000);

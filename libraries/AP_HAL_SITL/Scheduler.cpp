@@ -308,6 +308,7 @@ void Scheduler::stop_clock(uint64_t time_usec)
 void *Scheduler::thread_create_trampoline(void *ctx)
 {
     struct thread_attr *a = (struct thread_attr *)ctx;
+    a->thread = pthread_self();
     a->f[0]();
     
     WITH_SEMAPHORE(_thread_sem);
@@ -407,4 +408,16 @@ void Scheduler::check_thread_stacks(void)
             }
         }
     }
+}
+
+// get the name of the current thread, or nullptr if not known
+const char *Scheduler::get_current_thread_name(void) const
+{
+    const pthread_t self = pthread_self();
+    for (struct thread_attr *a=threads; a; a=a->next) {
+        if (a->thread == self) {
+            return a->name;
+        }
+    }
+    return nullptr;
 }
