@@ -132,21 +132,21 @@ bool AP_Mount_Servo::get_attitude_quaternion(Quaternion& att_quat)
 // update body-frame angle outputs from earth-frame angle targets
 void AP_Mount_Servo::update_angle_outputs(const MountTarget& angle_rad)
 {
-    const AP_AHRS &ahrs = AP::ahrs();
+    const auto &ahrs = AP::ahrs_base();
 
     // roll and pitch are based on the ahrs roll and pitch angle plus any requested angle
     _angle_bf_output_deg.x = degrees(angle_rad.roll);
     _angle_bf_output_deg.y = degrees(angle_rad.pitch);
     _angle_bf_output_deg.z = degrees(get_bf_yaw_angle(angle_rad));
     if (requires_stabilization) {
-        _angle_bf_output_deg.x -= degrees(ahrs.roll);
-        _angle_bf_output_deg.y -= degrees(ahrs.pitch);
+        _angle_bf_output_deg.x -= degrees(ahrs.get_roll());
+        _angle_bf_output_deg.y -= degrees(ahrs.get_pitch());
     }
 
     // lead filter
     const Vector3f &gyro = ahrs.get_gyro();
 
-    if (requires_stabilization && !is_zero(_params.roll_stb_lead) && fabsf(ahrs.pitch) < M_PI/3.0f) {
+    if (requires_stabilization && !is_zero(_params.roll_stb_lead) && fabsf(ahrs.get_pitch()) < M_PI/3.0f) {
         // Compute rate of change of euler roll angle
         float roll_rate = gyro.x + (ahrs.sin_pitch() / ahrs.cos_pitch()) * (gyro.y * ahrs.sin_roll() + gyro.z * ahrs.cos_roll());
         _angle_bf_output_deg.x -= degrees(roll_rate) * _params.roll_stb_lead;
