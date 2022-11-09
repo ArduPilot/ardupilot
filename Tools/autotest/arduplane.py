@@ -3958,6 +3958,84 @@ class AutoTestPlane(AutoTest):
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
+    def AerobaticsScripting(self):
+        '''Fixed Wing Aerobatics'''
+        applet_script = "Aerobatics/FixedWing/plane_aerobatics.lua"
+        trick72 = "Aerobatics/FixedWing/trick72.txt"
+
+        model = "plane-3d"
+
+        self.customise_SITL_commandline(
+            [],
+            model=model,
+            defaults_filepath="",
+            wipe=True)
+
+        self.context_push()
+        self.install_applet_script(applet_script)
+        self.install_applet_script(trick72)
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+
+        self.set_parameter("TRIK_ENABLE", 1)
+        self.set_rc(7, 1000) # disable tricks
+
+        self.scripting_restart()
+        self.wait_text("Enabled 3 aerobatic tricks", check_context=True)
+        self.set_parameters({
+            "TRIK1_ID": 72,
+            "RC7_OPTION" : 300, # activation switch
+            "RC9_OPTION" : 301, # selection switch
+        })
+
+        self.wait_ready_to_arm()
+        self.change_mode("TAKEOFF")
+        self.arm_vehicle()
+        self.wait_altitude(30, 40, timeout=30, relative=True)
+        self.change_mode("CRUISE")
+
+        self.set_rc(9, 1000) # select first trick
+        self.delay_sim_time(1)
+        self.set_rc(7, 1500) # show selected trick
+
+        self.wait_text("Trick 1 selected (SuperAirShow)", check_context=True)
+        self.set_rc(7, 2000) # activate trick
+        self.wait_text("Trick 1 started (SuperAirShow)", check_context=True)
+
+        highest_error = 0
+        while True:
+            m = self.mav.recv_match(type='NAMED_VALUE_FLOAT', blocking=True, timeout=2)
+            if not m:
+                break
+            if m.name != 'PERR':
+                continue
+            highest_error = max(highest_error, m.value)
+            if highest_error > 12:
+                raise NotAchievedException("path error %.1f" % m.value)
+
+        if highest_error == 0:
+            raise NotAchievedException("path error not reported")
+        self.progress("Finished trick, max error=%.1fm" % highest_error)
+        self.disarm_vehicle(force=True)
+
+        self.remove_example_script(applet_script)
+        self.remove_example_script(trick72)
+        messages = self.context_collection('STATUSTEXT')
+        self.context_pop()
+        self.reboot_sitl()
+
+        # check all messages to see if we got all tricks
+        tricks = ["Loop", "HalfReverseCubanEight", "ScaleFigureEight", "Immelmann",
+                  "Split-S", "RollingCircle", "HumptyBump", "HalfCubanEight",
+                  "Upline45", "Downline45", "HalfReverseCubanEight",
+                  "Finishing SuperAirShow!"]
+        texts = [m.text for m in messages]
+        for t in tricks:
+            if t in texts:
+                self.progress("Completed trick %s" % t)
+            else:
+                raise NotAchievedException("Missing trick %s" % t)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -4035,6 +4113,7 @@ class AutoTestPlane(AutoTest):
             self.HIGH_LATENCY2,
             self.MidAirDisarmDisallowed,
             self.EmbeddedParamParser,
+            self.AerobaticsScripting,
         ])
         return ret
 
