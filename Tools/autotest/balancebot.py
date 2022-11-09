@@ -60,7 +60,6 @@ class AutoTestBalanceBot(AutoTestRover):
         '''make sure wheel encoders are generally working'''
         ex = None
         try:
-            self.set_parameter("ATC_BAL_SPD_FF", 0)
             self.set_parameter("WENC_TYPE", 10)
             self.set_parameter("AHRS_EKF_TYPE", 10)
             self.reboot_sitl()
