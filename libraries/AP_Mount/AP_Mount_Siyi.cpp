@@ -580,7 +580,7 @@ void AP_Mount_Siyi::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_
     const float pitch_rate_scalar = constrain_float(100.0 * pitch_err_rad * AP_MOUNT_SIYI_PITCH_P / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
 
     // convert yaw angle to body-frame the use simple P controller to convert yaw angle error to a target rate scalar (-100 to +100)
-    const float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().yaw) : yaw_rad;
+    const float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs_base().get_yaw()) : yaw_rad;
     const float yaw_err_rad = (yaw_bf_rad - _current_angle_rad.z);
     const float yaw_rate_scalar = constrain_float(100.0 * yaw_err_rad * AP_MOUNT_SIYI_YAW_P / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
 
