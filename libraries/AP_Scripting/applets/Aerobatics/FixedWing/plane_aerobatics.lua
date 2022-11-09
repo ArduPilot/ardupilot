@@ -2177,7 +2177,7 @@ load_table["half_climbing_circle"] = half_climbing_circle
 load_table["crossbox_humpty"] = crossbox_humpty
 load_table["laydown_humpty"] = laydown_humpty
 load_table["straight_align"] = straight_align
-
+load_table["figure_eight"] = figure_eight
 
 
 --[[
