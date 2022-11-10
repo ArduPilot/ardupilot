@@ -48,13 +48,19 @@ QSPIDesc QSPIDeviceManager::device_table[] = { HAL_QSPI_DEVICE_LIST };
 #define XSTR(x) STR(x)
 #define STR(x) #x
 
+#if (STM32_QSPICLK < HAL_QSPI1_CLK)
+#error "Flash speed must not be greater than QSPI Clock"
+#endif
 #if (STM32_QSPICLK % HAL_QSPI1_CLK)
-#error "QSPI Clock" XSTR(STM32_QSPICLK) " needs to be divisible by selected clock" XSTR(HAL_QSPI1_CLK)
+#warning "QSPI clock not an integer multiple of flash speed"
 #endif
 
 #if defined(STM32_WSPI_USE_QUADSPI2) && STM32_WSPI_USE_QUADSPI2
+#if (STM32_QSPICLK < HAL_QSPI2_CLK)
+#error "Flash speed must not be greater than QSPI Clock"
+#endif
 #if (STM32_QSPICLK % HAL_QSPI2_CLK)
-#error "QSPI Clock" XSTR(STM32_QSPICLK) " needs to be divisible by selected clock" XSTR(HAL_QSPI2_CLK)
+#warning "QSPI clock not an integer multiple of flash speed"
 #endif
 #endif
 
