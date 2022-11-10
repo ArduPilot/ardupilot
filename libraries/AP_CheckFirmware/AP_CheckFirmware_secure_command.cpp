@@ -7,7 +7,11 @@
 #if AP_CHECK_FIRMWARE_ENABLED && AP_SIGNED_FIRMWARE && !defined(HAL_BOOTLOADER_BUILD)
 
 #include "monocypher.h"
-#include <AP_Math/crc.h>
+#include <AP_Math/AP_Math.h>
+
+#if HAL_GCS_ENABLED
+#include <GCS_MAVLink/GCS.h>
+#endif
 
 extern const AP_HAL::HAL &hal;
 
