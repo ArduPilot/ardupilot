@@ -19,33 +19,35 @@ AUTO missions. Once the trick is completed, the mode that was being used at the 
 track and altitude are reset to the values present when the mode is restored. Tricks in AUTO missions require that they be performed between two waypoints to establish
 the ground track.
 
-| ID | Name                     | Arg1   | Arg2        | Arg3       | Arg4       | Turnaround |
-| -- | ------------------------ | ------ | ----------  | -------    | ---------- | ---------- |
-| 1  | Figure Eight             | radius | bank angle  |            |            | No         |
-| 2  | Loop                     | radius | bank angle  | num loops  |            | No         |
-| 3  | Horizontal Rectangle     | length | width       | radius     | bank angle | No         |
-| 4  | Climbing Circle          | radius | height      | bank angle |            | No         |
-| 5  | vertical Box             | length | height      | radius     |            | No         |
-| 6  | Immelmann (FastRoll)     | radius |             |            |            | Yes        |
-| 7  | Straight Roll            | length | num rolls   |            |            | No         |
-| 8  | Rolling Circle           | radius | num rolls   |            |            | No         |
-| 9  | Half Cuban Eight         | radius |             |            |            | Yes        |
-| 10 | Half Reverse Cuban Eight | radius |             |            |            | Yes        |
-| 11 | Cuban Eight              | radius |             |            |            | No         |
-| 12 | Humpty Bump              | radius | height      |            |            | Yes        |
-| 13 | Straight Flight          | length | bank angle  |            |            | No         |
-| 14 | Scale Figure Eight       | radius | bank angle  |            |            | No         |
-| 15 | Immelmann Turn           | radius |             |            |            | Yes        |
-| 16 | Split-S                  | radius |             |            |            | Yes        |
-| 17 | Upline-45                | radius | height gain |            |            | No         |
-| 18 | Downline-45              | radius | height loss |            |            | No         |
-| 19 | Stall Turn               | radius | height      | direction  |            | Yes        |
-| 20 | Procedure Turn           | radius | bank angle  | step-out   |            | Yes        |
-| 21 | Derry Turn               | radius | bank angle  |            |            | No         |
-| 22 | Two Point Roll           | length |             |            |            | No         |
-| 23 | Half Climbing Circle     | radius | height      | bank angle |            | Yes        |
-| 24 | Crossbox Humpty          | radius | height      |            |            | Yes        |
-| 25 | Laydown Humpty           | radius | height      |            |            | Yes        |
+| ID | Name                     | Arg1   | Arg2        | Arg3        | Arg4       | Turnaround |
+| -- | ------------------------ | ------ | ----------  | -------     | ---------- | ---------- |
+| 1  | Figure Eight             | radius | bank angle  |             |            | No         |
+| 2  | Loop                     | radius | bank angle  | num loops   |            | No         |
+| 3  | Horizontal Rectangle     | length | width       | radius      | bank angle | No         |
+| 4  | Climbing Circle          | radius | height      | bank angle  |            | No         |
+| 5  | vertical Box             | length | height      | radius      |            | No         |
+| 6  | Immelmann (FastRoll)     | radius |             |             |            | Yes        |
+| 7  | Straight Roll            | length | num rolls   |             |            | No         |
+| 8  | Rolling Circle           | radius | num rolls   |             |            | No         |
+| 9  | Half Cuban Eight         | radius |             |             |            | Yes        |
+| 10 | Half Reverse Cuban Eight | radius |             |             |            | Yes        |
+| 11 | Cuban Eight              | radius |             |             |            | No         |
+| 12 | Humpty Bump              | radius | height      |             |            | Yes        |
+| 13 | Straight Flight          | length | bank angle  |             |            | No         |
+| 14 | Scale Figure Eight       | radius | bank angle  |             |            | No         |
+| 15 | Immelmann Turn           | radius |             |             |            | Yes        |
+| 16 | Split-S                  | radius |             |             |            | Yes        |
+| 17 | Upline-45                | radius | height gain |             |            | No         |
+| 18 | Downline-45              | radius | height loss |             |            | No         |
+| 19 | Stall Turn               | radius | height      | direction   |            | Yes        |
+| 20 | Procedure Turn           | radius | bank angle  | step-out    |            | Yes        |
+| 21 | Derry Turn               | radius | bank angle  |             |            | No         |
+| 22 | Two Point Roll           | length |             |             |            | No         |
+| 23 | Half Climbing Circle     | radius | height      | bank angle  |            | Yes        |
+| 24 | Crossbox Humpty          | radius | height      |             |            | Yes        |
+| 25 | Laydown Humpty           | radius | height      |             |            | Yes        |
+| 25 | Barrell Roll             | radius | length      | num spirals |            | No         |
+| 26 | Straight Hold            | length | bank angle  |             |            | No         |
 
 Note: In the script you will find other (specialised) manouvers which do not appear in the 
 'command table'. These tend to be specialised manouvers which may expect an inverted entry or 
