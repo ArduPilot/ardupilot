@@ -44,7 +44,9 @@
 #define OPTIMIZE(level) __attribute__((optimize(level)))
 
 // sometimes we need to prevent inlining to prevent large stack usage
+#ifndef NOINLINE
 #define NOINLINE __attribute__((noinline))
+#endif
 
 // used to ignore results for functions marked as warn unused
 #define IGNORE_RETURN(x) do {if (x) {}} while(0)
