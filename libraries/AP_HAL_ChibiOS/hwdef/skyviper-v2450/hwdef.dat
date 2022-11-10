@@ -136,5 +136,6 @@ define AP_GRIPPER_ENABLED 0
 # SkyViper has a very limited set of blinkenlights
 define AP_NOTIFY_NCP5623_ENABLED 0
 define AP_NOTIFY_PCA9685_ENABLED 0
+define AP_NOTIFY_TOSHIBALED_ENABLED 0
 
 AUTOBUILD_TARGETS Copter
