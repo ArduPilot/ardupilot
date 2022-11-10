@@ -2960,6 +2960,11 @@ def add_bootloader_defaults(f):
 #define HAL_GYROFFT_ENABLED 0
 #endif
 
+// bootloaders don't talk to the GCS:
+#ifndef HAL_GCS_ENABLED
+#define HAL_GCS_ENABLED 0
+#endif
+
 #define HAL_MAX_CAN_PROTOCOL_DRIVERS 0
 ''')
 
