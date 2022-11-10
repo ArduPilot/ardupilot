@@ -31,6 +31,8 @@ ERR_CORR_D = bind_add_param('ERR_COR_D', 13, 2.8)
 AEROM_ENTRY_RATE = bind_add_param('ENTRY_RATE', 14, 60)
 AEROM_THR_LKAHD = bind_add_param('THR_LKAHD', 15, 1)
 AEROM_DEBUG = bind_add_param('DEBUG', 16, 0)
+AEROM_THR_MIN = bind_add_param('THR_MIN', 17, 0)
+AEROM_THR_BOOST = bind_add_param('THR_BOOST', 18, 50)
 
 -- cope with old param values
 if AEROM_ANG_ACCEL:get() < 100 and AEROM_ANG_ACCEL:get() > 0 then
@@ -450,6 +452,9 @@ function PathComponent()
    function self.get_roll_correction(t)
       return 0
    end
+   function self.get_throttle_boost(t)
+      return self.thr_boost or false
+   end
    return self
 end
 
@@ -601,6 +606,9 @@ function Path(_path_component, _roll_component)
    end
    function self.get_final_orientation()
       return path_component.get_final_orientation()
+   end
+   function self.get_throttle_boost(t)
+      return self.thr_boost or false
    end
    return self
 end
@@ -759,6 +767,12 @@ function path_composer(_name, _subpaths)
       return final_orientation
    end
 
+   function self.get_throttle_boost(t)
+      local subpath_t, i = self.get_subpath_t(t)
+      local sp = self.subpath(i)
+      return sp.get_throttle_boost(t)
+   end
+
    return self
 end
 
@@ -773,6 +787,7 @@ function make_paths(name, paths)
       if paths[i].roll_ref then
          p[i].roll_ref = paths[i].roll_ref
       end
+      p[i].thr_boost = paths[i].thr_boost
    end
    return path_composer(name, p)
 end
@@ -930,7 +945,7 @@ end
 
 function rolling_circle(radius, num_rolls, arg3, arg4)
    return make_paths("rolling_circle", {
-         { path_horizontal_arc(radius, 360), roll_angle(360*num_rolls) },
+         { path_horizontal_arc(radius, 360), roll_angle(360*num_rolls), thr_boost=true },
    })
 end
 
@@ -1624,8 +1639,9 @@ function rotate_path(path_f, t, orientation, offset)
    local point = path_f.get_pos(t)
    local angle = path_f.get_roll(t)
    local speed = path_f.get_speed(t)
+   local thr_boost = path_f.get_throttle_boost(t)
    local point = quat_earth_to_body(orientation, point)
-   return point+offset, math.rad(angle), speed
+   return point+offset, math.rad(angle), speed, thr_boost
 end
 
 --Given vec1, vec2, returns an (rotation axis, angle) tuple that rotates vec1 to be parallel to vec2
@@ -1859,9 +1875,9 @@ function do_path()
    --[[
       recalculate the current path position and angle based on actual delta time
    --]]
-   local p1, r1, s1 = rotate_path(path,
-                                  constrain(path_var.path_t + path_t_delta, 0, 1),
-                                  path_var.initial_ori, path_var.initial_ef_pos)
+   local p1, r1, s1, thr_boost = rotate_path(path,
+                                             constrain(path_var.path_t + path_t_delta, 0, 1),
+                                             path_var.initial_ori, path_var.initial_ef_pos)
 
    local last_path_t = path_var.path_t
    path_var.path_t = path_var.path_t + path_t_delta
@@ -2086,7 +2102,11 @@ function do_path()
    local anticipated_pitch_rad = math.max(qnew:get_euler_pitch(), orientation_rel_ef_with_roll_angle:get_euler_pitch())
 
    local throttle = speed_PI.update(s1, anticipated_pitch_rad)
-   throttle = constrain(throttle, 0, 100.0)
+   local thr_min = AEROM_THR_MIN:get()
+   if thr_boost then
+      thr_min = math.max(thr_min, AEROM_THR_BOOST:get())
+   end
+   throttle = constrain(throttle, thr_min, 100.0)
 
    if isNaN(throttle) or Vec3IsNaN(tot_ang_vel_bf_dps) then
       gcs:send_text(0,string.format("Path NaN - aborting"))
