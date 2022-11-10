@@ -3250,4 +3250,9 @@ AP_AHRS &ahrs()
     return *AP_AHRS::get_singleton();
 }
 
+const AP_AHRS_Base &ahrs_base()
+{
+    return *AP_AHRS::get_singleton();
+}
+
 }

@@ -841,5 +841,8 @@ private:
 };
 
 namespace AP {
+    // accessor to the _full_ AHRS instance
     AP_AHRS &ahrs();
+    // read-only accessor to the AHRS core data
+    const AP_AHRS_Base &ahrs_base();
 };
