@@ -107,9 +107,9 @@ void HardFault_Handler(void) {
             fault_printf("HARDFAULT(%d)\n", int(faultType));
         }
         fault_printf("CSFR=0x%08x\n", cfsr);
-        fault_printf("CUR=0x%08x\n", ch.rlist.current);
-        if (ch.rlist.current) {
-            fault_printf("NAME=%s\n", ch.rlist.current->name);
+        fault_printf("CUR=0x%08x\n", currcore->rlist.current);
+        if (currcore->rlist.current) {
+            fault_printf("NAME=%s\n", currcore->rlist.current->name);
         }
         fault_printf("FA=0x%08x\n", faultAddress);
         fault_printf("PC=0x%08x\n", ctx.pc);

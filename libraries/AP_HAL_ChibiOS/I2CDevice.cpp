@@ -31,7 +31,7 @@
 #include "hal.h"
 
 static const struct I2CInfo {
-    struct I2CDriver *i2c;
+    I2CDriver *i2c;
     uint8_t instance;
     uint8_t dma_channel_rx;
     uint8_t dma_channel_tx;
