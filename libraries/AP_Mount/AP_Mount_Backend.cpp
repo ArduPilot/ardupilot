@@ -307,7 +307,7 @@ bool AP_Mount_Backend::get_angle_target_to_location(const Location &loc, MountTa
 {
     // exit immediately if vehicle's location is unavailable
     Location current_loc;
-    if (!AP::ahrs().get_location(current_loc)) {
+    if (!AP::ahrs_base().get_location(current_loc)) {
         return false;
     }
 
@@ -353,7 +353,7 @@ float AP_Mount_Backend::get_bf_yaw_angle(const MountTarget& angle_rad) const
 {
     if (angle_rad.yaw_is_ef) {
         // convert to body-frame
-        return wrap_PI(angle_rad.yaw - AP::ahrs().yaw);
+        return wrap_PI(angle_rad.yaw - AP::ahrs_base().get_yaw());
     }
 
     // target is already body-frame
@@ -369,7 +369,7 @@ float AP_Mount_Backend::get_ef_yaw_angle(const MountTarget& angle_rad) const
     }
 
     // convert to earth-frame
-    return wrap_PI(angle_rad.yaw + AP::ahrs().yaw);
+    return wrap_PI(angle_rad.yaw + AP::ahrs_base().get_yaw());
 }
 
 // update angle targets using a given rate target
@@ -417,10 +417,11 @@ uint16_t AP_Mount_Backend::get_gimbal_device_flags() const
 bool AP_Mount_Backend::get_angle_target_to_home(MountTarget& angle_rad) const
 {
     // exit immediately if home is not set
-    if (!AP::ahrs().home_is_set()) {
+    Location home;
+    if (!AP::ahrs_base().get_home(home)) {
         return false;
     }
-    return get_angle_target_to_location(AP::ahrs().get_home(), angle_rad);
+    return get_angle_target_to_location(home, angle_rad);
 }
 
 // get angle targets (in radians) to a vehicle with sysid of  _target_sysid
