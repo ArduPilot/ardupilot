@@ -477,6 +477,13 @@ function quat_body_to_earth(quat, v)
 end
 
 --[[
+   copy a quaternion
+--]]
+function quat_copy(q)
+   return q:inverse():inverse()
+end
+
+--[[
    path component that does a straight horizontal line
 --]]
 function path_straight(_distance)
@@ -557,16 +564,6 @@ function path_horizontal_arc(_radius, _angle, _height_gain)
    function self.get_final_orientation()
       local q = Quaternion()
       q:from_axis_angle(makeVector3f(0,0,1), sgn(radius)*math.rad(angle))
-      --[[
-         we also need to apply the roll correction to the final orientation
-      --]]
-      local rc = self.get_roll_correction(1.0)
-      if rc ~= 0 then
-         local q2 = Quaternion()
-         q2:from_axis_angle(makeVector3f(1,0,0), math.rad(-rc))
-         q = q * q2
-         q:normalize()
-      end
       return q
    end
 
@@ -584,6 +581,42 @@ function path_horizontal_arc(_radius, _angle, _height_gain)
 end
 
 --[[
+   path component that does a cylinder for a barrell roll
+--]]
+function path_cylinder(_radius, _length, _num_spirals)
+   local self = PathComponent()
+   self.name = "path_cylinder"
+   local radius = _radius
+   local length = _length
+   local num_spirals = _num_spirals
+   local gamma = math.atan((length/num_spirals)/(2*math.pi*radius))
+   local qrot = Quaternion()
+   qrot:from_axis_angle(makeVector3f(0,0,1), (0.5*math.pi)-gamma)
+
+   function self.get_pos(t)
+      local t2ang = t * num_spirals * math.pi * 2
+      local v = makeVector3f(length*t, math.abs(radius)*math.sin(t2ang+math.pi), -radius*(1.0 - math.cos(t2ang)))
+      return quat_earth_to_body(qrot, v)
+   end
+
+   function self.get_length()
+      local circumference = 2 * math.pi * math.abs(radius)
+      local length_per_spiral = length / num_spirals
+      local helix_length = math.sqrt(length_per_spiral*length_per_spiral + circumference*circumference)
+      return helix_length * num_spirals
+   end
+
+   --[[
+      roll correction for the rotation caused by the path
+   --]]
+   function self.get_roll_correction(t)
+      return t*360*math.sin(gamma)*num_spirals
+   end
+
+   return self
+end
+
+--[[
    a Path has the methods of both RollComponent and
    PathComponent allowing for a complete description of a subpath
 --]]
@@ -593,7 +626,10 @@ function Path(_path_component, _roll_component)
    local path_component = _path_component
    local roll_component = _roll_component
    function self.get_roll(t, time_s)
-      return wrap_180(roll_component.get_roll(t, time_s) + path_component.get_roll_correction(t))
+      return wrap_180(roll_component.get_roll(t, time_s))
+   end
+   function self.get_roll_correction(t)
+      return path_component.get_roll_correction(t)
    end
    function self.get_pos(t)
       return path_component.get_pos(t)
@@ -628,6 +664,7 @@ function path_composer(_name, _subpaths)
    local start_orientation = {}
    local start_pos = {}
    local start_angle = {}
+   local start_roll_correction = {}
    local end_speed = {}
    local start_speed = {}
    local total_length = 0
@@ -637,6 +674,7 @@ function path_composer(_name, _subpaths)
    local orientation = Quaternion()
    local pos = makeVector3f(0,0,0)
    local angle = 0
+   local roll_correction = 0
    local speed = target_groundspeed()
    local highest_i = 0
    local cache_i = -1
@@ -665,9 +703,10 @@ function path_composer(_name, _subpaths)
    
    for i = 1, num_sub_paths do
       -- accumulate orientation, position and angle
-      start_orientation[i] = orientation
-      start_pos[i] = pos
+      start_orientation[i] = quat_copy(orientation)
+      start_pos[i] = pos:copy()
       start_angle[i] = angle
+      start_roll_correction[i] = roll_correction
 
       local sp = self.subpath(i)
       lengths[i] = sp.get_length()
@@ -676,9 +715,11 @@ function path_composer(_name, _subpaths)
       local spos = quat_earth_to_body(orientation, sp.get_pos(1.0))
 
       pos = pos + spos
-      orientation = orientation * sp.get_final_orientation()
+      orientation = sp.get_final_orientation() * orientation
       orientation:normalize()
+
       angle = angle + sp.get_roll(1.0, lengths[i]/speed)
+      roll_correction = roll_correction + sp.get_roll_correction(1.0)
 
       start_speed[i] = speed
       end_speed[i] = sp.get_speed(1.0)
@@ -688,15 +729,15 @@ function path_composer(_name, _subpaths)
       speed = end_speed[i]
 
       if sp.roll_ref ~= nil then
-         q = Quaternion()
+         local q = Quaternion()
          q:from_axis_angle(makeVector3f(1,0,0), math.rad(sp.roll_ref))
-         orientation = orientation * q
+         orientation = q * orientation
          orientation:normalize()
       end
    end
 
    -- get our final orientation, including roll
-   local final_orientation = orientation
+   local final_orientation = quat_copy(orientation)
    local q = Quaternion()
    q:from_axis_angle(makeVector3f(1,0,0), math.rad(wrap_180(angle)))
    final_orientation = q * final_orientation
@@ -753,6 +794,12 @@ function path_composer(_name, _subpaths)
       return angle + start_angle[i]
    end
 
+   function self.get_roll_correction(t)
+      local subpath_t, i = self.get_subpath_t(t)
+      local sp = self.subpath(i)
+      return sp.get_roll_correction(subpath_t) + start_roll_correction[i]
+   end
+   
    -- return speed for the composed path at time t
    function self.get_speed(t)
       local subpath_t, i = self.get_subpath_t(t)
@@ -783,7 +830,11 @@ end
 function make_paths(name, paths)
    local p = {}
    for i = 1, #paths do
-      p[i] = Path(paths[i][1], paths[i][2])
+      if paths[i][2] == nil then
+         p[i] = paths[i][1]
+      else
+         p[i] = Path(paths[i][1], paths[i][2])
+      end
       if paths[i].roll_ref then
          p[i].roll_ref = paths[i].roll_ref
       end
@@ -805,6 +856,12 @@ end
 function half_climbing_circle(radius, height, bank_angle, arg4)
    return make_paths("half_climbing_circle", {
          { path_horizontal_arc(radius, 180, height), roll_angle_entry_exit(bank_angle) },
+   })
+end
+
+function partial_circle(radius, bank_angle, angle)
+   return make_paths("partial_circle", {
+         { path_horizontal_arc(radius, angle, 0), roll_angle_entry_exit(bank_angle) },
    })
 end
 
@@ -949,9 +1006,34 @@ function rolling_circle(radius, num_rolls, arg3, arg4)
    })
 end
 
+
+function cylinder(radius, length, num_spirals, arg4)
+   return make_paths("cylinder", {
+         { path_cylinder(radius, length, num_spirals), roll_angle(0), thr_boost=true },
+   })
+end
+
+function barrell_roll(radius, length, num_spirals, arg4)
+   local gamma_deg = math.deg(math.atan((length/num_spirals)/(2*math.pi*radius)))
+   local speed = target_groundspeed()
+   local bank = math.deg(math.atan((speed*speed) / (radius * GRAVITY_MSS)))
+
+   return make_paths("barrell_roll", {
+         { path_horizontal_arc(-radius, 90-gamma_deg, 0), roll_angle_entry_exit(-bank) },
+         { path_cylinder(radius, length, num_spirals),    roll_angle(0) },
+         { path_horizontal_arc(radius, 90-gamma_deg, 0),  roll_angle_entry_exit(bank) },
+   })
+end
+
 function straight_flight(length, bank_angle, arg3, arg4)
    return make_paths("straight_flight", {
          { path_straight(length), roll_angle_entry_exit(bank_angle) },
+   })
+end
+
+function straight_hold(length, bank_angle, arg3, arg4)
+   return make_paths("straight_hold", {
+         { path_straight(length), roll_angle_entry(bank_angle) },
    })
 end
 
@@ -1638,10 +1720,11 @@ function rotate_path(path_f, t, orientation, offset)
    local t = constrain(t, 0, 1)
    local point = path_f.get_pos(t)
    local angle = path_f.get_roll(t)
+   local roll_correction = path_f.get_roll_correction(t)
    local speed = path_f.get_speed(t)
    local thr_boost = path_f.get_throttle_boost(t)
    local point = quat_earth_to_body(orientation, point)
-   return point+offset, math.rad(angle), speed, thr_boost
+   return point+offset, math.rad(angle+roll_correction), speed, thr_boost
 end
 
 --Given vec1, vec2, returns an (rotation axis, angle) tuple that rotates vec1 to be parallel to vec2
@@ -2164,6 +2247,9 @@ command_table[22]= PathFunction(two_point_roll, "Two Point Roll")
 command_table[23]= PathFunction(half_climbing_circle, "Half Climbing Circle")
 command_table[24]= PathFunction(crossbox_humpty, "Crossbox Humpty")
 command_table[25]= PathFunction(laydown_humpty, "Laydown Humpty")
+command_table[26] = PathFunction(barrell_roll, "Barrell Roll")
+command_table[27]= PathFunction(straight_flight, "Straight Hold")
+command_table[28] = PathFunction(partial_circle, "Partial Circle")
 command_table[200] = PathFunction(test_all_paths, "Test Suite")
 command_table[201] = PathFunction(nz_clubman, "NZ Clubman")
 command_table[202] = PathFunction(f3a_p23_l_r, "FAI F3A P23 L to R")
@@ -2203,6 +2289,9 @@ load_table["crossbox_humpty"] = crossbox_humpty
 load_table["laydown_humpty"] = laydown_humpty
 load_table["straight_align"] = straight_align
 load_table["figure_eight"] = figure_eight
+load_table["barrell_roll"] = barrell_roll
+load_table["straight_hold"] = straight_hold
+load_table["partial_circle"] = partial_circle
 
 
 --[[
@@ -2250,12 +2339,12 @@ function load_trick(id)
          local f = load_table[cmd]
          if f == nil then
             gcs:send_text(0,string.format("Unknown command '%s' in %s", cmd, fname))
-            return
-         end
-         paths[#paths+1] = { f, { arg1, arg2, arg3, arg4 }}
-         if message ~= nil then
-            paths[#paths].message = message
-            message = nil
+         else
+            paths[#paths+1] = { f, { arg1, arg2, arg3, arg4 }}
+            if message ~= nil then
+               paths[#paths].message = message
+               message = nil
+            end
          end
       end
    end

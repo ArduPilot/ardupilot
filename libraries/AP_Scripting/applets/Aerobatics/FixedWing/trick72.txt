@@ -32,7 +32,7 @@ split_s  30
 straight_align 0
 
 message: RollingCircle
-rolling_circle -50 3
+rolling_circle -50 2
 straight_align -50
 
 message: HumptyBump
@@ -43,14 +43,11 @@ message: HalfCubanEight
 half_cuban_eight 25
 straight_align 75
 
-message: Upline45
-upline_45 30 50
+message: BarrellRoll
+barrell_roll 30 100 2
 
-message: Downline45
-downline_45 30 50
-
-message: HalfReverseCubanEight
-half_reverse_cuban_eight 25
+message: ProcedureTurn
+procedure_turn 30 45 30
 
 # get back to the start point
 straight_align 0
