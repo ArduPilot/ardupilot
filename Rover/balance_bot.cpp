@@ -8,7 +8,7 @@ void Rover::balancebot_pitch_control(float &throttle)
     const float demanded_pitch = radians(-throttle * 0.01f * g2.bal_pitch_max) + radians(g2.bal_pitch_trim);
 
     // calculate required throttle using PID controller
-    throttle = g2.attitude_control.get_throttle_out_from_pitch(demanded_pitch, g2.motors.limit.throttle_lower || g2.motors.limit.throttle_upper, G_Dt) * 100.0f;
+    throttle = g2.attitude_control.get_throttle_out_from_pitch(demanded_pitch, radians(g2.bal_pitch_max), g2.motors.limit.throttle_lower || g2.motors.limit.throttle_upper, G_Dt) * 100.0f;
 }
 
 // returns true if vehicle is a balance bot
