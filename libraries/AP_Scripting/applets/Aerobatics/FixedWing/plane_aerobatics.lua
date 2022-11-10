@@ -1819,6 +1819,11 @@ function do_path()
    local vel_length = ahrs_velned:length()
 
    local actual_dt = now - path_var.last_time
+   if actual_dt < 0.25 / LOOP_RATE then
+      -- the update has been executed too soon
+      return true
+   end
+
    path_var.last_time = now
 
    local local_n_dt = actual_dt/path_var.total_time
