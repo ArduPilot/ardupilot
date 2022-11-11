@@ -4028,7 +4028,7 @@ class AutoTestPlane(AutoTest):
         # check all messages to see if we got all tricks
         tricks = ["Loop", "HalfReverseCubanEight", "ScaleFigureEight", "Immelmann",
                   "Split-S", "RollingCircle", "HumptyBump", "HalfCubanEight",
-                  "Upline45", "Downline45", "HalfReverseCubanEight",
+                  "BarrellRoll", "HalfReverseCubanEight",
                   "Finishing SuperAirShow!"]
         texts = [m.text for m in messages]
         for t in tricks:
