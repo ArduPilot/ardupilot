@@ -4011,8 +4011,8 @@ class AutoTestPlane(AutoTest):
             if m.name != 'PERR':
                 continue
             highest_error = max(highest_error, m.value)
-            if highest_error > 12:
-                raise NotAchievedException("path error %.1f" % m.value)
+            if highest_error > 15:
+                raise NotAchievedException("path error %.1f" % highest_error)
 
         if highest_error == 0:
             raise NotAchievedException("path error not reported")
@@ -4028,7 +4028,7 @@ class AutoTestPlane(AutoTest):
         # check all messages to see if we got all tricks
         tricks = ["Loop", "HalfReverseCubanEight", "ScaleFigureEight", "Immelmann",
                   "Split-S", "RollingCircle", "HumptyBump", "HalfCubanEight",
-                  "BarrellRoll", "HalfReverseCubanEight",
+                  "BarrelRoll", "HalfReverseCubanEight",
                   "Finishing SuperAirShow!"]
         texts = [m.text for m in messages]
         for t in tricks:
