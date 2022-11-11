@@ -241,7 +241,7 @@ const AP_Param::Info Sub::var_info[] = {
 
     // @Param: JS_GAIN_DEFAULT
     // @DisplayName: Default gain at boot
-    // @Description: Default gain at boot, must be in range [JS_GAIN_MIN , JS_GAIN_MAX]
+    // @Description: Default gain at boot, must be in range [JS_GAIN_MIN , JS_GAIN_MAX]. Current gain value is accessible via NAMED_VALUE_FLOAT MAVLink message with name 'PilotGain'.
     // @User: Standard
     // @Range: 0.1 1.0
     GSCALAR(gain_default, "JS_GAIN_DEFAULT", 0.5),
