@@ -88,7 +88,7 @@ void AP_NMEA_Output::update()
 
     // format time string
     char tstring[11];
-    snprintf(tstring,sizeof(tstring), "%02u%02u%06.3f", tm->tm_hour, tm->tm_min, tm->tm_sec + (time_usec % 1000000) * 1.0e-6);
+    snprintf(tstring, sizeof(tstring), "%02u%02u%06.3f", tm->tm_hour, tm->tm_min, tm->tm_sec + (time_usec % 1000000) * 1.0e-6);
    
     // format date string
     char dstring[7];
@@ -124,7 +124,7 @@ void AP_NMEA_Output::update()
              loc.lng < 0 ? 'W' : 'E');
 
     // format GGA message
-    int gga_size = snprintf(_gga,sizeof(_gga),
+    int gga_size = snprintf(_gga, sizeof(_gga),
                                "$GPGGA,%s,%s,%s,%01d,%02d,%04.1f,%07.2f,M,0.0,M,,",
                                tstring,
                                lat_string,
@@ -145,7 +145,7 @@ void AP_NMEA_Output::update()
     float heading = wrap_360(degrees(atan2f(speed.x, speed.y)));
 
     // format RMC message
-    int rmc_size = snprintf(_rmc,sizeof(_rmc),
+    int rmc_size = snprintf(_rmc, sizeof(_rmc),
                                "$GPRMC,%s,%c,%s,%s,%.2f,%.2f,%s,,",
                                tstring,
                                pos_valid ? 'A' : 'V',
