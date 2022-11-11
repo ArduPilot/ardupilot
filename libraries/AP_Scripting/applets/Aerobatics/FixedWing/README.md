@@ -46,7 +46,7 @@ the ground track.
 | 23 | Half Climbing Circle     | radius | height      | bank angle  |            | Yes        |
 | 24 | Crossbox Humpty          | radius | height      |             |            | Yes        |
 | 25 | Laydown Humpty           | radius | height      |             |            | Yes        |
-| 25 | Barrell Roll             | radius | length      | num spirals |            | No         |
+| 25 | Barrel Roll              | radius | length      | num spirals |            | No         |
 | 26 | Straight Hold            | length | bank angle  |             |            | No         |
 
 Note: In the script you will find other (specialised) manouvers which do not appear in the 

@@ -43,8 +43,8 @@ message: HalfCubanEight
 half_cuban_eight 25
 straight_align 75
 
-message: BarrellRoll
-barrell_roll 30 100 2
+message: BarrelRoll
+barrel_roll 30 100 2
 
 message: ProcedureTurn
 procedure_turn 30 45 30
