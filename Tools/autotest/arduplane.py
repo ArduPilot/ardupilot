@@ -3986,7 +3986,7 @@ class AutoTestPlane(AutoTest):
             "TRIK1_ID": 72,
             "RC7_OPTION" : 300, # activation switch
             "RC9_OPTION" : 301, # selection switch
-            "SIM_SPEEDUP": 20, # need to give some cycles to lua
+            "SIM_SPEEDUP": 5, # need to give some cycles to lua
         })
 
         self.wait_ready_to_arm()
