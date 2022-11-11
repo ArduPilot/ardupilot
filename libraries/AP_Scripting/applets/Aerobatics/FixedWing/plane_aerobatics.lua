@@ -581,7 +581,7 @@ function path_horizontal_arc(_radius, _angle, _height_gain)
 end
 
 --[[
-   path component that does a cylinder for a barrell roll
+   path component that does a cylinder for a barrel roll
 --]]
 function path_cylinder(_radius, _length, _num_spirals)
    local self = PathComponent()
@@ -1013,12 +1013,12 @@ function cylinder(radius, length, num_spirals, arg4)
    })
 end
 
-function barrell_roll(radius, length, num_spirals, arg4)
+function barrel_roll(radius, length, num_spirals, arg4)
    local gamma_deg = math.deg(math.atan((length/num_spirals)/(2*math.pi*radius)))
    local speed = target_groundspeed()
    local bank = math.deg(math.atan((speed*speed) / (radius * GRAVITY_MSS)))
 
-   return make_paths("barrell_roll", {
+   return make_paths("barrel_roll", {
          { path_horizontal_arc(-radius, 90-gamma_deg, 0), roll_angle_entry_exit(-bank) },
          { path_cylinder(radius, length, num_spirals),    roll_angle(0) },
          { path_horizontal_arc(radius, 90-gamma_deg, 0),  roll_angle_entry_exit(bank) },
@@ -1591,7 +1591,7 @@ function f4c_example_l_r()                          -- positioned for a flight l
          { straight_roll,             { 200,   0 } },
          { half_climbing_circle,      { -65, 0, -60 } },
          { straight_align,            { 200, 0 } },
-         --{ barrell_roll,            { 100, 200 } , message="Barrel Roll"},     -- barrel roll - (radius, length)
+         --{ barrel_roll,            { 100, 200 } , message="Barrel Roll"},     -- barrel roll - (radius, length)
          { straight_roll,             { 20,    0 } },
    })
 end
@@ -2247,7 +2247,7 @@ command_table[22]= PathFunction(two_point_roll, "Two Point Roll")
 command_table[23]= PathFunction(half_climbing_circle, "Half Climbing Circle")
 command_table[24]= PathFunction(crossbox_humpty, "Crossbox Humpty")
 command_table[25]= PathFunction(laydown_humpty, "Laydown Humpty")
-command_table[26] = PathFunction(barrell_roll, "Barrell Roll")
+command_table[26] = PathFunction(barrel_roll, "Barrel Roll")
 command_table[27]= PathFunction(straight_flight, "Straight Hold")
 command_table[28] = PathFunction(partial_circle, "Partial Circle")
 command_table[200] = PathFunction(test_all_paths, "Test Suite")
@@ -2289,7 +2289,7 @@ load_table["crossbox_humpty"] = crossbox_humpty
 load_table["laydown_humpty"] = laydown_humpty
 load_table["straight_align"] = straight_align
 load_table["figure_eight"] = figure_eight
-load_table["barrell_roll"] = barrell_roll
+load_table["barrel_roll"] = barrel_roll
 load_table["straight_hold"] = straight_hold
 load_table["partial_circle"] = partial_circle
 
