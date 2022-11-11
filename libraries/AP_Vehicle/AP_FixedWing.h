@@ -22,6 +22,7 @@ struct AP_FixedWing {
     AP_Int8  autotune_level;
     AP_Int8  stall_prevention;
     AP_Int16 loiter_radius;
+    AP_Int16 pitch_trim_cd;
 
     struct Rangefinder_State {
         bool in_range:1;
