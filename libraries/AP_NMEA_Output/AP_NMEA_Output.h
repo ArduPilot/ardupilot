@@ -50,6 +50,8 @@ private:
     AP_HAL::UARTDriver* _uart[NMEA_MAX_OUTPUTS];
 
     uint32_t _last_run_ms;
+    char _gga[74];
+    char _rmc[108];
 };
 
 #endif  // !HAL_MINIMIZE_FEATURES

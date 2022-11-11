@@ -88,8 +88,8 @@ void AP_NMEA_Output::update()
 
     // format time string
     char tstring[11];
-    snprintf(tstring, sizeof(tstring), "%02u%02u%06.3f", tm->tm_hour, tm->tm_min, tm->tm_sec + (time_usec % 1000000) * 1.0e-6);
-
+    snprintf(tstring,sizeof(tstring), "%02u%02u%06.3f", tm->tm_hour, tm->tm_min, tm->tm_sec + (time_usec % 1000000) * 1.0e-6);
+   
     // format date string
     char dstring[7];
     snprintf(dstring, sizeof(dstring), "%02u%02u%02u", tm->tm_mday, tm->tm_mon+1, tm->tm_year % 100);
@@ -124,8 +124,7 @@ void AP_NMEA_Output::update()
              loc.lng < 0 ? 'W' : 'E');
 
     // format GGA message
-    char* gga = nullptr;
-    int16_t gga_res = asprintf(&gga,
+    int gga_size = snprintf(_gga,sizeof(_gga),
                                "$GPGGA,%s,%s,%s,%01d,%02d,%04.1f,%07.2f,M,0.0,M,,",
                                tstring,
                                lat_string,
@@ -134,11 +133,11 @@ void AP_NMEA_Output::update()
                                pos_valid ? 6 : 3,
                                2.0,
                                loc.alt * 0.01f);
-    if (gga_res == -1) {
-        return;
+    if (gga_size < 0 || ((unsigned) gga_size) >= sizeof(_gga)) {
+       return;
     }
     char gga_end[6];
-    snprintf(gga_end, sizeof(gga_end), "*%02X\r\n", (unsigned) _nmea_checksum(gga));
+    snprintf(gga_end, sizeof(gga_end), "*%02X\r\n", (unsigned) _nmea_checksum(_gga));
 
     // get speed
     Vector2f speed = ahrs.groundspeed_vector();
@@ -146,8 +145,7 @@ void AP_NMEA_Output::update()
     float heading = wrap_360(degrees(atan2f(speed.x, speed.y)));
 
     // format RMC message
-    char* rmc = nullptr;
-    int16_t rmc_res = asprintf(&rmc,
+    int rmc_size = snprintf(_rmc,sizeof(_rmc),
                                "$GPRMC,%s,%c,%s,%s,%.2f,%.2f,%s,,",
                                tstring,
                                pos_valid ? 'A' : 'V',
@@ -156,14 +154,13 @@ void AP_NMEA_Output::update()
                                speed_knots,
                                heading,
                                dstring);
-    if (rmc_res == -1) {
-        free(gga);
+    if (rmc_size < 0 || ((unsigned) rmc_size) >= sizeof(_rmc)) {
         return;
     }
     char rmc_end[6];
-    snprintf(rmc_end, sizeof(rmc_end), "*%02X\r\n", (unsigned) _nmea_checksum(rmc));
+    snprintf(rmc_end, sizeof(rmc_end), "*%02X\r\n", (unsigned) _nmea_checksum(_rmc));
 
-    const uint32_t space_required = strlen(gga) + strlen(gga_end) + strlen(rmc) + strlen(rmc_end);
+    const uint32_t space_required = gga_size + sizeof(gga_end)-1 + rmc_size + sizeof(rmc_end)-1;
 
     // send to all NMEA output ports
     for (uint8_t i = 0; i < _num_outputs; i++) {
@@ -171,15 +168,12 @@ void AP_NMEA_Output::update()
             continue;
         }
 
-        _uart[i]->write(gga);
+        _uart[i]->write(_gga);
         _uart[i]->write(gga_end);
 
-        _uart[i]->write(rmc);
+        _uart[i]->write(_rmc);
         _uart[i]->write(rmc_end);
     }
-
-    free(gga);
-    free(rmc);
 }
 
 #endif  // HAL_NMEA_OUTPUT_ENABLED
