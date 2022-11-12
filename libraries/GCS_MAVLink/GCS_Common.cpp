@@ -5596,6 +5596,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 
     case MSG_RC_CHANNELS:
+        if (!rc().has_had_rc_receiver() && !rc().has_had_rc_override()) {
+            // Not transmit if radio channel receiver is not connected or RC override.
+            break;
+        }
+
         CHECK_PAYLOAD_SIZE(RC_CHANNELS);
         send_rc_channels();
         break;
