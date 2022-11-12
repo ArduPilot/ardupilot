@@ -200,29 +200,32 @@ void AC_AutoTune::run()
     const bool zero_rp_input = is_zero(target_roll_cd) && is_zero(target_pitch_cd);
 
     const uint32_t now = AP_HAL::millis();
-    if (!zero_rp_input || !is_zero(target_yaw_rate_cds) || !is_zero(target_climb_rate_cms)) {
-        if (!pilot_override) {
-            pilot_override = true;
-            // set gains to their original values
-            load_gains(GAIN_ORIGINAL);
-            attitude_control->use_sqrt_controller(true);
-        }
-        // reset pilot override time
-        override_time = now;
-        if (!zero_rp_input) {
-            // only reset position on roll or pitch input
-            have_position = false;
-        }
-    } else if (pilot_override) {
-        // check if we should resume tuning after pilot's override
-        if (now - override_time > AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS) {
-            pilot_override = false;             // turn off pilot override
-            // set gains to their intra-test values (which are very close to the original gains)
-            // load_gains(GAIN_INTRA_TEST); //I think we should be keeping the originals here to let the I term settle quickly
-            step = WAITING_FOR_LEVEL; // set tuning step back from beginning
-            step_start_time_ms = now;
-            level_start_time_ms = now;
-            desired_yaw_cd = ahrs_view->yaw_sensor;
+
+    if (mode != SUCCESS) {
+        if (!zero_rp_input || !is_zero(target_yaw_rate_cds) || !is_zero(target_climb_rate_cms)) {
+            if (!pilot_override) {
+                pilot_override = true;
+                // set gains to their original values
+                load_gains(GAIN_ORIGINAL);
+                attitude_control->use_sqrt_controller(true);
+            }
+            // reset pilot override time
+            override_time = now;
+            if (!zero_rp_input) {
+                // only reset position on roll or pitch input
+                have_position = false;
+            }
+        } else if (pilot_override) {
+            // check if we should resume tuning after pilot's override
+            if (now - override_time > AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS) {
+                pilot_override = false;             // turn off pilot override
+                // set gains to their intra-test values (which are very close to the original gains)
+                // load_gains(GAIN_INTRA_TEST); //I think we should be keeping the originals here to let the I term settle quickly
+                step = WAITING_FOR_LEVEL; // set tuning step back from beginning
+                step_start_time_ms = now;
+                level_start_time_ms = now;
+                desired_yaw_cd = ahrs_view->yaw_sensor;
+            }
         }
     }
     if (pilot_override) {
