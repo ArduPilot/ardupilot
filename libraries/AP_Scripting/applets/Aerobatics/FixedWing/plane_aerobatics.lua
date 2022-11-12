@@ -165,7 +165,7 @@ end
 
 
 -- a PI controller implemented as a Lua object
-local function PI_controller(kP,kI,iMax)
+local function PI_controller(kP,kI,iMax,min,max)
    -- the new instance. You can put public variables inside this self
    -- declaration if you want to
    local self = {}
@@ -175,6 +175,8 @@ local function PI_controller(kP,kI,iMax)
    local _kI = kI or 0.0
    local _kD = kD or 0.0
    local _iMax = iMax
+   local _min = min
+   local _max = max
    local _last_t = nil
    local _I = 0
    local _P = 0
@@ -195,7 +197,9 @@ local function PI_controller(kP,kI,iMax)
       _counter = _counter + 1
 
       local P = _kP * err
-      _I = _I + _kI * err * dt
+      if ((_total < _max and _total > _min) or (_total >= _max and err < 0) or (_total <= _min and err > 0)) then
+         _I = _I + _kI * err * dt
+      end
       if _iMax then
          _I = constrain(_I, -_iMax, iMax)
       end
@@ -235,10 +239,10 @@ local function PI_controller(kP,kI,iMax)
    return self
 end
 
-local function speed_controller(kP_param,kI_param, kFF_pitch_param, Imax)
+local function speed_controller(kP_param,kI_param, kFF_pitch_param, Imax, min, max)
    local self = {}
    local kFF_pitch = kFF_pitch_param
-   local PI = PI_controller(kP_param:get(), kI_param:get(), Imax)
+   local PI = PI_controller(kP_param:get(), kI_param:get(), Imax, min, max)
 
    function self.update(target, anticipated_pitch_rad)
       local current_speed = ahrs:get_velocity_NED():length()
@@ -258,7 +262,7 @@ local function speed_controller(kP_param,kI_param, kFF_pitch_param, Imax)
    return self
 end
 
-local speed_PI = speed_controller(SPD_P, SPD_I, THR_PIT_FF, 100.0)
+local speed_PI = speed_controller(SPD_P, SPD_I, THR_PIT_FF, 100.0, 0.0, 100.0)
 
 function sgn(x)
    local eps = 0.000001
