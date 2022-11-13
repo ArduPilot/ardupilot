@@ -33,6 +33,7 @@ AEROM_THR_LKAHD = bind_add_param('THR_LKAHD', 15, 1)
 AEROM_DEBUG = bind_add_param('DEBUG', 16, 0)
 AEROM_THR_MIN = bind_add_param('THR_MIN', 17, 0)
 AEROM_THR_BOOST = bind_add_param('THR_BOOST', 18, 50)
+AEROM_YAW_ACCEL = bind_add_param('YAW_ACCEL', 19, 1500)
 
 -- cope with old param values
 if AEROM_ANG_ACCEL:get() < 100 and AEROM_ANG_ACCEL:get() > 0 then
@@ -2140,12 +2141,20 @@ function do_path()
    --]]
    local ang_rate_diff_dps = tot_ang_vel_bf_dps - path_var.last_ang_rate_dps
    local max_delta_dps = AEROM_ANG_ACCEL:get() * actual_dt
+   local max_delta_yaw_dps = max_delta_dps
+   if AEROM_YAW_ACCEL:get() > 0 and
+      (AEROM_YAW_ACCEL:get() < AEROM_ANG_ACCEL:get() or AEROM_ANG_ACCEL:get() <= 0) then
+      max_delta_yaw_dps = AEROM_YAW_ACCEL:get() * actual_dt
+   end
    if max_delta_dps > 0 then
       ang_rate_diff_dps:x(constrain(ang_rate_diff_dps:x(), -max_delta_dps, max_delta_dps))
       ang_rate_diff_dps:y(constrain(ang_rate_diff_dps:y(), -max_delta_dps, max_delta_dps))
-      ang_rate_diff_dps:z(constrain(ang_rate_diff_dps:z(), -max_delta_dps, max_delta_dps))
-      tot_ang_vel_bf_dps = path_var.last_ang_rate_dps + ang_rate_diff_dps
    end
+   if max_delta_yaw_dps > 0 then
+      ang_rate_diff_dps:z(constrain(ang_rate_diff_dps:z(), -max_delta_yaw_dps, max_delta_yaw_dps))
+   end
+
+   tot_ang_vel_bf_dps = path_var.last_ang_rate_dps + ang_rate_diff_dps
    path_var.last_ang_rate_dps = tot_ang_vel_bf_dps
 
 
