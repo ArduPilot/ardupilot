@@ -48,6 +48,8 @@ the ground track.
 | 25 | Laydown Humpty           | radius | height      |             |            | Yes        |
 | 25 | Barrel Roll              | radius | length      | num spirals |            | No         |
 | 26 | Straight Hold            | length | bank angle  |             |            | No         |
+| 29 | Four Point Roll          | length |             |             |            | No         |
+| 30 | Eight Point Roll         | length |             |             |            | No         |
 
 Note: In the script you will find other (specialised) manouvers which do not appear in the 
 'command table'. These tend to be specialised manouvers which may expect an inverted entry or 

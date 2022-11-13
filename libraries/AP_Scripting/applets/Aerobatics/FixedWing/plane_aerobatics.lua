@@ -1163,6 +1163,38 @@ function two_point_roll(length, arg2, arg3, arg4)
       })
 end
 
+function four_point_roll(length, arg2, arg3, arg4)
+   return make_paths("four_point_roll", {
+            { path_straight((length*3)/15),         roll_angle(90) },
+            { path_straight(length/15),             roll_angle(0) },
+            { path_straight((length*3)/15),         roll_angle(90) },
+            { path_straight(length/15),             roll_angle(0) },
+            { path_straight((length*3)/15),         roll_angle(90) },
+            { path_straight(length/15),             roll_angle(0) },
+            { path_straight((length*3)/15),         roll_angle(90) },
+      })
+end
+
+function eight_point_roll(length, arg2, arg3, arg4)
+   return make_paths("eight_point_roll", {
+            { path_straight((length*4)/39),         roll_angle(45) },
+            { path_straight(length/39),             roll_angle(0) },
+            { path_straight((length*4)/39),         roll_angle(45) },
+            { path_straight(length/39),             roll_angle(0) },
+            { path_straight((length*4)/39),         roll_angle(45) },
+            { path_straight(length/39),             roll_angle(0) },
+            { path_straight((length*4)/39),         roll_angle(45) },
+            { path_straight(length/39),             roll_angle(0) },
+            { path_straight((length*4)/39),         roll_angle(45) },
+            { path_straight(length/39),             roll_angle(0) },
+            { path_straight((length*4)/39),         roll_angle(45) },
+            { path_straight(length/39),             roll_angle(0) },
+            { path_straight((length*4)/39),         roll_angle(45) },
+            { path_straight(length/39),             roll_angle(0) },
+            { path_straight((length*4)/39),         roll_angle(45) },
+      })
+end
+
 function procedure_turn(radius, bank_angle, step_out, arg4)
    local rabs = math.abs(radius)
    return make_paths("procedure_turn", {
@@ -2263,6 +2295,8 @@ command_table[25]= PathFunction(laydown_humpty, "Laydown Humpty")
 command_table[26] = PathFunction(barrel_roll, "Barrel Roll")
 command_table[27]= PathFunction(straight_flight, "Straight Hold")
 command_table[28] = PathFunction(partial_circle, "Partial Circle")
+command_table[29]= PathFunction(four_point_roll, "Four Point Roll")
+command_table[30]= PathFunction(eight_point_roll, "Eight Point Roll")
 command_table[200] = PathFunction(test_all_paths, "Test Suite")
 command_table[201] = PathFunction(nz_clubman, "NZ Clubman")
 command_table[202] = PathFunction(f3a_p23_l_r, "FAI F3A P23 L to R")
