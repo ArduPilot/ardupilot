@@ -51,7 +51,7 @@ float Plane::calc_speed_scaler(void)
     }
     if (!plane.ahrs.airspeed_sensor_enabled()  && 
         (plane.g2.flight_options & FlightOptions::SURPRESS_TKOFF_SCALING) &&
-        (plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF)) { //scaling is surpressed during climb phase of automatic takeoffs with no airspeed sensor being used due to problems with inaccurate airspeed estimates
+        (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF)) { //scaling is surpressed during climb phase of automatic takeoffs with no airspeed sensor being used due to problems with inaccurate airspeed estimates
         return MIN(speed_scaler, 1.0f) ;
     }
     return speed_scaler;
@@ -395,10 +395,18 @@ void Plane::stabilize_training(float speed_scaler)
  */
 void Plane::stabilize_acro(float speed_scaler)
 {
+    if (g.acro_locking == 2 && g.acro_yaw_rate > 0 &&
+        yawController.rate_control_enabled()) {
+        // we can do 3D acro locking
+        stabilize_acro_quaternion(speed_scaler);
+        return;
+    }
     const float rexpo = roll_in_expo(true);
     const float pexpo = pitch_in_expo(true);
     float roll_rate = (rexpo/SERVO_MAX) * g.acro_roll_rate;
     float pitch_rate = (pexpo/SERVO_MAX) * g.acro_pitch_rate;
+
+    IGNORE_RETURN(plane.ahrs.get_quaternion(plane.acro_state.q));
 
     /*
       check for special roll handling near the pitch poles
@@ -472,6 +480,105 @@ void Plane::stabilize_acro(float speed_scaler)
 }
 
 /*
+  quaternion based acro stabilization with continuous locking. Enabled with ACRO_LOCKING=2
+ */
+void Plane::stabilize_acro_quaternion(float speed_scaler)
+{
+    auto &q = acro_state.q;
+    const float rexpo = roll_in_expo(true);
+    const float pexpo = pitch_in_expo(true);
+    const float yexpo = rudder_in_expo(true);
+
+    // get pilot desired rates
+    float roll_rate = (rexpo/SERVO_MAX) * g.acro_roll_rate;
+    float pitch_rate = (pexpo/SERVO_MAX) * g.acro_pitch_rate;
+    float yaw_rate = (yexpo/SERVO_MAX) * g.acro_yaw_rate;
+    bool roll_active = !is_zero(roll_rate);
+    bool pitch_active = !is_zero(pitch_rate);
+    bool yaw_active = !is_zero(yaw_rate);
+
+    // integrate target attitude
+    Vector3f r{ float(radians(roll_rate)), float(radians(pitch_rate)), float(radians(yaw_rate)) };
+    r *= G_Dt;
+    q.rotate_fast(r);
+    q.normalize();
+
+    // fill in target roll/pitch for GCS/logs
+    nav_roll_cd = degrees(q.get_euler_roll())*100;
+    nav_pitch_cd = degrees(q.get_euler_pitch())*100;
+
+    // get AHRS attitude
+    Quaternion ahrs_q;
+    IGNORE_RETURN(ahrs.get_quaternion(ahrs_q));
+
+    // zero target if not flying, no stick input and zero throttle
+    if (is_zero(get_throttle_input()) &&
+        !is_flying() &&
+        is_zero(roll_rate) &&
+        is_zero(pitch_rate) &&
+        is_zero(yaw_rate)) {
+        // cope with sitting on the ground with neutral sticks, no throttle
+        q = ahrs_q;
+    }
+
+    // get error in attitude
+    Quaternion error_quat = ahrs_q.inverse() * q;
+    Vector3f error_angle1;
+    error_quat.to_axis_angle(error_angle1);
+
+    // don't let too much error build up, limit to 0.2s
+    const float max_error_t = 0.2;
+    float max_err_roll_rad  = radians(g.acro_roll_rate*max_error_t);
+    float max_err_pitch_rad = radians(g.acro_pitch_rate*max_error_t);
+    float max_err_yaw_rad   = radians(g.acro_yaw_rate*max_error_t);
+
+    if (!roll_active && acro_state.roll_active_last) {
+        max_err_roll_rad = 0;
+    }
+    if (!pitch_active && acro_state.pitch_active_last) {
+        max_err_pitch_rad = 0;
+    }
+    if (!yaw_active && acro_state.yaw_active_last) {
+        max_err_yaw_rad = 0;
+    }
+
+    Vector3f desired_rates = error_angle1;
+    desired_rates.x = constrain_float(desired_rates.x, -max_err_roll_rad, max_err_roll_rad);
+    desired_rates.y = constrain_float(desired_rates.y, -max_err_pitch_rad, max_err_pitch_rad);
+    desired_rates.z = constrain_float(desired_rates.z, -max_err_yaw_rad, max_err_yaw_rad);
+
+    // correct target based on max error
+    q.rotate_fast(desired_rates - error_angle1);
+    q.normalize();
+
+    // convert to desired body rates
+    desired_rates.x /= rollController.tau();
+    desired_rates.y /= pitchController.tau();
+    desired_rates.z /= pitchController.tau(); // no yaw tau parameter, use pitch
+
+    desired_rates *= degrees(1.0);
+
+    if (roll_active) {
+        desired_rates.x = roll_rate;
+    }
+    if (pitch_active) {
+        desired_rates.y = pitch_rate;
+    }
+    if (yaw_active) {
+        desired_rates.z = yaw_rate;
+    }
+
+    // call to rate controllers
+    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron,  rollController.get_rate_out(desired_rates.x, speed_scaler));
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitchController.get_rate_out(desired_rates.y, speed_scaler));
+    steering_control.steering = steering_control.rudder = yawController.get_rate_out(desired_rates.z,  speed_scaler, false);
+
+    acro_state.roll_active_last = roll_active;
+    acro_state.pitch_active_last = pitch_active;
+    acro_state.yaw_active_last = yaw_active;
+}
+
+/*
   main stabilization function for all 3 axes
  */
 void Plane::stabilize()
@@ -508,8 +615,7 @@ void Plane::stabilize()
     if (control_mode == &mode_training) {
         stabilize_training(speed_scaler);
 #if AP_SCRIPTING_ENABLED
-    } else if ((control_mode == &mode_auto &&
-               mission.get_current_nav_cmd().id == MAV_CMD_NAV_SCRIPT_TIME) || (nav_scripting.enabled && nav_scripting.current_ms > 0)) {
+    } else if (nav_scripting_active()) {
         // scripting is in control of roll and pitch rates and throttle
         const float aileron = rollController.get_rate_out(nav_scripting.roll_rate_dps, speed_scaler);
         const float elevator = pitchController.get_rate_out(nav_scripting.pitch_rate_dps, speed_scaler);
@@ -518,9 +624,6 @@ void Plane::stabilize()
         if (yawController.rate_control_enabled()) {
             const float rudder = yawController.get_rate_out(nav_scripting.yaw_rate_dps, speed_scaler, false);
             steering_control.rudder = rudder;
-        }
-        if (AP_HAL::millis() - nav_scripting.current_ms > 50) { //set_target_throttle_rate_rpy has not been called from script in last 50ms
-            nav_scripting.current_ms = 0;
         }
 #endif
     } else if (control_mode == &mode_acro) {
@@ -532,10 +635,10 @@ void Plane::stabilize()
 
         // we also stabilize using fixed wing surfaces
         if (plane.control_mode->mode_number() == Mode::Number::QACRO) {
-            plane.stabilize_acro(speed_scaler);
+            stabilize_acro(speed_scaler);
         } else {
-            plane.stabilize_roll(speed_scaler);
-            plane.stabilize_pitch(speed_scaler);
+            stabilize_roll(speed_scaler);
+            stabilize_pitch(speed_scaler);
         }
 #endif
     } else {
@@ -664,8 +767,8 @@ void Plane::calc_nav_yaw_ground(void)
 {
     if (gps.ground_speed() < 1 && 
         is_zero(get_throttle_input()) &&
-        flight_stage != AP_Vehicle::FixedWing::FLIGHT_TAKEOFF &&
-        flight_stage != AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
+        flight_stage != AP_FixedWing::FlightStage::TAKEOFF &&
+        flight_stage != AP_FixedWing::FlightStage::ABORT_LANDING) {
         // manual rudder control while still
         steer_state.locked_course = false;
         steer_state.locked_course_err = 0;
@@ -681,8 +784,8 @@ void Plane::calc_nav_yaw_ground(void)
     steer_state.last_steer_ms = now_ms;
 
     float steer_rate = (rudder_input()/4500.0f) * g.ground_steer_dps;
-    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF ||
-        flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
+    if (flight_stage == AP_FixedWing::FlightStage::TAKEOFF ||
+        flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
         steer_rate = 0;
     }
     if (!is_zero(steer_rate)) {
@@ -691,8 +794,8 @@ void Plane::calc_nav_yaw_ground(void)
     } else if (!steer_state.locked_course) {
         // pilot has released the rudder stick or we are still - lock the course
         steer_state.locked_course = true;
-        if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_TAKEOFF &&
-            flight_stage != AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
+        if (flight_stage != AP_FixedWing::FlightStage::TAKEOFF &&
+            flight_stage != AP_FixedWing::FlightStage::ABORT_LANDING) {
             steer_state.locked_course_err = 0;
         }
     }
@@ -786,7 +889,7 @@ void Plane::calc_nav_roll()
 void Plane::adjust_nav_pitch_throttle(void)
 {
     int8_t throttle = throttle_percentage();
-    if (throttle >= 0 && throttle < aparm.throttle_cruise && flight_stage != AP_Vehicle::FixedWing::FLIGHT_VTOL) {
+    if (throttle >= 0 && throttle < aparm.throttle_cruise && flight_stage != AP_FixedWing::FlightStage::VTOL) {
         float p = (aparm.throttle_cruise - throttle) / (float)aparm.throttle_cruise;
         nav_pitch_cd -= g.stab_pitch_down * 100.0f * p;
     }

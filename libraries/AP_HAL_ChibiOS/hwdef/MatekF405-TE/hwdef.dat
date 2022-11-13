@@ -175,15 +175,14 @@ define HAL_DEFAULT_AIRSPEED_PIN 10
 
 # -------reduce max size of embedded params for apj_tool.py
 define AP_PARAM_MAX_EMBEDDED_PARAM 1024
-define HAL_WITH_DSP FALSE
+define HAL_GYROFFT_ENABLED 0
 
 # --------------------- save flash ----------------------
+# save some flash
+include ../include/save_some_flash.inc
 define AP_BATTMON_SMBUS_ENABLE 0
 define HAL_PARACHUTE_ENABLED 0
 define HAL_SPRAYER_ENABLED 0
-define HAL_GENERATOR_ENABLED 0
-define AC_OAPATHPLANNER_ENABLED 0
-define PRECISION_LANDING 0
 define HAL_BARO_WIND_COMP_ENABLED 0
 define AP_GRIPPER_ENABLED 0
 define HAL_RUNCAM_ENABLED 0
@@ -192,5 +191,3 @@ define HAL_NMEA_OUTPUT_ENABLED 0
 define HAL_BUTTON_ENABLED 0
 define HAL_OREO_LED_ENABLED 0
 define HAL_PICCOLO_CAN_ENABLE 0
-define AP_OPTICALFLOW_ENABLED 0
-define AP_ICENGINE_ENABLED 0

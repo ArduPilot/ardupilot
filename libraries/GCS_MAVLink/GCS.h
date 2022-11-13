@@ -20,10 +20,8 @@
 #include <AP_Filesystem/AP_Filesystem_config.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
-#include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include <AP_Mount/AP_Mount.h>
-#include <AC_Fence/AC_Fence.h>
-#include <AP_Airspeed/AP_Airspeed_config.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 #include "ap_message.h"
 

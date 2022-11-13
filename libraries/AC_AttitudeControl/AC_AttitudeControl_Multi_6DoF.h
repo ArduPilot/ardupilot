@@ -5,7 +5,7 @@
 
 class AC_AttitudeControl_Multi_6DoF : public AC_AttitudeControl_Multi {
 public:
-    AC_AttitudeControl_Multi_6DoF(AP_AHRS_View &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt):
+    AC_AttitudeControl_Multi_6DoF(AP_AHRS_View &ahrs, const AP_MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt):
         AC_AttitudeControl_Multi(ahrs,aparm,motors,dt) {
 
         if (_singleton != nullptr) {

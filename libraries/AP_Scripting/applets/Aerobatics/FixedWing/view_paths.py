@@ -9,12 +9,15 @@ from pymavlink.rotmat import Vector3, Matrix3
 from pymavlink import mavutil
 import math, sys
 
+# quaternion to rotate to fix NED to ENU conversion
+q_NED_ENU = Quaternion([0, -math.sqrt(2.0)*0.5, -math.sqrt(2)*0.5, 0])
+
 def qtuple(q):
     '''
     return a quaternion tuple. We mirror on the Z axis by changing
     the sign of two elements to cope with the different conventions
     '''
-    return (q[0],-q[1],-q[2],q[3])
+    return (q[0],q[1],q[2],q[3])
 
 config = ViewerConfig()
 config.set_window_size(320, 240)
@@ -39,14 +42,18 @@ def view_path(viewer, path, color):
         dist = math.sqrt(dx**2+dy**2+dz**2)+0.001
         if dist <= 0:
             continue
+        if math.isnan(p1.q[0]) or math.isnan(p1.q[1]) or math.isnan(p1.q[2]) or math.isnan(p1.q[3]):
+            continue
         pname = 'p%u' % i
         viewer.append_box('root', pname, (dist, 0.1, 0.002), frame=(p1.pos,qtuple(p1.q)))
         viewer.set_material('root', pname, color_rgba=color)
 
 class LogPoint(object):
     def __init__(self, x,y,z,q,t):
-        self.pos = (x,y,z)
-        self.q = q
+        # convert from NED to ENU
+        global q_NED_ENU
+        self.pos = (y,x,-z)
+        self.q = q_NED_ENU * q
         self.t = t
 
 def show_log(viewer,filename):
@@ -61,15 +68,15 @@ def show_log(viewer,filename):
     scale = 0.01
 
     while True:
-        m = mlog.recv_match(type=['POST', 'POSB', 'POSM','ATT'])
+        m = mlog.recv_match(type=['POST', 'POSB', 'POSM', 'ATT'])
         if m is None:
             break
         if m.get_type() == 'POST' and ATT is not None:
-            path_POST.append(LogPoint(m.px*scale, m.py*scale, -m.pz*scale, Quaternion([m.q1, m.q2, m.q3, m.q4]), m.TimeUS*1.0e-6))
+            path_POST.append(LogPoint(m.px*scale, m.py*scale, m.pz*scale, Quaternion([m.q1, m.q2, m.q3, m.q4]), m.TimeUS*1.0e-6))
         if m.get_type() == 'POSB' and ATT is not None:
-            path_POSB.append(LogPoint(m.px*scale, m.py*scale, -m.pz*scale, Quaternion([m.q1, m.q2, m.q3, m.q4]), m.TimeUS*1.0e-6))
+            path_POSB.append(LogPoint(m.px*scale, m.py*scale, m.pz*scale, Quaternion([m.q1, m.q2, m.q3, m.q4]), m.TimeUS*1.0e-6))
         if m.get_type() == 'POSM' and ATT is not None:
-            path_POSM.append(LogPoint(m.px*scale, m.py*scale, -m.pz*scale, Quaternion([m.q1, m.q2, m.q3, m.q4]), m.TimeUS*1.0e-6))
+            path_POSM.append(LogPoint(m.px*scale, m.py*scale, m.pz*scale, Quaternion([m.q1, m.q2, m.q3, m.q4]), m.TimeUS*1.0e-6))
         if m.get_type() == 'ATT':
             ATT = m
     view_path(viewer, path_POST, (0.7,0.1,0.1,1))

@@ -19,6 +19,7 @@
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_Beacon/AP_Beacon.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <stdio.h>
 
 #if !APM_BUILD_TYPE(APM_BUILD_ArduPlane)

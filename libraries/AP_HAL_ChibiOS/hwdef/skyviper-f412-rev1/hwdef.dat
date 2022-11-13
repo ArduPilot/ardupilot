@@ -128,3 +128,5 @@ define HAL_BARO_20789_I2C_ADDR_PRESS 0x63
 # Disable un-needed hardware drivers
 define HAL_WITH_ESC_TELEM 0
 define AP_FETTEC_ONEWIRE_ENABLED 0
+
+AUTOBUILD_TARGETS Copter

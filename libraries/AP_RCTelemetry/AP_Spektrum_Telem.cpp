@@ -32,6 +32,7 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_RTC/AP_RTC.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #ifdef HAVE_AP_BLHELI_SUPPORT
 #include <AP_BLheli/AP_BLHeli.h>
 #endif

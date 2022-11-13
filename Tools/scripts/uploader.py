@@ -234,6 +234,8 @@ class uploader(object):
     EXTF_READ_MULTI = b'\x36'     # read bytes at address and increment
     EXTF_GET_CRC    = b'\x37'	  # compute & return a CRC of data in external flash
 
+    CHIP_FULL_ERASE = b'\x40'     # full erase of flash
+
     INFO_BL_REV     = b'\x01'        # bootloader protocol revision
     BL_REV_MIN      = 2              # minimum supported bootloader protocol
     BL_REV_MAX      = 5              # maximum supported bootloader protocol
@@ -258,7 +260,8 @@ class uploader(object):
                  target_component=None,
                  source_system=None,
                  source_component=None,
-                 no_extf=False):
+                 no_extf=False,
+                 force_erase=False):
         self.MAVLINK_REBOOT_ID1 = bytearray(b'\xfe\x21\x72\xff\x00\x4c\x00\x00\x40\x40\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf6\x00\x01\x00\x00\x53\x6b')  # NOQA
         self.MAVLINK_REBOOT_ID0 = bytearray(b'\xfe\x21\x45\xff\x00\x4c\x00\x00\x40\x40\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf6\x00\x00\x00\x00\xcc\x37')  # NOQA
         if target_component is None:
@@ -268,6 +271,7 @@ class uploader(object):
         if source_component is None:
             source_component = 1
         self.no_extf = no_extf
+        self.force_erase = force_erase
 
         # open the port, keep the default timeout short so we can poll quickly
         self.port = serial.Serial(portname, baudrate_bootloader, timeout=2.0)
@@ -444,17 +448,23 @@ class uploader(object):
     # send the CHIP_ERASE command and wait for the bootloader to become ready
     def __erase(self, label):
         print("\n", end='')
-        self.__send(uploader.CHIP_ERASE +
-                    uploader.EOC)
+        if self.force_erase:
+            print("Force erasing full chip\n")
+            self.__send(uploader.CHIP_FULL_ERASE +
+                        uploader.EOC)
+        else:
+            self.__send(uploader.CHIP_ERASE +
+                        uploader.EOC)
 
         # erase is very slow, give it 20s
-        deadline = time.time() + 20.0
+        timeout = 20.0
+        deadline = time.time() + timeout
         while time.time() < deadline:
 
             # Draw progress bar (erase usually takes about 9 seconds to complete)
             estimatedTimeRemaining = deadline-time.time()
             if estimatedTimeRemaining >= 9.0:
-                self.__drawProgressBar(label, 20.0-estimatedTimeRemaining, 9.0)
+                self.__drawProgressBar(label, timeout-estimatedTimeRemaining, 9.0)
             else:
                 self.__drawProgressBar(label, 10.0, 10.0)
                 sys.stdout.write(" (timeout: %d seconds) " % int(deadline-time.time()))
@@ -1112,6 +1122,7 @@ def main():
     parser.add_argument('--no-extf', action="store_true", help="Do not attempt external flash operations")
     parser.add_argument('--erase-extflash', type=lambda x: int(x, 0), default=None,
                         help="Erase sectors containing specified amount of bytes from ext flash")
+    parser.add_argument('--force-erase', action="store_true", help="Do not check for pre cleared flash, always erase the chip")
     parser.add_argument('firmware', nargs="?", action="store", default=None, help="Firmware file to be uploaded")
     args = parser.parse_args()
 
@@ -1149,7 +1160,8 @@ def main():
                                   args.target_component,
                                   args.source_system,
                                   args.source_component,
-                                  args.no_extf)
+                                  args.no_extf,
+                                  args.force_erase)
 
                 except Exception as e:
                     if not is_WSL and not is_WSL2 and "win32" not in _platform:

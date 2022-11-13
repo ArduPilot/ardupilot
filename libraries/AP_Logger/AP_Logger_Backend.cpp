@@ -6,6 +6,7 @@
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Rally/AP_Rally.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -180,20 +181,16 @@ bool AP_Logger_Backend::Write_Emit_FMT(uint8_t msg_type)
 #endif
 
     // get log structure from front end:
-    char ls_name[LS_NAME_SIZE] = {};
-    char ls_format[LS_FORMAT_SIZE] = {};
-    char ls_labels[LS_LABELS_SIZE] = {};
-    char ls_units[LS_UNITS_SIZE] = {};
-    char ls_multipliers[LS_MULTIPLIERS_SIZE] = {};
+    struct AP_Logger::log_write_fmt_strings ls = {};
     struct LogStructure logstruct = {
         // these will be overwritten, but need to keep the compiler happy:
         0,
         0,
-        ls_name,
-        ls_format,
-        ls_labels,
-        ls_units,
-        ls_multipliers
+        ls.name,
+        ls.format,
+        ls.labels,
+        ls.units,
+        ls.multipliers
     };
     if (!_front.fill_log_write_logstructure(logstruct, msg_type)) {
         // this is a bug; we've been asked to write out the FMT

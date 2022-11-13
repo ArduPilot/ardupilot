@@ -83,10 +83,10 @@ void Plane::update_is_flying_5Hz(void)
 
             switch (flight_stage)
             {
-            case AP_Vehicle::FixedWing::FLIGHT_TAKEOFF:
+            case AP_FixedWing::FlightStage::TAKEOFF:
                 break;
 
-            case AP_Vehicle::FixedWing::FLIGHT_NORMAL:
+            case AP_FixedWing::FlightStage::NORMAL:
                 if (in_preLaunch_flight_stage()) {
                     // while on the ground, an uncalibrated airspeed sensor can drift to 7m/s so
                     // ensure we aren't showing a false positive.
@@ -96,17 +96,17 @@ void Plane::update_is_flying_5Hz(void)
                 }
                 break;
 
-            case AP_Vehicle::FixedWing::FLIGHT_VTOL:
+            case AP_FixedWing::FlightStage::VTOL:
                 // TODO: detect ground impacts
                 break;
 
-            case AP_Vehicle::FixedWing::FLIGHT_LAND:
+            case AP_FixedWing::FlightStage::LAND:
                 if (landing.is_on_approach() && auto_state.sink_rate > 0.2f) {
                     is_flying_bool = true;
                 }
                 break;
 
-            case AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND:
+            case AP_FixedWing::FlightStage::ABORT_LANDING:
                 if (auto_state.sink_rate < -0.5f) {
                     // steep climb
                     is_flying_bool = true;
@@ -121,7 +121,7 @@ void Plane::update_is_flying_5Hz(void)
         // when disarmed assume not flying and need overwhelming evidence that we ARE flying
         is_flying_bool = airspeed_movement && gps_confirmed_movement;
 
-        if ((flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF) || landing.is_flaring()) {
+        if ((flight_stage == AP_FixedWing::FlightStage::TAKEOFF) || landing.is_flaring()) {
             is_flying_bool = false;
         }
     }
@@ -257,7 +257,7 @@ void Plane::crash_detection_update(void)
         } else {
             switch (flight_stage)
             {
-            case AP_Vehicle::FixedWing::FLIGHT_TAKEOFF:
+            case AP_FixedWing::FlightStage::TAKEOFF:
                 if (g.takeoff_throttle_min_accel > 0 &&
                         !throttle_suppressed) {
                     // if you have an acceleration holding back throttle, but you met the
@@ -269,14 +269,14 @@ void Plane::crash_detection_update(void)
                 // TODO: handle auto missions without NAV_TAKEOFF mission cmd
                 break;
 
-            case AP_Vehicle::FixedWing::FLIGHT_NORMAL:
+            case AP_FixedWing::FlightStage::NORMAL:
                 if (!in_preLaunch_flight_stage() && been_auto_flying) {
                     crashed = true;
                     crash_state.debounce_time_total_ms = CRASH_DETECTION_DELAY_MS;
                 }
                 break;
 
-            case AP_Vehicle::FixedWing::FLIGHT_VTOL:
+            case AP_FixedWing::FlightStage::VTOL:
                 // we need a totally new method for this
                 crashed = false;
                 break;
@@ -337,6 +337,6 @@ bool Plane::in_preLaunch_flight_stage(void)
 #endif
     return (control_mode == &mode_auto &&
             throttle_suppressed &&
-            flight_stage == AP_Vehicle::FixedWing::FLIGHT_NORMAL &&
+            flight_stage == AP_FixedWing::FlightStage::NORMAL &&
             mission.get_current_nav_cmd().id == MAV_CMD_NAV_TAKEOFF);
 }

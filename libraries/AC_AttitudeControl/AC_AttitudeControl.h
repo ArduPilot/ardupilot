@@ -6,11 +6,11 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_AHRS/AP_AHRS_View.h>
 #include <AP_Motors/AP_Motors.h>
 #include <AC_PID/AC_PID.h>
 #include <AC_PID/AC_P.h>
+#include <AP_Vehicle/AP_MultiCopter.h>
 
 #define AC_ATTITUDE_CONTROL_ANGLE_P                     4.5f             // default angle P gain for roll, pitch and yaw
 
@@ -48,7 +48,7 @@
 class AC_AttitudeControl {
 public:
     AC_AttitudeControl( AP_AHRS_View &ahrs,
-                        const AP_Vehicle::MultiCopter &aparm,
+                        const AP_MultiCopter &aparm,
                         AP_Motors& motors,
                         float dt) :
         _p_angle_roll(AC_ATTITUDE_CONTROL_ANGLE_P),
@@ -516,7 +516,7 @@ protected:
 
     // References to external libraries
     const AP_AHRS_View&  _ahrs;
-    const AP_Vehicle::MultiCopter &_aparm;
+    const AP_MultiCopter &_aparm;
     AP_Motors&          _motors;
 
     static AC_AttitudeControl *_singleton;
@@ -552,4 +552,17 @@ public:
     float control_monitor_rms_output_pitch_D(void) const;
     float control_monitor_rms_output_pitch(void) const;
     float control_monitor_rms_output_yaw(void) const;
+
+    // structure for angle and/or rate target
+    enum class HeadingMode {
+        Angle_Only,
+        Angle_And_Rate,
+        Rate_Only
+    };
+    struct HeadingCommand {
+        float yaw_angle_cd;
+        float yaw_rate_cds;
+        HeadingMode heading_mode;
+    };
+    void input_thrust_vector_heading(const Vector3f& thrust_vector, HeadingCommand heading);
 };

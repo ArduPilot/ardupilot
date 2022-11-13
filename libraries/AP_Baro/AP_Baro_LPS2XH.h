@@ -2,10 +2,6 @@
 
 #include "AP_Baro_Backend.h"
 
-#ifndef AP_BARO_LPS2XH_ENABLED
-#define AP_BARO_LPS2XH_ENABLED AP_BARO_BACKEND_DEFAULT_ENABLED
-#endif
-
 #if AP_BARO_LPS2XH_ENABLED
 
 #include <AP_HAL/AP_HAL.h>

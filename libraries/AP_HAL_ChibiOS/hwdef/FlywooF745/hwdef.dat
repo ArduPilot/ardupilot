@@ -154,7 +154,7 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 define STM32_PWM_USE_ADVANCED TRUE
 
 # FFT option (disabled by default)
-# define HAL_WITH_DSP 1
+# define HAL_GYROFFT_ENABLED 1
 # define AC_OAPATHPLANNER_ENABLED 0
 
 # EK2 options (disabled by default)
@@ -162,9 +162,7 @@ define STM32_PWM_USE_ADVANCED TRUE
 # define HAL_NAVEKF3_AVAILABLE 0
 
 # save some flash
-define HAL_GENERATOR_ENABLED 0
-define AC_OAPATHPLANNER_ENABLED 0
-define PRECISION_LANDING 0
+include ../include/save_some_flash.inc
 define HAL_BARO_WIND_COMP_ENABLED 0
 define AP_GRIPPER_ENABLED 0
 define HAL_PARACHUTE_ENABLED 0
@@ -174,5 +172,3 @@ define HAL_PARACHUTE_ENABLED 0
 include ../include/minimal.inc
 define HAL_SPRAYER_ENABLED 0
 define AP_BATTMON_SMBUS_ENABLE 0
-define AP_OPTICALFLOW_ENABLED 0
-define AP_ICENGINE_ENABLED 0

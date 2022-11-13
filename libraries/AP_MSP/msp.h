@@ -17,7 +17,6 @@
 #endif
 
 #include <AP_HAL/UARTDriver.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 
 #include "msp_osd.h"
 #include "msp_protocol.h"

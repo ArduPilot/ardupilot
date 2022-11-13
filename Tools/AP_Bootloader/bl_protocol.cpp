@@ -116,6 +116,8 @@
 #define PROTO_EXTF_READ_MULTI       0x36    // read bytes at address and increment
 #define PROTO_EXTF_GET_CRC          0x37	// compute & return a CRC of data in external flash
 
+#define PROTO_CHIP_FULL_ERASE   0x40    // erase program area and reset program address, skip any flash wear optimization and force an erase
+
 #define PROTO_PROG_MULTI_MAX    64	// maximum PROG_MULTI size
 #define PROTO_READ_MULTI_MAX    255	// size of the size field
 
@@ -597,6 +599,9 @@ bootloader(unsigned timeout)
         // erase failure:	INSYNC/FAILURE
         //
         case PROTO_CHIP_ERASE:
+#if defined(STM32F7) || defined(STM32H7)
+        case PROTO_CHIP_FULL_ERASE:
+#endif
 
             if (!done_sync || !CHECK_GET_DEVICE_FINISHED(done_get_device_flags)) {
                 // lower chance of random data on a uart triggering erase
@@ -621,7 +626,11 @@ bootloader(unsigned timeout)
 
             // erase all sectors
             for (uint8_t i = 0; flash_func_sector_size(i) != 0; i++) {
+#if defined(STM32F7) || defined(STM32H7)
+                if (!flash_func_erase_sector(i, c == PROTO_CHIP_FULL_ERASE)) {
+#else
                 if (!flash_func_erase_sector(i)) {
+#endif
                     goto cmd_fail;
                 }
             }

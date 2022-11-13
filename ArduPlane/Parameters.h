@@ -562,6 +562,8 @@ public:
     AP_Int8         man_expo_rudder;
 
     AP_Int32        oneshot_mask;
+    
+    AP_Int8         axis_bitmask; // axes to be autotuned
 
     // just to make compilation easier when all things are compiled out...
     uint8_t unused_integer;

@@ -1,10 +1,11 @@
 #include "AP_Soaring.h"
-#include <AP_Logger/AP_Logger.h>
-#include <GCS_MAVLink/GCS.h>
-#include <stdint.h>
-extern const AP_HAL::HAL& hal;
 
 #if HAL_SOARING_ENABLED
+
+#include <AP_Logger/AP_Logger.h>
+#include <AP_TECS/AP_TECS.h>
+#include <GCS_MAVLink/GCS.h>
+#include <stdint.h>
 
 // ArduSoar parameters
 const AP_Param::GroupInfo SoaringController::var_info[] = {
@@ -165,7 +166,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     AP_GROUPEND
 };
 
-SoaringController::SoaringController(AP_TECS &tecs, const AP_Vehicle::FixedWing &parms) :
+SoaringController::SoaringController(AP_TECS &tecs, const AP_FixedWing &parms) :
     _tecs(tecs),
     _vario(parms,_polarParams),
     _speedToFly(_polarParams),

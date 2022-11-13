@@ -17,7 +17,7 @@
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS && HAL_CANMANAGER_ENABLED
 #include "AP_CANManager.h"
-#include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include <AP_UAVCAN/AP_UAVCAN.h>
 #include <AP_PiccoloCAN/AP_PiccoloCAN.h>

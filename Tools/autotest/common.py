@@ -2021,6 +2021,15 @@ class AutoTest(ABC):
         self.progress("Calling initialise-after-reboot")
         self.initialise_after_reboot_sitl()
 
+    def scripting_restart(self):
+        '''restart scripting subsystem'''
+        self.progress("Restarting Scripting")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_SCRIPTING,
+            mavutil.mavlink.SCRIPTING_CMD_STOP_AND_RESTART,
+            0, 0, 0, 0, 0, 0,
+            timeout=5)
+
     def set_streamrate(self, streamrate, timeout=20, stream=mavutil.mavlink.MAV_DATA_STREAM_ALL):
         '''set MAV_DATA_STREAM_ALL; timeout is wallclock time'''
         tstart = time.time()
@@ -3858,15 +3867,26 @@ class AutoTest(ABC):
             if self.get_sim_time_cached() - tstart > timeout:
                 return
 
-    def assert_receive_message(self, type, timeout=1, verbose=False, very_verbose=False, mav=None):
+    def assert_receive_message(self,
+                               type,
+                               timeout=1,
+                               verbose=False,
+                               very_verbose=False,
+                               mav=None,
+                               condition=None,
+                               delay_fn=None):
         if mav is None:
             mav = self.mav
         m = None
         tstart = time.time()  # timeout in wallclock
-        while m is None:
-            m = mav.recv_match(type=type, blocking=True, timeout=0.05)
+        while True:
+            m = mav.recv_match(type=type, blocking=True, timeout=0.05, condition=condition)
+            if m is not None:
+                break
             if time.time() - tstart > timeout:
                 raise NotAchievedException("Did not get %s" % type)
+            if delay_fn is not None:
+                delay_fn()
         if verbose:
             self.progress("Received (%s)" % str(m))
         if very_verbose:
@@ -7047,8 +7067,11 @@ Also, ignores heartbeats not from our target system'''
     def script_test_source_path(self, scriptname):
         return os.path.join(self.rootdir(), "libraries", "AP_Scripting", "tests", scriptname)
 
+    def script_applet_source_path(self, scriptname):
+        return os.path.join(self.rootdir(), "libraries", "AP_Scripting", "applets", scriptname)
+
     def installed_script_path(self, scriptname):
-        return os.path.join("scripts", scriptname)
+        return os.path.join("scripts", os.path.basename(scriptname))
 
     def install_script(self, source, scriptname):
         dest = self.installed_script_path(scriptname)
@@ -7066,8 +7089,12 @@ Also, ignores heartbeats not from our target system'''
         source = self.script_test_source_path(scriptname)
         self.install_script(source, scriptname)
 
+    def install_applet_script(self, scriptname):
+        source = self.script_applet_source_path(scriptname)
+        self.install_script(source, scriptname)
+
     def remove_example_script(self, scriptname):
-        dest = self.installed_script_path(scriptname)
+        dest = self.installed_script_path(os.path.basename(scriptname))
         try:
             os.unlink(dest)
         except IOError:

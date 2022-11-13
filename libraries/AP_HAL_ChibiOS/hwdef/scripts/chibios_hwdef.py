@@ -1488,6 +1488,11 @@ def write_IMU_config(f):
             error("Duplicate IMU: %s" % seen_str(dev))
         seen.add(seen_str(dev))
         driver = dev[0]
+        # get instance number if mentioned
+        instance = -1
+        if dev[-1].startswith("INSTANCE:"):
+            instance = int(dev[-1][9:])
+            dev = dev[:-1]
         for i in range(1, len(dev)):
             if dev[i].startswith("SPI:"):
                 dev[i] = parse_spi_device(dev[i])
@@ -1495,7 +1500,11 @@ def write_IMU_config(f):
                 (wrapper, dev[i]) = parse_i2c_device(dev[i])
         n = len(devlist)+1
         devlist.append('HAL_INS_PROBE%u' % n)
-        if dev[-1].startswith("BOARD_MATCH("):
+        if instance != -1:
+            f.write(
+            '#define HAL_INS_PROBE%u %s ADD_BACKEND_INSTANCE(AP_InertialSensor_%s::probe(*this,%s),%d)\n'
+            % (n, wrapper, driver, ','.join(dev[1:]), instance))
+        elif dev[-1].startswith("BOARD_MATCH("):
             f.write(
                 '#define HAL_INS_PROBE%u %s ADD_BACKEND_BOARD_MATCH(%s, AP_InertialSensor_%s::probe(*this,%s))\n'
                 % (n, wrapper, dev[-1], driver, ','.join(dev[1:-1])))
@@ -2918,6 +2927,21 @@ def add_apperiph_defaults(f):
 
 // no CAN manager in AP_Periph:
 #define HAL_CANMANAGER_ENABLED 0
+
+// Periphs don't use the FFT library:
+#ifndef HAL_GYROFFT_ENABLED
+#define HAL_GYROFFT_ENABLED 0
+#endif
+
+// MSP parsing is off by default in AP_Periph:
+#ifndef HAL_MSP_ENABLED
+#define HAL_MSP_ENABLED 0
+#endif
+
+// periph does not make use of compass scaling or diagonals
+#ifndef AP_COMPASS_DIAGONALS_ENABLED
+#define AP_COMPASS_DIAGONALS_ENABLED 0
+#endif
 ''')
 
 def add_bootloader_defaults(f):
@@ -2930,6 +2954,13 @@ def add_bootloader_defaults(f):
 // AP_Bootloader defaults
 
 #define HAL_DSHOT_ALARM_ENABLED 0
+
+// bootloaders *definitely* don't use the FFT library:
+#ifndef HAL_GYROFFT_ENABLED
+#define HAL_GYROFFT_ENABLED 0
+#endif
+
+#define HAL_MAX_CAN_PROTOCOL_DRIVERS 0
 ''')
 
 def add_iomcu_firmware_defaults(f):
@@ -2943,6 +2974,11 @@ def add_iomcu_firmware_defaults(f):
 // IOMCU Firmware defaults
 
 #define HAL_DSHOT_ALARM_ENABLED 0
+
+// IOMCUs *definitely* don't use the FFT library:
+#ifndef HAL_GYROFFT_ENABLED
+#define HAL_GYROFFT_ENABLED 0
+#endif
 ''')
 
 def add_normal_firmware_defaults(f):
@@ -2964,6 +3000,7 @@ def add_normal_firmware_defaults(f):
 #ifndef HAL_DSHOT_ALARM_ENABLED
 #define HAL_DSHOT_ALARM_ENABLED (HAL_PWM_COUNT>0)
 #endif
+
 ''')
 
 # process input file

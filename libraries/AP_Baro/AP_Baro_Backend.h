@@ -2,10 +2,6 @@
 
 #include "AP_Baro.h"
 
-#ifndef AP_BARO_BACKEND_DEFAULT_ENABLED
-#define AP_BARO_BACKEND_DEFAULT_ENABLED 1
-#endif
-
 class AP_Baro_Backend
 {
 public:

@@ -16,7 +16,6 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 
 #ifndef AP_DEVO_TELEM_ENABLED
     #define AP_DEVO_TELEM_ENABLED   0

@@ -20,7 +20,7 @@
 
 #include <AP_Filesystem/posix_compat.h>
 #include <AP_Scripting/AP_Scripting.h>
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_HAL/Semaphores.h>
 
 #include "lua/src/lua.hpp"
@@ -132,6 +132,9 @@ private:
     static void *alloc(void *ud, void *ptr, size_t osize, size_t nsize);
 
     static void *_heap;
+
+    // helper for print and log of runtime stats
+    void update_stats(const char *name, uint32_t run_time, int total_mem, int run_mem);
 
     // must be static for use in atpanic
     static void print_error(MAV_SEVERITY severity);

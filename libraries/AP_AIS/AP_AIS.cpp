@@ -28,6 +28,7 @@
 #if !AP_AIS_DUMMY_METHODS_ENABLED
 
 #include <AP_Logger/AP_Logger.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
 

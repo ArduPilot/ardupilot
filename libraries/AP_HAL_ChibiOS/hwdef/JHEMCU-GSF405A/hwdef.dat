@@ -152,7 +152,7 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # -------reduce max size of embedded params for apj_tool.py
 define AP_PARAM_MAX_EMBEDDED_PARAM 1024
-define HAL_WITH_DSP FALSE
+define HAL_GYROFFT_ENABLED 0
 
 # --------------------- save flash ----------------------
 define AP_BATTMON_SMBUS_ENABLE 0
