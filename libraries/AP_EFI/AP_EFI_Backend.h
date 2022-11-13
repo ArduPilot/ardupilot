@@ -17,6 +17,7 @@
 #include "AP_EFI.h"
 #include "AP_EFI_State.h"
 #include <AP_HAL/Semaphores.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 class AP_EFI; //forward declaration
 
