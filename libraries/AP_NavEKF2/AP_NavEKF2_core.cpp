@@ -573,8 +573,10 @@ void NavEKF2_core::UpdateFilter(bool predict)
         // Muat be run after SelectVelPosFusion() so that fresh GPS data is available
         runYawEstimatorCorrection();
 
+#if AP_BEACON_ENABLED
         // Update states using range beacon data
         SelectRngBcnFusion();
+#endif
 
         // Update states using optical flow data
         SelectFlowFusion();

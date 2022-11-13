@@ -795,6 +795,7 @@ void NavEKF2_core::readAirSpdData()
 *              Range Beacon Measurements                *
 ********************************************************/
 
+#if AP_BEACON_ENABLED
 // check for new range beacon data and push to data buffer if available
 void NavEKF2_core::readRngBcnData()
 {
@@ -901,6 +902,7 @@ void NavEKF2_core::readRngBcnData()
     rngBcnDataToFuse = storedRangeBeacon.recall(rngBcnDataDelayed,imuDataDelayed.time_ms);
 
 }
+#endif  // AP_BEACON_ENABLED
 
 /*
   update timing statistics structure
