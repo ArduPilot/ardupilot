@@ -14,7 +14,7 @@
  */
 
 #include "AP_EFI_MAV.h"
-#include <AP_MATH/definitions.h>
+#include <AP_Math/AP_Math.h>
 
 AP_EFI_MAV::AP_EFI_MAV(AP_EFI &_frontend) :  AP_EFI_Backend(_frontend) {
     //Nothing to do here
