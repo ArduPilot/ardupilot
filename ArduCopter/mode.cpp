@@ -207,34 +207,34 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
         return true;
     }
 
-    // Just for test
-    for(uint8_t i = 0; i < AP::battery().num_instances(); i++) {
-        if (battery.get_type(i) == AP_BattMonitor_Params::BattMonitor_Type::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT_AND_GPIO_REV3) {
-            if(mode == Mode::Number::STABILIZE)
-            {
-                AP::battery().set_batt_disco_en(false, i);
-                AP::battery().set_batt_kill(false, i);
-            }
+    // // Just for test
+    // for(uint8_t i = 0; i < AP::battery().num_instances(); i++) {
+    //     if (battery.get_type(i) == AP_BattMonitor_Params::BattMonitor_Type::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT_AND_GPIO_REV3) {
+    //         if(mode == Mode::Number::STABILIZE)
+    //         {
+    //             AP::battery().set_batt_disco_en(false, i);
+    //             AP::battery().set_batt_kill(false, i);
+    //         }
 
-            if(mode == Mode::Number::ALT_HOLD)
-            {
-                AP::battery().set_batt_disco_en(true, i);
-                AP::battery().set_batt_kill(false, i);
-            }
+    //         if(mode == Mode::Number::ALT_HOLD)
+    //         {
+    //             AP::battery().set_batt_disco_en(true, i);
+    //             AP::battery().set_batt_kill(false, i);
+    //         }
 
-            if(mode == Mode::Number::PLANCKTRACK)
-            {
-                AP::battery().set_batt_disco_en(false, i);
-                AP::battery().set_batt_kill(true, i);
-            }
+    //         if(mode == Mode::Number::PLANCKTRACK)
+    //         {
+    //             AP::battery().set_batt_disco_en(false, i);
+    //             AP::battery().set_batt_kill(true, i);
+    //         }
 
-            if(mode == Mode::Number::PLANCKRTB)
-            {
-                AP::battery().set_batt_disco_en(true, i);
-                AP::battery().set_batt_kill(true, i);
-            }
-        }
-    }
+    //         if(mode == Mode::Number::PLANCKRTB)
+    //         {
+    //             AP::battery().set_batt_disco_en(true, i);
+    //             AP::battery().set_batt_kill(true, i);
+    //         }
+    //     }
+    // }
 
     Mode *new_flightmode = mode_from_mode_num((Mode::Number)mode);
     if (new_flightmode == nullptr) {

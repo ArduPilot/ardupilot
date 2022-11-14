@@ -79,14 +79,18 @@ void AP_BattMonitor_Analog_GPIO::timer() {
 
 void AP_BattMonitor_Analog_GPIO::set_batt_disco_en(bool enable)
 {
-  _send_state.batt_disco_en = enable;
-  _send_required = true;
+  if(_send_state.batt_disco_en !=  enable) {
+    _send_state.batt_disco_en = enable;
+    _send_required = true;
+  }
 }
 
 void AP_BattMonitor_Analog_GPIO::set_batt_kill(bool enable)
 {
-  _send_state.batt_kill = enable;
-  _send_required = true;
+  if(_send_state.batt_kill !=  enable) {
+    _send_state.batt_kill = enable;
+    _send_required = true;
+  }
 }
 
 uint8_t AP_BattMonitor_Analog_GPIO::get_I2C_addr(const AP_BattMonitor_Params::BattMonitor_Type type)

@@ -431,6 +431,9 @@ void Copter::three_hz_loop()
 
     // update ch6 in flight tuning
     tuning();
+
+    // check to se if we should turn off the battery
+    battery_switch_status_check();
 }
 
 // one_hz_loop - runs at 1Hz

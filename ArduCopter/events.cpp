@@ -59,7 +59,7 @@ void Copter::failsafe_radio_on_event()
 
     } else if (control_mode == Mode::Number::AUTO && failsafe_option(FailsafeOption::RC_CONTINUE_IF_AUTO)) {
         // Allow mission to continue when FS_OPTIONS is set to continue mission
-        gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe - Continuing Auto Mode");       
+        gcs().send_text(MAV_SEVERITY_WARNING, "Radio Failsafe - Continuing Auto Mode");
         desired_action = Failsafe_Action_None;
 
     } else if ((flightmode->in_guided_mode()) &&
@@ -312,6 +312,21 @@ void Copter::failsafe_tether_on_event()
     if((copter.flightmode != &copter.mode_planckland) && (copter.flightmode != &copter.mode_planckrtb))
     {
         set_mode_planck_RTB_or_planck_land(ModeReason::TETHER_FAILSAFE);
+    }
+}
+
+
+void Copter::battery_switch_status_check()
+{
+    for(uint8_t i = 0; i < battery.num_instances(); i++) {
+        if (battery.get_type(i) == AP_BattMonitor_Params::BattMonitor_Type::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT_AND_GPIO_REV3) {
+
+            bool batt_disco_en = !motors->armed();
+            bool batt_kill = batt_disco_en && !AP::battery().on_tether_power(i);
+
+            battery.set_batt_kill(batt_kill, i);
+            battery.set_batt_disco_en(batt_disco_en, i);
+        }
     }
 }
 

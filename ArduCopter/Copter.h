@@ -538,7 +538,7 @@ private:
     AP_Parachute parachute{relay};
 #endif
 
-    // Button 
+    // Button
 #if BUTTON_ENABLED == ENABLED
     AP_Button button;
 #endif
@@ -746,6 +746,7 @@ private:
     void failsafe_terrain_on_event();
     void failsafe_tether_status_check();
     void failsafe_tether_on_event();
+    void battery_switch_status_check();
 
     void gpsglitch_check();
     void set_mode_RTL_or_land_with_pause(ModeReason reason);
