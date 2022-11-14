@@ -21,13 +21,8 @@ void AP_BattMonitor_Analog_GPIO::init(void) {
     if (_dev) {
         _dev->register_periodic_callback(500000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_Analog_GPIO::timer, void));
 
-        // May also need to set IO Expander configuration here with the correct
-        // input pins and output pins
-
         // Configuration register: 0x03
-        // Inputs P0, P1, P2, P3, P6, P7
-        // Outputs: P4, P5
-        // 11001111 = 0xCF
+        // Outputs: P4, P5: 11001111
         _dev->write_register(0x03, 0xCF);
     }
     AP_BattMonitor_Analog::init();
@@ -63,6 +58,10 @@ void AP_BattMonitor_Analog_GPIO::timer() {
   if (_params._type != AP_BattMonitor_Params::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT_AND_GPIO_REV3 || !_send_required) {
       return;
   }
+
+  // Configuration register: 0x03
+  // Outputs: P4, P5: 11001111
+  _dev->write_register(0x03, 0xCF);
 
   uint8_t register_value = 0;
   if(_send_state.batt_disco_en)
