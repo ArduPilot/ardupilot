@@ -124,7 +124,7 @@ void AP_NMEA_Output::update()
              loc.lng < 0 ? 'W' : 'E');
 
     // format GGA message
-    int gga_size = snprintf(_gga, sizeof(_gga),
+    int gga_size = snprintf(_gga_out_buffer, sizeof(_gga_out_buffer),
                                "$GPGGA,%s,%s,%s,%01d,%02d,%04.1f,%07.2f,M,0.0,M,,",
                                tstring,
                                lat_string,
@@ -133,11 +133,11 @@ void AP_NMEA_Output::update()
                                pos_valid ? 6 : 3,
                                2.0,
                                loc.alt * 0.01f);
-    if (gga_size < 0 || ((unsigned) gga_size) >= sizeof(_gga)) {
+    if (gga_size < 0 || ((unsigned) gga_size) >= sizeof(_gga_out_buffer)) {
        return;
     }
     char gga_end[6];
-    snprintf(gga_end, sizeof(gga_end), "*%02X\r\n", (unsigned) _nmea_checksum(_gga));
+    snprintf(gga_end, sizeof(gga_end), "*%02X\r\n", (unsigned) _nmea_checksum(_gga_out_buffer));
 
     // get speed
     Vector2f speed = ahrs.groundspeed_vector();
@@ -145,7 +145,7 @@ void AP_NMEA_Output::update()
     float heading = wrap_360(degrees(atan2f(speed.x, speed.y)));
 
     // format RMC message
-    int rmc_size = snprintf(_rmc, sizeof(_rmc),
+    int rmc_size = snprintf(_rmc_out_buffer, sizeof(_rmc_out_buffer),
                                "$GPRMC,%s,%c,%s,%s,%.2f,%.2f,%s,,",
                                tstring,
                                pos_valid ? 'A' : 'V',
@@ -154,11 +154,11 @@ void AP_NMEA_Output::update()
                                speed_knots,
                                heading,
                                dstring);
-    if (rmc_size < 0 || ((unsigned) rmc_size) >= sizeof(_rmc)) {
+    if (rmc_size < 0 || ((unsigned) rmc_size) >= sizeof(_rmc_out_buffer)) {
         return;
     }
     char rmc_end[6];
-    snprintf(rmc_end, sizeof(rmc_end), "*%02X\r\n", (unsigned) _nmea_checksum(_rmc));
+    snprintf(rmc_end, sizeof(rmc_end), "*%02X\r\n", (unsigned) _nmea_checksum(_rmc_out_buffer));
 
     const uint32_t space_required = gga_size + sizeof(gga_end)-1 + rmc_size + sizeof(rmc_end)-1;
 
@@ -168,10 +168,10 @@ void AP_NMEA_Output::update()
             continue;
         }
 
-        _uart[i]->write(_gga);
+        _uart[i]->write(_gga_out_buffer);
         _uart[i]->write(gga_end);
 
-        _uart[i]->write(_rmc);
+        _uart[i]->write(_rmc_out_buffer);
         _uart[i]->write(rmc_end);
     }
 }

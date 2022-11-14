@@ -31,6 +31,9 @@
 #define NMEA_MAX_OUTPUTS 3
 #endif
 
+#define NMEA_GGA_BUFFER_SIZE 74
+#define NMEA_RMC_BUFFER_SIZE 108
+
 class AP_NMEA_Output {
 
 public:
@@ -50,8 +53,8 @@ private:
     AP_HAL::UARTDriver* _uart[NMEA_MAX_OUTPUTS];
 
     uint32_t _last_run_ms;
-    char _gga[74];
-    char _rmc[108];
+    char _gga_out_buffer[NMEA_GGA_BUFFER_SIZE];
+    char _rmc_out_buffer[NMEA_RMC_BUFFER_SIZE];
 };
 
 #endif  // !HAL_MINIMIZE_FEATURES
