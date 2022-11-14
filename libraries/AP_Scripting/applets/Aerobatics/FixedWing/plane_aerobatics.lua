@@ -1155,44 +1155,28 @@ function vertical_aerobatic_box(total_length, total_width, r, bank_angle)
    })
 end
 
+function multi_point_roll(length, N, arg3, arg4)
+   local paths = {}
+   local len_roll = length * (N-1) / (N*4-1)
+   local len_hold = length / (N*4-1)
+   local ang = 360 / N
+   for i = 1, N do
+      paths[#paths+1] = { path_straight(len_roll), roll_angle(ang) }
+      paths[#paths+1] = { path_straight(len_hold), roll_angle(0) }
+   end
+   return make_paths("multi_point_roll", paths)
+end
+
 function two_point_roll(length, arg2, arg3, arg4)
-   return make_paths("two_point_roll", {
-            { path_straight((length*3)/7),         roll_angle(180) },
-            { path_straight(length/7),             roll_angle(0) },
-            { path_straight((length*3)/7),         roll_angle(180) },
-      })
+   return multi_point_roll(length, 2)
 end
 
 function four_point_roll(length, arg2, arg3, arg4)
-   return make_paths("four_point_roll", {
-            { path_straight((length*3)/15),         roll_angle(90) },
-            { path_straight(length/15),             roll_angle(0) },
-            { path_straight((length*3)/15),         roll_angle(90) },
-            { path_straight(length/15),             roll_angle(0) },
-            { path_straight((length*3)/15),         roll_angle(90) },
-            { path_straight(length/15),             roll_angle(0) },
-            { path_straight((length*3)/15),         roll_angle(90) },
-      })
+   return multi_point_roll(length, 4)
 end
 
 function eight_point_roll(length, arg2, arg3, arg4)
-   return make_paths("eight_point_roll", {
-            { path_straight((length*4)/39),         roll_angle(45) },
-            { path_straight(length/39),             roll_angle(0) },
-            { path_straight((length*4)/39),         roll_angle(45) },
-            { path_straight(length/39),             roll_angle(0) },
-            { path_straight((length*4)/39),         roll_angle(45) },
-            { path_straight(length/39),             roll_angle(0) },
-            { path_straight((length*4)/39),         roll_angle(45) },
-            { path_straight(length/39),             roll_angle(0) },
-            { path_straight((length*4)/39),         roll_angle(45) },
-            { path_straight(length/39),             roll_angle(0) },
-            { path_straight((length*4)/39),         roll_angle(45) },
-            { path_straight(length/39),             roll_angle(0) },
-            { path_straight((length*4)/39),         roll_angle(45) },
-            { path_straight(length/39),             roll_angle(0) },
-            { path_straight((length*4)/39),         roll_angle(45) },
-      })
+   return multi_point_roll(length, 8)
 end
 
 function procedure_turn(radius, bank_angle, step_out, arg4)
@@ -2297,6 +2281,7 @@ command_table[27]= PathFunction(straight_flight, "Straight Hold")
 command_table[28] = PathFunction(partial_circle, "Partial Circle")
 command_table[29]= PathFunction(four_point_roll, "Four Point Roll")
 command_table[30]= PathFunction(eight_point_roll, "Eight Point Roll")
+command_table[31]= PathFunction(multi_point_roll, "Multi Point Roll")
 command_table[200] = PathFunction(test_all_paths, "Test Suite")
 command_table[201] = PathFunction(nz_clubman, "NZ Clubman")
 command_table[202] = PathFunction(f3a_p23_l_r, "FAI F3A P23 L to R")
@@ -2339,6 +2324,7 @@ load_table["figure_eight"] = figure_eight
 load_table["barrel_roll"] = barrel_roll
 load_table["straight_hold"] = straight_hold
 load_table["partial_circle"] = partial_circle
+load_table["multi_point_roll"] = multi_point_roll
 
 
 --[[
