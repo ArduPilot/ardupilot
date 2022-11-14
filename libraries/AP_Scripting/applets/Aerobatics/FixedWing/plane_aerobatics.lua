@@ -736,7 +736,7 @@ function path_composer(_name, _subpaths)
       if sp.roll_ref ~= nil then
          local q = Quaternion()
          q:from_axis_angle(makeVector3f(1,0,0), math.rad(sp.roll_ref))
-         orientation = q * orientation
+         orientation = orientation * q
          orientation:normalize()
       end
    end
