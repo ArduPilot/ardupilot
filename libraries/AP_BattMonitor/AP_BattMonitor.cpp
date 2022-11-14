@@ -8,7 +8,8 @@
 #include "AP_BattMonitor_Sum.h"
 #include "AP_BattMonitor_FuelFlow.h"
 #include "AP_BattMonitor_FuelLevel_PWM.h"
-#include "AP_BattMonitor_Analog_GPIO.h"
+#include "AP_BattMonitor_Analog_GPIO_rev2.h"
+#include "AP_BattMonitor_Analog_GPIO_rev3.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -172,14 +173,18 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_SMBus_NeoDesign(*this, state[instance], _params[instance],
                                                                  hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
                                                                                          100000, true, 20));
-		break;
+                break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT_AND_GPIO_REV2:
+                drivers[instance] = new AP_BattMonitor_Analog_GPIO_rev2(*this, state[instance], _params[instance],
+                                                                        hal.i2c_mgr->get_device(AP_BATTMONITOR_ANALOG_GPIO_BUS_INTERNAL,
+                                                                                                AP_BATTMONITOR_ANALOG_GPIO_I2C_ADDR_REV2,
+                                                                                                100000, true, 20));
+                break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT_AND_GPIO_REV3:
-
-                drivers[instance] = new AP_BattMonitor_Analog_GPIO(*this, state[instance], _params[instance],
-                                                                  hal.i2c_mgr->get_device(AP_BATTMONITOR_ANALOG_GPIO_BUS_INTERNAL,
-                                                                                          AP_BattMonitor_Analog_GPIO::get_I2C_addr(_params[instance].type()),
-                                                                                            100000, true, 20));
+                drivers[instance] = new AP_BattMonitor_Analog_GPIO_rev3(*this, state[instance], _params[instance],
+                                                                        hal.i2c_mgr->get_device(AP_BATTMONITOR_ANALOG_GPIO_BUS_INTERNAL,
+                                                                                                AP_BATTMONITOR_ANALOG_GPIO_I2C_ADDR_REV3,
+                                                                                                100000, true, 20));
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_NONE:
             default:
@@ -561,6 +566,24 @@ void AP_BattMonitor::set_batt_kill(bool enable, uint8_t instance)
     if (instance < _num_instances && drivers[instance] != nullptr)
     {
         drivers[instance]->set_batt_kill(enable);
+    }
+}
+
+bool AP_BattMonitor::on_tether_power(uint8_t instance) const
+{
+    if (instance < _num_instances) {
+        return state[instance].on_tether_power;
+    } else {
+        return false;
+    }
+}
+
+bool AP_BattMonitor::mcu_alive(uint8_t instance) const
+{
+    if (instance < _num_instances) {
+        return state[instance].mcu_alive;
+    } else {
+        return false;
     }
 }
 

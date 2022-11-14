@@ -93,6 +93,7 @@ public:
         bool        is_powering_off;           // true when power button commands power off
         bool        powerOffNotified;          // only send powering off notification once
         bool        on_tether_power;           // Using tether power
+        bool        mcu_alive;                 // Battery MCU is alive
     };
 
     // Return the number of battery monitor instances
@@ -174,7 +175,8 @@ public:
     // reset battery remaining percentage
     bool reset_remaining(uint16_t battery_mask, float percentage);
 
-    bool on_tether_power(const uint8_t instance) const { return state[instance].on_tether_power; };
+    bool on_tether_power(uint8_t instance = AP_BATT_PRIMARY_INSTANCE) const;
+    bool mcu_alive(uint8_t instance = AP_BATT_PRIMARY_INSTANCE) const;
 
     void set_batt_disco_en(bool enable, uint8_t instance = AP_BATT_PRIMARY_INSTANCE);
     void set_batt_kill(bool enable, uint8_t instance = AP_BATT_PRIMARY_INSTANCE);
