@@ -285,7 +285,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Param: HDEM_TCONST
     // @DisplayName: Height Demand Time Constant
     // @Description: This sets the time constant of the low pass filter that is applied to the height demand input when bit 1 of TECS_OPTIONS is not selected.
-    // @Range: -1.0 5.0
+    // @Range: 1.0 5.0
     // @Units: s
     // @Increment: 0.2
     // @User: Advanced
@@ -537,7 +537,7 @@ void AP_TECS::_update_height_demand(void)
         // Apply a first order lag to height demand and compensate for lag when commencing height
         // control after takeoff to prevent plane pushing nose to level before climbing again. Post takeoff
         // compensation offset is decayed using the same time constant as the height demand filter.
-        const float coef = MIN(_DT / (_DT + _hgt_dem_tconst), 1.0f);
+        const float coef = MIN(_DT / (_DT + MAX(_hgt_dem_tconst, _DT)), 1.0f);
         _hgt_rate_dem = (_hgt_dem_rate_ltd - _hgt_dem_lpf) / _hgt_dem_tconst;
         _hgt_dem_lpf = _hgt_dem_rate_ltd * coef + (1.0f - coef) * _hgt_dem_lpf;
         _post_TO_hgt_offset *= (1.0f - coef);
