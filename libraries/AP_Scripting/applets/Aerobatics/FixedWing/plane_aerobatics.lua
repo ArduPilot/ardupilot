@@ -34,6 +34,7 @@ AEROM_DEBUG = bind_add_param('DEBUG', 16, 0)
 AEROM_THR_MIN = bind_add_param('THR_MIN', 17, 0)
 AEROM_THR_BOOST = bind_add_param('THR_BOOST', 18, 50)
 AEROM_YAW_ACCEL = bind_add_param('YAW_ACCEL', 19, 1500)
+AEROM_LKAHD = bind_add_param('LKAHD', 20, 0.5)
 
 -- cope with old param values
 if AEROM_ANG_ACCEL:get() < 100 and AEROM_ANG_ACCEL:get() > 0 then
@@ -85,6 +86,10 @@ function constrain(v, vmin, vmax)
       v = vmax
    end
    return v
+end
+
+function sq(x)
+   return x*x
 end
 
 if TRIK_ENABLE:get() > 0 then
@@ -328,7 +333,16 @@ function vectors_to_quat_rotation(vector1, vector2)
    return q
 end
 
-
+--[[
+   get path rate from two tangents and delta time
+--]]
+function tangents_to_rate(t1, t2, dt)
+   local q_delta = vectors_to_quat_rotation(t1, t2)
+   local rate_rads = Vector3f()
+   q_delta:to_axis_angle(rate_rads)
+   rate_rads = rate_rads:scale(1.0/dt)
+   return rate_rads
+end
 
 --[[
    trajectory building blocks. We have two types of building blocks,
@@ -2073,17 +2087,9 @@ function do_path()
    end
 
    --[[
-      get the quaternion rotation between tangent1_ef and tangent2_ef
-   --]]
-   local q_delta = vectors_to_quat_rotation(tangent1_ef, tangent2_ef)
-
-   --[[
       work out body frame path rate, this is based on two adjacent tangents on the path
    --]]
-   local path_rate_ef_rads = Vector3f()
-   q_delta:to_axis_angle(path_rate_ef_rads)
-   path_rate_ef_rads = path_rate_ef_rads:scale(1.0/actual_dt)
-
+   local path_rate_ef_rads = tangents_to_rate(tangent1_ef, tangent2_ef, actual_dt)
    if Vec3IsNaN(path_rate_ef_rads) then
       gcs:send_text(0,string.format("path_rate_ef_rads: NaN"))
       path_rate_ef_rads = makeVector3f(0,0,0)
@@ -2127,6 +2133,32 @@ function do_path()
    err_angle_rate_bf_dps:y(0)
    err_angle_rate_bf_dps:z(0)
 
+   --[[
+      implement lookahead for path rates
+   --]]
+   if AEROM_LKAHD:get() > 0 then
+      local lookahead = AEROM_LKAHD:get()
+      local lookahead_vt = lookahead / path_var.total_time
+      p2 = rotate_path(path,
+                       constrain(path_var.path_t+lookahead_vt, 0, 1),
+                       path_var.initial_ori, path_var.initial_ef_pos)
+      local tangent3_ef = p2 - p1
+      local lk_ef_rads = tangents_to_rate(tangent2_ef, tangent3_ef, 0.5*(lookahead+(1.0/LOOP_RATE)))
+
+      -- scale for airspeed
+      lk_ef_rads = lk_ef_rads:scale(sq(vel_length/path_var.target_speed))
+
+      local lookahead_bf_rads = quat_earth_to_body(ahrs_quat, lk_ef_rads)
+      local lookahead_bf_dps = lookahead_bf_rads:scale(math.deg(1))
+      logger.write('AELK','Py,Ly,Pz,Lz', 'ffff',
+                   path_rate_bf_dps:y(),
+                   lookahead_bf_dps:y(),
+                   path_rate_bf_dps:z(),
+                   lookahead_bf_dps:z())
+      path_rate_bf_dps:y(lookahead_bf_dps:y())
+      path_rate_bf_dps:z(lookahead_bf_dps:z())
+   end
+   
    --[[
       calculate an additional yaw rate to get us to the right angle of sideslip for knifeedge
    --]]
