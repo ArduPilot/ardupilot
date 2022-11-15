@@ -203,16 +203,17 @@ void AP_InertialSensor_SITL::generate_gyro()
     Vector3f gyro_accum;
     uint8_t nsamples = enable_fast_sampling(gyro_instance) ? 8 : 1;
 
+    const float _gyro_drift = gyro_drift();
     for (uint8_t j = 0; j < nsamples; j++) {
-        float p = radians(sitl->state.rollRate) + gyro_drift();
-        float q = radians(sitl->state.pitchRate) + gyro_drift();
-        float r = radians(sitl->state.yawRate) + gyro_drift();
+        float p = radians(sitl->state.rollRate) + _gyro_drift;
+        float q = radians(sitl->state.pitchRate) + _gyro_drift;
+        float r = radians(sitl->state.yawRate) + _gyro_drift;
 
         // minimum gyro noise is less than 1 bit
         float gyro_noise = ToRad(0.04f);
-        float noise_variation = 0.05f;
+        constexpr float noise_variation = 0.05f;
         // this smears the individual motor peaks somewhat emulating physical motors
-        float freq_variation = 0.12f;
+        constexpr float freq_variation = 0.12f;
         // add in sensor noise
         p += gyro_noise * rand_float();
         q += gyro_noise * rand_float();
@@ -265,14 +266,14 @@ void AP_InertialSensor_SITL::generate_gyro()
             }
         }
 
-        Vector3f gyro = Vector3f(p, q, r);
+        Vector3f gyro {p, q, r};
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
         sitl->imu_tcal[gyro_instance].sitl_apply_gyro(get_temperature(), gyro);
 #endif
 
         // add in gyro scaling
-        Vector3f scale = sitl->gyro_scale[gyro_instance];
+        const Vector3f &scale = sitl->gyro_scale[gyro_instance];
         gyro.x *= (1 + scale.x * 0.01f);
         gyro.y *= (1 + scale.y * 0.01f);
         gyro.z *= (1 + scale.z * 0.01f);
@@ -324,7 +325,7 @@ void AP_InertialSensor_SITL::timer_update(void)
     }
 }
 
-float AP_InertialSensor_SITL::gyro_drift(void)
+float AP_InertialSensor_SITL::gyro_drift(void) const
 {
     if (is_zero(sitl->drift_speed) ||
         is_zero(sitl->drift_time)) {
