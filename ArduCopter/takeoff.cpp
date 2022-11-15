@@ -78,7 +78,7 @@ void Mode::_TakeOff::stop()
 //  take off is complete when the vertical target reaches the take off altitude.
 //  climb is cancelled if pilot_climb_rate_cm becomes negative
 //  sets take off to complete when target altitude is within 1% of the take off altitude
-void Mode::_TakeOff::do_pilot_takeoff(float& pilot_climb_rate_cm)
+void Mode::_TakeOff::do_pilot_takeoff(float pilot_climb_rate_cm)
 {
     // return pilot_climb_rate if take-off inactive
     if (!_running) {

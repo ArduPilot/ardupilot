@@ -195,7 +195,7 @@ protected:
     public:
         void start(float alt_cm);
         void stop();
-        void do_pilot_takeoff(float& pilot_climb_rate);
+        void do_pilot_takeoff(float pilot_climb_rate);
         bool triggered(float target_climb_rate) const;
 
         bool running() const { return _running; }
