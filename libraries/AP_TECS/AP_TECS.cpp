@@ -246,7 +246,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Extra TECS options
     // @Description: This allows the enabling of special features in the speed/height controller.
-    // @Bitmask: 0:GliderOnly,1:No Height Demand Smoothing
+    // @Bitmask: 0:GliderOnly
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 28, AP_TECS, _options, 0),
 
