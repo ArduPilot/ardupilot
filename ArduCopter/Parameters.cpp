@@ -247,6 +247,15 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Standard
     GSCALAR(failsafe_throttle_value, "FS_THR_VALUE",      FS_THR_VALUE_DEFAULT),
 
+    // @Param: FS_RADIO_ACTD
+    // @DisplayName: Failsafe Radio Action Delay
+    // @Description: Failsafe Radio Action Delay
+    // @Range: 0 30000
+    // @Units: ms
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(failsafe_radio_action_delay, "FS_RADIO_ACTD", 0),
+
     // @Param: THR_DZ
     // @DisplayName: Throttle deadzone
     // @Description: The deadzone above and below mid throttle in PWM microseconds. Used in AltHold, Loiter, PosHold flight modes

@@ -291,7 +291,7 @@ public:
         k_param_rc_8_old,
         k_param_rc_10_old,
         k_param_rc_11_old,
-        k_param_throttle_min,           // remove
+        k_param_throttle_min = 180,     // remove
         k_param_throttle_max,           // remove
         k_param_failsafe_throttle,
         k_param_throttle_fs_action,     // remove
@@ -301,6 +301,7 @@ public:
         k_param_radio_tuning,
         k_param_radio_tuning_high_old,   // unused
         k_param_radio_tuning_low_old,    // unused
+        k_param_failsafe_radio_action_delay,
         k_param_rc_speed = 192,
         k_param_failsafe_battery_enabled, // unused - moved to AP_BattMonitor
         k_param_throttle_mid,           // remove
@@ -429,6 +430,7 @@ public:
     AP_Int8         failsafe_throttle;
     AP_Int16        failsafe_throttle_value;
     AP_Int16        throttle_deadzone;
+    AP_Int16        failsafe_radio_action_delay;
 
     // Flight modes
     //
