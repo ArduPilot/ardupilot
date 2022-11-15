@@ -1857,6 +1857,15 @@ void AP_Periph_FW::can_update()
     const uint32_t now_us = AP_HAL::micros();
     while ((AP_HAL::micros() - now_us) < 1000) {
         hal.scheduler->delay_microseconds(HAL_PERIPH_LOOP_DELAY_US);
+#if HAL_ENABLE_SERIAL_TUNNEL
+        for (uint8_t i=0; i<ARRAY_SIZE(dronecan_serial); i++) {
+            // run send_data() on all serial tunnels
+            if (dronecan_serial[i] != nullptr) {
+                dronecan_serial[i]->set_idle_time_us(periph.g.serial_idle_us[i]);
+                dronecan_serial[i]->send_data();
+            }
+        }
+#endif
         processTx();
         processRx();
     }

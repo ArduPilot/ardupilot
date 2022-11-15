@@ -8,7 +8,6 @@
 #include <dronecan_msgs.h>
 
 class AP_DroneCAN_Serial : public AP_HAL::UARTDriver {
-    friend class AP_Periph;
 public:
 
     AP_DroneCAN_Serial(uint8_t channel_id) :
@@ -59,16 +58,22 @@ public:
     uint32_t set_passthrough_baud(uint32_t baud) { return baudrate = baud; }
     static AP_SerialManager::SerialProtocol tunnel_protocol_to_ap_protocol(uint8_t tunnel_protocol);
 
+    void set_idle_time_us(const uint32_t idle_time_us) {
+        _idle_time_us = idle_time_us;
+    }
+
+    void send_data();
 private:
     int _channel_id;
+    uint32_t _idle_time_us;
     uint8_t _protocol;
-
     bool _initialized = false;
     bool _connected = false; // true if a client has connected
 
     ByteBuffer _readbuf{0};
     ByteBuffer _writebuf{0};
-    void send_data();
     uint32_t baudrate;
+    uint64_t last_write_us;
+    HAL_Semaphore send_sem;
 };
 #endif

@@ -31,6 +31,7 @@
 #define IFACE_ALL ((1U<<(HAL_NUM_CAN_IFACES+1U))-1U)
 
 extern const AP_HAL::HAL& hal;
+extern AP_Periph_FW periph;
 
 #define DEBUG 0
 
@@ -80,16 +81,31 @@ size_t AP_DroneCAN_Serial::write(uint8_t c)
 
 size_t AP_DroneCAN_Serial::write(const uint8_t *buffer, size_t size)
 {
-    // check if space in can buffer
+    WITH_SEMAPHORE(send_sem);
+    // we call send data here to split packets based on idle time
     size_t data_len = _writebuf.write(buffer, size);
+    // we call here again to send immediately if idle time is zero
+    if (_idle_time_us == 0) {
+        send_data();
+    }
+    last_write_us = AP_HAL::micros64();
     debug("write %d bytes", data_len);
-    send_data();
     return data_len;
 }
 
 void AP_DroneCAN_Serial::send_data()
 {
+    // we are busy doing write, no need to block here,
+    // we will send data in next iteration, or directly from
+    // write call
+    if (!send_sem.take_nonblocking()) {
+        return;
+    }
     int16_t ret;
+    if ((AP_HAL::micros64() - last_write_us) < _idle_time_us) {
+        send_sem.give();
+        return;
+    }
     while (_writebuf.available()) {
         uavcan_tunnel_Broadcast msg;
         uint8_t buffer[UAVCAN_TUNNEL_BROADCAST_MAX_SIZE];
@@ -108,6 +124,7 @@ void AP_DroneCAN_Serial::send_data()
         }
         _writebuf.advance(msg.buffer.len);
     }
+    send_sem.give();
 }
 
 AP_SerialManager::SerialProtocol AP_DroneCAN_Serial::tunnel_protocol_to_ap_protocol(uint8_t tunnel_protocol)

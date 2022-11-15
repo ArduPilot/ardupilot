@@ -536,6 +536,14 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @RebootRequired: True
     GARRAY(serial_chan_id, 0, "SERIAL0_CHAN_ID", -1),
 
+    // @Param: SERIAL0_IDLE_US
+    // @DisplayName: Serial0 UAVCAN Tunnel Idle Time
+    // @Description: This is the idle time after which the packet is passed through from the Serial0
+    // @Range: 0 1000000
+    // @Increment: 1
+    // @User: Advanced
+    GARRAY(serial_idle_us, 0, "SERIAL0_IDLE_US", 0),
+
 #if SERIALMANAGER_NUM_UART_PORTS > 1
     // @Param: SERIAL1_CHAN_ID
     // @DisplayName: Serial1 UAVCAN Tunnel Channel ID
@@ -544,6 +552,14 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     GARRAY(serial_chan_id, 1, "SERIAL1_CHAN_ID", -1),
+
+    // @Param: SERIAL1_IDLE_US
+    // @DisplayName: Serial1 UAVCAN Tunnel Idle Time
+    // @Description: This is the idle time after which the packet is passed through from the Serial1
+    // @Range: 0 1000000
+    // @Increment: 1
+    // @User: Advanced
+    GARRAY(serial_idle_us, 1, "SERIAL1_IDLE_US", 0),
 #endif
 
 #if SERIALMANAGER_NUM_UART_PORTS > 2
@@ -554,6 +570,14 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     GARRAY(serial_chan_id, 2, "SERIAL2_CHAN_ID", -1),
+
+    // @Param: SERIAL2_IDLE_US
+    // @DisplayName: Serial2 UAVCAN Tunnel Idle Time
+    // @Description: This is the idle time after which the packet is passed through from the Serial2
+    // @Range: 0 1000000
+    // @Increment: 1
+    // @User: Advanced
+    GARRAY(serial_idle_us, 2, "SERIAL2_IDLE_US", 0),
 #endif
 
 #if SERIALMANAGER_NUM_UART_PORTS > 3
@@ -564,6 +588,14 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     GARRAY(serial_chan_id, 3, "SERIAL3_CHAN_ID", -1),
+
+    // @Param: SERIAL3_IDLE_US
+    // @DisplayName: Serial3 UAVCAN Tunnel Idle Time
+    // @Description: This is the idle time after which the packet is passed through from the Serial3
+    // @Range: 0 1000000
+    // @Increment: 1
+    // @User: Advanced
+    GARRAY(serial_idle_us, 3, "SERIAL3_IDLE_US", 0),
 #endif
 
 #if SERIALMANAGER_NUM_UART_PORTS > 4
@@ -574,6 +606,14 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     GARRAY(serial_chan_id, 4, "SERIAL4_CHAN_ID", -1),
+
+    // @Param: SERIAL4_IDLE_US
+    // @DisplayName: Serial4 UAVCAN Tunnel Idle Time
+    // @Description: This is the idle time after which the packet is passed through from the Serial4
+    // @Range: 0 1000000
+    // @Increment: 1
+    // @User: Advanced
+    GARRAY(serial_idle_us, 4, "SERIAL4_IDLE_US", 0),
 #endif
 
 #if SERIALMANAGER_NUM_UART_PORTS > 5
@@ -584,6 +624,14 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     GARRAY(serial_chan_id, 5, "SERIAL5_CHAN_ID", -1),
+
+    // @Param: SERIAL5_IDLE_US
+    // @DisplayName: Serial5 UAVCAN Tunnel Idle Time
+    // @Description: This is the idle time after which the packet is passed through from the Serial5
+    // @Range: 0 1000000
+    // @Increment: 1
+    // @User: Advanced
+    GARRAY(serial_idle_us, 5, "SERIAL5_IDLE_US", 0),
 #endif
 
 #if SERIALMANAGER_NUM_UART_PORTS > 6
@@ -594,6 +642,14 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     GARRAY(serial_chan_id, 6, "SERIAL6_CHAN_ID", -1),
+
+    // @Param: SERIAL6_IDLE_US
+    // @DisplayName: Serial6 UAVCAN Tunnel Idle Time
+    // @Description: This is the idle time after which the packet is passed through from the Serial6
+    // @Range: 0 1000000
+    // @Increment: 1
+    // @User: Advanced
+    GARRAY(serial_idle_us, 6, "SERIAL6_IDLE_US", 0),
 #endif
 
 #if SERIALMANAGER_NUM_UART_PORTS > 7
@@ -604,6 +660,14 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     GARRAY(serial_chan_id, 7, "SERIAL7_CHAN_ID", -1),
+
+    // @Param: SERIAL7_IDLE_US
+    // @DisplayName: Serial7 UAVCAN Tunnel Idle Time
+    // @Description: This is the idle time after which the packet is passed through from the Serial7
+    // @Range: 0 1000000
+    // @Increment: 1
+    // @User: Advanced
+    GARRAY(serial_idle_us, 7, "SERIAL7_IDLE_US", 0),
 #endif
 
 #if SERIALMANAGER_NUM_UART_PORTS > 8
@@ -614,6 +678,14 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     GARRAY(serial_chan_id, 8, "SERIAL8_CHAN_ID", -1),
+
+    // @Param: SERIAL8_IDLE_US  
+    // @DisplayName: Serial8 UAVCAN Tunnel Idle Time
+    // @Description: This is the idle time after which the packet is passed through from the Serial8
+    // @Range: 0 1000000
+    // @Increment: 1
+    // @User: Advanced
+    GARRAY(serial_idle_us, 8, "SERIAL8_IDLE_US", 0),
 #endif
 
 #if SERIALMANAGER_NUM_UART_PORTS > 9
@@ -624,6 +696,14 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     GARRAY(serial_chan_id, 9, "SERIAL9_CHAN_ID", -1),
+
+    // @Param: SERIAL9_IDLE_US
+    // @DisplayName: Serial9 UAVCAN Tunnel Idle Time
+    // @Description: This is the idle time after which the packet is passed through from the Serial9
+    // @Range: 0 1000000
+    // @Increment: 1
+    // @User: Advanced
+    GARRAY(serial_idle_us, 9, "SERIAL9_IDLE_US", 0),
 #endif
 
     // @Param: SERIAL_AUTO_PASS
