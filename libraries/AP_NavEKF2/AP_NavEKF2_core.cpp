@@ -263,7 +263,9 @@ void NavEKF2_core::InitialiseVariables()
     varInnovRngBcn = 0.0f;
     innovRngBcn = 0.0f;
     memset(&lastTimeRngBcn_ms, 0, sizeof(lastTimeRngBcn_ms));
+#if AP_BEACON_ENABLED
     rngBcnDataToFuse = false;
+#endif
     beaconVehiclePosNED.zero();
     beaconVehiclePosErr = 1.0f;
     rngBcnLast3DmeasTime_ms = 0;
