@@ -350,10 +350,12 @@ float rand_float(void)
 
 Vector3f rand_vec3f(void)
 {
-    Vector3f v = Vector3f(rand_float(),
-                          rand_float(),
-                          rand_float());
-    if (!is_zero(v.length())) {
+    Vector3f v {
+        rand_float(),
+        rand_float(),
+        rand_float()
+    };
+    if (!v.is_zero()) {
         v.normalize();
     }
     return v;
