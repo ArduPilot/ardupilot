@@ -29,8 +29,8 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
 
     // @Param: DUAL_MODE
     // @DisplayName: Dual Mode
-    // @Description: Sets the dual mode of the heli, either as tandem or as transverse.
-    // @Values: 0:Longitudinal, 1:Transverse, 2:Intermeshing
+    // @Description: Sets the dual mode of the heli, either as tandem, transverse, or intermeshing/coaxial.
+    // @Values: 0:Longitudinal, 1:Transverse, 2:Intermeshing/Coaxial
     // @User: Standard
     AP_GROUPINFO("DUAL_MODE", 9, AP_MotorsHeli_Dual, _dual_mode, AP_MOTORS_HELI_DUAL_MODE_TANDEM),
 
