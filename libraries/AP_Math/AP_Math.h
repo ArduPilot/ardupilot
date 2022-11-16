@@ -325,7 +325,7 @@ uint16_t get_random16(void);
 // generate a random float between -1 and 1, for use in SITL
 float rand_float(void);
 
-// generate a random Vector3f of size 1
+// generate a random Vector3f with each value between -1.0 and 1.0
 Vector3f rand_vec3f(void);
 
 // return true if two rotations are equal
