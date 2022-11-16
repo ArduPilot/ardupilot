@@ -16,12 +16,12 @@
  */
 #pragma once
 
+#include "AP_Notify_config.h"
+
+#if AP_NOTIFY_OREOLED_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include "NotifyDevice.h"
-
-#ifndef HAL_OREO_LED_ENABLED
-#define HAL_OREO_LED_ENABLED 0
-#endif
 
 #define OREOLED_NUM_LEDS        4       // maximum number of individual LEDs connected to the oreo led cpu
 #define OREOLED_INSTANCE_ALL    0xff    // instance number to indicate all LEDs (used for set_rgb and set_macro)
@@ -202,3 +202,5 @@ private:
     uint32_t _last_boot_ms;
     uint32_t _last_sync_ms;
 };
+
+#endif  // AP_NOTIFY_OREOLED_ENABLED
