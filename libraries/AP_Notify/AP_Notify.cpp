@@ -176,7 +176,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     AP_GROUPINFO("DISPLAY_TYPE", 3, AP_Notify, _display_type, 0),
 #endif
 
-#if HAL_OREO_LED_ENABLED
+#if AP_NOTIFY_OREOLED_ENABLED
     // @Param: OREO_THEME
     // @DisplayName: OreoLED Theme
     // @Description: Enable/Disable Solo Oreo LED driver, 0 to disable, 1 for Aircraft theme, 2 for Rover theme
@@ -335,7 +335,7 @@ void AP_Notify::add_backends(void)
                 ADD_BACKEND(new ProfiLED_SPI());
                 break;
             case Notify_LED_OreoLED:
-#if HAL_OREO_LED_ENABLED
+#if AP_NOTIFY_OREOLED_ENABLED
                 if (_oreo_theme) {
                     ADD_BACKEND(new OreoLED_I2C(0, _oreo_theme));
                 }
