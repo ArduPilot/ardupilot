@@ -686,12 +686,24 @@ private:
         uint8_t current_baud;
         uint32_t probe_baud;
         bool auto_detected_baud;
+#if AP_GPS_UBLOX_ENABLED
         struct UBLOX_detect_state ublox_detect_state;
+#endif
+#if AP_GPS_SIRF_ENABLED
         struct SIRF_detect_state sirf_detect_state;
+#endif
+#if AP_GPS_NMEA_ENABLED
         struct NMEA_detect_state nmea_detect_state;
+#endif
+#if AP_GPS_SBP_ENABLED
         struct SBP_detect_state sbp_detect_state;
+#endif
+#if AP_GPS_SBP2_ENABLED
         struct SBP2_detect_state sbp2_detect_state;
+#endif
+#if AP_GPS_ERB_ENABLED
         struct ERB_detect_state erb_detect_state;
+#endif
     } detect_state[GPS_MAX_RECEIVERS];
 
     struct {
