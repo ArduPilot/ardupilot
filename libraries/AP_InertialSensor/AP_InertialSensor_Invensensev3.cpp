@@ -702,15 +702,18 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm456xy(void)
     register_write(INV3REG_456_FIFO_CONFIG3, 0x00);
     register_write(INV3REG_456_FIFO_CONFIG0, 0x07);
 
-    // setup gyro for 1.6kHz, 4000dps range
-    register_write(INV3REG_456_GYRO_CONFIG0, odr_config | 0x0);
+    // setup gyro for 1.6-6.4kHz, 4000dps range
+    register_write(INV3REG_456_GYRO_CONFIG0, (0x0 << 4) | odr_config); // GYRO_UI_FS_SEL b4-7, GYRO_ODR b0-3
 
-    // setup accel for 1.6kHz, 32g range
-    register_write(INV3REG_456_ACCEL_CONFIG0, odr_config | 0x0);
+    // setup accel for 1.6-6.4kHz, 32g range
+    register_write(INV3REG_456_ACCEL_CONFIG0, (0x0 << 4) | odr_config); // ACCEL_UI_FS_SEL b4-6, ACCEL_ODR b0-3
 
-    // enable timestamps on FIFO data
+    // enable timestamps on FIFO data 
     // SMC_CONTROL_0
     uint8_t reg = register_read_bank_icm456xy(INV3BANK_456_IPREG_TOP1_ADDR, 0x58);
+#ifdef ICM45686_CLKIN
+    reg |= (0x1<<4U); // ACCEL_LP_CLK_SEL
+#endif
     register_write_bank_icm456xy(INV3BANK_456_IPREG_TOP1_ADDR, 0x58, reg | 0x01);
 
     // enable FIFO for each sensor
@@ -749,6 +752,7 @@ bool AP_InertialSensor_Invensensev3::check_whoami(void)
     switch (whoami) {
     case INV3_ID_ICM40609:
         inv3_type = Invensensev3_Type::ICM40609;
+        // Accel scale 32g (1024 LSB/g)
         accel_scale = (GRAVITY_MSS / 1024);
         return true;
     case INV3_ID_ICM42688:
@@ -773,6 +777,8 @@ bool AP_InertialSensor_Invensensev3::check_whoami(void)
     case INV3_ID_ICM45686:
         inv3_type = Invensensev3_Type::ICM45686;
         gyro_scale = GYRO_SCALE_4000DPS;
+        // Accel scale 32g (1024 LSB/g)
+        accel_scale = (GRAVITY_MSS / 1024);
         return true;
     }
     // not a value WHOAMI result
@@ -882,21 +888,21 @@ bool AP_InertialSensor_Invensensev3::hardware_init(void)
         // gyro and accel in low-noise mode
         register_write(INV3REG_456_PWR_MGMT0, 0x0f);
         hal.scheduler->delay_microseconds(300);
+#ifdef ICM45686_CLKIN
         /*************************CLKIN setting*************************/
-        // Likely specific to CubeOrangePlus, will need changing for boards without external clocking
-        // override INT2 pad as CLKIN
-        register_write(INV3REG_456_IOC_PAD_SCENARIO_OVRD, 0x06, true);
+        // override INT2 pad as CLKIN, AUX1 disabled
+        register_write(INV3REG_456_IOC_PAD_SCENARIO_OVRD, (0x2<<4U), true);
 
         // disable AUX1
-        register_write(INV3REG_456_IOC_PAD_SCENARIO_AUX_OVRD, 0x02, true);
+        register_write(INV3REG_456_IOC_PAD_SCENARIO_AUX_OVRD, (0x1<<1U), true);
 
         // enable RTC MODE
-        register_write(INV3REG_456_RTC_CONFIG, 0x23, true);
-
+        register_write(INV3REG_456_RTC_CONFIG, (0x1<<5U) | 0x3, true);
+#endif
+        /*************************CLKIN setting*************************/
         // disable STC
         uint8_t reg = register_read_bank_icm456xy(INV3BANK_456_IPREG_TOP1_ADDR, 0x68);  // I3C_STC_MODE b2
         register_write_bank_icm456xy(INV3BANK_456_IPREG_TOP1_ADDR, 0x68, reg & ~0x04);
-        /*************************CLKIN setting*************************/
     }
 
     return true;
