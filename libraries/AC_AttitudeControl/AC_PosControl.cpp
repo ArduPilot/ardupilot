@@ -778,7 +778,7 @@ void AC_PosControl::init_z_controller()
     _last_update_z_us = AP_HAL::micros64();
 }
 
-/// input_vel_accel_z - calculate a jerk limited path from the current position, velocity and acceleration to an input velocity and acceleration.
+/// input_accel_z - calculate a jerk limited path from the current position, velocity and acceleration to an input acceleration.
 ///     The vel is projected forwards in time based on a time step of dt and acceleration accel.
 ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
 ///     The function alters the vel to be the kinematic path based on accel
@@ -793,7 +793,7 @@ void AC_PosControl::input_accel_z(float accel)
     shape_accel(accel, _accel_desired.z, jerk_max_z_cmsss, _dt);
 }
 
-/// input_accel_z - calculate a jerk limited path from the current position, velocity and acceleration to an input acceleration.
+/// input_vel_accel_z - calculate a jerk limited path from the current position, velocity and acceleration to an input velocity and acceleration.
 ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
 ///     The kinematic path is constrained by the maximum acceleration and jerk set using the function set_max_speed_accel_z.
 ///     The parameter limit_output specifies if the velocity and acceleration limits are applied to the sum of commanded and correction values or just correction.
