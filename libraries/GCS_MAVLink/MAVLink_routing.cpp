@@ -101,20 +101,19 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
     // so that find_mav_type works for all channels
     learn_route(in_channel, msg);
 
-    // don't ever forward data from a private channel
-    if ((GCS_MAVLINK::is_private(in_channel))) {
-        return true;
-    }
-
     if (msg.msgid == MAVLINK_MSG_ID_RADIO ||
         msg.msgid == MAVLINK_MSG_ID_RADIO_STATUS) {
         // don't forward RADIO packets
         return true;
     }
-    
+
+    const bool from_private_channel = GCS_MAVLINK::is_private(in_channel);
+
     if (msg.msgid == MAVLINK_MSG_ID_HEARTBEAT) {
         // heartbeat needs special handling
-        handle_heartbeat(in_channel, msg);
+        if (!from_private_channel) {
+            handle_heartbeat(in_channel, msg);
+        }
         return true;
     }
 
@@ -134,6 +133,11 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
     bool match_component = match_system && (broadcast_component || 
                                             (target_component == mavlink_system.compid));
     bool process_locally = match_system && match_component;
+
+    // don't ever forward data from a private channel
+    if (from_private_channel) {
+        return process_locally;
+    }
 
     if (process_locally && !broadcast_system && !broadcast_component) {
         // nothing more to do - it can only be for us
