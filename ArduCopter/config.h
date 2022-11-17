@@ -130,16 +130,6 @@
  # define FS_GCS                        DISABLED
 #endif
 
-// Radio failsafe while using RC_override
-#ifndef FS_RADIO_RC_OVERRIDE_TIMEOUT_MS
- # define FS_RADIO_RC_OVERRIDE_TIMEOUT_MS  1000    // RC Radio failsafe triggers after 1 second while using RC_override from ground station
-#endif
-
-// Radio failsafe
-#ifndef FS_RADIO_TIMEOUT_MS
- #define FS_RADIO_TIMEOUT_MS            500     // RC Radio Failsafe triggers after 500 milliseconds with No RC Input
-#endif
-
 // missing terrain data failsafe
 #ifndef FS_TERRAIN_TIMEOUT_MS
  #define FS_TERRAIN_TIMEOUT_MS          5000     // 5 seconds of missing terrain data will trigger failsafe (RTL)
