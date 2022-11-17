@@ -1036,11 +1036,12 @@ function barrel_roll(radius, length, num_spirals, arg4)
    local gamma_deg = math.deg(math.atan((length/num_spirals)/(2*math.pi*radius)))
    local speed = target_groundspeed()
    local bank = math.deg(math.atan((speed*speed) / (radius * GRAVITY_MSS)))
+   local radius2 = radius/(1.0 - math.cos(math.rad(90-gamma_deg)))
 
    return make_paths("barrel_roll", {
-         { path_horizontal_arc(-radius, 90-gamma_deg, 0), roll_angle_entry_exit(-bank) },
+         { path_horizontal_arc(-radius2, 90-gamma_deg, 0), roll_angle_entry_exit(-bank) },
          { path_cylinder(radius, length, num_spirals),    roll_angle(0) },
-         { path_horizontal_arc(radius, 90-gamma_deg, 0),  roll_angle_entry_exit(bank) },
+         { path_horizontal_arc(radius2, 90-gamma_deg, 0),  roll_angle_entry_exit(bank) },
    })
 end
 
