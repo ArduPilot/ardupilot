@@ -725,6 +725,33 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
     case MAV_CMD_DO_REPOSITION:
         return handle_command_int_do_reposition(packet);
 
+    case MAV_CMD_NAV_WAYPOINT: {
+        if (!check_latlng(packet.x, packet.y)) {
+            return MAV_RESULT_DENIED;
+        }
+
+        Location request_location;
+        if (!location_from_command_t(packet, request_location)) {
+            return MAV_RESULT_DENIED;
+        }
+
+        if (request_location.sanitize(copter.current_loc)) {
+            return MAV_RESULT_DENIED;
+        }
+
+        AP_Mission::Mission_Command cmd;
+        MAV_MISSION_RESULT result = AP_Mission::mavlink_cmd_int_to_mission_cmd(packet, cmd);
+        if (result != MAV_MISSION_ACCEPTED) {
+            return MAV_RESULT_FAILED;
+        }
+
+        if (handle_guided_request(cmd)) {
+            return MAV_RESULT_ACCEPTED;
+        }
+
+        return MAV_RESULT_FAILED;
+    }
+
     // pause or resume an auto mission
     case MAV_CMD_DO_PAUSE_CONTINUE:
         return handle_command_pause_continue(packet);
@@ -1009,6 +1036,37 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         GCS_MAVLINK_Copter::convert_COMMAND_LONG_to_COMMAND_INT(packet, packet_int);
         return handle_command_pause_continue(packet_int);
     }
+
+    // waypoint navigation
+    case MAV_CMD_NAV_WAYPOINT: {
+        int32_t latitude = packet.param5 * 1e7;
+        int32_t longitude = packet.param6 * 1e7;
+        if (!check_latlng(latitude, longitude)) {
+            return MAV_RESULT_DENIED;
+        }
+
+        Location request_location;
+        if (!location_from_command_t(packet, MAV_FRAME_GLOBAL_RELATIVE_ALT, request_location)) {
+            return MAV_RESULT_DENIED;
+        }
+
+        if (request_location.sanitize(copter.current_loc)) {
+            return MAV_RESULT_DENIED;
+        }
+
+        AP_Mission::Mission_Command cmd;
+        MAV_MISSION_RESULT result = AP_Mission::mavlink_cmd_long_to_mission_cmd(packet, cmd);
+        if (result != MAV_MISSION_ACCEPTED) {
+            return MAV_RESULT_FAILED;
+        }
+
+        if (handle_guided_request(cmd)) {
+            return MAV_RESULT_ACCEPTED;
+        }
+
+        return MAV_RESULT_FAILED;
+    }
+
     default:
         return GCS_MAVLINK::handle_command_long_packet(packet);
     }
