@@ -769,7 +769,11 @@ Copter::Copter(void)
     rc_throttle_control_in_filter(1.0f),
     inertial_nav(ahrs),
     param_loader(var_info),
+#if MODE_STABILIZE_ENABLED == ENABLED
     flightmode(&mode_stabilize)
+#else
+    flightmode(&mode_land)
+#endif
 {
 }
 

@@ -1,5 +1,7 @@
 #include "Copter.h"
 
+#if MODE_STABILIZE_ENABLED == ENABLED
+
 #if FRAME_CONFIG == HELI_FRAME
 /*
  * Init and run calls for stabilize flight mode for trad heli
@@ -82,3 +84,5 @@ void ModeStabilize_Heli::run()
 }
 
 #endif  //HELI_FRAME
+
+#endif

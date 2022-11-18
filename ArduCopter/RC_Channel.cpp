@@ -677,7 +677,10 @@ void Copter::auto_trim_cancel()
 void Copter::auto_trim()
 {
     if (auto_trim_counter > 0) {
-        if (copter.flightmode != &copter.mode_stabilize ||
+        if (
+#if MODE_STABILIZE_ENABLED == ENABLED
+            copter.flightmode != &copter.mode_stabilize ||
+#endif
             !copter.motors->armed()) {
             auto_trim_cancel();
             return;

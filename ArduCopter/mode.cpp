@@ -37,9 +37,11 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
             break;
 #endif
 
+#if MODE_STABILIZE_ENABLED == ENABLED
         case Mode::Number::STABILIZE:
             ret = &mode_stabilize;
             break;
+#endif
 
         case Mode::Number::ALT_HOLD:
             ret = &mode_althold;
@@ -394,9 +396,12 @@ void Copter::exit_mode(Mode *&old_flightmode,
     // stab col ramp value should be pre-loaded to the correct value to avoid a twitch
     // heli_stab_col_ramp should really only be active switching between Stabilize and Acro modes
     if (!old_flightmode->has_manual_throttle()){
+#if MODE_STABILIZE_ENABLED == ENABLED
         if (new_flightmode == &mode_stabilize){
             input_manager.set_stab_col_ramp(1.0);
-        } else if (new_flightmode == &mode_acro){
+        } else
+#endif
+        if (new_flightmode == &mode_acro){
             input_manager.set_stab_col_ramp(0.0);
         }
     }

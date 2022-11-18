@@ -979,10 +979,12 @@ private:
 #if MODE_RTL_ENABLED == ENABLED
     ModeRTL mode_rtl;
 #endif
+#if MODE_STABILIZE_ENABLED == ENABLED
 #if FRAME_CONFIG == HELI_FRAME
     ModeStabilize_Heli mode_stabilize;
 #else
     ModeStabilize mode_stabilize;
+#endif
 #endif
 #if MODE_SPORT_ENABLED == ENABLED
     ModeSport mode_sport;
