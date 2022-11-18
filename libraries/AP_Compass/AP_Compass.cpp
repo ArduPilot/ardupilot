@@ -1104,6 +1104,23 @@ void Compass::_probe_external_i2c_compasses(void)
 #endif
 #endif
 
+#if !defined(HAL_DISABLE_I2C_MAGS_BY_DEFAULT) || defined(HAL_USE_I2C_MAG_MMC5XX3)
+    //external i2c bus
+    FOREACH_I2C_EXTERNAL(i) {
+        ADD_BACKEND(DRIVER_MMC5XX3, AP_Compass_MMC5XX3::probe(GET_I2C_DEVICE(i, HAL_COMPASS_MMC5xx3_I2C_ADDR),
+                    true, ROTATION_NONE));
+    }
+
+    // internal i2c bus
+    if (all_external) {
+        // only probe MMC5XX on internal if we are treating internals as externals
+        FOREACH_I2C_INTERNAL(i) {
+            ADD_BACKEND(DRIVER_MMC5XX3, AP_Compass_MMC5XX3::probe(GET_I2C_DEVICE(i, HAL_COMPASS_MMC5xx3_I2C_ADDR),
+                        all_external, ROTATION_NONE));
+        }
+    }
+#endif
+
 #ifndef HAL_BUILD_AP_PERIPH
     // AK09916 on ICM20948
     FOREACH_I2C_EXTERNAL(i) {
