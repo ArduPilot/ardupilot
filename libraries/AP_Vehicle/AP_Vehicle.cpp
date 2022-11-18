@@ -128,21 +128,17 @@ extern AP_Vehicle& vehicle;
 #if defined(HAL_GPIO_PIN_WDO)
 static int cnt = 0;
 static bool _sw = false;
-void AP_Vehicle::timer_update(void)
+void AP_Vehicle::external_watchdog_pat(void)
 {
-    if (cnt == 50)
-    {
+    if (cnt == 50) {
         cnt = 0;
-    	if (_sw == true)
-	    {
+        if (_sw == true) {
             palSetLine(HAL_GPIO_PIN_WDO);
-    		_sw = false;
-	    }
-    	else
-	    {
+            _sw = false;
+        } else {
             palClearLine(HAL_GPIO_PIN_WDO);
-    		_sw = true;
-	    }
+            _sw = true;
+        }
     }
     cnt++;
 }
@@ -154,7 +150,7 @@ void AP_Vehicle::timer_update(void)
 void AP_Vehicle::setup()
 {
 #if defined(HAL_GPIO_PIN_WDO)
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Vehicle::timer_update, void));        
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Vehicle::external_watchdog_pat, void));
 #endif
 
     // load the default values of variables listed in var_info[]

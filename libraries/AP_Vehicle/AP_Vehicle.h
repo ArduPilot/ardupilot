@@ -423,7 +423,7 @@ private:
     AP_CustomRotations custom_rotations;
 
 #if defined(HAL_GPIO_PIN_WDO)
-    void timer_update();
+    void external_watchdog_pat();
 #endif
 };
 
