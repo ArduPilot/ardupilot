@@ -408,6 +408,8 @@ public:
 
     MAV_RESULT set_message_interval(uint32_t msg_id, int32_t interval_us);
 
+    static bool command_long_stores_location(const MAV_CMD command);
+
 protected:
 
     bool mavlink_coordinate_frame_to_location_alt_frame(MAV_FRAME coordinate_frame,
@@ -675,8 +677,6 @@ private:
     virtual void        handleMessage(const mavlink_message_t &msg) = 0;
 
     MAV_RESULT handle_servorelay_message(const mavlink_command_long_t &packet);
-
-    static bool command_long_stores_location(const MAV_CMD command);
 
     bool calibrate_gyros();
 
