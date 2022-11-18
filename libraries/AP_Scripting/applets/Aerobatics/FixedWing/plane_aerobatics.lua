@@ -35,6 +35,7 @@ AEROM_THR_MIN = bind_add_param('THR_MIN', 17, 0)
 AEROM_THR_BOOST = bind_add_param('THR_BOOST', 18, 50)
 AEROM_YAW_ACCEL = bind_add_param('YAW_ACCEL', 19, 1500)
 AEROM_LKAHD = bind_add_param('LKAHD', 20, 0.5)
+AEROM_PATH_SCALE = bind_add_param('PATH_SCALE', 21, 1.0)
 
 -- cope with old param values
 if AEROM_ANG_ACCEL:get() < 100 and AEROM_ANG_ACCEL:get() > 0 then
@@ -1777,6 +1778,19 @@ function rotate_path(path_f, t, orientation, offset)
    local speed = path_f.get_speed(t)
    local thr_boost = path_f.get_throttle_boost(t)
    local point = quat_earth_to_body(orientation, point)
+
+   local scale = AEROM_PATH_SCALE:get()
+   point = point:scale(math.abs(scale))
+   if scale < 0 then
+      -- we need to mirror the path
+      point:y(-point:y())
+      roll_correction = -roll_correction
+      angle = -angle
+      -- compensate path orientation for the mirroring
+      local orient = orientation:inverse()
+      point = quat_body_to_earth((orient * orient), point)
+   end
+
    return point+offset, math.rad(angle+roll_correction), speed, thr_boost
 end
 
@@ -1905,13 +1919,12 @@ function do_path()
       local speed = target_groundspeed()
       path_var.target_speed = speed
 
-      path_var.length = path.get_length()
+      path_var.length = path.get_length() * math.abs(AEROM_PATH_SCALE:get())
 
       path_var.total_rate_rads_ef = makeVector3f(0.0, 0.0, 0.0)
 
       --assuming constant velocity
       path_var.total_time = path_var.length/speed
-      path_var.last_pos = path.get_pos(0) --position at t0
 
       --deliberately only want yaw component, because the maneuver should be performed relative to the earth, not relative to the initial orientation
       path_var.initial_ori = Quaternion()

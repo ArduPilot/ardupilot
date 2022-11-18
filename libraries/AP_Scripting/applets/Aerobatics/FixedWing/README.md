@@ -188,3 +188,17 @@ Moving the activation switch to the bottom position cancels any
 running trick and stops the trick system.
 
 Changing flight modes will also cancel any active trick.
+
+## Parameters
+
+There are a number of parameters you can set to adjust the path
+tracking. Some of the key parameters are:
+
+ - AEROM_ANG_ACCEL : maximum angular acceleration in degrees per second per second. Reduce to give smoother flight, but more lag
+ - AEROM_ANG_TC : time constant for correcting angular roll errors. Reduce for snappier rolls, but more risk of oscillation
+ - AEROM_KE_ANG : knifeedge angle. This is the required pitch angle in knifeedge flight to hold height at cruise speed.
+ - AEROM_ENTRY_RATE : roll rate in degrees per second for entering and exiting a roll change
+ - AEROM_THR_MIN : minumum throttle percentage for all aerobatic maneuvers
+ - AEROM_THR_BOOST: minumum throttle percentage for maneuvers marked as throttle boost
+ - AEROM_YAW_ACCEL: maximum yaw acceleration in degrees per second per second. Lower to soften yaw control
+ - AEROM_PATH_SCALE: scale factor for all maneuvers. A value above 1.0 will increase the size of the maneuvers. A value below 1.0 will decrease the size. A negative value will mirror the maneuvers, allowing a sequence designed for left-to-right to be flown right-to-left.
