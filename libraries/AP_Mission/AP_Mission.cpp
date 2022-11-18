@@ -1414,6 +1414,39 @@ MAV_MISSION_RESULT AP_Mission::mavlink_cmd_long_to_mission_cmd(const mavlink_com
     miss_item.target_system = packet.target_system;
     miss_item.target_component = packet.target_component;
 
+    miss_item.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
+    if (GCS_MAVLINK::command_long_stores_location((MAV_CMD) packet.command)) {
+        miss_item.x = packet.param5 * 1e7;
+        miss_item.y = packet.param6 * 1e7;
+    } else {
+        miss_item.x = packet.param5;
+        miss_item.y = packet.param6;
+    }
+    miss_item.z = packet.param7;
+
+    return mavlink_int_to_mission_cmd(miss_item, cmd);
+}
+
+// mavlink_cmd_int_to_mission_cmd - converts a mavlink cmd int to an AP_Mission::Mission_Command object which can be stored to eeprom
+// return MAV_MISSION_ACCEPTED on success, MAV_MISSION_RESULT error on failure
+MAV_MISSION_RESULT AP_Mission::mavlink_cmd_int_to_mission_cmd(const mavlink_command_int_t& packet, AP_Mission::Mission_Command& cmd)
+{
+    mavlink_mission_item_int_t miss_item = {0};
+
+    miss_item.target_system = packet.target_system;
+    miss_item.target_component = packet.target_component;
+    miss_item.frame = packet.frame;
+    miss_item.command = packet.command;
+
+    miss_item.param1 = packet.param1;
+    miss_item.param2 = packet.param2;
+    miss_item.param3 = packet.param3;
+    miss_item.param4 = packet.param4;
+
+    miss_item.x = packet.x;
+    miss_item.y = packet.y;
+    miss_item.z = packet.z;
+
     return mavlink_int_to_mission_cmd(miss_item, cmd);
 }
 
