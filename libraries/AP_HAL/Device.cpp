@@ -178,11 +178,6 @@ bool AP_HAL::Device::write_register(uint8_t reg, uint8_t val, bool checked)
     return result;
 }
 
-bool AP_HAL::Device::write_register_fullduplex(uint8_t *send, uint8_t *recv, uint32_t len)
-{
-    return transfer_fullduplex(send, recv, len);
-}
-
 bool AP_HAL::Device::read_registers(uint8_t first_reg, uint8_t *recv, uint32_t recv_len)
 {
     uint8_t read_reg = first_reg;
@@ -192,11 +187,6 @@ bool AP_HAL::Device::read_registers(uint8_t first_reg, uint8_t *recv, uint32_t r
         _register_rw_callback(read_reg, recv, recv_len, false);
     }
     return result;
-}
-
-bool AP_HAL::Device::read_registers_fullduplex(uint8_t *send, uint8_t *recv, uint32_t len)
-{
-    return transfer_fullduplex(send, recv, len);
 }
 
 bool AP_HAL::Device::transfer_bank(uint8_t bank, const uint8_t *send, uint32_t send_len,

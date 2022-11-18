@@ -23,9 +23,13 @@
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
 
-static constexpr int16_t combine(uint8_t msb, uint8_t lsb) { return (msb << 8u) | lsb; }
+static constexpr int16_t combine(uint8_t msb, uint8_t lsb)
+{
+    return (msb << 8u) | lsb;
+}
 
-class AP_InertialSensor_SCHA63T : public AP_InertialSensor_Backend {
+class AP_InertialSensor_SCHA63T : public AP_InertialSensor_Backend
+{
 public:
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
@@ -40,9 +44,9 @@ public:
 
 private:
     AP_InertialSensor_SCHA63T(AP_InertialSensor &imu,
-                             AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
-                             AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro,
-                             enum Rotation rotation);
+                              AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
+                              AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro,
+                              enum Rotation rotation);
 
     /*
       initialise driver
