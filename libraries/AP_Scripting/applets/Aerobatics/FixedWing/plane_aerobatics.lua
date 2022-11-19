@@ -1185,28 +1185,25 @@ function vertical_aerobatic_box(total_length, total_width, r, bank_angle)
    })
 end
 
-function multi_point_roll(length, N, arg3, arg4)
+function multi_point_roll(length, N, hold_frac, arg4)
    local paths = {}
-   local len_roll = length * (N-1) / (N*4-1)
-   local len_hold = length / (N*4-1)
+   local roll_frac = (1 - hold_frac)
+   local frac_sum = roll_frac * N + hold_frac * (N - 1)
+   local len_scaler = length / frac_sum
+   local len_roll = roll_frac * len_scaler
+   local len_hold = hold_frac * len_scaler
    local ang = 360 / N
    for i = 1, N do
       paths[#paths+1] = { path_straight(len_roll), roll_angle(ang) }
-      paths[#paths+1] = { path_straight(len_hold), roll_angle(0) }
+      if (i < N) then
+         paths[#paths+1] = { path_straight(len_hold), roll_angle(0) }
+      end
    end
    return make_paths("multi_point_roll", paths)
 end
 
-function two_point_roll(length, arg2, arg3, arg4)
-   return multi_point_roll(length, 2)
-end
-
-function four_point_roll(length, arg2, arg3, arg4)
-   return multi_point_roll(length, 4)
-end
-
 function eight_point_roll(length, arg2, arg3, arg4)
-   return multi_point_roll(length, 8)
+   return multi_point_roll(length, 8, 0.5)
 end
 
 function procedure_turn(radius, bank_angle, step_out, arg4)
@@ -1531,7 +1528,7 @@ function nz_clubman()                               -- positioned for a flight l
           { straight_align,           { -180, 0 } },
           { half_reverse_cuban_eight, { 90 } },
           { straight_align,           { -120, 0 } },
-          { two_point_roll,           { 240 },         message="Two Point Roll"},
+          { multi_point_roll,         { 240, 2, 0.5 }, message="Two Point Roll"},
           { straight_align,           { 150, 0 } },
           { half_reverse_cuban_eight, { 90 } },
           { straight_align,           { 106, 0 } },
@@ -2335,15 +2332,15 @@ command_table[18]= PathFunction(downline_45, "Downline-45")
 command_table[19]= PathFunction(stall_turn, "Stall Turn")
 command_table[20]= PathFunction(procedure_turn, "Procedure Turn")
 command_table[21]= PathFunction(derry_turn, "Derry Turn")
-command_table[22]= PathFunction(two_point_roll, "Two Point Roll")
+-- 22 was Two Point Roll - use multi point roll instead
 command_table[23]= PathFunction(half_climbing_circle, "Half Climbing Circle")
 command_table[24]= PathFunction(crossbox_humpty, "Crossbox Humpty")
 command_table[25]= PathFunction(laydown_humpty, "Laydown Humpty")
 command_table[26]= PathFunction(barrel_roll, "Barrel Roll")
 command_table[27]= PathFunction(straight_flight, "Straight Hold")
 command_table[28]= PathFunction(partial_circle, "Partial Circle")
-command_table[29]= PathFunction(four_point_roll, "Four Point Roll")
-command_table[30]= PathFunction(eight_point_roll, "Eight Point Roll")
+-- 29 was Four Point Roll - use multi point roll instead
+-- 30 was Eight Point Roll - use multi point roll instead
 command_table[31]= PathFunction(multi_point_roll, "Multi Point Roll")
 command_table[32]= PathFunction(side_step, "Side Step")
 command_table[200] = PathFunction(test_all_paths, "Test Suite")
