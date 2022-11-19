@@ -29,7 +29,7 @@ bool Buzzer::init()
         return false;
     }
     _pin = pNotify->get_buzz_pin();
-    if (_pin <= 0) {
+    if (_pin == 0u) {
         // no buzzer
         return false;
     }
@@ -72,7 +72,7 @@ void Buzzer::update_pattern_to_play()
         if (_flags.armed) {
             // double buzz when armed
             play_pattern(ARMING_BUZZ);
-        }else{
+        } else {
             // single buzz when disarmed
             play_pattern(SINGLE_BUZZ);
         }
@@ -109,8 +109,7 @@ void Buzzer::update_playing_pattern()
         return;
     }
 
-    const uint32_t now = AP_HAL::millis();
-    const uint32_t delta = now - _pattern_start_time;
+    const uint32_t delta = AP_HAL::millis() - _pattern_start_time;
     if (delta >= 3200) {
         // finished playing pattern
         on(false);
