@@ -219,7 +219,9 @@ struct PACKED log_AETR {
     float throttle;
     float rudder;
     float flap;
-    float speed_scaler;
+    float speed_scaler_x;
+    float speed_scaler_y;
+    float speed_scaler_z;
 };
 
 void Plane::Log_Write_AETR()
@@ -232,7 +234,9 @@ void Plane::Log_Write_AETR()
         ,throttle : SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)
         ,rudder   : SRV_Channels::get_output_scaled(SRV_Channel::k_rudder)
         ,flap     : SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_flap_auto)
-        ,speed_scaler : get_speed_scaler(),
+        ,speed_scaler_x : get_rpy_speed_scaler().x
+        ,speed_scaler_y : get_rpy_speed_scaler().y
+        ,speed_scaler_z : get_rpy_speed_scaler().z
         };
 
     logger.WriteBlock(&pkt, sizeof(pkt));
@@ -427,9 +431,11 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: Thr: Pre-mixer value for throttle output (between -4500 to 4500)
 // @Field: Rudd: Pre-mixer value for rudder output (between -4500 to 4500)
 // @Field: Flap: Pre-mixer value for flaps output (between -4500 to 4500)
-// @Field: SS: Surface movement / airspeed scaling value
+// @Field: SSx: Surface movement / airspeed scaling value for roll rate control
+// @Field: SSy: Surface movement / airspeed scaling value for pitch rate control
+// @Field: SSz: Surface movement / airspeed scaling value for yaw rate control
     { LOG_AETR_MSG, sizeof(log_AETR),
-      "AETR", "Qffffff",  "TimeUS,Ail,Elev,Thr,Rudd,Flap,SS", "s------", "F------" , true },
+      "AETR", "Qffffffff",  "TimeUS,Ail,Elev,Thr,Rudd,Flap,SSx,SSy,SSz", "s--------", "F--------" , true },
 
 // @LoggerMessage: OFG
 // @Description: OFfboard-Guided - an advanced version of GUIDED for companion computers that includes rate/s.  

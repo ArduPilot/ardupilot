@@ -565,6 +565,12 @@ public:
     
     AP_Int8         axis_bitmask; // axes to be autotuned
 
+    // used for scaling of control surface effectiveness for propeller slipstream effects.
+    AP_Float prop_disc_loading;
+    AP_Float propwash_roll_comp;
+    AP_Float propwash_pitch_comp;
+    AP_Float propwash_yaw_comp;
+
     // just to make compilation easier when all things are compiled out...
     uint8_t unused_integer;
 };

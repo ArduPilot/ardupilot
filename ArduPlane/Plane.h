@@ -385,7 +385,7 @@ private:
     int32_t altitude_error_cm;
 
     // speed scaler for control surfaces, updated at 10Hz
-    float surface_speed_scaler = 1.0;
+    Vector3f surface_speed_scaler_rpy = {1.0f,1.0f,1.0f};
 
     // Battery Sensors
     AP_BattMonitor battery{MASK_LOG_CURRENT,
@@ -852,8 +852,8 @@ private:
     void calc_throttle();
     void calc_nav_roll();
     void calc_nav_pitch();
-    float calc_speed_scaler(void);
-    float get_speed_scaler(void) const { return surface_speed_scaler; }
+    Vector3f calc_rpy_speed_scaler(void);
+    Vector3f get_rpy_speed_scaler(void) const { return surface_speed_scaler_rpy; }
     bool stick_mixing_enabled(void);
     void stabilize_roll(float speed_scaler);
     float stabilize_roll_get_roll_out(float speed_scaler);
@@ -862,9 +862,9 @@ private:
     void stabilize_stick_mixing_direct();
     void stabilize_stick_mixing_fbw();
     void stabilize_yaw(float speed_scaler);
-    void stabilize_training(float speed_scaler);
-    void stabilize_acro(float speed_scaler);
-    void stabilize_acro_quaternion(float speed_scaler);
+    void stabilize_training(Vector3f speed_scaler);
+    void stabilize_acro(Vector3f speed_scaler);
+    void stabilize_acro_quaternion(Vector3f speed_scaler);
     void calc_nav_yaw_coordinated(float speed_scaler);
     void calc_nav_yaw_course(void);
     void calc_nav_yaw_ground(void);

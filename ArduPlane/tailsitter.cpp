@@ -340,12 +340,19 @@ void Tailsitter::output(void)
             // in forward flight: set motor tilt servos and throttles using FW controller
             if (vectored_forward_gain > 0) {
                 // remove scaling from surface speed scaling and apply throttle scaling
-                const float scaler = plane.control_mode == &plane.mode_manual?1:(quadplane.FW_vector_throttle_scaling() / plane.get_speed_scaler());
+                Vector2f scaler;
+                if (plane.control_mode == &plane.mode_manual) {
+                    scaler.x = scaler.y = 1.0f;
+                } else {
+                    Vector3f speed_scaler = plane.get_rpy_speed_scaler();
+                    scaler.x = quadplane.FW_vector_throttle_scaling() / speed_scaler.x;
+                    scaler.y = quadplane.FW_vector_throttle_scaling() / speed_scaler.y;
+                }
                 // thrust vectoring in fixed wing flight
                 float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
                 float elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
-                tilt_left  = (elevator + aileron) * vectored_forward_gain * scaler;
-                tilt_right = (elevator - aileron) * vectored_forward_gain * scaler;
+                tilt_left  = (elevator * scaler.y + aileron * scaler.x) * vectored_forward_gain;
+                tilt_right = (elevator * scaler.y - aileron * scaler.x) * vectored_forward_gain;
             }
             SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);
             SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);

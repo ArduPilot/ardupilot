@@ -5,23 +5,67 @@
   to PIDs to change the scaling of the PID with speed. At high speed
   we move the surfaces less, and at low speeds we move them more.
  */
-float Plane::calc_speed_scaler(void)
+Vector3f Plane::calc_rpy_speed_scaler(void)
 {
-    float aspeed, speed_scaler;
+    Vector3f speed_scaler;
+    float aspeed;
     if (ahrs.airspeed_estimate(aspeed)) {
         if (aspeed > auto_state.highest_airspeed && hal.util->get_soft_armed()) {
             auto_state.highest_airspeed = aspeed;
         }
+
+        Vector3f aspeed_rpy;
+        if (flight_stage != AP_FixedWing::FlightStage::VTOL && is_positive(g2.prop_disc_loading)) {
+            // Calculate prop-wash exit velocity using momentum disc theory
+            const float rho = SSL_AIR_DENSITY * plane.barometer.get_air_density_ratio();
+            // Estimate propeller disc loading in N/m^2 assuming drag is negligible and X axis
+            // specific force is mostly due to propeller thrust. This assumption will underestimate
+            // propeller disc loading at higher speeds but will be accurate enough at low speeds
+            // which is when prop wash effects dominate.
+            const float disc_loading = MAX(g2.prop_disc_loading * (ahrs.get_accel().x - ahrs.get_accel_bias().x), 0.0f);
+            // Solve this quadratic for propeller inflow factor a^2 + a - T / (2 * rho * S * V^2) = 0
+            // a = inflow factor
+            // T = propeller thrust (N)
+            // rho = air density (Kg/m^3)
+            // S = propeller area (m^2)
+            // V = true airspeed (m/s)
+            // Aerodynamics for Engineering Students, E L Houghton and N B Carruthers, Third Edition, pp469
+            const float a_coef = 1.0f;
+            const float b_coef = 1.0f;
+            const float c_coef = - disc_loading / (2.0f * rho * sq(MAX(aspeed,0.1f)));
+            const float inflow_factor = (-b_coef + sqrtf(sq(b_coef) - 4.0f * a_coef * c_coef)) / (2.0f * a_coef);
+            aspeed_rpy.x = aspeed * (1.0f + 2.0f * inflow_factor * g2.propwash_roll_comp);
+            aspeed_rpy.y = aspeed * (1.0f + 2.0f * inflow_factor * g2.propwash_pitch_comp);
+            aspeed_rpy.z = aspeed * (1.0f + 2.0f * inflow_factor * g2.propwash_yaw_comp);
+        } else {
+            aspeed_rpy.x = aspeed_rpy.y = aspeed_rpy.z = aspeed;
+        }
+
         // ensure we have scaling over the full configured airspeed
         const float airspeed_min = MAX(aparm.airspeed_min, MIN_AIRSPEED_MIN);
         const float scale_min = MIN(0.5, g.scaling_speed / (2.0 * aparm.airspeed_max));
         const float scale_max = MAX(2.0, g.scaling_speed / (0.7 * airspeed_min));
-        if (aspeed > 0.0001f) {
-            speed_scaler = g.scaling_speed / aspeed;
+
+        if (aspeed_rpy.x > 0.0001f) {
+            speed_scaler.x = g.scaling_speed / aspeed_rpy.x;
         } else {
-            speed_scaler = scale_max;
+            speed_scaler.x = scale_max;
         }
-        speed_scaler = constrain_float(speed_scaler, scale_min, scale_max);
+        speed_scaler.x = constrain_float(speed_scaler.x, scale_min, scale_max);
+
+        if (aspeed_rpy.y > 0.0001f) {
+            speed_scaler.y = g.scaling_speed / aspeed_rpy.y;
+        } else {
+            speed_scaler.y = scale_max;
+        }
+        speed_scaler.y = constrain_float(speed_scaler.y, scale_min, scale_max);
+
+        if (aspeed_rpy.z > 0.0001f) {
+            speed_scaler.z = g.scaling_speed / aspeed_rpy.z;
+        } else {
+            speed_scaler.z = scale_max;
+        }
+        speed_scaler.z = constrain_float(speed_scaler.z, scale_min, scale_max);
 
 #if HAL_QUADPLANE_ENABLED
         if (quadplane.in_vtol_mode() && hal.util->get_soft_armed()) {
@@ -29,7 +73,9 @@ float Plane::calc_speed_scaler(void)
             float threshold = airspeed_min * 0.5;
             if (aspeed < threshold) {
                 float new_scaler = linear_interpolate(0.001, g.scaling_speed / threshold, aspeed, 0, threshold);
-                speed_scaler = MIN(speed_scaler, new_scaler);
+                speed_scaler.x = MIN(speed_scaler.x, new_scaler);
+                speed_scaler.y = MIN(speed_scaler.y, new_scaler);
+                speed_scaler.z = MIN(speed_scaler.z, new_scaler);
 
                 // we also decay the integrator to prevent an integrator from before
                 // we were at low speed persistint at high speed
@@ -42,17 +88,18 @@ float Plane::calc_speed_scaler(void)
     } else if (hal.util->get_soft_armed()) {
         // scale assumed surface movement using throttle output
         float throttle_out = MAX(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), 1);
-        speed_scaler = sqrtf(THROTTLE_CRUISE / throttle_out);
         // This case is constrained tighter as we don't have real speed info
-        speed_scaler = constrain_float(speed_scaler, 0.6f, 1.67f);
+        speed_scaler.x = speed_scaler.y = speed_scaler.z = constrain_float(sqrtf(THROTTLE_CRUISE / throttle_out), 0.6f, 1.67f);
     } else {
         // no speed estimate and not armed, use a unit scaling
-        speed_scaler = 1;
+        speed_scaler.x = speed_scaler.y = speed_scaler.z = 1;
     }
     if (!plane.ahrs.airspeed_sensor_enabled()  && 
         (plane.g2.flight_options & FlightOptions::SURPRESS_TKOFF_SCALING) &&
         (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF)) { //scaling is surpressed during climb phase of automatic takeoffs with no airspeed sensor being used due to problems with inaccurate airspeed estimates
-        return MIN(speed_scaler, 1.0f) ;
+        speed_scaler.x = MIN(speed_scaler.x, 1.0f);
+        speed_scaler.y = MIN(speed_scaler.y, 1.0f);
+        speed_scaler.z = MIN(speed_scaler.z, 1.0f);
     }
     return speed_scaler;
 }
@@ -358,7 +405,7 @@ void Plane::stabilize_yaw(float speed_scaler)
 /*
   a special stabilization function for training mode
  */
-void Plane::stabilize_training(float speed_scaler)
+void Plane::stabilize_training(Vector3f speed_scaler)
 {
     const float rexpo = roll_in_expo(false);
     const float pexpo = pitch_in_expo(false);
@@ -366,7 +413,7 @@ void Plane::stabilize_training(float speed_scaler)
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, rexpo);
     } else {
         // calculate what is needed to hold
-        stabilize_roll(speed_scaler);
+        stabilize_roll(speed_scaler.x);
         if ((nav_roll_cd > 0 && rexpo < SRV_Channels::get_output_scaled(SRV_Channel::k_aileron)) ||
             (nav_roll_cd < 0 && rexpo > SRV_Channels::get_output_scaled(SRV_Channel::k_aileron))) {
             // allow user to get out of the roll
@@ -377,7 +424,7 @@ void Plane::stabilize_training(float speed_scaler)
     if (training_manual_pitch) {
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pexpo);
     } else {
-        stabilize_pitch(speed_scaler);
+        stabilize_pitch(speed_scaler.y);
         if ((nav_pitch_cd > 0 && pexpo < SRV_Channels::get_output_scaled(SRV_Channel::k_elevator)) ||
             (nav_pitch_cd < 0 && pexpo > SRV_Channels::get_output_scaled(SRV_Channel::k_elevator))) {
             // allow user to get back to level
@@ -385,7 +432,7 @@ void Plane::stabilize_training(float speed_scaler)
         }
     }
 
-    stabilize_yaw(speed_scaler);
+    stabilize_yaw(speed_scaler.z);
 }
 
 
@@ -393,7 +440,7 @@ void Plane::stabilize_training(float speed_scaler)
   this is the ACRO mode stabilization function. It does rate
   stabilization on roll and pitch axes
  */
-void Plane::stabilize_acro(float speed_scaler)
+void Plane::stabilize_acro(Vector3f speed_scaler)
 {
     if (g.acro_locking == 2 && g.acro_yaw_rate > 0 &&
         yawController.rate_control_enabled()) {
@@ -427,7 +474,7 @@ void Plane::stabilize_acro(float speed_scaler)
         // try to reduce the integrated angular error to zero. We set
         // 'stabilze' to true, which disables the roll integrator
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, rollController.get_servo_out(roll_error_cd,
-                                                                                             speed_scaler,
+                                                                                             speed_scaler.x,
                                                                                              true, false));
     } else {
         /*
@@ -435,7 +482,7 @@ void Plane::stabilize_acro(float speed_scaler)
           user releases the stick
          */
         acro_state.locked_roll = false;
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, rollController.get_rate_out(roll_rate,  speed_scaler));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, rollController.get_rate_out(roll_rate,  speed_scaler.x));
     }
 
     if (g.acro_locking && is_zero(pitch_rate)) {
@@ -451,14 +498,14 @@ void Plane::stabilize_acro(float speed_scaler)
         // integrator enabled, which helps with inverted flight
         nav_pitch_cd = acro_state.locked_pitch_cd;
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitchController.get_servo_out(nav_pitch_cd - ahrs.pitch_sensor,
-                                                                                               speed_scaler,
+                                                                                               speed_scaler.y,
                                                                                                false, false));
     } else {
         /*
           user has non-zero pitch input, use a pure rate controller
          */
         acro_state.locked_pitch = false;
-        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitchController.get_rate_out(pitch_rate, speed_scaler));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitchController.get_rate_out(pitch_rate, speed_scaler.y));
     }
 
     steering_control.steering = rudder_input();
@@ -467,10 +514,10 @@ void Plane::stabilize_acro(float speed_scaler)
         // user has asked for yaw rate control with yaw rate scaled by ACRO_YAW_RATE
         const float rudd_expo = rudder_in_expo(true);
         const float yaw_rate = (rudd_expo/SERVO_MAX) * g.acro_yaw_rate;
-        steering_control.steering = steering_control.rudder = yawController.get_rate_out(yaw_rate,  speed_scaler, false);
+        steering_control.steering = steering_control.rudder = yawController.get_rate_out(yaw_rate,  speed_scaler.z, false);
     } else if (plane.g2.flight_options & FlightOptions::ACRO_YAW_DAMPER) {
         // use yaw controller
-        calc_nav_yaw_coordinated(speed_scaler);
+        calc_nav_yaw_coordinated(speed_scaler.z);
     } else {
         /*
           manual rudder
@@ -482,7 +529,7 @@ void Plane::stabilize_acro(float speed_scaler)
 /*
   quaternion based acro stabilization with continuous locking. Enabled with ACRO_LOCKING=2
  */
-void Plane::stabilize_acro_quaternion(float speed_scaler)
+void Plane::stabilize_acro_quaternion(Vector3f speed_scaler)
 {
     auto &q = acro_state.q;
     const float rexpo = roll_in_expo(true);
@@ -569,9 +616,9 @@ void Plane::stabilize_acro_quaternion(float speed_scaler)
     }
 
     // call to rate controllers
-    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron,  rollController.get_rate_out(desired_rates.x, speed_scaler));
-    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitchController.get_rate_out(desired_rates.y, speed_scaler));
-    steering_control.steering = steering_control.rudder = yawController.get_rate_out(desired_rates.z,  speed_scaler, false);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron,  rollController.get_rate_out(desired_rates.x, speed_scaler.x));
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitchController.get_rate_out(desired_rates.y, speed_scaler.y));
+    steering_control.steering = steering_control.rudder = yawController.get_rate_out(desired_rates.z,  speed_scaler.z, false);
 
     acro_state.roll_active_last = roll_active;
     acro_state.pitch_active_last = pitch_active;
@@ -589,7 +636,7 @@ void Plane::stabilize()
         steer_state.locked_course_err = 0;
         return;
     }
-    float speed_scaler = get_speed_scaler();
+    Vector3f speed_scaler = get_rpy_speed_scaler();
 
     uint32_t now = AP_HAL::millis();
     bool allow_stick_mixing = true;
@@ -617,12 +664,12 @@ void Plane::stabilize()
 #if AP_SCRIPTING_ENABLED
     } else if (nav_scripting_active()) {
         // scripting is in control of roll and pitch rates and throttle
-        const float aileron = rollController.get_rate_out(nav_scripting.roll_rate_dps, speed_scaler);
-        const float elevator = pitchController.get_rate_out(nav_scripting.pitch_rate_dps, speed_scaler);
+        const float aileron = rollController.get_rate_out(nav_scripting.roll_rate_dps, speed_scaler.x);
+        const float elevator = pitchController.get_rate_out(nav_scripting.pitch_rate_dps, speed_scaler.y);
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron);
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elevator);
         if (yawController.rate_control_enabled()) {
-            const float rudder = yawController.get_rate_out(nav_scripting.yaw_rate_dps, speed_scaler, false);
+            const float rudder = yawController.get_rate_out(nav_scripting.yaw_rate_dps, speed_scaler.z, false);
             steering_control.rudder = rudder;
         }
 #endif
@@ -637,20 +684,20 @@ void Plane::stabilize()
         if (plane.control_mode->mode_number() == Mode::Number::QACRO) {
             stabilize_acro(speed_scaler);
         } else {
-            stabilize_roll(speed_scaler);
-            stabilize_pitch(speed_scaler);
+            stabilize_roll(speed_scaler.x);
+            stabilize_pitch(speed_scaler.y);
         }
 #endif
     } else {
         if (allow_stick_mixing && g.stick_mixing == StickMixing::FBW && control_mode != &mode_stabilize) {
             stabilize_stick_mixing_fbw();
         }
-        stabilize_roll(speed_scaler);
-        stabilize_pitch(speed_scaler);
+        stabilize_roll(speed_scaler.x);
+        stabilize_pitch(speed_scaler.y);
         if (allow_stick_mixing && (g.stick_mixing == StickMixing::DIRECT || control_mode == &mode_stabilize)) {
             stabilize_stick_mixing_direct();
         }
-        stabilize_yaw(speed_scaler);
+        stabilize_yaw(speed_scaler.z);
     }
 
     /*

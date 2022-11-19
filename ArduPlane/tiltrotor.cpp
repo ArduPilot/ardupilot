@@ -543,13 +543,21 @@ void Tiltrotor::vectoring(void)
 
     const bool no_yaw = tilt_over_max_angle();
     if (no_yaw) {
+        Vector2f scaler;
         // fixed wing  We need to apply inverse scaling with throttle, and remove the surface speed scaling as
         // we don't want tilt impacted by airspeed
-        const float scaler = plane.control_mode == &plane.mode_manual?1:(quadplane.FW_vector_throttle_scaling() / plane.get_speed_scaler());
-        const float gain = fixed_gain * fixed_tilt_limit * scaler;
-        const float right = gain * SRV_Channels::get_output_scaled(SRV_Channel::k_elevon_right) * (1/4500.0);
-        const float left  = gain * SRV_Channels::get_output_scaled(SRV_Channel::k_elevon_left) * (1/4500.0);
-        const float mid  = gain * SRV_Channels::get_output_scaled(SRV_Channel::k_elevator) * (1/4500.0);
+        if (plane.control_mode == &plane.mode_manual) {
+            scaler.x = scaler.y = 1.0f;
+        } else {
+            const Vector3f speed_scaler_rpy = plane.get_rpy_speed_scaler();
+            scaler.x = quadplane.FW_vector_throttle_scaling() / speed_scaler_rpy.x;
+            scaler.y = quadplane.FW_vector_throttle_scaling() / speed_scaler_rpy.y;
+        }
+        const Vector2f gain = scaler * (fixed_gain * fixed_tilt_limit);
+        const float elevon_gain = (gain.x + gain.y) * 0.5f;
+        const float right = elevon_gain * SRV_Channels::get_output_scaled(SRV_Channel::k_elevon_right) * (1/4500.0);
+        const float left  = elevon_gain * SRV_Channels::get_output_scaled(SRV_Channel::k_elevon_left) * (1/4500.0);
+        const float mid  = gain.y * SRV_Channels::get_output_scaled(SRV_Channel::k_elevator) * (1/4500.0);
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft,1000 * constrain_float(base_output - right,0,1));
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight,1000 * constrain_float(base_output - left,0,1));
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRearLeft,1000 * constrain_float(base_output + left,0,1));
