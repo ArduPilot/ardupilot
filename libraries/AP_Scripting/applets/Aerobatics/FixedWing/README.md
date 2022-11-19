@@ -42,15 +42,12 @@ the ground track.
 | 19 | Stall Turn               | radius | height      | direction   |            | Yes        |
 | 20 | Procedure Turn           | radius | bank angle  | step-out    |            | Yes        |
 | 21 | Derry Turn               | radius | bank angle  |             |            | No         |
-| 22 | Two Point Roll           | length |             |             |            | No         |
 | 23 | Half Climbing Circle     | radius | height      | bank angle  |            | Yes        |
 | 24 | Crossbox Humpty          | radius | height      |             |            | Yes        |
 | 25 | Laydown Humpty           | radius | height      |             |            | Yes        |
 | 25 | Barrel Roll              | radius | length      | num spirals |            | No         |
 | 26 | Straight Hold            | length | bank angle  |             |            | No         |
-| 29 | Four Point Roll          | length |             |             |            | No         |
-| 30 | Eight Point Roll         | length |             |             |            | No         |
-| 31 | Multi Point Roll         | length | num points  |             |            | No         |
+| 31 | Multi Point Roll         | length | num points  | hold frac   |            | No         |
 
 Note: In the script you will find other (specialised) manouvers which do not appear in the 
 'command table'. These tend to be specialised manouvers which may expect an inverted entry or 
