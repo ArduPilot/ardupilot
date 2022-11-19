@@ -116,6 +116,7 @@ class ExtractFeatures(object):
             ('AP_TRAMP_ENABLED', 'AP_Tramp::AP_Tramp',),
 
             ('HAL_QUADPLANE_ENABLED', 'QuadPlane::QuadPlane',),
+            ('QAUTOTUNE_ENABLED', 'ModeQAutotune::_enter',),
             ('HAL_SOARING_ENABLED', 'SoaringController::var_info',),
             ('HAL_LANDING_DEEPSTALL_ENABLED', r'AP_Landing_Deepstall::terminate\b',),
 
