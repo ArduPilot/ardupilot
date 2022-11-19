@@ -800,7 +800,7 @@ void AP_RunCam::start_uart()
 void AP_RunCam::get_device_info()
 {
     send_request_and_waiting_response(Command::RCDEVICE_PROTOCOL_COMMAND_GET_DEVICE_INFO, 0, RUNCAM_INIT_INTERVAL_MS * 4,
-        -1, FUNCTOR_BIND_MEMBER(&AP_RunCam::parse_device_info, void, const Request&));
+        UINT16_MAX, FUNCTOR_BIND_MEMBER(&AP_RunCam::parse_device_info, void, const Request&));
 }
 
 // map a Event to a SimulationOperation
