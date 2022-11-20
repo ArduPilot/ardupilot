@@ -752,10 +752,7 @@ void Sub::convert_old_parameters()
         { Parameters::k_param_attitude_control, 386, AP_PARAM_FLOAT, "ATC_RAT_PIT_FLTE" },
         { Parameters::k_param_attitude_control, 387, AP_PARAM_FLOAT, "ATC_RAT_YAW_FLTE" },
     };
-    uint8_t filt_table_size = ARRAY_SIZE(filt_conversion_info);
-    for (uint8_t i=0; i<filt_table_size; i++) {
-        AP_Param::convert_old_parameters(&filt_conversion_info[i], 1.0f);
-    }
+    AP_Param::convert_old_parameters(&filt_conversion_info[0], ARRAY_SIZE(filt_conversion_info));
 
     SRV_Channels::upgrade_parameters();
 }
