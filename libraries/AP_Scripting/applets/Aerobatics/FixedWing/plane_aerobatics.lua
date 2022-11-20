@@ -514,6 +514,15 @@ function PathComponent()
 end
 
 --[[
+   return a quaternion for a roll, pitch, yaw (321 euler sequence) attitude
+--]]
+function qorient(roll_deg, pitch_deg, yaw_deg)
+   local q = Quaternion()
+   q:from_euler(math.rad(roll_deg), math.rad(pitch_deg), math.rad(yaw_deg))
+   return q
+end
+
+--[[
    rotate a vector by a quaternion
 --]]
 function quat_earth_to_body(quat, v)
@@ -783,6 +792,11 @@ function path_composer(_name, _subpaths)
       end
       speed = end_speed[i]
 
+      if sp.set_orient ~= nil then
+         -- override orientation at this point in the sequence
+         orientation = sp.set_orient
+      end
+
       if sp.roll_ref ~= nil then
          local q = Quaternion()
          q:from_axis_angle(makeVector3f(1,0,0), math.rad(sp.roll_ref))
@@ -892,6 +906,9 @@ function make_paths(name, paths)
       end
       if paths[i].roll_ref then
          p[i].roll_ref = paths[i].roll_ref
+      end
+      if paths[i].set_orient then
+         p[i].set_orient = paths[i].set_orient
       end
       p[i].thr_boost = paths[i].thr_boost
    end
@@ -1541,6 +1558,16 @@ function fai_f3a_box_l_r()
           { vertical_aerobatic_box,     { 540, 190, 45,  0 } },
           { straight_roll,              { 50, 0 } }
    })
+end
+
+function funny_loop(radius, arg2, arg3, arg4)
+   return make_paths("funny_loop", {
+            { path_horizontal_arc(radius, 90),                  roll_angle(180) },
+            { path_vertical_arc(radius, 90),                    roll_angle(0),   set_orient=qorient(0,90,90)},
+            { path_horizontal_arc(radius, 180),                 roll_angle(360), set_orient=qorient(0,-90,-90) },
+            { path_vertical_arc(radius, 90),                    roll_angle(0),   set_orient=qorient(0,0,-90) },
+            { path_horizontal_arc(radius, 90),                  roll_angle(-180) },
+      })
 end
 
 --[[
@@ -2433,6 +2460,7 @@ load_table["p23_14"] = p23_14
 load_table["p23_15"] = p23_15
 load_table["p23_16"] = p23_16
 load_table["p23_17"] = p23_17
+load_table["funny_loop"] = funny_loop
 
 
 --[[
