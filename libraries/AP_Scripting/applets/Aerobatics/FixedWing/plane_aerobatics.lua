@@ -2693,4 +2693,5 @@ function update()
    return update, 1000.0/LOOP_RATE
 end
 
+gcs:send_text(0, string.format("Loaded plane_aerobatics.lua"))
 return update()
