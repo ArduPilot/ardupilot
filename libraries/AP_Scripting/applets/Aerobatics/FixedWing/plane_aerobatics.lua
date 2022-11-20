@@ -455,6 +455,41 @@ function roll_angle_exit(_angle)
 end
 
 --[[
+   implement a sequence of rolls, specified as a list of {proportion, roll_angle} pairs
+--]]
+function roll_sequence(_seq)
+   local self = {}
+   local seq = _seq
+   local total = 0.0
+   local end_t = {}
+   local start_t = {}
+   local start_ang = {}
+   local angle = 0.0
+   for i = 1, #seq do
+      total = total + seq[i][1]
+   end
+   local t = 0.0
+   for i = 1, #seq do
+      start_t[i] = t
+      start_ang[i] = angle
+      angle = angle + seq[i][2]
+      t = t + seq[i][1]/total
+      end_t[i] = t
+   end
+   function self.get_roll(t)
+      for i = 1, #seq do
+         if t <= end_t[i] then
+            local t2 = (t - start_t[i])/(seq[i][1]/total)
+            return start_ang[i] + t2 * seq[i][2]
+         end
+      end
+      -- we've gone past the end
+      return start_ang[#seq] + seq[#seq][2]
+   end
+   return self
+end
+
+--[[
   all path components inherit from PathComponent
 --]]
 function PathComponent()
@@ -1230,22 +1265,12 @@ end
 function p23_1(radius, height, width, arg4) -- top hat
    return make_paths("p23_1", {
             { path_vertical_arc(radius, 90),              roll_angle(0) },
-            { path_straight((height-2*radius)*2/9),       roll_angle(0) },
-            { path_straight((height-2*radius)*2/9),       roll_angle(90) },
-            { path_straight((height-2*radius)/9),         roll_angle(0) },
-            { path_straight((height-2*radius)*2/9),       roll_angle(90) },
-            { path_straight((height-2*radius)*2/9),       roll_angle(0) },            
+            { path_straight((height-2*radius)),           roll_sequence({{2,0}, {2, 90}, {1, 0}, {2, 90}, {2, 0}}) },
             { path_vertical_arc(-radius, 90),             roll_angle(0) },
-            { path_straight((width-2*radius)/3),          roll_angle(0) },
-            { path_straight((width-2*radius)/3),          roll_angle(180) },
-            { path_straight((width-2*radius)/3),          roll_angle(0) },
+            { path_straight((width-2*radius)),            roll_sequence({{1,0}, {1, 180}, {1, 0}}) },
             { path_vertical_arc(-radius, 90),             roll_angle(0) },
-            { path_straight((height-2*radius)*2/9),       roll_angle(0) },
-            { path_straight((height-2*radius)*2/9),       roll_angle(90) },
-            { path_straight((height-2*radius)/9),         roll_angle(0) },
-            { path_straight((height-2*radius)*2/9),       roll_angle(90) },
-            { path_straight((height-2*radius)*2/9),       roll_angle(0) },            
-            { path_vertical_arc(radius, 90),              roll_angle(0) },                        
+            { path_straight((height-2*radius)),           roll_sequence({{2,0}, {2, 90}, {1, 0}, {2, 90}, {2, 0}}) },
+            { path_vertical_arc(radius, 90),              roll_angle(0) },
       })
 end
 
