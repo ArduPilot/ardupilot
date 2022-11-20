@@ -5,7 +5,7 @@ allowing fixed wing aircraft to execute a number of aerobatic
 manoeuvres either in AUTO mission or by triggering using pilot commands
 using RC switches.
 
-As always, but particularly with scriped aerobatics, test in SITL until 
+As always, but particularly with scripted aerobatics, test in SITL until 
 you understand the function and behaviour of each manouver. You will need 
 an appropriate aircraft, and be ready to take manual control if necessary!
 
@@ -39,7 +39,7 @@ the ground track.
 | 16 | Split-S                  | radius |             |             |            | Yes        |
 | 17 | Upline-45                | radius | height gain |             |            | No         |
 | 18 | Downline-45              | radius | height loss |             |            | No         |
-| 19 | Stall Turn               | radius | height      | direction   |            | Yes        |
+| 19 | Stall Turn(experimental) | radius | height      | direction   |            | Yes        |
 | 20 | Procedure Turn           | radius | bank angle  | step-out    |            | Yes        |
 | 21 | Derry Turn               | radius | bank angle  |             |            | No         |
 | 23 | Half Climbing Circle     | radius | height      | bank angle  |            | Yes        |
@@ -47,11 +47,19 @@ the ground track.
 | 25 | Laydown Humpty           | radius | height      |             |            | Yes        |
 | 25 | Barrel Roll              | radius | length      | num spirals |            | No         |
 | 26 | Straight Hold            | length | bank angle  |             |            | No         |
-| 31 | Multi Point Roll         | length | num points  | hold frac   |            | No         |
+| 31 | Multi Point Roll         | length | num points  | hold frac   | pts to do  | No         |
+
+Some notes about maneuver arguments (arg1 - arg4):
+These are parameters each maneuver requires to execute. For example the length of a roll or radius of a loop (in meters), the number of rolls, the height of the maneuver, etc.
+When setting up a multi-point roll, for example, the length is in meters, the number of points is 'how many points should the roll have during 360 degrees', the hold fraction is the amount of the maneuver 'not rolling', and the points to do is how many points do you wish to fly. For example, if we want '2 of 4 point roll' : two points of a four point roll. From upright roll through 90 degrees, pause, and then roll through a further 90 degrees - finishing inverted. And we want the maneuver to happen over 100m, and the pause between points to be 50% of the maneuver length. Then the four arguments would be?
+
+Length = 100, num points = 4, hold fraction = 0.5, pts to do = 2.
+
+Remember, the model is now exiting inverted so the next maneuver must be planned to start from this position.
 
 Note: In the script you will find other (specialised) manouvers which do not appear in the 
-'command table'. These tend to be specialised manouvers which may expect an inverted entry or 
-finish inverted as well - so will not end well if started upright at a low altitude! These 
+'command table'. These tend to be specialised manouvers which may expect an inverted entry,a very high entry (270m), or 
+finish inverted and will not end well if started upright at a low altitude! These 
 manouvers are used in some of the schedules defined below. 
 
 
