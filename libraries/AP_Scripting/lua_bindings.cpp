@@ -361,7 +361,7 @@ int lua_get_i2c_device(lua_State *L) {
     }
 
     new_AP_HAL__I2CDevice(L);
-    *check_AP_HAL__I2CDevice(L, -1) = AP::scripting()->_i2c_dev[AP::scripting()->num_i2c_devices]->get();
+    *((AP_HAL::I2CDevice**)luaL_checkudata(L, -1, "AP_HAL::I2CDevice")) = AP::scripting()->_i2c_dev[AP::scripting()->num_i2c_devices]->get();
 
     AP::scripting()->num_i2c_devices++;
 
@@ -380,9 +380,6 @@ int AP_HAL__I2CDevice_read_registers(lua_State *L) {
     }
 
     AP_HAL::I2CDevice * ud = *check_AP_HAL__I2CDevice(L, 1);
-    if (ud == NULL) {
-        return luaL_error(L, "Internal error, null pointer");
-    }
 
     const uint8_t first_reg = get_uint8_t(L, 2);
 
@@ -432,7 +429,7 @@ int lua_get_CAN_device(lua_State *L) {
     }
 
     new_ScriptingCANBuffer(L);
-    *check_ScriptingCANBuffer(L, -1) = AP::scripting()->_CAN_dev->add_buffer(buffer_len);
+    *((ScriptingCANBuffer**)luaL_checkudata(L, -1, "ScriptingCANBuffer")) = AP::scripting()->_CAN_dev->add_buffer(buffer_len);
 
     return 1;
 }
@@ -455,7 +452,7 @@ int lua_get_CAN_device2(lua_State *L) {
     }
 
     new_ScriptingCANBuffer(L);
-    *check_ScriptingCANBuffer(L, -1) = AP::scripting()->_CAN_dev2->add_buffer(buffer_len);
+    *((ScriptingCANBuffer**)luaL_checkudata(L, -1, "ScriptingCANBuffer")) = AP::scripting()->_CAN_dev2->add_buffer(buffer_len);
 
     return 1;
 }
