@@ -170,12 +170,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-//  Crop Sprayer - enabled only on larger firmwares
-#ifndef SPRAYER_ENABLED
- # define SPRAYER_ENABLED  HAL_SPRAYER_ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // Precision Landing with companion computer or IRLock sensor
 #ifndef PRECISION_LANDING
  # define PRECISION_LANDING ENABLED

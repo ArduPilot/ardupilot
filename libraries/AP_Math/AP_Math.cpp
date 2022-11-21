@@ -348,15 +348,14 @@ float rand_float(void)
 #endif
 }
 
+// generate a random Vector3f with each value between -1.0 and 1.0
 Vector3f rand_vec3f(void)
 {
-    Vector3f v = Vector3f(rand_float(),
-                          rand_float(),
-                          rand_float());
-    if (!is_zero(v.length())) {
-        v.normalize();
-    }
-    return v;
+    return Vector3f{
+        rand_float(),
+        rand_float(),
+        rand_float()
+    };
 }
 #endif
 

@@ -1,5 +1,7 @@
 #include "AP_Frsky_D.h"
 
+#if AP_FRSKY_D_TELEM_ENABLED
+
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_GPS/AP_GPS.h>
@@ -82,3 +84,5 @@ void AP_Frsky_D::send(void)
         }
     }
 }
+
+#endif  // AP_FRSKY_D_TELEM_ENABLED

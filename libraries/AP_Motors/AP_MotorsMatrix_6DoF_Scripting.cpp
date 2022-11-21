@@ -19,6 +19,7 @@
 #include "AP_MotorsMatrix_6DoF_Scripting.h"
 #include <GCS_MAVLink/GCS.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 

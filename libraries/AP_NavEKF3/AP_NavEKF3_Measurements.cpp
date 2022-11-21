@@ -863,6 +863,7 @@ void NavEKF3_core::readAirSpdData()
     }
 }
 
+#if EK3_FEATURE_BEACON_FUSION
 /********************************************************
 *              Range Beacon Measurements                *
 ********************************************************/
@@ -979,6 +980,7 @@ void NavEKF3_core::readRngBcnData()
     }
 
 }
+#endif  // EK3_FEATURE_BEACON_FUSION
 
 /********************************************************
 *              Independant yaw sensor measurements      *

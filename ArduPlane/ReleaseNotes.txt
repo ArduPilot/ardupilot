@@ -1,3 +1,26 @@
+Release 4.3.2-beta1 Nov 21st 2022
+---------------------------------
+
+Changes from 4.3.1
+- ARKV6X support
+- MatekH743 supports 8 bi-directional dshot channels
+- Pixhawk1 boards support MS5607 baros
+- SpeedbyBee F405v3 support
+- DroneCAN Airspeed sensor support including hygrometer readings
+- Pre-arm warning if multiple UARTs with SERIALx_PROTOCOL = RCIN
+- Siyi gimbal support
+- Arm check warning loses duplicate "AHRS" prefix
+- AtomRCF405NAVI bootloader file name fixed
+- BRD_SAFETY_MASK fixed on boards with both FMU safety switch and IOMCU
+- Compass calibration continues even if a single compass's cal fails
+- Gremsy gimbal driver sends autopilot info at lower rate to save bandwidth
+- Invensense 42605 and 42609 IMUs use anti-aliasing filter and notch filter
+- OSD stats screen fix
+- RC input on serial port uses first UART with SERIALx_PROTOCOL = 23 (was using last)
+- RunCam caching fix with enablement and setup on 3-pos switch
+- RTK CAN GPS fix when GPSs conneted to separate CAN ports on autopilot
+- fixed yaw rate for fixed wing autotune
+
 Release 4.3.1 24th Oct 2022
 ---------------------------
 

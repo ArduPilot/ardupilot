@@ -70,7 +70,9 @@ env BUILD_ABIN True
 
 # Disable un-needed hardware drivers
 define AP_AIRSPEED_ENABLED 0
+define AP_BEACON_ENABLED 0
 define AP_OPTICALFLOW_ENABLED 0
+define AP_FRSKY_TELEM_ENABLED 0
 define BEACON_ENABLED 0
 define GPS_MOVING_BASELINE 0
 define HAL_ADSB_SAGETECH_ENABLED 0
@@ -97,6 +99,7 @@ define LANDING_GEAR_ENABLED 0
 define MODE_TURTLE_ENABLED 0
 define WINCH_ENABLED 0
 define AP_ICENGINE_ENABLED 0
+define HAL_DISPLAY_ENABLED 0
 
 # serially-attached actuators aren't relevant on SkyViper:
 define AP_FETTEC_ONEWIRE_ENABLED 0
@@ -136,5 +139,6 @@ define AP_GRIPPER_ENABLED 0
 # SkyViper has a very limited set of blinkenlights
 define AP_NOTIFY_NCP5623_ENABLED 0
 define AP_NOTIFY_PCA9685_ENABLED 0
+define AP_NOTIFY_TOSHIBALED_ENABLED 0
 
 AUTOBUILD_TARGETS Copter

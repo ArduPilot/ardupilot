@@ -283,8 +283,11 @@ void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_lo
         aim_height = flare_alt*2;
     }
 
-    // time before landing that we will flare
-    float flare_time = aim_height / tecs_Controller->get_land_sinkrate();
+    // calculate time spent in flare assuming the sink rate reduces over time from sink_rate at aim_height
+    // to tecs_controller->get_land_sinkrate() at touchdown
+    const float weight = constrain_float(0.01f*(float)flare_effectivness_pct, 0.0f, 1.0f);
+    const float flare_sink_rate_avg = MAX(weight * tecs_Controller->get_land_sinkrate() + (1.0f - weight) * sink_rate, 0.1f);
+    const float flare_time = aim_height / flare_sink_rate_avg;
 
     // distance to flare is based on ground speed, adjusted as we
     // get closer. This takes into account the wind

@@ -150,6 +150,7 @@ class BoardList(object):
             "MazzyStarDrone",
             "omnibusf4pro-one",
             "skyviper-f412-rev1",
+            "SkystarsH7HD",
             "*-ODID",
             "*-ODID-heli",
         ]

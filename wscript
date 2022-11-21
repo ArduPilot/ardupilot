@@ -447,7 +447,10 @@ def configure(cfg):
     cfg.load('clang_compilation_database')
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
-    cfg.load('uavcangen')
+    if cfg.options.board in cfg.ap_periph_boards():
+        cfg.load('dronecangen')
+    else:
+        cfg.load('uavcangen')
 
     cfg.env.SUBMODULE_UPDATE = cfg.options.submodule_update
 
@@ -545,26 +548,6 @@ def configure(cfg):
 
     _collect_autoconfig_files(cfg)
 
-def generate_dronecan_dsdlc(cfg):
-    dsdlc_gen_path = cfg.bldnode.make_node('modules/DroneCAN/libcanard/dsdlc_generated').abspath()
-    src = cfg.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_UAVCAN/dsdl/*', dir=True, src=False)
-    dsdlc_path = cfg.srcnode.make_node('modules/DroneCAN/dronecan_dsdlc/dronecan_dsdlc.py').abspath()
-    if not os.path.exists(dsdlc_path):
-        print("Please update submodules with: git submodule update --recursive --init")
-        sys.exit(1)
-    src = ' '.join([s.abspath() for s in src])
-    cmd = '{} {} -O {} {}'.format(cfg.env.get_flat('PYTHON'),
-                        dsdlc_path,
-                        dsdlc_gen_path,
-                        src)
-    print("Generating DSDLC for CANARD: " + cmd)
-    ret = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if ret.returncode != 0:
-        print('Failed to run: ', cmd)
-        print(ret.stdout.decode('utf-8'))
-        print(ret.stderr.decode('utf-8'))
-        raise RuntimeError('Failed to generate DSDL C bindings')
-
 def collect_dirs_to_recurse(bld, globs, **kw):
     dirs = []
     globs = Utils.to_list(globs)
@@ -661,9 +644,20 @@ def _build_dynamic_sources(bld):
             name='uavcan',
             export_includes=[
                 bld.bldnode.make_node('modules/uavcan/libuavcan/include/dsdlc_generated').abspath(),
+                bld.srcnode.find_dir('modules/uavcan/libuavcan/include').abspath()
             ]
         )
-
+    elif bld.env.AP_PERIPH:
+        bld(
+            features='dronecangen',
+            source=bld.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_UAVCAN/dsdl/*', dir=True, src=False),
+            output_dir='modules/DroneCAN/libcanard/dsdlc_generated/',
+            name='dronecan',
+            export_includes=[
+                bld.bldnode.make_node('modules/DroneCAN/libcanard/dsdlc_generated/include').abspath(),
+                bld.srcnode.find_dir('modules/DroneCAN/libcanard/').abspath(),
+            ]
+        )
 
     def write_version_header(tsk):
         bld = tsk.generator.bld
@@ -768,12 +762,6 @@ def _load_pre_build(bld):
     if bld.cmd == 'clean':
         return
     brd = bld.get_board()
-    if bld.env.AP_PERIPH:
-        dsdlc_gen_path = bld.bldnode.make_node('modules/DroneCAN/libcanard/dsdlc_generated/include').abspath()
-        #check if canard dsdlc directory empty
-        # check if directory exists
-        if not os.path.exists(dsdlc_gen_path) or not os.listdir(dsdlc_gen_path):
-            generate_dronecan_dsdlc(bld)
     if getattr(brd, 'pre_build', None):
         brd.pre_build(bld)    
 
@@ -795,6 +783,8 @@ def build(bld):
 
     if bld.get_board().with_can:
         bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['uavcan']
+    if bld.env.AP_PERIPH:
+        bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['dronecan']
 
     _build_cmd_tweaks(bld)
 

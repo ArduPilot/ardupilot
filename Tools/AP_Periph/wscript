@@ -70,24 +70,23 @@ def build(bld):
                      ]
     bld.ap_stlib(
         name= 'AP_Periph_libs',
+        dynamic_source='modules/DroneCAN/libcanard/dsdlc_generated/src/**.c',
         ap_vehicle='AP_Periph',
         ap_libraries= libraries,
+        use='dronecan',
         exclude_src=[
             'libraries/AP_HAL_ChibiOS/Storage.cpp'
         ]
     )
 
     # build external libcanard library
-    bld.stlib(source=['../../modules/DroneCAN/libcanard/canard.c'] +
-                     bld.bldnode.ant_glob('modules/DroneCAN/libcanard/dsdlc_generated/src/**.c'),
-              includes=[bld.env.SRCROOT + '/modules/DroneCAN/libcanard', 
-                        bld.env.BUILDROOT + '/modules/DroneCAN/libcanard/dsdlc_generated/include'],
+    bld.stlib(source='../../modules/DroneCAN/libcanard/canard.c',
+              name='libcanard',
+              use='dronecan',
               target='libcanard')
 
     bld.ap_program(
         program_name='AP_Periph',
-        use=['AP_Periph_libs', 'libcanard'],
+        use=['AP_Periph_libs', 'libcanard', 'dronecan'],
         program_groups=['bin','AP_Periph'],
-        includes=[bld.env.SRCROOT + '/modules/DroneCAN/libcanard',
-                  bld.env.BUILDROOT + '/modules/DroneCAN/libcanard/dsdlc_generated/include']
     )

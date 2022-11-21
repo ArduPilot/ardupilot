@@ -156,6 +156,14 @@ def process_ap_libraries(self):
         if vehicle:
             self.use.append(_vehicle_tgen_name(l, vehicle))
 
+@before_method('process_source')
+@feature('cxxstlib')
+def dynamic_post(self):
+    if not getattr(self, 'dynamic_source', None):
+        return
+    self.source = Utils.to_list(self.source)
+    self.source.extend(self.bld.bldnode.ant_glob(self.dynamic_source))
+
 class ap_library_check_headers(Task.Task):
     color = 'PINK'
     before  = 'cxx c'

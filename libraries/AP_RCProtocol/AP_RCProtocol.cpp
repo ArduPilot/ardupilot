@@ -50,10 +50,14 @@ void AP_RCProtocol::init()
     backend[AP_RCProtocol::SBUS_NI] = new AP_RCProtocol_SBUS(*this, false, 100000);
     backend[AP_RCProtocol::SRXL2] = new AP_RCProtocol_SRXL2(*this);
     backend[AP_RCProtocol::CRSF] = new AP_RCProtocol_CRSF(*this);
+#if AP_RCPROTOCOL_FPORT2_ENABLED
     backend[AP_RCProtocol::FPORT2] = new AP_RCProtocol_FPort2(*this, true);
 #endif
+#endif
     backend[AP_RCProtocol::ST24] = new AP_RCProtocol_ST24(*this);
+#if AP_RCPROTOCOL_FPORT_ENABLED
     backend[AP_RCProtocol::FPORT] = new AP_RCProtocol_FPort(*this, true);
+#endif
 }
 
 AP_RCProtocol::~AP_RCProtocol()
@@ -419,10 +423,14 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
         return "CRSF";
     case ST24:
         return "ST24";
+#if AP_RCPROTOCOL_FPORT_ENABLED
     case FPORT:
         return "FPORT";
+#endif
+#if AP_RCPROTOCOL_FPORT2_ENABLED
     case FPORT2:
         return "FPORT2";
+#endif
     case NONE:
         break;
     }

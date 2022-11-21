@@ -1257,13 +1257,13 @@ Vector2f AP_AHRS::groundspeed_vector(void)
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
         EKF2.getVelNED(vec);
-        return Vector2f(vec.x, vec.y);
+        return vec.xy();
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
         EKF3.getVelNED(vec);
-        return Vector2f(vec.x, vec.y);
+        return vec.xy();
 #endif
 
 #if AP_AHRS_SIM_ENABLED

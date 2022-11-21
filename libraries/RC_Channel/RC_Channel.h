@@ -601,7 +601,10 @@ public:
     // get last aux cached value for scripting. Returns false if never set, otherwise 0,1,2
     bool get_aux_cached(RC_Channel::aux_func_t aux_fn, uint8_t &pos);
 #endif
-    
+
+    // get failsafe timeout in milliseconds
+    uint32_t get_fs_timeout_ms() const { return MAX(_fs_timeout * 1000, 100); }
+
 protected:
 
     enum class Option {
@@ -637,6 +640,7 @@ private:
     AP_Float _override_timeout;
     AP_Int32  _options;
     AP_Int32  _protocols;
+    AP_Float _fs_timeout;
 
     RC_Channel *flight_mode_channel() const;
 

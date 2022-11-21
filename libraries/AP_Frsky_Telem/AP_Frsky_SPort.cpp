@@ -1,5 +1,7 @@
 #include "AP_Frsky_SPort.h"
 
+#if AP_FRSKY_SPORT_TELEM_ENABLED
+
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_GPS/AP_GPS.h>
@@ -472,3 +474,5 @@ namespace AP {
         return AP_Frsky_SPort::get_singleton();
     }
 };
+
+#endif  // AP_FRSKY_SPORT_TELEM_ENABLED

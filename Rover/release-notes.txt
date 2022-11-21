@@ -1,6 +1,30 @@
 Rover Release Notes:
 ------------------------------------------------------------------
-Rover 4.3.0-beta3 24-Oct-2022
+Rover 4.3.0-beta5 17-Nov-2022
+Changes from 4.3.0-beta4
+1) Autopilot specific enhancements
+   a) ARKV6X support
+   b) MatekH743 supports 8 bi-directional dshot channels
+   c) Pixhawk boards support MS5607 baros
+   d) SpeedbyBee F405v3 support
+2) Balancebot pitch control improvements and pitch limiting
+3) DroneCAN Airspeed sensor support including hygrometer (aka water vapour) readings
+4) EFI support (electronic fuel injection engines)
+5) Harmonic Notch support (Rover only)
+6) Pre-arm warning if multiple UARTs with SERIALx_PROTOCOL = RCIN
+7) Siyi gimbal support
+8) Bug fixes
+    a) AtomRCF405NAVI bootloader file name fixed
+    b) BRD_SAFETY_MASK fixed on boards with both FMU safety switch and IOMCU
+    c) Compass calibration continues even if a single compass's cal fails
+    d) Gremsy gimbal driver sends autopilot info at lower rate to save bandwidth
+    e) Invensense 42605 and 42609 IMUs use anti-aliasing filter and notch filter
+    f) OSD stats screen fix
+    g) RC input on serial port uses first UART with SERIALx_PROTOCOL = 23 (was using last)
+    h) RunCam caching fix with enablement and setup on 3-pos switch
+    i) RTK CAN GPS fix when GPSs conneted to separate CAN ports on autopilot
+------------------------------------------------------------------
+Rover 4.3.0-beta4 24-Oct-2022
 Changes from 4.3.0-beta3
 1) Scripting supports implementing AUX functions
 2) Bug fixes

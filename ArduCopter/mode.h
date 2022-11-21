@@ -1791,7 +1791,7 @@ private:
 
     // parameters
     AP_Int8  _auto_enabled;    // top level enable/disable control
-#if SPRAYER_ENABLED == ENABLED
+#if HAL_SPRAYER_ENABLED
     AP_Int8  _spray_enabled;   // auto spray enable/disable
 #endif
     AP_Int8  _wp_delay;        // delay for zigzag waypoint
