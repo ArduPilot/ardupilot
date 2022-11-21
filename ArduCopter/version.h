@@ -9,7 +9,7 @@
 #define THISFIRMWARE "ArduCopter V4.3.1-rc1"
 
 // the following line is parsed by the autotest scripts
-#define FIRMWARE_VERSION 4,3,0,FIRMWARE_VERSION_TYPE_RC
+#define FIRMWARE_VERSION 4,3,1,FIRMWARE_VERSION_TYPE_RC
 
 #define FW_MAJOR 4
 #define FW_MINOR 3
