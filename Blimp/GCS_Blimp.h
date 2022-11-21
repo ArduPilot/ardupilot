@@ -12,16 +12,14 @@ public:
     // return GCS link at offset ofs
     GCS_MAVLINK_Blimp *chan(const uint8_t ofs) override
     {
-        if (ofs > _num_gcs) {
-            INTERNAL_ERROR(AP_InternalError::error_t::gcs_offset);
+        if (ofs >= _num_gcs) {
             return nullptr;
         }
         return (GCS_MAVLINK_Blimp *)_chan[ofs];
     }
     const GCS_MAVLINK_Blimp *chan(const uint8_t ofs) const override
     {
-        if (ofs > _num_gcs) {
-            INTERNAL_ERROR(AP_InternalError::error_t::gcs_offset);
+        if (ofs >= _num_gcs) {
             return nullptr;
         }
         return (GCS_MAVLINK_Blimp *)_chan[ofs];
