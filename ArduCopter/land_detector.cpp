@@ -63,7 +63,10 @@ void Copter::update_land_detector()
         land_detector_count = 0;
     } else {
 
-        float land_trigger_sec = LAND_DETECTOR_TRIGGER_SEC;
+        float land_trigger_sec = g.land_detector_trigger_sec; //since  LAND_DETECTOR_TRIGGER_SEC_DEFAULT has been added as a parameter, we grab the parameter instead for compatibility purpose..
+		
+		
+		
 #if FRAME_CONFIG == HELI_FRAME
         // check for both manual collective modes and modes that use altitude hold. For manual collective (called throttle
         // because multi's use throttle), check that collective pitch is below land min collective position or throttle stick is zero.
@@ -80,9 +83,10 @@ void Copter::update_land_detector()
         bool motor_at_lower_limit = motors->limit.throttle_lower;
         bool throttle_mix_at_min = attitude_control->is_throttle_mix_min();
         // set throttle_mix_at_min to true because throttle is never at mix min in airmode
+		
         // increase land_trigger_sec when using airmode
         if (flightmode->has_manual_throttle() && air_mode == AirMode::AIRMODE_ENABLED) {
-            land_trigger_sec = LAND_AIRMODE_DETECTOR_TRIGGER_SEC;
+            land_trigger_sec = LAND_AIRMODE_DETECTOR_TRIGGER_SEC_DEFAULT;
             throttle_mix_at_min = true;
         }
 #endif
@@ -96,35 +100,73 @@ void Copter::update_land_detector()
 #endif
 
         // check that the airframe is not accelerating (not falling or braking after fast forward flight)
-        bool accel_stationary = (land_accel_ef_filter.get().length() <= LAND_DETECTOR_ACCEL_MAX * land_detector_scalar);
+		float acceleration = land_accel_ef_filter.get().length(); // in order to be able to add this value in the log for investigation purpose
+        bool accel_stationary = (acceleration <= g.land_detector_accel_max * land_detector_scalar);
 
         // check that vertical speed is within 1m/s of zero
-        bool descent_rate_low = fabsf(inertial_nav.get_velocity_z_up_cms()) < 100 * land_detector_scalar;
+		int32_t Zspeed = fabsf(inertial_nav.get_velocity_z_up_cms()); 	// in order to be able to add this value in the log for investigation purpose
+        bool descent_rate_low = Zspeed < 100 * land_detector_scalar; 	// LAND_SPEED should be below 100 and LAND_SPEED_HIGH higher
 
         // if we have a healthy rangefinder only allow landing detection below 2 meters
-        bool rangefinder_check = (!rangefinder_alt_ok() || rangefinder_state.alt_cm_filt.get() < LAND_RANGEFINDER_MIN_ALT_CM);
+		int32_t height = rangefinder_state.alt_cm_filt.get(); // in order to be able to add this value in the log for investigation purpose
+        bool rangefinder_check = (!rangefinder_alt_ok() || height < LAND_RANGEFINDER_MIN_ALT_CM);
+			
+		// Check the Motor throttle and add 5% as limit (for use with range finder only)	
+		float mot_throttle =  motors->get_throttle_out(); // in order to be able to add this value in the log for investigation purpose
+		bool land_mot_low = mot_throttle <  g.land_detector_mot_low; // mot_low will be used instead of  motor_at_lower_limit this value must be between motor_at_lower_limit and hoover
 
+		// Check if the range finder distance is below GNDCLEAR and > 0 : this condition will allow Landed_Complete regardless the AccStationary 
+		int16_t gnd_clear = copter.rangefinder.ground_clearance_cm_orient(ROTATION_PITCH_270);  // in order to be able to add this value in the log for investigation purpose
+		bool height_gnd_clear = height < gnd_clear && height > 0; // checking if height above ground is lower than RNGFND1_GNDCLEAR param, only usefull with a RNGFND and LAND_RNGFND = 1
+			
+		bool test_mode = g.land_detector_rngfnd==1;	//checks if we are in mode Land_detector (using) RNGFND
+			
+			
         // if we have weight on wheels (WoW) or ambiguous unknown. never no WoW
 #if LANDING_GEAR_ENABLED == ENABLED
         const bool WoW_check = (landinggear.get_wow_state() == AP_LandingGear::LG_WOW || landinggear.get_wow_state() == AP_LandingGear::LG_WOW_UNKNOWN);
 #else
         const bool WoW_check = true;
 #endif
+			    // support height based triggering using rangefinder or altitude above ground
+	
+						AP::logger().Write("LNDT", "TimeUS,MotLL,TMM,AcSt,DeRat,RfCk,RFLD,HGC,MotLo","---------","00000000", "Qffffffff", // loging of boolean values used for land detection
+										AP_HAL::micros64(),
+										(double)motor_at_lower_limit,	//This trigger will mean the drone is probably not flying as no thrust (possibly but unlikely descending)
+                                        (double)throttle_mix_at_min,	//This trigger is always true on LAND mode
+                                        (double)accel_stationary,	//This trigger means no accelaration anymore means the drone is probably on the ground or not common on big drone where vibrations keep that value high on ground
+                                        (double)descent_rate_low,	//This trigger means no vertical speed means the drone is on ground only if the thrust is @ minimum (or close) at the mean time
+                                        (double)rangefinder_check,	//This trigger means the range finder is below LAND_RANGEFINDER_MIN_ALT_CM (2m) or not healthy, 
+                                        (double)test_mode,	//This recalls if RNGFND based Land_detector mode is currently used
+										(double)height_gnd_clear,	//This trigger will mean the drone is close the ground below RNGFND1_GNDCLEAR it will be the altenative to accel_stationary if LAND_DET_RNGFND = 1
+										(double)land_mot_low); //This trigger will switch when motor_at_lower_limit +5% used only if LAND_DET_RNGFND = 1
+										
+						AP::logger().Write("LNDV", "TimeUS,Acc,height,Zspd,GndClr,ThO,Ldc","-omnm%-","00BBB20", "Qffffff", // loging of variable values used for land detection
+										AP_HAL::micros64(),
+										(double)acceleration,	//will display acceleration which will reset detector if over LAND_DET_ACC_MAX will be ignored if LAND_DET_RNGFND = 1
+                                        (double)height,	//Height from the ground 
+                                        (double)Zspeed,	//vertical speed down
+										(double)gnd_clear,	//Parameter RNGFND1_GNDCLEAR displayed here
+										(float)mot_throttle,	//average motor throttle 
+										(double)land_detector_count);	//This counts the number on cycles since Land detector conditions turned all true before LAND is completed
 
-        if (motor_at_lower_limit && throttle_mix_at_min && accel_stationary && descent_rate_low && rangefinder_check && WoW_check) {
+        if ((motor_at_lower_limit && accel_stationary && descent_rate_low && throttle_mix_at_min && rangefinder_check && WoW_check)|| 	// that condition will get TRUE as initial (probably not with large prop's)
+			(test_mode && land_mot_low && descent_rate_low && throttle_mix_at_min && rangefinder_check && WoW_check && height_gnd_clear))	// g.land_detector_rngfnd==1 && AccStationary is not tested in RNGFND LAND MODE
+			 {
             // landed criteria met - increment the counter and check if we've triggered
+			
             if( land_detector_count < land_trigger_sec*scheduler.get_loop_rate_hz()) {
                 land_detector_count++;
             } else {
                 set_land_complete(true);
-            }
+	            }
         } else {
-            // we've sensed movement up or down so reset land_detector
+            // we've sensed movement up or down so reset land_de	tector
             land_detector_count = 0;
         }
     }
 
-    set_land_complete_maybe(ap.land_complete || (land_detector_count >= LAND_DETECTOR_MAYBE_TRIGGER_SEC*scheduler.get_loop_rate_hz()));
+    set_land_complete_maybe(ap.land_complete || (land_detector_count >= g.land_detector_maybe_trigger_sec*scheduler.get_loop_rate_hz()));
 }
 
 // set land_complete flag and disarm motors if disarm-on-land is configured
