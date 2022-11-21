@@ -2347,13 +2347,6 @@ void emit_sandbox(void) {
     end_dependency(source, data->dependency);
     data = data->next;
   }
-  data = parsed_ap_objects;
-  while (data) {
-    start_dependency(source, data->dependency);
-    fprintf(source, "    {\"%s\", new_%s},\n", data->name, data->sanatized_name);
-    end_dependency(source, data->dependency);
-    data = data->next;
-  }
   if (parsed_globals) {
     struct method_alias *manual_aliases = parsed_globals->method_aliases;
     while (manual_aliases) {
