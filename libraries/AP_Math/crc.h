@@ -17,6 +17,8 @@
  */
 #pragma once
 
+#include <stdint.h>
+
 uint16_t crc_crc4(uint16_t *data);
 uint8_t crc_crc8(const uint8_t *p, uint8_t len);
 uint8_t crc8_dvb_s2(uint8_t crc, uint8_t a);
