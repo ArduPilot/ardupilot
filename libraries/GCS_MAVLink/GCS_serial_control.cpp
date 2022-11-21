@@ -44,6 +44,9 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t &msg)
 
     switch (packet.device) {
     case SERIAL_CONTROL_DEV_TELEM1: {
+        if (1 >= gcs().num_gcs()) {
+            break;
+        }
         GCS_MAVLINK *link = gcs().chan(1);
         if (link == nullptr) {
             break;
@@ -53,6 +56,9 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t &msg)
         break;
     }
     case SERIAL_CONTROL_DEV_TELEM2: {
+        if (2 >= gcs().num_gcs()) {
+            break;
+        }
         GCS_MAVLINK *link = gcs().chan(2);
         if (link == nullptr) {
             break;
@@ -81,6 +87,9 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t &msg)
 
         // see if we need to lock mavlink
         for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
+            if (i >= gcs().num_gcs()) {
+                continue;
+            }
             GCS_MAVLINK *link = gcs().chan(i);
             if (link == nullptr || link->get_uart() != port) {
                 continue;
