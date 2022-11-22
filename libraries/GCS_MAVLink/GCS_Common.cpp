@@ -3803,6 +3803,10 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         break;
 #endif
 
+    case MAVLINK_MSG_ID_MANUAL_CONTROL:
+        handle_manual_control(msg);
+        break;
+
 #if AP_NOTIFY_MAVLINK_PLAY_TUNE_SUPPORT_ENABLED
     case MAVLINK_MSG_ID_PLAY_TUNE:
         // send message to Notify
@@ -6298,6 +6302,29 @@ void GCS_MAVLINK::manual_override(RC_Channel *c, int16_t value_in, const uint16_
     }
     c->set_override(override_value, tnow);
 }
+
+void GCS_MAVLINK::handle_manual_control(const mavlink_message_t &msg)
+{
+    if (msg.sysid != sysid_my_gcs()) {
+        return; // only accept control from our gcs
+    }
+
+    mavlink_manual_control_t packet;
+    mavlink_msg_manual_control_decode(&msg, &packet);
+
+    if (packet.target != gcs().sysid_this_mav()) {
+        return; // only accept control aimed at us
+    }
+
+    uint32_t tnow = AP_HAL::millis();
+
+    handle_manual_control_axes(packet, tnow);
+
+    // a manual control message is considered to be a 'heartbeat'
+    // from the ground station for failsafe purposes
+    gcs().sysid_myggcs_seen(tnow);
+}
+
 
 uint8_t GCS_MAVLINK::receiver_rssi() const
 {
