@@ -167,6 +167,7 @@ float AP_Baro_SITL::wind_pressure_correction(void)
     float error = 0.0;
     const float sqx = sq(airspeed_vec_bf.x);
     const float sqy = sq(airspeed_vec_bf.y);
+    const float sqz = sq(airspeed_vec_bf.z);
 
     if (is_positive(airspeed_vec_bf.x)) {
         error += bp.wcof_xp * sqx;
@@ -177,6 +178,11 @@ float AP_Baro_SITL::wind_pressure_correction(void)
         error += bp.wcof_yp * sqy;
     } else {
         error += bp.wcof_yn * sqy;
+    }
+    if (is_positive(airspeed_vec_bf.z)) {
+        error += bp.wcof_zp * sqz;
+    } else {
+        error += bp.wcof_zn * sqz;
     }
 
     return error * 0.5 * SSL_AIR_DENSITY * AP::baro().get_air_density_ratio();
