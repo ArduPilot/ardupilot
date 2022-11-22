@@ -2942,6 +2942,11 @@ def add_apperiph_defaults(f):
 #ifndef AP_COMPASS_DIAGONALS_ENABLED
 #define AP_COMPASS_DIAGONALS_ENABLED 0
 #endif
+
+// disable various battery monitor backends:
+#ifndef AP_BATTMON_SYNTHETIC_CURRENT_ENABLED
+#define AP_BATTMON_SYNTHETIC_CURRENT_ENABLED 0
+#endif
 ''')
 
 def add_bootloader_defaults(f):
