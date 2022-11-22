@@ -319,7 +319,7 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     float thrust     = throttle;
 
     battery_voltage = sitl->batt_voltage - 0.7*throttle;
-    battery_current = 50.0f*throttle;
+    battery_current = (battery_voltage/sitl->batt_voltage)*50.0f*sq(throttle);
 
     if (ice_engine) {
         thrust = icengine.update(input);
