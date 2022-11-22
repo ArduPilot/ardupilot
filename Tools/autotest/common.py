@@ -11881,7 +11881,7 @@ switch value'''
             raise NotAchievedException("Did not get BATTERY_STATUS message")
         battery_status_current_a = batt.current_battery * 0.01 # cA -> A
         self.progress("BATTERY_STATUS current==%f frsky==%f" % (battery_status_current_a, current_a))
-        if self.compare_number_percent(battery_status_current_a, current_a, 10):
+        if self.compare_number_percent(round(battery_status_current_a * 10), round(current_a * 10), 10):
             return True
         return False
 
