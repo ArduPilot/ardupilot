@@ -17,6 +17,7 @@
 #include "AP_BattMonitor_LTC2946.h"
 #include "AP_BattMonitor_Torqeedo.h"
 #include "AP_BattMonitor_FuelLevel_Analog.h"
+#include "AP_BattMonitor_Synthetic_Current.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -322,6 +323,11 @@ AP_BattMonitor::init()
 #if HAL_TORQEEDO_ENABLED
             case Type::Torqeedo:
                 drivers[instance] = new AP_BattMonitor_Torqeedo(*this, state[instance], _params[instance]);
+                break;
+#endif
+#if AP_BATTMON_SYNTHETIC_CURRENT_ENABLED
+            case Type::Analog_Volt_Synthetic_Current:
+                drivers[instance] = new AP_BattMonitor_Synthetic_Current(*this, state[instance], _params[instance]);
                 break;
 #endif
             case Type::NONE:
