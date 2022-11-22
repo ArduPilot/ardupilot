@@ -160,7 +160,7 @@ void AP_CRSF_Telem::update_custom_telemetry_rates(AP_RCProtocol_CRSF::RFMode rf_
         // standard telemetry for low data rates
         set_scheduler_entry(BATTERY, 1000, 2000);       // 0.5Hz
         set_scheduler_entry(ATTITUDE, 1000, 3000);      // 0.33Hz
-        if (_crsf_version.is_elrs) {
+        if (is_elrs()) {
             // ELRS custom telemetry for low data rates
             set_scheduler_entry(GPS, 550, 1000);            // 1.0Hz
             set_scheduler_entry(PASSTHROUGH, 350, 500);     // 2.0Hz
@@ -209,7 +209,8 @@ bool AP_CRSF_Telem::process_rf_mode_changes()
     if ((now - _telem_last_report_ms > 5000)) {
         // report an RF mode change or a change in telemetry rate if we haven't done so in the last 5s
         if (!rc().suppress_crsf_message() && (_telem_rf_mode != current_rf_mode || abs(int16_t(_telem_last_avg_rate) - int16_t(_scheduler.avg_packet_rate)) > 25)) {
-            gcs().send_text(MAV_SEVERITY_INFO, "%s: RF Mode %d, telemetry rate is %dHz", get_protocol_string(), uint8_t(current_rf_mode) - (_crsf_version.is_elrs ? uint8_t(AP_RCProtocol_CRSF::RFMode::ELRS_RF_MODE_4HZ) : 0), get_telemetry_rate());
+            gcs().send_text(MAV_SEVERITY_INFO, "%s: Link rate %dHz, Telemetry rate %dHz",
+                get_protocol_string(), crsf->get_link_rate(_crsf_version.protocol), get_telemetry_rate());
         }
         // tune the scheduler based on telemetry speed high/low transitions
         if (_telem_is_high_speed != is_high_speed) {
@@ -230,7 +231,8 @@ bool AP_CRSF_Telem::process_rf_mode_changes()
 uint8_t AP_CRSF_Telem::get_custom_telem_frame_id() const
 {
     if (!_crsf_version.pending &&
-        ((_crsf_version.major > 4 || (_crsf_version.major == 4 && _crsf_version.minor >= 6)) || _crsf_version.is_elrs)) {
+        ((_crsf_version.major > 4 || (_crsf_version.major == 4 && _crsf_version.minor >= 6))
+            || is_elrs())) {
         return AP_RCProtocol_CRSF::CRSF_FRAMETYPE_AP_CUSTOM_TELEM;
     }
     return AP_RCProtocol_CRSF::CRSF_FRAMETYPE_AP_CUSTOM_TELEM_LEGACY;
@@ -244,11 +246,11 @@ AP_RCProtocol_CRSF::RFMode AP_CRSF_Telem::get_rf_mode() const
     }
 
     if (!_crsf_version.pending && _crsf_version.use_rf_mode) {
-        if (_crsf_version.is_elrs) {
+        if (is_elrs()) {
             return static_cast<AP_RCProtocol_CRSF::RFMode>(uint8_t(AP_RCProtocol_CRSF::RFMode::ELRS_RF_MODE_4HZ) + crsf->get_link_status().rf_mode);
         }
         return static_cast<AP_RCProtocol_CRSF::RFMode>(crsf->get_link_status().rf_mode);
-    } else if (_crsf_version.is_tracer) {
+    } else if (is_tracer()) {
         return AP_RCProtocol_CRSF::RFMode::CRSF_RF_MODE_250HZ;
     }
 
@@ -274,7 +276,7 @@ AP_RCProtocol_CRSF::RFMode AP_CRSF_Telem::get_rf_mode() const
 
 bool AP_CRSF_Telem::is_high_speed_telemetry(const AP_RCProtocol_CRSF::RFMode rf_mode) const
 {
-    if (!_crsf_version.is_elrs) {
+    if (_crsf_version.protocol != AP_RCProtocol_CRSF::ProtocolType::PROTOCOL_ELRS) {
         return rf_mode == AP_RCProtocol_CRSF::RFMode::CRSF_RF_MODE_150HZ || rf_mode == AP_RCProtocol_CRSF::RFMode::CRSF_RF_MODE_250HZ;
     }
     return get_telemetry_rate() > 30;
@@ -282,7 +284,7 @@ bool AP_CRSF_Telem::is_high_speed_telemetry(const AP_RCProtocol_CRSF::RFMode rf_
 
 uint16_t AP_CRSF_Telem::get_telemetry_rate() const
 {
-    if (!_crsf_version.is_elrs) {
+    if (_crsf_version.protocol != AP_RCProtocol_CRSF::ProtocolType::PROTOCOL_ELRS) {
         return get_avg_packet_rate();
     }
     AP_RCProtocol_CRSF* crsf = AP::crsf();
@@ -293,7 +295,7 @@ uint16_t AP_CRSF_Telem::get_telemetry_rate() const
     // the 1:n ratio is user selected
     // RC rate is measured by get_avg_packet_rate()
     // telemetry rate = air rate - RC rate
-    return uint16_t(AP_RCProtocol_CRSF::elrs_air_rates[MIN(crsf->get_link_status().rf_mode, 7U)] - get_avg_packet_rate());
+    return crsf->get_link_rate(_crsf_version.protocol) - get_avg_packet_rate();
 }
 
 void AP_CRSF_Telem::queue_message(MAV_SEVERITY severity, const char *text)
@@ -439,7 +441,7 @@ void AP_CRSF_Telem::process_packet(uint8_t idx)
             } else {
                 // on slower links we pack many passthrough
                 // frames in a single crossfire one (up to 9)
-                const uint8_t size = _crsf_version.is_elrs ? 3 : AP_CRSF_Telem::PASSTHROUGH_MULTI_PACKET_FRAME_MAX_SIZE;
+                const uint8_t size = is_elrs() ? 3 : AP_CRSF_Telem::PASSTHROUGH_MULTI_PACKET_FRAME_MAX_SIZE;
                 get_multi_packet_passthrough_telem_data(size);
             }
             break;
@@ -636,21 +638,28 @@ void AP_CRSF_Telem::process_device_info_frame(ParameterDeviceInfoFrame* info)
     // get the terminator of the device name string
     const uint8_t offset = strnlen((char*)info->payload,42U);
     if (strncmp((char*)info->payload, "Tracer", 6) == 0) {
-        _crsf_version.is_tracer = true;
+        _crsf_version.protocol = AP_RCProtocol_CRSF::ProtocolType::PROTOCOL_TRACER;
     } else if (strncmp((char*)&info->payload[offset+1], "ELRS", 4) == 0) {
         // ELRS magic number is ELRS encoded in the serial number
         // 0x45 'E' 0x4C 'L' 0x52 'R' 0x53 'S'
-        _crsf_version.is_elrs = true;
+        _crsf_version.protocol = AP_RCProtocol_CRSF::ProtocolType::PROTOCOL_ELRS;
     }
-    /*
-        fw major ver = offset + terminator (8bits) + serial (32bits) + hw id (32bits) + 3rd byte of sw id = 11bytes
-        fw minor ver = offset + terminator (8bits) + serial (32bits) + hw id (32bits) + 4th byte of sw id = 12bytes
-    */
-    _crsf_version.major = info->payload[offset+11];
-    _crsf_version.minor = info->payload[offset+12];
+
+    if (!is_elrs()) {
+        /*
+            fw major ver = offset + terminator (8bits) + serial (32bits) + hw id (32bits) + 3rd byte of sw id = 11bytes
+            fw minor ver = offset + terminator (8bits) + serial (32bits) + hw id (32bits) + 4th byte of sw id = 12bytes
+        */
+        _crsf_version.major = info->payload[offset+11];
+        _crsf_version.minor = info->payload[offset+12];
+    } else {
+        // ELRS does not populate the version field so cook up something sensible
+        _crsf_version.major = 1;
+        _crsf_version.minor = 0;
+    }
 
     // should we use rf_mode reported by link statistics?
-    if (_crsf_version.is_elrs || (!_crsf_version.is_tracer && (_crsf_version.major > 3 || (_crsf_version.major == 3 && _crsf_version.minor >= 72)))) {
+    if (is_elrs() || (!is_tracer() && (_crsf_version.major > 3 || (_crsf_version.major == 3 && _crsf_version.minor >= 72)))) {
         _crsf_version.use_rf_mode = true;
     }
 
@@ -1360,7 +1369,8 @@ void AP_CRSF_Telem::calc_status_text()
     if (!_statustext.available) {
         WITH_SEMAPHORE(_statustext.sem);
         // check link speed
-        if (!_crsf_version.is_elrs && !is_high_speed_telemetry(_telem_rf_mode)) {
+        if (_crsf_version.protocol != AP_RCProtocol_CRSF::ProtocolType::PROTOCOL_ELRS
+                && !is_high_speed_telemetry(_telem_rf_mode)) {
             // keep only warning/error/critical/alert/emergency status text messages
             bool got_message = false;
             while (_statustext.queue.pop(_statustext.next)) {
