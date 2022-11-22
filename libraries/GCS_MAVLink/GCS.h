@@ -591,6 +591,7 @@ protected:
     MAV_RESULT handle_fixed_mag_cal_yaw(const mavlink_command_long_t &packet);
 
     void handle_manual_control(const mavlink_message_t &msg);
+    void handle_manual_control_buttons(const mavlink_manual_control_t &packet, const uint32_t tnow);
 
     // default empty handling of LANDING_TARGET
     virtual void handle_landing_target(const mavlink_landing_target_t &packet, uint32_t timestamp_ms) { }
@@ -945,6 +946,15 @@ private:
     void load_signing_key(void);
     bool signing_enabled(void) const;
     static void save_signing_timestamp(bool force_save_now);
+
+    // state for the buttons in MANUAL_CONTROL message:
+    struct {
+        bool initialised;
+        uint16_t buttons;  // current acted-upon button state
+        uint16_t debounce_buttons;  // potential new values for buttons
+        uint16_t debounce_time_ms;  // time debounce_buttons changed
+        uint16_t button_level;  // stores level of aux function (HIGH/LOW)
+    } manual_control_buttons;
 
 #if HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
     // structure containing default intervals read from files for this

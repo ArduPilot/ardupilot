@@ -6303,6 +6303,71 @@ void GCS_MAVLINK::manual_override(RC_Channel *c, int16_t value_in, const uint16_
     c->set_override(override_value, tnow);
 }
 
+void GCS_MAVLINK::handle_manual_control_buttons(const mavlink_manual_control_t &packet, const uint32_t tnow)
+{
+    if (!manual_control_buttons.initialised) {
+        // initialisation
+        manual_control_buttons.initialised = true;
+        manual_control_buttons.buttons = packet.buttons;
+        manual_control_buttons.debounce_buttons = packet.buttons;
+        manual_control_buttons.debounce_time_ms = tnow;
+    }
+    if (manual_control_buttons.debounce_buttons != packet.buttons) {
+        // start the debounce timer
+        manual_control_buttons.debounce_time_ms = tnow;
+        manual_control_buttons.debounce_buttons = packet.buttons;
+        return;
+    }
+    if (manual_control_buttons.debounce_buttons == manual_control_buttons.buttons) {
+        // nothing to do
+        return;
+    }
+    // incoming buttons different to current buttons, check if
+    // debounce time expired:
+    if (tnow - manual_control_buttons.debounce_time_ms < 50) {
+        // debounce not expired
+        return;
+    }
+    // we have to take actions on buttons changed
+
+    RC_Channel *rc_channel = rc().channel(1);
+    if (rc_channel == nullptr) {
+        return;
+    }
+
+    static const RC_Channel::AUX_FUNC button_func[16] {
+        RC_Channel::AUX_FUNC::FENCE,
+        RC_Channel::AUX_FUNC::FENCE,
+        RC_Channel::AUX_FUNC::FENCE,
+        RC_Channel::AUX_FUNC::FENCE,
+        RC_Channel::AUX_FUNC::FENCE,
+        // all others remain at zero, meaning nothing
+    };
+    for (uint8_t i=0; i<16; i++) {
+        const RC_Channel::AUX_FUNC func = RC_Channel::AUX_FUNC(button_func[i]);
+        if (func == RC_Channel::AUX_FUNC::DO_NOTHING) {
+            continue;
+        }
+        RC_Channel::AuxSwitchPos new_level;
+        const uint16_t mask = (1U<<i);
+        if (!(manual_control_buttons.buttons & mask) &&
+            manual_control_buttons.debounce_buttons & mask) {
+            // button has been pressed - toggle the value
+            if (manual_control_buttons.button_level & mask) {
+                new_level = RC_Channel::AuxSwitchPos::HIGH;
+                manual_control_buttons.button_level &= ~mask;
+            } else {
+                new_level = RC_Channel::AuxSwitchPos::LOW;
+                manual_control_buttons.button_level |= mask;
+            }
+            rc_channel->run_aux_function(func, new_level, RC_Channel::AuxFuncTriggerSource::MAVLINK_MANUAL_CONTROL_BUTTONS);
+        }
+    }
+
+    // mark these actions as having been taken:
+    manual_control_buttons.buttons = manual_control_buttons.debounce_buttons;
+}
+
 void GCS_MAVLINK::handle_manual_control(const mavlink_message_t &msg)
 {
     if (msg.sysid != sysid_my_gcs()) {
@@ -6319,6 +6384,8 @@ void GCS_MAVLINK::handle_manual_control(const mavlink_message_t &msg)
     uint32_t tnow = AP_HAL::millis();
 
     handle_manual_control_axes(packet, tnow);
+
+    handle_manual_control_buttons(packet, tnow);
 
     // a manual control message is considered to be a 'heartbeat'
     // from the ground station for failsafe purposes
