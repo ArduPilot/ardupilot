@@ -68,7 +68,7 @@ public:
 
 private:
     /// Coding for the GPS sentences that the parser handles
-    enum _sentence_types : uint8_t {      //there are some more than 10 fields in some sentences , thus we have to increase these value.
+    enum _sentence_types : uint16_t {      //there are some more than 10 fields in some sentences , thus we have to increase these value.
         _GPS_SENTENCE_RMC = 32,
         _GPS_SENTENCE_GGA = 64,
         _GPS_SENTENCE_VTG = 96,
@@ -76,6 +76,7 @@ private:
         _GPS_SENTENCE_PHD = 138, // extension for AllyStar GPS modules
         _GPS_SENTENCE_THS = 160, // True heading with quality indicator, available on Trimble MB-Two
         _GPS_SENTENCE_KSXT = 170, // extension for Unicore, 21 fields
+        _GPS_SENTENCE_AGRICA = 193, // extension for Unicore, 65 fields
         _GPS_SENTENCE_OTHER = 0
     };
 
@@ -118,11 +119,19 @@ private:
     /// return true if we have a new set of NMEA messages
     bool _have_new_message(void);
 
+    /*
+      parse an AGRICA field
+     */
+    void parse_agrica_field(uint16_t term_number, const char *term);
+
+
     uint8_t _parity;                                                    ///< NMEA message checksum accumulator
+    uint32_t _crc32;                                            ///< CRC for unicore messages
     bool _is_checksum_term;                                     ///< current term is the checksum
     char _term[15];                                                     ///< buffer for the current term within the current sentence
-    uint8_t _sentence_type;                                     ///< the sentence type currently being processed
-    uint8_t _term_number;                                       ///< term index within the current sentence
+    uint16_t _sentence_type;                                     ///< the sentence type currently being processed
+    bool _is_unicore;                                           ///< true if in a unicore '#' sentence
+    uint16_t _term_number;                                       ///< term index within the current sentence
     uint8_t _term_offset;                                       ///< character offset with the term being received
     uint16_t _sentence_length;
     bool _gps_data_good;                                        ///< set when the sentence indicates data is good
@@ -151,6 +160,7 @@ private:
     uint32_t _last_vaccuracy_ms;
     uint32_t _last_3D_velocity_ms;
     uint32_t _last_KSXT_pos_ms;
+    uint32_t _last_AGRICA_ms;
     uint32_t _last_fix_ms;
 
     /// @name	Init strings
@@ -191,13 +201,31 @@ private:
         double fields[21];
     } _ksxt;
 
+    /*
+      unicore AGRICA message parsing
+     */
+    struct {
+        uint32_t start_byte;
+        uint8_t rtk_status;
+        uint8_t heading_status;
+        Vector3f vel_NED;
+        Vector3f vel_stddev;
+        double lat, lng;
+        float alt;
+        uint32_t itow;
+        float undulation;
+        double slave_lat, slave_lng;
+        float slave_alt;
+        Vector3f pos_stddev;
+    } _agrica;
+    bool _expect_agrica;
+
+    // last time we sent type specific config strings
+    uint32_t last_config_ms;
+
+    // send type specific config strings
+    void send_config(void);
 };
 
-#define AP_GPS_NMEA_HEMISPHERE_INIT_STRING \
-        "$JATT,NMEAHE,0\r\n" /* Prefix of GP on the HDT message */      \
-        "$JASC,GPGGA,5\r\n" /* GGA at 5Hz */                            \
-        "$JASC,GPRMC,5\r\n" /* RMC at 5Hz */                            \
-        "$JASC,GPVTG,5\r\n" /* VTG at 5Hz */                            \
-        "$JASC,GPHDT,5\r\n" /* HDT at 5Hz */                            \
-        "$JMODE,SBASR,YES\r\n" /* Enable SBAS */
-#endif
+#endif // AP_GPS_NMEA_ENABLED
+

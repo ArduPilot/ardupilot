@@ -41,6 +41,11 @@
 #if AP_GPS_NMEA_ENABLED
 extern const AP_HAL::HAL& hal;
 
+#ifndef AP_GPS_NMEA_CONFIG_PERIOD_MS
+// how often we send board specific config commands
+#define AP_GPS_NMEA_CONFIG_PERIOD_MS 15000U
+#endif
+
 // Convenience macros //////////////////////////////////////////////////////////
 //
 #define DIGIT_TO_VAL(_x)        (_x - '0')
@@ -50,6 +55,10 @@ bool AP_GPS_NMEA::read(void)
 {
     int16_t numc;
     bool parsed = false;
+
+    if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
+        send_config();
+    }
 
     numc = port->available();
     while (numc--) {
@@ -64,22 +73,33 @@ bool AP_GPS_NMEA::read(void)
     return parsed;
 }
 
+/*
+  decode one character, return true if we have successfully completed a sentence, false otherwise
+ */
 bool AP_GPS_NMEA::_decode(char c)
 {
-    bool valid_sentence = false;
-
     _sentence_length++;
         
     switch (c) {
+    case ';':
+        // header separator for unicore
+        if (_sentence_type != _GPS_SENTENCE_AGRICA) {
+            return false;
+        }
+        FALLTHROUGH;
     case ',': // term terminators
         _parity ^= c;
+        if (_is_unicore) {
+            _crc32 = crc_crc32(_crc32, (const uint8_t *)&c, 1);
+        }
         FALLTHROUGH;
     case '\r':
     case '\n':
-    case '*':
+    case '*': {
         if (_sentence_done) {
             return false;
         }
+        bool valid_sentence = false;
         if (_term_offset < sizeof(_term)) {
             _term[_term_offset] = 0;
             valid_sentence = _term_complete();
@@ -88,25 +108,33 @@ bool AP_GPS_NMEA::_decode(char c)
         _term_offset = 0;
         _is_checksum_term = c == '*';
         return valid_sentence;
+    }
 
     case '$': // sentence begin
+    case '#': // unicore message begin
+        _is_unicore = (c == '#');
         _term_number = _term_offset = 0;
         _parity = 0;
+        _crc32 = 0;
         _sentence_type = _GPS_SENTENCE_OTHER;
         _is_checksum_term = false;
         _gps_data_good = false;
         _sentence_length = 1;
         _sentence_done = false;
-        return valid_sentence;
+        return false;
     }
 
     // ordinary characters
     if (_term_offset < sizeof(_term) - 1)
         _term[_term_offset++] = c;
-    if (!_is_checksum_term)
+    if (!_is_checksum_term) {
         _parity ^= c;
+        if (_is_unicore) {
+            _crc32 = crc_crc32(_crc32, (const uint8_t *)&c, 1);
+        }
+    }
 
-    return valid_sentence;
+    return false;
 }
 
 int32_t AP_GPS_NMEA::_parse_decimal_100(const char *p)
@@ -235,13 +263,17 @@ bool AP_GPS_NMEA::_have_new_message()
         _last_KSXT_pos_ms = 0;
     }
 
-    // special case for fixing low output rate of ALLYSTAR GPS modules
-    const int32_t dt_ms = now - _last_fix_ms;
-    if (labs(dt_ms - gps._rate_ms[state.instance]) > 50 &&
-        get_type() == AP_GPS::GPS_TYPE_ALLYSTAR) {
-        nmea_printf(port, "$PHD,06,42,UUUUTTTT,BB,0,%u,55,0,%u,0,0,0",
-                    unsigned(1000U/gps._rate_ms[state.instance]),
-                    unsigned(gps._rate_ms[state.instance]));
+    if (now - _last_AGRICA_ms > 500) {
+        if (_last_AGRICA_ms != 0) {
+            // we have lost AGRICA
+            state.have_gps_yaw = false;
+            state.have_vertical_velocity = false;
+            state.have_speed_accuracy = false;
+            state.have_horizontal_accuracy = false;
+            state.have_vertical_accuracy = false;
+            state.have_undulation = false;
+            _last_AGRICA_ms = 0;
+        }
     }
 
     _last_fix_ms = now;
@@ -258,13 +290,9 @@ bool AP_GPS_NMEA::_term_complete()
     // handle the last term in a message
     if (_is_checksum_term) {
         _sentence_done = true;
-        uint8_t nibble_high = 0;
-        uint8_t nibble_low  = 0;
-        if (!hex_to_uint8(_term[0], nibble_high) || !hex_to_uint8(_term[1], nibble_low)) {
-            return false;
-        }
-        const uint8_t checksum = (nibble_high << 4u) | nibble_low;
-        if (checksum == _parity) {
+        const uint32_t crc = strtoul(_term, nullptr, 16);
+        const bool crc_ok = _is_unicore? (_crc32 == crc) : (_parity == crc);
+        if (crc_ok) {
             if (_gps_data_good) {
                 uint32_t now = AP_HAL::millis();
                 switch (_sentence_type) {
@@ -272,7 +300,7 @@ bool AP_GPS_NMEA::_term_complete()
                     _last_RMC_ms = now;
                     //time                        = _new_time;
                     //date                        = _new_date;
-                    if (_last_KSXT_pos_ms == 0) {
+                    if (_last_KSXT_pos_ms == 0 && _last_AGRICA_ms == 0) {
                         state.location.lat     = _new_latitude;
                         state.location.lng     = _new_longitude;
                     }
@@ -291,7 +319,7 @@ bool AP_GPS_NMEA::_term_complete()
                     break;
                 case _GPS_SENTENCE_GGA:
                     _last_GGA_ms = now;
-                    if (_last_KSXT_pos_ms == 0) {
+                    if (_last_KSXT_pos_ms == 0 && _last_AGRICA_ms == 0) {
                         state.location.alt  = _new_altitude;
                         state.location.lat  = _new_latitude;
                         state.location.lng  = _new_longitude;
@@ -340,6 +368,10 @@ bool AP_GPS_NMEA::_term_complete()
                     break;
                 case _GPS_SENTENCE_HDT:
                 case _GPS_SENTENCE_THS:
+                    if (_last_AGRICA_ms != 0 || _expect_agrica) {
+                        // use AGRICA
+                        break;
+                    }
                     _last_yaw_ms = now;
                     state.gps_yaw = wrap_360(_new_gps_yaw*0.01f);
                     state.have_gps_yaw = true;
@@ -351,6 +383,10 @@ bool AP_GPS_NMEA::_term_complete()
                     state.gps_yaw_configured = true;
                     break;
                 case _GPS_SENTENCE_PHD:
+                    if (_last_AGRICA_ms != 0) {
+                        // prefer AGRICA
+                        break;
+                    }
                     if (_phd.msg_id == 12) {
                         state.velocity.x = _phd.fields[0] * 0.01;
                         state.velocity.y = _phd.fields[1] * 0.01;
@@ -372,6 +408,10 @@ bool AP_GPS_NMEA::_term_complete()
                     }
                     break;
                 case _GPS_SENTENCE_KSXT:
+                    if (_last_AGRICA_ms != 0 || _expect_agrica) {
+                        // prefer AGRICA
+                        break;
+                    }
                     state.location.lat     = _ksxt.fields[2]*1.0e7;
                     state.location.lng     = _ksxt.fields[1]*1.0e7;
                     state.location.alt     = _ksxt.fields[3]*1.0e2;
@@ -398,6 +438,37 @@ bool AP_GPS_NMEA::_term_complete()
                         state.gps_yaw_configured = true;
                     }
                     break;
+                case _GPS_SENTENCE_AGRICA: {
+                    auto &ag = _agrica;
+                    _last_AGRICA_ms = now;
+                    state.location.lat = ag.lat*1.0e7;
+                    state.location.lng = ag.lng*1.0e7;
+                    state.location.alt = ag.alt*1.0e2;
+                    state.undulation   = -ag.undulation;
+                    state.velocity = ag.vel_NED;
+                    state.speed_accuracy = ag.vel_stddev.length();
+                    state.horizontal_accuracy = ag.pos_stddev.xy().length();
+                    state.vertical_accuracy = ag.pos_stddev.z;
+                    state.have_vertical_velocity = true;
+                    state.have_speed_accuracy = true;
+                    state.have_horizontal_accuracy = true;
+                    state.have_vertical_accuracy = true;
+                    state.have_undulation = true;
+
+                    if (ag.heading_status == 4) {
+                        Location slave( ag.slave_lat*1.0e7, ag.slave_lng*1.0e7, ag.slave_alt*1.0e2, Location::AltFrame::ABSOLUTE );
+                        const float dist = state.location.get_distance_NED(slave).length();
+                        const float bearing = degrees(state.location.get_bearing(slave));
+                        const float alt_diff = (state.location.alt - slave.alt)*0.01;
+                        calculate_moving_base_yaw(bearing, dist, alt_diff);
+                        state.gps_yaw_configured = true;
+                    } else {
+                        state.have_gps_yaw = false;
+                    }
+
+                    check_new_itow(ag.itow, _sentence_length);
+                    break;
+                }
                 }
             } else {
                 switch (_sentence_type) {
@@ -430,6 +501,11 @@ bool AP_GPS_NMEA::_term_complete()
         }
         if (strcmp(_term, "KSXT") == 0) {
             _sentence_type = _GPS_SENTENCE_KSXT;
+            _gps_data_good = true;
+            return false;
+        }
+        if (strcmp(_term, "AGRICA") == 0) {
+            _sentence_type = _GPS_SENTENCE_AGRICA;
             _gps_data_good = true;
             return false;
         }
@@ -557,13 +633,81 @@ bool AP_GPS_NMEA::_term_complete()
         case _GPS_SENTENCE_PHD + 6 ... _GPS_SENTENCE_PHD + 11: // PHD message, fields
             _phd.fields[_term_number-6] = atol(_term);
             break;
-        case _GPS_SENTENCE_KSXT + 1 ... _GPS_SENTENCE_KSXT + 22: // PHD message, fields
+        case _GPS_SENTENCE_KSXT + 1 ... _GPS_SENTENCE_KSXT + 22: // KSXT message, fields
             _ksxt.fields[_term_number-1] = atof(_term);
+            break;
+        case _GPS_SENTENCE_AGRICA + 1 ... _GPS_SENTENCE_AGRICA + 65: // AGRICA message
+            parse_agrica_field(_term_number, _term);
             break;
         }
     }
 
     return false;
+}
+
+/*
+  parse an AGRICA message term
+
+  Example:
+     #AGRICA,82,GPS,FINE,2237,176366400,0,0,18,15;GNSS,232,22,11,22,0,59,8,1,5,8,12,0,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,296.4656,-26.5685,0.0000,0.005,0.000,0.000,-0.005,0.044,0.032,0.038,-35.33142715815,149.13181842030,609.1494,-4471799.0368,2672944.7758,-3668288.9857,1.3923,1.5128,3.2272,2.3026,2.1633,2.1586,0.00000000000,0.00000000000,0.0000,0.00000000000,0.00000000000,0.0000,176366400,0.000,66.175285,18.972784,0.000000,0.000000,5,0,0,0*9f704dad
+ */
+void AP_GPS_NMEA::parse_agrica_field(uint16_t term_number, const char *term)
+{
+    auto &ag = _agrica;
+    // subtract 8 to align term numbers with reference manual
+    const uint8_t hdr_align = 8;
+    if (term_number < hdr_align) {
+        // discard header;
+        return;
+    }
+    term_number -= hdr_align;
+    // useful for debugging
+    //::printf("AGRICA[%u]=%s\n", unsigned(term_number), term);
+    switch (term_number) {
+    case 10:
+        ag.rtk_status = atol(term);
+        break;
+    case 11:
+        ag.heading_status = atol(term);
+        break;
+    case 25 ... 26:
+        ag.vel_NED[term_number-25] = atof(term);
+        break;
+    case 27:
+        // AGRIC gives velocity up
+        ag.vel_NED.z = -atof(term);
+        break;
+    case 28 ... 30:
+        ag.vel_stddev[term_number-28] = atof(term);
+        break;
+    case 31:
+        ag.lat = atof(term);
+        break;
+    case 32:
+        ag.lng = atof(term);
+        break;
+    case 33:
+        ag.alt = atof(term);
+        break;
+    case 46:
+        ag.slave_lat = atof(term);
+        break;
+    case 47:
+        ag.slave_lng = atof(term);
+        break;
+    case 48:
+        ag.slave_alt = atof(term);
+        break;
+    case 49:
+        ag.itow = atol(term);
+        break;
+    case 37 ... 39:
+        ag.pos_stddev[term_number-37] = atof(term);
+        break;
+    case 52:
+        ag.undulation = atof(term);
+        break;
+    }
 }
 
 /*
@@ -604,4 +748,57 @@ AP_GPS_NMEA::_detect(struct NMEA_detect_state &state, uint8_t data)
     }
     return false;
 }
-#endif
+
+/*
+  send type specific config strings
+ */
+void AP_GPS_NMEA::send_config(void)
+{
+    uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_config_ms < AP_GPS_NMEA_CONFIG_PERIOD_MS) {
+        return;
+    }
+    last_config_ms = now_ms;
+    const uint16_t rate_ms = gps._rate_ms[state.instance];
+    const float rate_s = rate_ms * 0.001;
+    const uint8_t rate_hz = 1000U / rate_ms;
+
+    switch (get_type()) {
+    case AP_GPS::GPS_TYPE_UNICORE_MOVINGBASE_NMEA:
+        port->printf("\r\nmode movingbase\r\n" \
+                     "CONFIG HEADING FIXLENGTH\r\n" \
+                     "CONFIG UNDULATION AUTO\r\n" \
+                     "GPGGAH %.3f\r\n", // needed to get slave antenna position in AGRICA
+                     rate_s);
+        state.gps_yaw_configured = true;
+        FALLTHROUGH;
+
+    case AP_GPS::GPS_TYPE_UNICORE_NMEA: {
+        port->printf("\r\nAGRICA %.3f\r\n", rate_s);
+        _expect_agrica = true;
+        break;
+    }
+
+    case AP_GPS::GPS_TYPE_HEMI: {
+        port->printf(
+        "$JATT,NMEAHE,0\r\n" /* Prefix of GP on the HDT message */      \
+        "$JASC,GPGGA,%u\r\n" /* GGA at 5Hz */                            \
+        "$JASC,GPRMC,%u\r\n" /* RMC at 5Hz */                            \
+        "$JASC,GPVTG,%u\r\n" /* VTG at 5Hz */                            \
+        "$JASC,GPHDT,%u\r\n" /* HDT at 5Hz */                            \
+        "$JMODE,SBASR,YES\r\n" /* Enable SBAS */,
+        rate_hz, rate_hz, rate_hz, rate_hz);
+        break;
+    }
+
+    case AP_GPS::GPS_TYPE_ALLYSTAR:
+        nmea_printf(port, "$PHD,06,42,UUUUTTTT,BB,0,%u,55,0,%u,0,0,0",
+                    unsigned(rate_hz), unsigned(rate_ms));
+        break;
+
+    default:
+        break;
+    }
+}
+
+#endif // AP_GPS_NMEA_ENABLED

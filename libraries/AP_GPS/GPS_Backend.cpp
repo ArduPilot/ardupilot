@@ -399,6 +399,8 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
 
             if (fabsf(alt_error) > permitted_error_length_pct * min_dist) {
                 // the vertical component is out of range, reject it
+                Debug("bad alt_err %.1f > %.1f\n",
+                      alt_error, permitted_error_length_pct * min_dist);
                 goto bad_yaw;
             }
         }
