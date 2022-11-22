@@ -118,7 +118,6 @@ bool AP_GPS_NMEA::_decode(char c)
         _crc32 = 0;
         _sentence_type = _GPS_SENTENCE_OTHER;
         _is_checksum_term = false;
-        _gps_data_good = false;
         _sentence_length = 1;
         _sentence_done = false;
         return false;
@@ -293,195 +292,181 @@ bool AP_GPS_NMEA::_term_complete()
         const uint32_t crc = strtoul(_term, nullptr, 16);
         const bool crc_ok = _is_unicore? (_crc32 == crc) : (_parity == crc);
         if (crc_ok) {
-            if (_gps_data_good) {
-                uint32_t now = AP_HAL::millis();
-                switch (_sentence_type) {
-                case _GPS_SENTENCE_RMC:
-                    _last_RMC_ms = now;
-                    //time                        = _new_time;
-                    //date                        = _new_date;
-                    if (_last_KSXT_pos_ms == 0 && _last_AGRICA_ms == 0) {
-                        state.location.lat     = _new_latitude;
-                        state.location.lng     = _new_longitude;
-                    }
-                    if (_last_3D_velocity_ms == 0 ||
-                        now - _last_3D_velocity_ms > 1000) {
-                        state.ground_speed     = _new_speed*0.01f;
-                        state.ground_course    = wrap_360(_new_course*0.01f);
-                    }
-                    make_gps_time(_new_date, _new_time * 10);
-                    set_uart_timestamp(_sentence_length);
-                    state.last_gps_time_ms = now;
+            uint32_t now = AP_HAL::millis();
+            switch (_sentence_type) {
+            case _GPS_SENTENCE_RMC:
+                _last_RMC_ms = now;
+                //time                        = _new_time;
+                //date                        = _new_date;
+                if (_last_KSXT_pos_ms == 0 && _last_AGRICA_ms == 0) {
+                    state.location.lat     = _new_latitude;
+                    state.location.lng     = _new_longitude;
+                }
+                if (_last_3D_velocity_ms == 0 ||
+                    now - _last_3D_velocity_ms > 1000) {
+                    state.ground_speed     = _new_speed*0.01f;
+                    state.ground_course    = wrap_360(_new_course*0.01f);
+                }
+                make_gps_time(_new_date, _new_time * 10);
+                set_uart_timestamp(_sentence_length);
+                state.last_gps_time_ms = now;
+                if (_last_vvelocity_ms == 0 ||
+                    now - _last_vvelocity_ms > 1000) {
+                    fill_3d_velocity();
+                }
+                break;
+            case _GPS_SENTENCE_GGA:
+                _last_GGA_ms = now;
+                if (_last_KSXT_pos_ms == 0 && _last_AGRICA_ms == 0) {
+                    state.location.alt  = _new_altitude;
+                    state.location.lat  = _new_latitude;
+                    state.location.lng  = _new_longitude;
+                }
+                state.num_sats      = _new_satellite_count;
+                state.hdop          = _new_hdop;
+                switch(_new_quality_indicator) {
+                case 0: // Fix not available or invalid
+                    state.status = AP_GPS::NO_FIX;
+                    break;
+                case 1: // GPS SPS Mode, fix valid
+                    state.status = AP_GPS::GPS_OK_FIX_3D;
+                    break;
+                case 2: // Differential GPS, SPS Mode, fix valid
+                    state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                    break;
+                case 3: // GPS PPS Mode, fix valid
+                    state.status = AP_GPS::GPS_OK_FIX_3D;
+                    break;
+                case 4: // Real Time Kinematic. System used in RTK mode with fixed integers
+                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
+                    break;
+                case 5: // Float RTK. Satellite system used in RTK mode, floating integers
+                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+                    break;
+                case 6: // Estimated (dead reckoning) Mode
+                    state.status = AP_GPS::NO_FIX;
+                    break;
+                default://to maintain compatibility with MAV_GPS_INPUT and others
+                    state.status = AP_GPS::GPS_OK_FIX_3D;
+                    break;
+                }
+                break;
+            case _GPS_SENTENCE_VTG:
+                _last_VTG_ms = now;
+                if (_last_3D_velocity_ms == 0 ||
+                    now - _last_3D_velocity_ms > 1000) {
+                    state.ground_speed  = _new_speed*0.01f;
+                    state.ground_course = wrap_360(_new_course*0.01f);
                     if (_last_vvelocity_ms == 0 ||
                         now - _last_vvelocity_ms > 1000) {
                         fill_3d_velocity();
                     }
+                }
+                // VTG has no fix indicator, can't change fix status
+                break;
+            case _GPS_SENTENCE_HDT:
+            case _GPS_SENTENCE_THS:
+                if (_last_AGRICA_ms != 0 || _expect_agrica) {
+                    // use AGRICA
                     break;
-                case _GPS_SENTENCE_GGA:
-                    _last_GGA_ms = now;
-                    if (_last_KSXT_pos_ms == 0 && _last_AGRICA_ms == 0) {
-                        state.location.alt  = _new_altitude;
-                        state.location.lat  = _new_latitude;
-                        state.location.lng  = _new_longitude;
-                    }
-                    state.num_sats      = _new_satellite_count;
-                    state.hdop          = _new_hdop;
-                    switch(_new_quality_indicator) {
-                    case 0: // Fix not available or invalid
-                        state.status = AP_GPS::NO_FIX;
-                        break;
-                    case 1: // GPS SPS Mode, fix valid
-                        state.status = AP_GPS::GPS_OK_FIX_3D;
-                        break;
-                    case 2: // Differential GPS, SPS Mode, fix valid
-                        state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
-                        break;
-                    case 3: // GPS PPS Mode, fix valid
-                        state.status = AP_GPS::GPS_OK_FIX_3D;
-                        break;
-                    case 4: // Real Time Kinematic. System used in RTK mode with fixed integers
-                        state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
-                        break;
-                    case 5: // Float RTK. Satellite system used in RTK mode, floating integers
-                        state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
-                        break;
-                    case 6: // Estimated (dead reckoning) Mode
-                        state.status = AP_GPS::NO_FIX;
-                        break;
-                    default://to maintain compatibility with MAV_GPS_INPUT and others
-                        state.status = AP_GPS::GPS_OK_FIX_3D;
-                        break;
-                    }
+                }
+                _last_yaw_ms = now;
+                state.gps_yaw = wrap_360(_new_gps_yaw*0.01f);
+                state.have_gps_yaw = true;
+                state.gps_yaw_time_ms = AP_HAL::millis();
+                // remember that we are setup to provide yaw. With
+                // a NMEA GPS we can only tell if the GPS is
+                // configured to provide yaw when it first sends a
+                // HDT sentence.
+                state.gps_yaw_configured = true;
+                break;
+            case _GPS_SENTENCE_PHD:
+                if (_last_AGRICA_ms != 0) {
+                    // prefer AGRICA
                     break;
-                case _GPS_SENTENCE_VTG:
-                    _last_VTG_ms = now;
-                    if (_last_3D_velocity_ms == 0 ||
-                        now - _last_3D_velocity_ms > 1000) {
-                        state.ground_speed  = _new_speed*0.01f;
-                        state.ground_course = wrap_360(_new_course*0.01f);
-                        if (_last_vvelocity_ms == 0 ||
-                            now - _last_vvelocity_ms > 1000) {
-                            fill_3d_velocity();
-                        }
-                    }
-                    // VTG has no fix indicator, can't change fix status
+                }
+                if (_phd.msg_id == 12) {
+                    state.velocity.x = _phd.fields[0] * 0.01;
+                    state.velocity.y = _phd.fields[1] * 0.01;
+                    state.velocity.z = _phd.fields[2] * 0.01;
+                    state.have_vertical_velocity = true;
+                    _last_vvelocity_ms = now;
+                    // we prefer a true 3D velocity when available
+                    state.ground_course = wrap_360(degrees(atan2f(state.velocity.y, state.velocity.x)));
+                    state.ground_speed = state.velocity.xy().length();
+                    _last_3D_velocity_ms = now;
+                } else if (_phd.msg_id == 26) {
+                    state.horizontal_accuracy = MAX(_phd.fields[0],_phd.fields[1]) * 0.001;
+                    state.have_horizontal_accuracy = true;
+                    state.vertical_accuracy = _phd.fields[2] * 0.001;
+                    state.have_vertical_accuracy = true;
+                    state.speed_accuracy = MAX(_phd.fields[3],_phd.fields[4]) * 0.001;
+                    state.have_speed_accuracy = true;
+                    _last_vaccuracy_ms = now;
+                }
+                break;
+            case _GPS_SENTENCE_KSXT:
+                if (_last_AGRICA_ms != 0 || _expect_agrica) {
+                    // prefer AGRICA
                     break;
-                case _GPS_SENTENCE_HDT:
-                case _GPS_SENTENCE_THS:
-                    if (_last_AGRICA_ms != 0 || _expect_agrica) {
-                        // use AGRICA
-                        break;
-                    }
+                }
+                state.location.lat     = _ksxt.fields[2]*1.0e7;
+                state.location.lng     = _ksxt.fields[1]*1.0e7;
+                state.location.alt     = _ksxt.fields[3]*1.0e2;
+                _last_KSXT_pos_ms = now;
+                if (_ksxt.fields[9] >= 1) {
+                    // we have 3D fix
+                    constexpr float kmh_to_mps = 1.0 / 3.6;
+                    state.velocity.y = _ksxt.fields[16] * kmh_to_mps;
+                    state.velocity.x = _ksxt.fields[17] * kmh_to_mps;
+                    state.velocity.z = _ksxt.fields[18] * -kmh_to_mps;
+                    state.have_vertical_velocity = true;
+                    _last_vvelocity_ms = now;
+                    // we prefer a true 3D velocity when available
+                    state.ground_course = wrap_360(degrees(atan2f(state.velocity.y, state.velocity.x)));
+                    state.ground_speed = state.velocity.xy().length();
+                    _last_3D_velocity_ms = now;
+                }
+                if (is_equal(3.0f, float(_ksxt.fields[10]))) {
+                    // have good yaw (from RTK fixed moving baseline solution)
                     _last_yaw_ms = now;
-                    state.gps_yaw = wrap_360(_new_gps_yaw*0.01f);
+                    state.gps_yaw = _ksxt.fields[4];
                     state.have_gps_yaw = true;
                     state.gps_yaw_time_ms = AP_HAL::millis();
-                    // remember that we are setup to provide yaw. With
-                    // a NMEA GPS we can only tell if the GPS is
-                    // configured to provide yaw when it first sends a
-                    // HDT sentence.
                     state.gps_yaw_configured = true;
-                    break;
-                case _GPS_SENTENCE_PHD:
-                    if (_last_AGRICA_ms != 0) {
-                        // prefer AGRICA
-                        break;
-                    }
-                    if (_phd.msg_id == 12) {
-                        state.velocity.x = _phd.fields[0] * 0.01;
-                        state.velocity.y = _phd.fields[1] * 0.01;
-                        state.velocity.z = _phd.fields[2] * 0.01;
-                        state.have_vertical_velocity = true;
-                        _last_vvelocity_ms = now;
-                        // we prefer a true 3D velocity when available
-                        state.ground_course = wrap_360(degrees(atan2f(state.velocity.y, state.velocity.x)));
-                        state.ground_speed = state.velocity.xy().length();
-                        _last_3D_velocity_ms = now;
-                    } else if (_phd.msg_id == 26) {
-                        state.horizontal_accuracy = MAX(_phd.fields[0],_phd.fields[1]) * 0.001;
-                        state.have_horizontal_accuracy = true;
-                        state.vertical_accuracy = _phd.fields[2] * 0.001;
-                        state.have_vertical_accuracy = true;
-                        state.speed_accuracy = MAX(_phd.fields[3],_phd.fields[4]) * 0.001;
-                        state.have_speed_accuracy = true;
-                        _last_vaccuracy_ms = now;
-                    }
-                    break;
-                case _GPS_SENTENCE_KSXT:
-                    if (_last_AGRICA_ms != 0 || _expect_agrica) {
-                        // prefer AGRICA
-                        break;
-                    }
-                    state.location.lat     = _ksxt.fields[2]*1.0e7;
-                    state.location.lng     = _ksxt.fields[1]*1.0e7;
-                    state.location.alt     = _ksxt.fields[3]*1.0e2;
-                    _last_KSXT_pos_ms = now;
-                    if (_ksxt.fields[9] >= 1) {
-                        // we have 3D fix
-                        constexpr float kmh_to_mps = 1.0 / 3.6;
-                        state.velocity.y = _ksxt.fields[16] * kmh_to_mps;
-                        state.velocity.x = _ksxt.fields[17] * kmh_to_mps;
-                        state.velocity.z = _ksxt.fields[18] * -kmh_to_mps;
-                        state.have_vertical_velocity = true;
-                        _last_vvelocity_ms = now;
-                        // we prefer a true 3D velocity when available
-                        state.ground_course = wrap_360(degrees(atan2f(state.velocity.y, state.velocity.x)));
-                        state.ground_speed = state.velocity.xy().length();
-                        _last_3D_velocity_ms = now;
-                    }
-                    if (is_equal(3.0f, float(_ksxt.fields[10]))) {
-                        // have good yaw (from RTK fixed moving baseline solution)
-                        _last_yaw_ms = now;
-                        state.gps_yaw = _ksxt.fields[4];
-                        state.have_gps_yaw = true;
-                        state.gps_yaw_time_ms = AP_HAL::millis();
-                        state.gps_yaw_configured = true;
-                    }
-                    break;
-                case _GPS_SENTENCE_AGRICA: {
-                    auto &ag = _agrica;
-                    _last_AGRICA_ms = now;
-                    state.location.lat = ag.lat*1.0e7;
-                    state.location.lng = ag.lng*1.0e7;
-                    state.location.alt = ag.alt*1.0e2;
-                    state.undulation   = -ag.undulation;
-                    state.velocity = ag.vel_NED;
-                    state.speed_accuracy = ag.vel_stddev.length();
-                    state.horizontal_accuracy = ag.pos_stddev.xy().length();
-                    state.vertical_accuracy = ag.pos_stddev.z;
-                    state.have_vertical_velocity = true;
-                    state.have_speed_accuracy = true;
-                    state.have_horizontal_accuracy = true;
-                    state.have_vertical_accuracy = true;
-                    state.have_undulation = true;
-
-                    if (ag.heading_status == 4) {
-                        Location slave( ag.slave_lat*1.0e7, ag.slave_lng*1.0e7, ag.slave_alt*1.0e2, Location::AltFrame::ABSOLUTE );
-                        const float dist = state.location.get_distance_NED(slave).length();
-                        const float bearing = degrees(state.location.get_bearing(slave));
-                        const float alt_diff = (state.location.alt - slave.alt)*0.01;
-                        calculate_moving_base_yaw(bearing, dist, alt_diff);
-                        state.gps_yaw_configured = true;
-                    } else {
-                        state.have_gps_yaw = false;
-                    }
-
-                    check_new_itow(ag.itow, _sentence_length);
-                    break;
                 }
-                }
-            } else {
-                switch (_sentence_type) {
-                case _GPS_SENTENCE_RMC:
-                case _GPS_SENTENCE_GGA:
-                    // Only these sentences give us information about
-                    // fix status.
-                    state.status = AP_GPS::NO_FIX;
-                    break;
-                case _GPS_SENTENCE_THS:
+                break;
+            case _GPS_SENTENCE_AGRICA: {
+                auto &ag = _agrica;
+                _last_AGRICA_ms = now;
+                state.location.lat = ag.lat*1.0e7;
+                state.location.lng = ag.lng*1.0e7;
+                state.location.alt = ag.alt*1.0e2;
+                state.undulation   = -ag.undulation;
+                state.velocity = ag.vel_NED;
+                state.speed_accuracy = ag.vel_stddev.length();
+                state.horizontal_accuracy = ag.pos_stddev.xy().length();
+                state.vertical_accuracy = ag.pos_stddev.z;
+                state.have_vertical_velocity = true;
+                state.have_speed_accuracy = true;
+                state.have_horizontal_accuracy = true;
+                state.have_vertical_accuracy = true;
+                state.have_undulation = true;
+
+                if (ag.heading_status == 4) {
+                    Location slave( ag.slave_lat*1.0e7, ag.slave_lng*1.0e7, ag.slave_alt*1.0e2, Location::AltFrame::ABSOLUTE );
+                    const float dist = state.location.get_distance_NED(slave).length();
+                    const float bearing = degrees(state.location.get_bearing(slave));
+                    const float alt_diff = (state.location.alt - slave.alt)*0.01;
+                    calculate_moving_base_yaw(bearing, dist, alt_diff);
+                    state.gps_yaw_configured = true;
+                } else {
                     state.have_gps_yaw = false;
-                    break;
                 }
+
+                check_new_itow(ag.itow, _sentence_length);
+                break;
+            }
             }
             // see if we got a good message
             return _have_new_message();
@@ -501,12 +486,10 @@ bool AP_GPS_NMEA::_term_complete()
         }
         if (strcmp(_term, "KSXT") == 0) {
             _sentence_type = _GPS_SENTENCE_KSXT;
-            _gps_data_good = true;
             return false;
         }
         if (strcmp(_term, "AGRICA") == 0) {
             _sentence_type = _GPS_SENTENCE_AGRICA;
-            _gps_data_good = true;
             return false;
         }
         /*
@@ -526,15 +509,10 @@ bool AP_GPS_NMEA::_term_complete()
             _sentence_type = _GPS_SENTENCE_GGA;
         } else if (strcmp(term_type, "HDT") == 0) {
             _sentence_type = _GPS_SENTENCE_HDT;
-            // HDT doesn't have a data qualifier
-            _gps_data_good = true;
         } else if (strcmp(term_type, "THS") == 0) {
             _sentence_type = _GPS_SENTENCE_THS;
         } else if (strcmp(term_type, "VTG") == 0) {
             _sentence_type = _GPS_SENTENCE_VTG;
-            // VTG may not contain a data qualifier, presume the solution is good
-            // unless it tells us otherwise.
-            _gps_data_good = true;
         } else {
             _sentence_type = _GPS_SENTENCE_OTHER;
         }
@@ -547,17 +525,13 @@ bool AP_GPS_NMEA::_term_complete()
         // operational status
         //
         case _GPS_SENTENCE_RMC + 2: // validity (RMC)
-            _gps_data_good = _term[0] == 'A';
             break;
         case _GPS_SENTENCE_GGA + 6: // Fix data (GGA)
-            _gps_data_good = _term[0] > '0';
-            _new_quality_indicator = _term[0] - '0';
-            break;
-        case _GPS_SENTENCE_THS + 2: // validity (THS)
-            _gps_data_good = _term[0] == 'A';
-            break;
-        case _GPS_SENTENCE_VTG + 9: // validity (VTG) (we may not see this field)
-            _gps_data_good = _term[0] != 'N';
+            if (_term[0] > '0') {
+                _new_quality_indicator = _term[0] - '0';
+            } else {
+                _new_quality_indicator = 0;
+            }
             break;
         case _GPS_SENTENCE_GGA + 7: // satellite count (GGA)
             _new_satellite_count = atol(_term);
@@ -622,10 +596,6 @@ bool AP_GPS_NMEA::_term_complete()
             break;
         case _GPS_SENTENCE_PHD + 2: // PHD message
             _phd.msg_id = atol(_term);
-            if (_phd.msg_class == 1 && (_phd.msg_id == 12 || _phd.msg_id == 26)) {
-                // we only support $PHD messages 1/12 and 1/26
-                _gps_data_good = true;
-            }
             break;
         case _GPS_SENTENCE_PHD + 5: // PHD message, itow
             _phd.itow = strtoul(_term, nullptr, 10);
