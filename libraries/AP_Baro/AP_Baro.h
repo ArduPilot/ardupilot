@@ -250,6 +250,8 @@ private:
         AP_Float xn;     // ratio of static pressure rise to dynamic pressure when flying backwards
         AP_Float yp;     // ratio of static pressure rise to dynamic pressure when flying to the right
         AP_Float yn;     // ratio of static pressure rise to dynamic pressure when flying to the left
+        AP_Float zp;     // ratio of static pressure rise to dynamic pressure when flying up
+        AP_Float zn;     // ratio of static pressure rise to dynamic pressure when flying down
     };
 #endif
 
