@@ -289,6 +289,7 @@ public:
         MAVLINK,
         MISSION,
         SCRIPTING,
+        MAVLINK_MANUAL_CONTROL_BUTTONS,
     };
 
     AuxSwitchPos get_aux_switch_pos() const;
