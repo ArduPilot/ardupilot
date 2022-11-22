@@ -51,6 +51,8 @@ protected:
     virtual MAV_VTOL_STATE vtol_state() const override { return MAV_VTOL_STATE_MC; };
     virtual MAV_LANDED_STATE landed_state() const override;
 
+    void handle_manual_control_axes(const mavlink_manual_control_t &packet, const uint32_t tnow) override;
+
 private:
 
     void handleMessage(const mavlink_message_t &msg) override;
