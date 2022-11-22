@@ -1055,6 +1055,21 @@ void GCS_MAVLINK_Copter::handle_mount_message(const mavlink_message_t &msg)
 }
 #endif
 
+// this is called on receipt of a MANUAL_CONTROL packet and is
+// expected to call manual_override to override RC input on desired
+// axes.
+void GCS_MAVLINK_Copter::handle_manual_control_axes(const mavlink_manual_control_t &packet, const uint32_t tnow)
+{
+    if (packet.z < 0) { // Copter doesn't do negative thrust
+        return;
+    }
+
+    manual_override(copter.channel_roll, packet.y, 1000, 2000, tnow);
+    manual_override(copter.channel_pitch, packet.x, 1000, 2000, tnow, true);
+    manual_override(copter.channel_throttle, packet.z, 0, 1000, tnow);
+    manual_override(copter.channel_yaw, packet.r, 1000, 2000, tnow);
+}
+
 void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
 {
     // for mavlink SET_POSITION_TARGET messages
@@ -1081,36 +1096,6 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         POSITION_TARGET_TYPEMASK_FORCE_SET;
 
     switch (msg.msgid) {
-
-    case MAVLINK_MSG_ID_MANUAL_CONTROL:
-    {
-        if (msg.sysid != copter.g.sysid_my_gcs) {
-            break; // only accept control from our gcs
-        }
-
-        mavlink_manual_control_t packet;
-        mavlink_msg_manual_control_decode(&msg, &packet);
-
-        if (packet.target != copter.g.sysid_this_mav) {
-            break; // only accept control aimed at us
-        }
-
-        if (packet.z < 0) { // Copter doesn't do negative thrust
-            break;
-        }
-
-        uint32_t tnow = AP_HAL::millis();
-
-        manual_override(copter.channel_roll, packet.y, 1000, 2000, tnow);
-        manual_override(copter.channel_pitch, packet.x, 1000, 2000, tnow, true);
-        manual_override(copter.channel_throttle, packet.z, 0, 1000, tnow);
-        manual_override(copter.channel_yaw, packet.r, 1000, 2000, tnow);
-
-        // a manual control message is considered to be a 'heartbeat'
-        // from the ground station for failsafe purposes
-        gcs().sysid_myggcs_seen(tnow);
-        break;
-    }
 
 #if MODE_GUIDED_ENABLED == ENABLED
     case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET:   // MAV ID: 82
