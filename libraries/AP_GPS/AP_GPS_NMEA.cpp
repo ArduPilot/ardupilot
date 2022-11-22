@@ -454,12 +454,14 @@ bool AP_GPS_NMEA::_term_complete()
                 state.have_undulation = true;
 
                 if (ag.heading_status == 4) {
+#if GPS_MOVING_BASELINE
                     Location slave( ag.slave_lat*1.0e7, ag.slave_lng*1.0e7, ag.slave_alt*1.0e2, Location::AltFrame::ABSOLUTE );
                     const float dist = state.location.get_distance_NED(slave).length();
                     const float bearing = degrees(state.location.get_bearing(slave));
                     const float alt_diff = (state.location.alt - slave.alt)*0.01;
                     calculate_moving_base_yaw(bearing, dist, alt_diff);
                     state.gps_yaw_configured = true;
+#endif
                 } else {
                     state.have_gps_yaw = false;
                 }
