@@ -253,6 +253,8 @@ public:
         AP_Float wcof_xn;
         AP_Float wcof_yp;
         AP_Float wcof_yn;
+        AP_Float wcof_zp;
+        AP_Float wcof_zn;
     };
     BaroParm baro[BARO_MAX_INSTANCES];
 
