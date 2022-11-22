@@ -90,12 +90,12 @@ public:
         case PPM:
         case FPORT:
         case FPORT2:
+        case CRSF:
             return true;
         case IBUS:
         case SUMD:
         case SRXL:
         case SRXL2:
-        case CRSF:
         case ST24:
         case NONE:
             return false;
