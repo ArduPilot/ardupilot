@@ -309,7 +309,9 @@ bool AP_GPS_NMEA::_term_complete()
                     state.ground_speed     = _new_speed*0.01f;
                     state.ground_course    = wrap_360(_new_course*0.01f);
                 }
-                make_gps_time(_new_date, _new_time * 10);
+                if (state.status >= AP_GPS::GPS_OK_FIX_3D) {
+                    make_gps_time(_new_date, _new_time * 10);
+                }
                 set_uart_timestamp(_sentence_length);
                 state.last_gps_time_ms = now;
                 if (_last_vvelocity_ms == 0 ||
@@ -759,7 +761,10 @@ void AP_GPS_NMEA::send_config(void)
         FALLTHROUGH;
 
     case AP_GPS::GPS_TYPE_UNICORE_NMEA: {
-        port->printf("\r\nAGRICA %.3f\r\n", rate_s);
+        port->printf("\r\nAGRICA %.3f\r\n" \
+                     "GNGGA %.3f\r\n" \
+                     "GNRMC %.3f\r\n",
+                     rate_s, rate_s, rate_s);
         _expect_agrica = true;
         break;
     }
