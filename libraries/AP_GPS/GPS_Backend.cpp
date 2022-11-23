@@ -110,6 +110,17 @@ void AP_GPS_Backend::make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds)
 }
 
 /*
+  get the last time of week in ms
+ */
+uint32_t AP_GPS_Backend::get_last_itow_ms(void) const
+{
+    if (!_have_itow) {
+        return state.time_week_ms;
+    }
+    return (_pseudo_itow_delta_ms == 0)?(_last_itow_ms):((_pseudo_itow/1000ULL) + _pseudo_itow_delta_ms);
+}
+
+/*
   fill in 3D velocity for a GPS that doesn't give vertical velocity numbers
  */
 void AP_GPS_Backend::fill_3d_velocity(void)
@@ -237,6 +248,7 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
 {
     if (itow != _last_itow_ms) {
         _last_itow_ms = itow;
+        _have_itow = true;
 
         /*
           we need to calculate a pseudo-itow, which copes with the
