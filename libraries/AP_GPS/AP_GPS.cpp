@@ -820,8 +820,10 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
 #if AP_GPS_NMEA_ENABLED
         if ((_type[instance] == GPS_TYPE_NMEA ||
                     _type[instance] == GPS_TYPE_HEMI ||
+#if AP_GPS_NMEA_UNICORE_ENABLED
                     _type[instance] == GPS_TYPE_UNICORE_NMEA ||
                     _type[instance] == GPS_TYPE_UNICORE_MOVINGBASE_NMEA ||
+#endif
                     _type[instance] == GPS_TYPE_ALLYSTAR) &&
                    AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
             return new AP_GPS_NMEA(*this, state[instance], _port[instance]);
