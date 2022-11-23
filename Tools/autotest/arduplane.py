@@ -4037,6 +4037,46 @@ class AutoTestPlane(AutoTest):
             else:
                 raise NotAchievedException("Missing trick %s" % t)
 
+    def MANUAL_CONTROL(self):
+        '''test MANUAL_CONTROL mavlink message'''
+        self.set_parameter("SYSID_MYGCS", self.mav.source_system)
+
+        self.progress("Takeoff")
+        self.takeoff(alt=50)
+
+        self.change_mode('FBWA')
+
+        tstart = self.get_sim_time_cached()
+        roll_input = -500
+        want_roll_degrees = -12
+        while True:
+            if self.get_sim_time_cached() - tstart > 10:
+                raise AutoTestTimeoutException("Did not reach roll")
+            self.progress("Sending roll-left")
+            self.mav.mav.manual_control_send(
+                1, # target system
+                32767, # x (pitch)
+                roll_input, # y (roll)
+                32767, # z (thrust)
+                32767, # r (yaw)
+                0) # button mask
+            m = self.mav.recv_match(type='ATTITUDE', blocking=True, timeout=1)
+            print("m=%s" % str(m))
+            if m is None:
+                continue
+            p = math.degrees(m.roll)
+            self.progress("roll=%f want<=%f" % (p, want_roll_degrees))
+            if p <= want_roll_degrees:
+                break
+        self.mav.mav.manual_control_send(
+            1, # target system
+            32767, # x (pitch)
+            32767, # y (roll)
+            32767, # z (thrust)
+            32767, # r (yaw)
+            0) # button mask
+        self.fly_home_land_and_disarm()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -4115,6 +4155,7 @@ class AutoTestPlane(AutoTest):
             self.MidAirDisarmDisallowed,
             self.EmbeddedParamParser,
             self.AerobaticsScripting,
+            self.MANUAL_CONTROL,
         ])
         return ret
 
