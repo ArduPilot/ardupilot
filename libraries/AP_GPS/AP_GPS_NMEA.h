@@ -119,10 +119,12 @@ private:
     /// return true if we have a new set of NMEA messages
     bool _have_new_message(void);
 
+#if AP_GPS_NMEA_UNICORE_ENABLED
     /*
       parse an AGRICA field
      */
     void parse_agrica_field(uint16_t term_number, const char *term);
+#endif
 
 
     uint8_t _parity;                                                    ///< NMEA message checksum accumulator
@@ -200,6 +202,7 @@ private:
         double fields[21];
     } _ksxt;
 
+#if AP_GPS_NMEA_UNICORE_ENABLED
     /*
       unicore AGRICA message parsing
      */
@@ -217,6 +220,7 @@ private:
         float slave_alt;
         Vector3f pos_stddev;
     } _agrica;
+#endif // AP_GPS_NMEA_UNICORE_ENABLED
     bool _expect_agrica;
 
     // last time we sent type specific config strings

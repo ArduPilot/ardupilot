@@ -262,6 +262,7 @@ bool AP_GPS_NMEA::_have_new_message()
         _last_KSXT_pos_ms = 0;
     }
 
+#if AP_GPS_NMEA_UNICORE_ENABLED
     if (now - _last_AGRICA_ms > 500) {
         if (_last_AGRICA_ms != 0) {
             // we have lost AGRICA
@@ -274,6 +275,7 @@ bool AP_GPS_NMEA::_have_new_message()
             _last_AGRICA_ms = 0;
         }
     }
+#endif // AP_GPS_NMEA_UNICORE_ENABLED
 
     _last_fix_ms = now;
 
@@ -436,6 +438,7 @@ bool AP_GPS_NMEA::_term_complete()
                     state.gps_yaw_configured = true;
                 }
                 break;
+#if AP_GPS_NMEA_UNICORE_ENABLED
             case _GPS_SENTENCE_AGRICA: {
                 auto &ag = _agrica;
                 _last_AGRICA_ms = now;
@@ -469,6 +472,7 @@ bool AP_GPS_NMEA::_term_complete()
                 check_new_itow(ag.itow, _sentence_length);
                 break;
             }
+#endif // AP_GPS_NMEA_UNICORE_ENABLED
             }
             // see if we got a good message
             return _have_new_message();
@@ -490,10 +494,12 @@ bool AP_GPS_NMEA::_term_complete()
             _sentence_type = _GPS_SENTENCE_KSXT;
             return false;
         }
+#if AP_GPS_NMEA_UNICORE_ENABLED
         if (strcmp(_term, "AGRICA") == 0) {
             _sentence_type = _GPS_SENTENCE_AGRICA;
             return false;
         }
+#endif
         /*
           The first two letters of the NMEA term are the talker
           ID. The most common is 'GP' but there are a bunch of others
@@ -608,15 +614,18 @@ bool AP_GPS_NMEA::_term_complete()
         case _GPS_SENTENCE_KSXT + 1 ... _GPS_SENTENCE_KSXT + 22: // KSXT message, fields
             _ksxt.fields[_term_number-1] = atof(_term);
             break;
+#if AP_GPS_NMEA_UNICORE_ENABLED
         case _GPS_SENTENCE_AGRICA + 1 ... _GPS_SENTENCE_AGRICA + 65: // AGRICA message
             parse_agrica_field(_term_number, _term);
             break;
+#endif
         }
     }
 
     return false;
 }
 
+#if AP_GPS_NMEA_UNICORE_ENABLED
 /*
   parse an AGRICA message term
 
@@ -681,6 +690,7 @@ void AP_GPS_NMEA::parse_agrica_field(uint16_t term_number, const char *term)
         break;
     }
 }
+#endif // AP_GPS_NMEA_UNICORE_ENABLED
 
 /*
   detect a NMEA GPS. Adds one byte, and returns true if the stream
@@ -732,10 +742,13 @@ void AP_GPS_NMEA::send_config(void)
     }
     last_config_ms = now_ms;
     const uint16_t rate_ms = gps._rate_ms[state.instance];
+#if AP_GPS_NMEA_UNICORE_ENABLED
     const float rate_s = rate_ms * 0.001;
+#endif
     const uint8_t rate_hz = 1000U / rate_ms;
 
     switch (get_type()) {
+#if AP_GPS_NMEA_UNICORE_ENABLED
     case AP_GPS::GPS_TYPE_UNICORE_MOVINGBASE_NMEA:
         port->printf("\r\nmode movingbase\r\n" \
                      "CONFIG HEADING FIXLENGTH\r\n" \
@@ -750,6 +763,7 @@ void AP_GPS_NMEA::send_config(void)
         _expect_agrica = true;
         break;
     }
+#endif // AP_GPS_NMEA_UNICORE_ENABLED
 
     case AP_GPS::GPS_TYPE_HEMI: {
         port->printf(
