@@ -83,26 +83,34 @@ float AP_Baro::wind_pressure_correction(uint8_t instance)
     }
 
     float error = 0.0;
-    const float sqx = sq(airspeed_vec_bf.x);
-    const float sqy = sq(airspeed_vec_bf.y);
-    const float sqz = sq(airspeed_vec_bf.z);
+
+    const float kp = 0.5 * SSL_AIR_DENSITY * get_air_density_ratio();
+    const float sqxp = sq(airspeed_vec_bf.x) * kp;
+    const float sqyp = sq(airspeed_vec_bf.y) * kp;
+    const float sqzp = sq(airspeed_vec_bf.z) * kp;
 
     if (is_positive(airspeed_vec_bf.x)) {
-        error += wcoef.xp * sqx;
+        sensors[instance].dynamic_pressure.x = sqxp;
+        error += wcoef.xp * sqxp;
     } else {
-        error += wcoef.xn * sqx;
+        sensors[instance].dynamic_pressure.x = -sqxp;
+        error += wcoef.xn * sqxp;
     }
     if (is_positive(airspeed_vec_bf.y)) {
-        error += wcoef.yp * sqy;
+        sensors[instance].dynamic_pressure.y = sqyp;
+        error += wcoef.yp * sqyp;
     } else {
-        error += wcoef.yn * sqy;
+        sensors[instance].dynamic_pressure.y = -sqyp;
+        error += wcoef.yn * sqyp;
     }
     if (is_positive(airspeed_vec_bf.z)) {
-        error += wcoef.zp * sqz;
+        sensors[instance].dynamic_pressure.z = sqzp;
+        error += wcoef.zp * sqzp;
     } else {
-        error += wcoef.zn * sqz;
+        sensors[instance].dynamic_pressure.z = -sqzp;
+        error += wcoef.zn * sqzp;
     }
 
-    return error * 0.5 * SSL_AIR_DENSITY * get_air_density_ratio();
+    return error;
 }
 #endif // HAL_BARO_WIND_COMP_ENABLED
