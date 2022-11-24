@@ -11,42 +11,45 @@ name: SuperAirShow
 message: Loop
 loop 25 0 1
 
-straight_align 80
+align_box 1
 message: HalfReverseCubanEight
 half_reverse_cuban_eight   25
 
-straight_align 80
 message: ScaleFigureEight
+align_center
 scale_figure_eight -40 -45
 
 message: Immelmann
+align_box 1
 immelmann_turn 30
 
-straight_align -40
+message: StraightAlign
 message: Roll
+align_center
 straight_roll 80 2
 
-straight_align 120 0
 message: Split-S
+align_box 1
 split_s  30
-straight_align 0
 
 message: RollingCircle
+align_center
 rolling_circle -50 2
-straight_align -50
 
 message: HumptyBump
+align_box 1
 humpty_bump 20 60
-straight_align 80
 
 message: HalfCubanEight
+align_box 1
 half_cuban_eight 25
-straight_align 75
 
+align_center
 message: BarrelRoll
 barrel_roll 30 100 2
 
 message: ProcedureTurn
+align_box 1
 procedure_turn 30 45 30
 
 # get back to the start point
