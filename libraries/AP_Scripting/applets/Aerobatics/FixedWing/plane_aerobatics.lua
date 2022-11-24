@@ -36,6 +36,7 @@ AEROM_THR_BOOST = bind_add_param('THR_BOOST', 18, 50)
 AEROM_YAW_ACCEL = bind_add_param('YAW_ACCEL', 19, 1500)
 AEROM_LKAHD = bind_add_param('LKAHD', 20, 0.5)
 AEROM_PATH_SCALE = bind_add_param('PATH_SCALE', 21, 1.0)
+AEROM_BOX_WIDTH = bind_add_param('BOX_WIDTH', 22, 400)
 
 -- cope with old param values
 if AEROM_ANG_ACCEL:get() < 100 and AEROM_ANG_ACCEL:get() > 0 then
@@ -489,6 +490,22 @@ function roll_sequence(_seq)
    return self
 end
 
+--[[ given a path function get_pos() calculate the extents of the path
+   along the X axis as a tuple
+--]]
+function get_extents_x(get_pos)
+   local p = get_pos(0)
+   local min_x = p:x()
+   local max_x = min_x
+   for t=0, 1, 0.02 do
+      p = get_pos(t)
+      min_x = math.min(min_x, p:x())
+      max_x = math.max(max_x, p:x())
+   end
+   return { min_x, max_x }
+end
+
+
 --[[
   all path components inherit from PathComponent
 --]]
@@ -510,6 +527,19 @@ function PathComponent()
    function self.get_throttle_boost(t)
       return self.thr_boost or false
    end
+
+   --[[ get the extents of the path on x axis. Can be overridden by a
+      more efficient and accurate path specific function
+   --]]
+   local extents = nil
+   function self.get_extents_x()
+      if extents ~= nil then
+         return extents
+      end
+      extents = get_extents_x(self.get_pos)
+      return extents
+   end
+
    return self
 end
 
@@ -559,6 +589,66 @@ function path_straight(_distance)
    end
    function self.get_length()
       return distance
+   end
+   return self
+end
+
+--[[
+   path component that aligns to within the aerobatic box
+--]]
+function path_align_box(_alignment)
+   local self = PathComponent()
+   self.name = "path_align_box"
+   local distance = nil
+   local alignment = _alignment
+   function self.get_pos(t)
+      return makeVector3f(distance*t, 0, 0)
+   end
+   function self.get_length()
+      return distance
+   end
+   function self.set_next_extents(extents, start_pos, start_orientation)
+      local box_half = AEROM_BOX_WIDTH:get()/2
+      local start_x = start_pos:x()
+      local next_max_x = extents[2]
+      if math.abs(math.deg(start_orientation:get_euler_yaw())) > 90 then
+         -- we are on a reverse path
+         distance = (box_half * alignment) + start_x - next_max_x
+      else
+         -- we are on a forward path
+         distance = (box_half * alignment) - start_x - next_max_x
+      end
+      distance = math.max(distance, 0.01)
+   end
+   return self
+end
+
+--[[
+   path component that aligns so the center of the next maneuver is
+   centered within the aerobatic box
+--]]
+function path_align_center()
+   local self = PathComponent()
+   self.name = "path_align_center"
+   local distance = nil
+   local alignment = _alignment
+   function self.get_pos(t)
+      return makeVector3f(distance*t, 0, 0)
+   end
+   function self.get_length()
+      return distance
+   end
+   function self.set_next_extents(extents, start_pos, start_orientation)
+      local start_x = start_pos:x()
+      local next_mid_x = (extents[1]+extents[2])*0.5
+      if math.abs(math.deg(start_orientation:get_euler_yaw())) > 90 then
+         -- we are on a reverse path
+         distance = start_x - next_mid_x
+      else
+         -- we are on a forward path
+         distance = - start_x - next_mid_x
+      end
+      distance = math.max(distance, 0.01)
    end
    return self
 end
@@ -710,6 +800,9 @@ function Path(_path_component, _roll_component)
    function self.get_throttle_boost(t)
       return self.thr_boost or false
    end
+   function self.set_next_extents(extents, start_pos, start_orientation)
+      path_component.set_next_extents(extents, start_pos, start_orientation)
+   end
    return self
 end
 
@@ -755,7 +848,7 @@ function path_composer(_name, _subpaths)
       if sp.name then
          -- we are being called with a list of Path objects
          cache_sp = sp
-         message = nil
+         message = sp.message
       else
          -- we are being called with a list function/argument tuples
          local args = subpaths[i][2]
@@ -774,7 +867,21 @@ function path_composer(_name, _subpaths)
       start_roll_correction[i] = roll_correction
 
       local sp = self.subpath(i)
+
       lengths[i] = sp.get_length()
+      if lengths[i] == nil and i < num_sub_paths then
+         local saved_message = message
+         local sp2 = self.subpath(i+1)
+         local next_extents = sp2.get_extents_x()
+         if next_extents ~= nil then
+            sp.set_next_extents(next_extents, start_pos[i], start_orientation[i])
+            lengths[i] = sp.get_length()
+            -- solidify this subpath now that it has its length calculated
+            subpaths[i] = sp
+            subpaths[i].message = saved_message
+         end
+      end
+
       total_length = total_length + lengths[i]
 
       local spos = quat_earth_to_body(orientation, sp.get_pos(1.0))
@@ -893,6 +1000,15 @@ function path_composer(_name, _subpaths)
       return sp.get_throttle_boost(t)
    end
 
+   local extents = nil
+   function self.get_extents_x()
+      if extents ~= nil then
+         return extents
+      end
+      extents = get_extents_x(self.get_pos)
+      return extents
+   end
+   
    return self
 end
 
@@ -957,7 +1073,6 @@ function straight_roll(length, num_rolls, arg3, arg4)
 end
 
 --[[
-
    fly straight until we are distance meters from the composite path
    origin in the maneuver frame along the X axis. If we are already
    past that position then return immediately
@@ -969,6 +1084,22 @@ function straight_align(distance, arg2, arg3, arg4, start_pos, start_orientation
    return make_paths("straight_align", {
          { path_straight(len), roll_angle(0) },
    })
+end
+
+--[[
+   fly straight so that the next maneuver in the sequence ends at
+   the given proportion of the aerobatic box
+--]]
+function align_box(alignment, arg2, arg3, arg4)
+   return Path(path_align_box(alignment), roll_angle(0))
+end
+
+--[[
+   fly straight so that the next maneuver in the sequence is centered
+   in the aerobatic box
+--]]
+function align_center(arg1, arg2, arg3, arg4)
+   return Path(path_align_center(), roll_angle(0))
 end
 
 function immelmann_turn(r, arg2, arg3, arg4)
@@ -1279,11 +1410,10 @@ end
 function procedure_turn(radius, bank_angle, step_out, arg4)
    local rabs = math.abs(radius)
    return make_paths("procedure_turn", {
-            { path_straight(rabs),                  roll_angle(0) },
             { path_horizontal_arc(radius,  90),     roll_angle_entry_exit(bank_angle) },
             { path_straight(step_out),              roll_angle(0) },
             { path_horizontal_arc(-radius,  270),   roll_angle_entry_exit(-bank_angle) },
-            { path_straight(4*rabs),                roll_angle(0) },
+            { path_straight(3*rabs),                roll_angle(0) },
       })
 end
 
@@ -2465,6 +2595,8 @@ load_table["p23_15"] = p23_15
 load_table["p23_16"] = p23_16
 load_table["p23_17"] = p23_17
 load_table["funny_loop"] = funny_loop
+load_table["align_box"] = align_box
+load_table["align_center"] = align_center
 
 
 --[[
