@@ -311,6 +311,9 @@ bool AP_GPS_NMEA::_term_complete()
                 }
                 if (state.status >= AP_GPS::GPS_OK_FIX_3D) {
                     make_gps_time(_new_date, _new_time * 10);
+                    if (_last_AGRICA_ms != 0) {
+                        state.time_week_ms = _last_itow_ms;
+                    }
                 }
                 set_uart_timestamp(_sentence_length);
                 state.last_gps_time_ms = now;
@@ -442,7 +445,7 @@ bool AP_GPS_NMEA::_term_complete()
                 break;
 #if AP_GPS_NMEA_UNICORE_ENABLED
             case _GPS_SENTENCE_AGRICA: {
-                auto &ag = _agrica;
+                const auto &ag = _agrica;
                 _last_AGRICA_ms = now;
                 state.location.lat = ag.lat*1.0e7;
                 state.location.lng = ag.lng*1.0e7;
@@ -638,6 +641,7 @@ void AP_GPS_NMEA::parse_agrica_field(uint16_t term_number, const char *term)
 {
     auto &ag = _agrica;
     // subtract 8 to align term numbers with reference manual
+    // look for "Unicore Reference Command Manual" to find the specification
     const uint8_t hdr_align = 8;
     if (term_number < hdr_align) {
         // discard header;
