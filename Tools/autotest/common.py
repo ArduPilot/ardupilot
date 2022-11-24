@@ -9375,7 +9375,9 @@ Also, ignores heartbeats not from our target system'''
         if ex is not None:
             raise ex
 
-    def send_poll_message(self, message_id, target_sysid=None, target_compid=None, quiet=False):
+    def send_poll_message(self, message_id, target_sysid=None, target_compid=None, quiet=False, mav=None):
+        if mav is None:
+            mav = self.mav
         if type(message_id) == str:
             message_id = eval("mavutil.mavlink.MAVLINK_MSG_ID_%s" % message_id)
         self.send_cmd(mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
@@ -9388,24 +9390,30 @@ Also, ignores heartbeats not from our target system'''
                       0,
                       target_sysid=target_sysid,
                       target_compid=target_compid,
-                      quiet=quiet)
+                      quiet=quiet,
+                      mav=mav)
 
-    def poll_message(self, message_id, timeout=10, quiet=False):
+    def poll_message(self, message_id, timeout=10, quiet=False, mav=None):
+        if mav is None:
+            mav = self.mav
         if type(message_id) == str:
             message_id = eval("mavutil.mavlink.MAVLINK_MSG_ID_%s" % message_id)
         tstart = self.get_sim_time() # required for timeout in run_cmd_get_ack to work
-        self.send_poll_message(message_id, quiet=quiet)
+        self.send_poll_message(message_id, quiet=quiet, mav=mav)
         self.run_cmd_get_ack(
             mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
             mavutil.mavlink.MAV_RESULT_ACCEPTED,
             timeout,
             quiet=quiet,
+            mav=mav
         )
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("Did not receive polled message")
-            m = self.mav.recv_match(blocking=True,
-                                    timeout=0.1)
+            m = mav.recv_match(blocking=True,
+                               timeout=0.1)
+            if self.mav != mav:
+                self.drain_mav()
             if m is None:
                 continue
             if m.id != message_id:

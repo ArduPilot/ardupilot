@@ -6109,6 +6109,53 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.reboot_sitl()
         self.progress("All done")
 
+    def PrivateChannel(self):
+        '''test the serial option bit specifying a mavlink channel as private'''
+        global mav2
+        mav2 = mavutil.mavlink_connection("tcp:localhost:5763",
+                                          robust_parsing=True,
+                                          source_system=7,
+                                          source_component=7)
+        # send a heartbeat or two to make sure ArduPilot's aware:
+
+        def heartbeat_on_mav2(mav, m):
+            '''send a heartbeat on mav2 whenever we get one on mav'''
+            global mav2
+            if mav == mav2:
+                return
+            if m.get_type() == 'HEARTBEAT':
+                mav2.mav.heartbeat_send(
+                    mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER,
+                    mavutil.mavlink.MAV_AUTOPILOT_INVALID,
+                    0,
+                    0,
+                    0)
+                return
+
+        self.assert_receive_message("HEARTBEAT", mav=mav2)
+
+        # ensure a targetted message is received:
+        self.install_message_hook_context(heartbeat_on_mav2)
+
+        self.progress("Ensuring we can get a message normally")
+        self.poll_message("AUTOPILOT_VERSION", mav=mav2)
+
+        self.progress("Polling AUTOPILOT_VERSION from random sysid")
+        self.send_poll_message("AUTOPILOT_VERSION", mav=mav2, target_sysid=134)
+        self.assert_not_receive_message("AUTOPILOT_VERSION", mav=mav2, timeout=10)
+
+        # ensure setting the private channel mask doesn't cause us to
+        # execute these commands:
+        self.set_parameter("SERIAL2_OPTIONS", 1024)
+        self.reboot_sitl()  # mavlink-private is reboot-required
+        mav2 = mavutil.mavlink_connection("tcp:localhost:5763",
+                                          robust_parsing=True,
+                                          source_system=7,
+                                          source_component=7)
+#        self.send_debug_trap()
+        self.send_poll_message("AUTOPILOT_VERSION", mav=mav2, target_sysid=134)
+        self.assert_not_receive_message("AUTOPILOT_VERSION", mav=mav2, timeout=10)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6178,6 +6225,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.EStopAtBoot,
             self.StickMixingAuto,
             self.AutoDock,
+            self.PrivateChannel,
         ])
         return ret
 
