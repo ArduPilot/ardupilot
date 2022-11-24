@@ -761,6 +761,7 @@ function path_composer(_name, _subpaths)
          local args = subpaths[i][2]
          cache_sp = subpaths[i][1](args[1], args[2], args[3], args[4], start_pos[i], start_orientation[i])
          message = subpaths[i].message
+         cache_sp.thr_boost = subpaths[i].thr_boost
       end
       return cache_sp
    end
@@ -886,6 +887,9 @@ function path_composer(_name, _subpaths)
    function self.get_throttle_boost(t)
       local subpath_t, i = self.get_subpath_t(t)
       local sp = self.subpath(i)
+      if sp.thr_boost ~= nil then
+         return sp.thr_boost
+      end
       return sp.get_throttle_boost(t)
    end
 
@@ -2488,6 +2492,7 @@ function load_trick(id)
    local name = string.format("Trick%u", id)
    local paths = {}
    local message = nil
+   local thr_boost = nil
    while true do
       local line = file:read()
       if not line then
@@ -2498,6 +2503,11 @@ function load_trick(id)
          -- ignore comments
       elseif cmd == "name:" then
          _, _, name = string.find(line, "^name:%s*([%w_]+)$")
+      elseif cmd == "thr_boost:" then
+         _, _, next_thr_boost = string.find(line, "^thr_boost:%s*(.+)$")
+         if next_thr_boost == "true" then
+            thr_boost = true
+         end
       elseif cmd == "message:" then
          _, _, message = string.find(line, "^message:%s*(.+)$")
       elseif cmd ~= nil then
@@ -2513,6 +2523,10 @@ function load_trick(id)
             if message ~= nil then
                paths[#paths].message = message
                message = nil
+            end
+            if thr_boost ~= nil then
+               paths[#paths].thr_boost = thr_boost
+               thr_boost = nil
             end
          end
       end
