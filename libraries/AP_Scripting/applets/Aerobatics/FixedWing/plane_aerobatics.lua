@@ -22,7 +22,6 @@ AEROM_KE_ANG = bind_add_param('KE_ANG', 3, 0)
 THR_PIT_FF = bind_add_param('THR_PIT_FF', 4, 80)
 SPD_P = bind_add_param('SPD_P', 5, 5)
 SPD_I = bind_add_param('SPD_I', 6, 25)
-ERR_CORR_TC = bind_add_param('ERR_COR_TC', 7, 3)
 ROLL_CORR_TC = bind_add_param('ROL_COR_TC', 8, 0.25)
 -- removed 9 and 10
 TIME_CORR_P = bind_add_param('TIME_COR_P', 11, 1.0)
@@ -54,6 +53,11 @@ ARSPD_FBW_MIN = Parameter("ARSPD_FBW_MIN")
 SCALING_SPEED = Parameter("SCALING_SPEED")
 
 local GRAVITY_MSS = 9.80665
+
+--[[
+   list of attributes that can be added to a path element
+--]]
+local path_attribs = { "roll_ref", "set_orient", "rate_override", "thr_boost", "pos_corr" }
 
 --[[
    Aerobatic tricks on a switch support - allows for tricks to be initiated outside AUTO mode
@@ -536,18 +540,11 @@ function PathComponent()
    function self.get_roll_correction(t)
       return 0
    end
-   function self.get_throttle_boost(t)
-      return self.thr_boost or false
+
+   function self.get_attribute(t, attrib)
+      return self[attrib]
    end
 
-   function self.get_rate_override(t)
-      return self.rate_override
-   end
-
-   function self.get_pos_correction(t)
-      return self.pos_corr or 1.0
-   end
-   
    --[[ get the extents of the path on x axis. Can be overridden by a
       more efficient and accurate path specific function
    --]]
@@ -837,15 +834,10 @@ function Path(_path_component, _roll_component)
    function self.get_final_orientation()
       return path_component.get_final_orientation()
    end
-   function self.get_throttle_boost(t)
-      return self.thr_boost or false
+   function self.get_attribute(t, attrib)
+      return self[attrib]
    end
-   function self.get_rate_override(t)
-      return self.rate_override
-   end
-   function self.get_pos_correction(t)
-      return self.pos_corr or 1.0
-   end
+
    function self.set_next_extents(extents, start_pos, start_orientation)
       path_component.set_next_extents(extents, start_pos, start_orientation)
    end
@@ -900,9 +892,10 @@ function path_composer(_name, _subpaths)
          local args = subpaths[i][2]
          cache_sp = subpaths[i][1](args[1], args[2], args[3], args[4], start_pos[i], start_orientation[i])
          message = subpaths[i].message
-         cache_sp.thr_boost = subpaths[i].thr_boost
-         cache_sp.pos_corr = subpaths[i].pos_corr
-         cache_sp.rate_override = subpaths[i].rate_override
+         -- copy over path attributes
+         for k, v in pairs(path_attribs) do
+            cache_sp[v] = subpaths[i][v]
+         end
       end
       return cache_sp
    end
@@ -1039,18 +1032,12 @@ function path_composer(_name, _subpaths)
       return final_orientation
    end
 
-   function self.get_throttle_boost(t)
+   function self.get_attribute(t, attrib)
       local subpath_t, i = self.get_subpath_t(t)
       local sp = self.subpath(i)
-      return sp.thr_boost or sp.get_throttle_boost(subpath_t)
+      return sp[attrib] or sp.get_attribute(subpath_t, attrib)
    end
 
-   function self.get_pos_correction(t)
-      local subpath_t, i = self.get_subpath_t(t)
-      local sp = self.subpath(i)
-      return sp.pos_corr or sp.get_pos_correction(subpath_t)
-   end
-   
    local extents = nil
    function self.get_extents_x()
       if extents ~= nil then
@@ -1058,15 +1045,6 @@ function path_composer(_name, _subpaths)
       end
       extents = get_extents_x(self.get_pos)
       return extents
-   end
-
-   function self.get_rate_override(t)
-      local subpath_t, i = self.get_subpath_t(t)
-      local sp = self.subpath(i)
-      if sp.rate_override ~= nil then
-         return sp.rate_override
-      end
-      return sp.get_rate_override(subpath_t)
    end
 
    --[[
@@ -1096,15 +1074,10 @@ function make_paths(name, paths)
       else
          p[i] = Path(paths[i][1], paths[i][2])
       end
-      if paths[i].roll_ref then
-         p[i].roll_ref = paths[i].roll_ref
+      -- copy over path attributes
+      for k, v in pairs(path_attribs) do
+         p[i][v] = paths[i][v]
       end
-      if paths[i].set_orient then
-         p[i].set_orient = paths[i].set_orient
-      end
-      p[i].rate_override = paths[i].rate_override
-      p[i].thr_boost = paths[i].thr_boost
-      p[i].pos_corr = paths[i].pos_corr
    end
    return path_composer(name, p)
 end
@@ -2154,9 +2127,11 @@ function rotate_path(path_f, t, orientation, offset)
    local angle = path_f.get_roll(t)
    local roll_correction = path_f.get_roll_correction(t)
    local speed = path_f.get_speed(t)
-   local thr_boost = path_f.get_throttle_boost(t)
-   local pos_corr = path_f.get_pos_correction(t)
-   local rate_override = path_f.get_rate_override(t)
+
+   local attrib = {}
+   for k, v in pairs(path_attribs) do
+      attrib[v] = path_f.get_attribute(t, v)
+   end
    local point = quat_earth_to_body(orientation, point)
 
    local scale = AEROM_PATH_SCALE:get()
@@ -2171,7 +2146,7 @@ function rotate_path(path_f, t, orientation, offset)
       point = quat_body_to_earth((orient * orient), point)
    end
 
-   return point+offset, math.rad(angle+roll_correction), speed, thr_boost, rate_override, pos_corr
+   return point+offset, math.rad(angle+roll_correction), speed, attrib
 end
 
 --Given vec1, vec2, returns an (rotation axis, angle) tuple that rotates vec1 to be parallel to vec2
@@ -2372,13 +2347,13 @@ function do_path()
    local p0 = path_var.pos:copy()
    local r0 = path_var.roll
    local s0 = path_var.speed
-   local p1, r1, s1, thr_boost, rate_override, pos_corr = rotate_path(path, path_var.path_t + local_n_dt,
-                                                                      path_var.initial_ori, path_var.initial_ef_pos)
+   local p1, r1, s1, attrib = rotate_path(path, path_var.path_t + local_n_dt,
+                                          path_var.initial_ori, path_var.initial_ef_pos)
 
    local current_measured_pos_ef = ahrs_pos_NED:copy()
 
-   if rate_override ~= nil then
-      if not rate_override.update(path, path_var.path_t + local_n_dt, s1) then
+   if attrib.rate_override ~= nil then
+      if not attrib.rate_override.update(path, path_var.path_t + local_n_dt, s1) then
          -- not done yet
          path_var.pos = current_measured_pos_ef
          return true
@@ -2417,9 +2392,9 @@ function do_path()
    --[[
       recalculate the current path position and angle based on actual delta time
    --]]
-   local p1, r1, s1, thr_boost = rotate_path(path,
-                                             constrain(path_var.path_t + path_t_delta, 0, 1),
-                                             path_var.initial_ori, path_var.initial_ef_pos)
+   local p1, r1, s1, attrib = rotate_path(path,
+                                          constrain(path_var.path_t + path_t_delta, 0, 1),
+                                          path_var.initial_ori, path_var.initial_ef_pos)
    local last_path_t = path_var.path_t
    path_var.path_t = path_var.path_t + path_t_delta
 
@@ -2448,9 +2423,9 @@ function do_path()
    path_var.path_t = path_var.path_t + TIME_CORR_P:get() * path_err_t
 
    -- get the path again with the corrected time
-   p1, r1, s1, thr_boost = rotate_path(path,
-                                       constrain(path_var.path_t, 0, 1),
-                                       path_var.initial_ori, path_var.initial_ef_pos)
+   p1, r1, s1, attrib = rotate_path(path,
+                                    constrain(path_var.path_t, 0, 1),
+                                    path_var.initial_ori, path_var.initial_ef_pos)
    -- recalculate the tangent to match the amount we advanced the path time
    tangent2_ef = p1 - p0
 
@@ -2485,7 +2460,7 @@ function do_path()
    local acc_err_ef = B:scale(ERR_CORR_P:get()) + B_dot:scale(ERR_CORR_D:get())
 
    -- scale by per-maneuver error correction scale factor
-   acc_err_ef = acc_err_ef:scale(pos_corr)
+   acc_err_ef = acc_err_ef:scale(attrib.pos_corr or 1.0)
 
    local acc_err_bf = quat_earth_to_body(ahrs_quat, acc_err_ef)
 
@@ -2672,7 +2647,7 @@ function do_path()
 
    local throttle = speed_PI.update(s1, anticipated_pitch_rad)
    local thr_min = AEROM_THR_MIN:get()
-   if thr_boost then
+   if attrib.thr_boost then
       thr_min = math.max(thr_min, AEROM_THR_BOOST:get())
    end
    throttle = constrain(throttle, thr_min, 100.0)
