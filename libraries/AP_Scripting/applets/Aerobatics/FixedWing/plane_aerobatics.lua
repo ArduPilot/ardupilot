@@ -2018,63 +2018,6 @@ function air_show3()
    })
 end
 
-function test_all_paths()
-   return path_composer("test_all_paths", {
-          { figure_eight,             { 100,  45 } },
-          { straight_roll,            { 20,    0 } },
-          { loop,                     { 30,    0,  1 } },
-          { straight_roll,            { 20,    0 } },
-          { horizontal_rectangle,     { 100, 100, 20, 45 } },
-          { straight_roll,            { 20,    0 } },
-          { climbing_circle,          { 100,  20, 45 } },
-          { straight_roll,            { 20,    0 } },
-          { vertical_aerobatic_box,   { 100, 100, 20,  0 } },
-          { straight_roll,            { 20,    0 } },
-          { rolling_circle,           { 100,   2,  0,  0 } },
-          { straight_roll,            { 20,    0 } },
-          { half_cuban_eight,         { 30,      } },
-          { straight_roll,            { 20,    0 } },
-          { half_reverse_cuban_eight, { 30,      } },
-          { straight_roll,            { 20,    0 } },
-          { cuban_eight,              { 30,      } },
-          { straight_roll,            { 20,    0 } },
-          { humpty_bump,              { 30,  100 } },
-          { straight_flight,          { 100,  45 } },
-          { scale_figure_eight,       { 100,  45 } },
-          { straight_roll,            { 20,    0 } },
-          { immelmann_turn,           { 30,   60 } },
-          { straight_roll,            { 20,    0 } },
-          { split_s,                  { 30,   60 } },
-          { straight_roll,            { 20,    0 } },
-          { upline_45,                { 20,   50 } },
-          { straight_roll,            { 20,    0 } },
-          { downline_45,              { 20,   50 } },
-          { straight_roll,            { 20,    0 } },
-          { procedure_turn,           { 40, 45, 20 } },
-          { straight_roll,            { 20,    0 } }, 
-          { two_point_roll,           { 100      } },
-          { straight_roll,            { 20,    0 } },
-          { derry_turn,               { 40,   60 } },
-          { straight_roll,            { 20,    0 } },
-          { half_climbing_circle,     { -65, 0, -60 } },
-          { straight_roll,            { 20,    0 } },
-          --[[
-          { p23_1,                    { 20, 150, 150 } }, 
-          { straight_roll,            { 20,    0 } },
-          { p23_2,                    { 20,  150 } },      
-          { straight_roll,            { 20,    0 } },
-          { p23_3,                    { 20,  150 } },      
-          { straight_roll,            { 20,    0 } },
-          { p23_4,                    { 20,  150 } },      
-          { straight_roll,            { 20,    0 } },
-          { p23_5,                    { 20,  150 } },   
-          { straight_roll,            { 20,    0 } },
-          { p23_6,                    { 20,  150 } },       -- now inverted :-)
-          { straight_roll,            { 20,    0 } },
-          --]]
-   })
-end
-
 ---------------------------------------------------
 
 --[[
@@ -2680,7 +2623,6 @@ command_table[28]= PathFunction(partial_circle, "Partial Circle")
 -- 30 was Eight Point Roll - use multi point roll instead
 command_table[31]= PathFunction(multi_point_roll, "Multi Point Roll")
 command_table[32]= PathFunction(side_step, "Side Step")
-command_table[200] = PathFunction(test_all_paths, "Test Suite")
 command_table[201] = PathFunction(nz_clubman, "NZ Clubman")
 command_table[202] = PathFunction(f3a_p23_l_r, "FAI F3A P23 L to R")
 command_table[203] = PathFunction(f4c_example_l_r, "FAI F4C Example L to R")
