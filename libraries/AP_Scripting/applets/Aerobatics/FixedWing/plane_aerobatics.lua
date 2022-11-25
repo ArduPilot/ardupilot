@@ -825,9 +825,6 @@ function Path(_path_component, _roll_component)
    function self.get_pos(t)
       return path_component.get_pos(t)
    end
-   function self.get_speed(t)
-      return nil
-   end
    function self.get_length()
       return path_component.get_length()
    end
@@ -860,8 +857,6 @@ function path_composer(_name, _subpaths)
    local start_pos = {}
    local start_angle = {}
    local start_roll_correction = {}
-   local end_speed = {}
-   local start_speed = {}
    local total_length = 0
    local num_sub_paths = #subpaths
    local last_subpath_t = { -1, 0, 0 }
@@ -934,13 +929,6 @@ function path_composer(_name, _subpaths)
       angle = angle + sp.get_roll(1.0, lengths[i]/speed)
       roll_correction = roll_correction + sp.get_roll_correction(1.0)
 
-      start_speed[i] = speed
-      end_speed[i] = sp.get_speed(1.0)
-      if end_speed[i] == nil then
-         end_speed[i] = target_groundspeed()
-      end
-      speed = end_speed[i]
-
       if sp.set_orient ~= nil then
          -- override orientation at this point in the sequence
          orientation = sp.set_orient
@@ -1003,10 +991,7 @@ function path_composer(_name, _subpaths)
    -- return angle for the composed path at time t
    function self.get_roll(t, time_s)
       local subpath_t, i = self.get_subpath_t(t)
-      local speed = self.get_speed(t)
-      if speed == nil then
-         speed = target_groundspeed()
-      end
+      local speed = target_groundspeed()
       local sp = self.subpath(i)
       angle = sp.get_roll(subpath_t, lengths[i]/speed)
       return angle + start_angle[i]
@@ -1018,12 +1003,6 @@ function path_composer(_name, _subpaths)
       return sp.get_roll_correction(subpath_t) + start_roll_correction[i]
    end
    
-   -- return speed for the composed path at time t
-   function self.get_speed(t)
-      local subpath_t, i = self.get_subpath_t(t)
-      return start_speed[i] + subpath_t * (end_speed[i] - start_speed[i])
-   end
-
    function self.get_length()
       return total_length
    end
@@ -2126,7 +2105,6 @@ function rotate_path(path_f, t, orientation, offset)
    local point = path_f.get_pos(t)
    local angle = path_f.get_roll(t)
    local roll_correction = path_f.get_roll_correction(t)
-   local speed = path_f.get_speed(t)
 
    local attrib = {}
    for k, v in pairs(path_attribs) do
@@ -2146,7 +2124,7 @@ function rotate_path(path_f, t, orientation, offset)
       point = quat_body_to_earth((orient * orient), point)
    end
 
-   return point+offset, math.rad(angle+roll_correction), speed, attrib
+   return point+offset, math.rad(angle+roll_correction), attrib
 end
 
 --Given vec1, vec2, returns an (rotation axis, angle) tuple that rotates vec1 to be parallel to vec2
@@ -2311,11 +2289,10 @@ function do_path()
 
       path_var.pos = path_var.initial_ef_pos:copy()
       path_var.roll = 0.0
-      path_var.speed = nil
 
       -- get initial tangent
-      local p1, r1, s1 = rotate_path(path, path_var.path_t + 0.1/(path_var.total_time*LOOP_RATE),
-                                     path_var.initial_ori, path_var.initial_ef_pos)
+      local p1, r1 = rotate_path(path, path_var.path_t + 0.1/(path_var.total_time*LOOP_RATE),
+                                 path_var.initial_ori, path_var.initial_ef_pos)
       path_var.tangent = p1 - path_var.pos
       return true
    end
@@ -2346,14 +2323,13 @@ function do_path()
 
    local p0 = path_var.pos:copy()
    local r0 = path_var.roll
-   local s0 = path_var.speed
-   local p1, r1, s1, attrib = rotate_path(path, path_var.path_t + local_n_dt,
-                                          path_var.initial_ori, path_var.initial_ef_pos)
+   local p1, r1, attrib = rotate_path(path, path_var.path_t + local_n_dt,
+                                      path_var.initial_ori, path_var.initial_ef_pos)
 
    local current_measured_pos_ef = ahrs_pos_NED:copy()
 
    if attrib.rate_override ~= nil then
-      if not attrib.rate_override.update(path, path_var.path_t + local_n_dt, s1) then
+      if not attrib.rate_override.update(path, path_var.path_t + local_n_dt, path_var.target_speed) then
          -- not done yet
          path_var.pos = current_measured_pos_ef
          return true
@@ -2392,9 +2368,9 @@ function do_path()
    --[[
       recalculate the current path position and angle based on actual delta time
    --]]
-   local p1, r1, s1, attrib = rotate_path(path,
-                                          constrain(path_var.path_t + path_t_delta, 0, 1),
-                                          path_var.initial_ori, path_var.initial_ef_pos)
+   local p1, r1, attrib = rotate_path(path,
+                                      constrain(path_var.path_t + path_t_delta, 0, 1),
+                                      path_var.initial_ori, path_var.initial_ef_pos)
    local last_path_t = path_var.path_t
    path_var.path_t = path_var.path_t + path_t_delta
 
@@ -2423,9 +2399,9 @@ function do_path()
    path_var.path_t = path_var.path_t + TIME_CORR_P:get() * path_err_t
 
    -- get the path again with the corrected time
-   p1, r1, s1, attrib = rotate_path(path,
-                                    constrain(path_var.path_t, 0, 1),
-                                    path_var.initial_ori, path_var.initial_ef_pos)
+   p1, r1, attrib = rotate_path(path,
+                                constrain(path_var.path_t, 0, 1),
+                                path_var.initial_ori, path_var.initial_ef_pos)
    -- recalculate the tangent to match the amount we advanced the path time
    tangent2_ef = p1 - p0
 
@@ -2441,7 +2417,6 @@ function do_path()
    path_var.tangent = tangent2_ef:copy()
    path_var.pos = p1:copy()
    path_var.roll = r1
-   path_var.speed = s1
 
    
    --[[
@@ -2631,12 +2606,7 @@ function do_path()
 
    --[[
       run the throttle based speed controller
-   --]]
-   if s1 == nil then
-      s1 = path_var.target_speed
-   end
 
-   --[[
       get the anticipated pitch at the throttle lookahead time
       we use the maximum of the current path pitch and the anticipated pitch
    --]]
@@ -2645,7 +2615,7 @@ function do_path()
    local qnew = qchange * orientation_rel_ef_with_roll_angle
    local anticipated_pitch_rad = math.max(qnew:get_euler_pitch(), orientation_rel_ef_with_roll_angle:get_euler_pitch())
 
-   local throttle = speed_PI.update(s1, anticipated_pitch_rad)
+   local throttle = speed_PI.update(path_var.target_speed, anticipated_pitch_rad)
    local thr_min = AEROM_THR_MIN:get()
    if attrib.thr_boost then
       thr_min = math.max(thr_min, AEROM_THR_BOOST:get())
