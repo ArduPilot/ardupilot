@@ -173,7 +173,6 @@ define STM32_PWM_USE_ADVANCED TRUE
 
 # save some flash
 include ../include/save_some_flash.inc
-define HAL_BARO_WIND_COMP_ENABLED 0
 define HAL_RUNCAM_ENABLED 0
 define HAL_SPEKTRUM_TELEM_ENABLED 0
 define HAL_SOARING_ENABLED 0
