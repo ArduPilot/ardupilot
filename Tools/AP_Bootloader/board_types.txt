@@ -185,6 +185,7 @@ AP_HW_JHEMCUGF16F405                 1081
 AP_HW_SPEEDYBEEF4V3                  1082
 AP_HW_PixPilot-V6                    1083
 AP_HW_JFB100                         1084
+AP_HW_Elfin-Wing                     1089
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
