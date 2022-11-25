@@ -72,7 +72,6 @@ modify it during the trick, like rolling circles and figure eights)
 
 | ID  | Name
 | --  | ------------------------
-| 200 | Test Suite (dont fly!)
 | 201 | NZ Clubman Schedule
 | 202 | FAI F3A P-23 (left to right)
 | 203 | FAI F3C Scale Example (left to right)
