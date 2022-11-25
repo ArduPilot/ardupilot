@@ -33,5 +33,4 @@ define HAL_GYROFFT_ENABLED 0
 # save some flash
 include ../include/save_some_flash.inc
 
-define HAL_BARO_WIND_COMP_ENABLED 0
 define AP_GRIPPER_ENABLED 0
