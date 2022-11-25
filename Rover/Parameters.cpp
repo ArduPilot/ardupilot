@@ -870,10 +870,7 @@ void Rover::load_parameters(void)
         { Parameters::k_param_g2, 25354, AP_PARAM_FLOAT, "ATC_SAIL_FLTE" },
         { Parameters::k_param_g2, 29450, AP_PARAM_FLOAT, "ATC_SAIL_FF" },
     };
-    uint8_t filt_table_size = ARRAY_SIZE(ff_and_filt_conversion_info);
-    for (uint8_t i=0; i<filt_table_size; i++) {
-        AP_Param::convert_old_parameters(&ff_and_filt_conversion_info[i], 1.0f);
-    }
+    AP_Param::convert_old_parameters(&ff_and_filt_conversion_info[0], ARRAY_SIZE(ff_and_filt_conversion_info));
 
     // configure safety switch to allow stopping the motors while armed
 #if HAL_HAVE_SAFETY_SWITCH
