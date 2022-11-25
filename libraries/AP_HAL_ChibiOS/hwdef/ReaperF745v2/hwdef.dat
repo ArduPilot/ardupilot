@@ -143,7 +143,6 @@ define STM32_PWM_USE_ADVANCED TRUE
 
 # save some flash
 include ../include/save_some_flash.inc
-define HAL_BARO_WIND_COMP_ENABLED 0
 define AP_GRIPPER_ENABLED 0
 define HAL_PARACHUTE_ENABLED 0
 define HAL_SPRAYER_ENABLED 0

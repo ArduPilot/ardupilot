@@ -62,7 +62,6 @@ define HAL_BARO_ALLOW_INIT_NO_BARO 1
 
 # save some flash
 include ../include/save_some_flash.inc
-define HAL_BARO_WIND_COMP_ENABLED 0
 define AP_GRIPPER_ENABLED 0
 define HAL_PARACHUTE_ENABLED 0
 define HAL_SPRAYER_ENABLED 0
