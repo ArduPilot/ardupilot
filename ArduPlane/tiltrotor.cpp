@@ -219,7 +219,10 @@ void Tiltrotor::continuous_update(void)
     if (!quadplane.in_vtol_mode() && (!hal.util->get_soft_armed() || !quadplane.assisted_flight)) {
         // we are in pure fixed wing mode. Move the tiltable motors all the way forward and run them as
         // a forward motor
-        slew(get_forward_flight_tilt());
+
+        // option set then if disarmed move to VTOL position to prevent ground strikes, allow tilt forward in manual mode for testing
+        const bool disarmed_tilt_up = !hal.util->get_soft_armed() && (plane.control_mode != &plane.mode_manual) && quadplane.option_is_set(QuadPlane::OPTION::DISARMED_TILT_UP);
+        slew(disarmed_tilt_up ? 0.0 : get_forward_flight_tilt());
 
         max_change = tilt_max_change(false);
 
