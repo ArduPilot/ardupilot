@@ -57,7 +57,7 @@ local GRAVITY_MSS = 9.80665
 --[[
    list of attributes that can be added to a path element
 --]]
-local path_attribs = { "roll_ref", "set_orient", "rate_override", "thr_boost", "pos_corr" }
+local path_attribs = { "roll_ref", "set_orient", "rate_override", "thr_boost", "pos_corr", "message" }
 
 --[[
    Aerobatic tricks on a switch support - allows for tricks to be initiated outside AUTO mode
@@ -869,7 +869,6 @@ function path_composer(_name, _subpaths)
    local highest_i = 0
    local cache_i = -1
    local cache_sp = nil
-   local message = nil
 
    -- return the subpath with index i. Used to cope with two ways of calling path_composer
    function self.subpath(i)
@@ -881,12 +880,10 @@ function path_composer(_name, _subpaths)
       if sp.name then
          -- we are being called with a list of Path objects
          cache_sp = sp
-         message = sp.message
       else
          -- we are being called with a list function/argument tuples
          local args = subpaths[i][2]
          cache_sp = subpaths[i][1](args[1], args[2], args[3], args[4], start_pos[i], start_orientation[i])
-         message = subpaths[i].message
          -- copy over path attributes
          for k, v in pairs(path_attribs) do
             cache_sp[v] = subpaths[i][v]
@@ -906,7 +903,6 @@ function path_composer(_name, _subpaths)
 
       lengths[i] = sp.get_length()
       if lengths[i] == nil and i < num_sub_paths then
-         local saved_message = message
          local sp2 = self.subpath(i+1)
          local next_extents = sp2.get_extents_x()
          if next_extents ~= nil then
@@ -914,7 +910,6 @@ function path_composer(_name, _subpaths)
             lengths[i] = sp.get_length()
             -- solidify this subpath now that it has its length calculated
             subpaths[i] = sp
-            subpaths[i].message = saved_message
          end
       end
 
@@ -971,8 +966,8 @@ function path_composer(_name, _subpaths)
       local sp = self.subpath(i)
       if i > highest_i and t < 1.0 and t > 0 then
          highest_i = i
-         if message ~= nil then
-            gcs:send_text(0, message)
+         if sp.message ~= nil then
+            gcs:send_text(0, sp.message)
          end
          if AEROM_DEBUG:get() > 0 then
             gcs:send_text(0, string.format("starting %s[%d] %s", self.name, i, sp.name))
@@ -2677,6 +2672,24 @@ load_table["funny_loop"] = funny_loop
 load_table["align_box"] = align_box
 load_table["align_center"] = align_center
 
+--[[
+   interpret an attribute value, coping with special cases
+--]]
+function interpret_attrib(v)
+   if v == "true" then
+      return true
+   end
+   if v == "false" then
+      return false
+   end
+   -- could be a number
+   local n = tonumber(v)
+   if n ~= nil then
+      return n
+   end
+   -- assume a string
+   return v
+end
 
 --[[
    load a trick description from a text file
@@ -2701,26 +2714,27 @@ function load_trick(id)
       return
    end
    local name = string.format("Trick%u", id)
+   local attrib = {}
    local paths = {}
-   local message = nil
-   local thr_boost = nil
    while true do
       local line = file:read()
       if not line then
          break
       end
+      -- trim trailing spaces
+      line = string.gsub(line, '^(.-)%s*$', '%1')
       local _, _, cmd, arg1, arg2, arg3, arg4 = string.find(line, "^([%w_:]+)%s*([-.%d]*)%s*([-.%d]*)%s*([-.%d]*)%s*([-.%d]*)")
       if cmd == "" or cmd == nil or string.sub(cmd,1,1) == "#" then
          -- ignore comments
       elseif cmd == "name:" then
          _, _, name = string.find(line, "^name:%s*([%w_]+)$")
-      elseif cmd == "thr_boost:" then
-         _, _, next_thr_boost = string.find(line, "^thr_boost:%s*(.+)$")
-         if next_thr_boost == "true" then
-            thr_boost = true
+      elseif string.sub(cmd,-1) == ":" then
+         _, _, a, s = string.find(line, "^([%w_]+):%s*([%w_%s-]+)$")
+         if a ~= nil then
+            attrib[a] = interpret_attrib(s)
+         else
+            gcs:send_text(0,"Bad line: '%s'", line)
          end
-      elseif cmd == "message:" then
-         _, _, message = string.find(line, "^message:%s*(.+)$")
       elseif cmd ~= nil then
          arg1 = tonumber(arg1) or 0
          arg2 = tonumber(arg2) or 0
@@ -2731,14 +2745,10 @@ function load_trick(id)
             gcs:send_text(0,string.format("Unknown command '%s' in %s", cmd, fname))
          else
             paths[#paths+1] = { f, { arg1, arg2, arg3, arg4 }}
-            if message ~= nil then
-               paths[#paths].message = message
-               message = nil
+            for k, v in pairs(attrib) do
+               paths[#paths][k] = v
             end
-            if thr_boost ~= nil then
-               paths[#paths].thr_boost = thr_boost
-               thr_boost = nil
-            end
+            attrib = {}
          end
       end
    end
