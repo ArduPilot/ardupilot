@@ -60,10 +60,6 @@
 # define RANGEFINDER_GAIN_DEFAULT 0.8f     // gain for controlling how quickly rangefinder range adjusts target altitude (lower means slower reaction)
 #endif
 
-#ifndef SURFACE_TRACKING_VELZ_MAX
-# define SURFACE_TRACKING_VELZ_MAX 150     // max vertical speed change while surface tracking with rangefinder
-#endif
-
 #ifndef SURFACE_TRACKING_TIMEOUT_MS
 # define SURFACE_TRACKING_TIMEOUT_MS  1000 // surface tracking target alt will reset to current rangefinder alt after this many milliseconds without a good rangefinder alt
 #endif
@@ -95,26 +91,9 @@
 # define MAV_SYSTEM_ID          1
 #endif
 
-
-//////////////////////////////////////////////////////////////////////////////
-// Battery monitoring
-//
-#ifndef BOARD_VOLTAGE_MIN
-# define BOARD_VOLTAGE_MIN             4.3f        // min board voltage in volts for pre-arm checks
-#endif
-
-#ifndef BOARD_VOLTAGE_MAX
-# define BOARD_VOLTAGE_MAX             5.8f        // max board voltage in volts for pre-arm checks
-#endif
-
 // prearm GPS hdop check
 #ifndef GPS_HDOP_GOOD_DEFAULT
 # define GPS_HDOP_GOOD_DEFAULT         140     // minimum hdop that represents a good position.  used during pre-arm checks if fence is enabled
-#endif
-
-// GCS failsafe
-#ifndef FS_GCS
-# define FS_GCS                        DISABLED
 #endif
 
 // Radio failsafe while using RC_override
