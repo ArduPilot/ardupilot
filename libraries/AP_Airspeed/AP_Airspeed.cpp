@@ -215,6 +215,74 @@ bool AP_Airspeed::add_backend(AP_Airspeed_Backend *backend)
     if (num_sensors == AIRSPEED_MAX_SENSORS) { return; } \
     } while (0)
 
+
+// convet params to per instance param table
+// PARAMETER_CONVERSION - Added: Dec-2022
+void AP_Airspeed::convert_per_instance()
+{
+    AP_Param::ConversionInfo info;
+#ifndef HAL_BUILD_AP_PERIPH
+    // Vehicle conversion
+    if (!AP_Param::find_key_by_pointer(this, info.old_key)) {
+        return;
+    }
+
+    const struct convert_table {
+        uint32_t element[2];
+        ap_var_type type;
+        const char* name;
+    }  conversion_table[] = {
+        { {4042, 714}, AP_PARAM_INT8, "TYPE" },      // ARSPD_TYPE, ARSPD2_TYPE
+        { {74, 778}, AP_PARAM_INT8, "USE" },        // ARSPD_USE, ARSPD2_USE
+        { {138, 842}, AP_PARAM_FLOAT, "OFFSET" },    // ARSPD_OFFSET, ARSPD2_OFFSET
+        { {202, 906}, AP_PARAM_FLOAT, "RATIO" },     // ARSPD_RATIO, ARSPD2_RATIO
+        { {266, 970}, AP_PARAM_INT8, "PIN" },        // ARSPD_PIN, ARSPD2_PIN
+#if AP_AIRSPEED_AUTOCAL_ENABLE
+        { {330, 1034}, AP_PARAM_INT8, "AUTOCAL" },    // ARSPD_AUTOCAL, ARSPD2_AUTOCAL
+#endif
+        { {394, 1098}, AP_PARAM_INT8, "TUBE_ORDR" },  // ARSPD_TUBE_ORDER, ARSPD2_TUBE_ORDR
+        { {458, 1162}, AP_PARAM_INT8, "SKIP_CAL" },   // ARSPD_SKIP_CAL, ARSPD2_SKIP_CAL
+        { {522, 1226}, AP_PARAM_FLOAT, "PSI_RANGE" }, // ARSPD_PSI_RANGE, ARSPD2_PSI_RANGE
+        { {586, 1290}, AP_PARAM_INT8, "BUS" },        // ARSPD_BUS, ARSPD2_BUS
+        { {1546, 1610}, AP_PARAM_INT32, "DEVID" },    // ARSPD_DEVID, ARSPD2_DEVID
+    };
+
+#else
+    // Periph conversion
+    if (!AP_Param::find_top_level_key_by_pointer(this, info.old_key)) {
+        return;
+    }
+    const struct convert_table {
+        uint32_t element[2];
+        ap_var_type type;
+        const char* name;
+    }  conversion_table[] = {
+        { {0, 11}, AP_PARAM_INT8, "TYPE" },      // ARSPD_TYPE, ARSPD2_TYPE
+#if AP_AIRSPEED_AUTOCAL_ENABLE
+        { {5, 16}, AP_PARAM_INT8, "AUTOCAL" },    // ARSPD_AUTOCAL, ARSPD2_AUTOCAL
+#endif
+        { {8, 19}, AP_PARAM_FLOAT, "PSI_RANGE" }, // ARSPD_PSI_RANGE, ARSPD2_PSI_RANGE
+        { {24, 25}, AP_PARAM_INT32, "DEVID" },    // ARSPD_DEVID, ARSPD2_DEVID
+    };
+#endif
+
+    char param_name[17] {};
+    info.new_name = param_name;
+
+    for (const auto & elem : conversion_table) {
+        info.type = elem.type;
+        for (uint8_t i=0; i < MIN(AIRSPEED_MAX_SENSORS,2); i++) {
+            info.old_group_element = elem.element[i];
+            if (i == 0) {
+                hal.util->snprintf(param_name, sizeof(param_name), "ARSPD_%s",  elem.name);
+            } else {
+                hal.util->snprintf(param_name, sizeof(param_name), "ARSPD%i_%s", i+1,  elem.name);
+            }
+            AP_Param::convert_old_parameter(&info, 1.0, 0);
+        }
+    }
+}
+
 void AP_Airspeed::init()
 {
 
@@ -224,6 +292,8 @@ void AP_Airspeed::init()
 #ifndef HAL_BUILD_AP_PERIPH
     param[0].pin.set_default(ARSPD_DEFAULT_PIN);
 #endif
+
+    convert_per_instance();
 
     if (sensor[0] != nullptr) {
         // already initialised
