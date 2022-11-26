@@ -43,7 +43,6 @@ the ground track.
 | 20 | Procedure Turn           | radius | bank angle  | step-out    |            | Yes        |
 | 21 | Derry Turn               | radius | bank angle  |             |            | No         |
 | 23 | Half Climbing Circle     | radius | height      | bank angle  |            | Yes        |
-| 24 | Crossbox Humpty          | radius | height      |             |            | Yes        |
 | 25 | Laydown Humpty           | radius | height      |             |            | Yes        |
 | 25 | Barrel Roll              | radius | length      | num spirals |            | No         |
 | 26 | Straight Hold            | length | bank angle  |             |            | No         |
