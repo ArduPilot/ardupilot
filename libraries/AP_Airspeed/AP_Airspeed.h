@@ -305,6 +305,9 @@ private:
     bool add_backend(AP_Airspeed_Backend *backend);
     
     const AP_FixedWing *fixed_wing_parameters;
+
+    void convert_per_instance();
+
 };
 
 namespace AP {
