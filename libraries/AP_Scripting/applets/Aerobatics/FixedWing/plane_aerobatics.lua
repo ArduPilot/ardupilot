@@ -57,7 +57,7 @@ GRAVITY_MSS = 9.80665
 --[[
    list of attributes that can be added to a path element
 --]]
-local path_attribs = { "roll_ref", "set_orient", "rate_override", "thr_boost", "pos_corr", "message", "shift_y" }
+local path_attribs = { "roll_ref", "set_orient", "rate_override", "thr_boost", "pos_corr", "message", "shift_xy" }
 
 --[[
    Aerobatic tricks on a switch support - allows for tricks to be initiated outside AUTO mode
@@ -186,6 +186,19 @@ function calc_lowpass_alpha(dt, time_constant)
    return dt/(dt+rc)
 end
 
+--[[ get the c.y element of the DCM body to earth matrix, which gives
+   the projection of the vehicle y axis in the down direction
+--]]
+function get_ahrs_dcm_c_y()
+   local ahrs_quat = ahrs:get_quaternion()
+   local q1 = ahrs_quat:q1()
+   local q2 = ahrs_quat:q2()
+   local q3 = ahrs_quat:q3()
+   local q4 = ahrs_quat:q4()
+   local q3q4 = q3 * q4
+   local q1q2 = q1 * q2
+   return 2*(q3q4 + q1q2)
+end
 
 -- a PI controller implemented as a Lua object
 local function PI_controller(kP,kI,iMax,min,max)
@@ -1298,28 +1311,36 @@ function rudder_over(_direction, _min_speed)
    local reached_speed = false
    local kick_started = false
    local pitch2_done = false
+   local descent_done = false
    local target_q = nil
+   local initial_q = nil
    local last_t = nil
+   local initial_z = nil
 
    --[[
       the update() method is called during the rudder over, it
       should return true when the maneuver is completed
    --]]
    function self.update(path, t, target_speed)
-      if pitch2_done then
+      if descent_done then
          -- we're all done
          return true
       end
 
       local ahrs_quat = ahrs:get_quaternion()
+      local ahrs_pos = ahrs:get_relative_position_NED_origin()
+      local ahrs_gyro = ahrs:get_gyro()
       local now = millis():tofloat() * 0.001
       local pitch_threshold = 60.0
 
       if target_q == nil then
-         -- should go full vertical
-         target_q = ahrs_quat
+         -- initialising
+         initial_z = ahrs_pos:z()
+         target_q = quat_copy(ahrs_quat)
+         initial_q = quat_copy(target_q)
          last_t = now
       end
+
       local dt = now - last_t
       last_t = now
 
@@ -1332,7 +1353,7 @@ function rudder_over(_direction, _min_speed)
       -- use user set throttle for achieving the stall
       local throttle = AEROM_STALL_THR:get()
       local pitch_deg = math.deg(ahrs:get_pitch())
-      if not kick_started and math.abs(math.deg(rate_rads:z())) > ACRO_YAW_RATE:get()/3 then
+      if reached_speed and not kick_started and math.abs(math.deg(ahrs_gyro:z())) > ACRO_YAW_RATE:get()/3 then
          kick_started = true
       end
       if kick_started then
@@ -1342,11 +1363,11 @@ function rudder_over(_direction, _min_speed)
 
       vehicle:set_target_throttle_rate_rpy(throttle, rate_dps:x(), rate_dps:y(), rate_dps:z())
 
-      local current_speed = ahrs:get_velocity_NED():length()
-      log_pose('POSM', ahrs:get_relative_position_NED_origin(), ahrs:get_quaternion())
-      log_pose('POST', ahrs:get_relative_position_NED_origin(), target_q)
+      log_pose('POSM', ahrs_pos, ahrs:get_quaternion())
+      log_pose('POST', ahrs_pos, target_q)
 
-      if not reached_speed and current_speed <= min_speed then
+      local current_speed_up = -ahrs:get_velocity_NED():z()
+      if not reached_speed and current_speed_up <= min_speed then
          reached_speed = true
       end
 
@@ -1355,37 +1376,75 @@ function rudder_over(_direction, _min_speed)
       end
 
       -- integrate desired attitude through yaw
-      local ahrs_gyro = ahrs:get_gyro()
       local q_rate_rads = makeVector3f(0,0,ahrs_gyro:z())
+      if pitch2_done then
+         -- stop adding yaw
+         q_rate_rads:z(0)
+      end
       local rotation = Quaternion()
       rotation:from_angular_velocity(q_rate_rads, dt)
       target_q = target_q * rotation
+      target_q:normalize()
 
       --[[
          override rudder to maximum, basing PWM on the MIN/MAX of the channel
          according to the desired direction
       --]]
       local rudd_pwm = nil
-      if direction * (RUDD_REVERSED:get()*2-1) < 0 then
+      local desired_direction = direction
+      if desired_direction == 0 then
+         local c_y = get_ahrs_dcm_c_y()
+         if c_y > 0 then
+            desired_direction = 1
+         else
+            desired_direction = -1
+         end
+      end
+      if desired_direction * (RUDD_REVERSED:get()*2-1) < 0 then
          rudd_pwm = RUDD_MAX:get()
       else
          rudd_pwm = RUDD_MIN:get()
       end
-      SRV_Channels:set_output_pwm_chan_timeout(rudder_chan, rudd_pwm, math.floor(4*1000/LOOP_RATE))
+      if not pitch2_done then
+         SRV_Channels:set_output_pwm_chan_timeout(rudder_chan, rudd_pwm, math.floor(4*1000/LOOP_RATE))
+      end
+
+      if not kick_started then
+         return false
+      end
 
       -- see if we are nose down
-      if pitch_deg > AEROM_STALL_PIT:get() then
-         -- not done
+      if kick_started and pitch_deg < AEROM_STALL_PIT:get() and not pitch2_done then
+         -- lock onto a descent path
+         pitch2_done = true
+         target_q = initial_q * qorient(0, 0, 180)
+         --[[ correct the attitude to the opposite correction that we
+            had at the start of the slowdown, so we fight the wind on
+            the way down
+         --]]
+         local error_q = initial_q:inverse() * qorient(0, 90, math.deg(initial_q:get_euler_yaw()))
+         local error_pitch = error_q:get_euler_pitch()
+         local error_yaw = error_q:get_euler_yaw()
+         target_q = target_q * qorient(0, math.deg(-2*error_pitch), math.deg(2*error_yaw))
+         target_q:normalize()
+         return false
+      end
+
+      if not pitch2_done or ahrs_pos:z() < initial_z then
+         -- haven't finished the descent
          return false
       end
 
       -- all done, update state
-      pitch_done2 = true
+      descent_done = true
       path_var.tangent = path_var.tangent:scale(-1)
       path_var.path_t = path.get_next_segment_start(t)
       path_var.accumulated_orientation_rel_ef = path_var.accumulated_orientation_rel_ef * qorient(0,0,180)
       path_var.last_time = now
       path_var.last_ang_rate_dps = ahrs_gyro:scale(math.deg(1))
+      path_var.pos = rotate_path(path, path_var.path_t, path_var.initial_ori, path_var.initial_ef_pos)
+      -- ensure that the path will move fwd on the next step
+      path_var.pos:z(path_var.pos:z()-10)
 
       -- cancel rudder override
       SRV_Channels:set_output_pwm_chan_timeout(rudder_chan, rudd_pwm, 0)
@@ -1407,7 +1466,7 @@ function stall_turn(radius, height, direction, min_speed)
          { path_vertical_arc(radius, 90),          roll_angle(0) },
          { path_straight(h),                       roll_angle(0) },
          { path_reverse(h/4),                      roll_angle(0), rate_override=rudder_over(direction,min_speed), set_orient=qorient(0,-90,0) },
-         { path_straight(h),                       roll_angle(0), pos_corr=0.5, shift_y=true },
+         { path_straight(h),                       roll_angle(0), pos_corr=0.5, shift_xy=true },
          { path_vertical_arc(-radius, 90),         roll_angle(0), set_orient=qorient(0,0,180) },
    })
 end
@@ -1745,7 +1804,7 @@ function do_path()
 
       path_var.pos = path_var.initial_ef_pos:copy()
       path_var.roll = 0.0
-      path_var.last_shift_y = nil
+      path_var.last_shift_xy = nil
       path_var.path_shift = Vector3f()
 
       -- get initial tangent
@@ -1795,20 +1854,24 @@ function do_path()
    end
 
    --[[
-      see if this path element has a shift_y attribute
+      see if this path element has a shift_xy attribute
    --]]
-   local shift_y = attrib.shift_y
-   if shift_y and not path_var.last_shift_y then
+   local shift_xy = attrib.shift_xy
+   if shift_xy and not path_var.last_shift_xy then
       --[[
-         we have entered a new sub-element with a shift_y
+         we have entered a new sub-element with a shift_xy
       --]]
       local curpos_mf = quat_body_to_earth(path_var.initial_ori, current_measured_pos_ef)
       local pathpos_mf = quat_body_to_earth(path_var.initial_ori, p1)
-      path_var.path_shift = makeVector3f(0, curpos_mf:y() - pathpos_mf:y(), 0)
-      p1 = p1 + path_var.path_shift
-      p0 = p0 + path_var.path_shift
+      local shift = curpos_mf - pathpos_mf
+      shift:z(0)
+      path_var.path_shift = path_var.path_shift + shift
+      local shift_ef = quat_earth_to_body(path_var.initial_ori, shift)
+      p1 = p1 + shift_ef
+      p0:y(p1:y())
+      p0:x(p1:x())
    end
-   path_var.last_shift_y = shift_y
+   path_var.last_shift_xy = shift_xy
 
    --[[
       get tangents to the path
