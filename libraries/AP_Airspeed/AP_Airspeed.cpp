@@ -82,10 +82,19 @@ extern const AP_HAL::HAL &hal;
 
 #define OPTIONS_DEFAULT AP_Airspeed::OptionsMask::ON_FAILURE_AHRS_WIND_MAX_DO_DISABLE | AP_Airspeed::OptionsMask::ON_FAILURE_AHRS_WIND_MAX_RECOVERY_DO_REENABLE | AP_Airspeed::OptionsMask::USE_EKF_CONSISTENCY
 
+#define ENABLE_PARAMETER !(APM_BUILD_TYPE(APM_BUILD_ArduPlane) || defined(HAL_BUILD_AP_PERIPH))
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
+#if ENABLE_PARAMETER
+    // @Param: _ENABLE
+    // @DisplayName: Airspeed Enable
+    // @Description: Enable airspeed sensor support
+    // @Values: 0:Disable, 1:Enable
+    // @User: Standard
+    AP_GROUPINFO_FLAGS("_ENABLE", 30, AP_Airspeed, _enable, 0, AP_PARAM_FLAG_ENABLE),
+#endif
     // slots 0-9 (and 63) were previously used by params before being refactored into AP_Airspeed_Params
 
     // @Param: _TUBE_ORDER
@@ -159,6 +168,8 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Path: AP_Airspeed_Params.cpp
     AP_SUBGROUPINFO(param[1], "2_", 29, AP_Airspeed, AP_Airspeed_Params),
 #endif
+
+    // index 30 is used by enable at the top of the table
 
     AP_GROUPEND
 };
@@ -294,6 +305,18 @@ void AP_Airspeed::init()
 #endif
 
     convert_per_instance();
+
+#if ENABLE_PARAMETER
+    // if either type is set then enable if not manually set
+    if (!_enable.configured() && ((param[0].type.get() != TYPE_NONE) || (param[1].type.get() != TYPE_NONE))) {
+        _enable.set_and_save(1);
+    }
+
+    // Check if enabled
+    if (!lib_enabled()) {
+        return;
+    }
+#endif
 
     if (sensor[0] != nullptr) {
         // already initialised
@@ -466,6 +489,9 @@ bool AP_Airspeed::get_temperature(uint8_t i, float &temperature)
 void AP_Airspeed::calibrate(bool in_startup)
 {
 #ifndef HAL_BUILD_AP_PERIPH
+    if (!lib_enabled()) {
+        return;
+    }
     if (hal.util->was_watchdog_reset()) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Airspeed: skipping cal");
         return;
@@ -601,6 +627,10 @@ void AP_Airspeed::read(uint8_t i)
 // read all airspeed sensors
 void AP_Airspeed::update()
 {
+    if (!lib_enabled()) {
+        return;
+    }
+
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
         read(i);
     }
@@ -646,7 +676,10 @@ void AP_Airspeed::update()
  */
 void AP_Airspeed::handle_msp(const MSP::msp_airspeed_data_message_t &pkt)
 {
-    
+    if (!lib_enabled()) {
+        return;
+    }
+
     if (pkt.instance > 1) {
         return; //supporting 2 airspeed sensors at most
     }
@@ -720,6 +753,9 @@ void AP_Airspeed::Log_Airspeed()
 bool AP_Airspeed::use(uint8_t i) const
 {
 #ifndef HAL_BUILD_AP_PERIPH
+    if (!lib_enabled()) {
+        return false;
+    }
     if (_force_disable_use) {
         return false;
     }
@@ -751,8 +787,18 @@ bool AP_Airspeed::all_healthy(void) const
     return true;
 }
 
+bool AP_Airspeed::lib_enabled() const {
+#if ENABLE_PARAMETER
+    return _enable > 0;
+#endif
+    return true;
+}
+
 // return true if airspeed is enabled
 bool AP_Airspeed::enabled(uint8_t i) const {
+    if (!lib_enabled()) {
+        return false;
+    }
     if (i < AIRSPEED_MAX_SENSORS) {
         return param[i].type.get() != TYPE_NONE;
     }
