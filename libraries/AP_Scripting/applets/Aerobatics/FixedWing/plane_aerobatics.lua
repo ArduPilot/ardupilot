@@ -1157,22 +1157,6 @@ function humpty_bump(r, h, arg3, arg4)
    })
 end
 
-function crossbox_humpty(r, h, arg3, arg4)
-   assert(h >= 2*r)
-   local rabs = math.abs(r)
-   return make_paths("crossbox_humpty", {
-            { path_vertical_arc(r, 90),          roll_angle(0) },
-            { path_straight((h-2*rabs)/3),       roll_angle(0) },
-            { path_straight((h-2*rabs)/3),       roll_angle(90),  roll_ref=90 },
-            { path_straight((h-2*rabs)/3),       roll_angle(0) },
-            { path_vertical_arc(-r, 180),        roll_angle(0) },
-            { path_straight((h-2*rabs)/3),       roll_angle(0) },
-            { path_straight((h-2*rabs)/3),       roll_angle(90), roll_ref=-90 },
-            { path_straight((h-2*rabs)/3),       roll_angle(0) },
-            { path_vertical_arc(r, 90),          roll_angle(0), roll_ref=180 },
-   })
-end
-
 function laydown_humpty(r, h, arg3, arg4)
    assert(h >= 2*r)
    local rabs = math.abs(r)
@@ -2609,7 +2593,7 @@ command_table[20]= PathFunction(procedure_turn, "Procedure Turn")
 command_table[21]= PathFunction(derry_turn, "Derry Turn")
 -- 22 was Two Point Roll - use multi point roll instead
 command_table[23]= PathFunction(half_climbing_circle, "Half Climbing Circle")
-command_table[24]= PathFunction(crossbox_humpty, "Crossbox Humpty")
+-- 24 was crossbox-humpty
 command_table[25]= PathFunction(laydown_humpty, "Laydown Humpty")
 command_table[26]= PathFunction(barrel_roll, "Barrel Roll")
 command_table[27]= PathFunction(straight_flight, "Straight Hold")
@@ -2652,7 +2636,6 @@ load_table["procedure_turn"] = procedure_turn
 load_table["derry_turn"] = derry_turn
 load_table["two_point_roll"] = two_point_roll
 load_table["half_climbing_circle"] = half_climbing_circle
-load_table["crossbox_humpty"] = crossbox_humpty
 load_table["laydown_humpty"] = laydown_humpty
 load_table["straight_align"] = straight_align
 load_table["figure_eight"] = figure_eight
