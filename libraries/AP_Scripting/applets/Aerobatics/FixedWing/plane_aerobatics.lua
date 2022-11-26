@@ -2692,6 +2692,36 @@ function interpret_attrib(v)
 end
 
 --[[
+   parse a function definition in a txt load file, adding it to the load table so
+   it can be used in schedules
+--]]
+function parse_function(line, file)
+   _, _, funcname, args = string.find(line, "^function%s*([%w_]+)(.*)$")
+   if not funcname then
+      gcs:send_text(0, string.format("Parse error: %s", line))
+      return
+   end
+   local funcstr = "function" .. args .. "\n"
+   while true do
+      local line = file:read()
+      if not line then
+         gcs:send_text(0, string.format("Error: end of file in %s", funcname))
+         break
+      end
+      funcstr = funcstr .. line .. "\n"
+      if string.sub(line,1,3) == "end" then
+         break
+      end
+   end
+   local f, errloc, err = load("return " .. funcstr, funcname, "t", _ENV)
+   if not f then
+      gcs:send_text(0,string.format("Error %s: %s", errloc, err))
+      return
+   end
+   load_table[funcname] = f()
+end
+
+--[[
    load a trick description from a text file
 --]]
 function load_trick(id)
@@ -2735,6 +2765,8 @@ function load_trick(id)
          else
             gcs:send_text(0,"Bad line: '%s'", line)
          end
+      elseif cmd == "function" then
+         parse_function(line, file)
       elseif cmd ~= nil then
          arg1 = tonumber(arg1) or 0
          arg2 = tonumber(arg2) or 0
