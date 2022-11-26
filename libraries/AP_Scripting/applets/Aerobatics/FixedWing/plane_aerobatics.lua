@@ -57,7 +57,7 @@ GRAVITY_MSS = 9.80665
 --[[
    list of attributes that can be added to a path element
 --]]
-local path_attribs = { "roll_ref", "set_orient", "rate_override", "thr_boost", "pos_corr", "message" }
+local path_attribs = { "roll_ref", "set_orient", "rate_override", "thr_boost", "pos_corr", "message", "shift_y" }
 
 --[[
    Aerobatic tricks on a switch support - allows for tricks to be initiated outside AUTO mode
@@ -1296,7 +1296,7 @@ function rudder_over(_direction, _min_speed)
    local direction = _direction
    local min_speed = _min_speed
    local reached_speed = false
-   local pitch1_done = false
+   local kick_started = false
    local pitch2_done = false
    local target_q = nil
    local last_t = nil
@@ -1316,6 +1316,7 @@ function rudder_over(_direction, _min_speed)
       local pitch_threshold = 60.0
 
       if target_q == nil then
+         -- should go full vertical
          target_q = ahrs_quat
          last_t = now
       end
@@ -1331,11 +1332,11 @@ function rudder_over(_direction, _min_speed)
       -- use user set throttle for achieving the stall
       local throttle = AEROM_STALL_THR:get()
       local pitch_deg = math.deg(ahrs:get_pitch())
-      if not pitch1_done and pitch_deg < 45 then
-         pitch1_done = true
+      if not kick_started and math.abs(math.deg(rate_rads:z())) > ACRO_YAW_RATE:get()/3 then
+         kick_started = true
       end
-      if pitch1_done then
-         -- when we are half way over cut the throttle to minimum
+      if kick_started then
+         -- when we have established some yaw rate cut the throttle to minimum
          throttle = AEROM_THR_MIN:get()
       end
 
@@ -1406,7 +1407,7 @@ function stall_turn(radius, height, direction, min_speed)
          { path_vertical_arc(radius, 90),          roll_angle(0) },
          { path_straight(h),                       roll_angle(0) },
          { path_reverse(h/4),                      roll_angle(0), rate_override=rudder_over(direction,min_speed), set_orient=qorient(0,-90,0) },
-         { path_straight(h),                       roll_angle(0), pos_corr=0.5 },
+         { path_straight(h),                       roll_angle(0), pos_corr=0.5, shift_y=true },
          { path_vertical_arc(-radius, 90),         roll_angle(0), set_orient=qorient(0,0,180) },
    })
 end
@@ -2032,6 +2033,7 @@ function rotate_path(path_f, t, orientation, offset)
    for k, v in pairs(path_attribs) do
       attrib[v] = path_f.get_attribute(t, v)
    end
+   point = point + path_var.path_shift
    local point = quat_earth_to_body(orientation, point)
 
    local scale = AEROM_PATH_SCALE:get()
@@ -2211,6 +2213,8 @@ function do_path()
 
       path_var.pos = path_var.initial_ef_pos:copy()
       path_var.roll = 0.0
+      path_var.last_shift_y = nil
+      path_var.path_shift = Vector3f()
 
       -- get initial tangent
       local p1, r1 = rotate_path(path, path_var.path_t + 0.1/(path_var.total_time*LOOP_RATE),
@@ -2257,6 +2261,22 @@ function do_path()
          return true
       end
    end
+
+   --[[
+      see if this path element has a shift_y attribute
+   --]]
+   local shift_y = attrib.shift_y
+   if shift_y and not path_var.last_shift_y then
+      --[[
+         we have entered a new sub-element with a shift_y
+      --]]
+      local curpos_mf = quat_body_to_earth(path_var.initial_ori, current_measured_pos_ef)
+      local pathpos_mf = quat_body_to_earth(path_var.initial_ori, p1)
+      path_var.path_shift = makeVector3f(0, curpos_mf:y() - pathpos_mf:y(), 0)
+      p1 = p1 + path_var.path_shift
+      p0 = p0 + path_var.path_shift
+   end
+   path_var.last_shift_y = shift_y
 
    --[[
       get tangents to the path
