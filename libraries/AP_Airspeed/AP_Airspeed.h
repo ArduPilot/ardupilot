@@ -204,6 +204,9 @@ public:
 private:
     static AP_Airspeed *_singleton;
 
+    AP_Int8 _enable;
+    bool lib_enabled() const;
+
     AP_Int8 primary_sensor;
     AP_Int8 max_speed_pcnt;
     AP_Int32 _options;    // bitmask options for airspeed
