@@ -461,7 +461,7 @@ static const luaL_Reg base_funcs[] = {
 //  {"getmetatable", luaB_getmetatable},
   {"ipairs", luaB_ipairs},
 //  {"loadfile", luaB_loadfile},
-//  {"load", luaB_load},
+  {"load", luaB_load},
 #if defined(LUA_COMPAT_LOADSTRING)
   {"loadstring", luaB_load},
 #endif
