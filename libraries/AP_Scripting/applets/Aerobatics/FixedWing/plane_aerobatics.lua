@@ -52,7 +52,7 @@ ACRO_YAW_RATE = Parameter('ACRO_YAW_RATE')
 ARSPD_FBW_MIN = Parameter("ARSPD_FBW_MIN")
 SCALING_SPEED = Parameter("SCALING_SPEED")
 
-local GRAVITY_MSS = 9.80665
+GRAVITY_MSS = 9.80665
 
 --[[
    list of attributes that can be added to a path element
@@ -2679,12 +2679,12 @@ end
    it can be used in schedules
 --]]
 function parse_function(line, file)
-   _, _, funcname, args = string.find(line, "^function%s*([%w_]+)(.*)$")
+   _, _, funcname = string.find(line, "^function%s*([%w_]+).*$")
    if not funcname then
       gcs:send_text(0, string.format("Parse error: %s", line))
       return
    end
-   local funcstr = "function" .. args .. "\n"
+   local funcstr = line .. "\n"
    while true do
       local line = file:read()
       if not line then
@@ -2696,12 +2696,17 @@ function parse_function(line, file)
          break
       end
    end
-   local f, errloc, err = load("return " .. funcstr, funcname, "t", _ENV)
+   local f, errloc, err = load(funcstr, funcname, "t", _ENV)
    if not f then
       gcs:send_text(0,string.format("Error %s: %s", errloc, err))
       return
    end
-   load_table[funcname] = f()
+   -- fun the function code, which creates the function
+   local success, err = pcall(f)
+   if not success then
+      gcs:send_text(0,string.format("Error %s: %s", funcname, err))
+   end
+   load_table[funcname] = _ENV[funcname]
 end
 
 --[[
