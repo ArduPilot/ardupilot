@@ -161,6 +161,7 @@ define AP_PARAM_MAX_EMBEDDED_PARAM 1024
 
 # save some flash
 include ../include/save_some_flash.inc
+define AP_BATTMON_SYNTHETIC_CURRENT_ENABLED 0
 
 # only include ublox GPS driver
 include ../include/minimal_GPS.inc
