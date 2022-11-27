@@ -7073,8 +7073,12 @@ Also, ignores heartbeats not from our target system'''
     def installed_script_path(self, scriptname):
         return os.path.join("scripts", os.path.basename(scriptname))
 
-    def install_script(self, source, scriptname):
-        dest = self.installed_script_path(scriptname)
+    def install_script(self, source, scriptname, install_name=None):
+        if install_name is not None:
+            dest = self.installed_script_path(install_name)
+        else:
+            dest = self.installed_script_path(scriptname)
+
         destdir = os.path.dirname(dest)
         if not os.path.exists(destdir):
             os.mkdir(destdir)
@@ -7089,9 +7093,9 @@ Also, ignores heartbeats not from our target system'''
         source = self.script_test_source_path(scriptname)
         self.install_script(source, scriptname)
 
-    def install_applet_script(self, scriptname):
+    def install_applet_script(self, scriptname, install_name=None):
         source = self.script_applet_source_path(scriptname)
-        self.install_script(source, scriptname)
+        self.install_script(source, scriptname, install_name=install_name)
 
     def remove_example_script(self, scriptname):
         dest = self.installed_script_path(os.path.basename(scriptname))
