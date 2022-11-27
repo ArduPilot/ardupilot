@@ -580,11 +580,12 @@ void AP_TECS::_update_height_demand(void)
         _hgt_dem_rate_ltd = _height;
         _hgt_dem_in_prev  = _height;
 
-        if (_flare_counter == 0) {
+        if (!_flare_initialised) {
             _flare_hgt_dem_adj = _hgt_dem;
             _flare_hgt_dem_ideal = _hgt_afe;
             _hgt_at_start_of_flare = _hgt_afe;
             _hgt_rate_at_flare_entry = _climb_rate;
+            _flare_initialised = true;
         }
 
         // adjust the flare sink rate to increase/decrease as your travel further beyond the land wp
@@ -598,8 +599,6 @@ void AP_TECS::_update_height_demand(void)
             p = 1.0f;
         }
         _hgt_rate_dem = _hgt_rate_at_flare_entry * (1.0f - p) - land_sink_rate_adj * p;
-
-        _flare_counter++;
 
         _flare_hgt_dem_ideal += _DT * _hgt_rate_dem; // the ideal height profile to follow
         _flare_hgt_dem_adj   += _DT * _hgt_rate_dem; // the demanded height profile that includes the pre-flare height tracking offset
@@ -1220,7 +1219,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     if (_landing.is_flaring()) {
         // smoothly move the min pitch to the required minimum at touchdown
         float p; // 0 at start of flare, 1 at finish
-        if (_flare_counter == 0) {
+        if (!_flare_initialised) {
             p = 0.0f;
         } else if (_hgt_at_start_of_flare > _flare_holdoff_hgt) {
             p = constrain_float((_hgt_at_start_of_flare - _hgt_afe) / _hgt_at_start_of_flare, 0.0f, 1.0f);
@@ -1243,6 +1242,9 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     } else if (_landing.is_on_approach()) {
         _PITCHminf = MAX(_PITCHminf, 0.01f * aparm.pitch_limit_min_cd);
         _pitch_min_at_flare_entry = _PITCHminf;
+        _flare_initialised = false;
+    } else {
+        _flare_initialised = false;
     }
 
     if (_landing.is_on_approach()) {
