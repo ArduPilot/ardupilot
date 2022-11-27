@@ -3961,7 +3961,8 @@ class AutoTestPlane(AutoTest):
     def AerobaticsScripting(self):
         '''Fixed Wing Aerobatics'''
         applet_script = "Aerobatics/FixedWing/plane_aerobatics.lua"
-        trick72 = "Aerobatics/FixedWing/trick72.txt"
+        airshow = "Aerobatics/FixedWing/Schedules/AirShow.txt"
+        trick72 = "trick72.txt"
 
         model = "plane-3d"
 
@@ -3973,7 +3974,7 @@ class AutoTestPlane(AutoTest):
 
         self.context_push()
         self.install_applet_script(applet_script)
-        self.install_applet_script(trick72)
+        self.install_applet_script(airshow, install_name=trick72)
         self.context_collect('STATUSTEXT')
         self.reboot_sitl()
 
