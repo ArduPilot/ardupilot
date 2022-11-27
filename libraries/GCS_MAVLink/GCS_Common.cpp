@@ -792,7 +792,11 @@ void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg, bool log_rad
         stream_slowdown_ms -= 40;
     } else if (packet.txbuf > 90 && stream_slowdown_ms != 0) {
         // the buffer has enough space, speed up a bit
-        stream_slowdown_ms -= 20;
+        if (stream_slowdown_ms > 20) {
+            stream_slowdown_ms -= 20;
+        } else {
+            stream_slowdown_ms = 0;
+        }
     }
 
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
@@ -3786,15 +3790,19 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         handle_statustext(msg);
         break;
 
+#if AP_NOTIFY_MAVLINK_LED_CONTROL_SUPPORT_ENABLED
     case MAVLINK_MSG_ID_LED_CONTROL:
         // send message to Notify
         AP_Notify::handle_led_control(msg);
         break;
+#endif
 
+#if AP_NOTIFY_MAVLINK_PLAY_TUNE_SUPPORT_ENABLED
     case MAVLINK_MSG_ID_PLAY_TUNE:
         // send message to Notify
         AP_Notify::handle_play_tune(msg);
         break;
+#endif
 
 #if HAL_RALLY_ENABLED
     case MAVLINK_MSG_ID_RALLY_POINT:

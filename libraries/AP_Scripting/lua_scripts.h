@@ -133,6 +133,9 @@ private:
 
     static void *_heap;
 
+    // helper for print and log of runtime stats
+    void update_stats(const char *name, uint32_t run_time, int total_mem, int run_mem);
+
     // must be static for use in atpanic
     static void print_error(MAV_SEVERITY severity);
     static char *error_msg_buf;

@@ -3,7 +3,7 @@
 --]]
 
 -- Check Script uses a miniumum firmware version
-local SCRIPT_AP_VERSION = 4.4
+local SCRIPT_AP_VERSION = 4.3
 local SCRIPT_NAME       = "EFI: HFE CAN"
 
 local VERSION = FWVersion:major() + (FWVersion:minor() * 0.1)
@@ -54,29 +54,37 @@ function constrain(v, vmin, vmax)
     return v
 end
 
--- Register for the CAN drivers
-local driver1 = CAN.get_device(25)
-
-if not driver1 then
-    gcs:send_text(0, string.format("EFI_HFE: Failed to load driver"))
-    return
-end
-
 local efi_backend = nil
 
 -- Setup EFI Parameters
-assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 5), 'could not add EFI_HFE param table')
+assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 6), 'could not add EFI_HFE param table')
 
 local EFI_HFE_ENABLE = bind_add_param('ENABLE',  1, 0)
 local EFI_HFE_RATE_HZ  = bind_add_param('RATE_HZ',  2, 200)    -- Script update frequency in Hz
 local EFI_HFE_ECU_IDX = bind_add_param('ECU_IDX',  3, 0)   -- ECU index on CAN bus, 0 for automatic
 local EFI_HFE_FUEL_DTY = bind_add_param('FUEL_DTY',  4, 740)   -- fuel density, g/litre
 local EFI_HFE_REL_IDX = bind_add_param('REL_IDX',  5, 0)   -- relay number for engine enable
+local EFI_HFE_CANDRV = bind_add_param('CANDRV',  6, 0)   -- CAN driver number
+
 local ICE_PWM_IGN_ON = bind_param("ICE_PWM_IGN_ON")
 
 if EFI_HFE_ENABLE:get() == 0 then
    return
 end
+
+-- Register for the CAN drivers
+local CAN_BUF_LEN = 25
+if EFI_HFE_CANDRV:get() == 1 then
+   driver1 = CAN.get_device(CAN_BUF_LEN)
+elseif EFI_HFE_CANDRV:get() == 2 then
+   driver1 = CAN.get_device2(CAN_BUF_LEN)
+end
+
+if not driver1 then
+    gcs:send_text(0, string.format("EFI_HFE: Failed to load driver"))
+    return
+end
+
 
 local now_s = get_time_sec()
 

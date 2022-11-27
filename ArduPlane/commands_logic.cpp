@@ -370,7 +370,7 @@ void Plane::do_takeoff(const AP_Mission::Mission_Command& cmd)
     auto_state.takeoff_pitch_cd        = (int16_t)cmd.p1 * 100;
     if (auto_state.takeoff_pitch_cd <= 0) {
         // if the mission doesn't specify a pitch use 4 degrees
-        auto_state.takeoff_pitch_cd = 400;
+        auto_state.takeoff_pitch_cd = 1500;
     }
     auto_state.takeoff_altitude_rel_cm = next_WP_loc.alt - home.alt;
     next_WP_loc.lat = home.lat + 10;
@@ -1160,10 +1160,10 @@ float Plane::get_wp_radius() const
  */
 void Plane::do_nav_script_time(const AP_Mission::Mission_Command& cmd)
 {
-    nav_scripting.done = false;
+    nav_scripting.enabled = true;
     nav_scripting.id++;
     nav_scripting.start_ms = AP_HAL::millis();
-    nav_scripting.current_ms = 0;
+    nav_scripting.current_ms = nav_scripting.start_ms;
 
     // start with current roll rate, pitch rate and throttle
     nav_scripting.roll_rate_dps = plane.rollController.get_pid_info().target;
@@ -1181,18 +1181,25 @@ bool Plane::verify_nav_script_time(const AP_Mission::Mission_Command& cmd)
         const uint32_t now = AP_HAL::millis();
         if (now - nav_scripting.start_ms > cmd.content.nav_script_time.timeout_s*1000U) {
             gcs().send_text(MAV_SEVERITY_INFO, "NavScriptTime timed out");
-            nav_scripting.done = true;
+            nav_scripting.enabled = false;
         }
     }
-    return nav_scripting.done;
+    return !nav_scripting.enabled;
 }
 
 // check if we are in a NAV_SCRIPT_* command
-bool Plane::nav_scripting_active(void) const
+bool Plane::nav_scripting_active(void)
 {
-    return !nav_scripting.done &&
-            control_mode == &mode_auto &&
-            mission.get_current_nav_cmd().id == MAV_CMD_NAV_SCRIPT_TIME;
+    if (AP_HAL::millis() - nav_scripting.current_ms > 200) {
+        // set_target_throttle_rate_rpy has not been called from script in last 200ms
+        nav_scripting.enabled = false;
+        nav_scripting.current_ms = 0;
+    }
+    if (control_mode == &mode_auto &&
+        mission.get_current_nav_cmd().id != MAV_CMD_NAV_SCRIPT_TIME) {
+        nav_scripting.enabled = false;
+    }
+    return nav_scripting.enabled;
 }
 
 // support for NAV_SCRIPTING mission command
@@ -1216,7 +1223,7 @@ bool Plane::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2
 void Plane::nav_script_time_done(uint16_t id)
 {
     if (id == nav_scripting.id) {
-        nav_scripting.done = true;
+        nav_scripting.enabled = false;
     }
 }
 
@@ -1226,8 +1233,9 @@ void Plane::set_target_throttle_rate_rpy(float throttle_pct, float roll_rate_dps
     nav_scripting.roll_rate_dps = constrain_float(roll_rate_dps, -g.acro_roll_rate, g.acro_roll_rate);
     nav_scripting.pitch_rate_dps = constrain_float(pitch_rate_dps, -g.acro_pitch_rate, g.acro_pitch_rate);
     nav_scripting.yaw_rate_dps = constrain_float(yaw_rate_dps, -g.acro_yaw_rate, g.acro_yaw_rate);
-    nav_scripting.throttle_pct = throttle_pct;
+    nav_scripting.throttle_pct = constrain_float(throttle_pct, aparm.throttle_min, aparm.throttle_max);
     nav_scripting.current_ms = AP_HAL::millis();
+    nav_scripting.enabled = true;
 }
 
 // enable NAV_SCRIPTING takeover in modes other than AUTO using script time mission commands

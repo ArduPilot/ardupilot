@@ -128,6 +128,8 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 1
 
 # one BARO
 BARO BMP280 I2C:0:0x76
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+define AP_BARO_BMP280_ENABLED 1
 
 # setup for OSD
 define OSD_ENABLED 1
@@ -137,11 +139,7 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 define STM32_PWM_USE_ADVANCED TRUE
 
 # save some flash
-define HAL_GENERATOR_ENABLED 0
-define AC_OAPATHPLANNER_ENABLED 0
-define PRECISION_LANDING 0
-define AP_OPTICALFLOW_ENABLED 0
-define AP_ICENGINE_ENABLED 0
+include ../include/save_some_flash.inc
 
 # only include ublox GPS driver
 include ../include/minimal_GPS.inc

@@ -1,7 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_Notify/AP_Notify.h>
 #include "AP_BattMonitor.h"
 #include "AP_BattMonitor_SMBus_SUI.h"
 

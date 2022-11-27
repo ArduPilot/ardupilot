@@ -1,22 +1,12 @@
 #pragma once
 
+#include "AP_Baro_config.h"
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <Filter/DerivativeFilter.h>
 #include <AP_MSP/msp.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
-
-#ifndef AP_SIM_BARO_ENABLED
-#define AP_SIM_BARO_ENABLED AP_SIM_ENABLED
-#endif
-
-#ifndef AP_BARO_EXTERNALAHRS_ENABLED
-#define AP_BARO_EXTERNALAHRS_ENABLED HAL_EXTERNAL_AHRS_ENABLED
-#endif
-
-#ifndef AP_BARO_MSP_ENABLED
-#define AP_BARO_MSP_ENABLED HAL_MSP_SENSORS_ENABLED
-#endif
 
 // maximum number of sensor instances
 #ifndef BARO_MAX_INSTANCES
@@ -30,10 +20,6 @@
 // timeouts for health reporting
 #define BARO_TIMEOUT_MS                 500     // timeout in ms since last successful read
 #define BARO_DATA_CHANGE_TIMEOUT_MS     2000    // timeout in ms since last successful read that involved temperature of pressure changing
-
-#ifndef HAL_BARO_WIND_COMP_ENABLED
-#define HAL_BARO_WIND_COMP_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
 
 class AP_Baro_Backend;
 

@@ -4,3 +4,19 @@ define HAL_MINIMIZE_FEATURES 1
 
 # disable emitting nice strings when activating RC channel aux functions:
 define AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED 0
+
+# low-end boards aren't expected to be used in environments where
+# things like satellite communications are required:
+define HAL_HIGH_LATENCY2_ENABLED 0
+
+# Crossfire telemetry must be explicitly enabled on minimized boards:
+define HAL_CRSF_TELEM_ENABLED 0
+
+# Gripper isn't a vital feature for smaller boards
+define AP_GRIPPER_ENABLED 0
+
+# Sprayer isn't a vital feature for smaller boards
+define HAL_SPRAYER_ENABLED 0
+
+# RunCam control isn't available on smaller boards
+define HAL_RUNCAM_ENABLED 0

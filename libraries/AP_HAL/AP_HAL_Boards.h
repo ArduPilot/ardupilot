@@ -325,3 +325,11 @@
 #ifndef HAL_ENABLE_DFU_BOOT
 #define HAL_ENABLE_DFU_BOOT 0
 #endif
+
+
+// sanity checks for the configuration.  This can't test everything as
+// the libraries can do their own definitions - but we can catch some
+// things:
+#if HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
+#error "2MB board with minimize features?!"
+#endif

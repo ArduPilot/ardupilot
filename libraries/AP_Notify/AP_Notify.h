@@ -16,7 +16,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
+#include "AP_Notify_config.h"
 
 #include "NotifyDevice.h"
 
@@ -151,8 +151,10 @@ public:
     /// update - allow updates of leds that cannot be updated during a timed interrupt
     void update(void);
 
+#if AP_NOTIFY_MAVLINK_LED_CONTROL_SUPPORT_ENABLED
     // handle a LED_CONTROL message
     static void handle_led_control(const mavlink_message_t &msg);
+#endif
 
     // handle RGB from Scripting or AP_Periph
     static void handle_rgb(uint8_t r, uint8_t g, uint8_t b, uint8_t rate_hz = 0);
@@ -160,8 +162,10 @@ public:
     // handle RGB from Scripting
     static void handle_rgb_id(uint8_t r, uint8_t g, uint8_t b, uint8_t id);
 
+#if AP_NOTIFY_MAVLINK_PLAY_TUNE_SUPPORT_ENABLED
     // handle a PLAY_TUNE message
     static void handle_play_tune(const mavlink_message_t &msg);
+#endif
 
     // play a tune string
     static void play_tune(const char *tune);

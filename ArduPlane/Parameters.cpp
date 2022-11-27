@@ -554,8 +554,8 @@ const AP_Param::Info Plane::var_info[] = {
     
     // @Param: ACRO_LOCKING
     // @DisplayName: ACRO mode attitude locking
-    // @Description: Enable attitude locking when sticks are released
-    // @Values: 0:Disabled,1:Enabled
+    // @Description: Enable attitude locking when sticks are released. If set to 2 then quaternion based locking is used if the yaw rate controller is enabled. Quaternion based locking will hold any attitude
+    // @Values: 0:Disabled,1:Enabled,2:Quaternion
     // @User: Standard
     GSCALAR(acro_locking,             "ACRO_LOCKING",     0),
 
@@ -662,7 +662,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: ALT_HOLD_FBWCM
     // @DisplayName: Minimum altitude for FBWB mode
-    // @Description: This is the minimum altitude in centimeters (above home) that FBWB and CRUISE modes will allow. If you attempt to descend below this altitude then the plane will level off. A value of zero means no limit.
+    // @Description: This is the minimum altitude in centimeters (above home) that FBWB and CRUISE modes will allow. If you attempt to descend below this altitude then the plane will level off. It will also force a climb to this altitude if below in these modes. A value of zero means no limit.
     // @Units: cm
     // @User: Standard
     GSCALAR(FBWB_min_altitude_cm,   "ALT_HOLD_FBWCM", ALT_HOLD_FBW_CM),

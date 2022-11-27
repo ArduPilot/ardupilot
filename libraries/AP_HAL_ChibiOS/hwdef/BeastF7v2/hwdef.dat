@@ -61,16 +61,12 @@ IMU BMI270 SPI:bmi270 ROTATION_ROLL_180_YAW_225
 define HAL_BARO_ALLOW_INIT_NO_BARO 1
 
 # save some flash
-define HAL_GENERATOR_ENABLED 0
-define AC_OAPATHPLANNER_ENABLED 0
-define PRECISION_LANDING 0
+include ../include/save_some_flash.inc
 define HAL_BARO_WIND_COMP_ENABLED 0
 define AP_GRIPPER_ENABLED 0
 define HAL_PARACHUTE_ENABLED 0
 define HAL_SPRAYER_ENABLED 0
 define AP_BATTMON_SMBUS_ENABLE 0
-define AP_OPTICALFLOW_ENABLED 0
-define AP_ICENGINE_ENABLED 0
 
 # only include ublox GPS driver
 include ../include/minimal_GPS.inc

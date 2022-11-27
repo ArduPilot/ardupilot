@@ -155,13 +155,13 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #endif
 #endif
 
-    // @Param: SAFETYENABLE
-    // @DisplayName: Enable use of safety arming switch
+    // @Param: SAFETY_DEFLT
+    // @DisplayName: Sets default state of the safety switch
     // @Description: This controls the default state of the safety switch at startup. When set to 1 the safety switch will start in the safe state (flashing) at boot. When set to zero the safety switch will start in the unsafe state (solid) at startup. Note that if a safety switch is fitted the user can still control the safety state after startup using the switch. The safety state can also be controlled in software using a MAVLink message.
     // @Values: 0:Disabled,1:Enabled
     // @RebootRequired: True
     // @User: Standard
-    AP_GROUPINFO("SAFETYENABLE",   3, AP_BoardConfig, state.safety_enable, BOARD_SAFETY_ENABLE_DEFAULT),
+    AP_GROUPINFO("SAFETY_DEFLT",   3, AP_BoardConfig, state.safety_enable, BOARD_SAFETY_ENABLE_DEFAULT),
 
 #if AP_FEATURE_SBUS_OUT
     // @Param: SBUS_OUT
@@ -211,8 +211,8 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #if HAL_WITH_IO_MCU
     // @Param: IO_ENABLE
     // @DisplayName: Enable IO co-processor
-    // @Description: This allows for the IO co-processor on FMUv1 and FMUv2 to be disabled
-    // @Values: 0:Disabled,1:Enabled
+    // @Description: This allows for the IO co-processor on boards with an IOMCU to be disabled. Setting to 2 will enable the IOMCU but not attempt to update firmware on startup
+    // @Values: 0:Disabled,1:Enabled,2:EnableNoFWUpdate
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("IO_ENABLE", 10, AP_BoardConfig, state.io_enable, 1),

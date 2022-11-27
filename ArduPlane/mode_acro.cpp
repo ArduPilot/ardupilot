@@ -5,6 +5,7 @@ bool ModeAcro::_enter()
 {
     plane.acro_state.locked_roll = false;
     plane.acro_state.locked_pitch = false;
+    IGNORE_RETURN(plane.ahrs.get_quaternion(plane.acro_state.q));
     return true;
 }
 

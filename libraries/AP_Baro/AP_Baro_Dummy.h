@@ -6,10 +6,6 @@
 
 #include "AP_Baro_Backend.h"
 
-#ifndef AP_BARO_DUMMY_ENABLED
-#define AP_BARO_DUMMY_ENABLED AP_BARO_BACKEND_DEFAULT_ENABLED
-#endif
-
 #if AP_BARO_DUMMY_ENABLED
 
 class AP_Baro_Dummy : public AP_Baro_Backend

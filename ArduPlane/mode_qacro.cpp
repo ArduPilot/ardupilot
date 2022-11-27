@@ -12,6 +12,8 @@ bool ModeQAcro::_enter()
     // disable yaw rate time contant to mantain old behaviour
     quadplane.disable_yaw_rate_time_constant();
 
+    IGNORE_RETURN(plane.ahrs.get_quaternion(plane.acro_state.q));
+
     return true;
 }
 

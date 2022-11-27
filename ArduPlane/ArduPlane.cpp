@@ -277,13 +277,7 @@ void Plane::update_logging25(void)
 #if ADVANCED_FAILSAFE == ENABLED
 void Plane::afs_fs_check(void)
 {
-    // perform AFS failsafe checks
-#if AP_FENCE_ENABLED
-    const bool fence_breached = fence.get_breaches() != 0;
-#else
-    const bool fence_breached = false;
-#endif
-    afs.check(fence_breached, failsafe.AFS_last_valid_rc_ms);
+    afs.check(failsafe.AFS_last_valid_rc_ms);
 }
 #endif
 
@@ -541,6 +535,13 @@ void Plane::update_alt()
 #endif
 
     update_flight_stage();
+
+#if AP_SCRIPTING_ENABLED
+    if (nav_scripting_active()) {
+        // don't call TECS while we are in a trick
+        return;
+    }
+#endif
 
     if (control_mode->does_auto_throttle() && !throttle_suppressed) {
 

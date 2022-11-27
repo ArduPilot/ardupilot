@@ -398,6 +398,10 @@ private:
         bool locked_pitch;
         float locked_roll_err;
         int32_t locked_pitch_cd;
+        Quaternion q;
+        bool roll_active_last;
+        bool pitch_active_last;
+        bool yaw_active_last;
     } acro_state;
 
     struct {
@@ -518,9 +522,7 @@ private:
         float throttle_pct;
         uint32_t start_ms;
         uint32_t current_ms;
-        bool done;
     } nav_scripting;
-    
 #endif
 
     struct {
@@ -862,6 +864,7 @@ private:
     void stabilize_yaw(float speed_scaler);
     void stabilize_training(float speed_scaler);
     void stabilize_acro(float speed_scaler);
+    void stabilize_acro_quaternion(float speed_scaler);
     void calc_nav_yaw_coordinated(float speed_scaler);
     void calc_nav_yaw_course(void);
     void calc_nav_yaw_ground(void);
@@ -1127,7 +1130,7 @@ private:
 
 #if AP_SCRIPTING_ENABLED
     // support for NAV_SCRIPT_TIME mission command
-    bool nav_scripting_active(void) const;
+    bool nav_scripting_active(void);
     bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4) override;
     void nav_script_time_done(uint16_t id) override;
 
