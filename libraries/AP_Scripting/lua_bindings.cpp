@@ -130,7 +130,7 @@ int AP_Logger_Write(lua_State *L) {
     struct AP_Logger::log_write_fmt *f;
     if (!have_units) {
         // ask for a mesage type
-        f = AP_logger->msg_fmt_for_name(name, label_cat, nullptr, nullptr, fmt_cat, true);
+        f = AP_logger->msg_fmt_for_name(name, label_cat, nullptr, nullptr, fmt_cat, true, true);
 
     } else {
         // read in units and multiplers strings
@@ -153,7 +153,7 @@ int AP_Logger_Write(lua_State *L) {
         strcat(multipliers_cat,multipliers);
 
         // ask for a mesage type
-        f = AP_logger->msg_fmt_for_name(name, label_cat, units_cat, multipliers_cat, fmt_cat, true);
+        f = AP_logger->msg_fmt_for_name(name, label_cat, units_cat, multipliers_cat, fmt_cat, true, true);
     }
 
     if (f == nullptr) {
@@ -384,13 +384,11 @@ int AP_HAL__I2CDevice_read_registers(lua_State *L) {
         return luaL_error(L, "Internal error, null pointer");
     }
 
-    const lua_Integer raw_first_reg = get_integer(L, 2, 0, UINT8_MAX);
-    const uint8_t first_reg = static_cast<uint8_t>(raw_first_reg);
+    const uint8_t first_reg = get_uint8_t(L, 2);
 
     uint8_t recv_length = 1;
     if (multi_register) {
-        const lua_Integer raw_recv_length = get_integer(L, 3, 0, UINT8_MAX);
-        recv_length = static_cast<uint8_t>(raw_recv_length);
+        recv_length = get_uint8_t(L, 3);
     }
 
     uint8_t data[recv_length];

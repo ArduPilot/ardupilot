@@ -13,9 +13,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Beacon_Nooploop.h"
+
+#if AP_BEACON_NOOPLOOP_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
-#include "AP_Beacon_Nooploop.h"
 #include <ctype.h>
 #include <stdio.h>
 
@@ -248,3 +251,5 @@ void AP_Beacon_Nooploop::parse_setting_frame0()
     }
     _anchor_pos_avail = true;
 }
+
+#endif  // AP_BEACON_NOOPLOOP_ENABLED

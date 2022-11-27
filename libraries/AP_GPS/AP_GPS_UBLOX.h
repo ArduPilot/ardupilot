@@ -97,7 +97,8 @@
 #define CONFIG_TMODE_MODE    (1<<16)
 #define CONFIG_RTK_MOVBASE   (1<<17)
 #define CONFIG_TIM_TM2       (1<<18)
-#define CONFIG_LAST          (1<<19) // this must always be the last bit
+#define CONFIG_M10           (1<<19)
+#define CONFIG_LAST          (1<<20) // this must always be the last bit
 
 #define CONFIG_REQUIRED_INITIAL (CONFIG_RATE_NAV | CONFIG_RATE_POSLLH | CONFIG_RATE_STATUS | CONFIG_RATE_VELNED)
 
@@ -281,7 +282,45 @@ private:
         MSGOUT_RTCM_3X_TYPE1127_UART2   = 0x209102d8,
         MSGOUT_RTCM_3X_TYPE1230_UART2   = 0x20910305,
         MSGOUT_UBX_NAV_RELPOSNED_UART2  = 0x2091008f,
+
+        // enable specific signals and constellations
+        CFG_SIGNAL_GPS_ENA              = 0x1031001f,
+        CFG_SIGNAL_GPS_L1CA_ENA         = 0x10310001,
+        CFG_SIGNAL_GPS_L2C_ENA          = 0x10310003,
+        CFG_SIGNAL_GPS_L5_ENA           = 0x10310004,
+        CFG_SIGNAL_SBAS_ENA             = 0x10310020,
+        CFG_SIGNAL_SBAS_L1CA_ENA        = 0x10310005,
+        CFG_SIGNAL_GAL_ENA              = 0x10310021,
+        CFG_SIGNAL_GAL_E1_ENA           = 0x10310007,
+        CFG_SIGNAL_GAL_E5A_ENA          = 0x10310009,
+        CFG_SIGNAL_GAL_E5B_ENA          = 0x1031000a,
+        CFG_SIGNAL_BDS_ENA              = 0x10310022,
+        CFG_SIGNAL_BDS_B1_ENA           = 0x1031000d,
+        CFG_SIGNAL_BDS_B1C_ENA          = 0x1031000f,
+        CFG_SIGNAL_BDS_B2_ENA           = 0x1031000e,
+        CFG_SIGNAL_BDS_B2A_ENA          = 0x10310028,
+        CFG_SIGNAL_QZSS_ENA             = 0x10310024,
+        CFG_SIGNAL_QZSS_L1CA_ENA        = 0x10310012,
+        CFG_SIGNAL_QZSS_L1S_ENA         = 0x10310014,
+        CFG_SIGNAL_QZSS_L2C_ENA         = 0x10310015,
+        CFG_SIGNAL_QZSS_L5_ENA          = 0x10310017,
+        CFG_SIGNAL_GLO_ENA              = 0x10310025,
+        CFG_SIGNAL_GLO_L1_ENA           = 0x10310018,
+        CFG_SIGNAL_GLO_L2_ENA           = 0x1031001a,
+        CFG_SIGNAL_NAVIC_ENA            = 0x10310026,
+        CFG_SIGNAL_NAVIC_L5_ENA         = 0x1031001d,
+
+        // other keys
+        CFG_NAVSPG_DYNMODEL             = 0x20110021,
+
     };
+
+    // layers for VALSET
+    #define UBX_VALSET_LAYER_RAM 0x1U
+    #define UBX_VALSET_LAYER_BBR 0x2U
+    #define UBX_VALSET_LAYER_FLASH 0x4U
+    #define UBX_VALSET_LAYER_ALL 0x7U
+
     struct PACKED ubx_cfg_valset {
         uint8_t version;
         uint8_t layers;
@@ -658,6 +697,7 @@ private:
         UBLOX_M8,
         UBLOX_F9 = 0x80, // comes from MON_VER hwVersion/swVersion strings
         UBLOX_M9 = 0x81, // comes from MON_VER hwVersion/swVersion strings
+        UBLOX_M10 = 0x82,
         UBLOX_UNKNOWN_HARDWARE_GENERATION = 0xff // not in the ublox spec used for
                                                  // flagging state in the driver
     };
@@ -685,6 +725,7 @@ private:
         STEP_VERSION,
         STEP_RTK_MOVBASE, // setup moving baseline
         STEP_TIM_TM2,
+        STEP_M10,
         STEP_LAST
     };
 
@@ -740,7 +781,7 @@ private:
     bool havePvtMsg;
 
     bool        _configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
-    bool        _configure_valset(ConfigKey key, const void *value);
+    bool        _configure_valset(ConfigKey key, const void *value, uint8_t layers=UBX_VALSET_LAYER_ALL);
     bool        _configure_valget(ConfigKey key);
     void        _configure_rate(void);
     void        _configure_sbas(bool enable);
@@ -782,7 +823,7 @@ private:
 
     // configure a set of config key/value pairs. The unconfig_bit corresponds to
     // a bit in _unconfigured_messages
-    bool _configure_config_set(const config_list *list, uint8_t count, uint32_t unconfig_bit);
+    bool _configure_config_set(const config_list *list, uint8_t count, uint32_t unconfig_bit, uint8_t layers=UBX_VALSET_LAYER_ALL);
 
     // find index in active_config list
     int8_t find_active_config_index(ConfigKey key) const;
@@ -796,6 +837,15 @@ private:
     void set_pps_desired_freq(uint8_t freq) override;
 #endif
 
+    // status of active configuration for a role
+    struct {
+        const config_list *list;
+        uint8_t count;
+        uint32_t done_mask;
+        uint32_t unconfig_bit;
+        uint8_t layers;
+    } active_config;
+
 #if GPS_MOVING_BASELINE
     // config for moving baseline base
     static const config_list config_MB_Base_uart1[];
@@ -805,17 +855,11 @@ private:
     static const config_list config_MB_Rover_uart1[];
     static const config_list config_MB_Rover_uart2[];
 
-    // status of active configuration for a role
-    struct {
-        const config_list *list;
-        uint8_t count;
-        uint32_t done_mask;
-        uint32_t unconfig_bit;
-    } active_config;
-
     // RTCM3 parser for when in moving baseline base mode
     RTCM3_Parser *rtcm3_parser;
 #endif // GPS_MOVING_BASELINE
+
+    static const config_list config_M10[];
 };
 
 #endif

@@ -357,7 +357,7 @@ void GCS_MAVLINK_Plane::send_pid_tuning()
         pid_info = &plane.steerController.get_pid_info();
         send_pid_info(pid_info, PID_TUNING_STEER, pid_info->actual);
     }
-    if ((g.gcs_pid_mask & TUNING_BITS_LAND) && (plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND)) {
+    if ((g.gcs_pid_mask & TUNING_BITS_LAND) && (plane.flight_stage == AP_FixedWing::FlightStage::LAND)) {
         AP_AHRS &ahrs = AP::ahrs();
         const Vector3f &gyro = ahrs.get_gyro();
         send_pid_info(plane.landing.get_pid_info(), PID_TUNING_LANDING, degrees(gyro.z));
@@ -1022,7 +1022,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
     case MAV_CMD_DO_GO_AROUND:
         {
             uint16_t mission_id = plane.mission.get_current_nav_cmd().id;
-            bool is_in_landing = (plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) ||
+            bool is_in_landing = (plane.flight_stage == AP_FixedWing::FlightStage::LAND) ||
                                  (mission_id == MAV_CMD_NAV_LAND) ||
                                  (mission_id == MAV_CMD_NAV_VTOL_LAND);
             if (is_in_landing) {
@@ -1175,35 +1175,20 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
     }
 }
 
+// this is called on receipt of a MANUAL_CONTROL packet and is
+// expected to call manual_override to override RC input on desired
+// axes.
+void GCS_MAVLINK_Plane::handle_manual_control_axes(const mavlink_manual_control_t &packet, const uint32_t tnow)
+{
+    manual_override(plane.channel_roll, packet.y, 1000, 2000, tnow);
+    manual_override(plane.channel_pitch, packet.x, 1000, 2000, tnow, true);
+    manual_override(plane.channel_throttle, packet.z, 0, 1000, tnow);
+    manual_override(plane.channel_rudder, packet.r, 1000, 2000, tnow);
+}
+
 void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
-
-    case MAVLINK_MSG_ID_MANUAL_CONTROL:
-    {
-        if (msg.sysid != plane.g.sysid_my_gcs) {
-            break; // only accept control from our gcs
-        }
-
-        mavlink_manual_control_t packet;
-        mavlink_msg_manual_control_decode(&msg, &packet);
-
-        if (packet.target != plane.g.sysid_this_mav) {
-            break; // only accept messages aimed at us
-        }
-
-        uint32_t tnow = AP_HAL::millis();
-
-        manual_override(plane.channel_roll, packet.y, 1000, 2000, tnow);
-        manual_override(plane.channel_pitch, packet.x, 1000, 2000, tnow, true);
-        manual_override(plane.channel_throttle, packet.z, 0, 1000, tnow);
-        manual_override(plane.channel_rudder, packet.r, 1000, 2000, tnow);
-
-        // a manual control message is considered to be a 'heartbeat'
-        // from the ground station for failsafe purposes
-        gcs().sysid_myggcs_seen(tnow);
-        break;
-    }
 
     case MAVLINK_MSG_ID_RADIO:
     case MAVLINK_MSG_ID_RADIO_STATUS:

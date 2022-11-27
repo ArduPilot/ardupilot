@@ -2,12 +2,15 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/I2CDevice.h>
 #endif
-#include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_CustomRotations/AP_CustomRotations.h>
+#include <GCS_MAVLink/GCS.h>
+
+#include "AP_Compass_config.h"
 
 #include "AP_Compass_SITL.h"
 #include "AP_Compass_AK8963.h"
@@ -21,17 +24,17 @@
 #include "AP_Compass_LIS3MDL.h"
 #include "AP_Compass_AK09916.h"
 #include "AP_Compass_QMC5883L.h"
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if AP_COMPASS_UAVCAN_ENABLED
 #include "AP_Compass_UAVCAN.h"
 #endif
 #include "AP_Compass_MMC3416.h"
 #include "AP_Compass_MMC5xx3.h"
 #include "AP_Compass_MAG3110.h"
 #include "AP_Compass_RM3100.h"
-#if HAL_MSP_COMPASS_ENABLED
+#if AP_COMPASS_MSP_ENABLED
 #include "AP_Compass_MSP.h"
 #endif
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_COMPASS_EXTERNALAHRS_ENABLED
 #include "AP_Compass_ExternalAHRS.h"
 #endif
 #include "AP_Compass.h"
@@ -888,7 +891,7 @@ void Compass::mag_state::copy_from(const Compass::mag_state& state)
     external.set_and_save_ifchanged(state.external);
     orientation.set_and_save_ifchanged(state.orientation);
     offset.set_and_save_ifchanged(state.offset);
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_COMPASS_DIAGONALS_ENABLED
     diagonals.set_and_save_ifchanged(state.diagonals);
     offdiagonals.set_and_save_ifchanged(state.offdiagonals);
 #endif
@@ -1264,7 +1267,7 @@ void Compass::_probe_external_i2c_compasses(void)
  */
 void Compass::_detect_backends(void)
 {
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_COMPASS_EXTERNALAHRS_ENABLED
     const int8_t serial_port = AP::externalAHRS().get_port();
     if (serial_port >= 0) {
         ADD_BACKEND(DRIVER_SERIAL, new AP_Compass_ExternalAHRS(serial_port));
@@ -1278,7 +1281,7 @@ void Compass::_detect_backends(void)
     }
 #endif
 
-#if AP_SIM_COMPASS_ENABLED
+#if AP_COMPASS_SITL_ENABLED
     ADD_BACKEND(DRIVER_SITL, new AP_Compass_SITL());
 #endif
 
@@ -1288,7 +1291,7 @@ void Compass::_detect_backends(void)
     CHECK_UNREG_LIMIT_RETURN;
 #endif
 
-#if HAL_MSP_COMPASS_ENABLED
+#if AP_COMPASS_MSP_ENABLED
     for (uint8_t i=0; i<8; i++) {
         if (msp_instance_mask & (1U<<i)) {
             ADD_BACKEND(DRIVER_MSP, new AP_Compass_MSP(i));
@@ -1407,7 +1410,7 @@ void Compass::_detect_backends(void)
 #endif
 
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if AP_COMPASS_UAVCAN_ENABLED
     if (_driver_enabled(DRIVER_UAVCAN)) {
         for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
             AP_Compass_Backend* _uavcan_backend = AP_Compass_UAVCAN::probe(i);
@@ -1475,9 +1478,9 @@ void Compass::_detect_backends(void)
                 }
             }
         }
-#endif
+#endif  // #if COMPASS_MAX_UNREG_DEV > 0
     }
-#endif
+#endif  // AP_COMPASS_UAVCAN_ENABLED
 
     if (_backend_count == 0 ||
         _compass_count == 0) {
@@ -1566,7 +1569,7 @@ void Compass::_reset_compass_id()
 void
 Compass::_detect_runtime(void)
 {
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if AP_COMPASS_UAVCAN_ENABLED
     if (!available()) {
         return;
     }
@@ -1590,7 +1593,7 @@ Compass::_detect_runtime(void)
             CHECK_UNREG_LIMIT_RETURN;
         }
     }
-#endif
+#endif  // AP_COMPASS_UAVCAN_ENABLED
 }
 
 bool
@@ -2053,7 +2056,7 @@ bool Compass::have_scale_factor(uint8_t i) const
     return true;
 }
 
-#if HAL_MSP_COMPASS_ENABLED
+#if AP_COMPASS_MSP_ENABLED
 void Compass::handle_msp(const MSP::msp_compass_data_message_t &pkt)
 {
     if (!_driver_enabled(DRIVER_MSP)) {
@@ -2069,9 +2072,9 @@ void Compass::handle_msp(const MSP::msp_compass_data_message_t &pkt)
         }
     }
 }
-#endif // HAL_MSP_COMPASS_ENABLED
+#endif // AP_COMPASS_MSP_ENABLED
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_COMPASS_EXTERNALAHRS_ENABLED
 void Compass::handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt)
 {
     if (!_driver_enabled(DRIVER_SERIAL)) {
@@ -2081,7 +2084,7 @@ void Compass::handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt)
         _backends[i]->handle_external(pkt);
     }
 }
-#endif // HAL_EXTERNAL_AHRS_ENABLED
+#endif // AP_COMPASS_EXTERNALAHRS_ENABLED
 
 // force save of current calibration as valid
 void Compass::force_save_calibration(void)

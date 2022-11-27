@@ -50,6 +50,8 @@
 #include <AC_PID/AC_PID_2D.h>
 #include <AC_PID/AC_PID_Basic.h>
 #include <AC_PID/AC_PID.h>
+#include <AP_Vehicle/AP_MultiCopter.h>
+
 #include <Filter/NotchFilter.h>
 
 // Configuration
@@ -97,7 +99,7 @@ public:
 private:
 
     // key aircraft parameters passed to multiple libraries
-    AP_Vehicle::MultiCopter aparm;
+    AP_MultiCopter aparm;
 
     // Global parameters are all contained within the 'g' class.
     Parameters g;

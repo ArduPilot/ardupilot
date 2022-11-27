@@ -16,9 +16,9 @@
  *   AP_Airspeed.cpp - airspeed (pitot) driver
  */
 
-#include <AP_Vehicle/AP_Vehicle_Type.h>
-
 #include "AP_Airspeed.h"
+
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 // Dummy the AP_Airspeed class to allow building Airspeed only for plane, rover, sub, and copter & heli 2MB boards
 // This could be removed once the build system allows for APM_BUILD_TYPE in header files
@@ -37,7 +37,6 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Logger/AP_Logger.h>
 #include <utility>
-#include <AP_Vehicle/AP_Vehicle.h>
 #include "AP_Airspeed_MS4525.h"
 #include "AP_Airspeed_MS5525.h"
 #include "AP_Airspeed_SDP3X.h"

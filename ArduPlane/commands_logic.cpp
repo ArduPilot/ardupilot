@@ -246,7 +246,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
             return quadplane.verify_vtol_land();            
         }
 #endif
-        if (flight_stage == AP_Vehicle::FixedWing::FlightStage::FLIGHT_ABORT_LAND) {
+        if (flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
             return landing.verify_abort_landing(prev_WP_loc, next_WP_loc, current_loc, auto_state.takeoff_altitude_rel_cm, throttle_suppressed);
 
         } else {
@@ -413,9 +413,9 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
 
     landing.do_land(cmd, relative_altitude);
 
-    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
+    if (flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
         // if we were in an abort we need to explicitly move out of the abort state, as it's sticky
-        set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_LAND);
+        set_flight_stage(AP_FixedWing::FlightStage::LAND);
     }
 
 #if AP_FENCE_ENABLED
@@ -1190,10 +1190,11 @@ bool Plane::verify_nav_script_time(const AP_Mission::Mission_Command& cmd)
 // check if we are in a NAV_SCRIPT_* command
 bool Plane::nav_scripting_active(void)
 {
-    if (AP_HAL::millis() - nav_scripting.current_ms > 200) {
-        // set_target_throttle_rate_rpy has not been called from script in last 200ms
+    if (nav_scripting.enabled && AP_HAL::millis() - nav_scripting.current_ms > 1000) {
+        // set_target_throttle_rate_rpy has not been called from script in last 1000ms
         nav_scripting.enabled = false;
         nav_scripting.current_ms = 0;
+        gcs().send_text(MAV_SEVERITY_INFO, "NavScript time out");
     }
     if (control_mode == &mode_auto &&
         mission.get_current_nav_cmd().id != MAV_CMD_NAV_SCRIPT_TIME) {
@@ -1235,7 +1236,6 @@ void Plane::set_target_throttle_rate_rpy(float throttle_pct, float roll_rate_dps
     nav_scripting.yaw_rate_dps = constrain_float(yaw_rate_dps, -g.acro_yaw_rate, g.acro_yaw_rate);
     nav_scripting.throttle_pct = constrain_float(throttle_pct, aparm.throttle_min, aparm.throttle_max);
     nav_scripting.current_ms = AP_HAL::millis();
-    nav_scripting.enabled = true;
 }
 
 // enable NAV_SCRIPTING takeover in modes other than AUTO using script time mission commands
@@ -1252,6 +1252,7 @@ bool Plane::nav_scripting_enable(uint8_t mode)
        case Mode::Number::CRUISE:
        case Mode::Number::LOITER:
            nav_scripting.enabled = true;
+           nav_scripting.current_ms = AP_HAL::millis();
            break;
        default:
            nav_scripting.enabled = false;

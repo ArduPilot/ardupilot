@@ -9,19 +9,19 @@
 
 #pragma once
 
-#include <AP_AHRS/AP_AHRS.h>
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef HAL_SOARING_ENABLED
+#define HAL_SOARING_ENABLED 1
+#endif
+
+#if HAL_SOARING_ENABLED
+
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include "ExtendedKalmanFilter.h"
 #include "Variometer.h"
-#include <AP_TECS/AP_TECS.h>
 #include "SpeedToFly.h"
-
-#ifndef HAL_SOARING_ENABLED
- #define HAL_SOARING_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
-#if HAL_SOARING_ENABLED
 
 #define INITIAL_THERMAL_RADIUS 80.0
 #define INITIAL_STRENGTH_COVARIANCE 0.0049
@@ -32,11 +32,11 @@
 class SoaringController {
     Variometer::PolarParams _polarParams;
     ExtendedKalmanFilter _ekf{};
-    AP_TECS &_tecs;
+    class AP_TECS &_tecs;
     Variometer _vario;
     SpeedToFly _speedToFly;
 
-    const AP_Vehicle::FixedWing &_aparm;
+    const AP_FixedWing &_aparm;
 
     // store aircraft location at last update
     Vector3f _prev_update_location;
@@ -81,7 +81,7 @@ protected:
     AP_Float soar_thermal_flap;
 
 public:
-    SoaringController(AP_TECS &tecs, const AP_Vehicle::FixedWing &parms);
+    SoaringController(class AP_TECS &tecs, const AP_FixedWing &parms);
 
     enum class LoiterStatus {
         DISABLED,

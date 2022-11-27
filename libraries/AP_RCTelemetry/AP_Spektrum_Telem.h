@@ -22,7 +22,6 @@
 
 #if HAL_SPEKTRUM_TELEM_ENABLED
 
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include "AP_RCTelemetry.h"
 

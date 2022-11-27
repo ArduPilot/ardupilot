@@ -1,0 +1,102 @@
+# example airshow in a loadable file
+# to use the airshow put the file on your microSD in the root
+# directory with name trickNN.txt where NN is the command ID you want
+# to assign. The trick can then be used in auto missions or in
+# TRIKn_ID commands for tricks on a switch
+
+# you can use name: to give your sequence a name
+name: SuperAirShow
+
+# you can add new path functions, following the same syntax
+# as in the main plane_aerobatics.lua
+function triangular_loop(radius, height, arg3, arg4)   -- triangle
+   local h1 = radius * math.sin(math.rad(45))
+   local h2 = (2 * radius) - (radius * math.cos(math.rad(45)))
+   local h3 = height - (2 * radius)
+   local side = h3 / math.cos(math.rad(45))
+   --local base = (h3 + (2 * (radius - radius * math.cos(math.rad(45))))) - (2 * radius)   
+   local base = (2 * (h3 + radius)) - 2 * radius
+   return make_paths("triangular_loop", {
+            { path_straight(base * 1/5),                   roll_angle(180) },
+            { path_straight(base * 2/5),                   roll_angle(0) },         
+            { path_vertical_arc(radius, 135) ,             roll_angle(0) },
+            { path_straight(side*2/9),                     roll_angle(0) },
+            { path_straight(side*2/9),                     roll_angle(90) },
+            { path_straight(side*1/9),                     roll_angle(0) },
+            { path_straight(side*2/9),                     roll_angle(90) },
+            { path_straight(side*2/9),                     roll_angle(0) },
+            { path_vertical_arc(radius, 90),               roll_angle(0) },
+            { path_straight(side*2/9),                     roll_angle(0) },
+            { path_straight(side*2/9),                     roll_angle(90) },
+            { path_straight(side*1/9),                     roll_angle(0) },
+            { path_straight(side*2/9),                     roll_angle(90) },
+            { path_straight(side*2/9),                     roll_angle(0) },
+            { path_vertical_arc(radius, 135),              roll_angle(0) },
+            { path_straight(base * 2/5),                   roll_angle(0) }, 
+            { path_straight(base * 1/5),                   roll_angle(180) },
+            { path_straight(base * 2/5),                   roll_angle(0) },  
+      })
+end
+
+# a cross-box tophat, used to get us back on track after the barrell roll
+function crossbox_tophat(radius, height, width, arg4) -- top hat
+   local w = width - 2*radius
+   return make_paths('crossbox_tophat', {
+            { path_vertical_arc(radius, 90),      roll_angle(0) },
+            { path_straight((height-2*radius)),   roll_sequence({{1,0}, {1, 90}, {1, 0}}), set_orient=qorient(0,90,90) },
+            { path_vertical_arc(-radius, 90),     roll_angle(0), set_orient=qorient(180,0,90) },
+            { path_straight(w),                   roll_angle(0) },
+            { path_vertical_arc(radius, 90),      roll_angle(0), set_orient=qorient(0,-90,90) },
+            { path_straight((height-2*radius)),   roll_sequence({{1,0}, {1, -90}, {1, 0}}), set_orient=qorient(0,-90,180) },
+            { path_vertical_arc(radius, 90),      roll_angle(0), set_orient=qorient(0,0,180) },
+      })
+end
+
+# you can add messages to display on the GCS/OSD while flying
+message: Loop
+loop 25 0 1
+
+align_box 1
+message: HalfReverseCubanEight
+half_reverse_cuban_eight   25
+
+message: ScaleFigureEight
+align_center
+scale_figure_eight -40 -45
+
+message: Immelmann
+align_box 1
+immelmann_turn 30
+
+message: StraightAlign
+message: Roll
+align_center
+straight_roll 80 2
+
+message: Split-S
+align_box 1
+split_s  30
+
+message: RollingCircle
+align_center
+rolling_circle -50 2
+
+message: HumptyBump
+align_box 1
+humpty_bump 20 60
+
+message: HalfCubanEight
+align_box 1
+half_cuban_eight 25
+
+align_center
+message: BarrelRoll
+barrel_roll 30 100 2
+
+align_box 1
+message: CrossBoxTopHat
+crossbox_tophat 20 60 60
+
+align_center
+message: TriangularLoop
+triangular_loop 20 60

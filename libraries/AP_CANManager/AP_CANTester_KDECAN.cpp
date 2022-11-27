@@ -24,7 +24,8 @@
 #include "AP_CANManager.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/utility/sparse-endian.h>
-#include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <GCS_MAVLink/GCS.h>
 
 #define debug_can(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "TestKDECAN",  fmt, ##args); } while (0)
 extern const AP_HAL::HAL& hal;

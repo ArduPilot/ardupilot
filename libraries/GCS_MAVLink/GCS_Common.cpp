@@ -47,6 +47,7 @@
 #include <AP_Scripting/AP_Scripting.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Winch/AP_Winch.h>
+#include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include <AP_OSD/AP_OSD.h>
 #include <AP_RCTelemetry/AP_CRSF_Telem.h>
 #include <AP_RPM/AP_RPM.h>
@@ -2059,10 +2060,12 @@ void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, u
         logger->Write_Message(first_piece_of_text);
     }
 
+#if AP_FRSKY_TELEM_ENABLED
     frsky = AP::frsky_telem();
     if (frsky != nullptr) {
         frsky->queue_message(severity, first_piece_of_text);
     }
+#endif
 #if HAL_SPEKTRUM_TELEM_ENABLED
     AP_Spektrum_Telem* spektrum = AP::spektrum_telem();
     if (spektrum != nullptr) {
@@ -2315,6 +2318,7 @@ void GCS::setup_uarts()
         create_gcs_mavlink_backend(chan_parameters[i], *uart);
     }
 
+#if AP_FRSKY_TELEM_ENABLED
     if (frsky == nullptr) {
         frsky = new AP_Frsky_Telem();
         if (frsky == nullptr || !frsky->init()) {
@@ -2322,6 +2326,8 @@ void GCS::setup_uarts()
             frsky = nullptr;
         }
     }
+#endif
+
 #if AP_LTM_TELEM_ENABLED
     ltm_telemetry.init();
 #endif
@@ -3796,6 +3802,10 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         AP_Notify::handle_led_control(msg);
         break;
 #endif
+
+    case MAVLINK_MSG_ID_MANUAL_CONTROL:
+        handle_manual_control(msg);
+        break;
 
 #if AP_NOTIFY_MAVLINK_PLAY_TUNE_SUPPORT_ENABLED
     case MAVLINK_MSG_ID_PLAY_TUNE:
@@ -6292,6 +6302,29 @@ void GCS_MAVLINK::manual_override(RC_Channel *c, int16_t value_in, const uint16_
     }
     c->set_override(override_value, tnow);
 }
+
+void GCS_MAVLINK::handle_manual_control(const mavlink_message_t &msg)
+{
+    if (msg.sysid != sysid_my_gcs()) {
+        return; // only accept control from our gcs
+    }
+
+    mavlink_manual_control_t packet;
+    mavlink_msg_manual_control_decode(&msg, &packet);
+
+    if (packet.target != gcs().sysid_this_mav()) {
+        return; // only accept control aimed at us
+    }
+
+    uint32_t tnow = AP_HAL::millis();
+
+    handle_manual_control_axes(packet, tnow);
+
+    // a manual control message is considered to be a 'heartbeat'
+    // from the ground station for failsafe purposes
+    gcs().sysid_myggcs_seen(tnow);
+}
+
 
 uint8_t GCS_MAVLINK::receiver_rssi() const
 {

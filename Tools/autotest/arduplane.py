@@ -712,7 +712,7 @@ class AutoTestPlane(AutoTest):
         ]
 
         for (current_waypoint, want_airspeed) in checks:
-            self.wait_current_waypoint(current_waypoint, timeout=120)
+            self.wait_current_waypoint(current_waypoint, timeout=150)
             self.wait_airspeed(want_airspeed-1, want_airspeed+1, minimum_duration=5, timeout=120)
 
         self.fly_home_land_and_disarm()
@@ -3958,6 +3958,125 @@ class AutoTestPlane(AutoTest):
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
+    def AerobaticsScripting(self):
+        '''Fixed Wing Aerobatics'''
+        applet_script = "Aerobatics/FixedWing/plane_aerobatics.lua"
+        trick72 = "Aerobatics/FixedWing/trick72.txt"
+
+        model = "plane-3d"
+
+        self.customise_SITL_commandline(
+            [],
+            model=model,
+            defaults_filepath="",
+            wipe=True)
+
+        self.context_push()
+        self.install_applet_script(applet_script)
+        self.install_applet_script(trick72)
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+
+        self.set_parameter("TRIK_ENABLE", 1)
+        self.set_rc(7, 1000) # disable tricks
+
+        self.scripting_restart()
+        self.wait_text("Enabled 3 aerobatic tricks", check_context=True)
+        self.set_parameters({
+            "TRIK1_ID": 72,
+            "RC7_OPTION" : 300, # activation switch
+            "RC9_OPTION" : 301, # selection switch
+            "SIM_SPEEDUP": 5, # need to give some cycles to lua
+        })
+
+        self.wait_ready_to_arm()
+        self.change_mode("TAKEOFF")
+        self.arm_vehicle()
+        self.wait_altitude(30, 40, timeout=30, relative=True)
+        self.change_mode("CRUISE")
+
+        self.set_rc(9, 1000) # select first trick
+        self.delay_sim_time(1)
+        self.set_rc(7, 1500) # show selected trick
+
+        self.wait_text("Trick 1 selected (SuperAirShow)", check_context=True)
+        self.set_rc(7, 2000) # activate trick
+        self.wait_text("Trick 1 started (SuperAirShow)", check_context=True)
+
+        highest_error = 0
+        while True:
+            m = self.mav.recv_match(type='NAMED_VALUE_FLOAT', blocking=True, timeout=2)
+            if not m:
+                break
+            if m.name != 'PERR':
+                continue
+            highest_error = max(highest_error, m.value)
+            if highest_error > 15:
+                raise NotAchievedException("path error %.1f" % highest_error)
+
+        if highest_error == 0:
+            raise NotAchievedException("path error not reported")
+        self.progress("Finished trick, max error=%.1fm" % highest_error)
+        self.disarm_vehicle(force=True)
+
+        self.remove_example_script(applet_script)
+        self.remove_example_script(trick72)
+        messages = self.context_collection('STATUSTEXT')
+        self.context_pop()
+        self.reboot_sitl()
+
+        # check all messages to see if we got all tricks
+        tricks = ["Loop", "HalfReverseCubanEight", "ScaleFigureEight", "Immelmann",
+                  "Split-S", "RollingCircle", "HumptyBump", "HalfCubanEight",
+                  "BarrelRoll", "CrossBoxTopHat", "TriangularLoop",
+                  "Finishing SuperAirShow!"]
+        texts = [m.text for m in messages]
+        for t in tricks:
+            if t in texts:
+                self.progress("Completed trick %s" % t)
+            else:
+                raise NotAchievedException("Missing trick %s" % t)
+
+    def MANUAL_CONTROL(self):
+        '''test MANUAL_CONTROL mavlink message'''
+        self.set_parameter("SYSID_MYGCS", self.mav.source_system)
+
+        self.progress("Takeoff")
+        self.takeoff(alt=50)
+
+        self.change_mode('FBWA')
+
+        tstart = self.get_sim_time_cached()
+        roll_input = -500
+        want_roll_degrees = -12
+        while True:
+            if self.get_sim_time_cached() - tstart > 10:
+                raise AutoTestTimeoutException("Did not reach roll")
+            self.progress("Sending roll-left")
+            self.mav.mav.manual_control_send(
+                1, # target system
+                32767, # x (pitch)
+                roll_input, # y (roll)
+                32767, # z (thrust)
+                32767, # r (yaw)
+                0) # button mask
+            m = self.mav.recv_match(type='ATTITUDE', blocking=True, timeout=1)
+            print("m=%s" % str(m))
+            if m is None:
+                continue
+            p = math.degrees(m.roll)
+            self.progress("roll=%f want<=%f" % (p, want_roll_degrees))
+            if p <= want_roll_degrees:
+                break
+        self.mav.mav.manual_control_send(
+            1, # target system
+            32767, # x (pitch)
+            32767, # y (roll)
+            32767, # z (thrust)
+            32767, # r (yaw)
+            0) # button mask
+        self.fly_home_land_and_disarm()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -4035,6 +4154,8 @@ class AutoTestPlane(AutoTest):
             self.HIGH_LATENCY2,
             self.MidAirDisarmDisallowed,
             self.EmbeddedParamParser,
+            self.AerobaticsScripting,
+            self.MANUAL_CONTROL,
         ])
         return ret
 

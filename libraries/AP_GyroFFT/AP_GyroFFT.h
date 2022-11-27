@@ -18,10 +18,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#ifndef HAL_GYROFFT_ENABLED
-#define HAL_GYROFFT_ENABLED HAL_WITH_DSP
-#endif
-
 #if HAL_GYROFFT_ENABLED
 
 #include <AP_Common/AP_Common.h>

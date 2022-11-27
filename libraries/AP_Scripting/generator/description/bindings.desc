@@ -66,8 +66,8 @@ singleton AP_Arming method is_armed boolean
 singleton AP_Arming method pre_arm_checks boolean false'literal
 singleton AP_Arming method arm boolean AP_Arming::Method::SCRIPTING'literal
 singleton AP_Arming method get_aux_auth_id boolean uint8_t'Null
-singleton AP_Arming method set_aux_auth_passed void uint8_t 0 UINT8_MAX
-singleton AP_Arming method set_aux_auth_failed void uint8_t 0 UINT8_MAX string
+singleton AP_Arming method set_aux_auth_passed void uint8_t'skip_check
+singleton AP_Arming method set_aux_auth_failed void uint8_t'skip_check string
 
 include AP_BattMonitor/AP_BattMonitor.h
 
@@ -165,8 +165,8 @@ userdata Quaternion method from_angular_velocity void Vector3f float'skip_check
 include AP_Notify/AP_Notify.h
 singleton AP_Notify rename notify
 singleton AP_Notify method play_tune void string
-singleton AP_Notify method handle_rgb void uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
-singleton AP_Notify method handle_rgb_id void uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
+singleton AP_Notify method handle_rgb void uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check
+singleton AP_Notify method handle_rgb_id void uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check
 
 include AP_Proximity/AP_Proximity.h
 
@@ -176,7 +176,7 @@ singleton AP_Proximity method get_status uint8_t
 singleton AP_Proximity method num_sensors uint8_t
 singleton AP_Proximity method get_object_count uint8_t
 singleton AP_Proximity method get_closest_object boolean float'Null float'Null
-singleton AP_Proximity method get_object_angle_and_distance boolean uint8_t 0 UINT8_MAX float'Null float'Null
+singleton AP_Proximity method get_object_angle_and_distance boolean uint8_t'skip_check float'Null float'Null
 
 include AP_RangeFinder/AP_RangeFinder.h
 
@@ -228,7 +228,7 @@ singleton AP_ONVIF method get_pan_tilt_limit_max Vector2f
 include AP_Vehicle/AP_Vehicle.h
 singleton AP_Vehicle rename vehicle
 singleton AP_Vehicle scheduler-semaphore
-singleton AP_Vehicle method set_mode boolean uint8_t 0 UINT8_MAX ModeReason::SCRIPTING'literal
+singleton AP_Vehicle method set_mode boolean uint8_t'skip_check ModeReason::SCRIPTING'literal
 singleton AP_Vehicle method get_mode uint8_t
 singleton AP_Vehicle method get_control_mode_reason uint8_t
 singleton AP_Vehicle method get_likely_flying boolean
@@ -252,11 +252,11 @@ singleton AP_Vehicle method get_wp_bearing_deg boolean float'Null
 singleton AP_Vehicle method get_wp_crosstrack_error_m boolean float'Null
 singleton AP_Vehicle method get_pan_tilt_norm boolean float'Null float'Null
 singleton AP_Vehicle method nav_script_time boolean uint16_t'Null uint8_t'Null float'Null float'Null int16_t'Null int16_t'Null
-singleton AP_Vehicle method nav_script_time_done void uint16_t 0 UINT16_MAX
+singleton AP_Vehicle method nav_script_time_done void uint16_t'skip_check
 singleton AP_Vehicle method set_target_throttle_rate_rpy void float -100 100 float'skip_check float'skip_check float'skip_check
 singleton AP_Vehicle method set_desired_turn_rate_and_speed boolean float'skip_check float'skip_check
 singleton AP_Vehicle method set_desired_speed boolean float'skip_check
-singleton AP_Vehicle method nav_scripting_enable boolean uint8_t 0 UINT8_MAX
+singleton AP_Vehicle method nav_scripting_enable boolean uint8_t'skip_check
 singleton AP_Vehicle method set_velocity_match boolean Vector2f
 singleton AP_Vehicle method has_ekf_failsafed boolean
 
@@ -264,21 +264,21 @@ include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED rename serialLED
 singleton AP_SerialLED method set_num_neopixel boolean uint8_t 1 16 uint8_t 0 AP_SERIALLED_MAX_LEDS
 singleton AP_SerialLED method set_num_profiled boolean uint8_t 1 16 uint8_t 0 AP_SERIALLED_MAX_LEDS
-singleton AP_SerialLED method set_RGB void uint8_t 1 16 int8_t -1 INT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
+singleton AP_SerialLED method set_RGB void uint8_t 1 16 int8_t -1 INT8_MAX uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check
 singleton AP_SerialLED method send void uint8_t 1 16
 
 include SRV_Channel/SRV_Channel.h
 singleton SRV_Channels rename SRV_Channels
 singleton SRV_Channels method find_channel boolean SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint8_t'Null
-singleton SRV_Channels method set_output_pwm void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t 0 UINT16_MAX
-singleton SRV_Channels method set_output_pwm_chan void uint8_t 0 NUM_SERVO_CHANNELS-1 uint16_t 0 UINT16_MAX
-singleton SRV_Channels method set_output_pwm_chan_timeout void uint8_t 0 NUM_SERVO_CHANNELS-1 uint16_t 0 UINT16_MAX uint16_t 0 UINT16_MAX
-singleton SRV_Channels method set_output_scaled void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 float -FLT_MAX FLT_MAX
+singleton SRV_Channels method set_output_pwm void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'skip_check
+singleton SRV_Channels method set_output_pwm_chan void uint8_t 0 NUM_SERVO_CHANNELS-1 uint16_t'skip_check
+singleton SRV_Channels method set_output_pwm_chan_timeout void uint8_t 0 NUM_SERVO_CHANNELS-1 uint16_t'skip_check uint16_t'skip_check
+singleton SRV_Channels method set_output_scaled void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 float'skip_check
 singleton SRV_Channels method get_output_pwm boolean SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'Null
 singleton SRV_Channels method get_output_scaled float SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1
 singleton SRV_Channels method set_output_norm void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 float -1 1
-singleton SRV_Channels method set_angle void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t 0 UINT16_MAX
-singleton SRV_Channels method set_range void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t 0 UINT16_MAX
+singleton SRV_Channels method set_angle void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'skip_check
+singleton SRV_Channels method set_range void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'skip_check
 
 ap_object RC_Channel method norm_input float
 ap_object RC_Channel method norm_input_dz float
@@ -301,12 +301,12 @@ include AP_SerialManager/AP_SerialManager.h
 
 ap_object AP_HAL::UARTDriver method begin void uint32_t 1U UINT32_MAX
 ap_object AP_HAL::UARTDriver method read int16_t
-ap_object AP_HAL::UARTDriver method write uint32_t uint8_t 0 UINT8_MAX
+ap_object AP_HAL::UARTDriver method write uint32_t uint8_t'skip_check
 ap_object AP_HAL::UARTDriver method available uint32_t
 ap_object AP_HAL::UARTDriver method set_flow_control void AP_HAL::UARTDriver::flow_control'enum AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE AP_HAL::UARTDriver::FLOW_CONTROL_AUTO
 
 singleton AP_SerialManager rename serial
-singleton AP_SerialManager method find_serial AP_HAL::UARTDriver AP_SerialManager::SerialProtocol_Scripting'literal uint8_t 0 UINT8_MAX
+singleton AP_SerialManager method find_serial AP_HAL::UARTDriver AP_SerialManager::SerialProtocol_Scripting'literal uint8_t'skip_check
 
 include AP_Baro/AP_Baro.h
 singleton AP_Baro rename baro
@@ -331,7 +331,7 @@ singleton AP_ESC_Telem method get_current boolean uint8_t 0 NUM_SERVO_CHANNELS f
 singleton AP_ESC_Telem method get_voltage boolean uint8_t 0 NUM_SERVO_CHANNELS float'Null
 singleton AP_ESC_Telem method get_consumption_mah boolean uint8_t 0 NUM_SERVO_CHANNELS float'Null
 singleton AP_ESC_Telem method get_usage_seconds boolean uint8_t 0 NUM_SERVO_CHANNELS uint32_t'Null
-singleton AP_ESC_Telem method update_rpm void uint8_t 0 NUM_SERVO_CHANNELS uint16_t 0 UINT16_MAX float'skip_check
+singleton AP_ESC_Telem method update_rpm void uint8_t 0 NUM_SERVO_CHANNELS uint16_t'skip_check float'skip_check
 singleton AP_ESC_Telem method set_rpm_scale void uint8_t 0 NUM_SERVO_CHANNELS float'skip_check
 
 include AP_Param/AP_Param.h
@@ -349,7 +349,7 @@ singleton AP_Param method add_param boolean uint8_t 0 200 uint8_t 1 63 string fl
 include AP_Scripting/AP_Scripting_helpers.h
 userdata Parameter creation lua_new_Parameter 1
 userdata Parameter method init boolean string
-userdata Parameter method init_by_info boolean uint16_t 0 UINT16_MAX uint32_t'skip_check ap_var_type'enum AP_PARAM_INT8 AP_PARAM_FLOAT
+userdata Parameter method init_by_info boolean uint16_t'skip_check uint32_t'skip_check ap_var_type'enum AP_PARAM_INT8 AP_PARAM_FLOAT
 userdata Parameter method get boolean float'Null
 userdata Parameter method set boolean float'skip_check
 userdata Parameter method set_and_save boolean float'skip_check
@@ -368,8 +368,8 @@ singleton AP_Mission method get_prev_nav_cmd_id uint16_t
 singleton AP_Mission method get_current_nav_id uint16_t
 singleton AP_Mission method get_current_do_cmd_id uint16_t
 singleton AP_Mission method num_commands uint16_t
-singleton AP_Mission method get_item boolean uint16_t 0 UINT16_MAX mavlink_mission_item_int_t'Null
-singleton AP_Mission method set_item boolean uint16_t 0 UINT16_MAX mavlink_mission_item_int_t
+singleton AP_Mission method get_item boolean uint16_t'skip_check mavlink_mission_item_int_t'Null
+singleton AP_Mission method set_item boolean uint16_t'skip_check mavlink_mission_item_int_t
 singleton AP_Mission method clear boolean
 
 userdata mavlink_mission_item_int_t field param1 float'skip_check read write
@@ -379,13 +379,13 @@ userdata mavlink_mission_item_int_t field param4 float'skip_check read write
 userdata mavlink_mission_item_int_t field x int32_t'skip_check read write
 userdata mavlink_mission_item_int_t field y int32_t'skip_check read write
 userdata mavlink_mission_item_int_t field z float'skip_check read write
-userdata mavlink_mission_item_int_t field seq uint16_t read write 0 UINT16_MAX
-userdata mavlink_mission_item_int_t field command uint16_t read write 0 UINT16_MAX
--- userdata mavlink_mission_item_int_t field target_system uint8_t read write 0 UINT8_MAX
--- userdata mavlink_mission_item_int_t field target_component uint8_t read write 0 UINT8_MAX
-userdata mavlink_mission_item_int_t field frame uint8_t read write  0 UINT8_MAX
-userdata mavlink_mission_item_int_t field current uint8_t read write  0 UINT8_MAX
--- userdata mavlink_mission_item_int_t field autocontinue uint8_t read write  0 UINT8_MAX
+userdata mavlink_mission_item_int_t field seq uint16_t'skip_check read write
+userdata mavlink_mission_item_int_t field command uint16_t'skip_check read write
+-- userdata mavlink_mission_item_int_t field target_system uint8_t'skip_check read write
+-- userdata mavlink_mission_item_int_t field target_component uint8_t'skip_check read write
+userdata mavlink_mission_item_int_t field frame uint8_t'skip_check read write
+userdata mavlink_mission_item_int_t field current uint8_t'skip_check read write
+-- userdata mavlink_mission_item_int_t field autocontinue uint8_t'skip_check read write
 
 
 include AP_RPM/AP_RPM.h
@@ -417,8 +417,9 @@ singleton AP_MotorsMatrix method set_throttle_factor boolean int8_t 0 (AP_MOTORS
 
 include AP_Frsky_Telem/AP_Frsky_SPort.h
 singleton AP_Frsky_SPort rename frsky_sport
-singleton AP_Frsky_SPort method sport_telemetry_push boolean uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint16_t 0 UINT16_MAX int32_t'skip_check
-singleton AP_Frsky_SPort method prep_number uint16_t int32_t'skip_check uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
+singleton AP_Frsky_SPort depends AP_FRSKY_SPORT_TELEM_ENABLED
+singleton AP_Frsky_SPort method sport_telemetry_push boolean uint8_t'skip_check uint8_t'skip_check uint16_t'skip_check int32_t'skip_check
+singleton AP_Frsky_SPort method prep_number uint16_t int32_t'skip_check uint8_t'skip_check uint8_t'skip_check
 
 include AC_AttitudeControl/AC_AttitudeControl_Multi_6DoF.h depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 singleton AC_AttitudeControl_Multi_6DoF depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
@@ -437,27 +438,27 @@ singleton AP_MotorsMatrix_6DoF_Scripting method add_motor void int8_t 0 (AP_MOTO
 include AP_HAL/I2CDevice.h
 ap_object AP_HAL::I2CDevice semaphore-pointer
 ap_object AP_HAL::I2CDevice method set_retries void uint8_t 0 20
-ap_object AP_HAL::I2CDevice method write_register boolean uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
+ap_object AP_HAL::I2CDevice method write_register boolean uint8_t'skip_check uint8_t'skip_check
 ap_object AP_HAL::I2CDevice manual read_registers AP_HAL__I2CDevice_read_registers 2
-ap_object AP_HAL::I2CDevice method set_address void uint8_t 0 UINT8_MAX
+ap_object AP_HAL::I2CDevice method set_address void uint8_t'skip_check
 
 
-ap_object AP_HAL::AnalogSource method set_pin boolean uint8_t 0 UINT8_MAX
+ap_object AP_HAL::AnalogSource method set_pin boolean uint8_t'skip_check
 ap_object AP_HAL::AnalogSource method voltage_average float
 ap_object AP_HAL::AnalogSource method voltage_latest float
 ap_object AP_HAL::AnalogSource method voltage_average_ratiometric float
 
 userdata AP_HAL::PWMSource rename PWMSource
-userdata AP_HAL::PWMSource method set_pin boolean uint8_t 0 UINT8_MAX "Scripting"'literal
+userdata AP_HAL::PWMSource method set_pin boolean uint8_t'skip_check "Scripting"'literal
 userdata AP_HAL::PWMSource method get_pwm_us uint16_t
 userdata AP_HAL::PWMSource method get_pwm_avg_us uint16_t
 
 singleton hal.gpio rename gpio
 singleton hal.gpio literal
-singleton hal.gpio method read boolean uint8_t 0 UINT8_MAX
-singleton hal.gpio method write void uint8_t 0 UINT8_MAX uint8_t 0 1
-singleton hal.gpio method toggle void uint8_t 0 UINT8_MAX
-singleton hal.gpio method pinMode void uint8_t 0 UINT8_MAX uint8_t 0 1
+singleton hal.gpio method read boolean uint8_t'skip_check
+singleton hal.gpio method write void uint8_t'skip_check uint8_t 0 1
+singleton hal.gpio method toggle void uint8_t'skip_check
+singleton hal.gpio method pinMode void uint8_t'skip_check uint8_t 0 1
 
 singleton hal.analogin rename analog
 singleton hal.analogin literal
@@ -491,7 +492,7 @@ include AP_HAL/AP_HAL.h
 userdata AP_HAL::CANFrame depends HAL_MAX_CAN_PROTOCOL_DRIVERS
 userdata AP_HAL::CANFrame rename CANFrame
 userdata AP_HAL::CANFrame field id uint32_t'skip_check read write
-userdata AP_HAL::CANFrame field data'array int(ARRAY_SIZE(ud->data)) uint8_t read write 0 UINT8_MAX
+userdata AP_HAL::CANFrame field data'array int(ARRAY_SIZE(ud->data)) uint8_t'skip_check read write
 userdata AP_HAL::CANFrame field dlc uint8_t read write 0 int(ARRAY_SIZE(ud->data))
 userdata AP_HAL::CANFrame method id_signed int32_t
 userdata AP_HAL::CANFrame method isExtended boolean
@@ -546,12 +547,12 @@ singleton AC_AttitudeControl method get_rpy_srate void float'Ref float'Ref float
 include AP_Mount/AP_Mount.h
 singleton AP_Mount depends HAL_MOUNT_ENABLED == 1
 singleton AP_Mount rename mount
-singleton AP_Mount method get_mode MAV_MOUNT_MODE'enum uint8_t 0 UINT8_MAX
-singleton AP_Mount method set_mode void uint8_t 0 UINT8_MAX MAV_MOUNT_MODE'enum MAV_MOUNT_MODE_RETRACT MAV_MOUNT_MODE_HOME_LOCATION
-singleton AP_Mount method set_angle_target void uint8_t 0 UINT8_MAX float'skip_check float'skip_check float'skip_check boolean
-singleton AP_Mount method set_rate_target void uint8_t 0 UINT8_MAX float'skip_check float'skip_check float'skip_check boolean
-singleton AP_Mount method set_roi_target void uint8_t 0 UINT8_MAX Location
-singleton AP_Mount method get_attitude_euler boolean uint8_t 0 UINT8_MAX float'Null float'Null float'Null
+singleton AP_Mount method get_mode MAV_MOUNT_MODE'enum uint8_t'skip_check
+singleton AP_Mount method set_mode void uint8_t'skip_check MAV_MOUNT_MODE'enum MAV_MOUNT_MODE_RETRACT MAV_MOUNT_MODE_HOME_LOCATION
+singleton AP_Mount method set_angle_target void uint8_t'skip_check float'skip_check float'skip_check float'skip_check boolean
+singleton AP_Mount method set_rate_target void uint8_t'skip_check float'skip_check float'skip_check float'skip_check boolean
+singleton AP_Mount method set_roi_target void uint8_t'skip_check Location
+singleton AP_Mount method get_attitude_euler boolean uint8_t'skip_check float'Null float'Null float'Null
 
 include AP_Winch/AP_Winch.h depends APM_BUILD_COPTER_OR_HELI
 singleton AP_Winch depends APM_BUILD_COPTER_OR_HELI
@@ -577,7 +578,7 @@ userdata Cylinder_Status field lambda_coefficient float'skip_check write
 userdata EFI_State depends (AP_EFI_SCRIPTING_ENABLED == 1)
 userdata EFI_State field last_updated_ms uint32_t'skip_check write
 userdata EFI_State field general_error boolean write
-userdata EFI_State field engine_load_percent uint8_t write 0 UINT8_MAX
+userdata EFI_State field engine_load_percent uint8_t'skip_check write
 userdata EFI_State field engine_speed_rpm uint32_t'skip_check write
 userdata EFI_State field spark_dwell_time_ms float'skip_check write
 userdata EFI_State field atmospheric_pressure_kpa float'skip_check write
@@ -589,8 +590,8 @@ userdata EFI_State field oil_temperature float'skip_check write
 userdata EFI_State field fuel_pressure float'skip_check write
 userdata EFI_State field fuel_consumption_rate_cm3pm float'skip_check write
 userdata EFI_State field estimated_consumed_fuel_volume_cm3 float'skip_check write
-userdata EFI_State field throttle_position_percent uint8_t write 0 UINT8_MAX
-userdata EFI_State field ecu_index uint8_t write 0 UINT8_MAX
+userdata EFI_State field throttle_position_percent uint8_t'skip_check write
+userdata EFI_State field ecu_index uint8_t'skip_check write
 userdata EFI_State field cylinder_status Cylinder_Status write
 userdata EFI_State field ignition_voltage float'skip_check write
 userdata EFI_State field throttle_out float'skip_check write
@@ -601,7 +602,7 @@ ap_object AP_EFI_Backend method handle_scripting boolean EFI_State
 
 singleton AP_EFI depends (AP_EFI_SCRIPTING_ENABLED == 1)
 singleton AP_EFI rename efi
-singleton AP_EFI method get_backend AP_EFI_Backend uint8_t 0 UINT8_MAX
+singleton AP_EFI method get_backend AP_EFI_Backend uint8_t'skip_check
 
 -- ----END EFI Library----
 

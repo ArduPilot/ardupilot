@@ -51,7 +51,7 @@ float Plane::calc_speed_scaler(void)
     }
     if (!plane.ahrs.airspeed_sensor_enabled()  && 
         (plane.g2.flight_options & FlightOptions::SURPRESS_TKOFF_SCALING) &&
-        (plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF)) { //scaling is surpressed during climb phase of automatic takeoffs with no airspeed sensor being used due to problems with inaccurate airspeed estimates
+        (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF)) { //scaling is surpressed during climb phase of automatic takeoffs with no airspeed sensor being used due to problems with inaccurate airspeed estimates
         return MIN(speed_scaler, 1.0f) ;
     }
     return speed_scaler;
@@ -767,8 +767,8 @@ void Plane::calc_nav_yaw_ground(void)
 {
     if (gps.ground_speed() < 1 && 
         is_zero(get_throttle_input()) &&
-        flight_stage != AP_Vehicle::FixedWing::FLIGHT_TAKEOFF &&
-        flight_stage != AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
+        flight_stage != AP_FixedWing::FlightStage::TAKEOFF &&
+        flight_stage != AP_FixedWing::FlightStage::ABORT_LANDING) {
         // manual rudder control while still
         steer_state.locked_course = false;
         steer_state.locked_course_err = 0;
@@ -784,8 +784,8 @@ void Plane::calc_nav_yaw_ground(void)
     steer_state.last_steer_ms = now_ms;
 
     float steer_rate = (rudder_input()/4500.0f) * g.ground_steer_dps;
-    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF ||
-        flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
+    if (flight_stage == AP_FixedWing::FlightStage::TAKEOFF ||
+        flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
         steer_rate = 0;
     }
     if (!is_zero(steer_rate)) {
@@ -794,8 +794,8 @@ void Plane::calc_nav_yaw_ground(void)
     } else if (!steer_state.locked_course) {
         // pilot has released the rudder stick or we are still - lock the course
         steer_state.locked_course = true;
-        if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_TAKEOFF &&
-            flight_stage != AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
+        if (flight_stage != AP_FixedWing::FlightStage::TAKEOFF &&
+            flight_stage != AP_FixedWing::FlightStage::ABORT_LANDING) {
             steer_state.locked_course_err = 0;
         }
     }
@@ -889,7 +889,7 @@ void Plane::calc_nav_roll()
 void Plane::adjust_nav_pitch_throttle(void)
 {
     int8_t throttle = throttle_percentage();
-    if (throttle >= 0 && throttle < aparm.throttle_cruise && flight_stage != AP_Vehicle::FixedWing::FLIGHT_VTOL) {
+    if (throttle >= 0 && throttle < aparm.throttle_cruise && flight_stage != AP_FixedWing::FlightStage::VTOL) {
         float p = (aparm.throttle_cruise - throttle) / (float)aparm.throttle_cruise;
         nav_pitch_cd -= g.stab_pitch_down * 100.0f * p;
     }

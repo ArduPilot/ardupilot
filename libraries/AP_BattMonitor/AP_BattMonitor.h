@@ -44,6 +44,10 @@
 #define AP_BATTMON_FUELLEVEL_ANALOG_ENABLE (BOARD_FLASH_SIZE > 1024)
 #endif
 
+#ifndef AP_BATTMON_SYNTHETIC_CURRENT_ENABLED
+#define AP_BATTMON_SYNTHETIC_CURRENT_ENABLED  1
+#endif
+
 // declare backend class
 class AP_BattMonitor_Backend;
 class AP_BattMonitor_Analog;
@@ -58,6 +62,7 @@ class AP_BattMonitor_INA2XX;
 class AP_BattMonitor_LTC2946;
 class AP_BattMonitor_Torqeedo;
 class AP_BattMonitor_FuelLevel_Analog;
+
 
 class AP_BattMonitor
 {
@@ -78,6 +83,7 @@ class AP_BattMonitor
 
     friend class AP_BattMonitor_Torqeedo;
     friend class AP_BattMonitor_FuelLevel_Analog;
+    friend class AP_BattMonitor_Synthetic_Current;
 
 public:
 
@@ -90,29 +96,30 @@ public:
 
     // Battery monitor driver types
     enum class Type {
-        NONE                       = 0,
-        ANALOG_VOLTAGE_ONLY        = 3,
-        ANALOG_VOLTAGE_AND_CURRENT = 4,
-        SOLO                       = 5,
-        BEBOP                      = 6,
-        SMBus_Generic              = 7,
-        UAVCAN_BatteryInfo         = 8,
-        BLHeliESC                  = 9,
-        Sum                        = 10,
-        FuelFlow                   = 11,
-        FuelLevel_PWM              = 12,
-        SUI3                       = 13,
-        SUI6                       = 14,
-        NeoDesign                  = 15,
-        MAXELL                     = 16,
-        GENERATOR_ELEC             = 17,
-        GENERATOR_FUEL             = 18,
-        Rotoye                     = 19,
+        NONE                           = 0,
+        ANALOG_VOLTAGE_ONLY            = 3,
+        ANALOG_VOLTAGE_AND_CURRENT     = 4,
+        SOLO                           = 5,
+        BEBOP                          = 6,
+        SMBus_Generic                  = 7,
+        UAVCAN_BatteryInfo             = 8,
+        BLHeliESC                      = 9,
+        Sum                            = 10,
+        FuelFlow                       = 11,
+        FuelLevel_PWM                  = 12,
+        SUI3                           = 13,
+        SUI6                           = 14,
+        NeoDesign                      = 15,
+        MAXELL                         = 16,
+        GENERATOR_ELEC                 = 17,
+        GENERATOR_FUEL                 = 18,
+        Rotoye                         = 19,
         // 20 was MPPT_PacketDigital
-        INA2XX                     = 21,
-        LTC2946                    = 22,
-        Torqeedo                   = 23,
-        FuelLevel_Analog           = 24,
+        INA2XX                         = 21,
+        LTC2946                        = 22,
+        Torqeedo                       = 23,
+        FuelLevel_Analog               = 24,
+        Analog_Volt_Synthetic_Current  = 25,
     };
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);

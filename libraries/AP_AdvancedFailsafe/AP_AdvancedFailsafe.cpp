@@ -27,6 +27,7 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Mission/AP_Mission.h>
+#include <AC_Fence/AC_Fence.h>
 
 AP_AdvancedFailsafe *AP_AdvancedFailsafe::_singleton;
 

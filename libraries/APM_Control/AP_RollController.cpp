@@ -20,6 +20,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_RollController.h"
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Scheduler/AP_Scheduler.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -48,7 +50,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 
     // @Param: _RATE_P
     // @DisplayName: Roll axis rate controller P gain
-    // @Description: Roll axis rate controller P gain.  Converts the difference between desired roll rate and actual roll rate into a motor speed output
+    // @Description: Roll axis rate controller P gain. Corrects in proportion to the difference between the desired roll rate vs actual roll rate
     // @Range: 0.08 0.35
     // @Increment: 0.005
     // @User: Standard
@@ -62,7 +64,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 
     // @Param: _RATE_IMAX
     // @DisplayName: Roll axis rate controller I gain maximum
-    // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
+    // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum that the I term will output
     // @Range: 0 1
     // @Increment: 0.01
     // @User: Standard
@@ -118,7 +120,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 };
 
 // constructor
-AP_RollController::AP_RollController(const AP_Vehicle::FixedWing &parms)
+AP_RollController::AP_RollController(const AP_FixedWing &parms)
     : aparm(parms)
 {
     AP_Param::setup_object_defaults(this, var_info);

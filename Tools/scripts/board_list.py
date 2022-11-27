@@ -136,7 +136,6 @@ class BoardList(object):
 
             # bdshot
             "fmuv3-bdshot",
-            "OMNIBUSF7V2-bdshot",
 
             # renamed to KakuteH7Mini-Nand
             "KakuteH7Miniv2",
@@ -151,6 +150,7 @@ class BoardList(object):
             "MazzyStarDrone",
             "omnibusf4pro-one",
             "skyviper-f412-rev1",
+            "SkystarsH7HD",
             "*-ODID",
             "*-ODID-heli",
         ]

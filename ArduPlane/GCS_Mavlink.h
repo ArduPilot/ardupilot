@@ -40,6 +40,8 @@ protected:
     void send_nav_controller_output() const override;
     void send_pid_tuning() override;
 
+    void handle_manual_control_axes(const mavlink_manual_control_t &packet, const uint32_t tnow) override;
+
 private:
 
     void send_pid_info(const AP_PIDInfo *pid_info, const uint8_t axis, const float achieved);

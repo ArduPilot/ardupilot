@@ -90,7 +90,7 @@ void NavEKF3_core::readRangeFinder(void)
                 // indicate we have updated the measurement
                 rngValidMeaTime_ms = imuSampleTime_ms;
 
-            } else if (!takeOffDetected && ((imuSampleTime_ms - rngValidMeaTime_ms) > 200)) {
+            } else if (onGround && ((imuSampleTime_ms - rngValidMeaTime_ms) > 200)) {
                 // before takeoff we assume on-ground range value if there is no data
                 rangeDataNew.time_ms = imuSampleTime_ms;
                 rangeDataNew.rng = rngOnGnd;
@@ -863,6 +863,7 @@ void NavEKF3_core::readAirSpdData()
     }
 }
 
+#if EK3_FEATURE_BEACON_FUSION
 /********************************************************
 *              Range Beacon Measurements                *
 ********************************************************/
@@ -979,6 +980,7 @@ void NavEKF3_core::readRngBcnData()
     }
 
 }
+#endif  // EK3_FEATURE_BEACON_FUSION
 
 /********************************************************
 *              Independant yaw sensor measurements      *

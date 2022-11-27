@@ -13,6 +13,7 @@
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 void setup();
 void loop();

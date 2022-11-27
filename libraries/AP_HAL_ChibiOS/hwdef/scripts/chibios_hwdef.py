@@ -2927,6 +2927,26 @@ def add_apperiph_defaults(f):
 
 // no CAN manager in AP_Periph:
 #define HAL_CANMANAGER_ENABLED 0
+
+// Periphs don't use the FFT library:
+#ifndef HAL_GYROFFT_ENABLED
+#define HAL_GYROFFT_ENABLED 0
+#endif
+
+// MSP parsing is off by default in AP_Periph:
+#ifndef HAL_MSP_ENABLED
+#define HAL_MSP_ENABLED 0
+#endif
+
+// periph does not make use of compass scaling or diagonals
+#ifndef AP_COMPASS_DIAGONALS_ENABLED
+#define AP_COMPASS_DIAGONALS_ENABLED 0
+#endif
+
+// disable various battery monitor backends:
+#ifndef AP_BATTMON_SYNTHETIC_CURRENT_ENABLED
+#define AP_BATTMON_SYNTHETIC_CURRENT_ENABLED 0
+#endif
 ''')
 
 def add_bootloader_defaults(f):
@@ -2939,6 +2959,18 @@ def add_bootloader_defaults(f):
 // AP_Bootloader defaults
 
 #define HAL_DSHOT_ALARM_ENABLED 0
+
+// bootloaders *definitely* don't use the FFT library:
+#ifndef HAL_GYROFFT_ENABLED
+#define HAL_GYROFFT_ENABLED 0
+#endif
+
+// bootloaders don't talk to the GCS:
+#ifndef HAL_GCS_ENABLED
+#define HAL_GCS_ENABLED 0
+#endif
+
+#define HAL_MAX_CAN_PROTOCOL_DRIVERS 0
 ''')
 
 def add_iomcu_firmware_defaults(f):
@@ -2952,6 +2984,11 @@ def add_iomcu_firmware_defaults(f):
 // IOMCU Firmware defaults
 
 #define HAL_DSHOT_ALARM_ENABLED 0
+
+// IOMCUs *definitely* don't use the FFT library:
+#ifndef HAL_GYROFFT_ENABLED
+#define HAL_GYROFFT_ENABLED 0
+#endif
 ''')
 
 def add_normal_firmware_defaults(f):
@@ -2973,6 +3010,7 @@ def add_normal_firmware_defaults(f):
 #ifndef HAL_DSHOT_ALARM_ENABLED
 #define HAL_DSHOT_ALARM_ENABLED (HAL_PWM_COUNT>0)
 #endif
+
 ''')
 
 # process input file

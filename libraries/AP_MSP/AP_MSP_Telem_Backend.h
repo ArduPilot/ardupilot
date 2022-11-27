@@ -17,6 +17,7 @@
 #pragma once
 
 #include <AP_RCTelemetry/AP_RCTelemetry.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_OSD/AP_OSD.h>
 
 #include "msp.h"

@@ -13,3 +13,4 @@ PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55) BIDIR
 
 NODMA I2C*
 define STM32_I2C_USE_DMA FALSE
+env DEFAULT_PARAMETERS libraries/AP_HAL_ChibiOS/hwdef/CubeOrange/defaults.parm

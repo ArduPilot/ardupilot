@@ -20,9 +20,6 @@
 #include "AP_HAL_ChibiOS_Namespace.h"
 #include "AP_HAL_ChibiOS.h"
 #include <ch.h>
-#if !defined(HAL_BOOTLOADER_BUILD)
-#include <GCS_MAVLink/GCS.h>
-#endif
 
 class ExpandingString;
 

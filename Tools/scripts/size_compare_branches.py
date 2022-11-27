@@ -22,12 +22,23 @@ import shutil
 import string
 import subprocess
 import sys
+import tempfile
 import time
+import board_list
 
 if sys.version_info[0] < 3:
     running_python3 = False
 else:
     running_python3 = True
+
+
+class SizeCompareBranchesResult(object):
+    '''object to return results from a comparison'''
+
+    def __init__(self, board, vehicle, bytes_delta):
+        self.board = board
+        self.vehicle = vehicle
+        self.bytes_delta = bytes_delta
 
 
 class SizeCompareBranches(object):
@@ -36,23 +47,63 @@ class SizeCompareBranches(object):
     def __init__(self,
                  branch=None,
                  master_branch="master",
-                 board="MatekF405-Wing",
-                 vehicle="plane",
+                 board=["MatekF405-Wing"],
+                 vehicle=["plane"],
                  bin_dir=None,
-                 pdf_file=None,
+                 run_elf_diff=True,
+                 all_vehicles=False,
+                 all_boards=False,
+                 use_merge_base=True,
                  extra_hwdef=None):
         if branch is None:
-            raise Exception("branch required")  # FIXME: narrow exception
+            branch = self.find_current_git_branch()
+
         self.master_branch = master_branch
         self.branch = branch
         self.board = board
         self.vehicle = vehicle
         self.bin_dir = bin_dir
-        self.pdf_file = pdf_file
+        self.run_elf_diff = run_elf_diff
         self.extra_hwdef = extra_hwdef
+        self.all_vehicles = all_vehicles
+        self.all_boards = all_boards
+        self.use_merge_base = use_merge_base
 
         if self.bin_dir is None:
             self.bin_dir = self.find_bin_dir()
+
+        self.boards_by_name = {}
+        for board in board_list.BoardList().boards:
+            self.boards_by_name[board.name] = board
+
+        # map from vehicle names to binary names
+        self.vehicle_map = {
+            "rover"     : "ardurover",
+            "copter"    : "arducopter",
+            "plane"     : "arduplane",
+            "sub"       : "ardusub",
+            "heli"      : "arducopter-heli",
+            "blimp"     : "blimp",
+            "antennatracker" : "antennatracker",
+            "AP_Periph" : "AP_Periph",
+            "iofirmware": "iofirmware_highpolh",  # FIXME: lowpolh?
+        }
+
+        if all_boards:
+            self.board = sorted(list(self.boards_by_name.keys()), key=lambda x: x.lower())
+        else:
+            # validate boards
+            all_boards = set(self.boards_by_name.keys())
+            for b in self.board:
+                if b not in all_boards:
+                    raise ValueError("Bad board %s" % str(b))
+
+        if all_vehicles:
+            self.vehicle = sorted(list(self.vehicle_map.keys()), key=lambda x: x.lower())
+        else:
+            for v in self.vehicle:
+                if v not in self.vehicle_map.keys():
+                    raise ValueError("Bad vehicle (%s); choose from %s" % (v, ",".join(self.vehicle_map.keys())))
 
     def find_bin_dir(self):
         '''attempt to find where the arm-none-eabi tools are'''
@@ -66,9 +117,13 @@ class SizeCompareBranches(object):
     def run_program(self, prefix, cmd_list, show_output=True, env=None):
         if show_output:
             self.progress("Running (%s)" % " ".join(cmd_list))
-        p = subprocess.Popen(cmd_list, bufsize=1, stdin=None,
-                             stdout=subprocess.PIPE, close_fds=True,
-                             stderr=subprocess.STDOUT, env=env)
+        p = subprocess.Popen(
+            cmd_list,
+            stdin=None,
+            stdout=subprocess.PIPE,
+            close_fds=True,
+            stderr=subprocess.STDOUT,
+            env=env)
         output = ""
         while True:
             x = p.stdout.readline()
@@ -95,6 +150,16 @@ class SizeCompareBranches(object):
                 returncode, cmd_list)
         return output
 
+    def find_current_git_branch(self):
+        output = self.run_git(["symbolic-ref", "--short", "HEAD"])
+        output = output.strip()
+        return output
+
+    def find_git_branch_merge_base(self, branch, master_branch):
+        output = self.run_git(["merge-base", branch, master_branch])
+        output = output.strip()
+        return output
+
     def run_git(self, args):
         '''run git with args git_args; returns git's output'''
         cmd_list = ["git"]
@@ -102,6 +167,15 @@ class SizeCompareBranches(object):
         return self.run_program("SCB-GIT", cmd_list)
 
     def run_waf(self, args, compiler=None):
+        # try to modify the environment so we can consistent builds:
+        consistent_build_envs = {
+            "CHIBIOS_GIT_VERSION": "12345678",
+            "GIT_VERSION": "abcdef",
+            "GIT_VERSION_INT": "15",
+        }
+        for (n, v) in consistent_build_envs.items():
+            os.environ[n] = v
+
         if os.path.exists("waf"):
             waf = "./waf"
         else:
@@ -135,59 +209,130 @@ class SizeCompareBranches(object):
         if self.extra_hwdef is not None:
             waf_configure_args.extend(["--extra-hwdef", self.extra_hwdef])
         self.run_waf(waf_configure_args)
-        self.run_waf([vehicle])
-        shutil.rmtree(outdir, ignore_errors=True)
-        shutil.copytree("build", outdir)
+        # we can't run `./waf copter blimp plane` without error, so do
+        # them one-at-a-time:
+        for v in vehicle:
+            self.run_waf([v])
+            self.run_program("rsync", ["rsync", "-aP", "build/", outdir])
+
+    def run_all(self):
+        '''run tests for boards and vehicles passed in constructor'''
+
+        results = {}
+        for board in self.board:
+            vehicle_results = self.run_board(board)
+            results[board] = vehicle_results
+            with open("/tmp/some.csv", "w") as f:
+                f.write(self.csv_for_results(results))
+
+        return results
+
+    def emit_csv_for_results(self, results):
+        '''emit dictionary of dictionaries as a CSV'''
+        print(self.csv_for_results(results))
+
+    def csv_for_results(self, results):
+        '''return a string with csv for results'''
+        boards = sorted(results.keys())
+        all_vehicles = set()
+        for board in boards:
+            all_vehicles.update(list(results[board].keys()))
+        sorted_all_vehicles = sorted(list(all_vehicles))
+        ret = ""
+        ret += ",".join(["Board"] + sorted_all_vehicles) + "\n"
+        for board in boards:
+            line = [board]
+            board_results = results[board]
+            for vehicle in sorted_all_vehicles:
+                bytes_delta = ""
+                if vehicle in board_results:
+                    result = board_results[vehicle]
+                    bytes_delta = result.bytes_delta
+                line.append(str(bytes_delta))
+            ret += ",".join(line) + "\n"
+        return ret
 
     def run(self):
-        outdir_1 = "/tmp/out-master"
-        outdir_2 = "/tmp/out-branch"
+        results = self.run_all()
+        self.emit_csv_for_results(results)
 
-        self.progress("Building branch 1")
-        self.build_branch_into_dir(self.board, self.master_branch, self.vehicle, outdir_1)
+    def run_board(self, board):
+        ret = {}
+        board_info = self.boards_by_name[board]
 
-        self.progress("Building branch 2")
-        self.build_branch_into_dir(self.board, self.branch, self.vehicle, outdir_2)
+        vehicles_to_build = []
+        for vehicle in self.vehicle:
+            if vehicle == 'AP_Periph':
+                if not board_info.is_ap_periph:
+                    continue
+            else:
+                if board_info.is_ap_periph:
+                    continue
+                if vehicle.lower() not in [x.lower() for x in board_info.autobuild_targets]:
+                    continue
+            vehicles_to_build.append(vehicle)
+        if len(vehicles_to_build) == 0:
+            return ret
 
-        self.progress("Starting compare (~10 minutes!)")
+        tmpdir = tempfile.mkdtemp()
+        outdir_1 = os.path.join(tmpdir, "out-master-%s" % (board,))
+        outdir_2 = os.path.join(tmpdir, "out-branch-%s" % (board,))
 
-        # map from vehicle names to binary names
-        vehicle_map = {
-            "rover"     : "ardurover",
-            "copter"    : "arducopter",
-            "plane"     : "arduplane",
-            "sub"       : "ardusub",
-            "heli"      : "arducopter-heli",
-            "blimp"     : "blimp",
-            "antennatracker" : "antennatracker",
-            "AP_Periph" : "AP_Periph",
-        }
-        if self.vehicle in vehicle_map:
-            binary_filename = vehicle_map[self.vehicle]
-        else:
-            raise Exception("Vehicle name (%s) incorrect" % (self.vehicle))
+        self.progress("Building branch 1 (%s)" % self.master_branch)
+        master_commit = self.master_branch
+        if self.use_merge_base:
+            master_commit = self.find_git_branch_merge_base(self.branch, self.master_branch)
+            self.progress("Using merge base (%s)" % master_commit)
+        shutil.rmtree(outdir_1, ignore_errors=True)
+        self.build_branch_into_dir(board, master_commit, vehicles_to_build, outdir_1)
 
-        elf_diff_commandline = [
-            "time",
-            "python3",
-            "-m", "elf_diff",
-            "--bin_dir", self.bin_dir,
-            '--bin_prefix=arm-none-eabi-',
-            "--old_alias", "%s %s" % (self.master_branch, binary_filename),
-            "--new_alias", "%s %s" % (self.branch, binary_filename),
-            "--html_dir", "../ELF_DIFF_%s" % (self.vehicle),
-            os.path.join(outdir_1, self.board, "bin", binary_filename),
-            os.path.join(outdir_2, self.board, "bin", binary_filename)
-        ]
+        self.progress("Building branch 2 (%s)" % self.branch)
+        shutil.rmtree(outdir_2, ignore_errors=True)
+        self.build_branch_into_dir(board, self.branch, vehicles_to_build, outdir_2)
 
-        #        if self.pdf_file is not None:
-        #            elf_diff_commandline.extend(["--pdf_file", self.pdf_file])
+        for vehicle in vehicles_to_build:
+            elf_filename = self.vehicle_map[vehicle]
+            bin_filename = self.vehicle_map[vehicle] + '.bin'
 
-        self.run_program("SCB", elf_diff_commandline)
+            master_bin_dir = os.path.join(outdir_1, board, "bin")
+            new_bin_dir = os.path.join(outdir_2, board, "bin")
+
+            if self.run_elf_diff:
+                self.progress("Starting compare (~10 minutes!)")
+                elf_diff_commandline = [
+                    "time",
+                    "python3",
+                    "-m", "elf_diff",
+                    "--bin_dir", self.bin_dir,
+                    '--bin_prefix=arm-none-eabi-',
+                    "--old_alias", "%s %s" % (self.master_branch, elf_filename),
+                    "--new_alias", "%s %s" % (self.branch, elf_filename),
+                    "--html_dir", "../ELF_DIFF_%s_%s" % (board, vehicle),
+                    os.path.join(master_bin_dir, elf_filename),
+                    os.path.join(new_bin_dir, elf_filename)
+                ]
+
+                self.run_program("SCB", elf_diff_commandline)
+
+            try:
+                master_size = os.path.getsize(os.path.join(master_bin_dir, bin_filename))
+                new_size = os.path.getsize(os.path.join(new_bin_dir, bin_filename))
+            except FileNotFoundError:
+                master_size = os.path.getsize(os.path.join(master_bin_dir, elf_filename))
+                new_size = os.path.getsize(os.path.join(new_bin_dir, elf_filename))
+
+            ret[vehicle] = SizeCompareBranchesResult(board, vehicle, new_size - master_size)
+
+        return ret
 
 
 if __name__ == '__main__':
     parser = optparse.OptionParser("size_compare_branches.py")
+    parser.add_option("",
+                      "--no-elf-diff",
+                      action="store_true",
+                      default=False,
+                      help="do not run elf_diff on output files")
     parser.add_option("",
                       "--master-branch",
                       type="string",
@@ -200,38 +345,51 @@ if __name__ == '__main__':
                       help="branch to compare")
     parser.add_option("",
                       "--vehicle",
-                      type="string",
-                      default="plane",
+                      action='append',
+                      default=[],
                       help="vehicle to build for")
     parser.add_option("",
                       "--board",
-                      type="string",
-                      default="MatekF405-Wing",
+                      action='append',
+                      default=[],
                       help="board to build for")
     parser.add_option("",
                       "--extra-hwdef",
                       type="string",
                       default=None,
                       help="configure with this extra hwdef file")
-#    parser.add_option("",
-#                      "--pdf_file",
-#                      type="string",
-#                      default=None,
-#                      help="output PDF to this file")
+    parser.add_option("",
+                      "--all-boards",
+                      action='store_true',
+                      default=False,
+                      help="Build all boards")
+    parser.add_option("",
+                      "--all-vehicles",
+                      action='store_true',
+                      default=False,
+                      help="Build all vehicles")
     cmd_opts, cmd_args = parser.parse_args()
 
-    # we require --branch rather than taking a fixed-position argument
-    # so that in the future we can assume the user wants to test the
-    # currently checked out branch.  That requires a bit of work...
-    if cmd_opts.branch is None:
-        raise Exception("--branch must be supplied")  # FIXME: narrow exception
+    vehicle = []
+    for v in cmd_opts.vehicle:
+        vehicle.extend(v.split(','))
+    if len(vehicle) == 0:
+        vehicle.append("plane")
+
+    board = []
+    for b in cmd_opts.board:
+        board.extend(b.split(','))
+    if len(board) == 0:
+        board.append("MatekF405-Wing")
 
     x = SizeCompareBranches(
         branch=cmd_opts.branch,
         master_branch=cmd_opts.master_branch,
-        board=cmd_opts.board,
-        vehicle=cmd_opts.vehicle,
+        board=board,
+        vehicle=vehicle,
         extra_hwdef=cmd_opts.extra_hwdef,
-        #        pdf_file=cmd_opts.pdf_file
+        run_elf_diff=(not cmd_opts.no_elf_diff),
+        all_vehicles=cmd_opts.all_vehicles,
+        all_boards=cmd_opts.all_boards,
     )
     x.run()

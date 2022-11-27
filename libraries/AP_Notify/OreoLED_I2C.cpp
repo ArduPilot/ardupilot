@@ -17,11 +17,14 @@
   but with some components from orleod.cpp from px4 firmware
 */
 
+#include "OreoLED_I2C.h"
+
+#if AP_NOTIFY_OREOLED_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#include "OreoLED_I2C.h"
 #include "AP_Notify.h"
 #include <utility>
 
@@ -709,3 +712,5 @@ bool OreoLED_I2C::oreo_state::operator==(const OreoLED_I2C::oreo_state &os) cons
             && (os.amplitude_red==amplitude_red) && (os.amplitude_green==amplitude_green) && (os.amplitude_blue==amplitude_blue)
             && (os.period==period) && (os.repeat==repeat) && (os.phase_offset==phase_offset));
 }
+
+#endif  // AP_NOTIFY_OREOLED_ENABLED

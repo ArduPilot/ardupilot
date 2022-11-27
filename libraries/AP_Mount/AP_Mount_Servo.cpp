@@ -1,6 +1,9 @@
 #include "AP_Mount_Servo.h"
 #if HAL_MOUNT_SERVO_ENABLED
 
+#include <AP_AHRS/AP_AHRS.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+
 extern const AP_HAL::HAL& hal;
 
 // init - performs any required initialisation for this instance

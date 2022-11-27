@@ -812,7 +812,7 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
             return new AP_GPS_SBP(*this, state[instance], _port[instance]);
         }
 #endif //AP_GPS_SBP_ENABLED
-#if !HAL_MINIMIZE_FEATURES && AP_GPS_SIRF_ENABLED
+#if AP_GPS_SIRF_ENABLED
         if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SIRF) &&
                  AP_GPS_SIRF::_detect(dstate->sirf_detect_state, data)) {
             return new AP_GPS_SIRF(*this, state[instance], _port[instance]);
@@ -2054,6 +2054,13 @@ bool AP_GPS::is_healthy(uint8_t instance) const
         return false;
     }
 
+#ifdef HAL_BUILD_AP_PERIPH
+    /*
+      on AP_Periph handling of timing is done by the flight controller
+      receiving the DroneCAN messages
+     */
+    return drivers[instance] != nullptr && drivers[instance]->is_healthy();
+#else
     /*
       allow two lost frames before declaring the GPS unhealthy, but
       require the average frame rate to be close to 5Hz. We allow for
@@ -2075,6 +2082,7 @@ bool AP_GPS::is_healthy(uint8_t instance) const
 
     return delay_ok && drivers[instance] != nullptr &&
            drivers[instance]->is_healthy();
+#endif // HAL_BUILD_AP_PERIPH
 }
 
 bool AP_GPS::prepare_for_arming(void) {
