@@ -57,13 +57,13 @@ namespace SITL {
 class PS_LightWare_SF45B : public PS_LightWare {
 public:
 
+    using PS_LightWare::PS_LightWare;
+
     uint32_t packet_for_location(const Location &location,
                                  uint8_t *data,
                                  uint8_t buflen) override;
 
     void update(const Location &location) override;
-
-    PS_LightWare_SF45B() : PS_LightWare() { }
 
 private:
 
