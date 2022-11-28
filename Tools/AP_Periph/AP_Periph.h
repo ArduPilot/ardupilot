@@ -222,6 +222,9 @@ public:
     SRV_Channels servo_channels;
     bool rcout_has_new_data_to_update;
 
+    uint32_t last_esc_raw_command_ms;
+    uint8_t  last_esc_num_channels;
+
     void rcout_init();
     void rcout_init_1Hz();
     void rcout_esc(int16_t *rc, uint8_t num_channels);
