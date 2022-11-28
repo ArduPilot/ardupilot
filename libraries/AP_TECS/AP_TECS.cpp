@@ -1262,13 +1262,6 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         _PITCHminf = MAX(_land_pitch_min, _PITCHminf);
     }
 
-    if (_landing.is_flaring()) {
-        // ensure we don't violate the limits for flare pitch
-        if (_land_pitch_max != 0) {
-            _PITCHmaxf = MIN(_land_pitch_max, _PITCHmaxf);
-        }
-    }
-
     if (flight_stage == AP_FixedWing::FlightStage::TAKEOFF || flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
         if (!_flags.reached_speed_takeoff && _TAS_state >= _TAS_dem_adj) {
             // we have reached our target speed in takeoff, allow for
