@@ -774,6 +774,10 @@ static void handle_esc_rawcommand(CanardInstance* ins, CanardRxTransfer* transfe
         return;
     }
     periph.rcout_esc(cmd.cmd.data, cmd.cmd.len);
+
+    // Update internal copy for disabling output to ESC when CAN packets are lost
+    periph.last_esc_num_channels = cmd.cmd.len;
+    periph.last_esc_raw_command_ms = AP_HAL::millis();
 }
 
 static void handle_act_command(CanardInstance* ins, CanardRxTransfer* transfer)
