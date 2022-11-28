@@ -425,13 +425,29 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
             interim_state.have_gps_yaw = true;
             interim_state.gps_yaw_time_ms = AP_HAL::millis();
         }
+        goto good_yaw;
     }
-
-    return true;
 
 bad_yaw:
     interim_state.have_gps_yaw = false;
-    return false;
+
+good_yaw:
+
+#if HAL_LOGGING_ENABLED
+    // this log message helps diagnose GPS yaw issues
+    AP::logger().WriteStreaming("GPYW", "TimeUS,Id,RHD,RDist,RDown,OK",
+                                "s#dmm-",
+                                "F-----",
+                                "QBfffB",
+                                AP_HAL::micros64(),
+                                state.instance,
+                                reported_heading_deg,
+                                reported_distance,
+                                reported_D,
+                                interim_state.have_gps_yaw);
+#endif
+
+    return interim_state.have_gps_yaw;
 }
 #endif // GPS_MOVING_BASELINE
 
