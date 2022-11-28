@@ -1,0 +1,11 @@
+# hw definition file for processing by chibios_hwdef.py
+# for the ARKV6X hardware on carrier boards without IOMCU
+
+include ../ARKV6X/hwdef.inc
+
+# disable the IOMCU
+undef IOMCU_UART
+
+# order of UARTs, USB, and make IO UART into telem port
+undef SERIAL_ORDER
+SERIAL_ORDER OTG1 UART7 UART5 USART1 UART8 USART2 UART4 USART3 OTG2 USART6

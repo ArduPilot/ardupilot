@@ -1,4 +1,4 @@
 # hw definition file for processing by chibios_hwdef.py
 # for the ARKV6X hardware
 
-include hwdef.inc
+include ../ARKV6X/hwdef-bl.inc
