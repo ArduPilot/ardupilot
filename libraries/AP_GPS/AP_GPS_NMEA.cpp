@@ -470,7 +470,9 @@ bool AP_GPS_NMEA::_term_complete()
                     const float dist = state.location.get_distance_NED(slave).length();
                     const float bearing = degrees(state.location.get_bearing(slave));
                     const float alt_diff = (state.location.alt - slave.alt)*0.01;
-                    calculate_moving_base_yaw(bearing, dist, alt_diff);
+                    if (calculate_moving_base_yaw(bearing, dist, alt_diff)) {
+                        _last_yaw_ms = now;
+                    }
                     state.gps_yaw_configured = true;
 #endif
                 } else {
