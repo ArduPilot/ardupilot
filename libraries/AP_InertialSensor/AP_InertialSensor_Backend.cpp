@@ -181,7 +181,7 @@ void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &
 
 void AP_InertialSensor_Backend::save_gyro_window(const uint8_t instance, const Vector3f &gyro, uint8_t phase)
 {
-#if HAL_WITH_DSP
+#if HAL_GYROFFT_ENABLED
     // capture gyro window for FFT analysis
     if (_imu._fft_window_phase == phase) {
         if (_imu._gyro_window_size > 0) {
@@ -243,7 +243,7 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
     // if the filtering failed in any way then reset the filters and keep the old value
     if (gyro_filtered.is_nan() || gyro_filtered.is_inf()) {
         _imu._gyro_filter[instance].reset();
-#if HAL_WITH_DSP
+#if HAL_GYROFFT_ENABLED
         _imu._post_filter_gyro_filter[instance].reset();
 #endif
         for (auto &notch : _imu.harmonic_notches) {
@@ -756,7 +756,7 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance) /* front end */
     }
     if (_imu._new_gyro_data[instance]) {
         _publish_gyro(instance, _imu._gyro_filtered[instance]);
-#if HAL_WITH_DSP
+#if HAL_GYROFFT_ENABLED
         // copy the gyro samples from the backend to the frontend window for FFTs sampling at less than IMU rate
         _imu._gyro_for_fft[instance] = _imu._last_gyro_for_fft[instance];
 #endif
@@ -768,7 +768,7 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance) /* front end */
 
     if (_last_gyro_filter_hz != _gyro_filter_cutoff() || sensors_converging()) {
         _imu._gyro_filter[instance].set_cutoff_frequency(gyro_rate, _gyro_filter_cutoff());
-#if HAL_WITH_DSP
+#if HAL_GYROFFT_ENABLED
         _imu._post_filter_gyro_filter[instance].set_cutoff_frequency(gyro_rate, _gyro_filter_cutoff());
 #endif
         _last_gyro_filter_hz = _gyro_filter_cutoff();
