@@ -27,6 +27,7 @@
 #include <GCS_MAVLink/GCS_config.h>
 #if HAL_GCS_ENABLED
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_HAL/utility/RingBuffer.h>
 #endif
 
 class AP_CANManager
@@ -113,7 +114,7 @@ public:
 
 #if HAL_GCS_ENABLED
     bool handle_can_forward(mavlink_channel_t chan, const mavlink_command_long_t &packet, const mavlink_message_t &msg);
-    void handle_can_frame(const mavlink_message_t &msg) const;
+    void handle_can_frame(const mavlink_message_t &msg);
     void handle_can_filter_modify(const mavlink_message_t &msg);
 #endif
 
@@ -190,6 +191,15 @@ private:
         uint16_t num_filter_ids;
         uint16_t *filter_ids;
     } can_forward;
+
+    // buffer for MAVCAN frames
+    struct BufferFrame {
+        uint8_t bus;
+        AP_HAL::CANFrame frame;
+    };
+    ObjectBuffer<BufferFrame> *frame_buffer;
+
+    void process_frame_buffer(void);
 #endif // HAL_GCS_ENABLED
 };
 
