@@ -447,6 +447,9 @@ bool AP_GPS_NMEA::_term_complete()
             case _GPS_SENTENCE_AGRICA: {
                 const auto &ag = _agrica;
                 _last_AGRICA_ms = now;
+                _last_vvelocity_ms = now;
+                _last_vaccuracy_ms = now;
+                _last_3D_velocity_ms = now;
                 state.location.lat = ag.lat*1.0e7;
                 state.location.lng = ag.lng*1.0e7;
                 state.location.alt = ag.alt*1.0e2;
@@ -794,6 +797,33 @@ void AP_GPS_NMEA::send_config(void)
     default:
         break;
     }
+}
+
+/*
+  return health status
+ */
+bool AP_GPS_NMEA::is_healthy(void) const
+{
+    switch (get_type()) {
+#if AP_GPS_NMEA_UNICORE_ENABLED
+    case AP_GPS::GPS_TYPE_UNICORE_MOVINGBASE_NMEA:
+    case AP_GPS::GPS_TYPE_UNICORE_NMEA:
+        // we should be getting AGRICA messages
+        return _last_AGRICA_ms != 0;
+#endif // AP_GPS_NMEA_UNICORE_ENABLED
+
+    case AP_GPS::GPS_TYPE_HEMI:
+        // we should be getting HDR for yaw
+        return _last_yaw_ms != 0;
+
+    case AP_GPS::GPS_TYPE_ALLYSTAR:
+        // we should get vertical velocity and accuracy from PHD
+        return _last_vvelocity_ms != 0 && _last_vaccuracy_ms != 0;
+
+    default:
+        break;
+    }
+    return true;
 }
 
 #endif // AP_GPS_NMEA_ENABLED

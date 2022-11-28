@@ -66,6 +66,9 @@ public:
 
     const char *name() const override { return "NMEA"; }
 
+    // driver specific health, returns true if the driver is healthy
+    bool is_healthy(void) const override;
+    
 private:
     /// Coding for the GPS sentences that the parser handles
     enum _sentence_types : uint16_t {      //there are some more than 10 fields in some sentences , thus we have to increase these value.
