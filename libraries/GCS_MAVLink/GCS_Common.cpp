@@ -5031,7 +5031,6 @@ void GCS::try_send_queued_message_for_type(MAV_MISSION_TYPE type) const {
 
 bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
 {
-    bool ret = true;
     switch (id) {
     case MSG_CURRENT_WAYPOINT:
     {
@@ -5040,38 +5039,32 @@ bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
         if (mission != nullptr) {
             mavlink_msg_mission_current_send(chan, mission->get_current_nav_index());
         }
-        ret = true;
         break;
     }
     case MSG_MISSION_ITEM_REACHED:
         CHECK_PAYLOAD_SIZE(MISSION_ITEM_REACHED);
         mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
-        ret = true;
         break;
     case MSG_NEXT_MISSION_REQUEST_WAYPOINTS:
         CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
         gcs().try_send_queued_message_for_type(MAV_MISSION_TYPE_MISSION);
-        ret = true;
         break;
 #if HAL_RALLY_ENABLED
     case MSG_NEXT_MISSION_REQUEST_RALLY:
         CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
         gcs().try_send_queued_message_for_type(MAV_MISSION_TYPE_RALLY);
-        ret = true;
         break;
 #endif
 #if AP_FENCE_ENABLED
     case MSG_NEXT_MISSION_REQUEST_FENCE:
         CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
         gcs().try_send_queued_message_for_type(MAV_MISSION_TYPE_FENCE);
-        ret = true;
         break;
 #endif
     default:
-        ret = true;
         break;
     }
-    return ret;
+    return true;
 }
 
 void GCS_MAVLINK::send_hwstatus()
