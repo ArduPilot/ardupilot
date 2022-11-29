@@ -3,17 +3,13 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_TemperatureSensor/AP_TemperatureSensor_config.h>
+#include <SRV_Channel/SRV_Channel_config.h>
 #include "AP_ESC_Telem_Backend.h"
 
 #if HAL_WITH_ESC_TELEM
 
-#ifdef NUM_SERVO_CHANNELS
- #define ESC_TELEM_MAX_ESCS NUM_SERVO_CHANNELS
-#elif !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
- #define ESC_TELEM_MAX_ESCS 32
-#else
- #define ESC_TELEM_MAX_ESCS 16
-#endif
+#define ESC_TELEM_MAX_ESCS NUM_SERVO_CHANNELS
+static_assert(ESC_TELEM_MAX_ESCS > 0, "Cannot have 0 ESC telemetry instances");
 
 #define ESC_TELEM_DATA_TIMEOUT_MS 5000UL
 #define ESC_RPM_DATA_TIMEOUT_US 1000000UL
