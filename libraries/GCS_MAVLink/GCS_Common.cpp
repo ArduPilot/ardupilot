@@ -3939,6 +3939,15 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         AP_CheckFirmware::handle_msg(chan, msg);
         break;
 #endif
+
+    case MAVLINK_MSG_ID_EFI_STATUS:
+#if HAL_EFI_ENABLED
+        AP_EFI *efi = AP::EFI();
+        if (efi) {
+            efi->handle_EFI_message(msg);
+        }
+#endif
+    	break;
     }
 
 }

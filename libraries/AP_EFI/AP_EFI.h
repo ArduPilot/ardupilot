@@ -84,6 +84,7 @@ public:
         DroneCAN = 5,
         CurrawongECU = 6,
         SCRIPTING  = 7,
+        MAV = 8,
     };
 
     static AP_EFI *get_singleton(void) {
@@ -96,6 +97,8 @@ public:
 #if AP_SCRIPTING_ENABLED
     AP_EFI_Backend* get_backend(uint8_t idx) { return idx==0?backend:nullptr; }
 #endif
+
+    void handle_EFI_message(const mavlink_message_t &msg);
 
 protected:
 
