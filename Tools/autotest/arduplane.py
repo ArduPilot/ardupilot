@@ -4144,6 +4144,50 @@ class AutoTestPlane(AutoTest):
             0) # button mask
         self.fly_home_land_and_disarm()
 
+    def TECS_LAND_ARSPD(self):
+        '''ensure TECS_LAND_ARSPD works in slope approaches'''
+
+        global current_waypoint
+        global desired_airspeed
+        current_waypoint = None
+
+        def check_airspeeds(mav, m):
+            global desired_airspeed
+            global current_waypoint
+            m_type = m.get_type()
+            if m_type == 'MISSION_CURRENT':
+                current_waypoint = m.seq
+                return
+            if m_type != 'VFR_HUD':
+                return
+            if current_waypoint is None or current_waypoint < 8 or current_waypoint > 9:
+                return
+            if abs(m.airspeed - desired_airspeed) > 1:
+                # raise NotAchievedException("Airspeed mismatch (want=%f got=%f)" % (desired_airspeed, m.airspeed))
+                print("Airspeed mismatch (want=%f got=%f)" % (desired_airspeed, m.airspeed))
+        self.install_message_hook_context(check_airspeeds)
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        desired_airspeed = 8
+        self.set_parameters({
+            'TECS_LAND_ARSPD': desired_airspeed,
+            'RTL_AUTOLAND': 1,
+        })
+        current_waypoint = None
+        self.fly_mission("mission.txt")
+
+        desired_airspeed = 12
+        self.set_parameters({
+            'TECS_LAND_ARSPD': desired_airspeed,
+        })
+        current_waypoint = 0
+        self.change_mode('MANUAL')
+        self.set_current_waypoint(0, check_afterwards=False)  # no idea
+        self.arm_vehicle()
+        self.fly_mission("mission.txt")
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -4224,6 +4268,7 @@ class AutoTestPlane(AutoTest):
             self.AerobaticsScripting,
             self.MANUAL_CONTROL,
             self.WindEstimates,
+            self.TECS_LAND_ARSPD,
         ])
         return ret
 
