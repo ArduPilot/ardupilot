@@ -36,7 +36,7 @@ extern const AP_HAL::HAL& hal;
 using namespace SITL;
 
 GPS::GPS(uint8_t _instance) :
-    SerialDevice(),
+    SerialDevice(8192, 2048),
     instance{_instance}
 {
 
