@@ -217,7 +217,7 @@ Util::FlashBootloader Util::flash_bootloader()
 bool Util::get_system_id(char buf[50])
 {
     //uint8_t serialid[12];
-    char board_name[14] = "esp32-buzz   ";
+    char board_name[] = HAL_ESP32_BOARD_NAME" ";
 
     uint8_t base_mac_addr[6] = {0};
     esp_err_t ret = esp_efuse_mac_get_custom(base_mac_addr);
@@ -230,7 +230,7 @@ bool Util::get_system_id(char buf[50])
              base_mac_addr[0], base_mac_addr[1], base_mac_addr[2], base_mac_addr[3], base_mac_addr[4], base_mac_addr[5]);
 
     // null terminate both
-    board_name[13] = 0;
+    //board_name[13] = 0;
     board_mac[19] = 0;
 
     // tack strings togehter

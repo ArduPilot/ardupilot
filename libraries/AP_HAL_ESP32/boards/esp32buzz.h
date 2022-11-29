@@ -14,6 +14,8 @@
  */
 #pragma once
 
+#define HAL_ESP32_BOARD_NAME "esp32-buzz"
+
 // make sensor selection clearer
 #define PROBE_IMU_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,GET_I2C_DEVICE(bus, addr),##args))
 #define PROBE_IMU_SPI(driver, devname, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,hal.spi->get_device(devname),##args))
@@ -180,3 +182,4 @@
 // setting to 2 means log-over-mavlink to a companion computer etc.
 #define HAL_LOGGING_BACKENDS_DEFAULT 1
 
+#define HAL_ESP32_RMT_RX_PIN_NUMBER 4

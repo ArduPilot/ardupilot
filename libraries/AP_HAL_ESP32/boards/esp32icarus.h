@@ -14,6 +14,8 @@
  */
 #pragma once
 
+#define HAL_ESP32_BOARD_NAME "esp32-icarus"
+
 #define HAL_INS_DEFAULT AP_FEATURE_BOARD_DETECT
 #define HAL_INS_MPU60x0_NAME "MPU6000"
 #define TRUE 1
@@ -56,3 +58,4 @@
 
 #define HAL_DISABLE_ADC_DRIVER 1
 #define HAL_USE_ADC 0
+#define HAL_ESP32_RMT_RX_PIN_NUMBER 36
