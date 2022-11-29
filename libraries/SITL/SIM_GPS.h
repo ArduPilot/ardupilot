@@ -66,6 +66,7 @@ public:
     // update state
     void update();
 
+    void write_to_buffer(const char *p, size_t size);
     ssize_t write_to_autopilot(const char *p, size_t size) const override;
 
     uint32_t device_baud() const override;  // 0 meaning unset
@@ -127,6 +128,12 @@ private:
 
     // get delayed data
     gps_data interpolate_data(const gps_data &d, uint32_t delay_ms);
+
+    // outgoing buffer
+    ByteBuffer outbuf{8192};
+
+    // write to autopilot from outbuf
+    void write_from_buffer();
 };
 
 }

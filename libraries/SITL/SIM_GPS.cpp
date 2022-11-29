@@ -170,9 +170,9 @@ void GPS::send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size)
     for (uint16_t i=0; i<size; i++) {
         chk[1] += (chk[0] += buf[i]);
     }
-    write_to_autopilot((char*)hdr, sizeof(hdr));
-    write_to_autopilot((char*)buf, size);
-    write_to_autopilot((char*)chk, sizeof(chk));
+    write_to_buffer((char*)hdr, sizeof(hdr));
+    write_to_buffer((char*)buf, size);
+    write_to_buffer((char*)chk, sizeof(chk));
 }
 
 /*
@@ -490,7 +490,7 @@ void GPS::nmea_printf(const char *fmt, ...)
     char *s = nmea_vaprintf(fmt, ap);
     va_end(ap);
     if (s != nullptr) {
-        write_to_autopilot((const char*)s, strlen(s));
+        write_to_buffer((const char*)s, strlen(s));
         free(s);
     }
 }
@@ -599,12 +599,12 @@ void GPS::sbp_send_message(uint16_t msg_type, uint16_t sender_id, uint8_t len, u
     }
 
     uint8_t preamble = 0x55;
-    write_to_autopilot((char*)&preamble, 1);
-    write_to_autopilot((char*)&msg_type, 2);
-    write_to_autopilot((char*)&sender_id, 2);
-    write_to_autopilot((char*)&len, 1);
+    write_to_buffer((char*)&preamble, 1);
+    write_to_buffer((char*)&msg_type, 2);
+    write_to_buffer((char*)&sender_id, 2);
+    write_to_buffer((char*)&len, 1);
     if (len > 0) {
-        write_to_autopilot((char*)payload, len);
+        write_to_buffer((char*)payload, len);
     }
 
     uint16_t crc;
@@ -612,7 +612,7 @@ void GPS::sbp_send_message(uint16_t msg_type, uint16_t sender_id, uint8_t len, u
     crc = crc16_ccitt((uint8_t*)&(sender_id), 2, crc);
     crc = crc16_ccitt(&(len), 1, crc);
     crc = crc16_ccitt(payload, len, crc);
-    write_to_autopilot((char*)&crc, 2);
+    write_to_buffer((char*)&crc, 2);
 }
 
 void GPS::update_sbp(const struct gps_data *d)
@@ -982,13 +982,13 @@ void GPS::update_nova(const struct gps_data *d)
 
 void GPS::nova_send_message(uint8_t *header, uint8_t headerlength, uint8_t *payload, uint8_t payloadlen)
 {
-    write_to_autopilot((char*)header, headerlength);
-write_to_autopilot((char*)payload, payloadlen);
+    write_to_buffer((char*)header, headerlength);
+    write_to_buffer((char*)payload, payloadlen);
 
     uint32_t crc = CalculateBlockCRC32(headerlength, header, (uint32_t)0);
     crc = CalculateBlockCRC32(payloadlen, payload, crc);
 
-    write_to_autopilot((char*)&crc, 4);
+    write_to_buffer((char*)&crc, 4);
 }
 
 #define CRC32_POLYNOMIAL 0xEDB88320L
@@ -1054,7 +1054,7 @@ void GPS::update_file()
         }
         buf = new uint8_t[header.n];
         if (buf != nullptr && ::read(fd[instance], buf, header.n) == ssize_t(header.n)) {
-            write_to_autopilot((const char *)buf, header.n);
+            write_to_buffer((const char *)buf, header.n);
             delete[] buf;
             buf = nullptr;
             continue;
@@ -1117,6 +1117,7 @@ void GPS::update()
 
         // run at configured GPS rate (default 5Hz)
         if ((now_ms - last_update) < (uint32_t)(1000/_sitl->gps_hertz[idx])) {
+            write_from_buffer();
             return;
         }
 
@@ -1223,6 +1224,8 @@ void GPS::update()
             break;
 #endif
     }
+
+    write_from_buffer();
 }
 
 /*
@@ -1259,6 +1262,29 @@ GPS::gps_data GPS::interpolate_data(const gps_data &d, uint32_t delay_ms)
     }
     // delay is too long, use last sample
     return _gps_history[N-1];
+}
+
+/*
+  write data to outbuf, pending write to the autopilot
+ */
+void GPS::write_to_buffer(const char *p, size_t size)
+{
+    outbuf.write((const uint8_t *)p, size);
+}
+
+/*
+  write data from buffer to autopilot
+ */
+void GPS::write_from_buffer(void)
+{
+    uint32_t available;
+    const uint8_t *ptr = outbuf.readptr(available);
+    if (ptr != nullptr) {
+        const ssize_t wrote = write_to_autopilot((const char *)ptr, available);
+        if (wrote > 0) {
+            outbuf.advance(wrote);
+        }
+    }
 }
 
 #endif  // HAL_SIM_GPS_ENABLED
