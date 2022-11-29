@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+#include <SRV_Channel/SRV_Channel_config.h>
 
 #if defined(NUM_SERVO_CHANNELS) && NUM_SERVO_CHANNELS == 0
 #define HAL_WITH_ESC_TELEM 0
