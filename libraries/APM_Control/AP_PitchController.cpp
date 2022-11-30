@@ -157,8 +157,6 @@ float AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool d
     float rate_y = _ahrs.get_gyro().y;
     float old_I = rate_pid.get_i();
 
-    rate_pid.set_dt(dt);
-
     bool underspeed = aspeed <= 0.5*float(aparm.airspeed_min);
     if (underspeed) {
         limit_I = true;
@@ -169,7 +167,7 @@ float AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool d
     //
     // note that we run AC_PID in radians so that the normal scaling
     // range for IMAX in AC_PID applies (usually an IMAX value less than 1.0)
-    rate_pid.update_all(radians(desired_rate) * scaler * scaler, rate_y * scaler * scaler, limit_I);
+    rate_pid.update_all(radians(desired_rate) * scaler * scaler, rate_y * scaler * scaler, dt, limit_I);
 
     if (underspeed) {
         // when underspeed we lock the integrator
