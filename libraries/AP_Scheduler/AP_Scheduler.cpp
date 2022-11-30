@@ -308,6 +308,10 @@ uint16_t AP_Scheduler::time_available_usec(void) const
  */
 float AP_Scheduler::load_average()
 {
+    // return 1 if filtered main loop rate is 5% below the configured rate
+    if (get_filtered_loop_rate_hz() < get_loop_rate_hz() * 0.95) {
+        return 1.0;
+    }
     if (_spare_ticks == 0) {
         return 0.0f;
     }
