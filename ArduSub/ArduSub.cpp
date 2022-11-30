@@ -134,7 +134,9 @@ void Sub::run_rate_controller()
 {
     //don't run rate controller in manual or motordetection modes
     if (control_mode != MANUAL && control_mode != MOTOR_DETECT) {
-        // run low level rate controllers that only require IMU data
+        // run low level rate controllers that only require IMU data and set loop time
+        attitude_control.set_dt(AP::scheduler().get_last_loop_time_s());
+        pos_control.set_dt(AP::scheduler().get_last_loop_time_s());
         attitude_control.rate_controller_run();
     }
 }
