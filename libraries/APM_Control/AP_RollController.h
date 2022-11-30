@@ -54,7 +54,7 @@ private:
     AP_AutoTune *autotune;
     bool failed_autotune_alloc;
     float _last_out;
-    AC_PID rate_pid{0.08, 0.15, 0, 0.345, 0.666, 3, 0, 12, 0.02, 150, 1};
+    AC_PID rate_pid{0.08, 0.15, 0, 0.345, 0.666, 3, 0, 12, 150, 1};
     float angle_err_deg;
 
     AP_PIDInfo _pid_info;
