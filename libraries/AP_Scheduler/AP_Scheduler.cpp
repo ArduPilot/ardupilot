@@ -426,6 +426,7 @@ void AP_Scheduler::Log_Write_Performance()
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
         time_us          : AP_HAL::micros64(),
+        loop_rate        : (uint16_t)(get_filtered_loop_rate_hz() + 0.5f),
         num_long_running : perf_info.get_num_long_running(),
         num_loops        : perf_info.get_num_loops(),
         max_time         : perf_info.get_max_time(),
