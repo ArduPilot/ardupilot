@@ -7,20 +7,4 @@
 
 include hwdef_pindef.dat
 
-define PRECISION_LANDING 0
-define OSD_ENABLED 1
-
-# --------------------- save flash ----------------------
-define HAL_BATTMON_SMBUS_ENABLE 0
-define HAL_BATTMON_FUEL_ENABLE 0
-define HAL_PARACHUTE_ENABLED 0
-define HAL_SPRAYER_ENABLED 0
-define HAL_GENERATOR_ENABLED 0
-define AC_OAPATHPLANNER_ENABLED 0
-define HAL_BARO_WIND_COMP_ENABLED 0
-define GRIPPER_ENABLED 0
-define HAL_HOTT_TELEM_ENABLED 0
-define HAL_NMEA_OUTPUT_ENABLED 0
-define HAL_BUTTON_ENABLED 0
-define HAL_OREO_LED_ENABLED 0
-define HAL_PICCOLO_CAN_ENABLE 0
+include ../include/minimize_feature.inc
