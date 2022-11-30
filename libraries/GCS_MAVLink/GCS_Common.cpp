@@ -3945,10 +3945,6 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
 
 void GCS_MAVLINK::handle_common_mission_message(const mavlink_message_t &msg)
 {
-    AP_Mission *_mission = AP::mission();
-    if (_mission == nullptr) {
-        return;
-    }
     switch (msg.msgid) {
     case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST: // MAV ID: 38
     {
@@ -3972,7 +3968,10 @@ void GCS_MAVLINK::handle_common_mission_message(const mavlink_message_t &msg)
 
     case MAVLINK_MSG_ID_MISSION_SET_CURRENT:    // MAV ID: 41
     {
-        handle_mission_set_current(*_mission, msg);
+        AP_Mission *_mission = AP::mission();
+        if (_mission != nullptr) {
+            handle_mission_set_current(*_mission, msg);
+        }
         break;
     }
 
@@ -5032,18 +5031,18 @@ void GCS::try_send_queued_message_for_type(MAV_MISSION_TYPE type) const {
 
 bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
 {
-    AP_Mission *mission = AP::mission();
-    if (mission == nullptr) {
-        return true;
-    }
-
     bool ret = true;
     switch (id) {
     case MSG_CURRENT_WAYPOINT:
+    {
         CHECK_PAYLOAD_SIZE(MISSION_CURRENT);
-        mavlink_msg_mission_current_send(chan, mission->get_current_nav_index());
+        AP_Mission *mission = AP::mission();
+        if (mission != nullptr) {
+            mavlink_msg_mission_current_send(chan, mission->get_current_nav_index());
+        }
         ret = true;
         break;
+    }
     case MSG_MISSION_ITEM_REACHED:
         CHECK_PAYLOAD_SIZE(MISSION_ITEM_REACHED);
         mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
