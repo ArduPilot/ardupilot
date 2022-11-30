@@ -467,10 +467,10 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
 AR_AttitudeControl::AR_AttitudeControl() :
     _steer_angle_p(AR_ATTCONTROL_STEER_ANG_P),
-    _steer_rate_pid(AR_ATTCONTROL_STEER_RATE_P, AR_ATTCONTROL_STEER_RATE_I, AR_ATTCONTROL_STEER_RATE_D, AR_ATTCONTROL_STEER_RATE_FF, AR_ATTCONTROL_STEER_RATE_IMAX, 0.0f, AR_ATTCONTROL_STEER_RATE_FILT, 0.0f, AR_ATTCONTROL_DT),
-    _throttle_speed_pid(AR_ATTCONTROL_THR_SPEED_P, AR_ATTCONTROL_THR_SPEED_I, AR_ATTCONTROL_THR_SPEED_D, 0.0f, AR_ATTCONTROL_THR_SPEED_IMAX, 0.0f, AR_ATTCONTROL_THR_SPEED_FILT, 0.0f, AR_ATTCONTROL_DT),
-    _pitch_to_throttle_pid(AR_ATTCONTROL_PITCH_THR_P, AR_ATTCONTROL_PITCH_THR_I, AR_ATTCONTROL_PITCH_THR_D, 0.0f, AR_ATTCONTROL_PITCH_THR_IMAX, 0.0f, AR_ATTCONTROL_PITCH_THR_FILT, 0.0f, AR_ATTCONTROL_DT),
-    _sailboat_heel_pid(AR_ATTCONTROL_HEEL_SAIL_P, AR_ATTCONTROL_HEEL_SAIL_I, AR_ATTCONTROL_HEEL_SAIL_D, 0.0f, AR_ATTCONTROL_HEEL_SAIL_IMAX, 0.0f, AR_ATTCONTROL_HEEL_SAIL_FILT, 0.0f, AR_ATTCONTROL_DT)
+    _steer_rate_pid(AR_ATTCONTROL_STEER_RATE_P, AR_ATTCONTROL_STEER_RATE_I, AR_ATTCONTROL_STEER_RATE_D, AR_ATTCONTROL_STEER_RATE_FF, AR_ATTCONTROL_STEER_RATE_IMAX, 0.0f, AR_ATTCONTROL_STEER_RATE_FILT, 0.0f),
+    _throttle_speed_pid(AR_ATTCONTROL_THR_SPEED_P, AR_ATTCONTROL_THR_SPEED_I, AR_ATTCONTROL_THR_SPEED_D, 0.0f, AR_ATTCONTROL_THR_SPEED_IMAX, 0.0f, AR_ATTCONTROL_THR_SPEED_FILT, 0.0f),
+    _pitch_to_throttle_pid(AR_ATTCONTROL_PITCH_THR_P, AR_ATTCONTROL_PITCH_THR_I, AR_ATTCONTROL_PITCH_THR_D, 0.0f, AR_ATTCONTROL_PITCH_THR_IMAX, 0.0f, AR_ATTCONTROL_PITCH_THR_FILT, 0.0f),
+    _sailboat_heel_pid(AR_ATTCONTROL_HEEL_SAIL_P, AR_ATTCONTROL_HEEL_SAIL_I, AR_ATTCONTROL_HEEL_SAIL_D, 0.0f, AR_ATTCONTROL_HEEL_SAIL_IMAX, 0.0f, AR_ATTCONTROL_HEEL_SAIL_FILT, 0.0f)
     {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -566,10 +566,7 @@ float AR_AttitudeControl::get_steering_out_rate(float desired_rate, bool motor_l
         _desired_turn_rate = constrain_float(_desired_turn_rate, -turn_rate_max, turn_rate_max);
     }
 
-    // set PID's dt
-    _steer_rate_pid.set_dt(dt);
-
-    float output = _steer_rate_pid.update_all(_desired_turn_rate, AP::ahrs().get_yaw_rate_earth(), (motor_limit_left || motor_limit_right));
+    float output = _steer_rate_pid.update_all(_desired_turn_rate, AP::ahrs().get_yaw_rate_earth(), dt, (motor_limit_left || motor_limit_right));
     output += _steer_rate_pid.get_ff();
     // constrain and return final output
     return output;
@@ -648,9 +645,6 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
     // acceleration limit desired speed
     _desired_speed = get_desired_speed_accel_limited(desired_speed, dt);
 
-    // set PID's dt
-    _throttle_speed_pid.set_dt(dt);
-
     // calculate base throttle (protect against divide by zero)
     float throttle_base = 0.0f;
     if (is_positive(cruise_speed) && is_positive(cruise_throttle)) {
@@ -658,7 +652,7 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
     }
 
     // calculate final output
-    float throttle_out = _throttle_speed_pid.update_all(_desired_speed, speed, (motor_limit_low || motor_limit_high || _throttle_limit_low || _throttle_limit_high));
+    float throttle_out = _throttle_speed_pid.update_all(_desired_speed, speed, dt, (motor_limit_low || motor_limit_high || _throttle_limit_low || _throttle_limit_high));
     throttle_out += _throttle_speed_pid.get_ff();
     throttle_out += throttle_base;
 
@@ -761,15 +755,12 @@ float AR_AttitudeControl::get_throttle_out_from_pitch(float desired_pitch, float
         _pitch_limited = false;
     }
 
-    // set PID's dt
-    _pitch_to_throttle_pid.set_dt(dt);
-
     // initialise output to feed forward from current pitch angle
     const float pitch_rad = AP::ahrs().pitch;
     float output = sinf(pitch_rad) * _pitch_to_throttle_ff;
 
     // add regular PID control
-    output += _pitch_to_throttle_pid.update_all(desired_pitch, pitch_rad, motor_limit);
+    output += _pitch_to_throttle_pid.update_all(desired_pitch, pitch_rad, dt, motor_limit);
     output += _pitch_to_throttle_pid.get_ff();
 
     // update pitch limits for next iteration
@@ -821,10 +812,7 @@ float AR_AttitudeControl::get_sail_out_from_heel(float desired_heel, float dt)
     }
     _heel_controller_last_ms = now;
 
-    // set PID's dt
-    _sailboat_heel_pid.set_dt(dt);
-
-    _sailboat_heel_pid.update_all(desired_heel, fabsf(AP::ahrs().roll));
+    _sailboat_heel_pid.update_all(desired_heel, fabsf(AP::ahrs().roll), dt);
 
     // get feed-forward
     const float ff = _sailboat_heel_pid.get_ff();
