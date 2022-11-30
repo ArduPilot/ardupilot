@@ -35,6 +35,7 @@ public:
     uint32_t get_avg_time() const;
     uint32_t get_stddev_time() const;
     float    get_filtered_time() const;
+    float get_filtered_loop_rate_hz() const;
     void set_loop_rate(uint16_t rate_hz);
 
     void update_logging() const;
