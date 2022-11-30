@@ -863,8 +863,7 @@ void Plane::calc_nav_roll()
 
         float bank_limit = degrees(atanf(guided_state.target_heading_accel_limit/GRAVITY_MSS)) * 1e2f;
 
-        g2.guidedHeading.update_error(error); // push error into AC_PID , possible improvement is to use update_all instead.?
-        g2.guidedHeading.set_dt(delta);
+        g2.guidedHeading.update_error(error, delta); // push error into AC_PID , possible improvement is to use update_all instead.?
 
         float i = g2.guidedHeading.get_i(); // get integrator TODO
         if (((is_negative(error) && !guided_state.target_heading_limit_low) || (is_positive(error) && !guided_state.target_heading_limit_high))) {
