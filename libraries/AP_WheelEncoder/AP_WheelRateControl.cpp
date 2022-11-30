@@ -189,9 +189,6 @@ float AP_WheelRateControl::get_rate_controlled_throttle(uint8_t instance, float 
     // determine which PID instance to use
     AC_PID& rate_pid = (instance == 0) ? _rate_pid0 : _rate_pid1;
 
-    // set PID's dt
-    rate_pid.set_dt(dt);
-
     // check for timeout
     uint32_t now = AP_HAL::millis();
     if (now - _last_update_ms > AP_WHEEL_RATE_CONTROL_TIMEOUT_MS) {
@@ -205,11 +202,11 @@ float AP_WheelRateControl::get_rate_controlled_throttle(uint8_t instance, float 
     // convert desired rate as a percentage to radians/sec
     float desired_rate = desired_rate_pct * 0.01f * get_rate_max_rads();
 
-    // get actual rate from wheeel encoder
+    // get actual rate from wheel encoder
     float actual_rate = _wheel_encoder.get_rate(instance);
 
     // constrain and set limit flags
-    float output = rate_pid.update_all(desired_rate, actual_rate, (_limit[instance].lower || _limit[instance].upper));
+    float output = rate_pid.update_all(desired_rate, actual_rate, dt, (_limit[instance].lower || _limit[instance].upper));
     output += rate_pid.get_ff();
 
     // set limits for next iteration
