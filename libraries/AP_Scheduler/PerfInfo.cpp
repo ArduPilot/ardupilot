@@ -183,6 +183,17 @@ float AP::PerfInfo::get_filtered_time() const
     return filtered_loop_time;
 }
 
+// return low pass filtered loop rate in hz
+float AP::PerfInfo::get_filtered_loop_rate_hz() const
+{
+    const float filt_time_s = get_filtered_time();
+    if (filt_time_s <= 0) {
+        return loop_rate_hz;
+    }
+    return 1.0 / filt_time_s;
+}
+
+
 void AP::PerfInfo::update_logging() const
 {
     gcs().send_text(MAV_SEVERITY_INFO,
@@ -191,7 +202,7 @@ void AP::PerfInfo::update_logging() const
                     (unsigned)get_num_loops(),
                     (unsigned long)get_max_time(),
                     (unsigned long)get_min_time(),
-                    (unsigned)(0.5+(1.0f/get_filtered_time())),
+                    (unsigned)(0.5+get_filtered_loop_rate_hz()),
                     (unsigned long)get_stddev_time(),
                     (unsigned long)AP::scheduler().get_extra_loop_us());
 }

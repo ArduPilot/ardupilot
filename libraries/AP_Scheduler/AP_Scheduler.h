@@ -163,8 +163,14 @@ public:
         return _loop_period_s;
     }
 
+    // get the filtered main loop time in seconds
     float get_filtered_loop_time(void) const {
         return perf_info.get_filtered_time();
+    }
+
+    // get the filtered active main loop rate
+    float get_filtered_loop_rate_hz() {
+        return perf_info.get_filtered_loop_rate_hz();
     }
 
     // get the time in seconds that the last loop took
