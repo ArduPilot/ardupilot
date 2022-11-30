@@ -1242,31 +1242,31 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Param: PROP_DSKLD
     // @DisplayName: Propeller disk loading
-    // @Description: This is the vehicle weight in kg divided by the total disk area of all propellers in m^2. It is used to calculate the effect of prop wash onc control surfaces. The effect on individual control surfaces is controlled by the PROP_RLL_COMP, PROP_PIT_COMP and PROP_YAW_COMP parameters. This correction is not applied during VTOL flight modes.
+    // @Description: This is the vehicle weight in kg divided by the total disk area of all propellers in m^2. It is used to calculate the effect of prop wash on ccontrol surfaces. The effect on individual control surfaces is controlled by the PROP_RLL_COMP, PROP_PIT_COMP and PROP_YAW_COMP parameters. This correction is not applied during VTOL flight modes. The following formula can be used: PROP_DSKLD = weight / (n_props x 0.785 x dia x dia), where n_props is the number of propellers, dia is the propeller diameter in metres and weight is the aircraft weight in Kilograms.
     // @Units: kg/m/m
     // @Range: 0 50
-    // @User: Standard
+    // @User: Advanced
     AP_GROUPINFO("PROP_DSKLD", 35, ParametersG2, prop_disc_loading, 0),
 
     // @Param: PROP_RLL_COMP
     // @DisplayName: Propwash roll compensation
-    // @Description: This is a scaling factor applied to the theoretical calculation of aileron effectiveness variation with propeller thrust. The PROP_DSKLD parameter must be set for this to work,
+    // @Description: This is a scaling factor applied to the theoretical calculation of aileron effectiveness variation with propeller thrust. The PROP_DSKLD parameter must be set for this to work.
     // @Range: 0 1
-    // @User: Standard
+    // @User: Advanced
     AP_GROUPINFO("PROP_RLL_COMP", 36, ParametersG2, propwash_roll_comp, 0),
 
     // @Param: PROP_PIT_COMP
     // @DisplayName: Propwash pitch compensation
-    // @Description: This is a scaling factor applied to the theoretical calculation of elevator effectiveness variation with propeller thrust. The PROP_DSKLD parameter must be set for this to work,
+    // @Description: This is a scaling factor applied to the theoretical calculation of elevator effectiveness variation with propeller thrust. The PROP_DSKLD parameter must be set for this to work.
     // @Range: 0 1
-    // @User: Standard
+    // @User: Advanced
     AP_GROUPINFO("PROP_PIT_COMP", 37, ParametersG2, propwash_pitch_comp, 0),
 
     // @Param: PROP_YAW_COMP
     // @DisplayName: Propwash yaw compensation
-    // @Description: This is a scaling factor applied to the theoretical calculation of rudder effectiveness variation with propeller thrust. The PROP_DSKLD parameter must be set for this to work,
+    // @Description: This is a scaling factor applied to the theoretical calculation of rudder effectiveness variation with propeller thrust. The PROP_DSKLD parameter must be set for this to work.
     // @Range: 0 1
-    // @User: Standard
+    // @User: Advanced
     AP_GROUPINFO("PROP_YAW_COMP", 38, ParametersG2, propwash_yaw_comp, 0),
 
     AP_GROUPEND
