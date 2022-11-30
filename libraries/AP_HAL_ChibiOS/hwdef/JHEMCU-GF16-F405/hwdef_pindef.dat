@@ -167,5 +167,3 @@ define HAL_OSD_TYPE_DEFAULT 1
 # Font for OSD
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
-define AP_PARAM_MAX_EMBEDDED_PARAM 1024
-define HAL_WITH_DSP FALSE
