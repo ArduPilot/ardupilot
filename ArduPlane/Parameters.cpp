@@ -1260,14 +1260,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Description: This is a scaling factor applied to the theoretical calculation of elevator effectiveness variation with propeller thrust. The PROP_DSKLD parameter must be set for this to work,
     // @Range: 0 1
     // @User: Standard
-    AP_GROUPINFO("PROP_PIT_COMP", 37, ParametersG2, propwash_pitch_comp, 0.3),
+    AP_GROUPINFO("PROP_PIT_COMP", 37, ParametersG2, propwash_pitch_comp, 0),
 
     // @Param: PROP_YAW_COMP
     // @DisplayName: Propwash yaw compensation
     // @Description: This is a scaling factor applied to the theoretical calculation of rudder effectiveness variation with propeller thrust. The PROP_DSKLD parameter must be set for this to work,
     // @Range: 0 1
     // @User: Standard
-    AP_GROUPINFO("PROP_YAW_COMP", 38, ParametersG2, propwash_yaw_comp, 0.5),
+    AP_GROUPINFO("PROP_YAW_COMP", 38, ParametersG2, propwash_yaw_comp, 0),
 
     AP_GROUPEND
 };
