@@ -2,6 +2,12 @@ APM:Sub Release Notes:
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.1 Beta3 1-December-2022
+
+ - Fix Leak detection on Navigator
+ - Fix missing deadzone in yaw input for AUTO, SURFACE, GUIDED, and CIRCLE modes
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 4.1.1 Beta2 24-October-2022
 
  - Fix GUIDED MODE bouncing back to origin after velocity command
