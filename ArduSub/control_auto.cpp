@@ -123,7 +123,7 @@ void Sub::auto_wp_run()
     float target_yaw_rate = 0;
     if (!failsafe.pilot_input) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input()) * 100;
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz()) * 100;
         if (!is_zero(target_yaw_rate)) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
@@ -313,7 +313,7 @@ void Sub::auto_loiter_run()
     // accept pilot input of yaw
     float target_yaw_rate = 0;
     if (!failsafe.pilot_input) {
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input()) * 100;
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz()) * 100;
     }
 
     // set motors to full range
