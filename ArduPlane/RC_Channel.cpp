@@ -156,6 +156,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::FBWA:
 #if HAL_QUADPLANE_ENABLED
     case AUX_FUNC::QRTL:
+    case AUX_FUNC::QSTABILIZE:
 #endif
     case AUX_FUNC::FBWA_TAILDRAGGER:
     case AUX_FUNC::FWD_THR:
@@ -259,6 +260,10 @@ bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
 #if HAL_QUADPLANE_ENABLED
     case AUX_FUNC::QRTL:
         do_aux_function_change_mode(Mode::Number::QRTL, ch_flag);
+        break;
+
+    case AUX_FUNC::QSTABILIZE:
+        do_aux_function_change_mode(Mode::Number::QSTABILIZE, ch_flag);
         break;
 #endif
 
