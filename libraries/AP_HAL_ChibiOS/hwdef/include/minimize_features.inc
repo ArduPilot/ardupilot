@@ -41,3 +41,6 @@ define AP_SMARTAUDIO_ENABLED 0
 
 # minimized boards don't get configuration via Tramp by default:
 define AP_TRAMP_ENABLED 0
+
+# various structures increase the flash size when using >16 servos:
+define NUM_SERVO_CHANNELS 16
