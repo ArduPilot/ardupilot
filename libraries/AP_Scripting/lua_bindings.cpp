@@ -10,6 +10,10 @@
 #include <AP_Scripting/AP_Scripting.h>
 #include <string.h>
 
+extern "C" {
+#include "lua/src/lmem.h"
+}
+
 extern const AP_HAL::HAL& hal;
 
 // millis
@@ -168,15 +172,8 @@ int AP_Logger_Write(lua_State *L) {
         return luaL_argerror(L, args, "unknown format");
     }
 
-    lua_Alloc allocf = lua_getallocf(L, nullptr);
-    char *buffer = (char*)allocf(nullptr, nullptr, 0, msg_len);
-    if (buffer == nullptr) {
-        lua_gc(L, LUA_GCCOLLECT, 0);
-        buffer = (char*)allocf(nullptr, nullptr, 0, msg_len);
-        if (buffer == nullptr) {
-            return luaL_error(L, "Buffer allocation failed");
-        }
-    }
+    // note that luaM_malloc will never return null, it will fault instead
+    char *buffer = (char*)luaM_malloc(L, msg_len);
 
     // add logging headers
     uint8_t offset = 0;
@@ -210,7 +207,7 @@ int AP_Logger_Write(lua_State *L) {
                 int isnum;
                 const lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
                 if (!isnum) {
-                    allocf(nullptr, buffer, 0, 0);
+                    luaM_free(L, buffer);
                     luaL_argerror(L, arg_index, "argument out of range");
                     // no return
                 }
@@ -223,7 +220,7 @@ int AP_Logger_Write(lua_State *L) {
                 int isnum;
                 const lua_Number tmp1 = lua_tonumberx(L, arg_index, &isnum);
                 if (!isnum) {
-                    allocf(nullptr, buffer, 0, 0);
+                    luaM_free(L, buffer);
                     luaL_argerror(L, arg_index, "argument out of range");
                     // no return
                 }
@@ -241,7 +238,7 @@ int AP_Logger_Write(lua_State *L) {
                 int isnum;
                 const lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
                 if (!isnum || (tmp1 < 0) || (tmp1 > UINT8_MAX)) {
-                    allocf(nullptr, buffer, 0, 0);
+                    luaM_free(L, buffer);
                     luaL_argerror(L, arg_index, "argument out of range");
                     // no return
                 }
@@ -264,7 +261,7 @@ int AP_Logger_Write(lua_State *L) {
                     } else {
                         const lua_Number v_float = lua_tonumberx(L, arg_index, &success);
                         if (!success || (v_float < 0) || (v_float > float(UINT32_MAX))) {
-                            allocf(nullptr, buffer, 0, 0);
+                            luaM_free(L, buffer);
                             luaL_argerror(L, arg_index, "argument out of range");
                             // no return
                         }
@@ -284,7 +281,7 @@ int AP_Logger_Write(lua_State *L) {
                 break;
             }
             default: {
-                allocf(nullptr, buffer, 0, 0);
+                luaM_free(L, buffer);
                 luaL_error(L, "%c unsupported format",fmt_cat[index]);
                 // no return
             }
@@ -293,12 +290,12 @@ int AP_Logger_Write(lua_State *L) {
             size_t slen;
             const char *tmp = lua_tolstring(L, arg_index, &slen);
             if (tmp == nullptr) {
-                allocf(nullptr, buffer, 0, 0);
+                luaM_free(L, buffer);
                 luaL_argerror(L, arg_index, "argument out of range");
                 // no return
             }
             if (slen > charlen) {
-                allocf(nullptr, buffer, 0, 0);
+                luaM_free(L, buffer);
                 luaL_error(L, "arg %d too long for %c format",arg_index,fmt_cat[index]);
                 // no return
             }
@@ -312,7 +309,7 @@ int AP_Logger_Write(lua_State *L) {
 
     AP_logger->WriteBlock(buffer,msg_len);
 
-    allocf(nullptr, buffer, 0, 0);
+    luaM_free(L, buffer);
 
     return 0;
 }
