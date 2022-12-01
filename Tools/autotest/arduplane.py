@@ -2426,7 +2426,7 @@ class AutoTestPlane(AutoTest):
         self.wait_altitude(alt_min-10, alt_min, timeout=600, relative=True)
 
         self.progress("Waiting for throttle up")
-        self.wait_servo_channel_value(3, 1200, timeout=2, comparator=operator.gt)
+        self.wait_servo_channel_value(3, 1200, timeout=5, comparator=operator.gt)
 
         self.progress("Waiting for climb to cutoff altitude")
         alt_ctf = self.get_parameter('SOAR_ALT_CUTOFF')
