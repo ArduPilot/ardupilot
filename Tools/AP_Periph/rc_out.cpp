@@ -127,8 +127,9 @@ void AP_Periph_FW::rcout_handle_safety_state(uint8_t safety_state)
 void AP_Periph_FW::rcout_update()
 {
     uint32_t now_ms = AP_HAL::millis();
-    const uint16_t esc_timeout_ms = 100U;
-    const bool has_esc_rawcommand_timed_out = (now_ms - last_esc_raw_command_ms) >= esc_timeout_ms;
+
+    const uint16_t esc_timeout_ms = g.esc_command_timeout_ms >= 0 ? g.esc_command_timeout_ms : 0; // Don't allow negative timeouts!
+    const bool has_esc_rawcommand_timed_out = esc_timeout_ms != 0 && ((now_ms - last_esc_raw_command_ms) >= esc_timeout_ms);
     if (last_esc_num_channels > 0 && has_esc_rawcommand_timed_out) {
         // If we've seen ESCs previously, and a timeout has occurred, then zero the outputs
         int16_t esc_output[last_esc_num_channels] {};
