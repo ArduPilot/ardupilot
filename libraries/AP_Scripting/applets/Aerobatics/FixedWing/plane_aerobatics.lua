@@ -437,29 +437,20 @@ end
 
 
 --[[
-  all roll components inherit from RollComponent object
---]]
-_RollComponent = inheritsFrom(nil)
-function _RollComponent:get_roll(t)
-   return 0
-end
-
-function RollComponent()
-   local self = _RollComponent:create()
-   self.name = nil
-   return self
-end
-
---[[
   roll component that goes through a fixed total angle at a fixed roll rate
 --]]
-_roll_angle = inheritsFrom(_RollComponent, 'roll_angle')
+_roll_angle = inheritsFrom(nil, 'roll_angle')
 function _roll_angle:get_roll(t)
+   if self.angle == nil then
+      return 0
+   end
    return self.angle * t
 end
 function roll_angle(angle)
    local self = _roll_angle:create()
-   self.angle = angle
+   if angle ~= 0 then
+      self.angle = angle
+   end
    return self
 end
 
@@ -468,9 +459,10 @@ end
    degrees/s, then holds that angle, then banks back to zero at
    AEROM_ENTRY_RATE degrees/s
 --]]
-_roll_angle_entry_exit = inheritsFrom(_RollComponent, "roll_angle_entry_exit")
+_roll_angle_entry_exit = inheritsFrom(nil, "roll_angle_entry_exit")
 function _roll_angle_entry_exit:get_roll(t, time_s)
-   local entry_t = self.entry_s / time_s
+   local entry_s = math.abs(self.angle) / AEROM_ENTRY_RATE:get()
+   local entry_t = entry_s / time_s
    if entry_t > 0.5 then
       entry_t = 0.5
    end
@@ -492,7 +484,6 @@ end
 function roll_angle_entry_exit(angle)
    local self = _roll_angle_entry_exit:create()
    self.angle = angle
-   self.entry_s = math.abs(self.angle) / AEROM_ENTRY_RATE:get()
    return self
 end
 
@@ -500,10 +491,11 @@ end
    roll component that banks to _angle over AEROM_ENTRY_RATE
    degrees/s, then holds that angle
 --]]
-_roll_angle_entry = inheritsFrom(_RollComponent, "roll_angle_entry")
+_roll_angle_entry = inheritsFrom(nil, "roll_angle_entry")
 
 function _roll_angle_entry:get_roll(t, time_s)
-   local entry_t = self.entry_s / time_s
+   local entry_s = math.abs(self.angle) / AEROM_ENTRY_RATE:get()
+   local entry_t = entry_s / time_s
    if entry_t > 0.5 then
       entry_t = 0.5
    end
@@ -516,7 +508,6 @@ end
 function roll_angle_entry(angle)
    local self = _roll_angle_entry:create()
    self.angle = angle
-   self.entry_s = math.abs(self.angle) / AEROM_ENTRY_RATE:get()
    return self
 end
 
@@ -524,9 +515,10 @@ end
    roll component that holds angle until the end of the subpath, then
    rolls back to 0 at the AEROM_ENTRY_RATE
 --]]
-_roll_angle_exit = inheritsFrom(_RollComponent, "roll_angle_exit")
+_roll_angle_exit = inheritsFrom(nil, "roll_angle_exit")
 function _roll_angle_exit:get_roll(t, time_s)
-   local entry_t = self.entry_s / time_s
+   local entry_s = math.abs(angle) / AEROM_ENTRY_RATE:get()
+   local entry_t = entry_s / time_s
    if t < 1.0 - entry_t then
       return 0
    end
@@ -538,15 +530,14 @@ end
 
 function roll_angle_exit(angle)
    local self = _roll_angle_exit:create()
-   self.angle = _angle
-   self.entry_s = math.abs(angle) / AEROM_ENTRY_RATE:get()
+   self.angle = angle
    return self
 end
 
 --[[
    implement a sequence of rolls, specified as a list of {proportion, roll_angle} pairs
 --]]
-_roll_sequence = inheritsFrom(_RollComponent, "roll_sequence")
+_roll_sequence = inheritsFrom(nil, "roll_sequence")
 function _roll_sequence:get_roll(t)
    for i = 1, #self.seq do
       if t <= self.end_t[i] then
@@ -884,17 +875,23 @@ function _path_composer:subpath(i)
    end
    return self.cache_sp
 end
-   
+
+function _path_composer:end_time(i)
+   local proportion = self.lengths[i] / self.total_length
+   return self.start_time[i] + proportion
+end
+
 function _path_composer:get_subpath_t(t)
    if self.last_subpath_t[1] == t then
       -- use cached value
       return self.last_subpath_t[2], self.last_subpath_t[3]
    end
    local i = 1
-   while t >= self.end_time[i] and i < self.num_sub_paths do
+   while t >= self:end_time(i) and i < self.num_sub_paths do
       i = i + 1
    end
-   local subpath_t = (t - self.start_time[i]) / self.proportions[i]
+   local proportion = self.lengths[i]/self.total_length
+   local subpath_t = (t - self.start_time[i]) / proportion
    self.last_subpath_t = { t, subpath_t, i }
    local sp = self:subpath(i)
    if i > self.highest_i and t < 1.0 and t > 0 then
@@ -928,7 +925,7 @@ end
 function _path_composer:get_roll_correction(t)
    local subpath_t, i = self:get_subpath_t(t)
    local sp = self:subpath(i)
-   return sp:get_roll_correction(subpath_t) + self.start_roll_correction[i]
+   return sp:get_roll_correction(subpath_t) + (self.start_roll_correction[i] or 0)
 end
    
 function _path_composer:get_length()
@@ -960,9 +957,9 @@ function _path_composer:get_next_segment_start(t)
    local subpath_t, i = self:get_subpath_t(t)
    local sp = self:subpath(i)
    if sp.get_next_segment_start ~= nil then
-      return self.start_time[i] + (sp:get_next_segment_start(subpath_t) * (self.end_time[i] - self.start_time[i]))
+      return self.start_time[i] + (sp:get_next_segment_start(subpath_t) * (self:end_time(i) - self.start_time[i]))
    end
-   return self.end_time[i]
+   return self:end_time(i)
 end
 
 function path_composer(name, subpaths)
@@ -970,9 +967,7 @@ function path_composer(name, subpaths)
    self.name = name
    self.subpaths = subpaths
    self.lengths = {}
-   self.proportions = {}
    self.start_time = {}
-   self.end_time = {}
    self.start_orientation = {}
    self.start_pos = {}
    self.start_angle = {}
@@ -995,7 +990,9 @@ function path_composer(name, subpaths)
       self.start_orientation[i] = quat_copy(orientation)
       self.start_pos[i] = pos:copy()
       self.start_angle[i] = angle
-      self.start_roll_correction[i] = roll_correction
+      if roll_correction ~= 0 then
+         self.start_roll_correction[i] = roll_correction
+      end
 
       local sp = self:subpath(i)
 
@@ -1044,10 +1041,9 @@ function path_composer(name, subpaths)
    -- work out the proportion of the total time we will spend in each sub path
    local total_time = 0
    for i = 1, self.num_sub_paths do
-      self.proportions[i] = self.lengths[i] / self.total_length
       self.start_time[i] = total_time
-      self.end_time[i] = total_time + self.proportions[i]
-      total_time = total_time + self.proportions[i]
+      local proportion = self.lengths[i]/self.total_length
+      total_time = total_time + proportion
    end
    return self
 end
@@ -1066,7 +1062,9 @@ function make_paths(name, paths)
       end
       -- copy over path attributes
       for k, v in pairs(path_attribs) do
-         p[i][v] = paths[i][v]
+         if paths[i][v] ~= nil then
+            p[i][v] = paths[i][v]
+         end
       end
    end
    return path_composer(name, p)
