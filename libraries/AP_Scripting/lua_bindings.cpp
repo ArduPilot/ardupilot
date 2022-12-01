@@ -171,7 +171,11 @@ int AP_Logger_Write(lua_State *L) {
     lua_Alloc allocf = lua_getallocf(L, nullptr);
     char *buffer = (char*)allocf(nullptr, nullptr, 0, msg_len);
     if (buffer == nullptr) {
-        return luaL_error(L, "Buffer allocation failed");
+        lua_gc(L, LUA_GCCOLLECT, 0);
+        buffer = (char*)allocf(nullptr, nullptr, 0, msg_len);
+        if (buffer == nullptr) {
+            return luaL_error(L, "Buffer allocation failed");
+        }
     }
 
     // add logging headers
