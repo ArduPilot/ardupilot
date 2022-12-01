@@ -2876,6 +2876,16 @@ def add_apperiph_defaults(f):
 #define AP_ROBOTISSERVO_ENABLED 0
 #endif
 
+// by default an AP_Periph defines as many servo output channels as
+// there are PWM outputs:
+#ifndef NUM_SERVO_CHANNELS
+#ifdef HAL_PWM_COUNT
+#define NUM_SERVO_CHANNELS HAL_PWM_COUNT
+#else
+#define NUM_SERVO_CHANNELS 0
+#endif
+#endif
+
 #ifndef AP_STATS_ENABLED
 #define AP_STATS_ENABLED 0
 #endif
