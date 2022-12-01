@@ -96,7 +96,7 @@ local function TrickDef(id, arg1, arg2, arg3, arg4)
 end
 
 -- constrain a value between limits
-function constrain(v, vmin, vmax)
+local function constrain(v, vmin, vmax)
    if v < vmin then
       v = vmin
    end
@@ -106,7 +106,7 @@ function constrain(v, vmin, vmax)
    return v
 end
 
-function sq(x)
+local function sq(x)
    return x*x
 end
 
@@ -149,7 +149,7 @@ local last_named_float_t = 0
 
 local path_var = {}
 
-function wrap_360(angle)
+local function wrap_360(angle)
    local res = math.fmod(angle, 360.0)
     if res < 0 then
         res = res + 360.0
@@ -157,7 +157,7 @@ function wrap_360(angle)
     return res
 end
 
-function wrap_180(angle) 
+local function wrap_180(angle)
     local res = wrap_360(angle)
     if res > 180 then
        res = res - 360
@@ -165,13 +165,13 @@ function wrap_180(angle)
     return res
 end
 
-function wrap_pi(angle)
+local function wrap_pi(angle)
    local angle_deg = math.deg(angle)
    local angle_wrapped = wrap_180(angle_deg)
    return math.rad(angle_wrapped)
 end
 
-function wrap_2pi(angle)
+local function wrap_2pi(angle)
    local angle_deg = math.deg(angle)
    local angle_wrapped = wrap_360(angle_deg)
    return math.rad(angle_wrapped)
@@ -181,7 +181,7 @@ end
 --[[
    calculate an alpha for a first order low pass filter
 --]]
-function calc_lowpass_alpha(dt, time_constant)
+local function calc_lowpass_alpha(dt, time_constant)
    local rc = time_constant/(math.pi*2)
    return dt/(dt+rc)
 end
@@ -189,7 +189,7 @@ end
 --[[ get the c.y element of the DCM body to earth matrix, which gives
    the projection of the vehicle y axis in the down direction
 --]]
-function get_ahrs_dcm_c_y()
+local function get_ahrs_dcm_c_y()
    local ahrs_quat = ahrs:get_quaternion()
    local q1 = ahrs_quat:q1()
    local q2 = ahrs_quat:q2()
@@ -300,7 +300,7 @@ end
 
 local speed_PI = speed_controller(SPD_P, SPD_I, THR_PIT_FF, 100.0, 0.0, 100.0)
 
-function sgn(x)
+local function sgn(x)
    local eps = 0.000001
    if (x > eps) then
       return 1.0
@@ -311,7 +311,7 @@ function sgn(x)
    end
 end
 
-function get_wp_location(i)
+local function get_wp_location(i)
    local m = mission:get_item(i)
    local loc = Location()
    loc:lat(m:x())
@@ -323,7 +323,7 @@ function get_wp_location(i)
    return loc
 end
 
-function resolve_jump(i)
+local function resolve_jump(i)
    local m = mission:get_item(i)
    while m:command() == DO_JUMP do
       i = math.floor(m:param1())
@@ -335,7 +335,7 @@ end
 --[[
    Wrapper to construct a Vector3f{x, y, z} from (x, y, z)
 --]]
-function makeVector3f(x, y, z)
+local function makeVector3f(x, y, z)
    local vec = Vector3f()
    vec:x(x)
    vec:y(y)
@@ -347,7 +347,7 @@ end
    get quaternion rotation between vector1 and vector2
    with thanks to https://stackoverflow.com/questions/1171849/finding-quaternion-representing-the-rotation-from-one-vector-to-another
 --]]
-function vectors_to_quat_rotation(vector1, vector2)
+local function vectors_to_quat_rotation(vector1, vector2)
    local v1 = vector1:copy()
    local v2 = vector2:copy()
    v1:normalize()
@@ -367,7 +367,7 @@ end
 --[[
    get path rate from two tangents and delta time
 --]]
-function tangents_to_rate(t1, t2, dt)
+local function tangents_to_rate(t1, t2, dt)
    local q_delta = vectors_to_quat_rotation(t1, t2)
    local rate_rads = Vector3f()
    q_delta:to_axis_angle(rate_rads)
@@ -378,7 +378,7 @@ end
 --[[
    create a class that inherits from a base class
 --]]
-function inheritsFrom(baseClass, _name)
+local function inheritsFrom(baseClass, _name)
     local new_class = { name = _name }
     local class_mt = { __index = new_class }
 
@@ -407,7 +407,7 @@ end
 --[[
    rotate a vector by a quaternion
 --]]
-function quat_earth_to_body(quat, v)
+local function quat_earth_to_body(quat, v)
    local v = v:copy()
    quat:earth_to_body(v)
    return v
@@ -416,7 +416,7 @@ end
 --[[
    rotate a vector by a inverse quaternion
 --]]
-function quat_body_to_earth(quat, v)
+local function quat_body_to_earth(quat, v)
    local v = v:copy()
    quat:inverse():earth_to_body(v)
    return v
@@ -425,7 +425,7 @@ end
 --[[
    copy a quaternion
 --]]
-function quat_copy(q)
+local function quat_copy(q)
    return q:inverse():inverse()
 end
 
@@ -439,7 +439,7 @@ end
 --[[
   roll component that goes through a fixed total angle at a fixed roll rate
 --]]
-_roll_angle = inheritsFrom(nil, 'roll_angle')
+local _roll_angle = inheritsFrom(nil, 'roll_angle')
 function _roll_angle:get_roll(t)
    if self.angle == nil then
       return 0
@@ -459,7 +459,7 @@ end
    degrees/s, then holds that angle, then banks back to zero at
    AEROM_ENTRY_RATE degrees/s
 --]]
-_roll_angle_entry_exit = inheritsFrom(nil, "roll_angle_entry_exit")
+local _roll_angle_entry_exit = inheritsFrom(nil, "roll_angle_entry_exit")
 function _roll_angle_entry_exit:get_roll(t, time_s)
    local entry_s = math.abs(self.angle) / AEROM_ENTRY_RATE:get()
    local entry_t = entry_s / time_s
@@ -491,8 +491,7 @@ end
    roll component that banks to _angle over AEROM_ENTRY_RATE
    degrees/s, then holds that angle
 --]]
-_roll_angle_entry = inheritsFrom(nil, "roll_angle_entry")
-
+local _roll_angle_entry = inheritsFrom(nil, "roll_angle_entry")
 function _roll_angle_entry:get_roll(t, time_s)
    local entry_s = math.abs(self.angle) / AEROM_ENTRY_RATE:get()
    local entry_t = entry_s / time_s
@@ -515,7 +514,7 @@ end
    roll component that holds angle until the end of the subpath, then
    rolls back to 0 at the AEROM_ENTRY_RATE
 --]]
-_roll_angle_exit = inheritsFrom(nil, "roll_angle_exit")
+local _roll_angle_exit = inheritsFrom(nil, "roll_angle_exit")
 function _roll_angle_exit:get_roll(t, time_s)
    local entry_s = math.abs(angle) / AEROM_ENTRY_RATE:get()
    local entry_t = entry_s / time_s
@@ -537,7 +536,7 @@ end
 --[[
    implement a sequence of rolls, specified as a list of {proportion, roll_angle} pairs
 --]]
-_roll_sequence = inheritsFrom(nil, "roll_sequence")
+local _roll_sequence = inheritsFrom(nil, "roll_sequence")
 function _roll_sequence:get_roll(t)
    for i = 1, #self.seq do
       if t <= self.end_t[i] then
@@ -546,7 +545,7 @@ function _roll_sequence:get_roll(t)
       end
    end
    -- we've gone past the end
-   return self.start_ang[#seq] + self.seq[#self.seq][2]
+   return self.start_ang[#self.seq] + self.seq[#self.seq][2]
 end
 
 function roll_sequence(seq)
@@ -574,7 +573,7 @@ end
 --[[ given a path function get_pos() calculate the extents of the path
    along the X axis as a tuple
 --]]
-function get_extents_x(obj)
+local function get_extents_x(obj)
    local p = obj:get_pos(0)
    local min_x = p:x()
    local max_x = min_x
@@ -590,7 +589,7 @@ end
 --[[
   all path components inherit from PathComponent
 --]]
-_PathComponent = inheritsFrom(nil)
+local _PathComponent = inheritsFrom(nil)
 function _PathComponent:get_pos(t)
    return makeVector3f(0, 0, 0)
 end
@@ -614,7 +613,7 @@ function _PathComponent:get_extents_x()
    return self.extents
 end
 
-function PathComponent()
+local function PathComponent()
    local self = _PathComponent:create()
    return self
 end
@@ -622,7 +621,7 @@ end
 --[[
    path component that does a straight horizontal line
 --]]
-_path_straight = inheritsFrom(_PathComponent, "path_straight")
+local _path_straight = inheritsFrom(_PathComponent, "path_straight")
 function _path_straight:get_pos(t)
    return makeVector3f(self.distance*t, 0, 0)
 end
@@ -638,7 +637,7 @@ end
 --[[
    path component that does a straight line then reverses direction
 --]]
-_path_reverse = inheritsFrom(_PathComponent, "path_reverse")
+local _path_reverse = inheritsFrom(_PathComponent, "path_reverse")
 function _path_reverse:get_pos(t)
    if t < 0.5 then
       return makeVector3f(self.distance*t*2, 0, 0)
@@ -658,7 +657,7 @@ end
 --[[
    path component that aligns to within the aerobatic box
 --]]
-_path_align_box = inheritsFrom(_PathComponent, "path_align_box")
+local _path_align_box = inheritsFrom(_PathComponent, "path_align_box")
 function _path_align_box:get_pos(t)
    return makeVector3f(self.distance*t, 0, 0)
 end
@@ -689,7 +688,7 @@ end
    path component that aligns so the center of the next maneuver is
    centered within the aerobatic box
 --]]
-_path_align_center = inheritsFrom(_PathComponent, "path_align_center")
+local _path_align_center = inheritsFrom(_PathComponent, "path_align_center")
 function _path_align_center:get_pos(t)
    return makeVector3f(self.distance*t, 0, 0)
 end
@@ -718,7 +717,7 @@ end
 --[[
    path component that does a vertical arc over a given angle
 --]]
-_path_vertical_arc = inheritsFrom(_PathComponent, "path_vertical_arc")
+local _path_vertical_arc = inheritsFrom(_PathComponent, "path_vertical_arc")
 function _path_vertical_arc:get_pos(t)
    local t2ang = wrap_2pi(t * math.rad(self.angle))
    return makeVector3f(math.abs(self.radius)*math.sin(t2ang), 0, -self.radius*(1.0 - math.cos(t2ang)))
@@ -742,7 +741,7 @@ end
 --[[
    path component that does a horizontal arc over a given angle
 --]]
-_path_horizontal_arc = inheritsFrom(_PathComponent, "path_horizontal_arc")
+local _path_horizontal_arc = inheritsFrom(_PathComponent, "path_horizontal_arc")
 function _path_horizontal_arc:get_pos(t)
    local t2ang = t * math.rad(self.angle)
    return makeVector3f(math.abs(self.radius)*math.sin(t2ang), self.radius*(1.0 - math.cos(t2ang)), -self.height_gain*t)
@@ -781,7 +780,7 @@ end
 --[[
    path component that does a cylinder for a barrel roll
 --]]
-_path_cylinder = inheritsFrom(_PathComponent, "path_cylinder")
+local _path_cylinder = inheritsFrom(_PathComponent, "path_cylinder")
 function _path_cylinder:get_pos(t)
    local t2ang = t * self.num_spirals * math.pi * 2
    local v = makeVector3f(self.length*t, math.abs(self.radius)*math.sin(t2ang+math.pi), -self.radius*(1.0 - math.cos(t2ang)))
@@ -817,7 +816,7 @@ end
    a Path has the methods of both RollComponent and
    PathComponent allowing for a complete description of a subpath
 --]]
-_Path = inheritsFrom(nil)
+local _Path = inheritsFrom(nil)
 function _Path:get_roll(t, time_s)
    return wrap_180(self.roll_component:get_roll(t, time_s))
 end
@@ -839,7 +838,7 @@ end
 function _Path:set_next_extents(extents, start_pos, start_orientation)
    self.path_component:set_next_extents(extents, start_pos, start_orientation)
 end
-function Path(path_component, roll_component)
+local function Path(path_component, roll_component)
    local self = _Path:create()
    self.name = string.format("%s|%s", path_component.name, roll_component.name)
    assert(path_component)
@@ -853,7 +852,7 @@ end
 --[[
    componse multiple sub-paths together to create a full trajectory
 --]]
-_path_composer = inheritsFrom(nil)
+local _path_composer = inheritsFrom(nil)
 -- return the subpath with index i. Used to cope with two ways of calling path_composer
 function _path_composer:subpath(i)
    if i == self.cache_i then
@@ -962,7 +961,7 @@ function _path_composer:get_next_segment_start(t)
    return self:end_time(i)
 end
 
-function path_composer(name, subpaths)
+local function path_composer(name, subpaths)
    local self = _path_composer:create()
    self.name = name
    self.subpaths = subpaths
