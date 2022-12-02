@@ -12,12 +12,9 @@ class AC_P_2D {
 public:
 
     // constructor
-    AC_P_2D(float initial_p, float dt);
+    AC_P_2D(float initial_p);
 
     CLASS_NO_COPY(AC_P_2D);
-
-    // set time step in seconds
-    void set_dt(float dt) { _dt = dt; }
 
     // set target and measured inputs to P controller and calculate outputs
     Vector2f update_all(postype_t &target_x, postype_t &target_y, const Vector2f &measurement) WARN_IF_UNUSED;
@@ -58,7 +55,6 @@ private:
     AP_Float    _kp;
 
     // internal variables
-    float _dt;          // time step in seconds
     Vector2f _error;    // time step in seconds
     float _error_max;   // error limit in positive direction
     float _D1_max;      // maximum first derivative of output
