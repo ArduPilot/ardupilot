@@ -69,8 +69,7 @@ const AP_Param::GroupInfo AC_PID::var_info[] = {
 
 // Constructor
 AC_PID::AC_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz,
-               float dt, float initial_srmax, float initial_srtau):
-    _dt(dt)
+               float initial_srmax, float initial_srtau)
 {
     // load parameter values from eeprom
     AP_Param::setup_object_defaults(this, var_info);
@@ -94,13 +93,6 @@ AC_PID::AC_PID(float initial_p, float initial_i, float initial_d, float initial_
     // slew limit scaler allows for plane to use degrees/sec slew
     // limit
     _slew_limit_scale = 1;
-}
-
-// set_dt - set time step in seconds
-void AC_PID::set_dt(float dt)
-{
-    // set dt and calculate the input filter alpha
-    _dt = dt;
 }
 
 // filt_T_hz - set target filter hz
@@ -131,7 +123,7 @@ void AC_PID::slew_limit(float smax)
 //  target and error are filtered
 //  the derivative is then calculated and filtered
 //  the integral is then updated based on the setting of the limit flag
-float AC_PID::update_all(float target, float measurement, bool limit)
+float AC_PID::update_all(float target, float measurement, float dt, bool limit)
 {
     // don't process inf or NaN
     if (!isfinite(target) || !isfinite(measurement)) {
@@ -146,24 +138,24 @@ float AC_PID::update_all(float target, float measurement, bool limit)
         _derivative = 0.0f;
     } else {
         float error_last = _error;
-        _target += get_filt_T_alpha() * (target - _target);
-        _error += get_filt_E_alpha() * ((_target - measurement) - _error);
+        _target += get_filt_T_alpha(dt) * (target - _target);
+        _error += get_filt_E_alpha(dt) * ((_target - measurement) - _error);
 
         // calculate and filter derivative
-        if (_dt > 0.0f) {
-            float derivative = (_error - error_last) / _dt;
-            _derivative += get_filt_D_alpha() * (derivative - _derivative);
+        if (is_positive(dt)) {
+            float derivative = (_error - error_last) / dt;
+            _derivative += get_filt_D_alpha(dt) * (derivative - _derivative);
         }
     }
 
     // update I term
-    update_i(limit);
+    update_i(dt, limit);
 
     float P_out = (_error * _kp);
     float D_out = (_derivative * _kd);
 
     // calculate slew limit modifier for P+D
-    _pid_info.Dmod = _slew_limiter.modifier((_pid_info.P + _pid_info.D) * _slew_limit_scale, _dt);
+    _pid_info.Dmod = _slew_limiter.modifier((_pid_info.P + _pid_info.D) * _slew_limit_scale, dt);
     _pid_info.slew_rate = _slew_limiter.get_slew_rate();
 
     P_out *= _pid_info.Dmod;
@@ -184,7 +176,7 @@ float AC_PID::update_all(float target, float measurement, bool limit)
 //  the integral is then updated based on the setting of the limit flag
 //  Target and Measured must be set manually for logging purposes.
 // todo: remove function when it is no longer used.
-float AC_PID::update_error(float error, bool limit)
+float AC_PID::update_error(float error, float dt, bool limit)
 {
     // don't process inf or NaN
     if (!isfinite(error)) {
@@ -200,23 +192,23 @@ float AC_PID::update_error(float error, bool limit)
         _derivative = 0.0f;
     } else {
         float error_last = _error;
-        _error += get_filt_E_alpha() * (error - _error);
+        _error += get_filt_E_alpha(dt) * (error - _error);
 
         // calculate and filter derivative
-        if (_dt > 0.0f) {
-            float derivative = (_error - error_last) / _dt;
-            _derivative += get_filt_D_alpha() * (derivative - _derivative);
+        if (is_positive(dt)) {
+            float derivative = (_error - error_last) / dt;
+            _derivative += get_filt_D_alpha(dt) * (derivative - _derivative);
         }
     }
 
     // update I term
-    update_i(limit);
+    update_i(dt, limit);
 
     float P_out = (_error * _kp);
     float D_out = (_derivative * _kd);
 
     // calculate slew limit modifier for P+D
-    _pid_info.Dmod = _slew_limiter.modifier((_pid_info.P + _pid_info.D) * _slew_limit_scale, _dt);
+    _pid_info.Dmod = _slew_limiter.modifier((_pid_info.P + _pid_info.D) * _slew_limit_scale, dt);
     _pid_info.slew_rate = _slew_limiter.get_slew_rate();
 
     P_out *= _pid_info.Dmod;
@@ -233,12 +225,12 @@ float AC_PID::update_error(float error, bool limit)
 
 //  update_i - update the integral
 //  If the limit flag is set the integral is only allowed to shrink
-void AC_PID::update_i(bool limit)
+void AC_PID::update_i(float dt, bool limit)
 {
-    if (!is_zero(_ki) && is_positive(_dt)) {
+    if (!is_zero(_ki) && is_positive(dt)) {
         // Ensure that integrator can only be reduced if the output is saturated
         if (!limit || ((is_positive(_integrator) && is_negative(_error)) || (is_negative(_integrator) && is_positive(_error)))) {
-            _integrator += ((float)_error * _ki) * _dt;
+            _integrator += ((float)_error * _ki) * dt;
             _integrator = constrain_float(_integrator, -_kimax, _kimax);
         }
     } else {
@@ -302,7 +294,7 @@ void AC_PID::save_gains()
 }
 
 /// Overload the function call operator to permit easy initialisation
-void AC_PID::operator()(float p_val, float i_val, float d_val, float ff_val, float imax_val, float input_filt_T_hz, float input_filt_E_hz, float input_filt_D_hz, float dt)
+void AC_PID::operator()(float p_val, float i_val, float d_val, float ff_val, float imax_val, float input_filt_T_hz, float input_filt_E_hz, float input_filt_D_hz)
 {
     _kp.set(p_val);
     _ki.set(i_val);
@@ -312,31 +304,24 @@ void AC_PID::operator()(float p_val, float i_val, float d_val, float ff_val, flo
     _filt_T_hz.set(input_filt_T_hz);
     _filt_E_hz.set(input_filt_E_hz);
     _filt_D_hz.set(input_filt_D_hz);
-    _dt = dt;
 }
 
 // get_filt_T_alpha - get the target filter alpha
-float AC_PID::get_filt_T_alpha() const
+float AC_PID::get_filt_T_alpha(float dt) const
 {
-    return get_filt_alpha(_filt_T_hz);
+    return calc_lowpass_alpha_dt(dt, _filt_T_hz);
 }
 
 // get_filt_E_alpha - get the error filter alpha
-float AC_PID::get_filt_E_alpha() const
+float AC_PID::get_filt_E_alpha(float dt) const
 {
-    return get_filt_alpha(_filt_E_hz);
+    return calc_lowpass_alpha_dt(dt, _filt_E_hz);
 }
 
 // get_filt_D_alpha - get the derivative filter alpha
-float AC_PID::get_filt_D_alpha() const
+float AC_PID::get_filt_D_alpha(float dt) const
 {
-    return get_filt_alpha(_filt_D_hz);
-}
-
-// get_filt_alpha - calculate a filter alpha
-float AC_PID::get_filt_alpha(float filt_hz) const
-{
-    return calc_lowpass_alpha_dt(_dt, filt_hz);
+    return calc_lowpass_alpha_dt(dt, _filt_D_hz);
 }
 
 void AC_PID::set_integrator(float target, float measurement, float integrator)
@@ -356,9 +341,11 @@ void AC_PID::set_integrator(float integrator)
     _pid_info.I = _integrator;
 }
 
-void AC_PID::relax_integrator(float integrator, float time_constant)
+void AC_PID::relax_integrator(float integrator, float dt, float time_constant)
 {
     integrator = constrain_float(integrator, -_kimax, _kimax);
-    _integrator = _integrator + (integrator - _integrator) * (_dt / (_dt + time_constant));
+    if (is_positive(dt)) {
+        _integrator = _integrator + (integrator - _integrator) * (dt / (dt + time_constant));
+    }
     _pid_info.I = _integrator;
 }

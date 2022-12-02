@@ -73,8 +73,8 @@ const AP_Param::GroupInfo AC_HELI_PID::var_info[] = {
 };
 
 /// Constructor for PID
-AC_HELI_PID::AC_HELI_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz, float dt) :
-    AC_PID(initial_p, initial_i, initial_d, initial_ff, initial_imax, initial_filt_T_hz, initial_filt_E_hz, initial_filt_D_hz, dt)
+AC_HELI_PID::AC_HELI_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz) :
+    AC_PID(initial_p, initial_i, initial_d, initial_ff, initial_imax, initial_filt_T_hz, initial_filt_E_hz, initial_filt_D_hz)
 {
     _last_requested_rate = 0;
 }
@@ -84,7 +84,7 @@ AC_HELI_PID::AC_HELI_PID(float initial_p, float initial_i, float initial_d, floa
 
 void AC_HELI_PID::update_leaky_i(float leak_rate)
 {
-    if (!is_zero(_ki) && !is_zero(_dt)){
+    if (!is_zero(_ki)){
 
         // integrator does not leak down below Leak Min
         if (_integrator > _leak_min){
