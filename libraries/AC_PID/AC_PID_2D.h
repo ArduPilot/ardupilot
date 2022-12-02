@@ -15,23 +15,20 @@ class AC_PID_2D {
 public:
 
     // Constructor for PID
-    AC_PID_2D(float initial_kP, float initial_kI, float initial_kD, float initial_kFF, float initial_imax, float initial_filt_hz, float initial_filt_d_hz, float dt);
+    AC_PID_2D(float initial_kP, float initial_kI, float initial_kD, float initial_kFF, float initial_imax, float initial_filt_hz, float initial_filt_d_hz);
 
     CLASS_NO_COPY(AC_PID_2D);
-
-    // set time step in seconds
-    void set_dt(float dt) { _dt = dt; }
 
     // update_all - set target and measured inputs to PID controller and calculate outputs
     // target and error are filtered
     // the derivative is then calculated and filtered
     // the integral is then updated if it does not increase in the direction of the limit vector
-    Vector2f update_all(const Vector2f &target, const Vector2f &measurement, const Vector2f &limit);
-    Vector2f update_all(const Vector3f &target, const Vector3f &measurement, const Vector3f &limit);
+    Vector2f update_all(const Vector2f &target, const Vector2f &measurement, float dt, const Vector2f &limit);
+    Vector2f update_all(const Vector3f &target, const Vector3f &measurement, float dt, const Vector3f &limit);
 
     // update the integral
     // if the limit flag is set the integral is only allowed to shrink
-    void update_i(const Vector2f &limit);
+    void update_i(float dt, const Vector2f &limit);
 
     // get results from pid controller
     Vector2f get_p() const;
@@ -57,8 +54,8 @@ public:
     AP_Float &filt_E_hz() { return _filt_E_hz; }
     AP_Float &filt_D_hz() { return _filt_D_hz; }
     float imax() const { return _kimax.get(); }
-    float get_filt_E_alpha() const;
-    float get_filt_D_alpha() const;
+    float get_filt_E_alpha(float dt) const;
+    float get_filt_D_alpha(float dt) const;
 
     // set accessors
     void kP(float v) { _kp.set(v); }
@@ -93,7 +90,6 @@ protected:
     AP_Float _filt_D_hz;         // PID derivative filter frequency in Hz
 
     // internal variables
-    float       _dt;            // timestep in seconds
     Vector2f    _target;        // target value to enable filtering
     Vector2f    _error;         // error value to enable filtering
     Vector2f    _derivative;    // last derivative from low-pass filter
