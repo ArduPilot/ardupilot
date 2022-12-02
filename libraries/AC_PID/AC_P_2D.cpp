@@ -13,8 +13,7 @@ const AP_Param::GroupInfo AC_P_2D::var_info[] = {
 };
 
 // Constructor
-AC_P_2D::AC_P_2D(float initial_p, float dt) :
-    _dt(dt)
+AC_P_2D::AC_P_2D(float initial_p)
 {
     // load parameter values from eeprom
     AP_Param::setup_object_defaults(this, var_info);
@@ -36,7 +35,7 @@ Vector2f AC_P_2D::update_all(postype_t &target_x, postype_t &target_y, const Vec
     }
 
     // MIN(_Dmax, _D2max / _kp) limits the max accel to the point where max jerk is exceeded
-    return sqrt_controller(_error, _kp, _D1_max, _dt);
+    return sqrt_controller(_error, _kp, _D1_max, 0.0);
 }
 
 // set_limits - sets the maximum error to limit output and first and second derivative of output
