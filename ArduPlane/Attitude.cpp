@@ -10,8 +10,14 @@ Vector3f Plane::calc_rpy_speed_scaler(void)
     Vector3f speed_scaler;
     float aspeed;
     if (ahrs.airspeed_estimate(aspeed)) {
-        if (aspeed > auto_state.highest_airspeed && hal.util->get_soft_armed()) {
-            auto_state.highest_airspeed = aspeed;
+        const float cutoff_Hz = 2.0;
+        const float dt = 0.1;
+        const float alpha = calc_lowpass_alpha_dt(dt, cutoff_Hz);
+        aspeed_filtered += (aspeed - aspeed_filtered) * alpha;
+        aspeed_filtered = MAX(aspeed_filtered, 0.0f);
+
+        if (aspeed_filtered > auto_state.highest_airspeed && hal.util->get_soft_armed()) {
+            auto_state.highest_airspeed = aspeed_filtered;
         }
 
         Vector3f aspeed_rpy;
@@ -22,7 +28,9 @@ Vector3f Plane::calc_rpy_speed_scaler(void)
             // specific force is mostly due to propeller thrust. This assumption will underestimate
             // propeller disc loading at higher speeds but will be accurate enough at low speeds
             // which is when prop wash effects dominate.
-            const float disc_loading = MAX(g2.prop_disc_loading * (ahrs.get_accel().x - ahrs.get_accel_bias().x), 0.0f);
+            const float disc_loading_unfiltered = MAX(g2.prop_disc_loading * (ahrs.get_accel().x - ahrs.get_accel_bias().x), 0.0f);
+            disc_loading_filtered += (disc_loading_unfiltered - disc_loading_filtered) * alpha;
+            disc_loading_filtered = MAX(disc_loading_filtered, 0.0f);
 
             // Solve this quadratic for propeller inflow factor a^2 + a - T / (2 * rho * S * V^2) = 0
             // a = inflow factor
@@ -33,13 +41,13 @@ Vector3f Plane::calc_rpy_speed_scaler(void)
             // Aerodynamics for Engineering Students, E L Houghton and N B Carruthers, Third Edition, pp469
             const float a_coef = 1.0f;
             const float b_coef = 1.0f;
-            const float c_coef = - disc_loading / (2.0f * rho * sq(MAX(aspeed,0.1f)));
+            const float c_coef = - disc_loading_filtered / (2.0f * rho * sq(MAX(aspeed_filtered,0.1f)));
             prop_inflow_factor = (-b_coef + sqrtf(sq(b_coef) - 4.0f * a_coef * c_coef)) / (2.0f * a_coef);
-            aspeed_rpy.x = aspeed * (1.0f + 2.0f * prop_inflow_factor * g2.propwash_roll_comp);
-            aspeed_rpy.y = aspeed * (1.0f + 2.0f * prop_inflow_factor * g2.propwash_pitch_comp);
-            aspeed_rpy.z = aspeed * (1.0f + 2.0f * prop_inflow_factor * g2.propwash_yaw_comp);
+            aspeed_rpy.x = aspeed_filtered * (1.0f + 2.0f * prop_inflow_factor * g2.propwash_roll_comp);
+            aspeed_rpy.y = aspeed_filtered * (1.0f + 2.0f * prop_inflow_factor * g2.propwash_pitch_comp);
+            aspeed_rpy.z = aspeed_filtered * (1.0f + 2.0f * prop_inflow_factor * g2.propwash_yaw_comp);
         } else {
-            aspeed_rpy.x = aspeed_rpy.y = aspeed_rpy.z = aspeed;
+            aspeed_rpy.x = aspeed_rpy.y = aspeed_rpy.z = aspeed_filtered;
         }
 
         // ensure we have scaling over the full configured airspeed

@@ -390,6 +390,12 @@ private:
     // Inflow factor for forward flight propeller(s) used for correcting control surface scaling for prop wash
     float prop_inflow_factor;
 
+    // Low-pass filtered forward flight propeller disc loading used for calculation of propeller inflow factor.
+    float disc_loading_filtered;
+
+    // Low-pass filtered airspeed used for control surface scaling
+    float aspeed_filtered;
+
     // Battery Sensors
     AP_BattMonitor battery{MASK_LOG_CURRENT,
                            FUNCTOR_BIND_MEMBER(&Plane::handle_battery_failsafe, void, const char*, const int8_t),
