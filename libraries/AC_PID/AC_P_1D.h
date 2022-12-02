@@ -12,12 +12,9 @@ class AC_P_1D {
 public:
 
     // constructor
-    AC_P_1D(float initial_p, float dt);
+    AC_P_1D(float initial_p);
 
     CLASS_NO_COPY(AC_P_1D);
-
-    // set time step in seconds
-    void set_dt(float dt) { _dt = dt; }
 
     // update_all - set target and measured inputs to P controller and calculate outputs
     // target and measurement are filtered
@@ -56,7 +53,6 @@ private:
     AP_Float _kp;
 
     // internal variables
-    float _dt;          // time step in seconds
     float _error;       // time step in seconds
     float _error_min; // error limit in negative direction
     float _error_max; // error limit in positive direction
