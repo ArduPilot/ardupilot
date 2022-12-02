@@ -587,6 +587,12 @@ void AP_Baro::init(void)
 {
     init_done = true;
 
+    // ensure that there isn't a previous ground temperature saved
+    if (!is_zero(_user_ground_temperature)) {
+        _user_ground_temperature.set_and_save(0.0f);
+        _user_ground_temperature.notify();
+    }
+
     // always set field elvation to zero on reboot in the case user
     // fails to update.  TBD automate sanity checking error bounds on
     // on previously saved value at new location etc.
