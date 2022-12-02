@@ -23,26 +23,18 @@ The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
 receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
  - SERIAL0 -> USB
- - SERIAL1 -> UART1 (DJI RCIN)
- - SERIAL2 -> UART2 (RX, DMA-enabled)
- - SERIAL3 -> UART3
- - SERIAL4 -> UART4 (Camera)
+ - SERIAL1 -> UART1 (DJI RCIN,but needs protocol changes to SERIAL1 and SERIAL 2)
+ - SERIAL2 -> UART2 (RX Protocol by default, DMA-enabled)
+ - SERIAL3 -> UART3 Telem/User
+ - SERIAL4 -> UART4 Telem/User
  - SERIAL7 -> UART7 (GPS, DMA-enabled)
 
 ## RC Input
 
-RC input is configured on the R2 (UART2_RX) pin. It supports all serial RC
-protocols. For protocols requiring half-duplex serial to transmit
-telemetry (such as FPort) you should setup the TX PIN as an RC input serial port,
-with half-duplex, pin-swap and inversion enabled.
+RC input is configured on the R2 (UART2_RX) pin by default. It supports all serial RC
+protocols. For FPort you should setup the TX PIN as an RC input serial port,
+with half-duplex and inversion enabled.
  
-## FrSky Telemetry
- 
-FrSky Telemetry is supported using the T2 pin (UART2 transmit). You need to set the following parameters to enable support for FrSky S.PORT
- 
-  - SERIAL5_PROTOCOL 10
-  - SERIAL5_OPTIONS 7
-  
 ## OSD Support
 
 The ReaperF745v2 supports OSD using OSD_TYPE 1 (MAX7456 driver).
@@ -82,7 +74,7 @@ The ReaperF745v2 does not have a builtin compass, but you can attach an external
 
 ## Barometer
 
-The ReaperF745v2 does not have a builtin barometer, but you can attach an external barometer using I2C on the SDA and SCL pads.
+The ReaperF745v2 does not have a builtin barometer, but you can attach an external barometer using I2C on the SDA and SCL pads or use GPS as the EKF3 Z source. The board will boot without either, but only non altitude information requiring modes can be used.
 
 ## Loading Firmware
 
