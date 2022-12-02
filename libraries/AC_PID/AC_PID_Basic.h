@@ -13,21 +13,18 @@ class AC_PID_Basic {
 public:
 
     // Constructor for PID
-    AC_PID_Basic(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_E_hz, float initial_filt_D_hz, float dt);
-
-    // set time step in seconds
-    void set_dt(float dt) { _dt = dt; }
+    AC_PID_Basic(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_E_hz, float initial_filt_D_hz);
 
     // set target and measured inputs to PID controller and calculate outputs
     // target and error are filtered
     // the derivative is then calculated and filtered
     // the integral is then updated based on the setting of the limit flag
-    float update_all(float target, float measurement, bool limit = false) WARN_IF_UNUSED;
-    float update_all(float target, float measurement, bool limit_neg, bool limit_pos) WARN_IF_UNUSED;
+    float update_all(float target, float measurement, float dt, bool limit = false) WARN_IF_UNUSED;
+    float update_all(float target, float measurement, float dt, bool limit_neg, bool limit_pos) WARN_IF_UNUSED;
 
     // update the integral
     // if the limit flags are set the integral is only allowed to shrink
-    void update_i(bool limit_neg, bool limit_pos);
+    void update_i(float dt, bool limit_neg, bool limit_pos);
 
     // get results from pid controller
     float get_p() const WARN_IF_UNUSED { return _error * _kp; }
@@ -53,8 +50,8 @@ public:
     AP_Float &filt_E_hz() WARN_IF_UNUSED { return _filt_E_hz; }
     AP_Float &filt_D_hz() WARN_IF_UNUSED { return _filt_D_hz; }
     float imax() const WARN_IF_UNUSED { return _kimax.get(); }
-    float get_filt_E_alpha() const WARN_IF_UNUSED;
-    float get_filt_D_alpha() const WARN_IF_UNUSED;
+    float get_filt_E_alpha(float dt) const WARN_IF_UNUSED;
+    float get_filt_D_alpha(float dt) const WARN_IF_UNUSED;
 
     // set accessors
     void kP(float v) { _kp.set(v); }
@@ -87,7 +84,6 @@ protected:
     AP_Float _filt_D_hz;         // PID derivative filter frequency in Hz
 
     // internal variables
-    float _dt;          // timestep in seconds
     float _target;      // target value to enable filtering
     float _error;       // error value to enable filtering
     float _derivative;  // last derivative for low-pass filter
