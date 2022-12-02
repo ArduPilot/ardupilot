@@ -33,10 +33,10 @@ Vector3f Plane::calc_rpy_speed_scaler(void)
             const float a_coef = 1.0f;
             const float b_coef = 1.0f;
             const float c_coef = - disc_loading / (2.0f * rho * sq(MAX(aspeed,0.1f)));
-            const float inflow_factor = (-b_coef + sqrtf(sq(b_coef) - 4.0f * a_coef * c_coef)) / (2.0f * a_coef);
-            aspeed_rpy.x = aspeed * (1.0f + 2.0f * inflow_factor * g2.propwash_roll_comp);
-            aspeed_rpy.y = aspeed * (1.0f + 2.0f * inflow_factor * g2.propwash_pitch_comp);
-            aspeed_rpy.z = aspeed * (1.0f + 2.0f * inflow_factor * g2.propwash_yaw_comp);
+            prop_inflow_factor = (-b_coef + sqrtf(sq(b_coef) - 4.0f * a_coef * c_coef)) / (2.0f * a_coef);
+            aspeed_rpy.x = aspeed * (1.0f + 2.0f * prop_inflow_factor * g2.propwash_roll_comp);
+            aspeed_rpy.y = aspeed * (1.0f + 2.0f * prop_inflow_factor * g2.propwash_pitch_comp);
+            aspeed_rpy.z = aspeed * (1.0f + 2.0f * prop_inflow_factor * g2.propwash_yaw_comp);
         } else {
             aspeed_rpy.x = aspeed_rpy.y = aspeed_rpy.z = aspeed;
         }

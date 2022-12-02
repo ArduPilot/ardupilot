@@ -384,8 +384,11 @@ private:
     // Difference between current altitude and desired altitude.  Centimeters
     int32_t altitude_error_cm;
 
-    // speed scaler for control surfaces, updated at 10Hz
+    // speed scaler for roll, pitch and yaw control surfaces, updated at 10Hz that can include prop wash corrections
     Vector3f surface_speed_scaler_rpy = {1.0f,1.0f,1.0f};
+
+    // Inflow factor for forward flight propeller(s) used for correcting control surface scaling for prop wash
+    float prop_inflow_factor;
 
     // Battery Sensors
     AP_BattMonitor battery{MASK_LOG_CURRENT,
@@ -854,6 +857,7 @@ private:
     void calc_nav_pitch();
     Vector3f calc_rpy_speed_scaler(void);
     Vector3f get_rpy_speed_scaler(void) const { return surface_speed_scaler_rpy; }
+    float get_prop_inflow_factor(void) const { return prop_inflow_factor; }
     bool stick_mixing_enabled(void);
     void stabilize_roll(float speed_scaler);
     float stabilize_roll_get_roll_out(float speed_scaler);

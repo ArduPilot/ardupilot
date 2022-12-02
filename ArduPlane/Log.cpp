@@ -222,10 +222,12 @@ struct PACKED log_AETR {
     float speed_scaler_x;
     float speed_scaler_y;
     float speed_scaler_z;
+    float inflow_factor;
 };
 
 void Plane::Log_Write_AETR()
 {
+    Vector3f rpy_speed_scaler = get_rpy_speed_scaler();
     struct log_AETR pkt = {
         LOG_PACKET_HEADER_INIT(LOG_AETR_MSG)
         ,time_us  : AP_HAL::micros64()
@@ -234,9 +236,10 @@ void Plane::Log_Write_AETR()
         ,throttle : SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)
         ,rudder   : SRV_Channels::get_output_scaled(SRV_Channel::k_rudder)
         ,flap     : SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_flap_auto)
-        ,speed_scaler_x : get_rpy_speed_scaler().x
-        ,speed_scaler_y : get_rpy_speed_scaler().y
-        ,speed_scaler_z : get_rpy_speed_scaler().z
+        ,speed_scaler_x : rpy_speed_scaler.x
+        ,speed_scaler_y : rpy_speed_scaler.y
+        ,speed_scaler_z : rpy_speed_scaler.z
+        ,inflow_factor : get_prop_inflow_factor()
         };
 
     logger.WriteBlock(&pkt, sizeof(pkt));
@@ -434,8 +437,9 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: SSx: Surface movement / airspeed scaling value for roll rate control
 // @Field: SSy: Surface movement / airspeed scaling value for pitch rate control
 // @Field: SSz: Surface movement / airspeed scaling value for yaw rate control
+// @Field: PIF: Propeller Inflow Factor
     { LOG_AETR_MSG, sizeof(log_AETR),
-      "AETR", "Qffffffff",  "TimeUS,Ail,Elev,Thr,Rudd,Flap,SSx,SSy,SSz", "s--------", "F--------" , true },
+      "AETR", "Qfffffffff",  "TimeUS,Ail,Elev,Thr,Rudd,Flap,SSx,SSy,SSz,PIF", "s---------", "F---------" , true },
 
 // @LoggerMessage: OFG
 // @Description: OFfboard-Guided - an advanced version of GUIDED for companion computers that includes rate/s.  
