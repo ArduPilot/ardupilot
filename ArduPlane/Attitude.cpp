@@ -23,6 +23,7 @@ Vector3f Plane::calc_rpy_speed_scaler(void)
             // propeller disc loading at higher speeds but will be accurate enough at low speeds
             // which is when prop wash effects dominate.
             const float disc_loading = MAX(g2.prop_disc_loading * (ahrs.get_accel().x - ahrs.get_accel_bias().x), 0.0f);
+
             // Solve this quadratic for propeller inflow factor a^2 + a - T / (2 * rho * S * V^2) = 0
             // a = inflow factor
             // T = propeller thrust (N)
@@ -440,7 +441,7 @@ void Plane::stabilize_training(Vector3f speed_scaler)
   this is the ACRO mode stabilization function. It does rate
   stabilization on roll and pitch axes
  */
-void Plane::stabilize_acro(Vector3f speed_scaler)
+void Plane::stabilize_acro(Vector3f &speed_scaler)
 {
     if (g.acro_locking == 2 && g.acro_yaw_rate > 0 &&
         yawController.rate_control_enabled()) {
@@ -529,7 +530,7 @@ void Plane::stabilize_acro(Vector3f speed_scaler)
 /*
   quaternion based acro stabilization with continuous locking. Enabled with ACRO_LOCKING=2
  */
-void Plane::stabilize_acro_quaternion(Vector3f speed_scaler)
+void Plane::stabilize_acro_quaternion(Vector3f &speed_scaler)
 {
     auto &q = acro_state.q;
     const float rexpo = roll_in_expo(true);

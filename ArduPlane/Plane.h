@@ -856,7 +856,7 @@ private:
     void calc_nav_roll();
     void calc_nav_pitch();
     Vector3f calc_rpy_speed_scaler(void);
-    Vector3f get_rpy_speed_scaler(void) const { return surface_speed_scaler_rpy; }
+    const Vector3f &get_rpy_speed_scaler(void) const { return surface_speed_scaler_rpy; }
     float get_prop_inflow_factor(void) const { return prop_inflow_factor; }
     bool stick_mixing_enabled(void);
     void stabilize_roll(float speed_scaler);
@@ -867,8 +867,8 @@ private:
     void stabilize_stick_mixing_fbw();
     void stabilize_yaw(float speed_scaler);
     void stabilize_training(Vector3f speed_scaler);
-    void stabilize_acro(Vector3f speed_scaler);
-    void stabilize_acro_quaternion(Vector3f speed_scaler);
+    void stabilize_acro(Vector3f &speed_scaler);
+    void stabilize_acro_quaternion(Vector3f &speed_scaler);
     void calc_nav_yaw_coordinated(float speed_scaler);
     void calc_nav_yaw_course(void);
     void calc_nav_yaw_ground(void);
