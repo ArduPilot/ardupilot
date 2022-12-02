@@ -491,6 +491,12 @@ struct PACKED log_CSRV {
     float force;
     float speed;
     uint8_t power_pct;
+    float pos_cmd;
+    float voltage;
+    float current;
+    float mot_temp;
+    float pcb_temp;
+    uint8_t error;
 };
 
 struct PACKED log_ARSP {
@@ -754,6 +760,12 @@ struct PACKED log_VER {
 // @Field: Force: Force being applied
 // @Field: Speed: Current servo movement speed
 // @Field: Pow: Amount of rated power being applied
+// @Field: PosCmd: commanded servo position
+// @Field: V: Voltage
+// @Field: A: Current
+// @Field: MotT: motor temperature
+// @Field: PCBT: PCB temperature
+// @Field: Err: error flags
 
 // @LoggerMessage: DMS
 // @Description: DataFlash-Over-MAVLink statistics
@@ -1271,7 +1283,7 @@ LOG_STRUCTURE_FROM_AVOIDANCE \
       "TERR","QBLLHffHHf","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded,ROfs", "s-DU-mm--m", "F-GG-00--0", true }, \
 LOG_STRUCTURE_FROM_ESC_TELEM \
     { LOG_CSRV_MSG, sizeof(log_CSRV), \
-      "CSRV","QBfffB","TimeUS,Id,Pos,Force,Speed,Pow", "s#---%", "F-0000", true }, \
+      "CSRV","QBfffBfffffB","TimeUS,Id,Pos,Force,Speed,Pow,PosCmd,V,A,MotT,PCBT,Err", "s#---%dvAOO-", "F-000000000-", true }, \
     { LOG_PIDR_MSG, sizeof(log_PID), \
       "PIDR", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS, true },  \
     { LOG_PIDP_MSG, sizeof(log_PID), \
