@@ -145,6 +145,9 @@ public:
 
 private:
 
+    // check for using too much time
+    static bool check_process_limit(uint32_t start_us);
+
     enum class Stage {
         FORMATS = 0,
         UNITS,

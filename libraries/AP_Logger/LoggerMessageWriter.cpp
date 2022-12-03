@@ -71,17 +71,33 @@ bool LoggerMessageWriter_DFLogStart::out_of_time_for_writing_messages() const
     return LoggerMessageWriter::out_of_time_for_writing_messages();
 }
 
+/*
+  check if we've taken too long in a process() stage
+  return true if we should stop processing now as we are out of time
+ */
+bool LoggerMessageWriter_DFLogStart::check_process_limit(uint32_t start_us)
+{
+    const uint32_t limit_us = 1000U;
+    if (AP_HAL::micros() - start_us > limit_us) {
+        return true;
+    }
+    return false;
+}
+
 void LoggerMessageWriter_DFLogStart::process()
 {
     if (out_of_time_for_writing_messages()) {
         return;
     }
+    // allow any stage to run for max 1ms, to prevent a long loop on arming
+    const uint32_t start_us = AP_HAL::micros();
 
     switch(stage) {
     case Stage::FORMATS:
         // write log formats so the log is self-describing
         while (next_format_to_send < _logger_backend->num_types()) {
-            if (!_logger_backend->Write_Format(_logger_backend->structure(next_format_to_send))) {
+            if (!_logger_backend->Write_Format(_logger_backend->structure(next_format_to_send)) ||
+                check_process_limit(start_us)) {
                 return; // call me again!
             }
             next_format_to_send++;
@@ -90,9 +106,10 @@ void LoggerMessageWriter_DFLogStart::process()
         stage = Stage::PARMS;
         FALLTHROUGH;
 
-    case Stage::PARMS:
+    case Stage::PARMS: {
         while (ap) {
-            if (!_logger_backend->Write_Parameter(ap, token, type, param_default)) {
+            if (!_logger_backend->Write_Parameter(ap, token, type, param_default) ||
+                check_process_limit(start_us)) {
                 return;
             }
             param_default = AP::logger().quiet_nanf();
@@ -101,11 +118,13 @@ void LoggerMessageWriter_DFLogStart::process()
 
         _params_done = true;
         stage = Stage::UNITS;
+        }
         FALLTHROUGH;
 
     case Stage::UNITS:
         while (_next_unit_to_send < _logger_backend->num_units()) {
-            if (!_logger_backend->Write_Unit(_logger_backend->unit(_next_unit_to_send))) {
+            if (!_logger_backend->Write_Unit(_logger_backend->unit(_next_unit_to_send)) ||
+                check_process_limit(start_us)) {
                 return; // call me again!
             }
             _next_unit_to_send++;
@@ -115,7 +134,8 @@ void LoggerMessageWriter_DFLogStart::process()
 
     case Stage::MULTIPLIERS:
         while (_next_multiplier_to_send < _logger_backend->num_multipliers()) {
-            if (!_logger_backend->Write_Multiplier(_logger_backend->multiplier(_next_multiplier_to_send))) {
+            if (!_logger_backend->Write_Multiplier(_logger_backend->multiplier(_next_multiplier_to_send)) ||
+                check_process_limit(start_us)) {
                 return; // call me again!
             }
             _next_multiplier_to_send++;
@@ -125,7 +145,8 @@ void LoggerMessageWriter_DFLogStart::process()
 
     case Stage::FORMAT_UNITS:
         while (_next_format_unit_to_send < _logger_backend->num_types()) {
-            if (!_logger_backend->Write_Format_Units(_logger_backend->structure(_next_format_unit_to_send))) {
+            if (!_logger_backend->Write_Format_Units(_logger_backend->structure(_next_format_unit_to_send)) ||
+                check_process_limit(start_us)) {
                 return; // call me again!
             }
             _next_format_unit_to_send++;
