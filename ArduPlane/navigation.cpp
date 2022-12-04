@@ -143,9 +143,9 @@ void Plane::calc_airspeed_errors()
     // Get the airspeed_estimate, update smoothed airspeed estimate
     // NOTE:  we use the airspeed estimate function not direct sensor
     //        as TECS may be using synthetic airspeed
-    float airspeed_measured = 0;
+    float airspeed_measured = 0.1;
     if (ahrs.airspeed_estimate(airspeed_measured)) {
-        smoothed_airspeed = smoothed_airspeed * 0.8f + airspeed_measured * 0.2f;
+        smoothed_airspeed = MAX(0.1, smoothed_airspeed * 0.8f + airspeed_measured * 0.2f);
     }
 
     // low pass filter speed scaler, with 1Hz cutoff, at 10Hz
