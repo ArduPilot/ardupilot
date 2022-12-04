@@ -15,10 +15,6 @@ FLASH_SIZE_KB 2048
 # bootloader starts at zero offset
 FLASH_RESERVE_START_KB 0
 
-# use last 2 pages for flash storage
-# H743 has 16 pages of 128k each
-STORAGE_FLASH_PAGE 14
-
 # the location where the bootloader will put the firmware
 # the H743 has 128k sectors
 FLASH_BOOTLOADER_LOAD_KB 128

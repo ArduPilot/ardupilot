@@ -27,7 +27,6 @@ define CH_CFG_ST_FREQUENCY 1000
 FLASH_SIZE_KB 256
 
 # store parameters in last 2 pages
-STORAGE_FLASH_PAGE 126
 define HAL_STORAGE_SIZE 800
 
 # USART3 for debug
