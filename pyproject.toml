@@ -4,7 +4,6 @@ skip = ["./modules/", "./build/"]
 
 [tool.black]
 line-length = 120
-skip-string-normalization = true
 
 [tool.mypy]
 ignore_missing_imports = true
@@ -14,3 +13,23 @@ exclude = [
     'cmake-build-debug/',
     '/setup\.py$'
 ]
+
+[tool.poetry]
+name="Ardupilot"
+version="0.1.0"
+description="Ardupilot"
+authors=["None"]
+
+[tool.poetry.dependencies]
+python = "^3.9.10"
+empy = "^3.3.4"
+pexpect = "^4.8.0"
+future = "^0.18.2"
+wxPython = "^4.1.1"
+gnureadline = "^8.1.2"
+billiard = "^4.0.0"
+numpy = "^1.23.1"
+pyparsing = "^3.0.9"
+MAVProxy = "^1.8.50"
+matplotlib = "^3.5.2"
+opencv-python = "^4.6.0"

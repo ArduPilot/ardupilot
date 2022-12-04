@@ -1,3 +1,18 @@
+# (Solar-Plane Usage)
+## Set-up for SITL
+Install:
+- poetry
+
+```bash
+poetry install
+poetry shell
+./run_sim.sh
+```
+
+## SITL terminal commands
+- 'arm throttle' - Arming the simulated vehicle
+- 'mode auto' - Switch to autonomous mode
+
 # ArduPilot Project
 
 <a href="https://ardupilot.org/discord"><img src="https://img.shields.io/discord/674039678562861068.svg" alt="Discord">
