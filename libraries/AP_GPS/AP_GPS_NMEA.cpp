@@ -827,4 +827,22 @@ bool AP_GPS_NMEA::is_healthy(void) const
     return true;
 }
 
+// get the velocity lag
+bool AP_GPS_NMEA::get_lag(float &lag_sec) const
+{
+    switch (get_type()) {
+#if AP_GPS_NMEA_UNICORE_ENABLED
+    case AP_GPS::GPS_TYPE_UNICORE_MOVINGBASE_NMEA:
+    case AP_GPS::GPS_TYPE_UNICORE_NMEA:
+        lag_sec = 0.14;
+        break;
+#endif // AP_GPS_NMEA_UNICORE_ENABLED
+
+    default:
+        lag_sec = 0.2;
+        break;
+    }
+    return true;
+}
+
 #endif // AP_GPS_NMEA_ENABLED
