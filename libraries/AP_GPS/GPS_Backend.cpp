@@ -133,6 +133,15 @@ void AP_GPS_Backend::fill_3d_velocity(void)
     state.have_vertical_velocity = false;
 }
 
+/*
+  fill in 3D velocity for a GPS that doesn't give vertical velocity numbers
+ */
+void AP_GPS_Backend::velocity_to_speed_course(AP_GPS::GPS_State &s)
+{
+    s.ground_course = wrap_360(degrees(atan2f(s.velocity.y, s.velocity.x)));
+    s.ground_speed = s.velocity.xy().length();
+}
+
 void
 AP_GPS_Backend::inject_data(const uint8_t *data, uint16_t len)
 {

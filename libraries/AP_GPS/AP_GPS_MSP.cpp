@@ -60,8 +60,7 @@ void AP_GPS_MSP::handle_msp(const MSP::msp_gps_data_message_t &pkt)
     vel.z = pkt.ned_vel_down * 0.01;
     state.velocity = vel;
 
-    state.ground_course = wrap_360(degrees(atan2f(state.velocity.y, state.velocity.x)));
-    state.ground_speed = state.velocity.xy().length();
+    velocity_to_speed_course(state);
 
     state.have_speed_accuracy = true;
     state.have_horizontal_accuracy = true;
