@@ -18,8 +18,6 @@ FLASH_RESERVE_START_KB 0
 # the location where the bootloader will put the firmware
 FLASH_BOOTLOADER_LOAD_KB 384
 
-STORAGE_FLASH_PAGE 1
-
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1
 
