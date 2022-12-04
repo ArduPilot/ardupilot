@@ -665,10 +665,8 @@ TEST(MathTest, VELCORRECTION)
 TEST(MathTest, LOWPASSALPHA)
 {
     const float accuracy = 1.0e-5f;
-    EXPECT_EQ(1.0f, calc_lowpass_alpha_dt(0.0f, 2.0f));
-    EXPECT_EQ(1.0f, calc_lowpass_alpha_dt(-1.0f, 2.0f));
+    EXPECT_EQ(0.0f, calc_lowpass_alpha_dt(0.0f, 2.0f));
     EXPECT_EQ(1.0f, calc_lowpass_alpha_dt(1.0f, 0.0f));
-    EXPECT_EQ(1.0f, calc_lowpass_alpha_dt(1.0f, -2.0f));
 
     EXPECT_NEAR(0.926288f, calc_lowpass_alpha_dt(1.0f, 2.0f), accuracy);
 }
