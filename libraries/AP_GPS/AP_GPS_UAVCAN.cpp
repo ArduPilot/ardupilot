@@ -377,8 +377,7 @@ void AP_GPS_UAVCAN::handle_velocity(const float vx, const float vy, const float 
     if (!uavcan::isNaN(vx)) {
         const Vector3f vel(vx, vy, vz);
         interim_state.velocity = vel;
-        interim_state.ground_speed = vel.xy().length();
-        interim_state.ground_course = wrap_360(degrees(atan2f(vel.y, vel.x)));
+        velocity_to_speed_course(interim_state);
         // assume we have vertical velocity if we ever get a non-zero Z velocity
         if (!isnanf(vel.z) && !is_zero(vel.z)) {
             interim_state.have_vertical_velocity = true;

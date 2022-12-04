@@ -401,10 +401,7 @@ AP_GPS_SBF::process_message(void)
 
             state.have_vertical_velocity = true;
 
-            float ground_vector_sq = state.velocity[0] * state.velocity[0] + state.velocity[1] * state.velocity[1];
-            state.ground_speed = (float)safe_sqrt(ground_vector_sq);
-
-            state.ground_course = wrap_360(degrees(atan2f(state.velocity[1], state.velocity[0])));
+            velocity_to_speed_course(state);
             state.rtk_age_ms = temp.MeanCorrAge * 10;
 
             // value is expressed as twice the rms error = int16 * 0.01/2

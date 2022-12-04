@@ -82,8 +82,7 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t &msg)
                 }
 
                 state.velocity = vel;
-                state.ground_course = wrap_360(degrees(atan2f(vel.y, vel.x)));
-                state.ground_speed = vel.xy().length();
+                velocity_to_speed_course(state);
             }
 
             if (have_sa) {
