@@ -118,6 +118,11 @@ protected:
     void fill_3d_velocity(void);
 
     /*
+      fill ground course and speed from velocity
+     */
+    void velocity_to_speed_course(AP_GPS::GPS_State &s);
+
+    /*
        fill in time_week_ms and time_week from BCD date and time components
        assumes MTK19 millisecond form of bcd_time
     */

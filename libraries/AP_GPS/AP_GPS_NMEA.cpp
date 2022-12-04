@@ -399,8 +399,7 @@ bool AP_GPS_NMEA::_term_complete()
                     state.have_vertical_velocity = true;
                     _last_vvelocity_ms = now;
                     // we prefer a true 3D velocity when available
-                    state.ground_course = wrap_360(degrees(atan2f(state.velocity.y, state.velocity.x)));
-                    state.ground_speed = state.velocity.xy().length();
+                    velocity_to_speed_course(state);
                     _last_3D_velocity_ms = now;
                 } else if (_phd.msg_id == 26) {
                     state.horizontal_accuracy = MAX(_phd.fields[0],_phd.fields[1]) * 0.001;
@@ -430,8 +429,7 @@ bool AP_GPS_NMEA::_term_complete()
                     state.have_vertical_velocity = true;
                     _last_vvelocity_ms = now;
                     // we prefer a true 3D velocity when available
-                    state.ground_course = wrap_360(degrees(atan2f(state.velocity.y, state.velocity.x)));
-                    state.ground_speed = state.velocity.xy().length();
+                    velocity_to_speed_course(state);
                     _last_3D_velocity_ms = now;
                 }
                 if (is_equal(3.0f, float(_ksxt.fields[10]))) {
@@ -455,6 +453,7 @@ bool AP_GPS_NMEA::_term_complete()
                 state.location.alt = ag.alt*1.0e2;
                 state.undulation   = -ag.undulation;
                 state.velocity = ag.vel_NED;
+                velocity_to_speed_course(state);
                 state.speed_accuracy = ag.vel_stddev.length();
                 state.horizontal_accuracy = ag.pos_stddev.xy().length();
                 state.vertical_accuracy = ag.pos_stddev.z;
