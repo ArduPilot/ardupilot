@@ -112,9 +112,11 @@ void shape_accel(float accel_input, float& accel,
     }
 
     // jerk limit acceleration change
-    float accel_delta = accel_input - accel;
-    accel_delta = constrain_float(accel_delta, -jerk_max * dt, jerk_max * dt);
-    accel += accel_delta;
+    if (is_positive(dt)) {
+        float accel_delta = accel_input - accel;
+        accel_delta = constrain_float(accel_delta, -jerk_max * dt, jerk_max * dt);
+        accel += accel_delta;
+    }
 }
 
 // 2D version
@@ -128,9 +130,11 @@ void shape_accel_xy(const Vector2f& accel_input, Vector2f& accel,
     }
 
     // jerk limit acceleration change
-    Vector2f accel_delta = accel_input - accel;
-    accel_delta.limit_length(jerk_max * dt);
-    accel = accel + accel_delta;
+    if (is_positive(dt)) {
+        Vector2f accel_delta = accel_input - accel;
+        accel_delta.limit_length(jerk_max * dt);
+        accel = accel + accel_delta;
+    }
 }
 
 void shape_accel_xy(const Vector3f& accel_input, Vector3f& accel,
@@ -410,7 +414,7 @@ float sqrt_controller(float error, float p, float second_ord_lim, float dt)
             correction_rate = error * p;
         }
     }
-    if (!is_zero(dt)) {
+    if (is_positive(dt)) {
         // this ensures we do not get small oscillations by over shooting the error correction in the last time step.
         return constrain_float(correction_rate, -fabsf(error) / dt, fabsf(error) / dt);
     } else {
