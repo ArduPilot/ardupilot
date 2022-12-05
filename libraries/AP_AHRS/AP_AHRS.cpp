@@ -420,6 +420,16 @@ void AP_AHRS::update(bool skip_ins_update)
         }
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AHRS: %s active", shortname);
     }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    /*
+      add timing jitter to simulate slow EKF response
+     */
+    const auto *sitl = AP::sitl();
+    if (sitl->loop_time_jitter_us > 0) {
+        hal.scheduler->delay_microseconds(random() % sitl->loop_time_jitter_us);
+    }
+#endif
 }
 
 /*
