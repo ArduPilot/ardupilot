@@ -537,6 +537,7 @@ struct PACKED log_Rally {
 struct PACKED log_Performance {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint16_t loop_rate;
     uint16_t num_long_running;
     uint16_t num_loops;
     uint32_t max_time;
@@ -943,8 +944,9 @@ struct PACKED log_VER {
 // @LoggerMessage: PM
 // @Description: autopilot system performance and general data dumping ground
 // @Field: TimeUS: Time since system startup
+// @Field: LR: Main loop rate
 // @Field: NLon: Number of long loops detected
-// @Field: NLoop: Number of measurement loops for this message
+// @Field: NL: Number of measurement loops for this message
 // @Field: MaxT: Maximum loop time
 // @Field: Mem: Free memory available
 // @Field: Load: System processor load
@@ -1258,7 +1260,7 @@ LOG_STRUCTURE_FROM_CAMERA \
     LOG_STRUCTURE_FROM_BEACON                                       \
     LOG_STRUCTURE_FROM_PROXIMITY                                    \
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance),                     \
-      "PM",  "QHHIIHHIIIIII", "TimeUS,NLon,NLoop,MaxT,Mem,Load,ErrL,IntE,ErrC,SPIC,I2CC,I2CI,Ex", "s---b%------s", "F---0A------F" }, \
+      "PM",  "QHHHIIHHIIIIII", "TimeUS,LR,NLon,NL,MaxT,Mem,Load,ErrL,IntE,ErrC,SPIC,I2CC,I2CI,Ex", "sz---b%------s", "F----0A------F" }, \
     { LOG_SRTL_MSG, sizeof(log_SRTL), \
       "SRTL", "QBHHBfff", "TimeUS,Active,NumPts,MaxPts,Action,N,E,D", "s----mmm", "F----000" }, \
 LOG_STRUCTURE_FROM_AVOIDANCE \
