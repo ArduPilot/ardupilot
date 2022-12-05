@@ -317,7 +317,7 @@ float AP_Scheduler::load_average()
     }
     const uint32_t loop_us = get_loop_period_us();
     const uint32_t used_time = loop_us - (_spare_micros/_spare_ticks);
-    return used_time / (float)loop_us;
+    return constrain_float(used_time / (float)loop_us, 0, 1);
 }
 
 void AP_Scheduler::loop()
