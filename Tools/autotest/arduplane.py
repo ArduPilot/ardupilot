@@ -2426,7 +2426,7 @@ class AutoTestPlane(AutoTest):
         self.wait_altitude(alt_min-10, alt_min, timeout=600, relative=True)
 
         self.progress("Waiting for throttle up")
-        self.wait_servo_channel_value(3, 1200, timeout=2, comparator=operator.gt)
+        self.wait_servo_channel_value(3, 1200, timeout=5, comparator=operator.gt)
 
         self.progress("Waiting for climb to cutoff altitude")
         alt_ctf = self.get_parameter('SOAR_ALT_CUTOFF')
@@ -3961,7 +3961,8 @@ class AutoTestPlane(AutoTest):
     def AerobaticsScripting(self):
         '''Fixed Wing Aerobatics'''
         applet_script = "Aerobatics/FixedWing/plane_aerobatics.lua"
-        trick72 = "Aerobatics/FixedWing/trick72.txt"
+        airshow = "Aerobatics/FixedWing/Schedules/AirShow.txt"
+        trick72 = "trick72.txt"
 
         model = "plane-3d"
 
@@ -3973,7 +3974,7 @@ class AutoTestPlane(AutoTest):
 
         self.context_push()
         self.install_applet_script(applet_script)
-        self.install_applet_script(trick72)
+        self.install_applet_script(airshow, install_name=trick72)
         self.context_collect('STATUSTEXT')
         self.reboot_sitl()
 

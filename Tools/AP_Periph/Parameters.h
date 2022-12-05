@@ -62,6 +62,7 @@ public:
         k_param_esc_telem_rate,
         k_param_can_slcan_cport,
         k_param_temperature_sensor,
+        k_param_esc_command_timeout_ms,
     };
 
     AP_Int16 format_version;
@@ -122,6 +123,7 @@ public:
 
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
     AP_Int8 esc_pwm_type;
+    AP_Int16 esc_command_timeout_ms;
 #if HAL_WITH_ESC_TELEM && !HAL_GCS_ENABLED
     AP_Int8 esc_telem_port;
 #endif

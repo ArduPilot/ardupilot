@@ -16,6 +16,7 @@ const AP_Param::GroupInfo Tiltrotor::var_info[] = {
     // @DisplayName: Tiltrotor mask
     // @Description: This is a bitmask of motors that are tiltable in a tiltrotor (or tiltwing). The mask is in terms of the standard motor order for the frame type.
     // @User: Standard
+    // @Bitmask: 0:Motor 1, 1:Motor 2, 2:Motor 3, 3:Motor 4, 4:Motor 5, 5:Motor 6, 6:Motor 7, 7:Motor 8, 8:Motor 9, 9:Motor 10, 10:Motor 11, 11:Motor 12
     AP_GROUPINFO("MASK", 2, Tiltrotor, tilt_mask, 0),
 
     // @Param: RATE_UP
@@ -219,7 +220,10 @@ void Tiltrotor::continuous_update(void)
     if (!quadplane.in_vtol_mode() && (!hal.util->get_soft_armed() || !quadplane.assisted_flight)) {
         // we are in pure fixed wing mode. Move the tiltable motors all the way forward and run them as
         // a forward motor
-        slew(get_forward_flight_tilt());
+
+        // option set then if disarmed move to VTOL position to prevent ground strikes, allow tilt forward in manual mode for testing
+        const bool disarmed_tilt_up = !hal.util->get_soft_armed() && (plane.control_mode != &plane.mode_manual) && quadplane.option_is_set(QuadPlane::OPTION::DISARMED_TILT_UP);
+        slew(disarmed_tilt_up ? 0.0 : get_forward_flight_tilt());
 
         max_change = tilt_max_change(false);
 
@@ -239,7 +243,7 @@ void Tiltrotor::continuous_update(void)
         }
         if (!quadplane.motor_test.running) {
             // the motors are all the way forward, start using them for fwd thrust
-            uint8_t mask = is_zero(current_throttle)?0:(uint8_t)tilt_mask.get();
+            const uint16_t mask = is_zero(current_throttle)?0U:tilt_mask.get();
             motors->output_motor_mask(current_throttle, mask, plane.rudder_dt);
         }
         return;
@@ -343,7 +347,7 @@ void Tiltrotor::binary_update(void)
 
         float new_throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)*0.01f;
         if (current_tilt >= 1) {
-            uint8_t mask = is_zero(new_throttle)?0:(uint8_t)tilt_mask.get();
+            const uint16_t mask = is_zero(new_throttle)?0U:tilt_mask.get();
             // the motors are all the way forward, start using them for fwd thrust
             motors->output_motor_mask(new_throttle, mask, plane.rudder_dt);
         }

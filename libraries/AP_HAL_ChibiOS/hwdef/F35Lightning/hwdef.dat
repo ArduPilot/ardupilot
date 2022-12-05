@@ -163,6 +163,7 @@ define HAL_BATT_CURR_SCALE 25
 
 # minimal drivers to reduce flash usage
 include ../include/minimal.inc
+define AP_BATTMON_SYNTHETIC_CURRENT_ENABLED 0
 
 # enable IMU fast sampling
 define HAL_DEFAULT_INS_FAST_SAMPLE 1

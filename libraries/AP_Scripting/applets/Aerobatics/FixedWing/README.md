@@ -64,27 +64,9 @@ manouvers are used in some of the schedules defined below.
 
 ## Available Schedules (pre-defined sequences of manouvers)
 
-The following table gives the available pre-defined schedules. Each schedule has
-an ID number which is used in the AUTO mission or in the TRIKn_ID
-parameters (described below). Entry ground track orientation is maintained throughout the schedule (except for tricks which 
-modify it during the trick, like rolling circles and figure eights)
-
-| ID  | Name
-| --  | ------------------------
-| 201 | NZ Clubman Schedule
-| 202 | FAI F3A P-23 (left to right)
-| 203 | FAI F3C Scale Example (left to right)
-| 204 | AirShow
-
-Note: ID's 202-203 are best flown with a mission start point 150m out from the pilot, with the prior and subsequent mission waypoints in a straight line with the model starting the script flying down wind. ID 201 is best started in the same manner, but the model positioned 100m out from the pilot.
-
-## Adding Schedules
-
-Schedules can be added to those above by creating a text file in the /scripts directory or the root directory on the SD card where the plane_aerobatics.lua script is stored.
-An example for the "Airshow" schedule is included as trick72.txt and would be executed as TRIK_ID = 72 via switch or in an AUTO mission command. The schedule will display its "name" when started, and as each trick begins the "message" will sent to the GCS to indicate its start.
-
-Note, that the "straight_align" command is not a trick, but rather a command as to when the next trick is to begin. Its parameter is meters from the
-schedules initial entry point. Positive numbers are meters away from that point in the entry direction on the ground track, while negative numbers are in the opposite direction on the track line. If the aircraft is already past that point in the desired direction along the track, the trick will begin immediately.
+See the Schedules subdirectory for a wide variety of pre-defined
+full aerobatic schedules you can use and instructions for how to
+install them.
 
 ## Loading the script
 
@@ -94,7 +76,7 @@ APM/SCRIPTS directory. You can use MAVFtp to do this.
 Then set
 
  - SCR_ENABLE = 1
- - SCR_HEAP_SIZE = 250000
+ - SCR_HEAP_SIZE = 300000
  - SCR_VM_I_COUNT = 200000
 
 You will need to refresh parameters after setting SCR_ENABLE. Then

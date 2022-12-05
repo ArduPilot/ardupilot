@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 4.3.1-rc1 17-Nov-2022
+Copter 4.3.1 05-Dec-2022 / 4.3.1-rc1 17-Nov-2022
 Changes from 4.3.0
 1) Autopilot specific enhancements
    a) ARKV6X support

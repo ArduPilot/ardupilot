@@ -28,13 +28,16 @@
 #define MAX_NAME_LEN 255
 #endif
 
+#if (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS) || (CONFIG_HAL_BOARD == HAL_BOARD_ESP32)
+#define DT_REG 0
+#define DT_DIR 1
+#define DT_LNK 10
+#endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #if HAVE_FILESYSTEM_SUPPORT
 #include "AP_Filesystem_FATFS.h"
 #endif
-#define DT_REG 0
-#define DT_DIR 1
-#define DT_LNK 10
 
 struct dirent {
    char    d_name[MAX_NAME_LEN]; /* filename */

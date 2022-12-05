@@ -197,6 +197,8 @@ define HAL_GYROFFT_ENABLED 0
 include ../include/save_some_flash.inc
 define HAL_BARO_WIND_COMP_ENABLED 0
 define AP_GRIPPER_ENABLED 0
+define AP_BATTMON_SYNTHETIC_CURRENT_ENABLED 0
 
 # only include ublox GPS driver
 include ../include/minimal_GPS.inc
+

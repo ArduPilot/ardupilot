@@ -294,7 +294,8 @@ void AP_Mount_Siyi::process_packet()
     switch ((SiyiCommandId)_parsed_msg.command_id) {
 
     case SiyiCommandId::ACQUIRE_FIRMWARE_VERSION: {
-        if (_parsed_msg.data_bytes_received != 12) {
+        if (_parsed_msg.data_bytes_received != 12 &&    // ZR10 firmware version reply is 12bytes
+            _parsed_msg.data_bytes_received != 8) {     // A8 firmware version reply is 8 bytes
 #if AP_MOUNT_SIYI_DEBUG
             unexpected_len = true;
 #endif
@@ -304,21 +305,25 @@ void AP_Mount_Siyi::process_packet()
 
         // display camera firmware version
         debug("Mount: SiyiCam fw:%u.%u.%u",
-              (unsigned)_msg_buff[_msg_buff_data_start+1],      // firmware major version
-              (unsigned)_msg_buff[_msg_buff_data_start+2],      // firmware minor version
-              (unsigned)_msg_buff[_msg_buff_data_start+3]);     // firmware revision
+              (unsigned)_msg_buff[_msg_buff_data_start+2],      // firmware major version
+              (unsigned)_msg_buff[_msg_buff_data_start+1],      // firmware minor version
+              (unsigned)_msg_buff[_msg_buff_data_start+0]);     // firmware revision
 
         // display gimbal info to user
         gcs().send_text(MAV_SEVERITY_INFO, "Mount: Siyi fw:%u.%u.%u",
-                (unsigned)_msg_buff[_msg_buff_data_start+5],    // firmware major version
-                (unsigned)_msg_buff[_msg_buff_data_start+6],    // firmware minor version
-                (unsigned)_msg_buff[_msg_buff_data_start+7]);   // firmware revision
+                (unsigned)_msg_buff[_msg_buff_data_start+6],    // firmware major version
+                (unsigned)_msg_buff[_msg_buff_data_start+5],    // firmware minor version
+                (unsigned)_msg_buff[_msg_buff_data_start+4]);   // firmware revision
 
         // display zoom firmware version
-        debug("Mount: SiyiZoom fw:%u.%u.%u",
-              (unsigned)_msg_buff[_msg_buff_data_start+9],      // firmware major version
-              (unsigned)_msg_buff[_msg_buff_data_start+10],     // firmware minor version
-              (unsigned)_msg_buff[_msg_buff_data_start+11]);    // firmware revision
+#if AP_MOUNT_SIYI_DEBUG
+        if (_parsed_msg.data_bytes_received >= 12) {
+            debug("Mount: SiyiZoom fw:%u.%u.%u",
+                (unsigned)_msg_buff[_msg_buff_data_start+10],    // firmware major version
+                (unsigned)_msg_buff[_msg_buff_data_start+9],     // firmware minor version
+                (unsigned)_msg_buff[_msg_buff_data_start+8]);    // firmware revision
+        }
+#endif
         break;
     }
 

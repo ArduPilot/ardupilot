@@ -417,9 +417,29 @@ bool AP_CANManager::handle_can_forward(mavlink_channel_t chan, const mavlink_com
 /*
   handle a CAN_FRAME packet
  */
-void AP_CANManager::handle_can_frame(const mavlink_message_t &msg) const
+void AP_CANManager::handle_can_frame(const mavlink_message_t &msg)
 {
-    const uint16_t timeout_us = 2000;
+    if (frame_buffer == nullptr) {
+        // allocate frame buffer
+        WITH_SEMAPHORE(_sem);
+        // 20 is good for firmware upload
+        uint8_t buffer_size = 20;
+        while (frame_buffer == nullptr && buffer_size > 0) {
+            // we'd like 20 frames, but will live with less
+            frame_buffer = new ObjectBuffer<BufferFrame>(buffer_size);
+            if (frame_buffer != nullptr) {
+                // register a callback for when frames can't be sent immediately
+                hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_CANManager::process_frame_buffer, void));
+                break;
+            }
+            buffer_size /= 2;
+        }
+        if (frame_buffer == nullptr) {
+            // disard the frames
+            return;
+        }
+    }
+
     switch (msg.msgid) {
     case MAVLINK_MSG_ID_CAN_FRAME: {
         mavlink_can_frame_t p;
@@ -427,8 +447,12 @@ void AP_CANManager::handle_can_frame(const mavlink_message_t &msg) const
         if (p.bus >= HAL_NUM_CAN_IFACES || hal.can[p.bus] == nullptr) {
             return;
         }
-        AP_HAL::CANFrame frame{p.id, p.data, p.len};
-        hal.can[p.bus]->send(frame, AP_HAL::native_micros64() + timeout_us, AP_HAL::CANIface::IsMAVCAN);
+        struct BufferFrame frame {
+            bus : p.bus,
+            frame : AP_HAL::CANFrame(p.id, p.data, p.len)
+        };
+        WITH_SEMAPHORE(_sem);
+        frame_buffer->push(frame);
         break;
     }
     case MAVLINK_MSG_ID_CANFD_FRAME: {
@@ -437,10 +461,41 @@ void AP_CANManager::handle_can_frame(const mavlink_message_t &msg) const
         if (p.bus >= HAL_NUM_CAN_IFACES || hal.can[p.bus] == nullptr) {
             return;
         }
-        AP_HAL::CANFrame frame{p.id, p.data, p.len, true};
-        hal.can[p.bus]->send(frame, AP_HAL::native_micros64() + timeout_us, AP_HAL::CANIface::IsMAVCAN);
+        struct BufferFrame frame {
+            bus : p.bus,
+            frame : AP_HAL::CANFrame(p.id, p.data, p.len, true)
+        };
+        WITH_SEMAPHORE(_sem);
+        frame_buffer->push(frame);
         break;
     }
+    }
+    process_frame_buffer();
+}
+
+/*
+  process the frame buffer
+ */
+void AP_CANManager::process_frame_buffer(void)
+{
+    while (frame_buffer) {
+        WITH_SEMAPHORE(_sem);
+        struct BufferFrame frame;
+        const uint16_t timeout_us = 2000;
+        if (!frame_buffer->peek(frame)) {
+            // no frames in the queue
+            break;
+        }
+        const int16_t retcode = hal.can[frame.bus]->send(frame.frame,
+                                                         AP_HAL::native_micros64() + timeout_us,
+                                                         frame.frame.isCanFDFrame()?AP_HAL::CANIface::IsMAVCAN:0);
+        if (retcode == 0) {
+            // no space in the CAN output slots, try again later
+            break;
+        }
+        // retcode == 1 means sent, -1 means a frame that can't be
+        // sent. Either way we should remove from the queue
+        frame_buffer->pop();
     }
 }
 
