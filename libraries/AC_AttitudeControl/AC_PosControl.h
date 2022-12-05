@@ -40,9 +40,14 @@ public:
 
     /// Constructor
     AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
-                  const class AP_Motors& motors, AC_AttitudeControl& attitude_control, float dt);
+                  const class AP_Motors& motors, AC_AttitudeControl& attitude_control);
 
-    /// get_dt - gets time delta in seconds for all position controllers
+
+
+    /// set_dt / get_dt - dt is the time since the last time the position controllers were updated
+    ///   _dt should be set based on the time of the last IMU read used by these controllers
+    ///   the position controller should run updates for active controllers on each loop to ensure normal operation
+    void set_dt(float dt) { _dt = dt; }
     float get_dt() const { return _dt; }
 
     /// get_shaping_jerk_xy_cmsss - gets the jerk limit of the xy kinematic path generation in cm/s/s/s
@@ -418,7 +423,7 @@ protected:
     // references to inertial nav and ahrs libraries
     AP_AHRS_View&           _ahrs;
     const AP_InertialNav&   _inav;
-    const class AP_Motors&        _motors;
+    const class AP_Motors&  _motors;
     AC_AttitudeControl&     _attitude_control;
 
     // parameters
@@ -432,7 +437,7 @@ protected:
     AC_PID          _pid_accel_z;       // Z axis acceleration controller to convert desired acceleration to throttle output
 
     // internal variables
-    float       _dt;                    // time difference (in seconds) between calls from the main program
+    float       _dt;                    // time difference (in seconds) since the last loop time
     uint64_t    _last_update_xy_us;     // system time (in microseconds) since last update_xy_controller call
     uint64_t    _last_update_z_us;      // system time (in microseconds) since last update_z_controller call
     float       _vel_max_xy_cms;        // max horizontal speed in cm/s used for kinematic shaping
