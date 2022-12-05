@@ -139,10 +139,10 @@ void AC_Loiter::soften_for_landing()
 //   dt should be the time (in seconds) since the last call to this function
 void AC_Loiter::set_pilot_desired_acceleration(float euler_roll_angle_cd, float euler_pitch_angle_cd)
 {
-    const float dt = _pos_control.get_dt();
+    const float dt = _attitude_control.get_dt();
     // Convert from centidegrees on public interface to radians
-    const float euler_roll_angle = radians(euler_roll_angle_cd*0.01f);
-    const float euler_pitch_angle = radians(euler_pitch_angle_cd*0.01f);
+    const float euler_roll_angle = radians(euler_roll_angle_cd * 0.01f);
+    const float euler_pitch_angle = radians(euler_pitch_angle_cd * 0.01f);
 
     // convert our desired attitude to an acceleration vector assuming we are not accelerating vertically
     const Vector3f desired_euler {euler_roll_angle, euler_pitch_angle, _ahrs.yaw};
@@ -188,7 +188,7 @@ float AC_Loiter::get_angle_max_cd() const
 /// run the loiter controller
 void AC_Loiter::update(bool avoidance_on)
 {
-    calc_desired_velocity(_pos_control.get_dt(), avoidance_on);
+    calc_desired_velocity(avoidance_on);
     _pos_control.update_xy_controller();
 }
 
@@ -201,20 +201,22 @@ void AC_Loiter::sanity_check_params()
 
 /// calc_desired_velocity - updates desired velocity (i.e. feed forward) with pilot requested acceleration and fake wind resistance
 ///		updated velocity sent directly to position controller
-void AC_Loiter::calc_desired_velocity(float nav_dt, bool avoidance_on)
+void AC_Loiter::calc_desired_velocity(bool avoidance_on)
 {
     float ekfGndSpdLimit, ahrsControlScaleXY;
     AP::ahrs().getControlLimits(ekfGndSpdLimit, ahrsControlScaleXY);
 
+    const float dt = _pos_control.get_dt();
+
     // calculate a loiter speed limit which is the minimum of the value set by the LOITER_SPEED
     // parameter and the value set by the EKF to observe optical flow limits
-    float gnd_speed_limit_cms = MIN(_speed_cms, ekfGndSpdLimit*100.0f);
+    float gnd_speed_limit_cms = MIN(_speed_cms, ekfGndSpdLimit * 100.0f);
     gnd_speed_limit_cms = MAX(gnd_speed_limit_cms, LOITER_SPEED_MIN);
 
-    float pilot_acceleration_max = angle_to_accel(get_angle_max_cd()*0.01) * 100;
+    float pilot_acceleration_max = angle_to_accel(get_angle_max_cd() * 0.01) * 100;
 
-    // range check nav_dt
-    if (nav_dt < 0) {
+    // range check dt
+    if (is_negative(dt)) {
         return;
     }
 
@@ -223,39 +225,34 @@ void AC_Loiter::calc_desired_velocity(float nav_dt, bool avoidance_on)
     Vector2f desired_vel{desired_vel_3d.x,desired_vel_3d.y};
 
     // update the desired velocity using our predicted acceleration
-    desired_vel.x += _predicted_accel.x * nav_dt;
-    desired_vel.y += _predicted_accel.y * nav_dt;
+    desired_vel.x += _predicted_accel.x * dt;
+    desired_vel.y += _predicted_accel.y * dt;
 
     Vector2f loiter_accel_brake;
     float desired_speed = desired_vel.length();
     if (!is_zero(desired_speed)) {
-        Vector2f desired_vel_norm = desired_vel/desired_speed;
-
-        // TODO: consider using a velocity squared relationship like
-        // pilot_acceleration_max*(desired_speed/gnd_speed_limit_cms)^2;
-        // the drag characteristic of a multirotor should be examined to generate a curve
-        // we could add a expo function here to fine tune it
+        Vector2f desired_vel_norm = desired_vel / desired_speed;
 
         // calculate a drag acceleration based on the desired speed.
-        float drag_decel = pilot_acceleration_max*desired_speed/gnd_speed_limit_cms;
+        float drag_decel = pilot_acceleration_max * desired_speed / gnd_speed_limit_cms;
 
         // calculate a braking acceleration if sticks are at zero
         float loiter_brake_accel = 0.0f;
         if (_desired_accel.is_zero()) {
-            if ((AP_HAL::millis()-_brake_timer) > _brake_delay * 1000.0f) {
+            if ((AP_HAL::millis() - _brake_timer) > _brake_delay * 1000.0f) {
                 float brake_gain = _pos_control.get_vel_xy_pid().kP() * 0.5f;
-                loiter_brake_accel = constrain_float(sqrt_controller(desired_speed, brake_gain, _brake_jerk_max_cmsss, nav_dt), 0.0f, _brake_accel_cmss);
+                loiter_brake_accel = constrain_float(sqrt_controller(desired_speed, brake_gain, _brake_jerk_max_cmsss, dt), 0.0f, _brake_accel_cmss);
             }
         } else {
             loiter_brake_accel = 0.0f;
             _brake_timer = AP_HAL::millis();
         }
-        _brake_accel += constrain_float(loiter_brake_accel-_brake_accel, -_brake_jerk_max_cmsss*nav_dt, _brake_jerk_max_cmsss*nav_dt);
-        loiter_accel_brake = desired_vel_norm*_brake_accel;
+        _brake_accel += constrain_float(loiter_brake_accel - _brake_accel, -_brake_jerk_max_cmsss * dt, _brake_jerk_max_cmsss * dt);
+        loiter_accel_brake = desired_vel_norm * _brake_accel;
 
         // update the desired velocity using the drag and braking accelerations
-        desired_speed = MAX(desired_speed-(drag_decel+_brake_accel)*nav_dt,0.0f);
-        desired_vel = desired_vel_norm*desired_speed;
+        desired_speed = MAX(desired_speed - (drag_decel + _brake_accel) * dt, 0.0f);
+        desired_vel = desired_vel_norm * desired_speed;
     }
 
     // add braking to the desired acceleration
@@ -275,7 +272,7 @@ void AC_Loiter::calc_desired_velocity(float nav_dt, bool avoidance_on)
         AC_Avoid *_avoid = AP::ac_avoid();
         if (_avoid != nullptr) {
             Vector3f avoidance_vel_3d{desired_vel.x, desired_vel.y, 0.0f};
-            _avoid->adjust_velocity(avoidance_vel_3d, _pos_control.get_pos_xy_p().kP(), _accel_cmss, _pos_control.get_pos_z_p().kP(), _pos_control.get_max_accel_z_cmss(), nav_dt);
+            _avoid->adjust_velocity(avoidance_vel_3d, _pos_control.get_pos_xy_p().kP(), _accel_cmss, _pos_control.get_pos_z_p().kP(), _pos_control.get_max_accel_z_cmss(), dt);
             desired_vel = Vector2f{avoidance_vel_3d.x, avoidance_vel_3d.y};
         }
     }
@@ -285,7 +282,7 @@ void AC_Loiter::calc_desired_velocity(float nav_dt, bool avoidance_on)
     Vector2p target_pos = _pos_control.get_pos_target_cm().xy();
 
     // update the target position using our predicted velocity
-    target_pos += (desired_vel * nav_dt).topostype();
+    target_pos += (desired_vel * dt).topostype();
 
     // send adjusted feed forward acceleration and velocity back to the Position Controller
     _pos_control.set_pos_vel_accel_xy(target_pos, desired_vel, _desired_accel);
