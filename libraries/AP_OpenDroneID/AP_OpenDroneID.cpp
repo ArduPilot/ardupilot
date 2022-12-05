@@ -177,6 +177,13 @@ void AP_OpenDroneID::send_dynamic_out()
         _last_send_system_update_ms = now;
         send_system_update_message();
     }
+    // send arm status message to the GCS every 4000 ms and only when receive
+    // arm_status message from the transmitter.
+    if (now - _last_arm_status_ms >= 4000 && 5000 > now - last_arm_status_ms &&
+         ODID_HAVE_PAYLOAD_SPACE(OPEN_DRONE_ID_ARM_STATUS)) {
+        _last_arm_status_ms = now;
+        send_arm_status_message();
+    }
 }
 
 void AP_OpenDroneID::send_static_out()
@@ -429,6 +436,14 @@ void AP_OpenDroneID::send_operator_id_message()
     // note that packet is filled in by the GCS
     if (_chan != MAV_CHAN_INVALID) {
         mavlink_msg_open_drone_id_operator_id_send_struct(_chan, &pkt_operator_id);
+    }
+}
+
+void AP_OpenDroneID::send_arm_status_message()
+{
+    // note that packet is filled in by the GCS
+    if (_chan != MAV_CHAN_INVALID) {
+        mavlink_msg_open_drone_id_arm_status_send_struct(_chan, &arm_status);
     }
 }
 

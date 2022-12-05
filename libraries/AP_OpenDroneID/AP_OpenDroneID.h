@@ -122,6 +122,7 @@ private:
     uint32_t _last_send_location_ms;
     uint32_t _last_send_system_update_ms;
     uint32_t _last_send_static_messages_ms;
+    uint32_t _last_arm_status_ms;
     const uint32_t _mavlink_dynamic_period_ms = 1000; //how often are mavlink dynamic messages sent in ms. E.g. 1000 = 1 Hz
     const uint32_t _mavlink_static_period_ms = 5000; //how often are mavlink static messages sent in ms
 
@@ -161,6 +162,7 @@ private:
     void send_system_update_message();
     void send_self_id_message();
     void send_operator_id_message();
+    void send_arm_status_message();
     void send_location_message();
     enum next_msg : uint8_t {
         NEXT_MSG_BASIC_ID = 0,
