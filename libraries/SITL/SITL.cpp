@@ -247,6 +247,8 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     AP_SUBGROUPINFO(baro[2], "BAR3_", 36, SIM, SIM::BaroParm),
 #endif
 
+    AP_GROUPINFO("TIME_JITTER",  37, SIM,  loop_time_jitter_us, 0),
+
     // user settable parameters for the 1st barometer
     // @Param: BARO_RND
     // @DisplayName: Baro Noise
