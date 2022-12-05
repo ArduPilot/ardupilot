@@ -275,10 +275,19 @@ void AP_Scheduler::run(uint32_t time_available)
         perf_info.update_task_info(i, time_taken, overrun);
 
         if (time_taken >= time_available) {
+            /*
+              we are out of time, but we need to keep walking the task
+              table in case there is another fast loop task after this
+              task, plus we need to update the accouting so we can
+              work out if we need to allocate extra time for the loop
+              (lower the loop rate)
+              Just set time_available to zero, which means we will
+              only run fast tasks after this one
+             */
             time_available = 0;
-            break;
+        } else {
+            time_available -= time_taken;
         }
-        time_available -= time_taken;
     }
 
     // update number of spare microseconds
