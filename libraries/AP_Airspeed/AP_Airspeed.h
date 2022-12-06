@@ -37,6 +37,9 @@ public:
     // constructor
     AP_Airspeed();
 
+    void set_fixedwing_parameters(const class AP_FixedWing *_fixed_wing_parameters);
+
+
     void init(void);
 
     // indicate which bit in LOG_BITMASK indicates we should log airspeed readings
@@ -168,6 +171,7 @@ private:
     static AP_Airspeed *_singleton;
 
     AP_Int8 primary_sensor;
+    AP_Int8 max_speed_pcnt;
     AP_Int32 _options;    // bitmask options for airspeed
     AP_Float _wind_max;
     AP_Float _wind_warn;
@@ -273,6 +277,8 @@ private:
     void Log_Airspeed();
 
     bool add_backend(AP_Airspeed_Backend *backend);
+    
+    const AP_FixedWing *fixed_wing_parameters;
 };
 
 namespace AP {

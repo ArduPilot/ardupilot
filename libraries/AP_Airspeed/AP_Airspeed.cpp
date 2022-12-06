@@ -50,6 +50,8 @@
 #include "AP_Airspeed_SITL.h"
 extern const AP_HAL::HAL &hal;
 
+#include <AP_Vehicle/AP_FixedWing.h>
+
 #ifdef HAL_AIRSPEED_TYPE_DEFAULT
  #define ARSPD_DEFAULT_TYPE HAL_AIRSPEED_TYPE_DEFAULT
  #ifndef ARSPD_DEFAULT_PIN
@@ -87,6 +89,7 @@ extern const AP_HAL::HAL &hal;
 #endif
 
 #define OPTIONS_DEFAULT AP_Airspeed::OptionsMask::ON_FAILURE_AHRS_WIND_MAX_DO_DISABLE | AP_Airspeed::OptionsMask::ON_FAILURE_AHRS_WIND_MAX_RECOVERY_DO_REENABLE | AP_Airspeed::OptionsMask::USE_EKF_CONSISTENCY
+
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
@@ -217,6 +220,14 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Range: 0.0 10.0
     // @User: Advanced
     AP_GROUPINFO("_WIND_GATE", 26, AP_Airspeed, _wind_gate, 5.0f),
+    
+    // @Param: _OFF_PCNT
+    // @DisplayName: Maximum offset cal speed error 
+    // @Description: The maximum percentage speed change in airspeed reports that is allowed due to offset changes between calibraions before a warning is issued. This potential speed error is in percent of ASPD_FBW_MIN. 0 disables. Helps warn of calibrations without pitot being covered.
+    // @Range: 0.0 10.0
+    // @Units: %
+    // @User: Advanced
+    AP_GROUPINFO_FRAME("_OFF_PCNT", 27, AP_Airspeed, max_speed_pcnt, 0, AP_PARAM_FRAME_PLANE),    
 
 #endif
 
@@ -323,6 +334,11 @@ AP_Airspeed::AP_Airspeed()
         AP_HAL::panic("AP_Airspeed must be singleton");
     }
     _singleton = this;
+}
+
+void AP_Airspeed::set_fixedwing_parameters(const AP_FixedWing *_fixed_wing_parameters)
+{
+    fixed_wing_parameters = _fixed_wing_parameters;
 }
 
 // macro for use by HAL_INS_PROBE_LIST
@@ -589,7 +605,17 @@ void AP_Airspeed::update_calibration(uint8_t i, float raw_pressure)
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Airspeed %u unhealthy", i + 1);
         } else {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Airspeed %u calibrated", i + 1);
-            param[i].offset.set_and_save(state[i].cal.sum / state[i].cal.count);
+            float calibrated_offset = state[i].cal.sum / state[i].cal.count;
+            // check if new offset differs too greatly from last calibration, indicating pitot uncovered in wind
+            if (fixed_wing_parameters != nullptr) {
+                float airspeed_min = fixed_wing_parameters->airspeed_min.get();
+                // use percentage of ARSPD_FBW_MIN as criteria for max allowed change in offset
+                float max_change = 0.5*(sq((1 + (max_speed_pcnt * 0.01))*airspeed_min) - sq(airspeed_min));
+                if (max_speed_pcnt > 0 && (abs(calibrated_offset-param[i].offset) > max_change) && (abs(param[i].offset) > 0)) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Arspd %d offset change large;cover and recal", i +1);
+                }
+            }
+            param[i].offset.set_and_save(calibrated_offset);
         }
         state[i].cal.start_ms = 0;
         return;
