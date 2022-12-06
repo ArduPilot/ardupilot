@@ -451,6 +451,32 @@ void fault_printf(const char *fmt, ...)
     va_end(ap);
     fault_send_string(buffer);
 }
+
+/*
+  These functions allow high rate printing. On an F405 decoding can be done
+  by setting the baud rate to 7.5mbaud. The timing is very sensitive to compiler
+  optimisations so HAL_GPIO_PIN_FAULT must be used directly.
+ */
+static void fault_fast_bit(uint8_t b)
+{
+    palWriteLine(HAL_GPIO_PIN_FAULT, b);
+    for (uint32_t i=0; i<4; i++) {
+        palWriteLine(HAL_GPIO_PIN_FAULT, b);
+    }
+}
+
+/*
+  send a byte out a debug line
+ */
+void fault_print_byte(uint8_t b)
+{
+    fault_fast_bit(0); // start bit
+    for (uint8_t i=0; i<8; i++) {
+        uint8_t bit = (b & (1U<<i))?1:0;
+        fault_fast_bit(bit);
+    }
+    fault_fast_bit(1); // stop bit
+}
 #endif // HAL_GPIO_PIN_HARDFAULT
 
 void system_halt_hook(void)
