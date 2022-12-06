@@ -86,6 +86,7 @@ void Plane::init_ardupilot()
     AP::compass().init();
 
 #if AP_AIRSPEED_ENABLED
+    airspeed.set_fixedwing_parameters(&aparm);
     airspeed.set_log_bit(MASK_LOG_IMU);
 #endif
 
