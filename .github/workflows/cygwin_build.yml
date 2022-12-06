@@ -13,9 +13,10 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'recursive'
-      - uses: cygwin/cygwin-install-action@master
+      - uses: cygwin/cygwin-install-action@v2
         with:
           packages: install cygwin32-gcc-g++ python37 python37-future python37-lxml python37-pip python37-setuptools python37-wheel git libexpat procps gettext
+          site: http://mirrors.kernel.org/sourceware/cygwin-archive/20221123
       - name: Install cygwin
         env:
           HOME: ${{ runner.workspace }}/ardupilot
