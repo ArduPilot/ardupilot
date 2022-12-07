@@ -19,9 +19,8 @@
 class AP_MotorsHeli_Quad : public AP_MotorsHeli {
 public:
     // constructor
-    AP_MotorsHeli_Quad(uint16_t loop_rate,
-                       uint16_t speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
-        AP_MotorsHeli(loop_rate, speed_hz)
+    AP_MotorsHeli_Quad(uint16_t speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
+        AP_MotorsHeli(speed_hz)
     {
         AP_Param::setup_object_defaults(this, var_info);
     };
