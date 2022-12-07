@@ -23,8 +23,8 @@ class AP_MotorsCoax : public AP_MotorsMulticopter {
 public:
 
     /// Constructor
-    AP_MotorsCoax(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_MotorsMulticopter(loop_rate, speed_hz)
+    AP_MotorsCoax(uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+        AP_MotorsMulticopter(speed_hz)
     {
     };
 

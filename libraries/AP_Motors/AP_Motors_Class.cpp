@@ -25,8 +25,7 @@ extern const AP_HAL::HAL& hal;
 AP_Motors *AP_Motors::_singleton;
 
 // Constructor
-AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
-    _loop_rate(loop_rate),
+AP_Motors::AP_Motors(uint16_t speed_hz) :
     _speed_hz(speed_hz),
     _throttle_filter(),
     _spool_desired(DesiredSpoolState::SHUT_DOWN),
