@@ -12,7 +12,7 @@ class AP_MotorsTailsitter : public AP_MotorsMulticopter {
 public:
 
     /// Constructor
-    AP_MotorsTailsitter(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
+    AP_MotorsTailsitter(uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
 
     // init
     void init(motor_frame_class frame_class, motor_frame_type frame_type) override;

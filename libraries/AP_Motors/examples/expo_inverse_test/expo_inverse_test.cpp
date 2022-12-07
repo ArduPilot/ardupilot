@@ -30,8 +30,8 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 class AP_MotorsMulticopter_test : public AP_MotorsMulticopter {
 public:
 
-    AP_MotorsMulticopter_test(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_MotorsMulticopter(loop_rate, speed_hz)
+    AP_MotorsMulticopter_test(uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+        AP_MotorsMulticopter(speed_hz)
     {
     };
 
@@ -48,7 +48,7 @@ public:
 
 };
 
-AP_MotorsMulticopter_test motors{1};
+AP_MotorsMulticopter_test motors;
 
 /*
  *  rotation tests
@@ -66,6 +66,7 @@ void setup(void)
     float max_diff_expo = 0;
 
     float expo = -1.0;
+    motors.set_dt(1);
     while (expo < 1.0+expo_step*0.5) {
         hal.console->printf("expo: %0.4f\n",expo);
         motors.set_expo(expo);

@@ -522,7 +522,7 @@ void AP_MotorsHeli::reset_swash_servo(SRV_Channel::Aux_servo_function_t function
 // update the throttle input filter
 void AP_MotorsHeli::update_throttle_filter()
 {
-    _throttle_filter.apply(_throttle_in, 1.0f/_loop_rate);
+    _throttle_filter.apply(_throttle_in,  _dt);
 
     // constrain filtered throttle
     if (_throttle_filter.get() < 0.0f) {
