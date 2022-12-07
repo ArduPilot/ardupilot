@@ -322,7 +322,7 @@ void CANIface::_pollWrite()
                 stats.tx_full++;
                 break;                        // Leaving the loop, the frame remains enqueued for the next retry
             } else {                          // Transmission error
-                stats.tx_write_fail++;
+                stats.tx_rejected++;
             }
         } else {
             // hal.console->printf("TDEAD: %lu CURRT: %lu DEL: %lu\n", tx.deadline, curr_time, curr_time-tx.deadline);
@@ -702,7 +702,7 @@ bool CANIface::CANSocketEventSource::wait(uint64_t duration, AP_HAL::EventHandle
 void CANIface::get_stats(ExpandingString &str)
 {
     str.printf("tx_requests:    %u\n"
-               "tx_write_fail:  %u\n"
+               "tx_rejected:    %u\n"
                "tx_full:        %u\n"
                "tx_confirmed:   %u\n"
                "tx_success:     %u\n"
@@ -716,7 +716,7 @@ void CANIface::get_stats(ExpandingString &str)
                "num_poll_tx_events: %u\n"
                "num_poll_rx_events: %u\n",
                stats.tx_requests,
-               stats.tx_write_fail,
+               stats.tx_rejected,
                stats.tx_full,
                stats.tx_confirmed,
                stats.tx_success,
