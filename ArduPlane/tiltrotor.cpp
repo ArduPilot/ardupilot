@@ -124,7 +124,7 @@ void Tiltrotor::setup()
         }
     }
 
-    if (quadplane.motors_var_info == AP_MotorsMatrix::var_info && _is_vectored) {
+    if (_is_vectored) {
         // we will be using vectoring for yaw
         motors->disable_yaw_torque();
     }
@@ -562,7 +562,16 @@ void Tiltrotor::vectoring(void)
     } else {
         const float yaw_out = motors->get_yaw()+motors->get_yaw_ff();
         const float roll_out = motors->get_roll()+motors->get_roll_ff();
-        float yaw_range = zero_out;
+        const float yaw_range = zero_out;
+
+        // Scaling yaw with throttle
+        const float throttle = motors->get_throttle_out();
+        const float scale_min = 0.5;
+        const float scale_max = 2.0;
+        float throttle_scaler = scale_max;
+        if (is_positive(throttle)) {
+            throttle_scaler = constrain_float(motors->get_throttle_hover() / throttle, scale_min, scale_max);
+        }
 
         // now apply vectored thrust for yaw and roll.
         const float tilt_rad = radians(current_tilt*90);
@@ -572,13 +581,26 @@ void Tiltrotor::vectoring(void)
         // we need to use the same factor here to keep the same roll
         // gains when tilted as we have when not tilted
         const float avg_roll_factor = 0.5;
-        const float tilt_offset = constrain_float(yaw_out * cos_tilt + avg_roll_factor * roll_out * sin_tilt, -1, 1);
+        const float tilt_offset = (throttle_scaler * yaw_out * cos_tilt + avg_roll_factor * roll_out * sin_tilt) * yaw_range;
 
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft,  1000 * constrain_float(base_output + tilt_offset * yaw_range,0,1));
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, 1000 * constrain_float(base_output - tilt_offset * yaw_range,0,1));
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRear,  1000 * constrain_float(base_output,0,1));
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRearLeft,  1000 * constrain_float(base_output + tilt_offset * yaw_range,0,1));
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRearRight, 1000 * constrain_float(base_output - tilt_offset * yaw_range,0,1));
+        float left_tilt = base_output + tilt_offset;
+        float right_tilt = base_output - tilt_offset;
+
+        // if output saturation of both left and right then set yaw limit flag
+        if (((left_tilt > 1.0) || (left_tilt < 0.0)) &&
+            ((right_tilt > 1.0) || (right_tilt < 0.0))) {
+            motors->limit.yaw = true;
+        }
+
+        // constrain and scale to ouput range
+        left_tilt = constrain_float(left_tilt,0.0,1.0) * 1000.0;
+        right_tilt = constrain_float(right_tilt,0.0,1.0) * 1000.0;
+
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, left_tilt);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, right_tilt);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRear, 1000.0 * constrain_float(base_output,0.0,1.0));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRearLeft, left_tilt);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRearRight, right_tilt);
     }
 }
 
