@@ -157,11 +157,14 @@ public:
     enum class Type {
         NONE,
         AIRSPEED_CAL,
+        SD_FORMAT,
     };
 
     // these can fail if there's no space on the channel to send the ack:
     bool conclude(MAV_RESULT result);
     bool send_in_progress();
+    // abort task without sending any further ACKs:
+    void abort() { task = Type::NONE; }
 
     Type task;
     MAV_CMD mav_cmd;
@@ -511,6 +514,7 @@ protected:
     virtual MAV_RESULT handle_command_component_arm_disarm(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_set_home(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_aux_function(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_storage_format(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     void handle_mission_request_list(const mavlink_message_t &msg);
     void handle_mission_request(const mavlink_message_t &msg) const;
     void handle_mission_request_int(const mavlink_message_t &msg) const;

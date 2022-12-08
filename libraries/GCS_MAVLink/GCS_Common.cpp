@@ -1313,8 +1313,26 @@ void GCS_MAVLINK_InProgress::check_tasks()
                 break;
             }
 #endif
+            }
             break;
-        }
+        case Type::SD_FORMAT:
+            switch (AP::FS().get_format_status()) {
+            case AP_Filesystem_Backend::FormatStatus::NOT_STARTED:
+                // we shouldn't get here
+                task.conclude(MAV_RESULT_FAILED);
+                break;
+            case AP_Filesystem_Backend::FormatStatus::IN_PROGRESS:
+            case AP_Filesystem_Backend::FormatStatus::PENDING:
+                task.send_in_progress();
+                break;
+            case AP_Filesystem_Backend::FormatStatus::SUCCESS:
+                task.conclude(MAV_RESULT_ACCEPTED);
+                break;
+            case AP_Filesystem_Backend::FormatStatus::FAILURE:
+                task.conclude(MAV_RESULT_FAILED);
+                break;
+            }
+            break;
         }
     }
 }
@@ -5077,6 +5095,23 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_long_t &
     return handle_command_do_set_roi(roi_loc);
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_storage_format(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
+{
+    if (!is_equal(packet.param1, 1.0f) ||
+        !is_equal(packet.param2, 1.0f)) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+    GCS_MAVLINK_InProgress *task = GCS_MAVLINK_InProgress::get_task(MAV_CMD_STORAGE_FORMAT, GCS_MAVLINK_InProgress::Type::SD_FORMAT, msg.sysid, msg.compid);
+    if (task == nullptr) {
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+    if (!AP::FS().format()) {
+        task->abort();
+        return MAV_RESULT_FAILED;
+    }
+    return MAV_RESULT_IN_PROGRESS;
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &packet)
 {
     switch (packet.command) {
@@ -5087,13 +5122,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_do_set_roi_sysid(packet);
     case MAV_CMD_DO_SET_HOME:
         return handle_command_int_do_set_home(packet);
-    case MAV_CMD_STORAGE_FORMAT: {
-        if (!is_equal(packet.param1, 1.0f) ||
-            !is_equal(packet.param2, 1.0f)) {
-            return MAV_RESULT_UNSUPPORTED;
-        }
-        return AP::FS().format() ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
-    }
 
 #if AP_SCRIPTING_ENABLED
     case MAV_CMD_SCRIPTING:
@@ -5119,7 +5147,17 @@ void GCS_MAVLINK::handle_command_int(const mavlink_message_t &msg)
 
     hal.util->persistent_data.last_mavlink_cmd = packet.command;
 
-    const MAV_RESULT result = handle_command_int_packet(packet);
+    MAV_RESULT result;
+
+    // special handling of messages that need the mavlink_message_t
+    switch (packet.command) {
+    case MAV_CMD_STORAGE_FORMAT:
+        result = handle_command_storage_format(packet, msg);
+        break;
+    default:
+        result = handle_command_int_packet(packet);
+        break;
+    }
 
     // send ACK or NAK
     mavlink_msg_command_ack_send(chan, packet.command, result,
