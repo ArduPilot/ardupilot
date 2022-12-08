@@ -5746,11 +5746,13 @@ class AutoTest(ABC):
         )
         self.run_cmd_get_ack(command, want_result, timeout, quiet=quiet, mav=mav)
 
-    def run_cmd_get_ack(self, command, want_result, timeout, quiet=False, mav=None):
+    def run_cmd_get_ack(self, command, want_result, timeout, quiet=False, mav=None, ignore_in_progress=None):
         # note that the caller should ensure that this cached
         # timestamp is reasonably up-to-date!
         if mav is None:
             mav = self.mav
+        if ignore_in_progress is None:
+            ignore_in_progress = want_result != mavutil.mavlink.MAV_RESULT_IN_PROGRESS
         tstart = self.get_sim_time_cached()
         while True:
             if mav != self.mav:
@@ -5766,6 +5768,8 @@ class AutoTest(ABC):
             if not quiet:
                 self.progress("ACK received: %s (%fs)" % (str(m), delta_time))
             if m.command == command:
+                if m.result == mavutil.mavlink.MAV_RESULT_IN_PROGRESS and ignore_in_progress:
+                    continue
                 if m.result != want_result:
                     raise ValueError("Expected %s got %s" % (
                         mavutil.mavlink.enums["MAV_RESULT"][want_result].name,
@@ -11928,14 +11932,18 @@ switch value'''
         text = ""
 
         self.context_collect('STATUSTEXT')
-        self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
-                     0, # p1
-                     0, # p2
-                     1, # p3, baro
-                     0, # p4
-                     0, # p5
-                     0, # p6
-                     0) # p7
+        command = mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION
+        self.send_cmd(command,
+                      0, # p1
+                      0, # p2
+                      1, # p3, baro
+                      0, # p4
+                      0, # p5
+                      0, # p6
+                      0) # p7
+        # this is a test for asynchronous handling of mavlink messages:
+        self.run_cmd_get_ack(command, mavutil.mavlink.MAV_RESULT_IN_PROGRESS, 2)
+        self.run_cmd_get_ack(command, mavutil.mavlink.MAV_RESULT_ACCEPTED, 5)
 
         received_frsky_texts = []
         last_len_received_statustexts = 0
