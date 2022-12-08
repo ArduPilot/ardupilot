@@ -151,6 +151,39 @@ private:
 };
 #endif
 
+class GCS_MAVLINK_InProgress
+{
+public:
+    enum class Type {
+        NONE,
+        AIRSPEED_CAL,
+    };
+
+    // these can fail if there's no space on the channel to send the ack:
+    bool conclude(MAV_RESULT result);
+    bool send_in_progress();
+
+    Type task;
+    MAV_CMD mav_cmd;
+
+    static class GCS_MAVLINK_InProgress *get_task(MAV_CMD cmd, Type t, uint8_t sysid, uint8_t compid);
+
+    static void check_tasks();
+
+private:
+
+    uint8_t requesting_sysid;
+    uint8_t requesting_compid;
+    mavlink_channel_t chan;
+
+    bool send_ack(MAV_RESULT result);
+
+    static GCS_MAVLINK_InProgress in_progress_tasks[1];
+
+    // allocate a task-tracking ID
+    static uint32_t last_check_ms;
+};
+
 ///
 /// @class	GCS_MAVLINK
 /// @brief	MAVLink transport control class
@@ -571,10 +604,10 @@ protected:
 
     // generally this should not be overridden; Plane overrides it to ensure
     // failsafe isn't triggered during calibration
-    virtual MAV_RESULT handle_command_preflight_calibration(const mavlink_command_long_t &packet);
+    virtual MAV_RESULT handle_command_preflight_calibration(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
 
-    virtual MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet);
-    virtual MAV_RESULT _handle_command_preflight_calibration_baro();
+    virtual MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
+    virtual MAV_RESULT _handle_command_preflight_calibration_baro(const mavlink_message_t &msg);
 
     MAV_RESULT handle_command_preflight_can(const mavlink_command_long_t &packet);
 
