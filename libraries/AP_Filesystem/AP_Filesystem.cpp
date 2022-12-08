@@ -296,6 +296,14 @@ bool AP_Filesystem::format(void)
     return false;
 #endif
 }
+AP_Filesystem_Backend::FormatStatus AP_Filesystem::get_format_status(void) const
+{
+#if AP_FILESYSTEM_FORMAT_ENABLED
+    return LOCAL_BACKEND.fs.get_format_status();
+#else
+    return AP_Filesystem_Backend::FormatStatus::NOT_STARTED;
+#endif
+}
 
 namespace AP
 {
