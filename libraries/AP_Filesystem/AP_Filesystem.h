@@ -116,9 +116,12 @@ public:
     // returns null-terminated string; cr or lf terminates line
     bool fgets(char *buf, uint8_t buflen, int fd);
 
-    // format filesystem
+    // format filesystem.  This is async, monitor get_format_status for progress
     bool format(void);
-    
+
+    // retrieve status of format process:
+    AP_Filesystem_Backend::FormatStatus get_format_status() const;
+
     /*
       load a full file. Use delete to free the data
      */
