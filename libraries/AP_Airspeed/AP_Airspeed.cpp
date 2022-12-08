@@ -893,6 +893,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = { AP_GROUPEND };
 void AP_Airspeed::update() {};
 bool AP_Airspeed::get_temperature(uint8_t i, float &temperature) { return false; }
 void AP_Airspeed::calibrate(bool in_startup) {}
+AP_Airspeed::CalibrationState AP_Airspeed::get_calibration_state() const { return CalibrationState::NOT_STARTED; }
 bool AP_Airspeed::use(uint8_t i) const { return false; }
 bool AP_Airspeed::enabled(uint8_t i) const { return false; }
 bool AP_Airspeed::healthy(uint8_t i) const { return false; }
