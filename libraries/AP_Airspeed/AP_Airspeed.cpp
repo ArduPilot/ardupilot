@@ -523,6 +523,7 @@ void AP_Airspeed::calibrate(bool in_startup)
         state[i].cal.count = 0;
         state[i].cal.sum = 0;
         state[i].cal.read_count = 0;
+        calibration_state[i] = CalibrationState::IN_PROGRESS;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Airspeed %u calibration started", i+1);
     }
 #endif // HAL_BUILD_AP_PERIPH
@@ -544,6 +545,7 @@ void AP_Airspeed::update_calibration(uint8_t i, float raw_pressure)
         state[i].cal.read_count > 15) {
         if (state[i].cal.count == 0) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Airspeed %u unhealthy", i + 1);
+            calibration_state[i] = CalibrationState::FAILED;
         } else {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Airspeed %u calibrated", i + 1);
             float calibrated_offset = state[i].cal.sum / state[i].cal.count;
@@ -557,6 +559,7 @@ void AP_Airspeed::update_calibration(uint8_t i, float raw_pressure)
                 }
             }
             param[i].offset.set_and_save(calibrated_offset);
+            calibration_state[i] = CalibrationState::SUCCESS;
         }
         state[i].cal.start_ms = 0;
         return;
@@ -568,6 +571,23 @@ void AP_Airspeed::update_calibration(uint8_t i, float raw_pressure)
     }
     state[i].cal.read_count++;
 #endif // HAL_BUILD_AP_PERIPH
+}
+
+// get aggregate calibration state for the Airspeed library:
+AP_Airspeed::CalibrationState AP_Airspeed::get_calibration_state() const
+{
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        switch (calibration_state[i]) {
+        case CalibrationState::SUCCESS:
+        case CalibrationState::NOT_STARTED:
+            continue;
+        case CalibrationState::IN_PROGRESS:
+            return CalibrationState::IN_PROGRESS;
+        case CalibrationState::FAILED:
+            return CalibrationState::FAILED;
+        }
+    }
+    return CalibrationState::SUCCESS;
 }
 
 // read one airspeed sensor
