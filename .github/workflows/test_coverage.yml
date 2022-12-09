@@ -29,7 +29,7 @@ jobs:
         ]
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
       # Put ccache into github cache for faster build
@@ -39,7 +39,7 @@ jobs:
           NOW=$(date -u +"%F-%T")
           echo "::set-output name=timestamp::${NOW}"
       - name: ccache cache files
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.ccache
           key: ${{github.workflow}}-ccache-${{ matrix.toolchain }}-${{steps.ccache_cache_timestamp.outputs.timestamp}}

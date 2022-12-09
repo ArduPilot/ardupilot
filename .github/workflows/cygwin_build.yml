@@ -10,7 +10,7 @@ jobs:
     runs-on: 'windows-latest'
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
       - uses: cygwin/cygwin-install-action@master
