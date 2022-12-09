@@ -376,7 +376,8 @@ void AP_Mount_Siyi::process_packet()
         break;
 
     case SiyiCommandId::ACQUIRE_GIMBAL_CONFIG_INFO: {
-        if (_parsed_msg.data_bytes_received != 5) {
+        if (_parsed_msg.data_bytes_received != 5 &&     // ZR10 firmware version reply is 5 bytes
+            _parsed_msg.data_bytes_received != 7) {     // A8 firmware version reply is 7 bytes
             unexpected_len = true;
             break;
         }
