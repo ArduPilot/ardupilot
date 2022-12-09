@@ -43,6 +43,9 @@ jobs:
           path: ~/.ccache
           key: ${{github.workflow}}-ccache-${{ matrix.toolchain }}-${{steps.ccache_cache_timestamp.outputs.timestamp}}
           restore-keys: ${{github.workflow}}-ccache-${{ matrix.toolchain }}-  # restore ccache from either previous build on this branch or on base branch
+      - name: setup ccache
+        run: |
+          . base_branch/.github/workflows/ccache.env
       - name: Build ${{ github.event.pull_request.base.ref }} ${{matrix.config}} ${{ matrix.toolchain }}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}
