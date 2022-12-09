@@ -397,7 +397,7 @@ void AP_Mount_Siyi::process_packet()
         // update recording state and warn user of mismatch
         const bool recording = _msg_buff[_msg_buff_data_start+3] > 0;
         if (recording != _last_record_video) {
-            gcs().send_text(MAV_SEVERITY_ERROR, "Siyi: recording %s", recording ? "ON" : "OFF");
+            gcs().send_text(MAV_SEVERITY_INFO, "Siyi: recording %s", recording ? "ON" : "OFF");
         }
         _last_record_video = recording;
         debug("GimConf hdr:%u rec:%u foll:%u", (unsigned)_msg_buff[_msg_buff_data_start+1],
