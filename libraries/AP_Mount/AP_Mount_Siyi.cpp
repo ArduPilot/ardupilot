@@ -47,14 +47,17 @@ void AP_Mount_Siyi::update()
     // reading incoming packets from gimbal
     read_incoming_packets();
 
-    // request firmware version at 1hz
+    // request firmware version during startup at 1hz
+    // during regular operation request configuration at 1hz
     uint32_t now_ms = AP_HAL::millis();
-    if (!_got_firmware_version) {
-        if ((now_ms - _last_send_ms) >= 1000) {
+    if ((now_ms - _last_send_ms) >= 1000) {
+        _last_send_ms = now_ms;
+        if (!_got_firmware_version) {
             request_firmware_version();
-            _last_send_ms = now_ms;
+            return;
+        } else {
+            request_configuration();
         }
-        return;
     }
 
     // request attitude at regular intervals
@@ -613,8 +616,6 @@ bool AP_Mount_Siyi::record_video(bool start_recording)
     // check desired recording state has changed
     bool ret = true;
     if (_last_record_video != start_recording) {
-        _last_record_video = start_recording;
-
         // request recording start or stop (sadly the same message is used)
         const uint8_t func_type = (uint8_t)PhotoFunction::RECORD_VIDEO_TOGGLE;
         ret = send_packet(SiyiCommandId::PHOTO, &func_type, 1);
