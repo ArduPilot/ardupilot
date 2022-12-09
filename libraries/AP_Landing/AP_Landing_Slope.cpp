@@ -25,6 +25,10 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Logger/AP_Logger.h>
 
+#if defined(APM_BUILD_TYPE)
+//  - this is just here to encourage the build system to supply the "legacy build defines".  The actual dependecy is in the AP_LandingGear.h and AP_LandingGear_config.h headers
+#endif
+
 void AP_Landing::type_slope_do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude)
 {
     initial_slope = 0;
@@ -111,7 +115,8 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
             }
             
             type_slope_stage = SlopeStage::FINAL;
-            
+
+#if AP_LANDINGGEAR_ENABLED
             // Check if the landing gear was deployed before landing
             // If not - go around
             AP_LandingGear *LG_inst = AP_LandingGear::get_singleton();
@@ -119,6 +124,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
                 type_slope_request_go_around();
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "Landing gear was not deployed");
             }
+#endif
         }
 
         if (gps.ground_speed() < 3) {
