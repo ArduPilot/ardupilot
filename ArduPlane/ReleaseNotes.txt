@@ -1,3 +1,23 @@
+Release 4.3.2-beta2 Dec 12th 2022
+---------------------------------
+
+Changes from 4.3.2-beta1:
+
+ - improved uBlox M10 support
+ - CubeOrange defaults to using 2nd IMU as primary
+ - SIRF and SBP GPS disabled on BeastF7v2, MatekF405-STD, MAtekF405-Wing, omnibusf4pro
+ - fixed loading of autotune gains during pilot testing
+ - Fixed CAM_MIN_INTERVAL to cope with mission and pilot triggering
+ - EKF3 fix when using EK3_RNG_USE_HGT/SPD params and rangefinder provides bad readings
+ - Main loop slowdown after arming fixed (parameter logging was causing delays)
+ - changed to 'fast task' scheme for critical loop updates
+ - MAVLink commands received on private channels checked for valid target sysid
+ - ModalAI camera support fixed (ODOMETRY message frame was consumed incorrectly)
+ - Param reset after firmware load fixed on several boards
+ - Siyi A8 gimbal support fixed
+ - Windows builds move to compiling only 64-bit executables
+
+
 Release 4.3.2-beta1 Nov 21st 2022
 ---------------------------------
 
