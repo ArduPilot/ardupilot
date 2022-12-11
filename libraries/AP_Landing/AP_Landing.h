@@ -166,6 +166,7 @@ private:
     AP_Int8 throttle_slewrate;
     AP_Int8 type;
     AP_Int8 flare_effectivness_pct;
+    AP_Float wind_comp;
 
     // Land Type STANDARD GLIDE SLOPE
 
