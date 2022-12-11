@@ -365,8 +365,8 @@ int32_t AP_Landing::type_slope_get_target_airspeed_cm(void)
     // when landing, add half of head-wind.
     const int32_t head_wind_compensation_cm = head_wind() * 0.5f * 100;
 
-    // Do not lower it or exceed cruise speed
-    return constrain_int32(target_airspeed_cm + head_wind_compensation_cm, target_airspeed_cm, aparm.airspeed_cruise_cm);
+    // Do not lower it or exceed max airspeed `ARSPD_FBW_MAX`
+    return constrain_int32(target_airspeed_cm + head_wind_compensation_cm, target_airspeed_cm, aparm.airspeed_max*100);
 }
 
 int32_t AP_Landing::type_slope_constrain_roll(const int32_t desired_roll_cd, const int32_t level_roll_limit_cd)
