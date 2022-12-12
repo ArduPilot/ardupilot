@@ -61,6 +61,15 @@ void Mode::_TakeOff::start(float alt_cm)
     _running = true;
     take_off_start_alt = copter.pos_control->get_pos_target_z_cm();
     take_off_complete_alt  = take_off_start_alt + alt_cm;
+
+    // if rangefinder if available "alt_cm" argument is interpreted as an alt above terrain
+    if ((alt_cm > 0) && copter.rangefinder_alt_ok() && (copter.rangefinder_state.glitch_count == 0)) {
+        use_terrain_alt = true;
+        take_off_complete_alt_terrain_cm = alt_cm;
+    } else {
+        use_terrain_alt = false;
+        take_off_complete_alt_terrain_cm = 0;
+    }
 }
 
 // stop takeoff
@@ -78,12 +87,28 @@ void Mode::_TakeOff::stop()
 //  take off is complete when the vertical target reaches the take off altitude.
 //  climb is cancelled if pilot_climb_rate_cm becomes negative
 //  sets take off to complete when target altitude is within 1% of the take off altitude
-void Mode::_TakeOff::do_pilot_takeoff(float& pilot_climb_rate_cm)
+void Mode::_TakeOff::do_pilot_takeoff(float pilot_climb_rate_cm)
 {
     // return pilot_climb_rate if take-off inactive
     if (!_running) {
         return;
     }
+
+    // calculate takeoff alt correction using range finder
+    float terr_offset = 0.0f;
+    if (use_terrain_alt) {
+        if (copter.rangefinder_alt_ok()) {
+            terr_offset = copter.inertial_nav.get_position_z_up_cm() - copter.rangefinder_state.alt_cm_filt.get();
+        } else {
+            // turn off use of rangefinder if unhealthy
+            use_terrain_alt = false;
+            copter.gcs().send_text(MAV_SEVERITY_WARNING, "takeoff: stopped using rangefinder");
+        }
+    }
+
+    // total climb distance in cm
+    const float est_complete_alt_cm = use_terrain_alt ? take_off_complete_alt_terrain_cm + terr_offset : take_off_complete_alt;
+    const float total_climb_cm = est_complete_alt_cm - take_off_start_alt;
 
     if (copter.ap.land_complete) {
         // send throttle to attitude controller with angle boost
@@ -94,7 +119,7 @@ void Mode::_TakeOff::do_pilot_takeoff(float& pilot_climb_rate_cm)
         if (throttle >= 0.9 || 
             (copter.pos_control->get_z_accel_cmss() >= 0.5 * copter.pos_control->get_max_accel_z_cmss()) ||
             (copter.pos_control->get_vel_desired_cms().z >= constrain_float(pilot_climb_rate_cm, copter.pos_control->get_max_speed_up_cms() * 0.1, copter.pos_control->get_max_speed_up_cms() * 0.5)) || 
-            (is_positive(take_off_complete_alt - take_off_start_alt) && copter.pos_control->get_pos_target_z_cm() - take_off_start_alt > 0.5 * (take_off_complete_alt - take_off_start_alt))) {
+            (is_positive(total_climb_cm) && copter.pos_control->get_pos_target_z_cm() - take_off_start_alt > 0.5 * total_climb_cm)) {
             // throttle > 90%
             // acceleration > 50% maximum acceleration
             // velocity > 10% maximum velocity && commanded climb rate
@@ -103,16 +128,21 @@ void Mode::_TakeOff::do_pilot_takeoff(float& pilot_climb_rate_cm)
             copter.set_land_complete(false);
         }
     } else {
-        float pos_z = take_off_complete_alt;
+        float pos_z = est_complete_alt_cm;
         float vel_z = pilot_climb_rate_cm;
 
         // command the aircraft to the take off altitude and current pilot climb rate
         copter.pos_control->input_pos_vel_accel_z(pos_z, vel_z, 0);
 
         // stop take off early and return if negative climb rate is commanded or we are within 0.1% of our take off altitude
-        if (is_negative(pilot_climb_rate_cm) ||
-            (take_off_complete_alt  - take_off_start_alt) * 0.999f < copter.pos_control->get_pos_target_z_cm() - take_off_start_alt) {
+        const bool reached_target = total_climb_cm * 0.999f < copter.pos_control->get_pos_target_z_cm() - take_off_start_alt;
+        if (is_negative(pilot_climb_rate_cm) || reached_target) {
             stop();
+
+            // if using rangefinder pass target to surface tracking
+            if (use_terrain_alt && reached_target) {
+                copter.surface_tracking.set_target_alt_cm(take_off_complete_alt_terrain_cm);
+            }
         }
     }
 }

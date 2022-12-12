@@ -195,7 +195,7 @@ protected:
     public:
         void start(float alt_cm);
         void stop();
-        void do_pilot_takeoff(float& pilot_climb_rate);
+        void do_pilot_takeoff(float pilot_climb_rate);
         bool triggered(float target_climb_rate) const;
 
         bool running() const { return _running; }
@@ -203,6 +203,8 @@ protected:
         bool _running;
         float take_off_start_alt;
         float take_off_complete_alt;
+        float take_off_complete_alt_terrain_cm;
+        bool use_terrain_alt;   // if true take_off_complete_alt_terrain_cm used as final target (in cm) above terrain
     };
 
     static _TakeOff takeoff;
