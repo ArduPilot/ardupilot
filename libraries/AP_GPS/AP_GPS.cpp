@@ -81,6 +81,9 @@ const char AP_GPS::_initialisation_blob[] =
 #if AP_GPS_SIRF_ENABLED
     SIRF_SET_BINARY
 #endif
+#if AP_GPS_NMEA_UNICORE_ENABLED
+    NMEA_UNICORE_SETUP
+#endif
     ""   // to compile we need *some_initialiser if all backends compiled out
     ;
 
