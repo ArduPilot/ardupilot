@@ -151,6 +151,11 @@ void AP_TemperatureSensor::init()
             _num_instances = instance + 1;
         }
     }
+    
+    if (_num_instances > 0) {
+        // param count could have changed
+        AP_Param::invalidate_count();
+    }
 }
 
 // update: - For all active instances update temperature and log TEMP
