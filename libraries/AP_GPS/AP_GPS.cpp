@@ -1010,7 +1010,9 @@ void AP_GPS::update_instance(uint8_t instance)
 void AP_GPS::get_RelPosHeading(uint32_t &timestamp, float &relPosHeading, float &relPosLength, float &relPosD, float &accHeading)
 {
     for (uint8_t i=0; i< GPS_MAX_RECEIVERS; i++) {
-        if (drivers[i] && _type[i] == GPS_TYPE_UBLOX_RTK_ROVER) {
+        if (drivers[i] &&
+            state[i].relposheading_ts != 0 &&
+            AP_HAL::millis() - state[i].relposheading_ts < 500) {
            relPosHeading = state[i].relPosHeading;
            relPosLength = state[i].relPosLength;
            relPosD = state[i].relPosD;
