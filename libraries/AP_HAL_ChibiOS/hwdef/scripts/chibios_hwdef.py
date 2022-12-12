@@ -2947,6 +2947,10 @@ def add_apperiph_defaults(f):
 #ifndef AP_BATTMON_SYNTHETIC_CURRENT_ENABLED
 #define AP_BATTMON_SYNTHETIC_CURRENT_ENABLED 0
 #endif
+
+#ifndef AP_BATT_MONITOR_MAX_INSTANCES
+#define AP_BATT_MONITOR_MAX_INSTANCES 1
+#endif
 ''')
 
 def add_bootloader_defaults(f):
