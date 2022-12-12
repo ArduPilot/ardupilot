@@ -27,6 +27,7 @@
 #include "AP_SerialManager.h"
 #include <stdio.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <GCS_MAVLink/GCS.h>
 #ifndef HAL_BUILD_AP_PERIPH
 #include <AP_UAVCAN/AP_DroneCAN_Serial.h>
 #else
