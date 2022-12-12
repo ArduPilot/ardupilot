@@ -2123,7 +2123,7 @@ void AP_Periph_FW::send_relposheading_msg() {
     relpos.relative_distance_m = relative_distance;
     relpos.relative_down_pos_m = relative_down_pos;
     relpos.reported_heading_acc_deg = reported_heading_acc;
-    relpos.reported_heading_acc_available = true;
+    relpos.reported_heading_acc_available = !is_zero(relpos.reported_heading_acc_deg);
     uint8_t buffer[ARDUPILOT_GNSS_RELPOSHEADING_MAX_SIZE] {};
     const uint16_t total_size = ardupilot_gnss_RelPosHeading_encode(&relpos, buffer, !periph.canfdout());
     canard_broadcast(ARDUPILOT_GNSS_RELPOSHEADING_SIGNATURE,
