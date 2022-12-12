@@ -603,11 +603,6 @@ void AP_GPS_UAVCAN::handle_moving_baseline_msg(const MovingBaselineDataCb &cb, u
 */
 void AP_GPS_UAVCAN::handle_relposheading_msg(const RelPosHeadingCb &cb, uint8_t node_id)
 {
-    if (role != AP_GPS::GPS_ROLE_MB_ROVER) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Incorrect Role set for UAVCAN GPS, %d should be Rover", node_id);
-        return;
-    }
-
     WITH_SEMAPHORE(sem);
 
     interim_state.gps_yaw_configured = true;
