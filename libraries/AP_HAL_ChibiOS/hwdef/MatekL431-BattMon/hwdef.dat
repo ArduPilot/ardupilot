@@ -1,0 +1,22 @@
+include ../MatekL431/hwdef.inc
+
+define CAN_APP_NODE_NAME "org.ardupilot.MatekL431-BattMon"
+
+# enable battery monitor
+define HAL_PERIPH_ENABLE_BATTERY
+define HAL_BATTMON_INA239_ENABLED 1
+define HAL_BATTMON_INA239_SPI_DEVICE "INA23X"
+define HAL_BATT_MONITOR_DEFAULT 26
+define AP_PERIPH_BATTERY_MODEL_NAME "MatekL431-BattMon"
+
+SPIDEV INA23X SPI1 DEVID1 SPARE_CS MODE1 10*MHZ 10*MHZ
+
+# no ADC pins
+define HAL_USE_ADC FALSE
+
+# disable unnecessary threads
+define HAL_NO_MONITOR_THREAD
+define HAL_NO_RCIN_THREAD
+define HAL_NO_RCOUT_THREAD
+define HAL_NO_TIMER_THREAD
+
