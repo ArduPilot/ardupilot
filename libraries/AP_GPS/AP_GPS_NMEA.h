@@ -72,6 +72,8 @@ public:
     // get lag in seconds
     bool get_lag(float &lag_sec) const override;
 
+    void Write_AP_Logger_Log_Startup_messages() const override;
+
 private:
     /// Coding for the GPS sentences that the parser handles
     enum _sentence_types : uint16_t {      //there are some more than 10 fields in some sentences , thus we have to increase these value.
@@ -83,6 +85,7 @@ private:
         _GPS_SENTENCE_THS = 160, // True heading with quality indicator, available on Trimble MB-Two
         _GPS_SENTENCE_KSXT = 170, // extension for Unicore, 21 fields
         _GPS_SENTENCE_AGRICA = 193, // extension for Unicore, 65 fields
+        _GPS_SENTENCE_VERSIONA = 270, // extension for Unicore, version
         _GPS_SENTENCE_OTHER = 0
     };
 
@@ -130,13 +133,16 @@ private:
       parse an AGRICA field
      */
     void parse_agrica_field(uint16_t term_number, const char *term);
+
+    // parse VERSIONA field
+    void parse_versiona_field(uint16_t term_number, const char *term);
 #endif
 
 
     uint8_t _parity;                                                    ///< NMEA message checksum accumulator
     uint32_t _crc32;                                            ///< CRC for unicore messages
     bool _is_checksum_term;                                     ///< current term is the checksum
-    char _term[15];                                                     ///< buffer for the current term within the current sentence
+    char _term[30];                                                     ///< buffer for the current term within the current sentence
     uint16_t _sentence_type;                                     ///< the sentence type currently being processed
     bool _is_unicore;                                           ///< true if in a unicore '#' sentence
     uint16_t _term_number;                                       ///< term index within the current sentence
@@ -226,6 +232,13 @@ private:
         float slave_alt;
         Vector3f pos_stddev;
     } _agrica;
+    struct {
+        char type[10];
+        char version[20];
+        char build_date[13];
+    } _versiona;
+    bool _have_unicore_versiona;
+
 #endif // AP_GPS_NMEA_UNICORE_ENABLED
     bool _expect_agrica;
 
@@ -235,6 +248,12 @@ private:
     // send type specific config strings
     void send_config(void);
 };
+
+#if AP_GPS_NMEA_UNICORE_ENABLED && !defined(NMEA_UNICORE_SETUP)
+// we don't know what port the GPS may be using, so configure all 3. We need to get it sending
+// one message to allow the NMEA detector to run
+#define NMEA_UNICORE_SETUP "CONFIG COM1 230400 8 n 1\r\nCONFIG COM2 230400 8 n 1\r\nCONFIG COM3 230400 8 n 1\r\nGPGGA 0.2\r\n"
+#endif
 
 #endif // AP_GPS_NMEA_ENABLED
 

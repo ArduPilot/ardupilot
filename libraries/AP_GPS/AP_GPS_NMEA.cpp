@@ -30,6 +30,8 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/NMEA.h>
+#include <GCS_MAVLink/GCS.h>
+#include <AP_Logger/AP_Logger.h>
 
 #include <ctype.h>
 #include <stdint.h>
@@ -56,9 +58,7 @@ bool AP_GPS_NMEA::read(void)
     int16_t numc;
     bool parsed = false;
 
-    if (gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
-        send_config();
-    }
+    send_config();
 
     numc = port->available();
     while (numc--) {
@@ -83,7 +83,7 @@ bool AP_GPS_NMEA::_decode(char c)
     switch (c) {
     case ';':
         // header separator for unicore
-        if (_sentence_type != _GPS_SENTENCE_AGRICA) {
+        if (!_is_unicore) {
             return false;
         }
         FALLTHROUGH;
@@ -481,6 +481,15 @@ bool AP_GPS_NMEA::_term_complete()
                 check_new_itow(ag.itow, _sentence_length);
                 break;
             }
+            case _GPS_SENTENCE_VERSIONA: {
+                _have_unicore_versiona = true;
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO,
+                              "NMEA %s %s %s",
+                              _versiona.type,
+                              _versiona.version,
+                              _versiona.build_date);
+                break;
+            }
 #endif // AP_GPS_NMEA_UNICORE_ENABLED
             }
             // see if we got a good message
@@ -504,8 +513,12 @@ bool AP_GPS_NMEA::_term_complete()
             return false;
         }
 #if AP_GPS_NMEA_UNICORE_ENABLED
-        if (strcmp(_term, "AGRICA") == 0) {
+        if (strcmp(_term, "AGRICA") == 0 && _expect_agrica) {
             _sentence_type = _GPS_SENTENCE_AGRICA;
+            return false;
+        }
+        if (strcmp(_term, "VERSIONA") == 0) {
+            _sentence_type = _GPS_SENTENCE_VERSIONA;
             return false;
         }
 #endif
@@ -627,6 +640,9 @@ bool AP_GPS_NMEA::_term_complete()
         case _GPS_SENTENCE_AGRICA + 1 ... _GPS_SENTENCE_AGRICA + 65: // AGRICA message
             parse_agrica_field(_term_number, _term);
             break;
+        case _GPS_SENTENCE_VERSIONA + 1 ... _GPS_SENTENCE_VERSIONA + 20:
+            parse_versiona_field(_term_number, _term);
+            break;
 #endif
         }
     }
@@ -700,6 +716,25 @@ void AP_GPS_NMEA::parse_agrica_field(uint16_t term_number, const char *term)
         break;
     }
 }
+
+// parse VERSIONA fields
+void AP_GPS_NMEA::parse_versiona_field(uint16_t term_number, const char *term)
+{
+    // printf useful for debugging
+    // ::printf("VERSIONA[%u]='%s'\n", term_number, term);
+    auto &v = _versiona;
+    switch (term_number) {
+    case 10:
+        strncpy(v.type, _term, sizeof(v.type)-1);
+        break;
+    case 11:
+        strncpy(v.version, _term, sizeof(v.version)-1);
+        break;
+    case 15:
+        strncpy(v.build_date, _term, sizeof(v.build_date)-1);
+        break;
+    }
+}
 #endif // AP_GPS_NMEA_UNICORE_ENABLED
 
 /*
@@ -746,6 +781,13 @@ AP_GPS_NMEA::_detect(struct NMEA_detect_state &state, uint8_t data)
  */
 void AP_GPS_NMEA::send_config(void)
 {
+    const auto type = get_type();
+    _expect_agrica = (type == AP_GPS::GPS_TYPE_UNICORE_NMEA ||
+                      type == AP_GPS::GPS_TYPE_UNICORE_MOVINGBASE_NMEA);
+    if (gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE) {
+        // not doing auto-config
+        return;
+    }
     uint32_t now_ms = AP_HAL::millis();
     if (now_ms - last_config_ms < AP_GPS_NMEA_CONFIG_PERIOD_MS) {
         return;
@@ -760,9 +802,10 @@ void AP_GPS_NMEA::send_config(void)
     switch (get_type()) {
 #if AP_GPS_NMEA_UNICORE_ENABLED
     case AP_GPS::GPS_TYPE_UNICORE_MOVINGBASE_NMEA:
-        port->printf("\r\nmode movingbase\r\n" \
+        port->printf("\r\nMODE MOVINGBASE\r\n" \
                      "CONFIG HEADING FIXLENGTH\r\n" \
                      "CONFIG UNDULATION AUTO\r\n" \
+                     "CONFIG\r\n" \
                      "GPGGAH %.3f\r\n", // needed to get slave antenna position in AGRICA
                      rate_s);
         state.gps_yaw_configured = true;
@@ -773,7 +816,14 @@ void AP_GPS_NMEA::send_config(void)
                      "GNGGA %.3f\r\n" \
                      "GNRMC %.3f\r\n",
                      rate_s, rate_s, rate_s);
-        _expect_agrica = true;
+        if (!_have_unicore_versiona) {
+            // get version information for logging if we don't have it yet
+            port->printf("VERSIONA\r\n");
+            if (gps._save_config) {
+                // save config changes for fast startup
+                port->printf("SAVECONFIG\r\n");
+            }
+        }
         break;
     }
 #endif // AP_GPS_NMEA_UNICORE_ENABLED
@@ -798,6 +848,11 @@ void AP_GPS_NMEA::send_config(void)
     default:
         break;
     }
+
+#ifdef AP_GPS_NMEA_CUSTOM_CONFIG_STRING
+    // allow for custom config strings, useful for peripherals
+    port->printf("%s\r\n", AP_GPS_NMEA_CUSTOM_CONFIG_STRING);
+#endif
 }
 
 /*
@@ -843,6 +898,22 @@ bool AP_GPS_NMEA::get_lag(float &lag_sec) const
         break;
     }
     return true;
+}
+
+void AP_GPS_NMEA::Write_AP_Logger_Log_Startup_messages() const
+{
+#if HAL_LOGGING_ENABLED
+    AP_GPS_Backend::Write_AP_Logger_Log_Startup_messages();
+#if AP_GPS_NMEA_UNICORE_ENABLED
+    if (_have_unicore_versiona) {
+        AP::logger().Write_MessageF("NMEA %u %s %s %s",
+                                    state.instance+1,
+                                    _versiona.type,
+                                    _versiona.version,
+                                    _versiona.build_date);
+    }
+#endif
+#endif
 }
 
 #endif // AP_GPS_NMEA_ENABLED
