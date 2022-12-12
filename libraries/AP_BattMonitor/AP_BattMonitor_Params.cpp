@@ -28,6 +28,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
 
     // 6 was AMP_OFFSET
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Param: CAPACITY
     // @DisplayName: Battery capacity
     // @Description: Capacity of the battery in mAh when full
@@ -43,6 +44,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO_FRAME("WATT_MAX", 8, AP_BattMonitor_Params, _watt_max, 0, AP_PARAM_FRAME_PLANE),
+#endif // HAL_BUILD_AP_PERIPH
 
     // @Param: SERIAL_NUM
     // @DisplayName: Battery serial number
@@ -50,6 +52,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SERIAL_NUM", 9, AP_BattMonitor_Params, _serial_number, AP_BATT_SERIAL_NUMBER_DEFAULT),
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Param: LOW_TIMER
     // @DisplayName: Low voltage timeout
     // @Description: This is the timeout in seconds before a low voltage event will be triggered. For aircraft with low C batteries it may be necessary to raise this in order to cope with low voltage on long takeoffs. A value of zero disables low voltage errors.
@@ -146,6 +149,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Bitmask: 0:Ignore DroneCAN SoC, 1:MPPT reports input voltage and current, 2:MPPT Powered off when disarmed, 3:MPPT Powered on when armed, 4:MPPT Powered off at boot, 5:MPPT Powered on at boot, 6:Send resistance compensated voltage to GCS
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 21, AP_BattMonitor_Params, _options, 0),
+#endif // HAL_BUILD_AP_PERIPH
 
     AP_GROUPEND
 
