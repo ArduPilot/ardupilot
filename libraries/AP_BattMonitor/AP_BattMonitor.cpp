@@ -14,6 +14,7 @@
 #include "AP_BattMonitor_FuelLevel_PWM.h"
 #include "AP_BattMonitor_Generator.h"
 #include "AP_BattMonitor_INA2xx.h"
+#include "AP_BattMonitor_INA239.h"
 #include "AP_BattMonitor_LTC2946.h"
 #include "AP_BattMonitor_Torqeedo.h"
 #include "AP_BattMonitor_FuelLevel_Analog.h"
@@ -346,6 +347,11 @@ AP_BattMonitor::init()
 #if AP_BATTMON_SYNTHETIC_CURRENT_ENABLED
             case Type::Analog_Volt_Synthetic_Current:
                 drivers[instance] = new AP_BattMonitor_Synthetic_Current(*this, state[instance], _params[instance]);
+                break;
+#endif
+#if HAL_BATTMON_INA239_ENABLED
+            case Type::INA239_SPI:
+                drivers[instance] = new AP_BattMonitor_INA239(*this, state[instance], _params[instance]);
                 break;
 #endif
             case Type::NONE:
