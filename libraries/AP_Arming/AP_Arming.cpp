@@ -51,6 +51,7 @@
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_Scheduler/AP_Scheduler.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
@@ -966,6 +967,16 @@ bool AP_Arming::system_checks(bool report)
             check_failed(ARMING_CHECK_SYSTEM, report, "Param storage failed");
             return false;
         }
+
+        // check main loop rate is at least 90% of expected value
+        const float actual_loop_rate = AP::scheduler().get_filtered_loop_rate_hz();
+        const uint16_t expected_loop_rate = AP::scheduler().get_loop_rate_hz();
+        const float loop_rate_pct =  actual_loop_rate / expected_loop_rate;
+        if (loop_rate_pct < 0.90) {
+            check_failed(ARMING_CHECK_SYSTEM, report, "Main loop slow (%uHz < %uHz)", (unsigned)actual_loop_rate, (unsigned)expected_loop_rate);
+            return false;
+        }
+
 #if AP_TERRAIN_AVAILABLE
         const AP_Terrain *terrain = AP_Terrain::get_singleton();
         if ((terrain != nullptr) && terrain->init_failed()) {

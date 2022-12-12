@@ -23,6 +23,7 @@
 #include "Plane.h"
 
 #define SCHED_TASK(func, rate_hz, max_time_micros, priority) SCHED_TASK_CLASS(Plane, &plane, func, rate_hz, max_time_micros, priority)
+#define FAST_TASK(func) FAST_TASK_CLASS(Plane, &plane, func)
 
 
 /*
@@ -49,16 +50,18 @@ SCHED_TASK_CLASS arguments:
  - expected time (in MicroSeconds) that the method should take to run
  - priority (0 through 255, lower number meaning higher priority)
 
+FAST_TASK entries are run on every loop even if that means the loop
+overruns its allotted time
  */
 const AP_Scheduler::Task Plane::scheduler_tasks[] = {
                            // Units:   Hz      us
-    SCHED_TASK(ahrs_update,           400,    400,   3),
+    FAST_TASK(ahrs_update),
+    FAST_TASK(update_control_mode),
+    FAST_TASK(stabilize),
+    FAST_TASK(set_servos),
     SCHED_TASK(read_radio,             50,    100,   6),
     SCHED_TASK(check_short_failsafe,   50,    100,   9),
     SCHED_TASK(update_speed_height,    50,    200,  12),
-    SCHED_TASK(update_control_mode,   400,    100,  15),
-    SCHED_TASK(stabilize,             400,    100,  18),
-    SCHED_TASK(set_servos,            400,    100,  21),
     SCHED_TASK(update_throttle_hover, 100,     90,  24),
     SCHED_TASK(read_control_switch,     7,    100,  27),
     SCHED_TASK(update_GPS_50Hz,        50,    300,  30),

@@ -264,14 +264,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("PTCH_FF_K", 30, AP_TECS, _pitch_ff_k, 0.0),
 
-    // @Param: LAND_PTRIM
-    // @DisplayName: Pitch angle for level flight in landing configuration
-    // @Description: This sets the pitch angle required to fly straight and level with flaps and gear in the landing configuration. It is used to calculate the lower pitch limit applied during landing up until the flare. This can be set to the average value of the AOA.AOA log data taken from a landing approach.
-    // @Range: -10 15
-    // @Units: deg
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("LAND_PTRIM", 31, AP_TECS, _land_pitch_trim, 0),
+    // 31 previously used by TECS_LAND_PTRIM
 
     // @Param: FLARE_HGT
     // @DisplayName: Flare holdoff height

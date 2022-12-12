@@ -275,10 +275,19 @@ void AP_Scheduler::run(uint32_t time_available)
         perf_info.update_task_info(i, time_taken, overrun);
 
         if (time_taken >= time_available) {
+            /*
+              we are out of time, but we need to keep walking the task
+              table in case there is another fast loop task after this
+              task, plus we need to update the accouting so we can
+              work out if we need to allocate extra time for the loop
+              (lower the loop rate)
+              Just set time_available to zero, which means we will
+              only run fast tasks after this one
+             */
             time_available = 0;
-            break;
+        } else {
+            time_available -= time_taken;
         }
-        time_available -= time_taken;
     }
 
     // update number of spare microseconds
@@ -308,12 +317,16 @@ uint16_t AP_Scheduler::time_available_usec(void) const
  */
 float AP_Scheduler::load_average()
 {
+    // return 1 if filtered main loop rate is 5% below the configured rate
+    if (get_filtered_loop_rate_hz() < get_loop_rate_hz() * 0.95) {
+        return 1.0;
+    }
     if (_spare_ticks == 0) {
         return 0.0f;
     }
     const uint32_t loop_us = get_loop_period_us();
     const uint32_t used_time = loop_us - (_spare_micros/_spare_ticks);
-    return used_time / (float)loop_us;
+    return constrain_float(used_time / (float)loop_us, 0, 1);
 }
 
 void AP_Scheduler::loop()
@@ -426,6 +439,7 @@ void AP_Scheduler::Log_Write_Performance()
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
         time_us          : AP_HAL::micros64(),
+        loop_rate        : (uint16_t)(get_filtered_loop_rate_hz() + 0.5f),
         num_long_running : perf_info.get_num_long_running(),
         num_loops        : perf_info.get_num_loops(),
         max_time         : perf_info.get_max_time(),
