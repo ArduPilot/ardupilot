@@ -380,7 +380,7 @@ bool AP_GPS_NMEA::_term_complete()
                 _last_yaw_ms = now;
                 state.gps_yaw = wrap_360(_new_gps_yaw*0.01f);
                 state.have_gps_yaw = true;
-                state.gps_yaw_time_ms = AP_HAL::millis();
+                state.gps_yaw_time_ms = now;
                 // remember that we are setup to provide yaw. With
                 // a NMEA GPS we can only tell if the GPS is
                 // configured to provide yaw when it first sends a
@@ -437,7 +437,7 @@ bool AP_GPS_NMEA::_term_complete()
                     _last_yaw_ms = now;
                     state.gps_yaw = _ksxt.fields[4];
                     state.have_gps_yaw = true;
-                    state.gps_yaw_time_ms = AP_HAL::millis();
+                    state.gps_yaw_time_ms = now;
                     state.gps_yaw_configured = true;
                 }
                 break;
@@ -469,6 +469,10 @@ bool AP_GPS_NMEA::_term_complete()
                     const float dist = state.location.get_distance_NED(slave).length();
                     const float bearing = degrees(state.location.get_bearing(slave));
                     const float alt_diff = (state.location.alt - slave.alt)*0.01;
+                    state.relPosHeading = bearing;
+                    state.relPosLength = dist;
+                    state.relPosD = alt_diff;
+                    state.relposheading_ts = now;
                     if (calculate_moving_base_yaw(bearing, dist, alt_diff)) {
                         _last_yaw_ms = now;
                     }
