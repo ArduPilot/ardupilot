@@ -22,6 +22,7 @@
 
 // Dummy the AP_Airspeed class to allow building Airspeed only for plane, rover, sub, and copter & heli 2MB boards
 // This could be removed once the build system allows for APM_BUILD_TYPE in header files
+// Note that this is also defined in AP_Airspeed_Params.cpp
 #ifndef AP_AIRSPEED_DUMMY_METHODS_ENABLED
 #define AP_AIRSPEED_DUMMY_METHODS_ENABLED ((APM_BUILD_COPTER_OR_HELI && BOARD_FLASH_SIZE <= 1024) || \
                                             APM_BUILD_TYPE(APM_BUILD_AntennaTracker) || APM_BUILD_TYPE(APM_BUILD_Blimp))
