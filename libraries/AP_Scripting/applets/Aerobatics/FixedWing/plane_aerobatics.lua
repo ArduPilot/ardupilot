@@ -765,8 +765,8 @@ function _path_horizontal_arc:get_roll_correction(t)
    if self.height_gain == 0 then
       return 0
    end
-   local gamma=math.atan(self.height_gain*(self.angle/360)/(2*math.pi*self.radius))
-   return -t*360*math.sin(gamma)
+   local gamma=math.atan(self.height_gain*(360/self.angle)/(2*math.pi*self.radius))
+   return -t*self.angle*math.sin(gamma)
 end
 
 function path_horizontal_arc(radius, angle, height_gain)
