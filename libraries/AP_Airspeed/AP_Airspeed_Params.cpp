@@ -16,6 +16,18 @@
 
 #include "AP_Airspeed.h"
 
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
+// Dummy the AP_Airspeed class to allow building Airspeed only for plane, rover, sub, and copter & heli 2MB boards
+// This could be removed once the build system allows for APM_BUILD_TYPE in header files
+// note that this is re-definition of the one in AP_Airspeed.cpp, can't be shared as vehicle dependences cant go in header files
+#ifndef AP_AIRSPEED_DUMMY_METHODS_ENABLED
+#define AP_AIRSPEED_DUMMY_METHODS_ENABLED ((APM_BUILD_COPTER_OR_HELI && BOARD_FLASH_SIZE <= 1024) || \
+                                            APM_BUILD_TYPE(APM_BUILD_AntennaTracker) || APM_BUILD_TYPE(APM_BUILD_Blimp))
+#endif
+
+#if !AP_AIRSPEED_DUMMY_METHODS_ENABLED
+
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
 #define PSI_RANGE_DEFAULT 0.05
 #endif
@@ -119,3 +131,10 @@ AP_Airspeed_Params::AP_Airspeed_Params(void)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
+
+#else  // dummy implementation:
+
+AP_Airspeed_Params::AP_Airspeed_Params(void) {};
+const AP_Param::GroupInfo AP_Airspeed_Params::var_info[] = { AP_GROUPEND };
+
+#endif
