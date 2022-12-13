@@ -15,7 +15,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     AP_GROUPINFO_FLAGS("ENABLE", 1, QuadPlane, enable, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Group: M_
-    // @Path: ../libraries/AP_Motors/AP_MotorsMulticopter.cpp
+    // @Path: ../libraries/AP_Motors/AP_MotorsMulticopter.cpp,../libraries/AP_Motors/AP_Motors_Class.cpp
     AP_SUBGROUPVARPTR(motors, "M_", 2, QuadPlane, plane.quadplane.motors_var_info),
 
     // 3 ~ 8 were used by quadplane attitude control PIDs
@@ -81,7 +81,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Range: 50 500
     // @Increment: 10
     // @User: Standard
-    AP_GROUPINFO("RC_SPEED", 21, QuadPlane, rc_speed, 490),
+    // 21: RC_SPEED
 
     // @Param: THR_MIN_PWM
     // @DisplayName: Minimum PWM output
@@ -569,6 +569,9 @@ const AP_Param::ConversionInfo q_conversion_table[] = {
 
     // PARAMETER_CONVERSION - Added: July-2022
     { Parameters::k_param_quadplane, 25,  AP_PARAM_FLOAT, "Q_PLT_Y_RATE" },   // Moved from quadplane to command model library
+
+    // PARAMETER_CONVERSION - Added: Nov-2022
+    { Parameters::k_param_quadplane, 21,  AP_PARAM_INT16, "Q_M_PWM_RATE" } // Moved down into motors library
 };
 
 // PARAMETER_CONVERSION - Added: Oct-2021
@@ -682,23 +685,23 @@ bool QuadPlane::setup(void)
 
     switch ((AP_Motors::motor_frame_class)frame_class) {
     case AP_Motors::MOTOR_FRAME_TRI:
-        motors = new AP_MotorsTri(rc_speed);
+        motors = new AP_MotorsTri();
         motors_var_info = AP_MotorsTri::var_info;
         break;
     case AP_Motors::MOTOR_FRAME_TAILSITTER:
         // this is a duo-motor tailsitter
-        tailsitter.tailsitter_motors = new AP_MotorsTailsitter(rc_speed);
+        tailsitter.tailsitter_motors = new AP_MotorsTailsitter();
         motors = tailsitter.tailsitter_motors;
         motors_var_info = AP_MotorsTailsitter::var_info;
         break;
     case AP_Motors::MOTOR_FRAME_DYNAMIC_SCRIPTING_MATRIX:
 #if AP_SCRIPTING_ENABLED
-            motors = new AP_MotorsMatrix_Scripting_Dynamic(plane.scheduler.get_loop_rate_hz());
+            motors = new AP_MotorsMatrix_Scripting_Dynamic();
             motors_var_info = AP_MotorsMatrix_Scripting_Dynamic::var_info;
 #endif // AP_SCRIPTING_ENABLED
             break;
     default:
-        motors = new AP_MotorsMatrix(rc_speed);
+        motors = new AP_MotorsMatrix();
         motors_var_info = AP_MotorsMatrix::var_info;
         break;
     }
@@ -746,7 +749,6 @@ bool QuadPlane::setup(void)
 
     motors->init(frame_class, frame_type);
     motors->update_throttle_range();
-    motors->set_update_rate(rc_speed);
     attitude_control->parameter_sanity_check();
 
     // Try to convert mot PWM params, if still invalid force conversion

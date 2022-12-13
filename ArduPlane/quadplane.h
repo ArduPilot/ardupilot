@@ -317,8 +317,6 @@ private:
     // fw landing approach radius
     AP_Float fw_land_approach_radius;
 
-    AP_Int16 rc_speed;
-
     // speed below which quad assistance is given
     AP_Float assist_speed;
 
