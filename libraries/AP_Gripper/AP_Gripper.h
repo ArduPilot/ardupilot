@@ -63,6 +63,7 @@ public:
     AP_Int8     _enabled;               // grabber enable/disable
 
     typedef enum {
+        STATE_NEUTRAL,
         STATE_GRABBING,
         STATE_RELEASING,
         STATE_GRABBED,
@@ -78,7 +79,7 @@ public:
         AP_Float    autoclose_time;        // Automatic close time (in seconds)
         AP_Int16    uavcan_hardpoint_id;
 
-        gripper_state state = STATE_RELEASED;
+        gripper_state state = STATE_NEUTRAL;
     } config;
 
 private:
