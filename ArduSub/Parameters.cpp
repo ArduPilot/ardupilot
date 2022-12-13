@@ -361,7 +361,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @Range: 50 490
     // @Increment: 1
     // @User: Advanced
-    GSCALAR(rc_speed, "RC_SPEED",              RC_SPEED_DEFAULT),
 
     // @Param: ACRO_RP_P
     // @DisplayName: Acro Roll and Pitch P gain
@@ -556,7 +555,7 @@ const AP_Param::Info Sub::var_info[] = {
 #endif
 
     // @Group: MOT_
-    // @Path: ../libraries/AP_Motors/AP_Motors6DOF.cpp,../libraries/AP_Motors/AP_MotorsMulticopter.cpp
+    // @Path: ../libraries/AP_Motors/AP_Motors6DOF.cpp,../libraries/AP_Motors/AP_MotorsMulticopter.cpp,../libraries/AP_Motors/AP_Motors_Class.cpp
     GOBJECT(motors, "MOT_",         AP_Motors6DOF),
 
 #if RCMAP_ENABLED == ENABLED
@@ -670,6 +669,9 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_failsafe_battery_enabled,       0,      AP_PARAM_INT8,  "BATT_FS_LOW_ACT" },
     { Parameters::k_param_compass_enabled_deprecated,       0,      AP_PARAM_INT8, "COMPASS_ENABLE" },
     { Parameters::k_param_arming,            2,     AP_PARAM_INT16,  "ARMING_CHECK" },
+    // PARAMETER_CONVERSION - Added: Nov-2022
+    // Moved down into motors library
+    { Parameters::k_param_rc_speed,          0,     AP_PARAM_INT16,  "MOT_PWM_RATE" },
 };
 
 void Sub::load_parameters()
