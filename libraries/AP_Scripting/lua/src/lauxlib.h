@@ -1,5 +1,5 @@
 /*
-** $Id: lauxlib.h,v 1.131.1.1 2017/04/19 17:20:42 roberto Exp $
+** $Id: lauxlib.h $
 ** Auxiliary functions for building Lua libraries
 ** See Copyright Notice in lua.h
 */
@@ -12,8 +12,15 @@
 #include <stddef.h>
 #include <stdio.h>
 
+#include "luaconf.h"
 #include "lua.h"
 
+
+/* global table */
+#define LUA_GNAME	"_G"
+
+
+typedef struct luaL_Buffer luaL_Buffer;
 
 
 /* extra error code for 'luaL_loadfilex' */
@@ -36,7 +43,9 @@ typedef struct luaL_Reg {
 
 #define LUAL_NUMSIZES	(sizeof(lua_Integer)*16 + sizeof(lua_Number))
 
+#ifdef ARDUPILOT_BUILD
 uint32_t lua_random32(void);
+#endif
 
 LUALIB_API void (luaL_checkversion_) (lua_State *L, lua_Number ver, size_t sz);
 #define luaL_checkversion(L)  \
@@ -46,6 +55,7 @@ LUALIB_API int (luaL_getmetafield) (lua_State *L, int obj, const char *e);
 LUALIB_API int (luaL_callmeta) (lua_State *L, int obj, const char *e);
 LUALIB_API const char *(luaL_tolstring) (lua_State *L, int idx, size_t *len);
 LUALIB_API int (luaL_argerror) (lua_State *L, int arg, const char *extramsg);
+LUALIB_API int (luaL_typeerror) (lua_State *L, int arg, const char *tname);
 LUALIB_API const char *(luaL_checklstring) (lua_State *L, int arg,
                                                           size_t *l);
 LUALIB_API const char *(luaL_optlstring) (lua_State *L, int arg,
@@ -75,6 +85,7 @@ LUALIB_API int (luaL_checkoption) (lua_State *L, int arg, const char *def,
 LUALIB_API int (luaL_fileresult) (lua_State *L, int stat, const char *fname);
 LUALIB_API int (luaL_execresult) (lua_State *L, int stat);
 
+
 /* predefined references */
 #define LUA_NOREF       (-2)
 #define LUA_REFNIL      (-1)
@@ -95,8 +106,10 @@ LUALIB_API lua_State *(luaL_newstate) (void);
 
 LUALIB_API lua_Integer (luaL_len) (lua_State *L, int idx);
 
-LUALIB_API const char *(luaL_gsub) (lua_State *L, const char *s, const char *p,
-                                                  const char *r);
+LUALIB_API void (luaL_addgsub) (luaL_Buffer *b, const char *s,
+                                     const char *p, const char *r);
+LUALIB_API const char *(luaL_gsub) (lua_State *L, const char *s,
+                                    const char *p, const char *r);
 
 LUALIB_API void (luaL_setfuncs) (lua_State *L, const luaL_Reg *l, int nup);
 
@@ -122,7 +135,11 @@ LUALIB_API void (luaL_requiref) (lua_State *L, const char *modname,
   (luaL_checkversion(L), luaL_newlibtable(L,l), luaL_setfuncs(L,l,0))
 
 #define luaL_argcheck(L, cond,arg,extramsg)	\
-		((void)((cond) || luaL_argerror(L, (arg), (extramsg))))
+	((void)(luai_likely(cond) || luaL_argerror(L, (arg), (extramsg))))
+
+#define luaL_argexpected(L,cond,arg,tname)	\
+	((void)(luai_likely(cond) || luaL_typeerror(L, (arg), (tname))))
+
 #define luaL_checkstring(L,n)	(luaL_checklstring(L, (n), NULL))
 #define luaL_optstring(L,n,d)	(luaL_optlstring(L, (n), (d), NULL))
 
@@ -142,18 +159,53 @@ LUALIB_API void (luaL_requiref) (lua_State *L, const char *modname,
 
 
 /*
+** Perform arithmetic operations on lua_Integer values with wrap-around
+** semantics, as the Lua core does.
+*/
+#define luaL_intop(op,v1,v2)  \
+	((lua_Integer)((lua_Unsigned)(v1) op (lua_Unsigned)(v2)))
+
+
+/* push the value used to represent failure/error */
+#define luaL_pushfail(L)	lua_pushnil(L)
+
+
+/*
+** Internal assertions for in-house debugging
+*/
+#if !defined(lua_assert)
+
+#if defined LUAI_ASSERT
+  #include <assert.h>
+  #define lua_assert(c)		assert(c)
+#else
+  #define lua_assert(c)		((void)0)
+#endif
+
+#endif
+
+
+
+/*
 ** {======================================================
 ** Generic Buffer manipulation
 ** =======================================================
 */
 
-typedef struct luaL_Buffer {
+struct luaL_Buffer {
   char *b;  /* buffer address */
   size_t size;  /* buffer size */
   size_t n;  /* number of characters in buffer */
   lua_State *L;
-  char initb[LUAL_BUFFERSIZE];  /* initial buffer */
-} luaL_Buffer;
+  union {
+    LUAI_MAXALIGN;  /* ensure maximum alignment for buffer */
+    char b[LUAL_BUFFERSIZE];  /* initial buffer */
+  } init;
+};
+
+
+#define luaL_bufflen(bf)	((bf)->n)
+#define luaL_buffaddr(bf)	((bf)->b)
 
 
 #define luaL_addchar(B,c) \
@@ -161,6 +213,8 @@ typedef struct luaL_Buffer {
    ((B)->b[(B)->n++] = (c)))
 
 #define luaL_addsize(B,s)	((B)->n += (s))
+
+#define luaL_buffsub(B,s)	((B)->n -= (s))
 
 LUALIB_API void (luaL_buffinit) (lua_State *L, luaL_Buffer *B);
 LUALIB_API char *(luaL_prepbuffsize) (luaL_Buffer *B, size_t sz);
@@ -198,21 +252,6 @@ typedef struct luaL_Stream {
 } luaL_Stream;
 
 /* }====================================================== */
-
-
-
-/* compatibility with old module system */
-#if defined(LUA_COMPAT_MODULE)
-
-LUALIB_API void (luaL_pushmodule) (lua_State *L, const char *modname,
-                                   int sizehint);
-LUALIB_API void (luaL_openlib) (lua_State *L, const char *libname,
-                                const luaL_Reg *l, int nup);
-
-#define luaL_register(L,n,l)	(luaL_openlib(L,(n),(l),0))
-
-#endif
-
 
 /*
 ** {==================================================================

@@ -1,5 +1,5 @@
 /*
-** $Id: lzio.c,v 1.37.1.1 2017/04/19 17:20:42 roberto Exp $
+** $Id: lzio.c $
 ** Buffered streams
 ** See Copyright Notice in lua.h
 */

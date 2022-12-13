@@ -1,5 +1,5 @@
 /*
-** $Id: lctype.h,v 1.12.1.1 2013/04/12 18:48:47 roberto Exp $
+** $Id: lctype.h $
 ** 'ctype' functions for Lua
 ** See Copyright Notice in lua.h
 */
@@ -13,7 +13,7 @@
 /*
 ** WARNING: the functions defined here do not necessarily correspond
 ** to the similar functions in the standard C ctype.h. They are
-** optimized for the specific needs of Lua
+** optimized for the specific needs of Lua.
 */
 
 #if !defined(LUA_USE_CTYPE)
@@ -61,14 +61,20 @@
 #define lisprint(c)	testprop(c, MASK(PRINTBIT))
 #define lisxdigit(c)	testprop(c, MASK(XDIGITBIT))
 
+
 /*
-** this 'ltolower' only works for alphabetic characters
+** In ASCII, this 'ltolower' is correct for alphabetic characters and
+** for '.'. That is enough for Lua needs. ('check_exp' ensures that
+** the character either is an upper-case letter or is unchanged by
+** the transformation, which holds for lower-case letters and '.'.)
 */
-#define ltolower(c)	((c) | ('A' ^ 'a'))
+#define ltolower(c)  \
+  check_exp(('A' <= (c) && (c) <= 'Z') || (c) == ((c) | ('A' ^ 'a')),  \
+            (c) | ('A' ^ 'a'))
 
 
-/* two more entries for 0 and -1 (EOZ) */
-LUAI_DDEC const lu_byte luai_ctype_[UCHAR_MAX + 2];
+/* one entry for each character and for -1 (EOZ) */
+LUAI_DDEC(const lu_byte luai_ctype_[UCHAR_MAX + 2];)
 
 
 #else			/* }{ */

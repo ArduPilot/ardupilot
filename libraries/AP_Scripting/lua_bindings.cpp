@@ -173,7 +173,7 @@ int AP_Logger_Write(lua_State *L) {
     }
 
     // note that luaM_malloc will never return null, it will fault instead
-    char *buffer = (char*)luaM_malloc(L, msg_len);
+    char *buffer = (char*)luaM_malloc_(L, msg_len, 0);
 
     // add logging headers
     uint8_t offset = 0;
