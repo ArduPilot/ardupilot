@@ -157,11 +157,11 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @Param: WIND_COMP
     // @DisplayName: Headwind Compensation when Landing
     // @Description: This param controls how much headwind compensation is used when landing.  Headwind speed component multiplied by this parameter is added to TECS_LAND_ARSPD command.  Set to Zero to disable.  Note:  The target landing airspeed command is still limited to ARSPD_FBW_MAX.
-    // @Range: 0 1
+    // @Range: 0 100
     // @Units: %
-    // @Increment: 0.1
+    // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("WIND_COMP", 18, AP_Landing, wind_comp, 0.5),
+    AP_GROUPINFO("WIND_COMP", 18, AP_Landing, wind_comp, 50),
 
     // @Param: TYPE
     // @DisplayName: Auto-landing type
