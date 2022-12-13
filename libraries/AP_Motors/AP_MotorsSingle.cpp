@@ -39,6 +39,9 @@ void AP_MotorsSingle::init(motor_frame_class frame_class, motor_frame_type frame
 
     _mav_type = MAV_TYPE_COAXIAL;
 
+    // set update rate
+    set_update_rate(_speed_hz);
+
     // record successful initialisation if what we setup was the desired frame_class
     set_initialised_ok(frame_class == MOTOR_FRAME_SINGLE);
 }
@@ -52,13 +55,10 @@ void AP_MotorsSingle::set_frame_class_and_type(motor_frame_class frame_class, mo
 // set update rate to motors - a value in hertz
 void AP_MotorsSingle::set_update_rate(uint16_t speed_hz)
 {
-    // record requested speed
-    _speed_hz = speed_hz;
-
     uint32_t mask =
         1U << AP_MOTORS_MOT_5 |
         1U << AP_MOTORS_MOT_6 ;
-    rc_set_freq(mask, _speed_hz);
+    rc_set_freq(mask, speed_hz);
 }
 
 void AP_MotorsSingle::output_to_motors()

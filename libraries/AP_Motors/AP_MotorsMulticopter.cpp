@@ -215,12 +215,15 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SAFE_TIME", 42, AP_MotorsMulticopter, _safe_time, AP_MOTORS_SAFE_TIME_DEFAULT),
 
+    // Parent class params
+    AP_NESTEDGROUPINFO(AP_Motors, 43),
+
     AP_GROUPEND
 };
 
 // Constructor
-AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t speed_hz) :
-                AP_Motors(speed_hz),
+AP_MotorsMulticopter::AP_MotorsMulticopter() :
+                AP_Motors(),
                 _lift_max(1.0f),
                 _throttle_limit(1.0f)
 {

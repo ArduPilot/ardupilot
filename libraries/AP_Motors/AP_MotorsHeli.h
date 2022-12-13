@@ -11,9 +11,6 @@
 #include "AP_Motors_Class.h"
 #include "AP_MotorsHeli_RSC.h"
 
-// servo output rates
-#define AP_MOTORS_HELI_SPEED_DEFAULT            125     // default servo update rate for helicopters
-
 // default swash min and max angles and positions
 #define AP_MOTORS_HELI_SWASH_CYCLIC_MAX         2500
 #define AP_MOTORS_HELI_COLLECTIVE_MIN           1250
@@ -40,8 +37,8 @@ class AP_MotorsHeli : public AP_Motors {
 public:
 
     /// Constructor
-    AP_MotorsHeli( uint16_t speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
-        AP_Motors(speed_hz),
+    AP_MotorsHeli() :
+        AP_Motors(),
         _main_rotor(SRV_Channel::k_heli_rsc, AP_MOTORS_HELI_RSC)
     {
         AP_Param::setup_object_defaults(this, var_info);
@@ -55,9 +52,6 @@ public:
         _frame_class = frame_class;
         _frame_type = frame_type;
     }
-
-    // set update rate to motors - a value in hertz
-    virtual void set_update_rate( uint16_t speed_hz ) override = 0;
 
     // output_min - sets servos to neutral point with motors stopped
     void output_min() override;

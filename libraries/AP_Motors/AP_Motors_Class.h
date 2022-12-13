@@ -47,9 +47,6 @@
 #define AP_MOTORS_FRAME_OCTAQUAD_ENABLED AP_MOTORS_FRAME_DEFAULT_ENABLED
 #endif
 
-// motor update rate
-#define AP_MOTORS_SPEED_DEFAULT     490 // default output rate to the motors
-
 /// @class      AP_Motors
 class AP_Motors {
 public:
@@ -103,7 +100,7 @@ public:
     void get_frame_and_type_string(char *buffer, uint8_t buflen) const;
 
     // Constructor
-    AP_Motors(uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
+    AP_Motors();
 
     // singleton support
     static AP_Motors    *get_singleton(void) { return _singleton; }
@@ -210,8 +207,8 @@ public:
     // virtual functions that should be implemented by child classes
     //
 
-    // set update rate to motors - a value in hertz
-    virtual void        set_update_rate( uint16_t speed_hz ) { _speed_hz = speed_hz; }
+    // override update rate to motors - a value in hertz
+    void                override_update_rate( uint16_t speed_hz ) { set_update_rate(speed_hz); }
 
     // init
     virtual void        init(motor_frame_class frame_class, motor_frame_type frame_type) = 0;
@@ -272,6 +269,9 @@ public:
     // write log, to be called at 10hz
     virtual void Log_Write() {};
 
+    // var_info for holding Parameter information
+    static const struct AP_Param::GroupInfo var_info[];
+
 protected:
     // output functions that should be overloaded by child classes
     virtual void        output_armed_stabilizing() = 0;
@@ -295,9 +295,11 @@ protected:
     // save parameters as part of disarming
     virtual void save_params_on_disarm() {}
 
+    // set update rate to motors - a value in hertz
+    virtual void set_update_rate( uint16_t speed_hz ) = 0;
+
     // internal variables
     float               _dt;                        // time difference (in seconds) since the last loop time
-    uint16_t            _speed_hz;                  // speed in hz to send updates to motors
     float               _roll_in;                   // desired roll control from attitude controllers, -1 ~ +1
     float               _roll_in_ff;                // desired roll feed forward control from attitude controllers, -1 ~ +1
     float               _pitch_in;                  // desired pitch control from attitude controller, -1 ~ +1
@@ -329,6 +331,7 @@ protected:
     float _yaw_radio_passthrough;      // yaw input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
 
     AP_Int8             _pwm_type;            // PWM output type
+    AP_Int16            _speed_hz;            // PWM output speed
 
     // motor failure handling
     bool                _thrust_boost;          // true if thrust boost is enabled to handle motor failure

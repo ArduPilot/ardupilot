@@ -79,15 +79,12 @@ void AP_MotorsTri::set_frame_class_and_type(motor_frame_class frame_class, motor
 // set update rate to motors - a value in hertz
 void AP_MotorsTri::set_update_rate(uint16_t speed_hz)
 {
-    // record requested speed
-    _speed_hz = speed_hz;
-
     // set update rate for the 3 motors (but not the servo on channel 7)
     uint32_t mask = 
 	    1U << AP_MOTORS_MOT_1 |
 	    1U << AP_MOTORS_MOT_2 |
 	    1U << AP_MOTORS_MOT_4;
-    rc_set_freq(mask, _speed_hz);
+    rc_set_freq(mask, speed_hz);
 }
 
 void AP_MotorsTri::output_to_motors()

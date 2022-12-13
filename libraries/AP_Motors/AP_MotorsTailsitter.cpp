@@ -49,25 +49,25 @@ void AP_MotorsTailsitter::init(motor_frame_class frame_class, motor_frame_type f
 
     _mav_type = MAV_TYPE_VTOL_DUOROTOR;
 
+    // set update rate
+    set_update_rate(_speed_hz);
+
     // record successful initialisation if what we setup was the desired frame_class
     set_initialised_ok(frame_class == MOTOR_FRAME_TAILSITTER);
 }
 
 
 /// Constructor
-AP_MotorsTailsitter::AP_MotorsTailsitter(uint16_t speed_hz) :
-    AP_MotorsMulticopter(speed_hz)
+AP_MotorsTailsitter::AP_MotorsTailsitter() :
+    AP_MotorsMulticopter()
 {
-    set_update_rate(speed_hz);
+    set_update_rate(_speed_hz);
 }
 
 
 // set update rate to motors - a value in hertz
 void AP_MotorsTailsitter::set_update_rate(uint16_t speed_hz)
 {
-    // record requested speed
-    _speed_hz = speed_hz;
-
     SRV_Channels::set_rc_frequency(SRV_Channel::k_throttleLeft, speed_hz);
     SRV_Channels::set_rc_frequency(SRV_Channel::k_throttleRight, speed_hz);
 }

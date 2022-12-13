@@ -18,8 +18,8 @@ class AP_MotorsTri : public AP_MotorsMulticopter {
 public:
 
     /// Constructor
-    AP_MotorsTri(uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_MotorsMulticopter(speed_hz)
+    AP_MotorsTri() :
+        AP_MotorsMulticopter()
     {
     };
 
@@ -28,9 +28,6 @@ public:
 
     // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
     void set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type) override;
-
-    // set update rate to motors - a value in hertz
-    void                set_update_rate( uint16_t speed_hz ) override;
 
     // output_to_motors - sends minimum values out to the motors
     virtual void        output_to_motors() override;
@@ -55,6 +52,9 @@ protected:
 
     // call vehicle supplied thrust compensation if set
     void                thrust_compensation(void) override;
+
+    // set update rate to motors - a value in hertz
+    void                set_update_rate( uint16_t speed_hz ) override;
 
     const char* _get_frame_string() const override { return "TRI"; }
 

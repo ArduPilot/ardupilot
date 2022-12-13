@@ -27,11 +27,11 @@ void update_motors();
 SRV_Channels srvs;
 
 // uncomment the row below depending upon what frame you are using
-//AP_MotorsTri  motors(400);
-AP_MotorsMatrix   motors(400);
-//AP_MotorsHeli_Single motors(rc7, rsc, h1, h2, h3, h4, 400);
-//AP_MotorsSingle motors(400);
-//AP_MotorsCoax motors(400);
+//AP_MotorsTri  motors;
+AP_MotorsMatrix  motors;
+//AP_MotorsHeli_Single motors(rc7, rsc, h1, h2, h3, h4);
+//AP_MotorsSingle motors;
+//AP_MotorsCoax motors;
 
 AP_BattMonitor _battmonitor{0, nullptr, nullptr};
 
@@ -41,7 +41,6 @@ void setup()
     hal.console->printf("AP_Motors library test ver 1.0\n");
 
     // motor initialisation
-    motors.set_update_rate(490);
     motors.init(AP_Motors::MOTOR_FRAME_QUAD, AP_Motors::MOTOR_FRAME_TYPE_X);
 #if HELI_TEST == 0
     motors.update_throttle_range();

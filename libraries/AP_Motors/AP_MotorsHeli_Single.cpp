@@ -143,9 +143,6 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
 // set update rate to motors - a value in hertz
 void AP_MotorsHeli_Single::set_update_rate( uint16_t speed_hz )
 {
-    // record requested speed
-    _speed_hz = speed_hz;
-
     // setup fast channels
     uint32_t mask = 
         1U << AP_MOTORS_MOT_1 |
@@ -155,7 +152,7 @@ void AP_MotorsHeli_Single::set_update_rate( uint16_t speed_hz )
     if (_swashplate.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
         mask |= 1U << (AP_MOTORS_MOT_5);
     }
-    rc_set_freq(mask, _speed_hz);
+    rc_set_freq(mask, speed_hz);
 }
 
 // init_outputs - initialise Servo/PWM ranges and endpoints

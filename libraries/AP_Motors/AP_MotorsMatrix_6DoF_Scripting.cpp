@@ -295,6 +295,9 @@ bool AP_MotorsMatrix_6DoF_Scripting::init(uint8_t expected_num_motors) {
         return false;
     }
 
+    // set update rate
+    set_update_rate(_speed_hz);
+
     switch (num_motors) {
         case 3:
             _mav_type = MAV_TYPE_TRICOPTER;

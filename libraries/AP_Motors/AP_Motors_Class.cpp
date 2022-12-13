@@ -18,6 +18,48 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Notify/AP_Notify.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
+// this attempts to capture old default defines, but is not fool proof as it cannot see the
+// old vehicle level defines that may have been added to defines.h,
+// but will work with defines from hwdef
+#ifndef PWM_RATE_DEFAULT
+    #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_Blimp)
+        #ifdef RC_FAST_SPEED
+            #define PWM_RATE_DEFAULT RC_FAST_SPEED
+        #endif
+
+    #elif APM_BUILD_TYPE(APM_BUILD_Heli)
+        #define PWM_RATE_DEFAULT 125
+
+    #elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
+        #ifdef RC_SPEED_DEFAULT
+            #define PWM_RATE_DEFAULT RC_SPEED_DEFAULT
+        #else
+            #define PWM_RATE_DEFAULT 200
+        #endif
+
+    #endif
+
+    #ifndef PWM_RATE_DEFAULT
+        #define PWM_RATE_DEFAULT 490
+    #endif
+#endif
+
+const AP_Param::GroupInfo AP_Motors::var_info[] = {
+
+    // @Param: PWM_RATE
+    // @DisplayName: ESC Update rate
+    // @Description: This is the rate in Hertz that your ESCs will receive updates
+    // @Units: Hz
+    // @Range: 50 490
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("PWM_RATE", 1, AP_Motors, _speed_hz, PWM_RATE_DEFAULT),
+
+    AP_GROUPEND
+};
+
 
 extern const AP_HAL::HAL& hal;
 
@@ -25,13 +67,14 @@ extern const AP_HAL::HAL& hal;
 AP_Motors *AP_Motors::_singleton;
 
 // Constructor
-AP_Motors::AP_Motors(uint16_t speed_hz) :
-    _speed_hz(speed_hz),
+AP_Motors::AP_Motors() :
     _throttle_filter(),
     _spool_desired(DesiredSpoolState::SHUT_DOWN),
     _spool_state(SpoolState::SHUT_DOWN),
     _air_density_ratio(1.0f)
 {
+    AP_Param::setup_object_defaults(this, var_info);
+
     _singleton = this;
 
     // setup throttle filtering
@@ -46,6 +89,10 @@ AP_Motors::AP_Motors(uint16_t speed_hz) :
     limit.throttle_upper = true;
     _thrust_boost = false;
     _thrust_balanced = true;
+
+    if (is_brushed_pwm_type()) {
+        _speed_hz.set_default(16000);
+    }
 };
 
 void AP_Motors::get_frame_and_type_string(char *buffer, uint8_t buflen) const

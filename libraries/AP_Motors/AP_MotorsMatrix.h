@@ -15,8 +15,8 @@ class AP_MotorsMatrix : public AP_MotorsMulticopter {
 public:
 
     /// Constructor
-    AP_MotorsMatrix(uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_MotorsMulticopter(speed_hz)
+    AP_MotorsMatrix() :
+        AP_MotorsMulticopter()
     {
         if (_singleton != nullptr) {
             AP_HAL::panic("AP_MotorsMatrix must be singleton");
@@ -43,10 +43,6 @@ public:
 
     // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
     void                set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type) override;
-
-    // set update rate to motors - a value in hertz
-    // you must have setup_motors before calling this
-    void                set_update_rate(uint16_t speed_hz) override;
 
     // output_test_num - spin a motor connected to the specified output channel
     //  (should only be performed during testing)
@@ -133,6 +129,10 @@ protected:
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     virtual void        _output_test_seq(uint8_t motor_seq, int16_t pwm) override;
+
+    // set update rate to motors - a value in hertz
+    // you must have setup_motors before calling this
+    void                set_update_rate(uint16_t speed_hz) override;
 
     float               _roll_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to roll
     float               _pitch_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to pitch
