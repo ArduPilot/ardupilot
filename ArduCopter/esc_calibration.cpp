@@ -91,7 +91,7 @@ void Copter::esc_calibration_passthrough()
         read_radio();
 
         // we run at high rate to make oneshot ESCs happy. Normal ESCs
-        // will only see pulses at the RC_SPEED
+        // will only see pulses at the MOT_PWM_RATE
         hal.scheduler->delay(3);
 
         // pass through to motors
@@ -153,12 +153,9 @@ void Copter::esc_calibration_setup()
     // clear esc flag for next time
     g.esc_calibrate.set_and_save(ESCCAL_NONE);
 
-    if (motors->is_normal_pwm_type()) {
-        // run at full speed for oneshot ESCs (actually done on push)
-        motors->set_update_rate(g.rc_speed);
-    } else {
+    if (!motors->is_normal_pwm_type()) {
         // reduce update rate to motors to 50Hz
-        motors->set_update_rate(50);
+        motors->override_update_rate(50);
     }
 
     // disable safety if requested

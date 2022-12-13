@@ -46,9 +46,6 @@ void Copter::init_rc_out()
     // enable aux servos to cope with multiple output channels per motor
     SRV_Channels::enable_aux_servos();
 
-    // update rate must be set after motors->init() to allow for motor mapping
-    motors->set_update_rate(g.rc_speed);
-
 #if FRAME_CONFIG != HELI_FRAME
     if (channel_throttle->configured()) {
         // throttle inputs setup, use those to set motor PWM min and max if not already configured

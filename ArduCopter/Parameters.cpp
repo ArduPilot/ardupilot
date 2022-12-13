@@ -423,7 +423,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @Range: 50 490
     // @Increment: 1
     // @User: Advanced
-    GSCALAR(rc_speed, "RC_SPEED",              RC_FAST_SPEED),
 
 #if MODE_ACRO_ENABLED == ENABLED || MODE_SPORT_ENABLED == ENABLED
     // @Param: ACRO_BAL_ROLL
@@ -625,11 +624,11 @@ const AP_Param::Info Copter::var_info[] = {
 
 #if FRAME_CONFIG == HELI_FRAME
     // @Group: H_
-    // @Path: ../libraries/AP_Motors/AP_MotorsHeli_Single.cpp,../libraries/AP_Motors/AP_MotorsHeli_Dual.cpp,../libraries/AP_Motors/AP_MotorsHeli.cpp
+    // @Path: ../libraries/AP_Motors/AP_MotorsHeli_Single.cpp,../libraries/AP_Motors/AP_MotorsHeli_Dual.cpp,../libraries/AP_Motors/AP_MotorsHeli.cpp,../libraries/AP_Motors/AP_Motors_Class.cpp
     GOBJECTVARPTR(motors, "H_",        &copter.motors_var_info),
 #else
     // @Group: MOT_
-    // @Path: ../libraries/AP_Motors/AP_MotorsMulticopter.cpp
+    // @Path: ../libraries/AP_Motors/AP_MotorsMulticopter.cpp,../libraries/AP_Motors/AP_Motors_Class.cpp
     GOBJECTVARPTR(motors, "MOT_",      &copter.motors_var_info),
 #endif
 
@@ -1528,6 +1527,16 @@ void Copter::convert_pid_parameters(void)
     for (const auto &info : cmd_mdl_conversion_info) {
         AP_Param::convert_old_parameter(&info, 1.0);
     }
+
+    // RC_SPEED moved down into motors library
+    // PARAMETER_CONVERSION - Added: Nov-2022
+#if FRAME_CONFIG == HELI_FRAME
+    const AP_Param::ConversionInfo motor_conversion_info = { Parameters::k_param_rc_speed, 0, AP_PARAM_INT16, "H_PWM_RATE" };
+#else
+    const AP_Param::ConversionInfo motor_conversion_info = { Parameters::k_param_rc_speed, 0, AP_PARAM_INT16, "MOT_PWM_RATE" };
+#endif
+    AP_Param::convert_old_parameter(&motor_conversion_info, 1.0f);
+
 
     // make any SRV_Channel upgrades needed
     SRV_Channels::upgrade_parameters();

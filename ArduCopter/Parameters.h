@@ -301,7 +301,7 @@ public:
         k_param_radio_tuning,
         k_param_radio_tuning_high_old,   // unused
         k_param_radio_tuning_low_old,    // unused
-        k_param_rc_speed = 192,
+        k_param_rc_speed = 192,          // unused
         k_param_failsafe_battery_enabled, // unused - moved to AP_BattMonitor
         k_param_throttle_mid,           // remove
         k_param_failsafe_gps_enabled,   // remove
@@ -459,8 +459,6 @@ public:
 #if MODE_THROW_ENABLED == ENABLED
     AP_Enum<ModeThrow::PreThrowMotorState>         throw_motor_start;
 #endif
-
-    AP_Int16                rc_speed; // speed of fast RC Channels in Hz
 
 #if MODE_ACRO_ENABLED == ENABLED || MODE_SPORT_ENABLED == ENABLED
     // Acro parameters
