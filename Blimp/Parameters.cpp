@@ -298,7 +298,6 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Range: 50 490
     // @Increment: 1
     // @User: Advanced
-    GSCALAR(rc_speed, "RC_SPEED",              RC_FAST_SPEED),
 
     // variables not in the g class which contain EEPROM saved variables
 

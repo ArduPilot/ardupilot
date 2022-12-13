@@ -171,7 +171,7 @@ public:
         k_param_failsafe_throttle = 170,
         k_param_failsafe_throttle_value,
         k_param_radio_tuning, // unused
-        k_param_rc_speed = 192,
+        k_param_rc_speed = 192, // unused
         k_param_failsafe_gcs,
         k_param_rcmap, // 199
 
@@ -253,8 +253,6 @@ public:
     AP_Int16        dis_mask;
 
     AP_Int8         rtl_alt_type;
-
-    AP_Int16        rc_speed; // speed of fast RC Channels in Hz
 
     // Note: keep initializers here in the same order as they are declared
     // above.
