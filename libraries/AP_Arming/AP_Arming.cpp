@@ -581,7 +581,7 @@ bool AP_Arming::gps_checks(bool report)
         }
 
         if (!AP::ahrs().home_is_set()) {
-            check_failed(ARMING_CHECK_GPS, report, "GPS: waiting for home");
+            check_failed(ARMING_CHECK_GPS, report, "AHRS: waiting for home");
             return false;
         }
 
