@@ -12,6 +12,7 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_Notify/AP_Notify.h>
+#include <AP_OpticalFlow/AP_OpticalFlow.h>
 
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"

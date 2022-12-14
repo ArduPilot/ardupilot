@@ -20,7 +20,6 @@
 #include <AP_Filesystem/AP_Filesystem_config.h>
 #include <AP_Frsky_Telem/AP_Frsky_config.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Mount/AP_Mount.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
@@ -314,9 +313,7 @@ public:
 #if AP_MAVLINK_BATTERY2_ENABLED
     void send_battery2();
 #endif
-#if AP_OPTICALFLOW_ENABLED
     void send_opticalflow();
-#endif
     virtual void send_attitude() const;
     virtual void send_attitude_quaternion() const;
     void send_autopilot_version() const;
@@ -606,9 +603,7 @@ protected:
     MAV_RESULT handle_can_forward(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
     void handle_can_frame(const mavlink_message_t &msg) const;
 
-#if AP_OPTICALFLOW_ENABLED
     void handle_optical_flow(const mavlink_message_t &msg);
-#endif
 
     MAV_RESULT handle_fixed_mag_cal_yaw(const mavlink_command_long_t &packet);
 
