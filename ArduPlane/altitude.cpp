@@ -25,17 +25,14 @@
  */
 void Plane::adjust_altitude_target()
 {
-    Location target_location;
+    control_mode->update_target_altitude();
+}
 
-    if (control_mode == &mode_fbwb ||
-        control_mode == &mode_cruise) {
-        return;
-    }
-    if ((control_mode == &mode_loiter) && plane.stick_mixing_enabled() && (plane.g2.flight_options & FlightOptions::ENABLE_LOITER_ALT_CONTROL)) {
-       return;
-    }
+// to be moved to mode_guided.cpp in a future PR, kept here to minimise diff
+void ModeGuided::update_target_altitude()
+{
 #if OFFBOARD_GUIDED == ENABLED
-    if (control_mode == &mode_guided && ((plane.guided_state.target_alt_time_ms != 0) || plane.guided_state.target_alt > -0.001 )) { // target_alt now defaults to -1, and _time_ms defaults to zero.
+    if (((plane.guided_state.target_alt_time_ms != 0) || plane.guided_state.target_alt > -0.001 )) { // target_alt now defaults to -1, and _time_ms defaults to zero.
         // offboard altitude demanded
         uint32_t now = AP_HAL::millis();
         float delta = 1e-3f * (now - plane.guided_state.target_alt_time_ms);
@@ -53,11 +50,20 @@ void Plane::adjust_altitude_target()
         }
         plane.guided_state.last_target_alt = temp.alt;
         plane.set_target_altitude_location(temp);
+        plane.altitude_error_cm = plane.calc_altitude_error_cm();
     } else 
 #endif // OFFBOARD_GUIDED == ENABLED
-      if (control_mode->update_target_altitude()) {
-        // handled in mode specific code
-    } else if (plane.landing.is_flaring()) {
+        {
+        Mode::update_target_altitude();
+    }
+}
+
+// to be moved to mode.cpp in a future PR, kept here to minimise diff
+void Mode::update_target_altitude()
+{
+    Location target_location;
+
+    if (plane.landing.is_flaring()) {
         // during a landing flare, use TECS_LAND_SINK as a target sink
         // rate, and ignores the target altitude
         plane.set_target_altitude_location(plane.next_WP_loc);
