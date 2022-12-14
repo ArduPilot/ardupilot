@@ -35,59 +35,59 @@ void Plane::adjust_altitude_target()
        return;
     }
 #if OFFBOARD_GUIDED == ENABLED
-    if (control_mode == &mode_guided && ((guided_state.target_alt_time_ms != 0) || guided_state.target_alt > -0.001 )) { // target_alt now defaults to -1, and _time_ms defaults to zero.
+    if (control_mode == &mode_guided && ((plane.guided_state.target_alt_time_ms != 0) || plane.guided_state.target_alt > -0.001 )) { // target_alt now defaults to -1, and _time_ms defaults to zero.
         // offboard altitude demanded
         uint32_t now = AP_HAL::millis();
-        float delta = 1e-3f * (now - guided_state.target_alt_time_ms);
-        guided_state.target_alt_time_ms = now;
+        float delta = 1e-3f * (now - plane.guided_state.target_alt_time_ms);
+        plane.guided_state.target_alt_time_ms = now;
         // determine delta accurately as a float
-        float delta_amt_f = delta * guided_state.target_alt_accel;
+        float delta_amt_f = delta * plane.guided_state.target_alt_accel;
         // then scale x100 to match last_target_alt and convert to a signed int32_t as it may be negative
         int32_t delta_amt_i = (int32_t)(100.0 * delta_amt_f); 
         Location temp {};
-        temp.alt = guided_state.last_target_alt + delta_amt_i; // ...to avoid floats here, 
-        if (is_positive(guided_state.target_alt_accel)) {
-            temp.alt = MIN(guided_state.target_alt, temp.alt);
+        temp.alt = plane.guided_state.last_target_alt + delta_amt_i; // ...to avoid floats here, 
+        if (is_positive(plane.guided_state.target_alt_accel)) {
+            temp.alt = MIN(plane.guided_state.target_alt, temp.alt);
         } else {
-            temp.alt = MAX(guided_state.target_alt, temp.alt);
+            temp.alt = MAX(plane.guided_state.target_alt, temp.alt);
         }
-        guided_state.last_target_alt = temp.alt;
-        set_target_altitude_location(temp);
+        plane.guided_state.last_target_alt = temp.alt;
+        plane.set_target_altitude_location(temp);
     } else 
 #endif // OFFBOARD_GUIDED == ENABLED
       if (control_mode->update_target_altitude()) {
-          // handled in mode specific code
-    } else if (landing.is_flaring()) {
+        // handled in mode specific code
+    } else if (plane.landing.is_flaring()) {
         // during a landing flare, use TECS_LAND_SINK as a target sink
         // rate, and ignores the target altitude
-        set_target_altitude_location(next_WP_loc);
-    } else if (landing.is_on_approach()) {
-        landing.setup_landing_glide_slope(prev_WP_loc, next_WP_loc, current_loc, target_altitude.offset_cm);
-        landing.adjust_landing_slope_for_rangefinder_bump(rangefinder_state, prev_WP_loc, next_WP_loc, current_loc, auto_state.wp_distance, target_altitude.offset_cm);
-    } else if (landing.get_target_altitude_location(target_location)) {
-       set_target_altitude_location(target_location);
+        plane.set_target_altitude_location(plane.next_WP_loc);
+    } else if (plane.landing.is_on_approach()) {
+        plane.landing.setup_landing_glide_slope(plane.prev_WP_loc, plane.next_WP_loc, plane.current_loc, plane.target_altitude.offset_cm);
+        plane.landing.adjust_landing_slope_for_rangefinder_bump(plane.rangefinder_state, plane.prev_WP_loc, plane.next_WP_loc, plane.current_loc, plane.auto_state.wp_distance, plane.target_altitude.offset_cm);
+    } else if (plane.landing.get_target_altitude_location(target_location)) {
+        plane.set_target_altitude_location(target_location);
 #if HAL_SOARING_ENABLED
-    } else if (g2.soaring_controller.is_active() && g2.soaring_controller.get_throttle_suppressed()) {
-       // Reset target alt to current alt, to prevent large altitude errors when gliding.
-       set_target_altitude_location(current_loc);
-       reset_offset_altitude();
+    } else if (plane.g2.soaring_controller.is_active() && plane.g2.soaring_controller.get_throttle_suppressed()) {
+        // Reset target alt to current alt, to prevent large altitude errors when gliding.
+        plane.set_target_altitude_location(plane.current_loc);
+        plane.reset_offset_altitude();
 #endif
-    } else if (reached_loiter_target()) {
+    } else if (plane.reached_loiter_target()) {
         // once we reach a loiter target then lock to the final
         // altitude target
-        set_target_altitude_location(next_WP_loc);
-    } else if (target_altitude.offset_cm != 0 && 
-               !current_loc.past_interval_finish_line(prev_WP_loc, next_WP_loc)) {
+        plane.set_target_altitude_location(plane.next_WP_loc);
+    } else if (plane.target_altitude.offset_cm != 0 && 
+               !plane.current_loc.past_interval_finish_line(plane.prev_WP_loc, plane.next_WP_loc)) {
         // control climb/descent rate
-        set_target_altitude_proportion(next_WP_loc, 1.0f-auto_state.wp_proportion);
+        plane.set_target_altitude_proportion(plane.next_WP_loc, 1.0f-plane.auto_state.wp_proportion);
 
         // stay within the range of the start and end locations in altitude
-        constrain_target_altitude_location(next_WP_loc, prev_WP_loc);
+        plane.constrain_target_altitude_location(plane.next_WP_loc, plane.prev_WP_loc);
     } else {
-        set_target_altitude_location(next_WP_loc);
+        plane.set_target_altitude_location(plane.next_WP_loc);
     }
 
-    altitude_error_cm = calc_altitude_error_cm();
+    plane.altitude_error_cm = plane.calc_altitude_error_cm();
 }
 
 /*
