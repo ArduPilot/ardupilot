@@ -87,12 +87,8 @@ void GCS_MAVLINK::handle_setup_signing(const mavlink_message_t &msg) const
     }
 
     // activate it immediately on all links:
-    for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
-        GCS_MAVLINK *backend = gcs().chan(i);
-        if (backend == nullptr) {
-            return;
-        }
-        backend->load_signing_key();
+    for (uint8_t i=0; i<gcs().num_gcs(); i++) {
+        gcs().chan(i)->load_signing_key();
     }
 }
 

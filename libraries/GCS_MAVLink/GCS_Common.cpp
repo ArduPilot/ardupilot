@@ -2717,11 +2717,11 @@ MAV_RESULT GCS::set_message_interval(uint8_t port_num, uint32_t msg_id, int32_t 
 {
     uint8_t channel = get_channel_from_port_number(port_num);
 
-    if ((channel < MAVLINK_COMM_NUM_BUFFERS) && (chan(channel) != nullptr)) {
-        return chan(channel)->set_message_interval(msg_id, interval_us);
+    if (channel >= num_gcs()) {
+        return MAV_RESULT_FAILED;
     }
 
-    return MAV_RESULT_FAILED;
+    return chan(channel)->set_message_interval(msg_id, interval_us);
 }
 
 uint8_t GCS::get_channel_from_port_number(uint8_t port_num)
