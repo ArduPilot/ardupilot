@@ -140,6 +140,8 @@ public:
         return _baudrate/(9*1024);
     }
 
+    uint32_t get_baud_rate() const override { return _baudrate; }
+
 #if HAL_UART_STATS_ENABLED
     // request information on uart I/O for one uart
     void uart_info(ExpandingString &str) override;
