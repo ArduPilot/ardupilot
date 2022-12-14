@@ -516,7 +516,7 @@ end
 --]]
 local _roll_angle_exit = inheritsFrom(nil, "roll_angle_exit")
 function _roll_angle_exit:get_roll(t, time_s)
-   local entry_s = math.abs(angle) / AEROM_ENTRY_RATE:get()
+   local entry_s = math.abs(self.angle) / AEROM_ENTRY_RATE:get()
    local entry_t = entry_s / time_s
    if t < 1.0 - entry_t then
       return 0
