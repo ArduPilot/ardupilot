@@ -196,6 +196,7 @@ vector<string> split(string str, char del) {
 
 void ModeRTL::return_start()
 {
+    // array index 10 is landing points limit number.
     char *pos[10];
     int  lat[10],lng[10];
     
@@ -203,7 +204,7 @@ void ModeRTL::return_start()
 
         rx::xml_document<> doc;
         rx::file<> input("locate.xml");
-        gcs().send_text(MAV_SEVERITY_CRITICAL,"RAPIDXML READ.........");
+        //gcs().send_text(MAV_SEVERITY_CRITICAL,"RAPIDXML READ.........");
         doc.parse<0>(input.data());
 
       
