@@ -300,8 +300,8 @@ void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_lo
     float flare_distance = groundspeed * flare_time;
 
     // don't allow the flare before half way along the final leg
-    if (flare_distance > total_distance/2) {
-        flare_distance = total_distance/2;
+    if (flare_distance > total_distance*0.5f) {
+        flare_distance = total_distance*0.5f;
     }
 
     // project a point 500 meters past the landing point, passing
