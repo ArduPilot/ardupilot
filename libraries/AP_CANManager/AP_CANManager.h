@@ -110,6 +110,16 @@ public:
         return Driver_Type_None;
     }
 
+    // Can Id Pre arm check Param
+    AP_Int32 _can_id_check_1;
+    AP_Int32 _can_id_check_2;
+    AP_Int32 _can_id_check_3;
+    AP_Int32 _can_id_check_4;
+    AP_Int32 _can_id_check_5;
+    AP_Int32 _can_id_check_6;
+    AP_Int32 _can_id_check_7;
+    AP_Int32 _can_id_check_8;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 #if HAL_GCS_ENABLED
