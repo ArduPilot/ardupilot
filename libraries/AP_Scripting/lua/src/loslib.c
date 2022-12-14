@@ -1,5 +1,5 @@
 /*
-** $Id: loslib.c,v 1.65.1.1 2017/04/19 17:29:57 roberto Exp $
+** $Id: loslib.c $
 ** Standard Operating System library
 ** See Copyright Notice in lua.h
 */
@@ -59,18 +59,20 @@
 ** ===================================================================
 */
 
-#if !defined(l_time_t)		/* { */
 /*
 ** type to represent time_t in Lua
 */
+#if !defined(LUA_NUMTIME)	/* { */
+
 #define l_timet			lua_Integer
 #define l_pushtime(L,t)		lua_pushinteger(L,(lua_Integer)(t))
+#define l_gettime(L,arg)	luaL_checkinteger(L, arg)
 
-static time_t l_checktime (lua_State *L, int arg) {
-  lua_Integer t = luaL_checkinteger(L, arg);
-  luaL_argcheck(L, (time_t)t == t, arg, "time out-of-bounds");
-  return (time_t)t;
-}
+#else				/* }{ */
+
+#define l_timet			lua_Number
+#define l_pushtime(L,t)		lua_pushnumber(L,(lua_Number)(t))
+#define l_gettime(L,arg)	luaL_checknumber(L, arg)
 
 #endif				/* } */
 
@@ -90,7 +92,7 @@ static time_t l_checktime (lua_State *L, int arg) {
 
 /* ISO C definitions */
 #define l_gmtime(t,r)		((void)(r)->tm_sec, gmtime(t))
-#define l_localtime(t,r)  	((void)(r)->tm_sec, localtime(t))
+#define l_localtime(t,r)	((void)(r)->tm_sec, localtime(t))
 
 #endif				/* } */
 
@@ -137,10 +139,11 @@ static time_t l_checktime (lua_State *L, int arg) {
 
 
 
-
 static int os_execute (lua_State *L) {
   const char *cmd = luaL_optstring(L, 1, NULL);
-  int stat = system(cmd);
+  int stat;
+  errno = 0;
+  stat = system(cmd);
   if (cmd != NULL)
     return luaL_execresult(L, stat);
   else {
@@ -167,7 +170,7 @@ static int os_tmpname (lua_State *L) {
   char buff[LUA_TMPNAMBUFSIZE];
   int err;
   lua_tmpnam(buff, err);
-  if (err)
+  if (l_unlikely(err))
     return luaL_error(L, "unable to generate a unique filename");
   lua_pushstring(L, buff);
   return 1;
@@ -194,10 +197,24 @@ static int os_clock (lua_State *L) {
 ** =======================================================
 */
 
-static void setfield (lua_State *L, const char *key, int value) {
-  lua_pushinteger(L, value);
+/*
+** About the overflow check: an overflow cannot occur when time
+** is represented by a lua_Integer, because either lua_Integer is
+** large enough to represent all int fields or it is not large enough
+** to represent a time that cause a field to overflow.  However, if
+** times are represented as doubles and lua_Integer is int, then the
+** time 0x1.e1853b0d184f6p+55 would cause an overflow when adding 1900
+** to compute the year.
+*/
+static void setfield (lua_State *L, const char *key, int value, int delta) {
+  #if (defined(LUA_NUMTIME) && LUA_MAXINTEGER <= INT_MAX)
+    if (l_unlikely(value > LUA_MAXINTEGER - delta))
+      luaL_error(L, "field '%s' is out-of-bound", key);
+  #endif
+  lua_pushinteger(L, (lua_Integer)value + delta);
   lua_setfield(L, -2, key);
 }
+
 
 static void setboolfield (lua_State *L, const char *key, int value) {
   if (value < 0)  /* undefined? */
@@ -211,14 +228,14 @@ static void setboolfield (lua_State *L, const char *key, int value) {
 ** Set all fields from structure 'tm' in the table on top of the stack
 */
 static void setallfields (lua_State *L, struct tm *stm) {
-  setfield(L, "sec", stm->tm_sec);
-  setfield(L, "min", stm->tm_min);
-  setfield(L, "hour", stm->tm_hour);
-  setfield(L, "day", stm->tm_mday);
-  setfield(L, "month", stm->tm_mon + 1);
-  setfield(L, "year", stm->tm_year + 1900);
-  setfield(L, "wday", stm->tm_wday + 1);
-  setfield(L, "yday", stm->tm_yday + 1);
+  setfield(L, "year", stm->tm_year, 1900);
+  setfield(L, "month", stm->tm_mon, 1);
+  setfield(L, "day", stm->tm_mday, 0);
+  setfield(L, "hour", stm->tm_hour, 0);
+  setfield(L, "min", stm->tm_min, 0);
+  setfield(L, "sec", stm->tm_sec, 0);
+  setfield(L, "yday", stm->tm_yday, 1);
+  setfield(L, "wday", stm->tm_wday, 1);
   setboolfield(L, "isdst", stm->tm_isdst);
 }
 
@@ -231,24 +248,21 @@ static int getboolfield (lua_State *L, const char *key) {
 }
 
 
-/* maximum value for date fields (to avoid arithmetic overflows with 'int') */
-#if !defined(L_MAXDATEFIELD)
-#define L_MAXDATEFIELD	(INT_MAX / 2)
-#endif
-
 static int getfield (lua_State *L, const char *key, int d, int delta) {
   int isnum;
   int t = lua_getfield(L, -1, key);  /* get field and its type */
   lua_Integer res = lua_tointegerx(L, -1, &isnum);
   if (!isnum) {  /* field is not an integer? */
-    if (t != LUA_TNIL)  /* some other value? */
+    if (l_unlikely(t != LUA_TNIL))  /* some other value? */
       return luaL_error(L, "field '%s' is not an integer", key);
-    else if (d < 0)  /* absent field; no default? */
+    else if (l_unlikely(d < 0))  /* absent field; no default? */
       return luaL_error(L, "field '%s' missing in date table", key);
     res = d;
   }
   else {
-    if (!(-L_MAXDATEFIELD <= res && res <= L_MAXDATEFIELD))
+    /* unsigned avoids overflow when lua_Integer has 32 bits */
+    if (!(res >= 0 ? (lua_Unsigned)res <= (lua_Unsigned)INT_MAX + delta
+                   : (lua_Integer)INT_MIN + delta <= res))
       return luaL_error(L, "field '%s' is out-of-bound", key);
     res -= delta;
   }
@@ -276,6 +290,13 @@ static const char *checkoption (lua_State *L, const char *conv,
 }
 
 
+static time_t l_checktime (lua_State *L, int arg) {
+  l_timet t = l_gettime(L, arg);
+  luaL_argcheck(L, (time_t)t == t, arg, "time out-of-bounds");
+  return (time_t)t;
+}
+
+
 /* maximum size for an individual 'strftime' item */
 #define SIZETIMEFMT	250
 
@@ -294,7 +315,7 @@ static int os_date (lua_State *L) {
     stm = l_localtime(&t, &tmr);
   if (stm == NULL)  /* invalid date? */
     return luaL_error(L,
-                 "time result cannot be represented in this installation");
+                 "date result cannot be represented in this installation");
   if (strcmp(s, "*t") == 0) {
     lua_createtable(L, 0, 9);  /* 9 = number of fields */
     setallfields(L, stm);
@@ -330,12 +351,12 @@ static int os_time (lua_State *L) {
     struct tm ts;
     luaL_checktype(L, 1, LUA_TTABLE);
     lua_settop(L, 1);  /* make sure table is at the top */
-    ts.tm_sec = getfield(L, "sec", 0, 0);
-    ts.tm_min = getfield(L, "min", 0, 0);
-    ts.tm_hour = getfield(L, "hour", 12, 0);
-    ts.tm_mday = getfield(L, "day", -1, 0);
-    ts.tm_mon = getfield(L, "month", -1, 1);
     ts.tm_year = getfield(L, "year", -1, 1900);
+    ts.tm_mon = getfield(L, "month", -1, 1);
+    ts.tm_mday = getfield(L, "day", -1, 0);
+    ts.tm_hour = getfield(L, "hour", 12, 0);
+    ts.tm_min = getfield(L, "min", 0, 0);
+    ts.tm_sec = getfield(L, "sec", 0, 0);
     ts.tm_isdst = getboolfield(L, "isdst");
     t = mktime(&ts);
     setallfields(L, &ts);  /* update fields with normalized values */

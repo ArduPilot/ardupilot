@@ -1,5 +1,5 @@
 /*
-** $Id: lprefix.h,v 1.2.1.1 2017/04/19 17:20:42 roberto Exp $
+** $Id: lprefix.h $
 ** Definitions for Lua code that must come before any other header file
 ** See Copyright Notice in lua.h
 */
@@ -33,7 +33,7 @@
 /*
 ** Windows stuff
 */
-#if defined(_WIN32) 	/* { */
+#if defined(_WIN32)	/* { */
 
 #if !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS  /* avoid warnings about ISO C functions */
@@ -43,10 +43,11 @@
 
 #endif
 
+#ifdef ARDUPILOT_BUILD
 // load posix compatibility functions
 #include <AP_Filesystem/posix_compat.h>
 
 #define lua_writestring(s,l) printf("%s", s)
 #define lua_writestringerror(s,l) lua_writestring(s,l)
-
+#endif // ARDUPILOT_BUILD
 
