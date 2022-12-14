@@ -41,6 +41,7 @@
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Mission/AP_Mission_ChangeDetector.h>
 #include <AR_WPNav/AR_WPNav_OA.h>
+#include <AP_OpticalFlow/AP_OpticalFlow.h>
 
 // Configuration
 #include "defines.h"
