@@ -2050,6 +2050,26 @@ void AP_Periph_FW::can_gps_update(void)
                         total_size);
 
     }
+
+    // send Heading message if we are not sending RelPosHeading messages and have yaw
+    if (gps.have_gps_yaw() && last_relposheading_ms == 0) {
+        float yaw_deg, yaw_acc_deg;
+        uint32_t yaw_time_ms;
+        if (gps.gps_yaw_deg(yaw_deg, yaw_acc_deg, yaw_time_ms) && yaw_time_ms != last_gps_yaw_ms) {
+            ardupilot_gnss_Heading heading {};
+            heading.heading_valid = true;
+            heading.heading_accuracy_valid = is_positive(yaw_acc_deg);
+            heading.heading_rad = radians(yaw_deg);
+            heading.heading_accuracy_rad = radians(yaw_acc_deg);
+            uint8_t buffer[ARDUPILOT_GNSS_HEADING_MAX_SIZE] {};
+            const uint16_t total_size = ardupilot_gnss_Heading_encode(&heading, buffer, !periph.canfdout());
+            canard_broadcast(ARDUPILOT_GNSS_HEADING_SIGNATURE,
+                             ARDUPILOT_GNSS_HEADING_ID,
+                             CANARD_TRANSFER_PRIORITY_LOW,
+                             &buffer[0],
+                             total_size);
+        }
+    }
 #endif // HAL_PERIPH_ENABLE_GPS
 }
 
@@ -2110,13 +2130,12 @@ void AP_Periph_FW::send_relposheading_msg() {
     float relative_distance;
     float relative_down_pos;
     float reported_heading_acc;
-    static uint32_t last_timestamp = 0;
     uint32_t curr_timestamp = 0;
     gps.get_RelPosHeading(curr_timestamp, reported_heading, relative_distance, relative_down_pos, reported_heading_acc);
-    if (last_timestamp == curr_timestamp) {
+    if (last_relposheading_ms == curr_timestamp) {
         return;
     }
-    last_timestamp = curr_timestamp;
+    last_relposheading_ms = curr_timestamp;
     ardupilot_gnss_RelPosHeading relpos {};
     relpos.timestamp.usec = uint64_t(curr_timestamp)*1000LLU;
     relpos.reported_heading_deg = reported_heading;
