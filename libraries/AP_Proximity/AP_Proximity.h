@@ -24,6 +24,9 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AP_Proximity_Params.h"
 #include "AP_Proximity_Boundary_3D.h"
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
+#include <AP_HAL/Semaphores.h>
 
 #define PROXIMITY_MAX_INSTANCES             3   // Maximum number of proximity sensor instances available on this platform
 #define PROXIMITY_SENSOR_ID_START 10
@@ -34,6 +37,7 @@ class AP_Proximity
 {
 public:
     friend class AP_Proximity_Backend;
+    friend class AP_Proximity_DroneCAN;
 
     AP_Proximity();
 
@@ -56,6 +60,7 @@ public:
         AirSimSITL = 12,
 #endif
         CYGBOT_D1 = 13,
+        DroneCAN = 14,
     };
 
     enum class Status {
@@ -115,6 +120,9 @@ public:
     uint8_t get_object_count() const;
     bool get_object_angle_and_distance(uint8_t object_number, float& angle_deg, float &distance) const;
 
+    // get obstacle pitch and angle for a particular obstacle num
+    bool get_obstacle_info(uint8_t obstacle_num, float &angle_deg, float &pitch, float &distance) const;
+
     //
     // mavlink related methods
     //
@@ -158,6 +166,11 @@ public:
     // Check if Obstacle defined by body-frame yaw and pitch is near ground
     bool check_obstacle_near_ground(float pitch, float yaw, float distance) const;
 
+    // get proximity address (for AP_Periph CAN)
+    uint8_t get_address(uint8_t id) const {
+        return id >= PROXIMITY_MAX_INSTANCES? 0 : uint8_t(params[id].address.get());
+    }
+
 protected:
 
     // parameters for backends
@@ -188,6 +201,7 @@ private:
         uint32_t last_downward_update_ms;  // last update ms
     } _rangefinder_state;
 
+    HAL_Semaphore detect_sem;
 };
 
 namespace AP {

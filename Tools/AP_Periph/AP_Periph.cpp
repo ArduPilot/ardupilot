@@ -214,6 +214,17 @@ void AP_Periph_FW::init()
     }
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_PRX
+    if (proximity.get_type(0) != AP_Proximity::Type::None && g.proximity_port >= 0) {
+        auto *uart = hal.serial(g.proximity_port);
+        if (uart != nullptr) {
+            uart->begin(g.proximity_baud);
+            serial_manager.set_protocol_and_baud(g.proximity_port, AP_SerialManager::SerialProtocol_Lidar360, g.proximity_baud);
+            proximity.init();
+        }
+    }
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
     pwm_hardpoint_init();
 #endif

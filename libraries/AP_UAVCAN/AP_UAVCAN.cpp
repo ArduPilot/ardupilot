@@ -61,6 +61,7 @@
 #include <AP_Notify/AP_Notify.h>
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include "AP_UAVCAN_pool.h"
+#include <AP_Proximity/AP_Proximity_DroneCAN.h>
 
 #define LED_DELAY_US 50000
 
@@ -354,6 +355,10 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
 #endif
 #if HAL_EFI_DRONECAN_ENABLED
     AP_EFI_DroneCAN::subscribe_msgs(this);
+#endif
+
+#if AP_PROXIMITY_DRONECAN_ENABLED
+    AP_Proximity_DroneCAN::subscribe_msgs(this);
 #endif
 
     act_out_array[driver_index] = new uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>(*_node);

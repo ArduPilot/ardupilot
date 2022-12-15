@@ -90,14 +90,14 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
 
     // @Param: _DISARMED
     // @DisplayName: Enable logging while disarmed
-    // @Description: If LOG_DISARMED is set to 1 then logging will be enabled while disarmed. This can make for very large logfiles but can help a lot when tracking down startup issues
-    // @Values: 0:Disabled,1:Enabled
+    // @Description: If LOG_DISARMED is set to 1 then logging will be enabled at all times including when disarmed. Logging before arming can make for very large logfiles but can help a lot when tracking down startup issues and is necessary if logging of EKF replay data is selected via the LOG_REPLAY parameter. If LOG_DISARMED is set to 2, then logging will be enabled when disarmed, but not if a USB connection is detected. This can be used to prevent unwanted data logs being generated when the vehicle is connected via USB for log downloading or parameter changes.
+    // @Values: 0:Disabled,1:Enabled,2:Disabled on USB connection
     // @User: Standard
     AP_GROUPINFO("_DISARMED",  2, AP_Logger, _params.log_disarmed,       0),
 
     // @Param: _REPLAY
     // @DisplayName: Enable logging of information needed for Replay
-    // @Description: If LOG_REPLAY is set to 1 then the EKF2 state estimator will log detailed information needed for diagnosing problems with the Kalman filter. It is suggested that you also raise LOG_FILE_BUFSIZE to give more buffer space for logging and use a high quality microSD card to ensure no sensor data is lost
+    // @Description: If LOG_REPLAY is set to 1 then the EKF2 and EKF3 state estimators will log detailed information needed for diagnosing problems with the Kalman filter. LOG_DISARMED must be set to 1 or 2 or else the log will not contain the pre-flight data required for replay testing of the EKF's. It is suggested that you also raise LOG_FILE_BUFSIZE to give more buffer space for logging and use a high quality microSD card to ensure no sensor data is lost.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("_REPLAY",  3, AP_Logger, _params.log_replay,       0),
@@ -1468,7 +1468,7 @@ bool AP_Logger::log_while_disarmed(void) const
     if (_force_log_disarmed) {
         return true;
     }
-    if (_params.log_disarmed != 0) {
+    if (_params.log_disarmed == 1 || (_params.log_disarmed == 2 && !hal.gpio->usb_connected())) {
         return true;
     }
 
