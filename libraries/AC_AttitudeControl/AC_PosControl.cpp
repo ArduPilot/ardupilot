@@ -344,8 +344,9 @@ void AC_PosControl::input_pos_xyz(const Vector3p& pos, float pos_offset_z, float
     _accel_desired.z -= _accel_offset_z;
 
     // calculated increased maximum acceleration and jerk if over speed
-    float accel_max_z_cmss = _accel_max_z_cmss * calculate_overspeed_gain();
-    float jerk_max_z_cmsss = _jerk_max_z_cmsss * calculate_overspeed_gain();
+    const float overspeed_gain = calculate_overspeed_gain();
+    const float accel_max_z_cmss = _accel_max_z_cmss * overspeed_gain;
+    const float jerk_max_z_cmsss = _jerk_max_z_cmsss * overspeed_gain;
 
     update_pos_vel_accel_xy(_pos_target.xy(), _vel_desired.xy(), _accel_desired.xy(), _dt, _limit_vector.xy(), _p_pos_xy.get_error(), _pid_vel_xy.get_error());
 
@@ -780,10 +781,8 @@ void AC_PosControl::init_z_controller()
     _last_update_z_us = AP::ins().get_last_update_usec();
 }
 
-/// input_vel_accel_z - calculate a jerk limited path from the current position, velocity and acceleration to an input velocity and acceleration.
-///     The vel is projected forwards in time based on a time step of dt and acceleration accel.
+/// input_accel_z - calculate a jerk limited path from the current position, velocity and acceleration to an input acceleration.
 ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
-///     The function alters the vel to be the kinematic path based on accel
 void AC_PosControl::input_accel_z(float accel)
 {
     // calculated increased maximum jerk if over speed
@@ -807,8 +806,9 @@ void AC_PosControl::input_vel_accel_z(float &vel, float accel, bool ignore_desce
     }
 
     // calculated increased maximum acceleration and jerk if over speed
-    float accel_max_z_cmss = _accel_max_z_cmss * calculate_overspeed_gain();
-    float jerk_max_z_cmsss = _jerk_max_z_cmsss * calculate_overspeed_gain();
+    const float overspeed_gain = calculate_overspeed_gain();
+    const float accel_max_z_cmss = _accel_max_z_cmss * overspeed_gain;
+    const float jerk_max_z_cmsss = _jerk_max_z_cmsss * overspeed_gain;
 
     // adjust desired alt if motors have not hit their limits
     update_pos_vel_accel(_pos_target.z, _vel_desired.z, _accel_desired.z, _dt, _limit_vector.z, _p_pos_z.get_error(), _pid_vel_z.get_error());
@@ -859,8 +859,9 @@ void AC_PosControl::land_at_climb_rate_cm(float vel, bool ignore_descent_limit)
 void AC_PosControl::input_pos_vel_accel_z(float &pos, float &vel, float accel, bool limit_output)
 {
     // calculated increased maximum acceleration and jerk if over speed
-    float accel_max_z_cmss = _accel_max_z_cmss * calculate_overspeed_gain();
-    float jerk_max_z_cmsss = _jerk_max_z_cmsss * calculate_overspeed_gain();
+    const float overspeed_gain = calculate_overspeed_gain();
+    const float accel_max_z_cmss = _accel_max_z_cmss * overspeed_gain;
+    const float jerk_max_z_cmsss = _jerk_max_z_cmsss * overspeed_gain;
 
     // adjust desired altitude if motors have not hit their limits
     update_pos_vel_accel(_pos_target.z, _vel_desired.z, _accel_desired.z, _dt, _limit_vector.z, _p_pos_z.get_error(), _pid_vel_z.get_error());
