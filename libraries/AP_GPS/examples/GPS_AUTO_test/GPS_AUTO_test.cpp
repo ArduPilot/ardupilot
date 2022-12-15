@@ -23,6 +23,8 @@
 #include <AP_Notify/AP_BoardLED.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <SITL/SITL.h>
+#include <AP_Scheduler/AP_Scheduler.h>
 
 void setup();                                                   //This function is defined in most of the libraries. This function is called only once at boot up time. This function is called by main() function in HAL.
 void loop();                                                    //This function is defined in most of the libraries. This function is called by main function in HAL. The main work of the sketch is typically in this function only.
@@ -40,6 +42,12 @@ GCS_Dummy _gcs;                                                 //gcs stands for
 const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
         AP_GROUPEND
 };
+
+#if AP_SIM_ENABLED
+SITL::SIM sitl;
+AP_Baro baro;
+AP_Scheduler scheduler;
+#endif
 
 // This example uses GPS system. Create it.
 static AP_GPS gps;
