@@ -778,7 +778,7 @@ void ModeGuided::accel_control_run()
             auto_yaw.set_rate(0.0f);
         }
         pos_control->input_vel_accel_xy(guided_vel_target_cms.xy(), guided_accel_target_cmss.xy(), false);
-        pos_control->input_vel_accel_z(guided_vel_target_cms.z, guided_accel_target_cmss.z, false, false);
+        pos_control->input_vel_accel_z(guided_vel_target_cms.z, guided_accel_target_cmss.z, false);
     } else {
         // update position controller with new target
         pos_control->input_accel_xy(guided_accel_target_cmss);
@@ -865,7 +865,7 @@ void ModeGuided::velaccel_control_run()
         // set position errors to zero
         pos_control->stop_pos_xy_stabilisation();
     }
-    pos_control->input_vel_accel_z(guided_vel_target_cms.z, guided_accel_target_cmss.z, false, false);
+    pos_control->input_vel_accel_z(guided_vel_target_cms.z, guided_accel_target_cmss.z, false);
 
     // call velocity controller which includes z axis controller
     pos_control->update_xy_controller();
@@ -904,7 +904,7 @@ void ModeGuided::pause_control_run()
 
     // set the vertical velocity and acceleration targets to zero
     float vel_z = 0.0;
-    pos_control->input_vel_accel_z(vel_z, 0.0, false, false);
+    pos_control->input_vel_accel_z(vel_z, 0.0, false);
 
     // call velocity controller which includes z axis controller
     pos_control->update_xy_controller();
