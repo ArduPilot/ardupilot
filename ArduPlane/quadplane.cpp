@@ -1005,7 +1005,7 @@ void QuadPlane::check_yaw_reset(void)
 
 void QuadPlane::set_climb_rate_cms(float target_climb_rate_cms, bool force_descend)
 {
-    pos_control->input_vel_accel_z(target_climb_rate_cms, 0, force_descend);
+    pos_control->land_at_climb_rate_cm(target_climb_rate_cms, force_descend);
 }
 
 /*
