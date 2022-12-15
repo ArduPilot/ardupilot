@@ -171,15 +171,13 @@ class AutoTestPlane(AutoTest):
         while not success:
             if self.get_sim_time_cached() - tstart > 60:
                 raise NotAchievedException("Did not get correct failure reason")
-            self.send_mavlink_arm_command()
+            self.run_cmd_run_prearms()
             try:
                 self.wait_statustext(".*AHRS: not using configured AHRS type.*", timeout=1, check_context=True, regex=True)
                 success = True
                 continue
             except AutoTestTimeoutException:
                 pass
-            if self.armed():
-                raise NotAchievedException("Armed unexpectedly")
 
         self.set_parameter("SIM_GPS_DISABLE", 0)
         self.wait_ready_to_arm()
