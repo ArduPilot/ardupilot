@@ -67,7 +67,11 @@ public:
 
     // return the current airspeed ratio (dimensionless)
     float get_airspeed_ratio(uint8_t i) const {
+#ifndef HAL_BUILD_AP_PERIPH
         return param[i].ratio;
+#else
+        return 0.0;
+#endif
     }
     float get_airspeed_ratio(void) const { return get_airspeed_ratio(primary); }
 
@@ -76,10 +80,12 @@ public:
     bool get_temperature(float &temperature) { return get_temperature(primary, temperature); }
 
     // set the airspeed ratio (dimensionless)
+#ifndef HAL_BUILD_AP_PERIPH
     void set_airspeed_ratio(uint8_t i, float ratio) {
         param[i].ratio.set(ratio);
     }
     void set_airspeed_ratio(float ratio) { set_airspeed_ratio(primary, ratio); }
+#endif
 
     // return true if airspeed is enabled, and airspeed use is set
     bool use(uint8_t i) const;
@@ -178,17 +184,23 @@ private:
     AP_Float _wind_gate;
 
     struct {
+        AP_Int32 bus_id;
+#ifndef HAL_BUILD_AP_PERIPH
         AP_Float offset;
         AP_Float ratio;
+#endif
         AP_Float psi_range;
+#ifndef HAL_BUILD_AP_PERIPH
         AP_Int8  use;
-        AP_Int8  type;
         AP_Int8  pin;
-        AP_Int8  bus;
-        AP_Int8  autocal;
-        AP_Int8  tube_order;
         AP_Int8  skip_cal;
-        AP_Int32 bus_id;
+#endif
+        AP_Int8  type;
+        AP_Int8  bus;
+#if AP_AIRSPEED_AUTOCAL_ENABLE
+        AP_Int8  autocal;
+#endif
+        AP_Int8  tube_order;
     } param[AIRSPEED_MAX_SENSORS];
 
     struct airspeed_state {
@@ -265,7 +277,11 @@ private:
     void send_airspeed_calibration(const Vector3f &vg);
     // return the current calibration offset
     float get_offset(uint8_t i) const {
+#ifndef HAL_BUILD_AP_PERIPH
         return param[i].offset;
+#else
+        return 0.0;
+#endif
     }
     float get_offset(void) const { return get_offset(primary); }
 
