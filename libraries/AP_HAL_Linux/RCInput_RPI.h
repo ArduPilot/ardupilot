@@ -71,7 +71,7 @@ public:
     void* get_page(void **pages, const uint32_t addr) const;
 
     // This function returns offset from the beginning of the buffer using (virtual) address in 'pages' and memory_table.
-    uint32_t get_offset(void **pages, const uint32_t addr) const;
+    uint32_t get_offset(void **pages, const uint64_t addr) const;
 
     //How many bytes are available for reading in circle buffer?
     uint32_t bytes_available(const uint32_t read_addr, const uint32_t write_addr) const;
