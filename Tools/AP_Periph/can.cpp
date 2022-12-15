@@ -1861,7 +1861,7 @@ void AP_Periph_FW::can_update()
         for (uint8_t i=0; i<ARRAY_SIZE(dronecan_serial); i++) {
             // run send_data() on all serial tunnels
             if (dronecan_serial[i] != nullptr) {
-                dronecan_serial[i]->set_idle_time_us(periph.g.serial_idle_us[i]);
+                dronecan_serial[i]->set_buffer_time_us(periph.g.serial_buffer_us[i]);
                 dronecan_serial[i]->send_data();
             }
         }

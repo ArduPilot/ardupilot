@@ -81,16 +81,16 @@ public:
         k_param_serial_chan_id8,
         k_param_serial_chan_id9,
         k_param_serial_auto_passthrough_select,
-        k_param_serial_idle_us0,
-        k_param_serial_idle_us1,
-        k_param_serial_idle_us2,
-        k_param_serial_idle_us3,
-        k_param_serial_idle_us4,
-        k_param_serial_idle_us5,
-        k_param_serial_idle_us6,
-        k_param_serial_idle_us7,
-        k_param_serial_idle_us8,
-        k_param_serial_idle_us9,
+        k_param_serial_buffer_us0,
+        k_param_serial_buffer_us1,
+        k_param_serial_buffer_us2,
+        k_param_serial_buffer_us3,
+        k_param_serial_buffer_us4,
+        k_param_serial_buffer_us5,
+        k_param_serial_buffer_us6,
+        k_param_serial_buffer_us7,
+        k_param_serial_buffer_us8,
+        k_param_serial_buffer_us9,
     };
 
     AP_Int16 format_version;
@@ -193,7 +193,7 @@ public:
 
 #if HAL_ENABLE_SERIAL_TUNNEL
     AP_Int8 serial_chan_id[SERIALMANAGER_NUM_UART_PORTS];
-    AP_Int32 serial_idle_us[SERIALMANAGER_NUM_UART_PORTS];
+    AP_Int32 serial_buffer_us[SERIALMANAGER_NUM_UART_PORTS];
     AP_Int8 serial_auto_passthrough_select;
 #endif
     Parameters() {}

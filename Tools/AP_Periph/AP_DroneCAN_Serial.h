@@ -58,14 +58,14 @@ public:
     uint32_t set_passthrough_baud(uint32_t baud) { return baudrate = baud; }
     static AP_SerialManager::SerialProtocol tunnel_protocol_to_ap_protocol(uint8_t tunnel_protocol);
 
-    void set_idle_time_us(const uint32_t idle_time_us) {
-        _idle_time_us = idle_time_us;
+    void set_buffer_time_us(const uint32_t buffer_time_us) {
+        _buffer_time_us = buffer_time_us;
     }
 
     void send_data();
 private:
     int _channel_id;
-    uint32_t _idle_time_us;
+    uint32_t _buffer_time_us;
     uint8_t _protocol;
     bool _initialized = false;
     bool _connected = false; // true if a client has connected

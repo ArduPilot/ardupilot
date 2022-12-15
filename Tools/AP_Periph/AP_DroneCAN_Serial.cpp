@@ -85,10 +85,12 @@ size_t AP_DroneCAN_Serial::write(const uint8_t *buffer, size_t size)
     // we call send data here to split packets based on idle time
     size_t data_len = _writebuf.write(buffer, size);
     // we call here again to send immediately if idle time is zero
-    if (_idle_time_us == 0) {
+    if (_buffer_time_us == 0) {
         send_data();
     }
-    last_write_us = AP_HAL::micros64();
+    if (last_write_us == 0) {
+        last_write_us = AP_HAL::micros64();
+    }
     debug("write %d bytes", data_len);
     return data_len;
 }
@@ -101,13 +103,15 @@ void AP_DroneCAN_Serial::send_data()
     if (!send_sem.take_nonblocking()) {
         return;
     }
+    uavcan_tunnel_Broadcast msg;
     int16_t ret;
-    if ((AP_HAL::micros64() - last_write_us) < _idle_time_us) {
+    if ((AP_HAL::micros64() - last_write_us) < _buffer_time_us &&
+        _writebuf.available() < sizeof(msg.buffer.data)) {
         send_sem.give();
         return;
     }
+    last_write_us = 0;
     while (_writebuf.available()) {
-        uavcan_tunnel_Broadcast msg;
         uint8_t buffer[UAVCAN_TUNNEL_BROADCAST_MAX_SIZE];
         msg.buffer.len = _writebuf.peekbytes(msg.buffer.data, sizeof(msg.buffer.data));
         msg.protocol.protocol = _protocol;
