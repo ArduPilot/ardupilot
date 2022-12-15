@@ -798,13 +798,8 @@ void AC_PosControl::input_accel_z(float accel)
 ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
 ///     The kinematic path is constrained by the maximum acceleration and jerk set using the function set_max_speed_accel_z.
 ///     The parameter limit_output specifies if the velocity and acceleration limits are applied to the sum of commanded and correction values or just correction.
-void AC_PosControl::input_vel_accel_z(float &vel, float accel, bool ignore_descent_limit, bool limit_output)
+void AC_PosControl::input_vel_accel_z(float &vel, float accel, bool limit_output)
 {
-    if (ignore_descent_limit) {
-        // turn off limits in the negative z direction
-        _limit_vector.z = MAX(_limit_vector.z, 0.0f);
-    }
-
     // calculated increased maximum acceleration and jerk if over speed
     const float overspeed_gain = calculate_overspeed_gain();
     const float accel_max_z_cmss = _accel_max_z_cmss * overspeed_gain;
@@ -832,7 +827,7 @@ void AC_PosControl::set_pos_target_z_from_climb_rate_cm(float vel)
     _accel_desired.z -= _accel_offset_z;
 
     float vel_temp = vel;
-    input_vel_accel_z(vel_temp, 0, false);
+    input_vel_accel_z(vel_temp, 0.0);
 
     // update the vertical position, velocity and acceleration offsets
     update_pos_offset_z(_pos_offset_target_z);
@@ -848,7 +843,12 @@ void AC_PosControl::set_pos_target_z_from_climb_rate_cm(float vel)
 ///     ignore_descent_limit turns off output saturation handling to aid in landing detection. ignore_descent_limit should be false unless landing.
 void AC_PosControl::land_at_climb_rate_cm(float vel, bool ignore_descent_limit)
 {
-    input_vel_accel_z(vel, 0, ignore_descent_limit);
+    if (ignore_descent_limit) {
+        // turn off limits in the negative z direction
+        _limit_vector.z = MAX(_limit_vector.z, 0.0f);
+    }
+
+    input_vel_accel_z(vel, 0.0);
 }
 
 /// input_pos_vel_accel_z - calculate a jerk limited path from the current position, velocity and acceleration to an input position velocity and acceleration.
