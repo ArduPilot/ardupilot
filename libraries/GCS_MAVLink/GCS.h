@@ -92,16 +92,14 @@ bool check_payload_size(mavlink_channel_t chan, uint16_t max_payload_len);
 // then call its own specific methods on
 #define GCS_MAVLINK_CHAN_METHOD_DEFINITIONS(subclass_name) \
     subclass_name *chan(const uint8_t ofs) override {                   \
-        if (ofs > _num_gcs) {                                           \
-            INTERNAL_ERROR(AP_InternalError::error_t::gcs_offset);      \
+        if (ofs >= _num_gcs) {                                           \
             return nullptr;                                             \
         }                                                               \
         return (subclass_name *)_chan[ofs];                        \
     }                                                                   \
                                                                         \
     const subclass_name *chan(const uint8_t ofs) const override { \
-        if (ofs > _num_gcs) {                                           \
-            INTERNAL_ERROR(AP_InternalError::error_t::gcs_offset);      \
+        if (ofs >= _num_gcs) {                                           \
             return nullptr;                                             \
         }                                                               \
         return (subclass_name *)_chan[ofs];                        \
