@@ -38,6 +38,7 @@ AEROM_PATH_SCALE = bind_add_param('PATH_SCALE', 21, 1.0)
 AEROM_BOX_WIDTH = bind_add_param('BOX_WIDTH', 22, 400)
 AEROM_STALL_THR = bind_add_param('STALL_THR', 23, 40)
 AEROM_STALL_PIT = bind_add_param('STALL_PIT', 24, -20)
+AEROM_KE_TC = bind_add_param('KE_TC', 25, 0.5)
 
 -- cope with old param values
 if AEROM_ANG_ACCEL:get() < 100 and AEROM_ANG_ACCEL:get() > 0 then
@@ -186,18 +187,26 @@ local function calc_lowpass_alpha(dt, time_constant)
    return dt/(dt+rc)
 end
 
---[[ get the c.y element of the DCM body to earth matrix, which gives
+--[[ get the c.y element of a quaternion, which gives
    the projection of the vehicle y axis in the down direction
+   This is equal to sin(roll)*cos(pitch)
 --]]
-local function get_ahrs_dcm_c_y()
-   local ahrs_quat = ahrs:get_quaternion()
-   local q1 = ahrs_quat:q1()
-   local q2 = ahrs_quat:q2()
-   local q3 = ahrs_quat:q3()
-   local q4 = ahrs_quat:q4()
+local function get_quat_dcm_c_y(q)
+   local q1 = q:q1()
+   local q2 = q:q2()
+   local q3 = q:q3()
+   local q4 = q:q4()
    local q3q4 = q3 * q4
    local q1q2 = q1 * q2
    return 2*(q3q4 + q1q2)
+end
+
+--[[ get the c.y element of the DCM body to earth matrix, which gives
+   the projection of the vehicle y axis in the down direction
+   This is equal to sin(roll)*cos(pitch)
+--]]
+local function get_ahrs_dcm_c_y()
+   return get_quat_dcm_c_y(ahrs:get_quaternion())
 end
 
 -- a PI controller implemented as a Lua object
@@ -1795,9 +1804,7 @@ function do_path()
       path_var.filtered_angular_velocity = Vector3f()
 
       path_var.last_time = now - 1.0/LOOP_RATE
-      path_var.sideslip_angle_rad = { 0.0, 0.0 }
       path_var.ff_yaw_rate_rads = 0.0
-      path_var.last_q_change_t = 1.0 / LOOP_RATE
       path_var.last_ang_rate_dps = ahrs_gyro:scale(math.deg(1))
 
       path_var.path_t = 0.0
@@ -2066,27 +2073,15 @@ function do_path()
    --[[
       calculate an additional yaw rate to get us to the right angle of sideslip for knifeedge
    --]]
-   local g_force = (path_rate_ef_rads:cross(v)):scale(1.0/GRAVITY_MSS)
-   local specific_force_g_ef = g_force - makeVector3f(0,0,-1)
-   local specific_force_g_bf = quat_earth_to_body(orientation_rel_ef_with_roll_angle, specific_force_g_ef)
+   -- look ahead by AEROM_KE_TC seconds to get predicted attitude
+   local lookahead_rotation = Quaternion()
+   lookahead_rotation:from_angular_velocity(path_rate_bf_dps:scale(math.rad(1)), AEROM_KE_TC:get())
+   local lkahead_q = orientation_rel_ef_with_roll_angle * lookahead_rotation
+   -- get sin(roll)*cos(pitch) for scaling the KE angle
+   local ke_angle = get_quat_dcm_c_y(lkahead_q)
+   -- scale by square of airspeed
    local airspeed_scaling = SCALING_SPEED:get()/airspeed_constrained
-
-   local sideslip_rad = specific_force_g_bf:y() * (airspeed_scaling*airspeed_scaling) * math.rad(AEROM_KE_ANG:get())
-   local ff_yaw_rate_rads1 = -(sideslip_rad - path_var.sideslip_angle_rad[2]) / q_change_t
-   local ff_yaw_rate_rads2 = -(path_var.sideslip_angle_rad[2] - path_var.sideslip_angle_rad[1]) / path_var.last_q_change_t
-   local ff_yaw_rate_rads = 0.5 * (ff_yaw_rate_rads1 + ff_yaw_rate_rads2)
-
-   if path_var.count <= 4 then
-      -- prevent an initialisation issue
-      ff_yaw_rate_rads = 0.0
-   end
-
-   ff_yaw_rate_rads = 0.8 * path_var.ff_yaw_rate_rads + 0.2 * ff_yaw_rate_rads
-   path_var.ff_yaw_rate_rads = ff_yaw_rate_rads
-
-   path_var.sideslip_angle_rad[1] = path_var.sideslip_angle_rad[2]
-   path_var.sideslip_angle_rad[2] = sideslip_rad
-   path_var.last_q_change_t = q_change_t
+   local ff_yaw_rate_rads = math.rad(AEROM_KE_ANG:get()) * (-ke_angle) * sq(airspeed_scaling)
 
    local sideslip_rate_bf_dps = makeVector3f(0, 0, ff_yaw_rate_rads):scale(math.deg(1))
 
@@ -2129,15 +2124,14 @@ function do_path()
                 q_change_t,
                 actual_dt)
 
-   logger.write('AERT','Cx,Cy,Cz,Px,Py,Pz,Ex,Tx,Ty,Tz,Perr,Aerr,Yff,SS', 'ffffffffffffff',
+   logger.write('AERT','Cx,Cy,Cz,Px,Py,Pz,Ex,Tx,Ty,Tz,Perr,Aerr,Yff', 'fffffffffffff',
                 cor_ang_vel_bf_dps:x(), cor_ang_vel_bf_dps:y(), cor_ang_vel_bf_dps:z(),
                 path_rate_bf_dps:x(), path_rate_bf_dps:y(), path_rate_bf_dps:z(),
                 err_angle_rate_bf_dps:x(),
                 tot_ang_vel_bf_dps:x(), tot_ang_vel_bf_dps:y(), tot_ang_vel_bf_dps:z(),
                 pos_error_ef:length(),
                 wrap_180(math.deg(err_angle_rad)),
-                math.deg(ff_yaw_rate_rads),
-                math.deg(sideslip_rad))
+                math.deg(ff_yaw_rate_rads))
 
    --log_pose('POSB', p1, path_var.accumulated_orientation_rel_ef)
 
