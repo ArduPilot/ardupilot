@@ -545,6 +545,14 @@ void AP_GPS_UAVCAN::handle_aux_msg(const AuxCb &cb)
 
 void AP_GPS_UAVCAN::handle_heading_msg(const HeadingCb &cb)
 {
+#if GPS_MOVING_BASELINE
+    if (seen_relposheading && gps.mb_params[interim_state.instance].type.get() != 0) {
+        // we prefer to use the relposheading to get yaw as it allows
+        // the user to more easily control the relative antenna positions
+        return;
+    }
+#endif
+
     WITH_SEMAPHORE(sem);
 
     if (interim_state.gps_yaw_configured == false) {
@@ -606,6 +614,7 @@ void AP_GPS_UAVCAN::handle_relposheading_msg(const RelPosHeadingCb &cb, uint8_t 
     WITH_SEMAPHORE(sem);
 
     interim_state.gps_yaw_configured = true;
+    seen_relposheading = true;
     // push raw heading data to calculate moving baseline heading states
     if (calculate_moving_base_yaw(interim_state,
                                 cb.msg->reported_heading_deg,
