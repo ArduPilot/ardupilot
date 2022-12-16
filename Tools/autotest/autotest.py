@@ -10,11 +10,6 @@ from __future__ import print_function
 import atexit
 import fnmatch
 import copy
-try:
-    import distutils.dir_util
-except ImportError:
-    # we copy with this with try/except in copy_tree, below
-    pass
 import glob
 import optparse
 import os
@@ -666,10 +661,7 @@ class TestResults(object):
 
 
 def copy_tree(f, t, dirs_exist_ok=False):
-    try:
-        distutils.dir_util.copy_tree(f, t)
-    except Exception:
-        shutil.copytree(f, t, dirs_exist_ok=dirs_exist_ok)
+    shutil.copytree(f, t, dirs_exist_ok=dirs_exist_ok)
 
 
 def write_webresults(results_to_write):
