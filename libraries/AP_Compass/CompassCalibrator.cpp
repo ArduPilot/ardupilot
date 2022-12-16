@@ -189,6 +189,7 @@ void CompassCalibrator::update()
     if (_status == Status::RUNNING_STEP_ONE) {
         if (_fit_step >= 10) {
             if (is_equal(_fitness, _initial_fitness) || isnan(_fitness)) {  // if true, means that fitness is diverging instead of converging
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "CompassCal: Calibration routine failed to find solution");
                 set_status(Status::FAILED);
             } else {
                 set_status(Status::RUNNING_STEP_TWO);
@@ -202,9 +203,16 @@ void CompassCalibrator::update()
         }
     } else if (_status == Status::RUNNING_STEP_TWO) {
         if (_fit_step >= 35) {
-            if (fit_acceptable() && fix_radius() && calculate_orientation()) {
+            bool is_fit_acceptable = fit_acceptable();
+            bool radius_fixed = fix_radius();
+            bool orientation_calculated = calculate_orientation();
+            if (is_fit_acceptable && radius_fixed && orientation_calculated) {
                 set_status(Status::SUCCESS);
             } else {
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "CompassCal: fit acceptable: %s, fix radius: %s, calculate orientation: %s",
+                              is_fit_acceptable?"true":"false",
+                              radius_fixed?"true":"false", 
+                              orientation_calculated?"true":"false");
                 set_status(Status::FAILED);
             }
         } else if (_fit_step < 15) {
@@ -478,6 +486,13 @@ bool CompassCalibrator::fit_acceptable() const
         fabsf(_params.offdiag.z) < 1.0f ) {
             return _fitness <= sq(_tolerance);
         }
+    // display reason for failure
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CompassCal: is_fitness_nan: %s", isnan(_fitness)?"true":"false");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CompassCal: radius within limits: %s", (_params.radius > FIELD_RADIUS_MIN && _params.radius < FIELD_RADIUS_MAX)?"true":"false");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CompassCal: offset within limits: %s", (fabsf(_params.offset.x) < _offset_max && fabsf(_params.offset.y) < _offset_max && fabsf(_params.offset.z) < _offset_max)?"true":"false");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CompassCal: diag within limits: %s", (_params.diag.x > 0.2f && _params.diag.x < 5.0f && _params.diag.y > 0.2f && _params.diag.y < 5.0f && _params.diag.z > 0.2f && _params.diag.z < 5.0f)?"true":"false");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CompassCal: offdiag within limits: %s", (fabsf(_params.offdiag.x) < 1.0f && fabsf(_params.offdiag.y) < 1.0f && fabsf(_params.offdiag.z) < 1.0f)?"true":"false");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CompassCal: fitness within limits: %s", (_fitness <= sq(_tolerance))?"true":"false");
     return false;
 }
 
