@@ -14,7 +14,7 @@ import os
 OFFSET = '#' if os.getenv('BRDOC') else ''
 
 # Parameter groups disabled at compile time (Vehicle-specific)
-sub_blacklist = ['AVOID_', 'CIRCLE_', 'FLOW', 'MIS_', 'PRX', 'RALLY_', 'RCMAP_', 'RPM', 'TERRAIN_', 'WPNAV_']
+sub_blacklist = ['RCMAP_', 'TERRAIN_']
 
 # Parameter groups with redundant information (ie RCn_, SERVOn_)
 # We can keep the documentation concise by only documenting these once
@@ -46,7 +46,7 @@ draft = false
 toc = true
 top = false""" % now
         
-        self.preamble = """\nThis is a complete list of the parameters which can be set via the MAVLink protocol in the EEPROM of your autopilot to control vehicle behaviour. This list is automatically generated from the latest ardupilot source code, and so may contain parameters which are not yet in the stable released versions of the code. Some parameters may only be available for developers, and are enabled at compile-time."""
+        self.preamble = """\nThis is a complete list of the parameters which can be set via the MAVLink protocol in the EEPROM of your autopilot to control vehicle behaviour. Some parameters may only be available for developers, and are enabled at compile-time."""
         self.t = ''
 
     def close(self):
