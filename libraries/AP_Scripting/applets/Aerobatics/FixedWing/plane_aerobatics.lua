@@ -2392,6 +2392,10 @@ function check_auto_mission()
       last_id = id
       local initial_yaw_deg = get_ground_course_deg()
       load_trick(cmd)
+      if command_table[cmd] == nil then
+         gcs:send_text(0, string.format("Trick %u not found", cmd))
+         return
+      end
       gcs:send_text(0, string.format("Starting %s!", command_table[cmd].name ))
 
       -- work out yaw between previous WP and next WP
