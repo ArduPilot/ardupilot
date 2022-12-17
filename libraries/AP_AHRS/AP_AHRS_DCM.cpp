@@ -1254,3 +1254,9 @@ bool AP_AHRS_DCM::get_relative_position_D_origin(float &posD) const
 void AP_AHRS_DCM::send_ekf_status_report(GCS_MAVLINK &link) const
 {
 }
+
+// return true if DCM has a yaw source available
+bool AP_AHRS_DCM::yaw_source_available(void) const
+{
+    return AP::compass().use_for_yaw();
+}

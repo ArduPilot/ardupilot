@@ -1904,6 +1904,11 @@ AP_AHRS::EKFType AP_AHRS::active_EKF_type(void) const
     if (ret != EKFType::NONE &&
         (_vehicle_class == VehicleClass::FIXED_WING ||
          _vehicle_class == VehicleClass::GROUND)) {
+        if (!dcm.yaw_source_available() && !fly_forward) {
+            // if we don't have a DCM yaw source available and we are
+            // in a non-fly-forward mode then we are best off using the EKF
+            return ret;
+        }
         bool should_use_gps = true;
         nav_filter_status filt_state;
 #if HAL_NAVEKF2_AVAILABLE
