@@ -228,7 +228,7 @@ private:
     void hold_stabilize(float throttle_in);
 
     // set climb rate in position controller
-    void set_climb_rate_cms(float target_climb_rate_cms, bool force_descend);
+    void set_climb_rate_cms(float target_climb_rate_cms);
 
     // get pilot desired yaw rate in cd/s
     float get_pilot_input_yaw_rate_cds(void) const;
