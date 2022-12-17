@@ -88,7 +88,7 @@ void ModeQRTL::run()
                                                                           quadplane.get_weathervane_yaw_rate_cds());
 
             // climb at full WP nav speed
-            quadplane.set_climb_rate_cms(quadplane.wp_nav->get_default_speed_up(), false);
+            quadplane.set_climb_rate_cms(quadplane.wp_nav->get_default_speed_up());
             quadplane.run_z_controller();
 
             ftype alt_diff;
