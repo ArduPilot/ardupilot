@@ -3,6 +3,18 @@
 """
 Contains functions used to test the ArduPilot build_options.py structures
 
+To extract feature sizes:
+
+cat >> /tmp/extra-hwdef.dat <<EOF
+undef AP_BARO_MS56XX_ENABLED
+define AP_BARO_MS56XX_ENABLED 1
+EOF
+
+nice time ./Tools/autotest/test_build_options.py --board=CubeOrange --extra-hwdef=/tmp/extra-hwdef.dat --no-run-with-defaults --no-disable-all --no-enable-in-turn | tee /tmp/tbo-out  # noqa
+grep 'sabling.*saves' /tmp/tbo-out
+
+ - note that a lot of the time explicitly disabling features will make the binary larger as the ROMFS includes the generated hwdef.h which will have the extra define in it  # noqa
+
 AP_FLAKE8_CLEAN
 """
 
@@ -13,6 +25,15 @@ import optparse
 import os
 
 from pysim import util
+
+
+class TestBuildOptionsResult(object):
+    '''object to return results from a comparison'''
+
+    def __init__(self, feature, vehicle, bytes_delta):
+        self.feature = feature
+        self.vehicle = vehicle
+        self.bytes_delta = bytes_delta
 
 
 class TestBuildOptions(object):
@@ -38,6 +59,7 @@ class TestBuildOptions(object):
         if self.build_targets is None:
             self.build_targets = self.all_targets()
         self._board = board
+        self.results = {}
 
     @staticmethod
     def all_targets():
@@ -174,6 +196,27 @@ class TestBuildOptions(object):
             ret[target] = os.path.getsize(path)
         return ret
 
+    def csv_for_results(self, results):
+        '''return a string with csv for results'''
+        features = sorted(results.keys())
+        all_vehicles = set()
+        for feature in features:
+            all_vehicles.update(list(results[feature].keys()))
+        sorted_all_vehicles = sorted(list(all_vehicles))
+        ret = ""
+        ret += ",".join(["Feature"] + sorted_all_vehicles) + "\n"
+        for feature in features:
+            line = [feature]
+            feature_results = results[feature]
+            for vehicle in sorted_all_vehicles:
+                bytes_delta = ""
+                if vehicle in feature_results:
+                    result = feature_results[vehicle]
+                    bytes_delta = result.bytes_delta
+                line.append(str(bytes_delta))
+            ret += ",".join(line) + "\n"
+        return ret
+
     def disable_in_turn_check_sizes(self, feature, sizes_nothing_disabled):
         if not self.do_step_disable_none:
             self.progress("disable-none skipped, size comparison not available")
@@ -183,13 +226,18 @@ class TestBuildOptions(object):
             old_size = sizes_nothing_disabled[build]
             self.progress("Disabling %s(%s) on %s saves %u bytes" %
                           (feature.label, feature.define, build, old_size - new_size))
+            if feature.define not in self.results:
+                self.results[feature.define] = {}
+            self.results[feature.define][build] = TestBuildOptionsResult(feature.define, build, old_size - new_size)
+            with open("/tmp/some.csv", "w") as f:
+                f.write(self.csv_for_results(self.results))
 
     def run_disable_in_turn(self):
         options = self.get_build_options_from_ardupilot_tree()
         if self.match_glob is not None:
             options = list(filter(lambda x : fnmatch.fnmatch(x.define, self.match_glob), options))
         count = 1
-        for feature in options:
+        for feature in sorted(options, key=lambda x : x.define):
             self.progress("Disabling feature %s(%s) (%u/%u)" %
                           (feature.label, feature.define, count, len(options)))
             self.test_disable_feature(feature, options)
@@ -204,7 +252,7 @@ class TestBuildOptions(object):
         for feature in options:
             self.progress("Enabling feature %s(%s) (%u/%u)" %
                           (feature.label, feature.define, count, len(options)))
-            self.test_enable_feature(feature, options)
+            self.test_enable_feature(feature.label, options)
             count += 1
 
     def get_option_by_label(self, label, options):
