@@ -1003,9 +1003,9 @@ void QuadPlane::check_yaw_reset(void)
     }
 }
 
-void QuadPlane::set_climb_rate_cms(float target_climb_rate_cms, bool force_descend)
+void QuadPlane::set_climb_rate_cms(float target_climb_rate_cms)
 {
-    pos_control->land_at_climb_rate_cm(target_climb_rate_cms, force_descend);
+    pos_control->input_vel_accel_z(target_climb_rate_cms, 0, false);
 }
 
 /*
@@ -1023,7 +1023,7 @@ void QuadPlane::hold_hover(float target_climb_rate_cms)
     multicopter_attitude_rate_update(get_desired_yaw_rate_cds(false));
 
     // call position controller
-    set_climb_rate_cms(target_climb_rate_cms, false);
+    set_climb_rate_cms(target_climb_rate_cms);
 
     run_z_controller();
 }
@@ -2790,7 +2790,7 @@ void QuadPlane::vtol_position_controller(void)
             float zero = 0;
             pos_control->input_pos_vel_accel_z(target_z, zero, 0);
         } else {
-            set_climb_rate_cms(0, false);
+            set_climb_rate_cms(0);
         }
         break;
     }
@@ -2804,7 +2804,7 @@ void QuadPlane::vtol_position_controller(void)
             }
         }
         const float descent_rate_cms = landing_descent_rate_cms(height_above_ground);
-        set_climb_rate_cms(-descent_rate_cms, descent_rate_cms>0);
+        pos_control->land_at_climb_rate_cm(-descent_rate_cms, descent_rate_cms>0);
         break;
     }
 
@@ -2952,10 +2952,10 @@ void QuadPlane::takeoff_controller(void)
             vel_z = 0;
             pos_control->input_pos_vel_accel_z(pos_z, vel_z, 0);
         } else {
-            set_climb_rate_cms(vel_z, false);
+            set_climb_rate_cms(vel_z);
         }
     } else {
-        set_climb_rate_cms(vel_z, false);
+        set_climb_rate_cms(vel_z);
     }
 
     run_z_controller();
@@ -3000,7 +3000,7 @@ void QuadPlane::waypoint_controller(void)
                                                        true);
 
     // climb based on altitude error
-    set_climb_rate_cms(assist_climb_rate_cms(), false);
+    set_climb_rate_cms(assist_climb_rate_cms());
     run_z_controller();
 }
 
