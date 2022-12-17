@@ -538,7 +538,7 @@ void GPS::update_nmea(const struct gps_data *d)
                      lng_string,
                      d->have_lock?1:0,
                      d->have_lock?_sitl->gps_numsats[instance]:3,
-                     2.0,
+                     1.2,
                      d->altitude);
     const float speed_mps = norm(d->speedN, d->speedE);
     const float speed_knots = speed_mps * M_PER_SEC_TO_KNOTS;
