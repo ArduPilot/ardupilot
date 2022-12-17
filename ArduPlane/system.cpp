@@ -243,18 +243,6 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
         return false;
     }
 
-#if !QAUTOTUNE_ENABLED
-    if (&new_mode == &plane.mode_qautotune) {
-        gcs().send_text(MAV_SEVERITY_INFO,"QAUTOTUNE disabled");
-        set_mode(plane.mode_qhover, ModeReason::UNAVAILABLE);
-        // make sad noise
-        if (reason != ModeReason::INITIALISED) {
-            AP_Notify::events.user_mode_change_failed = 1;
-        }
-        return false;
-    }
-#endif  // !QAUTOTUNE_ENABLED
-
 #else
     if (new_mode.is_vtol_mode()) {
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
