@@ -30,11 +30,11 @@ USER ${USER_NAME}
 ENV SKIP_AP_EXT_ENV=1 SKIP_AP_GRAPHIC_ENV=1 SKIP_AP_COV_ENV=1 SKIP_AP_GIT_CHECK=1
 RUN Tools/environment_install/install-prereqs-ubuntu.sh -y
 
-# add waf alias to ardupilot waf to .bashrc
-RUN echo "alias waf=\"/${USER_NAME}/waf\"" >> ~/ardupilot_entrypoint.sh
+# add waf alias to ardupilot waf to .ardupilot_env
+RUN echo "alias waf=\"/${USER_NAME}/waf\"" >> ~/.ardupilot_env
 
 # Check that local/bin are in PATH for pip --user installed package
-RUN echo "if [ -d \"\$HOME/.local/bin\" ] ; then\nPATH=\"\$HOME/.local/bin:\$PATH\"\nfi" >> ~/ardupilot_entrypoint.sh
+RUN echo "if [ -d \"\$HOME/.local/bin\" ] ; then\nPATH=\"\$HOME/.local/bin:\$PATH\"\nfi" >> ~/.ardupilot_env
 
 # Create entrypoint as docker cannot do shell substitution correctly
 RUN export ARDUPILOT_ENTRYPOINT="/home/${USER_NAME}/ardupilot_entrypoint.sh" \
