@@ -6598,7 +6598,7 @@ class AutoTest(ABC):
         if seq != wpnum:
             raise NotAchievedException("Incorrect current wp")
 
-    def wait_current_waypoint(self, wpnum, timeout=60):
+    def wait_current_waypoint(self, wpnum, timeout=70):
         tstart = self.get_sim_time()
         while True:
             if self.get_sim_time() - tstart > timeout:
