@@ -244,6 +244,9 @@ public:
     // allow the enable flag to be set by Replay
     void set_enable(bool enable) { _enable.set_enable(enable); }
 
+    // get the enable parameter
+    bool get_enable(void) const { return bool(_enable.get()); }
+    
     /*
      * Write position and quaternion data from an external navigation system
      *
