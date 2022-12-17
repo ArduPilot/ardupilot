@@ -450,8 +450,6 @@ bool AP_GPS_NMEA::_term_complete()
             _sentence_type = _GPS_SENTENCE_GGA;
         } else if (strcmp(term_type, "HDT") == 0) {
             _sentence_type = _GPS_SENTENCE_HDT;
-            // HDT doesn't have a data qualifier
-            _gps_data_good = true;
         } else if (strcmp(term_type, "THS") == 0) {
             _sentence_type = _GPS_SENTENCE_THS;
         } else if (strcmp(term_type, "VTG") == 0) {
@@ -532,6 +530,8 @@ bool AP_GPS_NMEA::_term_complete()
             break;
         case _GPS_SENTENCE_HDT + 1: // Course (HDT)
             _new_gps_yaw = _parse_decimal_100(_term);
+            // HDT doesn't have a data qualifier
+            _gps_data_good = true;
             break;
         case _GPS_SENTENCE_THS + 1: // Course (THS)
             _new_gps_yaw = _parse_decimal_100(_term);
