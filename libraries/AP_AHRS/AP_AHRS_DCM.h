@@ -124,6 +124,9 @@ public:
 
     void send_ekf_status_report(class GCS_MAVLINK &link) const override;
 
+    // return true if DCM has a yaw source
+    bool yaw_source_available(void) const;
+
 private:
 
     // settable parameters
