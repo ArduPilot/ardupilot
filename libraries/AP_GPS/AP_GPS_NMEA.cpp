@@ -48,6 +48,9 @@ extern const AP_HAL::HAL& hal;
 #define AP_GPS_NMEA_CONFIG_PERIOD_MS 15000U
 #endif
 
+// a quiet nan for invalid values
+#define QNAN nanf("GPS")
+
 // Convenience macros //////////////////////////////////////////////////////////
 //
 #define DIGIT_TO_VAL(_x)        (_x - '0')
@@ -120,6 +123,7 @@ bool AP_GPS_NMEA::_decode(char c)
         _is_checksum_term = false;
         _sentence_length = 1;
         _sentence_done = false;
+        _new_gps_yaw = QNAN;
         return false;
     }
 
@@ -375,6 +379,10 @@ bool AP_GPS_NMEA::_term_complete()
             case _GPS_SENTENCE_THS:
                 if (_last_AGRICA_ms != 0 || _expect_agrica) {
                     // use AGRICA
+                    break;
+                }
+                if (isnan(_new_gps_yaw)) {
+                    // empty sentence
                     break;
                 }
                 _last_yaw_ms = now;
