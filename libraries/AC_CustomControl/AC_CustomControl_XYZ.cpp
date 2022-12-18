@@ -1,26 +1,26 @@
 #include "AC_CustomControl_XYZ.h"
 
-#if CUSTOMCONTROL_EMPTY_ENABLED
+#if CUSTOMCONTROL_XYZ_ENABLED
 
 #include <GCS_MAVLink/GCS.h>
 
 // table of user settable parameters
 const AP_Param::GroupInfo AC_CustomControl_XYZ::var_info[] = {
     // @Param: PARAM1
-    // @DisplayName: Empty param1
-    // @Description: Dumy parameter for empty custom controller backend
+    // @DisplayName: XYZ param1
+    // @Description: Dumy parameter for XYZ custom controller backend
     // @User: Advanced
     AP_GROUPINFO("PARAM1", 1, AC_CustomControl_XYZ, param1, 0.0f),
 
     // @Param: PARAM2
-    // @DisplayName: Empty param2
-    // @Description: Dumy parameter for empty custom controller backend
+    // @DisplayName: XYZ param2
+    // @Description: Dumy parameter for XYZ custom controller backend
     // @User: Advanced
     AP_GROUPINFO("PARAM2", 2, AC_CustomControl_XYZ, param2, 0.0f),
 
     // @Param: PARAM3
-    // @DisplayName: Empty param3
-    // @Description: Dumy parameter for empty custom controller backend
+    // @DisplayName: XYZ param3
+    // @Description: Dumy parameter for XYZ custom controller backend
     // @User: Advanced
     AP_GROUPINFO("PARAM3", 3, AC_CustomControl_XYZ, param3, 0.0f),
 
@@ -57,7 +57,7 @@ Vector3f AC_CustomControl_XYZ::update(void)
     // arducopter main attitude controller already runned
     // we don't need to do anything else
 
-    gcs().send_text(MAV_SEVERITY_INFO, "empty custom controller working");
+    gcs().send_text(MAV_SEVERITY_INFO, "XYZ custom controller working");
 
     // return what arducopter main controller outputted
     return Vector3f(_motors->get_roll(), _motors->get_pitch(), _motors->get_yaw());
