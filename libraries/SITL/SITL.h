@@ -209,6 +209,9 @@ public:
     AP_Float gps_init_lon_ofs;
     AP_Float gps_init_alt_ofs;
 
+    // log number for GPS::update_file()
+    AP_Int16 gps_log_num;
+
     AP_Float batt_voltage; // battery voltage base
     AP_Float batt_capacity_ah; // battery capacity in Ah
     AP_Int8  rc_fail;     // fail RC input

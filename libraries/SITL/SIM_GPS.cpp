@@ -1023,7 +1023,7 @@ void GPS::update_file()
 {
     static int fd[2] = {-1,-1};
     static uint32_t base_time[2];
-    const uint16_t lognum = 9;
+    const uint16_t lognum = uint16_t(_sitl->gps_log_num.get());
     if (instance > 1) {
         return;
     }

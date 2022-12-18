@@ -376,6 +376,8 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     AP_GROUPINFO("INIT_LON_OFS",  46, SIM,  gps_init_lon_ofs, 0),
     AP_GROUPINFO("INIT_ALT_OFS",  47, SIM,  gps_init_alt_ofs, 0),
 
+    AP_GROUPINFO("GPS_LOG_NUM",   48, SIM,  gps_log_num, 0),
+
     AP_GROUPEND
 };
 #endif  // HAL_SIM_GPS_ENABLED
