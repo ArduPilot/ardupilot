@@ -1,4 +1,4 @@
-# 42605
+#ICM-42688
 # Con i suggerimenti di andhi
 # LUMINOUS BEE 5.32 bidirectional telemetry - BETA 
 # hw definition file for processing by chibios_hwdef.py
@@ -122,7 +122,7 @@ PD1 CAN1_TX CAN1
 
 # USART2 serial2 telem1
 
-PD3 icm42605_CS CS # ex usart2 RTS
+PD3 icm42688_CS CS # ex usart2 RTS
 
 PD5 USART2_TX USART2
 PD6 USART2_RX USART2
@@ -148,7 +148,7 @@ PE1 UART8_TX UART8
 
 
 
-#set up SPI bus4 for UWB
+#set up SPI bus4 for icm42688
 PE2 SPI4_SCK SPI4
 PE5 SPI4_MISO SPI4
 PE6 SPI4_MOSI SPI4
@@ -187,7 +187,7 @@ SPIDEV hmc5843     SPI1 DEVID5  MAG_CS     MODE3  11*MHZ  11*MHZ
 #SPIDEV bmi088_a    SPI1 DEVID2  BMI088_ACCEL_CS   MODE3 10*MHZ 10*MHZ
 SPIDEV ramtron     SPI2 DEVID10 FRAM_CS    		MODE3   8*MHZ   8*MHZ
 #SPIDEV dwm1000     SPI4 DEVID5  UWB_CS     		MODE0   3*MHZ  20*MHZ
-SPIDEV icm42605     SPI4 DEVID4  icm42605_CS     		MODE3   16*MHZ  16*MHZ
+SPIDEV icm42688     SPI4 DEVID4  icm42688_CS     		MODE3   16*MHZ  16*MHZ
 
 
 define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
@@ -235,8 +235,9 @@ define BOARD_PWM_COUNT_DEFAULT 7
 
 # two IMUs
 #IMU Invensense SPI:icm20608 ROTATION_YAW_180
-IMU Invensensev3 SPI:icm42605 ROTATION_NONE
+#IMU Invensensev3 SPI:icm42605 ROTATION_NONE
 #IMU BMI088       SPI:bmi088_a SPI:bmi088_g ROTATION_ROLL_180_YAW_90
+IMU Invensensev3 SPI:icm42688 ROTATION_NONE
 define HAL_DEFAULT_INS_FAST_SAMPLE 1
 
 # 2 compasses. R15 has LIS3MDL instead of HMC5843
