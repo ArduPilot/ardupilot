@@ -92,6 +92,8 @@ void AP_OpenDroneID::init()
     if (_enable == 0) {
         return;
     }
+    last_system_ms = 0;
+    last_location_ms = 0;
 
     _chan = mavlink_channel_t(gcs().get_channel_from_port_number(_mav_port));
 }
@@ -104,11 +106,6 @@ bool AP_OpenDroneID::pre_arm_check(char* failmsg, uint8_t failmsg_len)
 
     if (!option_enabled(Options::EnforceArming)) {
         return true;
-    }
-
-    if (pkt_basic_id.id_type == MAV_ODID_ID_TYPE_NONE) {
-        strncpy(failmsg, "UA_TYPE required in BasicID", failmsg_len);
-        return false;
     }
 
     if (pkt_system.operator_latitude == 0 && pkt_system.operator_longitude == 0) {
@@ -130,7 +127,13 @@ bool AP_OpenDroneID::pre_arm_check(char* failmsg, uint8_t failmsg_len)
         strncpy(failmsg, "SYSTEM not available", failmsg_len);
         return false;
     }
-    
+
+    if (last_location_ms == 0 ||
+        (now_ms - last_location_ms > max_age_ms)) {
+        strncpy(failmsg, "LOCATION not available or invalid", failmsg_len);
+        return false;
+    }
+
     if (arm_status.status != MAV_ODID_GOOD_TO_ARM) {
         strncpy(failmsg, arm_status.error, failmsg_len);
         return false;
@@ -198,7 +201,7 @@ void AP_OpenDroneID::send_static_out()
         last_lost_operator_msg_ms = now_ms;
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ODID: lost operator location");
     }
-    
+
     const uint32_t msg_spacing_ms = _mavlink_static_period_ms / 4;
     if (now_ms - last_msg_send_ms >= msg_spacing_ms) {
         // allow update of channel during setup, this makes it easy to debug with a GCS
@@ -343,6 +346,7 @@ void AP_OpenDroneID::send_location_message()
         uint32_t time_week_ms = gps.time_week_ms();
         timestamp = float(time_week_ms % (3600 * 1000)) * 0.001;
         timestamp = create_location_timestamp(timestamp);   //make sure timestamp is within Remote ID limit
+        last_location_ms = AP_HAL::millis();
     }
 
 

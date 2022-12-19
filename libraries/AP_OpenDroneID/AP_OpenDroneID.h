@@ -143,6 +143,9 @@ private:
     // last time we got a SYSTEM_UPDATE message
     uint32_t last_system_update_ms;
 
+    // last time we got a valid LOCATION (GPS fix)
+    uint32_t last_location_ms;
+
     // arm status from the transmitter
     mavlink_open_drone_id_arm_status_t arm_status;
     uint32_t last_arm_status_ms;
