@@ -162,37 +162,9 @@ void AP_Mount_Servo::update_angle_outputs(const MountTarget& angle_rad)
     }
 }
 
-// closest_limit - returns closest angle to 'angle' taking into account limits.  all angles are in degrees * 10
-int16_t AP_Mount_Servo::closest_limit(int16_t angle, int16_t angle_min, int16_t angle_max)
-{
-    // Make sure the angle lies in the interval [-180 .. 180[ degrees
-    while (angle < -1800) angle += 3600;
-    while (angle >= 1800) angle -= 3600;
-
-    // Make sure the angle limits lie in the interval [-180 .. 180[ degrees
-    while (angle_min < -1800) angle_min += 3600;
-    while (angle_min >= 1800) angle_min -= 3600;
-    while (angle_max < -1800) angle_max += 3600;
-    while (angle_max >= 1800) angle_max -= 3600;
-
-    // If the angle is outside servo limits, saturate the angle to the closest limit
-    // On a circle the closest angular position must be carefully calculated to account for wrap-around
-    if ((angle < angle_min) && (angle > angle_max)) {
-        // angle error if min limit is used
-        int16_t err_min = angle_min - angle + (angle<angle_min ? 0 : 3600);     // add 360 degrees if on the "wrong side"
-        // angle error if max limit is used
-        int16_t err_max = angle - angle_max + (angle>angle_max ? 0 : 3600);     // add 360 degrees if on the "wrong side"
-        angle = err_min<err_max ? angle_min : angle_max;
-    }
-
-    return angle;
-}
-
 // move_servo - moves servo with the given id to the specified angle.  all angles are in degrees * 10
 void AP_Mount_Servo::move_servo(uint8_t function_idx, int16_t angle, int16_t angle_min, int16_t angle_max)
 {
-	// saturate to the closest angle limit if outside of [min max] angle interval
-	int16_t servo_out = closest_limit(angle, angle_min, angle_max);
-	SRV_Channels::move_servo((SRV_Channel::Aux_servo_function_t)function_idx, servo_out, angle_min, angle_max);
+	SRV_Channels::move_servo((SRV_Channel::Aux_servo_function_t)function_idx, angle, angle_min, angle_max);
 }
 #endif // HAL_MOUNT_SERVO_ENABLED
