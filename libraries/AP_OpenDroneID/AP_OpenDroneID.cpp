@@ -257,8 +257,9 @@ void AP_OpenDroneID::send_location_message()
     if (!ahrs.get_location(current_location)) {
         return;
     }
+        
     uint8_t uav_status = hal.util->get_soft_armed()? MAV_ODID_STATUS_AIRBORNE : MAV_ODID_STATUS_GROUND;
-    if (AP_Notify::flags.vehicle_lost == true || AP_Notify::flags.parachute_release == 1 || AP_AdvancedFailsafe::should_crash_vehicle == true) {
+    if (AP_Notify::flags.vehicle_lost == true || AP_Notify::flags.parachute_release == 1) {
         uav_status = MAV_ODID_STATUS_EMERGENCY;
     }
 
