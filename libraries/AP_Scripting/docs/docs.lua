@@ -2361,3 +2361,19 @@ function follow:get_last_update_ms() end
 -- desc
 ---@return boolean
 function follow:have_target() end
+
+-- desc
+---@class scripting
+scripting = {}
+
+-- desc
+function scripting:scripting_restart() end
+
+-- desc
+--@param directoryname
+--@return list of filenames
+function dirlist(directoryname) end
+
+--desc
+--@param filename
+function remove(filename) end

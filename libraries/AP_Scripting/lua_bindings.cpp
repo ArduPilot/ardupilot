@@ -1,6 +1,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/HAL.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 
 #include "lua_bindings.h"
 
@@ -494,3 +495,40 @@ int lua_get_CAN_device2(lua_State *L) {
     return 1;
 }
 #endif // HAL_MAX_CAN_PROTOCOL_DRIVERS
+
+/*
+  directory listing, return table of files in a directory
+ */
+int lua_dirlist(lua_State *L) {
+    struct dirent *entry;
+    int i;
+    const char *path = luaL_checkstring(L, 1);
+    
+    /* open directory */
+    auto dir = AP::FS().opendir(path);
+    if (dir == nullptr) {  /* error opening the directory? */
+        lua_pushnil(L);  /* return nil and ... */
+        lua_pushstring(L, strerror(errno));  /* error message */
+        return 2;  /* number of results */
+    }
+    
+    /* create result table */
+    lua_newtable(L);
+    i = 1;
+    while ((entry = AP::FS().readdir(dir)) != nullptr) {
+        lua_pushnumber(L, i++);  /* push key */
+        lua_pushstring(L, entry->d_name);  /* push value */
+        lua_settable(L, -3);
+    }
+    
+    AP::FS().closedir(dir);
+    return 1;  /* table is already on top */
+}
+
+/*
+  remove a file
+ */
+int lua_removefile(lua_State *L) {
+  const char *filename = luaL_checkstring(L, 1);
+  return luaL_fileresult(L, remove(filename) == 0, filename);
+}

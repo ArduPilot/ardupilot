@@ -317,6 +317,12 @@ bool AP_Scripting::arming_checks(size_t buflen, char *buffer) const
     return true;
 }
 
+void AP_Scripting::scripting_restart()
+{
+    _stop = true;
+    _restart = true;
+}
+
 AP_Scripting *AP_Scripting::_singleton = nullptr;
 
 namespace AP {
