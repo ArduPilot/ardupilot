@@ -410,6 +410,9 @@ SITL::SerialDevice *SITL_State::create_serial_sim(const char *name, const char *
     } else if (streq(name, "fetteconewireesc")) {
         sitl_model->set_fetteconewireesc(&_sitl->fetteconewireesc_sim);
         return &_sitl->fetteconewireesc_sim;
+    } else if (!strncmp(name, "hwingesc", 8)) {
+        const uint8_t x = atoi(arg);
+        return sitl_model->hwing_escs.create(x);
     } else if (streq(name, "ie24")) {
         sitl_model->set_ie24(&_sitl->ie24_sim);
         return &_sitl->ie24_sim;
