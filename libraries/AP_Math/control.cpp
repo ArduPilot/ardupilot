@@ -33,11 +33,17 @@
 // vel_error - specifies the direction of the velocity error used in limit handling.
 void update_vel_accel(float& vel, float accel, float dt, float limit, float vel_error)
 {
-    const float delta_vel = accel * dt;
+    float delta_vel = accel * dt;
     // do not add delta_vel if it will increase the velocity error in the direction of limit
-    if (!(is_positive(delta_vel * limit) && is_positive(vel_error * limit))) {
-        vel += delta_vel;
+    // unless adding delta_vel will reduce vel towards zero
+    if (is_positive(delta_vel * limit) && is_positive(vel_error * limit)) {
+        if (is_negative(vel * limit)) {
+            delta_vel = constrain_float(delta_vel, -fabsf(vel), fabsf(vel));
+        } else {
+            delta_vel = 0.0;
+        }
     }
+    vel += delta_vel;
 }
 
 // update_pos_vel_accel - single axis projection of position and velocity forward in time based on a time step of dt and acceleration of accel.
@@ -49,9 +55,10 @@ void update_pos_vel_accel(postype_t& pos, float& vel, float accel, float dt, flo
     // move position and velocity forward by dt if it does not increase error when limited.
     float delta_pos = vel * dt + accel * 0.5f * sq(dt);
     // do not add delta_pos if it will increase the velocity error in the direction of limit
-    if (!(is_positive(delta_pos * limit) && is_positive(pos_error * limit))) {
-        pos += delta_pos;
+    if (is_positive(delta_pos * limit) && is_positive(pos_error * limit)) {
+        delta_pos = 0.0;
     }
+    pos += delta_pos;
 
     update_vel_accel(vel, accel, dt, limit, vel_error);
 }
@@ -63,13 +70,12 @@ void update_pos_vel_accel(postype_t& pos, float& vel, float accel, float dt, flo
 void update_vel_accel_xy(Vector2f& vel, const Vector2f& accel, float dt, const Vector2f& limit, const Vector2f& vel_error)
 {
     // increase velocity by acceleration * dt if it does not increase error when limited.
+    // unless adding delta_vel will reduce the magnitude of vel
     Vector2f delta_vel = accel * dt;
     if (!limit.is_zero() && !delta_vel.is_zero()) {
         // check if delta_vel will increase the velocity error in the direction of limit
-        if (is_positive(delta_vel * limit) && is_positive(vel_error * limit)) {
-            // remove component of delta_vel in direction of limit
-            Vector2f limit_unit = limit.normalized();
-            delta_vel -= limit_unit * (limit_unit * delta_vel);
+        if (is_positive(delta_vel * limit) && is_positive(vel_error * limit) && !is_negative(vel * limit)) {
+            delta_vel.zero();
         }
     }
     vel += delta_vel;
