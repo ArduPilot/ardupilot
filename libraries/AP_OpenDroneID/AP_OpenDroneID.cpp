@@ -36,6 +36,7 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Notify/AP_Notify.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -255,7 +256,10 @@ void AP_OpenDroneID::send_location_message()
     if (!ahrs.get_location(current_location)) {
         return;
     }
-    const uint8_t uav_status = hal.util->get_soft_armed()? MAV_ODID_STATUS_AIRBORNE : MAV_ODID_STATUS_GROUND;
+    uint8_t uav_status = hal.util->get_soft_armed()? MAV_ODID_STATUS_AIRBORNE : MAV_ODID_STATUS_GROUND;
+    if (AP_Notify::flags.vehicle_lost == true) {
+        uav_status = MAV_ODID_STATUS_EMERGENCY;
+    }
 
     float direction = ODID_INV_DIR;
     if (!got_bad_gps_fix) {
