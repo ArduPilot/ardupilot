@@ -299,7 +299,9 @@ void shape_pos_vel_accel(postype_t pos_input, float vel_input, float accel_input
     float vel_target = sqrt_controller(pos_error, KPv, accel_tc_max, dt);
 
     // limit velocity between vel_min and vel_max
-    vel_target = constrain_float(vel_target, vel_min, vel_max);
+    if (is_negative(vel_min) || is_positive(vel_max)) {
+        vel_target = constrain_float(vel_target, vel_min, vel_max);
+    }
 
     // velocity correction with input velocity
     vel_target += vel_input;
@@ -336,7 +338,9 @@ void shape_pos_vel_accel_xy(const Vector2p& pos_input, const Vector2f& vel_input
     Vector2f vel_target = sqrt_controller(pos_error, KPv, accel_tc_max, dt);
 
     // limit velocity to vel_max
-    vel_target.limit_length(vel_max);
+    if (is_positive(vel_max)) {
+        vel_target.limit_length(vel_max);
+    }
 
     // velocity correction with input velocity
     vel_target = vel_target + vel_input;
