@@ -36,21 +36,42 @@
 extern const AP_HAL::HAL &hal;
 
 /*
-  send requested config to the VN
- */
-void AP_ExternalAHRS_VectorNav::send_config(void) const
-{
-    nmea_printf(uart, "$VNWRG,75,3,%u,35,0003,0F2C,0147,0613", unsigned(400/get_rate()));
-    nmea_printf(uart, "$VNWRG,76,3,80,4E,0002,0010,20B8,2018");
-}
-
-/*
   header for pre-configured 50Hz data
   assumes the following config for VN-300:
     $VNWRG,75,3,8,35,0003,0F2C,0147,0613*2642
+
+    0x35: Groups 1,3,5,6
+    Group 1 (Common):
+        0x0003:
+            TimeStartup
+            TimeGps
+    Group 3 (IMU):
+        0x0F2C:
+            UncompAccel
+            UncompGyro
+            Pres
+            Mag
+            Accel
+            AngularRate
+            No 11th item in my manual, presubably "sensSat" whatever that means
+    Group 5 (Attitude):
+        0x0147:
+            Reserved, presumably "AHRSStatus" my manual must be out of date!
+            YawPitchRoll
+            Quaternion
+            LinearAccelBody
+            YprU
+    Group 6 (INS):
+        0x0613:
+            InsStatus
+            PosLLa
+            VelNed
+            LinearAccelEcef
+            PosU
+
 */
 static const uint8_t vn_pkt1_header[] { 0x35, 0x03, 0x00, 0x2c, 0x0f, 0x47, 0x01, 0x13, 0x06 };
-#define VN_PKT1_LENGTH 194 // includes header
+#define VN_PKT1_LENGTH 194 // includes header and CRC
 
 struct PACKED VN_packet1 {
     uint64_t timeStartup;
@@ -81,9 +102,29 @@ static_assert(sizeof(VN_packet1)+2+4*2+2 == VN_PKT1_LENGTH, "incorrect VN_packet
   header for pre-configured 5Hz data
   assumes the following VN-300 config:
     $VNWRG,76,3,80,4E,0002,0010,20B8,2018*A66B
+
+    0x4E: Groups 2,3,4,7
+    Group 2 (Time):
+        0x0002:
+            TimeGps
+    Group 3 (IMU):
+        0x0010:
+            Temp
+    Group 4 (GPS1):
+        0x20B8:
+            NumSats
+            Fix
+            PosLLa
+            VelNed
+            DOP
+    Group 7 (GPS2):
+        0x2018:
+            NumSats
+            Fix
+            DOP
 */
 static const uint8_t vn_pkt2_header[] { 0x4e, 0x02, 0x00, 0x10, 0x00, 0xb8, 0x20, 0x18, 0x20 };
-#define VN_PKT2_LENGTH 120 // includes header
+#define VN_PKT2_LENGTH 120 // includes header and CRC
 
 struct PACKED VN_packet2 {
     uint64_t timeGPS;
@@ -101,6 +142,37 @@ struct PACKED VN_packet2 {
 // check packet size for 4 groups
 static_assert(sizeof(VN_packet2)+2+4*2+2 == VN_PKT2_LENGTH, "incorrect VN_packet2 length");
 
+/*
+  assumes the following VN-300 config:
+    $VNWRG,75,3,80,14,0730,0004*66
+
+  Alternate first packet for VN-100
+    0x14: Groups 3, 5
+        Group 3 (IMU):
+            0x0730:
+                Temp
+                Pres
+                Mag
+                Accel
+                Gyro
+        Group 5 (Attitude):
+            0x0004:
+                Quaternion
+*/
+static const uint8_t vn_100_pkt1_header[] { 0x14, 0x30, 0x07, 0x04, 0x00 };
+#define VN_100_PKT1_LENGTH 68 // includes header and CRC
+
+struct PACKED VN_100_packet1 {
+    float temp;
+    float pressure;
+    float mag[3];
+    float accel[3];
+    float gyro[3];
+    float quaternion[4];
+};
+
+static_assert(sizeof(VN_100_packet1)+2+2*2+2 == VN_100_PKT1_LENGTH, "incorrect VN_100_packet1 length");
+
 // constructor
 AP_ExternalAHRS_VectorNav::AP_ExternalAHRS_VectorNav(AP_ExternalAHRS *_frontend,
                                                      AP_ExternalAHRS::state_t &_state) :
@@ -115,7 +187,7 @@ AP_ExternalAHRS_VectorNav::AP_ExternalAHRS_VectorNav(AP_ExternalAHRS *_frontend,
     baudrate = sm.find_baudrate(AP_SerialManager::SerialProtocol_AHRS, 0);
     port_num = sm.find_portnum(AP_SerialManager::SerialProtocol_AHRS, 0);
 
-    bufsize = MAX(VN_PKT1_LENGTH, VN_PKT2_LENGTH);
+    bufsize = MAX(MAX(VN_PKT1_LENGTH, VN_PKT2_LENGTH), VN_100_PKT1_LENGTH);
     pktbuf = new uint8_t[bufsize];
     last_pkt1 = new VN_packet1;
     last_pkt2 = new VN_packet2;
@@ -134,13 +206,13 @@ AP_ExternalAHRS_VectorNav::AP_ExternalAHRS_VectorNav(AP_ExternalAHRS *_frontend,
   check the UART for more data
   returns true if the function should be called again straight away
  */
+#define SYNC_BYTE 0xFA
 bool AP_ExternalAHRS_VectorNav::check_uart()
 {
-    if (!port_opened) {
+    if (!setup_complete) {
         return false;
     }
     WITH_SEMAPHORE(state.sem);
-
     uint32_t n = uart->available();
     if (n == 0) {
         return false;
@@ -153,15 +225,21 @@ bool AP_ExternalAHRS_VectorNav::check_uart()
         pktoffset += nread;
     }
 
-    bool match_header1, match_header2;
+    bool match_header1 = false;
+    bool match_header2 = false;
+    bool match_header3 = false;
 
-    if (pktbuf[0] != 0xFA) {
+    if (pktbuf[0] != SYNC_BYTE) {
         goto reset;
     }
 
-    match_header1 = (0 == memcmp(&pktbuf[1], vn_pkt1_header, MIN(sizeof(vn_pkt1_header), unsigned(pktoffset-1))));
-    match_header2 = (0 == memcmp(&pktbuf[1], vn_pkt2_header, MIN(sizeof(vn_pkt2_header), unsigned(pktoffset-1))));
-    if (!match_header1 && !match_header2) {
+    if (type == TYPE::VN_300) {
+        match_header1 = (0 == memcmp(&pktbuf[1], vn_pkt1_header, MIN(sizeof(vn_pkt1_header), unsigned(pktoffset-1))));
+        match_header2 = (0 == memcmp(&pktbuf[1], vn_pkt2_header, MIN(sizeof(vn_pkt2_header), unsigned(pktoffset-1))));
+    } else {
+        match_header3 = (0 == memcmp(&pktbuf[1], vn_100_pkt1_header, MIN(sizeof(vn_100_pkt1_header), unsigned(pktoffset-1))));
+    }
+    if (!match_header1 && !match_header2 && !match_header3) {
         goto reset;
     }
 
@@ -185,11 +263,21 @@ bool AP_ExternalAHRS_VectorNav::check_uart()
         } else {
             goto reset;
         }
+    } else if (match_header3 && pktoffset >= VN_100_PKT1_LENGTH) {
+        uint16_t crc = crc16_ccitt(&pktbuf[1], VN_100_PKT1_LENGTH-1, 0);
+        if (crc == 0) {
+            // got VN-100 pkt1
+            process_packet_VN_100(&pktbuf[sizeof(vn_100_pkt1_header)+1]);
+            memmove(&pktbuf[0], &pktbuf[VN_100_PKT1_LENGTH], pktoffset-VN_100_PKT1_LENGTH);
+            pktoffset -= VN_100_PKT1_LENGTH;
+        } else {
+            goto reset;
+        }
     }
     return true;
 
 reset:
-    uint8_t *p = (uint8_t *)memchr(&pktbuf[1], (char)0xFA, pktoffset-1);
+    uint8_t *p = (uint8_t *)memchr(&pktbuf[1], SYNC_BYTE, pktoffset-1);
     if (p) {
         uint8_t newlen = pktoffset - (p - pktbuf);
         memmove(&pktbuf[0], p, newlen);
@@ -200,20 +288,167 @@ reset:
     return true;
 }
 
-void AP_ExternalAHRS_VectorNav::update_thread()
+// Send command to read given register number and wait for responce
+// Only run from thread! This blocks until a responce is received
+#define READ_REQUEST_RETRY_MS 500
+void AP_ExternalAHRS_VectorNav::wait_register_responce(const uint8_t register_num)
 {
-    if (!port_opened) {
-        // open port in the thread
-        port_opened = true;
-        uart->begin(baudrate, 1024, 512);
-        send_config();
+    nmea.register_number = register_num;
+
+    uint32_t request_sent = 0;
+    while (true) {
+        hal.scheduler->delay(1);
+
+        const uint32_t now = AP_HAL::millis();
+        if (now - request_sent > READ_REQUEST_RETRY_MS) {
+            // Send request to read
+            nmea_printf(uart, "$%s%u", "VNRRG,", nmea.register_number);
+            request_sent = now;
+        }
+
+        int16_t nbytes = uart->available();
+        while (nbytes-- > 0) {
+            char c = uart->read();
+            if (decode(c)) {
+                return;
+            }
+        }
+    }
+}
+
+// add a single character to the buffer and attempt to decode
+// returns true if a complete sentence was successfully decoded
+bool AP_ExternalAHRS_VectorNav::decode(char c)
+{
+    switch (c) {
+    case ',':
+        // end of a term, add to checksum
+        nmea.checksum ^= c;
+        FALLTHROUGH;
+    case '\r':
+    case '\n':
+    case '*':
+    {
+        if (nmea.sentence_done) {
+            return false;
+        }
+        if (nmea.term_is_checksum) {
+            nmea.sentence_done = true;
+            uint8_t checksum = 16 * char_to_hex(nmea.term[0]) + char_to_hex(nmea.term[1]);
+            return ((checksum == nmea.checksum) && nmea.sentence_valid);
+        }
+
+        // null terminate and decode latest term
+        nmea.term[nmea.term_offset] = 0;
+        if (nmea.sentence_valid) {
+            nmea.sentence_valid = decode_latest_term();
+        }
+
+        // move onto next term
+        nmea.term_number++;
+        nmea.term_offset = 0;
+        nmea.term_is_checksum = (c == '*');
+        return false;
     }
 
+    case '$': // sentence begin
+        nmea.sentence_valid = true;
+        nmea.term_number = 0;
+        nmea.term_offset = 0;
+        nmea.checksum = 0;
+        nmea.term_is_checksum = false;
+        nmea.sentence_done = false;
+        return false;
+    }
+
+    // ordinary characters are added to term
+    if (nmea.term_offset < sizeof(nmea.term) - 1) {
+        nmea.term[nmea.term_offset++] = c;
+    }
+    if (!nmea.term_is_checksum) {
+        nmea.checksum ^= c;
+    }
+
+    return false;
+}
+
+// decode the most recently consumed term
+// returns true if new sentence has just passed checksum test and is validated
+bool AP_ExternalAHRS_VectorNav::decode_latest_term()
+{
+    switch (nmea.term_number) {
+        case 0:
+            if (strcmp(nmea.term, "VNRRG") != 0) {
+                return false;
+            }
+            break;
+
+        case 1:
+            if (nmea.register_number != strtoul(nmea.term, nullptr, 10)) {
+                return false;
+            }
+            break;
+
+        case 2:
+            strncpy(model_name, nmea.term, sizeof(model_name));
+            break;
+
+        default:
+            return false;
+    }
+    return true;
+}
+
+void AP_ExternalAHRS_VectorNav::update_thread()
+{
+    // Open port in the thread
+    uart->begin(baudrate, 1024, 512);
+
+    // Reset and wait for module to reboot
+    // VN_100 takes 1.25 seconds
+    nmea_printf(uart, "$VNRST");
+    hal.scheduler->delay(3000);
+
+    // Stop NMEA Async Outputs (this UART only)
+    nmea_printf(uart, "$VNWRG,6,0");
+
+    // Detect version
+    // Read Model Number Register, ID 1
+    wait_register_responce(1);
+
+    // Setup for messages respective model types (on both UARTs)
+    if (strncmp(model_name, "VN-100", 6) == 0) {
+        // VN-100
+        type = TYPE::VN_100;
+        // Shrink buffer size to packet length
+        // Allowing multiple packets to fit in the buffer breaks the parser
+        // its safe to make it smaller, we could resize to get some memory back
+        bufsize = MIN(bufsize,VN_100_PKT1_LENGTH);
+
+        // This assumes unit is still configured at its default rate of 800hz
+        nmea_printf(uart, "$VNWRG,75,3,%u,14,0730,0004", unsigned(800/get_rate()));
+
+    } else {
+        // Default to Setup for VN-300 series
+        // This assumes unit is still configured at its default rate of 400hz
+        nmea_printf(uart, "$VNWRG,75,3,%u,35,0003,0F2C,0147,0613", unsigned(400/get_rate()));
+        nmea_printf(uart, "$VNWRG,76,3,80,4E,0002,0010,20B8,2018");
+    }
+
+    setup_complete = true;
     while (true) {
         if (!check_uart()) {
             hal.scheduler->delay(1);
         }
     }
+}
+
+const char* AP_ExternalAHRS_VectorNav::get_name() const
+{
+    if (setup_complete) {
+        return model_name;
+    }
+    return nullptr;
 }
 
 /*
@@ -351,6 +586,84 @@ void AP_ExternalAHRS_VectorNav::process_packet2(const uint8_t *b)
     AP::gps().handle_external(gps);
 }
 
+/*
+  process VN-100 packet type 1
+ */
+void AP_ExternalAHRS_VectorNav::process_packet_VN_100(const uint8_t *b)
+{
+    const struct VN_100_packet1 &pkt = *(struct VN_100_packet1 *)b;
+
+    last_pkt1_ms = AP_HAL::millis();
+    {
+        WITH_SEMAPHORE(state.sem);
+        state.accel = Vector3f{pkt.accel[0], pkt.accel[1], pkt.accel[2]};
+        state.gyro = Vector3f{pkt.gyro[0], pkt.gyro[1], pkt.gyro[2]};
+
+        state.quat = Quaternion{pkt.quaternion[3], pkt.quaternion[0], pkt.quaternion[1], pkt.quaternion[2]};
+        state.have_quaternion = true;
+    }
+
+#if AP_BARO_EXTERNALAHRS_ENABLED
+    {
+        AP_ExternalAHRS::baro_data_message_t baro;
+        baro.instance = 0;
+        baro.pressure_pa = pkt.pressure*1e3;
+        baro.temperature = pkt.temp;
+
+        AP::baro().handle_external(baro);
+    }
+#endif
+
+    {
+        AP_ExternalAHRS::mag_data_message_t mag;
+        mag.field = Vector3f{pkt.mag[0], pkt.mag[1], pkt.mag[2]};
+        mag.field *= 1000; // to mGauss
+
+        AP::compass().handle_external(mag);
+    }
+
+    {
+        AP_ExternalAHRS::ins_data_message_t ins;
+
+        ins.accel = state.accel;
+        ins.gyro = state.gyro;
+        ins.temperature = pkt.temp;
+
+        AP::ins().handle_external(ins);
+    }
+
+    // @LoggerMessage: EAH3
+    // @Description: External AHRS data
+    // @Field: TimeUS: Time since system startup
+    // @Field: Temp: Temprature
+    // @Field: Pres: Pressure
+    // @Field: MX: Magnetic feild X-axis
+    // @Field: MY: Magnetic feild Y-axis
+    // @Field: MZ: Magnetic feild Z-axis
+    // @Field: AX: Acceleration X-axis
+    // @Field: AY: Acceleration Y-axis
+    // @Field: AZ: Acceleration Z-axis
+    // @Field: GX: Rotation rate X-axis
+    // @Field: GY: Rotation rate Y-axis
+    // @Field: GZ: Rotation rate Z-axis
+    // @Field: Q1: Attitude quaternion 1
+    // @Field: Q2: Attitude quaternion 2
+    // @Field: Q3: Attitude quaternion 3
+    // @Field: Q4: Attitude quaternion 4
+
+    AP::logger().WriteStreaming("EAH3", "TimeUS,Temp,Pres,MX,MY,MZ,AX,AY,AZ,GX,GY,GZ,Q1,Q2,Q3,Q4",
+                       "sdPGGGoooEEE----", "F000000000000000",
+                       "Qfffffffffffffff",
+                       AP_HAL::micros64(),
+                       pkt.temp, pkt.pressure*1e3,
+                       pkt.mag[0], pkt.mag[1], pkt.mag[2],
+                       pkt.accel[0], pkt.accel[1], pkt.accel[2],
+                       pkt.gyro[0], pkt.gyro[1], pkt.gyro[2],
+                       pkt.quaternion[0], pkt.quaternion[1], pkt.quaternion[2], pkt.quaternion[3]);
+
+}
+
+
 // get serial port number for the uart
 int8_t AP_ExternalAHRS_VectorNav::get_port(void) const
 {
@@ -363,28 +676,43 @@ int8_t AP_ExternalAHRS_VectorNav::get_port(void) const
 // accessors for AP_AHRS
 bool AP_ExternalAHRS_VectorNav::healthy(void) const
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
+    if (type == TYPE::VN_100) {
+        return (now - last_pkt1_ms < 40);
+    }
     return (now - last_pkt1_ms < 40 && now - last_pkt2_ms < 500);
 }
 
 bool AP_ExternalAHRS_VectorNav::initialised(void) const
 {
+    if (!setup_complete) {
+        return false;
+    }
+    if (type == TYPE::VN_100) {
+        return last_pkt1_ms != 0;
+    }
     return last_pkt1_ms != 0 && last_pkt2_ms != 0;
 }
 
 bool AP_ExternalAHRS_VectorNav::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
 {
+    if (!setup_complete) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "VectorNav setup failed");
+        return false;
+    }
     if (!healthy()) {
         hal.util->snprintf(failure_msg, failure_msg_len, "VectorNav unhealthy");
         return false;
     }
-    if (last_pkt2->GPS1Fix < 3) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "VectorNav no GPS1 lock");
-        return false;
-    }
-    if (last_pkt2->GPS2Fix < 3) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "VectorNav no GPS2 lock");
-        return false;
+    if (type == TYPE::VN_300) {
+        if (last_pkt2->GPS1Fix < 3) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "VectorNav no GPS1 lock");
+            return false;
+        }
+        if (last_pkt2->GPS2Fix < 3) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "VectorNav no GPS2 lock");
+            return false;
+        }
     }
     return true;
 }
@@ -396,22 +724,29 @@ bool AP_ExternalAHRS_VectorNav::pre_arm_check(char *failure_msg, uint8_t failure
 void AP_ExternalAHRS_VectorNav::get_filter_status(nav_filter_status &status) const
 {
     memset(&status, 0, sizeof(status));
-    if (last_pkt1 && last_pkt2) {
-        status.flags.initalized = 1;
-    }
-    if (healthy() && last_pkt2) {
-        status.flags.attitude = 1;
-        status.flags.vert_vel = 1;
-        status.flags.vert_pos = 1;
+    if (type == TYPE::VN_300) {
+        if (last_pkt1 && last_pkt2) {
+            status.flags.initalized = 1;
+        }
+        if (healthy() && last_pkt2) {
+            status.flags.attitude = 1;
+            status.flags.vert_vel = 1;
+            status.flags.vert_pos = 1;
 
-        const struct VN_packet2 &pkt2 = *last_pkt2;
-        if (pkt2.GPS1Fix >= 3) {
-            status.flags.horiz_vel = 1;
-            status.flags.horiz_pos_rel = 1;
-            status.flags.horiz_pos_abs = 1;
-            status.flags.pred_horiz_pos_rel = 1;
-            status.flags.pred_horiz_pos_abs = 1;
-            status.flags.using_gps = 1;
+            const struct VN_packet2 &pkt2 = *last_pkt2;
+            if (pkt2.GPS1Fix >= 3) {
+                status.flags.horiz_vel = 1;
+                status.flags.horiz_pos_rel = 1;
+                status.flags.horiz_pos_abs = 1;
+                status.flags.pred_horiz_pos_rel = 1;
+                status.flags.pred_horiz_pos_abs = 1;
+                status.flags.using_gps = 1;
+            }
+        }
+    } else {
+        status.flags.initalized = initialised();
+        if (healthy()) {
+            status.flags.attitude = true;
         }
     }
 }
