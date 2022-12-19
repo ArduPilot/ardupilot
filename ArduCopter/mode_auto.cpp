@@ -1296,25 +1296,10 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
         }
     }
 
-    // init wpnav and set origin if transitioning from takeoff
-    if (!wp_nav->is_active()) {
-        Vector3f stopping_point;
-        if (_mode == SubMode::TAKEOFF) {
-            Vector3p takeoff_complete_pos;
-            if (auto_takeoff_get_position(takeoff_complete_pos)) {
-                stopping_point = takeoff_complete_pos.tofloat();
-            }
-        }
-        wp_nav->wp_and_spline_init(0, stopping_point);
-    }
-
     // get waypoint's location from command and send to wp_nav
-    const Location dest_loc = loc_from_cmd(cmd, default_loc);
-    if (!wp_nav->set_wp_destination_loc(dest_loc)) {
-        // failure to set destination can only be because of missing terrain data
-        copter.failsafe_terrain_on_event();
-        return;
-    }
+    const Location target_loc = loc_from_cmd(cmd, default_loc);
+
+    wp_start(target_loc);
 
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
@@ -1322,20 +1307,11 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     loiter_time_max = cmd.p1;
 
     // set next destination if necessary
-    if (!set_next_wp(cmd, dest_loc)) {
+    if (!set_next_wp(cmd, target_loc)) {
         // failure to set next destination can only be because of missing terrain data
         copter.failsafe_terrain_on_event();
         return;
     }
-
-    // initialise yaw
-    // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
-    if (auto_yaw.mode() != AutoYaw::Mode::ROI) {
-        auto_yaw.set_mode_to_default(false);
-    }
-
-    // set submode
-    set_submode(SubMode::WP);
 }
 
 // checks the next mission command and adds it as a destination if necessary
