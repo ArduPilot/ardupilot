@@ -57,6 +57,10 @@ AP_RobotisServo *SRV_Channels::robotis_ptr;
 AP_FETtecOneWire *SRV_Channels::fetteconwire_ptr;
 #endif
 
+#if AP_ESC_SERIAL_TELEM_ESC_TELEM_BACKEND_ENABLED
+AP_ESCSerialTelem_ESCTelem_Backend *SRV_Channels::hobbywing_esc_telem_ptr;
+#endif
+
 uint16_t SRV_Channels::override_counter[NUM_SERVO_CHANNELS];
 
 #if HAL_SUPPORT_RCOUT_SERIAL
@@ -249,7 +253,13 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Bitmask: 0:RCIN1Scaled, 1:RCIN2Scaled, 2:RCIN3Scaled, 3:RCIN4Scaled, 4:RCIN5Scaled, 5:RCIN6Scaled, 6:RCIN7Scaled, 7:RCIN8Scaled, 8:RCIN9Scaled, 9:RCIN10Scaled, 10:RCIN11Scaled, 11:SRCIN12Scaled, 12:RCIN13Scaled, 13:RCIN14Scaled, 14:RCIN15Scaled, 15:RCIN16Scaled
     // @User: Advanced
     AP_GROUPINFO("_RC_FS_MSK", 44, SRV_Channels, rc_fs_mask, 0),
- 
+
+#if AP_ESC_SERIAL_TELEM_ESC_TELEM_BACKEND_ENABLED
+    // @Group: _EST_
+    // @Path: ../AP_ESCSerialTelem/AP_ESCSerialTelem.cpp
+    AP_SUBGROUPINFO(hobbywing_esc_telem, "_EST_",  44, SRV_Channels, AP_ESCSerialTelem_ESCTelem_Backend),
+#endif
+
 #if (NUM_SERVO_CHANNELS >= 17)
     // @Param: _32_ENABLE
     // @DisplayName: Enable outputs 17 to 31
@@ -384,6 +394,10 @@ SRV_Channels::SRV_Channels(void)
     fetteconwire_ptr = &fetteconwire;
 #endif
 
+#if AP_ESC_SERIAL_TELEM_ESC_TELEM_BACKEND_ENABLED
+    hobbywing_esc_telem_ptr = &hobbywing_esc_telem;
+#endif
+
 #if AP_VOLZ_ENABLED
     volz_ptr = &volz;
 #endif
@@ -410,6 +424,9 @@ void SRV_Channels::init(uint32_t motor_mask, AP_HAL::RCOutput::output_mode mode)
 #endif
 #ifndef HAL_BUILD_AP_PERIPH
     hal.rcout->set_dshot_rate(_singleton->dshot_rate, AP::scheduler().get_loop_rate_hz());
+#endif
+#if AP_ESC_SERIAL_TELEM_ESC_TELEM_BACKEND_ENABLED
+    hobbywing_esc_telem_ptr->init();
 #endif
 }
 
@@ -539,10 +556,9 @@ void SRV_Channels::push()
     fetteconwire_ptr->update();
 #endif
 
-#if AP_KDECAN_ENABLED
-    if (AP::kdecan() != nullptr) {
-        AP::kdecan()->update();
-    }
+#if AP_ESC_SERIAL_TELEM_ESC_TELEM_BACKEND_ENABLED
+    // give blheli telemetry a chance to update
+    hobbywing_esc_telem_ptr->update_telemetry();
 #endif
 
 #if HAL_ENABLE_DRONECAN_DRIVERS
