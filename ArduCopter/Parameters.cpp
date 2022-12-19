@@ -96,6 +96,23 @@ const AP_Param::Info Copter::var_info[] = {
     // @Bitmask: 0:Roll,1:Pitch,2:Yaw,3:AccelZ
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
 
+#if MODE_FLIP_ENABLED
+    // @Param: FLIP_MODE
+    // @DisplayName: Flip Direction
+    // @Description: Direction of copter to flip, adjust to desired direction
+    // @User: Advanced
+    // @Values: 0:Left,1:Right,2:Forward,3:Backwards
+    GSCALAR(flip_mode,           "FLIP_MODE",     (uint8_t)ModeFlip::Dir::RIGHT),
+
+    // @Param: FLIP_THROTTLE
+    // @DisplayName: Throttle adjustment exiting ModeFlip
+    // @Description: Percentage adjustment of the throttle exiting the flip. The adjustment is a percentage change from the throttle at the start of the maneuver
+    // @Range: -1.0 1.0
+    // @Increment: 0.01
+    // @User: Advanced
+    GSCALAR(flip_throttle,           "FLIP_THROTTLE",     0.0f),
+#endif // MODE_FLIP_ENABLED
+
 #if MODE_RTL_ENABLED == ENABLED
     // @Param: RTL_ALT
     // @DisplayName: RTL Altitude

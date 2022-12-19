@@ -835,6 +835,14 @@ public:
     using Mode::Mode;
     Number mode_number() const override { return Number::FLIP; }
 
+// FLIP_MODE parameters
+    enum class Dir{
+        LEFT = 0, 
+        RIGHT,
+        FWD,                            
+        BACK,                           
+    };
+
     bool init(bool ignore_checks) override;
     void run() override;
 
@@ -866,6 +874,7 @@ private:
     uint32_t  start_time_ms;          // time since flip began
     int8_t    roll_dir;            // roll direction (-1 = roll left, 1 = roll right)
     int8_t    pitch_dir;           // pitch direction (-1 = pitch forward, 1 = pitch back)
+    float     _flip_start_throttle;      //throttle input at beginning of flip maneuver.
 };
 
 
