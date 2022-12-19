@@ -37,6 +37,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Notify/AP_Notify.h>
+#include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -257,7 +258,7 @@ void AP_OpenDroneID::send_location_message()
         return;
     }
     uint8_t uav_status = hal.util->get_soft_armed()? MAV_ODID_STATUS_AIRBORNE : MAV_ODID_STATUS_GROUND;
-    if (AP_Notify::flags.vehicle_lost == true) {
+    if (AP_Notify::flags.vehicle_lost == true || AP_Notify::flags.parachute_release == 1 || AP_AdvancedFailsafe::should_crash_vehicle == true) {
         uav_status = MAV_ODID_STATUS_EMERGENCY;
     }
 
