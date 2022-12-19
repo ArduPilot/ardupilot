@@ -1,5 +1,5 @@
 # copter with simulated 3-axis servo gimbal
-MNT_TYPE 1
+MNT1_TYPE 1
 RC6_OPTION 213
 SERVO5_FUNCTION 8
 SERVO6_FUNCTION 7
