@@ -1,15 +1,15 @@
 /*
-  ESC Telemetry for Hobbywing Pro 80A HV ESC. This will be
-  incorporated into a broader ESC telemetry library in ArduPilot
-  master in the future
+  ESC Telemetry for Hobbywing Pro 80A HV ESC.
 
   This protocol only allows for one ESC per UART RX line, so using a
   CAN node per ESC works well.
  */
-#include "hwing_esc.h"
+#include "AP_ESCSerialTelem.h"
 #include <AP_HAL/utility/sparse-endian.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
-#ifdef HAL_PERIPH_ENABLE_HWESC
+#if AP_ESC_SERIAL_TELEM_ENABLED
 
 extern const AP_HAL::HAL& hal;
 
@@ -17,11 +17,11 @@ extern const AP_HAL::HAL& hal;
 #define TELEM_LEN    0x16
 
 // constructor
-HWESC_Telem::HWESC_Telem(void)
+AP_ESCSerialTelem::AP_ESCSerialTelem(void)
 {
 }
 
-void HWESC_Telem::init(AP_HAL::UARTDriver *_uart)
+void AP_ESCSerialTelem::init(AP_HAL::UARTDriver *_uart)
 {
     uart = _uart;
     uart->begin(19200);
@@ -31,7 +31,7 @@ void HWESC_Telem::init(AP_HAL::UARTDriver *_uart)
 /*
   update ESC telemetry
  */
-bool HWESC_Telem::update()
+bool AP_ESCSerialTelem::update()
 {
     uint32_t n = uart->available();
     if (n == 0) {
@@ -106,7 +106,7 @@ static const struct {
     { 41, 	120}, 	{ 41, 	121}, 	{ 39, 	122}, 	{ 39, 	123}, 	{ 39, 	124}, 	{ 37, 	125}, 	{ 37, 	126}, 	{ 35, 	127}, 	{ 35, 	128}, 	{ 33, 	129},
 };
 
-uint8_t HWESC_Telem::temperature_decode(uint8_t temp_raw) const
+uint8_t AP_ESCSerialTelem::temperature_decode(uint8_t temp_raw) const
 {
     for (uint8_t i=0; i<ARRAY_SIZE(temp_table); i++) {
         if (temp_table[i].adc_temp <= temp_raw) {
@@ -119,7 +119,7 @@ uint8_t HWESC_Telem::temperature_decode(uint8_t temp_raw) const
 /*
   parse packet
  */
-bool HWESC_Telem::parse_packet(void)
+bool AP_ESCSerialTelem::parse_packet(void)
 {
     uint16_t crc = calc_crc((uint8_t *)&pkt, sizeof(pkt)-2);
     if (crc != pkt.crc) {
@@ -143,5 +143,70 @@ bool HWESC_Telem::parse_packet(void)
     return true;
 }
 
-#endif // HAL_PERIPH_ENABLE_HWESC
+#if AP_ESC_SERIAL_TELEM_ESC_TELEM_BACKEND_ENABLED
+const AP_Param::GroupInfo AP_ESCSerialTelem_ESCTelem_Backend::var_info[] = {
+    // @Param: MASK
+    // @DisplayName: HobbyWingESC Channel Bitmask
+    // @Description: Mask of which channels are returning data on serial ports
+    // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16, 16:Channel 17, 17: Channel 18, 18: Channel 19, 19: Channel 20, 20: Channel 21, 21: Channel 22, 22: Channel 23, 23: Channel 24, 24: Channel 25, 25: Channel 26, 26: Channel 27, 27: Channel 28, 28: Channel 29, 29: Channel 30, 30: Channel 31, 31: Channel 32
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("MASK",  1, AP_ESCSerialTelem_ESCTelem_Backend, channel_mask, 0),
+
+    AP_GROUPEND
+};
+
+// constructor
+AP_ESCSerialTelem_ESCTelem_Backend::AP_ESCSerialTelem_ESCTelem_Backend(void)
+{
+    AP_Param::setup_object_defaults(this, var_info);
+}
+
+void AP_ESCSerialTelem_ESCTelem_Backend::init()
+{
+    for (uint8_t i=0; i<32 && num_backends<ARRAY_SIZE(backends); i++) {
+        // work out our servo channel offset.  First instance of this
+        // class gets the channel corresponding to the first bit set in
+        // the mask etc
+        if (!((uint32_t)channel_mask & (1U<<i))) {
+            continue;
+        }
+        // see if there's another serial port configured for the correct protocol:
+        AP_HAL::UARTDriver *uart { AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_HobbyWingESC, num_backends) };
+        if (uart == nullptr) {
+            break;
+        }
+        backends[num_backends] = new AP_ESCSerialTelem();
+        if (backends[num_backends] == nullptr) {
+            break;
+        }
+        backends[num_backends]->init(uart);
+        servo_channel[num_backends++] = i+1;
+    }
+}
+
+void AP_ESCSerialTelem_ESCTelem_Backend::update_telemetry()
+{
+    for (uint8_t i=0; i<num_backends; i++) {
+        AP_ESCSerialTelem &backend = *backends[i];
+        if (!backend.update()) {
+            continue;
+        }
+        const auto &decoded = backend.get_telem();
+        update_rpm(servo_channel[i], decoded.rpm, 0);
+
+        const TelemetryData t {
+            .temperature_cdeg = int16_t(decoded.mos_temperature * 100),
+            .voltage = float(decoded.voltage) * 0.01f,
+            .current = float(decoded.current) * 0.01f,
+        };
+        update_telem_data(servo_channel[i], t,
+                          AP_ESC_Telem_Backend::TelemetryType::CURRENT
+                          | AP_ESC_Telem_Backend::TelemetryType::VOLTAGE
+                          | AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
+    }
+}
+#endif  // AP_ESC_SERIAL_TELEM_ESC_TELEM_ENABLED
+
+#endif  // AP_ESC_SERIAL_TELEM_ENABLED
 

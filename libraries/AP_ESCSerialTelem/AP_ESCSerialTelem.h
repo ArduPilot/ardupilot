@@ -1,20 +1,33 @@
 /*
-  ESC Telemetry for Hobbywing Pro 80A HV ESC. This will be
-  incorporated into a broader ESC telemetry library in ArduPilot
-  master in the future
+  ESC Telemetry for Hobbywing Pro 80A HV ESC.
+
+ - this driver is used in two different ways:
+  - by the main firmware as an AP_ESC_Telem_Backend
+  - by AP_Periph using a simple getter for the decoded telemetry data
+
  */
 
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
+#include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 
-#ifdef HAL_PERIPH_ENABLE_HWESC
+#ifndef AP_ESC_SERIAL_TELEM_ENABLED
+#define AP_ESC_SERIAL_TELEM_ENABLED HAL_WITH_ESC_TELEM
+#endif
 
-class HWESC_Telem {
+#ifndef AP_ESC_SERIAL_TELEM_ESC_TELEM_BACKEND_ENABLED
+#define AP_ESC_SERIAL_TELEM_ESC_TELEM_BACKEND_ENABLED (AP_ESC_SERIAL_TELEM_ENABLED && HAL_WITH_ESC_TELEM)
+#endif
+
+#if AP_ESC_SERIAL_TELEM_ENABLED
+
+#include <AP_Param/AP_Param.h>
+
+class AP_ESCSerialTelem {
 public:
-    HWESC_Telem();
+    AP_ESCSerialTelem();
 
-    void init(AP_HAL::UARTDriver *uart);
+    void init(class AP_HAL::UARTDriver *uart);
     bool update();
 
     struct HWESC {
@@ -62,6 +75,35 @@ private:
 
     bool parse_packet(void);
     uint8_t temperature_decode(uint8_t temp_raw) const;
+
 };
 
-#endif // HAL_PERIPH_ENABLE_HWESC
+
+// AP_ESC_Telem interface
+#if HAL_WITH_ESC_TELEM
+class AP_ESCSerialTelem_ESCTelem_Backend
+    : AP_ESC_Telem_Backend
+{
+public:
+
+    // constructor
+    AP_ESCSerialTelem_ESCTelem_Backend();
+
+    static const struct AP_Param::GroupInfo var_info[];
+
+    void init();
+
+    void update_telemetry();
+
+private:
+    AP_Int32 channel_mask;
+
+    static const uint8_t MAX_BACKENDS { 8 };
+    AP_ESCSerialTelem *backends[MAX_BACKENDS];
+    uint8_t servo_channel[MAX_BACKENDS];
+
+    uint8_t num_backends;
+};
+#endif  // HAL_WITH_ESC_TELEM
+
+#endif  // AP_ESC_SERIAL_TELEM_ENABLED
