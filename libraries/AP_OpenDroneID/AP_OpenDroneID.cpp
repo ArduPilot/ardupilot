@@ -261,16 +261,22 @@ void AP_OpenDroneID::send_location_message()
     
     uint8_t uav_status = hal.util->get_soft_armed()? MAV_ODID_STATUS_AIRBORNE : MAV_ODID_STATUS_GROUND;
     
-    //check if there are conditions that make AP uncontrollable, is so, set location to emergency status
+    //check if there are conditions that make AP uncontrollable. If so set location to emergency status
     if (AP_Notify::flags.vehicle_lost == true || AP_Notify::flags.parachute_release == 1) {
         uav_status = MAV_ODID_STATUS_EMERGENCY;
     } 
-    
+
+    //if we are in the air, but don't have a GPS fix anymore
+    if (got_bad_gps_fix && uav_status == MAV_ODID_STATUS_AIRBORNE) {
+        uav_status = MAV_ODID_STATUS_EMERGENCY;	
+    }
+        
     //check if we have a non-zero internal error
 	if (hal.util->persistent_data.fault_type != 0) {
         uav_status = MAV_ODID_STATUS_EMERGENCY;
     }
-
+    
+    //if advanced failsafe is enabled and it wants to crash the UA, set Remote ID to emergency status
 #ifdef ADVANCED_FAILSAFE
     #if ADVANCED_FAILSAFE == ENABLE
         auto &afs = AP::afs();
@@ -279,7 +285,7 @@ void AP_OpenDroneID::send_location_message()
 		}
     #endif
 #endif
-
+    
     float direction = ODID_INV_DIR;
     if (!got_bad_gps_fix) {
         direction = wrap_360(degrees(ahrs.groundspeed_vector().angle())); // heading (degrees)
