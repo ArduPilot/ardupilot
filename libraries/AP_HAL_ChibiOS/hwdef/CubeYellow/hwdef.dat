@@ -479,3 +479,4 @@ STORAGE_FLASH_PAGE 1
 # ardupilot root
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_highpolh.bin
 
+define HAL_ENABLE_FAST_FIFO_RESET_ICM20602 1
