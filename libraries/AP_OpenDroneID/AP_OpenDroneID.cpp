@@ -38,6 +38,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -257,11 +258,27 @@ void AP_OpenDroneID::send_location_message()
     if (!ahrs.get_location(current_location)) {
         return;
     }
-        
+    
     uint8_t uav_status = hal.util->get_soft_armed()? MAV_ODID_STATUS_AIRBORNE : MAV_ODID_STATUS_GROUND;
+    
+    //check if there are conditions that make AP uncontrollable, is so, set location to emergency status
     if (AP_Notify::flags.vehicle_lost == true || AP_Notify::flags.parachute_release == 1) {
         uav_status = MAV_ODID_STATUS_EMERGENCY;
+    } 
+    
+    //check if we have a non-zero internal error
+	if (hal.util->persistent_data.fault_type != 0) {
+        uav_status = MAV_ODID_STATUS_EMERGENCY;
     }
+
+#ifdef ADVANCED_FAILSAFE
+    #if ADVANCED_FAILSAFE == ENABLE
+        auto &afs = AP::afs();
+        if (afs.should_crash_vehicle == true) {
+            uav_status = MAV_ODID_STATUS_EMERGENCY;
+		}
+    #endif
+#endif
 
     float direction = ODID_INV_DIR;
     if (!got_bad_gps_fix) {
