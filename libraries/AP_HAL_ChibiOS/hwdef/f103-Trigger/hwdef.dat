@@ -24,4 +24,4 @@ define PWM_HARDPOINT_PIN 77
 
 # no I2C
 undef I2C_ORDER
-
+undef I2C1
