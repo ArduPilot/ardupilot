@@ -1,6 +1,6 @@
 #ICM-42688
 # Con i suggerimenti di andhi
-# LUMINOUS BEE 5.32 bidirectional telemetry - BETA 
+# LUMINOUS BEE 5.4 bidirectional telemetry - BETA 
 # hw definition file for processing by chibios_hwdef.py
 # aggiunto HAL_HAVE_FAST_MCU 1 
 
