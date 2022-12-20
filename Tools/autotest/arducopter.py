@@ -8715,6 +8715,63 @@ class AutoTestCopter(AutoTest):
 
         self.wait_disarmed()
 
+    def run_cmd_DO_CHANGE_SPEED_groundspeed(self, speed_ms):
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
+            1,
+            speed_ms,
+            0,
+            0,
+            0,
+            0,
+            0
+        )
+
+    def DO_CHANGE_SPEED_via_MAVLink(self):
+        '''Change speed during mission using mavlink commands'''
+
+        # upload 1 waypoint a long way away:
+        loc = self.poll_home_position()
+        alt = 20
+        loc.alt = alt
+        items = []
+        items.append((mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, alt),)
+        items.append((mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0))
+        self.upload_simple_relhome_mission(items)
+
+        start_speed_ms = self.get_parameter('WPNAV_SPEED') / 100.0
+
+        self.takeoff(20)
+        self.change_mode('AUTO')
+        self.wait_groundspeed(start_speed_ms-1, start_speed_ms+1, minimum_duration=10)
+
+        # time how long it takes to change from 10m/s to 1m/s
+        self.run_cmd_DO_CHANGE_SPEED_groundspeed(10)
+        self.wait_groundspeed(9, 11, minimum_duration=5)
+        tstart = self.get_sim_time()
+        self.run_cmd_DO_CHANGE_SPEED_groundspeed(1)
+        self.wait_groundspeed(0, 2, minimum_duration=1)
+        delta = self.get_sim_time() - tstart - 1  # -1 for the minimum_duration
+
+        # now try a pair of rapid changes to see what happens:
+        # start at 10m/s
+        self.run_cmd_DO_CHANGE_SPEED_groundspeed(10)
+        self.wait_groundspeed(9, 11, minimum_duration=5)
+
+        tstart = self.get_sim_time()
+        self.run_cmd_DO_CHANGE_SPEED_groundspeed(100)
+        self.run_cmd_DO_CHANGE_SPEED_groundspeed(1)
+        self.wait_groundspeed(0, 2, minimum_duration=1)
+        delta2 = self.get_sim_time() - tstart - 1  # -1 for the minimum_duration
+
+        if abs(delta - delta2) > 0.5:
+            raise NotAchievedException("Changing speeds rapidly broke things (first=%f second=%f)" % (delta, delta2))
+
+        # for speed_ms in 7, 8, 7, 8, 9, 10, 11, 7:
+        #     self.set_parameter('WPNAV_SPEED', speed_ms*100)
+        #     self.wait_groundspeed(speed_ms-1, speed_ms+1, minimum_duration=10)
+        self.do_RTL()
+
     def AUTO_LAND_TO_BRAKE(self):
         '''ensure terrain altitude is taken into account when braking'''
         self.load_mission('mission.txt')
@@ -9322,6 +9379,7 @@ class AutoTestCopter(AutoTest):
             self.GroundEffectCompensation_touchDownExpected,
             self.GroundEffectCompensation_takeOffExpected,
             self.DO_CHANGE_SPEED,
+            self.DO_CHANGE_SPEED_via_MAVLink,
             self.AUTO_LAND_TO_BRAKE,
             self.WPNAV_SPEED,
             self.WPNAV_SPEED_UP,
