@@ -344,6 +344,7 @@ singleton AP_Param method set_and_save_by_name rename set_and_save
 singleton AP_Param method set_default_by_name boolean string float'skip_check
 singleton AP_Param method set_default_by_name rename set_default
 singleton AP_Param method add_table boolean uint8_t 0 200 string uint8_t 1 63
+singleton AP_Param method get_table_key uint8_t string uint8_t 1 63
 singleton AP_Param method add_param boolean uint8_t 0 200 uint8_t 1 63 string float'skip_check
 
 include AP_Scripting/AP_Scripting_helpers.h
