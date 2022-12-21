@@ -55,6 +55,9 @@ public:
         return rate.get();
     }
 
+    // Get model/type name
+    const char* get_name() const;
+
     // get serial port number, -1 for not enabled
     int8_t get_port(void) const;
 
