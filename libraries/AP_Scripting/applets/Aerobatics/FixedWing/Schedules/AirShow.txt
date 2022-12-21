@@ -79,7 +79,7 @@ split_s  30
 
 message: RollingCircle
 align_center
-rolling_circle -50 2
+rolling_circle -75 1
 
 message: HumptyBump
 align_box 1
