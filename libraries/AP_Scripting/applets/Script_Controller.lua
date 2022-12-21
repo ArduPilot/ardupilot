@@ -1,8 +1,17 @@
 --[[
-   a script to select other lua scripts using an auxillary switch
+   a script to select other lua scripts using an auxillary switch from
+    /1 /2 or /3 subdirectories of the scripts directory
 --]]
 
-local THIS_SCRIPT = "script_controller.lua"
+local THIS_SCRIPT = "Script_Controller.lua"
+local SEL_CH = 302
+
+--[[
+   check that directory exists
+--]]
+function check_subdir_exists(n)
+  return dirlist(get_scripts_dir() .. "/" .. n )
+end
 
 --[[
    copy file src to dest, return true on success
@@ -78,6 +87,9 @@ function get_scripts_dir()
    return "scripts"
 end
 
+--[[
+    check if a file exists, returns true if it does' fname is complete path to file
+--]]
 function file_exists(fname)
    local f = io.open(fname,"rb")
    if not f then
@@ -87,8 +99,15 @@ function file_exists(fname)
    return true
 end
 
+--[[ compare strings case insensitive and return true if match
+
+--]]
+function compare_strings_ci(a,b)
+   return string.upper(a) == string.upper(b)
+end
+
 --[[
-   remove any lua scripts in the scripts directory that are not in the given subdir
+   remove any lua scripts in the scripts directory that are not in the given subdir besides ourselves
    returns true if any files were removed
 --]]
 function remove_scripts(subdir)
@@ -100,7 +119,7 @@ function remove_scripts(subdir)
    local ret = false
    for k,v in ipairs(dlist) do
       local suffix = v:sub(-4)
-      if suffix == ".lua" and v ~= THIS_SCRIPT then
+      if compare_strings_ci(suffix,".LUA") and not compare_strings_ci(v,THIS_SCRIPT) then
          if not file_exists(subdir .. "/" .. v) then
             ret = true
             remove(sdir .. "/" .. v)
@@ -123,18 +142,17 @@ function copy_scripts(subdir)
    local sdir = get_scripts_dir()
    for k, v in ipairs(dlist) do
       local suffix = v:sub(-4)
-      gcs:send_text(0, string.format("checking %s", v))
-      if suffix == ".lua" and v ~= THIS_SCRIPT then
+      if compare_strings_ci(suffix,".LUA") and not compare_strings_ci(v,THIS_SCRIPT) then
          local src = subdir .. "/" .. v
          local dest = sdir .. "/" .. v
          if not file_compare(src, dest) then
             ret = true
-            gcs:send_text(0, string.format("copying %s -> %s", src, dest))
             file_copy(src, dest)
-         else
-            gcs:send_text(0, string.format("same %s -> %s", src, dest))
          end
       end
+   end
+   if ret then
+      gcs:send_text(5,"Copied new files to scripts directory")
    end
    return ret
 end
@@ -143,11 +161,43 @@ end
    activate a scripting subdirectory
 --]]
 function activate_subdir(n)
-   gcs:send_text(0, string.format("Activating %s", n))
-   -- step1, remove lua files from scripts/ that are not in the givem subdirectory
+   -- step1, remove lua files from scripts/ that are not in the given subdirectory
    local subdir = get_scripts_dir() .. "/" .. n
    local changes_made = remove_scripts(subdir)
-   changes_made = changes_made or copy_scripts(subdir)
+   changes_made = changes_made or copy_scripts(subdir)  --copy files if different
+   return changes_made
 end
 
-activate_subdir(1)
+local sw_last = -1
+function update()
+   local sw_current = rc:get_aux_cached(SEL_CH)
+   if sw_current == sw_last then
+      return update, 500
+   end
+   if sw_current == 0 then 
+        subdir = 1
+      elseif sw_current == 2 then
+        subdir = 3
+      else
+        subdir = 2
+   end
+   sw_last = sw_current
+   if not check_subdir_exists(subdir) then
+      gcs:send_text(0,string.format("Scripts subdirectory /%s does not exist!",subdir))
+      return update, 500
+   end
+   changes_made = activate_subdir(subdir)
+   if changes_made then
+      scripting:restart_all()
+   else
+      gcs:send_text(0, string.format("Script subbdirectory %s active", subdir))
+   end
+   return update, 500
+end
+
+gcs:send_text(5,"Loaded Script_Controller.lua")
+return update, 500
+
+
+
+
