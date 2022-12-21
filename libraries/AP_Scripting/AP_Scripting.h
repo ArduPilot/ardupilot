@@ -51,7 +51,7 @@ public:
 
     bool arming_checks(size_t buflen, char *buffer) const;
     
-    void scripting_restart(void);
+    void restart_all(void);
 
    // User parameters for inputs into scripts 
    AP_Float _user[6];

@@ -2367,7 +2367,7 @@ function follow:have_target() end
 scripting = {}
 
 -- desc
-function scripting:scripting_restart() end
+function scripting:restart_all() end
 
 -- desc
 --@param directoryname
