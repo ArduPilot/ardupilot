@@ -249,9 +249,11 @@ class AutoTestRover(AutoTest):
             spinner_ch_min = 975
             spinner_ch_trim = 1510
             spinner_ch_max = 1975
+            pump_pct_1ms = 10
 
             self.set_parameters({
                 "SPRAY_ENABLE": 1,
+                "SPRAY_PUMP_RATE": pump_pct_1ms,
 
                 "SERVO%u_FUNCTION" % pump_ch: 22,
                 "SERVO%u_MIN" % pump_ch: pump_ch_min,
@@ -272,9 +274,7 @@ class AutoTestRover(AutoTest):
             })
 
             self.reboot_sitl()
-
             self.wait_ready_to_arm()
-            self.arm_vehicle()
 
             self.progress("test bootup state - it's zero-output!")
             self.wait_servo_channel_value(spinner_ch, 0)
@@ -283,7 +283,15 @@ class AutoTestRover(AutoTest):
             self.progress("Enable sprayer")
             self.set_rc(rc_ch, 2000)
 
+            # enabling sprayer when disarmed turns on the pump
+            self.progress("Testing on-ground pump-test function")
+            self.wait_servo_channel_value(pump_ch, pump_ch_min + pump_pct_1ms * 0.01 * (pump_ch_max - pump_ch_min))
+            self.set_rc(rc_ch, 1000) # turning it off
+
+            self.arm_vehicle()
+
             self.progress("Testing zero-speed state")
+            self.set_rc(rc_ch, 2000)
             self.wait_servo_channel_value(spinner_ch, spinner_ch_min)
             self.wait_servo_channel_value(pump_ch, pump_ch_min)
 
