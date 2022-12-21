@@ -16,7 +16,7 @@ The switching is allowed:
 
 CAUTION: Use this script AT YOUR OWN RISK.
 
--- Willy Zehnder -- 14.12.2022
+-- Willy Zehnder -- 21.12.2022
 
 ]]
 -------- SCRIPT 'CONSTANTS' --------
@@ -69,7 +69,6 @@ end
 local function add_params(key, prefix, tbl)
 -- add script-specific parameter table
   if not param:add_table(key, prefix, #tbl) then
-    send_msg(INFO, string.format('Could not add table %s at key %d', prefix, key))
     return false
   end
   for num, data in ipairs(tbl) do
@@ -82,18 +81,21 @@ end
 local function read_mission(file_path)
 -- try to read the mission from file and write it into FC
   local file = io.open(file_path)
-
-  -- check file-header
-  local headline = file:read('l')
-  if headline == nil then
-    send_msg(WARN,string.format('%s not existing or empty', file_name))
+  if file then
+    -- check file-header
+    local headline = file:read('l')
+    if not headline then
+      send_msg(WARN,string.format('%s is empty', file_name))
+      return
+    end
+    if string.find(headline, 'QGC WPL 110') ~= 1 then
+      send_msg(WARN,string.format('%s incorrect format', file_name))
+      return
+    end
+  else
+    send_msg(WARN,string.format('%s not existing', file_name))
     return
   end
-  if string.find(headline, 'QGC WPL 110') ~= 1 then
-    send_msg(WARN,string.format('%s incorrect format', file_name))
-    return
-  end
-
   -- clear any existing mission
   assert(mission:clear(), string.format('%s: Could not clear current mission', SCRIPT_NAME))
 
@@ -277,12 +279,12 @@ function init()
   sub_dir = string.format('%s/%s', SUB_DIR_APM, SUB_DIR_MISSIONS)
   file_name = string.format('%s_%s%d.%s', SCRIPT_NAME, FILE_PREFIX, 0, FILE_EXTENSION)
   local file = io.open(string.format('%s/%s', sub_dir, file_name))
-  if file:read('l') ~= nil then
+  if file then
     file:close()
   else
     sub_dir = string.format('%s/%s', SUB_DIR_SITL, SUB_DIR_MISSIONS)
     file = io.open(string.format('%s/%s', sub_dir, file_name))
-    if file:read('l') ~= nil then
+    if file then
       file:close()
     else
       send_msg(WARN, string.format('No file %s found ...', file_name))
@@ -297,7 +299,7 @@ function init()
   while true do
     file_name = string.format('%s_%s%d.%s', SCRIPT_NAME, FILE_PREFIX, num_files, FILE_EXTENSION)
     file = io.open(string.format('%s/%s', sub_dir, file_name))
-    if file:read('l') ~= nil then
+    if file then
       num_files = num_files + 1
       file:close()
     else
