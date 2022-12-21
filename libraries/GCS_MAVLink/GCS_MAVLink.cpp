@@ -97,7 +97,7 @@ void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len)
 #if HAL_HIGH_LATENCY2_ENABLED
     // if it's a disabled high latency channel, don't send
     GCS_MAVLINK *link = gcs().chan(chan);
-    if (!link->should_send()) {
+    if (link->is_high_latency_link && !gcs().get_high_latency_status()) {
         return;
     }
 #endif
