@@ -1882,6 +1882,15 @@ function gcs:send_named_float(name, value) end
 ---| '4' # Failed
 function gcs:set_message_interval(port_num, msg_id, interval_us) end
 
+-- set high latency control state. Analogous to MAV_CMD_CONTROL_HIGH_LATENCY
+---@param enabled boolean -- true to enable or false to disable
+---@return void
+function gcs:enable_high_latency_connections(enabled) end
+
+-- get the the current state of high latency control
+---@return boolean
+function gcs:get_high_latency_status() end
+
 -- send text with severity level
 ---@param severity integer
 ---| '0' # Emergency: System is unusable. This is a "panic" condition.

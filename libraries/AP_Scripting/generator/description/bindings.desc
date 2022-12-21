@@ -217,6 +217,10 @@ singleton GCS method send_text void MAV_SEVERITY'enum MAV_SEVERITY_EMERGENCY MAV
 singleton GCS method set_message_interval MAV_RESULT'enum uint8_t 0 MAVLINK_COMM_NUM_BUFFERS uint32_t'skip_check int32_t -1 INT32_MAX
 singleton GCS method send_named_float void string float'skip_check
 
+singleton GCS depends HAL_HIGH_LATENCY2_ENABLED == 1
+singleton GCS method get_high_latency_status boolean
+singleton GCS method enable_high_latency_connections void boolean
+
 include AP_ONVIF/AP_ONVIF.h depends ENABLE_ONVIF == 1
 singleton AP_ONVIF depends ENABLE_ONVIF == 1
 singleton AP_ONVIF rename onvif
