@@ -35,6 +35,9 @@ public:
     // get serial port number, -1 for not enabled
     int8_t get_port(void) const override;
 
+    // Get model/type name
+    const char* get_name() const override;
+
     // accessors for AP_AHRS
     bool healthy(void) const override;
     bool initialised(void) const override;
