@@ -40,6 +40,14 @@
 
 extern const AP_HAL::HAL& hal;
 
+#ifndef SIM_RATE_HZ_DEFAULT
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#define SIM_RATE_HZ_DEFAULT 1200
+#else
+#define SIM_RATE_HZ_DEFAULT 400
+#endif
+#endif
+
 namespace SITL {
 
 SIM *SIM::_singleton = nullptr;
@@ -222,7 +230,7 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // vicon velocity glitch in NED frame
     AP_GROUPINFO("VICON_VGLI",    21, SIM,  vicon_vel_glitch, 0),
 
-    AP_GROUPINFO("RATE_HZ",  22, SIM,  loop_rate_hz, 1200),
+    AP_GROUPINFO("RATE_HZ",  22, SIM,  loop_rate_hz, SIM_RATE_HZ_DEFAULT),
 
     // count of simulated IMUs
     AP_GROUPINFO("IMU_COUNT",    23, SIM,  imu_count,  2),
