@@ -213,6 +213,15 @@ void AP_ExternalAHRS::update(void)
     }
 }
 
+// Get model/type name
+const char* AP_ExternalAHRS::get_name() const
+{
+    if (backend) {
+        return backend->get_name();
+    }
+    return nullptr;
+}
+
 namespace AP {
 
 AP_ExternalAHRS &externalAHRS()
