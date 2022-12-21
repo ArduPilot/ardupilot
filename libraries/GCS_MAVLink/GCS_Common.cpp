@@ -66,6 +66,7 @@
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <AP_LandingGear/AP_LandingGear.h>
 #include <AP_Landing/AP_Landing_config.h>
+#include <AP_Generator/AP_Generator_Loweheiser.h>
 
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"
@@ -91,6 +92,10 @@
 
   #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
   #include <AP_DroneCAN/AP_DroneCAN.h>
+#endif
+
+#if AP_GENERATOR_LOWEHEISER_ENABLED
+#include <AP_Generator/AP_Generator_Loweheiser.h>
 #endif
 
 #include <AP_BattMonitor/AP_BattMonitor_config.h>
@@ -3748,6 +3753,10 @@ void GCS_MAVLINK::handle_command_ack(const mavlink_message_t &msg)
         accelcal->handle_command_ack(packet);
     }
 #endif
+#if AP_GENERATOR_LOWEHEISER_ENABLED
+    // this might be an ACK from a loweheiser generator:
+    handle_generator_message(msg);
+#endif
 }
 
 // allow override of RC channel values for complete GCS
@@ -4232,8 +4241,32 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         break;
     }
 #endif
+
+#if AP_GENERATOR_LOWEHEISER_ENABLED
+    case MAVLINK_MSG_ID_LOWEHEISER_GOV_EFI:
+        // message received from Loweheiser mavlink connection
+        handle_generator_message(msg);
+        break;
+#endif
     }
 
+}
+
+void GCS_MAVLINK::handle_generator_message(const mavlink_message_t &msg)
+{
+#if AP_GENERATOR_LOWEHEISER_ENABLED
+    AP_Generator *generator = AP::generator();
+    if (generator == nullptr) {
+        return;
+    }
+
+    auto *backend = generator->get_loweheiser();
+    if (backend == nullptr) {
+        return;
+    }
+
+    backend->handle_mavlink_msg(*this, msg);
+#endif
 }
 
 void GCS_MAVLINK::handle_common_mission_message(const mavlink_message_t &msg)

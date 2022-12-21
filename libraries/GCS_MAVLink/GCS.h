@@ -1036,6 +1036,7 @@ private:
                                                      const uint16_t payload_size);
     void handle_vision_speed_estimate(const mavlink_message_t &msg);
     void handle_landing_target(const mavlink_message_t &msg);
+    void handle_generator_message(const mavlink_message_t &msg);
 
     void lock_channel(const mavlink_channel_t chan, bool lock);
 
