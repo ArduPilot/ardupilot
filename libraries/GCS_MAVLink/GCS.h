@@ -418,8 +418,8 @@ public:
     bool is_private(void) const { return is_private(chan); }
 
 #if HAL_HIGH_LATENCY2_ENABLED
-    // return true if the link should be sending. Will return false if is a high latency link AND is not active
-    bool should_send() { return is_high_latency_link ? high_latency_link_enabled : true; }
+    // true if this is a high latency link
+    bool is_high_latency_link;
 #endif
 
     /*
@@ -683,9 +683,6 @@ protected:
 
     MAV_RESULT handle_control_high_latency(const mavlink_command_long_t &packet);
 
-    // true if this is a high latency link
-    bool is_high_latency_link;
-    bool high_latency_link_enabled;
 #endif // HAL_HIGH_LATENCY2_ENABLED
     
     static constexpr const float magic_force_arm_value = 2989.0f;
@@ -1212,7 +1209,9 @@ public:
     uint8_t get_channel_from_port_number(uint8_t port_num);
 
 #if HAL_HIGH_LATENCY2_ENABLED
+    bool high_latency_link_enabled;
     void enable_high_latency_connections(bool enabled);
+    bool get_high_latency_status();
 #endif // HAL_HIGH_LATENCY2_ENABLED
 
     virtual uint8_t sysid_this_mav() const = 0;
