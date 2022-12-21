@@ -2094,6 +2094,16 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
         ret = false;
     }
 
+#if HAL_EXTERNAL_AHRS_ENABLED
+    // Always check external AHRS if enabled
+    // it is a source for IMU data even if not being used as direct AHRS replacment
+    if (AP::externalAHRS().enabled() || (ekf_type() == EKFType::EXTERNAL)) {
+        if (!AP::externalAHRS().pre_arm_check(failure_msg, failure_msg_len)) {
+            return false;
+        }
+    }
+#endif
+
     if (!attitudes_consistent(failure_msg, failure_msg_len)) {
         return false;
     }
@@ -2114,9 +2124,9 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
 
 #if HAL_EXTERNAL_AHRS_ENABLED
     case EKFType::EXTERNAL:
-        return AP::externalAHRS().pre_arm_check(failure_msg, failure_msg_len) && ret;
+        return ret;
 #endif
-        
+
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
         if (!_ekf2_started) {
