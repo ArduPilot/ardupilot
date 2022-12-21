@@ -88,6 +88,11 @@ void AP_ExternalAHRS::init(void)
     }
 }
 
+bool AP_ExternalAHRS::enabled() const
+{
+    return DevType(devtype) != DevType::None;
+}
+
 // get serial port number for the uart, or -1 if not applicable
 int8_t AP_ExternalAHRS::get_port(void) const
 {
