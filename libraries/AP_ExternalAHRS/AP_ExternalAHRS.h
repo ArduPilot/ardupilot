@@ -75,6 +75,7 @@ public:
     } state;
 
     // accessors for AP_AHRS
+    bool enabled() const;
     bool healthy(void) const;
     bool initialised(void) const;
     bool get_quaternion(Quaternion &quat);
