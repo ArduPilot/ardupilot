@@ -2956,6 +2956,25 @@ bool AP_Param::add_table(uint8_t _key, const char *prefix, uint8_t num_params)
 }
 
 /*
+  look for a fitting key or add a new table via add_table()
+*/
+uint8_t AP_Param::get_table_key(const char *prefix, uint8_t num_params)
+{
+    uint8_t key {0};
+    do
+    {
+        if (AP_Param::add_table(key, prefix, num_params))
+        {
+            return key;
+        }
+        key++;
+    }
+    while (key <= 200);
+
+    return 0xFF; /* invalid */
+}
+
+/*
  Load an AP_Int32 variable from EEPROM using top level key and group element. Used to confirm
  a key in add_table()
 */

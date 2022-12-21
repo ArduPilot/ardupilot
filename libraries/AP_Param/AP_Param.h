@@ -542,9 +542,10 @@ public:
 
 #if AP_PARAM_DYNAMIC_ENABLED
     // allow for dynamically added parameter tables from scripts
-    static bool add_table(uint8_t key, const char *prefix, uint8_t num_params);
-    static bool add_param(uint8_t key, uint8_t param_num, const char *pname, float default_value);
-    static bool load_int32(uint16_t key, uint32_t group_element, int32_t &value);
+    static bool    add_table(uint8_t key, const char *prefix, uint8_t num_params);
+    static uint8_t get_table_key( const char *prefix, uint8_t num_params);
+    static bool    add_param(uint8_t key, uint8_t param_num, const char *pname, float default_value);
+    static bool    load_int32(uint16_t key, uint32_t group_element, int32_t &value);
 #endif
 
     static bool load_defaults_file(const char *filename, bool last_pass);
