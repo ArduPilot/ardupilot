@@ -358,7 +358,7 @@ userdata Parameter method set_default boolean float'skip_check
 
 include AP_Scripting/AP_Scripting.h
 singleton AP_Scripting rename scripting
-singleton AP_Scripting method scripting_restart void
+singleton AP_Scripting method restart_all void
 
 include AP_Mission/AP_Mission.h
 singleton AP_Mission rename mission
