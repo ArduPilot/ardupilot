@@ -45,6 +45,7 @@ public:
 protected:
     AP_ExternalAHRS::state_t &state;
     uint16_t get_rate(void) const;
+    bool option_is_set(AP_ExternalAHRS::OPTIONS option) const;
 
 private:
     AP_ExternalAHRS &frontend;
