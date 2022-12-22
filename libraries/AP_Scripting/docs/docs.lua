@@ -1622,6 +1622,11 @@ function serialLED:set_num_neopixel(chan, num_leds) end
 vehicle = {}
 
 -- desc
+---@param rudder_pct number
+---@param run_yaw_rate_control boolean
+function vehicle:set_rudder_offset(rudder_pct, run_yaw_rate_control) end
+
+-- desc
 ---@return boolean
 function vehicle:has_ekf_failsafed() end
 
