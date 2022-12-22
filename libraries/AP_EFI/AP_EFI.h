@@ -91,7 +91,9 @@ public:
     }
 
     // send EFI_STATUS
+#if HAL_GCS_ENABLED
     void send_mavlink_status(mavlink_channel_t chan);
+#endif
 
 #if AP_SCRIPTING_ENABLED
     AP_EFI_Backend* get_backend(uint8_t idx) { return idx==0?backend:nullptr; }
