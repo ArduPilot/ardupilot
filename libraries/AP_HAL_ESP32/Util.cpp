@@ -107,7 +107,7 @@ void *Util::allocate_heap_memory(size_t size)
     return heap;
 }
 
-void *Util::heap_realloc(void *heap, void *ptr, size_t new_size)
+void *Util::heap_realloc(void *heap, void *ptr, size_t old_size, size_t new_size)
 {
     if (heap == nullptr) {
         return nullptr;
