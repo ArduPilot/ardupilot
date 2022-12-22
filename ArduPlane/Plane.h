@@ -522,6 +522,8 @@ private:
         float throttle_pct;
         uint32_t start_ms;
         uint32_t current_ms;
+        float rudder_offset_pct;
+        bool run_yaw_rate_controller;
     } nav_scripting;
 #endif
 
@@ -1140,6 +1142,7 @@ private:
     // command throttle percentage and roll, pitch, yaw target
     // rates. For use with scripting controllers
     void set_target_throttle_rate_rpy(float throttle_pct, float roll_rate_dps, float pitch_rate_dps, float yaw_rate_dps) override;
+    void set_rudder_offset(float rudder_pct, bool run_yaw_rate_controller) override;
     bool nav_scripting_enable(uint8_t mode) override;
 #endif
  
