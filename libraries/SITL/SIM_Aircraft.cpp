@@ -37,6 +37,7 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include "SIM_TMotorDataLink.h"
 
 using namespace SITL;
 
@@ -1003,6 +1004,12 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
     if (fetteconewireesc) {
         fetteconewireesc->update(*this);
     }
+
+#if AP_SIM_TMOTOR_DATALINK_ENABLED
+    if (tmotordatalink != nullptr) {
+        tmotordatalink->update(*this, input);
+    }
+#endif
 
 #if AP_SIM_SHIP_ENABLED
     sitl->shipsim.update();
