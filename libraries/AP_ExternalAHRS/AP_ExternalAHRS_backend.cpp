@@ -32,5 +32,10 @@ uint16_t AP_ExternalAHRS_backend::get_rate(void) const
     return frontend.get_IMU_rate();
 }
 
+bool AP_ExternalAHRS_backend::option_is_set(AP_ExternalAHRS::OPTIONS option) const
+{
+    return frontend.option_is_set(option);
+}
+
 #endif  // HAL_EXTERNAL_AHRS_ENABLED
 

@@ -450,10 +450,17 @@ void AP_ExternalAHRS_VectorNav::process_packet1(const uint8_t *b)
     last_pkt1_ms = AP_HAL::millis();
     *last_pkt1 = pkt1;
 
+    const bool use_uncomp = option_is_set(AP_ExternalAHRS::OPTIONS::VN_UNCOMP_IMU);
+
     {
         WITH_SEMAPHORE(state.sem);
-        state.accel = Vector3f{pkt1.accel[0], pkt1.accel[1], pkt1.accel[2]};
-        state.gyro = Vector3f{pkt1.gyro[0], pkt1.gyro[1], pkt1.gyro[2]};
+        if (use_uncomp) {
+            state.accel = Vector3f{pkt1.uncompAccel[0], pkt1.uncompAccel[1], pkt1.uncompAccel[2]};
+            state.gyro = Vector3f{pkt1.uncompAngRate[0], pkt1.uncompAngRate[1], pkt1.uncompAngRate[2]};
+        } else {
+            state.accel = Vector3f{pkt1.accel[0], pkt1.accel[1], pkt1.accel[2]};
+            state.gyro = Vector3f{pkt1.gyro[0], pkt1.gyro[1], pkt1.gyro[2]};
+        }
 
         state.quat = Quaternion{pkt1.quaternion[3], pkt1.quaternion[0], pkt1.quaternion[1], pkt1.quaternion[2]};
         state.have_quaternion = true;
@@ -582,10 +589,18 @@ void AP_ExternalAHRS_VectorNav::process_packet_VN_100(const uint8_t *b)
     const struct VN_100_packet1 &pkt = *(struct VN_100_packet1 *)b;
 
     last_pkt1_ms = AP_HAL::millis();
+
+    const bool use_uncomp = option_is_set(AP_ExternalAHRS::OPTIONS::VN_UNCOMP_IMU);
+
     {
         WITH_SEMAPHORE(state.sem);
-        state.accel = Vector3f{pkt.accel[0], pkt.accel[1], pkt.accel[2]};
-        state.gyro = Vector3f{pkt.gyro[0], pkt.gyro[1], pkt.gyro[2]};
+        if (use_uncomp) {
+            state.accel = Vector3f{pkt.uncompAccel[0], pkt.uncompAccel[1], pkt.uncompAccel[2]};
+            state.gyro = Vector3f{pkt.uncompAngRate[0], pkt.uncompAngRate[1], pkt.uncompAngRate[2]};
+        } else {
+            state.accel = Vector3f{pkt.accel[0], pkt.accel[1], pkt.accel[2]};
+            state.gyro = Vector3f{pkt.gyro[0], pkt.gyro[1], pkt.gyro[2]};
+        }
 
         state.quat = Quaternion{pkt.quaternion[3], pkt.quaternion[0], pkt.quaternion[1], pkt.quaternion[2]};
         state.have_quaternion = true;
@@ -604,7 +619,11 @@ void AP_ExternalAHRS_VectorNav::process_packet_VN_100(const uint8_t *b)
 
     {
         AP_ExternalAHRS::mag_data_message_t mag;
-        mag.field = Vector3f{pkt.mag[0], pkt.mag[1], pkt.mag[2]};
+        if (use_uncomp) {
+            mag.field = Vector3f{pkt.uncompMag[0], pkt.uncompMag[1], pkt.uncompMag[2]};
+        } else {
+            mag.field = Vector3f{pkt.mag[0], pkt.mag[1], pkt.mag[2]};
+        }
         mag.field *= 1000; // to mGauss
 
         AP::compass().handle_external(mag);
@@ -644,10 +663,12 @@ void AP_ExternalAHRS_VectorNav::process_packet_VN_100(const uint8_t *b)
                        "Qfffffffffffffff",
                        AP_HAL::micros64(),
                        pkt.temp, pkt.pressure*1e3,
-                       pkt.mag[0], pkt.mag[1], pkt.mag[2],
-                       pkt.accel[0], pkt.accel[1], pkt.accel[2],
-                       pkt.gyro[0], pkt.gyro[1], pkt.gyro[2],
-                       pkt.quaternion[0], pkt.quaternion[1], pkt.quaternion[2], pkt.quaternion[3]);
+                       use_uncomp ? pkt.uncompMag[0] : pkt.mag[0],
+                       use_uncomp ? pkt.uncompMag[1] : pkt.mag[1], 
+                       use_uncomp ? pkt.uncompMag[2] : pkt.mag[2],
+                       state.accel[0], state.accel[1], state.accel[2],
+                       state.gyro[0], state.gyro[1], state.gyro[2],
+                       state.quat[0], state.quat[1], state.quat[2], state.quat[3]);
 
 }
 

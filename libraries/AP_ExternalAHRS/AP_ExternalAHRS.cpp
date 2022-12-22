@@ -60,7 +60,14 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @Units: Hz
     // @User: Standard
     AP_GROUPINFO("_RATE", 2, AP_ExternalAHRS, rate, 50),
-    
+
+    // @Param: _OPTIONS
+    // @DisplayName: External AHRS options
+    // @Description: External AHRS options bitmask
+    // @Bitmask: 0:Vector Nav use uncompensated values for accel gyro and mag.
+    // @User: Standard
+    AP_GROUPINFO("_OPTIONS", 3, AP_ExternalAHRS, options, 0),
+
     AP_GROUPEND
 };
 
