@@ -512,7 +512,7 @@ private:
 
     // Parachute release
 #if PARACHUTE == ENABLED
-    AP_Parachute parachute{relay};
+    AP_Parachute parachute;
 #endif
 
     // Landing Gear Controller
