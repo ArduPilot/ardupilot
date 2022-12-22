@@ -9,7 +9,17 @@
  */
 
 #include <SITL/SIM_Multicopter.h>
+#include <SITL/SIM_Helicopter.h>
+#include <SITL/SIM_SingleCopter.h>
 #include <SITL/SIM_Plane.h>
+#include <SITL/SIM_QuadPlane.h>
+#include <SITL/SIM_Rover.h>
+#include <SITL/SIM_BalanceBot.h>
+#include <SITL/SIM_Sailboat.h>
+#include <SITL/SIM_MotorBoat.h>
+#include <SITL/SIM_Tracker.h>
+#include <SITL/SIM_Submarine.h>
+#include <SITL/SIM_Blimp.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include <AP_Baro/AP_Baro.h>
