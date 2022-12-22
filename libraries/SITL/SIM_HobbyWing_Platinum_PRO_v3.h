@@ -32,7 +32,7 @@ mode takeoff
 
 param fetch
 
-./Tools/autotest/autotest.py --gdb --debug build.ArduCopter fly.ArduPlane.HobbyWing_Platinum_PRO_v3
+./Tools/autotest/autotest.py --gdb --debug build.Plane test.Plane.HobbyWing_Platinum_PRO_v3
 
 ./Tools/autotest/sim_vehicle.py  --gdb --debug -v plane -f plane -A --uartF=logic_async_csv:libraries/AP_ESC_Telem/examples/samples/hobbywing-platinum-pro-v3.csv --speedup=1 -B AP_HobbyWing_Platinum_PRO_v3::update
 graph RPM.rpm1
