@@ -97,6 +97,7 @@ function maybe_prompt_user() {
 }
 
 brew update
+brew install --overwrite python@3.10
 brew install gawk curl coreutils wget
 
 PIP=pip
