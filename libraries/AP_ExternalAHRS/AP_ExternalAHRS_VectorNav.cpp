@@ -38,57 +38,43 @@ extern const AP_HAL::HAL &hal;
 /*
   header for pre-configured 50Hz data
   assumes the following config for VN-300:
-    $VNWRG,75,3,8,35,0003,0F2C,0147,0613*2642
+    $VNWRG,75,3,8,34,072C,0106,0612*0C
 
-    0x35: Groups 1,3,5,6
-    Group 1 (Common):
-        0x0003:
-            TimeStartup
-            TimeGps
+    0x34: Groups 3,5,6
     Group 3 (IMU):
-        0x0F2C:
+        0x072C:
             UncompAccel
             UncompGyro
             Pres
             Mag
             Accel
             AngularRate
-            No 11th item in my manual, presubably "sensSat" whatever that means
     Group 5 (Attitude):
-        0x0147:
-            Reserved, presumably "AHRSStatus" my manual must be out of date!
+        0x0106:
             YawPitchRoll
             Quaternion
-            LinearAccelBody
             YprU
     Group 6 (INS):
-        0x0613:
-            InsStatus
+        0x0612:
             PosLLa
             VelNed
-            LinearAccelEcef
             PosU
+            VelU
 
 */
-static const uint8_t vn_pkt1_header[] { 0x35, 0x03, 0x00, 0x2c, 0x0f, 0x47, 0x01, 0x13, 0x06 };
-#define VN_PKT1_LENGTH 194 // includes header and CRC
+static const uint8_t vn_pkt1_header[] { 0x34, 0x2c, 0x07, 0x06, 0x01, 0x12, 0x06 };
+#define VN_PKT1_LENGTH 158 // includes header and CRC
 
 struct PACKED VN_packet1 {
-    uint64_t timeStartup;
-    uint64_t timeGPS;
     float uncompAccel[3];
     float uncompAngRate[3];
     float pressure;
     float mag[3];
     float accel[3];
     float gyro[3];
-    uint16_t sensSat;
-    uint16_t AHRSStatus;
     float ypr[3];
     float quaternion[4];
-    float linAccBody[3];
     float yprU[3];
-    uint16_t INSStatus;
     double positionLLA[3];
     float velNED[3];
     float posU;
@@ -96,12 +82,12 @@ struct PACKED VN_packet1 {
 };
 
 // check packet size for 4 groups
-static_assert(sizeof(VN_packet1)+2+4*2+2 == VN_PKT1_LENGTH, "incorrect VN_packet1 length");
+static_assert(sizeof(VN_packet1)+2+3*2+2 == VN_PKT1_LENGTH, "incorrect VN_packet1 length");
 
 /*
   header for pre-configured 5Hz data
   assumes the following VN-300 config:
-    $VNWRG,76,3,80,4E,0002,0010,20B8,2018*A66B
+    $VNWRG,76,3,80,4E,0002,0010,20B8,0018*63
 
     0x4E: Groups 2,3,4,7
     Group 2 (Time):
@@ -118,13 +104,12 @@ static_assert(sizeof(VN_packet1)+2+4*2+2 == VN_PKT1_LENGTH, "incorrect VN_packet
             VelNed
             DOP
     Group 7 (GPS2):
-        0x2018:
+        0x0018:
             NumSats
             Fix
-            DOP
 */
-static const uint8_t vn_pkt2_header[] { 0x4e, 0x02, 0x00, 0x10, 0x00, 0xb8, 0x20, 0x18, 0x20 };
-#define VN_PKT2_LENGTH 120 // includes header and CRC
+static const uint8_t vn_pkt2_header[] { 0x4e, 0x02, 0x00, 0x10, 0x00, 0xb8, 0x20, 0x18, 0x00 };
+#define VN_PKT2_LENGTH 92 // includes header and CRC
 
 struct PACKED VN_packet2 {
     uint64_t timeGPS;
@@ -136,7 +121,6 @@ struct PACKED VN_packet2 {
     float GPS1DOP[7];
     uint8_t numGPS2Sats;
     uint8_t GPS2Fix;
-    float GPS2DOP[7];
 };
 
 // check packet size for 4 groups
@@ -431,8 +415,8 @@ void AP_ExternalAHRS_VectorNav::update_thread()
     } else {
         // Default to Setup for VN-300 series
         // This assumes unit is still configured at its default rate of 400hz
-        nmea_printf(uart, "$VNWRG,75,3,%u,35,0003,0F2C,0147,0613", unsigned(400/get_rate()));
-        nmea_printf(uart, "$VNWRG,76,3,80,4E,0002,0010,20B8,2018");
+        nmea_printf(uart, "$VNWRG,75,3,%u,34,072C,0106,0612", unsigned(400/get_rate()));
+        nmea_printf(uart, "$VNWRG,76,3,80,4E,0002,0010,20B8,0018");
     }
 
     setup_complete = true;
