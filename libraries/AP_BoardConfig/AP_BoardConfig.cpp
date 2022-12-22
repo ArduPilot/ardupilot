@@ -411,7 +411,7 @@ void AP_BoardConfig::throw_error(const char *err_type, const char *fmt, va_list 
         uint32_t now = AP_HAL::millis();
         if (now - last_print_ms >= 5000) {
             last_print_ms = now;
-            char printfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+2];
+            char printfmt[52];  // MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+2
             hal.util->snprintf(printfmt, sizeof(printfmt), "%s: %s\n", err_type, fmt);
             {
                 va_list arg_copy;
