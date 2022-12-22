@@ -38,11 +38,12 @@ extern const AP_HAL::HAL &hal;
 /*
   header for pre-configured 50Hz data
   assumes the following config for VN-300:
-    $VNWRG,75,3,8,34,072C,0106,0612*0C
+    $VNWRG,75,3,8,34,072E,0106,0612*0C
 
     0x34: Groups 3,5,6
     Group 3 (IMU):
-        0x072C:
+        0x072E:
+            UncompMag
             UncompAccel
             UncompGyro
             Pres
@@ -62,10 +63,11 @@ extern const AP_HAL::HAL &hal;
             VelU
 
 */
-static const uint8_t vn_pkt1_header[] { 0x34, 0x2c, 0x07, 0x06, 0x01, 0x12, 0x06 };
-#define VN_PKT1_LENGTH 158 // includes header and CRC
+static const uint8_t vn_pkt1_header[] { 0x34, 0x2E, 0x07, 0x06, 0x01, 0x12, 0x06 };
+#define VN_PKT1_LENGTH 170 // includes header and CRC
 
 struct PACKED VN_packet1 {
+    float uncompMag[3];
     float uncompAccel[3];
     float uncompAngRate[3];
     float pressure;
@@ -128,12 +130,15 @@ static_assert(sizeof(VN_packet2)+2+4*2+2 == VN_PKT2_LENGTH, "incorrect VN_packet
 
 /*
   assumes the following VN-300 config:
-    $VNWRG,75,3,80,14,0730,0004*66
+    $VNWRG,75,3,80,14,073E,0004*66
 
   Alternate first packet for VN-100
     0x14: Groups 3, 5
         Group 3 (IMU):
-            0x0730:
+            0x073E:
+                UncompMag
+                UncompAccel
+                UncompGyro
                 Temp
                 Pres
                 Mag
@@ -143,10 +148,13 @@ static_assert(sizeof(VN_packet2)+2+4*2+2 == VN_PKT2_LENGTH, "incorrect VN_packet
             0x0004:
                 Quaternion
 */
-static const uint8_t vn_100_pkt1_header[] { 0x14, 0x30, 0x07, 0x04, 0x00 };
-#define VN_100_PKT1_LENGTH 68 // includes header and CRC
+static const uint8_t vn_100_pkt1_header[] { 0x14, 0x3E, 0x07, 0x04, 0x00 };
+#define VN_100_PKT1_LENGTH 104 // includes header and CRC
 
 struct PACKED VN_100_packet1 {
+    float uncompMag[3];
+    float uncompAccel[3];
+    float uncompAngRate[3];
     float temp;
     float pressure;
     float mag[3];
@@ -404,18 +412,14 @@ void AP_ExternalAHRS_VectorNav::update_thread()
     if (strncmp(model_name, "VN-100", 6) == 0) {
         // VN-100
         type = TYPE::VN_100;
-        // Shrink buffer size to packet length
-        // Allowing multiple packets to fit in the buffer breaks the parser
-        // its safe to make it smaller, we could resize to get some memory back
-        bufsize = MIN(bufsize,VN_100_PKT1_LENGTH);
 
         // This assumes unit is still configured at its default rate of 800hz
-        nmea_printf(uart, "$VNWRG,75,3,%u,14,0730,0004", unsigned(800/get_rate()));
+        nmea_printf(uart, "$VNWRG,75,3,%u,14,073E,0004", unsigned(800/get_rate()));
 
     } else {
         // Default to Setup for VN-300 series
         // This assumes unit is still configured at its default rate of 400hz
-        nmea_printf(uart, "$VNWRG,75,3,%u,34,072C,0106,0612", unsigned(400/get_rate()));
+        nmea_printf(uart, "$VNWRG,75,3,%u,34,072E,0106,0612", unsigned(400/get_rate()));
         nmea_printf(uart, "$VNWRG,76,3,80,4E,0002,0010,20B8,0018");
     }
 
