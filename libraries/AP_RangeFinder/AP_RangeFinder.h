@@ -158,7 +158,9 @@ public:
     void update(void);
 
     // Handle an incoming DISTANCE_SENSOR message (from a MAVLink enabled range finder)
+#if HAL_GCS_ENABLED
     void handle_msg(const mavlink_message_t &msg);
+#endif
 
 #if HAL_MSP_RANGEFINDER_ENABLED
     // Handle an incoming DISTANCE_SENSOR message (from a MSP enabled range finder)
@@ -189,7 +191,9 @@ public:
     int16_t max_distance_cm_orient(enum Rotation orientation) const;
     int16_t min_distance_cm_orient(enum Rotation orientation) const;
     int16_t ground_clearance_cm_orient(enum Rotation orientation) const;
+#if HAL_GCS_ENABLED
     MAV_DISTANCE_SENSOR get_mav_distance_sensor_type_orient(enum Rotation orientation) const;
+#endif
     RangeFinder::Status status_orient(enum Rotation orientation) const;
     bool has_data_orient(enum Rotation orientation) const;
     uint8_t range_valid_count_orient(enum Rotation orientation) const;
