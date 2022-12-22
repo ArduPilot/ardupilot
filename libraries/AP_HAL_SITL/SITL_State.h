@@ -44,6 +44,7 @@
 #include <SITL/SIM_RF_NMEA.h>
 #include <SITL/SIM_RF_MAVLink.h>
 #include <SITL/SIM_RF_GYUS42v2.h>
+#include <SITL/SIM_TMotorDataLink.h>
 #include <SITL/SIM_VectorNav.h>
 #include <SITL/SIM_LORD.h>
 #include <SITL/SIM_AIS.h>
@@ -282,6 +283,11 @@ private:
 #if HAL_SIM_AIS_ENABLED
     // simulated AIS stream
     SITL::AIS *ais;
+#endif
+
+#if AP_SIM_TMOTOR_DATALINK_ENABLED
+    // simulated TMotorDataLink
+    SITL::TMotorDataLink *tmotordatalink;
 #endif
 
     // simulated EFI MegaSquirt device:

@@ -388,6 +388,19 @@ SITL::SerialDevice *SITL_State::create_serial_sim(const char *name, const char *
     } else if (streq(name, "fetteconewireesc")) {
         sitl_model->set_fetteconewireesc(&_sitl->fetteconewireesc_sim);
         return &_sitl->fetteconewireesc_sim;
+#if AP_SIM_TMOTOR_DATALINK_ENABLED
+    } else if (!strncmp(name, "tmotordatalink", sizeof("tmotordatalink"))) {
+        if (tmotordatalink != nullptr) {
+            AP_HAL::panic("Only one TMotorDataLink at a time");
+        }
+        tmotordatalink = new SITL::TMotorDataLink();
+        if (tmotordatalink == nullptr) {
+            AP_HAL::panic("Failed to create TMotorDataLink");
+        }
+        tmotordatalink->set_motors(arg);
+        sitl_model->set_tmotordatalink(tmotordatalink);
+        return tmotordatalink;
+#endif  // AP_SIM_TMOTOR_DATALINK_ENABLED
     } else if (streq(name, "ie24")) {
         sitl_model->set_ie24(&_sitl->ie24_sim);
         return &_sitl->ie24_sim;
