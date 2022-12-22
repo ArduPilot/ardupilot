@@ -192,10 +192,12 @@ public:
     /*
       handle an incoming MAG_CAL command
     */
+#if HAL_GCS_ENABLED
     MAV_RESULT handle_mag_cal_command(const mavlink_command_long_t &packet);
 
     bool send_mag_cal_progress(const class GCS_MAVLINK& link);
     bool send_mag_cal_report(const class GCS_MAVLINK& link);
+#endif
 
     // check if the compasses are pointing in the same direction
     bool consistent() const;
@@ -339,9 +341,11 @@ public:
     /*
       fast compass calibration given vehicle position and yaw
      */
+#if HAL_GCS_ENABLED
     MAV_RESULT mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
                                  float lat_deg, float lon_deg,
                                  bool force_use=false);
+#endif
 
 #if AP_COMPASS_MSP_ENABLED
     void handle_msp(const MSP::msp_compass_data_message_t &pkt);
@@ -389,8 +393,10 @@ private:
     bool _start_calibration(uint8_t i, bool retry=false, float delay_sec=0.0f);
     bool _start_calibration_mask(uint8_t mask, bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot=false);
     bool _auto_reboot() const { return _compass_cal_autoreboot; }
+#if HAL_GCS_ENABLED
     Priority next_cal_progress_idx[MAVLINK_COMM_NUM_BUFFERS];
     Priority next_cal_report_idx[MAVLINK_COMM_NUM_BUFFERS];
+#endif
 
     // see if we already have probed a i2c driver by bus number and address
     bool _have_i2c_driver(uint8_t bus_num, uint8_t address) const;
