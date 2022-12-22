@@ -604,7 +604,12 @@ void Plane::stabilize()
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron);
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elevator);
         if (yawController.rate_control_enabled()) {
-            const float rudder = yawController.get_rate_out(nav_scripting.yaw_rate_dps, speed_scaler, false);
+            float rudder = nav_scripting.rudder_offset_pct * 45;
+            if (nav_scripting.run_yaw_rate_controller) {
+                rudder += yawController.get_rate_out(nav_scripting.yaw_rate_dps, speed_scaler, false);
+            } else {
+                yawController.reset_I();
+            }
             steering_control.rudder = rudder;
         }
 #endif
