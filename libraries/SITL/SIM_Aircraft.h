@@ -170,6 +170,7 @@ public:
     void set_gripper_servo(Gripper_Servo *_gripper) { gripper = _gripper; }
     void set_gripper_epm(Gripper_EPM *_gripper_epm) { gripper_epm = _gripper_epm; }
     void set_precland(SIM_Precland *_precland);
+    void set_tmotordatalink(class TMotorDataLink *_tmotordatalink) { tmotordatalink = _tmotordatalink; }
     void set_i2c(class I2C *_i2c) { i2c = _i2c; }
 #if AP_TEST_DRONECAN_DRIVERS
     void set_dronecan_device(DroneCANDevice *_dronecan) { dronecan = _dronecan; }
@@ -420,6 +421,8 @@ private:
 
     static Aircraft *instances[MAX_SIM_INSTANCES];
     HAL_Semaphore pose_sem;
+
+    class TMotorDataLink *tmotordatalink;
 };
 
 } // namespace SITL
