@@ -339,6 +339,11 @@ if __name__ == '__main__':
                       default="master",
                       help="master branch to use")
     parser.add_option("",
+                      "--no-merge-base",
+                      action="store_true",
+                      default=False,
+                      help="do not use the merge-base for testing, do a direct comparison between branches")
+    parser.add_option("",
                       "--branch",
                       type="string",
                       default=None,
@@ -391,5 +396,6 @@ if __name__ == '__main__':
         run_elf_diff=(not cmd_opts.no_elf_diff),
         all_vehicles=cmd_opts.all_vehicles,
         all_boards=cmd_opts.all_boards,
+        use_merge_base=not cmd_opts.no_merge_base,
     )
     x.run()
