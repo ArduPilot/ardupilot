@@ -253,7 +253,9 @@ public:
     bool reset_remaining(uint8_t instance, float percentage) { return reset_remaining_mask(1U<<instance, percentage);}
 
     // Returns mavlink charge state
+#if HAL_GCS_ENABLED
     MAV_BATTERY_CHARGE_STATE get_mavlink_charge_state(const uint8_t instance) const;
+#endif
 
     // Returns mavlink fault state
     uint32_t get_mavlink_fault_bitmask(const uint8_t instance) const;
