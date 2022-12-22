@@ -47,7 +47,9 @@ public:
     }
 #endif
 
+#if HAL_GCS_ENABLED
     virtual void queue_text_message(MAV_SEVERITY severity, const char *text) { }
+#endif
 
 protected:
 
