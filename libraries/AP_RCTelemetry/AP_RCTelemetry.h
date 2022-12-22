@@ -33,8 +33,10 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(AP_RCTelemetry);
 
+#if HAL_GCS_ENABLED
     // add statustext message to message queue
     virtual void queue_message(MAV_SEVERITY severity, const char *text);
+#endif
 
     // scheduler entry helpers
     void enable_scheduler_entry(const uint8_t slot) {
@@ -115,12 +117,14 @@ protected:
 #endif
     } _scheduler;
 
+#if HAL_GCS_ENABLED
     struct {
         HAL_Semaphore sem;
         ObjectBuffer<mavlink_statustext_t> queue{TELEM_PAYLOAD_STATUS_CAPACITY};
         mavlink_statustext_t next;
         bool available;
     } _statustext;
+#endif
 
 private:
     uint32_t check_sensor_status_timer;
