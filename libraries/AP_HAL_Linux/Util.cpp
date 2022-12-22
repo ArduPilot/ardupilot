@@ -253,7 +253,7 @@ void *Util::allocate_heap_memory(size_t size)
     return (void *)new_heap;
 }
 
-void *Util::heap_realloc(void *h, void *ptr, size_t new_size)
+void *Util::heap_realloc(void *h, void *ptr, size_t old_size, size_t new_size)
 {
     if (h == nullptr) {
         return nullptr;
@@ -261,8 +261,10 @@ void *Util::heap_realloc(void *h, void *ptr, size_t new_size)
 
     struct heap *heapp = (struct heap*)h;
 
-    // extract appropriate headers
-    size_t old_size = 0;
+    // extract appropriate headers. We use the old_size from the
+    // header not from the caller. We use SITL to catch cases they
+    // don't match (which would be a lua bug)
+    old_size = 0;
     heap_allocation_header *old_header = nullptr;
     if (ptr != nullptr) {
         old_header = ((heap_allocation_header *)ptr) - 1;
