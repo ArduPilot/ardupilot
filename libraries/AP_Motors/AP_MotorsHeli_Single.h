@@ -29,7 +29,7 @@
 #define AP_MOTORS_HELI_SINGLE_EXT_GYRO_GAIN                    350
 
 // COLYAW parameter min and max values
-#define AP_MOTORS_HELI_SINGLE_COLYAW_RANGE                     10.0f
+#define AP_MOTORS_HELI_SINGLE_COLYAW_RANGE                     5.0f
 
 // maximum number of swashplate servos
 #define AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS            3
@@ -140,9 +140,9 @@ protected:
     AP_Int16        _tail_type;                 // Tail type used: Servo, Servo with external gyro, direct drive variable pitch or direct drive fixed pitch
     AP_Int16        _ext_gyro_gain_std;         // PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro
     AP_Int16        _ext_gyro_gain_acro;        // PWM sent to external gyro on ch7 when tail type is Servo w/ ExtGyro in ACRO
-    AP_Float        _collective_yaw_effect;     // Feed-forward compensation to automatically add rudder input when collective pitch is increased. Can be positive or negative depending on mechanics.
     AP_Int8         _flybar_mode;               // Flybar present or not.  Affects attitude controller used during ACRO flight mode
     AP_Int16        _direct_drive_tailspeed;    // Direct Drive VarPitch Tail ESC speed (0 ~ 1000)
+    AP_Float        _collective_yaw_scale;      // Feed-forward compensation to automatically add rudder input when collective pitch is increased. Can be positive or negative depending on mechanics.
 
     bool            _acro_tail = false;
 };
