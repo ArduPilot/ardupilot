@@ -191,6 +191,7 @@ AP_HW_C_RTK2_HP                      1085
 AP_HW_JUMPER_XIAKE800                1086
 AP_HW_Sierra_F1                      1087
 AP_HW_HolybroCompass                 1088
+AP_HW_SKYSTARS_F405_WING_MINI        1089
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
