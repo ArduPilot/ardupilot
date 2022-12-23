@@ -81,9 +81,7 @@ void ModeRTL::update()
 void ModeRTL::navigate()
 {
 #if HAL_QUADPLANE_ENABLED
-    if ((plane.control_mode->mode_number() != QRTL) && plane.quadplane.available()) {
-        // QRTL shares this navigate function with RTL
-
+    if (plane.quadplane.available()) {
         if (plane.quadplane.rtl_mode == QuadPlane::RTL_MODE::VTOL_APPROACH_QRTL) {
             // VTOL approach landing
             AP_Mission::Mission_Command cmd;
