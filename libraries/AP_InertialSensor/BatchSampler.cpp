@@ -1,6 +1,6 @@
 #include "AP_InertialSensor.h"
 
-#if HAL_INS_ENABLED
+#if AP_INERTIALSENSOR_ENABLED
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 
@@ -282,4 +282,4 @@ void AP_InertialSensor::BatchSampler::sample(uint8_t _instance, AP_InertialSenso
     data_write_offset++; // may unblock the reading process
 #endif
 }
-#endif //#if HAL_INS_ENABLED
+#endif //#if AP_INERTIALSENSOR_ENABLED
