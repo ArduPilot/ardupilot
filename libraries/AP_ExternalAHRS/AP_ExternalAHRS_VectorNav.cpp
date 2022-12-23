@@ -398,8 +398,8 @@ void AP_ExternalAHRS_VectorNav::update_thread()
 
     // Reset and wait for module to reboot
     // VN_100 takes 1.25 seconds
-    nmea_printf(uart, "$VNRST");
-    hal.scheduler->delay(3000);
+    //nmea_printf(uart, "$VNRST");
+    //hal.scheduler->delay(3000);
 
     // Stop NMEA Async Outputs (this UART only)
     nmea_printf(uart, "$VNWRG,6,0");
