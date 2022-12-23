@@ -1829,7 +1829,7 @@ void GCS_MAVLINK::send_rc_channels_raw() const
 
 void GCS_MAVLINK::send_raw_imu()
 {
-#if HAL_INS_ENABLED
+#if AP_INERTIALSENSOR_ENABLED
     const AP_InertialSensor &ins = AP::ins();
     const Compass &compass = AP::compass();
 
@@ -1861,7 +1861,7 @@ void GCS_MAVLINK::send_raw_imu()
 
 void GCS_MAVLINK::send_scaled_imu(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro, int16_t xmag, int16_t ymag, int16_t zmag, int16_t temperature))
 {
-#if HAL_INS_ENABLED
+#if AP_INERTIALSENSOR_ENABLED
     const AP_InertialSensor &ins = AP::ins();
     const Compass &compass = AP::compass();
     int16_t _temperature = 0;
@@ -2555,7 +2555,7 @@ void GCS_MAVLINK::send_local_position() const
  */
 void GCS_MAVLINK::send_vibration() const
 {
-#if HAL_INS_ENABLED
+#if AP_INERTIALSENSOR_ENABLED
     const AP_InertialSensor &ins = AP::ins();
 
     Vector3f vibration = ins.get_vibration_levels();
@@ -4039,7 +4039,7 @@ void GCS_MAVLINK::send_banner()
         send_text(MAV_SEVERITY_INFO, "%s", banner_msg);
     }
 
-#if HAL_INS_ENABLED
+#if AP_INERTIALSENSOR_ENABLED
     // output any fast sampling status messages
     for (uint8_t i = 0; i < INS_MAX_BACKENDS; i++) {
         if (AP::ins().get_output_banner(i, banner_msg, sizeof(banner_msg))) {
@@ -4115,7 +4115,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_set_sensor_offsets(const mavlin
 
 bool GCS_MAVLINK::calibrate_gyros()
 {
-#if HAL_INS_ENABLED
+#if AP_INERTIALSENSOR_ENABLED
     AP::ins().init_gyro();
     if (!AP::ins().gyro_calibrated_ok_all()) {
         return false;
@@ -4175,7 +4175,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
     }
 #endif
 
-#if HAL_INS_ENABLED
+#if AP_INERTIALSENSOR_ENABLED
     const uint32_t now = AP_HAL::millis();
     if (is_equal(packet.param5,2.0f)) {
         // reject any time we've done a calibration recently
