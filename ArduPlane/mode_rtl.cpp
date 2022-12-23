@@ -158,3 +158,8 @@ bool ModeRTL::switch_QRTL()
 }
 
 #endif  // HAL_QUADPLANE_ENABLED
+
+bool ModeRTL::use_glide_slope() const
+{
+    return plane.above_location_current(plane.next_WP_loc);
+}

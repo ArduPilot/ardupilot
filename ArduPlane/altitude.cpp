@@ -40,40 +40,10 @@ void Plane::setup_glide_slope(void)
     TECS_controller.set_path_proportion(auto_state.wp_proportion);
     update_flight_stage();
 
-    /*
-      work out if we will gradually change altitude, or try to get to
-      the new altitude as quickly as possible.
-     */
-    switch (control_mode->mode_number()) {
-    case Mode::Number::RTL:
-    case Mode::Number::AVOID_ADSB:
-    case Mode::Number::GUIDED:
-        /* glide down slowly if above target altitude, but ascend more
-           rapidly if below it. See
-           https://github.com/ArduPilot/ardupilot/issues/39
-        */
-        if (above_location_current(next_WP_loc)) {
-            set_offset_altitude_location(prev_WP_loc, next_WP_loc);
-        } else {
-            reset_offset_altitude();
-        }
-        break;
-
-    case Mode::Number::AUTO:
-        // we only do glide slide handling in AUTO when above 20m or
-        // when descending. The 20 meter threshold is arbitrary, and
-        // is basically to prevent situations where we try to slowly
-        // gain height at low altitudes, potentially hitting
-        // obstacles.
-        if (adjusted_relative_altitude_cm() > 2000 || above_location_current(next_WP_loc)) {
-            set_offset_altitude_location(prev_WP_loc, next_WP_loc);
-        } else {
-            reset_offset_altitude();
-        }
-        break;
-    default:
+    if (control_mode->use_glide_slope()) {
+        set_offset_altitude_location(prev_WP_loc, next_WP_loc);
+    } else {
         reset_offset_altitude();
-        break;
     }
 }
 

@@ -120,6 +120,10 @@ public:
     // handle a guided target request from GCS
     virtual bool handle_guided_request(Location target_loc) { return false; }
 
+    // return true if vehicle should gradually change altitude, if false the vehicle
+    // will try to get to the new altitude as quickly as possible.
+    virtual bool use_glide_slope() const { return false; }
+
 protected:
 
     // subclasses override this to perform checks before entering the mode
@@ -176,6 +180,8 @@ public:
 
     bool does_auto_throttle() const override;
 
+    bool use_glide_slope() const override;
+
 protected:
 
     bool _enter() override;
@@ -227,6 +233,8 @@ public:
     void set_radius_and_direction(const float radius, const bool direction_is_ccw);
 
     void update_target_altitude() override;
+
+    bool use_glide_slope() const override;
 
 protected:
 
@@ -341,6 +349,8 @@ public:
     bool does_auto_navigation() const override { return true; }
 
     bool does_auto_throttle() const override { return true; }
+
+    bool use_glide_slope() const override;
 
 protected:
 
@@ -482,6 +492,8 @@ public:
     virtual bool is_guided_mode() const override { return true; }
 
     bool does_auto_throttle() const override { return true; }
+
+    bool use_glide_slope() const override;
 
 protected:
 

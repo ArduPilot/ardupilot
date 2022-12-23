@@ -139,3 +139,13 @@ bool ModeAuto::does_auto_throttle() const
 #endif
    return true;
 }
+
+bool ModeAuto::use_glide_slope() const
+{
+    // we only do glide slide handling in AUTO when above 20m or
+    // when descending. The 20 meter threshold is arbitrary, and
+    // is basically to prevent situations where we try to slowly
+    // gain height at low altitudes, potentially hitting
+    // obstacles.
+    return plane.adjusted_relative_altitude_cm() > 2000 || plane.above_location_current(plane.next_WP_loc);
+}

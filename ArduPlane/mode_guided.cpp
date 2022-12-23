@@ -93,3 +93,8 @@ void ModeGuided::update_target_altitude()
         Mode::update_target_altitude();
     }
 }
+
+bool ModeGuided::use_glide_slope() const
+{
+    return plane.above_location_current(plane.next_WP_loc);
+}

@@ -19,5 +19,10 @@ void ModeAvoidADSB::navigate()
     plane.update_loiter(0);
 }
 
+bool ModeAvoidADSB::use_glide_slope() const
+{
+    return plane.above_location_current(plane.next_WP_loc);
+}
+
 #endif // HAL_ADSB_ENABLED
 
