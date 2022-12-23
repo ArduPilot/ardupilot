@@ -357,7 +357,7 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
 }
 
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
-void ModeAuto::wp_start(const Location& dest_loc)
+bool ModeAuto::wp_start(const Location& dest_loc)
 {
     // init wpnav and set origin if transitioning from takeoff
     if (!wp_nav->is_active()) {
@@ -371,11 +371,8 @@ void ModeAuto::wp_start(const Location& dest_loc)
         wp_nav->wp_and_spline_init(0, stopping_point);
     }
 
-    // send target to waypoint controller
     if (!wp_nav->set_wp_destination_loc(dest_loc)) {
-        // failure to set destination can only be because of missing terrain data
-        copter.failsafe_terrain_on_event();
-        return;
+        return false;
     }
 
     // initialise yaw
@@ -386,6 +383,8 @@ void ModeAuto::wp_start(const Location& dest_loc)
 
     // set submode
     set_submode(SubMode::WP);
+
+    return true;
 }
 
 // auto_land_start - initialises controller to implement a landing
@@ -1299,7 +1298,11 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     // get waypoint's location from command and send to wp_nav
     const Location target_loc = loc_from_cmd(cmd, default_loc);
 
-    wp_start(target_loc);
+    if (!wp_start(target_loc)) {
+        // failure to set next destination can only be because of missing terrain data
+        copter.failsafe_terrain_on_event();
+        return;
+    }
 
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
@@ -1384,7 +1387,11 @@ void ModeAuto::do_land(const AP_Mission::Mission_Command& cmd)
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Land: no terrain data, using alt-above-home");
         }
 
-        wp_start(target_loc);
+        if (!wp_start(target_loc)) {
+            // failure to set next destination can only be because of missing terrain data
+            copter.failsafe_terrain_on_event();
+            return;
+        }
     } else {
         // set landing state
         state = State::Descending;
@@ -1426,7 +1433,11 @@ void ModeAuto::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
     }
 
     // start way point navigator and provide it the desired location
-    wp_start(target_loc);
+    if (!wp_start(target_loc)) {
+        // failure to set next destination can only be because of missing terrain data
+        copter.failsafe_terrain_on_event();
+        return;
+    }
 }
 
 // do_circle - initiate moving in a circle
@@ -1744,7 +1755,11 @@ void ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
             gcs().send_text(MAV_SEVERITY_CRITICAL, "PayloadPlace: no terrain data, using alt-above-home");
         }
 
-        wp_start(target_loc);
+        if (!wp_start(target_loc)) {
+            // failure to set next destination can only be because of missing terrain data
+            copter.failsafe_terrain_on_event();
+            return;
+        }
     } else {
         nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover_Start;
 

@@ -468,7 +468,7 @@ public:
     bool loiter_start();
     void rtl_start();
     void takeoff_start(const Location& dest_loc);
-    void wp_start(const Location& dest_loc);
+    bool wp_start(const Location& dest_loc);
     void land_start();
     void circle_movetoedge_start(const Location &circle_center, float radius_m);
     void circle_start();
