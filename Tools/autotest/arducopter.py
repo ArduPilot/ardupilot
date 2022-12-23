@@ -2434,7 +2434,7 @@ class AutoTestCopter(AutoTest):
             else:
                 return
             variance = m.terrain_alt_variance
-            if zero_variance_wanted and variance != 0:
+            if zero_variance_wanted and variance > 0.00001:
                 raise NotAchievedException("Wanted zero variance at height %f, got %f" % (alt, variance))
             elif not zero_variance_wanted and variance == 0:
                 raise NotAchievedException("Wanted non-zero variance at alt=%f, got zero" % alt)

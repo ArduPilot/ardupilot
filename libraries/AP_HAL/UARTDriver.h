@@ -134,6 +134,8 @@ public:
         return 57;
     }
 
+    virtual uint32_t get_baud_rate() const { return 0; }
+
     /*
       return true if this UART has DMA enabled on both RX and TX
      */
