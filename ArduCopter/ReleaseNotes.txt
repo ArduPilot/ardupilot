@@ -1,5 +1,9 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.3.2 23-Dec-2022
+Changes from 4.3.2-rc1
+1) Reverted arming check that main loop is running at configured speed (e.g. SCHED_LOOP_RATE)
+------------------------------------------------------------------
 Copter 4.3.2-rc1 10-Dec-2022
 Changes from 4.3.1
 1) Arming check that main loop is running at configured speed (e.g. SCHED_LOOP_RATE)
