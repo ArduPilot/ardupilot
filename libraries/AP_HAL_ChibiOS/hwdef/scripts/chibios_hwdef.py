@@ -1624,7 +1624,19 @@ def write_AIRSPEED_config(f):
         idx += 1
     if len(devlist) > 0:
         f.write('#define HAL_AIRSPEED_PROBE_LIST %s\n\n' % ';'.join(devlist))
-        
+
+def write_MAVLINK_config(f):
+    enabled = intdefines.get('AP_MAVLINK_ENABLED', None)
+    if enabled is None:
+        # default changes based on firmware type
+        if is_normal_firmware():
+            enabled = 1
+        else:
+            enabled = 0
+        f.write('#define AP_MAVLINK_ENABLED %u\n\n' % enabled)
+
+    env_vars['MAVLINK'] = enabled
+
 def write_board_validate_macro(f):
     '''write board validation macro'''
     global config
@@ -2365,6 +2377,7 @@ def write_hwdef_header(outfilename):
     write_MAG_config(f)
     write_BARO_config(f)
     write_AIRSPEED_config(f)
+    write_MAVLINK_config(f)
     write_board_validate_macro(f)
     write_check_firmware(f)
 
@@ -3057,16 +3070,23 @@ def add_iomcu_firmware_defaults(f):
 #endif
 ''')
 
-def add_normal_firmware_defaults(f):
-    '''add default defines to builds with are not bootloader, periph or IOMCU'''
+def is_normal_firmware():
+    '''returns true if this isn't a Periph. IOMCU or bootloader etc'''
     if env_vars.get('IOMCU_FW', 0) != 0:
         # IOMCU firmware
-        return
+        return False
     if env_vars.get('AP_PERIPH', 0) != 0:
         # Periph firmware
-        return
+        return False
     if args.bootloader:
         # guess
+        return False
+    return True
+
+
+def add_normal_firmware_defaults(f):
+    '''add default defines to builds with are not bootloader, periph or IOMCU'''
+    if not is_normal_firmware():
         return
 
     print("Setting up as normal firmware")

@@ -39,7 +39,9 @@ public:
 #include <AP_Common/Location.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
-#define AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT 1
+#ifndef AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT
+#define AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT AP_MAVLINK_ENABLED
+#endif
 
 class AC_PolyFence_loader
 {
@@ -129,7 +131,9 @@ public:
     /// mavlink
     ///
     /// handler for polygon fence messages with GCS
+#if AP_MAVLINK_ENABLED
     void handle_msg(class GCS_MAVLINK &link, const mavlink_message_t& msg);
+#endif
 
     //  breached() - returns true if the vehicle has breached any fence
     bool breached() const WARN_IF_UNUSED;
@@ -371,6 +375,7 @@ private:
      */
     void handle_msg_fetch_fence_point(GCS_MAVLINK &link, const mavlink_message_t& msg);
     void handle_msg_fence_point(GCS_MAVLINK &link, const mavlink_message_t& msg);
+
     // contains_compatible_fence - returns true if the permanent fence
     // storage contains fences that are compatible with the old
     // FENCE_POINT protocol.

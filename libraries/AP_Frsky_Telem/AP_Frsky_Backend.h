@@ -4,7 +4,10 @@
 
 #if AP_FRSKY_TELEM_ENABLED
 
+#include <GCS_MAVLink/GCS_config.h>
+#if HAL_GCS_ENABLED
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#endif
 
 class AP_Frsky_Backend
 {

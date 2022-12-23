@@ -23,7 +23,9 @@
 #include <AP_MSP/msp.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <SITL/SIM_GPS.h>
+#if AP_MAVLINK_ENABLED
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#endif
 
 /**
    maximum number of GPS instances available on this platform. If more
@@ -135,15 +137,15 @@ public:
 #endif
     };
 
-    /// GPS status codes
+    /// GPS status codes - the mavlink code assumes these values come from the GPS_FIX_TYPE enumeration
     enum GPS_Status {
-        NO_GPS = GPS_FIX_TYPE_NO_GPS,                     ///< No GPS connected/detected
-        NO_FIX = GPS_FIX_TYPE_NO_FIX,                     ///< Receiving valid GPS messages but no lock
-        GPS_OK_FIX_2D = GPS_FIX_TYPE_2D_FIX,              ///< Receiving valid messages and 2D lock
-        GPS_OK_FIX_3D = GPS_FIX_TYPE_3D_FIX,              ///< Receiving valid messages and 3D lock
-        GPS_OK_FIX_3D_DGPS = GPS_FIX_TYPE_DGPS,           ///< Receiving valid messages and 3D lock with differential improvements
-        GPS_OK_FIX_3D_RTK_FLOAT = GPS_FIX_TYPE_RTK_FLOAT, ///< Receiving valid messages and 3D RTK Float
-        GPS_OK_FIX_3D_RTK_FIXED = GPS_FIX_TYPE_RTK_FIXED, ///< Receiving valid messages and 3D RTK Fixed
+        NO_GPS = 0,                     ///< No GPS connected/detected
+        NO_FIX = 1,                     ///< Receiving valid GPS messages but no lock
+        GPS_OK_FIX_2D = 2,              ///< Receiving valid messages and 2D lock
+        GPS_OK_FIX_3D = 3,              ///< Receiving valid messages and 3D lock
+        GPS_OK_FIX_3D_DGPS = 4,         ///< Receiving valid messages and 3D lock with differential improvements
+        GPS_OK_FIX_3D_RTK_FLOAT = 5,    ///< Receiving valid messages and 3D RTK Float
+        GPS_OK_FIX_3D_RTK_FIXED = 6,    ///< Receiving valid messages and 3D RTK Fixed
     };
 
     // GPS navigation engine settings. Not all GPS receivers support
@@ -234,7 +236,9 @@ public:
     void update(void);
 
     // Pass mavlink data to message handlers (for MAV type)
+#if AP_MAVLINK_ENABLED
     void handle_msg(const mavlink_message_t &msg);
+#endif
 #if HAL_MSP_GPS_ENABLED
     void handle_msp(const MSP::msp_gps_data_message_t &pkt);
 #endif
@@ -471,10 +475,12 @@ public:
     void lock_port(uint8_t instance, bool locked);
 
     //MAVLink Status Sending
+#if AP_MAVLINK_ENABLED
     void send_mavlink_gps_raw(mavlink_channel_t chan);
     void send_mavlink_gps2_raw(mavlink_channel_t chan);
 
     void send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst);
+#endif
 
     // Returns true if there is an unconfigured GPS, and provides the instance number of the first non configured GPS
     bool first_unconfigured_gps(uint8_t &instance) const WARN_IF_UNUSED;
@@ -697,6 +703,10 @@ private:
       backends. This assumes we don't want more than 4*180=720 bytes
       in a RTCM data block
      */
+#ifndef MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN
+// in case we are not building the mavlink headers:
+#define MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN 180
+#endif
     struct rtcm_buffer {
         uint8_t fragments_received;
         uint8_t sequence;
@@ -705,9 +715,11 @@ private:
         uint8_t buffer[MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN*4];
     } *rtcm_buffer;
 
+#if AP_MAVLINK_ENABLED
     // re-assemble GPS_RTCM_DATA message
     void handle_gps_rtcm_data(const mavlink_message_t &msg);
     void handle_gps_inject(const mavlink_message_t &msg);
+#endif
 
     //Inject a packet of raw binary to a GPS
     void inject_data(const uint8_t *data, uint16_t len);

@@ -4,7 +4,10 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_TemperatureSensor/AP_TemperatureSensor_config.h>
+#include <GCS_MAVLink/GCS_config.h>
+#if HAL_GCS_ENABLED
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#endif
 #include "AP_BattMonitor_Params.h"
 #include "AP_BattMonitor_config.h"
 

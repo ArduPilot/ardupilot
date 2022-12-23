@@ -18,6 +18,7 @@
 
 #if AP_FRSKY_TELEM_ENABLED
 
+#include <GCS_MAVLink/GCS_config.h>
 #include "AP_Frsky_Backend.h"
 #include "AP_Frsky_SPort.h"
 

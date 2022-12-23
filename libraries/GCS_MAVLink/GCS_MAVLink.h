@@ -4,6 +4,8 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
+#if AP_MAVLINK_ENABLED
+
 // we have separate helpers disabled to make it possible
 // to select MAVLink 1.0 in the arduino GUI build
 #define MAVLINK_SEPARATE_HELPERS
@@ -75,3 +77,5 @@ void comm_send_unlock(mavlink_channel_t chan);
 HAL_Semaphore &comm_chan_lock(mavlink_channel_t chan);
 
 #pragma GCC diagnostic pop
+
+#endif

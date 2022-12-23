@@ -252,7 +252,9 @@ public:
     void Write_Fence();
 #endif
     void Write_Power(void);
+#if AP_MAVLINK_ENABLED
     void Write_Radio(const mavlink_radio_t &packet);
+#endif
     void Write_Message(const char *message);
     void Write_MessageF(const char *fmt, ...);
     void Write_ServoStatus(uint64_t time_us, uint8_t id, float position, float force, float speed, uint8_t power_pct);
@@ -260,11 +262,13 @@ public:
     void Write_Mode(uint8_t mode, const ModeReason reason);
 
     void Write_EntireMission();
+#if AP_MAVLINK_ENABLED
     void Write_Command(const mavlink_command_int_t &packet,
                        uint8_t source_system,
                        uint8_t source_component,
                        MAV_RESULT result,
                        bool was_command_long=false);
+#endif
     void Write_Mission_Cmd(const AP_Mission &mission,
                                const AP_Mission::Mission_Command &cmd);
     void Write_RallyPoint(uint8_t total,
@@ -296,7 +300,9 @@ public:
     void flush(void);
 #endif
 
+#if AP_MAVLINK_ENABLED
     void handle_mavlink_msg(class GCS_MAVLINK &, const mavlink_message_t &msg);
+#endif
 
     void periodic_tasks(); // may want to split this into GCS/non-GCS duties
 
@@ -566,6 +572,7 @@ private:
     // can be used by other subsystems to detect if they should log data
     uint8_t _log_start_count;
 
+#if AP_MAVLINK_ENABLED
     void handle_log_message(class GCS_MAVLINK &, const mavlink_message_t &msg);
 
     void handle_log_request_list(class GCS_MAVLINK &, const mavlink_message_t &msg);
@@ -575,6 +582,7 @@ private:
     void handle_log_send_listing(); // handle LISTING state
     void handle_log_sending(); // handle SENDING state
     bool handle_log_send_data(); // send data chunk to client
+#endif
 
     void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
 

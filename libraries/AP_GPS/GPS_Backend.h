@@ -57,11 +57,15 @@ public:
 
     //MAVLink methods
     virtual bool supports_mavlink_gps_rtk_message() const { return false; }
+#if AP_MAVLINK_ENABLED
     virtual void send_mavlink_gps_rtk(mavlink_channel_t chan);
+#endif
 
     virtual void broadcast_configuration_failure_reason(void) const { return ; }
 
+#if AP_MAVLINK_ENABLED
     virtual void handle_msg(const mavlink_message_t &msg) { return ; }
+#endif
 #if HAL_MSP_GPS_ENABLED
     virtual void handle_msp(const MSP::msp_gps_data_message_t &pkt) { return; }
 #endif

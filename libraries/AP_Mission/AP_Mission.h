@@ -566,6 +566,7 @@ public:
     ///     home is taken directly from ahrs
     void write_home_to_storage();
 
+#if AP_MAVLINK_ENABLED
     static MAV_MISSION_RESULT convert_MISSION_ITEM_to_MISSION_ITEM_INT(const mavlink_mission_item_t &mission_item,
             mavlink_mission_item_int_t &mission_item_int) WARN_IF_UNUSED;
     static MAV_MISSION_RESULT convert_MISSION_ITEM_INT_to_MISSION_ITEM(const mavlink_mission_item_int_t &mission_item_int,
@@ -582,6 +583,7 @@ public:
     // mission_cmd_to_mavlink_int - converts an AP_Mission::Mission_Command object to a mavlink message which can be sent to the GCS
     //  return true on success, false on failure
     static bool mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& cmd, mavlink_mission_item_int_t& packet);
+#endif
 
     // return the last time the mission changed in milliseconds
     uint32_t last_change_time_ms(void) const
@@ -629,8 +631,10 @@ public:
         return _rsem;
     }
 
+#if AP_MAVLINK_ENABLED
     // returns true if the mission contains the requested items
     bool contains_item(MAV_CMD command) const;
+#endif
 
     // returns true if the mission has a terrain relative mission item
     bool contains_terrain_alt_items(void);
@@ -655,9 +659,11 @@ public:
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
+#if AP_MAVLINK_ENABLED
     // allow lua to get/set any WP items in any order in a mavlink-ish kinda way.
     bool get_item(uint16_t index, mavlink_mission_item_int_t& result) const ;
     bool set_item(uint16_t index, mavlink_mission_item_int_t& source) ;
+#endif
 
 private:
     static AP_Mission *_singleton;
@@ -744,8 +750,10 @@ private:
     // update progress made in mission to store last position in the event of mission exit
     void update_exit_position(void);
 
+#if AP_MAVLINK_ENABLED
     /// sanity checks that the masked fields are not NaN's or infinite
     static MAV_MISSION_RESULT sanity_check_params(const mavlink_mission_item_int_t& packet);
+#endif
 
     /// check if the next nav command is a takeoff, skipping delays
     bool is_takeoff_next(uint16_t start_index);

@@ -1245,6 +1245,7 @@ void AP_GPS::update_primary(void)
 }
 #endif  // GPS_MAX_RECEIVERS > 1
 
+#if AP_MAVLINK_ENABLED
 void AP_GPS::handle_gps_inject(const mavlink_message_t &msg)
 {
     mavlink_gps_inject_data_t packet;
@@ -1257,6 +1258,7 @@ void AP_GPS::handle_gps_inject(const mavlink_message_t &msg)
 
     handle_gps_rtcm_fragment(0, packet.data, packet.len);
 }
+#endif
 
 /*
   pass along a mavlink message (for MAV type)
