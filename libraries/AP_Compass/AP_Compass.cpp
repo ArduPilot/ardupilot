@@ -506,7 +506,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     AP_GROUPINFO("OFFS_MAX", 31, Compass, _offset_max, AP_COMPASS_OFFSETS_MAX_DEFAULT),
 #endif
 
-#if COMPASS_MOT_ENABLED
+#if COMPASS_MOT_ENABLED && AP_COMPASS_PMOT_ENABLED
     // @Group: PMOT
     // @Path: Compass_PerMotor.cpp
     AP_SUBGROUPINFO(_per_motor, "PMOT", 32, Compass, Compass_PerMotor),
@@ -2118,7 +2118,7 @@ bool Compass::configured(char *failure_msg, uint8_t failure_msg_len)
  */
 void Compass::motor_compensation_type(const uint8_t comp_type)
 {
-    if (_motor_comp_type <= AP_COMPASS_MOT_COMP_CURRENT && _motor_comp_type != (int8_t)comp_type) {
+    if (_motor_comp_type <= AP_COMPASS_MOT_COMP_PER_MOTOR && _motor_comp_type != (int8_t)comp_type) {
         _motor_comp_type.set((int8_t)comp_type);
         _thr = 0; // set current  throttle to zero
         for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {

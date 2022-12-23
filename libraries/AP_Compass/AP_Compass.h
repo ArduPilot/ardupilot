@@ -166,7 +166,15 @@ public:
     void cal_update();
 
 #if COMPASS_MOT_ENABLED
+    bool per_motor_compensation_enabled(void) {
+        return _per_motor.enabled();
+    }
     // per-motor calibration access
+    void per_motor_set_compensation(uint8_t i, uint8_t motor, const Vector3f& offset) {
+        if (i==0) {
+            _per_motor.set_compensation(motor, offset);
+        }
+    }
     void per_motor_calibration_start(void) {
         _per_motor.calibration_start();
     }

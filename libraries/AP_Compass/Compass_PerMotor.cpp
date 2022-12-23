@@ -4,6 +4,8 @@
 
 #include "AP_Compass.h"
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Motors/AP_Motors_Class.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 #include <SRV_Channel/SRV_Channel.h>
 
 extern const AP_HAL::HAL &hal;
@@ -15,7 +17,7 @@ const AP_Param::GroupInfo Compass_PerMotor::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO_FLAGS("_EN",  1, Compass_PerMotor, enable, 0, AP_PARAM_FLAG_ENABLE),
-
+#if !AP_COMPASS_PMOT_USE_THRUST
     // @Param: _EXP
     // @DisplayName: per-motor exponential correction
     // @Description: This is the exponential correction for the power output of the motor for per-motor compass correction
@@ -23,7 +25,7 @@ const AP_Param::GroupInfo Compass_PerMotor::var_info[] = {
     // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("_EXP", 2, Compass_PerMotor, expo, 0.65),
-
+#endif
     // @Param: 1_X
     // @DisplayName: Compass per-motor1 X
     // @Description: Compensation for X axis of motor1
@@ -98,6 +100,22 @@ Compass_PerMotor::Compass_PerMotor(Compass &_compass) :
     AP_Param::setup_object_defaults(this, var_info);
 }
 
+#if AP_COMPASS_PMOT_USE_THRUST
+float Compass_PerMotor::scaled_output(uint8_t motor)
+{
+#if APM_BUILD_COPTER_OR_HELI
+    AP_Motors* motors = AP::motors();
+
+    if (motors == nullptr || !motors->is_motor_enabled(motor)) {
+        return 0.0f;
+    }
+
+    return motors->get_power_out(motor);
+#else
+    return 0.0f;
+#endif
+}
+#else
 // return current scaled motor output
 float Compass_PerMotor::scaled_output(uint8_t motor)
 {
@@ -130,11 +148,12 @@ float Compass_PerMotor::scaled_output(uint8_t motor)
     output = powf(output, expo);
     return output;
 }
+#endif
 
 // per-motor calibration update
 void Compass_PerMotor::calibration_start(void)
 {
-    for (uint8_t i=0; i<4; i++) {
+    for (uint8_t i=0; i<AP_COMPASS_PMOT_MAX_NUM_MOTORS; i++) {
         field_sum[i].zero();
         output_sum[i] = 0;
         count[i] = 0;
@@ -157,10 +176,16 @@ void Compass_PerMotor::calibration_start(void)
 void Compass_PerMotor::calibration_update(void)
 {
     uint32_t now = AP_HAL::millis();
-    
+
+    float current = 1.0;
+#if AP_COMPASS_PMOT_USE_THRUST
+    if (!AP::battery().current_amps(current)) {
+        return;
+    }
+#endif
     // accumulate per-motor sums
-    for (uint8_t i=0; i<4; i++) {
-        float output = scaled_output(i);
+    for (uint8_t i=0; i<AP_COMPASS_PMOT_MAX_NUM_MOTORS; i++) {
+        float output = scaled_output(i) * current;
 
         if (output <= 0) {
             // motor is off
@@ -185,7 +210,7 @@ void Compass_PerMotor::calibration_update(void)
 // calculate per-motor calibration values
 void Compass_PerMotor::calibration_end(void)
 {
-    for (uint8_t i=0; i<4; i++) {
+    for (uint8_t i=0; i<AP_COMPASS_PMOT_MAX_NUM_MOTORS; i++) {
         if (count[i] == 0) {
             continue;
         }
@@ -212,20 +237,21 @@ void Compass_PerMotor::calibration_end(void)
 /*
   calculate total offset for per-motor compensation
  */
-void Compass_PerMotor::compensate(Vector3f &offset)
+Vector3f Compass_PerMotor::compensate(float current)
 {
-    offset.zero();
-
-    if (running) {
+    Vector3f offset;
+    if (running || !enable) {
         // don't compensate while calibrating
-        return;
+        return offset;
     }
 
-    for (uint8_t i=0; i<4; i++) {
+    for (uint8_t i=0; i<AP_COMPASS_PMOT_MAX_NUM_MOTORS; i++) {
         float output = scaled_output(i);
 
         const Vector3f &c = compensation[i].get();
 
-        offset += c * output;
+        offset += c * output * current;
     }
+
+    return offset;
 }
