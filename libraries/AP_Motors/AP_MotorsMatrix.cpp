@@ -391,9 +391,21 @@ void AP_MotorsMatrix::output_armed_stabilizing()
 
     // add scaled roll, pitch, constrained yaw and throttle for each motor
     const float throttle_thrust_best_plus_adj = throttle_thrust_best_rpy + thr_adj;
+    float total_power = 0;
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             _thrust_rpyt_out[i] = (throttle_thrust_best_plus_adj * _throttle_factor[i]) + (rpy_scale * _thrust_rpyt_out[i]);
+            _power_out[i] = powf(_thrust_rpyt_out[i], 3 * 0.5); // power is Thrust ^ (3/2)
+            total_power += _power_out[i];
+        } else {
+            _power_out[i] = 0.0f;
+        }
+    }
+
+    // scale power to unity
+    for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        if (!is_zero(total_power)) {
+            _power_out[i] /= total_power;
         }
     }
 
@@ -1319,6 +1331,7 @@ void AP_MotorsMatrix::normalise_rpy_factors()
             yaw_fac = MAX(yaw_fac,fabsf(_yaw_factor[i]));
             throttle_fac = MAX(throttle_fac,MAX(0.0f,_throttle_factor[i]));
         }
+        _power_out[i] = 0.0f;
     }
 
     // scale factors back to -0.5 to +0.5 for each axis
