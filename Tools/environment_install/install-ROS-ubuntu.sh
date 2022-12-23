@@ -235,7 +235,7 @@ if maybe_prompt_user "Add ardupilot-ws to your home folder [N/y]?" ; then
         git clone https://github.com/ArduPilot/ardupilot_ros.git
         popd
         sudo apt update
-        rosdep install --from-paths src --ignore-src --rosdistro=${ROS_DISTRO} -y
+        rosdep install --from-paths src --ignore-src --rosdistro=${ROS_DISTRO} -y -r
         catkin build
         popd
     else
