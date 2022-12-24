@@ -576,9 +576,21 @@ void AP_Vehicle::update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch)
                 float notches[INS_MAX_NOTCHES];
                 const uint8_t peaks = gyro_fft.get_weighted_noise_center_frequencies_hz(notch.num_dynamic_notches, notches);
 
-                notch.update_frequencies_hz(peaks, notches);
+                if (peaks > 0) {
+                    for (uint8_t i = 0; i < peaks; i++) {
+                        notches[i] =  MAX(ref_freq, notches[i]);
+                    }
+                    notch.update_frequencies_hz(peaks, notches);
+                } else {    // since FFT can be used post-filter it is better to disable the notch when there is no data
+                    notch.set_inactive(true);
+                }
             } else {
-                notch.update_freq_hz(gyro_fft.get_weighted_noise_center_freq_hz());
+                float center_freq = gyro_fft.get_weighted_noise_center_freq_hz();
+                if (!is_zero(center_freq)) {
+                    notch.update_freq_hz(MAX(ref_freq, center_freq));
+                } else {    // since FFT can be used post-filter it is better to disable the notch when there is no data
+                    notch.set_inactive(true);
+                }
             }
             break;
 #endif
