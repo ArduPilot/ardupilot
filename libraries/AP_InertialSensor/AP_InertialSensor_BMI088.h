@@ -75,7 +75,9 @@ private:
     bool setup_accel_config(void);
 
     AP_HAL::OwnPtr<AP_HAL::Device> dev_accel;
+    AP_HAL::Device::PeriodicHandle accel_periodic_handle;
     AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro;
+    AP_HAL::Device::PeriodicHandle gyro_periodic_handle;
 
     uint8_t accel_instance;
     uint8_t gyro_instance;
