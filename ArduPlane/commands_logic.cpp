@@ -370,7 +370,7 @@ void Plane::do_takeoff(const AP_Mission::Mission_Command& cmd)
     auto_state.takeoff_pitch_cd        = (int16_t)cmd.p1 * 100;
     if (auto_state.takeoff_pitch_cd <= 0) {
         // if the mission doesn't specify a pitch use 4 degrees
-        auto_state.takeoff_pitch_cd = 1500;
+        auto_state.takeoff_pitch_cd = 400;
     }
     auto_state.takeoff_altitude_rel_cm = next_WP_loc.alt - home.alt;
     next_WP_loc.lat = home.lat + 10;
