@@ -96,6 +96,13 @@ function maybe_prompt_user() {
     fi
 }
 
+# delete links installed by github in /usr/local/bin; installing or
+# upgrading python via brew fails if these links are in place.  brew
+# auto-updates things when you install other packages which depend on
+# more recent versions.
+# see https://github.com/orgs/Homebrew/discussions/3895
+find /usr/local/bin -lname '*/Library/Frameworks/Python.framework/*' -delete
+
 brew update
 brew install gawk curl coreutils wget
 
