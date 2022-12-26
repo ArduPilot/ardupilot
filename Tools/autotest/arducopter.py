@@ -1128,6 +1128,7 @@ class AutoTestCopter(AutoTest):
         self.change_mode(mode)
         self.zero_throttle()
         self.wait_ready_to_arm()
+        self.context_push()
         self.context_collect('STATUSTEXT')
         self.send_mavlink_arm_command()
         self.mav.recv_match(blocking=True, timeout=1)
@@ -1137,6 +1138,7 @@ class AutoTestCopter(AutoTest):
             self.set_rc(3, 1700)
         # we may never see ourselves as armed in a heartbeat
         self.wait_statustext("Takeoff blocked: ESC RPM too low", check_context=True)
+        self.context_pop()
         self.zero_throttle()
         self.disarm_vehicle()
         self.wait_disarmed()
