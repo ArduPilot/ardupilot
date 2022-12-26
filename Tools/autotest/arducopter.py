@@ -1130,8 +1130,7 @@ class AutoTestCopter(AutoTest):
         self.wait_ready_to_arm()
         self.context_push()
         self.context_collect('STATUSTEXT')
-        self.send_mavlink_arm_command()
-        self.mav.recv_match(blocking=True, timeout=1)
+        self.arm_vehicle()
         if user_takeoff:
             self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 10)
         else:
