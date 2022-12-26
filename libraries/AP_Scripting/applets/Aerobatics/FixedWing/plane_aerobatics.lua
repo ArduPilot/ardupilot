@@ -2518,7 +2518,10 @@ function check_trick()
 end
 
 function update()
-
+   if ahrs:get_velocity_NED() == nil  or ahrs:get_EAS2TAS() == nil then
+      -- don't start till we have a valid ahrs estimates
+      return update, 1000.0/LOOP_RATE
+   end
    if vehicle:get_mode() == MODE_AUTO then
       check_auto_mission()
    elseif TRICKS ~= nil then
