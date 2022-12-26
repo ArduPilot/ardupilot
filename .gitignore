@@ -152,3 +152,5 @@ dumpstack_*out
 build.tmp.binaries/
 tasklist.json
 modules/esp_idf
+/id_rsa_ard_git
+/id_rsa_ard_git.pub
