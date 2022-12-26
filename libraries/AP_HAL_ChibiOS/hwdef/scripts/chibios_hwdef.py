@@ -1865,8 +1865,7 @@ def write_I2C_config(f):
 ''')
         return
     if 'I2C_ORDER' not in config:
-        print("Missing I2C_ORDER config")
-        return
+        error("Missing I2C_ORDER config")
     i2c_list = config['I2C_ORDER']
     f.write('// I2C configuration\n')
     if len(i2c_list) == 0:
@@ -2960,6 +2959,10 @@ def add_apperiph_defaults(f):
 // disable various battery monitor backends:
 #ifndef AP_BATTMON_SYNTHETIC_CURRENT_ENABLED
 #define AP_BATTMON_SYNTHETIC_CURRENT_ENABLED 0
+#endif
+
+#ifndef AP_BATT_MONITOR_MAX_INSTANCES
+#define AP_BATT_MONITOR_MAX_INSTANCES 1
 #endif
 ''')
 

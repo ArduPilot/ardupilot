@@ -87,8 +87,6 @@ private:
     pid_t _parent_pid;
     uint32_t _update_count;
 
-    class AP_Baro *_barometer;
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     SocketAPM _sitl_rc_in{true};
 #endif

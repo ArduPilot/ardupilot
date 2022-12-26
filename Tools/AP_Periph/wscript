@@ -67,6 +67,7 @@ def build(bld):
                      'AP_Stats',
                      'AP_EFI',
                      'AP_CheckFirmware',
+                     'AP_Proximity',
                      ]
     bld.ap_stlib(
         name= 'AP_Periph_libs',

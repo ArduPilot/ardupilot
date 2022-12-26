@@ -26,7 +26,7 @@ namespace SITL {
 class SerialDevice {
 public:
 
-    SerialDevice();
+    SerialDevice(uint16_t tx_bufsize=512, uint16_t rx_bufsize=512);
 
 
     // methods for autopilot to use to talk to device:

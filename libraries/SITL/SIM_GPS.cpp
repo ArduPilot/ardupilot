@@ -36,7 +36,7 @@ extern const AP_HAL::HAL& hal;
 using namespace SITL;
 
 GPS::GPS(uint8_t _instance) :
-    SerialDevice(),
+    SerialDevice(8192, 2048),
     instance{_instance}
 {
 
@@ -538,7 +538,7 @@ void GPS::update_nmea(const struct gps_data *d)
                      lng_string,
                      d->have_lock?1:0,
                      d->have_lock?_sitl->gps_numsats[instance]:3,
-                     2.0,
+                     1.2,
                      d->altitude);
     const float speed_mps = norm(d->speedN, d->speedE);
     const float speed_knots = speed_mps * M_PER_SEC_TO_KNOTS;
@@ -1023,7 +1023,7 @@ void GPS::update_file()
 {
     static int fd[2] = {-1,-1};
     static uint32_t base_time[2];
-    const uint16_t lognum = 9;
+    const uint16_t lognum = uint16_t(_sitl->gps_log_num.get());
     if (instance > 1) {
         return;
     }

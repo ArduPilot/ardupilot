@@ -690,6 +690,9 @@ private:
     // update roll_sensor, pitch_sensor and yaw_sensor
     void update_cd_values(void);
 
+    // return origin for a specified EKF type
+    bool get_origin(EKFType type, Location &ret) const;
+
     // helper trig variables
     float _cos_roll{1.0f};
     float _cos_pitch{1.0f};

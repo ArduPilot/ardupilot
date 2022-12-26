@@ -116,7 +116,7 @@ void AP_TemperatureSensor::init()
     }
 
  // For Sub set the Default: Type to TSYS01 and I2C_ADDR of 0x77
-#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub) && AP_TEMPERATURE_SENSOR_TSYS01_ENABLED
     AP_Param::set_default_by_name("TEMP1_TYPE", (float)AP_TemperatureSensor_Params::Type::TSYS01);
     AP_Param::set_default_by_name("TEMP1_ADDR", TSYS01_ADDR_CSB0);
 #endif
@@ -150,6 +150,11 @@ void AP_TemperatureSensor::init()
             // this is safe
             _num_instances = instance + 1;
         }
+    }
+    
+    if (_num_instances > 0) {
+        // param count could have changed
+        AP_Param::invalidate_count();
     }
 }
 

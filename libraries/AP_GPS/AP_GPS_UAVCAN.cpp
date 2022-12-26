@@ -377,8 +377,7 @@ void AP_GPS_UAVCAN::handle_velocity(const float vx, const float vy, const float 
     if (!uavcan::isNaN(vx)) {
         const Vector3f vel(vx, vy, vz);
         interim_state.velocity = vel;
-        interim_state.ground_speed = vel.xy().length();
-        interim_state.ground_course = wrap_360(degrees(atan2f(vel.y, vel.x)));
+        velocity_to_speed_course(interim_state);
         // assume we have vertical velocity if we ever get a non-zero Z velocity
         if (!isnanf(vel.z) && !is_zero(vel.z)) {
             interim_state.have_vertical_velocity = true;
@@ -546,6 +545,14 @@ void AP_GPS_UAVCAN::handle_aux_msg(const AuxCb &cb)
 
 void AP_GPS_UAVCAN::handle_heading_msg(const HeadingCb &cb)
 {
+#if GPS_MOVING_BASELINE
+    if (seen_relposheading && gps.mb_params[interim_state.instance].type.get() != 0) {
+        // we prefer to use the relposheading to get yaw as it allows
+        // the user to more easily control the relative antenna positions
+        return;
+    }
+#endif
+
     WITH_SEMAPHORE(sem);
 
     if (interim_state.gps_yaw_configured == false) {
@@ -604,14 +611,10 @@ void AP_GPS_UAVCAN::handle_moving_baseline_msg(const MovingBaselineDataCb &cb, u
 */
 void AP_GPS_UAVCAN::handle_relposheading_msg(const RelPosHeadingCb &cb, uint8_t node_id)
 {
-    if (role != AP_GPS::GPS_ROLE_MB_ROVER) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Incorrect Role set for UAVCAN GPS, %d should be Rover", node_id);
-        return;
-    }
-
     WITH_SEMAPHORE(sem);
 
     interim_state.gps_yaw_configured = true;
+    seen_relposheading = true;
     // push raw heading data to calculate moving baseline heading states
     if (calculate_moving_base_yaw(interim_state,
                                 cb.msg->reported_heading_deg,
@@ -767,6 +770,7 @@ bool AP_GPS_UAVCAN::read(void)
             // we have had a valid GPS message time, from which we calculate
             // the time of week.
             _last_itow_ms = interim_state.time_week_ms;
+            _have_itow = true;
         }
         return true;
     }

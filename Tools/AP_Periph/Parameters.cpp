@@ -490,6 +490,40 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(efi, "EFI", AP_EFI),
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_PRX
+    // @Param: PRX_BAUDRATE
+    // @DisplayName: Proximity Sensor serial baudrate
+    // @Description: Proximity Sensor serial baudrate.
+    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,230:230400,256:256000,460:460800,500:500000,921:921600,1500:1500000
+    // @Increment: 1
+    // @User: Standard
+    // @RebootRequired: True
+    GSCALAR(proximity_baud, "PRX_BAUDRATE", HAL_PERIPH_RANGEFINDER_BAUDRATE_DEFAULT),
+
+    // @Param: PRX_PORT
+    // @DisplayName: Proximity Sensor Serial Port
+    // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to Proximity Sensor.
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    GSCALAR(proximity_port, "PRX_PORT", AP_PERIPH_RANGEFINDER_PORT_DEFAULT),
+
+    // @Param: PRX_MAX_RATE
+    // @DisplayName: Proximity Sensor max rate
+    // @Description: This is the maximum rate we send Proximity Sensor data in Hz. Zero means no limit
+    // @Units: Hz
+    // @Range: 0 200
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(proximity_max_rate, "PRX_MAX_RATE", 50),
+
+    // Proximity driver
+    // @Group: PRX
+    // @Path: ../libraries/AP_RangeFinder/AP_Proximity.cpp
+    GOBJECT(proximity, "PRX", AP_Proximity),
+#endif
+
     AP_VAREND
 };
 

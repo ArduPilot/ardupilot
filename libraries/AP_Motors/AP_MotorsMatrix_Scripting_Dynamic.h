@@ -7,8 +7,8 @@ class AP_MotorsMatrix_Scripting_Dynamic : public AP_MotorsMatrix {
 public:
 
     // Constructor
-    AP_MotorsMatrix_Scripting_Dynamic(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_MotorsMatrix(loop_rate, speed_hz)
+    AP_MotorsMatrix_Scripting_Dynamic(uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+        AP_MotorsMatrix(speed_hz)
     {
         if (_singleton != nullptr) {
             AP_HAL::panic("AP_MotorsMatrix_Scripting_Dynamic must be singleton");

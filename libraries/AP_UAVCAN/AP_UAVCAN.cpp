@@ -61,6 +61,7 @@
 #include <AP_Notify/AP_Notify.h>
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include "AP_UAVCAN_pool.h"
+#include <AP_Proximity/AP_Proximity_DroneCAN.h>
 
 #define LED_DELAY_US 50000
 
@@ -356,6 +357,10 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     AP_EFI_DroneCAN::subscribe_msgs(this);
 #endif
 
+#if AP_PROXIMITY_DRONECAN_ENABLED
+    AP_Proximity_DroneCAN::subscribe_msgs(this);
+#endif
+
     act_out_array[driver_index] = new uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>(*_node);
     act_out_array[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
     act_out_array[driver_index]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
@@ -494,6 +499,7 @@ void AP_UAVCAN::loop(void)
 #if AP_OPENDRONEID_ENABLED
         AP::opendroneid().dronecan_send(this);
 #endif
+        logging();
     }
 }
 
@@ -543,7 +549,11 @@ void AP_UAVCAN::SRV_send_actuator(void)
         }
 
         if (i > 0) {
-            act_out_array[_driver_index]->broadcast(msg);
+            if (act_out_array[_driver_index]->broadcast(msg) > 0) {
+                _srv_send_count++;
+            } else {
+                _fail_send_count++;
+            }
 
             if (i == 15) {
                 repeat_send = true;
@@ -594,7 +604,11 @@ void AP_UAVCAN::SRV_send_esc(void)
             k++;
         }
 
-        esc_raw[_driver_index]->broadcast(esc_msg);
+        if (esc_raw[_driver_index]->broadcast(esc_msg) > 0) {
+            _esc_send_count++;
+        } else {
+            _fail_send_count++;
+        }
     }
 }
 
@@ -1215,6 +1229,54 @@ bool AP_UAVCAN::prearm_check(char* fail_msg, uint8_t fail_msg_len) const
 {
     // forward this to DNA_Server
     return _dna_server->prearm_check(fail_msg, fail_msg_len);
+}
+
+/*
+  periodic logging
+ */
+void AP_UAVCAN::logging(void)
+{
+#if HAL_LOGGING_ENABLED
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_log_ms < 1000) {
+        return;
+    }
+    last_log_ms = now_ms;
+    if (HAL_NUM_CAN_IFACES <= _driver_index) {
+        // no interface?
+        return;
+    }
+    const auto *iface = hal.can[_driver_index];
+    if (iface == nullptr) {
+        return;
+    }
+    const auto *stats = iface->get_statistics();
+    if (stats == nullptr) {
+        // statistics not implemented on this interface
+        return;
+    }
+    const auto &s = *stats;
+    AP::logger().WriteStreaming("CANS",
+                                "TimeUS,I,T,Trq,Trej,Tov,Tto,Tab,R,Rov,Rer,Bo,Etx,Stx,Ftx",
+                                "s#-------------",
+                                "F--------------",
+                                "QBIIIIIIIIIIIII",
+                                AP_HAL::micros64(),
+                                _driver_index,
+                                s.tx_success,
+                                s.tx_requests,
+                                s.tx_rejected,
+                                s.tx_overflow,
+                                s.tx_timedout,
+                                s.tx_abort,
+                                s.rx_received,
+                                s.rx_overflow,
+                                s.rx_errors,
+                                s.num_busoff_err,
+                                _esc_send_count,
+                                _srv_send_count,
+                                _fail_send_count);
+#endif // HAL_LOGGING_ENABLED
 }
 
 #endif // HAL_NUM_CAN_IFACES

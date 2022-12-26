@@ -933,6 +933,22 @@ class AutoTestQuadPlane(AutoTest):
         self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, -1)
         self.disarm_vehicle()
 
+    def MAV_CMD_NAV_LOITER_TO_ALT(self, target_system=1, target_component=1):
+        '''ensure consecutive loiter to alts work'''
+        self.load_mission('mission.txt')
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_current_waypoint(4, timeout=240)
+        self.assert_altitude(120, accuracy=5, relative=True)
+        self.delay_sim_time(30)
+        self.assert_altitude(120, accuracy=5, relative=True)
+        self.set_current_waypoint(5)
+        self.wait_altitude(altitude_min=65, altitude_max=75, relative=True)
+        if self.current_waypoint() != 5:
+            raise NotAchievedException("Should pass 90m before passing waypoint 5")
+        self.wait_disarmed(timeout=300)
+
     def Mission(self):
         '''fly the OBC 2016 mission in Dalby'''
         self.fly_mission(
@@ -962,5 +978,6 @@ class AutoTestQuadPlane(AutoTest):
             self.MidAirDisarmDisallowed,
             self.BootInAUTO,
             self.Ship,
+            self.MAV_CMD_NAV_LOITER_TO_ALT,
         ])
         return ret

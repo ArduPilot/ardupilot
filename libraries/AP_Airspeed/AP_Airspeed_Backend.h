@@ -65,7 +65,11 @@ protected:
     }
 
     AP_Airspeed::pitot_tube_order get_tube_order(void) const {
+#ifndef HAL_BUILD_AP_PERIPH
         return AP_Airspeed::pitot_tube_order(frontend.param[instance].tube_order.get());
+#else
+        return AP_Airspeed::pitot_tube_order::PITOT_TUBE_ORDER_AUTO;
+#endif
     }
 
     // semaphore for access to shared frontend data
@@ -82,17 +86,23 @@ protected:
 
     // set to no zero cal, which makes sense for some sensors
     void set_skip_cal(void) {
+#ifndef HAL_BUILD_AP_PERIPH
         frontend.param[instance].skip_cal.set(1);
+#endif
     }
 
     // set zero offset
     void set_offset(float ofs) {
+#ifndef HAL_BUILD_AP_PERIPH
         frontend.param[instance].offset.set(ofs);
+#endif
     }
 
     // set use
     void set_use(int8_t use) {
+#ifndef HAL_BUILD_AP_PERIPH
         frontend.param[instance].use.set(use);
+#endif
     }
 
     // set bus ID of this instance, for ARSPD_DEVID parameters

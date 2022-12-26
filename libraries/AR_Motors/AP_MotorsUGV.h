@@ -112,6 +112,9 @@ public:
     // returns true if the configured PWM type is digital and should have fixed endpoints
     bool is_digital_pwm_type() const;
 
+    // returns true if the vehicle is omni
+    bool is_omni() const { return _frame_type != FRAME_TYPE_UNDEFINED && _motors_num > 0; }
+
     // structure for holding motor limit flags
     struct AP_MotorsUGV_limit {
         uint8_t steer_left      : 1; // we have reached the steering controller's left most limit

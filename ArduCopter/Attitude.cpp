@@ -1,6 +1,24 @@
 #include "Copter.h"
 
 /*************************************************************
+ *  Attitude Rate controllers and timing
+ ****************************************************************/
+
+// update rate controllers and output to roll, pitch and yaw actuators
+//  called at 400hz by default
+void Copter::run_rate_controller()
+{
+    // set attitude and position controller loop time
+    const float last_loop_time_s = AP::scheduler().get_last_loop_time_s();
+    motors->set_dt(last_loop_time_s);
+    attitude_control->set_dt(last_loop_time_s);
+    pos_control->set_dt(last_loop_time_s);
+
+    // run low level rate controllers that only require IMU data
+    attitude_control->rate_controller_run(); 
+}
+
+/*************************************************************
  *  throttle control
  ****************************************************************/
 

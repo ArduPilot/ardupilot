@@ -52,8 +52,7 @@ const AP_Param::GroupInfo AC_PID_Basic::var_info[] = {
 };
 
 // Constructor
-AC_PID_Basic::AC_PID_Basic(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_E_hz, float initial_filt_D_hz, float dt) :
-    _dt(dt)
+AC_PID_Basic::AC_PID_Basic(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_E_hz, float initial_filt_D_hz)
 {
     // load parameter values from eeprom
     AP_Param::setup_object_defaults(this, var_info);
@@ -70,16 +69,16 @@ AC_PID_Basic::AC_PID_Basic(float initial_p, float initial_i, float initial_d, fl
     _reset_filter = true;
 }
 
-float AC_PID_Basic::update_all(float target, float measurement, bool limit)
+float AC_PID_Basic::update_all(float target, float measurement, float dt, bool limit)
 {
-    return update_all(target, measurement, (limit && is_negative(_integrator)), (limit && is_positive(_integrator)));
+    return update_all(target, measurement, dt, (limit && is_negative(_integrator)), (limit && is_positive(_integrator)));
 }
 
 //  update_all - set target and measured inputs to PID controller and calculate outputs
 //  target and error are filtered
 //  the derivative is then calculated and filtered
 //  the integral is then updated based on the setting of the limit flag
-float AC_PID_Basic::update_all(float target, float measurement, bool limit_neg, bool limit_pos)
+float AC_PID_Basic::update_all(float target, float measurement, float dt, bool limit_neg, bool limit_pos)
 {
     // don't process inf or NaN
     if (!isfinite(target) || isnan(target) ||
@@ -97,17 +96,17 @@ float AC_PID_Basic::update_all(float target, float measurement, bool limit_neg, 
         _derivative = 0.0f;
     } else {
         float error_last = _error;
-        _error += get_filt_E_alpha() * ((_target - measurement) - _error);
+        _error += get_filt_E_alpha(dt) * ((_target - measurement) - _error);
 
         // calculate and filter derivative
-        if (is_positive(_dt)) {
-            float derivative = (_error - error_last) / _dt;
-            _derivative += get_filt_D_alpha() * (derivative - _derivative);
+        if (is_positive(dt)) {
+            float derivative = (_error - error_last) / dt;
+            _derivative += get_filt_D_alpha(dt) * (derivative - _derivative);
         }
     }
 
     // update I term
-    update_i(limit_neg, limit_pos);
+    update_i(dt, limit_neg, limit_pos);
 
     const float P_out = _error * _kp;
     const float D_out = _derivative * _kd;
@@ -126,12 +125,12 @@ float AC_PID_Basic::update_all(float target, float measurement, bool limit_neg, 
 //  update_i - update the integral
 //  if limit_neg is true, the integral can only increase
 //  if limit_pos is true, the integral can only decrease
-void AC_PID_Basic::update_i(bool limit_neg, bool limit_pos)
+void AC_PID_Basic::update_i(float dt, bool limit_neg, bool limit_pos)
 {
     if (!is_zero(_ki)) {
         // Ensure that integrator can only be reduced if the output is saturated
         if (!((limit_neg && is_negative(_error)) || (limit_pos && is_positive(_error)))) {
-            _integrator += ((float)_error * _ki) * _dt;
+            _integrator += ((float)_error * _ki) * dt;
             _integrator = constrain_float(_integrator, -_kimax, _kimax);
         }
     } else {
@@ -158,15 +157,15 @@ void AC_PID_Basic::save_gains()
 }
 
 // get_filt_T_alpha - get the target filter alpha
-float AC_PID_Basic::get_filt_E_alpha() const
+float AC_PID_Basic::get_filt_E_alpha(float dt) const
 {
-    return calc_lowpass_alpha_dt(_dt, _filt_E_hz);
+    return calc_lowpass_alpha_dt(dt, _filt_E_hz);
 }
 
 // get_filt_D_alpha - get the derivative filter alpha
-float AC_PID_Basic::get_filt_D_alpha() const
+float AC_PID_Basic::get_filt_D_alpha(float dt) const
 {
-    return calc_lowpass_alpha_dt(_dt, _filt_D_hz);
+    return calc_lowpass_alpha_dt(dt, _filt_D_hz);
 }
 
 void AC_PID_Basic::set_integrator(float target, float measurement, float i)

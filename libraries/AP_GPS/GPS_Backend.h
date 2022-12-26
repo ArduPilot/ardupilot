@@ -91,9 +91,7 @@ public:
     virtual bool get_error_codes(uint32_t &error_codes) const { return false; }
 
     // return iTOW of last message, or zero if not supported
-    uint32_t get_last_itow_ms(void) const {
-        return (_pseudo_itow_delta_ms == 0)?(_last_itow_ms):((_pseudo_itow/1000ULL) + _pseudo_itow_delta_ms);
-    }
+    uint32_t get_last_itow_ms(void) const;
 
     // check if an option is set
     bool option_set(const AP_GPS::DriverOptions option) const {
@@ -108,6 +106,7 @@ protected:
     uint64_t _last_pps_time_us;
     JitterCorrection jitter_correction;
     uint32_t _last_itow_ms;
+    bool _have_itow;
 
     // common utility functions
     int32_t swap_int32(int32_t v) const;
@@ -117,6 +116,11 @@ protected:
       fill in 3D velocity from 2D components
      */
     void fill_3d_velocity(void);
+
+    /*
+      fill ground course and speed from velocity
+     */
+    void velocity_to_speed_course(AP_GPS::GPS_State &s);
 
     /*
        fill in time_week_ms and time_week from BCD date and time components

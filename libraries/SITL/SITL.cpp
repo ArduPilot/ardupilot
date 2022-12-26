@@ -40,6 +40,14 @@
 
 extern const AP_HAL::HAL& hal;
 
+#ifndef SIM_RATE_HZ_DEFAULT
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#define SIM_RATE_HZ_DEFAULT 1200
+#else
+#define SIM_RATE_HZ_DEFAULT 400
+#endif
+#endif
+
 namespace SITL {
 
 SIM *SIM::_singleton = nullptr;
@@ -222,7 +230,7 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // vicon velocity glitch in NED frame
     AP_GROUPINFO("VICON_VGLI",    21, SIM,  vicon_vel_glitch, 0),
 
-    AP_GROUPINFO("RATE_HZ",  22, SIM,  loop_rate_hz, 1200),
+    AP_GROUPINFO("RATE_HZ",  22, SIM,  loop_rate_hz, SIM_RATE_HZ_DEFAULT),
 
     // count of simulated IMUs
     AP_GROUPINFO("IMU_COUNT",    23, SIM,  imu_count,  2),
@@ -319,6 +327,8 @@ const AP_Param::GroupInfo SIM::BaroParm::var_info[] = {
     AP_GROUPINFO("WCF_BAK", 8,  SIM::BaroParm, wcof_xn, 0.0),
     AP_GROUPINFO("WCF_RGT", 9,  SIM::BaroParm, wcof_yp, 0.0),
     AP_GROUPINFO("WCF_LFT", 10, SIM::BaroParm, wcof_yn, 0.0),
+    AP_GROUPINFO("WCF_UP",  11, SIM::BaroParm, wcof_zp, 0.0),
+    AP_GROUPINFO("WCF_DN",  12, SIM::BaroParm, wcof_zn, 0.0),
     AP_GROUPEND
 };
 
@@ -373,6 +383,8 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     AP_GROUPINFO("INIT_LAT_OFS",  45, SIM,  gps_init_lat_ofs, 0),
     AP_GROUPINFO("INIT_LON_OFS",  46, SIM,  gps_init_lon_ofs, 0),
     AP_GROUPINFO("INIT_ALT_OFS",  47, SIM,  gps_init_alt_ofs, 0),
+
+    AP_GROUPINFO("GPS_LOG_NUM",   48, SIM,  gps_log_num, 0),
 
     AP_GROUPEND
 };

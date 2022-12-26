@@ -110,6 +110,17 @@ void AP_GPS_Backend::make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds)
 }
 
 /*
+  get the last time of week in ms
+ */
+uint32_t AP_GPS_Backend::get_last_itow_ms(void) const
+{
+    if (!_have_itow) {
+        return state.time_week_ms;
+    }
+    return (_pseudo_itow_delta_ms == 0)?(_last_itow_ms):((_pseudo_itow/1000ULL) + _pseudo_itow_delta_ms);
+}
+
+/*
   fill in 3D velocity for a GPS that doesn't give vertical velocity numbers
  */
 void AP_GPS_Backend::fill_3d_velocity(void)
@@ -120,6 +131,15 @@ void AP_GPS_Backend::fill_3d_velocity(void)
     state.velocity.y = state.ground_speed * sinf(gps_heading);
     state.velocity.z = 0;
     state.have_vertical_velocity = false;
+}
+
+/*
+  fill in 3D velocity for a GPS that doesn't give vertical velocity numbers
+ */
+void AP_GPS_Backend::velocity_to_speed_course(AP_GPS::GPS_State &s)
+{
+    s.ground_course = wrap_360(degrees(atan2f(s.velocity.y, s.velocity.x)));
+    s.ground_speed = s.velocity.xy().length();
 }
 
 void
@@ -237,6 +257,7 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
 {
     if (itow != _last_itow_ms) {
         _last_itow_ms = itow;
+        _have_itow = true;
 
         /*
           we need to calculate a pseudo-itow, which copes with the
@@ -399,6 +420,8 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
 
             if (fabsf(alt_error) > permitted_error_length_pct * min_dist) {
                 // the vertical component is out of range, reject it
+                Debug("bad alt_err %.1f > %.1f\n",
+                      alt_error, permitted_error_length_pct * min_dist);
                 goto bad_yaw;
             }
         }
@@ -411,13 +434,29 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
             interim_state.have_gps_yaw = true;
             interim_state.gps_yaw_time_ms = AP_HAL::millis();
         }
+        goto good_yaw;
     }
-
-    return true;
 
 bad_yaw:
     interim_state.have_gps_yaw = false;
-    return false;
+
+good_yaw:
+
+#if HAL_LOGGING_ENABLED
+    // this log message helps diagnose GPS yaw issues
+    AP::logger().WriteStreaming("GPYW", "TimeUS,Id,RHD,RDist,RDown,OK",
+                                "s#dmm-",
+                                "F-----",
+                                "QBfffB",
+                                AP_HAL::micros64(),
+                                state.instance,
+                                reported_heading_deg,
+                                reported_distance,
+                                reported_D,
+                                interim_state.have_gps_yaw);
+#endif
+
+    return interim_state.have_gps_yaw;
 }
 #endif // GPS_MOVING_BASELINE
 
@@ -450,7 +489,7 @@ void AP_GPS_Backend::logging_loop(void)
         hal.scheduler->delay(10);
         static uint16_t lognum;
         for (uint8_t instance=0; instance<2; instance++) {
-            if (logging[instance].fd == -1) {
+            if (logging[instance].fd == -1 && logging[instance].buf.available()) {
                 char fname[] = "gpsN_XXX.log";
                 fname[3] = '1' + instance;
                 if (lognum == 0) {

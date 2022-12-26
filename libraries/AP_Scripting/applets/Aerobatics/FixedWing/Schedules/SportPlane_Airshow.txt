@@ -1,0 +1,70 @@
+# Many sport "3D" planes are
+# perfectly capable of aerobatics including sustained
+# knife-edges and have the ability to do loops and immelmans
+# and even hovers.
+# However, maintaining precise earth reference trajectories
+# while doing vertical tricks can result in stalls or aborts
+# of the schedule, especially in even relatively light wind.
+# This schedule is almost entirely horizontal (constant altitude) tricks
+# and only uses the half-reverse-cuban-eight as the turn-around 
+# at each end and moderate climbing manuovers since they require minimal
+# sustained vertical power
+
+name: Sport_Plane_AirShow
+
+message: Upline45
+upline_45 10 20
+
+message: SplitS
+align_box 1
+split_s   10
+
+message: 4pt Roll
+align_center
+multi_point_roll 100 4 .5 0
+
+message: HalfReverseCubanEight
+align_box 1
+half_reverse_cuban_eight   10
+
+message: Knife Edge
+align_center
+straight_flight 150 90
+
+message: HalfReverseCubanEight
+align_box 1
+half_reverse_cuban_eight   10
+
+message: Slow Roll
+align_center
+straight_roll 200 2
+
+message: HalfReverseCubanEight
+align_box 1
+half_reverse_cuban_eight   10
+
+message: Rolling Circle
+align_center
+rolling_circle 50 6
+
+message: HalfReverseCubanEight
+align_box 1
+half_reverse_cuban_eight   10
+
+message: Figure Eight
+align_center
+figure_eight -30 45
+
+message: ClimbingCircle
+climbing_circle 20 20 -45
+
+messge: SplitS
+align_box 1
+split_s 10
+
+message: InvertedFlight
+align_center
+straight_flight 200 180
+
+
+

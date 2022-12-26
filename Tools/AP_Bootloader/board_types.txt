@@ -44,6 +44,8 @@ TARGET_HW_ARK_CAN_RTK_GPS              82
 TARGET_HW_FF_RTK_CAN_GPS               85
 TARGET_HW_ATL_MANTIS_EDU               97
 TARGET_HW_ARK_FMU_V6X                  57
+TARGET_HW_THE_PEACH_K1                212
+TARGET_HW_THE_PEACH_R1                213
 
 
 Reserved  PX4 [BL] FMU v5X.x           51
@@ -188,6 +190,7 @@ AP_HW_JFB100                         1084
 AP_HW_C_RTK2_HP                      1085
 AP_HW_JUMPER_XIAKE800                1086
 AP_HW_Sierra_F1                      1087
+AP_HW_HolybroCompass                 1088
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401

@@ -546,6 +546,19 @@ void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
         break;
     }
 
+    case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE: {     // MAV ID: 70
+        if (msg.sysid != sub.g.sysid_my_gcs) {
+            break;    // Only accept control from our gcs
+        }
+
+        sub.failsafe.last_pilot_input_ms = AP_HAL::millis();
+        // a RC override message is considered to be a 'heartbeat'
+        // from the ground station for failsafe purposes
+        
+        handle_rc_channels_override(msg);
+        break;
+    }
+
     
     case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET: { // MAV ID: 82
         // decode packet

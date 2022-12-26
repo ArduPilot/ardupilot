@@ -312,6 +312,9 @@ public:
     // allow the enable flag to be set by Replay
     void set_enable(bool enable) { _enable.set_enable(enable); }
 
+    // get the enable parameter
+    bool get_enable(void) const { return bool(_enable.get()); }
+    
     /*
       check if switching lanes will reduce the normalised
       innovations. This is called when the vehicle code is about to

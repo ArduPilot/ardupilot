@@ -20,7 +20,6 @@
 #include <AP_Filesystem/AP_Filesystem_config.h>
 #include <AP_Frsky_Telem/AP_Frsky_config.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Mount/AP_Mount.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
@@ -85,6 +84,28 @@ void gcs_out_of_space_to_send(mavlink_channel_t chan);
         ARRAY_SIZE(stream_name ## _msgs)        \
     }
 #define MAV_STREAM_TERMINATOR { (streams)0, nullptr, 0 }
+
+// code generation; avoid each subclass duplicating these two methods
+// and just changing the name.  These methods allow retrieval of
+// objects specific to the vehicle's subclass, which the vehicle can
+// then call its own specific methods on
+#define GCS_MAVLINK_CHAN_METHOD_DEFINITIONS(subclass_name) \
+    subclass_name *chan(const uint8_t ofs) override {                   \
+        if (ofs > _num_gcs) {                                           \
+            INTERNAL_ERROR(AP_InternalError::error_t::gcs_offset);      \
+            return nullptr;                                             \
+        }                                                               \
+        return (subclass_name *)_chan[ofs];                        \
+    }                                                                   \
+                                                                        \
+    const subclass_name *chan(const uint8_t ofs) const override { \
+        if (ofs > _num_gcs) {                                           \
+            INTERNAL_ERROR(AP_InternalError::error_t::gcs_offset);      \
+            return nullptr;                                             \
+        }                                                               \
+        return (subclass_name *)_chan[ofs];                        \
+    }
+
 
 #define GCS_MAVLINK_NUM_STREAM_RATES 10
 class GCS_MAVLINK_Parameters
@@ -292,9 +313,7 @@ public:
 #if AP_MAVLINK_BATTERY2_ENABLED
     void send_battery2();
 #endif
-#if AP_OPTICALFLOW_ENABLED
     void send_opticalflow();
-#endif
     virtual void send_attitude() const;
     virtual void send_attitude_quaternion() const;
     void send_autopilot_version() const;
@@ -584,9 +603,7 @@ protected:
     MAV_RESULT handle_can_forward(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
     void handle_can_frame(const mavlink_message_t &msg) const;
 
-#if AP_OPTICALFLOW_ENABLED
     void handle_optical_flow(const mavlink_message_t &msg);
-#endif
 
     MAV_RESULT handle_fixed_mag_cal_yaw(const mavlink_command_long_t &packet);
 

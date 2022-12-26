@@ -132,13 +132,14 @@ void ModeQRTL::run()
 /*
   update target altitude for QRTL profile
  */
-bool ModeQRTL::update_target_altitude()
+void ModeQRTL::update_target_altitude()
 {
     /*
       update height target in approach
      */
     if ((submode != SubMode::RTL) || (plane.quadplane.poscontrol.get_state() != QuadPlane::QPOS_APPROACH)) {
-        return false;
+        Mode::update_target_altitude();
+        return;
     }
 
     /*
@@ -158,7 +159,7 @@ bool ModeQRTL::update_target_altitude()
     Location loc = plane.next_WP_loc;
     loc.alt += alt*100;
     plane.set_target_altitude_location(loc);
-    return true;
+    plane.altitude_error_cm = plane.calc_altitude_error_cm();
 }
 
 // only nudge during approach

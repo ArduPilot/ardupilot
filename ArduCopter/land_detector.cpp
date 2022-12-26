@@ -88,7 +88,7 @@ void Copter::update_land_detector()
 #endif
 
         uint8_t land_detector_scalar = 1;
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
         if (landinggear.get_wow_state() != AP_LandingGear::LG_WOW_UNKNOWN) {
             // we have a WoW sensor so lets loosen the strictness of the landing detector
             land_detector_scalar = 2;
@@ -105,7 +105,7 @@ void Copter::update_land_detector()
         bool rangefinder_check = (!rangefinder_alt_ok() || rangefinder_state.alt_cm_filt.get() < LAND_RANGEFINDER_MIN_ALT_CM);
 
         // if we have weight on wheels (WoW) or ambiguous unknown. never no WoW
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
         const bool WoW_check = (landinggear.get_wow_state() == AP_LandingGear::LG_WOW || landinggear.get_wow_state() == AP_LandingGear::LG_WOW_UNKNOWN);
 #else
         const bool WoW_check = true;

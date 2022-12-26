@@ -247,6 +247,9 @@ private:
     // send parameter save request
     void send_parameter_save_request();
 
+    // periodic logging
+    void logging();
+    
     // set parameter on a node
     ParamGetSetIntCb *param_int_cb;
     ParamGetSetFloatCb *param_float_cb;
@@ -287,9 +290,16 @@ private:
         bool servo_pending;
     } _SRV_conf[UAVCAN_SRV_NUMBER];
 
+    uint32_t _esc_send_count;
+    uint32_t _srv_send_count;
+    uint32_t _fail_send_count;
+
     uint8_t _SRV_armed;
     uint32_t _SRV_last_send_us;
     HAL_Semaphore SRV_sem;
+
+    // last log time
+    uint32_t last_log_ms;
 
     ///// LED /////
     struct led_device {

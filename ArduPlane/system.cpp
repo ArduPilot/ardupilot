@@ -86,6 +86,7 @@ void Plane::init_ardupilot()
     AP::compass().init();
 
 #if AP_AIRSPEED_ENABLED
+    airspeed.set_fixedwing_parameters(&aparm);
     airspeed.set_log_bit(MASK_LOG_IMU);
 #endif
 
@@ -100,7 +101,7 @@ void Plane::init_ardupilot()
     camera_mount.init();
 #endif
 
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
     // initialise landing gear position
     g2.landing_gear.init();
 #endif
@@ -241,18 +242,6 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
         }
         return false;
     }
-
-#if !QAUTOTUNE_ENABLED
-    if (&new_mode == &plane.mode_qautotune) {
-        gcs().send_text(MAV_SEVERITY_INFO,"QAUTOTUNE disabled");
-        set_mode(plane.mode_qhover, ModeReason::UNAVAILABLE);
-        // make sad noise
-        if (reason != ModeReason::INITIALISED) {
-            AP_Notify::events.user_mode_change_failed = 1;
-        }
-        return false;
-    }
-#endif  // !QAUTOTUNE_ENABLED
 
 #else
     if (new_mode.is_vtol_mode()) {

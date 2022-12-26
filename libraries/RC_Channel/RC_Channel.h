@@ -550,6 +550,10 @@ public:
         return get_singleton() != nullptr && (_options & uint32_t(Option::CRSF_FM_DISARM_STAR)) != 0;
     }
 
+    bool use_420kbaud_for_elrs(void) const {
+        return get_singleton() != nullptr && (_options & uint32_t(Option::ELRS_420KBAUD)) != 0;
+    }
+
     // returns true if overrides should time out.  If true is returned
     // then returned_timeout_ms will contain the timeout in
     // milliseconds, with 0 meaning overrides are disabled.
@@ -626,6 +630,7 @@ protected:
         MULTI_RECEIVER_SUPPORT  = (1U << 10), // allow multiple receivers
         USE_CRSF_LQ_AS_RSSI     = (1U << 11), // returns CRSF link quality as RSSI value, instead of RSSI
         CRSF_FM_DISARM_STAR     = (1U << 12), // when disarmed, add a star at the end of the flight mode in CRSF telemetry
+        ELRS_420KBAUD           = (1U << 13), // use 420kbaud for ELRS protocol
     };
 
     void new_override_received() {

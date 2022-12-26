@@ -9,7 +9,17 @@
  */
 
 #include <SITL/SIM_Multicopter.h>
+#include <SITL/SIM_Helicopter.h>
+#include <SITL/SIM_SingleCopter.h>
 #include <SITL/SIM_Plane.h>
+#include <SITL/SIM_QuadPlane.h>
+#include <SITL/SIM_Rover.h>
+#include <SITL/SIM_BalanceBot.h>
+#include <SITL/SIM_Sailboat.h>
+#include <SITL/SIM_MotorBoat.h>
+#include <SITL/SIM_Tracker.h>
+#include <SITL/SIM_Submarine.h>
+#include <SITL/SIM_Blimp.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include <AP_Baro/AP_Baro.h>
@@ -20,16 +30,29 @@ using namespace AP_HAL;
 
 #include <AP_Terrain/AP_Terrain.h>
 
+#ifndef AP_SIM_FRAME_CLASS
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#define AP_SIM_FRAME_Class MultiCopter
+#elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#define AP_SIM_FRAME_CLASS Plane
+#endif
+#endif
+
+#ifndef AP_SIM_FRAME_STRING
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#define AP_SIM_FRAME_STRING "+"
+#elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#define AP_SIM_FRAME_STRING "plane"
+#endif
+#endif
+
+
 void SIMState::update()
 {
     static bool init_done;
     if (!init_done) {
         init_done = true;
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-        sitl_model = SITL::MultiCopter::create("+");
-#elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-        sitl_model = SITL::Plane::create("plane");
-#endif
+        sitl_model = SITL::AP_SIM_FRAME_CLASS::create(AP_SIM_FRAME_STRING);
     }
 
     _fdm_input_step();
@@ -43,9 +66,6 @@ void SIMState::_sitl_setup(const char *home_str)
     _home_str = home_str;
 
     printf("Starting SITL input\n");
-
-    // find the barometer object if it exists
-    _barometer = AP_Baro::get_singleton();
 }
 
 
@@ -234,6 +254,9 @@ void SIMState::_simulator_servos(struct sitl_input &input)
     // output at chosen framerate
     uint32_t now = AP_HAL::micros();
     // last_update_usec = now;
+
+    // find the barometer object if it exists
+    const auto *_barometer = AP_Baro::get_singleton();
 
     float altitude = _barometer?_barometer->get_altitude():0;
     float wind_speed = 0;

@@ -172,12 +172,14 @@ void NavEKF2_core::getVelNED(Vector3f &vel) const
 // returns false if estimate is unavailable
 bool NavEKF2_core::getAirSpdVec(Vector3f &vel) const
 {
-    if (inhibitWindStates || PV_AidingMode == AID_NONE) {
+    if (PV_AidingMode == AID_NONE) {
         return false;
     }
     vel = (outputDataNew.velocity + velOffsetNED).tofloat();
-    vel.x -= stateStruct.wind_vel.x;
-    vel.y -= stateStruct.wind_vel.y;
+    if (!inhibitWindStates) {
+        vel.x -= stateStruct.wind_vel.x;
+        vel.y -= stateStruct.wind_vel.y;
+    }
     Matrix3f Tnb; // rotation from nav to body frame
     outputDataNew.quat.inverse().rotation_matrix(Tnb);
     vel = Tnb * vel;

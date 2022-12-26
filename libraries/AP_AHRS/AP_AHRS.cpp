@@ -223,6 +223,14 @@ void AP_AHRS::init()
     }
 #endif
 
+#if HAL_NAVEKF2_AVAILABLE && HAL_NAVEKF3_AVAILABLE
+    // a special case to catch users who had AHRS_EKF_TYPE=2 saved and
+    // updated to a version where EK2_ENABLE=0
+    if (_ekf_type.get() == 2 && !EKF2.get_enable() && EKF3.get_enable()) {
+        _ekf_type.set(3);
+    }
+#endif
+
     last_active_ekf_type = (EKFType)_ekf_type.get();
 
     // init backends
@@ -1896,6 +1904,11 @@ AP_AHRS::EKFType AP_AHRS::active_EKF_type(void) const
     if (ret != EKFType::NONE &&
         (_vehicle_class == VehicleClass::FIXED_WING ||
          _vehicle_class == VehicleClass::GROUND)) {
+        if (!dcm.yaw_source_available() && !fly_forward) {
+            // if we don't have a DCM yaw source available and we are
+            // in a non-fly-forward mode then we are best off using the EKF
+            return ret;
+        }
         bool should_use_gps = true;
         nav_filter_status filt_state;
 #if HAL_NAVEKF2_AVAILABLE
@@ -2705,29 +2718,21 @@ void AP_AHRS::send_ekf_status_report(GCS_MAVLINK &link) const
     }
 }
 
-// passes a reference to the location of the inertial navigation origin
-// in WGS-84 coordinates
-// returns a boolean true when the inertial navigation origin has been set
-bool AP_AHRS::get_origin(Location &ret) const
+// return origin for a specified EKF type
+bool AP_AHRS::get_origin(EKFType type, Location &ret) const
 {
-    switch (ekf_type()) {
+    switch (type) {
     case EKFType::NONE:
         return dcm.get_origin(ret);
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
-        if (!EKF2.getOriginLLH(ret)) {
-            return false;
-        }
-        return true;
+        return EKF2.getOriginLLH(ret);
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        if (!EKF3.getOriginLLH(ret)) {
-            return false;
-        }
-        return true;
+        return EKF3.getOriginLLH(ret);
 #endif
 
 #if AP_AHRS_SIM_ENABLED
@@ -2745,7 +2750,25 @@ bool AP_AHRS::get_origin(Location &ret) const
         return AP::externalAHRS().get_origin(ret);
 #endif
     }
+    return false;
+}
 
+/*
+  return origin for the configured EKF type. If we are armed and the
+  configured EKF type cannot return an origin then return origin for
+  the active EKF type (if available)
+
+  This copes with users force arming a plane that is running on DCM as
+  the EKF has not fully initialised
+ */
+bool AP_AHRS::get_origin(Location &ret) const
+{
+    if (get_origin(ekf_type(), ret)) {
+        return true;
+    }
+    if (hal.util->get_soft_armed() && get_origin(active_EKF_type(), ret)) {
+        return true;
+    }
     return false;
 }
 
@@ -2754,7 +2777,7 @@ bool AP_AHRS::get_origin(Location &ret) const
 // it will return false when no limiting is required
 bool AP_AHRS::get_hgt_ctrl_limit(float& limit) const
 {
-    switch (ekf_type()) {
+    switch (active_EKF_type()) {
     case EKFType::NONE:
         // We are not using an EKF so no limiting applies
         return false;

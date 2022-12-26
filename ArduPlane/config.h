@@ -250,10 +250,6 @@
  #define OFFBOARD_GUIDED !HAL_MINIMIZE_FEATURES
 #endif
 
-#ifndef LANDING_GEAR_ENABLED
- #define LANDING_GEAR_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 //  EKF Failsafe
 #ifndef FS_EKF_THRESHOLD_DEFAULT

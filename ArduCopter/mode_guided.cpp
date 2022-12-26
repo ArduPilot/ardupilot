@@ -108,6 +108,13 @@ bool ModeGuided::allows_arming(AP_Arming::Method method) const
     return (copter.g2.guided_options & (uint32_t)Options::AllowArmingFromTX) != 0;
 };
 
+#if WEATHERVANE_ENABLED == ENABLED
+bool ModeGuided::allows_weathervaning() const
+{
+    return (copter.g2.guided_options.get() & (uint32_t)Options::AllowWeatherVaning) != 0;
+}
+#endif
+
 // initialises position controller to implement take-off
 // takeoff_alt_cm is interpreted as alt-above-home (in cm) or alt-above-terrain if a rangefinder is available
 bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
@@ -652,7 +659,7 @@ void ModeGuided::takeoff_run()
     auto_takeoff_run();
     if (auto_takeoff_complete && !takeoff_complete) {
         takeoff_complete = true;
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
         // optionally retract landing gear
         copter.landinggear.retract_after_takeoff();
 #endif

@@ -101,12 +101,12 @@ public:
 #if AP_RCPROTOCOL_FPORT2_ENABLED
         case FPORT2:
 #endif
+        case CRSF:
             return true;
         case IBUS:
         case SUMD:
         case SRXL:
         case SRXL2:
-        case CRSF:
         case ST24:
         case NONE:
             return false;

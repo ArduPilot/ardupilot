@@ -1,5 +1,39 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.3.2 23-Dec-2022
+Changes from 4.3.2-rc1
+1) Reverted arming check that main loop is running at configured speed (e.g. SCHED_LOOP_RATE)
+------------------------------------------------------------------
+Copter 4.3.2-rc1 10-Dec-2022
+Changes from 4.3.1
+1) Arming check that main loop is running at configured speed (e.g. SCHED_LOOP_RATE)
+2) uBlox M10 support
+3) Autopilot specific changes
+    a) CubeOrange defaults to using 2nd IMU as primary
+    b) SIRF and SBP GPS disabled on BeastF7v2, MatekF405-STD, MAtekF405-Wing, omnibusf4pro
+4) Bug fixes
+    a) AutoTune gains loaded correctly during pilot testing
+    b) Camera driver's CAM_MIN_INTERVAL fixed if pilot manually triggers extra picture
+    c) EKF3 fix when using EK3_RNG_USE_HGT/SPD params and rangefinder provides bad readings
+    d) Main loop slowdown after arming fixed (parameter logging was causing delays)
+    e) Main loop's fast tasks always run (caused twitches in Loiter on heavily loaded CPUs)
+    f) MAVLink commands received on private channels checked for valid target sysid
+    g) ModalAI cameras support fixed (ODOMETRY message frame was consumed incorrectly)
+    h) Param reset after firmware load fixed on these boards
+        - BeastF7v2
+        - CubeYellow-bdshot
+        - f405-MatekAirspeed
+        - FlywooF745Nano
+        - KakuteF4Mini
+        - KakuteF7-bdshot
+        - MatekF405-bdshot
+        - MatekF405-STD
+        - MatekF405-Wing-bdshot
+        - MatekF765-SE
+        - MatekF765-Wing-bdshot
+    i) Siyi A8 gimbal support fixed
+    j) Windows builds move to compiling only 64-bit executables
+------------------------------------------------------------------
 Copter 4.3.1 05-Dec-2022 / 4.3.1-rc1 17-Nov-2022
 Changes from 4.3.0
 1) Autopilot specific enhancements
