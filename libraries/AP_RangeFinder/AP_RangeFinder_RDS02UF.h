@@ -132,4 +132,4 @@ private:
     0xAD,0x69,0xCC,0xA4,0x94,0x90,0x1B,0x43,
     };
 };
-#endif  // AP_RANGEFINDER_NMEA_ENABLED
+#endif  // AP_RANGEFINDER_RDS02UF_ENABLED
