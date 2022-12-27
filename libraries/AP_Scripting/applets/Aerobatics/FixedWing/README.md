@@ -41,7 +41,6 @@ the ground track.
 | 18 | Downline-45              | radius | height loss |             |            | No         |
 | 19 | Stall Turn(experimental) | radius | height      | direction   |            | Yes        |
 | 20 | Procedure Turn           | radius | bank angle  | step-out    |            | Yes        |
-| 21 | Derry Turn               | radius | bank angle  |             |            | No         |
 | 23 | Half Climbing Circle     | radius | height      | bank angle  |            | Yes        |
 | 25 | Laydown Humpty           | radius | height      |             |            | Yes        |
 | 25 | Barrel Roll              | radius | length      | num spirals |            | No         |

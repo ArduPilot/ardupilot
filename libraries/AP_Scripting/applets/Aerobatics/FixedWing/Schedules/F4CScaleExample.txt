@@ -90,10 +90,14 @@ function split_s(r, arg2, arg3, arg4)
    })
 end
 
-function derry_turn(radius, bank_angle, arg3, arg4)
+function derry_turn(radius, bank_angle, roll_dist, arg4)
+   local direction = sgn(radius)
+   local abs_bank = math.abs(bank_angle)
+   local bank2 = 360.0 - abs_bank*2
    return make_paths("derry_turn", {
-            { path_horizontal_arc(radius,  90),     roll_angle_entry_exit(bank_angle) },
-            { path_horizontal_arc(-radius,  90),    roll_angle_entry_exit(-bank_angle) },
+            { path_horizontal_arc(radius,  90),      roll_angle_entry(direction*abs_bank) },
+            { path_straight(roll_dist),              roll_angle(bank2) },
+            { path_horizontal_arc(-radius, 90),      roll_angle_exit(direction*abs_bank) },
       })
 end
 
@@ -155,7 +159,7 @@ half_climbing_circle 65 0 50
 
 align_center
 message: DerryTurn
-derry_turn 140 60
+derry_turn 140 60 30
 
 straight_roll 80 0
 half_climbing_circle -140 0 -50
