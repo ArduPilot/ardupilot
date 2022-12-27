@@ -191,19 +191,55 @@ int AP_Logger_Write(lua_State *L) {
         uint8_t index = have_units ? i-5 : i-3;
         uint8_t arg_index = i + arg_offset;
         switch(fmt_cat[index]) {
-            // logger varable types not available to scripting
-            // 'b': int8_t
-            // 'h': int16_t
-            // 'c': int16_t
+            // logger variable types not available to scripting
             // 'd': double
-            // 'H': uint16_t
-            // 'C': uint16_t
             // 'Q': uint64_t
             // 'q': int64_t
             // 'a': arrays
-            case 'i':
-            case 'L':
-            case 'e': {
+            case 'b': { // int8_t
+                int isnum;
+                const lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
+                if (!isnum || (tmp1 < INT8_MIN) || (tmp1 > INT8_MAX)) {
+                    luaM_free(L, buffer);
+                    luaL_argerror(L, arg_index, "argument out of range");
+                    // no return
+                }
+                int8_t tmp = static_cast<int8_t>(tmp1);
+                memcpy(&buffer[offset], &tmp, sizeof(int8_t));
+                offset += sizeof(int8_t);
+                break;
+            }
+            case 'h': // int16_t
+            case 'c': { // int16_t * 100
+                int isnum;
+                const lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
+                if (!isnum || (tmp1 < INT16_MIN) || (tmp1 > INT16_MAX)) {
+                    luaM_free(L, buffer);
+                    luaL_argerror(L, arg_index, "argument out of range");
+                    // no return
+                }
+                int16_t tmp = static_cast<int16_t>(tmp1);
+                memcpy(&buffer[offset], &tmp, sizeof(int16_t));
+                offset += sizeof(int16_t);
+                break;
+            }
+            case 'H': // uint16_t
+            case 'C': { // uint16_t * 100
+                int isnum;
+                const lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
+                if (!isnum || (tmp1 < 0) || (tmp1 > UINT16_MAX)) {
+                    luaM_free(L, buffer);
+                    luaL_argerror(L, arg_index, "argument out of range");
+                    // no return
+                }
+                uint16_t tmp = static_cast<uint16_t>(tmp1);
+                memcpy(&buffer[offset], &tmp, sizeof(uint16_t));
+                offset += sizeof(uint16_t);
+                break;
+            }
+            case 'i': // int32_t
+            case 'L': // int32_t (lat/long)
+            case 'e': { // int32_t * 100
                 int isnum;
                 const lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
                 if (!isnum) {
@@ -216,7 +252,7 @@ int AP_Logger_Write(lua_State *L) {
                 offset += sizeof(int32_t);
                 break;
             }
-            case 'f': {
+            case 'f': { // float
                 int isnum;
                 const lua_Number tmp1 = lua_tonumberx(L, arg_index, &isnum);
                 if (!isnum) {
@@ -229,12 +265,12 @@ int AP_Logger_Write(lua_State *L) {
                 offset += sizeof(float);
                 break;
             }
-            case 'n': {
+            case 'n': { // char[4]
                 charlen = 4;
                 break;
             }
-            case 'M':
-            case 'B': {
+            case 'M': // uint8_t (flight mode)
+            case 'B': { // uint8_t
                 int isnum;
                 const lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
                 if (!isnum || (tmp1 < 0) || (tmp1 > UINT8_MAX)) {
@@ -247,8 +283,8 @@ int AP_Logger_Write(lua_State *L) {
                 offset += sizeof(uint8_t);
                 break;
             }
-            case 'I':
-            case 'E': {
+            case 'I': // uint32_t
+            case 'E': { // uint32_t * 100
                 uint32_t tmp;
                 void * ud = luaL_testudata(L, arg_index, "uint32_t");
                 if (ud != nullptr) {
@@ -272,11 +308,11 @@ int AP_Logger_Write(lua_State *L) {
                 offset += sizeof(uint32_t);
                 break;
             }
-            case 'N': {
+            case 'N': { // char[16]
                 charlen = 16;
                 break;
             }
-            case 'Z': {
+            case 'Z': { // char[64]
                 charlen = 64;
                 break;
             }
