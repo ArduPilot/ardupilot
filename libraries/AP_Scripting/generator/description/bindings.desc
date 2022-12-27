@@ -566,7 +566,6 @@ singleton AP_Winch method get_rate_max float
 include AP_Parachute/AP_Parachute.h depends HAL_PARACHUTE_ENABLED
 singleton AP_Parachute depends HAL_PARACHUTE_ENABLED
 singleton AP_Parachute rename parachute
-singleton AP_Parachute method enabled void boolean
 singleton AP_Parachute method enabled boolean
 singleton AP_Parachute method release void
 singleton AP_Parachute method released boolean
