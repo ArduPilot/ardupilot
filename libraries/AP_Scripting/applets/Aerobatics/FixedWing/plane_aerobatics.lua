@@ -309,7 +309,7 @@ end
 
 local speed_PI = speed_controller(SPD_P, SPD_I, THR_PIT_FF, 100.0, 0.0, 100.0)
 
-local function sgn(x)
+function sgn(x)
    local eps = 0.000001
    if (x > eps) then
       return 1.0
@@ -2199,7 +2199,6 @@ command_table[17]= PathFunction(upline_45, "Upline-45")
 command_table[18]= PathFunction(downline_45, "Downline-45")
 command_table[19]= PathFunction(stall_turn, "Stall Turn")
 command_table[20]= PathFunction(procedure_turn, "Procedure Turn")
-command_table[21]= PathFunction(derry_turn, "Derry Turn")
 command_table[23]= PathFunction(half_climbing_circle, "Half Climbing Circle")
 command_table[25]= PathFunction(laydown_humpty, "Laydown Humpty")
 command_table[26]= PathFunction(barrel_roll, "Barrel Roll")
