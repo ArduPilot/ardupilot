@@ -227,7 +227,6 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This is the number of msec that the Height measurements lag behind the inertial measurements.
     // @Range: 0 250
     // @Increment: 10
-    // @RebootRequired: True
     // @User: Advanced
     // @Units: ms
     // @RebootRequired: True
@@ -331,7 +330,6 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This is the number of msec that the optical flow measurements lag behind the inertial measurements. It is the time from the end of the optical flow averaging period and does not include the time delay due to the 100msec of averaging within the flow sensor.
     // @Range: 0 250
     // @Increment: 10
-    // @RebootRequired: True
     // @User: Advanced
     // @Units: ms
     // @RebootRequired: True
@@ -516,7 +514,6 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This is the number of msec that the range beacon measurements lag behind the inertial measurements.
     // @Range: 0 250
     // @Increment: 10
-    // @RebootRequired: True
     // @User: Advanced
     // @Units: ms
     // @RebootRequired: True
