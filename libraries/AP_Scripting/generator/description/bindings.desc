@@ -563,6 +563,18 @@ singleton AP_Winch method release_length void float'skip_check
 singleton AP_Winch method set_desired_rate void float'skip_check
 singleton AP_Winch method get_rate_max float
 
+include AP_Parachute/AP_Parachute.h depends HAL_PARACHUTE_ENABLED
+singleton AP_Parachute depends HAL_PARACHUTE_ENABLED
+singleton AP_Parachute rename parachute
+singleton AP_Parachute method enabled void boolean
+singleton AP_Parachute method enabled boolean
+singleton AP_Parachute method release void
+singleton AP_Parachute method released boolean
+singleton AP_Parachute method release_initiated boolean
+singleton AP_Parachute method release_in_progress boolean
+singleton AP_Parachute method alt_min int16_t
+
+
 -- ----EFI Library----
 include AP_EFI/AP_EFI.h depends HAL_EFI_ENABLED
 include AP_EFI/AP_EFI_Scripting.h depends HAL_EFI_ENABLED
