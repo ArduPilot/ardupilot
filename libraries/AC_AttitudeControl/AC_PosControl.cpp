@@ -448,8 +448,6 @@ void AC_PosControl::init_xy_controller_stopping_point()
     get_stopping_point_xy_cm(_pos_target.xy());
     _vel_desired.xy().zero();
     _accel_desired.xy().zero();
-
-    _pid_vel_xy.set_integrator(_accel_target);
 }
 
 // relax_velocity_controller_xy - initialise the position controller to the current position and velocity with decaying acceleration.
@@ -513,7 +511,7 @@ void AC_PosControl::init_xy_controller()
     _pid_vel_xy.reset_filter();
     // initialise the I term to _accel_target - _accel_desired
     // _accel_desired is zero and can be removed from the equation
-    _pid_vel_xy.set_integrator(_accel_target);
+    _pid_vel_xy.set_integrator(_accel_target.xy() - _vel_target.xy() * _pid_vel_xy.ff());
 
     // initialise ekf xy reset handler
     init_ekf_xy_reset();
