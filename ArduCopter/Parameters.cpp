@@ -454,6 +454,15 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(acro_trainer,   "ACRO_TRAINER",     (uint8_t)ModeAcro::Trainer::LIMITED),
 #endif
 
+    // @Param: LAND_WITH_DELAY
+    // @DisplayName: Land with delay
+    // @Description: land-with-delay is triggered during a failsafe event
+    // @Units: ms
+    // @Range: 0 10000
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(land_with_delay,        "LAND_WITH_DELAY",   LAND_WITH_DELAY_MS),
+
     // variables not in the g class which contain EEPROM saved variables
 
 #if AP_CAMERA_ENABLED

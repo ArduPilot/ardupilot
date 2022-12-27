@@ -382,6 +382,8 @@ public:
 
         k_param_vehicle = 257, // vehicle common block of parameters
 
+        k_param_land_with_delay = 258,
+
         // the k_param_* space is 9-bits in size
         // 511: reserved
     };
@@ -475,6 +477,8 @@ public:
     // Acro parameters
     AP_Int8                 acro_trainer;
 #endif
+
+    AP_Int32                land_with_delay;
 
     // Note: keep initializers here in the same order as they are declared
     // above.
