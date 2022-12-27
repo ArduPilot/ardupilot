@@ -85,7 +85,8 @@ private:
         _GPS_SENTENCE_THS = 160, // True heading with quality indicator, available on Trimble MB-Two
         _GPS_SENTENCE_KSXT = 170, // extension for Unicore, 21 fields
         _GPS_SENTENCE_AGRICA = 193, // extension for Unicore, 65 fields
-        _GPS_SENTENCE_VERSIONA = 270, // extension for Unicore, version
+        _GPS_SENTENCE_VERSIONA = 270, // extension for Unicore, version, 10 fields
+        _GPS_SENTENCE_UNIHEADINGA = 290, // extension for Unicore, uniheadinga, 20 fields
         _GPS_SENTENCE_OTHER = 0
     };
 
@@ -136,6 +137,11 @@ private:
 
     // parse VERSIONA field
     void parse_versiona_field(uint16_t term_number, const char *term);
+
+#if GPS_MOVING_BASELINE
+    // parse UNIHEADINGA field
+    void parse_uniheadinga_field(uint16_t term_number, const char *term);
+#endif
 #endif
 
 
@@ -228,10 +234,10 @@ private:
         float alt;
         uint32_t itow;
         float undulation;
-        double slave_lat, slave_lng;
-        float slave_alt;
         Vector3f pos_stddev;
     } _agrica;
+
+    // unicore VERSIONA parsing
     struct {
         char type[10];
         char version[20];
@@ -239,6 +245,15 @@ private:
     } _versiona;
     bool _have_unicore_versiona;
 
+#if GPS_MOVING_BASELINE
+    // unicore UNIHEADINGA parsing
+    struct {
+        float baseline_length;
+        float heading;
+        float pitch;
+        float heading_sd;
+    } _uniheadinga;
+#endif
 #endif // AP_GPS_NMEA_UNICORE_ENABLED
     bool _expect_agrica;
 
