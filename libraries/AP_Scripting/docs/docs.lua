@@ -2361,3 +2361,26 @@ function follow:get_last_update_ms() end
 -- desc
 ---@return boolean
 function follow:have_target() end
+
+-- Return status of the parachute module
+---@return boolean
+function parachute:enabled() end
+
+-- Release the parachute
+function parachute:release() end
+
+-- Returns true if the parachute has been released
+---@return boolean
+function parachute:released() end
+
+-- Returns true if the parachute release has been initiated
+---@return boolean
+function parachute:release_initiated() end
+
+-- Returns true if the parachute release is in progress
+---@return boolean
+function parachute:release_in_progress() end
+
+-- Returns the minimum altitude set for parachure deployment
+---@return int16_t
+function parachute:alt_min() end
