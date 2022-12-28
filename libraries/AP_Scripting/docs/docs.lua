@@ -968,6 +968,43 @@ function winch:healthy() end
 mount = {}
 
 -- desc
+---@param param1 integer
+---@return integer|nil  -- pic_count
+---@return boolean|nil  -- record_video
+---@return integer|nil  -- zoom_step
+---@return integer|nil  -- focus_step
+---@return boolean|nil  -- auto_focus
+function mount:get_camera_state(param1) end
+
+-- desc
+---@param instance integer
+---@param roll_deg number
+---@param pitch_deg number
+---@param yaw_deg number
+function mount:set_attitude_euler(instance, roll_deg, pitch_deg, yaw_deg) end
+
+-- desc
+---@param instance integer
+---@return Location_ud|nil
+function mount:get_location_target(instance) end
+
+-- desc
+---@param instance integer
+---@return number|nil   -- roll_deg
+---@return number|nil   -- pitch_deg
+---@return number|nil   -- yaw_deg
+---@return boolean|nil  -- yaw_is_earth_frame
+function mount:get_angle_target(instance) end
+
+-- desc
+---@param instance integer
+---@return number|nil   -- roll_degs
+---@return number|nil   -- pitch_degs
+---@return number|nil   -- yaw_degs
+---@return boolean|nil  -- yaw_is_earth_frame
+function mount:get_rate_target(instance) end
+
+-- desc
 ---@param instance integer
 ---@param target_loc Location_ud
 function mount:set_roi_target(instance, target_loc) end
