@@ -12,6 +12,7 @@
 #include "AP_Mount_SToRM32_serial.h"
 #include "AP_Mount_Gremsy.h"
 #include "AP_Mount_Siyi.h"
+#include "AP_Mount_Scripting.h"
 #include <stdio.h>
 #include <AP_Math/location.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -117,6 +118,13 @@ void AP_Mount::init()
             _backends[instance] = new AP_Mount_Siyi(*this, _params[instance], instance);
             _num_instances++;
 #endif // HAL_MOUNT_SIYI_ENABLED
+
+#if HAL_MOUNT_SCRIPTING_ENABLED
+        // check for Scripting gimbal
+        } else if (mount_type == Mount_Type_Scripting) {
+            _backends[instance] = new AP_Mount_Scripting(*this, _params[instance], instance);
+            _num_instances++;
+#endif // HAL_MOUNT_SCRIPTING_ENABLED
 
         }
 
@@ -426,6 +434,39 @@ bool AP_Mount::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
     }
 
     return true;
+}
+
+// accessors for scripting backends
+bool AP_Mount::get_rate_target(uint8_t instance, float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame)
+{
+    if (!check_instance(instance)) {
+        return false;
+    }
+    return _backends[instance]->get_rate_target(roll_degs, pitch_degs, yaw_degs, yaw_is_earth_frame);
+}
+
+bool AP_Mount::get_angle_target(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame)
+{
+    if (!check_instance(instance)) {
+        return false;
+    }
+    return _backends[instance]->get_angle_target(roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame);
+}
+
+bool AP_Mount::get_location_target(uint8_t instance, Location& target_loc)
+{
+    if (!check_instance(instance)) {
+        return false;
+    }
+    return _backends[instance]->get_location_target(target_loc);
+}
+
+void AP_Mount::set_attitude_euler(uint8_t instance, float roll_deg, float pitch_deg, float yaw_bf_deg)
+{
+    if (!check_instance(instance)) {
+        return;
+    }
+    _backends[instance]->set_attitude_euler(roll_deg, pitch_deg, yaw_bf_deg);
 }
 
 // point at system ID sysid

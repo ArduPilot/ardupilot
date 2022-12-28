@@ -49,6 +49,7 @@ class AP_Mount_SToRM32;
 class AP_Mount_SToRM32_serial;
 class AP_Mount_Gremsy;
 class AP_Mount_Siyi;
+class AP_Mount_Scripting;
 
 /*
   This is a workaround to allow the MAVLink backend access to the
@@ -66,6 +67,7 @@ class AP_Mount
     friend class AP_Mount_SToRM32_serial;
     friend class AP_Mount_Gremsy;
     friend class AP_Mount_Siyi;
+    friend class AP_Mount_Scripting;
 
 public:
     AP_Mount();
@@ -89,6 +91,7 @@ public:
         Mount_Type_Gremsy = 6,          /// Gremsy gimbal using MAVLink v2 Gimbal protocol
         Mount_Type_BrushlessPWM = 7,    /// Brushless (stabilized) gimbal using PWM protocol
         Mount_Type_Siyi = 8,            /// Siyi gimbal using custom serial protocol
+        Mount_Type_Scripting = 9,       /// Scripting gimbal driver
     };
 
     // init - detect and initialise all mounts
@@ -163,6 +166,12 @@ public:
     // run pre-arm check.  returns false on failure and fills in failure_msg
     // any failure_msg returned will not include a prefix
     bool pre_arm_checks(char *failure_msg, uint8_t failure_msg_len);
+
+    // accessors for scripting backends
+    bool get_rate_target(uint8_t instance, float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame);
+    bool get_angle_target(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame);
+    bool get_location_target(uint8_t instance, Location& target_loc);
+    void set_attitude_euler(uint8_t instance, float roll_deg, float pitch_deg, float yaw_bf_deg);
 
     //
     // camera controls for gimbals that include a camera
