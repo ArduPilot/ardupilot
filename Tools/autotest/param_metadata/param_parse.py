@@ -198,7 +198,7 @@ def process_vehicle(vehicle):
                     else:
                         error("%s already has field %s" % (p.name, field_name))
                 setattr(p, field[0], value)
-            elif field[0] == "CopyValuesFrom":
+            elif field[0] in frozenset(["CopyValuesFrom", 'CopyBitmaskFrom']):
                 setattr(p, field[0], field[1])
             else:
                 error("param: unknown parameter metadata field '%s'" % field[0])
@@ -281,7 +281,7 @@ def process_library(vehicle, library, pathprefix=None):
                         else:
                             error("%s already has field %s" % (p.name, field_name))
                     setattr(p, field[0], value)
-                elif field[0] == "CopyValuesFrom":
+                elif field[0] in frozenset(["CopyValuesFrom", 'CopyBitmaskFrom']):
                     setattr(p, field[0], field[1])
                 else:
                     error("param: unknown parameter metadata field %s" % field[0])
@@ -353,7 +353,7 @@ def process_library(vehicle, library, pathprefix=None):
             for field in fields:
                 if field[0] in known_group_fields:
                     setattr(lib, field[0], field[1])
-                elif field[0] == "CopyValuesFrom":
+                elif field[0] in frozenset(["CopyValuesFrom", 'CopyBitmaskFrom']):
                     setattr(p, field[0], field[1])
                 else:
                     error("unknown parameter metadata field '%s'" % field[0])
@@ -408,30 +408,42 @@ def clean_param(param):
         param.Values = ",".join(new_valueList)
 
 
-def do_copy_values(vehicle_params, libraries, param):
-    if not hasattr(param, "CopyValuesFrom"):
+def do_copy_field(vehicle_params, libraries, param, copy_from_field_name, field_name):
+    '''copy_from_field_name might be "CopyValuesFrom", and field_name
+    would thus likely be "Values" - the first's value is somewhere to
+    get the values, the second is where to put them
+    '''
+    if not hasattr(param, copy_from_field_name):
         return
 
     # so go and find the values...
-    wanted_name = param.CopyValuesFrom
-    del param.CopyValuesFrom
+    wanted_name = eval("param.%s" % copy_from_field_name)
+    delattr(param, copy_from_field_name)
     for x in vehicle_params:
         name = x.name
         (v, name) = name.split(":")
         if name != wanted_name:
             continue
-        param.Values = x.Values
+        setattr(param, field_name, getattr(x, field_name))
         return
 
     for lib in libraries:
         for x in lib.params:
             if x.name != wanted_name:
                 continue
-            param.Values = x.Values
+            setattr(param, field_name, getattr(x, field_name))
             return
 
     error("Did not find value to copy (%s wants %s)" %
           (param.name, wanted_name))
+
+
+def do_copy_values(vehicle_params, libraries, param):
+    return do_copy_field(vehicle_params, libraries, param, "CopyValuesFrom", "Values")
+
+
+def do_copy_bitmask(vehicle_params, libraries, param):
+    return do_copy_field(vehicle_params, libraries, param, "CopyBitmaskFrom", "Bitmask")
 
 
 def validate(param):
@@ -517,6 +529,13 @@ for param in vehicle.params:
 for library in libraries:
     for param in library.params:
         do_copy_values(vehicle.params, libraries, param)
+
+# handle CopyBitmaskFrom:
+for param in vehicle.params:
+    do_copy_bitmask(vehicle.params, libraries, param)
+for library in libraries:
+    for param in library.params:
+        do_copy_bitmask(vehicle.params, libraries, param)
 
 if not args.emit_params:
     sys.exit(error_count)
