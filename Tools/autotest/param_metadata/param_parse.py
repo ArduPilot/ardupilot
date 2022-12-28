@@ -127,6 +127,11 @@ truename_map = {
 valid_truenames = frozenset(truename_map.values())
 truename = truename_map.get(args.vehicle, args.vehicle)
 
+documentation_tags_which_are_comma_separated_nv_pairs = frozenset([
+    'Values',
+    'Bitmask',
+])
+
 vehicle_path = find_vehicle_parameter_filepath(args.vehicle)
 
 basename = os.path.basename(os.path.dirname(vehicle_path))
@@ -179,9 +184,19 @@ def process_vehicle(vehicle):
         fields = prog_param_fields.findall(field_text)
         field_list = []
         for field in fields:
+            (field_name, field_value) = field
             field_list.append(field[0])
             if field[0] in known_param_fields:
                 value = re.sub('@PREFIX@', "", field[1]).rstrip()
+                if hasattr(p, field_name):
+                    if field_name in documentation_tags_which_are_comma_separated_nv_pairs:
+                        # allow concatenation of (e.g.) bitmask fields
+                        x = eval("p.%s" % field_name)
+                        x += ", "
+                        x += value
+                        value = x
+                    else:
+                        error("%s already has field %s" % (p.name, field_name))
                 setattr(p, field[0], value)
             elif field[0] == "CopyValuesFrom":
                 setattr(p, field[0], field[1])
@@ -252,9 +267,19 @@ def process_library(vehicle, library, pathprefix=None):
             fields = prog_param_fields.findall(field_text)
             field_list = []
             for field in fields:
+                (field_name, field_value) = field
                 field_list.append(field[0])
                 if field[0] in known_param_fields:
                     value = re.sub('@PREFIX@', library.name, field[1])
+                    if hasattr(p, field_name):
+                        if field_name in documentation_tags_which_are_comma_separated_nv_pairs:
+                            # allow concatenation of (e.g.) bitmask fields
+                            x = eval("p.%s" % field_name)
+                            x += ", "
+                            x += value
+                            value = x
+                        else:
+                            error("%s already has field %s" % (p.name, field_name))
                     setattr(p, field[0], value)
                 elif field[0] == "CopyValuesFrom":
                     setattr(p, field[0], field[1])
