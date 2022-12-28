@@ -22,7 +22,7 @@ track and altitude are reset to the values present when the mode is restored. Tr
 the ground track.
 
 | ID | Name                     | Arg1            | Arg2                       | Turnaround |
-| -- | ------------------------ | ------------_-- | -------------------------- | -----------|
+| -- | ------------------------ | --------------- | -------------------------- | -----------|
 | 1  | Roll(s)                  | rollrate(dps)   | num rolls                  | No         |
 | 2  | Loop(s)/TurnAround       | pitchrate(dps)  | num loops or turnaround(0) | if num=0   |
 | 3  | Rolling Circle           | yawrate(dps)    | rollrate(dps)              | No         |
@@ -91,17 +91,17 @@ modes:
  - LOITER
 
 
-Set TRIK_COUNT to the number of tricks you want to make available and reboot,
-with a maximum of 11. (Why 11 when fewer than that are available? To allow variants, such as different knife-edges, ie 90 deg and 180 deg inveterd flight)
+Set TRIKR_COUNT to the number of tricks you want to make available and reboot,
+with a maximum of 11. (Why 11 when fewer than that are available? To allow variants, such as different knife-edges, ie 90 deg and 180 deg inverted flight)
 
-After setting TRIK_COUNT, reboot and refresh parameters. You will find
-you will now have 5 parameters per trick.
+After setting TRIKR_COUNT, reboot and refresh parameters. You will find
+you will now have 5 parameters per trick,but only three are used at this time.
 
- - TRIKn_ID
- - TRIKn_ARG1
- - TRIKn_ARG2
- - TRIKn_ARG3 (unused, future use)
- - TRIKn_ARG4 (unused, future use)
+ - TRIKRn_ID
+ - TRIKRn_ARG1
+ - TRIKRn_ARG2
+ - TRIKRn_ARG3 (unused, future use)
+ - TRIKRn_ARG4 (unused, future use)
 
 The ID parameter is the manoeuvre from the above table, and the arguments are the arguments to each manoeuvre.
 
@@ -139,7 +139,7 @@ Changing flight modes will also cancel any active trick.
 There are a number of parameters added by this script to control its control loops. The defaults should be satisfactory, but some of the key parameters are:
 
 
- - AEROM_HGT_KE_BIAS: knife-edge boost. Adds immediate rudder as the plane rolls into 90 degree positions rather than waiting of an altitude change
- - AEROM_THR_FF : modulates throttle as pitch increases or decreases
+ - AEROR_HGT_KE_BIAS: knife-edge boost. Adds immediate rudder as the plane rolls into 90 degree positions rather than waiting of an altitude change
+ - AEROR_THR_FF : modulates throttle as pitch increases or decreases
 
 the other parameters control the height and speed PID controllers used in the script

@@ -53,7 +53,7 @@ end
 --]]
 -- 2nd param table for tricks on a switch
 local PARAM_TABLE_KEY2 = 73
-local PARAM_TABLE_PREFIX2 = "TRIK"
+local PARAM_TABLE_PREFIX2 = "TRIKR"
 assert(param:add_table(PARAM_TABLE_KEY2, PARAM_TABLE_PREFIX2, 63), 'could not add param table2')
 
 -- add a parameter and bind it to a variable in table2
