@@ -206,7 +206,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 #endif
 
     case MAV_CMD_NAV_DELAY:
-        do_nav_delay(cmd);
+        mode_auto.do_nav_delay(cmd);
         break;
         
     default:
@@ -311,7 +311,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
 #endif
 
      case MAV_CMD_NAV_DELAY:
-         return verify_nav_delay(cmd);
+         return mode_auto.verify_nav_delay(cmd);
 
     // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
@@ -533,7 +533,7 @@ void Plane::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
 }
 
 // do_nav_delay - Delay the next navigation command
-void Plane::do_nav_delay(const AP_Mission::Mission_Command& cmd)
+void ModeAuto::do_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
     nav_delay.time_start_ms = millis();
 
@@ -880,9 +880,9 @@ bool Plane::verify_altitude_wait(const AP_Mission::Mission_Command &cmd)
 }
 
 // verify_nav_delay - check if we have waited long enough
-bool Plane::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
+bool ModeAuto::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
-    if (arming.is_armed_and_safety_off()) {
+    if (AP::arming().is_armed_and_safety_off()) {
         // don't delay while armed, we need a nav controller running
         return true;
     }

@@ -940,9 +940,6 @@ private:
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     float get_wp_radius() const;
 
-    void do_nav_delay(const AP_Mission::Mission_Command& cmd);
-    bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
-
     bool is_land_command(uint16_t cmd) const;
 
     bool do_change_speed(uint8_t speedtype, float speed_target_ms, float rhtottle_pct);
@@ -950,13 +947,7 @@ private:
       return true if in a specific AUTO mission command
     */
     bool in_auto_mission_id(uint16_t command) const;
-    
-    // Delay the next navigation command
-    struct {
-        uint32_t time_max_ms;
-        uint32_t time_start_ms;
-    } nav_delay;
-    
+
 #if AP_SCRIPTING_ENABLED
     // nav scripting support
     void do_nav_script_time(const AP_Mission::Mission_Command& cmd);
