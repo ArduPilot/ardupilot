@@ -858,9 +858,9 @@ void AP_FETtecOneWire::beep(const uint8_t beep_frequency)
 #if HAL_AP_FETTEC_ESC_LIGHT
 /**
     sets the racewire color for all ESCs
-    @param r red brightness
-    @param g green brightness
-    @param b blue brightness
+    r = red brightness
+    g = green brightness
+    b = blue brightness
 */
 void AP_FETtecOneWire::led_color(const uint8_t r, const uint8_t g, const uint8_t b)
 {
