@@ -30,14 +30,6 @@ using namespace AP_HAL;
 
 #include <AP_Terrain/AP_Terrain.h>
 
-#ifndef AP_SIM_FRAME_CLASS
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-#define AP_SIM_FRAME_Class MultiCopter
-#elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-#define AP_SIM_FRAME_CLASS Plane
-#endif
-#endif
-
 #ifndef AP_SIM_FRAME_STRING
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 #define AP_SIM_FRAME_STRING "+"
@@ -52,7 +44,15 @@ void SIMState::update()
     static bool init_done;
     if (!init_done) {
         init_done = true;
+#ifndef AP_SIM_FRAME_CLASS
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+        sitl_model = SITL::MultiCopter::create(AP_SIM_FRAME_STRING);
+#elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+        sitl_model = SITL::Plane::create(AP_SIM_FRAME_STRING);
+#else
         sitl_model = SITL::AP_SIM_FRAME_CLASS::create(AP_SIM_FRAME_STRING);
+#endif
+#endif
     }
 
     _fdm_input_step();
