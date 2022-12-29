@@ -12,6 +12,9 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AC_Avoidance/AC_Avoid.h>                 // Stop at fence library
 
+// maximum velocities and accelerations
+#define WPNAV_ACCELERATION              250.0f      // maximum horizontal acceleration in cm/s/s that wp navigation will request
+
 class AC_WPNav
 {
 public:
@@ -81,7 +84,7 @@ public:
     float get_accel_z() const { return _wp_accel_z_cmss; }
 
     /// get_wp_acceleration - returns acceleration in cm/s/s during missions
-    float get_wp_acceleration() const { return _wp_accel_cmss.get(); }
+    float get_wp_acceleration() const { return (is_positive(_wp_accel_cmss)) ? _wp_accel_cmss : WPNAV_ACCELERATION; }
 
     /// get_wp_destination waypoint using position vector
     /// x,y are distance from ekf origin in cm
