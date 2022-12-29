@@ -790,15 +790,6 @@ bool AP_Arming::mission_checks(bool report)
             check_failed(ARMING_CHECK_MISSION, report, "No mission library present");
             return false;
         }
-#if HAL_RALLY_ENABLED
-        AP_Rally *rally = AP::rally();
-        if (rally == nullptr) {
-            check_failed(ARMING_CHECK_MISSION, report, "No rally library present");
-            return false;
-        }
-#else
-        check_failed(ARMING_CHECK_MISSION, report, "No rally library present");
-#endif
 
         const struct MisItemTable {
           MIS_ITEM_CHECK check;
@@ -820,8 +811,13 @@ bool AP_Arming::mission_checks(bool report)
                 }
             }
         }
-#if HAL_RALLY_ENABLED
         if (_required_mission_items & MIS_ITEM_CHECK_RALLY) {
+#if HAL_RALLY_ENABLED
+            AP_Rally *rally = AP::rally();
+            if (rally == nullptr) {
+                check_failed(ARMING_CHECK_MISSION, report, "No rally library present");
+                return false;
+            }
             Location ahrs_loc;
             if (!AP::ahrs().get_location(ahrs_loc)) {
                 check_failed(ARMING_CHECK_MISSION, report, "Can't check rally without position");
@@ -832,8 +828,11 @@ bool AP_Arming::mission_checks(bool report)
                 check_failed(ARMING_CHECK_MISSION, report, "No sufficently close rally point located");
                 return false;
             }
-          }
+#else
+            check_failed(ARMING_CHECK_MISSION, report, "No rally library present");
+            return false;
 #endif
+        }
     }
 
     return true;
