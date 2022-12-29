@@ -69,6 +69,9 @@ public:
     /// release_in_progress - true if the parachute release sequence is in progress
     bool release_in_progress() const { return _release_in_progress; }
 
+    // Get release status as enum
+    ReleaseStatus release_status() { return _release_status; }
+
     /// update - shuts off the trigger should be called at about 10hz
     void update();
 
@@ -93,6 +96,14 @@ public:
     // get singleton instance
     static AP_Parachute *get_singleton() { return _singleton; }
 
+    // Enum for determining the release status of the parachute
+    enum ReleaseStatus {
+        NotReleased,
+        ReleaseInitiated,
+        ReleaseInProgress,
+        Released,
+    };
+
 private:
     static AP_Parachute *_singleton;
     // Parameters
@@ -110,6 +121,7 @@ private:
     bool        _release_initiated:1;    // true if the parachute release initiated (may still be waiting for engine to be suppressed etc.)
     bool        _release_in_progress:1;  // true if the parachute release is in progress
     bool        _released:1;             // true if the parachute has been released
+    ReleaseStatus _release_status = ReleaseStatus::NotReleased; // Determines the release status of the parachute           
     bool        _is_flying:1;            // true if the vehicle is flying
     uint32_t    _sink_time_ms;           // system time that the vehicle exceeded critical sink rate
 

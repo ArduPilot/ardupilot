@@ -112,6 +112,7 @@ void AP_Parachute::release()
     }
 
     _release_initiated = true;
+    _release_status = ReleaseStatus::ReleaseInitiated;
 
     // update AP_Notify
     AP_Notify::flags.parachute_release = 1;
@@ -143,6 +144,7 @@ void AP_Parachute::update()
             }
             _release_in_progress = true;
             _released = true;
+            _release_status = ReleaseStatus::Released;
         }
     } else if ((_release_time == 0) ||
                (!hold_forever && time_diff >= delay_ms + AP_PARACHUTE_RELEASE_DURATION_MS)) {
@@ -156,6 +158,7 @@ void AP_Parachute::update()
         // reset released flag and release_time
         _release_in_progress = false;
         _release_time = 0;
+        _release_status = ReleaseStatus::NotReleased;
         // update AP_Notify
         AP_Notify::flags.parachute_release = 0;
     }
