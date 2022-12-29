@@ -252,7 +252,7 @@ class TestBuildOptions(object):
         for feature in options:
             self.progress("Enabling feature %s(%s) (%u/%u)" %
                           (feature.label, feature.define, count, len(options)))
-            self.test_enable_feature(feature.label, options)
+            self.test_enable_feature(feature, options)
             count += 1
 
     def get_option_by_label(self, label, options):
