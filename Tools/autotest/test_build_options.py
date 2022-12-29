@@ -61,6 +61,13 @@ class TestBuildOptions(object):
         self._board = board
         self.results = {}
 
+    def must_have_defines_for_board(self, board):
+        '''return a set of defines which must always be enabled'''
+        must_have_defines = {
+            "CubeOrange": frozenset(['AP_BARO_MS56XX_ENABLED'])
+        }
+        return must_have_defines.get(board, frozenset([]))
+
     @staticmethod
     def all_targets():
         return ['copter', 'plane', 'rover', 'antennatracker', 'sub', 'blimp']
@@ -133,6 +140,8 @@ class TestBuildOptions(object):
         '''returns a hash of (name, value) defines to turn all features *but* feature (and whatever it depends on) on'''
         ret = self.get_disable_all_defines()
         self.update_get_enable_defines_for_feature(ret, feature, options)
+        for define in self.must_have_defines_for_board(self._board):
+            ret[define] = 1
         return ret
 
     def test_disable_feature(self, feature, options):
@@ -238,6 +247,10 @@ class TestBuildOptions(object):
             options = list(filter(lambda x : fnmatch.fnmatch(x.define, self.match_glob), options))
         count = 1
         for feature in sorted(options, key=lambda x : x.define):
+            if feature.define in self.must_have_defines_for_board(self._board):
+                self.progress("Feature %s(%s) (%u/%u) is a MUST-HAVE" %
+                              (feature.label, feature.define, count, len(options)))
+                continue
             self.progress("Disabling feature %s(%s) (%u/%u)" %
                           (feature.label, feature.define, count, len(options)))
             self.test_disable_feature(feature, options)
@@ -270,6 +283,9 @@ class TestBuildOptions(object):
                 if not fnmatch.fnmatch(feature.define, self.match_glob):
                     continue
             defines[feature.define] = 0
+        for define in self.must_have_defines_for_board(self._board):
+            defines[define] = 1
+
         return defines
 
     def run_disable_all(self):
