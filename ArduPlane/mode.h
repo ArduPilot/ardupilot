@@ -8,6 +8,7 @@
 #include <AP_Vehicle/ModeReason.h>
 #include "quadplane.h"
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Mission/AP_Mission.h>
 
 class AC_PosControl;
 class AC_AttitudeControl_Multi;
@@ -220,12 +221,24 @@ public:
     bool mode_allows_autotuning() const override { return true; }
 
     bool is_landing() const override;
-    
+
+    void do_nav_delay(const AP_Mission::Mission_Command& cmd);
+    bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
+
 protected:
 
     bool _enter() override;
     void _exit() override;
     bool _pre_arm_checks(size_t buflen, char *buffer) const override;
+
+private:
+
+    // Delay the next navigation command
+    struct {
+        uint32_t time_max_ms;
+        uint32_t time_start_ms;
+    } nav_delay;
+
 };
 
 
