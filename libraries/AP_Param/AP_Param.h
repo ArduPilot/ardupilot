@@ -572,7 +572,7 @@ public:
 protected:
 
     // store default value in linked list
-    static void add_default(AP_Param *ap, float v) { add_default(ap, v, default_list); }
+    static void add_default(AP_Param *ap, float v);
 
 private:
     static AP_Param *_singleton;
@@ -801,11 +801,7 @@ private:
         float val;
         defaults_list *next;
     };
-#if AP_PARAM_MAX_EMBEDDED_PARAM > 0
-    static defaults_list *embedded_default_list;
-#endif
     static defaults_list *default_list;
-    static void add_default(AP_Param *ap, float v, defaults_list *&list);
     static void check_default(AP_Param *ap, float *default_value);
 };
 

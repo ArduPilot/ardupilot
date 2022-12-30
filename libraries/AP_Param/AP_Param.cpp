@@ -102,9 +102,6 @@ ObjectBuffer_TS<AP_Param::param_save> AP_Param::save_queue{30};
 bool AP_Param::registered_save_handler;
 
 AP_Param::defaults_list *AP_Param::default_list;
-#if AP_PARAM_MAX_EMBEDDED_PARAM > 0
-    AP_Param::defaults_list *AP_Param::embedded_default_list;
-#endif
 
 // we need a dummy object for the parameter save callback
 static AP_Param save_dummy;
@@ -2404,9 +2401,6 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
             num_read_only++;
         }
         idx++;
-#if AP_PARAM_DEFAULTS_ENABLED
-        add_default(vp, value, embedded_default_list);
-#endif
         if (!vp->configured_in_storage()) {
             vp->set_float(value, var_type);
         }
@@ -2700,17 +2694,6 @@ void AP_Param::check_default(AP_Param *ap, float *default_value)
     if (default_value == nullptr || ap == nullptr) {
         return;
     }
-#if AP_PARAM_MAX_EMBEDDED_PARAM > 0
-    // Check embedded list first
-    if (embedded_default_list != nullptr) {
-        for (defaults_list *item = embedded_default_list; item; item = item->next) {
-            if (item->ap == ap) {
-                *default_value = item->val;
-                return;
-            }
-        }
-    }
-#endif
     if (default_list != nullptr) {
         for (defaults_list *item = default_list; item; item = item->next) {
             if (item->ap == ap) {
@@ -2721,11 +2704,18 @@ void AP_Param::check_default(AP_Param *ap, float *default_value)
     }
 }
 
-void AP_Param::add_default(AP_Param *ap, float v, defaults_list*& list)
+void AP_Param::add_default(AP_Param *ap, float v)
 {
-    if (list != nullptr) {
+    // Embedded defaults trump runtime, don't allow override
+    for (uint16_t i=0; i<num_param_overrides; i++) {
+        if (ap == param_overrides[i].object_ptr) {
+            return;
+        }
+    }
+
+    if (default_list != nullptr) {
         // check is param is already in list
-        for (defaults_list *item = list; item; item = item->next) {
+        for (defaults_list *item = default_list; item; item = item->next) {
             // update existing entry
             if (item->ap == ap) {
                 item->val = v;
@@ -2741,8 +2731,8 @@ void AP_Param::add_default(AP_Param *ap, float v, defaults_list*& list)
     }
     new_item->ap = ap;
     new_item->val = v;
-    new_item->next = list;
-    list = new_item;
+    new_item->next = default_list;
+    default_list = new_item;
 }
 #endif // AP_PARAM_DEFAULTS_ENABLED
 
