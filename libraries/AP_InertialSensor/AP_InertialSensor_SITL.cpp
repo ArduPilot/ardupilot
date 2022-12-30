@@ -2,7 +2,7 @@
 #include "AP_InertialSensor_SITL.h"
 #include <AP_Logger/AP_Logger.h>
 #include <SITL/SITL.h>
-#include <stdio.h>
+#include <fcntl.h>
 
 #if AP_SIM_INS_ENABLED
 
