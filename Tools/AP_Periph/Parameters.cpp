@@ -274,9 +274,9 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
     // Airspeed driver
-    // @Group: ARSP
+    // @Group: ARSPD
     // @Path: ../libraries/AP_Airspeed/AP_Airspeed.cpp
-    GOBJECT(airspeed, "ARSP", AP_Airspeed),
+    GOBJECT(airspeed, "ARSPD", AP_Airspeed),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
