@@ -32,7 +32,6 @@ define CAN_APP_NODE_NAME "org.ardupilot.MatekH743-periph"
 define GPS_MAX_RECEIVERS 1
 define GPS_MAX_INSTANCES 1
 define HAL_COMPASS_MAX_SENSORS 1
-define RANGEFINDER_MAX_INSTANCES 1
 
 # set up for sensors
 define HAL_PROBE_EXTERNAL_I2C_BAROS
