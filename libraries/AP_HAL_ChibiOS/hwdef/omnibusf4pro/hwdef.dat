@@ -1,6 +1,6 @@
 # hw definition file for processing by chibios_pins.py
 # Omnibus F4 PRO with on-board current sensor
-# with F405 mcu, mpu6000 imu, bmp280 barometer, 7456 series osd  and sdcard
+# with F405 mcu, mpu6000 and bmi270 imu, bmp280 barometer, 7456 series osd  and sdcard
 
 MCU STM32F4xx STM32F405xx
 
@@ -107,13 +107,16 @@ PB8 TIM4_CH3 TIM4 RCININT PULLDOWN LOW
 
 
 # SPI Device table 
+SPIDEV bmi270     SPI1 DEVID1 MPU6000_CS MODE3 1*MHZ 10*MHZ 
 SPIDEV mpu6000    SPI1 DEVID1 MPU6000_CS MODE3 1*MHZ 8*MHZ
 SPIDEV sdcard     SPI2 DEVID2 SDCARD_CS MODE0 400*KHZ 25*MHZ
 SPIDEV bmp280     SPI3 DEVID3 BMP280_CS MODE3 1*MHZ 8*MHZ
 SPIDEV osd        SPI3 DEVID4 OSD_CS MODE0 10*MHZ 10*MHZ
 
-# one IMU
+# one IMU  BMI270 or MPU6000 
 IMU Invensense SPI:mpu6000 ROTATION_YAW_180
+IMU BMI270     SPI:bmi270  ROTATION_ROLL_180
+
 
 # one baro
 BARO BMP280 SPI:bmp280
