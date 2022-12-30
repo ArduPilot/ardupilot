@@ -32,7 +32,7 @@ using namespace AP_HAL;
 
 #ifndef AP_SIM_FRAME_CLASS
 #if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-#define AP_SIM_FRAME_Class MultiCopter
+#define AP_SIM_FRAME_CLASS MultiCopter
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 #define AP_SIM_FRAME_CLASS Plane
 #endif
