@@ -183,23 +183,21 @@ void AP_Periph_FW::init()
 #endif
     
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
-    if (airspeed.enabled()){
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-        const bool pins_enabled = ChibiOS::I2CBus::check_select_pins(0x01);
-        if (pins_enabled) {
-            ChibiOS::I2CBus::set_bus_to_floating(0);
+    const bool pins_enabled = ChibiOS::I2CBus::check_select_pins(0x01);
+    if (pins_enabled) {
+        ChibiOS::I2CBus::set_bus_to_floating(0);
 #ifdef HAL_GPIO_PIN_LED_CAN_I2C
-            palWriteLine(HAL_GPIO_PIN_LED_CAN_I2C, 1);
+        palWriteLine(HAL_GPIO_PIN_LED_CAN_I2C, 1);
 #endif
-        } else {
-            // Note: logging of ARSPD is not enabled currently. To enable, call airspeed.set_log_bit(); here
-            airspeed.init();
-        }
-#else
+    } else {
         // Note: logging of ARSPD is not enabled currently. To enable, call airspeed.set_log_bit(); here
         airspeed.init();
-#endif
     }
+#else
+    // Note: logging of ARSPD is not enabled currently. To enable, call airspeed.set_log_bit(); here
+    airspeed.init();
+#endif
 
 #endif
 
