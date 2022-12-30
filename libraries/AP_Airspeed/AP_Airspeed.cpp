@@ -319,8 +319,15 @@ void AP_Airspeed::init()
     }
 #endif
 
+    if (enabled(0)) {
+        allocate();
+    }
+}
+
+void AP_Airspeed::allocate()
+{
     if (sensor[0] != nullptr) {
-        // already initialised
+        // already initialised, periph may call allocate several times to allow CAN detection
         return;
     }
 

@@ -67,8 +67,9 @@ public:
 
     void set_fixedwing_parameters(const class AP_FixedWing *_fixed_wing_parameters);
 
-
     void init(void);
+    void allocate();
+
 
     // indicate which bit in LOG_BITMASK indicates we should log airspeed readings
     void set_log_bit(uint32_t log_bit) { _log_bit = log_bit; }
