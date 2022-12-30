@@ -2964,6 +2964,10 @@ def add_apperiph_defaults(f):
 #ifndef AP_BATT_MONITOR_MAX_INSTANCES
 #define AP_BATT_MONITOR_MAX_INSTANCES 1
 #endif
+
+#ifndef RANGEFINDER_MAX_INSTANCES
+#define RANGEFINDER_MAX_INSTANCES 1
+#endif
 ''')
 
 def add_bootloader_defaults(f):
