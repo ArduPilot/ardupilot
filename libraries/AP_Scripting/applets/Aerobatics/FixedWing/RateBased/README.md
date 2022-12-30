@@ -22,7 +22,7 @@ track and altitude are reset to the values present when the mode is restored. Tr
 the ground track.
 
 | ID | Name                     | Arg1            | Arg2                       | Turnaround |
-| -- | ------------------------ | ------------_-- | -------------------------- | -----------|
+| -- | ------------------------ | --------------- | -------------------------- | -----------|
 | 1  | Roll(s)                  | rollrate(dps)   | num rolls                  | No         |
 | 2  | Loop(s)/TurnAround       | pitchrate(dps)  | num loops or turnaround(0) | if num=0   |
 | 3  | Rolling Circle           | yawrate(dps)    | rollrate(dps)              | No         |
