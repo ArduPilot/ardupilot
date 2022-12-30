@@ -182,6 +182,7 @@ def process_vehicle(vehicle):
         global current_param
         current_param = p.name
         fields = prog_param_fields.findall(field_text)
+        p.__field_text = field_text
         field_list = []
         for field in fields:
             (field_name, field_value) = field
@@ -198,13 +199,10 @@ def process_vehicle(vehicle):
                     else:
                         error("%s already has field %s" % (p.name, field_name))
                 setattr(p, field[0], value)
-            elif field[0] == "CopyValuesFrom":
+            elif field[0] in frozenset(["CopyFieldsFrom", "CopyValuesFrom"]):
                 setattr(p, field[0], field[1])
             else:
                 error("param: unknown parameter metadata field '%s'" % field[0])
-        for req_field in required_param_fields:
-            if req_field not in field_list:
-                error("missing parameter metadata field '%s' in %s" % (req_field, field_text))
 
         vehicle.params.append(p)
     current_file = None
@@ -265,6 +263,7 @@ def process_library(vehicle, library, pathprefix=None):
             global current_param
             current_param = p.name
             fields = prog_param_fields.findall(field_text)
+            p.__field_text = field_text
             field_list = []
             for field in fields:
                 (field_name, field_value) = field
@@ -281,13 +280,10 @@ def process_library(vehicle, library, pathprefix=None):
                         else:
                             error("%s already has field %s" % (p.name, field_name))
                     setattr(p, field[0], value)
-                elif field[0] == "CopyValuesFrom":
+                elif field[0] in frozenset(["CopyFieldsFrom", "CopyValuesFrom"]):
                     setattr(p, field[0], field[1])
                 else:
                     error("param: unknown parameter metadata field %s" % field[0])
-            for req_field in required_library_param_fields:
-                if req_field not in field_list:
-                    error("missing parameter metadata field '%s' in %s" % (req_field, current_param))
 
             debug("matching %s" % field_text)
             fields = prog_param_tagged_fields.findall(field_text)
@@ -353,7 +349,7 @@ def process_library(vehicle, library, pathprefix=None):
             for field in fields:
                 if field[0] in known_group_fields:
                     setattr(lib, field[0], field[1])
-                elif field[0] == "CopyValuesFrom":
+                elif field[0] in ["CopyFieldsFrom", "CopyValuesFrom"]:
                     setattr(p, field[0], field[1])
                 else:
                     error("unknown parameter metadata field '%s'" % field[0])
@@ -434,7 +430,49 @@ def do_copy_values(vehicle_params, libraries, param):
           (param.name, wanted_name))
 
 
-def validate(param):
+def do_copy_fields(vehicle_params, libraries, param):
+    do_copy_values(vehicle_params, libraries, param)
+
+    if not hasattr(param, 'CopyFieldsFrom'):
+        return
+
+    # so go and find the values...
+    wanted_name = param.CopyFieldsFrom
+    del param.CopyFieldsFrom
+    for x in vehicle_params:
+        name = x.name
+        (v, name) = name.split(":")
+        if name != wanted_name:
+            continue
+        for field in dir(x):
+            if hasattr(param, field):
+                # override
+                continue
+            if field.startswith("__") or field in frozenset(["name", "real_path"]):
+                # internal methods like __ne__
+                continue
+            setattr(param, field, getattr(x, field))
+        return
+
+    for lib in libraries:
+        for x in lib.params:
+            if x.name != wanted_name:
+                continue
+            for field in dir(x):
+                if hasattr(param, field):
+                    # override
+                    continue
+                if field.startswith("__") or field in frozenset(["name", "real_path"]):
+                    # internal methods like __ne__
+                    continue
+                setattr(param, field, getattr(x, field))
+            return
+
+    error("Did not find value to copy (%s wants %s)" %
+          (param.name, wanted_name))
+
+
+def validate(param, is_library=False):
     """
     Validates the parameter meta data.
     """
@@ -479,6 +517,20 @@ def validate(param):
         if not param.Description or not param.Description.strip():
             error("Empty Description (%s)" % param)
 
+    required_fields = required_param_fields
+    if is_library:
+        required_fields = required_library_param_fields
+    for req_field in required_fields:
+        if not getattr(param, req_field, False):
+            error("missing parameter metadata field '%s' in %s" % (req_field, param.__field_text))
+
+
+# handle CopyFieldsFrom and CopyValuesFrom:
+for param in vehicle.params:
+    do_copy_fields(vehicle.params, libraries, param)
+for library in libraries:
+    for param in library.params:
+        do_copy_fields(vehicle.params, libraries, param)
 
 for param in vehicle.params:
     clean_param(param)
@@ -509,14 +561,7 @@ for library in libraries:
 
 for library in libraries:
     for param in library.params:
-        validate(param)
-
-# handle CopyValuesFrom:
-for param in vehicle.params:
-    do_copy_values(vehicle.params, libraries, param)
-for library in libraries:
-    for param in library.params:
-        do_copy_values(vehicle.params, libraries, param)
+        validate(param, is_library=True)
 
 if not args.emit_params:
     sys.exit(error_count)
