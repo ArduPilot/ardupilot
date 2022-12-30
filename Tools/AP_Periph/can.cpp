@@ -2223,7 +2223,7 @@ void AP_Periph_FW::can_airspeed_update(void)
         static uint32_t last_probe_ms;
         if (now - last_probe_ms >= 1000) {
             last_probe_ms = now;
-            airspeed.init();
+            airspeed.allocate();
         }
     }
 #endif
