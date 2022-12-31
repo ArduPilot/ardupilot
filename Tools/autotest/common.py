@@ -2957,6 +2957,9 @@ class AutoTest(ABC):
         '''test sending of HIGH_LATENCY2'''
 
         # set airspeed sensor type to DLVR for air temperature message testing
+        if not self.is_plane():
+            # Plane does not have enable parameter
+            self.set_parameter("ARSPD_ENABLE", 1)
         self.set_parameter("ARSPD_BUS", 2)
         self.set_parameter("ARSPD_TYPE", 7)
         self.reboot_sitl()
