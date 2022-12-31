@@ -553,7 +553,7 @@ private:
     void payload_place_run();
     bool payload_place_run_should_run();
     void payload_place_run_hover();
-    void payload_place_run_descend();
+    void payload_place_run_descent();
     void payload_place_run_release();
 
     SubMode _mode = SubMode::TAKEOFF;   // controls which auto controller is run
@@ -644,14 +644,13 @@ private:
     State state = State::FlyToLocation;
 
     struct {
-        PayloadPlaceStateType state = PayloadPlaceStateType_Calibrating_Hover_Start; // records state of place (descending, releasing, released, ...)
-        uint32_t hover_start_timestamp; // milliseconds
-        float hover_throttle_level;
-        uint32_t descend_start_timestamp; // milliseconds
-        uint32_t place_start_timestamp; // milliseconds
-        float descend_throttle_level;
-        float descend_start_altitude;
-        float descend_max; // centimetres
+        PayloadPlaceStateType state = PayloadPlaceStateType_Descent_Start; // records state of payload place
+        uint32_t descent_established_time_ms; // milliseconds
+        uint32_t place_start_time_ms; // milliseconds
+        float descent_thrust_level;
+        float descent_start_altitude_cm;
+        float descent_speed_cms;
+        float descent_max_cm;
     } nav_payload_place;
 
     bool waiting_to_start;  // true if waiting for vehicle to be armed or EKF origin before starting mission
