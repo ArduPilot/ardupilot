@@ -5,7 +5,7 @@ The MambaH743v4 is a flight controller produced by [Diatone](https://www.diatone
 ## Features
 
  - MCU - STM32H743 32-bit processor running at 480 MHz
- - IMU - Dual MPU6000 (Version A) or BMI270 (Version B)
+ - IMU - Dual MPU6000 (Version A) or BMI270 (Version B) or Dual ICM42688 (v2)
  - Barometer - DPS280
  - OSD - AT7456E
  - Onboard Flash: 1GBit
