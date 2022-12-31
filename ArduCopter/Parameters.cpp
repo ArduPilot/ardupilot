@@ -1168,8 +1168,52 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // ID 60 is reserved for the SHIP_OPS
 
+    // extend to a new group
+    AP_SUBGROUPEXTENSION("", 61, ParametersG2, var_info2),
+
     // ID 62 is reserved for the SHOW_... parameters from the Skybrush fork at
     // https://github.com/skybrush-io/ardupilot
+
+    AP_GROUPEND
+};
+
+/*
+  extension to g2 parameters
+ */
+const AP_Param::GroupInfo ParametersG2::var_info2[] = {
+
+    // @Param: PLDP_THRESH
+    // @DisplayName: Payload Place thrust ratio threshold
+    // @Description: Ratio of vertical thrust during decent below which payload touchdown will trigger.
+    // @Range: 0.5 0.9
+    // @User: Standard
+    AP_GROUPINFO("PLDP_THRESH", 1, ParametersG2, pldp_thrust_placed_fraction, 0.9),
+
+    // @Param: PLDP_RNG_MIN
+    // @DisplayName: Payload Place minimum range finder altitude
+    // @Description: Minimum range finder altitude in m to trigger payload touchdown, set to zero to disable.
+    // @Units: m
+    // @Range: 0 100
+    // @User: Standard
+    AP_GROUPINFO("PLDP_RNG_MIN", 2, ParametersG2, pldp_range_finder_minimum_m, 0.0),
+
+    // @Param: PLDP_DELAY
+    // @DisplayName: Payload Place climb delay
+    // @Description: Delay after release, in seconds, before aircraft starts to climb back to starting altitude.
+    // @Units: s
+    // @Range: 0 120
+    // @User: Standard
+    AP_GROUPINFO("PLDP_DELAY", 3, ParametersG2, pldp_delay_s, 0.0),
+
+    // @Param: PLDP_SPEED_DN
+    // @DisplayName: Payload Place decent speed
+    // @Description: The maximum vertical decent velocity in m/s. If 0 LAND_SPEED value is used.
+    // @Units: m/s
+    // @Range: 0 5
+    // @User: Standard
+    AP_GROUPINFO("PLDP_SPEED_DN", 4, ParametersG2, pldp_descent_speed_ms, 0.0),
+
+    // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND
 };
@@ -1231,6 +1275,7 @@ ParametersG2::ParametersG2(void)
 #endif
 {
     AP_Param::setup_object_defaults(this, var_info);
+    AP_Param::setup_object_defaults(this, var_info2);
 }
 
 /*
