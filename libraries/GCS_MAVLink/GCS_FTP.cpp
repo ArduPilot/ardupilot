@@ -47,10 +47,6 @@ bool GCS_MAVLINK::ftp_init(void) {
     if (ftp.requests == nullptr) {
         goto failed;
     }
-    ftp.replies = new ObjectBuffer<pending_ftp>(30);
-    if (ftp.replies == nullptr) {
-        goto failed;
-    }
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&GCS_MAVLINK::ftp_worker, void),
                                       "FTP", 2560, AP_HAL::Scheduler::PRIORITY_IO, 0)) {
@@ -62,8 +58,6 @@ bool GCS_MAVLINK::ftp_init(void) {
 failed:
     delete ftp.requests;
     ftp.requests = nullptr;
-    delete ftp.replies;
-    ftp.replies = nullptr;
     gcs().send_text(MAV_SEVERITY_WARNING, "failed to initialize MAVFTP");
 
     return false;
@@ -96,50 +90,34 @@ void GCS_MAVLINK::handle_file_transfer_protocol(const mavlink_message_t &msg) {
     }
 }
 
-void GCS_MAVLINK::send_ftp_replies(void)
+bool GCS_MAVLINK::send_ftp_reply(const pending_ftp &reply)
 {
     /*
       provide same banner we would give with old param download
     */
-    if (ftp.need_banner_send_mask & (1U<<chan)) {
-        ftp.need_banner_send_mask &= ~(1U<<chan);
+    if (ftp.need_banner_send_mask & (1U<<reply.chan)) {
+        ftp.need_banner_send_mask &= ~(1U<<reply.chan);
         send_banner();
     }
-    
-    if (ftp.replies == nullptr || ftp.replies->is_empty()) {
-        return;
+    WITH_SEMAPHORE(comm_chan_lock(reply.chan));
+    if (!HAVE_PAYLOAD_SPACE(chan, FILE_TRANSFER_PROTOCOL)) {
+        return false;
     }
-
-    for (uint8_t i = 0; i < 20; i++) {
-        if (!HAVE_PAYLOAD_SPACE(chan, FILE_TRANSFER_PROTOCOL)) {
-            return;
-        }
-        if ((i > 0) && comm_get_txspace(chan) < (2 * (packet_overhead() + MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL_LEN))) {
-            // if this isn't the first packet we have to leave deadspace for the next message
-            return;
-        }
-
-        struct pending_ftp reply;
-        uint8_t payload[251] = {};
-        if (ftp.replies->peek(reply) && (reply.chan == chan)) {
-            put_le16_ptr(payload, reply.seq_number);
-            payload[2] = reply.session;
-            payload[3] = static_cast<uint8_t>(reply.opcode);
-            payload[4] = reply.size;
-            payload[5] = static_cast<uint8_t>(reply.req_opcode);
-            payload[6] = reply.burst_complete ? 1 : 0;
-            put_le32_ptr(&payload[8], reply.offset);
-            memcpy(&payload[12], reply.data, sizeof(reply.data));
-            mavlink_msg_file_transfer_protocol_send(
-                reply.chan,
-                0, reply.sysid, reply.compid,
-                payload);
-            ftp.replies->pop();
-            ftp.last_send_ms = AP_HAL::millis();
-        } else {
-            return;
-        }
-    }
+    uint8_t payload[251] = {};
+    put_le16_ptr(payload, reply.seq_number);
+    payload[2] = reply.session;
+    payload[3] = static_cast<uint8_t>(reply.opcode);
+    payload[4] = reply.size;
+    payload[5] = static_cast<uint8_t>(reply.req_opcode);
+    payload[6] = reply.burst_complete ? 1 : 0;
+    put_le32_ptr(&payload[8], reply.offset);
+    memcpy(&payload[12], reply.data, sizeof(reply.data));
+    mavlink_msg_file_transfer_protocol_send(
+        reply.chan,
+        0, reply.sysid, reply.compid,
+        payload);
+    ftp.last_send_ms = AP_HAL::millis();
+    return true;
 }
 
 void GCS_MAVLINK::ftp_error(struct pending_ftp &response, FTP_ERROR error) {
@@ -168,7 +146,7 @@ void GCS_MAVLINK::ftp_error(struct pending_ftp &response, FTP_ERROR error) {
 // send our response back out to the system
 void GCS_MAVLINK::ftp_push_replies(pending_ftp &reply)
 {
-    while (!ftp.replies->push(reply)) { // we must fit the response, keep shoving it in
+    while (!send_ftp_reply(reply)) {
         hal.scheduler->delay(2);
     }
 }
