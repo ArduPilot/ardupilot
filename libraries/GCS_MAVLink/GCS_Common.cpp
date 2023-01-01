@@ -1045,7 +1045,7 @@ uint16_t GCS_MAVLINK::get_reschedule_interval_ms(const deferred_message_bucket_t
         // we are sending requests for waypoints, penalize streams:
         interval_ms *= 4;
     }
-    if (ftp.replies && AP_HAL::millis() - ftp.last_send_ms < 500) {
+    if (AP_HAL::millis() - ftp.last_send_ms < 500) {
         // we are sending ftp replies
         interval_ms *= 4;
     }
@@ -1222,7 +1222,6 @@ void GCS_MAVLINK::update_send()
         AP::logger().handle_log_send();
     }
 #endif
-    send_ftp_replies();
 
     if (!deferred_messages_initialised) {
         initialise_message_intervals_from_streamrates();
