@@ -171,6 +171,11 @@ void OpticalFlow_Onboard::init()
     }
 
     _gyro_ring_buffer = new ObjectBuffer<GyroSample>(OPTICAL_FLOW_GYRO_BUFFER_LEN);
+    if (_gyro_ring_buffer != nullptr && _gyro_ring_buffer->get_size() == 0) {
+        // allocation failed
+        delete _gyro_ring_buffer;
+        _gyro_ring_buffer = nullptr;
+    }
 
     _initialized = true;
 }
