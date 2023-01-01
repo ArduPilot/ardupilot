@@ -625,8 +625,8 @@ class ModeQAcro : public Mode
 public:
 
     Number mode_number() const override { return Number::QACRO; }
-    const char *name() const override { return "QACO"; }
-    const char *name4() const override { return "QACRO"; }
+    const char *name() const override { return "QACRO"; }
+    const char *name4() const override { return "QACO"; }
 
     bool is_vtol_mode() const override { return true; }
     bool is_vtol_man_throttle() const override { return true; }
