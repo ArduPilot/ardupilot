@@ -124,6 +124,8 @@ void Mode::auto_takeoff_run()
     if (!motors->armed() || !copter.ap.auto_armed) {
         // do not spool down tradheli when on the ground with motor interlock enabled
         make_safe_ground_handling(copter.is_tradheli() && motors->get_interlock());
+        // update auto_takeoff_no_nav_alt_cm
+        auto_takeoff_no_nav_alt_cm = inertial_nav.get_position_z_up_cm() + g2.wp_navalt_min * 100;
         return;
     }
 
@@ -148,6 +150,8 @@ void Mode::auto_takeoff_run()
         attitude_control->reset_yaw_target_and_rate();
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), 0.0);
+        // update auto_takeoff_no_nav_alt_cm
+        auto_takeoff_no_nav_alt_cm = inertial_nav.get_position_z_up_cm() + g2.wp_navalt_min * 100;
         return;
     }
     
@@ -222,9 +226,10 @@ void Mode::auto_takeoff_start(float complete_alt_cm, bool terrain_alt)
     auto_takeoff_complete_alt_cm = complete_alt_cm;
     auto_takeoff_terrain_alt = terrain_alt;
     auto_takeoff_complete = false;
+    // initialise auto_takeoff_no_nav_alt_cm
+    auto_takeoff_no_nav_alt_cm = inertial_nav.get_position_z_up_cm() + g2.wp_navalt_min * 100;
     if ((g2.wp_navalt_min > 0) && (is_disarmed_or_landed() || !motors->get_interlock())) {
         // we are not flying, climb with no navigation to current alt-above-ekf-origin + wp_navalt_min
-        auto_takeoff_no_nav_alt_cm = inertial_nav.get_position_z_up_cm() + g2.wp_navalt_min * 100;
         auto_takeoff_no_nav_active = true;
     } else {
         auto_takeoff_no_nav_active = false;
