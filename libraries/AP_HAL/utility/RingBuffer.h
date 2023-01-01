@@ -129,6 +129,9 @@ public:
 
     // return size of ringbuffer
     uint32_t get_size(void) const {
+        if (buffer == nullptr) {
+            return 0;
+        }
         uint32_t size = buffer->get_size() / sizeof(T);
         return size>0?size-1:0;
     }
@@ -291,6 +294,9 @@ public:
     // return size of ringbuffer
     uint32_t get_size(void) {
         WITH_SEMAPHORE(sem);
+        if (buffer == nullptr) {
+            return 0;
+        }
         uint32_t size = buffer->get_size() / sizeof(T);
         return size>0?size-1:0;
     }
