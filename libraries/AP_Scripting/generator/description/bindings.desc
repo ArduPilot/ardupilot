@@ -626,6 +626,7 @@ userdata EFI_State field coolant_temperature float'skip_check write
 userdata EFI_State field oil_pressure float'skip_check write
 userdata EFI_State field oil_temperature float'skip_check write
 userdata EFI_State field fuel_pressure float'skip_check write
+userdata EFI_State field fuel_pressure_status Fuel_Pressure_Status'enum write Fuel_Pressure_Status::NOT_SUPPORTED Fuel_Pressure_Status::ABOVE_NOMINAL
 userdata EFI_State field fuel_consumption_rate_cm3pm float'skip_check write
 userdata EFI_State field estimated_consumed_fuel_volume_cm3 float'skip_check write
 userdata EFI_State field throttle_position_percent uint8_t'skip_check write

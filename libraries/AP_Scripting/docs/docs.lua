@@ -115,6 +115,10 @@ function EFI_State_ud:fuel_consumption_rate_cm3pm(value) end
 function EFI_State_ud:fuel_pressure(value) end
 
 -- set field
+---@param value integer
+function EFI_State_ud:fuel_pressure_status(value) end
+
+-- set field
 ---@param value number
 function EFI_State_ud:oil_temperature(value) end
 
