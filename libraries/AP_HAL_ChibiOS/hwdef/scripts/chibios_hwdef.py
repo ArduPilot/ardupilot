@@ -2968,6 +2968,12 @@ def add_apperiph_defaults(f):
 #ifndef RANGEFINDER_MAX_INSTANCES
 #define RANGEFINDER_MAX_INSTANCES 1
 #endif
+
+// by default AP_Periphs don't use INS:
+#ifndef AP_INERTIALSENSOR_ENABLED
+#define AP_INERTIALSENSOR_ENABLED 0
+#endif
+
 ''')
 
 def add_bootloader_defaults(f):
@@ -2991,6 +2997,11 @@ def add_bootloader_defaults(f):
 #define HAL_GCS_ENABLED 0
 #endif
 
+// by default bootloaders don't use INS:
+#ifndef AP_INERTIALSENSOR_ENABLED
+#define AP_INERTIALSENSOR_ENABLED 0
+#endif
+
 #define HAL_MAX_CAN_PROTOCOL_DRIVERS 0
 ''')
 
@@ -3009,6 +3020,11 @@ def add_iomcu_firmware_defaults(f):
 // IOMCUs *definitely* don't use the FFT library:
 #ifndef HAL_GYROFFT_ENABLED
 #define HAL_GYROFFT_ENABLED 0
+#endif
+
+// by default IOMCUs don't use INS:
+#ifndef AP_INERTIALSENSOR_ENABLED
+#define AP_INERTIALSENSOR_ENABLED 0
 #endif
 ''')
 
