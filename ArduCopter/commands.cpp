@@ -54,7 +54,6 @@ bool Copter::set_home_to_current_location(bool lock) {
 }
 
 // set_home - sets ahrs home (used for RTL) to specified location
-//  initialises inertial nav and compass on first call
 //  returns true if home location set successfully
 bool Copter::set_home(const Location& loc, bool lock)
 {
@@ -69,24 +68,9 @@ bool Copter::set_home(const Location& loc, bool lock)
         return false;
     }
 
-    const bool home_was_set = ahrs.home_is_set();
-
     // set ahrs home (used for RTL)
     if (!ahrs.set_home(loc)) {
         return false;
-    }
-
-    // init inav and compass declination
-    if (!home_was_set) {
-#if MODE_AUTO_ENABLED == ENABLED
-        // log new home position which mission library will pull from ahrs
-        if (should_log(MASK_LOG_CMD)) {
-            AP_Mission::Mission_Command temp_cmd;
-            if (mode_auto.mission.read_cmd_from_storage(0, temp_cmd)) {
-                logger.Write_Mission_Cmd(mode_auto.mission, temp_cmd);
-            }
-        }
-#endif
     }
 
     // lock home position
