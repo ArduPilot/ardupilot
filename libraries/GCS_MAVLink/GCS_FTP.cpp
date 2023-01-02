@@ -483,7 +483,27 @@ void GCS_MAVLINK::ftp_worker(void) {
                             break;
                         }
 
-                        const uint32_t transfer_size = 100;
+                        /*
+                          calculate a burst delay so that FTP burst
+                          transfer doesn't use more than 1/3 of
+                          available bandwidth on links that don't have
+                          flow control. This reduces the chance of
+                          lost packets a lot, which results in overall
+                          faster transfers
+                         */
+                        uint32_t burst_delay_ms = 0;
+                        if (valid_channel(request.chan)) {
+                            auto *port = mavlink_comm_port[request.chan];
+                            if (port != nullptr && port->get_flow_control() != AP_HAL::UARTDriver::FLOW_CONTROL_ENABLE) {
+                                const uint32_t bw = port->bw_in_kilobytes_per_second();
+                                const uint16_t pkt_size = PAYLOAD_SIZE(request.chan, FILE_TRANSFER_PROTOCOL) - (sizeof(reply.data) - max_read);
+                                burst_delay_ms = 3 * pkt_size / bw;
+                            }
+                        }
+
+
+                        // this transfer size is enough for a full parameter file with max parameters
+                        const uint32_t transfer_size = 500;
                         for (uint32_t i = 0; (i < transfer_size); i++) {
                             // fill the buffer
                             const ssize_t read_bytes = AP::FS().read(ftp.fd, reply.data, MIN(sizeof(reply.data), max_read));
@@ -516,6 +536,8 @@ void GCS_MAVLINK::ftp_worker(void) {
 
                             // prep the reply to be used again
                             reply.seq_number++;
+
+                            hal.scheduler->delay(burst_delay_ms);
                         }
 
                         if (reply.opcode != FTP_OP::Nack) {
