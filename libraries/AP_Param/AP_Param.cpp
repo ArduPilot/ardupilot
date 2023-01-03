@@ -2793,6 +2793,16 @@ void AP_Param::show_all(AP_HAL::BetterStream *port, bool showKeyValues)
         show(ap, token, type, port);
         hal.scheduler->delay(1);
     }
+
+#if AP_PARAM_DEFAULTS_ENABLED
+    uint16_t list_len = 0;
+    if (default_list != nullptr) {
+        for (defaults_list *item = default_list; item; item = item->next) {
+            list_len++;
+        }
+    }
+    ::printf("Defaults list containts %i params (%li bytes)\n", list_len, list_len*sizeof(defaults_list));
+#endif
 }
 #endif // AP_PARAM_KEY_DUMP
 
