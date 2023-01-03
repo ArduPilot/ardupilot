@@ -1,8 +1,11 @@
 #include <assert.h>
 
+#include "AP_InertialSensor.h"
+
+#if AP_INERTIALSENSOR_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-#if AP_INERTIALSENSOR_ENABLED
 #include <AP_HAL/I2CDevice.h>
 #include <AP_HAL/SPIDevice.h>
 #include <AP_HAL/DSP.h>
@@ -19,7 +22,6 @@
 #endif
 #include <GCS_MAVLink/GCS.h>
 
-#include "AP_InertialSensor.h"
 #include "AP_InertialSensor_BMI160.h"
 #include "AP_InertialSensor_BMI270.h"
 #include "AP_InertialSensor_Backend.h"
