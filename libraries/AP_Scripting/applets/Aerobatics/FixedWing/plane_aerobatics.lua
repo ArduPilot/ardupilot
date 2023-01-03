@@ -2451,6 +2451,7 @@ end
 --]]
 function check_trick()
    local selection = get_trick_selection()
+   assert(selection ~= 0,"Must assign an RC channel to trick selection")
    local action = rc:get_aux_cached(TRIK_ACT_FN:get())
    if action == 0 and current_task ~= nil then
       gcs:send_text(0,string.format("Trick aborted"))
