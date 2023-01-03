@@ -339,12 +339,17 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
     }
 
     // 5us
+#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
     if (!_imu.batchsampler.doing_post_filter_logging()) {
         log_gyro_raw(instance, sample_us, gyro);
     }
     else {
         log_gyro_raw(instance, sample_us, _imu._gyro_filtered[instance]);
     }
+#else
+    // assume pre-filter logging if batchsampler is not enabled
+    log_gyro_raw(instance, sample_us, gyro);
+#endif
 }
 
 /*
@@ -431,12 +436,17 @@ void AP_InertialSensor_Backend::_notify_new_delta_angle(uint8_t instance, const 
         _imu._new_gyro_data[instance] = true;
     }
 
+#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
     if (!_imu.batchsampler.doing_post_filter_logging()) {
         log_gyro_raw(instance, sample_us, gyro);
     }
     else {
         log_gyro_raw(instance, sample_us, _imu._gyro_filtered[instance]);
     }
+#else
+    // assume we're doing pre-filter logging:
+    log_gyro_raw(instance, sample_us, gyro);
+#endif
 }
 
 void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &gyro)
@@ -450,9 +460,11 @@ void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sa
     if (should_log_imu_raw()) {
         Write_GYR(instance, sample_us, gyro);
     } else {
+#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
         if (!_imu.batchsampler.doing_sensor_rate_logging()) {
             _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_GYRO, sample_us, gyro);
         }
+#endif
     }
 #endif
 }
@@ -558,11 +570,16 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
     }
 
     // 5us
+#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
     if (!_imu.batchsampler.doing_post_filter_logging()) {
         log_accel_raw(instance, sample_us, accel);
     } else {
         log_accel_raw(instance, sample_us, _imu._accel_filtered[instance]);
     }
+#else
+    // assume we're doing pre-filter logging:
+    log_accel_raw(instance, sample_us, accel);
+#endif
 }
 
 /*
@@ -630,29 +647,38 @@ void AP_InertialSensor_Backend::_notify_new_delta_velocity(uint8_t instance, con
         _imu._new_accel_data[instance] = true;
     }
 
+#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
     if (!_imu.batchsampler.doing_post_filter_logging()) {
         log_accel_raw(instance, sample_us, accel);
     } else {
         log_accel_raw(instance, sample_us, _imu._accel_filtered[instance]);
     }
+#else
+    // assume we're doing pre-filter logging
+    log_accel_raw(instance, sample_us, accel);
+#endif
 }
 
 
 void AP_InertialSensor_Backend::_notify_new_accel_sensor_rate_sample(uint8_t instance, const Vector3f &accel)
 {
+#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
     if (!_imu.batchsampler.doing_sensor_rate_logging()) {
         return;
     }
 
     _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_ACCEL, AP_HAL::micros64(), accel);
+#endif
 }
 
 void AP_InertialSensor_Backend::_notify_new_gyro_sensor_rate_sample(uint8_t instance, const Vector3f &gyro)
 {
+#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
     if (!_imu.batchsampler.doing_sensor_rate_logging()) {
         return;
     }
     _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_GYRO, AP_HAL::micros64(), gyro);
+#endif
 }
 
 void AP_InertialSensor_Backend::log_accel_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &accel)
@@ -666,9 +692,11 @@ void AP_InertialSensor_Backend::log_accel_raw(uint8_t instance, const uint64_t s
     if (should_log_imu_raw()) {
         Write_ACC(instance, sample_us, accel);
     } else {
+#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
         if (!_imu.batchsampler.doing_sensor_rate_logging()) {
             _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_ACCEL, sample_us, accel);
         }
+#endif
     }
 #endif
 }

@@ -330,6 +330,7 @@ public:
         IMU_SENSOR_TYPE_GYRO = 1,
     };
 
+#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
     class BatchSampler {
     public:
         BatchSampler(const AP_InertialSensor &imu) :
@@ -415,6 +416,7 @@ public:
         const AP_InertialSensor &_imu;
     };
     BatchSampler batchsampler{*this};
+#endif
 
 #if HAL_EXTERNAL_AHRS_ENABLED
     // handle external AHRS data
