@@ -1260,3 +1260,10 @@ bool AP_AHRS_DCM::yaw_source_available(void) const
 {
     return AP::compass().use_for_yaw();
 }
+
+void AP_AHRS_DCM::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
+{
+    // lower gains in VTOL controllers when flying on DCM
+    ekfGndSpdLimit = 50.0;
+    ekfNavVelGainScaler = 0.5;
+}
