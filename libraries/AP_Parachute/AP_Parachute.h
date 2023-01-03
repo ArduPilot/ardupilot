@@ -29,6 +29,15 @@
 
 #if HAL_PARACHUTE_ENABLED
 
+
+// Enum for determining the release status of the parachute
+enum class ReleaseStatus {
+    NotReleased,
+    ReleaseInitiated,
+    ReleaseInProgress,
+    Released,
+};
+
 /// @class  AP_Parachute
 /// @brief  Class managing the release of a parachute
 class AP_Parachute {
@@ -61,13 +70,13 @@ public:
     void release();
 
     /// released - true if the parachute has been released (or release is in progress)
-    bool released() const { return _released; }
+    bool released() const;
 
     /// release_initiated - true if the parachute release sequence has been initiated (may wait before actual release)
-    bool release_initiated() const { return _release_initiated; }
+    bool release_initiated() const;
 
     /// release_in_progress - true if the parachute release sequence is in progress
-    bool release_in_progress() const { return _release_in_progress; }
+    bool release_in_progress() const;
 
     // Get release status as enum
     ReleaseStatus release_status() { return _release_status; }
@@ -96,13 +105,7 @@ public:
     // get singleton instance
     static AP_Parachute *get_singleton() { return _singleton; }
 
-    // Enum for determining the release status of the parachute
-    enum ReleaseStatus {
-        NotReleased,
-        ReleaseInitiated,
-        ReleaseInProgress,
-        Released,
-    };
+
 
 private:
     static AP_Parachute *_singleton;
@@ -118,9 +121,6 @@ private:
     // internal variables
     AP_Relay   &_relay;         // pointer to relay object from the base class Relay.
     uint32_t    _release_time;  // system time that parachute is ordered to be released (actual release will happen 0.5 seconds later)
-    bool        _release_initiated:1;    // true if the parachute release initiated (may still be waiting for engine to be suppressed etc.)
-    bool        _release_in_progress:1;  // true if the parachute release is in progress
-    bool        _released:1;             // true if the parachute has been released
     ReleaseStatus _release_status = ReleaseStatus::NotReleased; // Determines the release status of the parachute           
     bool        _is_flying:1;            // true if the vehicle is flying
     uint32_t    _sink_time_ms;           // system time that the vehicle exceeded critical sink rate
