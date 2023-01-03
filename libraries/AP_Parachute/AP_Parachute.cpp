@@ -84,6 +84,36 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     AP_GROUPEND
 };
 
+bool AP_Parachute::release_initiated() const {
+     switch(_release_status) {
+        case ReleaseStatus::NotReleased:
+            return false;
+        case ReleaseStatus::ReleaseInitiated:
+        case ReleaseStatus::ReleaseInProgress:
+        case ReleaseStatus::Released:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool AP_Parachute::release_in_progress() const {
+    switch(_release_status) {
+        case ReleaseStatus::NotReleased:
+        case ReleaseStatus::ReleaseInitiated:
+            return false;
+        case ReleaseStatus::ReleaseInProgress:
+        case ReleaseStatus::Released:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool AP_Parachute::released() const {
+    return _release_status == ReleaseStatus::Released;
+}
+
 /// enabled - enable or disable parachute release
 void AP_Parachute::enabled(bool on_off)
 {
@@ -111,7 +141,7 @@ void AP_Parachute::release()
         _release_time = AP_HAL::millis();
     }
 
-    _release_initiated = true;
+    _release_status = ReleaseStatus::ReleaseInitiated;
 
     // update AP_Notify
     AP_Notify::flags.parachute_release = 1;
@@ -132,7 +162,7 @@ void AP_Parachute::update()
     bool hold_forever = (_options.get() & uint32_t(Options::HoldOpen)) != 0;
 
     // check if we should release parachute
-    if ((_release_time != 0) && !_release_in_progress) {
+    if ((_release_time != 0) && !release_in_progress()) {
         if (time_diff >= delay_ms) {
             if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
                 // move servo
@@ -144,8 +174,7 @@ void AP_Parachute::update()
                     _relay->on(_release_type);
                 }
             }
-            _release_in_progress = true;
-            _released = true;
+            _release_status = ReleaseStatus::Released;
         }
     } else if ((_release_time == 0) ||
                (!hold_forever && time_diff >= delay_ms + AP_PARACHUTE_RELEASE_DURATION_MS)) {
@@ -160,8 +189,8 @@ void AP_Parachute::update()
             }
         }
         // reset released flag and release_time
-        _release_in_progress = false;
         _release_time = 0;
+        _release_status = ReleaseStatus::NotReleased;
         // update AP_Notify
         AP_Notify::flags.parachute_release = 0;
     }
@@ -192,7 +221,7 @@ void AP_Parachute::set_sink_rate(float sink_rate)
 void AP_Parachute::check_sink_rate()
 {
     // return immediately if parachute is being released or vehicle is not flying
-    if (_release_initiated || !_is_flying) {
+    if (release_initiated() || !_is_flying) {
         return;
     }
 
@@ -218,7 +247,7 @@ bool AP_Parachute::arming_checks(size_t buflen, char *buffer) const
                 return false;
             }
         }
-        if (_release_initiated) {
+        if (release_initiated()) {
             hal.util->snprintf(buffer, buflen, "Chute is released");
             return false;
         }
