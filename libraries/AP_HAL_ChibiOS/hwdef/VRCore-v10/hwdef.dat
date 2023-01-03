@@ -165,3 +165,6 @@ define HAL_BATT_VOLT_SCALE 10.1
 define HAL_BATT_CURR_SCALE 17.0
 
 define STM32_PWM_USE_ADVANCED TRUE
+
+# minimal drivers to reduce flash usage
+include ../include/minimal.inc
