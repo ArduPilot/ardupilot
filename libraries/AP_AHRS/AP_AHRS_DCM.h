@@ -88,7 +88,7 @@ public:
     // other than an actual airspeed sensor), if available. return
     // true if we have a synthetic airspeed.  ret will not be modified
     // on failure.
-    bool synthetic_airspeed(float &ret) const override WARN_IF_UNUSED {
+    bool synthetic_airspeed(float &ret) const WARN_IF_UNUSED {
         ret = _last_airspeed;
         return true;
     }
@@ -126,6 +126,8 @@ public:
 
     // return true if DCM has a yaw source
     bool yaw_source_available(void) const;
+
+    void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override;
 
 private:
 
