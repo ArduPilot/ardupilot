@@ -108,7 +108,14 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @Units: Hz
     // @User: Advanced
     AP_GROUPINFO("SRV_RT", 4, AP_UAVCAN, _servo_rate_hz, 50),
-
+    
+    // @Param: ESCREVBM
+    // @DisplayName: Bitmask for ESCs that allow reverse by sending negative values over UAVCAN
+    // @Description: Bitmask with one set for channel that allows reverse negative values command over UAVCAN
+    // @Bitmask: 0: ESC 1, 1: ESC 2, 2: ESC 3, 3: ESC 4, 4: ESC 5, 5: ESC 6, 6: ESC 7, 7: ESC 8, 8: ESC 9, 9: ESC 10, 10: ESC 11, 11: ESC 12, 12: ESC 13, 13: ESC 14, 14: ESC 15, 15: ESC 16
+    // @User: Advanced
+   // AP_GROUPINFO("ESCREVBM", 5, AP_UAVCAN, _esc_rev_bm, 0),
+   
     // @Param: OPTION
     // @DisplayName: UAVCAN options
     // @Description: Option flags
@@ -545,12 +552,17 @@ void AP_UAVCAN::SRV_send_esc(void)
 
         for (uint8_t i = esc_offset; i < max_esc_num && k < 20; i++) {
             if ((((uint32_t) 1) << i) & _esc_bm) {
-                // TODO: ESC negative scaling for reverse thrust and reverse rotation
-                float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse) + 1.0) / 2.0;
-
-                scaled = constrain_float(scaled, 0, cmd_max);
-
-                esc_msg.cmd.push_back(static_cast<int>(scaled));
+                // Allows motors to be reversed 
+                 
+                 float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse));
+                
+                //float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse) + 1.0) / 2.0;
+                //scaled = constrain_float(scaled, 0, cmd_max);
+                if (_SRV_conf[i].pulse != 0) {
+                    esc_msg.cmd.push_back(static_cast<int>(scaled));
+                } else  {
+                    esc_msg.cmd.push_back(static_cast<int>(0));
+                }
             } else {
                 esc_msg.cmd.push_back(static_cast<unsigned>(0));
             }
