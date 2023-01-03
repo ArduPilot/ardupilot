@@ -58,4 +58,6 @@ private:
     Vector2f _error;    // time step in seconds
     float _error_max;   // error limit in positive direction
     float _D1_max;      // maximum first derivative of output
+
+    const float default_kp;
 };
