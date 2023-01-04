@@ -32,10 +32,8 @@ public:
 
 static AP_SerialManager serial_manager;
 
-#define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, (const void *)&v, {group_info : class::var_info} }
 const struct AP_Param::Info var_info[] = {
-//    GOBJECT(serial_manager, "SERIAL",   AP_SerialManager),
-    { AP_PARAM_GROUP, "SERIAL", Parameters::k_param_serial_manager, (const void *)&serial_manager, {group_info : AP_SerialManager::var_info} },
+    { "SERIAL", (const void *)&serial_manager, {group_info : AP_SerialManager::var_info}, 0, Parameters::k_param_serial_manager, AP_PARAM_GROUP },
     AP_VAREND
 };
 
