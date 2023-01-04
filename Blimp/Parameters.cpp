@@ -20,14 +20,6 @@
  *
  */
 
-#define GSCALAR(v, name, def) { blimp.g.v.vtype, name, Parameters::k_param_ ## v, &blimp.g.v, {def_value : def} }
-#define ASCALAR(v, name, def) { blimp.aparm.v.vtype, name, Parameters::k_param_ ## v, (const void *)&blimp.aparm.v, {def_value : def} }
-#define GGROUP(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &blimp.g.v, {group_info : class::var_info} }
-#define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, (const void *)&blimp.v, {group_info : class::var_info} }
-#define GOBJECTPTR(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, (const void *)&blimp.v, {group_info : class::var_info}, AP_PARAM_FLAG_POINTER }
-#define GOBJECTVARPTR(v, name, var_info_ptr) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, (const void *)&blimp.v, {group_info_ptr : var_info_ptr}, AP_PARAM_FLAG_POINTER | AP_PARAM_FLAG_INFO_POINTER }
-#define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, (const void *)&blimp.v, {group_info : class::var_info} }
-
 #define DEFAULT_FRAME_CLASS 0
 
 const AP_Param::Info Blimp::var_info[] = {
@@ -734,7 +726,7 @@ const AP_Param::Info Blimp::var_info[] = {
 
     // @Group:
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
-    { AP_PARAM_GROUP, "", Parameters::k_param_vehicle, (const void *)&blimp, {group_info : AP_Vehicle::var_info} },
+    PARAM_VEHICLE_INFO,
 
     AP_VAREND
 };
