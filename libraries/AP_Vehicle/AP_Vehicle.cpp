@@ -278,6 +278,10 @@ void AP_Vehicle::setup()
     }
 #endif
 
+    // invalidate count in case an enable parameter changed during
+    // initialisation
+    AP_Param::invalidate_count();
+
     gcs().send_text(MAV_SEVERITY_INFO, "ArduPilot Ready");
 }
 
