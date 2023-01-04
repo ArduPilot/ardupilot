@@ -1,5 +1,7 @@
 #pragma once
 
+#define AP_PARAM_VEHICLE_NAME sub
+
 #include <AP_Common/AP_Common.h>
 
 #include <AP_Gripper/AP_Gripper.h>
