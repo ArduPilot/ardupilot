@@ -260,7 +260,7 @@ void GCS::update_sensor_status_flags()
     }
 #endif
 
-#if !defined(HAL_BUILD_AP_PERIPH) && AP_FENCE_ENABLED
+#if AP_FENCE_ENABLED
     const AC_Fence *fence = AP::fence();
     if (fence != nullptr) {
         if (fence->sys_status_enabled()) {
