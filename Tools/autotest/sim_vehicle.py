@@ -196,8 +196,8 @@ def under_vagrant():
 
 
 def under_wsl2():
-    from platform import uname
-    return 'microsoft-standard-WSL2' in uname().release
+    import platform
+    return 'microsoft-standard-WSL2' in platform.release()
 
 
 def wsl2_host_ip():
