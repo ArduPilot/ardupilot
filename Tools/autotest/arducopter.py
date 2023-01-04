@@ -2419,6 +2419,7 @@ class AutoTestCopter(AutoTest):
         self.reboot_sitl()
 
         # add a listener that verifies rangefinder innovations look good
+        global alt
         alt = None
 
         def verify_innov(mav, m):
@@ -2427,6 +2428,8 @@ class AutoTestCopter(AutoTest):
                 alt = m.relative_alt * 0.001  # mm -> m
                 return
             if m.get_type() != 'EKF_STATUS_REPORT':
+                return
+            if alt is None:
                 return
             if alt > 1 and alt < 8:  # 8 is very low, but it takes a long time to start to use the rangefinder again
                 zero_variance_wanted = False
