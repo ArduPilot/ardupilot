@@ -946,10 +946,26 @@ bool AP_Arming::heater_min_temperature_checks(bool report)
             float temperature;
             int8_t min_temperature;
             if (board->get_board_heater_temperature(temperature) &&
-                board->get_board_heater_arming_temperature(min_temperature) &&
-                (temperature < min_temperature)) {
-                check_failed(ARMING_CHECK_SYSTEM, report, "heater temp low (%0.1f < %i)", temperature, min_temperature);
-                return false;
+                board->get_board_heater_arming_temperature(min_temperature)) {
+
+                AP_InertialSensor *ins = AP_InertialSensor::get_singleton();
+                if (ins != nullptr) {
+                    // Check the heater temperature of each IMU
+                    for (uint8_t i = 0; i < ins->get_accel_count(); ++i) {
+                        temperature = ins->get_temperature(i);
+                        if (temperature < min_temperature) {
+                            if (running_arming_checks) {
+                                check_failed(ARMING_CHECK_SYSTEM, report, "heater%d temp low (%0.1f < %i)", i, temperature, min_temperature);
+                            } else {
+                                if (report) {
+                                    // This is the updated temperature information.
+                                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IMU: heater%d temp low (%0.1f < %i)", i, temperature, min_temperature);
+                                }
+                            }
+                            return false;
+                        }
+                    }
+                }
             }
         }
     }
