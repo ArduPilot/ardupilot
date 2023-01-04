@@ -197,7 +197,12 @@ def under_vagrant():
 
 def under_wsl2():
     from platform import uname
-    return 'microsoft-standard-WSL2' in uname().release
+    uname_result = uname()
+    if type(uname_result) == tuple:
+        (system, node, release, version, machine, processor) = uname_result
+    else:
+        release = uname().release
+    return 'microsoft-standard-WSL2' in release
 
 
 def wsl2_host_ip():
