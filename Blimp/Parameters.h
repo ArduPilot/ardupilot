@@ -1,5 +1,7 @@
 #pragma once
 
+#define AP_PARAM_VEHICLE_NAME blimp
+
 #include <AP_Common/AP_Common.h>
 #include "RC_Channel.h"
 
