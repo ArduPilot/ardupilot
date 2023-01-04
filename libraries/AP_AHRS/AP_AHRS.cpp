@@ -1773,6 +1773,13 @@ bool AP_AHRS::get_relative_position_D_origin(float &posD) const
 // will use the barometer if the EKF isn't available
 void AP_AHRS::get_relative_position_D_home(float &posD) const
 {
+    if (!_home_is_set) {
+        // fall back to an altitude derived from barometric pressure
+        // differences vs a calibrated ground pressure:
+        posD = -AP::baro().get_altitude();
+        return;
+    }
+
     Location originLLH;
     float originD;
     if (!get_relative_position_D_origin(originD) ||
