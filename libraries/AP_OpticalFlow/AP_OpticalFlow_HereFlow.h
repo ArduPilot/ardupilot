@@ -10,8 +10,6 @@
 
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
-class MeasurementCb;
-
 class AP_OpticalFlow_HereFlow : public OpticalFlow_backend {
 public:
     AP_OpticalFlow_HereFlow(AP_OpticalFlow &flow);
@@ -22,7 +20,7 @@ public:
 
     static void subscribe_msgs(AP_UAVCAN* ap_uavcan);
 
-    static void handle_measurement(AP_UAVCAN* ap_uavcan, uint8_t node_id, const MeasurementCb &cb);
+    static void handle_measurement(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const com_hex_equipment_flow_Measurement &msg);
 
 private:
 
