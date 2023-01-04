@@ -186,6 +186,13 @@ AP_Airspeed::AP_Airspeed()
 {
     AP_Param::setup_object_defaults(this, var_info);
 
+    // Setup defaults that only apply to first sensor
+    param[0].type.set_default(ARSPD_DEFAULT_TYPE);
+    param[0].bus.set_default(HAL_AIRSPEED_BUS_DEFAULT);
+#ifndef HAL_BUILD_AP_PERIPH
+    param[0].pin.set_default(ARSPD_DEFAULT_PIN);
+#endif
+
     if (_singleton != nullptr) {
         AP_HAL::panic("AP_Airspeed must be singleton");
     }
@@ -297,13 +304,6 @@ void AP_Airspeed::convert_per_instance()
 
 void AP_Airspeed::init()
 {
-
-    // Setup defaults that only apply to first sensor
-    param[0].type.set_default(ARSPD_DEFAULT_TYPE);
-    param[0].bus.set_default(HAL_AIRSPEED_BUS_DEFAULT);
-#ifndef HAL_BUILD_AP_PERIPH
-    param[0].pin.set_default(ARSPD_DEFAULT_PIN);
-#endif
 
     convert_per_instance();
 
