@@ -188,6 +188,11 @@ uint8_t AP_Filesystem_Param::pack_param(const struct rfile &r, struct cursor &c,
         ap = AP_Param::next_scalar(&c.token, &ptype, &default_val);
     }
     if (ap == nullptr || (r.count && c.idx >= r.count)) {
+        if (r.count == 0 && c.idx != AP_Param::count_parameters()) {
+            // the parameter count is incorrect, invalidate so a
+            // repeated param download avoids an error
+            AP_Param::invalidate_count();
+        }
         return 0;
     }
     ap->copy_name_token(c.token, name, AP_MAX_NAME_SIZE, true);
