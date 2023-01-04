@@ -38,7 +38,7 @@ local wp_yaw_deg = 0
 local initial_height = 0
 local repeat_count = 0
 local running = false
-local roll_stage = 0
+local trick_stage = 0
 
 local function TrickDef(id, arg1, arg2, arg3, arg4)
    local self = {}
@@ -84,23 +84,31 @@ TRIK_ACT_FN = bind_add_param2("_ACT_FN", 3, 300)
 TRIK_COUNT  = bind_add_param2("_COUNT",  4, 3)
 TRICKS = {}
 
+
+function tricks_exist()
+   if rc:find_channel_for_option(TRIK_SEL_FN:get())  
+            and math.floor(TRIK_COUNT:get()) then
+      return true
+   else
+      return false
+   end
+end   
+   
 -- setup parameters for tricks
 count = math.floor(TRIK_COUNT:get())
-count = constrain(count,1,11)
-if count > 11 then 
-    count = 1
+count = constrain(count,0,11)
+if tricks_exist() then
+   for i = 1, count do
+      local k = 5*i
+      local prefix = string.format("%u", i)
+      TRICKS[i] = TrickDef(bind_add_param2(prefix .. "_ID",   k+0, i),
+                          bind_add_param2(prefix .. "_ARG1", k+1, 30),
+                           bind_add_param2(prefix .. "_ARG2", k+2, 0),
+                           bind_add_param2(prefix .. "_ARG3", k+3, 0),
+                           bind_add_param2(prefix .. "_ARG4", k+4, 0))
+   end
+   gcs:send_text(5, string.format("Enabled %u aerobatic tricks", count))   
 end
-for i = 1, count do
-   local k = 5*i
-   local prefix = string.format("%u", i)
-   TRICKS[i] = TrickDef(bind_add_param2(prefix .. "_ID",   k+0, i),
-                        bind_add_param2(prefix .. "_ARG1", k+1, 30),
-                        bind_add_param2(prefix .. "_ARG2", k+2, 0),
-                        bind_add_param2(prefix .. "_ARG3", k+3, 0),
-                        bind_add_param2(prefix .. "_ARG4", k+4, 0))
-end
-gcs:send_text(5, string.format("Enabled %u aerobatic tricks", TRIK_COUNT:get()))   
-
 
 
 -- roll angle error 180 wrap to cope with errors while in inverted segments
@@ -281,39 +289,40 @@ function do_axial_roll(arg1, arg2)
       running = true
       roll_num = 1
       repeat_count = arg2 -1
-      roll_stage = 0
+      trick_stage = 0
       height_PI.reset()
-      --gcs:send_text(5, string.format("Starting roll(s)"))
+      gcs:send_text(5, string.format("Starting %d Roll(s)", arg2))
    end
    local roll_rate = arg1
    local pitch_deg = math.deg(ahrs:get_pitch())
    local roll_deg = math.deg(ahrs:get_roll())
 
-   if roll_stage == 0 then
+   if trick_stage == 0 then
       if roll_deg > 45 then
-         roll_stage = 1
+         trick_stage = 1
       end
-   elseif roll_stage == 1 then
+   elseif trick_stage == 1 then
       if roll_deg > -5 and roll_deg < 5 then
          -- we're done with a roll
-         gcs:send_text(5, string.format("Finished roll %d", roll_num))
+         gcs:send_text(5, string.format("Finished Roll %d", roll_num))
          if repeat_count > 0 then
-            roll_stage = 0
+            trick_stage = 0
             repeat_count = repeat_count - 1
             roll_num = roll_num + 1
          else
          running = false
+         trick = 0
          if vehicle:get_mode() == MODE_AUTO then
             vehicle:nav_script_time_done(last_id)
          else
             vehicle:nav_scripting_enable(255)
          end
-         roll_stage = 2
+         trick_stage = 2
          return
          end
       end
    end
-   if roll_stage < 2 then
+   if trick_stage < 2 then
       throttle = throttle_controller()
       target_pitch = height_PI.update(initial_height)
       pitch_rate, yaw_rate = pitch_controller(target_pitch, wp_yaw_deg, PITCH_TCONST:get())
@@ -321,21 +330,21 @@ function do_axial_roll(arg1, arg2)
    end
 end
 
-local loop_stage = 0
+
 local target_vel
 
 function do_loop(arg1, arg2)
-   -- do one loop with controllable pitch rate arg1 is pitch rate, arg2 number of loops, 0 indicates 1/2 cuban8 reversal style turnaround
+   -- do one loop with controllable pitch rate arg1 is pitch rate, arg2 number of loops, 0 or less indicates 1/2 cuban8 reversal style turnaround
    if not running then
       running = true
-      loop_stage = 0 
+      trick_stage = 0 
       loop_number = 1
       repeat_count = arg2 -1  
       target_vel = ahrs:get_velocity_NED():length()
-      if arg2 ~=0 then
-        gcs:send_text(5, string.format("Starting loop"))
+      if arg2 > 0 then
+         gcs:send_text(5, string.format("Starting %d Loop(s)",arg2))
       else
-        gcs:send_text(5, string.format("Starting turnaround"))
+        gcs:send_text(5, string.format("Starting Turnaround"))
       end
    end
 
@@ -347,27 +356,27 @@ function do_loop(arg1, arg2)
    local pitch_rate = pitch_rate * (1+ 2*((vel/target_vel)-1)) --increase/decrease rate based on velocity to round loop
    pitch_rate = constrain(pitch_rate,.5 * arg1, 3 * arg1)
    
-   if loop_stage == 0 then
+   if trick_stage == 0 then
       if pitch_deg > 60 then
-         loop_stage = 1
+         trick_stage = 1
       end
-   elseif loop_stage == 1 then
+   elseif trick_stage == 1 then
       if (math.abs(roll_deg) < 90 and pitch_deg > -5 and pitch_deg < 5 and repeat_count >= 0) then 
          -- we're done with loop
-         gcs:send_text(5, string.format("Finished loop %d", loop_number))
-         loop_stage = 2  --now recover stage
+         gcs:send_text(5, string.format("Finished Loop %d", loop_number))
+         trick_stage = 2  --now recover stage
          height_PI.reset()
       elseif (math.abs(roll_deg) > 90 and pitch_deg > -5 and pitch_deg < 5 and repeat_count < 0) then
-         gcs:send_text(5, string.format("Finished turnaround ")) 
-         loop_stage = 2  --now recover stage
+         gcs:send_text(5, string.format("Finished Turnaround ")) 
+         trick_stage = 2  --now recover stage
          height_PI.reset()
       end
-   elseif loop_stage == 2 then
+   elseif trick_stage == 2 then
          -- recover alt if above or below start and terminate
     if math.abs(ahrs:get_position():alt()*0.01 - initial_height) > 3 then
        throttle, pitch_rate, yaw_rate = recover_alt()
     elseif repeat_count > 0 then
-    loop_stage = 0
+    trick_stage = 0
     repeat_count = repeat_count - 1
     loop_number = loop_number + 1
     else 
@@ -381,7 +390,7 @@ function do_loop(arg1, arg2)
     end
   end
   throttle = throttle_controller()
-  if loop_stage == 2 or loop_stage == 0 then 
+  if trick_stage == 2 or trick_stage == 0 then 
      level_type = 0
   else
      level_type = 1
@@ -394,19 +403,19 @@ function do_loop(arg1, arg2)
    vehicle:set_target_throttle_rate_rpy(throttle, roll_rate, pitch_rate, 0)
 end
 
-local rolling_circle_stage = 0
-local rolling_circle_yaw = 0
-local rolling_circle_last_ms = 0
+
+local circle_yaw_deg = 0
+local circle_last_ms = 0
 
 function do_rolling_circle(arg1, arg2)
    -- constant roll rate circle roll, arg1 yaw rate, positive to right, neg to left, arg2 is roll rate
    if not running then
       running = true
-      rolling_circle_stage = 0
-      rolling_circle_yaw_deg = 0
-      rolling_circle_last_ms = millis()
+      trick_stage = 0
+      circle_yaw_deg = 0
+      circle_last_ms = millis()
       height_PI.reset()
-      --gcs:send_text(5, string.format("Starting rolling circle"))
+      gcs:send_text(5, string.format("Starting Rolling Circle"))
    end
    local yaw_rate_dps = arg1
    local roll_rate_dps = arg2
@@ -414,33 +423,33 @@ function do_rolling_circle(arg1, arg2)
    local roll_deg = math.deg(ahrs:get_roll())
    local yaw_deg = math.deg(ahrs:get_yaw())
    local now_ms = millis()
-   local dt = (now_ms - rolling_circle_last_ms):tofloat() * 0.001
-   rolling_circle_last_ms = now_ms
+   local dt = (now_ms - circle_last_ms):tofloat() * 0.001
+   circle_last_ms = now_ms
 
-   rolling_circle_yaw_deg = rolling_circle_yaw_deg + yaw_rate_dps * dt
+   circle_yaw_deg = circle_yaw_deg + yaw_rate_dps * dt
 
-   if rolling_circle_stage == 0 then
-      if math.abs(rolling_circle_yaw_deg) > 10.0 then
-         rolling_circle_stage = 1
+   if trick_stage == 0 then
+      if math.abs(circle_yaw_deg) > 10.0 then
+         trick_stage = 1
       end
-   elseif rolling_circle_stage == 1 then
-      if math.abs(rolling_circle_yaw_deg) >= 360.0 then
+   elseif trick_stage == 1 then
+      if math.abs(circle_yaw_deg) >= 360.0 then
          running = false
          -- we're done
-         gcs:send_text(5,"Finished rolling circle")
+         gcs:send_text(5,"Finished Rolling Circle")
          if vehicle:get_mode() == MODE_AUTO then
             vehicle:nav_script_time_done(last_id)
          else
             vehicle:nav_scripting_enable(255)
          end
-         rolling_circle_stage = 2
+         trick_stage = 2
          return
       end
    end
-   if rolling_circle_stage < 2 then
+   if trick_stage < 2 then
       target_pitch = height_PI.update(initial_height)
       vel = ahrs:get_velocity_NED()
-      pitch_rate, yaw_rate = pitch_controller(target_pitch, wrap_360(rolling_circle_yaw_deg+initial_yaw_deg), PITCH_TCONST:get())
+      pitch_rate, yaw_rate = pitch_controller(target_pitch, wrap_360(circle_yaw_deg+initial_yaw_deg), PITCH_TCONST:get())
       throttle = throttle_controller()
       throttle = constrain(throttle, 0, 100.0)
       vehicle:set_target_throttle_rate_rpy(throttle, roll_rate_dps, pitch_rate, yaw_rate)
@@ -455,7 +464,7 @@ function do_knife_edge(arg1,arg2)
         running = true
         height_PI.reset()
         knife_edge_s = now
-        gcs:send_text(5, string.format("%d Knife edge", arg1))
+        gcs:send_text(5, string.format("Starting %d Knife Edge", arg1))
     end
     local i=0
     if (now - knife_edge_s) < arg2 then
@@ -474,7 +483,7 @@ function do_knife_edge(arg1,arg2)
         throttle = throttle_controller()
         vehicle:set_target_throttle_rate_rpy(throttle, roll_rate, pitch_rate, yaw_rate)
     else
-        gcs:send_text(5, string.format("Finished Knife edge", arg1))
+        gcs:send_text(5, string.format("Finished Knife Edge", arg1))
         running = false
         if vehicle:get_mode() == MODE_AUTO then
            vehicle:nav_script_time_done(last_id)
@@ -504,6 +513,7 @@ function do_pause(arg1,arg2)
         vehicle:set_target_throttle_rate_rpy(throttle, roll_rate, pitch_rate, yaw_rate)
     else 
         running = false
+        gcs:send_text(5, string.format("Pause Over"))
         if vehicle:get_mode() == MODE_AUTO then
            vehicle:nav_script_time_done(last_id)
         else
@@ -514,7 +524,191 @@ function do_pause(arg1,arg2)
 end
 
 
+local circle_yaw = 0
+local circle_last_ms = 0
 
+function do_knifedge_circle(arg1, arg2)
+   -- constant roll angle circle , arg1 yaw rate, positive to right, neg to left, arg2 is not used
+   if not running then
+      running = true
+      trick_stage = 0
+      circle_yaw_deg = 0
+      circle_last_ms = millis()
+      height_PI.reset()
+      gcs:send_text(5, string.format("Staring KnifeEdge Circle"))
+   end
+   local yaw_rate_dps = arg1
+   local pitch_deg = math.deg(ahrs:get_pitch())
+   local yaw_deg = math.deg(ahrs:get_yaw())
+   local now_ms = millis()
+   local dt = (now_ms - circle_last_ms):tofloat() * 0.001
+   circle_last_ms = now_ms
+   circle_yaw_deg = circle_yaw_deg + yaw_rate_dps * dt
+   if trick_stage == 0 then
+      if math.abs(circle_yaw_deg) > 10.0 then
+         trick_stage = 1
+      end
+   elseif trick_stage == 1 then
+      if math.abs(circle_yaw_deg) >= 360.0 then
+         running = false
+         -- we're done
+         gcs:send_text(5,"Finished KnifeEdge Circle")
+         if vehicle:get_mode() == MODE_AUTO then
+            vehicle:nav_script_time_done(last_id)
+         else
+            vehicle:nav_scripting_enable(255)
+         end
+         trick_stage = 2
+         return
+      end
+   end
+   if trick_stage < 2 then
+        local roll_deg = math.deg(ahrs:get_roll())
+        if arg1 >0 then
+           angle = 90
+        else
+           angle = -90
+        end
+        local roll_angle_error = (angle - roll_deg)
+        if math.abs(roll_angle_error) > 180 then
+         if roll_angle_error > 0 then
+           roll_angle_error = roll_angle_error - 360
+         else 
+           roll_angle_error= roll_angle_error +360
+         end 
+        end
+      roll_rate_dps = roll_angle_error/RLL2SRV_TCONST:get()
+      target_pitch = height_PI.update(initial_height)
+      vel = ahrs:get_velocity_NED()
+      pitch_rate, yaw_rate = pitch_controller(target_pitch, wrap_360(circle_yaw_deg+initial_yaw_deg), PITCH_TCONST:get())
+      throttle = throttle_controller()
+      throttle = constrain(throttle, 0, 100.0)
+      vehicle:set_target_throttle_rate_rpy(throttle, roll_rate_dps, pitch_rate, yaw_rate)
+   end
+end
+
+function hold_roll_angle (angle)
+   local roll_deg = math.deg(ahrs:get_roll())
+   local roll_angle_error = (angle - roll_deg)
+   if math.abs(roll_angle_error) > 180 then
+      if roll_angle_error > 0 then
+         roll_angle_error = roll_angle_error - 360
+      else 
+         roll_angle_error= roll_angle_error +360
+      end 
+   end
+   return roll_angle_error/RLL2SRV_TCONST:get()
+end
+
+local roll_ms = 0
+function do_4point_roll(arg1, arg2)
+   -- constant roll rate axial roll with pauses at 90 deg intervals, arg1 roll rate, arg2 is pause time in sec
+   arg2 = arg2 * 1000
+   if not running then
+      running = true
+      trick_stage = 0
+      height_PI.reset()
+      gcs:send_text(5, string.format("Starting 4pt Roll"))
+   end
+   local pitch_deg = math.deg(ahrs:get_pitch())
+   local roll_deg = math.deg(ahrs:get_roll())
+
+   if trick_stage == 0 then
+      roll_rate = arg1
+      if roll_deg >= 90 then
+         trick_stage = 1
+         roll_ms = millis()
+      end
+   elseif trick_stage == 1 then
+      roll_rate = hold_roll_angle(90)
+      if (millis() - roll_ms > arg2) then
+         trick_stage = 2
+      end
+   elseif trick_stage == 2 then
+      roll_rate = arg1
+      if roll_deg >= 175 or roll_deg <= -175 then
+         trick_stage = 3
+         roll_ms = millis()
+      end
+   elseif trick_stage == 3 then
+      roll_rate = hold_roll_angle(180)
+      if (millis() - roll_ms >arg2) then
+         trick_stage = 4
+      end
+   elseif trick_stage == 4 then
+      roll_rate = arg1
+      if roll_deg >=-90 and roll_deg < 175 then
+         trick_stage = 5
+         roll_ms = millis()
+      end
+   elseif trick_stage == 5 then   
+      roll_rate = hold_roll_angle(-90)
+      if (millis() - roll_ms >arg2) then
+         trick_stage = 6
+      end
+   elseif trick_stage == 6 then
+      roll_rate = arg1 
+      if roll_deg > -5 and roll_deg < 5 then
+         -- we're done with a roll
+         trick_stage = 7
+         gcs:send_text(5, "Finished 4 pt Roll")
+         running = false
+         if vehicle:get_mode() == MODE_AUTO then
+            vehicle:nav_script_time_done(last_id)
+         else
+            vehicle:nav_scripting_enable(255)
+         end
+      end
+   end
+   if trick_stage < 7 then
+      throttle = throttle_controller()
+      target_pitch = height_PI.update(initial_height)
+      pitch_rate, yaw_rate = pitch_controller(target_pitch, wp_yaw_deg, PITCH_TCONST:get())
+      vehicle:set_target_throttle_rate_rpy(throttle, roll_rate, pitch_rate, yaw_rate)
+   end
+end
+
+function do_split_s(arg1, arg2)
+   -- roll inverted at arg2 rate, then 1/2 loop at arg1 pitch rate
+   if not running then
+      running = true
+      trick_stage = 0   --roll inverted, pitch level
+      height_PI.reset()
+      gcs:send_text(5, string.format("Starting Split-S"))
+   end
+   local pitch_deg = math.deg(ahrs:get_pitch())
+   local roll_deg = math.deg(ahrs:get_roll())
+   if trick_stage == 0 then 
+      roll_rate = arg2
+      wp_yaw_deg = math.deg(ahrs:get_yaw())
+      target_pitch = height_PI.update(initial_height)
+      pitch_rate, yaw_rate = pitch_controller(target_pitch, wp_yaw_deg, PITCH_TCONST:get())   
+      if roll_deg >=175 or roll_deg <= -175 then
+         trick_stage = 1 --start the pitch rate, wings level
+      end
+   elseif trick_stage == 1 then
+      if math.abs(pitch_deg) > 85 and  math.abs(pitch_deg) < 95 then
+         roll_rate = 0
+      else
+         roll_rate = earth_frame_wings_level(1)
+      end
+      pitch_rate = arg1
+      if (math.abs(roll_deg) < 90 and pitch_deg > -5 and pitch_deg < 5) then
+          trick_stage = 2 --trick over
+          gcs:send_text(5, string.format("Finished Split-S ")) 
+          height_PI.reset()
+          running = false
+          if vehicle:get_mode() == MODE_AUTO then
+             vehicle:nav_script_time_done(last_id)
+          else
+             vehicle:nav_scripting_enable(255)
+          end
+      end
+   end 
+   throttle = throttle_controller() 
+   vehicle:set_target_throttle_rate_rpy(throttle, roll_rate, pitch_rate, 0) 
+end
+ 
 function get_wp_location(i)
    local m = mission:get_item(i)
    local loc = Location()
@@ -598,6 +792,10 @@ end
  name[2] = "Loop(s)/Turnaround"
  name[3] = "Rolling Circle"
  name[4] = "Knife-Edge"
+ name[5] = "Pause"
+ name[6] = "Knife Edge Circle"
+ name[7] = "4pt Roll"
+ name[8] = "Split-S"
 --[[
    check for running a trick
 --]]
@@ -626,8 +824,9 @@ function check_trick()
    end
    if running then
       -- let the task finish
-      return id
+      return selection
    end
+   -- trick action changed state
    if action ~= last_trick_action_state then
       last_trick_selection = selection
       last_trick_action_state = action
@@ -640,19 +839,17 @@ function check_trick()
          gcs:send_text(5, string.format("%s selected ", name[id]))
          return 0
       end
-      if action == 2 then
+      -- action changed to execute
+      if action == 2 and vehicle:get_likely_flying() then
          last_trick_selection = selection
          local current_mode = vehicle:get_mode()
          if not vehicle:nav_scripting_enable(current_mode) then
             gcs:send_text(0, string.format("Tricks not available in this mode"))
             return 0
          end
-         if id ~= 2 then
-            gcs:send_text(5, string.format("%s started ", name[id])) 
-         end
          wp_yaw_deg = math.deg(ahrs:get_yaw())
          initial_height = ahrs:get_position():alt()*0.01
-         return id     
+         return selection     
       end
    end
    return 0
@@ -669,18 +866,25 @@ function do_trick(cmd,arg1,arg2)
          do_knife_edge(arg1,arg2)
       elseif cmd == 5 then
          do_pause(arg1,arg2)
+      elseif cmd == 6 then
+         do_knifedge_circle(arg1,arg2)
+      elseif cmd == 7 then
+         do_4point_roll(arg1,arg2)
+      elseif cmd == 8 then
+         do_split_s(arg1,arg2)
       end
 end
 
 function update()
    if vehicle:get_mode() == MODE_AUTO then
-      check_auto_mission() 
-   else
+      check_auto_mission() --run a trick mission item
+   elseif tricks_exist() then
       trick = check_trick() 
-      if trick ~=0 then  
+      if trick ~=0 then 
+      id = TRICKS[trick].id:get()
       arg1 = TRICKS[trick].args[1]:get()
       arg2 = TRICKS[trick].args[2]:get()
-      do_trick(trick,arg1,arg2)
+      do_trick(id,arg1,arg2)
       end
    end
   return update, 10

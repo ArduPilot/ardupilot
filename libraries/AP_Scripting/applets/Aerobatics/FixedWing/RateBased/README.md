@@ -28,8 +28,11 @@ the ground track.
 | 3  | Rolling Circle           | yawrate(dps)    | rollrate(dps)              | No         |
 | 4  | KnifeEdge                | roll angle(deg) | length(sec)                | No         |
 | 5  | Pause                    | length(sec)     | na                         | No         |
+| 6  | KnifeEdge Circle         | yawrate(dps)    | na                         | No         |
+| 7  | 4 point roll             | rollrate(dps)   | pause in sec at each point | No         |
+| 8  | Split-S                  | pitchrate(dps)  | rollrate(dps)              | Yes        |
 
-note: for Rolling Circle, the time it takes to make the circle is 360/yawrate. You should make sure that an integer number of rolls is commanded by the rollrate parameter in that time, ie rollrate should be set to the number of rolls * yawrate.
+note: for Rolling Circle, the time it takes to make the circle is 360/yawrate. You should make sure that an integer number of rolls is commanded by the rollrate parameter in that time, ie rollrate should be set to the number of rolls * yawrate. In most cases negative rate, reverses the direction, ie in Rolls -45 for rollrate would roll left at 45dps.
 
 ## Loading the script
 
@@ -39,7 +42,7 @@ APM/SCRIPTS directory. You can use MAVFtp to do this.
 Then set
 
  - SCR_ENABLE = 1
- - SCR_HEAP_SIZE = 200000
+ - SCR_HEAP_SIZE = 150000
  - SCR_VM_I_COUNT = 100000
 
 You will need to refresh parameters after setting SCR_ENABLE. Then
@@ -68,16 +71,16 @@ NAV_SCRIPT_TIME elements (shown as SCRIPT_TIME in MissionPlanner). These mission
 
  - the command ID from the table above
  - the timeout in seconds
- - up to four arguments as shown in the above table
+ - up to two arguments as shown in the above table
 
 The aerobatics system will use the location of the previous and next
 waypoints to line up the manoeuvre. You need to plan a normal
 waypoint just before the location where you want to start the
-manoeuvre, then the NAV_SCRIPT_TIME with the trick or schedule ID, a timeout that is long enough to allow the trick, and then a normal waypoint after the manoeuvre.
+manoeuvre, then the NAV_SCRIPT_TIME with the trick or schedule ID, a timeout that is long enough to allow the trick, and then a normal waypoint after the manoeuvre. You can have consecutive tricks between waypoints. You can use the PAUSE trick after a framing waypoint to  move the location of the beginning of the trick or to put some time between consecutive tricks.
 
 ## Use with "tricks on a switch"
 
-You can trigger the manoeuvres using RC switches, allowing you to have
+You can trigger the manoeuvres using RC switches (or using the GCS AUX Function tab), allowing you to have
 up to 11 tricks pre-programmed on your transmitter ready for use in
 fixed wing flight. You can trigger the tricks in the following flight
 modes:
@@ -89,7 +92,6 @@ modes:
  - FBWB
  - CRUISE
  - LOITER
-
 
 Set TRIKR_COUNT to the number of tricks you want to make available and reboot,
 with a maximum of 11. (Why 11 when fewer than that are available? To allow variants, such as different knife-edges, ie 90 deg and 180 deg inverted flight)
@@ -115,21 +117,25 @@ select tricks. It is best to use a knob for the trick selector so you can have u
 Work out which RC input channel you want to use for activation (a 3 position switch) and set
 
  - RCn_OPTION = 300
+ 
+Note: It is not required to setup the 300 function for activation by the Transmitter switch. You can also activate a trick via the GCS. Mission Planner has an AUX Functions tab to enable setting the "300" function from the GCS.
 
 Then work out what RC input channel you want to use for selection and set
 
  - RCn_OPTION = 301
+ 
+ TRIKR_COUNT must be non-zero and an RC channel set to function 301 for Tricks on a Switch to function.
 
 ## Flying with tricks
 
-When the activation channel (the one marked with option 300) is in the
-middle position then when you move the knob the GCS will display the
+When the activation channel (the one assigned option 300 or set via the GCS) is in the
+middle position then when you move the trick selection knob/switch, the GCS will display the
 currently selected trick.
 
-To activate a trick you move the activation channel to the top
+To activate a trick you move the activation channel to the top (high)
 position, and the trick will run.
 
-Moving the activation switch to the bottom position cancels any
+Moving the activation switch to the bottom position (low) cancels any
 running trick and stops the trick system.
 
 Changing flight modes will also cancel any active trick.
