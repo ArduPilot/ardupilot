@@ -191,6 +191,36 @@ def under_macos():
     return sys.platform == 'darwin'
 
 
+def under_vagrant():
+    return os.path.isfile("/ardupilot.vagrant")
+
+
+def under_wsl2():
+    from platform import uname
+    return 'microsoft-standard-WSL2' in uname().release
+
+
+def wsl2_host_ip():
+    if not under_wsl2():
+        return None
+
+    pipe = subprocess.Popen("grep -m 1 nameserver /etc/resolv.conf | awk '{print $2}'",
+                            shell=True,
+                            stdout=subprocess.PIPE)
+    output_lines = pipe.stdout.read().decode('utf-8').strip(' \r\n')
+    ret = pipe.wait()
+
+    if ret != 0:
+        # Command exited with an error. The output it generated probably isn't what we're expecting
+        return None
+
+    if not output_lines:
+        # No output detected, maybe there's no nameserver or WSL2 has some abnormal firewalls/network settings?
+        return None
+
+    return str(output_lines)
+
+
 def kill_tasks_cygwin(victims):
     """Shell out to ps -ea to find processes to kill"""
     for victim in list(victims):
@@ -796,14 +826,22 @@ def start_mavproxy(opts, stuff):
     if opts.mcast:
         cmd.extend(["--master", "mcast:"])
 
+    # returns a valid IP of the host windows computer if we're WSL2.
+    # This is run before the loop so it only runs once
+    wsl2_host_ip_str = wsl2_host_ip()
+
     for i in instances:
         if not opts.no_extra_ports:
             ports = [p + 10 * i for p in [14550, 14551]]
             for port in ports:
-                if os.path.isfile("/ardupilot.vagrant"):
+                if under_vagrant():
                     # We're running inside of a vagrant guest; forward our
                     # mavlink out to the containing host OS
                     cmd.extend(["--out", "10.0.2.2:" + str(port)])
+                elif wsl2_host_ip_str:
+                    # We're running WSL2; forward our
+                    # mavlink out to the containing host Windows OS
+                    cmd.extend(["--out", str(wsl2_host_ip_str) + ":" + str(port)])
                 else:
                     cmd.extend(["--out", "127.0.0.1:" + str(port)])
 
