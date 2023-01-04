@@ -116,7 +116,7 @@
 #define AP_CLASSTYPE(clazz, element) ((uint8_t)(((const clazz *) 1)->element.vtype))
 
 // declare a group var_info line
-#define AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, flags) { AP_CLASSTYPE(clazz, element), idx, name, AP_VAROFFSET(clazz, element), {def_value : def}, flags }
+#define AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, flags) { name, AP_VAROFFSET(clazz, element), {def_value : def}, flags, idx, AP_CLASSTYPE(clazz, element)}
 
 // declare a group var_info line with a frame type mask
 #define AP_GROUPINFO_FRAME(name, idx, clazz, element, def, frame_flags) AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, (frame_flags)<<AP_PARAM_FRAME_TYPE_SHIFT )
@@ -128,23 +128,23 @@
 #define AP_GROUPINFO(name, idx, clazz, element, def) AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, 0)
 
 // declare a nested group entry in a group var_info
-#define AP_NESTEDGROUPINFO(clazz, idx) { AP_PARAM_GROUP, idx, "", 0, { group_info : clazz::var_info }, 0 }
+#define AP_NESTEDGROUPINFO(clazz, idx) { "", 0, { group_info : clazz::var_info }, 0, idx, AP_PARAM_GROUP }
 
 // declare a subgroup entry in a group var_info. This is for having another arbitrary object as a member of the parameter list of
 // an object
-#define AP_SUBGROUPINFO(element, name, idx, thisclazz, elclazz) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info }, AP_PARAM_FLAG_NESTED_OFFSET }
+#define AP_SUBGROUPINFO(element, name, idx, thisclazz, elclazz) { name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info }, AP_PARAM_FLAG_NESTED_OFFSET, idx, AP_PARAM_GROUP }
 
 // declare a second parameter table for the same object
-#define AP_SUBGROUPEXTENSION(name, idx, clazz, vinfo) { AP_PARAM_GROUP, idx, name, 0, { group_info : clazz::vinfo }, AP_PARAM_FLAG_NESTED_OFFSET }
+#define AP_SUBGROUPEXTENSION(name, idx, clazz, vinfo) { name, 0, { group_info : clazz::vinfo }, AP_PARAM_FLAG_NESTED_OFFSET, idx, AP_PARAM_GROUP }
 
 // declare a pointer subgroup entry in a group var_info
-#define AP_SUBGROUPPTR(element, name, idx, thisclazz, elclazz) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info }, AP_PARAM_FLAG_POINTER }
+#define AP_SUBGROUPPTR(element, name, idx, thisclazz, elclazz) { name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info }, AP_PARAM_FLAG_POINTER, idx, AP_PARAM_GROUP }
 
 // declare a pointer subgroup entry in a group var_info with a pointer var_info
-#define AP_SUBGROUPVARPTR(element, name, idx, thisclazz, var_info) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclazz, element), { group_info_ptr : &var_info }, AP_PARAM_FLAG_POINTER | AP_PARAM_FLAG_INFO_POINTER }
+#define AP_SUBGROUPVARPTR(element, name, idx, thisclazz, var_info) { name, AP_VAROFFSET(thisclazz, element), { group_info_ptr : &var_info }, AP_PARAM_FLAG_POINTER | AP_PARAM_FLAG_INFO_POINTER, idx, AP_PARAM_GROUP }
 
-#define AP_GROUPEND     { AP_PARAM_NONE, 0xFF, "", 0, { group_info : nullptr } }
-#define AP_VAREND       { AP_PARAM_NONE, "", 0, nullptr, { group_info : nullptr } }
+#define AP_GROUPEND     { "", 0,       { group_info : nullptr }, 0, 0xFF, AP_PARAM_NONE }
+#define AP_VAREND       { "", nullptr, { group_info : nullptr }, 0, 0,    AP_PARAM_NONE }
 
 enum ap_var_type {
     AP_PARAM_NONE    = 0,
@@ -168,8 +168,6 @@ public:
     // program in setup() to give information on how variables are
     // named and their location in memory
     struct GroupInfo {
-        uint8_t type; // AP_PARAM_*
-        uint8_t idx;  // identifier within the group
         const char *name;
         ptrdiff_t offset; // offset within the object
         union {
@@ -178,11 +176,11 @@ public:
             const float def_value;
         };
         uint16_t flags;
+        uint8_t idx;  // identifier within the group
+        uint8_t type; // AP_PARAM_*
     };
     struct Info {
-        uint8_t type; // AP_PARAM_*
         const char *name;
-        uint16_t key; // k_param_*
         const void *ptr;    // pointer to the variable in memory
         union {
             const struct GroupInfo *group_info;
@@ -190,6 +188,8 @@ public:
             const float def_value;
         };
         uint16_t flags;
+        uint16_t key; // k_param_*
+        uint8_t type; // AP_PARAM_*
     };
     struct ConversionInfo {
         uint16_t old_key; // k_param_*
