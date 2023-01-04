@@ -158,6 +158,17 @@ Vector2f AP_AHRS_DCM::groundspeed_vector(void)
     return Vector2f(0.0f, 0.0f);
 }
 
+Vector2f AP_AHRS_Backend::groundspeed_vector(void)
+{
+    // base-class imnplementation extracts the groundspeed from the
+    // velocity_NED result:
+    Vector3f velNED;
+    if (!get_velocity_NED(velNED)) {
+        return Vector2f{};
+    }
+    return velNED.xy();
+}
+
 /*
   calculate sin and cos of roll/pitch/yaw from a body_to_ned rotation matrix
  */

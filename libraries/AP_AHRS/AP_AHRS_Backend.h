@@ -166,14 +166,12 @@ public:
     }
 
     // return a ground vector estimate in meters/second, in North/East order
-    virtual Vector2f groundspeed_vector(void) = 0;
+    virtual Vector2f groundspeed_vector(void);
 
     // return a ground velocity in meters/second, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is
     // true
-    virtual bool get_velocity_NED(Vector3f &vec) const WARN_IF_UNUSED {
-        return false;
-    }
+    virtual bool get_velocity_NED(Vector3f &vec) const WARN_IF_UNUSED = 0;
 
     // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
     // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.

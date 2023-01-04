@@ -69,17 +69,6 @@ bool AP_AHRS_SIM::get_quaternion(Quaternion &quat) const
     return true;
 }
 
-Vector2f AP_AHRS_SIM::groundspeed_vector(void)
-{
-    if (_sitl == nullptr) {
-        return Vector2f{};
-    }
-
-    const struct SITL::sitl_fdm &fdm = _sitl->state;
-
-    return Vector2f(fdm.speedN, fdm.speedE);
-}
-
 bool AP_AHRS_SIM::get_vert_pos_rate(float &velocity) const
 {
     if (_sitl == nullptr) {
