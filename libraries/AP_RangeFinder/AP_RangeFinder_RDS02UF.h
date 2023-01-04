@@ -25,7 +25,7 @@
 #if AP_RANGEFINDER_RDS02UF_ENABLED
 
 #define RDS02_BUFFER_SIZE 50
-
+#define RDS02_USE_CRC 0 // To save Flash and Ram, do not use CRC check
 class AP_RangeFinder_RDS02UF : public AP_RangeFinder_Backend_Serial
 {
 
@@ -96,7 +96,7 @@ private:
     uint8_t crc8(uint8_t *pbuf, int32_t len);
 
     bool decode(uint8_t c);
-
+#if RDS02_USE_CRC
     const uint8_t crc8_table[256] = {
     0x93,0x98,0xE4,0x46,0xEB,0xBA,0x04,0x4C,
     0xFA,0x40,0xB8,0x96,0x0E,0xB2,0xB7,0xC0,
@@ -131,5 +131,6 @@ private:
     0x68,0x35,0xFD,0x8F,0x9E,0x1F,0x13,0xD1,
     0xAD,0x69,0xCC,0xA4,0x94,0x90,0x1B,0x43,
     };
+#endif
 };
 #endif  // AP_RANGEFINDER_RDS02UF_ENABLED

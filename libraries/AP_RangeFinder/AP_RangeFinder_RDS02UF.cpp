@@ -58,7 +58,7 @@ bool AP_RangeFinder_RDS02UF::get_reading(float &reading_m)
     // read any available data from the lidar
     float sum = 0.0f;
     uint16_t count = 0;
-    uint32_t nbytes = MAX(uart->available(), 1024);
+    uint32_t nbytes = MAX(uart->available(), 1024U);
     while (nbytes-- > 0) {
         int16_t c = uart->read();
         if (c < 0) {
@@ -152,8 +152,11 @@ bool AP_RangeFinder_RDS02UF::decode(uint8_t c)
             break;
         case RDS02UF_PARSE_STATE::STATE9_CRC: // crc
         {
+        #if RDS02_USE_CRC
 	        const uint8_t crc_data = crc8(&parser_buffer[2], RDS02UF_PRE_DATA_LEN + RDS02UF_DATA_LEN);
-            
+        #else
+            const uint8_t crc_data = data;
+        #endif
             if (crc_data == data || data == 0xff) { // 0xff indicates that the current frame does not need to be checked.
                 parser_buffer[parser_index++] = data;
                 decode_state = RDS02UF_PARSE_STATE::STATE10_END_1;
@@ -206,9 +209,11 @@ bool AP_RangeFinder_RDS02UF::decode(uint8_t c)
 
 uint8_t AP_RangeFinder_RDS02UF::crc8(uint8_t* pbuf, int32_t len)
 {
-     uint8_t* data = pbuf;
      uint8_t crc = 0;
+#if RDS02_USE_CRC
+     uint8_t* data = pbuf;
      while ( len-- )
         crc = crc8_table[crc^*(data++)];
+#endif
      return crc;
 }
