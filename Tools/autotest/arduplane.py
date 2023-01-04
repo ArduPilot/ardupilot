@@ -1977,56 +1977,40 @@ class AutoTestPlane(AutoTest):
 
     def RangeFinder(self):
         '''Test RangeFinder Basic Functionality'''
-        ex = None
         self.context_push()
         self.progress("Making sure we don't ordinarily get RANGEFINDER")
-        m = None
-        try:
-            m = self.mav.recv_match(type='RANGEFINDER',
-                                    blocking=True,
-                                    timeout=5)
-        except Exception as e:
-            self.print_exception_caught(e)
+        self.assert_not_receive_message('RANGEFDINDER')
 
-        if m is not None:
-            raise NotAchievedException("Received unexpected RANGEFINDER msg")
+        self.set_analog_rangefinder_parameters()
 
-        try:
-            self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
 
-            self.reboot_sitl()
+        '''ensure rangefinder gives height-above-ground'''
+        self.load_mission("plane-gripper-mission.txt") # borrow this
+        self.set_parameter("RTL_AUTOLAND", 1)
+        self.set_current_waypoint(1)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_waypoint(5, 5, max_dist=100)
+        rf = self.mav.recv_match(type="RANGEFINDER", timeout=1, blocking=True)
+        if rf is None:
+            raise NotAchievedException("Did not receive rangefinder message")
+        gpi = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=1)
+        if gpi is None:
+            raise NotAchievedException("Did not receive GLOBAL_POSITION_INT message")
+        if abs(rf.distance - gpi.relative_alt/1000.0) > 3:
+            raise NotAchievedException(
+                "rangefinder alt (%s) disagrees with global-position-int.relative_alt (%s)" %
+                (rf.distance, gpi.relative_alt/1000.0))
+        self.wait_statustext("Auto disarmed", timeout=60)
 
-            '''ensure rangefinder gives height-above-ground'''
-            self.load_mission("plane-gripper-mission.txt") # borrow this
-            self.set_parameter("RTL_AUTOLAND", 1)
-            self.set_current_waypoint(1)
-            self.change_mode('AUTO')
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-            self.wait_waypoint(5, 5, max_dist=100)
-            rf = self.mav.recv_match(type="RANGEFINDER", timeout=1, blocking=True)
-            if rf is None:
-                raise NotAchievedException("Did not receive rangefinder message")
-            gpi = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=1)
-            if gpi is None:
-                raise NotAchievedException("Did not receive GLOBAL_POSITION_INT message")
-            if abs(rf.distance - gpi.relative_alt/1000.0) > 3:
-                raise NotAchievedException(
-                    "rangefinder alt (%s) disagrees with global-position-int.relative_alt (%s)" %
-                    (rf.distance, gpi.relative_alt/1000.0))
-            self.wait_statustext("Auto disarmed", timeout=60)
+        self.progress("Ensure RFND messages in log")
+        if not self.current_onboard_log_contains_message("RFND"):
+            raise NotAchievedException("No RFND messages in log")
 
-            self.progress("Ensure RFND messages in log")
-            if not self.current_onboard_log_contains_message("RFND"):
-                raise NotAchievedException("No RFND messages in log")
-
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
         self.context_pop()
         self.reboot_sitl()
-        if ex is not None:
-            raise ex
 
     def rc_defaults(self):
         ret = super(AutoTestPlane, self).rc_defaults()
