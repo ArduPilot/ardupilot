@@ -16,6 +16,8 @@
 #include "AP_Torqeedo/AP_Torqeedo.h"
 #include <AP_WindVane/AP_WindVane.h>
 
+#define AP_PARAM_VEHICLE_NAME rover
+
 // Global parameter class.
 //
 class Parameters {

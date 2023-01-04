@@ -4,11 +4,6 @@
   Rover parameter definitions
 */
 
-#define GSCALAR(v, name, def) { rover.g.v.vtype, name, Parameters::k_param_ ## v, &rover.g.v, {def_value:def} }
-#define GGROUP(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &rover.g.v, {group_info:class::var_info} }
-#define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &rover.v, {group_info:class::var_info} }
-#define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, &rover.v, {group_info : class::var_info} }
-
 const AP_Param::Info Rover::var_info[] = {
     // @Param: FORMAT_VERSION
     // @DisplayName: Eeprom format version number
@@ -395,7 +390,7 @@ const AP_Param::Info Rover::var_info[] = {
 
     // @Group:
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
-    { AP_PARAM_GROUP, "", Parameters::k_param_vehicle, (const void *)&rover, {group_info : AP_Vehicle::var_info} },
+    PARAM_VEHICLE_INFO,
 
     AP_VAREND
 };
