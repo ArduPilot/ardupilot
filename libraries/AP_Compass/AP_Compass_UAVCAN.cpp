@@ -21,16 +21,12 @@
 
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
-
-#include <uavcan/equipment/ahrs/MagneticFieldStrength.hpp>
-#include <uavcan/equipment/ahrs/MagneticFieldStrength2.hpp>
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <SITL/SITL.h>
 
 extern const AP_HAL::HAL& hal;
 
 #define LOG_TAG "COMPASS"
-// Frontend Registry Binders
-UC_REGISTRY_BINDER(MagCb, uavcan::equipment::ahrs::MagneticFieldStrength);
-UC_REGISTRY_BINDER(Mag2Cb, uavcan::equipment::ahrs::MagneticFieldStrength2);
 
 AP_Compass_UAVCAN::DetectedModules AP_Compass_UAVCAN::_detected_modules[];
 HAL_Semaphore AP_Compass_UAVCAN::_sem_registry;
@@ -48,23 +44,12 @@ void AP_Compass_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
     if (ap_uavcan == nullptr) {
         return;
     }
-
-    auto* node = ap_uavcan->get_node();
-
-    uavcan::Subscriber<uavcan::equipment::ahrs::MagneticFieldStrength, MagCb> *mag_listener;
-    mag_listener = new uavcan::Subscriber<uavcan::equipment::ahrs::MagneticFieldStrength, MagCb>(*node);
-    const int mag_listener_res = mag_listener->start(MagCb(ap_uavcan, &handle_magnetic_field));
-    if (mag_listener_res < 0) {
-        AP_HAL::panic("UAVCAN Mag subscriber start problem\n\r");
-        return;
+    if (Canard::allocate_sub_arg_callback(ap_uavcan, &handle_magnetic_field, ap_uavcan->get_driver_index()) == nullptr) {
+        AP_BoardConfig::allocation_error("mag_sub");
     }
 
-    uavcan::Subscriber<uavcan::equipment::ahrs::MagneticFieldStrength2, Mag2Cb> *mag2_listener;
-    mag2_listener = new uavcan::Subscriber<uavcan::equipment::ahrs::MagneticFieldStrength2, Mag2Cb>(*node);
-    const int mag2_listener_res = mag2_listener->start(Mag2Cb(ap_uavcan, &handle_magnetic_field_2));
-    if (mag2_listener_res < 0) {
-        AP_HAL::panic("UAVCAN Mag subscriber start problem\n\r");
-        return;
+    if (Canard::allocate_sub_arg_callback(ap_uavcan, &handle_magnetic_field_2, ap_uavcan->get_driver_index()) == nullptr) {
+        AP_BoardConfig::allocation_error("mag2_sub");
     }
 }
 
@@ -87,6 +72,23 @@ AP_Compass_Backend* AP_Compass_UAVCAN::probe(uint8_t index)
                                 _detected_modules[index].node_id,
                                 _detected_modules[index].ap_uavcan->get_driver_index(),
                                 _detected_modules[index].sensor_id);
+#if AP_TEST_DRONECAN_DRIVERS
+            // Scroll through the registered compasses, and set the offsets
+            if (driver->_compass.get_offsets(index).is_zero()) {
+                driver->_compass.set_offsets(index, AP::sitl()->mag_ofs[index]);
+            }
+
+            // we want to simulate a calibrated compass by default, so set
+            // scale to 1
+            AP_Param::set_default_by_name("COMPASS_SCALE", 1);
+            AP_Param::set_default_by_name("COMPASS_SCALE2", 1);
+            AP_Param::set_default_by_name("COMPASS_SCALE3", 1);
+            driver->save_dev_id(index);
+            driver->set_rotation(index, ROTATION_NONE);
+
+            // make first compass external
+            driver->set_external(index, true);
+#endif
         }
     }
     return driver;
@@ -170,31 +172,31 @@ void AP_Compass_UAVCAN::handle_mag_msg(const Vector3f &mag)
     accumulate_sample(raw_field, _instance);
 }
 
-void AP_Compass_UAVCAN::handle_magnetic_field(AP_UAVCAN* ap_uavcan, uint8_t node_id, const MagCb &cb)
+void AP_Compass_UAVCAN::handle_magnetic_field(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const uavcan_equipment_ahrs_MagneticFieldStrength& msg)
 {
     WITH_SEMAPHORE(_sem_registry);
 
     Vector3f mag_vector;
-    AP_Compass_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id, 0);
+    AP_Compass_UAVCAN* driver = get_uavcan_backend(ap_uavcan, transfer.source_node_id, 0);
     if (driver != nullptr) {
-        mag_vector[0] = cb.msg->magnetic_field_ga[0];
-        mag_vector[1] = cb.msg->magnetic_field_ga[1];
-        mag_vector[2] = cb.msg->magnetic_field_ga[2];
+        mag_vector[0] = msg.magnetic_field_ga[0];
+        mag_vector[1] = msg.magnetic_field_ga[1];
+        mag_vector[2] = msg.magnetic_field_ga[2];
         driver->handle_mag_msg(mag_vector);
     }
 }
 
-void AP_Compass_UAVCAN::handle_magnetic_field_2(AP_UAVCAN* ap_uavcan, uint8_t node_id, const Mag2Cb &cb)
+void AP_Compass_UAVCAN::handle_magnetic_field_2(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const uavcan_equipment_ahrs_MagneticFieldStrength2 &msg)
 {
     WITH_SEMAPHORE(_sem_registry);
 
     Vector3f mag_vector;
-    uint8_t sensor_id = cb.msg->sensor_id;
-    AP_Compass_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id, sensor_id);
+    uint8_t sensor_id = msg.sensor_id;
+    AP_Compass_UAVCAN* driver = get_uavcan_backend(ap_uavcan, transfer.source_node_id, sensor_id);
     if (driver != nullptr) {
-        mag_vector[0] = cb.msg->magnetic_field_ga[0];
-        mag_vector[1] = cb.msg->magnetic_field_ga[1];
-        mag_vector[2] = cb.msg->magnetic_field_ga[2];
+        mag_vector[0] = msg.magnetic_field_ga[0];
+        mag_vector[1] = msg.magnetic_field_ga[1];
+        mag_vector[2] = msg.magnetic_field_ga[2];
         driver->handle_mag_msg(mag_vector);
     }
 }
@@ -203,5 +205,4 @@ void AP_Compass_UAVCAN::read(void)
 {
     drain_accumulated_samples(_instance);
 }
-
 #endif  // AP_COMPASS_UAVCAN_ENABLED
