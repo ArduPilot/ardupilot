@@ -76,6 +76,9 @@ Plane::Plane(const char *frame_str) :
         launch_accel = 25;
         launch_time = 0.4;
     }
+    if (strstr(frame_str, "-boost")) {
+        have_boost_throttle = true;
+    }
     if (strstr(frame_str, "-tailsitter")) {
         tailsitter = true;
         ground_behavior = GROUND_BEHAVIOR_TAILSITTER;
@@ -318,8 +321,13 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     
     float thrust     = throttle;
 
-    battery_voltage = sitl->batt_voltage - 0.7*throttle;
-    battery_current = (battery_voltage/sitl->batt_voltage)*50.0f*sq(throttle);
+    if (have_boost_throttle) {
+        // optional 2nd boost motor
+        thrust += filtered_servo_range(input, 12);
+    }
+
+    battery_voltage = sitl->batt_voltage - 0.7*thrust;
+    battery_current = (battery_voltage/sitl->batt_voltage)*50.0f*sq(thrust);
 
     if (ice_engine) {
         thrust = icengine.update(input);
