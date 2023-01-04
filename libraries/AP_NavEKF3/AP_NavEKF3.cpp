@@ -864,6 +864,87 @@ bool NavEKF3::InitialiseFilter(void)
     return ret;
 }
 
+bool NavEKF3::started() const
+{
+    return _ekf3_started;
+}
+
+void NavEKF3::reset()
+{
+    if (_ekf3_started) {
+        _ekf3_started = InitialiseFilter();
+    }
+}
+
+bool NavEKF3::initialised() const
+{
+    // initialisation complete 10sec after ekf has started
+    return (_ekf3_started && (AP_HAL::millis() - start_time_ms > AP_AHRS_NAVEKF_SETTLE_TIME_MS));
+}
+
+void NavEKF3::update(void)
+{
+    if (!_ekf3_started) {
+        // wait 1 second for DCM to output a valid tilt error estimate
+        if (start_time_ms == 0) {
+            start_time_ms = AP_HAL::millis();
+        }
+#if !APM_BUILD_TYPE(APM_BUILD_Replay)
+        extern const AP_HAL::HAL& hal;
+        // if we're doing Replay logging then don't allow any data
+        // into the EKF yet.  Don't allow it to block us for long.
+        if (!hal.util->was_watchdog_reset()) {
+            if (AP_HAL::millis() - start_time_ms < 5000) {
+                if (!AP::logger().allow_start_ekf()) {
+                    return;
+                }
+            }
+        }
+#endif
+        if (AP_HAL::millis() - start_time_ms > 1000) {
+            _ekf3_started = InitialiseFilter();
+        }
+    }
+    if (_ekf3_started) {
+        UpdateFilter();
+    }
+}
+
+void NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
+{
+    Vector3f eulers;
+    getRotationBodyToNED(results.dcm_matrix);
+    getEulerAngles(eulers);
+    results.roll_rad  = eulers.x;
+    results.pitch_rad = eulers.y;
+    results.yaw_rad   = eulers.z;
+
+    const auto &_ins = AP::dal().ins();
+
+    // Use the primary EKF to select the primary gyro
+    const int8_t primary_imu = getPrimaryCoreIMUIndex();
+    const uint8_t primary_gyro = primary_imu>=0?primary_imu:_ins.get_primary_gyro();
+    const uint8_t primary_accel = primary_imu>=0?primary_imu:_ins.get_primary_accel();
+
+    // get gyro bias for primary EKF and change sign to give gyro drift
+    // Note sign convention used by EKF is bias = measurement - truth
+    results.gyro_drift.zero();
+    getGyroBias(-1, results.gyro_drift);
+    results.gyro_drift = -results.gyro_drift;
+
+    // use the same IMU as the primary EKF and correct for gyro drift
+    results.gyro_estimate = _ins.get_gyro(primary_gyro) + results.gyro_drift;
+
+    // get 3-axis accel bias festimates for active EKF (this is usually for the primary IMU)
+    Vector3f &abias = results.accel_bias;
+    getAccelBias(-1,abias);
+
+    // use the primary IMU for accel earth frame
+    Vector3f accel = _ins.get_accel(primary_accel);
+    accel -= abias;
+    results.accel_ef = results.dcm_matrix * AP::ahrs().get_rotation_autopilot_body_to_vehicle_body() * accel;
+}
+
 /*
   return true if a new core index has a better score than the current
   core
@@ -1191,11 +1272,13 @@ bool NavEKF3::getPosD(float &posD) const
 }
 
 // return NED velocity in m/s
-void NavEKF3::getVelNED(Vector3f &vel) const
+bool NavEKF3::get_velocity_NED(Vector3f &vel) const
 {
     if (core) {
         core[primary].getVelNED(vel);
+        return true;
     }
+    return false;
 }
 
 // return estimate of true airspeed vector in body frame in m/s
@@ -1252,7 +1335,7 @@ uint8_t NavEKF3::get_active_source_set() const
 }
 
 // reset body axis gyro bias estimates
-void NavEKF3::resetGyroBias(void)
+void NavEKF3::reset_gyro_drift(void)
 {
     AP::dal().log_event3(AP_DAL::Event::resetGyroBias);
 
@@ -1287,7 +1370,7 @@ bool NavEKF3::resetHeightDatum(void)
 
 // return the horizontal speed limit in m/s set by optical flow sensor limits
 // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
-void NavEKF3::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
+void NavEKF3::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {
     if (core) {
         core[primary].getEkfControlLimits(ekfGndSpdLimit, ekfNavVelGainScaler);
@@ -1299,7 +1382,7 @@ void NavEKF3::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainSca
 
 // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
 // returns true if wind state estimation is active
-bool NavEKF3::getWind(Vector3f &wind) const
+bool NavEKF3::wind_estimate(Vector3f &wind) const
 {
     if (core == nullptr) {
         return false;
@@ -1308,23 +1391,27 @@ bool NavEKF3::getWind(Vector3f &wind) const
 }
 
 // return earth magnetic field estimates in measurement units / 1000
-void NavEKF3::getMagNED(Vector3f &magNED) const
+bool NavEKF3::get_mag_field_NED(Vector3f &magNED) const
 {
     if (core) {
         core[primary].getMagNED(magNED);
+        return true;
     }
+    return false;
 }
 
 // return body magnetic field estimates in measurement units / 1000
-void NavEKF3::getMagXYZ(Vector3f &magXYZ) const
+bool NavEKF3::get_mag_field_correction(Vector3f &magXYZ) const
 {
     if (core) {
         core[primary].getMagXYZ(magXYZ);
+        return true;
     }
+    return false;
 }
 
 // return the airspeed sensor in use
-uint8_t NavEKF3::getActiveAirspeed() const
+uint8_t NavEKF3::get_active_airspeed_index() const
 {
     if (core) {
         return core[primary].getActiveAirspeed();
@@ -1335,7 +1422,7 @@ uint8_t NavEKF3::getActiveAirspeed() const
 
 // Return estimated magnetometer offsets
 // Return true if magnetometer offsets are valid
-bool NavEKF3::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
+bool NavEKF3::get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const
 {
     if (!core) {
         return false;
@@ -1356,7 +1443,7 @@ bool NavEKF3::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 // If a calculated location isn't available, return a raw GPS measurement
 // The status will return true if a calculation or raw measurement is available
 // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
-bool NavEKF3::getLLH(Location &loc) const
+bool NavEKF3::get_location(Location &loc) const
 {
     if (!core) {
         return false;
@@ -1367,7 +1454,7 @@ bool NavEKF3::getLLH(Location &loc) const
 // Return the latitude and longitude and height used to set the NED origin
 // All NED positions calculated by the filter are relative to this location
 // Returns false if the origin has not been set
-bool NavEKF3::getOriginLLH(Location &loc) const
+bool NavEKF3::get_origin(Location &loc) const
 {
     if (!core) {
         return false;
@@ -1444,15 +1531,17 @@ void NavEKF3::getQuaternionBodyToNED(int8_t instance, Quaternion &quat) const
 }
 
 // return the quaternions defining the rotation from NED to XYZ (autopilot) axes
-void NavEKF3::getQuaternion(Quaternion &quat) const
+bool NavEKF3::get_quaternion(Quaternion &quat) const
 {
     if (core) {
         core[primary].getQuaternion(quat);
+        return true;
     }
+    return false;
 }
 
 // return the innovations
-bool NavEKF3::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
+bool NavEKF3::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
 {
     if (core == nullptr) {
         return false;
@@ -1462,7 +1551,7 @@ bool NavEKF3::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &m
 }
 
 // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
-bool NavEKF3::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
+bool NavEKF3::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
 {
     if (core == nullptr) {
         return false;
@@ -1793,7 +1882,7 @@ void NavEKF3::getFilterStatus(nav_filter_status &status) const
 }
 
 // send an EKF_STATUS_REPORT message to GCS
-void NavEKF3::send_status_report(GCS_MAVLINK &link) const
+void NavEKF3::send_ekf_status_report(GCS_MAVLINK &link) const
 {
     if (core) {
         core[primary].send_status_report(link);

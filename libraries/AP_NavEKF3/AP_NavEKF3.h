@@ -24,11 +24,12 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_NavEKF/AP_Nav_Common.h>
 #include <AP_NavEKF/AP_NavEKF_Source.h>
+#include <AP_AHRS/AP_AHRS_Backend.h>
 
 class NavEKF3_core;
 class EKFGSF_yaw;
 
-class NavEKF3 {
+class NavEKF3 : public AP_AHRS_Backend {
     friend class NavEKF3_core;
 
 public:
@@ -45,6 +46,12 @@ public:
         return num_cores;
     }
 
+    bool initialised() const override;
+    bool started() const override;
+    void update() override;
+    void get_results(AP_AHRS_Backend::Estimates &results) override;
+    void reset() override;
+
     // Initialise the filter
     bool InitialiseFilter(void);
 
@@ -52,11 +59,11 @@ public:
     void UpdateFilter(void);
 
     // Check basic filter health metrics and return a consolidated health status
-    bool healthy(void) const;
+    bool healthy(void) const override;
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     // requires_position should be true if horizontal position configuration should be checked
-    bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const;
+    bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
 
     // returns the index of the primary core
     // return -1 if no primary core selected
@@ -77,7 +84,7 @@ public:
     bool getPosD(float &posD) const;
 
     // return NED velocity in m/s
-    void getVelNED(Vector3f &vel) const;
+    bool get_velocity_NED(Vector3f &vel) const override;
 
     // return estimate of true airspeed vector in body frame in m/s
     // returns false if estimate is unavailable
@@ -92,6 +99,11 @@ public:
     // but will always be kinematically consistent with the z component of the EKF position state
     float getPosDownDerivative() const;
 
+    bool get_vert_pos_rate(float &velocity) const override {
+        velocity = getPosDownDerivative();
+        return true;
+    }
+
     // return body axis gyro bias estimates in rad/sec for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
     void getGyroBias(int8_t instance, Vector3f &gyroBias) const;
@@ -104,47 +116,47 @@ public:
     uint8_t get_active_source_set() const;
 
     // reset body axis gyro bias estimates
-    void resetGyroBias(void);
+    void reset_gyro_drift(void) override;
 
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
     // Adjusts the EKF origin height so that the EKF height + origin height is the same as before
     // Returns true if the height datum reset has been performed
     // If using a range finder for height no reset is performed and it returns false
-    bool resetHeightDatum(void);
+    bool resetHeightDatum(void) override;
 
     // return the horizontal speed limit in m/s set by optical flow sensor limits
     // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
-    void getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const;
+    void get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const override;
 
     // return the NED wind speed estimates in m/s (positive is air
     // moving in the direction of the axis) returns true if wind state
     // estimation is active
-    bool getWind(Vector3f &wind) const;
+    bool wind_estimate(Vector3f &wind) const override;
 
     // return earth magnetic field estimates in measurement units / 1000
-    void getMagNED(Vector3f &magNED) const;
+    bool get_mag_field_NED(Vector3f &magNED) const override;
 
     // return body magnetic field estimates in measurement units / 1000
-    void getMagXYZ(Vector3f &magXYZ) const;
+    bool get_mag_field_correction(Vector3f &magXYZ) const override;
 
     // return the airspeed sensor in use
-    uint8_t getActiveAirspeed() const;
+    uint8_t get_active_airspeed_index() const;
 
     // Return estimated magnetometer offsets
     // Return true if magnetometer offsets are valid
-    bool getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const;
+    bool get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const override;
 
     // Return the last calculated latitude, longitude and height in WGS-84
     // If a calculated location isn't available, return a raw GPS measurement
     // The status will return true if a calculation or raw measurement is available
     // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
-    bool getLLH(Location &loc) const;
+    bool get_location(Location &loc) const override;
 
     // Return the latitude and longitude and height used to set the NED origin
     // All NED positions calculated by the filter are relative to this location
     // Returns false if the origin has not been set
-    bool getOriginLLH(Location &loc) const;
+    bool get_origin(Location &loc) const override;
 
     // set the latitude and longitude and height used to set the NED origin
     // All NED positions calculated by the filter will be relative to this location
@@ -166,13 +178,13 @@ public:
     void getQuaternionBodyToNED(int8_t instance, Quaternion &quat) const;
 
     // return the quaternions defining the rotation from NED to XYZ (autopilot) axes
-    void getQuaternion(Quaternion &quat) const;
+    bool get_quaternion(Quaternion &quat) const override;
 
     // return the innovations
-    bool getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const;
+    bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const override;
 
     // return the innovation consistency test ratios
-    bool getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
+    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const override;
 
     // get a source's velocity innovations
     // returns true on success and results are placed in innovations and variances arguments
@@ -181,6 +193,10 @@ public:
     // should we use the compass? This is public so it can be used for
     // reporting via ahrs.use_compass()
     bool use_compass(void) const;
+    bool use_compass(void) override {
+        const auto *const_this { this };
+        return const_this->use_compass();
+    };
 
     // write the raw optical flow measurements
     // rawFlowQuality is a measured of quality between 0 and 255, with 255 being the best quality
@@ -283,7 +299,7 @@ public:
     void getFilterStatus(nav_filter_status &status) const;
 
     // send an EKF_STATUS_REPORT message to GCS
-    void send_status_report(class GCS_MAVLINK &link) const;
+    void send_ekf_status_report(class GCS_MAVLINK &link) const override;
 
     // provides the height limit to be observed by the control loops
     // returns false if no height limiting is required
@@ -292,19 +308,19 @@ public:
 
     // return the amount of yaw angle change (in radians) due to the last yaw angle reset or core selection switch
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-    uint32_t getLastYawResetAngle(float &yawAngDelta);
+    uint32_t getLastYawResetAngle(float &yawAngDelta) override;
 
     // return the amount of NE position change due to the last position reset in metres
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosNorthEastReset(Vector2f &posDelta);
+    uint32_t getLastPosNorthEastReset(Vector2f &posDelta) override;
 
     // return the amount of NE velocity change due to the last velocity reset in metres/sec
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastVelNorthEastReset(Vector2f &vel) const;
+    uint32_t getLastVelNorthEastReset(Vector2f &vel) const override;
 
     // return the amount of vertical position change due to the last reset in metres
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosDownReset(float &posDelta);
+    uint32_t getLastPosDownReset(float &posDelta) override;
 
     // set and save the _baroAltNoise parameter
     void set_baro_alt_noise(float noise) { _baroAltNoise.set_and_save(noise); };
@@ -336,10 +352,10 @@ public:
     void Log_Write();
 
     // are we using (aka fusing) a non-compass yaw?
-    bool using_noncompass_for_yaw() const;
+    bool using_noncompass_for_yaw() const override;
 
     // are we using (aka fusing) external nav for yaw?
-    bool using_extnav_for_yaw() const;
+    bool using_extnav_for_yaw() const override;
 
     // check if configured to use GPS for horizontal position estimation
     bool configuredToUseGPSForPosXY(void) const;
@@ -361,6 +377,9 @@ public:
     const EKFGSF_yaw *get_yawEstimator(void) const;
 
 private:
+    bool _ekf3_started;
+    uint32_t start_time_ms;
+
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
     NavEKF3_core *core = nullptr;
