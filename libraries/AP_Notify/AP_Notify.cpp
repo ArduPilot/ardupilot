@@ -348,9 +348,9 @@ void AP_Notify::add_backends(void)
 #endif
                 break;
             case Notify_LED_UAVCAN:
-#if HAL_CANMANAGER_ENABLED
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
                 ADD_BACKEND(new UAVCAN_RGB_LED(0));
-#endif // HAL_CANMANAGER_ENABLED
+#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
                 break;
 
             case Notify_LED_Scripting:
