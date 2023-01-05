@@ -325,6 +325,9 @@ def ap_stlib(bld, **kw):
     for l in kw['ap_libraries']:
         bld.ap_library(l, kw['ap_vehicle'])
 
+    if 'dynamic_source' not in kw:
+        kw['dynamic_source'] = 'modules/DroneCAN/libcanard/dsdlc_generated/src/**.c'
+
     kw['features'] = kw.get('features', []) + ['cxx', 'cxxstlib']
     kw['target'] = kw['name']
     kw['source'] = []

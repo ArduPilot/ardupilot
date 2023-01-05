@@ -443,9 +443,11 @@ def setup_canmgr_build(cfg):
     env = cfg.env
     env.AP_LIBRARIES += [
         'AP_UAVCAN',
-        'modules/uavcan/libuavcan/src/**/*.cpp',
+        'modules/DroneCAN/libcanard/*.c',
         ]
-
+    env.INCLUDES += [
+        cfg.srcnode.find_dir('modules/DroneCAN/libcanard').abspath(),
+        ]
     env.CFLAGS += ['-DHAL_CAN_IFACES=2']
 
     env.DEFINES += [
@@ -453,6 +455,12 @@ def setup_canmgr_build(cfg):
         'UAVCAN_NO_ASSERTIONS=1',
         'UAVCAN_NULLPTR=nullptr'
         ]
+    if not env.AP_PERIPH:
+        env.DEFINES += [
+            'DRONECAN_CXX_WRAPPERS=1',
+            'CANARD_ENABLE_DEADLINE=1',
+            'CANARD_MULTI_IFACE=1'
+            ]
 
     if cfg.env.HAL_CANFD_SUPPORTED:
         env.DEFINES += ['UAVCAN_SUPPORT_CANFD=1']
