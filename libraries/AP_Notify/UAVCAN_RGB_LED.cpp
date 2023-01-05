@@ -17,7 +17,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/system.h>
 
-#if HAL_CANMANAGER_ENABLED
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
 #include "UAVCAN_RGB_LED.h"
 
 #include <AP_UAVCAN/AP_UAVCAN.h>
