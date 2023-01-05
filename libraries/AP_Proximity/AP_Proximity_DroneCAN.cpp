@@ -23,12 +23,8 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <GCS_MAVLink/GCS.h>
 
-#include <ardupilot/equipment/proximity_sensor/Proximity.hpp>
-
 extern const AP_HAL::HAL& hal;
 
-//DroneCAN Frontend Registry Binder ARDUPILOT_EQUIPMENT_PROXIMITY_SENSOR_PROXIMITY
-UC_REGISTRY_BINDER(MeasurementCb, ardupilot::equipment::proximity_sensor::Proximity);
 
 ObjectBuffer_TS<AP_Proximity_DroneCAN::ObstacleItem> AP_Proximity_DroneCAN::items(50);
 
@@ -42,19 +38,8 @@ void AP_Proximity_DroneCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
         return;
     }
 
-    auto* node = ap_uavcan->get_node();
-
-    uavcan::Subscriber<ardupilot::equipment::proximity_sensor::Proximity, MeasurementCb> *measurement_listener;
-    measurement_listener = new uavcan::Subscriber<ardupilot::equipment::proximity_sensor::Proximity, MeasurementCb>(*node);
-    if (measurement_listener == nullptr) {
-        AP_BoardConfig::allocation_error("DroneCAN_PRX");
-    }
-
-    // Register method to handle incoming Proximity measurement
-    const int measurement_listener_res = measurement_listener->start(MeasurementCb(ap_uavcan, &handle_measurement));
-    if (measurement_listener_res < 0) {
-        AP_BoardConfig::allocation_error("DroneCAN Proximity subscriber start problem\n\r");
-        return;
+    if (Canard::allocate_sub_arg_callback(ap_uavcan, &handle_measurement, ap_uavcan->get_driver_index()) == nullptr) {
+        AP_BoardConfig::allocation_error("measurement_sub");
     }
 }
 
@@ -169,20 +154,20 @@ float AP_Proximity_DroneCAN::distance_min() const
 }
 
 //Proximity message handler
-void AP_Proximity_DroneCAN::handle_measurement(AP_UAVCAN* ap_uavcan, uint8_t node_id, const MeasurementCb &cb)
+void AP_Proximity_DroneCAN::handle_measurement(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const ardupilot_equipment_proximity_sensor_Proximity &msg)
 {
     //fetch the matching DroneCAN driver, node id and sensor id backend instance
-    AP_Proximity_DroneCAN* driver = get_uavcan_backend(ap_uavcan, node_id, cb.msg->sensor_id, true);
+    AP_Proximity_DroneCAN* driver = get_uavcan_backend(ap_uavcan, transfer.source_node_id, msg.sensor_id, true);
     if (driver == nullptr) {
         return;
     }
     WITH_SEMAPHORE(driver->_sem);
-    switch (cb.msg->reading_type) {
-        case ardupilot::equipment::proximity_sensor::Proximity::READING_TYPE_GOOD: {
+    switch (msg.reading_type) {
+        case ARDUPILOT_EQUIPMENT_PROXIMITY_SENSOR_PROXIMITY_READING_TYPE_GOOD: {
             //update the states in backend instance
             driver->_last_update_ms = AP_HAL::millis();
             driver->_status = AP_Proximity::Status::Good;
-            const ObstacleItem item = {cb.msg->yaw, cb.msg->pitch, cb.msg->distance};
+            const ObstacleItem item = {msg.yaw, msg.pitch, msg.distance};
 
             if (driver->items.space()) {
                 // ignore reading if no place to put it in the queue
@@ -191,12 +176,12 @@ void AP_Proximity_DroneCAN::handle_measurement(AP_UAVCAN* ap_uavcan, uint8_t nod
             break;
         }
         //Additional states supported by Proximity message
-        case ardupilot::equipment::proximity_sensor::Proximity::READING_TYPE_NOT_CONNECTED: {
+        case ARDUPILOT_EQUIPMENT_PROXIMITY_SENSOR_PROXIMITY_READING_TYPE_NOT_CONNECTED: {
             driver->_last_update_ms = AP_HAL::millis();
             driver->_status = AP_Proximity::Status::NotConnected;
             break;
         }
-        case ardupilot::equipment::proximity_sensor::Proximity::READING_TYPE_NO_DATA: {
+        case ARDUPILOT_EQUIPMENT_PROXIMITY_SENSOR_PROXIMITY_READING_TYPE_NO_DATA: {
             driver->_last_update_ms = AP_HAL::millis();
             driver->_status = AP_Proximity::Status::NoData;
             break;
