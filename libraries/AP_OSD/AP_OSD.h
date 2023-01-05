@@ -72,6 +72,7 @@ public:
     AP_Int8 xpos;
     AP_Int8 ypos;
 
+    AP_OSD_Setting();
     AP_OSD_Setting(bool enabled, uint8_t x, uint8_t y);
 
     // User settable parameters
@@ -183,8 +184,8 @@ private:
     AP_OSD_Setting compass{true, 15, 3};
     AP_OSD_Setting wind{false, 2, 12};
     AP_OSD_Setting aspeed{false, 2, 13};
-    AP_OSD_Setting aspd1{false, 0, 0};
-    AP_OSD_Setting aspd2{false, 0, 0};
+    AP_OSD_Setting aspd1;
+    AP_OSD_Setting aspd2;
     AP_OSD_Setting vspeed{true, 24, 9};
 #if HAL_WITH_ESC_TELEM
     AP_OSD_Setting esc_temp {false, 24, 13};
@@ -193,37 +194,37 @@ private:
 #endif
     AP_OSD_Setting gps_latitude{true, 9, 13};
     AP_OSD_Setting gps_longitude{true, 9, 14};
-    AP_OSD_Setting roll_angle{false, 0, 0};
-    AP_OSD_Setting pitch_angle{false, 0, 0};
-    AP_OSD_Setting temp{false, 0, 0};
+    AP_OSD_Setting roll_angle;
+    AP_OSD_Setting pitch_angle;
+    AP_OSD_Setting temp;
 #if BARO_MAX_INSTANCES > 1
-    AP_OSD_Setting btemp{false, 0, 0};
+    AP_OSD_Setting btemp;
 #endif
-    AP_OSD_Setting hdop{false, 0, 0};
-    AP_OSD_Setting waypoint{false, 0, 0};
-    AP_OSD_Setting xtrack_error{false, 0, 0};
+    AP_OSD_Setting hdop;
+    AP_OSD_Setting waypoint;
+    AP_OSD_Setting xtrack_error;
     AP_OSD_Setting dist{false,22,11};
     AP_OSD_Setting stat{false,0,0};
     AP_OSD_Setting flightime{false, 23, 10};
     AP_OSD_Setting climbeff{false,0,0};
     AP_OSD_Setting eff{false, 22, 10};
-    AP_OSD_Setting atemp{false, 0, 0};
-    AP_OSD_Setting bat2_vlt{false, 0, 0};
-    AP_OSD_Setting bat2used{false, 0, 0};
-    AP_OSD_Setting current2{false, 0, 0};
-    AP_OSD_Setting clk{false, 0, 0};
-    AP_OSD_Setting callsign{false, 0, 0};
-    AP_OSD_Setting vtx_power{false, 0, 0};
+    AP_OSD_Setting atemp;
+    AP_OSD_Setting bat2_vlt;
+    AP_OSD_Setting bat2used;
+    AP_OSD_Setting current2;
+    AP_OSD_Setting clk;
+    AP_OSD_Setting callsign;
+    AP_OSD_Setting vtx_power;
     AP_OSD_Setting hgt_abvterr{false, 23, 7};
     AP_OSD_Setting fence{false, 14, 9};
-    AP_OSD_Setting rngf{false, 0, 0};
+    AP_OSD_Setting rngf;
 #if HAL_PLUSCODE_ENABLE
-    AP_OSD_Setting pluscode{false, 0, 0};
+    AP_OSD_Setting pluscode;
 #endif
     AP_OSD_Setting sidebars{false, 4, 5};
 
     // MSP OSD only
-    AP_OSD_Setting crosshair{false, 0, 0};
+    AP_OSD_Setting crosshair;
     AP_OSD_Setting home_dist{true, 1, 1};
     AP_OSD_Setting home_dir{true, 1, 1};
     AP_OSD_Setting power{true, 1, 1};
@@ -315,9 +316,14 @@ private:
 /*
   class to hold one setting
  */
-class AP_OSD_ParamSetting : public AP_OSD_Setting
+class AP_OSD_ParamSetting
 {
 public:
+
+    AP_Int8 enabled;
+    AP_Int8 xpos;
+    AP_Int8 ypos;
+
     // configured index.
     AP_Int32 _param_group;
     AP_Int16 _param_key;
@@ -351,10 +357,7 @@ public:
 
     static const ParamMetadata _param_metadata[];
 
-#if HAL_GCS_ENABLED
-    AP_OSD_ParamSetting(uint8_t param_number, bool enabled, uint8_t x, uint8_t y, int16_t key, int8_t idx, int32_t group,
-        int8_t type = OSD_PARAM_NONE, float min = 0.0f, float max = 1.0f, float incr = 0.001f);
-#endif
+    AP_OSD_ParamSetting() {};
     AP_OSD_ParamSetting(uint8_t param_number);
     AP_OSD_ParamSetting(const Initializer& initializer);
 
@@ -425,7 +428,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    AP_OSD_ParamSetting params[NUM_PARAMS] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    AP_OSD_ParamSetting params[NUM_PARAMS];
 
     void save_parameters();
 #if OSD_ENABLED
