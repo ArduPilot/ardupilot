@@ -42,7 +42,7 @@ const AP_Param::GroupInfo AP_OSD_ParamSetting::var_info[] = {
     // @Description: Horizontal position on screen
     // @Range: 0 29
     // @User: Standard
-    AP_GROUPINFO("_X", 2, AP_OSD_ParamSetting, xpos, 0),
+    AP_GROUPINFO("_X", 2, AP_OSD_ParamSetting, xpos, 2),
 
     // @Param: _Y
     // @DisplayName: Y position
@@ -236,38 +236,27 @@ const AP_OSD_ParamSetting::ParamMetadata AP_OSD_ParamSetting::_param_metadata[OS
 
 extern const AP_HAL::HAL& hal;
 
-// constructor
-AP_OSD_ParamSetting::AP_OSD_ParamSetting(uint8_t param_number, bool _enabled, uint8_t x, uint8_t y,  int16_t key, int8_t idx, int32_t group, int8_t type, float min, float max, float incr)
-    : AP_OSD_Setting(_enabled, x, y), _param_number(param_number)
-{
-    _param_group.set(group);
-    _param_idx.set(idx);
-    _param_key.set(key);
-    _param_min.set(min);
-    _param_max.set(max);
-    _param_incr.set(incr);
-    _type.set(type);
-}
-
 // default constructor that just sets some sensible defaults that exist on all platforms
 AP_OSD_ParamSetting::AP_OSD_ParamSetting(uint8_t param_number)
-    : AP_OSD_Setting(false, 2, param_number + 1), _param_number(param_number)
+    : _param_number(param_number)
 {
-    _param_min.set(0.0f);
-    _param_max.set(1.0f);
-    _param_incr.set(0.001f);
-    _type.set(OSD_PARAM_NONE);
+    AP_Param::setup_object_defaults(this, var_info);
+
+    ypos.set(param_number + 1);
 }
 
 // construct a setting from a compact static initializer structure
 AP_OSD_ParamSetting::AP_OSD_ParamSetting(const Initializer& initializer)
-    : AP_OSD_ParamSetting(initializer.index)
+    : _param_number(initializer.index)
 {
+    AP_Param::setup_object_defaults(this, var_info);
+
+    enabled.set(true);
+    ypos.set(initializer.index + 1);
     _param_group.set(initializer.token.group_element);
     _param_idx.set(initializer.token.idx);
     _param_key.set(initializer.token.key);
     _type.set(initializer.type);
-    enabled.set(true);
 }
 
 // update the contained parameter
