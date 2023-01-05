@@ -13,6 +13,7 @@ sys.path.insert(0, 'Tools/ardupilotwaf/')
 
 import ardupilotwaf
 import boards
+import shutil
 
 from waflib import Build, ConfigSet, Configure, Context, Utils
 from waflib.Configure import conf
@@ -255,6 +256,9 @@ submodules at specific revisions.
                  help="Enable the dds client to connect with ROS2/DDS"
     )
 
+    g.add_option('--enable-dronecan-tests', action='store_true',
+                 default=False,
+                 help="Enables DroneCAN tests in sitl")
     g = opt.ap_groups['linux']
 
     linux_options = ('--prefix', '--destdir', '--bindir', '--libdir')
@@ -478,6 +482,8 @@ def configure(cfg):
         cfg.load('dronecangen')
     else:
         cfg.load('uavcangen')
+        if not (cfg.options.sitl_32bit and cfg.options.board != 'sitl'):
+            cfg.load('dronecangen')
 
     cfg.env.SUBMODULE_UPDATE = cfg.options.submodule_update
 
@@ -674,6 +680,23 @@ def _build_dynamic_sources(bld):
                 bld.srcnode.find_dir('modules/uavcan/libuavcan/include').abspath()
             ]
         )
+        if (not bld.env.SITL32BIT) and bld.env.BOARD == 'sitl':
+            # remove generated files
+            dronecan_dir = bld.bldnode.make_node('modules/DroneCAN/libcanard/dsdlc_generated/').abspath()
+            if os.path.exists(dronecan_dir):
+                print("Removing DroneCAN generated files")
+                shutil.rmtree(dronecan_dir)
+        else:
+            bld(
+                features='dronecangen',
+                source=bld.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_UAVCAN/dsdl/*', dir=True, src=False),
+                output_dir='modules/DroneCAN/libcanard/dsdlc_generated/',
+                name='dronecan',
+                export_includes=[
+                    bld.bldnode.make_node('modules/DroneCAN/libcanard/dsdlc_generated/include').abspath(),
+                    bld.srcnode.find_dir('modules/DroneCAN/libcanard/').abspath(),
+                ]
+            )
     elif bld.env.AP_PERIPH:
         bld(
             features='dronecangen',
@@ -812,8 +835,6 @@ def build(bld):
     _load_pre_build(bld)
 
     if bld.get_board().with_can:
-        bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['uavcan']
-    if bld.env.AP_PERIPH:
         bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['dronecan']
 
     _build_cmd_tweaks(bld)
