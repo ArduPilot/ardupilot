@@ -421,10 +421,6 @@ private:
     uint32_t _last_internal_errors;  // backup of AP_InternalError::internal_errors bitmask
 
     AP_CustomRotations custom_rotations;
-
-#if defined(HAL_GPIO_PIN_WDO)
-    void external_watchdog_pat();
-#endif
 };
 
 namespace AP {

@@ -754,7 +754,27 @@ void Scheduler::watchdog_pat(void)
 {
     stm32_watchdog_pat();
     last_watchdog_pat_ms = AP_HAL::millis();
+#if defined(HAL_GPIO_PIN_WDO)
+    external_watchdog_pat();
+#endif
 }
+
+#if defined(HAL_GPIO_PIN_WDO)
+void Scheduler::external_watchdog_pat(void)
+{
+    uint32_t now = AP_HAL::millis();
+    if ((now - _ext_watchdog_ms) >= 50) {
+        _ext_watchdog_ms = now;
+        if (_ext_watchdog_sw == true) {
+            palSetLine(HAL_GPIO_PIN_WDO);
+            _ext_watchdog_sw = false;
+        } else {
+            palClearLine(HAL_GPIO_PIN_WDO);
+            _ext_watchdog_sw = true;
+        }
+    }
+}
+#endif
 
 #if CH_DBG_ENABLE_STACK_CHECK == TRUE
 /*
