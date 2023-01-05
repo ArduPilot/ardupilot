@@ -37,7 +37,6 @@ class AP_AHRS_View;
 
 #define AP_AHRS_NAVEKF_SETTLE_TIME_MS 20000     // time in milliseconds the ekf needs to settle after being started
 
-#include <AP_NMEA_Output/AP_NMEA_Output.h>
 
 // fwd declare GSF estimator
 class EKFGSF_yaw;
@@ -823,10 +822,6 @@ private:
     void Write_AHRS2(void) const;
     // write POS (canonical vehicle position) message out:
     void Write_POS(void) const;
-
-#if HAL_NMEA_OUTPUT_ENABLED
-    class AP_NMEA_Output* _nmea_out;
-#endif
 };
 
 namespace AP {
