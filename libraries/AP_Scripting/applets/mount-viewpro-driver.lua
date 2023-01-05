@@ -74,6 +74,11 @@ local cam_rec_video = false             -- last record video state.  used to det
 local cam_zoom_step = 0                 -- last zoom step state.  zoom out = -1, hold = 0, zoom in = 1
 local cam_focus_step = 0                -- last focus step state.  focus in = -1, focus hold = 0, focus out = 1
 
+-- debug variables
+local last_print_ms = 0
+local bytes_read = 0
+local bytes_written = 0
+
 -- find and initialise serial port connected to gimbal
 function init()
   uart = serial:find_serial(0)    -- 1st instance of SERIALx_PROTOCOL = 28 (Scripting)
@@ -90,6 +95,8 @@ end
 function send_msg(msg)
   for i=1,#msg do
     uart:write(msg[i])
+    -- debug
+    bytes_written = bytes_written + 1
   end
 end
 
@@ -97,6 +104,9 @@ end
 function read_incoming_packets()
   local n_bytes = uart:available()
   while n_bytes > 0 do
+    -- debug
+    bytes_read = bytes_read + 1
+
     n_bytes = n_bytes - 1
     b = uart:read()
 
@@ -173,6 +183,9 @@ function write_byte(b, checksum)
   end
   local byte_to_write = b & 0xFF
   uart:write(byte_to_write)
+
+  -- debug
+  bytes_written = bytes_written + 1
 
   return (checksum + byte_to_write) & 0xFF
 end
@@ -336,6 +349,12 @@ function update()
   if not initialised then
     init()
     return update, INIT_INTERVAL_MS
+  end
+
+  -- debug
+  if now_ms - last_print_ms > 5000 then
+    last_print_ms = now_ms
+    gcs:send_text(6, string.format("ViewPro: read:%u written:%u", bytes_read, bytes_written)) -- MAV_SEVERITY_INFO
   end
 
   -- request gimbal attitude
