@@ -356,3 +356,15 @@ void gcs_out_of_space_to_send(mavlink_channel_t chan)
 {
     gcs().chan(chan)->out_of_space_to_send();
 }
+
+/*
+  check there is enough space for a message
+ */
+bool GCS_MAVLINK::check_payload_size(uint16_t max_payload_len)
+{
+    if (txspace() < unsigned(packet_overhead()+max_payload_len)) {
+        gcs_out_of_space_to_send(chan);
+        return false;
+    }
+    return true;
+}
