@@ -42,6 +42,23 @@ public:
     void start() override;
     bool update() override;
 
+    enum reg_scha63t {
+        S_SUM       = 0x0E,
+        R_S1        = 0x10,
+        A_S1        = 0x12,
+        C_S1        = 0x14,
+        C_S2        = 0x15,
+        G_FILT_DYN  = 0x16,
+        RESCTRL     = 0x18,
+        MODE        = 0x19,
+        A_FILT_DYN  = 0x1A,
+        X_1C        = 0x1C,
+        X_1D        = 0x1D,
+        X_1E        = 0x1E,
+        SEL_BANK    = 0x1F,
+        SET_EOI     = 0x20,
+    };
+
 private:
     AP_InertialSensor_SCHA63T(AP_InertialSensor &imu,
                               AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
@@ -60,9 +77,10 @@ private:
     void read_fifo_gyro();
 
     int16_t gyro_x;
-    bool RegisterRead(int tp, uint8_t reg, uint8_t* val);
-    bool RegisterWrite(int tp, uint8_t reg, uint8_t val);
-    unsigned char CalcTblCrc( unsigned char	*ptr, short	nLen);
+    bool RegisterRead(int tp, reg_scha63t reg, uint8_t* val);
+    bool RegisterWrite(int tp, reg_scha63t reg, uint8_t val);
+    void set_temperature(uint8_t instance, uint8_t temper1, uint8_t temper2);
+    uint8_t CalcTblCrc(uint8_t* ptr, short nLen);
 
     AP_HAL::OwnPtr<AP_HAL::Device> dev_accel;
     AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro;
