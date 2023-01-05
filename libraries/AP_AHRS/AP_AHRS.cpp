@@ -236,10 +236,6 @@ void AP_AHRS::init()
     // init backends
     dcm.init();
 
-#if HAL_NMEA_OUTPUT_ENABLED
-    _nmea_out = AP_NMEA_Output::probe();
-#endif
-
 #if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
     // convert to new custom rotaton
     // PARAMETER_CONVERSION - Added: Nov-2021
@@ -389,13 +385,6 @@ void AP_AHRS::update(bool skip_ins_update)
 
     // update AOA and SSA
     update_AOA_SSA();
-
-#if HAL_NMEA_OUTPUT_ENABLED
-    // update NMEA output
-    if (_nmea_out != nullptr) {
-        _nmea_out->update();
-    }
-#endif
 
     EKFType active = active_EKF_type();
     if (active != last_active_ekf_type) {
