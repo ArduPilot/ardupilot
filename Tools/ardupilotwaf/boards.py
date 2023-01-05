@@ -429,15 +429,26 @@ class Board:
             ]
 
         if self.with_can and not cfg.env.AP_PERIPH:
-            env.AP_LIBRARIES += [
-                'AP_UAVCAN',
-                'modules/uavcan/libuavcan/src/**/*.cpp'
-                ]
+            if not cfg.env.SITL32BIT and cfg.env.BOARD == 'sitl':
+                env.DEFINES.update(
+                    HAL_ENABLE_LIBUAVCAN_DRIVERS = 0
+                )
+            else:
+                env.AP_LIBRARIES += [
+                    'AP_UAVCAN',
+                    'modules/DroneCAN/libcanard/*.c',
+                    ]
+            if cfg.options.enable_dronecan_tests:
+                env.DEFINES.update(
+                    AP_TEST_DRONECAN_DRIVERS = 1
+                )
 
             env.DEFINES.update(
                 UAVCAN_CPP_VERSION = 'UAVCAN_CPP03',
                 UAVCAN_NO_ASSERTIONS = 1,
-                UAVCAN_NULLPTR = 'nullptr'
+                UAVCAN_NULLPTR = 'nullptr',
+                DRONECAN_CXX_WRAPPERS = 1,
+                CANARD_ENABLE_DEADLINE = 1,
             )
 
 
@@ -638,6 +649,9 @@ class sitl(Board):
             cfg.define('HAL_NUM_CAN_IFACES', 2)
             cfg.define('UAVCAN_EXCEPTIONS', 0)
             cfg.define('UAVCAN_SUPPORT_CANFD', 1)
+            env.DEFINES.update(CANARD_MULTI_IFACE=1,
+                               CANARD_IFACE_ALL = 0x3,
+                                CANARD_ENABLE_CANFD = 1)
 
         env.CXXFLAGS += [
             '-Werror=float-equal'
@@ -1069,16 +1083,13 @@ class chibios(Board):
             ('10','2','1'),
         ]
 
-        if cfg.env.AP_PERIPH:
-            if cfg.env.HAL_CANFD_SUPPORTED:
-                env.DEFINES.update(CANARD_ENABLE_CANFD=1)
-            else:
-                env.DEFINES.update(CANARD_ENABLE_TAO_OPTION=1)
-            if not cfg.options.bootloader:
-                if int(cfg.env.HAL_NUM_CAN_IFACES) > 1:
-                    env.DEFINES.update(CANARD_MULTI_IFACE=1)
-                else:
-                    env.DEFINES.update(CANARD_MULTI_IFACE=0)
+        if cfg.env.HAL_CANFD_SUPPORTED:
+            env.DEFINES.update(CANARD_ENABLE_CANFD=1)
+        else:
+            env.DEFINES.update(CANARD_ENABLE_TAO_OPTION=1)
+        if not cfg.options.bootloader and cfg.env.HAL_NUM_CAN_IFACES:
+            if int(cfg.env.HAL_NUM_CAN_IFACES) >= 1:
+                env.DEFINES.update(CANARD_IFACE_ALL=(1<<int(cfg.env.HAL_NUM_CAN_IFACES))-1)
         if cfg.options.Werror or cfg.env.CC_VERSION in gcc_whitelist:
             cfg.msg("Enabling -Werror", "yes")
             if '-Werror' not in env.CXXFLAGS:

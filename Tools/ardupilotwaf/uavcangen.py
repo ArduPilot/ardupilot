@@ -19,7 +19,7 @@ class uavcangen(Task.Task):
         python = self.env.get_flat('PYTHON')
         out = self.env.get_flat('OUTPUT_DIR')
         src = self.env.get_flat('SRC')
-        dsdlc = self.env.get_flat("DSDL_COMPILER")
+        dsdlc = self.env.get_flat("UC_DSDL_COMPILER")
 
         ret = self.exec_command(['{}'.format(python),
                                  '{}'.format(dsdlc),
@@ -71,6 +71,6 @@ def configure(cfg):
     cfg.check_python_version(minver=(2,7,0))
 
     env = cfg.env
-    env.DSDL_COMPILER_DIR = cfg.srcnode.make_node('modules/uavcan/libuavcan/dsdl_compiler').abspath()
-    env.DSDL_COMPILER = env.DSDL_COMPILER_DIR + '/libuavcan_dsdlc'
-    cfg.msg('DSDL compiler', env.DSDL_COMPILER)
+    env.UC_DSDL_COMPILER_DIR = cfg.srcnode.make_node('modules/uavcan/libuavcan/dsdl_compiler').abspath()
+    env.UC_DSDL_COMPILER = env.UC_DSDL_COMPILER_DIR + '/libuavcan_dsdlc'
+    cfg.msg('UC_DSDL compiler', env.UC_DSDL_COMPILER)
