@@ -204,7 +204,7 @@ def wsl2_host_ip():
     if not under_wsl2():
         return None
 
-    pipe = subprocess.Popen("grep -m 1 nameserver /etc/resolv.conf | awk '{print $2}'",
+    pipe = subprocess.Popen("route -n | grep eth0 | grep '^0[.]0[.]0[.]0'  | tr -s ' ' | cut -f 2 -d ' '",
                             shell=True,
                             stdout=subprocess.PIPE)
     output_lines = pipe.stdout.read().decode('utf-8').strip(' \r\n')
