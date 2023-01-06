@@ -250,15 +250,16 @@ fi
 
 if maybe_prompt_user "Add ardupilot_gazebo to your home folder [N/y]?" ; then
     if [ ! -d $AP_GZ_ROOT ]; then
-        git clone https://github.com/khancyr/ardupilot_gazebo
+        sudo apt install libgz-sim7-dev rapidjson-dev
+        git clone https://github.com/ArduPilot/ardupilot_gazebo
         pushd $AP_GZ_ROOT
-        mkdir build
-        pushd build
-        cmake ..
+        mkdir build && pushd build
+        cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo
         make -j4
-        sudo make install
         popd
         popd
+        echo 'export GZ_SIM_SYSTEM_PLUGIN_PATH=$AP_GZ_ROOT/build:${GZ_SIM_SYSTEM_PLUGIN_PATH}' >> ~/.bashrc
+        echo 'export GZ_SIM_RESOURCE_PATH=$AP_GZ_ROOT/models:$AP_GZ_ROOT/worlds:${GZ_SIM_RESOURCE_PATH}' >> ~/.bashrc
     else
         heading "${red}ardupilot_gazebo already exists, skipping...${reset}"
     fi
