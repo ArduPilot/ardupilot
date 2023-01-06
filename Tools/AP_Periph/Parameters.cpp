@@ -532,10 +532,8 @@ void AP_Periph_FW::load_parameters(void)
 {
     AP_Param::setup_sketch_defaults();
 
-    if (!AP_Param::check_var_info()) {
-        hal.console->printf("Bad parameter table\n");
-        AP_HAL::panic("Bad parameter table");
-    }
+    AP_Param::check_var_info();
+
     if (!g.format_version.load() ||
         g.format_version != Parameters::k_format_version) {
         // erase all parameters
