@@ -272,6 +272,9 @@ public:
     // Return angular velocity in radians used in the angular velocity controller
     Vector3f rate_bf_targets() const { return _ang_vel_body + _sysid_ang_vel_body; }
 
+    // return the angular velocity of the target (setpoint) attitude rad/s
+    const Vector3f& get_rate_ef_targets() const { return _euler_rate_target; }
+
     // Enable or disable body-frame feed forward
     void bf_feedforward(bool enable_or_disable) { _rate_bf_ff_enabled.set(enable_or_disable); }
 
