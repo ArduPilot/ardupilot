@@ -4,6 +4,7 @@ set -e
 # set -x
 
 ROS_WS_ROOT=$HOME/ardupilot-ws
+AP_GZ_ROOT=$HOME/ardupilot_gazebo
 
 red=`tput setaf 1`
 green=`tput setaf 2`
@@ -244,6 +245,26 @@ if maybe_prompt_user "Add ardupilot-ws to your home folder [N/y]?" ; then
     
 else
     echo "Skipping adding ardupilot_ws to your home folder."
+fi
+
+
+if maybe_prompt_user "Add ardupilot_gazebo to your home folder [N/y]?" ; then
+    if [ ! -d $AP_GZ_ROOT ]; then
+        git clone https://github.com/khancyr/ardupilot_gazebo
+        pushd $AP_GZ_ROOT
+        mkdir build
+        pushd build
+        cmake ..
+        make -j4
+        sudo make install
+        popd
+        popd
+    else
+        heading "${red}ardupilot_gazebo already exists, skipping...${reset}"
+    fi
+    
+else
+    echo "Skipping adding ardupilot_gazebo to your home folder."
 fi
 
 heading "${green}Adding setup.bash, ROS_MASTER_URI and ROS_HOSTNAME to .bashrc ${reset}"
