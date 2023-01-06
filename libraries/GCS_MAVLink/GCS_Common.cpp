@@ -5359,11 +5359,11 @@ void GCS_MAVLINK::send_autopilot_state_for_gimbal_device() const
         vel.zero();
     }
 
-    // get vehicle body-frame rotation rate targets
-    Vector3f rate_bf_targets;
+    // get vehicle earth-frame rotation rate targets
+    Vector3f rate_ef_targets;
     const AP_Vehicle *vehicle = AP::vehicle();
     if (vehicle != nullptr) {
-        vehicle->get_rate_bf_targets(rate_bf_targets);
+        vehicle->get_rate_ef_targets(rate_ef_targets);
     }
 
     // get estimator flags
@@ -5384,7 +5384,7 @@ void GCS_MAVLINK::send_autopilot_state_for_gimbal_device() const
         vel.y,  // y speed in NED (m/s)
         vel.z,  // z speed in NED (m/s)
         0,      // velocity estimated delay in micros
-        rate_bf_targets.z,// feed forward angular velocity z
+        rate_ef_targets.z,  // feed forward angular velocity z
         est_status_flags,   // estimator status
         0);     // landed_state (see MAV_LANDED_STATE)
 }
