@@ -90,9 +90,8 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
 
 void ReplayVehicle::load_parameters(void)
 {
-    if (!AP_Param::check_var_info()) {
-        AP_HAL::panic("Bad parameter table");
-    }
+    AP_Param::check_var_info();
+
     StorageManager::erase();
     AP_Param::erase_all();
     // Load all auto-loaded EEPROM variables - also registers thread
