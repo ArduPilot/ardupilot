@@ -145,6 +145,9 @@ void AP_Vehicle::setup()
     check_firmware_print();
 #endif
 
+    // validate the static parameter table, then load persistent
+    // values from storage:
+    AP_Param::check_var_info();
     load_parameters();
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
