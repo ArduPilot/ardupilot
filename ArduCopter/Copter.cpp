@@ -761,10 +761,15 @@ bool Copter::get_wp_crosstrack_error_m(float &xtrack_error) const
     return true;
 }
 
-// get the target body-frame angular velocities in rad/s (Z-axis component used by some gimbals)
-bool Copter::get_rate_bf_targets(Vector3f& rate_bf_targets) const
+// get the target earth-frame angular velocities in rad/s (Z-axis component used by some gimbals)
+bool Copter::get_rate_ef_targets(Vector3f& rate_ef_targets) const
 {
-    rate_bf_targets = attitude_control->rate_bf_targets();
+    // always returns zero vector if landed or disarmed
+    if (copter.ap.land_complete) {
+        rate_ef_targets.zero();
+    } else {
+        rate_ef_targets = attitude_control->get_rate_ef_targets();
+    }
     return true;
 }
 
