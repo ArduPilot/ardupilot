@@ -3,6 +3,9 @@
 
   This protocol only allows for one ESC per UART RX line, so using a
   CAN node per ESC works well.
+
+  See https://github.com/dgatf/msrc#9-annex
+
  */
 #include "AP_ESCSerialTelem.h"
 #include <AP_HAL/utility/sparse-endian.h>
@@ -10,6 +13,9 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 
 #if AP_ESC_SERIAL_TELEM_ENABLED
+
+#include <GCS_MAVLink/GCS.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -33,7 +39,18 @@ void AP_ESCSerialTelem::init(AP_HAL::UARTDriver *_uart)
  */
 bool AP_ESCSerialTelem::update()
 {
+    uint32_t last_debug_ms = 0;
+    bool do_debug = false;
+    const uint32_t now_ms = AP_HAL::millis();;
+    if (now_ms - last_debug_ms > 5) {
+        do_debug = true;For
+        last_debug_ms = now_ms;
+    }
+
     uint32_t n = uart->available();
+    if (do_debug) {
+        gcs().send_text(MAV_SEVERITY_INFO, "%d bytes available", (signed)n);
+    }
     if (n == 0) {
         return false;
     }
@@ -48,10 +65,10 @@ bool AP_ESCSerialTelem::update()
     if (n > 500) {
         n = 500;
     }
-    if (len == 0 && !frame_gap) {
-        uart->discard_input();
-        return false;
-    }
+    // if (len == 0 && !frame_gap) {
+    //     uart->discard_input();
+    //     return false;
+    // }
 
     if (frame_gap) {
         len = 0;
@@ -61,6 +78,16 @@ bool AP_ESCSerialTelem::update()
 
     while (n--) {
         uint8_t b = uart->read();
+
+        static int log_fd;
+        if (log_fd == 0 && log_fd != -1 && AP_HAL::millis() > 2000) {
+            log_fd = AP::FS().open("esc.log", O_WRONLY|O_CREAT|O_TRUNC);
+        }
+        if (log_fd != -1) {
+            AP::FS().write(log_fd, &b, 1);
+            AP::FS().fsync(log_fd);
+        }
+
         //hal.console->printf("t=%u 0x%02x\n", now, b);
         if (len == 0 && b != TELEM_HEADER) {
             continue;
