@@ -674,11 +674,6 @@ const AP_Param::ConversionInfo conversion_table[] = {
 
 void Sub::load_parameters()
 {
-    if (!AP_Param::check_var_info()) {
-        hal.console->printf("Bad var table\n");
-        AP_HAL::panic("Bad var table");
-    }
-
     hal.util->set_soft_armed(false);
 
     if (!g.format_version.load() ||
