@@ -493,7 +493,7 @@ public:
     float                   cast_to_float(enum ap_var_type type) const;
 
     // check var table for consistency
-    static bool             check_var_info(void);
+    static void             check_var_info(void);
 
     // return true if the parameter is configured
     bool configured(void) const;
@@ -617,7 +617,7 @@ private:
 #endif
 
 
-    static bool                 check_group_info(const struct GroupInfo *group_info, uint16_t *total_size, 
+    static void                 check_group_info(const struct GroupInfo *group_info, uint16_t *total_size, 
                                                  uint8_t max_bits, uint8_t prefix_length);
     static bool                 duplicate_key(uint16_t vindex, uint16_t key);
 

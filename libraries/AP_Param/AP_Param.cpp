@@ -49,8 +49,10 @@ AP_Param *AP_Param::_singleton;
 #define ENABLE_DEBUG 0
 
 #if ENABLE_DEBUG
+# define FATAL(fmt, args ...) AP_HAL::panic(fmt, args);
  # define Debug(fmt, args ...)  do {::printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
+ # define FATAL(fmt, args ...) AP_HAL::panic("Bad parameter table");
  # define Debug(fmt, args ...)
 #endif
 
@@ -208,7 +210,7 @@ bool AP_Param::check_frame_type(uint16_t flags)
 }
 
 // validate a group info table
-bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
+void AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
                                 uint16_t *                          total_size,
                                 uint8_t                             group_shift,
                                 uint8_t                             prefix_length)
@@ -220,45 +222,37 @@ bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
          i++) {
         uint8_t idx = group_info[i].idx;
         if (idx >= (1<<_group_level_shift)) {
-            Debug("idx too large (%u) in %s", idx, group_info[i].name);
-            return false;
+            FATAL("idx too large (%u) in %s", idx, group_info[i].name);
         }
         if (group_shift != 0 && idx == 0) {
             // treat idx 0 as 63 for duplicates. See group_id()
             idx = 63;
         }
         if (used_mask & (1ULL<<idx)) {
-            Debug("Duplicate group idx %u for %s", idx, group_info[i].name);
-            return false;
+            FATAL("Duplicate group idx %u for %s", idx, group_info[i].name);
         }
         used_mask |= (1ULL<<idx);
         if (type == AP_PARAM_GROUP) {
             // a nested group
             if (group_shift + _group_level_shift >= _group_bits) {
-                Debug("double group nesting in %s", group_info[i].name);
-                return false;
+                FATAL("double group nesting in %s", group_info[i].name);
             }
             const struct GroupInfo *ginfo = get_group_info(group_info[i]);
             if (ginfo == nullptr) {
                 continue;
             }
-            if (!check_group_info(ginfo, total_size, group_shift + _group_level_shift, prefix_length + strlen(group_info[i].name))) {
-                return false;
-            }
+            check_group_info(ginfo, total_size, group_shift + _group_level_shift, prefix_length + strlen(group_info[i].name));
             continue;
         }
         uint8_t size = type_size((enum ap_var_type)type);
         if (size == 0) {
-            Debug("invalid type in %s", group_info[i].name);
-            return false;
+            FATAL("invalid type in %s", group_info[i].name);
         }
         if (prefix_length + strlen(group_info[i].name) > 16) {
-            Debug("suffix is too long in %s", group_info[i].name);
-            return false;
+            FATAL("suffix is too long in %s", group_info[i].name);
         }
         (*total_size) += size + sizeof(struct Param_header);
     }
-    return true;
 }
 
 // check for duplicate key values
@@ -297,7 +291,7 @@ const struct AP_Param::GroupInfo *AP_Param::get_group_info(const struct Info &in
 }
 
 // validate the _var_info[] table
-bool AP_Param::check_var_info(void)
+void AP_Param::check_var_info(void)
 {
     uint16_t total_size = sizeof(struct EEPROM_header);
 
@@ -307,39 +301,33 @@ bool AP_Param::check_var_info(void)
         uint16_t key = info.key;
         if (type == AP_PARAM_GROUP) {
             if (i == 0) {
-                // first element can't be a group, for first() call
-                return false;
+                FATAL("first element can't be a group, for first() call");
             }
             const struct GroupInfo *group_info = get_group_info(info);
             if (group_info == nullptr) {
                 continue;
             }
-            if (!check_group_info(group_info, &total_size, 0, strlen(info.name))) {
-                return false;
-            }
+            check_group_info(group_info, &total_size, 0, strlen(info.name));
         } else {
             uint8_t size = type_size((enum ap_var_type)type);
             if (size == 0) {
                 // not a valid type - the top level list can't contain
                 // AP_PARAM_NONE
-                return false;
+                FATAL("AP_PARAM_NONE at top level");
             }
             total_size += size + sizeof(struct Param_header);
         }
         if (duplicate_key(i, key)) {
-            return false;
+            FATAL("duplicate key");
         }
         if (type != AP_PARAM_GROUP && (info.flags & AP_PARAM_FLAG_POINTER)) {
-            // only groups can be pointers
-            return false;
+            FATAL("only groups can be pointers");
         }
     }
 
     // we no longer check if total_size is larger than _eeprom_size,
     // as we allow for more variables than could fit, relying on not
     // saving default values
-
-    return true;
 }
 
 
