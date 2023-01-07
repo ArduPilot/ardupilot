@@ -12,8 +12,6 @@ except Exception:
 # Emit docs in a RST format
 class RSTEmit(Emit):
     def blurb(self):
-        if self.sitl:
-            return """SITL parameters"""
         return """This is a complete list of the parameters which can be set (e.g. via the MAVLink protocol) to control vehicle behaviour. They are stored in persistent storage on the vehicle.
 
 This list is automatically generated from the latest ardupilot source code, and so may contain parameters which are not yet in the stable released versions of the code.
@@ -30,10 +28,7 @@ This list is automatically generated from the latest ardupilot source code, and 
         self.f = open(self.output_fname(), mode='w')
         self.spacer = re.compile("^", re.MULTILINE)
         self.rstescape = re.compile("([^a-zA-Z0-9\n 	])")
-        if self.sitl:
-            parameterlisttype = "SITL Parameter List"
-        else:
-            parameterlisttype = "Complete Parameter List"
+        parameterlisttype = "Complete Parameter List"
         parameterlisttype += "\n" + "=" * len(parameterlisttype)
         self.preamble = """.. Dynamically generated list of documented parameters
 .. This page was generated using {toolname}
