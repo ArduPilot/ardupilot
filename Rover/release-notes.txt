@@ -1,5 +1,19 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.3.0-beta7 09-Jan-2023
+Changes from 4.3.0-beta6
+1) Autopilot related changes
+    a) AIRLink LTE module enable pin added
+    b) CUAV Nora/Nora+ bdshot firmware (allows Bi-directional DShot)
+    c) CubeOrange, CubeYellow gets fast reset of ICM20602
+    d) PixPilot-V6
+2) Bug fixes
+    a) Analog rangefinder GPIO pin arming check fixed
+    b) Arming check of AHRS/EKF vs GPS location disabled if GPS disabled
+    c) Servo gimbal yaw jump to opposite side fixed
+    d) Siyi A8 gimbal driver's record video feature fixed
+    e) SToRM32 serial gimbal driver actual angle reporting fixed (pitch and yaw angle signs were reversed)
+------------------------------------------------------------------
 Rover 4.3.0-beta6 10-Dec-2022
 Changes from 4.3.0-beta5
 1) Arming check that main loop is running at configured speed (e.g. SCHED_LOOP_RATE)
