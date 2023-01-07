@@ -37,11 +37,6 @@ parser.add_argument("--format",
                     default='all',
                     choices=['all', 'html', 'rst', 'rstlatexpdf', 'wiki', 'xml', 'json', 'edn', 'md', 'xml_mp'],
                     help="what output format to use")
-parser.add_argument("--sitl",
-                    dest='emit_sitl',
-                    action='store_true',
-                    default=False,
-                    help="true to only emit sitl parameters, false to not emit sitl parameters")
 
 args = parser.parse_args()
 
@@ -163,8 +158,7 @@ def process_vehicle(vehicle):
             libraries.append(lib)
 
     param_matches = []
-    if not args.emit_sitl:
-        param_matches = prog_param.findall(p_text)
+    param_matches = prog_param.findall(p_text)
 
     for param_match in param_matches:
         (only_vehicles, param_name, field_text) = (param_match[0],
@@ -212,11 +206,6 @@ def process_vehicle(vehicle):
 process_vehicle(vehicle)
 
 debug("Found %u documented libraries" % len(libraries))
-
-if args.emit_sitl:
-    libraries = filter(lambda x : x.name == 'SIM_', libraries)
-else:
-    libraries = filter(lambda x : x.name != 'SIM_', libraries)
 
 libraries = list(libraries)
 
@@ -293,7 +282,7 @@ def process_library(vehicle, library, pathprefix=None):
             seen_values_or_bitmask_for_other_vehicle = False
             for field in fields:
                 only_for_vehicles = field[1].split(",")
-                only_for_vehicles = [x.rstrip().lstrip() for x in only_for_vehicles]
+                only_for_vehicles = [some_vehicle.rstrip().lstrip() for some_vehicle in only_for_vehicles]
                 delta = set(only_for_vehicles) - set(truename_map.values())
                 if len(delta):
                     error("Unknown vehicles (%s)" % delta)
@@ -593,16 +582,11 @@ for emitter_name in all_emitters.keys():
     if args.output_format == 'all' or args.output_format == emitter_name:
         emitters_to_use.append(emitter_name)
 
-if args.emit_sitl:
-    # only generate rst for SITL for now:
-    emitters_to_use = ['rst']
-
 # actually invoke each emitter:
 for emitter_name in emitters_to_use:
-    emit = all_emitters[emitter_name](sitl=args.emit_sitl)
+    emit = all_emitters[emitter_name]()
 
-    if not args.emit_sitl:
-        emit.emit(vehicle)
+    emit.emit(vehicle)
 
     emit.start_libraries()
 
