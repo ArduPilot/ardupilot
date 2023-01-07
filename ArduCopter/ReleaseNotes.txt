@@ -1,5 +1,25 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.3.3-rc1 09-Jan-2023
+Changes from 4.3.2
+1) Autopilot related changes
+    a) AIRLink LTE module enable pin added
+    b) CUAV Nora/Nora+ bdshot firmware (allows Bi-directional DShot)
+    c) CubeOrange, CubeYellow gets fast reset of ICM20602
+    d) PixPilot-V6
+2) Attitude and Navigation controllers use real-time dt (better handles variable or slow main loop)
+3) Bug fixes
+    a) Analog rangefinder GPIO pin arming check fixed
+    b) Arming check of AHRS/EKF vs GPS location disabled if GPS disabled
+    c) Position Controller limit handling improved to avoid overshooting and hard landings
+    d) PSC_ANGLE_MAX param reduction causing WPNAV_ACCEL to be set too low fixed
+    e) Servo gimbal yaw jump to opposite side fixed
+    f) Siyi A8 gimbal driver's record video feature fixed
+    g) SToRM32 serial gimbal driver actual angle reporting fixed (pitch and yaw angle signs were reversed)
+    h) Takeoff in Auto, Guided fixed when target altitude is current altitude
+    i) Takeoff in Auto handles baro drift before takeoff
+    j) Takeoff twitch due to velocity integrator init bug fixed
+------------------------------------------------------------------
 Copter 4.3.2 23-Dec-2022
 Changes from 4.3.2-rc1
 1) Reverted arming check that main loop is running at configured speed (e.g. SCHED_LOOP_RATE)
