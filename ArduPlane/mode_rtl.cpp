@@ -99,34 +99,28 @@ void ModeRTL::navigate()
     }
 #endif
 
-    if (plane.g.rtl_autoland == RtlAutoland::RTL_THEN_DO_LAND_START &&
-        !plane.auto_state.checked_for_autoland &&
-        plane.reached_loiter_target() && 
-        labs(plane.altitude_error_cm) < 1000) {
-        // we've reached the RTL point, see if we have a landing sequence
-        if (plane.mission.jump_to_landing_sequence()) {
-            // switch from RTL -> AUTO
-            plane.mission.set_force_resume(true);
-            plane.set_mode(plane.mode_auto, ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND);
-        }
+    if (!plane.auto_state.checked_for_autoland) {
+        if ((plane.g.rtl_autoland == RtlAutoland::RTL_IMMEDIATE_DO_LAND_START) ||
+            (plane.g.rtl_autoland == RtlAutoland::RTL_THEN_DO_LAND_START &&
+            plane.reached_loiter_target() && 
+            labs(plane.altitude_error_cm) < 1000))
+            {
+                // we've reached the RTL point, see if we have a landing sequence
+                if (plane.mission.jump_to_landing_sequence()) {
+                    // switch from RTL -> AUTO
+                    plane.mission.set_force_resume(true);
+                    if (plane.set_mode(plane.mode_auto, ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND)) {
+                        // return here so we don't change the radius and don't run the rtl update_loiter()
+                        return;
+                    }
+                }
 
-        // prevent running the expensive jump_to_landing_sequence
-        // on every loop
-        plane.auto_state.checked_for_autoland = true;
+                // prevent running the expensive jump_to_landing_sequence
+                // on every loop
+                plane.auto_state.checked_for_autoland = true;
+            }
     }
-    else if (plane.g.rtl_autoland == RtlAutoland::RTL_IMMEDIATE_DO_LAND_START &&
-        !plane.auto_state.checked_for_autoland) {
-        // Go directly to the landing sequence
-        if (plane.mission.jump_to_landing_sequence()) {
-            // switch from RTL -> AUTO
-            plane.mission.set_force_resume(true);
-            plane.set_mode(plane.mode_auto, ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND);
-        }
 
-        // prevent running the expensive jump_to_landing_sequence
-        // on every loop
-        plane.auto_state.checked_for_autoland = true;
-    }
     uint16_t radius = abs(plane.g.rtl_radius);
     if (radius > 0) {
         plane.loiter.direction = (plane.g.rtl_radius < 0) ? -1 : 1;
