@@ -111,7 +111,7 @@ if maybe_prompt_user "Install python using pyenv [N/y]?" ; then
 
         pushd $HOME/.pyenv
         git fetch --tags
-        git checkout v2.0.4
+        git checkout v2.3.9
         popd
         exportline="export PYENV_ROOT=\$HOME/.pyenv"
         echo $exportline >> ~/$SHELL_LOGIN
@@ -124,8 +124,12 @@ if maybe_prompt_user "Install python using pyenv [N/y]?" ; then
         source ~/$SHELL_LOGIN
     }
     echo "pyenv installed"
-    env PYTHON_CONFIGURE_OPTS="--enable-framework" pyenv install 3.9.4
-    pyenv global 3.9.4
+    {
+        $(pyenv global 3.10.4)
+    } || {
+        env PYTHON_CONFIGURE_OPTS="--enable-framework" pyenv install 3.10.4
+        pyenv global 3.10.4
+    }
 fi
 
 
