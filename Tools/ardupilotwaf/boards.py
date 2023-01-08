@@ -429,7 +429,7 @@ class Board:
             ]
 
         if self.with_can and not cfg.env.AP_PERIPH:
-            if not cfg.env.SITL32BIT and cfg.env.BOARD == 'sitl':
+            if not cfg.env.FORCE32BIT and (cfg.env.BOARD == 'sitl' or cfg.env.BOARD == 'linux'):
                 env.DEFINES.update(
                     HAL_ENABLE_LIBUAVCAN_DRIVERS = 0
                 )
@@ -759,7 +759,7 @@ class sitl(Board):
                 '-fno-slp-vectorize' # compiler bug when trying to use SLP
             ]
 
-        if cfg.options.sitl_32bit:
+        if cfg.options.force_32bit:
             # 32bit platform flags
             env.CXXFLAGS += [
                 '-m32',
@@ -1134,7 +1134,15 @@ class chibios(Board):
         return self.name
 
 class linux(Board):
+    def __init__(self):
+        if self.toolchain == 'native':
+            self.with_can = True
+        else:
+            self.with_can = False
+
     def configure_env(self, cfg, env):
+        if cfg.options.board == 'linux' and cfg.options.force_32bit:
+            self.with_can = True
         super(linux, self).configure_env(cfg, env)
 
         env.DEFINES.update(
@@ -1162,8 +1170,35 @@ class linux(Board):
             'AP_HAL_Linux',
         ]
 
-        if self.with_can:
+        if cfg.options.force_32bit:
+            env.DEFINES.update(
+                HAL_FORCE_32BIT = 1,
+            )
+            # 32bit platform flags
+            cfg.env.CXXFLAGS += [
+                '-m32',
+            ]
+            cfg.env.CFLAGS += [
+                '-m32',
+            ]
+            cfg.env.LDFLAGS += [
+                '-m32',
+            ]
+        else:
+            env.DEFINES.update(
+                HAL_FORCE_32BIT = 0,
+            )
+        if self.with_can and cfg.options.board == 'linux' and cfg.options.force_32bit:
+            cfg.env.HAL_NUM_CAN_IFACES = 2
+            cfg.define('HAL_NUM_CAN_IFACES', 2)
             cfg.define('UAVCAN_EXCEPTIONS', 0)
+            cfg.define('UAVCAN_SUPPORT_CANFD', 1)
+            cfg.define('HAL_CANFD_SUPPORTED', 1)
+            cfg.define('CANARD_ENABLE_CANFD', 1)
+        
+        if self.with_can:
+            env.DEFINES.update(CANARD_MULTI_IFACE=1,
+                               CANARD_IFACE_ALL = 0x3)
 
         if cfg.options.apstatedir:
             cfg.define('AP_STATEDIR', cfg.options.apstatedir)
@@ -1270,7 +1305,7 @@ class bbbmini(linux):
 
     def configure_env(self, cfg, env):
         super(bbbmini, self).configure_env(cfg, env)
-
+        cfg.env.HAL_NUM_CAN_IFACES = 1
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BBBMINI',
         )
@@ -1283,6 +1318,7 @@ class blue(linux):
 
     def configure_env(self, cfg, env):
         super(blue, self).configure_env(cfg, env)
+        cfg.env.HAL_NUM_CAN_IFACES = 1
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BLUE',
@@ -1296,6 +1332,7 @@ class pocket(linux):
 
     def configure_env(self, cfg, env):
         super(pocket, self).configure_env(cfg, env)
+        cfg.env.HAL_NUM_CAN_IFACES = 1
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_POCKET',
