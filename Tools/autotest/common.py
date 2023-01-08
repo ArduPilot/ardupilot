@@ -1494,7 +1494,7 @@ class AutoTest(ABC):
                  replay=False,
                  sup_binaries=[],
                  reset_after_every_test=False,
-                 sitl_32bit=False,
+                 force_32bit=False,
                  ubsan=False,
                  ubsan_abort=False,
                  num_aux_imus=0,
@@ -1521,7 +1521,7 @@ class AutoTest(ABC):
             self.speedup = self.default_speedup()
         self.sup_binaries = sup_binaries
         self.reset_after_every_test = reset_after_every_test
-        self.sitl_32bit = sitl_32bit
+        self.force_32bit = force_32bit
         self.ubsan = ubsan
         self.ubsan_abort = ubsan_abort
         self.build_opts = build_opts
