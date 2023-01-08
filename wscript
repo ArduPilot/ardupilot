@@ -328,9 +328,9 @@ configuration in order to save typing.
                  default=False,
                  help="Enable SITL RGBLed")
 
-    g.add_option('--sitl-32bit', action='store_true',
+    g.add_option('--force-32bit', action='store_true',
                  default=False,
-                 help="Enable SITL 32bit")
+                 help="Force 32bit build")
 
     g.add_option('--build-dates', action='store_true',
                  default=False,
@@ -440,7 +440,7 @@ def configure(cfg):
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
     cfg.env.COVERAGE = cfg.options.coverage
-    cfg.env.SITL32BIT = cfg.options.sitl_32bit
+    cfg.env.FORCE32BIT = cfg.options.force_32bit
     cfg.env.ENABLE_ASSERTS = cfg.options.enable_asserts
     cfg.env.BOOTLOADER = cfg.options.bootloader
     cfg.env.ENABLE_MALLOC_GUARD = cfg.options.enable_malloc_guard
@@ -482,7 +482,7 @@ def configure(cfg):
         cfg.load('dronecangen')
     else:
         cfg.load('uavcangen')
-        if not (cfg.options.sitl_32bit and cfg.options.board != 'sitl'):
+        if cfg.options.force_32bit or (cfg.options.board != 'sitl' and cfg.options.board != 'linux'):
             cfg.load('dronecangen')
 
     cfg.env.SUBMODULE_UPDATE = cfg.options.submodule_update
@@ -542,8 +542,8 @@ def configure(cfg):
     else:
         cfg.end_msg('disabled', color='YELLOW')
 
-    cfg.start_msg('SITL 32-bit build')
-    if cfg.env.SITL32BIT:
+    cfg.start_msg('Force 32-bit build')
+    if cfg.env.FORCE32BIT:
         cfg.end_msg('enabled')
     else:
         cfg.end_msg('disabled', color='YELLOW')
@@ -680,7 +680,7 @@ def _build_dynamic_sources(bld):
                 bld.srcnode.find_dir('modules/uavcan/libuavcan/include').abspath()
             ]
         )
-        if (not bld.env.SITL32BIT) and bld.env.BOARD == 'sitl':
+        if (not bld.env.FORCE32BIT) and (bld.env.BOARD == 'sitl' or bld.env.BOARD == 'linux'):
             # remove generated files
             dronecan_dir = bld.bldnode.make_node('modules/DroneCAN/libcanard/dsdlc_generated/').abspath()
             if os.path.exists(dronecan_dir):
