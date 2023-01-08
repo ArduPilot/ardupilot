@@ -393,8 +393,8 @@ def do_build(opts, frame_options):
     if opts.ekf_single:
         cmd_configure.append("--ekf-single")
 
-    if opts.sitl_32bit:
-        cmd_configure.append("--sitl-32bit")
+    if opts.force_32bit:
+        cmd_configure.append("--force-32bit")
 
     if opts.ubsan:
         cmd_configure.append("--ubsan")
@@ -1029,10 +1029,10 @@ group_build.add_option("--enable-math-check-indexes",
                        action="store_true",
                        dest="math_check_indexes",
                        help="enable checking of math indexes")
-group_build.add_option("", "--sitl-32bit",
+group_build.add_option("", "--force-32bit",
                        default=False,
                        action='store_true',
-                       dest="sitl_32bit",
+                       dest="force_32bit",
                        help="compile sitl using 32-bit")
 group_build.add_option("", "--configure-define",
                        default=[],
