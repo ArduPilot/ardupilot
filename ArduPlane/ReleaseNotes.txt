@@ -1,3 +1,26 @@
+Release 4.3.3beta1 Jan 8th 2023
+-------------------------------
+
+ - AIRLink LTE module enable pin added
+ - CUAV Nora/Nora+ bdshot firmware (allows Bi-directional DShot)
+ - CubeOrange, CubeYellow gets fast reset of ICM20602
+ - PixPilot-V6 support
+ - Attitude and Navigation controllers use real-time dt (better handles variable or slow main loop)
+ - Analog rangefinder GPIO pin arming check fixed
+ - Arming check of AHRS/EKF vs GPS location disabled if GPS disabled
+ - Position Controller limit handling improved to avoid overshooting and hard landings
+ - PSC_ANGLE_MAX param reduction causing WPNAV_ACCEL to be set too low fixed
+ - Servo gimbal yaw jump to opposite side fixed
+ - Siyi A8 gimbal driver's record video feature fixed
+ - SToRM32 serial gimbal driver actual angle reporting fixed (pitch and yaw angle signs were reversed)
+ - Takeoff in Auto, Guided fixed when target altitude is current altitude
+ - Takeoff in Auto handles baro drift before takeoff
+ - Takeoff twitch due to velocity integrator init bug fixed
+ - moved FTP MAVLink transfers to FTP thread and better control bandwidth
+ - switch to QRTL if indide RTL radius when using Q_RTL_MODE=3 (approach)
+
+Happy flying!
+
 Release 4.3.2 Dec 23rd 2022
 ---------------------------
 
