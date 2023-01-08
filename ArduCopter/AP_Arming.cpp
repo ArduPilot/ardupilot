@@ -162,6 +162,12 @@ bool AP_Arming_Copter::board_voltage_checks(bool display_failure)
 // all data loaded
 bool AP_Arming_Copter::terrain_database_required() const
 {
+
+    if (copter.wp_nav->get_terrain_source() == AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER) {
+        // primary terrain source is from rangefinder, allow arming without terrain database
+        return false;
+    }
+
     if (copter.wp_nav->get_terrain_source() == AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE &&
         copter.mode_rtl.get_alt_type() == ModeRTL::RTLAltType::RTL_ALTTYPE_TERRAIN) {
         return true;
