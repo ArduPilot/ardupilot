@@ -64,10 +64,10 @@ jobs:
         shell: 'script -q -e -c "bash {0}"'
         run: |
           PATH="/github/home/.local/bin:$PATH"
-          python -m pip install --user mavproxy
+          python -m pip install --progress-bar off --user mavproxy
           python -m pip uninstall -y pymavlink
           git submodule update --init --recursive
-          (cd modules/mavlink/pymavlink && DISABLE_MAVNATIVE=True MDEF="$PWD/../message_definitions" python -m pip install --user .)
+          (cd modules/mavlink/pymavlink && DISABLE_MAVNATIVE=True MDEF="$PWD/../message_definitions" python -m pip install --progress-bar off --user .)
           if [[ ${{ matrix.config }} == "coverage" ]]; then
             Tools/scripts/run_coverage.py -f
           else

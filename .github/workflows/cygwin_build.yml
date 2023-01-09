@@ -21,8 +21,8 @@ jobs:
           HOME: ${{ runner.workspace }}/ardupilot
         run: |
           bash --login -c "ln -sf /usr/bin/python3.7 /usr/bin/python && ln -sf /usr/bin/pip3.7 /usr/bin/pip"
-          bash --login -c "python -m pip install empy pexpect"
-          bash --login -c "python -m pip install dronecan --upgrade"
+          bash --login -c "python -m pip install --progress-bar off empy pexpect"
+          bash --login -c "python -m pip install --progress-bar off dronecan --upgrade"
       - name: Build SITL
         env:
           HOME: ${{ runner.workspace }}/ardupilot
