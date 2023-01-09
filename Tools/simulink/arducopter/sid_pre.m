@@ -429,44 +429,12 @@ for i = 1:length(fileIndices)
     sidLogs(numOldSubflights + i).data = resampleLog(log, true, 'linear');
 end
 
-% Save identification data in IdData objects
-% Index to save IO data of SID runs
-j = 1;
-for i=1:length(sidLogs)-numOldSubflights
-    if sidLogs(numOldSubflights + i).data.MODE.Mode == 25
-        % Let user insert minimum and maximum frequencies for spectral
-        % analysis
-        disp('Insert minimum and maximum frequency for spectral analysis (enter no value to choose sweep values):')
-        fminSweep = sidLogs(numOldSubflights + i).data.SIDS.FSt;
-        fmaxSweep = sidLogs(numOldSubflights + i).data.SIDS.FSp;
-        fmin = input(['Minimum frequency (sweep = ' num2str(fminSweep) '): fmin = ']);
-        fmax = input(['Maximum frequency (sweep = ' num2str(fmaxSweep) '): fmax = ']);
-        if isempty(fmin) fmin = fminSweep; end
-        if isempty(fmax) fmax = fmaxSweep; end
-        idData(numOldSysidflights + j) = IdData(sidLogs(numOldSubflights + i).data, subflights(i), i, fmin, fmax);
-        
-        % Increment IO data index for later saving
-        j = j+1;
-    end
-end
-
 % Print modes and/or tested sid axis in log array
 fprintf('\nChosen test flights:\n')
-fprintf('Dataset\t|File\t|Subflight\t|Mode\t|Axis\t|Id Quality\n')
+fprintf('Dataset\t|File\t|Subflight\t|Mode\n')
 for i=1:length(sidLogs)-numOldSubflights
-    if (isfield(sidLogs(numOldSubflights + i).data, 'SIDS'))
-        % Find correct idData object for data quality
-        idDataObj = findobj(idData, '-function', ...
-            @(obj) strcmp(obj.fileName, fileNames{fileIndices(i)}) && obj.dataIndex == i);
-        % When identical objects are contained in idData vector, use latest
-        idDataObj = idDataObj(end);
-        fprintf('sid(%d)\t|%d\t\t|%d\t\t\t|%d\t\t|%d\t\t|%.2f\t\n', int16(i+numOldSubflights), ...
-            fileIndices(i), subflights(i), sidLogs(numOldSubflights + i).data.MODE.Mode(1), ...
-            sidLogs(numOldSubflights + i).data.SIDS.Ax, idDataObj.dataQuality);
-    else
-        fprintf('sid(%d)\t|%d\t\t|%d\t\t\t|%d\t\t|-\t\t|-\n', int16(i+numOldSubflights), ...
-            fileIndices(i), subflights(i), sidLogs(numOldSubflights + i).data.MODE.Mode(1));
-    end
+    fprintf('sid(%d)\t|%d\t\t|%d\t\t\t|%d\n', int16(i+numOldSubflights), ...
+        fileIndices(i), subflights(i), sidLogs(numOldSubflights + i).data.MODE.Mode(1));
 end
 
 % Save configuration of loaded data to struct and to repo
