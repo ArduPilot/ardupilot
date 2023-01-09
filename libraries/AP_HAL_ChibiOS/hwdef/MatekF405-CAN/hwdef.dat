@@ -177,4 +177,10 @@ define HAL_WITH_DSP FALSE
 # reduce max size of embedded params for apj_tool.py
 define AP_PARAM_MAX_EMBEDDED_PARAM 1024
 
+# disable some GPS drivers to save flash
+define AP_GPS_SIRF_ENABLED 0
+define AP_GPS_SBP_ENABLED 0
+define AP_GPS_NOVA_ENABLED 0
+define AP_GPS_GSOF_ENABLED 0
+define AP_GPS_ERB_ENABLED 0
 
