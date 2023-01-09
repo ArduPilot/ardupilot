@@ -314,7 +314,7 @@ void AP_MotorsMulticopter::update_throttle_filter()
 
     // calculate slope normalized from per-micro
     const float rate = fabsf(_throttle_slew.slope() * 1e6);
-    _throttle_slew_rate = _throttle_slew_filter.apply(rate, 1.0f / _loop_rate);
+    _throttle_slew_rate = _throttle_slew_filter.apply(rate, _dt);
 }
 
 // return current_limit as a number from 0 ~ 1 in the range throttle_min to throttle_max
