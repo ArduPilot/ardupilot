@@ -28,6 +28,7 @@ This list is automatically generated from the latest ardupilot source code, and 
         self.f = open(self.output_fname(), mode='w')
         self.spacer = re.compile("^", re.MULTILINE)
         self.rstescape = re.compile("([^a-zA-Z0-9\n 	])")
+        self.emitted_sitl_heading = False
         parameterlisttype = "Complete Parameter List"
         parameterlisttype += "\n" + "=" * len(parameterlisttype)
         self.preamble = """.. Dynamically generated list of documented parameters
@@ -191,8 +192,17 @@ This list is automatically generated from the latest ardupilot source code, and 
         return ''
 
     def emit(self, g):
-        tag = '%s Parameters' % self.escape(g.reference)
-        reference = "parameters_" + g.reference
+        # make only a single group for SIM_ parameters
+        do_emit_heading = True
+        if g.reference.startswith("SIM_"):
+            if self.emitted_sitl_heading:
+                do_emit_heading = False
+            self.emitted_sitl_heading = True
+            tag = "Simulation Parameters"
+            reference = "parameters_sim"
+        else:
+            tag = '%s Parameters' % self.escape(g.reference)
+            reference = "parameters_" + g.reference
 
         field_table_info = {
             "Values": {
@@ -203,7 +213,9 @@ This list is automatically generated from the latest ardupilot source code, and 
             },
         }
 
-        ret = """
+        ret = ""
+        if do_emit_heading:
+            ret = """
 
 .. _{reference}:
 
