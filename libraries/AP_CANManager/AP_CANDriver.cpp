@@ -36,9 +36,11 @@ const AP_Param::GroupInfo AP_CANManager::CANDriver_Params::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("PROTOCOL", 1, AP_CANManager::CANDriver_Params, _driver_type, AP_CANManager::Driver_Type_UAVCAN),
 
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
     // @Group: UC_
     // @Path: ../AP_UAVCAN/AP_UAVCAN.cpp
     AP_SUBGROUPPTR(_uavcan, "UC_", 2, AP_CANManager::CANDriver_Params, AP_UAVCAN),
+#endif
 
 #if (APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub))
     // @Group: KDE_
