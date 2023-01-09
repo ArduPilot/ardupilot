@@ -2463,6 +2463,37 @@ class AutoTestCopter(AutoTest):
 
         self.reboot_sitl()
 
+    def TerrainDBPreArm(self):
+        '''test that pre-arm checks are working corrctly for terrain database'''
+        self.context_push()
+
+        self.progress("# Load msission with terrain alt")
+        # load the waypoint
+        num_wp = self.load_mission("terrain_wp.txt", strict=False)
+        if not num_wp:
+            raise NotAchievedException("load terrain_wp failed")
+
+        self.set_analog_rangefinder_parameters()
+        self.set_parameters({
+            "WPNAV_RFND_USE": 1,
+            "TERRAIN_ENABLE": 1,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        # make sure we can still arm with valid rangefinder and terrain db disabled
+        self.set_parameter("TERRAIN_ENABLE", 0)
+        self.wait_ready_to_arm()
+        self.progress("# Vehicle armed with terrain db disabled")
+
+        # make sure we can't arm with terrain db enabled and no rangefinder in us
+        self.set_parameter("WPNAV_RFND_USE", 0)
+        self.assert_prearm_failure("terrain disabled")
+
+        self.context_pop()
+
+        self.reboot_sitl()
+
     def CopterMission(self):
         '''fly mission which tests a significant number of commands'''
         # Fly mission #1
@@ -9525,7 +9556,8 @@ class AutoTestCopter(AutoTest):
             self.WatchAlts,
             self.GuidedEKFLaneChange,
             self.Sprayer,
-            self.EK3_RNG_USE_HGT
+            self.EK3_RNG_USE_HGT,
+            self.TerrainDBPreArm
         ])
         return ret
 
