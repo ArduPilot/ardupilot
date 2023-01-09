@@ -172,6 +172,7 @@ struct log_RRNI {
     uint8_t orientation;
     uint8_t status;
     uint8_t instance;
+    bool use;
     uint8_t _end;
 };
 
@@ -396,7 +397,7 @@ struct log_RBOH {
     { LOG_RRNH_MSG, RLOG_SIZE(RRNH),                                   \
       "RRNH", "hhB", "GCl,MaxD,NumSensors", "???", "???" },  \
     { LOG_RRNI_MSG, RLOG_SIZE(RRNI),                                   \
-      "RRNI", "fffHBBB", "PX,PY,PZ,Dist,Orient,Status,I", "------#", "-------" }, \
+      "RRNI", "fffHBBBB", "PX,PY,PZ,Dist,Orient,Status,I,Use", "-------#", "--------" }, \
     { LOG_RGPH_MSG, RLOG_SIZE(RGPH),                                   \
       "RGPH", "BB", "NumInst,Primary", "--", "--" },  \
     { LOG_RGPI_MSG, RLOG_SIZE(RGPI),                                   \

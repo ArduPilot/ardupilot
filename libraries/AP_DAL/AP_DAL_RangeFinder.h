@@ -61,6 +61,8 @@ public:
 
     const Vector3f &get_pos_offset() const { return _RRNI.pos_offset; }
 
+    bool use_sensor() const { return _RRNI.use; }
+
     // DAL methods:
     void start_frame(AP_RangeFinder_Backend *backend);
 
