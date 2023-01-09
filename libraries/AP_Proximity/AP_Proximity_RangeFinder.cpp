@@ -40,7 +40,7 @@ void AP_Proximity_RangeFinder::update(void)
         if (sensor == nullptr) {
             continue;
         }
-        if (sensor->has_data()) {
+        if (sensor->has_data() && sensor->use_sensor()) {
             // check for horizontal range finders
             if (sensor->orientation() <= ROTATION_YAW_315) {
                 const uint8_t sector = (uint8_t)sensor->orientation();
