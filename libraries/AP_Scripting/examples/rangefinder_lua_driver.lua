@@ -56,7 +56,7 @@ function update()
   if not lua_driver_found then
     -- We can't use this script if user hasn't setup a lua rangefinder
     gcs:send_text(0, string.format("Configure Lua RangeFinder"))
-    return update, update_rate_error_ms
+    return
   end
 
   for i = 0, sensor_count do
@@ -79,10 +79,10 @@ function update()
               gcs:send_text(0, string.format("RangeFinder Lua Script Error"))
               return update, update_rate_error_ms
             end
-            return update, update_rate_ms
+            return
           else
             -- device is not conncted, do not send anything.
-            return update, update_rate_error_ms
+            return
           end
         end
 
@@ -110,7 +110,7 @@ function update()
   if (same_direction_sensor_count == 0) then
     -- no rangefinder in the required direction, do not send anything (which will trigger a pre arm error)
     gcs:send_text(0, string.format("No Range Finder Found"))
-    return update, update_rate_error_ms
+    return
   end
 
   if RNGLUA_MODE:get() == 0 then
@@ -119,7 +119,7 @@ function update()
     if not sent_successfully then
       -- This should never happen as we already checked for a valid configured lua backend above
       gcs:send_text(0, string.format("RangeFinder Lua Script Error"))
-      return update, update_rate_error_ms
+      return
     end
   end
 
@@ -133,12 +133,25 @@ function update()
       if not sent_successfully then
         -- This should never happen as we already checked for a valid configured lua backend above
         gcs:send_text(0, string.format("RangeFinder Lua Script Error"))
-        return update, update_rate_error_ms
+        return
       end
     end
   end
-
-  return update, update_rate_ms -- check again in 25ms
 end
 
-return update(), 5000 -- first data may be  checked 5 seconds after start-up
+-- wrapper around update(). This calls update() and if update faults
+-- then an error is displayed, but the script is not stopped
+function protected_wrapper()
+  local success, err = pcall(update)
+  if not success then
+      gcs:send_text(MAV_SEVERITY_ERROR, "Internal Error: " .. err)
+      -- when we fault we run the update function again after 1s, slowing it
+      -- down a bit so we don't flood the console with errors
+      return protected_wrapper, 1000
+  end
+  return protected_wrapper, update_rate_ms
+end
+
+-- start running update loop
+return protected_wrapper()
+
