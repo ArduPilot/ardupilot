@@ -115,6 +115,7 @@ private:
 
     enum Options : int16_t {
         EnforceArming     = (1U << 0U),
+        AllowNonGPSPosition = (1U << 1U),
     };
 
     // check if an option is set
