@@ -3,6 +3,8 @@
 #include <AP_Common/AP_Common.h>
 #include "GCS_MAVLink.h"
 
+#define AP_PARAM_VEHICLE_NAME periph
+
 // Global parameter class.
 //
 class Parameters {
