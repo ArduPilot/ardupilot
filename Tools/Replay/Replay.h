@@ -18,6 +18,8 @@
 
 #include "LogReader.h"
 
+#define AP_PARAM_VEHICLE_NAME replayvehicle
+
 struct user_parameter {
     struct user_parameter *next;
     char name[17];
