@@ -144,7 +144,19 @@
 #define AP_SUBGROUPVARPTR(element, name, idx, thisclazz, var_info) { name, AP_VAROFFSET(thisclazz, element), { group_info_ptr : &var_info }, AP_PARAM_FLAG_POINTER | AP_PARAM_FLAG_INFO_POINTER, idx, AP_PARAM_GROUP }
 
 #define AP_GROUPEND     { "", 0,       { group_info : nullptr }, 0, 0xFF, AP_PARAM_NONE }
-#define AP_VAREND       { "", nullptr, { group_info : nullptr }, 0, 0,    AP_PARAM_NONE }
+
+// Vehicle defines for info struct
+#define GSCALAR(v, name, def)                { name, &AP_PARAM_VEHICLE_NAME.g.v,                   {def_value : def},                   0,                                                  Parameters::k_param_ ## v,          AP_PARAM_VEHICLE_NAME.g.v.vtype }
+#define GARRAY(v, index, name, def)          { name, &AP_PARAM_VEHICLE_NAME.g.v[index],            {def_value : def},                   0,                                                  Parameters::k_param_ ## v ## index, AP_PARAM_VEHICLE_NAME.g.v[index].vtype }
+#define ASCALAR(v, name, def)                { name, (const void *)&AP_PARAM_VEHICLE_NAME.aparm.v, {def_value : def},                   0,                                                  Parameters::k_param_ ## v,          AP_PARAM_VEHICLE_NAME.aparm.v.vtype }
+#define GGROUP(v, name, class)               { name, &AP_PARAM_VEHICLE_NAME.g.v,                   {group_info : class::var_info},      0,                                                  Parameters::k_param_ ## v,          AP_PARAM_GROUP }
+#define GOBJECT(v, name, class)              { name, (const void *)&AP_PARAM_VEHICLE_NAME.v,       {group_info : class::var_info},      0,                                                  Parameters::k_param_ ## v,          AP_PARAM_GROUP }
+#define GOBJECTPTR(v, name, class)           { name, (const void *)&AP_PARAM_VEHICLE_NAME.v,       {group_info : class::var_info},      AP_PARAM_FLAG_POINTER,                              Parameters::k_param_ ## v,          AP_PARAM_GROUP }
+#define GOBJECTVARPTR(v, name, var_info_ptr) { name, (const void *)&AP_PARAM_VEHICLE_NAME.v,       {group_info_ptr : var_info_ptr},     AP_PARAM_FLAG_POINTER | AP_PARAM_FLAG_INFO_POINTER, Parameters::k_param_ ## v,          AP_PARAM_GROUP }
+#define GOBJECTN(v, pname, name, class)      { name, (const void *)&AP_PARAM_VEHICLE_NAME.v,       {group_info : class::var_info},      0,                                                  Parameters::k_param_ ## pname,      AP_PARAM_GROUP }
+#define PARAM_VEHICLE_INFO                   { "",   (const void *)&AP_PARAM_VEHICLE_NAME,         {group_info : AP_Vehicle::var_info}, 0,                                                  Parameters::k_param_vehicle,        AP_PARAM_GROUP }
+#define AP_VAREND                            { "",   nullptr,                                      {group_info : nullptr },             0,                                                  0,                                  AP_PARAM_NONE }
+
 
 enum ap_var_type {
     AP_PARAM_NONE    = 0,
