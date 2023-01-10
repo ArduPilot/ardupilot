@@ -780,6 +780,8 @@ void NavEKF2::UpdateFilter(void)
         }
         runCoreSelection = (imuSampleTime_us - lastUnhealthyTime_us) > 1E7;
     }
+
+    const uint8_t original_primary = primary;
     float primaryErrorScore = core[primary].errorScore();
     if ((primaryErrorScore > 1.0f || !core[primary].healthy()) && runCoreSelection) {
         float lowestErrorScore = 0.67f * primaryErrorScore;
@@ -820,6 +822,13 @@ void NavEKF2::UpdateFilter(void)
         // noise characteristics this leads to inconsistent
         // performance
         primary = 0;
+    }
+
+    if (primary != original_primary) {
+#if !APM_BUILD_TYPE(APM_BUILD_Replay)
+        AP::logger().Write_Error(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(primary));
+#endif
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF primary changed:%d", (unsigned)primary);
     }
 }
 
