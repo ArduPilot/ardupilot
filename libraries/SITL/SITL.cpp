@@ -58,8 +58,23 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     AP_GROUPINFO("DRIFT_SPEED",    5, SIM,  drift_speed, 0.05f),
     AP_GROUPINFO("DRIFT_TIME",     6, SIM,  drift_time,  5),
     AP_GROUPINFO("ENGINE_MUL",     8, SIM,  engine_mul,  1),
+    // @Param: WIND_SPD
+    // @DisplayName: Simulated Wind speed
+    // @Description: Allows you to emulate wind in sim
+    // @Units: m/s
+    // @User: Advanced
     AP_GROUPINFO("WIND_SPD",       9, SIM,  wind_speed,  0),
+    // @Param: WIND_DIR
+    // @DisplayName: Simulated Wind direction
+    // @Description: Allows you to set wind direction (true deg) in sim
+    // @Units: deg
+    // @User: Advanced
     AP_GROUPINFO("WIND_DIR",      10, SIM,  wind_direction,  180),
+    // @Param: WIND_TURB
+    // @DisplayName: Simulated Wind variation
+    // @Description: Allows you to emulate randowm wind variations in sim
+    // @Units: m/s
+    // @User: Advanced
     AP_GROUPINFO("WIND_TURB",     11, SIM,  wind_turbulance,  0),
     AP_GROUPINFO("SERVO_SPEED",   16, SIM,  servo_speed,  0.14),
     AP_GROUPINFO("SONAR_ROT",     17, SIM,  sonar_rot, Rotation::ROTATION_PITCH_270),
@@ -67,6 +82,11 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     AP_GROUPINFO("BATT_CAP_AH",   20, SIM,  batt_capacity_ah,  0),
     AP_GROUPINFO("SONAR_GLITCH",  23, SIM,  sonar_glitch, 0),
     AP_GROUPINFO("SONAR_RND",     24, SIM,  sonar_noise, 0),
+    // @Param: RC_FAIL
+    // @DisplayName: Simulated RC signal failure
+    // @Description: Allows you to emulate rc failures in sim
+    // @Values: 0:Disabled,1:No RC pusles,2:Binding pulses
+    // @User: Advanced
     AP_GROUPINFO("RC_FAIL",       25, SIM,  rc_fail, 0),
     AP_GROUPINFO("FLOAT_EXCEPT",  28, SIM,  float_exception, 1),
     AP_GROUPINFO("SONAR_SCALE",   32, SIM,  sonar_scale, 12.1212f),
@@ -106,6 +126,11 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
 
     AP_GROUPINFO("WIND_DIR_Z",  10, SIM,  wind_dir_z,     0),
     AP_GROUPINFO("WIND_T"      ,15, SIM,  wind_type, SIM::WIND_TYPE_SQRT),
+    // @Param: WIND_T_ALT
+    // @DisplayName: Full Wind Altitude
+    // @Description: Altitude at which wind reaches full strength, rising from 0 at ground level
+    // @Units: m
+    // @User: Advanced
     AP_GROUPINFO("WIND_T_ALT"  ,16, SIM,  wind_type_alt, 60),
     AP_GROUPINFO("WIND_T_COEF", 17, SIM,  wind_type_coef, 0.01f),
     AP_GROUPINFO("RC_CHANCOUNT",21, SIM,  rc_chancount, 16),
@@ -511,7 +536,7 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
 #endif
     AP_GROUPINFO("ACC_TRIM",     25, SIM, accel_trim, 0),
 
-    // @Param: SAIL_TYPE
+    // @Param{Rover}: SAIL_TYPE
     // @DisplayName: Sailboat simulation sail type
     // @Description: 0: mainsail with sheet, 1: directly actuated wing
     AP_GROUPINFO("SAIL_TYPE",     26, SIM, sail_type, 0),
@@ -523,7 +548,7 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
 
     // @Param: OH_MASK
     // @DisplayName: SIM-on_hardware Output Enable Mask
-    // @Description: channels which are passed through to actual hardware when running on actual hardware
+    // @Description: channels which are passed through to actual hardware when running sim on actual hardware
     AP_GROUPINFO("OH_MASK",     28, SIM, on_hardware_output_enable_mask, 0),
 #if AP_SIM_INS_FILE_ENABLED
     // read and write IMU data to/from files
