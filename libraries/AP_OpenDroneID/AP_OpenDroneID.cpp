@@ -38,6 +38,8 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Parachute/AP_Parachute.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -63,8 +65,8 @@ const AP_Param::GroupInfo AP_OpenDroneID::var_info[] = {
     
     // @Param: OPTIONS
     // @DisplayName: OpenDroneID options
-    // @Description: Options for OpenDroneID subsystem. Bit 0 means to enforce arming checks
-    // @Bitmask: 0:EnforceArming
+    // @Description: Options for OpenDroneID subsystem
+    // @Bitmask: 0:EnforceArming, 1:AllowNonGPSPosition
     AP_GROUPINFO("OPTIONS", 4, AP_OpenDroneID, _options, 0),
 
     // @Param: BARO_ACC
@@ -252,12 +254,42 @@ void AP_OpenDroneID::send_location_message()
 
     const AP_GPS::GPS_Status gps_status = gps.status();
     const bool got_bad_gps_fix = (gps_status < AP_GPS::GPS_Status::GPS_OK_FIX_3D);
+    const bool armed = hal.util->get_soft_armed();
 
     Location current_location;
     if (!ahrs.get_location(current_location)) {
         return;
     }
-    const uint8_t uav_status = hal.util->get_soft_armed()? MAV_ODID_STATUS_AIRBORNE : MAV_ODID_STATUS_GROUND;
+    uint8_t uav_status = hal.util->get_soft_armed()? MAV_ODID_STATUS_AIRBORNE : MAV_ODID_STATUS_GROUND;
+#if HAL_PARACHUTE_ENABLED
+    // set emergency status if chute is released
+    const auto *parachute = AP::parachute();
+    if (parachute != nullptr && parachute->released()) {
+        uav_status = MAV_ODID_STATUS_EMERGENCY;
+    }
+#endif
+    if (AP::vehicle()->is_crashed()) {
+        // if in crashed state also declare an emergency
+        uav_status = MAV_ODID_STATUS_EMERGENCY;
+    }
+
+    // if we are armed with no GPS fix and we haven't specifically
+    // allowed for non-GPS operation then declare an emergency
+    if (got_bad_gps_fix && armed && !option_enabled(Options::AllowNonGPSPosition)) {
+        uav_status = MAV_ODID_STATUS_EMERGENCY;
+    }
+
+    // if we are disarmed and falling at over 3m/s then declare an
+    // emergency. This covers cases such as deliberate crash with
+    // advanced failsafe and an unintended reboot or in-flight disarm
+    if (!got_bad_gps_fix && !armed && gps.velocity().z > 3.0) {
+        uav_status = MAV_ODID_STATUS_EMERGENCY;
+    }
+
+    // if we have watchdogged while armed then declare an emergency
+    if (hal.util->was_watchdog_armed()) {
+        uav_status = MAV_ODID_STATUS_EMERGENCY;
+    }
 
     float direction = ODID_INV_DIR;
     if (!got_bad_gps_fix) {
