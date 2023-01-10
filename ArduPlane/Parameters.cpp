@@ -131,6 +131,15 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(takeoff_throttle_delay,     "TKOFF_THR_DELAY",  2),
 
+    // @Param: TKOFF_THR_MAX_T
+    // @DisplayName: Takeoff throttle maximum time
+    // @Description: This sets the time that maximum throttle will be forced during a fixed wing takeoff without an airspeed sensor. If an airspeed sensor is being used then the throttle is set to maximum until the takeoff airspeed is reached.
+    // @Units: s
+    // @Range: 0 10
+    // @Increment: 0.5
+    // @User: Standard
+    ASCALAR(takeoff_throttle_max_t,     "TKOFF_THR_MAX_T",  4),
+    
     // @Param: TKOFF_TDRAG_ELEV
     // @DisplayName: Takeoff tail dragger elevator
     // @Description: This parameter sets the amount of elevator to apply during the initial stage of a takeoff. It is used to hold the tail wheel of a taildragger on the ground during the initial takeoff stage to give maximum steering. This option should be combined with the TKOFF_TDRAG_SPD1 option and the GROUND_STEER_ALT option along with tuning of the ground steering controller. A value of zero means to bypass the initial "tail hold" stage of takeoff. Set to zero for hand and catapult launch. For tail-draggers you should normally set this to 100, meaning full up elevator during the initial stage of takeoff. For most tricycle undercarriage aircraft a value of zero will work well, but for some tricycle aircraft a small negative value (say around -20 to -30) will apply down elevator which will hold the nose wheel firmly on the ground during initial acceleration. Only use a negative value if you find that the nosewheel doesn't grip well during takeoff. Too much down elevator on a tricycle undercarriage may cause instability in steering as the plane pivots around the nosewheel. Add down elevator 10 percent at a time.
