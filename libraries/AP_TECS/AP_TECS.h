@@ -307,6 +307,9 @@ private:
     // Total energy rate filter state
     float _STEdotErrLast;
 
+    // time we started a takeoff
+    uint32_t _takeoff_start_ms;
+
     struct flags {
         // Underspeed condition
         bool underspeed:1;
