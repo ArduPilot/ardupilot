@@ -443,21 +443,6 @@ void NavEKF3_core::SelectMagFusion()
 */
 void NavEKF3_core::FuseMagnetometer()
 {
-    // declarations
-    ftype &q0 = mag_state.q0;
-    ftype &q1 = mag_state.q1;
-    ftype &q2 = mag_state.q2;
-    ftype &q3 = mag_state.q3;
-    ftype &magN = mag_state.magN;
-    ftype &magE = mag_state.magE;
-    ftype &magD = mag_state.magD;
-    ftype &magXbias = mag_state.magXbias;
-    ftype &magYbias = mag_state.magYbias;
-    ftype &magZbias = mag_state.magZbias;
-    Matrix3F &DCM = mag_state.DCM;
-    Vector3F &MagPred = mag_state.MagPred;
-    ftype &R_MAG = mag_state.R_MAG;
-    ftype *SH_MAG = &mag_state.SH_MAG[0];
     Vector24 H_MAG;
     Vector5 SK_MX;
     Vector5 SK_MY;
@@ -471,20 +456,21 @@ void NavEKF3_core::FuseMagnetometer()
     // associated with sequential fusion
     // calculate observation jacobians and Kalman gains
 
-    // copy required states to local variable names
-    q0       = stateStruct.quat[0];
-    q1       = stateStruct.quat[1];
-    q2       = stateStruct.quat[2];
-    q3       = stateStruct.quat[3];
-    magN     = stateStruct.earth_magfield[0];
-    magE     = stateStruct.earth_magfield[1];
-    magD     = stateStruct.earth_magfield[2];
-    magXbias = stateStruct.body_magfield[0];
-    magYbias = stateStruct.body_magfield[1];
-    magZbias = stateStruct.body_magfield[2];
+    // create aliases for state to make code easier to read:
+    const ftype q0       = stateStruct.quat[0];
+    const ftype q1       = stateStruct.quat[1];
+    const ftype q2       = stateStruct.quat[2];
+    const ftype q3       = stateStruct.quat[3];
+    const ftype magN     = stateStruct.earth_magfield[0];
+    const ftype magE     = stateStruct.earth_magfield[1];
+    const ftype magD     = stateStruct.earth_magfield[2];
+    const ftype magXbias = stateStruct.body_magfield[0];
+    const ftype magYbias = stateStruct.body_magfield[1];
+    const ftype magZbias = stateStruct.body_magfield[2];
 
     // rotate predicted earth components into body axes and calculate
     // predicted measurements
+    Matrix3F DCM;
     DCM[0][0] = q0*q0 + q1*q1 - q2*q2 - q3*q3;
     DCM[0][1] = 2.0f*(q1*q2 + q0*q3);
     DCM[0][2] = 2.0f*(q1*q3-q0*q2);
@@ -494,6 +480,8 @@ void NavEKF3_core::FuseMagnetometer()
     DCM[2][0] = 2.0f*(q1*q3 + q0*q2);
     DCM[2][1] = 2.0f*(q2*q3 - q0*q1);
     DCM[2][2] = q0*q0 - q1*q1 - q2*q2 + q3*q3;
+
+    Vector3F MagPred;
     MagPred[0] = DCM[0][0]*magN + DCM[0][1]*magE  + DCM[0][2]*magD + magXbias;
     MagPred[1] = DCM[1][0]*magN + DCM[1][1]*magE  + DCM[1][2]*magD + magYbias;
     MagPred[2] = DCM[2][0]*magN + DCM[2][1]*magE  + DCM[2][2]*magD + magZbias;
@@ -504,9 +492,10 @@ void NavEKF3_core::FuseMagnetometer()
     }
 
     // scale magnetometer observation error with total angular rate to allow for timing errors
-    R_MAG = sq(constrain_ftype(frontend->_magNoise, 0.01f, 0.5f)) + sq(frontend->magVarRateScale*imuDataDelayed.delAng.length() / imuDataDelayed.delAngDT);
+    const ftype R_MAG = sq(constrain_ftype(frontend->_magNoise, 0.01f, 0.5f)) + sq(frontend->magVarRateScale*imuDataDelayed.delAng.length() / imuDataDelayed.delAngDT);
 
     // calculate common expressions used to calculate observation jacobians an innovation variance for each component
+    Vector9 SH_MAG;
     SH_MAG[0] = 2.0f*magD*q3 + 2.0f*magE*q2 + 2.0f*magN*q1;
     SH_MAG[1] = 2.0f*magD*q0 - 2.0f*magE*q1 + 2.0f*magN*q2;
     SH_MAG[2] = 2.0f*magD*q1 + 2.0f*magE*q0 - 2.0f*magN*q3;
