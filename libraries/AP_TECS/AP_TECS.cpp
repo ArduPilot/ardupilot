@@ -329,6 +329,7 @@ void AP_TECS::update_50hz(void)
         _height_filter.dd_height = 0.0f;
         DT = 0.02f; // when first starting TECS, use most likely time constant
         _vdot_filter.reset();
+        _takeoff_start_ms = 0;
     }
     _update_50hz_last_usec = now;
 
@@ -859,6 +860,18 @@ void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge)
         _throttle_dem = nomThr;
     }
 
+    if (_flight_stage == AP_FixedWing::FlightStage::TAKEOFF) {
+        const uint32_t now = AP_HAL::millis();
+        if (_takeoff_start_ms == 0) {
+            _takeoff_start_ms = now;
+        }
+        const uint32_t dt = now - _takeoff_start_ms;
+        if (dt*0.001 < aparm.takeoff_throttle_max_t) {
+            _throttle_dem = _THRmaxf;
+        }
+    } else {
+        _takeoff_start_ms = 0;
+    }
     if (_flags.is_gliding) {
         _throttle_dem = 0.0f;
         return;
@@ -1072,6 +1085,7 @@ void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
         _DT                   = 0.02f; // when first starting TECS, use the most likely time constant
         _lag_comp_hgt_offset  = 0.0f;
         _post_TO_hgt_offset   = 0.0f;
+        _takeoff_start_ms = 0;
 
         _flags.underspeed            = false;
         _flags.badDescent            = false;
