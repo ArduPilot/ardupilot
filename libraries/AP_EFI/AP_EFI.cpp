@@ -266,7 +266,8 @@ void AP_EFI::send_mavlink_status(mavlink_channel_t chan)
         KELVIN_TO_C(state.cylinder_status.exhaust_gas_temperature),
         state.throttle_out,
         state.pt_compensation,
-        state.ignition_voltage
+        state.ignition_voltage,
+        state.fuel_pressure
         );
 }
 
