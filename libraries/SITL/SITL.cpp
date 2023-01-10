@@ -58,6 +58,12 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     AP_GROUPINFO("DRIFT_SPEED",    5, SIM,  drift_speed, 0.05f),
     AP_GROUPINFO("DRIFT_TIME",     6, SIM,  drift_time,  5),
     AP_GROUPINFO("ENGINE_MUL",     8, SIM,  engine_mul,  1),
+    // @Param: RC_FAIL
+    // @DisplayName: Simulated RC signal failure
+    // @Description: Allows you to emulate rc failures in sim
+    // @Values: 0:Disabled,1:No RC pusles,2:Binding pulses
+    // @User: Advanced
+    AP_GROUPINFO("RC_FAIL",       25, SIM,  rc_fail, 0),
     // @Param: WIND_SPD
     // @DisplayName: Simulated Wind speed
     // @Description: Allows you to emulate wind in sim
@@ -82,12 +88,6 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     AP_GROUPINFO("BATT_CAP_AH",   20, SIM,  batt_capacity_ah,  0),
     AP_GROUPINFO("SONAR_GLITCH",  23, SIM,  sonar_glitch, 0),
     AP_GROUPINFO("SONAR_RND",     24, SIM,  sonar_noise, 0),
-    // @Param: RC_FAIL
-    // @DisplayName: Simulated RC signal failure
-    // @Description: Allows you to emulate rc failures in sim
-    // @Values: 0:Disabled,1:No RC pusles,2:Binding pulses
-    // @User: Advanced
-    AP_GROUPINFO("RC_FAIL",       25, SIM,  rc_fail, 0),
     AP_GROUPINFO("FLOAT_EXCEPT",  28, SIM,  float_exception, 1),
     AP_GROUPINFO("SONAR_SCALE",   32, SIM,  sonar_scale, 12.1212f),
     AP_GROUPINFO("FLOW_ENABLE",   33, SIM,  flow_enable, 0),
