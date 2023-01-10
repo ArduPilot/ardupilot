@@ -1449,26 +1449,6 @@ private:
         uint16_t value;
     } gpsCheckStatus;
 
-    // states held by magnetometer fusion across time steps
-    // magnetometer X,Y,Z measurements are fused across three time steps
-    // to level computational load as this is an expensive operation
-    struct {
-        ftype q0;
-        ftype q1;
-        ftype q2;
-        ftype q3;
-        ftype magN;
-        ftype magE;
-        ftype magD;
-        ftype magXbias;
-        ftype magYbias;
-        ftype magZbias;
-        Matrix3F DCM;
-        Vector3F MagPred;
-        ftype R_MAG;
-        Vector9 SH_MAG;
-    } mag_state;
-
     // string representing last reason for prearm failure
     char prearm_fail_string[40];
 
