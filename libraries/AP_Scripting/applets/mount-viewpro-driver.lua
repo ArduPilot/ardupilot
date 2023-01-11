@@ -25,7 +25,7 @@
 
 -- global definitions
 local INIT_INTERVAL_MS = 3000           -- attempt to initialise the gimbal at this interval
-local UPDATE_INTERVAL_MS = 20           -- update at 50hz
+local UPDATE_INTERVAL_MS = 1000         -- update at 50hz
 local MOUNT_INSTANCE = 0                -- always control the first mount/gimbal
 local VIEWPRO_HEADER1 = 0xFF            -- Viewpro protocol's 1st header byte
 local VIEWPRO_HEADER2 = 0x01            -- Viewpro protocol's 2nd header byte
@@ -51,6 +51,11 @@ local PARSE_STATE_WAITING_FOR_HEADER4   = 3
 local PARSE_STATE_WAITING_FOR_DATA      = 4
 
 -- hardcoded outgoing messages
+local QUERY_TIMEZONE_MSG = {0x55,0xAA,0xDC,0x0D,0x01,0x84,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x88}
+local QUERY_PROTOCOL_CONTROL_MSG = {0x55,0xAA,0xDC,0x0D,0x01,0x82,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x8E}
+local PROTOCOL_CONTROL_INIT_MSG = {0x55,0xAA,0xDC,0x0D,0x01,0x02,0x00,0x00,0x3E,0x00,0x81,0xF9,0x00,0x00,0x00,0x48}
+local YAW_0DEG_MSG = {0x55,0xAA,0xDC,0x0C,0x1A,0x0B,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x1D}
+local YAW_22DEG_MSG = {0x55,0xAA,0xDC,0x0C,0x1A,0x0B,0x0F,0xFF,0x00,0x00,0x00,0x00,0x00,0x00,0xED}
 local REQUEST_ATTITUDE_MSG = {0x3E,0x3D,0x00,0x3D,0x00}
 local ZOOM_OUT_MSG = {0xFF,0x01,0x00,0x40,0x00,0x00,0x41}
 local ZOOM_IN_MSG = {0xFF,0x01,0x00,0x20,0x00,0x00,0x21}
@@ -78,6 +83,7 @@ local cam_focus_step = 0                -- last focus step state.  focus in = -1
 local last_print_ms = 0
 local bytes_read = 0
 local bytes_written = 0
+local debug_zoom_counter = 0
 
 -- find and initialise serial port connected to gimbal
 function init()
@@ -187,7 +193,7 @@ function write_byte(b, checksum)
   -- debug
   bytes_written = bytes_written + 1
 
-  return (checksum + byte_to_write) & 0xFF
+  return (checksum ~ byte_to_write) & 0xFF
 end
 
 -- get lowbyte of a number
@@ -211,8 +217,8 @@ function write_number(num, checksum)
     gcs:send_text(3, "ViewPro: failed to write number") -- MAV_SEVERITY_ERR
     return
   end
-  checksum = write_byte(lowbyte(num), checksum)
   checksum = write_byte(highbyte(num), checksum)
+  checksum = write_byte(lowbyte(num), checksum)
   return checksum
 end
 
@@ -358,7 +364,25 @@ function update()
   end
 
   -- request gimbal attitude
-  send_msg(REQUEST_ATTITUDE_MSG)
+  --send_msg(REQUEST_ATTITUDE_MSG)
+  --send_msg(QUERY_PROTOCOL_CONTROL_MSG)
+  send_msg(QUERY_TIMEZONE_MSG)
+
+  --if (debug_zoom_counter == 0) then
+  --  send_msg(PROTOCOL_CONTROL_INIT_MSG)
+  --end
+
+  --debug_zoom_counter = debug_zoom_counter + 1
+  --if (debug_zoom_counter < 5) then
+  --  send_msg(YAW_22DEG_MSG)
+  --  gcs:send_text(6, string.format("ViewPro: yaw to 22:%u", debug_zoom_counter))
+  --else
+  --  send_msg(YAW_0DEG_MSG)
+  --  gcs:send_text(6, string.format("ViewPro: yaw to 0:%u", debug_zoom_counter-5))
+  --  if debug_zoom_counter >= 10 then
+  --    debug_zoom_counter = 1
+  --  end
+  --end
 
   -- check camera status
   check_camera_state()
@@ -375,14 +399,14 @@ function update()
   -- get target angle
   local roll_deg, pitch_deg, yaw_deg, yaw_is_ef = mount:get_angle_target(MOUNT_INSTANCE)
   if roll_deg and pitch_deg and yaw_deg then
-    send_target_angles(roll_deg, pitch_deg, yaw_deg)
+    --send_target_angles(roll_deg, pitch_deg, yaw_deg)
     return update, UPDATE_INTERVAL_MS
   end
 
   -- get target rate
   local roll_degs, pitch_degs, yaw_degs, yaw_is_ef = mount:get_rate_target(MOUNT_INSTANCE)
   if roll_degs and pitch_degs and yaw_degs then
-    send_target_rates(roll_degs, pitch_degs, yaw_degs)
+    --send_target_rates(roll_degs, pitch_degs, yaw_degs)
     return update, UPDATE_INTERVAL_MS
   end
 
