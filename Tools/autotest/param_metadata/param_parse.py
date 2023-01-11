@@ -8,6 +8,7 @@
 '''
 
 from __future__ import print_function
+import copy
 import os
 import re
 import sys
@@ -590,8 +591,24 @@ for emitter_name in emitters_to_use:
 
     emit.start_libraries()
 
+    # create a single parameter list for all SIM_ parameters (for rst to use)
+    sim_params = []
+    for library in libraries:
+        if library.name.startswith("SIM_"):
+            sim_params.extend(library.params)
+    sim_params = sorted(sim_params, key=lambda x : x.name)
+
     for library in libraries:
         if library.params:
+            # we sort the parameters in the SITL library to avoid
+            # rename, and on the assumption that an asciibetical sort
+            # gives a good layout:
+            if emitter_name == 'rst':
+                if library.name == 'SIM_':
+                    library = copy.deepcopy(library)
+                    library.params = sim_params
+                elif library.name.startswith('SIM_'):
+                    continue
             emit.emit(library)
 
     emit.close()
