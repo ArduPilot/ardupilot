@@ -443,11 +443,6 @@ void NavEKF3_core::SelectMagFusion()
 */
 void NavEKF3_core::FuseMagnetometer()
 {
-    Vector24 H_MAG;
-    Vector5 SK_MX;
-    Vector5 SK_MY;
-    Vector5 SK_MZ;
-
     // perform sequential fusion of magnetometer measurements.
     // this assumes that the errors in the different components are
     // uncorrelated which is not true, however in the absence of covariance
@@ -470,41 +465,42 @@ void NavEKF3_core::FuseMagnetometer()
 
     // rotate predicted earth components into body axes and calculate
     // predicted measurements
-    Matrix3F DCM;
-    DCM[0][0] = q0*q0 + q1*q1 - q2*q2 - q3*q3;
-    DCM[0][1] = 2.0f*(q1*q2 + q0*q3);
-    DCM[0][2] = 2.0f*(q1*q3-q0*q2);
-    DCM[1][0] = 2.0f*(q1*q2 - q0*q3);
-    DCM[1][1] = q0*q0 - q1*q1 + q2*q2 - q3*q3;
-    DCM[1][2] = 2.0f*(q2*q3 + q0*q1);
-    DCM[2][0] = 2.0f*(q1*q3 + q0*q2);
-    DCM[2][1] = 2.0f*(q2*q3 - q0*q1);
-    DCM[2][2] = q0*q0 - q1*q1 - q2*q2 + q3*q3;
+    const Matrix3F DCM {
+        q0*q0 + q1*q1 - q2*q2 - q3*q3,
+        2.0f*(q1*q2 + q0*q3),
+        2.0f*(q1*q3-q0*q2),
+        2.0f*(q1*q2 - q0*q3),
+        q0*q0 - q1*q1 + q2*q2 - q3*q3,
+        2.0f*(q2*q3 + q0*q1),
+        2.0f*(q1*q3 + q0*q2),
+        2.0f*(q2*q3 - q0*q1),
+        q0*q0 - q1*q1 - q2*q2 + q3*q3
+    };
 
-    Vector3F MagPred;
-    MagPred[0] = DCM[0][0]*magN + DCM[0][1]*magE  + DCM[0][2]*magD + magXbias;
-    MagPred[1] = DCM[1][0]*magN + DCM[1][1]*magE  + DCM[1][2]*magD + magYbias;
-    MagPred[2] = DCM[2][0]*magN + DCM[2][1]*magE  + DCM[2][2]*magD + magZbias;
+    const Vector3F MagPred {
+        DCM[0][0]*magN + DCM[0][1]*magE  + DCM[0][2]*magD + magXbias,
+        DCM[1][0]*magN + DCM[1][1]*magE  + DCM[1][2]*magD + magYbias,
+        DCM[2][0]*magN + DCM[2][1]*magE  + DCM[2][2]*magD + magZbias
+    };
 
     // calculate the measurement innovation for each axis
-    for (uint8_t i = 0; i<=2; i++) {
-        innovMag[i] = MagPred[i] - magDataDelayed.mag[i];
-    }
+    innovMag = MagPred - magDataDelayed.mag;
 
     // scale magnetometer observation error with total angular rate to allow for timing errors
     const ftype R_MAG = sq(constrain_ftype(frontend->_magNoise, 0.01f, 0.5f)) + sq(frontend->magVarRateScale*imuDataDelayed.delAng.length() / imuDataDelayed.delAngDT);
 
     // calculate common expressions used to calculate observation jacobians an innovation variance for each component
-    Vector9 SH_MAG;
-    SH_MAG[0] = 2.0f*magD*q3 + 2.0f*magE*q2 + 2.0f*magN*q1;
-    SH_MAG[1] = 2.0f*magD*q0 - 2.0f*magE*q1 + 2.0f*magN*q2;
-    SH_MAG[2] = 2.0f*magD*q1 + 2.0f*magE*q0 - 2.0f*magN*q3;
-    SH_MAG[3] = sq(q3);
-    SH_MAG[4] = sq(q2);
-    SH_MAG[5] = sq(q1);
-    SH_MAG[6] = sq(q0);
-    SH_MAG[7] = 2.0f*magN*q0;
-    SH_MAG[8] = 2.0f*magE*q3;
+    const Vector9 SH_MAG {
+        2.0f*magD*q3 + 2.0f*magE*q2 + 2.0f*magN*q1,
+        2.0f*magD*q0 - 2.0f*magE*q1 + 2.0f*magN*q2,
+        2.0f*magD*q1 + 2.0f*magE*q0 - 2.0f*magN*q3,
+        sq(q3),
+        sq(q2),
+        sq(q1),
+        sq(q0),
+        2.0f*magN*q0,
+        2.0f*magE*q3
+    };
 
     // Calculate the innovation variance for each axis
     // X axis
@@ -556,6 +552,7 @@ void NavEKF3_core::FuseMagnetometer()
         return;
     }
 
+    Vector24 H_MAG;
     for (uint8_t obsIndex = 0; obsIndex <= 2; obsIndex++) {
 
         if (obsIndex == 0) {
@@ -573,11 +570,13 @@ void NavEKF3_core::FuseMagnetometer()
             H_MAG[21] = 0.0f;
 
             // calculate Kalman gain
-            SK_MX[0] = 1.0f / varInnovMag[0];
-            SK_MX[1] = SH_MAG[3] + SH_MAG[4] - SH_MAG[5] - SH_MAG[6];
-            SK_MX[2] = SH_MAG[7] + SH_MAG[8] - 2.0f*magD*q2;
-            SK_MX[3] = 2.0f*q0*q2 - 2.0f*q1*q3;
-            SK_MX[4] = 2.0f*q0*q3 + 2.0f*q1*q2;
+            const Vector5 SK_MX {
+                1.0f / varInnovMag[0],
+                SH_MAG[3] + SH_MAG[4] - SH_MAG[5] - SH_MAG[6],
+                SH_MAG[7] + SH_MAG[8] - 2.0f*magD*q2,
+                2.0f*q0*q2 - 2.0f*q1*q3,
+                2.0f*q0*q3 + 2.0f*q1*q2
+            };
 
             Kfusion[0] = SK_MX[0]*(P[0][19] + P[0][1]*SH_MAG[0] - P[0][2]*SH_MAG[1] + P[0][3]*SH_MAG[2] + P[0][0]*SK_MX[2] - P[0][16]*SK_MX[1] + P[0][17]*SK_MX[4] - P[0][18]*SK_MX[3]);
             Kfusion[1] = SK_MX[0]*(P[1][19] + P[1][1]*SH_MAG[0] - P[1][2]*SH_MAG[1] + P[1][3]*SH_MAG[2] + P[1][0]*SK_MX[2] - P[1][16]*SK_MX[1] + P[1][17]*SK_MX[4] - P[1][18]*SK_MX[3]);
@@ -653,11 +652,13 @@ void NavEKF3_core::FuseMagnetometer()
             H_MAG[21] = 0.0f;
 
             // calculate Kalman gain
-            SK_MY[0] = 1.0f / varInnovMag[1];
-            SK_MY[1] = SH_MAG[3] - SH_MAG[4] + SH_MAG[5] - SH_MAG[6];
-            SK_MY[2] = SH_MAG[7] + SH_MAG[8] - 2.0f*magD*q2;
-            SK_MY[3] = 2.0f*q0*q3 - 2.0f*q1*q2;
-            SK_MY[4] = 2.0f*q0*q1 + 2.0f*q2*q3;
+            const Vector5 SK_MY {
+                1.0f / varInnovMag[1],
+                SH_MAG[3] - SH_MAG[4] + SH_MAG[5] - SH_MAG[6],
+                SH_MAG[7] + SH_MAG[8] - 2.0f*magD*q2,
+                2.0f*q0*q3 - 2.0f*q1*q2,
+                2.0f*q0*q1 + 2.0f*q2*q3
+            };
 
             Kfusion[0] = SK_MY[0]*(P[0][20] + P[0][0]*SH_MAG[2] + P[0][1]*SH_MAG[1] + P[0][2]*SH_MAG[0] - P[0][3]*SK_MY[2] - P[0][17]*SK_MY[1] - P[0][16]*SK_MY[3] + P[0][18]*SK_MY[4]);
             Kfusion[1] = SK_MY[0]*(P[1][20] + P[1][0]*SH_MAG[2] + P[1][1]*SH_MAG[1] + P[1][2]*SH_MAG[0] - P[1][3]*SK_MY[2] - P[1][17]*SK_MY[1] - P[1][16]*SK_MY[3] + P[1][18]*SK_MY[4]);
@@ -735,11 +736,13 @@ void NavEKF3_core::FuseMagnetometer()
             H_MAG[21] = 1.0f;
 
             // calculate Kalman gain
-            SK_MZ[0] = 1.0f / varInnovMag[2];
-            SK_MZ[1] = SH_MAG[3] - SH_MAG[4] - SH_MAG[5] + SH_MAG[6];
-            SK_MZ[2] = SH_MAG[7] + SH_MAG[8] - 2.0f*magD*q2;
-            SK_MZ[3] = 2.0f*q0*q1 - 2.0f*q2*q3;
-            SK_MZ[4] = 2.0f*q0*q2 + 2.0f*q1*q3;
+            const Vector5 SK_MZ {
+                1.0f / varInnovMag[2],
+                SH_MAG[3] - SH_MAG[4] - SH_MAG[5] + SH_MAG[6],
+                SH_MAG[7] + SH_MAG[8] - 2.0f*magD*q2,
+                2.0f*q0*q1 - 2.0f*q2*q3,
+                2.0f*q0*q2 + 2.0f*q1*q3
+            };
 
             Kfusion[0] = SK_MZ[0]*(P[0][21] + P[0][0]*SH_MAG[1] - P[0][1]*SH_MAG[2] + P[0][3]*SH_MAG[0] + P[0][2]*SK_MZ[2] + P[0][18]*SK_MZ[1] + P[0][16]*SK_MZ[4] - P[0][17]*SK_MZ[3]);
             Kfusion[1] = SK_MZ[0]*(P[1][21] + P[1][0]*SH_MAG[1] - P[1][1]*SH_MAG[2] + P[1][3]*SH_MAG[0] + P[1][2]*SK_MZ[2] + P[1][18]*SK_MZ[1] + P[1][16]*SK_MZ[4] - P[1][17]*SK_MZ[3]);
