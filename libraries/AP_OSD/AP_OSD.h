@@ -72,11 +72,15 @@ public:
     AP_Int8 xpos;
     AP_Int8 ypos;
 
-    AP_OSD_Setting();
-    AP_OSD_Setting(bool enabled, uint8_t x, uint8_t y);
+    AP_OSD_Setting(bool enabled = 0, uint8_t x = 0, uint8_t y = 0);
 
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
+
+private:
+    const float default_enabled;
+    const float default_xpos;
+    const float default_ypos;
 };
 
 class AP_OSD;
@@ -384,6 +388,13 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    float default_enabled;
+    float default_ypos;
+    float default_param_group;
+    float default_param_idx;
+    float default_param_key;
+    float default_type;
+
 };
 
 /*
