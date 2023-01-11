@@ -37,7 +37,7 @@ void Sub::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &ro
 float Sub::get_pilot_desired_yaw_rate(float stick_angle) const
 {
     // convert pilot input to the desired yaw rate
-    float max = degrees(attitude_control.get_ang_vel_yaw_max_rads()) * 100.f;
+    float max = degrees(attitude_control->get_ang_vel_yaw_max_rads()) * 100.f;
     return constrain_float(stick_angle * g.acro_yaw_p , -max, max);
 }
 
@@ -47,7 +47,7 @@ void Sub::check_ekf_yaw_reset()
     float yaw_angle_change_rad;
     uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
     if (new_ekfYawReset_ms != ekfYawReset_ms) {
-        attitude_control.inertial_frame_reset();
+        attitude_control->inertial_frame_reset();
         ekfYawReset_ms = new_ekfYawReset_ms;
     }
 }
@@ -129,14 +129,14 @@ float Sub::get_surface_tracking_climb_rate(int16_t target_rate, float current_al
     last_call_ms = now;
 
     // adjust rangefinder target alt if motors have not hit their limits
-    if ((target_rate<0 && !motors.limit.throttle_lower) || (target_rate>0 && !motors.limit.throttle_upper)) {
+    if ((target_rate<0 && !motors->limit.throttle_lower) || (target_rate>0 && !motors->limit.throttle_upper)) {
         target_rangefinder_alt += target_rate * dt;
     }
 
     // do not let target altitude get too far from current altitude above ground
     target_rangefinder_alt = constrain_float(target_rangefinder_alt,
-        rangefinder_state.alt_cm - pos_control.get_pos_error_z_down_cm(),
-        rangefinder_state.alt_cm + pos_control.get_pos_error_z_up_cm());
+        rangefinder_state.alt_cm - pos_control->get_pos_error_z_down_cm(),
+        rangefinder_state.alt_cm + pos_control->get_pos_error_z_up_cm());
 
     // calc desired velocity correction from target rangefinder alt vs actual rangefinder alt (remove the error already passed to Altitude controller to avoid oscillations)
     distance_error = (target_rangefinder_alt - rangefinder_state.alt_cm) - (current_alt_target - current_alt);
@@ -169,8 +169,8 @@ void Sub::update_poscon_alt_max()
     }
 #endif
     // pass limit to pos controller
-    pos_control.set_alt_min(min_alt_cm);
-    pos_control.set_alt_max(max_alt_cm);
+    pos_control->set_alt_min(min_alt_cm);
+    pos_control->set_alt_max(max_alt_cm);
 }
 
 // rotate vector from vehicle's perspective to North-East frame

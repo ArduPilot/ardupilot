@@ -56,12 +56,12 @@ bool Sub::motordetect_init()
 void Sub::motordetect_run()
 {
     // if not armed set throttle to zero and exit immediately
-    if (!motors.armed()) {
-        motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+    if (!motors->armed()) {
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Force all motors to stop
         for(uint8_t i=0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
-            if (motors.motor_is_enabled(i)) {
-                motors.output_test_num(i, 1500);
+            if (motors->motor_is_enabled(i)) {
+                motors->output_test_num(i, 1500);
             }
         }
         md_state = STANDBY;
@@ -81,8 +81,8 @@ void Sub::motordetect_run()
     case SETTLING:
         // Force all motors to stop
         for (uint8_t i=0; i <AP_MOTORS_MAX_NUM_MOTORS; i++) {
-            if (motors.motor_is_enabled(i)) {
-                motors.output_test_num(i, 1500);
+            if (motors->motor_is_enabled(i)) {
+                motors->output_test_num(i, 1500);
             }
         }
         // wait until gyro product is under a certain(experimental) threshold
@@ -100,7 +100,7 @@ void Sub::motordetect_run()
     // Thrusts motor for 500ms
     case THRUSTING:
         if (AP_HAL::millis() < (thrusting_timer + 500)) {
-            if (!motors.output_test_num(current_motor, 1500 + 300*current_direction)) {
+            if (!motors->output_test_num(current_motor, 1500 + 300*current_direction)) {
                 md_state = DONE;
             };
 
@@ -132,13 +132,13 @@ void Sub::motordetect_run()
 
         Vector3f directions(roll, pitch, yaw);
         // Good read, not inverted
-        if (directions == motors.get_motor_angular_factors(current_motor)) {
+        if (directions == motors->get_motor_angular_factors(current_motor)) {
             gcs().send_text(MAV_SEVERITY_INFO, "Thruster %d is ok!", current_motor + 1);
         }
         // Good read, inverted
-        else if (-directions == motors.get_motor_angular_factors(current_motor)) {
+        else if (-directions == motors->get_motor_angular_factors(current_motor)) {
             gcs().send_text(MAV_SEVERITY_INFO, "Thruster %d is reversed! Saving it!", current_motor + 1);
-            motors.set_reversed(current_motor, true);
+            motors->set_reversed(current_motor, true);
         }
         // Bad read!
         else {
@@ -160,7 +160,7 @@ void Sub::motordetect_run()
         // Test the next motor, if it exists
         current_motor++;
         current_direction = UP;
-        if (!motors.motor_is_enabled(current_motor)) {
+        if (!motors->motor_is_enabled(current_motor)) {
             md_state = DONE;
             gcs().send_text(MAV_SEVERITY_WARNING, "Motor direction detection is complete.");
         }

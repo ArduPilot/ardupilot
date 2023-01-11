@@ -204,6 +204,7 @@ private:
             uint8_t at_surface          : 1; // true if we are at the surface
             uint8_t depth_sensor_present: 1; // true if there is a depth sensor detected at boot
             uint8_t unused1             : 1; // was compass_init_location; true when the compass's initial location has been set
+            uint8_t initialised_params  : 1; // true when the all parameters have been initialised. we cannot send parameters to the GCS until this is done
         };
         uint32_t value;
     } ap;
@@ -253,7 +254,8 @@ private:
     // Baro sensor instance index of the external water pressure sensor
     uint8_t depth_sensor_idx;
 
-    AP_Motors6DOF motors;
+    AP_MotorsMatrix *motors;
+    const struct AP_Param::GroupInfo *motors_var_info;
 
     // Auto
     AutoMode auto_mode;   // controls which auto controller is run
@@ -335,17 +337,17 @@ private:
     // Inertial Navigation
     AP_InertialNav_NavEKF inertial_nav;
 
-    AP_AHRS_View ahrs_view;
+    AP_AHRS_View *ahrs_view;
 
     // Attitude, Position and Waypoint navigation objects
     // To-Do: move inertial nav up or other navigation variables down here
-    AC_AttitudeControl_Sub attitude_control;
+    AC_AttitudeControl_Sub *attitude_control;
 
-    AC_PosControl_Sub pos_control;
+    AC_PosControl_Sub *pos_control;
 
-    AC_WPNav wp_nav;
-    AC_Loiter loiter_nav;
-    AC_Circle circle_nav;
+    AC_WPNav *wp_nav;
+    AC_Loiter *loiter_nav;
+    AC_Circle *circle_nav;
 
     // Camera
 #if CAMERA == ENABLED
@@ -555,6 +557,7 @@ private:
     void terrain_update();
     void terrain_logging();
     void init_ardupilot() override;
+    void allocate_motors(void);
     void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
                              uint8_t &task_count,
                              uint32_t &log_bit) override;

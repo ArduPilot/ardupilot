@@ -26,7 +26,8 @@ public:
         SUB_FRAME_SIMPLEROV_3,
         SUB_FRAME_SIMPLEROV_4,
         SUB_FRAME_SIMPLEROV_5,
-        SUB_FRAME_CUSTOM
+        SUB_FRAME_CUSTOM,
+        SUB_FRAME_SCRIPTING
     } sub_frame_t;
 
     const char* get_frame_string() const override { return _frame_class_string; };
@@ -44,16 +45,13 @@ public:
     void output_to_motors() override;
 
     // returns a vector with roll, pitch, and yaw contributions
-    Vector3f get_motor_angular_factors(int motor_number);
+    Vector3f get_motor_angular_factors(int motor_number) override;
 
-    // returns true if motor is enabled
-    bool motor_is_enabled(int motor_number);
-
-    bool set_reversed(int motor_number, bool reversed);
+    bool set_reversed(int motor_number, bool reversed) override;
 
     // This allows us to read back the output of the altidude controllers
     // The controllers are in charge of the throttle input, so this gives vehicle access/visibility to the output of those controllers
-    float get_throttle_in_bidirectional() const { return constrain_float(2*(_throttle_in - 0.5f), -1.0f, 1.0f); }
+    float get_throttle_in_bidirectional() const override { return constrain_float(2*(_throttle_in - 0.5f), -1.0f, 1.0f); }
 
     // Sub assumes vehicles are neutrally buoyant
     virtual float get_throttle_hover() const override { return 0.5f; }

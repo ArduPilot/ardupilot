@@ -12,7 +12,7 @@ static float current_depth = 0;
 // ToDo: doesn't need to be called this fast
 void Sub::update_surface_and_bottom_detector()
 {
-    if (!motors.armed()) { // only update when armed
+    if (!motors->armed()) { // only update when armed
         set_surfaced(false);
         set_bottomed(false);
         return;
@@ -35,7 +35,7 @@ void Sub::update_surface_and_bottom_detector()
         }
 
 
-        if (motors.limit.throttle_lower && vel_stationary) {
+        if (motors->limit.throttle_lower && vel_stationary) {
             // bottom criteria met - increment the counter and check if we've triggered
             if (bottom_detector_count < ((float)BOTTOM_DETECTOR_TRIGGER_SEC)*MAIN_LOOP_RATE) {
                 bottom_detector_count++;
@@ -49,7 +49,7 @@ void Sub::update_surface_and_bottom_detector()
 
         // with no external baro, the only thing we have to go by is a vertical velocity estimate
     } else if (vel_stationary) {
-        if (motors.limit.throttle_upper) {
+        if (motors->limit.throttle_upper) {
 
             // surface criteria met, increment counter and see if we've triggered
             if (surface_detector_count < ((float)SURFACE_DETECTOR_TRIGGER_SEC)*MAIN_LOOP_RATE) {
@@ -58,7 +58,7 @@ void Sub::update_surface_and_bottom_detector()
                 set_surfaced(true);
             }
 
-        } else if (motors.limit.throttle_lower) {
+        } else if (motors->limit.throttle_lower) {
             // bottom criteria met, increment counter and see if we've triggered
             if (bottom_detector_count < ((float)BOTTOM_DETECTOR_TRIGGER_SEC)*MAIN_LOOP_RATE) {
                 bottom_detector_count++;

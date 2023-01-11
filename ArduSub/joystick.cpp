@@ -153,7 +153,7 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
     // Act based on the function assigned to this button
     switch (get_button(_button)->function(shift)) {
     case JSButton::button_function_t::k_arm_toggle:
-        if (motors.armed()) {
+        if (motors->armed()) {
             arming.disarm(AP_Arming::Method::MAVLINK);
         } else {
             arming.arm(AP_Arming::Method::MAVLINK);
@@ -364,7 +364,7 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
         last_pilot_heading = degrees(attitudeTarget.get_euler_yaw()) * 100;
         break;
     case JSButton::button_function_t::k_input_hold_set:
-        if(!motors.armed()) {
+        if(!motors->armed()) {
             break;
         }
         if(roll_pitch_flag) {
