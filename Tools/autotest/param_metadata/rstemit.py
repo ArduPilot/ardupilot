@@ -8,6 +8,19 @@ try:
 except Exception:
     from html import escape as cescape
 
+import functools
+
+def compare_keys(p1, p2):
+    '''
+    compare two params for sorting. We only want to sort SIM_ params
+    '''
+    if not p1.startswith("SIM_") and not p2.startswith("SIM_"):
+        return 0
+    if p1 < p2:
+        return -1
+    if p1 > p2:
+        return 1
+    return 0
 
 # Emit docs in a RST format
 class RSTEmit(Emit):
@@ -224,7 +237,9 @@ This list is automatically generated from the latest ardupilot source code, and 
 """.format(tag=tag, underline="-" * len(tag),
            reference=reference)
 
-        for param in g.params:
+        params = sorted(g.params, key=functools.cmp_to_key(lambda p1, p2: compare_keys(p1.name, p2.name)))
+
+        for param in params:
             if not hasattr(param, 'DisplayName') or not hasattr(param, 'Description'):
                 continue
             d = param.__dict__
