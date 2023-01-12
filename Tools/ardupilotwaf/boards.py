@@ -660,6 +660,7 @@ class sitl(Board):
 
         env.AP_LIBRARIES += [
             'AP_HAL_SITL',
+            'AP_CSVReader',
         ]
 
         if not cfg.env.AP_PERIPH:
