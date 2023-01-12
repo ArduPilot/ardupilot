@@ -31,13 +31,14 @@ bool AP_AHRS_SIM::get_velocity_NED(Vector3f &vec) const
     return true;
 }
 
-Vector3f AP_AHRS_SIM::wind_estimate() const
+bool AP_AHRS_SIM::wind_estimate(Vector3f &wind) const
 {
     if (_sitl == nullptr) {
-        return Vector3f{};
+        return false;
     }
 
-    return _sitl->state.wind_ef;
+    wind = _sitl->state.wind_ef;
+    return true;
 }
 
 bool AP_AHRS_SIM::airspeed_estimate(float &airspeed_ret) const
