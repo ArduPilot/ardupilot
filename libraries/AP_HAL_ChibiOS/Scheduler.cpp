@@ -565,10 +565,13 @@ void Scheduler::check_low_memory_is_zero()
     // we can't do address 0, but can check next 3 bytes
     const uint8_t *addr0 = (const uint8_t *)0;
     for (uint8_t i=1; i<4; i++) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
         if (addr0[i] != 0) {
             AP_memory_guard_error(1023);
             break;
         }
+#pragma GCC diagnostic pop
     }
 }
 #endif // STM32H7
