@@ -230,4 +230,51 @@ bool AP_AHRS_SIM::get_variances(float &velVar, float &posVar, float &hgtVar, Vec
     return true;
 }
 
+void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
+{
+    if (_sitl == nullptr) {
+        _sitl = AP::sitl();
+        if (_sitl == nullptr) {
+            return;
+        }
+    }
+
+    const struct SITL::sitl_fdm &fdm = _sitl->state;
+    const AP_InertialSensor &_ins = AP::ins();
+
+    fdm.quaternion.rotation_matrix(results.dcm_matrix);
+    results.dcm_matrix = results.dcm_matrix * AP::ahrs().get_rotation_vehicle_body_to_autopilot_body();
+    results.dcm_matrix.to_euler(&results.roll_rad, &results.pitch_rad, &results.yaw_rad);
+
+    results.gyro_estimate = _ins.get_gyro();
+    results.gyro_drift.zero();
+
+    const Vector3f &accel = _ins.get_accel();
+    results.accel_ef = results.dcm_matrix * AP::ahrs().get_rotation_autopilot_body_to_vehicle_body() * accel;
+
+#if HAL_NAVEKF3_AVAILABLE
+    if (_sitl->odom_enable) {
+        // use SITL states to write body frame odometry data at 20Hz
+        uint32_t timeStamp_ms = AP_HAL::millis();
+        if (timeStamp_ms - _last_body_odm_update_ms > 50) {
+            const float quality = 100.0f;
+            const Vector3f posOffset(0.0f, 0.0f, 0.0f);
+            const float delTime = 0.001f * (timeStamp_ms - _last_body_odm_update_ms);
+            _last_body_odm_update_ms = timeStamp_ms;
+            timeStamp_ms -= (timeStamp_ms - _last_body_odm_update_ms)/2; // correct for first order hold average delay
+            Vector3f delAng = _ins.get_gyro();
+
+            delAng *= delTime;
+            // rotate earth velocity into body frame and calculate delta position
+            Matrix3f Tbn;
+            Tbn.from_euler(radians(fdm.rollDeg),radians(fdm.pitchDeg),radians(fdm.yawDeg));
+            const Vector3f earth_vel(fdm.speedN,fdm.speedE,fdm.speedD);
+            const Vector3f delPos = Tbn.transposed() * (earth_vel * delTime);
+            // write to EKF
+            EKF3.writeBodyFrameOdom(quality, delPos, delAng, delTime, timeStamp_ms, 0, posOffset);
+        }
+    }
+#endif // HAL_NAVEKF3_AVAILABLE
+}
+
 #endif // AP_AHRS_SIM_ENABLED
