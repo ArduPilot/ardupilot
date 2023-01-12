@@ -734,40 +734,40 @@ float AP_AHRS::get_error_yaw(void) const
 }
 
 // return a wind estimation vector, in m/s
-Vector3f AP_AHRS::wind_estimate(void) const
+bool AP_AHRS::wind_estimate(Vector3f &wind) const
 {
-    Vector3f wind;
     switch (active_EKF_type()) {
     case EKFType::NONE:
-        wind = dcm.wind_estimate();
-        break;
+        return dcm.wind_estimate(wind);
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        wind = sim.wind_estimate();
-        break;
+        return sim.wind_estimate(wind);
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
         EKF2.getWind(wind);
-        break;
+        return true;
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        EKF3.getWind(wind);
-        break;
+        return EKF3.getWind(wind);
 #endif
 
 #if HAL_EXTERNAL_AHRS_ENABLED
     case EKFType::EXTERNAL:
-        wind.zero();
-        break;
+        return false;
 #endif
-        
     }
-    return wind;
+    return false;
+}
+Vector3f AP_AHRS::wind_estimate(void) const
+{
+    Vector3f ret;
+    UNUSED_RESULT(wind_estimate(ret));
+    return ret;
 }
 
 /*

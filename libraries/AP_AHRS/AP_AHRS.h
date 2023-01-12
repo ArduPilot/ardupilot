@@ -108,7 +108,7 @@ public:
     // wind_estimation_enabled returns true if wind estimation is enabled
     bool get_wind_estimation_enabled() const { return wind_estimation_enabled; }
 
-    // return a wind estimation vector, in m/s
+    // return a wind estimation vector, in m/s; returns 0,0,0 on failure
     Vector3f wind_estimate() const;
 
     // instruct DCM to update its wind estimate:
@@ -783,6 +783,9 @@ private:
      * wind estimation support
      */
     bool wind_estimation_enabled;
+
+    // return a wind estimation vector, in m/s
+    bool wind_estimate(Vector3f &wind) const WARN_IF_UNUSED;
 
     /*
      * fly_forward is set by the vehicles to indicate the vehicle
