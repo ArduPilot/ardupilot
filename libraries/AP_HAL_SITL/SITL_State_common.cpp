@@ -256,6 +256,9 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         }
         gyus42v2 = new SITL::RF_GYUS42v2();
         return gyus42v2;
+    } else if (!strncmp(name, "hobbywing_platinum_pro_v3", strlen("hobbywing_platinum_pro_v3"))) {
+        const uint8_t x = atoi(arg);
+        return sitl_model->hwing_escs.create(x);
     } else if (streq(name, "megasquirt")) {
         if (efi_ms != nullptr) {
             AP_HAL::panic("Only one megasquirt at a time");
