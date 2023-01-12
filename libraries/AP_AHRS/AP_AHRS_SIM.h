@@ -67,7 +67,7 @@ public:
     bool get_hagl(float &hagl) const override WARN_IF_UNUSED;
 
     // return a wind estimation vector, in m/s
-    Vector3f wind_estimate() const override;
+    bool wind_estimate(Vector3f &wind) const override;
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
