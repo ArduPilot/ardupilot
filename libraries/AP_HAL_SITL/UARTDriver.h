@@ -8,6 +8,7 @@
 #include "AP_HAL_SITL_Namespace.h"
 #include <AP_HAL/utility/Socket.h>
 #include <AP_HAL/utility/RingBuffer.h>
+#include <AP_CSVReader/AP_CSVReader.h>
 
 #include <SITL/SIM_SerialDevice.h>
 
@@ -130,6 +131,22 @@ private:
     uint32_t last_tick_us;
 
     SITL::SerialDevice *_sim_serial_device;
+
+    struct {
+        bool active;
+        uint8_t term[20];
+        AP_CSVReader csvreader{term, sizeof(term), ','};
+        struct {
+            uint32_t timestamp_us;
+            uint8_t b;  // the byte
+        } loaded_data;
+        bool loaded;  // true if data is all valid
+        bool done_first_line = false;
+        uint8_t terms_seen;
+        uint32_t first_timestamp_us;
+        uint32_t first_emit_micros_us;
+    } logic_async_csv;
+    uint16_t read_from_async_csv(uint8_t *buffer, uint16_t space);
 };
 
 #endif
