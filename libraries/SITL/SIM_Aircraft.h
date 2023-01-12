@@ -43,6 +43,7 @@
 #include "SIM_GPIO_LED_2.h"
 #include "SIM_GPIO_LED_3.h"
 #include "SIM_GPIO_LED_RGB.h"
+#include "SIM_HobbyWing_Platinum_PRO_v3.h"
 
 #define MAX_SIM_INSTANCES 16
 
@@ -179,6 +180,7 @@ public:
     float ambient_temperature_degC() const;
 
     ADSB *adsb;
+    HobbyWing_Platinum_PRO_v3s hwing_escs;
 
     ServoModel servo_filter[16];
 

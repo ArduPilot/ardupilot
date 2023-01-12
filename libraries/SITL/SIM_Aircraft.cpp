@@ -1165,6 +1165,9 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
         volz->update(*this);
     }
 #endif  // AP_SIM_VOLZ_ENABLED
+    for (auto &esc : hwing_escs) {
+        esc.update(*this, input);
+    }
 
 #if AP_SIM_SHIP_ENABLED
     sitl->models.shipsim.update();
