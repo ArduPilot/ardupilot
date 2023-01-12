@@ -14,7 +14,7 @@ bool ModeQRTL::_enter()
     submode = SubMode::RTL;
     plane.prev_WP_loc = plane.current_loc;
 
-    const int32_t RTL_alt_abs_cm = plane.home.alt + quadplane.qrtl_alt*100UL;
+    int32_t RTL_alt_abs_cm = plane.home.alt + quadplane.qrtl_alt*100UL;
     if (quadplane.motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) {
         // VTOL motors are active, either in VTOL flight or assisted flight
         Location destination = plane.rally.calc_best_rally_or_home_location(plane.current_loc, RTL_alt_abs_cm);
@@ -22,24 +22,42 @@ bool ModeQRTL::_enter()
         const float dist = plane.current_loc.get_distance(destination);
         const float radius = MAX(fabsf(plane.aparm.loiter_radius), fabsf(plane.g.rtl_radius));
 
-        const float dist_to_climb = quadplane.qrtl_alt - plane.relative_ground_altitude(plane.g.rangefinder_landing);
-        if (dist < 1.5*radius) {
-            // we're close to destination and already running VTOL motors, don't transition and don't climb
-            gcs().send_text(MAV_SEVERITY_INFO,"VTOL position1 d=%.1f r=%.1f", dist, radius);
-            poscontrol.set_state(QuadPlane::QPOS_POSITION1);
+        // Climb at least to a cone around home of hight of QRTL alt and radius of 1.5*radius
+        // Always climb up to at least land final alt
+        const float target_alt = MAX(quadplane.qrtl_alt * (dist / MAX(1.5*radius, dist)), quadplane.land_final_alt);
 
-        } else if (is_positive(dist_to_climb)) {
+
+#if AP_TERRAIN_AVAILABLE
+        const bool use_terrain = plane.terrain_enabled_in_mode(mode_number());
+#else
+        const bool use_terrain = false;
+#endif
+
+        const float dist_to_climb = target_alt - plane.relative_ground_altitude(plane.g.rangefinder_landing, use_terrain);
+        if (is_positive(dist_to_climb)) {
             // climb before returning, only next waypoint altitude is used
             submode = SubMode::climb;
             plane.next_WP_loc = plane.current_loc;
 #if AP_TERRAIN_AVAILABLE
-            if (plane.terrain_enabled_in_mode(mode_number())) {
-                plane.next_WP_loc.set_alt_cm(quadplane.qrtl_alt * 100UL, Location::AltFrame::ABOVE_TERRAIN);
+            int32_t curent_alt_terrain_cm;
+            if (use_terrain && plane.current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, curent_alt_terrain_cm)) {
+                plane.next_WP_loc.set_alt_cm(curent_alt_terrain_cm + dist_to_climb * 100UL, Location::AltFrame::ABOVE_TERRAIN);
                 return true;
             }
 #endif
             plane.next_WP_loc.set_alt_cm(plane.current_loc.alt + dist_to_climb * 100UL, plane.current_loc.get_alt_frame());
             return true;
+
+        } else if (dist < 1.5*radius) {
+            // Above home "cone", return at curent altitude if lower than QRTL alt
+            int32_t current_alt_abs_cm;
+            if (plane.current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, current_alt_abs_cm)) {
+                RTL_alt_abs_cm = MIN(RTL_alt_abs_cm, current_alt_abs_cm);
+            }
+
+            // we're close to destination and already running VTOL motors, don't transition and don't climb
+            gcs().send_text(MAV_SEVERITY_INFO,"VTOL position1 d=%.1f r=%.1f", dist, radius);
+            poscontrol.set_state(QuadPlane::QPOS_POSITION1);
         }
     }
 
@@ -96,7 +114,22 @@ void ModeQRTL::run()
                 // climb finshed or cant get alt diff, head home
                 submode = SubMode::RTL;
                 plane.prev_WP_loc = plane.current_loc;
-                plane.do_RTL(plane.home.alt + quadplane.qrtl_alt*100UL);
+
+                int32_t RTL_alt_abs_cm = plane.home.alt + quadplane.qrtl_alt*100UL;
+                Location destination = plane.rally.calc_best_rally_or_home_location(plane.current_loc, RTL_alt_abs_cm);
+                const float dist = plane.current_loc.get_distance(destination);
+                const float radius = MAX(fabsf(plane.aparm.loiter_radius), fabsf(plane.g.rtl_radius));
+                if (dist < 1.5*radius) {
+                    // if close to home return at current altitude
+                    int32_t current_alt_abs_cm;
+                    if (plane.current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, current_alt_abs_cm)) {
+                        RTL_alt_abs_cm = MIN(RTL_alt_abs_cm, current_alt_abs_cm);
+                    }
+                    gcs().send_text(MAV_SEVERITY_INFO,"VTOL position1 d=%.1f r=%.1f", dist, radius);
+                    poscontrol.set_state(QuadPlane::QPOS_POSITION1);
+                }
+
+                plane.do_RTL(RTL_alt_abs_cm);
                 quadplane.poscontrol_init_approach();
                 if (plane.current_loc.get_alt_distance(plane.next_WP_loc, alt_diff)) {
                     poscontrol.slow_descent = is_positive(alt_diff);
