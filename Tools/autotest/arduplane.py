@@ -5954,6 +5954,37 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_statustext('Airspeed 2 calibrated', check_context=True)
         self.context_pop()
 
+    def HobbyWing_Platinum_PRO_v3(self):
+        '''test support for v3 of the HobbyWing Platinum PRO protocol'''
+        self.context_push()
+
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 45,
+            "RPM1_TYPE": 5,
+            "RPM1_ESC_MASK": 4,
+            "SERVO_H_V3_MASK": 4,
+            "SIM_ESC_TELEM": 0,
+        })
+        self.customise_SITL_commandline([
+            "--uartF=sim:hobbywing_platinum_pro_v3:3",
+        ])
+
+        self.assert_received_message_field_values("RPM", {
+            "rpm1": 0,
+            "rpm2": -1,
+        })
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('TAKEOFF')
+
+        self.wait_message_field_values("RPM", {
+            "rpm1": 5000,
+        }, epsilon=100)
+
+        self.disarm_vehicle(force=True)
+
+        self.context_pop()
         self.reboot_sitl()
 
     def RunMissionScript(self):
@@ -7421,6 +7452,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.SpeedToFly,
             self.AltitudeSlopeMaxHeight,
             self.HIGH_LATENCY2,
+            self.HobbyWing_Platinum_PRO_v3,
             self.MidAirDisarmDisallowed,
             self.AerobaticsScripting,
             self.MANUAL_CONTROL,
