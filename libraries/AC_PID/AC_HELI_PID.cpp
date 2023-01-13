@@ -93,6 +93,5 @@ void AC_HELI_PID::update_leaky_i(float leak_rate)
             _integrator -= (float)(_integrator + _leak_min) * leak_rate;
         }
 
-        _pid_info.I = _integrator;
     }
 }
