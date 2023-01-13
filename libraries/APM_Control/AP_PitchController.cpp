@@ -345,7 +345,6 @@ float AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool di
 
 void AP_PitchController::reset_I()
 {
-    _pid_info.I = 0;
     rate_pid.reset_I();
 }
 
