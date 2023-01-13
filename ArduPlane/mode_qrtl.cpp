@@ -110,8 +110,13 @@ void ModeQRTL::run()
             quadplane.set_climb_rate_cms(quadplane.wp_nav->get_default_speed_up());
             quadplane.run_z_controller();
 
+            // Climb done when stopping point reaches target altitude
+            Vector3p stopping_point;
+            pos_control->get_stopping_point_z_cm(stopping_point.z);
+            Location stopping_loc = Location(stopping_point.tofloat(), Location::AltFrame::ABOVE_ORIGIN);
+
             ftype alt_diff;
-            if (!plane.current_loc.get_alt_distance(plane.next_WP_loc, alt_diff) || is_positive(alt_diff)) {
+            if (!stopping_loc.get_alt_distance(plane.next_WP_loc, alt_diff) || is_positive(alt_diff)) {
                 // climb finshed or cant get alt diff, head home
                 submode = SubMode::RTL;
                 plane.prev_WP_loc = plane.current_loc;
@@ -121,10 +126,10 @@ void ModeQRTL::run()
                 const float dist = plane.current_loc.get_distance(destination);
                 const float radius = MAX(fabsf(plane.aparm.loiter_radius), fabsf(plane.g.rtl_radius));
                 if (dist < 1.5*radius) {
-                    // if close to home return at current altitude
-                    int32_t current_alt_abs_cm;
-                    if (plane.current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, current_alt_abs_cm)) {
-                        RTL_alt_abs_cm = MIN(RTL_alt_abs_cm, current_alt_abs_cm);
+                    // if close to home return at current target altitude
+                    int32_t target_alt_abs_cm;
+                    if (plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, target_alt_abs_cm)) {
+                        RTL_alt_abs_cm = MIN(RTL_alt_abs_cm, target_alt_abs_cm);
                     }
                     gcs().send_text(MAV_SEVERITY_INFO,"VTOL position1 d=%.1f r=%.1f", dist, radius);
                     poscontrol.set_state(QuadPlane::QPOS_POSITION1);
