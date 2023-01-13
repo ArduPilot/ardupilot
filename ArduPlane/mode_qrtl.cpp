@@ -23,8 +23,9 @@ bool ModeQRTL::_enter()
         const float radius = MAX(fabsf(plane.aparm.loiter_radius), fabsf(plane.g.rtl_radius));
 
         // Climb at least to a cone around home of hight of QRTL alt and radius of 1.5*radius
-        // Always climb up to at least land final alt
-        const float target_alt = MAX(quadplane.qrtl_alt * (dist / MAX(1.5*radius, dist)), quadplane.land_final_alt);
+        // Always climb up to at least Q_RTL_ALT_MIN, constrain Q_RTL_ALT_MIN between Q_LAND_FINAL_ALT and Q_RTL_ALT
+        const float min_climb = constrain_float(quadplane.qrtl_alt_min, quadplane.land_final_alt, quadplane.qrtl_alt);
+        const float target_alt = MAX(quadplane.qrtl_alt * (dist / MAX(1.5*radius, dist)), min_climb);
 
 
 #if AP_TERRAIN_AVAILABLE

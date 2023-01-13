@@ -337,6 +337,7 @@ private:
 
     // QRTL start altitude, meters
     AP_Int16 qrtl_alt;
+    AP_Int16 qrtl_alt_min;
     
     // alt to switch to QLAND_FINAL
     AP_Float land_final_alt;
