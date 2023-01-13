@@ -121,6 +121,8 @@ private:
     bool _have_elevator;
     bool _have_aileron;
     bool _have_rudder;
+    bool _have_elevon;
+    bool _have_v_tail;
 
     // refences for convenience
     QuadPlane& quadplane;
