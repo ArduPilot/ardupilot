@@ -112,7 +112,7 @@ bool AP_Compass_MMC5XX3::init()
 
     set_dev_id(compass_instance, dev->get_bus_id());
 
-    printf("Found a MMC5983 on 0x%x as compass %u\n", dev->get_bus_id(), compass_instance);
+    printf("Found a MMC5983 on 0x%" PRIx32 " as compass %" PRIu8 "\n", dev->get_bus_id(), compass_instance);
 
     set_rotation(compass_instance, rotation);
 

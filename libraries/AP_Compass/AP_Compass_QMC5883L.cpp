@@ -120,7 +120,7 @@ bool AP_Compass_QMC5883L::init()
     }
     set_dev_id(_instance, _dev->get_bus_id());
 
-    printf("%s found on bus %u id %u address 0x%02x\n", name,
+    printf("%s found on bus %" PRIu8 " id %" PRIu32 " address 0x%02x\n", name,
            _dev->bus_num(), _dev->get_bus_id(), _dev->get_bus_address());
 
     set_rotation(_instance, _rotation);
