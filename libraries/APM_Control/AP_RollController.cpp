@@ -247,7 +247,6 @@ float AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool dis
 
 void AP_RollController::reset_I()
 {
-    _pid_info.I = 0;
     rate_pid.reset_I();
 }
 
