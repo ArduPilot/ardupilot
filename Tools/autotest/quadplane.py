@@ -1096,6 +1096,13 @@ class AutoTestQuadPlane(AutoTest):
         self.wait_disarmed(timeout=120) # give quadplane a long time to land
         self.progress("Mission OK")
 
+    def VTOLLandSpiral(self):
+        '''check spiral-to-alt option for landing'''
+        self.fly_mission('mission.txt')
+        self.set_parameter('WP_LOITER_RAD', -self.get_parameter('WP_LOITER_RAD'))
+        self.set_current_waypoint(0, check_afterwards=False)
+        self.fly_mission('mission.txt')
+
     def tests(self):
         '''return list of all tests'''
 
@@ -1119,5 +1126,6 @@ class AutoTestQuadPlane(AutoTest):
             self.Ship,
             self.MAV_CMD_NAV_LOITER_TO_ALT,
             self.LoiterAltQLand,
+            self.VTOLLandSpiral,
         ])
         return ret
