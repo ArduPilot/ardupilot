@@ -85,6 +85,7 @@ public:
         SerialProtocol_IMUOUT = 46,
         // Reserving Serial Protocol 47 for SerialProtocol_IQ
         SerialProtocol_PPP = 48,
+        SerialProtocol_HobbyWing = 49,
         SerialProtocol_NumProtocols                    // must be the last value
     };
 
