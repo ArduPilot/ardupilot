@@ -999,6 +999,22 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(rngf, "RNGF", 60, AP_OSD_Screen, AP_OSD_Setting),
 
+    // @Param: ACRVOLT_EN
+    // @DisplayName: ACRVOLT_EN
+    // @Description: Displays resting voltage for the average cell. WARNING: this can be inaccurate if the cell count is not detected or set properly. If the  the battery is far from fully charged the detected cell count might not be accurate if auto cell count detection is used (OSD_CELL_COUNT=0).
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: ACRVOLT_X
+    // @DisplayName: ACRVOLT_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: ACRVOLT_Y
+    // @DisplayName: ACRVOLT_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(avgcellrestvolt, "ACRVOLT", 61, AP_OSD_Screen, AP_OSD_Setting),
+
     AP_GROUPEND
 };
 
@@ -1297,7 +1313,7 @@ void AP_OSD_Screen::draw_bat_volt(uint8_t x, uint8_t y)
     backend->write(x,y, v < osd->warn_batvolt, "%c%2.1f%c", SYMBOL(SYM_BATT_FULL) + p, (double)v, SYMBOL(SYM_VOLT));
 }
 
-void AP_OSD_Screen::draw_avgcellvolt(uint8_t x, uint8_t y)
+void AP_OSD_Screen::draw_avgcellvolt_common(uint8_t x, uint8_t y, bool rest)
 {
     AP_BattMonitor &battery = AP::battery();
     uint8_t pct = 0;
@@ -1308,13 +1324,31 @@ void AP_OSD_Screen::draw_avgcellvolt(uint8_t x, uint8_t y)
     osd->max_battery_voltage.set(MAX(osd->max_battery_voltage,v));
     if (osd->cell_count > 0) {
         v = v / osd->cell_count;
-        backend->write(x,y, v < osd->warn_avgcellvolt, "%c%1.2f%c", SYMBOL(SYM_BATT_FULL) + p, v, SYMBOL(SYM_VOLT));
+        if (rest) {
+            backend->write(x,y, v < osd->warn_avgcellrestvolt, "%c%1.2f%c", SYMBOL(SYM_BATT_FULL) + p, v, SYMBOL(SYM_VOLT));
+        } else {
+            backend->write(x,y, v < osd->warn_avgcellvolt, "%c%1.2f%c", SYMBOL(SYM_BATT_FULL) + p, v, SYMBOL(SYM_VOLT));
+        }
     } else if (osd->cell_count < 0) { // user must decide on autodetect cell count or manually entered to display this panel since default is -1
         backend->write(x,y, false, "%c---%c", SYMBOL(SYM_BATT_FULL) + p, SYMBOL(SYM_VOLT));
     } else {  // use autodetected cell count
         v = v /  (uint8_t)(osd->max_battery_voltage * 0.2381 + 1);
-        backend->write(x,y, v < osd->warn_avgcellvolt, "%c%1.2f%c", SYMBOL(SYM_BATT_FULL) + p, v, SYMBOL(SYM_VOLT));
+        if (rest) {
+            backend->write(x,y, v < osd->warn_avgcellrestvolt, "%c%1.2f%c", SYMBOL(SYM_BATT_FULL) + p, v, SYMBOL(SYM_VOLT));
+        } else {
+            backend->write(x,y, v < osd->warn_avgcellvolt, "%c%1.2f%c", SYMBOL(SYM_BATT_FULL) + p, v, SYMBOL(SYM_VOLT));
+        }
     }
+}
+
+void AP_OSD_Screen::draw_avgcellvolt(uint8_t x, uint8_t y)
+{
+    draw_avgcellvolt_common(x, y, false);
+}
+
+void AP_OSD_Screen::draw_avgcellrestvolt(uint8_t x, uint8_t y)
+{
+    draw_avgcellvolt_common(x, y, true);
 }
 
 void AP_OSD_Screen::draw_restvolt(uint8_t x, uint8_t y)
@@ -1326,8 +1360,6 @@ void AP_OSD_Screen::draw_restvolt(uint8_t x, uint8_t y)
     float v = battery.voltage_resting_estimate();
     backend->write(x,y, v < osd->warn_restvolt, "%c%2.1f%c", SYMBOL(SYM_BATT_FULL) + p, (double)v, SYMBOL(SYM_VOLT));
 }
-
-
 
 void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
 {
@@ -2202,6 +2234,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(bat2_vlt);
     DRAW_SETTING(avgcellvolt);
     DRAW_SETTING(restvolt);
+    DRAW_SETTING(avgcellrestvolt);
     DRAW_SETTING(rssi);
     DRAW_SETTING(link_quality);
     DRAW_SETTING(current);

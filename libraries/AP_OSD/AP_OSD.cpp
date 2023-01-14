@@ -207,6 +207,13 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_W_RESTVOLT", 26, AP_OSD, warn_restvolt, 10.0f),
 
+    // @Param: _W_ACRVOLT
+    // @DisplayName: ACRVOLT warn level
+    // @Description: Set level at which ACRVOLT item will flash
+    // @Range: 0 100
+    // @User: Standard
+    AP_GROUPINFO("_W_ACRVOLT", 31, AP_OSD, warn_avgcellrestvolt, 3.6f),
+
 #endif //osd enabled
 #if OSD_PARAM_ENABLED
     // @Group: 5_
