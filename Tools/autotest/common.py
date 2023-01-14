@@ -4241,9 +4241,13 @@ class AutoTest(ABC):
                     raise NotAchievedException("Frame not same (got=%s want=%s)" %
                                                (self.string_for_frame(downloaded_item_val),
                                                 self.string_for_frame(item_val)))
-                if abs(item.z - downloaded_item.z) > 1.0E-3: # error should be less than 1 mm
-                    raise NotAchievedException("Z not preserved (got=%f want=%f)" %
-                                               (downloaded_item.z, item.z))
+                if downloaded_item.z == 0:
+                    delta = abs(item.z)
+                else:
+                    delta = 1 - abs(item.z / downloaded_item.z)
+                if delta > 0.01: # error should be less than 1 mm, but float precision issues in Python...
+                    raise NotAchievedException("Z not preserved (got=%f want=%f delta=%f%%)" %
+                                               (downloaded_item.z, item.z, delta))
 
     def check_fence_items_same(self, want, got, strict=True):
         check_atts = ['mission_type', 'command', 'x', 'y', 'seq', 'param1']
