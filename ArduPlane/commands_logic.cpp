@@ -1019,6 +1019,8 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
     const int8_t direction = is_negative(radius) ? -1 : 1;
     const float abs_radius = fabsf(radius);
 
+    loiter.direction = direction;
+
     switch (vtol_approach_s.approach_stage) {
         case RTL:
             {
