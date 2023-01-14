@@ -158,7 +158,10 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // @Path: ./SIM_Gripper_EPM.cpp
     AP_SUBGROUPINFO(gripper_epm_sim, "GRPE_", 24, SIM, Gripper_EPM),
 
-    // weight on wheels pin
+    // @Param: WOW_PIN
+    // @DisplayName: Weight on Wheels Pin
+    // @Description: SITL set this simulated pin to true if vehicle is on ground
+    // @User: Advanced
     AP_GROUPINFO("WOW_PIN",     25, SIM,  wow_pin, -1),
 
     // vibration frequencies on each axis
