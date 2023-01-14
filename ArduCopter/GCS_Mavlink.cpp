@@ -6,10 +6,24 @@
 
 MAV_TYPE GCS_Copter::frame_type() const
 {
+    /*
+      for GCS don't give MAV_TYPE_GENERIC as the GCS would have no
+      information and won't display UIs such as flight mode
+      selection
+    */
+#if FRAME_CONFIG == HELI_FRAME
+    const MAV_TYPE mav_type_default = MAV_TYPE_HELICOPTER;
+#else
+    const MAV_TYPE mav_type_default = MAV_TYPE_QUADROTOR;
+#endif
     if (copter.motors == nullptr) {
-        return MAV_TYPE_GENERIC;
+        return mav_type_default;
     }
-    return copter.motors->get_frame_mav_type();
+    MAV_TYPE mav_type = copter.motors->get_frame_mav_type();
+    if (mav_type == MAV_TYPE_GENERIC) {
+        mav_type = mav_type_default;
+    }
+    return mav_type;
 }
 
 MAV_MODE GCS_MAVLINK_Copter::base_mode() const
