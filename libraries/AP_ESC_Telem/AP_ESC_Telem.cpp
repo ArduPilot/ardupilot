@@ -192,7 +192,7 @@ bool AP_ESC_Telem::get_rpm(uint8_t esc_index, float& rpm) const
     return false;
 }
 
-// get an individual ESC's raw rpm if available, returns true on success
+// get an individual ESC's unfiltered rpm if available, returns true on success
 bool AP_ESC_Telem::get_raw_rpm(uint8_t esc_index, float& rpm) const
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS) {
