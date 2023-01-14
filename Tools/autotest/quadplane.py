@@ -282,29 +282,22 @@ class AutoTestQuadPlane(AutoTest):
             self.disarm_vehicle()
             self.wait_ready_to_arm()
 
-    def fly_mission(self, filename, fence=None, height_accuracy=-1, include_terrain_timeout=False):
+    def fly_mission(self, filename, fence=None, height_accuracy=-1):
         """Fly a mission from a file."""
         self.progress("Flying mission %s" % filename)
-        self.load_mission(filename)
-        if fence is not None:
-            self.load_fence(fence)
+        num_wp = self.load_mission(filename)
         if self.mavproxy is not None:
             self.mavproxy.send('wp list\n')
-        self.install_terrain_handlers_context()
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
+        if fence is not None:
+            self.load_fence(fence)
+            if self.mavproxy is not None:
+                self.mavproxy.send('fence list\n')
+        # self.install_terrain_handlers_context()
         self.change_mode('AUTO')
-        self.wait_waypoint(1, 19, max_dist=60, timeout=1200)
-
-        self.wait_disarmed(timeout=120) # give quadplane a long time to land
-        # wait for blood sample here
-        self.set_current_waypoint(20)
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.wait_waypoint(20, 34, max_dist=60, timeout=1200)
-
+        self.wait_waypoint(1, num_wp-1)
         self.wait_disarmed(timeout=120) # give quadplane a long time to land
-        self.progress("Mission OK")
 
     def EXTENDED_SYS_STATE_SLT(self):
         self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, 10)
@@ -1083,11 +1076,25 @@ class AutoTestQuadPlane(AutoTest):
 
     def Mission(self):
         '''fly the OBC 2016 mission in Dalby'''
-        self.fly_mission(
-            "Dalby-OBC2016.txt",
-            "Dalby-OBC2016-fence.txt",
-            include_terrain_timeout=True
-        )
+        self.load_mission("Dalby-OBC2016.txt")
+        self.load_fence("Dalby-OBC2016-fence.txt")
+        if self.mavproxy is not None:
+            self.mavproxy.send('wp list\n')
+        self.install_terrain_handlers_context()
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+        self.wait_waypoint(1, 19, max_dist=60, timeout=1200)
+
+        self.wait_disarmed(timeout=120) # give quadplane a long time to land
+        # wait for blood sample here
+        self.set_current_waypoint(20)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_waypoint(20, 34, max_dist=60, timeout=1200)
+
+        self.wait_disarmed(timeout=120) # give quadplane a long time to land
+        self.progress("Mission OK")
 
     def tests(self):
         '''return list of all tests'''
