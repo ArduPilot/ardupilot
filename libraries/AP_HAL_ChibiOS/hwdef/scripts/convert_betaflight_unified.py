@@ -91,7 +91,11 @@ def write_imu_config(f, n):
     global dma_noshare
     global dma_pri
     bus = settings['gyro_' + n + '_spibus']
-    align = settings['gyro_' + n + '_sensor_align']
+    sensor_align = 'gyro_' + n + '_sensor_align'
+    if sensor_align in settings:
+        align = settings[sensor_align]
+    else:
+        align = 'CW0'
     f.write('''
 # IMU setup
 SPIDEV imu%s   SPI%s DEVID1 GYRO%s_CS   MODE3   1*MHZ   8*MHZ
