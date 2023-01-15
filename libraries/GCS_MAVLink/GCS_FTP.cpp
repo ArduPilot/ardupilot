@@ -116,7 +116,11 @@ bool GCS_MAVLINK::send_ftp_reply(const pending_ftp &reply)
         reply.chan,
         0, reply.sysid, reply.compid,
         payload);
-    ftp.last_send_ms = AP_HAL::millis();
+    if (reply.req_opcode == FTP_OP::TerminateSession) {
+        ftp.last_send_ms = 0;
+    } else {
+        ftp.last_send_ms = AP_HAL::millis();
+    }
     return true;
 }
 
