@@ -164,20 +164,21 @@
 #ifdef HAL_CUSTOM_MCU_CLOCKRATE
 #if HAL_CUSTOM_MCU_CLOCKRATE == 480000000
 #define STM32_PLL1_DIVN_VALUE               120
+#define STM32_PLL1_DIVQ_VALUE               12
 #else
 #error "Unable to configure custom clockrate"
 #endif
 #else
 #define STM32_PLL1_DIVN_VALUE               100
+#define STM32_PLL1_DIVQ_VALUE               10
 #endif
 #define STM32_PLL1_DIVP_VALUE               2
-#define STM32_PLL1_DIVQ_VALUE               10
 #define STM32_PLL1_DIVR_VALUE               2
 
-#define STM32_PLL2_DIVN_VALUE               45
-#define STM32_PLL2_DIVP_VALUE               2
-#define STM32_PLL2_DIVQ_VALUE               5
-#define STM32_PLL2_DIVR_VALUE               8
+#define STM32_PLL2_DIVN_VALUE               75
+#define STM32_PLL2_DIVP_VALUE               3
+#define STM32_PLL2_DIVQ_VALUE               6
+#define STM32_PLL2_DIVR_VALUE               3
 
 #define STM32_PLL3_DIVN_VALUE               72
 #define STM32_PLL3_DIVQ_VALUE               6
@@ -197,10 +198,10 @@
 #define STM32_PLL1_DIVQ_VALUE               10
 #define STM32_PLL1_DIVR_VALUE               2
 
-#define STM32_PLL2_DIVN_VALUE               30
-#define STM32_PLL2_DIVP_VALUE               2
-#define STM32_PLL2_DIVQ_VALUE               5
-#define STM32_PLL2_DIVR_VALUE               8
+#define STM32_PLL2_DIVN_VALUE               50
+#define STM32_PLL2_DIVP_VALUE               3
+#define STM32_PLL2_DIVQ_VALUE               6
+#define STM32_PLL2_DIVR_VALUE               3
 
 #define STM32_PLL3_DIVN_VALUE               72
 #define STM32_PLL3_DIVQ_VALUE               6
@@ -215,10 +216,10 @@
 #define STM32_PLL1_DIVQ_VALUE               10
 #define STM32_PLL1_DIVR_VALUE               2
 
-#define STM32_PLL2_DIVN_VALUE               72
-#define STM32_PLL2_DIVP_VALUE               2
-#define STM32_PLL2_DIVQ_VALUE               5
-#define STM32_PLL2_DIVR_VALUE               8
+#define STM32_PLL2_DIVN_VALUE               120
+#define STM32_PLL2_DIVP_VALUE               3
+#define STM32_PLL2_DIVQ_VALUE               6
+#define STM32_PLL2_DIVR_VALUE               3
 
 #define STM32_PLL3_DIVN_VALUE               48
 #define STM32_PLL3_DIVQ_VALUE               5
@@ -284,14 +285,14 @@
 #ifndef STM32_CKPERSEL
 #define STM32_CKPERSEL                      STM32_CKPERSEL_HSE_CK
 #endif
-#define STM32_SDMMCSEL                      STM32_SDMMCSEL_PLL2_R_CK
+#define STM32_SDMMCSEL                      STM32_SDMMCSEL_PLL1_Q_CK
 #define STM32_QSPISEL                       STM32_QSPISEL_PLL2_R_CK
 #define STM32_FMCSEL                        STM32_QSPISEL_HCLK
 #define STM32_SWPSEL                        STM32_SWPSEL_PCLK1
 #define STM32_FDCANSEL                      STM32_FDCANSEL_PLL1_Q_CK
 #define STM32_DFSDM1SEL                     STM32_DFSDM1SEL_PCLK2
 #define STM32_SPDIFSEL                      STM32_SPDIFSEL_PLL1_Q_CK
-#define STM32_SPI45SEL                      STM32_SPI45SEL_PCLK2
+#define STM32_SPI45SEL                      STM32_SPI45SEL_PLL2_Q_CK
 #define STM32_SPI123SEL                     STM32_SPI123SEL_PLL1_Q_CK
 #define STM32_SAI23SEL                      STM32_SAI23SEL_PLL1_Q_CK
 #define STM32_SAI1SEL                       STM32_SAI1SEL_PLL1_Q_CK
@@ -300,9 +301,9 @@
 #define STM32_USBSEL                        STM32_USBSEL_PLL3_Q_CK
 #define STM32_I2C123SEL                     STM32_I2C123SEL_PLL3_R_CK
 #define STM32_RNGSEL                        STM32_RNGSEL_HSI48_CK
-#define STM32_USART16SEL                    STM32_USART16SEL_PCLK2
-#define STM32_USART234578SEL                STM32_USART234578SEL_PCLK1
-#define STM32_SPI6SEL                       STM32_SPI6SEL_PCLK4
+#define STM32_USART16SEL                    STM32_USART16SEL_PLL2_Q_CK
+#define STM32_USART234578SEL                STM32_USART234578SEL_PLL2_Q_CK
+#define STM32_SPI6SEL                       STM32_SPI6SEL_PLL2_Q_CK
 #define STM32_SAI4BSEL                      STM32_SAI4BSEL_PLL1_Q_CK
 #define STM32_SAI4ASEL                      STM32_SAI4ASEL_PLL1_Q_CK
 #define STM32_ADCSEL                        STM32_ADCSEL_PLL3_R_CK
@@ -494,15 +495,6 @@
 #define STM32_SERIAL_USART6_PRIORITY        12
 #define STM32_SERIAL_UART7_PRIORITY         12
 #define STM32_SERIAL_UART8_PRIORITY         12
-
-#define STM32_UART1CLK STM32_PCLK1
-#define STM32_UART2CLK STM32_PCLK1
-#define STM32_UART3CLK STM32_PCLK1
-#define STM32_UART4CLK STM32_PCLK1
-#define STM32_UART5CLK STM32_PCLK1
-#define STM32_UART6CLK STM32_PCLK1
-#define STM32_UART7CLK STM32_PCLK1
-#define STM32_UART8CLK STM32_PCLK1
 
 /*
  * SIO driver system settings.
