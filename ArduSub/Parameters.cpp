@@ -516,6 +516,8 @@ const AP_Param::Info Sub::var_info[] = {
 #endif
 
 #if AP_SIM_ENABLED
+    // @Group: SIM_
+    // @Path: ../libraries/SITL/SITL.cpp
     GOBJECT(sitl, "SIM_", SITL::SIM),
 #endif
 
