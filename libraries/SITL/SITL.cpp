@@ -25,6 +25,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Logger/AP_Logger.h>
@@ -614,10 +615,12 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
 #endif
     AP_GROUPINFO("ACC_TRIM",     25, SIM, accel_trim, 0),
 
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
     // @Param{Rover}: SAIL_TYPE
     // @DisplayName: Sailboat simulation sail type
     // @Description: 0: mainsail with sheet, 1: directly actuated wing
     AP_GROUPINFO("SAIL_TYPE",     26, SIM, sail_type, 0),
+#endif
 
     // @Param: JSON_MASTER
     // @DisplayName: JSON master instance
