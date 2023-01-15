@@ -2,6 +2,9 @@
 '''
 convert a betaflight unified configuration file into a hwdef.dat
 currently very approximate, file requires cleanup afterwards
+must be run from within a source tree as it relies on other other python files
+
+code by Andy Piper <github@andypiper.com>
 '''
 
 import sys, re
