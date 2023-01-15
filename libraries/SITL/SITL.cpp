@@ -325,6 +325,13 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
 
     AP_GROUPINFO("ESC_ARM_RPM", 41, SIM,  esc_rpm_armed, 0.0f),
 
+    // @Param: UART_LOSS
+    // @DisplayName: UART byte loss percentage
+    // @Description: Sets percentage of outgoing byte loss on UARTs
+    // @Units: %
+    // @User: Advanced
+    AP_GROUPINFO("UART_LOSS", 42, SIM,  uart_byte_loss_pct, 0),
+
     AP_SUBGROUPINFO(airspeed[0], "ARSPD_", 50, SIM, SIM::AirspeedParm),
 #if AIRSPEED_MAX_SENSORS > 1
     AP_SUBGROUPINFO(airspeed[1], "ARSPD2_", 51, SIM, SIM::AirspeedParm),
