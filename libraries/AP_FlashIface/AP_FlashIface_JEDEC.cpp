@@ -929,13 +929,13 @@ bool AP_FlashIface_JEDEC::start_xip_mode(void** addr)
         {
             // Set QSPI module for XIP mode
             AP_HAL::QSPIDevice::CommandHeader cmd;
-            cmd.cmd = _desc.fast_read_ins;
-            cmd.alt = 0xA5;
+            cmd.cmd = _desc.fast_read_ins;  // generally 0xEB for 1-4-4 access
+            cmd.alt = 0xF0;                 // add M0-7 bits in alt to make up 32-bit address phase
             cmd.cfg = AP_HAL::QSPI::CFG_ADDR_SIZE_24 |
                       AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
                       AP_HAL::QSPI::CFG_ADDR_MODE_FOUR_LINES |
                       AP_HAL::QSPI::CFG_DATA_MODE_FOUR_LINES |
-                      AP_HAL::QSPI::CFG_ALT_MODE_FOUR_LINES |  /* Always 4 lines, note.*/
+                      AP_HAL::QSPI::CFG_ALT_MODE_FOUR_LINES |
                       AP_HAL::QSPI::CFG_ALT_SIZE_8;
             cmd.addr = 0;
             cmd.dummy = _desc.fast_read_dummy_cycles;
