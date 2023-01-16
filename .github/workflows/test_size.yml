@@ -36,7 +36,7 @@ jobs:
         id: ccache_cache_timestamp
         run: |
           NOW=$(date -u +"%F-%T")
-          echo "::set-output name=timestamp::${NOW}"
+          echo "{timestamp}=${NOW}" >> $GITHUB_OUTPUT
       - name: ccache cache files
         uses: actions/cache@v3
         with:
@@ -174,7 +174,7 @@ jobs:
           zip -r elf_diff.zip elf_diff
 
       - name: Archive elf_diff output
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
            name: ELF_DIFF_${{matrix.config}}
            path: elf_diff.zip
