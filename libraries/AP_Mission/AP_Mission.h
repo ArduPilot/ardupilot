@@ -634,6 +634,9 @@ public:
 
     // returns true if the mission has a terrain relative mission item
     bool contains_terrain_alt_items(void);
+    
+    // returns true if the mission cmd has a location
+    static bool cmd_has_location(const uint16_t command);
 
     // reset the mission history to prevent recalling previous mission histories when restarting missions.
     void reset_wp_history(void);
