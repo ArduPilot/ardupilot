@@ -124,6 +124,10 @@ public:
     // vehicle has been disarmed at least once.
     Method last_disarm_method() const { return _last_disarm_method; }
 
+    // method that was last used for arm; invalid unless the
+    // vehicle has been disarmed at least once.
+    Method last_arm_method() const { return _last_arm_method; }
+    
     // enum for ARMING_OPTIONS parameter
     enum class Option : int32_t {
         DISABLE_PREARM_DISPLAY   = (1U << 0),
@@ -264,9 +268,10 @@ private:
     bool aux_auth_error;        // true if too many auxiliary authorisers
     HAL_Semaphore aux_auth_sem; // semaphore for accessing the aux_auth_state and aux_auth_fail_msg
 
-    // method that was last used for disarm; invalid unless the
+    // method that was last used for arm/disarm; invalid unless the
     // vehicle has been disarmed at least once.
     Method _last_disarm_method = Method::UNKNOWN;
+    Method _last_arm_method = Method::UNKNOWN;
 
     uint32_t last_prearm_display_ms;  // last time we send statustexts for prearm failures
     bool running_arming_checks;  // true if the arming checks currently being performed are being done because the vehicle is trying to arm the vehicle
