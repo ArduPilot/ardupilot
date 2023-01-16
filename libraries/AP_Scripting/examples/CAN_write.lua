@@ -4,70 +4,48 @@
 local driver = CAN:get_device(5)
 
 -- transfer ID of the message were sending
-local Transfer_ID = 0
+local FrameId = 0x223
 
--- RGB colours in 0 - 255 range, and RGB fade speed
-local red = 255
-local green = 0
-local blue  = 0
-local fade_speed = 5
+-- msgs to request attitude
+local request_attitude_msg1 = {0xAA, 0x13, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00}
+local request_attitude_msg2 = {0x03, 0x00, 0x10, 0x4E, 0x0E, 0x02, 0x01, 0x08}
+local request_attitude_msg3 = {0x9F, 0xB2, 0x07}
 
+function send_can_msg(msg_data)
+  canframe = CANFrame()
+  canframe:id(FrameId)
+  canframe:dlc(#msg_data)
+  for i = 0, #msg_data-1 do
+    canframe:data(i,msg_data[i+1])
+  end
+  driver:write_frame(canframe, 10000)
+  -- debug
+  local is_ext = 0
+  if canframe:isExtended() then
+    is_ext = 1
+  end
+  gcs:send_text(0,string.format("W fi:" .. tostring(canframe:id()) .. " dlc:%u x:%d %x %x %x %x %x %x %x %x", canframe:dlc(), is_ext, canframe:data(0), canframe:data(1), canframe:data(2), canframe:data(3), canframe:data(4), canframe:data(5), canframe:data(6), canframe:data(7)))
+  --gcs:send_text(0,string.format("Wr fi:" .. tostring(canframe:id()) .. " dlc:%u ex:%d", canframe:dlc(), is_ext))
+end
+
+--userdata AP_HAL::CANFrame rename CANFrame
+--userdata AP_HAL::CANFrame field id uint32_t'skip_check read write
+--userdata AP_HAL::CANFrame field data'array int(ARRAY_SIZE(ud->data)) uint8_t'skip_check read write
+--userdata AP_HAL::CANFrame field dlc uint8_t read write 0 int(ARRAY_SIZE(ud->data))
+--userdata AP_HAL::CANFrame method id_signed int32_t
+--userdata AP_HAL::CANFrame method isExtended boolean
+--userdata AP_HAL::CANFrame method isRemoteTransmissionRequest boolean
+--userdata AP_HAL::CANFrame method isErrorFrame boolean
 
 function update()
 
-  -- send UAVCAN Light command
-  -- uavcan.equipment.indication.LightsCommand
-  -- note that as we don't do dynamic node allocation, the target light device must have a static node ID
+  -- send DJI R2 gimbal command to retrieve attitude
+  send_can_msg(request_attitude_msg1)
+  send_can_msg(request_attitude_msg2)
+  send_can_msg(request_attitude_msg3)
 
-  msg = CANFrame()
-
-  -- extended frame, priority 30, message ID 1081 and node ID 11
-  -- lua cannot handle numbers so large, so we have to use uint32_t userdata
-  msg:id( (uint32_t(1) << 31) | (uint32_t(30) << 24) | (uint32_t(1081) << 8) | uint32_t(11) )
-
-  msg:data(0,0) -- set light_id = 0
-
-  -- convert colors to 565 rgb
-  local red_5bit   = red >> 3
-  local green_6bit = green >> 2
-  local blue_5bit  = blue >> 3
-
-  -- first is made up of 5 bits red and 3 bits of green
-  msg:data(1, (red_5bit << 3) | (green_6bit >> 3))
-
-  -- remaining 3 bits of green and 5 of blue
-  msg:data(2, ((green_6bit << 5) | blue_5bit) & 0xFF)
-
-  -- Tail includes, start of transfer, end of transfer, toggle and transfer ID bits.
-  msg:data(3, (1 << 7) | (1 << 6) | Transfer_ID)
-
-  Transfer_ID = Transfer_ID + 1
-  -- transfer ID is 5 bits
-  if Transfer_ID > 31 then
-    Transfer_ID = 0
-  end
-
-  -- sending 4 bytes of data
-  msg:dlc(4)
-
-  -- write the frame with a 10000us timeout
-  driver:write_frame(msg, 10000)
-
-  -- basic RGB fade
-  if red > 0 and blue == 0 then
-    red = red - fade_speed
-    green = green + fade_speed
-  end
-  if green > 0 and red == 0 then
-    green = green - fade_speed
-    blue = blue + fade_speed
-  end
-  if blue > 0 and green == 0 then
-    red = red + fade_speed
-    blue = blue - fade_speed
-  end
-
-  return update, 100
+  -- update every 3 seconds
+  return update, 5000
 
 end
 

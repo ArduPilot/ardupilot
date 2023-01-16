@@ -2,8 +2,8 @@
 
 -- Load CAN driver1. The first will attach to a protocol of 10, the 2nd to a protocol of 12
 -- this allows the script to distinguish packets on two CAN interfaces
-local driver1 = CAN:get_device(5)
-local driver2 = CAN:get_device2(5)
+local driver1 = CAN:get_device(25)
+local driver2 = CAN:get_device2(25)
 
 if not driver1 and not driver2 then
    gcs:send_text(0,"No scripting CAN interfaces found")
@@ -11,23 +11,28 @@ if not driver1 and not driver2 then
 end
 
 function show_frame(dnum, frame)
-    gcs:send_text(0,string.format("CAN[%u] msg from " .. tostring(frame:id()) .. ": %i, %i, %i, %i, %i, %i, %i, %i", dnum, frame:data(0), frame:data(1), frame:data(2), frame:data(3), frame:data(4), frame:data(5), frame:data(6), frame:data(7)))
+    --if uint32_t(frame:id()) == uint32_t(0x222) then
+      local is_ext = 0
+      if frame:isExtended() then
+        is_ext = 1
+      end
+      gcs:send_text(0,string.format("C%u fi:" .. tostring(frame:id()) .. " dl:%u x:%d %x %x %x %x %x %x %x %x", dnum, frame:dlc(), is_ext, frame:data(0), frame:data(1), frame:data(2), frame:data(3), frame:data(4), frame:data(5), frame:data(6), frame:data(7)))
+    --end
 end
 
 function update()
 
    -- see if we got any frames
    if driver1 then
-      frame = driver1:read_frame()
-      if frame then
-         show_frame(1, frame)
-      end
-   end
-   if driver2 then
-      frame = driver2:read_frame()
-      if frame then
-         show_frame(2, frame)
-      end
+      local frame
+      repeat
+        frame = driver1:read_frame()
+        if frame then
+          show_frame(1, frame)
+        end
+      until not frame
+   else
+     gcs:send_text(0,"CAN_read: drive1 is null")
    end
 
   return update, 10
