@@ -292,9 +292,9 @@ void Tiltrotor::continuous_update(void)
             // no manual throttle control, set angle to zero
             slew(0);
         } else {
-            // manual control of forward throttle
+            // manual control of forward throttle up to max VTOL angle
             float settilt = .01f * quadplane.forward_throttle_pct();
-            slew(settilt);
+            slew(MIN(settilt * max_angle_deg * (1/90.0), get_forward_flight_tilt())); 
         }
         return;
     }
