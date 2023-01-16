@@ -777,6 +777,9 @@ private:
     // time that rudder arming has been running
     uint32_t rudder_arm_timer;
 
+    // have we seen neutral rudder since arming with rudder?
+    bool seen_neutral_rudder;
+
 #if HAL_QUADPLANE_ENABLED
     // support for quadcopter-plane
     QuadPlane quadplane{ahrs};

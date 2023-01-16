@@ -2911,11 +2911,32 @@ void QuadPlane::takeoff_controller(void)
         return;
     }
 
+    uint32_t now = AP_HAL::millis();
+    const auto spool_state = motors->get_desired_spool_state();
     if (plane.control_mode == &plane.mode_guided && guided_takeoff
-        && tiltrotor.enabled() && !tiltrotor.fully_up()) {
+        && tiltrotor.enabled() && !tiltrotor.fully_up() &&
+        spool_state != AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) {
         // waiting for motors to tilt up
+        takeoff_start_time_ms = now;
         return;
     }
+
+    // don't takeoff up until rudder is re-centered after rudder arming
+    if (plane.arming.last_arm_method() == AP_Arming::Method::RUDDER &&
+        (takeoff_last_run_ms == 0 ||
+         now - takeoff_last_run_ms < 1000) &&
+        !plane.seen_neutral_rudder &&
+        spool_state <= AP_Motors::DesiredSpoolState::GROUND_IDLE) {
+        // start motor spinning if not spinning already so user sees it is armed
+        set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+        takeoff_start_time_ms = now;
+        if (now - rudder_takeoff_warn_ms > 3000) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "takeoff wait rudder release");
+            rudder_takeoff_warn_ms = now;
+        }
+        return;
+    }
+
 
     /*
       for takeoff we use the position controller
@@ -2935,17 +2956,16 @@ void QuadPlane::takeoff_controller(void)
      */
     bool no_navigation = false;
     if (takeoff_navalt_min > 0) {
-        uint32_t now = AP_HAL::millis();
         const float alt = plane.current_loc.alt*0.01;
         if (takeoff_last_run_ms == 0 ||
             now - takeoff_last_run_ms > 1000) {
             takeoff_start_alt = alt;
         }
-        takeoff_last_run_ms = now;
         if (alt - takeoff_start_alt < takeoff_navalt_min) {
             no_navigation = true;
         }
     }
+    takeoff_last_run_ms = now;
 
     if (no_navigation) {
         plane.nav_roll_cd = 0;
