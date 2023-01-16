@@ -1539,6 +1539,8 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
     if ((!do_arming_checks && mandatory_checks(true)) || (pre_arm_checks(true) && arm_checks(method))) {
         armed = true;
 
+        _last_arm_method = method;
+
         Log_Write_Arm(!do_arming_checks, method); // note Log_Write_Armed takes forced not do_arming_checks
 
     } else {
