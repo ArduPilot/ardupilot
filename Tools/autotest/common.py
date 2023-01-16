@@ -8032,9 +8032,9 @@ Also, ignores heartbeats not from our target system'''
                      )
         self.progress("zeroed mag parameters")
         params = [
-            [("SIM_MAG_OFS_X", "COMPASS_OFS_X", 0),
-             ("SIM_MAG_OFS_Y", "COMPASS_OFS_Y", 0),
-             ("SIM_MAG_OFS_Z", "COMPASS_OFS_Z", 0), ],
+            [("SIM_MAG1_OFS1_X", "COMPASS_OFS_X", 0),
+             ("SIM_MAG1_OFS1_Y", "COMPASS_OFS_Y", 0),
+             ("SIM_MAG1_OFS1_Z", "COMPASS_OFS_Z", 0), ],
         ]
         for count in range(2, compass_count + 1):
             params += [
@@ -8048,12 +8048,12 @@ Also, ignores heartbeats not from our target system'''
         self.progress("Forty twoing Mag DIA and ODI parameters")
         self.get_sim_time()
         params = [
-            [("SIM_MAG_DIA_X", "COMPASS_DIA_X", 42.0),
-             ("SIM_MAG_DIA_Y", "COMPASS_DIA_Y", 42.0),
-             ("SIM_MAG_DIA_Z", "COMPASS_DIA_Z", 42.0),
-             ("SIM_MAG_ODI_X", "COMPASS_ODI_X", 42.0),
-             ("SIM_MAG_ODI_Y", "COMPASS_ODI_Y", 42.0),
-             ("SIM_MAG_ODI_Z", "COMPASS_ODI_Z", 42.0), ],
+            [("SIM_MAG1_DIA_X", "COMPASS_DIA_X", 42.0),
+             ("SIM_MAG1_DIA_Y", "COMPASS_DIA_Y", 42.0),
+             ("SIM_MAG1_DIA_Z", "COMPASS_DIA_Z", 42.0),
+             ("SIM_MAG1_ODI_X", "COMPASS_ODI_X", 42.0),
+             ("SIM_MAG1_ODI_Y", "COMPASS_ODI_Y", 42.0),
+             ("SIM_MAG1_ODI_Z", "COMPASS_ODI_Z", 42.0), ],
         ]
         for count in range(2, compass_count + 1):
             params += [
@@ -8132,15 +8132,15 @@ Also, ignores heartbeats not from our target system'''
             MAG_DIA = 1.0
             MAG_ODI = 0.004
             params += [
-                [("SIM_MAG_OFS_X", "COMPASS_OFS_X", MAG_OFS),
-                 ("SIM_MAG_OFS_Y", "COMPASS_OFS_Y", MAG_OFS + 100),
-                 ("SIM_MAG_OFS_Z", "COMPASS_OFS_Z", MAG_OFS + 200),
-                 ("SIM_MAG_DIA_X", "COMPASS_DIA_X", MAG_DIA),
-                 ("SIM_MAG_DIA_Y", "COMPASS_DIA_Y", MAG_DIA + 0.1),
-                 ("SIM_MAG_DIA_Z", "COMPASS_DIA_Z", MAG_DIA + 0.2),
-                 ("SIM_MAG_ODI_X", "COMPASS_ODI_X", MAG_ODI),
-                 ("SIM_MAG_ODI_Y", "COMPASS_ODI_Y", MAG_ODI + 0.001),
-                 ("SIM_MAG_ODI_Z", "COMPASS_ODI_Z", MAG_ODI + 0.001), ],
+                [("SIM_MAG1_OFS_X", "COMPASS_OFS_X", MAG_OFS),
+                 ("SIM_MAG1_OFS_Y", "COMPASS_OFS_Y", MAG_OFS + 100),
+                 ("SIM_MAG1_OFS_Z", "COMPASS_OFS_Z", MAG_OFS + 200),
+                 ("SIM_MAG1_DIA_X", "COMPASS_DIA_X", MAG_DIA),
+                 ("SIM_MAG1_DIA_Y", "COMPASS_DIA_Y", MAG_DIA + 0.1),
+                 ("SIM_MAG1_DIA_Z", "COMPASS_DIA_Z", MAG_DIA + 0.2),
+                 ("SIM_MAG1_ODI_X", "COMPASS_ODI_X", MAG_ODI),
+                 ("SIM_MAG1_ODI_Y", "COMPASS_ODI_Y", MAG_ODI + 0.001),
+                 ("SIM_MAG1_ODI_Z", "COMPASS_ODI_Z", MAG_ODI + 0.001), ],
             ]
             for count in range(2, compass_count + 1):
                 params += [
@@ -8171,7 +8171,7 @@ Also, ignores heartbeats not from our target system'''
             self.progress("Setting SITL Magnetometer model value")
             self.set_parameter("COMPASS_AUTO_ROT", 0)
             # MAG_ORIENT = 4
-            # self.set_parameter("SIM_MAG_ORIENT", MAG_ORIENT)
+            # self.set_parameter("SIM_MAG1_ORIENT", MAG_ORIENT)
             # for count in range(2, compass_count + 1):
             #     self.set_parameter("SIM_MAG%d_ORIENT" % count, MAG_ORIENT * (count % 41))
             #     # set compass external to check that orientation is found and auto set
@@ -8316,7 +8316,7 @@ Also, ignores heartbeats not from our target system'''
                 if m.get_type() == "MAG_CAL_REPORT":
                     if report_get[m.compass_id] == 0:
                         self.progress("Report: %s" % self.dump_message_verbose(m))
-                        param_names = ["SIM_MAG_ORIENT"]
+                        param_names = ["SIM_MAG1_ORIENT"]
                         for i in range(2, compass_tnumber+1):
                             param_names.append("SIM_MAG%u_ORIENT" % i)
                         for param_name in param_names:
@@ -8361,7 +8361,7 @@ Also, ignores heartbeats not from our target system'''
                          timeout=20,
                          )
             self.check_mag_parameters(params, compass_tnumber)
-            self.verify_parameter_values({"COMPASS_ORIENT": self.get_parameter("SIM_MAG_ORIENT")})
+            self.verify_parameter_values({"COMPASS_ORIENT": self.get_parameter("SIM_MAG1_ORIENT")})
             for count in range(2, compass_tnumber + 1):
                 self.verify_parameter_values({"COMPASS_ORIENT%d" % count: self.get_parameter("SIM_MAG%d_ORIENT" % count)})
             self.try_arm(False, "Compass calibrated requires reboot")
@@ -8631,9 +8631,9 @@ Also, ignores heartbeats not from our target system'''
                 "COMPASS_ODI3_Z": 0,
             }
             self.set_parameters({
-                "SIM_MAG_OFS_X": MAG_OFS_X,
-                "SIM_MAG_OFS_Y": MAG_OFS_Y,
-                "SIM_MAG_OFS_Z": MAG_OFS_Z,
+                "SIM_MAG1_OFS_X": MAG_OFS_X,
+                "SIM_MAG1_OFS_Y": MAG_OFS_Y,
+                "SIM_MAG1_OFS_Z": MAG_OFS_Z,
 
                 "SIM_MAG2_OFS_X": MAG_OFS_X,
                 "SIM_MAG2_OFS_Y": MAG_OFS_Y,
