@@ -1330,17 +1330,12 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(const ma
       any commands which use the x and y fields not as
       latitude/longitude.
      */
-    switch (packet.command) {
-    case MAV_CMD_DO_DIGICAM_CONTROL:
-    case MAV_CMD_DO_DIGICAM_CONFIGURE:
-    case MAV_CMD_NAV_ATTITUDE_TIME:
-    case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
+    if (!cmd_has_location(packet.command)) {
         mav_cmd.x = packet.x;
         mav_cmd.y = packet.y;
-        break;
 
-    default:
-        // all other commands use x and y as lat/lon. We need to
+    } else {
+         //these commands use x and y as lat/lon. We need to
         // multiply by 1e7 to convert to int32_t
         if (!check_lat(packet.x)) {
             return MAV_MISSION_INVALID_PARAM5_X;
@@ -1350,7 +1345,6 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(const ma
         }
         mav_cmd.x = packet.x * 1.0e7f;
         mav_cmd.y = packet.y * 1.0e7f;
-        break;
     }
 
     return MAV_MISSION_ACCEPTED;
@@ -1373,17 +1367,12 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_INT_to_MISSION_ITEM(const ma
     item.autocontinue = item_int.autocontinue;
     item.mission_type = item_int.mission_type;
 
-    switch (item_int.command) {
-    case MAV_CMD_DO_DIGICAM_CONTROL:
-    case MAV_CMD_DO_DIGICAM_CONFIGURE:
-    case MAV_CMD_NAV_ATTITUDE_TIME:
-    case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
+    if (!cmd_has_location(item_int.command)) {
         item.x = item_int.x;
         item.y = item_int.y;
-        break;
 
-    default:
-        // all other commands use x and y as lat/lon. We need to
+    } else {
+        // These commands use x and y as lat/lon. We need to
         // multiply by 1e-7 to convert to float
         item.x = item_int.x * 1.0e-7f;
         item.y = item_int.y * 1.0e-7f;
@@ -1393,7 +1382,6 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_INT_to_MISSION_ITEM(const ma
         if (!check_lng(item.y)) {
             return MAV_MISSION_INVALID_PARAM6_Y;
         }
-        break;
     }
 
     return MAV_MISSION_ACCEPTED;
@@ -2515,6 +2503,15 @@ bool AP_Mission::contains_item(MAV_CMD command) const
         }
     }
     return false;
+}
+
+/*
+  return true if the mission item has a location
+*/
+
+bool AP_Mission::cmd_has_location(const uint16_t command)
+{
+    return stored_in_location(command);
 }
 
 /*
