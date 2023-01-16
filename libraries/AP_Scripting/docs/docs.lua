@@ -1304,6 +1304,11 @@ function mission:get_current_nav_index() end
 ---@return integer
 function mission:state() end
 
+-- desc
+---@param cmd integer
+---@return boolean
+function mission:cmd_has_location(cmd)end
+
 
 -- desc
 ---@class param
