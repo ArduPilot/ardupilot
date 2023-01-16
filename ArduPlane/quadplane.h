@@ -583,6 +583,7 @@ private:
     AP_Float maximum_takeoff_airspeed;
     uint32_t takeoff_start_time_ms;
     uint32_t takeoff_time_limit_ms;
+    uint32_t rudder_takeoff_warn_ms;
 
     float last_land_final_agl;
 
