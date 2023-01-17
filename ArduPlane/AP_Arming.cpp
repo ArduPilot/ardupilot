@@ -413,7 +413,7 @@ bool AP_Arming_Plane::mission_checks(bool report)
             if (!plane.mission.read_cmd_from_storage(i, cmd)) {
                 break;
             }
-            if ((cmd.id == MAV_CMD_NAV_VTOL_LAND || cmd.id == MAV_CMD_NAV_LAND) &&
+            if (plane.is_land_command(cmd.id) &&
                 prev_cmd.id == MAV_CMD_NAV_WAYPOINT) {
                 const float dist = cmd.content.location.get_distance(prev_cmd.content.location);
                 const float tecs_land_speed = plane.TECS_controller.get_land_airspeed();
