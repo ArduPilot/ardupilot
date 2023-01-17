@@ -222,6 +222,32 @@ def get_ADC1_chan(mcu, pin):
         error("Unable to find ADC1 channel for pin %s" % pin)
     return ADC1_map[pin]
 
+def get_ADC2_chan(mcu, pin):
+    '''return ADC2 channel for an analog pin'''
+    import importlib
+    try:
+        lib = importlib.import_module(mcu)
+        ADC2_map = lib.ADC2_map
+    except ImportError:
+        error("Unable to find ADC2_Map for MCU %s" % mcu)
+
+    if pin not in ADC2_map:
+        error("Unable to find ADC2 channel for pin %s" % pin)
+    return ADC2_map[pin]
+
+def get_ADC3_chan(mcu, pin):
+    '''return ADC3 channel for an analog pin'''
+    import importlib
+    try:
+        lib = importlib.import_module(mcu)
+        ADC3_map = lib.ADC3_map
+    except ImportError:
+        error("Unable to find ADC3_Map for MCU %s" % mcu)
+
+    if pin not in ADC3_map:
+        error("Unable to find ADC3 channel for pin %s" % pin)
+    return ADC3_map[pin]
+
 
 class generic_pin(object):
     '''class to hold pin definition'''
@@ -589,6 +615,10 @@ class generic_pin(object):
             str += " AF%u" % self.af
         if self.type.startswith('ADC1'):
             str += " ADC1_IN%u" % get_ADC1_chan(mcu_type, self.portpin)
+        if self.type.startswith('ADC2'):
+            str += " ADC2_IN%u" % get_ADC2_chan(mcu_type, self.portpin)
+        if self.type.startswith('ADC3'):
+            str += " ADC3_IN%u" % get_ADC3_chan(mcu_type, self.portpin)
         if self.extra_value('PWM', type=int):
             str += " PWM%u" % self.extra_value('PWM', type=int)
         return "P%s%u %s %s%s" % (self.port, self.pin, self.label, self.type,
@@ -2160,34 +2190,65 @@ def write_PWM_config(f, ordered_timers):
 def write_ADC_config(f):
     '''write ADC config defines'''
     f.write('// ADC config\n')
-    adc_chans = []
+    adc_chans = [[], [], []]
+    index = 0
     for l in bylabel:
         p = bylabel[l]
         if not p.type.startswith('ADC'):
             continue
-        chan = get_ADC1_chan(mcu_type, p.portpin)
+        if p.type.startswith('ADC1'):
+            index = 0
+            chan = get_ADC1_chan(mcu_type, p.portpin)
+        elif p.type.startswith('ADC2'):
+            index = 1
+            chan = get_ADC2_chan(mcu_type, p.portpin)
+        elif p.type.startswith('ADC3'):
+            index = 2
+            chan = get_ADC3_chan(mcu_type, p.portpin)
+        else:
+            raise ValueError("Unknown ADC type %s" % p.type)
         scale = p.extra_value('SCALE', default=None)
         if p.label == 'VDD_5V_SENS':
-            f.write('#define ANALOG_VCC_5V_PIN %u\n' % chan)
+            f.write('#define ANALOG_VCC_5V_PIN %u\n' % (chan + index*20))
             f.write('#define HAL_HAVE_BOARD_VOLTAGE 1\n')
         if p.label == 'FMU_SERVORAIL_VCC_SENS':
-            f.write('#define FMU_SERVORAIL_ADC_CHAN %u\n' % chan)
+            f.write('#define FMU_SERVORAIL_ADC_CHAN %u\n' % (chan + index*20))
             f.write('#define HAL_HAVE_SERVO_VOLTAGE 1\n')
-        adc_chans.append((chan, scale, p.label, p.portpin))
-    adc_chans = sorted(adc_chans)
+        adc_chans[index].append((chan, scale, p.label, p.portpin))
+    adc_chans[index] = sorted(adc_chans[index])
     vdd = get_config('STM32_VDD', default='330U')
     if vdd[-1] == 'U':
         vdd = vdd[:-1]
     vdd = float(vdd) * 0.01
-    f.write('#define HAL_ANALOG_PINS { \\\n')
-    for (chan, scale, label, portpin) in adc_chans:
+    f.write('#define HAL_ANALOG_PINS \\\n')
+    for (chan, scale, label, portpin) in adc_chans[0]:
         scale_str = '%.2f/4096' % vdd
         if scale is not None and scale != '1':
             scale_str = scale + '*' + scale_str
         f.write('{ %2u, %12s }, /* %s %s */ \\\n' % (chan, scale_str, portpin,
                                                      label))
-    f.write('}\n\n')
-
+    f.write('\n\n')
+    if len(adc_chans[1]) > 0:
+        f.write('#define STM32_ADC_SAMPLES_SIZE 32\n')
+        f.write('#define STM32_ADC_DUAL_MODE TRUE\n')
+        f.write('#define HAL_ANALOG2_PINS \\\n')
+        for (chan, scale, label, portpin) in adc_chans[1]:
+            scale_str = '%.2f/4096' % vdd
+            if scale is not None and scale != '1':
+                scale_str = scale + '*' + scale_str
+            f.write('{ %2u, %12s }, /* %s %s */ \\\n' % (chan, scale_str, portpin,
+                                                        label))
+        f.write('\n\n')
+    if len(adc_chans[2]) > 0:
+        f.write('#define STM32_ADC_USE_ADC3 TRUE\n')    
+        f.write('#define HAL_ANALOG3_PINS \\\n')
+        for (chan, scale, label, portpin) in adc_chans[2]:
+            scale_str = '%.2f/4096' % vdd
+            if scale is not None and scale != '1':
+                scale_str = scale + '*' + scale_str
+            f.write('{ %2u, %12s }, /* %s %s */ \\\n' % (chan, scale_str, portpin,
+                                                        label))
+        f.write('\n\n')
 
 def write_GPIO_config(f):
     '''write GPIO config defines'''
