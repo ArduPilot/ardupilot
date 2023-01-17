@@ -1047,6 +1047,9 @@ function motors:get_interlock() end
 ---@param param1 string
 function motors:set_frame_string(param1) end
 
+-- desc
+---@return integer
+function motors:get_desired_spool_state() end
 
 -- desc
 ---@class FWVersion
@@ -1254,6 +1257,14 @@ function quadplane:in_assisted_flight() end
 -- desc
 ---@return boolean
 function quadplane:in_vtol_mode() end
+
+-- true in descent phase of VTOL landing
+---@return boolean
+function quadplane:in_vtol_land_descent() end
+
+-- abort a VTOL landing, climbing back up
+---@return boolean
+function quadplane:abort_landing() end
 
 
 -- desc
@@ -1620,6 +1631,11 @@ function serialLED:set_num_neopixel(chan, num_leds) end
 -- desc
 ---@class vehicle
 vehicle = {}
+
+-- override landing descent rate, times out in 1s
+---@param rate number
+---@return boolean
+function vehicle:set_land_descent_rate(rate) end
 
 -- desc
 ---@param rudder_pct number
