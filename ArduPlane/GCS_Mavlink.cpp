@@ -1039,8 +1039,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         {
             uint16_t mission_id = plane.mission.get_current_nav_cmd().id;
             bool is_in_landing = (plane.flight_stage == AP_FixedWing::FlightStage::LAND) ||
-                                 (mission_id == MAV_CMD_NAV_LAND) ||
-                                 (mission_id == MAV_CMD_NAV_VTOL_LAND);
+                plane.is_land_command(mission_id);
             if (is_in_landing) {
                 // fly a user planned abort pattern if available
                 if (plane.mission.jump_to_abort_landing_sequence()) {
