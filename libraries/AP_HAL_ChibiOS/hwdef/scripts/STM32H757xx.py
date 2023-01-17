@@ -1293,4 +1293,19 @@ ADC1_map = {
     "PA1"	:	17,
     "PA4"	:	18,
     "PA5"	:	19,
+    "PF11"  :   2,
+	"PF12"  :   6,
+    "PF3"   :   5,
+}
+
+ADC2_map = {
+	# format is PIN : ADC2_CHAN
+	"PF13"  :   2,
+	"PB1"	:	5,
+}
+
+ADC3_map = {
+	# format is PIN : ADC3_CHAN
+	"PC3"   :   1,
+	"PF3"	:   5,
 }
