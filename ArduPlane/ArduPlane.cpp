@@ -801,6 +801,19 @@ bool Plane::set_velocity_match(const Vector2f &velocity)
     return false;
 }
 
+// allow for override of land descent rate
+bool Plane::set_land_descent_rate(float descent_rate)
+{
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.in_vtol_land_descent()) {
+        quadplane.poscontrol.override_descent_rate = descent_rate;
+        quadplane.poscontrol.last_override_descent_ms = AP_HAL::millis();
+        return true;
+    }
+#endif
+    return false;
+}
+
 #endif // AP_SCRIPTING_ENABLED
 
 // correct AHRS pitch for TRIM_PITCH_CD in non-VTOL modes, and return VTOL view in VTOL
