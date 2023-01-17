@@ -369,11 +369,13 @@ int32_t AP_Landing::type_slope_get_target_airspeed_cm(void)
     }
 
     // when landing, add half of head-wind.
-    const float head_wind_comp = constrain_float((float)wind_comp, 0.0f, 100.0f)*0.01;
+    const float head_wind_comp = constrain_float(wind_comp, 0.0f, 100.0f)*0.01;
     const int32_t head_wind_compensation_cm = head_wind() * head_wind_comp * 100;
 
-    // Do not lower it or exceed max airspeed `ARSPD_FBW_MAX`
-    return constrain_int32(target_airspeed_cm + head_wind_compensation_cm, target_airspeed_cm, aparm.airspeed_max*100);
+    const uint32_t max_airspeed_cm = AP_Landing::allow_max_airspeed_on_land() ? aparm.airspeed_max*100 : aparm.airspeed_cruise_cm;
+    
+    return constrain_int32(target_airspeed_cm + head_wind_compensation_cm, target_airspeed_cm, max_airspeed_cm);
+    
 }
 
 int32_t AP_Landing::type_slope_constrain_roll(const int32_t desired_roll_cd, const int32_t level_roll_limit_cd)
