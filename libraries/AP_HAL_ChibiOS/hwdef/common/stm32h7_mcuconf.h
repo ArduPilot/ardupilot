@@ -365,12 +365,18 @@
 /*
  * ADC driver system settings.
  */
+#ifndef STM32_ADC_DUAL_MODE
 #define STM32_ADC_DUAL_MODE                 FALSE
+#endif
+#ifndef STM32_ADC_SAMPLES_SIZE
 #define STM32_ADC_SAMPLES_SIZE              16
+#endif
 #define STM32_ADC_COMPACT_SAMPLES           FALSE
 #define STM32_ADC_USE_ADC12                 TRUE
 #ifndef STM32H750xx
+#ifndef STM32_ADC_USE_ADC3
 #define STM32_ADC_USE_ADC3                  TRUE
+#endif
 #endif
 #define STM32_ADC_ADC12_DMA_PRIORITY        2
 #define STM32_ADC_ADC3_DMA_PRIORITY         2
