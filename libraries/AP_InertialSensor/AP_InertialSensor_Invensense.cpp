@@ -472,6 +472,7 @@ bool AP_InertialSensor_Invensense::update() /* front end */
 #if HAL_LOGGING_ENABLED
         if (last_fast_reset_count != fast_reset_count) {
             AP::logger().Write_MessageF("IMU%u fast fifo reset %u", _gyro_instance, fast_reset_count);
+            last_fast_reset_count = fast_reset_count;
         }
 #endif
     }
