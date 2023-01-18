@@ -2209,7 +2209,6 @@ class AutoTest(ABC):
             "SIM_ENGINE_FAIL",
             "SIM_ENGINE_MUL",
             "SIM_ESC_ARM_RPM",
-            "SIM_ESC_TELEM",
             "SIM_FLOAT_EXCEPT",
             "SIM_FLOW_DELAY",
             "SIM_FLOW_ENABLE",
@@ -9985,12 +9984,17 @@ Also, ignores heartbeats not from our target system'''
 
     def Gripper(self):
         '''Test gripper'''
+        self.GripperType(1)  # servo
+        self.GripperType(2)  # EPM
+
+    def GripperType(self, gripper_type):
+        '''test specific gripper type'''
         self.context_push()
         self.set_parameters({
             "GRIP_ENABLE": 1,
             "GRIP_GRAB": 2000,
             "GRIP_RELEASE": 1000,
-            "GRIP_TYPE": 1,
+            "GRIP_TYPE": gripper_type,
             "SIM_GRPS_ENABLE": 1,
             "SIM_GRPS_PIN": 8,
             "SERVO8_FUNCTION": 28,

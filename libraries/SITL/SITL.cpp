@@ -339,6 +339,10 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Units: m
     // @User: Advanced
 
+    // @Param: ESC_TELEM
+    // @DisplayName: Simulated ESC Telemetry
+    // @Description: enable perfect simulated ESC telemetry
+    // @User: Advanced
     AP_GROUPINFO("ESC_TELEM", 40, SIM, esc_telem, 1),
 
     AP_GROUPINFO("ESC_ARM_RPM", 41, SIM,  esc_rpm_armed, 0.0f),

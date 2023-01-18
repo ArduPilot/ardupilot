@@ -72,8 +72,9 @@ public:
     }
 
     // return a wind estimation vector, in m/s
-    Vector3f wind_estimate() const override {
-        return _wind;
+    bool wind_estimate(Vector3f &wind) const override {
+        wind = _wind;
+        return true;
     }
 
     // return an airspeed estimate if available. return true
