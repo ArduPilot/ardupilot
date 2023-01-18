@@ -2209,7 +2209,6 @@ class AutoTest(ABC):
             "SIM_ENGINE_FAIL",
             "SIM_ENGINE_MUL",
             "SIM_ESC_ARM_RPM",
-            "SIM_ESC_TELEM",
             "SIM_FLOAT_EXCEPT",
             "SIM_FLOW_DELAY",
             "SIM_FLOW_ENABLE",
