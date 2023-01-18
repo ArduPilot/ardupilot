@@ -196,23 +196,32 @@ void Copter::heli_update_rotor_speed_targets()
 // to autorotation flight mode if manual collective is not being used.
 void Copter::heli_update_autorotation()
 {
-#if MODE_AUTOROTATE_ENABLED == ENABLED
     // check if flying and interlock disengaged
-    if (!ap.land_complete && !motors->get_interlock() && g2.arot.is_enable()) {
-        if (!flightmode->has_manual_throttle()) {
-            // set autonomous autorotation flight mode
-            set_mode(Mode::Number::AUTOROTATE, ModeReason::AUTOROTATION_START);
+    if (!ap.land_complete && !motors->get_interlock()) {
+#if MODE_AUTOROTATE_ENABLED == ENABLED
+        if (g2.arot.is_enable()) {
+            if (!flightmode->has_manual_throttle()) {
+                // set autonomous autorotation flight mode
+                set_mode(Mode::Number::AUTOROTATE, ModeReason::AUTOROTATION_START);
+            }
+            // set flag to facilitate both auto and manual autorotations
+            heli_flags.in_autorotation = true;
+            motors->set_in_autorotation(heli_flags.in_autorotation);
+            motors->set_enable_bailout(true);
         }
-        // set flag to facilitate both auto and manual autorotations
-        heli_flags.in_autorotation = true;
-        motors->set_in_autorotation(heli_flags.in_autorotation);
-        motors->set_enable_bailout(true);
+#endif
+        if (flightmode->has_manual_throttle() && motors->arot_man_enabled()) {
+            // set flag to facilitate both auto and manual autorotations
+            heli_flags.in_autorotation = true;
+            motors->set_in_autorotation(heli_flags.in_autorotation);
+            motors->set_enable_bailout(true);
+        }
     } else {
         heli_flags.in_autorotation = false;
         motors->set_in_autorotation(heli_flags.in_autorotation);
         motors->set_enable_bailout(false);
     }
-#endif
+
 }
 
 // update collective low flag.  Use a debounce time of 400 milliseconds.
