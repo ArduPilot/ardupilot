@@ -88,18 +88,14 @@ void RCOutput::push(void)
         _corked = false;
     }
 
-    // do not overwrite FETTec simulation's ESC telemetry data:
     SITL::SIM *sitl = AP::sitl();
-    if (sitl != nullptr &&
-        sitl->fetteconewireesc_sim.enabled()) {
-        return;
-    }
-
-    if (esc_telem == nullptr) {
-        esc_telem = new AP_ESC_Telem_SITL;
-    }
-    if (esc_telem != nullptr) {
-        esc_telem->update();
+    if (sitl && sitl->esc_telem) {
+        if (esc_telem == nullptr) {
+            esc_telem = new AP_ESC_Telem_SITL;
+        }
+        if (esc_telem != nullptr) {
+            esc_telem->update();
+        }
     }
 }
 
