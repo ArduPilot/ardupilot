@@ -4918,10 +4918,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.context_push()
 
         self.set_parameters({
-            "SERIAL5_PROTOCOL": 45,
+            "SERIAL5_PROTOCOL": 47,  # v3
             "RPM1_TYPE": 5,
             "RPM1_ESC_MASK": 4,
-            "SERVO_H_V3_MASK": 4,
+            "ESC_TLM_G1_PROT": 1,  # HobbyWing PRO v3
+            "ESC_TLM_G1_MASK": 4,  # ... on motor 3
             "SIM_ESC_TELEM": 0,
         })
         self.customise_SITL_commandline([
@@ -5384,6 +5385,39 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.drain_mav()
         self.assert_servo_channel_value(3, servo_min)
 
+    def HobbyWing_DataLink(self):
+        '''test support for DataLink devices'''
+        self.context_push()
+
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 46,
+            "RPM1_TYPE": 5,
+            "RPM1_ESC_MASK": 4,
+            "SIM_ESC_TELEM": 0,
+        })
+
+        self.customise_SITL_commandline([
+            "--uartF=sim:tmotordatalink:0,0,3",
+        ])
+
+        self.assert_received_message_field_values("RPM", {
+            "rpm1": 0,
+            "rpm2": -1,
+        })
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('TAKEOFF')
+
+        self.wait_message_field_values("RPM", {
+            "rpm1": 5000,
+        }, epsilon=100)
+
+        self.disarm_vehicle(force=True)
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -5465,6 +5499,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.GlideSlopeThresh,
             self.HIGH_LATENCY2,
             self.HobbyWing_Platinum_PRO_v3,
+            self.HobbyWing_DataLink,
             self.MidAirDisarmDisallowed,
             self.AerobaticsScripting,
             self.MANUAL_CONTROL,
