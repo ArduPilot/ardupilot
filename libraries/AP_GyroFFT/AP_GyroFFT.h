@@ -113,6 +113,11 @@ public:
     bool check_esc_noise() const { return (_options & uint32_t(Options::ESCNoiseCheck)) != 0; }
     // look for a frequency in the detected noise
     float has_noise_at_frequency_hz(float freq) const;
+    static float calculate_notch_frequency(float* freqs, uint16_t numpeaks, float harmonic_fit, uint8_t& harmonics);
+    static bool is_harmonic_of(float harmonic, float fundamental, uint8_t mult, float _fit) {
+        const float fit = 100.0f * fabsf(harmonic - fundamental * mult) / harmonic;
+        return (isfinite(fit) && fit < _fit);
+    }
 
     static const struct AP_Param::GroupInfo var_info[];
     static AP_GyroFFT *get_singleton() { return _singleton; }
