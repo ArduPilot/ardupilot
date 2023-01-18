@@ -1,0 +1,445 @@
+#VRML_SIM R2023a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/devices/generic/protos/Servo.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+
+WorldInfo {
+  title "ArduCopter Webots"
+  physics "sitl_physics_env"
+  basicTimeStep 1
+  FPS 30
+}
+Viewpoint {
+  orientation -0.04218570329652089 -0.9904182026265073 0.13149962107723565 5.656763850316557
+  position -2.6005179384905186 0.5904244895108399 1.7290915433665206
+  follow "quad1"
+}
+DEF DEF_VEHICLE Robot {
+  translation 0 0 0.17998019
+  children [
+    Servo {
+      translation -0.41 0 0.08
+      rotation 1 0 0 1.5707963267948968
+      children [
+        Transform {
+          rotation 1 2.43348e-15 -5.07515e-07 3.14159
+          children [
+            Propeller {
+              shaftAxis 0 0 1
+              thrustConstants 0.00450012 0
+              torqueConstants 0 0
+              fastHelixThreshold 100
+              device RotationalMotor {
+                name "motor3"
+                controlPID 10.001 0 0
+                maxVelocity 80000
+                maxTorque 80000
+              }
+              fastHelix Solid {
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                        diffuseColor 0.960784 0.47451 0
+                      }
+                    }
+                    geometry Cylinder {
+                      height 0.001
+                      radius 0.07
+                    }
+                  }
+                ]
+              }
+              slowHelix Solid {
+                rotation 0 0 -1 5.6738354365065256
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                        diffuseColor 0.447059 0.623529 0.811765
+                      }
+                    }
+                    geometry Cylinder {
+                      height 0.001
+                      radius 0.07
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+      name "motor4"
+      boundingObject Cylinder {
+        height 0.001
+        radius 0.07
+      }
+      physics Physics {
+        density -1
+        mass 0.001
+      }
+      position -0.5
+    }
+    Camera {
+    }
+    Compass {
+      rotation 0 0 1 -1.5707996938995747
+    }
+    Emitter {
+    }
+    Gyro {
+      rotation 0 0 1 -1.5707996938995747
+    }
+    InertialUnit {
+      rotation 0 0 1 -1.5707996938995747
+    }
+    GPS {
+      rotation 0 0 1 -1.5707996938995747
+    }
+    Accelerometer {
+      rotation 0 0 1 -1.5707996938995747
+    }
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0.12549 0.290196 0.529412
+          emissiveColor 0.12549 0.290196 0.529412
+          specularColor 0.333333 0.341176 0.32549
+        }
+      }
+      geometry Box {
+        size 0.1 0.1 0.1
+      }
+    }
+    Solid {
+      translation 0.300012 0.300012 0
+      children [
+        Propeller {
+          shaftAxis 0 0 -1
+          thrustConstants -0.00400012 0
+          torqueConstants 0 0
+          device RotationalMotor {
+            name "motor2"
+            controlPID 10.001 0 0
+            maxVelocity 80000
+            maxTorque 80000
+          }
+          fastHelix Solid {
+            children [
+              Shape {
+                appearance Appearance {
+                  material Material {
+                    diffuseColor 0.960784 0.47451 0
+                  }
+                }
+                geometry Cylinder {
+                  height 0.001
+                  radius 0.07
+                }
+              }
+            ]
+          }
+          slowHelix Solid {
+            rotation 0 0 -1 2.8142786324489
+            children [
+              Shape {
+                appearance Appearance {
+                  material Material {
+                    diffuseColor 0.937255 0.160784 0.160784
+                  }
+                }
+                geometry Cylinder {
+                  height 0.001
+                  radius 0.07
+                }
+              }
+            ]
+          }
+        }
+      ]
+      name "arm2"
+      boundingObject Cylinder {
+        height 0.001
+        radius 0.07
+      }
+      physics Physics {
+        density -1
+        mass 0.001
+      }
+    }
+    Solid {
+      translation 0.300012 -0.300012 0
+      children [
+        Propeller {
+          shaftAxis 0 0 1
+          thrustConstants 0.00400012 0
+          torqueConstants 0 0
+          device RotationalMotor {
+            name "motor1"
+            controlPID 10.001 0 0
+            maxVelocity 80000
+            maxTorque 80000
+          }
+          fastHelix Solid {
+            children [
+              Shape {
+                appearance Appearance {
+                  material Material {
+                    diffuseColor 0.960784 0.47451 0
+                  }
+                }
+                geometry Cylinder {
+                  height 0.001
+                  radius 0.07
+                }
+              }
+            ]
+          }
+          slowHelix Solid {
+            rotation 0 0 -0.9999999999999999 3.2369557986115076
+            children [
+              Shape {
+                appearance Appearance {
+                  material Material {
+                    diffuseColor 0.937255 0.160784 0.160784
+                  }
+                }
+                geometry Cylinder {
+                  height 0.001
+                  radius 0.07
+                }
+              }
+            ]
+          }
+        }
+      ]
+      name "arm1"
+      boundingObject Cylinder {
+        height 0.001
+        radius 0.07
+      }
+      physics Physics {
+        density -1
+        mass 0.001
+      }
+    }
+  ]
+  boundingObject Box {
+    size 1.1 0.8 0.3
+  }
+  physics Physics {
+    density -1
+    mass 0.75
+  }
+  controller "ardupilot_SITL_TRI_2023a"
+  controllerArgs [
+    "-df"
+    "0.01"
+    "-p"
+    "5577"
+  ]
+}
+Solid {
+  translation 0 3.12 1.2299303799999999
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0.937255 0.160784 0.160784
+        }
+      }
+      geometry Sphere {
+        radius 1.2
+      }
+    }
+  ]
+  name "ball"
+  boundingObject Sphere {
+    radius 0.1
+  }
+  physics Physics {
+    density -1
+    mass 1
+  }
+}
+Solid {
+  translation 0 35.26 59.34
+  rotation 0 1 0 0
+  scale 9 9 9
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0.937255 0.160784 0.160784
+        }
+      }
+      geometry Sphere {
+        radius 1.2
+      }
+    }
+  ]
+  name "ball(1)"
+  boundingObject Sphere {
+    radius 0.1
+  }
+}
+Solid {
+  translation 537.71 35.26 298.07
+  rotation 0 1 0 0
+  scale 9 9 9
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0.937255 0.160784 0.160784
+        }
+      }
+      geometry Sphere {
+        radius 1.2
+      }
+    }
+  ]
+  name "ball(2)"
+  boundingObject Sphere {
+    radius 0.1
+  }
+}
+Solid {
+  translation 8.95 -449.95 249.32
+  rotation 0 1 0 0
+  scale 9 9 9
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0.937255 0.160784 0.160784
+        }
+      }
+      geometry Sphere {
+        radius 1.2
+      }
+    }
+  ]
+  name "ball(3)"
+  boundingObject Sphere {
+    radius 0.1
+  }
+}
+Solid {
+  translation -681.15 440.37 249.32
+  rotation 0 1 0 0
+  scale 36 36 36
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0.988235 0.913725 0.309804
+        }
+      }
+      geometry Sphere {
+        radius 1.2
+      }
+    }
+  ]
+  name "ball(4)"
+  boundingObject Sphere {
+    radius 0.1
+  }
+}
+TexturedBackground {
+  texture "noon_sunny_empty"
+}
+TexturedBackgroundLight {
+}
+Solid {
+  scale 18 18 18
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0.305882 0.603922 0.0235294
+        }
+      }
+      geometry Plane {
+        size 100 100
+      }
+    }
+  ]
+  name "ground"
+  boundingObject Plane {
+    size 100 100
+  }
+}
+Solid {
+  translation 0 396.36 29.98
+  scale 550 550 550
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0.203922 0.396078 0.643137
+        }
+      }
+      geometry Cone {
+        bottomRadius 0.05
+        height 0.1
+      }
+    }
+  ]
+}
+Solid {
+  translation -447.47 -650.39 29.98
+  scale 550 550 550
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0.960784 0.47451 0
+        }
+      }
+      geometry Cone {
+        bottomRadius 0.05
+        height 0.1
+      }
+    }
+  ]
+  name "solid(1)"
+}
+Solid {
+  translation 596.79 -650.39 29.98
+  scale 550 550 550
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0.678431 0.498039 0.658824
+        }
+      }
+      geometry Cone {
+        bottomRadius 0.05
+        height 0.1
+      }
+    }
+  ]
+  name "solid(2)"
+}
+Solid {
+  translation 596.79 399.41 29.98
+  scale 550 550 550
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0.960784 0.47451 0
+        }
+      }
+      geometry Cone {
+        bottomRadius 0.05
+        height 0.1
+      }
+    }
+  ]
+  name "solid(3)"
+}

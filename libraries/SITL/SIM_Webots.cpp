@@ -390,7 +390,6 @@ void Webots::output_tricopter(const struct sitl_input &input)
     const int len = snprintf(buf, sizeof(buf)-1, "{\"eng\": [%.3f, %.3f, %.3f, %.3f], \"wnd\": [%f, %3.1f, %1.1f, %2.1f]}\n",
              m_right, m_left, m_servo, m_back,
              input.wind.speed, wind_ef.x, wind_ef.y, wind_ef.z);
-    //printf("\"eng\": [%.3f, %.3f, %.3f, %.3f]\n",m_right, m_left, m_servo, m_back);
     buf[len] = 0;
 
     sim_sock->send(buf, len);
@@ -427,7 +426,7 @@ void Webots::output (const struct sitl_input &input)
             output_pwm(input);
             break;
         case OUTPUT_TRICOPTER:
-            output_tricopter(input);
+            output_pwm(input);
             break;
         case OUTPUT_PWM:
             output_pwm(input);
@@ -487,7 +486,7 @@ void Webots::update(const struct sitl_input &input)
         position.xy() += origin.get_distance_NE_double(home);
 
         // limit to 16G to match pixhawk1
-        float a_limit = GRAVITY_MSS*16;
+        float a_limit = GRAVITY_MSS*32;
         accel_body.x = constrain_float(accel_body.x, -a_limit, a_limit);
         accel_body.y = constrain_float(accel_body.y, -a_limit, a_limit);
         accel_body.z = constrain_float(accel_body.z, -a_limit, a_limit);
