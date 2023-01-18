@@ -499,12 +499,11 @@ void GCS_MAVLINK::ftp_worker(void) {
                         if (valid_channel(request.chan)) {
                             auto *port = mavlink_comm_port[request.chan];
                             if (port != nullptr && port->get_flow_control() != AP_HAL::UARTDriver::FLOW_CONTROL_ENABLE) {
-                                const uint32_t bw = port->bw_in_kilobytes_per_second();
+                                const uint32_t bw = port->bw_in_bytes_per_second();
                                 const uint16_t pkt_size = PAYLOAD_SIZE(request.chan, FILE_TRANSFER_PROTOCOL) - (sizeof(reply.data) - max_read);
-                                burst_delay_ms = 3 * pkt_size / bw;
+                                burst_delay_ms = 3000 * pkt_size / bw;
                             }
                         }
-
 
                         // this transfer size is enough for a full parameter file with max parameters
                         const uint32_t transfer_size = 500;
