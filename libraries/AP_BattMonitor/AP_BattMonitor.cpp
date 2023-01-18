@@ -15,6 +15,7 @@
 #include "AP_BattMonitor_Generator.h"
 #include "AP_BattMonitor_INA2xx.h"
 #include "AP_BattMonitor_INA239.h"
+#include "AP_BattMonitor_INA260.h"
 #include "AP_BattMonitor_LTC2946.h"
 #include "AP_BattMonitor_Torqeedo.h"
 #include "AP_BattMonitor_FuelLevel_Analog.h"
@@ -352,6 +353,11 @@ AP_BattMonitor::init()
 #if HAL_BATTMON_INA239_ENABLED
             case Type::INA239_SPI:
                 drivers[instance] = new AP_BattMonitor_INA239(*this, state[instance], _params[instance]);
+                break;
+#endif
+#if HAL_BATTMON_INA260_ENABLED
+            case Type::INA260:
+                drivers[instance] = new AP_BattMonitor_INA260(*this, state[instance], _params[instance]);
                 break;
 #endif
             case Type::NONE:
