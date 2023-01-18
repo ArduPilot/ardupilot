@@ -454,14 +454,31 @@ private:
     uint8_t obs_buffer_length;
 
 #if MATH_CHECK_INDEXES
+    class Vector9 : public VectorN<ftype, 9> {
+    public:
+        Vector9(ftype p0, ftype p1, ftype p2,
+                ftype p3, ftype p4, ftype p5,
+                ftype p6, ftype p7, ftype p8) {
+            _v[0] = p0;   _v[1] = p1;  _v[2] = p2;
+            _v[3] = p3;   _v[4] = p4;  _v[5] = p5;
+            _v[6] = p6;   _v[7] = p7;  _v[8] = p8;
+        }
+    };
+    class Vector5 : public VectorN<ftype, 5> {
+    public:
+        Vector5(ftype p0, ftype p1, ftype p2,
+                ftype p3, ftype p4) {
+            _v[0] = p0;   _v[1] = p1;  _v[2] = p2;
+            _v[3] = p3;   _v[4] = p4;
+        }
+    };
+
     typedef VectorN<ftype,2> Vector2;
     typedef VectorN<ftype,3> Vector3;
     typedef VectorN<ftype,4> Vector4;
-    typedef VectorN<ftype,5> Vector5;
     typedef VectorN<ftype,6> Vector6;
     typedef VectorN<ftype,7> Vector7;
     typedef VectorN<ftype,8> Vector8;
-    typedef VectorN<ftype,9> Vector9;
     typedef VectorN<ftype,10> Vector10;
     typedef VectorN<ftype,11> Vector11;
     typedef VectorN<ftype,13> Vector13;
