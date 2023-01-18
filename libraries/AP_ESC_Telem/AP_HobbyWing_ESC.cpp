@@ -1,5 +1,9 @@
 #include "AP_HobbyWing_ESC.h"
 
+#include "AP_ESC_Telem_config.h"
+
+#if AP_HOBBYWING_ESC_ENABLED
+
 #include <AP_HAL/UARTDriver.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -76,6 +80,26 @@ bool AP_HobbyWing_ESC::get_telem(HWESC &hwesc)
     return true;
 }
 
+#if HAL_WITH_ESC_TELEM
+void AP_HobbyWing_ESC::update_telemetry()
+{
+    // FIXME: packet freshness?
+    HWESC decoded_data {
+    rpm: nanf(""),
+    voltage: nanf(""),
+    phase_current: nanf(""),
+    current: nanf(""),
+    temperature: nanf("")
+    };
+    if (!get_telem(decoded_data)) {
+        return;
+    }
+
+    // ESC telem library wants an offset, not a channel number, thus -1:
+    update_motor_data_from_HWESC(servo_channel-1, decoded_data);
+}
+#endif  // HAL_WITH_ESC_TELEM
+
 void AP_HobbyWing_ESC::check_seq(uint32_t this_seq)
 {
     const uint32_t packet_delta = this_seq - last_seq;
@@ -86,3 +110,5 @@ void AP_HobbyWing_ESC::check_seq(uint32_t this_seq)
     }
     last_seq = this_seq;
 }
+
+#endif

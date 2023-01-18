@@ -14,22 +14,42 @@
  */
 
 #include "AP_ESC_Telem.h"
-#include <AP_HAL/AP_HAL.h>
-#include <GCS_MAVLink/GCS.h>
-#include <AP_Logger/AP_Logger.h>
 
 #if HAL_WITH_ESC_TELEM
 
+#include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_TemperatureSensor/AP_TemperatureSensor_config.h>
 
 #include <AP_Math/AP_Math.h>
+#include <AP_SerialManager/AP_SerialManager.h>
+
+#include "AP_HobbyWing_ESC.h"
+#include "AP_HobbyWing_ESC_Platinum_PRO_v3.h"
+#include "AP_HobbyWing_ESC_Platinum_v4.h"
+#include "AP_HobbyWing_ESC_XRotor_v4.h"
+#include "AP_HobbyWing_DataLink.h"
 
 //#define ESC_TELEM_DEBUG
 
 #define ESC_RPM_CHECK_TIMEOUT_US 210000UL   // timeout for motor running validity
 
 extern const AP_HAL::HAL& hal;
+
+// table of user settable parameters
+#if AP_HOBBYWING_ESC_ENABLED
+const AP_Param::GroupInfo AP_ESC_Telem_MotorGroup::var_info[] = {
+    AP_GROUPINFO_FLAGS("_PROT", 1, AP_ESC_Telem_MotorGroup, protocol, 0, AP_PARAM_FLAG_ENABLE),
+
+    AP_GROUPINFO("_POLE", 2, AP_ESC_Telem_MotorGroup, poles, 14),
+
+    AP_GROUPINFO("_MASK", 3, AP_ESC_Telem_MotorGroup, mask, 0),
+
+    AP_GROUPEND
+};
+#endif  // AP_HOBBYWING_ESC_ENABLED
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_ESC_Telem::var_info[] = {
@@ -41,7 +61,51 @@ const AP_Param::GroupInfo AP_ESC_Telem::var_info[] = {
     // @Range: 0 31
     // @User: Standard
     AP_GROUPINFO("_MAV_OFS", 1, AP_ESC_Telem, mavlink_offset, 0),
-    
+
+#if AP_ESC_TELEM_MAX_PROTOCOL_GROUPS > 0
+    // @Param: _G1_PROT
+    // @DisplayName: ESC telemetry protocol for Motor Group1
+    // @Description: ESC telemetry protocol used for this motor group
+    // @Values: 0:None, 1:HobbyWing Platinum Pro v3, 2:HobbyWing Platinum v4, 3: HobbyWing XRotorv4
+    // @Increment: 1
+    // @User: Standard
+
+    // @Param: _G1_POLE
+    // @DisplayName: Number of Poles for Motor Group1
+    // @Description: When converting from ESC telemetry stream, assume this number of motor poles in connected motors (this is an eRPM to RPM conversion)
+    // @Increment: 1
+    // @User: Standard
+
+    // @Param: _G1_MASK
+    // @DisplayName: Mask of which motor outputs correspond to configured telemetry inputs.  For each bit set in this mask there must be a serial port configured with the matching protocol.
+    // @Description: ESC telemetry protocol used for this motor group
+    // @Values: 0:None, 1:HobbyWing Platinum Pro v3, 2:HobbyWing Platinum v4, 3: HobbyWing XRotorv4
+    // @Increment: 1
+    // @User: Standard
+
+    AP_SUBGROUPINFO(motor_group[0], "_G1", 2, AP_ESC_Telem, AP_ESC_Telem_MotorGroup),
+#endif  // AP_ESC_TELEM_MAX_PROTOCOL_GROUPS > 0
+
+#if AP_ESC_TELEM_MAX_PROTOCOL_GROUPS > 1
+    // @Param: _G2_PROT
+    // @CopyFieldsFrom: ESC_TLM_G1_PROT
+    // @DisplayName: ESC telemetry protocol for Motor Group1
+
+    // @Param: _G2_POLE
+    // @CopyFieldsFrom: ESC_TLM_G1_POLE
+    // @DisplayName: Number of Poles for Motor Group1
+
+    // @Param: _G2_MASK
+    // @CopyFieldsFrom: ESC_TLM_G1_MASK
+    AP_SUBGROUPINFO(motor_group[1], "_G2", 3, AP_ESC_Telem, AP_ESC_Telem_MotorGroup),
+#endif  // AP_ESC_TELEM_MAX_PROTOCOL_GROUPS > 1
+
+#if AP_HOBBYWING_DATALINK_ENABLED
+    // @Group: _DL
+    // @Path: AP_HobbyWing_DataLink.cpp
+    AP_SUBGROUPINFO(datalink, "_DL", 10, AP_ESC_Telem, AP_HobbyWing_DataLink),
+#endif
+
     AP_GROUPEND
 };
 
@@ -54,6 +118,162 @@ AP_ESC_Telem::AP_ESC_Telem()
 #if !defined(IOMCU_FW)
     AP_Param::setup_object_defaults(this, var_info);
 #endif
+}
+
+AP_SerialManager::SerialProtocol AP_ESC_Telem::serial_protocol_for_esc_telem_protocol(AP_ESC_Telem_Protocol protocol)
+{
+    switch (protocol) {
+    case AP_ESC_Telem_Protocol::HOBBYWING_PLATINUM_PRO_V3:
+        return AP_SerialManager::SerialProtocol::SerialProtocol_HobbyWing_PlatinumProV3;
+    case AP_ESC_Telem_Protocol::HOBBYWING_PLATINUM_V4:
+        return AP_SerialManager::SerialProtocol::SerialProtocol_HobbyWing_PlatinumV4;
+    case AP_ESC_Telem_Protocol::HOBBYWING_XROTOR_V4:
+        return AP_SerialManager::SerialProtocol::SerialProtocol_HobbyWing_XRotorV4;
+    default:
+        // this is a user-supplied parameter, so could be anything:
+        break;
+    }
+
+    return AP_SerialManager::SerialProtocol::SerialProtocol_None;
+}
+
+AP_HobbyWing_ESC *AP_ESC_Telem::new_esc_backend_for_type(AP_ESC_Telem_Protocol protocol, AP_HAL::UARTDriver &uart, uint8_t servo_channel, uint8_t poles)
+{
+    switch (protocol) {
+#if AP_HOBBYWING_PLATINUM_PRO_V3_ENABLED
+    case AP_ESC_Telem_Protocol::HOBBYWING_PLATINUM_PRO_V3:
+        return new AP_HobbyWing_Platinum_PRO_v3(uart, servo_channel, poles);
+#endif
+#if AP_HOBBYWING_PLATINUM_V4_ENABLED
+    case AP_ESC_Telem_Protocol::HOBBYWING_PLATINUM_V4:
+        return new AP_HobbyWing_Platinum_v4(uart, servo_channel, poles);
+#endif
+#if AP_HOBBYWING_XROTOR_V4_ENABLED
+    case AP_ESC_Telem_Protocol::HOBBYWING_XROTOR_V4:
+        return new AP_HobbyWing_XRotor_v4(uart, servo_channel, poles);
+#endif
+    default:
+        break;
+    }
+
+    return nullptr;
+}
+
+
+void AP_ESC_Telem::init()
+{
+#if AP_HOBBYWING_ESC_ENABLED
+    for (auto &group : motor_group) {
+        if (group.protocol == AP_ESC_Telem_Protocol::NONE) {
+            continue;
+        }
+        for (uint8_t i=0; i<32; i++) {  // n.b. 32 is ambitious given old mavlink transfer protocol
+            if (!BIT_IS_SET(group.mask, i)) {
+                continue;
+            }
+
+            // find a UART for this group protocol:
+            const auto serial_protocol = serial_protocol_for_esc_telem_protocol(group.protocol);
+            if (serial_protocol == AP_SerialManager::SerialProtocol::SerialProtocol_None) {
+                break;
+            }
+
+            // note we rely on group.protocol being constrained by the
+            // return of a valid serial protocol!  If that goes wrong
+            // this will lead to an out-of-bounds array access here:
+            const uint8_t group_protocol = group.protocol;
+            AP_HAL::UARTDriver *uart { AP::serialmanager().find_serial(serial_protocol, num_escs_for_protocol[group_protocol]) };
+            if (uart == nullptr) {
+                break;
+            }
+
+            // instantiate a backend for the type:
+            escs[num_escs] = new_esc_backend_for_type(group.protocol, *uart, i+1, group.poles);
+            if (escs[num_escs] == nullptr) {
+                break;
+            }
+
+            num_escs_for_protocol[group_protocol]++;
+            num_escs++;
+        }
+    }
+
+#if AP_HOBBYWING_DATALINK_ENABLED
+    {
+        AP_HAL::UARTDriver *uart { AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_HobbyWing_DataLink, 0) };
+        if (uart != nullptr) {
+            datalink = new AP_HobbyWing_DataLink(*uart);
+        }
+    }
+#endif
+
+    bool create_thread = false;
+
+    if (num_escs != 0) {
+        create_thread = true;
+    }
+
+#if AP_HOBBYWING_DATALINK_ENABLED
+    if (datalink != nullptr) {
+        create_thread = true;
+    }
+#endif
+
+    if (!create_thread) {
+        return;
+    }
+
+    // start a thread to handle the reading from all of those UARTs:
+    if (!hal.scheduler->thread_create(
+            FUNCTOR_BIND_MEMBER(&AP_ESC_Telem::thread_main, void),
+            "HobbyWing",
+            512, AP_HAL::Scheduler::PRIORITY_BOOST, 1)) {
+        DEV_PRINTF("Failed to create HobbyWing thread\n");
+    }
+#endif // AP_HOBBYWING_ESC_ENABLED
+}
+
+#if AP_HOBBYWING_ESC_ENABLED
+void AP_ESC_Telem::thread_main()
+{
+    // initialise all escs; this will set the UART up in the thread
+    for (uint8_t i=0; i<num_escs; i++) {
+        escs[i]->init();
+    }
+#if AP_HOBBYWING_DATALINK_ENABLED
+    if (datalink != nullptr) {
+        datalink->init();
+    }
+#endif
+
+    while (true) {
+        hal.scheduler->delay_microseconds(1500);
+        for (uint8_t i=0; i<num_escs; i++) {
+            escs[i]->update();
+        }
+#if AP_HOBBYWING_DATALINK_ENABLED
+        if (datalink != nullptr) {
+            datalink->update();
+        }
+#endif
+    }
+}
+#endif  // AP_HOBBYWING_ESC_ENABLED
+
+void AP_ESC_Telem::update_telemetry()
+{
+#if AP_HOBBYWING_ESC_ENABLED
+    for (uint8_t i=0; i<num_escs; i++) {
+        AP_HobbyWing_ESC &esc = *escs[i];
+        esc.update_telemetry();
+    }
+
+#if AP_HOBBYWING_DATALINK_ENABLED
+    if (datalink != nullptr) {
+        datalink->update_telemetry();
+    }
+#endif  // AP_HOBBYWING_DATALINK_ENABLED
+#endif  // AP_HOBBYWING_ESC_ENABLED
 }
 
 // return the average motor RPM
@@ -587,6 +807,10 @@ void AP_ESC_Telem::update_telem_data(const uint8_t esc_index, const AP_ESC_Telem
 // this should be called by backends when new telemetry values are available
 void AP_ESC_Telem::update_rpm(const uint8_t esc_index, const float new_rpm, const float error_rate)
 {
+    if (isnan(new_rpm)) {
+        abort();
+    }
+
     if (esc_index >= ESC_TELEM_MAX_ESCS) {
         return;
     }
@@ -668,7 +892,13 @@ uint16_t AP_ESC_Telem::merge_edt2_stress(uint16_t old_stress, uint16_t new_stres
 
 void AP_ESC_Telem::update()
 {
+    update_telemetry();
+    update_logging();
+}
+
 #if HAL_LOGGING_ENABLED
+void AP_ESC_Telem::update_logging()
+{
     AP_Logger *logger = AP_Logger::get_singleton();
     const uint64_t now_us64 = AP_HAL::micros64();
 

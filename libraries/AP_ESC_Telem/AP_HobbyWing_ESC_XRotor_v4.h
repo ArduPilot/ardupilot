@@ -17,10 +17,6 @@ public:
 
     void update() override;
 
-private:
-
-    uint8_t temperature_decode(uint8_t temp_raw) const;
-
 };
 
 #endif  // AP_HOBBYWING_XROTOR_V4_ENABLED
