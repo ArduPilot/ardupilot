@@ -2,6 +2,17 @@
 
 #include "AP_ESC_Telem_config.h"
 
+// data structure and method common to several backends for sharing
+// data - even if HAL_WITH_ESC_TELEM is false:
+struct HWESC {
+    float rpm;
+    float voltage;
+    float phase_current;
+    float current;
+    float temperature;
+    uint32_t error_count;
+};
+
 #if HAL_WITH_ESC_TELEM
 
 class AP_ESC_Telem;
@@ -56,6 +67,9 @@ protected:
 
     // callback to update the data in the frontend, should be called by the driver when new data is available
     void update_telem_data(const uint8_t esc_index, const TelemetryData& new_data, const uint16_t data_present_mask);
+
+    void update_motor_data_from_HWESC(uint8_t motor, const HWESC &decoded);
+    static uint8_t temperature_decode(uint8_t temp_raw);
 
 private:
     AP_ESC_Telem* _frontend;

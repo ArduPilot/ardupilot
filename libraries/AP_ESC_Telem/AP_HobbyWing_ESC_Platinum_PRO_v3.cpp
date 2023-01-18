@@ -14,6 +14,8 @@
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_HAL/AP_HAL.h>
 
+#include <stdio.h>  // removeme
+
 void AP_HobbyWing_Platinum_PRO_v3::update()
 {
     struct PACKED Packet {

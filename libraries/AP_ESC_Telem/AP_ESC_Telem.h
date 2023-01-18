@@ -3,7 +3,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <SRV_Channel/SRV_Channel_config.h>
+#include "AP_ESC_Telem_config.h"
 #include "AP_ESC_Telem_Backend.h"
+#include <AP_SerialManager/AP_SerialManager.h>
 
 #if HAL_WITH_ESC_TELEM
 
@@ -12,6 +14,28 @@ static_assert(ESC_TELEM_MAX_ESCS > 0, "Cannot have 0 ESC telemetry instances");
 
 #define ESC_TELEM_DATA_TIMEOUT_MS 5000UL
 #define ESC_RPM_DATA_TIMEOUT_US 1000000UL
+
+enum class AP_ESC_Telem_Protocol : uint8_t {
+    NONE =  0,
+    HOBBYWING_PLATINUM_PRO_V3 = 1,
+    HOBBYWING_PLATINUM_V4 = 2,
+    HOBBYWING_XROTOR_V4 = 3,
+    __LAST__ = 4,
+};
+
+class AP_ESC_Telem_MotorGroup {
+public:
+
+    AP_ESC_Telem_MotorGroup() {
+        AP_Param::setup_object_defaults(this, var_info);
+    };
+
+    AP_Enum<AP_ESC_Telem_Protocol> protocol;
+    AP_Int8 poles;
+    AP_Int32 mask;
+
+    static const struct AP_Param::GroupInfo var_info[];
+};
 
 class AP_ESC_Telem {
 public:
@@ -25,6 +49,8 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     static AP_ESC_Telem *get_singleton();
+
+    void init();
 
     // get an individual ESC's slewed rpm if available, returns true on success
     bool get_rpm(uint8_t esc_index, float& rpm) const;
@@ -92,7 +118,7 @@ public:
     // send telemetry data to mavlink
     void send_esc_telemetry_mavlink(uint8_t mav_chan);
 
-    // update at 10Hz to log telemetry
+    // library update call; updates backends and logs data
     void update();
 
     // is rpm telemetry configured for the provided channel mask
@@ -136,6 +162,27 @@ private:
     bool _have_data;
 
     AP_Int8 mavlink_offset;
+
+    // methods for update() to call
+    void update_logging();
+    void update_telemetry();
+
+
+#if AP_ESC_TELEM_MAX_PROTOCOL_GROUPS > 0
+    AP_ESC_Telem_MotorGroup motor_group[AP_ESC_TELEM_MAX_PROTOCOL_GROUPS];
+    // num_escs contains the number of escs allocated for each supported type:
+    uint8_t num_escs_for_protocol[uint8_t(AP_ESC_Telem_Protocol::__LAST__)];
+    uint8_t num_escs;  // sum of all the values in num_escs_for_protocol
+    class AP_HobbyWing_ESC *escs[ESC_TELEM_MAX_ESCS];
+    void thread_main(void);
+#endif
+
+#if AP_HOBBYWING_DATALINK_ENABLED
+    class AP_HobbyWing_DataLink *datalink;
+#endif  // AP_HOBBYWING_DATALINK_ENABLED
+
+    static class AP_HobbyWing_ESC *new_esc_backend_for_type(AP_ESC_Telem_Protocol protocol, AP_HAL::UARTDriver &uart, uint8_t servo_channel, uint8_t poles);
+    AP_SerialManager::SerialProtocol serial_protocol_for_esc_telem_protocol(AP_ESC_Telem_Protocol protocol);
 
     static AP_ESC_Telem *_singleton;
 };
