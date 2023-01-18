@@ -7,7 +7,7 @@
 #include <utility>
 
 #ifndef HAL_BATTMON_INA260_ENABLED
-#define HAL_BATTMON_INA260_ENABLED (BOARD_FLASH_SIZE > 1024)
+#define HAL_BATTMON_INA260_ENABLED 1           //Disable INA260 by writing 0
 #endif
 
 #if HAL_BATTMON_INA260_ENABLED
