@@ -756,7 +756,7 @@ def get_ram_map():
                     if app_ram_map[0][0] == ram_map[i][0]:
                         env_vars['APP_RAM_START'] = i
             return ram_map
-    elif env_vars['EXT_FLASH_SIZE_MB']:
+    elif env_vars['EXT_FLASH_SIZE_MB'] and not env_vars['INT_FLASH_PRIMARY']:
         ram_map = get_mcu_config('RAM_MAP_EXTERNAL_FLASH', False)
         if ram_map is not None:
             return ram_map
@@ -1000,8 +1000,8 @@ def write_mcu_config(f):
     f.write('#define EXT_FLASH_RESERVE_END_KB %u\n' % get_config('EXT_FLASH_RESERVE_END_KB', default=0, type=int))
 
     env_vars['EXT_FLASH_SIZE_MB'] = get_config('EXT_FLASH_SIZE_MB', default=0, type=int)
-
-    if env_vars['EXT_FLASH_SIZE_MB'] and not args.bootloader:
+    env_vars['INT_FLASH_PRIMARY'] = get_config('INT_FLASH_PRIMARY', default=False, type=bool)
+    if env_vars['EXT_FLASH_SIZE_MB'] and not args.bootloader and not env_vars['INT_FLASH_PRIMARY']:
         f.write('#define CRT0_AREAS_NUMBER 3\n')
         f.write('#define CRT1_RAMFUNC_ENABLE TRUE\n') # this will enable loading program sections to RAM
         f.write('#define __FASTRAMFUNC__ __attribute__ ((__section__(".fastramfunc")))\n')
@@ -1010,6 +1010,13 @@ def write_mcu_config(f):
     else:
         f.write('#define CRT0_AREAS_NUMBER 1\n')
         f.write('#define CRT1_RAMFUNC_ENABLE FALSE\n')
+
+    if env_vars['INT_FLASH_PRIMARY']:
+         # this will put methods with low latency requirements into external flash
+         # and save internal flash space
+        f.write('#define __EXTFLASHFUNC__ __attribute__ ((__section__(".extflash")))\n')
+    else:
+        f.write('#define __EXTFLASHFUNC__\n')
 
     storage_flash_page = get_storage_flash_page()
     flash_reserve_end = get_config('FLASH_RESERVE_END_KB', default=0, type=int)
@@ -1034,7 +1041,7 @@ def write_mcu_config(f):
         env_vars['ENABLE_CRASHDUMP'] = 0
 
     if args.bootloader:
-        if env_vars['EXT_FLASH_SIZE_MB']:
+        if env_vars['EXT_FLASH_SIZE_MB'] and not env_vars['INT_FLASH_PRIMARY']:
             f.write('\n// location of loaded firmware in external flash\n')
             f.write('#define APP_START_ADDRESS 0x%08x\n' % (0x90000000 + get_config(
                 'EXT_FLASH_RESERVE_START_KB', default=0, type=int)*1024))
@@ -1306,6 +1313,7 @@ def write_ldscript(fname):
 
     # get external flash if any
     ext_flash_size = get_config('EXT_FLASH_SIZE_MB', default=0, type=int)
+    int_flash_primary = get_config('INT_FLASH_PRIMARY', default=False, type=int)
 
     if not args.bootloader:
         flash_length = flash_size - (flash_reserve_start + flash_reserve_end)
@@ -1320,6 +1328,9 @@ def write_ldscript(fname):
     f = open(fname, 'w')
     ram0_start = ram_map[0][0]
     ram0_len = ram_map[0][1] * 1024
+    if ext_flash_size > 32:
+        error("We only support 24bit addressing over external flash")
+
     if env_vars['APP_RAM_START'] is None:
         # default to start of ram for shared ram
         # possibly reserve some memory for app/bootloader comms
@@ -1337,9 +1348,19 @@ MEMORY
 
 INCLUDE common.ld
 ''' % (flash_base, flash_length, ram0_start, ram0_len))
+    elif int_flash_primary:
+        env_vars['HAS_EXTERNAL_FLASH_SECTIONS'] = 1
+        f.write('''/* generated ldscript.ld */
+MEMORY
+{
+    flash : org = 0x%08x, len = %uK
+    ext_flash : org = 0x%08x, len = %uK
+    ram0  : org = 0x%08x, len = %u
+}
+
+INCLUDE common_mixf.ld
+''' % (flash_base, flash_length, ext_flash_base, ext_flash_length, ram0_start, ram0_len))
     else:
-        if ext_flash_size > 32:
-            error("We only support 24bit addressing over external flash")
         env_vars['HAS_EXTERNAL_FLASH_SECTIONS'] = 1
         f.write('''/* generated ldscript.ld */
 MEMORY
@@ -1363,6 +1384,9 @@ def copy_common_linkerscript(outdir):
     if not get_config('EXT_FLASH_SIZE_MB', default=0, type=int) or args.bootloader:
         shutil.copy(os.path.join(dirpath, "../common/common.ld"),
                     os.path.join(outdir, "common.ld"))
+    elif get_config('INT_FLASH_PRIMARY', default=False, type=int):
+        shutil.copy(os.path.join(dirpath, "../common/common_mixf.ld"),
+                    os.path.join(outdir, "common_mixf.ld"))
     else:
         shutil.copy(os.path.join(dirpath, "../common/common_extf.ld"),
                     os.path.join(outdir, "common_extf.ld"))
