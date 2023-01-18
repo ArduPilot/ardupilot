@@ -318,6 +318,10 @@
 #define __FASTRAMFUNC__
 #endif
 
+#ifndef __EXTFLASHFUNC__
+#define __EXTFLASHFUNC__
+#endif
+
 #ifndef HAL_ENABLE_DFU_BOOT
 #define HAL_ENABLE_DFU_BOOT 0
 #endif
