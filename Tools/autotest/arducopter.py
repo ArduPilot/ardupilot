@@ -9223,6 +9223,7 @@ class AutoTestCopter(AutoTest):
             "SERVO6_FUNCTION": 34,
             "SERVO7_FUNCTION": 35,
             "SERVO8_FUNCTION": 36,
+            "SIM_ESC_TELEM": 0,
         })
         self.customise_SITL_commandline(["--uartF=sim:fetteconewireesc"])
         self.FETtecESC_safety_switch()
