@@ -15,11 +15,7 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-
-#ifndef HAL_SMARTAUDIO_ENABLED
-#define HAL_SMARTAUDIO_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
+#include "AP_VideoTX_config.h"
 
 #if HAL_SMARTAUDIO_ENABLED
 
