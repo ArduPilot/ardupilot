@@ -645,6 +645,7 @@ bool RC_Channel::read_aux()
         // may wish to add special cases for other "AUXSW" things
         // here e.g. RCMAP_ROLL etc once they become options
         return false;
+#if AP_VIDEOTX_ENABLED
     } else if (_option == AUX_FUNC::VTX_POWER) {
         int8_t position;
         if (read_6pos_switch(position)) {
@@ -652,6 +653,7 @@ bool RC_Channel::read_aux()
             return true;
         }
         return false;
+#endif  // AP_VIDEOTX_ENABLED
     }
 
     AuxSwitchPos new_position;
