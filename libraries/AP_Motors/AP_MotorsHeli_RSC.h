@@ -17,7 +17,7 @@
 // default main rotor ramp up time in seconds
 #define AP_MOTORS_HELI_RSC_RAMP_TIME            1       // 1 second to ramp output to main rotor ESC to setpoint
 #define AP_MOTORS_HELI_RSC_RUNUP_TIME           10      // 10 seconds for rotor to reach full speed
-#define AP_MOTORS_HELI_RSC_BAILOUT_TIME         1       // time in seconds to ramp motors when bailing out of autorotation
+#define AP_MOTORS_HELI_RSC_AROT_ENGAGE_TIME     1       // time in seconds to ramp motors when bailing out of autorotation
 #define AP_MOTORS_HELI_RSC_AROT_PCT             0
 
 // Throttle Curve Defaults
@@ -130,7 +130,8 @@ public:
     AP_Int16        _critical_speed;          // Rotor speed below which flight is not possible
     AP_Int16        _idle_output;             // Rotor control output while at idle
     AP_Int16        _ext_gov_arot_pct;        // Percent value sent to external governor when in autorotation
-    AP_Int8         _rsc_bailout_time;        // time in seconds for power recovery
+    AP_Int8         _rsc_arot_engage_time;    // time in seconds for in-flight power re-engagement
+    AP_Int8         _rsc_arot_man_enable;     // enables manual autorotation
 
 private:
     uint64_t        _last_update_us;
@@ -164,6 +165,7 @@ private:
     float           _governor_torque_reference;   // governor reference for load calculations
     bool            _autorotating;
     bool            _bailing_out;
+    float           _idle_throttle;
 
     // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
     void            update_rotor_ramp(float rotor_ramp_input, float dt);
