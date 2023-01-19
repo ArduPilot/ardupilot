@@ -200,14 +200,21 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("GOV_TORQUE", 24, AP_MotorsHeli_RSC, _governor_torque, 30),
 	
-    // @Param: BLOUT_TIME
+    // @Param: AROT_ENG_T
     // @DisplayName: Time for in-flight power re-engagement
     // @Description: amount of seconds to move throttle output from idle to throttle curve position during manual autorotations  
     // @Range: 0 10
     // @Units: %
     // @Increment: 0.5
     // @User: Standard
-    AP_GROUPINFO("BLOUT_TIME", 25, AP_MotorsHeli_RSC, _rsc_bailout_time, AP_MOTORS_HELI_RSC_BAILOUT_TIME),
+    AP_GROUPINFO("AROT_ENG_T", 25, AP_MotorsHeli_RSC, _rsc_arot_engage_time, AP_MOTORS_HELI_RSC_AROT_ENGAGE_TIME),
+	
+    // @Param: AROT_MN_EN
+    // @DisplayName: Enable Manual Autorotations
+    // @Description: Allows you to enable (1) or disable (0) the manual autorotation capability.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("AROT_MN_EN", 26, AP_MotorsHeli_RSC, _rsc_arot_man_enable, 0),
 
     AP_GROUPEND
 };
@@ -284,6 +291,9 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
             _starting = true;
             _autorotating = false;
             _bailing_out = false;
+
+            // ensure _idle_throttle not set to invalid value
+            _idle_throttle = get_idle_output();
             break;
 
         case ROTOR_CONTROL_IDLE:
@@ -296,50 +306,59 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
             _governor_fault = false;
             if (_in_autorotation) {
                 // if in autorotation and using an external governor, set the output to tell the governor to use bailout ramp
-                _control_output = constrain_float( _ext_gov_arot_pct/100.0f , 0.0f, 0.4f);
+                _idle_throttle = constrain_float( _ext_gov_arot_pct/100.0f , 0.0f, 0.4f);
                 if(!_autorotating){
                     gcs().send_text(MAV_SEVERITY_CRITICAL, "Autorotation");
                     _autorotating =true;				
                 }
             } else {
+                if(_autorotating){
+                    gcs().send_text(MAV_SEVERITY_CRITICAL, "Autorotation Stopped");
+                    _autorotating =false;				
+                }
                 // set rotor control speed to idle speed parameter, this happens instantly and ignores ramping
                 if (_turbine_start && _starting == true ) {
-                    _control_output += 0.001f;
+                    _idle_throttle += 0.001f;
                     if (_control_output >= 1.0f) {
-                        _control_output = get_idle_output();
+                        _idle_throttle = get_idle_output();
                         gcs().send_text(MAV_SEVERITY_INFO, "Turbine startup");
                         _starting = false;
                     }
                 } else{
                     if (_cooldown_time > 0) {
-                        _control_output = get_idle_output() * 1.5f;
+                        _idle_throttle = get_idle_output() * 1.5f;
                         _fast_idle_timer += dt;
                         if (_fast_idle_timer > (float)_cooldown_time) {
                             _fast_idle_timer = 0.0f;
                         }
                     } else {
-                        _control_output = get_idle_output();
+                        _idle_throttle = get_idle_output();
                     }
                     _use_bailout_ramp = false;			 
                 }
             }
+            _control_output = _idle_throttle;
             break;
 
         case ROTOR_CONTROL_ACTIVE:
             // set main rotor ramp to increase to full speed
             update_rotor_ramp(1.0f, dt);
 
+            // ensure _idle_throttle not set to invalid value due to premature switch out of turbine start
+            if (_starting) {
+                _idle_throttle = get_idle_output();
+            }
             // if turbine engine started without using start sequence, set starting flag just to be sure it can't be triggered when back in idle
             _starting = false;
             _autorotating = false;
 
             if ((_control_mode == ROTOR_CONTROL_MODE_PASSTHROUGH) || (_control_mode == ROTOR_CONTROL_MODE_SETPOINT)) {
                 // set control rotor speed to ramp slewed value between idle and desired speed
-                _control_output = get_idle_output() + (_rotor_ramp_output * (_desired_speed - get_idle_output()));
+                _control_output = _idle_throttle + (_rotor_ramp_output * (_desired_speed - _idle_throttle));
             } else if (_control_mode == ROTOR_CONTROL_MODE_THROTTLECURVE) {
                 // throttle output from throttle curve based on collective position
                 float throttlecurve = calculate_throttlecurve(_collective_in);
-                _control_output = get_idle_output() + (_rotor_ramp_output * (throttlecurve - get_idle_output()));
+                _control_output = _idle_throttle + (_rotor_ramp_output * (throttlecurve - _idle_throttle));
             } else if (_control_mode == ROTOR_CONTROL_MODE_AUTOTHROTTLE) {
                 autothrottle_run();
             }
@@ -371,10 +390,10 @@ void AP_MotorsHeli_RSC::update_rotor_ramp(float rotor_ramp_input, float dt)
         ramp_time = _ramp_time;
     }
 
-    if (_rsc_bailout_time <= 0) {
+    if (_rsc_arot_engage_time <= 0) {
         bailout_time = 1;
     } else {
-        bailout_time = _rsc_bailout_time;
+        bailout_time = _rsc_arot_engage_time;
     }
 
     // ramp output upwards towards target
@@ -423,7 +442,15 @@ void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
             _rotor_runup_output = _rotor_ramp_output;
         }
     }else{
-        _rotor_runup_output = _rotor_ramp_output;
+        _rotor_runup_output -= runup_increment;
+        if (_rotor_runup_output < _rotor_ramp_output) {
+            _rotor_runup_output = _rotor_ramp_output;
+        }
+    }
+    // if in autorotation, don't let rotor_runup_output go less than critical speed to keep
+    // runup complete flag from being set to false
+    if (_autorotating && _rotor_runup_output < get_critical_speed()) {
+        _rotor_runup_output = get_critical_speed();
     }
 
     // update run-up complete flag
@@ -440,7 +467,7 @@ void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
     }
     // if rotor speed is less than critical speed, then run-up is not complete
     // this will prevent the case where the target rotor speed is less than critical speed
-    if (_runup_complete && (get_rotor_speed() <= get_critical_speed())) {
+    if (_runup_complete && (get_rotor_speed() < get_critical_speed())) {
         _runup_complete = false;
     }
     // if rotor estimated speed is zero, then spooldown has been completed
@@ -489,7 +516,7 @@ void AP_MotorsHeli_RSC::autothrottle_run()
 
     // if the desired governor RPM is zero, use the throttle curve only and exit
     if (_governor_rpm == 0) {
-        _control_output = get_idle_output() + (_rotor_ramp_output * (throttlecurve - get_idle_output()));
+        _control_output = _idle_throttle + (_rotor_ramp_output * (throttlecurve - _idle_throttle));
         return;
     }
 
@@ -545,11 +572,11 @@ void AP_MotorsHeli_RSC::autothrottle_run()
             // temporary use of throttle curve and ramp timer to accelerate rotor to governor min torque rise speed
             _governor_output = 0.0f;
         }
-        _control_output = constrain_float(get_idle_output() + (_rotor_ramp_output * (throttlecurve + _governor_output - get_idle_output())), 0.0f, 1.0f);
+        _control_output = constrain_float(_idle_throttle + (_rotor_ramp_output * (throttlecurve + _governor_output - _idle_throttle)), 0.0f, 1.0f);
         _governor_torque_reference = _control_output;  // increment torque setting to be passed to main power loop
     } else {
         // failsafe - if governor has faulted use throttle curve
-        _control_output = get_idle_output() + (_rotor_ramp_output * (throttlecurve - get_idle_output()));
+        _control_output = _idle_throttle + (_rotor_ramp_output * (throttlecurve - _idle_throttle));
     }
 }
 

@@ -87,6 +87,9 @@ public:
     // get_rsc_setpoint - gets contents of _rsc_setpoint parameter (0~1)
     float get_rsc_setpoint() const { return _main_rotor._rsc_setpoint.get() * 0.01f; }
 
+    // arot_man_enabled - gets contents of manual_autorotation_enabled parameter
+    bool arot_man_enabled() const { return (_main_rotor._rsc_arot_man_enable.get() == 1) ? true : false; }
+
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1
     virtual void set_desired_rotor_speed(float desired_speed) = 0;
 
