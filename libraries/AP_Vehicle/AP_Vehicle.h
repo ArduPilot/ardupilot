@@ -286,7 +286,9 @@ protected:
 #if HAL_GYROFFT_ENABLED
     AP_GyroFFT gyro_fft;
 #endif
+#if AP_VIDEOTX_ENABLED
     AP_VideoTX vtx;
+#endif
     AP_SerialManager serial_manager;
 
     AP_Relay relay;
