@@ -16,6 +16,10 @@
 #endif
 #endif
 
+#ifndef AP_TEMPERATURE_SENSOR_MAX31865_ENABLED
+    #define AP_TEMPERATURE_SENSOR_MAX31865_ENABLED AP_TEMPERATURE_SENSOR_ENABLED
+#endif
+
 
 
 // maximum number of Temperature Sensors
