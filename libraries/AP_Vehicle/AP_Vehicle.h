@@ -329,8 +329,8 @@ protected:
 #if HAL_EXTERNAL_AHRS_ENABLED
     AP_ExternalAHRS externalAHRS;
 #endif
-    
-#if HAL_SMARTAUDIO_ENABLED
+
+#if AP_SMARTAUDIO_ENABLED
     AP_SmartAudio smartaudio;
 #endif
 
