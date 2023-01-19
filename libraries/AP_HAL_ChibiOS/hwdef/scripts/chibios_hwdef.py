@@ -3030,6 +3030,10 @@ def add_iomcu_firmware_defaults(f):
 #ifndef AP_INERTIALSENSOR_ENABLED
 #define AP_INERTIALSENSOR_ENABLED 0
 #endif
+
+#ifndef AP_VIDEOTX_ENABLED
+#define AP_VIDEOTX_ENABLED 0
+#endif
 ''')
 
 def add_normal_firmware_defaults(f):
