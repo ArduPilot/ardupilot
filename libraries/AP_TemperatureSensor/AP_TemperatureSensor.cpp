@@ -26,6 +26,7 @@
 
 #include "AP_TemperatureSensor_TSYS01.h"
 #include "AP_TemperatureSensor_MCP9600.h"
+#include "AP_TemperatureSensor_MAX31865.h"
 
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -133,6 +134,11 @@ void AP_TemperatureSensor::init()
 #if AP_TEMPERATURE_SENSOR_MCP9600_ENABLED
             case AP_TemperatureSensor_Params::Type::MCP9600:
                 drivers[instance] = new AP_TemperatureSensor_MCP9600(*this, _state[instance], _params[instance]);
+                break;
+#endif
+#if AP_TEMPERATURE_SENSOR_MAX31865_ENABLED
+            case AP_TemperatureSensor_Params::Type::MAX31865:
+                drivers[instance] = new AP_TemperatureSensor_MAX31865(*this, _state[instance], _params[instance]);
                 break;
 #endif
             case AP_TemperatureSensor_Params::Type::NONE:
