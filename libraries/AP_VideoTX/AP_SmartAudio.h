@@ -17,7 +17,7 @@
 
 #include "AP_VideoTX_config.h"
 
-#if HAL_SMARTAUDIO_ENABLED
+#if AP_SMARTAUDIO_ENABLED
 
 #include <AP_Param/AP_Param.h>
 #include <AP_HAL/utility/RingBuffer.h>
