@@ -239,7 +239,7 @@ void AP_Vehicle::setup()
     vtx.init();
 #endif
 
-#if HAL_SMARTAUDIO_ENABLED
+#if AP_SMARTAUDIO_ENABLED
     smartaudio.init();
 #endif
 
