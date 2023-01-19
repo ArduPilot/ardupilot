@@ -31,12 +31,6 @@ void AP_Periph_FW::rcout_init()
     // start up with safety enabled. This disables the pwm output until we receive an packet from the rempte system
     hal.rcout->force_safety_on();
 
-#if HAL_WITH_ESC_TELEM && !HAL_GCS_ENABLED
-    if (g.esc_telem_port >= 0) {
-        serial_manager.set_protocol_and_baud(g.esc_telem_port, AP_SerialManager::SerialProtocol_ESCTelemetry, 115200);
-    }
-#endif
-
 #if HAL_PWM_COUNT > 0
     for (uint8_t i=0; i<HAL_PWM_COUNT; i++) {
         servo_channels.set_default_function(i, SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + i));
@@ -64,9 +58,6 @@ void AP_Periph_FW::rcout_init()
 
     // run DShot at 1kHz
     hal.rcout->set_dshot_rate(SRV_Channels::get_dshot_rate(), 400);
-#if HAL_WITH_ESC_TELEM
-    esc_telem_update_period_ms = 1000 / constrain_int32(g.esc_telem_rate.get(), 1, 1000);
-#endif
 }
 
 void AP_Periph_FW::rcout_init_1Hz()
@@ -148,12 +139,6 @@ void AP_Periph_FW::rcout_update()
     SRV_Channels::cork();
     SRV_Channels::output_ch_all();
     SRV_Channels::push();
-#if HAL_WITH_ESC_TELEM
-    if (now_ms - last_esc_telem_update_ms >= esc_telem_update_period_ms) {
-        last_esc_telem_update_ms = now_ms;
-        esc_telem_update();
-    }
-#endif
 }
 
 #endif // HAL_PERIPH_ENABLE_RC_OUT

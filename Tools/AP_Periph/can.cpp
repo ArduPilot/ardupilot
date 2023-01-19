@@ -1635,13 +1635,21 @@ void AP_Periph_FW::hwesc_telem_update()
 }
 #endif // HAL_PERIPH_ENABLE_HWESC
 
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
 #if HAL_WITH_ESC_TELEM
 /*
   send ESC status packets based on AP_ESC_Telem
  */
 void AP_Periph_FW::esc_telem_update()
 {
+    if (g.esc_telem_rate <= 0) {
+        return;
+    }
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_esc_telem_update_ms < esc_telem_update_period_ms) {
+        return;
+    }
+    last_esc_telem_update_ms = now_ms;
+
     uint32_t mask = esc_telem.get_active_esc_mask();
     while (mask != 0) {
         int8_t i = __builtin_ffs(mask) - 1;
@@ -1688,7 +1696,6 @@ void AP_Periph_FW::esc_telem_update()
     }
 }
 #endif // HAL_WITH_ESC_TELEM
-#endif // HAL_PERIPH_ENABLE_RC_OUT
 
 
 void AP_Periph_FW::can_update()
@@ -1755,6 +1762,9 @@ void AP_Periph_FW::can_update()
     #endif
     #ifdef HAL_PERIPH_ENABLE_RC_OUT
         rcout_update();
+    #endif
+    #if HAL_WITH_ESC_TELEM
+        esc_telem_update();
     #endif
     #ifdef HAL_PERIPH_ENABLE_EFI
         can_efi_update();

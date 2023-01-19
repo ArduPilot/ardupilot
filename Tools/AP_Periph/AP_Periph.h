@@ -217,7 +217,6 @@ public:
     uint32_t efi_update_ms;
 #endif
     
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
 #if HAL_WITH_ESC_TELEM
     AP_ESC_Telem esc_telem;
     uint32_t last_esc_telem_update_ms;
@@ -225,6 +224,7 @@ public:
     uint32_t esc_telem_update_period_ms;
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_RC_OUT
     SRV_Channels servo_channels;
     bool rcout_has_new_data_to_update;
 

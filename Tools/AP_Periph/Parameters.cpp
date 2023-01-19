@@ -373,8 +373,10 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Units: ms
     // @User: Advanced
     GSCALAR(esc_command_timeout_ms, "ESC_CMD_TIMO",     200),
+#endif
 
-#if HAL_WITH_ESC_TELEM && !HAL_GCS_ENABLED
+#if HAL_WITH_ESC_TELEM
+#if !HAL_GCS_ENABLED
     // @Param: ESC_TELEM_PORT
     // @DisplayName: ESC Telemetry Serial Port
     // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to ESC Telemetry
@@ -383,9 +385,8 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     GSCALAR(esc_telem_port, "ESC_TELEM_PORT", AP_PERIPH_ESC_TELEM_PORT_DEFAULT),
-#endif
+#endif // HAL_WITH_ESC_TELEM && !HAL_GCS_ENABLED
 
-#if HAL_WITH_ESC_TELEM
     // @Param: ESC_TELEM_RATE
     // @DisplayName: ESC Telemetry update rate
     // @Description: This is the rate at which ESC Telemetry will be sent across the CAN bus
@@ -394,8 +395,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     GSCALAR(esc_telem_rate, "ESC_TELEM_RATE", AP_PERIPH_ESC_TELEM_RATE_DEFAULT),
-#endif
-#endif
+#endif // HAL_WITH_ESC_TELEM
 
 #if AP_TEMPERATURE_SENSOR_ENABLED
     // @Group: TEMP

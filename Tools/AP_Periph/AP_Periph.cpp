@@ -167,6 +167,12 @@ void AP_Periph_FW::init()
     rcout_init();
 #endif
 
+#if HAL_WITH_ESC_TELEM && !HAL_GCS_ENABLED
+    if (g.esc_telem_port >= 0) {
+        serial_manager.set_protocol_and_baud(g.esc_telem_port, AP_SerialManager::SerialProtocol_ESCTelemetry, 115200);
+    }
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_ADSB
     adsb_init();
 #endif
@@ -374,6 +380,11 @@ void AP_Periph_FW::update()
 #endif
         hal.scheduler->delay(1);
 #endif
+
+#if HAL_WITH_ESC_TELEM
+        esc_telem_update_period_ms = 1000 / constrain_int32(g.esc_telem_rate.get(), 1, 1000);
+#endif
+
 #ifdef HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY
         hal.rcout->set_serial_led_num_LEDs(HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY, HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY, AP_HAL::RCOutput::MODE_NEOPIXEL);
 #endif
