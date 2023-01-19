@@ -24,6 +24,9 @@
 
 extern const AP_HAL::HAL& hal;
 
+//check for Gopro in Solo gimbal status
+bool gopro_status_check = false; // default is none
+
 #define ROUTING_DEBUG 0
 
 // constructor
@@ -90,6 +93,15 @@ routing table.
 */
 bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavlink_message_t &msg)
 {
+    #if HAL_SOLO_GIMBAL_ENABLED
+    // check if a Gopro is connected. If yes, we allow the routing
+    // of mavlink messages to a private channel (Solo Gimbal case)
+    if ((gopro_status_check == false) && (msg.msgid == MAVLINK_MSG_ID_GOPRO_HEARTBEAT)) {
+       gopro_status_check = true;
+       gcs().send_text(MAV_SEVERITY_NOTICE, "GoPro in Solo gimbal detected"); 
+    }
+    #endif // HAL_SOLO_GIMBAL_ENABLED
+
     // handle the case of loopback of our own messages, due to
     // incorrect serial configuration.
     if (msg.sysid == mavlink_system.sysid &&
@@ -135,7 +147,8 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
     bool process_locally = match_system && match_component;
 
     // don't ever forward data from a private channel
-    if (from_private_channel) {
+    // unless a Gopro camera is connected to a Solo gimbal
+    if ((from_private_channel) && (!gopro_status_check)) {
         return process_locally;
     }
 
