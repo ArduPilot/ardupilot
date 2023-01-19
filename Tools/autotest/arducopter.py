@@ -5896,6 +5896,7 @@ class AutoTestCopter(AutoTest):
             self.start_subtest("Hover to calculate approximate hover frequency and see that it is tracked")
             # magic tridge EKF type that dramatically speeds up the test
             self.set_parameters({
+                "INS_HNTCH_ATT": 100,
                 "AHRS_EKF_TYPE": 10,
                 "EK2_ENABLE": 0,
                 "EK3_ENABLE": 0,
@@ -5903,7 +5904,6 @@ class AutoTestCopter(AutoTest):
                 "INS_LOG_BAT_OPT": 2,
                 "INS_GYRO_FILTER": 100,
                 "INS_FAST_SAMPLE": 0,
-                "INS_HNTCH_ATT": 100,
                 "LOG_BITMASK": 958,
                 "LOG_DISARMED": 0,
                 "SIM_DRIFT_SPEED": 0,
@@ -5916,6 +5916,8 @@ class AutoTestCopter(AutoTest):
                 "FFT_ENABLE": 1,
                 "FFT_WINDOW_SIZE": 64,  # not the default, but makes the test more reliable
                 "FFT_SNR_REF": 10,
+                "FFT_MINHZ": 80,
+                "FFT_MAXHZ": 450,
             })
 
             # Step 1: inject actual motor noise and use the FFT to track it
@@ -5963,13 +5965,23 @@ class AutoTestCopter(AutoTest):
             self.start_subtest("Verify that noise is suppressed by the harmonic notch")
             self.hover_and_check_matched_frequency_with_fft(0, 100, 350, reverse=True, takeoff=False)
 
+            # reset notch to defaults
+            self.set_parameters({
+                "INS_HNTCH_HMNCS": 3.0,
+                "INS_HNTCH_ENABLE": 0.0,
+                "INS_HNTCH_REF": 0.0,
+                "INS_HNTCH_FREQ": 80,
+                "INS_HNTCH_BW": 40,
+                "INS_HNTCH_FM_RAT": 1.0
+            })
+
             # Step 3: add a second harmonic and check the first is still tracked
             self.start_subtest("Add a fixed frequency harmonic at twice the hover frequency "
                                "and check the right harmonic is found")
             self.set_parameters({
-                "SIM_VIB_FREQ_X": freq * 2,
-                "SIM_VIB_FREQ_Y": freq * 2,
-                "SIM_VIB_FREQ_Z": freq * 2,
+                "SIM_VIB_FREQ_X": detected_freq * 2,
+                "SIM_VIB_FREQ_Y": detected_freq * 2,
+                "SIM_VIB_FREQ_Z": detected_freq * 2,
                 "SIM_VIB_MOT_MULT": 0.25,  # halve the motor noise so that the higher harmonic dominates
             })
             self.reboot_sitl()
@@ -6009,6 +6021,12 @@ class AutoTestCopter(AutoTest):
                 "SIM_VIB_FREQ_Y": 0,
                 "SIM_VIB_FREQ_Z": 0,
                 "SIM_VIB_MOT_MULT": 1.0,
+                "INS_HNTCH_HMNCS": 3.0,
+                "INS_HNTCH_ENABLE": 0.0,
+                "INS_HNTCH_REF": 0.0,
+                "INS_HNTCH_FREQ": 80,
+                "INS_HNTCH_BW": 40,
+                "INS_HNTCH_FM_RAT": 1.0
             })
             # prevent update parameters from messing with the settings when we pop the context
             self.set_parameter("FFT_ENABLE", 0)
