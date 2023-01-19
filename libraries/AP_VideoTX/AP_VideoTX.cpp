@@ -14,6 +14,9 @@
 */
 
 #include "AP_VideoTX.h"
+
+#if AP_VIDEOTX_ENABLED
+
 #include <AP_RCTelemetry/AP_CRSF_Telem.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -540,3 +543,5 @@ namespace AP {
         return *AP_VideoTX::get_singleton();
     }
 };
+
+#endif
