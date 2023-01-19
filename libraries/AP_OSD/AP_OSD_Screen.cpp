@@ -2113,6 +2113,7 @@ void AP_OSD_Screen::draw_current2(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_vtx_power(uint8_t x, uint8_t y)
 {
+#if AP_VIDEOTX_ENABLED
     AP_VideoTX *vtx = AP_VideoTX::get_singleton();
     if (!vtx) {
         return;
@@ -2123,6 +2124,7 @@ void AP_OSD_Screen::draw_vtx_power(uint8_t x, uint8_t y)
         powr = vtx->get_power_mw();
     }
     backend->write(x, y, !vtx->is_configuration_finished(), "%4hu%c", powr, SYMBOL(SYM_MW));
+#endif  // AP_VIDEOTX_ENABLED
 }
 #if AP_TERRAIN_AVAILABLE
 void AP_OSD_Screen::draw_hgt_abvterr(uint8_t x, uint8_t y)
