@@ -17,8 +17,8 @@ public:
     // consume vision velocity estimate data and send to EKF, velocity in NED meters per second
     void handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter) override;
 
-    // handle request to align camera's attitude with vehicle's AHRS/EKF attitude
-    void align_sensor_to_vehicle() override { _align_camera = true; }
+    // request sensor's yaw be aligned with vehicle's AHRS/EKF attitude
+    void request_align_yaw_to_ahrs() override { _align_yaw = true; }
 
     // update position offsets to align to AHRS position
     // should only be called when this library is not being used as the position source
@@ -38,8 +38,8 @@ protected:
     // rotate attitude using _yaw_trim
     void rotate_attitude(Quaternion &attitude) const;
 
-    // use sensor provided position and attitude to calculate rotation to align sensor with AHRS/EKF attitude
-    bool align_sensor_to_vehicle(const Vector3f &position, const Quaternion &attitude);
+    // use sensor provided position and attitude to calculate rotation to align sensor yaw with AHRS/EKF attitude
+    bool align_yaw_to_ahrs(const Vector3f &position, const Quaternion &attitude);
 
     // returns true if sensor data should be consumed, false if it should be ignored
     // set vision_position_estimate to true if reset_counter is from the VISION_POSITION_ESTIMATE source, false otherwise
@@ -57,7 +57,7 @@ protected:
     Vector3f _pos_correction;                   // position correction that should be added to position reported from sensor
     bool _use_att_rotation;                     // true if _att_rotation should be applied to sensor's attitude data
     bool _use_posvel_rotation;                  // true if _posvel_rotation should be applied to sensor's position and/or velocity data
-    bool _align_camera = true;                  // true if camera should be aligned to AHRS/EKF
+    bool _align_yaw = true;                     // true if sensor yaw should be aligned to AHRS/EKF
     bool _align_posxy;                          // true if sensor xy position should be aligned to AHRS
     bool _align_posz;                           // true if sensor z position should be aligned to AHRS
     bool _error_orientation;                    // true if the orientation is not supported
