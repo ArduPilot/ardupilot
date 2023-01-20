@@ -39,7 +39,11 @@ protected:
     void rotate_attitude(Quaternion &attitude) const;
 
     // use sensor provided position and attitude to calculate rotation to align sensor yaw with AHRS/EKF attitude
+    // calls align_yaw (see below)
     bool align_yaw_to_ahrs(const Vector3f &position, const Quaternion &attitude);
+
+    // align sensor yaw with any new yaw (in radians)
+    void align_yaw(const Vector3f &position, const Quaternion &attitude, float yaw_rad);
 
     // returns true if sensor data should be consumed, false if it should be ignored
     // set vision_position_estimate to true if reset_counter is from the VISION_POSITION_ESTIMATE source, false otherwise
@@ -49,6 +53,11 @@ protected:
     // align position with ahrs position by updating _pos_correction
     // sensor_pos should be the position directly from the sensor with only scaling applied (i.e. no yaw or position corrections)
     bool align_position_to_ahrs(const Vector3f &sensor_pos, bool align_xy, bool align_z);
+
+    // align position with a new position by updating _pos_correction
+    // sensor_pos should be the position directly from the sensor with only scaling applied (i.e. no yaw or position corrections)
+    // new_pos should be a NED position offset from the EKF origin
+    void align_position(const Vector3f &sensor_pos, const Vector3f &new_pos, bool align_xy, bool align_z);
 
     float _yaw_trim;                            // yaw angle trim (in radians) to align camera's yaw to ahrs/EKF's
     Quaternion _yaw_rotation;                   // earth-frame yaw rotation to align heading of sensor with vehicle.  use when _yaw_trim is non-zero
