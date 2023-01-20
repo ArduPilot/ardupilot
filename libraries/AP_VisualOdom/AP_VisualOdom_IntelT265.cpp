@@ -140,6 +140,13 @@ bool AP_VisualOdom_IntelT265::align_yaw_to_ahrs(const Vector3f &position, const 
         return false;
     }
 
+    align_yaw(position, attitude, AP::ahrs().get_yaw());
+    return true;
+}
+
+// align sensor yaw with any new yaw (in radians)
+void AP_VisualOdom_IntelT265::align_yaw(const Vector3f &position, const Quaternion &attitude, float yaw_rad)
+{
     // clear any existing errors
     _error_orientation = false;
 
@@ -161,7 +168,7 @@ bool AP_VisualOdom_IntelT265::align_yaw_to_ahrs(const Vector3f &position, const 
 
     // trim yaw by difference between ahrs and sensor yaw
     const float yaw_trim_orig = _yaw_trim;
-    _yaw_trim = wrap_2PI(AP::ahrs().get_yaw() - sens_yaw);
+    _yaw_trim = wrap_2PI(yaw_rad - sens_yaw);
     gcs().send_text(MAV_SEVERITY_INFO, "VisOdom: yaw shifted %d to %d deg",
                     (int)degrees(_yaw_trim - yaw_trim_orig),
                     (int)wrap_360(degrees(sens_yaw + _yaw_trim)));
@@ -186,8 +193,6 @@ bool AP_VisualOdom_IntelT265::align_yaw_to_ahrs(const Vector3f &position, const 
 
     // update position correction to remove change due to rotation
     _pos_correction += (pos_orig - pos_new);
-
-    return true;
 }
 
 // align position with ahrs position by updating _pos_correction
@@ -200,20 +205,27 @@ bool AP_VisualOdom_IntelT265::align_position_to_ahrs(const Vector3f &sensor_pos,
         return false;
     }
 
+    align_position(sensor_pos, ahrs_pos_ned, align_xy, align_z);
+    return true;
+}
+
+// align position with a new position by updating _pos_correction
+// sensor_pos should be the position directly from the sensor with only scaling applied (i.e. no yaw or position corrections)
+// new_pos should be a NED position offset from the EKF origin
+void AP_VisualOdom_IntelT265::align_position(const Vector3f &sensor_pos, const Vector3f &new_pos, bool align_xy, bool align_z)
+{
     // calculate position with current rotation and correction
     Vector3f pos_orig = sensor_pos;
     rotate_and_correct_position(pos_orig);
 
     // update position correction
     if (align_xy) {
-        _pos_correction.x += (ahrs_pos_ned.x - pos_orig.x);
-        _pos_correction.y += (ahrs_pos_ned.y - pos_orig.y);
+        _pos_correction.x += (new_pos.x - pos_orig.x);
+        _pos_correction.y += (new_pos.y - pos_orig.y);
     }
     if (align_z) {
-        _pos_correction.z += (ahrs_pos_ned.z - pos_orig.z);
+        _pos_correction.z += (new_pos.z - pos_orig.z);
     }
-
-    return true;
 }
 
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
