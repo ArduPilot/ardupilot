@@ -458,20 +458,18 @@ bool AP_InertialSensor_Invensense::update() /* front end */
         // check if we have reported in the last 1 seconds or
         // fast_reset_count changed
 #if HAL_GCS_ENABLED && BOARD_FLASH_SIZE > 1024
-        if (AP_HAL::millis() - last_fast_reset_count_report_ms > 1000) {
-            last_fast_reset_count_report_ms = AP_HAL::millis();
-            char param_name[sizeof("IMUx_RST")];
-            if (_gyro_instance <= 9) {
-                snprintf(param_name, sizeof(param_name), "IMU%u_RST", _gyro_instance);
-            } else {
-                snprintf(param_name, sizeof(param_name), "IMUx_RST");
-            }
+        const uint32_t now = AP_HAL::millis();
+        if (now - last_fast_reset_count_report_ms > 5000U) {
+            last_fast_reset_count_report_ms = now;
+            char param_name[sizeof("IMUxx_RST")];
+            snprintf(param_name, sizeof(param_name), "IMU%u_RST", MIN(_gyro_instance,9));
             gcs().send_named_float(param_name, fast_reset_count);
         }
 #endif
 #if HAL_LOGGING_ENABLED
         if (last_fast_reset_count != fast_reset_count) {
             AP::logger().Write_MessageF("IMU%u fast fifo reset %u", _gyro_instance, fast_reset_count);
+            last_fast_reset_count = fast_reset_count;
         }
 #endif
     }

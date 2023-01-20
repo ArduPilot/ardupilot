@@ -1,5 +1,11 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.3.0-beta8 20-Jan-2023
+Changes from 4.3.0-beta7
+1) Bug fixes
+    a) MAVFTP fix to terminate session error (could cause FTP failures)
+    b) IMU fast fifo reset log message max frequency reduced
+------------------------------------------------------------------
 Rover 4.3.0-beta7 09-Jan-2023
 Changes from 4.3.0-beta6
 1) Autopilot related changes
