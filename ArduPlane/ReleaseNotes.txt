@@ -1,5 +1,5 @@
-Release 4.3.3beta1 Jan 8th 2023
--------------------------------
+Release 4.3.3 Jan 19th 2023
+---------------------------
 
  - AIRLink LTE module enable pin added
  - CUAV Nora/Nora+ bdshot firmware (allows Bi-directional DShot)
@@ -23,6 +23,7 @@ Release 4.3.3beta1 Jan 8th 2023
  - support MambaH743-v2
  - support MambaF405-2022B
  - fixed nullptr checks on new
+ - fixed a bug in terrain handling for ship landing lua script checks on new
 
 Happy flying!
 
