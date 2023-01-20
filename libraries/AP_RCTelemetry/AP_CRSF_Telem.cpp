@@ -820,12 +820,11 @@ void AP_CRSF_Telem::update_vtx_params()
         }
         _telem_pending = true;
         // calculate command crc
-        uint8_t* crcptr = &_telem.ext.command.destination;
         uint8_t crc = crc8_dvb(0, AP_RCProtocol_CRSF::CRSF_FRAMETYPE_COMMAND, 0xBA);
         for (uint8_t i = 0; i < len; i++) {
-            crc = crc8_dvb(crc, crcptr[i], 0xBA);
+            crc = crc8_dvb(crc, _telem.ext.byte[i], 0xBA);
         }
-        crcptr[len] = crc;
+        _telem.ext.byte[len] = crc;
         _telem_size = len + 1;
     }
 }

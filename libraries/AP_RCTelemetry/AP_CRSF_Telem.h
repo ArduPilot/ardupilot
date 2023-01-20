@@ -224,6 +224,7 @@ public:
         ParameterSettingsEntry param_entry;
         ParameterSettingsReadFrame param_read;
         ParameterSettingsWriteFrame param_write;
+        uint8_t byte[sizeof(command)];
     };
 
     union PACKED TelemetryPayload {
