@@ -59,6 +59,15 @@ protected:
     // new_pos should be a NED position offset from the EKF origin
     void align_position(const Vector3f &sensor_pos, const Vector3f &new_pos, bool align_xy, bool align_z);
 
+    // record voxl camera's position and reset counter for reset jump handling
+    // position is post scaling, offset and orientation corrections
+    void record_voxl_position_and_reset_count(const Vector3f &position, uint8_t reset_counter);
+
+    // handle voxl camera reset jumps in attitude and position
+    // sensor_pos should be the position directly from the sensor with only scaling applied (i.e. no yaw or position corrections)
+    // sensor_att is similarly the attitude directly from the sensor
+    void handle_voxl_camera_reset_jump(const Vector3f &sensor_pos, const Quaternion &sensor_att, uint8_t reset_counter);
+
     float _yaw_trim;                            // yaw angle trim (in radians) to align camera's yaw to ahrs/EKF's
     Quaternion _yaw_rotation;                   // earth-frame yaw rotation to align heading of sensor with vehicle.  use when _yaw_trim is non-zero
     Quaternion _att_rotation;                   // body-frame rotation corresponding to ORIENT parameter.  use when get_orientation != NONE
@@ -73,6 +82,10 @@ protected:
     Quaternion _attitude_last;                  // last attitude received from camera (used for arming checks)
     uint8_t _pos_reset_counter_last;            // last vision-position-estimate reset counter value
     uint32_t _pos_reset_ignore_start_ms;        // system time we start ignoring sensor information, 0 if sensor data is not being ignored
+
+    // voxl reset jump handling variables
+    uint8_t _voxl_reset_counter_last;           // last reset counter from voxl camera (only used for origin jump handling)
+    Vector3f _voxl_position_last;               // last recorded position (post scaling, offset and orientation corrections)
 };
 
 #endif
