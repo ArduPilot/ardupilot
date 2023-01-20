@@ -1220,7 +1220,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         if (ch_flag == AuxSwitchPos::HIGH) {
             AP_VisualOdom *visual_odom = AP::visualodom();
             if (visual_odom != nullptr) {
-                visual_odom->align_sensor_to_vehicle();
+                visual_odom->request_align_yaw_to_ahrs();
             }
         }
         break;
