@@ -33,6 +33,9 @@ void AP_VisualOdom_IntelT265::handle_vision_position_estimate(uint64_t remote_ti
     Vector3f pos{x * scale_factor, y * scale_factor, z * scale_factor};
     Quaternion att = attitude;
 
+    // handle voxl camera reset jumps in attitude and position
+    handle_voxl_camera_reset_jump(pos, att, reset_counter);
+
     // handle request to align sensor's yaw with vehicle's AHRS/EKF attitude
     if (_align_yaw) {
         if (align_yaw_to_ahrs(pos, attitude)) {
@@ -48,6 +51,9 @@ void AP_VisualOdom_IntelT265::handle_vision_position_estimate(uint64_t remote_ti
     // rotate position and attitude to align with vehicle
     rotate_and_correct_position(pos);
     rotate_attitude(att);
+
+    // record position for voxl reset jump handling
+    record_voxl_position_and_reset_count(pos, reset_counter);
 
     posErr = constrain_float(posErr, _frontend.get_pos_noise(), 100.0f);
     angErr = constrain_float(angErr, _frontend.get_yaw_noise(), 1.5f);
@@ -295,6 +301,47 @@ bool AP_VisualOdom_IntelT265::should_consume_sensor_data(bool vision_position_es
     }
 
     return (_pos_reset_ignore_start_ms == 0);
+}
+
+// record voxl camera's position and reset counter for reset jump handling
+// position is post scaling, offset and orientation corrections
+void AP_VisualOdom_IntelT265::record_voxl_position_and_reset_count(const Vector3f &position, uint8_t reset_counter)
+{
+    // return immediately if not using VOXL camera
+    if (get_type() != AP_VisualOdom::VisualOdom_Type::VOXL) {
+        return;
+    }
+
+    _voxl_position_last = position;
+    _voxl_reset_counter_last = reset_counter;
+}
+
+// handle voxl camera reset jumps in attitude and position
+// sensor_pos should be the position directly from the sensor with only scaling applied (i.e. no yaw or position corrections)
+// sensor_att is similarly the attitude directly from the sensor
+void AP_VisualOdom_IntelT265::handle_voxl_camera_reset_jump(const Vector3f &sensor_pos, const Quaternion &sensor_att, uint8_t reset_counter)
+{
+    // return immediately if not using VOXL camera
+    if (get_type() != AP_VisualOdom::VisualOdom_Type::VOXL) {
+        return;
+    }
+
+    // return immediately if no change in reset counter
+    if (reset_counter == _voxl_reset_counter_last) {
+        return;
+    }
+
+    // warng user of reset
+    gcs().send_text(MAV_SEVERITY_WARNING, "VisOdom: reset");
+
+    // align sensor yaw to match current yaw estimate
+    align_yaw_to_ahrs(sensor_pos, sensor_att);
+
+    // align psoition to match last recorded position
+    align_position(sensor_pos, _voxl_position_last, true, true);
+
+    // record change in reset counter
+    _voxl_reset_counter_last = reset_counter;
 }
 
 #endif
