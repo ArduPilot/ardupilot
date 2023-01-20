@@ -33,10 +33,10 @@ void AP_VisualOdom_IntelT265::handle_vision_position_estimate(uint64_t remote_ti
     Vector3f pos{x * scale_factor, y * scale_factor, z * scale_factor};
     Quaternion att = attitude;
 
-    // handle user request to align camera
-    if (_align_camera) {
-        if (align_sensor_to_vehicle(pos, attitude)) {
-            _align_camera = false;
+    // handle request to align sensor's yaw with vehicle's AHRS/EKF attitude
+    if (_align_yaw) {
+        if (align_yaw_to_ahrs(pos, attitude)) {
+            _align_yaw = false;
         }
     }
     if (_align_posxy || _align_posz) {
@@ -128,7 +128,7 @@ void AP_VisualOdom_IntelT265::rotate_attitude(Quaternion &attitude) const
 }
 
 // use sensor provided attitude to calculate rotation to align sensor with AHRS/EKF attitude
-bool AP_VisualOdom_IntelT265::align_sensor_to_vehicle(const Vector3f &position, const Quaternion &attitude)
+bool AP_VisualOdom_IntelT265::align_yaw_to_ahrs(const Vector3f &position, const Quaternion &attitude)
 {
     // do not align to ahrs if we are its yaw source
     if (AP::ahrs().using_extnav_for_yaw()) {
