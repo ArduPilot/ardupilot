@@ -75,7 +75,7 @@ const AP_Param::GroupInfo AP_GyroFFT::var_info[] = {
     // @Range: 20 400
     // @Units: Hz
     // @User: Advanced
-    AP_GROUPINFO("MINHZ", 2, AP_GyroFFT, _fft_min_hz, 80),
+    AP_GROUPINFO("MINHZ", 2, AP_GyroFFT, _fft_min_hz, 50),
 
     // @Param: MAXHZ
     // @DisplayName: Maximum Frequency
@@ -83,7 +83,7 @@ const AP_Param::GroupInfo AP_GyroFFT::var_info[] = {
     // @Range: 20 495
     // @Units: Hz
     // @User: Advanced
-    AP_GROUPINFO("MAXHZ", 3, AP_GyroFFT, _fft_max_hz, 200),
+    AP_GROUPINFO("MAXHZ", 3, AP_GyroFFT, _fft_max_hz, 450),
 
     // @Param: SAMPLE_MODE
     // @DisplayName: Sample Mode
