@@ -760,17 +760,20 @@ void AP_GyroFFT::stop_notch_tune()
     // if we don't have a throttle value then all bets are off
     if (is_zero(_avg_throttle_out) || is_zero(harmonic)) {
         gcs().send_text(MAV_SEVERITY_WARNING, "FFT: Unable to calculate notch: need stable hover");
+        AP_Notify::events.autotune_failed = true;
         return;
     }
 
     if (!_ins->setup_throttle_gyro_harmonic_notch(harmonic, (float)_fft_min_hz.get(), _avg_throttle_out, harmonics)) {
         gcs().send_text(MAV_SEVERITY_WARNING, "FFT: Unable to set throttle notch with %.1fHz/%.2f",
             harmonic, _avg_throttle_out);
+        AP_Notify::events.autotune_failed = true;
         // save results to FFT slots
         _throttle_ref.set(_avg_throttle_out);
         _freq_hover_hz.set(harmonic);
     } else {
         gcs().send_text(MAV_SEVERITY_NOTICE, "FFT: Notch frequency %.1fHz and ref %.2f selected", harmonic, _avg_throttle_out);
+        AP_Notify::events.autotune_complete = true;
     }
 }
 
