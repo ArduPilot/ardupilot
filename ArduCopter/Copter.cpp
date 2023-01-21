@@ -117,15 +117,15 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if AC_CUSTOMCONTROL_MULTI_ENABLED == ENABLED
     FAST_TASK(run_custom_controller),
 #endif
+#if FRAME_CONFIG == HELI_FRAME
+    FAST_TASK(heli_update_autorotation),
+#endif //HELI_FRAME
     // send outputs to the motors library immediately
     FAST_TASK(motors_output),
      // run EKF state estimator (expensive)
     FAST_TASK(read_AHRS),
 #if FRAME_CONFIG == HELI_FRAME
     FAST_TASK(update_heli_control_dynamics),
-    #if MODE_AUTOROTATE_ENABLED == ENABLED
-    FAST_TASK(heli_update_autorotation),
-    #endif
 #endif //HELI_FRAME
     // Inertial Nav
     FAST_TASK(read_inertia),
