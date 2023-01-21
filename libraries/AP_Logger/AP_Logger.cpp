@@ -91,7 +91,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Param: _DISARMED
     // @DisplayName: Enable logging while disarmed
     // @Description: If LOG_DISARMED is set to 1 then logging will be enabled at all times including when disarmed. Logging before arming can make for very large logfiles but can help a lot when tracking down startup issues and is necessary if logging of EKF replay data is selected via the LOG_REPLAY parameter. If LOG_DISARMED is set to 2, then logging will be enabled when disarmed, but not if a USB connection is detected. This can be used to prevent unwanted data logs being generated when the vehicle is connected via USB for log downloading or parameter changes.
-    // @Values: 0:Disabled,1:Enabled,2:Disabled on USB connection
+    // @Values: 0:Disabled,1:Enabled,2:Disabled on USB connection,3:Disabled 1st disarmed
     // @User: Standard
     AP_GROUPINFO("_DISARMED",  2, AP_Logger, _params.log_disarmed,       0),
 
@@ -1472,6 +1472,15 @@ bool AP_Logger::log_while_disarmed(void) const
         return true;
     }
 
+    static bool logged_armed = false; 
+    if (logged_armed) {
+        if (_params.log_disarmed == 3) { 
+            return true;
+        } else {
+            logged_armed = false;
+        }
+    }
+
     uint32_t now = AP_HAL::millis();
     uint32_t persist_ms = HAL_LOGGER_ARM_PERSIST*1000U;
     if (_force_long_log_persist) {
@@ -1482,6 +1491,7 @@ bool AP_Logger::log_while_disarmed(void) const
     // keep logging for HAL_LOGGER_ARM_PERSIST seconds after disarming
     const uint32_t arm_change_ms = hal.util->get_last_armed_change();
     if (!hal.util->get_soft_armed() && arm_change_ms != 0 && now - arm_change_ms < persist_ms) {
+        logged_armed = true;
         return true;
     }
 
