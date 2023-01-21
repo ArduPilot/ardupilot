@@ -1632,7 +1632,7 @@ AP_Arming::Required AP_Arming::arming_required()
 bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channel *channels[4]) const
 {
     // set rc-checks to success if RC checks are disabled
-    if ((checks_to_perform != ARMING_CHECK_ALL) && !(checks_to_perform & ARMING_CHECK_RC)) {
+    if (!check_enabled(ARMING_CHECK_RC)) {
         return true;
     }
 
@@ -1676,7 +1676,7 @@ bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channe
 // check visual odometry is working
 bool AP_Arming::visodom_checks(bool display_failure) const
 {
-    if ((checks_to_perform != ARMING_CHECK_ALL) && !(checks_to_perform & ARMING_CHECK_VISION)) {
+    if (!check_enabled(ARMING_CHECK_VISION)) {
         return true;
     }
 
