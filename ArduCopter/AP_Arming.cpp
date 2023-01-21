@@ -539,7 +539,7 @@ bool AP_Arming_Copter::winch_checks(bool display_failure) const
 {
 #if WINCH_ENABLED == ENABLED
     // pass if parameter or all arming checks disabled
-    if (((checks_to_perform & ARMING_CHECK_ALL) == 0) && ((checks_to_perform & ARMING_CHECK_PARAMETERS) == 0)) {
+    if (!check_enabled(ARMING_CHECK_PARAMETERS)) {
         return true;
     }
 
