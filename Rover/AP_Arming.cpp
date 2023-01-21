@@ -5,7 +5,7 @@
 bool AP_Arming_Rover::rc_calibration_checks(const bool display_failure)
 {
     // set rc-checks to success if RC checks are disabled
-    if ((checks_to_perform != ARMING_CHECK_ALL) && !(checks_to_perform & ARMING_CHECK_RC)) {
+    if (!check_enabled(ARMING_CHECK_RC)) {
         return true;
     }
 
@@ -180,7 +180,7 @@ bool AP_Arming_Rover::oa_check(bool report)
 bool AP_Arming_Rover::parameter_checks(bool report)
 {
     // success if parameter checks are disabled
-    if ((checks_to_perform != ARMING_CHECK_ALL) && !(checks_to_perform & ARMING_CHECK_PARAMETERS)) {
+    if (!check_enabled(ARMING_CHECK_PARAMETERS)) {
         return true;
     }
 
