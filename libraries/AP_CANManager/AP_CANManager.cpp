@@ -115,6 +115,7 @@ AP_CANManager::AP_CANManager()
     _singleton = this;
 }
 
+#if !AP_TEST_DRONECAN_DRIVERS
 void AP_CANManager::init()
 {
     WITH_SEMAPHORE(_sem);
@@ -282,7 +283,26 @@ void AP_CANManager::init()
         _driver_type_cache[drv_num] = drv_type[drv_num];
     }
 }
+#else
+void AP_CANManager::init()
+{
+    WITH_SEMAPHORE(_sem);
+    for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
+        if ((Driver_Type) _drv_param[i]._driver_type.get() == Driver_Type_UAVCAN) {
+            _drivers[i] = _drv_param[i]._uavcan = new AP_UAVCAN(i);
 
+            if (_drivers[i] == nullptr) {
+                AP_BoardConfig::allocation_error("uavcan %d", i + 1);
+                continue;
+            }
+
+            AP_Param::load_object_from_eeprom((AP_UAVCAN*)_drivers[i], AP_UAVCAN::var_info);
+            _drivers[i]->init(i, true);
+            _driver_type_cache[i] = (Driver_Type) _drv_param[i]._driver_type.get();
+        }
+    }
+}
+#endif
 /*
   register a new CAN driver
  */
