@@ -1498,6 +1498,7 @@ class AutoTest(ABC):
                  ubsan=False,
                  ubsan_abort=False,
                  num_aux_imus=0,
+                 dronecan_tests=False,
                  build_opts={}):
 
         self.start_time = time.time()
@@ -1578,6 +1579,7 @@ class AutoTest(ABC):
             offline=self.terrain_in_offline_mode
         )
         self.terrain_data_messages_sent = 0  # count of messages back
+        self.dronecan_tests = dronecan_tests
 
     def __del__(self):
         if self.rc_thread is not None:
