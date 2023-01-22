@@ -827,6 +827,7 @@ private:
     void setup_glide_slope(void);
     int32_t get_RTL_altitude_cm() const;
     float relative_ground_altitude(bool use_rangefinder_if_available);
+    float relative_ground_altitude(bool use_rangefinder_if_available, bool use_terrain_if_available);
     void set_target_altitude_current(void);
     void set_target_altitude_current_adjusted(void);
     void set_target_altitude_location(const Location &loc);
