@@ -448,6 +448,7 @@ def run_step(step):
         "ubsan" : opts.ubsan,
         "ubsan_abort" : opts.ubsan_abort,
         "num_aux_imus" : opts.num_aux_imus,
+        "dronecan_tests" : opts.dronecan_tests,
     }
 
     if opts.Werror:
@@ -978,6 +979,11 @@ if __name__ == "__main__":
                            default=0,
                            type='int',
                            help='number of auxiliary IMUs to simulate')
+    group_build.add_option("--enable-dronecan-tests",
+                           default=False,
+                           action='store_true',
+                           dest="dronecan_tests",
+                           help="enable dronecan tests")
     parser.add_option_group(group_build)
 
     group_sim = optparse.OptionGroup(parser, "Simulation options")
