@@ -1870,10 +1870,43 @@ function terrain:status() end
 ---@return boolean
 function terrain:enabled() end
 
+-- RangeFinder backend
+---@class AP_RangeFinder_Backend_ud
+local AP_RangeFinder_Backend_ud = {}
+
+-- Send distance to lua rangefinder backend. Returns false if failed
+---@param distance number
+---@return boolean
+function AP_RangeFinder_Backend_ud:handle_script_msg(distance) end
+
+-- Status of this rangefinder instance
+---@return integer
+function AP_RangeFinder_Backend_ud:status() end
+
+-- Type of rangefinder of this instance
+---@return integer
+function AP_RangeFinder_Backend_ud:type() end
+
+-- Orintation of the rangefinder of this instance
+---@return integer
+function AP_RangeFinder_Backend_ud:orientation() end
+
+-- Current distance of the sensor instance
+---@return number
+function AP_RangeFinder_Backend_ud:distance() end
+
+-- Returns true if backend has new data
+---@return boolean
+function AP_RangeFinder_Backend_ud:has_data() end
 
 -- desc
 ---@class rangefinder
 rangefinder = {}
+
+-- get backend based on rangefinder instance provided
+---@param rangefinder_instance integer
+---@return AP_RangeFinder_Backend_ud
+function rangefinder:get_backend(rangefinder_instance) end
 
 -- desc
 ---@param orientation integer
