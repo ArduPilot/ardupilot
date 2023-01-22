@@ -34,6 +34,7 @@
 #include <SITL/SIM_AirSim.h>
 #include <SITL/SIM_Scrimmage.h>
 #include <SITL/SIM_Webots.h>
+#include <SITL/SIM_Webots_Python.h>
 #include <SITL/SIM_JSON.h>
 #include <SITL/SIM_Blimp.h>
 #include <AP_Filesystem/AP_Filesystem.h>
@@ -173,6 +174,7 @@ static const struct {
     { "morse",              Morse::create },
     { "airsim",             AirSim::create},
     { "scrimmage",          Scrimmage::create },
+    { "webots-python",      WebotsPython::create },
     { "webots",             Webots::create },
     { "JSON",               JSON::create },
     { "blimp",              Blimp::create },
