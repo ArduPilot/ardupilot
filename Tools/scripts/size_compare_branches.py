@@ -16,6 +16,7 @@ Starting in the ardupilot directory.
 Output is placed into ../ELF_DIFF_[VEHICLE_NAME]
 '''
 
+import copy
 import optparse
 import os
 import shutil
@@ -86,6 +87,7 @@ class SizeCompareBranches(object):
             "blimp"     : "blimp",
             "antennatracker" : "antennatracker",
             "AP_Periph" : "AP_Periph",
+            "bootloader": "AP_Bootloader",
             "iofirmware": "iofirmware_highpolh",  # FIXME: lowpolh?
         }
 
@@ -212,8 +214,19 @@ class SizeCompareBranches(object):
         # we can't run `./waf copter blimp plane` without error, so do
         # them one-at-a-time:
         for v in vehicle:
+            if v == 'bootloader':
+                # need special configuration directive
+                continue
             self.run_waf([v])
-            self.run_program("rsync", ["rsync", "-aP", "build/", outdir])
+        for v in vehicle:
+            if v != 'bootloader':
+                continue
+            # need special configuration directive
+            bootloader_waf_configure_args = copy.copy(waf_configure_args)
+            bootloader_waf_configure_args.append('--bootloader')
+            self.run_waf(bootloader_waf_configure_args)
+            self.run_waf([v])
+        self.run_program("rsync", ["rsync", "-aP", "build/", outdir])
 
     def run_all(self):
         '''run tests for boards and vehicles passed in constructor'''
@@ -268,7 +281,9 @@ class SizeCompareBranches(object):
             else:
                 if board_info.is_ap_periph:
                     continue
-                if vehicle.lower() not in [x.lower() for x in board_info.autobuild_targets]:
+                # the bootloader target isn't an autobuild target, so
+                # it gets special treatment here:
+                if vehicle != 'bootloader' and vehicle.lower() not in [x.lower() for x in board_info.autobuild_targets]:
                     continue
             vehicles_to_build.append(vehicle)
         if len(vehicles_to_build) == 0:
