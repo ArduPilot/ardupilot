@@ -551,6 +551,13 @@ void FlightAxis::update(const struct sitl_input &input)
     // update magnetic field
     update_mag_field_bf();
 
+    // one rangefinder
+    if (is_positive(dcm.c.z)) {
+        rangefinder_m[0] = state.m_altitudeAGL_MTR / dcm.c.z;
+    } else {
+        rangefinder_m[0] = -1;
+    }
+
     report_FPS();
 }
 
