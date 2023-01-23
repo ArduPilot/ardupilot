@@ -24,11 +24,11 @@
 #define HAL_BATTMON_INA219_ENABLED  0
 #define HAL_BATTMON_INA226_ENABLED  0
 
-class AP_BattMonitor_INA2xx: public AP_BattMonitor_Backend
+class AP_BattMonitor_INA2XX: public AP_BattMonitor_Backend
 {
 public:
     /// Constructor
-    AP_BattMonitor_INA2xx(AP_BattMonitor &mon,
+    AP_BattMonitor_INA2XX(AP_BattMonitor &mon,
                           AP_BattMonitor::BattMonitor_State &mon_state,
                           AP_BattMonitor_Params &params);
     
