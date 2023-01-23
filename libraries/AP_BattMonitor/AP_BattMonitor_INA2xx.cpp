@@ -217,7 +217,7 @@ void AP_BattMonitor_INA2xx::read(void)
     }
 
     _state.voltage = accumulate._voltage/ accumulate._count;
-    _state.current_amps = (accumulate._current/ accumulate._count)*10;           //multiplied by 10 because since it terminates one digit while displaying on QGC or MissionPlanner
+    _state.current_amps = accumulate._current/ accumulate._count;    
     accumulate._voltage = 0;
     accumulate._current = 0;
     accumulate._count = 0;
