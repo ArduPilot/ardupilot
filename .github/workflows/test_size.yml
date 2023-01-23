@@ -151,9 +151,9 @@ jobs:
           cd pr/
           git config user.email "ardupilot-ci@ardupilot.org"
           git config user.name "ArduPilot CI"
-          git remote add ardupilot https://github.com/ArduPilot/ardupilot.git
-          git fetch --no-tags --prune --progress ardupilot ${{ github.event.pull_request.base.ref }}
-          git rebase ardupilot/${{ github.event.pull_request.base.ref }}
+          git remote add target_repo https://github.com/${{github.event.pull_request.base.repo.full_name}}
+          git fetch --no-tags --prune --progress target_repo ${{ github.event.pull_request.base.ref }}
+          git rebase target_repo/${{ github.event.pull_request.base.ref }}
           git submodule update --init --recursive --depth=1
           # configure
           if [ $BOOTLOADER -eq 1 ]; then
