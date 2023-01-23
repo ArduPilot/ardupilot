@@ -6,7 +6,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#if HAL_BATTMON_INA2xx_ENABLED
+#if HAL_BATTMON_INA2XX_ENABLED
 
 /*******************register definitions***************/
 
