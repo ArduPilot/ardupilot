@@ -247,6 +247,10 @@ void AP_Compass_MMC3416::timer()
 #endif
 
         last_sample_ms = AP_HAL::millis();
+
+        // sensor is not FRD
+        field.y = -field.y;
+
         accumulate_sample(field, compass_instance);
 
         if (!dev->write_register(REG_CONTROL0, REG_CONTROL0_TM)) {
@@ -272,6 +276,9 @@ void AP_Compass_MMC3416::timer()
                        float(data1[2]) - zero_offset);
         field *= -counts_to_milliGauss;
         field += offset;
+
+        // sensor is not FRD
+        field.y = -field.y;
 
         last_sample_ms = AP_HAL::millis();
         accumulate_sample(field, compass_instance);
