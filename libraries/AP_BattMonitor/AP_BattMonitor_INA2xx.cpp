@@ -123,7 +123,7 @@ void AP_BattMonitor_INA2XX::init(void)
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "device pass");
     }
     // register now and configure in the timer callbacks
-    dev->register_periodic_callback(25000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_INA2xx::timer, void));
+    dev->register_periodic_callback(25000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_INA2XX::timer, void));
 }
 
 /*
