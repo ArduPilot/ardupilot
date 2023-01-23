@@ -13,11 +13,11 @@
 #include <AP_Param/AP_Param.h>
 #include <utility>
 
-#ifndef HAL_BATTMON_INA2xx_ENABLED
-#define HAL_BATTMON_INA2xx_ENABLED (BOARD_FLASH_SIZE>1024)
+#ifndef HAL_BATTMON_INA2XX_ENABLED
+#define HAL_BATTMON_INA2XX_ENABLED (BOARD_FLASH_SIZE>1024)
 #endif
 
-#if HAL_BATTMON_INA2xx_ENABLED
+#if HAL_BATTMON_INA2XX_ENABLED
 
 //enable or disable only one of the sensor at a given time (enable at least one of the following sensor)
 #define HAL_BATTMON_INA260_ENABLED  1                   
