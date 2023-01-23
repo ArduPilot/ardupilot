@@ -66,14 +66,14 @@ extern const AP_HAL::HAL& hal;
 
 
 /*I2C bus and address*/
-#ifndef HAL_BATTMON_INA2xx_BUS
-#define HAL_BATTMON_INA2xx_BUS  0                          //try changing bus value to 1,2 or 3 if 0 doesn't work
+#ifndef HAL_BATTMON_INA2XX_BUS
+#define HAL_BATTMON_INA2XX_BUS  0                          //try changing bus value to 1,2 or 3 if 0 doesn't work
 #endif
-#ifndef HAL_BATTMON_INA2xx_ADDR
-#define HAL_BATTMON_INA2xx_ADDR 64                         //address 0x40 = 64 when A1 and A0 are GND
+#ifndef HAL_BATTMON_INA2XX_ADDR
+#define HAL_BATTMON_INA2XX_ADDR 64                         //address 0x40 = 64 when A1 and A0 are GND
 #endif
 
-const AP_Param::GroupInfo AP_BattMonitor_INA2xx::var_info[] = {
+const AP_Param::GroupInfo AP_BattMonitor_INA2XX::var_info[] = {
 
     // @Param: _i2c_bus
     // @DisplayName: Battery monitor I2C bus number
@@ -82,7 +82,7 @@ const AP_Param::GroupInfo AP_BattMonitor_INA2xx::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
 
-    AP_GROUPINFO("I2C_BUS", 25, AP_BattMonitor_INA2xx, _i2c_bus, HAL_BATTMON_INA2xx_BUS),
+    AP_GROUPINFO("I2C_BUS", 25, AP_BattMonitor_INA2XX, _i2c_bus, HAL_BATTMON_INA2XX_BUS),
 
     // @Param: I2C_ADDR
     // @DisplayName: Battery monitor I2C address
@@ -90,14 +90,14 @@ const AP_Param::GroupInfo AP_BattMonitor_INA2xx::var_info[] = {
     // @Range: 0 127
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("I2C_ADDR", 26, AP_BattMonitor_INA2xx, _i2c_address, HAL_BATTMON_INA2xx_ADDR),
+    AP_GROUPINFO("I2C_ADDR", 26, AP_BattMonitor_INA2XX, _i2c_address, HAL_BATTMON_INA2XX_ADDR),
 
     AP_GROUPEND
 };
 
 
 
-AP_BattMonitor_INA2xx::AP_BattMonitor_INA2xx(AP_BattMonitor &mon,
+AP_BattMonitor_INA2XX::AP_BattMonitor_INA2XX(AP_BattMonitor &mon,
                                              AP_BattMonitor::BattMonitor_State &mon_state,
                                              AP_BattMonitor_Params &params)
         : AP_BattMonitor_Backend(mon, mon_state, params)
@@ -112,7 +112,7 @@ AP_BattMonitor_INA2xx::AP_BattMonitor_INA2xx(AP_BattMonitor &mon,
 @param  : none
 @retval : none
 */
-void AP_BattMonitor_INA2xx::init(void)
+void AP_BattMonitor_INA2XX::init(void)
 {
     dev = hal.i2c_mgr->get_device(_i2c_bus, _i2c_address, 100000, false, 20);        //100kHz freq. and 20ms timeout
     if (!dev) {
@@ -131,7 +131,7 @@ void AP_BattMonitor_INA2xx::init(void)
 @param  : none
 @retval : none
 */
-void AP_BattMonitor_INA2xx::configure(void)
+void AP_BattMonitor_INA2XX::configure(void)
 {
     WITH_SEMAPHORE(dev->get_semaphore());
 
@@ -207,7 +207,7 @@ void AP_BattMonitor_INA2xx::configure(void)
 @param  : none
 @retval : none
 */
-void AP_BattMonitor_INA2xx::read(void)
+void AP_BattMonitor_INA2XX::read(void)
 {
 
     WITH_SEMAPHORE(accumulate.sem);
@@ -237,7 +237,7 @@ void AP_BattMonitor_INA2xx::read(void)
 @param  : register to read from and data to store the register value
 @retval : returns true if read was successful, false if failed
 */
-bool AP_BattMonitor_INA2xx::read_word(const uint8_t reg, int16_t& data) const
+bool AP_BattMonitor_INA2XX::read_word(const uint8_t reg, int16_t& data) const
 {
     // read the appropriate register from the device
     if (!dev->read_registers(reg, (uint8_t *)&data, sizeof(data))) {
@@ -257,7 +257,7 @@ bool AP_BattMonitor_INA2xx::read_word(const uint8_t reg, int16_t& data) const
 @param  : register to write to and data to be written
 @retval : returns true if write was successful, false if failed
 */
-bool AP_BattMonitor_INA2xx::write_word(const uint8_t reg, const uint16_t data) const
+bool AP_BattMonitor_INA2XX::write_word(const uint8_t reg, const uint16_t data) const
 {
     const uint8_t b[3] { reg, uint8_t(data >> 8), uint8_t(data&0xff) };
     return dev->transfer(b, sizeof(b), nullptr, 0);
@@ -270,7 +270,7 @@ bool AP_BattMonitor_INA2xx::write_word(const uint8_t reg, const uint16_t data) c
 @param  : none
 @retval : none
 */
-void AP_BattMonitor_INA2xx::timer(void)
+void AP_BattMonitor_INA2XX::timer(void)
 {
     // allow for power-on after boot
     if (!_configured) {
@@ -312,4 +312,4 @@ void AP_BattMonitor_INA2xx::timer(void)
     accumulate._count++;
 }
 
-#endif // HAL_BATTMON_INA2xx_ENABLED
+#endif // HAL_BATTMON_INA2XX_ENABLED
