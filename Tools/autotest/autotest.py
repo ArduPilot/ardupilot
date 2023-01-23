@@ -117,6 +117,12 @@ def build_binaries():
     """Run the build_binaries.py script."""
     print("Running build_binaries.py")
 
+    try:
+        util.run_cmd("git diff-index --quiet HEAD --")
+    except:
+        print("Skipping build_binaries.py, working directory has changes")
+        return True
+
     # copy the script (and various libraries used by the script) as it
     # changes git branch, which can change the script while running
     for thing in [
