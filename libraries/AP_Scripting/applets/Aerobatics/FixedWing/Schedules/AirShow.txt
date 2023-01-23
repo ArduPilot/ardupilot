@@ -60,33 +60,32 @@ align_box 1
 message: HalfReverseCubanEight
 half_reverse_cuban_eight   25
 
-message: ScaleFigureEight
 align_center
+message: ScaleFigureEight
 scale_figure_eight -40 -45
 
-message: Immelmann
 align_box 1
+message: Immelmann
 immelmann_turn 30
 
-message: StraightAlign
-message: Roll
 align_center
+message: Roll
 straight_roll 80 2
 
-message: Split-S
 align_box 1
+message: Split-S
 split_s  30
 
-message: RollingCircle
 align_center
+message: RollingCircle
 rolling_circle -75 1
 
-message: HumptyBump
 align_box 1
+message: HumptyBump
 humpty_bump 20 60
 
-message: HalfCubanEight
 align_box 1
+message: HalfCubanEight
 half_cuban_eight 25
 
 align_center
