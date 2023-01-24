@@ -4266,6 +4266,11 @@ void SLT_Transition::set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& nav_roll_
         return;
     }
 
+    if (!plane.control_mode->does_auto_throttle()) {
+        // don't limit pitch when in manually controlled modes like FBWA, ACRO
+        return;
+    }
+
     float max_pitch;
     if (transition_state < TRANSITION_TIMER) {
         if (plane.ahrs.groundspeed() < 3.0) {
