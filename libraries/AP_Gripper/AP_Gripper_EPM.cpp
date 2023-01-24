@@ -15,6 +15,8 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
+#include <SRV_Channel/SRV_Channel.h>
+
 #ifdef UAVCAN_NODE_FILE
 #include <fcntl.h>
 #include <stdio.h>
