@@ -30,6 +30,16 @@ const AP_Param::GroupInfo AP_BattMonitor_UAVCAN::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("CURR_MULT", 30, AP_BattMonitor_UAVCAN, _curr_mult, 1.0),
 
+
+#if AP_BATTMONITOR_UAVCAN_MPPT_USE_STATUS_AND_OVERRIDE_PARAM
+    // @Param: MPPT_EN
+    // @DisplayName: MPPT Enable/Disable
+    // @Description: MPPT Enable/Disable current status and/or override
+    // @Values: -1:Unknonwn, 0:Disabled, 1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("MPPT_EN", 31, AP_BattMonitor_UAVCAN, _mppt.powered_state_param, -1),
+#endif
+
     // Param indexes must be between 30 and 39 to avoid conflict with other battery monitor param tables loaded by pointer
 
     AP_GROUPEND
@@ -286,6 +296,11 @@ void AP_BattMonitor_UAVCAN::read()
     if (_mppt.is_detected) {
         mppt_check_powered_state();
     }
+#if AP_BATTMONITOR_UAVCAN_MPPT_USE_STATUS_AND_OVERRIDE_PARAM
+    else {
+        _mppt.powered_state_param.set(-1);
+    }
+#endif
 }
 
 /// capacity_remaining_pct - returns true if the percentage is valid and writes to percentage argument
@@ -336,6 +351,13 @@ void AP_BattMonitor_UAVCAN::mppt_set_bootup_powered_state()
 // request MPPT board to power on/off depending upon vehicle arming state as specified by BATT_OPTIONS
 void AP_BattMonitor_UAVCAN::mppt_check_powered_state()
 {
+#if AP_BATTMONITOR_UAVCAN_MPPT_USE_STATUS_AND_OVERRIDE_PARAM
+    if ((_mppt.powered_state != _mppt.powered_state_param) &&
+        ((_mppt.powered_state_param == 0) || (_mppt.powered_state_param == 1))) {
+            mppt_set_powered_state(_mppt.powered_state_param != 0, true);
+    }
+#endif
+
     if ((_mppt.powered_state_remote_ms != 0) && (AP_HAL::millis() - _mppt.powered_state_remote_ms >= 1000)) {
         // there's already a set attempt that didnt' respond. Retry at 1Hz
         mppt_set_powered_state(_mppt.powered_state, true);
@@ -373,6 +395,11 @@ void AP_BattMonitor_UAVCAN::mppt_set_powered_state(bool power_on, bool force)
     if ((_mppt.powered_state == power_on) && !force) {
         return;
     }
+
+#if AP_BATTMONITOR_UAVCAN_MPPT_USE_STATUS_AND_OVERRIDE_PARAM
+    _mppt.powered_state_param.set(power_on);
+#endif
+
     _mppt.powered_state = power_on;
     _mppt.powered_state_changed = true;
 

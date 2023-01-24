@@ -12,6 +12,10 @@
 #define AP_BATTMONITOR_UAVCAN_MPPT_DEBUG 0
 #endif
 
+#ifndef AP_BATTMONITOR_UAVCAN_MPPT_USE_STATUS_AND_OVERRIDE_PARAM
+#define AP_BATTMONITOR_UAVCAN_MPPT_USE_STATUS_AND_OVERRIDE_PARAM (BOARD_FLASH_SIZE > 1024)
+#endif
+
 class BattInfoCb;
 class BattInfoAuxCb;
 class MpptStreamCb;
@@ -106,6 +110,9 @@ private:
     AP_Float _curr_mult;                 // scaling multiplier applied to current reports for adjustment
     // MPPT variables
     struct {
+#if AP_BATTMONITOR_UAVCAN_MPPT_USE_STATUS_AND_OVERRIDE_PARAM
+        AP_Int8 powered_state_param;
+#endif
         bool is_detected;               // true if this UAVCAN device is a Packet Digital MPPT
         bool powered_state;             // true if the mppt is powered on, false if powered off
         bool powered_state_changed;     // true if _mppt_powered_state has changed and should be sent to MPPT board
