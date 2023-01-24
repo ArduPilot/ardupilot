@@ -2366,10 +2366,6 @@ def write_hwdef_header(outfilename):
     write_BARO_config(f)
     write_AIRSPEED_config(f)
     write_board_validate_macro(f)
-    add_apperiph_defaults(f)
-    add_bootloader_defaults(f)
-    add_iomcu_firmware_defaults(f)
-    add_normal_firmware_defaults(f)
     write_check_firmware(f)
 
     write_peripheral_enable(f)
@@ -2490,6 +2486,11 @@ def write_hwdef_header(outfilename):
             for r in dma_required:
                 if fnmatch.fnmatch(d, r):
                     error("Missing required DMA for %s" % d)
+
+    add_apperiph_defaults(f)
+    add_bootloader_defaults(f)
+    add_iomcu_firmware_defaults(f)
+    add_normal_firmware_defaults(f)
 
     f.close()
     # see if we ended up with the same file, on an unnecessary reconfigure
