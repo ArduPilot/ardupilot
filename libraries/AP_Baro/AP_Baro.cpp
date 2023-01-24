@@ -618,7 +618,7 @@ void AP_Baro::init(void)
 #endif
 
 #if AP_BARO_EXTERNALAHRS_ENABLED
-    const int8_t serial_port = AP::externalAHRS().get_port();
+    const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::BARO);
     if (serial_port >= 0) {
         ADD_BACKEND(new AP_Baro_ExternalAHRS(*this, serial_port));
     }
