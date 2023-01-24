@@ -68,6 +68,13 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 3, AP_ExternalAHRS, options, 0),
 
+    // @Param: _SENSORS
+    // @DisplayName: External AHRS sensors
+    // @Description: External AHRS sensors bitmask
+    // @Bitmask: 0:GPS,1:IMU,2:Baro,3:Compass
+    // @User: Advanced
+    AP_GROUPINFO("_SENSORS", 4, AP_ExternalAHRS, sensors, 0xF),
+    
     AP_GROUPEND
 };
 
@@ -101,9 +108,9 @@ bool AP_ExternalAHRS::enabled() const
 }
 
 // get serial port number for the uart, or -1 if not applicable
-int8_t AP_ExternalAHRS::get_port(void) const
+int8_t AP_ExternalAHRS::get_port(AvailableSensor sensor) const
 {
-    if (!backend) {
+    if (!backend || !has_sensor(sensor)) {
         return -1;
     }
     return backend->get_port();
