@@ -180,7 +180,7 @@ AP_ADSB::AP_ADSB()
     _singleton = this;
 
 #ifdef ADSB_STATIC_CALLSIGN
-    strncpy(&out_state.cfg.callsign, ADSB_STATIC_CALLSIGN, sizeof(out_state.cfg.callsign));
+    strncpy(out_state.cfg.callsign, ADSB_STATIC_CALLSIGN, sizeof(out_state.cfg.callsign));
 #endif
 }
 
