@@ -8,6 +8,10 @@
 
 #define AP_BATTMONITOR_UAVCAN_TIMEOUT_MICROS         5000000 // sensor becomes unhealthy if no successful readings for 5 seconds
 
+#ifndef AP_BATTMONITOR_UAVCAN_MPPT_DEBUG
+#define AP_BATTMONITOR_UAVCAN_MPPT_DEBUG 0
+#endif
+
 class BattInfoCb;
 class BattInfoAuxCb;
 class MpptStreamCb;
@@ -74,8 +78,11 @@ private:
     void mppt_set_bootup_powered_state();
     void mppt_set_armed_powered_state();
     void mppt_set_powered_state(bool power_on, bool force);
-    void mppt_check_and_report_faults(uint8_t fault_flags);
-    const char* mppt_fault_string(MPPT_FaultFlags fault);
+
+#if AP_BATTMONITOR_UAVCAN_MPPT_DEBUG
+    static void mppt_report_faults(const uint8_t instance, const uint8_t fault_flags);
+    static const char* mppt_fault_string(const MPPT_FaultFlags fault);
+#endif
 
     AP_BattMonitor::BattMonitor_State _interim_state;
     BattMonitor_UAVCAN_Type _type;
