@@ -107,6 +107,12 @@ class SizeCompareBranches(object):
                 if v not in self.vehicle_map.keys():
                     raise ValueError("Bad vehicle (%s); choose from %s" % (v, ",".join(self.vehicle_map.keys())))
 
+        # some boards we don't have a -bl.dat for, so skip them.
+        # TODO: find a way to get this information from board_list:
+        self.bootloader_blacklist = frozenset([
+            'skyviper-v2450',
+        ])
+
     def find_bin_dir(self):
         '''attempt to find where the arm-none-eabi tools are'''
         binary = shutil.which("arm-none-eabi-g++")
@@ -221,6 +227,8 @@ class SizeCompareBranches(object):
         for v in vehicle:
             if v != 'bootloader':
                 continue
+            if board in self.bootloader_blacklist:
+                continue
             # need special configuration directive
             bootloader_waf_configure_args = copy.copy(waf_configure_args)
             bootloader_waf_configure_args.append('--bootloader')
@@ -306,6 +314,9 @@ class SizeCompareBranches(object):
         self.build_branch_into_dir(board, self.branch, vehicles_to_build, outdir_2)
 
         for vehicle in vehicles_to_build:
+            if vehicle == 'bootloader' and board in self.bootloader_blacklist:
+                continue
+
             elf_filename = self.vehicle_map[vehicle]
             bin_filename = self.vehicle_map[vehicle] + '.bin'
 
