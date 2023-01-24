@@ -1268,7 +1268,7 @@ void Compass::_probe_external_i2c_compasses(void)
 void Compass::_detect_backends(void)
 {
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
-    const int8_t serial_port = AP::externalAHRS().get_port();
+    const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::COMPASS);
     if (serial_port >= 0) {
         ADD_BACKEND(DRIVER_SERIAL, new AP_Compass_ExternalAHRS(serial_port));
     }
