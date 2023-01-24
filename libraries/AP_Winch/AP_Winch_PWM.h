@@ -16,7 +16,6 @@
 #pragma once
 
 #include <AP_Winch/AP_Winch_Backend.h>
-#include <SRV_Channel/SRV_Channel.h>
 
 class AP_Winch_PWM : public AP_Winch_Backend {
 public:
