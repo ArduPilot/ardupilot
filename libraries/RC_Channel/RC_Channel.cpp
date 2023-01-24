@@ -1031,8 +1031,11 @@ bool RC_Channel::run_aux_function(aux_func_t ch_option, AuxSwitchPos pos, AuxFun
     // @Description: Auxiliary function invocation information
     // @Field: TimeUS: Time since system startup
     // @Field: function: ID of triggered function
+    // @FieldValueEnum: function: RC_Channel::AUX_FUNC
     // @Field: pos: switch position when function triggered
+    // @FieldValueEnum: pos: RC_Channel::AuxSwitchPos
     // @Field: source: source of auxiliary function invocation
+    // @FieldValueEnum: source: RC_Channel::AuxFuncTriggerSource
     // @Field: result: true if function was successful
     AP::logger().Write(
         "AUXF",
