@@ -62,7 +62,7 @@ void AP_RCProtocol::init()
 
 AP_RCProtocol::~AP_RCProtocol()
 {
-    for (uint8_t i = 0; i < AP_RCProtocol::NONE; i++) {
+    for (uint8_t i = 0; i < ARRAY_SIZE(backend); i++) {
         if (backend[i] != nullptr) {
             delete backend[i];
             backend[i] = nullptr;
@@ -109,7 +109,7 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
     }
 
     // otherwise scan all protocols
-    for (uint8_t i = 0; i < AP_RCProtocol::NONE; i++) {
+    for (uint8_t i = 0; i < ARRAY_SIZE(backend); i++) {
         if (_disabled_for_pulses & (1U << i)) {
             // this protocol is disabled for pulse input
             continue;
@@ -128,7 +128,7 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
                 }
                 _new_input = (input_count != backend[i]->get_rc_input_count());
                 _detected_protocol = (enum AP_RCProtocol::rcprotocol_t)i;
-                for (uint8_t j = 0; j < AP_RCProtocol::NONE; j++) {
+                for (uint8_t j = 0; j < ARRAY_SIZE(backend); j++) {
                     if (backend[j]) {
                         backend[j]->reset_rc_frame_count();
                     }
@@ -194,7 +194,7 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
     }
 
     // otherwise scan all protocols
-    for (uint8_t i = 0; i < AP_RCProtocol::NONE; i++) {
+    for (uint8_t i = 0; i < ARRAY_SIZE(backend); i++) {
         if (backend[i] != nullptr) {
             if (!protocol_enabled(rcprotocol_t(i))) {
                 continue;
@@ -211,7 +211,7 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
                 _detected_protocol = (enum AP_RCProtocol::rcprotocol_t)i;
                 _last_input_ms = now;
                 _detected_with_bytes = true;
-                for (uint8_t j = 0; j < AP_RCProtocol::NONE; j++) {
+                for (uint8_t j = 0; j < ARRAY_SIZE(backend); j++) {
                     if (backend[j]) {
                         backend[j]->reset_rc_frame_count();
                     }
@@ -234,7 +234,7 @@ void AP_RCProtocol::process_handshake( uint32_t baudrate)
     }
 
     // otherwise handshake all protocols
-    for (uint8_t i = 0; i < AP_RCProtocol::NONE; i++) {
+    for (uint8_t i = 0; i < ARRAY_SIZE(backend); i++) {
         if (backend[i] != nullptr) {
             backend[i]->process_handshake(baudrate);
         }
@@ -337,7 +337,7 @@ bool AP_RCProtocol::new_input()
     check_added_uart();
 
     // run update function on backends
-    for (uint8_t i = 0; i < AP_RCProtocol::NONE; i++) {
+    for (uint8_t i = 0; i < ARRAY_SIZE(backend); i++) {
         if (backend[i] != nullptr) {
             backend[i]->update();
         }
@@ -387,7 +387,7 @@ int16_t AP_RCProtocol::get_rx_link_quality(void) const
  */
 void AP_RCProtocol::start_bind(void)
 {
-    for (uint8_t i = 0; i < AP_RCProtocol::NONE; i++) {
+    for (uint8_t i = 0; i < ARRAY_SIZE(backend); i++) {
         if (backend[i] != nullptr) {
             backend[i]->start_bind();
         }
