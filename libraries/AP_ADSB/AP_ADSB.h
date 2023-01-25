@@ -21,11 +21,7 @@
   Tom Pittenger, November 2015
 */
 
-#include <AP_HAL/AP_HAL_Boards.h>
-
-#ifndef HAL_ADSB_ENABLED
-#define HAL_ADSB_ENABLED !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
-#endif
+#include "AP_ADSB_config.h"
 
 #if HAL_ADSB_ENABLED
 #include <AP_Common/AP_Common.h>
