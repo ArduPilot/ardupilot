@@ -621,6 +621,8 @@ public:
 
     bool allows_throttle_nudging() const override;
 
+    float get_VTOL_return_radius() const;
+
 protected:
 
     bool _enter() override;
