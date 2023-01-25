@@ -265,10 +265,12 @@ AP_BattMonitor::init()
             case Type::ANALOG_VOLTAGE_AND_CURRENT:
                 drivers[instance] = new AP_BattMonitor_Analog(*this, state[instance], _params[instance]);
                 break;
-#if AP_BATTMON_SMBUS_ENABLE
+#if AP_BATTMON_SMBUS_SOLO_ENABLED
             case Type::SOLO:
                 drivers[instance] = new AP_BattMonitor_SMBus_Solo(*this, state[instance], _params[instance]);
                 break;
+#endif
+#if AP_BATTMON_SMBUS_ENABLE
             case Type::SMBus_Generic:
                 drivers[instance] = new AP_BattMonitor_SMBus_Generic(*this, state[instance], _params[instance]);
                 break;
