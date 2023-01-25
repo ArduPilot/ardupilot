@@ -20,3 +20,6 @@
 #define AP_BATTMON_SYNTHETIC_CURRENT_ENABLED  1
 #endif
 
+#ifndef AP_BATTMON_SMBUS_SOLO_ENABLED
+#define AP_BATTMON_SMBUS_SOLO_ENABLED 0  // turned on in hwdefs
+#endif
