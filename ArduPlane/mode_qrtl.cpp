@@ -20,12 +20,12 @@ bool ModeQRTL::_enter()
         Location destination = plane.rally.calc_best_rally_or_home_location(plane.current_loc, RTL_alt_abs_cm);
 
         const float dist = plane.current_loc.get_distance(destination);
-        const float radius = MAX(fabsf(plane.aparm.loiter_radius), fabsf(plane.g.rtl_radius));
+        const float radius = get_VTOL_return_radius();
 
-        // Climb at least to a cone around home of hight of QRTL alt and radius of 1.5*radius
+        // Climb at least to a cone around home of hight of QRTL alt and radius of radius
         // Always climb up to at least Q_RTL_ALT_MIN, constrain Q_RTL_ALT_MIN between Q_LAND_FINAL_ALT and Q_RTL_ALT
         const float min_climb = constrain_float(quadplane.qrtl_alt_min, quadplane.land_final_alt, quadplane.qrtl_alt);
-        const float target_alt = MAX(quadplane.qrtl_alt * (dist / MAX(1.5*radius, dist)), min_climb);
+        const float target_alt = MAX(quadplane.qrtl_alt * (dist / MAX(radius, dist)), min_climb);
 
 
 #if AP_TERRAIN_AVAILABLE
@@ -49,7 +49,7 @@ bool ModeQRTL::_enter()
             plane.next_WP_loc.set_alt_cm(plane.current_loc.alt + dist_to_climb * 100UL, plane.current_loc.get_alt_frame());
             return true;
 
-        } else if (dist < 1.5*radius) {
+        } else if (dist < radius) {
             // Above home "cone", return at curent altitude if lower than QRTL alt
             int32_t current_alt_abs_cm;
             if (plane.current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, current_alt_abs_cm)) {
@@ -124,8 +124,8 @@ void ModeQRTL::run()
                 int32_t RTL_alt_abs_cm = plane.home.alt + quadplane.qrtl_alt*100UL;
                 Location destination = plane.rally.calc_best_rally_or_home_location(plane.current_loc, RTL_alt_abs_cm);
                 const float dist = plane.current_loc.get_distance(destination);
-                const float radius = MAX(fabsf(plane.aparm.loiter_radius), fabsf(plane.g.rtl_radius));
-                if (dist < 1.5*radius) {
+                const float radius = get_VTOL_return_radius();
+                if (dist < radius) {
                     // if close to home return at current target altitude
                     int32_t target_alt_abs_cm;
                     if (plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, target_alt_abs_cm)) {
@@ -205,6 +205,12 @@ void ModeQRTL::update_target_altitude()
 bool ModeQRTL::allows_throttle_nudging() const
 {
     return (submode == SubMode::RTL) && (plane.quadplane.poscontrol.get_state() == QuadPlane::QPOS_APPROACH);
+}
+
+// Return the radius from destination at which pure VTOL flight should be used, no transition to FW
+float ModeQRTL::get_VTOL_return_radius() const
+{
+    return MAX(fabsf(plane.aparm.loiter_radius), fabsf(plane.g.rtl_radius)) * 1.5;
 }
 
 #endif
