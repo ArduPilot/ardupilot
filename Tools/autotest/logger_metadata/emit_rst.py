@@ -61,7 +61,7 @@ This is a list of log messages which may be present in logs produced and stored 
                         if comment is None:
                             comment = ""
                         bitmaskrows.append([enumentry.name, str(enumentry.value), comment])
-                    fdesc += "\n%s:\n%s" % (table_label, self.tablify(bitmaskrows))
+                    fdesc += "\n%s:\n\n%s" % (table_label, self.tablify(bitmaskrows))
                 rows.append([f, fdesc])
 
             print(self.tablify(rows), file=self.fh)
