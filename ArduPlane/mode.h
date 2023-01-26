@@ -113,6 +113,10 @@ public:
     // true if the mode sets the vehicle destination, which controls
     // whether control input is ignored with STICK_MIXING=0
     virtual bool does_auto_throttle() const { return false; }
+    
+    // true if the mode supports autotuning (via switch for modes other
+    // that AUTOTUNE itself
+    virtual bool mode_allows_autotuning() const { return false; }
 
     // method for mode specific target altitude profiles
     virtual void update_target_altitude();
@@ -175,6 +179,8 @@ public:
     bool does_auto_navigation() const override;
 
     bool does_auto_throttle() const override;
+    
+    bool mode_allows_autotuning() const override { return true; }
 
 protected:
 
@@ -193,11 +199,12 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+    
+    bool mode_allows_autotuning() const override { return true; }
 
 protected:
 
     bool _enter() override;
-    void _exit() override;
 };
 
 class ModeGuided : public Mode
@@ -281,6 +288,8 @@ public:
     bool allows_terrain_disable() const override { return true; }
 
     void update_target_altitude() override;
+    
+    bool mode_allows_autotuning() const override { return true; }
 
 protected:
 
@@ -406,6 +415,8 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+    
+    bool mode_allows_autotuning() const override { return true; }
 
 };
 
@@ -425,6 +436,8 @@ public:
     void update() override;
 
     bool does_auto_throttle() const override { return true; }
+    
+    bool mode_allows_autotuning() const override { return true; }
 
     void update_target_altitude() override {};
 
