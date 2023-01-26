@@ -338,6 +338,7 @@ void HarmonicNotchFilterParams::save_params()
     _attenuation_dB.save();
     _harmonics.save();
     _reference.save();
+    _freq_min_ratio.save();
 }
 
 /* 
