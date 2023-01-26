@@ -310,6 +310,12 @@ protected:
     // function which instantiates an instance of the backend sensor
     // driver if the sensor is available
 
+    bool is_internal_imu () {
+        return _internal_imu;
+    }
+
+    bool _internal_imu = true;
+
 private:
 
     bool should_log_imu_raw() const ;

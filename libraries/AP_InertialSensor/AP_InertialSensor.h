@@ -598,6 +598,7 @@ private:
     
     // temperatures for an instance if available
     float _temperature[INS_MAX_INSTANCES];
+    uint8_t _min_internal_imu_index = INS_MAX_INSTANCES;
 
     // filtering frequency (0 means default)
     AP_Int16    _accel_filter_cutoff;
