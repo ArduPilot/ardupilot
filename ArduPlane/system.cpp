@@ -299,11 +299,6 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
         return false;
     }
 
-    if (previous_mode == &mode_autotune) {
-        // restore last gains
-        autotune_restore();
-    }
-
     // exit previous mode
     old_mode.exit();
 

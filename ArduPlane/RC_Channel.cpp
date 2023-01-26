@@ -405,7 +405,13 @@ bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
         break;
 
     case AUX_FUNC::FW_AUTOTUNE:
-        plane.autotune_enable(ch_flag == AuxSwitchPos::HIGH);
+        if (ch_flag == AuxSwitchPos::HIGH && plane.control_mode->mode_allows_autotuning()) {
+           plane.autotune_enable(true);
+        } else if (ch_flag == AuxSwitchPos::HIGH) {
+           GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Autotuning not allowed in this mode!");
+        } else {
+           plane.autotune_enable(false); 
+        }
         break;
 
     default:
