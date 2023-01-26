@@ -112,6 +112,7 @@ class SizeCompareBranches(object):
         # TODO: find a way to get this information from board_list:
         self.bootloader_blacklist = frozenset([
             'skyviper-v2450',
+            'iomcu',
         ])
 
     def find_bin_dir(self):
