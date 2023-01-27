@@ -430,7 +430,9 @@ private:
         DRIVER_QMC5883L =12,
         DRIVER_SITL     =13,
         DRIVER_MAG3110  =14,
+#if AP_COMPASS_IST8308_ENABLED
         DRIVER_IST8308  =15,
+#endif
 		DRIVER_RM3100   =16,
         DRIVER_MSP      =17,
         DRIVER_SERIAL   =18,
