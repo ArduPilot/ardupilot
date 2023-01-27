@@ -274,7 +274,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #ifdef HAL_GPIO_PWM_VOLT_PIN
     // @Param: PWM_VOLT_SEL
     // @DisplayName: Set PWM Out Voltage
-    // @Description: This sets the voltage max for PWM output pulses. 0 for 3.3V and 1 for 5V output.
+    // @Description: This sets the voltage max for PWM output pulses. 0 for 3.3V and 1 for 5V output. On boards with an IOMCU that support this parameter this option only affects the 8 main outputs, not the 6 auxilliary outputs. Using 5V output can help to reduce the impact of ESC noise interference corrupting signals to the ESCs.
     // @Values: 0:3.3V,1:5V
     // @User: Advanced
     AP_GROUPINFO("PWM_VOLT_SEL", 18, AP_BoardConfig, _pwm_volt_sel, 0),
