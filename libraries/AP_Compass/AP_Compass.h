@@ -415,7 +415,9 @@ private:
     // enum of drivers for COMPASS_TYPEMASK
     enum DriverType {
         DRIVER_HMC5843  =0,
+#if AP_COMPASS_LSM303D_ENABLED
         DRIVER_LSM303D  =1,
+#endif
         DRIVER_AK8963   =2,
         DRIVER_BMM150   =3,
         DRIVER_LSM9DS1  =4,

@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AP_Compass_config.h"
+
+#if AP_COMPASS_LSM303D_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Device.h>
@@ -53,3 +57,5 @@ private:
     uint8_t _mag_samplerate;
     uint8_t _reg7_expected;
 };
+
+#endif  // AP_COMPASS_LSM303D_ENABLED
