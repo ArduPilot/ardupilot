@@ -65,6 +65,7 @@
 -- global definitions
 local INIT_INTERVAL_MS = 3000           -- attempt to initialise the gimbal at this interval
 local UPDATE_INTERVAL_MS = 1            -- update interval in millis
+local REPLY_TIMEOUT_MS = 1000           -- timeout waiting for reply after 1 sec
 local REQUEST_ATTITUDE_INTERVAL_MS = 5000   -- request attitude at this interval
 local SET_ATTITUDE_INTERVAL_MS = 5000   -- set attitude at this interval
 local MOUNT_INSTANCE = 0                -- always control the first mount/gimbal
@@ -107,6 +108,9 @@ local parse_bytes_recv = 0              -- message buffer length.  count of the 
 local last_send_seq = 0                 -- last sequence number sent
 local last_req_attitude_ms = 0          -- system time of last request for attitude
 local last_set_attitude_ms = 0          -- system time of last set attitude call
+local REPLY_TYPE = {NONE=0, ATTITUDE=1, POSITION_CONTROL=2, SPEED_CONTROL=3} -- enum of expected reply types
+local expected_reply = REPLY_TYPE.NONE  -- currently expected reply type
+local expected_reply_ms = 0             -- system time that reply is first expected.  used for timeouts
 
 -- debug variables
 local last_print_ms = 0                 -- system time that debug output was last printed
@@ -116,6 +120,7 @@ local bytes_error = 0                   -- number of bytes read that could not b
 local msg_ignored = 0                   -- number of ignored messages (because frame id does not match)
 local write_fails = 0                   -- number of times write failed
 local execute_fails = 0                 -- number of times that gimbal was unable to execute the command
+local reply_timeouts = 0                -- number of timeouts waiting for replies
 local last_test_msg_send_ms = 0         -- system time that last test message was sent
 
 local crc16_lookup = {
@@ -251,11 +256,12 @@ function init()
 end
 
 -- send serial message over CAN bus
+-- returns true on success, false on failure
 function send_msg(serial_msg)
 
   if not serial_msg then
     gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR2: cannot send invalid message")
-    do return end
+    do return false end
   end
 
   -- debug
@@ -288,12 +294,14 @@ function send_msg(serial_msg)
     else
       write_fails = write_fails + 1
       -- on failure do not send rest of message
-      do return end
+      do return false end
     end
 
     -- debug
     --gcs:send_text(MAV_SEVERITY.INFO,string.format("DJIR2: dlc:%u %x %x %x %x %x %x %x %x", canframe:dlc(), canframe:data(0), canframe:data(1), canframe:data(2), canframe:data(3), canframe:data(4), canframe:data(5), canframe:data(6), canframe:data(7)))
   end
+
+  return true
 end
 
 -- get next sequence number that should be used for send commands
@@ -341,12 +349,20 @@ function request_attitude()
   -- Field number                  1     2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19
   --                             SOF  LenL  LenH CmdTyp  Enc   RES   RES   RES  SeqL  SeqH  CrcL  CrcH CmdSet CmdId Data1 CRC32 CRC32 CRC32 CRC32
   local request_attitude_msg = {0xAA, 0x13, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x0E, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00}
-
+  -- Field number                  1     2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19    20    21    22    23    24    25    26
+  -- Field name                  SOF  LenL  LenH CmdTyp  Enc   RES   RES   RES  SeqL  SeqH  CrcL  CrcH CmdSet CmdId YawL  YawH  RollL RollH PitL  PitH  Ctrl  Time CRC32 CRC32 CRC32 CRC32
+  -- local set_target_att_msg =   {0xAA, 0x1A, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0E, 0x00, 0x20, 0x00, 0x30, 0x00, 0x40, 0x00, 0x01, 0x14, 0x00, 0x00, 0x00, 0x00}
+  --                         {0xAA, 0x1A, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x22, 0x11, 0xA2, 0x42, 0x0E, 0x00, 0x20, 0x00, 0x30, 0x00, 0x40, 0x00, 0x01, 0x14, 0x7B, 0x40, 0x97, 0xBE}
   -- update_msg_seq_and_crc
   update_msg_seq_and_crc(request_attitude_msg)
 
   -- send bytes
-  send_msg(request_attitude_msg)
+  if send_msg(request_attitude_msg) then
+    expected_reply = REPLY_TYPE.ATTITUDE
+    expected_reply_ms = millis()
+  else
+    expected_reply = REPLY_TYPE.NONE
+  end
 end
 
 -- send target angles (in degrees) to gimbal
@@ -400,7 +416,12 @@ function send_target_angles(roll_angle_deg, pitch_angle_deg, yaw_angle_deg, time
   update_msg_seq_and_crc(set_target_att_msg)
 
   -- send bytes
-  send_msg(set_target_att_msg)
+  if send_msg(set_target_att_msg) then
+    expected_reply = REPLY_TYPE.POSITION_CONTROL
+    expected_reply_ms = millis()
+  else
+    expected_reply = REPLY_TYPE.NONE
+  end
 end
 
 -- send target rates (in deg/sec) to gimbal
@@ -443,7 +464,12 @@ function send_target_rates(roll_rate_degs, pitch_rate_degs, yaw_rate_degs)
   update_msg_seq_and_crc(set_target_speed_msg)
 
   -- send bytes
-  send_msg(set_target_speed_msg)
+  if send_msg(set_target_speed_msg) then
+    expected_reply = REPLY_TYPE.SPEED_CONTROL
+    expected_reply_ms = millis()
+  else
+    expected_reply = REPLY_TYPE.NONE
+  end
 
   -- debug
   gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: rate R:%x %x P:%x %x Y:%x %x", set_target_speed_msg[18], set_target_speed_msg[17], set_target_speed_msg[20], set_target_speed_msg[19], set_target_speed_msg[16], set_target_speed_msg[15]))
@@ -538,24 +564,26 @@ function parse_byte(b)
         local cmd_type_reply = (parse_buff[4] & 0x20) > 0
         --gcs:send_text(MAV_SEVERITY.INFO, "DJIR2: reply:" .. tostring(cmd_type_reply))
 
-        -- if message has at least 2 bytes of data, check cmdid and cmdset
-        if cmd_type_reply and parse_length >= SERIAL_PACKET_LENGTH_MIN + 2 then
-          local cmdset = parse_buff[13]
-          local cmdid = parse_buff[14]
-          gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: cmdset:%x cmdid:%x len:%d", cmdset, cmdid, parse_length))
+        -- process reply messages
+        if cmd_type_reply then
+
+          if expected_reply == REPLY_TYPE.NONE then
+            gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: unexpected reply len:%d", parse_length))
+          end
+
   -- Field number                     1     2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19
   --                                SOF  LenL  LenH CmdTyp  Enc   RES   RES   RES  SeqL  SeqH  CrcL  CrcH CmdSet CmdId Data1 CRC32 CRC32 CRC32 CRC32
   -- local request_attitude_msg = {0xAA, 0x13, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x0E, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00}
 
           -- parse attitude reply message
-          if (cmdset == REQUEST_ATTITUDE_CMDSET) and (cmdid == REQUEST_ATTITUDE_CMDID) and (parse_length >= 22) then
-            local ret_code = parse_buff[15]
+          if (expected_reply == REPLY_TYPE.ATTITUDE) and (parse_length >= 20) then
+            local ret_code = parse_buff[13]
             gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: ret code:%x", ret_code))
             if ret_code == RETURN_CODE.SUCCESS then
-              --local data_type = parse_buff[16]
-              local yaw_deg = int16_value(parse_buff[18],parse_buff[17]) * 0.1
-              local roll_deg = int16_value(parse_buff[20],parse_buff[19]) * 0.1
-              local pitch_deg = int16_value(parse_buff[22],parse_buff[21]) * 0.1
+              --local data_type = parse_buff[14]
+              local yaw_deg = int16_value(parse_buff[16],parse_buff[15]) * 0.1
+              local roll_deg = int16_value(parse_buff[18],parse_buff[17]) * 0.1 -- reversed with pitch below?
+              local pitch_deg = int16_value(parse_buff[20],parse_buff[19]) * 0.1
               mount:set_attitude_euler(MOUNT_INSTANCE, roll_deg, pitch_deg, yaw_deg)
               gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: roll:%4.1f pitch:%4.1f yaw:%4.1f", roll_deg, pitch_deg, yaw_deg))
             else
@@ -565,8 +593,8 @@ function parse_byte(b)
           end
 
           -- parse position control reply message
-          if (cmdset == POSITION_CONTROL_CMDSET) and (cmdid == POSITION_CONTROL_CMDID) and (parse_length >= 15) then
-            local ret_code = parse_buff[15]
+          if (expected_reply == REPLY_TYPE.POSITION_CONTROL) and (parse_length >= 13) then
+            local ret_code = parse_buff[13]
             gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: ret code:%x", ret_code))
             if ret_code == RETURN_CODE.SUCCESS then
               gcs:send_text(MAV_SEVERITY.INFO, "DJIR2: poscon success")
@@ -577,8 +605,8 @@ function parse_byte(b)
           end
 
           -- parse speed control reply message
-          if (cmdset == SPEED_CONTROL_CMDSET) and (cmdid == SPEED_CONTROL_CMDID) and (parse_length >= 15) then
-            local ret_code = parse_buff[15]
+          if (expected_reply == REPLY_TYPE.SPEED_CONTROL) and (parse_length >= 13) then
+            local ret_code = parse_buff[13]
             gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: ret code:%x", ret_code))
             if ret_code == RETURN_CODE.SUCCESS then
               gcs:send_text(MAV_SEVERITY.INFO, "DJIR2: speedcon success")
@@ -588,6 +616,8 @@ function parse_byte(b)
             end
           end
 
+          -- clear expected reply flag
+          expected_reply = REPLY_TYPE.NONE
         else
           -- not attempting to parse
           gcs:send_text(MAV_SEVERITY.INFO, "DJIR2: skipped reply:" .. tostring(cmd_type_reply) .. "len:" .. tostring(parse_length))
@@ -647,7 +677,7 @@ function update()
   -- debug  
   if now_ms - last_print_ms > 5000 then
     last_print_ms = now_ms
-    gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: r:%u w:%u fail:%u,%u perr:%u ign:%u", bytes_read, bytes_written, write_fails, execute_fails, bytes_error, msg_ignored))
+    gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: r:%u w:%u fail:%u,%u perr:%u to:%u ign:%u", bytes_read, bytes_written, write_fails, execute_fails, bytes_error, reply_timeouts, msg_ignored))
 
     -- debug of crc16
     --local test_msg1 = {0xAA,0x1A,0x00,0x03,0x00,0x00,0x00,0x00,0x22, 0x11}
@@ -664,6 +694,18 @@ function update()
   -- do not send any messages until CAN traffic has been seen
   if msg_ignored == 0 and bytes_read == 0 then
     return update, UPDATE_INTERVAL_MS
+  end
+
+  -- handle expected reply timeouts
+  if (expected_reply ~= REPLY_TYPE.NONE) then
+    if ((now_ms - expected_reply_ms) > REPLY_TIMEOUT_MS) then
+      gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: timeout expecting %d", expected_reply))
+      expected_reply = REPLY_TYPE.NONE
+      reply_timeouts = reply_timeouts + 1
+    else
+      -- do not process any messages
+      return update, UPDATE_INTERVAL_MS
+    end
   end
 
   -- send test message
@@ -705,6 +747,7 @@ function update()
   if now_ms - last_req_attitude_ms > REQUEST_ATTITUDE_INTERVAL_MS then
     last_req_attitude_ms = now_ms
     request_attitude()
+    return update, UPDATE_INTERVAL_MS
   end
 
   -- set gimbal attitude or rate
@@ -712,20 +755,22 @@ function update()
     last_set_attitude_ms = now_ms
 
     -- send angle target
-    --local roll_deg, pitch_deg, yaw_deg, yaw_is_ef = mount:get_angle_target(MOUNT_INSTANCE)
-    --if roll_deg and pitch_deg and yaw_deg then
-    --  send_target_angles(roll_deg, pitch_deg, yaw_deg, 1)
-    --  return update, UPDATE_INTERVAL_MS
-    --end
+    local roll_deg, pitch_deg, yaw_deg, yaw_is_ef = mount:get_angle_target(MOUNT_INSTANCE)
+    if roll_deg and pitch_deg and yaw_deg then
+      send_target_angles(roll_deg, pitch_deg, yaw_deg, 1)
+      --send_target_rates(roll_deg * 0.1, pitch_deg * 0.1, yaw_deg * 0.1)
+      return update, UPDATE_INTERVAL_MS
+    end
     --send_target_angles(0, 10, 20, 1)
 
     -- send rate target
-    --local roll_degs, pitch_degs, yaw_degs, yaw_is_ef = mount:get_rate_target(MOUNT_INSTANCE)
-    --if roll_degs and pitch_degs and yaw_degs then
-    --  send_target_rates(roll_degs, pitch_degs, yaw_degs)
-    --  return update, UPDATE_INTERVAL_MS
-    --end
+    local roll_degs, pitch_degs, yaw_degs, yaw_is_ef = mount:get_rate_target(MOUNT_INSTANCE)
+    if roll_degs and pitch_degs and yaw_degs then
+      send_target_rates(roll_degs, pitch_degs, yaw_degs)
+      return update, UPDATE_INTERVAL_MS
+    end
     --send_target_rates(0, 10, -30)
+    return update, UPDATE_INTERVAL_MS
   end
 
   return update, UPDATE_INTERVAL_MS
