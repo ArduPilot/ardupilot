@@ -2,7 +2,7 @@
 # assumes: Aileron, Elevator, Throttle, Rudder, flaps
 
 {
-    "settings" : { "debug" : 1 },
+    "settings" : { "debug" : 0 },
 
     "sim/operation/override/override_joystick" : { "type" : "fixed", "value" : 1 },
     "sim/operation/override/override_flightcontrol" : { "type" : "fixed", "value" : 0 },

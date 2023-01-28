@@ -20,10 +20,10 @@
 #include <AP_Motors/AP_Motors.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#include "SIM_Aircraft.h"
 
 #include <stdio.h>
 #include <sys/stat.h>
-
 
 using namespace SITL;
 
@@ -341,39 +341,9 @@ void Frame::load_frame_params(const char *model_json)
     if (fname == nullptr) {
         AP_HAL::panic("%s failed to load\n", model_json);
     }
-    ::printf("Loading model %s\n", fname);
-    int fd = AP::FS().open(model_json, O_RDONLY);
-    if (fd == -1) {
+    picojson::value *obj = (picojson::value *)load_json(model_json);
+    if (obj == nullptr) {
         AP_HAL::panic("%s failed to load\n", model_json);
-    }
-    char buf[st.st_size+1];
-    memset(buf, '\0', sizeof(buf));
-    if (AP::FS().read(fd, buf, st.st_size) != st.st_size) {
-        AP_HAL::panic("%s failed to load\n", model_json);
-    }
-    AP::FS().close(fd);
-
-    char *start = strchr(buf, '{');
-    if (!start) {
-        AP_HAL::panic("Invalid json %s", model_json);
-    }
-    free(fname);
-
-    /*
-      remove comments, as not allowed by the parser
-     */
-    for (char *p = strchr(start,'#'); p; p=strchr(p+1, '#')) {
-        // clear to end of line
-        do {
-            *p++ = ' ';
-        } while (*p != '\n' && *p != '\r' && *p);
-    }
-
-    picojson::value obj;
-    std::string err = picojson::parse(obj, start);
-    if (!err.empty()) {
-        AP_HAL::panic("Failed to load %s: %s", model_json, err.c_str());
-        exit(1);
     }
 
     enum class VarType {
@@ -415,7 +385,7 @@ void Frame::load_frame_params(const char *model_json)
     };
 
     for (uint8_t i=0; i<ARRAY_SIZE(vars); i++) {
-        auto v = obj.get(vars[i].label);
+        auto v = obj->get(vars[i].label);
         if (v.is<picojson::null>()) {
             // use default value
             continue;
@@ -438,7 +408,7 @@ void Frame::load_frame_params(const char *model_json)
     for (uint8_t i=0; i<ARRAY_SIZE(per_motor_vars); i++) {
         for (uint8_t j=0; j<12; j++) {
             sprintf(label_name, "motor%i_%s", j+1, per_motor_vars[i].label);
-            auto v = obj.get(label_name);
+            auto v = obj->get(label_name);
             if (v.is<picojson::null>()) {
                 // use default value
                 continue;
@@ -451,6 +421,8 @@ void Frame::load_frame_params(const char *model_json)
             }
         }
     }
+
+    delete obj;
 
     ::printf("Loaded model params from %s\n", model_json);
 }
@@ -473,10 +445,11 @@ void Frame::parse_vector3(picojson::value val, const char* label, Vector3f &para
 
 #endif
 
+#if AP_SIM_ENABLED
+
 /*
   initialise the frame
  */
-#if AP_SIM_ENABLED
 void Frame::init(const char *frame_str, Battery *_battery)
 {
     model = default_model;
