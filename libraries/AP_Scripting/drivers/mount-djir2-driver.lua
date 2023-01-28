@@ -65,8 +65,8 @@
 -- global definitions
 local INIT_INTERVAL_MS = 3000           -- attempt to initialise the gimbal at this interval
 local UPDATE_INTERVAL_MS = 1            -- update interval in millis
-local REQUEST_ATTITUDE_INTERVAL_MS = 100   -- request attitude at this interval
-local SET_ATTITUDE_INTERVAL_MS = 100   -- set attitude at this interval
+local REQUEST_ATTITUDE_INTERVAL_MS = 5000   -- request attitude at this interval
+local SET_ATTITUDE_INTERVAL_MS = 5000   -- set attitude at this interval
 local MOUNT_INSTANCE = 0                -- always control the first mount/gimbal
 local SEND_FRAMEID = 0x223              -- send CAN messages with this frame id
 local RECEIVE_FRAMEID = 0x222           -- receive CAN messages with this frame id
@@ -643,9 +643,9 @@ function update()
   end
 
   -- do not send any messages until CAN traffic has been seen
-  --if msg_ignored == 0 and bytes_read == 0 then
-  --  return update, UPDATE_INTERVAL_MS
-  --end
+  if msg_ignored == 0 and bytes_read == 0 then
+    return update, UPDATE_INTERVAL_MS
+  end
 
   -- send test message
   if now_ms - last_test_msg_send_ms > 10000 then
@@ -685,26 +685,29 @@ function update()
   -- request gimbal attitude
   if now_ms - last_req_attitude_ms > REQUEST_ATTITUDE_INTERVAL_MS then
     last_req_attitude_ms = now_ms
-    --request_attitude()
+    request_attitude()
   end
 
-  -- set gimbal attitude
+  -- set gimbal attitude or rate
   if now_ms - last_set_attitude_ms > SET_ATTITUDE_INTERVAL_MS then
     last_set_attitude_ms = now_ms
+
+    -- send angle target
     --local roll_deg, pitch_deg, yaw_deg, yaw_is_ef = mount:get_angle_target(MOUNT_INSTANCE)
     --if roll_degs and pitch_degs and yaw_degs then
     --  send_target_angles(roll_deg, pitch_deg, yaw_deg, 1)
+    --  return update, UPDATE_INTERVAL_MS
     --end
-    --send_target_angles(0, 10, 20, 1)
-    send_target_rates(0, 10, -30)
-  end
+    send_target_angles(0, 10, 20, 1)
 
-  -- get target rate
-  --local roll_degs, pitch_degs, yaw_degs, yaw_is_ef = mount:get_rate_target(MOUNT_INSTANCE)
-  --if roll_degs and pitch_degs and yaw_degs then
-    --send_target_rates(roll_degs, pitch_degs, yaw_degs)
-  --  return update, UPDATE_INTERVAL_MS
-  --end
+    -- send rate target
+    --local roll_degs, pitch_degs, yaw_degs, yaw_is_ef = mount:get_rate_target(MOUNT_INSTANCE)
+    --if roll_degs and pitch_degs and yaw_degs then
+    --  send_target_rates(roll_degs, pitch_degs, yaw_degs)
+    --  return update, UPDATE_INTERVAL_MS
+    --end
+    --send_target_rates(0, 10, -30)
+  end
 
   return update, UPDATE_INTERVAL_MS
 end
