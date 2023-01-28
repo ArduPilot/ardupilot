@@ -74,6 +74,7 @@ local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTI
 -- bind parameters to variables
 local CAN_P1_DRIVER = Parameter("CAN_P1_DRIVER")        -- should be 1:Enabled
 local CAN_D1_PROTOCOL = Parameter("CAN_D1_PROTOCOL")    -- should be 10:Scripting
+local MNT1_TYPE = Parameter("MNT1_TYPE")                -- should be 9:Scripting
 
 -- message definitions
 local HEADER = 0xAA
@@ -217,13 +218,6 @@ end
 
 -- perform any require initialisation
 function init()
-
-  -- check parameters exist
-  if not CAN_P1_DRIVER or not CAN_D1_PROTOCOL then
-    gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR2: CAN disabled")   
-    do return end
-  end
-
   -- check parameter settings
   if CAN_P1_DRIVER:get() <= 0 then
     gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR2: set CAN_P1_DRIVER=1")   
@@ -231,6 +225,10 @@ function init()
   end
   if CAN_D1_PROTOCOL:get() ~= 10 then
     gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR2: set CAN_D1_PROTOCOL=10")   
+    do return end
+  end
+  if MNT1_TYPE:get() ~= 9 then
+    gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR2: set MNT1_TYPE=9")   
     do return end
   end
 
