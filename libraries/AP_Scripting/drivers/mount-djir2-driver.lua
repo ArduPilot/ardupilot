@@ -767,7 +767,7 @@ function update()
 
     -- send angle target
     local roll_deg, pitch_deg, yaw_deg, yaw_is_ef = mount:get_angle_target(MOUNT_INSTANCE)
-    if roll_deg and pitch_deg and yaw_deg and yaw_is_ef then
+    if roll_deg and pitch_deg and yaw_deg then
       if yaw_is_ef then
         -- convert to body-frame
         yaw_deg = wrap_180(yaw_deg - math.deg(ahrs:get_yaw()))
