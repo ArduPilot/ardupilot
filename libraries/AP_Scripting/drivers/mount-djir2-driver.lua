@@ -81,6 +81,7 @@ local MNT1_TYPE = Parameter("MNT1_TYPE")                -- should be 9:Scripting
 local HEADER = 0xAA
 local REQUEST_ATTITUDE_CMDSET = 0x0E
 local REQUEST_ATTITUDE_CMDID = 0x02
+local RETURN_CODE = {SUCCESS=0x00, PARSE_ERROR=0x01, EXECUTION_FAILED=0x02, UNDEFINED=0xFF}
 
 -- parsing state definitions
 local PARSE_STATE_WAITING_FOR_HEADER        = 0
@@ -110,6 +111,7 @@ local bytes_written = 0                 -- number of bytes written to gimbal
 local bytes_error = 0                   -- number of bytes read that could not be parsed
 local msg_ignored = 0                   -- number of ignored messages (because frame id does not match)
 local write_fails = 0                   -- number of times write failed
+local last_test_msg_send_ms = 0         -- system time that last test message was sent
 
 local crc16_lookup = {
     0x0000, 0xc0c1, 0xc181, 0x0140, 0xc301, 0x03c0, 0x0280, 0xc241,
@@ -363,8 +365,8 @@ function send_target_angles(roll_angle_deg, pitch_angle_deg, yaw_angle_deg, time
   --       7: time for action, uint8_t, unit: 0.1s.  e.g. if 20, gimbal will rotate to the position desired within 2sec
   --
   -- Field number                1     2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19    20    21    22    23    24    25    26
-  -- Field name                SOF  LenL  LenH CmdTyp  Enc   RES   RES   RES  SeqL  SeqH  CrcL  CrcH CmdSet CmdId YawL  YawH  RollL RollH PitL  PitH  Ctrl Time  CRC32 CRC32 CRC32 CRC32
-  local set_target_att_msg = {0xAA, 0x1A, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0E, 0x00, 0x20, 0x00, 0x30, 0x00, 0x40, 0x00, 0x01, 0x14, 0x7B, 0x40, 0x97, 0xBE}
+  -- Field name                SOF  LenL  LenH CmdTyp  Enc   RES   RES   RES  SeqL  SeqH  CrcL  CrcH CmdSet CmdId YawL  YawH  RollL RollH PitL  PitH  Ctrl  Time CRC32 CRC32 CRC32 CRC32
+  local set_target_att_msg = {0xAA, 0x1A, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0E, 0x00, 0x20, 0x00, 0x30, 0x00, 0x40, 0x00, 0x01, 0x14, 0x00, 0x00, 0x00, 0x00}
   --                         {0xAA, 0x1A, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x22, 0x11, 0xA2, 0x42, 0x0E, 0x00, 0x20, 0x00, 0x30, 0x00, 0x40, 0x00, 0x01, 0x14, 0x7B, 0x40, 0x97, 0xBE}
 
   -- set angles
@@ -422,13 +424,16 @@ function parse_byte(b)
     parse_bytes_recv = parse_bytes_recv + 1
     parse_buff[parse_bytes_recv] = b
 
-    -- waiting for header1
-    if parse_state == PARSE_STATE_WAITING_FOR_HEADER and b == HEADER then
-      parse_state = PARSE_STATE_WAITING_FOR_VERLENGTH
-      do return end
-    else
-      -- unexpected byte
-      bytes_error = bytes_error + 1
+    -- waiting for header
+    if parse_state == PARSE_STATE_WAITING_FOR_HEADER then
+      if b == HEADER then
+        parse_state = PARSE_STATE_WAITING_FOR_VERLENGTH
+        do return end
+      else
+        -- unexpected byte
+        bytes_error = bytes_error + 1
+        gcs:send_text(MAV_SEVERITY.CRITICAL, string.format("DJIR2: unexp byte:%x", b))
+      end
     end
 
     -- waiting for version/length LSB
@@ -444,6 +449,7 @@ function parse_byte(b)
           gcs:send_text(MAV_SEVERITY.CRITICAL, string.format("DJIR2: unexpected len:%u", parse_length))
         else
           parse_state = PARSE_STATE_WAITING_FOR_DATA
+          gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: good len:%d", parse_length))
         end
       end
       do return end
@@ -457,6 +463,8 @@ function parse_byte(b)
         if (expected_crc16 ~= received_crc16) then
           gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: crc16 exp:%x got:%x", expected_crc16, received_crc16))
           gcs:send_text(MAV_SEVERITY.INFO,string.format("DJIR2: msg:%x %x %x %x %x %x %x %x %x %x", parse_buff[1], parse_buff[2], parse_buff[3], parse_buff[4], parse_buff[5], parse_buff[6], parse_buff[7], parse_buff[8], parse_buff[9], parse_buff[10]))
+          parse_state = PARSE_STATE_WAITING_FOR_HEADER
+          do return end
         end
 
         -- check crc32
@@ -464,28 +472,37 @@ function parse_byte(b)
         local received_crc32 = uint32_value(parse_buff[parse_length], parse_buff[parse_length-1], parse_buff[parse_length-2], parse_buff[parse_length-3])
         if (expected_crc32 ~= received_crc32) then
           gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: crc32 exp:%x got:%x", expected_crc32, received_crc32))
+          parse_state = PARSE_STATE_WAITING_FOR_HEADER
+          do return end
         end
 
         -- check if reply
         local cmd_type_reply = (parse_buff[4] & 0x20) > 0
+        gcs:send_text(MAV_SEVERITY.INFO, "DJIR2: reply:" .. tostring(cmd_type_reply))
 
         -- if message has at least 2 bytes of data, check cmdid and cmdset
         if cmd_type_reply and parse_length >= SERIAL_PACKET_LENGTH_MIN + 2 then
           local cmdset = parse_buff[13]
           local cmdid = parse_buff[14]
-
+          gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: cmdset:%x cmdid:%x", cmdset, cmdid))
   -- Field number                     1     2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19
   --                                SOF  LenL  LenH CmdTyp  Enc   RES   RES   RES  SeqL  SeqH  CrcL  CrcH CmdSet CmdId Data1 CRC32 CRC32 CRC32 CRC32
   -- local request_attitude_msg = {0xAA, 0x13, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x0E, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00}
 
-          -- parse attitude message
+          -- parse attitude reply message
           if (cmdset == REQUEST_ATTITUDE_CMDSET) and (cmdid == REQUEST_ATTITUDE_CMDID) and (parse_length >= 22) then
-            --local return_code = parse_buff[15]
-            --local data_type = parse_buff[16]
-            local yaw_deg = uint16_value(parse_buff[18],parse_buff[17]) * 0.1
-            local roll_deg = uint16_value(parse_buff[20],parse_buff[19]) * 0.1
-            local pitch_deg = uint16_value(parse_buff[22],parse_buff[21]) * 0.1
-            mount:set_attitude_euler(MOUNT_INSTANCE, roll_deg, pitch_deg, yaw_deg)
+            local ret_code = parse_buff[15]
+            gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: ret code:%x", ret_code))
+            if ret_code == RETURN_CODE.SUCCESS then
+              --local data_type = parse_buff[16]
+              local yaw_deg = int16_value(parse_buff[18],parse_buff[17]) * 0.1
+              local roll_deg = int16_value(parse_buff[20],parse_buff[19]) * 0.1
+              local pitch_deg = int16_value(parse_buff[22],parse_buff[21]) * 0.1
+              mount:set_attitude_euler(MOUNT_INSTANCE, roll_deg, pitch_deg, yaw_deg)
+              gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: roll:%4.1f pitch:%4.1f yaw:%4.1f", roll_deg, pitch_deg, yaw_deg))
+            else
+              gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR2: ret code fialure")
+            end
           end
         end
 
@@ -503,6 +520,16 @@ end
 -- get highbyte of a number
 function highbyte(num)
   return (num >> 8) & 0xFF
+end
+
+-- get int16 from two bytes
+function int16_value(hbyte, lbyte)
+  local uret = uint16_value(hbyte, lbyte)
+  if uret <= 0x8000 then
+    return uret
+  else
+    return uret - 0x10000
+  end
 end
 
 -- get uint16 from two bytes
@@ -548,14 +575,33 @@ function update()
   end
 
   -- do not send any messages until CAN traffic has been seen
-  if msg_ignored == 0 and bytes_read == 0 then
-    return update, UPDATE_INTERVAL_MS
+  --if msg_ignored == 0 and bytes_read == 0 then
+  --  return update, UPDATE_INTERVAL_MS
+  --end
+
+  -- send test message
+  if now_ms - last_test_msg_send_ms > 10000 then
+    last_test_msg_send_ms = now_ms
+    -- set attitude
+    -- Field number      1     2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19    20    21    22    23    24    25    26
+    -- Field name      SOF  LenL  LenH CmdTyp  Enc   RES   RES   RES  SeqL  SeqH  CrcL  CrcH CmdSet CmdId YawL  YawH  RollL RollH PitL  PitH  Ctrl  Time CRC32 CRC32 CRC32 CRC32
+    --local test_msg = {0xAA, 0x1A, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x22, 0x11, 0xA2, 0x42, 0x0E, 0x00, 0x20, 0x00, 0x30, 0x00, 0x40, 0x00, 0x01, 0x14, 0x7B, 0x40, 0x97, 0xBE}
+
+    -- get attitude reply               reply                                                             RetCde datTy YawL YawH  RollL RollH PitL  PitH  
+    --                                                                                                           1:ang
+    -- Field number      1     2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19    20    21    22    23    24    25    26
+    --                 SOF  LenL  LenH CmdTyp  Enc   RES   RES   RES  SeqL  SeqH  CrcL  CrcH CmdSet CmdId RetC DatTy  YawL  YawH  RolL  RolH  PitL  PitH  CRC32 CRC32 CRC32 CRC32
+    local test_msg = {0xAA, 0x1A, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x68, 0xDC, 0x0E, 0x02, 0x00, 0x01, 0x9C, 0xFF, 0x96, 0x00, 0xFA, 0x00, 0x27, 0xE1, 0xAD, 0x08}
+
+    for i=1,#test_msg do
+      parse_byte(test_msg[i])
+    end
   end
 
   -- request gimbal attitude
   if now_ms - last_req_attitude_ms > REQUEST_ATTITUDE_INTERVAL_MS then
     last_req_attitude_ms = now_ms
-    request_attitude()
+    --request_attitude()
   end
 
   -- set gimbal attitude
@@ -565,7 +611,7 @@ function update()
     --if roll_degs and pitch_degs and yaw_degs then
     --  send_target_angles(roll_deg, pitch_deg, yaw_deg, 1)
     --end
-    send_target_angles(0, 10, 20, 1)
+    --send_target_angles(0, 10, 20, 1)
   end
 
   -- get target rate
