@@ -381,7 +381,7 @@ function send_target_angles(roll_angle_deg, pitch_angle_deg, yaw_angle_deg, time
   time_sec = math.floor(time_sec + 0.5)
 
   -- debug
-  gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: ang R:%f P:%f Y:%f t:%f", roll_angle_deg, pitch_angle_deg, yaw_angle_deg, time_sec))
+  --gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: ang R:%f P:%f Y:%f t:%f", roll_angle_deg, pitch_angle_deg, yaw_angle_deg, time_sec))
 
   --    0x0E, 0x00: Handheld Gimbal Position Control
   --      Command frame bytes
@@ -472,7 +472,7 @@ function send_target_rates(roll_rate_degs, pitch_rate_degs, yaw_rate_degs)
   end
 
   -- debug
-  gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: rate R:%x %x P:%x %x Y:%x %x", set_target_speed_msg[18], set_target_speed_msg[17], set_target_speed_msg[20], set_target_speed_msg[19], set_target_speed_msg[16], set_target_speed_msg[15]))
+  --gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: rate R:%x %x P:%x %x Y:%x %x", set_target_speed_msg[18], set_target_speed_msg[17], set_target_speed_msg[20], set_target_speed_msg[19], set_target_speed_msg[16], set_target_speed_msg[15]))
 end
 
 -- consume incoming CAN packets
@@ -516,7 +516,7 @@ function parse_byte(b)
       else
         -- unexpected byte
         bytes_error = bytes_error + 1
-        gcs:send_text(MAV_SEVERITY.CRITICAL, string.format("DJIR2: unexp byte:%x", b))
+        --gcs:send_text(MAV_SEVERITY.CRITICAL, string.format("DJIR2: unexp byte:%x", b))
       end
     end
 
@@ -530,7 +530,7 @@ function parse_byte(b)
           parse_state = PARSE_STATE_WAITING_FOR_HEADER
           -- invalid length
           bytes_error = bytes_error + 1
-          gcs:send_text(MAV_SEVERITY.CRITICAL, string.format("DJIR2: unexpected len:%u", parse_length))
+          --gcs:send_text(MAV_SEVERITY.CRITICAL, string.format("DJIR2: unexpected len:%u", parse_length))
         else
           parse_state = PARSE_STATE_WAITING_FOR_DATA
           --gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: good len:%d", parse_length))
@@ -578,16 +578,16 @@ function parse_byte(b)
           -- parse attitude reply message
           if (expected_reply == REPLY_TYPE.ATTITUDE) and (parse_length >= 20) then
             local ret_code = parse_buff[13]
-            gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: ret code:%x", ret_code))
+            --gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: ret code:%x", ret_code))
             if ret_code == RETURN_CODE.SUCCESS then
               --local data_type = parse_buff[14]
               local yaw_deg = int16_value(parse_buff[16],parse_buff[15]) * 0.1
               local roll_deg = int16_value(parse_buff[18],parse_buff[17]) * 0.1 -- reversed with pitch below?
               local pitch_deg = int16_value(parse_buff[20],parse_buff[19]) * 0.1
               mount:set_attitude_euler(MOUNT_INSTANCE, roll_deg, pitch_deg, yaw_deg)
-              gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: roll:%4.1f pitch:%4.1f yaw:%4.1f", roll_deg, pitch_deg, yaw_deg))
+              --gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: roll:%4.1f pitch:%4.1f yaw:%4.1f", roll_deg, pitch_deg, yaw_deg))
             else
-              gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR2: ret code failure")
+              --gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR2: ret code failure")
               execute_fails = execute_fails + 1
             end
           end
@@ -595,11 +595,12 @@ function parse_byte(b)
           -- parse position control reply message
           if (expected_reply == REPLY_TYPE.POSITION_CONTROL) and (parse_length >= 13) then
             local ret_code = parse_buff[13]
-            gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: ret code:%x", ret_code))
-            if ret_code == RETURN_CODE.SUCCESS then
-              gcs:send_text(MAV_SEVERITY.INFO, "DJIR2: poscon success")
-            else
-              gcs:send_text(MAV_SEVERITY.INFO, "DJIR2: poscon fail")
+            --gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: ret code:%x", ret_code))
+            --if ret_code == RETURN_CODE.SUCCESS then
+            --  gcs:send_text(MAV_SEVERITY.INFO, "DJIR2: poscon success")
+            --else
+            if ret_code ~= RETURN_CODE.SUCCESS then
+              --gcs:send_text(MAV_SEVERITY.INFO, "DJIR2: poscon fail")
               execute_fails = execute_fails + 1
             end
           end
@@ -607,11 +608,12 @@ function parse_byte(b)
           -- parse speed control reply message
           if (expected_reply == REPLY_TYPE.SPEED_CONTROL) and (parse_length >= 13) then
             local ret_code = parse_buff[13]
-            gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: ret code:%x", ret_code))
-            if ret_code == RETURN_CODE.SUCCESS then
-              gcs:send_text(MAV_SEVERITY.INFO, "DJIR2: speedcon success")
-            else
-              gcs:send_text(MAV_SEVERITY.INFO, "DJIR2: speedcon fail")
+            --gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: ret code:%x", ret_code))
+            --if ret_code == RETURN_CODE.SUCCESS then
+            --  gcs:send_text(MAV_SEVERITY.INFO, "DJIR2: speedcon success")
+            --else
+            --  gcs:send_text(MAV_SEVERITY.INFO, "DJIR2: speedcon fail")
+            if ret_code ~= RETURN_CODE.SUCCESS then
               execute_fails = execute_fails + 1
             end
           end
