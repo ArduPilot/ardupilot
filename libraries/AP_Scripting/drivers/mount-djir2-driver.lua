@@ -71,6 +71,10 @@ local SEND_FRAMEID = 0x223              -- send CAN messages with this frame id
 local RECEIVE_FRAMEID = 0x222           -- receive CAN messages with this frame id
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 
+-- bind parameters to variables
+local CAN_P1_DRIVER = Parameter("CAN_P1_DRIVER")        -- should be 1:Enabled
+local CAN_D1_PROTOCOL = Parameter("CAN_D1_PROTOCOL")    -- should be 10:Scripting
+
 -- message definitions
 local HEADER = 0xAA
 local REQUEST_ATTITUDE_CMDSET = 0x0E
@@ -213,6 +217,24 @@ end
 
 -- perform any require initialisation
 function init()
+
+  -- check parameters exist
+  if not CAN_P1_DRIVER or not CAN_D1_PROTOCOL then
+    gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR2: CAN disabled")   
+    do return end
+  end
+
+  -- check parameter settings
+  if CAN_P1_DRIVER:get() <= 0 then
+    gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR2: set CAN_P1_DRIVER=1")   
+    do return end
+  end
+  if CAN_D1_PROTOCOL:get() ~= 10 then
+    gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR2: set CAN_D1_PROTOCOL=10")   
+    do return end
+  end
+
+  -- get CAN device
   driver = CAN:get_device(25)
   if driver then
     initialised = true
@@ -527,9 +549,9 @@ function update()
   end
 
   -- do not send any messages until CAN traffic has been seen
-  --if msg_ignored == 0 and bytes_read == 0 then
-  --  return update, UPDATE_INTERVAL_MS
-  --end
+  if msg_ignored == 0 and bytes_read == 0 then
+    return update, UPDATE_INTERVAL_MS
+  end
 
   -- request gimbal attitude
   if now_ms - last_req_attitude_ms > REQUEST_ATTITUDE_INTERVAL_MS then
