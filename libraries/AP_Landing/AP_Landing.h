@@ -61,6 +61,7 @@ public:
     // we support upto 32 boolean bits for users wanting to change landing behaviour.
     enum OptionsMask {
         ON_LANDING_FLARE_USE_THR_MIN                   = (1<<0),   // If set then set trottle to thr_min instead of zero on final flare
+        ON_LANDING_USE_ARSPD_MAX                       = (1<<1),   // If set then allow landing throttle constraint to be increased from trim airspeed to max airspeed (ARSPD_FBW_MAX)
     };
 
     void do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude);
@@ -79,6 +80,7 @@ public:
     bool is_throttle_suppressed(void) const;
     bool is_flying_forward(void) const;
     bool use_thr_min_during_flare(void) const; //defaults to false, but _options bit zero enables it.
+    bool allow_max_airspeed_on_land(void) const; //defaults to false, but _options bit one enables it.
     void handle_flight_stage_change(const bool _in_landing_stage);
     int32_t constrain_roll(const int32_t desired_roll_cd, const int32_t level_roll_limit_cd);
     bool get_target_altitude_location(Location &location);
@@ -166,6 +168,7 @@ private:
     AP_Int8 throttle_slewrate;
     AP_Int8 type;
     AP_Int8 flare_effectivness_pct;
+    AP_Float wind_comp;
 
     // Land Type STANDARD GLIDE SLOPE
 

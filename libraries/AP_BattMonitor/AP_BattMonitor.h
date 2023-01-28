@@ -6,6 +6,7 @@
 #include <AP_TemperatureSensor/AP_TemperatureSensor_config.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AP_BattMonitor_Params.h"
+#include "AP_BattMonitor_config.h"
 
 // maximum number of battery monitors
 #ifndef AP_BATT_MONITOR_MAX_INSTANCES
@@ -26,26 +27,6 @@
 #define AP_BATT_MONITOR_CELLS_MAX           14
 #else
 #define AP_BATT_MONITOR_CELLS_MAX           12
-#endif
-
-#ifndef AP_BATTMON_SMBUS_ENABLE
-#define AP_BATTMON_SMBUS_ENABLE 1
-#endif
-
-#ifndef AP_BATTMON_FUELFLOW_ENABLE
-#define AP_BATTMON_FUELFLOW_ENABLE (BOARD_FLASH_SIZE > 1024)
-#endif
-
-#ifndef AP_BATTMON_FUELLEVEL_PWM_ENABLE
-#define AP_BATTMON_FUELLEVEL_PWM_ENABLE (BOARD_FLASH_SIZE > 1024)
-#endif
-
-#ifndef AP_BATTMON_FUELLEVEL_ANALOG_ENABLE
-#define AP_BATTMON_FUELLEVEL_ANALOG_ENABLE (BOARD_FLASH_SIZE > 1024)
-#endif
-
-#ifndef AP_BATTMON_SYNTHETIC_CURRENT_ENABLED
-#define AP_BATTMON_SYNTHETIC_CURRENT_ENABLED  1
 #endif
 
 // declare backend class

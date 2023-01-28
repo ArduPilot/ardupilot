@@ -791,7 +791,7 @@ end
  name[1] = "Roll(s)"
  name[2] = "Loop(s)/Turnaround"
  name[3] = "Rolling Circle"
- name[4] = "Knife-Edge"
+ name[4] = "Straight Hold"
  name[5] = "Pause"
  name[6] = "Knife Edge Circle"
  name[7] = "4pt Roll"
@@ -817,7 +817,7 @@ function check_trick()
       return 0
    end
    if action == 1 and selection ~= last_trick_selection then
-         gcs:send_text(5, string.format("%s selected", name[id]))
+         gcs:send_text(5, string.format("Trick %u selected (%s)", id, name[id]))
          last_trick_action_state = action
          last_trick_selection = selection
          return 0
@@ -836,7 +836,7 @@ function check_trick()
       end
       local id = TRICKS[selection].id:get()    
       if action == 1 then
-         gcs:send_text(5, string.format("%s selected ", name[id]))
+         gcs:send_text(5, string.format("Trick %u selected (%s)", id, name[id]))
          return 0
       end
       -- action changed to execute

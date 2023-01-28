@@ -36,10 +36,11 @@ else:
 class SizeCompareBranchesResult(object):
     '''object to return results from a comparison'''
 
-    def __init__(self, board, vehicle, bytes_delta):
+    def __init__(self, board, vehicle, bytes_delta, identical):
         self.board = board
         self.vehicle = vehicle
         self.bytes_delta = bytes_delta
+        self.identical = identical
 
 
 class SizeCompareBranches(object):
@@ -106,6 +107,13 @@ class SizeCompareBranches(object):
             for v in self.vehicle:
                 if v not in self.vehicle_map.keys():
                     raise ValueError("Bad vehicle (%s); choose from %s" % (v, ",".join(self.vehicle_map.keys())))
+
+        # some boards we don't have a -bl.dat for, so skip them.
+        # TODO: find a way to get this information from board_list:
+        self.bootloader_blacklist = frozenset([
+            'skyviper-v2450',
+            'iomcu',
+        ])
 
     def find_bin_dir(self):
         '''attempt to find where the arm-none-eabi tools are'''
@@ -221,6 +229,8 @@ class SizeCompareBranches(object):
         for v in vehicle:
             if v != 'bootloader':
                 continue
+            if board in self.bootloader_blacklist:
+                continue
             # need special configuration directive
             bootloader_waf_configure_args = copy.copy(waf_configure_args)
             bootloader_waf_configure_args.append('--bootloader')
@@ -260,7 +270,10 @@ class SizeCompareBranches(object):
                 bytes_delta = ""
                 if vehicle in board_results:
                     result = board_results[vehicle]
-                    bytes_delta = result.bytes_delta
+                    if result.identical:
+                        bytes_delta = "*"
+                    else:
+                        bytes_delta = result.bytes_delta
                 line.append(str(bytes_delta))
             ret += ",".join(line) + "\n"
         return ret
@@ -268,6 +281,10 @@ class SizeCompareBranches(object):
     def run(self):
         results = self.run_all()
         self.emit_csv_for_results(results)
+
+    def files_are_identical(self, file1, file2):
+        '''returns true if the files have the same content'''
+        return open(file1, "rb").read() == open(file2, "rb").read()
 
     def run_board(self, board):
         ret = {}
@@ -306,6 +323,9 @@ class SizeCompareBranches(object):
         self.build_branch_into_dir(board, self.branch, vehicles_to_build, outdir_2)
 
         for vehicle in vehicles_to_build:
+            if vehicle == 'bootloader' and board in self.bootloader_blacklist:
+                continue
+
             elf_filename = self.vehicle_map[vehicle]
             bin_filename = self.vehicle_map[vehicle] + '.bin'
 
@@ -330,13 +350,19 @@ class SizeCompareBranches(object):
                 self.run_program("SCB", elf_diff_commandline)
 
             try:
-                master_size = os.path.getsize(os.path.join(master_bin_dir, bin_filename))
-                new_size = os.path.getsize(os.path.join(new_bin_dir, bin_filename))
+                master_path = os.path.join(master_bin_dir, bin_filename)
+                new_path = os.path.join(new_bin_dir, bin_filename)
+                master_size = os.path.getsize(master_path)
+                new_size = os.path.getsize(new_path)
             except FileNotFoundError:
-                master_size = os.path.getsize(os.path.join(master_bin_dir, elf_filename))
-                new_size = os.path.getsize(os.path.join(new_bin_dir, elf_filename))
+                master_path = os.path.join(master_bin_dir, elf_filename)
+                new_path = os.path.join(new_bin_dir, elf_filename)
+                master_size = os.path.getsize(master_path)
+                new_size = os.path.getsize(new_path)
 
-            ret[vehicle] = SizeCompareBranchesResult(board, vehicle, new_size - master_size)
+            identical = self.files_are_identical(master_path, new_path)
+
+            ret[vehicle] = SizeCompareBranchesResult(board, vehicle, new_size - master_size, identical)
 
         return ret
 

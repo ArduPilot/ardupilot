@@ -932,6 +932,14 @@ void UARTDriver::_timer_tick(void)
             _connected = false;
             fprintf(stdout, "Closed connection on serial port %u\n", _portNumber);
             fflush(stdout);
+#if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(CYGWIN_BUILD)
+            if (_portNumber == 0) {
+                // exit on cygwin port 0 is almost certainly closing the
+                // connection in MissionPlanner SITL. We want to exit or
+                // we leave a stray process which confuses restart
+                exit(0);
+            }
+#endif
             return;
         }
     }

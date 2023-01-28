@@ -14,6 +14,10 @@
 */
 #pragma once
 
+#include "AP_VideoTX_config.h"
+
+#if AP_VIDEOTX_ENABLED
+
 #include <AP_Param/AP_Param.h>
 
 #define VTX_MAX_CHANNELS 8
@@ -195,3 +199,5 @@ private:
 namespace AP {
     AP_VideoTX& vtx();
 };
+
+#endif  // AP_VIDEOTX_ENABLED

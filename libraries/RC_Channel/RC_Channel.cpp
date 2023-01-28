@@ -645,6 +645,7 @@ bool RC_Channel::read_aux()
         // may wish to add special cases for other "AUXSW" things
         // here e.g. RCMAP_ROLL etc once they become options
         return false;
+#if AP_VIDEOTX_ENABLED
     } else if (_option == AUX_FUNC::VTX_POWER) {
         int8_t position;
         if (read_6pos_switch(position)) {
@@ -652,6 +653,7 @@ bool RC_Channel::read_aux()
             return true;
         }
         return false;
+#endif  // AP_VIDEOTX_ENABLED
     }
 
     AuxSwitchPos new_position;
@@ -1031,8 +1033,11 @@ bool RC_Channel::run_aux_function(aux_func_t ch_option, AuxSwitchPos pos, AuxFun
     // @Description: Auxiliary function invocation information
     // @Field: TimeUS: Time since system startup
     // @Field: function: ID of triggered function
+    // @FieldValueEnum: function: RC_Channel::AUX_FUNC
     // @Field: pos: switch position when function triggered
+    // @FieldValueEnum: pos: RC_Channel::AuxSwitchPos
     // @Field: source: source of auxiliary function invocation
+    // @FieldValueEnum: source: RC_Channel::AuxFuncTriggerSource
     // @Field: result: true if function was successful
     AP::logger().Write(
         "AUXF",
@@ -1218,7 +1223,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         if (ch_flag == AuxSwitchPos::HIGH) {
             AP_VisualOdom *visual_odom = AP::visualodom();
             if (visual_odom != nullptr) {
-                visual_odom->align_sensor_to_vehicle();
+                visual_odom->request_align_yaw_to_ahrs();
             }
         }
         break;

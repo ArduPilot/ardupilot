@@ -4,6 +4,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include "RC_Channel.h"
+#include <SRV_Channel/SRV_Channel.h>
 
 // Global parameter class.
 //

@@ -8,7 +8,7 @@ const AP_Param::GroupInfo AC_P::var_info[] = {
     // @Param: P
     // @DisplayName: PI Proportional Gain
     // @Description: P Gain which produces an output value that is proportional to the current error value
-    AP_GROUPINFO("P",    0, AC_P, _kp, 0),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("P",    0, AC_P, _kp, default_kp),
     AP_GROUPEND
 };
 

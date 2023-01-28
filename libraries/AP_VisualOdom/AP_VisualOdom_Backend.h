@@ -36,8 +36,8 @@ public:
     // consume vision velocity estimate data and send to EKF, velocity in NED meters per second
     virtual void handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter) = 0;
 
-    // handle request to align camera's attitude with vehicle's AHRS/EKF attitude
-    virtual void align_sensor_to_vehicle() {}
+    // request sensor's yaw be aligned with vehicle's AHRS/EKF attitude
+    virtual void request_align_yaw_to_ahrs() {}
 
     // handle request to align position with AHRS
     virtual void align_position_to_ahrs(bool align_xy, bool align_z) {}

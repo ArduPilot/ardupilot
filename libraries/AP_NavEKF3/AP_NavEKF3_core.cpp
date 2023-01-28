@@ -460,8 +460,6 @@ void NavEKF3_core::InitialiseVariablesMag()
     magTimeout = false;
     allMagSensorsFailed = false;
     finalInflightMagInit = false;
-    mag_state.q0 = 1;
-    mag_state.DCM.identity();
     inhibitMagStates = true;
     magSelectIndex = dal.compass().get_first_usable();
     lastMagOffsetsValid = false;

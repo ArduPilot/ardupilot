@@ -681,6 +681,13 @@ private:
         uint32_t received_ms; // time RADIO_STATUS received
     } last_radio_status;
 
+    enum class Flags {
+        USING_SIGNING = (1<<0),
+        ACTIVE = (1<<1),
+        STREAMING = (1<<2),
+        PRIVATE = (1<<3),
+        LOCKED = (1<<4),
+    };
     void log_mavlink_stats();
 
     uint32_t last_accel_cal_ms; // used to rate limit accel cals for bad links

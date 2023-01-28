@@ -2366,10 +2366,6 @@ def write_hwdef_header(outfilename):
     write_BARO_config(f)
     write_AIRSPEED_config(f)
     write_board_validate_macro(f)
-    add_apperiph_defaults(f)
-    add_bootloader_defaults(f)
-    add_iomcu_firmware_defaults(f)
-    add_normal_firmware_defaults(f)
     write_check_firmware(f)
 
     write_peripheral_enable(f)
@@ -2490,6 +2486,11 @@ def write_hwdef_header(outfilename):
             for r in dma_required:
                 if fnmatch.fnmatch(d, r):
                     error("Missing required DMA for %s" % d)
+
+    add_apperiph_defaults(f)
+    add_bootloader_defaults(f)
+    add_iomcu_firmware_defaults(f)
+    add_normal_firmware_defaults(f)
 
     f.close()
     # see if we ended up with the same file, on an unnecessary reconfigure
@@ -2876,6 +2877,16 @@ def add_apperiph_defaults(f):
 #define AP_ROBOTISSERVO_ENABLED 0
 #endif
 
+// by default an AP_Periph defines as many servo output channels as
+// there are PWM outputs:
+#ifndef NUM_SERVO_CHANNELS
+#ifdef HAL_PWM_COUNT
+#define NUM_SERVO_CHANNELS HAL_PWM_COUNT
+#else
+#define NUM_SERVO_CHANNELS 0
+#endif
+#endif
+
 #ifndef AP_STATS_ENABLED
 #define AP_STATS_ENABLED 0
 #endif
@@ -3029,6 +3040,10 @@ def add_iomcu_firmware_defaults(f):
 // by default IOMCUs don't use INS:
 #ifndef AP_INERTIALSENSOR_ENABLED
 #define AP_INERTIALSENSOR_ENABLED 0
+#endif
+
+#ifndef AP_VIDEOTX_ENABLED
+#define AP_VIDEOTX_ENABLED 0
 #endif
 ''')
 

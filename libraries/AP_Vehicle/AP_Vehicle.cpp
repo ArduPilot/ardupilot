@@ -41,9 +41,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Path: ../AP_VisualOdom/AP_VisualOdom.cpp
     AP_SUBGROUPINFO(visual_odom, "VISO",  3, AP_Vehicle, AP_VisualOdom),
 #endif
+
+#if AP_VIDEOTX_ENABLED
     // @Group: VTX_
     // @Path: ../AP_VideoTX/AP_VideoTX.cpp
     AP_SUBGROUPINFO(vtx, "VTX_",  4, AP_Vehicle, AP_VideoTX),
+#endif
 
 #if HAL_MSP_ENABLED
     // @Group: MSP
@@ -232,9 +235,11 @@ void AP_Vehicle::setup()
     visual_odom.init();
 #endif
 
+#if AP_VIDEOTX_ENABLED
     vtx.init();
+#endif
 
-#if HAL_SMARTAUDIO_ENABLED
+#if AP_SMARTAUDIO_ENABLED
     smartaudio.init();
 #endif
 
@@ -362,7 +367,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update_parameters,         1, 50, 210),
 #endif
     SCHED_TASK(update_dynamic_notch_at_specified_rate,      LOOP_RATE,                    200, 215),
+#if AP_VIDEOTX_ENABLED
     SCHED_TASK_CLASS(AP_VideoTX,   &vehicle.vtx,            update,                    2, 100, 220),
+#endif
 #if AP_TRAMP_ENABLED
     SCHED_TASK_CLASS(AP_Tramp,     &vehicle.tramp,          update,                   50,  50, 225),
 #endif
