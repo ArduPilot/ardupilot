@@ -287,6 +287,8 @@ function send_msg(serial_msg)
       bytes_written = bytes_written + num_bytes
     else
       write_fails = write_fails + 1
+      -- on failure do not send rest of message
+      do return end
     end
 
     -- debug
