@@ -107,10 +107,6 @@ void AP_MotorsSingle::output_to_motors()
 uint32_t AP_MotorsSingle::get_motor_mask()
 {
     uint32_t motor_mask =
-        1U << AP_MOTORS_MOT_1 |
-        1U << AP_MOTORS_MOT_2 |
-        1U << AP_MOTORS_MOT_3 |
-        1U << AP_MOTORS_MOT_4 |
         1U << AP_MOTORS_MOT_5 |
         1U << AP_MOTORS_MOT_6;
 
