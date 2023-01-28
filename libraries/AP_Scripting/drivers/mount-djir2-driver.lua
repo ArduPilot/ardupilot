@@ -81,6 +81,8 @@ local MNT1_TYPE = Parameter("MNT1_TYPE")                -- should be 9:Scripting
 local HEADER = 0xAA
 local REQUEST_ATTITUDE_CMDSET = 0x0E
 local REQUEST_ATTITUDE_CMDID = 0x02
+local POSITION_CONTROL_CMDSET = 0x0E
+local POSITION_CONTROL_CMDID = 0x00
 local RETURN_CODE = {SUCCESS=0x00, PARSE_ERROR=0x01, EXECUTION_FAILED=0x02, UNDEFINED=0xFF}
 
 -- parsing state definitions
@@ -111,6 +113,7 @@ local bytes_written = 0                 -- number of bytes written to gimbal
 local bytes_error = 0                   -- number of bytes read that could not be parsed
 local msg_ignored = 0                   -- number of ignored messages (because frame id does not match)
 local write_fails = 0                   -- number of times write failed
+local execute_fails = 0                 -- number of times that gimbal was unable to execute the command
 local last_test_msg_send_ms = 0         -- system time that last test message was sent
 
 local crc16_lookup = {
@@ -501,9 +504,23 @@ function parse_byte(b)
               mount:set_attitude_euler(MOUNT_INSTANCE, roll_deg, pitch_deg, yaw_deg)
               gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: roll:%4.1f pitch:%4.1f yaw:%4.1f", roll_deg, pitch_deg, yaw_deg))
             else
-              gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR2: ret code fialure")
+              gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR2: ret code failure")
+              execute_fails = execute_fails + 1
             end
           end
+
+          -- parse position control reply message
+          if (cmdset == POSITION_CONTROL_CMDSET) and (cmdid == POSITION_CONTROL_CMDID) and (parse_length >= 15) then
+            local ret_code = parse_buff[15]
+            gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: ret code:%x", ret_code))
+            if ret_code == RETURN_CODE.SUCCESS then
+              gcs:send_text(MAV_SEVERITY.INFO, "DJIR2: poscon success")
+            else
+              gcs:send_text(MAV_SEVERITY.INFO, "DJIR2: poscon fail")
+              execute_fails = execute_fails + 1
+            end
+          end
+
         end
 
        parse_state = PARSE_STATE_WAITING_FOR_HEADER
@@ -560,7 +577,7 @@ function update()
   -- debug  
   if now_ms - last_print_ms > 5000 then
     last_print_ms = now_ms
-    gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: read:%u write:%u fail:%u perr:%u ign:%u", bytes_read, bytes_written, write_fails, bytes_error, msg_ignored))
+    gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: r:%u w:%u fail:%u,%u perr:%u ign:%u", bytes_read, bytes_written, write_fails, execute_fails, bytes_error, msg_ignored))
 
     -- debug of crc16
     --local test_msg1 = {0xAA,0x1A,0x00,0x03,0x00,0x00,0x00,0x00,0x22, 0x11}
@@ -582,16 +599,22 @@ function update()
   -- send test message
   if now_ms - last_test_msg_send_ms > 10000 then
     last_test_msg_send_ms = now_ms
-    -- set attitude
+    -- position control
     -- Field number      1     2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19    20    21    22    23    24    25    26
     -- Field name      SOF  LenL  LenH CmdTyp  Enc   RES   RES   RES  SeqL  SeqH  CrcL  CrcH CmdSet CmdId YawL  YawH  RollL RollH PitL  PitH  Ctrl  Time CRC32 CRC32 CRC32 CRC32
     --local test_msg = {0xAA, 0x1A, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x22, 0x11, 0xA2, 0x42, 0x0E, 0x00, 0x20, 0x00, 0x30, 0x00, 0x40, 0x00, 0x01, 0x14, 0x7B, 0x40, 0x97, 0xBE}
 
+    -- position control reply
+    -- Field number      1     2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19
+    -- Field name      SOF  LenL  LenH CmdTyp  Enc   RES   RES   RES  SeqL  SeqH  CrcL  CrcH CmdSet CmdId RetC CRC32 CRC32 CRC32 CRC32
+    local test_msg = {0xAA, 0x13, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x03, 0xEC, 0x0E, 0x00, 0x00, 0xE1, 0xE9, 0x91, 0x7A} -- poscon success
+    local test_msg = {0xAA, 0x13, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x03, 0xEC, 0x0E, 0x00, 0x01, 0x77, 0xD9, 0x96, 0x0D} -- poscon failure
+
     -- get attitude reply               reply                                                             RetCde datTy YawL YawH  RollL RollH PitL  PitH  
     --                                                                                                           1:ang
-    -- Field number      1     2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19    20    21    22    23    24    25    26
-    --                 SOF  LenL  LenH CmdTyp  Enc   RES   RES   RES  SeqL  SeqH  CrcL  CrcH CmdSet CmdId RetC DatTy  YawL  YawH  RolL  RolH  PitL  PitH  CRC32 CRC32 CRC32 CRC32
-    local test_msg = {0xAA, 0x1A, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x68, 0xDC, 0x0E, 0x02, 0x00, 0x01, 0x9C, 0xFF, 0x96, 0x00, 0xFA, 0x00, 0x27, 0xE1, 0xAD, 0x08}
+    -- Field number        1     2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19    20    21    22    23    24    25    26
+    --                   SOF  LenL  LenH CmdTyp  Enc   RES   RES   RES  SeqL  SeqH  CrcL  CrcH CmdSet CmdId RetC DatTy  YawL  YawH  RolL  RolH  PitL  PitH  CRC32 CRC32 CRC32 CRC32
+    --local test_msg = {0xAA, 0x1A, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x68, 0xDC, 0x0E, 0x02, 0x00, 0x01, 0x9C, 0xFF, 0x96, 0x00, 0xFA, 0x00, 0x27, 0xE1, 0xAD, 0x08}
 
     for i=1,#test_msg do
       parse_byte(test_msg[i])
