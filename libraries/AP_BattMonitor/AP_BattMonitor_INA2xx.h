@@ -13,22 +13,22 @@
 #include <AP_Param/AP_Param.h>
 #include <utility>
 
-#ifndef HAL_BATTMON_INA2XX_ENABLED
-#define HAL_BATTMON_INA2XX_ENABLED (BOARD_FLASH_SIZE>1024)
+#ifndef HAL_BATTMON_INA2xx_ENABLED
+#define HAL_BATTMON_INA2xx_ENABLED (BOARD_FLASH_SIZE>1024)
 #endif
 
-#if HAL_BATTMON_INA2XX_ENABLED
+#if HAL_BATTMON_INA2xx_ENABLED
 
 //enable or disable only one of the sensor at a given time (enable at least one of the following sensor)
-#define HAL_BATTMON_INA260_ENABLED  1                   
-#define HAL_BATTMON_INA219_ENABLED  0
+#define HAL_BATTMON_INA260_ENABLED  0                   
+#define HAL_BATTMON_INA219_ENABLED  1
 #define HAL_BATTMON_INA226_ENABLED  0
 
-class AP_BattMonitor_INA2XX: public AP_BattMonitor_Backend
+class AP_BattMonitor_INA2xx: public AP_BattMonitor_Backend
 {
 public:
     /// Constructor
-    AP_BattMonitor_INA2XX(AP_BattMonitor &mon,
+    AP_BattMonitor_INA2xx(AP_BattMonitor &mon,
                           AP_BattMonitor::BattMonitor_State &mon_state,
                           AP_BattMonitor_Params &params);
     
@@ -38,7 +38,7 @@ public:
     bool has_current() const override { return true; }
     bool reset_remaining(float percentage) override { return false; }
     bool get_cycle_count(uint16_t &cycles) const override { return false; }
-    bool has_consumed_energy() const override {return true;}
+    bool has_consumed_energy() const override {return false;}
 
     void init(void) override;
     void read() override;
@@ -49,7 +49,8 @@ private:
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
 
     void configure(void);
-    bool read_word(const uint8_t reg, int16_t& data) const;
+    bool read_word_signed(const uint8_t reg, int16_t& data) const;
+    bool read_word_unsigned(const uint8_t reg, uint16_t& data) const;
     bool write_word(const uint8_t reg, const uint16_t data) const;
     void timer(void);
 
