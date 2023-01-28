@@ -6,6 +6,7 @@
 #include <AP_Soaring/AP_Soaring.h>
 #include <AP_ADSB/AP_ADSB.h>
 #include <AP_Vehicle/ModeReason.h>
+#include "defines.h"
 #include "quadplane.h"
 
 class AC_PosControl;
@@ -124,6 +125,12 @@ public:
     // handle a guided target request from GCS
     virtual bool handle_guided_request(Location target_loc) { return false; }
 
+    // Return true if stick mixing of any type is enabled
+    virtual bool allows_stick_mixing() const;
+
+    // Return true if roll/pitch stick mixing is enabled
+    virtual bool allows_roll_pitch_stick_mixing() const;
+
 protected:
 
     // subclasses override this to perform checks before entering the mode
@@ -154,6 +161,8 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
+    bool allows_roll_pitch_stick_mixing() const override { return false; }
+
 protected:
 
     bool _enter() override;
@@ -182,6 +191,8 @@ public:
     
     bool mode_allows_autotuning() const override { return true; }
 
+    bool allows_stick_mixing() const override;
+
 protected:
 
     bool _enter() override;
@@ -201,6 +212,8 @@ public:
     void update() override;
     
     bool mode_allows_autotuning() const override { return true; }
+
+    bool allows_roll_pitch_stick_mixing() const override { return false; }
 
 protected:
 
@@ -383,6 +396,9 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+
+    bool allows_roll_pitch_stick_mixing() const override { return false; }
+
 };
 
 class ModeInitializing : public Mode
@@ -418,6 +434,10 @@ public:
     
     bool mode_allows_autotuning() const override { return true; }
 
+    bool allows_stick_mixing() const override;
+
+    bool allows_roll_pitch_stick_mixing() const override { return false; }
+
 };
 
 class ModeFBWB : public Mode
@@ -440,6 +460,8 @@ public:
     bool mode_allows_autotuning() const override { return true; }
 
     void update_target_altitude() override {};
+
+    bool allows_roll_pitch_stick_mixing() const override { return false; }
 
 protected:
 
@@ -468,6 +490,8 @@ public:
     bool does_auto_throttle() const override { return true; }
 
     void update_target_altitude() override {};
+
+    bool allows_roll_pitch_stick_mixing() const override { return false; }
 
 protected:
 
@@ -524,6 +548,8 @@ public:
 
     void run() override;
 
+    bool allows_roll_pitch_stick_mixing() const override { return false; }
+
 protected:
 private:
 
@@ -548,6 +574,8 @@ public:
 
     void run() override;
 
+    bool allows_roll_pitch_stick_mixing() const override { return false; }
+
 protected:
 
     bool _enter() override;
@@ -571,6 +599,8 @@ public:
 
     void run() override;
 
+    bool allows_roll_pitch_stick_mixing() const override { return false; }
+
 protected:
 
     bool _enter() override;
@@ -592,6 +622,8 @@ public:
     void run() override;
 
     bool allows_arming() const override { return false; }
+
+    bool allows_roll_pitch_stick_mixing() const override { return false; }
 
 protected:
 
@@ -623,6 +655,8 @@ public:
 
     float get_VTOL_return_radius() const;
 
+    bool allows_stick_mixing() const override;
+
 protected:
 
     bool _enter() override;
@@ -652,6 +686,8 @@ public:
 
     void run() override;
 
+    bool allows_roll_pitch_stick_mixing() const override { return false; }
+
 protected:
 
     bool _enter() override;
@@ -673,6 +709,8 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+
+    bool allows_roll_pitch_stick_mixing() const override { return false; }
 
 protected:
 

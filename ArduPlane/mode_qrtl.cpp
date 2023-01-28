@@ -213,4 +213,15 @@ float ModeQRTL::get_VTOL_return_radius() const
     return MAX(fabsf(plane.aparm.loiter_radius), fabsf(plane.g.rtl_radius)) * 1.5;
 }
 
+// Return true if stick mixing of any type is enabled
+bool ModeQRTL::allows_stick_mixing() const
+{
+    if (quadplane.poscontrol.get_state() >= QuadPlane::QPOS_POSITION1) {
+        // user may be repositioning
+        return false;
+    }
+
+    return Mode::allows_stick_mixing();
+}
+
 #endif

@@ -139,3 +139,16 @@ bool ModeAuto::does_auto_throttle() const
 #endif
    return true;
 }
+
+// Return true if stick mixing of any type is enabled
+bool ModeAuto::allows_stick_mixing() const
+{
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.in_vtol_land_poscontrol()) {
+        // user may be repositioning
+        return false;
+    }
+#endif
+
+    return Mode::allows_stick_mixing();
+}

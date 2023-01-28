@@ -35,3 +35,14 @@ void ModeFBWA::update()
         }
     }
 }
+
+// Return true if stick mixing of any type is enabled
+bool ModeFBWA::allows_stick_mixing() const
+{
+    if (plane.failsafe.rc_failsafe && plane.g.fs_action_short == FS_ACTION_SHORT_FBWA) {
+        // don't do stick mixing in FBWA glide mode
+        return false;
+    }
+
+    return Mode::allows_stick_mixing();
+}

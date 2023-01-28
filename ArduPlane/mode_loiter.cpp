@@ -9,7 +9,7 @@ bool ModeLoiter::_enter()
     // make sure the local target altitude is the same as the nav target used for loiter nav
     // this allows us to do FBWB style stick control
     /*IGNORE_RETURN(plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, plane.target_altitude.amsl_cm));*/
-    if (plane.stick_mixing_enabled() && (plane.g2.flight_options & FlightOptions::ENABLE_LOITER_ALT_CONTROL)) {
+    if (allows_stick_mixing() && (plane.g2.flight_options & FlightOptions::ENABLE_LOITER_ALT_CONTROL)) {
         plane.set_target_altitude_current();
     }
 
@@ -21,7 +21,7 @@ bool ModeLoiter::_enter()
 void ModeLoiter::update()
 {
     plane.calc_nav_roll();
-    if (plane.stick_mixing_enabled() && (plane.g2.flight_options & FlightOptions::ENABLE_LOITER_ALT_CONTROL)) {
+    if (allows_stick_mixing() && (plane.g2.flight_options & FlightOptions::ENABLE_LOITER_ALT_CONTROL)) {
         plane.update_fbwb_speed_height();
     } else {
         plane.calc_nav_pitch();
@@ -112,7 +112,7 @@ void ModeLoiter::navigate()
 
 void ModeLoiter::update_target_altitude()
 {
-    if (plane.stick_mixing_enabled() && (plane.g2.flight_options & FlightOptions::ENABLE_LOITER_ALT_CONTROL)) {
+    if (allows_stick_mixing() && (plane.g2.flight_options & FlightOptions::ENABLE_LOITER_ALT_CONTROL)) {
         return;
     }
     Mode::update_target_altitude();

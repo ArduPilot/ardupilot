@@ -169,3 +169,21 @@ void Mode::update_target_altitude()
 
     plane.altitude_error_cm = plane.calc_altitude_error_cm();
 }
+
+// Return true if roll/pitch stick mixing is enabled
+bool Mode::allows_roll_pitch_stick_mixing() const
+{
+    // Direct stick mixing functionality has been removed, so as not to remove all stick mixing from the user completely
+    // the old direct option is now used to enable fbw mixing, this is easier than doing a param conversion.
+    if ((plane.g.stick_mixing != StickMixing::FBW) && (plane.g.stick_mixing != StickMixing::DIRECT_REMOVED)) {
+        return false;
+    }
+
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.available() && !quadplane.transition->allow_stick_mixing()) {
+        return false;
+    }
+#endif
+
+    return allows_stick_mixing();
+}

@@ -860,7 +860,6 @@ private:
     void calc_nav_pitch();
     float calc_speed_scaler(void);
     float get_speed_scaler(void) const { return surface_speed_scaler; }
-    bool stick_mixing_enabled(void);
     void stabilize_roll();
     float stabilize_roll_get_roll_out();
     void stabilize_pitch();

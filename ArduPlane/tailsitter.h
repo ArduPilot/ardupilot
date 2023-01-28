@@ -159,7 +159,9 @@ public:
 
     bool show_vtol_view() const override;
 
-    void set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& nav_roll_cd, bool& allow_stick_mixing) override;
+    void set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& nav_roll_cd) override;
+
+    bool allow_stick_mixing() const override;
 
     MAV_VTOL_STATE get_mav_vtol_state() const override;
 

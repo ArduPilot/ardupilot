@@ -880,7 +880,7 @@ bool Tailsitter_Transition::show_vtol_view() const
     return show_vtol;
 }
 
-void Tailsitter_Transition::set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& nav_roll_cd, bool& allow_stick_mixing)
+void Tailsitter_Transition::set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& nav_roll_cd)
 {
     uint32_t now = AP_HAL::millis();
     if (tailsitter.in_vtol_transition(now)) {
@@ -892,7 +892,6 @@ void Tailsitter_Transition::set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& na
         // multiply by 0.1 to convert (degrees/second * milliseconds) to centi degrees
         nav_pitch_cd = constrain_float(vtol_transition_initial_pitch + (tailsitter.transition_rate_vtol * dt) * 0.1f, -8500, 8500);
         nav_roll_cd = 0;
-        allow_stick_mixing = false;
 
     } else if (transition_state == TRANSITION_DONE) {
         // still in FW, reset transition starting point
@@ -908,10 +907,14 @@ void Tailsitter_Transition::set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& na
             } else {
                 nav_pitch_cd = pitch_limit_cd;
                 nav_roll_cd = 0;
-                allow_stick_mixing = false;
             }
         }
     }
+}
+
+bool Tailsitter_Transition::allow_stick_mixing() const
+{
+    return tailsitter.in_vtol_transition(AP_HAL::millis()) || ((transition_state == TRANSITION_DONE) && (fw_limit_start_ms != 0));
 }
 
 bool Tailsitter_Transition::set_VTOL_roll_pitch_limit(int32_t& nav_roll_cd, int32_t& nav_pitch_cd)

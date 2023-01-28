@@ -59,43 +59,29 @@ float Plane::calc_speed_scaler(void)
 
 /*
   return true if the current settings and mode should allow for stick mixing
+  Left here for easy diff, should be moved to mode.cpp in future
  */
-bool Plane::stick_mixing_enabled(void)
+bool Mode::allows_stick_mixing() const
 {
     if (!rc().has_valid_input()) {
         // never stick mix without valid RC
         return false;
     }
 #if AP_FENCE_ENABLED
-    const bool stickmixing = fence_stickmixing();
+    const bool stickmixing = plane.fence_stickmixing();
 #else
     const bool stickmixing = true;
 #endif
-#if HAL_QUADPLANE_ENABLED
-    if (control_mode == &mode_qrtl &&
-        quadplane.poscontrol.get_state() >= QuadPlane::QPOS_POSITION1) {
-        // user may be repositioning
-        return false;
-    }
-    if (quadplane.in_vtol_land_poscontrol()) {
-        // user may be repositioning
-        return false;
-    }
-#endif
-    if (control_mode->does_auto_throttle() && plane.control_mode->does_auto_navigation()) {
+
+    if (does_auto_throttle() && does_auto_navigation()) {
         // we're in an auto mode. Check the stick mixing flag
-        if (g.stick_mixing != StickMixing::NONE &&
-            g.stick_mixing != StickMixing::VTOL_YAW &&
+        if (plane.g.stick_mixing != StickMixing::NONE &&
+            plane.g.stick_mixing != StickMixing::VTOL_YAW &&
             stickmixing) {
             return true;
         } else {
             return false;
         }
-    }
-
-    if (failsafe.rc_failsafe && g.fs_action_short == FS_ACTION_SHORT_FBWA) {
-        // don't do stick mixing in FBWA glide mode
-        return false;
     }
 
     // non-auto mode. Always do stick mixing
@@ -216,7 +202,7 @@ float Plane::stabilize_pitch_get_pitch_out()
  */
 void Plane::stabilize_stick_mixing_direct()
 {
-    if (!stick_mixing_enabled()) {
+    if (!control_mode->allows_stick_mixing()) {
         return;
     }
     float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
@@ -234,23 +220,7 @@ void Plane::stabilize_stick_mixing_direct()
  */
 void Plane::stabilize_stick_mixing_fbw()
 {
-    if (!stick_mixing_enabled() ||
-        control_mode == &mode_acro ||
-        control_mode == &mode_fbwa ||
-        control_mode == &mode_autotune ||
-        control_mode == &mode_fbwb ||
-        control_mode == &mode_cruise ||
-#if HAL_QUADPLANE_ENABLED
-        control_mode == &mode_qstabilize ||
-        control_mode == &mode_qhover ||
-        control_mode == &mode_qloiter ||
-        control_mode == &mode_qland ||
-        control_mode == &mode_qacro ||
-#if QAUTOTUNE_ENABLED
-        control_mode == &mode_qautotune ||
-#endif
-#endif  // HAL_QUADPLANE_ENABLED
-        control_mode == &mode_training) {
+    if (!control_mode->allows_roll_pitch_stick_mixing()) {
         return;
     }
     // do FBW style stick mixing. We don't treat it linearly
@@ -573,10 +543,9 @@ void Plane::stabilize()
     }
 
     uint32_t now = AP_HAL::millis();
-    bool allow_stick_mixing = true;
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.available()) {
-        quadplane.transition->set_FW_roll_pitch(nav_pitch_cd, nav_roll_cd, allow_stick_mixing);
+        quadplane.transition->set_FW_roll_pitch(nav_pitch_cd, nav_roll_cd);
     }
 #endif
 
@@ -616,6 +585,12 @@ void Plane::stabilize()
     } else if (control_mode == &mode_acro) {
         stabilize_acro();
     } else if (control_mode == &mode_stabilize) {
+        bool allow_stick_mixing = true;
+#if HAL_QUADPLANE_ENABLED
+        if (quadplane.available() && !quadplane.transition->allow_stick_mixing()) {
+            allow_stick_mixing = false;
+        }
+#endif
         stabilize_roll();
         stabilize_pitch();
         if (allow_stick_mixing) {
@@ -636,11 +611,7 @@ void Plane::stabilize()
         }
 #endif
     } else {
-        // Direct stick mixing functionality has been removed, so as not to remove all stick mixing from the user completely
-        // the old direct option is now used to enable fbw mixing, this is easier than doing a param conversion.
-        if (allow_stick_mixing && ((g.stick_mixing == StickMixing::FBW) || (g.stick_mixing == StickMixing::DIRECT_REMOVED))) {
-            stabilize_stick_mixing_fbw();
-        }
+        stabilize_stick_mixing_fbw();
         stabilize_roll();
         stabilize_pitch();
         stabilize_yaw();
@@ -750,7 +721,7 @@ void Plane::calc_nav_yaw_course(void)
     // auto-takeoff and landing
     int32_t bearing_error_cd = nav_controller->bearing_error_cd();
     steering_control.steering = steerController.get_steering_out_angle_error(bearing_error_cd);
-    if (stick_mixing_enabled()) {
+    if (control_mode->allows_stick_mixing()) {
         steering_control.steering = channel_rudder->stick_mixing(steering_control.steering);
     }
     steering_control.steering = constrain_int16(steering_control.steering, -4500, 4500);
