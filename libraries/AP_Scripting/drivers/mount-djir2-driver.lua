@@ -661,6 +661,15 @@ function uint32_value(byte3, byte2, byte1, byte0)
   return (((byte3 & 0xFF) << 24) | ((byte2 & 0xFF) << 16) | ((byte1 & 0xFF) << 8) | (byte0 & 0xFF))
 end
 
+-- wrap yaw angle in degrees to value between -180 and +180
+function wrap_180(angle_deg)
+  local res = wrap_360(angle_deg)
+  if res > 180 then
+    res = res - 360
+  end
+  return res
+end
+
 -- the main update function that performs a simplified version of RTL
 function update()
 
@@ -758,7 +767,11 @@ function update()
 
     -- send angle target
     local roll_deg, pitch_deg, yaw_deg, yaw_is_ef = mount:get_angle_target(MOUNT_INSTANCE)
-    if roll_deg and pitch_deg and yaw_deg then
+    if roll_deg and pitch_deg and yaw_deg and yaw_is_ef then
+      if yaw_is_ef then
+        -- convert to body-frame
+        yaw_deg = wrap_180(yaw_deg - math.deg(ahrs:get_yaw()))
+      end
       send_target_angles(roll_deg, pitch_deg, yaw_deg, 1)
       --send_target_rates(roll_deg * 0.1, pitch_deg * 0.1, yaw_deg * 0.1)
       return update, UPDATE_INTERVAL_MS
