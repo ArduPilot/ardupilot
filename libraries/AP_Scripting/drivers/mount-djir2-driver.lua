@@ -83,6 +83,8 @@ local REQUEST_ATTITUDE_CMDSET = 0x0E
 local REQUEST_ATTITUDE_CMDID = 0x02
 local POSITION_CONTROL_CMDSET = 0x0E
 local POSITION_CONTROL_CMDID = 0x00
+local SPEED_CONTROL_CMDSET = 0x0E
+local SPEED_CONTROL_CMDID = 0x01
 local RETURN_CODE = {SUCCESS=0x00, PARSE_ERROR=0x01, EXECUTION_FAILED=0x02, UNDEFINED=0xFF}
 
 -- parsing state definitions
@@ -391,7 +393,44 @@ function send_target_angles(roll_angle_deg, pitch_angle_deg, yaw_angle_deg, time
 end
 
 -- send target rates (in deg/sec) to gimbal
-function send_target_rates(roll_rate_deg, pitch_rate_degs, yaw_rate_degs)
+function send_target_rates(roll_rate_degs, pitch_rate_degs, yaw_rate_degs)
+  -- default argument values
+  roll_rate_degs = roll_rate_degs or 0
+  pitch_rate_degs = pitch_rate_degs or 0
+  yaw_rate_degs = yaw_rate_degs or 0
+  time_sec = time_sec or 2
+
+  --    0x0E, 0x01: Handheld Gimbal Speed Control
+  --      Command frame bytes
+  --       0~1: yaw speed * 10, int16, -3600 to +3600
+  --       2~3: roll speed * 10, int16, -3600 to +3600
+  --       4~5: pitch speed * 10, int16, -3600 to +3600
+  --       6: ctrl_byte, uint8, always use 0x88
+  --             bit0~2 = reserved, must be zero
+  --             bit3 = 0:consider focal length, 1:do not consider focal length
+  --             bit4~6 = reserved, must be zero
+  --             bit7 = 0:release speed control, 1:take over speed control
+  --
+  -- Field number                  1     2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19    20    21    22    23    24    25
+  -- Field name                  SOF  LenL  LenH CmdTyp  Enc   RES   RES   RES  SeqL  SeqH  CrcL  CrcH CmdSet CmdId YawL  YawH  RollL RollH PitL  PitH  Ctrl  CRC32 CRC32 CRC32 CRC32
+  local set_target_speed_msg = {0xAA, 0x19, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0E, 0x01, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x88, 0x00, 0x00, 0x00, 0x00}
+
+  -- set angles
+  set_target_speed_msg[15] = lowbyte(yaw_rate_degs * 10)
+  set_target_speed_msg[16] = highbyte(yaw_rate_degs * 10)
+  set_target_speed_msg[17] = lowbyte(roll_rate_degs * 10)
+  set_target_speed_msg[18] = highbyte(roll_rate_degs * 10)
+  set_target_speed_msg[19] = lowbyte(pitch_rate_degs * 10)
+  set_target_speed_msg[20] = highbyte(pitch_rate_degs * 10)
+
+  -- update_msg_seq_and_crc
+  update_msg_seq_and_crc(set_target_speed_msg)
+
+  -- send bytes
+  send_msg(set_target_speed_msg)
+
+  -- debug
+  gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: rate R:%x %x P:%x %x Y:%x %x", set_target_speed_msg[18], set_target_speed_msg[17], set_target_speed_msg[20], set_target_speed_msg[19], set_target_speed_msg[16], set_target_speed_msg[15]))
 end
 
 -- consume incoming CAN packets
@@ -521,6 +560,18 @@ function parse_byte(b)
             end
           end
 
+          -- parse speed control reply message
+          if (cmdset == SPEED_CONTROL_CMDSET) and (cmdid == SPEED_CONTROL_CMDID) and (parse_length >= 15) then
+            local ret_code = parse_buff[15]
+            gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: ret code:%x", ret_code))
+            if ret_code == RETURN_CODE.SUCCESS then
+              gcs:send_text(MAV_SEVERITY.INFO, "DJIR2: speedcon success")
+            else
+              gcs:send_text(MAV_SEVERITY.INFO, "DJIR2: speedcon fail")
+              execute_fails = execute_fails + 1
+            end
+          end
+
         end
 
        parse_state = PARSE_STATE_WAITING_FOR_HEADER
@@ -605,20 +656,30 @@ function update()
     --local test_msg = {0xAA, 0x1A, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x22, 0x11, 0xA2, 0x42, 0x0E, 0x00, 0x20, 0x00, 0x30, 0x00, 0x40, 0x00, 0x01, 0x14, 0x7B, 0x40, 0x97, 0xBE}
 
     -- position control reply
-    -- Field number      1     2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19
-    -- Field name      SOF  LenL  LenH CmdTyp  Enc   RES   RES   RES  SeqL  SeqH  CrcL  CrcH CmdSet CmdId RetC CRC32 CRC32 CRC32 CRC32
-    local test_msg = {0xAA, 0x13, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x03, 0xEC, 0x0E, 0x00, 0x00, 0xE1, 0xE9, 0x91, 0x7A} -- poscon success
-    local test_msg = {0xAA, 0x13, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x03, 0xEC, 0x0E, 0x00, 0x01, 0x77, 0xD9, 0x96, 0x0D} -- poscon failure
+    --   Field number      1     2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19
+    --   Field name      SOF  LenL  LenH CmdTyp  Enc   RES   RES   RES  SeqL  SeqH  CrcL  CrcH CmdSet CmdId RetC CRC32 CRC32 CRC32 CRC32
+    --local test_msg = {0xAA, 0x13, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x03, 0xEC, 0x0E, 0x00, 0x00, 0xE1, 0xE9, 0x91, 0x7A} -- poscon success
+    --local test_msg = {0xAA, 0x13, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x03, 0xEC, 0x0E, 0x00, 0x01, 0x77, 0xD9, 0x96, 0x0D} -- poscon failure
 
-    -- get attitude reply               reply                                                             RetCde datTy YawL YawH  RollL RollH PitL  PitH  
-    --                                                                                                           1:ang
+    -- speed control
+    -- Field number      1     2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19    20    21    22    23    24    25
+    -- Field name      SOF  LenL  LenH CmdTyp  Enc   RES   RES   RES  SeqL  SeqH  CrcL  CrcH CmdSet CmdId YawL  YawH  RollL RollH PitL  PitH  Ctrl  CRC32 CRC32 CRC32 CRC32
+    --local test_msg = {0xAA, 0x19, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x6E, 0x1E, 0x0E, 0x01, 0xD4, 0xFE, 0x00, 0x00, 0x64, 0x00, 0x88, 0xF3, 0xAA, 0xFF, 0x06}
+
+    -- speed control reply
+    -- Field number      1     2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19
+    -- Field name      SOF  LenL  LenH CmdTyp  Enc   RES   RES   RES  SeqL  SeqH  CrcL  CrcH CmdSet CmdId RetC  CRC32 CRC32 CRC32 CRC32
+    --local test_msg = {0xAA, 0x13, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x7C, 0x0E, 0x01, 0x00, 0x00, 0x1B, 0xDD, 0x45} -- speedcon success
+    --local test_msg = {0xAA, 0x13, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x7C, 0x0E, 0x01, 0x01, 0x96, 0x2B, 0xDA, 0x32} -- speedcon failure
+
+    -- get attitude reply               reply                                                                    1=ang
     -- Field number        1     2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19    20    21    22    23    24    25    26
     --                   SOF  LenL  LenH CmdTyp  Enc   RES   RES   RES  SeqL  SeqH  CrcL  CrcH CmdSet CmdId RetC DatTy  YawL  YawH  RolL  RolH  PitL  PitH  CRC32 CRC32 CRC32 CRC32
     --local test_msg = {0xAA, 0x1A, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x68, 0xDC, 0x0E, 0x02, 0x00, 0x01, 0x9C, 0xFF, 0x96, 0x00, 0xFA, 0x00, 0x27, 0xE1, 0xAD, 0x08}
 
-    for i=1,#test_msg do
-      parse_byte(test_msg[i])
-    end
+    --for i=1,#test_msg do
+    --  parse_byte(test_msg[i])
+    --end
   end
 
   -- request gimbal attitude
@@ -635,6 +696,7 @@ function update()
     --  send_target_angles(roll_deg, pitch_deg, yaw_deg, 1)
     --end
     --send_target_angles(0, 10, 20, 1)
+    send_target_rates(0, 10, -30)
   end
 
   -- get target rate
