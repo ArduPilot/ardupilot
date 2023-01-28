@@ -37,6 +37,10 @@
 #include <Filter/Filter.h>
 #include "SIM_JSON_Master.h"
 
+#ifndef USE_PICOJSON
+#define USE_PICOJSON (CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX)
+#endif
+
 namespace SITL {
 
 /*
