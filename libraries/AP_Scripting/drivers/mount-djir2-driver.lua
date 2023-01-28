@@ -66,8 +66,8 @@
 local INIT_INTERVAL_MS = 3000           -- attempt to initialise the gimbal at this interval
 local UPDATE_INTERVAL_MS = 1            -- update interval in millis
 local REPLY_TIMEOUT_MS = 1000           -- timeout waiting for reply after 1 sec
-local REQUEST_ATTITUDE_INTERVAL_MS = 5000   -- request attitude at this interval
-local SET_ATTITUDE_INTERVAL_MS = 5000   -- set attitude at this interval
+local REQUEST_ATTITUDE_INTERVAL_MS = 1000   -- request attitude at this interval
+local SET_ATTITUDE_INTERVAL_MS = 1000   -- set attitude at this interval
 local MOUNT_INSTANCE = 0                -- always control the first mount/gimbal
 local SEND_FRAMEID = 0x223              -- send CAN messages with this frame id
 local RECEIVE_FRAMEID = 0x222           -- receive CAN messages with this frame id
