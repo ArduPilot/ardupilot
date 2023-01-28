@@ -295,8 +295,12 @@ void AP_RCProtocol_CRSF::update(void)
 
     // never received RC frames, but have received CRSF frames so make sure we give the telemetry opportunity to run
     uint32_t now = AP_HAL::micros();
-    if (_last_frame_time_us > 0 && (!get_rc_frame_count() || !is_tx_active())
-        && now - _last_frame_time_us > CRSF_INTER_FRAME_TIME_US_250HZ) {
+    if (
+#if AP_SCRIPTING_ENABLED
+        (lua_push_buffer && lua_push_buffer->len > 0) || //if lua lua_push_buffer is filled, then push it
+#endif
+        (_last_frame_time_us > 0 && (!get_rc_frame_count() || !is_tx_active())
+        && now - _last_frame_time_us > CRSF_INTER_FRAME_TIME_US_250HZ) ) {
         process_telemetry(false);
         _last_frame_time_us = now;
     }
@@ -384,10 +388,24 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
             process_link_stats_tx_frame((uint8_t*)&_frame.payload);
             break;
         default:
+#if AP_SCRIPTING_ENABLED
+            if (_frame.type >= CRSF_FRAMETYPE_PARAM_DEVICE_PING && (_frame.payload[0] == CRSF_ADDRESS_FLIGHT_CONTROLLER || _frame.payload[0] == CRSF_ADDRESS_BROADCAST)) {
+                process_lua_pop();
+            }
+#endif
             break;
     }
+
+#if AP_SCRIPTING_ENABLED
+     // send lua push packet
+     if (lua_push_buffer && lua_push_buffer->len > 0) {
+         process_telemetry();
+         return rc_active;
+     }
+#endif
+
 #if HAL_CRSF_TELEM_ENABLED && !APM_BUILD_TYPE(APM_BUILD_iofirmware)
-    if (AP_CRSF_Telem::process_frame(FrameType(_frame.type), (uint8_t*)&_frame.payload)) {
+    if (telemetry_enabled && AP_CRSF_Telem::process_frame(FrameType(_frame.type), (uint8_t*)&_frame.payload)) {
         process_telemetry();
     }
     // process any pending baudrate changes before reading another frame
@@ -477,31 +495,42 @@ void AP_RCProtocol_CRSF::decode_variable_bit_channels(const uint8_t* payload, ui
     }
 }
 
-// send out telemetry
+// send out telemetry, returns true if telemetry frame was sent
 bool AP_RCProtocol_CRSF::process_telemetry(bool check_constraint)
 {
-
     AP_HAL::UARTDriver *uart = get_current_UART();
     if (!uart) {
         return false;
     }
 
-    if (!telem_available) {
-#if HAL_CRSF_TELEM_ENABLED && !APM_BUILD_TYPE(APM_BUILD_iofirmware)
-        if (AP_CRSF_Telem::get_telem_data(&_telemetry_frame, is_tx_active())) {
-            telem_available = true;
-        } else {
-            return false;
-        }
-#else
-        return false;
-#endif
-    }
-    write_frame(&_telemetry_frame);
-    // get fresh telem_data in the next call
-    telem_available = false;
+    bool telem_available = false;
 
-    return true;
+#if AP_SCRIPTING_ENABLED
+    //first push lua data (if available), then other telem data
+    if (lua_push_buffer && lua_push_buffer->sem.take_nonblocking()) {
+        if (lua_push_buffer->len > 0) {
+            memcpy(_telemetry_frame.payload, lua_push_buffer->data, lua_push_buffer->len);
+            _telemetry_frame.device_address = AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER;  //sync byte 0xC8
+            _telemetry_frame.length = lua_push_buffer->len + 2;
+            _telemetry_frame.type = lua_push_buffer->type;
+            lua_push_buffer->len = 0;
+            telem_available = true;
+        }
+        lua_push_buffer->sem.give();
+    }
+#endif
+
+#if HAL_CRSF_TELEM_ENABLED && !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+    if (!telem_available) {
+        telem_available = AP_CRSF_Telem::get_telem_data(&_telemetry_frame, is_tx_active());
+    }
+#endif
+
+    if (telem_available) {
+        write_frame(&_telemetry_frame);
+    }
+
+    return telem_available;
 }
 
 // process link statistics to get RSSI
@@ -627,3 +656,18 @@ namespace AP {
         return AP_RCProtocol_CRSF::get_singleton();
     }
 };
+
+#if AP_SCRIPTING_ENABLED
+//save data frame to buffer for lua, overwrite any existing buffer data
+void AP_RCProtocol_CRSF::process_lua_pop()
+{
+    if (lua_pop_buffer && _frame.length > 2 && _frame.length <= sizeof(lua_buffer_t::data) + 2) {
+        if (lua_pop_buffer->sem.take_nonblocking()) {
+            lua_pop_buffer->type = _frame.type;
+            memcpy(lua_pop_buffer->data, _frame.payload, _frame.length - 2); //copy payload without crc
+            lua_pop_buffer->len = _frame.length - 2;
+            lua_pop_buffer->sem.give();
+        }
+    }
+}
+#endif

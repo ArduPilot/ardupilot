@@ -279,6 +279,18 @@ public:
     // return the protocol string
     const char* get_protocol_string(ProtocolType protocol) const;
 
+    struct lua_buffer_t {
+        HAL_Semaphore sem;
+        uint8_t type;
+        uint8_t len = 0;
+        char data[60]; // largest possible frame is 60
+    };
+#if AP_SCRIPTING_ENABLED
+    lua_buffer_t *lua_pop_buffer = NULL;
+    lua_buffer_t *lua_push_buffer = NULL;
+#endif
+    bool telemetry_enabled = true;
+
 private:
     struct Frame _frame;
     struct Frame _telemetry_frame;
@@ -311,7 +323,6 @@ private:
     uint32_t _last_uart_start_time_ms;
     uint32_t _last_rx_frame_time_us;
     uint32_t _start_frame_time_us;
-    bool telem_available;
     uint32_t _new_baud_rate;
     bool _crsf_v3_active;
 
@@ -323,6 +334,9 @@ private:
     static const uint16_t RF_MODE_RATES[RFMode::RF_MODE_MAX_MODES];
 
     AP_HAL::UARTDriver *_uart;
+#if AP_SCRIPTING_ENABLED
+    void process_lua_pop();
+#endif
 };
 
 namespace AP {

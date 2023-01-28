@@ -10,6 +10,7 @@
 
 #include <AP_Scripting/AP_Scripting.h>
 #include <string.h>
+#include <AP_RCProtocol/AP_RCProtocol_CRSF.h>
 
 extern "C" {
 #include "lua/src/lmem.h"
@@ -539,4 +540,89 @@ int SRV_Channels_get_safety_state(lua_State *L) {
     const bool data = hal.util->safety_switch_state() !=  AP_HAL::Util::SAFETY_ARMED;
     lua_pushboolean(L, data);
     return 1;
+}
+
+// local cmd, data = crsf.pop() -- get CRSF frame or nil if no data received
+int lua_crsf_pop(lua_State *L) {
+    // Allocate buffer on first call to this function
+    AP_RCProtocol_CRSF *crsf = AP_RCProtocol_CRSF::get_singleton();
+    if (!crsf->lua_pop_buffer) {
+        crsf->lua_pop_buffer = new AP_RCProtocol_CRSF::lua_buffer_t();
+    }
+    AP_RCProtocol_CRSF::lua_buffer_t *buf = crsf->lua_pop_buffer;
+    if (!buf) {
+        return luaL_error(L, "Out of memory");
+    }
+
+    // Move crsf buffer to lua
+    int retval = 0;
+    if (buf->sem.take_nonblocking()) {
+        if (buf->len > 0) {
+            lua_pushinteger(L, buf->type);
+            lua_pushlstring(L, buf->data, buf->len);
+            buf->len = 0;
+            retval = 2;
+        }
+        buf->sem.give();
+    }
+    return retval;
+}
+
+// local result = crsf.push(cmd, data) -- push CRSF frame, returns true on success
+int lua_crsf_push(lua_State *L) {
+    // Allocate buffer on first call to this function
+    AP_RCProtocol_CRSF *crsf = AP_RCProtocol_CRSF::get_singleton();
+    if (!crsf->lua_push_buffer) {
+        crsf->lua_push_buffer = new AP_RCProtocol_CRSF::lua_buffer_t();
+    }
+    AP_RCProtocol_CRSF::lua_buffer_t *buf = crsf->lua_push_buffer;
+    if (!buf) {
+        return luaL_error(L, "Out of memory");
+    }
+
+    //return buffer status when called without arguments, returns true if buffer empty
+    if(lua_gettop(L) == 0) {
+        lua_pushboolean(L, (buf->len == 0));
+        return 1;
+    }
+
+    //get lua arguments
+    uint8_t push_type = get_uint8_t(L, 1);
+    size_t push_len;
+    const uint8_t *push_data = (uint8_t*)luaL_tolstring(L, 2, &push_len);
+
+    //check data size
+    if (push_len > sizeof(AP_RCProtocol_CRSF::lua_buffer_t::data)) {
+        return luaL_error(L, "Data too long");
+    }
+
+    //check no data
+    if (push_len == 0) {
+        lua_pushboolean(L,false);
+        return 1;
+    }
+
+    //move lua data to crsf buffer
+    bool pushed = false;
+    if (buf->sem.take_nonblocking()) {
+        buf->type = push_type;
+        buf->len = push_len;
+        memcpy(buf->data, push_data, push_len);
+        pushed = true;
+        buf->sem.give();
+    }
+    lua_pushboolean(L, pushed);
+    return 1;
+}
+
+// get/set telemetry_enabled flag
+int lua_crsf_telemetry_enabled(lua_State *L) {
+    AP_RCProtocol_CRSF *crsf = AP_RCProtocol_CRSF::get_singleton();
+    if (lua_gettop(L) == 0) {
+        lua_pushboolean(L, crsf->telemetry_enabled);
+        return 1;
+    }
+    bool enable = lua_toboolean(L, 1);
+    crsf->telemetry_enabled = enable;
+    return 0;
 }

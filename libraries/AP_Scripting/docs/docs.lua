@@ -2449,3 +2449,19 @@ function dirlist(directoryname) end
 --desc
 --@param filename
 function remove(filename) end
+
+-- Send CRSF frame
+---@param cmd integer -- byte CRSF type
+---@param data string -- byte data to send
+---@return boolean -- data was pushed to CRSF buffer
+function crsf:push(cmd,data) end
+
+-- Receive CRSF frame
+---@return integer|nil -- received byte CRSF type or nil if no data received
+---@return string|nil -- received CRSF data or nil if no data received
+function crsf:pop() end
+
+-- Get/set Ardupilot CRSF Telemetry enabled state
+---@param enable boolean|nil
+---@return boolean -- state of the flag
+function crsf:telemetry_enabled(enable)
