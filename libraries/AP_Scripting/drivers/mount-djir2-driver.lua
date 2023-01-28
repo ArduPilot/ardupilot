@@ -358,6 +358,15 @@ function send_target_angles(roll_angle_deg, pitch_angle_deg, yaw_angle_deg, time
   yaw_angle_deg = yaw_angle_deg or 0
   time_sec = time_sec or 2
 
+  -- ensure angles are integers
+  roll_angle_deg = math.floor(roll_angle_deg + 0.5)
+  pitch_angle_deg = math.floor(pitch_angle_deg + 0.5)
+  yaw_angle_deg = math.floor(yaw_angle_deg + 0.5)
+  time_sec = math.floor(time_sec + 0.5)
+
+  -- debug
+  gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: ang R:%f P:%f Y:%f t:%f", roll_angle_deg, pitch_angle_deg, yaw_angle_deg, time_sec))
+
   --    0x0E, 0x00: Handheld Gimbal Position Control
   --      Command frame bytes
   --       0~1: yaw angle * 10, int16, -1800 to +1800
@@ -401,6 +410,11 @@ function send_target_rates(roll_rate_degs, pitch_rate_degs, yaw_rate_degs)
   pitch_rate_degs = pitch_rate_degs or 0
   yaw_rate_degs = yaw_rate_degs or 0
   time_sec = time_sec or 2
+
+  -- ensure rates are integers
+  roll_rate_degs = math.floor(roll_rate_degs + 0.5)
+  pitch_rate_degs = math.floor(pitch_rate_degs + 0.5)
+  yaw_rate_degs = math.floor(yaw_rate_degs + 0.5)
 
   --    0x0E, 0x01: Handheld Gimbal Speed Control
   --      Command frame bytes
@@ -493,7 +507,7 @@ function parse_byte(b)
           gcs:send_text(MAV_SEVERITY.CRITICAL, string.format("DJIR2: unexpected len:%u", parse_length))
         else
           parse_state = PARSE_STATE_WAITING_FOR_DATA
-          gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: good len:%d", parse_length))
+          --gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: good len:%d", parse_length))
         end
       end
       do return end
@@ -522,13 +536,13 @@ function parse_byte(b)
 
         -- check if reply
         local cmd_type_reply = (parse_buff[4] & 0x20) > 0
-        gcs:send_text(MAV_SEVERITY.INFO, "DJIR2: reply:" .. tostring(cmd_type_reply))
+        --gcs:send_text(MAV_SEVERITY.INFO, "DJIR2: reply:" .. tostring(cmd_type_reply))
 
         -- if message has at least 2 bytes of data, check cmdid and cmdset
         if cmd_type_reply and parse_length >= SERIAL_PACKET_LENGTH_MIN + 2 then
           local cmdset = parse_buff[13]
           local cmdid = parse_buff[14]
-          gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: cmdset:%x cmdid:%x", cmdset, cmdid))
+          gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR2: cmdset:%x cmdid:%x len:%d", cmdset, cmdid, parse_length))
   -- Field number                     1     2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19
   --                                SOF  LenL  LenH CmdTyp  Enc   RES   RES   RES  SeqL  SeqH  CrcL  CrcH CmdSet CmdId Data1 CRC32 CRC32 CRC32 CRC32
   -- local request_attitude_msg = {0xAA, 0x13, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x0E, 0x02, 0x01, 0x00, 0x00, 0x00, 0x00}
@@ -574,6 +588,9 @@ function parse_byte(b)
             end
           end
 
+        else
+          -- not attempting to parse
+          gcs:send_text(MAV_SEVERITY.INFO, "DJIR2: skipped reply:" .. tostring(cmd_type_reply) .. "len:" .. tostring(parse_length))
         end
 
        parse_state = PARSE_STATE_WAITING_FOR_HEADER
@@ -696,11 +713,11 @@ function update()
 
     -- send angle target
     --local roll_deg, pitch_deg, yaw_deg, yaw_is_ef = mount:get_angle_target(MOUNT_INSTANCE)
-    --if roll_degs and pitch_degs and yaw_degs then
+    --if roll_deg and pitch_deg and yaw_deg then
     --  send_target_angles(roll_deg, pitch_deg, yaw_deg, 1)
     --  return update, UPDATE_INTERVAL_MS
     --end
-    send_target_angles(0, 10, 20, 1)
+    --send_target_angles(0, 10, 20, 1)
 
     -- send rate target
     --local roll_degs, pitch_degs, yaw_degs, yaw_is_ef = mount:get_rate_target(MOUNT_INSTANCE)
