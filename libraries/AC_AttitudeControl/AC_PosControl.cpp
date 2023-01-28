@@ -4,7 +4,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Motors/AP_Motors.h>    // motors library
 #include <AP_Vehicle/AP_Vehicle_Type.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_Scheduler/AP_Scheduler.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -518,7 +518,7 @@ void AC_PosControl::init_xy_controller()
     init_ekf_xy_reset();
 
     // initialise z_controller time out
-    _last_update_xy_us = AP::ins().get_last_update_usec();
+    _last_update_xy_ticks = AP::scheduler().ticks32();
 }
 
 /// input_accel_xy - calculate a jerk limited path from the current position, velocity and acceleration to an input acceleration.
@@ -589,8 +589,8 @@ void AC_PosControl::stop_vel_xy_stabilisation()
 // is_active_xy - returns true if the xy position controller has bee n run in the previous 5 loop times
 bool AC_PosControl::is_active_xy() const
 {
-    const uint32_t dt_us = AP::ins().get_last_update_usec() - _last_update_xy_us;
-    return dt_us <= _dt * 1500000.0;
+    const uint32_t dt_ticks = AP::scheduler().ticks32() - _last_update_xy_ticks;
+    return dt_ticks <= 1;
 }
 
 /// update_xy_controller - runs the horizontal position controller correcting position, velocity and acceleration errors.
@@ -610,7 +610,7 @@ void AC_PosControl::update_xy_controller()
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         }
     }
-    _last_update_xy_us = AP::ins().get_last_update_usec();
+    _last_update_xy_ticks = AP::scheduler().ticks32();
 
     float ahrsGndSpdLimit, ahrsControlScaleXY;
     AP::ahrs().getControlLimits(ahrsGndSpdLimit, ahrsControlScaleXY);
@@ -779,7 +779,7 @@ void AC_PosControl::init_z_controller()
     init_ekf_z_reset();
 
     // initialise z_controller time out
-    _last_update_z_us = AP::ins().get_last_update_usec();
+    _last_update_z_ticks = AP::scheduler().ticks32();
 }
 
 /// input_accel_z - calculate a jerk limited path from the current position, velocity and acceleration to an input acceleration.
@@ -904,8 +904,8 @@ void AC_PosControl::update_pos_offset_z(float pos_offset_z)
 // is_active_z - returns true if the z position controller has been run in the previous 5 loop times
 bool AC_PosControl::is_active_z() const
 {
-    const uint32_t dt_us = AP::ins().get_last_update_usec() - _last_update_z_us;
-    return dt_us <= _dt * 1500000.0;
+    const uint32_t dt_ticks = AP::scheduler().ticks32() - _last_update_z_ticks;
+    return dt_ticks <= 1;
 }
 
 /// update_z_controller - runs the vertical position controller correcting position, velocity and acceleration errors.
@@ -925,7 +925,7 @@ void AC_PosControl::update_z_controller()
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         }
     }
-    _last_update_z_us = AP::ins().get_last_update_usec();
+    _last_update_z_ticks = AP::scheduler().ticks32();
 
     // calculate the target velocity correction
     float pos_target_zf = _pos_target.z;
