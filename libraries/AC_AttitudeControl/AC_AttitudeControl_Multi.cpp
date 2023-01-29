@@ -232,6 +232,13 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THR_MIX_MAN", 6, AC_AttitudeControl_Multi, _thr_mix_man, AC_ATTITUDE_CONTROL_MAN_DEFAULT),
 
+    // @Param: THR_G_BOOST
+    // @DisplayName: Throttle-gain boost
+    // @Description: Throttle-gain boost ratio. A value of 0 means no boosting is applied, a value of 1 means full boosting is applied. Describes the ratio increase that is applied to angle P and PD on pitch and roll.
+    // @Range: 0 1
+    // @User: Advanced
+    AP_GROUPINFO("THR_G_BOOST", 7, AC_AttitudeControl_Multi, _throttle_gain_boost, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -312,6 +319,19 @@ float AC_AttitudeControl_Multi::get_throttle_avg_max(float throttle_in)
     return MAX(throttle_in, throttle_in * MAX(0.0f, 1.0f - _throttle_rpy_mix) + _motors.get_throttle_hover() * _throttle_rpy_mix);
 }
 
+// update_throttle_gain_boost - boost angle_p/pd each cycle on high throttle slew
+void AC_AttitudeControl_Multi::update_throttle_gain_boost()
+{
+    // Boost PD and Angle P on very rapid throttle changes
+    if (_motors.get_throttle_slew_rate() > AC_ATTITUDE_CONTROL_THR_G_BOOST_THRESH) {
+        const float pd_boost = constrain_float(_throttle_gain_boost + 1.0f, 1.0, 2.0);
+        set_PD_scale_mult(Vector3f(pd_boost, pd_boost, 1.0f));
+
+        const float angle_p_boost = constrain_float((_throttle_gain_boost + 1.0f) * (_throttle_gain_boost + 1.0f), 1.0, 4.0);
+        set_angle_P_scale_mult(Vector3f(angle_p_boost, angle_p_boost, 1.0f));
+    }
+}
+
 // update_throttle_rpy_mix - slew set_throttle_rpy_mix to requested value
 void AC_AttitudeControl_Multi::update_throttle_rpy_mix()
 {
@@ -342,18 +362,15 @@ void AC_AttitudeControl_Multi::update_throttle_rpy_mix()
 
 void AC_AttitudeControl_Multi::rate_controller_run()
 {
+    // boost angle_p/pd each cycle on high throttle slew
+    update_throttle_gain_boost();
+
     // move throttle vs attitude mixing towards desired (called from here because this is conveniently called on every iteration)
     update_throttle_rpy_mix();
 
     _ang_vel_body += _sysid_ang_vel_body;
 
     Vector3f gyro_latest = _ahrs.get_gyro_latest();
-
-    // Boost PD on very rapid throttle changes
-    if (_motors.get_throttle_slew_rate() > AC_ATTITUDE_CONTROL_THR_G_BOOST_THRESH) {
-        const float pd_boost = constrain_float(_throttle_gain_boost + 1.0f, 1.0, 2.0);
-        set_PD_scale_mult(Vector3f(pd_boost, pd_boost, 1.0f));
-    }
 
     _motors.set_roll(get_rate_roll_pid().update_all(_ang_vel_body.x, gyro_latest.x,  _dt, _motors.limit.roll, _pd_scale.x) + _actuator_sysid.x);
     _motors.set_roll_ff(get_rate_roll_pid().get_ff());
