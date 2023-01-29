@@ -344,21 +344,23 @@ void Rover::ahrs_update()
  */
 void Rover::gcs_failsafe_check(void)
 {
-    if (!g.fs_gcs_enabled) {
+    if (g.fs_gcs_enabled == FS_GCS_DISABLED) {
         // gcs failsafe disabled
         return;
     }
 
-    // check for updates from GCS within 2 seconds
     const uint32_t gcs_last_seen_ms = gcs().sysid_myggcs_last_seen_time_ms();
-    bool do_failsafe = true;
     if (gcs_last_seen_ms == 0) {
         // we've never seen the GCS, so we never failsafe for not seeing it
-        do_failsafe = false;
-    } else if (millis() - gcs_last_seen_ms <= 2000) {
-        // we've never seen the GCS in the last couple of seconds, so all good
-        do_failsafe = false;
+        return;
     }
+
+    // calc time since last gcs update
+    // note: this only looks at the heartbeat from the device id set by g.sysid_my_gcs
+    const uint32_t last_gcs_update_ms = millis() - gcs_last_seen_ms;
+    const uint32_t gcs_timeout_ms = uint32_t(constrain_float(g2.fs_gcs_timeout * 1000.0f, 0.0f, UINT32_MAX));
+
+    const bool do_failsafe = last_gcs_update_ms >= gcs_timeout_ms ? true : false;
 
     failsafe_trigger(FAILSAFE_EVENT_GCS, "GCS", do_failsafe);
 }
