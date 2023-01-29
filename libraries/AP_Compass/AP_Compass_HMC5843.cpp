@@ -21,9 +21,9 @@
  *       Sensor is initialized in Continuos mode (10Hz)
  *
  */
-#include <AP_HAL/AP_HAL.h>
+#include "AP_Compass_HMC5843.h"
 
-#ifdef HAL_COMPASS_HMC5843_I2C_ADDR
+#if AP_COMPASS_HMC5843_ENABLED
 
 #include <assert.h>
 #include <utility>
@@ -31,8 +31,7 @@
 
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/utility/sparse-endian.h>
-
-#include "AP_Compass_HMC5843.h"
+#include <AP_HAL/AP_HAL.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_InertialSensor/AuxiliaryBus.h>
 
@@ -587,4 +586,4 @@ uint32_t AP_HMC5843_BusDriver_Auxiliary::get_bus_id(void) const
     return _bus->get_bus_id();
 }
 
-#endif
+#endif  // AP_COMPASS_HMC5843_ENABLED
