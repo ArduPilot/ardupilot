@@ -109,6 +109,8 @@ public:
     float get_min_retry_time_sec() const { return _retry_timeout_sec; }
     AC_PrecLand_StateMachine::RetryAction get_retry_behaviour() const { return static_cast<AC_PrecLand_StateMachine::RetryAction>(_retry_behave.get()); }
 
+    bool allow_precland_after_reposition() const { return _options & PLND_OPTION_PRECLAND_AFTER_REPOSITION; }
+
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -130,6 +132,7 @@ private:
     enum PLndOptions {
         PLND_OPTION_DISABLED = 0,
         PLND_OPTION_MOVING_TARGET = (1 << 0),
+        PLND_OPTION_PRECLAND_AFTER_REPOSITION = (1 << 1),
     };
 
     // check the status of the target
