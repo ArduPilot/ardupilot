@@ -163,9 +163,9 @@ private:
     float           _fast_idle_timer;             // cooldown timer variable
     uint8_t         _governor_fault_count;        // variable for tracking governor speed sensor faults
     float           _governor_torque_reference;   // governor reference for load calculations
-    bool            _autorotating;
-    bool            _bailing_out;
-    float           _idle_throttle;
+    bool            _autorotating;                // flag that holds the status of autorotation
+    bool            _bailing_out;                 // flag that holds the status of bail out(power engagement)
+    float           _idle_throttle;               // current idle throttle setting
 
     // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
     void            update_rotor_ramp(float rotor_ramp_input, float dt);
