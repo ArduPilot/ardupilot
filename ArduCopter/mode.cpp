@@ -668,6 +668,13 @@ void Mode::land_run_horizontal_control()
                     AP::logger().Write_Event(LogEvent::LAND_REPO_ACTIVE);
                 }
                 copter.ap.land_repo_active = true;
+#if PRECISION_LANDING == ENABLED
+            } else {
+                // no override right now, check if we should allow precland
+                if (copter.precland.allow_precland_after_reposition()) {
+                    copter.ap.land_repo_active = false;
+                }
+#endif
             }
         }
     }
