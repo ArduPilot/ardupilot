@@ -433,6 +433,9 @@ public:
 
     // manual mode steering expo
     AP_Float manual_steering_expo;
+
+    // FS GCS timeout trigger time
+    AP_Float fs_gcs_timeout;
 };
 
 extern const AP_Param::Info var_info[];
