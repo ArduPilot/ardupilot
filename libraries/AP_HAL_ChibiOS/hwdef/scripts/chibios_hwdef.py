@@ -1082,6 +1082,14 @@ def write_mcu_config(f):
     elif get_mcu_config('EXPECTED_CLOCK', required=True):
         f.write('#define HAL_EXPECTED_SYSCLOCK %u\n' % get_mcu_config('EXPECTED_CLOCK'))
 
+    if get_mcu_config('EXPECTED_CLOCKS', required=False):
+        clockrate = get_config('MCU_CLOCKRATE_MHZ', required=False)
+        for mcu_clock, mcu_clock_speed in get_mcu_config('EXPECTED_CLOCKS'):
+            if (mcu_clock == 'STM32_HCLK' or mcu_clock == 'STM32_SYS_CK') and clockrate:
+                f.write('#define HAL_EXPECTED_%s %u\n' % (mcu_clock, int(clockrate) * 1000000))
+            else:
+                f.write('#define HAL_EXPECTED_%s %u\n' % (mcu_clock, mcu_clock_speed))
+
     env_vars['CORTEX'] = cortex
 
     if not args.bootloader:
