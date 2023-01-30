@@ -45,10 +45,10 @@ private:
     void update_serial_LEDs(void);
     static void *update_thread_start(void *obj);
 
-    static constexpr uint8_t height = 50;
+    static constexpr uint8_t height = 100;
     static constexpr uint8_t width = height;
 
-    static constexpr uint8_t serialLED_size = 16;
+    static constexpr uint8_t serialLED_size = 32;
 
     enum class brightness {
         LED_LOW    = 0x33,
