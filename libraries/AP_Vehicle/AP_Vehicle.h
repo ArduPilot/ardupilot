@@ -55,6 +55,7 @@
 #include <SITL/SITL.h>
 #include <AP_CustomRotations/AP_CustomRotations.h>
 #include <AP_AIS/AP_AIS.h>
+#include <AP_NMEA_Output/AP_NMEA_Output.h>
 #include <AC_Fence/AC_Fence.h>
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
 #include <Filter/LowPassFilter.h>
@@ -350,6 +351,10 @@ protected:
 #if AP_AIS_ENABLED
     // Automatic Identification System - for tracking sea-going vehicles
     AP_AIS ais;
+#endif
+
+#if HAL_NMEA_OUTPUT_ENABLED
+    AP_NMEA_Output nmea;
 #endif
 
 #if AP_FENCE_ENABLED
