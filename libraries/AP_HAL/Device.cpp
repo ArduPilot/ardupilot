@@ -214,11 +214,11 @@ void AP_HAL::Device::set_read_flag(uint8_t flag)
 
 
 /**
- * make a bus id given bus type, bus number, bus address and
+ * make a device id given bus type, bus number, bus address and
  * device type This is for use by devices that do not use one of
  * the standard HAL Device types, such as UAVCAN devices
  */
-uint32_t AP_HAL::Device::make_bus_id(enum BusType bus_type, uint8_t bus, uint8_t address, uint8_t devtype) {
+uint32_t AP_HAL::Device::make_dev_id(enum BusType bus_type, uint8_t bus, uint8_t address, uint8_t devtype) {
     union DeviceId d {};
     d.devid_s.bus_type = bus_type;
     d.devid_s.bus = bus;
