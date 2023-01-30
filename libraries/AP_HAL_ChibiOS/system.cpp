@@ -53,6 +53,26 @@ static_assert(HAL_EXPECTED_SYSCLOCK == STM32_HCLK, "unexpected STM32_HCLK value"
 #define AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED 1
 #endif
 
+#define QUOTE(str) #str
+#define EXPAND_AND_QUOTE(str) QUOTE(str)
+#define ASSERT_CLOCK(clk) static_assert(HAL_EXPECTED_ ##clk == (clk), "unexpected " #clk " value: '" EXPAND_AND_QUOTE(clk) "'")
+
+#if defined(HAL_EXPECTED_STM32_SYS_CK) && defined(STM32_SYS_CK)
+ASSERT_CLOCK(STM32_SYS_CK);
+#endif
+#if defined(HAL_EXPECTED_STM32_HCLK) && defined(STM32_HCLK)
+ASSERT_CLOCK(STM32_HCLK);
+#endif
+#if defined(HAL_EXPECTED_STM32_SDMMC1CLK) && defined(STM32_SDMMC1CLK)
+ASSERT_CLOCK(STM32_SDMMC1CLK);
+#endif
+#if defined(HAL_EXPECTED_STM32_SPI45CLK) && defined(STM32_SPI45CLK)
+ASSERT_CLOCK(STM32_SPI45CLK);
+#endif
+#if defined(HAL_EXPECTED_STM32_FDCANCLK) && defined(STM32_FDCANCLK)
+ASSERT_CLOCK(STM32_FDCANCLK);
+#endif
+
 extern const AP_HAL::HAL& hal;
 extern "C"
 {

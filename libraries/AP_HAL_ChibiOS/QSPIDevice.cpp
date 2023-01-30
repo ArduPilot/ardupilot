@@ -45,9 +45,6 @@ static const struct QSPIDriverInfo {
 QSPIDesc QSPIDeviceManager::device_table[] = { HAL_QSPI_DEVICE_LIST };
 
 // Check clock sanity during runtime
-#define XSTR(x) STR(x)
-#define STR(x) #x
-
 #if (STM32_QSPICLK < HAL_QSPI1_CLK)
 #error "Flash speed must not be greater than QSPI Clock"
 #endif
