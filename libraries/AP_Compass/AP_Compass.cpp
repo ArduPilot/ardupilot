@@ -1319,10 +1319,6 @@ void Compass::_detect_backends(void)
         CHECK_UNREG_LIMIT_RETURN;
         break;
 
-    case AP_BoardConfig::PX4_BOARD_PCNC1:
-        ADD_BACKEND(DRIVER_BMM150,
-                    AP_Compass_BMM150::probe(GET_I2C_DEVICE(0, 0x10), false, ROTATION_NONE));
-        break;
     case AP_BoardConfig::VRX_BOARD_BRAIN54:
     case AP_BoardConfig::VRX_BOARD_BRAIN51: {
         // external i2c bus
