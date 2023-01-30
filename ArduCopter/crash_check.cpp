@@ -345,11 +345,11 @@ void Copter::parachute_release()
 
 // parachute_manual_release - trigger the release of the parachute, after performing some checks for pilot error
 //   checks if the vehicle is landed 
-void Copter::parachute_manual_release()
+bool Copter::parachute_manual_release()
 {
     // exit immediately if parachute is not enabled
     if (!parachute.enabled()) {
-        return;
+        return false;
     }
 
     // do not release if vehicle is landed
@@ -358,7 +358,7 @@ void Copter::parachute_manual_release()
         // warn user of reason for failure
         gcs().send_text(MAV_SEVERITY_INFO,"Parachute: Landed");
         AP::logger().Write_Error(LogErrorSubsystem::PARACHUTES, LogErrorCode::PARACHUTE_LANDED);
-        return;
+        return false;
     }
 
     // do not release if we are landed or below the minimum altitude above home
@@ -366,11 +366,13 @@ void Copter::parachute_manual_release()
         // warn user of reason for failure
         gcs().send_text(MAV_SEVERITY_ALERT,"Parachute: Too low");
         AP::logger().Write_Error(LogErrorSubsystem::PARACHUTES, LogErrorCode::PARACHUTE_TOO_LOW);
-        return;
+        return false;
     }
 
     // if we get this far release parachute
     parachute_release();
+
+    return true;
 }
 
 #endif // PARACHUTE == ENABLED

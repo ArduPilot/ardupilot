@@ -476,6 +476,15 @@ void Copter::do_failsafe_action(FailsafeAction action, ModeReason reason){
         case FailsafeAction::AUTO_DO_LAND_START:
             set_mode_auto_do_land_start_or_RTL(reason);
             break;
+        case FailsafeAction::PARACHUTE_LAND:
+#if PARACHUTE == ENABLED
+            if (parachute_manual_release()) {
+                break;
+            }
+#endif
+            // fall through to LAND if parachute not available or cannot be released
+            set_mode_land_with_pause(reason);
+            break;
     }
 
 #if AP_GRIPPER_ENABLED
