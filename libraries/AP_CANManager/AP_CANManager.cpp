@@ -99,6 +99,62 @@ const AP_Param::GroupInfo AP_CANManager::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LOGLEVEL", 8, AP_CANManager, _loglevel, AP_CANManager::LOG_NONE),
 
+    // @Param: ID_1
+    // @DisplayName: ID_1
+    // @Description: CAN ID from 1 -16 could be checked if to have a pre arm condition  
+    // @Bitmask: 0 16
+    // @User: Advanced
+    AP_GROUPINFO("ID_1", 9, AP_CANManager, _can_id_check_1, 0),
+
+    // @Param: ID_2
+    // @DisplayName: ID_2
+    // @Description: CAN ID from 17 - 32 could be checked if to have a pre arm condition  
+    // @Bitmask: 0 16
+    // @User: Advanced
+    AP_GROUPINFO("ID_2", 10, AP_CANManager, _can_id_check_2, 0),
+
+    // @Param: ID_3
+    // @DisplayName: ID_3
+    // @Description: CAN ID from 33 - 48 could be checked if to have a pre arm condition  
+    // @Bitmask: 0 16
+    // @User: Advanced
+    AP_GROUPINFO("ID_3", 11, AP_CANManager, _can_id_check_3, 0),
+
+    // @Param: ID_4
+    // @DisplayName: ID_4
+    // @Description: CAN ID from 49 - 64 could be checked if to have a pre arm condition  
+    // @Bitmask: 0 16
+    // @User: Advanced
+    AP_GROUPINFO("ID_4", 12, AP_CANManager, _can_id_check_4, 0),
+
+    // @Param: ID_5
+    // @DisplayName: ID_5
+    // @Description: CAN ID from 65 - 80 could be checked if to have a pre arm condition  
+    // @Bitmask: 0 16
+    // @User: Advanced
+    AP_GROUPINFO("ID_5", 13, AP_CANManager, _can_id_check_5, 0),
+
+    // @Param: ID_6
+    // @DisplayName: ID_6
+    // @Description: CAN ID from 81 - 96 could be checked if to have a pre arm condition  
+    // @Bitmask: 0 16
+    // @User: Advanced
+    AP_GROUPINFO("ID_6", 14, AP_CANManager, _can_id_check_6, 0),
+
+    // @Param: ID_7
+    // @DisplayName: ID_7
+    // @Description: CAN ID from 97 - 112 could be checked if to have a pre arm condition  
+    // @Bitmask: 0 16
+    // @User: Advanced
+    AP_GROUPINFO("ID_7", 15, AP_CANManager, _can_id_check_7, 0),
+
+    // @Param: ID_8
+    // @DisplayName: ID_8
+    // @Description: CAN ID from 113 - 125 could be checked if to have a pre arm condition  
+    // @Bitmask: 0 13
+    // @User: Advanced
+    AP_GROUPINFO("ID_8", 16, AP_CANManager, _can_id_check_8, 0),
+
     AP_GROUPEND
 };
 

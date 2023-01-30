@@ -26,6 +26,7 @@ class AP_UAVCAN_DNA_Server
 
     enum ServerState {
         NODE_STATUS_UNHEALTHY = -5,
+        FAILED_TO_CHECK_NODE = -4,
         STORAGE_FAILURE = -3,
         DUPLICATE_NODES = -2,
         FAILED_TO_ADD_NODE = -1,
@@ -131,6 +132,8 @@ public:
 
     //Run through the list of seen node ids for verification
     void verify_nodes();
+
+    void handleNodesIDCheck();
 };
 
 #endif

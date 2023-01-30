@@ -465,6 +465,34 @@ void AP_UAVCAN_DNA_Server::verify_nodes()
         getNodeInfo_client[driver_index]->call(curr_verifying_node, request);
         nodeInfo_resp_rcvd = false;
     }
+    //run the ID ccheck for Pre ARM
+    handleNodesIDCheck();
+}
+
+/* Run through the list of nodes which are flagged in the param CAN_ID_* 
+for a pre arm check and check if the node is verified or not. 
+Will raise issue if the required nodes are not available in the verification list */
+void AP_UAVCAN_DNA_Server::handleNodesIDCheck()
+{
+    int32_t check_node_param[8]; 
+    uint32_t shift = 0;
+    _ap_uavcan->get_can_check_node_param(check_node_param);
+
+    //check for flagged bits
+    for (uint8_t i = 0; i <= MAX_NODE_ID; i++) {
+        shift = 15 - (i - (16 * (i/16)));
+        if(check_node_param[i/16] & (1 << shift)){
+            if (!isNodeIDVerified(i+1)) {
+                server_state = FAILED_TO_CHECK_NODE;
+                fault_node_id = i+1;
+                break;
+            }
+            else {
+                //If all healthy and previous state was FAILED_TO_CHECK_NODE
+                server_state = HEALTHY;
+            }
+        }
+    }
 }
 
 /* Handles Node Status Message, adds to the Seen Node list
@@ -720,6 +748,10 @@ bool AP_UAVCAN_DNA_Server::prearm_check(char* fail_msg, uint8_t fail_msg_len) co
             return true;
         }
         snprintf(fail_msg, fail_msg_len, "Node %d unhealthy!", fault_node_id);
+        return false;
+    }
+    case FAILED_TO_CHECK_NODE: {
+        snprintf(fail_msg, fail_msg_len, "Failed to see Node %d!", fault_node_id);
         return false;
     }
     }

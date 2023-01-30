@@ -146,6 +146,18 @@ public:
     // Save parameters
     bool save_parameters_on_node(uint8_t node_id, ParamSaveCb *cb);
 
+    // returns can check node id param
+    void get_can_check_node_param(int32_t *temp_array) const {
+        temp_array[0] = AP::can()._can_id_check_1.get();
+        temp_array[1] = AP::can()._can_id_check_2.get();
+        temp_array[2] = AP::can()._can_id_check_3.get();
+        temp_array[3] = AP::can()._can_id_check_4.get();
+        temp_array[4] = AP::can()._can_id_check_5.get();
+        temp_array[5] = AP::can()._can_id_check_6.get();
+        temp_array[6] = AP::can()._can_id_check_7.get();
+        temp_array[7] = AP::can()._can_id_check_8.get();
+    }
+
     template <typename DataType_>
     class RegistryBinder {
     protected:
