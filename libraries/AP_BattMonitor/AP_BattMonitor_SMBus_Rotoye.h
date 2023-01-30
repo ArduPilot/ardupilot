@@ -11,4 +11,5 @@ private:
     // Rotoye Batmon has two temperature readings
     void read_temp(void) override;
 
+    void read_current(void) override;
 };
