@@ -1203,12 +1203,7 @@ AP_InertialSensor::detect_backends(void)
     case AP_BoardConfig::VRX_BOARD_UBRAIN52:
         ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME), ROTATION_YAW_180));
         break;
-        
-    case AP_BoardConfig::PX4_BOARD_PCNC1:
-        _add_backend(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device(HAL_INS_MPU60x0_NAME), ROTATION_ROLL_180));
-        break;
-
-    default:
+    case AP_BoardConfig::NONE:
         break;
     }
 #elif HAL_INS_DEFAULT == HAL_INS_NONE
