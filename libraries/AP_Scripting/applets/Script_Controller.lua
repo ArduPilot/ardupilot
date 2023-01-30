@@ -224,11 +224,6 @@ function mission_load(n)
   gcs:send_text(0, string.format("Loaded %u mission items", index))
 end
 
-function update()
-  read_mission('mission1.txt')
-  return
-end
-
 --[[
    activate a scripting subdirectory
 --]]
