@@ -280,7 +280,7 @@ void AP_IOMCU_FW::heater_update()
     uint32_t now = last_ms;
     if (!has_heater) {
         // use blue LED as heartbeat, run it 4x faster when override active
-        if (now - last_blue_led_ms > (override_active?125:500)) {
+        if (now - last_blue_led_ms > 500) {
             BLUE_TOGGLE();
             last_blue_led_ms = now;
         }
@@ -319,24 +319,6 @@ void AP_IOMCU_FW::rcin_update()
     if (update_default_rate) {
         hal.rcout->set_default_rate(reg_setup.pwm_defaultrate);
         update_default_rate = false;
-    }
-
-    bool old_override = override_active;
-
-    // check for active override channel
-    if (mixing.enabled &&
-        mixing.rc_chan_override > 0 &&
-        rc_input.flags_rc_ok &&
-        mixing.rc_chan_override <= IOMCU_MAX_CHANNELS) {
-        override_active = (rc_input.pwm[mixing.rc_chan_override-1] >= 1750);
-    } else {
-        override_active = false;
-    }
-    if (old_override != override_active) {
-        if (override_active) {
-            fill_failsafe_pwm();
-        }
-        chEvtSignal(thread_ctx, EVENT_MASK(IOEVENT_PWM));
     }
 }
 
@@ -577,10 +559,6 @@ bool AP_IOMCU_FW::handle_code_write()
         break;
 
     case PAGE_DIRECT_PWM: {
-        if (override_active) {
-            // no input when override is active
-            break;
-        }
         /* copy channel data */
         uint16_t i = 0, offset = rx_io_packet.offset, num_values = rx_io_packet.count;
         if (offset + num_values > sizeof(reg_direct_pwm.pwm)/2) {
@@ -598,15 +576,6 @@ bool AP_IOMCU_FW::handle_code_write()
         }
         fmu_data_received_time = last_ms;
         chEvtSignalI(thread_ctx, EVENT_MASK(IOEVENT_PWM));
-        break;
-    }
-
-    case PAGE_MIXING: {
-        uint16_t offset = rx_io_packet.offset, num_values = rx_io_packet.count;
-        if (offset + num_values > sizeof(mixing)/2) {
-            return false;
-        }
-        memcpy(((uint16_t *)&mixing)+offset, &rx_io_packet.regs[0], num_values*2);
         break;
     }
 
@@ -764,9 +733,6 @@ void AP_IOMCU_FW::fill_failsafe_pwm(void)
         } else {
             reg_direct_pwm.pwm[i] = 0;
         }
-    }
-    if (mixing.enabled) {
-        run_mixer();
     }
 }
 

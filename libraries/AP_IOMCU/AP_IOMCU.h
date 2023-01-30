@@ -10,7 +10,6 @@
 #if HAL_WITH_IO_MCU
 
 #include "iofirmware/ioprotocol.h"
-#include <AP_RCMapper/AP_RCMapper.h>
 
 typedef uint32_t eventmask_t;
 typedef struct ch_thread thread_t;
@@ -103,10 +102,6 @@ public:
     // shutdown IO protocol (for reboot)
     void shutdown();
 
-    // setup for FMU failsafe mixing
-    bool setup_mixing(RCMapper *rcmap, int8_t override_chan,
-                      float mixing_gain, uint16_t manual_rc_mask);
-
     // Check if pin number is valid and configured for GPIO
     bool valid_GPIO_pin(uint8_t pin) const;
 
@@ -190,9 +185,6 @@ private:
     // PAGE_RAW_RCIN values
     struct page_rc_input rc_input;
     uint32_t rc_last_input_ms;
-
-    // MIXER values
-    struct page_mixing mixing;
 
     // output pwm values
     struct {
