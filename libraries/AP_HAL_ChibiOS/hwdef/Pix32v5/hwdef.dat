@@ -18,4 +18,4 @@ PG14 USART6_TX USART6 NODMA
 
 # offset the internal compass for EM impact of the IMU heater
 # this is in body frame mGauss
-define HAL_HEATER_MAG_OFFSET {AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_I2C,0,0xe,0xa),Vector3f(18,0,8)}
+define HAL_HEATER_MAG_OFFSET {AP_HAL::Device::make_dev_id(AP_HAL::Device::BUS_TYPE_I2C,0,0xe,0xa),Vector3f(18,0,8)}
