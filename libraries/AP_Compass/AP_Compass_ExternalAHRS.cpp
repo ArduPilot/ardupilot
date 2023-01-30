@@ -20,7 +20,7 @@
 
 AP_Compass_ExternalAHRS::AP_Compass_ExternalAHRS(uint8_t port)
 {
-    auto devid = AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SERIAL,port,0,0);
+    auto devid = AP_HAL::Device::make_dev_id(AP_HAL::Device::BUS_TYPE_SERIAL,port,0,0);
     register_compass(devid, instance);
 
     set_dev_id(instance, devid);

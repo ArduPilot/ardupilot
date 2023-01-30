@@ -23,7 +23,7 @@ AP_Compass_MSP::AP_Compass_MSP(uint8_t _msp_instance)
 {
     msp_instance = _msp_instance;
 
-    auto devid = AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_MSP, 0, _msp_instance, 0);
+    auto devid = AP_HAL::Device::make_dev_id(AP_HAL::Device::BUS_TYPE_MSP, 0, _msp_instance, 0);
     register_compass(devid, instance);
 
     set_dev_id(instance, devid);

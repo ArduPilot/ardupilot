@@ -137,7 +137,7 @@ AP_Compass_UAVCAN* AP_Compass_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, u
                 _detected_modules[i].ap_uavcan = ap_uavcan;
                 _detected_modules[i].node_id = node_id;
                 _detected_modules[i].sensor_id = sensor_id;
-                _detected_modules[i].devid = AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_UAVCAN,
+                _detected_modules[i].devid = AP_HAL::Device::make_dev_id(AP_HAL::Device::BUS_TYPE_UAVCAN,
                                                  ap_uavcan->get_driver_index(),
                                                  node_id,
                                                  sensor_id + 1); // we use sensor_id as devtype
