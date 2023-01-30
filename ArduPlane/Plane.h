@@ -384,8 +384,17 @@ private:
     // Difference between current altitude and desired altitude.  Centimeters
     int32_t altitude_error_cm;
 
-    // speed scaler for control surfaces, updated at 10Hz
-    float surface_speed_scaler = 1.0;
+    // speed scaler for roll, pitch and yaw control surfaces, updated at 10Hz that can include prop wash corrections
+    Vector3f surface_speed_scaler_rpy = {1.0f,1.0f,1.0f};
+
+    // Inflow factor for forward flight propeller(s) used for correcting control surface scaling for prop wash
+    float prop_inflow_factor;
+
+    // Low-pass filtered forward flight propeller disc loading used for calculation of propeller inflow factor.
+    float disc_loading_filtered;
+
+    // Low-pass filtered airspeed used for control surface scaling
+    float aspeed_filtered;
 
     // Battery Sensors
     AP_BattMonitor battery{MASK_LOG_CURRENT,
@@ -853,8 +862,9 @@ private:
     void calc_throttle();
     void calc_nav_roll();
     void calc_nav_pitch();
-    float calc_speed_scaler(void);
-    float get_speed_scaler(void) const { return surface_speed_scaler; }
+    Vector3f calc_rpy_speed_scaler(void);
+    const Vector3f &get_rpy_speed_scaler(void) const { return surface_speed_scaler_rpy; }
+    float get_prop_inflow_factor(void) const { return prop_inflow_factor; }
     bool stick_mixing_enabled(void);
     void stabilize_roll(float speed_scaler);
     float stabilize_roll_get_roll_out(float speed_scaler);
@@ -863,9 +873,9 @@ private:
     void stabilize_stick_mixing_direct();
     void stabilize_stick_mixing_fbw();
     void stabilize_yaw(float speed_scaler);
-    void stabilize_training(float speed_scaler);
-    void stabilize_acro(float speed_scaler);
-    void stabilize_acro_quaternion(float speed_scaler);
+    void stabilize_training(Vector3f speed_scaler);
+    void stabilize_acro(Vector3f &speed_scaler);
+    void stabilize_acro_quaternion(Vector3f &speed_scaler);
     void calc_nav_yaw_coordinated(float speed_scaler);
     void calc_nav_yaw_course(void);
     void calc_nav_yaw_ground(void);

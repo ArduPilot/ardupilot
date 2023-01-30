@@ -148,12 +148,7 @@ void Plane::calc_airspeed_errors()
         smoothed_airspeed = MAX(0.1, smoothed_airspeed * 0.8f + airspeed_measured * 0.2f);
     }
 
-    // low pass filter speed scaler, with 1Hz cutoff, at 10Hz
-    const float speed_scaler = calc_speed_scaler();
-    const float cutoff_Hz = 2.0;
-    const float dt = 0.1;
-    surface_speed_scaler += calc_lowpass_alpha_dt(dt, cutoff_Hz) * (speed_scaler - surface_speed_scaler);
-
+    surface_speed_scaler_rpy = calc_rpy_speed_scaler();
 
     // FBW_B/cruise airspeed target
     if (!failsafe.rc_failsafe && (control_mode == &mode_fbwb || control_mode == &mode_cruise)) {
