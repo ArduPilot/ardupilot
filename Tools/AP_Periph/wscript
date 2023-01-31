@@ -46,6 +46,7 @@ def build(bld):
                      'AP_SerialManager',
                      'AP_RTC',
                      'AP_Compass',
+                     'AP_NMEA_Output',
                      'AP_Baro',
                      'Filter',
                      'AP_InternalError',
