@@ -245,6 +245,10 @@ void AP_Periph_FW::init()
     temperature_sensor.init();
 #endif
 
+#if HAL_NMEA_OUTPUT_ENABLED
+    nmea.init();
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_NOTIFY
     notify.init();
 #endif
@@ -441,6 +445,10 @@ void AP_Periph_FW::update()
         gcs().update_send();
 #endif
     }
+
+#if HAL_NMEA_OUTPUT_ENABLED
+    nmea.update();
+#endif
 
 #if AP_TEMPERATURE_SENSOR_ENABLED
     temperature_sensor.update();
