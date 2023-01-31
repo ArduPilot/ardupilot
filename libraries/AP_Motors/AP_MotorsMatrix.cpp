@@ -168,7 +168,7 @@ void AP_MotorsMatrix::output_to_motors()
             // set motor output based on thrust requests
             for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
                 if (motor_enabled[i]) {
-                    set_actuator_with_slew(_actuator[i], thrust_to_actuator(_thrust_rpyt_out[i]));
+                    set_actuator_with_slew(_actuator[i], thr_lin.thrust_to_actuator(_thrust_rpyt_out[i]));
                 }
             }
             break;
@@ -213,7 +213,7 @@ float AP_MotorsMatrix::boost_ratio(float boost_value, float normal_value) const
 void AP_MotorsMatrix::output_armed_stabilizing()
 {
     // apply voltage and air pressure compensation
-    const float compensation_gain = get_compensation_gain(); // compensation for battery voltage and altitude
+    const float compensation_gain = thr_lin.get_compensation_gain(); // compensation for battery voltage and altitude
 
     // pitch thrust input value, +/- 1.0
     const float roll_thrust = (_roll_in + _roll_in_ff) * compensation_gain;
@@ -454,7 +454,7 @@ void AP_MotorsMatrix::check_for_failed_motor(float throttle_thrust_best_plus_adj
     }
 
     // check to see if thrust boost is using more throttle than _throttle_thrust_max
-    if ((_throttle_thrust_max * get_compensation_gain() > throttle_thrust_best_plus_adj) && (rpyt_high < 0.9f) && _thrust_balanced) {
+    if ((_throttle_thrust_max * thr_lin.get_compensation_gain() > throttle_thrust_best_plus_adj) && (rpyt_high < 0.9f) && _thrust_balanced) {
         _thrust_boost = false;
     }
 }
