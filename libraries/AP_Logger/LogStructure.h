@@ -332,6 +332,11 @@ struct PACKED log_POWR {
     uint16_t flags;
     uint16_t accumulated_flags;
     uint8_t safety_and_arm;
+};
+
+struct PACKED log_MCU {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
     float MCU_temp;
     float MCU_voltage;
     float MCU_voltage_min;
@@ -974,10 +979,14 @@ struct PACKED log_VER {
 // @Field: Flags: System power flags
 // @Field: AccFlags: Accumulated System power flags; all flags which have ever been set
 // @Field: Safety: Hardware Safety Switch status
-// @Field: MTemp: MCU Temperature
-// @Field: MVolt: MCU Voltage
-// @Field: MVmin: MCU Voltage min
-// @Field: MVmax: MCU Voltage max
+
+// @LoggerMessage: MCU
+// @Description: MCU voltage and temprature monitering
+// @Field: TimeUS: Time since system startup
+// @Field: MTemp: Temperature
+// @Field: MVolt: Voltage
+// @Field: MVmin: Voltage min
+// @Field: MVmax: Voltage max
 
 // @LoggerMessage: RAD
 // @Description: Telemetry radio statistics
@@ -1249,7 +1258,9 @@ LOG_STRUCTURE_FROM_GPS \
 LOG_STRUCTURE_FROM_BARO \
 LOG_STRUCTURE_FROM_PRECLAND \
     { LOG_POWR_MSG, sizeof(log_POWR), \
-      "POWR","QffHHBffff","TimeUS,Vcc,VServo,Flags,AccFlags,Safety,MTemp,MVolt,MVmin,MVmax", "svv---Ovvv", "F00---0000", true }, \
+      "POWR","QffHHB","TimeUS,Vcc,VServo,Flags,AccFlags,Safety", "svv---", "F00---", true }, \
+    { LOG_MCU_MSG, sizeof(log_MCU), \
+      "MCU","Qffff","TimeUS,MTemp,MVolt,MVmin,MVmax", "sOvvv", "F0000", true }, \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
       "CMD", "QHHHffffLLfB","TimeUS,CTot,CNum,CId,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt,Frame", "s-------DUm-", "F-------GG0-" }, \
     { LOG_MAVLINK_COMMAND_MSG, sizeof(log_MAVLink_Command), \
@@ -1359,6 +1370,7 @@ enum LogMessages : uint8_t {
     LOG_RSSI_MSG,
     LOG_IDS_FROM_BARO,
     LOG_POWR_MSG,
+    LOG_MCU_MSG,
     LOG_IDS_FROM_AHRS,
     LOG_SIMSTATE_MSG,
     LOG_CMD_MSG,

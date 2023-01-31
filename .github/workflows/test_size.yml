@@ -26,7 +26,7 @@ jobs:
             f103-GPS  # see special code for Periph below (3 places!)
         ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           ref: ${{ github.event.pull_request.base.ref }}
           path: base_branch
@@ -36,13 +36,16 @@ jobs:
         id: ccache_cache_timestamp
         run: |
           NOW=$(date -u +"%F-%T")
-          echo "::set-output name=timestamp::${NOW}"
+          echo "{timestamp}=${NOW}" >> $GITHUB_OUTPUT
       - name: ccache cache files
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.ccache
           key: ${{github.workflow}}-ccache-${{ matrix.toolchain }}-${{steps.ccache_cache_timestamp.outputs.timestamp}}
           restore-keys: ${{github.workflow}}-ccache-${{ matrix.toolchain }}-  # restore ccache from either previous build on this branch or on base branch
+      - name: setup ccache
+        run: |
+          . base_branch/.github/workflows/ccache.env
       - name: Build ${{ github.event.pull_request.base.ref }} ${{matrix.config}} ${{ matrix.toolchain }}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}
@@ -77,7 +80,7 @@ jobs:
 
           echo [`date`] Built ${{ github.event.pull_request.base.ref }} with no versions
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
           path: 'pr'
@@ -171,7 +174,7 @@ jobs:
           zip -r elf_diff.zip elf_diff
 
       - name: Archive elf_diff output
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
            name: ELF_DIFF_${{matrix.config}}
            path: elf_diff.zip

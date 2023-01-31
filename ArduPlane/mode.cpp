@@ -15,6 +15,11 @@ void Mode::exit()
 {
     // call sub-classes exit
     _exit();
+    // stop autotuning if not AUTOTUNE mode
+    if (plane.control_mode != &plane.mode_autotune){
+        plane.autotune_restore();
+    }
+
 }
 
 bool Mode::enter()

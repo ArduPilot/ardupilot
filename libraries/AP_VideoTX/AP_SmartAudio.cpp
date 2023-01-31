@@ -517,6 +517,11 @@ void AP_SmartAudio::update_vtx_settings(const Settings& settings)
         vtx.set_power_dbm(settings.power_in_dbm);
         // learn them all
         vtx.update_all_power_dbm(settings.num_power_levels, settings.power_levels);
+    } else if (settings.version == SMARTAUDIO_SPEC_PROTOCOL_v2) {
+        vtx.set_power_level(settings.power, AP_VideoTX::PowerActive::Active);
+        // learn them all - it's not possible to know the mw values in v2.0 so just have to go from the spec
+        uint8_t power[] { 0, 14, 23, 27, 29 };
+        vtx.update_all_power_dbm(5, power);
     } else {
         vtx.set_power_level(settings.power, AP_VideoTX::PowerActive::Active);
     }

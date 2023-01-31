@@ -147,6 +147,7 @@ private:
     enum DwellType {
         RATE    = 0,
         ANGLE   = 1,
+        DRB     = 2,
     };
 
     // Feedforward test used to determine Rate FF gain

@@ -23,7 +23,7 @@ jobs:
     container: ardupilot/ardupilot-dev-base:latest
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
 

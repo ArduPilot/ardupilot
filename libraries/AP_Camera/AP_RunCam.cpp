@@ -34,7 +34,7 @@ const AP_Param::GroupInfo AP_RunCam::var_info[] = {
     // @Param: TYPE
     // @DisplayName: RunCam device type
     // @Description: RunCam deviee type used to determine OSD menu structure and shutter options.
-    // @Values: 0:Disabled, 1:RunCam Split Micro/RunCam with UART, 2:RunCam Split, 3:RunCam Split4 4k, 4:RunCam Hybrid/RunCam Thumb Pro
+    // @Values: 0:Disabled, 1:RunCam Split Micro/RunCam with UART, 2:RunCam Split, 3:RunCam Split4 4k, 4:RunCam Hybrid/RunCam Thumb Pro, 5:Runcam 2 4k
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_RunCam, _cam_type, int(DeviceType::Disabled), AP_PARAM_FLAG_ENABLE),
 
     // @Param: FEATURES
@@ -64,7 +64,7 @@ const AP_Param::GroupInfo AP_RunCam::var_info[] = {
 
     // @Param: CONTROL
     // @DisplayName: RunCam control option
-    // @Description: Specifies the allowed actions required to enter the OSD menu
+    // @Description: Specifies the allowed actions required to enter the OSD menu and other option like autorecording
     // @Bitmask: 0:Stick yaw right,1:Stick roll right,2:3-position switch,3:2-position switch,4:Autorecording enabled
     // @User: Advanced
     AP_GROUPINFO("CONTROL", 6, AP_RunCam, _cam_control_option, uint8_t(ControlOption::STICK_ROLL_RIGHT) | uint8_t(ControlOption::TWO_POS_SWITCH)),
@@ -114,6 +114,7 @@ AP_RunCam::Menu AP_RunCam::_menus[RUNCAM_MAX_DEVICE_TYPES] = {
     { 0, { 0 }}, // Split
     { 6, { 4, 10, 3, 3, 7 }}, // Split4 4K
     { 1, { 0 }}, // Hybrid, simple mode switch
+	{ 6, { 3, 10, 2, 2, 8 }}, // Runcam 2 4K
 };
 
 AP_RunCam::AP_RunCam()
@@ -153,8 +154,8 @@ void AP_RunCam::init()
         return;
     }
 
-    // Split requires two mode presses to get into the menu
-    if (_cam_type.get() == int8_t(DeviceType::Split)) {
+    // Split and Runcam 2 4k requires two mode presses to get into the menu
+    if (_cam_type.get() == int8_t(DeviceType::Split) || _cam_type.get() == int8_t(DeviceType::Run24k)) {
         _menu_enter_level = -1;
         _in_menu = -1;
     }
@@ -549,12 +550,12 @@ void AP_RunCam::handle_2_key_simulation_process(Event ev)
 
     case Event::IN_MENU_ENTER:
         // in a sub-menu and save-and-exit was selected
-        if (_in_menu > 1 && get_top_menu_length() > 0 && _sub_menu_pos == (get_sub_menu_length(_top_menu_pos) - 1)) {
+        if (_in_menu > 1 && get_top_menu_length() > 0 && _sub_menu_pos == (get_sub_menu_length(_top_menu_pos) - 1) && DeviceType(_cam_type.get()) != DeviceType::Run24k) {
             simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_SIMULATE_WIFI_BTN, _button_delay_ms);
             _sub_menu_pos = 0;
             _in_menu--;
         // in the top-menu and save-and-exit was selected
-        } else if (_in_menu == 1 && get_top_menu_length() > 0 && _top_menu_pos == (get_top_menu_length() - 1)) {
+        } else if (_in_menu == 1 && get_top_menu_length() > 0 && _top_menu_pos == (get_top_menu_length() - 1) && DeviceType(_cam_type.get()) != DeviceType::Run24k) {
             simulate_camera_button(ControlOperation::RCDEVICE_PROTOCOL_SIMULATE_WIFI_BTN, _mode_delay_ms);
             _in_menu--;
             _state = State::EXITING_MENU;
@@ -710,7 +711,7 @@ void AP_RunCam::handle_5_key_simulation_response(const Request& request)
 
 // command to start recording
 AP_RunCam::ControlOperation AP_RunCam::start_recording_command() const {
-    if (DeviceType(_cam_type.get()) == DeviceType::Split4k || DeviceType(_cam_type.get()) == DeviceType::Hybrid) {
+    if (DeviceType(_cam_type.get()) == DeviceType::Split4k || DeviceType(_cam_type.get()) == DeviceType::Hybrid || DeviceType(_cam_type.get()) == DeviceType::Run24k) {
         return ControlOperation::RCDEVICE_PROTOCOL_SIMULATE_POWER_BTN;
     } else {
         return ControlOperation::RCDEVICE_PROTOCOL_CHANGE_START_RECORDING;
@@ -719,7 +720,7 @@ AP_RunCam::ControlOperation AP_RunCam::start_recording_command() const {
 
 // command to stop recording
 AP_RunCam::ControlOperation AP_RunCam::stop_recording_command() const {
-    if (DeviceType(_cam_type.get()) == DeviceType::Split4k || DeviceType(_cam_type.get()) == DeviceType::Hybrid) {
+    if (DeviceType(_cam_type.get()) == DeviceType::Split4k || DeviceType(_cam_type.get()) == DeviceType::Hybrid || DeviceType(_cam_type.get()) == DeviceType::Run24k) {
         return ControlOperation::RCDEVICE_PROTOCOL_SIMULATE_POWER_BTN;
     } else {
         return ControlOperation::RCDEVICE_PROTOCOL_CHANGE_STOP_RECORDING;

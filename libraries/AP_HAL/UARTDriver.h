@@ -132,8 +132,8 @@ public:
      */
     virtual uint64_t receive_time_constraint_us(uint16_t nbytes) { return 0; }
 
-    virtual uint32_t bw_in_kilobytes_per_second() const {
-        return 57;
+    virtual uint32_t bw_in_bytes_per_second() const {
+        return 5760;
     }
 
     virtual uint32_t get_baud_rate() const { return 0; }
