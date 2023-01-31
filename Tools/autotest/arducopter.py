@@ -785,6 +785,25 @@ class AutoTestCopter(AutoTest):
         self.change_mode("LOITER")
         self.end_subtest("Completed GCS failsafe recovery test")
 
+        # Trigger telemetry loss with failsafe enabled. Verify
+        # failsafe triggers to RTL. Restore telemetry, verify failsafe
+        # clears, and change modes.
+        self.start_subtest("GCS failsafe recovery test: FS_GCS_ENABLE=1 & FS_OPTIONS=0 & FS_GCS_TIMEOUT=10")
+        self.setGCSfailsafe(1)
+        self.set_parameter('FS_OPTIONS', 0)
+        old_gcs_timeout = self.get_parameter("FS_GCS_TIMEOUT")
+        new_gcs_timeout = old_gcs_timeout * 2
+        self.set_parameter("FS_GCS_TIMEOUT", new_gcs_timeout)
+        self.set_heartbeat_rate(0)
+        self.delay_sim_time(old_gcs_timeout + (new_gcs_timeout - old_gcs_timeout) / 2)
+        self.assert_mode("LOITER")
+        self.wait_mode("RTL")
+        self.set_heartbeat_rate(self.speedup)
+        self.wait_statustext("GCS Failsafe Cleared", timeout=60)
+        self.change_mode("LOITER")
+        self.set_parameter('FS_GCS_TIMEOUT', old_gcs_timeout)
+        self.end_subtest("Completed GCS failsafe recovery test")
+
         # Trigger telemetry loss with failsafe enabled. Verify failsafe triggers and RTL completes
         self.start_subtest("GCS failsafe RTL with no options test: FS_GCS_ENABLE=1 & FS_OPTIONS=0")
         self.setGCSfailsafe(1)
