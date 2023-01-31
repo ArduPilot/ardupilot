@@ -302,11 +302,11 @@ void Tailsitter::output(void)
             */
             if (!is_negative(transition_throttle_vtol)) { 
                 // Q_TAILSIT_THR_VT is positive use it until transition is complete
-                throttle = motors->actuator_to_thrust(MIN(transition_throttle_vtol*0.01,1.0));
+                throttle = motors->thr_lin.actuator_to_thrust(MIN(transition_throttle_vtol*0.01,1.0));
             } else {
                 throttle = motors->get_throttle_hover();
                 // work out equivelent motors throttle level for cruise
-                throttle = MAX(throttle,motors->actuator_to_thrust(plane.aparm.throttle_cruise.get() * 0.01));
+                throttle = MAX(throttle,motors->thr_lin.actuator_to_thrust(plane.aparm.throttle_cruise.get() * 0.01));
             }
 
             SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0.0);
@@ -321,7 +321,7 @@ void Tailsitter::output(void)
 
                 // convert the hover throttle to the same output that would result if used via AP_Motors
                 // apply expo, battery scaling and SPIN min/max.
-                throttle = motors->thrust_to_actuator(throttle);
+                throttle = motors->thr_lin.thrust_to_actuator(throttle);
 
                 // override AP_MotorsTailsitter throttles during back transition
 
