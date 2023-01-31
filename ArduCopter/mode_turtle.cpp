@@ -163,7 +163,7 @@ void ModeTurtle::run()
     Vector2f input{sign_roll, sign_pitch};
     motors_input = input.normalized() * 0.5;
     // we bypass spin min and friends in the deadzone because we only want spin up when the sticks are moved
-    motors_output = !is_zero(flip_power) ? motors->thrust_to_actuator(flip_power) : 0.0f;
+    motors_output = !is_zero(flip_power) ? motors->thr_lin.thrust_to_actuator(flip_power) : 0.0f;
 }
 
 // actually write values to the motors
