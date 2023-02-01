@@ -856,17 +856,17 @@ private:
     float calc_speed_scaler(void);
     float get_speed_scaler(void) const { return surface_speed_scaler; }
     bool stick_mixing_enabled(void);
-    void stabilize_roll(float speed_scaler);
-    float stabilize_roll_get_roll_out(float speed_scaler);
-    void stabilize_pitch(float speed_scaler);
-    float stabilize_pitch_get_pitch_out(float speed_scaler);
+    void stabilize_roll();
+    float stabilize_roll_get_roll_out();
+    void stabilize_pitch();
+    float stabilize_pitch_get_pitch_out();
     void stabilize_stick_mixing_direct();
     void stabilize_stick_mixing_fbw();
-    void stabilize_yaw(float speed_scaler);
-    void stabilize_training(float speed_scaler);
-    void stabilize_acro(float speed_scaler);
-    void stabilize_acro_quaternion(float speed_scaler);
-    void calc_nav_yaw_coordinated(float speed_scaler);
+    void stabilize_yaw();
+    void stabilize_training();
+    void stabilize_acro();
+    void stabilize_acro_quaternion();
+    void calc_nav_yaw_coordinated();
     void calc_nav_yaw_course(void);
     void calc_nav_yaw_ground(void);
 
