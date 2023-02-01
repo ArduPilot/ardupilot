@@ -81,6 +81,7 @@ public:
     friend class GCS_Rover;
     friend class Mode;
     friend class ModeAcro;
+    friend class ModeCircle;
     friend class ModeAuto;
     friend class ModeGuided;
     friend class ModeHold;
@@ -228,6 +229,7 @@ private:
     ModeHold mode_hold;
     ModeManual mode_manual;
     ModeAcro mode_acro;
+    ModeCircle mode_circle;
     ModeGuided mode_guided;
     ModeAuto mode_auto;
     ModeLoiter mode_loiter;

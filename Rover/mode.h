@@ -27,6 +27,7 @@ public:
         SMART_RTL    = 12,
         GUIDED       = 15,
         INITIALISING = 16,
+        CIRCLE       = 17
     };
 
     // Constructor
@@ -383,6 +384,31 @@ private:
 
     // Mission change detector
     AP_Mission_ChangeDetector mis_change_detector;
+};
+
+
+class ModeCircle : public Mode
+{
+public:
+
+    uint32_t mode_number() const override { return CIRCLE; }
+    const char *name4() const override { return "CIRCLE"; }
+
+    void update() override;
+
+protected:
+
+    bool _enter() override;
+    void _exit() override;
+
+private:
+    Location center;
+    double radius = 50.0f; // in meters
+    const int K = 400;     // maximum steering
+    const int M = 50;      // parameter for how much to change the steering
+    double last_dist = radius;
+    double throttle;
+    double steering;
 };
 
 
