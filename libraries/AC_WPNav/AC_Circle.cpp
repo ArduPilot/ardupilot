@@ -19,7 +19,7 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
 
     // @Param: RATE
     // @DisplayName: Circle rate
-    // @Description: Circle mode's turn rate in deg/sec.  Positive to turn clockwise, negative for counter clockwise
+    // @Description: Circle mode's turn rate in deg/sec.  Positive to turn clockwise, negative for counter clockwise. Circle rate must be less than ATC_SLEW_YAW parameter.
     // @Units: deg/s
     // @Range: -90 90
     // @Increment: 1

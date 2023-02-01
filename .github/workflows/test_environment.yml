@@ -62,7 +62,7 @@ jobs:
           esac
 
       # git checkout the PR
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
             submodules: 'recursive'
       - name: test install environment ${{matrix.os}}.${{matrix.name}}

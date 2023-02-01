@@ -4,7 +4,6 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
-#include <SRV_Channel/SRV_Channel.h>
 #include "AP_MotorsMulticopter.h"
 
 /// @class      AP_MotorsTailsitter

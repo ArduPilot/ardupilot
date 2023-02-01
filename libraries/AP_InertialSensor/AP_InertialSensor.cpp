@@ -1072,7 +1072,7 @@ AP_InertialSensor::detect_backends(void)
 
 #if HAL_EXTERNAL_AHRS_ENABLED
     // if enabled, make the first IMU the external AHRS
-    const int8_t serial_port = AP::externalAHRS().get_port();
+    const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::IMU);
     if (serial_port >= 0) {
         ADD_BACKEND(new AP_InertialSensor_ExternalAHRS(*this, serial_port));
     }
@@ -2135,7 +2135,7 @@ void AP_InertialSensor::HarmonicNotch::update_frequencies_hz(uint8_t num_freqs, 
 }
 
 // setup the notch for throttle based tracking, called from FFT based tuning
-bool AP_InertialSensor::setup_throttle_gyro_harmonic_notch(float center_freq_hz, float ref)
+bool AP_InertialSensor::setup_throttle_gyro_harmonic_notch(float center_freq_hz, float lower_freq_hz, float ref, uint8_t harmonics)
 {
     for (auto &notch : harmonic_notches) {
         if (notch.params.tracking_mode() != HarmonicNotchDynamicMode::UpdateThrottle) {
@@ -2145,6 +2145,8 @@ bool AP_InertialSensor::setup_throttle_gyro_harmonic_notch(float center_freq_hz,
         notch.params.set_center_freq_hz(center_freq_hz);
         notch.params.set_reference(ref);
         notch.params.set_bandwidth_hz(center_freq_hz / 2.0f);
+        notch.params.set_freq_min_ratio(lower_freq_hz / center_freq_hz);
+        notch.params.set_harmonics(harmonics);
         notch.params.save_params();
         // only enable the first notch
         return true;

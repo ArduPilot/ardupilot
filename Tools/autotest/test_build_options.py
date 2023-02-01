@@ -64,7 +64,10 @@ class TestBuildOptions(object):
     def must_have_defines_for_board(self, board):
         '''return a set of defines which must always be enabled'''
         must_have_defines = {
-            "CubeOrange": frozenset(['AP_BARO_MS56XX_ENABLED'])
+            "CubeOrange": frozenset([
+                'AP_BARO_MS56XX_ENABLED',
+                'AP_COMPASS_LSM303D_ENABLED',
+            ])
         }
         return must_have_defines.get(board, frozenset([]))
 

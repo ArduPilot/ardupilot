@@ -27,7 +27,7 @@ DO NOT EDIT
         self.fh = open("LogMessages.html", mode='w')
         print(self.preface(), file=self.fh)
 
-    def emit(self, doccos):
+    def emit(self, doccos, enumerations):
         self.start()
         for docco in doccos:
             print('    <h1>%s</h1>' % docco.name, file=self.fh)

@@ -786,6 +786,8 @@ def start_vehicle(binary, opts, stuff, spawns=None):
 
         cmd.append("--start-time=%d" % start_time_UTC)
 
+    cmd.append("--sim-address=%s" % cmd_opts.sim_address)
+
     old_dir = os.getcwd()
     for i, i_dir in zip(instances, instance_dir):
         c = ["-I" + str(i)]
@@ -1267,6 +1269,10 @@ group_sim.add_option("", "--auto-sysid",
                      default=False,
                      action='store_true',
                      help="Set SYSID_THISMAV based upon instance number")
+group_sim.add_option("", "--sim-address",
+                     type=str,
+                     default="127.0.0.1",
+                     help="IP address of the simulator. Defaults to localhost")
 parser.add_option_group(group_sim)
 
 

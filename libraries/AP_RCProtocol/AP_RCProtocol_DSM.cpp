@@ -23,6 +23,8 @@
 #include "AP_RCProtocol_SRXL2.h"
 #endif
 
+#include <AP_VideoTX/AP_VideoTX_config.h>
+
 extern const AP_HAL::HAL& hal;
 
 // #define DSM_DEBUG
@@ -235,15 +237,15 @@ bool AP_RCProtocol_DSM::dsm_decode(uint32_t frame_time_ms, const uint8_t dsm_fra
     }
 
     // Handle VTX control frame.
+#if AP_VIDEOTX_ENABLED
     if (haveVtxControl) {
-#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
         AP_RCProtocol_SRXL2::configure_vtx(
             (vtxControl & SPEKTRUM_VTX_BAND_MASK)     >> SPEKTRUM_VTX_BAND_SHIFT,
             (vtxControl & SPEKTRUM_VTX_CHANNEL_MASK)  >> SPEKTRUM_VTX_CHANNEL_SHIFT,
             (vtxControl & SPEKTRUM_VTX_POWER_MASK)    >> SPEKTRUM_VTX_POWER_SHIFT,
             (vtxControl & SPEKTRUM_VTX_PIT_MODE_MASK) >> SPEKTRUM_VTX_PIT_MODE_SHIFT);
-#endif
     }
+#endif
 
     /*
      * The encoding of the first two bytes is uncertain, so we're

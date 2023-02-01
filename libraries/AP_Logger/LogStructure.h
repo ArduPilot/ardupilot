@@ -332,6 +332,11 @@ struct PACKED log_POWR {
     uint16_t flags;
     uint16_t accumulated_flags;
     uint8_t safety_and_arm;
+};
+
+struct PACKED log_MCU {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
     float MCU_temp;
     float MCU_voltage;
     float MCU_voltage_min;
@@ -728,8 +733,10 @@ struct PACKED log_VER {
 // @Field: TimeUS: Time since system startup
 // @Field: ArmState: true if vehicle is now armed
 // @Field: ArmChecks: arming bitmask at time of arming
+// @FieldBitmaskEnum: ArmChecks: AP_Arming::ArmingChecks
 // @Field: Forced: true if arm/disarm was forced
 // @Field: Method: method used for arming
+// @FieldValueEnum: Method: AP_Arming::Method
 
 // @LoggerMessage: ARSP
 // @Description: Airspeed sensor data
@@ -818,12 +825,14 @@ struct PACKED log_VER {
 // @Description: Specifically coded error messages
 // @Field: TimeUS: Time since system startup
 // @Field: Subsys: Subsystem in which the error occurred
+// @FieldValueEnum: Subsys: LogErrorSubsystem
 // @Field: ECode: Subsystem-specific error code
 
 // @LoggerMessage: EV
 // @Description: Specifically coded event messages
 // @Field: TimeUS: Time since system startup
 // @Field: Id: Event identifier
+// @FieldValueEnum: Id: LogEvent
 
 // @LoggerMessage: FMT
 // @Description: Message defining the format of messages in this file
@@ -845,6 +854,7 @@ struct PACKED log_VER {
 // @Description: Landing gear information
 // @Field: TimeUS: Time since system startup
 // @Field: LandingGear: Current landing gear state
+// @FieldValueEnum: LandingGear: AP_LandingGear::LG_LandingGear_State
 // @Field: WeightOnWheels: True if there is weight on wheels
 
 // @LoggerMessage: MAG
@@ -871,6 +881,7 @@ struct PACKED log_VER {
 // @Field: rxp: received packet count
 // @Field: rxdp: perceived number of packets we never received
 // @Field: flags: compact representation of some stage of the channel
+// @FieldBitmaskEnum: flags: GCS_MAVLINK::Flags
 // @Field: ss: stream slowdown is the number of ms being added to each message to fit within bandwidth
 // @Field: tf: times buffer was full when a message was going to be sent
 
@@ -899,6 +910,7 @@ struct PACKED log_VER {
 // @Field: Mode: vehicle-specific mode number
 // @Field: ModeNum: alias for Mode
 // @Field: Rsn: reason for entering this mode; enumeration value
+// @FieldValueEnum: Rsn: ModeReason
 
 // @LoggerMessage: MSG
 // @Description: Textual messages
@@ -951,6 +963,7 @@ struct PACKED log_VER {
 // @Field: Mem: Free memory available
 // @Field: Load: System processor load
 // @Field: IntE: Internal error mask; which internal errors have been detected
+// @FieldBitmaskEnum: IntE: AP_InternalError::error_t
 // @Field: ErrL: Internal error line number; last line number on which a internal error was detected
 // @Field: ErrC: Internal error count; how many internal errors have been detected
 // @Field: SPIC: Number of SPI transactions processed
@@ -966,10 +979,14 @@ struct PACKED log_VER {
 // @Field: Flags: System power flags
 // @Field: AccFlags: Accumulated System power flags; all flags which have ever been set
 // @Field: Safety: Hardware Safety Switch status
-// @Field: MTemp: MCU Temperature
-// @Field: MVolt: MCU Voltage
-// @Field: MVmin: MCU Voltage min
-// @Field: MVmax: MCU Voltage max
+
+// @LoggerMessage: MCU
+// @Description: MCU voltage and temprature monitering
+// @Field: TimeUS: Time since system startup
+// @Field: MTemp: Temperature
+// @Field: MVolt: Voltage
+// @Field: MVmin: Voltage min
+// @Field: MVmax: Voltage max
 
 // @LoggerMessage: RAD
 // @Description: Telemetry radio statistics
@@ -1095,14 +1112,16 @@ struct PACKED log_VER {
 // @Field: NumPts: number of points currently in use
 // @Field: MaxPts: maximum number of points that could be used
 // @Field: Action: most recent internal action taken by SRTL library
+// @FieldValueEnum: Action: AP_SmartRTL::SRTL_Actions
 // @Field: N: point associated with most recent action (North component)
 // @Field: E: point associated with most recent action (East component)
 // @Field: D: point associated with most recent action (Down component)
 
 // @LoggerMessage: TERR
-// @Description: Terrain database infomration
+// @Description: Terrain database information
 // @Field: TimeUS: Time since system startup
 // @Field: Status: Terrain database status
+// @FieldValueEnum: Status: AP_Terrain::TerrainStatus
 // @Field: Lat: Current vehicle latitude
 // @Field: Lng: Current vehicle longitude
 // @Field: Spacing: terrain Tile spacing
@@ -1239,7 +1258,9 @@ LOG_STRUCTURE_FROM_GPS \
 LOG_STRUCTURE_FROM_BARO \
 LOG_STRUCTURE_FROM_PRECLAND \
     { LOG_POWR_MSG, sizeof(log_POWR), \
-      "POWR","QffHHBffff","TimeUS,Vcc,VServo,Flags,AccFlags,Safety,MTemp,MVolt,MVmin,MVmax", "svv---Ovvv", "F00---0000", true }, \
+      "POWR","QffHHB","TimeUS,Vcc,VServo,Flags,AccFlags,Safety", "svv---", "F00---", true }, \
+    { LOG_MCU_MSG, sizeof(log_MCU), \
+      "MCU","Qffff","TimeUS,MTemp,MVolt,MVmin,MVmax", "sOvvv", "F0000", true }, \
     { LOG_CMD_MSG, sizeof(log_Cmd), \
       "CMD", "QHHHffffLLfB","TimeUS,CTot,CNum,CId,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt,Frame", "s-------DUm-", "F-------GG0-" }, \
     { LOG_MAVLINK_COMMAND_MSG, sizeof(log_MAVLink_Command), \
@@ -1349,6 +1370,7 @@ enum LogMessages : uint8_t {
     LOG_RSSI_MSG,
     LOG_IDS_FROM_BARO,
     LOG_POWR_MSG,
+    LOG_MCU_MSG,
     LOG_IDS_FROM_AHRS,
     LOG_SIMSTATE_MSG,
     LOG_CMD_MSG,

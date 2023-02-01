@@ -4,6 +4,7 @@
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
   #include <SITL/SITL.h>

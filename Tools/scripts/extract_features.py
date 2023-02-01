@@ -113,7 +113,7 @@ class ExtractFeatures(object):
             ('OSD_PARAM_ENABLED', 'AP_OSD_ParamScreen::AP_OSD_ParamScreen',),
             ('HAL_OSD_SIDEBAR_ENABLE', 'AP_OSD_Screen::draw_sidebars',),
 
-            ('HAL_SMARTAUDIO_ENABLED', 'AP_SmartAudio::AP_SmartAudio',),
+            ('AP_SMARTAUDIO_ENABLED', 'AP_SmartAudio::AP_SmartAudio',),
             ('AP_TRAMP_ENABLED', 'AP_Tramp::AP_Tramp',),
 
             ('HAL_QUADPLANE_ENABLED', 'QuadPlane::QuadPlane',),

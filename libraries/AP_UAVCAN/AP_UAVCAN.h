@@ -29,7 +29,7 @@
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 #include <uavcan/protocol/param/GetSet.hpp>
 #include <uavcan/protocol/param/ExecuteOpcode.hpp>
-#include <SRV_Channel/SRV_Channel.h>
+#include <SRV_Channel/SRV_Channel_config.h>
 
 
 #ifndef UAVCAN_SRV_NUMBER

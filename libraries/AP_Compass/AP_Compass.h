@@ -414,8 +414,12 @@ private:
 
     // enum of drivers for COMPASS_TYPEMASK
     enum DriverType {
+#if AP_COMPASS_HMC5843_ENABLED
         DRIVER_HMC5843  =0,
+#endif
+#if AP_COMPASS_LSM303D_ENABLED
         DRIVER_LSM303D  =1,
+#endif
         DRIVER_AK8963   =2,
         DRIVER_BMM150   =3,
         DRIVER_LSM9DS1  =4,
@@ -428,7 +432,9 @@ private:
         DRIVER_QMC5883L =12,
         DRIVER_SITL     =13,
         DRIVER_MAG3110  =14,
+#if AP_COMPASS_IST8308_ENABLED
         DRIVER_IST8308  =15,
+#endif
 		DRIVER_RM3100   =16,
         DRIVER_MSP      =17,
         DRIVER_SERIAL   =18,

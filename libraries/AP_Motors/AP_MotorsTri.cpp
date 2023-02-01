@@ -18,6 +18,7 @@
 
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 #include "AP_MotorsTri.h"
 

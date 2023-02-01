@@ -92,7 +92,7 @@ int32_t Plane::get_RTL_altitude_cm() const
   return relative altitude in meters (relative to terrain, if available,
   or home otherwise)
  */
-float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
+float Plane::relative_ground_altitude(bool use_rangefinder_if_available, bool use_terrain_if_available)
 {
    if (use_rangefinder_if_available && rangefinder_state.in_range) {
         return rangefinder_state.height_estimate;
@@ -109,7 +109,7 @@ float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
 
 #if AP_TERRAIN_AVAILABLE
     float altitude;
-    if (target_altitude.terrain_following &&
+    if (use_terrain_if_available &&
         terrain.status() == AP_Terrain::TerrainStatusOK &&
         terrain.height_above_terrain(altitude, true)) {
         return altitude;
@@ -129,6 +129,17 @@ float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
 
     return relative_altitude;
 }
+
+// Helper for above method using terrain if the vehicle is currently terrain following
+float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
+{
+#if AP_TERRAIN_AVAILABLE
+    return relative_ground_altitude(use_rangefinder_if_available, target_altitude.terrain_following);
+#else
+    return relative_ground_altitude(use_rangefinder_if_available, false);
+#endif
+}
+
 
 /*
   set the target altitude to the current altitude. This is used when 

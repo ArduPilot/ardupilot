@@ -31,6 +31,10 @@
 #include <AP_HAL_ChibiOS/I2CDevice.h>
 #endif
 
+#ifndef HAL_PERIPH_HWESC_SERIAL_PORT
+#define HAL_PERIPH_HWESC_SERIAL_PORT 3
+#endif
+
 extern const AP_HAL::HAL &hal;
 
 AP_Periph_FW periph;
@@ -228,7 +232,7 @@ void AP_Periph_FW::init()
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_HWESC
-    hwesc_telem.init(hal.serial(3));
+    hwesc_telem.init(hal.serial(HAL_PERIPH_HWESC_SERIAL_PORT));
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MSP

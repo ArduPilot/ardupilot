@@ -312,6 +312,7 @@ function update_target()
    have_target = true
 
    target_pos, target_velocity = follow:get_target_location_and_velocity_ofs()
+   target_pos:change_alt_frame(ALT_FRAME_ABSOLUTE)
    target_heading = follow:get_target_heading_deg()
    -- zero vertical velocity to reduce impact of ship movement
    target_velocity:z(0)
@@ -350,6 +351,7 @@ function update_auto_offset()
 
    -- get target without offsets applied
    target_no_ofs, vel = follow:get_target_location_and_velocity()
+   target_no_ofs:change_alt_frame(ALT_FRAME_ABSOLUTE)
 
    -- setup offsets so target location will be current location
    local new = target_no_ofs:get_distance_NED(current_pos)
@@ -392,6 +394,7 @@ function update()
       -- not in a flight mode with a target location
       return
    end
+   next_WP:change_alt_frame(ALT_FRAME_ABSOLUTE)
 
    if vehicle_mode == MODE_RTL then
       local holdoff_pos = get_holdoff_position()

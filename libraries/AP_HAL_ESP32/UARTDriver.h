@@ -71,9 +71,9 @@ public:
     size_t write(const uint8_t *buffer, size_t size) override;
 
     bool discard_input() override; // discard all bytes available for reading
-    uint32_t bw_in_kilobytes_per_second() const override
+    uint32_t bw_in_bytes_per_second() const override
     {
-        return 10;
+        return 10*1024;
     }
 
     //bool lock_port(uint32_t write_key, uint32_t read_key) override;

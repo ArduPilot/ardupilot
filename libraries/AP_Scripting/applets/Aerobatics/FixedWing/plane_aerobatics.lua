@@ -792,10 +792,15 @@ end
 local _path_cylinder = inheritsFrom(_PathComponent, "path_cylinder")
 function _path_cylinder:get_pos(t)
    local t2ang = t * self.num_spirals * math.pi * 2
-   local v = makeVector3f(self.length*t, math.abs(self.radius)*math.sin(t2ang+math.pi), -self.radius*(1.0 - math.cos(t2ang)))
+   local v = makeVector3f(self.length*t, math.abs(self.radius)*math.sin(t2ang+math.pi), -math.abs(self.radius)*(1.0 - math.cos(t2ang)))
    local qrot = Quaternion()
    qrot:from_axis_angle(makeVector3f(0,0,1), (0.5*math.pi)-self.gamma)
-   return quat_earth_to_body(qrot, v)
+   v = quat_earth_to_body(qrot, v)
+   if self.radius < 0 then
+      -- mirror for reverse radius
+      v:y(-v:y())
+   end
+   return v
 end
 
 function _path_cylinder:get_length()
@@ -809,7 +814,7 @@ end
    roll correction for the rotation caused by the path
 --]]
 function _path_cylinder:get_roll_correction(t)
-   return t*360*math.sin(self.gamma)*self.num_spirals
+   return sgn(self.radius)*t*360*math.sin(self.gamma)*self.num_spirals
 end
 
 function path_cylinder(radius, length, num_spirals)
@@ -817,7 +822,7 @@ function path_cylinder(radius, length, num_spirals)
    self.radius = radius
    self.length = length
    self.num_spirals = num_spirals
-   self.gamma = math.atan((length/num_spirals)/(2*math.pi*radius))
+   self.gamma = math.atan((length/num_spirals)/(2*math.pi*math.abs(radius)))
    return self
 end
 
@@ -1240,15 +1245,8 @@ function rolling_circle(radius, num_rolls, arg3, arg4)
    })
 end
 
-
-function cylinder(radius, length, num_spirals, arg4)
-   return make_paths("cylinder", {
-         { path_cylinder(radius, length, num_spirals), roll_angle(0), thr_boost=true },
-   })
-end
-
 function barrel_roll(radius, length, num_spirals, arg4)
-   local gamma_deg = math.deg(math.atan((length/num_spirals)/(2*math.pi*radius)))
+   local gamma_deg = math.deg(math.atan((length/num_spirals)/(2*math.pi*math.abs(radius))))
    local speed = target_groundspeed()
    local bank = math.deg(math.atan((speed*speed) / (radius * GRAVITY_MSS)))
    local radius2 = radius/(1.0 - math.cos(math.rad(90-gamma_deg)))

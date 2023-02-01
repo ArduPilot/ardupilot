@@ -90,13 +90,16 @@
 // hide parameter from param download
 #define AP_PARAM_FLAG_HIDDEN (1<<6)
 
+// Default value is a "pointer" actually its a offest from the base value, but the idea is the same
+#define AP_PARAM_FLAG_DEFAULT_POINTER (1<<7)
+
 // keep all flags before the FRAME tags
 
 // vehicle and frame type flags, used to hide parameters when not
 // relevent to a vehicle type. Use AP_Param::set_frame_type_flags() to
 // enable parameters flagged in this way. frame type flags are stored
 // in flags field, shifted by AP_PARAM_FRAME_TYPE_SHIFT.
-#define AP_PARAM_FRAME_TYPE_SHIFT   7
+#define AP_PARAM_FRAME_TYPE_SHIFT   8
 
 // supported frame types for parameters
 #define AP_PARAM_FRAME_COPTER       (1<<0)
@@ -123,6 +126,9 @@
 
 // declare a group var_info line with both flags and frame type mask
 #define AP_GROUPINFO_FLAGS_FRAME(name, idx, clazz, element, def, flags, frame_flags) AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, flags|((frame_flags)<<AP_PARAM_FRAME_TYPE_SHIFT) )
+
+// declare a group var_info line with a default "pointer"
+#define AP_GROUPINFO_FLAGS_DEFAULT_POINTER(name, idx, clazz, element, def) {  name, AP_VAROFFSET(clazz, element), {def_value_offset : AP_VAROFFSET(clazz, element) - AP_VAROFFSET(clazz, def)}, AP_PARAM_FLAG_DEFAULT_POINTER, idx, AP_CLASSTYPE(clazz, element) }
 
 // declare a group var_info line
 #define AP_GROUPINFO(name, idx, clazz, element, def) AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, 0)
@@ -186,6 +192,7 @@ public:
             const struct GroupInfo *group_info;
             const struct GroupInfo **group_info_ptr; // when AP_PARAM_FLAG_INFO_POINTER is set in flags
             const float def_value;
+            ptrdiff_t def_value_offset; // Default value offset from param object, when AP_PARAM_FLAG_DEFAULT_POINTER is set in flags
         };
         uint16_t flags;
         uint8_t idx;  // identifier within the group
@@ -198,6 +205,7 @@ public:
             const struct GroupInfo *group_info;
             const struct GroupInfo **group_info_ptr; // when AP_PARAM_FLAG_INFO_POINTER is set in flags
             const float def_value;
+            ptrdiff_t def_value_offset; // Default value offset from param object, when AP_PARAM_FLAG_DEFAULT_POINTER is set in flags
         };
         uint16_t flags;
         uint16_t key; // k_param_*
@@ -564,7 +572,7 @@ public:
 protected:
 
     // store default value in linked list
-    static void add_default(AP_Param *ap, float v) { add_default(ap, v, default_list); }
+    static void add_default(AP_Param *ap, float v);
 
 private:
     static AP_Param *_singleton;
@@ -706,7 +714,8 @@ private:
                                     float *default_val);
 
     // find a default value given a pointer to a default value in flash
-    static float get_default_value(const AP_Param *object_ptr, const float *def_value_ptr);
+    static float get_default_value(const AP_Param *object_ptr, const struct GroupInfo &info);
+    static float get_default_value(const AP_Param *object_ptr, const struct Info &info);
 
     static bool parse_param_line(char *line, char **vname, float &value, bool &read_only);
 
@@ -792,11 +801,7 @@ private:
         float val;
         defaults_list *next;
     };
-#if AP_PARAM_MAX_EMBEDDED_PARAM > 0
-    static defaults_list *embedded_default_list;
-#endif
     static defaults_list *default_list;
-    static void add_default(AP_Param *ap, float v, defaults_list *&list);
     static void check_default(AP_Param *ap, float *default_value);
 };
 

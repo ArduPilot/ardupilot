@@ -454,14 +454,31 @@ private:
     uint8_t obs_buffer_length;
 
 #if MATH_CHECK_INDEXES
+    class Vector9 : public VectorN<ftype, 9> {
+    public:
+        Vector9(ftype p0, ftype p1, ftype p2,
+                ftype p3, ftype p4, ftype p5,
+                ftype p6, ftype p7, ftype p8) {
+            _v[0] = p0;   _v[1] = p1;  _v[2] = p2;
+            _v[3] = p3;   _v[4] = p4;  _v[5] = p5;
+            _v[6] = p6;   _v[7] = p7;  _v[8] = p8;
+        }
+    };
+    class Vector5 : public VectorN<ftype, 5> {
+    public:
+        Vector5(ftype p0, ftype p1, ftype p2,
+                ftype p3, ftype p4) {
+            _v[0] = p0;   _v[1] = p1;  _v[2] = p2;
+            _v[3] = p3;   _v[4] = p4;
+        }
+    };
+
     typedef VectorN<ftype,2> Vector2;
     typedef VectorN<ftype,3> Vector3;
     typedef VectorN<ftype,4> Vector4;
-    typedef VectorN<ftype,5> Vector5;
     typedef VectorN<ftype,6> Vector6;
     typedef VectorN<ftype,7> Vector7;
     typedef VectorN<ftype,8> Vector8;
-    typedef VectorN<ftype,9> Vector9;
     typedef VectorN<ftype,10> Vector10;
     typedef VectorN<ftype,11> Vector11;
     typedef VectorN<ftype,13> Vector13;
@@ -1236,10 +1253,11 @@ private:
     bool baroDataToFuse;            // true when valid baro height finder data has arrived at the fusion time horizon.
     bool gpsDataToFuse;             // true when valid GPS data has arrived at the fusion time horizon.
     bool magDataToFuse;             // true when valid magnetometer data has arrived at the fusion time horizon
-    enum AidingMode {AID_ABSOLUTE=0,    // GPS or some other form of absolute position reference aiding is being used (optical flow may also be used in parallel) so position estimates are absolute.
-                     AID_NONE=1,       // no aiding is being used so only attitude and height estimates are available. Either constVelMode or constPosMode must be used to constrain tilt drift.
-                     AID_RELATIVE=2    // only optical flow aiding is being used so position estimates will be relative
-                    };
+    enum AidingMode {
+        AID_ABSOLUTE=0,    // GPS or some other form of absolute position reference aiding is being used (optical flow may also be used in parallel) so position estimates are absolute.
+        AID_NONE=1,       // no aiding is being used so only attitude and height estimates are available. Either constVelMode or constPosMode must be used to constrain tilt drift.
+        AID_RELATIVE=2,    // only optical flow aiding is being used so position estimates will be relative
+    };
     AidingMode PV_AidingMode;       // Defines the preferred mode for aiding of velocity and position estimates from the INS
     AidingMode PV_AidingModePrev;   // Value of PV_AidingMode from the previous frame - used to detect transitions
     bool gndOffsetValid;            // true when the ground offset state can still be considered valid
@@ -1448,26 +1466,6 @@ private:
         };
         uint16_t value;
     } gpsCheckStatus;
-
-    // states held by magnetometer fusion across time steps
-    // magnetometer X,Y,Z measurements are fused across three time steps
-    // to level computational load as this is an expensive operation
-    struct {
-        ftype q0;
-        ftype q1;
-        ftype q2;
-        ftype q3;
-        ftype magN;
-        ftype magE;
-        ftype magD;
-        ftype magXbias;
-        ftype magYbias;
-        ftype magZbias;
-        Matrix3F DCM;
-        Vector3F MagPred;
-        ftype R_MAG;
-        Vector9 SH_MAG;
-    } mag_state;
 
     // string representing last reason for prearm failure
     char prearm_fail_string[40];
