@@ -17,7 +17,7 @@ Release 4.3.3 Jan 19th 2023
  - Takeoff in Auto handles baro drift before takeoff
  - Takeoff twitch due to velocity integrator init bug fixed
  - moved FTP MAVLink transfers to FTP thread and better control bandwidth
- - switch to QRTL if indide RTL radius when using Q_RTL_MODE=3 (approach)
+ - switch to QRTL if inside RTL radius when using Q_RTL_MODE=3 (approach)
  - check for 3 good frames for CRSF
  - allow for ELRS at 420kbaud
  - support MambaH743-v2
