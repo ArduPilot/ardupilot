@@ -67,6 +67,7 @@ class TestBuildOptions(object):
             "CubeOrange": frozenset([
                 'AP_BARO_MS56XX_ENABLED',
                 'AP_COMPASS_LSM303D_ENABLED',
+                'AP_COMPASS_AK8963_ENABLED',
             ])
         }
         return must_have_defines.get(board, frozenset([]))
