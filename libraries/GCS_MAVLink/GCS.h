@@ -993,7 +993,7 @@ private:
     
     // we cache the current location and send it even if the AHRS has
     // no idea where we are:
-    struct Location global_position_current_loc;
+    Location global_position_current_loc;
 
     uint8_t last_tx_seq;
     uint16_t send_packet_count;
