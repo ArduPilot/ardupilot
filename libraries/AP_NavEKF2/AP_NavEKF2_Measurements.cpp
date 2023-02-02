@@ -594,7 +594,7 @@ void NavEKF2_core::readGpsData()
             }
 
             // Read the GPS location in WGS-84 lat,long,height coordinates
-            const struct Location &gpsloc = gps.location();
+            const Location &gpsloc = gps.location();
 
             // Set the EKF origin and magnetic field declination if not previously set  and GPS checks have passed
             if (gpsGoodToAlign && !validOrigin) {
