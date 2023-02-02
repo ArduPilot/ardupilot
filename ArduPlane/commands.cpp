@@ -7,7 +7,7 @@
 /*
  *  set_next_WP - sets the target location the vehicle should fly to
  */
-void Plane::set_next_WP(const struct Location &loc)
+void Plane::set_next_WP(const Location &loc)
 {
     if (auto_state.next_wp_crosstrack) {
         // copy the current WP into the OldWP slot
