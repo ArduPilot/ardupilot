@@ -85,7 +85,7 @@ public:
       wrappers around ahrs functions which pass-thru directly. See
       AP_AHRS.h for description of each function
      */
-    bool get_location(struct Location &loc) const WARN_IF_UNUSED {
+    bool get_location(Location &loc) const WARN_IF_UNUSED {
         return ahrs.get_location(loc);
     }
 

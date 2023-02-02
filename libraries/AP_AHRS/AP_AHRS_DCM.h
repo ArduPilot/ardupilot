@@ -61,7 +61,7 @@ public:
     }
 
     // dead-reckoning support
-    virtual bool get_location(struct Location &loc) const override;
+    virtual bool get_location(Location &loc) const override;
 
     // status reporting
     float           get_error_rp() const {
