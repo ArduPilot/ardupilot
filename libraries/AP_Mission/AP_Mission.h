@@ -769,7 +769,7 @@ private:
     uint16_t                _prev_nav_cmd_id;       // id of the previous "navigation" command. (WAYPOINT, LOITER_TO_ALT, ect etc)
     uint16_t                _prev_nav_cmd_index;    // index of the previous "navigation" command.  Rarely used which is why we don't store the whole command
     uint16_t                _prev_nav_cmd_wp_index; // index of the previous "navigation" command that contains a waypoint.  Rarely used which is why we don't store the whole command
-    struct Location         _exit_position;  // the position in the mission that the mission was exited
+    Location         _exit_position;  // the position in the mission that the mission was exited
 
     // jump related variables
     struct jump_tracking_struct {
