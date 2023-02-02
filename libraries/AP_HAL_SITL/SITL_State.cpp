@@ -949,7 +949,7 @@ void SITL_State::set_height_agl(void)
         // get height above terrain from AP_Terrain. This assumes
         // AP_Terrain is working
         float terrain_height_amsl;
-        struct Location location;
+        Location location;
         location.lat = _sitl->state.latitude*1.0e7;
         location.lng = _sitl->state.longitude*1.0e7;
 
