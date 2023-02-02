@@ -1022,7 +1022,7 @@ void AP_AHRS_DCM::estimate_wind(void)
 
 // return our current position estimate using
 // dead-reckoning or GPS
-bool AP_AHRS_DCM::get_location(struct Location &loc) const
+bool AP_AHRS_DCM::get_location(Location &loc) const
 {
     loc.lat = _last_lat;
     loc.lng = _last_lng;
