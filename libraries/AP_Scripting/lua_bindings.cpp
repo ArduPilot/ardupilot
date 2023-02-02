@@ -532,3 +532,11 @@ int lua_removefile(lua_State *L) {
   const char *filename = luaL_checkstring(L, 1);
   return luaL_fileresult(L, remove(filename) == 0, filename);
 }
+
+// Manual binding to allow SRV_Channels table to see safety state
+int SRV_Channels_get_safety_state(lua_State *L) {
+    binding_argcheck(L, 1);
+    const bool data = hal.util->safety_switch_state() !=  AP_HAL::Util::SAFETY_ARMED;
+    lua_pushboolean(L, data);
+    return 1;
+}

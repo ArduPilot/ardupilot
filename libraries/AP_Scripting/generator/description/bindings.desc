@@ -279,6 +279,8 @@ singleton SRV_Channels method get_output_scaled float SRV_Channel::Aux_servo_fun
 singleton SRV_Channels method set_output_norm void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 float -1 1
 singleton SRV_Channels method set_angle void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'skip_check
 singleton SRV_Channels method set_range void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'skip_check
+singleton SRV_Channels method get_emergency_stop boolean
+singleton SRV_Channels manual get_safety_state SRV_Channels_get_safety_state 0
 
 ap_object RC_Channel method norm_input float
 ap_object RC_Channel method norm_input_dz float
@@ -521,6 +523,7 @@ singleton AP::motors() depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_CO
 singleton AP::motors() literal
 singleton AP::motors() rename motors
 singleton AP::motors() method set_frame_string void string
+singleton AP::motors() method get_interlock boolean
 
 include AP_Common/AP_FWVersion.h
 singleton AP::fwversion() literal

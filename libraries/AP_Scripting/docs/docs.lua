@@ -1037,6 +1037,12 @@ function mount:get_attitude_euler(instance) end
 ---@class motors
 motors = {}
 
+-- Get motors interlock state, the state of motors controlled by AP_Motors, Copter and Quadplane VTOL motors. Not plane forward flight motors.
+---@return boolean
+---| true  # motors active
+---| false # motors inactive
+function motors:get_interlock() end
+
 -- desc
 ---@param param1 string
 function motors:set_frame_string(param1) end
@@ -1517,6 +1523,18 @@ function rc:get_pwm(chan_num) end
 -- desc
 ---@class SRV_Channels
 SRV_Channels = {}
+
+-- Get emergency stop state if active no motors of any kind will be active
+---@return boolean
+---| true # E-Stop active
+---| false # E-Stop inactive
+function SRV_Channels:get_emergency_stop() end
+
+-- Get safety state
+---@return boolean
+---| true # Disarmed outputs inactive
+---| false # Armed outputs live
+function SRV_Channels:get_safety_state() end
 
 -- desc
 ---@param function_num integer
