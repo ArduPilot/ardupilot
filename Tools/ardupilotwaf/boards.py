@@ -1032,7 +1032,7 @@ class chibios(Board):
         if cfg.env.SAVE_TEMPS:
             env.CXXFLAGS += [ '-S', '-save-temps=obj' ]
 
-        if cfg.options.disable_watchdog:
+        if cfg.options.disable_watchdog or cfg.env.DEBUG:
             cfg.msg("Disabling Watchdog", "yes")
             env.CFLAGS += [ '-DDISABLE_WATCHDOG' ]
             env.CXXFLAGS += [ '-DDISABLE_WATCHDOG' ]
