@@ -102,7 +102,7 @@ void Tracker::init_ardupilot()
 /*
   fetch HOME from EEPROM
 */
-bool Tracker::get_home_eeprom(struct Location &loc) const
+bool Tracker::get_home_eeprom(Location &loc) const
 {
     // Find out proper location in memory by using the start_byte position + the index
     // --------------------------------------------------------------------------------
