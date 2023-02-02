@@ -705,13 +705,13 @@ private:
 
     // 3D Location vectors
     // Location structure defined in AP_Common
-    const struct Location &home = ahrs.get_home();
+    const Location &home = ahrs.get_home();
 
     // The location of the previous waypoint.  Used for track following and altitude ramp calculations
     Location prev_WP_loc {};
 
     // The plane's current location
-    struct Location current_loc {};
+    Location current_loc {};
 
     // The location of the current/active waypoint.  Used for altitude ramp, track following and loiter calculations.
     Location next_WP_loc {};
@@ -889,7 +889,7 @@ private:
     void load_parameters(void) override;
 
     // commands_logic.cpp
-    void set_next_WP(const struct Location &loc);
+    void set_next_WP(const Location &loc);
     void do_RTL(int32_t alt);
     bool verify_takeoff();
     bool verify_loiter_unlim(const AP_Mission::Mission_Command &cmd);
