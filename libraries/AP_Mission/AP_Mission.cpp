@@ -2118,7 +2118,7 @@ uint16_t AP_Mission::num_commands_max(void) const
 // be found.
 uint16_t AP_Mission::get_landing_sequence_start()
 {
-    struct Location current_loc;
+    Location current_loc;
 
     if (!AP::ahrs().get_location(current_loc)) {
         return 0;
@@ -2186,7 +2186,7 @@ bool AP_Mission::jump_to_landing_sequence(void)
 // jumps the mission to the closest landing abort that is planned, returns false if unable to find a valid abort
 bool AP_Mission::jump_to_abort_landing_sequence(void)
 {
-    struct Location current_loc;
+    Location current_loc;
 
     uint16_t abort_index = 0;
     if (AP::ahrs().get_location(current_loc)) {
