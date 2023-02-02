@@ -50,8 +50,8 @@ public:
     float turn_distance(float wp_radius) const override;
     float turn_distance(float wp_radius, float turn_angle) const override;
     float loiter_radius (const float loiter_radius) const override;
-    void update_waypoint(const struct Location &prev_WP, const struct Location &next_WP, float dist_min = 0.0f) override;
-    void update_loiter(const struct Location &center_WP, float radius, int8_t loiter_direction) override;
+    void update_waypoint(const class Location &prev_WP, const class Location &next_WP, float dist_min = 0.0f) override;
+    void update_loiter(const class Location &center_WP, float radius, int8_t loiter_direction) override;
     void update_heading_hold(int32_t navigation_heading_cd) override;
     void update_level_flight(void) override;
     bool reached_loiter_target(void) override;
