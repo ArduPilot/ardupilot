@@ -541,7 +541,7 @@ void GCS_MAVLINK::send_ahrs2()
 {
     const AP_AHRS &ahrs = AP::ahrs();
     Vector3f euler;
-    struct Location loc {};
+    Location loc {};
     // we want one or both of these, use | to avoid short-circuiting:
     if (ahrs.get_secondary_attitude(euler) |
         ahrs.get_secondary_position(loc)) {
