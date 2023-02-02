@@ -790,7 +790,7 @@ int32_t GCS_MAVLINK_Sub::global_position_int_relative_alt() const {
 int16_t GCS_MAVLINK_Sub::high_latency_target_altitude() const
 {
     AP_AHRS &ahrs = AP::ahrs();
-    struct Location global_position_current;
+    Location global_position_current;
     UNUSED_RESULT(ahrs.get_location(global_position_current));
 
     //return units are m
