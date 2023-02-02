@@ -2167,7 +2167,7 @@ bool AP_GPS::get_undulation(uint8_t instance, float &undulation) const
 void AP_GPS::Write_GPS(uint8_t i)
 {
     const uint64_t time_us = AP_HAL::micros64();
-    const struct Location &loc = location(i);
+    const Location &loc = location(i);
 
     float yaw_deg=0, yaw_accuracy_deg=0;
     uint32_t yaw_time_ms;
