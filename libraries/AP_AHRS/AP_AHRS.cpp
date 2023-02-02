@@ -681,7 +681,7 @@ void AP_AHRS::reset()
 }
 
 // dead-reckoning support
-bool AP_AHRS::get_location(struct Location &loc) const
+bool AP_AHRS::get_location(Location &loc) const
 {
     switch (active_EKF_type()) {
     case EKFType::NONE:
@@ -1158,7 +1158,7 @@ bool AP_AHRS::get_secondary_quaternion(Quaternion &quat) const
 }
 
 // return secondary position solution if available
-bool AP_AHRS::get_secondary_position(struct Location &loc) const
+bool AP_AHRS::get_secondary_position(Location &loc) const
 {
     EKFType secondary_ekf_type;
     if (!get_secondary_EKF_type(secondary_ekf_type)) {

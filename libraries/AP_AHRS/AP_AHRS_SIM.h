@@ -61,7 +61,7 @@ public:
     void            reset() override { return; }
 
     // dead-reckoning support
-    virtual bool get_location(struct Location &loc) const override;
+    virtual bool get_location(Location &loc) const override;
 
     // get latest altitude estimate above ground level in meters and validity flag
     bool get_hagl(float &hagl) const override WARN_IF_UNUSED;
