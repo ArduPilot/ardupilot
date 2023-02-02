@@ -102,7 +102,7 @@ private:
     AP_BattMonitor battery{MASK_LOG_CURRENT,
                            FUNCTOR_BIND_MEMBER(&Tracker::handle_battery_failsafe, void, const char*, const int8_t),
                            nullptr};
-    struct Location current_loc;
+    Location current_loc;
 
     Mode *mode_from_mode_num(enum Mode::Number num);
 
@@ -202,7 +202,7 @@ private:
 
     // system.cpp
     void init_ardupilot() override;
-    bool get_home_eeprom(struct Location &loc) const;
+    bool get_home_eeprom(Location &loc) const;
     bool set_home_eeprom(const Location &temp) WARN_IF_UNUSED;
     bool set_home(const Location &temp) WARN_IF_UNUSED;
     void prepare_servos();
