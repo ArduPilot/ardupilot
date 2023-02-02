@@ -1070,7 +1070,7 @@ bool NavEKF2::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 // If a calculated location isn't available, return a raw GPS measurement
 // The status will return true if a calculation or raw measurement is available
 // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
-bool NavEKF2::getLLH(struct Location &loc) const
+bool NavEKF2::getLLH(Location &loc) const
 {
     if (!core) {
         return false;
@@ -1082,7 +1082,7 @@ bool NavEKF2::getLLH(struct Location &loc) const
 // An out of range instance (eg -1) returns data for the primary instance
 // All NED positions calculated by the filter are relative to this location
 // Returns false if the origin has not been set
-bool NavEKF2::getOriginLLH(struct Location &loc) const
+bool NavEKF2::getOriginLLH(Location &loc) const
 {
     if (!core) {
         return false;
