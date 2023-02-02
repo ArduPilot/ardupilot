@@ -188,7 +188,7 @@ bool AP_MotorsHeli_Single::init_outputs()
 
     // set signal value for main rotor external governor to know when to use autorotation bailout ramp up
     if (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SETPOINT  ||  _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_PASSTHROUGH) {
-        _main_rotor.set_ext_gov_arot_bail(_main_rotor._ext_gov_arot_pct.get());
+        _main_rotor.set_ext_gov_arot_bail(_main_rotor._arot_idle_output.get());
     } else {
         _main_rotor.set_ext_gov_arot_bail(0);
     }
@@ -196,7 +196,7 @@ bool AP_MotorsHeli_Single::init_outputs()
     // set signal value for tail rotor external governor to know when to use autorotation bailout ramp up
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPIT_EXT_GOV) {
         // set point for tail rsc is the same as for main rotor to save on parameters
-        _tail_rotor.set_ext_gov_arot_bail(_main_rotor._ext_gov_arot_pct.get());
+        _tail_rotor.set_ext_gov_arot_bail(_main_rotor._arot_idle_output.get());
     } else {
         _tail_rotor.set_ext_gov_arot_bail(0);
     }
