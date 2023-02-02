@@ -137,14 +137,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("GOV_RANGE", 17, AP_MotorsHeli_RSC, _governor_range, AP_MOTORS_HELI_RSC_GOVERNOR_RANGE_DEFAULT),
 
-    // @Param: AROT_PCT
-    // @DisplayName: Autorotation Throttle Percentage for External Governor
-    // @Description: The throttle percentage sent to external governors, signaling to enable fast spool-up, when bailing out of an autorotation.  Set 0 to disable. If also using a tail rotor of type DDVP with external governor then this value must lie within the autorotation window of both governors.
-    // @Range: 0 40
-    // @Units: %
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("AROT_PCT", 18, AP_MotorsHeli_RSC, _ext_gov_arot_pct, AP_MOTORS_HELI_RSC_AROT_PCT),
+    // Index 18 was renamed from AROT_PCT to AROT_IDLE
 
     // @Param: CLDWN_TIME
     // @DisplayName: Cooldown Time
@@ -215,6 +208,15 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("AROT_MN_EN", 26, AP_MotorsHeli_RSC, _rsc_arot_man_enable, 0),
+
+    // @Param: AROT_IDLE
+    // @DisplayName: Idle Throttle Percentage during Autorotation
+    // @Description: Idle throttle used for all RSC modes.  For external governors, this would be set to signal it to enable fast spool-up, when bailing out of an autorotation.  Set 0 to disable. If also using a tail rotor of type DDVP with external governor then this value must lie within the autorotation window of both governors.
+    // @Range: 0 40
+    // @Units: %
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("AROT_IDLE", 27, AP_MotorsHeli_RSC, _arot_idle_output, AP_MOTORS_HELI_RSC_AROT_IDLE),
 
     AP_GROUPEND
 };
@@ -305,8 +307,13 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
         _autothrottle = false;
         _governor_fault = false;
         if (_in_autorotation) {
-            // if in autorotation and using an external governor, set the output to tell the governor to use bailout ramp
-            _idle_throttle = constrain_float( _ext_gov_arot_pct/100.0f, 0.0f, 0.4f);
+            // if in autorotation, set the output to idle for autorotation. This will tell an external governor to use fast ramp for spool up.
+            // if autorotation idle is set to zero then default to the RSC idle value.
+            if (_arot_idle_output == 0) {
+                _idle_throttle = get_idle_output();
+            } else {
+                _idle_throttle = constrain_float( get_arot_idle_output(), 0.0f, 0.4f);
+            }
             if (!_autorotating) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "Autorotation");
                 _autorotating =true;
