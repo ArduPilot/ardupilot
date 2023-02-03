@@ -98,6 +98,7 @@ extern const AP_HAL::HAL& hal;
 
 #define INV3REG_456_WHOAMI          0x72
 #define INV3REG_456_PWR_MGMT0       0x10
+#define INV3REG_456_INT1_STATUS0    0x19
 #define INV3REG_456_ACCEL_CONFIG0   0x1B
 #define INV3REG_456_GYRO_CONFIG0    0x1C
 #define INV3REG_456_FIFO_CONFIG0    0x1D
@@ -112,6 +113,7 @@ extern const AP_HAL::HAL& hal;
 #define INV3REG_456_IOC_PAD_SCENARIO 0x2F
 #define INV3REG_456_IOC_PAD_SCENARIO_AUX_OVRD 0x30
 #define INV3REG_456_IOC_PAD_SCENARIO_OVRD 0x31
+#define INV3REG_456_PWR_MGMT_AUX1   0x54
 #define INV3REG_456_IREG_ADDRH      0x7C
 #define INV3REG_456_IREG_ADDRL      0x7D
 #define INV3REG_456_IREG_DATA       0x7E
@@ -730,14 +732,6 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm456xy(void)
     reg = register_read_bank_icm456xy(INV3BANK_456_IPREG_SYS2_ADDR, 0x7B); // ACCEL_SRC_CTRL b0-1
     register_write_bank_icm456xy(INV3BANK_456_IPREG_SYS2_ADDR, 0x7B, (reg & ~0x3) | 0x2);
 
-    // enable gyro LPF
-    reg = register_read_bank_icm456xy(INV3BANK_456_IPREG_SYS1_ADDR, 0xAC);  // GYRO_UI_LPFBW_SEL b0-1
-    register_write_bank_icm456xy(INV3BANK_456_IPREG_SYS1_ADDR, 0xAC, (reg & ~0x7) | 0x0);   // bypass
-
-    // enable accel LPF
-    reg = register_read_bank_icm456xy(INV3BANK_456_IPREG_SYS2_ADDR, 0x83); // ACCEL_UI_LPFBW_SEL b0-1
-    register_write_bank_icm456xy(INV3BANK_456_IPREG_SYS2_ADDR, 0x7B, (reg & ~0x3) | 0x0);   // bypass
-
     // enable FIFO
     register_write(INV3REG_456_FIFO_CONFIG3, 0x07, true);
 }
@@ -884,20 +878,31 @@ bool AP_InertialSensor_Invensensev3::hardware_init(void)
         // little-endian, fifo count in records
         register_write(INV3REG_70_INTF_CONFIG0, 0x40, true);
     } else if (inv3_type == Invensensev3_Type::ICM45686) {
+
+        // do soft reset
+        register_write(INV3REG_456_REG_MISC2, 0x02);
         hal.scheduler->delay_microseconds(1000);
+        // check if reset done
+        if (!(register_read(INV3REG_456_INT1_STATUS0) & 0x80)) {
+            // failed to reset
+            return false;
+        }
+        // turn off aux1
+        register_write(INV3REG_456_PWR_MGMT_AUX1, 0x3);
+
         // gyro and accel in low-noise mode
         register_write(INV3REG_456_PWR_MGMT0, 0x0f);
-        hal.scheduler->delay_microseconds(300);
+
 #ifdef ICM45686_CLKIN
         /*************************CLKIN setting*************************/
         // override INT2 pad as CLKIN, AUX1 disabled
-        register_write(INV3REG_456_IOC_PAD_SCENARIO_OVRD, (0x2<<4U), true);
+        register_write(INV3REG_456_IOC_PAD_SCENARIO_OVRD, (0x1 << 2)| 0x2 , true);
 
         // disable AUX1
         register_write(INV3REG_456_IOC_PAD_SCENARIO_AUX_OVRD, (0x1<<1U), true);
 
         // enable RTC MODE
-        register_write(INV3REG_456_RTC_CONFIG, (0x1<<5U) | 0x3, true);
+        register_write(INV3REG_456_RTC_CONFIG, (0x1<<5U), true);
 #endif
         /*************************CLKIN setting*************************/
         // disable STC
