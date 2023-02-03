@@ -280,6 +280,11 @@ if [ -n "$RP" ]; then
     BASE_PKGS+=" realpath"
 fi
 
+# WSL2 needs route to detect the host to auto-forward mavlink to it
+if [[ $(grep -i Microsoft /proc/version) ]]; then
+    SITL_PKGS+=" net-tools"
+fi
+
 # Check if we need to manually install libtool-bin
 LBTBIN=$(apt-cache search -n '^libtool-bin')
 if [ -n "$LBTBIN" ]; then
