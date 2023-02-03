@@ -204,6 +204,8 @@ AP_HW_Sierra-TrueNav                 1092
 AP_HW_Sierra-TrueNorth               1093
 AP_HW_Sierra-TrueSpeed               1094
 AP_HW_Sierra-PrecisionPoint          1095
+AP_HW_PixPilot-V3                    1096
+AP_HW_PixSurveyA2                    1097
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
