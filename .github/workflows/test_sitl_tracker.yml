@@ -57,6 +57,7 @@ jobs:
       - name: build tracker ${{ matrix.toolchain }}
         shell: bash
         run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
           if [[ ${{ matrix.toolchain }} == "clang" ]]; then
             export CC=clang
             export CXX=clang++
@@ -105,6 +106,7 @@ jobs:
           CI_BUILD_TARGET: ${{matrix.config}}
         shell: bash
         run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
           PATH="/github/home/.local/bin:$PATH"
           Tools/scripts/build_ci.sh
 
