@@ -21,7 +21,7 @@ import pexpect
 
 from pymavlink.rotmat import Vector3, Matrix3
 
-if (sys.version_info[0] >= 3):
+if sys.version_info[0] >= 3:
     ENCODING = 'ascii'
 else:
     ENCODING = None
@@ -53,11 +53,11 @@ def mps2kt(x):
 def topdir():
     """Return top of git tree where autotest is running from."""
     d = os.path.dirname(os.path.realpath(__file__))
-    assert(os.path.basename(d) == 'pysim')
+    assert os.path.basename(d) == 'pysim'
     d = os.path.dirname(d)
-    assert(os.path.basename(d) == 'autotest')
+    assert os.path.basename(d) == 'autotest'
     d = os.path.dirname(d)
-    assert(os.path.basename(d) == 'Tools')
+    assert os.path.basename(d) == 'Tools'
     d = os.path.dirname(d)
     return d
 
@@ -92,7 +92,7 @@ def rmfile(path):
     """Remove a file if it exists."""
     try:
         os.unlink(path)
-    except Exception:
+    except (OSError, FileNotFoundError):
         pass
 
 
@@ -368,10 +368,10 @@ def kill_mac_terminal():
 
 
 class FakeMacOSXSpawn(object):
-    '''something that looks like a pspawn child so we can ignore attempts
+    """something that looks like a pspawn child so we can ignore attempts
     to pause (and otherwise kill(1) SITL.  MacOSX using osascript to
     start/stop sitl
-    '''
+    """
     def __init__(self):
         pass
 
@@ -435,8 +435,8 @@ def start_SITL(binary,
             # attach gdb to the gdbserver:
             f = open("/tmp/x.gdb", "w")
             f.write("target extended-remote localhost:3333\nc\n")
-            for breakpoint in breakpoints:
-                f.write("b %s\n" % (breakpoint,))
+            for breakingpoint in breakpoints:
+                f.write("b %s\n" % (breakingpoint,))
             if disable_breakpoints:
                 f.write("disable\n")
             f.close()
@@ -445,8 +445,8 @@ def start_SITL(binary,
     elif gdb:
         f = open("/tmp/x.gdb", "w")
         f.write("set pagination off\n")
-        for breakpoint in breakpoints:
-            f.write("b %s\n" % (breakpoint,))
+        for breakingpoint in breakpoints:
+            f.write("b %s\n" % (breakingpoint,))
         if disable_breakpoints:
             f.write("disable\n")
         if not gdb_no_tui:
@@ -466,8 +466,8 @@ def start_SITL(binary,
                         'gdb', '-x', '/tmp/x.gdb', binary, '--args'])
     elif lldb:
         f = open("/tmp/x.lldb", "w")
-        for breakpoint in breakpoints:
-            f.write("b %s\n" % (breakpoint,))
+        for breakingpoint in breakpoints:
+            f.write("b %s\n" % (breakingpoint,))
         if disable_breakpoints:
             f.write("disable\n")
         f.write("settings set target.process.stop-on-exec false\n")
@@ -569,19 +569,19 @@ def start_SITL(binary,
 
 
 def mavproxy_cmd():
-    '''return path to which mavproxy to use'''
+    """return path to which mavproxy to use"""
     return os.getenv('MAVPROXY_CMD', 'mavproxy.py')
 
 
 def MAVProxy_version():
-    '''return the current version of mavproxy as a tuple e.g. (1,8,8)'''
+    """return the current version of mavproxy as a tuple e.g. (1,8,8)"""
     command = "%s --version" % mavproxy_cmd()
     output = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE).communicate()[0]
     output = output.decode('ascii')
     match = re.search("MAVProxy Version: ([0-9]+)[.]([0-9]+)[.]([0-9]+)", output)
     if match is None:
         raise ValueError("Unable to determine MAVProxy version from (%s)" % output)
-    return (int(match.group(1)), int(match.group(2)), int(match.group(3)))
+    return int(match.group(1)), int(match.group(2)), int(match.group(3))
 
 
 def start_MAVProxy_SITL(atype,
@@ -670,7 +670,7 @@ def lock_file(fname):
     f = open(fname, mode='w')
     try:
         fcntl.lockf(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except Exception:
+    except OSError:
         return None
     return f
 
@@ -680,13 +680,13 @@ def check_parent(parent_pid=None):
     if parent_pid is None:
         try:
             parent_pid = os.getppid()
-        except Exception:
+        except OSError:
             pass
     if parent_pid is None:
         return
     try:
         os.kill(parent_pid, 0)
-    except Exception:
+    except OSError:
         print("Parent had finished - exiting")
         sys.exit(1)
 
@@ -751,7 +751,7 @@ def gps_newpos(lat, lon, bearing, distance):
                 cos(lat1) * sin(dr) * cos(brng))
     lon2 = lon1 + atan2(sin(brng) * sin(dr) * cos(lat1),
                         cos(dr) - sin(lat1) * sin(lat2))
-    return (degrees(lat2), degrees(lon2))
+    return degrees(lat2), degrees(lon2)
 
 
 def gps_distance(lat1, lon1, lat2, lon2):
@@ -823,7 +823,7 @@ class Wind(object):
         w_delta -= (self.turbulance_mul - 1.0) * (deltat / self.turbulance_time_constant)
         self.turbulance_mul += w_delta
         speed = self.speed * math.fabs(self.turbulance_mul)
-        return (speed, self.direction)
+        return speed, self.direction
 
     # Calculate drag.
     def drag(self, velocity, deltat=None):
@@ -877,7 +877,7 @@ def apparent_wind(wind_sp, obj_speed, alpha):
     else:
         beta = acos((delta + obj_speed) / rel_speed)
 
-    return (rel_speed, beta)
+    return rel_speed, beta
 
 
 def drag_force(wind, sp):
@@ -922,7 +922,7 @@ def constrain(value, minv, maxv):
 
 
 def load_local_module(fname):
-    '''load a python module from within the ardupilot tree'''
+    """load a python module from within the ardupilot tree"""
     fname = os.path.join(topdir(), fname)
     if sys.version_info.major >= 3:
         import importlib.util
