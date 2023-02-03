@@ -19,6 +19,7 @@ jobs:
             base,  # GCC
         ]
         config: [
+            disco,
             Durandal,
             MatekF405,
             Pixhawk1-1M,
@@ -37,6 +38,7 @@ jobs:
         run: |
           NOW=$(date -u +"%F-%T")
           echo "{timestamp}=${NOW}" >> $GITHUB_OUTPUT
+          apt install -y arm-linux-gnueabihf
       - name: ccache cache files
         uses: actions/cache@v3
         with:
@@ -70,11 +72,17 @@ jobs:
           NO_VERSIONS_DIR="$GITHUB_WORKSPACE/base_branch_bin_no_versions"
           mkdir "$NO_VERSIONS_DIR"
 
+          # export some environment variables designed to get
+          #            repeatable builds from the same source:
+          export CHIBIOS_GIT_VERSION="12345678"
+          export GIT_VERSION="abcdef"
+          export GIT_VERSION_INT="15"
+
           if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
              [ "${{matrix.config}}" = "f103-GPS" ]; then
-            CHIBIOS_GIT_VERSION="12345678" GIT_VERSION="abcdef" GIT_VERSION_INT="15" ./waf AP_Periph
+            ./waf AP_Periph
           else
-            CHIBIOS_GIT_VERSION="12345678" GIT_VERSION="abcdef" GIT_VERSION_INT="15" ./waf
+            ./waf
           fi
           cp -r build/${{matrix.config}}/bin/* "$NO_VERSIONS_DIR"
 
@@ -164,12 +172,16 @@ jobs:
         run: |
           python3 -m pip install -U weasyprint elf_diff anytree
           mkdir elf_diff
+          BIN_PREFIX="arm-none-eabi-"
+          if [ "${{matrix.config}}" = "disco" ]; then
+             BIN_PREFIX="arm-linux-gnueabihf-"
+          fi
           if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
              [ "${{matrix.config}}" = "f103-GPS" ]; then
-             python3 -m elf_diff --bin_prefix=arm-none-eabi- --html_dir=elf_diff/AP_Periph $GITHUB_WORKSPACE/base_branch_bin/AP_Periph $GITHUB_WORKSPACE/pr_bin/AP_Periph
+             python3 -m elf_diff --bin_prefix="$BIN_PREFIX" --html_dir=elf_diff/AP_Periph $GITHUB_WORKSPACE/base_branch_bin/AP_Periph $GITHUB_WORKSPACE/pr_bin/AP_Periph
           else
-             python3 -m elf_diff --bin_prefix=arm-none-eabi- --html_dir=elf_diff/plane $GITHUB_WORKSPACE/base_branch_bin/arduplane $GITHUB_WORKSPACE/pr_bin/arduplane
-             python3 -m elf_diff --bin_prefix=arm-none-eabi- --html_dir=elf_diff/copter $GITHUB_WORKSPACE/base_branch_bin/arducopter $GITHUB_WORKSPACE/pr_bin/arducopter
+             python3 -m elf_diff --bin_prefix="$BIN_PREFIX" --html_dir=elf_diff/plane $GITHUB_WORKSPACE/base_branch_bin/arduplane $GITHUB_WORKSPACE/pr_bin/arduplane
+             python3 -m elf_diff --bin_prefix="$BIN_PREFIX" --html_dir=elf_diff/copter $GITHUB_WORKSPACE/base_branch_bin/arducopter $GITHUB_WORKSPACE/pr_bin/arducopter
           fi
           zip -r elf_diff.zip elf_diff
 

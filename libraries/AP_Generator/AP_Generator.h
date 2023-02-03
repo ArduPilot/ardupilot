@@ -42,14 +42,14 @@ public:
     // Helpers to retrieve measurements
     float get_voltage(void) const { return _voltage; }
     float get_current(void) const { return _current; }
-    float get_fuel_remain(void) const { return _fuel_remain_pct; }
+    float get_fuel_remaining_pct(void) const { return _fuel_remain_pct; }
     float get_batt_consumed(void) const { return _consumed_mah; }
     uint16_t get_rpm(void) const { return _rpm; }
 
     // Helpers to see if backend has a measurement
     bool has_current() const { return _has_current; }
     bool has_consumed_energy() const { return _has_consumed_energy; }
-    bool has_fuel_remaining() const { return _has_fuel_remaining; }
+    bool has_fuel_remaining_pct() const { return _has_fuel_remaining_pct; }
 
     // healthy() returns true if the generator is not present, or it is
     // present, providing telemetry and not indicating any errors.
@@ -103,7 +103,7 @@ private:
     bool _healthy;
     bool _has_current;
     bool _has_consumed_energy;
-    bool _has_fuel_remaining;
+    bool _has_fuel_remaining_pct;
 
     static AP_Generator *_singleton;
 

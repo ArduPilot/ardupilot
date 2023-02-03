@@ -56,7 +56,7 @@ const struct UnitStructure log_Units[] = {
     { 'h', "degheading" },    // 0.? to 359.?
     { 'i', "A.s" },           // Ampere second
     { 'J', "W.s" },           // Joule (Watt second)
-    // { 'l', "l" },          // litres
+    { 'l', "l" },             // litres
     { 'L', "rad/s/s" },       // radians per second per second
     { 'm', "m" },             // metres
     { 'n', "m/s" },           // metres per second
@@ -75,6 +75,7 @@ const struct UnitStructure log_Units[] = {
     { 'w', "Ohm" },           // Ohm
     { 'W', "Watt" },          // Watt
     { 'X', "W.h" },           // Watt hour
+    { 'y', "l/s" },           // litres per second
     { 'Y', "us" },            // pulse width modulation in microseconds
     { 'z', "Hz" },            // Hertz
     { '#', "instance" }       // (e.g.)Sensor instance number
