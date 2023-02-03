@@ -85,6 +85,7 @@ jobs:
           CI_BUILD_TARGET: ${{matrix.config}}
         shell: bash
         run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
           if [[ ${{ matrix.toolchain }} == "chibios-clang" ]]; then
             export CC=clang
             export CXX=clang++

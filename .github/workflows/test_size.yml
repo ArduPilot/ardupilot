@@ -57,6 +57,7 @@ jobs:
           CI_BUILD_TARGET: ${{matrix.config}}
         shell: bash
         run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
           PATH="/github/home/.local/bin:$PATH"
           cd base_branch
           ./waf configure --board ${{matrix.config}}
@@ -102,6 +103,7 @@ jobs:
           CI_BUILD_TARGET: ${{matrix.config}}
         shell: bash
         run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
           PATH="/github/home/.local/bin:$PATH"
           cd pr/
           git config user.email "ardupilot-ci@ardupilot.org"
