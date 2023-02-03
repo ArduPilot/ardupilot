@@ -163,8 +163,12 @@ jobs:
         shell: bash
         run: |
           cd pr/
-          Tools/scripts/extract_features.py $GITHUB_WORKSPACE/base_branch_bin/arduplane >features-base_branch.txt
-          Tools/scripts/extract_features.py $GITHUB_WORKSPACE/pr_bin/arduplane >features-pr.txt
+          BIN_PREFIX="arm-none-eabi-"
+          if [ "${{matrix.toolchain}}" = "armhf" ]; then
+             BIN_PREFIX="arm-linux-gnueabihf-"
+          fi
+          Tools/scripts/extract_features.py $GITHUB_WORKSPACE/base_branch_bin/arduplane -nm "${BIN_PREFIX}nm" >features-base_branch.txt
+          Tools/scripts/extract_features.py $GITHUB_WORKSPACE/pr_bin/arduplane -nm "${BIN_PREFIX}nm" >features-pr.txt
           diff -u features-base_branch.txt features-pr.txt || true
 
       - name: Checksum compare with ${{ github.event.pull_request.base.ref }}
@@ -179,7 +183,7 @@ jobs:
           python3 -m pip install -U --no-deps elf_diff GitPython Jinja2 MarkupSafe PyYAML anytree dict2xml gitdb progressbar2 python-utils setuptools-git smmap
           mkdir elf_diff
           BIN_PREFIX="arm-none-eabi-"
-          if [ "${{matrix.config}}" = "disco" ]; then
+          if [ "${{ matrix.toolchain }}" = "armhf" ]; then
              BIN_PREFIX="arm-linux-gnueabihf-"
           fi
           if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
