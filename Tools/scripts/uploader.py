@@ -635,7 +635,7 @@ class uploader(object):
         self.__send(uploader.EXTF_ERASE + size_bytes + uploader.EOC)
         self.__getSync()
         last_pct = 0
-        while(True):
+        while True:
             if last_pct < 90:
                 pct = self.__recv_uint8()
                 if last_pct != pct:
