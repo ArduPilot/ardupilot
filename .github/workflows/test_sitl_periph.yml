@@ -28,7 +28,7 @@ concurrency:
 jobs:
   build-gcc-ap_periph:
     runs-on: ubuntu-20.04
-    container: ardupilot/ardupilot-dev-base:latest
+    container: ardupilot/ardupilot-dev-periph:latest
     steps:
       # git checkout the PR
       - uses: actions/checkout@v3
@@ -49,11 +49,6 @@ jobs:
       - name: setup ccache
         run: |
           . .github/workflows/ccache.env
-      - name: install 32-bit libraries
-        run: |
-          dpkg --add-architecture i386
-          apt-get update
-          apt-get install -y gcc-multilib g++-multilib
 
       - name: run dronecan dsdlc generator test
         run: |
@@ -74,7 +69,7 @@ jobs:
     needs: build-gcc-ap_periph  # don't try to launch the tests matrix if it doesn't build first, profit from caching for fast build
     runs-on: ubuntu-20.04
     container: 
-      image: ardupilot/ardupilot-dev-base:latest
+      image: ardupilot/ardupilot-dev-periph:latest
       options: --privileged
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
@@ -103,11 +98,6 @@ jobs:
       - name: setup ccache
         run: |
           . .github/workflows/ccache.env
-      - name: install 32-bit libraries
-        run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get update
-          sudo apt-get install -y gcc-multilib g++-multilib
       - name: setup can-utils
         run: |
           kernel_ver=`uname -r`
