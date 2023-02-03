@@ -38,7 +38,7 @@ jobs:
         run: |
           NOW=$(date -u +"%F-%T")
           echo "{timestamp}=${NOW}" >> $GITHUB_OUTPUT
-          apt install -y arm-linux-gnueabihf
+          apt install -y g++-arm-linux-gnueabihf
       - name: ccache cache files
         uses: actions/cache@v3
         with:
