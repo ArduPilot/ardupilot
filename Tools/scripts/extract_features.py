@@ -5,8 +5,7 @@ script to determine what features have been built into an ArduPilot binary
 
 AP_FLAKE8_CLEAN
 """
-
-import optparse
+import argparse
 import os
 import re
 import string
@@ -24,9 +23,9 @@ else:
 
 class ExtractFeatures(object):
 
-    def __init__(self, filename):
+    def __init__(self, filename, nm="arm-none-eabi-nm"):
         self.filename = filename
-        self.nm = 'arm-none-eabi-nm'
+        self.nm = nm
 
         # feature_name should match the equivalent feature in
         # build_options.py ('FEATURE_NAME', 'EXPECTED_SYMBOL').
@@ -144,12 +143,12 @@ class ExtractFeatures(object):
             ('EK3_FEATURE_EXTERNAL_NAV', r'NavEKF3::writeExtNavVelData'),
         ]
 
-    def progress(self, string):
-        '''pretty-print progress'''
-        print("EF: %s" % string)
+    def progress(self, msg):
+        """Pretty-print progress."""
+        print("EF: %s" % msg)
 
     def run_program(self, prefix, cmd_list, show_output=True, env=None):
-        '''swiped from build_binaries.py'''
+        """Swiped from build_binaries.py."""
         if show_output:
             self.progress("Running (%s)" % " ".join(cmd_list))
         p = subprocess.Popen(
@@ -171,7 +170,7 @@ class ExtractFeatures(object):
                 continue
             if running_python3:
                 x = bytearray(x)
-                x = filter(lambda x : chr(x) in string.printable, x)
+                x = filter(lambda x: chr(x) in string.printable, x)
                 x = "".join([chr(c) for c in x])
             output += x
             x = x.rstrip()
@@ -215,7 +214,7 @@ class ExtractFeatures(object):
             return some_dict
 
     def extract_symbols_from_elf(self, filename):
-        '''parses ELF in filename, returns dict of symbols=>attributes'''
+        """Parses ELF in filename, returns dict of symbols=>attributes."""
         text_output = self.run_program('EF', [
             self.nm,
             '--demangle',
@@ -288,15 +287,11 @@ class ExtractFeatures(object):
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser("extract_features.py FILENAME")
+    parser = argparse.ArgumentParser(prog='extract_features.py', description='Extract ArduPilot features from binaries')
+    parser.add_argument('firmware_file', help='firmware binary')
+    parser.add_argument('-nm', type=str, default="arm-none-eabi-nm", help='nm binary to use.')
+    args = parser.parse_args()
+    print(args.firmware_file, args.nm)
 
-    cmd_opts, cmd_args = parser.parse_args()
-
-    if len(cmd_args) < 1:
-        parser.print_help()
-        sys.exit(1)
-
-    filename = cmd_args[0]
-
-    ef = ExtractFeatures(filename)
+    ef = ExtractFeatures(args.firmware_file, args.nm)
     ef.run()
