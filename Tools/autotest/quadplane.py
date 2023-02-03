@@ -258,7 +258,7 @@ class AutoTestQuadPlane(AutoTest):
     def TestMotorMask(self):
         """Check operation of output_motor_mask"""
         """copter tailsitters will add condition: or (int(self.get_parameter('Q_TAILSIT_MOTMX')) & 1)"""
-        if not(int(self.get_parameter('Q_TILT_MASK')) & 1):
+        if not (int(self.get_parameter('Q_TILT_MASK')) & 1):
             self.progress("output_motor_mask not in use")
             return
         self.progress("Testing output_motor_mask")
@@ -266,7 +266,7 @@ class AutoTestQuadPlane(AutoTest):
 
         """Default channel for Motor1 is 5"""
         self.progress('Assert that SERVO5 is Motor1')
-        assert(33 == self.get_parameter('SERVO5_FUNCTION'))
+        assert 33 == self.get_parameter('SERVO5_FUNCTION')
 
         modes = ('MANUAL', 'FBWA', 'QHOVER')
         for mode in modes:
