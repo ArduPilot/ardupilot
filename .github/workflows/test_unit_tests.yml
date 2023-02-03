@@ -27,6 +27,9 @@ jobs:
             sitl
             # examples,
         ]
+        exclude:
+          - config: python-cleanliness
+            toolchain: clang
     steps:
       # git checkout the PR
       - uses: actions/checkout@v3
