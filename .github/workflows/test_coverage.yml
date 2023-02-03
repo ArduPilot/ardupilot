@@ -15,7 +15,7 @@ jobs:
   build:
     runs-on: ubuntu-20.04
     container:
-      image: ardupilot/ardupilot-dev-coverage:latest
+      image: ardupilot/ardupilot-dev-${{ matrix.type }}:latest
       options: --privileged
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
@@ -27,6 +27,15 @@ jobs:
             coverage,
             sitltest-can,
         ]
+        type: [
+          coverage,
+        ]
+        include:
+          - config: sitltest-can
+            type: periph
+        exclude:
+          - config: sitltest-can
+            type: coverage
     steps:
       # git checkout the PR
       - uses: actions/checkout@v3
@@ -50,10 +59,8 @@ jobs:
       - name: Configure CAN
         if: ${{ matrix.config == 'sitltest-can'}}
         run: |
-          sudo dpkg --add-architecture i386
           sudo apt update
-          sudo apt install -y gcc-multilib g++-multilib
-          sudo apt -y install can-utils iproute2 linux-modules-extra-$(uname -r)
+          sudo apt -y linux-modules-extra-$(uname -r)
           sudo modprobe vcan
           sudo ip link add dev vcan0 type vcan
           sudo ip link set up vcan0
@@ -66,7 +73,7 @@ jobs:
           PATH="/github/home/.local/bin:$PATH"
           python -m pip install --progress-bar off --user mavproxy
           python -m pip uninstall -y pymavlink
-          git submodule update --init --recursive
+          git submodule update --init --recursive --depth=1
           (cd modules/mavlink/pymavlink && DISABLE_MAVNATIVE=True MDEF="$PWD/../message_definitions" python -m pip install --progress-bar off --user .)
           if [[ ${{ matrix.config }} == "coverage" ]]; then
             Tools/scripts/run_coverage.py -f
