@@ -63,6 +63,7 @@ jobs:
       - name: build sitl_periph_gps
         shell: bash
         run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
           PATH="/github/home/.local/bin:$PATH"
           ./waf configure --board sitl_periph_gps
           ./waf build --target bin/AP_Periph
@@ -121,6 +122,7 @@ jobs:
           CI_BUILD_TARGET: ${{matrix.config}}
         shell: bash
         run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
           kernel_ver=`uname -r`
           if [ "$kernel_ver" = "5.4.0-1032-azure" ] || [ "$kernel_ver" = "5.11.4-051104-generic" ]; then echo "Unsupported Kernel $kernel_ver" && exit 0; fi;
           PATH="/github/home/.local/bin:$PATH"
