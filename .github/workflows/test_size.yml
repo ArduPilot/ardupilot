@@ -11,12 +11,12 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-20.04
-    container: ardupilot/ardupilot-dev-chibios:latest
+    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:latest
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
         toolchain: [
-            base,  # GCC
+            chibios,
         ]
         config: [
             Durandal,
@@ -25,6 +25,12 @@ jobs:
             Hitec-Airspeed,  # see special code for Periph below (3 places!)
             f103-GPS  # see special code for Periph below (3 places!)
         ]
+        include:
+          - config: disco
+            toolchain: armhf
+        exclude:
+          - config: disco
+            toolchain: chibios
     steps:
       - uses: actions/checkout@v3
         with:
@@ -149,7 +155,6 @@ jobs:
         shell: bash
         run: |
           cd pr/
-          python3 -m pip install -U tabulate
           Tools/scripts/pretty_diff_size.py -m $GITHUB_WORKSPACE/base_branch_bin -s $GITHUB_WORKSPACE/pr_bin
 
       - name: Feature compare with  ${{ github.event.pull_request.base.ref }}
@@ -168,7 +173,8 @@ jobs:
       - name: elf_diff compare with ${{ github.event.pull_request.base.ref }}
         shell: bash
         run: |
-          python3 -m pip install -U weasyprint elf_diff anytree
+          # we don't use weasyprint so manually pull the elf_diff deps reduce install size and time
+          python3 -m pip install -U --no-deps elf_diff GitPython Jinja2 MarkupSafe PyYAML anytree dict2xml gitdb progressbar2 python-utils setuptools-git smmap
           mkdir elf_diff
           BIN_PREFIX="arm-none-eabi-"
           if [ "${{matrix.config}}" = "disco" ]; then
