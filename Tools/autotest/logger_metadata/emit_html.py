@@ -46,9 +46,6 @@ DO NOT EDIT
                     fdesc = ""
                 print('        <tr><td>%s</td><td>%s</td></tr>' % (f, fdesc),
                       file=self.fh)
-#                if "bits" in docco.fields[f]:
-#                    print('                <bits>%s</bits>' %
-#                          docco.fields[f]["bits"], file=self.fh)
             print('        </table>', file=self.fh)
 
             print("", file=self.fh)
