@@ -293,6 +293,7 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
         _starting = true;
         _autorotating = false;
         _bailing_out = false;
+        _gov_bailing_out = false;
 
         // ensure _idle_throttle not set to invalid value
         _idle_throttle = get_idle_output();
@@ -341,8 +342,11 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
                 } else {
                     _idle_throttle = get_idle_output();
                 }
-                _use_bailout_ramp = false;
             }
+            // this resets the bailout feature if the aircraft has landed.
+            _use_bailout_ramp = false;
+            _bailing_out = false;
+            _gov_bailing_out = false;
         }
         _control_output = _idle_throttle;
         break;
@@ -409,6 +413,7 @@ void AP_MotorsHeli_RSC::update_rotor_ramp(float rotor_ramp_input, float dt)
             if (!_bailing_out) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "bailing_out");
                 _bailing_out = true;
+                if (_control_mode == ROTOR_CONTROL_MODE_AUTOTHROTTLE) {_gov_bailing_out = true;}
             }
             _rotor_ramp_output += (dt / bailout_time);
         } else {
@@ -561,12 +566,17 @@ void AP_MotorsHeli_RSC::autothrottle_run()
             _governor_fault_count = 0;   // reset fault count if the fault doesn't persist
         }
     } else if (!_governor_engage && !_governor_fault) {
-        // if governor is not engaged and rotor is overspeeding by more than 2% due to misconfigured
-        // throttle curve or stuck throttle, set a fault and governor will not operate
-        if (_rotor_rpm > (_governor_rpm + _governor_range)) {
+        // if governor is not engaged and rotor is overspeeding by more than governor range due to 
+        // misconfigured throttle curve or stuck throttle, set a fault and governor will not operate
+        if (_rotor_rpm > (_governor_rpm + _governor_range) && !_gov_bailing_out) {
             _governor_fault = true;
             governor_reset();
             gcs().send_text(MAV_SEVERITY_WARNING, "Governor Fault: Rotor Overspeed");
+            _governor_output = 0.0f;
+
+        // when performing power recovery from autorotation, this waits for user to load rotor in order to 
+        // engage the governor
+        } else if (_rotor_rpm > _governor_rpm && _gov_bailing_out) {
             _governor_output = 0.0f;
 
             // torque rise limiter accelerates rotor to the reference speed
@@ -577,6 +587,7 @@ void AP_MotorsHeli_RSC::autothrottle_run()
             if (_rotor_rpm >= ((float)_governor_rpm - torque_ref_error_rpm)) {
                 _governor_engage = true;
                 _autothrottle = true;
+                _gov_bailing_out = false;
                 gcs().send_text(MAV_SEVERITY_NOTICE, "Governor Engaged");
             }
         } else {
