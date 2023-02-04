@@ -166,6 +166,7 @@ private:
     bool            _autorotating;                // flag that holds the status of autorotation
     bool            _bailing_out;                 // flag that holds the status of bail out(power engagement)
     float           _idle_throttle;               // current idle throttle setting
+    bool            _gov_bailing_out;             // flag that holds the status of governor bail out
 
     // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
     void            update_rotor_ramp(float rotor_ramp_input, float dt);
