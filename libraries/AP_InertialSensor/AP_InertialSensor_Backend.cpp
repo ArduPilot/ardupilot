@@ -731,8 +731,18 @@ void AP_InertialSensor_Backend::_publish_temperature(uint8_t instance, float tem
 
 #if HAL_HAVE_IMU_HEATER
     /* give the temperature to the control loop in order to keep it constant*/
-    if ((instance <= _imu._min_internal_imu_index) && (is_internal_imu())) {
-        //use the least index number
+    if (_imu._main_temprature_sensor==255) { 
+        //if there is no defined temprature sensor then use the least index number of internal imus
+        if ((instance <= _imu._min_internal_imu_index) && (is_internal_imu())) {
+            _imu._min_internal_imu_index = instance;
+            AP_BoardConfig *bc = AP::boardConfig();
+            if (bc) {
+                bc->set_imu_temp(temperature);
+            }
+        }
+    }
+    else if (_imu._main_temprature_sensor == instance) {
+        // if this is our main temprature sensor then use it anyway.
         _imu._min_internal_imu_index = instance;
         AP_BoardConfig *bc = AP::boardConfig();
         if (bc) {
