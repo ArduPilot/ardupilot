@@ -10,7 +10,10 @@ extern const AP_HAL::HAL& hal;
 #define DEBUG_PKTS 0
 
 DEFINE_HANDLER_LIST_HEADS();
+DEFINE_HANDLER_LIST_SEMAPHORES();
+
 DEFINE_TRANSFER_OBJECT_HEADS();
+DEFINE_TRANSFER_OBJECT_SEMAPHORES();
 
 #if AP_TEST_DRONECAN_DRIVERS
 CanardInterface* CanardInterface::canard_ifaces[] = {nullptr, nullptr, nullptr};
