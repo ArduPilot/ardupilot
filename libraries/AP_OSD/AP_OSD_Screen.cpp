@@ -1304,6 +1304,9 @@ void AP_OSD_Screen::draw_avgcellvolt(uint8_t x, uint8_t y)
     IGNORE_RETURN(battery.capacity_remaining_pct(pct));
     uint8_t p = (100 - pct) / 16.6;
     float v = battery.voltage();
+    if (osd->options & AP_OSD::OPTION_AVG_CELL_IS_RESTING) {
+        v = battery.voltage_resting_estimate();
+    }
     // calculate cell count - WARNING this can be inaccurate if the LIPO/LIION  battery is far from fully charged when attached and is used in this panel
     osd->max_battery_voltage.set(MAX(osd->max_battery_voltage,v));
     if (osd->cell_count > 0) {
