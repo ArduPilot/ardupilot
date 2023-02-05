@@ -2489,7 +2489,7 @@ const char *AP_Mission::Mission_Command::type() const
 
 bool AP_Mission::contains_item(MAV_CMD command) const
 {
-    for (int i = 1; i < num_commands(); i++) {
+    for (uint16_t i = 1; i < num_commands(); i++) {
         Mission_Command tmp;
         if (!read_cmd_from_storage(i, tmp)) {
             continue;
@@ -2524,7 +2524,7 @@ bool AP_Mission::contains_terrain_alt_items(void)
 
 bool AP_Mission::calculate_contains_terrain_alt_items(void) const
 {
-    for (int i = 1; i < num_commands(); i++) {
+    for (uint16_t i = 1; i < num_commands(); i++) {
         Mission_Command tmp;
         if (!read_cmd_from_storage(i, tmp)) {
             continue;
