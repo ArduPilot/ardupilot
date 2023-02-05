@@ -695,6 +695,7 @@ def _build_dynamic_sources(bld):
                 export_includes=[
                     bld.bldnode.make_node('modules/DroneCAN/libcanard/dsdlc_generated/include').abspath(),
                     bld.srcnode.find_dir('modules/DroneCAN/libcanard/').abspath(),
+                    bld.srcnode.find_dir('libraries/AP_UAVCAN/canard/').abspath(),
                 ]
             )
     elif bld.env.AP_PERIPH:

@@ -448,6 +448,7 @@ class Board:
                 UAVCAN_NO_ASSERTIONS = 1,
                 UAVCAN_NULLPTR = 'nullptr',
                 DRONECAN_CXX_WRAPPERS = 1,
+                USE_USER_HELPERS = 1,
                 CANARD_ENABLE_DEADLINE = 1,
             )
 
