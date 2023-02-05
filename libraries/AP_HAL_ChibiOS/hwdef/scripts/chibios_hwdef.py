@@ -840,7 +840,7 @@ def write_mcu_config(f):
     f.write('// MCU type (ChibiOS define)\n')
     f.write('#define %s_MCUCONF\n' % get_config('MCU'))
     mcu_subtype = get_config('MCU', 1)
-    if mcu_subtype.endswith('xx'):
+    if mcu_subtype[-1:] == 'x' or mcu_subtype[-2:-1] == 'x':
         f.write('#define %s_MCUCONF\n\n' % mcu_subtype[:-2])
     f.write('#define %s\n\n' % mcu_subtype)
     f.write('// crystal frequency\n')
