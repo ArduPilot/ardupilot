@@ -556,7 +556,8 @@ bool AP_RangeFinder_VL53L1X::write_register32(uint16_t reg, uint32_t value)
 void AP_RangeFinder_VL53L1X::timer(void)
 {
     uint16_t range_mm;
-    if ((get_reading(range_mm)) && (range_mm <= 4000)) {
+    // MIN: 4cm MAX: 4m
+    if ((get_reading(range_mm)) && (range_mm <= 4000) && (range_mm >= 40)) {
         WITH_SEMAPHORE(_sem);
         sum_mm += range_mm;
         counter++;
