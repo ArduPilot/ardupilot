@@ -615,8 +615,8 @@
 #endif
 #define STM32_USB_OTG1_IRQ_PRIORITY         14
 #define STM32_USB_OTG2_IRQ_PRIORITY         14
-#define STM32_USB_OTG1_RX_FIFO_SIZE         512
-#define STM32_USB_OTG2_RX_FIFO_SIZE         1024
+#define STM32_USB_OTG1_RX_FIFO_SIZE         2048
+#define STM32_USB_OTG2_RX_FIFO_SIZE         2048
 #define STM32_USB_HOST_WAKEUP_DURATION      2
 
 /*
