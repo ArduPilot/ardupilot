@@ -23,6 +23,7 @@
 #include <AP_Filesystem/AP_Filesystem.h>
 #include "bouncebuffer.h"
 #include "stm32_util.h"
+#include "hwdef/common/usbcfg.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -45,6 +46,11 @@ static AP_HAL::OwnPtr<AP_HAL::SPIDevice> device;
 static MMCConfig mmcconfig;
 static SPIConfig lowspeed;
 static SPIConfig highspeed;
+#endif
+
+#if HAL_HAVE_USB_CDC_MSD
+static uint8_t blkbuf[512];
+static uint8_t txbuf[512];
 #endif
 
 /*
@@ -88,13 +94,41 @@ bool sdcard_init()
             sdcStop(&sdcd);
             continue;
         }
-        if (f_mount(&SDC_FS, "/", 1) != FR_OK) {
+        FRESULT res = f_mount(&SDC_FS, "/", 1);
+#if defined(HAL_SDMMC_TYPE_EMMC)
+        if (res == FR_NO_FILESYSTEM) {
+            //format eMMC
+            MKFS_PARM opt = {0};
+            opt.fmt = FM_EXFAT;
+            res = f_mkfs("/", &opt, 0, 4096);
+            if (res == FR_OK) {
+                res = f_mount(&SDC_FS, "/", 1);
+            }
+        }
+#endif
+        if (res != FR_OK) {
             sdcDisconnect(&sdcd);
             sdcStop(&sdcd);
             continue;
         }
         printf("Successfully mounted SDCard (slowdown=%u)\n", (unsigned)sd_slowdown);
-
+#if HAL_HAVE_USB_CDC_MSD
+        if (USBMSD1.state == USB_MSD_UNINIT) {
+            msdObjectInit(&USBMSD1);
+            msdStart(&USBMSD1, 
+    #if STM32_USB_USE_OTG1
+                    &USBD1,
+    #else
+                    &USBD2,
+    #endif
+                    (BaseBlockDevice*)&SDCD1, blkbuf, txbuf,  NULL, NULL);
+            usbDisconnectBus(serusbcfg1.usbp);
+            usbStop(serusbcfg1.usbp);
+            chThdSleep(chTimeUS2I(1500));
+            usbStart(serusbcfg1.usbp, &usbcfg);
+            usbConnectBus(serusbcfg1.usbp);
+        }
+#endif
         sdcard_running = true;
         return true;
     }
