@@ -47,7 +47,7 @@ void Plane::failsafe_check(void)
 
         rc().read_input();
 
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ADVANCEDFAILSAFE_ENABLED
         if (in_calibration) {
             // tell the failsafe system that we are calibrating
             // sensors, so don't trigger failsafe
@@ -83,7 +83,7 @@ void Plane::failsafe_check(void)
         // this is to allow the failsafe module to deliberately crash 
         // the plane. Only used in extreme circumstances to meet the
         // OBC rules
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ADVANCEDFAILSAFE_ENABLED
         if (afs.should_crash_vehicle()) {
             afs.terminate_vehicle();
             if (!afs.terminating_vehicle_via_landing()) {
