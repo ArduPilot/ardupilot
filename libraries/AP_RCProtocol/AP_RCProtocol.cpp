@@ -72,6 +72,11 @@ bool AP_RCProtocol::should_search(uint32_t now_ms) const
     if (_detected_protocol != AP_RCProtocol::NONE && !rc().multiple_receiver_support()) {
         return false;
     }
+#else
+    // on IOMCU don't allow protocol to change once detected
+    if (_detected_protocol != AP_RCProtocol::NONE) {
+        return false;
+    }
 #endif
     return (now_ms - _last_input_ms >= 200);
 }
