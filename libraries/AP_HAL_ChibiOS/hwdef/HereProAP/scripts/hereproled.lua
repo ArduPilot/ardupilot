@@ -1,5 +1,4 @@
 -- This script is a test of led override
--- luacheck: only 0
 
 local count = 0
 local num_leds = 16
