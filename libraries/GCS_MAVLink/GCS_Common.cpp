@@ -3048,6 +3048,7 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
  */
 MAV_RESULT GCS_MAVLINK::handle_flight_termination(const mavlink_command_long_t &packet)
 {
+#if AP_ADVANCEDFAILSAFE_ENABLED
     AP_AdvancedFailsafe *failsafe = AP::advancedfailsafe();
     if (failsafe == nullptr) {
         return MAV_RESULT_UNSUPPORTED;
@@ -3059,6 +3060,9 @@ MAV_RESULT GCS_MAVLINK::handle_flight_termination(const mavlink_command_long_t &
         return MAV_RESULT_ACCEPTED;
     }
     return MAV_RESULT_FAILED;
+#else
+    return MAV_RESULT_UNSUPPORTED;
+#endif
 }
 
 /*
@@ -6249,11 +6253,13 @@ uint64_t GCS_MAVLINK::capabilities() const
         ret |= MAV_PROTOCOL_CAPABILITY_MAVLINK2;
     }
 
+#if AP_ADVANCEDFAILSAFE_ENABLED
     AP_AdvancedFailsafe *failsafe = AP::advancedfailsafe();
     if (failsafe != nullptr && failsafe->enabled()) {
         // Copter and Sub may also set this bit as they can always terminate
         ret |= MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION;
     }
+#endif
 
 #if HAL_RALLY_ENABLED
     if (AP::rally()) {
