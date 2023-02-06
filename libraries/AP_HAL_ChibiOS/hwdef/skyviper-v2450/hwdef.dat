@@ -149,6 +149,9 @@ define HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED 0
 
 define AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED 0
 
+# SkyViper really doesn't need advanced failsafe features:
+define AP_ADVANCEDFAILSAFE_ENABLED 0
+
 // EKF3 features:
 define EK3_FEATURE_EXTERNAL_NAV 0
 define EK3_FEATURE_BODY_ODOM 0
