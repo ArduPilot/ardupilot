@@ -18,6 +18,20 @@ function Matrix3() {
     this.c.y = 0
     this.c.z = 0
 
+    this.identity = function() {
+        // set to identity
+        this.a.x = 1
+        this.a.y = 0
+        this.a.z = 0
+
+        this.b.x = 0
+        this.b.y = 1
+        this.b.z = 0
+
+        this.c.x = 0
+        this.c.y = 0
+        this.c.z = 1
+    }
 
     this.from_euler = function(roll, pitch, yaw) {
         // fill the matrix from Euler angles in radians
@@ -65,6 +79,14 @@ function Matrix3() {
         ret.x = this.a.x * v.x + this.a.y * v.y + this.a.z * v.z
         ret.y = this.b.x * v.x + this.b.y * v.y + this.b.z * v.z
         ret.z = this.c.x * v.x + this.c.y * v.y + this.c.z * v.z
+        return ret
+    }
+
+    this.mul_transpose = function(v) {
+        ret = {}
+        ret.x = this.a.x * v.x + this.b.x * v.y + this.c.x * v.z
+        ret.y = this.a.y * v.x + this.b.y * v.y + this.c.y * v.z
+        ret.z = this.a.z * v.x + this.b.z * v.y + this.c.z * v.z
         return ret
     }
 

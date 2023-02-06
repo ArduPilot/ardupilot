@@ -1,46 +1,55 @@
 // Grab compass parameters from log and populate form
 function compass_params(_instance) {
     this.instance = _instance
-    this.vaild = false
+    this.valid = false
 
     this.offsets = {}
     this.diagonals = {}
     this.off_diagonals = {}
     this.motor = {}
-    this.scale = null
+    this.scale_raw = null
+    this.scale = 1.0
+    this.comp_type = null
+    this.mat = Matrix3()
+    this.mat.identity()
 
-    this.compare_param_name = function(string, key, axis) {
+    this.compare_param_name = function(string, key, instance, axis) {
         if (!string.startsWith("COMPASS")) {
             return false
         }
         if ((axis != null) && !string.includes(axis)) {
             return false
         }
-        if (this.instance == 0) {
-            if (/\d/.test(string)) {
-                return false
-            }
-        } else {
-            if (!string.includes((this.instance+1).toString())) {
-                return false
+        if (instance != null) {
+            if (instance == 0) {
+                if (/\d/.test(string)) {
+                    return false
+                }
+            } else {
+                if (!string.includes((instance+1).toString())) {
+                    return false
+                }
             }
         }
         return string.includes(key)
     }
 
-    this.show_param = function(param, key, axis) {
+    this.show_param = function(param, key, instance, axis) {
         var inputs = document.forms["params"].getElementsByTagName("input");
         for (var i=0;i<inputs.length;i++) {
-            if (this.compare_param_name(inputs[i].name, key, axis)) {
+            if (this.compare_param_name(inputs[i].name, key, instance, axis)) {
                 inputs[i].value = param
+                return
             }
         }
+        console.log(instance + "Could not show param:" + key + axis + instance)
+        this.valid = false
     }
 
     this.show_param_vec = function(param, key) {
-        this.show_param(param.X, key, "X")
-        this.show_param(param.Y, key, "Y")
-        this.show_param(param.Z, key, "Z")
+        this.show_param(param.X, key, this.instance, "X")
+        this.show_param(param.Y, key, this.instance, "Y")
+        this.show_param(param.Z, key, this.instance, "Z")
     }
 
     this.show = function() {
@@ -48,46 +57,118 @@ function compass_params(_instance) {
         this.show_param_vec(this.diagonals, "DIA")
         this.show_param_vec(this.off_diagonals, "ODI")
         this.show_param_vec(this.motor, "MOT")
-        this.show_param(this.scale, "SCALE")
+        this.show_param(this.scale_raw, "SCALE", this.instance)
     }
 
-    this.get_param_value = function(PARM_log, key, axis) {
+    this.get_param_value = function(PARM_log, key, instance, axis) {
         var value = null
         for (let i = 0; i < PARM_log.Name.length; i++) {
-            if (this.compare_param_name(PARM_log.Name[i], key, axis)) {
+            if (this.compare_param_name(PARM_log.Name[i], key, instance, axis)) {
                 if (value == null) {
                     value = PARM_log.Value[i]
                 } else if (value != PARM_log.Value[i]) {
                     // Cant deal with calibration changing during flight
-                    console.log(this.instance + "duplicate param:" + key + " " + axis)
-                    this.vaild = false
+                    console.log(instance + "duplicate param:" + key + " " + axis)
+                    this.valid = false
                     return null
                 }
             }
         }
         if (value == null) {
-            console.log(this.instance + "Could not find param:" + key + axis)
-            this.vaild = false
+            console.log(instance + "Could not find param:" + key + axis)
+            this.valid = false
         }
         return value
     }
 
     this.get_param_value_vec = function(param, PARM_log, key) {
-        param.X = this.get_param_value(PARM_log, key, "X")
-        param.Y = this.get_param_value(PARM_log, key, "Y")
-        param.Z = this.get_param_value(PARM_log, key, "Z")
+        param.X = this.get_param_value(PARM_log, key, this.instance, "X")
+        param.Y = this.get_param_value(PARM_log, key, this.instance, "Y")
+        param.Z = this.get_param_value(PARM_log, key, this.instance, "Z")
     }
 
     this.load_from_log = function(PARM_log) {
-        this.vaild = true
+        this.valid = true
         this.get_param_value_vec(this.offsets, PARM_log, "OFS")
         this.get_param_value_vec(this.diagonals, PARM_log, "DIA")
         this.get_param_value_vec(this.off_diagonals, PARM_log, "ODI")
         this.get_param_value_vec(this.motor, PARM_log, "MOT")
-        this.scale = this.get_param_value(PARM_log, "SCALE")
-        if (this.vaild) {
+        this.scale_raw = this.get_param_value(PARM_log, "SCALE", this.instance)
+        this.comp_type = this.get_param_value(PARM_log, "MOTCT")
+        if (this.valid) {
             this.show()
+            if ((this.diagonals.X != 0) || (this.diagonals.Y != 0) || (this.diagonals.Z != 0)) {
+                // Setup matrix to apply to raw values
+                this.mat.a.x = this.diagonals.X
+                this.mat.a.y = this.off_diagonals.X
+                this.mat.a.z = this.off_diagonals.y
+
+                this.mat.b.x = this.off_diagonals.X
+                this.mat.b.y = this.diagonals.Y
+                this.mat.b.z = this.off_diagonals.z
+
+                this.mat.c.x = this.off_diagonals.y
+                this.mat.c.y = this.off_diagonals.z
+                this.mat.c.z = this.diagonals.Z
+            }
+            const MAX_SCALE_FACTOR = 1.5
+            if ((this.scale_raw <= MAX_SCALE_FACTOR) && (this.scale_raw >=  (1/MAX_SCALE_FACTOR))) {
+                this.scale = this.scale_raw
+            }
         }
+    }
+
+    this.apply = function(sample) {
+        var ret = {}
+
+        ret.x = (sample.raw_X + offsets.X) * this.scale
+        ret.y = (sample.raw_Y + offsets.Y) * this.scale
+        ret.z = (sample.raw_Z + offsets.Z) * this.scale
+
+        ret = this.mat.mul(ret)
+
+        if (this.comp_type == 1) {
+            ret.x += motor.X * sample.QTUN_throttle
+            ret.y += motor.Y * sample.QTUN_throttle
+            ret.z += motor.Z * sample.QTUN_throttle
+        } else if (this.comp_type == 1) {
+            ret.x += motor.X * sample['BATT[0]'].Curr
+            ret.y += motor.Y * sample['BATT[0]'].Curr
+            ret.z += motor.Z * sample['BATT[0]'].Curr
+        }
+
+        return ret
+    }
+
+    this.remove = function(sample) {
+
+        raw = {}
+        raw.x = sample.X
+        raw.y = sample.Y
+        raw.z = sample.Z
+
+        if (this.comp_type == 1) {
+            ret.x -= motor.X * sample.QTUN_throttle
+            ret.y -= motor.Y * sample.QTUN_throttle
+            ret.z -= motor.Z * sample.QTUN_throttle
+        } else if (this.comp_type == 1) {
+            ret.x -= motor.X * sample['BATT[0]'].Curr
+            ret.y -= motor.Y * sample['BATT[0]'].Curr
+            ret.z -= motor.Z * sample['BATT[0]'].Curr
+        }
+
+        raw = this.mat.mul_transpose(raw)
+
+        ret.x /= this.scale
+        ret.y /= this.scale
+        ret.z /= this.scale
+
+        ret.x -= this.offsets.X
+        ret.y -= this.offsets.Y
+        ret.z -= this.offsets.Z
+
+        return ret
+
     }
 
     return this
@@ -112,10 +193,8 @@ function get_param(PARM_log, name) {
     return value
 }
 
-var log = new DataflashParser()
 var axis = ['X', 'Y', 'Z']
 var chart = {}
-var MAG_Data = []
 
 for (let axi of axis) {
     chart[axi] = new Chart("MAG " + axi, {
@@ -132,7 +211,7 @@ for (let axi of axis) {
                     pointRadius: 0,
                 },
                 {
-                    label: 'Compass 1',
+                    label: 'Compass 1', // Could pull devID's and report type
                     borderColor: "rgba(255,0,0,1)",
                     pointBackgroundColor: "rgba(255,0,0,1)",
                     fill: false,
@@ -282,6 +361,13 @@ chart.Interference = new Chart("Interference", {
 })
 
 function add_Interference_dataset(data, key) {
+    // Generate random color
+    const r = Math.floor(Math.random() * 255)
+    const g = Math.floor(Math.random() * 255)
+    const b = Math.floor(Math.random() * 255)
+    const color = `rgba(` + r + ',' + g + `,` + b + `,1)`
+
+    // Plot
     chart.Interference.data.datasets.push({
         data: data,
         label: key,
@@ -289,7 +375,9 @@ function add_Interference_dataset(data, key) {
         showLine: true,
         parsing: { xAxisKey: 'time', yAxisKey: key },
         pointRadius: 0,
-        yAxisID: key
+        yAxisID: key,
+        borderColor: color,
+        pointBackgroundColor: color
     })
     chart.Interference.options.scales[key] = { display: false, position: 'left' }
     chart.Interference.update()
@@ -322,11 +410,24 @@ function interpolate_log(des_time, log_time, log_values) {
     return ret
 }
 
+var log
+var MAG_Data
+var MAG_Data
+var MAG_params_original
+var trim
+function load(log_file) {
 
-var MAG_Data = []
-var MAG_params_original = []
-var trim = {}
-function load() {
+    // Clear and reset state
+    log = new DataflashParser()
+    log.processData(log_file)
+
+    MAG_Data = []
+    MAG_Data = []
+    MAG_params_original = []
+    trim = {}
+
+    // also need to reset plots...
+
     // Grab and plot MAG data
     log.parseAtOffset('MAG')
 
@@ -374,6 +475,7 @@ function load() {
     trim.Z = get_param(log.messages['PARM'], "AHRS_TRIM_Z")
 
     var EKF_TYPE = get_param(log.messages['PARM'], "AHRS_EKF_TYPE")
+    var EKF3_PRIMARY = get_param(log.messages['PARM'], "EK3_PRIMARY")
     var COMP_TYPE = get_param(log.messages['PARM'], "COMPASS_MOTCT")
 
     if ((trim.X == null) || (trim.Y == null) || (trim.Z == null) || (EKF_TYPE == null) || (COMP_TYPE == null)) {
@@ -381,17 +483,17 @@ function load() {
         return
     }
 
-    // Use last home or EKF origin for earth felid
+    // Use last EKF origin for earth field
     log.parseAtOffset("ORGN")
-    if (log.messages["ORGN"] == null) {
-        console.log("Could not get ORGN")
+    if (log.messages["ORGN[0]"] == null) {
+        console.log("Could not get EFK origin")
         return
     }
-    var Lat = log.messages["ORGN"][log.messages["ORGN"].length-1].Lat * 10**-7
-    var Lng = log.messages["ORGN"][log.messages["ORGN"].length-1].Lng * 10**-7
+    var Lat = log.messages["ORGN[0]"].Lat[log.messages["ORGN[0]"].Lat.length-1] * 10**-7
+    var Lng = log.messages["ORGN[0]"].Lng[log.messages["ORGN[0]"].Lng.length-1] * 10**-7
     var earth_field = expected_earth_field_lat_lon(Lat, Lng)
     if (earth_field == null) {
-        console.log("Could not get earth felid")
+        console.log("Could not get earth field")
         return
     }
     console.log("EF: " + earth_field.x + ", " + earth_field.y + ", " + earth_field.z + " at Lat: " + Lat + " Lng: " + Lng)
@@ -399,14 +501,19 @@ function load() {
     // Get vehicle attitude
     var att_msg = "ATT"
 
-    // Instance parsing seems broke?
-    //if (EKF_TYPE == 2) {
-    //    att_msg = "NKF1"
-    //} else if (EKF_TYPE == 3) {
-    //    att_msg = "XKF1"
-    //}
+    // Note that this is not clever enough to deal with primary changing in flight
+    if (EKF_TYPE == 2) {
+        log.parseAtOffset("NKF1")
+        att_msg = "NKF1[0]"
+    } else if (EKF_TYPE == 3) {
+        log.parseAtOffset("XKF1")
+        var primary = 0
+        if (EKF3_PRIMARY != null) {
+            primary = EKF3_PRIMARY
+        }
+        att_msg = "XKF1[" + primary + "]"
+    }
 
-    log.parseAtOffset(att_msg)
     if (log.messages[att_msg] == null) {
         console.log("Could not get attitude from: " + att_msg)
         return
@@ -454,9 +561,10 @@ function load() {
     chart.Error.update()
 
     // Gather all sources of interference
+
+    // FW throttle
     log.parseAtOffset("CTUN")
     if (log.messages["CTUN"] != null) {
-        console.log(log.messages["CTUN"])
         for (let i = 0; i < 3; i++) {
             if (MAG_Data[i] == null) {
                 continue
@@ -469,27 +577,83 @@ function load() {
         add_Interference_dataset(MAG_Data[0], "CTUN_throttle")
     }
 
+    // VTOL throttle
     log.parseAtOffset("QTUN")
     if (log.messages["QTUN"] != null) {
-        console.log(log.messages["QTUN"])
         for (let i = 0; i < 3; i++) {
             if (MAG_Data[i] == null) {
                 continue
             }
             for (let j = 0; j < MAG_Data[i].length; j++) {
-                const mag_time = MAG_Data[i][j].time
-                var interpolated = interpolate_log(mag_time, log.messages["QTUN"].time_boot_ms, { thr:log.messages["QTUN"].ThO } )
+                var interpolated = interpolate_log(MAG_Data[i][j].time, log.messages["QTUN"].time_boot_ms, { thr:log.messages["QTUN"].ThO } )
                 MAG_Data[i][j].QTUN_throttle = interpolated.thr
             }
         }
         add_Interference_dataset(MAG_Data[0], "QTUN_throttle")
     }
 
-    // Should also do BAT current and voltage
-    // Instance parsing seems broken tho
+    // Battery current and voltage
     log.parseAtOffset("BAT")
-    console.log(log.messages["BAT"])
+    for (let k = 0; k < 20; k++) {
+        const batt_instance = "BAT[" + k + "]"
+        if (log.messages[batt_instance] == null) {
+            continue
+        }
+        for (let i = 0; i < 3; i++) {
+            if (MAG_Data[i] == null) {
+                continue
+            }
+            for (let j = 0; j < MAG_Data[i].length; j++) {
+                var interpolated = interpolate_log(MAG_Data[i][j].time, log.messages[batt_instance].time_boot_ms, { Volt:log.messages[batt_instance].Volt, Curr:log.messages[batt_instance].Curr } )
+                MAG_Data[i][j][batt_instance + "_Volt"] = interpolated.Volt
+                MAG_Data[i][j][batt_instance + "_Curr"] = interpolated.Curr
+            }
+        }
+        // Only add current, voltage is used in combination with throttle in some cases
+        add_Interference_dataset(MAG_Data[0], batt_instance + "_Curr")
+    }
 
+    // Remove existing calibration to get raw values
+    for (let i = 0; i < 3; i++) {
+        if (MAG_Data[i] == null) {
+            continue
+        }
+        for (let j = 0; j < MAG_Data[i].length; j++) {
+            const raw = MAG_params_original[i].remove(MAG_Data[i][j])
+            MAG_Data[i][j].raw_X = raw.x
+            MAG_Data[i][j].raw_Y = raw.y
+            MAG_Data[i][j].raw_Z = raw.z
+            MAG_Data[i][j].raw_Error = Math.sqrt((MAG_Data[i][j].raw_X - MAG_Data[i][j].expected_X)**2 + (MAG_Data[i][j].raw_Y - MAG_Data[i][j].expected_Y)**2 + (MAG_Data[i][j].raw_Z - MAG_Data[i][j].expected_Z)**2)
+        }
+    }
 
+    // Now calculation is done enable display selection buttons
+    document.getElementById("mag_disp_exst").disabled = false;
+    document.getElementById("mag_disp_raw").disabled = false;
+
+}
+
+function mag_display_change(src) {
+    if (src.value == "Existing") {
+        for (let i = 0; i < 3; i++) {
+            chart.Error.data.datasets[i].parsing.yAxisKey = "Error"
+            for (let axi of axis) {
+                chart[axi].data.datasets[i+1].parsing.yAxisKey = axi
+            }
+        }
+
+    } else if (src.value == "Raw") {
+        for (let i = 0; i < 3; i++) {
+            chart.Error.data.datasets[i].parsing.yAxisKey = "raw_Error"
+            for (let axi of axis) {
+                chart[axi].data.datasets[i+1].parsing.yAxisKey = "raw_" + axi
+            }
+        }
+    }
+
+    for (let axi of axis) {
+        chart[axi].update()
+    }
+    chart.Error.update()
 
 }

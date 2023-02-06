@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>ArduPilot MAG-Fit</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="text/javascript" src="parser.js"></script>
+<script type="text/javascript" src="matrix3.js"></script>
+<script type="text/javascript" src="wmm.js"></script>
+
+</head>
+<a href="https://ardupilot.org"><img src="logo.png"></a>
+<h1>ArduPilot MAG-Fit</h1>
+
+<body>
+
+Body frame compass readings and expected value from world magnetic model.
+<p>
+<canvas id="MAG X" style="width:100%;max-width:1200px"></canvas>
+
+<canvas id="MAG Y" style="width:100%;max-width:1200px"></canvas>
+
+<canvas id="MAG Z" style="width:100%;max-width:1200px"></canvas>
+</p>
+
+Error and sources of possible interference.
+<p>
+<canvas id="Error" style="width:100%;max-width:1200px"></canvas>
+
+<canvas id="Interference" style="width:100%;max-width:1200px"></canvas>
+</p>
+
+<input id="fileItem" type="file" accept=".bin" onchange="readFile(this)">
+
+<p>
+Existing Calibration<input id="mag_disp_exst" type="radio" name="mag_disp" onchange="mag_display_change(this);" value="Existing" checked disabled/>
+Raw<input id="mag_disp_raw" type="radio" name="mag_disp" onchange="mag_display_change(this);" value="Raw" disabled/>
+</p>
+
+<style>
+    label.parameter_input_label {
+        display: inline-block;
+        width: 150px;
+        text-align: right;
+        margin:5px 0px;
+    }
+</style>
+
+<form id="params" action="">
+<table>
+    <tr>
+        <td>
+            <fieldset style="width:300px">
+                <legend>Compass 1</legend>
+                <p>
+                    <label class="parameter_input_label" for="COMPASS_OFS_X">COMPASS_OFS_X</label>
+                    <input id="COMPASS_OFS_X" name="COMPASS_OFS_X" type="number" style="width: 100px" disabled/>
+
+                    <label class="parameter_input_label" for="COMPASS_OFS_Y">COMPASS_OFS_Y</label>
+                    <input id="COMPASS_OFS_Y" name="COMPASS_OFS_Y" type="number" style="width: 100px" disabled/>
+
+                    <label class="parameter_input_label" for="COMPASS_OFS_Z">COMPASS_OFS_Z</label>
+                    <input id="COMPASS_OFS_Z" name="COMPASS_OFS_Z" type="number" style="width: 100px" disabled/>
+                </p>
+                <p>
+                    <label class="parameter_input_label" for="COMPASS_DIA_X">COMPASS_DIA_X</label>
+                    <input id="COMPASS_DIA_X" name="COMPASS_DIA_X" type="number" style="width: 100px" disabled/>
+
+                    <label class="parameter_input_label" for="COMPASS_DIA_Y">COMPASS_DIA_Y</label>
+                    <input id="COMPASS_DIA_Y" name="COMPASS_DIA_Y" type="number" style="width: 100px" disabled/>
+
+                    <label class="parameter_input_label" for="COMPASS_DIA_Z">COMPASS_DIA_Z</label>
+                    <input id="COMPASS_DIA_Z" name="COMPASS_DIA_Z" type="number" style="width: 100px" disabled/>
+                </p>
+                <p>
+                    <label class="parameter_input_label" for="COMPASS_ODI_X">COMPASS_ODI_X</label>
+                    <input id="COMPASS_ODI_X" name="COMPASS_ODI_X" type="number" style="width: 100px" disabled/>
+
+                    <label class="parameter_input_label" for="COMPASS_ODI_Y">COMPASS_ODI_Y</label>
+                    <input id="COMPASS_ODI_Y" name="COMPASS_ODI_Y" type="number" style="width: 100px" disabled/>
+
+                    <label class="parameter_input_label" for="COMPASS_ODI_Z">COMPASS_ODI_Z</label>
+                    <input id="COMPASS_ODI_Z" name="COMPASS_ODI_Z" type="number" style="width: 100px" disabled/>
+                </p>
+                <p>
+                    <label class="parameter_input_label" for="COMPASS_MOT_X">COMPASS_MOT_X</label>
+                    <input id="COMPASS_MOT_X" name="COMPASS_MOT_X" type="number" style="width: 100px" disabled/>
+
+                    <label class="parameter_input_label" for="COMPASS_MOT_Y">COMPASS_MOT_Y</label>
+                    <input id="COMPASS_MOT_Y" name="COMPASS_MOT_Y" type="number" style="width: 100px" disabled/>
+
+                    <label class="parameter_input_label" for="COMPASS_MOT_Z">COMPASS_MOT_Z</label>
+                    <input id="COMPASS_MOT_Z" name="COMPASS_MOT_Z" type="number" style="width: 100px" disabled/>
+                </p>
+                <label class="parameter_input_label" for="COMPASS_SCALE">COMPASS_SCALE</label>
+                <input id="COMPASS_SCALE" name="COMPASS_SCALE" type="number" style="width: 100px" disabled/>
+            </fieldset>
+        </td>
+        <td>
+            <fieldset style="width:300px">
+                <legend>Compass 2</legend>
+                <p>
+                    <label class="parameter_input_label" for="COMPASS_OFS2_X">COMPASS_OFS2_X</label>
+                    <input id="COMPASS_OFS2_X" name="COMPASS_OFS2_X" type="number" style="width: 100px" disabled/>
+
+                    <label class="parameter_input_label" for="COMPASS_OFS2_Y">COMPASS_OFS2_Y</label>
+                    <input id="COMPASS_OFS2_Y" name="COMPASS_OFS2_Y" type="number" style="width: 100px" disabled/>
+
+                    <label class="parameter_input_label" for="COMPASS_OFS2_Z">COMPASS_OFS2_Z</label>
+                    <input id="COMPASS_OFS2_Z" name="COMPASS_OFS2_Z" type="number" style="width: 100px" disabled/>
+                </p>
+                <p>
+                    <label class="parameter_input_label" for="COMPASS_DIA2_X">COMPASS_DIA2_X</label>
+                    <input id="COMPASS_DIA2_X" name="COMPASS_DIA2_X" type="number" style="width: 100px" disabled/>
+
+                    <label class="parameter_input_label" for="COMPASS_DIA2_Y">COMPASS_DIA2_Y</label>
+                    <input id="COMPASS_DIA2_Y" name="COMPASS_DIA2_Y" type="number" style="width: 100px" disabled/>
+
+                    <label class="parameter_input_label" for="COMPASS_DIA2_Z">COMPASS_DIA2_Z</label>
+                    <input id="COMPASS_DIA2_Z" name="COMPASS_DIA2_Z" type="number" style="width: 100px" disabled/>
+                </p>
+                <p>
+                    <label class="parameter_input_label" for="COMPASS_ODI2_X">COMPASS_ODI2_X</label>
+                    <input id="COMPASS_ODI2_X" name="COMPASS_ODI2_X" type="number" style="width: 100px" disabled/>
+
+                    <label class="parameter_input_label" for="COMPASS_ODI2_Y">COMPASS_ODI2_Y</label>
+                    <input id="COMPASS_ODI2_Y" name="COMPASS_ODI2_Y" type="number" style="width: 100px" disabled/>
+
+                    <label class="parameter_input_label" for="COMPASS_ODI2_Z">COMPASS_ODI2_Z</label>
+                    <input id="COMPASS_ODI2_Z" name="COMPASS_ODI2_Z" type="number" style="width: 100px" disabled/>
+                </p>
+                <p>
+                    <label class="parameter_input_label" for="COMPASS_MOT2_X">COMPASS_MOT2_X</label>
+                    <input id="COMPASS_MOT2_X" name="COMPASS_MOT2_X" type="number" style="width: 100px" disabled/>
+
+                    <label class="parameter_input_label" for="COMPASS_MOT2_Y">COMPASS_MOT2_Y</label>
+                    <input id="COMPASS_MOT2_Y" name="COMPASS_MOT2_Y" type="number" style="width: 100px" disabled/>
+
+                    <label class="parameter_input_label" for="COMPASS_MOT2_Z">COMPASS_MOT2_Z</label>
+                    <input id="COMPASS_MOT2_Z" name="COMPASS_MOT2_Z" type="number" style="width: 100px" disabled/>
+                </p>
+                <label class="parameter_input_label" for="COMPASS_SCALE2">COMPASS_SCALE2</label>
+                <input id="COMPASS_SCALE2" name="COMPASS_SCALE2" type="number" style="width: 100px" disabled/>
+            </fieldset>
+        </td>
+        <td>
+            <fieldset style="width:300px">
+                <legend>Compass 3</legend>
+                <p>
+                    <label class="parameter_input_label" for="COMPASS_OFS3_X">COMPASS_OFS3_X</label>
+                    <input id="COMPASS_OFS3_X" name="COMPASS_OFS3_X" type="number" style="width: 100px" disabled/>
+
+                    <label class="parameter_input_label" for="COMPASS_OFS3_Y">COMPASS_OFS3_Y</label>
+                    <input id="COMPASS_OFS3_Y" name="COMPASS_OFS3_Y" type="number" style="width: 100px" disabled/>
+
+                    <label class="parameter_input_label" for="COMPASS_OFS3_Z">COMPASS_OFS3_Z</label>
+                    <input id="COMPASS_OFS3_Z" name="COMPASS_OFS3_Z" type="number" style="width: 100px" disabled/>
+                </p>
+                <p>
+                    <label class="parameter_input_label" for="COMPASS_DIA3_X">COMPASS_DIA3_X</label>
+                    <input id="COMPASS_DIA3_X" name="COMPASS_DIA3_X" type="number" style="width: 100px" disabled/>
+
+                    <label class="parameter_input_label" for="COMPASS_DIA3_Y">COMPASS_DIA3_Y</label>
+                    <input id="COMPASS_DIA3_Y" name="COMPASS_DIA3_Y" type="number" style="width: 100px" disabled/>
+
+                    <label class="parameter_input_label" for="COMPASS_DIA3_Z">COMPASS_DIA3_Z</label>
+                    <input id="COMPASS_DIA3_Z" name="COMPASS_DIA3_Z" type="number" style="width: 100px" disabled/>
+                </p>
+                <p>
+                    <label class="parameter_input_label" for="COMPASS_ODI3_X">COMPASS_ODI3_X</label>
+                    <input id="COMPASS_ODI3_X" name="COMPASS_ODI3_X" type="number" style="width: 100px" disabled/>
+
+                    <label class="parameter_input_label" for="COMPASS_ODI3_Y">COMPASS_ODI3_Y</label>
+                    <input id="COMPASS_ODI3_Y" name="COMPASS_ODI3_Y" type="number" style="width: 100px" disabled/>
+
+                    <label class="parameter_input_label" for="COMPASS_ODI3_Z">COMPASS_ODI3_Z</label>
+                    <input id="COMPASS_ODI3_Z" name="COMPASS_ODI3_Z" type="number" style="width: 100px" disabled/>
+                </p>
+                <p>
+                    <label class="parameter_input_label" for="COMPASS_MOT3_X">COMPASS_MOT3_X</label>
+                    <input id="COMPASS_MOT3_X" name="COMPASS_MOT3_X" type="number" style="width: 100px" disabled/>
+
+                    <label class="parameter_input_label" for="COMPASS_MOT3_Y">COMPASS_MOT3_Y</label>
+                    <input id="COMPASS_MOT3_Y" name="COMPASS_MOT3_Y" type="number" style="width: 100px" disabled/>
+
+                    <label class="parameter_input_label" for="COMPASS_MOT3_Z">COMPASS_MOT3_Z</label>
+                    <input id="COMPASS_MOT3_Z" name="COMPASS_MOT3_Z" type="number" style="width: 100px" disabled/>
+                </p>
+                <label class="parameter_input_label" for="COMPASS_SCALE3">COMPASS_SCALE3</label>
+                <input id="COMPASS_SCALE3" name="COMPASS_SCALE3" type="number" style="width: 100px" disabled/>
+            </fieldset>
+        </td>
+    </tr>
+</table>
+</form>
+
+</body>
+
+<script type="text/javascript" src="magfit.js"></script>
+<script>
+    function readFile(e) {
+        const file = e.files[0]
+        if (file == null) {
+            return
+        }
+        let reader = new FileReader()
+        reader.onload = function (e) {
+            load(reader.result)
+        }
+        reader.readAsArrayBuffer(file)
+    }
+
+</script>
