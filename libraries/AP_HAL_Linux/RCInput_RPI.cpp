@@ -183,6 +183,10 @@ Memory_table::Memory_table(uint32_t page_count, int version)
     // Get list of available cache coherent physical addresses
     for (i = 0; i < _page_count; i++) {
         _virt_pages[i] = mmap(0, PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_NORESERVE | MAP_LOCKED, -1, 0);
+        if (_virt_pages[i] == MAP_FAILED) {
+            fprintf(stderr, "Failed to map cache coherent physical page (%m)\n");
+            exit(-1);
+        }
         if (::read(file, &pageInfo, 8) < 8) {
             fprintf(stderr, "Failed to read pagemap\n");
             exit(-1);
@@ -193,7 +197,15 @@ Memory_table::Memory_table(uint32_t page_count, int version)
     // Map physical addresses to virtual memory
     for (i = 0; i < _page_count; i++) {
         munmap(_virt_pages[i], PAGE_SIZE);
+
+        void * prev_virt = _virt_pages[i];
         _virt_pages[i] = mmap(_virt_pages[i], PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED | MAP_NORESERVE | MAP_LOCKED, fdMem, ((uintptr_t)_phys_pages[i] & (version == 1 ? 0xFFFFFFFFFFFFFFFF : ~bus)));
+        if (_virt_pages[i] == MAP_FAILED) {
+            fprintf(stderr, "Failed phys2virt prev_virt=%p phys_page=%p %m\n", prev_virt, _phys_pages[i]);
+            printf("Make sure that CONFIG_STRICT_DEVMEM is disabled\n");
+            exit(-1);
+        }
+
         memset(_virt_pages[i], 0xee, PAGE_SIZE);
     }
     close(file);
@@ -276,6 +288,9 @@ void RCInput_RPI::set_physical_addresses()
         dma_base = RCIN_RPI_RPI4_DMA_BASE;
         clk_base = RCIN_RPI_RPI4_CLK_BASE;
         pcm_base = RCIN_RPI_RPI4_PCM_BASE;
+    } else {
+        fprintf(stderr,"unknown RPI _version=%i\n", _version);
+        exit(-1);
     }
 }
 
@@ -293,6 +308,7 @@ void *RCInput_RPI::map_peripheral(uint32_t base, uint32_t len)
     vaddr = mmap(nullptr, len, PROT_READ | PROT_WRITE, MAP_SHARED, fd, base);
     if (vaddr == MAP_FAILED) {
         printf("rpio-pwm: Failed to map peripheral at 0x%08x: %m\n", base);
+        exit(-1);
     }
 
     close(fd);
