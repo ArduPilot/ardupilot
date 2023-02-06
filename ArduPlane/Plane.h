@@ -92,7 +92,7 @@
 // Configuration
 #include "config.h"
 
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ADVANCEDFAILSAFE_ENABLED
 #include "afs_plane.h"
 #endif
 
@@ -654,7 +654,7 @@ private:
 #endif
 
     // Outback Challenge Failsafe Support
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ADVANCEDFAILSAFE_ENABLED
     AP_AdvancedFailsafe_Plane afs;
 #endif
 
@@ -1002,7 +1002,7 @@ private:
     void update_GPS_10Hz(void);
     void update_compass(void);
     void update_alt(void);
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ADVANCEDFAILSAFE_ENABLED
     void afs_fs_check(void);
 #endif
     void one_second_loop(void);
