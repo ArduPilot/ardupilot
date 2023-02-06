@@ -3749,11 +3749,10 @@ class AutoTestPlane(AutoTest):
         '''Really annoy the EKF and force fallback'''
         self.reboot_sitl()
         self.delay_sim_time(30)
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
 
         self.takeoff(50)
         self.change_mode('CIRCLE')
+        self.context_push()
         self.context_collect('STATUSTEXT')
         self.set_parameters({
             "EK3_POS_I_GATE": 0,
@@ -3769,6 +3768,8 @@ class AutoTestPlane(AutoTest):
         self.context_stop_collecting('STATUSTEXT')
 
         self.fly_home_land_and_disarm()
+        self.context_pop()
+        self.reboot_sitl()
 
     def ForcedDCM(self):
         '''Switch to DCM mid-flight'''
