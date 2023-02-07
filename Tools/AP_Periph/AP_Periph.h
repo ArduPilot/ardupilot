@@ -24,6 +24,13 @@
 #include <AP_HAL/CANIface.h>
 #include <AP_Stats/AP_Stats.h>
 
+
+#include <AP_NMEA_Output/AP_NMEA_Output.h>
+#if HAL_NMEA_OUTPUT_ENABLED && !(HAL_GCS_ENABLED && defined(HAL_PERIPH_ENABLE_GPS))
+    // Needs SerialManager + (AHRS or GPS)
+    #error "AP_NMEA_Output requires Serial/GCS and either AHRS or GPS. Needs HAL_GCS_ENABLED and HAL_PERIPH_ENABLE_GPS"
+#endif
+
 #if HAL_GCS_ENABLED
 #include "GCS_MAVLink.h"
 #endif
@@ -126,6 +133,10 @@ public:
 #if HAL_NUM_CAN_IFACES >= 2
     int8_t gps_mb_can_port = -1;
 #endif
+#endif
+
+#if HAL_NMEA_OUTPUT_ENABLED
+    AP_NMEA_Output nmea;
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MAG

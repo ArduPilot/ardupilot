@@ -517,6 +517,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(proximity, "PRX", AP_Proximity),
 #endif
 
+#if HAL_NMEA_OUTPUT_ENABLED
+    // @Group: NMEA_
+    // @Path: ../libraries/AP_NMEA_Output/AP_NMEA_Output.cpp
+    GOBJECT(nmea, "NMEA_",   AP_NMEA_Output),
+#endif
+
     AP_VAREND
 };
 
