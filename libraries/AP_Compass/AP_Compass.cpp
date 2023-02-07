@@ -1251,15 +1251,15 @@ void Compass::_probe_external_i2c_compasses(void)
 #endif
 #endif
 
-#if AP_COMPASS_I2C_BACKEND_DEFAULT_ENABLED && !defined(STM32F1)
-    // BMM150 on I2C, not on F1 to save flash
+#if AP_COMPASS_BMM150_ENABLED
+    // BMM150 on I2C
     FOREACH_I2C_EXTERNAL(i) {
         for (uint8_t addr=BMM150_I2C_ADDR_MIN; addr <= BMM150_I2C_ADDR_MAX; addr++) {
             ADD_BACKEND(DRIVER_BMM150,
                         AP_Compass_BMM150::probe(GET_I2C_DEVICE(i, addr), true, ROTATION_NONE));
         }
     }
-#endif // HAL_BUILD_AP_PERIPH
+#endif // AP_COMPASS_BMM150_ENABLED
 }
 
 /*
@@ -1320,8 +1320,10 @@ void Compass::_detect_backends(void)
         break;
 
     case AP_BoardConfig::PX4_BOARD_PCNC1:
+#if AP_COMPASS_BMM150_ENABLED
         ADD_BACKEND(DRIVER_BMM150,
                     AP_Compass_BMM150::probe(GET_I2C_DEVICE(0, 0x10), false, ROTATION_NONE));
+#endif
         break;
     case AP_BoardConfig::VRX_BOARD_BRAIN54:
     case AP_BoardConfig::VRX_BOARD_BRAIN51: {
