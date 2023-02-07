@@ -205,7 +205,11 @@ class set_app_descriptor(Task.Task):
         desc_len = 16
         crc1 = to_unsigned(crc32(bytearray(img[:offset])))
         crc2 = to_unsigned(crc32(bytearray(img[offset+desc_len:])))
-        githash = to_unsigned(int('0x' + os.environ.get('GIT_VERSION') if 'GIT_VERSION' in os.environ else self.generator.bld.git_head_hash(short=True),16))
+        if 'GIT_VERSION' in os.environ:
+            hex_hash = os.environ.get('GIT_VERSION')
+        else:
+            hex_hash = self.generator.bld.git_head_hash(short=True)
+        githash = to_unsigned(int('0x' + hex_hash, 16))
         desc = struct.pack('<IIII', crc1, crc2, len(img), githash)
         img = img[:offset] + desc + img[offset+desc_len:]
         Logs.info("Applying %s APP_DESCRIPTOR %08x%08x" % (self.env.APP_DESCRIPTOR, crc1, crc2))
