@@ -768,28 +768,7 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
 
 bool AP_Mission::stored_in_location(uint16_t id)
 {
-    switch (id) {
-    case MAV_CMD_NAV_WAYPOINT:
-    case MAV_CMD_NAV_LOITER_UNLIM:
-    case MAV_CMD_NAV_LOITER_TURNS:
-    case MAV_CMD_NAV_LOITER_TIME:
-    case MAV_CMD_NAV_LAND:
-    case MAV_CMD_NAV_TAKEOFF:
-    case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
-    case MAV_CMD_NAV_LOITER_TO_ALT:
-    case MAV_CMD_NAV_SPLINE_WAYPOINT:
-    case MAV_CMD_NAV_GUIDED_ENABLE:
-    case MAV_CMD_DO_SET_HOME:
-    case MAV_CMD_DO_LAND_START:
-    case MAV_CMD_DO_GO_AROUND:
-    case MAV_CMD_DO_SET_ROI:
-    case MAV_CMD_NAV_VTOL_TAKEOFF:
-    case MAV_CMD_NAV_VTOL_LAND:
-    case MAV_CMD_NAV_PAYLOAD_PLACE:
-        return true;
-    default:
-        return false;
-    }
+    return mavlink_cmd_has_location(id);
 }
 
 /// write_cmd_to_storage - write a command to storage
@@ -1304,7 +1283,8 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     return MAV_MISSION_ACCEPTED;
 }
 
-MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(const mavlink_mission_item_t &packet,
+
+MAV_MISSION_RESULT MissionItemProtocol::convert_MISSION_ITEM_to_MISSION_ITEM_INT(const mavlink_mission_item_t &packet,
         mavlink_mission_item_int_t &mav_cmd)
 {
     // TODO: rename mav_cmd to mission_item_int
@@ -1330,7 +1310,7 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(const ma
       any commands which use the x and y fields not as
       latitude/longitude.
      */
-    if (!cmd_has_location(packet.command)) {
+    if (!mavlink_cmd_has_location(packet.command)) {
         mav_cmd.x = packet.x;
         mav_cmd.y = packet.y;
 
@@ -1350,7 +1330,7 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(const ma
     return MAV_MISSION_ACCEPTED;
 }
 
-MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_INT_to_MISSION_ITEM(const mavlink_mission_item_int_t &item_int,
+MAV_MISSION_RESULT MissionItemProtocol::convert_MISSION_ITEM_INT_to_MISSION_ITEM(const mavlink_mission_item_int_t &item_int,
         mavlink_mission_item_t &item)
 {
     item.param1 = item_int.param1;
@@ -1367,7 +1347,7 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_INT_to_MISSION_ITEM(const ma
     item.autocontinue = item_int.autocontinue;
     item.mission_type = item_int.mission_type;
 
-    if (!cmd_has_location(item_int.command)) {
+    if (!mavlink_cmd_has_location(item_int.command)) {
         item.x = item_int.x;
         item.y = item_int.y;
 
@@ -2499,15 +2479,6 @@ bool AP_Mission::contains_item(MAV_CMD command) const
         }
     }
     return false;
-}
-
-/*
-  return true if the mission item has a location
-*/
-
-bool AP_Mission::cmd_has_location(const uint16_t command)
-{
-    return stored_in_location(command);
 }
 
 /*
