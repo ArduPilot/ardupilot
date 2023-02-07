@@ -43,6 +43,39 @@ const StorageManager::StorageArea StorageManager::layout[STORAGE_NUM_AREAS] = {
     { StorageParam,   0,     HAL_STORAGE_SIZE}
 };
 
+#elif STORAGE_ALLOCATION_FAVOR_MISSION && STORAGE_NUM_AREAS >= 15
+#if !APM_BUILD_COPTER_OR_HELI
+    { StorageParam,   0,     1280}, // 0x500 parameter bytes
+    { StorageMission, 1280,  2506},
+    { StorageRally,   3786,   150}, // 10 rally points
+    { StorageFence,   3936,   160}, // 20 fence points
+#else
+    { StorageParam,   0,     1536}, // 0x600 param bytes
+    { StorageMission, 1536,  2422},
+    { StorageRally,   3958,    90}, // 6 rally points
+    { StorageFence,   4048,    48}, // 6 fence points
+#endif
+
+    { StorageParam,   4096,  1280},
+    { StorageMission, 5376,   300},
+    { StorageMission, 5676,   256},
+    { StorageMission, 5932,  2132},
+    { StorageKeys,    8064,    64}, 
+    { StorageBindInfo,8128,    56},
+    { StorageMission, 8192,  1280},
+    { StorageMission, 9472,   300},
+    { StorageMission, 9772,   256},
+    { StorageMission, 10028,  5204}, // leave 128 byte gap for expansion
+    { StorageCANDNA,  15232,  1024},
+    // 128 byte gap at end of first 16k
+
+#if STORAGE_NUM_AREAS >= 18
+    { StorageMission, 16384,  1280},
+    { StorageMission, 17664,  9842},
+    { StorageMission, 27506,  5262},
+#endif
+};
+
 #else
 /*
   layout for fixed wing and rovers

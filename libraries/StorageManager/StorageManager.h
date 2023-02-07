@@ -44,8 +44,12 @@
 #error "Unsupported storage size"
 #endif
 
+#ifndef STORAGE_ALLOCATION_FAVOR_MISSION
+#define STORAGE_ALLOCATION_FAVOR_MISSION 0
+#endif
+
 /*
-  The StorageManager holds the layout of non-volatile storeage
+  The StorageManager holds the layout of non-volatile storage
  */
 class StorageManager {
     friend class StorageAccess;
