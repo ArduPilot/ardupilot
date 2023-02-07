@@ -415,7 +415,11 @@ class Board:
             self.embed_ROMFS_files(bld)
 
     def build(self, bld):
-        bld.ap_version_append_str('GIT_VERSION', bld.git_head_hash(short=True))
+        version_type = 'GIT_VERSION'
+        if version_type in os.environ:
+            bld.ap_version_append_str(version_type, version_type)
+        else:
+            bld.ap_version_append_str(version_type, bld.git_head_hash(short=True))
         import time
         ltime = time.localtime()
         if bld.env.build_dates:
@@ -951,7 +955,11 @@ class chibios(Board):
 
     def build(self, bld):
         super(chibios, self).build(bld)
-        bld.ap_version_append_str('CHIBIOS_GIT_VERSION', bld.git_submodule_head_hash('ChibiOS', short=True))
+        version_type = 'CHIBIOS_GIT_VERSION'
+        if version_type in os.environ:
+            bld.ap_version_append_str(version_type, version_type)
+        else:
+            bld.ap_version_append_str(version_type, bld.git_submodule_head_hash('ChibiOS', short=True))
         bld.load('chibios')
 
     def pre_build(self, bld):
