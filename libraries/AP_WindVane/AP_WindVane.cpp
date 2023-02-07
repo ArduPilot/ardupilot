@@ -23,7 +23,13 @@
 #include "AP_WindVane_SITL.h"
 #include "AP_WindVane_NMEA.h"
 
+#include <GCS_MAVLink/GCS.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_SerialManager/AP_SerialManager.h>
+
+extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_WindVane::var_info[] = {
 
@@ -269,11 +275,11 @@ void AP_WindVane::update()
         } else if (_calibration == 2 && have_speed) {
             _speed_driver->calibrate();
         } else if (_calibration != 0) {
-            gcs().send_text(MAV_SEVERITY_INFO, "WindVane: driver not found");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "WindVane: driver not found");
             _calibration.set_and_save(0);
         }
     } else if (_calibration != 0) {
-        gcs().send_text(MAV_SEVERITY_INFO, "WindVane: disarm for cal");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "WindVane: disarm for cal");
         _calibration.set_and_save(0);
     }
 
@@ -369,12 +375,16 @@ void AP_WindVane::update()
 
 }
 
+void AP_WindVane::record_home_heading()
+{
+    _home_heading = AP::ahrs().yaw;
+}
 
 // to start direction calibration from mavlink or other
 bool AP_WindVane::start_direction_calibration()
 {
     if (enabled() && (_calibration == 0)) {
-        _calibration = 1;
+        _calibration.set(1);
         return true;
     }
     return false;
@@ -384,7 +394,7 @@ bool AP_WindVane::start_direction_calibration()
 bool AP_WindVane::start_speed_calibration()
 {
     if (enabled() && (_calibration == 0)) {
-        _calibration = 2;
+        _calibration.set(2);
         return true;
     }
     return false;

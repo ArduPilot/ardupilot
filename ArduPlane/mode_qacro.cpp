@@ -6,8 +6,14 @@
 bool ModeQAcro::_enter()
 {
     quadplane.throttle_wait = false;
-    quadplane.transition->force_transistion_complete();
+    quadplane.transition->force_transition_complete();
     attitude_control->relax_attitude_controllers();
+
+    // disable yaw rate time contant to mantain old behaviour
+    quadplane.disable_yaw_rate_time_constant();
+
+    IGNORE_RETURN(plane.ahrs.get_quaternion(plane.acro_state.q));
+
     return true;
 }
 

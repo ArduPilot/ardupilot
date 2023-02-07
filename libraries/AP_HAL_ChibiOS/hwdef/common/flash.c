@@ -75,7 +75,7 @@
 
 // optionally disable interrupts during flash writes
 #ifndef STM32_FLASH_DISABLE_ISR
-#define STM32_FLASH_DISABLE_ISR 0
+#define STM32_FLASH_DISABLE_ISR 1
 #endif
 
 // the 2nd bank of flash needs to be handled differently
@@ -160,6 +160,12 @@ static bool flash_keep_unlocked;
 #endif
 #ifndef FLASH_KEY2
 #define FLASH_KEY2      0xCDEF89AB
+#endif
+#ifndef FLASH_OPTKEY1
+#define FLASH_OPTKEY1      0x08192A3B
+#endif
+#ifndef FLASH_OPTKEY2
+#define FLASH_OPTKEY2      0x4C5D6E7F
 #endif
 
 /* Some compiler options will convert short loads and stores into byte loads
@@ -278,7 +284,48 @@ void stm32_flash_lock(void)
 #endif
 }
 
+#if defined(STM32H7) && HAL_FLASH_PROTECTION
+static void stm32_flash_wait_opt_idle(void)
+{
+    __DSB();
+    while (FLASH->OPTSR_CUR & FLASH_OPTSR_OPT_BUSY) {
+        // nop
+    }
+}
 
+static void stm32_flash_opt_clear_errors(void)
+{
+    FLASH->OPTCCR = FLASH_OPTCCR_CLR_OPTCHANGEERR;
+}
+
+static bool stm32_flash_unlock_options(void)
+{
+    stm32_flash_wait_opt_idle();
+
+    if (FLASH->OPTCR & FLASH_OPTCR_OPTLOCK) {
+        /* Unlock sequence */
+        FLASH->OPTKEYR = FLASH_OPTKEY1;
+        FLASH->OPTKEYR = FLASH_OPTKEY2;
+    }
+
+    if (FLASH->OPTSR_CUR & FLASH_OPTSR_OPTCHANGEERR) {
+        return false;
+    }
+    return true;
+}
+
+static bool stm32_flash_lock_options(void)
+{
+    stm32_flash_wait_opt_idle();
+
+    FLASH->OPTCR |= FLASH_OPTCR_OPTLOCK;
+
+    if (FLASH->OPTSR_CUR & FLASH_OPTSR_OPTCHANGEERR) {
+        return false;
+    }
+    return true;
+}
+#endif
 
 /*
   get the memory address of a page
@@ -499,28 +546,37 @@ static bool stm32_flash_write_h7(uint32_t addr, const void *buf, uint32_t count)
         return false;
     }
 
-    // check for erasure
-    if (!stm32h7_check_all_ones(addr, count >> 2)) {
-        return false;
-    }
-
-#if STM32_FLASH_DISABLE_ISR
-    syssts_t sts = chSysGetStatusAndLockX();
-#endif
-
     stm32_flash_unlock();
     bool success = true;
 
     while (count >= 32) {
-        if (!stm32h7_flash_write32(addr, b)) {
-            success = false;
-            goto failed;
-        }
+        const uint8_t *b2 = (const uint8_t *)addr;
+        // if the bytes already match then skip this chunk
+        if (memcmp(b, b2, 32) != 0) {
+            // check for erasure
+            if (!stm32h7_check_all_ones(addr, 8)) {
+                return false;
+            }
 
-        // check contents
-        if (memcmp((void*)addr, b, 32) != 0) {
-            success = false;
-            goto failed;
+#if STM32_FLASH_DISABLE_ISR
+            syssts_t sts = chSysGetStatusAndLockX();
+#endif
+
+            bool ok = stm32h7_flash_write32(addr, b);
+
+#if STM32_FLASH_DISABLE_ISR
+            chSysRestoreStatusX(sts);
+#endif
+
+            if (!ok) {
+                success = false;
+                goto failed;
+            }
+            // check contents
+            if (memcmp((void*)addr, b, 32) != 0) {
+                success = false;
+                goto failed;
+            }
         }
 
         addr += 32;
@@ -530,9 +586,6 @@ static bool stm32_flash_write_h7(uint32_t addr, const void *buf, uint32_t count)
 
 failed:
     stm32_flash_lock();
-#if STM32_FLASH_DISABLE_ISR
-    chSysRestoreStatusX(sts);
-#endif
     return success;
 }
 
@@ -801,6 +854,139 @@ void stm32_flash_keep_unlocked(bool set)
         flash_keep_unlocked = false;
         stm32_flash_lock();        
     }
+}
+
+/**
+ * @brief write protect the main flash or bootloader sectors
+ */
+void stm32_flash_protect_flash(bool bootloader, bool protect)
+{
+    (void)bootloader;
+    (void)protect;
+#if defined(STM32H7) && HAL_FLASH_PROTECTION
+    uint32_t prg1 = FLASH->WPSN_CUR1;
+    uint32_t prg2 = FLASH->WPSN_CUR2;
+#ifndef STORAGE_FLASH_PAGE
+    const uint32_t storage_page = 0xFF;
+#else
+    const uint32_t storage_page = STORAGE_FLASH_PAGE;
+#endif
+    const uint32_t reserve_page = (FLASH_LOAD_ADDRESS - 0x08000000) / (1024 * 128);
+
+    if (bootloader) { // only lock the reserved section
+        for (uint32_t i = 0; i < reserve_page; i++) {
+            if (protect) {
+                prg1 &= ~(1U<<i);
+            } else {
+                prg1 |= 1U<<i;
+            }
+        }
+    } else {
+        for (uint32_t i = reserve_page; i < 8; i++) {
+            if (i != storage_page && i != storage_page+1 && protect) {
+                prg1 &= ~(1U<<i);
+            } else {
+                prg1 |= 1U<<i;
+            }
+        }
+
+        for (uint32_t i = 0; i < 8; i++) {
+            if (i+8 != storage_page && i+8 != storage_page+1 && protect) {
+                prg2 &= ~(1U<<i);
+            } else {
+                prg2 |= 1U<<i;
+            }
+        }
+    }
+
+    // check if any changes to be made
+    if (prg1 == FLASH->WPSN_CUR1 && prg2 == FLASH->WPSN_CUR2) {
+        return;
+    }
+
+    stm32_flash_opt_clear_errors();
+    stm32_flash_clear_errors();
+
+    if (stm32_flash_unlock_options()) {
+        FLASH->WPSN_PRG1 = prg1;
+        FLASH->WPSN_PRG2 = prg2;
+        FLASH->OPTCR |= FLASH_OPTCR_OPTSTART;
+        stm32_flash_wait_opt_idle();
+
+        stm32_flash_lock_options();
+    }
+#endif
+}
+
+/*
+ * remove all protections from flash banks
+ * this is a destructive operation requiring bank erasure
+ * see H743 reference manual 4.3.10 - flash bank erase with protection removal
+ */
+void stm32_flash_unprotect_flash()
+{
+#if defined(STM32H7) && HAL_FLASH_PROTECTION
+    stm32_flash_opt_clear_errors();
+    stm32_flash_clear_errors();
+
+    if ((FLASH->PRAR_CUR2 & 0xFFF) <= ((FLASH->PRAR_CUR2 >> 16) & 0xFFF)
+        || (FLASH->SCAR_CUR2 & 0xFFF) <= ((FLASH->SCAR_CUR2 >> 16) & 0xFFF)) {
+
+        if (stm32_flash_unlock_options()) {
+            const uint32_t start_addr = 0x00;
+            const uint32_t end_addr = 0xFF;
+            const uint32_t prg = (1 << 31) | ((start_addr << 16) | end_addr);
+
+            FLASH->PRAR_PRG2 = prg;
+            FLASH->SCAR_PRG2 = prg;
+            FLASH->WPSN_PRG2 = 0xFF;
+
+            stm32_flash_unlock();
+
+            FLASH->CR2 |= FLASH_CR_BER; // bank 2 erase
+            FLASH->CR2 |= FLASH_CR_START;
+
+            stm32_flash_wait_idle();
+
+            stm32_flash_lock();
+        }
+    }
+
+    if ((FLASH->PRAR_CUR1 & 0xFFF) <= ((FLASH->PRAR_CUR1 >> 16) & 0xFFF)
+        || (FLASH->SCAR_CUR1 & 0xFFF) <= ((FLASH->SCAR_CUR1 >> 16) & 0xFFF)) {
+
+        if (stm32_flash_unlock_options()) {
+            const uint32_t start_addr = 0x00;
+            const uint32_t end_addr = 0xFF;
+            const uint32_t prg = (1 << 31) | ((start_addr << 16) | end_addr);
+
+            FLASH->PRAR_PRG1 = prg;
+            FLASH->SCAR_PRG1 = prg;
+            FLASH->WPSN_PRG1 = 0xFF;
+
+            stm32_flash_unlock();
+
+            FLASH->CR1 |= FLASH_CR_BER; // bank 1 erase
+            FLASH->CR1 |= FLASH_CR_START;
+
+            stm32_flash_wait_idle();
+
+            stm32_flash_lock();
+        }
+    }
+    // remove write protection from banks 1&2
+    if ((FLASH->WPSN_CUR2 & 0xFF) != 0xFF
+        || (FLASH->WPSN_CUR1 & 0xFF) != 0xFF) {
+        if (stm32_flash_unlock_options()) {
+            FLASH->WPSN_PRG1 = 0xFF;
+            FLASH->WPSN_PRG2 = 0xFF;
+            FLASH->OPTCR |= FLASH_OPTCR_OPTSTART;
+
+            stm32_flash_wait_opt_idle();
+            stm32_flash_lock_options();
+        }
+    }
+#endif
 }
 
 #ifndef HAL_BOOTLOADER_BUILD

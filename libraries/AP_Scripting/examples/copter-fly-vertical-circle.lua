@@ -38,7 +38,7 @@ function update()
         end
       elseif (stage == 2) then      -- Stage2: check if vehicle has reached target altitude
         local home = ahrs:get_home()
-        local curr_loc = ahrs:get_position()
+        local curr_loc = ahrs:get_location()
         if home and curr_loc then
           local vec_from_home = home:get_distance_NED(curr_loc)
           gcs:send_text(0, "alt above home: " .. tostring(math.floor(-vec_from_home:z())))

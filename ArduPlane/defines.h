@@ -3,12 +3,10 @@
 // Internal defines, don't edit and expect things to work
 // -------------------------------------------------------
 
-#define TRUE 1
-#define FALSE 0
-
-#define DEBUG 0
 #define SERVO_MAX 4500.0  // This value represents 45 degrees and is just an
                         // arbitrary representation of servo max travel.
+
+#define MIN_AIRSPEED_MIN 5 // m/s, used for arming check and speed scaling
 
 // failsafe
 // ----------------------
@@ -50,9 +48,18 @@ enum failsafe_action_long {
 enum class StickMixing {
     NONE     = 0,
     FBW      = 1,
-    DIRECT   = 2,
+    DIRECT_REMOVED = 2,
     VTOL_YAW = 3,
 };
+
+// values for RTL_AUTOLAND
+enum class RtlAutoland {
+    RTL_DISABLE = 0,
+    RTL_THEN_DO_LAND_START = 1,
+    RTL_IMMEDIATE_DO_LAND_START = 2,
+    NO_RTL_GO_AROUND = 3,
+};
+    
 
 enum ChannelMixing {
     MIXING_DISABLED = 0,
@@ -83,8 +90,6 @@ static_assert(TUNING_BITS_END <= (1 << 24) + 1, "Tuning bit mask is too large to
 enum log_messages {
     LOG_CTUN_MSG,
     LOG_NTUN_MSG,
-    LOG_STARTUP_MSG,
-    TYPE_GROUNDSTART_MSG,
     LOG_STATUS_MSG,
     LOG_QTUN_MSG,
     LOG_PIQR_MSG,
@@ -94,10 +99,6 @@ enum log_messages {
     LOG_PIDG_MSG,
     LOG_AETR_MSG,
     LOG_OFG_MSG,
-    LOG_CMDI_MSG,
-    LOG_CMDA_MSG,
-    LOG_CMDS_MSG,
-    LOG_CMDH_MSG,
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
@@ -119,14 +120,6 @@ enum log_messages {
 #define MASK_LOG_IMU_RAW                (1UL<<19)
 #define MASK_LOG_ATTITUDE_FULLRATE      (1U<<20)
 #define MASK_LOG_VIDEO_STABILISATION    (1UL<<21)
-
-// altitude control algorithms
-enum {
-    ALT_CONTROL_DEFAULT      = 0,
-    ALT_CONTROL_NON_AIRSPEED = 1,
-    ALT_CONTROL_TECS         = 2,
-    ALT_CONTROL_AIRSPEED     = 3
-};
 
 enum {
     CRASH_DETECT_ACTION_BITMASK_DISABLED = 0,
@@ -167,6 +160,8 @@ enum FlightOptions {
     OSD_REMOVE_TRIM_PITCH_CD = (1 << 9),
     CENTER_THROTTLE_TRIM = (1<<10),
     DISABLE_GROUND_PID_SUPPRESSION = (1<<11),
+    ENABLE_LOITER_ALT_CONTROL = (1<<12),
+
 };
 
 enum CrowFlapOptions {

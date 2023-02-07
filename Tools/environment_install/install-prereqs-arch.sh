@@ -23,10 +23,10 @@ while getopts "yq" opt; do
 done
 
 BASE_PKGS="base-devel ccache git gsfonts tk wget gcc"
-SITL_PKGS="python-pip python-setuptools python-wheel wxpython opencv python-numpy python-scipy"
+SITL_PKGS="python-pip python-setuptools python-wheel python-wxpython opencv python-numpy python-scipy"
 PX4_PKGS="lib32-glibc zip zlib ncurses"
 
-PYTHON_PKGS="future lxml pymavlink MAVProxy argparse matplotlib pyparsing geocoder pyserial empy"
+PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect argparse matplotlib pyparsing geocoder pyserial empy dronecan"
 
 # GNU Tools for ARM Embedded Processors
 # (see https://launchpad.net/gcc-arm-embedded/)
@@ -68,7 +68,7 @@ pip3 -q install --user -U $PYTHON_PKGS
 if [ ! -d $OPT/$ARM_ROOT ]; then
     (
         cd $OPT;
-        sudo wget $ARM_TARBALL_URL;
+        sudo wget --progress=dot:giga $ARM_TARBALL_URL;
         sudo tar xjf ${ARM_TARBALL};
         sudo rm ${ARM_TARBALL};
     )

@@ -1,5 +1,7 @@
 #include "AP_Frsky_SPort_Passthrough.h"
 
+#if AP_FRSKY_SPORT_PASSTHROUGH_ENABLED
+
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_GPS/AP_GPS.h>
@@ -222,11 +224,13 @@ bool AP_Frsky_SPort_Passthrough::is_packet_ready(uint8_t idx, bool queue_empty)
     case RPM:
         {
             packet_ready = false;
+#if AP_RPM_ENABLED
             const AP_RPM *rpm = AP::rpm();
             if (rpm == nullptr) {
                 break;
             }
             packet_ready = rpm->num_sensors() > 0;
+#endif
         }
         break;
     case TERRAIN:
@@ -563,7 +567,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_ap_status(void)
 {
     // IMU temperature: offset -19, 0 means temp =< 19°, 63 means temp => 82°
     uint8_t imu_temp = 0;
-#if HAL_INS_ENABLED
+#if AP_INERTIALSENSOR_ENABLED
     imu_temp = (uint8_t) roundf(constrain_float(AP::ins().get_temperature(0), AP_IMU_TEMP_MIN, AP_IMU_TEMP_MAX) - AP_IMU_TEMP_MIN);
 #endif
 
@@ -582,12 +586,14 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_ap_status(void)
     ap_status |= (uint8_t)(AP_Notify::flags.ekf_bad)<<AP_EKF_FS_OFFSET;
     // generic failsafe
     ap_status |= (uint8_t)(AP_Notify::flags.failsafe_battery||AP_Notify::flags.failsafe_ekf||AP_Notify::flags.failsafe_gcs||AP_Notify::flags.failsafe_radio)<<AP_FS_OFFSET;
+#if AP_FENCE_ENABLED
     // fence status
     AC_Fence *fence = AP::fence();
     if (fence != nullptr) {
         ap_status |= (uint8_t)(fence->enabled() && fence->present()) << AP_FENCE_PRESENT_OFFSET;
         ap_status |= (uint8_t)(fence->get_breaches()>0) << AP_FENCE_BREACH_OFFSET;
     }
+#endif
     // signed throttle [-100,100] scaled down to [-63,63] on 7 bits, MSB for sign + 6 bits for 0-63
     ap_status |= prep_number(gcs().get_hud_throttle()*0.63, 2, 0)<<AP_THROTTLE_OFFSET;
     // IMU temperature
@@ -610,7 +616,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_home(void)
     {
         AP_AHRS &_ahrs = AP::ahrs();
         WITH_SEMAPHORE(_ahrs.get_semaphore());
-        got_position = _ahrs.get_position(loc);
+        got_position = _ahrs.get_location(loc);
         home_loc = _ahrs.get_home();
     }
 
@@ -679,11 +685,13 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_attiandrng(void)
 {
     const RangeFinder *_rng = RangeFinder::get_singleton();
 
-    AP_AHRS &_ahrs = AP::ahrs();
+    float roll;
+    float pitch;
+    AP::vehicle()->get_osd_roll_pitch_rad(roll,pitch);
     // roll from [-18000;18000] centidegrees to unsigned .2 degree increments [0;1800] (just in case, limit to 2047 (0x7FF) since the value is stored on 11 bits)
-    uint32_t attiandrng = ((uint16_t)roundf((_ahrs.roll_sensor + 18000) * 0.05f) & ATTIANDRNG_ROLL_LIMIT);
+    uint32_t attiandrng = ((uint16_t)roundf((roll * RAD_TO_DEG * 100 + 18000) * 0.05f) & ATTIANDRNG_ROLL_LIMIT);
     // pitch from [-9000;9000] centidegrees to unsigned .2 degree increments [0;900] (just in case, limit to 1023 (0x3FF) since the value is stored on 10 bits)
-    attiandrng |= ((uint16_t)roundf((_ahrs.pitch_sensor + 9000) * 0.05f) & ATTIANDRNG_PITCH_LIMIT)<<ATTIANDRNG_PITCH_OFFSET;
+    attiandrng |= ((uint16_t)roundf((pitch * RAD_TO_DEG * 100 + 9000) * 0.05f) & ATTIANDRNG_PITCH_LIMIT)<<ATTIANDRNG_PITCH_OFFSET;
     // rangefinder measurement in cm
     attiandrng |= prep_number(_rng ? _rng->distance_cm_orient(ROTATION_PITCH_270) : 0, 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
     return attiandrng;
@@ -695,6 +703,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_attiandrng(void)
  */
 uint32_t AP_Frsky_SPort_Passthrough::calc_rpm(void)
 {
+#if AP_RPM_ENABLED
     const AP_RPM *ap_rpm = AP::rpm();
     if (ap_rpm == nullptr) {
         return 0;
@@ -711,6 +720,9 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_rpm(void)
         value |= (int16_t)roundf(rpm * 0.1) << 16;
     }
     return value;
+#else
+    return 0;
+#endif
 }
 
 /*
@@ -857,10 +869,10 @@ bool AP_Frsky_SPort_Passthrough::set_telem_data(const uint8_t frame, const uint1
     // queue only Uplink packets
     if (frame == SPORT_UPLINK_FRAME || frame == SPORT_UPLINK_FRAME_RW) {
         const AP_Frsky_SPort::sport_packet_t sp {
-            0x00,   // this is ignored by process_sport_rx_queue() so no need for a real sensor ID
+            { 0x00,   // this is ignored by process_sport_rx_queue() so no need for a real sensor ID
             frame,
             appid,
-            data
+            data }
         };
 
         _SPort_bidir.rx_packet_queue.push_force(sp);
@@ -956,3 +968,5 @@ AP_Frsky_SPort_Passthrough *frsky_passthrough_telem()
     return AP_Frsky_SPort_Passthrough::get_singleton();
 }
 };
+
+#endif  // AP_FRSKY_SPORT_PASSTHROUGH_ENABLED

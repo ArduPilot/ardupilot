@@ -12,6 +12,8 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include <hal.h>
 #include "RCOutput.h"
 #include <AP_Math/AP_Math.h>
 #include "hwdef/common/stm32_util.h"
@@ -36,7 +38,9 @@ bool RCOutput::dshot_send_command(pwm_group& group, uint8_t command, uint8_t cha
         return false;
     }
 
+#ifdef HAL_GPIO_LINE_GPIO81
     TOGGLE_PIN_DEBUG(81);
+#endif
     // first make sure we have the DMA channel before anything else
 
     osalDbgAssert(!group.dma_handle->is_locked(), "DMA handle is already locked");
@@ -46,9 +50,10 @@ bool RCOutput::dshot_send_command(pwm_group& group, uint8_t command, uint8_t cha
     group.dshot_waiter = rcout_thread_ctx;
     bool bdshot_telem = false;
 #ifdef HAL_WITH_BIDIR_DSHOT
+    uint32_t active_channels = group.ch_mask & group.en_mask;
     // no need to get the input capture lock
     group.bdshot.enabled = false;
-    if ((_bdshot.mask & group.ch_mask) == group.ch_mask) {
+    if ((_bdshot.mask & active_channels) == active_channels) {
         bdshot_telem = true;
         // it's not clear why this is required, but without it we get no output
         if (group.pwm_started) {
@@ -66,9 +71,13 @@ bool RCOutput::dshot_send_command(pwm_group& group, uint8_t command, uint8_t cha
     const uint16_t packet = create_dshot_packet(command, true, bdshot_telem);
 
     for (uint8_t i = 0; i < 4; i++) {
-        if (group.chan[i] == chan || (chan == RCOutput::ALL_CHANNELS && group.is_chan_enabled(i))) {
+        if (!group.is_chan_enabled(i)) {
+            continue;
+        }
+
+        if (group.chan[i] == chan || chan == RCOutput::ALL_CHANNELS) {
             fill_DMA_buffer_dshot(group.dma_buffer + i, 4, packet, group.bit_width_mul);
-        } else if (group.is_chan_enabled(i)) {
+        } else {
             fill_DMA_buffer_dshot(group.dma_buffer + i, 4, zero_packet, group.bit_width_mul);
         }
     }
@@ -76,7 +85,9 @@ bool RCOutput::dshot_send_command(pwm_group& group, uint8_t command, uint8_t cha
     chEvtGetAndClearEvents(group.dshot_event_mask);
     // start sending the pulses out
     send_pulses_DMAR(group, DSHOT_BUFFER_LENGTH);
+#ifdef HAL_GPIO_LINE_GPIO81
     TOGGLE_PIN_DEBUG(81);
+#endif
 
     return true;
 }
@@ -96,7 +107,7 @@ void RCOutput::send_dshot_command(uint8_t command, uint8_t chan, uint32_t comman
 
     DshotCommandPacket pkt;
     pkt.command = command;
-    pkt.chan = chan + chan_offset;
+    pkt.chan = chan - chan_offset;
     if (command_timeout_ms == 0) {
         pkt.cycle = MAX(10, repeat_count);
     } else {
@@ -112,14 +123,14 @@ void RCOutput::send_dshot_command(uint8_t command, uint8_t chan, uint32_t comman
 // Set the dshot outputs that should be reversed (as opposed to 3D)
 // The chanmask passed is added (ORed) into any existing mask.
 // The mask uses servo channel numbering
-void RCOutput::set_reversed_mask(uint16_t chanmask) {
+void RCOutput::set_reversed_mask(uint32_t chanmask) {
     _reversed_mask |= (chanmask >> chan_offset);
 }
 
 // Set the dshot outputs that should be reversible/3D
 // The chanmask passed is added (ORed) into any existing mask.
 // The mask uses servo channel numbering
-void RCOutput::set_reversible_mask(uint16_t chanmask) {
+void RCOutput::set_reversible_mask(uint32_t chanmask) {
     _reversible_mask |= (chanmask >> chan_offset);
 }
 
@@ -135,11 +146,12 @@ void RCOutput::update_channel_masks() {
     for (uint8_t i=0; i<HAL_PWM_COUNT; i++) {
         switch (_dshot_esc_type) {
             case DSHOT_ESC_BLHELI:
+            case DSHOT_ESC_BLHELI_S:
                 if (_reversible_mask & (1U<<i)) {
-                    send_dshot_command(DSHOT_3D_ON, i, 0, 10, true);
+                    send_dshot_command(DSHOT_3D_ON, i + chan_offset, 0, 10, true);
                 }
                 if (_reversed_mask & (1U<<i)) {
-                    send_dshot_command(DSHOT_REVERSE, i, 0, 10, true);
+                    send_dshot_command(DSHOT_REVERSE, i + chan_offset, 0, 10, true);
                 }
                 break;
             default:

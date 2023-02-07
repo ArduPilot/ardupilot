@@ -720,11 +720,13 @@ LUALIB_API int luaL_loadfilex (lua_State *L, const char *filename,
   }
   if (skipcomment(&lf, &c))  /* read initial portion */
     lf.buff[lf.n++] = '\n';  /* add line to correct line numbers */
+#if LUA_SUPPORT_LOAD_BINARY
   if (c == LUA_SIGNATURE[0] && filename) {  /* binary file? */
     lf.f = freopen(filename, "rb", lf.f);  /* reopen in binary mode */
     if (lf.f == NULL) return errfile(L, "reopen", fnameindex);
     skipcomment(&lf, &c);  /* re-read initial portion */
   }
+#endif
   if (c != EOF)
     lf.buff[lf.n++] = c;  /* 'c' is the first character of the stream */
   status = lua_load(L, getF, &lf, lua_tostring(L, -1), mode);
@@ -1044,3 +1046,15 @@ LUALIB_API void luaL_checkversion_ (lua_State *L, lua_Number ver, size_t sz) {
                   (LUAI_UACNUMBER)ver, (LUAI_UACNUMBER)*v);
 }
 
+
+/*
+  32 bit random number generator for lua internals
+ */
+uint32_t lua_random32(void)
+{
+    static uint32_t m_z = 1234;
+    static uint32_t m_w = 76542;
+    m_z = 36969 * (m_z & 0xFFFFu) + (m_z >> 16);
+    m_w = 18000 * (m_w & 0xFFFFu) + (m_w >> 16);
+    return ((m_z << 16) + m_w);
+}

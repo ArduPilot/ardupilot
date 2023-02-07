@@ -94,9 +94,9 @@ void AP_MotorsHeli_Swash::configure()
     _collective_direction = static_cast<CollectiveDirection>(_swash_coll_dir.get());
     _make_servo_linear = _linear_swash_servo;
     if (_swash_type == SWASHPLATE_TYPE_H3) {
-        enable = 1;
+        enable.set(1);
     } else {
-        enable = 0;
+        enable.set(0);
     }
 }
 

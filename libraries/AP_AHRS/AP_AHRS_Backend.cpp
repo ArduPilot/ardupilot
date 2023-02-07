@@ -16,10 +16,14 @@
 */
 #include "AP_AHRS.h"
 #include "AP_AHRS_View.h"
+
+#include <AP_Common/Location.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_Compass/AP_Compass.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -63,18 +67,27 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_
     }
 }
 
-// Set the board mounting orientation, may be called while disarmed
+// Set the board mounting orientation from AHRS_ORIENTATION parameter
 void AP_AHRS::update_orientation()
 {
-    const enum Rotation orientation = (enum Rotation)_board_orientation.get();
-    if (orientation != ROTATION_CUSTOM) {
-        AP::ins().set_board_orientation(orientation);
-        AP::compass().set_board_orientation(orientation);
-    } else {
-        _custom_rotation.from_euler(radians(_custom_roll), radians(_custom_pitch), radians(_custom_yaw));
-        AP::ins().set_board_orientation(orientation, &_custom_rotation);
-        AP::compass().set_board_orientation(orientation, &_custom_rotation);
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_orientation_update_ms < 1000) {
+        // only update once/second
+        return;
     }
+
+    // never update while armed - unless we've never updated
+    // (e.g. mid-air reboot or ARMING_REQUIRED=NO on Plane):
+    if (hal.util->get_soft_armed() && last_orientation_update_ms != 0) {
+        return;
+    }
+
+    last_orientation_update_ms = now_ms;
+
+    const enum Rotation orientation = (enum Rotation)_board_orientation.get();
+
+    AP::ins().set_board_orientation(orientation);
+    AP::compass().set_board_orientation(orientation);
 }
 
 // return a ground speed estimate in m/s
@@ -87,10 +100,10 @@ Vector2f AP_AHRS_DCM::groundspeed_vector(void)
     const bool gotAirspeed = airspeed_estimate_true(airspeed);
     const bool gotGPS = (AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D);
     if (gotAirspeed) {
-        const Vector3f wind = wind_estimate();
-        const Vector2f wind2d(wind.x, wind.y);
         const Vector2f airspeed_vector{_cos_yaw * airspeed, _sin_yaw * airspeed};
-        gndVelADS = airspeed_vector + wind2d;
+        Vector3f wind;
+        UNUSED_RESULT(wind_estimate(wind));
+        gndVelADS = airspeed_vector + wind.xy();
     }
 
     // Generate estimate of ground speed vector using GPS
@@ -135,7 +148,8 @@ Vector2f AP_AHRS_DCM::groundspeed_vector(void)
         Vector2f ret{_cos_yaw, _sin_yaw};
         ret *= airspeed;
         // adjust for estimated wind
-        const Vector3f wind = wind_estimate();
+        Vector3f wind;
+        UNUSED_RESULT(wind_estimate(wind));
         ret.x += wind.x;
         ret.y += wind.y;
         return ret;

@@ -9,7 +9,6 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <stddef.h>
-#include <ff.h>
 #include "AP_Filesystem_backend.h"
 
 // Seek offset macros
@@ -17,17 +16,11 @@
 #define SEEK_CUR 1
 #define SEEK_END 2
 
-#if FF_USE_LFN != 0
-#define MAX_NAME_LEN FF_MAX_LFN 
-#else
-#define MAX_NAME_LEN 13
-#endif
-
 class AP_Filesystem_FATFS : public AP_Filesystem_Backend
 {
 public:
     // functions that closely match the equivalent posix calls
-    int open(const char *fname, int flags) override;
+    int open(const char *fname, int flags, bool allow_absolute_paths = false) override;
     int close(int fd) override;
     int32_t read(int fd, void *buf, uint32_t count) override;
     int32_t write(int fd, const void *buf, uint32_t count) override;

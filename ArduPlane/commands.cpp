@@ -7,7 +7,7 @@
 /*
  *  set_next_WP - sets the target location the vehicle should fly to
  */
-void Plane::set_next_WP(const struct Location &loc)
+void Plane::set_next_WP(const Location &loc)
 {
     if (auto_state.next_wp_crosstrack) {
         // copy the current WP into the OldWP slot
@@ -59,11 +59,19 @@ void Plane::set_next_WP(const struct Location &loc)
 
     setup_glide_slope();
     setup_turn_angle();
+
+    // update plane.target_altitude straight away, or if we are too
+    // close to out loiter point we may decide we are at the correct
+    // altitude before updating it (this is based on scheduler table
+    // ordering, where we navigate() before we
+    // adjust_altitude_target(), and navigate() uses values updated in
+    // adjust_altitude_target()
+    adjust_altitude_target();
 }
 
-void Plane::set_guided_WP(void)
+void Plane::set_guided_WP(const Location &loc)
 {
-    if (aparm.loiter_radius < 0 || guided_WP_loc.loiter_ccw) {
+    if (aparm.loiter_radius < 0 || loc.loiter_ccw) {
         loiter.direction = -1;
     } else {
         loiter.direction = 1;
@@ -75,7 +83,7 @@ void Plane::set_guided_WP(void)
 
     // Load the next_WP slot
     // ---------------------
-    next_WP_loc = guided_WP_loc;
+    next_WP_loc = loc;
 
     // used to control FBW and limit the rate of climb
     // -----------------------------------------------
@@ -122,7 +130,7 @@ void Plane::update_home()
     }
     if (ahrs.home_is_set() && !ahrs.home_is_locked()) {
         Location loc;
-        if(ahrs.get_position(loc) && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        if(ahrs.get_location(loc) && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
             // we take the altitude directly from the GPS as we are
             // about to reset the baro calibration. We can't use AHRS
             // altitude or we can end up perpetuating a bias in

@@ -3,8 +3,10 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_TemperatureSensor/AP_TemperatureSensor_config.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AP_BattMonitor_Params.h"
+#include "AP_BattMonitor_config.h"
 
 // maximum number of battery monitors
 #ifndef AP_BATT_MONITOR_MAX_INSTANCES
@@ -27,14 +29,6 @@
 #define AP_BATT_MONITOR_CELLS_MAX           12
 #endif
 
-#ifndef HAL_BATTMON_SMBUS_ENABLE
-#define HAL_BATTMON_SMBUS_ENABLE 1
-#endif
-
-#ifndef HAL_BATTMON_FUEL_ENABLE
-#define HAL_BATTMON_FUEL_ENABLE 1
-#endif
-
 // declare backend class
 class AP_BattMonitor_Backend;
 class AP_BattMonitor_Analog;
@@ -46,8 +40,11 @@ class AP_BattMonitor_SMBus_Rotoye;
 class AP_BattMonitor_UAVCAN;
 class AP_BattMonitor_Generator;
 class AP_BattMonitor_INA2XX;
+class AP_BattMonitor_INA239;
 class AP_BattMonitor_LTC2946;
 class AP_BattMonitor_Torqeedo;
+class AP_BattMonitor_FuelLevel_Analog;
+
 
 class AP_BattMonitor
 {
@@ -64,9 +61,12 @@ class AP_BattMonitor
     friend class AP_BattMonitor_FuelLevel_PWM;
     friend class AP_BattMonitor_Generator;
     friend class AP_BattMonitor_INA2XX;
+    friend class AP_BattMonitor_INA239;
     friend class AP_BattMonitor_LTC2946;
 
     friend class AP_BattMonitor_Torqeedo;
+    friend class AP_BattMonitor_FuelLevel_Analog;
+    friend class AP_BattMonitor_Synthetic_Current;
 
 public:
 
@@ -79,28 +79,31 @@ public:
 
     // Battery monitor driver types
     enum class Type {
-        NONE                       = 0,
-        ANALOG_VOLTAGE_ONLY        = 3,
-        ANALOG_VOLTAGE_AND_CURRENT = 4,
-        SOLO                       = 5,
-        BEBOP                      = 6,
-        SMBus_Generic              = 7,
-        UAVCAN_BatteryInfo         = 8,
-        BLHeliESC                  = 9,
-        Sum                        = 10,
-        FuelFlow                   = 11,
-        FuelLevel_PWM              = 12,
-        SUI3                       = 13,
-        SUI6                       = 14,
-        NeoDesign                  = 15,
-        MAXELL                     = 16,
-        GENERATOR_ELEC             = 17,
-        GENERATOR_FUEL             = 18,
-        Rotoye                     = 19,
+        NONE                           = 0,
+        ANALOG_VOLTAGE_ONLY            = 3,
+        ANALOG_VOLTAGE_AND_CURRENT     = 4,
+        SOLO                           = 5,
+        BEBOP                          = 6,
+        SMBus_Generic                  = 7,
+        UAVCAN_BatteryInfo             = 8,
+        BLHeliESC                      = 9,
+        Sum                            = 10,
+        FuelFlow                       = 11,
+        FuelLevel_PWM                  = 12,
+        SUI3                           = 13,
+        SUI6                           = 14,
+        NeoDesign                      = 15,
+        MAXELL                         = 16,
+        GENERATOR_ELEC                 = 17,
+        GENERATOR_FUEL                 = 18,
+        Rotoye                         = 19,
         // 20 was MPPT_PacketDigital
-        INA2XX                     = 21,
-        LTC2946                    = 22,
-        Torqeedo                   = 23,
+        INA2XX                         = 21,
+        LTC2946                        = 22,
+        Torqeedo                       = 23,
+        FuelLevel_Analog               = 24,
+        Analog_Volt_Synthetic_Current  = 25,
+        INA239_SPI                     = 26,
     };
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
@@ -108,8 +111,7 @@ public:
     AP_BattMonitor(uint32_t log_battery_bit, battery_failsafe_handler_fn_t battery_failsafe_handler_fn, const int8_t *failsafe_priorities);
 
     /* Do not allow copies */
-    AP_BattMonitor(const AP_BattMonitor &other) = delete;
-    AP_BattMonitor &operator=(const AP_BattMonitor&) = delete;
+    CLASS_NO_COPY(AP_BattMonitor);
 
     static AP_BattMonitor *get_singleton() {
         return _singleton;
@@ -131,6 +133,10 @@ public:
         uint32_t    low_voltage_start_ms;      // time when voltage dropped below the minimum in milliseconds
         uint32_t    critical_voltage_start_ms; // critical voltage failsafe start timer in milliseconds
         float       temperature;               // battery temperature in degrees Celsius
+#if AP_TEMPERATURE_SENSOR_ENABLED
+        bool        temperature_external_use;
+        float       temperature_external;      // battery temperature set by an external source in degrees Celsius
+#endif
         uint32_t    temperature_time;          // timestamp of the last received temperature message
         float       voltage_resting_estimate;  // voltage with sag removed based on current and resistance estimate in Volt
         float       resistance;                // resistance, in Ohms, calculated by comparing resting voltage vs in flight voltage
@@ -156,11 +162,17 @@ public:
 
     // healthy - returns true if monitor is functioning
     bool healthy(uint8_t instance) const;
-    bool healthy() const { return healthy(AP_BATT_PRIMARY_INSTANCE); }
+
+    // return true if all configured battery monitors are healthy
+    bool healthy() const;
 
     /// voltage - returns battery voltage in volts
     float voltage(uint8_t instance) const;
     float voltage() const { return voltage(AP_BATT_PRIMARY_INSTANCE); }
+
+    // voltage for a GCS, may be resistance compensated
+    float gcs_voltage(uint8_t instance) const;
+    float gcs_voltage(void) const { return gcs_voltage(AP_BATT_PRIMARY_INSTANCE); }
 
     /// get voltage with sag removed (based on battery current draw and resistance)
     /// this will always be greater than or equal to the raw voltage
@@ -218,6 +230,10 @@ public:
     // temperature
     bool get_temperature(float &temperature) const { return get_temperature(temperature, AP_BATT_PRIMARY_INSTANCE); }
     bool get_temperature(float &temperature, const uint8_t instance) const;
+#if AP_TEMPERATURE_SENSOR_ENABLED
+    bool set_temperature(const float temperature, const uint8_t instance);
+    bool set_temperature_by_serial_number(const float temperature, const int32_t serial_number);
+#endif
 
     // cycle count
     bool get_cycle_count(uint8_t instance, uint16_t &cycles) const;

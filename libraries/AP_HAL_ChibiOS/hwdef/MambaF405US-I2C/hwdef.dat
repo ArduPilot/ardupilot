@@ -50,11 +50,11 @@ PB11 USART3_RX USART3
 
 # UART4
 PA0 UART4_TX UART4
-PA1 UART4_RX UART4
+PA1 UART4_RX UART4 NODMA
 
 # UART5
 PC12 UART5_TX UART5
-PD2 UART5_RX UART5
+PD2 UART5_RX UART5 NODMA
 
 # USART6
 PC6 USART6_TX USART6
@@ -118,15 +118,14 @@ SPIDEV dataflash  SPI3 DEVID1 FLASH_CS   MODE3 32*MHZ 32*MHZ
 # One IMU rotated in yaw
 IMU Invensense SPI:mpu6000 ROTATION_YAW_90
 
-# Probe for I2C BMP280, but allow init on board variants without onboard baro too
+# Probe for I2C BMP280 only
 BARO BMP280 I2C:0:0x76
-define HAL_PROBE_EXTERNAL_I2C_BAROS
-define HAL_BARO_ALLOW_INIT_NO_BARO
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+define AP_BARO_BMP280_ENABLED 1
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
@@ -148,7 +147,7 @@ define HAL_BATT_VOLT_SCALE 11
 define HAL_BATT_CURR_SCALE 39
 
 # Analog RSSI pin (also could be used as analog airspeed input)
-define BOARD_RSSI_ANA_PIN 1
+define BOARD_RSSI_ANA_PIN 12
 
 # Setup for OSD
 define OSD_ENABLED 1

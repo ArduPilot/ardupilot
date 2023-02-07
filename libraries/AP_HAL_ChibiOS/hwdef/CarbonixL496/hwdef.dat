@@ -18,8 +18,8 @@ env AP_PERIPH 1
 
 # enable watchdog
 
-# crystal frequency
-OSCILLATOR_HZ 12000000
+# crystal frequency set to 0 to use internal clock
+OSCILLATOR_HZ 0
 
 # assume the 256k flash part
 FLASH_SIZE_KB 256
@@ -55,7 +55,7 @@ PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
 
 # LED, active low
-PA13 LED OUTPUT HIGH GPIO(1)
+PA15 LED OUTPUT HIGH GPIO(1)
 
 # spi2
 PB10 SPI2_SCK SPI2
@@ -78,9 +78,9 @@ I2C_ORDER I2C4
 # allow for reboot command for faster development
 define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
 
-# debugger support (disabled as conflicts with LED)
-#PA13 JTMS-SWDIO SWD
-#PA14 JTCK-SWCLK SWD
+# debugger support 
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
 
 define HAL_NO_GPIO_IRQ
 define SERIAL_BUFFERS_SIZE 512
@@ -111,6 +111,8 @@ PA5 VSENSE2 ADC1 SCALE(1)
 PA6 VSENSE3 ADC1 SCALE(1)
 PB1 VSENSE4 ADC1 SCALE(1)
 
+define AP_STATS_ENABLED 1
+
 define HAL_NO_GCS
 define HAL_NO_MONITOR_THREAD
 
@@ -125,6 +127,17 @@ define HAL_PERIPH_ENABLE_RC_OUT
 # enable ESC control
 define HAL_SUPPORT_RCOUT_SERIAL 1
 define HAL_WITH_ESC_TELEM 1
+
+# enable GPS
+define HAL_PERIPH_ENABLE_GPS
+define HAL_PERIPH_GPS_PORT_DEFAULT 2
+#define HAL_PERIPH_ENABLE_NOTIFY
+#define HAL_PERIPH_ENABLE_NCP5623_LED_WITHOUT_NOTIFY
+
+# default ADSB off by setting 0 baudrate
+define HAL_PERIPH_ENABLE_ADSB
+define HAL_PERIPH_ADSB_PORT_DEFAULT 3
+define HAL_PERIPH_ADSB_BAUD_DEFAULT 57600
 
 BARO MS56XX I2C:0:0x76
 COMPASS MMC5XX3 I2C:0:0x30 false ROTATION_NONE

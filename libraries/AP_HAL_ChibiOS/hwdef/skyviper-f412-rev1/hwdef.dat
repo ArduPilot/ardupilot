@@ -6,18 +6,11 @@ MCU STM32F4xx STM32F412Rx
 # board ID for firmware load
 APJ_BOARD_ID 9
 
+# short board name override (13 chars) to match original max length; can't change because name is used for transmitter bind CRC
+define CHIBIOS_SHORT_BOARD_NAME "skyviper-f412"
+
 # crystal frequency
 OSCILLATOR_HZ 24000000
-
-define HAL_CUSTOM_CLOCK_TREE
-STM32_HSE_ENABLED FALSE
-STM32_PLLM_VALUE 16
-STM32_PLLN_VALUE 384
-STM32_PLLP_VALUE 4
-STM32_PLLQ_VALUE 8
-STM32_PLLSRC STM32_PLLSRC_HSI
-STM32_PREE1  STM32_PREE1_DIV2
-STM32_PREE2  STM32_PREE2_DIV1
 
 STM32_PWM_USE_TIM3 TRUE
 
@@ -135,3 +128,5 @@ define HAL_BARO_20789_I2C_ADDR_PRESS 0x63
 # Disable un-needed hardware drivers
 define HAL_WITH_ESC_TELEM 0
 define AP_FETTEC_ONEWIRE_ENABLED 0
+
+AUTOBUILD_TARGETS Copter

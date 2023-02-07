@@ -30,6 +30,9 @@ float ICEngine::update(const struct sitl_input &input)
     bool have_choke = choke_servo>=0;
     bool have_starter = starter_servo>=0;
     float throttle_demand = (input.servos[throttle_servo]-1000) * 0.001f;
+    if (throttle_reversed) {
+        throttle_demand = 1 - throttle_demand;
+    }
 
     state.ignition = have_ignition?input.servos[ignition_servo]>1700:true;
     state.choke = have_choke?input.servos[choke_servo]>1700:false;

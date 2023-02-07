@@ -14,12 +14,12 @@
 */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_Frsky_Telem/AP_Frsky_config.h>
 #include <AP_OSD/AP_OSD.h>
 
 #ifndef HAL_CRSF_TELEM_ENABLED
-#define HAL_CRSF_TELEM_ENABLED !HAL_MINIMIZE_FEATURES
+#define HAL_CRSF_TELEM_ENABLED AP_FRSKY_SPORT_PASSTHROUGH_ENABLED
 #endif
 
 #ifndef HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
@@ -28,9 +28,6 @@
 
 #if HAL_CRSF_TELEM_ENABLED
 
-#include <AP_Notify/AP_Notify.h>
-#include <AP_SerialManager/AP_SerialManager.h>
-#include <AP_HAL/utility/RingBuffer.h>
 #include <AP_RCProtocol/AP_RCProtocol_CRSF.h>
 #include "AP_RCTelemetry.h"
 #include <AP_HAL/utility/sparse-endian.h>
@@ -43,8 +40,7 @@ public:
     ~AP_CRSF_Telem() override;
 
     /* Do not allow copies */
-    AP_CRSF_Telem(const AP_CRSF_Telem &other) = delete;
-    AP_CRSF_Telem &operator=(const AP_CRSF_Telem&) = delete;
+    CLASS_NO_COPY(AP_CRSF_Telem);
 
     // init - perform required initialisation
     virtual bool init() override;
@@ -67,7 +63,7 @@ public:
     };
 
     struct HeartbeatFrame {
-        uint8_t origin; // Device addres
+        uint8_t origin; // Device address
     };
 
     struct PACKED BatteryFrame {
@@ -236,23 +232,19 @@ public:
     };
 
     // get the protocol string
-    const char* get_protocol_string() const {
-        if (_crsf_version.is_elrs) {
-            return "ELRS";
-        } else {
-            const AP_RCProtocol_CRSF* crsf = AP::crsf();
-            if (crsf && crsf->is_crsf_v3_active()) {
-                return "CRSFv3";
-            }
-            return "CRSFv2";
-        }
-    };
+    const char* get_protocol_string() const { return AP::crsf()->get_protocol_string(_crsf_version.protocol); }
+
+    // is the current protocol ELRS?
+    bool is_elrs() const { return _crsf_version.protocol == AP_RCProtocol_CRSF::ProtocolType::PROTOCOL_ELRS; }
+    // is the current protocol Tracer?
+    bool is_tracer() const { return _crsf_version.protocol == AP_RCProtocol_CRSF::ProtocolType::PROTOCOL_TRACER; }
+
     // Process a frame from the CRSF protocol decoder
     static bool process_frame(AP_RCProtocol_CRSF::FrameType frame_type, void* data);
     // process any changed settings and schedule for transmission
     void update();
     // get next telemetry data for external consumers of SPort data
-    static bool get_telem_data(AP_RCProtocol_CRSF::Frame* frame);
+    static bool get_telem_data(AP_RCProtocol_CRSF::Frame* frame, bool is_tx_active);
 
 private:
 
@@ -267,6 +259,8 @@ private:
         PASSTHROUGH,
         STATUS_TEXT,
         GENERAL_COMMAND,
+        VERSION_PING,
+        DEVICE_PING,
         NUM_SENSORS
     };
 
@@ -284,18 +278,18 @@ private:
     void calc_attitude();
     void calc_flight_mode();
     void calc_device_info();
-    void calc_device_ping();
+    void calc_device_ping(uint8_t destination);
     void calc_command_response();
     void calc_parameter();
 #if HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
     void calc_text_selection( AP_OSD_ParamSetting* param, uint8_t chunk);
 #endif
-    void update_params();
+    void process_pending_requests();
     void update_vtx_params();
     void get_single_packet_passthrough_telem_data();
     void get_multi_packet_passthrough_telem_data(uint8_t size = PASSTHROUGH_MULTI_PACKET_FRAME_MAX_SIZE);
     void calc_status_text();
-    void process_rf_mode_changes();
+    bool process_rf_mode_changes();
     uint8_t get_custom_telem_frame_id() const;
     AP_RCProtocol_CRSF::RFMode get_rf_mode() const;
     uint16_t get_telemetry_rate() const;
@@ -315,9 +309,11 @@ private:
     // setup the scheduler for parameters download
     void enter_scheduler_params_mode();
     void exit_scheduler_params_mode();
+    void disable_tx_entries();
+    void enable_tx_entries();
 
     // get next telemetry data for external consumers
-    bool _get_telem_data(AP_RCProtocol_CRSF::Frame* data);
+    bool _get_telem_data(AP_RCProtocol_CRSF::Frame* data, bool is_tx_active);
     bool _process_frame(AP_RCProtocol_CRSF::FrameType frame_type, void* data);
 
     TelemetryPayload _telem;
@@ -327,10 +323,14 @@ private:
     // reporting telemetry rate
     uint32_t _telem_last_report_ms;
     uint16_t _telem_last_avg_rate;
+    // do we need to report the initial state
+    bool _telem_bootstrap_msg_pending;
 
     bool _telem_is_high_speed;
     bool _telem_pending;
     bool _enable_telemetry;
+    // used to limit telemetry when in a failsafe condition
+    bool _is_tx_active;
 
     struct {
         uint8_t destination = AP_RCProtocol_CRSF::CRSF_ADDRESS_BROADCAST;
@@ -342,9 +342,8 @@ private:
         uint8_t major;
         uint8_t retry_count;
         bool use_rf_mode;
-        bool is_tracer;
+        AP_RCProtocol_CRSF::ProtocolType protocol;
         bool pending = true;
-        bool is_elrs;
     } _crsf_version;
 
     struct {

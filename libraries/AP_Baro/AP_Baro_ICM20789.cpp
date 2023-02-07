@@ -13,13 +13,16 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Baro_ICM20789.h"
+
+#if AP_BARO_ICM20789_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
 #include <utility>
 
 #include <AP_Common/AP_Common.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#include "AP_Baro_ICM20789.h"
 
 #include <stdio.h>
 
@@ -360,3 +363,4 @@ void AP_Baro_ICM20789::update()
     }
 }
 
+#endif  // AP_BARO_ICM20789_ENABLED

@@ -21,9 +21,9 @@
  *       Sensor is initialized in Continuos mode (10Hz)
  *
  */
-#include <AP_HAL/AP_HAL.h>
+#include "AP_Compass_HMC5843.h"
 
-#ifdef HAL_COMPASS_HMC5843_I2C_ADDR
+#if AP_COMPASS_HMC5843_ENABLED
 
 #include <assert.h>
 #include <utility>
@@ -31,8 +31,7 @@
 
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/utility/sparse-endian.h>
-
-#include "AP_Compass_HMC5843.h"
+#include <AP_HAL/AP_HAL.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_InertialSensor/AuxiliaryBus.h>
 
@@ -152,7 +151,7 @@ bool AP_Compass_HMC5843::init()
     AP_HAL::Semaphore *bus_sem = _bus->get_semaphore();
 
     if (!bus_sem) {
-        hal.console->printf("HMC5843: Unable to get bus semaphore\n");
+        DEV_PRINTF("HMC5843: Unable to get bus semaphore\n");
         return false;
     }
     bus_sem->take_blocking();
@@ -161,7 +160,7 @@ bool AP_Compass_HMC5843::init()
     _bus->set_retries(10);
     
     if (!_bus->configure()) {
-        hal.console->printf("HMC5843: Could not configure the bus\n");
+        DEV_PRINTF("HMC5843: Could not configure the bus\n");
         goto errout;
     }
 
@@ -170,7 +169,7 @@ bool AP_Compass_HMC5843::init()
     }
 
     if (!_calibrate()) {
-        hal.console->printf("HMC5843: Could not calibrate sensor\n");
+        DEV_PRINTF("HMC5843: Could not calibrate sensor\n");
         goto errout;
     }
 
@@ -179,7 +178,7 @@ bool AP_Compass_HMC5843::init()
     }
 
     if (!_bus->start_measurements()) {
-        hal.console->printf("HMC5843: Could not start measurements on bus\n");
+        DEV_PRINTF("HMC5843: Could not start measurements on bus\n");
         goto errout;
     }
 
@@ -210,7 +209,7 @@ bool AP_Compass_HMC5843::init()
     _bus->register_periodic_callback(13333,
                                      FUNCTOR_BIND_MEMBER(&AP_Compass_HMC5843::_timer, void));
 
-    hal.console->printf("HMC5843 found on bus 0x%x\n", (unsigned)_bus->get_bus_id());
+    DEV_PRINTF("HMC5843 found on bus 0x%x\n", (unsigned)_bus->get_bus_id());
     
     return true;
 
@@ -497,7 +496,7 @@ AP_HMC5843_BusDriver_Auxiliary::AP_HMC5843_BusDriver_Auxiliary(AP_InertialSensor
      * Only initialize members. Fails are handled by configure or while
      * getting the semaphore
      */
-#if HAL_INS_ENABLED
+#if AP_INERTIALSENSOR_ENABLED
     _bus = ins.get_auxiliary_bus(backend_id);
     if (!_bus) {
         return;
@@ -587,4 +586,4 @@ uint32_t AP_HMC5843_BusDriver_Auxiliary::get_bus_id(void) const
     return _bus->get_bus_id();
 }
 
-#endif
+#endif  // AP_COMPASS_HMC5843_ENABLED

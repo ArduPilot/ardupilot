@@ -20,7 +20,7 @@ STM32_ST_USE_TIMER 2
 FLASH_RESERVE_START_KB 128
 
 # order of UARTs (and USB)
-SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 UART7
+SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 UART7 OTG2
 
 # now we define the pins that USB is connected on
 PA11 OTG_FS_DM OTG1
@@ -167,6 +167,7 @@ IMU Invensensev3 SPI:imu1      ROTATION_YAW_270
 IMU Invensense   SPI:imu2      ROTATION_ROLL_180
 IMU Invensensev3 SPI:imu2      ROTATION_YAW_270
 IMU Invensense   SPI:imu3      ROTATION_ROLL_180
+IMU Invensensev3 SPI:imu3      ROTATION_YAW_270
 
 
 # two Baro sensors

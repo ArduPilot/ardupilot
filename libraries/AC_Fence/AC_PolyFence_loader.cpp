@@ -1,7 +1,18 @@
 #include "AC_PolyFence_loader.h"
 
+#if AP_FENCE_ENABLED
+
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
+#ifndef AC_FENCE_DUMMY_METHODS_ENABLED
+#define AC_FENCE_DUMMY_METHODS_ENABLED  (!(APM_BUILD_TYPE(APM_BUILD_Rover) | APM_BUILD_COPTER_OR_HELI | APM_BUILD_TYPE(APM_BUILD_ArduPlane) | APM_BUILD_TYPE(APM_BUILD_ArduSub) | (AP_FENCE_ENABLED == 1)))
+#endif
+
+#if !AC_FENCE_DUMMY_METHODS_ENABLED
+
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Logger/AP_Logger.h>
 
 #include <stdio.h>
 
@@ -195,8 +206,8 @@ bool AC_PolyFence_loader::load_point_from_eeprom(uint16_t i, Vector2l& point) co
 
 bool AC_PolyFence_loader::breached() const
 {
-    struct Location loc;
-    if (!AP::ahrs().get_position(loc)) {
+    Location loc;
+    if (!AP::ahrs().get_location(loc)) {
         return false;
     }
 
@@ -286,7 +297,7 @@ bool AC_PolyFence_loader::format()
 bool AC_PolyFence_loader::convert_to_new_storage()
 {
     // sanity check total
-    _total = constrain_int16(_total, 0, max_items());
+    _total.set(constrain_int16(_total, 0, max_items()));
     // FIXME: ensure the fence was closed and don't load it if it was not
     if (_total < 5) {
         // fence was invalid.  Just format it and move on
@@ -637,7 +648,7 @@ bool AC_PolyFence_loader::load_from_eeprom()
         return _load_time_ms != 0;
     }
 
-    struct Location ekf_origin{};
+    Location ekf_origin{};
     if (!AP::ahrs().get_origin(ekf_origin)) {
 //        Debug("fence load requires origin");
         return false;
@@ -1170,6 +1181,9 @@ bool AC_PolyFence_loader::write_fence(const AC_PolyFenceItem *new_items, uint16_
     gcs().send_text(MAV_SEVERITY_DEBUG, "Fence Indexed OK");
 #endif
 
+    // start logger logging new fence
+    AP::logger().Write_Fence();
+
     void_index();
 
     // this may be completely bogus total.  If we are storing an
@@ -1662,3 +1676,33 @@ void AC_PolyFence_loader::update()
         return;
     }
 }
+
+#else  // build type is not appropriate; provide a dummy implementation:
+
+void AC_PolyFence_loader::init() {};
+
+bool AC_PolyFence_loader::get_item(const uint16_t seq, AC_PolyFenceItem &item) { return false; }
+
+Vector2f* AC_PolyFence_loader::get_exclusion_polygon(uint16_t index, uint16_t &num_points) const { return nullptr; }
+Vector2f* AC_PolyFence_loader::get_inclusion_polygon(uint16_t index, uint16_t &num_points) const { return nullptr; }
+
+bool AC_PolyFence_loader::get_exclusion_circle(uint8_t index, Vector2f &center_pos_cm, float &radius) const { return false; }
+bool AC_PolyFence_loader::get_inclusion_circle(uint8_t index, Vector2f &center_pos_cm, float &radius) const { return false; }
+
+void AC_PolyFence_loader::handle_msg(GCS_MAVLINK &link, const mavlink_message_t& msg) {};
+
+bool AC_PolyFence_loader::breached() const { return false; }
+bool AC_PolyFence_loader::breached(const Location& loc) const { return false; }
+
+uint16_t AC_PolyFence_loader::max_items() const { return 0; }
+
+bool AC_PolyFence_loader::write_fence(const AC_PolyFenceItem *new_items, uint16_t count) { return false; }
+
+void AC_PolyFence_loader::update() {};
+
+#if AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT
+bool AC_PolyFence_loader::get_return_point(Vector2l &ret) { return false; }
+#endif
+
+#endif // #if AC_FENCE_DUMMY_METHODS_ENABLED
+#endif // AP_FENCE_ENABLED

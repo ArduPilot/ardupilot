@@ -7,7 +7,7 @@ demostage = 0
 eventcounter = 0
 
 function update () -- periodic function that will be called
-    current_pos = ahrs:get_position()
+    current_pos = ahrs:get_location()
 
   -- adds new/extra mission item at the end by copying the last one and modifying it
   -- get number of last mission item
@@ -257,7 +257,7 @@ function stage7 ()
 end
 
 function wait_for_home()
-  current_pos = ahrs:get_position()
+  current_pos = ahrs:get_location()
   if current_pos == nil then
      return wait_for_home, 1000
   end

@@ -15,17 +15,14 @@
 
 #pragma once
 
+#include "AP_EFI_config.h"
 
+#if HAL_EFI_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
-#ifndef HAL_EFI_ENABLED
-#define HAL_EFI_ENABLED !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
-#endif
-
-#if HAL_EFI_ENABLED
 #include "AP_EFI_Backend.h"
 #include "AP_EFI_State.h"
 
@@ -66,6 +63,14 @@ public:
 
     bool is_healthy() const;
 
+    // return timestamp of last update
+    uint32_t get_last_update_ms(void) const {
+        return state.last_updated_ms;
+    }
+
+    // get a copy of state structure
+    void get_state(EFI_State &state);
+
     // Parameter info
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -73,8 +78,12 @@ public:
     enum class Type : uint8_t {
         NONE       = 0,
         MegaSquirt = 1,
-        NWPMU     = 2,
-        Lutan     = 3,
+        NWPMU      = 2,
+        Lutan      = 3,
+        // LOWEHEISER = 4,
+        DroneCAN = 5,
+        CurrawongECU = 6,
+        SCRIPTING  = 7,
     };
 
     static AP_EFI *get_singleton(void) {
@@ -84,11 +93,17 @@ public:
     // send EFI_STATUS
     void send_mavlink_status(mavlink_channel_t chan);
 
+#if AP_SCRIPTING_ENABLED
+    AP_EFI_Backend* get_backend(uint8_t idx) { return idx==0?backend:nullptr; }
+#endif
+
 protected:
 
     // Back end Parameters
     AP_Float coef1;
     AP_Float coef2;
+
+    AP_Float ecu_fuel_density;
 
     EFI_State state;
 
@@ -99,6 +114,9 @@ private:
     // Tracking backends
     AP_EFI_Backend *backend;
     static AP_EFI *singleton;
+
+    // Semaphore for access to shared frontend data
+    HAL_Semaphore sem;
 
     // write to log
     void log_status();

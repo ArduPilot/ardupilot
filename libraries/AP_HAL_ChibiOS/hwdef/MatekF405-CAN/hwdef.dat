@@ -81,6 +81,9 @@ PB8 CAN1_RX CAN1
 PB9 CAN1_TX CAN1
 PC13 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW GPIO(70)
 
+# reduce memory usage
+define UAVCAN_NODE_POOL_SIZE 1024
+
 
 # --------------------- UARTs ---------------------------
 SERIAL_ORDER OTG1 USART1 USART3 UART4 UART5 USART2
@@ -147,8 +150,7 @@ PC2 RSSI_ADC_PIN ADC1 SCALE(1)
 PC3 PRESSURE_SENS ADC1 SCALE(1)
 PC5 BATT2_VOLTAGE_SENS ADC1 SCALE(1)
 
-define HAL_BATT_MONITOR_DEFAULT 4
-define HAL_BATT2_MONITOR_DEFAULT 4
+define HAL_BATT_MONITOR_DEFAULT 0
 
 define HAL_BATT_VOLT_PIN 10
 define HAL_BATT_VOLT_SCALE 21.0
@@ -164,14 +166,11 @@ define HAL_BATT2_VOLT_SCALE 11.0
 
 
 # --------------------- save flash ----------------------
-define HAL_MINIMIZE_FEATURES 1
+include ../include/minimize_features.inc
+include ../include/minimal_GPS.inc
 
-define HAL_BATTMON_SMBUS_ENABLE 0
-define HAL_BATTMON_FUEL_ENABLE 0
+define AP_BATTMON_SMBUS_ENABLE 0
 define HAL_PARACHUTE_ENABLED 0
-define HAL_SPRAYER_ENABLED 0
-
-define HAL_WITH_DSP FALSE
 
 # reduce max size of embedded params for apj_tool.py
 define AP_PARAM_MAX_EMBEDDED_PARAM 1024

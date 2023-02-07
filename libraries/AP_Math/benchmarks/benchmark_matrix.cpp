@@ -2,6 +2,8 @@
 
 #include <AP_Math/AP_Math.h>
 
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
 static void BM_MatrixMultiplication(benchmark::State& state)
 {
     Matrix3f m1(Vector3f(1.0f, 2.0f, 3.0f),

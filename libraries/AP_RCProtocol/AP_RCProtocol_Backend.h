@@ -85,6 +85,11 @@ public:
     bool have_UART(void) const {
         return frontend.added.uart != nullptr;
     }
+
+    // is the receiver active, used to detect power loss and baudrate changes
+    virtual bool is_rx_active() const {
+        return true;
+    }
     
 protected:
     struct Channels11Bit_8Chan {

@@ -86,8 +86,6 @@ private:
     uint64_t prev_timestamp_us;
     SocketAPM recv_sock;
     SocketAPM send_sock;
-
-    const char *frame_str;
 };
 
 } // namespace SITL

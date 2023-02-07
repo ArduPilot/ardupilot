@@ -33,7 +33,7 @@ class AP_MotorsMulticopter : public AP_Motors {
 public:
 
     // Constructor
-    AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
+    AP_MotorsMulticopter(uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
 
     // output - sends commands to the motors
     virtual void        output() override;
@@ -42,7 +42,7 @@ public:
     void                output_min() override;
 
     // set_yaw_headroom - set yaw headroom (yaw is given at least this amount of pwm)
-    void                set_yaw_headroom(int16_t pwm) { _yaw_headroom = pwm; }
+    void                set_yaw_headroom(int16_t pwm) { _yaw_headroom.set(pwm); }
 
     // update_throttle_range - update throttle endpoints
     void                update_throttle_range();
@@ -64,11 +64,11 @@ public:
     // output a thrust to all motors that match a given motor
     // mask. This is used to control tiltrotor motors in forward
     // flight. Thrust is in the range 0 to 1
-    virtual void        output_motor_mask(float thrust, uint8_t mask, float rudder_dt);
+    virtual void        output_motor_mask(float thrust, uint16_t mask, float rudder_dt);
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-    virtual uint16_t    get_motor_mask() override;
+    virtual uint32_t    get_motor_mask() override;
 
     // get minimum or maximum pwm value that can be output to motors
     int16_t             get_pwm_output_min() const { return _pwm_min; }
@@ -101,6 +101,9 @@ public:
 
     // 10hz logging of voltage scaling and max trust
     void                Log_Write() override;
+
+    // Run arming checks
+    bool arming_checks(size_t buflen, char *buffer) const override;
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];

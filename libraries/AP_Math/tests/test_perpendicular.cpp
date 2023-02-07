@@ -3,6 +3,8 @@
 #include <AP_Math/vector2.h>
 #include <AP_Math/vector3.h>
 
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
 #define EXPECT_VECTOR2F_EQ(v1, v2)              \
     do {                                        \
         EXPECT_FLOAT_EQ(v1[0], v2[0]);          \

@@ -1,3 +1,5 @@
+
+#include <AP_HAL/AP_HAL_Boards.h>
 #include "AP_Periph.h"
 
 extern const AP_HAL::HAL &hal;
@@ -10,8 +12,8 @@ extern const AP_HAL::HAL &hal;
 #define HAL_PERIPH_RANGEFINDER_BAUDRATE_DEFAULT 115200
 #endif
 
-#ifndef HAL_PERIPH_RANGEFINDER_PORT_DEFAULT
-#define HAL_PERIPH_RANGEFINDER_PORT_DEFAULT 3
+#ifndef AP_PERIPH_RANGEFINDER_PORT_DEFAULT
+#define AP_PERIPH_RANGEFINDER_PORT_DEFAULT 3
 #endif
 
 #ifndef HAL_PERIPH_GPS_PORT_DEFAULT
@@ -33,6 +35,22 @@ extern const AP_HAL::HAL &hal;
 #define AP_PERIPH_ESC_TELEM_PORT_DEFAULT -1
 #endif
 
+#ifndef AP_PERIPH_ESC_TELEM_RATE_DEFAULT
+#define AP_PERIPH_ESC_TELEM_RATE_DEFAULT 50
+#endif
+
+#ifndef AP_PERIPH_BARO_ENABLE_DEFAULT
+#define AP_PERIPH_BARO_ENABLE_DEFAULT 1
+#endif
+
+#ifndef AP_PERIPH_EFI_PORT_DEFAULT
+#define AP_PERIPH_EFI_PORT_DEFAULT 3
+#endif
+
+#ifndef HAL_PERIPH_EFI_BAUDRATE_DEFAULT
+#define HAL_PERIPH_EFI_BAUDRATE_DEFAULT 115200
+#endif
+
 #ifndef HAL_DEFAULT_MAV_SYSTEM_ID
 #define MAV_SYSTEM_ID 3
 #else
@@ -43,13 +61,6 @@ extern const AP_HAL::HAL &hal;
  *  AP_Periph parameter definitions
  *
  */
-
-#define GSCALAR(v, name, def) { periph.g.v.vtype, name, Parameters::k_param_ ## v, &periph.g.v, {def_value : def} }
-#define GARRAY(v, index, name, def) { periph.g.v[index].vtype, name, Parameters::k_param_ ## v ## index, &periph.g.v[index], {def_value : def} }
-#define ASCALAR(v, name, def) { periph.aparm.v.vtype, name, Parameters::k_param_ ## v, (const void *)&periph.aparm.v, {def_value : def} }
-#define GGROUP(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &periph.g.v, {group_info : class::var_info} }
-#define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, (const void *)&periph.v, {group_info : class::var_info} }
-#define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, (const void *)&periph.v, {group_info : class::var_info} }
 
 const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Param: FORMAT_VERSION
@@ -74,11 +85,21 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @RebootRequired: True
     GARRAY(can_baudrate,     0, "CAN_BAUDRATE", 1000000),
 
+#ifdef HAL_PERIPH_ENABLE_SLCAN
+    // @Param: CAN_SLCAN_CPORT
+    // @DisplayName: SLCAN Route
+    // @Description: CAN Interface ID to be routed to SLCAN, 0 means no routing
+    // @Values: 0:Disabled,1:First interface,2:Second interface
+    // @User: Standard
+    // @RebootRequired: True
+    GSCALAR(can_slcan_cport, "CAN_SLCAN_CPORT", 1),
+#endif
+
 #if HAL_NUM_CAN_IFACES >= 2
     // @Param: CAN_PROTOCOL
     // @DisplayName: Enable use of specific protocol to be used on this port
     // @Description: Enabling this option starts selected protocol that will use this virtual driver. At least one CAN port must be UAVCAN or else CAN1 gets set to UAVCAN
-    // @Values: 0:Disabled,1:UAVCAN,3:ToshibaCAN,4:PiccoloCAN,5:CANTester,6:EFI_NWPMU,7:USD1,8:KDECAN
+    // @Values: 0:Disabled,1:UAVCAN,4:PiccoloCAN,5:CANTester,6:EFI_NWPMU,7:USD1,8:KDECAN
     // @User: Advanced
     // @RebootRequired: True
     GARRAY(can_protocol,     0, "CAN_PROTOCOL", AP_CANManager::Driver_Type_UAVCAN),
@@ -94,7 +115,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Param: CAN2_PROTOCOL
     // @DisplayName: Enable use of specific protocol to be used on this port
     // @Description: Enabling this option starts selected protocol that will use this virtual driver. At least one CAN port must be UAVCAN or else CAN1 gets set to UAVCAN
-    // @Values: 0:Disabled,1:UAVCAN,3:ToshibaCAN,4:PiccoloCAN,5:CANTester,6:EFI_NWPMU,7:USD1,8:KDECAN
+    // @Values: 0:Disabled,1:UAVCAN,4:PiccoloCAN,5:CANTester,6:EFI_NWPMU,7:USD1,8:KDECAN
     // @User: Advanced
     // @RebootRequired: True
     GARRAY(can_protocol,     1, "CAN2_PROTOCOL", AP_CANManager::Driver_Type_UAVCAN),
@@ -112,10 +133,38 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Param: CAN3_PROTOCOL
     // @DisplayName: Enable use of specific protocol to be used on this port
     // @Description: Enabling this option starts selected protocol that will use this virtual driver. At least one CAN port must be UAVCAN or else CAN1 gets set to UAVCAN
-    // @Values: 0:Disabled,1:UAVCAN,3:ToshibaCAN,4:PiccoloCAN,5:CANTester,6:EFI_NWPMU,7:USD1,8:KDECAN
+    // @Values: 0:Disabled,1:UAVCAN,4:PiccoloCAN,5:CANTester,6:EFI_NWPMU,7:USD1,8:KDECAN
     // @User: Advanced
     // @RebootRequired: True
     GARRAY(can_protocol,    2, "CAN3_PROTOCOL", AP_CANManager::Driver_Type_UAVCAN),
+#endif
+
+#if HAL_CANFD_SUPPORTED
+    // @Param: CAN_FDMODE
+    // @DisplayName: Enable CANFD mode
+    // @Description: Enabling this option sets the CAN bus to be in CANFD mode with BRS.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    // @RebootRequired: True
+    GSCALAR(can_fdmode,     "CAN_FDMODE", 0),
+
+    // @Param: CAN_FDBAUDRATE
+    // @DisplayName: Set up bitrate for data section on CAN1
+    // @Description: This sets the bitrate for the data section of CAN1.
+    // @Values: 1:1M, 2:2M, 4:4M, 5:5M, 8:8M
+    // @User: Advanced
+    // @RebootRequired: True
+    GARRAY(can_fdbaudrate,    0, "CAN_FDBAUDRATE", HAL_CANFD_SUPPORTED),
+
+#if HAL_NUM_CAN_IFACES >= 2
+    // @Param: CAN2_FDBAUDRATE
+    // @DisplayName: Set up bitrate for data section on CAN2
+    // @Description: This sets the bitrate for the data section of CAN2.
+    // @Values: 1:1M, 2:2M, 4:4M, 5:5M, 8:8M
+    // @User: Advanced
+    // @RebootRequired: True
+    GARRAY(can_fdbaudrate,    1, "CAN2_FDBAUDRATE", HAL_CANFD_SUPPORTED),
+#endif
 #endif
 
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
@@ -130,9 +179,10 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Param: DEBUG
     // @DisplayName: Debug
     // @Description: Debug
-    // @Values: 0:Disabled, 1:Show free stack space
+    // @Bitmask: 0:Disabled, 1:Show free stack space, 2:Auto Reboot after 15sec
     // @User: Advanced
     GSCALAR(debug, "DEBUG", 0),
+
 
     // @Param: BRD_SERIAL_NUM
     // @DisplayName: Serial number of device
@@ -167,7 +217,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @RebootRequired: True
     GSCALAR(gps_port, "GPS_PORT", HAL_PERIPH_GPS_PORT_DEFAULT),
 
-#if HAL_NUM_CAN_IFACES >= 2
+#if GPS_MOVING_BASELINE
     // @Param: MB_CAN_PORT
     // @DisplayName: Moving Baseline CAN Port option
     // @Description: Autoselect dedicated CAN port on which moving baseline data will be transmitted.
@@ -201,7 +251,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Description: Barometer Enable
     // @Values: 0:Disabled, 1:Enabled
     // @User: Standard
-    GSCALAR(baro_enable, "BARO_ENABLE", 1),
+    GSCALAR(baro_enable, "BARO_ENABLE", AP_PERIPH_BARO_ENABLE_DEFAULT),
 #endif
 
 #ifdef AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
@@ -217,9 +267,9 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
     // Airspeed driver
-    // @Group: ARSP
+    // @Group: ARSPD
     // @Path: ../libraries/AP_Airspeed/AP_Airspeed.cpp
-    GOBJECT(airspeed, "ARSP", AP_Airspeed),
+    GOBJECT(airspeed, "ARSPD", AP_Airspeed),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
@@ -239,8 +289,17 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
-    GSCALAR(rangefinder_port, "RNGFND_PORT", HAL_PERIPH_RANGEFINDER_PORT_DEFAULT),
+    GSCALAR(rangefinder_port, "RNGFND_PORT", AP_PERIPH_RANGEFINDER_PORT_DEFAULT),
 
+    // @Param: RNGFND_MAX_RATE
+    // @DisplayName: Rangefinder max rate
+    // @Description: This is the maximum rate we send rangefinder data in Hz. Zero means no limit
+    // @Units: Hz
+    // @Range: 0 200
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(rangefinder_max_rate, "RNGFND_MAX_RATE", 50),
+    
     // Rangefinder driver
     // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder.cpp
@@ -307,6 +366,14 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @RebootRequired: True
     GSCALAR(esc_pwm_type, "ESC_PWM_TYPE",     0),
 
+    // @Param: ESC_CMD_TIMO
+    // @DisplayName: ESC Command Timeout
+    // @Description: This is the duration (ms) with which to hold the last driven ESC command before timing out and zeroing the ESC outputs. To disable zeroing of outputs in event of CAN loss, use 0. Use values greater than the expected duration between two CAN frames to ensure Periph is not starved of ESC Raw Commands.
+    // @Range: 0 10000
+    // @Units: ms
+    // @User: Advanced
+    GSCALAR(esc_command_timeout_ms, "ESC_CMD_TIMO",     200),
+
 #if HAL_WITH_ESC_TELEM && !HAL_GCS_ENABLED
     // @Param: ESC_TELEM_PORT
     // @DisplayName: ESC Telemetry Serial Port
@@ -317,6 +384,23 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @RebootRequired: True
     GSCALAR(esc_telem_port, "ESC_TELEM_PORT", AP_PERIPH_ESC_TELEM_PORT_DEFAULT),
 #endif
+
+#if HAL_WITH_ESC_TELEM
+    // @Param: ESC_TELEM_RATE
+    // @DisplayName: ESC Telemetry update rate
+    // @Description: This is the rate at which ESC Telemetry will be sent across the CAN bus
+    // @Range: 0 1000
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    GSCALAR(esc_telem_rate, "ESC_TELEM_RATE", AP_PERIPH_ESC_TELEM_RATE_DEFAULT),
+#endif
+#endif
+
+#if AP_TEMPERATURE_SENSOR_ENABLED
+    // @Group: TEMP
+    // @Path: ../libraries/AP_TemperatureSensor/AP_TemperatureSensor.cpp
+    GOBJECT(temperature_sensor,         "TEMP",     AP_TemperatureSensor),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MSP
@@ -367,6 +451,72 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Path: ../libraries/AP_Scripting/AP_Scripting.cpp
     GOBJECT(scripting, "SCR_", AP_Scripting),
 #endif
+
+#if AP_STATS_ENABLED
+    // @Group: Node
+    // @Path: ../libraries/AP_Stats/AP_Stats.cpp
+    GOBJECT(node_stats, "STAT", AP_Stats),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_EFI
+    // @Param: EFI_BAUDRATE
+    // @DisplayName: EFI serial baudrate
+    // @Description: EFI  serial baudrate.
+    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,230:230400,256:256000,460:460800,500:500000,921:921600,1500:1500000
+    // @Increment: 1
+    // @User: Standard
+    // @RebootRequired: True
+    GSCALAR(efi_baudrate, "EFI_BAUDRATE", HAL_PERIPH_EFI_BAUDRATE_DEFAULT),
+
+    // @Param: EFI_PORT
+    // @DisplayName: EFI Serial Port
+    // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to EFI.
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    GSCALAR(efi_port, "EFI_PORT", AP_PERIPH_EFI_PORT_DEFAULT),
+
+    // EFI driver
+    // @Group: EFI
+    // @Path: ../libraries/AP_EFI/AP_EFI.cpp
+    GOBJECT(efi, "EFI", AP_EFI),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_PRX
+    // @Param: PRX_BAUDRATE
+    // @DisplayName: Proximity Sensor serial baudrate
+    // @Description: Proximity Sensor serial baudrate.
+    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,230:230400,256:256000,460:460800,500:500000,921:921600,1500:1500000
+    // @Increment: 1
+    // @User: Standard
+    // @RebootRequired: True
+    GSCALAR(proximity_baud, "PRX_BAUDRATE", HAL_PERIPH_RANGEFINDER_BAUDRATE_DEFAULT),
+
+    // @Param: PRX_PORT
+    // @DisplayName: Proximity Sensor Serial Port
+    // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to Proximity Sensor.
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    GSCALAR(proximity_port, "PRX_PORT", AP_PERIPH_RANGEFINDER_PORT_DEFAULT),
+
+    // @Param: PRX_MAX_RATE
+    // @DisplayName: Proximity Sensor max rate
+    // @Description: This is the maximum rate we send Proximity Sensor data in Hz. Zero means no limit
+    // @Units: Hz
+    // @Range: 0 200
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(proximity_max_rate, "PRX_MAX_RATE", 50),
+
+    // Proximity driver
+    // @Group: PRX
+    // @Path: ../libraries/AP_RangeFinder/AP_Proximity.cpp
+    GOBJECT(proximity, "PRX", AP_Proximity),
+#endif
+
     AP_VAREND
 };
 
@@ -375,10 +525,8 @@ void AP_Periph_FW::load_parameters(void)
 {
     AP_Param::setup_sketch_defaults();
 
-    if (!AP_Param::check_var_info()) {
-        hal.console->printf("Bad parameter table\n");
-        AP_HAL::panic("Bad parameter table");
-    }
+    AP_Param::check_var_info();
+
     if (!g.format_version.load() ||
         g.format_version != Parameters::k_format_version) {
         // erase all parameters
@@ -388,6 +536,7 @@ void AP_Periph_FW::load_parameters(void)
         // save the current format version
         g.format_version.set_and_save(Parameters::k_format_version);
     }
+    g.format_version.set_default(Parameters::k_format_version);
 
     // Load all auto-loaded EEPROM variables
     AP_Param::load_all();

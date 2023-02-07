@@ -28,6 +28,15 @@ void ModeCruise::update()
         lock_timer_ms = 0;
     }
 
+#if AP_SCRIPTING_ENABLED
+    if (plane.nav_scripting_active()) {
+        // while a trick is running unlock heading and zero altitude offset
+        locked_heading = false;
+        lock_timer_ms = 0;
+        plane.set_target_altitude_current();
+    }
+#endif
+    
     if (!locked_heading) {
         plane.nav_roll_cd = plane.channel_roll->norm_input() * plane.roll_limit_cd;
         plane.update_load_factor();
@@ -43,6 +52,12 @@ void ModeCruise::update()
  */
 void ModeCruise::navigate()
 {
+#if AP_SCRIPTING_ENABLED
+    if (plane.nav_scripting_active()) {
+        // don't try to navigate while running trick
+        return;
+    }
+#endif
     if (!locked_heading &&
         plane.channel_roll->get_control_in() == 0 &&
         plane.rudder_input() == 0 &&

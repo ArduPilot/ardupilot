@@ -1,0 +1,3 @@
+# JHEMCU GSF405A target for external receiver
+
+include ../JHEMCU-GSF405A/hwdef-bl.dat

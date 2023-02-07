@@ -24,18 +24,18 @@ bool ModeAuto::init(bool ignore_checks)
 {
     auto_RTL = false;
     if (mission.num_commands() > 1 || ignore_checks) {
-        _mode = SubMode::LOITER;
-
         // reject switching to auto mode if landed with motors armed but first command is not a takeoff (reduce chance of flips)
         if (motors->armed() && copter.ap.land_complete && !mission.starts_with_takeoff_cmd()) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Auto: Missing Takeoff Cmd");
             return false;
         }
 
+        _mode = SubMode::LOITER;
+
         // stop ROI from carrying over from previous runs of the mission
         // To-Do: reset the yaw as part of auto_wp_start when the previous command was not a wp command to remove the need for this special ROI check
-        if (auto_yaw.mode() == AUTO_YAW_ROI) {
-            auto_yaw.set_mode(AUTO_YAW_HOLD);
+        if (auto_yaw.mode() == AutoYaw::Mode::ROI) {
+            auto_yaw.set_mode(AutoYaw::Mode::HOLD);
         }
 
         // initialise waypoint and spline controller
@@ -135,7 +135,8 @@ void ModeAuto::run()
         break;
 
     case SubMode::NAVGUIDED:
-#if NAV_GUIDED == ENABLED
+    case SubMode::NAV_SCRIPT_TIME:
+#if NAV_GUIDED == ENABLED || AP_SCRIPTING_ENABLED
         nav_guided_run();
 #endif
         break;
@@ -151,6 +152,10 @@ void ModeAuto::run()
     case SubMode::NAV_PAYLOAD_PLACE:
         payload_place_run();
         break;
+
+    case SubMode::NAV_ATTITUDE_TIME:
+        nav_attitude_time_run();
+        break;
     }
 
     // only pretend to be in auto RTL so long as mission still thinks its in a landing sequence or the mission has completed
@@ -161,10 +166,45 @@ void ModeAuto::run()
     }
 }
 
+// return true if a position estimate is required
+bool ModeAuto::requires_GPS() const
+{
+    // position estimate is required in all sub modes except attitude control
+    return _mode != SubMode::NAV_ATTITUDE_TIME;
+}
+
+// set submode.  This may re-trigger the vehicle's EKF failsafe if the new submode requires a position estimate
+void ModeAuto::set_submode(SubMode new_submode)
+{
+    // return immediately if the submode has not been changed
+    if (new_submode == _mode) {
+        return;
+    }
+
+    // backup old mode
+    SubMode old_submode = _mode;
+
+    // set mode
+    _mode = new_submode;
+
+    // if changing out of the nav-attitude-time submode, recheck the EKF failsafe
+    // this may trigger a flight mode change if the EKF failsafe is active
+    if (old_submode == SubMode::NAV_ATTITUDE_TIME) {
+        copter.failsafe_ekf_recheck();
+    }
+}
+
 bool ModeAuto::allows_arming(AP_Arming::Method method) const
 {
     return ((copter.g2.auto_options & (uint32_t)Options::AllowArming) != 0) && !auto_RTL;
 };
+
+#if WEATHERVANE_ENABLED == ENABLED
+bool ModeAuto::allows_weathervaning() const
+{
+    return (copter.g2.auto_options & (uint32_t)Options::AllowWeatherVaning) != 0;
+}
+#endif
 
 // Go straight to landing sequence via DO_LAND_START, if succeeds pretend to be Auto RTL mode
 bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
@@ -199,6 +239,33 @@ bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
     return false;
 }
 
+// lua scripts use this to retrieve the contents of the active command
+bool ModeAuto::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4)
+{
+#if AP_SCRIPTING_ENABLED
+    if (_mode == SubMode::NAV_SCRIPT_TIME) {
+        id = nav_scripting.id;
+        cmd = nav_scripting.command;
+        arg1 = nav_scripting.arg1;
+        arg2 = nav_scripting.arg2;
+        arg3 = nav_scripting.arg3;
+        arg4 = nav_scripting.arg4;
+        return true;
+    }
+#endif
+    return false;
+}
+
+// lua scripts use this to indicate when they have complete the command
+void ModeAuto::nav_script_time_done(uint16_t id)
+{
+#if AP_SCRIPTING_ENABLED
+    if ((_mode == SubMode::NAV_SCRIPT_TIME) && (id == nav_scripting.id)) {
+        nav_scripting.done = true;
+    }
+#endif
+}
+
 // auto_loiter_start - initialises loitering in auto mode
 //  returns success/failure because this can be called by exit_mission
 bool ModeAuto::loiter_start()
@@ -217,7 +284,7 @@ bool ModeAuto::loiter_start()
     wp_nav->set_wp_destination(stopping_point);
 
     // hold yaw at current heading
-    auto_yaw.set_mode(AUTO_YAW_HOLD);
+    auto_yaw.set_mode(AutoYaw::Mode::HOLD);
 
     return true;
 }
@@ -225,101 +292,116 @@ bool ModeAuto::loiter_start()
 // auto_rtl_start - initialises RTL in AUTO flight mode
 void ModeAuto::rtl_start()
 {
-    _mode = SubMode::RTL;
-
     // call regular rtl flight mode initialisation and ask it to ignore checks
-    copter.mode_rtl.init(true);
+    if (copter.mode_rtl.init(true)) {
+        set_submode(SubMode::RTL);
+    } else {
+        // this should never happen because RTL never fails init if argument is true
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    }
 }
 
-// auto_takeoff_start - initialises waypoint controller to implement take-off
+// initialise waypoint controller to implement take-off
 void ModeAuto::takeoff_start(const Location& dest_loc)
 {
-    _mode = SubMode::TAKEOFF;
-
-    Location dest(dest_loc);
-
     if (!copter.current_loc.initialised()) {
-        // vehicle doesn't know where it is ATM.  We should not
-        // initialise our takeoff destination without knowing this!
+        // this should never happen because mission commands are not executed until
+        // the AHRS/EKF origin is set by which time current_loc should also have been set
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         return;
     }
 
-    // set horizontal target
-    dest.lat = copter.current_loc.lat;
-    dest.lng = copter.current_loc.lng;
+    // calculate current and target altitudes
+    // by default current_alt_cm and alt_target_cm are alt-above-EKF-origin
+    int32_t alt_target_cm;
+    bool alt_target_terrain = false;
+    float current_alt_cm = inertial_nav.get_position_z_up_cm();
+    float terrain_offset;   // terrain's altitude in cm above the ekf origin
+    if ((dest_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) && wp_nav->get_terrain_offset(terrain_offset)) {
+        // subtract terrain offset to convert vehicle's alt-above-ekf-origin to alt-above-terrain
+        current_alt_cm -= terrain_offset;
 
-    // get altitude target
-    int32_t alt_target;
-    if (!dest.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_target)) {
-        // this failure could only happen if take-off alt was specified as an alt-above terrain and we have no terrain data
-        AP::logger().Write_Error(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
-        // fall back to altitude above current altitude
-        alt_target = copter.current_loc.alt + dest.alt;
+        // specify alt_target_cm as alt-above-terrain
+        alt_target_cm = dest_loc.alt;
+        alt_target_terrain = true;
+    } else {
+        // set horizontal target
+        Location dest(dest_loc);
+        dest.lat = copter.current_loc.lat;
+        dest.lng = copter.current_loc.lng;
+
+        // get altitude target above EKF origin
+        if (!dest.get_alt_cm(Location::AltFrame::ABOVE_ORIGIN, alt_target_cm)) {
+            // this failure could only happen if take-off alt was specified as an alt-above terrain and we have no terrain data
+            AP::logger().Write_Error(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
+            // fall back to altitude above current altitude
+            alt_target_cm = current_alt_cm + dest.alt;
+        }
     }
 
     // sanity check target
-    if (alt_target < copter.current_loc.alt) {
-        dest.set_alt_cm(copter.current_loc.alt, Location::AltFrame::ABOVE_HOME);
-    }
-    // Note: if taking off from below home this could cause a climb to an unexpectedly high altitude
-    if (alt_target < 100) {
-        dest.set_alt_cm(100, Location::AltFrame::ABOVE_HOME);
-    }
-
-    // set waypoint controller target
-    if (!wp_nav->set_wp_destination_loc(dest)) {
-        // failure to set destination can only be because of missing terrain data
-        copter.failsafe_terrain_on_event();
-        return;
-    }
+    int32_t alt_target_min_cm = current_alt_cm + (copter.ap.land_complete ? 100 : 0);
+    alt_target_cm = MAX(alt_target_cm, alt_target_min_cm);
 
     // initialise yaw
-    auto_yaw.set_mode(AUTO_YAW_HOLD);
+    auto_yaw.set_mode(AutoYaw::Mode::HOLD);
 
     // clear i term when we're taking off
-    set_throttle_takeoff();
+    pos_control->init_z_controller();
 
-    // get initial alt for WP_NAVALT_MIN
-    auto_takeoff_set_start_alt();
+    // initialise alt for WP_NAVALT_MIN and set completion alt
+    auto_takeoff_start(alt_target_cm, alt_target_terrain);
+
+    // set submode
+    set_submode(SubMode::TAKEOFF);
 }
 
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
-void ModeAuto::wp_start(const Location& dest_loc)
+bool ModeAuto::wp_start(const Location& dest_loc)
 {
-    // send target to waypoint controller
-    if (!wp_nav->set_wp_destination_loc(dest_loc)) {
-        // failure to set destination can only be because of missing terrain data
-        copter.failsafe_terrain_on_event();
-        return;
+    // init wpnav and set origin if transitioning from takeoff
+    if (!wp_nav->is_active()) {
+        Vector3f stopping_point;
+        if (_mode == SubMode::TAKEOFF) {
+            Vector3p takeoff_complete_pos;
+            if (auto_takeoff_get_position(takeoff_complete_pos)) {
+                stopping_point = takeoff_complete_pos.tofloat();
+            }
+        }
+        wp_nav->wp_and_spline_init(0, stopping_point);
     }
 
-    _mode = SubMode::WP;
+    if (!wp_nav->set_wp_destination_loc(dest_loc)) {
+        return false;
+    }
 
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
-    if (auto_yaw.mode() != AUTO_YAW_ROI) {
+    if (auto_yaw.mode() != AutoYaw::Mode::ROI) {
         auto_yaw.set_mode_to_default(false);
     }
+
+    // set submode
+    set_submode(SubMode::WP);
+
+    return true;
 }
 
 // auto_land_start - initialises controller to implement a landing
 void ModeAuto::land_start()
 {
-    // set target to stopping point
-    Vector2f stopping_point;
-    loiter_nav->get_stopping_point_xy(stopping_point);
+    // set horizontal speed and acceleration limits
+    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+    pos_control->set_correction_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
 
-    // call location specific land start function
-    land_start(stopping_point);
-}
+    // initialise the vertical position controller
+    if (!pos_control->is_active_xy()) {
+        pos_control->init_xy_controller();
+    }
 
-// auto_land_start - initialises controller to implement a landing
-void ModeAuto::land_start(const Vector2f& destination)
-{
-    _mode = SubMode::LAND;
-
-    // initialise loiter target destination
-    loiter_nav->init_target(destination);
+    // set vertical speed and acceleration limits
+    pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+    pos_control->set_correction_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
 
     // initialise the vertical position controller
     if (!pos_control->is_active_z()) {
@@ -327,17 +409,26 @@ void ModeAuto::land_start(const Vector2f& destination)
     }
 
     // initialise yaw
-    auto_yaw.set_mode(AUTO_YAW_HOLD);
+    auto_yaw.set_mode(AutoYaw::Mode::HOLD);
 
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
     // optionally deploy landing gear
     copter.landinggear.deploy_for_landing();
 #endif
 
-#if AC_FENCE == ENABLED
+#if AP_FENCE_ENABLED
     // disable the fence on landing
     copter.fence.auto_disable_fence_for_landing();
 #endif
+
+    // reset flag indicating if pilot has applied roll or pitch inputs during landing
+    copter.ap.land_repo_active = false;
+
+    // this will be set true if prec land is later active
+    copter.ap.prec_land_active = false;
+
+    // set submode
+    set_submode(SubMode::LAND);
 }
 
 // auto_circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location
@@ -349,7 +440,7 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
 
     // set circle radius
     if (!is_zero(radius_m)) {
-        copter.circle_nav->set_radius(radius_m * 100.0f);
+        copter.circle_nav->set_radius_cm(radius_m * 100.0f);
     }
 
     // check our distance from edge of circle
@@ -359,9 +450,6 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
 
     // if more than 3m then fly to edge
     if (dist_to_edge > 300.0f) {
-        // set the state to move to the edge of the circle
-        _mode = SubMode::CIRCLE_MOVE_TO_EDGE;
-
         // convert circle_edge_neu to Location
         Location circle_edge(circle_edge_neu, Location::AltFrame::ABOVE_ORIGIN);
 
@@ -378,14 +466,17 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
         const float dist_to_center = get_horizontal_distance_cm(inertial_nav.get_position_xy_cm().topostype(), copter.circle_nav->get_center().xy());
         // initialise yaw
         // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
-        if (auto_yaw.mode() != AUTO_YAW_ROI) {
+        if (auto_yaw.mode() != AutoYaw::Mode::ROI) {
             if (dist_to_center > copter.circle_nav->get_radius() && dist_to_center > 500) {
                 auto_yaw.set_mode_to_default(false);
             } else {
                 // vehicle is within circle so hold yaw to avoid spinning as we move to edge of circle
-                auto_yaw.set_mode(AUTO_YAW_HOLD);
+                auto_yaw.set_mode(AutoYaw::Mode::HOLD);
             }
         }
+
+        // set the submode to move to the edge of the circle
+        set_submode(SubMode::CIRCLE_MOVE_TO_EDGE);
     } else {
         circle_start();
     }
@@ -395,27 +486,33 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
 //   assumes that circle_nav object has already been initialised with circle center and radius
 void ModeAuto::circle_start()
 {
-    _mode = SubMode::CIRCLE;
-
     // initialise circle controller
     copter.circle_nav->init(copter.circle_nav->get_center(), copter.circle_nav->center_is_terrain_alt());
 
-    if (auto_yaw.mode() != AUTO_YAW_ROI) {
-        auto_yaw.set_mode(AUTO_YAW_CIRCLE);
+    if (auto_yaw.mode() != AutoYaw::Mode::ROI) {
+        auto_yaw.set_mode(AutoYaw::Mode::CIRCLE);
     }
+
+    // set submode to circle
+    set_submode(SubMode::CIRCLE);
 }
 
 #if NAV_GUIDED == ENABLED
 // auto_nav_guided_start - hand over control to external navigation controller in AUTO mode
 void ModeAuto::nav_guided_start()
 {
-    _mode = SubMode::NAVGUIDED;
-
     // call regular guided flight mode initialisation
-    copter.mode_guided.init(true);
+    if (!copter.mode_guided.init(true)) {
+        // this should never happen because guided mode never fails to init
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        return;
+    }
 
     // initialise guided start time and position as reference for limit checking
     copter.mode_guided.limit_init_time_and_pos();
+
+    // set submode
+    set_submode(SubMode::NAVGUIDED);
 }
 #endif //NAV_GUIDED
 
@@ -434,24 +531,64 @@ bool ModeAuto::is_landing() const
 
 bool ModeAuto::is_taking_off() const
 {
-    return ((_mode == SubMode::TAKEOFF) && !wp_nav->reached_wp_destination());
+    return ((_mode == SubMode::TAKEOFF) && !auto_takeoff_complete);
 }
 
 // auto_payload_place_start - initialises controller to implement a placing
 void ModeAuto::payload_place_start()
 {
-    // set target to stopping point
-    Vector2f stopping_point;
-    loiter_nav->get_stopping_point_xy(stopping_point);
+    // set horizontal speed and acceleration limits
+    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+    pos_control->set_correction_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
 
-    // call location specific place start function
-    payload_place_start(stopping_point);
+    // initialise the vertical position controller
+    if (!pos_control->is_active_xy()) {
+        pos_control->init_xy_controller();
+    }
+
+    // set vertical speed and acceleration limits
+    pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+    pos_control->set_correction_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+
+    // initialise the vertical position controller
+    if (!pos_control->is_active_z()) {
+        pos_control->init_z_controller();
+    }
+
+    // initialise yaw
+    auto_yaw.set_mode(AutoYaw::Mode::HOLD);
+
+    // set submode
+    set_submode(SubMode::NAV_PAYLOAD_PLACE);
+
+    nav_payload_place.state = PayloadPlaceStateType_Descent_Start;
 }
 
 // returns true if pilot's yaw input should be used to adjust vehicle's heading
 bool ModeAuto::use_pilot_yaw(void) const
 {
-    return (copter.g2.auto_options.get() & uint32_t(Options::IgnorePilotYaw)) == 0;
+    const bool allow_yaw_option = (copter.g2.auto_options.get() & uint32_t(Options::IgnorePilotYaw)) == 0;
+    const bool rtl_allow_yaw = (_mode == SubMode::RTL) && copter.mode_rtl.use_pilot_yaw();
+    const bool landing = _mode == SubMode::LAND;
+    return allow_yaw_option || rtl_allow_yaw || landing;
+}
+
+bool ModeAuto::set_speed_xy(float speed_xy_cms)
+{
+    copter.wp_nav->set_speed_xy(speed_xy_cms);
+    return true;
+}
+
+bool ModeAuto::set_speed_up(float speed_up_cms)
+{
+    copter.wp_nav->set_speed_up(speed_up_cms);
+    return true;
+}
+
+bool ModeAuto::set_speed_down(float speed_down_cms)
+{
+    copter.wp_nav->set_speed_down(speed_down_cms);
+    return true;
 }
 
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
@@ -467,6 +604,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
     ///
     /// navigation commands
     ///
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
     case MAV_CMD_NAV_TAKEOFF:                   // 22
         do_takeoff(cmd);
         break;
@@ -475,6 +613,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         do_nav_wp(cmd);
         break;
 
+    case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_LAND:              // 21 LAND to Waypoint
         do_land(cmd);
         break;
@@ -517,6 +656,16 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         do_payload_place(cmd);
         break;
 
+#if AP_SCRIPTING_ENABLED
+    case MAV_CMD_NAV_SCRIPT_TIME:
+        do_nav_script_time(cmd);
+        break;
+#endif
+
+    case MAV_CMD_NAV_ATTITUDE_TIME:
+        do_nav_attitude_time(cmd);
+        break;
+
     //
     // conditional commands
     //
@@ -554,7 +703,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         break;
     
     case MAV_CMD_DO_FENCE_ENABLE:
-#if AC_FENCE == ENABLED
+#if AP_FENCE_ENABLED
         if (cmd.p1 == 0) { //disable
             copter.fence.enable(false);
             gcs().send_text(MAV_SEVERITY_INFO, "Fence Disabled");
@@ -562,7 +711,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
             copter.fence.enable(true);
             gcs().send_text(MAV_SEVERITY_INFO, "Fence Enabled");
         }
-#endif //AC_FENCE == ENABLED
+#endif //AP_FENCE_ENABLED
         break;
 
 #if NAV_GUIDED == ENABLED
@@ -610,7 +759,7 @@ void ModeAuto::exit_mission()
 bool ModeAuto::do_guided(const AP_Mission::Mission_Command& cmd)
 {
     // only process guided waypoint if we are in guided mode
-    if (copter.flightmode->mode_number() != Mode::Number::GUIDED && !(copter.flightmode->mode_number() == Mode::Number::AUTO && mode() == SubMode::NAVGUIDED)) {
+    if (copter.flightmode->mode_number() != Mode::Number::GUIDED && !(copter.flightmode->mode_number() == Mode::Number::AUTO && _mode == SubMode::NAVGUIDED)) {
         return false;
     }
 
@@ -697,6 +846,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     //
     // navigation commands
     //
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
     case MAV_CMD_NAV_TAKEOFF:
         cmd_complete = verify_takeoff();
         break;
@@ -705,6 +855,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
         cmd_complete = verify_nav_wp(cmd);
         break;
 
+    case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_LAND:
         cmd_complete = verify_land();
         break;
@@ -744,6 +895,16 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
 
      case MAV_CMD_NAV_DELAY:
         cmd_complete = verify_nav_delay(cmd);
+        break;
+
+#if AP_SCRIPTING_ENABLED
+    case MAV_CMD_NAV_SCRIPT_TIME:
+        cmd_complete = verify_nav_script_time();
+        break;
+#endif
+
+    case MAV_CMD_NAV_ATTITUDE_TIME:
+        cmd_complete = verify_nav_attitude_time(cmd);
         break;
 
     ///
@@ -806,20 +967,9 @@ void ModeAuto::takeoff_run()
 //      called by auto_run at 100hz or more
 void ModeAuto::wp_run()
 {
-    // process pilot's yaw input
-    float target_yaw_rate = 0;
-    if (!copter.failsafe.radio && use_pilot_yaw()) {
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
-        if (!is_zero(target_yaw_rate)) {
-            auto_yaw.set_mode(AUTO_YAW_HOLD);
-        }
-    }
-
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_ground_handling();
-        wp_nav->wp_and_spline_init();
         return;
     }
 
@@ -833,14 +983,8 @@ void ModeAuto::wp_run()
     // run the vertical position controller and set output throttle
     pos_control->update_z_controller();
 
-    // call attitude controller
-    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
-        // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control->input_thrust_vector_rate_heading(wp_nav->get_thrust_vector(), target_yaw_rate);
-    } else {
-        // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_thrust_vector_heading(wp_nav->get_thrust_vector(), auto_yaw.yaw(), auto_yaw.rate_cds());
-    }
+    // call attitude controller with auto yaw
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // auto_land_run - lands in auto mode
@@ -851,8 +995,6 @@ void ModeAuto::land_run()
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_ground_handling();
-        loiter_nav->clear_pilot_desired_acceleration();
-        loiter_nav->init_target();
         return;
     }
 
@@ -875,16 +1017,6 @@ void ModeAuto::rtl_run()
 //      called by auto_run at 100hz or more
 void ModeAuto::circle_run()
 {
-    // process pilot's yaw input
-    float target_yaw_rate = 0;
-    if (!copter.failsafe.radio && use_pilot_yaw()) {
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
-        if (!is_zero(target_yaw_rate)) {
-            auto_yaw.set_mode(AUTO_YAW_HOLD);
-        }
-    }
-
     // call circle controller
     copter.failsafe_terrain_set_status(copter.circle_nav->update());
 
@@ -892,16 +1024,11 @@ void ModeAuto::circle_run()
     // run the vertical position controller and set output throttle
     pos_control->update_z_controller();
 
-    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
-        // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control->input_thrust_vector_rate_heading(copter.circle_nav->get_thrust_vector(), target_yaw_rate);
-    } else {
-        // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_thrust_vector_heading(copter.circle_nav->get_thrust_vector(), auto_yaw.yaw());
-    }
+    // call attitude controller with auto yaw
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
-#if NAV_GUIDED == ENABLED
+#if NAV_GUIDED == ENABLED || AP_SCRIPTING_ENABLED
 // auto_nav_guided_run - allows control by external navigation controller
 //      called by auto_run at 100hz or more
 void ModeAuto::nav_guided_run()
@@ -909,7 +1036,7 @@ void ModeAuto::nav_guided_run()
     // call regular guided flight mode run function
     copter.mode_guided.run();
 }
-#endif  // NAV_GUIDED
+#endif  // NAV_GUIDED || AP_SCRIPTING_ENABLED
 
 // auto_loiter_run - loiter in AUTO flight mode
 //      called by auto_run at 100hz or more
@@ -918,14 +1045,7 @@ void ModeAuto::loiter_run()
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_ground_handling();
-        wp_nav->wp_and_spline_init();
         return;
-    }
-
-    // accept pilot input of yaw
-    float target_yaw_rate = 0;
-    if (!copter.failsafe.radio && use_pilot_yaw()) {
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
     }
 
     // set motors to full range
@@ -935,7 +1055,9 @@ void ModeAuto::loiter_run()
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
 
     pos_control->update_z_controller();
-    attitude_control->input_thrust_vector_rate_heading(wp_nav->get_thrust_vector(), target_yaw_rate);
+
+    // call attitude controller with auto yaw
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // auto_loiter_run - loiter to altitude in AUTO flight mode
@@ -944,7 +1066,7 @@ void ModeAuto::loiter_to_alt_run()
 {
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if (is_disarmed_or_landed() || !motors->get_interlock()) {
-        zero_throttle_and_relax_ac();
+        make_safe_ground_handling();
         return;
     }
 
@@ -958,9 +1080,14 @@ void ModeAuto::loiter_to_alt_run()
     }
 
     if (!loiter_to_alt.loiter_start_done) {
-        loiter_nav->clear_pilot_desired_acceleration();
-        loiter_nav->init_target();
-        _mode = SubMode::LOITER_TO_ALT;
+        // set horizontal speed and acceleration limits
+        pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+        pos_control->set_correction_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+
+        if (!pos_control->is_active_xy()) {
+            pos_control->init_xy_controller();
+        }
+
         loiter_to_alt.loiter_start_done = true;
     }
     const float alt_error_cm = copter.current_loc.alt - loiter_to_alt.alt;
@@ -997,54 +1124,237 @@ void ModeAuto::loiter_to_alt_run()
     pos_control->update_z_controller();
 }
 
-// auto_payload_place_start - initialises controller to implement placement of a load
-void ModeAuto::payload_place_start(const Vector2f& destination)
+// maintain an attitude for a specified time
+void ModeAuto::nav_attitude_time_run()
 {
-    _mode = SubMode::NAV_PAYLOAD_PLACE;
-    nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover_Start;
+    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
+    if (is_disarmed_or_landed() || !motors->get_interlock()) {
+        make_safe_ground_handling();
+        return;
+    }
 
-    // initialise loiter target destination
-    loiter_nav->init_target(destination);
+    // constrain climb rate
+    float target_climb_rate_cms = constrain_float(nav_attitude_time.climb_rate * 100.0, pos_control->get_max_speed_down_cms(), pos_control->get_max_speed_up_cms());
 
-    // initialise the vertical position controller
-    pos_control->init_z_controller();
+    // get avoidance adjusted climb rate
+    target_climb_rate_cms = get_avoidance_adjusted_climbrate(target_climb_rate_cms);
 
-    // initialise yaw
-    auto_yaw.set_mode(AUTO_YAW_HOLD);
+    // limit and scale lean angles
+    const float angle_limit_cd = MAX(1000.0f, MIN(copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max_cd()));
+    Vector2f target_rp_cd(nav_attitude_time.roll_deg * 100, nav_attitude_time.pitch_deg * 100);
+    target_rp_cd.limit_length(angle_limit_cd);
+
+    // send targets to attitude controller
+    attitude_control->input_euler_angle_roll_pitch_yaw(target_rp_cd.x, target_rp_cd.y, nav_attitude_time.yaw_deg * 100, true);
+
+    // Send the commanded climb rate to the position controller
+    pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate_cms);
+
+    pos_control->update_z_controller();
 }
 
 // auto_payload_place_run - places an object in auto mode
 //      called by auto_run at 100hz or more
 void ModeAuto::payload_place_run()
 {
+    const char* prefix_str = "PayloadPlace:";
+
     if (!payload_place_run_should_run()) {
         zero_throttle_and_relax_ac();
-        // set target to current position
-        loiter_nav->clear_pilot_desired_acceleration();
-        loiter_nav->init_target();
         return;
     }
 
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
+    const uint32_t descent_thrust_cal_duration_ms = 2000; // milliseconds
+    const uint32_t placed_check_duration_ms = 500; // how long we have to be below a throttle threshold before considering placed
+
+    // Vertical thrust is taken from the attitude controller before angle boost is added
+    const float thrust_level = attitude_control->get_throttle_in();
+    const uint32_t now_ms = AP_HAL::millis();
+
+    // if we discover we've landed then immediately release the load:
+    if (copter.ap.land_complete || copter.ap.land_complete_maybe) {
+        switch (nav_payload_place.state) {
+        case PayloadPlaceStateType_FlyToLocation:
+            // this is handled in wp_run()
+            break;
+        case PayloadPlaceStateType_Descent_Start:
+            // do nothing on this loop
+            break;
+        case PayloadPlaceStateType_Descent:
+            gcs().send_text(MAV_SEVERITY_INFO, "%s landed", prefix_str);
+            nav_payload_place.state = PayloadPlaceStateType_Release;
+            break;
+        case PayloadPlaceStateType_Release:
+        case PayloadPlaceStateType_Releasing:
+        case PayloadPlaceStateType_Delay:
+        case PayloadPlaceStateType_Ascent_Start:
+        case PayloadPlaceStateType_Ascent:
+        case PayloadPlaceStateType_Done:
+            break;
+        }
+    }
+
+#if AP_GRIPPER_ENABLED == ENABLED
+    // if pilot releases load manually:
+    if (g2.gripper.valid() && g2.gripper.released()) {
+        switch (nav_payload_place.state) {
+        case PayloadPlaceStateType_FlyToLocation:
+        case PayloadPlaceStateType_Descent_Start:
+            set_submode(SubMode::NAV_PAYLOAD_PLACE);
+            gcs().send_text(MAV_SEVERITY_INFO, "%s Manual release", prefix_str);
+            nav_payload_place.state = PayloadPlaceStateType_Done;
+            break;
+        case PayloadPlaceStateType_Descent:
+            gcs().send_text(MAV_SEVERITY_INFO, "%s Manual release", prefix_str);
+            nav_payload_place.state = PayloadPlaceStateType_Release;
+            break;
+        case PayloadPlaceStateType_Release:
+        case PayloadPlaceStateType_Releasing:
+        case PayloadPlaceStateType_Delay:
+        case PayloadPlaceStateType_Ascent_Start:
+        case PayloadPlaceStateType_Ascent:
+        case PayloadPlaceStateType_Done:
+            break;
+        }
+    }
+#endif
+
     switch (nav_payload_place.state) {
     case PayloadPlaceStateType_FlyToLocation:
-        return wp_run();
-    case PayloadPlaceStateType_Calibrating_Hover_Start:
-    case PayloadPlaceStateType_Calibrating_Hover:
-        return payload_place_run_loiter();
-    case PayloadPlaceStateType_Descending_Start:
-    case PayloadPlaceStateType_Descending:
-        return payload_place_run_descend();
-    case PayloadPlaceStateType_Releasing_Start:
+        if (copter.wp_nav->reached_wp_destination()) {
+            payload_place_start();
+        }
+        break;
+
+    case PayloadPlaceStateType_Descent_Start:
+        nav_payload_place.descent_established_time_ms = now_ms;
+        nav_payload_place.descent_start_altitude_cm = inertial_nav.get_position_z_up_cm();
+        // limiting the decent rate to the limit set in wp_nav is not necessary but done for safety
+        nav_payload_place.descent_speed_cms = MIN((is_positive(g2.pldp_descent_speed_ms)) ? g2.pldp_descent_speed_ms * 100.0 : abs(g.land_speed), wp_nav->get_default_speed_down());
+        nav_payload_place.descent_thrust_level = 1.0;
+        nav_payload_place.state = PayloadPlaceStateType_Descent;
+        FALLTHROUGH;
+
+    case PayloadPlaceStateType_Descent:
+        // check maximum decent distance
+        if (!is_zero(nav_payload_place.descent_max_cm) &&
+            nav_payload_place.descent_start_altitude_cm - inertial_nav.get_position_z_up_cm() > nav_payload_place.descent_max_cm) {
+            nav_payload_place.state = PayloadPlaceStateType_Ascent_Start;
+            gcs().send_text(MAV_SEVERITY_WARNING, "%s Reached maximum descent", prefix_str);
+            break;
+        }
+        // calibrate the decent thrust after aircraft has reached constant decent rate and release if threshold is reached
+        if (pos_control->get_vel_desired_cms().z > -0.95 * nav_payload_place.descent_speed_cms) {
+            // decent rate has not reached descent_speed_cms
+            nav_payload_place.descent_established_time_ms = now_ms;
+            break;
+        } else if (now_ms - nav_payload_place.descent_established_time_ms < descent_thrust_cal_duration_ms) {
+            // record minimum thrust for descent_thrust_cal_duration_ms
+            nav_payload_place.descent_thrust_level = MIN(nav_payload_place.descent_thrust_level, thrust_level);
+            nav_payload_place.place_start_time_ms = now_ms;
+            break;
+        } else if (thrust_level > g2.pldp_thrust_placed_fraction * nav_payload_place.descent_thrust_level) {
+            // thrust is above minimum threshold
+            nav_payload_place.place_start_time_ms = now_ms;
+            break;
+        } else if (is_positive(g2.pldp_range_finder_minimum_m)) {
+            if (!copter.rangefinder_state.enabled) {
+                // abort payload place because rangefinder is not enabled
+                nav_payload_place.state = PayloadPlaceStateType_Ascent_Start;
+                gcs().send_text(MAV_SEVERITY_WARNING, "%s PLDP_RNG_MIN set and rangefinder not enabled", prefix_str);
+                break;
+            } else if (copter.rangefinder_alt_ok() && (copter.rangefinder_state.glitch_count == 0) && (copter.rangefinder_state.alt_cm > g2.pldp_range_finder_minimum_m * 100.0)) {
+                // range finder altitude is above minimum
+                nav_payload_place.place_start_time_ms = now_ms;
+                break;
+            }
+        }
+
+        // If we get here:
+        // 1. we have reached decent velocity
+        // 2. measured the thrust level required for decent
+        // 3. detected that our thrust requirements have reduced
+        // 4. rangefinder range has dropped below minimum if set
+        // 5. place_start_time_ms has been initialised
+
+        // payload touchdown must be detected for 0.5 seconds
+
+        if (now_ms - nav_payload_place.place_start_time_ms > placed_check_duration_ms) {
+            nav_payload_place.state = PayloadPlaceStateType_Release;
+            gcs().send_text(MAV_SEVERITY_INFO, "%s payload release thrust threshold: %f", prefix_str, static_cast<double>(g2.pldp_thrust_placed_fraction * nav_payload_place.descent_thrust_level));
+        }
+        break;
+
+    case PayloadPlaceStateType_Release:
+        // Reinitialise vertical position controller to remove discontinuity due to touch down of payload
+        pos_control->init_z_controller_no_descent();
+#if AP_GRIPPER_ENABLED == ENABLED
+        if (g2.gripper.valid()) {
+            gcs().send_text(MAV_SEVERITY_INFO, "%s Releasing the gripper", prefix_str);
+            g2.gripper.release();
+            nav_payload_place.state = PayloadPlaceStateType_Releasing;
+        } else {
+            nav_payload_place.state = PayloadPlaceStateType_Delay;
+        }
+#else
+        nav_payload_place.state = PayloadPlaceStateType_Delay;
+#endif
+        break;
+
     case PayloadPlaceStateType_Releasing:
-    case PayloadPlaceStateType_Released:
-    case PayloadPlaceStateType_Ascending_Start:
-        return payload_place_run_loiter();
-    case PayloadPlaceStateType_Ascending:
+#if AP_GRIPPER_ENABLED == ENABLED
+        if (g2.gripper.valid() && !g2.gripper.released()) {
+            break;
+        }
+#endif
+        nav_payload_place.state = PayloadPlaceStateType_Delay;
+        FALLTHROUGH;
+
+    case PayloadPlaceStateType_Delay:
+        // If we get here we have finished releasing the gripper
+        if (now_ms - nav_payload_place.place_start_time_ms < placed_check_duration_ms + g2.pldp_delay_s * 1000.0) {
+            break;
+        }
+        FALLTHROUGH;
+
+    case PayloadPlaceStateType_Ascent_Start: {
+        auto_takeoff_start(nav_payload_place.descent_start_altitude_cm, false);
+        nav_payload_place.state = PayloadPlaceStateType_Ascent;
+        }
+        break;
+
+    case PayloadPlaceStateType_Ascent:
+        if (auto_takeoff_complete) {
+            nav_payload_place.state = PayloadPlaceStateType_Done;
+        }
+        break;
+
     case PayloadPlaceStateType_Done:
+        break;
+    default:
+        // this should never happen
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        break;
+    }
+
+    switch (nav_payload_place.state) {
+    case PayloadPlaceStateType_FlyToLocation:
+        // this should never happen
         return wp_run();
+    case PayloadPlaceStateType_Descent_Start:
+    case PayloadPlaceStateType_Descent:
+        return payload_place_run_descent();
+    case PayloadPlaceStateType_Release:
+    case PayloadPlaceStateType_Releasing:
+    case PayloadPlaceStateType_Delay:
+    case PayloadPlaceStateType_Ascent_Start:
+        return payload_place_run_hover();
+    case PayloadPlaceStateType_Ascent:
+    case PayloadPlaceStateType_Done:
+        return takeoff_run();
     }
 }
 
@@ -1059,7 +1369,7 @@ bool ModeAuto::payload_place_run_should_run()
         return false;
     }
     // must not be landed
-    if (copter.ap.land_complete) {
+    if (copter.ap.land_complete && (nav_payload_place.state == PayloadPlaceStateType_FlyToLocation || nav_payload_place.state == PayloadPlaceStateType_Descent_Start)) {
         return false;
     }
     // interlock must be enabled (i.e. unsafe)
@@ -1070,40 +1380,49 @@ bool ModeAuto::payload_place_run_should_run()
     return true;
 }
 
-void ModeAuto::payload_place_run_loiter()
+void ModeAuto::payload_place_run_hover()
 {
-    // loiter...
     land_run_horizontal_control();
-
-    // call position controller
+    // update altitude target and call position controller
+    pos_control->land_at_climb_rate_cm(0.0, false);
     pos_control->update_z_controller();
 }
 
-void ModeAuto::payload_place_run_descend()
+void ModeAuto::payload_place_run_descent()
 {
     land_run_horizontal_control();
-    land_run_vertical_control();
+    // update altitude target and call position controller
+    pos_control->land_at_climb_rate_cm(-nav_payload_place.descent_speed_cms, true);
+    pos_control->update_z_controller();
 }
 
-// terrain_adjusted_location: returns a Location with lat/lon from cmd
-// and altitude from our current altitude adjusted for location
-Location ModeAuto::terrain_adjusted_location(const AP_Mission::Mission_Command& cmd) const
+// sets the target_loc's alt to the vehicle's current alt but does not change target_loc's frame
+// in the case of terrain altitudes either the terrain database or the rangefinder may be used
+// returns true on success, false on failure
+bool ModeAuto::shift_alt_to_current_alt(Location& target_loc) const
 {
-    // convert to location class
-    Location target_loc(cmd.content.location);
-
-    // decide if we will use terrain following
-    int32_t curr_terr_alt_cm, target_terr_alt_cm;
-    if (copter.current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, curr_terr_alt_cm) &&
-        target_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, target_terr_alt_cm)) {
-        curr_terr_alt_cm = MAX(curr_terr_alt_cm,200);
-        // if using terrain, set target altitude to current altitude above terrain
-        target_loc.set_alt_cm(curr_terr_alt_cm, Location::AltFrame::ABOVE_TERRAIN);
-    } else {
-        // set target altitude to current altitude above home
-        target_loc.set_alt_cm(copter.current_loc.alt, Location::AltFrame::ABOVE_HOME);
+    // if terrain alt using rangefinder is being used then set alt to current rangefinder altitude
+    if ((target_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) &&
+        (wp_nav->get_terrain_source() == AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER)) {
+        int32_t curr_rngfnd_alt_cm;
+        if (copter.get_rangefinder_height_interpolated_cm(curr_rngfnd_alt_cm)) {
+            // wp_nav is using rangefinder so use current rangefinder alt
+            target_loc.set_alt_cm(MAX(curr_rngfnd_alt_cm, 200), Location::AltFrame::ABOVE_TERRAIN);
+            return true;
+        }
+        return false;
     }
-    return target_loc;
+
+    // take copy of current location and change frame to match target
+    Location currloc = copter.current_loc;
+    if (!currloc.change_alt_frame(target_loc.get_alt_frame())) {
+        // this could fail due missing terrain database alt
+        return false;
+    }
+
+    // set target_loc's alt
+    target_loc.set_alt_cm(currloc.alt, currloc.get_alt_frame());
+    return true;
 }
 
 /********************************************************************************/
@@ -1154,14 +1473,13 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     }
 
     // get waypoint's location from command and send to wp_nav
-    const Location dest_loc = loc_from_cmd(cmd, default_loc);
-    if (!wp_nav->set_wp_destination_loc(dest_loc)) {
-        // failure to set destination can only be because of missing terrain data
+    const Location target_loc = loc_from_cmd(cmd, default_loc);
+
+    if (!wp_start(target_loc)) {
+        // failure to set next destination can only be because of missing terrain data
         copter.failsafe_terrain_on_event();
         return;
     }
-
-    _mode = SubMode::WP;
 
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
@@ -1169,16 +1487,10 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     loiter_time_max = cmd.p1;
 
     // set next destination if necessary
-    if (!set_next_wp(cmd, dest_loc)) {
+    if (!set_next_wp(cmd, target_loc)) {
         // failure to set next destination can only be because of missing terrain data
         copter.failsafe_terrain_on_event();
         return;
-    }
-
-    // initialise yaw
-    // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
-    if (auto_yaw.mode() != AUTO_YAW_ROI) {
-        auto_yaw.set_mode_to_default(false);
     }
 }
 
@@ -1204,7 +1516,8 @@ bool ModeAuto::set_next_wp(const AP_Mission::Mission_Command& current_cmd, const
     switch (next_cmd.id) {
     case MAV_CMD_NAV_WAYPOINT:
     case MAV_CMD_NAV_LOITER_UNLIM:
-    case MAV_CMD_NAV_LOITER_TIME: {
+    case MAV_CMD_NAV_LOITER_TIME:
+    case MAV_CMD_NAV_PAYLOAD_PLACE: {
         const Location dest_loc = loc_from_cmd(current_cmd, default_loc);
         const Location next_dest_loc = loc_from_cmd(next_cmd, dest_loc);
         return wp_nav->set_wp_destination_next_loc(next_dest_loc);
@@ -1216,10 +1529,12 @@ bool ModeAuto::set_next_wp(const AP_Mission::Mission_Command& current_cmd, const
         get_spline_from_cmd(next_cmd, default_loc, next_dest_loc, next_next_dest_loc, next_next_dest_loc_is_spline);
         return wp_nav->set_spline_destination_next_loc(next_dest_loc, next_next_dest_loc, next_next_dest_loc_is_spline);
     }
+    case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_LAND:
         // stop because we may change between rel,abs and terrain alt types
     case MAV_CMD_NAV_LOITER_TURNS:
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
     case MAV_CMD_NAV_TAKEOFF:
         // always stop for RTL and takeoff commands
     default:
@@ -1240,9 +1555,21 @@ void ModeAuto::do_land(const AP_Mission::Mission_Command& cmd)
         // set state to fly to location
         state = State::FlyToLocation;
 
-        const Location target_loc = terrain_adjusted_location(cmd);
+        // convert cmd to location class
+        Location target_loc(cmd.content.location);
+        if (!shift_alt_to_current_alt(target_loc)) {
+            // this can only fail due to missing terrain database alt or rangefinder alt
+            // use current alt-above-home and report error
+            target_loc.set_alt_cm(copter.current_loc.alt, Location::AltFrame::ABOVE_HOME);
+            AP::logger().Write_Error(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Land: no terrain data, using alt-above-home");
+        }
 
-        wp_start(target_loc);
+        if (!wp_start(target_loc)) {
+            // failure to set next destination can only be because of missing terrain data
+            copter.failsafe_terrain_on_event();
+            return;
+        }
     } else {
         // set landing state
         state = State::Descending;
@@ -1284,7 +1611,11 @@ void ModeAuto::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
     }
 
     // start way point navigator and provide it the desired location
-    wp_start(target_loc);
+    if (!wp_start(target_loc)) {
+        // failure to set next destination can only be because of missing terrain data
+        copter.failsafe_terrain_on_event();
+        return;
+    }
 }
 
 // do_circle - initiate moving in a circle
@@ -1293,7 +1624,12 @@ void ModeAuto::do_circle(const AP_Mission::Mission_Command& cmd)
     const Location circle_center = loc_from_cmd(cmd, copter.current_loc);
 
     // calculate radius
-    uint8_t circle_radius_m = HIGHBYTE(cmd.p1); // circle radius held in high byte of p1
+    uint16_t circle_radius_m = HIGHBYTE(cmd.p1); // circle radius held in high byte of p1
+    if (cmd.id == MAV_CMD_NAV_LOITER_TURNS &&
+        cmd.type_specific_bits & (1U << 0)) {
+        // special storage handling allows for larger radii
+        circle_radius_m *= 10;
+    }
 
     // move to edge of circle (verify_circle) will ensure we begin circling once we reach the edge
     circle_movetoedge_start(circle_center, circle_radius_m);
@@ -1317,7 +1653,6 @@ void ModeAuto::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
 {
     // re-use loiter unlimited
     do_loiter_unlimited(cmd);
-    _mode = SubMode::LOITER_TO_ALT;
 
     // if we aren't navigating to a location then we have to adjust
     // altitude for current location
@@ -1340,6 +1675,10 @@ void ModeAuto::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
 
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+    pos_control->set_correction_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+
+    // set submode
+    set_submode(SubMode::LOITER_TO_ALT);
 }
 
 // do_spline_wp - initiate move to next waypoint
@@ -1364,8 +1703,6 @@ void ModeAuto::do_spline_wp(const AP_Mission::Mission_Command& cmd)
         return;
     }
 
-    _mode = SubMode::WP;
-
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
     // this is the delay, stored in seconds
@@ -1380,9 +1717,12 @@ void ModeAuto::do_spline_wp(const AP_Mission::Mission_Command& cmd)
 
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
-    if (auto_yaw.mode() != AUTO_YAW_ROI) {
+    if (auto_yaw.mode() != AutoYaw::Mode::ROI) {
         auto_yaw.set_mode_to_default(false);
     }
+
+    // set submode
+    set_submode(SubMode::WP);
 }
 
 // calculate locations required to build a spline curve from a mission command
@@ -1437,6 +1777,41 @@ void ModeAuto::do_nav_delay(const AP_Mission::Mission_Command& cmd)
         nav_delay_time_max_ms = AP::rtc().get_time_utc(cmd.content.nav_delay.hour_utc, cmd.content.nav_delay.min_utc, cmd.content.nav_delay.sec_utc, 0);
     }
     gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec", (unsigned)(nav_delay_time_max_ms/1000));
+}
+
+#if AP_SCRIPTING_ENABLED
+// start accepting position, velocity and acceleration targets from lua scripts
+void ModeAuto::do_nav_script_time(const AP_Mission::Mission_Command& cmd)
+{
+    // call regular guided flight mode initialisation
+    if (copter.mode_guided.init(true)) {
+        nav_scripting.done = false;
+        nav_scripting.id++;
+        nav_scripting.start_ms = millis();
+        nav_scripting.command = cmd.content.nav_script_time.command;
+        nav_scripting.timeout_s = cmd.content.nav_script_time.timeout_s;
+        nav_scripting.arg1 = cmd.content.nav_script_time.arg1.get();
+        nav_scripting.arg2 = cmd.content.nav_script_time.arg2.get();
+        nav_scripting.arg3 = cmd.content.nav_script_time.arg3;
+        nav_scripting.arg4 = cmd.content.nav_script_time.arg4;
+        set_submode(SubMode::NAV_SCRIPT_TIME);
+    } else {
+        // for safety we set nav_scripting to done to protect against the mission getting stuck
+        nav_scripting.done = true;
+    }
+}
+#endif
+
+// start maintaining an attitude for a specified time
+void ModeAuto::do_nav_attitude_time(const AP_Mission::Mission_Command& cmd)
+{
+    // copy command arguments into local structure
+    nav_attitude_time.roll_deg = cmd.content.nav_attitude_time.roll_deg;
+    nav_attitude_time.pitch_deg = cmd.content.nav_attitude_time.pitch_deg;
+    nav_attitude_time.yaw_deg = cmd.content.nav_attitude_time.yaw_deg;
+    nav_attitude_time.climb_rate = cmd.content.nav_attitude_time.climb_rate;
+    nav_attitude_time.start_ms = AP_HAL::millis();
+    set_submode(SubMode::NAV_ATTITUDE_TIME);
 }
 
 /********************************************************************************/
@@ -1514,7 +1889,7 @@ void ModeAuto::do_mount_control(const AP_Mission::Mission_Command& cmd)
         auto_yaw.set_yaw_angle_rate(cmd.content.mount_control.yaw,0.0f);
     }
     // pass the target angles to the camera mount
-    copter.camera_mount.set_angle_targets(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw);
+    copter.camera_mount.set_angle_target(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw, false);
 #endif
 }
 
@@ -1548,16 +1923,27 @@ void ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
         // set state to fly to location
         nav_payload_place.state = PayloadPlaceStateType_FlyToLocation;
 
-        const Location target_loc = terrain_adjusted_location(cmd);
-
-        wp_start(target_loc);
+        // convert cmd to location class
+        Location target_loc(cmd.content.location);
+        if (!shift_alt_to_current_alt(target_loc)) {
+            // this can only fail due to missing terrain database alt or rangefinder alt
+            // use current alt-above-home and report error
+            target_loc.set_alt_cm(copter.current_loc.alt, Location::AltFrame::ABOVE_HOME);
+            AP::logger().Write_Error(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PayloadPlace: no terrain data, using alt-above-home");
+        }
+        if (!wp_start(target_loc)) {
+            // failure to set next destination can only be because of missing terrain data
+            copter.failsafe_terrain_on_event();
+            return;
+        }
+        // set submode
+        set_submode(SubMode::NAV_PAYLOAD_PLACE);
     } else {
-        nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover_Start;
-
         // initialise placing controller
         payload_place_start();
     }
-    nav_payload_place.descend_max = cmd.p1;
+    nav_payload_place.descent_max_cm = cmd.p1;
 }
 
 // do_RTL - start Return-to-Launch
@@ -1574,18 +1960,15 @@ void ModeAuto::do_RTL(void)
 // verify_takeoff - check if we have completed the takeoff
 bool ModeAuto::verify_takeoff()
 {
-    // have we reached our target altitude?
-    const bool reached_wp_dest = copter.wp_nav->reached_wp_destination();
-
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
     // if we have reached our destination
-    if (reached_wp_dest) {
+    if (auto_takeoff_complete) {
         // retract the landing gear
         copter.landinggear.retract_after_takeoff();
     }
 #endif
 
-    return reached_wp_dest;
+    return auto_takeoff_complete;
 }
 
 // verify_land - returns true if landing has been completed
@@ -1597,11 +1980,8 @@ bool ModeAuto::verify_land()
         case State::FlyToLocation:
             // check if we've reached the location
             if (copter.wp_nav->reached_wp_destination()) {
-                // get destination so we can use it for loiter target
-                const Vector2f& dest = copter.wp_nav->get_wp_destination().xy();
-
                 // initialise landing controller
-                land_start(dest);
+                land_start();
 
                 // advance to next state
                 state = State::Descending;
@@ -1634,166 +2014,25 @@ bool ModeAuto::verify_land()
     return retval;
 }
 
-#define NAV_PAYLOAD_PLACE_DEBUGGING 0
-
-#if NAV_PAYLOAD_PLACE_DEBUGGING
-#include <stdio.h>
-#define debug(fmt, args ...)  do {::fprintf(stderr,"%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
-#else
-#define debug(fmt, args ...)
-#endif
-
 // verify_payload_place - returns true if placing has been completed
 bool ModeAuto::verify_payload_place()
 {
-    const uint16_t hover_throttle_calibrate_time = 2000; // milliseconds
-    const uint16_t descend_throttle_calibrate_time = 2000; // milliseconds
-    const float hover_throttle_placed_fraction = 0.7; // i.e. if throttle is less than 70% of hover we have placed
-    const float descent_throttle_placed_fraction = 0.9; // i.e. if throttle is less than 90% of descent throttle we have placed
-    const uint16_t placed_time = 500; // how long we have to be below a throttle threshold before considering placed
-
-    const float current_throttle_level = motors->get_throttle();
-    const uint32_t now = AP_HAL::millis();
-
-    // if we discover we've landed then immediately release the load:
-    if (copter.ap.land_complete) {
-        switch (nav_payload_place.state) {
-        case PayloadPlaceStateType_FlyToLocation:
-        case PayloadPlaceStateType_Calibrating_Hover_Start:
-        case PayloadPlaceStateType_Calibrating_Hover:
-        case PayloadPlaceStateType_Descending_Start:
-        case PayloadPlaceStateType_Descending:
-            gcs().send_text(MAV_SEVERITY_INFO, "PayloadPlace: landed");
-            nav_payload_place.state = PayloadPlaceStateType_Releasing_Start;
-            break;
-        case PayloadPlaceStateType_Releasing_Start:
-        case PayloadPlaceStateType_Releasing:
-        case PayloadPlaceStateType_Released:
-        case PayloadPlaceStateType_Ascending_Start:
-        case PayloadPlaceStateType_Ascending:
-        case PayloadPlaceStateType_Done:
-            break;
-        }
-    }
-
     switch (nav_payload_place.state) {
     case PayloadPlaceStateType_FlyToLocation:
-        if (!copter.wp_nav->reached_wp_destination()) {
-            return false;
-        }
-        payload_place_start();
-        return false;
-    case PayloadPlaceStateType_Calibrating_Hover_Start:
-        // hover for 1 second to get an idea of what our hover
-        // throttle looks like
-        debug("Calibrate start");
-        nav_payload_place.hover_start_timestamp = now;
-        nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover;
-        FALLTHROUGH;
-    case PayloadPlaceStateType_Calibrating_Hover: {
-        if (now - nav_payload_place.hover_start_timestamp < hover_throttle_calibrate_time) {
-            // still calibrating...
-            debug("Calibrate Timer: %d", now - nav_payload_place.hover_start_timestamp);
-            return false;
-        }
-        // we have a valid calibration.  Hopefully.
-        nav_payload_place.hover_throttle_level = current_throttle_level;
-        const float hover_throttle_delta = fabsf(nav_payload_place.hover_throttle_level - motors->get_throttle_hover());
-        gcs().send_text(MAV_SEVERITY_INFO, "hover throttle delta: %f", static_cast<double>(hover_throttle_delta));
-        nav_payload_place.state = PayloadPlaceStateType_Descending_Start;
-        }
-        FALLTHROUGH;
-    case PayloadPlaceStateType_Descending_Start:
-        nav_payload_place.descend_start_timestamp = now;
-        nav_payload_place.descend_start_altitude = inertial_nav.get_position_z_up_cm();
-        nav_payload_place.descend_throttle_level = 0;
-        nav_payload_place.state = PayloadPlaceStateType_Descending;
-        FALLTHROUGH;
-    case PayloadPlaceStateType_Descending:
-        // make sure we don't descend too far:
-        debug("descended: %f cm (%f cm max)", (nav_payload_place.descend_start_altitude - inertial_nav.get_position_z_up_cm()), nav_payload_place.descend_max);
-        if (!is_zero(nav_payload_place.descend_max) &&
-            nav_payload_place.descend_start_altitude - inertial_nav.get_position_z_up_cm()  > nav_payload_place.descend_max) {
-            nav_payload_place.state = PayloadPlaceStateType_Ascending;
-            gcs().send_text(MAV_SEVERITY_WARNING, "Reached maximum descent");
-            return false; // we'll do any cleanups required next time through the loop
-        }
-        // see if we've been descending long enough to calibrate a descend-throttle-level:
-        if (is_zero(nav_payload_place.descend_throttle_level) &&
-            now - nav_payload_place.descend_start_timestamp > descend_throttle_calibrate_time) {
-            nav_payload_place.descend_throttle_level = current_throttle_level;
-        }
-        // watch the throttle to determine whether the load has been placed
-        // debug("hover ratio: %f   descend ratio: %f\n", current_throttle_level/nav_payload_place.hover_throttle_level, ((nav_payload_place.descend_throttle_level == 0) ? -1.0f : current_throttle_level/nav_payload_place.descend_throttle_level));
-        if (current_throttle_level/nav_payload_place.hover_throttle_level > hover_throttle_placed_fraction &&
-            (is_zero(nav_payload_place.descend_throttle_level) ||
-             current_throttle_level/nav_payload_place.descend_throttle_level > descent_throttle_placed_fraction)) {
-            // throttle is above both threshold ratios (or above hover threshold ration and descent threshold ratio not yet valid)
-            nav_payload_place.place_start_timestamp = 0;
-            return false;
-        }
-        if (nav_payload_place.place_start_timestamp == 0) {
-            // we've only just now hit the correct throttle level
-            nav_payload_place.place_start_timestamp = now;
-            return false;
-        } else if (now - nav_payload_place.place_start_timestamp < placed_time) {
-            // keep going down....
-            debug("Place Timer: %d", now - nav_payload_place.place_start_timestamp);
-            return false;
-        }
-        nav_payload_place.state = PayloadPlaceStateType_Releasing_Start;
-        FALLTHROUGH;
-    case PayloadPlaceStateType_Releasing_Start:
-#if GRIPPER_ENABLED == ENABLED
-        if (g2.gripper.valid()) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Releasing the gripper");
-            g2.gripper.release();
-        } else {
-            gcs().send_text(MAV_SEVERITY_INFO, "Gripper not valid");
-            nav_payload_place.state = PayloadPlaceStateType_Ascending_Start;
-            break;
-        }
-#else
-        gcs().send_text(MAV_SEVERITY_INFO, "Gripper code disabled");
-#endif
-        nav_payload_place.state = PayloadPlaceStateType_Releasing;
-        FALLTHROUGH;
+    case PayloadPlaceStateType_Descent_Start:
+    case PayloadPlaceStateType_Descent:
+    case PayloadPlaceStateType_Release:
     case PayloadPlaceStateType_Releasing:
-#if GRIPPER_ENABLED == ENABLED
-        if (g2.gripper.valid() && !g2.gripper.released()) {
-            return false;
-        }
-#endif
-        nav_payload_place.state = PayloadPlaceStateType_Released;
-        FALLTHROUGH;
-    case PayloadPlaceStateType_Released: {
-        nav_payload_place.state = PayloadPlaceStateType_Ascending_Start;
-        }
-        FALLTHROUGH;
-    case PayloadPlaceStateType_Ascending_Start: {
-        Location target_loc(inertial_nav.get_position_neu_cm(), Location::AltFrame::ABOVE_ORIGIN);
-        target_loc.alt = nav_payload_place.descend_start_altitude;
-        wp_start(target_loc);
-        nav_payload_place.state = PayloadPlaceStateType_Ascending;
-        }
-        FALLTHROUGH;
-    case PayloadPlaceStateType_Ascending:
-        if (!copter.wp_nav->reached_wp_destination()) {
-            return false;
-        }
-        nav_payload_place.state = PayloadPlaceStateType_Done;
-        FALLTHROUGH;
+    case PayloadPlaceStateType_Delay:
+    case PayloadPlaceStateType_Ascent_Start:
+    case PayloadPlaceStateType_Ascent:
+        return false;
     case PayloadPlaceStateType_Done:
-        return true;
-    default:
-        // this should never happen
-        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         return true;
     }
     // should never get here
     return true;
 }
-#undef debug
 
 bool ModeAuto::verify_loiter_unlimited()
 {
@@ -1868,13 +2107,11 @@ bool ModeAuto::verify_within_distance()
 // verify_yaw - return true if we have reached the desired heading
 bool ModeAuto::verify_yaw()
 {
-    // set yaw mode if it has been changed (the waypoint controller often retakes control of yaw as it executes a new waypoint command)
-    if (auto_yaw.mode() != AUTO_YAW_FIXED) {
-        auto_yaw.set_mode(AUTO_YAW_FIXED);
-    }
+    // make sure still in fixed yaw mode, the waypoint controller often retakes control of yaw as it executes a new waypoint command
+    auto_yaw.set_mode(AutoYaw::Mode::FIXED);
 
-    // check if we are within 2 degrees of the target heading
-    return (fabsf(wrap_180_cd(ahrs.yaw_sensor-auto_yaw.yaw())) <= 200);
+    // check if we have reached the target heading
+    return auto_yaw.reached_fixed_yaw_target();
 }
 
 // verify_nav_wp - check if we have reached the next way point
@@ -1910,7 +2147,7 @@ bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
 {
     // check if we've reached the edge
-    if (mode() == SubMode::CIRCLE_MOVE_TO_EDGE) {
+    if (_mode == SubMode::CIRCLE_MOVE_TO_EDGE) {
         if (copter.wp_nav->reached_wp_destination()) {
             // start circling
             circle_start();
@@ -1919,7 +2156,7 @@ bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
     }
 
     // check if we have completed circling
-    return fabsf(copter.circle_nav->get_angle_total()/M_2PI) >= LOWBYTE(cmd.p1);
+    return fabsf(copter.circle_nav->get_angle_total()/float(M_2PI)) >= LOWBYTE(cmd.p1);
 }
 
 // verify_spline_wp - check if we have reached the next way point using spline
@@ -1965,6 +2202,50 @@ bool ModeAuto::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
         return true;
     }
     return false;
+}
+
+#if AP_SCRIPTING_ENABLED
+// check if verify_nav_script_time command has completed
+bool ModeAuto::verify_nav_script_time()
+{
+    // if done or timeout then return true
+    if (nav_scripting.done ||
+        ((nav_scripting.timeout_s > 0) &&
+         (AP_HAL::millis() - nav_scripting.start_ms) > (nav_scripting.timeout_s * 1000))) {
+        return true;
+    }
+    return false;
+}
+#endif
+
+// check if nav_attitude_time command has completed
+bool ModeAuto::verify_nav_attitude_time(const AP_Mission::Mission_Command& cmd)
+{
+    return ((AP_HAL::millis() - nav_attitude_time.start_ms) > (cmd.content.nav_attitude_time.time_sec * 1000));
+}
+
+// pause - Prevent aircraft from progressing along the track
+bool ModeAuto::pause()
+{
+    // do not pause if already paused or not in the WP sub mode or already reached to the destination
+    if(wp_nav->paused() || _mode != SubMode::WP || wp_nav->reached_wp_destination()) {
+        return false;
+    }
+
+    wp_nav->set_pause();
+    return true;
+}
+
+// resume - Allow aircraft to progress along the track
+bool ModeAuto::resume()
+{
+    // do not resume if not paused before
+    if(!wp_nav->paused()) {
+        return false;
+    }
+
+    wp_nav->set_resume();
+    return true;
 }
 
 #endif

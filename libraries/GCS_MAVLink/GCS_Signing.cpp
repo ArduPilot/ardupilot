@@ -134,7 +134,7 @@ void GCS_MAVLINK::load_signing_key(void)
     }
     mavlink_status_t *status = mavlink_get_channel_status(chan);
     if (status == nullptr) {
-        hal.console->printf("Failed to load signing key - no status");
+        DEV_PRINTF("Failed to load signing key - no status");
         return;        
     }
     memcpy(signing.secret_key, key.secret_key, 32);

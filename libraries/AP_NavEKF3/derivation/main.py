@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copied from https://github.com/PX4/ecl/commit/264c8c4e8681704e4719d0a03b848df8617c0863
 # and modified for ArduPilot
 from sympy import *
@@ -267,7 +268,7 @@ def body_frame_accel_observation(P,state,R_to_body,vx,vy,vz,wx,wy):
     # accYpred = -0.5*rho*vrel[1]*vrel[1]*BCYinv # predicted acceleration measured along Y body axis
 
     # Use a simple viscous drag model for the linear estimator equations
-    # Use the the derivative from speed to acceleration averaged across the
+    # Use the derivative from speed to acceleration averaged across the
     # speed range. This avoids the generation of a dirac function in the derivation
     # The nonlinear equation will be used to calculate the predicted measurement in implementation
     observation = Matrix([-Kaccx*vrel[0],-Kaccy*vrel[1]])

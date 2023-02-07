@@ -6,6 +6,7 @@
 
 MAV_RESULT GCS_MAVLINK::handle_command_do_fence_enable(const mavlink_command_long_t &packet)
 {
+#if AP_FENCE_ENABLED
     AC_Fence *fence = AP::fence();
     if (fence == nullptr) {
         return MAV_RESULT_UNSUPPORTED;
@@ -29,10 +30,14 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_fence_enable(const mavlink_command_lon
     default:
         return MAV_RESULT_FAILED;
     }
+#else
+    return MAV_RESULT_UNSUPPORTED;
+#endif // AP_FENCE_ENABLED
 }
 
 void GCS_MAVLINK::handle_fence_message(const mavlink_message_t &msg)
 {
+#if AP_FENCE_ENABLED
     AC_Fence *fence = AP::fence();
     if (fence == nullptr) {
         return;
@@ -49,11 +54,13 @@ void GCS_MAVLINK::handle_fence_message(const mavlink_message_t &msg)
 #endif
         break;
     }
+#endif // AP_FENCE_ENABLED
 }
 
 // fence_send_mavlink_status - send fence status to ground station
 void GCS_MAVLINK::send_fence_status() const
 {
+#if AP_FENCE_ENABLED
     const AC_Fence *fence = AP::fence();
     if (fence == nullptr) {
         return;
@@ -95,4 +102,5 @@ void GCS_MAVLINK::send_fence_status() const
                                   mavlink_breach_type,
                                   fence->get_breach_time(),
                                   breach_mitigation);
+#endif // AP_FENCE_ENABLED
 }

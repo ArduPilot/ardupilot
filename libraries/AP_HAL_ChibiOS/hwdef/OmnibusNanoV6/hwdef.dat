@@ -120,7 +120,6 @@ BARO BMP280 SPI:bmp280
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 0
 
@@ -151,3 +150,6 @@ define STM32_PWM_USE_ADVANCED TRUE
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 define HAL_MOUNT_ENABLED 0
+
+# minimal drivers to reduce flash usage
+include ../include/minimal.inc

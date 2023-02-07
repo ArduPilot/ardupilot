@@ -41,7 +41,7 @@ For purchase, connection and configuration information please see the [ArduPilot
 
 ## ArduPilot to ESC protocol
 
-The FETtec OneWire protocol supports up to 24 ESCs. As most copters only use at most 12 motors, ArduPilot's implementation supports only 12 (`ESC_TELEM_MAX_ESCS`)to save memory.
+The FETtec OneWire protocol supports up to 24 ESCs without telemetry and up to 15 ESCs with telemetry.
 
 There are two types of messages sent to the ESCs configuration and fast-throttle messages:
 
@@ -104,7 +104,7 @@ Four ESCs need 90us for the fast-throttle request and telemetry reception. With 
 Each additional ESC adds 11 extra fast-throttle command bits, so the update rate is lowered by each additional ESC.
 If you use 8 ESCs, it needs 160us including telemetry response, so 5.8kHz update rate would be possible.
 The FETtec ArduPilot device driver limits the message transmit period to `_min_fast_throttle_period_us` according to the number of ESCs used.
-The update() function has an extra invocation period limit so that even at very high loop rates the the ESCs will still operate correctly albeit doing some decimation.
+The update() function has an extra invocation period limit so that even at very high loop rates the ESCs will still operate correctly albeit doing some decimation.
 The current update rate for Copter is 400Hz (~2500us) and for other vehicles is 50Hz (~20000us) so we are bellow device driver limit.
 
 **Note:** The FETtec ESCs firmware requires at least a 4Hz fast-throttle update rate (max. 250ms between messages) otherwise the FETtec ESC disarm (stop) the motors.
@@ -165,7 +165,7 @@ pre_arm_check()
 
 The `SERVO_FTW_MASK` parameter selects which servo outputs, if any, will be routed to FETtec ESCs.
 You need to reboot after changing this parameter.
-When `HAL_WITH_ESC_TELEM` is active (default) only the first 12 (`ESC_TELEM_MAX_ESCS`) can be used.
+When `HAL_WITH_ESC_TELEM` is active (default) only the first 15 (`ESC_TELEM_MAX_ESCS`) can be used.
 The FETtec ESC IDs set inside the FETtec firmware by the FETtec configuration tool are one-indexed.
 These IDs must start at ID 1 and be in a single contiguous block.
 You do not need to change these FETtec IDs if you change the servo output assignments inside ArduPilot the using the `SERVO_FTW_MASK` parameter.

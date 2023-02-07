@@ -14,13 +14,15 @@
  *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
+
+#include <hal.h>
 #include "shared_dma.h"
 
 /*
   code to handle sharing of DMA channels between peripherals
  */
 
-#if CH_CFG_USE_MUTEXES == TRUE && !defined(HAL_NO_SHARED_DMA)
+#if CH_CFG_USE_MUTEXES == TRUE && AP_HAL_SHARED_DMA_ENABLED
 
 #include <AP_Common/ExpandingString.h>
 

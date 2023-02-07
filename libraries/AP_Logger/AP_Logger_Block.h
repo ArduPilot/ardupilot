@@ -60,9 +60,9 @@ protected:
     uint32_t df_NumPages;
     volatile bool log_write_started;
 
-    static const uint16_t page_size_max = 256;
     uint8_t *buffer;
     uint32_t last_messagewrite_message_sent;
+    uint32_t df_Read_PageAdr;
 
 private:
     /*
@@ -74,6 +74,7 @@ private:
     virtual void Sector4kErase(uint32_t SectorAdr) = 0;
     virtual void StartErase() = 0;
     virtual bool InErase() = 0;
+    void         flash_test(void);
 
     struct PACKED PageHeader {
         uint32_t FilePage;
@@ -95,8 +96,7 @@ private:
 
     // state variables
     uint16_t df_Read_BufferIdx;
-    uint32_t df_PageAdr;
-    uint32_t df_Read_PageAdr;
+    uint32_t df_PageAdr;    // current page address for writes
     // file numbers
     uint16_t df_FileNumber;
     uint16_t df_Write_FileNumber;

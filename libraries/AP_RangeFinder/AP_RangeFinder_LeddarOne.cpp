@@ -15,6 +15,8 @@
 
 #include "AP_RangeFinder_LeddarOne.h"
 
+#if AP_RANGEFINDER_LEDDARONE_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/crc.h>
 
@@ -70,7 +72,7 @@ bool AP_RangeFinder_LeddarOne::get_reading(float &reading_m)
         leddarone_status = parse_response(number_detections);
 
         if (leddarone_status == LEDDARONE_STATE_OK) {
-            reading_m = (sum_distance * 0.01f) / number_detections;
+            reading_m = (sum_distance_mm * 0.001f) / number_detections;
 
             // reset mod_bus status to read new buffer
             modbus_status = LEDDARONE_MODBUS_STATE_INIT;
@@ -131,14 +133,13 @@ bool AP_RangeFinder_LeddarOne::CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCh
   */
 LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint8_t &number_detections)
 {
-    uint8_t index;
     uint8_t index_offset = LEDDARONE_DETECTION_DATA_INDEX_OFFSET;
 
     // read serial
     uint32_t nbytes = uart->available();
 
     if (nbytes != 0)  {
-        for (index=read_len; index<nbytes+read_len; index++) {
+        for (uint8_t index=read_len; index<nbytes+read_len; index++) {
             if (index >= LEDDARONE_READ_BUFFER_SIZE) {
                 return LEDDARONE_STATE_ERR_BAD_RESPONSE;
             }
@@ -170,12 +171,10 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint8_t &number_detect
         return LEDDARONE_STATE_ERR_NUMBER_DETECTIONS;
     }
 
-    memset(detections, 0, sizeof(detections));
-    sum_distance = 0;
-    for (index=0; index<number_detections; index++) {
-        // construct data word from two bytes and convert mm to cm
-        detections[index] =  (static_cast<uint16_t>(read_buffer[index_offset])*256 + read_buffer[index_offset+1]) / 10;
-        sum_distance += detections[index];
+    sum_distance_mm = 0;
+    for (uint8_t index=0; index<number_detections; index++) {
+        // construct data word from two bytes
+        sum_distance_mm += read_buffer[index_offset]<<8 | read_buffer[index_offset+1];
 
         // add index offset (4) to read next detection data
         index_offset += LEDDARONE_DETECTION_DATA_OFFSET;
@@ -183,3 +182,5 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint8_t &number_detect
 
     return LEDDARONE_STATE_OK;
 }
+
+#endif  // AP_RANGEFINDER_LEDDARONE_ENABLED

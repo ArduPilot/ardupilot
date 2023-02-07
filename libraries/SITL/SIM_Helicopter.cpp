@@ -65,6 +65,8 @@ Helicopter::Helicopter(const char *frame_str) :
 
     ground_behavior = GROUND_BEHAVIOR_NO_MOVEMENT;
     lock_step_scheduled = true;
+
+    motor_mask |= (1U<<0);
 }
 
 /*
@@ -316,7 +318,8 @@ void Helicopter::update(const struct sitl_input &input)
 
 
     update_dynamics(rot_accel);
-    
+    update_external_payload(input);
+
     // update lat/lon/altitude
     update_position();
     time_advance();

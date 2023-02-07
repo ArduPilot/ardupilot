@@ -14,6 +14,9 @@
  */
 #include "AP_Baro_BMP280.h"
 
+#if AP_BARO_BMP280_ENABLED
+
+#include <AP_Math/definitions.h>
 #include <utility>
 
 extern const AP_HAL::HAL &hal;
@@ -162,7 +165,7 @@ void AP_Baro_BMP280::_update_temperature(int32_t temp_raw)
     _t_fine = var1 + var2;
     t = (_t_fine * 5 + 128) >> 8;
 
-    const float temp = ((float)t) / 100.0f;
+    const float temp = ((float)t) * 0.01f;
 
     WITH_SEMAPHORE(_sem);
     
@@ -203,3 +206,5 @@ void AP_Baro_BMP280::_update_pressure(int32_t press_raw)
     _pressure_sum += press;
     _pressure_count++;
 }
+
+#endif  // AP_BARO_BMP280_ENABLED

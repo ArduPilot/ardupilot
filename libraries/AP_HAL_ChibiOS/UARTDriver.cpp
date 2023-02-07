@@ -17,6 +17,8 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !defined(HAL_NO_UARTDRIVER)
+
+#include <hal.h>
 #include "UARTDriver.h"
 #include "GPIO.h"
 #include <usbcfg.h>
@@ -549,7 +551,7 @@ void UARTDriver::rx_irq_cb(void* self)
 /*
   handle a RX DMA full interrupt
  */
-void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
+__RAMFUNC__ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
 {
 #if HAL_USE_SERIAL == TRUE
     UARTDriver* uart_drv = (UARTDriver*)self;
@@ -571,6 +573,7 @@ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
           we have data to copy out
          */
         uart_drv->_readbuf.write(uart_drv->rx_bounce_buf[bounce_idx], len);
+        uart_drv->_rx_stats_bytes += len;
         uart_drv->receive_timestamp_update();
     }
 
@@ -632,7 +635,7 @@ void UARTDriver::flush()
         sduSOFHookI((SerialUSBDriver*)sdef.serial);
 #endif
     } else {
-        //TODO: Handle this for other serial ports
+        chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
     }
 }
 
@@ -662,20 +665,12 @@ uint32_t UARTDriver::get_usb_baud() const
     return 0;
 }
 
-/* Empty implementations of Stream virtual methods */
 uint32_t UARTDriver::available() {
-    if (!_rx_initialised || lock_read_key) {
+    if (!_rx_initialised || _uart_owner_thd != chThdGetSelfX()) {
         return 0;
     }
-    if (sdef.is_usb) {
-#ifdef HAVE_USB_SERIAL
 
-        if (((SerialUSBDriver*)sdef.serial)->config->usbp->state != USB_ACTIVE) {
-            return 0;
-        }
-#endif
-    }
-    return _readbuf.available();
+    return UARTDriver::available_locked(0);
 }
 
 uint32_t UARTDriver::available_locked(uint32_t key)
@@ -743,22 +738,11 @@ ssize_t UARTDriver::read(uint8_t *buffer, uint16_t count)
 
 int16_t UARTDriver::read()
 {
-    if (lock_read_key != 0 || _uart_owner_thd != chThdGetSelfX()){
-        return -1;
-    }
-    if (!_rx_initialised) {
+    if (_uart_owner_thd != chThdGetSelfX()) {
         return -1;
     }
 
-    uint8_t byte;
-    if (!_readbuf.read_byte(&byte)) {
-        return -1;
-    }
-    if (!_rts_is_active) {
-        update_rts_line();
-    }
-
-    return byte;
+    return UARTDriver::read_locked(0);
 }
 
 int16_t UARTDriver::read_locked(uint32_t key)
@@ -895,7 +879,7 @@ bool UARTDriver::wait_timeout(uint16_t n, uint32_t timeout_ms)
 /*
   DMA transmit completion interrupt handler
  */
-void UARTDriver::tx_complete(void* self, uint32_t flags)
+__RAMFUNC__ void UARTDriver::tx_complete(void* self, uint32_t flags)
 {
     UARTDriver* uart_drv = (UARTDriver*)self;
     chSysLockFromISR();
@@ -1019,7 +1003,7 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
             if (tx_len > 0) {
                 _last_write_completed_us = AP_HAL::micros();
             }
-            chEvtGetAndClearEvents(EVT_TRANSMIT_DMA_COMPLETE);
+            chEvtGetAndClearEventsI(EVT_TRANSMIT_DMA_COMPLETE);
             chSysUnlock();
         }
         // clean up pending locks
@@ -1154,7 +1138,7 @@ void UARTDriver::write_pending_bytes(void)
         }
         if (AP_HAL::micros() - _first_write_started_us > 500*1000UL) {
             // it doesn't look like hw flow control is working
-            hal.console->printf("disabling flow control on serial %u\n", sdef.get_index());
+            DEV_PRINTF("disabling flow control on serial %u\n", sdef.get_index());
             set_flow_control(FLOW_CONTROL_DISABLE);
         }
     }
@@ -1419,7 +1403,7 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
   software update of rts line. We don't use the HW support for RTS as
   it has no hysteresis, so it ends up toggling RTS on every byte
  */
-void UARTDriver::update_rts_line(void)
+__RAMFUNC__ void UARTDriver::update_rts_line(void)
 {
     if (arts_line == 0 || _flow_control == FLOW_CONTROL_DISABLE) {
         return;
@@ -1546,7 +1530,7 @@ void UARTDriver::set_stop_bits(int n)
 
 
 // record timestamp of new incoming data
-void UARTDriver::receive_timestamp_update(void)
+__RAMFUNC__ void UARTDriver::receive_timestamp_update(void)
 {
     _receive_timestamp[_receive_timestamp_idx^1] = AP_HAL::micros64();
     _receive_timestamp_idx ^= 1;

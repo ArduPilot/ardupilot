@@ -44,8 +44,7 @@ public:
     }
 
     /* Do not allow copies */
-    AP_AHRS_DCM(const AP_AHRS_DCM &other) = delete;
-    AP_AHRS_DCM &operator=(const AP_AHRS_DCM&) = delete;
+    CLASS_NO_COPY(AP_AHRS_DCM);
 
     // reset the current gyro drift estimate
     //  should be called if gyro offsets are recalculated
@@ -62,7 +61,7 @@ public:
     }
 
     // dead-reckoning support
-    virtual bool get_position(struct Location &loc) const override;
+    virtual bool get_location(Location &loc) const override;
 
     // status reporting
     float           get_error_rp() const {
@@ -73,8 +72,9 @@ public:
     }
 
     // return a wind estimation vector, in m/s
-    Vector3f wind_estimate() const override {
-        return _wind;
+    bool wind_estimate(Vector3f &wind) const override {
+        wind = _wind;
+        return true;
     }
 
     // return an airspeed estimate if available. return true
@@ -89,7 +89,7 @@ public:
     // other than an actual airspeed sensor), if available. return
     // true if we have a synthetic airspeed.  ret will not be modified
     // on failure.
-    bool synthetic_airspeed(float &ret) const override WARN_IF_UNUSED {
+    bool synthetic_airspeed(float &ret) const WARN_IF_UNUSED {
         ret = _last_airspeed;
         return true;
     }
@@ -123,7 +123,12 @@ public:
     bool get_relative_position_NE_origin(Vector2f &posNE) const override;
     bool get_relative_position_D_origin(float &posD) const override;
 
-    void send_ekf_status_report(mavlink_channel_t chan) const override;
+    void send_ekf_status_report(class GCS_MAVLINK &link) const override;
+
+    // return true if DCM has a yaw source
+    bool yaw_source_available(void) const;
+
+    void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override;
 
 private:
 
@@ -144,11 +149,10 @@ private:
     static constexpr float _ki_yaw = 0.01f;
 
     // accelerometer values in the earth frame in m/s/s
-    Vector3f        _accel_ef[INS_MAX_INSTANCES];
-    Vector3f        _accel_ef_blended;
+    Vector3f        _accel_ef;
 
     // Methods
-    void            matrix_update(float _G_Dt);
+    void            matrix_update(void);
     void            normalize(void);
     void            check_matrix(void);
     bool            renorm(Vector3f const &a, Vector3f &result);
@@ -162,6 +166,13 @@ private:
     // internal reset function.  Called externally, we never reset the
     // DCM matrix from the eulers.  Called internally we may.
     void            reset(bool recover_eulers);
+
+    // airspeed_ret: will always be filled-in by get_unconstrained_airspeed_estimate which fills in airspeed_ret in this order:
+    //               airspeed as filled-in by an enabled airsped sensor
+    //               if no airspeed sensor: airspeed estimated using the GPS speed & wind_speed_estimation
+    //               Or if none of the above, fills-in using the previous airspeed estimate
+    // Return false: if we are using the previous airspeed estimate
+    bool get_unconstrained_airspeed_estimate(uint8_t airspeed_index, float &airspeed_ret) const;
 
     // primary representation of attitude of board used for all inertial calculations
     Matrix3f _dcm_matrix;

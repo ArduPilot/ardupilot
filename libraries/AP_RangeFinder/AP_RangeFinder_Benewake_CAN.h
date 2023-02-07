@@ -1,9 +1,14 @@
 #pragma once
 
 #include "AP_RangeFinder_Backend.h"
+
 #include <AP_CANManager/AP_CANSensor.h>
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#ifndef AP_RANGEFINDER_BENEWAKE_CAN_ENABLED
+#define AP_RANGEFINDER_BENEWAKE_CAN_ENABLED (HAL_MAX_CAN_PROTOCOL_DRIVERS && AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED)
+#endif
+
+#if AP_RANGEFINDER_BENEWAKE_CAN_ENABLED
 
 class Benewake_MultiCAN;
 
@@ -17,6 +22,7 @@ public:
 
     // handler for incoming frames. Return true if consumed
     bool handle_frame(AP_HAL::CANFrame &frame);
+    bool handle_frame_H30(AP_HAL::CANFrame &frame);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -52,6 +58,6 @@ public:
     AP_RangeFinder_Benewake_CAN *drivers;
 };
 
-#endif //HAL_MAX_CAN_PROTOCOL_DRIVERS
+#endif  // AP_RANGEFINDER_BENEWAKE_CAN_ENABLED
 
 

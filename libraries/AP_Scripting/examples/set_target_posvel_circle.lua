@@ -69,7 +69,7 @@ function update()
         end
     else 
         -- calculate test starting location in NED
-        local cur_loc = ahrs:get_position()        
+        local cur_loc = ahrs:get_location()        
         if cur_loc then
              test_start_location = cur_loc.get_vector_from_origin_NEU(cur_loc)             
              if test_start_location then

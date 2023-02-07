@@ -1,6 +1,9 @@
 #pragma once
 
 #include "AP_Frsky_SPort.h"
+
+#if AP_FRSKY_SPORT_PASSTHROUGH_ENABLED
+
 #include <AP_RCTelemetry/AP_RCTelemetry.h>
 
 #include "AP_Frsky_SPortParser.h"
@@ -173,3 +176,6 @@ private:
 namespace AP {
     AP_Frsky_SPort_Passthrough *frsky_passthrough_telem();
 };
+
+
+#endif  // AP_FRSKY_SPORT_PASSTHROUGH_ENABLED

@@ -139,6 +139,7 @@ bool RC_Channel_Rover::do_aux_function(const aux_func_t ch_option, const AuxSwit
             // if disarmed clear mission and set home to current location
             if (!rover.arming.is_armed()) {
                 rover.mode_auto.mission.clear();
+                gcs().send_text(MAV_SEVERITY_NOTICE, "SaveWP: Mission cleared!");
                 if (!rover.set_home_to_current_location(false)) {
                     // ignored
                 }

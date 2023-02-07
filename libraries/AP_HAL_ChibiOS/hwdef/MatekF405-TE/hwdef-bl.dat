@@ -33,3 +33,6 @@ PB12 OSD_CS CS
 PC13 FLASH_CS CS
 PC1  SDCARD_CS CS
 
+# Turn on switched supply and camera switch/output during bootloader to match default
+PA4  PINIO1 OUTPUT LOW
+PB5  PINIO2 OUTPUT LOW

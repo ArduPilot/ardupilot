@@ -397,7 +397,7 @@ void AP_ADSB_Sagetech::send_msg_Installation()
 
 //    // convert a decimal 123456 to 0x123456
     // TODO: do a proper conversion. The param contains "131313" but what gets transmitted over the air is 0x200F1.
-    const uint32_t icao_hex = convert_base_to_decimal(16, _frontend.out_state.cfg.ICAO_id_param);
+    const uint32_t icao_hex = AP_ADSB::convert_base_to_decimal(16, _frontend.out_state.cfg.ICAO_id_param);
     put_le24_ptr(&pkt.payload[0], icao_hex);
 
     memcpy(&pkt.payload[3], &_frontend.out_state.cfg.callsign, 8);
@@ -452,7 +452,7 @@ void AP_ADSB_Sagetech::send_msg_Operating()
     // squawk
     // param is saved as native octal so we need convert back to
     // decimal because Sagetech will convert it back to octal
-    uint16_t squawk = convert_base_to_decimal(8, last_operating_squawk);
+    const uint16_t squawk = AP_ADSB::convert_base_to_decimal(8, last_operating_squawk);
     put_le16_ptr(&pkt.payload[0], squawk);
 
     // altitude
@@ -524,29 +524,6 @@ void AP_ADSB_Sagetech::send_msg_GPS()
     }
 
     send_msg(pkt);
-}
-
-/*
- * Convert base 8 or 16 to decimal. Used to convert an octal/hexadecimal value stored on a GCS as a string field in different format, but then transmitted over mavlink as a float which is always a decimal.
- * baseIn: base of input number
- * inputNumber: value currently in base "baseIn" to be converted to base "baseOut"
- *
- * Example: convert ADSB squawk octal "1200" stored in memory as 0x0280 to 0x04B0
- *          uint16_t squawk_decimal = convertMathBase(8, squawk_octal);
- */
-uint32_t AP_ADSB_Sagetech::convert_base_to_decimal(const uint8_t baseIn, uint32_t inputNumber)
-{
-    // Our only sensible input bases are 16 and 8
-    if (baseIn != 8 && baseIn != 16) {
-        return inputNumber;
-    }
-
-    uint32_t outputNumber = 0;
-    for (uint8_t i=0; inputNumber != 0; i++) {
-        outputNumber += (inputNumber % 10) * powf(10, i);
-        inputNumber /= 10;
-    }
-    return outputNumber;
 }
 
 #endif // HAL_ADSB_SAGETECH_ENABLED

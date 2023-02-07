@@ -25,7 +25,7 @@ private:
     // check and process replies from sensor
     void initialise_modes();
     bool read_sensor_data();
-    void update_sector_data(int16_t angle_deg, uint16_t distance_cm);
+    void update_sector_data(int16_t angle_deg, uint16_t distance_mm);
     void set_mode(const uint8_t *c, int length);
 
     enum InitState {

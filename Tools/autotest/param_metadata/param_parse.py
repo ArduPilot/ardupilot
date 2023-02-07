@@ -8,13 +8,14 @@
 '''
 
 from __future__ import print_function
+import copy
 import os
 import re
 import sys
 from argparse import ArgumentParser
 
 from param import (Library, Parameter, Vehicle, known_group_fields,
-                   known_param_fields, required_param_fields, known_units)
+                   known_param_fields, required_param_fields, required_library_param_fields, known_units)
 from htmlemit import HtmlEmit
 from rstemit import RSTEmit
 from rstlatexpdfemit import RSTLATEXPDFEmit
@@ -37,11 +38,6 @@ parser.add_argument("--format",
                     default='all',
                     choices=['all', 'html', 'rst', 'rstlatexpdf', 'wiki', 'xml', 'json', 'edn', 'md', 'xml_mp'],
                     help="what output format to use")
-parser.add_argument("--sitl",
-                    dest='emit_sitl',
-                    action='store_true',
-                    default=False,
-                    help="true to only emit sitl parameters, false to not emit sitl parameters")
 
 args = parser.parse_args()
 
@@ -127,6 +123,11 @@ truename_map = {
 valid_truenames = frozenset(truename_map.values())
 truename = truename_map.get(args.vehicle, args.vehicle)
 
+documentation_tags_which_are_comma_separated_nv_pairs = frozenset([
+    'Values',
+    'Bitmask',
+])
+
 vehicle_path = find_vehicle_parameter_filepath(args.vehicle)
 
 basename = os.path.basename(os.path.dirname(vehicle_path))
@@ -158,8 +159,7 @@ def process_vehicle(vehicle):
             libraries.append(lib)
 
     param_matches = []
-    if not args.emit_sitl:
-        param_matches = prog_param.findall(p_text)
+    param_matches = prog_param.findall(p_text)
 
     for param_match in param_matches:
         (only_vehicles, param_name, field_text) = (param_match[0],
@@ -177,19 +177,27 @@ def process_vehicle(vehicle):
         global current_param
         current_param = p.name
         fields = prog_param_fields.findall(field_text)
+        p.__field_text = field_text
         field_list = []
         for field in fields:
+            (field_name, field_value) = field
             field_list.append(field[0])
             if field[0] in known_param_fields:
                 value = re.sub('@PREFIX@', "", field[1]).rstrip()
+                if hasattr(p, field_name):
+                    if field_name in documentation_tags_which_are_comma_separated_nv_pairs:
+                        # allow concatenation of (e.g.) bitmask fields
+                        x = eval("p.%s" % field_name)
+                        x += ", "
+                        x += value
+                        value = x
+                    else:
+                        error("%s already has field %s" % (p.name, field_name))
                 setattr(p, field[0], value)
-            elif field[0] == "CopyValuesFrom":
+            elif field[0] in frozenset(["CopyFieldsFrom", "CopyValuesFrom"]):
                 setattr(p, field[0], field[1])
             else:
                 error("param: unknown parameter metadata field '%s'" % field[0])
-        for req_field in required_param_fields:
-            if req_field not in field_list:
-                error("missing parameter metadata field '%s' in %s" % (req_field, field_text))
 
         vehicle.params.append(p)
     current_file = None
@@ -199,11 +207,6 @@ def process_vehicle(vehicle):
 process_vehicle(vehicle)
 
 debug("Found %u documented libraries" % len(libraries))
-
-if args.emit_sitl:
-    libraries = filter(lambda x : x.name == 'SIM_', libraries)
-else:
-    libraries = filter(lambda x : x.name != 'SIM_', libraries)
 
 libraries = list(libraries)
 
@@ -250,14 +253,28 @@ def process_library(vehicle, library, pathprefix=None):
             global current_param
             current_param = p.name
             fields = prog_param_fields.findall(field_text)
+            p.__field_text = field_text
+            field_list = []
             for field in fields:
+                (field_name, field_value) = field
+                field_list.append(field[0])
                 if field[0] in known_param_fields:
                     value = re.sub('@PREFIX@', library.name, field[1])
+                    if hasattr(p, field_name):
+                        if field_name in documentation_tags_which_are_comma_separated_nv_pairs:
+                            # allow concatenation of (e.g.) bitmask fields
+                            x = eval("p.%s" % field_name)
+                            x += ", "
+                            x += value
+                            value = x
+                        else:
+                            error("%s already has field %s" % (p.name, field_name))
                     setattr(p, field[0], value)
-                elif field[0] == "CopyValuesFrom":
+                elif field[0] in frozenset(["CopyFieldsFrom", "CopyValuesFrom"]):
                     setattr(p, field[0], field[1])
                 else:
                     error("param: unknown parameter metadata field %s" % field[0])
+
             debug("matching %s" % field_text)
             fields = prog_param_tagged_fields.findall(field_text)
             # a parameter is considered to be vehicle-specific if
@@ -266,7 +283,7 @@ def process_library(vehicle, library, pathprefix=None):
             seen_values_or_bitmask_for_other_vehicle = False
             for field in fields:
                 only_for_vehicles = field[1].split(",")
-                only_for_vehicles = [x.rstrip().lstrip() for x in only_for_vehicles]
+                only_for_vehicles = [some_vehicle.rstrip().lstrip() for some_vehicle in only_for_vehicles]
                 delta = set(only_for_vehicles) - set(truename_map.values())
                 if len(delta):
                     error("Unknown vehicles (%s)" % delta)
@@ -322,7 +339,7 @@ def process_library(vehicle, library, pathprefix=None):
             for field in fields:
                 if field[0] in known_group_fields:
                     setattr(lib, field[0], field[1])
-                elif field[0] == "CopyValuesFrom":
+                elif field[0] in ["CopyFieldsFrom", "CopyValuesFrom"]:
                     setattr(p, field[0], field[1])
                 else:
                     error("unknown parameter metadata field '%s'" % field[0])
@@ -403,7 +420,49 @@ def do_copy_values(vehicle_params, libraries, param):
           (param.name, wanted_name))
 
 
-def validate(param):
+def do_copy_fields(vehicle_params, libraries, param):
+    do_copy_values(vehicle_params, libraries, param)
+
+    if not hasattr(param, 'CopyFieldsFrom'):
+        return
+
+    # so go and find the values...
+    wanted_name = param.CopyFieldsFrom
+    del param.CopyFieldsFrom
+    for x in vehicle_params:
+        name = x.name
+        (v, name) = name.split(":")
+        if name != wanted_name:
+            continue
+        for field in dir(x):
+            if hasattr(param, field):
+                # override
+                continue
+            if field.startswith("__") or field in frozenset(["name", "real_path"]):
+                # internal methods like __ne__
+                continue
+            setattr(param, field, getattr(x, field))
+        return
+
+    for lib in libraries:
+        for x in lib.params:
+            if x.name != wanted_name:
+                continue
+            for field in dir(x):
+                if hasattr(param, field):
+                    # override
+                    continue
+                if field.startswith("__") or field in frozenset(["name", "real_path"]):
+                    # internal methods like __ne__
+                    continue
+                setattr(param, field, getattr(x, field))
+            return
+
+    error("Did not find value to copy (%s wants %s)" %
+          (param.name, wanted_name))
+
+
+def validate(param, is_library=False):
     """
     Validates the parameter meta data.
     """
@@ -448,6 +507,20 @@ def validate(param):
         if not param.Description or not param.Description.strip():
             error("Empty Description (%s)" % param)
 
+    required_fields = required_param_fields
+    if is_library:
+        required_fields = required_library_param_fields
+    for req_field in required_fields:
+        if not getattr(param, req_field, False):
+            error("missing parameter metadata field '%s' in %s" % (req_field, param.__field_text))
+
+
+# handle CopyFieldsFrom and CopyValuesFrom:
+for param in vehicle.params:
+    do_copy_fields(vehicle.params, libraries, param)
+for library in libraries:
+    for param in library.params:
+        do_copy_fields(vehicle.params, libraries, param)
 
 for param in vehicle.params:
     clean_param(param)
@@ -478,14 +551,7 @@ for library in libraries:
 
 for library in libraries:
     for param in library.params:
-        validate(param)
-
-# handle CopyValuesFrom:
-for param in vehicle.params:
-    do_copy_values(vehicle.params, libraries, param)
-for library in libraries:
-    for param in library.params:
-        do_copy_values(vehicle.params, libraries, param)
+        validate(param, is_library=True)
 
 if not args.emit_params:
     sys.exit(error_count)
@@ -517,21 +583,32 @@ for emitter_name in all_emitters.keys():
     if args.output_format == 'all' or args.output_format == emitter_name:
         emitters_to_use.append(emitter_name)
 
-if args.emit_sitl:
-    # only generate rst for SITL for now:
-    emitters_to_use = ['rst']
-
 # actually invoke each emitter:
 for emitter_name in emitters_to_use:
-    emit = all_emitters[emitter_name](sitl=args.emit_sitl)
+    emit = all_emitters[emitter_name]()
 
-    if not args.emit_sitl:
-        emit.emit(vehicle)
+    emit.emit(vehicle)
 
     emit.start_libraries()
 
+    # create a single parameter list for all SIM_ parameters (for rst to use)
+    sim_params = []
+    for library in libraries:
+        if library.name.startswith("SIM_"):
+            sim_params.extend(library.params)
+    sim_params = sorted(sim_params, key=lambda x : x.name)
+
     for library in libraries:
         if library.params:
+            # we sort the parameters in the SITL library to avoid
+            # rename, and on the assumption that an asciibetical sort
+            # gives a good layout:
+            if emitter_name == 'rst':
+                if library.name == 'SIM_':
+                    library = copy.deepcopy(library)
+                    library.params = sim_params
+                elif library.name.startswith('SIM_'):
+                    continue
             emit.emit(library)
 
     emit.close()

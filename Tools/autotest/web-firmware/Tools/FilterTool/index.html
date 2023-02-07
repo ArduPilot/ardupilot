@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>ArduPilot Filter Analysis</title>
+<script type="text/javascript" src="filters.js"></script>
+<script type="text/javascript" src="FileSaver.js"></script>
+<script type="text/javascript" src={{url_for('static', filename='filters.js')}}></script>
+<script type="text/javascript" src={{url_for('static', filename='FileSaver.js')}}></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+<script src="https://www.lactame.com/lib/ml/6.0.0/ml.min.js"></script>
+</head>
+<a href="https://ardupilot.org"><img src="logo.png"></a>
+<h1>ArduPilot Filter Analysis</h1>
+
+The following form will display the attenuation and phase lag for an
+ArduPilot 4.2 filter setup.
+<body onload="load(); fill_docs(); update_all_hidden(); check_nyquist(); calculate_filter(); calculate_pid();">
+  <canvas id="Attenuation" style="width:100%;max-width:1200px"></canvas>
+  <canvas id="Phase" style="width:100%;max-width:1200px;"></canvas>
+<p>
+  <input type="button" id="calculate" value="Calculate">
+  <input type="button" id="SaveParams" value="Save Parameters" onclick="save_parameters();">
+  <button class="styleClass" onclick="document.getElementById('param_file').click()">Load Parameters</button>
+  <input type='file' id="param_file" style="display:none" onchange="load_parameters(this.files[0]);">
+  <input type="button" id="GetLink" value="Get Link" onclick="get_link();">
+
+  <form id="params" action="">
+<fieldset style="max-width:1200px">
+  <legend>Graph Settings</legend>
+        <table>
+                <tr>
+                        <td>
+                                <fieldset style="width:150px">
+                                        <legend>Magnitude scale</legend>
+                                        <input type="radio" id="ScaleLog" name="Scale" value="Log" checked>
+                                        <label for="LogScale">dB</label><br>
+                                        <input type="radio" id="ScaleLinear" name="Scale" value="Linear">
+                                        <label for="LinearScale">Linear</label><br>
+                                </fieldset>
+                        </td>
+                        <td>
+                                <fieldset style="width:150px">
+                                        <legend>Phase scale</legend>
+                                        <input type="radio" id="ScaleUnWrap" name="PhaseScale" value="unwrap" checked>
+                                        <label for="ScaleUnWrap">un-wrapped</label><br>
+                                        <input type="radio" id="ScaleWrap" name="PhaseScale" value="wrap">
+                                        <label for="ScaleWrap">±180</label><br>
+                                </fieldset>
+                        </td>
+                        <td>
+                                <fieldset style="width:150px">
+                                        <legend>Frequency scale</legend>
+                                        <table>
+                                                <tr>
+                                                        <td>
+                                                                <input type="radio" id="freq_ScaleLog" name="feq_scale" value="Log" checked>
+                                                                <label for="LogScale">Log</label><br>
+                                                                <input type="radio" id="freq_ScaleLinear" name="feq_scale" value="Linear">
+                                                                <label for="LinearScale">Linear</label><br>
+                                                        </td>
+                                                        <td>
+                                                                <input type="radio" id="freq_Scale_Hz" name="feq_unit" value="Hz" checked>
+                                                                <label for="Scale_unit_Hz">Hz</label><br>
+                                                                <input type="radio" id="freq_Scale_RPM" name="feq_unit" value="RPM">
+                                                                <label for="Scale_unit_RPM">RPM</label><br>
+                                                        </td>
+                                                </tr>
+                                        </table>
+                                </fieldset>
+                        </td>
+                </tr>
+        </table>
+        <p>
+                <label for="MaxFreq">Maximum Displayed Frequency</label>
+                <input id="MaxFreq" name="MaxFreq" type="number" step="1" value="150" onchange="check_nyquist();"/>
+                <label id="MaxFreq_warning"></label>
+	</p>
+        <p>
+                <label for="MaxPhaseLag">Maximum Displayed Phase Lag</label>
+                <input id="MaxPhaseLag" name="MaxPhaseLag" type="number" step="1" value="360"/>
+	</p>
+</fieldset>
+<fieldset style="max-width:1200px">
+  <legend>INS Settings</legend>
+        <p>
+                <label for="GyroSampleRate">Gyro Sample Rate</label>
+                <input id="GyroSampleRate" name="GYRO_SAMPLE_RATE" type="number" step="1" value="2000" onchange="check_nyquist();"/>
+	</p>
+        <p>
+                <label for="INS_GYRO_FILTER">INS_GYRO_FILTER</label>
+                <input id="INS_GYRO_FILTER" name="INS_GYRO_FILTER" type="number" step="0.1" value="20.0"/>
+	</p>
+</fieldset>
+<fieldset style="max-width:1200px">
+  <legend>First Notch Filter</legend>
+        <p>
+                <label for="INS_HNTCH_ENABLE">INS_HNTCH_ENABLE</label>
+                <input id="INS_HNTCH_ENABLE" name="INS_HNTCH_ENABLE" type="number" step="1" value="0" onchange="update_hidden(this.id); fill_docs();"/>
+                <label id="INS_HNTCH_ENABLE.doc"></label>
+        </p>
+        <p>
+                <label for="INS_HNTCH_MODE">INS_HNTCH_MODE</label>
+                <input id="INS_HNTCH_MODE" name="INS_HNTCH_MODE" type="number" step="1" value="0" onchange="update_hidden_mode(); fill_docs();"/>
+                <label id="INS_HNTCH_MODE.doc"></label>
+        </p>
+        <p>
+                <label for="INS_HNTCH_FREQ">INS_HNTCH_FREQ</label>
+                <input id="INS_HNTCH_FREQ" name="INS_HNTCH_FREQ" type="number" step="0.1" value="0"/>
+        </p>
+        <p>
+                <label for="INS_HNTCH_BW">INS_HNTCH_BW</label>
+                <input id="INS_HNTCH_BW" name="INS_HNTCH_BW" type="number" step="0.1" value="0"/>
+        </p>
+        <p>
+                <label for="INS_HNTCH_ATT">INS_HNTCH_ATT</label>
+                <input id="INS_HNTCH_ATT" name="INS_HNTCH_ATT" type="number" step="0.1" value="0"/>
+	</p>
+        <p>
+                <label for="INS_HNTCH_REF">INS_HNTCH_REF</label>
+                <input id="INS_HNTCH_REF" name="INS_HNTCH_REF" type="number" step="0.01" value="0"/>
+	</p>
+        <p>
+                <label for="INS_HNTCH_FM_RAT">INS_HNTCH_FM_RAT</label>
+                <input id="INS_HNTCH_FM_RAT" name="INS_HNTCH_FM_RAT" type="number" step="0.01" value="1.0"/>
+	</p>
+        <p>
+                <label for="INS_HNTCH_HMNCS">INS_HNTCH_HMNCS</label>
+                <input id="INS_HNTCH_HMNCS" name="INS_HNTCH_HMNCS" type="number" step="1" value="1"/>
+                <label id="INS_HNTCH_HMNCS.doc"></label>
+        </p>
+        <p>
+                <label for="INS_HNTCH_OPTS">INS_HNTCH_OPTS</label>
+                <input id="INS_HNTCH_OPTS" name="INS_HNTCH_OPTS" type="number" step="1" value="0"/>
+                <label id="INS_HNTCH_OPTS.doc"></label>
+        </p>
+</fieldset>
+<fieldset style="max-width:1200px">
+  <legend>Second Notch Filter</legend>
+        <p>
+                <label for="INS_HNTC2_ENABLE">INS_HNTC2_ENABLE</label>
+                <input id="INS_HNTC2_ENABLE" name="INS_HNTC2_ENABLE" type="number" step="1" value="0" onchange="update_hidden(this.id); fill_docs();"/>
+                <label id="INS_HNTC2_ENABLE.doc"></label>
+        </p>
+        <p>
+                <label for="INS_HNTC2_MODE">INS_HNTC2_MODE</label>
+                <input id="INS_HNTC2_MODE" name="INS_HNTC2_MODE" type="number" step="1" value="0" onchange="update_hidden_mode(); fill_docs();"/>
+                <label id="INS_HNTC2_MODE.doc"></label>
+        </p>
+        <p>
+                <label for="INS_HNTC2_FREQ">INS_HNTC2_FREQ</label>
+                <input id="INS_HNTC2_FREQ" name="INS_HNTC2_FREQ" type="number" step="0.1" value="0"/>
+	</p>
+        <p>
+                <label for="INS_HNTC2_BW">INS_HNTC2_BW</label>
+                <input id="INS_HNTC2_BW" name="INS_HNTC2_BW" type="number" step="0.1" value="0"/>
+	</p>
+        <p>
+                <label for="INS_HNTC2_ATT">INS_HNTC2_ATT</label>
+                <input id="INS_HNTC2_ATT" name="INS_HNTC2_ATT" type="number" step="0.1" value="0"/>
+	</p>
+        <p>
+                <label for="INS_HNTC2_REF">INS_HNTC2_REF</label>
+                <input id="INS_HNTC2_REF" name="INS_HNTC2_REF" type="number" step="0.01" value="0"/>
+	</p>
+        <p>
+                <label for="INS_HNTC2_FM_RAT">INS_HNTC2_FM_RAT</label>
+                <input id="INS_HNTC2_FM_RAT" name="INS_HNTC2_FM_RAT" type="number" step="0.01" value="1.0"/>
+	</p>
+        <p>
+                <label for="INS_HNTC2_HMNCS">INS_HNTC2_HMNCS</label>
+                <input id="INS_HNTC2_HMNCS" name="INS_HNTC2_HMNCS" type="number" step="1" value="1"/>
+                <label id="INS_HNTC2_HMNCS.doc"></label>
+        </p>
+        <p>
+                <label for="INS_HNTC2_OPTS">INS_HNTC2_OPTS</label>
+                <input id="INS_HNTC2_OPTS" name="INS_HNTC2_OPTS" type="number" step="1" value="0"/>
+                <label id="INS_HNTC2_OPTS.doc"></label>
+        </p>
+</fieldset>
+<fieldset style="max-width:1200px" id="Throttle_input">
+        <legend>Throttle Based</legend>
+              <p>
+                      <label for="Throttle">Throttle</label>
+                      <input id="Throttle" name="Throttle" type="number" step="0.01" value="0.3"/>
+              </p>
+</fieldset>
+<fieldset style="max-width:1200px" id="ESC_input">
+        <legend>ESC Telemetry</legend>
+              <p>
+                      <label for="NUM_MOTORS">Number of Motors</label>
+                      <input id="NUM_MOTORS" name="NUM_MOTORS" type="number" step="1" value="1"/>
+              </p>
+              <p>
+                      <label for="ESC_RPM">ESC RPM</label>
+                      <input id="ESC_RPM" name="ESC_RPM" type="number" step="1" value="2500"/>
+              </p>
+</fieldset>
+<fieldset style="max-width:1200px" id="RPM_input">
+        <legend>RPM/EFI Based</legend>
+              <p>
+                      <label for="RPM1">RPM1</label>
+                      <input id="RPM1" name="RPM1" type="number" step="1" value="2500"/>
+              </p>
+              <p>
+                      <label for="RPM2">RPM2</label>
+                      <input id="RPM2" name="RPM2" type="number" step="1" value="2500"/>
+              </p>
+</fieldset>
+</form>
+
+<h2>PIDs</h2>
+<h3><label id="PID_title">Title</label></h3>
+<canvas id="PID_Attenuation" style="width:100%;max-width:1200px"></canvas>
+<canvas id="PID_Phase" style="width:100%;max-width:1200px"></canvas>
+<p>
+<input type="button" id="CalculateRoll" value="Caculate Roll" onclick="calculate_pid(this.id);">
+<input type="button" id="CalculatePitch" value="Caculate Pitch" onclick="calculate_pid(this.id);">
+<input type="button" id="CalculateYaw" value="Caculate Yaw" onclick="calculate_pid(this.id);">
+</p>
+<form id="PID_params" action="">
+        <fieldset style="max-width:1200px">
+          <legend>Graph Settings</legend>
+                <p>
+                        <table>
+                                <tr>
+                                        <td>
+                                                <fieldset style="width:150px">
+                                                        <legend>Gain scale</legend>
+                                                        <input type="radio" id="PID_ScaleLog" name="PID_Scale" value="Log" checked>
+                                                        <label for="LogScale">dB</label><br>
+                                                        <input type="radio" id="PID_ScaleLinear" name="PID_Scale" value="Linear">
+                                                        <label for="LinearScale">Linear</label><br>
+                                                </fieldset>
+                                        </td>
+                                        <td>
+                                                <fieldset style="width:150px">
+                                                        <legend>Phase scale</legend>
+                                                        <input type="radio" id="PID_ScaleUnWrap" name="PID_PhaseScale" value="unwrap" checked>
+                                                        <label for="ScaleUnWrap">un-wrapped</label><br>
+                                                        <input type="radio" id="PID_ScaleWrap" name="PID_PhaseScale" value="wrap">
+                                                        <label for="ScaleWrap">±180</label><br>
+                                                </fieldset>
+                                        </td>
+                                        <td>
+                                                <fieldset style="width:150px">
+                                                        <legend>Frequency scale</legend>
+                                                        <table>
+                                                                <tr>
+                                                                        <td>
+                                                                                <input type="radio" id="PID_freq_ScaleLog" name="PID_feq_scale" value="Log" checked>
+                                                                                <label for="LogScale">Log</label><br>
+                                                                                <input type="radio" id="PID_freq_ScaleLinear" name="PID_feq_scale" value="Linear">
+                                                                                <label for="LinearScale">Linear</label><br>
+                                                                        </td>
+                                                                        <td>
+                                                                                <input type="radio" id="PID_freq_Scale_Hz" name="PID_feq_unit" value="Hz" checked>
+                                                                                <label for="Scale_unit_Hz">Hz</label><br>
+                                                                                <input type="radio" id="PID_freq_Scale_RPM" name="PID_feq_unit" value="RPM">
+                                                                                <label for="Scale_unit_RPM">RPM</label><br>
+                                                                        </td>
+                                                                </tr>
+                                                        </table>
+                                                </fieldset>
+                                        </td>
+                                        <td>
+                                                <fieldset style="width:150px">
+                                                        <legend>Filtering</legend>
+                                                        <input type="radio" id="PID_filtering_Pre" name="filtering" value="Pre" checked>
+                                                        <label for="LogScale">Pre</label><br>
+                                                        <input type="radio" id="PID_filtering_Post" name="filtering" value="Post">
+                                                        <label for="LinearScale">Post</label><br>
+                                                </fieldset>
+                                        </td>
+                                </tr>
+                        </table> 
+                </p>
+                <p>
+                        <label for="PID_MaxFreq">Maximum Displayed Frequency</label>
+                        <input id="PID_MaxFreq" name="PID_MaxFreq" type="number" step="1" value="150" onchange="check_nyquist();"/>
+                        <label id="PID_MaxFreq_warning"></label>
+                </p>
+                <p>
+                        <label for="PID_MaxPhaseLag">Maximum Displayed Phase Lag</label>
+                        <input id="PID_MaxPhaseLag" name="PID_MaxPhaseLag" type="number" step="1" value="360"/>
+                </p>
+        </fieldset>
+        <fieldset style="max-width:1200px">
+        <legend>Loop Rate</legend>
+               <p>
+                        <label for="SCHED_LOOP_RATE">SCHED_LOOP_RATE</label>
+                        <input id="SCHED_LOOP_RATE" name="SCHED_LOOP_RATE" type="number" step="1" value="400" onchange="check_nyquist();"/>
+                </p>
+        </fieldset>
+        <fieldset style="max-width:1200px">
+        <legend>Roll</legend>
+                <p>
+                        <label for="ATC_RAT_RLL_P">ATC_RAT_RLL_P</label>
+                        <input id="ATC_RAT_RLL_P" name="ATC_RAT_RLL_P" type="number" step="0.01" value="0.135"/>
+                </p>
+                <p>
+                        <label for="ATC_RAT_RLL_I">ATC_RAT_RLL_I</label>
+                        <input id="ATC_RAT_RLL_I" name="ATC_RAT_RLL_I" type="number" step="0.01" value="0.135"/>
+                </p>
+                <p>
+                        <label for="ATC_RAT_RLL_D">ATC_RAT_RLL_D</label>
+                        <input id="ATC_RAT_RLL_D" name="ATC_RAT_RLL_D" type="number" step="0.0001" value="0.0036"/>
+                </p>
+                <p>
+                        <label for="ATC_RAT_RLL_FLTE">ATC_RAT_RLL_FLTE</label>
+                        <input id="ATC_RAT_RLL_FLTE" name="ATC_RAT_RLL_FLTE" type="number" step="0.01" value="0"/>
+                </p>
+                <p>
+                        <label for="ATC_RAT_RLL_FLTD">ATC_RAT_RLL_FLTD</label>
+                        <input id="ATC_RAT_RLL_FLTD" name="ATC_RAT_RLL_FLTD" type="number" step="0.01" value="20"/>
+                </p>
+        </fieldset>
+        <fieldset style="max-width:1200px">
+        <legend>Pitch</legend>
+                <p>
+                        <label for="ATC_RAT_PIT_P">ATC_RAT_PIT_P</label>
+                        <input id="ATC_RAT_PIT_P" name="ATC_RAT_PIT_P" type="number" step="0.01" value="0.135"/>
+                </p>
+                <p>
+                        <label for="ATC_RAT_PIT_I">ATC_RAT_PIT_I</label>
+                        <input id="ATC_RAT_PIT_I" name="ATC_RAT_PIT_I" type="number" step="0.01" value="0.135"/>
+                </p>
+                <p>
+                        <label for="ATC_RAT_PIT_D">ATC_RAT_PIT_D</label>
+                        <input id="ATC_RAT_PIT_D" name="ATC_RAT_PIT_D" type="number" step="0.0001" value="0.0036"/>
+                </p>
+                <p>
+                        <label for="ATC_RAT_PIT_FLTE">ATC_RAT_PIT_FLTE</label>
+                        <input id="ATC_RAT_PIT_FLTE" name="ATC_RAT_PIT_FLTE" type="number" step="0.01" value="0"/>
+                </p>
+                <p>
+                        <label for="ATC_RAT_PIT_FLTD">ATC_RAT_PIT_FLTD</label>
+                        <input id="ATC_RAT_PIT_FLTD" name="ATC_RAT_PIT_FLTD" type="number" step="0.01" value="20"/>
+                </p>
+        </fieldset>
+        <fieldset style="max-width:1200px">
+        <legend>Yaw</legend>
+                <p>
+                        <label for="ATC_RAT_YAW_P">ATC_RAT_YAW_P</label>
+                        <input id="ATC_RAT_YAW_P" name="ATC_RAT_YAW_P" type="number" step="0.01" value="0.09"/>
+                </p>
+                <p>
+                        <label for="ATC_RAT_YAW_I">ATC_RAT_YAW_I</label>
+                        <input id="ATC_RAT_YAW_I" name="ATC_RAT_YAW_I" type="number" step="0.01" value="0.009"/>
+                </p>
+                <p>
+                        <label for="ATC_RAT_YAW_D">ATC_RAT_YAW_D</label>
+                        <input id="ATC_RAT_YAW_D" name="ATC_RAT_YAW_D" type="number" step="0.0001" value="0"/>
+                </p>
+                <p>
+                        <label for="ATC_RAT_YAW_FLTE">ATC_RAT_YAW_FLTE</label>
+                        <input id="ATC_RAT_YAW_FLTE" name="ATC_RAT_YAW_FLTE" type="number" step="0.01" value="2.5"/>
+                </p>
+                <p>
+                        <label for="ATC_RAT_YAW_FLTD">ATC_RAT_YAW_FLTD</label>
+                        <input id="ATC_RAT_YAW_FLTD" name="ATC_RAT_YAW_FLTD" type="number" step="0.01" value="0"/>
+                </p>
+        </fieldset>
+</form>
+
+<script>
+  var calc_btn = document.getElementById('calculate');
+  calc_btn.onclick = function() {
+      calculate_filter();
+  }
+  //var clear_btn = document.getElementById('clear_cookies');
+  //clear_btn.onclick = function() {
+  //    clear_cookies();
+  //}
+</script>
+
+</body>
+</html>

@@ -14,10 +14,8 @@
  */
 #pragma once
 
-#include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Common/Location.h>
-#include <AP_Filesystem/AP_Filesystem_Available.h>
+#include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_Filesystem/AP_Filesystem_config.h>
 
 #ifndef AP_TERRAIN_AVAILABLE
 #if HAVE_FILESYSTEM_SUPPORT && defined(HAL_BOARD_TERRAIN_DIRECTORY)
@@ -29,8 +27,10 @@
 
 #if AP_TERRAIN_AVAILABLE
 
+#include <AP_Common/AP_Common.h>
+#include <AP_Common/Location.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_Mission/AP_Mission.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 #define TERRAIN_DEBUG 0
 
@@ -83,11 +83,10 @@
 
 class AP_Terrain {
 public:
-    AP_Terrain(const AP_Mission &_mission);
+    AP_Terrain();
 
     /* Do not allow copies */
-    AP_Terrain(const AP_Terrain &other) = delete;
-    AP_Terrain &operator=(const AP_Terrain&) = delete;
+    CLASS_NO_COPY(AP_Terrain);
 
     static AP_Terrain *get_singleton(void) { return singleton; }
 
@@ -103,10 +102,12 @@ public:
     void update(void);
 
     bool enabled() const { return enable; }
-    void set_enabled(bool _enable) { enable = _enable; }
+    void set_enabled(bool _enable) { enable.set(_enable); }
 
     // return status enum for health reporting
     enum TerrainStatus status(void) const { return system_status; }
+
+    bool pre_arm_checks(char *failure_msg, uint8_t failure_msg_len) const;
 
     // send any pending terrain request message
     bool send_cache_request(mavlink_channel_t chan);
@@ -122,12 +123,8 @@ public:
       find the terrain height in meters above sea level for a location
 
       return false if not available
-
-      if corrected is true then terrain alt is adjusted so that
-      the terrain altitude matches the home altitude at the home location
-      (i.e. we assume home is at the terrain altitude)
      */
-    bool height_amsl(const Location &loc, float &height, bool corrected);
+    bool height_amsl(const Location &loc, float &height, bool corrected = true);
 
     /* 
        find difference between home terrain height and the terrain
@@ -193,6 +190,12 @@ public:
       returns true if initialisation failed because out-of-memory
      */
     bool init_failed() const { return memory_alloc_failed; }
+
+    /*
+      setup a reference location for terrain adjustment. This should
+      be called when the vehicle is definately on the ground
+     */
+    void set_reference_location(void);
 
 private:
     // allocate the terrain subsystem data
@@ -339,6 +342,9 @@ private:
     void write_block(void);
     void read_block(void);
 
+    // check for missing data in squares surrounding loc:
+    bool update_surrounding_tiles(const Location &loc);
+
     /*
       check for missing mission terrain data
      */
@@ -349,20 +355,22 @@ private:
      */
     void update_rally_data(void);
 
+    /*
+      calculate reference offset if needed
+     */
+    void update_reference_offset(void);
+
 
     // parameters
     AP_Int8  enable;
     AP_Float margin;
     AP_Int16 grid_spacing; // meters between grid points
     AP_Int16 options; // option bits
+    AP_Float offset_max;
 
     enum class Options {
         DisableDownload = (1U<<0),
     };
-
-    // reference to AP_Mission, so we can ask preload terrain data for 
-    // all waypoints
-    const AP_Mission &mission;
 
     // cache of grids in memory, LRU
     uint8_t cache_size = 0;
@@ -404,12 +412,26 @@ private:
     // cache the home altitude, as it is needed so often
     float home_height;
     Location home_loc;
+    bool have_home_height;
+
+    // reference position for terrain adjustment, set at arming
+    bool have_reference_loc;
+    Location reference_loc;
+
+    // calculated reference offset
+    bool have_reference_offset;
+    float reference_offset;
+
 
     // cache the last terrain height (AMSL) of the AHRS current
     // location. This is used for extrapolation when terrain data is
     // temporarily unavailable
     bool have_current_loc_height;
     float last_current_loc_height;
+
+    // true if we have all of the data for the squares around the
+    // current location:
+    bool have_surrounding_tiles;
 
     // next mission command to check
     uint16_t next_mission_index;

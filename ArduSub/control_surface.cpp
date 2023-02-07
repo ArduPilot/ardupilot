@@ -21,7 +21,6 @@ bool Sub::surface_init()
 void Sub::surface_run()
 {
     float target_roll, target_pitch;
-    float target_yaw_rate;
 
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
@@ -43,7 +42,7 @@ void Sub::surface_run()
     get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
 
     // get pilot's desired yaw rate
-    target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
     // call attitude controller
     attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);

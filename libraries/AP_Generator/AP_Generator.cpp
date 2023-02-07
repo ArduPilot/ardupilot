@@ -21,6 +21,8 @@
 #include "AP_Generator_IE_2400.h"
 #include "AP_Generator_RichenPower.h"
 
+#include <GCS_MAVLink/GCS.h>
+
 const AP_Param::GroupInfo AP_Generator::var_info[] = {
 
     // @Param: TYPE
@@ -30,6 +32,13 @@ const AP_Param::GroupInfo AP_Generator::var_info[] = {
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_Generator, _type, 0, AP_PARAM_FLAG_ENABLE),
+
+    // @Param: OPTIONS
+    // @DisplayName: Generator Options
+    // @Description: Bitmask of options for generators
+    // @Bitmask: 0:Supress Maintenance-Required Warnings
+    // @User: Standard
+    AP_GROUPINFO("OPTIONS", 2, AP_Generator, _options, 0),
 
     AP_GROUPEND
 };
@@ -65,7 +74,9 @@ void AP_Generator::init()
             break;
 
         case Type::RICHENPOWER:
+#if AP_GENERATOR_RICHENPOWER_ENABLED
             _driver_ptr = new AP_Generator_RichenPower(*this);
+#endif
             break;
     }
 

@@ -1,7 +1,8 @@
-#include <AP_HAL/AP_HAL.h>
 #include "AP_RangeFinder_USD1_CAN.h"
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if AP_RANGEFINDER_USD1_CAN_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
 
 /*
   constructor
@@ -39,4 +40,4 @@ void AP_RangeFinder_USD1_CAN::handle_frame(AP_HAL::CANFrame &frame)
     _distance_count++;
 }
 
-#endif // HAL_MAX_CAN_PROTOCOL_DRIVERS
+#endif  // AP_RANGEFINDER_USD1_CAN_ENABLED

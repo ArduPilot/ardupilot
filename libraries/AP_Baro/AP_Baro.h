@@ -1,19 +1,13 @@
 #pragma once
 
+#include "AP_Baro_config.h"
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
-#include <Filter/Filter.h>
+#include <AP_Math/AP_Math.h>
 #include <Filter/DerivativeFilter.h>
 #include <AP_MSP/msp.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
-
-#ifndef AP_SIM_BARO_ENABLED
-#define AP_SIM_BARO_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
-#endif
-
-#ifndef HAL_MSP_BARO_ENABLED
-#define HAL_MSP_BARO_ENABLED HAL_MSP_SENSORS_ENABLED
-#endif
 
 // maximum number of sensor instances
 #ifndef BARO_MAX_INSTANCES
@@ -28,10 +22,6 @@
 #define BARO_TIMEOUT_MS                 500     // timeout in ms since last successful read
 #define BARO_DATA_CHANGE_TIMEOUT_MS     2000    // timeout in ms since last successful read that involved temperature of pressure changing
 
-#ifndef HAL_BARO_WIND_COMP_ENABLED
-#define HAL_BARO_WIND_COMP_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
 class AP_Baro_Backend;
 
 class AP_Baro
@@ -43,8 +33,7 @@ public:
     AP_Baro();
 
     /* Do not allow copies */
-    AP_Baro(const AP_Baro &other) = delete;
-    AP_Baro &operator=(const AP_Baro&) = delete;
+    CLASS_NO_COPY(AP_Baro);
 
     // get singleton
     static AP_Baro *get_singleton(void) {
@@ -76,12 +65,19 @@ public:
     // check if all baros are healthy - used for SYS_STATUS report
     bool all_healthy(void) const;
 
+    // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+    bool arming_checks(size_t buflen, char *buffer) const;
+
     // get primary sensor
     uint8_t get_primary(void) const { return _primary; }
 
     // pressure in Pascal. Divide by 100 for millibars or hectopascals
     float get_pressure(void) const { return get_pressure(_primary); }
     float get_pressure(uint8_t instance) const { return sensors[instance].pressure; }
+#if HAL_BARO_WIND_COMP_ENABLED
+    // dynamic pressure in Pascal. Divide by 100 for millibars or hectopascals
+    const Vector3f& get_dynamic_pressure(uint8_t instance) const { return sensors[instance].dynamic_pressure; }
+#endif
 
     // temperature in degrees C
     float get_temperature(void) const { return get_temperature(_primary); }
@@ -114,6 +110,10 @@ public:
     // get altitude difference in meters relative given a base
     // pressure in Pascal
     float get_altitude_difference(float base_pressure, float pressure) const;
+
+    // get sea level pressure relative to 1976 standard atmosphere model
+    // pressure in Pascal
+    float get_sealevel_pressure(float pressure) const;
 
     // get scale factor required to convert equivalent to true airspeed
     float get_EAS2TAS(void);
@@ -166,7 +166,7 @@ public:
     uint8_t num_instances(void) const { return _num_sensors; }
 
     // set baro drift amount
-    void set_baro_drift_altitude(float alt) { _alt_offset = alt; }
+    void set_baro_drift_altitude(float alt) { _alt_offset.set(alt); }
 
     // get baro drift amount
     float get_baro_drift_offset(void) const { return _alt_offset_active; }
@@ -191,14 +191,23 @@ public:
         return _rsem;
     }
 
-#if HAL_MSP_BARO_ENABLED
+#if AP_BARO_MSP_ENABLED
     void handle_msp(const MSP::msp_baro_data_message_t &pkt);
 #endif
-
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_BARO_EXTERNALAHRS_ENABLED
     void handle_external(const AP_ExternalAHRS::baro_data_message_t &pkt);
 #endif
-    
+
+    enum Options : uint16_t {
+        TreatMS5611AsMS5607     = (1U << 0U),
+    };
+
+    // check if an option is set
+    bool option_enabled(const Options option) const
+    {
+        return (uint16_t(_options.get()) & uint16_t(option)) != 0;
+    }
+
 private:
     // singleton
     static AP_Baro *_singleton;
@@ -217,9 +226,7 @@ private:
 
     bool init_done;
 
-#if HAL_MSP_BARO_ENABLED
     uint8_t msp_instance_mask;
-#endif
 
     // bitmask values for GND_PROBE_EXT
     enum {
@@ -248,6 +255,8 @@ private:
         AP_Float xn;     // ratio of static pressure rise to dynamic pressure when flying backwards
         AP_Float yp;     // ratio of static pressure rise to dynamic pressure when flying to the right
         AP_Float yn;     // ratio of static pressure rise to dynamic pressure when flying to the left
+        AP_Float zp;     // ratio of static pressure rise to dynamic pressure when flying up
+        AP_Float zn;     // ratio of static pressure rise to dynamic pressure when flying down
     };
 #endif
 
@@ -266,11 +275,15 @@ private:
         AP_Int32 bus_id;
 #if HAL_BARO_WIND_COMP_ENABLED
         WindCoeff wind_coeff;
+        Vector3f dynamic_pressure;      // calculated dynamic pressure
 #endif
     } sensors[BARO_MAX_INSTANCES];
 
     AP_Float                            _alt_offset;
     float                               _alt_offset_active;
+    AP_Float                            _field_elevation;       // field elevation in meters
+    float                               _field_elevation_active;
+    uint32_t                            _field_elevation_last_ms;
     AP_Int8                             _primary_baro; // primary chosen by user
     AP_Int8                             _ext_bus; // bus number for external barometer
     float                               _last_altitude_EAS2TAS;
@@ -285,10 +298,18 @@ private:
     // when did we last notify the GCS of new pressure reference?
     uint32_t                            _last_notify_ms;
 
+    // see if we already have probed a i2c driver by bus number and address
+    bool _have_i2c_driver(uint8_t bus_num, uint8_t address) const;
     bool _add_backend(AP_Baro_Backend *backend);
     void _probe_i2c_barometers(void);
     AP_Int8                            _filter_range;  // valid value range from mean value
     AP_Int32                           _baro_probe_ext;
+
+#ifndef HAL_BUILD_AP_PERIPH
+    AP_Float                           _alt_error_max;
+#endif
+
+    AP_Int16                           _options;
 
     // semaphore for API access from threads
     HAL_Semaphore                      _rsem;
@@ -303,7 +324,8 @@ private:
     // Logging function
     void Write_Baro(void);
     void Write_Baro_instance(uint64_t time_us, uint8_t baro_instance);
-    
+
+    void update_field_elevation();
 };
 
 namespace AP {

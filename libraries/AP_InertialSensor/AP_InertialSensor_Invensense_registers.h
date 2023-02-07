@@ -113,6 +113,11 @@
 #       define BIT_I2C_SLV1_DLY_EN              0x02
 #       define BIT_I2C_SLV2_DLY_EN              0x04
 #       define BIT_I2C_SLV3_DLY_EN              0x08
+#define MPUREG_SIGNAL_PATH_RESET                0x68
+// bit definitions for MPUREG_SIGNAL_PATH_RESET
+#       define BIT_SIGNAL_PATH_RESET_TEMP_RESET     0x01 // resets temp signal path
+#       define BIT_SIGNAL_PATH_RESET_ACCEL_RESET    0x02 // resets accel signal path
+#       define BIT_SIGNAL_PATH_RESET_GYRO_RESET     0x04 // resets gyro signal path
 #define MPUREG_USER_CTRL                        0x6A
 // bit definitions for MPUREG_USER_CTRL
 #       define BIT_USER_CTRL_SIG_COND_RESET         0x01 // resets signal paths and results registers for all sensors (gyros, accel, temp)

@@ -38,6 +38,7 @@ parser = argparse.ArgumentParser(description='ArduPilot IMU Filter Tester Tool. 
 parser.add_argument('file', nargs='?', default=None, help='bin log file containing raw IMU logs')
 parser.add_argument('--begin-time', '-b', type=int, default=0, help='start from second')
 parser.add_argument('--end-time', '-e', type=int, default=-1, help='end to second')
+parser.add_argument('--instance', type=int, default=0, help='IMU instance')
 
 args = parser.parse_args()
 
@@ -72,7 +73,7 @@ PREVENT_POST_FILTER_LOGS = False
 
 PARAMS_TO_CHECK = [
     "INS_LOG_BAT_OPT", "INS_GYRO_FILTER", "INS_ACCEL_FILTER",
-    "INS_NOTCH_ENABLE", "INS_NOTCH_FREQ", "INS_NOTCH_BW", "INS_NOTCH_ATT",
+    "INS_HNTC2_ENABLE", "INS_HNTC2_FREQ", "INS_HNTC2_BW", "INS_HNTC2_ATT",
     "INS_NOTCA_ENABLE", "INS_NOTCA_FREQ", "INS_NOTCA_BW", "INS_NOTCA_ATT",
     "LOG_BITMASK"
 ]
@@ -113,7 +114,7 @@ GYR_z = []
 params = {}
 
 while True:
-    m = mlog._parse_next()
+    m = mlog.recv_match(type=['PARM', 'GYR', 'ACC'])
     """
     @type m DFMessage
     """
@@ -142,13 +143,13 @@ while True:
     except AttributeError:
         pass
 
-    if m.fmt.name == "ACC1":
+    if m.fmt.name == "ACC" and m.I == args.instance:
         ACC_t.append(m_time_sec)
         ACC_x.append(m.AccX)
         ACC_y.append(m.AccY)
         ACC_z.append(m.AccZ)
 
-    elif m.fmt.name == "GYR1":
+    elif m.fmt.name == "GYR" and m.I == args.instance:
         GYR_t.append(m_time_sec)
         GYR_x.append(m.GyrX)
         GYR_y.append(m.GyrY)
@@ -226,18 +227,18 @@ if "INS_GYRO_FILTER" in params:
 if "INS_ACCEL_FILTER" in params:
     DEFAULT_ACC_FILTER = params["INS_ACCEL_FILTER"]
 
-if "INS_NOTCH_ENABLE" in params:
-    if params["INS_NOTCH_ENABLE"] != 0:
-        if "INS_NOTCH_ATT" in params:
-            DEFAULT_GYR_NOTCH_ATTENUATION = params["INS_NOTCH_ATT"]
+if "INS_HNTC2_ENABLE" in params:
+    if params["INS_HNTC2_ENABLE"] != 0:
+        if "INS_HNTC2_ATT" in params:
+            DEFAULT_GYR_NOTCH_ATTENUATION = params["INS_HNTC2_ATT"]
     else:
         DEFAULT_GYR_NOTCH_ATTENUATION = 0
 
-    if "INS_NOTCH_BW" in params:
-        DEFAULT_GYR_NOTCH_BANDWIDTH = params["INS_NOTCH_BW"]
+    if "INS_HNTC2_BW" in params:
+        DEFAULT_GYR_NOTCH_BANDWIDTH = params["INS_HNTC2_BW"]
 
-    if "INS_NOTCH_FREQ" in params:
-        DEFAULT_GYR_NOTCH_FREQ = params["INS_NOTCH_FREQ"]
+    if "INS_HNTC2_FREQ" in params:
+        DEFAULT_GYR_NOTCH_FREQ = params["INS_HNTC2_FREQ"]
 
 if "INS_NOTCA_ENABLE" in params:
     if params["INS_NOTCA_ENABLE"] != 0:

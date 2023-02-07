@@ -8,6 +8,10 @@
 
 #define AP_BATTMONITOR_UAVCAN_TIMEOUT_MICROS         5000000 // sensor becomes unhealthy if no successful readings for 5 seconds
 
+#ifndef AP_BATTMONITOR_UAVCAN_MPPT_DEBUG
+#define AP_BATTMONITOR_UAVCAN_MPPT_DEBUG 0
+#endif
+
 class BattInfoCb;
 class BattInfoAuxCb;
 class MpptStreamCb;
@@ -21,6 +25,8 @@ public:
 
     /// Constructor
     AP_BattMonitor_UAVCAN(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, BattMonitor_UAVCAN_Type type, AP_BattMonitor_Params &params);
+
+    static const struct AP_Param::GroupInfo var_info[];
 
     void init() override {}
 
@@ -54,7 +60,6 @@ public:
 private:
     void handle_battery_info(const BattInfoCb &cb);
     void handle_battery_info_aux(const BattInfoAuxCb &cb);
-
     void update_interim_state(const float voltage, const float current, const float temperature_K, const uint8_t soc);
 
     static bool match_battery_id(uint8_t instance, uint8_t battery_id) {
@@ -73,8 +78,11 @@ private:
     void mppt_set_bootup_powered_state();
     void mppt_set_armed_powered_state();
     void mppt_set_powered_state(bool power_on, bool force);
-    void mppt_check_and_report_faults(uint8_t fault_flags);
-    const char* mppt_fault_string(MPPT_FaultFlags fault);
+
+#if AP_BATTMONITOR_UAVCAN_MPPT_DEBUG
+    static void mppt_report_faults(const uint8_t instance, const uint8_t fault_flags);
+    static const char* mppt_fault_string(const MPPT_FaultFlags fault);
+#endif
 
     AP_BattMonitor::BattMonitor_State _interim_state;
     BattMonitor_UAVCAN_Type _type;
@@ -94,7 +102,7 @@ private:
     bool _has_battery_info_aux;
     uint8_t _instance;                  // instance of this battery monitor
     uavcan::Node<0> *_node;             // UAVCAN node id
-
+    AP_Float _curr_mult;                 // scaling multiplier applied to current reports for adjustment
     // MPPT variables
     struct {
         bool is_detected;               // true if this UAVCAN device is a Packet Digital MPPT

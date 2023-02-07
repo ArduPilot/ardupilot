@@ -30,12 +30,13 @@ public:
     const int8_t starter_servo;
     const float slew_rate; // percent-per-second
 
-    ICEngine(uint8_t _throttle, int8_t _choke, int8_t _ignition, int8_t _starter, float _slew_rate) :
+    ICEngine(uint8_t _throttle, int8_t _choke, int8_t _ignition, int8_t _starter, float _slew_rate, bool _throttle_reversed) :
         throttle_servo(_throttle),
         choke_servo(_choke),
         ignition_servo(_ignition),
         starter_servo(_starter),
-        slew_rate(_slew_rate)
+        slew_rate(_slew_rate),
+        throttle_reversed(_throttle_reversed)
     {}
 
     // update motor state
@@ -54,5 +55,6 @@ private:
         uint8_t value;
     } state, last_state;
     bool overheat:1;
+    bool throttle_reversed;
 };
 }

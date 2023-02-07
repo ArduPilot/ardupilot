@@ -84,8 +84,6 @@ PA12 CAN1_TX CAN1
 
 define HAL_NO_MONITOR_THREAD
 
-define HAL_MINIMIZE_FEATURES 0
-
 define AP_PARAM_MAX_EMBEDDED_PARAM 512
 
 # keep ROMFS uncompressed as we don't have enough RAM

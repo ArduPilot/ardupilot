@@ -1,10 +1,21 @@
 #include "AP_LandingGear.h"
+
+#if AP_LANDINGGEAR_ENABLED
+
 #include <AP_Relay/AP_Relay.h>
 #include <AP_Math/AP_Math.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+#endif
+
+#if defined(APM_BUILD_TYPE)
+//  - this is just here to encourage the build system to supply the "legacy build defines".  The actual dependecy is in the AP_LandingGear.h and AP_LandingGear_config.h headers
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -28,7 +39,7 @@ const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
 
     // @Param: DEPLOY_PIN
     // @DisplayName: Chassis deployment feedback pin
-    // @Description: Pin number to use for detection of gear deployment. If set to -1 feedback is disabled.
+    // @Description: Pin number to use for detection of gear deployment. If set to -1 feedback is disabled. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
     // @Values: -1:Disabled,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6
     // @User: Standard
     // @RebootRequired: True
@@ -43,18 +54,18 @@ const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
 
     // @Param: WOW_PIN
     // @DisplayName: Weight on wheels feedback pin
-    // @Description: Pin number to use for feedback of weight on wheels condition. If set to -1 feedback is disabled.
+    // @Description: Pin number to use for feedback of weight on wheels condition. If set to -1 feedback is disabled. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
     // @Values: -1:Disabled,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("WOW_PIN", 5, AP_LandingGear, _pin_weight_on_wheels, DEFAULT_PIN_WOW),
+    AP_GROUPINFO("WOW_PIN", 5, AP_LandingGear, _pin_weight_on_wheels, -1),
 
     // @Param: WOW_POL
     // @DisplayName: Weight on wheels feedback pin polarity
     // @Description: Polarity for feedback pin. If this is 1 then the pin should be high when there is weight on wheels. If set to 0 then then weight on wheels level is low.
     // @Values: 0:Low,1:High
     // @User: Standard
-    AP_GROUPINFO("WOW_POL", 6, AP_LandingGear, _pin_weight_on_wheels_polarity, DEFAULT_PIN_WOW_POL),
+    AP_GROUPINFO("WOW_POL", 6, AP_LandingGear, _pin_weight_on_wheels_polarity, 0),
 
     // @Param: DEPLOY_ALT
     // @DisplayName: Landing gear deployment altitude
@@ -91,6 +102,13 @@ AP_LandingGear *AP_LandingGear::_singleton;
 /// initialise state of landing gear
 void AP_LandingGear::init()
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (AP::sitl()->wow_pin > 0) {
+        _pin_weight_on_wheels.set_and_default(AP::sitl()->wow_pin);
+        _pin_weight_on_wheels_polarity.set_and_default(1);
+    }
+#endif
+
     if (!_enable.configured() && (SRV_Channels::function_assigned(SRV_Channel::k_landing_gear_control) || 
             (_pin_deployed > 0) || (_pin_weight_on_wheels > 0))) {
         // if not configured set enable param if output servo or sense pins are defined
@@ -320,3 +338,5 @@ void AP_LandingGear::deploy_for_landing()
         deploy();
     }
 }
+
+#endif

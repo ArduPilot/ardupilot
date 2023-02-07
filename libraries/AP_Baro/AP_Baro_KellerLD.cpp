@@ -15,6 +15,8 @@
 
 #include "AP_Baro_KellerLD.h"
 
+#if AP_BARO_KELLERLD_ENABLED
+
 #include <utility>
 #include <stdio.h>
 
@@ -319,3 +321,5 @@ void AP_Baro_KellerLD::update()
 
     _copy_to_frontend(_instance, pressure, temperature);
 }
+
+#endif  // AP_BARO_KELLERLD_ENABLED

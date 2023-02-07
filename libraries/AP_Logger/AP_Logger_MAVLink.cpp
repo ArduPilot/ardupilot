@@ -274,10 +274,16 @@ void AP_Logger_MAVLink::remote_log_block_status_msg(const GCS_MAVLINK &link,
     if (!semaphore.take_nonblocking()) {
         return;
     }
-    if(packet.status == MAV_REMOTE_LOG_DATA_BLOCK_NACK) {
-        handle_retry(packet.seqno);
-    } else {
-        handle_ack(link, msg, packet.seqno);
+    switch ((MAV_REMOTE_LOG_DATA_BLOCK_STATUSES)packet.status) {
+        case MAV_REMOTE_LOG_DATA_BLOCK_NACK:
+            handle_retry(packet.seqno);
+            break;
+        case MAV_REMOTE_LOG_DATA_BLOCK_ACK:
+            handle_ack(link, msg, packet.seqno);
+            break;
+        // we apparently have to handle an END enum entry, just drop it so we catch future additions
+        case MAV_REMOTE_LOG_DATA_BLOCK_STATUSES_ENUM_END:
+            break;
     }
     semaphore.give();
 }
@@ -524,8 +530,8 @@ void AP_Logger_MAVLink::periodic_10Hz(const uint32_t now)
 }
 void AP_Logger_MAVLink::periodic_1Hz()
 {
-    if (rate_limiter == nullptr && _front._params.mav_ratemax > 0) {
-        // setup rate limiting
+    if (rate_limiter == nullptr && (_front._params.mav_ratemax > 0 || _front._log_pause)) {
+        // setup rate limiting if log rate max > 0Hz or log pause of streaming entries is requested
         rate_limiter = new AP_Logger_RateLimiter(_front, _front._params.mav_ratemax);
     }
 

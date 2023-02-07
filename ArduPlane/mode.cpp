@@ -15,10 +15,20 @@ void Mode::exit()
 {
     // call sub-classes exit
     _exit();
+    // stop autotuning if not AUTOTUNE mode
+    if (plane.control_mode != &plane.mode_autotune){
+        plane.autotune_restore();
+    }
+
 }
 
 bool Mode::enter()
 {
+#if AP_SCRIPTING_ENABLED
+    // reset nav_scripting.enabled
+    plane.nav_scripting.enabled = false;
+#endif
+
     // cancel inverted flight
     plane.auto_state.inverted_flight = false;
 
@@ -48,7 +58,7 @@ bool Mode::enter()
     plane.guided_state.last_target_alt = 0;
 #endif
 
-#if CAMERA == ENABLED
+#if AP_CAMERA_ENABLED
     plane.camera.set_is_auto_mode(this == &plane.mode_auto);
 #endif
 
@@ -75,6 +85,10 @@ bool Mode::enter()
     // initialize speed variable used in AUTO and GUIDED for DO_CHANGE_SPEED commands
     plane.new_airspeed_cm = -1;
 
+#if HAL_QUADPLANE_ENABLED
+    quadplane.mode_enter();
+#endif
+
     bool enter_result = _enter();
 
     if (enter_result) {
@@ -92,6 +106,13 @@ bool Mode::enter()
 
         // update RC failsafe, as mode change may have necessitated changing the failsafe throttle
         plane.control_failsafe();
+
+#if AP_FENCE_ENABLED
+        // pilot requested flight mode change during a fence breach indicates pilot is attempting to manually recover
+        // this flight mode change could be automatic (i.e. fence, battery, GPS or GCS failsafe)
+        // but it should be harmless to disable the fence temporarily in these situations as well
+        plane.fence.manual_recovery_start();
+#endif
     }
 
     return enter_result;
@@ -110,4 +131,41 @@ bool Mode::is_vtol_man_throttle() const
     }
 #endif
     return false;
+}
+
+void Mode::update_target_altitude()
+{
+    Location target_location;
+
+    if (plane.landing.is_flaring()) {
+        // during a landing flare, use TECS_LAND_SINK as a target sink
+        // rate, and ignores the target altitude
+        plane.set_target_altitude_location(plane.next_WP_loc);
+    } else if (plane.landing.is_on_approach()) {
+        plane.landing.setup_landing_glide_slope(plane.prev_WP_loc, plane.next_WP_loc, plane.current_loc, plane.target_altitude.offset_cm);
+        plane.landing.adjust_landing_slope_for_rangefinder_bump(plane.rangefinder_state, plane.prev_WP_loc, plane.next_WP_loc, plane.current_loc, plane.auto_state.wp_distance, plane.target_altitude.offset_cm);
+    } else if (plane.landing.get_target_altitude_location(target_location)) {
+        plane.set_target_altitude_location(target_location);
+#if HAL_SOARING_ENABLED
+    } else if (plane.g2.soaring_controller.is_active() && plane.g2.soaring_controller.get_throttle_suppressed()) {
+        // Reset target alt to current alt, to prevent large altitude errors when gliding.
+        plane.set_target_altitude_location(plane.current_loc);
+        plane.reset_offset_altitude();
+#endif
+    } else if (plane.reached_loiter_target()) {
+        // once we reach a loiter target then lock to the final
+        // altitude target
+        plane.set_target_altitude_location(plane.next_WP_loc);
+    } else if (plane.target_altitude.offset_cm != 0 && 
+               !plane.current_loc.past_interval_finish_line(plane.prev_WP_loc, plane.next_WP_loc)) {
+        // control climb/descent rate
+        plane.set_target_altitude_proportion(plane.next_WP_loc, 1.0f-plane.auto_state.wp_proportion);
+
+        // stay within the range of the start and end locations in altitude
+        plane.constrain_target_altitude_location(plane.next_WP_loc, plane.prev_WP_loc);
+    } else {
+        plane.set_target_altitude_location(plane.next_WP_loc);
+    }
+
+    plane.altitude_error_cm = plane.calc_altitude_error_cm();
 }

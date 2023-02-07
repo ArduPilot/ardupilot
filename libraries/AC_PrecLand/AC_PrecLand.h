@@ -27,8 +27,7 @@ public:
     AC_PrecLand();
 
     /* Do not allow copies */
-    AC_PrecLand(const AC_PrecLand &other) = delete;
-    AC_PrecLand &operator=(const AC_PrecLand&) = delete;
+    CLASS_NO_COPY(AC_PrecLand);
 
     // return singleton
     static AC_PrecLand *get_singleton() {
@@ -54,6 +53,9 @@ public:
     // vehicle has to be closer than this many cm's to the target before descending towards target
     float get_max_xy_error_before_descending_cm() const { return _xy_max_dist_desc * 100.0f; }
 
+    // returns orientation of sensor
+    Rotation get_orient() const { return _orient; }
+
     // returns ekf outlier count
     uint32_t ekf_outlier_count() const { return _outlier_reject_count; }
 
@@ -71,6 +73,9 @@ public:
 
     // returns target velocity relative to vehicle
     bool get_target_velocity_relative_cms(Vector2f& ret);
+
+    // get the absolute velocity of the vehicle
+    void get_target_velocity_cms(const Vector2f& vehicle_velocity_cms, Vector2f& target_vel_cms);
 
     // returns true when the landing target has been detected
     bool target_acquired();
@@ -104,6 +109,8 @@ public:
     float get_min_retry_time_sec() const { return _retry_timeout_sec; }
     AC_PrecLand_StateMachine::RetryAction get_retry_behaviour() const { return static_cast<AC_PrecLand_StateMachine::RetryAction>(_retry_behave.get()); }
 
+    bool allow_precland_after_reposition() const { return _options & PLND_OPTION_PRECLAND_AFTER_REPOSITION; }
+
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -120,6 +127,12 @@ private:
         IRLOCK = 2,
         SITL_GAZEBO = 3,
         SITL = 4,
+    };
+
+    enum PLndOptions {
+        PLND_OPTION_DISABLED = 0,
+        PLND_OPTION_MOVING_TARGET = (1 << 0),
+        PLND_OPTION_PRECLAND_AFTER_REPOSITION = (1 << 1),
     };
 
     // check the status of the target
@@ -165,6 +178,8 @@ private:
     AP_Int8                     _retry_behave;      // Action to do when trying a landing retry
     AP_Float                    _sensor_min_alt;     // PrecLand minimum height required for detecting target
     AP_Float                    _sensor_max_alt;     // PrecLand maximum height the sensor can detect target
+    AP_Int16                    _options;            // Bitmask for extra options
+    AP_Enum<Rotation>           _orient;             // Orientation of camera/sensor
 
     uint32_t                    _last_update_ms;    // system time in millisecond when update was last called
     bool                        _target_acquired;   // true if target has been seen recently after estimator is initialized
@@ -177,6 +192,7 @@ private:
     uint32_t                    _outlier_reject_count;  // mini-EKF's outlier counter (3 consecutive outliers lead to EKF accepting updates)
 
     Vector3f                    _target_pos_rel_meas_NED; // target's relative position as 3D vector
+    Vector3f                    _approach_vector_body;   // unit vector in landing approach direction (in body frame)
 
     Vector3f                    _last_target_pos_rel_origin_NED;  // stores the last known location of the target horizontally, and the height of the vehicle where it detected this target in meters NED
     Vector3f                    _last_vehicle_pos_NED;            // stores the position of the vehicle when landing target was last detected in m and NED

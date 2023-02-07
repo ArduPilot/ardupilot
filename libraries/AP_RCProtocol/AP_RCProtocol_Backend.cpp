@@ -64,7 +64,11 @@ void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool
     memcpy(_pwm_values, values, num_values*sizeof(uint16_t));
     _num_channels = num_values;
     rc_frame_count++;
-#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+    frontend.set_failsafe_active(in_failsafe);
+#if APM_BUILD_TYPE(APM_BUILD_iofirmware)
+    // failsafed is sorted out in AP_IOMCU.cpp
+    in_failsafe = false;
+#else
     if (rc().ignore_rc_failsafe()) {
         in_failsafe = false;
     }

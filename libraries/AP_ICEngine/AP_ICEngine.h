@@ -18,13 +18,17 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_RPM/AP_RPM.h>
+#include "AP_ICEngine_config.h"
+
+#if AP_ICENGINE_ENABLED
+
+#include <AP_Param/AP_Param.h>
+#include <Filter/LowPassFilter.h>
 
 class AP_ICEngine {
 public:
     // constructor
-    AP_ICEngine(const AP_RPM &_rpm);
+    AP_ICEngine(const class AP_RPM &_rpm);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -32,7 +36,7 @@ public:
     void update(void);
 
     // check for throttle override
-    bool throttle_override(uint8_t &percent);
+    bool throttle_override(float &percent, const float base_throttle);
 
     enum ICE_State {
         ICE_OFF=0,
@@ -51,14 +55,23 @@ public:
     // update min throttle for idle governor
     void update_idle_governor(int8_t &min_throttle);
 
+    // do we have throttle while disarmed enabled?
+    bool allow_throttle_while_disarmed(void) const {
+        return enable && option_set(Options::THROTTLE_WHILE_DISARMED);
+    }
+
     static AP_ICEngine *get_singleton() { return _singleton; }
 
 private:
     static AP_ICEngine *_singleton;
 
-    const AP_RPM &rpm;
+    const class AP_RPM &rpm;
 
     enum ICE_State state;
+
+    // filter for RPM value
+    LowPassFilterFloat _rpm_filter;
+    float filtered_rpm_value;
 
     // enable library
     AP_Int8 enable;
@@ -122,15 +135,31 @@ private:
 
     enum class Options : uint16_t {
         DISABLE_IGNITION_RC_FAILSAFE=(1U<<0),
+        DISABLE_REDLINE_GOVERNOR = (1U << 1),
+        THROTTLE_WHILE_DISARMED = (1U << 2),
     };
     AP_Int16 options;
+
+    bool option_set(Options option) const {
+        return (options & uint16_t(option)) != 0;
+    }
 
     // start_chan debounce
     uint16_t start_chan_last_value = 1500;
     uint32_t start_chan_last_ms;
+
+    // redline rpm
+    AP_Int32 redline_rpm;
+    struct {
+        bool flag;
+        float governor_integrator;
+        float throttle_percentage;
+    } redline;
 };
 
 
 namespace AP {
     AP_ICEngine *ice();
 };
+
+#endif  // AP_ICENGINE_ENABLED

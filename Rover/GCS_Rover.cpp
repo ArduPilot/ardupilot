@@ -58,6 +58,17 @@ void GCS_Rover::update_vehicle_sensor_status_flags(void)
     }
 #endif
 
+#if AP_OPTICALFLOW_ENABLED
+    const AP_OpticalFlow *optflow = AP::opticalflow();
+    if (optflow && optflow->enabled()) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
+    }
+    if (optflow && optflow->healthy()) {
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
+    }
+#endif
+
     const RangeFinder *rangefinder = RangeFinder::get_singleton();
     if (rangefinder && rangefinder->num_sensors() > 0) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_LASER_POSITION;

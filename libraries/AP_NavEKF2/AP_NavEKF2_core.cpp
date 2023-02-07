@@ -263,7 +263,9 @@ void NavEKF2_core::InitialiseVariables()
     varInnovRngBcn = 0.0f;
     innovRngBcn = 0.0f;
     memset(&lastTimeRngBcn_ms, 0, sizeof(lastTimeRngBcn_ms));
+#if AP_BEACON_ENABLED
     rngBcnDataToFuse = false;
+#endif
     beaconVehiclePosNED.zero();
     beaconVehiclePosErr = 1.0f;
     rngBcnLast3DmeasTime_ms = 0;
@@ -573,8 +575,10 @@ void NavEKF2_core::UpdateFilter(bool predict)
         // Muat be run after SelectVelPosFusion() so that fresh GPS data is available
         runYawEstimatorCorrection();
 
+#if AP_BEACON_ENABLED
         // Update states using range beacon data
         SelectRngBcnFusion();
+#endif
 
         // Update states using optical flow data
         SelectFlowFusion();
@@ -598,7 +602,7 @@ void NavEKF2_core::UpdateFilter(bool predict)
     static uint32_t timing_counter;
     total_us += dal.micros() - timing_start_us;
     if (timing_counter++ == 4000) {
-        hal.console->printf("ekf2 avg %.2f us\n", total_us / float(timing_counter));
+        DEV_PRINTF("ekf2 avg %.2f us\n", total_us / float(timing_counter));
         total_us = 0;
         timing_counter = 0;
     }

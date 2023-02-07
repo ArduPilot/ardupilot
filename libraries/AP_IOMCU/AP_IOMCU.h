@@ -9,9 +9,11 @@
 
 #if HAL_WITH_IO_MCU
 
-#include "ch.h"
 #include "iofirmware/ioprotocol.h"
 #include <AP_RCMapper/AP_RCMapper.h>
+
+typedef uint32_t eventmask_t;
+typedef struct ch_thread thread_t;
 
 class AP_IOMCU {
 public:
@@ -105,7 +107,7 @@ public:
     bool setup_mixing(RCMapper *rcmap, int8_t override_chan,
                       float mixing_gain, uint16_t manual_rc_mask);
 
-    // Check if pin number is valid for GPIO
+    // Check if pin number is valid and configured for GPIO
     bool valid_GPIO_pin(uint8_t pin) const;
 
     // convert external pin numbers 101 to 108 to internal 0 to 7
@@ -266,6 +268,8 @@ private:
     bool check_crc(void);
     void handle_repeated_failures();
     void check_iomcu_reset();
+
+    void write_log();  // handle onboard logging
 
     static AP_IOMCU *singleton;
 

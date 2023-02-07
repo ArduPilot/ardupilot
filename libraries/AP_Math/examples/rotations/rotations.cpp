@@ -4,6 +4,9 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_CustomRotations/AP_CustomRotations.h>
+
+AP_CustomRotations cust_rot;
 
 void setup();
 void loop();
@@ -165,15 +168,45 @@ static void test_euler(enum Rotation rotation, float roll, float pitch, float ya
     float q_roll, q_pitch, q_yaw, qe_roll, qe_pitch, qe_yaw;
     q.to_euler(q_roll, q_pitch, q_yaw);
     qe.to_euler(qe_roll, qe_pitch, qe_yaw);
-    const float roll_diff = fabsf(wrap_PI(q_roll - qe_roll));
-    const float pitch_diff = fabsf(wrap_PI(q_pitch - qe_pitch));
-    const float yaw_diff = fabsf(wrap_PI(q_yaw - qe_yaw));
+    float roll_diff = fabsf(wrap_PI(q_roll - qe_roll));
+    float pitch_diff = fabsf(wrap_PI(q_pitch - qe_pitch));
+    float yaw_diff = fabsf(wrap_PI(q_yaw - qe_yaw));
     if ((roll_diff > q_accuracy) || (pitch_diff > q_accuracy) || (yaw_diff > q_accuracy)) {
         hal.console->printf("quaternion test %u failed : yaw:%f/%f roll:%f/%f pitch:%f/%f\n",
         (unsigned)rotation,
         (double)q_yaw,(double)qe_yaw,
         (double)q_roll,(double)qe_roll,
         (double)q_pitch,(double)qe_pitch);
+    }
+
+    // test custom rotations
+    AP::custom_rotations().set(ROTATION_CUSTOM_1, roll, pitch, yaw);
+    v1 = v;
+    v1.rotate(ROTATION_CUSTOM_1);
+
+    diff = (v2 - v1);
+    if (diff.length() > accuracy) {
+        hal.console->printf("euler test %u failed : yaw:%d roll:%d pitch:%d\n",
+        (unsigned)rotation,
+        (int)yaw,
+        (int)roll,
+        (int)pitch);
+        hal.console->printf("custom rotated: ");
+        print_vector(v1);
+        hal.console->printf("correct rotated: ");
+        print_vector(v2);
+        hal.console->printf("\n");
+    }
+
+    Quaternion qc;
+    qc.from_rotation(ROTATION_CUSTOM_1);
+    float qc_roll, qc_pitch, qc_yaw;
+    qc.to_euler(qc_roll, qc_pitch, qc_yaw);
+    roll_diff = fabsf(wrap_PI(qc_roll - qe_roll));
+    pitch_diff = fabsf(wrap_PI(qc_pitch - qe_pitch));
+    yaw_diff = fabsf(wrap_PI(qc_yaw - qe_yaw));
+    if ((roll_diff > q_accuracy) || (pitch_diff > q_accuracy) || (yaw_diff > q_accuracy)) {
+        hal.console->printf("custom quaternion test %u failed\n", (unsigned)rotation);
     }
 }
 

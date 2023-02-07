@@ -9,7 +9,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
 
     // @Param: RAT_RLL_P
     // @DisplayName: Roll axis rate controller P gain
-    // @Description: Roll axis rate controller P gain.  Converts the difference between desired roll rate and actual roll rate into a motor speed output
+    // @Description: Roll axis rate controller P gain.  Corrects in proportion to the difference between the desired roll rate vs actual roll rate
     // @Range: 0.0 0.30
     // @Increment: 0.005
     // @User: Standard
@@ -23,7 +23,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
 
     // @Param: RAT_RLL_IMAX
     // @DisplayName: Roll axis rate controller I gain maximum
-    // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
+    // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum that the I term will output
     // @Range: 0 1
     // @Increment: 0.01
     // @User: Standard
@@ -77,7 +77,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
 
     // @Param: RAT_PIT_P
     // @DisplayName: Pitch axis rate controller P gain
-    // @Description: Pitch axis rate controller P gain.  Converts the difference between desired pitch rate and actual pitch rate into a motor speed output
+    // @Description: Pitch axis rate controller P gain.  Corrects in proportion to the difference between the desired pitch rate vs actual pitch rate
     // @Range: 0.0 0.30
     // @Increment: 0.005
     // @User: Standard
@@ -91,7 +91,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
 
     // @Param: RAT_PIT_IMAX
     // @DisplayName: Pitch axis rate controller I gain maximum
-    // @Description: Pitch axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
+    // @Description: Pitch axis rate controller I gain maximum.  Constrains the maximum that the I term will output
     // @Range: 0 1
     // @Increment: 0.01
     // @User: Standard
@@ -145,7 +145,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
 
     // @Param: RAT_YAW_P
     // @DisplayName: Yaw axis rate controller P gain
-    // @Description: Yaw axis rate controller P gain.  Converts the difference between desired yaw rate and actual yaw rate into a motor speed output
+    // @Description: Yaw axis rate controller P gain.  Corrects in proportion to the difference between the desired yaw rate vs actual yaw rate
     // @Range: 0.0 0.50
     // @Increment: 0.005
     // @User: Standard
@@ -159,7 +159,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
 
     // @Param: RAT_YAW_IMAX
     // @DisplayName: Yaw axis rate controller I gain maximum
-    // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
+    // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum that the I term will output
     // @Range: 0 1
     // @Increment: 0.01
     // @User: Standard
@@ -259,12 +259,12 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
     AP_GROUPEND
 };
 
-AC_AttitudeControl_Sub::AC_AttitudeControl_Sub(AP_AHRS_View &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt) :
-    AC_AttitudeControl(ahrs, aparm, motors, dt),
+AC_AttitudeControl_Sub::AC_AttitudeControl_Sub(AP_AHRS_View &ahrs, const AP_MultiCopter &aparm, AP_MotorsMulticopter& motors) :
+    AC_AttitudeControl(ahrs, aparm, motors),
     _motors_multi(motors),
-    _pid_rate_roll(AC_ATC_SUB_RATE_RP_P, AC_ATC_SUB_RATE_RP_I, AC_ATC_SUB_RATE_RP_D, 0.0f, AC_ATC_SUB_RATE_RP_IMAX, AC_ATC_SUB_RATE_RP_FILT_HZ, 0.0f, AC_ATC_SUB_RATE_RP_FILT_HZ, dt),
-    _pid_rate_pitch(AC_ATC_SUB_RATE_RP_P, AC_ATC_SUB_RATE_RP_I, AC_ATC_SUB_RATE_RP_D, 0.0f, AC_ATC_SUB_RATE_RP_IMAX, AC_ATC_SUB_RATE_RP_FILT_HZ, 0.0f, AC_ATC_SUB_RATE_RP_FILT_HZ, dt),
-	_pid_rate_yaw(AC_ATC_SUB_RATE_YAW_P, AC_ATC_SUB_RATE_YAW_I, AC_ATC_SUB_RATE_YAW_D, 0.0f, AC_ATC_SUB_RATE_YAW_IMAX, AC_ATC_SUB_RATE_YAW_FILT_HZ, 0.0f, AC_ATC_SUB_RATE_YAW_FILT_HZ, dt)
+    _pid_rate_roll(AC_ATC_SUB_RATE_RP_P, AC_ATC_SUB_RATE_RP_I, AC_ATC_SUB_RATE_RP_D, 0.0f, AC_ATC_SUB_RATE_RP_IMAX, AC_ATC_SUB_RATE_RP_FILT_HZ, 0.0f, AC_ATC_SUB_RATE_RP_FILT_HZ),
+    _pid_rate_pitch(AC_ATC_SUB_RATE_RP_P, AC_ATC_SUB_RATE_RP_I, AC_ATC_SUB_RATE_RP_D, 0.0f, AC_ATC_SUB_RATE_RP_IMAX, AC_ATC_SUB_RATE_RP_FILT_HZ, 0.0f, AC_ATC_SUB_RATE_RP_FILT_HZ),
+	_pid_rate_yaw(AC_ATC_SUB_RATE_YAW_P, AC_ATC_SUB_RATE_YAW_I, AC_ATC_SUB_RATE_YAW_D, 0.0f, AC_ATC_SUB_RATE_YAW_IMAX, AC_ATC_SUB_RATE_YAW_FILT_HZ, 0.0f, AC_ATC_SUB_RATE_YAW_FILT_HZ)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -297,13 +297,6 @@ void AC_AttitudeControl_Sub::set_throttle_out(float throttle_in, bool apply_angl
     _throttle_in = throttle_in;
     update_althold_lean_angle_max(throttle_in);
     _motors.set_throttle_filter_cutoff(filter_cutoff);
-    if (apply_angle_boost) {
-        // Apply angle boost
-        throttle_in = get_throttle_boosted(throttle_in);
-    }else{
-        // Clear angle_boost for logging purposes
-        _angle_boost = 0.0f;
-    }
     _motors.set_throttle(throttle_in);
     _motors.set_throttle_avg_max(get_throttle_avg_max(MAX(throttle_in, _throttle_in)));
 }
@@ -356,9 +349,9 @@ void AC_AttitudeControl_Sub::rate_controller_run()
     update_throttle_rpy_mix();
 
     Vector3f gyro_latest = _ahrs.get_gyro_latest();
-    _motors.set_roll(get_rate_roll_pid().update_all(_ang_vel_body.x, gyro_latest.x, _motors.limit.roll));
-    _motors.set_pitch(get_rate_pitch_pid().update_all(_ang_vel_body.y, gyro_latest.y, _motors.limit.pitch));
-    _motors.set_yaw(get_rate_yaw_pid().update_all(_ang_vel_body.z, gyro_latest.z, _motors.limit.yaw));
+    _motors.set_roll(get_rate_roll_pid().update_all(_ang_vel_body.x, gyro_latest.x, _dt, _motors.limit.roll));
+    _motors.set_pitch(get_rate_pitch_pid().update_all(_ang_vel_body.y, gyro_latest.y, _dt, _motors.limit.pitch));
+    _motors.set_yaw(get_rate_yaw_pid().update_all(_ang_vel_body.z, gyro_latest.z, _dt, _motors.limit.yaw));
 
     control_monitor_update();
 }

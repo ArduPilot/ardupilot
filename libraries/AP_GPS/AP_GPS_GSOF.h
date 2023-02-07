@@ -22,10 +22,6 @@
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 
-#ifndef AP_GPS_GSOF_ENABLED
-  #define AP_GPS_GSOF_ENABLED 1
-#endif
-
 #if AP_GPS_GSOF_ENABLED
 class AP_GPS_GSOF : public AP_GPS_Backend
 {

@@ -43,6 +43,9 @@ public:
         AP_HAL::Util*       _util,
         AP_HAL::OpticalFlow*_opticalflow,
         AP_HAL::Flash*      _flash,
+#if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
+        class AP_HAL::SIMState*   _simstate,
+#endif
         AP_HAL::DSP*        _dsp,
 #if HAL_NUM_CAN_IFACES > 0
         AP_HAL::CANIface* _can_ifaces[HAL_NUM_CAN_IFACES])
@@ -73,6 +76,9 @@ public:
         util(_util),
         opticalflow(_opticalflow),
         flash(_flash),
+#if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
+        simstate(_simstate),
+#endif
         dsp(_dsp)
     {
 #if HAL_NUM_CAN_IFACES > 0
@@ -109,15 +115,15 @@ public:
 private:
     // the uartX ports must be contiguous in ram for the serial() method to work
     AP_HAL::UARTDriver* uartA;
-    AP_HAL::UARTDriver* uartB;
-    AP_HAL::UARTDriver* uartC;
-    AP_HAL::UARTDriver* uartD;
-    AP_HAL::UARTDriver* uartE;
-    AP_HAL::UARTDriver* uartF;
-    AP_HAL::UARTDriver* uartG;
-    AP_HAL::UARTDriver* uartH;
-    AP_HAL::UARTDriver* uartI;
-    AP_HAL::UARTDriver* uartJ;
+    AP_HAL::UARTDriver* uartB UNUSED_PRIVATE_MEMBER;
+    AP_HAL::UARTDriver* uartC UNUSED_PRIVATE_MEMBER;
+    AP_HAL::UARTDriver* uartD UNUSED_PRIVATE_MEMBER;
+    AP_HAL::UARTDriver* uartE UNUSED_PRIVATE_MEMBER;
+    AP_HAL::UARTDriver* uartF UNUSED_PRIVATE_MEMBER;
+    AP_HAL::UARTDriver* uartG UNUSED_PRIVATE_MEMBER;
+    AP_HAL::UARTDriver* uartH UNUSED_PRIVATE_MEMBER;
+    AP_HAL::UARTDriver* uartI UNUSED_PRIVATE_MEMBER;
+    AP_HAL::UARTDriver* uartJ UNUSED_PRIVATE_MEMBER;
 
 public:
     AP_HAL::I2CDeviceManager* i2c_mgr;
@@ -144,4 +150,15 @@ public:
     UARTDriver* serial(uint8_t sernum) const;
 
     static constexpr uint8_t num_serial = 10;
+
+#if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
+    AP_HAL::SIMState *simstate;
+#endif
+
+#ifndef HAL_CONSOLE_DISABLED
+# define DEV_PRINTF(fmt, args ...)  do { hal.console->printf(fmt, ## args); } while(0)
+#else
+# define DEV_PRINTF(fmt, args ...)
+#endif
+
 };

@@ -23,7 +23,7 @@ TEST(MathTest, IsZeroDouble)
 TEST(MathTest, MAXDouble)
 {
     AP_Float t_float;
-    t_float = 0.1f;
+    t_float.set(0.1f);
     EXPECT_EQ(2.0, MAX(t_float, 2.0));
 }
 TEST(MathTest, IsEqualDouble)

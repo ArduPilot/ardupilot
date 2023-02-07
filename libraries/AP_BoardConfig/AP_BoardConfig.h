@@ -44,14 +44,10 @@ extern "C" typedef int (*main_fn_t)(int argc, char **);
 
 class AP_BoardConfig {
 public:
-    AP_BoardConfig() {
-        _singleton = this;
-        AP_Param::setup_object_defaults(this, var_info);
-    };
+    AP_BoardConfig();
 
     /* Do not allow copies */
-    AP_BoardConfig(const AP_BoardConfig &other) = delete;
-    AP_BoardConfig &operator=(const AP_BoardConfig&) = delete;
+    CLASS_NO_COPY(AP_BoardConfig);
 
     // singleton support
     static AP_BoardConfig *get_singleton(void) {
@@ -99,11 +95,13 @@ public:
         VRX_BOARD_CORE10   = 36,
         VRX_BOARD_BRAIN54  = 38,
         PX4_BOARD_FMUV6    = 39,
+        FMUV6_BOARD_HOLYBRO_6X = 40,
+        FMUV6_BOARD_CUAV_6X = 41,
         PX4_BOARD_OLDDRIVERS = 100,
     };
 
     // set default value for BRD_SAFETY_MASK
-    void set_default_safety_ignore_mask(uint16_t mask);
+    void set_default_safety_ignore_mask(uint32_t mask);
 
     static enum px4_board_type get_board_type(void) {
 #if AP_FEATURE_BOARD_DETECT
@@ -124,12 +122,10 @@ public:
 #endif
     }
 
-#ifdef HAL_PIN_ALT_CONFIG
     // get alternative config selection
     uint8_t get_alt_config(void) {
         return uint8_t(_alt_config.get());
     }
-#endif // HAL_PIN_ALT_CONFIG
 
     enum board_safety_button_option {
         BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF= (1 << 0),
@@ -145,11 +141,7 @@ public:
 
     // return the value of BRD_SAFETY_MASK
     uint16_t get_safety_mask(void) const {
-#if AP_FEATURE_BOARD_DETECT || defined(AP_FEATURE_BRD_PWM_COUNT_PARAM)
-        return uint16_t(state.ignore_safety_channels.get());
-#else
-        return 0;
-#endif
+        return uint32_t(state.ignore_safety_channels.get());
     }
 
 #if HAL_HAVE_BOARD_VOLTAGE
@@ -177,6 +169,9 @@ public:
         DISABLE_FTP = (1<<1),
         ALLOW_SET_INTERNAL_PARM = (1<<2),
         BOARD_OPTION_DEBUG_ENABLE = (1<<3),
+        UNLOCK_FLASH = (1<<4),
+        WRITE_PROTECT_FLASH = (1<<5),
+        WRITE_PROTECT_BOOTLOADER = (1<<6),
     };
 
     // return true if ftp is disabled
@@ -187,6 +182,21 @@ public:
     // return true if watchdog enabled
     static bool watchdog_enabled(void) {
         return _singleton?(_singleton->_options & BOARD_OPTION_WATCHDOG)!=0:HAL_WATCHDOG_ENABLED_DEFAULT;
+    }
+
+    // return true if flash should be unlocked
+    static bool unlock_flash(void) {
+        return _singleton && (_singleton->_options & UNLOCK_FLASH) != 0;
+    }
+
+    // return true if flash should be write protected
+    static bool protect_flash(void) {
+        return _singleton && (_singleton->_options & WRITE_PROTECT_FLASH) != 0;
+    }
+
+    // return true if bootloader should be write protected
+    static bool protect_bootloader(void) {
+        return _singleton && (_singleton->_options & WRITE_PROTECT_BOOTLOADER) != 0;
     }
 
     // return true if we allow setting of internal parameters (for developers)
@@ -214,7 +224,7 @@ public:
 private:
     static AP_BoardConfig *_singleton;
     
-    AP_Int16 vehicleSerialNumber;
+    AP_Int32 vehicleSerialNumber;
 
     struct {
         AP_Int8 safety_enable;
@@ -236,6 +246,7 @@ private:
     bool spi_check_register_inv2(const char *devname, uint8_t regnum, uint8_t value, uint8_t read_flag = 0x80);
     void validate_board_type(void);
     void board_autodetect(void);
+    void detect_fmuv6_variant(void);
     bool check_ms5611(const char* devname);
 
 #endif // AP_FEATURE_BOARD_DETECT
@@ -254,9 +265,9 @@ private:
 
 #if HAL_HAVE_IMU_HEATER
     struct {
+        AC_PI pi_controller;
         AP_Int8 imu_target_temperature;
         uint32_t last_update_ms;
-        AC_PI pi_controller{HAL_IMUHEAT_P_DEFAULT, HAL_IMUHEAT_I_DEFAULT, 70};
         uint16_t count;
         float sum;
         float output;
@@ -282,9 +293,7 @@ private:
     AP_Float _vservo_min;
 #endif
 
-#ifdef HAL_GPIO_PWM_VOLT_PIN
     AP_Int8 _pwm_volt_sel;
-#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     AP_Int8 _sdcard_slowdown;
@@ -294,9 +303,7 @@ private:
 
     AP_Int32 _options;
 
-#ifdef HAL_PIN_ALT_CONFIG
     AP_Int8  _alt_config;
-#endif
 };
 
 namespace AP {

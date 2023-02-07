@@ -7,7 +7,6 @@
 #define HAL_OS_SOCKETS 1
 #define HAL_STORAGE_SIZE            16384
 #define HAL_STORAGE_SIZE_AVAILABLE  HAL_STORAGE_SIZE
-#define HAL_DSHOT_ALARM 0
 
 // make sensor selection clearer
 #define PROBE_IMU_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,GET_I2C_DEVICE(bus, addr),##args))
@@ -29,7 +28,6 @@
     #define HAL_BOARD_STORAGE_DIRECTORY "."
     #define HAL_INS_DEFAULT HAL_INS_NONE
     #define HAL_BARO_DEFAULT HAL_BARO_NONE
-    #define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD
     #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
       #define HAL_INS_PROBE_LIST PROBE_IMU_SPI(Invensense, "mpu9250", ROTATION_ROLL_180_YAW_270)
@@ -85,7 +83,6 @@
     // linux SBC with VectorNav AHRS
     #define HAL_EXTERNAL_AHRS_DEFAULT 1
     #define HAL_SERIAL3_PROTOCOL 36
-    #define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
     #define HAL_AIRSPEED_TYPE_DEFAULT 0
     #define HAL_GPS_TYPE_DEFAULT 21
     #define HAL_AHRS_EKF_TYPE_DEFAULT 11
@@ -159,10 +156,8 @@
     // Stub the sensors out for now, at least we can build and run
     #define HAL_INS_DEFAULT HAL_INS_NONE
     #define HAL_BARO_DEFAULT HAL_BARO_NONE
-    #define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
     // only external compasses
     #define HAL_PROBE_EXTERNAL_I2C_COMPASSES
-    #define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OCPOC_ZYNQ
     #define HAL_INS_PROBE_LIST PROBE_IMU_SPI(Invensense, "mpu9250", ROTATION_NONE)
     #define HAL_BARO_PROBE_LIST PROBE_BARO_SPI(MS56XX, "ms5611")
@@ -277,7 +272,6 @@
     #define HAL_BARO_PROBE_LIST PROBE_BARO_SPI(MS56XX, "ms5611")
     // only external compasses
     #define HAL_PROBE_EXTERNAL_I2C_COMPASSES
-    #define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
     #define HAL_NUM_CAN_IFACES 1
     #define HAL_IMU_TEMP_DEFAULT 55
     #define HAL_HAVE_IMU_HEATER 1
@@ -333,10 +327,6 @@
 
 #else
     #error "no Linux board subtype set"
-#endif
-
-#ifndef HAL_COMPASS_DEFAULT
-    #define HAL_COMPASS_DEFAULT -1
 #endif
 
 #ifndef HAL_OPTFLOW_PX4FLOW_I2C_ADDRESS
@@ -401,4 +391,8 @@
 
 #ifndef HAL_WITH_EKF_DOUBLE
 #define HAL_WITH_EKF_DOUBLE HAL_HAVE_HARDWARE_DOUBLE
+#endif
+
+#ifndef HAL_GYROFFT_ENABLED
+#define HAL_GYROFFT_ENABLED 0
 #endif

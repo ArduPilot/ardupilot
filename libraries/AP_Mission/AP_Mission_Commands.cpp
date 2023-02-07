@@ -7,6 +7,8 @@
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AC_Sprayer/AC_Sprayer.h>
 #include <AP_Scripting/AP_Scripting.h>
+#include <RC_Channel/RC_Channel.h>
+#include <AP_Mount/AP_Mount.h>
 
 bool AP_Mission::start_command_do_aux_function(const AP_Mission::Mission_Command& cmd)
 {
@@ -27,6 +29,7 @@ bool AP_Mission::start_command_do_aux_function(const AP_Mission::Mission_Command
     return true;
 }
 
+#if AP_GRIPPER_ENABLED
 bool AP_Mission::start_command_do_gripper(const AP_Mission::Mission_Command& cmd)
 {
     AP_Gripper *gripper = AP::gripper();
@@ -54,6 +57,7 @@ bool AP_Mission::start_command_do_gripper(const AP_Mission::Mission_Command& cmd
         return false;
     }
 }
+#endif  // AP_GRIPPER_ENABLED
 
 bool AP_Mission::start_command_do_servorelayevents(const AP_Mission::Mission_Command& cmd)
 {
@@ -87,6 +91,7 @@ bool AP_Mission::start_command_do_servorelayevents(const AP_Mission::Mission_Com
     }
 }
 
+#if AP_CAMERA_ENABLED
 bool AP_Mission::start_command_camera(const AP_Mission::Mission_Command& cmd)
 {
     AP_Camera *camera = AP::camera();
@@ -131,6 +136,7 @@ bool AP_Mission::start_command_camera(const AP_Mission::Mission_Command& cmd)
         return false;
     }
 }
+#endif
 
 bool AP_Mission::start_command_parachute(const AP_Mission::Mission_Command& cmd)
 {
@@ -202,4 +208,48 @@ bool AP_Mission::start_command_do_scripting(const AP_Mission::Mission_Command& c
 #else
     return false;
 #endif // AP_SCRIPTING_ENABLED
+}
+
+bool AP_Mission::start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Mission_Command& cmd)
+{
+#if HAL_MOUNT_ENABLED
+    AP_Mount *mount = AP::mount();
+    if (mount == nullptr) {
+        return false;
+    }
+
+    // check gimbal device id.  0 is primary, 1 is 1st gimbal, 2 is 2nd gimbal, etc
+    uint8_t gimbal_instance = mount->get_primary();
+    if (cmd.content.gimbal_manager_pitchyaw.gimbal_id > 0) {
+        gimbal_instance = cmd.content.gimbal_manager_pitchyaw.gimbal_id - 1;
+    }
+
+    // check flags for change to RETRACT
+    if ((cmd.content.gimbal_manager_pitchyaw.flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
+        mount->set_mode(gimbal_instance, MAV_MOUNT_MODE_RETRACT);
+        return true;
+    }
+    // check flags for change to NEUTRAL
+    if ((cmd.content.gimbal_manager_pitchyaw.flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
+        mount->set_mode(gimbal_instance, MAV_MOUNT_MODE_NEUTRAL);
+        return true;
+    }
+
+    // handle angle target
+    const bool pitch_angle_valid = !isnan(cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg) && (fabsf(cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg) <= 90);
+    const bool yaw_angle_valid = !isnan(cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg) && (fabsf(cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg) <= 360);
+    if (pitch_angle_valid && yaw_angle_valid) {
+        mount->set_angle_target(gimbal_instance, 0, cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg, cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg, cmd.content.gimbal_manager_pitchyaw.flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        return true;
+    }
+
+    // handle rate target
+    if (!isnan(cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs) && !isnan(cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs)) {
+        mount->set_rate_target(gimbal_instance, 0, cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs, cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs, cmd.content.gimbal_manager_pitchyaw.flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        return true;
+    }
+
+#endif // HAL_MOUNT_ENABLED
+    // if we got this far then message is not handled
+    return false;
 }

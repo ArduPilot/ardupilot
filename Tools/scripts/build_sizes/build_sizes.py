@@ -16,7 +16,7 @@ parser.add_argument('basedir', default=None, help='base directory (binaries dire
 parser.add_argument('--outfile', default="builds.html", help='output file')
 
 build_dirs = ['latest', 'beta', 'stable']
-builds = ['Plane', 'Copter', 'Rover', 'Sub', 'Blimp', 'AP_Periph']
+builds = ['Plane', 'Copter', 'Rover', 'Sub', 'Blimp', 'AntennaTracker', 'AP_Periph']
 
 args = parser.parse_args()
 
@@ -90,7 +90,8 @@ a {
 </a>
 <h2 id='top'>Build List</h2>
 <p>This is an auto-generated list of current builds
-    allowing us to quickly see how close we are to running out of flash space. </p>
+    allowing us to quickly see how close we are to running out of flash space.
+<br>This page was most recently regenerated on %s UTC.</p>
 <p>Builds that are coloured red haven't built recently. Builds that are coloured yellow have low flash space remaining.</p>
 <p>Click on any column header to sort by that column, or filter by entering a search term in the box above each table.</p>
 <ul>
@@ -98,7 +99,7 @@ a {
 <li>Jump to <a href='#beta'>beta</a></li>
 <li>Jump to <a href='#stable'>stable</a></li>
 </ul>
-''')
+''' % datetime.now().strftime("%F %k:%M"))
 
 
 def write_footer(h):
@@ -123,7 +124,7 @@ def write_table(h, build_type):
             max_mtime = apjinfo.mtime
 
     for apjinfo in boards:
-        if apjinfo.flash_free < warning_flash_free:
+        if apjinfo.flash_free < warning_flash_free and not apjinfo.flash_free == -1:
             apjinfo.warning = 1
         if int(apjinfo.mtime) < int(max_mtime)-warning_build_days*86400 and build_type == "latest":
             apjinfo.warning = 2
@@ -146,7 +147,7 @@ def write_table(h, build_type):
 <h3 id='%s'>%s builds</h3>
 <p><input type="text" id="search_%s" onkeyup="searchFunc('%s')" placeholder="Filter..."></p>
 <table class="sortable" id="table_%s">
-<tr><th style="width:80px">Vehicle</th><th style="width:220px">Board</th><th style="width:140px">Build Date</th>
+<tr><th style="width:90px">Vehicle</th><th style="width:250px">Board</th><th style="width:140px">Build Date</th>
     <th style="width:100px">git hash</th><th style="width:100px">Flash Free</th></tr>
 ''' % (build_type, build_type.capitalize(), build_type, build_type, build_type))
 

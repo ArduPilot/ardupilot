@@ -42,12 +42,14 @@ public:
     void bicopter_output();
     void tilt_compensate_angle(float *thrust, uint8_t num_motors, float non_tilted_mul, float tilted_mul);
     void tilt_compensate(float *thrust, uint8_t num_motors);
+    bool tilt_over_max_angle(void) const;
 
     bool is_motor_tilting(uint8_t motor) const {
         return (((uint8_t)tilt_mask.get()) & (1U<<motor));
     }
 
     bool fully_fwd() const;
+    bool fully_up() const;
     float tilt_max_change(bool up, bool in_flap_range = false) const;
     float get_fully_forward_tilt() const;
     float get_forward_flight_tilt() const;

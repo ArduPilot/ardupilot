@@ -15,8 +15,8 @@ class AP_MotorsMatrix : public AP_MotorsMulticopter {
 public:
 
     /// Constructor
-    AP_MotorsMatrix(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_MotorsMulticopter(loop_rate, speed_hz)
+    AP_MotorsMatrix(uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+        AP_MotorsMulticopter(speed_hz)
     {
         if (_singleton != nullptr) {
             AP_HAL::panic("AP_MotorsMatrix must be singleton");
@@ -48,11 +48,6 @@ public:
     // you must have setup_motors before calling this
     void                set_update_rate(uint16_t speed_hz) override;
 
-    // output_test_seq - spin a motor at the pwm value specified
-    //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
-    //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-    virtual void        output_test_seq(uint8_t motor_seq, int16_t pwm) override;
-
     // output_test_num - spin a motor connected to the specified output channel
     //  (should only be performed during testing)
     //  If a motor output channel is remapped, the mapped channel is used.
@@ -65,7 +60,7 @@ public:
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-    uint16_t            get_motor_mask() override;
+    uint32_t            get_motor_mask() override;
 
     // return number of motor that has failed.  Should only be called if get_thrust_boost() returns true
     uint8_t             get_lost_motor() const override { return _motor_lost_index; }
@@ -134,6 +129,11 @@ protected:
     const char*         _get_frame_string() const override { return _frame_class_string; }
     const char*         get_type_string() const override { return _frame_type_string; }
 
+    // output_test_seq - spin a motor at the pwm value specified
+    //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
+    //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
+    virtual void        _output_test_seq(uint8_t motor_seq, int16_t pwm) override;
+
     float               _roll_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to roll
     float               _pitch_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to pitch
     float               _yaw_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to yaw (normally 1 or -1)
@@ -150,6 +150,16 @@ protected:
 
     const char*         _frame_class_string = ""; // string representation of frame class
     const char*         _frame_type_string = "";  //  string representation of frame type
+
 private:
+    // setup motors matrix
+    bool setup_quad_matrix(motor_frame_type frame_type);
+    bool setup_hexa_matrix(motor_frame_type frame_type);
+    bool setup_octa_matrix(motor_frame_type frame_type);
+    bool setup_deca_matrix(motor_frame_type frame_type);
+    bool setup_dodecahexa_matrix(motor_frame_type frame_type);
+    bool setup_y6_matrix(motor_frame_type frame_type);
+    bool setup_octaquad_matrix(motor_frame_type frame_type);
+
     static AP_MotorsMatrix *_singleton;
 };

@@ -2,7 +2,6 @@
 /// @brief	handle routing of MAVLink packets by ID
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include "GCS_MAVLink.h"
 
@@ -43,6 +42,12 @@ public:
       returns true if a match is found
      */
     bool find_by_mavtype(uint8_t mavtype, uint8_t &sysid, uint8_t &compid, mavlink_channel_t &channel);
+
+    /*
+      search for the first vehicle or component in the routing table with given mav_type and component id and retrieve its sysid and channel
+      returns true if a match is found
+     */
+    bool find_by_mavtype_and_compid(uint8_t mavtype, uint8_t compid, uint8_t &sysid, mavlink_channel_t &channel) const;
 
 private:
     // a simple linear routing table. We don't expect to have a lot of

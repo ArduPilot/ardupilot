@@ -6,7 +6,7 @@ void Sub::read_barometer()
     barometer.update();
     // If we are reading a positive altitude, the sensor needs calibration
     // Even a few meters above the water we should have no significant depth reading
-    if(!motors.armed() && barometer.get_altitude() > 0) {
+    if(barometer.get_altitude() > 0) {
         barometer.update_calibration();
     }
 
@@ -69,12 +69,4 @@ void Sub::read_rangefinder()
 bool Sub::rangefinder_alt_ok() const
 {
     return (rangefinder_state.enabled && rangefinder_state.alt_healthy);
-}
-
-/*
-  ask airspeed sensor for a new value, duplicated from plane
- */
-void Sub::read_airspeed()
-{
-    g2.airspeed.update(should_log(MASK_LOG_IMU));
 }

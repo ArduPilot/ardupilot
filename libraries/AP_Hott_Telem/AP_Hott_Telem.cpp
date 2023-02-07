@@ -34,7 +34,7 @@
 #include <AP_RTC/AP_RTC.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Mission/AP_Mission.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #include <stdio.h>
 
 #define PROT_BINARY   0x80
@@ -73,7 +73,7 @@ void AP_Hott_Telem::init()
         if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Hott_Telem::loop, void),
                                           "Hott",
                                           1024, AP_HAL::Scheduler::PRIORITY_BOOST, 1)) {
-            hal.console->printf("Failed to create Hott thread\n");
+            DEV_PRINTF("Failed to create Hott thread\n");
         }
     }
 }
@@ -148,11 +148,13 @@ void AP_Hott_Telem::send_EAM(void)
     msg.climbrate = uint16_t(30000.5 + vel.z * -100);
     msg.climbrate3s = 120 + vel.z * -3;
 
+#if AP_RPM_ENABLED
     const AP_RPM *rpm = AP::rpm();
     float rpm_value;
     if (rpm && rpm->get_rpm(0, rpm_value)) {
         msg.rpm = rpm_value * 0.1;
     }
+#endif
 
     AP_Stats *stats = AP::stats();
     if (stats) {
@@ -161,6 +163,7 @@ void AP_Hott_Telem::send_EAM(void)
         msg.electric_sec = t % 60U;
     }
 
+#if AP_AIRSPEED_ENABLED
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
     if (airspeed && airspeed->healthy()) {
         msg.speed = uint16_t(airspeed->get_airspeed() * 3.6 + 0.5);
@@ -168,6 +171,10 @@ void AP_Hott_Telem::send_EAM(void)
         WITH_SEMAPHORE(ahrs.get_semaphore());
         msg.speed = uint16_t(ahrs.groundspeed() * 3.6 + 0.5);
     }
+#else
+    WITH_SEMAPHORE(ahrs.get_semaphore());
+    msg.speed = uint16_t(ahrs.groundspeed() * 3.6 + 0.5);
+#endif
 
     send_packet((const uint8_t *)&msg, sizeof(msg));
 }

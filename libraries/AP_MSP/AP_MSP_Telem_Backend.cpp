@@ -17,10 +17,12 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
+#include <AP_Compass/AP_Compass.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_Notify/AP_Notify.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_RCMapper/AP_RCMapper.h>
@@ -180,7 +182,7 @@ void AP_MSP_Telem_Backend::update_home_pos(home_state_t &home_state)
     WITH_SEMAPHORE(_ahrs.get_semaphore());
     Location loc;
     float alt;
-    if (_ahrs.get_position(loc) && _ahrs.home_is_set()) {
+    if (_ahrs.get_location(loc) && _ahrs.home_is_set()) {
         const Location &home_loc = _ahrs.get_home();
         home_state.home_distance_m = home_loc.get_distance(loc);
         home_state.home_bearing_cd = loc.get_bearing_to(home_loc);
@@ -525,7 +527,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_sensor_command(uint16_t cmd_m
 void AP_MSP_Telem_Backend::msp_handle_opflow(const MSP::msp_opflow_data_message_t &pkt)
 {
 #if HAL_MSP_OPTICALFLOW_ENABLED
-    OpticalFlow *optflow = AP::opticalflow();
+    AP_OpticalFlow *optflow = AP::opticalflow();
     if (optflow == nullptr) {
         return;
     }
@@ -553,26 +555,36 @@ void AP_MSP_Telem_Backend::msp_handle_gps(const MSP::msp_gps_data_message_t &pkt
 
 void AP_MSP_Telem_Backend::msp_handle_compass(const MSP::msp_compass_data_message_t &pkt)
 {
-#if HAL_MSP_COMPASS_ENABLED
+#if AP_COMPASS_MSP_ENABLED
     AP::compass().handle_msp(pkt);
 #endif
 }
 
 void AP_MSP_Telem_Backend::msp_handle_baro(const MSP::msp_baro_data_message_t &pkt)
 {
-#if HAL_MSP_BARO_ENABLED
+#if AP_BARO_MSP_ENABLED
     AP::baro().handle_msp(pkt);
 #endif
 }
 
 void AP_MSP_Telem_Backend::msp_handle_airspeed(const MSP::msp_airspeed_data_message_t &pkt)
 {
-#if HAL_MSP_AIRSPEED_ENABLED
+#if AP_AIRSPEED_MSP_ENABLED && AP_AIRSPEED_ENABLED
     auto *airspeed = AP::airspeed();
     if (airspeed) {
         airspeed->handle_msp(pkt);
     }
 #endif
+}
+
+uint32_t AP_MSP_Telem_Backend::get_osd_flight_mode_bitmask(void)
+{
+    // Note: we only set the BOXARM bit (bit 0) which is the same for BF, INAV and DJI VTX
+    // When armed we simply return 1 (1 == 1 << 0)
+    if (hal.util->get_soft_armed()) {
+        return 1U;
+    }
+    return 0U;
 }
 
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_api_version(sbuf_t *dst)
@@ -826,7 +838,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_osd_config(sbuf_t *dst)
         if (msp->_osd_item_settings[i] != nullptr) {      // ok supported
             if (msp->_osd_item_settings[i]->enabled) {    // ok enabled
                 // let's check if we need to hide this dynamically
-                if (!BIT_IS_SET(osd_hidden_items_bitmask, i)) {
+                if (!BIT_IS_SET_64(osd_hidden_items_bitmask, i)) {
                     pos = MSP_OSD_POS(msp->_osd_item_settings[i]);
                 }
             }
@@ -1214,6 +1226,12 @@ void AP_MSP_Telem_Backend::msp_displayport_write_string(uint8_t col, uint8_t row
     memcpy(packet.text, string, len);
 
     msp_send_packet(MSP_DISPLAYPORT, MSP::MSP_V1, &packet, 4 + len, false);
+}
+
+void AP_MSP_Telem_Backend::msp_displayport_set_options(const uint8_t font_index, const uint8_t screen_resolution)
+{
+    const uint8_t subcmd[] = { msp_displayport_subcmd_e::MSP_DISPLAYPORT_SET_OPTIONS, font_index, screen_resolution };
+    msp_send_packet(MSP_DISPLAYPORT, MSP::MSP_V1, subcmd, sizeof(subcmd), false);
 }
 #endif //HAL_WITH_MSP_DISPLAYPORT
 bool AP_MSP_Telem_Backend::displaying_stats_screen() const

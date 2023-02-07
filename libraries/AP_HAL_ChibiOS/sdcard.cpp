@@ -14,11 +14,13 @@
  *
  */
 
+#include <hal.h>
 #include "SPIDevice.h"
 #include "sdcard.h"
 #include "hwdef/common/spi_hook.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#include "bouncebuffer.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -170,8 +172,10 @@ bool sdcard_retry(void)
 #ifdef USE_POSIX
     if (!sdcard_running) {
         if (sdcard_init()) {
+#if HAVE_FILESYSTEM_SUPPORT
             // create APM directory
             AP::FS().mkdir("/APM");
+#endif
         }
     }
     return sdcard_running;
@@ -197,7 +201,7 @@ void spiStopHook(SPIDriver *spip)
 {
 }
 
-void spiSelectHook(SPIDriver *spip)
+__RAMFUNC__ void spiSelectHook(SPIDriver *spip)
 {
     if (sdcard_running) {
         device->get_semaphore()->take_blocking();
@@ -205,7 +209,7 @@ void spiSelectHook(SPIDriver *spip)
     }
 }
 
-void spiUnselectHook(SPIDriver *spip)
+__RAMFUNC__ void spiUnselectHook(SPIDriver *spip)
 {
     if (sdcard_running) {
         device->set_chip_select(false);
@@ -220,14 +224,14 @@ void spiIgnoreHook(SPIDriver *spip, size_t n)
     }
 }
 
-void spiSendHook(SPIDriver *spip, size_t n, const void *txbuf)
+__RAMFUNC__ void spiSendHook(SPIDriver *spip, size_t n, const void *txbuf)
 {
     if (sdcard_running) {
         device->transfer((const uint8_t *)txbuf, n, nullptr, 0);
     }
 }
 
-void spiReceiveHook(SPIDriver *spip, size_t n, void *rxbuf)
+__RAMFUNC__ void spiReceiveHook(SPIDriver *spip, size_t n, void *rxbuf)
 {
     if (sdcard_running) {
         device->transfer(nullptr, 0, (uint8_t *)rxbuf, n);

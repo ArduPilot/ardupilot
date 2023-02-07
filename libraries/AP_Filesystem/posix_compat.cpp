@@ -83,6 +83,10 @@ APFS_FILE *apfs_fopen(const char *pathname, const char *mode)
         return nullptr;
     }
     f->fd = AP::FS().open(pathname, posix_fopen_modes_to_open(mode));
+    if (f->fd == -1) {
+        delete f;
+        return nullptr;
+    }
     f->unget = -1;
     return f;
 }
@@ -146,15 +150,14 @@ int apfs_fputs(const char *s, APFS_FILE *stream)
     return ret;
 }
 
+#undef fgets
 char *apfs_fgets(char *s, int size, APFS_FILE *stream)
 {
     CHECK_STREAM(stream, NULL);
-    ssize_t ret = AP::FS().read(stream->fd, s, size-1);
-    if (ret < 0) {
-        stream->error = true;
+    auto &fs = AP::FS();
+    if (!fs.fgets(s, size, stream->fd)) {
         return NULL;
     }
-    s[ret] = 0;
     return s;
 }
 

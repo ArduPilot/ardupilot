@@ -18,7 +18,7 @@ void Plane::read_rangefinder(void)
 #endif
     {
         // use the best available alt estimate via baro above home
-        if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
+        if (flight_stage == AP_FixedWing::FlightStage::LAND) {
             // ensure the rangefinder is powered-on when land alt is higher than home altitude.
             // This is done using the target alt which we know is below us and we are sinking to it
             height = height_above_target();
@@ -32,29 +32,4 @@ void Plane::read_rangefinder(void)
     rangefinder.update();
 
     rangefinder_height_update();
-}
-
-/*
-  ask airspeed sensor for a new value
- */
-void Plane::read_airspeed(void)
-{
-    airspeed.update(should_log(MASK_LOG_IMU));
-
-    // we calculate airspeed errors (and thus target_airspeed_cm) even
-    // when airspeed is disabled as TECS may be using synthetic
-    // airspeed for a quadplane transition
-    calc_airspeed_errors();
-    
-    // update smoothed airspeed estimate
-    float aspeed;
-    if (ahrs.airspeed_estimate(aspeed)) {
-        smoothed_airspeed = smoothed_airspeed * 0.8f + aspeed * 0.2f;
-    }
-
-    // low pass filter speed scaler, with 1Hz cutoff, at 10Hz
-    const float speed_scaler = calc_speed_scaler();
-    const float cutoff_Hz = 2.0;
-    const float dt = 0.1;
-    surface_speed_scaler += calc_lowpass_alpha_dt(dt, cutoff_Hz) * (speed_scaler - surface_speed_scaler);
 }

@@ -193,6 +193,13 @@ uint8_t HAL_SITL::get_instance() const
     return _sitl_state->get_instance();
 }
 
+#if defined(HAL_BUILD_AP_PERIPH)
+bool HAL_SITL::run_in_maintenance_mode() const
+{
+    return _sitl_state->run_in_maintenance_mode();
+}
+#endif
+
 void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
     assert(callbacks);
@@ -257,7 +264,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
     uint32_t last_watchdog_save = AP_HAL::millis();
     uint8_t fill_count = 0;
 
-    while (!HALSITL::Scheduler::_should_reboot) {
+    while (true) {
         if (HALSITL::Scheduler::_should_exit) {
             ::fprintf(stderr, "Exitting\n");
             exit(0);
@@ -265,6 +272,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
         if (fill_count++ % 10 == 0) {
             // only fill every 10 loops. This still gives us a lot of
             // protection, but saves a lot of CPU
+            fill_count = 1u;
             fill_stack_nan();
         }
         callbacks->loop();

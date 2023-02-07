@@ -283,7 +283,7 @@ bool AP_Torqeedo::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
     return true;
 }
 
-// returns a human-readable string corresponding the the passed-in
+// returns a human-readable string corresponding the passed-in
 // master error code (see page 93 of https://media.torqeedo.com/downloads/manuals/torqeedo-Travel-manual-DE-EN.pdf)
 // If no conversion is available then nullptr is returned
 const char * AP_Torqeedo::map_master_error_code_to_string(uint8_t code) const
@@ -1031,7 +1031,7 @@ int16_t AP_Torqeedo::calc_motor_speed_limited(int16_t desired_motor_speed)
     }
 
     // calculate dt since last update
-    float dt = (now_ms - _motor_speed_limited_ms) / 1000.0f;
+    float dt = (now_ms - _motor_speed_limited_ms) * 0.001f;
     if (dt > 1.0) {
         // after a long delay limit motor output to zero to avoid sudden starts
         lower_limit = 0;

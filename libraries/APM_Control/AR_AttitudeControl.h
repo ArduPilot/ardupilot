@@ -67,9 +67,14 @@ public:
     float get_throttle_out_stop(bool motor_limit_low, bool motor_limit_high, float cruise_speed, float cruise_throttle, float dt, bool &stopped);
 
     // balancebot pitch to throttle controller
-    // returns a throttle output from -100 to +100 given a desired pitch angle and vehicle's current speed (from wheel encoders)
-    // desired_pitch is in radians, veh_speed_pct is supplied as a percentage (-100 to +100) of vehicle's top speed
-    float get_throttle_out_from_pitch(float desired_pitch, float veh_speed_pct, bool motor_limit_low, bool motor_limit_high, float dt);
+    // returns a throttle output from -1 to +1 given a desired pitch angle (in radians)
+    // pitch_max should be the user defined max pitch angle (in radians)
+    // motor_limit should be true if the motors have hit their upper or lower limit
+    float get_throttle_out_from_pitch(float desired_pitch, float pitch_max, bool motor_limit, float dt);
+
+    // returns true if the pitch angle has been limited to prevent falling over
+    // pitch limit protection is implemented within get_throttle_out_from_pitch
+    bool pitch_limited() const { return _pitch_limited; }
 
     // get latest desired pitch in radians for reporting purposes
     float get_desired_pitch() const;
@@ -82,7 +87,7 @@ public:
     AC_PID& get_steering_rate_pid() { return _steer_rate_pid; }
     AC_PID& get_pitch_to_throttle_pid() { return _pitch_to_throttle_pid; }
     AC_PID& get_sailboat_heel_pid() { return _sailboat_heel_pid; }
-    const AP_Logger::PID_Info& get_throttle_speed_pid_info() const { return _throttle_speed_pid_info; }
+    const AP_PIDInfo& get_throttle_speed_pid_info() const { return _throttle_speed_pid_info; }
 
     // get forward speed in m/s (earth-frame horizontal velocity but only along vehicle x-axis).  returns true on success
     bool get_forward_speed(float &speed) const;
@@ -121,7 +126,9 @@ private:
     AC_PID   _steer_rate_pid;       // steering rate controller
     AC_PID   _throttle_speed_pid;   // throttle speed controller
     AC_PID   _pitch_to_throttle_pid;// balancebot pitch controller
-    AP_Float _pitch_to_throttle_speed_ff;   // balancebot feed forward from speed
+    AP_Float _pitch_to_throttle_ff; // balancebot feed forward from current pitch angle
+    AP_Float _pitch_limit_tc;       // balancebot pitch limit protection time constant
+    AP_Float _pitch_limit_throttle_thresh;  // balancebot pitch limit throttle threshold (in the range 0 to 1.0)
 
     AP_Float _throttle_accel_max;   // speed/throttle control acceleration (and deceleration) maximum in m/s/s.  0 to disable limits
     AP_Float _throttle_decel_max;    // speed/throttle control deceleration maximum in m/s/s. 0 to use ATC_ACCEL_MAX for deceleration
@@ -143,10 +150,13 @@ private:
     uint32_t _stop_last_ms;         // system time the vehicle was at a complete stop
     bool     _throttle_limit_low;   // throttle output was limited from going too low (used to reduce i-term buildup)
     bool     _throttle_limit_high;  // throttle output was limited from going too high (used to reduce i-term buildup)
-    AP_Logger::PID_Info _throttle_speed_pid_info;   // local copy of throttle_speed controller's PID info to allow reporting of unusual FF
+    AP_PIDInfo _throttle_speed_pid_info;   // local copy of throttle_speed controller's PID info to allow reporting of unusual FF
 
     // balancebot pitch control
-    uint32_t _balance_last_ms = 0;
+    uint32_t _balance_last_ms = 0;  // system time that get_throttle_out_from_pitch was last called
+    float _pitch_limit_low = 0;     // min desired pitch (in radians) used to protect against falling over
+    float _pitch_limit_high = 0;    // max desired pitch (in radians) used to protect against falling over
+    bool _pitch_limited = false;    // true if pitch was limited on last call to get_throttle_out_from_pitch
 
     // Sailboat heel control
     AC_PID   _sailboat_heel_pid;    // Sailboat heel angle pid controller

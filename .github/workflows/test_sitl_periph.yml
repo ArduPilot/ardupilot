@@ -1,9 +1,26 @@
 name: test ap_periph
 
-on: [push, pull_request, workflow_dispatch]
-# paths:
-# - "*"
-# - "!README.md" <-- don't rebuild on doc change
+on: 
+  push:
+    paths-ignore: # ignore vehicle only changes
+      - 'AntennaTracker/**'
+      - 'ArduPlane/**'
+      - 'ArduSub/**'
+      - 'Rover/**'
+      - 'Blimp/**'
+      - 'ArduCopter/**'
+
+  pull_request:
+    paths-ignore: # ignore vehicle only changes
+      - 'AntennaTracker/**'
+      - 'ArduPlane/**'
+      - 'ArduSub/**'
+      - 'Rover/**'
+      - 'Blimp/**'
+      - 'ArduCopter/**'
+
+  workflow_dispatch:
+
 concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true
@@ -11,10 +28,10 @@ concurrency:
 jobs:
   build-gcc-ap_periph:
     runs-on: ubuntu-20.04
-    container: ardupilot/ardupilot-dev-base:latest
+    container: ardupilot/ardupilot-dev-periph:latest
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
       # Put ccache into github cache for faster build
@@ -22,27 +39,16 @@ jobs:
         id: ccache_cache_timestamp
         run: |
           NOW=$(date -u +"%F-%T")
-          echo "::set-output name=timestamp::${NOW}"
+          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
       - name: ccache cache files
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.ccache
           key: ${{github.workflow}}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
           restore-keys: ${{github.workflow}}-ccache-  # restore ccache from either previous build on this branch or on master
       - name: setup ccache
         run: |
-          mkdir -p ~/.ccache
-          echo "base_dir = ${GITHUB_WORKSPACE}" > ~/.ccache/ccache.conf
-          echo "compression = true" >> ~/.ccache/ccache.conf
-          echo "compression_level = 6" >> ~/.ccache/ccache.conf
-          echo "max_size = 400M" >> ~/.ccache/ccache.conf
-          ccache -s
-          ccache -z
-      - name: install 32-bit libraries
-        run: |
-          dpkg --add-architecture i386
-          apt-get update
-          apt-get install -y gcc-multilib g++-multilib
+          . .github/workflows/ccache.env
 
       - name: run dronecan dsdlc generator test
         run: |
@@ -52,6 +58,7 @@ jobs:
       - name: build sitl_periph_gps
         shell: bash
         run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
           PATH="/github/home/.local/bin:$PATH"
           ./waf configure --board sitl_periph_gps
           ./waf build --target bin/AP_Periph
@@ -62,7 +69,7 @@ jobs:
     needs: build-gcc-ap_periph  # don't try to launch the tests matrix if it doesn't build first, profit from caching for fast build
     runs-on: ubuntu-20.04
     container: 
-      image: ardupilot/ardupilot-dev-base:latest
+      image: ardupilot/ardupilot-dev-periph:latest
       options: --privileged
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
@@ -73,7 +80,7 @@ jobs:
 
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
       # Put ccache into github cache for faster build
@@ -81,27 +88,16 @@ jobs:
         id: ccache_cache_timestamp
         run: |
           NOW=$(date -u +"%F-%T")
-          echo "::set-output name=timestamp::${NOW}"
+          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
       - name: ccache cache files
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.ccache
           key: ${{github.workflow}}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
           restore-keys: ${{github.workflow}}-ccache-  # restore ccache from either previous build on this branch or on master
       - name: setup ccache
         run: |
-          mkdir -p ~/.ccache
-          echo "base_dir = ${GITHUB_WORKSPACE}" > ~/.ccache/ccache.conf
-          echo "compression = true" >> ~/.ccache/ccache.conf
-          echo "compression_level = 6" >> ~/.ccache/ccache.conf
-          echo "max_size = 400M" >> ~/.ccache/ccache.conf
-          ccache -s
-          ccache -z
-      - name: install 32-bit libraries
-        run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get update
-          sudo apt-get install -y gcc-multilib g++-multilib
+          . .github/workflows/ccache.env
       - name: setup can-utils
         run: |
           kernel_ver=`uname -r`
@@ -116,6 +112,7 @@ jobs:
           CI_BUILD_TARGET: ${{matrix.config}}
         shell: bash
         run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
           kernel_ver=`uname -r`
           if [ "$kernel_ver" = "5.4.0-1032-azure" ] || [ "$kernel_ver" = "5.11.4-051104-generic" ]; then echo "Unsupported Kernel $kernel_ver" && exit 0; fi;
           PATH="/github/home/.local/bin:$PATH"

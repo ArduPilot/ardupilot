@@ -104,6 +104,8 @@ PC13 LED0 OUTPUT LOW GPIO(90) # Blue LED
 DMA_PRIORITY USART1* TIM1* TIM3*
 # TIM3_CH4 is shared with TIM3_UP
 DMA_NOSHARE SPI3* TIM1_CH2
+NODMA I2C*
+define STM32_I2C_USE_DMA FALSE
 
 define HAL_STORAGE_SIZE 16384
 STORAGE_FLASH_PAGE 1
@@ -118,7 +120,6 @@ SPIDEV osd       SPI4 DEVID4 AT7456E_CS MODE0 10*MHZ 10*MHZ
 
 # no built-in compass and no external I2C so no compass
 define ALLOW_ARM_NO_COMPASS
-define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 define HAL_I2C_INTERNAL_MASK 0
 
 # one IMU, v1 mpu6000 and v2 bmi270
@@ -127,6 +128,8 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 1
 
 # one BARO
 BARO BMP280 I2C:0:0x76
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+define AP_BARO_BMP280_ENABLED 1
 
 # setup for OSD
 define OSD_ENABLED 1
@@ -136,7 +139,7 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 define STM32_PWM_USE_ADVANCED TRUE
 
 # save some flash
-define HAL_GENERATOR_ENABLED 0
-define AC_OAPATHPLANNER_ENABLED 0
-define PRECISION_LANDING 0
-define AP_OPTICALFLOW_ENABLED 0
+include ../include/save_some_flash.inc
+
+# only include ublox GPS driver
+include ../include/minimal_GPS.inc

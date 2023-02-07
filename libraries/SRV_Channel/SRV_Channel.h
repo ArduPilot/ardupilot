@@ -23,15 +23,9 @@
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_FETtecOneWire/AP_FETtecOneWire.h>
 
-#ifndef NUM_SERVO_CHANNELS
-#if defined(HAL_BUILD_AP_PERIPH) && defined(HAL_PWM_COUNT)
-    #define NUM_SERVO_CHANNELS HAL_PWM_COUNT
-#elif defined(HAL_BUILD_AP_PERIPH)
-    #define NUM_SERVO_CHANNELS 0
-#else
-    #define NUM_SERVO_CHANNELS 16
-#endif
-#endif
+#include "SRV_Channel_config.h"
+
+static_assert(NUM_SERVO_CHANNELS <= 32, "More than 32 servos not supported");
 
 class SRV_Channels;
 
@@ -52,7 +46,7 @@ public:
     typedef enum
     {
         k_GPIO                  = -1,           ///< used as GPIO pin (input or output)
-        k_none                  = 0,            ///< disabled
+        k_none                  = 0,            ///< general use PWM output used by do-set-servo commands and lua scripts
         k_manual                = 1,            ///< manual, just pass-thru the RC in signal
         k_flap                  = 2,            ///< flap
         k_flap_auto             = 3,            ///< flap automated
@@ -176,12 +170,30 @@ public:
         k_trim                  = 135,  // always outputs SERVOn_TRIM
         k_max                   = 136,  // always outputs SERVOn_MAX
         k_mast_rotation         = 137,
+        k_alarm                 = 138,
+        k_alarm_inverted        = 139,
+        k_rcin1_mapped          = 140,
+        k_rcin2_mapped          = 141,
+        k_rcin3_mapped          = 142,
+        k_rcin4_mapped          = 143,
+        k_rcin5_mapped          = 144,
+        k_rcin6_mapped          = 145,
+        k_rcin7_mapped          = 146,
+        k_rcin8_mapped          = 147,
+        k_rcin9_mapped          = 148,
+        k_rcin10_mapped         = 149,
+        k_rcin11_mapped         = 150,
+        k_rcin12_mapped         = 151,
+        k_rcin13_mapped         = 152,
+        k_rcin14_mapped         = 153,
+        k_rcin15_mapped         = 154,
+        k_rcin16_mapped         = 155,
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
     // check if a function is valid for indexing into functions
     static bool valid_function(Aux_servo_function_t fn) {
-        return fn >= 0 && fn < k_nr_aux_servo_functions;
+        return fn >= k_none && fn < k_nr_aux_servo_functions;
     }
     bool valid_function(void) const {
         return valid_function(function);
@@ -317,7 +329,7 @@ private:
     float get_output_norm(void);
 
     // a bitmask type wide enough for NUM_SERVO_CHANNELS
-    typedef uint16_t servo_mask_t;
+    typedef uint32_t servo_mask_t;
 
     // mask of channels where we have a output_pwm value. Cleared when a
     // scaled value is written. 
@@ -367,6 +379,9 @@ public:
     // get scaled output for the given function type.
     static float get_output_scaled(SRV_Channel::Aux_servo_function_t function);
 
+    // get slew limited scaled output for the given function type
+    static float get_slew_limited_output_scaled(SRV_Channel::Aux_servo_function_t function);
+
     // get pwm output for the first channel of the given function type.
     static bool get_output_pwm(SRV_Channel::Aux_servo_function_t function, uint16_t &value);
 
@@ -378,10 +393,10 @@ public:
     static void set_output_norm(SRV_Channel::Aux_servo_function_t function, float value);
 
     // get output channel mask for a function
-    static uint16_t get_output_channel_mask(SRV_Channel::Aux_servo_function_t function);
-    
+    static uint32_t get_output_channel_mask(SRV_Channel::Aux_servo_function_t function);
+
     // limit slew rate to given limit in percent per second
-    static void limit_slew_rate(SRV_Channel::Aux_servo_function_t function, float slew_rate, float dt);
+    static void set_slew_rate(SRV_Channel::Aux_servo_function_t function, float slew_rate, uint16_t range, float dt);
 
     // call output_ch() on all channels
     static void output_ch_all(void);
@@ -429,8 +444,8 @@ public:
     static void copy_radio_in_out(SRV_Channel::Aux_servo_function_t function, bool do_input_output=false);
 
     // copy radio_in to servo_out by channel mask
-    static void copy_radio_in_out_mask(uint16_t mask);
-    
+    static void copy_radio_in_out_mask(uint32_t mask);
+
     // setup failsafe for an auxiliary channel function, by pwm
     static void set_failsafe_pwm(SRV_Channel::Aux_servo_function_t function, uint16_t pwm);
 
@@ -451,7 +466,7 @@ public:
     static void enable_aux_servos(void);
 
     // enable channels by mask
-    static void enable_by_mask(uint16_t mask);
+    static void enable_by_mask(uint32_t mask);
 
     // return the current function for a channel
     static SRV_Channel::Aux_servo_function_t channel_function(uint8_t channel);
@@ -491,6 +506,8 @@ public:
     // return the ESC type for dshot commands
     static AP_HAL::RCOutput::DshotEscType get_dshot_esc_type() { return AP_HAL::RCOutput::DshotEscType(_singleton->dshot_esc_type.get()); }
 
+    static uint8_t get_dshot_rate() { return _singleton->dshot_rate.get(); }
+
     static SRV_Channel *srv_channel(uint8_t i) {
 #if NUM_SERVO_CHANNELS > 0
         return i<NUM_SERVO_CHANNELS?&channels[i]:nullptr;
@@ -514,22 +531,21 @@ public:
 
     static void push();
 
-    // disable output to a set of channels given by a mask. This is used by the AP_BLHeli code
-    static void set_disabled_channel_mask(uint16_t mask) { disabled_mask = mask; }
+    // disable PWM output to a set of channels given by a mask. This is used by the AP_BLHeli code
+    static void set_disabled_channel_mask(uint32_t mask) { disabled_mask = mask; }
+    static uint32_t get_disabled_channel_mask() { return disabled_mask; }
 
     // add to mask of outputs which use digital (non-PWM) output and optionally can reverse thrust, such as DShot
-    static void set_digital_outputs(uint16_t dig_mask, uint16_t rev_mask);
+    static void set_digital_outputs(uint32_t dig_mask, uint32_t rev_mask);
 
     // return true if all of the outputs in mask are digital
-    static bool have_digital_outputs(uint16_t mask) { return mask != 0 && (mask & digital_mask) == mask; }
+    static bool have_digital_outputs(uint32_t mask) { return mask != 0 && (mask & digital_mask) == mask; }
 
     // return true if any of the outputs are digital
     static bool have_digital_outputs() { return digital_mask != 0; }
 
     // Set E - stop
-    static void set_emergency_stop(bool state) {
-        emergency_stop = state;
-    }
+    static void set_emergency_stop(bool state);
 
     // get E - stop
     static bool get_emergency_stop() { return emergency_stop;}
@@ -542,10 +558,20 @@ public:
     static void zero_rc_outputs();
 
     // initialize before any call to push
-    static void init();
+    static void init(uint32_t motor_mask = 0, AP_HAL::RCOutput::output_mode mode = AP_HAL::RCOutput::MODE_PWM_NONE);
 
     // return true if a channel is set to type GPIO
     static bool is_GPIO(uint8_t channel);
+
+    // return true if a channel is set to type alarm
+    static bool is_alarm(uint8_t channel) {
+        return channel_function(channel) == SRV_Channel::k_alarm;
+    }
+
+    // return true if a channel is set to type alarm inverted
+    static bool is_alarm_inverted(uint8_t channel) {
+        return channel_function(channel) == SRV_Channel::k_alarm_inverted;
+    }
 
 private:
 
@@ -560,19 +586,23 @@ private:
     static SRV_Channel *channels;
     static SRV_Channels *_singleton;
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_VOLZ_ENABLED
     // support for Volz protocol
     AP_Volz_Protocol volz;
     static AP_Volz_Protocol *volz_ptr;
+#endif
 
+#ifndef HAL_BUILD_AP_PERIPH
     // support for SBUS protocol
     AP_SBusOut sbus;
     static AP_SBusOut *sbus_ptr;
+#endif // HAL_BUILD_AP_PERIPH
 
+#if AP_ROBOTISSERVO_ENABLED
     // support for Robotis servo protocol
     AP_RobotisServo robotis;
     static AP_RobotisServo *robotis_ptr;
-#endif // HAL_BUILD_AP_PERIPH
+#endif
 
 #if HAL_SUPPORT_RCOUT_SERIAL
     // support for BLHeli protocol
@@ -585,14 +615,18 @@ private:
     static AP_FETtecOneWire *fetteconwire_ptr;
 #endif  // AP_FETTEC_ONEWIRE_ENABLED
 
-    static uint16_t disabled_mask;
+    // mask of disabled channels
+    static uint32_t disabled_mask;
 
     // mask of outputs which use a digital output protocol, not
     // PWM (eg. DShot)
-    static uint16_t digital_mask;
+    static uint32_t digital_mask;
     
     // mask of outputs which are digitally reversible (eg. DShot-3D)
-    static uint16_t reversible_mask;
+    static uint32_t reversible_mask;
+
+    // mask of channels with invalid funtions, eg GPIO
+    static uint32_t invalid_mask;
 
     SRV_Channel obj_channels[NUM_SERVO_CHANNELS];
 
@@ -612,6 +646,9 @@ private:
     AP_Int8 dshot_rate;
     AP_Int8 dshot_esc_type;
     AP_Int32 gpio_mask;
+#if NUM_SERVO_CHANNELS >= 17
+    AP_Int8 enable_32_channels;
+#endif
 
     // return true if passthrough is disabled
     static bool passthrough_disabled(void) {
@@ -619,6 +656,16 @@ private:
     }
 
     static bool emergency_stop;
+
+    // linked list for slew rate handling
+    struct slew_list {
+        slew_list(SRV_Channel::Aux_servo_function_t _func) : func(_func) {};
+        const SRV_Channel::Aux_servo_function_t func;
+        float last_scaled_output;
+        float max_change;
+        slew_list * next;
+    };
+    static slew_list *_slew;
 
     // semaphore for multi-thread use of override_counter array
     HAL_Semaphore override_counter_sem;

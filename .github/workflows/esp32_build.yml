@@ -1,0 +1,89 @@
+name: ESP32 Build
+
+on: [push, pull_request, workflow_dispatch]
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false  # don't cancel if a job from the matrix fails
+      matrix:
+        config: [
+            esp32buzz,
+        ]
+        gcc: [10]
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+      - name: Install Prerequisites
+        shell: bash
+        run: |
+          sudo apt-get install git wget libncurses-dev flex bison gperf python3 python3-pip python3-setuptools python3-serial python3-cryptography python3-future python3-pyparsing python3-pyelftools cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0
+          sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 10
+
+          rm -rf /usr/local/bin/cmake
+
+          sudo apt remove --purge --auto-remove cmake
+          sudo apt update && \
+          sudo apt install -y software-properties-common lsb-release && \
+          sudo apt clean all
+          wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
+          sudo apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main"
+          sudo apt update
+          sudo apt install cmake
+
+
+          git submodule update --init --recursive --depth=1
+          ./Tools/scripts/esp32_get_idf.sh
+
+          sudo ln -s /usr/bin/ninja /usr/bin/ninja-build
+
+          cd modules/esp_idf
+          echo "Installing ESP-IDF tools...."
+          ./install.sh 2>&1 > /dev/null
+          cd ../..
+          
+          
+      - name: build ${{matrix.config}}
+        env:
+          CI_BUILD_TARGET: ${{matrix.config}}
+        shell: bash
+        run: |
+          source ~/.bash_profile
+          PATH="/github/home/.local/bin:$PATH"
+          echo $PATH
+          
+          cd modules/esp_idf
+          ./install.sh
+          source ./export.sh
+          cd ../..
+          python -m pip install --progress-bar off future lxml pymavlink MAVProxy pexpect flake8 geocoder empy dronecan
+          which cmake
+          ./waf configure --board ${{matrix.config}}
+          ./waf plane
+          cp build/esp32buzz/esp-idf_build/ardupilot.bin ./ArduPlane.bin
+          cp build/esp32buzz/esp-idf_build/ardupilot.elf ./ArduPlane.elf
+          ./waf copter
+          cp build/esp32buzz/esp-idf_build/ardupilot.bin ./ArduCopter.bin
+          cp build/esp32buzz/esp-idf_build/ardupilot.elf ./ArduCopter.elf
+
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v3
+        with:
+           name: esp32-binaries -${{matrix.config}}
+           path: |
+              /home/runner/work/ardupilot/ardupilot/ArduPlane.bin
+              /home/runner/work/ardupilot/ardupilot/ArduPlane.elf
+              /home/runner/work/ardupilot/ardupilot/ArduCopter.bin
+              /home/runner/work/ardupilot/ardupilot/ArduCopter.elf
+              /home/runner/work/ardupilot/ardupilot/build/esp32buzz/esp-idf_build/bootloader/bootloader.bin
+              /home/runner/work/ardupilot/ardupilot/build/esp32buzz/esp-idf_build/partition_table/partition-table.bin
+
+
+           retention-days: 14
+           

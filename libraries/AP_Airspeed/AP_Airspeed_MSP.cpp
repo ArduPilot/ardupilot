@@ -1,6 +1,6 @@
 #include "AP_Airspeed_MSP.h"
 
-#if HAL_MSP_AIRSPEED_ENABLED
+#if AP_AIRSPEED_MSP_ENABLED
 
 AP_Airspeed_MSP::AP_Airspeed_MSP(AP_Airspeed &_frontend, uint8_t _instance, uint8_t _msp_instance) :
     AP_Airspeed_Backend(_frontend, _instance),
@@ -66,4 +66,4 @@ void AP_Airspeed_MSP::handle_msp(const MSP::msp_airspeed_data_message_t &pkt)
     
 }
 
-#endif // HAL_MSP_AIRSPEED_ENABLED
+#endif // AP_AIRSPEED_MSP_ENABLED

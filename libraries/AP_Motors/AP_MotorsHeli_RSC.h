@@ -4,7 +4,6 @@
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <RC_Channel/RC_Channel.h>
 #include <SRV_Channel/SRV_Channel.h>
-#include <GCS_MAVLink/GCS.h>
 
 // default main rotor speed (ch8 out) as a number from 0 ~ 100
 #define AP_MOTORS_HELI_RSC_SETPOINT             70
@@ -18,7 +17,8 @@
 // default main rotor ramp up time in seconds
 #define AP_MOTORS_HELI_RSC_RAMP_TIME            1       // 1 second to ramp output to main rotor ESC to setpoint
 #define AP_MOTORS_HELI_RSC_RUNUP_TIME           10      // 10 seconds for rotor to reach full speed
-#define AP_MOTORS_HELI_RSC_BAILOUT_TIME         1       // time in seconds to ramp motors when bailing out of autorotation
+#define AP_MOTORS_HELI_RSC_AROT_ENGAGE_TIME     1       // time in seconds to ramp motors when bailing out of autorotation
+#define AP_MOTORS_HELI_RSC_AROT_IDLE            0
 
 // Throttle Curve Defaults
 #define AP_MOTORS_HELI_RSC_THRCRV_0_DEFAULT     25
@@ -73,7 +73,7 @@ public:
     uint8_t     get_control_mode() const { return _control_mode; }
 
     // set_critical_speed
-    void        set_critical_speed(float critical_speed) { _critical_speed = critical_speed; }
+    void        set_critical_speed(float critical_speed) { _critical_speed.set(critical_speed); }
 
     // get_desired_speed
     float       get_desired_speed() const { return _desired_speed; }
@@ -89,13 +89,13 @@ public:
     float       get_governor_output() const { return _governor_output; }
     void        governor_reset();
     float       get_control_output() const { return _control_output; }
-    void        set_idle_output(float idle_output) { _idle_output = idle_output; }
+    void        set_idle_output(float idle_output) { _idle_output.set(idle_output); }
     void        autothrottle_run();
     void        set_throttle_curve();
 
     // functions for ramp and runup timers, runup_complete flag
-    void        set_ramp_time(int8_t ramp_time) { _ramp_time = ramp_time; }
-    void        set_runup_time(int8_t runup_time) { _runup_time = runup_time; }
+    void        set_ramp_time(int8_t ramp_time) { _ramp_time.set(ramp_time); }
+    void        set_runup_time(int8_t runup_time) { _runup_time.set(runup_time); }
     bool        is_runup_complete() const { return _runup_complete; }
 
     // is_spooldown_complete
@@ -112,6 +112,9 @@ public:
 
     // set the throttle percentage to be sent to external governor to signal that autorotation bailout ramp should be used within this instance of Heli_RSC
     void        set_ext_gov_arot_bail(int16_t pct) { _rsc_arot_bailout_pct = pct; }
+	
+    // turbine start initialize sequence
+    void        set_turbine_start(bool turbine_start) {_turbine_start = turbine_start; }
 
     // output - update value to send to ESC/Servo
     void        output(RotorControlState state);
@@ -126,7 +129,9 @@ public:
     AP_Int8         _runup_time;              // Time in seconds for the main rotor to reach full speed.  Must be longer than _rsc_ramp_time
     AP_Int16        _critical_speed;          // Rotor speed below which flight is not possible
     AP_Int16        _idle_output;             // Rotor control output while at idle
-    AP_Int16        _ext_gov_arot_pct;        // Percent value sent to external governor when in autorotation
+    AP_Int16        _arot_idle_output;           // Percent value used when in autorotation
+    AP_Int8         _rsc_arot_engage_time;    // time in seconds for in-flight power re-engagement
+    AP_Int8         _rsc_arot_man_enable;     // enables manual autorotation
 
 private:
     uint64_t        _last_update_us;
@@ -145,6 +150,8 @@ private:
     float           _thrcrv_poly[4][4];           // spline polynomials for throttle curve interpolation
     float           _collective_in;               // collective in for throttle curve calculation, range 0-1.0f
     float           _rotor_rpm;                   // rotor rpm from speed sensor for governor
+    bool            _turbine_start;               // initiates starting sequence
+    bool            _starting;                    // tracks if starting sequence has been used
     float           _governor_output;             // governor output for rotor speed control
     bool            _governor_engage;             // RSC governor status flag
     bool            _autothrottle;                // autothrottle status flag
@@ -156,6 +163,10 @@ private:
     float           _fast_idle_timer;             // cooldown timer variable
     uint8_t         _governor_fault_count;        // variable for tracking governor speed sensor faults
     float           _governor_torque_reference;   // governor reference for load calculations
+    bool            _autorotating;                // flag that holds the status of autorotation
+    bool            _bailing_out;                 // flag that holds the status of bail out(power engagement)
+    float           _idle_throttle;               // current idle throttle setting
+    bool            _gov_bailing_out;             // flag that holds the status of governor bail out
 
     // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
     void            update_rotor_ramp(float rotor_ramp_input, float dt);
@@ -185,4 +196,5 @@ private:
     float       get_idle_output() const { return _idle_output * 0.01; }
     float       get_governor_torque() const { return _governor_torque * 0.01; }
     float       get_governor_compensator() const { return _governor_compensator * 0.000001; }
+    float       get_arot_idle_output() const { return _arot_idle_output * 0.01; }
 };

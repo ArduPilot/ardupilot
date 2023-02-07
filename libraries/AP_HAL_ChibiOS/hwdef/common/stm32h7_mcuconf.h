@@ -19,7 +19,9 @@
 #pragma once
 
 // we want to cope with both revision XY chips and newer chips
+#if !defined(HAL_CUSTOM_MCU_CLOCKRATE) || HAL_CUSTOM_MCU_CLOCKRATE <= 400000000
 #define STM32_ENFORCE_H7_REV_XY
+#endif
 
 #ifndef STM32_LSECLK
 #define STM32_LSECLK 32768U
@@ -47,6 +49,7 @@
 #define STM32H743_MCUCONF
 #define STM32H753_MCUCONF
 #define STM32H745_MCUCONF
+#define STM32H750_MCUCONF
 #define STM32H755_MCUCONF
 #define STM32H747_MCUCONF
 #define STM32H757_MCUCONF
@@ -143,7 +146,7 @@
 // no crystal
 #define STM32_PLL1_DIVN_VALUE               50
 #define STM32_PLL1_DIVP_VALUE               2
-#define STM32_PLL1_DIVQ_VALUE               8
+#define STM32_PLL1_DIVQ_VALUE               10
 #define STM32_PLL1_DIVR_VALUE               2
 
 #define STM32_PLL2_DIVN_VALUE               45
@@ -158,9 +161,17 @@
 
 #elif (STM32_HSECLK == 8000000U) || (STM32_HSECLK == 16000000U)
 // common clock tree for multiples of 8MHz crystals
+#ifdef HAL_CUSTOM_MCU_CLOCKRATE
+#if HAL_CUSTOM_MCU_CLOCKRATE == 480000000
+#define STM32_PLL1_DIVN_VALUE               120
+#else
+#error "Unable to configure custom clockrate"
+#endif
+#else
 #define STM32_PLL1_DIVN_VALUE               100
+#endif
 #define STM32_PLL1_DIVP_VALUE               2
-#define STM32_PLL1_DIVQ_VALUE               8
+#define STM32_PLL1_DIVQ_VALUE               10
 #define STM32_PLL1_DIVR_VALUE               2
 
 #define STM32_PLL2_DIVN_VALUE               45
@@ -174,9 +185,17 @@
 #define STM32_PLL3_DIVR_VALUE               9
 
 #elif STM32_HSECLK == 24000000U
+#ifdef HAL_CUSTOM_MCU_CLOCKRATE
+#if HAL_CUSTOM_MCU_CLOCKRATE == 480000000
+#define STM32_PLL1_DIVN_VALUE               120
+#else
+#error "Unable to configure custom clockrate"
+#endif
+#else
 #define STM32_PLL1_DIVN_VALUE               100
+#endif
 #define STM32_PLL1_DIVP_VALUE               2
-#define STM32_PLL1_DIVQ_VALUE               8
+#define STM32_PLL1_DIVQ_VALUE               10
 #define STM32_PLL1_DIVR_VALUE               2
 
 #define STM32_PLL2_DIVN_VALUE               30
@@ -190,9 +209,12 @@
 #define STM32_PLL3_DIVR_VALUE               9
 
 #elif STM32_HSECLK == 25000000U
+#ifdef HAL_CUSTOM_MCU_CLOCKRATE
+#error "Unable to configure custom clockrate"
+#endif
 #define STM32_PLL1_DIVN_VALUE               64
 #define STM32_PLL1_DIVP_VALUE               2
-#define STM32_PLL1_DIVQ_VALUE               8
+#define STM32_PLL1_DIVQ_VALUE               10
 #define STM32_PLL1_DIVR_VALUE               2
 
 #define STM32_PLL2_DIVN_VALUE               72
@@ -269,7 +291,7 @@
 #define STM32_QSPISEL                       STM32_QSPISEL_PLL2_R_CK
 #define STM32_FMCSEL                        STM32_QSPISEL_HCLK
 #define STM32_SWPSEL                        STM32_SWPSEL_PCLK1
-#define STM32_FDCANSEL                      STM32_FDCANSEL_PLL2_Q_CK
+#define STM32_FDCANSEL                      STM32_FDCANSEL_PLL1_Q_CK
 #define STM32_DFSDM1SEL                     STM32_DFSDM1SEL_PCLK2
 #define STM32_SPDIFSEL                      STM32_SPDIFSEL_PLL1_Q_CK
 #define STM32_SPI45SEL                      STM32_SPI45SEL_PCLK2
@@ -312,7 +334,6 @@
 #define STM32_IRQ_FDCAN2_PRIORITY           10
 
 #define STM32_IRQ_MDMA_PRIORITY             9
-
 #define STM32_IRQ_QUADSPI1_PRIORITY         10
 
 #define STM32_IRQ_SDMMC1_PRIORITY           9
@@ -349,7 +370,9 @@
 #define STM32_ADC_DUAL_MODE                 FALSE
 #define STM32_ADC_COMPACT_SAMPLES           FALSE
 #define STM32_ADC_USE_ADC12                 TRUE
+#ifndef STM32H750xx
 #define STM32_ADC_USE_ADC3                  TRUE
+#endif
 #define STM32_ADC_ADC12_DMA_PRIORITY        2
 #define STM32_ADC_ADC3_DMA_PRIORITY         2
 #define STM32_ADC_ADC12_IRQ_PRIORITY        5
@@ -408,7 +431,7 @@
 #define STM32_I2C_I2C2_DMA_PRIORITY         3
 #define STM32_I2C_I2C3_DMA_PRIORITY         3
 #define STM32_I2C_I2C4_DMA_PRIORITY         3
-#define STM32_I2C_DMA_ERROR_HOOK(i2cp)      osalSysHalt("DMA failure")
+#define STM32_I2C_DMA_ERROR_HOOK(i2cp)      STM32_DMA_ERROR_HOOK(i2cp)
 
 /*
  * ICU driver system settings.
@@ -515,7 +538,7 @@
 #define STM32_SPI_SPI4_IRQ_PRIORITY         10
 #define STM32_SPI_SPI5_IRQ_PRIORITY         10
 #define STM32_SPI_SPI6_IRQ_PRIORITY         10
-#define STM32_SPI_DMA_ERROR_HOOK(spip)      osalSysHalt("DMA failure")
+#define STM32_SPI_DMA_ERROR_HOOK(spip)      STM32_DMA_ERROR_HOOK(spip)
 
 /*
  * ST driver system settings.
@@ -542,7 +565,7 @@
 #define STM32_UART_USART6_DMA_PRIORITY      0
 #define STM32_UART_UART7_DMA_PRIORITY       0
 #define STM32_UART_UART8_DMA_PRIORITY       0
-#define STM32_UART_DMA_ERROR_HOOK(uartp)    osalSysHalt("DMA failure")
+#define STM32_UART_DMA_ERROR_HOOK(uartp)    STM32_DMA_ERROR_HOOK(uartp)
 
 #define STM32_IRQ_LPUART1_PRIORITY          12
 

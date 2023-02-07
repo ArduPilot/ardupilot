@@ -1,8 +1,7 @@
 #include "AP_Mount_Alexmos.h"
-#if HAL_MOUNT_ENABLED
-#include <AP_SerialManager/AP_SerialManager.h>
 
-extern const AP_HAL::HAL& hal;
+#if HAL_MOUNT_ALEXMOS_ENABLED
+#include <AP_SerialManager/AP_SerialManager.h>
 
 void AP_Mount_Alexmos::init()
 {
@@ -13,6 +12,7 @@ void AP_Mount_Alexmos::init()
         _initialised = true;
         get_boardinfo();
         read_params(0); //we request parameters for profile 0 and therfore get global and profile parameters
+        set_mode((enum MAV_MOUNT_MODE)_params.default_mode.get());
     }
 }
 
@@ -26,85 +26,92 @@ void AP_Mount_Alexmos::update()
     read_incoming(); // read the incoming messages from the gimbal
 
     // update based on mount mode
-    switch(get_mode()) {
+    switch (get_mode()) {
         // move mount to a "retracted" position.  we do not implement a separate servo based retract mechanism
-        case MAV_MOUNT_MODE_RETRACT:
-            control_axis(_state._retract_angles.get(), true);
+        case MAV_MOUNT_MODE_RETRACT: {
+            const Vector3f &target = _params.retract_angles.get();
+            _angle_rad.roll = radians(target.x);
+            _angle_rad.pitch = radians(target.y);
+            _angle_rad.yaw = radians(target.z);
+            _angle_rad.yaw_is_ef = false;
             break;
+        }
 
         // move mount to a neutral position, typically pointing forward
-        case MAV_MOUNT_MODE_NEUTRAL:
-            control_axis(_state._neutral_angles.get(), true);
+        case MAV_MOUNT_MODE_NEUTRAL: {
+            const Vector3f &target = _params.neutral_angles.get();
+            _angle_rad.roll = radians(target.x);
+            _angle_rad.pitch = radians(target.y);
+            _angle_rad.yaw = radians(target.z);
+            _angle_rad.yaw_is_ef = false;
             break;
+        }
 
         // point to the angles given by a mavlink message
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-            // do nothing because earth-frame angle targets (i.e. _angle_ef_target_rad) should have already been set by a MOUNT_CONTROL message from GCS
-            control_axis(_angle_ef_target_rad, false);
+            switch (mavt_target.target_type) {
+            case MountTargetType::ANGLE:
+                _angle_rad = mavt_target.angle_rad;
+                break;
+            case MountTargetType::RATE:
+                update_angle_target_from_rate(mavt_target.rate_rads, _angle_rad);
+                break;
+            }
             break;
 
         // RC radio manual angle control, but with stabilization from the AHRS
-        case MAV_MOUNT_MODE_RC_TARGETING:
-            // update targets using pilot's rc inputs
-            update_targets_from_rc();
-            control_axis(_angle_ef_target_rad, false);
+        case MAV_MOUNT_MODE_RC_TARGETING: {
+            // update targets using pilot's RC inputs
+            MountTarget rc_target {};
+            if (get_rc_rate_target(rc_target)) {
+                update_angle_target_from_rate(rc_target, _angle_rad);
+            } else if (get_rc_angle_target(rc_target)) {
+                _angle_rad = rc_target;
+            }
             break;
+        }
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
-            if (calc_angle_to_roi_target(_angle_ef_target_rad, true, false)) {
-                control_axis(_angle_ef_target_rad, false);
-            }
+            IGNORE_RETURN(get_angle_target_to_roi(_angle_rad));
             break;
 
         case MAV_MOUNT_MODE_HOME_LOCATION:
-            // constantly update the home location:
-            if (!AP::ahrs().home_is_set()) {
-                break;
-            }
-            _state._roi_target = AP::ahrs().get_home();
-            _state._roi_target_set = true;
-            if (calc_angle_to_roi_target(_angle_ef_target_rad, true, false)) {
-                control_axis(_angle_ef_target_rad, false);
-            }
+            IGNORE_RETURN(get_angle_target_to_home(_angle_rad));
             break;
 
         case MAV_MOUNT_MODE_SYSID_TARGET:
-            if (calc_angle_to_sysid_target(_angle_ef_target_rad,
-                                           true,
-                                           false)) {
-                control_axis(_angle_ef_target_rad, false);
-            }
+            IGNORE_RETURN(get_angle_target_to_sysid(_angle_rad));
             break;
 
         default:
             // we do not know this mode so do nothing
             break;
     }
+
+    // send latest targets to gimbal
+    control_axis(_angle_rad);
 }
 
-// has_pan_control - returns true if this mount can control it's pan (required for multicopters)
+// has_pan_control - returns true if this mount can control its pan (required for multicopters)
 bool AP_Mount_Alexmos::has_pan_control() const
 {
-    return _gimbal_3axis;
+    return _gimbal_3axis && yaw_range_valid();
 }
 
-// set_mode - sets mount's mode
-void AP_Mount_Alexmos::set_mode(enum MAV_MOUNT_MODE mode)
-{
-    // record the mode change and return success
-    _state._mode = mode;
-}
-
-// send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
-void AP_Mount_Alexmos::send_mount_status(mavlink_channel_t chan)
+// get attitude as a quaternion.  returns true on success
+bool AP_Mount_Alexmos::get_attitude_quaternion(Quaternion& att_quat)
 {
     if (!_initialised) {
-        return;
+        return false;
     }
 
+    // request attitude from gimbal
     get_angles();
-    mavlink_msg_mount_status_send(chan, 0, 0, _current_angle.y*100, _current_angle.x*100, _current_angle.z*100, _state._mode);
+
+    // construct quaternion
+    att_quat.from_euler(radians(_current_angle.x), radians(_current_angle.y), radians(_current_angle.z));
+    return true;
 }
 
 /*
@@ -143,23 +150,18 @@ void AP_Mount_Alexmos::get_boardinfo()
 }
 
 /*
-  control_axis : send new angles to the gimbal at a fixed speed of 30 deg/s2
+  control_axis : send new angle target to the gimbal at a fixed speed of 30 deg/s
 */
-void AP_Mount_Alexmos::control_axis(const Vector3f& angle, bool target_in_degrees)
+void AP_Mount_Alexmos::control_axis(const MountTarget& angle_target_rad)
 {
-    // convert to degrees if necessary
-    Vector3f target_deg = angle;
-    if (!target_in_degrees) {
-        target_deg *= RAD_TO_DEG;
-    }
     alexmos_parameters outgoing_buffer;
     outgoing_buffer.angle_speed.mode = AP_MOUNT_ALEXMOS_MODE_ANGLE;
     outgoing_buffer.angle_speed.speed_roll = DEGREE_PER_SEC_TO_VALUE(AP_MOUNT_ALEXMOS_SPEED);
-    outgoing_buffer.angle_speed.angle_roll = DEGREE_TO_VALUE(target_deg.x);
+    outgoing_buffer.angle_speed.angle_roll = DEGREE_TO_VALUE(degrees(angle_target_rad.roll));
     outgoing_buffer.angle_speed.speed_pitch = DEGREE_PER_SEC_TO_VALUE(AP_MOUNT_ALEXMOS_SPEED);
-    outgoing_buffer.angle_speed.angle_pitch = DEGREE_TO_VALUE(target_deg.y);
+    outgoing_buffer.angle_speed.angle_pitch = DEGREE_TO_VALUE(degrees(angle_target_rad.pitch));
     outgoing_buffer.angle_speed.speed_yaw = DEGREE_PER_SEC_TO_VALUE(AP_MOUNT_ALEXMOS_SPEED);
-    outgoing_buffer.angle_speed.angle_yaw = DEGREE_TO_VALUE(target_deg.z);
+    outgoing_buffer.angle_speed.angle_yaw = DEGREE_TO_VALUE(degrees(get_bf_yaw_angle(angle_target_rad)));
     send_command(CMD_CONTROL, (uint8_t *)&outgoing_buffer.angle_speed, sizeof(alexmos_angles_speed));
 }
 
@@ -212,7 +214,7 @@ void AP_Mount_Alexmos::parse_body()
     switch (_command_id ) {
         case CMD_BOARD_INFO:
             _board_version = _buffer.version._board_version/ 10;
-            _current_firmware_version = _buffer.version._firmware_version / 1000.0f ;
+            _current_firmware_version = _buffer.version._firmware_version * 0.001f ;
             _firmware_beta_version = _buffer.version._firmware_version % 10 ;
             _gimbal_3axis = (_buffer.version._board_features & 0x1);
             _gimbal_bat_monitoring = (_buffer.version._board_features & 0x2);
@@ -305,4 +307,4 @@ void AP_Mount_Alexmos::read_incoming()
         }
     }
 }
-#endif // HAL_MOUNT_ENABLED
+#endif // HAL_MOUNT_ALEXMOS_ENABLED

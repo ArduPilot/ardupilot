@@ -14,7 +14,7 @@ class AP_OpticalFlow_Pixart : public OpticalFlow_backend
 {
 public:
     /// constructor
-    AP_OpticalFlow_Pixart(const char *devname, OpticalFlow &_frontend);
+    AP_OpticalFlow_Pixart(const char *devname, AP_OpticalFlow &_frontend);
 
     // init - initialise the sensor
     void init() override {}
@@ -23,7 +23,7 @@ public:
     void update(void) override;
 
     // detect if the sensor is available
-    static AP_OpticalFlow_Pixart *detect(const char *devname, OpticalFlow &_frontend);
+    static AP_OpticalFlow_Pixart *detect(const char *devname, AP_OpticalFlow &_frontend);
 
 private:
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> _dev;

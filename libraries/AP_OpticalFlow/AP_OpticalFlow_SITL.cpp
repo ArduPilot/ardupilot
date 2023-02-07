@@ -17,26 +17,17 @@
  * AP_OpticalFlow_SITL.cpp - SITL emulation of optical flow sensor.
  */
 
-#include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-
 #include "AP_OpticalFlow_SITL.h"
 
-extern const AP_HAL::HAL& hal;
+#if AP_OPTICALFLOW_SITL_ENABLED
 
-AP_OpticalFlow_SITL::AP_OpticalFlow_SITL(OpticalFlow &_frontend) :
-    OpticalFlow_backend(_frontend),
-    _sitl(AP::sitl())
-{
-}
-
-void AP_OpticalFlow_SITL::init(void)
-{
-}
+#include <AP_HAL/AP_HAL.h>
+#include <SITL/SITL.h>
 
 void AP_OpticalFlow_SITL::update(void)
 {
+    auto *_sitl = AP::sitl();
+
     if (!_sitl->flow_enable) {
         return;
     }
@@ -52,7 +43,7 @@ void AP_OpticalFlow_SITL::update(void)
                   radians(_sitl->state.pitchRate), 
                   radians(_sitl->state.yawRate));
 
-    OpticalFlow::OpticalFlow_state state;
+    AP_OpticalFlow::OpticalFlow_state state;
 
     // NED velocity vector in m/s
     Vector3f velocity(_sitl->state.speedN,
@@ -114,7 +105,7 @@ void AP_OpticalFlow_SITL::update(void)
         // cope with updates to the delay control
         if (_sitl->flow_delay > 0 &&
             (uint8_t)(_sitl->flow_delay) > ARRAY_SIZE(optflow_data)) {
-            _sitl->flow_delay = ARRAY_SIZE(optflow_data);
+            _sitl->flow_delay.set(ARRAY_SIZE(optflow_data));
         }
         optflow_delay = _sitl->flow_delay;
         for (uint8_t i=0; i<optflow_delay; i++) {
@@ -128,4 +119,4 @@ void AP_OpticalFlow_SITL::update(void)
     _update_frontend(state);
 }
 
-#endif // CONFIG_HAL_BOARD
+#endif  // AP_OPTICALFLOW_SITL_ENABLED

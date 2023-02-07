@@ -5,6 +5,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Beacon/AP_Beacon_Marvelmind.h>
 #include <AP_Beacon/AP_Beacon.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #include <stdio.h>
 
 void setup();
@@ -15,7 +16,7 @@ void set_object_value_and_report(const void *object_pointer,
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 static AP_SerialManager serial_manager;
-AP_Beacon beacon{serial_manager};
+AP_Beacon beacon;
 
 // try to set the object value but provide diagnostic if it failed
 void set_object_value_and_report(const void *object_pointer,

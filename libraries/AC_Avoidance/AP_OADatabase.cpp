@@ -16,6 +16,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -151,16 +152,14 @@ void AP_OADatabase::queue_push(const Vector3f &pos, uint32_t timestamp_ms, float
     // check if this obstacle needs to be rejected from DB because of low altitude near home
 #if APM_BUILD_COPTER_OR_HELI
     if (!is_zero(_min_alt)) { 
-        Vector2f current_pos;
-        if (!AP::ahrs().get_relative_position_NE_home(current_pos)) {
+        Vector3f current_pos;
+        if (!AP::ahrs().get_relative_position_NED_home(current_pos)) {
             // we do not know where the vehicle is
             return;
         }
-        if (current_pos.length() < AP_OADATABASE_DISTANCE_FROM_HOME) {
+        if (current_pos.xy().length() < AP_OADATABASE_DISTANCE_FROM_HOME) {
             // vehicle is within a small radius of home 
-            float height_above_home;
-            AP::ahrs().get_relative_position_D_home(height_above_home);
-            if (-height_above_home < _min_alt) {
+            if (-current_pos.z < _min_alt) {
                 // vehicle is below the minimum alt
                 return;
             }
@@ -188,6 +187,11 @@ void AP_OADatabase::init_queue()
     }
 
     _queue.items = new ObjectBuffer<OA_DbItem>(_queue.size);
+    if (_queue.items != nullptr && _queue.items->get_size() == 0) {
+        // allocation failed
+        delete _queue.items;
+        _queue.items = nullptr;
+    }
 }
 
 void AP_OADatabase::init_database()

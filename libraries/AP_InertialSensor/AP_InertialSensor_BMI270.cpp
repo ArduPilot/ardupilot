@@ -143,6 +143,8 @@ const uint8_t AP_InertialSensor_BMI270::maximum_fifo_config_file[] = { BMI270_RE
 
 #define BMI270_HARDWARE_INIT_MAX_TRIES 5
 
+const uint32_t BACKEND_PERIOD_US = 1000000UL / BMI270_BACKEND_SAMPLE_RATE;
+
 extern const AP_HAL::HAL& hal;
 
 AP_InertialSensor_BMI270::AP_InertialSensor_BMI270(AP_InertialSensor &imu,
@@ -210,7 +212,6 @@ void AP_InertialSensor_BMI270::start()
 
     _dev->get_semaphore()->give();
 
-    // using headerless mode so gyro and accel ODRs must match
     if (!_imu.register_accel(_accel_instance, BMI270_BACKEND_SAMPLE_RATE, _dev->get_bus_id_devtype(DEVTYPE_BMI270)) ||
         !_imu.register_gyro(_gyro_instance, BMI270_BACKEND_SAMPLE_RATE, _dev->get_bus_id_devtype(DEVTYPE_BMI270))) {
         return;
@@ -220,9 +221,8 @@ void AP_InertialSensor_BMI270::start()
     set_gyro_orientation(_gyro_instance, _rotation);
     set_accel_orientation(_accel_instance, _rotation);
 
-    /* Call _poll_data() at 1600Hz */
-    _dev->register_periodic_callback(1000000UL / BMI270_BACKEND_SAMPLE_RATE,
-        FUNCTOR_BIND_MEMBER(&AP_InertialSensor_BMI270::poll_data, void));
+    /* Call read_fifo() at 1600Hz */
+    periodic_handle = _dev->register_periodic_callback(BACKEND_PERIOD_US, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_BMI270::read_fifo, void));
 }
 
 bool AP_InertialSensor_BMI270::update()
@@ -277,40 +277,40 @@ void AP_InertialSensor_BMI270::check_err_reg()
             read_registers(BMI270_REG_INTERNAL_STATUS, &status, 1);
             switch (status & 0xF) {
             case 0:
-                AP_HAL::panic("BMI270: not_init\n");
+                AP_HAL::panic("BMI270: not_init");
                 break;
             case 2:
-                AP_HAL::panic("BMI270: init_err\n");
+                AP_HAL::panic("BMI270: init_err");
                 break;
             case 3:
-                AP_HAL::panic("BMI270: drv_err\n");
+                AP_HAL::panic("BMI270: drv_err");
                 break;
             case 4:
-                AP_HAL::panic("BMI270: sns_stop\n");
+                AP_HAL::panic("BMI270: sns_stop");
                 break;
             case 5:
-                AP_HAL::panic("BMI270: nvm_error\n");
+                AP_HAL::panic("BMI270: nvm_error");
                 break;
             case 6:
-                AP_HAL::panic("BMI270: start_up_error\n");
+                AP_HAL::panic("BMI270: start_up_error");
                 break;
             case 7:
-                AP_HAL::panic("BMI270: compat_error\n");
+                AP_HAL::panic("BMI270: compat_error");
                 break;
             case 1: // init ok
                 if ((status>>5 & 1) == 1) {
-                    AP_HAL::panic("BMI270: axes_remap_error\n");
+                    AP_HAL::panic("BMI270: axes_remap_error");
                 } else if ((status>>6 & 1) == 1) {
-                    AP_HAL::panic("BMI270: odr_50hz_error\n");
+                    AP_HAL::panic("BMI270: odr_50hz_error");
                 }
                 break;
             }
         } else if ((err>>6 & 1) == 1) {
-            AP_HAL::panic("BMI270: fifo_err\n");
+            AP_HAL::panic("BMI270: fifo_err");
         } else if ((err>>7 & 1) == 1) {
-            AP_HAL::panic("BMI270: aux_err\n");
+            AP_HAL::panic("BMI270: aux_err");
         } else {
-            AP_HAL::panic("BMI270: internal error detected %d\n", err>>1 & 0xF);
+            AP_HAL::panic("BMI270: internal error detected %d", err>>1 & 0xF);
         }
     }
 #endif
@@ -318,8 +318,10 @@ void AP_InertialSensor_BMI270::check_err_reg()
 
 void AP_InertialSensor_BMI270::configure_accel()
 {
-    // set acc in high performance mode with normal filtering at 1600Hz
-    write_register(BMI270_REG_ACC_CONF, 1U<<7 | 0x2U<<4 | 0x0C);
+    // set acc in high performance mode with OSR4 filtering (751Hz/4) at 1600Hz
+    // see https://community.bosch-sensortec.com/t5/MEMS-sensors-forum/BMI270-OSR-mode-behaviour/td-p/52020
+    // OSR4 is a 188Hz filter cutoff, acc_bwp == 0, equivalent to other driver filters
+    write_register(BMI270_REG_ACC_CONF, 1U<<7 | 0x0C);
     // set acc to 16G full scale
     write_register(BMI270_REG_ACC_RANGE, 0x03);
 
@@ -328,8 +330,9 @@ void AP_InertialSensor_BMI270::configure_accel()
 
 void AP_InertialSensor_BMI270::configure_gyro()
 {
-    // set gyro in high performance filter mode, high performance noise mode. normal filtering at 1600Hz
-    write_register(BMI270_REG_GYRO_CONF, 1U<<7 | 1<<6 | 2<<4 | 0x0C);
+    // set gyro in high performance filter mode, high performance noise mode, normal filtering at 3.2KHz
+    // filter cutoff 751hz
+    write_register(BMI270_REG_GYRO_CONF, 1U<<7 | 1<<6 | 2<<4 | 0x0D);
     // set gyro to 2000dps full scale
     // for some reason you have to enable the ois_range bit (bit 3) for 2000dps as well
     // or else the gyro scale will be 250dps when in prefiltered FIFO mode (not documented in datasheet!)
@@ -340,20 +343,29 @@ void AP_InertialSensor_BMI270::configure_gyro()
 
 void AP_InertialSensor_BMI270::configure_fifo()
 {
-    // don't stop when full, disable sensortime frame
-    write_register(BMI270_REG_FIFO_CONFIG_0, 0x00);
+    // stop when full, disable sensortime frame
+    write_register(BMI270_REG_FIFO_CONFIG_0, 0x01);
     // accel + gyro data in FIFO together with headers
     write_register(BMI270_REG_FIFO_CONFIG_1, 1U<<7 | 1U<<6 | 1U<<4);
-    // unfiltered with gyro downsampled by 2^2 to give 1600Hz
-    write_register(BMI270_REG_FIFO_DOWNS, 0x02);
+    // filtered data downsampled by 2**1 to 1600Hz
+    write_register(BMI270_REG_FIFO_DOWNS, 1U<<7 | 1U<<3 | 0x01);
     // disable advanced power save, enable FIFO self-wake
     write_register(BMI270_REG_PWR_CONF, 0x02);
     // Enable the gyro, accelerometer and temperature sensor - disable aux interface
     write_register(BMI270_REG_PWR_CTRL, 0x0E);
-    // flush FIFO
-    write_register(BMI270_REG_CMD, BMI270_CMD_FIFOFLUSH);
+
+    fifo_reset();
 
     check_err_reg();
+}
+
+void AP_InertialSensor_BMI270::fifo_reset()
+{
+    // flush and reset FIFO
+    write_register(BMI270_REG_CMD, BMI270_CMD_FIFOFLUSH);
+
+    notify_accel_fifo_reset(_accel_instance);
+    notify_gyro_fifo_reset(_gyro_instance);
 }
 
 /*
@@ -361,6 +373,14 @@ void AP_InertialSensor_BMI270::configure_fifo()
  */
 void AP_InertialSensor_BMI270::read_fifo(void)
 {
+    // check for FIFO errors/overflow
+    uint8_t err = 0;
+    read_registers(BMI270_REG_ERR_REG, &err, 1);
+    if ((err>>6 & 1) == 1) {
+        fifo_reset();
+        return;
+    }
+
     uint8_t len[2];
     if (!read_registers(BMI270_REG_FIFO_LENGTH_LSB, len, 2)) {
         _inc_accel_error_count(_accel_instance);
@@ -387,6 +407,10 @@ void AP_InertialSensor_BMI270::read_fifo(void)
         _inc_gyro_error_count(_gyro_instance);
         return;
     }
+
+    // adjust the periodic callback to be synchronous with the incoming data
+    // this means that we rarely run read_fifo() without updating the sensor data
+    _dev->adjust_periodic_callback(periodic_handle, BACKEND_PERIOD_US);
 
     const uint8_t *p = &data[0];
     while (fifo_length >= 12) {
@@ -418,17 +442,22 @@ void AP_InertialSensor_BMI270::read_fifo(void)
             break;
         case 0x48:
             // fifo config frame
-            frame_len = 2;
+            frame_len = 5;
             break;
         case 0x50:
             // sample drop frame
             frame_len = 2;
             break;
+        case 0x80:
+            // invalid frame
+            fifo_reset();
+            return;
         }
         p += frame_len;
         fifo_length -= frame_len;
     }
 
+    // temperature sensor updated every 10ms
     if (temperature_counter++ == 100) {
         temperature_counter = 0;
         uint8_t tbuf[2];
@@ -436,10 +465,12 @@ void AP_InertialSensor_BMI270::read_fifo(void)
             _inc_accel_error_count(_accel_instance);
             _inc_gyro_error_count(_gyro_instance);
         } else {
-            uint16_t temp_uint11 = (tbuf[0]<<3) | (tbuf[1]>>5);
-            int16_t temp_int11 = temp_uint11>1023?temp_uint11-2048:temp_uint11;
-            float temp_degc = temp_int11 * 0.125f + 23;
-            _publish_temperature(_accel_instance, temp_degc);
+            uint16_t tval = tbuf[0] | (tbuf[1] << 8);
+            if (tval != 0x8000) {   // 0x8000 is invalid
+                int16_t klsb = static_cast<int16_t>(tval);
+                float temp_degc = klsb * 0.002f + 23.0f;
+                _publish_temperature(_accel_instance, temp_degc);
+            }
         }
     }
 }
@@ -475,18 +506,14 @@ void AP_InertialSensor_BMI270::parse_gyro_frame(const uint8_t* d)
     _notify_new_gyro_raw_sample(_gyro_instance, gyro);
 }
 
-void AP_InertialSensor_BMI270::poll_data()
-{
-    read_fifo();
-}
-
 bool AP_InertialSensor_BMI270::hardware_init()
 {
-    bool ret = false;
+    bool init = false;
+    bool read_chip_id = false;
 
     hal.scheduler->delay(BMI270_POWERUP_DELAY_MSEC);
 
-    _dev->get_semaphore()->take_blocking();
+    WITH_SEMAPHORE(_dev->get_semaphore());
 
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
 
@@ -512,6 +539,9 @@ bool AP_InertialSensor_BMI270::hardware_init()
             continue;
         }
 
+        // successfully identified the chip, proceed with initialisation
+        read_chip_id = true;
+
         // disable power save
         write_register(BMI270_REG_PWR_CONF, 0x00);
         hal.scheduler->delay(1); // needs to be at least 450us
@@ -532,27 +562,24 @@ bool AP_InertialSensor_BMI270::hardware_init()
         read_registers(BMI270_REG_INTERNAL_STATUS, &status, 1);
 
         if ((status & 1) == 1) {
-            ret = true;
-            hal.console->printf("BMI270 initialized after %d retries\n", i+1);
+            init = true;
+            DEV_PRINTF("BMI270 initialized after %d retries\n", i+1);
             break;
         }
     }
 
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 
-    _dev->get_semaphore()->give();
-    return ret;
+    if (read_chip_id && !init) {
+        DEV_PRINTF("BMI270: failed to init\n");
+    }
+
+    return init;
 }
 
 bool AP_InertialSensor_BMI270::init()
 {
-    bool ret = false;
     _dev->set_read_flag(0x80);
 
-    ret = hardware_init();
-    if (!ret) {
-        hal.console->printf("BMI270: failed to init\n");
-    }
-
-    return ret;
+    return hardware_init();
 }

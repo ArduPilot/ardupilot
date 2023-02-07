@@ -2,6 +2,13 @@
 
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Backend.h"
+
+#ifndef AP_RANGEFINDER_HC_SR04_ENABLED
+#define AP_RANGEFINDER_HC_SR04_ENABLED AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
+#endif
+
+#if AP_RANGEFINDER_HC_SR04_ENABLED
+
 #include "AP_RangeFinder_Params.h"
 
 class AP_RangeFinder_HC_SR04 : public AP_RangeFinder_Backend
@@ -37,3 +44,5 @@ private:
 
     uint32_t last_ping_ms;
 };
+
+#endif  // AP_RANGEFINDER_HC_SR04_ENABLED

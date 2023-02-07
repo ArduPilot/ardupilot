@@ -97,12 +97,8 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
         return true;
     }
 
-    // don't ever forward data from a private channel
-    if ((GCS_MAVLINK::is_private(in_channel))) {
-        return true;
-    }
-
-    // learn new routes
+    // learn new routes including private channels
+    // so that find_mav_type works for all channels
     learn_route(in_channel, msg);
 
     if (msg.msgid == MAVLINK_MSG_ID_RADIO ||
@@ -110,10 +106,14 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
         // don't forward RADIO packets
         return true;
     }
-    
+
+    const bool from_private_channel = GCS_MAVLINK::is_private(in_channel);
+
     if (msg.msgid == MAVLINK_MSG_ID_HEARTBEAT) {
         // heartbeat needs special handling
-        handle_heartbeat(in_channel, msg);
+        if (!from_private_channel) {
+            handle_heartbeat(in_channel, msg);
+        }
         return true;
     }
 
@@ -133,6 +133,11 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
     bool match_component = match_system && (broadcast_component || 
                                             (target_component == mavlink_system.compid));
     bool process_locally = match_system && match_component;
+
+    // don't ever forward data from a private channel
+    if (from_private_channel) {
+        return process_locally;
+    }
 
     if (process_locally && !broadcast_system && !broadcast_component) {
         // nothing more to do - it can only be for us
@@ -258,6 +263,22 @@ bool MAVLink_routing::find_by_mavtype(uint8_t mavtype, uint8_t &sysid, uint8_t &
     }
 
     // if we've reached we have not found the component
+    return false;
+}
+
+/*
+  search for the first vehicle or component in the routing table with given mav_type and component id and retrieve its sysid and channel
+  returns true if a match is found
+ */
+bool MAVLink_routing::find_by_mavtype_and_compid(uint8_t mavtype, uint8_t compid, uint8_t &sysid, mavlink_channel_t &channel) const
+{
+    for (uint8_t i=0; i<num_routes; i++) {
+        if ((routes[i].mavtype == mavtype) && (routes[i].compid == compid)) {
+            sysid = routes[i].sysid;
+            channel = routes[i].channel;
+            return true;
+        }
+    }
     return false;
 }
 

@@ -8,7 +8,7 @@ const AP_Param::GroupInfo AP_Tuning_Plane::var_info[] = {
     // @Param: PARAM
     // @DisplayName: Transmitter tuning parameter or set of parameters
     // @Description: This sets which parameter or set of parameters will be tuned. Values greater than 100 indicate a set of parameters rather than a single parameter. Parameters less than 50 are for QuadPlane vertical lift motors only.
-    // @Values: 0:None,1:RateRollPI,2:RateRollP,3:RateRollI,4:RateRollD,5:RatePitchPI,6:RatePitchP,7:RatePitchI,8:RatePitchD,9:RateYawPI,10:RateYawP,11:RateYawI,12:RateYawD,13:AngleRollP,14:AnglePitchP,15:AngleYawP,16:PosXYP,17:PosZP,18:VelXYP,19:VelXYI,20:VelZP,21:AccelZP,22:AccelZI,23:AccelZD,24:RatePitchFF,25:RateRollFF,26:RateYawFF,50:FixedWingRollP,51:FixedWingRollI,52:FixedWingRollD,53:FixedWingRollFF,54:FixedWingPitchP,55:FixedWingPitchI,56:FixedWingPitchD,57:FixedWingPitchFF,101:Set_RateRollPitch,102:Set_RateRoll,103:Set_RatePitch,104:Set_RateYaw,105:Set_AngleRollPitch,106:Set_VelXY,107:Set_AccelZ
+    // @Values: 0:None,1:RateRollPI,2:RateRollP,3:RateRollI,4:RateRollD,5:RatePitchPI,6:RatePitchP,7:RatePitchI,8:RatePitchD,9:RateYawPI,10:RateYawP,11:RateYawI,12:RateYawD,13:AngleRollP,14:AnglePitchP,15:AngleYawP,16:PosXYP,17:PosZP,18:VelXYP,19:VelXYI,20:VelZP,21:AccelZP,22:AccelZI,23:AccelZD,24:RatePitchFF,25:RateRollFF,26:RateYawFF,50:FixedWingRollP,51:FixedWingRollI,52:FixedWingRollD,53:FixedWingRollFF,54:FixedWingPitchP,55:FixedWingPitchI,56:FixedWingPitchD,57:FixedWingPitchFF,101:Set_RateRollPitch,102:Set_RateRoll,103:Set_RatePitch,104:Set_RateYaw,105:Set_AngleRollPitch,106:Set_VelXY,107:Set_AccelZ,108:Set_RatePitchDP,109:Set_RateRollDP,110:Set_RateYawDP
     // @User: Standard
     AP_GROUPINFO("PARAM", 1, AP_Tuning_Plane, parmset, 0),
 
@@ -22,27 +22,33 @@ const AP_Param::GroupInfo AP_Tuning_Plane::var_info[] = {
 /*
   tables of tuning sets
  */
-const uint8_t AP_Tuning_Plane::tuning_set_rate_roll_pitch[] = { TUNING_RATE_ROLL_D, TUNING_RATE_ROLL_PI,
-                                                                TUNING_RATE_PITCH_D, TUNING_RATE_PITCH_PI};
-const uint8_t AP_Tuning_Plane::tuning_set_rate_roll[] =       { TUNING_RATE_ROLL_D, TUNING_RATE_ROLL_PI };
-const uint8_t AP_Tuning_Plane::tuning_set_rate_pitch[] =      { TUNING_RATE_PITCH_D, TUNING_RATE_PITCH_PI };
-const uint8_t AP_Tuning_Plane::tuning_set_rate_yaw[] =        { TUNING_RATE_YAW_P, TUNING_RATE_YAW_I, TUNING_RATE_YAW_D };
-const uint8_t AP_Tuning_Plane::tuning_set_ang_roll_pitch[] =  { TUNING_ANG_ROLL_P, TUNING_ANG_PITCH_P };
-const uint8_t AP_Tuning_Plane::tuning_set_vxy[] =             { TUNING_VXY_P, TUNING_VXY_I };
-const uint8_t AP_Tuning_Plane::tuning_set_az[] =              { TUNING_AZ_P, TUNING_AZ_I, TUNING_AZ_D };
+const uint8_t AP_Tuning_Plane::tuning_set_rate_roll_pitch[] =  { TUNING_RATE_ROLL_D, TUNING_RATE_ROLL_PI,
+                                                                 TUNING_RATE_PITCH_D, TUNING_RATE_PITCH_PI};
+const uint8_t AP_Tuning_Plane::tuning_set_rate_roll[] =        { TUNING_RATE_ROLL_D, TUNING_RATE_ROLL_PI };
+const uint8_t AP_Tuning_Plane::tuning_set_rate_pitch[] =       { TUNING_RATE_PITCH_D, TUNING_RATE_PITCH_PI };
+const uint8_t AP_Tuning_Plane::tuning_set_rate_yaw[] =         { TUNING_RATE_YAW_P, TUNING_RATE_YAW_I, TUNING_RATE_YAW_D };
+const uint8_t AP_Tuning_Plane::tuning_set_ang_roll_pitch[] =   { TUNING_ANG_ROLL_P, TUNING_ANG_PITCH_P };
+const uint8_t AP_Tuning_Plane::tuning_set_vxy[] =              { TUNING_VXY_P, TUNING_VXY_I };
+const uint8_t AP_Tuning_Plane::tuning_set_az[] =               { TUNING_AZ_P, TUNING_AZ_I, TUNING_AZ_D };
+const uint8_t AP_Tuning_Plane::tuning_set_rate_pitchDP[]=      { TUNING_RATE_PITCH_D, TUNING_RATE_PITCH_P };
+const uint8_t AP_Tuning_Plane::tuning_set_rate_rollDP[]=       { TUNING_RATE_ROLL_D, TUNING_RATE_ROLL_P };
+const uint8_t AP_Tuning_Plane::tuning_set_rate_yawDP[]=        { TUNING_RATE_YAW_D, TUNING_RATE_YAW_P };
 
 // macro to prevent getting the array length wrong
 #define TUNING_ARRAY(v) ARRAY_SIZE(v), v
 
 // list of tuning sets
 const AP_Tuning_Plane::tuning_set AP_Tuning_Plane::tuning_sets[] = {
-    { TUNING_SET_RATE_ROLL_PITCH, TUNING_ARRAY(tuning_set_rate_roll_pitch) },
-    { TUNING_SET_RATE_ROLL,       TUNING_ARRAY(tuning_set_rate_roll) },
-    { TUNING_SET_RATE_PITCH,      TUNING_ARRAY(tuning_set_rate_pitch) },
-    { TUNING_SET_RATE_YAW,        TUNING_ARRAY(tuning_set_rate_yaw) },
-    { TUNING_SET_ANG_ROLL_PITCH,  TUNING_ARRAY(tuning_set_ang_roll_pitch) },
-    { TUNING_SET_VXY,             TUNING_ARRAY(tuning_set_vxy) },
-    { TUNING_SET_AZ,              TUNING_ARRAY(tuning_set_az) },
+    { TUNING_SET_RATE_ROLL_PITCH,       TUNING_ARRAY(tuning_set_rate_roll_pitch) },
+    { TUNING_SET_RATE_ROLL,             TUNING_ARRAY(tuning_set_rate_roll) },
+    { TUNING_SET_RATE_PITCH,            TUNING_ARRAY(tuning_set_rate_pitch) },
+    { TUNING_SET_RATE_YAW,              TUNING_ARRAY(tuning_set_rate_yaw) },
+    { TUNING_SET_ANG_ROLL_PITCH,        TUNING_ARRAY(tuning_set_ang_roll_pitch) },
+    { TUNING_SET_VXY,                   TUNING_ARRAY(tuning_set_vxy) },
+    { TUNING_SET_AZ,                    TUNING_ARRAY(tuning_set_az) },
+    { TUNING_SET_RATE_PITCHDP,          TUNING_ARRAY(tuning_set_rate_pitchDP) },
+    { TUNING_SET_RATE_ROLLDP,           TUNING_ARRAY(tuning_set_rate_rollDP) },
+    { TUNING_SET_RATE_YAWDP,            TUNING_ARRAY(tuning_set_rate_yawDP) },
     { 0, 0, nullptr }
 };
 
@@ -299,74 +305,3 @@ void AP_Tuning_Plane::reload_value(uint8_t parm)
     }
 }
 
-/*
-  return current controller error
- */
-float AP_Tuning_Plane::controller_error(uint8_t parm)
-{
-#if HAL_QUADPLANE_ENABLED
-    if (!plane.quadplane.available()) {
-        return 0;
-    }
-
-    // in general a good tune will have rmsP significantly greater
-    // than rmsD. Otherwise it is too easy to push D too high while
-    // tuning a quadplane and end up with D dominating
-    const float max_P_D_ratio = 3.0f;
-
-    if (plane.quadplane.motors->get_throttle() < 0.1f) {
-        // don't report stale errors if not running VTOL motors
-        return 0;
-    }
-        
-    switch(parm) {
-    // special handling of dual-parameters
-    case TUNING_RATE_ROLL_PI:
-    case TUNING_RATE_ROLL_P:
-    case TUNING_RATE_ROLL_I:
-   case TUNING_RATE_ROLL_FF:
-        return plane.quadplane.attitude_control->control_monitor_rms_output_roll();
-
-    case TUNING_RATE_ROLL_D: {
-        // special case for D term to keep it well below P
-        float rms_P = plane.quadplane.attitude_control->control_monitor_rms_output_roll_P();
-        float rms_D = plane.quadplane.attitude_control->control_monitor_rms_output_roll_D();
-        if (rms_P < rms_D * max_P_D_ratio) {
-            return max_P_D_ratio;
-        }
-        return rms_P+rms_D;
-    }
-        
-        
-    case TUNING_RATE_PITCH_PI:
-    case TUNING_RATE_PITCH_P:
-    case TUNING_RATE_PITCH_I:
-    case TUNING_RATE_PITCH_FF:
-        return plane.quadplane.attitude_control->control_monitor_rms_output_pitch();
-
-    case TUNING_RATE_PITCH_D: {
-        // special case for D term to keep it well below P
-        float rms_P = plane.quadplane.attitude_control->control_monitor_rms_output_pitch_P();
-        float rms_D = plane.quadplane.attitude_control->control_monitor_rms_output_pitch_D();
-        if (rms_P < rms_D * max_P_D_ratio) {
-            return max_P_D_ratio;
-        }
-        return rms_P+rms_D;
-    }
-        
-    case TUNING_RATE_YAW_PI:
-    case TUNING_RATE_YAW_P:
-    case TUNING_RATE_YAW_I:
-    case TUNING_RATE_YAW_D:
-    case TUNING_RATE_YAW_FF:
-        return plane.quadplane.attitude_control->control_monitor_rms_output_yaw();
-
-    default:
-        // no special handler
-        return 0;
-    }
-#else
-    // no special handler
-    return 0;
-#endif  // HAL_QUADPLANE_ENABLED
-}

@@ -4,7 +4,9 @@
 #include <fcntl.h>
 #include <poll.h>
 #include <stdio.h>
-#include <termios.h>
+#include <sys/ioctl.h>
+#include <asm/ioctls.h>
+#include <asm/termbits.h>
 #include <unistd.h>
 
 #include <AP_HAL/AP_HAL.h>
@@ -86,10 +88,13 @@ void UARTDevice::set_blocking(bool blocking)
 
 void UARTDevice::_disable_crlf()
 {
-    struct termios t;
-    memset(&t, 0, sizeof(t));
+    struct termios2 t = { 0 };
 
-    tcgetattr(_fd, &t);
+    if (ioctl(_fd, TCGETS2, &t) != 0) {
+        ::fprintf(stderr, "Failed to read serial options for %s - %s\n",
+                  _device_path, strerror(errno));
+        return;
+    }
 
     // disable LF -> CR/LF
     t.c_iflag &= ~(BRKINT | ICRNL | IMAXBEL | IXON | IXOFF);
@@ -97,28 +102,49 @@ void UARTDevice::_disable_crlf()
     t.c_lflag &= ~(ISIG | ICANON | IEXTEN | ECHO | ECHOE | ECHOK | ECHOCTL | ECHOKE);
     t.c_cc[VMIN] = 0;
 
-    tcsetattr(_fd, TCSANOW, &t);
+    if (ioctl(_fd, TCSETS2, &t) != 0) {
+        ::fprintf(stderr, "Failed to disable crlf on %s - %s\n",
+                  _device_path, strerror(errno));
+        return;
+    }
 }
 
 void UARTDevice::set_speed(uint32_t baudrate)
 {
-    struct termios t;
-    memset(&t, 0, sizeof(t));
+    struct termios2 tio = { 0 };
 
-    tcgetattr(_fd, &t);
-    cfsetspeed(&t, baudrate);
-    tcsetattr(_fd, TCSANOW, &t);
+    if (ioctl(_fd, TCGETS2, &tio) != 0) {
+        ::fprintf(stderr, "Failed to read serial options for %s - %s\n",
+                  _device_path, strerror(errno));
+        return;
+    }
+
+    // use CBAUDEX to gain access to "non-standard" rates that are common for eg. RC receivers
+    tio.c_cflag &= ~CBAUD;
+    tio.c_cflag |= CBAUDEX;
+    tio.c_ispeed = baudrate;
+    tio.c_ospeed = baudrate;
+
+    if (ioctl(_fd, TCSETS2, &tio) != 0) {
+        ::fprintf(stderr, "Failed to set serial baud to %d for %s - %s\n",
+                  baudrate, _device_path, strerror(errno));
+        return;
+    }
 }
 
 void UARTDevice::set_flow_control(AP_HAL::UARTDriver::flow_control flow_control_setting)
 {
-    struct termios t;
-
     if (_flow_control == flow_control_setting) {
         return;
     }
 
-    tcgetattr(_fd, &t);
+    struct termios2 t = { 0 };
+
+    if (ioctl(_fd, TCGETS2, &t) != 0) {
+        ::fprintf(stderr, "Failed to read serial options for %s - %s\n",
+                  _device_path, strerror(errno));
+        return;
+    }
 
     if (flow_control_setting != AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE) {
         t.c_cflag |= CRTSCTS;
@@ -126,15 +152,25 @@ void UARTDevice::set_flow_control(AP_HAL::UARTDriver::flow_control flow_control_
         t.c_cflag &= ~CRTSCTS;
     }
 
-    tcsetattr(_fd, TCSANOW, &t);
+    if (ioctl(_fd, TCSETS2, &t) != 0) {
+        ::fprintf(stderr, "Failed to set flow control for %s - %s\n",
+                  _device_path, strerror(errno));
+        return;
+    }
 
     _flow_control = flow_control_setting;
 }
 
 void UARTDevice::set_parity(int v)
 {
-    struct termios t;
-    tcgetattr(_fd, &t);
+    struct termios2 t = { 0 };
+
+    if (ioctl(_fd, TCGETS2, &t) != 0) {
+        ::fprintf(stderr, "Failed to read serial options for %s - %s\n",
+                  _device_path, strerror(errno));
+        return;
+    }
+
     if (v != 0) {
         // enable parity
         t.c_cflag |= PARENB;
@@ -148,5 +184,10 @@ void UARTDevice::set_parity(int v)
         // disable parity
         t.c_cflag &= ~PARENB;
     }
-    tcsetattr(_fd, TCSANOW, &t);
+
+    if (ioctl(_fd, TCSETS2, &t) != 0) {
+        ::fprintf(stderr, "Failed to set parity for %s - %s\n",
+                  _device_path, strerror(errno));
+        return;
+    }
 }

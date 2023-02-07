@@ -13,10 +13,10 @@ bool ModeQLand::_enter()
     quadplane.last_land_final_agl = plane.relative_ground_altitude(plane.g.rangefinder_landing);
     quadplane.landing_detect.lower_limit_start_ms = 0;
     quadplane.landing_detect.land_start_ms = 0;
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
     plane.g2.landing_gear.deploy_for_landing();
 #endif
-#if AC_FENCE == ENABLED
+#if AP_FENCE_ENABLED
     plane.fence.auto_disable_fence_for_landing();
 #endif
     return true;

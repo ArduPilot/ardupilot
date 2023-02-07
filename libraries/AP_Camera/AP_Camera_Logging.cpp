@@ -1,5 +1,9 @@
 #include "AP_Camera.h"
+
+#if AP_CAMERA_ENABLED
+
 #include <AP_Logger/AP_Logger.h>
+#include <AP_GPS/AP_GPS.h>
 
 // Write a Camera packet
 void AP_Camera::Write_CameraInfo(enum LogMessages msg, uint64_t timestamp_us)
@@ -7,7 +11,7 @@ void AP_Camera::Write_CameraInfo(enum LogMessages msg, uint64_t timestamp_us)
     const AP_AHRS &ahrs = AP::ahrs();
 
     Location current_loc;
-    if (!ahrs.get_position(current_loc)) {
+    if (!ahrs.get_location(current_loc)) {
         // completely ignore this failure!  AHRS will provide its best guess.
     }
 
@@ -54,3 +58,5 @@ void AP_Camera::Write_Trigger(void)
 {
     Write_CameraInfo(LOG_TRIGGER_MSG, 0);
 }
+
+#endif

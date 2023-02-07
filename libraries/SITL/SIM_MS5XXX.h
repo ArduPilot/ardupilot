@@ -23,10 +23,6 @@ private:
     // float pressure;
     // float temperature;
 
-    // time we last updated the measurements (simulated internal
-    // workings of sensor)
-    uint32_t last_update_ms;
-
     void reset();
 
     enum class Command : uint8_t {

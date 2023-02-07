@@ -3,7 +3,11 @@
 #include "AP_RangeFinder_Backend.h"
 #include <AP_CANManager/AP_CANSensor.h>
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#ifndef AP_RANGEFINDER_USD1_CAN_ENABLED
+#define AP_RANGEFINDER_USD1_CAN_ENABLED (HAL_MAX_CAN_PROTOCOL_DRIVERS && AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED)
+#endif
+
+#if AP_RANGEFINDER_USD1_CAN_ENABLED
 
 class AP_RangeFinder_USD1_CAN : public CANSensor, public AP_RangeFinder_Backend {
 public:
@@ -22,5 +26,5 @@ private:
     float _distance_sum;
     uint32_t _distance_count;
 };
-#endif //HAL_MAX_CAN_PROTOCOL_DRIVERS
 
+#endif  // AP_RANGEFINDER_USD1_CAN_ENABLED

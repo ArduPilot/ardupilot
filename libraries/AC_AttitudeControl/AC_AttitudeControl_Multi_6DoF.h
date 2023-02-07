@@ -5,8 +5,8 @@
 
 class AC_AttitudeControl_Multi_6DoF : public AC_AttitudeControl_Multi {
 public:
-    AC_AttitudeControl_Multi_6DoF(AP_AHRS_View &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt):
-        AC_AttitudeControl_Multi(ahrs,aparm,motors,dt) {
+    AC_AttitudeControl_Multi_6DoF(AP_AHRS_View &ahrs, const AP_MultiCopter &aparm, AP_MotorsMulticopter& motors):
+        AC_AttitudeControl_Multi(ahrs,aparm,motors) {
 
         if (_singleton != nullptr) {
             AP_HAL::panic("Can only be one AC_AttitudeControl_Multi_6DoF");
@@ -19,8 +19,9 @@ public:
     }
 
     // Command a Quaternion attitude with feedforward and smoothing
+    // attitude_desired_quat: is updated on each time_step (_dt) by the integral of the angular velocity
     // not used anywhere in current code, panic so this implementaiton is not overlooked
-    void input_quaternion(Quaternion attitude_desired_quat) override;
+    void input_quaternion(Quaternion& attitude_desired_quat, Vector3f ang_vel_target) override;
     /*
         override input functions to attitude controller and convert desired angles into thrust angles and substitute for osset angles
     */
@@ -32,7 +33,7 @@ public:
     void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw) override;
 
     // Command a thrust vector in the earth frame and a heading angle and/or rate
-    void input_thrust_vector_rate_heading(const Vector3f& thrust_vector, float heading_rate_cds) override;
+    void input_thrust_vector_rate_heading(const Vector3f& thrust_vector, float heading_rate_cds, bool slew_yaw = true) override;
     void input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds) override;
 
     /*

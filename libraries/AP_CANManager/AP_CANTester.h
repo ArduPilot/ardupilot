@@ -18,7 +18,11 @@
 #include "AP_CANDriver.h"
 #include <AP_HAL/Semaphores.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES && HAL_CANMANAGER_ENABLED
+#ifndef HAL_ENABLE_CANTESTER
+#define HAL_ENABLE_CANTESTER 0
+#endif
+
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES && HAL_CANMANAGER_ENABLED && HAL_ENABLE_CANTESTER
 
 class CANTester : public AP_CANDriver
 {
@@ -32,8 +36,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     /* Do not allow copies */
-    CANTester(const CANTester &other) = delete;
-    CANTester &operator=(const CANTester&) = delete;
+    CLASS_NO_COPY(CANTester);
 
     void init(uint8_t driver_index, bool enable_filters) override;
     bool add_interface(AP_HAL::CANIface* can_iface) override;
@@ -48,9 +51,9 @@ private:
         TEST_LOOPBACK,
         TEST_BUSOFF_RECOVERY,
         TEST_UAVCAN_DNA,
-        TEST_TOSHIBA_CAN,
         TEST_KDE_CAN,
         TEST_UAVCAN_ESC,
+        TEST_UAVCAN_FD_ESC,
         TEST_END,
     };
 
@@ -74,12 +77,10 @@ private:
     bool test_busoff_recovery();
 
     bool test_uavcan_dna();
-    bool test_toshiba_can();
-    bool send_toshiba_can_reply(uint32_t cmd);
 
     bool test_kdecan();
 
-    bool test_uavcan_esc();
+    bool test_uavcan_esc(bool enable_canfd);
 
     // write frame on CAN bus, returns true on success
     bool write_frame(uint8_t iface, AP_HAL::CANFrame &out_frame, uint64_t timeout);

@@ -35,8 +35,7 @@ Scrimmage::Scrimmage(const char *_frame_str) :
     Aircraft(_frame_str),
     prev_timestamp_us(0),
     recv_sock(true),
-    send_sock(true),
-    frame_str(_frame_str)
+    send_sock(true)
 {
 }
 

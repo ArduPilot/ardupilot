@@ -4,6 +4,17 @@
 bool ModeAuto::_enter()
 {
 #if HAL_QUADPLANE_ENABLED
+    // check if we should refuse auto mode due to a missing takeoff in
+    // guided_wait_takeoff state
+    if (plane.previous_mode == &plane.mode_guided &&
+        quadplane.guided_wait_takeoff_on_mode_enter) {
+        if (!plane.mission.starts_with_takeoff_cmd()) {
+            gcs().send_text(MAV_SEVERITY_ERROR,"Takeoff waypoint required");
+            quadplane.guided_wait_takeoff = true;
+            return false;
+        }
+    }
+    
     if (plane.quadplane.available() && plane.quadplane.enable == 2) {
         plane.auto_state.vtol_mode = true;
     } else {
@@ -69,7 +80,7 @@ void ModeAuto::update()
 #endif
 
     if (nav_cmd_id == MAV_CMD_NAV_TAKEOFF ||
-        (nav_cmd_id == MAV_CMD_NAV_LAND && plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND)) {
+        (nav_cmd_id == MAV_CMD_NAV_LAND && plane.flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING)) {
         plane.takeoff_calc_roll();
         plane.takeoff_calc_pitch();
         plane.calc_throttle();
@@ -112,3 +123,19 @@ void ModeAuto::navigate()
     }
 }
 
+
+bool ModeAuto::does_auto_navigation() const
+{
+#if AP_SCRIPTING_ENABLED
+   return (!plane.nav_scripting_active());
+#endif
+   return true;
+}
+
+bool ModeAuto::does_auto_throttle() const
+{
+#if AP_SCRIPTING_ENABLED
+   return (!plane.nav_scripting_active());
+#endif
+   return true;
+}

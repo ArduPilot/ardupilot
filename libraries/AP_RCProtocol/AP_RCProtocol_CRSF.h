@@ -20,22 +20,45 @@
 
 #include "AP_RCProtocol.h"
 #include <AP_Math/AP_Math.h>
+#include <RC_Channel/RC_Channel.h>
 #include "SoftSerial.h"
 
 #define CRSF_MAX_CHANNELS   24U      // Maximum number of channels from crsf datastream
 #define CRSF_FRAMELEN_MAX   64U      // maximum possible framelength
-#define CRSF_BAUDRATE       416666
+#define CSRF_HEADER_LEN     2U       // header length
+#define CRSF_FRAME_PAYLOAD_MAX (CRSF_FRAMELEN_MAX - CSRF_HEADER_LEN)     // maximum size of the frame length field in a packet
+#define CRSF_BAUDRATE      416666U
+#define ELRS_BAUDRATE      420000U
+#define CRSF_TX_TIMEOUT    500000U   // the period after which the transmitter is considered disconnected (matches copters failsafe)
+#define CRSF_RX_TIMEOUT    150000U   // the period after which the receiver is considered disconnected (>ping frequency)
 
 class AP_RCProtocol_CRSF : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_CRSF(AP_RCProtocol &_frontend);
     virtual ~AP_RCProtocol_CRSF();
     void process_byte(uint8_t byte, uint32_t baudrate) override;
-    void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
+    void process_handshake(uint32_t baudrate) override;
     void update(void) override;
     // support for CRSF v3
     bool change_baud_rate(uint32_t baudrate);
-    bool is_crsf_v3_active() const { return _crsf_v3_active; }
+    // bootstrap baudrate
+    uint32_t get_bootstrap_baud_rate() const {
+        return rc().use_420kbaud_for_elrs() ? ELRS_BAUDRATE : CRSF_BAUDRATE;
+    }
+
+    // is the receiver active, used to detect power loss and baudrate changes
+    bool is_rx_active() const override {
+        // later versions of CRSFv3 will send link rate frames every 200ms
+        // but only before an initial failsafe
+        return AP_HAL::micros() < _last_rx_frame_time_us + CRSF_RX_TIMEOUT;
+    }
+
+    // is the transmitter active, used to adjust telemetry data
+    bool is_tx_active() const {
+        // this is the same as the Copter failsafe timeout
+        return AP_HAL::micros() < _last_tx_frame_time_us + CRSF_TX_TIMEOUT;
+    }
+
     // get singleton instance
     static AP_RCProtocol_CRSF* get_singleton() {
         return _singleton;
@@ -169,7 +192,7 @@ public:
         uint8_t device_address;
         uint8_t length;
         uint8_t type;
-        uint8_t payload[CRSF_FRAMELEN_MAX - 3]; // +1 for crc
+        uint8_t payload[CRSF_FRAME_PAYLOAD_MAX - 1]; // type is already accounted for
     } PACKED;
 
     struct LinkStatisticsFrame {
@@ -209,13 +232,19 @@ public:
         uint8_t starting_channel:5;     // which channel number is the first one in the frame
         uint8_t res_configuration:2;    // configuration for the RC data resolution (10 - 13 bits)
         uint8_t digital_switch_flag:1;  // configuration bit for digital channel
-        uint8_t channels[CRSF_FRAMELEN_MAX - 4]; // +1 for crc
+        uint8_t channels[CRSF_FRAME_PAYLOAD_MAX - 2]; // payload less byte above
         // uint16_t channel[]:res;      // variable amount of channels (with variable resolution based
                                         // on the res_configuration) based on the frame size
         // uint16_t digital_switch_channel[]:10; // digital switch channel
     } PACKED;
 
-    enum class RFMode : uint8_t {
+    enum class ProtocolType {
+        PROTOCOL_CRSF,
+        PROTOCOL_TRACER,
+        PROTOCOL_ELRS
+    };
+
+    enum RFMode {
         CRSF_RF_MODE_4HZ = 0,
         CRSF_RF_MODE_50HZ,
         CRSF_RF_MODE_150HZ,
@@ -228,10 +257,9 @@ public:
         ELRS_RF_MODE_200HZ,
         ELRS_RF_MODE_250HZ,
         ELRS_RF_MODE_500HZ,
+        RF_MODE_MAX_MODES,
         RF_MODE_UNKNOWN,
     };
-    // nominal ELRS air rates
-    static constexpr uint16_t elrs_air_rates[8] = {4, 25, 50, 100, 150, 200, 250, 500};
 
     struct LinkStatus {
         int16_t rssi = -1;
@@ -244,6 +272,12 @@ public:
     const volatile LinkStatus& get_link_status() const {
         return _link_status;
     }
+
+    // return the link rate as defined by the LinkStatistics
+    uint16_t get_link_rate(ProtocolType protocol) const;
+
+    // return the protocol string
+    const char* get_protocol_string(ProtocolType protocol) const;
 
 private:
     struct Frame _frame;
@@ -273,8 +307,9 @@ private:
     void add_to_buffer(uint8_t index, uint8_t b) { ((uint8_t*)&_frame)[index] = b; }
 
     uint32_t _last_frame_time_us;
+    uint32_t _last_tx_frame_time_us;
     uint32_t _last_uart_start_time_ms;
-    uint32_t _last_rx_time_us;
+    uint32_t _last_rx_frame_time_us;
     uint32_t _start_frame_time_us;
     bool telem_available;
     uint32_t _new_baud_rate;
@@ -285,9 +320,9 @@ private:
 
     volatile struct LinkStatus _link_status;
 
-    AP_HAL::UARTDriver *_uart;
+    static const uint16_t RF_MODE_RATES[RFMode::RF_MODE_MAX_MODES];
 
-    SoftSerial ss{CRSF_BAUDRATE, SoftSerial::SERIAL_CONFIG_8N1};
+    AP_HAL::UARTDriver *_uart;
 };
 
 namespace AP {

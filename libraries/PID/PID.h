@@ -4,7 +4,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_Logger/AP_Logger.h>
+#include <AC_PID/AC_PID.h>  // for AP_PIDInfo
 #include <stdlib.h>
 #include <cmath>
 
@@ -16,13 +16,13 @@ public:
     PID(const float &   initial_p = 0.0f,
         const float &   initial_i = 0.0f,
         const float &   initial_d = 0.0f,
-        const int16_t & initial_imax = 0)
+        const int16_t & initial_imax = 0):
+            default_kp(initial_p),
+            default_ki(initial_i),
+            default_kd(initial_d),
+            default_kimax(initial_imax)
     {
 		AP_Param::setup_object_defaults(this, var_info);
-        _kp = initial_p;
-        _ki = initial_i;
-        _kd = initial_d;
-        _imax = initial_imax;
 
 		// set _last_derivative as invalid when we startup
 		_last_derivative = NAN;
@@ -63,7 +63,7 @@ public:
                              const float    i,
                              const float    d,
                              const int16_t  imaxval) {
-        _kp = p; _ki = i; _kd = d; _imax = imaxval;
+        _kp.set(p); _ki.set(i); _kd.set(d); _imax.set(imaxval);
     }
 
     float        kP() const {
@@ -98,7 +98,7 @@ public:
 
     static const struct AP_Param::GroupInfo        var_info[];
 
-    const AP_Logger::PID_Info& get_pid_info(void) const { return _pid_info; }
+    const AP_PIDInfo& get_pid_info(void) const { return _pid_info; }
 
 private:
     AP_Float        _kp;
@@ -113,7 +113,7 @@ private:
 
     float           _get_pid(float error, uint16_t dt, float scaler);
 
-    AP_Logger::PID_Info _pid_info {};
+    AP_PIDInfo _pid_info {};
 
     /// Low pass filter cut frequency for derivative calculation.
     ///
@@ -121,4 +121,9 @@ private:
     /// http://en.wikipedia.org/wiki/Low-pass_filter.
     ///
     static const uint8_t        _fCut = 20;
+
+    const float default_kp;
+    const float default_ki;
+    const float default_kd;
+    const float default_kimax;
 };

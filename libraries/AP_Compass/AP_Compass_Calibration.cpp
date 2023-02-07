@@ -82,7 +82,7 @@ bool Compass::_start_calibration(uint8_t i, bool retry, float delay)
 
     if (_rotate_auto) {
         enum Rotation r = _get_state(prio).external?(enum Rotation)_get_state(prio).orientation.get():ROTATION_NONE;
-        if (r != ROTATION_CUSTOM) {
+        if (r < ROTATION_MAX) {
             _calibrator[prio]->set_orientation(r, _get_state(prio).external, _rotate_auto>=2, _rotate_auto>=3);
         }
     }
@@ -203,8 +203,10 @@ bool Compass::_accept_calibration(uint8_t i)
         float scale_factor = cal_report.scale_factor;
 
         set_and_save_offsets(i, ofs);
+#if AP_COMPASS_DIAGONALS_ENABLED
         set_and_save_diagonals(i,diag);
         set_and_save_offdiagonals(i,offdiag);
+#endif
         set_and_save_scale_factor(i,scale_factor);
 
         if (cal_report.check_orientation && _get_state(prio).external && _rotate_auto >= 2) {
@@ -289,10 +291,18 @@ bool Compass::send_mag_cal_report(const GCS_MAVLINK& link)
             continue;
         }
         const CompassCalibrator::Report cal_report = _calibrator[compass_id]->get_report();
-        if (cal_report.status == CompassCalibrator::Status::SUCCESS ||
-            cal_report.status == CompassCalibrator::Status::FAILED ||
-            cal_report.status == CompassCalibrator::Status::BAD_ORIENTATION) {
-
+        switch (cal_report.status) {
+        case CompassCalibrator::Status::NOT_STARTED:
+        case CompassCalibrator::Status::WAITING_TO_START:
+        case CompassCalibrator::Status::RUNNING_STEP_ONE:
+        case CompassCalibrator::Status::RUNNING_STEP_TWO:
+            // calibration has not finished ergo no report
+            next_cal_report_idx[chan] = compass_id;
+            continue;
+        case CompassCalibrator::Status::SUCCESS:
+        case CompassCalibrator::Status::FAILED:
+        case CompassCalibrator::Status::BAD_ORIENTATION:
+        case CompassCalibrator::Status::BAD_RADIUS:
             // ensure we don't try to send with no space available
             if (!HAVE_PAYLOAD_SPACE(chan, MAG_CAL_REPORT)) {
                 return false;
@@ -315,8 +325,6 @@ bool Compass::send_mag_cal_report(const GCS_MAVLINK& link)
                 cal_report.orientation,
                 cal_report.scale_factor
             );
-        } else {
-            next_cal_report_idx[chan] = compass_id;
         }
     }
     return true;
@@ -333,8 +341,13 @@ bool Compass::is_calibrating() const
             case CompassCalibrator::Status::SUCCESS:
             case CompassCalibrator::Status::FAILED:
             case CompassCalibrator::Status::BAD_ORIENTATION:
-                break;
-            default:
+            case CompassCalibrator::Status::BAD_RADIUS:
+                // this backend isn't calibrating,
+                // but maybe the next one is:
+                continue;
+            case CompassCalibrator::Status::WAITING_TO_START:
+            case CompassCalibrator::Status::RUNNING_STEP_ONE:
+            case CompassCalibrator::Status::RUNNING_STEP_TWO:
                 return true;
         }
     }
@@ -442,25 +455,29 @@ MAV_RESULT Compass::handle_mag_cal_command(const mavlink_command_long_t &packet)
  */
 bool Compass::get_uncorrected_field(uint8_t instance, Vector3f &field) const
 {
+    // get corrected field
+    field = get_field(instance);
+
+#if AP_COMPASS_DIAGONALS_ENABLED
     // form eliptical correction matrix and invert it. This is
     // needed to remove the effects of the eliptical correction
     // when calculating new offsets
     const Vector3f &diagonals = get_diagonals(instance);
-    const Vector3f &offdiagonals = get_offdiagonals(instance);
-    Matrix3f mat {
-        diagonals.x, offdiagonals.x, offdiagonals.y,
-        offdiagonals.x,    diagonals.y, offdiagonals.z,
-        offdiagonals.y, offdiagonals.z,    diagonals.z
-    };
-    if (!mat.invert()) {
-        return false;
+    if (!diagonals.is_zero()) {
+        const Vector3f &offdiagonals = get_offdiagonals(instance);
+        Matrix3f mat {
+            diagonals.x, offdiagonals.x, offdiagonals.y,
+            offdiagonals.x,    diagonals.y, offdiagonals.z,
+            offdiagonals.y, offdiagonals.z,    diagonals.z
+        };
+        if (!mat.invert()) {
+            return false;
+        }
+
+        // remove impact of diagonals and off-diagonals
+        field = mat * field;
     }
-
-    // get corrected field
-    field = get_field(instance);
-
-    // remove impact of diagonals and off-diagonals
-    field = mat * field;
+#endif
 
     // remove impact of offsets
     field -= get_offsets(instance);
@@ -489,7 +506,7 @@ MAV_RESULT Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
     if (is_zero(lat_deg) && is_zero(lon_deg)) {
         Location loc;
         // get AHRS position. If unavailable then try GPS location
-        if (!AP::ahrs().get_position(loc)) {
+        if (!AP::ahrs().get_location(loc)) {
             if (AP::gps().status() < AP_GPS::GPS_OK_FIX_3D) {
                 gcs().send_text(MAV_SEVERITY_ERROR, "Mag: no position available");
                 return MAV_RESULT_FAILED;
@@ -542,10 +559,12 @@ MAV_RESULT Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
 
         Vector3f offsets = field - measurement;
         set_and_save_offsets(i, offsets);
+#if AP_COMPASS_DIAGONALS_ENABLED
         Vector3f one{1,1,1};
         set_and_save_diagonals(i, one);
         Vector3f zero{0,0,0};
         set_and_save_offdiagonals(i, zero);
+#endif
     }
 
     return MAV_RESULT_ACCEPTED;

@@ -298,7 +298,7 @@ void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n)
 */
 void peripheral_power_enable(void)
 {
-#if defined(HAL_GPIO_PIN_nVDD_5V_PERIPH_EN) || defined(HAL_GPIO_PIN_nVDD_5V_HIPOWER_EN) || defined(HAL_GPIO_PIN_VDD_3V3_SENSORS_EN)|| defined(HAL_GPIO_PIN_VDD_3V3_SENSORS2_EN) || defined(HAL_GPIO_PIN_VDD_3V3_SENSORS3_EN) || defined(HAL_GPIO_PIN_VDD_3V3_SENSORS4_EN) || defined(HAL_GPIO_PIN_nVDD_3V3_SD_CARD_EN) || defined(HAL_GPIO_PIN_VDD_3V3_SD_CARD_EN)
+#if defined(HAL_GPIO_PIN_nVDD_5V_PERIPH_EN) || defined(HAL_GPIO_PIN_nVDD_5V_HIPOWER_EN) || defined(HAL_GPIO_PIN_VDD_3V3_SENSORS_EN)|| defined(HAL_GPIO_PIN_VDD_3V3_SENSORS2_EN) || defined(HAL_GPIO_PIN_VDD_3V3_SENSORS3_EN) || defined(HAL_GPIO_PIN_VDD_3V3_SENSORS4_EN) || defined(HAL_GPIO_PIN_nVDD_3V3_SD_CARD_EN) || defined(HAL_GPIO_PIN_VDD_3V3_SD_CARD_EN) || defined(HAL_GPIO_PIN_VDD_3V5_LTE_EN)
     // we don't know what state the bootloader had the CTS pin in, so
     // wait here with it pulled up from the PAL table for enough time
     // for the radio to be definately powered down
@@ -336,6 +336,9 @@ void peripheral_power_enable(void)
 #ifdef HAL_GPIO_PIN_VDD_3V3_SD_CARD_EN
     // others need it active high
     palWriteLine(HAL_GPIO_PIN_VDD_3V3_SD_CARD_EN, 1);
+#endif
+#ifdef HAL_GPIO_PIN_VDD_3V5_LTE_EN
+    palWriteLine(HAL_GPIO_PIN_VDD_3V5_LTE_EN, 1);
 #endif
     for (i=0; i<20; i++) {
         // give 20ms for sensors to settle
@@ -558,3 +561,20 @@ unsigned int stm32_rand_generate_nonblocking(unsigned char* output, unsigned int
 }
 
 #endif // #if HAL_USE_HW_RNG && defined(RNG)
+
+/*
+  see if we should limit flash to 1M on devices with older revisions of STM32F427
+ */
+bool check_limit_flash_1M(void)
+{
+#ifdef STM32F427xx
+    const uint16_t revid = (*(uint32_t *)DBGMCU_BASE) >> 16;
+    static const uint16_t badrevs[4] = { 0x1000, 0x1001, 0x1003, 0x1007 };
+    for (uint8_t i=0; i<4; i++) {
+        if (revid == badrevs[i]) {
+            return true;
+        }
+    }
+#endif
+    return false;
+}

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Emit parameter documentation in markdown format
 """

@@ -161,7 +161,7 @@ bool AP_InertialSensor_BMI055::accel_init()
         goto failed;
     }
 
-    hal.console->printf("BMI055: found accel\n");
+    DEV_PRINTF("BMI055: found accel\n");
 
     dev_accel->get_semaphore()->give();
     return true;
@@ -215,7 +215,7 @@ bool AP_InertialSensor_BMI055::gyro_init()
         goto failed;
     }
 
-    hal.console->printf("BMI055: found gyro\n");    
+    DEV_PRINTF("BMI055: found gyro\n");    
 
     dev_gyro->get_semaphore()->give();
     return true;

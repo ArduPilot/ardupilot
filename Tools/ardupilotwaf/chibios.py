@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # encoding: utf-8
 
 """
@@ -14,6 +13,7 @@ import sys
 import re
 import pickle
 import struct
+import base64
 
 _dynamic_env_data = {}
 def _load_dynamic_env_data(bld):
@@ -53,17 +53,69 @@ class upload_fw(Task.Task):
     color='BLUE'
     always_run = True
     def run(self):
+        import platform
         upload_tools = self.env.get_flat('UPLOAD_TOOLS')
         upload_port = self.generator.bld.options.upload_port
         src = self.inputs[0]
         # Refer Tools/scripts/macos_remote_upload.sh for details
         if 'AP_OVERRIDE_UPLOAD_CMD' in os.environ:
             cmd = "{} '{}'".format(os.environ['AP_OVERRIDE_UPLOAD_CMD'], src.abspath())
+        elif "microsoft-standard-WSL2" in platform.release():
+            if not self.wsl2_prereq_checks():
+                return
+            print("If this takes takes too long here, try power-cycling your hardware\n")
+            cmd = "{} '{}/uploader.py' '{}'".format('python.exe', upload_tools, src.abspath())
         else:
             cmd = "{} '{}/uploader.py' '{}'".format(self.env.get_flat('PYTHON'), upload_tools, src.abspath())
         if upload_port is not None:
             cmd += " '--port' '%s'" % upload_port
         return self.exec_command(cmd)
+
+    def wsl2_prereq_checks(self):
+        # As of July 2022 WSL2 does not support native USB support. The workaround from Microsoft
+        #       using 'usbipd' does not work due to the following workflow:
+        #
+        # 1) connect USB device to Windows computer running WSL2
+        # 2) device boots into app
+        # 3) use 'usbipd' from Windows Cmd/PowerShell to determine busid, this is very hard to automate on Windows
+        # 4) use 'usbipd' from Windows Cmd/PowerShell to attach, this is very hard to automate on Windows
+        # -- device is now viewable via 'lsusb' but you need sudo to read from it.
+        # either run 'chmod666 /dev/ttyACM*' or use udev to automate chmod on device connect
+        # 5) uploader.py detects device, sends reboot command which disconnects the USB port and reboots into
+        #       bootloader (different USB device)
+        # 6) manually repeat steps 3 & 4
+        # 7) doing steps 3 and 4 will most likely take several seconds and in many cases the bootloader has
+        #        moved on into the app
+        #
+        # Solution: simply call "python.exe" instead of 'python' which magically calls it from the windows
+        #   system using the same absolute path back into the WSL2's user's directory
+        # Requirements: Windows must have Python3.9.x (NTO 3.10.x) installed and a few packages.
+        import subprocess
+        try:
+            where_python = subprocess.check_output('where.exe python.exe', shell=True, text=True)
+        except subprocess.CalledProcessError:
+            #if where.exe can't find the file it returns a non-zero result which throws this exception
+            where_python = ""
+        if not where_python or not "\Python\Python" in where_python or "python.exe" not in where_python:
+            print(self.get_full_wsl2_error_msg("Windows python.exe not found"))
+            return False
+        return True
+
+    def get_full_wsl2_error_msg(self, error_msg):
+        return ("""
+        ****************************************
+        ****************************************
+        WSL2 firmware uploads use the host's Windows Python.exe so it has access to the COM ports.
+
+        %s
+        Please download Windows Installer 3.9.x (not 3.10) from https://www.python.org/downloads/
+        and make sure to add it to your path during the installation. Once installed, run this
+        command in Powershell or Command Prompt to install some packages:
+        
+        pip.exe install empy pyserial
+        ****************************************
+        ****************************************
+        """ % error_msg)
 
     def exec_command(self, cmd, **kw):
         kw['stdout'] = sys.stdout
@@ -174,6 +226,29 @@ def to_unsigned(i):
         i += 2**32
     return i
 
+def sign_firmware(image, private_keyfile):
+    '''sign firmware with private key'''
+    try:
+        import monocypher
+    except ImportError:
+        Logs.error("Please install monocypher with: python3 -m pip install pymonocypher")
+        return None
+    try:
+        key = open(private_keyfile, 'r').read()
+    except Exception as ex:
+        Logs.error("Failed to open %s" % private_keyfile)
+        return None
+    keytype = "PRIVATE_KEYV1:"
+    if not key.startswith(keytype):
+        Logs.error("Bad private key file %s" % private_keyfile)
+        return None
+    key = base64.b64decode(key[len(keytype):])
+    sig = monocypher.signature_sign(key, image)
+    sig_len = len(sig)
+    sig_version = 30437
+    return struct.pack("<IQ64s", sig_len+8, sig_version, sig)
+
+
 class set_app_descriptor(Task.Task):
     '''setup app descriptor in bin file'''
     color='BLUE'
@@ -181,17 +256,15 @@ class set_app_descriptor(Task.Task):
     def keyword(self):
         return "app_descriptor"
     def run(self):
-        if not 'APP_DESCRIPTOR' in self.env:
-            return
-        if self.env.APP_DESCRIPTOR == 'MissionPlanner':
-            descriptor = b'\x40\xa2\xe4\xf1\x64\x68\x91\x06'
+        if self.generator.bld.env.AP_SIGNED_FIRMWARE:
+            descriptor = b'\x41\xa3\xe5\xf2\x65\x69\x92\x07'
         else:
-            Logs.error("Bad APP_DESCRIPTOR %s" % self.env.APP_DESCRIPTOR)
-            return
+            descriptor = b'\x40\xa2\xe4\xf1\x64\x68\x91\x06'
+
         img = open(self.inputs[0].abspath(), 'rb').read()
         offset = img.find(descriptor)
         if offset == -1:
-            Logs.error("Failed to find %s APP_DESCRIPTOR" % self.env.APP_DESCRIPTOR)
+            Logs.info("No APP_DESCRIPTOR found")
             return
         offset += 8
         # next 8 bytes is 64 bit CRC. We set first 4 bytes to
@@ -202,17 +275,33 @@ class set_app_descriptor(Task.Task):
         upload_tools = self.env.get_flat('UPLOAD_TOOLS')
         sys.path.append(upload_tools)
         from uploader import crc32
-        desc_len = 16
-        crc1 = to_unsigned(crc32(bytearray(img[:offset])))
-        crc2 = to_unsigned(crc32(bytearray(img[offset+desc_len:])))
+        if self.generator.bld.env.AP_SIGNED_FIRMWARE:
+            desc_len = 92
+        else:
+            desc_len = 16
+        img1 = bytearray(img[:offset])
+        img2 = bytearray(img[offset+desc_len:])
+        crc1 = to_unsigned(crc32(img1))
+        crc2 = to_unsigned(crc32(img2))
         if 'GIT_VERSION' in os.environ:
             hex_hash = os.environ.get('GIT_VERSION')
         else:
             hex_hash = self.generator.bld.git_head_hash(short=True)
         githash = to_unsigned(int('0x' + hex_hash, 16))
-        desc = struct.pack('<IIII', crc1, crc2, len(img), githash)
+        if self.generator.bld.env.AP_SIGNED_FIRMWARE:
+            sig = bytearray([0 for i in range(76)])
+            if self.generator.bld.env.PRIVATE_KEY:
+                sig_signed = sign_firmware(img1+img2, self.generator.bld.env.PRIVATE_KEY)
+                if sig_signed:
+                    Logs.info("Signed firmware")
+                    sig = sig_signed
+                else:
+                    self.generator.bld.fatal("Signing failed")
+            desc = struct.pack('<IIII76s', crc1, crc2, len(img), githash, sig)
+        else:
+            desc = struct.pack('<IIII', crc1, crc2, len(img), githash)
         img = img[:offset] + desc + img[offset+desc_len:]
-        Logs.info("Applying %s APP_DESCRIPTOR %08x%08x" % (self.env.APP_DESCRIPTOR, crc1, crc2))
+        Logs.info("Applying APP_DESCRIPTOR %08x%08x" % (crc1, crc2))
         open(self.inputs[0].abspath(), 'wb').write(img)
 
 class generate_apj(Task.Task):
@@ -241,8 +330,8 @@ class generate_apj(Task.Task):
             "flash_total": int(self.env.FLASH_TOTAL),
             "image_maxsize": int(self.env.FLASH_TOTAL),
             "flash_free": int(self.env.FLASH_TOTAL) - len(intf_img),
-            "extflash_total": int(self.env.EXTERNAL_PROG_FLASH_MB * 1024 * 1024),
-            "extflash_free": int(self.env.EXTERNAL_PROG_FLASH_MB * 1024 * 1024) - len(extf_img),
+            "extflash_total": int(self.env.EXT_FLASH_SIZE_MB * 1024 * 1024),
+            "extflash_free": int(self.env.EXT_FLASH_SIZE_MB * 1024 * 1024) - len(extf_img),
             "git_identity": self.generator.bld.git_head_hash(short=True),
             "board_revision": 0,
             "USBID": self.env.USBID
@@ -269,6 +358,18 @@ class build_abin(Task.Task):
         return "Generating"
     def __str__(self):
         return self.outputs[0].path_from(self.generator.bld.bldnode)
+
+class build_normalized_bins(Task.Task):
+    '''Move external flash binaries to regular location if regular bin is zero length'''
+    color='CYAN'
+    always_run = True
+    def run(self):
+        if self.env.HAS_EXTERNAL_FLASH_SECTIONS and os.path.getsize(self.inputs[0].abspath()) == 0:
+                os.remove(self.inputs[0].abspath())
+                shutil.move(self.inputs[1].abspath(), self.inputs[0].abspath())
+
+    def keyword(self):
+        return "bin cleanup"
 
 class build_intel_hex(Task.Task):
     '''build an intel hex file for upload with DFU'''
@@ -306,12 +407,15 @@ def chibios_firmware(self):
         abin_task = self.create_task('build_abin', src=link_output, tgt=abin_target)
         abin_task.set_run_after(generate_apj_task)
 
+    cleanup_task = self.create_task('build_normalized_bins', src=bin_target)
+    cleanup_task.set_run_after(generate_apj_task)
+
     bootloader_bin = self.bld.srcnode.make_node("Tools/bootloaders/%s_bl.bin" % self.env.BOARD)
     if self.bld.env.HAVE_INTEL_HEX:
         if os.path.exists(bootloader_bin.abspath()):
             hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.hex').name)
             hex_task = self.create_task('build_intel_hex', src=[bin_target[0], bootloader_bin], tgt=hex_target)
-            hex_task.set_run_after(generate_bin_task)
+            hex_task.set_run_after(cleanup_task)
         else:
             print("Not embedding bootloader; %s does not exist" % bootloader_bin)
 
@@ -321,13 +425,18 @@ def chibios_firmware(self):
         default_params_task.set_run_after(self.link_task)
         generate_bin_task.set_run_after(default_params_task)
 
-    if self.env.APP_DESCRIPTOR:
+    # we need to setup the app descriptor so the bootloader can validate the firmware
+    if not self.bld.env.BOOTLOADER:
         app_descriptor_task = self.create_task('set_app_descriptor', src=bin_target)
         app_descriptor_task.set_run_after(generate_bin_task)
         generate_apj_task.set_run_after(app_descriptor_task)
         if hex_task is not None:
             hex_task.set_run_after(app_descriptor_task)
-
+    else:
+        generate_apj_task.set_run_after(generate_bin_task)
+        if hex_task is not None:
+            hex_task.set_run_after(generate_bin_task)
+        
     if self.bld.options.upload:
         _upload_task = self.create_task('upload_fw', src=apj_target)
         _upload_task.set_run_after(generate_apj_task)
@@ -349,9 +458,11 @@ def setup_canmgr_build(cfg):
         'UAVCAN_NULLPTR=nullptr'
         ]
 
-    env.INCLUDES += [
-        cfg.srcnode.find_dir('modules/uavcan/libuavcan/include').abspath(),
-        ]
+    if cfg.env.HAL_CANFD_SUPPORTED:
+        env.DEFINES += ['UAVCAN_SUPPORT_CANFD=1']
+    else:
+        env.DEFINES += ['UAVCAN_SUPPORT_CANFD=0']
+
     cfg.get_board().with_can = True
 
 def load_env_vars(env):
@@ -387,6 +498,8 @@ def load_env_vars(env):
         env.CHIBIOS_BUILD_FLAGS += ' ENABLE_MALLOC_GUARD=yes'
     if env.ENABLE_STATS:
         env.CHIBIOS_BUILD_FLAGS += ' ENABLE_STATS=yes'
+    if env.ENABLE_DFU_BOOT and env.BOOTLOADER:
+        env.CHIBIOS_BUILD_FLAGS += ' USE_ASXOPT=-DCRT0_ENTRY_HOOK=TRUE'
 
 
 def setup_optimization(env):
@@ -475,6 +588,10 @@ def generate_hwdef_h(env):
             env.HWDEF = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % env.BOARD)
         env.BOOTLOADER_OPTION=""
 
+    if env.AP_SIGNED_FIRMWARE:
+        print(env.BOOTLOADER_OPTION)
+        env.BOOTLOADER_OPTION += " --signed-fw"
+        print(env.BOOTLOADER_OPTION)
     hwdef_script = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/scripts/chibios_hwdef.py')
     hwdef_out = env.BUILDROOT
     if not os.path.exists(hwdef_out):
@@ -583,6 +700,7 @@ def build(bld):
                 'fiprintf','printf',
                 'fopen', 'fflush', 'fwrite', 'fread', 'fputs', 'fgets',
                 'clearerr', 'fseek', 'ferror', 'fclose', 'tmpfile', 'getc', 'ungetc', 'feof',
-                'ftell', 'freopen', 'remove', 'vfprintf', 'fscanf' ]
+                'ftell', 'freopen', 'remove', 'vfprintf', 'fscanf',
+                '_gettimeofday', '_times', '_times_r', '_gettimeofday_r', 'time', 'clock' ]
     for w in wraplist:
         bld.env.LINKFLAGS += ['-Wl,--wrap,%s' % w]

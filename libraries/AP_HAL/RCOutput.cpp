@@ -2,6 +2,10 @@
 
 extern const AP_HAL::HAL &hal;
 
+uint32_t AP_HAL::RCOutput::DSHOT_BIT_WIDTH_TICKS = DSHOT_BIT_WIDTH_TICKS_DEFAULT;
+uint32_t AP_HAL::RCOutput::DSHOT_BIT_0_TICKS = DSHOT_BIT_0_TICKS_DEFAULT;
+uint32_t AP_HAL::RCOutput::DSHOT_BIT_1_TICKS = DSHOT_BIT_1_TICKS_DEFAULT;
+
 // helper function for implementation of get_output_mode_banner
 const char* AP_HAL::RCOutput::get_output_mode_string(enum output_mode out_mode) const
 {
@@ -68,3 +72,45 @@ bool AP_HAL::RCOutput::is_dshot_protocol(const enum output_mode mode)
         return false;
     }
 }
+
+/*
+ * calculate the prescaler required to achieve the desire bitrate
+ */
+uint32_t AP_HAL::RCOutput::calculate_bitrate_prescaler(uint32_t timer_clock, uint32_t target_frequency, bool is_dshot)
+{
+    if (target_frequency > timer_clock) {
+        // we can't achieve the desired frequency
+        return 0;
+    }
+
+    uint32_t prescaler;
+
+    if (is_dshot) {
+        // original prescaler calculation from betaflight. bi-dir dshot is incredibly sensitive to the bitrate
+        prescaler = uint32_t(lrintf((float) timer_clock / target_frequency + 0.01f) - 1);
+    } else {
+        // adjust frequency to give an allowed value given the clock, erring on the high side
+        prescaler = timer_clock / target_frequency;
+        while ((timer_clock / prescaler) < target_frequency && prescaler > 1) {
+            prescaler--;
+        }
+        // prescaler is divisor - 1
+        prescaler--;
+    }
+
+    if (!is_dshot) {
+        const uint32_t freq = timer_clock / (prescaler + 1);
+        // find the closest value
+        const float delta = fabsf(float(freq) - target_frequency);
+        if (freq > target_frequency
+            && delta > fabsf(float(timer_clock / (prescaler+2)) - target_frequency)) {
+            prescaler++;
+        } else if (prescaler > 0 && freq < target_frequency
+            && delta > fabsf(float(timer_clock / (prescaler)) - target_frequency)) {
+            prescaler--;
+        }
+    }
+
+    return prescaler;
+}
+

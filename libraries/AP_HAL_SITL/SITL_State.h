@@ -31,6 +31,7 @@
 #include <SITL/SIM_RF_Benewake_TF02.h>
 #include <SITL/SIM_RF_Benewake_TF03.h>
 #include <SITL/SIM_RF_Benewake_TFmini.h>
+#include <SITL/SIM_RF_TeraRanger_Serial.h>
 #include <SITL/SIM_RF_LightWareSerial.h>
 #include <SITL/SIM_RF_LightWareSerialBinary.h>
 #include <SITL/SIM_RF_Lanbao.h>
@@ -96,8 +97,7 @@ public:
     
     // simulated airspeed, sonar and battery monitor
     uint16_t sonar_pin_value;    // pin 0
-    uint16_t airspeed_pin_value; // pin 1
-    uint16_t airspeed_2_pin_value; // pin 2
+    uint16_t airspeed_pin_value[AIRSPEED_MAX_SENSORS]; // pin 1
     uint16_t voltage_pin_value;  // pin 13
     uint16_t current_pin_value;  // pin 12
     uint16_t voltage2_pin_value;  // pin 15
@@ -186,7 +186,6 @@ private:
     uint8_t store_index_wind;
     uint32_t last_store_time_wind;
     VectorN<readings_wind,wind_buffer_length> buffer_wind;
-    VectorN<readings_wind,wind_buffer_length> buffer_wind_2;
     uint32_t time_delta_wind;
     uint32_t delayed_time_wind;
     uint32_t wind_start_delay_micros;
@@ -214,6 +213,8 @@ private:
     SITL::RF_Benewake_TF03 *benewake_tf03;
     // simulated Benewake tfmini rangefinder:
     SITL::RF_Benewake_TFmini *benewake_tfmini;
+    // simulated TeraRanger Serial:
+    SITL::RF_TeraRanger_Serial *teraranger_serial;
 
     // simulated LightWareSerial rangefinder - legacy protocol::
     SITL::RF_LightWareSerial *lightwareserial;

@@ -3,7 +3,7 @@
 
 #include "AP_Mission_ChangeDetector.h"
 
-extern const AP_HAL::HAL& hal;
+#if AP_MISSION_ENABLED
 
 // detect external changes to mission
 bool AP_Mission_ChangeDetector::check_for_mission_change()
@@ -59,3 +59,4 @@ bool AP_Mission_ChangeDetector::check_for_mission_change()
     return cmds_changed && !curr_cmd_idx_changed;
 }
 
+#endif  // AP_MISSION_ENABLED

@@ -18,6 +18,8 @@
 
 #include "RPM_ESC_Telem.h"
 
+#if AP_RPM_ESC_TELEM_ENABLED
+
 extern const AP_HAL::HAL& hal;
 
 /*
@@ -40,3 +42,5 @@ void AP_RPM_ESC_Telem::update(void)
     state.last_reading_ms = AP_HAL::millis();
 #endif
 }
+
+#endif  // AP_RPM_ESC_TELEM_ENABLED

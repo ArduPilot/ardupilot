@@ -20,12 +20,8 @@ void Sub::init_ardupilot()
 #endif
 
     // init cargo gripper
-#if GRIPPER_ENABLED == ENABLED
+#if AP_GRIPPER_ENABLED
     g2.gripper.init();
-#endif
-
-#if AC_FENCE == ENABLED
-    fence.init();
 #endif
 
     // initialise notify system
@@ -52,7 +48,11 @@ void Sub::init_ardupilot()
 #elif CONFIG_HAL_BOARD != HAL_BOARD_LINUX
     AP_Param::set_default_by_name("BARO_EXT_BUS", 1);
 #endif
-    celsius.init(barometer.external_bus());
+
+#if AP_TEMPERATURE_SENSOR_ENABLED
+    // In order to preserve Sub's previous AP_TemperatureSensor Behavior we set the Default I2C Bus Here
+    AP_Param::set_default_by_name("TEMP1_BUS", barometer.external_bus());
+#endif
 
     // setup telem slots with serial ports
     gcs().setup_uarts();
@@ -85,6 +85,10 @@ void Sub::init_ardupilot()
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
 
+#if AP_AIRSPEED_ENABLED
+    airspeed.set_log_bit(MASK_LOG_IMU);
+#endif
+
 #if AP_OPTICALFLOW_ENABLED
     // initialise optical flow sensor
     optflow.init(MASK_LOG_OPTFLOW);
@@ -94,7 +98,7 @@ void Sub::init_ardupilot()
     // initialise camera mount
     camera_mount.init();
     // This step ncessary so the servo is properly initialized
-    camera_mount.set_angle_targets(0, 0, 0);
+    camera_mount.set_angle_target(0, 0, 0, false);
     // for some reason the call to set_angle_targets changes the mode to mavlink targeting!
     camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
 #endif
@@ -137,7 +141,7 @@ void Sub::init_ardupilot()
 #endif
 
     // initialise AP_RPM library
-#if RPM_ENABLED == ENABLED
+#if AP_RPM_ENABLED
     rpm_sensor.init();
 #endif
 
@@ -154,8 +158,6 @@ void Sub::init_ardupilot()
 #if AP_SCRIPTING_ENABLED
     g2.scripting.init();
 #endif // AP_SCRIPTING_ENABLED
-
-    g2.airspeed.init();
 
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are

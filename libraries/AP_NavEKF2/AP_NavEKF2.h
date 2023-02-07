@@ -25,7 +25,6 @@
 #include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_NavEKF/AP_Nav_Common.h>
 
 class NavEKF2_core;
@@ -38,8 +37,7 @@ public:
     NavEKF2();
 
     /* Do not allow copies */
-    NavEKF2(const NavEKF2 &other) = delete;
-    NavEKF2 &operator=(const NavEKF2&) = delete;
+    CLASS_NO_COPY(NavEKF2);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -68,40 +66,30 @@ public:
     // return -1 if no primary core selected
     int8_t getPrimaryCoreIMUIndex(void) const;
     
-    // Write the last calculated NE position relative to the reference point (m) for the specified instance.
-    // An out of range instance (eg -1) returns data for the primary instance
+    // Write the last calculated NE position relative to the reference point (m)
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
-    bool getPosNE(int8_t instance, Vector2f &posNE) const;
+    bool getPosNE(Vector2f &posNE) const;
 
-    // Write the last calculated D position relative to the reference point (m) for the specified instance.
-    // An out of range instance (eg -1) returns data for the primary instance
+    // Write the last calculated D position relative to the reference point (m)
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
-    bool getPosD(int8_t instance, float &posD) const;
+    bool getPosD(float &posD) const;
 
-    // return NED velocity in m/s for the specified instance
-    // An out of range instance (eg -1) returns data for the primary instance
-    void getVelNED(int8_t instance, Vector3f &vel) const;
+    // return NED velocity in m/s
+    void getVelNED(Vector3f &vel) const;
 
-    // return estimate of true airspeed vector in body frame in m/s for the specified instance
-    // An out of range instance (eg -1) returns data for the primary instance
+    // return estimate of true airspeed vector in body frame in m/s
     // returns false if estimate is unavailable
-    bool getAirSpdVec(int8_t instance, Vector3f &vel) const;
+    bool getAirSpdVec(Vector3f &vel) const;
 
-    // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s for the specified instance
-    // An out of range instance (eg -1) returns data for the primary instance
+    // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
     // This can be different to the z component of the EKF velocity state because it will fluctuate with height errors and corrections in the EKF
     // but will always be kinematically consistent with the z component of the EKF position state
-    float getPosDownDerivative(int8_t instance) const;
+    float getPosDownDerivative() const;
 
-    // return body axis gyro bias estimates in rad/sec for the specified instance
-    // An out of range instance (eg -1) returns data for the primary instance
-    void getGyroBias(int8_t instance, Vector3f &gyroBias) const;
-
-    // return body axis gyro scale factor error as a percentage for the specified instance
-    // An out of range instance (eg -1) returns data for the primary instance
-    void getGyroScaleErrorPercentage(int8_t instance, Vector3f &gyroScale) const;
+    // return body axis gyro bias estimates in rad/sec
+    void getGyroBias(Vector3f &gyroBias) const;
 
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
@@ -119,19 +107,19 @@ public:
 
     // return the Z-accel bias estimate in m/s^2 for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
-    void getAccelZBias(int8_t instance, float &zbias) const;
+    void getAccelZBias(float &zbias) const;
 
     // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
     // An out of range instance (eg -1) returns data for the primary instance
-    void getWind(int8_t instance, Vector3f &wind) const;
+    void getWind(Vector3f &wind) const;
 
     // return earth magnetic field estimates in measurement units / 1000 for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
-    void getMagNED(int8_t instance, Vector3f &magNED) const;
+    void getMagNED(Vector3f &magNED) const;
 
     // return body magnetic field estimates in measurement units / 1000 for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
-    void getMagXYZ(int8_t instance, Vector3f &magXYZ) const;
+    void getMagXYZ(Vector3f &magXYZ) const;
 
     // Return estimated magnetometer offsets
     // Return true if magnetometer offsets are valid
@@ -141,13 +129,13 @@ public:
     // If a calculated location isn't available, return a raw GPS measurement
     // The status will return true if a calculation or raw measurement is available
     // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
-    bool getLLH(struct Location &loc) const;
+    bool getLLH(Location &loc) const;
 
     // Return the latitude and longitude and height used to set the NED origin for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
     // All NED positions calculated by the filter are relative to this location
     // Returns false if the origin has not been set
-    bool getOriginLLH(int8_t instance, struct Location &loc) const;
+    bool getOriginLLH(Location &loc) const;
 
     // set the latitude and longitude and height used to set the NED origin
     // All NED positions calculated by the filter will be relative to this location
@@ -161,7 +149,7 @@ public:
 
     // return the Euler roll, pitch and yaw angle in radians for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
-    void getEulerAngles(int8_t instance, Vector3f &eulers) const;
+    void getEulerAngles(Vector3f &eulers) const;
 
     // return the transformation matrix from XYZ (body) to NED axes
     void getRotationBodyToNED(Matrix3f &mat) const;
@@ -170,15 +158,15 @@ public:
     void getQuaternionBodyToNED(int8_t instance, Quaternion &quat) const;
 
     // return the quaternions defining the rotation from NED to autopilot axes
-    void getQuaternion(int8_t instance, Quaternion &quat) const;
+    void getQuaternion(Quaternion &quat) const;
 
     // return the innovations for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
-    bool getInnovations(int8_t index, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const;
+    bool getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const;
 
     // return the innovation consistency test ratios for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
-    bool getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
+    bool getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
 
     // should we use the compass? This is public so it can be used for
     // reporting via ahrs.use_compass()
@@ -191,7 +179,8 @@ public:
     // The sign convention is that a RH physical rotation of the sensor about an axis produces both a positive flow and gyro rate
     // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
     // posOffset is the XYZ flow sensor position in the body frame in m
-    void  writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset);
+    // heightOverride is the fixed height of the sensor above ground in m, when on rover vehicles. 0 if not used
+    void  writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride);
 
     // Set to true if the terrain underneath is stable enough to be used as a height reference
     // in combination with a range finder. Set to false if the terrain underneath the vehicle
@@ -211,22 +200,22 @@ public:
      6 = badly conditioned synthetic sideslip fusion
      7 = filter is not initialised
     */
-    void  getFilterFaults(int8_t instance, uint16_t &faults) const;
+    void  getFilterFaults(uint16_t &faults) const;
 
     /*
     return filter gps quality check status for the specified instance
     An out of range instance (eg -1) returns data for the primary instance
     */
-    void  getFilterGpsStatus(int8_t instance, nav_gps_status &faults) const;
+    void  getFilterGpsStatus(nav_gps_status &faults) const;
 
     /*
     return filter status flags for the specified instance
     An out of range instance (eg -1) returns data for the primary instance
     */
-    void  getFilterStatus(int8_t instance, nav_filter_status &status) const;
+    void  getFilterStatus(nav_filter_status &status) const;
 
     // send an EKF_STATUS_REPORT message to GCS
-    void send_status_report(mavlink_channel_t chan) const;
+    void send_status_report(class GCS_MAVLINK &link) const;
 
     // provides the height limit to be observed by the control loops
     // returns false if no height limiting is required
@@ -255,6 +244,9 @@ public:
     // allow the enable flag to be set by Replay
     void set_enable(bool enable) { _enable.set_enable(enable); }
 
+    // get the enable parameter
+    bool get_enable(void) const { return bool(_enable.get()); }
+    
     /*
      * Write position and quaternion data from an external navigation system
      *
@@ -407,7 +399,7 @@ private:
     const float maxYawEstVelInnov = 2.0f;          // Maximum acceptable length of the velocity innovation returned by the EKF-GSF yaw estimator (m/s)
 
     // origin set by one of the cores
-    struct Location common_EKF_origin;
+    Location common_EKF_origin;
     bool common_origin_valid;
 
     // time at start of current filter update

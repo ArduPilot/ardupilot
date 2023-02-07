@@ -16,7 +16,7 @@
 */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 #include <SITL/SITL.h>
 
 #ifdef WITH_SITL_RGBLED

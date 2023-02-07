@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """ ArduPilot IMU Filter Test Class
@@ -455,10 +454,10 @@ class FilterTest:
             filt_type = f.get_type()
 
             if filt_type == BiquadFilterType.PEAK:  # NOTCH
-                print("INS_NOTCH_ENABLE,", 1)
-                print("INS_NOTCH_FREQ,", f.get_center_freq())
-                print("INS_NOTCH_BW,", f.get_bandwidth())
-                print("INS_NOTCH_ATT,", f.get_attenuation())
+                print("INS_HNTC2_ENABLE,", 1)
+                print("INS_HNTC2_FREQ,", f.get_center_freq())
+                print("INS_HNTC2_BW,", f.get_bandwidth())
+                print("INS_HNTC2_ATT,", f.get_attenuation())
             else:  # LPF
                 print("INS_GYRO_FILTER,", f.get_center_freq())
 

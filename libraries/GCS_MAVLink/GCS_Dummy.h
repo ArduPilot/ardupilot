@@ -23,7 +23,6 @@ private:
     void handleMessage(const mavlink_message_t &msg) override {}
     bool try_send_message(enum ap_message id) override { return true; }
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override { return true; }
-    void handle_change_alt_request(AP_Mission::Mission_Command &cmd) override {}
 
 protected:
 
@@ -62,20 +61,12 @@ protected:
     }
 
 private:
-    GCS_MAVLINK_Dummy *chan(const uint8_t ofs) override {
-        if (ofs > _num_gcs) {
-            INTERNAL_ERROR(AP_InternalError::error_t::gcs_offset);
-            return nullptr;
-        }
-        return (GCS_MAVLINK_Dummy *)_chan[ofs];
-    };
-    const GCS_MAVLINK_Dummy *chan(const uint8_t ofs) const override {
-        if (ofs > _num_gcs) {
-            INTERNAL_ERROR(AP_InternalError::error_t::gcs_offset);
-            return nullptr;
-        }
-        return (GCS_MAVLINK_Dummy *)_chan[ofs];
-    };
+    // the following define expands to a pair of methods to retrieve a
+    // pointer to an object of the correct subclass for the link at
+    // offset ofs.  These are of the form:
+    // GCS_MAVLINK_XXXX *chan(const uint8_t ofs) override;
+    // const GCS_MAVLINK_XXXX *chan(const uint8_t ofs) override const;
+    GCS_MAVLINK_CHAN_METHOD_DEFINITIONS(GCS_MAVLINK_Dummy);
 
     void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t dest_bitmask) override;
 

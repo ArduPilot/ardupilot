@@ -3,14 +3,24 @@
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Backend_Serial.h"
 
+#ifndef AP_RANGEFINDER_WASP_ENABLED
+#define AP_RANGEFINDER_WASP_ENABLED AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
+#endif
+
+#if AP_RANGEFINDER_WASP_ENABLED
+
 // WASP 200 LRF
 // http://www.attolloengineering.com/wasp-200-lrf.html
 
 class AP_RangeFinder_Wasp : public AP_RangeFinder_Backend_Serial {
 
 public:
-    AP_RangeFinder_Wasp(RangeFinder::RangeFinder_State &_state,
-                        AP_RangeFinder_Params &_params);
+
+    static AP_RangeFinder_Backend_Serial *create(
+        RangeFinder::RangeFinder_State &_state,
+        AP_RangeFinder_Params &_params) {
+        return new AP_RangeFinder_Wasp(_state, _params);
+    }
 
     void update(void) override;
 
@@ -28,6 +38,9 @@ protected:
     }
 
 private:
+
+    AP_RangeFinder_Wasp(RangeFinder::RangeFinder_State &_state,
+                        AP_RangeFinder_Params &_params);
 
     enum wasp_configuration_stage {
         WASP_CFG_RATE,     // set the baudrate
@@ -59,3 +72,5 @@ private:
     AP_Int16 thr;
     AP_Int8  baud;
 };
+
+#endif

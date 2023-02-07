@@ -468,3 +468,13 @@ DMA_PRIORITY USART6* SPI*
 # is "ROMFS ROMFS-filename source-filename". Paths are relative to the
 # ardupilot root.
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
+
+# for users running fmuv3 on their Solo:
+define AP_NOTIFY_OREOLED_ENABLED (BOARD_FLASH_SIZE > 1024)
+define HAL_SOLO_GIMBAL_ENABLED (HAL_MOUNT_ENABLED && BOARD_FLASH_SIZE > 1024)
+
+undef AP_BATTMON_SMBUS_SOLO_ENABLED
+define AP_BATTMON_SMBUS_SOLO_ENABLED (AP_BATTMON_SMBUS_ENABLE && BOARD_FLASH_SIZE > 1024)
+
+# produce this error if we are on a 1M board
+define BOARD_CHECK_F427_USE_1M "ERROR: 1M flash use fmuv2"

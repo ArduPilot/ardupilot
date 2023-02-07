@@ -1,0 +1,55 @@
+include ../MatekL431/hwdef.inc
+
+define CAN_APP_NODE_NAME "org.ardupilot.MatekL431-GPS"
+
+# enable GPS and compass
+define HAL_PERIPH_ENABLE_GPS
+define GPS_MAX_RATE_MS 200
+
+define GPS_MAX_RECEIVERS 1
+define GPS_MAX_INSTANCES 1
+
+define HAL_PERIPH_GPS_PORT_DEFAULT 2
+
+# allow for F9P GPS modules with moving baseline
+define GPS_MOVING_BASELINE 1
+
+define HAL_PERIPH_ENABLE_MAG
+
+define HAL_COMPASS_MAX_SENSORS 1
+
+SPIDEV  rm3100 SPI1 DEVID1   MAG_CS MODE0  1*MHZ  1*MHZ
+COMPASS RM3100 SPI:rm3100 false ROTATION_PITCH_180
+
+# QMC5883L for different board varients
+COMPASS QMC5883L I2C:0:0xd false ROTATION_PITCH_180_YAW_90
+
+# disable USART1
+undef PB6
+undef PB7
+
+# disable USART2
+undef PA2
+undef PA3
+
+# enable GPS port with DMA
+undef PB10
+undef PB11
+PB10  USART3_TX USART3 SPEED_HIGH
+PB11  USART3_RX USART3 SPEED_HIGH
+
+# no ADC pins
+define HAL_USE_ADC FALSE
+
+# disable unnecessary threads
+define HAL_NO_MONITOR_THREAD
+define HAL_NO_RCIN_THREAD
+define HAL_NO_RCOUT_THREAD
+define HAL_NO_TIMER_THREAD
+
+# maintain GPS port number compatibility with MatekL431-Periph
+SERIAL_ORDER EMPTY EMPTY USART3
+
+# larger CAN pool for RTCM data
+undef HAL_CAN_POOL_SIZE
+define HAL_CAN_POOL_SIZE 12000

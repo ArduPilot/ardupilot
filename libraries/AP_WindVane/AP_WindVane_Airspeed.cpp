@@ -17,8 +17,10 @@
 
 void AP_WindVane_Airspeed::update_speed()
 {
+#if AP_AIRSPEED_ENABLED
     const AP_Airspeed* airspeed = AP_Airspeed::get_singleton();
     if (airspeed != nullptr) {
         _frontend._speed_apparent_raw = airspeed->get_raw_airspeed();
     }
+#endif
 }

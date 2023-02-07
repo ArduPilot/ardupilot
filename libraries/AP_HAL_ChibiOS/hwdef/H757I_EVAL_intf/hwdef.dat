@@ -1,6 +1,8 @@
 # hw definition file for processing by chibios_hwdef.py
 # for H757
 
+AUTOBUILD_TARGETS None
+
 # MCU class and specific type
 MCU STM32H7xx STM32H757xx
 
@@ -70,7 +72,7 @@ define DISABLE_SERIAL_ESC_COMM TRUE
 PB13 VBUS INPUT OPENDRAIN
 
 # QSPI Flash
-# we only declare this so that initialisation 
+# we only declare this so that initialisation
 # doesn't reset these pins
 PF8 QUADSPI_BK1_IO0 QUADSPI1
 PF9 QUADSPI_BK1_IO1 QUADSPI1
@@ -82,4 +84,4 @@ PB2 QUADSPI_CLK QUADSPI1
 
 define CAN_APP_NODE_NAME "org.cubepilot.H757"
 
-# EXTERNAL_PROG_FLASH_MB 32
+# EXT_FLASH_SIZE_MB 32

@@ -6,6 +6,8 @@
 
 #include "AP_Baro_Backend.h"
 
+#if AP_BARO_DUMMY_ENABLED
+
 class AP_Baro_Dummy : public AP_Baro_Backend
 {
 public:
@@ -18,3 +20,5 @@ public:
 private:
     uint8_t _instance;
 };
+
+#endif  // AP_BARO_DUMMY_ENABLED

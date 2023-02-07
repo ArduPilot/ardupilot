@@ -1,6 +1,24 @@
 #include "Copter.h"
 
 /*************************************************************
+ *  Attitude Rate controllers and timing
+ ****************************************************************/
+
+// update rate controllers and output to roll, pitch and yaw actuators
+//  called at 400hz by default
+void Copter::run_rate_controller()
+{
+    // set attitude and position controller loop time
+    const float last_loop_time_s = AP::scheduler().get_last_loop_time_s();
+    motors->set_dt(last_loop_time_s);
+    attitude_control->set_dt(last_loop_time_s);
+    pos_control->set_dt(last_loop_time_s);
+
+    // run low level rate controllers that only require IMU data
+    attitude_control->rate_controller_run(); 
+}
+
+/*************************************************************
  *  throttle control
  ****************************************************************/
 
@@ -28,7 +46,7 @@ void Copter::update_throttle_hover()
 
     // calc average throttle if we are in a level hover.  accounts for heli hover roll trim
     if (throttle > 0.0f && fabsf(inertial_nav.get_velocity_z_up_cms()) < 60 &&
-        labs(ahrs.roll_sensor-attitude_control->get_roll_trim_cd()) < 500 && labs(ahrs.pitch_sensor) < 500) {
+        fabsf(ahrs.roll_sensor-attitude_control->get_roll_trim_cd()) < 500 && labs(ahrs.pitch_sensor) < 500) {
         // Can we set the time constant automatically
         motors->update_throttle_hover(0.01f);
 #if HAL_GYROFFT_ENABLED
@@ -58,7 +76,7 @@ float Copter::get_pilot_desired_climb_rate(float throttle_control)
     throttle_control = constrain_float(throttle_control,0.0f,1000.0f);
 
     // ensure a reasonable deadzone
-    g.throttle_deadzone = constrain_int16(g.throttle_deadzone, 0, 400);
+    g.throttle_deadzone.set(constrain_int16(g.throttle_deadzone, 0, 400));
 
     float desired_rate = 0.0f;
     const float mid_stick = get_throttle_mid();

@@ -27,6 +27,10 @@ void Tracker::init_ardupilot()
 
     // setup telem slots with serial ports
     gcs().setup_uarts();
+    // update_send so that if the first packet we receive happens to
+    // be an arm message we don't trigger an internal error when we
+    // try to initialise stream rates in the main loop.
+    gcs().update_send();
 
 #if LOGGING_ENABLED == ENABLED
     log_init();
@@ -98,7 +102,7 @@ void Tracker::init_ardupilot()
 /*
   fetch HOME from EEPROM
 */
-bool Tracker::get_home_eeprom(struct Location &loc) const
+bool Tracker::get_home_eeprom(Location &loc) const
 {
     // Find out proper location in memory by using the start_byte position + the index
     // --------------------------------------------------------------------------------

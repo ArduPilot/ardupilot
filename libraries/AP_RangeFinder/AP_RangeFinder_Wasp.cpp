@@ -15,6 +15,8 @@
 
 #include "AP_RangeFinder_Wasp.h"
 
+#if AP_RANGEFINDER_WASP_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
 
@@ -247,3 +249,4 @@ void AP_RangeFinder_Wasp::parse_response(void) {
     }
 }
 
+#endif  // AP_RANGEFINDER_WASP_ENABLED

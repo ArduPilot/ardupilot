@@ -360,7 +360,7 @@ private:
     MotorStatus _motor_status_prev;                             // backup of motor status
     static AP_Torqeedo *_singleton;
 
-    // returns a human-readable string corresponding the the passed-in
+    // returns a human-readable string corresponding the passed-in
     // master error code (see page 93 of https://media.torqeedo.com/downloads/manuals/torqeedo-Travel-manual-DE-EN.pdf)
     // If no conversion is available then nullptr is returned
     const char *map_master_error_code_to_string(uint8_t code) const;

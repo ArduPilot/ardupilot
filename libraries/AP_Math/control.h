@@ -1,6 +1,5 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 #include "vector2.h"
 #include "vector3.h"
@@ -52,11 +51,7 @@ void update_pos_vel_accel_xy(Vector2p& pos, Vector2f& vel, const Vector2f& accel
 /* shape_accel calculates a jerk limited path from the current acceleration to an input acceleration.
  The function takes the current acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
  The kinematic path is constrained by :
-    acceleration limits - accel_min, accel_max,
-    time constant - tc.
- The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
- The time constant also defines the time taken to achieve the maximum acceleration.
- The time constant must be positive.
+    maximum jerk - jerk_max (must be positive).
  The function alters the variable accel to follow a jerk limited kinematic path to accel_input.
 */
 void shape_accel(float accel_input, float& accel,
@@ -72,14 +67,11 @@ void shape_accel_xy(const Vector3f& accel_input, Vector3f& accel,
 /* shape_vel_accel and shape_vel_xy calculate a jerk limited path from the current position, velocity and acceleration to an input velocity.
  The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
  The kinematic path is constrained by :
-    maximum velocity - vel_max,
-    maximum acceleration - accel_max,
-    time constant - tc.
- The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
- The time constant also defines the time taken to achieve the maximum acceleration.
- The time constant must be positive.
+    minimum acceleration - accel_min (must be negative),
+    maximum acceleration - accel_max (must be positive),
+    maximum jerk - jerk_max (must be positive).
  The function alters the variable accel to follow a jerk limited kinematic path to vel_input and accel_input.
- The accel_max limit can be removed by setting it to zero.
+ The correction acceleration is limited from accel_min to accel_max. If limit_total is true the target acceleration is limited from accel_min to accel_max.
 */
 void shape_vel_accel(float vel_input, float accel_input,
                      float vel, float& accel,
@@ -94,26 +86,27 @@ void shape_vel_accel_xy(const Vector2f& vel_input1, const Vector2f& accel_input,
 /* shape_pos_vel_accel calculate a jerk limited path from the current position, velocity and acceleration to an input position and velocity.
  The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
  The kinematic path is constrained by :
-    maximum velocity - vel_max,
-    maximum acceleration - accel_max,
-    time constant - tc.
- The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
- The time constant also defines the time taken to achieve the maximum acceleration.
- The time constant must be positive.
+    minimum velocity - vel_min (must be negative),
+    maximum velocity - vel_max (must be positive),
+    minimum acceleration - accel_min (must be negative),
+    maximum acceleration - accel_max (must be positive),
+    maximum jerk - jerk_max (must be positive).
  The function alters the variable accel to follow a jerk limited kinematic path to pos_input, vel_input and accel_input.
- The vel_max, vel_correction_max, and accel_max limits can be removed by setting the desired limit to zero.
+ The correction velocity is limited to vel_max to vel_min. If limit_total is true the target velocity is limited to vel_max to vel_min.
+ The correction acceleration is limited from accel_min to accel_max. If limit_total is true the target acceleration is limited from accel_min to accel_max.
 */
 void shape_pos_vel_accel(const postype_t pos_input, float vel_input, float accel_input,
                          const postype_t pos, float vel, float& accel,
                          float vel_min, float vel_max,
                          float accel_min, float accel_max,
-                         float jerk_max, float dt, bool limit_total_accel);
+                         float jerk_max, float dt, bool limit_total);
 
 // 2D version
 void shape_pos_vel_accel_xy(const Vector2p& pos_input, const Vector2f& vel_input, const Vector2f& accel_input,
                             const Vector2p& pos, const Vector2f& vel, Vector2f& accel,
                             float vel_max, float accel_max,
-                            float jerk_max, float dt, bool limit_total_accel);
+                            float jerk_max, float dt, bool limit_total);
+
 
 /* limit_accel_xy limits the acceleration to prioritise acceleration perpendicular to the provided velocity vector.
  Input parameters are:
@@ -145,3 +138,16 @@ float kinematic_limit(Vector3f direction, float max_xy, float max_z_pos, float m
 // The input must be in the range of -1 to 1.
 // The expo should be less than 1.0 but limited to be less than 0.95.
 float input_expo(float input, float expo);
+
+// angle_to_accel converts a maximum lean angle in degrees to an accel limit in m/s/s
+float angle_to_accel(float angle_deg);
+
+// accel_to_angle converts a maximum accel in m/s/s to a lean angle in degrees
+float accel_to_angle(float accel);
+
+// rc_input_to_roll_pitch - transform pilot's normalised roll or pitch stick input into a roll and pitch euler angle command
+// roll_in_unit and pitch_in_unit - are normalised roll and pitch stick inputs
+// angle_max_deg - maximum lean angle from the z axis
+// angle_limit_deg - provides the ability to reduce the maximum output lean angle to less than angle_max_deg
+// returns roll and pitch euler angles in degrees
+void rc_input_to_roll_pitch(float roll_in_unit, float pitch_in_unit, float angle_max_deg, float angle_limit_deg, float &roll_out_deg, float &pitch_out_deg);

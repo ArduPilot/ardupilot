@@ -20,10 +20,12 @@
 //  UBlox Lea6H protocol: http://www.u-blox.com/images/downloads/Product_Docs/u-blox6_ReceiverDescriptionProtocolSpec_%28GPS.G6-SW-10018%29.pdf
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
+
+#if AP_GPS_UBLOX_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
 
 /*
  *  try to put a UBlox into binary mode. This is in two parts. 
@@ -36,6 +38,12 @@
  * The reason we need the NAV_SOL rate message at all is some uBlox
  * modules are configured with all ubx binary messages off, which
  * would mean we would never detect it.
+
+ * running a uBlox at less than 38400 will lead to packet
+ * corruption, as we can't receive the packets in the 200ms
+ * window for 5Hz fixes. The NMEA startup message should force
+ * the uBlox into 230400 no matter what rate it is configured
+ * for.
  */
 #define UBLOX_SET_BINARY_115200 "\265\142\006\001\003\000\001\006\001\022\117$PUBX,41,1,0023,0001,115200,0*1C\r\n"
 
@@ -49,6 +57,9 @@
 #define UBLOX_MAX_RXM_RAW_SATS 22
 #define UBLOX_MAX_RXM_RAWX_SATS 32
 #define UBLOX_GNSS_SETTINGS 1
+#ifndef UBLOX_TIM_TM2_LOGGING
+    #define UBLOX_TIM_TM2_LOGGING (BOARD_FLASH_SIZE>1024)
+#endif
 
 #define UBLOX_MAX_GNSS_CONFIG_BLOCKS 7
 
@@ -65,6 +76,7 @@
 #define RATE_DOP 1
 #define RATE_HW 5
 #define RATE_HW2 5
+#define RATE_TIM_TM2 1
 
 #define CONFIG_RATE_NAV      (1<<0)
 #define CONFIG_RATE_POSLLH   (1<<1)
@@ -84,7 +96,9 @@
 #define CONFIG_RATE_TIMEGPS  (1<<15)
 #define CONFIG_TMODE_MODE    (1<<16)
 #define CONFIG_RTK_MOVBASE   (1<<17)
-#define CONFIG_LAST          (1<<18) // this must always be the last bit
+#define CONFIG_TIM_TM2       (1<<18)
+#define CONFIG_M10           (1<<19)
+#define CONFIG_LAST          (1<<20) // this must always be the last bit
 
 #define CONFIG_REQUIRED_INITIAL (CONFIG_RATE_NAV | CONFIG_RATE_POSLLH | CONFIG_RATE_STATUS | CONFIG_RATE_VELNED)
 
@@ -268,7 +282,45 @@ private:
         MSGOUT_RTCM_3X_TYPE1127_UART2   = 0x209102d8,
         MSGOUT_RTCM_3X_TYPE1230_UART2   = 0x20910305,
         MSGOUT_UBX_NAV_RELPOSNED_UART2  = 0x2091008f,
+
+        // enable specific signals and constellations
+        CFG_SIGNAL_GPS_ENA              = 0x1031001f,
+        CFG_SIGNAL_GPS_L1CA_ENA         = 0x10310001,
+        CFG_SIGNAL_GPS_L2C_ENA          = 0x10310003,
+        CFG_SIGNAL_GPS_L5_ENA           = 0x10310004,
+        CFG_SIGNAL_SBAS_ENA             = 0x10310020,
+        CFG_SIGNAL_SBAS_L1CA_ENA        = 0x10310005,
+        CFG_SIGNAL_GAL_ENA              = 0x10310021,
+        CFG_SIGNAL_GAL_E1_ENA           = 0x10310007,
+        CFG_SIGNAL_GAL_E5A_ENA          = 0x10310009,
+        CFG_SIGNAL_GAL_E5B_ENA          = 0x1031000a,
+        CFG_SIGNAL_BDS_ENA              = 0x10310022,
+        CFG_SIGNAL_BDS_B1_ENA           = 0x1031000d,
+        CFG_SIGNAL_BDS_B1C_ENA          = 0x1031000f,
+        CFG_SIGNAL_BDS_B2_ENA           = 0x1031000e,
+        CFG_SIGNAL_BDS_B2A_ENA          = 0x10310028,
+        CFG_SIGNAL_QZSS_ENA             = 0x10310024,
+        CFG_SIGNAL_QZSS_L1CA_ENA        = 0x10310012,
+        CFG_SIGNAL_QZSS_L1S_ENA         = 0x10310014,
+        CFG_SIGNAL_QZSS_L2C_ENA         = 0x10310015,
+        CFG_SIGNAL_QZSS_L5_ENA          = 0x10310017,
+        CFG_SIGNAL_GLO_ENA              = 0x10310025,
+        CFG_SIGNAL_GLO_L1_ENA           = 0x10310018,
+        CFG_SIGNAL_GLO_L2_ENA           = 0x1031001a,
+        CFG_SIGNAL_NAVIC_ENA            = 0x10310026,
+        CFG_SIGNAL_NAVIC_L5_ENA         = 0x1031001d,
+
+        // other keys
+        CFG_NAVSPG_DYNMODEL             = 0x20110021,
+
     };
+
+    // layers for VALSET
+    #define UBX_VALSET_LAYER_RAM 0x1U
+    #define UBX_VALSET_LAYER_BBR 0x2U
+    #define UBX_VALSET_LAYER_FLASH 0x4U
+    #define UBX_VALSET_LAYER_ALL 0x7U
+
     struct PACKED ubx_cfg_valset {
         uint8_t version;
         uint8_t layers;
@@ -341,7 +393,7 @@ private:
         uint8_t flags2; 
         uint8_t num_sv; 
         int32_t lon, lat; 
-        int32_t height, h_msl; 
+        int32_t h_ellipsoid, h_msl;
         uint32_t h_acc, v_acc; 
         int32_t velN, velE, velD, gspeed; 
         int32_t head_mot; 
@@ -516,6 +568,19 @@ private:
         uint32_t loadMask;
     };
 
+    struct PACKED ubx_tim_tm2 {
+        uint8_t ch;
+        uint8_t flags;
+        uint16_t count;
+        uint16_t wnR;
+        uint16_t wnF;
+        uint32_t towMsR;
+        uint32_t towSubMsR;
+        uint32_t towMsF;
+        uint32_t towSubMsF;
+        uint32_t accEst;
+    };
+
     // Receive buffer
     union PACKED {
         DEFINE_BYTE_ARRAY_METHODS
@@ -548,6 +613,7 @@ private:
         ubx_rxm_rawx rxm_rawx;
 #endif
         ubx_ack_ack ack;
+        ubx_tim_tm2 tim_tm2;
     } _buffer;
 
     enum class RELPOSNED {
@@ -573,6 +639,7 @@ private:
         CLASS_CFG = 0x06,
         CLASS_MON = 0x0A,
         CLASS_RXM = 0x02,
+        CLASS_TIM = 0x0d,
         MSG_ACK_NACK = 0x00,
         MSG_ACK_ACK = 0x01,
         MSG_POSLLH = 0x2,
@@ -598,7 +665,8 @@ private:
         MSG_MON_VER = 0x04,
         MSG_NAV_SVINFO = 0x30,
         MSG_RXM_RAW = 0x10,
-        MSG_RXM_RAWX = 0x15
+        MSG_RXM_RAWX = 0x15,
+        MSG_TIM_TM2 = 0x03
     };
     enum ubx_gnss_identifier {
         GNSS_GPS     = 0x00,
@@ -629,6 +697,7 @@ private:
         UBLOX_M8,
         UBLOX_F9 = 0x80, // comes from MON_VER hwVersion/swVersion strings
         UBLOX_M9 = 0x81, // comes from MON_VER hwVersion/swVersion strings
+        UBLOX_M10 = 0x82,
         UBLOX_UNKNOWN_HARDWARE_GENERATION = 0xff // not in the ublox spec used for
                                                  // flagging state in the driver
     };
@@ -655,6 +724,8 @@ private:
         STEP_RAWX,
         STEP_VERSION,
         STEP_RTK_MOVBASE, // setup moving baseline
+        STEP_TIM_TM2,
+        STEP_M10,
         STEP_LAST
     };
 
@@ -710,7 +781,7 @@ private:
     bool havePvtMsg;
 
     bool        _configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
-    bool        _configure_valset(ConfigKey key, const void *value);
+    bool        _configure_valset(ConfigKey key, const void *value, uint8_t layers=UBX_VALSET_LAYER_ALL);
     bool        _configure_valget(ConfigKey key);
     void        _configure_rate(void);
     void        _configure_sbas(bool enable);
@@ -728,13 +799,14 @@ private:
     void unexpected_message(void);
     void log_mon_hw(void);
     void log_mon_hw2(void);
+    void log_tim_tm2(void);
     void log_rxm_raw(const struct ubx_rxm_raw &raw);
     void log_rxm_rawx(const struct ubx_rxm_rawx &raw);
 
 #if GPS_MOVING_BASELINE
     // see if we should use uart2 for moving baseline config
     bool mb_use_uart2(void) const {
-        return (driver_options() & DriverOptions::UBX_MBUseUart2)?true:false;
+        return option_set(AP_GPS::DriverOptions::UBX_MBUseUart2)?true:false;
     }
 #endif
 
@@ -751,13 +823,28 @@ private:
 
     // configure a set of config key/value pairs. The unconfig_bit corresponds to
     // a bit in _unconfigured_messages
-    bool _configure_config_set(const config_list *list, uint8_t count, uint32_t unconfig_bit);
+    bool _configure_config_set(const config_list *list, uint8_t count, uint32_t unconfig_bit, uint8_t layers=UBX_VALSET_LAYER_ALL);
 
     // find index in active_config list
     int8_t find_active_config_index(ConfigKey key) const;
 
     // return true if GPS is capable of F9 config
     bool supports_F9_config(void) const;
+
+    uint8_t _pps_freq = 1;
+#ifdef HAL_GPIO_PPS
+    void pps_interrupt(uint8_t pin, bool high, uint32_t timestamp_us);
+    void set_pps_desired_freq(uint8_t freq) override;
+#endif
+
+    // status of active configuration for a role
+    struct {
+        const config_list *list;
+        uint8_t count;
+        uint32_t done_mask;
+        uint32_t unconfig_bit;
+        uint8_t layers;
+    } active_config;
 
 #if GPS_MOVING_BASELINE
     // config for moving baseline base
@@ -768,15 +855,11 @@ private:
     static const config_list config_MB_Rover_uart1[];
     static const config_list config_MB_Rover_uart2[];
 
-    // status of active configuration for a role
-    struct {
-        const config_list *list;
-        uint8_t count;
-        uint32_t done_mask;
-        uint32_t unconfig_bit;
-    } active_config;
-
     // RTCM3 parser for when in moving baseline base mode
     RTCM3_Parser *rtcm3_parser;
 #endif // GPS_MOVING_BASELINE
+
+    static const config_list config_M10[];
 };
+
+#endif

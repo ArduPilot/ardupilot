@@ -35,16 +35,13 @@ local auto_switch = false           -- true when auto switching between sources 
 local gps_usable_accuracy = 1.0     -- GPS is usable if speed accuracy is at or below this value
 local vote_counter_max = 20         -- when a vote counter reaches this number (i.e. 2sec) source may be switched
 local gps_vs_opticalflow_vote = 0   -- vote counter for GPS vs optical (-20 = GPS, +20 = optical flow)
-local scr_user1_param = Parameter() -- user1 param (rangefinder altitude threshold)
-local scr_user2_param = Parameter() -- user2 param (GPS speed accuracy threshold)
-local scr_user3_param = Parameter() -- user3 param (optical flow quality threshold)
-local scr_user4_param = Parameter() -- user4 param (optical flow innovation threshold)
 
 -- initialise parameters
-assert(scr_user1_param:init('SCR_USER1'), 'could not find SCR_USER1 parameter')
-assert(scr_user2_param:init('SCR_USER2'), 'could not find SCR_USER2 parameter')
-assert(scr_user3_param:init('SCR_USER3'), 'could not find SCR_USER3 parameter')
-assert(scr_user4_param:init('SCR_USER4'), 'could not find SCR_USER4 parameter')
+local scr_user1_param = Parameter('SCR_USER1') -- user1 param (rangefinder altitude threshold)
+local scr_user2_param = Parameter('SCR_USER2') -- user2 param (GPS speed accuracy threshold)
+local scr_user3_param = Parameter('SCR_USER3') -- user3 param (optical flow quality threshold)
+local scr_user4_param = Parameter('SCR_USER4') -- user4 param (optical flow innovation threshold)
+
 assert(optical_flow, 'could not access optical flow')
 
 -- play tune on buzzer to alert user to change in active source set

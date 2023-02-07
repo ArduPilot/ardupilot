@@ -15,3 +15,6 @@ APJ_BOARD_ID 1002
 #Overide it to use as GPS UART port
 PC8 SBUS_INVERT_RX OUTPUT LOW
 PC9 SBUS_INVERT_TX OUTPUT LOW
+
+# only include ublox GPS driver
+include ../include/minimal_GPS.inc

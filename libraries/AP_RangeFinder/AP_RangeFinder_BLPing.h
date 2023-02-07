@@ -1,6 +1,13 @@
 #pragma once
 
 #include "AP_RangeFinder.h"
+
+#ifndef AP_RANGEFINDER_BLPING_ENABLED
+#define AP_RANGEFINDER_BLPING_ENABLED AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
+#endif
+
+#if AP_RANGEFINDER_BLPING_ENABLED
+
 #include "AP_RangeFinder_Backend_Serial.h"
 
 /**
@@ -117,7 +124,12 @@ class AP_RangeFinder_BLPing : public AP_RangeFinder_Backend_Serial
     static constexpr uint16_t _sensor_rate_ms = 50; // initialise sensor at no more than 20hz
 
 public:
-    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+
+    static AP_RangeFinder_Backend_Serial *create(
+        RangeFinder::RangeFinder_State &_state,
+        AP_RangeFinder_Params &_params) {
+        return new AP_RangeFinder_BLPing(_state, _params);
+    }
 
     /**
      * @brief Update class state
@@ -142,6 +154,9 @@ protected:
     PingProtocol protocol;
 
 private:
+
+    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+
     /**
      * @brief Do the necessary sensor initiation
      *
@@ -170,3 +185,5 @@ private:
      */
     uint32_t last_init_ms;
 };
+
+#endif

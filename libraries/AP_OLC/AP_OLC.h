@@ -17,7 +17,6 @@
 
 #pragma once
 #include <stdint.h>
-#include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef HAL_PLUSCODE_ENABLE

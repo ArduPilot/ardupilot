@@ -16,7 +16,9 @@ public:
     // correct an offboard timestamp to a jitter-free local
     // timestamp. See JitterCorrection.cpp for details
     uint32_t correct_offboard_timestamp_msec(uint32_t offboard_ms, uint32_t local_ms);
-    
+
+    int64_t get_link_offset_usec(void) const { return link_offset_usec; }
+
 private:
     const uint16_t max_lag_ms;
     const uint16_t convergence_loops;

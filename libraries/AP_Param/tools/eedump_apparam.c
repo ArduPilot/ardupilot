@@ -119,8 +119,8 @@ main(int argc, char *argv[])
     index = sizeof(*header);
     for (;; ) {
         uint8_t size;
-        const uint16_t key = ((uint16_t)var->key_high)<<8 | var->key_low;
         var = (struct Param_header *)&eeprom[index];
+        const uint16_t key = ((uint16_t)var->key_high)<<8 | var->key_low;
         if (key == _sentinal_key ||
             var->type == _sentinal_type) {
             printf("end sentinel at %u\n", index);

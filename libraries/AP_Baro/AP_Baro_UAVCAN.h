@@ -2,6 +2,8 @@
 
 #include "AP_Baro_Backend.h"
 
+#if AP_BARO_UAVCAN_ENABLED
+
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
 class PressureCb;
@@ -44,3 +46,5 @@ private:
 
     static HAL_Semaphore _sem_registry;
 };
+
+#endif  // AP_BARO_UAVCAN_ENABLED

@@ -317,7 +317,6 @@ define HAL_HAVE_SAFETY_SWITCH 1
 # one baro
 BARO MS56XX SPI:ms5611
 
-define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 
 # enable FAT filesystem support (needs a microSD defined via SDMMC)
@@ -347,3 +346,10 @@ define HAL_BATT_CURR_SCALE 36.364
 # before we enable it
 #define HAL_SPI_USE_POLLED
 
+# Enable Sagetech MXS ADSB transponder
+define HAL_ADSB_SAGETECH_MXS_ENABLED HAL_ADSB_ENABLED
+
+# enable DFU reboot for installing bootloader
+# note that if firmware is build with --secure-bl then DFU is
+# disabled
+ENABLE_DFU_BOOT 1

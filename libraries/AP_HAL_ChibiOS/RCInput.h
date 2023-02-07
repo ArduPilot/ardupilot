@@ -69,8 +69,18 @@ private:
     int16_t _rssi = -1;
     int16_t _rx_link_quality = -1;
     uint32_t _rcin_timestamp_last_signal;
+    uint32_t _rcin_last_iomcu_ms;
     bool _init;
     const char *last_protocol;
+
+    enum class RCSource {
+        NONE = 0,
+        IOMCU = 1,
+        RCPROT_PULSES = 2,
+        RCPROT_BYTES = 3,
+        APRADIO = 4,
+    } last_source;
+
     bool pulse_input_enabled;
 
 #if HAL_RCINPUT_WITH_AP_RADIO

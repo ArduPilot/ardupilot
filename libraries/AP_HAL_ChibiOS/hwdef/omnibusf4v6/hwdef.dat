@@ -119,11 +119,12 @@ IMU Invensense SPI:mpu6000 ROTATION_YAW_90
 
 # one baro
 BARO BMP280 SPI:bmp280
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+define AP_BARO_BMP280_ENABLED 1
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 0
 
@@ -150,3 +151,6 @@ define STM32_PWM_USE_ADVANCED TRUE
 define OSD_ENABLED 1
 #font for the osd
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# minimal drivers to reduce flash usage
+include ../include/minimal.inc

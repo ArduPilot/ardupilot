@@ -4,9 +4,6 @@
 
 #if HAL_GENERATOR_ENABLED
 
-#include <AP_Param/AP_Param.h>
-#include <GCS_MAVLink/GCS.h>
-
 class AP_Generator_IE_FuelCell : public AP_Generator_Backend
 {
 

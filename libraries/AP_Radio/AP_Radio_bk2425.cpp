@@ -36,6 +36,18 @@ extern const AP_HAL::HAL& hal;
 #define DebugMavlink(level, fmt, args...)   do { if ((level) <= get_debug_level()) { gcs().send_text(MAV_SEVERITY_INFO, fmt, ##args); }} while (0)
 
 
+#if SUPPORT_BK_DEBUG_PINS
+#define DEBUG1_HIGH()       (palSetLine(HAL_GPIO_PIN_DEBUG1))
+#define DEBUG1_LOW()        (palClearLine(HAL_GPIO_PIN_DEBUG1))
+#define DEBUG2_HIGH()       (palSetLine(HAL_GPIO_PIN_DEBUG2))
+#define DEBUG2_LOW()        (palClearLine(HAL_GPIO_PIN_DEBUG2))
+#else
+#define DEBUG1_HIGH()       do {} while (0)
+#define DEBUG1_LOW()        do {} while (0)
+#define DEBUG2_HIGH()       do {} while (0)
+#define DEBUG2_LOW()        do {} while (0)
+#endif
+
 // object instance for trampoline
 AP_Radio_beken *AP_Radio_beken::radio_singleton;
 thread_t *AP_Radio_beken::_irq_handler_ctx;

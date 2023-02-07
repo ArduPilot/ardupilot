@@ -23,7 +23,7 @@
 #include "hwdef/common/watchdog.h"
 #include "hwdef/common/stm32_util.h"
 #include <AP_Vehicle/AP_Vehicle_Type.h>
-#if HAL_CRASHDUMP_ENABLE
+#if AP_CRASHDUMP_ENABLED
 #include <CrashCatcher.h>
 #endif
 #include <ch.h>
@@ -52,7 +52,7 @@ extern "C"
 {
 #define bkpt() __asm volatile("BKPT #0\n")
 
-#if !HAL_CRASHDUMP_ENABLE
+#if !AP_CRASHDUMP_ENABLED
 // do legacy hardfault handling
 void HardFault_Handler(void);
 void HardFault_Handler(void) {
@@ -240,6 +240,28 @@ void __cxa_pure_virtual() { while (1); } //TODO: Handle properly, maybe generate
 void NMI_Handler(void);
 void NMI_Handler(void) { while (1); }
 
+#if defined(HAL_BOOTLOADER_BUILD) && HAL_ENABLE_DFU_BOOT
+void __entry_hook(void);
+void __entry_hook()
+{
+    // read the persistent data
+    AP_HAL::Util::PersistentData pd;
+    stm32_watchdog_load((uint32_t *)&pd, (sizeof(pd)+3)/4);
+    if (pd.boot_to_dfu) {
+        pd.boot_to_dfu = false;
+        stm32_watchdog_save((uint32_t *)&pd, (sizeof(pd)+3)/4);
+#if defined(STM32H7)
+        const uint32_t *app_base = (const uint32_t *)(0x1FF09800); 
+#else
+        const uint32_t *app_base = (const uint32_t *)(0x1FFF0000);
+#endif
+        __set_MSP(*app_base);
+        ((void (*)())*(&app_base[1]))();
+        while(true);
+    }
+}
+#endif
+
 }
 namespace AP_HAL {
 
@@ -272,7 +294,7 @@ void panic(const char *errormsg, ...)
 #endif
 }
 
-uint32_t micros()
+__FASTRAMFUNC__ uint32_t micros()
 {
 #if CH_CFG_ST_RESOLUTION == 32 && CH_CFG_ST_FREQUENCY==1000000U
     // special case optimisation for 32 bit timers
@@ -293,48 +315,48 @@ uint16_t micros16()
 #endif
 }
     
-uint32_t millis()
+__FASTRAMFUNC__ uint32_t millis()
 {
     return hrt_millis32();
 }
 
-uint16_t millis16()
+__FASTRAMFUNC__ uint16_t millis16()
 {
     return hrt_millis32() & 0xFFFF;
 }
 
-uint64_t micros64()
+__FASTRAMFUNC__ uint64_t micros64()
 {
     return hrt_micros64();
 }
 
-uint64_t millis64()
+__FASTRAMFUNC__ uint64_t millis64()
 {
     return hrt_micros64() / 1000U;
 }
 
 
-uint32_t native_micros()
+__FASTRAMFUNC__ uint32_t native_micros()
 {
     return micros();
 }
 
-uint32_t native_millis()
+__FASTRAMFUNC__ uint32_t native_millis()
 {
     return millis();
 }
 
-uint16_t native_millis16()
+__FASTRAMFUNC__ uint16_t native_millis16()
 {
     return millis16();
 }
 
-uint64_t native_micros64()
+__FASTRAMFUNC__ uint64_t native_micros64()
 {
     return micros64();
 }
 
-uint64_t native_millis64()
+__FASTRAMFUNC__ uint64_t native_millis64()
 {
     return millis64();
 }

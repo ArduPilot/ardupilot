@@ -12,10 +12,12 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "AP_Baro_LPS2XH.h"
+
+#if AP_BARO_LPS2XH_ENABLED
+
 #include <utility>
 #include <stdio.h>
-
-#include "AP_Baro_LPS2XH.h"
 
 #include <AP_InertialSensor/AP_InertialSensor_Invensense_registers.h>
 
@@ -117,7 +119,7 @@ bool AP_Baro_LPS2XH::_imu_i2c_init(uint8_t imu_address)
 
     uint8_t whoami=0;
     _dev->read_registers(MPUREG_WHOAMI, &whoami, 1);
-    hal.console->printf("IMU: whoami 0x%02x old_address=%02x\n", whoami, old_address);
+    DEV_PRINTF("IMU: whoami 0x%02x old_address=%02x\n", whoami, old_address);
 
     _dev->write_register(MPUREG_FIFO_EN, 0x00);
     _dev->write_register(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_XGYRO);
@@ -194,7 +196,7 @@ bool AP_Baro_LPS2XH::_check_whoami(void)
     if (!_dev->read_registers(REG_ID, &whoami, 1)) {
 	   return false;
     }
-    hal.console->printf("LPS2XH whoami 0x%02x\n", whoami);
+    DEV_PRINTF("LPS2XH whoami 0x%02x\n", whoami);
 
     switch(whoami){
     case LPS22HB_WHOAMI:
@@ -274,3 +276,5 @@ void AP_Baro_LPS2XH::_update_pressure(void)
     _pressure_sum += Pressure_mb;
     _pressure_count++;
 }
+
+#endif  // AP_BARO_LPS2XH_ENABLED

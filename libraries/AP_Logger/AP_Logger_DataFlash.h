@@ -35,7 +35,6 @@ private:
 
     void              WriteEnable();
     bool              getSectorCount(void);
-    void              flash_test(void);
 
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev;
     AP_HAL::Semaphore *dev_sem;
@@ -44,6 +43,7 @@ private:
     uint32_t erase_start_ms;
     uint8_t erase_cmd;
     bool use_32bit_address;
+    bool read_cache_valid;
 };
 
 #endif // HAL_LOGGING_DATAFLASH_ENABLED

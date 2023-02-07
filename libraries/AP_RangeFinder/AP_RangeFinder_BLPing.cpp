@@ -13,9 +13,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
-#include <GCS_MAVLink/GCS.h>
 #include "AP_RangeFinder_BLPing.h"
+
+#if AP_RANGEFINDER_BLPING_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
 
 void AP_RangeFinder_BLPing::update(void)
 {
@@ -226,3 +228,5 @@ PingProtocol::MessageId PingProtocol::parse_byte(uint8_t b)
 
     return msg.done ? get_message_id() : MessageId::INVALID;
 }
+
+#endif  // AP_RANGEFINDER_BLPING_ENABLED

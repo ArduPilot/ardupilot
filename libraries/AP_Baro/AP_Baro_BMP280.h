@@ -1,10 +1,12 @@
 #pragma once
 
+#include "AP_Baro_Backend.h"
+
+#if AP_BARO_BMP280_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Device.h>
 #include <AP_HAL/utility/OwnPtr.h>
-
-#include "AP_Baro_Backend.h"
 
 #ifndef HAL_BARO_BMP280_I2C_ADDR
  #define HAL_BARO_BMP280_I2C_ADDR  (0x76)
@@ -42,3 +44,5 @@ private:
     int16_t _t2, _t3, _p2, _p3, _p4, _p5, _p6, _p7, _p8, _p9;
     uint16_t _t1, _p1;
 };
+
+#endif  // AP_BARO_BMP280_ENABLED

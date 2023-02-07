@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # encoding: utf-8
 # (c) Siddharth Bharat Purohit, 3DRobotics Inc.
 

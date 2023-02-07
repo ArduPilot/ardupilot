@@ -71,8 +71,6 @@ private:
 // So we set batt fs high 46s
 // Gennie keeps batts charged to 49v + typically
 
-    class SIM *_sitl;
-
     uint32_t last_sent_ms;
 
     void update_control_pin(const struct sitl_input &input);
@@ -98,6 +96,10 @@ private:
 
     uint32_t last_rpm_update_ms;
 
+    enum class Errors {
+        MaintenanceRequired = 0,
+    };
+
     // packet to send:
     struct PACKED RichenPacket {
         uint8_t magic1;
@@ -122,7 +124,7 @@ private:
         uint8_t footermagic1;
         uint8_t footermagic2;
     };
-    assert_storage_size<RichenPacket, 70> _assert_storage_size_RichenPacket;
+    assert_storage_size<RichenPacket, 70> _assert_storage_size_RichenPacket UNUSED_PRIVATE_MEMBER;
 
     union RichenUnion {
         uint8_t parse_buffer[70];

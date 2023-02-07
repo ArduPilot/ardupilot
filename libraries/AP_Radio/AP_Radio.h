@@ -18,9 +18,8 @@
  * base class for direct attached radios
  */
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 class AP_Radio_backend;
 

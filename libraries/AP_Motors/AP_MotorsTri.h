@@ -4,7 +4,6 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
-#include <SRV_Channel/SRV_Channel.h>
 #include "AP_MotorsMulticopter.h"
 
 // tail servo uses channel 7
@@ -18,8 +17,8 @@ class AP_MotorsTri : public AP_MotorsMulticopter {
 public:
 
     /// Constructor
-    AP_MotorsTri(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_MotorsMulticopter(loop_rate, speed_hz)
+    AP_MotorsTri(uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+        AP_MotorsMulticopter(speed_hz)
     {
     };
 
@@ -32,23 +31,18 @@ public:
     // set update rate to motors - a value in hertz
     void                set_update_rate( uint16_t speed_hz ) override;
 
-    // output_test_seq - spin a motor at the pwm value specified
-    //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
-    //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-    virtual void        output_test_seq(uint8_t motor_seq, int16_t pwm) override;
-
     // output_to_motors - sends minimum values out to the motors
     virtual void        output_to_motors() override;
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-    uint16_t            get_motor_mask() override;
+    uint32_t            get_motor_mask() override;
 
     // output a thrust to all motors that match a given motor
     // mask. This is used to control tiltrotor motors in forward
     // flight. Thrust is in the range 0 to 1
     // rudder_dt applys diffential thrust for yaw in the range 0 to 1
-    void                output_motor_mask(float thrust, uint8_t mask, float rudder_dt) override;
+    void                output_motor_mask(float thrust, uint16_t mask, float rudder_dt) override;
 
     // return the roll factor of any motor, this is used for tilt rotors and tail sitters
     // using copter motors for forward flight
@@ -62,6 +56,11 @@ protected:
     void                thrust_compensation(void) override;
 
     const char* _get_frame_string() const override { return "TRI"; }
+
+    // output_test_seq - spin a motor at the pwm value specified
+    //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
+    //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
+    virtual void _output_test_seq(uint8_t motor_seq, int16_t pwm) override;
 
     // parameters
 

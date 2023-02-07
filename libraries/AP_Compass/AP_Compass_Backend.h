@@ -19,11 +19,17 @@
  */
 #pragma once
 
-#include "AP_Compass.h"
+#include "AP_Compass_config.h"
 
-#ifndef HAL_MSP_COMPASS_ENABLED
-#define HAL_MSP_COMPASS_ENABLED HAL_MSP_SENSORS_ENABLED
+#if AP_COMPASS_EXTERNALAHRS_ENABLED
+#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #endif
+
+#if AP_COMPASS_MSP_ENABLED
+#include <AP_MSP/msp.h>
+#endif
+
+#include <AP_Math/AP_Math.h>
 
 class Compass;  // forward declaration
 class AP_Compass_Backend
@@ -69,11 +75,11 @@ public:
         DEVTYPE_AK09915 = 0x15,
     };
 
-#if HAL_MSP_COMPASS_ENABLED
+#if AP_COMPASS_MSP_ENABLED
     virtual void handle_msp(const MSP::msp_compass_data_message_t &pkt) {}
 #endif
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_COMPASS_EXTERNALAHRS_ENABLED
     virtual void handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt) {}
 #endif
     

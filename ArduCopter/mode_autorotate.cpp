@@ -41,7 +41,7 @@ bool ModeAutorotate::init(bool ignore_checks)
     g2.arot.init_hs_controller();
     g2.arot.init_fwd_spd_controller();
 
-    // Retrive rpm and start rpm sensor health checks
+    // Retrieve rpm and start rpm sensor health checks
     _initial_rpm = g2.arot.get_rpm(true);
 
     // Display message 
@@ -173,7 +173,7 @@ void ModeAutorotate::run()
                 g2.arot.set_desired_fwd_speed();
 
                 // Set target head speed in head speed controller
-                _target_head_speed = HEAD_SPEED_TARGET_RATIO;  //Ensure target hs is set to glide incase hs hasent reached target for glide
+                _target_head_speed = HEAD_SPEED_TARGET_RATIO;  //Ensure target hs is set to glide in case hs hasent reached target for glide
                 g2.arot.set_target_head_speed(_target_head_speed);
 
                 // Prevent running the initial glide functions again
@@ -209,7 +209,7 @@ void ModeAutorotate::run()
                     gcs().send_text(MAV_SEVERITY_INFO, "Bailing Out of Autorotation");
                 #endif
 
-                // Set bail out timer remaining equal to the paramter value, bailout time 
+                // Set bail out timer remaining equal to the parameter value, bailout time 
                 // cannot be less than the motor spool-up time: BAILOUT_MOTOR_RAMP_TIME.
                 _bail_time = MAX(g2.arot.get_bail_time(),BAILOUT_MOTOR_RAMP_TIME+0.1f);
 

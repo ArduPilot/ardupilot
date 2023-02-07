@@ -16,7 +16,7 @@
 
 #include "AP_EFI.h"
 #include "AP_EFI_State.h"
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/Semaphores.h>
 
 class AP_EFI; //forward declaration
 
@@ -31,12 +31,13 @@ public:
     // Update the state structure
     virtual void update() = 0;
 
+#if AP_SCRIPTING_ENABLED
+    virtual bool handle_scripting(const EFI_State &efi_state) { return false; }
+#endif
+
 protected:
     // Copies internal state to the frontend state
     void copy_to_frontend();
-
-    // Semaphore for access to shared frontend data
-    HAL_Semaphore sem;
 
     // Internal state for this driver (before copying to frontend)
     EFI_State internal_state;
@@ -44,6 +45,9 @@ protected:
     int8_t get_uavcan_node_id(void) const;
     float get_coef1(void) const;
     float get_coef2(void) const;
+    float get_ecu_fuel_density(void) const;
+
+    HAL_Semaphore &get_sem(void);
 
 private:
     AP_EFI &frontend;

@@ -7,7 +7,6 @@
 /*
  * Init and run calls for acro flight mode
  */
-
 void ModeAcro::run()
 {
     // convert the input to the desired body frame rate
@@ -17,24 +16,33 @@ void ModeAcro::run()
     if (!motors->armed()) {
         // Motors should be Stopped
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
-    } else if (copter.ap.throttle_zero && copter.air_mode != AirMode::AIRMODE_ENABLED) {
-        // Attempting to Land, if airmode is enabled only an actual landing will spool down the motors
+    } else if (copter.ap.throttle_zero
+               || (copter.air_mode == AirMode::AIRMODE_ENABLED && motors->get_spool_state() == AP_Motors::SpoolState::SHUT_DOWN)) {
+        // throttle_zero is never true in air mode, but the motors should be allowed to go through ground idle
+        // in order to facilitate the spoolup block
+
+        // Attempting to Land or motors not yet spinning
+        // if airmode is enabled only an actual landing will spool down the motors
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
     } else {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     }
+
+    float pilot_desired_throttle = get_pilot_desired_throttle();
 
     switch (motors->get_spool_state()) {
     case AP_Motors::SpoolState::SHUT_DOWN:
         // Motors Stopped
         attitude_control->reset_target_and_rate(true);
         attitude_control->reset_rate_controller_I_terms();
+        pilot_desired_throttle = 0.0f;
         break;
 
     case AP_Motors::SpoolState::GROUND_IDLE:
         // Landed
         attitude_control->reset_target_and_rate();
         attitude_control->reset_rate_controller_I_terms_smoothly();
+        pilot_desired_throttle = 0.0f;
         break;
 
     case AP_Motors::SpoolState::THROTTLE_UNLIMITED:
@@ -58,9 +66,7 @@ void ModeAcro::run()
     }
 
     // output pilot's throttle without angle boost
-    attitude_control->set_throttle_out(get_pilot_desired_throttle(),
-                                       false,
-                                       copter.g.throttle_filt);
+    attitude_control->set_throttle_out(pilot_desired_throttle, false, copter.g.throttle_filt);
 }
 
 bool ModeAcro::init(bool ignore_checks)
@@ -113,13 +119,13 @@ void ModeAcro::get_pilot_desired_angle_rates(float roll_in, float pitch_in, floa
     // calculate roll, pitch rate requests
     
     // roll expo
-    rate_bf_request_cd.x = g2.acro_rp_rate * 100.0 * input_expo(roll_in, g.acro_rp_expo);
+    rate_bf_request_cd.x = g2.command_model_acro_rp.get_rate() * 100.0 * input_expo(roll_in, g2.command_model_acro_rp.get_expo());
 
     // pitch expo
-    rate_bf_request_cd.y = g2.acro_rp_rate * 100.0 * input_expo(pitch_in, g.acro_rp_expo);
+    rate_bf_request_cd.y = g2.command_model_acro_rp.get_rate() * 100.0 * input_expo(pitch_in, g2.command_model_acro_rp.get_expo());
 
     // yaw expo
-    rate_bf_request_cd.z = g2.acro_y_rate * 100.0 * input_expo(yaw_in, g2.acro_y_expo);
+    rate_bf_request_cd.z = g2.command_model_acro_y.get_rate() * 100.0 * input_expo(yaw_in, g2.command_model_acro_y.get_expo());
 
     // calculate earth frame rate corrections to pull the copter back to level while in ACRO mode
 
@@ -143,15 +149,15 @@ void ModeAcro::get_pilot_desired_angle_rates(float roll_in, float pitch_in, floa
         if (g.acro_trainer == (uint8_t)Trainer::LIMITED) {
             const float angle_max = copter.aparm.angle_max;
             if (roll_angle > angle_max){
-                rate_ef_level_cd.x += sqrt_controller(angle_max - roll_angle, g2.acro_rp_rate * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_roll_max_cdss(), G_Dt);
+                rate_ef_level_cd.x += sqrt_controller(angle_max - roll_angle, g2.command_model_acro_rp.get_rate() * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_roll_max_cdss(), G_Dt);
             }else if (roll_angle < -angle_max) {
-                rate_ef_level_cd.x += sqrt_controller(-angle_max - roll_angle, g2.acro_rp_rate * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_roll_max_cdss(), G_Dt);
+                rate_ef_level_cd.x += sqrt_controller(-angle_max - roll_angle, g2.command_model_acro_rp.get_rate() * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_roll_max_cdss(), G_Dt);
             }
 
             if (pitch_angle > angle_max){
-                rate_ef_level_cd.y += sqrt_controller(angle_max - pitch_angle, g2.acro_rp_rate * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_pitch_max_cdss(), G_Dt);
+                rate_ef_level_cd.y += sqrt_controller(angle_max - pitch_angle, g2.command_model_acro_rp.get_rate() * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_pitch_max_cdss(), G_Dt);
             }else if (pitch_angle < -angle_max) {
-                rate_ef_level_cd.y += sqrt_controller(-angle_max - pitch_angle, g2.acro_rp_rate * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_pitch_max_cdss(), G_Dt);
+                rate_ef_level_cd.y += sqrt_controller(-angle_max - pitch_angle, g2.command_model_acro_rp.get_rate() * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_pitch_max_cdss(), G_Dt);
             }
         }
 

@@ -72,6 +72,7 @@ import re
 from sys import platform as _platform
 
 is_WSL = bool("Microsoft" in platform.uname()[2])
+is_WSL2 = bool("microsoft-standard-WSL2" in platform.release())
 
 # default list of port names to look for autopilots
 default_ports = ['/dev/serial/by-id/usb-Ardu*',
@@ -88,10 +89,15 @@ default_ports = ['/dev/serial/by-id/usb-Ardu*',
                  '/dev/serial/by-id/usb-*-BL_*',
                  '/dev/serial/by-id/usb-*_BL_*',
                  '/dev/serial/by-id/usb-Swift-Flyer*',
+                 '/dev/serial/by-id/usb-CubePilot*',
                  '/dev/tty.usbmodem*']
 
 if "cygwin" in _platform or is_WSL:
     default_ports += ['/dev/ttyS*']
+
+if "win32" in _platform:
+    for com_port in range(1, 255):
+        default_ports += ['COM' + str(com_port)]
 
 # Detect python version
 if sys.version_info[0] < 3:
@@ -228,6 +234,8 @@ class uploader(object):
     EXTF_READ_MULTI = b'\x36'     # read bytes at address and increment
     EXTF_GET_CRC    = b'\x37'	  # compute & return a CRC of data in external flash
 
+    CHIP_FULL_ERASE = b'\x40'     # full erase of flash
+
     INFO_BL_REV     = b'\x01'        # bootloader protocol revision
     BL_REV_MIN      = 2              # minimum supported bootloader protocol
     BL_REV_MAX      = 5              # maximum supported bootloader protocol
@@ -252,7 +260,8 @@ class uploader(object):
                  target_component=None,
                  source_system=None,
                  source_component=None,
-                 no_extf=False):
+                 no_extf=False,
+                 force_erase=False):
         self.MAVLINK_REBOOT_ID1 = bytearray(b'\xfe\x21\x72\xff\x00\x4c\x00\x00\x40\x40\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf6\x00\x01\x00\x00\x53\x6b')  # NOQA
         self.MAVLINK_REBOOT_ID0 = bytearray(b'\xfe\x21\x45\xff\x00\x4c\x00\x00\x40\x40\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf6\x00\x00\x00\x00\xcc\x37')  # NOQA
         if target_component is None:
@@ -262,6 +271,7 @@ class uploader(object):
         if source_component is None:
             source_component = 1
         self.no_extf = no_extf
+        self.force_erase = force_erase
 
         # open the port, keep the default timeout short so we can poll quickly
         self.port = serial.Serial(portname, baudrate_bootloader, timeout=2.0)
@@ -438,17 +448,23 @@ class uploader(object):
     # send the CHIP_ERASE command and wait for the bootloader to become ready
     def __erase(self, label):
         print("\n", end='')
-        self.__send(uploader.CHIP_ERASE +
-                    uploader.EOC)
+        if self.force_erase:
+            print("Force erasing full chip\n")
+            self.__send(uploader.CHIP_FULL_ERASE +
+                        uploader.EOC)
+        else:
+            self.__send(uploader.CHIP_ERASE +
+                        uploader.EOC)
 
         # erase is very slow, give it 20s
-        deadline = time.time() + 20.0
+        timeout = 20.0
+        deadline = time.time() + timeout
         while time.time() < deadline:
 
             # Draw progress bar (erase usually takes about 9 seconds to complete)
             estimatedTimeRemaining = deadline-time.time()
             if estimatedTimeRemaining >= 9.0:
-                self.__drawProgressBar(label, 20.0-estimatedTimeRemaining, 9.0)
+                self.__drawProgressBar(label, timeout-estimatedTimeRemaining, 9.0)
             else:
                 self.__drawProgressBar(label, 10.0, 10.0)
                 sys.stdout.write(" (timeout: %d seconds) " % int(deadline-time.time()))
@@ -629,7 +645,7 @@ class uploader(object):
         self.__send(uploader.EXTF_ERASE + size_bytes + uploader.EOC)
         self.__getSync()
         last_pct = 0
-        while(True):
+        while True:
             if last_pct < 90:
                 pct = self.__recv_uint8()
                 if last_pct != pct:
@@ -661,10 +677,33 @@ class uploader(object):
             size_bytes = chr(size)
         print("\n", end='')
         self.__drawProgressBar(label, 1, 100)
+
         expect_crc = fw.extf_crc(size)
         self.__send(uploader.EXTF_GET_CRC +
                     size_bytes + uploader.EOC)
-        report_crc = self.__recv_int()
+
+        # crc can be slow, give it 10s
+        deadline = time.time() + 10.0
+        while time.time() < deadline:
+
+            # Draw progress bar
+            estimatedTimeRemaining = deadline-time.time()
+            if estimatedTimeRemaining >= 4.0:
+                self.__drawProgressBar(label, 10.0-estimatedTimeRemaining, 4.0)
+            else:
+                self.__drawProgressBar(label, 5.0, 5.0)
+                sys.stdout.write(" (timeout: %d seconds) " % int(deadline-time.time()))
+                sys.stdout.flush()
+
+            try:
+                report_crc = self.__recv_int()
+                break
+            except Exception:
+                continue
+
+        if time.time() >= deadline:
+            raise RuntimeError("Program CRC timed out")
+
         self.__getSync()
         if report_crc != expect_crc:
             print("\nExpected 0x%x" % expect_crc)
@@ -989,9 +1028,15 @@ def ports_to_try(args):
 def modemmanager_check():
     if os.path.exists("/usr/sbin/ModemManager"):
         print("""
-==========================================================================================================
-WARNING: You should uninstall ModemManager as it conflicts with any non-modem serial device (like Pixhawk)
-==========================================================================================================
+===========================================================================================
+WARNING: You should uninstall ModemManager as it conflicts with any non-modem serial device
+===========================================================================================
+""")
+    if os.path.exists("/usr/bin/brltty"):
+        print("""
+=====================================================================================
+WARNING: You should uninstall brltty as it conflicts with any non-modem serial device
+=====================================================================================
 """)
 
 
@@ -1077,6 +1122,7 @@ def main():
     parser.add_argument('--no-extf', action="store_true", help="Do not attempt external flash operations")
     parser.add_argument('--erase-extflash', type=lambda x: int(x, 0), default=None,
                         help="Erase sectors containing specified amount of bytes from ext flash")
+    parser.add_argument('--force-erase', action="store_true", help="Do not check for pre cleared flash, always erase the chip")
     parser.add_argument('firmware', nargs="?", action="store", default=None, help="Firmware file to be uploaded")
     args = parser.parse_args()
 
@@ -1114,10 +1160,11 @@ def main():
                                   args.target_component,
                                   args.source_system,
                                   args.source_component,
-                                  args.no_extf)
+                                  args.no_extf,
+                                  args.force_erase)
 
                 except Exception as e:
-                    if not is_WSL:
+                    if not is_WSL and not is_WSL2 and "win32" not in _platform:
                         # open failed, WSL must cycle through all ttyS* ports quickly but rate limit everything else
                         print("Exception creating uploader: %s" % str(e))
                         time.sleep(0.05)
@@ -1142,8 +1189,8 @@ def main():
                         up.upload(fw, force=args.force, boot_delay=args.boot_delay)
 
                 except RuntimeError as ex:
-                    # print the error
-                    print("\nERROR: %s" % ex.args)
+                    # print the error and exit as a failure
+                    sys.exit("\nERROR: %s" % ex.args)
 
                 except IOError:
                     up.close()

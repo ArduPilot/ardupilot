@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # encoding: utf-8
 
 from __future__ import print_function
@@ -18,6 +17,7 @@ SOURCE_EXTS = [
 ]
 
 COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
+    'AP_Airspeed',
     'AP_AccelCal',
     'AP_ADC',
     'AP_AHRS',
@@ -88,10 +88,10 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AC_Avoidance',
     'AP_LandingGear',
     'AP_RobotisServo',
-    'AP_ToshibaCAN',
     'AP_NMEA_Output',
     'AP_Filesystem',
     'AP_ADSB',
+    'AP_ADSB/sagetech-sdk',
     'AC_PID',
     'AP_SerialLED',
     'AP_EFI',
@@ -107,7 +107,12 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_ExternalAHRS',
     'AP_VideoTX',
     'AP_FETtecOneWire',
+    'AP_TemperatureSensor',
     'AP_Torqeedo',
+    'AP_CustomRotations',
+    'AP_AIS',
+    'AP_OpenDroneID',
+    'AP_CheckFirmware',
 ]
 
 def get_legacy_defines(sketch_name, bld):
@@ -294,7 +299,8 @@ def ap_program(bld,
         tg.env.STLIB += [kw['use']]
 
     for group in program_groups:
-        _grouped_programs.setdefault(group, []).append(tg)
+        _grouped_programs.setdefault(group, {}).update({tg.name : tg})
+
 
 @conf
 def ap_example(bld, **kw):
@@ -377,7 +383,7 @@ def ap_version_append_str(ctx, k, v):
 
 @conf
 def ap_version_append_int(ctx, k, v):
-    ctx.env['AP_VERSION_ITEMS'] += [(k,v)]
+    ctx.env['AP_VERSION_ITEMS'] += [(k, '{}'.format(os.environ.get(k, v)))]
 
 @conf
 def write_version_header(ctx, tgt):
@@ -506,21 +512,20 @@ def _select_programs_from_group(bld):
             groups = ['bin']
 
     if 'all' in groups:
-        groups = _grouped_programs.keys()
+        groups = list(_grouped_programs.keys())
+        groups.remove('bin')       # Remove `bin` so as not to duplicate all items in bin
 
     for group in groups:
         if group not in _grouped_programs:
             bld.fatal('Group %s not found' % group)
 
-        tg = _grouped_programs[group][0]
-        if bld.targets:
-            bld.targets += ',' + tg.name
-        else:
-            bld.targets = tg.name
+        target_names = _grouped_programs[group].keys()
 
-        if len(_grouped_programs[group]) > 2:
-            for tg in _grouped_programs[group][1:]:
-                bld.targets += ',' + tg.name
+        for name in target_names:
+            if bld.targets:
+                bld.targets += ',' + name
+            else:
+                bld.targets = name
 
 def options(opt):
     opt.ap_groups = {
@@ -561,6 +566,10 @@ arducopter and upload it to my board".
         action='store_true',
         help='Output all test programs.')
 
+    g.add_option('--define',
+        action='append',
+        help='Add C++ define to build.')
+
     g = opt.ap_groups['clean']
 
     g.add_option('--clean-all-sigs',
@@ -580,6 +589,14 @@ Address Sanitizer support llvm-symbolizer is required to be on the PATH.
 This option is only supported on macOS versions of clang.
 ''')
 
+    g.add_option('--ubsan',
+        action='store_true',
+        help='''Build using the gcc undefined behaviour sanitizer''')
+
+    g.add_option('--ubsan-abort',
+        action='store_true',
+        help='''Build using the gcc undefined behaviour sanitizer and abort on error''')
+    
 def build(bld):
     bld.add_pre_fun(_process_build_command)
     bld.add_pre_fun(_select_programs_from_group)

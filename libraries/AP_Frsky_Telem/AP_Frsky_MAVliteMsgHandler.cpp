@@ -2,6 +2,7 @@
 
 #include <AC_Fence/AC_Fence.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -130,16 +131,19 @@ MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command_preflight_calibration_baro
     AP::baro().update_calibration();
     gcs().send_text(MAV_SEVERITY_INFO, "Barometer calibration complete");
 
+#if AP_AIRSPEED_ENABLED
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
     if (airspeed != nullptr) {
         airspeed->calibrate(false);
     }
+#endif
 
     return MAV_RESULT_ACCEPTED;
 }
 
 MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command_do_fence_enable(const mavlink_command_long_t &mav_command_long)
 {
+#if AP_FENCE_ENABLED
     AC_Fence *fence = AP::fence();
     if (fence == nullptr) {
         return MAV_RESULT_UNSUPPORTED;
@@ -155,6 +159,9 @@ MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command_do_fence_enable(const mavl
         default:
             return MAV_RESULT_FAILED;
     }
+#else
+    return MAV_RESULT_UNSUPPORTED;
+#endif // AP_FENCE_ENABLED
 }
 
 /*

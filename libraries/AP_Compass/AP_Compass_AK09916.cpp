@@ -155,7 +155,7 @@ AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(AP_HAL::OwnPtr<AP_HAL::I2
     if (dev->read_registers(REG_COMPANY_ID, (uint8_t *)&whoami, 2)) {
         // a device is replying on the AK09916 I2C address, don't
         // load the ICM20948
-        hal.console->printf("ICM20948: AK09916 bus conflict\n");
+        DEV_PRINTF("ICM20948: AK09916 bus conflict\n");
         goto fail;
     }
 
@@ -179,7 +179,7 @@ AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(uint8_t inv2_instance,
 AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948_SPI(uint8_t inv2_instance,
                                                      enum Rotation rotation)
 {
-#if HAL_INS_ENABLED
+#if AP_INERTIALSENSOR_ENABLED
     AP_InertialSensor &ins = AP::ins();
 
     AP_AK09916_BusDriver *bus =
@@ -230,7 +230,7 @@ bool AP_Compass_AK09916::init()
     _bus->get_semaphore()->take_blocking();
 
     if (!_bus->configure()) {
-        hal.console->printf("AK09916: Could not configure the bus\n");
+        DEV_PRINTF("AK09916: Could not configure the bus\n");
         goto fail;
     }
 
@@ -239,7 +239,6 @@ bool AP_Compass_AK09916::init()
     }
 
     if (!_check_id()) {
-        hal.console->printf("AK09916: Wrong id\n");
         goto fail;
     }
 
@@ -247,12 +246,12 @@ bool AP_Compass_AK09916::init()
     _bus->setup_checked_registers(1);
 
     if (!_setup_mode()) {
-        hal.console->printf("AK09916: Could not setup mode\n");
+        DEV_PRINTF("AK09916: Could not setup mode\n");
         goto fail;
     }
 
     if (!_bus->start_measurements()) {
-        hal.console->printf("AK09916: Could not start measurements\n");
+        DEV_PRINTF("AK09916: Could not start measurements\n");
         goto fail;
     }
 
@@ -324,19 +323,6 @@ void AP_Compass_AK09916::_update()
 
     _make_adc_sensitivity_adjustment(raw_field);
     raw_field *= AK09916_MILLIGAUSS_SCALE;
-
-#ifdef HAL_AK09916_HEATER_OFFSET
-    /*
-      the internal AK09916 can be impacted by the magnetic field from
-      a heater. We use the heater duty cycle to correct for the error
-     */
-    if (AP_HAL::Device::devid_get_bus_type(_bus->get_bus_id()) == AP_HAL::Device::BUS_TYPE_SPI) {
-        auto *bc = AP::boardConfig();
-        if (bc) {
-            raw_field += HAL_AK09916_HEATER_OFFSET * bc->get_heater_duty_cycle() * 0.01;
-        }
-    }
-#endif
 
     accumulate_sample(raw_field, _compass_instance, 10);
 
@@ -416,7 +402,7 @@ AP_AK09916_BusDriver_Auxiliary::AP_AK09916_BusDriver_Auxiliary(AP_InertialSensor
      * Only initialize members. Fails are handled by configure or while
      * getting the semaphore
      */
-#if HAL_INS_ENABLED
+#if AP_INERTIALSENSOR_ENABLED
     _bus = ins.get_auxiliary_bus(backend_id, backend_instance);
     if (!_bus) {
         return;

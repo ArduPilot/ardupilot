@@ -67,12 +67,12 @@ protected:
         float thruster_mount_radius = 0.25; // distance in meters from thrusters to center of mass. Used to calculate torque.
         float equivalent_sphere_radius = 0.2;
         // volume = 4.pi.r³/3
-        float volume = 4 * M_PI * pow(equivalent_sphere_radius, 3) / 3;
+        float volume = 4 * M_PI * powf(equivalent_sphere_radius, 3) / 3;
         float density = 500;
         float mass = volume * density; // 16.75 kg
         // Moment of Inertia (I)(kg.m²) approximated with a sphere with a 25 cm radius (r) and same density as water
         // I = 2.m.r²/5
-        float moment_of_inertia =  2 * (mass * pow(equivalent_sphere_radius, 2) / 5);
+        float moment_of_inertia =  2 * (mass * powf(equivalent_sphere_radius, 2) / 5);
 
         // Frame drag coefficient
         const Vector3f linear_drag_coefficient = Vector3f(1.4, 1.8, 2.0);
@@ -83,7 +83,7 @@ protected:
         // $ V = 4 * pi * r^3 / 3 $
         // $ r ^2 = (V * 3 / 4) ^ (2/3) $
         // A = area (m^3), r = sphere radius (m)
-        float equivalent_sphere_area = M_PI_4 * pow(volume * 3.0f / 4.0f, 2.0f / 3.0f);
+        float equivalent_sphere_area = M_PI_4 * powf(volume * 3.0f / 4.0f, 2.0f / 3.0f);
 
     } frame_property;
 

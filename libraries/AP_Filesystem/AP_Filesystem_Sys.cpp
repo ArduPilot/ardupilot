@@ -19,6 +19,9 @@
  */
 #include "AP_Filesystem.h"
 #include "AP_Filesystem_Sys.h"
+
+#if AP_FILESYSTEM_SYS_ENABLED
+
 #include <AP_Math/AP_Math.h>
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_Scheduler/AP_Scheduler.h>
@@ -36,6 +39,7 @@ static const SysFileList sysfs_file_list[] = {
     {"dma.txt"},
     {"memory.txt"},
     {"uarts.txt"},
+    {"timers.txt"},
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
     {"can_log.txt"},
 #endif
@@ -59,7 +63,7 @@ int8_t AP_Filesystem_Sys::file_in_sysfs(const char *fname) {
     return -1;
 }
 
-int AP_Filesystem_Sys::open(const char *fname, int flags)
+int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_paths)
 {
     if ((flags & O_ACCMODE) != O_RDONLY) {
         errno = EROFS;
@@ -110,6 +114,9 @@ int AP_Filesystem_Sys::open(const char *fname, int flags)
         hal.util->uart_info(*r.str);
     }
 #endif
+    if (strcmp(fname, "timers.txt") == 0) {
+        hal.util->timer_info(*r.str);
+    }
 #if HAL_CANMANAGER_ENABLED
     if (strcmp(fname, "can_log.txt") == 0) {
         AP::can().log_retrieve(*r.str);
@@ -131,9 +138,11 @@ int AP_Filesystem_Sys::open(const char *fname, int flags)
     if (strcmp(fname, "persistent.parm") == 0) {
         hal.util->load_persistent_params(*r.str);
     }
+#if AP_CRASHDUMP_ENABLED
     if (strcmp(fname, "crash_dump.bin") == 0) {
         r.str->set_buffer((char*)hal.util->last_crash_dump_ptr(), hal.util->last_crash_dump_size(), hal.util->last_crash_dump_size());
-    } else
+    }
+#endif
     if (strcmp(fname, "storage.bin") == 0) {
         // we don't want to store the contents of storage.bin
         // we read directly from the storage driver
@@ -266,10 +275,14 @@ int AP_Filesystem_Sys::stat(const char *pathname, struct stat *stbuf)
     // read every file for a directory listing
     if (strcmp(pathname_noslash, "storage.bin") == 0) {
         stbuf->st_size = HAL_STORAGE_SIZE;
+#if AP_CRASHDUMP_ENABLED
     } else if (strcmp(pathname_noslash, "crash_dump.bin") == 0) {
         stbuf->st_size = hal.util->last_crash_dump_size();
+#endif
     } else {
         stbuf->st_size = 100000;
     }
     return 0;
 }
+
+#endif  // AP_FILESYSTEM_SYS_ENABLED

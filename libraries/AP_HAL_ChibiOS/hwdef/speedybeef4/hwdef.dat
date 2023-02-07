@@ -130,7 +130,6 @@ define HAL_BARO_ALLOW_INIT_NO_BARO
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 0
 
@@ -146,3 +145,7 @@ define HAL_LOGGING_DATAFLASH_ENABLED 1
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# minimal drivers to reduce flash usage
+include ../include/minimal.inc
+define AP_BATTMON_SYNTHETIC_CURRENT_ENABLED 0

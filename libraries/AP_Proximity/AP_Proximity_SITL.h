@@ -14,7 +14,7 @@ class AP_Proximity_SITL : public AP_Proximity_Backend
 
 public:
     // constructor
-    AP_Proximity_SITL(AP_Proximity &_frontend, AP_Proximity::Proximity_State &_state);
+    AP_Proximity_SITL(AP_Proximity &_frontend, AP_Proximity::Proximity_State &_state, AP_Proximity_Params& _params);
 
     // update state
     void update(void) override;
@@ -30,9 +30,6 @@ private:
     SITL::SIM *sitl;
     AP_Float *fence_alt_max;
     Location current_loc;
-
-    // latest sector updated
-    uint8_t last_sector;
 
     // get distance in meters to fence in a particular direction in degrees (0 is forward, angles increase in the clockwise direction)
     bool get_distance_to_fence(float angle_deg, float &distance) const;

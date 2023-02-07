@@ -4,7 +4,6 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
-#include <SRV_Channel/SRV_Channel.h>
 #include "AP_MotorsMulticopter.h"
 
 // feedback direction
@@ -23,8 +22,8 @@ class AP_MotorsCoax : public AP_MotorsMulticopter {
 public:
 
     /// Constructor
-    AP_MotorsCoax(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_MotorsMulticopter(loop_rate, speed_hz)
+    AP_MotorsCoax(uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+        AP_MotorsMulticopter(speed_hz)
     {
     };
 
@@ -37,17 +36,15 @@ public:
     // set update rate to motors - a value in hertz
     void                set_update_rate( uint16_t speed_hz ) override;
 
-    // output_test_seq - spin a motor at the pwm value specified
-    //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
-    //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-    virtual void        output_test_seq(uint8_t motor_seq, int16_t pwm) override;
-
     // output_to_motors - sends minimum values out to the motors
     virtual void        output_to_motors() override;
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-    uint16_t            get_motor_mask() override;
+    uint32_t            get_motor_mask() override;
+
+    // Run arming checks
+    bool arming_checks(size_t buflen, char *buffer) const override { return AP_Motors::arming_checks(buflen, buffer); }
 
 protected:
     // output - sends commands to the motors
@@ -58,4 +55,9 @@ protected:
     float               _thrust_yt_cw;
 
     const char* _get_frame_string() const override { return "COAX"; }
+
+    // output_test_seq - spin a motor at the pwm value specified
+    //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
+    //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
+    virtual void _output_test_seq(uint8_t motor_seq, int16_t pwm) override;
 };

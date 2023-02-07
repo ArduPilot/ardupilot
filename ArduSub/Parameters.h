@@ -1,5 +1,7 @@
 #pragma once
 
+#define AP_PARAM_VEHICLE_NAME sub
+
 #include <AP_Common/AP_Common.h>
 
 #include <AP_Gripper/AP_Gripper.h>
@@ -87,7 +89,7 @@ public:
         k_param_pos_control, // Position Control
         k_param_wp_nav, // Waypoint navigation
         k_param_mission, // Mission library
-        k_param_fence, // Fence Library
+        k_param_fence_old, // only used for conversion
         k_param_terrain, // Terrain database
         k_param_rally, // Disabled
         k_param_circle_nav, // Disabled
@@ -320,7 +322,7 @@ public:
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
-#if GRIPPER_ENABLED
+#if AP_GRIPPER_ENABLED
     AP_Gripper gripper;
 #endif
 
@@ -338,10 +340,6 @@ public:
 #if AP_SCRIPTING_ENABLED
     AP_Scripting scripting;
 #endif // AP_SCRIPTING_ENABLED
-
-    // Airspeed
-    AP_Airspeed airspeed;
-
 };
 
 extern const AP_Param::Info        var_info[];

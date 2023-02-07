@@ -41,7 +41,7 @@ const AP_Param::GroupInfo AP_RTC::var_info[] = {
 
 void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
 {
-    const uint64_t oldest_acceptable_date = 1546300800000; // 2019-01-01 0:00
+    const uint64_t oldest_acceptable_date_us = 1640995200ULL*1000*1000; // 2022-01-01 0:00
 
     if (type >= rtc_source_type) {
         // e.g. system-time message when we've been set by the GPS
@@ -54,7 +54,7 @@ void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
     }
 
     // don't allow old times
-    if (time_utc_usec < oldest_acceptable_date) {
+    if (time_utc_usec < oldest_acceptable_date_us) {
         return;
     }
 

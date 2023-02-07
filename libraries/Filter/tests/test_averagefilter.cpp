@@ -42,4 +42,31 @@ TEST(AverageFilterTest, Float_Size5)
 
 }
 
+TEST(AverageIntegralFilterTest, UInt16_Size5)
+{
+    AverageIntegralFilter<uint16_t, uint32_t, 5> test_filter;
+    // filter should be zero even on stack (this may not pick up bugs, but may):
+    EXPECT_FLOAT_EQ(0, test_filter.getf());
+    EXPECT_FLOAT_EQ(0, test_filter.getd());
+
+    EXPECT_EQ(0, test_filter.apply(1));  // apply always returns 0
+    EXPECT_FLOAT_EQ(1, test_filter.getf());
+
+    EXPECT_EQ(0, test_filter.apply(3));  // apply always returns 0
+    EXPECT_FLOAT_EQ(2, test_filter.getf());
+
+    EXPECT_EQ(0, test_filter.apply(2));  // apply always returns 0
+    EXPECT_FLOAT_EQ(2, test_filter.getf());
+
+    EXPECT_EQ(0, test_filter.apply(4));  // apply always returns 0
+    EXPECT_FLOAT_EQ(2.5, test_filter.getf());
+
+    EXPECT_EQ(0, test_filter.apply(100));  // apply always returns 0
+    EXPECT_FLOAT_EQ(22, test_filter.getf());
+
+    EXPECT_EQ(0, test_filter.apply(110));  // apply always returns 0
+    EXPECT_FLOAT_EQ(43.799999, test_filter.getf());
+    EXPECT_FLOAT_EQ(43.799999, test_filter.getd());
+}
+
 AP_GTEST_MAIN()

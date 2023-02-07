@@ -16,21 +16,13 @@
   CAN bootloader support
  */
 #include <AP_HAL/AP_HAL.h>
-
+#include <hal.h>
 #if HAL_USE_CAN == TRUE || HAL_NUM_CAN_IFACES
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/crc.h>
 #include <canard.h>
 #include "support.h"
-#include <uavcan/protocol/dynamic_node_id/Allocation.h>
-#include <uavcan/protocol/file/BeginFirmwareUpdate.h>
-#include <uavcan/protocol/file/Read.h>
-#include <uavcan/protocol/dynamic_node_id/Allocation.h>
-#include <uavcan/protocol/NodeStatus.h>
-#include <uavcan/protocol/RestartNode.h>
-#include <uavcan/protocol/GetNodeInfo.h>
-#include <uavcan/equipment/indication/LightsCommand.h>
-#include <ardupilot/indication/NotifyState.h>
+#include <dronecan_msgs.h>
 #include "can.h"
 #include "bl_protocol.h"
 #include <drivers/stm32/canard_stm32.h>
@@ -38,7 +30,7 @@
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
 #include <stdio.h>
 #include <AP_HAL_ChibiOS/CANIface.h>
-
+#include <AP_CheckFirmware/AP_CheckFirmware.h>
 
 static CanardInstance canard;
 static uint32_t canard_memory_pool[4096/4];
@@ -79,27 +71,17 @@ static struct {
     uint32_t last_ms;
     uint8_t node_id;
     uint8_t transfer_id;
-    uint8_t path[UAVCAN_PROTOCOL_FILE_PATH_PATH_MAX_LENGTH+1];
+    uint8_t path[sizeof(uavcan_protocol_file_Path::path.data)+1];
     uint8_t sector;
     uint32_t sector_ofs;
 } fw_update;
-
-enum {
-    FAIL_REASON_NO_APP_SIG = 10,
-    FAIL_REASON_BAD_LENGTH_APP = 11,
-    FAIL_REASON_BAD_BOARD_ID = 12,
-    FAIL_REASON_BAD_CRC = 13,
-    FAIL_REASON_IN_UPDATE = 14,
-    FAIL_REASON_WATCHDOG = 15,
-    FAIL_REASON_BAD_LENGTH_DESCRIPTOR = 16,
-};
 
 /*
   get cpu unique ID
  */
 static void readUniqueID(uint8_t* out_uid)
 {
-    uint8_t len = UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_UNIQUE_ID_MAX_LENGTH;
+    uint8_t len = sizeof(uavcan_protocol_dynamic_node_id_Allocation::unique_id.data);
     memset(out_uid, 0, len);
     memcpy(out_uid, (const void *)UDID_START, MIN(len,12));
 }
@@ -150,9 +132,9 @@ static void handle_get_node_info(CanardInstance* ins,
     char name[strlen(CAN_APP_NODE_NAME)+1];
     strcpy(name, CAN_APP_NODE_NAME);
     pkt.name.len = strlen(CAN_APP_NODE_NAME);
-    pkt.name.data = (uint8_t *)name;
+    memcpy(pkt.name.data, name, pkt.name.len);
 
-    uint16_t total_size = uavcan_protocol_GetNodeInfoResponse_encode(&pkt, buffer);
+    uint16_t total_size = uavcan_protocol_GetNodeInfoResponse_encode(&pkt, buffer, true);
 
     canardRequestOrRespond(ins,
                            transfer->source_node_id,
@@ -171,7 +153,7 @@ static void handle_get_node_info(CanardInstance* ins,
 static void send_fw_read(void)
 {
     uint32_t now = AP_HAL::millis();
-    if (now - fw_update.last_ms < 250) {
+    if (now - fw_update.last_ms < 750) {
         // the server may still be responding
         return;
     }
@@ -235,10 +217,12 @@ static void handle_file_read_response(CanardInstance* ins, CanardRxTransfer* tra
         fw_update.sector++;
         fw_update.sector_ofs -= sector_size;
     }
-    if (len < UAVCAN_PROTOCOL_FILE_READ_RESPONSE_DATA_MAX_LENGTH) {
+    if (len < sizeof(uavcan_protocol_file_ReadResponse::data.data)) {
         fw_update.node_id = 0;
         flash_write_flush();
-        if (can_check_firmware()) {
+        const auto ok = check_good_firmware();
+        node_status.vendor_specific_status_code = uint8_t(ok);
+        if (ok == check_fw_result_t::CHECK_FW_OK) {
             jump_to_app();
         }
     }
@@ -280,7 +264,7 @@ static void handle_begin_firmware_update(CanardInstance* ins, CanardRxTransfer* 
     uavcan_protocol_file_BeginFirmwareUpdateResponse reply {};
     reply.error = UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_RESPONSE_ERROR_OK;
 
-    uint32_t total_size = uavcan_protocol_file_BeginFirmwareUpdateResponse_encode(&reply, buffer);
+    uint32_t total_size = uavcan_protocol_file_BeginFirmwareUpdateResponse_encode(&reply, buffer, true);
     canardRequestOrRespond(ins,
                            transfer->source_node_id,
                            UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_SIGNATURE,
@@ -309,7 +293,7 @@ static void handle_allocation_response(CanardInstance* ins, CanardRxTransfer* tr
 
     // Copying the unique ID from the message
     static const uint8_t UniqueIDBitOffset = 8;
-    uint8_t received_unique_id[UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_UNIQUE_ID_MAX_LENGTH];
+    uint8_t received_unique_id[sizeof(uavcan_protocol_dynamic_node_id_Allocation::unique_id.data)];
     uint8_t received_unique_id_len = 0;
     for (; received_unique_id_len < (transfer->payload_len - (UniqueIDBitOffset / 8U)); received_unique_id_len++) {
         const uint8_t bit_offset = (uint8_t)(UniqueIDBitOffset + received_unique_id_len * 8U);
@@ -317,7 +301,7 @@ static void handle_allocation_response(CanardInstance* ins, CanardRxTransfer* tr
     }
 
     // Obtaining the local unique ID
-    uint8_t my_unique_id[UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_UNIQUE_ID_MAX_LENGTH];
+    uint8_t my_unique_id[sizeof(uavcan_protocol_dynamic_node_id_Allocation::unique_id.data)];
     readUniqueID(my_unique_id);
 
     // Matching the received UID against the local one
@@ -326,7 +310,7 @@ static void handle_allocation_response(CanardInstance* ins, CanardRxTransfer* tr
         return;         // No match, return
     }
 
-    if (received_unique_id_len < UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_UNIQUE_ID_MAX_LENGTH) {
+    if (received_unique_id_len < sizeof(uavcan_protocol_dynamic_node_id_Allocation::unique_id.data)) {
         // The allocator has confirmed part of unique ID, switching to the next stage and updating the timeout.
         node_id_allocation_unique_id_offset = received_unique_id_len;
         send_next_node_id_allocation_request_at_ms -= UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MIN_REQUEST_PERIOD_MS;
@@ -563,11 +547,11 @@ static void can_handle_DNA(void)
         allocation_request[0] |= 1;     // First part of unique ID
     }
 
-    uint8_t my_unique_id[UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_UNIQUE_ID_MAX_LENGTH];
+    uint8_t my_unique_id[sizeof(uavcan_protocol_dynamic_node_id_Allocation::unique_id.data)];
     readUniqueID(my_unique_id);
 
     static const uint8_t MaxLenOfUniqueIDInRequest = 6;
-    uint8_t uid_size = (uint8_t)(UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_UNIQUE_ID_MAX_LENGTH - node_id_allocation_unique_id_offset);
+    uint8_t uid_size = (uint8_t)(sizeof(uavcan_protocol_dynamic_node_id_Allocation::unique_id.data) - node_id_allocation_unique_id_offset);
     if (uid_size > MaxLenOfUniqueIDInRequest) {
         uid_size = MaxLenOfUniqueIDInRequest;
     }
@@ -592,7 +576,7 @@ static void send_node_status(void)
     uint8_t buffer[UAVCAN_PROTOCOL_NODESTATUS_MAX_SIZE];
     node_status.uptime_sec = AP_HAL::millis() / 1000U;
 
-    uint32_t len = uavcan_protocol_NodeStatus_encode(&node_status, buffer);
+    uint32_t len = uavcan_protocol_NodeStatus_encode(&node_status, buffer, true);
 
     static uint8_t transfer_id;  // Note that the transfer ID variable MUST BE STATIC (or heap-allocated)!
 
@@ -624,76 +608,67 @@ void can_set_node_id(uint8_t node_id)
     initial_node_id = node_id;
 }
 
-/*
-  check firmware CRC to see if it matches
- */
-bool can_check_firmware(void)
-{
-    if (fw_update.node_id != 0) {
-        // we're doing an update, don't boot this fw
-        node_status.vendor_specific_status_code = FAIL_REASON_IN_UPDATE;
-        return false;
-    }
-    const uint8_t sig[8] = { 0x40, 0xa2, 0xe4, 0xf1, 0x64, 0x68, 0x91, 0x06 };
-    const uint8_t *flash = (const uint8_t *)(FLASH_LOAD_ADDRESS + (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)*1024);
-    const uint32_t flash_size = (BOARD_FLASH_SIZE - (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB))*1024;
-    const app_descriptor *ad = (const app_descriptor *)memmem(flash, flash_size-sizeof(app_descriptor), sig, sizeof(sig));
-    if (ad == nullptr) {
-        // no application signature
-        node_status.vendor_specific_status_code = FAIL_REASON_NO_APP_SIG;
-        printf("No app sig\n");
-        return false;
-    }
-    // check length
-    if (ad->image_size > flash_size) {
-        node_status.vendor_specific_status_code = FAIL_REASON_BAD_LENGTH_APP;
-        printf("Bad fw length %u\n", ad->image_size);
-        return false;
-    }
-
-    if (ad->board_id != APJ_BOARD_ID) {
-        node_status.vendor_specific_status_code = FAIL_REASON_BAD_BOARD_ID;
-        printf("Bad board_id %u should be %u\n", ad->board_id, APJ_BOARD_ID);
-        return false;
-    }
-
-    const uint8_t desc_len = offsetof(app_descriptor, version_major) - offsetof(app_descriptor, image_crc1);
-    uint32_t len1 = ((const uint8_t *)&ad->image_crc1) - flash;
-    if ((len1 + desc_len) > ad->image_size) {
-        node_status.vendor_specific_status_code = FAIL_REASON_BAD_LENGTH_DESCRIPTOR;
-        printf("Bad fw descriptor length %u\n", ad->image_size);
-        return false;
-    }
-
-    uint32_t len2 = ad->image_size - (len1 + desc_len);
-    uint32_t crc1 = crc32_small(0, flash, len1);
-    uint32_t crc2 = crc32_small(0, (const uint8_t *)&ad->version_major, len2);
-    if (crc1 != ad->image_crc1 || crc2 != ad->image_crc2) {
-        node_status.vendor_specific_status_code = FAIL_REASON_BAD_CRC;
-        printf("Bad app CRC 0x%08x:0x%08x 0x%08x:0x%08x\n", ad->image_crc1, ad->image_crc2, crc1, crc2);
-        return false;
-    }
-    printf("Good firmware\n");
-    return true;
-}
-
 // check for a firmware update marker left by app
-void can_check_update(void)
+bool can_check_update(void)
 {
+    bool ret = false;
 #if HAL_RAM_RESERVE_START >= 256
     struct app_bootloader_comms *comms = (struct app_bootloader_comms *)HAL_RAM0_START;
     if (comms->magic == APP_BOOTLOADER_COMMS_MAGIC) {
         can_set_node_id(comms->my_node_id);
         fw_update.node_id = comms->server_node_id;
-        memcpy(fw_update.path, comms->path, UAVCAN_PROTOCOL_FILE_PATH_PATH_MAX_LENGTH+1);
+        memcpy(fw_update.path, comms->path, sizeof(uavcan_protocol_file_Path::path.data)+1);
+        ret = true;
+        // clear comms region
+        memset(comms, 0, sizeof(struct app_bootloader_comms));
     }
-    // clear comms region
-    memset(comms, 0, sizeof(struct app_bootloader_comms));
 #endif
+#if defined(CAN1_BASE) && defined(RCC_APB1ENR_CAN1EN)
+    // check for px4 fw update. px4 uses the filter registers in CAN1
+    // to communicate with the bootloader. This only works on CAN1
+    if (!ret && stm32_was_software_reset()) {
+        uint32_t *fir = (uint32_t *)(CAN1_BASE + 0x240);
+        struct PACKED app_shared {
+            union {
+                uint64_t ull;
+                uint32_t ul[2];
+                uint8_t  valid;
+            } crc;
+            uint32_t signature;
+            uint32_t bus_speed;
+            uint32_t node_id;
+        } *app = (struct app_shared *)&fir[4];
+        /* we need to enable the CAN peripheral in order to look at
+           the FIR registers.
+        */
+        RCC->APB1ENR |= RCC_APB1ENR_CAN1EN;
+        static const uint32_t app_signature = 0xb0a04150;
+        if (app->signature == app_signature &&
+            app->node_id > 0 && app->node_id < 128) {
+            // crc is in reversed word order in FIR registers
+            uint32_t sig[3];
+            memcpy((uint8_t *)&sig[0], (const uint8_t *)&app->signature, sizeof(sig));
+            const uint64_t crc = crc_crc64(sig, 3);
+            const uint32_t *crc32 = (const uint32_t *)&crc;
+            if (crc32[0] == app->crc.ul[1] &&
+                crc32[1] == app->crc.ul[0]) {
+                // reset signature so we don't get in a boot loop
+                app->signature = 0;
+                // setup node ID
+                can_set_node_id(app->node_id);
+                // and baudrate
+                baudrate = app->bus_speed;
+                ret = true;
+            }
+        }
+    }
+#endif
+    return ret;
 }
 
 void can_start()
 {
+    node_status.vendor_specific_status_code = uint8_t(check_good_firmware());
     node_status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_MAINTENANCE;
 
 #if HAL_USE_CAN
@@ -722,7 +697,7 @@ void can_start()
         get_random_range(UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MAX_FOLLOWUP_DELAY_MS);
 
     if (stm32_was_watchdog_reset()) {
-        node_status.vendor_specific_status_code = FAIL_REASON_WATCHDOG;
+        node_status.vendor_specific_status_code = uint8_t(check_fw_result_t::FAIL_REASON_WATCHDOG);
     }
 }
 

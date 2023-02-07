@@ -188,44 +188,62 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     focal.vm.boot_timeout = 1500
   end
 
-  # 20.10
-  config.vm.define "groovy", autostart: false do |groovy|
-    groovy.vm.box = "ubuntu/groovy64"
-    groovy.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
-    groovy.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (groovy)"
-    end
-    groovy.vm.boot_timeout = 1200
-  end
+  # 20.10  EOL July 2021
+#   config.vm.define "groovy", autostart: false do |groovy|
+#     groovy.vm.box = "ubuntu/groovy64"
+#     groovy.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+#     groovy.vm.provider "virtualbox" do |vb|
+#       vb.name = "ArduPilot (groovy)"
+#     end
+#     groovy.vm.boot_timeout = 1200
+#   end
 
-  # 21.04
-  config.vm.define "hirsute", autostart: false do |hirsute|
-    hirsute.vm.box = "ubuntu/hirsute64"
-    hirsute.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
-    hirsute.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (hirsute)"
+  # 21.04 EOL January 2022 apt repo down
+#   config.vm.define "hirsute", autostart: false do |hirsute|
+#     hirsute.vm.box = "ubuntu/hirsute64"
+#     hirsute.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+#     hirsute.vm.provider "virtualbox" do |vb|
+#       vb.name = "ArduPilot (hirsute)"
+#     end
+#     hirsute.vm.boot_timeout = 1200
+#   end
+#   config.vm.define "hirsute-desktop", autostart: false do |hirsute|
+#     hirsute.vm.box = "ubuntu/hirsute64"
+#     hirsute.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
+#     hirsute.vm.provider "virtualbox" do |vb|
+#       vb.name = "ArduPilot (hirsute-desktop)"
+#       vb.gui = true
+#     end
+#     hirsute.vm.boot_timeout = 1200
+#   end
+
+  # 21.10 EOL July 2022
+#   config.vm.define "impish", autostart: false do |impish|
+#     impish.vm.box = "ubuntu/impish64"
+#     impish.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+#     impish.vm.provider "virtualbox" do |vb|
+#       vb.name = "ArduPilot (impish)"
+#     end
+#     impish.vm.boot_timeout = 1200
+#   end
+
+  # 22.04 LTS EOL Apr 2032
+  config.vm.define "jammy", autostart: false do |jammy|
+    jammy.vm.box = "ubuntu/jammy64"
+    jammy.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    jammy.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (jammy)"
     end
-    hirsute.vm.boot_timeout = 1200
+    jammy.vm.boot_timeout = 1200
   end
-  config.vm.define "hirsute-desktop", autostart: false do |hirsute|
-    hirsute.vm.box = "ubuntu/hirsute64"
-    hirsute.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
-    hirsute.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (hirsute-desktop)"
+  config.vm.define "jammy-desktop", autostart: false do |jammy|
+    jammy.vm.box = "ubuntu/jammy64"
+    jammy.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
+    jammy.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (jammy-desktop)"
       vb.gui = true
     end
-    hirsute.vm.boot_timeout = 1200
-  end
-
-  # 21.10
-  config.vm.define "impish", autostart: false do |impish|
-    impish.vm.box = "ubuntu/impish64"
-    impish.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
-    impish.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (impish)"
-    end
-    impish.vm.boot_timeout = 1200
+    jammy.vm.boot_timeout = 1200
   end
 
 end
-

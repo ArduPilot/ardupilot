@@ -36,9 +36,8 @@
 class AP_MotorsHeli_Dual : public AP_MotorsHeli {
 public:
     // constructor
-    AP_MotorsHeli_Dual(uint16_t loop_rate,
-                       uint16_t speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
-        AP_MotorsHeli(loop_rate, speed_hz)
+    AP_MotorsHeli_Dual(uint16_t speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
+        AP_MotorsHeli(speed_hz)
     {
         AP_Param::setup_object_defaults(this, var_info);
     };
@@ -48,7 +47,7 @@ public:
     void set_update_rate( uint16_t speed_hz ) override;
 
     // output_test_seq - spin a motor at the pwm value specified
-    virtual void output_test_seq(uint8_t motor_seq, int16_t pwm) override;
+    virtual void _output_test_seq(uint8_t motor_seq, int16_t pwm) override;
 
     // output_to_motors - sends values out to the motors
     void output_to_motors() override;
@@ -78,7 +77,7 @@ public:
     void calculate_armed_scalars() override;
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
-    uint16_t get_motor_mask() override;
+    uint32_t get_motor_mask() override;
 
     // has_flybar - returns true if we have a mechical flybar
     bool has_flybar() const  override { return AP_MOTORS_HELI_NOFLYBAR; }

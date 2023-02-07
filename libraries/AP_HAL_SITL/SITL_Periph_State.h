@@ -41,8 +41,7 @@ public:
 
     // simulated airspeed, sonar and battery monitor
     uint16_t sonar_pin_value;    // pin 0
-    uint16_t airspeed_pin_value; // pin 1
-    uint16_t airspeed_2_pin_value; // pin 2
+    uint16_t airspeed_pin_value[2]; // pin 1
     uint16_t voltage_pin_value;  // pin 13
     uint16_t current_pin_value;  // pin 12
     uint16_t voltage2_pin_value;  // pin 15
@@ -62,6 +61,8 @@ public:
 
     uint8_t get_instance() const { return _instance; }
 
+    bool run_in_maintenance_mode() const { return _maintenance; }
+
     SITL::SerialDevice *create_serial_sim(const char *name, const char *arg) {
         return nullptr;
     }
@@ -75,6 +76,7 @@ private:
     const char *defaults_path = HAL_PARAM_DEFAULTS_PATH;
 
     uint8_t _instance;
+    bool _maintenance;
 };
 
 #endif

@@ -20,7 +20,7 @@
 #include <stdint.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 
-#include "AP_Filesystem_Available.h"
+#include "AP_Filesystem_config.h"
 
 #include <AP_InternalError/AP_InternalError.h>
 
@@ -43,7 +43,7 @@ class AP_Filesystem_Backend {
 
 public:
     // functions that closely match the equivalent posix calls
-    virtual int open(const char *fname, int flags) {
+    virtual int open(const char *fname, int flags, bool allow_absolute_paths = false) {
         return -1;
     }
     virtual int close(int fd) { return -1; }

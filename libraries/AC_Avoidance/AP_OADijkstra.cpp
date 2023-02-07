@@ -17,8 +17,12 @@
 #include "AP_OAPathPlanner.h"
 
 #include <AC_Fence/AC_Fence.h>
+
+#if AP_FENCE_ENABLED
+
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Logger/AP_Logger.h>
+#include <GCS_MAVLink/GCS.h>
 
 #define OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK  32      // expanding arrays for fence points and paths to destination will grow in increments of 20 elements
 #define OA_DIJKSTRA_POLYGON_SHORTPATH_NOTSET_IDX        255     // index use to indicate we do not have a tentative short path for a node
@@ -959,3 +963,5 @@ bool AP_OADijkstra::convert_node_to_point(const AP_OAVisGraph::OAItemID& id, Vec
     // we should never reach here but just in case
     return false;
 }
+#endif // AP_FENCE_ENABLED
+

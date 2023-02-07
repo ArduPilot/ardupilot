@@ -15,6 +15,8 @@
 
 #include "PixRacerLED.h"
 
+#include <AP_HAL/HAL.h>
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 
 #ifndef HAL_GPIO_A_LED_PIN

@@ -1,0 +1,88 @@
+include ../MatekL431/hwdef.inc
+
+define CAN_APP_NODE_NAME "org.ardupilot.MatekL431-Periph"
+
+
+# --------------------- PWM -----------------------
+PA8   TIM1_CH1  TIM1 PWM(1) GPIO(50)
+PA9   TIM1_CH2  TIM1 PWM(2) GPIO(51)
+PA10  TIM1_CH3  TIM1 PWM(3) GPIO(52)
+PA11  TIM1_CH4  TIM1 PWM(4) GPIO(53)
+PA15  TIM2_CH1  TIM2 PWM(5) GPIO(54)
+
+# Beeper
+PA6   TIM16_CH1 TIM16 GPIO(32) ALARM
+
+# ----------------------- GPS ----------------------------
+define HAL_PERIPH_ENABLE_GPS
+define GPS_MAX_RATE_MS 200
+
+define GPS_MAX_RECEIVERS 1
+define GPS_MAX_INSTANCES 1
+
+define HAL_PERIPH_GPS_PORT_DEFAULT 2
+
+# allow for F9P GPS modules with moving baseline
+define GPS_MOVING_BASELINE 1
+
+
+# ---------------------- COMPASS ---------------------------
+define HAL_PERIPH_ENABLE_MAG
+
+SPIDEV  rm3100 SPI1 DEVID1   MAG_CS MODE0  1*MHZ  1*MHZ
+COMPASS RM3100 SPI:rm3100 false ROTATION_PITCH_180
+
+define HAL_COMPASS_MAX_SENSORS 1
+
+# added QMC5883L for different board varients
+COMPASS QMC5883L I2C:0:0xd false ROTATION_PITCH_180_YAW_90
+
+
+# --------------------- Barometer ---------------------------
+define HAL_PERIPH_ENABLE_BARO
+define HAL_BARO_ALLOW_INIT_NO_BARO
+
+BARO SPL06 I2C:0:0x76
+
+# ------------------ I2C airspeed -------------------------
+define HAL_PERIPH_ENABLE_AIRSPEED
+
+# MS4525 sensor by default
+define HAL_AIRSPEED_TYPE_DEFAULT 1
+define AIRSPEED_MAX_SENSORS 1
+
+# -------------------- MSP --------------------------------
+define HAL_PERIPH_ENABLE_MSP
+define HAL_MSP_ENABLED 1
+define AP_PERIPH_MSP_PORT_DEFAULT 1
+
+# ------------------ BATTERY Monitor -----------------------
+define HAL_PERIPH_ENABLE_BATTERY
+
+define HAL_USE_ADC TRUE
+define STM32_ADC_USE_ADC1 TRUE
+
+PA0 BATT_VOLTAGE_SENS  ADC1 SCALE(1)
+PA1 BATT_CURRENT_SENS  ADC1 SCALE(1)
+
+define HAL_BATT_MONITOR_DEFAULT  0
+define HAL_BATT_VOLT_PIN 5
+define HAL_BATT_VOLT_SCALE 21.0
+define HAL_BATT_CURR_PIN 6
+define HAL_BATT_CURR_SCALE 40.0
+
+
+PB0 BATT2_VOLTAGE_SENS ADC1 SCALE(1)
+PB1 BATT2_CURRENT_SENS ADC1 SCALE(1)
+
+define HAL_BATT2_MONITOR_DEFAULT  0
+define HAL_BATT2_VOLT_PIN 15
+define HAL_BATT2_VOLT_SCALE 21.0
+define HAL_BATT2_CURR_PIN 16
+define HAL_BATT2_CURR_SCALE 40.0
+
+
+# -------------------- Buzzer+NeoPixels --------------d------
+define HAL_PERIPH_ENABLE_RC_OUT
+define HAL_PERIPH_ENABLE_NOTIFY
+

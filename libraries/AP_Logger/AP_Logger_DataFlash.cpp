@@ -53,6 +53,7 @@ extern const AP_HAL::HAL& hal;
 #define JEDEC_ID_WINBOND_W25Q64        0xEF4017
 #define JEDEC_ID_WINBOND_W25Q128       0xEF4018
 #define JEDEC_ID_WINBOND_W25Q256       0xEF4019
+#define JEDEC_ID_WINBOND_W25Q128_2     0xEF7018
 #define JEDEC_ID_CYPRESS_S25FL128L     0x016018
 
 void AP_Logger_DataFlash::Init()
@@ -109,9 +110,10 @@ bool AP_Logger_DataFlash::getSectorCount(void)
 
     // Read manufacturer ID
     uint8_t cmd = JEDEC_DEVICE_ID;
-    dev->transfer(&cmd, 1, buffer, 4);
+    uint8_t buf[4]; // buffer not yet allocated
+    dev->transfer(&cmd, 1, buf, 4);
 
-    uint32_t id = buffer[0] << 16 | buffer[1] << 8 | buffer[2];
+    uint32_t id = buf[0] << 16 | buf[1] << 8 | buf[2];
 
     uint32_t blocks = 0;
 
@@ -138,6 +140,7 @@ bool AP_Logger_DataFlash::getSectorCount(void)
         break;
     case JEDEC_ID_MICRON_N25Q128:
     case JEDEC_ID_WINBOND_W25Q128:
+    case JEDEC_ID_WINBOND_W25Q128_2:
     case JEDEC_ID_CYPRESS_S25FL128L:
         blocks = 256;
         df_PagePerBlock = 256;
@@ -216,8 +219,17 @@ void AP_Logger_DataFlash::PageToBuffer(uint32_t pageNum)
     if (pageNum == 0 || pageNum > df_NumPages+1) {
         printf("Invalid page read %u\n", pageNum);
         memset(buffer, 0xFF, df_PageSize);
+        df_Read_PageAdr = pageNum;
         return;
     }
+
+    // we already just read this page
+    if (pageNum == df_Read_PageAdr && read_cache_valid) {
+        return;
+    }
+
+    df_Read_PageAdr = pageNum;
+
     WaitReady();
 
     uint32_t PageAdr = (pageNum-1) * df_PageSize;
@@ -227,6 +239,8 @@ void AP_Logger_DataFlash::PageToBuffer(uint32_t pageNum)
     send_command_addr(JEDEC_READ_DATA, PageAdr);
     dev->transfer(nullptr, 0, buffer, df_PageSize);
     dev->set_chip_select(false);
+
+    read_cache_valid = true;
 }
 
 void AP_Logger_DataFlash::BufferToPage(uint32_t pageNum)
@@ -235,6 +249,12 @@ void AP_Logger_DataFlash::BufferToPage(uint32_t pageNum)
         printf("Invalid page write %u\n", pageNum);
         return;
     }
+
+    // about to write the cached page
+    if (pageNum != df_Read_PageAdr) {
+        read_cache_valid = false;
+    }
+
     WriteEnable();
 
     WITH_SEMAPHORE(dev_sem);
@@ -300,31 +320,6 @@ void AP_Logger_DataFlash::WriteEnable(void)
     WITH_SEMAPHORE(dev_sem);
     uint8_t b = JEDEC_WRITE_ENABLE;
     dev->transfer(&b, 1, nullptr, 0);
-}
-
-void AP_Logger_DataFlash::flash_test()
-{
-    // wait for the chip to be ready, this has been moved from Init()
-    hal.scheduler->delay(2000);
-
-    for (uint8_t i=1; i<=20; i++) {
-        printf("Flash fill %u\n", i);
-        if (i % df_PagePerBlock == 0) {
-            SectorErase(i / df_PagePerBlock);
-        }
-        memset(buffer, i, df_PageSize);
-        BufferToPage(i);
-    }
-    for (uint8_t i=1; i<=20; i++) {
-        printf("Flash check %u\n", i);
-        PageToBuffer(i);
-        for (uint32_t j=0; j<df_PageSize; j++) {
-            if (buffer[j] != i) {
-                printf("Test error: page %u j=%u v=%u\n", i, j, buffer[j]);
-                break;
-            }
-        }
-    }
 }
 
 #endif // HAL_LOGGING_DATAFLASH_ENABLED

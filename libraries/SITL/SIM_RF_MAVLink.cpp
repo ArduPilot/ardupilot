@@ -40,17 +40,17 @@ uint32_t RF_MAVLink::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t bu
     const uint8_t system_id = 32;
     const uint8_t component_id = 32;
     const mavlink_distance_sensor_t distance_sensor{
-        time_boot_ms: AP_HAL::millis(),
-        min_distance: 10, // cm
-        max_distance: 1000, // cm
-        current_distance: alt_cm,
-        type: 0,
-        id: 72, // ID
-        MAV_SENSOR_ROTATION_PITCH_270,
-        255, // 255 is unknown covariance
-        0, // 0 is unknown horizontal fov
-        0, // 0 is unknown vertical fov
-        {0,0,0,0} // unknown/unused quat
+        .time_boot_ms = AP_HAL::millis(),
+        .min_distance = 10, // cm
+        .max_distance = 1000, // cm
+        .current_distance = alt_cm,
+        .type = 0,
+        .id = 72, // ID
+        .orientation = MAV_SENSOR_ROTATION_PITCH_270,
+        .covariance = 255, // 255 is unknown covariance
+        .horizontal_fov = 0, // 0 is unknown horizontal fov
+        .vertical_fov = 0, // 0 is unknown vertical fov
+        .quaternion = {0,0,0,0} // unknown/unused quat
     };
     const uint16_t len = mavlink_msg_distance_sensor_encode(system_id,
                                                             component_id,

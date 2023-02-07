@@ -28,7 +28,7 @@ lock_file() {
 
         if test -f "$lck" && kill -0 $pid 2> /dev/null; then
 	    LOCKAGE=$(($(date +%s) - $(stat -c '%Y' "build.lck")))
-	    test $LOCKAGE -gt 60000 && {
+	    test $LOCKAGE -gt 80000 && {
                 echo "old lock file $lck is valid for $pid with age $LOCKAGE seconds"
 	    }
             return 1
@@ -52,39 +52,16 @@ lock_file build.lck || {
 (
 date
 
-report() {
-    d="$1"
-    old="$2"
-    new="$3"
-    cat <<EOF | mail -s 'build failed' ardupilot.devel@google.com
-A build of $d failed at `date`
-
-You can view the build logs at https://autotest.ardupilot.org/
-
-A log of the commits since the last attempted build is below
-
-`git log $old $new`
-EOF
-}
-
-report_pull_failure() {
-    d="$1"
-    git show origin/master | mail -s 'APM pull failed' ardupilot.devel@google.com
-    exit 1
-}
-
 oldhash=$(cd APM && git rev-parse HEAD)
 
 echo "Updating APM"
 pushd APM
 git checkout -f master
 git fetch origin
-git submodule update --recursive --force
 git reset --hard origin/master
-git pull || report_pull_failure
+Tools/gittools/submodule-sync.sh
 git clean -f -f -x -d -d
 git tag autotest-$(date '+%Y-%m-%d-%H%M%S') -m "test tag `date`"
-cp ../config.mk .
 popd
 
 rsync -a APM/Tools/autotest/web-firmware/ buildlogs/binaries/
@@ -123,7 +100,7 @@ export BUILD_BINARIES_PATH=$HOME/build/tmp
 # exit on panic so we don't waste time waiting around
 export SITL_PANIC_EXIT=1
 
-timelimit 32000 APM/Tools/autotest/autotest.py --autotest-server --timeout=30000 > buildlogs/autotest-output.txt 2>&1
+timelimit 72000 APM/Tools/autotest/autotest.py --autotest-server --timeout=70000 > buildlogs/autotest-output.txt 2>&1
 
 mkdir -p "buildlogs/history/$hdate"
 

@@ -31,8 +31,7 @@ public:
     AP_Winch();
 
     // Do not allow copies
-    AP_Winch(const AP_Winch &other) = delete;
-    AP_Winch &operator=(const AP_Winch&) = delete;
+    CLASS_NO_COPY(AP_Winch);
 
     // indicate whether this module is enabled
     bool enabled() const;
@@ -59,7 +58,7 @@ public:
     float get_rate_max() const { return MAX(config.rate_max, 0.0f); }
 
     // send status to ground station
-    void send_status(const GCS_MAVLINK &channel);
+    void send_status(const class GCS_MAVLINK &channel);
 
     // write log
     void write_log();

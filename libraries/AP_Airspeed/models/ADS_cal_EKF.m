@@ -37,7 +37,7 @@ for i = 1:1000
     
     %% Calculate truth values
     % calculate ground velocity by simulating a wind relative
-    % circular path of of 60m radius and 16 m/s airspeed
+    % circular path of 60m radius and 16 m/s airspeed
     time = i*DT;
     radius = 60;
     TAS_truth = 16;

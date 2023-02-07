@@ -31,7 +31,7 @@ if [ -n "$SITL_RITW_TERMINAL" ]; then
 elif [ "$TERM" = "screen" ] && [ -n "$TMUX" ]; then
   tmux new-window -dn "$name" "$*"
 elif [ -n "$DISPLAY" -a -n "$(which osascript)" ]; then
-  osascript -e 'tell application "Terminal" to do script "'"$* "'"'
+  osascript -e 'tell application "Terminal" to do script "'"cd $(pwd) && clear && $* "'"'
 elif [ -n "$DISPLAY" -a -n "$(which xterm)" ]; then
   if [ $SITL_RITW_MINIMIZE -eq 1 ]; then
       ICONIC=-iconic

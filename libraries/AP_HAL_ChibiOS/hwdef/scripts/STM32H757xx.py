@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 '''
-these tables are generated from the STM32 datasheets for the STM32H743bi
+these tables are generated from the STM32 datasheets for the STM32H757
 '''
 
 # additional build information for ChibiOS
@@ -14,24 +14,63 @@ mcu = {
     # location of MCU serial number
     'UDID_START' : 0x1FF1E800,
 
+    # DMA peripheral capabilities:
+    # - can't use ITCM or DTCM for any DMA
+    # - SPI1 to SPI5 can use AXI SRAM, SRAM1 to SRAM3 and SRAM4 for DMA
+    # - SPI6, I2C4 and ADC3 can use SRAM4 on BDMA
+    # - UARTS can use AXI SRAM, SRAM1 to SRAM3 and SRAM4 for DMA
+    # - I2C1, I2C2 and I2C3 can use AXI SRAM, SRAM1 to SRAM3 and SRAM4 with DMA
+    # - timers can use AXI SRAM, SRAM1 to SRAM3 and SRAM4 with DMA
+    # - ADC12 can use AXI SRAM, SRAM1 to SRAM3 and SRAM4
+    # - SDMMC can use AXI SRAM, SRAM1 to SRAM3 with IDMA (cannot use SRAM4)
+
     # ram map, as list of (address, size-kb, flags)
     # flags of 1 means DMA-capable (DMA and BDMA)
     # flags of 2 means faster memory for CPU intensive work
     # flags of 4 means memory can be used for SDMMC DMA
     'RAM_MAP' : [
-        (0x30000000, 288, 0), # SRAM1, SRAM2, SRAM3
+        (0x30000000, 256, 0), # SRAM1, SRAM2
         (0x20000000, 128, 2), # DTCM, tightly coupled, no DMA, fast
-        (0x38000000,  64, 1), # SRAM4. This supports both DMA and BDMA ops
         (0x24000000, 512, 4), # AXI SRAM. Use this for SDMMC IDMA ops
+        (0x00000400,  63, 2), # ITCM (first 1k removed, to keep address 0 unused)
+        (0x30040000,  32, 0), # SRAM3.
+        (0x38000000,  64, 1), # SRAM4.
     ],
 
-    'INSTRUCTION_RAM' : (0x00000400, 63), # ITCM (first 1k removed, to keep address 0 unused)
+    'RAM_MAP_EXTERNAL_FLASH' : [
+		# SSBL checks that stack is in this region so needs to come first
+        (0x30000000, 256, 0), # SRAM1, SRAM2
+        (0x20000000,  64, 2), # DTCM, tightly coupled, no DMA, fast
+        (0x24000000, 128, 4), # AXI SRAM. Use this for SDMMC IDMA ops
+        (0x30040000,  32, 0), # SRAM3.
+        (0x38000000,  64, 1), # SRAM4.
+    ],
+    'INSTRUCTION_RAM' : (0x00000400,  63), # ITCM (first 1k removed, to keep address 0 unused)
+    'FLASH_RAM' : 		(0x24020000, 384), # AXI SRAM used for process stack and ram functions
+    'DATA_RAM' :        (0x20010000,  64), # DTCM, tightly coupled, no DMA, fast
+
+	# avoid a problem in the bootloader by making DTCM first. The DCache init
+    # when using SRAM1 as primary memory gets a hard fault in bootloader
+    # we can't use DTCM first for main firmware as some builds overflow the first segment
+    'RAM_MAP_BOOTLOADER' : [
+        (0x20000000, 128, 2), # DTCM, tightly coupled, no DMA, fast
+        (0x30000000, 256, 0), # SRAM1, SRAM2
+        (0x24000000, 512, 4), # AXI SRAM. Use this for SDMMC IDMA ops
+        (0x00000400,  63, 2), # ITCM (first 1k removed, to keep address 0 unused)
+        (0x30040000,  32, 0), # SRAM3.
+        (0x38000000,  64, 1), # SRAM4.
+    ],
 
     'EXPECTED_CLOCK' : 400000000,
 
     # this MCU has M7 instructions and hardware double precision
     'CORTEX'    : 'cortex-m7',
     'CPU_FLAGS' : '-mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard',
+
+    'DEFINES' : {
+        'HAL_HAVE_HARDWARE_DOUBLE' : '1',
+        'STM32H7' : '1',
+    }
 }
 
 pincount = {

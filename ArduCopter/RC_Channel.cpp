@@ -102,6 +102,7 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const AuxS
     case AUX_FUNC::TURTLE:
     case AUX_FUNC::SIMPLE_HEADING_RESET:
     case AUX_FUNC::ARMDISARM_AIRMODE:
+    case AUX_FUNC::TURBINE_START:
         break;
     case AUX_FUNC::ACRO_TRAINER:
     case AUX_FUNC::ATTCON_ACCEL_LIM:
@@ -118,6 +119,9 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const AuxS
     case AUX_FUNC::SURFACE_TRACKING:
     case AUX_FUNC::WINCH_ENABLE:
     case AUX_FUNC::AIRMODE:
+    case AUX_FUNC::FORCEFLYING:
+    case AUX_FUNC::CUSTOM_CONTROLLER:
+    case AUX_FUNC::WEATHER_VANE_ENABLE:
         run_aux_function(ch_option, ch_flag, AuxFuncTriggerSource::INIT);
         break;
     default:
@@ -266,15 +270,15 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
 #if MODE_ACRO_ENABLED == ENABLED
             switch(ch_flag) {
                 case AuxSwitchPos::LOW:
-                    copter.g.acro_trainer = (uint8_t)ModeAcro::Trainer::OFF;
+                    copter.g.acro_trainer.set((uint8_t)ModeAcro::Trainer::OFF);
                     AP::logger().Write_Event(LogEvent::ACRO_TRAINER_OFF);
                     break;
                 case AuxSwitchPos::MIDDLE:
-                    copter.g.acro_trainer = (uint8_t)ModeAcro::Trainer::LEVELING;
+                    copter.g.acro_trainer.set((uint8_t)ModeAcro::Trainer::LEVELING);
                     AP::logger().Write_Event(LogEvent::ACRO_TRAINER_LEVELING);
                     break;
                 case AuxSwitchPos::HIGH:
-                    copter.g.acro_trainer = (uint8_t)ModeAcro::Trainer::LIMITED;
+                    copter.g.acro_trainer.set((uint8_t)ModeAcro::Trainer::LIMITED);
                     AP::logger().Write_Event(LogEvent::ACRO_TRAINER_LIMITED);
                     break;
             }
@@ -324,11 +328,9 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             switch (ch_flag) {
                 case AuxSwitchPos::LOW:
                     copter.parachute.enabled(false);
-                    AP::logger().Write_Event(LogEvent::PARACHUTE_DISABLED);
                     break;
                 case AuxSwitchPos::MIDDLE:
                     copter.parachute.enabled(true);
-                    AP::logger().Write_Event(LogEvent::PARACHUTE_ENABLED);
                     break;
                 case AuxSwitchPos::HIGH:
                     copter.parachute.enabled(true);
@@ -359,7 +361,23 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             copter.ap.motor_interlock_switch = (ch_flag == AuxSwitchPos::HIGH || ch_flag == AuxSwitchPos::MIDDLE);
 #endif
             break;
-
+			
+        case AUX_FUNC::TURBINE_START:
+#if FRAME_CONFIG == HELI_FRAME     
+           switch (ch_flag) {
+                case AuxSwitchPos::HIGH:
+                    copter.motors->set_turb_start(true);
+                    break;
+                case AuxSwitchPos::MIDDLE:
+                    // nothing
+                    break;
+                case AuxSwitchPos::LOW:
+                    copter.motors->set_turb_start(false);
+                    break;
+           }
+#endif
+           break;
+		 
         case AUX_FUNC::BRAKE:
 #if MODE_BRAKE_ENABLED == ENABLED
             do_aux_function_change_mode(Mode::Number::BRAKE, ch_flag);
@@ -496,7 +514,7 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             break;
 
         case AUX_FUNC::FLOWHOLD:
-#if AP_OPTICALFLOW_ENABLED
+#if MODE_FLOWHOLD_ENABLED
             do_aux_function_change_mode(Mode::Number::FLOWHOLD, ch_flag);
 #endif
             break;
@@ -565,6 +583,10 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
 #endif
             break;
 
+        case AUX_FUNC::FORCEFLYING:
+            do_aux_function_change_force_flying(ch_flag);
+            break;
+
         case AUX_FUNC::AUTO_RTL:
 #if MODE_AUTO_ENABLED == ENABLED
             do_aux_function_change_mode(Mode::Number::AUTO_RTL, ch_flag);
@@ -591,6 +613,28 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             }
             break;
 
+#if AC_CUSTOMCONTROL_MULTI_ENABLED == ENABLED
+        case AUX_FUNC::CUSTOM_CONTROLLER:
+            copter.custom_control.set_custom_controller(ch_flag == AuxSwitchPos::HIGH);
+            break;
+#endif
+
+#if WEATHERVANE_ENABLED == ENABLED
+    case AUX_FUNC::WEATHER_VANE_ENABLE: {
+        switch (ch_flag) {
+            case AuxSwitchPos::HIGH:
+                copter.g2.weathervane.allow_weathervaning(true);
+                break;
+            case AuxSwitchPos::MIDDLE:
+                break;
+            case AuxSwitchPos::LOW:
+                copter.g2.weathervane.allow_weathervaning(false);
+                break;
+        }
+        break;
+    }
+#endif
+
     default:
         return RC_Channel::do_aux_function(ch_option, ch_flag);
     }
@@ -608,6 +652,21 @@ void RC_Channel_Copter::do_aux_function_change_air_mode(const AuxSwitchPos ch_fl
         break;
     case AuxSwitchPos::LOW:
         copter.air_mode = AirMode::AIRMODE_DISABLED;
+        break;
+    }
+}
+
+// change force flying status
+void RC_Channel_Copter::do_aux_function_change_force_flying(const AuxSwitchPos ch_flag)
+{
+    switch (ch_flag) {
+    case AuxSwitchPos::HIGH:
+        copter.force_flying = true;
+        break;
+    case AuxSwitchPos::MIDDLE:
+        break;
+    case AuxSwitchPos::LOW:
+        copter.force_flying = false;
         break;
     }
 }

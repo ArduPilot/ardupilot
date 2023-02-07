@@ -1,4 +1,3 @@
-#include "mode.h"
 #include "Rover.h"
 
 bool ModeSmartRTL::_enter()
@@ -14,16 +13,12 @@ bool ModeSmartRTL::_enter()
         return false;
     }
 
+    // initialise waypoint navigation library
+    g2.wp_nav.init(MAX(0, g2.rtl_speed));
+
     // set desired location to reasonable stopping point
     if (!g2.wp_nav.set_desired_location_to_stopping_location()) {
         return false;
-    }
-
-    // initialise waypoint speed
-    if (is_positive(g2.rtl_speed)) {
-        g2.wp_nav.set_desired_speed(g2.rtl_speed);
-    } else {
-        g2.wp_nav.set_desired_speed_to_default();
     }
 
     // init state
@@ -49,20 +44,33 @@ void ModeSmartRTL::update()
         case SmartRTL_PathFollow:
             // load point if required
             if (_load_point) {
-                Vector3f next_point;
-                if (!g2.smart_rtl.pop_point(next_point)) {
+                Vector3f dest_NED;
+                if (!g2.smart_rtl.pop_point(dest_NED)) {
                     // if not more points, we have reached home
                     gcs().send_text(MAV_SEVERITY_INFO, "Reached destination");
                     smart_rtl_state = SmartRTL_StopAtHome;
                     break;
+                } else {
+                    // peek at the next point.  this can fail if the IO task currently has the path semaphore
+                    Vector3f next_dest_NED;
+                    if (g2.smart_rtl.peek_point(next_dest_NED)) {
+                        if (!g2.wp_nav.set_desired_location_NED(dest_NED, next_dest_NED)) {
+                            // this should never happen because the EKF origin should already be set
+                            gcs().send_text(MAV_SEVERITY_INFO, "SmartRTL: failed to set destination");
+                            smart_rtl_state = SmartRTL_Failure;
+                            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                        }
+                    } else {
+                        // no next point so add only immediate point
+                        if (!g2.wp_nav.set_desired_location_NED(dest_NED)) {
+                            // this should never happen because the EKF origin should already be set
+                            gcs().send_text(MAV_SEVERITY_INFO, "SmartRTL: failed to set destination");
+                            smart_rtl_state = SmartRTL_Failure;
+                            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                        }
+                    }
                 }
                 _load_point = false;
-                // set target destination to new point
-                if (!g2.wp_nav.set_desired_location_NED(next_point)) {
-                    // this failure should never happen but we add it just in case
-                    gcs().send_text(MAV_SEVERITY_INFO, "SmartRTL: failed to set destination");
-                    smart_rtl_state = SmartRTL_Failure;
-                }
             }
             // update navigation controller
             navigate_to_waypoint();
@@ -118,11 +126,7 @@ bool ModeSmartRTL::get_desired_location(Location& destination) const
 // set desired speed in m/s
 bool ModeSmartRTL::set_desired_speed(float speed)
 {
-    if (is_negative(speed)) {
-        return false;
-    }
-    g2.wp_nav.set_desired_speed(speed);
-    return true;
+    return g2.wp_nav.set_speed_max(speed);
 }
 
 // save current position for use by the smart_rtl flight mode

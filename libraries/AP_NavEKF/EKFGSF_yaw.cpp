@@ -23,7 +23,6 @@
 
 #include "AP_NavEKF/EKFGSF_yaw.h"
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
 
 EKFGSF_yaw::EKFGSF_yaw() {};
@@ -93,7 +92,7 @@ void EKFGSF_yaw::update(const Vector3F &delAng,
     }
 
     // Always run the AHRS prediction cycle for each model
-    for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
+    for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx++) {
         predict(mdl_idx);
     }
 
@@ -105,7 +104,7 @@ void EKFGSF_yaw::update(const Vector3F &delAng,
     // To avoid issues with angle wrapping, the yaw state is converted to a vector with legnth
     // equal to the weighting value before it is summed.
     Vector2F yaw_vector = {};
-    for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
+    for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx++) {
         yaw_vector[0] += GSF.weights[mdl_idx] * cosF(EKF[mdl_idx].X[2]);
         yaw_vector[1] += GSF.weights[mdl_idx] * sinF(EKF[mdl_idx].X[2]);
     }
@@ -114,7 +113,7 @@ void EKFGSF_yaw::update(const Vector3F &delAng,
     // Example for future reference showing how a full GSF covariance matrix could be calculated if required
     /*
     memset(&GSF.P, 0, sizeof(GSF.P));
-    for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
+    for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx++) {
         ftype delta[3];
         for (uint8_t row = 0; row < 3; row++) {
             delta[row] = EKF[mdl_idx].X[row] - GSF.X[row];
@@ -128,7 +127,7 @@ void EKFGSF_yaw::update(const Vector3F &delAng,
     */
 
     GSF.yaw_variance = 0.0f;
-    for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
+    for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx++) {
         ftype yawDelta = wrap_PI(EKF[mdl_idx].X[2] - GSF.yaw);
         GSF.yaw_variance +=  GSF.weights[mdl_idx] * (EKF[mdl_idx].P[2][2] + sq(yawDelta));
     }
@@ -144,7 +143,7 @@ void EKFGSF_yaw::fuseVelData(const Vector2F &vel, const ftype velAcc)
         if (!vel_fuse_running) {
             // Perform in-flight alignment
             resetEKFGSF();
-            for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
+            for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx++) {
                 // Use the firstGPS  measurement to set the velocities and corresponding variances
                 EKF[mdl_idx].X[0] = vel[0];
                 EKF[mdl_idx].X[1] = vel[1];
@@ -157,7 +156,7 @@ void EKFGSF_yaw::fuseVelData(const Vector2F &vel, const ftype velAcc)
             ftype total_w = 0.0f;
             ftype newWeight[(uint8_t)N_MODELS_EKFGSF];
             bool state_update_failed = false;
-            for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
+            for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx++) {
                 // Update states and covariances using GPS NE velocity measurements fused as direct state observations
                 if (!correct(mdl_idx, vel, velObsVar)) {
                     state_update_failed = true;
@@ -167,8 +166,8 @@ void EKFGSF_yaw::fuseVelData(const Vector2F &vel, const ftype velAcc)
             if (!state_update_failed) {
                 // Calculate weighting for each model assuming a normal error distribution
                 const ftype min_weight = 1e-5f;
-                uint8_t n_clips = 0;
-                for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
+                n_clips = 0;
+                for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx++) {
                     newWeight[mdl_idx] = gaussianDensity(mdl_idx) * GSF.weights[mdl_idx];
                     if (newWeight[mdl_idx] < min_weight) {
                         n_clips++;
@@ -181,7 +180,7 @@ void EKFGSF_yaw::fuseVelData(const Vector2F &vel, const ftype velAcc)
                 // Reset the filters if all weights have underflowed due to excessive innovation variances
                 if (vel_fuse_running && n_clips < N_MODELS_EKFGSF) {
                     ftype total_w_inv = 1.0f / total_w;
-                    for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
+                    for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx++) {
                         GSF.weights[mdl_idx]  = newWeight[mdl_idx] * total_w_inv;
                     }
                 } else {
@@ -226,8 +225,8 @@ void EKFGSF_yaw::predictAHRS(const uint8_t mdl_idx)
 
     // Gyro bias estimation
     const ftype gyro_bias_limit = radians(5.0f);
-    const ftype spinRate = ang_rate_delayed_raw.length();
-    if (spinRate < 0.175f) {
+    const ftype spinRate_squared = ang_rate_delayed_raw.length_squared();
+    if (spinRate_squared < sq(0.175f)) {
         AHRS[mdl_idx].gyro_bias -= tilt_error_gyro_correction * (EKFGSF_gyroBiasGain * angle_dt);
 
         for (uint8_t i = 0; i < 3; i++) {
@@ -625,13 +624,19 @@ Matrix3F EKFGSF_yaw::updateRotMat(const Matrix3F &R, const Vector3F &g) const
     return ret;
 }
 
-bool EKFGSF_yaw::getYawData(ftype &yaw, ftype &yawVariance) const
+// returns true if a yaw estimate is available.  yaw and its variance
+// is returned, as well as the number of models which are *not* being
+// used to snthesise the yaw.
+bool EKFGSF_yaw::getYawData(ftype &yaw, ftype &yawVariance, uint8_t *_n_clips) const
 {
     if (!vel_fuse_running) {
         return false;
     }
     yaw = GSF.yaw;
     yawVariance = GSF.yaw_variance;
+    if (_n_clips != nullptr) {
+        *_n_clips = n_clips;
+    }
     return true;
 }
 
@@ -641,7 +646,7 @@ bool EKFGSF_yaw::getVelInnovLength(ftype &velInnovLength) const
         return false;
     }
     velInnovLength = 0.0f;
-    for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx ++) {
+    for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx++) {
         velInnovLength += GSF.weights[mdl_idx] * sqrtF((sq(EKF[mdl_idx].innov[0]) + sq(EKF[mdl_idx].innov[1])));
     }
     return true;

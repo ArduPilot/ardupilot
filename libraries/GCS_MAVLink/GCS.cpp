@@ -7,8 +7,16 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Compass/AP_Compass.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Arming/AP_Arming.h>
+#include <AP_VisualOdom/AP_VisualOdom.h>
+#include <AP_Notify/AP_Notify.h>
+#include <AP_OpticalFlow/AP_OpticalFlow.h>
+
+#include "MissionItemProtocol_Waypoints.h"
+#include "MissionItemProtocol_Rally.h"
+#include "MissionItemProtocol_Fence.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -29,15 +37,7 @@ void GCS::get_sensor_status_flags(uint32_t &present,
     health = control_sensors_health;
 }
 
-MissionItemProtocol_Waypoints *GCS::_missionitemprotocol_waypoints;
-MissionItemProtocol_Rally *GCS::_missionitemprotocol_rally;
-MissionItemProtocol_Fence *GCS::_missionitemprotocol_fence;
-
-const MAV_MISSION_TYPE GCS_MAVLINK::supported_mission_types[] = {
-    MAV_MISSION_TYPE_MISSION,
-    MAV_MISSION_TYPE_RALLY,
-    MAV_MISSION_TYPE_FENCE,
-};
+MissionItemProtocol *GCS::missionitemprotocols[3];
 
 void GCS::init()
 {
@@ -113,6 +113,17 @@ void GCS::send_named_float(const char *name, float value) const
                                   (const char *)&packet);
 }
 
+#if HAL_HIGH_LATENCY2_ENABLED
+void GCS::enable_high_latency_connections(bool enabled)
+{
+    for (uint8_t i=0; i<num_gcs(); i++) {
+        GCS_MAVLINK &c = *chan(i);
+        c.high_latency_link_enabled = enabled && c.is_high_latency_link;
+    } 
+    gcs().send_text(MAV_SEVERITY_NOTICE, "High Latency %s", enabled ? "enabled" : "disabled");
+}
+#endif // HAL_HIGH_LATENCY2_ENABLED
+
 /*
   install an alternative protocol handler. This allows another
   protocol to take over the link if MAVLink goes idle. It is used to
@@ -120,15 +131,16 @@ void GCS::send_named_float(const char *name, float value) const
  */
 bool GCS::install_alternative_protocol(mavlink_channel_t c, GCS_MAVLINK::protocol_handler_fn_t handler)
 {
-    if (c >= num_gcs()) {
+    GCS_MAVLINK *link = chan(c);
+    if (link == nullptr) {
         return false;
     }
-    if (chan(c)->alternative.handler && handler) {
+    if (link->alternative.handler && handler) {
         // already have one installed - we may need to add support for
         // multiple alternative handlers
         return false;
     }
-    chan(c)->alternative.handler = handler;
+    link->alternative.handler = handler;
     return true;
 }
 
@@ -249,7 +261,7 @@ void GCS::update_sensor_status_flags()
     }
 #endif
 
-#if !defined(HAL_BUILD_AP_PERIPH)
+#if AP_FENCE_ENABLED
     const AC_Fence *fence = AP::fence();
     if (fence != nullptr) {
         if (fence->sys_status_enabled()) {
@@ -261,6 +273,33 @@ void GCS::update_sensor_status_flags()
         if (!fence->sys_status_failed()) {
             control_sensors_health |= MAV_SYS_STATUS_GEOFENCE;
         }
+    }
+#endif
+
+    // airspeed
+#if AP_AIRSPEED_ENABLED
+    const AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
+    if (airspeed && airspeed->enabled()) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
+        const bool use = airspeed->use();
+        const bool enabled = AP::ahrs().airspeed_sensor_enabled();
+        if (use) {
+            control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
+        }
+        if (airspeed->all_healthy() && (!use || enabled)) {
+            control_sensors_health |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
+        }
+    }
+#endif
+
+#if AP_OPTICALFLOW_ENABLED
+    const AP_OpticalFlow *optflow = AP::opticalflow();
+    if (optflow && optflow->enabled()) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
+    }
+    if (optflow && optflow->healthy()) {
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
     }
 #endif
 
@@ -314,7 +353,23 @@ bool GCS::out_of_time() const
     return true;
 }
 
-void gcs_out_of_space_to_send_count(mavlink_channel_t chan)
+void gcs_out_of_space_to_send(mavlink_channel_t chan)
 {
-    gcs().chan(chan)->out_of_space_to_send();
+    GCS_MAVLINK *link = gcs().chan(chan);
+    if (link == nullptr) {
+        return;
+    }
+    link->out_of_space_to_send();
+}
+
+/*
+  check there is enough space for a message
+ */
+bool GCS_MAVLINK::check_payload_size(uint16_t max_payload_len)
+{
+    if (txspace() < unsigned(packet_overhead()+max_payload_len)) {
+        gcs_out_of_space_to_send(chan);
+        return false;
+    }
+    return true;
 }

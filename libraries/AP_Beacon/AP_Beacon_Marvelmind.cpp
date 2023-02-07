@@ -18,9 +18,12 @@
  April 2017
  */
 
+#include "AP_Beacon_Marvelmind.h"
+
+#if AP_BEACON_MARVELMIND_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/crc.h>
-#include "AP_Beacon_Marvelmind.h"
 
 #define AP_BEACON_MARVELMIND_POSITION_DATAGRAM_ID 0x0001
 #define AP_BEACON_MARVELMIND_POSITIONS_DATAGRAM_ID 0x0002
@@ -386,3 +389,5 @@ void AP_Beacon_Marvelmind::order_stationary_beacons()
         } while(swapped);
     }
 }
+
+#endif  // AP_BEACON_MARVELMIND_ENABLED

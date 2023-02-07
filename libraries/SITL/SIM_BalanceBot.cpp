@@ -16,6 +16,8 @@
   Balance Bot simulator class
 */
 
+#define ALLOW_DOUBLE_MATH_FUNCTIONS
+
 #include "SIM_BalanceBot.h"
 #include <stdio.h>
 

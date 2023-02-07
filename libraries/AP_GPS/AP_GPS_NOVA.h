@@ -22,10 +22,6 @@
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 
-#ifndef AP_GPS_NOVA_ENABLED
-  #define AP_GPS_NOVA_ENABLED 1
-#endif
-
 #if AP_GPS_NOVA_ENABLED
 class AP_GPS_NOVA : public AP_GPS_Backend
 {
@@ -59,7 +55,7 @@ private:
     
     uint8_t _init_blob_index = 0;
     uint32_t _init_blob_time = 0;
-    static const char* const _initialisation_blob[6];
+    static const char* const _initialisation_blob[4];
    
     uint32_t crc_error_counter = 0;
 

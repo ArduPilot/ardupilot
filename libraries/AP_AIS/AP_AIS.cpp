@@ -19,9 +19,16 @@
 
 #include "AP_AIS.h"
 
-#if HAL_AIS_ENABLED
+#if AP_AIS_ENABLED
+
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
+#define AP_AIS_DUMMY_METHODS_ENABLED ((AP_AIS_ENABLED == 2) && !APM_BUILD_TYPE(APM_BUILD_Rover))
+
+#if !AP_AIS_DUMMY_METHODS_ENABLED
 
 #include <AP_Logger/AP_Logger.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -63,7 +70,18 @@ const AP_Param::GroupInfo AP_AIS::var_info[] = {
 // constructor
 AP_AIS::AP_AIS()
 {
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AIS must be singleton");
+    }
+    _singleton = this;
+
     AP_Param::setup_object_defaults(this, var_info);
+}
+
+// return true if AIS is enabled
+bool AP_AIS::enabled() const
+{ 
+    return AISType(_type.get()) != AISType::NONE;
 }
 
 // Initialize the AIS object and prepare it for use
@@ -291,12 +309,12 @@ bool AP_AIS::get_vessel_index(uint32_t mmsi, uint16_t &index, uint32_t lat, uint
         return false;
     }
 
-    struct Location current_loc;
-    if (!AP::ahrs().get_position(current_loc)) {
+    Location current_loc;
+    if (!AP::ahrs().get_location(current_loc)) {
         return false;
     }
 
-    struct Location loc;
+    Location loc;
     float dist;
     float max_dist = 0;
     for (uint16_t i = 0; i < list_size; i++) {
@@ -804,4 +822,30 @@ bool AP_AIS::decode_latest_term()
     return false;
 }
 
-#endif  // HAL_AIS_ENABLED
+// get singleton instance
+AP_AIS *AP_AIS::get_singleton() {
+    return _singleton;
+}
+
+#else
+// Dummy methods are required to allow functionality to be enabled for Rover.
+// It is not posible to compile in or out the full code based on vehicle type due to limitations
+// of the handling of `APM_BUILD_TYPE` define.
+// These dummy methods minimise flash cost in that case.
+
+const AP_Param::GroupInfo AP_AIS::var_info[] = { AP_GROUPEND };
+AP_AIS::AP_AIS() {};
+
+bool AP_AIS::enabled() const { return false; }
+
+void AP_AIS::init() {};
+void AP_AIS::update() {};
+void AP_AIS::send(mavlink_channel_t chan) {};
+
+AP_AIS *AP_AIS::get_singleton() { return nullptr; }
+
+#endif // AP_AIS_DUMMY_METHODS_ENABLED
+
+AP_AIS *AP_AIS::_singleton;
+
+#endif  // AP_AIS_ENABLED

@@ -15,6 +15,8 @@
 
 #include "AP_RangeFinder_LightWareSerial.h"
 
+#if AP_RANGEFINDER_LIGHTWARE_SERIAL_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
 
@@ -149,3 +151,5 @@ bool AP_RangeFinder_LightWareSerial::is_lost_signal_distance(int16_t distance_cm
     }
     return false;
 }
+
+#endif

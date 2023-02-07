@@ -12,7 +12,7 @@ function update ()
     location = Location() location:lat(-353632640) location:lng(1491652352) location:alt(58409)
     
     if ahrs:set_origin(location) then
-        gcs:send_text(0, string.format("Origin Set - Lat:%.7f Long:%.7f Alt:%.1f", location:lat()/10000000, location:lng()/10000000, location:alt()/100))
+        gcs:send_text(6, string.format("Origin Set - Lat:%.7f Long:%.7f Alt:%.1f", location:lat()/10000000, location:lng()/10000000, location:alt()/100))
     else
         gcs:send_text(0, "Refused to set EKF origin")
     end

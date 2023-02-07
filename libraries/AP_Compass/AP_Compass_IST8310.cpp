@@ -229,19 +229,6 @@ void AP_Compass_IST8310::timer()
     /* Resolution: 0.3 µT/LSB - already convert to milligauss */
     Vector3f field = Vector3f{x * 3.0f, y * 3.0f, z * 3.0f};
 
-#ifdef HAL_IST8310_I2C_HEATER_OFFSET
-    /*
-      the internal IST8310 can be impacted by the magnetic field from
-      a heater. We use the heater duty cycle to correct for the error
-     */
-    if (!is_external(_instance) && AP_HAL::Device::devid_get_bus_type(_dev->get_bus_id()) == AP_HAL::Device::BUS_TYPE_I2C) {
-        const auto *bc = AP::boardConfig();
-        if (bc) {
-            field += HAL_IST8310_I2C_HEATER_OFFSET * bc->get_heater_duty_cycle() * 0.01;
-        }
-    }
-#endif
-    
     accumulate_sample(field, _instance);
 }
 

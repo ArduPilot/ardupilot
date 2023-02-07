@@ -33,6 +33,8 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 
+#include <AP_EFI/AP_EFI_Currawong_ECU.h>
+
 #include <stdio.h>
 
 // Protocol files for the Velocity ESC
@@ -42,6 +44,10 @@
 // Protocol files for the CBS servo
 #include <AP_PiccoloCAN/piccolo_protocol/ServoProtocol.h>
 #include <AP_PiccoloCAN/piccolo_protocol/ServoPackets.h>
+
+// Protocol files for the ECU
+#include <AP_PiccoloCAN/piccolo_protocol/ECUProtocol.h>
+#include <AP_PiccoloCAN/piccolo_protocol/ECUPackets.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -57,7 +63,7 @@ const AP_Param::GroupInfo AP_PiccoloCAN::var_info[] = {
     // @Param: ESC_BM
     // @DisplayName: ESC channels
     // @Description: Bitmask defining which ESC (motor) channels are to be transmitted over Piccolo CAN
-    // @Bitmask: 0: ESC 1, 1: ESC 2, 2: ESC 3, 3: ESC 4, 4: ESC 5, 5: ESC 6, 6: ESC 7, 7: ESC 8, 8: ESC 9, 9: ESC 10, 10: ESC 11, 11: ESC 12, 12: ESC 13, 13: ESC 14, 14: ESC 15, 15: ESC 16
+    // @Bitmask: 0: ESC 1, 1: ESC 2, 2: ESC 3, 3: ESC 4, 4: ESC 5, 5: ESC 6, 6: ESC 7, 7: ESC 8, 8: ESC 9, 9: ESC 10, 10: ESC 11, 11: ESC 12, 12: ESC 13, 13: ESC 14, 14: ESC 15, 15: ESC 16, 16: ESC 17, 17: ESC 18, 18: ESC 19, 19: ESC 20, 20: ESC 21, 21: ESC 22, 22: ESC 23, 23: ESC 24, 24: ESC 25, 25: ESC 26, 26: ESC 27, 27: ESC 28, 28: ESC 29, 29: ESC 30, 30: ESC 31, 31: ESC 32
     // @User: Advanced
     AP_GROUPINFO("ESC_BM", 1, AP_PiccoloCAN, _esc_bm, 0xFFFF),
 
@@ -83,7 +89,22 @@ const AP_Param::GroupInfo AP_PiccoloCAN::var_info[] = {
     // @User: Advanced
     // @Range: 1 500
     AP_GROUPINFO("SRV_RT", 4, AP_PiccoloCAN, _srv_hz, PICCOLO_MSG_RATE_HZ_DEFAULT),
+#if HAL_EFI_CURRAWONG_ECU_ENABLED
+    // @Param: ECU_ID
+    // @DisplayName: ECU Node ID
+    // @Description: Node ID to send ECU throttle messages to. Set to zero to disable ECU throttle messages. Set to 255 to broadcast to all ECUs.
+    // @Range: 0 255
+    // @User: Advanced
+    AP_GROUPINFO("ECU_ID", 5, AP_PiccoloCAN, _ecu_id, PICCOLO_CAN_ECU_ID_DEFAULT),
 
+    // @Param: ECU_RT
+    // @DisplayName: ECU command output rate
+    // @Description: Output rate of ECU command messages
+    // @Units: Hz
+    // @User: Advanced
+    // @Range: 1 500
+    AP_GROUPINFO("ECU_RT", 6, AP_PiccoloCAN, _ecu_hz, PICCOLO_MSG_RATE_HZ_DEFAULT),
+#endif
     AP_GROUPEND
 };
 
@@ -161,6 +182,9 @@ void AP_PiccoloCAN::loop()
 
     uint16_t esc_tx_counter = 0;
     uint16_t servo_tx_counter = 0;
+#if HAL_EFI_CURRAWONG_ECU_ENABLED
+    uint16_t ecu_tx_counter = 0;
+#endif
 
     // CAN Frame ID components
     uint8_t frame_id_group;     // Piccolo message group
@@ -175,15 +199,19 @@ void AP_PiccoloCAN::loop()
         }
 
         // Calculate the output rate for ESC commands
-        _esc_hz = constrain_int16(_esc_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX);
+        _esc_hz.set(constrain_int16(_esc_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX));
 
         uint16_t escCmdRateMs = 1000 / _esc_hz;
 
         // Calculate the output rate for servo commands
-        _srv_hz = constrain_int16(_srv_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX);
+        _srv_hz.set(constrain_int16(_srv_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX));
 
         uint16_t servoCmdRateMs = 1000 / _srv_hz;
+#if HAL_EFI_CURRAWONG_ECU_ENABLED
+        _ecu_hz.set(constrain_int16(_ecu_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX));
 
+        uint16_t ecuCmdRateMs = 1000 / _ecu_hz;
+#endif
         uint64_t timeout = AP_HAL::micros64() + 250ULL;
 
         // 1ms loop delay
@@ -200,6 +228,14 @@ void AP_PiccoloCAN::loop()
             servo_tx_counter = 0;
             send_servo_messages();
         }
+
+#if HAL_EFI_CURRAWONG_ECU_ENABLED
+        // Transmit ecu throttle commands at regular intervals
+        if (ecu_tx_counter++ > ecuCmdRateMs) {
+            ecu_tx_counter = 0;
+            send_ecu_messages();
+        }
+#endif
 
         // Look for any message responses on the CAN bus
         while (read_frame(rxFrame, timeout)) {
@@ -233,6 +269,13 @@ void AP_PiccoloCAN::loop()
                     break;
                 }
 
+                break;
+            case MessageGroup::ECU_OUT:
+            #if HAL_EFI_CURRAWONG_ECU_ENABLED
+                if (handle_ecu_message(rxFrame)) {
+                    // Returns true if the message was successfully decoded
+                }
+            #endif
                 break;
             default:
                 break;
@@ -321,6 +364,13 @@ void AP_PiccoloCAN::update()
         }
     }
 
+#if HAL_EFI_CURRAWONG_ECU_ENABLED
+    if (_ecu_id != 0) {
+        _ecu_info.command = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
+        _ecu_info.newCommand = true;
+    }
+#endif // HAL_EFI_CURRAWONG_ECU_ENABLED
+
     AP_Logger *logger = AP_Logger::get_singleton();
 
     // Push received telemetry data into the logging system
@@ -337,7 +387,7 @@ void AP_PiccoloCAN::update()
                     timestamp,
                     ii,
                     (float) servo.statusA.position,         // Servo position (represented in microsecond units)
-                    (float) servo.statusB.current / 100.0f, // Servo force (actually servo current, 0.01A per bit)
+                    (float) servo.statusB.current * 0.01f, // Servo force (actually servo current, 0.01A per bit)
                     (float) servo.statusB.speed,            // Servo speed (degrees per second)
                     (uint8_t) abs(servo.statusB.dutyCycle)  // Servo duty cycle (absolute value as it can be +/- 100%)
                 );
@@ -736,6 +786,39 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
     return result;
 }
 
+#if HAL_EFI_CURRAWONG_ECU_ENABLED
+void AP_PiccoloCAN::send_ecu_messages(void)
+{
+    AP_HAL::CANFrame txFrame {};
+
+    const uint64_t timeout = AP_HAL::micros64() + 1000ULL;
+
+    // No ECU node id set, don't send anything
+    if (_ecu_id == 0) {
+        return;
+    }
+
+    if (_ecu_info.newCommand) {
+        encodeECU_ThrottleCommandPacket(&txFrame, _ecu_info.command);
+        txFrame.id |= (uint8_t) _ecu_id;
+
+        _ecu_info.newCommand = false;
+
+        write_frame(txFrame, timeout);
+    }
+}
+
+bool AP_PiccoloCAN::handle_ecu_message(AP_HAL::CANFrame &frame)
+{
+    // Get the ecu instance
+    AP_EFI_Currawong_ECU* ecu = AP_EFI_Currawong_ECU::get_instance();
+    if (ecu != nullptr) {
+        return ecu->handle_message(frame);
+    }
+    return false;
+}
+#endif // HAL_EFI_CURRAWONG_ECU_ENABLED
+
 /**
  * Check if a given servo channel is "active" (has been configured for Piccolo control output)
  */
@@ -749,7 +832,7 @@ bool AP_PiccoloCAN::is_servo_channel_active(uint8_t chan)
     SRV_Channel::Aux_servo_function_t function = SRV_Channels::channel_function(chan);
 
     // Ignore if the servo channel does not have a function assigned
-    if (function == SRV_Channel::k_none) {
+    if (function <= SRV_Channel::k_none) {
         return false;
     }
 
@@ -1052,6 +1135,73 @@ int getServoPacketSize(const void* pkt)
 
 //! \return the ID of a packet from the packet header
 uint32_t getServoPacketID(const void* pkt)
+{
+    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
+
+    // Extract the message ID field from the 29-bit ID
+    return (uint32_t) ((frame->id >> 16) & 0xFF);
+}
+
+/* Piccolo Glue Logic
+ * The following functions are required by the auto-generated protogen code.
+ */
+
+
+//! \return the packet data pointer from the packet
+uint8_t* getECUPacketData(void* pkt)
+{
+    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
+
+    return (uint8_t*) frame->data;
+}
+
+//! \return the packet data pointer from the packet, const
+const uint8_t* getECUPacketDataConst(const void* pkt)
+{
+    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
+
+    return (const uint8_t*) frame->data;
+}
+
+//! Complete a packet after the data have been encoded
+void finishECUPacket(void* pkt, int size, uint32_t packetID)
+{
+    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
+
+    if (size > AP_HAL::CANFrame::MaxDataLen) {
+        size = AP_HAL::CANFrame::MaxDataLen;
+    }
+
+    frame->dlc = size;
+
+    /* Encode the CAN ID
+     * 0x09mmdddd
+     * - 07 = ECU_IN (to and ECU) group ID
+     * - mm = Message ID
+     * - dd = Device ID
+     *
+     * Note: The Device ID (lower 16 bits of the frame ID) will have to be inserted later
+     */
+
+    uint32_t id = (((uint8_t) AP_PiccoloCAN::MessageGroup::ECU_IN) << 24) |       // CAN Group ID
+                  ((packetID & 0xFF) << 16);                                       // Message ID
+
+    // Extended frame format
+    id |= AP_HAL::CANFrame::FlagEFF;
+
+    frame->id = id;
+}
+
+//! \return the size of a packet from the packet header
+int getECUPacketSize(const void* pkt)
+{
+    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
+
+    return (int) frame->dlc;
+}
+
+//! \return the ID of a packet from the packet header
+uint32_t getECUPacketID(const void* pkt)
 {
     AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
 

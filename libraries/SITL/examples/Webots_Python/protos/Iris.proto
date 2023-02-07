@@ -1,0 +1,161 @@
+# VRML_SIM R2022b utf8
+# Iris drone model. Note that the model is not 1-to-1 with the 
+# real drone as motor/propeller constants were empirically determined.
+
+PROTO Iris [
+  field  SFVec3f     translation     0 0 0
+  field  SFRotation  rotation        0 0 1 0
+  field  SFString    name            "Iris"  # Is `Robot.name`.
+  field  SFString    controller      "void"  # Is `Robot.controller`.
+  field  MFString    controllerArgs  []      # Is `Robot.controllerArgs`.
+  field  SFString    customData      ""      # Is `Robot.customData`.
+  field  SFBool      supervisor      FALSE   # Is `Robot.supervisor`.
+  field  SFBool      synchronization TRUE    # Is `Robot.synchronization`.
+  field  MFNode      extensionSlot   []      # Extends the robot with new nodes in the extension slot.
+]
+{
+  Robot {
+    translation IS translation
+    rotation IS rotation
+    controller IS controller
+    controllerArgs IS controllerArgs
+    customData IS customData
+    supervisor IS supervisor
+    synchronization IS synchronization
+    name IS name
+    children [
+      Group {
+        children IS extensionSlot
+      }
+      DEF IRIS_MESH Shape {
+        appearance PBRAppearance {
+          baseColor 0.05 0.05 0.05
+          roughness 1.000000
+          metalness 0.2
+        }
+        geometry Mesh {
+          url "meshes/iris.dae"
+        }
+        castShadows FALSE
+      }
+      Propeller {
+        shaftAxis 0 0 1
+        centerOfThrust 0.130000 -0.220000 0.023000
+        thrustConstants 0.0012 0
+        torqueConstants 5.0e-04 0
+        device RotationalMotor {
+          name "m1_motor"
+          maxVelocity 100
+          maxTorque 30
+          multiplier 1
+        }
+        slowHelix Solid {
+          translation 0.130000 -0.220000 0.023000
+          children [
+            Shape {
+              appearance DEF PROP_BLUE PBRAppearance {
+                baseColor 0 0 0.75
+                metalness 0.3
+              }
+              geometry DEF CCW_PROP Mesh {
+                url [
+                  "meshes/iris_prop_ccw.dae"
+                ]
+              }
+            }
+          ]
+        }
+      }
+      Propeller {
+        shaftAxis 0 0 1
+        centerOfThrust -0.130000 0.200000 0.023000
+        thrustConstants 0.0012 0
+        torqueConstants 5.0e-04 0
+        device RotationalMotor {
+          name "m2_motor"
+          maxVelocity 100
+          maxTorque 30
+          multiplier 1
+        }
+        slowHelix Solid {
+          translation -0.130000 0.200000 0.023000
+          children [
+            Shape {
+              appearance DEF PROP_BLACK PBRAppearance {
+                baseColor 0 0 0
+                metalness 0.3
+              }
+              geometry USE CCW_PROP
+            }
+          ]
+        }
+      }
+      Propeller {
+        shaftAxis 0 0 1
+        centerOfThrust 00.130000 0.220000 0.023000
+        thrustConstants -0.0012 0
+        torqueConstants 5.0e-04 0
+        device RotationalMotor {
+          name "m3_motor"
+          maxVelocity 100
+          maxTorque 30
+          multiplier -1
+        }
+        slowHelix Solid {
+          translation 0.130000 0.220000 0.023000
+          children [
+            Shape {
+              appearance USE PROP_BLUE
+              geometry DEF CW_PROP Mesh {
+                url [
+                  "meshes/iris_prop_cw.dae"
+                ]
+              }
+            }
+          ]
+        }
+      }
+      Propeller {
+        shaftAxis 0 0 1
+        centerOfThrust -0.130000 -0.200000 0.023000
+        thrustConstants -0.0012 0
+        torqueConstants 5.0e-04 0
+        device RotationalMotor {
+          name "m4_motor"
+          maxVelocity 100
+          maxTorque 30
+          multiplier -1
+        }
+        slowHelix Solid {
+          translation -0.130000 -0.200000 0.023000
+          children [
+            Shape {
+              appearance USE PROP_BLACK
+              geometry USE CW_PROP
+            }
+          ]
+        }
+      }
+      Accelerometer {
+      }
+      GPS {
+      }
+      Gyro {
+      }
+      InertialUnit {
+      }
+    ]
+    boundingObject Box {
+       size 0.470000 0.470000 0.110000
+    }
+    physics Physics {
+      density -1
+      mass 1.500000
+      centerOfMass [ 0.000000 0.000000 0.000000 ]
+      inertiaMatrix [
+        2.912500e-02 2.912500e-02 5.522500e-02
+        0.000000e+00 0.000000e+00 0.000000e+00
+      ]
+    }
+  }
+}

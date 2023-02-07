@@ -27,6 +27,7 @@
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Common/ExpandingString.h>
+#include <AP_HAL/SIMState.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
@@ -70,8 +71,7 @@ const AP_Param::GroupInfo AP_Scheduler::var_info[] = {
 };
 
 // constructor
-AP_Scheduler::AP_Scheduler(scheduler_fastloop_fn_t fastloop_fn) :
-    _fastloop_fn(fastloop_fn)
+AP_Scheduler::AP_Scheduler()
 {
     if (_singleton) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -154,6 +154,7 @@ void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks, uint
 void AP_Scheduler::tick(void)
 {
     _tick_counter++;
+    _tick_counter32++;
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -212,33 +213,37 @@ void AP_Scheduler::run(uint32_t time_available)
             common_tasks_offset++;
         }
 
-        const uint16_t dt = _tick_counter - _last_run[i];
-        // we allow 0 to mean loop rate
-        uint32_t interval_ticks = (is_zero(task.rate_hz) ? 1 : _loop_rate_hz / task.rate_hz);
-        if (interval_ticks < 1) {
-            interval_ticks = 1;
-        }
-        if (dt < interval_ticks) {
-            // this task is not yet scheduled to run again
-            continue;
-        }
-        // this task is due to run. Do we have enough time to run it?
-        _task_time_allowed = task.max_time_micros;
+        if (task.priority > MAX_FAST_TASK_PRIORITIES) {
+            const uint16_t dt = _tick_counter - _last_run[i];
+            // we allow 0 to mean loop rate
+            uint32_t interval_ticks = (is_zero(task.rate_hz) ? 1 : _loop_rate_hz / task.rate_hz);
+            if (interval_ticks < 1) {
+                interval_ticks = 1;
+            }
+            if (dt < interval_ticks) {
+                // this task is not yet scheduled to run again
+                continue;
+            }
+            // this task is due to run. Do we have enough time to run it?
+            _task_time_allowed = task.max_time_micros;
 
-        if (dt >= interval_ticks*2) {
-            perf_info.task_slipped(i);
-        }
+            if (dt >= interval_ticks*2) {
+                perf_info.task_slipped(i);
+            }
 
-        if (dt >= interval_ticks*max_task_slowdown) {
-            // we are going beyond the maximum slowdown factor for a
-            // task. This will trigger increasing the time budget
-            task_not_achieved++;
-        }
+            if (dt >= interval_ticks*max_task_slowdown) {
+                // we are going beyond the maximum slowdown factor for a
+                // task. This will trigger increasing the time budget
+                task_not_achieved++;
+            }
 
-        if (_task_time_allowed > time_available) {
-            // not enough time to run this task.  Continue loop -
-            // maybe another task will fit into time remaining
-            continue;
+            if (_task_time_allowed > time_available) {
+                // not enough time to run this task.  Continue loop -
+                // maybe another task will fit into time remaining
+                continue;
+            }
+        } else {
+            _task_time_allowed = get_loop_period_us();
         }
 
         // run it
@@ -271,10 +276,19 @@ void AP_Scheduler::run(uint32_t time_available)
         perf_info.update_task_info(i, time_taken, overrun);
 
         if (time_taken >= time_available) {
+            /*
+              we are out of time, but we need to keep walking the task
+              table in case there is another fast loop task after this
+              task, plus we need to update the accouting so we can
+              work out if we need to allocate extra time for the loop
+              (lower the loop rate)
+              Just set time_available to zero, which means we will
+              only run fast tasks after this one
+             */
             time_available = 0;
-            break;
+        } else {
+            time_available -= time_taken;
         }
-        time_available -= time_taken;
     }
 
     // update number of spare microseconds
@@ -304,12 +318,16 @@ uint16_t AP_Scheduler::time_available_usec(void) const
  */
 float AP_Scheduler::load_average()
 {
+    // return 1 if filtered main loop rate is 5% below the configured rate
+    if (get_filtered_loop_rate_hz() < get_loop_rate_hz() * 0.95) {
+        return 1.0;
+    }
     if (_spare_ticks == 0) {
         return 0.0f;
     }
     const uint32_t loop_us = get_loop_period_us();
     const uint32_t used_time = loop_us - (_spare_micros/_spare_ticks);
-    return used_time / (float)loop_us;
+    return constrain_float(used_time / (float)loop_us, 0, 1);
 }
 
 void AP_Scheduler::loop()
@@ -328,14 +346,6 @@ void AP_Scheduler::loop()
         _last_loop_time_s = get_loop_period_s();
     } else {
         _last_loop_time_s = (sample_time_us - _loop_timer_start_us) * 1.0e-6;
-    }
-
-    // Execute the fast loop
-    // ---------------------
-    if (_fastloop_fn) {
-        hal.util->persistent_data.scheduler_task = -2;
-        _fastloop_fn();
-        hal.util->persistent_data.scheduler_task = -1;
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -368,8 +378,6 @@ void AP_Scheduler::loop()
 
     // add in extra loop time determined by not achieving scheduler tasks
     time_available += extra_loop_us;
-    // update the task info for the fast loop
-    perf_info.update_task_info(_num_tasks, loop_tick_us, loop_tick_us > loop_us);
 
     // run the tasks
     run(time_available);
@@ -400,6 +408,10 @@ void AP_Scheduler::loop()
     perf_info.check_loop_time(sample_time_us - _loop_timer_start_us);
         
     _loop_timer_start_us = sample_time_us;
+
+#if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
+    hal.simstate->update();
+#endif
 }
 
 void AP_Scheduler::update_logging()
@@ -428,6 +440,7 @@ void AP_Scheduler::Log_Write_Performance()
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
         time_us          : AP_HAL::micros64(),
+        loop_rate        : (uint16_t)(get_filtered_loop_rate_hz() + 0.5f),
         num_long_running : perf_info.get_num_long_running(),
         num_loops        : perf_info.get_num_loops(),
         max_time         : perf_info.get_max_time(),
@@ -448,11 +461,11 @@ void AP_Scheduler::Log_Write_Performance()
 void AP_Scheduler::task_info(ExpandingString &str)
 {
     // a header to allow for machine parsers to determine format
-    str.printf("TasksV1\n");
+    str.printf("TasksV2\n");
 
     // dynamically enable statistics collection
     if (!(_options & uint8_t(Options::RECORD_TASK_INFO))) {
-        _options |= uint8_t(Options::RECORD_TASK_INFO);
+        _options.set(_options | uint8_t(Options::RECORD_TASK_INFO));
         return;
     }
 
@@ -472,67 +485,41 @@ void AP_Scheduler::task_info(ExpandingString &str)
     uint8_t vehicle_tasks_offset = 0;
     uint8_t common_tasks_offset = 0;
 
-    for (uint8_t i = 0; i < _num_tasks + 1; i++) {
-        const AP::PerfInfo::TaskInfo* ti;
+    for (uint8_t i = 0; i < _num_tasks; i++) {
+        const AP::PerfInfo::TaskInfo* ti = perf_info.get_task_info(i);
         const char *task_name;
-        if (i == 0) {
-            // put the fast-loop entry at the top of the list - it's the last task in perf_info
-            ti = perf_info.get_task_info(_num_tasks);
-            task_name = "fast_loop";
-        } else {
-            ti = perf_info.get_task_info(i - 1);
 
-            // now find the task name:
-
-            // determine which of the common task / vehicle task to run
-            bool run_vehicle_task = false;
-            if (vehicle_tasks_offset < _num_vehicle_tasks &&
-                common_tasks_offset < _num_common_tasks) {
-                // still have entries on both lists; compare the
-                // priorities.  In case of a tie the vehicle-specific
-                // entry wins.
-                const Task &vehicle_task = _vehicle_tasks[vehicle_tasks_offset];
-                const Task &common_task = _common_tasks[common_tasks_offset];
-                if (vehicle_task.priority <= common_task.priority) {
-                    run_vehicle_task = true;
-                }
-            } else if (vehicle_tasks_offset < _num_vehicle_tasks) {
-                // out of common tasks to run
+        // determine which of the common task / vehicle task to run
+        bool run_vehicle_task = false;
+        if (vehicle_tasks_offset < _num_vehicle_tasks &&
+            common_tasks_offset < _num_common_tasks) {
+            // still have entries on both lists; compare the
+            // priorities.  In case of a tie the vehicle-specific
+            // entry wins.
+            const Task &vehicle_task = _vehicle_tasks[vehicle_tasks_offset];
+            const Task &common_task = _common_tasks[common_tasks_offset];
+            if (vehicle_task.priority <= common_task.priority) {
                 run_vehicle_task = true;
-            } else if (common_tasks_offset < _num_common_tasks) {
-                // out of vehicle tasks to run
-                run_vehicle_task = false;
-            } else {
-                // this is an error; the outside loop should have terminated
-                INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-                return;
             }
-
-            if (run_vehicle_task) {
-                task_name = _vehicle_tasks[vehicle_tasks_offset++].name;
-            } else {
-                task_name = _common_tasks[common_tasks_offset++].name;
-            }
-            // the loop counter i is adjusted here because we emit the
-            // fast-loop entry first but it appears last in the
-            // perf_info list
+        } else if (vehicle_tasks_offset < _num_vehicle_tasks) {
+            // out of common tasks to run
+            run_vehicle_task = true;
+        } else if (common_tasks_offset < _num_common_tasks) {
+            // out of vehicle tasks to run
+            run_vehicle_task = false;
+        } else {
+            // this is an error; the outside loop should have terminated
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            return;
         }
 
-        uint16_t avg = 0;
-        float pct = 0.0f;
-        if (ti != nullptr && ti->tick_count > 0) {
-            pct = ti->elapsed_time_us * 100.0f / total_time;
-            avg = MIN(uint16_t(ti->elapsed_time_us / ti->tick_count), 999);
+        if (run_vehicle_task) {
+            task_name = _vehicle_tasks[vehicle_tasks_offset++].name;
+        } else {
+            task_name = _common_tasks[common_tasks_offset++].name;
         }
 
-#if HAL_MINIMIZE_FEATURES
-        const char* fmt = "%-16.16s MIN=%3u MAX=%3u AVG=%3u OVR=%3u SLP=%3u, TOT=%4.1f%%\n";
-#else
-        const char* fmt = "%-32.32s MIN=%3u MAX=%3u AVG=%3u OVR=%3u SLP=%3u, TOT=%4.1f%%\n";
-#endif
-        str.printf(fmt, task_name,
-                   unsigned(MIN(ti->min_time_us, 999)), unsigned(MIN(ti->max_time_us, 999)), unsigned(avg),
-                   unsigned(MIN(ti->overrun_count, 999)), unsigned(MIN(ti->slip_count, 999)), pct);
+        ti->print(task_name, total_time, str);
     }
 }
 

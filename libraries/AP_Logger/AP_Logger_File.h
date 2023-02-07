@@ -100,6 +100,8 @@ private:
     bool file_exists(const char *filename) const;
     bool log_exists(const uint16_t lognum) const;
 
+    bool dirent_to_log_num(const dirent *de, uint16_t &log_num) const;
+
     // write buffer
     ByteBuffer _writebuf{0};
     const uint16_t _writebuf_chunk = HAL_LOGGER_WRITE_CHUNK_SIZE;

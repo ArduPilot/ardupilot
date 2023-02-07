@@ -39,8 +39,7 @@ public:
     AP_KDECAN();
     
     /* Do not allow copies */
-    AP_KDECAN(const AP_KDECAN &other) = delete;
-    AP_KDECAN &operator=(const AP_KDECAN&) = delete;
+    CLASS_NO_COPY(AP_KDECAN);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -72,7 +71,7 @@ private:
     AP_Int8 _num_poles;
 
     // ESC detected information
-    uint16_t _esc_present_bitmask;
+    uint32_t _esc_present_bitmask;
     uint8_t _esc_max_node_id;
 
     // enumeration

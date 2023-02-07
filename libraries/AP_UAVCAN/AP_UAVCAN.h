@@ -21,28 +21,19 @@
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
 
 #include <uavcan/uavcan.hpp>
-#include "AP_UAVCAN_DNA_Server.h"
 #include "AP_UAVCAN_IfaceMgr.h"
 #include "AP_UAVCAN_Clock.h"
-#include <AP_CANManager/AP_CANDriver.h>
+#include <AP_CANManager/AP_CANManager.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 #include <uavcan/protocol/param/GetSet.hpp>
 #include <uavcan/protocol/param/ExecuteOpcode.hpp>
-#include <uavcan/helpers/heap_based_pool_allocator.hpp>
+#include <SRV_Channel/SRV_Channel_config.h>
 
-
-#ifndef UAVCAN_NODE_POOL_SIZE
-#define UAVCAN_NODE_POOL_SIZE 8192
-#endif
-
-#ifndef UAVCAN_NODE_POOL_BLOCK_SIZE
-#define UAVCAN_NODE_POOL_BLOCK_SIZE 64
-#endif
 
 #ifndef UAVCAN_SRV_NUMBER
-#define UAVCAN_SRV_NUMBER 18
+#define UAVCAN_SRV_NUMBER NUM_SERVO_CHANNELS
 #endif
 
 #define AP_UAVCAN_SW_VERS_MAJOR 1
@@ -61,6 +52,8 @@ class ESCStatusCb;
 class DebugCb;
 class ParamGetSetCb;
 class ParamExecuteOpcodeCb;
+class AP_PoolAllocator;
+class AP_UAVCAN_DNA_Server;
 
 #if defined(__GNUC__) && (__GNUC__ > 8)
 #define DISABLE_W_CAST_FUNCTION_TYPE_PUSH \
@@ -105,6 +98,7 @@ class ParamExecuteOpcodeCb;
     }
 
 class AP_UAVCAN : public AP_CANDriver, public AP_ESC_Telem_Backend {
+    friend class AP_UAVCAN_DNA_Server;
 public:
     AP_UAVCAN();
     ~AP_UAVCAN();
@@ -113,10 +107,11 @@ public:
 
     // Return uavcan from @driver_index or nullptr if it's not ready or doesn't exist
     static AP_UAVCAN *get_uavcan(uint8_t driver_index);
+    bool prearm_check(char* fail_msg, uint8_t fail_msg_len) const;
 
     void init(uint8_t driver_index, bool enable_filters) override;
     bool add_interface(AP_HAL::CANIface* can_iface) override;
-    
+
     uavcan::Node<0>* get_node() { return _node; }
     uint8_t get_driver_index() const { return _driver_index; }
 
@@ -206,6 +201,9 @@ public:
     enum class Options : uint16_t {
         DNA_CLEAR_DATABASE        = (1U<<0),
         DNA_IGNORE_DUPLICATE_NODE = (1U<<1),
+        CANFD_ENABLED             = (1U<<2),
+        DNA_IGNORE_UNHEALTHY_NODE = (1U<<3),
+        USE_ACTUATOR_PWM          = (1U<<4),
     };
 
     // check if a option is set
@@ -217,11 +215,11 @@ public:
     // 0. return true if it was set
     bool check_and_reset_option(Options option);
 
-private:
     // This will be needed to implement if UAVCAN is used with multithreading
     // Such cases will be firmware update, etc.
     class RaiiSynchronizer {};
 
+private:
     void loop(void);
 
     ///// SRV output /////
@@ -249,6 +247,9 @@ private:
     // send parameter save request
     void send_parameter_save_request();
 
+    // periodic logging
+    void logging();
+    
     // set parameter on a node
     ParamGetSetIntCb *param_int_cb;
     ParamGetSetFloatCb *param_float_cb;
@@ -262,15 +263,18 @@ private:
     HAL_Semaphore _param_save_sem;
     uint8_t param_save_request_node_id;
 
-    uavcan::PoolAllocator<UAVCAN_NODE_POOL_SIZE, UAVCAN_NODE_POOL_BLOCK_SIZE, AP_UAVCAN::RaiiSynchronizer> _node_allocator;
-
     // UAVCAN parameters
     AP_Int8 _uavcan_node;
     AP_Int32 _servo_bm;
     AP_Int32 _esc_bm;
+    AP_Int8 _esc_offset;
     AP_Int16 _servo_rate_hz;
     AP_Int16 _options;
     AP_Int16 _notify_state_hz;
+    AP_Int16 _pool_size;
+
+    AP_PoolAllocator *_allocator;
+    AP_UAVCAN_DNA_Server *_dna_server;
 
     uavcan::Node<0> *_node;
 
@@ -286,9 +290,16 @@ private:
         bool servo_pending;
     } _SRV_conf[UAVCAN_SRV_NUMBER];
 
+    uint32_t _esc_send_count;
+    uint32_t _srv_send_count;
+    uint32_t _fail_send_count;
+
     uint8_t _SRV_armed;
     uint32_t _SRV_last_send_us;
     HAL_Semaphore SRV_sem;
+
+    // last log time
+    uint32_t last_log_ms;
 
     ///// LED /////
     struct led_device {

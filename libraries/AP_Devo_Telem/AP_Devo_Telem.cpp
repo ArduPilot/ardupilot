@@ -26,6 +26,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #include <GCS_MAVLink/GCS.h>
 
 #define DEVOM_SYNC_BYTE        0xAA
@@ -96,7 +97,7 @@ void AP_DEVO_Telem::send_frames()
     const AP_GPS &gps = AP::gps();
     Location loc;
 
-    if (_ahrs.get_position(loc)) {
+    if (_ahrs.get_location(loc)) {
         devoPacket.lat = gpsDdToDmsFormat(loc.lat);
         devoPacket.lon = gpsDdToDmsFormat(loc.lng);
         devoPacket.speed = (int16_t)(gps.ground_speed() * DEVO_SPEED_FACTOR * 100.0f);  // * 100 for cm

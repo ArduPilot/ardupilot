@@ -7,6 +7,7 @@ extern const AP_HAL::HAL& hal;
 #include <limits>
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #define AVOIDANCE_DEBUGGING 0
 
@@ -147,7 +148,7 @@ void AP_Avoidance::init(void)
 
         if (_obstacles == nullptr) {
             // dynamic RAM allocation of _obstacles[] failed, disable gracefully
-            hal.console->printf("Unable to initialize Avoidance obstacle list\n");
+            DEV_PRINTF("Unable to initialize Avoidance obstacle list\n");
             // disable ourselves to avoid repeated allocation attempts
             _enabled.set(0);
             return;
@@ -457,7 +458,7 @@ void AP_Avoidance::check_for_threats()
     const AP_AHRS &_ahrs = AP::ahrs();
 
     Location my_loc;
-    if (!_ahrs.get_position(my_loc)) {
+    if (!_ahrs.get_location(my_loc)) {
         // if we don't know our own location we can't determine any threat level
         return;
     }
@@ -542,7 +543,7 @@ void AP_Avoidance::handle_avoidance_local(AP_Avoidance::Obstacle *threat)
             action = (MAV_COLLISION_ACTION)_fail_action.get();
             Location my_loc;
             if (action != MAV_COLLISION_ACTION_NONE && _fail_altitude_minimum > 0 &&
-                AP::ahrs().get_position(my_loc) && ((my_loc.alt*0.01f) < _fail_altitude_minimum)) {
+                AP::ahrs().get_location(my_loc) && ((my_loc.alt*0.01f) < _fail_altitude_minimum)) {
                 // disable avoidance when close to ground, report only
                 action = MAV_COLLISION_ACTION_REPORT;
 			}
@@ -593,14 +594,17 @@ void AP_Avoidance::handle_msg(const mavlink_message_t &msg)
     // inform AP_Avoidance we have a new player
     mavlink_global_position_int_t packet;
     mavlink_msg_global_position_int_decode(&msg, &packet);
-    Location loc;
-    loc.lat = packet.lat;
-    loc.lng = packet.lon;
-    loc.alt = packet.alt / 10; // mm -> cm
-    loc.relative_alt = false;
-    Vector3f vel = Vector3f(packet.vx/100.0f, // cm to m
-                            packet.vy/100.0f,
-                            packet.vz/100.0f);
+    const Location loc {
+        packet.lat,
+        packet.lon,
+        int32_t(packet.alt * 0.1),  // mm -> cm
+        Location::AltFrame::ABSOLUTE
+    };
+    const Vector3f vel {
+        packet.vx * 0.01f, // cm to m
+        packet.vy * 0.01f,
+        packet.vz * 0.01f
+    };
     add_obstacle(AP_HAL::millis(),
                  MAV_COLLISION_SRC_MAVLINK_GPS_GLOBAL_INT,
                  msg.sysid,
@@ -617,7 +621,7 @@ bool AP_Avoidance::get_vector_perpendicular(const AP_Avoidance::Obstacle *obstac
     }
 
     Location my_abs_pos;
-    if (!AP::ahrs().get_position(my_abs_pos)) {
+    if (!AP::ahrs().get_location(my_abs_pos)) {
         // we should not get to here!  If we don't know our position
         // we can't know if there are any threats, for starters!
         return false;

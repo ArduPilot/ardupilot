@@ -5,17 +5,19 @@ bool ModeLand::init(bool ignore_checks)
 {
     // check if we have GPS and decide which LAND we're going to do
     control_position = copter.position_ok();
-    if (control_position) {
-        // set target to stopping point
-        Vector2f stopping_point;
-        loiter_nav->get_stopping_point_xy(stopping_point);
-        loiter_nav->init_target(stopping_point);
+
+    // set horizontal speed and acceleration limits
+    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+    pos_control->set_correction_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+
+    // initialise the horizontal position controller
+    if (control_position && !pos_control->is_active_xy()) {
+        pos_control->init_xy_controller();
     }
 
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
     pos_control->set_correction_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
-    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
 
     // initialise the vertical position controller
     if (!pos_control->is_active_z()) {
@@ -28,15 +30,18 @@ bool ModeLand::init(bool ignore_checks)
     // reset flag indicating if pilot has applied roll or pitch inputs during landing
     copter.ap.land_repo_active = false;
 
-    // initialise yaw
-    auto_yaw.set_mode(AUTO_YAW_HOLD);
+    // this will be set true if prec land is later active
+    copter.ap.prec_land_active = false;
 
-#if LANDING_GEAR_ENABLED == ENABLED
+    // initialise yaw
+    auto_yaw.set_mode(AutoYaw::Mode::HOLD);
+
+#if AP_LANDINGGEAR_ENABLED
     // optionally deploy landing gear
     copter.landinggear.deploy_for_landing();
 #endif
 
-#if AC_FENCE == ENABLED
+#if AP_FENCE_ENABLED
     // disable the fence on landing
     copter.fence.auto_disable_fence_for_landing();
 #endif
@@ -73,8 +78,6 @@ void ModeLand::gps_run()
     // Land State Machine Determination
     if (is_disarmed_or_landed()) {
         make_safe_ground_handling();
-        loiter_nav->clear_pilot_desired_acceleration();
-        loiter_nav->init_target();
     } else {
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
@@ -95,7 +98,6 @@ void ModeLand::gps_run()
 void ModeLand::nogps_run()
 {
     float target_roll = 0.0f, target_pitch = 0.0f;
-    float target_yaw_rate = 0;
 
     // process pilot inputs
     if (!copter.failsafe.radio) {
@@ -113,11 +115,6 @@ void ModeLand::nogps_run()
             get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max_cd());
         }
 
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
-        if (!is_zero(target_yaw_rate)) {
-            auto_yaw.set_mode(AUTO_YAW_HOLD);
-        }
     }
 
     // disarm when the landing detector says we've landed
@@ -141,7 +138,7 @@ void ModeLand::nogps_run()
     }
 
     // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, auto_yaw.get_heading().yaw_rate_cds);
 }
 
 // do_not_use_GPS - forces land-mode to not use the GPS but instead rely on pilot input for roll and pitch

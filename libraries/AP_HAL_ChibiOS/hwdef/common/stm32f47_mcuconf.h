@@ -92,8 +92,8 @@
 #define STM32_HSE_ENABLED                   FALSE
 #define STM32_HSI_ENABLED                   TRUE
 #define STM32_PLLSRC                        STM32_PLLSRC_HSI
-#define STM32_PLLM_VALUE                    8
-#define STM32_PLLN_VALUE                    216
+#define STM32_PLLM_VALUE                    16
+#define STM32_PLLN_VALUE                    432
 #define STM32_PLLP_VALUE                    2
 #define STM32_PLLQ_VALUE                    9
 #elif STM32_HSECLK == 8000000U
@@ -102,8 +102,8 @@
 #define STM32_PLLP_VALUE                    2
 #define STM32_PLLQ_VALUE                    9
 #elif STM32_HSECLK == 16000000U
-#define STM32_PLLM_VALUE                    8
-#define STM32_PLLN_VALUE                    216
+#define STM32_PLLM_VALUE                    16
+#define STM32_PLLN_VALUE                    432
 #define STM32_PLLP_VALUE                    2
 #define STM32_PLLQ_VALUE                    9
 #elif STM32_HSECLK == 24000000U
@@ -114,18 +114,80 @@
 #else
 #error "Unsupported F7 HSE clock"
 #endif
+#define STM32_PLLI2SQ_VALUE                 4
 #else // F4
-// F4 clock config
-#if STM32_HSECLK == 8000000U
+#if HAL_EXPECTED_SYSCLOCK == 100000000
+// low frequency variants of F4, such as F412
+#if STM32_HSECLK == 0U
+#undef STM32_HSE_ENABLED
+#undef STM32_HSI_ENABLED
+#undef STM32_PLLSRC
+#define STM32_HSE_ENABLED                   FALSE
+#define STM32_HSI_ENABLED                   TRUE
+#define STM32_PLLSRC                        STM32_PLLSRC_HSI
 #define STM32_PLLM_VALUE                    8
+#define STM32_PLLN_VALUE                    100
+#define STM32_PLLP_VALUE                    2
+#define STM32_PLLQ_VALUE                    2
+#define STM32_PLLI2SM_VALUE                 16
+#elif STM32_HSECLK == 8000000U
+#define STM32_PLLM_VALUE                    4
+#define STM32_PLLN_VALUE                    100
+#define STM32_PLLP_VALUE                    2
+#define STM32_PLLQ_VALUE                    2
+#define STM32_PLLI2SM_VALUE                 8
+#elif STM32_HSECLK == 16000000U
+#define STM32_PLLM_VALUE                    8
+#define STM32_PLLN_VALUE                    100
+#define STM32_PLLP_VALUE                    2
+#define STM32_PLLQ_VALUE                    2
+#define STM32_PLLI2SM_VALUE                 16
+#elif STM32_HSECLK == 24000000U
+#define STM32_PLLM_VALUE                    12
+#define STM32_PLLN_VALUE                    100
+#define STM32_PLLP_VALUE                    2
+#define STM32_PLLQ_VALUE                    2
+#define STM32_PLLI2SM_VALUE                 24
+#else
+#error "Unsupported F4 HSE clock"
+#endif
+
+// also setup 48MHz clock to allow for SDIO
+#define STM32_PLLI2SN_VALUE                 192
+#define STM32_PLLI2SP_VALUE                 2
+#define STM32_PLLI2SQ_VALUE                 4
+#define STM32_PLLI2SR_VALUE                 2
+#define STM32_PLLI2SSRC                     STM32_PLLI2SSRC_PLLSRC
+#define STM32_CK48MSEL                      STM32_CK48MSEL_PLLSAI
+
+#elif HAL_EXPECTED_SYSCLOCK == 168000000
+// medium frequency variants of F4, such as F405, F427
+#if STM32_HSECLK == 0U
+#undef STM32_HSE_ENABLED
+#undef STM32_HSI_ENABLED
+#undef STM32_PLLSRC
+#define STM32_HSE_ENABLED                   FALSE
+#define STM32_HSI_ENABLED                   TRUE
+#define STM32_PLLSRC                        STM32_PLLSRC_HSI
+#define STM32_PLLM_VALUE                    16
+#define STM32_PLLN_VALUE                    336
+#define STM32_PLLP_VALUE                    2
+#define STM32_PLLQ_VALUE                    7
+#elif STM32_HSECLK == 8000000U
+#define STM32_PLLM_VALUE                    8
+#define STM32_PLLN_VALUE                    336
+#define STM32_PLLP_VALUE                    2
+#define STM32_PLLQ_VALUE                    7
+#elif STM32_HSECLK == 12000000U
+#define STM32_PLLM_VALUE                    12
 #define STM32_PLLN_VALUE                    336
 #define STM32_PLLP_VALUE                    2
 #define STM32_PLLQ_VALUE                    7
 #elif STM32_HSECLK == 16000000U
 #define STM32_PLLM_VALUE                    16
-#define STM32_PLLN_VALUE                    384
-#define STM32_PLLP_VALUE                    4
-#define STM32_PLLQ_VALUE                    8
+#define STM32_PLLN_VALUE                    336
+#define STM32_PLLP_VALUE                    2
+#define STM32_PLLQ_VALUE                    7
 #elif STM32_HSECLK == 24000000U
 #define STM32_PLLM_VALUE                    24
 #define STM32_PLLN_VALUE                    336
@@ -134,6 +196,44 @@
 #else
 #error "Unsupported F4 HSE clock"
 #endif
+#elif HAL_EXPECTED_SYSCLOCK == 180000000
+// high frequency variants of F4, such as F469
+#if STM32_HSECLK == 0U
+#undef STM32_HSE_ENABLED
+#undef STM32_HSI_ENABLED
+#undef STM32_PLLSRC
+#define STM32_HSE_ENABLED                   FALSE
+#define STM32_HSI_ENABLED                   TRUE
+#define STM32_PLLSRC                        STM32_PLLSRC_HSI
+#define STM32_PLLM_VALUE                    16
+#define STM32_PLLN_VALUE                    360
+#define STM32_PLLP_VALUE                    2
+#define STM32_PLLQ_VALUE                    6
+#define STM32_CK48MSEL                      STM32_CK48MSEL_PLLALT
+#elif STM32_HSECLK == 8000000U
+#define STM32_PLLM_VALUE                    8
+#define STM32_PLLN_VALUE                    360
+#define STM32_PLLP_VALUE                    2
+#define STM32_PLLQ_VALUE                    6
+#define STM32_CK48MSEL                      STM32_CK48MSEL_PLLALT
+#elif STM32_HSECLK == 16000000U
+#define STM32_PLLM_VALUE                    16
+#define STM32_PLLN_VALUE                    360
+#define STM32_PLLP_VALUE                    2
+#define STM32_PLLQ_VALUE                    6
+#define STM32_CK48MSEL                      STM32_CK48MSEL_PLLALT
+#elif STM32_HSECLK == 24000000U
+#define STM32_PLLM_VALUE                    24
+#define STM32_PLLN_VALUE                    360
+#define STM32_PLLP_VALUE                    2
+#define STM32_PLLQ_VALUE                    6
+#define STM32_CK48MSEL                      STM32_CK48MSEL_PLLALT
+#else
+#error "Unsupported F4 HSE clock"
+#endif
+#else
+#error "Unsupported F4 EXPECTED_CLOCK"
+#endif // HAL_EXPECTED_SYSCLOCK
 #endif // MCU
 #endif // HAL_CUSTOM_CLOCK_TREE
 
@@ -153,8 +253,12 @@
 #define STM32_MCO2SEL                       STM32_MCO2SEL_SYSCLK
 #define STM32_MCO2PRE                       STM32_MCO2PRE_DIV5
 #define STM32_I2SSRC                        STM32_I2SSRC_CKIN
+#ifndef STM32_PLLI2SN_VALUE
 #define STM32_PLLI2SN_VALUE                 192
+#endif
+#ifndef STM32_PLLI2SR_VALUE
 #define STM32_PLLI2SR_VALUE                 5
+#endif
 #define STM32_PVD_ENABLE                    FALSE
 #define STM32_PLS                           STM32_PLS_LEV0
 #define STM32_BKPRAM_ENABLE                 FALSE
@@ -290,7 +394,7 @@
 #define STM32_I2C_I2C1_DMA_PRIORITY         3
 #define STM32_I2C_I2C2_DMA_PRIORITY         3
 #define STM32_I2C_I2C3_DMA_PRIORITY         3
-#define STM32_I2C_DMA_ERROR_HOOK(i2cp)      osalSysHalt("DMA failure")
+#define STM32_I2C_DMA_ERROR_HOOK(i2cp)      STM32_DMA_ERROR_HOOK(i2cp)
 
 /*
  * I2S driver system settings.
@@ -299,7 +403,7 @@
 #define STM32_I2S_SPI3_IRQ_PRIORITY         10
 #define STM32_I2S_SPI2_DMA_PRIORITY         1
 #define STM32_I2S_SPI3_DMA_PRIORITY         1
-#define STM32_I2S_DMA_ERROR_HOOK(i2sp)      osalSysHalt("DMA failure")
+#define STM32_I2S_DMA_ERROR_HOOK(i2sp)      STM32_DMA_ERROR_HOOK(i2sp)
 
 /*
  * ICU driver system settings.
@@ -386,7 +490,7 @@
 #define STM32_SPI_SPI2_IRQ_PRIORITY         10
 #define STM32_SPI_SPI3_IRQ_PRIORITY         10
 #define STM32_SPI_SPI4_IRQ_PRIORITY         10
-#define STM32_SPI_DMA_ERROR_HOOK(spip)      osalSysHalt("DMA failure")
+#define STM32_SPI_DMA_ERROR_HOOK(spip)      STM32_DMA_ERROR_HOOK(spip)
 
 /*
  * ST driver system settings.
@@ -424,7 +528,7 @@
 #define STM32_UART_UART4_DMA_PRIORITY       0
 #define STM32_UART_UART5_DMA_PRIORITY       0
 #define STM32_UART_USART6_DMA_PRIORITY      0
-#define STM32_UART_DMA_ERROR_HOOK(uartp)    osalSysHalt("DMA failure")
+#define STM32_UART_DMA_ERROR_HOOK(uartp)    STM32_DMA_ERROR_HOOK(uartp)
 
 #define STM32_IRQ_UART1_PRIORITY            12
 #define STM32_IRQ_UART2_PRIORITY            12

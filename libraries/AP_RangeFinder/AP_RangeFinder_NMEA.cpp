@@ -15,6 +15,8 @@
 
 #include "AP_RangeFinder_NMEA.h"
 
+#if AP_RANGEFINDER_NMEA_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
 
@@ -187,3 +189,5 @@ bool AP_RangeFinder_NMEA::decode_latest_term()
 
     return false;
 }
+
+#endif  // AP_RANGEFINDER_NMEA_ENABLED

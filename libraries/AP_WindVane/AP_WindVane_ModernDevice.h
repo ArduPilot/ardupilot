@@ -16,11 +16,6 @@
 
 #include "AP_WindVane_Backend.h"
 
-#include <GCS_MAVLink/GCS.h>
-#include <AP_HAL/AP_HAL.h>
-
-extern const AP_HAL::HAL& hal;
-
 class AP_WindVane_ModernDevice : public AP_WindVane_Backend
 {
 public:

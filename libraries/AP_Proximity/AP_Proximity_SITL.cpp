@@ -33,8 +33,9 @@ extern const AP_HAL::HAL& hal;
    The constructor also initialises the proximity sensor. 
 */
 AP_Proximity_SITL::AP_Proximity_SITL(AP_Proximity &_frontend,
-                                     AP_Proximity::Proximity_State &_state):
-    AP_Proximity_Backend(_frontend, _state),
+                                     AP_Proximity::Proximity_State &_state,
+                                     AP_Proximity_Params& _params):
+    AP_Proximity_Backend(_frontend, _state, _params),
     sitl(AP::sitl())
 {
     ap_var_type ptype;
@@ -51,6 +52,7 @@ void AP_Proximity_SITL::update(void)
     current_loc.lng = sitl->state.longitude * 1.0e7;
     current_loc.alt = sitl->state.altitude * 1.0e2;
 
+#if AP_FENCE_ENABLED
     if (!AP::fence()->polyfence().breached()) {
         // only called to prompt polyfence to reload fence if required
     }
@@ -59,24 +61,28 @@ void AP_Proximity_SITL::update(void)
         // update distance in each sector
         for (uint8_t sector=0; sector < PROXIMITY_NUM_SECTORS; sector++) {
             const float yaw_angle_deg = sector * 45.0f;
-            AP_Proximity_Boundary_3D::Face face = boundary.get_face(yaw_angle_deg);
+            AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(yaw_angle_deg);
             float fence_distance;
             if (get_distance_to_fence(yaw_angle_deg, fence_distance)) {
-                boundary.set_face_attributes(face, yaw_angle_deg, fence_distance);
+                frontend.boundary.set_face_attributes(face, yaw_angle_deg, fence_distance, state.instance);
                 // update OA database
                 database_push(yaw_angle_deg, fence_distance);
             } else {
-                boundary.reset_face(face);
+                frontend.boundary.reset_face(face, state.instance);
             }
         }
     } else {
         set_status(AP_Proximity::Status::NoData);
     }
+#else
+    set_status(AP_Proximity::Status::NoData);
+#endif
 }
 
 // get distance in meters to fence in a particular direction in degrees (0 is forward, angles increase in the clockwise direction)
 bool AP_Proximity_SITL::get_distance_to_fence(float angle_deg, float &distance) const
 {
+#if AP_FENCE_ENABLED
     if (!AP::fence()->polyfence().inclusion_boundary_available()) {
         return false;
     }
@@ -101,11 +107,14 @@ bool AP_Proximity_SITL::get_distance_to_fence(float angle_deg, float &distance) 
         }
     }
     distance = min_dist;
-    if (check_obstacle_near_ground(angle_deg, distance)) {
+    if (ignore_reading(angle_deg, distance, false)) {
         // obstacle near land, lets ignore it
         return false;
     }
     return true;
+#else
+    return false;
+#endif
 }
 
 // get maximum and minimum distances (in meters) of primary sensor

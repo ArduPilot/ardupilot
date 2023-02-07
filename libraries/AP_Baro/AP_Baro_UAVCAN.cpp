@@ -1,8 +1,6 @@
-#include <AP_HAL/AP_HAL.h>
-
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
-
 #include "AP_Baro_UAVCAN.h"
+
+#if AP_BARO_UAVCAN_ENABLED
 
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
@@ -18,7 +16,7 @@ extern const AP_HAL::HAL& hal;
 UC_REGISTRY_BINDER(PressureCb, uavcan::equipment::air_data::StaticPressure);
 UC_REGISTRY_BINDER(TemperatureCb, uavcan::equipment::air_data::StaticTemperature);
 
-AP_Baro_UAVCAN::DetectedModules AP_Baro_UAVCAN::_detected_modules[] = {0};
+AP_Baro_UAVCAN::DetectedModules AP_Baro_UAVCAN::_detected_modules[];
 HAL_Semaphore AP_Baro_UAVCAN::_sem_registry;
 
 /*
@@ -192,5 +190,4 @@ void AP_Baro_UAVCAN::update(void)
     }
 }
 
-#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
-
+#endif // AP_BARO_UAVCAN_ENABLED

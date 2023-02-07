@@ -18,7 +18,7 @@ public:
         FUNCTOR_BIND_MEMBER(&DummyVehicle::start_cmd, bool, const AP_Mission::Mission_Command &),
         FUNCTOR_BIND_MEMBER(&DummyVehicle::verify_cmd, bool, const AP_Mission::Mission_Command &),
         FUNCTOR_BIND_MEMBER(&DummyVehicle::mission_complete, void)};
-    AP_Terrain terrain{mission};
+    AP_Terrain terrain;
 };
 
 const struct AP_Param::GroupInfo        GCS_MAVLINK_Parameters::var_info[] = {
@@ -311,30 +311,37 @@ TEST(Location, Distance)
     bearing = test_home.get_bearing_to(test_loc);
     EXPECT_EQ(31503, bearing);
     const float bearing_rad = test_home.get_bearing(test_loc);
-    EXPECT_FLOAT_EQ(radians(315.03), bearing_rad);
+    EXPECT_FLOAT_EQ(5.4982867, bearing_rad);
 
 }
 
 TEST(Location, Sanitize)
 {
+    // we will sanitize test_loc with test_default_loc
+    // test_home is just for reference
     const Location test_home{-35362938, 149165085, 100, Location::AltFrame::ABSOLUTE};
+    EXPECT_TRUE(vehicle.ahrs.set_home(test_home));
+    const Location test_default_loc{-35362938, 149165085, 200, Location::AltFrame::ABSOLUTE};
     Location test_loc;
     test_loc.set_alt_cm(0, Location::AltFrame::ABOVE_HOME);
-    EXPECT_TRUE(test_loc.sanitize(test_home));
-    EXPECT_TRUE(test_loc.same_latlon_as(test_home));
-    EXPECT_EQ(test_home.alt, test_loc.alt);
+    EXPECT_TRUE(test_loc.sanitize(test_default_loc));
+    EXPECT_TRUE(test_loc.same_latlon_as(test_default_loc));
+    int32_t default_loc_alt;
+    // we should compare test_loc alt and test_default_loc alt in same frame , in this case, ABOVE HOME
+    EXPECT_TRUE(test_default_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, default_loc_alt));
+    EXPECT_EQ(test_loc.alt, default_loc_alt);
     test_loc = Location(91*1e7, 0, 0, Location::AltFrame::ABSOLUTE);
-    EXPECT_TRUE(test_loc.sanitize(test_home));
-    EXPECT_TRUE(test_loc.same_latlon_as(test_home));
-    EXPECT_NE(test_home.alt, test_loc.alt);
+    EXPECT_TRUE(test_loc.sanitize(test_default_loc));
+    EXPECT_TRUE(test_loc.same_latlon_as(test_default_loc));
+    EXPECT_NE(test_default_loc.alt, test_loc.alt);
     test_loc = Location(0, 181*1e7, 0, Location::AltFrame::ABSOLUTE);
-    EXPECT_TRUE(test_loc.sanitize(test_home));
-    EXPECT_TRUE(test_loc.same_latlon_as(test_home));
-    EXPECT_NE(test_home.alt, test_loc.alt);
+    EXPECT_TRUE(test_loc.sanitize(test_default_loc));
+    EXPECT_TRUE(test_loc.same_latlon_as(test_default_loc));
+    EXPECT_NE(test_default_loc.alt, test_loc.alt);
     test_loc = Location(42*1e7, 42*1e7, 420, Location::AltFrame::ABSOLUTE);
-    EXPECT_FALSE(test_loc.sanitize(test_home));
-    EXPECT_FALSE(test_loc.same_latlon_as(test_home));
-    EXPECT_NE(test_home.alt, test_loc.alt);
+    EXPECT_FALSE(test_loc.sanitize(test_default_loc));
+    EXPECT_FALSE(test_loc.same_latlon_as(test_default_loc));
+    EXPECT_NE(test_default_loc.alt, test_loc.alt);
 }
 
 TEST(Location, Line)

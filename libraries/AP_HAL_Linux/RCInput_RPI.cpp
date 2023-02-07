@@ -167,6 +167,7 @@ Memory_table::Memory_table(uint32_t page_count, int version)
 
     if ((fdMem = open("/dev/mem", O_RDWR | O_SYNC | O_CLOEXEC)) < 0) {
         fprintf(stderr, "Failed to open /dev/mem\n");
+        printf("Make sure that CONFIG_STRICT_DEVMEM is disabled\n");
         exit(-1);
     }
 
@@ -192,7 +193,7 @@ Memory_table::Memory_table(uint32_t page_count, int version)
     // Map physical addresses to virtual memory
     for (i = 0; i < _page_count; i++) {
         munmap(_virt_pages[i], PAGE_SIZE);
-        _virt_pages[i] = mmap(_virt_pages[i], PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED | MAP_NORESERVE | MAP_LOCKED, fdMem, ((uintptr_t)_phys_pages[i] & (version == 1 ? 0xFFFFFFFF : ~bus)));
+        _virt_pages[i] = mmap(_virt_pages[i], PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED | MAP_NORESERVE | MAP_LOCKED, fdMem, ((uintptr_t)_phys_pages[i] & (version == 1 ? 0xFFFFFFFFFFFFFFFF : ~bus)));
         memset(_virt_pages[i], 0xee, PAGE_SIZE);
     }
     close(file);
@@ -232,11 +233,11 @@ void *Memory_table::get_virt_addr(const uint32_t phys_addr) const
 
 // This function returns offset from the beginning of the buffer using virtual
 // address and memory_table.
-uint32_t Memory_table::get_offset(void ** const pages, const uint32_t addr) const
+uint32_t Memory_table::get_offset(void ** const pages, const uint64_t addr) const
 {
     uint32_t i = 0;
     for (; i < _page_count; i++) {
-        if ((uintptr_t) pages[i] == (addr & 0xFFFFF000) ) {
+        if ((uintptr_t) pages[i] == (addr & 0xFFFFFFFFFFFFF000) ) {
             return (i*PAGE_SIZE + (addr & 0xFFF));
         }
     }
@@ -286,6 +287,7 @@ void *RCInput_RPI::map_peripheral(uint32_t base, uint32_t len)
 
     if (fd < 0) {
         printf("Failed to open /dev/mem: %m\n");
+        printf("Make sure that CONFIG_STRICT_DEVMEM is disabled\n");
         return nullptr;
     }
     vaddr = mmap(nullptr, len, PROT_READ | PROT_WRITE, MAP_SHARED, fd, base);

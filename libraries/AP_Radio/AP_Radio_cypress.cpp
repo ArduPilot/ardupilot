@@ -11,7 +11,7 @@
 #include <AP_Math/crc.h>
 #include "telem_structure.h"
 #include <AP_Notify/AP_Notify.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <GCS_MAVLink/GCS.h>
 
 /*
   driver for CYRF6936 radio

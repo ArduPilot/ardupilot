@@ -21,12 +21,7 @@
   Tom Pittenger, November 2015
 */
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/AP_HAL_Boards.h>
-
-#ifndef HAL_ADSB_ENABLED
-#define HAL_ADSB_ENABLED !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
-#endif
+#include "AP_ADSB_config.h"
 
 #if HAL_ADSB_ENABLED
 #include <AP_Common/AP_Common.h>
@@ -38,6 +33,8 @@
 
 #define ADSB_BITBASK_RF_CAPABILITIES_UAT_IN         (1 << 0)
 #define ADSB_BITBASK_RF_CAPABILITIES_1090ES_IN      (1 << 1)
+#define ADSB_BITBASK_RF_CAPABILITIES_UAT_OUT        (1 << 2)
+#define ADSB_BITBASK_RF_CAPABILITIES_1090ES_OUT     (1 << 3)
 
 class AP_ADSB_Backend;
 
@@ -47,13 +44,13 @@ public:
     friend class AP_ADSB_uAvionix_MAVLink;
     friend class AP_ADSB_uAvionix_UCP;
     friend class AP_ADSB_Sagetech;
+    friend class AP_ADSB_Sagetech_MXS;
 
     // constructor
     AP_ADSB();
 
     /* Do not allow copies */
-    AP_ADSB(const AP_ADSB &other) = delete;
-    AP_ADSB &operator=(const AP_ADSB&) = delete;
+    CLASS_NO_COPY(AP_ADSB);
 
     // get singleton instance
     static AP_ADSB *get_singleton(void) {
@@ -66,6 +63,7 @@ public:
         uAvionix_MAVLink    = 1,
         Sagetech            = 2,
         uAvionix_UCP        = 3,
+        Sagetech_MXS        = 4,
     };
 
     struct adsb_vehicle_t {
@@ -78,6 +76,7 @@ public:
         Ping200X_Send_GPS               = (1<<0),
         Squawk_7400_FS_RC               = (1<<1),
         Squawk_7400_FS_GCS              = (1<<2),
+        SagteTech_MXS_External_Config   = (1<<3),
     };
 
     // for holding parameters
@@ -146,11 +145,16 @@ public:
     bool get_vehicle_by_ICAO(const uint32_t icao, adsb_vehicle_t &vehicle) const;
 
     uint32_t get_special_ICAO_target() const { return (uint32_t)_special_ICAO_target; };
-    void set_special_ICAO_target(const uint32_t new_icao_target) { _special_ICAO_target = (int32_t)new_icao_target; };
+    void set_special_ICAO_target(const uint32_t new_icao_target) { _special_ICAO_target.set((int32_t)new_icao_target); };
     bool is_special_vehicle(uint32_t icao) const { return _special_ICAO_target != 0 && (_special_ICAO_target == (int32_t)icao); }
 
     // confirm a value is a valid callsign
     static bool is_valid_callsign(uint16_t octal) WARN_IF_UNUSED;
+
+    // Convert base 8 or 16 to decimal. Used to convert an octal/hexadecimal value
+    // stored on a GCS as a string field in different format, but then transmitted
+    // over mavlink as a float which is always a decimal.
+    static uint32_t convert_base_to_decimal(const uint8_t baseIn, uint32_t inputNumber);
 
     // Trigger a Mode 3/A transponder IDENT. This should only be done when requested to do so by an Air Traffic Controller.
     // See wikipedia for IDENT explaination https://en.wikipedia.org/wiki/Transponder_(aeronautics)

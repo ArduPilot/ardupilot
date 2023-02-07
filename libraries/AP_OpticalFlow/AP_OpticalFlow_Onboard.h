@@ -32,7 +32,9 @@
 class AP_OpticalFlow_Onboard : public OpticalFlow_backend
 {
 public:
-    AP_OpticalFlow_Onboard(OpticalFlow &_frontend);
+
+    using OpticalFlow_backend::OpticalFlow_backend;
+
     void init(void) override;
     void update(void) override;
 private:

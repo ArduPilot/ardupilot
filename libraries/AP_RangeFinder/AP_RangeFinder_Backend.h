@@ -15,7 +15,8 @@
 #pragma once
 
 #include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_HAL/Semaphores.h>
 #include "AP_RangeFinder.h"
 
 class AP_RangeFinder_Backend
@@ -67,6 +68,10 @@ public:
     // 0 is no return value, 100 is perfect.  false means signal
     // quality is not available
     virtual bool get_signal_quality_pct(uint8_t &quality_pct) const { return false; }
+
+    // return the actual type of the rangefinder, as opposed to the
+    // parameter value which may be changed at runtime.
+    RangeFinder::Type allocated_type() const { return _backend_type; }
 
 protected:
 

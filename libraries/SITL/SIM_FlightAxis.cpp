@@ -109,7 +109,6 @@ FlightAxis::FlightAxis(const char *frame_str) :
     Aircraft(frame_str)
 {
     use_time_sync = false;
-    num_motors = 2;
     rate_hz = 250 / target_speedup;
     heli_demix = strstr(frame_str, "helidemix") != nullptr;
     rev4_servos = strstr(frame_str, "rev4") != nullptr;
@@ -489,12 +488,12 @@ void FlightAxis::update(const struct sitl_input &input)
        can't get that from m_airspeed_MPS, so instead we calculate it
        from wind vector and ground speed
      */
-    Vector3f m_wind_ef(-state.m_windY_MPS,-state.m_windX_MPS,-state.m_windZ_MPS);
-    Vector3f airspeed_3d_ef = m_wind_ef + velocity_ef;
+    wind_ef = Vector3f(state.m_windY_MPS,state.m_windX_MPS,state.m_windZ_MPS);
+    Vector3f airspeed_3d_ef = velocity_ef - wind_ef;
     Vector3f airspeed3d = dcm.mul_transpose(airspeed_3d_ef);
 
     if (last_imu_rotation != ROTATION_NONE) {
-        airspeed3d = airspeed3d * sitl->ahrs_rotation_inv;
+        airspeed3d = sitl->ahrs_rotation * airspeed3d;
     }
     airspeed_pitot = MAX(airspeed3d.x,0);
 
@@ -512,6 +511,7 @@ void FlightAxis::update(const struct sitl_input &input)
     battery_current = MAX(state.m_batteryCurrentDraw_AMPS, 0);
     rpm[0] = state.m_heliMainRotorRPM;
     rpm[1] = state.m_propRPM;
+    motor_mask = 3;
 
     /*
       the interlink interface supports 12 input channels
@@ -531,7 +531,18 @@ void FlightAxis::update(const struct sitl_input &input)
             time_now_us = new_time_us;
         }
     } else {
-        time_now_us = new_time_us;
+        uint64_t dt_us = new_time_us - time_now_us;
+        const uint64_t glitch_threshold_us = 50000;
+        const uint64_t glitch_max_us = 2000000;
+        if (dt_us > glitch_threshold_us && dt_us < glitch_max_us) {
+            // we've had a network glitch, compensate by advancing initial time
+            float adjustment_s = (dt_us-glitch_threshold_us)*1.0e-6;
+            initial_time_s += adjustment_s;
+            printf("glitch %.2fs\n", adjustment_s);
+            dt_us = glitch_threshold_us;
+            glitch_count++;
+        }
+        time_now_us += dt_us;
     }
 
     last_time_s = state.m_currentPhysicsTime_SEC;
@@ -540,6 +551,13 @@ void FlightAxis::update(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
+
+    // one rangefinder
+    if (is_positive(dcm.c.z)) {
+        rangefinder_m[0] = state.m_altitudeAGL_MTR / dcm.c.z;
+    } else {
+        rangefinder_m[0] = -1;
+    }
 
     report_FPS();
 }
@@ -554,8 +572,8 @@ void FlightAxis::report_FPS(void)
             uint64_t frames = socket_frame_counter - last_socket_frame_counter;
             last_socket_frame_counter = socket_frame_counter;
             double dt = state.m_currentPhysicsTime_SEC - last_frame_count_s;
-            printf("%.2f/%.2f FPS avg=%.2f\n",
-                   frames / dt, 1000 / dt, 1.0/average_frame_time_s);
+            printf("%.2f/%.2f FPS avg=%.2f glitches=%u\n",
+                   frames / dt, 1000 / dt, 1.0/average_frame_time_s, unsigned(glitch_count));
         } else {
             printf("Initial position %f %f %f\n", position.x, position.y, position.z);
         }

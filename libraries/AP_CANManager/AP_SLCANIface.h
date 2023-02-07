@@ -50,7 +50,9 @@ class CANIface: public AP_HAL::CANIface
     bool handle_FrameRTRStd(const char* cmd);
     bool handle_FrameRTRExt(const char* cmd);
     bool handle_FrameDataStd(const char* cmd);
-    bool handle_FrameDataExt(const char* cmd);
+    bool handle_FrameDataExt(const char* cmd, bool canfd);
+
+    bool handle_FDFrameDataExt(const char* cmd);
 
     // Parsing bytes received on the serial port
     inline void addByte(const uint8_t byte);
@@ -99,11 +101,12 @@ public:
     // Initialisation of SLCAN Passthrough method of operation
     bool init_passthrough(uint8_t i);
 
-    void reset_params();
-    int8_t get_iface_num() const
+    void set_can_iface(AP_HAL::CANIface* can_iface)
     {
-        return _iface_num;
+        _can_iface = can_iface;
     }
+
+    void reset_params();
 
     // Overriden methods
     bool set_event_handle(AP_HAL::EventHandle* evt_handle) override;
@@ -123,6 +126,15 @@ public:
 
     int16_t receive(AP_HAL::CANFrame& out_frame, uint64_t& rx_time,
                     AP_HAL::CANIface::CanIOFlags& out_flags) override;
+
+protected:
+    int8_t get_iface_num() const override {
+        return _iface_num;
+    }
+
+    bool add_to_rx_queue(const AP_HAL::CANIface::CanRxItem &frm) override {
+        return rx_queue_.push(frm);
+    }
 };
 
 }

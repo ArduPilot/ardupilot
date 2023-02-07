@@ -19,7 +19,7 @@ lckfile='/home/pbarker/rc/buildlogs/autotest.lck'
 >>>> PASSED STEP: build.ArduCopter at Thu Feb 22 09:46:43 2018
 check step:  build.ArduCopter
 BWFD: ADVANCED_FAILSAFE OK
-BWFD: Successes: ['MOUNT', 'AUTOTUNE_ENABLED', 'AC_FENCE', 'CAMERA', 'RANGEFINDER_ENABLED', 'PROXIMITY_ENABLED', 'AC_RALLY', 'AC_AVOID_ENABLED', 'PARACHUTE', 'NAV_GUIDED', 'OPTFLOW', 'VISUAL_ODOMETRY_ENABLED', 'FRSKY_TELEM_ENABLED', 'ADSB_ENABLED', 'PRECISION_LANDING', 'SPRAYER', 'WINCH_ENABLED', 'ADVANCED_FAILSAFE']
+BWFD: Successes: ['MOUNT', 'AUTOTUNE_ENABLED', 'AP_FENCE_ENABLED', 'CAMERA', 'RANGEFINDER_ENABLED', 'PROXIMITY_ENABLED', 'AC_RALLY', 'AC_AVOID_ENABLED', 'PARACHUTE', 'NAV_GUIDED', 'OPTFLOW', 'VISUAL_ODOMETRY_ENABLED', 'ADSB_ENABLED', 'PRECISION_LANDING', 'SPRAYER', 'WINCH_ENABLED', 'ADVANCED_FAILSAFE']
 BWFD: Failures: ['LOGGING_ENABLED']
 pbarker@bluebottle:~/rc/ardupilot(build-with-disabled-features)$ q
 
@@ -205,7 +205,7 @@ specs = [
         "autotest_target": "build.Copter",
         "target_binary": "bin/arducopter",
         "reverse-deps": {
-            "AC_FENCE": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
+            "AP_FENCE_ENABLED": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
             "PROXIMITY_ENABLED": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
             "MODE_AUTO_ENABLED": ["MODE_GUIDED", "ADVANCED_FAILSAFE"],
             "MODE_RTL_ENABLED": ["MODE_AUTO_ENABLED", "MODE_SMARTRTL_ENABLED"],
@@ -226,7 +226,7 @@ specs = [
                               "MODE_ACRO_ENABLED",
                               "AUTOTUNE_ENABLED"],
         "reverse-deps": {
-            "AC_FENCE": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
+            "AP_FENCE_ENABLED": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
             "PROXIMITY_ENABLED": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
             "MODE_AUTO_ENABLED": ["MODE_GUIDED", "ADVANCED_FAILSAFE"],
             "MODE_RTL_ENABLED": ["MODE_AUTO_ENABLED", "MODE_SMARTRTL_ENABLED"],
@@ -256,7 +256,7 @@ specs = [
         "autotest_target": "build.Sub",
         "target_binary": "bin/ardusub",
         "reverse-deps": {
-            "AC_FENCE": ["AVOIDANCE_ENABLED"],
+            "AP_FENCE_ENABLED": ["AVOIDANCE_ENABLED"],
             "PROXIMITY_ENABLED": ["AVOIDANCE_ENABLED"],
         },
     }, {

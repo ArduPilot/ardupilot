@@ -54,6 +54,11 @@ uint64_t stm32_get_utc_usec(void);
 // hook for FAT timestamps    
 uint32_t get_fattime(void);
 
+/*
+  see if we should limit flash to 1M on devices with older revisions of STM32F427
+ */
+bool check_limit_flash_1M(void);
+
 // one-time programmable area
 #if defined(FLASH_OTP_BASE)
 #define OTP_BASE FLASH_OTP_BASE
@@ -160,6 +165,9 @@ void save_fault_watchdog(uint16_t line, FaultType fault_type, uint32_t fault_add
 bool stm32_rand_generate_blocking(unsigned char* output, unsigned int sz, uint32_t timeout_us);
 unsigned int stm32_rand_generate_nonblocking(unsigned char* output, unsigned int sz);
 #endif
+
+void stm32_flash_protect_flash(bool bootloader, bool protect);
+void stm32_flash_unprotect_flash(void);
 
 // allow stack view code to show free ISR stack
 extern uint32_t __main_stack_base__;

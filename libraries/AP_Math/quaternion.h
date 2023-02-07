@@ -17,6 +17,8 @@
 // Refactored by Jonathan Challinger
 #pragma once
 
+#include "definitions.h"
+#include "matrix3.h"
 #include <cmath>
 #if MATH_CHECK_INDEXES
 #include <assert.h>
@@ -30,20 +32,20 @@ public:
 
     // constructor creates a quaternion equivalent
     // to roll=0, pitch=0, yaw=0
-    QuaternionT<T>()
+    QuaternionT()
     {
         q1 = 1;
         q2 = q3 = q4 = 0;
     }
 
     // setting constructor
-    QuaternionT<T>(const T _q1, const T _q2, const T _q3, const T _q4) :
+    QuaternionT(const T _q1, const T _q2, const T _q3, const T _q4) :
         q1(_q1), q2(_q2), q3(_q3), q4(_q4)
     {
     }
 
     // setting constructor
-    QuaternionT<T>(const T _q[4]) :
+    QuaternionT(const T _q[4]) :
         q1(_q[0]), q2(_q[1]), q3(_q[2]), q4(_q[3])
     {
     }
@@ -110,28 +112,45 @@ public:
     // the axis vector must be length 1, theta should less than 0.17 radians (i.e. 10 degrees)
     void        from_axis_angle_fast(const Vector3<T> &axis, T theta);
 
+    // create a quaternion by integrating an angular velocity over some time_delta, which is 
+    // assumed to be small
+    void        from_angular_velocity(const Vector3<T>& angular_velocity, float time_delta);
+
     // rotate by the provided rotation vector
     // only use with small angles.  I.e. length of v should less than 0.17 radians (i.e. 10 degrees)
     void        rotate_fast(const Vector3<T> &v);
 
-    // get euler roll angle
+    // get euler roll angle in radians
     T       get_euler_roll() const;
 
-    // get euler pitch angle
+    // get euler pitch angle in radians
     T       get_euler_pitch() const;
 
-    // get euler yaw angle
+    // get euler yaw angle in radians
     T       get_euler_yaw() const;
 
-    // create eulers from a quaternion
+    // create eulers (in radians) from a quaternion
     void        to_euler(float &roll, float &pitch, float &yaw) const;
     void        to_euler(double &roll, double &pitch, double &yaw) const;
 
     // create eulers from a quaternion
     Vector3<T>    to_vector312(void) const;
 
+    T length_squared(void) const;
     T length(void) const;
     void normalize();
+
+    // Checks if each element of the quaternion is zero
+    bool is_zero(void) const;
+
+    // zeros the quaternion to [0, 0, 0, 0], an invalid quaternion
+    // See initialize() if you want the zero rotation quaternion
+    void zero(void);
+
+    // Checks if the quaternion is unit_length within a tolerance
+    // Returns True: if its magnitude is close to unit length +/- 1E-3
+    // This limit is somewhat greater than sqrt(FLT_EPSL)
+    bool is_unit_length(void) const;
 
     // initialise the quaternion to no rotation
     void initialise()

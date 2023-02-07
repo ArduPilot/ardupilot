@@ -2,6 +2,8 @@
 
 #include <AP_Math/AP_Math.h>
 
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
 TEST(Vector2Test, Operator)
 {
     Vector2f v_float0{1.0f, 1.0f};

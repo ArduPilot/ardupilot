@@ -26,7 +26,7 @@ param set SERIAL5_PROTOCOL 5
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef HAL_SIM_GPS_ENABLED
-#define HAL_SIM_GPS_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH))
+#define HAL_SIM_GPS_ENABLED (AP_SIM_ENABLED && !defined(HAL_BUILD_AP_PERIPH))
 #endif
 
 #if HAL_SIM_GPS_ENABLED
@@ -67,6 +67,8 @@ public:
     void update();
 
     ssize_t write_to_autopilot(const char *p, size_t size) const override;
+
+    uint32_t device_baud() const override;  // 0 meaning unset
 
 private:
 

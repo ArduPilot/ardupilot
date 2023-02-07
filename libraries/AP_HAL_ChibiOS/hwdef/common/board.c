@@ -171,7 +171,7 @@ static void stm32_gpio_init(void) {
   /* Enabling GPIO-related clocks, the mask comes from the
      registry header file.*/
 #if defined(STM32H7)
-#if !EXTERNAL_PROG_FLASH_MB // if we have external flash resetting GPIO might disable all comms with it
+#if !EXT_FLASH_SIZE_MB // if we have external flash resetting GPIO might disable all comms with it
   rccResetAHB4(STM32_GPIO_EN_MASK);
 #endif
   rccEnableAHB4(STM32_GPIO_EN_MASK, true);
@@ -238,6 +238,12 @@ void __early_init(void) {
   SCB_DisableDCache();
 #endif
 #if defined(STM32H7)
+
+  // ensure ITCM and DTCM are enabled. These could be disabled by the px4
+  // bootloader
+  SCB->ITCMCR |= 1; // ITCM enable
+  SCB->DTCMCR |= 1; // DTCM enable
+
   // disable cache on SRAM4 so we can use it for DMA
   mpuConfigureRegion(MPU_REGION_5,
                      0x38000000U,

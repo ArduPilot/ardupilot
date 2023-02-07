@@ -150,6 +150,9 @@ IMU Invensense SPI:mpu6000 ROTATION_YAW_180
 # one baro, multiple possible choices for different board variants
 BARO BMP280 I2C:0:0x76
 BARO DPS310 I2C:0:0x76
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+define AP_BARO_BMP280_ENABLED 1
+define AP_BARO_DPS280_ENABLED 1
 
 define HAL_OS_FATFS_IO 1
 define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
@@ -169,7 +172,6 @@ define BOARD_RSSI_ANA_PIN 15
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
@@ -180,9 +182,8 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 
 define STM32_PWM_USE_ADVANCED TRUE
 
-# disable SMBUS and fuel battery monitors to save flash
-define HAL_BATTMON_SMBUS_ENABLE 0
-define HAL_BATTMON_FUEL_ENABLE 0
+# disable SMBUS battery monitors to save flash
+define AP_BATTMON_SMBUS_ENABLE 0
 
 # disable parachute and sprayer to save flash
 define HAL_PARACHUTE_ENABLED 0
@@ -190,12 +191,13 @@ define HAL_SPRAYER_ENABLED 0
 
 # reduce max size of embedded params for apj_tool.py
 define AP_PARAM_MAX_EMBEDDED_PARAM 1024
-define HAL_WITH_DSP FALSE
+define HAL_GYROFFT_ENABLED 0
 
 # save some flash
-define HAL_GENERATOR_ENABLED 0
-define AC_OAPATHPLANNER_ENABLED 0
-define PRECISION_LANDING 0
-define HAL_BARO_WIND_COMP_ENABLED 0
-define GRIPPER_ENABLED 0
-define AP_OPTICALFLOW_ENABLED 0
+include ../include/save_some_flash.inc
+define AP_GRIPPER_ENABLED 0
+define AP_BATTMON_SYNTHETIC_CURRENT_ENABLED 0
+
+# only include ublox GPS driver
+include ../include/minimal_GPS.inc
+

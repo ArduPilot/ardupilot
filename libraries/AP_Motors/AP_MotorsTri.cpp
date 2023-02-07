@@ -14,8 +14,12 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
+#include <SRV_Channel/SRV_Channel.h>
+
 #include "AP_MotorsTri.h"
 
 extern const AP_HAL::HAL& hal;
@@ -124,13 +128,13 @@ void AP_MotorsTri::output_to_motors()
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
 //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-uint16_t AP_MotorsTri::get_motor_mask()
+uint32_t AP_MotorsTri::get_motor_mask()
 {
     // tri copter uses channels 1,2,4 and 7
-    uint16_t motor_mask = (1U << AP_MOTORS_MOT_1) |
+    uint32_t motor_mask = (1U << AP_MOTORS_MOT_1) |
                           (1U << AP_MOTORS_MOT_2) |
                           (1U << AP_MOTORS_MOT_4);
-    uint16_t mask = motor_mask_to_srv_channel_mask(motor_mask);
+    uint32_t mask = motor_mask_to_srv_channel_mask(motor_mask);
 
     // add parent's mask
     mask |= AP_MotorsMulticopter::get_motor_mask();
@@ -156,7 +160,7 @@ void AP_MotorsTri::output_armed_stabilizing()
     SRV_Channels::set_angle(SRV_Channels::get_motor_function(AP_MOTORS_CH_TRI_YAW), _yaw_servo_angle_max_deg*100);
 
     // sanity check YAW_SV_ANGLE parameter value to avoid divide by zero
-    _yaw_servo_angle_max_deg = constrain_float(_yaw_servo_angle_max_deg, AP_MOTORS_TRI_SERVO_RANGE_DEG_MIN, AP_MOTORS_TRI_SERVO_RANGE_DEG_MAX);
+    _yaw_servo_angle_max_deg.set(constrain_float(_yaw_servo_angle_max_deg, AP_MOTORS_TRI_SERVO_RANGE_DEG_MIN, AP_MOTORS_TRI_SERVO_RANGE_DEG_MAX));
 
     // apply voltage and air pressure compensation
     const float compensation_gain = get_compensation_gain();
@@ -280,13 +284,8 @@ void AP_MotorsTri::output_armed_stabilizing()
 // output_test_seq - spin a motor at the pwm value specified
 //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
 //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-void AP_MotorsTri::output_test_seq(uint8_t motor_seq, int16_t pwm)
+void AP_MotorsTri::_output_test_seq(uint8_t motor_seq, int16_t pwm)
 {
-    // exit immediately if not armed
-    if (!armed()) {
-        return;
-    }
-
     // output to motors and servos
     switch (motor_seq) {
         case 1:
@@ -335,7 +334,7 @@ void AP_MotorsTri::thrust_compensation(void)
 /*
   override tricopter tail servo output in output_motor_mask
  */
-void AP_MotorsTri::output_motor_mask(float thrust, uint8_t mask, float rudder_dt)
+void AP_MotorsTri::output_motor_mask(float thrust, uint16_t mask, float rudder_dt)
 {
     // normal multicopter output
     AP_MotorsMulticopter::output_motor_mask(thrust, mask, rudder_dt);

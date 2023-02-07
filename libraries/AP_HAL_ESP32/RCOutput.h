@@ -86,7 +86,7 @@ public:
     /*
        set safety mask for IOMCU
        */
-    void set_safety_mask(uint16_t mask)
+    void set_safety_mask(uint32_t mask)
     {
         safety_mask = mask;
     }
@@ -126,7 +126,7 @@ private:
     uint8_t safety_press_count; // 0.1s units
 
     // mask of channels to allow when safety on
-    uint16_t safety_mask;
+    uint32_t safety_mask;
 
     // update safety switch and LED
     void safety_update(void);

@@ -12,9 +12,6 @@
 #include <AC_PID/AC_PID_2D.h>       // PID library (2-axis)
 #include <AP_InertialNav/AP_InertialNav.h>  // Inertial Navigation library
 #include "AC_AttitudeControl.h"     // Attitude control library
-#include <AP_Motors/AP_Motors.h>    // motors library
-#include <AP_Vehicle/AP_Vehicle.h>  // common vehicle parameters
-
 
 // position controller default definitions
 #define POSCONTROL_ACCEL_XY                     100.0f  // default horizontal acceleration in cm/s/s.  This is overwritten by waypoint and loiter controllers
@@ -34,7 +31,7 @@
 
 #define POSCONTROL_OVERSPEED_GAIN_Z             2.0f    // gain controlling rate at which z-axis speed is brought back within SPEED_UP and SPEED_DOWN range
 
-#define POSCONTROL_RELAX_TC                     0.16f   // This is used to decay the relevant variable to 5% in half a second.
+#define POSCONTROL_RELAX_TC                     0.16f   // This is used to decay the I term to 5% in half a second.
 
 class AC_PosControl
 {
@@ -42,9 +39,14 @@ public:
 
     /// Constructor
     AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
-                  const AP_Motors& motors, AC_AttitudeControl& attitude_control, float dt);
+                  const class AP_Motors& motors, AC_AttitudeControl& attitude_control);
 
-    /// get_dt - gets time delta in seconds for all position controllers
+
+
+    /// set_dt / get_dt - dt is the time since the last time the position controllers were updated
+    ///   _dt should be set based on the time of the last IMU read used by these controllers
+    ///   the position controller should run updates for active controllers on each loop to ensure normal operation
+    void set_dt(float dt) { _dt = dt; }
     float get_dt() const { return _dt; }
 
     /// get_shaping_jerk_xy_cmsss - gets the jerk limit of the xy kinematic path generation in cm/s/s/s
@@ -95,6 +97,9 @@ public:
     // relax_velocity_controller_xy - initialise the position controller to the current position and velocity with decaying acceleration.
     ///     This function decays the output acceleration by 95% every half second to achieve a smooth transition to zero requested acceleration.
     void relax_velocity_controller_xy();
+
+    /// reduce response for landing
+    void soften_for_landing_xy();
 
     // init_xy_controller - initialise the position controller to the current position, velocity, acceleration and attitude.
     ///     This function is the default initialisation for any position control that provides position, velocity and acceleration.
@@ -196,7 +201,7 @@ public:
     ///     The kinematic path is constrained by the maximum acceleration and jerk set using the function set_max_speed_accel_z.
     ///     The function alters the vel to be the kinematic path based on accel
     ///     The parameter limit_output specifies if the velocity and acceleration limits are applied to the sum of commanded and correction values or just correction.
-    virtual void input_vel_accel_z(float &vel, float accel, bool ignore_descent_limit, bool limit_output = true);
+    virtual void input_vel_accel_z(float &vel, float accel, bool limit_output = true);
 
     /// set_pos_target_z_from_climb_rate_cm - adjusts target up or down using a commanded climb rate in cm/s
     ///     using the default position control kinematic path.
@@ -243,16 +248,16 @@ public:
 
     /// Position
 
-    /// set_pos_target_xy_cm - sets the position target in NEU cm from home
+    /// set_pos_target_xy_cm - sets the position target, frame NEU in cm relative to the EKF origin
     void set_pos_target_xy_cm(float pos_x, float pos_y) { _pos_target.x = pos_x; _pos_target.y = pos_y; }
 
-    /// get_pos_target_cm - returns the position target in NEU cm from home
+    /// get_pos_target_cm - returns the position target, frame NEU in cm relative to the EKF origin
     const Vector3p& get_pos_target_cm() const { return _pos_target; }
 
-    /// set_pos_target_z_cm - set altitude target in cm above home
+    /// set_pos_target_z_cm - set altitude target in cm above the EKF origin
     void set_pos_target_z_cm(float pos_target) { _pos_target.z = pos_target; }
 
-    /// get_pos_target_z_cm - get target altitude (in cm above home)
+    /// get_pos_target_z_cm - get target altitude (in cm above the EKF origin)
     float get_pos_target_z_cm() const { return _pos_target.z; }
 
     /// get_stopping_point_xy_cm - calculates stopping point in NEU cm based on current position, velocity, vehicle acceleration
@@ -303,13 +308,13 @@ public:
 
     /// Offset
 
-    /// set_pos_offset_target_z_cm - set altitude offset target in cm above home
+    /// set_pos_offset_target_z_cm - set altitude offset target in cm above the EKF origin
     void set_pos_offset_target_z_cm(float pos_offset_target_z) { _pos_offset_target_z = pos_offset_target_z; }
 
-    /// set_pos_offset_z_cm - set altitude offset in cm above home
+    /// set_pos_offset_z_cm - set altitude offset in cm above the EKF origin
     void set_pos_offset_z_cm(float pos_offset_z) { _pos_offset_z = pos_offset_z; }
 
-    /// get_pos_offset_z_cm - returns altitude offset in cm above home
+    /// get_pos_offset_z_cm - returns altitude offset in cm above the EKF origin
     float get_pos_offset_z_cm() const { return _pos_offset_z; }
 
     /// get_vel_offset_z_cm - returns current vertical offset speed in cm/s
@@ -340,6 +345,12 @@ public:
     /// get_lean_angle_max_cd - returns the maximum lean angle the autopilot may request
     float get_lean_angle_max_cd() const;
 
+    /*
+      set_lean_angle_max_cd - set the maximum lean angle. A value of zero means to use the ANGLE_MAX parameter.
+      This is reset to zero on init_xy_controller()
+    */
+    void set_lean_angle_max_cd(float angle_max_cd) { _angle_max_override_cd = angle_max_cd; }
+    
 
     /// Other
 
@@ -353,9 +364,6 @@ public:
     /// set_limit_accel_xy - mark that accel has been limited
     ///     this prevents integrator buildup
     void set_externally_limited_xy() { _limit_vector.x = _accel_target.x; _limit_vector.y = _accel_target.y; }
-
-    // overrides the velocity process variable for one timestep
-    void override_vehicle_velocity_xy(const Vector2f& vel_xy) { _vehicle_horiz_vel = vel_xy; _flags.vehicle_horiz_vel_override = true; }
 
     // lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
     Vector3f lean_angles_to_accel(const Vector3f& att_target_euler) const;
@@ -383,20 +391,15 @@ public:
     ///     aircraft when in standby.
     void standby_xyz_reset();
 
+    // get earth-frame Z-axis acceleration with gravity removed in cm/s/s with +ve being up
+    float get_z_accel_cmss() const { return -(_ahrs.get_accel_ef().z + GRAVITY_MSS) * 100.0f; }
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
 
-    // general purpose flags
-    struct poscontrol_flags {
-            uint16_t vehicle_horiz_vel_override : 1; // 1 if we should use _vehicle_horiz_vel as our velocity process variable for one timestep
-    } _flags;
-
     // get throttle using vibration-resistant calculation (uses feed forward with manually calculated gain)
     float get_throttle_with_vibration_override();
-
-    // get earth-frame Z-axis acceleration with gravity removed in cm/s/s with +ve being up
-    float get_z_accel_cmss() const { return -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f; }
 
     // lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
     void accel_to_lean_angles(float accel_x_cmss, float accel_y_cmss, float& roll_target, float& pitch_target) const;
@@ -407,6 +410,9 @@ protected:
     // calculate_yaw_and_rate_yaw - calculate the vehicle yaw and rate of yaw.
     bool calculate_yaw_and_rate_yaw();
 
+    // calculate_overspeed_gain - calculated increased maximum acceleration and jerk if over speed condition is detected
+    float calculate_overspeed_gain();
+
     /// initialise and check for ekf position resets
     void init_ekf_xy_reset();
     void handle_ekf_xy_reset();
@@ -416,7 +422,7 @@ protected:
     // references to inertial nav and ahrs libraries
     AP_AHRS_View&           _ahrs;
     const AP_InertialNav&   _inav;
-    const AP_Motors&        _motors;
+    const class AP_Motors&  _motors;
     AC_AttitudeControl&     _attitude_control;
 
     // parameters
@@ -430,9 +436,9 @@ protected:
     AC_PID          _pid_accel_z;       // Z axis acceleration controller to convert desired acceleration to throttle output
 
     // internal variables
-    float       _dt;                    // time difference (in seconds) between calls from the main program
-    uint64_t    _last_update_xy_us;     // system time (in microseconds) since last update_xy_controller call
-    uint64_t    _last_update_z_us;      // system time (in microseconds) since last update_z_controller call
+    float       _dt;                    // time difference (in seconds) since the last loop time
+    uint32_t    _last_update_xy_ticks;  // ticks of last last update_xy_controller call
+    uint32_t    _last_update_z_ticks;   // ticks of last update_z_controller call
     float       _vel_max_xy_cms;        // max horizontal speed in cm/s used for kinematic shaping
     float       _vel_max_up_cms;        // max climb rate in cm/s used for kinematic shaping
     float       _vel_max_down_cms;      // max descent rate in cm/s used for kinematic shaping
@@ -449,15 +455,15 @@ protected:
     float       _yaw_rate_target;       // desired yaw rate in centi-degrees per second calculated by position controller
 
     // position controller internal variables
-    Vector3p    _pos_target;            // target location in NEU cm from home
+    Vector3p    _pos_target;            // target location, frame NEU in cm relative to the EKF origin
     Vector3f    _vel_desired;           // desired velocity in NEU cm/s
     Vector3f    _vel_target;            // velocity target in NEU cm/s calculated by pos_to_rate step
     Vector3f    _accel_desired;         // desired acceleration in NEU cm/s/s (feed forward)
     Vector3f    _accel_target;          // acceleration target in NEU cm/s/s
     Vector3f    _limit_vector;          // the direction that the position controller is limited, zero when not limited
-    Vector2f    _vehicle_horiz_vel;     // velocity to use if _flags.vehicle_horiz_vel_override is set
-    float       _pos_offset_target_z;   // vertical position offset target in NEU cm from home
-    float       _pos_offset_z;          // vertical position offset in NEU cm from home
+
+    float       _pos_offset_target_z;   // vertical position offset target, frame NEU in cm relative to the EKF origin
+    float       _pos_offset_z;          // vertical position offset, frame NEU in cm relative to the EKF origin
     float       _vel_offset_z;          // vertical velocity offset in NEU cm/s calculated by pos_to_rate step
     float       _accel_offset_z;        // vertical acceleration offset in NEU cm/s/s
 
@@ -467,6 +473,9 @@ protected:
 
     // high vibration handling
     bool        _vibe_comp_enabled;     // true when high vibration compensation is on
+
+    // angle max override, if zero then use ANGLE_MAX parameter
+    float       _angle_max_override_cd;
 
     // return true if on a real vehicle or SITL with lock-step scheduling
     bool has_good_timing(void) const;

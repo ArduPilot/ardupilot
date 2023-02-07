@@ -6,7 +6,7 @@ check that replay produced identical results
 
 from __future__ import print_function
 
-def check_log(logfile, progress=print, ekf2_only=False, ekf3_only=False, verbose=False, accuracy=0.0):
+def check_log(logfile, progress=print, ekf2_only=False, ekf3_only=False, verbose=False, accuracy=0.0, ignores=set()):
     '''check replay log for matching output'''
     from pymavlink import mavutil
     progress("Processing log %s" % logfile)
@@ -56,6 +56,8 @@ def check_log(logfile, progress=print, ekf2_only=False, ekf3_only=False, verbose
         for f in m._fieldnames:
             if f == 'C':
                 continue
+            if "%s.%s" % (mtype, f) in ignores:
+                continue
             v1 = getattr(m,f)
             v2 = getattr(mb,f)
             ok = v1 == v2
@@ -91,13 +93,14 @@ if __name__ == '__main__':
     parser.add_argument("--ekf3-only", action='store_true', help="only check EKF3")
     parser.add_argument("--verbose", action='store_true', help="verbose output")
     parser.add_argument("--accuracy", type=float, default=0.0, help="accuracy percentage for match")
+    parser.add_argument("--ignore-field", action='append', default=[], help="ignore message field when comparing")
     parser.add_argument("logs", metavar="LOG", nargs="+")
 
     args = parser.parse_args()
 
     failed = False
     for filename in args.logs:
-        if not check_log(filename, print, args.ekf2_only, args.ekf3_only, args.verbose, accuracy=args.accuracy):
+        if not check_log(filename, print, args.ekf2_only, args.ekf3_only, args.verbose, accuracy=args.accuracy, ignores=args.ignore_field):
             failed = True
 
     if failed:

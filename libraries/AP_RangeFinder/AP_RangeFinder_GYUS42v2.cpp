@@ -13,11 +13,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
 #include "AP_RangeFinder_GYUS42v2.h"
-#include <ctype.h>
 
-extern const AP_HAL::HAL& hal;
+#if AP_RANGEFINDER_GYUS42V2_ENABLED
 
 bool AP_RangeFinder_GYUS42v2::find_signature_in_buffer(uint8_t start)
 {
@@ -70,3 +68,5 @@ bool AP_RangeFinder_GYUS42v2::get_reading(float &reading_m)
 
     return true;
 }
+
+#endif  // AP_RANGEFINDER_GYUS42V2_ENABLED

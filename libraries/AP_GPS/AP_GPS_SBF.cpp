@@ -68,7 +68,7 @@ AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 
     // if we ever parse RTK observations it will always be of type NED, so set it once
     state.rtk_baseline_coords_type = RTK_BASELINE_COORDINATE_SYSTEM_NED;
-    if (driver_options() & DriverOptions::SBF_UseBaseForYaw) {
+    if (option_set(AP_GPS::DriverOptions::SBF_UseBaseForYaw)) {
         state.gps_yaw_configured = true;
     }
 }
@@ -86,6 +86,9 @@ AP_GPS_SBF::read(void)
     uint32_t available_bytes = port->available();
     for (uint32_t i = 0; i < available_bytes; i++) {
         uint8_t temp = port->read();
+#if AP_GPS_DEBUG_LOGGING_ENABLED
+        log_data(&temp, 1);
+#endif
         ret |= parse(temp);
     }
 
@@ -398,10 +401,7 @@ AP_GPS_SBF::process_message(void)
 
             state.have_vertical_velocity = true;
 
-            float ground_vector_sq = state.velocity[0] * state.velocity[0] + state.velocity[1] * state.velocity[1];
-            state.ground_speed = (float)safe_sqrt(ground_vector_sq);
-
-            state.ground_course = wrap_360(degrees(atan2f(state.velocity[1], state.velocity[0])));
+            velocity_to_speed_course(state);
             state.rtk_age_ms = temp.MeanCorrAge * 10;
 
             // value is expressed as twice the rms error = int16 * 0.01/2
@@ -416,6 +416,8 @@ AP_GPS_SBF::process_message(void)
             state.location.lat = (int32_t)(temp.Latitude * RAD_TO_DEG_DOUBLE * (double)1e7);
             state.location.lng = (int32_t)(temp.Longitude * RAD_TO_DEG_DOUBLE * (double)1e7);
             state.location.alt = (int32_t)(((float)temp.Height - temp.Undulation) * 1e2f);
+            state.have_undulation = true;
+            state.undulation = temp.Undulation;
         }
 
         if (temp.NrSV != 255) {
@@ -533,7 +535,7 @@ AP_GPS_SBF::process_message(void)
 
 #if GPS_MOVING_BASELINE
             // copy the baseline data as a yaw source
-            if (driver_options() & DriverOptions::SBF_UseBaseForYaw) {
+            if (option_set(AP_GPS::DriverOptions::SBF_UseBaseForYaw)) {
                 calculate_moving_base_yaw(temp.info.Azimuth * 0.01f + 180.0f,
                                           Vector3f(temp.info.DeltaNorth, temp.info.DeltaEast, temp.info.DeltaUp).length(),
                                           -temp.info.DeltaUp);

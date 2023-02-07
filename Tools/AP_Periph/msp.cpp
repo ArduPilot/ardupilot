@@ -3,6 +3,7 @@
   Thanks to input from Konstantin Sharlaimov
  */
 
+#include <AP_HAL/AP_HAL_Boards.h>
 #include "AP_Periph.h"
 
 #ifdef HAL_PERIPH_ENABLE_MSP

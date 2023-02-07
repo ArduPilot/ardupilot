@@ -17,7 +17,7 @@ public:
 
 protected:
     // Called in the constructor once
-    int _check_rpi_version();
+    int _check_rpi_version_by_rev();
 
 private:
     int _rpi_version = 0;

@@ -27,10 +27,10 @@
 
 using namespace SITL;
 
-SerialDevice::SerialDevice()
+SerialDevice::SerialDevice(uint16_t tx_bufsize, uint16_t rx_bufsize)
 {
-    to_autopilot = new ByteBuffer{512};
-    from_autopilot = new ByteBuffer{512};
+    to_autopilot = new ByteBuffer{tx_bufsize};
+    from_autopilot = new ByteBuffer{rx_bufsize};
 }
 
 bool SerialDevice::init_sitl_pointer()
@@ -64,6 +64,10 @@ ssize_t SerialDevice::read_from_autopilot(char *buffer, const size_t size) const
 
 ssize_t SerialDevice::write_to_autopilot(const char *buffer, const size_t size) const
 {
+    if (!is_match_baud()) {
+        return -1;
+    }
+
     const ssize_t ret = to_autopilot->write((uint8_t*)buffer, size);
     // ::fprintf(stderr, "write to autopilot: (");
     // for (ssize_t i=0; i<ret; i++) {
@@ -79,6 +83,10 @@ ssize_t SerialDevice::write_to_autopilot(const char *buffer, const size_t size) 
 
 ssize_t SerialDevice::read_from_device(char *buffer, const size_t size) const
 {
+    if (!is_match_baud()) {
+        return -1;
+    }
+
     const ssize_t ret = to_autopilot->read((uint8_t*)buffer, size);
     return ret;
 }
@@ -86,4 +94,18 @@ ssize_t SerialDevice::write_to_device(const char *buffer, const size_t size) con
 {
     const ssize_t ret = from_autopilot->write((uint8_t*)buffer, size);
     return ret;
+}
+
+/**
+ * baudrates match
+ * 
+ * @retval true matched baudreate
+ * @retval false  unmatched baudreate
+ */
+bool SerialDevice::is_match_baud() const
+{
+    if (device_baud() != 0 && autopilot_baud != 0 && device_baud() != autopilot_baud) {
+        return false;
+    }
+    return true;
 }

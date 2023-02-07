@@ -58,11 +58,6 @@ void Sub::Log_Write_Attitude()
     ahrs.Write_Attitude(targets);
 
     AP::ahrs().Log_Write();
-    ahrs.Write_AHRS2();
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    sitl.Log_Write_SIMSTATE();
-#endif
-    ahrs.Write_POS();
 }
 
 struct PACKED log_Data_Int16t {
@@ -173,22 +168,6 @@ void Sub::Log_Write_Data(LogDataID id, float value)
     }
 }
 
-// logs when baro or compass becomes unhealthy
-void Sub::Log_Sensor_Health()
-{
-    // check baro
-    if (sensor_health.baro != barometer.healthy()) {
-        sensor_health.baro = barometer.healthy();
-        AP::logger().Write_Error(LogErrorSubsystem::BARO, (sensor_health.baro ? LogErrorCode::ERROR_RESOLVED : LogErrorCode::UNHEALTHY));
-    }
-
-    // check compass
-    if (sensor_health.compass != compass.healthy()) {
-        sensor_health.compass = compass.healthy();
-        AP::logger().Write_Error(LogErrorSubsystem::COMPASS, (sensor_health.compass ? LogErrorCode::ERROR_RESOLVED : LogErrorCode::UNHEALTHY));
-    }
-}
-
 struct PACKED log_GuidedTarget {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -272,7 +251,7 @@ void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target
 // @Field: Id: Data type identifier
 // @Field: Value: Value
 
-// @LoggerMessage: GUID
+// @LoggerMessage: GUIP
 // @Description: Guided mode target information
 // @Field: TimeUS: Time since system startup
 // @Field: Type: Type of guided mode
@@ -301,7 +280,7 @@ const struct LogStructure Sub::log_structure[] = {
     { LOG_DATA_FLOAT_MSG, sizeof(log_Data_Float),         
       "DFLT",  "QBf",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
-      "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
+      "GUIP",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
 };
 
 void Sub::Log_Write_Vehicle_Startup_Messages()
@@ -327,7 +306,6 @@ void Sub::Log_Write_Data(LogDataID id, uint32_t value) {}
 void Sub::Log_Write_Data(LogDataID id, int16_t value) {}
 void Sub::Log_Write_Data(LogDataID id, uint16_t value) {}
 void Sub::Log_Write_Data(LogDataID id, float value) {}
-void Sub::Log_Sensor_Health() {}
 void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}
 void Sub::Log_Write_Vehicle_Startup_Messages() {}
 

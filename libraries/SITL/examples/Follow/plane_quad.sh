@@ -16,7 +16,7 @@ PLANE=$ROOTDIR/build/sitl/bin/arduplane
 #UARTA="tcp:0"
 UARTA="mcast:"
 
-PLANE_DEFAULTS="$ROOTDIR/Tools/autotest/default_params/plane.parm"
+PLANE_DEFAULTS="$ROOTDIR/Tools/autotest/models/plane.parm"
 COPTER_DEFAULTS="$ROOTDIR/Tools/autotest/default_params/copter.parm"
 
 mkdir -p swarm/plane swarm/copter

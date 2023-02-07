@@ -162,7 +162,7 @@ void SoloGimbal_Parameters::update()
     for(uint8_t i=0; i<MAVLINK_GIMBAL_NUM_TRACKED_PARAMS; i++) {
         if (!_params[i].seen && _params[i].fetch_attempts > _max_fetch_attempts) {
             _params[i].state = GMB_PARAMSTATE_NONEXISTANT;
-            hal.console->printf("Gimbal parameter %s timed out\n", get_param_name((gmb_param_t)i));
+            DEV_PRINTF("Gimbal parameter %s timed out\n", get_param_name((gmb_param_t)i));
         }
     }
 

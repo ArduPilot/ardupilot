@@ -32,6 +32,7 @@ void Plane::throttle_slew_limit(SRV_Channel::Aux_servo_function_t func)
 
     if (!do_throttle_slew) {
         // only do throttle slew limiting in modes where throttle control is automatic
+        SRV_Channels::set_slew_rate(func, 0.0, 100, G_Dt);
         return;
     }
 
@@ -39,13 +40,13 @@ void Plane::throttle_slew_limit(SRV_Channel::Aux_servo_function_t func)
     if (control_mode == &mode_auto) {
         if (auto_state.takeoff_complete == false && g.takeoff_throttle_slewrate != 0) {
             slewrate = g.takeoff_throttle_slewrate;
-        } else if (landing.get_throttle_slewrate() != 0 && flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
+        } else if (landing.get_throttle_slewrate() != 0 && flight_stage == AP_FixedWing::FlightStage::LAND) {
             slewrate = landing.get_throttle_slewrate();
         }
     }
     if (g.takeoff_throttle_slewrate != 0 &&
-        (flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF ||
-         flight_stage == AP_Vehicle::FixedWing::FLIGHT_VTOL)) {
+        (flight_stage == AP_FixedWing::FlightStage::TAKEOFF ||
+         flight_stage == AP_FixedWing::FlightStage::VTOL)) {
         // for VTOL we use takeoff slewrate, which helps with transition
         slewrate = g.takeoff_throttle_slewrate;
     }
@@ -54,10 +55,7 @@ void Plane::throttle_slew_limit(SRV_Channel::Aux_servo_function_t func)
         slewrate = g.takeoff_throttle_slewrate;
     }
 #endif
-    // if slew limit rate is set to zero then do not slew limit
-    if (slewrate) {                   
-        SRV_Channels::limit_slew_rate(func, slewrate, G_Dt);
-    }
+    SRV_Channels::set_slew_rate(func, slewrate, 100, G_Dt);
 }
 
 /* We want to suppress the throttle if we think we are on the ground and in an autopilot controlled throttle mode.
@@ -135,11 +133,17 @@ bool Plane::suppress_throttle(void)
         // if we have an airspeed sensor, then check it too, and
         // require 5m/s. This prevents throttle up due to spiky GPS
         // groundspeed with bad GPS reception
+#if AP_AIRSPEED_ENABLED
         if ((!ahrs.airspeed_sensor_enabled()) || airspeed.get_airspeed() >= 5) {
             // we're moving at more than 5 m/s
             throttle_suppressed = false;
             return false;        
         }
+#else
+        // no airspeed sensor, so we trust that the GPS's movement is truthful
+        throttle_suppressed = false;
+        return false;
+#endif
     }
 
 #if HAL_QUADPLANE_ENABLED
@@ -186,7 +190,7 @@ void Plane::channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, S
 /*
   setup flaperon output channels
  */
-void Plane::flaperon_update(int8_t flap_percent)
+void Plane::flaperon_update()
 {
     /*
       flaperons are implemented as a mixer between aileron and a
@@ -194,6 +198,7 @@ void Plane::flaperon_update(int8_t flap_percent)
       or from auto flaps.
      */
     float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
+    float flap_percent = SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_flap_auto);
     float flaperon_left  = constrain_float(aileron + flap_percent * 45, -4500, 4500);
     float flaperon_right = constrain_float(aileron - flap_percent * 45, -4500, 4500);
     SRV_Channels::set_output_scaled(SRV_Channel::k_flaperon_left, flaperon_left);
@@ -275,11 +280,11 @@ void Plane::dspoiler_update(void)
           spoilers to both wings. Get flap percentage from k_flap_auto, which is set
           in set_servos_flaps() as the maximum of manual and auto flap control
          */
-        const int16_t flap_percent = SRV_Channels::get_output_scaled(SRV_Channel::k_flap_auto);
+        const float flap_percent = SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_flap_auto);
 
-        if (flap_percent > 0) {
-            float inner_flap_scaled = (float)flap_percent;
-            float outer_flap_scaled = (float)flap_percent;
+        if (is_positive(flap_percent)) {
+            float inner_flap_scaled = flap_percent;
+            float outer_flap_scaled = flap_percent;
             if (progressive_crow) {
                 // apply 0 - full inner from 0 to 50% flap then add in outer above 50%
                 inner_flap_scaled = constrain_float(inner_flap_scaled * 2, 0,100);
@@ -383,13 +388,15 @@ void Plane::set_servos_manual_passthrough(void)
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
 
 #if HAL_QUADPLANE_ENABLED
-    if (quadplane.available() && (quadplane.options & QuadPlane::OPTION_IDLE_GOV_MANUAL)) {
+    if (quadplane.available() && quadplane.option_is_set(QuadPlane::OPTION::IDLE_GOV_MANUAL)) {
         // for quadplanes it can be useful to run the idle governor in MANUAL mode
         // as it prevents the VTOL motors from running
         int8_t min_throttle = aparm.throttle_min.get();
 
         // apply idle governor
+#if AP_ICENGINE_ENABLED
         g2.ice_control.update_idle_governor(min_throttle);
+#endif
         throttle = MAX(throttle, min_throttle);
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
     }
@@ -425,8 +432,8 @@ void Plane::throttle_voltage_comp(int8_t &min_throttle, int8_t &max_throttle) co
     const float ratio = g2.fwd_thr_batt_voltage_max / batt_voltage_resting_estimate;
 
     // Scale the throttle limits to prevent subsequent clipping
-    min_throttle = MAX((int8_t)(ratio * (float)min_throttle), -100);
-    max_throttle = MIN((int8_t)(ratio * (float)max_throttle),  100);
+    min_throttle = int8_t(MAX((ratio * (float)min_throttle), -100));
+    max_throttle = int8_t(MIN((ratio * (float)max_throttle),  100));
 
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,
                                         constrain_float(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * ratio, -100, 100));
@@ -485,7 +492,7 @@ void Plane::throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle)
  */
 void Plane::set_servos_controlled(void)
 {
-    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
+    if (flight_stage == AP_FixedWing::FlightStage::LAND) {
         // allow landing to override servos if it would like to
         landing.override_servos();
     }
@@ -494,17 +501,19 @@ void Plane::set_servos_controlled(void)
     int8_t min_throttle = aparm.throttle_min.get();
     int8_t max_throttle = aparm.throttle_max.get();
 
+#if AP_ICENGINE_ENABLED
     // apply idle governor
     g2.ice_control.update_idle_governor(min_throttle);
-    
+#endif
+
     if (min_throttle < 0 && !allow_reverse_thrust()) {
         // reverse thrust is available but inhibited.
         min_throttle = 0;
     }
 
     bool flight_stage_determines_max_throttle = false;
-    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF || 
-        flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND
+    if (flight_stage == AP_FixedWing::FlightStage::TAKEOFF || 
+        flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING
         ) {
         flight_stage_determines_max_throttle = true;
     }
@@ -552,13 +561,17 @@ void Plane::set_servos_controlled(void)
             // manual pass through of throttle while throttle is suppressed
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
         }
+#if AP_SCRIPTING_ENABLED
+    } else if (nav_scripting_active()) {
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.nav_scripting.throttle_pct);
+#endif
     } else if (control_mode == &mode_stabilize ||
                control_mode == &mode_training ||
                control_mode == &mode_acro ||
                control_mode == &mode_fbwa ||
                control_mode == &mode_autotune) {
         // a manual throttle mode
-        if (failsafe.throttle_counter) {
+        if (!rc().has_valid_input()) {
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
         } else if (g.throttle_passthru_stabilize) {
             // manual pass through of throttle while in FBWA or
@@ -612,7 +625,7 @@ void Plane::set_servos_flaps(void)
     int8_t manual_flap_percent = 0;
 
     // work out any manual flap input
-    if (channel_flap != nullptr && !failsafe.rc_failsafe && failsafe.throttle_counter == 0) {
+    if (channel_flap != nullptr && rc().has_valid_input()) {
         manual_flap_percent = channel_flap->percent_input();
     }
 
@@ -641,19 +654,19 @@ void Plane::set_servos_flaps(void)
           possibility of oscillation
          */
         switch (flight_stage) {
-            case AP_Vehicle::FixedWing::FLIGHT_TAKEOFF:
-            case AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND:
+            case AP_FixedWing::FlightStage::TAKEOFF:
+            case AP_FixedWing::FlightStage::ABORT_LANDING:
                 if (g.takeoff_flap_percent != 0) {
                     auto_flap_percent = g.takeoff_flap_percent;
                 }
                 break;
-            case AP_Vehicle::FixedWing::FLIGHT_NORMAL:
+            case AP_FixedWing::FlightStage::NORMAL:
                 if (g.takeoff_flap_percent != 0 && in_preLaunch_flight_stage()) {
                     // TODO: move this to a new FLIGHT_PRE_TAKEOFF stage
                     auto_flap_percent = g.takeoff_flap_percent;
                 }
                 break;
-            case AP_Vehicle::FixedWing::FLIGHT_LAND:
+            case AP_FixedWing::FlightStage::LAND:
                 if (landing.get_flap_percent() != 0) {
                   auto_flap_percent = landing.get_flap_percent();
                 }
@@ -671,16 +684,14 @@ void Plane::set_servos_flaps(void)
     SRV_Channels::set_output_scaled(SRV_Channel::k_flap_auto, auto_flap_percent);
     SRV_Channels::set_output_scaled(SRV_Channel::k_flap, manual_flap_percent);
 
-    if (g.flap_slewrate) {
-        SRV_Channels::limit_slew_rate(SRV_Channel::k_flap_auto, g.flap_slewrate, G_Dt);
-        SRV_Channels::limit_slew_rate(SRV_Channel::k_flap, g.flap_slewrate, G_Dt);
-    }    
+    SRV_Channels::set_slew_rate(SRV_Channel::k_flap_auto, g.flap_slewrate, 100, G_Dt);
+    SRV_Channels::set_slew_rate(SRV_Channel::k_flap, g.flap_slewrate, 100, G_Dt);
 
     // output to flaperons, if any
-    flaperon_update(auto_flap_percent);
+    flaperon_update();
 }
 
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
 /*
   setup landing gear state
  */
@@ -688,10 +699,10 @@ void Plane::set_landing_gear(void)
 {
     if (control_mode == &mode_auto && hal.util->get_soft_armed() && is_flying() && gear.last_flight_stage != flight_stage) {
         switch (flight_stage) {
-        case AP_Vehicle::FixedWing::FLIGHT_LAND:
+        case AP_FixedWing::FlightStage::LAND:
             g2.landing_gear.deploy_for_landing();
             break;
-        case AP_Vehicle::FixedWing::FLIGHT_NORMAL:
+        case AP_FixedWing::FlightStage::NORMAL:
             g2.landing_gear.retract_after_takeoff();
             break;
         default:
@@ -700,7 +711,7 @@ void Plane::set_landing_gear(void)
     }
     gear.last_flight_stage = flight_stage;
 }
-#endif // LANDING_GEAR_ENABLED
+#endif // AP_LANDINGGEAR_ENABLED
 
 
 /*
@@ -709,7 +720,7 @@ void Plane::set_landing_gear(void)
 void Plane::servos_twin_engine_mix(void)
 {
     float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
-    float rud_gain = float(plane.g2.rudd_dt_gain) / 100;
+    float rud_gain = float(plane.g2.rudd_dt_gain) * 0.01f;
     rudder_dt = rud_gain * SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) / SERVO_MAX;
 
 #if ADVANCED_FAILSAFE == ENABLED
@@ -868,7 +879,7 @@ void Plane::set_servos(void)
     // setup flap outputs
     set_servos_flaps();
 
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
     // setup landing gear output
     set_landing_gear();
 #endif
@@ -878,6 +889,14 @@ void Plane::set_servos(void)
 
     // slew rate limit throttle
     throttle_slew_limit(SRV_Channel::k_throttle);
+
+    int8_t min_throttle = 0;
+#if AP_ICENGINE_ENABLED
+    if (g2.ice_control.allow_throttle_while_disarmed()) {
+        min_throttle = MAX(aparm.throttle_min.get(), 0);
+    }
+    const float base_throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
+#endif
 
     if (!arming.is_armed()) {
         //Some ESCs get noisy (beep error msgs) if PWM == 0.
@@ -896,7 +915,6 @@ void Plane::set_servos(void)
 
         case AP_Arming::Required::YES_MIN_PWM:
         default:
-            int8_t min_throttle = MAX(aparm.throttle_min.get(),0);
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, min_throttle);
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, min_throttle);
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, min_throttle);
@@ -904,11 +922,16 @@ void Plane::set_servos(void)
         }
     }
 
-    uint8_t override_pct;
-    if (g2.ice_control.throttle_override(override_pct)) {
-        // the ICE controller wants to override the throttle for starting
+#if AP_ICENGINE_ENABLED
+    float override_pct = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
+    if (g2.ice_control.throttle_override(override_pct, base_throttle)) {
+        // the ICE controller wants to override the throttle for starting, idle, or redline
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, override_pct);
+#if HAL_QUADPLANE_ENABLED
+        quadplane.vel_forward.integrator = 0;
+#endif
     }
+#endif  // AP_ICENGINE_ENABLED
 
     // run output mixer and send values to the hal for output
     servos_output();
@@ -978,7 +1001,7 @@ void Plane::servos_output(void)
 
     // support MANUAL_RCMASK
     if (g2.manual_rc_mask.get() != 0 && control_mode == &mode_manual) {
-        SRV_Channels::copy_radio_in_out_mask(uint16_t(g2.manual_rc_mask.get()));
+        SRV_Channels::copy_radio_in_out_mask(uint32_t(g2.manual_rc_mask.get()));
     }
 
     SRV_Channels::calc_pwm();
@@ -1017,7 +1040,7 @@ void Plane::servos_auto_trim(void)
         return;
     }
 #if HAL_QUADPLANE_ENABLED
-    if (quadplane.in_assisted_flight() || quadplane.in_vtol_mode()) {
+    if (!quadplane.allow_servo_auto_trim()) {
         // can't auto-trim with quadplane motors running
         return;
     }

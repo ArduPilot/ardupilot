@@ -1,11 +1,13 @@
 #pragma once
 
+#include "AP_Baro_Backend.h"
+
+#if AP_BARO_BMP085_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
 #include <AP_HAL/utility/OwnPtr.h>
 #include <Filter/Filter.h>
-
-#include "AP_Baro_Backend.h"
 
 #ifndef HAL_BARO_BMP085_I2C_ADDR
 #define HAL_BARO_BMP085_I2C_ADDR        (0x77)
@@ -62,3 +64,5 @@ private:
     uint8_t _vers;
     uint8_t _type;
 };
+
+#endif  // AP_BARO_BMP085_ENABLED

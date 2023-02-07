@@ -16,7 +16,6 @@ void Sub::stabilize_run()
 {
     uint32_t tnow = AP_HAL::millis();
     float target_roll, target_pitch;
-    float target_yaw_rate;
 
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
@@ -34,7 +33,7 @@ void Sub::stabilize_run()
     get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, aparm.angle_max);
 
     // get pilot's desired yaw rate
-    target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
 
     // call attitude controller
     // update attitude controller targets

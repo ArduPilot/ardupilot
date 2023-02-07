@@ -36,6 +36,7 @@
 *.vbrain
 *.vrx
 *.zip
+!Tools/autotest/tilecache/**/*.zip
 *~
 .*.swo
 .*.swp
@@ -81,7 +82,6 @@ Thumbs.db
 autotest.lck
 build
 cmake_install.cmake
-config.mk
 cscope.in.out
 cscope.out
 cscope.po.out
@@ -92,6 +92,13 @@ logs/
 mav.log
 mav.log.raw
 mav.parm
+/defaults.parm
+/ArduCopter/defaults.parm
+/ArduPlane/defaults.parm
+/AntennaTracker/defaults.parm
+/ArduSub/defaults.parm
+/Blimp/defaults.parm
+/Rover/defaults.parm
 mk/PX4/ROMFS/default.parm
 module.mk
 serialsent.raw
@@ -102,7 +109,6 @@ test.ArduCopter/*
 GPATH
 GRTAGS
 GTAGS
-config.mk
 *.apj
 .gdbinit
 /.vscode

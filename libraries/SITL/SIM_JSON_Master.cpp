@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  Send and receve JSON backend data to alow a second AP instance to ride along
+  Send and receive JSON backend data to alow a second AP instance to ride along
 */
 
 #include "SIM_JSON_Master.h"
@@ -159,7 +159,7 @@ void JSON_Master::receive(struct sitl_input &input)
 
         if (list->instance == master_instance) {
             // Use the servo outs from this instance
-            memcpy(input.servos,buffer.pwm,sizeof(input.servos));
+            memcpy(input.servos,buffer.pwm,sizeof(buffer.pwm));
         }
     }
 }

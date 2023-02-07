@@ -117,4 +117,3 @@ typedef struct{
 /* Definition of control register structures. */
 #define PRU0_CTRL (*((volatile pruCtrl*)0x22000))
 #define PRU1_CTRL (*((volatile pruCtrl*)0x24000))
-

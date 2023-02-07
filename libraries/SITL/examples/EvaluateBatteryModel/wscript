@@ -1,0 +1,21 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+def build(bld):
+
+    if bld.env.BOARD != 'linux':
+        return
+
+    source = bld.path.ant_glob('*.cpp')
+    source.append('../../../../libraries/SITL/SIM_Battery.cpp')
+    source.append('../../../../libraries/SITL/SIM_Frame.cpp')
+    source.append('../../../../libraries/SITL/picojson.cpp')
+
+    bld.env.DEFINES.append("USE_PICOJSON=1")
+
+    bld.ap_program(
+        use='ap',
+        program_groups=['examples'],
+        source=source,
+    )
+

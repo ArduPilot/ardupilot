@@ -19,14 +19,13 @@
 //
 #pragma once
 
-#include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 
 #ifndef AP_GPS_MAV_ENABLED
-  #define AP_GPS_MAV_ENABLED 1
+  #define AP_GPS_MAV_ENABLED AP_GPS_BACKEND_DEFAULT_ENABLED
 #endif 
 
 #if AP_GPS_MAV_ENABLED

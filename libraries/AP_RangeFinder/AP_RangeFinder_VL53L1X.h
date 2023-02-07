@@ -2,6 +2,13 @@
 
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Backend.h"
+
+#ifndef AP_RANGEFINDER_VL53L1X_ENABLED
+#define AP_RANGEFINDER_VL53L1X_ENABLED AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
+#endif
+
+#if AP_RANGEFINDER_VL53L1X_ENABLED
+
 #include <AP_HAL/I2CDevice.h>
 
 class AP_RangeFinder_VL53L1X : public AP_RangeFinder_Backend
@@ -1293,3 +1300,5 @@ private:
     uint32_t calcMacroPeriod(uint8_t vcsel_period) const;
     bool setupManualCalibration(void);
 };
+
+#endif  // AP_RANGEFINDER_VL53L1X_ENABLED

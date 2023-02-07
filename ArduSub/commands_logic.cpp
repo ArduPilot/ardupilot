@@ -353,7 +353,10 @@ void Sub::do_circle(const AP_Mission::Mission_Command& cmd)
     }
 
     // calculate radius
-    uint8_t circle_radius_m = HIGHBYTE(cmd.p1); // circle radius held in high byte of p1
+    uint16_t circle_radius_m = HIGHBYTE(cmd.p1); // circle radius held in high byte of p1
+    if (cmd.type_specific_bits & (1U << 0)) {
+        circle_radius_m *= 10;
+    }
 
     // move to edge of circle (verify_circle) will ensure we begin circling once we reach the edge
     auto_circle_movetoedge_start(circle_center, circle_radius_m);
@@ -509,7 +512,8 @@ bool Sub::verify_circle(const AP_Mission::Mission_Command& cmd)
     // check if we've reached the edge
     if (auto_mode == Auto_CircleMoveToEdge) {
         if (wp_nav.reached_wp_destination()) {
-            Vector3f circle_center = pv_location_to_vector(cmd.content.location);
+            Vector3f circle_center;
+            UNUSED_RESULT(cmd.content.location.get_vector_from_origin_NEU(circle_center));
 
             // set target altitude if not provided
             if (is_zero(circle_center.z)) {
@@ -681,6 +685,6 @@ void Sub::do_roi(const AP_Mission::Mission_Command& cmd)
 void Sub::do_mount_control(const AP_Mission::Mission_Command& cmd)
 {
 #if HAL_MOUNT_ENABLED
-    camera_mount.set_angle_targets(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw);
+    camera_mount.set_angle_target(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw, false);
 #endif
 }

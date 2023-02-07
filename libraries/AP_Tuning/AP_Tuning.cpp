@@ -1,7 +1,9 @@
 #include "AP_Tuning.h"
+
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 #include <RC_Channel/RC_Channel.h>
+#include <AP_Notify/AP_Notify.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -189,9 +191,6 @@ void AP_Tuning::check_input(uint8_t flightmode)
         last_channel_value = chan_value;
     }
 
-    // check for controller error
-    check_controller_error();
-    
     if (fabsf(chan_value - last_channel_value) < 0.01) {
         // ignore changes of less than 1%
         return;
@@ -334,20 +333,4 @@ const char *AP_Tuning::get_tuning_name(uint8_t parm)
         }
     }
     return "UNKNOWN";
-}
-
-/*
-  check for controller error
- */
-void AP_Tuning::check_controller_error(void)
-{
-    float err = controller_error(current_parm);
-    if (err > error_threshold && !mid_point_wait && error_threshold > 0) {
-        uint32_t now = AP_HAL::millis();
-        if (now - last_controller_error_ms > 2000 && hal.util->get_soft_armed()) {
-            AP_Notify::events.tune_error = 1;
-            gcs().send_text(MAV_SEVERITY_INFO, "Tuning: error %.2f", (double)err);
-            last_controller_error_ms = now;
-        }
-    }
 }

@@ -20,20 +20,24 @@
  */
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
 #ifndef HAL_SCHEDULER_ENABLED
 #define HAL_SCHEDULER_ENABLED 1
 #endif
 
 #include <AP_Param/AP_Param.h>
+#include <AP_HAL/Semaphores.h>
 #include <AP_HAL/Util.h>
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include "PerfInfo.h"       // loop perf monitoring
 
 #if HAL_MINIMIZE_FEATURES
 #define AP_SCHEDULER_NAME_INITIALIZER(_clazz,_name) .name = #_name,
+#define AP_FAST_NAME_INITIALIZER(_clazz,_name) .name = #_name "*",
 #else
 #define AP_SCHEDULER_NAME_INITIALIZER(_clazz,_name) .name = #_clazz "::" #_name,
+#define AP_FAST_NAME_INITIALIZER(_clazz,_name) .name = #_clazz "::" #_name "*",
 #endif
 #define LOOP_RATE 0
 
@@ -49,6 +53,17 @@
 }
 
 /*
+  useful macro for creating the fastloop task table
+ */
+#define FAST_TASK_CLASS(classname, classptr, func) { \
+    .function = FUNCTOR_BIND(classptr, &classname::func, void),\
+    AP_FAST_NAME_INITIALIZER(classname, func)\
+    .rate_hz = 0,\
+    .max_time_micros = 0,\
+    .priority = AP_Scheduler::FAST_TASK_PRI0 \
+}
+
+/*
   A task scheduler for APM main loops
 
   Sketches should call scheduler.init() on startup, then call
@@ -61,14 +76,10 @@
 class AP_Scheduler
 {
 public:
-
-    FUNCTOR_TYPEDEF(scheduler_fastloop_fn_t, void);
-
-    AP_Scheduler(scheduler_fastloop_fn_t fastloop_fn = nullptr);
+    AP_Scheduler();
 
     /* Do not allow copies */
-    AP_Scheduler(const AP_Scheduler &other) = delete;
-    AP_Scheduler &operator=(const AP_Scheduler&) = delete;
+    CLASS_NO_COPY(AP_Scheduler);
 
     static AP_Scheduler *get_singleton();
     static AP_Scheduler *_singleton;
@@ -85,6 +96,13 @@ public:
 
     enum class Options : uint8_t {
         RECORD_TASK_INFO = 1 << 0
+    };
+
+    enum FastTaskPriorities {
+        FAST_TASK_PRI0 = 0,
+        FAST_TASK_PRI1 = 1,
+        FAST_TASK_PRI2 = 2,
+        MAX_FAST_TASK_PRIORITIES = 3
     };
 
     // initialise scheduler
@@ -105,6 +123,7 @@ public:
 
     // return current tick counter
     uint16_t ticks() const { return _tick_counter; }
+    uint32_t ticks32() const { return _tick_counter32; }
 
     // run the tasks. Call this once per 'tick'.
     // time_available is the amount of time available to run
@@ -144,8 +163,14 @@ public:
         return _loop_period_s;
     }
 
+    // get the filtered main loop time in seconds
     float get_filtered_loop_time(void) const {
         return perf_info.get_filtered_time();
+    }
+
+    // get the filtered active main loop rate
+    float get_filtered_loop_rate_hz() {
+        return perf_info.get_filtered_loop_rate_hz();
     }
 
     // get the time in seconds that the last loop took
@@ -168,9 +193,6 @@ public:
     AP::PerfInfo perf_info;
 
 private:
-    // function that is called before anything in the scheduler table:
-    scheduler_fastloop_fn_t _fastloop_fn;
-
     // used to enable scheduler debugging
     AP_Int8 _debug;
 
@@ -203,6 +225,7 @@ private:
     // number of 'ticks' that have passed (number of times that
     // tick() has been called
     uint16_t _tick_counter;
+    uint32_t _tick_counter32;
 
     // tick counter at the time we last ran each task
     uint16_t *_last_run;

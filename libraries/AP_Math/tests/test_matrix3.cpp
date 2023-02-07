@@ -17,6 +17,8 @@
 
 #include "math_test.h"
 
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
 // given we are in the Math library, you're epected to know what
 // you're doing when directly comparing floats:
 #pragma GCC diagnostic push

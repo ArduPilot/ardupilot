@@ -1,5 +1,7 @@
 # hw definition file for processing by chibios_pins.py
 
+AUTOBUILD_TARGETS None
+
 # MCU class and specific type
 MCU STM32L496 STM32L496xx
 
@@ -97,7 +99,7 @@ PA4 VSENSE ADC1 SCALE(2)
 
 define HAL_NO_MONITOR_THREAD
 
-define HAL_MINIMIZE_FEATURES 1
+include ../include/minimize_features.inc
 
 
 define AP_PARAM_MAX_EMBEDDED_PARAM 512

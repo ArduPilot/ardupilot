@@ -67,8 +67,7 @@ public:
     AP_FETtecOneWire();
 
     /// Do not allow copies
-    AP_FETtecOneWire(const AP_FETtecOneWire &other) = delete;
-    AP_FETtecOneWire &operator=(const AP_FETtecOneWire&) = delete;
+    CLASS_NO_COPY(AP_FETtecOneWire);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -193,10 +192,9 @@ private:
     };
 
     uint32_t _min_fast_throttle_period_us;  ///< minimum allowed fast-throttle command transmit period
-    uint32_t _last_not_running_warning_ms;  ///< last time we warned the user their ESCs are stuffed
-    int32_t _motor_mask;                    ///< an un-mutable copy of the _motor_mask_parameter taken before _init_done goes true
-    int32_t _reverse_mask;                  ///< a copy of the _reverse_mask_parameter taken while not armed
-    int32_t _running_mask;                  ///< a bitmask of the actively running ESCs
+    uint32_t _motor_mask;                    ///< an un-mutable copy of the _motor_mask_parameter taken before _init_done goes true
+    uint32_t _reverse_mask;                  ///< a copy of the _reverse_mask_parameter taken while not armed
+    uint32_t _running_mask;                  ///< a bitmask of the actively running ESCs
     uint32_t _last_transmit_us;             ///< last time the transmit() function sent data
     ESC *_escs;
     uint8_t _esc_count;                ///< number of allocated ESCs
@@ -372,7 +370,7 @@ private:
         uint16_t voltage;         // centi-Volt
         uint16_t current;         // centi-Ampere  (signed?)
         int16_t rpm;              // centi-rpm
-        uint16_t consumption_mah; // mili-Ampere.hour
+        uint16_t consumption_mah; // milli-Ampere.hour
         uint16_t tx_err_count;    // CRC error count, as perceived from the ESC receiving side
     };
 

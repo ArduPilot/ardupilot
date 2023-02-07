@@ -35,6 +35,12 @@ void Copter::crash_check()
         return;
     }
 
+    // exit immediately if in force flying
+    if (force_flying && !flightmode->is_landing()) {
+        crash_counter = 0;
+        return;
+    }
+
     // return immediately if we are not in an angle stabilize flight mode or we are flipping
     if (flightmode->mode_number() == Mode::Number::ACRO || flightmode->mode_number() == Mode::Number::FLIP) {
         crash_counter = 0;
@@ -163,6 +169,12 @@ void Copter::thrust_loss_check()
         // enable thrust loss handling
         motors->set_thrust_boost(true);
         // the motors library disables this when it is no longer needed to achieve the commanded output
+
+#if AP_GRIPPER_ENABLED
+        if ((copter.g2.flight_options & uint32_t(FlightOptions::RELEASE_GRIPPER_ON_THRUST_LOSS)) != 0) {
+            copter.g2.gripper.release();
+        }
+#endif
     }
 }
 
@@ -179,7 +191,7 @@ void Copter::yaw_imbalance_check()
         return;
     }
 
-    // thrust loss is trigerred, yaw issues are expected
+    // thrust loss is triggered, yaw issues are expected
     if (motors->get_thrust_boost()) {
         yaw_I_filt.reset(0.0f);
         return;
@@ -207,8 +219,8 @@ void Copter::yaw_imbalance_check()
 
     const float I_max = attitude_control->get_rate_yaw_pid().imax();
     if ((is_positive(I_max) && ((I > YAW_IMBALANCE_IMAX_THRESHOLD * I_max) || (is_equal(I_term,I_max))))) {
-        // filtered using over precentage of I max or unfiltered = I max
-        // I makes up more than precentage of total available control power
+        // filtered using over percentage of I max or unfiltered = I max
+        // I makes up more than percentage of total available control power
         const uint32_t now = millis();
         if (now - last_yaw_warn_ms > YAW_IMBALANCE_WARN_MS) {
             last_yaw_warn_ms = now;
@@ -221,7 +233,7 @@ void Copter::yaw_imbalance_check()
 
 // Code to detect a crash main ArduCopter code
 #define PARACHUTE_CHECK_TRIGGER_SEC         1       // 1 second of loss of control triggers the parachute
-#define PARACHUTE_CHECK_ANGLE_DEVIATION_CD  3000    // 30 degrees off from target indicates a loss of control
+#define PARACHUTE_CHECK_ANGLE_DEVIATION_DEG 30.0f   // 30 degrees off from target indicates a loss of control
 
 // parachute_check - disarms motors and triggers the parachute if serious loss of control has been detected
 // vehicle is considered to have a "serious loss of control" by the vehicle being more than 30 degrees off from the target roll and pitch angles continuously for 1 second
@@ -283,7 +295,7 @@ void Copter::parachute_check()
 
     // check for angle error over 30 degrees
     const float angle_error = attitude_control->get_att_error_angle_deg();
-    if (angle_error <= CRASH_CHECK_ANGLE_DEVIATION_DEG) {
+    if (angle_error <= PARACHUTE_CHECK_ANGLE_DEVIATION_DEG) {
         if (control_loss_count > 0) {
             control_loss_count--;
         }
@@ -325,7 +337,7 @@ void Copter::parachute_release()
     // release parachute
     parachute.release();
 
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
     // deploy landing gear
     landinggear.set_position(AP_LandingGear::LandingGear_Deploy);
 #endif

@@ -13,14 +13,14 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
 #include "AP_RangeFinder_USD1_Serial.h"
+
+#if AP_RANGEFINDER_USD1_SERIAL_ENABLED
+
 #include <ctype.h>
 
 #define USD1_HDR 254   // Header Byte from USD1_Serial (0xFE)
 #define USD1_HDR_V0 72 // Header Byte for beta V0 of USD1_Serial (0x48)
-
-extern const AP_HAL::HAL& hal;
 
 /*
    detect USD1_Serial Firmware Version
@@ -173,3 +173,5 @@ bool AP_RangeFinder_USD1_Serial::get_reading(float &reading_m)
 
     return true;
 }
+
+#endif  // AP_RANGEFINDER_USD1_SERIAL_ENABLED

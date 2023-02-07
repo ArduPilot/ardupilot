@@ -14,7 +14,7 @@ class MeasurementCb;
 
 class AP_OpticalFlow_HereFlow : public OpticalFlow_backend {
 public:
-    AP_OpticalFlow_HereFlow(OpticalFlow &flow);
+    AP_OpticalFlow_HereFlow(AP_OpticalFlow &flow);
 
     void init() override {}
 

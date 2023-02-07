@@ -1,7 +1,7 @@
 -- This script is an example of writing to CAN bus
 
 -- Load CAN driver, using the scripting protocol and with a buffer size of 5
-local driver = CAN.get_device(5)
+local driver = CAN:get_device(5)
 
 -- transfer ID of the message were sending
 local Transfer_ID = 0

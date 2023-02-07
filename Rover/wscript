@@ -9,7 +9,6 @@ def build(bld):
         ap_libraries=bld.ap_common_vehicle_libraries() + [
             'APM_Control',
             'AP_Arming',
-            'AP_L1_Control',
             'AP_Mount',
             'AP_Navigation',
             'AR_WPNav',
@@ -18,7 +17,6 @@ def build(bld):
             'AP_AdvancedFailsafe',
             'AP_WheelEncoder',
             'AP_SmartRTL',
-            'AC_Fence',
             'AC_AttitudeControl',
             'AP_LTM_Telem',
             'AP_Devo_Telem',
@@ -27,7 +25,8 @@ def build(bld):
             'AP_WindVane',
             'AR_Motors',
             'AP_Torqeedo',
-            'AP_AIS',
+            'AC_PrecLand',
+            'AP_IRLock',
         ],
     )
 

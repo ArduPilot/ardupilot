@@ -18,6 +18,8 @@
 
 #include "ExpandingString.h"
 
+#include <AP_HAL/AP_HAL.h>
+
 extern const AP_HAL::HAL& hal;
 
 #define EXPAND_INCREMENT 512

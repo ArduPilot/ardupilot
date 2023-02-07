@@ -15,8 +15,8 @@ APJ_BOARD_ID 1053
 # setup build for a peripheral firmware
 env AP_PERIPH 1
 
-# crystal frequency
-OSCILLATOR_HZ 12000000
+# crystal frequency set to 0 to use internal clock
+OSCILLATOR_HZ 0
 
 # assume 256k flash part
 FLASH_SIZE_KB 256
@@ -28,7 +28,7 @@ STDOUT_BAUDRATE 57600
 SERIAL_ORDER OTG1 USART2
 
 # a fault LED
-PA13 LED_BOOTLOADER OUTPUT HIGH # blue
+PA15 LED_BOOTLOADER OUTPUT HIGH # blue
 define HAL_LED_ON 0
 
 # USART1
@@ -60,9 +60,9 @@ define HAL_DISABLE_LOOP_DELAY
 PB8 CAN1_RX CAN1
 PB9 CAN1_TX CAN1
 
-# debugger support, disabled as PA13 used for LED
-# PA13 JTMS-SWDIO SWD
-# PA14 JTCK-SWCLK SWD
+# debugger support 
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
 
 # make bl baudrate match debug baudrate for easier debugging
 define BOOTLOADER_BAUDRATE 57600

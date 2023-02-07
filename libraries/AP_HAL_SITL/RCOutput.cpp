@@ -35,7 +35,7 @@ void RCOutput::enable_ch(uint8_t ch)
     if (!(_enable_mask & (1U << ch))) {
         Debug("enable_ch(%u)\n", ch);
     }
-    _enable_mask |= 1U << ch;
+    _enable_mask |= (1U << ch);
 }
 
 void RCOutput::disable_ch(uint8_t ch)
@@ -43,13 +43,14 @@ void RCOutput::disable_ch(uint8_t ch)
     if (_enable_mask & (1U << ch)) {
         Debug("disable_ch(%u)\n", ch);
     }
-    _enable_mask &= ~1U << ch;
+    _enable_mask &= ~(1U << ch);
 }
 
 void RCOutput::write(uint8_t ch, uint16_t period_us)
 {
     _sitlState->output_ready = true;
-    if (ch < SITL_NUM_CHANNELS && (_enable_mask & (1U<<ch))) {
+    // FIXME: something in sitl is expecting to be able to read and write disabled channels
+    if (ch < SITL_NUM_CHANNELS /*&& (_enable_mask & (1U<<ch))*/) {
         if (_corked) {
             _pending[ch] = period_us;
         } else {
@@ -60,7 +61,8 @@ void RCOutput::write(uint8_t ch, uint16_t period_us)
 
 uint16_t RCOutput::read(uint8_t ch)
 {
-    if (ch < SITL_NUM_CHANNELS) {
+    // FIXME: something in sitl is expecting to be able to read and write disabled channels
+    if (ch < SITL_NUM_CHANNELS /*&& (_enable_mask & (1U<<ch))*/) {
         return _sitlState->pwm_output[ch];
     }
     return 0;
@@ -86,25 +88,21 @@ void RCOutput::push(void)
         _corked = false;
     }
 
-    // do not overwrite FETTec simulation's ESC telemetry data:
     SITL::SIM *sitl = AP::sitl();
-    if (sitl != nullptr &&
-        sitl->fetteconewireesc_sim.enabled()) {
-        return;
-    }
-
-    if (esc_telem == nullptr) {
-        esc_telem = new AP_ESC_Telem_SITL;
-    }
-    if (esc_telem != nullptr) {
-        esc_telem->update();
+    if (sitl && sitl->esc_telem) {
+        if (esc_telem == nullptr) {
+            esc_telem = new AP_ESC_Telem_SITL;
+        }
+        if (esc_telem != nullptr) {
+            esc_telem->update();
+        }
     }
 }
 
 /*
   Serial LED emulation
 */
-bool RCOutput::set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, output_mode mode, uint16_t clock_mask)
+bool RCOutput::set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, output_mode mode, uint32_t clock_mask)
 {
     if (chan > 15 || num_leds > 64) {
         return false;

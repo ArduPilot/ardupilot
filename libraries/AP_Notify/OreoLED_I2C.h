@@ -16,12 +16,12 @@
  */
 #pragma once
 
+#include "AP_Notify_config.h"
+
+#if AP_NOTIFY_OREOLED_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include "NotifyDevice.h"
-
-#ifndef HAL_OREO_LED_ENABLED
-#define HAL_OREO_LED_ENABLED 0
-#endif
 
 #define OREOLED_NUM_LEDS        4       // maximum number of individual LEDs connected to the oreo led cpu
 #define OREOLED_INSTANCE_ALL    0xff    // instance number to indicate all LEDs (used for set_rgb and set_macro)
@@ -41,8 +41,10 @@ public:
     // called at 50Hz
     void update() override;
 
+#if AP_NOTIFY_MAVLINK_LED_CONTROL_SUPPORT_ENABLED
     // handle a LED_CONTROL message, by default device ignore message
     void handle_led_control(const mavlink_message_t &msg) override;
+#endif
 
 private:
     enum oreoled_pattern {
@@ -200,3 +202,5 @@ private:
     uint32_t _last_boot_ms;
     uint32_t _last_sync_ms;
 };
+
+#endif  // AP_NOTIFY_OREOLED_ENABLED

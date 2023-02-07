@@ -16,6 +16,12 @@
 
 #include <AP_HAL/AP_HAL.h>
 
+#ifndef AP_LTM_TELEM_ENABLED
+#define AP_LTM_TELEM_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+#if AP_LTM_TELEM_ENABLED
+
 static const uint8_t LTM_GFRAME_SIZE = 18;
 static const uint8_t LTM_AFRAME_SIZE = 10;
 static const uint8_t LTM_SFRAME_SIZE = 11;
@@ -26,8 +32,7 @@ public:
     AP_LTM_Telem() {}
 
     /* Do not allow copies */
-    AP_LTM_Telem(const AP_LTM_Telem &other) = delete;
-    AP_LTM_Telem &operator=(const AP_LTM_Telem&) = delete;
+    CLASS_NO_COPY(AP_LTM_Telem);
 
     // init - perform required initialisation
     void init();
@@ -45,3 +50,5 @@ private:
     void send_LTM(uint8_t lt_packet[], uint8_t lt_packet_size);
     void tick(void); // tick - main call to send updates to transmitter (called by scheduler at 1kHz)
 };
+
+#endif

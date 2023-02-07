@@ -15,15 +15,28 @@
 #pragma once
 
 #include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_MSP/msp.h>
 #include "AP_RangeFinder_Params.h"
 
+#ifndef AP_RANGEFINDER_ENABLED
+#define AP_RANGEFINDER_ENABLED 1
+#endif
+
+#ifndef AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
+#define AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED AP_RANGEFINDER_ENABLED
+#endif
+
 // Maximum number of range finder instances available on this platform
-#ifndef RANGEFINDER_MAX_INSTANCES
-#define RANGEFINDER_MAX_INSTANCES 10
+#ifndef RANGEFINDER_MAX_INSTANCES 
+  #if AP_RANGEFINDER_ENABLED
+  #define RANGEFINDER_MAX_INSTANCES 10
+  #else
+  #define RANGEFINDER_MAX_INSTANCES 1
+  #endif
 #endif
 
 #define RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT 10
@@ -49,8 +62,7 @@ public:
     RangeFinder();
 
     /* Do not allow copies */
-    RangeFinder(const RangeFinder &other) = delete;
-    RangeFinder &operator=(const RangeFinder&) = delete;
+    CLASS_NO_COPY(RangeFinder);
 
     // RangeFinder driver types
     enum class Type {
@@ -89,6 +101,7 @@ public:
         MSP = 32,
         USD1_CAN = 33,
         Benewake_CAN = 34,
+        TeraRanger_Serial = 35,
         SIM = 100,
     };
 
@@ -209,8 +222,6 @@ private:
     HAL_Semaphore detect_sem;
     float estimated_terrain_height;
     Vector3f pos_offset_zero;   // allows returning position offsets of zero for invalid requests
-
-    void convert_params(void);
 
     void detect_instance(uint8_t instance, uint8_t& serial_instance);
 

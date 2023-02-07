@@ -24,14 +24,14 @@ public:
     bool pressure_ok(float press);
     uint32_t get_error_count() const { return _error_count; }
 
-#if HAL_MSP_BARO_ENABLED
+#if AP_BARO_MSP_ENABLED
     virtual void handle_msp(const MSP::msp_baro_data_message_t &pkt) {}
-#endif 
+#endif
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_BARO_EXTERNALAHRS_ENABLED
     virtual void handle_external(const AP_ExternalAHRS::baro_data_message_t &pkt) {}
-#endif 
-    
+#endif
+
     /*
       device driver IDs. These are used to fill in the devtype field
       of the device ID, which shows up as BARO_DEVID* parameters to
@@ -52,6 +52,12 @@ public:
         DEVTYPE_BARO_SPL06    = 0x0C,
         DEVTYPE_BARO_UAVCAN   = 0x0D,
         DEVTYPE_BARO_MSP      = 0x0E,
+        DEVTYPE_BARO_ICP101XX = 0x0F,
+        DEVTYPE_BARO_ICP201XX = 0x10,
+        DEVTYPE_BARO_MS5607   = 0x11,
+        DEVTYPE_BARO_MS5837   = 0x12,
+        DEVTYPE_BARO_MS5637   = 0x13,
+        DEVTYPE_BARO_BMP390   = 0x14,
     };
     
 protected:

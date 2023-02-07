@@ -21,6 +21,11 @@ void stm32_watchdog_pat(void);
 bool stm32_was_watchdog_reset(void);
 
 /*
+  return true if reboot was from a software reset
+ */
+bool stm32_was_software_reset(void);
+    
+/*
   save the reset reason code
  */
 void stm32_watchdog_save_reason(void);

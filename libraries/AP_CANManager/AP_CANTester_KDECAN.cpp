@@ -24,7 +24,8 @@
 #include "AP_CANManager.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/utility/sparse-endian.h>
-#include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <GCS_MAVLink/GCS.h>
 
 #define debug_can(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "TestKDECAN",  fmt, ##args); } while (0)
 extern const AP_HAL::HAL& hal;
@@ -201,12 +202,12 @@ void AP_CANTester_KDECAN::loop(void)
 
 void AP_CANTester_KDECAN::print_stats(void)
 {
-    hal.console->printf("KDECANTester: TimeStamp: %u\n", (unsigned)AP_HAL::micros());
+    DEV_PRINTF("KDECANTester: TimeStamp: %u\n", (unsigned)AP_HAL::micros());
     for (uint16_t i=0; i<100; i++) {
         if (counters[i].frame_id == 0) {
             break;
         }
-        hal.console->printf("0x%08x: %u\n", (unsigned)counters[i].frame_id, (unsigned)counters[i].count);
+        DEV_PRINTF("0x%08x: %u\n", (unsigned)counters[i].frame_id, (unsigned)counters[i].count);
         counters[i].count = 0;
     }
 }

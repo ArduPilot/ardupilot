@@ -19,6 +19,7 @@
 
 #include <stdint.h>
 #include "AP_HAL_Namespace.h"
+#include "AP_HAL_Boards.h"
 
 class ExpandingString;
 
@@ -32,28 +33,30 @@ struct AP_HAL::CANFrame {
     static const uint32_t FlagRTR = 1U << 30;                  ///< Remote transmission request
     static const uint32_t FlagERR = 1U << 29;                  ///< Error frame
 
+#if HAL_CANFD_SUPPORTED
+    static const uint8_t NonFDCANMaxDataLen = 8;
+    static const uint8_t MaxDataLen = 64;
+#else
+    static const uint8_t NonFDCANMaxDataLen = 8;
     static const uint8_t MaxDataLen = 8;
-
+#endif
     uint32_t id;                ///< CAN ID with flags (above)
-    uint8_t data[MaxDataLen];
+    union {
+        uint8_t data[MaxDataLen];
+        uint32_t data_32[MaxDataLen/4];
+    };
     uint8_t dlc;                ///< Data Length Code
+    bool canfd;
 
     CANFrame() :
         id(0),
-        dlc(0)
+        dlc(0),
+        canfd(false)
     {
         memset(data,0, MaxDataLen);
     }
 
-    CANFrame(uint32_t can_id, const uint8_t* can_data, uint8_t data_len) :
-        id(can_id),
-        dlc((data_len > MaxDataLen) ? MaxDataLen : data_len)
-    {
-        if ((can_data == nullptr) || (data_len != dlc) || (dlc == 0)) {
-            return;
-        }
-        memcpy(this->data, can_data, dlc);
-    }
+    CANFrame(uint32_t can_id, const uint8_t* can_data, uint8_t data_len, bool canfd_frame = false);
 
     bool operator!=(const CANFrame& rhs) const
     {
@@ -62,6 +65,11 @@ struct AP_HAL::CANFrame {
     bool operator==(const CANFrame& rhs) const
     {
         return (id == rhs.id) && (dlc == rhs.dlc) && (memcmp(data, rhs.data, dlc) == 0);
+    }
+
+    // signed version of id, for use by scriping where uint32_t is expensive
+    int32_t id_signed(void) const {
+        return isExtended()? int32_t(id & MaskExtID) : int32_t(id & MaskStdID);
     }
 
     bool isExtended()                  const
@@ -76,7 +84,19 @@ struct AP_HAL::CANFrame {
     {
         return id & FlagERR;
     }
+    void setCanFD(bool canfd_frame)
+    {
+        canfd = canfd_frame;
+    }
 
+    bool isCanFDFrame() const
+    {
+        return canfd;
+    }
+
+    static uint8_t dlcToDataLength(uint8_t dlc);
+
+    static uint8_t dataLengthToDlc(uint8_t data_length);
     /**
      * CAN frame arbitration rules, particularly STD vs EXT:
      *     Marco Di Natale - "Understanding and using the Controller Area Network"
@@ -105,6 +125,7 @@ public:
     typedef uint16_t CanIOFlags;
     static const CanIOFlags Loopback = 1;
     static const CanIOFlags AbortOnError = 2;
+    static const CanIOFlags IsMAVCAN = 4;
 
     // Single Rx Frame with related info
     struct CanRxItem {
@@ -123,6 +144,7 @@ public:
         bool aborted:1;
         bool pushed:1;
         bool setup:1;
+        bool canfd_frame:1;
 
         bool operator<(const CanTxItem& rhs) const
         {
@@ -146,6 +168,10 @@ public:
         }
     };
 
+    virtual bool init(const uint32_t bitrate, const uint32_t fdbitrate, const OperatingMode mode) {
+        return init(bitrate, mode);
+    }
+
     // Initialise the interface with hardware configuration required to start comms.
     virtual bool init(const uint32_t bitrate, const OperatingMode mode) = 0;
 
@@ -167,11 +193,13 @@ public:
     }
 
     // Put frame in queue to be sent, return negative if error occured, 0 if no space, and 1 if successful
-    virtual int16_t send(const CANFrame& frame, uint64_t tx_deadline, CanIOFlags flags) = 0;
+    // must be called on child class
+    virtual int16_t send(const CANFrame& frame, uint64_t tx_deadline, CanIOFlags flags);
 
     // Non blocking receive frame that pops the frames received inside the buffer, return negative if error occured, 
     // 0 if no frame available, 1 if successful
-    virtual int16_t receive(CANFrame& out_frame, uint64_t& out_ts_monotonic, CanIOFlags& out_flags) = 0;
+    // must be called on child class
+    virtual int16_t receive(CANFrame& out_frame, uint64_t& out_ts_monotonic, CanIOFlags& out_flags);
 
     //Configure filters so as to reject frames that are not going to be handled by us
     virtual bool configureFilters(const CanFilterConfig* filter_configs, uint16_t num_configs)
@@ -192,8 +220,29 @@ public:
         return 0;
     }
 
+    typedef struct {
+        uint32_t tx_requests;
+        uint32_t tx_rejected;
+        uint32_t tx_overflow;
+        uint32_t tx_success;
+        uint32_t tx_timedout;
+        uint32_t tx_abort;
+        uint32_t rx_received;
+        uint32_t rx_overflow;
+        uint32_t rx_errors;
+        uint32_t num_busoff_err;
+    } bus_stats_t;
+
+#if !defined(HAL_BOOTLOADER_BUILD)
     //Get status info of the interface
     virtual void get_stats(ExpandingString &str) {}
+
+    /*
+      return bus statistics for logging
+      return nullptr if no statistics available
+     */
+    virtual const bus_stats_t *get_statistics(void) const { return nullptr; };
+#endif
 
     // return true if busoff was detected and not cleared
     virtual bool is_busoff() const
@@ -208,7 +257,17 @@ public:
 
     // return true if init was called and successful
     virtual bool is_initialized() const = 0;
+
+    FUNCTOR_TYPEDEF(FrameCb, void, uint8_t, const AP_HAL::CANFrame &);
+
+    // register a frame callback function
+    virtual bool register_frame_callback(FrameCb cb);
+
 protected:
+    virtual int8_t get_iface_num() const = 0;
+    virtual bool add_to_rx_queue(const CanRxItem &rx_item) = 0;
+
+    FrameCb frame_callback;
     uint32_t bitrate_;
     OperatingMode mode_;
 };

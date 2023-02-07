@@ -901,6 +901,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(current2, "CURRENT2", 54, AP_OSD_Screen, AP_OSD_Setting),
 
+#if AP_VIDEOTX_ENABLED
     // @Param: VTX_PWR_EN
     // @DisplayName: VTX_PWR_EN
     // @Description: Displays VTX Power
@@ -916,6 +917,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(vtx_power, "VTX_PWR", 55, AP_OSD_Screen, AP_OSD_Setting),
+#endif  // AP_VIDEOTX_ENABLED
 
 #if AP_TERRAIN_AVAILABLE
     // @Param: TER_HGT_EN
@@ -1022,6 +1024,21 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(link_quality, "LINK_Q", 1, AP_OSD_Screen, AP_OSD_Setting),
 
+#if HAL_WITH_MSP_DISPLAYPORT
+    // @Param: TXT_RES
+    // @DisplayName: Sets the overlay text resolution (MSP DisplayPort only)
+    // @Description: Sets the overlay text resolution for this screen to either LD 30x16 or HD 50x18 (MSP DisplayPort only)
+    // @Values: 0:30x16,1:50x18
+    // @User: Standard
+    AP_GROUPINFO("TXT_RES", 3, AP_OSD_Screen, txt_resolution, 0),
+
+    // @Param: FONT
+    // @DisplayName: Sets the font index for this screen (MSP DisplayPort only)
+    // @Description: Sets the font index for this screen (MSP DisplayPort only)
+    // @Range: 0 15
+    // @User: Standard
+    AP_GROUPINFO("FONT", 4, AP_OSD_Screen, font_index, 0),
+#endif
     AP_GROUPEND
 };
 
@@ -1290,7 +1307,7 @@ void AP_OSD_Screen::draw_avgcellvolt(uint8_t x, uint8_t y)
     uint8_t p = (100 - pct) / 16.6;
     float v = battery.voltage();
     // calculate cell count - WARNING this can be inaccurate if the LIPO/LIION  battery is far from fully charged when attached and is used in this panel
-    osd->max_battery_voltage = MAX(osd->max_battery_voltage,v);
+    osd->max_battery_voltage.set(MAX(osd->max_battery_voltage,v));
     if (osd->cell_count > 0) {
         v = v / osd->cell_count;
         backend->write(x,y, v < osd->warn_avgcellvolt, "%c%1.2f%c", SYMBOL(SYM_BATT_FULL) + p, v, SYMBOL(SYM_VOLT));
@@ -1318,7 +1335,7 @@ void AP_OSD_Screen::draw_rssi(uint8_t x, uint8_t y)
 {
     AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
     if (ap_rssi) {
-        const uint8_t rssiv = ap_rssi->read_receiver_rssi() * 99;
+        const uint8_t rssiv = ap_rssi->read_receiver_rssi() * 100;
         backend->write(x, y, rssiv < osd->warn_rssi, "%c%2d", SYMBOL(SYM_RSSI), rssiv);
     }
 }
@@ -1559,7 +1576,7 @@ void AP_OSD_Screen::draw_home(uint8_t x, uint8_t y)
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
     Location loc;
-    if (ahrs.get_position(loc) && ahrs.home_is_set()) {
+    if (ahrs.get_location(loc) && ahrs.home_is_set()) {
         const Location &home_loc = ahrs.get_home();
         float distance = home_loc.get_distance(loc);
         int32_t angle = wrap_360_cd(loc.get_bearing_to(home_loc) - ahrs.yaw_sensor);
@@ -1862,7 +1879,7 @@ void AP_OSD_Screen::draw_temp(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_hdop(uint8_t x, uint8_t y)
 {
     AP_GPS & gps = AP::gps();
-    float hdp = gps.get_hdop() / 100.0f;
+    float hdp = gps.get_hdop() * 0.01f;
     backend->write(x, y, false, "%c%c%3.2f", SYMBOL(SYM_HDOP_L), SYMBOL(SYM_HDOP_R), (double)hdp);
 }
 
@@ -1891,7 +1908,7 @@ void AP_OSD_Screen::draw_stat(uint8_t x, uint8_t y)
     backend->write(x+2, y, false, "%c%c%c", 0x4d,0x41,0x58);
     backend->write(x, y+1, false, "%c",SYMBOL(SYM_GSPD));
     backend->write(x+1, y+1, false, "%4d%c", (int)u_scale(SPEED, osd->_stats.max_speed_mps), u_icon(SPEED));
-    backend->write(x, y+2, false, "%5.1f%c", (double)osd->_stats.max_current_a, SYM_AMP);
+    backend->write(x, y+2, false, "%5.1f%c", (double)osd->_stats.max_current_a, SYMBOL(SYM_AMP));
     backend->write(x, y+3, false, "%5d%c", (int)u_scale(ALTITUDE, osd->_stats.max_alt_m), u_icon(ALTITUDE));
     backend->write(x, y+4, false, "%c", SYMBOL(SYM_HOME));
     draw_distance(x+1, y+4, osd->_stats.max_dist_m);
@@ -1973,6 +1990,7 @@ void AP_OSD_Screen::draw_btemp(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_atemp(uint8_t x, uint8_t y)
 {
+#if AP_AIRSPEED_ENABLED
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
     if (!airspeed) {
         return;
@@ -1984,6 +2002,7 @@ void AP_OSD_Screen::draw_atemp(uint8_t x, uint8_t y)
     } else {
         backend->write(x, y, false, "--%c", u_icon(TEMPERATURE));
     }
+#endif
 }
 
 void AP_OSD_Screen::draw_bat2_vlt(uint8_t x, uint8_t y)
@@ -2007,6 +2026,7 @@ void AP_OSD_Screen::draw_bat2used(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_aspd1(uint8_t x, uint8_t y)
 {
+#if AP_AIRSPEED_ENABLED
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
     if (!airspeed) {
         return;
@@ -2017,10 +2037,12 @@ void AP_OSD_Screen::draw_aspd1(uint8_t x, uint8_t y)
     } else {
         backend->write(x, y, false, "%c ---%c", SYMBOL(SYM_ASPD), u_icon(SPEED));
     }
+#endif
 }
 
 void AP_OSD_Screen::draw_aspd2(uint8_t x, uint8_t y)
 {
+#if AP_AIRSPEED_ENABLED
     AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
     if (!airspeed) {
         return;
@@ -2031,6 +2053,7 @@ void AP_OSD_Screen::draw_aspd2(uint8_t x, uint8_t y)
     } else {
         backend->write(x, y, false, "%c ---%c", SYMBOL(SYM_ASPD), u_icon(SPEED));
     }
+#endif
 }
 
 void AP_OSD_Screen::draw_clk(uint8_t x, uint8_t y)
@@ -2090,6 +2113,7 @@ void AP_OSD_Screen::draw_current2(uint8_t x, uint8_t y)
     draw_current(1, x, y);
 }
 
+#if AP_VIDEOTX_ENABLED
 void AP_OSD_Screen::draw_vtx_power(uint8_t x, uint8_t y)
 {
     AP_VideoTX *vtx = AP_VideoTX::get_singleton();
@@ -2103,6 +2127,8 @@ void AP_OSD_Screen::draw_vtx_power(uint8_t x, uint8_t y)
     }
     backend->write(x, y, !vtx->is_configuration_finished(), "%4hu%c", powr, SYMBOL(SYM_MW));
 }
+#endif  // AP_VIDEOTX_ENABLED
+
 #if AP_TERRAIN_AVAILABLE
 void AP_OSD_Screen::draw_hgt_abvterr(uint8_t x, uint8_t y)
 {
@@ -2118,7 +2144,7 @@ void AP_OSD_Screen::draw_hgt_abvterr(uint8_t x, uint8_t y)
 }
 #endif
 
-
+#if AP_FENCE_ENABLED
 void AP_OSD_Screen::draw_fence(uint8_t x, uint8_t y)
 {
     AC_Fence *fenceptr = AP::fence();
@@ -2131,6 +2157,7 @@ void AP_OSD_Screen::draw_fence(uint8_t x, uint8_t y)
         backend->write(x, y, false, "%c", SYMBOL(SYM_FENCE_DISABLED));
     }
 }
+#endif
 
 void AP_OSD_Screen::draw_rngf(uint8_t x, uint8_t y)
 {
@@ -2194,7 +2221,9 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(heading);
     DRAW_SETTING(wind);
     DRAW_SETTING(home);
+#if AP_FENCE_ENABLED
     DRAW_SETTING(fence);
+#endif
     DRAW_SETTING(roll_angle);
     DRAW_SETTING(pitch_angle);
     DRAW_SETTING(temp);
@@ -2205,7 +2234,9 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(hdop);
     DRAW_SETTING(flightime);
     DRAW_SETTING(clk);
+#if AP_VIDEOTX_ENABLED
     DRAW_SETTING(vtx_power);
+#endif
 
 #if HAL_WITH_ESC_TELEM
     DRAW_SETTING(esc_temp);

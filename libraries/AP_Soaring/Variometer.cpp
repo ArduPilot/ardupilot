@@ -6,7 +6,7 @@ Manages the estimation of aircraft total energy, drag and vertical air velocity.
 
 #include <AP_Logger/AP_Logger.h>
 
-Variometer::Variometer(const AP_Vehicle::FixedWing &parms, PolarParams &polarParams) :
+Variometer::Variometer(const AP_FixedWing &parms, const PolarParams &polarParams) :
     _aparm(parms),
     _polarParams(polarParams)
 {
@@ -21,7 +21,7 @@ void Variometer::update(const float thermal_bank)
 
     float aspd = 0;
     if (!_ahrs.airspeed_estimate(aspd)) {
-            aspd = _aparm.airspeed_cruise_cm / 100.0f;
+            aspd = _aparm.airspeed_cruise_cm * 0.01f;
     }
 
     float aspd_filt = _sp_filter.apply(aspd);
@@ -126,7 +126,7 @@ float Variometer::calculate_aircraft_sinkrate(float phi) const
     return _aspd_filt_constrained * (C1 + C2 / (cosphi * cosphi));
 }
 
-float Variometer::calculate_circling_time_constant(float thermal_bank)
+float Variometer::calculate_circling_time_constant(float thermal_bank) const
 {
     // Calculate a time constant to use to filter quantities over a full thermal orbit.
     // This is used for rejecting variation in e.g. climb rate, or estimated climb rate

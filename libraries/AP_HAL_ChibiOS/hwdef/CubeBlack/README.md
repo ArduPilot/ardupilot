@@ -494,7 +494,7 @@ The CubeBlack supports up to 14 PWM outputs. First first 8 outputs (labelled
 "MAIN") are controlled by a dedicated STM32F100 IO controller. These 8
 outputs support all PWM output formats, but not DShot.
 
-The remaining 6 outputs (labelled AUX1 to AUX6) are the "auxillary"
+The remaining 6 outputs (labelled AUX1 to AUX6) are the "auxiliary"
 outputs. These are directly attached to the STM32F427 and support all
 PWM protocols as well as DShot.
 
@@ -507,7 +507,7 @@ The 8 main PWM outputs are in 3 groups:
  - PWM 3 and 4 in group2
  - PWM 5, 6, 7 and 8 in group3
 
-The 6 auxillary PWM outputs are in 2 groups:
+The 6 auxiliary PWM outputs are in 2 groups:
 
  - PWM 1, 2, 3 and 4 in group1
  - PWM 5 and 6 in group2

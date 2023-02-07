@@ -12,6 +12,9 @@ import emit_html
 import emit_rst
 import emit_xml
 
+import enum_parse
+from enum_parse import EnumDocco
+
 topdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
 topdir = os.path.realpath(topdir)
 
@@ -21,7 +24,8 @@ re_description = re.compile(r"\s*//\s*@Description\s*:\s*(.*)")
 re_url = re.compile(r"\s*//\s*@URL\s*:\s*(.*)")
 re_field = re.compile(r"\s*//\s*@Field\s*:\s*(\w+):\s*(.*)")
 re_fieldbits = re.compile(r"\s*//\s*@FieldBits\s*:\s*(\w+):\s*(.*)")
-re_fieldbits = re.compile(r"\s*//\s*@FieldBits\s*:\s*(\w+):\s*(.*)")
+re_fieldbitmaskenum = re.compile(r"\s*//\s*@FieldBitmaskEnum\s*:\s*(\w+):\s*(.*)")
+re_fieldvalueenum = re.compile(r"\s*//\s*@FieldValueEnum\s*:\s*(\w+):\s*(.*)")
 re_vehicles = re.compile(r"\s*//\s*@Vehicles\s*:\s*(.*)")
 
 # TODO: validate URLS actually return 200
@@ -57,6 +61,7 @@ class LoggerDocco(object):
             self.fields = {}
             self.fields_order = []
             self.vehicles = None
+            self.bits_enums = []
 
         def set_description(self, desc):
             self.description = desc
@@ -77,8 +82,24 @@ class LoggerDocco(object):
             self.fields[field]["description"] = description
 
         def set_field_bits(self, field, bits):
+            bits = bits.split(",")
+            count = 0
+            entries = []
+            for bit in bits:
+                entries.append(EnumDocco.EnumEntry(bit, 1<<count, None))
+                count += 1
+            bitmask_name = self.name + field
+            self.bits_enums.append(EnumDocco.Enumeration(bitmask_name, entries))
             self.ensure_field(field)
-            self.fields[field]["bits"] = bits
+            self.fields[field]["bitmaskenum"] = bitmask_name
+
+        def set_fieldbitmaskenum(self, field, bits):
+            self.ensure_field(field)
+            self.fields[field]["bitmaskenum"] = bits
+
+        def set_fieldbitmaskvalue(self, field, bits):
+            self.ensure_field(field)
+            self.fields[field]["valueenum"] = bits
 
         def set_vehicles(self, vehicles):
             self.vehicles = vehicles
@@ -140,6 +161,14 @@ class LoggerDocco(object):
                 if m is not None:
                     docco.set_field_bits(m.group(1), m.group(2))
                     continue
+                m = re_fieldbitmaskenum.match(line)
+                if m is not None:
+                    docco.set_fieldbitmaskenum(m.group(1), m.group(2))
+                    continue
+                m = re_fieldvalueenum.match(line)
+                if m is not None:
+                    docco.set_fieldbitmaskvalue(m.group(1), m.group(2))
+                    continue
                 m = re_vehicles.match(line)
                 if m is not None:
                     docco.set_vehicles([x.strip() for x in m.group(1).split(',')])
@@ -164,10 +193,14 @@ class LoggerDocco(object):
                 new_doccos.append(docco)
         new_doccos = sorted(new_doccos, key=lambda x : x.name)
 
+        enums_by_name = {}
+        for enum in self.enumerations:
+            enums_by_name[enum.name] = enum
         for emitter in self.emitters:
-            emitter.emit(new_doccos)
+            emitter.emit(new_doccos, enums_by_name)
 
     def run(self):
+        self.enumerations = enum_parse.EnumDocco(self.vehicle).get_enumerations()
         self.files = []
         self.search_for_files([self.vehicle_map[self.vehicle], "libraries"])
         self.parse_files()
@@ -175,6 +208,7 @@ class LoggerDocco(object):
 
     def finalise_docco(self, docco):
         self.doccos.append(docco)
+        self.enumerations += docco.bits_enums
 
 
 if __name__ == '__main__':

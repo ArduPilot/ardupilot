@@ -32,6 +32,7 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_RTC/AP_RTC.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #ifdef HAVE_AP_BLHELI_SUPPORT
 #include <AP_BLheli/AP_BLHeli.h>
 #endif
@@ -302,6 +303,7 @@ void AP_Spektrum_Telem::calc_rpm()
     // battery voltage in centivolts, can have up to a 12S battery (4.25Vx12S = 51.0V)
     _telem.rpm.volts = htobe16(((uint16_t)roundf(_battery.voltage(0) * 100.0f)));
     _telem.rpm.temperature = htobe16(int16_t(roundf(32.0f + AP::baro().get_temperature(0) * 9.0f / 5.0f)));
+#if AP_RPM_ENABLED
     const AP_RPM *rpm = AP::rpm();
     float rpm_value;
     if (!rpm || !rpm->get_rpm(0, rpm_value) || rpm_value < 999.0f) {
@@ -310,6 +312,7 @@ void AP_Spektrum_Telem::calc_rpm()
     _telem.rpm.microseconds = htobe16(uint16_t(roundf(MICROSEC_PER_MINUTE / rpm_value)));
     _telem.rpm.dBm_A = 0x7F;
     _telem.rpm.dBm_B = 0x7F;
+#endif
     _telem_pending = true;
 }
 
@@ -433,13 +436,18 @@ void AP_Spektrum_Telem::calc_airspeed()
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
 
-    const AP_Airspeed *airspeed = AP::airspeed();
     float speed = 0.0f;
+#if AP_AIRSPEED_ENABLED
+    const AP_Airspeed *airspeed = AP::airspeed();
     if (airspeed && airspeed->healthy()) {
         speed = roundf(airspeed->get_airspeed() * 3.6);
     } else {
         speed = roundf(AP::ahrs().groundspeed() * 3.6);
     }
+#else
+    speed = roundf(AP::ahrs().groundspeed() * 3.6);
+#endif
+
     _telem.speed.airspeed = htobe16(uint16_t(speed));           // 1 km/h increments
     _max_speed = MAX(speed, _max_speed);
     _telem.speed.maxAirspeed = htobe16(uint16_t(_max_speed));   // 1 km/h increments

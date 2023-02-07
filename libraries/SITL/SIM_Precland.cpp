@@ -32,31 +32,31 @@ const AP_Param::GroupInfo SIM_Precland::var_info[] = {
     AP_GROUPINFO("ENABLE",  0, SIM_Precland, _enable, 0),
 
     // @Param: LAT
-    // @DisplayName: Precland device origin's latitude
-    // @Description: Precland device origin's latitude
+    // @DisplayName: Precland device center's latitude
+    // @Description: Precland device center's latitude
     // @Units: deg
     // @Increment: 0.000001
     // @Range: -90 90
     // @User: Advanced
-    AP_GROUPINFO("LAT", 1, SIM_Precland, _origin_lat, 0),
+    AP_GROUPINFO("LAT", 1, SIM_Precland, _device_lat, 0),
 
     // @Param: LON
-    // @DisplayName: Precland device origin's longitude
-    // @Description: Precland device origin's longitude
+    // @DisplayName: Precland device center's longitude
+    // @Description: Precland device center's longitude
     // @Units: deg
     // @Increment: 0.000001
     // @Range: -180 180
     // @User: Advanced
-    AP_GROUPINFO("LON", 2, SIM_Precland, _origin_lon, 0),
+    AP_GROUPINFO("LON", 2, SIM_Precland, _device_lon, 0),
 
     // @Param: HEIGHT
-    // @DisplayName: Precland device origin's height above sealevel
-    // @Description: Precland device origin's height above sealevel assume a 2x2m square as station base
+    // @DisplayName: Precland device center's height above sealevel
+    // @Description: Precland device center's height above sealevel assume a 2x2m square as station base
     // @Units: cm
     // @Increment: 1
     // @Range: 0 10000
     // @User: Advanced
-    AP_GROUPINFO("HEIGHT", 3, SIM_Precland, _origin_height, 0),
+    AP_GROUPINFO("HEIGHT", 3, SIM_Precland, _device_height, 0),
 
     // @Param: YAW
     // @DisplayName: Precland device systems rotation from north
@@ -98,6 +98,20 @@ const AP_Param::GroupInfo SIM_Precland::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DIST_LMT", 8, SIM_Precland, _dist_limit, 10),
 
+    // @Param: ORIENT
+    // @DisplayName: Precland device orientation
+    // @Description: Precland device orientation vector
+    // @Values: 0:Front, 4:Back, 24:Up
+    // @User: Advanced
+    AP_GROUPINFO("ORIENT", 9, SIM_Precland, _orient, ROTATION_PITCH_90),
+
+    // @Param: OPTIONS
+    // @DisplayName: SIM_Precland extra options
+    // @Description: SIM_Precland extra options
+    // @Bitmask: 0: Enable target distance
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS",  10, SIM_Precland, _options, 0),
+
     AP_GROUPEND
 };
 
@@ -112,24 +126,40 @@ void SIM_Precland::update(const Location &loc, const Vector3d &position)
         return;
     }
 
-    const float distance_z = -position.z;
-    const float origin_height_m = _origin_height * 0.01f;
-    if (distance_z > _alt_limit + origin_height_m) {
-        _healthy = false;
-        return;
-    }
-
-    const Location origin_center(static_cast<int32_t>(_origin_lat * 1.0e7f),
-            static_cast<int32_t>(_origin_lon * 1.0e7f),
-            static_cast<int32_t>(_origin_height),
+    const Location device_center(static_cast<int32_t>(_device_lat * 1.0e7f),
+            static_cast<int32_t>(_device_lon * 1.0e7f),
+            static_cast<int32_t>(_device_height),
             Location::AltFrame::ABOVE_HOME);
-    Vector2f center;
-    if (!origin_center.get_vector_xy_from_origin_NE(center)) {
+    Vector2f centerf;
+    if (!device_center.get_vector_xy_from_origin_NE(centerf)) {
         _healthy = false;
         return;
     }
-    center = center * 0.01f;  // cm to m
-    _over_precland_base = origin_center.get_distance(loc) <= 2.0f;
+    centerf = centerf * 0.01f;        // cm to m
+    Vector3d center(centerf.x, centerf.y, -_device_height);   // convert to make the further vector operations easy
+
+    // axis of cone or cylinder inside which the vehicle receives signals from simulated precland device
+    Vector3d axis{1, 0, 0};
+    axis.rotate((Rotation)_orient.get());   // unit vector in direction of axis of cone or cylinder
+    Vector3d position_wrt_device = position - center;  // position of vehicle with respect to preland device center
+    
+    // longitudinal distance of vehicle from the precland device
+    // this is the distance of vehicle from the plane which is passing through precland device center and perpendicular to axis of cone/cylinder
+    // this plane is the ground plane when the axis has PITCH_90 rotation
+    Vector3d projection_on_axis = position_wrt_device.projected(axis);
+    const float longitudinal_dist = projection_on_axis.length();
+
+    // lateral distance of vehicle from the precland device
+    // this is the perpendicular distance of vehicle from the axis of cone/cylinder
+    const float lateral_distance = safe_sqrt(MAX(0, position_wrt_device.length_squared() - longitudinal_dist*longitudinal_dist));
+
+    // sign of projection's dot product with axis tells if vehicle is in front of beacon
+    // return false if vehicle if vehicle is  longitudinally too far away from precland device
+    // for PITCH_90 orientation, longitudinal distance = alt of vehicle - device_height (in m)
+    if (projection_on_axis.dot(axis) <= 0 || longitudinal_dist > _alt_limit) {
+        _healthy = false;
+        return;
+    }
 
     const uint32_t now = AP_HAL::millis();
     if (now - _last_update_ms < 1000.0f * (1.0f / _rate)) {
@@ -139,15 +169,17 @@ void SIM_Precland::update(const Location &loc, const Vector3d &position)
 
     switch (_type) {
         case PRECLAND_TYPE_CONE: {
-            const float in_radius = distance_z * _dist_limit / (_alt_limit + origin_height_m);
-            if (norm(position.x - center.x, position.y - center.y) > in_radius) {
+            // lateral_limit is the limit of how far the vehicle can laterally be from precland_device
+            // in case of cone, this limit increases gradually as the vehicle moves longitudinally far away from precland device
+            const float lateral_limit = longitudinal_dist * _dist_limit / _alt_limit;
+            if (lateral_distance > lateral_limit) {
                 _healthy = false;
                 return;
             }
             break;
         }
         case PRECLAND_TYPE_SPHERE: {
-            if (norm(position.x - center.x, position.y - center.y, distance_z - _origin_height) > (_alt_limit + origin_height_m)) {
+            if (position_wrt_device.length() > _dist_limit) {
                 _healthy = false;
                 return;
             }
@@ -155,21 +187,21 @@ void SIM_Precland::update(const Location &loc, const Vector3d &position)
         }
         default:
         case PRECLAND_TYPE_CYLINDER: {
-            if (norm(position.x - center.x, position.y - center.y) > _dist_limit) {
+            if (lateral_distance > _dist_limit) {
                 _healthy = false;
                 return;
             }
             break;
         }
     }
-    _target_pos = position - Vector3d(center.x, center.y, origin_height_m);
+    _target_pos = position_wrt_device;
     _healthy = true;
 }
 
 void SIM_Precland::set_default_location(float lat, float lon, int16_t yaw) {
-    if (is_zero(_origin_lat) && is_zero(_origin_lon)) {
-        _origin_lat = lat;
-        _origin_lon = lon;
-        _orient_yaw = yaw;
+    if (is_zero(_device_lat) && is_zero(_device_lon)) {
+        _device_lat.set(lat);
+        _device_lon.set(lon);
+        _orient_yaw.set(yaw);
     }
 }

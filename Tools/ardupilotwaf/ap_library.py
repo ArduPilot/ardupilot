@@ -156,16 +156,24 @@ def process_ap_libraries(self):
         if vehicle:
             self.use.append(_vehicle_tgen_name(l, vehicle))
 
+@before_method('process_source')
+@feature('cxxstlib')
+def dynamic_post(self):
+    if not getattr(self, 'dynamic_source', None):
+        return
+    self.source = Utils.to_list(self.source)
+    self.source.extend(self.bld.bldnode.ant_glob(self.dynamic_source))
+
 class ap_library_check_headers(Task.Task):
     color = 'PINK'
     before  = 'cxx c'
     dispatched_headers = set()
     whitelist = (
         'libraries/AP_Vehicle/AP_Vehicle_Type.h',
-        'libraries/AP_Camera/AP_RunCam.h',
         'libraries/AP_Common/AP_FWVersionDefine.h',
         'libraries/AP_Scripting/lua_generated_bindings.h',
         'libraries/AP_NavEKF3/AP_NavEKF3_feature.h',
+        'libraries/AP_LandingGear/AP_LandingGear_config.h',
     )
     whitelist = tuple(os.path.join(*p.split('/')) for p in whitelist)
 

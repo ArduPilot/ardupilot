@@ -56,6 +56,7 @@ static MaxSonarI2CXL maxsonari2cxl;
 static MaxSonarI2CXL maxsonari2cxl_2;
 static Maxell maxell;
 static Rotoye rotoye;
+static SIM_BattMonitor_SMBus_Generic smbus_generic;
 static Airspeed_DLVR airspeed_dlvr;
 static TSYS01 tsys01;
 static MCP9600 mcp9600;
@@ -80,8 +81,9 @@ struct i2c_device_at_address {
     { 1, 0x40, ignored }, // KellerLD
     { 1, 0x76, ms5525 },  // MS5525: ARSPD_TYPE = 4
     { 1, 0x77, tsys01 },
-    { 1, 0x0B, rotoye },  // Rotoye: BATTx_MONITOR 19
-    { 2, 0x0B, maxell },  // Maxell: BATTx_MONITOR 16
+    { 1, 0x0B, rotoye },        // Rotoye: BATTx_MONITOR 19, BATTx_I2C_ADDR 13
+    { 2, 0x0B, maxell },        // Maxell: BATTx_MONITOR 16, BATTx_I2C_ADDR 13
+    { 3, 0x0B, smbus_generic},  // BATTx_MONITOR 7, BATTx_I2C_ADDR 13
     { 2, 0x28, airspeed_dlvr }, // ARSPD_TYPE = 7 5inch H2O sensor
     { 2, 0x77, ms5611 },        // MS5611: BARO_PROBE_EXT = 2
 };

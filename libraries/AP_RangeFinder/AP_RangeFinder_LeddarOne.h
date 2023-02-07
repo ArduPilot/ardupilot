@@ -3,6 +3,12 @@
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Backend_Serial.h"
 
+#ifndef AP_RANGEFINDER_LEDDARONE_ENABLED
+#define AP_RANGEFINDER_LEDDARONE_ENABLED AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
+#endif
+
+#if AP_RANGEFINDER_LEDDARONE_ENABLED
+
 // defines
 #define LEDDARONE_DEFAULT_ADDRESS 0x01
 #define LEDDARONE_MODOBUS_FUNCTION_CODE 0x04
@@ -42,7 +48,11 @@ class AP_RangeFinder_LeddarOne : public AP_RangeFinder_Backend_Serial
 
 public:
 
-    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+    static AP_RangeFinder_Backend_Serial *create(
+        RangeFinder::RangeFinder_State &_state,
+        AP_RangeFinder_Params &_params) {
+        return new AP_RangeFinder_LeddarOne(_state, _params);
+    }
 
 protected:
 
@@ -51,6 +61,9 @@ protected:
     }
 
 private:
+
+    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+
     // get a reading
     bool get_reading(float &reading_m) override;
 
@@ -63,8 +76,7 @@ private:
     uint32_t last_sending_request_ms;
     uint32_t last_available_ms;
 
-    uint16_t detections[LEDDARONE_DETECTIONS_MAX];
-    uint32_t sum_distance;
+    uint32_t sum_distance_mm;
 
     LeddarOne_ModbusStatus modbus_status = LEDDARONE_MODBUS_STATE_INIT;
     uint8_t read_buffer[LEDDARONE_READ_BUFFER_SIZE];
@@ -83,3 +95,5 @@ private:
         0x09    // CRC Hi
     };
 };
+
+#endif  // AP_RANGEFINDER_LEDDARONE_ENABLED

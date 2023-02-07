@@ -14,9 +14,11 @@
  */
 
 #include "AP_Generator_IE_FuelCell.h"
-#include <AP_SerialManager/AP_SerialManager.h>
 
 #if HAL_GENERATOR_ENABLED
+
+#include <AP_SerialManager/AP_SerialManager.h>
+#include <GCS_MAVLink/GCS.h>
 
 // Initialize the fuelcell object and prepare it for use
 void AP_Generator_IE_FuelCell::init()

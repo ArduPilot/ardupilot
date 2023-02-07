@@ -22,13 +22,19 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/ioctl.h>
+#include <asm/ioctls.h>
 #include <asm/termbits.h>
+#include <stdarg.h>
+
+#include <AP_RCProtocol/AP_RCProtocol.h>
+#include "RCInput.h"
 #include "RCInput_RCProtocol.h"
 #include <GCS_MAVLink/GCS.h>
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_VNAV
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_VNAV || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR
 
 extern const AP_HAL::HAL& hal;
 

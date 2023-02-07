@@ -25,7 +25,6 @@
 #include <AP_InternalError/AP_InternalError.h>
 
 // control default definitions
-#define CONTROL_TIME_CONSTANT_RATIO 4.0             // time constant to ensure stable kinematic path generation
 #define CORNER_ACCELERATION_RATIO   1.0/safe_sqrt(2.0)   // acceleration reduction to enable zero overshoot corners
 
 // update_vel_accel - single axis projection of velocity, vel, forwards in time based on a time step of dt and acceleration of accel.
@@ -34,11 +33,17 @@
 // vel_error - specifies the direction of the velocity error used in limit handling.
 void update_vel_accel(float& vel, float accel, float dt, float limit, float vel_error)
 {
-    const float delta_vel = accel * dt;
+    float delta_vel = accel * dt;
     // do not add delta_vel if it will increase the velocity error in the direction of limit
-    if (!(is_positive(delta_vel * limit) && is_positive(vel_error * limit))){
-        vel += delta_vel;
+    // unless adding delta_vel will reduce vel towards zero
+    if (is_positive(delta_vel * limit) && is_positive(vel_error * limit)) {
+        if (is_negative(vel * limit)) {
+            delta_vel = constrain_float(delta_vel, -fabsf(vel), fabsf(vel));
+        } else {
+            delta_vel = 0.0;
+        }
     }
+    vel += delta_vel;
 }
 
 // update_pos_vel_accel - single axis projection of position and velocity forward in time based on a time step of dt and acceleration of accel.
@@ -50,9 +55,10 @@ void update_pos_vel_accel(postype_t& pos, float& vel, float accel, float dt, flo
     // move position and velocity forward by dt if it does not increase error when limited.
     float delta_pos = vel * dt + accel * 0.5f * sq(dt);
     // do not add delta_pos if it will increase the velocity error in the direction of limit
-    if (!(is_positive(delta_pos * limit) && is_positive(pos_error * limit))){
-        pos += delta_pos;
+    if (is_positive(delta_pos * limit) && is_positive(pos_error * limit)) {
+        delta_pos = 0.0;
     }
+    pos += delta_pos;
 
     update_vel_accel(vel, accel, dt, limit, vel_error);
 }
@@ -64,13 +70,12 @@ void update_pos_vel_accel(postype_t& pos, float& vel, float accel, float dt, flo
 void update_vel_accel_xy(Vector2f& vel, const Vector2f& accel, float dt, const Vector2f& limit, const Vector2f& vel_error)
 {
     // increase velocity by acceleration * dt if it does not increase error when limited.
+    // unless adding delta_vel will reduce the magnitude of vel
     Vector2f delta_vel = accel * dt;
     if (!limit.is_zero() && !delta_vel.is_zero()) {
         // check if delta_vel will increase the velocity error in the direction of limit
-        if (is_positive(delta_vel * limit) && is_positive(vel_error * limit)) {
-            // remove component of delta_vel in direction of limit
-            Vector2f limit_unit = limit.normalized();
-            delta_vel -= limit_unit * (limit_unit * delta_vel);
+        if (is_positive(delta_vel * limit) && is_positive(vel_error * limit) && !is_negative(vel * limit)) {
+            delta_vel.zero();
         }
     }
     vel += delta_vel;
@@ -100,34 +105,42 @@ void update_pos_vel_accel_xy(Vector2p& pos, Vector2f& vel, const Vector2f& accel
 /* shape_accel calculates a jerk limited path from the current acceleration to an input acceleration.
  The function takes the current acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
  The kinematic path is constrained by :
-    acceleration limits - accel_min, accel_max,
-    time constant - tc.
- The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
- The time constant also defines the time taken to achieve the maximum acceleration.
- The time constant must be positive.
+    maximum jerk - jerk_max (must be positive).
  The function alters the variable accel to follow a jerk limited kinematic path to accel_input.
 */
 void shape_accel(float accel_input, float& accel,
                  float jerk_max, float dt)
 {
-    // jerk limit acceleration change
-    float accel_delta = accel_input - accel;
-    if (is_positive(jerk_max)) {
-        accel_delta = constrain_float(accel_delta, -jerk_max * dt, jerk_max * dt);
+    // sanity check jerk_max
+    if (!is_positive(jerk_max)) {
+        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
+        return;
     }
-    accel += accel_delta;
+
+    // jerk limit acceleration change
+    if (is_positive(dt)) {
+        float accel_delta = accel_input - accel;
+        accel_delta = constrain_float(accel_delta, -jerk_max * dt, jerk_max * dt);
+        accel += accel_delta;
+    }
 }
 
 // 2D version
 void shape_accel_xy(const Vector2f& accel_input, Vector2f& accel,
                     float jerk_max, float dt)
 {
-    // jerk limit acceleration change
-    Vector2f accel_delta = accel_input - accel;
-    if (is_positive(jerk_max)) {
-        accel_delta.limit_length(jerk_max * dt);
+    // sanity check jerk_max
+    if (!is_positive(jerk_max)) {
+        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
+        return;
     }
-    accel = accel + accel_delta;
+
+    // jerk limit acceleration change
+    if (is_positive(dt)) {
+        Vector2f accel_delta = accel_input - accel;
+        accel_delta.limit_length(jerk_max * dt);
+        accel = accel + accel_delta;
+    }
 }
 
 void shape_accel_xy(const Vector3f& accel_input, Vector3f& accel,
@@ -144,34 +157,39 @@ void shape_accel_xy(const Vector3f& accel_input, Vector3f& accel,
 /* shape_vel_accel and shape_vel_xy calculate a jerk limited path from the current position, velocity and acceleration to an input velocity.
  The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
  The kinematic path is constrained by :
-    maximum velocity - vel_max,
-    maximum acceleration - accel_max,
-    time constant - tc.
- The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
- The time constant also defines the time taken to achieve the maximum acceleration.
- The time constant must be positive.
+    minimum acceleration - accel_min (must be negative),
+    maximum acceleration - accel_max (must be positive),
+    maximum jerk - jerk_max (must be positive).
  The function alters the variable accel to follow a jerk limited kinematic path to vel_input and accel_input.
- The accel_max limit can be removed by setting it to zero.
+ The correction acceleration is limited from accel_min to accel_max. If limit_total is true the target acceleration is limited from accel_min to accel_max.
 */
 void shape_vel_accel(float vel_input, float accel_input,
                      float vel, float& accel,
                      float accel_min, float accel_max,
                      float jerk_max, float dt, bool limit_total_accel)
 {
-    // sanity check accel_max
-    if (!(is_negative(accel_min) && is_positive(accel_max))) {
+    // sanity check accel_min, accel_max and jerk_max.
+    if (!is_negative(accel_min) || !is_positive(accel_max) || !is_positive(jerk_max)) {
         INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
         return;
     }
 
-    // Calculate time constants and limits to ensure stable operation
-    const float KPa = jerk_max / accel_max;
-
     // velocity error to be corrected
     float vel_error = vel_input - vel;
 
+    // Calculate time constants and limits to ensure stable operation
+    // The direction of acceleration limit is the same as the velocity error.
+    // This is because the velocity error is negative when slowing down while
+    // closing a positive position error.
+    float KPa;
+    if (is_positive(vel_error)) {
+        KPa = jerk_max / accel_max;
+    } else {
+        KPa = jerk_max / (-accel_min);
+    }
+
     // acceleration to correct velocity
-    float accel_target = vel_error * KPa;
+    float accel_target = sqrt_controller(vel_error, KPa, jerk_max, dt);
 
     // constrain correction acceleration from accel_min to accel_max
     accel_target = constrain_float(accel_target, accel_min, accel_max);
@@ -192,8 +210,8 @@ void shape_vel_accel_xy(const Vector2f& vel_input, const Vector2f& accel_input,
                         const Vector2f& vel, Vector2f& accel,
                         float accel_max, float jerk_max, float dt, bool limit_total_accel)
 {
-    // sanity check accel_max
-    if (!is_positive(accel_max)) {
+    // sanity check accel_max and jerk_max.
+    if (!is_positive(accel_max) || !is_positive(jerk_max)) {
         INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
         return;
     }
@@ -205,7 +223,7 @@ void shape_vel_accel_xy(const Vector2f& vel_input, const Vector2f& accel_input,
     const Vector2f vel_error = vel_input - vel;
 
     // acceleration to correct velocity
-    Vector2f accel_target = vel_error * KPa;
+    Vector2f accel_target = sqrt_controller(vel_error, KPa, jerk_max, dt);
 
     // limit correction acceleration to accel_max
     if (vel_input.is_zero()) {
@@ -216,7 +234,7 @@ void shape_vel_accel_xy(const Vector2f& vel_input, const Vector2f& accel_input,
         float accel_dir = vel_input_unit * accel_target;
         Vector2f accel_cross =  accel_target - (vel_input_unit * accel_dir);
 
-        // ensure 1/sqrt(2) of maximum acceleration is availible to correct cross component 
+        // ensure 1/sqrt(2) of maximum acceleration is available to correct cross component 
         // relative to vel_input
         if (sq(accel_dir) <= accel_cross.length_squared()) {
             // accel_target can be simply limited in magnitude
@@ -245,64 +263,79 @@ void shape_vel_accel_xy(const Vector2f& vel_input, const Vector2f& accel_input,
 /* shape_pos_vel_accel calculate a jerk limited path from the current position, velocity and acceleration to an input position and velocity.
  The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
  The kinematic path is constrained by :
-    maximum velocity - vel_max,
-    maximum acceleration - accel_max,
-    time constant - tc.
- The time constant defines the acceleration error decay in the kinematic path as the system approaches constant acceleration.
- The time constant also defines the time taken to achieve the maximum acceleration.
- The time constant must be positive.
+    minimum velocity - vel_min (must not be positive),
+    maximum velocity - vel_max (must not be negative),
+    minimum acceleration - accel_min (must be negative),
+    maximum acceleration - accel_max (must be positive),
+    maximum jerk - jerk_max (must be positive).
  The function alters the variable accel to follow a jerk limited kinematic path to pos_input, vel_input and accel_input.
- The vel_max, vel_correction_max, and accel_max limits can be removed by setting the desired limit to zero.
+ The correction velocity is limited to vel_max to vel_min. If limit_total is true the target velocity is limited to vel_max to vel_min.
+ The correction acceleration is limited from accel_min to accel_max. If limit_total is true the target acceleration is limited from accel_min to accel_max.
 */
 void shape_pos_vel_accel(postype_t pos_input, float vel_input, float accel_input,
                          postype_t pos, float vel, float& accel,
                          float vel_min, float vel_max,
                          float accel_min, float accel_max,
-                         float jerk_max, float dt, bool limit_total_accel)
+                         float jerk_max, float dt, bool limit_total)
 {
-    // sanity check accel_max
-    if (!(is_negative(accel_min) && is_positive(accel_max))) {
+    // sanity check vel_min, vel_max, accel_min, accel_max and jerk_max.
+    if (is_positive(vel_min) || is_negative(vel_max) || !is_negative(accel_min) || !is_positive(accel_max) || !is_positive(jerk_max)) {
         INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
         return;
     }
 
-    // Calculate time constants and limits to ensure stable operation
-    const float KPv = jerk_max / (CONTROL_TIME_CONSTANT_RATIO * MAX(-accel_min, accel_max));
-    const float accel_tc_max = MIN(-accel_min, accel_max) * (1.0 - 1.0 / CONTROL_TIME_CONSTANT_RATIO);
-
     // position error to be corrected
     float pos_error = pos_input - pos;
+
+    // Calculate time constants and limits to ensure stable operation
+    // The negative acceleration limit is used here because the square root controller
+    // manages the approach to the setpoint. Therefore the acceleration is in the opposite
+    // direction to the position error.
+    float accel_tc_max;
+    float KPv;
+    if (is_positive(pos_error)) {
+        accel_tc_max = -0.5 * accel_min;
+        KPv = 0.5 * jerk_max / (-accel_min);
+    } else {
+        accel_tc_max = 0.5 * accel_max;
+        KPv = 0.5 * jerk_max / accel_max;
+    }
 
     // velocity to correct position
     float vel_target = sqrt_controller(pos_error, KPv, accel_tc_max, dt);
 
-    // limit velocity to vel_max
-    if (is_negative(vel_min) && is_positive(vel_max)){
+    // limit velocity between vel_min and vel_max
+    if (is_negative(vel_min) || is_positive(vel_max)) {
         vel_target = constrain_float(vel_target, vel_min, vel_max);
     }
 
     // velocity correction with input velocity
     vel_target += vel_input;
 
-    shape_vel_accel(vel_target, accel_input, vel, accel, accel_min, accel_max, jerk_max, dt, limit_total_accel);
+    // limit velocity between vel_min and vel_max
+    if (limit_total) {
+        vel_target = constrain_float(vel_target, vel_min, vel_max);
+    }
+
+    shape_vel_accel(vel_target, accel_input, vel, accel, accel_min, accel_max, jerk_max, dt, limit_total);
 }
 
 // 2D version
 void shape_pos_vel_accel_xy(const Vector2p& pos_input, const Vector2f& vel_input, const Vector2f& accel_input,
                             const Vector2p& pos, const Vector2f& vel, Vector2f& accel,
                             float vel_max, float accel_max,
-                            float jerk_max, float dt, bool limit_total_accel)
+                            float jerk_max, float dt, bool limit_total)
 {
-    // sanity check accel_max
-    if (!is_positive(accel_max)) {
+    // sanity check vel_max, accel_max and jerk_max.
+    if (is_negative(vel_max) || !is_positive(accel_max) || !is_positive(jerk_max)) {
         INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
         return;
     }
 
     // Calculate time constants and limits to ensure stable operation
-    const float KPv = jerk_max / (CONTROL_TIME_CONSTANT_RATIO * accel_max);
+    const float KPv = 0.5 * jerk_max / accel_max;
     // reduce breaking acceleration to support cornering without overshooting the stopping point
-    const float accel_tc_max = CORNER_ACCELERATION_RATIO * accel_max * (1.0 - 1.0 / CONTROL_TIME_CONSTANT_RATIO);
+    const float accel_tc_max = 0.5 * accel_max;
 
     // position error to be corrected
     Vector2f pos_error = (pos_input - pos).tofloat();
@@ -311,16 +344,19 @@ void shape_pos_vel_accel_xy(const Vector2p& pos_input, const Vector2f& vel_input
     Vector2f vel_target = sqrt_controller(pos_error, KPv, accel_tc_max, dt);
 
     // limit velocity to vel_max
-    if (is_negative(vel_max)) {
-        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
-    } else if (is_positive(vel_max)) {
+    if (is_positive(vel_max)) {
         vel_target.limit_length(vel_max);
     }
 
     // velocity correction with input velocity
     vel_target = vel_target + vel_input;
+    
+    // limit velocity to vel_max
+    if (limit_total) {
+        vel_target.limit_length(vel_max);
+    }
 
-    shape_vel_accel_xy(vel_target, accel_input, vel, accel, accel_max, jerk_max, dt, limit_total_accel);
+    shape_vel_accel_xy(vel_target, accel_input, vel, accel, accel_max, jerk_max, dt, limit_total);
 }
 
 /* limit_accel_xy limits the acceleration to prioritise acceleration perpendicular to the provided velocity vector.
@@ -388,7 +424,7 @@ float sqrt_controller(float error, float p, float second_ord_lim, float dt)
             correction_rate = error * p;
         }
     }
-    if (!is_zero(dt)) {
+    if (is_positive(dt)) {
         // this ensures we do not get small oscillations by over shooting the error correction in the last time step.
         return constrain_float(correction_rate, -fabsf(error) / dt, fabsf(error) / dt);
     } else {
@@ -488,4 +524,47 @@ float input_expo(float input, float expo)
         return (1 - expo) * input / (1 - expo * fabsf(input));
     }
     return input;
+}
+
+// angle_to_accel converts a maximum lean angle in degrees to an accel limit in m/s/s
+float angle_to_accel(float angle_deg)
+{
+    return GRAVITY_MSS * tanf(radians(angle_deg));
+}
+
+// accel_to_angle converts a maximum accel in m/s/s to a lean angle in degrees
+float accel_to_angle(float accel)
+{
+    return degrees(atanf((accel/GRAVITY_MSS)));
+}
+
+// rc_input_to_roll_pitch - transform pilot's normalised roll or pitch stick input into a roll and pitch euler angle command
+// roll_in_unit and pitch_in_unit - are normalised roll and pitch stick input
+// angle_max_deg - maximum lean angle from the z axis
+// angle_limit_deg - provides the ability to reduce the maximum output lean angle to less than angle_max_deg
+// returns roll and pitch angle in degrees
+void rc_input_to_roll_pitch(float roll_in_unit, float pitch_in_unit, float angle_max_deg, float angle_limit_deg, float &roll_out_deg, float &pitch_out_deg)
+{
+    angle_max_deg = MIN(angle_max_deg, 85.0);
+    float rc_2_rad = radians(angle_max_deg);
+
+    // fetch roll and pitch stick positions and convert them to normalised horizontal thrust
+    Vector2f thrust;
+    thrust.x = - tanf(rc_2_rad * pitch_in_unit);
+    thrust.y = tanf(rc_2_rad * roll_in_unit);
+
+    // calculate the horizontal thrust limit based on the angle limit
+    angle_limit_deg = constrain_float(angle_limit_deg, 10.0f, angle_max_deg);
+    float thrust_limit = tanf(radians(angle_limit_deg));
+
+    // apply horizontal thrust limit
+    thrust.limit_length(thrust_limit);
+
+    // Conversion from angular thrust vector to euler angles.
+    float pitch_rad = - atanf(thrust.x);
+    float roll_rad = atanf(cosf(pitch_rad) * thrust.y);
+
+    // Convert to degrees
+    roll_out_deg = degrees(roll_rad);
+    pitch_out_deg = degrees(pitch_rad);
 }

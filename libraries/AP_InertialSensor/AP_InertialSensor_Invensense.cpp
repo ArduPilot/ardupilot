@@ -27,6 +27,7 @@
 #include <AP_Logger/AP_Logger.h>
 
 #include "AP_InertialSensor_Invensense.h"
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -195,6 +196,16 @@ void AP_InertialSensor_Invensense::_fifo_reset(bool log_error)
     notify_gyro_fifo_reset(_gyro_instance);
 }
 
+void AP_InertialSensor_Invensense::_fast_fifo_reset()
+{
+    fast_reset_count++;
+    _register_write(MPUREG_USER_CTRL, _last_stat_user_ctrl | BIT_USER_CTRL_FIFO_RESET);
+
+    notify_accel_fifo_reset(_accel_instance);
+    notify_gyro_fifo_reset(_gyro_instance);
+}
+
+
 bool AP_InertialSensor_Invensense::_has_auxiliary_bus()
 {
     return _dev->bus_type() != AP_HAL::Device::BUS_TYPE_I2C;
@@ -225,6 +236,10 @@ void AP_InertialSensor_Invensense::start()
     case Invensense_ICM20602:
         gdev = DEVTYPE_INS_ICM20602;
         adev = DEVTYPE_INS_ICM20602;
+        // ICM20602 has a bug where sometimes the data gets a huge offset
+        // this seems to be fixed by doing a quick FIFO reset via USR_CTRL
+        // reg
+        _enable_fast_fifo_reset = true;
         _enable_offset_checking = true;
         break;
     case Invensense_ICM20601:
@@ -417,7 +432,7 @@ void AP_InertialSensor_Invensense::start()
 bool AP_InertialSensor_Invensense::get_output_banner(char* banner, uint8_t banner_len) {
     if (_fast_sampling) {
         snprintf(banner, banner_len, "IMU%u: fast sampling enabled %.1fkHz/%.1fkHz",
-            _gyro_instance, _gyro_backend_rate_hz * _gyro_fifo_downsample_rate / 1000.0, _gyro_backend_rate_hz / 1000.0);
+            _gyro_instance, _gyro_backend_rate_hz * _gyro_fifo_downsample_rate * 0.001, _gyro_backend_rate_hz * 0.001);
         return true;
     }
     return false;
@@ -427,12 +442,32 @@ bool AP_InertialSensor_Invensense::get_output_banner(char* banner, uint8_t banne
 /*
   publish any pending data
  */
-bool AP_InertialSensor_Invensense::update()
+bool AP_InertialSensor_Invensense::update() /* front end */
 {
     update_accel(_accel_instance);
     update_gyro(_gyro_instance);
 
     _publish_temperature(_accel_instance, _temp_filtered);
+
+    if (fast_reset_count) {
+        // check if we have reported in the last 1 seconds or
+        // fast_reset_count changed
+#if HAL_GCS_ENABLED && BOARD_FLASH_SIZE > 1024
+        const uint32_t now = AP_HAL::millis();
+        if (now - last_fast_reset_count_report_ms > 5000U) {
+            last_fast_reset_count_report_ms = now;
+            char param_name[sizeof("IMUxx_RST")];
+            snprintf(param_name, sizeof(param_name), "IMU%u_RST", MIN(_gyro_instance,9));
+            gcs().send_named_float(param_name, fast_reset_count);
+        }
+#endif
+#if HAL_LOGGING_ENABLED
+        if (last_fast_reset_count != fast_reset_count) {
+            AP::logger().Write_MessageF("IMU%u fast fifo reset %u", _gyro_instance, fast_reset_count);
+            last_fast_reset_count = fast_reset_count;
+        }
+#endif
+    }
 
     return true;
 }
@@ -547,11 +582,16 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
 
         int16_t t2 = int16_val(data, 3);
         if (!_check_raw_temp(t2)) {
-            if (!hal.scheduler->in_expected_delay()) {
-                debug("temp reset IMU[%u] %d %d", _accel_instance, _raw_temp, t2);
+            if (_enable_fast_fifo_reset) {
+                _fast_fifo_reset();
+                return false;
+            } else {
+                if (!hal.scheduler->in_expected_delay()) {
+                    debug("temp reset IMU[%u] %d %d", _accel_instance, _raw_temp, t2);
+                }
+                _fifo_reset(true);
+                return false;
             }
-            _fifo_reset(true);
-            return false;
         }
         float temp = t2 * temp_sensitivity + temp_zero;
         
@@ -589,14 +629,19 @@ bool AP_InertialSensor_Invensense::_accumulate_sensor_rate_sampling(uint8_t *sam
     for (uint8_t i = 0; i < n_samples; i++) {
         const uint8_t *data = samples + MPU_SAMPLE_SIZE * i;
 
-        // use temperatue to detect FIFO corruption
+        // use temperature to detect FIFO corruption
         int16_t t2 = int16_val(data, 3);
         if (!_check_raw_temp(t2)) {
-            if (!hal.scheduler->in_expected_delay()) {
-                debug("temp reset IMU[%u] %d %d", _accel_instance, _raw_temp, t2);
+            if (_enable_fast_fifo_reset) {
+                _fast_fifo_reset();
+                ret = false;
+            } else {
+                if (!hal.scheduler->in_expected_delay()) {
+                    debug("temp reset IMU[%u] %d %d", _accel_instance, _raw_temp, t2);
+                }
+                _fifo_reset(true);
+                ret = false;
             }
-            _fifo_reset(true);
-            ret = false;
             break;
         }
         tsum += t2;
@@ -727,7 +772,7 @@ void AP_InertialSensor_Invensense::_read_fifo()
 
         if (_fast_sampling) {
             if (!_accumulate_sensor_rate_sampling(rx, n)) {
-                if (!hal.scheduler->in_expected_delay()) {
+                if (!hal.scheduler->in_expected_delay() && !_enable_fast_fifo_reset) {
                     debug("IMU[%u] stop at %u of %u", _accel_instance, n_samples, bytes_read/MPU_SAMPLE_SIZE);
                 }
                 break;
@@ -759,7 +804,9 @@ check_registers:
               events to help with log analysis, but don't shout at the
               GCS to prevent possible flood
             */
+#if HAL_LOGGING_ENABLED
             AP::logger().Write_MessageF("ICM20602 yofs fix: %x %x", y_ofs, _saved_y_ofs_high);
+#endif
             _register_write(MPUREG_ACC_OFF_Y_H, _saved_y_ofs_high);
         }
     }
@@ -971,6 +1018,13 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
 
         /* bus-dependent initialization */
         if (_dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
+            /* reset signal path as recommended in the datasheet */
+            if (_mpu_type == Invensense_MPU6000 || _mpu_type == Invensense_MPU6500) {
+                _register_write(MPUREG_SIGNAL_PATH_RESET,
+                    BIT_SIGNAL_PATH_RESET_TEMP_RESET|BIT_SIGNAL_PATH_RESET_ACCEL_RESET|BIT_SIGNAL_PATH_RESET_GYRO_RESET);
+                hal.scheduler->delay(100);
+            }
+
             /* Disable I2C bus if SPI selected (Recommended in Datasheet to be
              * done just after the device is reset) */
             _last_stat_user_ctrl |= BIT_USER_CTRL_I2C_IF_DIS;
@@ -1004,7 +1058,7 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 
     if (tries == 5) {
-        hal.console->printf("Failed to boot Invensense 5 times\n");
+        DEV_PRINTF("Failed to boot Invensense 5 times\n");
         return false;
     }
 
@@ -1055,7 +1109,7 @@ int AP_Invensense_AuxiliaryBusSlave::passthrough_read(uint8_t reg, uint8_t *buf,
                                                    uint8_t size)
 {
     if (_registered) {
-        hal.console->printf("Error: can't passthrough when slave is already configured\n");
+        DEV_PRINTF("Error: can't passthrough when slave is already configured\n");
         return -1;
     }
 
@@ -1081,7 +1135,7 @@ int AP_Invensense_AuxiliaryBusSlave::passthrough_read(uint8_t reg, uint8_t *buf,
 int AP_Invensense_AuxiliaryBusSlave::passthrough_write(uint8_t reg, uint8_t val)
 {
     if (_registered) {
-        hal.console->printf("Error: can't passthrough when slave is already configured\n");
+        DEV_PRINTF("Error: can't passthrough when slave is already configured\n");
         return -1;
     }
 
@@ -1104,7 +1158,7 @@ int AP_Invensense_AuxiliaryBusSlave::passthrough_write(uint8_t reg, uint8_t val)
 int AP_Invensense_AuxiliaryBusSlave::read(uint8_t *buf)
 {
     if (!_registered) {
-        hal.console->printf("Error: can't read before configuring slave\n");
+        DEV_PRINTF("Error: can't read before configuring slave\n");
         return -1;
     }
 

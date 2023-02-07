@@ -1,8 +1,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "AP_RangeFinder_Benewake_CAN.h"
+#include <AP_HAL/utility/sparse-endian.h>
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if AP_RANGEFINDER_BENEWAKE_CAN_ENABLED
 
 const AP_Param::GroupInfo AP_RangeFinder_Benewake_CAN::var_info[] = {
 
@@ -67,10 +68,46 @@ void AP_RangeFinder_Benewake_CAN::update(void)
     }
 }
 
+// handler for incoming frames for H30 radar
+bool AP_RangeFinder_Benewake_CAN::handle_frame_H30(AP_HAL::CANFrame &frame)
+{
+    /*
+      The H30 produces 3 targets, each as 16 bit unsigned integers in
+      cm. Only look at target1 for now
+    */
+    const uint16_t target1_cm = be16toh_ptr(&frame.data[0]);
+    if (target1_cm == 0) {
+        // no target gives 0
+        return false;
+    }
+    //uint16_t target2 = be16toh_ptr(&frame.data[2]);
+    //uint16_t target3 = be16toh_ptr(&frame.data[4]);
+
+    _distance_sum_cm += target1_cm;
+    _distance_count++;
+
+    return true;
+}
+
 // handler for incoming frames. These come in at 100Hz
 bool AP_RangeFinder_Benewake_CAN::handle_frame(AP_HAL::CANFrame &frame)
 {
     WITH_SEMAPHORE(_sem);
+    if (frame.isExtended()) {
+        // H30 radar uses extended frames
+        const int32_t id = int32_t(frame.id & AP_HAL::CANFrame::MaskExtID);
+        if (receive_id != 0 && id != receive_id.get()) {
+            // incorrect receive ID
+            return false;
+        }
+        if (last_recv_id != -1 && id != last_recv_id) {
+            // changing ID
+            return false;
+        }
+        last_recv_id = id;
+        return handle_frame_H30(frame);
+    }
+
     const uint16_t id = frame.id & AP_HAL::CANFrame::MaskStdID;
     if (receive_id != 0 && id != uint16_t(receive_id.get())) {
         // incorrect receive ID
@@ -82,8 +119,8 @@ bool AP_RangeFinder_Benewake_CAN::handle_frame(AP_HAL::CANFrame &frame)
     }
     last_recv_id = id;
 
-    const uint16_t dist_cm = (frame.data[1]<<8) | frame.data[0];
-    const uint16_t snr = (frame.data[3]<<8) | frame.data[2];
+    const uint16_t dist_cm = le16toh_ptr(&frame.data[0]);
+    const uint16_t snr = le16toh_ptr(&frame.data[2]);
     if (snr_min != 0 && snr < uint16_t(snr_min.get())) {
         // too low signal strength
         return true;
@@ -104,4 +141,4 @@ void Benewake_MultiCAN::handle_frame(AP_HAL::CANFrame &frame)
     }
 }
 
-#endif // HAL_MAX_CAN_PROTOCOL_DRIVERS
+#endif  // AP_RANGEFINDER_BENEWAKE_CAN_ENABLED

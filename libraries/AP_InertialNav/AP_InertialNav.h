@@ -27,23 +27,21 @@ public:
     nav_filter_status get_filter_status() const;
 
     /**
-     * get_position_neu_cm - returns the current position relative to the home location in cm.
-     *
-     * the home location was set with AP_InertialNav::set_home_position(int32_t, int32_t)
+     * get_position_neu_cm - returns the current position relative to the EKF origin in cm.
      *
      * @return
      */
     const Vector3f&    get_position_neu_cm() const;
 
     /**
-     * get_position_xy_cm - returns the current x-y position relative to the home location in cm.
+     * get_position_xy_cm - returns the current x-y position relative to the EKF origin in cm.
      *
      * @return
      */
     const Vector2f&    get_position_xy_cm() const;
 
     /**
-     * get_position_z_up_cm - returns the current z position relative to the home location, frame z up, in cm.
+     * get_position_z_up_cm - returns the current z position relative to the EKF origin, frame z up, in cm.
      * @return
      */
     float              get_position_z_up_cm() const;
@@ -59,7 +57,7 @@ public:
     const Vector3f&    get_velocity_neu_cms() const;
 
     /**
-     * get_velocity_xy_cms - returns the current x-y velocity relative to the home location in cm.
+     * get_velocity_xy_cms - returns the current x-y velocity relative to the EKF origin in cm.
      *
      * @return
      */

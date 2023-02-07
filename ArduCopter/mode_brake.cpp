@@ -37,7 +37,6 @@ void ModeBrake::run()
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_ground_handling();
-        pos_control->relax_velocity_controller_xy();
         pos_control->relax_z_controller(0.0f);
         return;
     }
@@ -47,7 +46,7 @@ void ModeBrake::run()
 
     // relax stop target if we might be landed
     if (copter.ap.land_complete_maybe) {
-        loiter_nav->soften_for_landing();
+        pos_control->soften_for_landing_xy();
     }
 
     // use position controller to stop

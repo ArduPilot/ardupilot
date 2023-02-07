@@ -143,3 +143,24 @@ public:
 #define EXPECT_DELAY_MS(ms) DELAY_JOIN( ms, __COUNTER__ )
 #define DELAY_JOIN( ms, counter) _DO_DELAY_JOIN( ms, counter )
 #define _DO_DELAY_JOIN( ms, counter ) ExpectDelay _getdelay ## counter(ms)
+
+
+/*
+  TIME_CHECK() can be used to unexpected detect long delays. Scatter
+  them in likely places and any long delays will be printed
+ */
+
+class TimeCheck {
+public:
+    TimeCheck(uint32_t limit_ms, const char *file, uint32_t line);
+    ~TimeCheck();
+private:
+    const uint32_t limit_ms;
+    const uint32_t line;
+    const char *file;
+    uint32_t start_ms;
+};
+
+#define TIME_CHECK(limit_ms) JOIN_TC(limit_ms, __FILE__, __LINE__, __COUNTER__ )
+#define JOIN_TC(limit_ms, file, line, counter ) _DO_JOIN_TC( limit_ms, file, line, counter )
+#define _DO_JOIN_TC(limit_ms, file, line, counter ) TimeCheck _gettc ## counter(limit_ms, file, line)

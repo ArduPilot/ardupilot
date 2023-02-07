@@ -53,8 +53,7 @@ public:
     ~AP_ExpandingArrayGeneric(void);
 
     /* Do not allow copies */
-    AP_ExpandingArrayGeneric(const AP_ExpandingArrayGeneric &other) = delete;
-    AP_ExpandingArrayGeneric &operator=(const AP_ExpandingArrayGeneric&) = delete;
+    CLASS_NO_COPY(AP_ExpandingArrayGeneric);
 
     // current maximum number of items (using expand may increase this)
     uint16_t max_items() const { return chunk_size * chunk_count; }
@@ -83,13 +82,12 @@ class AP_ExpandingArray : public AP_ExpandingArrayGeneric
 {
 public:
 
-    AP_ExpandingArray<T>(uint16_t elements_per_chunk) :
+    AP_ExpandingArray(uint16_t elements_per_chunk) :
         AP_ExpandingArrayGeneric(sizeof(T), elements_per_chunk)
     {}
 
     /* Do not allow copies */
-    AP_ExpandingArray<T>(const AP_ExpandingArray<T> &other) = delete;
-    AP_ExpandingArray<T> &operator=(const AP_ExpandingArray<T>&) = delete;
+    CLASS_NO_COPY(AP_ExpandingArray);
 
     // allow use as an array for assigning to elements. no bounds checking is performed
     T &operator[](uint16_t i)

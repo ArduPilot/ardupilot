@@ -15,8 +15,7 @@ public:
     AP_SBusOut();
 
     /* Do not allow copies */
-    AP_SBusOut(const AP_SBusOut &other) = delete;
-    AP_SBusOut &operator=(const AP_SBusOut&) = delete;
+    CLASS_NO_COPY(AP_SBusOut);
 
     static const struct AP_Param::GroupInfo var_info[];
 

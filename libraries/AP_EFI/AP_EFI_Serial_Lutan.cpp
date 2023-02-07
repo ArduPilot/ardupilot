@@ -16,10 +16,16 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_EFI_Serial_Lutan.h"
 #include <AP_HAL/utility/sparse-endian.h>
-#include <stdio.h>
 
 #if HAL_EFI_ENABLED
+
+#include <stdio.h>
+
+#include <AP_Math/AP_Math.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+
+// RPM Threshold for fuel consumption estimator
+#define RPM_THRESHOLD                100
 
 extern const AP_HAL::HAL &hal;
 
@@ -47,9 +53,9 @@ void AP_EFI_Serial_Lutan::update()
     if (n + pkt_nbytes > sizeof(pkt)) {
         pkt_nbytes = 0;
     }
-    const ssize_t nread = port->read(&pkt[pkt_nbytes], n);
-    if (nread <= 0) {
-        return;
+    ssize_t nread = port->read(&pkt[pkt_nbytes], n);
+    if (nread < 0) {
+        nread = 0;
     }
     pkt_nbytes += nread;
     if (pkt_nbytes > 2) {
@@ -60,23 +66,32 @@ void AP_EFI_Serial_Lutan::update()
             const uint32_t crc2 = ~crc_crc32(~0U, &pkt[2], length);
             if (crc == crc2) {
                 // valid data
-                internal_state.last_updated_ms = now;
                 internal_state.spark_dwell_time_ms = int16_t(be16toh(data.dwell))*0.1;
-                internal_state.cylinder_status[0].injection_time_ms = be16toh(data.pulseWidth1)*0.00666;
+                internal_state.cylinder_status.injection_time_ms = be16toh(data.pulseWidth1)*0.00666;
                 internal_state.engine_speed_rpm = be16toh(data.rpm);
                 internal_state.atmospheric_pressure_kpa = int16_t(be16toh(data.barometer))*0.1;
                 internal_state.intake_manifold_pressure_kpa = int16_t(be16toh(data.map))*0.1;
                 internal_state.intake_manifold_temperature = degF_to_Kelvin(int16_t(be16toh(data.mat))*0.1);
                 internal_state.coolant_temperature = degF_to_Kelvin(int16_t(be16toh(data.coolant))*0.1);
                 // CHT is in coolant field
-                internal_state.cylinder_status[0].cylinder_head_temperature = internal_state.coolant_temperature;
+                internal_state.cylinder_status.cylinder_head_temperature = internal_state.coolant_temperature;
                 internal_state.throttle_position_percent = int16_t(be16toh(data.tps))*0.1;
+
+                // integrate fuel consumption
+                if (internal_state.engine_speed_rpm > RPM_THRESHOLD) {
+                    const float duty_cycle = (internal_state.cylinder_status.injection_time_ms * internal_state.engine_speed_rpm)/600.0f;
+                    internal_state.fuel_consumption_rate_cm3pm = duty_cycle*get_coef1() - get_coef2();
+                    internal_state.estimated_consumed_fuel_volume_cm3 += internal_state.fuel_consumption_rate_cm3pm * (now - internal_state.last_updated_ms)/60000.0f;
+                } else {
+                    internal_state.fuel_consumption_rate_cm3pm = 0;
+                }
+                internal_state.last_updated_ms = now;
                 copy_to_frontend();
             }
             pkt_nbytes = 0;
         }
     }
-    if (n == 0 || now - last_request_ms > 200) {
+    if (now - last_request_ms > 200) {
         last_request_ms = now;
         port->discard_input();
         send_request();

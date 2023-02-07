@@ -15,6 +15,8 @@
 
 #include "AP_RangeFinder_LeddarVu8.h"
 
+#if AP_RANGEFINDER_LEDDARVU8_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
 
@@ -202,3 +204,5 @@ bool AP_RangeFinder_LeddarVu8::parse_byte(uint8_t b, bool &valid_reading, uint16
     valid_reading = false;
     return false;
 }
+
+#endif  // AP_RANGEFINDER_LEDDARVU8_ENABLED

@@ -20,10 +20,14 @@ void Plane::Log_Write_Attitude(void)
         quadplane.attitude_control->get_attitude_target_quat().to_euler(targets.x, targets.y, targets.z);
         targets *= degrees(100.0f);
         quadplane.ahrs_view->Write_AttitudeView(targets);
-    } else {
+    } else
+#endif
+            {
         ahrs.Write_Attitude(targets);
     }
-    if (quadplane.in_vtol_mode() || quadplane.in_assisted_flight()) {
+
+#if HAL_QUADPLANE_ENABLED
+    if (AP_HAL::millis() - quadplane.last_att_control_ms < 100) {
         // log quadplane PIDs separately from fixed wing PIDs
         logger.Write_PID(LOG_PIQR_MSG, quadplane.attitude_control->get_rate_roll_pid().get_pid_info());
         logger.Write_PID(LOG_PIQP_MSG, quadplane.attitude_control->get_rate_pitch_pid().get_pid_info());
@@ -38,52 +42,28 @@ void Plane::Log_Write_Attitude(void)
 
     logger.Write_PID(LOG_PIDR_MSG, rollController.get_pid_info());
     logger.Write_PID(LOG_PIDP_MSG, pitchController.get_pid_info());
-    logger.Write_PID(LOG_PIDY_MSG, yawController.get_pid_info());
-    logger.Write_PID(LOG_PIDS_MSG, steerController.get_pid_info());
+
+    if (yawController.enabled()) {
+        logger.Write_PID(LOG_PIDY_MSG, yawController.get_pid_info());
+    }
+
+    if (steerController.active()) {
+        logger.Write_PID(LOG_PIDS_MSG, steerController.get_pid_info());
+    }
 
     AP::ahrs().Log_Write();
-    ahrs.Write_AHRS2();
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    sitl.Log_Write_SIMSTATE();
-#endif
-    ahrs.Write_POS();
 }
 
 // do fast logging for plane
-void Plane::Log_Write_Fast(void)
+void Plane::Log_Write_FullRate(void)
 {
-    if (!should_log(MASK_LOG_ATTITUDE_FULLRATE)) {
-        uint32_t now = AP_HAL::millis();
-        if (now - last_log_fast_ms < 40) {
-            // default to 25Hz
-            return;
-        }
-        last_log_fast_ms = now;
-    }
-    if (should_log(MASK_LOG_ATTITUDE_FAST | MASK_LOG_ATTITUDE_FULLRATE)) {
+    // MASK_LOG_ATTITUDE_FULLRATE logs at 400Hz, MASK_LOG_ATTITUDE_FAST at 25Hz, MASK_LOG_ATTIUDE_MED logs at 10Hz
+    // highest rate selected wins
+    if (should_log(MASK_LOG_ATTITUDE_FULLRATE)) {
         Log_Write_Attitude();
     }
 }
 
-
-struct PACKED log_Startup {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t startup_type;
-    uint16_t command_total;
-};
-
-void Plane::Log_Write_Startup(uint8_t type)
-{
-    struct log_Startup pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_STARTUP_MSG),
-        time_us         : AP_HAL::micros64(),
-        startup_type    : type,
-        command_total   : mission.num_commands()
-    };
-    logger.WriteCriticalBlock(&pkt, sizeof(pkt));
-}
 
 struct PACKED log_Control_Tuning {
     LOG_PACKET_HEADER;
@@ -173,7 +153,8 @@ struct PACKED log_Nav_Tuning {
     float   airspeed_error;
     int32_t target_lat;
     int32_t target_lng;
-    int32_t target_alt;
+    int32_t target_alt_wp;
+    int32_t target_alt_tecs;
     int32_t target_airspeed;
 };
 
@@ -192,7 +173,8 @@ void Plane::Log_Write_Nav_Tuning()
         airspeed_error      : airspeed_error,
         target_lat          : next_WP_loc.lat,
         target_lng          : next_WP_loc.lng,
-        target_alt          : next_WP_loc.alt,
+        target_alt_wp       : next_WP_loc.alt,
+        target_alt_tecs     : tecs_target_alt_cm,
         target_airspeed     : target_airspeed_cm,
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
@@ -249,7 +231,7 @@ void Plane::Log_Write_AETR()
         ,elevator : SRV_Channels::get_output_scaled(SRV_Channel::k_elevator)
         ,throttle : SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)
         ,rudder   : SRV_Channels::get_output_scaled(SRV_Channel::k_rudder)
-        ,flap     : SRV_Channels::get_output_scaled(SRV_Channel::k_flap_auto)
+        ,flap     : SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_flap_auto)
         ,speed_scaler : get_speed_scaler(),
         };
 
@@ -307,8 +289,6 @@ struct PACKED log_CMDI {
 // units and "Format characters" for field type information
 const struct LogStructure Plane::log_structure[] = {
     LOG_COMMON_STRUCTURES,
-    { LOG_STARTUP_MSG, sizeof(log_Startup),         
-      "STRT", "QBH",         "TimeUS,SType,CTot", "s--", "F--" },
 
 // @LoggerMessage: CTUN
 // @Description: Control Tuning information
@@ -334,16 +314,17 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: Dist: distance to the current navigation waypoint
 // @Field: TBrg: bearing to the current navigation waypoint
 // @Field: NavBrg: the vehicle's desired heading
-// @Field: AltErr: difference between current vehicle height and target height
+// @Field: AltE: difference between current vehicle height and target height
 // @Field: XT: the vehicle's current distance from the current travel segment
 // @Field: XTi: integration of the vehicle's crosstrack error
-// @Field: AspdE: difference between vehicle's airspeed and desired airspeed
+// @Field: AsE: difference between vehicle's airspeed and desired airspeed
 // @Field: TLat: target latitude
 // @Field: TLng: target longitude
-// @Field: TAlt: target altitude
-// @Field: TAspd: target airspeed
+// @Field: TAW: target altitude WP
+// @Field: TAT: target altitude TECS
+// @Field: TAsp: target airspeed
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
-      "NTUN", "QfcccfffLLii",  "TimeUS,Dist,TBrg,NavBrg,AltErr,XT,XTi,AspdE,TLat,TLng,TAlt,TAspd", "smddmmmnDUmn", "F0BBB0B0GGBB" , true },
+      "NTUN", "QfcccfffLLeee",  "TimeUS,Dist,TBrg,NavBrg,AltE,XT,XTi,AsE,TLat,TLng,TAW,TAT,TAsp", "smddmmmnDUmmn", "F0BBB0B0GG000" , true },
 
 // @LoggerMessage: ATRP
 // @Description: Plane AutoTune
@@ -462,76 +443,11 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: HdgA: target heading lim
     { LOG_OFG_MSG, sizeof(log_OFG_Guided),     
       "OFG", "QffffBff",    "TimeUS,Arsp,ArspA,Alt,AltA,AltF,Hdg,HdgA", "s-------", "F-------" , true }, 
-
-// @LoggerMessage: CMDI
-// @Description: Generic CommandInt message logger(CMDI) 
-// @Field: TimeUS: Time since system startup
-// @Field: CId:  command id
-// @Field: TSys: target system
-// @Field: TCmp: target component
-// @Field: cur:  current
-// @Field: cont: autocontinue
-// @Field: Prm1: parameter 1
-// @Field: Prm2: parameter 2
-// @Field: Prm3: parameter 3
-// @Field: Prm4: parameter 4
-// @Field: Lat: target latitude
-// @Field: Lng: target longitude
-// @Field: Alt: target altitude
-// @Field: F:   frame
-    { LOG_CMDI_MSG, sizeof(log_CMDI),     
-      "CMDI", "QHBBBBffffiifB",    "TimeUS,CId,TSys,TCmp,cur,cont,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt,F", "s---------DUm-", "F---------GGB-" }, 
-// these next three are same format as log_CMDI just each a different name for Heading,Speed and Alt COMMAND_INTs
-    { LOG_CMDS_MSG, sizeof(log_CMDI),     
-      "CMDS", "QHBBBBffffiifB",    "TimeUS,CId,TSys,TCmp,cur,cont,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt,F", "s---------DUm-", "F---------GGB-" }, 
-    { LOG_CMDA_MSG, sizeof(log_CMDI),     
-      "CMDA", "QHBBBBffffiifB",    "TimeUS,CId,TSys,TCmp,cur,cont,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt,F", "s---------DUm-", "F---------GGB-" }, 
-    { LOG_CMDH_MSG, sizeof(log_CMDI),     
-      "CMDH", "QHBBBBffffiifB",    "TimeUS,CId,TSys,TCmp,cur,cont,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt,F", "s---------DUm-", "F---------GGB-" }, 
-
 };
-
-
-// Write a COMMAND INT packet.
-void Plane::Log_Write_MavCmdI(const mavlink_command_int_t &mav_cmd)
-{
-    struct log_CMDI pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_CMDI_MSG),
-        TimeUS:AP_HAL::micros64(),
-        CId:   mav_cmd.command,
-        TSys:  mav_cmd.target_system,
-        TCmp:  mav_cmd.target_component,
-        cur:   mav_cmd.current,
-        cont:  mav_cmd.autocontinue,
-        Prm1:  mav_cmd.param1,
-        Prm2:  mav_cmd.param2,
-        Prm3:  mav_cmd.param3,
-        Prm4:  mav_cmd.param4,
-        Lat:   mav_cmd.x,
-        Lng:   mav_cmd.y,
-        Alt:   mav_cmd.z,
-        F:     mav_cmd.frame
-};
-
-// rather than have 4 different functions for these similar outputs, we just create it as a CMDI and rename it here
-#if OFFBOARD_GUIDED == ENABLED
-    if (mav_cmd.command == MAV_CMD_GUIDED_CHANGE_SPEED) {
-        pkt.msgid = LOG_CMDS_MSG;
-    } else if (mav_cmd.command == MAV_CMD_GUIDED_CHANGE_ALTITUDE) {
-        pkt.msgid = LOG_CMDA_MSG;
-    } else if (mav_cmd.command == MAV_CMD_GUIDED_CHANGE_HEADING) {
-        pkt.msgid = LOG_CMDH_MSG;
-    }
-#endif
-    //normally pkt.msgid = LOG_CMDI_MSG
-    logger.WriteBlock(&pkt, sizeof(pkt));
-
-}
 
 void Plane::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by AP_Logger
-    Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.initialised) {
         char frame_and_type_string[30];
@@ -556,13 +472,11 @@ void Plane::log_init(void)
 
 void Plane::Log_Write_Attitude(void) {}
 void Plane::Log_Write_Fast(void) {}
-void Plane::Log_Write_Startup(uint8_t type) {}
 void Plane::Log_Write_Control_Tuning() {}
 void Plane::Log_Write_OFG_Guided() {}
 void Plane::Log_Write_Nav_Tuning() {}
 void Plane::Log_Write_Status() {}
 void Plane::Log_Write_Guided(void) {}
-void Plane::Log_Write_MavCmdI(const mavlink_command_int_t &packet) {}
 void Plane::Log_Write_RC(void) {}
 void Plane::Log_Write_Vehicle_Startup_Messages() {}
 

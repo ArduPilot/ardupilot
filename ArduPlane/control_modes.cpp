@@ -90,7 +90,7 @@ Mode *Plane::mode_from_mode_num(const enum Mode::Number num)
         break;
 #if HAL_QUADPLANE_ENABLED
     case Mode::Number::LOITER_ALT_QLAND:
-        ret = &mode_lotier_qland;
+        ret = &mode_loiter_qland;
         break;
 #endif  // HAL_QUADPLANE_ENABLED
 
@@ -107,9 +107,8 @@ void Plane::read_control_switch()
     // If we get this value we do not want to change modes.
     if(switchPosition == 255) return;
 
-    if (failsafe.rc_failsafe || failsafe.throttle_counter > 0) {
-        // when we are in rc_failsafe mode then RC input is not
-        // working, and we need to ignore the mode switch channel
+    if (!rc().has_valid_input()) {
+        // ignore the mode switch channel if there is no valid RC input
         return;
     }
 
@@ -161,10 +160,25 @@ void Plane::reset_control_switch()
  */
 void Plane::autotune_start(void)
 {
-    gcs().send_text(MAV_SEVERITY_INFO, "Started autotune");
-    rollController.autotune_start();
-    pitchController.autotune_start();
-    yawController.autotune_start();
+    const bool tune_roll = g2.axis_bitmask.get() & int8_t(AutoTuneAxis::ROLL);
+    const bool tune_pitch = g2.axis_bitmask.get() & int8_t(AutoTuneAxis::PITCH);
+    const bool tune_yaw = g2.axis_bitmask.get() & int8_t(AutoTuneAxis::YAW);
+    if (tune_roll || tune_pitch || tune_yaw) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Started autotune");
+        if (tune_roll) { 
+            rollController.autotune_start();
+        }
+        if (tune_pitch) { 
+            pitchController.autotune_start();
+        }
+        if (tune_yaw) { 
+            yawController.autotune_start();
+        }
+        autotuning = true;
+        gcs().send_text(MAV_SEVERITY_INFO, "Autotuning %s%s%s", tune_roll?"roll ":"", tune_pitch?"pitch ":"", tune_yaw?"yaw":"");
+    } else {
+        gcs().send_text(MAV_SEVERITY_INFO, "No axis selected for tuning!");
+    }        
 }
 
 /*
@@ -175,7 +189,10 @@ void Plane::autotune_restore(void)
     rollController.autotune_restore();
     pitchController.autotune_restore();
     yawController.autotune_restore();
-    gcs().send_text(MAV_SEVERITY_INFO, "Stopped autotune");
+    if (autotuning) {
+        autotuning = false;
+        gcs().send_text(MAV_SEVERITY_INFO, "Stopped autotune");
+    }
 }
 
 /*

@@ -1,0 +1,33 @@
+name: test ccache
+
+on: [push, pull_request, workflow_dispatch]
+# paths:
+# - "*"
+# - "!README.md" <-- don't rebuild on doc change
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:latest
+    strategy:
+      fail-fast: false  # don't cancel if a job from the matrix fails
+      matrix:
+        toolchain: [
+            chibios,
+        ]
+        gcc: [10]
+    steps:
+      # git checkout the PR
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+      - name: ccache test
+        shell: bash
+        run: |
+          PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-${{matrix.gcc}}/bin:$PATH"
+          Tools/scripts/build_tests/test_ccache.py --boards MatekF405,MatekF405-bdshot --min-cache-pct=75
+          Tools/scripts/build_tests/test_ccache.py --boards CubeOrange,Durandal --min-cache-pct=75
+

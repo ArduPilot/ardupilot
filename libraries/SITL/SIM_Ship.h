@@ -71,6 +71,7 @@ private:
     AP_Float path_size;
     AP_Float deck_size;
     AP_Int8 sys_id;
+    AP_Vector3f offset;
 
     Location home;
     const char *target_address = "127.0.0.1";

@@ -286,20 +286,20 @@ bool AP_NavEKF_Source::usingGPS() const
 }
 
 // true if some parameters have been configured (used during parameter conversion)
-bool AP_NavEKF_Source::configured_in_storage()
+bool AP_NavEKF_Source::configured()
 {
-    if (config_in_storage) {
+    if (_configured) {
         return true;
     }
 
     // first source parameter is used to determine if configured or not
-    config_in_storage = _source_set[0].posxy.configured_in_storage();
+    _configured = _source_set[0].posxy.configured();
 
-    return config_in_storage;
+    return _configured;
 }
 
-// mark parameters as configured in storage (used to ensure parameter conversion is only done once)
-void AP_NavEKF_Source::mark_configured_in_storage()
+// mark parameters as configured (used to ensure parameter conversion is only done once)
+void AP_NavEKF_Source::mark_configured()
 {
     // save first parameter's current value to mark as configured
     return _source_set[0].posxy.save(true);
@@ -443,9 +443,16 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
         return false;
     }
 
-    if (beacon_required && (dal.beacon() == nullptr || !dal.beacon()->enabled())) {
-        hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "Beacon");
-        return false;
+    if (beacon_required) {
+#if AP_BEACON_ENABLED
+        const bool beacon_available = (dal.beacon() != nullptr && dal.beacon()->enabled());
+#else
+        const bool beacon_available = false;
+#endif
+        if (!beacon_available) {
+            hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "Beacon");
+            return false;
+        }
     }
 
     if (compass_required && (dal.compass().get_num_enabled() == 0)) {
@@ -522,6 +529,12 @@ bool AP_NavEKF_Source::wheel_encoder_enabled(void) const
         }
     }
     return false;
+}
+
+// returns active source set
+uint8_t AP_NavEKF_Source::get_active_source_set() const
+{
+    return active_source_set;
 }
 
 // return true if GPS yaw is enabled on any source

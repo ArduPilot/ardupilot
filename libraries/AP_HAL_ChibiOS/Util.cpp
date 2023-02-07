@@ -17,6 +17,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
+#include <hal.h>
 #include "Util.h"
 #include <ch.h>
 #include "RCOutput.h"
@@ -28,7 +29,7 @@
 #include <AP_Common/ExpandingString.h>
 #include "sdcard.h"
 #include "shared_dma.h"
-#if defined(HAL_PWM_ALARM) || HAL_DSHOT_ALARM || HAL_CANMANAGER_ENABLED
+#if defined(HAL_PWM_ALARM) || HAL_DSHOT_ALARM_ENABLED || HAL_CANMANAGER_ENABLED || HAL_USE_PWM == TRUE
 #include <AP_Notify/AP_Notify.h>
 #endif
 #if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
@@ -42,6 +43,10 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_IOMCU/AP_IOMCU.h>
 extern AP_IOMCU iomcu;
+#endif
+
+#if AP_SIGNED_FIRMWARE && !defined(HAL_BOOTLOADER_BUILD)
+#include <AP_CheckFirmware/AP_CheckFirmware.h>
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -85,16 +90,11 @@ void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
 
 void *Util::allocate_heap_memory(size_t size)
 {
-    void *buf = malloc(size);
-    if (buf == nullptr) {
+    memory_heap_t *heap = (memory_heap_t *)malloc(size + sizeof(memory_heap_t));
+    if (heap == nullptr) {
         return nullptr;
     }
-
-    memory_heap_t *heap = (memory_heap_t *)malloc(sizeof(memory_heap_t));
-    if (heap != nullptr) {
-        chHeapObjectInit(heap, buf, size);
-    }
-
+    chHeapObjectInit(heap, heap + 1U, size);
     return heap;
 }
 
@@ -118,7 +118,7 @@ void *Util::std_realloc(void *addr, size_t size)
     return new_mem;
 }
 
-void *Util::heap_realloc(void *heap, void *ptr, size_t new_size)
+void *Util::heap_realloc(void *heap, void *ptr, size_t old_size, size_t new_size)
 {
     if (heap == nullptr) {
         return nullptr;
@@ -134,7 +134,13 @@ void *Util::heap_realloc(void *heap, void *ptr, size_t new_size)
     }
     void *new_mem = chHeapAlloc((memory_heap_t *)heap, new_size);
     if (new_mem != nullptr) {
-        memcpy(new_mem, ptr, chHeapGetSize(ptr) > new_size ? new_size : chHeapGetSize(ptr));
+        const size_t old_size2 = chHeapGetSize(ptr);
+#ifdef HAL_DEBUG_BUILD
+        if (new_size != 0 && old_size2 != old_size) {
+            INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
+        }
+#endif
+        memcpy(new_mem, ptr, old_size2 > new_size ? new_size : old_size2);
         chHeapFree(ptr);
     }
     return new_mem;
@@ -157,6 +163,8 @@ Util::safety_state Util::safety_switch_state(void)
 
 #ifdef HAL_PWM_ALARM
 struct Util::ToneAlarmPwmGroup Util::_toneAlarm_pwm_group = HAL_PWM_ALARM;
+#elif HAL_USE_PWM == TRUE
+struct Util::ToneAlarmPwmGroup Util::_toneAlarm_pwm_group = {};
 #endif
 
 uint8_t  Util::_toneAlarm_types = 0;
@@ -169,7 +177,7 @@ bool Util::toneAlarm_init(uint8_t types)
 #endif
     _toneAlarm_types = types;
 
-#if !defined(HAL_PWM_ALARM) && !HAL_DSHOT_ALARM && !HAL_CANMANAGER_ENABLED
+#if HAL_USE_PWM != TRUE && !HAL_DSHOT_ALARM_ENABLED && !HAL_CANMANAGER_ENABLED
     // Nothing to do
     return false;
 #else
@@ -177,19 +185,37 @@ bool Util::toneAlarm_init(uint8_t types)
 #endif
 }
 
-void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms)
+#if HAL_USE_PWM == TRUE
+bool Util::toneAlarm_init(const PWMConfig& pwm_cfg, PWMDriver* pwm_drv, pwmchannel_t chan, bool active_high)
 {
 #ifdef HAL_PWM_ALARM
-    if (is_zero(frequency) || is_zero(volume)) {
-        pwmDisableChannel(_toneAlarm_pwm_group.pwm_drv, _toneAlarm_pwm_group.chan);
-    } else {
-        pwmChangePeriod(_toneAlarm_pwm_group.pwm_drv,
-                        roundf(_toneAlarm_pwm_group.pwm_cfg.frequency/frequency));
+    pwmStop(_toneAlarm_pwm_group.pwm_drv);
+#endif
+    _toneAlarm_pwm_group.pwm_cfg = pwm_cfg;
+    _toneAlarm_pwm_group.pwm_drv = pwm_drv;
+    _toneAlarm_pwm_group.pwm_cfg.period = 1000;
+    _toneAlarm_pwm_group.pwm_cfg.channels[chan].mode = active_high ? PWM_OUTPUT_ACTIVE_HIGH : PWM_OUTPUT_ACTIVE_LOW;
+    _toneAlarm_pwm_group.chan = chan;
+    pwmStart(_toneAlarm_pwm_group.pwm_drv, &_toneAlarm_pwm_group.pwm_cfg);
+    return true;
+}
+#endif
 
-        pwmEnableChannel(_toneAlarm_pwm_group.pwm_drv, _toneAlarm_pwm_group.chan, roundf(volume*_toneAlarm_pwm_group.pwm_cfg.frequency/frequency)/2);
+void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms)
+{
+#if HAL_USE_PWM == TRUE
+    if (_toneAlarm_pwm_group.pwm_drv != nullptr) {
+        if (is_zero(frequency) || is_zero(volume)) {
+            pwmDisableChannel(_toneAlarm_pwm_group.pwm_drv, _toneAlarm_pwm_group.chan);
+        } else {
+            pwmChangePeriod(_toneAlarm_pwm_group.pwm_drv,
+                            roundf(_toneAlarm_pwm_group.pwm_cfg.frequency/frequency));
+
+            pwmEnableChannel(_toneAlarm_pwm_group.pwm_drv, _toneAlarm_pwm_group.chan, roundf(volume*_toneAlarm_pwm_group.pwm_cfg.frequency/frequency)/2);
+        }
     }
-#endif // HAL_PWM_ALARM
-#if HAL_DSHOT_ALARM
+#endif // HAL_USE_PWM
+#if HAL_DSHOT_ALARM_ENABLED
     // don't play the motors while flying
     if (!(_toneAlarm_types & AP_Notify::Notify_Buzz_DShot) || get_soft_armed() || hal.rcout->get_dshot_esc_type() != RCOutput::DSHOT_ESC_BLHELI) {
         return;
@@ -208,7 +234,7 @@ void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t dur
     } else {  // G+
         hal.rcout->send_dshot_command(RCOutput::DSHOT_BEEP5, RCOutput::ALL_CHANNELS, duration_ms);
     }
-#endif // HAL_DSHOT_ALARM
+#endif // HAL_DSHOT_ALARM_ENABLED
 }
 
 /*
@@ -229,12 +255,10 @@ uint64_t Util::get_hw_rtc() const
 
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
 
-#ifndef HAL_BOOTLOADER_BUILD
 #include <GCS_MAVLink/GCS.h>
 #if HAL_GCS_ENABLED
 #define Debug(fmt, args ...)  do { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } while (0)
 #endif // HAL_GCS_ENABLED
-#endif // ifndef HAL_BOOT_LOADER_BUILD
 
 #ifndef Debug
 #define Debug(fmt, args ...)  do { hal.console->printf(fmt, ## args); } while (0)
@@ -252,6 +276,18 @@ Util::FlashBootloader Util::flash_bootloader()
         Debug("failed to find %s\n", fw_name);
         return FlashBootloader::NOT_AVAILABLE;
     }
+
+#if AP_SIGNED_FIRMWARE
+    if (!AP_CheckFirmware::check_signed_bootloader(fw, fw_size)) {
+        // don't allow flashing of an unsigned bootloader in a secure
+        // setup. This prevents the easy mistake of leaving an
+        // unsigned bootloader in ROMFS, which would give a trivail
+        // way to bypass signing
+        AP_ROMFS::free(fw);
+        return FlashBootloader::NOT_SIGNED;
+    }
+#endif
+
     // make sure size is multiple of 32
     fw_size = (fw_size + 31U) & ~31U;
 
@@ -340,22 +376,24 @@ Util::FlashBootloader Util::flash_bootloader()
 /*
   display system identifer - board type and serial number
  */
-bool Util::get_system_id(char buf[40])
+bool Util::get_system_id(char buf[50])
 {
     uint8_t serialid[12];
-    char board_name[14];
+    char board_name[24];
 
     memcpy(serialid, (const void *)UDID_START, 12);
-    strncpy(board_name, CHIBIOS_SHORT_BOARD_NAME, 13);
-    board_name[13] = 0;
+    // avoid board names greater than 23 chars (sizeof includes null char, so allow 24 bytes total)
+    static_assert(sizeof(CHIBIOS_SHORT_BOARD_NAME) <= 24, "CHIBIOS_SHORT_BOARD_NAME must be 23 characters or less");
+    strncpy(board_name, CHIBIOS_SHORT_BOARD_NAME, 23);
+    board_name[23] = 0;
 
     // this format is chosen to match the format used by HAL_PX4
-    snprintf(buf, 40, "%s %02X%02X%02X%02X %02X%02X%02X%02X %02X%02X%02X%02X",
+    snprintf(buf, 50, "%s %02X%02X%02X%02X %02X%02X%02X%02X %02X%02X%02X%02X",
              board_name,
              (unsigned)serialid[3], (unsigned)serialid[2], (unsigned)serialid[1], (unsigned)serialid[0],
              (unsigned)serialid[7], (unsigned)serialid[6], (unsigned)serialid[5], (unsigned)serialid[4],
              (unsigned)serialid[11], (unsigned)serialid[10], (unsigned)serialid[9],(unsigned)serialid[8]);
-    buf[39] = 0;
+    buf[49] = 0;
     return true;
 }
 
@@ -376,7 +414,7 @@ bool Util::was_watchdog_reset() const
 /*
   display stack usage as text buffer for @SYS/threads.txt
  */
-void Util::thread_info(ExpandingString &str)
+__RAMFUNC__ void Util::thread_info(ExpandingString &str)
 {
 #if HAL_ENABLE_THREAD_STATISTICS
     uint64_t cumulative_cycles = ch.kernel_stats.m_crit_isr.cumulative;
@@ -445,7 +483,7 @@ void Util::thread_info(ExpandingString &str)
 // request information on dma contention
 void Util::dma_info(ExpandingString &str)
 {
-#ifndef HAL_NO_SHARED_DMA
+#if AP_HAL_SHARED_DMA_ENABLED
     ChibiOS::Shared_DMA::dma_info(str);
 #endif
 }
@@ -566,7 +604,7 @@ void Util::apply_persistent_params(void) const
                             errors++;
                             break;
                         }
-                        if (!ap->configured_in_storage()) {
+                        if (!ap->configured()) {
                             ap->save();
                         }
                     }
@@ -603,6 +641,14 @@ void Util::uart_info(ExpandingString &str)
     str.printf("IOMCU   ");
     uart_io.uart_info(str);
 #endif
+}
+#endif
+
+// request information on uart I/O
+#if HAL_USE_PWM == TRUE
+void Util::timer_info(ExpandingString &str)
+{
+    hal.rcout->timer_info(str);
 }
 #endif
 
@@ -698,10 +744,9 @@ void Util::log_stack_info(void)
 #endif
 }
 
-#if !defined(HAL_BOOTLOADER_BUILD)
+#if AP_CRASHDUMP_ENABLED
 size_t Util::last_crash_dump_size() const
 {
-#if HAL_GCS_ENABLED && HAL_CRASHDUMP_ENABLE
     // get dump size
     uint32_t size = stm32_crash_dump_size();
     char* dump_start = (char*)stm32_crash_dump_addr();
@@ -714,22 +759,25 @@ size_t Util::last_crash_dump_size() const
         size = stm32_crash_dump_max_size();
     }
     return size;
-#endif
-    return 0;
 }
 
 void* Util::last_crash_dump_ptr() const
 {
-#if HAL_GCS_ENABLED && HAL_CRASHDUMP_ENABLE
     if (last_crash_dump_size() == 0) {
         return nullptr;
     }
     return (void*)stm32_crash_dump_addr();
-#else
-    return nullptr;
-#endif
 }
-#endif // HAL_BOOTLOADER_BUILD
+#endif // AP_CRASHDUMP_ENABLED
+
+#if HAL_ENABLE_DFU_BOOT && !defined(HAL_BOOTLOADER_BUILD)
+void Util::boot_to_dfu()
+{
+    hal.util->persistent_data.boot_to_dfu = true;
+    stm32_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
+    hal.scheduler->reboot(false);
+}
+#endif
 
 // set armed state
 void Util::set_soft_armed(const bool b)

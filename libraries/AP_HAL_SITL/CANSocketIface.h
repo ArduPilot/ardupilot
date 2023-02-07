@@ -59,7 +59,6 @@ public:
     CANIface(int index)
       : _self_index(index)
       , _frames_in_socket_tx_queue(0)
-      , _max_frames_in_socket_tx_queue(2)
     { }
 
     static uint8_t next_interface;
@@ -68,6 +67,7 @@ public:
     ~CANIface() { }
 
     // Initialise CAN Peripheral
+    bool init(const uint32_t bitrate, const uint32_t fdbitrate, const OperatingMode mode) override;
     bool init(const uint32_t bitrate, const OperatingMode mode) override;
 
     // Put frame into Tx FIFO returns negative on error, 0 on buffer full, 
@@ -118,6 +118,13 @@ public:
     // results available via @SYS/can0_stats.txt or @SYS/can1_stats.txt 
     void get_stats(ExpandingString &str) override;
 
+    /*
+      return statistics structure
+     */
+    const bus_stats_t *get_statistics(void) const override {
+        return &stats;
+    }
+    
     class CANSocketEventSource : public AP_HAL::EventSource {
         friend class CANIface;
         CANIface *_ifaces[HAL_NUM_CAN_IFACES];
@@ -137,6 +144,8 @@ private:
 
     int _read(AP_HAL::CANFrame& frame, uint64_t& ts_usec, bool& loopback) const;
 
+    int _readfd(AP_HAL::CANFrame& frame, uint64_t& ts_usec, bool& loopback) const;
+
     void _incrementNumFramesInSocketTxQueue();
 
     void _confirmSentFrame();
@@ -144,10 +153,11 @@ private:
     bool _wasInPendingLoopbackSet(const AP_HAL::CANFrame& frame);
 
     bool _checkHWFilters(const can_frame& frame) const;
+    bool _checkHWFilters(const canfd_frame& frame) const;
 
-    bool _hasReadyTx() const;
+    bool _hasReadyTx();
 
-    bool _hasReadyRx() const;
+    bool _hasReadyRx();
 
     void _poll(bool read, bool write);
 
@@ -164,7 +174,6 @@ private:
 
     const uint8_t _self_index;
 
-    const unsigned _max_frames_in_socket_tx_queue;
     unsigned _frames_in_socket_tx_queue;
     uint32_t _tx_frame_counter;
     AP_HAL::EventHandle *_evt_handle;
@@ -177,15 +186,12 @@ private:
     std::unordered_multiset<uint32_t> _pending_loopback_ids;
     std::vector<can_filter> _hw_filters_container;
 
-    struct {
-        uint32_t tx_requests;
+    /*
+      additional statistics
+     */
+    struct bus_stats : public AP_HAL::CANIface::bus_stats_t {
         uint32_t tx_full;
         uint32_t tx_confirmed;
-        uint32_t tx_write_fail;
-        uint32_t tx_success;
-        uint32_t tx_timedout;
-        uint32_t rx_received;
-        uint32_t rx_errors;
         uint32_t num_downs;
         uint32_t num_rx_poll_req;
         uint32_t num_tx_poll_req;
@@ -193,6 +199,18 @@ private:
         uint32_t num_poll_tx_events;
         uint32_t num_poll_rx_events;
     } stats;
+
+    HAL_Semaphore sem;
+
+protected:
+    bool add_to_rx_queue(const CanRxItem &rx_item) override {
+        _rx_queue.push(rx_item);
+        return true;
+    }
+
+    int8_t get_iface_num(void) const override {
+        return _self_index;
+    }
 };
 
 }

@@ -17,6 +17,7 @@
 #include <AP_Math/AP_Math.h>
 #include "AP_MotorsSingle.h"
 #include <GCS_MAVLink/GCS.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -81,10 +82,10 @@ void AP_MotorsSingle::output_to_motors()
             for (uint8_t i = 0; i < NUM_ACTUATORS; i++) {
                 rc_write_angle(AP_MOTORS_MOT_1 + i, _spin_up_ratio * _actuator_out[i] * AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
             }
-            set_actuator_with_slew(_actuator[5], actuator_spin_up_to_ground_idle());
-            set_actuator_with_slew(_actuator[6], actuator_spin_up_to_ground_idle());
-            rc_write(AP_MOTORS_MOT_5, output_to_pwm(_actuator[5]));
-            rc_write(AP_MOTORS_MOT_6, output_to_pwm(_actuator[6]));
+            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_5], actuator_spin_up_to_ground_idle());
+            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_6], actuator_spin_up_to_ground_idle());
+            rc_write(AP_MOTORS_MOT_5, output_to_pwm(_actuator[AP_MOTORS_MOT_5]));
+            rc_write(AP_MOTORS_MOT_6, output_to_pwm(_actuator[AP_MOTORS_MOT_6]));
             break;
         case SpoolState::SPOOLING_UP:
         case SpoolState::THROTTLE_UNLIMITED:
@@ -93,27 +94,23 @@ void AP_MotorsSingle::output_to_motors()
             for (uint8_t i = 0; i < NUM_ACTUATORS; i++) {
                 rc_write_angle(AP_MOTORS_MOT_1 + i, _actuator_out[i] * AP_MOTORS_SINGLE_SERVO_INPUT_RANGE);
             }
-            set_actuator_with_slew(_actuator[5], thrust_to_actuator(_thrust_out));
-            set_actuator_with_slew(_actuator[6], thrust_to_actuator(_thrust_out));
-            rc_write(AP_MOTORS_MOT_5, output_to_pwm(_actuator[5]));
-            rc_write(AP_MOTORS_MOT_6, output_to_pwm(_actuator[6]));
+            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_5], thrust_to_actuator(_thrust_out));
+            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_6], thrust_to_actuator(_thrust_out));
+            rc_write(AP_MOTORS_MOT_5, output_to_pwm(_actuator[AP_MOTORS_MOT_5]));
+            rc_write(AP_MOTORS_MOT_6, output_to_pwm(_actuator[AP_MOTORS_MOT_6]));
             break;
     }
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
 //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-uint16_t AP_MotorsSingle::get_motor_mask()
+uint32_t AP_MotorsSingle::get_motor_mask()
 {
     uint32_t motor_mask =
-        1U << AP_MOTORS_MOT_1 |
-        1U << AP_MOTORS_MOT_2 |
-        1U << AP_MOTORS_MOT_3 |
-        1U << AP_MOTORS_MOT_4 |
         1U << AP_MOTORS_MOT_5 |
         1U << AP_MOTORS_MOT_6;
 
-    uint16_t mask = motor_mask_to_srv_channel_mask(motor_mask);
+    uint32_t mask = motor_mask_to_srv_channel_mask(motor_mask);
 
     // add parent's mask
     mask |= AP_MotorsMulticopter::get_motor_mask();
@@ -162,7 +159,7 @@ void AP_MotorsSingle::output_armed_stabilizing()
     if (is_zero(rp_thrust_max)) {
         rp_scale = 1.0f;
     } else {
-        rp_scale = constrain_float((1.0f - MIN(fabsf(yaw_thrust), (float) _yaw_headroom / 1000.0f)) / rp_thrust_max, 0.0f, 1.0f);
+        rp_scale = constrain_float((1.0f - MIN(fabsf(yaw_thrust), (float) _yaw_headroom * 0.001f)) / rp_thrust_max, 0.0f, 1.0f);
         if (rp_scale < 1.0f) {
             limit.roll = true;
             limit.pitch = true;
@@ -238,13 +235,8 @@ void AP_MotorsSingle::output_armed_stabilizing()
 // output_test_seq - spin a motor at the pwm value specified
 //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
 //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-void AP_MotorsSingle::output_test_seq(uint8_t motor_seq, int16_t pwm)
+void AP_MotorsSingle::_output_test_seq(uint8_t motor_seq, int16_t pwm)
 {
-    // exit immediately if not armed
-    if (!armed()) {
-        return;
-    }
-
     // output to motors and servos
     switch (motor_seq) {
         case 1:

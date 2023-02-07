@@ -1,6 +1,13 @@
 #pragma once
 
 #include "AP_RangeFinder.h"
+
+#ifndef AP_RANGEFINDER_GYUS42V2_ENABLED
+#define AP_RANGEFINDER_GYUS42V2_ENABLED AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
+#endif
+
+#if AP_RANGEFINDER_GYUS42V2_ENABLED
+
 #include "AP_RangeFinder_Backend_Serial.h"
 
 class AP_RangeFinder_GYUS42v2 : public AP_RangeFinder_Backend_Serial
@@ -8,7 +15,11 @@ class AP_RangeFinder_GYUS42v2 : public AP_RangeFinder_Backend_Serial
 
 public:
 
-    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+    static AP_RangeFinder_Backend_Serial *create(
+        RangeFinder::RangeFinder_State &_state,
+        AP_RangeFinder_Params &_params) {
+        return new AP_RangeFinder_GYUS42v2(_state, _params);
+    }
 
 protected:
 
@@ -22,6 +33,8 @@ protected:
 
 private:
 
+    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+
     // get a reading
     bool get_reading(float &reading_m) override;
 
@@ -32,3 +45,5 @@ private:
     uint8_t buffer[7];
     uint8_t buffer_used;
 };
+
+#endif  // AP_RANGEFINDER_GYUS42V2_ENABLED

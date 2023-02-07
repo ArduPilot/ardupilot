@@ -15,6 +15,9 @@
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #pragma once
+
+#include "AP_RCProtocol_config.h"
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 
@@ -48,8 +51,12 @@ public:
         SRXL2      =  7,
         CRSF       =  8,
         ST24       =  9,
+#if AP_RCPROTOCOL_FPORT_ENABLED
         FPORT      = 10,
+#endif
+#if AP_RCPROTOCOL_FPORT2_ENABLED
         FPORT2     = 11,
+#endif
 #if AP_RCPROTOCOL_FASTSBUS_ENABLED
         FASTSBUS   = 12,
 #endif
@@ -67,6 +74,13 @@ public:
     void process_handshake(uint32_t baudrate);
     void update(void);
 
+    bool failsafe_active() const {
+        return _failsafe_active;
+    }
+    void set_failsafe_active(bool active) {
+        _failsafe_active = active;
+    }
+
     void disable_for_pulses(enum rcprotocol_t protocol) {
         _disabled_for_pulses |= (1U<<(uint8_t)protocol);
     }
@@ -81,14 +95,18 @@ public:
         case SBUS:
         case SBUS_NI:
         case PPM:
+#if AP_RCPROTOCOL_FPORT_ENABLED
         case FPORT:
+#endif
+#if AP_RCPROTOCOL_FPORT2_ENABLED
         case FPORT2:
+#endif
+        case CRSF:
             return true;
         case IBUS:
         case SUMD:
         case SRXL:
         case SRXL2:
-        case CRSF:
         case ST24:
         case NONE:
             return false;
@@ -117,6 +135,7 @@ public:
 
     // add a UART for RCIN
     void add_uart(AP_HAL::UARTDriver* uart);
+    bool has_uart() const { return added.uart != nullptr; }
 
 #ifdef IOMCU_FW
     // set allowed RC protocols
@@ -135,6 +154,11 @@ public:
         bool invert_rx;
     };
 
+    // return true if we are decoding a byte stream, instead of pulses
+    bool using_uart(void) const {
+        return _detected_with_bytes;
+    }
+
 private:
     void check_added_uart(void);
 
@@ -147,6 +171,7 @@ private:
     AP_RCProtocol_Backend *backend[NONE];
     bool _new_input;
     uint32_t _last_input_ms;
+    bool _failsafe_active;
     bool _valid_serial_prot;
 
     // optional additional uart

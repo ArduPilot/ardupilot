@@ -29,12 +29,13 @@ void SITL_State::init(int argc, char * const argv[]) {
     const struct GetOptLong::option options[] = {
         {"help",            false,  0, 'h'},
         {"instance",        true,   0, 'I'},
+        {"maintenance",     false,  0, 'M'},
     };
 
     setvbuf(stdout, (char *)0, _IONBF, 0);
     setvbuf(stderr, (char *)0, _IONBF, 0);
 
-    GetOptLong gopt(argc, argv, "hI:",
+    GetOptLong gopt(argc, argv, "hI:M",
                     options);
 
     while((opt = gopt.getoption()) != -1) {
@@ -42,10 +43,15 @@ void SITL_State::init(int argc, char * const argv[]) {
             case 'I':
                 _instance = atoi(gopt.optarg);
                 break;
+            case 'M':
+                printf("Running in Maintenance Mode\n");
+                _maintenance = true;
+                break;
             default:
                 printf("Options:\n"
                     "\t--help|-h                display this help information\n"
-                    "\t--instance|-I N          set instance of SITL Periph\n");
+                    "\t--instance|-I N          set instance of SITL Periph\n"
+                    "\t--maintenance|-M         run in maintenance mode\n");
                 exit(1);
         }
     }

@@ -27,7 +27,7 @@ void ModeQStabilize::update()
         return;
     }
 
-    if ((plane.quadplane.options & QuadPlane::OPTION_INGORE_FW_ANGLE_LIMITS_IN_Q_MODES) == 0) {
+    if (!plane.quadplane.option_is_set(QuadPlane::OPTION::INGORE_FW_ANGLE_LIMITS_IN_Q_MODES)) {
         // by default angles are also constrained by forward flight limits
         set_limited_roll_pitch(roll_input, pitch_input);
     } else {

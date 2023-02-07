@@ -21,6 +21,20 @@
 
 extern const AP_HAL::HAL& hal;
 
+const AP_Param::GroupInfo AP_BattMonitor_UAVCAN::var_info[] = {
+
+    // @Param: CURR_MULT
+    // @DisplayName: Scales reported power monitor current
+    // @Description: Multiplier applied to all current related reports to allow for adjustment if no UAVCAN param access or current splitting applications
+    // @Range: .1 10
+    // @User: Advanced
+    AP_GROUPINFO("CURR_MULT", 30, AP_BattMonitor_UAVCAN, _curr_mult, 1.0),
+
+    // Param indexes must be between 30 and 39 to avoid conflict with other battery monitor param tables loaded by pointer
+
+    AP_GROUPEND
+};
+
 UC_REGISTRY_BINDER(BattInfoCb, uavcan::equipment::power::BatteryInfo);
 UC_REGISTRY_BINDER(BattInfoAuxCb, ardupilot::equipment::power::BatteryInfoAux);
 UC_REGISTRY_BINDER(MpptStreamCb, mppt::Stream);
@@ -30,6 +44,9 @@ AP_BattMonitor_UAVCAN::AP_BattMonitor_UAVCAN(AP_BattMonitor &mon, AP_BattMonitor
     AP_BattMonitor_Backend(mon, mon_state, params),
     _type(type)
 {
+    AP_Param::setup_object_defaults(this,var_info);
+    _state.var_info = var_info;
+
     // starts with not healthy
     _state.healthy = false;
 }
@@ -125,7 +142,7 @@ void AP_BattMonitor_UAVCAN::update_interim_state(const float voltage, const floa
     WITH_SEMAPHORE(_sem_battmon);
 
     _interim_state.voltage = voltage;
-    _interim_state.current_amps = current;
+    _interim_state.current_amps = _curr_mult * current;
     _soc = soc;
 
     if (!isnanf(temperature_K) && temperature_K > 0) {
@@ -137,14 +154,10 @@ void AP_BattMonitor_UAVCAN::update_interim_state(const float voltage, const floa
     const uint32_t tnow = AP_HAL::micros();
 
     if (!_has_battery_info_aux || _mppt.is_detected) {
-        uint32_t dt = tnow - _interim_state.last_time_micros;
+        const uint32_t dt_us = tnow - _interim_state.last_time_micros;
 
         // update total current drawn since startup
-        if (_interim_state.last_time_micros != 0 && dt < 2000000) {
-            float mah = calculate_mah(_interim_state.current_amps, dt);
-            _interim_state.consumed_mah += mah;
-            _interim_state.consumed_wh  += 0.001f * mah * _interim_state.voltage;
-        }
+        update_consumed(_interim_state, dt_us);
     }
 
     // record time
@@ -196,7 +209,12 @@ void AP_BattMonitor_UAVCAN::handle_mppt_stream(const MpptStreamCb &cb)
         mppt_set_bootup_powered_state();
     }
 
-    mppt_check_and_report_faults(cb.msg->fault_flags);
+#if AP_BATTMONITOR_UAVCAN_MPPT_DEBUG
+    if (_mppt.fault_flags != cb.msg->fault_flags) {
+        mppt_report_faults(_instance, cb.msg->fault_flags);
+    }
+#endif
+    _mppt.fault_flags = cb.msg->fault_flags;
 }
 
 void AP_BattMonitor_UAVCAN::handle_battery_info_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const BattInfoCb &cb)
@@ -352,18 +370,13 @@ void AP_BattMonitor_UAVCAN::mppt_set_powered_state(bool power_on, bool force)
     client.call(_node_id, request);
 }
 
+#if AP_BATTMONITOR_UAVCAN_MPPT_DEBUG
 // report changes in MPPT faults
-void AP_BattMonitor_UAVCAN::mppt_check_and_report_faults(uint8_t fault_flags)
+void AP_BattMonitor_UAVCAN::mppt_report_faults(const uint8_t instance, const uint8_t fault_flags)
 {
-    // return immediately if no changes
-    if (_mppt.fault_flags == fault_flags) {
-        return;
-    }
-    _mppt.fault_flags = fault_flags;
-
     // handle recovery
-    if (_mppt.fault_flags == 0) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: OK", (unsigned)_instance+1);
+    if (fault_flags == 0) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: OK", (unsigned)instance+1);
         return;
     }
 
@@ -372,13 +385,13 @@ void AP_BattMonitor_UAVCAN::mppt_check_and_report_faults(uint8_t fault_flags)
         // this loop is to generate multiple messages if there are multiple concurrent faults, but also run once if there are no faults
         if ((fault_bit & fault_flags) != 0) {
             const MPPT_FaultFlags err = (MPPT_FaultFlags)fault_bit;
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: %s", (unsigned)_instance+1, mppt_fault_string(err));
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: %s", (unsigned)instance+1, mppt_fault_string(err));
         }
     }
 }
 
 // returns string description of MPPT fault bit. Only handles single bit faults
-const char* AP_BattMonitor_UAVCAN::mppt_fault_string(MPPT_FaultFlags fault)
+const char* AP_BattMonitor_UAVCAN::mppt_fault_string(const MPPT_FaultFlags fault)
 {
     switch (fault) {
         case MPPT_FaultFlags::OVER_VOLTAGE:
@@ -392,6 +405,7 @@ const char* AP_BattMonitor_UAVCAN::mppt_fault_string(MPPT_FaultFlags fault)
     }
     return "unknown";
 }
+#endif
 
 // return mavlink fault bitmask (see MAV_BATTERY_FAULT enum)
 uint32_t AP_BattMonitor_UAVCAN::get_mavlink_fault_bitmask() const

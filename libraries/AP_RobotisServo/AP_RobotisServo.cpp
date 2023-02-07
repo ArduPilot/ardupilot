@@ -34,14 +34,14 @@
 * limitations under the License.
 */
 
+#include "AP_RobotisServo.h"
+
+#if AP_ROBOTISSERVO_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <SRV_Channel/SRV_Channel.h>
-
-#include "AP_RobotisServo.h"
-
-#if NUM_SERVO_CHANNELS
 
 extern const AP_HAL::HAL& hal;
 
@@ -340,11 +340,11 @@ void AP_RobotisServo::process_packet(const uint8_t *pkt, uint8_t length)
         // easier
         return;
     }
-    uint16_t id_mask = (1U<<(id-1));
+    uint32_t id_mask = (1U<<(id-1));
     if (!(id_mask & servo_mask)) {
         // mark the servo as present
         servo_mask |= id_mask;
-        hal.console->printf("Robotis: new servo %u\n", id);
+        DEV_PRINTF("Robotis: new servo %u\n", id);
     }
 }
 
@@ -406,4 +406,5 @@ void AP_RobotisServo::update()
         send_command(i+1, REG_GOAL_POSITION, value, 4);
     }
 }
-#endif //NUM_SERVO_CHANNELS
+
+#endif  // AP_ROBOTISSERVO_ENABLED

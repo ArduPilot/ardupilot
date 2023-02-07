@@ -9,7 +9,6 @@
 #if HAL_GENERATOR_ENABLED
 
 #include <AP_Param/AP_Param.h>
-#include <GCS_MAVLink/GCS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 
 class AP_Generator_Backend;
@@ -29,8 +28,7 @@ public:
     AP_Generator();
 
     // Do not allow copies
-    AP_Generator(const AP_Generator &other) = delete;
-    AP_Generator &operator=(const AP_Generator&) = delete;
+    CLASS_NO_COPY(AP_Generator);
 
     static AP_Generator* get_singleton();
 
@@ -44,14 +42,14 @@ public:
     // Helpers to retrieve measurements
     float get_voltage(void) const { return _voltage; }
     float get_current(void) const { return _current; }
-    float get_fuel_remain(void) const { return _fuel_remain_pct; }
+    float get_fuel_remaining_pct(void) const { return _fuel_remain_pct; }
     float get_batt_consumed(void) const { return _consumed_mah; }
     uint16_t get_rpm(void) const { return _rpm; }
 
     // Helpers to see if backend has a measurement
     bool has_current() const { return _has_current; }
     bool has_consumed_energy() const { return _has_consumed_energy; }
-    bool has_fuel_remaining() const { return _has_fuel_remaining; }
+    bool has_fuel_remaining_pct() const { return _has_fuel_remaining_pct; }
 
     // healthy() returns true if the generator is not present, or it is
     // present, providing telemetry and not indicating any errors.
@@ -62,10 +60,19 @@ public:
     bool idle(void);
     bool run(void);
 
-    void send_generator_status(const GCS_MAVLINK &channel);
+    void send_generator_status(const class GCS_MAVLINK &channel);
 
     // Parameter block
     static const struct AP_Param::GroupInfo var_info[];
+
+    // bits which can be set in _options to modify generator behaviour:
+    enum class Option {
+        INHIBIT_MAINTENANCE_WARNINGS = 0,
+    };
+
+    bool option_set(Option opt) const {
+        return (_options & 1U<<uint32_t(opt)) != 0;
+    }
 
 private:
 
@@ -74,12 +81,14 @@ private:
 
     // Parameters
     AP_Int8 _type; // Select which generator to use
+    AP_Int32 _options; // Select which generator to use
 
     enum class Type {
         GEN_DISABLED = 0,
         IE_650_800 = 1,
         IE_2400 = 2,
         RICHENPOWER = 3,
+        // LOWEHEISER = 4,
     };
 
     // Helper to get param and cast to GenType
@@ -94,7 +103,7 @@ private:
     bool _healthy;
     bool _has_current;
     bool _has_consumed_energy;
-    bool _has_fuel_remaining;
+    bool _has_fuel_remaining_pct;
 
     static AP_Generator *_singleton;
 

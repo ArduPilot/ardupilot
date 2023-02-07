@@ -185,7 +185,7 @@ struct PACKED log_XKF3 {
 // @Field: OFN: Most recent position reset (North component)
 // @Field: OFE: Most recent position reset (East component)
 // @Field: FS: Filter fault status
-// @Field: TS: Filter timeout status bitmask (0:position measurement, 1:velocity measurement, 2:height measurement, 3:magnetometer measurement, 4:airspeed measurement)
+// @Field: TS: Filter timeout status bitmask (0:position measurement, 1:velocity measurement, 2:height measurement, 3:magnetometer measurement, 4:airspeed measurement, 5:drag measurement)
 // @Field: SS: Filter solution status
 // @Field: GPS: Filter GPS status
 // @Field: PI: Primary core index
@@ -420,6 +420,7 @@ struct PACKED log_XKV {
     float v11;
 };
 
+#if HAL_NAVEKF3_AVAILABLE
 #define LOG_STRUCTURE_FROM_NAVEKF3        \
     { LOG_XKF0_MSG, sizeof(log_XKF0), \
       "XKF0","QBBccCCcccccccc","TimeUS,C,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD", "s#-m---mmmmmmmm", "F--B---BBBBBBBB" , true }, \
@@ -448,3 +449,6 @@ struct PACKED log_XKV {
       "XKV1","QBffffffffffff","TimeUS,C,V00,V01,V02,V03,V04,V05,V06,V07,V08,V09,V10,V11", "s#------------", "F-------------" , true }, \
     { LOG_XKV2_MSG, sizeof(log_XKV), \
       "XKV2","QBffffffffffff","TimeUS,C,V12,V13,V14,V15,V16,V17,V18,V19,V20,V21,V22,V23", "s#------------", "F-------------" , true },
+#else
+  #define LOG_STRUCTURE_FROM_NAVEKF3
+#endif

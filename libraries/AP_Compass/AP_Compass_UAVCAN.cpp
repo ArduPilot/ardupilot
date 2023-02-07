@@ -13,11 +13,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
-
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
-
 #include "AP_Compass_UAVCAN.h"
+
+#if AP_COMPASS_UAVCAN_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
 
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
@@ -32,7 +32,7 @@ extern const AP_HAL::HAL& hal;
 UC_REGISTRY_BINDER(MagCb, uavcan::equipment::ahrs::MagneticFieldStrength);
 UC_REGISTRY_BINDER(Mag2Cb, uavcan::equipment::ahrs::MagneticFieldStrength2);
 
-AP_Compass_UAVCAN::DetectedModules AP_Compass_UAVCAN::_detected_modules[] = {0};
+AP_Compass_UAVCAN::DetectedModules AP_Compass_UAVCAN::_detected_modules[];
 HAL_Semaphore AP_Compass_UAVCAN::_sem_registry;
 
 AP_Compass_UAVCAN::AP_Compass_UAVCAN(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t sensor_id, uint32_t devid)
@@ -204,4 +204,4 @@ void AP_Compass_UAVCAN::read(void)
     drain_accumulated_samples(_instance);
 }
 
-#endif
+#endif  // AP_COMPASS_UAVCAN_ENABLED

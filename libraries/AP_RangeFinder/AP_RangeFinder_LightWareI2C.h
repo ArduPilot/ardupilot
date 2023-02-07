@@ -2,6 +2,13 @@
 
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Backend.h"
+
+#ifndef AP_RANGEFINDER_LWI2C_ENABLED
+#define AP_RANGEFINDER_LWI2C_ENABLED AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
+#endif
+
+#if AP_RANGEFINDER_LWI2C_ENABLED
+
 #include <AP_HAL/I2CDevice.h>
 
 #define NUM_SF20_DATA_STREAMS 1
@@ -58,3 +65,5 @@ private:
     void data_log(uint16_t *val);
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 };
+
+#endif  // AP_RANGEFINDER_LWI2C_ENABLED

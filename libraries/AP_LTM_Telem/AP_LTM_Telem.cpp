@@ -17,11 +17,14 @@
 
 #include "AP_LTM_Telem.h"
 
+#if AP_LTM_TELEM_ENABLED
+
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_RSSI/AP_RSSI.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -74,7 +77,7 @@ void AP_LTM_Telem::send_Gframe(void)
         ahrs.get_relative_position_D_home(alt_ahrs);
         alt = (int32_t) roundf(-alt_ahrs * 100.0); // altitude (cm)
         Location loc;
-        if (ahrs.get_position(loc)) {
+        if (ahrs.get_location(loc)) {
             lat = loc.lat;
             lon = loc.lng;
             gndspeed = (uint8_t) roundf(gps.ground_speed());
@@ -121,11 +124,13 @@ void AP_LTM_Telem::send_Sframe(void)
     const uint16_t amp = (uint16_t) roundf(current * 100.0f);                          // current sensor (expects value in hundredth of A)
 
     // airspeed in m/s if available and enabled - even if not used - otherwise send 0
-    const AP_Airspeed *aspeed = AP::airspeed();
     uint8_t airspeed = 0; // airspeed sensor (m/s)
+#if AP_AIRSPEED_ENABLED
+    const AP_Airspeed *aspeed = AP::airspeed();
     if (aspeed && aspeed->enabled()) {
         airspeed = (uint8_t) roundf(aspeed->get_airspeed());
     }
+#endif
 
     const uint8_t flightmode = AP_Notify::flags.flight_mode; // flight mode
 
@@ -166,9 +171,9 @@ void AP_LTM_Telem::send_Aframe(void)
     {
         AP_AHRS &ahrs = AP::ahrs();
         WITH_SEMAPHORE(ahrs.get_semaphore());
-        pitch = roundf(ahrs.pitch_sensor / 100.0); // attitude pitch in degrees
-        roll = roundf(ahrs.roll_sensor / 100.0);   // attitude roll in degrees
-        heading = roundf(ahrs.yaw_sensor / 100.0); // heading in degrees
+        pitch = roundf(ahrs.pitch_sensor * 0.01); // attitude pitch in degrees
+        roll = roundf(ahrs.roll_sensor * 0.01);   // attitude roll in degrees
+        heading = roundf(ahrs.yaw_sensor * 0.01); // heading in degrees
     }
 
     uint8_t lt_buff[LTM_AFRAME_SIZE];
@@ -214,3 +219,5 @@ void AP_LTM_Telem::tick(void)
         generate_LTM();
     }
 }
+
+#endif  // AP_LTM_TELEM_ENABLED

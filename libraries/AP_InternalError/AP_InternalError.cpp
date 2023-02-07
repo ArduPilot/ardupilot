@@ -9,7 +9,7 @@ extern const AP_HAL::HAL &hal;
 static AP_InternalError instance;
 
 void AP_InternalError::error(const AP_InternalError::error_t e, uint16_t line) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && defined(HAL_DEBUG_BUILD)
     switch (e) {
     case AP_InternalError::error_t::watchdog_reset:
     case AP_InternalError::error_t::main_loop_stuck:

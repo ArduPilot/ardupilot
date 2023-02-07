@@ -12,6 +12,8 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include <hal.h>
 #include "I2CDevice.h"
 
 #include <AP_HAL/AP_HAL.h>
@@ -104,6 +106,45 @@ void I2CBus::clear_all()
         clear_bus(i);
     }
 }
+
+/*
+  If bus exists, set its data and clock lines to floating
+ */
+void I2CBus::set_bus_to_floating(uint8_t busidx)
+{
+    if (busidx < ARRAY_SIZE(I2CD)) {
+        const struct I2CInfo &info = I2CD[busidx];
+        const ioline_t sda_line = GPIO::resolve_alt_config(info.sda_line, PERIPH_TYPE::I2C_SDA, info.instance);
+        const ioline_t scl_line = GPIO::resolve_alt_config(info.scl_line, PERIPH_TYPE::I2C_SCL, info.instance);
+        palSetLineMode(sda_line, PAL_MODE_INPUT);
+        palSetLineMode(scl_line, PAL_MODE_INPUT);
+    }
+}
+
+
+/*
+  Check enabled I2C/CAN select pins against check_pins bitmask
+ */
+bool I2CBus::check_select_pins(uint8_t check_pins)
+{
+    uint8_t enabled_pins = 0;
+
+#ifdef HAL_GPIO_PIN_GPIO_CAN_I2C1_SEL
+    enabled_pins |= palReadLine(HAL_GPIO_PIN_GPIO_CAN_I2C1_SEL) << 0;
+#endif
+#ifdef HAL_GPIO_PIN_GPIO_CAN_I2C2_SEL
+    enabled_pins |= palReadLine(HAL_GPIO_PIN_GPIO_CAN_I2C2_SEL) << 1;
+#endif
+#ifdef HAL_GPIO_PIN_GPIO_CAN_I2C3_SEL
+    enabled_pins |= palReadLine(HAL_GPIO_PIN_GPIO_CAN_I2C3_SEL) << 2;
+#endif
+#ifdef HAL_GPIO_PIN_GPIO_CAN_I2C4_SEL
+    enabled_pins |= palReadLine(HAL_GPIO_PIN_GPIO_CAN_I2C4_SEL) << 3;
+#endif
+
+    return (enabled_pins & check_pins) == check_pins;
+}
+
 
 /*
   clear a stuck bus (bus held by a device that is holding SDA low) by
@@ -226,7 +267,7 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
             bus.i2ccfg.duty_cycle = STD_DUTY_CYCLE;
         }
 #endif
-        hal.console->printf("I2C%u clock %ukHz\n", busnum, unsigned(bus.busclock/1000));
+        DEV_PRINTF("I2C%u clock %ukHz\n", busnum, unsigned(bus.busclock/1000));
     }
 }
 
@@ -257,7 +298,7 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
     if (!bus.semaphore.check_owner()) {
-        hal.console->printf("I2C: not owner of 0x%x for addr 0x%02x\n", (unsigned)get_bus_id(), _address);
+        DEV_PRINTF("I2C: not owner of 0x%x for addr 0x%02x\n", (unsigned)get_bus_id(), _address);
         return false;
     }
 

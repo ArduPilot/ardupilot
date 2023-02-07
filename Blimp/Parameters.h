@@ -1,7 +1,10 @@
 #pragma once
 
+#define AP_PARAM_VEHICLE_NAME blimp
+
 #include <AP_Common/AP_Common.h>
 #include "RC_Channel.h"
+#include <SRV_Channel/SRV_Channel.h>
 
 // Global parameter class.
 //
@@ -148,7 +151,7 @@ public:
         // 140: Sensor parameters
         //
         k_param_compass,
-        k_param_frame_type,
+        k_param_frame_type, //unused
         k_param_ahrs, // AHRS group // 159
 
         //
@@ -170,7 +173,7 @@ public:
         //
         k_param_failsafe_throttle = 170,
         k_param_failsafe_throttle_value,
-        k_param_radio_tuning,
+        k_param_radio_tuning, // unused
         k_param_rc_speed = 192,
         k_param_failsafe_gcs,
         k_param_rcmap, // 199
@@ -235,8 +238,6 @@ public:
     // Misc
     //
     AP_Int32        log_bitmask;
-    AP_Int8         radio_tuning;
-    AP_Int8         frame_type;
     AP_Int8         disarm_delay;
 
     AP_Int8         fs_ekf_action;
@@ -312,9 +313,6 @@ public:
 #if AP_SCRIPTING_ENABLED
     AP_Scripting scripting;
 #endif // AP_SCRIPTING_ENABLED
-
-    AP_Float tuning_min;
-    AP_Float tuning_max;
 
     // vibration failsafe enable/disable
     AP_Int8 fs_vibe_enabled;

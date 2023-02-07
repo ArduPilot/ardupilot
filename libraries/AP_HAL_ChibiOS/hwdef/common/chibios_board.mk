@@ -18,6 +18,16 @@ ifeq ($(USE_CPPOPT),)
   USE_CPPOPT = -fno-rtti -std=gnu++11
 endif
 
+# Assembly specific options here (added to USE_OPT).
+ifeq ($(USE_ASOPT),)
+  USE_ASOPT = 
+endif
+
+# Assembly specific options here (added to USE_ASXOPT).
+ifeq ($(USE_ASXOPT),)
+  USE_ASXOPT =
+endif
+
 # Enable this if you want the linker to remove unused code and data
 ifeq ($(USE_LINK_GC),)
   USE_LINK_GC = yes

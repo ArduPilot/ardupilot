@@ -41,3 +41,6 @@ PC4 IMU1_CS CS
 PB12 MAX7456_CS CS
 PD7 IMU2_CS CS
 PE11 SPARE_CS CS
+
+# turn switched supply on at power up
+PE4  PINIO1 OUTPUT LOW

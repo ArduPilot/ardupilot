@@ -12,7 +12,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 TEST(AP_FWVersion, FWVersion)
 {
     EXPECT_EQ(AP::fwversion().header, 0x61706677766572fbu);
-    EXPECT_EQ(AP::fwversion().header_version, 0x0100U);
+    EXPECT_EQ(AP::fwversion().header_version, 0x0200U);
     EXPECT_EQ(AP::fwversion().pointer_size, static_cast<uint8_t>(sizeof(void*)));
     EXPECT_EQ(AP::fwversion().reserved, 0);
     EXPECT_EQ(AP::fwversion().vehicle_type, static_cast<uint8_t>(APM_BUILD_DIRECTORY));
@@ -26,6 +26,7 @@ TEST(AP_FWVersion, FWVersion)
     EXPECT_STREQ(AP::fwversion().fw_string, THISFIRMWARE);
     EXPECT_STREQ(AP::fwversion().fw_hash_str, "");
     EXPECT_STREQ(AP::fwversion().fw_short_string, THISFIRMWARE);
+    EXPECT_EQ(AP::fwversion().fw_hash, 0u);
     EXPECT_EQ(AP::fwversion().middleware_name, nullptr);
     EXPECT_EQ(AP::fwversion().middleware_hash_str, nullptr);
     EXPECT_EQ(AP::fwversion().os_name, nullptr);

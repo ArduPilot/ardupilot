@@ -15,6 +15,9 @@
 
 #include "AP_Filesystem.h"
 
+#include "AP_Filesystem_config.h"
+#include <AP_HAL/HAL.h>
+
 static AP_Filesystem fs;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
@@ -37,19 +40,22 @@ static AP_Filesystem_ESP32 fs_local;
 static AP_Filesystem_Posix fs_local;
 #endif
 
-#ifdef HAL_HAVE_AP_ROMFS_EMBEDDED_H
+#if AP_FILESYSTEM_ROMFS_ENABLED
 #include "AP_Filesystem_ROMFS.h"
 static AP_Filesystem_ROMFS fs_romfs;
 #endif
 
+#if AP_FILESYSTEM_PARAM_ENABLED
 #include "AP_Filesystem_Param.h"
 static AP_Filesystem_Param fs_param;
+#endif
 
+#if AP_FILESYSTEM_SYS_ENABLED
 #include "AP_Filesystem_Sys.h"
 static AP_Filesystem_Sys fs_sys;
+#endif
 
-#include <AP_Mission/AP_Mission.h>
-#if HAL_MISSION_ENABLED
+#if AP_FILESYSTEM_MISSION_ENABLED
 #include "AP_Filesystem_Mission.h"
 static AP_Filesystem_Mission fs_mission;
 #endif
@@ -59,13 +65,17 @@ static AP_Filesystem_Mission fs_mission;
  */
 const AP_Filesystem::Backend AP_Filesystem::backends[] = {
     { nullptr, fs_local },
-#ifdef HAL_HAVE_AP_ROMFS_EMBEDDED_H
+#if AP_FILESYSTEM_ROMFS_ENABLED
     { "@ROMFS/", fs_romfs },
 #endif
+#if AP_FILESYSTEM_PARAM_ENABLED
     { "@PARAM/", fs_param },
+#endif
+#if AP_FILESYSTEM_SYS_ENABLED
     { "@SYS/", fs_sys },
     { "@SYS", fs_sys },
-#if HAL_MISSION_ENABLED
+#endif
+#if AP_FILESYSTEM_MISSION_ENABLED
     { "@MISSION/", fs_mission },
 #endif
 };
@@ -106,10 +116,10 @@ const AP_Filesystem::Backend &AP_Filesystem::backend_by_fd(int &fd) const
     return backends[idx];
 }
 
-int AP_Filesystem::open(const char *fname, int flags)
+int AP_Filesystem::open(const char *fname, int flags, bool allow_absolute_paths)
 {
     const Backend &backend = backend_by_path(fname);
-    int fd = backend.fs.open(fname, flags);
+    int fd = backend.fs.open(fname, flags, allow_absolute_paths);
     if (fd < 0) {
         return -1;
     }
@@ -260,7 +270,10 @@ bool AP_Filesystem::fgets(char *buf, uint8_t buflen, int fd)
 
     uint8_t i = 0;
     for (; i<buflen-1; i++) {
-        if (backend.fs.read(fd, &buf[i], 1) != 1) {
+        if (backend.fs.read(fd, &buf[i], 1) <= 0) {
+            if (i==0) {
+                return false;
+            }
             break;
         }
         if (buf[i] == '\r' || buf[i] == '\n') {
@@ -268,7 +281,7 @@ bool AP_Filesystem::fgets(char *buf, uint8_t buflen, int fd)
         }
     }
     buf[i] = '\0';
-    return i != 0;
+    return true;
 }
 
 // format filesystem

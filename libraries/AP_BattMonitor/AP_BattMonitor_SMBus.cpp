@@ -39,8 +39,8 @@ AP_BattMonitor_SMBus::AP_BattMonitor_SMBus(AP_BattMonitor &mon,
     _state.var_info = var_info;
 
     _bus.set_default(i2c_bus);
-    _params._serial_number = AP_BATT_SERIAL_NUMBER_DEFAULT;
-    _params._pack_capacity = 0;
+    _params._serial_number.set(AP_BATT_SERIAL_NUMBER_DEFAULT);
+    _params._pack_capacity.set(0);
 }
 
 void AP_BattMonitor_SMBus::init(void)
@@ -171,6 +171,45 @@ bool AP_BattMonitor_SMBus::read_word(uint8_t reg, uint16_t& data) const
 
     // return success
     return true;
+}
+
+// read_block - returns number of characters read if successful, zero if unsuccessful
+uint8_t AP_BattMonitor_SMBus::read_block(uint8_t reg, uint8_t* data, uint8_t len) const
+{
+    // get length
+    uint8_t bufflen;
+    // read byte (first byte indicates the number of bytes in the block)
+    if (!_dev->read_registers(reg, &bufflen, 1)) {
+        return 0;
+    }
+
+    // sanity check length returned by smbus
+    if (bufflen == 0 || bufflen > len) {
+        return 0;
+    }
+
+    // buffer to hold results (2 extra byte returned holding length and PEC)
+    const uint8_t read_size = bufflen + 1 + (_pec_supported ? 1 : 0);
+    uint8_t buff[read_size];
+
+    // read bytes
+    if (!_dev->read_registers(reg, buff, read_size)) {
+        return 0;
+    }
+
+    // check PEC
+    if (_pec_supported) {
+        const uint8_t pec = get_PEC(_address, reg, true, buff, bufflen+1);
+        if (pec != buff[bufflen+1]) {
+            return 0;
+        }
+    }
+
+    // copy data (excluding length & PEC)
+    memcpy(data, &buff[1], bufflen);
+
+    // return success
+    return bufflen;
 }
 
 /// get_PEC - calculate packet error correction code of buffer

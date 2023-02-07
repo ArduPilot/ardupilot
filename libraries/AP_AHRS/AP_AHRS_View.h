@@ -85,12 +85,12 @@ public:
       wrappers around ahrs functions which pass-thru directly. See
       AP_AHRS.h for description of each function
      */
-    bool get_position(struct Location &loc) const WARN_IF_UNUSED {
-        return ahrs.get_position(loc);
+    bool get_location(Location &loc) const WARN_IF_UNUSED {
+        return ahrs.get_location(loc);
     }
 
-    Vector3f wind_estimate(void) {
-        return ahrs.wind_estimate();
+    bool wind_estimate(Vector3f &wind) {
+        return ahrs.wind_estimate(wind);
     }
 
     bool airspeed_estimate(float &airspeed_ret) const WARN_IF_UNUSED {
@@ -141,8 +141,8 @@ public:
         return ahrs.groundspeed();
     }
 
-    const Vector3f &get_accel_ef_blended(void) const {
-        return ahrs.get_accel_ef_blended();
+    const Vector3f &get_accel_ef(void) const {
+        return ahrs.get_accel_ef();
     }
 
     uint32_t getLastPosNorthEastReset(Vector2f &pos) WARN_IF_UNUSED {
@@ -187,9 +187,16 @@ public:
 
 
     // get current rotation
+    // note that this may not be the rotation were actually using, see _pitch_trim_deg
     enum Rotation get_rotation(void) const {
         return rotation;
     }
+
+    // get pitch trim (deg)
+    float get_pitch_trim() const { return _pitch_trim_deg; }
+
+    // Rotate vector from AHRS reference frame to AHRS view refences frame
+    void rotate(Vector3f &vec) const;
 
 private:
     const enum Rotation rotation;

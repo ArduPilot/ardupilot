@@ -17,12 +17,15 @@
     SITL.cpp - software in the loop state
 */
 
+#define ALLOW_DOUBLE_MATH_FUNCTIONS
+
 #include "SITL.h"
+
+#if AP_SIM_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Logger/AP_Logger.h>
@@ -38,6 +41,14 @@
 
 extern const AP_HAL::HAL& hal;
 
+#ifndef SIM_RATE_HZ_DEFAULT
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#define SIM_RATE_HZ_DEFAULT 1200
+#else
+#define SIM_RATE_HZ_DEFAULT 400
+#endif
+#endif
+
 namespace SITL {
 
 SIM *SIM::_singleton = nullptr;
@@ -48,14 +59,35 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     AP_GROUPINFO("DRIFT_SPEED",    5, SIM,  drift_speed, 0.05f),
     AP_GROUPINFO("DRIFT_TIME",     6, SIM,  drift_time,  5),
     AP_GROUPINFO("ENGINE_MUL",     8, SIM,  engine_mul,  1),
+    // @Param: WIND_SPD
+    // @DisplayName: Simulated Wind speed
+    // @Description: Allows you to emulate wind in sim
+    // @Units: m/s
+    // @User: Advanced
     AP_GROUPINFO("WIND_SPD",       9, SIM,  wind_speed,  0),
+    // @Param: WIND_DIR
+    // @DisplayName: Simulated Wind direction
+    // @Description: Allows you to set wind direction (true deg) in sim
+    // @Units: deg
+    // @User: Advanced
     AP_GROUPINFO("WIND_DIR",      10, SIM,  wind_direction,  180),
+    // @Param: WIND_TURB
+    // @DisplayName: Simulated Wind variation
+    // @Description: Allows you to emulate random wind variations in sim
+    // @Units: m/s
+    // @User: Advanced
     AP_GROUPINFO("WIND_TURB",     11, SIM,  wind_turbulance,  0),
     AP_GROUPINFO("SERVO_SPEED",   16, SIM,  servo_speed,  0.14),
+    AP_GROUPINFO("SONAR_ROT",     17, SIM,  sonar_rot, Rotation::ROTATION_PITCH_270),
     AP_GROUPINFO("BATT_VOLTAGE",  19, SIM,  batt_voltage,  12.6f),
     AP_GROUPINFO("BATT_CAP_AH",   20, SIM,  batt_capacity_ah,  0),
     AP_GROUPINFO("SONAR_GLITCH",  23, SIM,  sonar_glitch, 0),
     AP_GROUPINFO("SONAR_RND",     24, SIM,  sonar_noise, 0),
+    // @Param: RC_FAIL
+    // @DisplayName: Simulated RC signal failure
+    // @Description: Allows you to emulate rc failures in sim
+    // @Values: 0:Disabled,1:No RC pusles,2:All Channels neutral except Throttle is 950us
+    // @User: Advanced
     AP_GROUPINFO("RC_FAIL",       25, SIM,  rc_fail, 0),
     AP_GROUPINFO("FLOAT_EXCEPT",  28, SIM,  float_exception, 1),
     AP_GROUPINFO("SONAR_SCALE",   32, SIM,  sonar_scale, 12.1212f),
@@ -63,12 +95,16 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     AP_GROUPINFO("TERRAIN",       34, SIM,  terrain_enable, 1),
     AP_GROUPINFO("FLOW_RATE",     35, SIM,  flow_rate, 10),
     AP_GROUPINFO("FLOW_DELAY",    36, SIM,  flow_delay, 0),
-    AP_GROUPINFO("WIND_DELAY",    40, SIM,  wind_delay, 0),
     AP_GROUPINFO("ADSB_COUNT",    45, SIM,  adsb_plane_count, -1),
     AP_GROUPINFO("ADSB_RADIUS",   46, SIM,  adsb_radius_m, 10000),
     AP_GROUPINFO("ADSB_ALT",      47, SIM,  adsb_altitude_m, 1000),
     AP_GROUPINFO("PIN_MASK",      50, SIM,  pin_mask, 0),
     AP_GROUPINFO("ADSB_TX",       51, SIM,  adsb_tx, 0),
+    // @Param: SPEEDUP
+    // @DisplayName: Sim Speedup
+    // @Description: Runs the simulation at multiples of normal speed. Do not use if realtime physics, like RealFlight, is being used
+    // @Range: 1 10
+    // @User: Advanced    
     AP_GROUPINFO("SPEEDUP",       52, SIM,  speedup, -1),
     AP_GROUPINFO("IMU_POS",       53, SIM,  imu_pos_offset, 0),
     AP_SUBGROUPEXTENSION("",      54, SIM,  var_ins),
@@ -79,7 +115,9 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     AP_SUBGROUPINFO(shipsim, "SHIP_", 59, SIM, ShipSim),
 #endif
     AP_SUBGROUPEXTENSION("",      60, SIM,  var_mag),
+#if HAL_SIM_GPS_ENABLED
     AP_SUBGROUPEXTENSION("",      61, SIM,  var_gps),
+#endif
     AP_SUBGROUPEXTENSION("",      62, SIM,  var_info3),
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_info2),
     AP_GROUPEND
@@ -93,8 +131,22 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     AP_GROUPINFO("TEMP_BFACTOR", 4, SIM,  temp_baro_factor, 0),
 
     AP_GROUPINFO("WIND_DIR_Z",  10, SIM,  wind_dir_z,     0),
+    // @Param: WIND_T_
+    // @DisplayName: Wind Profile Type
+    // @Description: Selects how wind varies from surface to WIND_T_ALT
+    // @Values: 0:square law,1: none, 2:linear-see WIND_T_COEF
+    // @User: Advanced    
     AP_GROUPINFO("WIND_T"      ,15, SIM,  wind_type, SIM::WIND_TYPE_SQRT),
+    // @Param: WIND_T_ALT
+    // @DisplayName: Full Wind Altitude
+    // @Description: Altitude at which wind reaches full strength, decaying from full strength as altitude lowers to ground level
+    // @Units: m
+    // @User: Advanced
     AP_GROUPINFO("WIND_T_ALT"  ,16, SIM,  wind_type_alt, 60),
+    // @Param: WIND_T_COEF
+    // @DisplayName: Linear Wind Curve Coeff
+    // @Description: For linear wind profile,wind is reduced by (Altitude-WIND_T_ALT) x this value
+    // @User: Advanced
     AP_GROUPINFO("WIND_T_COEF", 17, SIM,  wind_type_coef, 0.01f),
     AP_GROUPINFO("RC_CHANCOUNT",21, SIM,  rc_chancount, 16),
     // @Group: SPR_
@@ -107,7 +159,10 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // @Path: ./SIM_Gripper_EPM.cpp
     AP_SUBGROUPINFO(gripper_epm_sim, "GRPE_", 24, SIM, Gripper_EPM),
 
-    // weight on wheels pin
+    // @Param: WOW_PIN
+    // @DisplayName: Weight on Wheels Pin
+    // @Description: SITL set this simulated pin to true if vehicle is on ground
+    // @User: Advanced
     AP_GROUPINFO("WOW_PIN",     25, SIM,  wow_pin, -1),
 
     // vibration frequencies on each axis
@@ -167,12 +222,19 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
 
     AP_GROUPINFO("SAFETY_STATE",    59, SIM,  _safety_switch_state, 0),
 
+    // motor harmonics
+    AP_GROUPINFO("VIB_MOT_HMNC", 60, SIM,  vibe_motor_harmonics, 1),
+
+    // motor mask, allowing external simulators to mark motors
+    AP_GROUPINFO("VIB_MOT_MASK", 5, SIM,  vibe_motor_mask, 0),
+    
     // max motor vibration frequency
     AP_GROUPINFO("VIB_MOT_MAX", 61, SIM,  vibe_motor, 0.0f),
     // minimum throttle for simulated ins noise
     AP_GROUPINFO("INS_THR_MIN", 62, SIM,  ins_noise_throttle_min, 0.1f),
     // amplitude scaling of motor noise relative to gyro/accel noise
     AP_GROUPINFO("VIB_MOT_MULT", 63, SIM,  vibe_motor_scale, 1.0f),
+
 
     AP_GROUPEND
 
@@ -211,7 +273,7 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // vicon velocity glitch in NED frame
     AP_GROUPINFO("VICON_VGLI",    21, SIM,  vicon_vel_glitch, 0),
 
-    AP_GROUPINFO("RATE_HZ",  22, SIM,  loop_rate_hz, 1200),
+    AP_GROUPINFO("RATE_HZ",  22, SIM,  loop_rate_hz, SIM_RATE_HZ_DEFAULT),
 
     // count of simulated IMUs
     AP_GROUPINFO("IMU_COUNT",    23, SIM,  imu_count,  2),
@@ -235,6 +297,8 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
 #if BARO_MAX_INSTANCES > 2
     AP_SUBGROUPINFO(baro[2], "BAR3_", 36, SIM, SIM::BaroParm),
 #endif
+
+    AP_GROUPINFO("TIME_JITTER",  37, SIM,  loop_time_jitter_us, 0),
 
     // user settable parameters for the 1st barometer
     // @Param: BARO_RND
@@ -275,24 +339,26 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Units: m
     // @User: Advanced
 
+    // @Param: ESC_TELEM
+    // @DisplayName: Simulated ESC Telemetry
+    // @Description: enable perfect simulated ESC telemetry
+    // @User: Advanced
     AP_GROUPINFO("ESC_TELEM", 40, SIM, esc_telem, 1),
 
-    // user settable parameters for the 1st airspeed sensor
-    AP_GROUPINFO("ARSPD_RND",     50, SIM,  arspd_noise[0], 2.0),
-    AP_GROUPINFO("ARSPD_OFS",     51, SIM,  arspd_offset[0], 2013),
-    AP_GROUPINFO("ARSPD_FAIL",    52, SIM,  arspd_fail[0], 0),
-    AP_GROUPINFO("ARSPD_FAILP",   53, SIM,  arspd_fail_pressure[0], 0),
-    AP_GROUPINFO("ARSPD_PITOT",   54, SIM,  arspd_fail_pitot_pressure[0], 0),
+    AP_GROUPINFO("ESC_ARM_RPM", 41, SIM,  esc_rpm_armed, 0.0f),
 
-    // user settable parameters for the 2nd airspeed sensor
-    AP_GROUPINFO("ARSPD2_RND",    56, SIM,  arspd_noise[1], 2.0),
-    AP_GROUPINFO("ARSPD2_OFS",    57, SIM,  arspd_offset[1], 2013),
-    AP_GROUPINFO("ARSPD2_FAIL",   58, SIM,  arspd_fail[1], 0),
-    AP_GROUPINFO("ARSPD2_FAILP",  59, SIM,  arspd_fail_pressure[1], 0),
-    AP_GROUPINFO("ARSPD2_PITOT",  60, SIM,  arspd_fail_pitot_pressure[1], 0),
+    // @Param: UART_LOSS
+    // @DisplayName: UART byte loss percentage
+    // @Description: Sets percentage of outgoing byte loss on UARTs
+    // @Units: %
+    // @User: Advanced
+    AP_GROUPINFO("UART_LOSS", 42, SIM,  uart_byte_loss_pct, 0),
 
-    // user settable common airspeed parameters
-    AP_GROUPINFO("ARSPD_SIGN",    62, SIM,  arspd_signflip, 0),
+    AP_SUBGROUPINFO(airspeed[0], "ARSPD_", 50, SIM, SIM::AirspeedParm),
+#if AIRSPEED_MAX_SENSORS > 1
+    AP_SUBGROUPINFO(airspeed[1], "ARSPD2_", 51, SIM, SIM::AirspeedParm),
+#endif
+
 
 #ifdef SFML_JOYSTICK
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_sfml_joystick),
@@ -315,11 +381,37 @@ const AP_Param::GroupInfo SIM::BaroParm::var_info[] = {
     AP_GROUPINFO("WCF_BAK", 8,  SIM::BaroParm, wcof_xn, 0.0),
     AP_GROUPINFO("WCF_RGT", 9,  SIM::BaroParm, wcof_yp, 0.0),
     AP_GROUPINFO("WCF_LFT", 10, SIM::BaroParm, wcof_yn, 0.0),
+    AP_GROUPINFO("WCF_UP",  11, SIM::BaroParm, wcof_zp, 0.0),
+    AP_GROUPINFO("WCF_DN",  12, SIM::BaroParm, wcof_zn, 0.0),
     AP_GROUPEND
 };
-    
+
+// user settable parameters for airspeed sensors
+const AP_Param::GroupInfo SIM::AirspeedParm::var_info[] = {
+        // user settable parameters for the 1st airspeed sensor
+    AP_GROUPINFO("RND",     1, SIM::AirspeedParm,  noise, 2.0),
+    AP_GROUPINFO("OFS",     2, SIM::AirspeedParm,  offset, 2013),
+    // @Param: ARSPD_FAIL
+    // @DisplayName: Airspeed sensor failure
+    // @Description: Simulates Airspeed sensor 1 failure
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("FAIL",    3, SIM::AirspeedParm,  fail, 0),
+    AP_GROUPINFO("FAILP",   4, SIM::AirspeedParm,  fail_pressure, 0),
+    AP_GROUPINFO("PITOT",   5, SIM::AirspeedParm,  fail_pitot_pressure, 0),
+    AP_GROUPINFO("SIGN",    6, SIM::AirspeedParm,  signflip, 0),
+    AP_GROUPINFO("RATIO",   7, SIM::AirspeedParm,  ratio, 1.99),
+    AP_GROUPEND
+};
+
+#if HAL_SIM_GPS_ENABLED
 // GPS SITL parameters
 const AP_Param::GroupInfo SIM::var_gps[] = {
+    // @Param: GPS_DISABLE
+    // @DisplayName: GPS 1 disable
+    // @Description: Disables GPS 1
+    // @Values: 0:Enable, 1:GPS Disabled
+    // @User: Advanced
     AP_GROUPINFO("GPS_DISABLE",    1, SIM,  gps_disable[0], 0),
     AP_GROUPINFO("GPS_LAG_MS",     2, SIM,  gps_delay_ms[0], 100),
     AP_GROUPINFO("GPS_TYPE",       3, SIM,  gps_type[0],  GPS::Type::UBLOX),
@@ -335,7 +427,11 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     AP_GROUPINFO("GPS_HDG",       13, SIM,  gps_hdg_enabled[0], SIM::GPS_HEADING_NONE),
     AP_GROUPINFO("GPS_ACC",       14, SIM,  gps_accuracy[0], 0.3),
     AP_GROUPINFO("GPS_VERR",      15, SIM,  gps_vel_err[0], 0),
-
+    // @Param: GPS2_DISABLE
+    // @DisplayName: GPS 2 disable
+    // @Description: Disables GPS 2
+    // @Values: 0:Enable, 1:GPS Disabled
+    // @User: Advanced
     AP_GROUPINFO("GPS2_DISABLE",  30, SIM,  gps_disable[1], 1),
     AP_GROUPINFO("GPS2_LAG_MS",   31, SIM,  gps_delay_ms[1], 100),
     AP_GROUPINFO("GPS2_TYPE",     32, SIM,  gps_type[1],  GPS::Type::UBLOX),
@@ -356,20 +452,23 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     AP_GROUPINFO("INIT_LON_OFS",  46, SIM,  gps_init_lon_ofs, 0),
     AP_GROUPINFO("INIT_ALT_OFS",  47, SIM,  gps_init_alt_ofs, 0),
 
+    AP_GROUPINFO("GPS_LOG_NUM",   48, SIM,  gps_log_num, 0),
+
     AP_GROUPEND
 };
+#endif  // HAL_SIM_GPS_ENABLED
 
 // Mag SITL parameters
 const AP_Param::GroupInfo SIM::var_mag[] = {
     AP_GROUPINFO("MAG_RND",        1, SIM,  mag_noise,   0),
     AP_GROUPINFO("MAG_MOT",        2, SIM,  mag_mot, 0),
     AP_GROUPINFO("MAG_DELAY",      3, SIM,  mag_delay, 0),
-    AP_GROUPINFO("MAG_OFS",        4, SIM,  mag_ofs[0], 0),
+    AP_GROUPINFO("MAG1_OFS",        4, SIM,  mag_ofs[0], 0),
     AP_GROUPINFO("MAG_ALY",        5, SIM,  mag_anomaly_ned, 0),
     AP_GROUPINFO("MAG_ALY_HGT",    6, SIM,  mag_anomaly_hgt, 1.0f),
-    AP_GROUPINFO("MAG_DIA",        7, SIM,  mag_diag[0], 0),
-    AP_GROUPINFO("MAG_ODI",        8, SIM,  mag_offdiag[0], 0),
-    AP_GROUPINFO("MAG_ORIENT",     9, SIM,  mag_orient[0], 0),
+    AP_GROUPINFO("MAG1_DIA",        7, SIM,  mag_diag[0], 0),
+    AP_GROUPINFO("MAG1_ODI",        8, SIM,  mag_offdiag[0], 0),
+    AP_GROUPINFO("MAG1_ORIENT",     9, SIM,  mag_orient[0], 0),
     AP_GROUPINFO("MAG1_SCALING",  10, SIM,  mag_scaling[0], 1),
     AP_GROUPINFO("MAG1_DEVID",    11, SIM,  mag_devid[0], 97539),
     AP_GROUPINFO("MAG2_DEVID",    12, SIM,  mag_devid[1], 131874),
@@ -391,12 +490,22 @@ const AP_Param::GroupInfo SIM::var_mag[] = {
 #if MAX_CONNECTED_MAGS > 7
     AP_GROUPINFO("MAG8_DEVID",    18, SIM,  mag_devid[7], 0),
 #endif
+    // @Param: MAG1_FAIL
+    // @DisplayName: MAG1 Failure
+    // @Description: Simulated failure of MAG1
+    // @Values: 0:Disabled, 1:MAG1 Failure
+    // @User: Advanced
     AP_GROUPINFO("MAG1_FAIL",     26, SIM,  mag_fail[0], 0),
 #if HAL_COMPASS_MAX_SENSORS > 1
     AP_GROUPINFO("MAG2_OFS",      19, SIM,  mag_ofs[1], 0),
     AP_GROUPINFO("MAG2_DIA",      20, SIM,  mag_diag[1], 0),
     AP_GROUPINFO("MAG2_ODI",      21, SIM,  mag_offdiag[1], 0),
     AP_GROUPINFO("MAG2_ORIENT",   22, SIM,  mag_orient[1], 0),
+    // @Param: MAG2_FAIL
+    // @DisplayName: MAG2 Failure
+    // @Description: Simulated failure of MAG2
+    // @Values: 0:Disabled, 1:MAG2 Failure
+    // @User: Advanced
     AP_GROUPINFO("MAG2_FAIL",     27, SIM,  mag_fail[1], 0),
     AP_GROUPINFO("MAG2_SCALING",  28, SIM,  mag_scaling[1], 1),
 #endif
@@ -404,6 +513,11 @@ const AP_Param::GroupInfo SIM::var_mag[] = {
     AP_GROUPINFO("MAG3_OFS",      23, SIM,  mag_ofs[2], 0),
     AP_GROUPINFO("MAG3_DIA",      24, SIM,  mag_diag[2], 0),
     AP_GROUPINFO("MAG3_ODI",      25, SIM,  mag_offdiag[2], 0),
+    // @Param: MAG3_FAIL
+    // @DisplayName: MAG3 Failure
+    // @Description: Simulated failure of MAG3
+    // @Values: 0:Disabled, 1:MAG3 Failure
+    // @User: Advanced
     AP_GROUPINFO("MAG3_FAIL",     29, SIM,  mag_fail[2], 0),
     AP_GROUPINFO("MAG3_SCALING",  30, SIM,  mag_scaling[2], 1),
     AP_GROUPINFO("MAG3_ORIENT",   36, SIM,  mag_orient[2], 0),
@@ -428,10 +542,12 @@ const AP_Param::GroupInfo SIM::var_sfml_joystick[] = {
 
 // INS SITL parameters
 const AP_Param::GroupInfo SIM::var_ins[] = {
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
     AP_GROUPINFO("IMUT_START",    1, SIM, imu_temp_start,  25),
     AP_GROUPINFO("IMUT_END",      2, SIM, imu_temp_end, 45),
     AP_GROUPINFO("IMUT_TCONST",   3, SIM, imu_temp_tconst, 300),
     AP_GROUPINFO("IMUT_FIXED",    4, SIM, imu_temp_fixed, 0),
+#endif
     AP_GROUPINFO("ACC1_BIAS",     5, SIM, accel_bias[0], 0),
 #if INS_MAX_INSTANCES > 1
     AP_GROUPINFO("ACC2_BIAS",     6, SIM, accel_bias[1], 0),
@@ -460,14 +576,39 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
 #if INS_MAX_INSTANCES > 2
     AP_GROUPINFO("GYR3_SCALE",   16, SIM, gyro_scale[2], 0),
 #endif
+    // @Param: ACCEL1_FAIL
+    // @DisplayName: ACCEL1 Failure
+    // @Description: Simulated failure of ACCEL1
+    // @Values: 0:Disabled, 1:ACCEL1 Failure
+    // @User: Advanced
     AP_GROUPINFO("ACCEL1_FAIL",  17, SIM, accel_fail[0],  0),
 #if INS_MAX_INSTANCES > 1
+    // @Param: ACCEL2_FAIL
+    // @DisplayName: ACCEL2 Failure
+    // @Description: Simulated failure of ACCEL2
+    // @Values: 0:Disabled, 1:ACCEL2 Failure
+    // @User: Advanced
     AP_GROUPINFO("ACCEL2_FAIL",  18, SIM, accel_fail[1],  0),
 #endif
 #if INS_MAX_INSTANCES > 2
+    // @Param: ACCEL3_FAIL
+    // @DisplayName: ACCEL3 Failure
+    // @Description: Simulated failure of ACCEL3
+    // @Values: 0:Disabled, 1:ACCEL3 Failure
+    // @User: Advanced
     AP_GROUPINFO("ACCEL3_FAIL",  19, SIM, accel_fail[2],  0),
 #endif
+    // @Param: GYRO_FAIL_MSK
+    // @DisplayName: Gyro Failure Mask
+    // @Description: Determines if the gyro reading updates are stopped when for an IMU simulated failure by ACCELx_FAIL params
+    // @Values: 0:Disabled, 1:Readings stopped
+    // @User: Advanced
     AP_GROUPINFO("GYR_FAIL_MSK", 20, SIM, gyro_fail_mask,  0),
+    // @Param: ACC_FAIL_MSK
+    // @DisplayName: Accelerometer Failure Mask
+    // @Description: Determines if the acclerometer reading updates are stopped when for an IMU simulated failure by ACCELx_FAIL params
+    // @Values: 0:Disabled, 1:Readings stopped
+    // @User: Advanced
     AP_GROUPINFO("ACC_FAIL_MSK", 21, SIM, accel_fail_mask,  0),
     AP_GROUPINFO("ACC1_SCAL",    22, SIM, accel_scale[0], 0),
 #if INS_MAX_INSTANCES > 1
@@ -478,17 +619,29 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
 #endif
     AP_GROUPINFO("ACC_TRIM",     25, SIM, accel_trim, 0),
 
-    // @Param: SAIL_TYPE
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+    // @Param{Rover}: SAIL_TYPE
     // @DisplayName: Sailboat simulation sail type
     // @Description: 0: mainsail with sheet, 1: directly actuated wing
     AP_GROUPINFO("SAIL_TYPE",     26, SIM, sail_type, 0),
+#endif
 
     // @Param: JSON_MASTER
     // @DisplayName: JSON master instance
     // @Description: the instance number to  take servos from
     AP_GROUPINFO("JSON_MASTER",     27, SIM, ride_along_master, 0),
 
+    // @Param: OH_MASK
+    // @DisplayName: SIM-on_hardware Output Enable Mask
+    // @Description: channels which are passed through to actual hardware when running sim on actual hardware
+    AP_GROUPINFO("OH_MASK",     28, SIM, on_hardware_output_enable_mask, 0),
+#if AP_SIM_INS_FILE_ENABLED
+    // read and write IMU data to/from files
+    AP_GROUPINFO("GYR_FILE_RW", 29, SIM, gyro_file_rw, INSFileMode::INS_FILE_NONE),
+    AP_GROUPINFO("ACC_FILE_RW", 30, SIM, accel_file_rw, INSFileMode::INS_FILE_NONE),
+#endif
     // the IMUT parameters must be last due to the enable parameters
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
     AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SIM, AP_InertialSensor::TCal),
 #if INS_MAX_INSTANCES > 1
     AP_SUBGROUPINFO(imu_tcal[1], "IMUT2_", 62, SIM, AP_InertialSensor::TCal),
@@ -496,9 +649,17 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
 #if INS_MAX_INSTANCES > 2
     AP_SUBGROUPINFO(imu_tcal[2], "IMUT3_", 63, SIM, AP_InertialSensor::TCal),
 #endif
+#endif  // HAL_INS_TEMPERATURE_CAL_ENABLE
     AP_GROUPEND
 };
-    
+
+const Location post_origin {
+    518752066,
+    146487830,
+    0,
+    Location::AltFrame::ABSOLUTE
+};
+
 /* report SITL state via MAVLink SIMSTATE*/
 void SIM::simstate_send(mavlink_channel_t chan) const
 {
@@ -633,14 +794,119 @@ Vector3f SIM::convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro)
 
 // get the rangefinder reading for the desired rotation, returns -1 for no data
 float SIM::get_rangefinder(uint8_t instance) {
-    if (instance < RANGEFINDER_MAX_INSTANCES) {
+    if (instance < ARRAY_SIZE(state.rangefinder_m)) {
         return state.rangefinder_m[instance];
     }
     return -1;
 };
 
-} // namespace SITL
+float SIM::measure_distance_at_angle_bf(const Location &location, float angle) const
+{
+    // should we populate state.rangefinder_m[...] from this?
+    Vector2f vehicle_pos_cm;
+    if (!location.get_vector_xy_from_origin_NE(vehicle_pos_cm)) {
+        // should probably use SITL variables...
+        return 0.0f;
+    }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    static uint64_t count = 0;
+
+    if (count == 0) {
+        unlink("/tmp/rayfile.scr");
+        unlink("/tmp/intersectionsfile.scr");
+    }
+
+    count++;
+
+    // the 1000 here is so the files don't grow unbounded
+    const bool write_debug_files = count < 1000;
+
+    FILE *rayfile = nullptr;
+    if (write_debug_files) {
+        rayfile = fopen("/tmp/rayfile.scr", "a");
+    }
+#endif
+
+    // cast a ray from location out 200m...
+    Location location2 = location;
+    location2.offset_bearing(wrap_180(angle + state.yawDeg), 200);
+    Vector2f ray_endpos_cm;
+    if (!location2.get_vector_xy_from_origin_NE(ray_endpos_cm)) {
+        // should probably use SITL variables...
+        return 0.0f;
+    }
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (rayfile != nullptr) {
+        ::fprintf(rayfile, "map icon %f %f barrell\n", location2.lat*1e-7, location2.lng*1e-7);
+        fclose(rayfile);
+    }
+
+    // setup a grid of posts
+    FILE *postfile = nullptr;
+    FILE *intersectionsfile = nullptr;
+    if (write_debug_files) {
+        static bool postfile_written;
+        if (!postfile_written) {
+            ::fprintf(stderr, "Writing /tmp/post-locations.scr\n");
+            postfile_written = true;
+            postfile = fopen("/tmp/post-locations.scr", "w");
+        }
+        intersectionsfile = fopen("/tmp/intersections.scr", "a");
+    }
+#endif
+
+    const float radius_cm = 100.0f;
+    float min_dist_cm = 1000000.0;
+    const uint8_t num_post_offset = 10;
+    for (int8_t x=-num_post_offset; x<num_post_offset; x++) {
+        for (int8_t y=-num_post_offset; y<num_post_offset; y++) {
+            Location post_location = post_origin;
+            post_location.offset(x*10+3, y*10+2);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            if (postfile != nullptr) {
+                ::fprintf(postfile, "map circle %f %f %f blue\n", post_location.lat*1e-7, post_location.lng*1e-7, radius_cm/100.0);
+            }
+#endif
+            Vector2f post_position_cm;
+            if (!post_location.get_vector_xy_from_origin_NE(post_position_cm)) {
+                // should probably use SITL variables...
+                return 0.0f;
+            }
+            Vector2f intersection_point_cm;
+            if (Vector2f::circle_segment_intersection(ray_endpos_cm, vehicle_pos_cm, post_position_cm, radius_cm, intersection_point_cm)) {
+                float dist_cm = (intersection_point_cm-vehicle_pos_cm).length();
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+                if (intersectionsfile != nullptr) {
+                    Location intersection_point = location;
+                    intersection_point.offset(intersection_point_cm.x/100.0,
+                                              intersection_point_cm.y/100.0);
+                    ::fprintf(intersectionsfile,
+                              "map icon %f %f barrell\n",
+                              intersection_point.lat*1e-7,
+                              intersection_point.lng*1e-7);
+                }
+#endif
+                if (dist_cm < min_dist_cm) {
+                    min_dist_cm = dist_cm;
+                }
+            }
+        }
+    }
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (postfile != nullptr) {
+        fclose(postfile);
+    }
+    if (intersectionsfile != nullptr) {
+        fclose(intersectionsfile);
+    }
+#endif
+
+    // ::fprintf(stderr, "Distance @%f = %fm\n", angle, min_dist_cm/100.0f);
+    return min_dist_cm / 100.0f;
+}
+
+} // namespace SITL
 
 namespace AP {
 
@@ -651,4 +917,4 @@ SITL::SIM *sitl()
 
 };
 
-#endif // CONFIG_HAL_BOARD
+#endif // AP_SIM_ENABLED
