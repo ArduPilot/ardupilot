@@ -18,7 +18,7 @@ end
 
 AEROM_ANG_ACCEL = bind_add_param('ANG_ACCEL', 1, 6000)
 AEROM_ANG_TC = bind_add_param('ANG_TC', 2, 0.1)
-AEROM_KE_ANG = bind_add_param('KE_ANG', 3, 0)
+-- 3 was AEROM_KE_ANG
 THR_PIT_FF = bind_add_param('THR_PIT_FF', 4, 80)
 SPD_P = bind_add_param('SPD_P', 5, 5)
 SPD_I = bind_add_param('SPD_I', 6, 25)
@@ -38,7 +38,7 @@ AEROM_PATH_SCALE = bind_add_param('PATH_SCALE', 21, 1.0)
 AEROM_BOX_WIDTH = bind_add_param('BOX_WIDTH', 22, 400)
 AEROM_STALL_THR = bind_add_param('STALL_THR', 23, 40)
 AEROM_STALL_PIT = bind_add_param('STALL_PIT', 24, -20)
-AEROM_KE_TC = bind_add_param('KE_TC', 25, 0.5)
+-- 25 was AEROM_KE_TC
 AEROM_KE_RUDD = bind_add_param('KE_RUDD', 26, 25)
 AEROM_KE_RUDD_LK = bind_add_param('KE_RUDD_LK', 27, 0.25)
 
@@ -1736,45 +1736,6 @@ function quat_projection_ground_plane(q)
    return 2.0 * (q3q4 + q1q2)
 end
 
-
---[[
-   calculate side slip and AOA correction
-   NOTE: currently unused
---]]
-function calculate_side_slip_aoa_full(path_rate_bf_dps, ahrs_quat, airspeed_constrained, tv_unit, ahrs_velned, dt)
-   -- get our velocity along desired flight path
-   local vel_path_ef = tv_unit:scale(tv_unit:dot(ahrs_velned))
-   local vel_path_bf = quat_earth_to_body(ahrs_quat, vel_path_ef)
-
-   local path_rate_bf_rps = path_rate_bf_dps:scale(math.rad(1))
-
-   local manoeuvre_accel_bf = path_rate_bf_rps:cross(vel_path_bf)
-   local gravity_ef = makeVector3f(0, 0, GRAVITY_MSS)
-   local gravity_bf = quat_earth_to_body(ahrs_quat, gravity_ef)
-
-   manoeuvre_accel_bf = manoeuvre_accel_bf - gravity_bf
-
-   local manoeuvre_g_y = manoeuvre_accel_bf:y() / GRAVITY_MSS
-
-   local airspeed_scaling = SCALING_SPEED:get()/airspeed_constrained
-   local sideslip_angle = (-manoeuvre_g_y) * math.rad(AEROM_KE_ANG:get()) * sq(airspeed_scaling)
-
-   -- calculate low pass filtered sideslip angle and derivative
-   local tc = 0.2
-   local alpha = dt / (dt + tc)
-
-   local ss_angle_new = (1.0 - alpha) * path_var.ss_angle_filt + alpha * sideslip_angle
-   local ss_deriv = (ss_angle_new - path_var.ss_angle_filt) / dt
-   path_var.ss_angle_filt = ss_angle_new
-   path_var.ss_angle = sideslip_angle
-
-   logger.write('AESS','SSA,SSAfil,SSder', 'fff',
-                math.deg(sideslip_angle),
-                math.deg(path_var.ss_angle_filt),
-                math.deg(ss_deriv))
-   
-   return makeVector3f(0, 0, -ss_deriv):scale(math.deg(1))
-end
 
 --[[
    calculate rudder offset
