@@ -475,7 +475,7 @@ class Board:
     def build(self, bld):
         version_type = 'GIT_VERSION'
         if version_type in os.environ:
-            bld.ap_version_append_str(version_type, version_type)
+            bld.ap_version_append_str(version_type, os.environ[version_type])
         else:
             bld.ap_version_append_str(version_type, bld.git_head_hash(short=True))
             
