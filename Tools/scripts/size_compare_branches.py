@@ -56,7 +56,9 @@ class SizeCompareBranches(object):
                  all_vehicles=False,
                  all_boards=False,
                  use_merge_base=True,
-                 extra_hwdef=None):
+                 extra_hwdef=[],
+                 extra_hwdef_branch=[],
+                 extra_hwdef_master=[]):
         if branch is None:
             branch = self.find_current_git_branch()
 
@@ -67,6 +69,8 @@ class SizeCompareBranches(object):
         self.bin_dir = bin_dir
         self.run_elf_diff = run_elf_diff
         self.extra_hwdef = extra_hwdef
+        self.extra_hwdef_branch = extra_hwdef_branch
+        self.extra_hwdef_master = extra_hwdef_master
         self.all_vehicles = all_vehicles
         self.all_boards = all_boards
         self.use_merge_base = use_merge_base
@@ -211,13 +215,15 @@ class SizeCompareBranches(object):
         '''pretty-print progress'''
         print("SCB: %s" % string)
 
-    def build_branch_into_dir(self, board, branch, vehicle, outdir):
+    def build_branch_into_dir(self, board, branch, vehicle, outdir, extra_hwdef=None):
         self.run_git(["checkout", branch])
         self.run_git(["submodule", "update", "--recursive"])
         shutil.rmtree("build", ignore_errors=True)
         waf_configure_args = ["configure", "--board", board]
-        if self.extra_hwdef is not None:
-            waf_configure_args.extend(["--extra-hwdef", self.extra_hwdef])
+
+        if extra_hwdef is not None:
+            waf_configure_args.extend(["--extra-hwdef", extra_hwdef])
+
         self.run_waf(waf_configure_args)
         # we can't run `./waf copter blimp plane` without error, so do
         # them one-at-a-time:
@@ -286,6 +292,28 @@ class SizeCompareBranches(object):
         '''returns true if the files have the same content'''
         return open(file1, "rb").read() == open(file2, "rb").read()
 
+    def extra_hwdef_file(self, more):
+        # create a combined list of hwdefs:
+        extra_hwdefs = []
+        extra_hwdefs.extend(self.extra_hwdef)
+        extra_hwdefs.extend(more)
+        extra_hwdefs = list(filter(lambda x : x is not None, extra_hwdefs))
+        if len(extra_hwdefs) == 0:
+            return None
+
+        # slurp all content into a variable:
+        content = bytearray()
+        for extra_hwdef in extra_hwdefs:
+            with open(extra_hwdef, "r+b") as f:
+                content += f.read()
+
+        # spew content to single file:
+        f = tempfile.NamedTemporaryFile(delete=False)
+        f.write(content)
+        f.close()
+
+        return f.name
+
     def run_board(self, board):
         ret = {}
         board_info = self.boards_by_name[board]
@@ -316,11 +344,24 @@ class SizeCompareBranches(object):
             master_commit = self.find_git_branch_merge_base(self.branch, self.master_branch)
             self.progress("Using merge base (%s)" % master_commit)
         shutil.rmtree(outdir_1, ignore_errors=True)
-        self.build_branch_into_dir(board, master_commit, vehicles_to_build, outdir_1)
+
+        self.build_branch_into_dir(
+            board,
+            master_commit,
+            vehicles_to_build,
+            outdir_1,
+            extra_hwdef=self.extra_hwdef_file(self.extra_hwdef_master)
+        )
 
         self.progress("Building branch 2 (%s)" % self.branch)
         shutil.rmtree(outdir_2, ignore_errors=True)
-        self.build_branch_into_dir(board, self.branch, vehicles_to_build, outdir_2)
+        self.build_branch_into_dir(
+            board,
+            self.branch,
+            vehicles_to_build,
+            outdir_2,
+            self.extra_hwdef_file(self.extra_hwdef_branch)
+        )
 
         for vehicle in vehicles_to_build:
             if vehicle == 'bootloader' and board in self.bootloader_blacklist:
@@ -401,9 +442,19 @@ if __name__ == '__main__':
                       help="board to build for")
     parser.add_option("",
                       "--extra-hwdef",
-                      type="string",
-                      default=None,
+                      default=[],
+                      action="append",
                       help="configure with this extra hwdef file")
+    parser.add_option("",
+                      "--extra-hwdef-branch",
+                      default=[],
+                      action="append",
+                      help="configure with this extra hwdef file only on new branch")
+    parser.add_option("",
+                      "--extra-hwdef-master",
+                      default=[],
+                      action="append",
+                      help="configure with this extra hwdef file only on merge/master branch")
     parser.add_option("",
                       "--all-boards",
                       action='store_true',
@@ -434,6 +485,8 @@ if __name__ == '__main__':
         board=board,
         vehicle=vehicle,
         extra_hwdef=cmd_opts.extra_hwdef,
+        extra_hwdef_branch=cmd_opts.extra_hwdef_branch,
+        extra_hwdef_master=cmd_opts.extra_hwdef_master,
         run_elf_diff=(not cmd_opts.no_elf_diff),
         all_vehicles=cmd_opts.all_vehicles,
         all_boards=cmd_opts.all_boards,
