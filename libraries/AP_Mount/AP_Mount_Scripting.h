@@ -61,6 +61,7 @@ public:
     bool get_angle_target(float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame) override;
     bool get_location_target(Location& _target_loc) override;
     void set_attitude_euler(float roll_deg, float pitch_deg, float yaw_bf_deg) override;
+    bool get_camera_state(uint16_t& pic_count, bool& record_video, int8_t& zoom_step, int8_t& focus_step, bool& auto_focus) override;
 
 protected:
 
