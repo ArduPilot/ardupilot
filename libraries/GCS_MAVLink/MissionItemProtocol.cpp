@@ -382,3 +382,86 @@ void MissionItemProtocol::update()
         link->send_message(next_item_ap_message_id());
     }
 }
+
+MAV_MISSION_RESULT MissionItemProtocol::convert_MISSION_ITEM_to_MISSION_ITEM_INT(const mavlink_mission_item_t &packet,
+        mavlink_mission_item_int_t &mav_cmd)
+{
+    // TODO: rename mav_cmd to mission_item_int
+    // TODO: rename packet to mission_item
+    mav_cmd.param1 = packet.param1;
+    mav_cmd.param2 = packet.param2;
+    mav_cmd.param3 = packet.param3;
+    mav_cmd.param4 = packet.param4;
+    mav_cmd.z = packet.z;
+    mav_cmd.seq = packet.seq;
+    mav_cmd.command = packet.command;
+    mav_cmd.target_system = packet.target_system;
+    mav_cmd.target_component = packet.target_component;
+    mav_cmd.frame = packet.frame;
+    mav_cmd.current = packet.current;
+    mav_cmd.autocontinue = packet.autocontinue;
+    mav_cmd.mission_type = packet.mission_type;
+
+    /*
+      the strategy for handling both MISSION_ITEM and MISSION_ITEM_INT
+      is to pass the lat/lng in MISSION_ITEM_INT straight through, and
+      for MISSION_ITEM multiply by 1e7 here. We need an exception for
+      any commands which use the x and y fields not as
+      latitude/longitude.
+     */
+    if (!mavlink_cmd_has_location(packet.command)) {
+        mav_cmd.x = packet.x;
+        mav_cmd.y = packet.y;
+
+    } else {
+         //these commands use x and y as lat/lon. We need to
+        // multiply by 1e7 to convert to int32_t
+        if (!check_lat(packet.x)) {
+            return MAV_MISSION_INVALID_PARAM5_X;
+        }
+        if (!check_lng(packet.y)) {
+            return MAV_MISSION_INVALID_PARAM6_Y;
+        }
+        mav_cmd.x = packet.x * 1.0e7f;
+        mav_cmd.y = packet.y * 1.0e7f;
+    }
+
+    return MAV_MISSION_ACCEPTED;
+}
+
+MAV_MISSION_RESULT MissionItemProtocol::convert_MISSION_ITEM_INT_to_MISSION_ITEM(const mavlink_mission_item_int_t &item_int,
+        mavlink_mission_item_t &item)
+{
+    item.param1 = item_int.param1;
+    item.param2 = item_int.param2;
+    item.param3 = item_int.param3;
+    item.param4 = item_int.param4;
+    item.z = item_int.z;
+    item.seq = item_int.seq;
+    item.command = item_int.command;
+    item.target_system = item_int.target_system;
+    item.target_component = item_int.target_component;
+    item.frame = item_int.frame;
+    item.current = item_int.current;
+    item.autocontinue = item_int.autocontinue;
+    item.mission_type = item_int.mission_type;
+
+    if (!mavlink_cmd_has_location(item_int.command)) {
+        item.x = item_int.x;
+        item.y = item_int.y;
+
+    } else {
+        // These commands use x and y as lat/lon. We need to
+        // multiply by 1e-7 to convert to float
+        item.x = item_int.x * 1.0e-7f;
+        item.y = item_int.y * 1.0e-7f;
+        if (!check_lat(item.x)) {
+            return MAV_MISSION_INVALID_PARAM5_X;
+        }
+        if (!check_lng(item.y)) {
+            return MAV_MISSION_INVALID_PARAM6_Y;
+        }
+    }
+
+    return MAV_MISSION_ACCEPTED;
+}
