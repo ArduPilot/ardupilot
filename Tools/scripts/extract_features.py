@@ -40,6 +40,9 @@ class ExtractFeatures(object):
             ('HAL_ADSB_ENABLED', 'AP_ADSB::AP_ADSB',),
             ('HAL_ADSB_{type}_ENABLED', r'AP_ADSB_(?P<type>.*)::update',),
             ('HAL_ADSB_UCP_ENABLED', 'AP_ADSB_uAvionix_UCP::update',),
+
+            ('AP_COMPASS_{type}_ENABLED', r'AP_Compass_(?P<type>.*)::read\b',),
+
             ('AP_AIS_ENABLED', 'AP_AIS::AP_AIS',),
 
             ('HAL_EFI_ENABLED', 'AP_EFI::AP_EFI',),
