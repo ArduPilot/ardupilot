@@ -1251,7 +1251,7 @@ void Compass::_probe_external_i2c_compasses(void)
 #endif
 #endif
 
-#if AP_COMPASS_BMM150_ENABLED
+#if AP_COMPASS_BMM150_DETECT_BACKENDS_ENABLED
     // BMM150 on I2C
     FOREACH_I2C_EXTERNAL(i) {
         for (uint8_t addr=BMM150_I2C_ADDR_MIN; addr <= BMM150_I2C_ADDR_MAX; addr++) {
