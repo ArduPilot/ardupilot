@@ -1086,7 +1086,7 @@ class chibios(Board):
         super(chibios, self).build(bld)
         version_type = 'CHIBIOS_GIT_VERSION'
         if version_type in os.environ:
-            bld.ap_version_append_str(version_type, version_type)
+            bld.ap_version_append_str(version_type, os.environ[version_type])
         else:
             bld.ap_version_append_str(version_type, bld.git_submodule_head_hash('ChibiOS', short=True))
         bld.load('chibios')
