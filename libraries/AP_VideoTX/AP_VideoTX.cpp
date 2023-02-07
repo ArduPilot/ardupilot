@@ -335,6 +335,10 @@ void AP_VideoTX::set_freq_is_current()
 // periodic update
 void AP_VideoTX::update(void)
 {
+    if (!_enabled) {
+        return;
+    }
+
 #if HAL_CRSF_TELEM_ENABLED
     AP_CRSF_Telem* crsf = AP::crsf_telem();
 
@@ -503,7 +507,7 @@ void AP_VideoTX::announce_vtx_settings() const
 // 6-pos range is in the middle of the available range
 void AP_VideoTX::change_power(int8_t position)
 {
-    if (position < 0 || position > 5) {
+    if (!_enabled || position < 0 || position > 5) {
         return;
     }
     // first find out how many possible levels there are
@@ -529,7 +533,9 @@ void AP_VideoTX::change_power(int8_t position)
     }
 
     if (power == 0) {
-        set_configured_options(get_configured_options() | uint8_t(VideoOptions::VTX_PITMODE));
+        if (!hal.util->get_soft_armed()) {    // don't allow pitmode to be entered if already armed
+            set_configured_options(get_configured_options() | uint8_t(VideoOptions::VTX_PITMODE));
+        }
     } else {
         if (has_option(VideoOptions::VTX_PITMODE)) {
             set_configured_options(get_configured_options() & ~uint8_t(VideoOptions::VTX_PITMODE));
