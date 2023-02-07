@@ -481,9 +481,9 @@ class Board:
             
         version_type_int = 'GIT_VERSION_INT'
         if version_type_int in os.environ:
-            bld.ap_version_append_str(version_type_int, os.environ[version_type_int])
+            bld.ap_version_append_int(version_type_int, os.environ[version_type_int])
         else:
-            bld.ap_version_append_str(version_type_int, int("0x" + bld.git_head_hash(short=True), base=16))
+            bld.ap_version_append_int(version_type_int, int("0x" + bld.git_head_hash(short=True), base=16))
 
         import time
         ltime = time.localtime()
