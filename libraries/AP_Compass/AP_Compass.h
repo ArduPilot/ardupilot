@@ -423,7 +423,9 @@ private:
 #if AP_COMPASS_AK8963_ENABLED
         DRIVER_AK8963   =2,
 #endif
+#if AP_COMPASS_BMM150_ENABLED
         DRIVER_BMM150   =3,
+#endif
         DRIVER_LSM9DS1  =4,
         DRIVER_LIS3MDL  =5,
         DRIVER_AK09916  =6,
