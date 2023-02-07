@@ -75,3 +75,5 @@ void comm_send_unlock(mavlink_channel_t chan);
 HAL_Semaphore &comm_chan_lock(mavlink_channel_t chan);
 
 #pragma GCC diagnostic pop
+
+bool mavlink_cmd_has_location(uint16_t id);

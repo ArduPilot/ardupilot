@@ -149,3 +149,29 @@ HAL_Semaphore &comm_chan_lock(mavlink_channel_t chan)
 {
     return chan_locks[uint8_t(chan)];
 }
+
+bool mavlink_cmd_has_location(uint16_t id)
+{
+    switch (id) {
+    case MAV_CMD_NAV_WAYPOINT:
+    case MAV_CMD_NAV_LOITER_UNLIM:
+    case MAV_CMD_NAV_LOITER_TURNS:
+    case MAV_CMD_NAV_LOITER_TIME:
+    case MAV_CMD_NAV_LAND:
+    case MAV_CMD_NAV_TAKEOFF:
+    case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
+    case MAV_CMD_NAV_LOITER_TO_ALT:
+    case MAV_CMD_NAV_SPLINE_WAYPOINT:
+    case MAV_CMD_NAV_GUIDED_ENABLE:
+    case MAV_CMD_DO_SET_HOME:
+    case MAV_CMD_DO_LAND_START:
+    case MAV_CMD_DO_GO_AROUND:
+    case MAV_CMD_DO_SET_ROI:
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
+    case MAV_CMD_NAV_VTOL_LAND:
+    case MAV_CMD_NAV_PAYLOAD_PLACE:
+        return true;
+    default:
+        return false;
+    }
+}

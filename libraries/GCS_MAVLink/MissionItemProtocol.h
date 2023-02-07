@@ -65,6 +65,11 @@ public:
     // MISSION_ITEM messages (we should be getting MISSION_ITEM_INT)
     void send_mission_item_warning();
 
+    static MAV_MISSION_RESULT convert_MISSION_ITEM_to_MISSION_ITEM_INT(const mavlink_mission_item_t &mission_item,
+            mavlink_mission_item_int_t &mission_item_int) WARN_IF_UNUSED;
+    static MAV_MISSION_RESULT convert_MISSION_ITEM_INT_to_MISSION_ITEM(const mavlink_mission_item_int_t &mission_item_int,
+            mavlink_mission_item_t &mission_item) WARN_IF_UNUSED;
+
 protected:
 
     GCS_MAVLINK *link; // link currently receiving waypoints on

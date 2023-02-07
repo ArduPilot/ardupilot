@@ -819,7 +819,7 @@ void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
     if (msg.msgid == MAVLINK_MSG_ID_MISSION_ITEM) {
         mavlink_mission_item_t mission_item;
         mavlink_msg_mission_item_decode(&msg, &mission_item);
-        MAV_MISSION_RESULT ret = AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(mission_item, mission_item_int);
+        MAV_MISSION_RESULT ret = MissionItemProtocol::convert_MISSION_ITEM_to_MISSION_ITEM_INT(mission_item, mission_item_int);
         if (ret != MAV_MISSION_ACCEPTED) {
             const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item_int.mission_type;
             send_mission_ack(msg, type, ret);
