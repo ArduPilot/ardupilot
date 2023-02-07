@@ -373,7 +373,7 @@ _versions = []
 
 @conf
 def ap_version_append_str(ctx, k, v):
-    ctx.env['AP_VERSION_ITEMS'] += [(k, '"{}"'.format(os.environ.get(k) if k in os.environ else v)))]
+    ctx.env['AP_VERSION_ITEMS'] += [(k, '"{}"'.format(os.environ.get(k, v)))]
 
 @conf
 def ap_version_append_int(ctx, k, v):
