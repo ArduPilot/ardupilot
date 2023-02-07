@@ -295,7 +295,7 @@ if __name__ == '__main__':
     parser.add_argument('firmware_file', help='firmware binary')
     parser.add_argument('-nm', type=str, default="arm-none-eabi-nm", help='nm binary to use.')
     args = parser.parse_args()
-    print(args.firmware_file, args.nm)
+    # print(args.firmware_file, args.nm)
 
     ef = ExtractFeatures(args.firmware_file, args.nm)
     ef.run()
