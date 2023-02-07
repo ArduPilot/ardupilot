@@ -33,7 +33,7 @@ jobs:
         id: ccache_cache_timestamp
         run: |
           NOW=$(date -u +"%F-%T")
-          echo "{timestamp}=${NOW}" >> $GITHUB_OUTPUT
+          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
       - name: ccache cache files
         uses: actions/cache@v3
         with:
