@@ -156,6 +156,7 @@ void MissionItemProtocol::handle_mission_request_int(const GCS_MAVLINK &_link,
     _link.send_message(MAVLINK_MSG_ID_MISSION_ITEM_INT, (const char*)&ret_packet);
 }
 
+#if AP_MAVLINK_MISSION_ITEM_ENABLED
 void MissionItemProtocol::handle_mission_request(const GCS_MAVLINK &_link,
                                                  const mavlink_mission_request_t &packet,
                                                  const mavlink_message_t &msg
@@ -200,6 +201,7 @@ void MissionItemProtocol::handle_mission_request(const GCS_MAVLINK &_link,
 
     _link.send_message(MAVLINK_MSG_ID_MISSION_ITEM, (const char*)&ret_packet);
 }
+#endif
 
 void MissionItemProtocol::send_mission_item_warning()
 {
@@ -383,6 +385,7 @@ void MissionItemProtocol::update()
     }
 }
 
+#if AP_MAVLINK_MISSION_ITEM_ENABLED
 MAV_MISSION_RESULT MissionItemProtocol::convert_MISSION_ITEM_to_MISSION_ITEM_INT(const mavlink_mission_item_t &packet,
         mavlink_mission_item_int_t &mav_cmd)
 {
@@ -465,3 +468,4 @@ MAV_MISSION_RESULT MissionItemProtocol::convert_MISSION_ITEM_INT_to_MISSION_ITEM
 
     return MAV_MISSION_ACCEPTED;
 }
+#endif  // AP_MAVLINK_MISSION_ITEM_ENABLED

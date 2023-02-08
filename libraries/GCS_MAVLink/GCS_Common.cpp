@@ -599,6 +599,7 @@ void GCS_MAVLINK::handle_mission_request_int(const mavlink_message_t &msg) const
         prot->handle_mission_request_int(*this, packet, msg);
 }
 
+#if AP_MAVLINK_MISSION_ITEM_ENABLED
 void GCS_MAVLINK::handle_mission_request(const mavlink_message_t &msg) const
 {
         // decode
@@ -611,6 +612,7 @@ void GCS_MAVLINK::handle_mission_request(const mavlink_message_t &msg) const
         }
         prot->handle_mission_request(*this, packet, msg);
 }
+#endif
 
 /*
   handle a MISSION_SET_CURRENT mavlink packet
@@ -816,6 +818,7 @@ void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
 {
     mavlink_mission_item_int_t mission_item_int;
     bool send_mission_item_warning = false;
+#if AP_MAVLINK_MISSION_ITEM_ENABLED
     if (msg.msgid == MAVLINK_MSG_ID_MISSION_ITEM) {
         mavlink_mission_item_t mission_item;
         mavlink_msg_mission_item_decode(&msg, &mission_item);
@@ -829,6 +832,10 @@ void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
     } else {
         mavlink_msg_mission_item_int_decode(&msg, &mission_item_int);
     }
+#else
+    mavlink_msg_mission_item_int_decode(&msg, &mission_item_int);
+#endif  // AP_MAVLINK_MISSION_ITEM_ENABLED
+
     const uint8_t current = mission_item_int.current;
     const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item_int.mission_type;
 
@@ -3948,7 +3955,9 @@ void GCS_MAVLINK::handle_common_mission_message(const mavlink_message_t &msg)
     }
 
     // GCS has sent us a mission item, store to EEPROM
+#if AP_MAVLINK_MISSION_ITEM_ENABLED
     case MAVLINK_MSG_ID_MISSION_ITEM:           // MAV ID: 39
+#endif
     case MAVLINK_MSG_ID_MISSION_ITEM_INT:
         handle_mission_item(msg);
         break;
@@ -3957,9 +3966,11 @@ void GCS_MAVLINK::handle_common_mission_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_MISSION_REQUEST_INT:
         handle_mission_request_int(msg);
         break;
+#if AP_MAVLINK_MISSION_ITEM_ENABLED
     case MAVLINK_MSG_ID_MISSION_REQUEST:
         handle_mission_request(msg);
         break;
+#endif
 
     case MAVLINK_MSG_ID_MISSION_SET_CURRENT:    // MAV ID: 41
     {
