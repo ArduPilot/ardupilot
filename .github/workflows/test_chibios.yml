@@ -1,10 +1,54 @@
 name: test chibios
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    paths:
+      - '.github/workflows/test_chibios.yml'
+      - 'Tools/scripts/build_ci.sh'
+      - 'AntennaTracker/**'
+      - 'ArduCopter/**'
+      - 'ArduPlane/**'
+      - 'ArduSub/**'
+      - 'Rover/**'
+      - 'Blimp/**'
+      - 'Tools/AP_Bootloader/**'
+      - 'Tools/AP_Periph/**'
+      - 'modules/**'
+      - 'libraries/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'wscript'
+      - 'Tools/autotest/param_metadata/param_parse.py'
+      - 'Tools/scripts/configure_all.py'
+      - 'Tools/autotest/test_build_options.py'
+      - 'Tools/scripts/signing/generate_keys.py'
+      - 'Tools/scripts/build_bootloaders.py'
+      - 'Tools/scripts/signing/**'
 
-# paths:
-# - "*"
-# - "!README.md" <-- don't rebuild on doc change
+  pull_request:
+    paths:
+      - '.github/workflows/test_chibios.yml'
+      - 'Tools/scripts/build_ci.sh'
+      - 'AntennaTracker/**'
+      - 'ArduCopter/**'
+      - 'ArduPlane/**'
+      - 'ArduSub/**'
+      - 'Rover/**'
+      - 'Blimp/**'
+      - 'Tools/AP_Bootloader/**'
+      - 'Tools/AP_Periph/**'
+      - 'modules/**'
+      - 'libraries/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'wscript'
+      - 'Tools/autotest/param_metadata/param_parse.py'
+      - 'Tools/scripts/configure_all.py'
+      - 'Tools/autotest/test_build_options.py'
+      - 'Tools/scripts/signing/generate_keys.py'
+      - 'Tools/scripts/build_bootloaders.py'
+      - 'Tools/scripts/signing/**'
+
+  workflow_dispatch:
+
 concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true

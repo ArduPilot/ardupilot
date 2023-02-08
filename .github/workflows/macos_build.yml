@@ -1,6 +1,38 @@
 name: Macos Build
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    paths:
+      - '.github/workflows/macos_build.yml'
+      - 'Tools/environment_install/install-prereqs-mac.sh'
+      - 'AntennaTracker/**'
+      - 'ArduCopter/**'
+      - 'ArduPlane/**'
+      - 'ArduSub/**'
+      - 'Rover/**'
+      - 'Blimp/**'
+      - 'modules/**'
+      - 'libraries/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'wscript'
+
+  pull_request:
+    paths:
+      - '.github/workflows/macos_build.yml'
+      - 'Tools/environment_install/install-prereqs-mac.sh'
+      - 'AntennaTracker/**'
+      - 'ArduCopter/**'
+      - 'ArduPlane/**'
+      - 'ArduSub/**'
+      - 'Rover/**'
+      - 'Blimp/**'
+      - 'modules/**'
+      - 'libraries/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'wscript'
+
+  workflow_dispatch:
+
 concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true

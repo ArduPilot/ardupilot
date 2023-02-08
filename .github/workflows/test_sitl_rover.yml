@@ -1,21 +1,47 @@
 name: test rover
 
-on: 
+on:
   push:
-    paths-ignore: # ignore vehicle only changes not for rover
-      - 'AntennaTracker/**'
-      - 'ArduPlane/**'
-      - 'ArduSub/**'
-      - 'Blimp/**'
-      - 'ArduCopter/**'
+    paths:
+      - '.github/workflows/test_sitl_rover.yml'
+      - 'Rover/**'
+      - 'modules/**'
+      - 'libraries/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'Tools/autotest/**/*.py'
+      - '!Tools/autotest/*.py'
+      - 'Tools/autotest/rover.py'
+      - 'Tools/autotest/sailboat.py'
+      - 'Tools/autotest/balancebot.py'
+      - 'Tools/autotest/autotest.py'
+      - 'Tools/autotest/common.py'
+      - 'Tools/autotest/**/*.txt'
+      - 'wscript'
+      - '!Tools/autotest/location.txt'
+      - '!Tools/autotest/swarminit.txt'
+      - '!libraries/AP_HAL_ChibiOS/**'
+      - '!libraries/AP_HAL_ESP32/**'
 
   pull_request:
-    paths-ignore: # ignore vehicle only changes not for rover
-      - 'AntennaTracker/**'
-      - 'ArduPlane/**'
-      - 'ArduSub/**'
-      - 'Blimp/**'
-      - 'ArduCopter/**'
+    paths:
+      - '.github/workflows/test_sitl_rover.yml'
+      - 'Rover/**'
+      - 'modules/**'
+      - 'libraries/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'Tools/autotest/**/*.py'
+      - '!Tools/autotest/*.py'
+      - 'Tools/autotest/rover.py'
+      - 'Tools/autotest/sailboat.py'
+      - 'Tools/autotest/balancebot.py'
+      - 'Tools/autotest/autotest.py'
+      - 'Tools/autotest/common.py'
+      - 'Tools/autotest/**/*.txt'
+      - 'wscript'
+      - '!Tools/autotest/location.txt'
+      - '!Tools/autotest/swarminit.txt'
+      - '!libraries/AP_HAL_ChibiOS/**'
+      - '!libraries/AP_HAL_ESP32/**'
 
   workflow_dispatch:
 

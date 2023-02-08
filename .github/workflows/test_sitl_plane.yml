@@ -1,21 +1,45 @@
 name: test plane
 
-on: 
+on:
   push:
-    paths-ignore: # ignore vehicle only changes not for plane
-      - 'AntennaTracker/**'
-      - 'ArduSub/**'
-      - 'Rover/**'
-      - 'Blimp/**'
-      - 'ArduCopter/**'
+    paths:
+      - '.github/workflows/test_sitl_plane.yml'
+      - 'ArduPlane/**'
+      - 'modules/**'
+      - 'libraries/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'Tools/autotest/**/*.py'
+      - '!Tools/autotest/*.py'
+      - 'Tools/autotest/arduplane.py'
+      - 'Tools/autotest/quadplane.py'
+      - 'Tools/autotest/autotest.py'
+      - 'Tools/autotest/common.py'
+      - 'Tools/autotest/**/*.txt'
+      - 'wscript'
+      - '!Tools/autotest/location.txt'
+      - '!Tools/autotest/swarminit.txt'
+      - '!libraries/AP_HAL_ChibiOS/**'
+      - '!libraries/AP_HAL_ESP32/**'
 
   pull_request:
-    paths-ignore: # ignore vehicle only changes not for plane
-      - 'AntennaTracker/**'
-      - 'ArduSub/**'
-      - 'Rover/**'
-      - 'Blimp/**'
-      - 'ArduCopter/**'
+    paths:
+      - '.github/workflows/test_sitl_plane.yml'
+      - 'ArduPlane/**'
+      - 'modules/**'
+      - 'libraries/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'Tools/autotest/**/*.py'
+      - '!Tools/autotest/*.py'
+      - 'Tools/autotest/arduplane.py'
+      - 'Tools/autotest/quadplane.py'
+      - 'Tools/autotest/autotest.py'
+      - 'Tools/autotest/common.py'
+      - 'Tools/autotest/**/*.txt'
+      - 'wscript'
+      - '!Tools/autotest/location.txt'
+      - '!Tools/autotest/swarminit.txt'
+      - '!libraries/AP_HAL_ChibiOS/**'
+      - '!libraries/AP_HAL_ESP32/**'
 
   workflow_dispatch:
 

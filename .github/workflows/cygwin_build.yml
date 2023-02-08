@@ -1,6 +1,24 @@
 name: Cygwin Build
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    paths-ignore: # ignore autotest, chibios, esp32 stuffs, .sh/md/txt files
+      - 'Tools/autotest/**'
+      - 'libraries/AP_HAL_ChibiOS/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      - '**/*.sh'
+      - '**/*.md'
+      - '**/*.txt'
+  pull_request:
+    paths-ignore:
+      - 'Tools/autotest/**'
+      - 'libraries/AP_HAL_ChibiOS/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      - '**/*.sh'
+      - '**/*.md'
+      - '**/*.txt'
+  workflow_dispatch:
+
 concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true

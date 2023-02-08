@@ -1,26 +1,27 @@
 name: test replay
 
-on: 
+on:
   push:
-    paths-ignore: # ignore vehicle only changes
-      - 'AntennaTracker/**'
-      - 'ArduPlane/**'
-      - 'ArduSub/**'
-      - 'Rover/**'
-      - 'Blimp/**'
-      - 'ArduCopter/**'
+    paths:
+      - '.github/workflows/test_replay.yml'
+      - 'Tools/scripts/build_ci.sh'
+      - 'modules/**'
+      - 'libraries/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'wscript'
+      - 'Tools/Replay/**'
 
   pull_request:
-    paths-ignore: # ignore vehicle only changes
-      - 'AntennaTracker/**'
-      - 'ArduPlane/**'
-      - 'ArduSub/**'
-      - 'Rover/**'
-      - 'Blimp/**'
-      - 'ArduCopter/**'
+    paths:
+      - '.github/workflows/test_replay.yml'
+      - 'Tools/scripts/build_ci.sh'
+      - 'modules/**'
+      - 'libraries/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'wscript'
+      - 'Tools/Replay/**'
 
   workflow_dispatch:
-
 
 concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}

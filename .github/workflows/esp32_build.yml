@@ -1,6 +1,30 @@
 name: ESP32 Build
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    paths:
+      - '.github/workflows/esp32_build.yml'
+      - 'Tools/scripts/esp32_get_idf.sh'
+      - 'ArduCopter/**'
+      - 'ArduPlane/**'
+      - 'modules/**'
+      - 'libraries/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'wscript'
+
+  pull_request:
+    paths:
+      - '.github/workflows/esp32_build.yml'
+      - 'Tools/scripts/esp32_get_idf.sh'
+      - 'ArduCopter/**'
+      - 'ArduPlane/**'
+      - 'modules/**'
+      - 'libraries/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'wscript'
+
+  workflow_dispatch:
+
 concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true

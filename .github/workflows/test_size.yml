@@ -1,9 +1,12 @@
 name: test size
 
-on: [pull_request]
-# paths:
-# - "*"
-# - "!README.md" <-- don't rebuild on doc change
+on:
+  pull_request:
+    paths-ignore:  # ignore autotest stuffs
+      - 'Tools/autotest/**'
+  workflow_dispatch:
+
+
 concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true

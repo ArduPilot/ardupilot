@@ -2,22 +2,28 @@ name: test ap_periph
 
 on: 
   push:
-    paths-ignore: # ignore vehicle only changes
-      - 'AntennaTracker/**'
-      - 'ArduPlane/**'
-      - 'ArduSub/**'
-      - 'Rover/**'
-      - 'Blimp/**'
-      - 'ArduCopter/**'
+    paths:
+      - '.github/workflows/test_sitl_periph.yml'
+      - 'Tools/AP_Periph/**'
+      - 'modules/**'
+      - 'libraries/**'
+      - 'Tools/autotest/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'wscript'
+      - '!libraries/AP_HAL_ChibiOS/**'
+      - '!libraries/AP_HAL_ESP32/**'
 
   pull_request:
-    paths-ignore: # ignore vehicle only changes
-      - 'AntennaTracker/**'
-      - 'ArduPlane/**'
-      - 'ArduSub/**'
-      - 'Rover/**'
-      - 'Blimp/**'
-      - 'ArduCopter/**'
+    paths:
+      - '.github/workflows/test_sitl_periph.yml'
+      - 'Tools/AP_Periph/**'
+      - 'modules/**'
+      - 'libraries/**'
+      - 'Tools/autotest/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'wscript'
+      - '!libraries/AP_HAL_ChibiOS/**'
+      - '!libraries/AP_HAL_ESP32/**'
 
   workflow_dispatch:
 

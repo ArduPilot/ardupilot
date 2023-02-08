@@ -1,9 +1,28 @@
 name: test ccache
 
-on: [push, pull_request, workflow_dispatch]
-# paths:
-# - "*"
-# - "!README.md" <-- don't rebuild on doc change
+on:
+  push:
+    paths:
+      - '.github/workflows/test_ccache.yml'
+      - 'Tools/scripts/build_tests/test_ccache.py'
+      - 'ArduCopter/**'
+      - 'modules/**'
+      - 'libraries/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'wscript'
+
+  pull_request:
+    paths:
+      - '.github/workflows/test_ccache.yml'
+      - 'Tools/scripts/build_tests/test_ccache.py'
+      - 'ArduCopter/**'
+      - 'modules/**'
+      - 'libraries/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'wscript'
+
+  workflow_dispatch:
+
 concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true

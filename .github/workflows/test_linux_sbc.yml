@@ -1,9 +1,40 @@
 name: test Linux SBC
 
-on: [push, pull_request, workflow_dispatch]
-# paths:
-# - "*"
-# - "!README.md" <-- don't rebuild on doc change
+on:
+  push:
+    paths:
+      - '.github/workflows/test_linux_sbc.yml'
+      - 'Tools/scripts/build_ci.sh'
+      - 'AntennaTracker/**'
+      - 'ArduCopter/**'
+      - 'ArduPlane/**'
+      - 'ArduSub/**'
+      - 'Rover/**'
+      - 'Blimp/**'
+      - 'modules/**'
+      - 'libraries/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'wscript'
+      - 'Tools/Linux_HAL_Essentials/**'
+
+  pull_request:
+    paths:
+      - '.github/workflows/test_linux_sbc.yml'
+      - 'Tools/scripts/build_ci.sh'
+      - 'AntennaTracker/**'
+      - 'ArduCopter/**'
+      - 'ArduPlane/**'
+      - 'ArduSub/**'
+      - 'Rover/**'
+      - 'Blimp/**'
+      - 'modules/**'
+      - 'libraries/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'wscript'
+      - 'Tools/Linux_HAL_Essentials/**'
+
+  workflow_dispatch:
+
 concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true
