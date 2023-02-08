@@ -743,8 +743,8 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
         
         AP_ESC_Telem_Backend::TelemetryData telem {};
 
-        telem.voltage = float(esc.voltage) * 0.01f;
-        telem.current = float(esc.current) * 0.01f;
+        telem.voltage = float(esc.voltage) * 0.1f;
+        telem.current = float(esc.current) * 0.1f;
         telem.motor_temp_cdeg = int16_t(esc.motorTemperature * 100);
 
         update_telem_data(addr, telem,
