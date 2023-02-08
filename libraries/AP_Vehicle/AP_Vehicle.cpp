@@ -124,6 +124,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(nmea, "NMEA_", 17, AP_Vehicle, AP_NMEA_Output),
 #endif
 
+#if AP_CURSORONTARGET_ENABLED
+    // @Group: COT_
+    // @Path: ../AP_CursorOnTarget/AP_CursorOnTarget.cpp
+    AP_SUBGROUPINFO(cursorOnTarget, "COT_", 18, AP_Vehicle, AP_CursorOnTarget),
+#endif
+
     AP_GROUPEND
 };
 
@@ -404,6 +410,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
 #if HAL_INS_ACCELCAL_ENABLED
     SCHED_TASK(accel_cal_update,                                                      10, 100, 245),
+#endif
+#if AP_CURSORONTARGET_ENABLED
+    SCHED_TASK_CLASS(AP_CursorOnTarget, &vehicle.cursorOnTarget, update,              10, 100, 247),
 #endif
 #if AP_FENCE_ENABLED
     SCHED_TASK_CLASS(AC_Fence,     &vehicle.fence,          update,                   10, 100, 248),

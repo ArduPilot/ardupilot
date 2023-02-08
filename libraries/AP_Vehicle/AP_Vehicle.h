@@ -44,6 +44,7 @@
 #include <AP_Hott_Telem/AP_Hott_Telem.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
+#include <AP_CursorOnTarget/AP_CursorOnTarget.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_VideoTX/AP_VideoTX.h>
 #include <AP_MSP/AP_MSP.h>
@@ -295,6 +296,10 @@ protected:
     AP_VideoTX vtx;
 #endif
     AP_SerialManager serial_manager;
+
+#if AP_CURSORONTARGET_ENABLED
+    AP_CursorOnTarget cursorOnTarget;
+#endif
 
     AP_Relay relay;
 
