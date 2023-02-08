@@ -211,9 +211,9 @@ class ModeGuided : public Mode
 {
 public:
 
-    Number mode_number() const override { return Number::GUIDED; }
-    const char *name() const override { return "GUIDED"; }
-    const char *name4() const override { return "GUID"; }
+    Number mode_number() const override;
+    const char *name() const override;
+    const char *name4() const override;
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
@@ -235,12 +235,23 @@ public:
 
     void update_target_altitude() override;
 
+    enum class SubMode {
+        Guided,
+#if AP_SCRIPTING_ENABLED
+        NAV_Script_time,
+#endif
+    };
+
+    void set_submode(SubMode mode);
+
 protected:
 
     bool _enter() override;
 
 private:
     float active_radius_m;
+
+    SubMode submode;
 };
 
 class ModeCircle: public Mode

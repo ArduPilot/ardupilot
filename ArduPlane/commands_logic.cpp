@@ -8,6 +8,10 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     // default to non-VTOL loiter
     auto_state.vtol_loiter = false;
 
+#if AP_SCRIPTING_ENABLED
+    nav_scripting.enabled = false;
+#endif
+
         // log when new commands start
     if (should_log(MASK_LOG_CMD)) {
         logger.Write_Mission_Cmd(mission, cmd);
@@ -1190,11 +1194,11 @@ bool Plane::verify_nav_script_time(const AP_Mission::Mission_Command& cmd)
             nav_scripting.run_yaw_rate_controller = true;
         }
     }
+    nav_scripting_check_timeout();
     return !nav_scripting.enabled;
 }
 
-// check if we are in a NAV_SCRIPT_* command
-bool Plane::nav_scripting_active(void)
+void Plane::nav_scripting_check_timeout(void)
 {
     if (nav_scripting.enabled && AP_HAL::millis() - nav_scripting.current_ms > 1000) {
         // set_target_throttle_rate_rpy has not been called from script in last 1000ms
@@ -1204,17 +1208,18 @@ bool Plane::nav_scripting_active(void)
         nav_scripting.run_yaw_rate_controller = true;
         gcs().send_text(MAV_SEVERITY_INFO, "NavScript time out");
     }
-    if (control_mode == &mode_auto &&
-        mission.get_current_nav_cmd().id != MAV_CMD_NAV_SCRIPT_TIME) {
-        nav_scripting.enabled = false;
-    }
+}
+
+// check if we are in a NAV_SCRIPT_* command
+bool Plane::nav_scripting_active(void) const
+{
     return nav_scripting.enabled;
 }
 
 // support for NAV_SCRIPTING mission command
 bool Plane::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4)
 {
-    if (!nav_scripting_active()) {
+    if (!nav_scripting_active() || (control_mode != &mode_auto) || (mission.get_current_nav_cmd().id != MAV_CMD_NAV_SCRIPT_TIME)) {
         // not in NAV_SCRIPT_TIME
         return false;
     }
@@ -1256,26 +1261,31 @@ void Plane::set_rudder_offset(float rudder_pct, bool run_yaw_rate_controller)
 // enable NAV_SCRIPTING takeover in modes other than AUTO using script time mission commands
 bool Plane::nav_scripting_enable(uint8_t mode)
 {
-   uint8_t current_control_mode = control_mode->mode_number();
-   if (current_control_mode == mode) {
-       switch (current_control_mode) {
-       case Mode::Number::CIRCLE:
-       case Mode::Number::STABILIZE:
-       case Mode::Number::ACRO:
-       case Mode::Number::FLY_BY_WIRE_A:
-       case Mode::Number::FLY_BY_WIRE_B:
-       case Mode::Number::CRUISE:
-       case Mode::Number::LOITER:
-           nav_scripting.enabled = true;
-           nav_scripting.current_ms = AP_HAL::millis();
-           break;
-       default:
-           nav_scripting.enabled = false;
-       }
-   } else {
-       nav_scripting.enabled = false;
-   }
-   return nav_scripting.enabled;
+    uint8_t current_control_mode = control_mode->mode_number();
+    if (current_control_mode == mode) {
+        switch (current_control_mode) {
+            case Mode::Number::CIRCLE:
+            case Mode::Number::STABILIZE:
+            case Mode::Number::ACRO:
+            case Mode::Number::FLY_BY_WIRE_A:
+            case Mode::Number::FLY_BY_WIRE_B:
+            case Mode::Number::CRUISE:
+            case Mode::Number::LOITER:
+                // Switch into guided mode and enable script time submode
+                if (set_mode(mode_guided, ModeReason::NAV_SCRIPTING_START)) {
+                    mode_guided.set_submode(ModeGuided::SubMode::NAV_Script_time);
+                    nav_scripting.enabled = true;
+                    nav_scripting.current_ms = AP_HAL::millis();
+                    return true;
+                }
+            break;
+
+        default:
+            break;
+        }
+    }
+    nav_scripting.enabled = false;
+    return false;
 }
 #endif // AP_SCRIPTING_ENABLED
 

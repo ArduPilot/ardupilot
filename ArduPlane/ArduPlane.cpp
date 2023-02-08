@@ -732,7 +732,7 @@ bool Plane::set_target_location(const Location &target_loc)
 {
     Location loc{target_loc};
 
-    if (plane.control_mode != &plane.mode_guided) {
+    if (plane.control_mode->mode_number() != Mode::Number::GUIDED) {
         // only accept position updates when in GUIDED mode
         return false;
     }

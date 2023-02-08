@@ -71,6 +71,8 @@ void Plane::set_next_WP(const Location &loc)
 
 void Plane::set_guided_WP(const Location &loc)
 {
+    mode_guided.set_submode(ModeGuided::SubMode::Guided);
+
     if (aparm.loiter_radius < 0 || loc.loiter_ccw) {
         loiter.direction = -1;
     } else {
