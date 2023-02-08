@@ -1184,6 +1184,8 @@ bool Plane::verify_nav_script_time(const AP_Mission::Mission_Command& cmd)
         if (now - nav_scripting.start_ms > cmd.content.nav_script_time.timeout_s*1000U) {
             gcs().send_text(MAV_SEVERITY_INFO, "NavScriptTime timed out");
             nav_scripting.enabled = false;
+            nav_scripting.rudder_offset_pct = 0;
+            nav_scripting.run_yaw_rate_controller = true;
         }
     }
     return !nav_scripting.enabled;
@@ -1196,6 +1198,8 @@ bool Plane::nav_scripting_active(void)
         // set_target_throttle_rate_rpy has not been called from script in last 1000ms
         nav_scripting.enabled = false;
         nav_scripting.current_ms = 0;
+        nav_scripting.rudder_offset_pct = 0;
+        nav_scripting.run_yaw_rate_controller = true;
         gcs().send_text(MAV_SEVERITY_INFO, "NavScript time out");
     }
     if (control_mode == &mode_auto &&
@@ -1238,6 +1242,13 @@ void Plane::set_target_throttle_rate_rpy(float throttle_pct, float roll_rate_dps
     nav_scripting.yaw_rate_dps = constrain_float(yaw_rate_dps, -g.acro_yaw_rate, g.acro_yaw_rate);
     nav_scripting.throttle_pct = constrain_float(throttle_pct, aparm.throttle_min, aparm.throttle_max);
     nav_scripting.current_ms = AP_HAL::millis();
+}
+
+// support for rudder offset override in aerobatic scripting
+void Plane::set_rudder_offset(float rudder_pct, bool run_yaw_rate_controller)
+{
+    nav_scripting.rudder_offset_pct = rudder_pct;
+    nav_scripting.run_yaw_rate_controller = run_yaw_rate_controller;
 }
 
 // enable NAV_SCRIPTING takeover in modes other than AUTO using script time mission commands

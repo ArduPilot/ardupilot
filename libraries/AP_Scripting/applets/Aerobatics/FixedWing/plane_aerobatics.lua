@@ -18,7 +18,7 @@ end
 
 AEROM_ANG_ACCEL = bind_add_param('ANG_ACCEL', 1, 6000)
 AEROM_ANG_TC = bind_add_param('ANG_TC', 2, 0.1)
-AEROM_KE_ANG = bind_add_param('KE_ANG', 3, 0)
+-- 3 was AEROM_KE_ANG
 THR_PIT_FF = bind_add_param('THR_PIT_FF', 4, 80)
 SPD_P = bind_add_param('SPD_P', 5, 5)
 SPD_I = bind_add_param('SPD_I', 6, 25)
@@ -38,7 +38,9 @@ AEROM_PATH_SCALE = bind_add_param('PATH_SCALE', 21, 1.0)
 AEROM_BOX_WIDTH = bind_add_param('BOX_WIDTH', 22, 400)
 AEROM_STALL_THR = bind_add_param('STALL_THR', 23, 40)
 AEROM_STALL_PIT = bind_add_param('STALL_PIT', 24, -20)
-AEROM_KE_TC = bind_add_param('KE_TC', 25, 0.5)
+-- 25 was AEROM_KE_TC
+AEROM_KE_RUDD = bind_add_param('KE_RUDD', 26, 25)
+AEROM_KE_RUDD_LK = bind_add_param('KE_RUDD_LK', 27, 0.25)
 
 -- cope with old param values
 if AEROM_ANG_ACCEL:get() < 100 and AEROM_ANG_ACCEL:get() > 0 then
@@ -79,15 +81,6 @@ local TRICKS = nil
 local TRIK_SEL_FN = nil
 local TRIK_ACT_FN = nil
 local TRIK_COUNT  = nil
-
---[[
-   find our rudder channel for stall turns
---]]
-local K_RUDDER = 21
-local rudder_chan = SRV_Channels:find_channel(K_RUDDER)
-local RUDD_REVERSED = Parameter(string.format("SERVO%u_REVERSED", rudder_chan+1))
-local RUDD_MIN = Parameter(string.format("SERVO%u_MIN", rudder_chan+1))
-local RUDD_MAX = Parameter(string.format("SERVO%u_MAX", rudder_chan+1))
 
 local function TrickDef(id, arg1, arg2, arg3, arg4)
    local self = {}
@@ -1154,7 +1147,7 @@ function immelmann_turn(r, arg2, arg3, arg4)
    local rabs = math.abs(r)
    return make_paths("immelmann_turn", {
          { path_vertical_arc(r, 180),      roll_angle(0) },
-         { path_straight(rabs/2),          roll_angle(180) },
+         { path_straight(rabs),            roll_angle(180) },
    })
 end
 
@@ -1323,6 +1316,7 @@ function rudder_over(_direction, _min_speed)
    local initial_q = nil
    local last_t = nil
    local initial_z = nil
+   local desired_direction = nil
 
    --[[
       the update() method is called during the rudder over, it
@@ -1397,25 +1391,22 @@ function rudder_over(_direction, _min_speed)
          override rudder to maximum, basing PWM on the MIN/MAX of the channel
          according to the desired direction
       --]]
-      local rudd_pwm = nil
-      local desired_direction = direction
-      if desired_direction == 0 then
-         local c_y = get_ahrs_dcm_c_y()
-         if c_y > 0 then
-            desired_direction = 1
-         else
-            desired_direction = -1
+      if desired_direction == nil then
+         desired_direction = direction
+         if desired_direction == 0 then
+            local c_y = get_ahrs_dcm_c_y()
+            if c_y > 0 then
+               desired_direction = 1
+            else
+               desired_direction = -1
+            end
          end
       end
-      if desired_direction * (RUDD_REVERSED:get()*2-1) < 0 then
-         rudd_pwm = RUDD_MAX:get()
-      else
-         rudd_pwm = RUDD_MIN:get()
-      end
       if not pitch2_done then
-         SRV_Channels:set_output_pwm_chan_timeout(rudder_chan, rudd_pwm, math.floor(4*1000/LOOP_RATE))
+         vehicle:set_rudder_offset(desired_direction * 100, false)
+      else
+         vehicle:set_rudder_offset(0, true)
       end
-
       if not kick_started then
          return false
       end
@@ -1452,9 +1443,6 @@ function rudder_over(_direction, _min_speed)
       path_var.pos = rotate_path(path, path_var.path_t, path_var.initial_ori, path_var.initial_ef_pos)
       -- ensure that the path will move fwd on the next step
       path_var.pos:z(path_var.pos:z()-10)
-
-      -- cancel rudder override
-      SRV_Channels:set_output_pwm_chan_timeout(rudder_chan, rudd_pwm, 0)
 
       return false
    end
@@ -1749,6 +1737,26 @@ function quat_projection_ground_plane(q)
 end
 
 
+--[[
+   calculate rudder offset
+--]]
+function calculate_rudder_offset(ahrs_quat, ahrs_gyro, airspeed_constrained)
+   --[[
+      look ahead for what our y projection will be at AEROM_KE_RUDD_LK
+      seconds forward in time
+   --]]
+   local qchange = Quaternion()
+   qchange:from_angular_velocity(ahrs_gyro, -AEROM_KE_RUDD_LK:get())
+   local qnew = qchange * ahrs_quat
+
+   local airspeed_scaling = SCALING_SPEED:get()/airspeed_constrained
+   local y_projection = get_quat_dcm_c_y(qnew:inverse())
+   local rudder_ofs = -y_projection * AEROM_KE_RUDD:get() * sq(airspeed_scaling)
+   rudder_ofs = constrain(rudder_ofs, -100, 100)
+
+   return rudder_ofs
+end
+
 path_var.count = 0
 
 function do_path()
@@ -1802,7 +1810,6 @@ function do_path()
       path_var.filtered_angular_velocity = Vector3f()
 
       path_var.last_time = now - 1.0/LOOP_RATE
-      path_var.ff_yaw_rate_rads = 0.0
       path_var.last_ang_rate_dps = ahrs_gyro:scale(math.deg(1))
 
       path_var.path_t = 0.0
@@ -1811,6 +1818,9 @@ function do_path()
       path_var.roll = 0.0
       path_var.last_shift_xy = nil
       path_var.path_shift = Vector3f()
+
+      path_var.ss_angle = 0.0
+      path_var.ss_angle_filt = 0.0
 
       -- get initial tangent
       local p1, r1 = rotate_path(path, path_var.path_t + 0.1/(path_var.total_time*LOOP_RATE),
@@ -2071,17 +2081,8 @@ function do_path()
    --[[
       calculate an additional yaw rate to get us to the right angle of sideslip for knifeedge
    --]]
-   -- look ahead by AEROM_KE_TC seconds to get predicted attitude
-   local lookahead_rotation = Quaternion()
-   lookahead_rotation:from_angular_velocity(path_rate_bf_dps:scale(math.rad(1)), AEROM_KE_TC:get())
-   local lkahead_q = orientation_rel_ef_with_roll_angle * lookahead_rotation
-   -- get sin(roll)*cos(pitch) for scaling the KE angle
-   local ke_angle = get_quat_dcm_c_y(lkahead_q)
-   -- scale by square of airspeed
-   local airspeed_scaling = SCALING_SPEED:get()/airspeed_constrained
-   local ff_yaw_rate_rads = math.rad(AEROM_KE_ANG:get()) * (-ke_angle) * sq(airspeed_scaling)
-
-   local sideslip_rate_bf_dps = makeVector3f(0, 0, ff_yaw_rate_rads):scale(math.deg(1))
+   -- local sideslip_rate_bf_dps = calculate_side_slip_aoa(path_rate_bf_dps, ahrs_quat, airspeed_constrained, tv_unit, ahrs_velned, actual_dt)
+   local sideslip_rate_bf_dps = Vector3f()
 
    --[[
       total angular rate is sum of path rate, correction rate and roll correction rate
@@ -2109,6 +2110,13 @@ function do_path()
    tot_ang_vel_bf_dps = path_var.last_ang_rate_dps + ang_rate_diff_dps
    path_var.last_ang_rate_dps = tot_ang_vel_bf_dps
 
+   --[[
+      calculate a rudder offset for knife-edge
+   --]]
+   local rudder_offset_pct = 0
+   if AEROM_KE_RUDD:get() > 0 then
+      rudder_offset_pct = calculate_rudder_offset(ahrs_quat, ahrs_gyro, airspeed_constrained)
+   end
 
    --[[
       log POSM is pose-measured, POST is pose-track, POSB is pose-track without the roll
@@ -2122,14 +2130,15 @@ function do_path()
                 q_change_t,
                 actual_dt)
 
-   logger.write('AERT','Cx,Cy,Cz,Px,Py,Pz,Ex,Tx,Ty,Tz,Perr,Aerr,Yff', 'fffffffffffff',
+   logger.write('AERT','Cx,Cy,Cz,Px,Py,Pz,Ex,Tx,Ty,Tz,Perr,Aerr,Yff,Rofs', 'ffffffffffffff',
                 cor_ang_vel_bf_dps:x(), cor_ang_vel_bf_dps:y(), cor_ang_vel_bf_dps:z(),
                 path_rate_bf_dps:x(), path_rate_bf_dps:y(), path_rate_bf_dps:z(),
                 err_angle_rate_bf_dps:x(),
                 tot_ang_vel_bf_dps:x(), tot_ang_vel_bf_dps:y(), tot_ang_vel_bf_dps:z(),
                 pos_error_ef:length(),
                 wrap_180(math.deg(err_angle_rad)),
-                math.deg(ff_yaw_rate_rads))
+                sideslip_rate_bf_dps:z(),
+                rudder_offset_pct)
 
    --log_pose('POSB', p1, path_var.accumulated_orientation_rel_ef)
 
@@ -2157,6 +2166,7 @@ function do_path()
    end
 
    vehicle:set_target_throttle_rate_rpy(throttle, tot_ang_vel_bf_dps:x(), tot_ang_vel_bf_dps:y(), tot_ang_vel_bf_dps:z())
+   vehicle:set_rudder_offset(rudder_offset_pct, true)
 
    if now - last_named_float_t > 1.0 / NAME_FLOAT_RATE then
       last_named_float_t = now
