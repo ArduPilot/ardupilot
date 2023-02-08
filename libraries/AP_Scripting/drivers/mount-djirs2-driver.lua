@@ -268,6 +268,15 @@ function uint32_value(byte3, byte2, byte1, byte0)
   return (((byte3 & 0xFF) << 24) | ((byte2 & 0xFF) << 16) | ((byte1 & 0xFF) << 8) | (byte0 & 0xFF))
 end
 
+-- wrap yaw angle in degrees to value between 0 and 360
+function wrap_360(angle)
+   local res = math.fmod(angle, 360.0)
+    if res < 0 then
+        res = res + 360.0
+    end
+    return res
+end
+
 -- wrap yaw angle in degrees to value between -180 and +180
 function wrap_180(angle_deg)
   local res = wrap_360(angle_deg)
