@@ -1220,6 +1220,14 @@ struct PACKED log_VER {
 // @Field: Total_mem: total memory usage of all scripts
 // @Field: Run_mem: run memory usage
 
+// @LoggerMessage: SIMF
+// @Description: Simulator Flight Axis Framerate/communications 
+// @Field: TimeUS: Time since system startup
+// @Field: FrameDT: Frames per Time Delta
+// @Field: DT: Time Delta
+// @Field: FPSAvg: Average Frames per second
+// @Field: Glitches: running count of glitches (>200ms)
+
 // @LoggerMessage: MOTB
 // @Description: Motor mixer information
 // @Field: TimeUS: Time since system startup
