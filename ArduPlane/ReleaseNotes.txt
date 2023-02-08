@@ -1,3 +1,14 @@
+Release 4.3.4beta1 Feb 9th 2023
+-------------------------------
+
+- don't allow RC protocol change on IOMCU once detected
+- fixed FBWA pitch limits when in VTOL qassist
+- fixed handling of zero compass diagonals
+- added an output buffer to MAVCAN
+- set emergency status in OpenDroneID on crash or chute deploy
+- avoid logging duplicate format messages
+- fixed bug in alt error arming check with BARO_FIELD_ELEV set
+
 Release 4.3.3 Jan 19th 2023
 ---------------------------
 
