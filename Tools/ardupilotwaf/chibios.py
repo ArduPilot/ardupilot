@@ -317,6 +317,10 @@ class generate_apj(Task.Task):
             extf_img = open(self.inputs[1].abspath(),'rb').read()
         else:
             extf_img = b""
+        if "GIT_VERSION" in os.environ:
+            git_identity = os.environ.get["GIT_VERSION"]
+        else:
+            git_identity = self.generator.bld.git_head_hash(short=True)
         d = {
             "board_id": int(self.env.APJ_BOARD_ID),
             "magic": "APJFWv1",
@@ -332,7 +336,7 @@ class generate_apj(Task.Task):
             "flash_free": int(self.env.FLASH_TOTAL) - len(intf_img),
             "extflash_total": int(self.env.EXT_FLASH_SIZE_MB * 1024 * 1024),
             "extflash_free": int(self.env.EXT_FLASH_SIZE_MB * 1024 * 1024) - len(extf_img),
-            "git_identity": self.generator.bld.git_head_hash(short=True),
+            "git_identity": git_identity,
             "board_revision": 0,
             "USBID": self.env.USBID
         }
