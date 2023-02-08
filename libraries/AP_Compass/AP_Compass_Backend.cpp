@@ -87,13 +87,15 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
     }
 
     // apply eliptical correction
-    Matrix3f mat(
-        diagonals.x, offdiagonals.x, offdiagonals.y,
-        offdiagonals.x,    diagonals.y, offdiagonals.z,
-        offdiagonals.y, offdiagonals.z,    diagonals.z
-    );
+    if (!diagonals.is_zero()) {
+        Matrix3f mat(
+            diagonals.x,    offdiagonals.x, offdiagonals.y,
+            offdiagonals.x, diagonals.y,    offdiagonals.z,
+            offdiagonals.y, offdiagonals.z, diagonals.z
+            );
 
-    mag = mat * mag;
+        mag = mat * mag;
+    }
 
 #if COMPASS_MOT_ENABLED
     const Vector3f &mot = state.motor_compensation.get();
