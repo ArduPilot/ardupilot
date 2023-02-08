@@ -1100,9 +1100,12 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         do_aux_function_avoid_adsb(ch_flag);
         break;
 
+#if 0
+    // feature disabled for 4.3.4 due to https://github.com/ArduPilot/ardupilot/pull/22686
     case AUX_FUNC::FFT_NOTCH_TUNE:
         do_aux_function_fft_notch_tune(ch_flag);
         break;
+#endif
 
 #if HAL_GENERATOR_ENABLED
     case AUX_FUNC::GENERATOR:
