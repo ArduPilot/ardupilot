@@ -39,7 +39,7 @@ mavproxy_installed=0
 function install_pymavlink() {
     if [ $pymavlink_installed -eq 0 ]; then
         echo "Installing pymavlink"
-        git submodule update --init --recursive
+        git submodule update --init --recursive --depth 1
         (cd modules/mavlink/pymavlink && python setup.py build install --user)
         pymavlink_installed=1
     fi
@@ -56,7 +56,7 @@ function run_autotest() {
     if [ $mavproxy_installed -eq 0 ]; then
         echo "Installing MAVProxy"
         pushd /tmp
-          git clone https://github.com/ardupilot/MAVProxy
+          git clone https://github.com/ardupilot/MAVProxy --depth 1
           pushd MAVProxy
             python setup.py build install --user --force
           popd
