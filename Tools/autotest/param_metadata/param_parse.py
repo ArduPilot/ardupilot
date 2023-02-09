@@ -12,6 +12,7 @@ import copy
 import os
 import re
 import sys
+import glob
 from argparse import ArgumentParser
 
 from param import (Library, Parameter, Vehicle, known_group_fields,
@@ -44,7 +45,7 @@ args = parser.parse_args()
 
 # Regular expressions for parsing the parameter metadata
 
-prog_param = re.compile(r"@Param(?:{([^}]+)})?: (\w+).*((?:\n[ \t]*// @(\w+)(?:{([^}]+)})?: ?(.*))+)(?:\n[ \t\r]*\n|\n[ \t]+[A-Z])", re.MULTILINE)  # noqa
+prog_param = re.compile(r"@Param(?:{([^}]+)})?: (\w+).*((?:\n[ \t]*// @(\w+)(?:{([^}]+)})?: ?(.*))+)(?:\n[ \t\r]*\n|\n[ \t]+[A-Z]|\n\-\-\]\])", re.MULTILINE)  # noqa
 
 # match e.g @Value: 0=Unity, 1=Koala, 17=Liability
 prog_param_fields = re.compile(r"[ \t]*// @(\w+): ?([^\r\n]*)")
@@ -80,6 +81,25 @@ def find_vehicle_parameter_filepath(vehicle_name):
 
     raise ValueError("Unable to find parameters file for (%s)" % vehicle_name)
 
+def debug(str_to_print):
+    """Debug output if verbose is set."""
+    if args.verbose:
+        print(str_to_print)
+
+def lua_applets():
+    '''return list of Library objects for lua applets and drivers'''
+    lua_lib = Library("", reference="Lua Script")
+    patterns=["libraries/AP_Scripting/applets/*.lua", "libraries/AP_Scripting/drivers/*.lua"]
+    paths = []
+    for p in patterns:
+        debug("Adding lua paths %s" % p)
+        luafiles = glob.glob(p)
+        for f in luafiles:
+            f = f.replace("libraries/", "")
+            paths.append(f)
+    setattr(lua_lib, "Path", ','.join(paths))
+    return lua_lib
+
 
 libraries = []
 
@@ -89,15 +109,11 @@ ap_vehicle_lib = Library("") # the "" is tacked onto the front of param name
 setattr(ap_vehicle_lib, "Path", os.path.join('..', 'libraries', 'AP_Vehicle', 'AP_Vehicle.cpp'))
 libraries.append(ap_vehicle_lib)
 
+libraries.append(lua_applets())
+
 error_count = 0
 current_param = None
 current_file = None
-
-
-def debug(str_to_print):
-    """Debug output if verbose is set."""
-    if args.verbose:
-        print(str_to_print)
 
 
 def error(str_to_print):
