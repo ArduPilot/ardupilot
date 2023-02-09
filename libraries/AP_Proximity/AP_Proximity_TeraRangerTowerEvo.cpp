@@ -55,11 +55,11 @@ void AP_Proximity_TeraRangerTowerEvo::update(void)
 // get maximum and minimum distances (in meters) of primary sensor
 float AP_Proximity_TeraRangerTowerEvo::distance_max() const
 {
-    return 60.0f;
+    return params.max_m;
 }
 float AP_Proximity_TeraRangerTowerEvo::distance_min() const
 {
-    return 0.50f;
+    return params.min_m;
 }
 
 void AP_Proximity_TeraRangerTowerEvo::initialise_modes()
@@ -134,14 +134,14 @@ bool AP_Proximity_TeraRangerTowerEvo::read_sensor_data()
 
             //check if message has right CRC
             if (crc_crc8(buffer, 19) == buffer[19]){
-                update_sector_data(0,   UINT16_VALUE(buffer[2],  buffer[3]));   // d1
-                update_sector_data(45,  UINT16_VALUE(buffer[4],  buffer[5]));   // d2
-                update_sector_data(90,  UINT16_VALUE(buffer[6],  buffer[7]));   // d3
-                update_sector_data(135, UINT16_VALUE(buffer[8],  buffer[9]));   // d4
-                update_sector_data(180, UINT16_VALUE(buffer[10], buffer[11]));  // d5
-                update_sector_data(225, UINT16_VALUE(buffer[12], buffer[13]));  // d6
-                update_sector_data(270, UINT16_VALUE(buffer[14], buffer[15]));  // d7
-                update_sector_data(315, UINT16_VALUE(buffer[16], buffer[17]));  // d8
+                update_sector_data((int16_t)lround(correct_angle_for_orientation((float)0)),   UINT16_VALUE(buffer[2],  buffer[3]));   // d1
+                update_sector_data((int16_t)lround(correct_angle_for_orientation((float)45)),  UINT16_VALUE(buffer[4],  buffer[5]));   // d2
+                update_sector_data((int16_t)lround(correct_angle_for_orientation((float)90)),  UINT16_VALUE(buffer[6],  buffer[7]));   // d3
+                update_sector_data((int16_t)lround(correct_angle_for_orientation((float)135)), UINT16_VALUE(buffer[8],  buffer[9]));   // d4
+                update_sector_data((int16_t)lround(correct_angle_for_orientation((float)180)), UINT16_VALUE(buffer[10], buffer[11]));  // d5
+                update_sector_data((int16_t)lround(correct_angle_for_orientation((float)225)), UINT16_VALUE(buffer[12], buffer[13]));  // d6
+                update_sector_data((int16_t)lround(correct_angle_for_orientation((float)270)), UINT16_VALUE(buffer[14], buffer[15]));  // d7
+                update_sector_data((int16_t)lround(correct_angle_for_orientation((float)315)), UINT16_VALUE(buffer[16], buffer[17]));  // d8
 
                 message_count++;
             }
