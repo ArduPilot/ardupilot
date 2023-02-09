@@ -284,7 +284,7 @@ class set_app_descriptor(Task.Task):
         crc1 = to_unsigned(crc32(img1))
         crc2 = to_unsigned(crc32(img2))
         if 'GIT_VERSION' in os.environ:
-            hex_hash = os.environ.get('GIT_VERSION')
+            hex_hash = os.environ['GIT_VERSION']
         else:
             hex_hash = self.generator.bld.git_head_hash(short=True)
         githash = to_unsigned(int('0x' + hex_hash, 16))
