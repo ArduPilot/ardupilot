@@ -1437,14 +1437,14 @@ function esc_telem:get_temperature(instance) end
 function esc_telem:get_rpm(instance) end
 
 -- update RPM for an ESC
----@param param1 integer -- ESC number
----@param param2 integer -- RPM
----@param param3 number -- error rate
+---@param esc_index integer -- ESC number
+---@param rpm integer -- RPM
+---@param error_rate number -- error rate
 function esc_telem:update_rpm(esc_index, rpm, error_rate) end
 
 -- set scale factor for RPM on a motor
----@param param1 motor index (0 is first motor)
----@param param2 scale factor
+---@param esc_index integer -- index (0 is first motor)
+---@param scale_factor number -- factor
 function esc_telem:set_rpm_scale(esc_index, scale_factor) end
 
 -- desc
