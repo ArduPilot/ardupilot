@@ -252,7 +252,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Rover}: 211:Walking Height
     // @Values{Copter, Rover, Plane}: 212:Mount1 Roll, 213:Mount1 Pitch, 214:Mount1 Yaw, 215:Mount2 Roll, 216:Mount2 Pitch, 217:Mount2 Yaw
     // @Values{Copter}: 219:Transmitter Tuning
-    // @Values{Copter, Rover, Plane}: 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8
+    // @Values{Copter, Rover, Plane}: 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8, 308:Scripting9, 309:Scripting10, 310:Scripting11, 311:Scripting12, 312:Scripting13, 313:Scripting14, 314:Scripting15, 315:Scripting16
     // @User: Standard
     AP_GROUPINFO_FRAME("OPTION",  6, RC_Channel, option, 0, AP_PARAM_FRAME_COPTER|AP_PARAM_FRAME_ROVER|AP_PARAM_FRAME_PLANE|AP_PARAM_FRAME_BLIMP),
 
@@ -685,6 +685,14 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::SCRIPTING_6:
     case AUX_FUNC::SCRIPTING_7:
     case AUX_FUNC::SCRIPTING_8:
+    case AUX_FUNC::SCRIPTING_9:
+    case AUX_FUNC::SCRIPTING_10:
+    case AUX_FUNC::SCRIPTING_11:
+    case AUX_FUNC::SCRIPTING_12:
+    case AUX_FUNC::SCRIPTING_13:
+    case AUX_FUNC::SCRIPTING_14:
+    case AUX_FUNC::SCRIPTING_15:
+    case AUX_FUNC::SCRIPTING_16:
 #endif
 #if AP_VIDEOTX_ENABLED
     case AUX_FUNC::VTX_POWER:
@@ -1864,6 +1872,14 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
     case AUX_FUNC::SCRIPTING_6:
     case AUX_FUNC::SCRIPTING_7:
     case AUX_FUNC::SCRIPTING_8:
+    case AUX_FUNC::SCRIPTING_9:
+    case AUX_FUNC::SCRIPTING_10:
+    case AUX_FUNC::SCRIPTING_11:
+    case AUX_FUNC::SCRIPTING_12:
+    case AUX_FUNC::SCRIPTING_13:
+    case AUX_FUNC::SCRIPTING_14:
+    case AUX_FUNC::SCRIPTING_15:
+    case AUX_FUNC::SCRIPTING_16:
 #endif
         break;
 
