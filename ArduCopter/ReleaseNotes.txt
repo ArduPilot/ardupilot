@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 4.3.4-rc1 10-Feb-2023
+Copter 4.3.4-rc1 14-Feb-2023
 Changes from 4.3.3
 1) Precision landing option to resume tracking target after pilot repositioning
 2) Bug fixes
@@ -9,11 +9,12 @@ Changes from 4.3.3
     c) Compass calibration diagonals set to 1,1,1 if incorrectly set to 0,0,0
     d) FFT notch tune feature disabled (will be re-released in 4.4)
     e) Gimbal's yaw feed-forward set to zero when landed (affects Gremsy gimbals)
-    f) Logging fix for duplicate format messages
-    g) OpenDroneId sets emergency status on crash or chute deploy
-    h) Peripheral firmware updates using MAVCAN fixed
-    i) RC protocol cannot be changed once detected on boards with IOMCU
-    j) Surface tracking uses filtered and corrected rangefinder values
+    f) IOMCU double reset and safety disable fix
+    g) Logging fix for duplicate format messages
+    h) OpenDroneId sets emergency status on crash or chute deploy
+    i) Peripheral firmware updates using MAVCAN fixed
+    j) RC protocol cannot be changed once detected on boards with IOMCU
+    k) Surface tracking uses filtered and corrected rangefinder values
 ------------------------------------------------------------------
 Copter 4.3.3 20-Jan-2023
 Changes from 4.3.3-rc1
