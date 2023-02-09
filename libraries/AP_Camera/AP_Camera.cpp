@@ -373,7 +373,7 @@ void AP_Camera::update()
         return;
     }
 
-    if (is_zero(_trigg_dist)) {
+    if (!is_positive(_trigg_dist)) {
         _last_location.lat = 0;
         _last_location.lng = 0;
         return;

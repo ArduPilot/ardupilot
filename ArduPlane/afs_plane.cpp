@@ -4,7 +4,7 @@
 
 #include "Plane.h"
 
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ADVANCEDFAILSAFE_ENABLED
 
 /*
   setup radio_out values for all channels to termination values
@@ -103,4 +103,4 @@ AP_AdvancedFailsafe::control_mode AP_AdvancedFailsafe_Plane::afs_mode(void)
     }
     return AP_AdvancedFailsafe::AFS_STABILIZED;
 }
-#endif // ADVANCED_FAILSAFE
+#endif // AP_ADVANCEDFAILSAFE_ENABLED

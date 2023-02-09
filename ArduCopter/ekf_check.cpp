@@ -121,7 +121,9 @@ bool Copter::ekf_over_threshold()
     // use EKF to get variance
     float position_variance, vel_variance, height_variance, tas_variance;
     Vector3f mag_variance;
-    ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance);
+    if (!ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance)) {
+        return false;
+    }
 
     const float mag_max = fmaxf(fmaxf(mag_variance.x,mag_variance.y),mag_variance.z);
 

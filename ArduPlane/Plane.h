@@ -92,7 +92,7 @@
 // Configuration
 #include "config.h"
 
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ADVANCEDFAILSAFE_ENABLED
 #include "afs_plane.h"
 #endif
 
@@ -656,7 +656,7 @@ private:
 #endif
 
     // Outback Challenge Failsafe Support
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ADVANCEDFAILSAFE_ENABLED
     AP_AdvancedFailsafe_Plane afs;
 #endif
 
@@ -778,6 +778,9 @@ private:
 
     // time that rudder arming has been running
     uint32_t rudder_arm_timer;
+
+    // have we seen neutral rudder since arming with rudder?
+    bool seen_neutral_rudder;
 
 #if HAL_QUADPLANE_ENABLED
     // support for quadcopter-plane
@@ -938,6 +941,13 @@ private:
     void do_nav_delay(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
 
+    bool is_land_command(uint16_t cmd) const;
+
+    /*
+      return true if in a specific AUTO mission command
+    */
+    bool in_auto_mission_id(uint16_t command) const;
+    
     // Delay the next navigation command
     struct {
         uint32_t time_max_ms;
@@ -955,12 +965,6 @@ private:
     void update_home();
     // set home location and store it persistently:
     bool set_home_persistently(const Location &loc) WARN_IF_UNUSED;
-
-    // quadplane.cpp
-#if HAL_QUADPLANE_ENABLED
-    bool verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd);
-    bool verify_vtol_land(const AP_Mission::Mission_Command &cmd);
-#endif
 
     // control_modes.cpp
     void read_control_switch();
@@ -1004,7 +1008,7 @@ private:
     void update_GPS_10Hz(void);
     void update_compass(void);
     void update_alt(void);
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ADVANCEDFAILSAFE_ENABLED
     void afs_fs_check(void);
 #endif
     void one_second_loop(void);
@@ -1229,6 +1233,9 @@ public:
     bool get_target_location(Location& target_loc) override;
     bool update_target_location(const Location &old_loc, const Location &new_loc) override;
     bool set_velocity_match(const Vector2f &velocity) override;
+
+    // allow for landing descent rate to be overridden by a script, may be -ve to climb
+    bool set_land_descent_rate(float descent_rate) override;
 #endif // AP_SCRIPTING_ENABLED
 
 };

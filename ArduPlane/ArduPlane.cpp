@@ -71,7 +71,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(calc_airspeed_errors,   10,    100,  42),
     SCHED_TASK(update_alt,             10,    200,  45),
     SCHED_TASK(adjust_altitude_target, 10,    200,  48),
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ADVANCEDFAILSAFE_ENABLED
     SCHED_TASK(afs_fs_check,           10,    100,  51),
 #endif
     SCHED_TASK(ekf_check,              10,     75,  54),
@@ -277,7 +277,7 @@ void Plane::update_logging25(void)
 /*
   check for AFS failsafe check
  */
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ADVANCEDFAILSAFE_ENABLED
 void Plane::afs_fs_check(void)
 {
     afs.check(failsafe.AFS_last_valid_rc_ms);
@@ -795,6 +795,19 @@ bool Plane::set_velocity_match(const Vector2f &velocity)
     if (quadplane.in_vtol_mode() || quadplane.in_vtol_land_sequence()) {
         quadplane.poscontrol.velocity_match = velocity;
         quadplane.poscontrol.last_velocity_match_ms = AP_HAL::millis();
+        return true;
+    }
+#endif
+    return false;
+}
+
+// allow for override of land descent rate
+bool Plane::set_land_descent_rate(float descent_rate)
+{
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.in_vtol_land_descent()) {
+        quadplane.poscontrol.override_descent_rate = descent_rate;
+        quadplane.poscontrol.last_override_descent_ms = AP_HAL::millis();
         return true;
     }
 #endif
