@@ -16,9 +16,11 @@ class Vehicle(object):
 
 
 class Library(object):
-    def __init__(self, name):
+    def __init__(self, name, reference=None):
         self.set_name(name)
         self.params = []
+        if reference is not None:
+            self.reference = reference
 
     def set_name(self, name):
         self.name = name
