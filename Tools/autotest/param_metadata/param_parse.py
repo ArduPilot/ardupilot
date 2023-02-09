@@ -81,15 +81,17 @@ def find_vehicle_parameter_filepath(vehicle_name):
 
     raise ValueError("Unable to find parameters file for (%s)" % vehicle_name)
 
+
 def debug(str_to_print):
     """Debug output if verbose is set."""
     if args.verbose:
         print(str_to_print)
 
+
 def lua_applets():
     '''return list of Library objects for lua applets and drivers'''
-    lua_lib = Library("", reference="Lua Script")
-    patterns=["libraries/AP_Scripting/applets/*.lua", "libraries/AP_Scripting/drivers/*.lua"]
+    lua_lib = Library("", reference="Lua Script", not_rst=True)
+    patterns = ["libraries/AP_Scripting/applets/*.lua", "libraries/AP_Scripting/drivers/*.lua"]
     paths = []
     for p in patterns:
         debug("Adding lua paths %s" % p)
@@ -620,6 +622,8 @@ for emitter_name in emitters_to_use:
             # rename, and on the assumption that an asciibetical sort
             # gives a good layout:
             if emitter_name == 'rst':
+                if library.not_rst:
+                    continue
                 if library.name == 'SIM_':
                     library = copy.deepcopy(library)
                     library.params = sim_params
