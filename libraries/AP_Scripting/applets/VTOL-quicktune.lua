@@ -39,17 +39,113 @@ end
 -- setup quicktune specific parameters
 assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 12), 'could not add param table')
 
+--[[
+  // @Param: QUIK_ENABLE
+  // @DisplayName: Quicktune enable
+  // @Description: Enable quicktune system
+  // @Values: 0:Disabled,1:Enabled
+  // @User: Standard
+--]]
 local QUIK_ENABLE      = bind_add_param('ENABLE',         1, 0) 
+
+--[[
+  // @Param: QUIK_AXES
+  // @DisplayName: Quicktune axes
+  // @Description: axes to tune
+  // @Bitmask: 0:Roll,1:Pitch,2:Yaw
+  // @User: Standard
+--]]
 local QUIK_AXES        = bind_add_param('AXES',           2, 7)
+
+--[[
+  // @Param: QUIK_DOUBLE_TIME
+  // @DisplayName: Quicktune doubling time
+  // @Description: Time to double a tuning parameter. Raise this for a slower tune.
+  // @Range: 5 20
+  // @Units: s
+  // @User: Standard
+--]]
 local QUIK_DOUBLE_TIME = bind_add_param('DOUBLE_TIME',    3, 10)
+
+--[[
+  // @Param: QUIK_GAIN_MARGIN
+  // @DisplayName: Quicktune gain margin
+  // @Description: Reduction in gain after oscillation detected. Raise this number to get a more conservative tune
+  // @Range: 20 80
+  // @Units: %
+  // @User: Standard
+--]]
 local QUIK_GAIN_MARGIN = bind_add_param('GAIN_MARGIN',    4, 60)
+
+--[[
+  // @Param: QUIK_OSC_SMAX
+  // @DisplayName: Quicktune oscillation rate threshold
+  // @Description: Threshold for oscillation detection. A lower value will lead to a more conservative tune.
+  // @Range: 1 10
+  // @User: Standard
+--]]
 local QUIK_OSC_SMAX    = bind_add_param('OSC_SMAX',       5, 5)
+
+--[[
+  // @Param: QUIK_YAW_P_MAX
+  // @DisplayName: Quicktune Yaw P max
+  // @Description: Maximum value for yaw P gain
+  // @Range: 0.1 3
+  // @User: Standard
+--]]
 local QUIK_YAW_P_MAX   = bind_add_param('YAW_P_MAX',      6, 0.5)
+
+--[[
+  // @Param: QUIK_YAW_D_MAX
+  // @DisplayName: Quicktune Yaw D max
+  // @Description: Maximum value for yaw D gain
+  // @Range: 0.001 1
+  // @User: Standard
+--]]
 local QUIK_YAW_D_MAX   = bind_add_param('YAW_D_MAX',      7, 0.01)
+
+--[[
+  // @Param: QUIK_RP_PI_RATIO
+  // @DisplayName: Quicktune roll/pitch PI ratio
+  // @Description: Ratio between P and I gains for roll and pitch. Raise this to get a lower I gain
+  // @Range: 0.5 1.0
+  // @User: Standard
+--]]
 local QUIK_RP_PI_RATIO = bind_add_param('RP_PI_RATIO',    8, 1.0)
+
+--[[
+  // @Param: QUIK_Y_PI_RATIO
+  // @DisplayName: Quicktune Yaw PI ratio
+  // @Description: Ratio between P and I gains for yaw. Raise this to get a lower I gain
+  // @Range: 0.5 20
+  // @User: Standard
+--]]
 local QUIK_Y_PI_RATIO  = bind_add_param('Y_PI_RATIO',     9, 10)
+
+--[[
+  // @Param: QUIK_AUTO_FILTER
+  // @DisplayName: Quicktune auto filter enable
+  // @Description: When enabled the PID filter settings are automatically set based on INS_GYRO_FILTER
+  // @Values: 0:Disabled,1:Enabled
+  // @User: Standard
+--]]
 local QUIK_AUTO_FILTER = bind_add_param('AUTO_FILTER',   10, 1)
+
+--[[
+  // @Param: QUIK_AUTO_SAVE
+  // @DisplayName: Quicktune auto save
+  // @Description: Number of seconds after completion of tune to auto-save. This is useful when using a 2 position switch for quicktune
+  // @Units: s
+  // @User: Standard
+--]]
 local QUIK_AUTO_SAVE   = bind_add_param('AUTO_SAVE',     11, 0)
+
+--[[
+  // @Param: QUIK_RC_FUNC
+  // @DisplayName: Quicktune RC function
+  // @Description: RCn_OPTION number to use to control tuning stop/start/save
+  // @User: Standard
+--]]
 local QUIK_RC_FUNC     = bind_add_param('RC_FUNC',       12, 300)
 
 local INS_GYRO_FILTER  = bind_param("INS_GYRO_FILTER")
