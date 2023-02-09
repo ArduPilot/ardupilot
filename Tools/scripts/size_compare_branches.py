@@ -157,7 +157,7 @@ class SizeCompareBranches(object):
             if show_output:
                 print("%s: %s" % (prefix, x))
         (_, status) = returncode
-        if status != 0 and show_output:
+        if status != 0:
             self.progress("Process failed (%s)" %
                           str(returncode))
             raise subprocess.CalledProcessError(
