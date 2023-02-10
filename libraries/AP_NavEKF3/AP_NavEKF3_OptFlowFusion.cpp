@@ -1,7 +1,11 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_NavEKF3.h"
+
 #include "AP_NavEKF3_core.h"
+
+#if EK3_FEATURE_OPTFLOW_FUSION
+
 #include <GCS_MAVLink/GCS.h>
 
 /********************************************************
@@ -779,3 +783,4 @@ bool NavEKF3_core::getOptFlowSample(uint32_t& timestamp_ms, Vector2f& flowRate, 
 *                   MISC FUNCTIONS                      *
 ********************************************************/
 
+#endif  //  EK3_FEATURE_OPTFLOW_FUSION

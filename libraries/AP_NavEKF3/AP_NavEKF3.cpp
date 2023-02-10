@@ -1551,6 +1551,7 @@ bool NavEKF3::configuredToUseGPSForPosXY(void) const
 // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
 // posOffset is the XYZ flow sensor position in the body frame in m
 // heightOverride is the fixed height of the sensor above ground in m, when on rover vehicles. 0 if not used
+#if EK3_FEATURE_OPTFLOW_FUSION
 void NavEKF3::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride)
 {
     AP::dal().writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset, heightOverride);
@@ -1571,6 +1572,7 @@ bool NavEKF3::getOptFlowSample(uint32_t& timeStamp_ms, Vector2f& flowRate, Vecto
     }
     return false;
 }
+#endif  // EK3_FEATURE_OPTFLOW_FUSION
 
 // write yaw angle sensor measurements
 void NavEKF3::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t timeStamp_ms, uint8_t type)
