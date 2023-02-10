@@ -198,6 +198,7 @@ AP_HW_JUMPER_XIAKE800                1086
 AP_HW_Sierra_F1                      1087
 AP_HW_HolybroCompass                 1088
 AP_HW_FOXEERH743_V1                  1089
+AP_HW_PixFlamingoL4R5_V1             1090
 
 AP_HW_Sierra-TrueNav Pro             1091
 AP_HW_Sierra-TrueNav                 1092

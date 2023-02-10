@@ -167,8 +167,17 @@ jobs:
           if [ "${{matrix.toolchain}}" = "armhf" ]; then
              BIN_PREFIX="arm-linux-gnueabihf-"
           fi
-          Tools/scripts/extract_features.py $GITHUB_WORKSPACE/base_branch_bin/arduplane -nm "${BIN_PREFIX}nm" >features-base_branch.txt
-          Tools/scripts/extract_features.py $GITHUB_WORKSPACE/pr_bin/arduplane -nm "${BIN_PREFIX}nm" >features-pr.txt
+          if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
+             [ "${{matrix.config}}" = "f103-GPS" ]; then
+              EF_BINARY_NAME="AP_Periph"
+          else
+              EF_BINARY_NAME="arduplane"
+          fi
+          EF_BASE_BRANCH_BINARY="$GITHUB_WORKSPACE/base_branch_bin/$EF_BINARY_NAME"
+          EF_PR_BRANCH_BINARY="$GITHUB_WORKSPACE/pr_bin/$EF_BINARY_NAME"
+
+          Tools/scripts/extract_features.py "$EF_BASE_BRANCH_BINARY" -nm "${BIN_PREFIX}nm" >features-base_branch.txt
+          Tools/scripts/extract_features.py "$EF_PR_BRANCH_BINARY" -nm "${BIN_PREFIX}nm" >features-pr.txt
           diff -u features-base_branch.txt features-pr.txt || true
 
       - name: Checksum compare with ${{ github.event.pull_request.base.ref }}

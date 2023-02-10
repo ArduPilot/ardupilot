@@ -47,6 +47,11 @@ class ExtractFeatures(object):
             ('AP_AIS_ENABLED', 'AP_AIS::AP_AIS',),
 
             ('HAL_EFI_ENABLED', 'AP_EFI::AP_EFI',),
+            ('HAL_EFI_{type}_ENABLED', 'AP_EFI_(?P<type>.*)::update',),
+
+            ('AP_TEMPERATURE_SENSOR_ENABLED', 'AP_TemperatureSensor::AP_TemperatureSensor',),
+            ('AP_TEMPERATURE_SENSOR_{type}_ENABLED', 'AP_TemperatureSensor_(?P<type>.*)::update',),
+
             ('BEACON_ENABLED', 'AP_Beacon::AP_Beacon',),
             ('HAL_TORQEEDO_ENABLED', 'AP_Torqeedo::AP_Torqeedo'),
 
@@ -82,6 +87,7 @@ class ExtractFeatures(object):
 
             ('AP_BATTMON_{type}_ENABLE', r'AP_BattMonitor_(?P<type>.*)::init\b',),
             ('HAL_BATTMON_{type}_ENABLED', r'AP_BattMonitor_(?P<type>.*)::init\b',),
+            ('AP_BATTMON_{type}_ENABLED', r'AP_BattMonitor_(?P<type>.*)::init\b',),
 
             ('HAL_MOUNT_ENABLED', 'AP_Mount::AP_Mount',),
             ('HAL_MOUNT_{type}_ENABLED', r'AP_Mount_(?P<type>.*)::update\b',),
@@ -94,9 +100,15 @@ class ExtractFeatures(object):
             ('AP_LTM_TELEM_ENABLED', 'AP_LTM_Telem::init',),
             ('HAL_HIGH_LATENCY2_ENABLED', 'GCS_MAVLINK::handle_control_high_latency',),
 
+            ('AP_FRSKY_TELEM_ENABLED', 'AP::frsky_telem',),
+            ('AP_FRSKY_D_TELEM_ENABLED', 'AP_Frsky_D::send',),
+            ('AP_FRSKY_SPORT_TELEM_ENABLED', 'AP_Frsky_SPort::send_sport_frame',),
+            ('AP_FRSKY_SPORT_PASSTHROUGH_ENABLED', 'AP::frsky_passthrough_telem',),
+
             ('MODE_{type}_ENABLED', r'Mode(?P<type>.+)::init',),
             ('MODE_GUIDED_NOGPS_ENABLED', r'ModeGuidedNoGPS::init',),
 
+            ('AP_CAMERA_ENABLED', 'AP_Camera::var_info',),
             ('HAL_RUNCAM_ENABLED', 'AP_RunCam::AP_RunCam',),
 
             ('HAL_PARACHUTE_ENABLED', 'AP_Parachute::update',),
@@ -136,6 +148,7 @@ class ExtractFeatures(object):
             ('AP_FETTEC_ONEWIRE_ENABLED', r'AP_FETtecOneWire::init\b',),
 
             ('AP_RPM_ENABLED', 'AP_RPM::AP_RPM',),
+            ('AP_RPM_{type}_ENABLED', r'AP_RPM_(?P<type>.*)::update',),
 
             ('GPS_MOVING_BASELINE', r'AP_GPS_Backend::calculate_moving_base_yaw\b',),
 
@@ -147,11 +160,36 @@ class ExtractFeatures(object):
 
             ('HAL_PICCOLO_CAN_ENABLE', r'AP_PiccoloCAN::update',),
             ('EK3_FEATURE_EXTERNAL_NAV', r'NavEKF3::writeExtNavVelData'),
+
+            ('AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED', r'RC_Channel::lookuptable',),
+
         ]
 
     def progress(self, msg):
         """Pretty-print progress."""
         print("EF: %s" % msg)
+
+    def validate_features_list(self):
+        '''ensures that every define present in build_options.py could be
+        found by in our features list'''
+        # a list of problematic defines we don't have fixes for ATM:
+        whitelist = frozenset([
+            'HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF',  # this define changes single method body, hard to detect?
+        ])
+        for option in build_options.BUILD_OPTIONS:
+            if option.define in whitelist:
+                continue
+            matched = False
+            for (define, _) in self.features:
+                # replace {type} with "match any number of word characters'''
+                define_re = "^" + re.sub(r"{type}", "\\\\w+", define) + "$"
+                # print("define re is (%s)" % define_re)
+                if re.match(define_re, option.define):
+                    matched = True
+                    break
+            if not matched:
+                raise ValueError("feature (%s) is not matched in extract_features" %
+                                 (option.define))
 
     def run_program(self, prefix, cmd_list, show_output=True, env=None):
         """Swiped from build_binaries.py."""
@@ -183,7 +221,7 @@ class ExtractFeatures(object):
             if show_output:
                 print("%s: %s" % (prefix, x))
         (_, status) = returncode
-        if status != 0 and show_output:
+        if status != 0:
             self.progress("Process failed (%s)" %
                           str(returncode))
             raise subprocess.CalledProcessError(
@@ -288,6 +326,7 @@ class ExtractFeatures(object):
         return ret
 
     def run(self):
+        self.validate_features_list()
         print(self.create_string())
 
 
