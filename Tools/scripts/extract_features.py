@@ -13,6 +13,7 @@ import subprocess
 import sys
 import time
 import build_options
+import select
 
 
 if sys.version_info[0] < 3:
@@ -200,12 +201,27 @@ class ExtractFeatures(object):
             stdin=None,
             stdout=subprocess.PIPE,
             close_fds=True,
-            stderr=subprocess.STDOUT,
+            stderr=subprocess.PIPE,
             env=env)
+        stderr = bytearray()
         output = ""
         while True:
+            # read all of stderr:
+            while True:
+                (rin, _, _) = select.select([p.stderr.fileno()], [], [], 0)
+                if p.stderr.fileno() not in rin:
+                    break
+                new = p.stderr.read()
+                if len(new) == 0:
+                    break
+                stderr += new
+
             x = p.stdout.readline()
             if len(x) == 0:
+                (rin, _, _) = select.select([p.stderr.fileno()], [], [], 0)
+                if p.stderr.fileno() in rin:
+                    stderr += p.stderr.read()
+
                 returncode = os.waitpid(p.pid, 0)
                 if returncode:
                     break
@@ -222,10 +238,11 @@ class ExtractFeatures(object):
                 print("%s: %s" % (prefix, x))
         (_, status) = returncode
         if status != 0:
-            self.progress("Process failed (%s)" %
-                          str(returncode))
+            stderr = stderr.decode('utf-8')
+            self.progress("Process failed (%s) (%s)" %
+                          (str(returncode), stderr))
             raise subprocess.CalledProcessError(
-                returncode, cmd_list)
+                status, cmd_list, output=str(output), stderr=str(stderr))
         return output
 
     class Symbols(object):
