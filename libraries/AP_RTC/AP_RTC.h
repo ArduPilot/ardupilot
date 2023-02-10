@@ -44,6 +44,9 @@ public:
 
     uint32_t get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms);
 
+    // creates strings like "2023-02-07T16:51:40.307Z"
+    static bool unix_time_to_string(const time_t time_usec, char* str, const uint8_t max_len);
+
     // replacement for mktime()
     static time_t mktime(const struct tm *t);
 

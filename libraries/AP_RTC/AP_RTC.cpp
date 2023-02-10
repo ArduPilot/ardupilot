@@ -248,6 +248,25 @@ time_t AP_RTC::mktime(const struct tm *t)
     return epoch;
 }
 
+// creates strings like "2023-02-07T16:51:40.307Z"
+bool AP_RTC::unix_time_to_string(const time_t time_usec, char* str, const uint8_t max_len)
+{
+    if (str == nullptr) {
+        return false;
+    }
+
+    struct tm *t = gmtime((time_t *)&time_usec);
+    const int len = hal.util->snprintf(str, max_len,"%4d-%02d-%2dT%2d:%2d:%2d.%u3Z",
+            t->tm_year + 1900,
+            t->tm_mon+1,
+            t->tm_mday,
+            t->tm_hour,
+            t->tm_min,
+            t->tm_sec,
+            unsigned(time_usec % 1000000));
+    return (len > 0);
+}
+
 // singleton instance
 AP_RTC *AP_RTC::_singleton;
 
