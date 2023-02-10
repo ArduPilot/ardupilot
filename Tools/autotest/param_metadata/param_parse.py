@@ -95,9 +95,11 @@ def lua_applets():
     paths = []
     for p in patterns:
         debug("Adding lua paths %s" % p)
-        luafiles = glob.glob(p)
+        luafiles = glob.glob(os.path.join(apm_path, p))
         for f in luafiles:
-            f = f.replace("libraries/", "")
+            # the library is expected to have the path as a relative path from within
+            # a vehicle directory
+            f = f.replace(apm_path, "../")
             paths.append(f)
     setattr(lua_lib, "Path", ','.join(paths))
     return lua_lib
