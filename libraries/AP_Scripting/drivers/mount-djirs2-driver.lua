@@ -511,7 +511,7 @@ function send_target_rates(roll_rate_degs, pitch_rate_degs, yaw_rate_degs)
   -- Field name                  SOF  LenL  LenH CmdTyp  Enc   RES   RES   RES  SeqL  SeqH  CrcL  CrcH CmdSet CmdId YawL  YawH  RollL RollH PitL  PitH  Ctrl CRC32 CRC32 CRC32 CRC32
   local set_target_speed_msg = {0xAA, 0x19, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0E, 0x01, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x88, 0x00, 0x00, 0x00, 0x00}
 
-  -- set angles
+  -- set rates
   set_target_speed_msg[15] = lowbyte(yaw_rate_degs * 10)
   set_target_speed_msg[16] = highbyte(yaw_rate_degs * 10)
   set_target_speed_msg[17] = lowbyte(roll_rate_degs * 10)
