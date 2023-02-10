@@ -23,6 +23,8 @@ public:
     // update state
     void update(void) override;
 
+    static const struct AP_Param::GroupInfo var_info[];
+
 protected:
 
     MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
@@ -43,6 +45,8 @@ private:
     AP_HAL::PWMSource pwm_source;
 
     uint32_t last_ping_ms;
+
+    AP_Float speed_scale; // Speed scaling factor of the propogating waves based on the environment. This is approximately equal to 2/(speed of sound in the environment)
 };
 
 #endif  // AP_RANGEFINDER_HC_SR04_ENABLED

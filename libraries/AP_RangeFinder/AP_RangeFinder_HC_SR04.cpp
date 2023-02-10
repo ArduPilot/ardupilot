@@ -37,10 +37,24 @@
 
 extern const AP_HAL::HAL& hal;
 
+const AP_Param::GroupInfo AP_RangeFinder_HC_SR04::var_info[] = {
+
+    // @Param: SPD_SCAL
+    // @DisplayName: Ultrasound speed scaling factor for HC-SR04
+    // @Description: Speed scaling factor of the propogating waves based on the environment. This is approximately equal to 2/(speed of sound in the environment)
+    // @Range: 10 300
+    // @User: Advanced
+    AP_GROUPINFO("SPD_SCAL", 1, AP_RangeFinder_HC_SR04, speed_scale, 58.0f),
+
+    AP_GROUPEND
+};
+
 AP_RangeFinder_HC_SR04::AP_RangeFinder_HC_SR04(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
     AP_RangeFinder_Backend(_state, _params)
 {
     set_status(RangeFinder::Status::NoData);
+    AP_Param::setup_object_defaults(this, var_info);
+    state.var_info = var_info;
 }
 
 bool AP_RangeFinder_HC_SR04::check_pins()
@@ -106,7 +120,11 @@ void AP_RangeFinder_HC_SR04::update(void)
     } else {
         // gcs().send_text(MAV_SEVERITY_WARNING, "Pong!");
         // a new reading - convert time to distance
-        state.distance_m = (value_us * (1.0/58.0f)) * 0.01f;  // 58 is from datasheet, mult for performance
+        float speed_scaling = speed_scale;
+        if (is_zero(speed_scale)) {
+            speed_scaling = 58.0f;
+        }
+        state.distance_m = (value_us * (1.0/speed_scaling)) * 0.01f;  // 58 is from datasheet, mult for performance
 
         // glitch remover: measurement is greater than .5m from last.
         // the SR-04 seeems to suffer from single-measurement glitches
