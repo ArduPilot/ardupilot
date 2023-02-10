@@ -162,6 +162,7 @@ jobs:
       - name: Feature compare with  ${{ github.event.pull_request.base.ref }}
         shell: bash
         run: |
+          set -ex
           cd pr/
           BIN_PREFIX="arm-none-eabi-"
           if [ "${{matrix.toolchain}}" = "armhf" ]; then
