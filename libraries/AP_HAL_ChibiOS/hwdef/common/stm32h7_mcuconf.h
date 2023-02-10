@@ -482,7 +482,7 @@
 #define STM32_SDC_SDMMC_CLOCK_DELAY         10
 #define STM32_SDC_SDMMC1_DMA_PRIORITY       3
 #define STM32_SDC_SDMMC1_IRQ_PRIORITY       9
-#define STM32_SDC_SDMMC_PWRSAV              FALSE
+#define STM32_SDC_SDMMC_PWRSAV              TRUE
 
 /*
  * SERIAL driver system settings.
