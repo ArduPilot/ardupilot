@@ -18,6 +18,7 @@
 #include <AP_RCProtocol/AP_RCProtocol.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Arming/AP_Arming.h>
 #include <ch.h>
 
 extern const AP_HAL::HAL &hal;
@@ -785,7 +786,7 @@ void AP_IOMCU::update_safety_options(void)
     if (!(options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)) {
         desired_options |= P_SETUP_ARMING_SAFETY_DISABLE_ON;
     }
-    if (!(options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED) && hal.util->get_soft_armed()) {
+    if (!(options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED) && AP::arming().is_armed()) {
         desired_options |= (P_SETUP_ARMING_SAFETY_DISABLE_ON | P_SETUP_ARMING_SAFETY_DISABLE_OFF);
     }
     if (last_safety_options != desired_options) {
@@ -915,7 +916,7 @@ void AP_IOMCU::shutdown(void)
  */
 void AP_IOMCU::bind_dsm(uint8_t mode)
 {
-    if (!is_chibios_backend || hal.util->get_soft_armed()) {
+    if (!is_chibios_backend || AP::arming().is_armed()) {
         // only with ChibiOS IO firmware, and disarmed
         return;
     }
@@ -1021,7 +1022,9 @@ void AP_IOMCU::check_iomcu_reset(void)
         return;
     }
     uint32_t dt_ms = reg_status.timestamp_ms - last_iocmu_timestamp_ms;
-    uint32_t ts1 = last_iocmu_timestamp_ms;
+#if IOMCU_DEBUG_ENABLE
+    const uint32_t ts1 = last_iocmu_timestamp_ms;
+#endif
     // when we are in an expected delay allow for a larger time
     // delta. This copes with flash erase, such as bootloader update
     const uint32_t max_delay = hal.scheduler->in_expected_delay()?5000:500;
@@ -1034,19 +1037,23 @@ void AP_IOMCU::check_iomcu_reset(void)
     }
     detected_io_reset = true;
     INTERNAL_ERROR(AP_InternalError::error_t::iomcu_reset);
-    hal.console->printf("IOMCU reset t=%u %u %u dt=%u\n",
-                        unsigned(AP_HAL::millis()), unsigned(ts1), unsigned(reg_status.timestamp_ms), unsigned(dt_ms));
+    debug("IOMCU reset t=%u %u %u dt=%u\n",
+          unsigned(AP_HAL::millis()), unsigned(ts1), unsigned(reg_status.timestamp_ms), unsigned(dt_ms));
 
-    if (last_safety_off && !reg_status.flag_safety_off && hal.util->get_soft_armed()) {
+    bool have_forced_off = false;
+    if (last_safety_off && !reg_status.flag_safety_off && AP::arming().is_armed()) {
         AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
         uint16_t options = boardconfig?boardconfig->get_safety_button_options():0;
         if (safety_forced_off || (options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED) == 0) {
             // IOMCU has reset while armed with safety off - force it off
             // again so we can keep flying
+            have_forced_off = true;
             force_safety_off();
         }
     }
-    last_safety_off = reg_status.flag_safety_off;
+    if (!have_forced_off) {
+        last_safety_off = reg_status.flag_safety_off;
+    }
 
     // we need to ensure the mixer data and the rates are sent over to
     // the IOMCU
