@@ -313,8 +313,18 @@ class TestBuildOptions(object):
         for feature in options:
             self.get_disable_defines(feature, options)
 
+    def check_duplicate_labels(self):
+        '''check that we do not have multiple features with same labels'''
+        options = self.get_build_options_from_ardupilot_tree()
+        seen_labels = {}
+        for feature in options:
+            if seen_labels.get(feature.label, None) is not None:
+                raise ValueError("Duplicate entries found for label '%s'" % feature.label)
+            seen_labels[feature.label] = True
+
     def run(self):
         self.check_deps_consistency()
+        self.check_duplicate_labels()
         if self.do_step_run_with_defaults:
             self.progress("Running run-with-defaults step")
             self.run_with_defaults()
