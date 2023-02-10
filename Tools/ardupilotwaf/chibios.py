@@ -283,11 +283,8 @@ class set_app_descriptor(Task.Task):
         img2 = bytearray(img[offset+desc_len:])
         crc1 = to_unsigned(crc32(img1))
         crc2 = to_unsigned(crc32(img2))
-        if 'GIT_VERSION' in os.environ:
-            hex_hash = os.environ['GIT_VERSION']
-        else:
-            hex_hash = self.generator.bld.git_head_hash(short=True)
-        githash = to_unsigned(int('0x' + hex_hash, 16))
+        git_hash_hex = self.generator.bld.lazy_git_head_hash('GIT_VERSION', short=True)
+        git_hash_int = to_unsigned(int('0x' + git_hash_hex, 16))
         if self.generator.bld.env.AP_SIGNED_FIRMWARE:
             sig = bytearray([0 for i in range(76)])
             if self.generator.bld.env.PRIVATE_KEY:
@@ -297,9 +294,9 @@ class set_app_descriptor(Task.Task):
                     sig = sig_signed
                 else:
                     self.generator.bld.fatal("Signing failed")
-            desc = struct.pack('<IIII76s', crc1, crc2, len(img), githash, sig)
+            desc = struct.pack('<IIII76s', crc1, crc2, len(img), git_hash_int, sig)
         else:
-            desc = struct.pack('<IIII', crc1, crc2, len(img), githash)
+            desc = struct.pack('<IIII', crc1, crc2, len(img), git_hash_int)
         img = img[:offset] + desc + img[offset+desc_len:]
         Logs.info("Applying APP_DESCRIPTOR %08x%08x" % (crc1, crc2))
         open(self.inputs[0].abspath(), 'wb').write(img)
@@ -317,10 +314,6 @@ class generate_apj(Task.Task):
             extf_img = open(self.inputs[1].abspath(),'rb').read()
         else:
             extf_img = b""
-        if "GIT_VERSION" in os.environ:
-            git_identity = os.environ.get["GIT_VERSION"]
-        else:
-            git_identity = self.generator.bld.git_head_hash(short=True)
         d = {
             "board_id": int(self.env.APJ_BOARD_ID),
             "magic": "APJFWv1",
@@ -336,7 +329,7 @@ class generate_apj(Task.Task):
             "flash_free": int(self.env.FLASH_TOTAL) - len(intf_img),
             "extflash_total": int(self.env.EXT_FLASH_SIZE_MB * 1024 * 1024),
             "extflash_free": int(self.env.EXT_FLASH_SIZE_MB * 1024 * 1024) - len(extf_img),
-            "git_identity": git_identity,
+            "git_identity": self.generator.bld.lazy_git_head_hash('GIT_VERSION', short=True),
             "board_revision": 0,
             "USBID": self.env.USBID
         }

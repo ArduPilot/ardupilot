@@ -35,8 +35,12 @@ from waflib import Context, Logs, Task, Utils
 from waflib.Configure import conf
 from waflib.TaskGen import before_method, feature, taskgen_method
 
-import os.path
+import os
 import re
+
+VERSION_STRING_TO_SUBMODULE_MAP = {
+    'CHIBIOS_GIT_VERSION': "ChibiOS",
+}
 
 class update_submodule(Task.Task):
     color = 'BLUE'
@@ -172,3 +176,20 @@ def git_submodule_head_hash(self, name, short=False):
 @conf
 def git_head_hash(self, short=False):
     return _git_head_hash(self, self.srcnode.abspath(), short=short)
+
+@conf
+def lazy_git_submodule_head_hash(self, name, short=False):
+        if name in os.environ:
+            return os.environ[name]
+        else:
+            return self.git_submodule_head_hash(
+                name=VERSION_STRING_TO_SUBMODULE_MAP[name], 
+                short=short
+                )
+
+@conf
+def lazy_git_head_hash(self, name, short=False):
+        if name in os.environ:
+            return os.environ[name]
+        else:
+            return self.git_head_hash(short=short)

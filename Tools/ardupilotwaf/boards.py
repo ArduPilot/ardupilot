@@ -474,17 +474,9 @@ class Board:
 
     def build(self, bld):
         version_type = 'GIT_VERSION'
-        if version_type in os.environ:
-            bld.ap_version_append_str(version_type, os.environ[version_type])
-        else:
-            bld.ap_version_append_str(version_type, bld.git_head_hash(short=True))
-            
-        version_type_int = 'GIT_VERSION_INT'
-        if version_type_int in os.environ:
-            bld.ap_version_append_int(version_type_int, os.environ[version_type_int])
-        else:
-            bld.ap_version_append_int(version_type_int, int("0x" + bld.git_head_hash(short=True), base=16))
-
+        git_hash = bld.lazy_git_head_hash(version_type, short=True)
+        bld.ap_version_append_str(version_type, git_hash)
+        bld.ap_version_append_int(version_type + '_INT', int("0x" + git_hash, base=16))
         import time
         ltime = time.localtime()
         if bld.env.build_dates:
