@@ -225,8 +225,8 @@ BUILD_OPTIONS = [
     Feature('GPS Drivers', 'SBP', 'AP_GPS_SBP_ENABLED', 'Enable SBP GPS', 0, None),
     Feature('GPS Drivers', 'ERB', 'AP_GPS_ERB_ENABLED', 'Enable ERB GPS', 0, None),
     Feature('GPS Drivers', 'GSOF', 'AP_GPS_GSOF_ENABLED', 'Enable GSOF GPS', 0, None),
-    Feature('GPS Drivers', 'NMEA', 'AP_GPS_NMEA_ENABLED', 'Enable NMEA GPS', 0, None),
-    Feature('GPS Drivers', 'NMEA_UNICORE', 'AP_GPS_NMEA_UNICORE_ENABLED', 'Enable NMEA Unicore GPS', 0, "NMEA"),
+    Feature('GPS Drivers', 'NMEA_GPS', 'AP_GPS_NMEA_ENABLED', 'Enable NMEA GPS', 0, None),
+    Feature('GPS Drivers', 'NMEA_UNICORE', 'AP_GPS_NMEA_UNICORE_ENABLED', 'Enable NMEA Unicore GPS', 0, "NMEA_GPS"),
     Feature('GPS Drivers', 'MAV', 'AP_GPS_MAV_ENABLED', 'Enable MAVLink GPS', 0, None),
     Feature('GPS Drivers', 'NOVA', 'AP_GPS_NOVA_ENABLED', 'Enable NOVA GPS', 0, None),
     Feature('GPS Drivers', 'SBF', 'AP_GPS_SBF_ENABLED', 'Enable SBF GPS', 0, None),
@@ -238,7 +238,7 @@ BUILD_OPTIONS = [
     Feature('Airspeed Drivers', 'MS4525', 'AP_AIRSPEED_MS4525_ENABLED', 'ENABLE MS4525 AIRSPEED', 0, 'AIRSPEED'),
     Feature('Airspeed Drivers', 'MS5525', 'AP_AIRSPEED_MS5525_ENABLED', 'ENABLE MS5525 AIRSPEED', 0, 'AIRSPEED'),
     Feature('Airspeed Drivers', 'MSP_AIRSPEED', 'AP_AIRSPEED_MSP_ENABLED', 'ENABLE MSP AIRSPEED', 0, 'AIRSPEED,MSP,OSD'),
-    Feature('Airspeed Drivers', 'NMEA', 'AP_AIRSPEED_NMEA_ENABLED', 'ENABLE NMEA AIRSPEED', 0, 'AIRSPEED'),
+    Feature('Airspeed Drivers', 'NMEA_AIRSPEED', 'AP_AIRSPEED_NMEA_ENABLED', 'ENABLE NMEA AIRSPEED', 0, 'AIRSPEED'),
     Feature('Airspeed Drivers', 'SDP3X', 'AP_AIRSPEED_SDP3X_ENABLED', 'ENABLE SDP3X AIRSPEED', 0, 'AIRSPEED'),
     Feature('Airspeed Drivers', 'UAVCAN_ASPD', 'AP_AIRSPEED_UAVCAN_ENABLED', 'ENABLE UAVCAN AIRSPEED', 0, 'AIRSPEED'),   # NOQA: E501
 
