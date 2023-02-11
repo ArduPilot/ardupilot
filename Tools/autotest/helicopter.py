@@ -150,7 +150,10 @@ class AutoTestHelicopter(AutoTestCopter):
         self.progress("Raising rotor speed")
         self.set_rc(8, 2000)
         self.progress("wait for rotor runup to complete")
-        self.wait_servo_channel_value(8, 1660, timeout=10)
+        self.wait_servo_channel_value(8, 1659, timeout=10)
+
+        # wait for motor runup
+        self.delay_sim_time(20)
 
         if mode == 'GUIDED':
             self.user_takeoff(alt_min=alt_min)
@@ -214,7 +217,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.progress("Raising rotor speed")
             self.set_rc(8, 2000)
             self.progress("wait for rotor runup to complete")
-            self.wait_servo_channel_value(8, 1660, timeout=10)
+            self.wait_servo_channel_value(8, 1659, timeout=10)
             self.delay_sim_time(20)
             # check we are still on the ground...
             m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
@@ -273,7 +276,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.arm_vehicle()
             self.set_rc(8, 2000)
             self.progress("wait for rotor runup to complete")
-            self.wait_servo_channel_value(8, 1660, timeout=10)
+            self.wait_servo_channel_value(8, 1659, timeout=10)
             self.delay_sim_time(20)
             # check we are still on the ground...
             m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
@@ -331,7 +334,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.arm_vehicle()
         self.set_rc(8, 2000)
         self.progress("wait for rotor runup to complete")
-        self.wait_servo_channel_value(8, 1660, timeout=10)
+        self.wait_servo_channel_value(8, 1659, timeout=10)
         self.delay_sim_time(20)
         self.set_rc(3, 2000)
         self.wait_altitude(start_alt - 1,
