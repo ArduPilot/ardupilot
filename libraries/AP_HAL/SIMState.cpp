@@ -37,6 +37,8 @@ using namespace AP_HAL;
 #define AP_SIM_FRAME_CLASS Helicopter
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 #define AP_SIM_FRAME_CLASS Plane
+#elif APM_BUILD_TYPE(APM_BUILD_Rover)
+#define AP_SIM_FRAME_CLASS SimRover
 #endif
 #endif
 
@@ -47,6 +49,8 @@ using namespace AP_HAL;
 #define AP_SIM_FRAME_STRING "heli"
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 #define AP_SIM_FRAME_STRING "plane"
+#elif APM_BUILD_TYPE(APM_BUILD_Rover)
+#define AP_SIM_FRAME_STRING "rover"
 #endif
 #endif
 
