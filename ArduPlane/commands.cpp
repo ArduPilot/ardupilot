@@ -7,7 +7,7 @@
 /*
  *  set_next_WP - sets the target location the vehicle should fly to
  */
-void Plane::set_next_WP(const struct Location &loc)
+void Plane::set_next_WP(const Location &loc)
 {
     if (auto_state.next_wp_crosstrack) {
         // copy the current WP into the OldWP slot
@@ -59,6 +59,14 @@ void Plane::set_next_WP(const struct Location &loc)
 
     setup_glide_slope();
     setup_turn_angle();
+
+    // update plane.target_altitude straight away, or if we are too
+    // close to out loiter point we may decide we are at the correct
+    // altitude before updating it (this is based on scheduler table
+    // ordering, where we navigate() before we
+    // adjust_altitude_target(), and navigate() uses values updated in
+    // adjust_altitude_target()
+    adjust_altitude_target();
 }
 
 void Plane::set_guided_WP(const Location &loc)

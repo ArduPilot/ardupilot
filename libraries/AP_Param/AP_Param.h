@@ -90,13 +90,16 @@
 // hide parameter from param download
 #define AP_PARAM_FLAG_HIDDEN (1<<6)
 
+// Default value is a "pointer" actually its a offest from the base value, but the idea is the same
+#define AP_PARAM_FLAG_DEFAULT_POINTER (1<<7)
+
 // keep all flags before the FRAME tags
 
 // vehicle and frame type flags, used to hide parameters when not
 // relevent to a vehicle type. Use AP_Param::set_frame_type_flags() to
 // enable parameters flagged in this way. frame type flags are stored
 // in flags field, shifted by AP_PARAM_FRAME_TYPE_SHIFT.
-#define AP_PARAM_FRAME_TYPE_SHIFT   7
+#define AP_PARAM_FRAME_TYPE_SHIFT   8
 
 // supported frame types for parameters
 #define AP_PARAM_FRAME_COPTER       (1<<0)
@@ -116,7 +119,7 @@
 #define AP_CLASSTYPE(clazz, element) ((uint8_t)(((const clazz *) 1)->element.vtype))
 
 // declare a group var_info line
-#define AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, flags) { AP_CLASSTYPE(clazz, element), idx, name, AP_VAROFFSET(clazz, element), {def_value : def}, flags }
+#define AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, flags) { name, AP_VAROFFSET(clazz, element), {def_value : def}, flags, idx, AP_CLASSTYPE(clazz, element)}
 
 // declare a group var_info line with a frame type mask
 #define AP_GROUPINFO_FRAME(name, idx, clazz, element, def, frame_flags) AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, (frame_flags)<<AP_PARAM_FRAME_TYPE_SHIFT )
@@ -124,27 +127,42 @@
 // declare a group var_info line with both flags and frame type mask
 #define AP_GROUPINFO_FLAGS_FRAME(name, idx, clazz, element, def, flags, frame_flags) AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, flags|((frame_flags)<<AP_PARAM_FRAME_TYPE_SHIFT) )
 
+// declare a group var_info line with a default "pointer"
+#define AP_GROUPINFO_FLAGS_DEFAULT_POINTER(name, idx, clazz, element, def) {  name, AP_VAROFFSET(clazz, element), {def_value_offset : AP_VAROFFSET(clazz, element) - AP_VAROFFSET(clazz, def)}, AP_PARAM_FLAG_DEFAULT_POINTER, idx, AP_CLASSTYPE(clazz, element) }
+
 // declare a group var_info line
 #define AP_GROUPINFO(name, idx, clazz, element, def) AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, 0)
 
 // declare a nested group entry in a group var_info
-#define AP_NESTEDGROUPINFO(clazz, idx) { AP_PARAM_GROUP, idx, "", 0, { group_info : clazz::var_info }, 0 }
+#define AP_NESTEDGROUPINFO(clazz, idx) { "", 0, { group_info : clazz::var_info }, 0, idx, AP_PARAM_GROUP }
 
 // declare a subgroup entry in a group var_info. This is for having another arbitrary object as a member of the parameter list of
 // an object
-#define AP_SUBGROUPINFO(element, name, idx, thisclazz, elclazz) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info }, AP_PARAM_FLAG_NESTED_OFFSET }
+#define AP_SUBGROUPINFO(element, name, idx, thisclazz, elclazz) { name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info }, AP_PARAM_FLAG_NESTED_OFFSET, idx, AP_PARAM_GROUP }
 
 // declare a second parameter table for the same object
-#define AP_SUBGROUPEXTENSION(name, idx, clazz, vinfo) { AP_PARAM_GROUP, idx, name, 0, { group_info : clazz::vinfo }, AP_PARAM_FLAG_NESTED_OFFSET }
+#define AP_SUBGROUPEXTENSION(name, idx, clazz, vinfo) { name, 0, { group_info : clazz::vinfo }, AP_PARAM_FLAG_NESTED_OFFSET, idx, AP_PARAM_GROUP }
 
 // declare a pointer subgroup entry in a group var_info
-#define AP_SUBGROUPPTR(element, name, idx, thisclazz, elclazz) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info }, AP_PARAM_FLAG_POINTER }
+#define AP_SUBGROUPPTR(element, name, idx, thisclazz, elclazz) { name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info }, AP_PARAM_FLAG_POINTER, idx, AP_PARAM_GROUP }
 
 // declare a pointer subgroup entry in a group var_info with a pointer var_info
-#define AP_SUBGROUPVARPTR(element, name, idx, thisclazz, var_info) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclazz, element), { group_info_ptr : &var_info }, AP_PARAM_FLAG_POINTER | AP_PARAM_FLAG_INFO_POINTER }
+#define AP_SUBGROUPVARPTR(element, name, idx, thisclazz, var_info) { name, AP_VAROFFSET(thisclazz, element), { group_info_ptr : &var_info }, AP_PARAM_FLAG_POINTER | AP_PARAM_FLAG_INFO_POINTER, idx, AP_PARAM_GROUP }
 
-#define AP_GROUPEND     { AP_PARAM_NONE, 0xFF, "", 0, { group_info : nullptr } }
-#define AP_VAREND       { AP_PARAM_NONE, "", 0, nullptr, { group_info : nullptr } }
+#define AP_GROUPEND     { "", 0,       { group_info : nullptr }, 0, 0xFF, AP_PARAM_NONE }
+
+// Vehicle defines for info struct
+#define GSCALAR(v, name, def)                { name, &AP_PARAM_VEHICLE_NAME.g.v,                   {def_value : def},                   0,                                                  Parameters::k_param_ ## v,          AP_PARAM_VEHICLE_NAME.g.v.vtype }
+#define GARRAY(v, index, name, def)          { name, &AP_PARAM_VEHICLE_NAME.g.v[index],            {def_value : def},                   0,                                                  Parameters::k_param_ ## v ## index, AP_PARAM_VEHICLE_NAME.g.v[index].vtype }
+#define ASCALAR(v, name, def)                { name, (const void *)&AP_PARAM_VEHICLE_NAME.aparm.v, {def_value : def},                   0,                                                  Parameters::k_param_ ## v,          AP_PARAM_VEHICLE_NAME.aparm.v.vtype }
+#define GGROUP(v, name, class)               { name, &AP_PARAM_VEHICLE_NAME.g.v,                   {group_info : class::var_info},      0,                                                  Parameters::k_param_ ## v,          AP_PARAM_GROUP }
+#define GOBJECT(v, name, class)              { name, (const void *)&AP_PARAM_VEHICLE_NAME.v,       {group_info : class::var_info},      0,                                                  Parameters::k_param_ ## v,          AP_PARAM_GROUP }
+#define GOBJECTPTR(v, name, class)           { name, (const void *)&AP_PARAM_VEHICLE_NAME.v,       {group_info : class::var_info},      AP_PARAM_FLAG_POINTER,                              Parameters::k_param_ ## v,          AP_PARAM_GROUP }
+#define GOBJECTVARPTR(v, name, var_info_ptr) { name, (const void *)&AP_PARAM_VEHICLE_NAME.v,       {group_info_ptr : var_info_ptr},     AP_PARAM_FLAG_POINTER | AP_PARAM_FLAG_INFO_POINTER, Parameters::k_param_ ## v,          AP_PARAM_GROUP }
+#define GOBJECTN(v, pname, name, class)      { name, (const void *)&AP_PARAM_VEHICLE_NAME.v,       {group_info : class::var_info},      0,                                                  Parameters::k_param_ ## pname,      AP_PARAM_GROUP }
+#define PARAM_VEHICLE_INFO                   { "",   (const void *)&AP_PARAM_VEHICLE_NAME,         {group_info : AP_Vehicle::var_info}, 0,                                                  Parameters::k_param_vehicle,        AP_PARAM_GROUP }
+#define AP_VAREND                            { "",   nullptr,                                      {group_info : nullptr },             0,                                                  0,                                  AP_PARAM_NONE }
+
 
 enum ap_var_type {
     AP_PARAM_NONE    = 0,
@@ -168,28 +186,30 @@ public:
     // program in setup() to give information on how variables are
     // named and their location in memory
     struct GroupInfo {
-        uint8_t type; // AP_PARAM_*
-        uint8_t idx;  // identifier within the group
         const char *name;
         ptrdiff_t offset; // offset within the object
         union {
             const struct GroupInfo *group_info;
             const struct GroupInfo **group_info_ptr; // when AP_PARAM_FLAG_INFO_POINTER is set in flags
             const float def_value;
+            ptrdiff_t def_value_offset; // Default value offset from param object, when AP_PARAM_FLAG_DEFAULT_POINTER is set in flags
         };
         uint16_t flags;
+        uint8_t idx;  // identifier within the group
+        uint8_t type; // AP_PARAM_*
     };
     struct Info {
-        uint8_t type; // AP_PARAM_*
         const char *name;
-        uint16_t key; // k_param_*
         const void *ptr;    // pointer to the variable in memory
         union {
             const struct GroupInfo *group_info;
             const struct GroupInfo **group_info_ptr; // when AP_PARAM_FLAG_INFO_POINTER is set in flags
             const float def_value;
+            ptrdiff_t def_value_offset; // Default value offset from param object, when AP_PARAM_FLAG_DEFAULT_POINTER is set in flags
         };
         uint16_t flags;
+        uint16_t key; // k_param_*
+        uint8_t type; // AP_PARAM_*
     };
     struct ConversionInfo {
         uint16_t old_key; // k_param_*
@@ -493,7 +513,7 @@ public:
     float                   cast_to_float(enum ap_var_type type) const;
 
     // check var table for consistency
-    static bool             check_var_info(void);
+    static void             check_var_info(void);
 
     // return true if the parameter is configured
     bool configured(void) const;
@@ -552,7 +572,7 @@ public:
 protected:
 
     // store default value in linked list
-    static void add_default(AP_Param *ap, float v) { add_default(ap, v, default_list); }
+    static void add_default(AP_Param *ap, float v);
 
 private:
     static AP_Param *_singleton;
@@ -617,7 +637,7 @@ private:
 #endif
 
 
-    static bool                 check_group_info(const struct GroupInfo *group_info, uint16_t *total_size, 
+    static void                 check_group_info(const struct GroupInfo *group_info, uint16_t *total_size, 
                                                  uint8_t max_bits, uint8_t prefix_length);
     static bool                 duplicate_key(uint16_t vindex, uint16_t key);
 
@@ -694,7 +714,8 @@ private:
                                     float *default_val);
 
     // find a default value given a pointer to a default value in flash
-    static float get_default_value(const AP_Param *object_ptr, const float *def_value_ptr);
+    static float get_default_value(const AP_Param *object_ptr, const struct GroupInfo &info);
+    static float get_default_value(const AP_Param *object_ptr, const struct Info &info);
 
     static bool parse_param_line(char *line, char **vname, float &value, bool &read_only);
 
@@ -780,11 +801,7 @@ private:
         float val;
         defaults_list *next;
     };
-#if AP_PARAM_MAX_EMBEDDED_PARAM > 0
-    static defaults_list *embedded_default_list;
-#endif
     static defaults_list *default_list;
-    static void add_default(AP_Param *ap, float v, defaults_list *&list);
     static void check_default(AP_Param *ap, float *default_value);
 };
 

@@ -397,6 +397,7 @@ class AutoTestHelicopter(AutoTestCopter):
                 raise NotAchievedException("Airspeed mismatch (as1=%f as2=%f)" % (airspeed[0], airspeed[1]))
 
         # Copter's airspeed sensors are off by default
+        self.set_parameter("ARSPD_ENABLE", 1)
         self.set_parameter("ARSPD_TYPE", 2)     # Analog airspeed driver
         self.set_parameter("ARSPD_PIN", 1)      # Analog airspeed driver pin for SITL
         self.reboot_sitl()

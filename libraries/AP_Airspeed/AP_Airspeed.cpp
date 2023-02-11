@@ -22,6 +22,7 @@
 
 // Dummy the AP_Airspeed class to allow building Airspeed only for plane, rover, sub, and copter & heli 2MB boards
 // This could be removed once the build system allows for APM_BUILD_TYPE in header files
+// Note that this is also defined in AP_Airspeed_Params.cpp
 #ifndef AP_AIRSPEED_DUMMY_METHODS_ENABLED
 #define AP_AIRSPEED_DUMMY_METHODS_ENABLED ((APM_BUILD_COPTER_OR_HELI && BOARD_FLASH_SIZE <= 1024) || \
                                             APM_BUILD_TYPE(APM_BUILD_AntennaTracker) || APM_BUILD_TYPE(APM_BUILD_Blimp))
@@ -49,6 +50,8 @@
 #include "AP_Airspeed_MSP.h"
 #include "AP_Airspeed_SITL.h"
 extern const AP_HAL::HAL &hal;
+
+#include <AP_Vehicle/AP_FixedWing.h>
 
 #ifdef HAL_AIRSPEED_TYPE_DEFAULT
  #define ARSPD_DEFAULT_TYPE HAL_AIRSPEED_TYPE_DEFAULT
@@ -78,103 +81,30 @@ extern const AP_HAL::HAL &hal;
 #define HAL_AIRSPEED_BUS_DEFAULT 1
 #endif
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
-#define PSI_RANGE_DEFAULT 0.05
-#endif
-
-#ifndef PSI_RANGE_DEFAULT
-#define PSI_RANGE_DEFAULT 1.0f
-#endif
-
 #define OPTIONS_DEFAULT AP_Airspeed::OptionsMask::ON_FAILURE_AHRS_WIND_MAX_DO_DISABLE | AP_Airspeed::OptionsMask::ON_FAILURE_AHRS_WIND_MAX_RECOVERY_DO_REENABLE | AP_Airspeed::OptionsMask::USE_EKF_CONSISTENCY
+
+#define ENABLE_PARAMETER !(APM_BUILD_TYPE(APM_BUILD_ArduPlane) || defined(HAL_BUILD_AP_PERIPH))
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
-    // @Param: _TYPE
-    // @DisplayName: Airspeed type
-    // @Description: Type of airspeed sensor
-    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR-5in,8:DroneCAN,9:I2C-DLVR-10in,10:I2C-DLVR-20in,11:I2C-DLVR-30in,12:I2C-DLVR-60in,13:NMEA water speed,14:MSP,15:ASP5033,100:SITL
+#if ENABLE_PARAMETER
+    // @Param: _ENABLE
+    // @DisplayName: Airspeed Enable
+    // @Description: Enable airspeed sensor support
+    // @Values: 0:Disable, 1:Enable
     // @User: Standard
-    AP_GROUPINFO_FLAGS("_TYPE", 0, AP_Airspeed, param[0].type, ARSPD_DEFAULT_TYPE, AP_PARAM_FLAG_ENABLE),     // NOTE: Index 0 is actually used as index 63 here
-
-    // @Param: _DEVID
-    // @DisplayName: Airspeed ID
-    // @Description: Airspeed sensor ID, taking into account its type, bus and instance
-    // @ReadOnly: True
-    // @User: Advanced
-    AP_GROUPINFO_FLAGS("_DEVID", 24, AP_Airspeed, param[0].bus_id, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
-
-#ifndef HAL_BUILD_AP_PERIPH
-    // @Param: _USE
-    // @DisplayName: Airspeed use
-    // @Description: Enables airspeed use for automatic throttle modes and replaces control from THR_TRIM. Continues to display and log airspeed if set to 0. Uses airspeed for control if set to 1. Only uses airspeed when throttle = 0 if set to 2 (useful for gliders with airspeed sensors behind propellers).
-    // @Description{Copter, Blimp, Rover, Sub}: This parameter is not used by this vehicle. Always set to 0.
-    // @Values: 0:DoNotUse,1:Use,2:UseWhenZeroThrottle
-    // @User: Standard
-    AP_GROUPINFO("_USE",    1, AP_Airspeed, param[0].use, 0),
-
-    // @Param: _OFFSET
-    // @DisplayName: Airspeed offset
-    // @Description: Airspeed calibration offset
-    // @Increment: 0.1
-    // @User: Advanced
-    AP_GROUPINFO("_OFFSET", 2, AP_Airspeed, param[0].offset, 0),
-
-    // @Param: _RATIO
-    // @DisplayName: Airspeed ratio
-    // @Description: Calibrates pitot tube pressure to velocity. Increasing this value will indicate a higher airspeed at any given dynamic pressure.
-    // @Increment: 0.1
-    // @User: Advanced
-    AP_GROUPINFO("_RATIO",  3, AP_Airspeed, param[0].ratio, 1.9936f),
-
-    // @Param: _PIN
-    // @DisplayName: Airspeed pin
-    // @Description: The pin number that the airspeed sensor is connected to for analog sensors. Set to 15 on the Pixhawk for the analog airspeed port. 
-    // @User: Advanced
-    AP_GROUPINFO("_PIN",  4, AP_Airspeed, param[0].pin, ARSPD_DEFAULT_PIN),
-#endif // HAL_BUILD_AP_PERIPH
-
-#if AP_AIRSPEED_AUTOCAL_ENABLE
-    // @Param: _AUTOCAL
-    // @DisplayName: Automatic airspeed ratio calibration
-    // @DisplayName{Copter, Blimp, Rover, Sub}: This parameter and function is not used by this vehicle. Always set to 0.
-    // @Description: Enables automatic adjustment of ARSPD_RATIO during a calibration flight based on estimation of ground speed and true airspeed. New ratio saved every 2 minutes if change is > 5%. Should not be left enabled.
-    // @User: Advanced
-    AP_GROUPINFO("_AUTOCAL",  5, AP_Airspeed, param[0].autocal, 0),
+    AP_GROUPINFO_FLAGS("_ENABLE", 30, AP_Airspeed, _enable, 0, AP_PARAM_FLAG_ENABLE),
 #endif
+    // slots 0-9 (and 63) were previously used by params before being refactored into AP_Airspeed_Params
 
     // @Param: _TUBE_ORDER
     // @DisplayName: Control pitot tube order
     // @Description: This parameter allows you to control whether the order in which the tubes are attached to your pitot tube matters. If you set this to 0 then the first (often the top) connector on the sensor needs to be the stagnation pressure (the pressure at the tip of the pitot tube). If set to 1 then the second (often the bottom) connector needs to be the stagnation pressure. If set to 2 (the default) then the airspeed driver will accept either order. The reason you may wish to specify the order is it will allow your airspeed sensor to detect if the aircraft is receiving excessive pressure on the static port compared to the stagnation port such as during a stall, which would otherwise be seen as a positive airspeed.
     // @User: Advanced
     // @Values: 0:Normal,1:Swapped,2:Auto Detect
-    AP_GROUPINFO("_TUBE_ORDER",  6, AP_Airspeed, param[0].tube_order, 2),
 
-#ifndef HAL_BUILD_AP_PERIPH
-    // @Param: _SKIP_CAL
-    // @DisplayName: Skip airspeed offset calibration on startup
-    // @Description: This parameter allows you to skip airspeed offset calibration on startup, instead using the offset from the last calibration. This may be desirable if the offset variance between flights for your sensor is low and you want to avoid having to cover the pitot tube on each boot.
-    // @Values: 0:Disable,1:Enable
-    // @User: Advanced
-    AP_GROUPINFO("_SKIP_CAL",  7, AP_Airspeed, param[0].skip_cal, 0),
-#endif // HAL_BUILD_AP_PERIPH
-
-    // @Param: _PSI_RANGE
-    // @DisplayName: The PSI range of the device
-    // @Description: This parameter allows you to set the PSI (pounds per square inch) range for your sensor. You should not change this unless you examine the datasheet for your device
-    // @User: Advanced
-    AP_GROUPINFO("_PSI_RANGE",  8, AP_Airspeed, param[0].psi_range, PSI_RANGE_DEFAULT),
-
-#ifndef HAL_BUILD_AP_PERIPH
-    // @Param: _BUS
-    // @DisplayName: Airspeed I2C bus
-    // @Description: Bus number of the I2C bus where the airspeed sensor is connected. May not correspond to board's I2C bus number labels. Retry another bus and reboot if airspeed sensor fails to initialize.
-    // @Values: 0:Bus0,1:Bus1,2:Bus2
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("_BUS",  9, AP_Airspeed, param[0].bus, HAL_AIRSPEED_BUS_DEFAULT),
-#endif // HAL_BUILD_AP_PERIPH
+    // tube order param had to be shortened so is not preserved in per group descriptions 
 
 #if AIRSPEED_MAX_SENSORS > 1
     // @Param: _PRIMARY
@@ -184,6 +114,8 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_PRIMARY", 10, AP_Airspeed, primary_sensor, 0),
 #endif
+
+    // 11-20 were previously used by second sensor params before being refactored into AP_Airspeed_Params
 
 #ifndef HAL_BUILD_AP_PERIPH
     // @Param: _OPTIONS
@@ -217,94 +149,29 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Range: 0.0 10.0
     // @User: Advanced
     AP_GROUPINFO("_WIND_GATE", 26, AP_Airspeed, _wind_gate, 5.0f),
-
-#endif
-
-#if AIRSPEED_MAX_SENSORS > 1
-    // @Param: 2_TYPE
-    // @DisplayName: Second Airspeed type
-    // @Description: Type of 2nd airspeed sensor
-    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR-5in,8:DroneCAN,9:I2C-DLVR-10in,10:I2C-DLVR-20in,11:I2C-DLVR-30in,12:I2C-DLVR-60in,13:NMEA water speed,14:MSP,15:ASP5033
-    // @User: Standard
-    AP_GROUPINFO_FLAGS("2_TYPE", 11, AP_Airspeed, param[1].type, 0, AP_PARAM_FLAG_ENABLE),
-
-    // @Param: 2_USE
-    // @DisplayName: Enable use of 2nd airspeed sensor
-    // @Description: use airspeed for flight control. When set to 0 airspeed sensor can be logged and displayed on a GCS but won't be used for flight. When set to 1 it will be logged and used. When set to 2 it will be only used when the throttle is zero, which can be useful in gliders with airspeed sensors behind a propeller
-    // @Description{Copter, Blimp, Rover, Sub}: This parameter and function is not used by this vehicle. Always set to 0.
-    // @Values: 0:Don't Use,1:use,2:UseWhenZeroThrottle
-    // @User: Standard
-    AP_GROUPINFO("2_USE",    12, AP_Airspeed, param[1].use, 0),
-
-    // @Param: 2_OFFSET
-    // @DisplayName: Airspeed offset for 2nd airspeed sensor
-    // @Description: Airspeed calibration offset
-    // @Increment: 0.1
-    // @User: Advanced
-    AP_GROUPINFO("2_OFFSET", 13, AP_Airspeed, param[1].offset, 0),
-
-    // @Param: 2_RATIO
-    // @DisplayName: Airspeed ratio for 2nd airspeed sensor
-    // @Description: Airspeed calibration ratio
-    // @Increment: 0.1
-    // @User: Advanced
-    AP_GROUPINFO("2_RATIO",  14, AP_Airspeed, param[1].ratio, 2),
-
-    // @Param: 2_PIN
-    // @DisplayName: Airspeed pin for 2nd airspeed sensor
-    // @Description: Pin number indicating location of analog airspeed sensors. Pixhawk/Cube if set to 15. 
-    // @User: Advanced
-    AP_GROUPINFO("2_PIN",  15, AP_Airspeed, param[1].pin, 0),
-
-    // @Param: 2_AUTOCAL
-    // @DisplayName: Automatic airspeed ratio calibration for 2nd airspeed sensor
-    // @Description: If this is enabled then the autopilot will automatically adjust the ARSPD_RATIO during flight, based upon an estimation filter using ground speed and true airspeed. The automatic calibration will save the new ratio to EEPROM every 2 minutes if it changes by more than 5%. This option should be enabled for a calibration flight then disabled again when calibration is complete. Leaving it enabled all the time is not recommended.
-    // @Description{Copter, Blimp, Rover, Sub}: This parameter and function is not used by this vehicle. Always set to 0.
-    // @User: Advanced
-    AP_GROUPINFO("2_AUTOCAL",  16, AP_Airspeed, param[1].autocal, 0),
-
-    // @Param: 2_TUBE_ORDR
-    // @DisplayName: Control pitot tube order of 2nd airspeed sensor
-    // @Description: This parameter allows you to control whether the order in which the tubes are attached to your pitot tube matters. If you set this to 0 then the first (often the top) connector on the sensor needs to be the stagnation pressure (the pressure at the tip of the pitot tube). If set to 1 then the second (often the bottom) connector needs to be the stagnation pressure. If set to 2 (the default) then the airspeed driver will accept either order. The reason you may wish to specify the order is it will allow your airspeed sensor to detect if the aircraft is receiving excessive pressure on the static port compared to the stagnation port such as during a stall, which would otherwise be seen as a positive airspeed.
-    // @User: Advanced
-    // @Values: 0:Normal,1:Swapped,2:Auto Detect
-    AP_GROUPINFO("2_TUBE_ORDR",  17, AP_Airspeed, param[1].tube_order, 2),
-
-    // @Param: 2_SKIP_CAL
-    // @DisplayName: Skip airspeed offset calibration on startup for 2nd sensor
-    // @Description: This parameter allows you to skip airspeed offset calibration on startup, instead using the offset from the last calibration. This may be desirable if the offset variance between flights for your sensor is low and you want to avoid having to cover the pitot tube on each boot.
-    // @Values: 0:Disable,1:Enable
-    // @User: Advanced
-    AP_GROUPINFO("2_SKIP_CAL",  18, AP_Airspeed, param[1].skip_cal, 0),
-
-    // @Param: 2_PSI_RANGE
-    // @DisplayName: The PSI range of the device for 2nd sensor
-    // @Description: This parameter allows you to set the PSI (pounds per square inch) range for your sensor. You should not change this unless you examine the datasheet for your device
-    // @User: Advanced
-    AP_GROUPINFO("2_PSI_RANGE",  19, AP_Airspeed, param[1].psi_range, PSI_RANGE_DEFAULT),
-
-    // @Param: 2_BUS
-    // @DisplayName: Airspeed I2C bus for 2nd sensor
-    // @Description: Bus number of the I2C bus where the airspeed sensor is connected. May not correspond to board's I2C bus number labels. Retry another bus and reboot if airspeed sensor fails to initialize.
-    // @Values: 0:Bus0,1:Bus1,2:Bus2
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("2_BUS",  20, AP_Airspeed, param[1].bus, 1),
-
-#if AIRSPEED_MAX_SENSORS > 1
-    // @Param: 2_DEVID
-    // @DisplayName: Airspeed2 ID
-    // @Description: Airspeed2 sensor ID, taking into account its type, bus and instance
-    // @ReadOnly: True
-    // @User: Advanced
-    AP_GROUPINFO_FLAGS("2_DEVID", 25, AP_Airspeed, param[1].bus_id, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
-#endif
     
-#endif // AIRSPEED_MAX_SENSORS
+    // @Param: _OFF_PCNT
+    // @DisplayName: Maximum offset cal speed error 
+    // @Description: The maximum percentage speed change in airspeed reports that is allowed due to offset changes between calibraions before a warning is issued. This potential speed error is in percent of ASPD_FBW_MIN. 0 disables. Helps warn of calibrations without pitot being covered.
+    // @Range: 0.0 10.0
+    // @Units: %
+    // @User: Advanced
+    AP_GROUPINFO_FRAME("_OFF_PCNT", 27, AP_Airspeed, max_speed_pcnt, 0, AP_PARAM_FRAME_PLANE),    
 
-    // Note that 21, 22, 23, 24, 25 and 26 are used above by the _OPTIONS, _DEVID, __WIND_MAX, _WIND_WARN and _WIND_GATE parameters.  Do not use them!!
+#endif
 
-    // NOTE: Index 63 is used by AIRSPEED_TYPE, Do not use it!: AP_Param converts an index of 0 to 63 so that the index may be bit shifted
+    // @Group: _
+    // @Path: AP_Airspeed_Params.cpp
+    AP_SUBGROUPINFO(param[0], "_", 28, AP_Airspeed, AP_Airspeed_Params),
+
+#if AIRSPEED_MAX_SENSORS > 1
+    // @Group: 2_
+    // @Path: AP_Airspeed_Params.cpp
+    AP_SUBGROUPINFO(param[1], "2_", 29, AP_Airspeed, AP_Airspeed_Params),
+#endif
+
+    // index 30 is used by enable at the top of the table
+
     AP_GROUPEND
 };
 
@@ -319,10 +186,22 @@ AP_Airspeed::AP_Airspeed()
 {
     AP_Param::setup_object_defaults(this, var_info);
 
+    // Setup defaults that only apply to first sensor
+    param[0].type.set_default(ARSPD_DEFAULT_TYPE);
+    param[0].bus.set_default(HAL_AIRSPEED_BUS_DEFAULT);
+#ifndef HAL_BUILD_AP_PERIPH
+    param[0].pin.set_default(ARSPD_DEFAULT_PIN);
+#endif
+
     if (_singleton != nullptr) {
         AP_HAL::panic("AP_Airspeed must be singleton");
     }
     _singleton = this;
+}
+
+void AP_Airspeed::set_fixedwing_parameters(const AP_FixedWing *_fixed_wing_parameters)
+{
+    fixed_wing_parameters = _fixed_wing_parameters;
 }
 
 // macro for use by HAL_INS_PROBE_LIST
@@ -355,30 +234,102 @@ bool AP_Airspeed::add_backend(AP_Airspeed_Backend *backend)
     if (num_sensors == AIRSPEED_MAX_SENSORS) { return; } \
     } while (0)
 
-void AP_Airspeed::init()
-{   
-    if (sensor[0] != nullptr) {
-        // already initialised
+
+// convet params to per instance param table
+// PARAMETER_CONVERSION - Added: Dec-2022
+void AP_Airspeed::convert_per_instance()
+{
+    AP_Param::ConversionInfo info;
+#ifndef HAL_BUILD_AP_PERIPH
+    // Vehicle conversion
+    if (!AP_Param::find_key_by_pointer(this, info.old_key)) {
         return;
     }
-    // cope with upgrade from old system
-    if (param[0].pin.load() && param[0].pin.get() != 65) {
-        param[0].type.set_default(TYPE_ANALOG);
+
+    const struct convert_table {
+        uint32_t element[2];
+        ap_var_type type;
+        const char* name;
+    }  conversion_table[] = {
+        { {4042, 714}, AP_PARAM_INT8, "TYPE" },      // ARSPD_TYPE, ARSPD2_TYPE
+        { {74, 778}, AP_PARAM_INT8, "USE" },        // ARSPD_USE, ARSPD2_USE
+        { {138, 842}, AP_PARAM_FLOAT, "OFFSET" },    // ARSPD_OFFSET, ARSPD2_OFFSET
+        { {202, 906}, AP_PARAM_FLOAT, "RATIO" },     // ARSPD_RATIO, ARSPD2_RATIO
+        { {266, 970}, AP_PARAM_INT8, "PIN" },        // ARSPD_PIN, ARSPD2_PIN
+#if AP_AIRSPEED_AUTOCAL_ENABLE
+        { {330, 1034}, AP_PARAM_INT8, "AUTOCAL" },    // ARSPD_AUTOCAL, ARSPD2_AUTOCAL
+#endif
+        { {394, 1098}, AP_PARAM_INT8, "TUBE_ORDR" },  // ARSPD_TUBE_ORDER, ARSPD2_TUBE_ORDR
+        { {458, 1162}, AP_PARAM_INT8, "SKIP_CAL" },   // ARSPD_SKIP_CAL, ARSPD2_SKIP_CAL
+        { {522, 1226}, AP_PARAM_FLOAT, "PSI_RANGE" }, // ARSPD_PSI_RANGE, ARSPD2_PSI_RANGE
+        { {586, 1290}, AP_PARAM_INT8, "BUS" },        // ARSPD_BUS, ARSPD2_BUS
+        { {1546, 1610}, AP_PARAM_INT32, "DEVID" },    // ARSPD_DEVID, ARSPD2_DEVID
+    };
+
+#else
+    // Periph conversion
+    if (!AP_Param::find_top_level_key_by_pointer(this, info.old_key)) {
+        return;
     }
+    const struct convert_table {
+        uint32_t element[2];
+        ap_var_type type;
+        const char* name;
+    }  conversion_table[] = {
+        { {0, 11}, AP_PARAM_INT8, "TYPE" },      // ARSPD_TYPE, ARSPD2_TYPE
+#if AP_AIRSPEED_AUTOCAL_ENABLE
+        { {5, 16}, AP_PARAM_INT8, "AUTOCAL" },    // ARSPD_AUTOCAL, ARSPD2_AUTOCAL
+#endif
+        { {8, 19}, AP_PARAM_FLOAT, "PSI_RANGE" }, // ARSPD_PSI_RANGE, ARSPD2_PSI_RANGE
+        { {24, 25}, AP_PARAM_INT32, "DEVID" },    // ARSPD_DEVID, ARSPD2_DEVID
+    };
+#endif
 
-#ifndef HAL_BUILD_AP_PERIPH
-    // Switch to dedicated WIND_MAX param
-    // PARAMETER_CONVERSION - Added: Oct-2020
-    const float ahrs_max_wind = AP::ahrs().get_max_wind();
-    if (!_wind_max.configured() && is_positive(ahrs_max_wind)) {
-        _wind_max.set_and_save(ahrs_max_wind);
+    char param_name[17] {};
+    info.new_name = param_name;
 
-        // Turn off _options to override the new default
-        if (!_options.configured()) {
-            _options.set_and_save(0);
+    for (const auto & elem : conversion_table) {
+        info.type = elem.type;
+        for (uint8_t i=0; i < MIN(AIRSPEED_MAX_SENSORS,2); i++) {
+            info.old_group_element = elem.element[i];
+            if (i == 0) {
+                hal.util->snprintf(param_name, sizeof(param_name), "ARSPD_%s",  elem.name);
+            } else {
+                hal.util->snprintf(param_name, sizeof(param_name), "ARSPD%i_%s", i+1,  elem.name);
+            }
+            AP_Param::convert_old_parameter(&info, 1.0, 0);
         }
     }
+}
+
+void AP_Airspeed::init()
+{
+
+    convert_per_instance();
+
+#if ENABLE_PARAMETER
+    // if either type is set then enable if not manually set
+    if (!_enable.configured() && ((param[0].type.get() != TYPE_NONE) || (param[1].type.get() != TYPE_NONE))) {
+        _enable.set_and_save(1);
+    }
+
+    // Check if enabled
+    if (!lib_enabled()) {
+        return;
+    }
 #endif
+
+    if (enabled(0)) {
+        allocate();
+    }
+}
+
+void AP_Airspeed::allocate()
+{
+    if (sensor[0] != nullptr) {
+        // already initialised, periph may call allocate several times to allow CAN detection
+        return;
+    }
 
 #ifdef HAL_AIRSPEED_PROBE_LIST
     // load sensors via a list from hwdef.dat
@@ -545,6 +496,10 @@ bool AP_Airspeed::get_temperature(uint8_t i, float &temperature)
 // least once before the get_airspeed() interface can be used
 void AP_Airspeed::calibrate(bool in_startup)
 {
+#ifndef HAL_BUILD_AP_PERIPH
+    if (!lib_enabled()) {
+        return;
+    }
     if (hal.util->was_watchdog_reset()) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Airspeed: skipping cal");
         return;
@@ -570,6 +525,7 @@ void AP_Airspeed::calibrate(bool in_startup)
         state[i].cal.read_count = 0;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Airspeed %u calibration started", i+1);
     }
+#endif // HAL_BUILD_AP_PERIPH
 }
 
 /*
@@ -577,6 +533,7 @@ void AP_Airspeed::calibrate(bool in_startup)
 */
 void AP_Airspeed::update_calibration(uint8_t i, float raw_pressure)
 {
+#ifndef HAL_BUILD_AP_PERIPH
     if (!enabled(i) || state[i].cal.start_ms == 0) {
         return;
     }
@@ -589,7 +546,17 @@ void AP_Airspeed::update_calibration(uint8_t i, float raw_pressure)
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Airspeed %u unhealthy", i + 1);
         } else {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Airspeed %u calibrated", i + 1);
-            param[i].offset.set_and_save(state[i].cal.sum / state[i].cal.count);
+            float calibrated_offset = state[i].cal.sum / state[i].cal.count;
+            // check if new offset differs too greatly from last calibration, indicating pitot uncovered in wind
+            if (fixed_wing_parameters != nullptr) {
+                float airspeed_min = fixed_wing_parameters->airspeed_min.get();
+                // use percentage of ARSPD_FBW_MIN as criteria for max allowed change in offset
+                float max_change = 0.5*(sq((1 + (max_speed_pcnt * 0.01))*airspeed_min) - sq(airspeed_min));
+                if (max_speed_pcnt > 0 && (abs(calibrated_offset-param[i].offset) > max_change) && (abs(param[i].offset) > 0)) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Arspd %d offset change large;cover and recal", i +1);
+                }
+            }
+            param[i].offset.set_and_save(calibrated_offset);
         }
         state[i].cal.start_ms = 0;
         return;
@@ -600,6 +567,7 @@ void AP_Airspeed::update_calibration(uint8_t i, float raw_pressure)
         state[i].cal.count++;
     }
     state[i].cal.read_count++;
+#endif // HAL_BUILD_AP_PERIPH
 }
 
 // read one airspeed sensor
@@ -617,16 +585,17 @@ void AP_Airspeed::read(uint8_t i)
         return;
     }
 
-    bool prev_healthy = state[i].healthy;
     float raw_pressure = get_pressure(i);
-    if (state[i].cal.start_ms != 0) {
-        update_calibration(i, raw_pressure);
-    }
-
-    float airspeed_pressure = raw_pressure - param[i].offset;
+    float airspeed_pressure = raw_pressure - get_offset(i);
 
     // remember raw pressure for logging
     state[i].corrected_pressure = airspeed_pressure;
+
+#ifndef HAL_BUILD_AP_PERIPH
+    bool prev_healthy = state[i].healthy;
+    if (state[i].cal.start_ms != 0) {
+        update_calibration(i, raw_pressure);
+    }
 
     // filter before clamping positive
     if (!prev_healthy) {
@@ -660,11 +629,16 @@ void AP_Airspeed::read(uint8_t i)
         state[i].airspeed       = sqrtf(fabsf(state[i].filtered_pressure) * param[i].ratio);
         break;
     }
+#endif // HAL_BUILD_AP_PERIPH
 }
 
 // read all airspeed sensors
 void AP_Airspeed::update()
 {
+    if (!lib_enabled()) {
+        return;
+    }
+
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
         read(i);
     }
@@ -710,7 +684,10 @@ void AP_Airspeed::update()
  */
 void AP_Airspeed::handle_msp(const MSP::msp_airspeed_data_message_t &pkt)
 {
-    
+    if (!lib_enabled()) {
+        return;
+    }
+
     if (pkt.instance > 1) {
         return; //supporting 2 airspeed sensors at most
     }
@@ -783,21 +760,26 @@ void AP_Airspeed::Log_Airspeed()
 
 bool AP_Airspeed::use(uint8_t i) const
 {
+#ifndef HAL_BUILD_AP_PERIPH
+    if (!lib_enabled()) {
+        return false;
+    }
     if (_force_disable_use) {
         return false;
     }
     if (!enabled(i) || !param[i].use) {
         return false;
     }
-#ifndef HAL_BUILD_AP_PERIPH
     if (param[i].use == 2 && !is_zero(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle))) {
         // special case for gliders with airspeed sensors behind the
         // propeller. Allow airspeed to be disabled when throttle is
         // running
         return false;
     }
-#endif
     return true;
+#else
+    return false;
+#endif // HAL_BUILD_AP_PERIPH
 }
 
 /*
@@ -813,8 +795,18 @@ bool AP_Airspeed::all_healthy(void) const
     return true;
 }
 
+bool AP_Airspeed::lib_enabled() const {
+#if ENABLE_PARAMETER
+    return _enable > 0;
+#endif
+    return true;
+}
+
 // return true if airspeed is enabled
 bool AP_Airspeed::enabled(uint8_t i) const {
+    if (!lib_enabled()) {
+        return false;
+    }
     if (i < AIRSPEED_MAX_SENSORS) {
         return param[i].type.get() != TYPE_NONE;
     }

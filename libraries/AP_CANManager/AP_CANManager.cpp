@@ -427,11 +427,13 @@ void AP_CANManager::handle_can_frame(const mavlink_message_t &msg)
         while (frame_buffer == nullptr && buffer_size > 0) {
             // we'd like 20 frames, but will live with less
             frame_buffer = new ObjectBuffer<BufferFrame>(buffer_size);
-            if (frame_buffer != nullptr) {
+            if (frame_buffer != nullptr && frame_buffer->get_size() != 0) {
                 // register a callback for when frames can't be sent immediately
                 hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_CANManager::process_frame_buffer, void));
                 break;
             }
+            delete frame_buffer;
+            frame_buffer = nullptr;
             buffer_size /= 2;
         }
         if (frame_buffer == nullptr) {

@@ -18,7 +18,7 @@
   advanced failsafe support for plane
  */
 
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ADVANCEDFAILSAFE_ENABLED
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 
 /*
@@ -41,5 +41,4 @@ protected:
     enum control_mode afs_mode(void) override;
 };
 
-#endif // ADVANCED_FAILSAFE
-
+#endif // AP_ADVANCEDFAILSAFE_ENABLED

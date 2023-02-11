@@ -139,7 +139,10 @@ void AP_Parachute::update()
                 SRV_Channels::set_output_pwm(SRV_Channel::k_parachute_release, _servo_on_pwm);
             } else if (_release_type <= AP_PARACHUTE_TRIGGER_TYPE_RELAY_3) {
                 // set relay
-                _relay.on(_release_type);
+                AP_Relay*_relay = AP::relay();
+                if (_relay != nullptr) {
+                    _relay->on(_release_type);
+                }
             }
             _release_in_progress = true;
             _released = true;
@@ -151,7 +154,10 @@ void AP_Parachute::update()
             SRV_Channels::set_output_pwm(SRV_Channel::k_parachute_release, _servo_off_pwm);
         } else if (_release_type <= AP_PARACHUTE_TRIGGER_TYPE_RELAY_3) {
             // set relay back to zero volts
-            _relay.off(_release_type);
+            AP_Relay*_relay = AP::relay();
+            if (_relay != nullptr) {
+                _relay->off(_release_type);
+            }
         }
         // reset released flag and release_time
         _release_in_progress = false;
@@ -205,9 +211,12 @@ bool AP_Parachute::arming_checks(size_t buflen, char *buffer) const
                 hal.util->snprintf(buffer, buflen, "Chute has no channel");
                 return false;
             }
-        } else if (!_relay.enabled(_release_type)) {
-            hal.util->snprintf(buffer, buflen, "Chute invalid relay %d", int(_release_type));
-            return false;
+        } else {
+            AP_Relay*_relay = AP::relay();
+            if (_relay == nullptr || !_relay->enabled(_release_type)) {
+                hal.util->snprintf(buffer, buflen, "Chute invalid relay %d", int(_release_type));
+                return false;
+            }
         }
         if (_release_initiated) {
             hal.util->snprintf(buffer, buflen, "Chute is released");

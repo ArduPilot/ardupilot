@@ -33,6 +33,7 @@ class AP_ExternalAHRS {
 
 public:
     friend class AP_ExternalAHRS_backend;
+    friend class AP_ExternalAHRS_VectorNav;
 
     AP_ExternalAHRS();
 
@@ -55,8 +56,18 @@ public:
         return rate.get();
     }
 
+    // Get model/type name
+    const char* get_name() const;
+
+    enum class AvailableSensor {
+        GPS = (1U<<0),
+        IMU = (1U<<1),
+        BARO = (1U<<2),
+        COMPASS = (1U<<3),
+    };
+
     // get serial port number, -1 for not enabled
-    int8_t get_port(void) const;
+    int8_t get_port(AvailableSensor sensor) const;
 
     struct state_t {
         HAL_Semaphore sem;
@@ -75,6 +86,7 @@ public:
     } state;
 
     // accessors for AP_AHRS
+    bool enabled() const;
     bool healthy(void) const;
     bool initialised(void) const;
     bool get_quaternion(Quaternion &quat);
@@ -128,14 +140,28 @@ public:
         Vector3f gyro;
         float temperature;
     } ins_data_message_t;
-    
+
+protected:
+
+    enum class OPTIONS {
+        VN_UNCOMP_IMU = 1U << 0,
+    };
+    bool option_is_set(OPTIONS option) const { return (options.get() & int32_t(option)) != 0; }
+
 private:
     AP_ExternalAHRS_backend *backend;
 
     AP_Enum<DevType> devtype;
     AP_Int16         rate;
+    AP_Int16         options;
+    AP_Int16         sensors;
 
     static AP_ExternalAHRS *_singleton;
+
+    // check if a sensor type is enabled
+    bool has_sensor(AvailableSensor sensor) const {
+        return (uint16_t(sensors.get()) & uint16_t(sensor)) != 0;
+    }
 };
 
 namespace AP {

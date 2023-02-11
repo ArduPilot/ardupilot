@@ -174,11 +174,38 @@ void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &
     _imu._delta_angle_acc_dt[instance] = 0;
 }
 
+
+void AP_InertialSensor_Backend::save_gyro_window(const uint8_t instance, const Vector3f &gyro, uint8_t phase)
+{
+#if HAL_WITH_DSP
+    // capture gyro window for FFT analysis
+    if (_imu._fft_window_phase == phase) {
+        if (_imu._gyro_window_size > 0) {
+            Vector3f scaled_gyro = gyro * _imu._gyro_raw_sampling_multiplier[instance];
+            // LPF always must come last to remove high-frequency shot noise, but the FFT still
+            // needs to see the same data so gets its own LPF at the tap point
+            if (_imu._post_filter_fft) {
+                scaled_gyro = _imu._post_filter_gyro_filter[instance].apply(scaled_gyro);
+            }
+            _imu._gyro_window[instance][0].push(scaled_gyro.x);
+            _imu._gyro_window[instance][1].push(scaled_gyro.y);
+            _imu._gyro_window[instance][2].push(scaled_gyro.z);
+            _imu._last_gyro_for_fft[instance] = scaled_gyro;
+        } else {
+            _imu._last_gyro_for_fft[instance] = gyro * _imu._gyro_raw_sampling_multiplier[instance];;
+        }
+    }
+#endif
+}
+
 /*
   apply harmonic notch and low pass gyro filters
  */
 void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const Vector3f &gyro)
 {
+    uint8_t filter_phase = 0;
+    save_gyro_window(instance, gyro, filter_phase++);
+
     Vector3f gyro_filtered = gyro;
 
     // apply the harmonic notch filters
@@ -203,14 +230,18 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
         } else {
             gyro_filtered = notch.filter[instance].apply(gyro_filtered);
         }
+        save_gyro_window(instance, gyro_filtered, filter_phase++);
     }
 
-    // apply the low pass filter last to attentuate any notch induced noise
+    // apply the low pass filter last to attenuate any notch induced noise
     gyro_filtered = _imu._gyro_filter[instance].apply(gyro_filtered);
 
     // if the filtering failed in any way then reset the filters and keep the old value
     if (gyro_filtered.is_nan() || gyro_filtered.is_inf()) {
         _imu._gyro_filter[instance].reset();
+#if HAL_WITH_DSP
+        _imu._post_filter_gyro_filter[instance].reset();
+#endif
         for (auto &notch : _imu.harmonic_notches) {
             notch.filter[instance].reset();
         }
@@ -300,29 +331,25 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
         // save previous delta angle for coning correction
         _imu._last_delta_angle[instance] = delta_angle;
         _imu._last_raw_gyro[instance] = gyro;
-#if HAL_WITH_DSP
-        // capture gyro window for FFT analysis
-        if (_imu._gyro_window_size > 0) {
-            const Vector3f& scaled_gyro = gyro * _imu._gyro_raw_sampling_multiplier[instance];
-            _imu._gyro_window[instance][0].push(scaled_gyro.x);
-            _imu._gyro_window[instance][1].push(scaled_gyro.y);
-            _imu._gyro_window[instance][2].push(scaled_gyro.z);
-        }
-#endif
 
-        // apply gyro filters
+        // apply gyro filters and sample for FFT
         apply_gyro_filters(instance, gyro);
 
         _imu._new_gyro_data[instance] = true;
     }
 
     // 5us
+#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
     if (!_imu.batchsampler.doing_post_filter_logging()) {
         log_gyro_raw(instance, sample_us, gyro);
     }
     else {
         log_gyro_raw(instance, sample_us, _imu._gyro_filtered[instance]);
     }
+#else
+    // assume pre-filter logging if batchsampler is not enabled
+    log_gyro_raw(instance, sample_us, gyro);
+#endif
 }
 
 /*
@@ -402,28 +429,24 @@ void AP_InertialSensor_Backend::_notify_new_delta_angle(uint8_t instance, const 
         // save previous delta angle for coning correction
         _imu._last_delta_angle[instance] = delta_angle;
         _imu._last_raw_gyro[instance] = gyro;
-#if HAL_WITH_DSP
-        // capture gyro window for FFT analysis
-        if (_imu._gyro_window_size > 0) {
-            const Vector3f& scaled_gyro = gyro * _imu._gyro_raw_sampling_multiplier[instance];
-            _imu._gyro_window[instance][0].push(scaled_gyro.x);
-            _imu._gyro_window[instance][1].push(scaled_gyro.y);
-            _imu._gyro_window[instance][2].push(scaled_gyro.z);
-        }
-#endif
 
-        // apply gyro filters
+        // apply gyro filters and sample for FFT
         apply_gyro_filters(instance, gyro);
 
         _imu._new_gyro_data[instance] = true;
     }
 
+#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
     if (!_imu.batchsampler.doing_post_filter_logging()) {
         log_gyro_raw(instance, sample_us, gyro);
     }
     else {
         log_gyro_raw(instance, sample_us, _imu._gyro_filtered[instance]);
     }
+#else
+    // assume we're doing pre-filter logging:
+    log_gyro_raw(instance, sample_us, gyro);
+#endif
 }
 
 void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &gyro)
@@ -437,9 +460,11 @@ void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sa
     if (should_log_imu_raw()) {
         Write_GYR(instance, sample_us, gyro);
     } else {
+#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
         if (!_imu.batchsampler.doing_sensor_rate_logging()) {
             _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_GYRO, sample_us, gyro);
         }
+#endif
     }
 #endif
 }
@@ -545,11 +570,16 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
     }
 
     // 5us
+#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
     if (!_imu.batchsampler.doing_post_filter_logging()) {
         log_accel_raw(instance, sample_us, accel);
     } else {
         log_accel_raw(instance, sample_us, _imu._accel_filtered[instance]);
     }
+#else
+    // assume we're doing pre-filter logging:
+    log_accel_raw(instance, sample_us, accel);
+#endif
 }
 
 /*
@@ -617,29 +647,38 @@ void AP_InertialSensor_Backend::_notify_new_delta_velocity(uint8_t instance, con
         _imu._new_accel_data[instance] = true;
     }
 
+#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
     if (!_imu.batchsampler.doing_post_filter_logging()) {
         log_accel_raw(instance, sample_us, accel);
     } else {
         log_accel_raw(instance, sample_us, _imu._accel_filtered[instance]);
     }
+#else
+    // assume we're doing pre-filter logging
+    log_accel_raw(instance, sample_us, accel);
+#endif
 }
 
 
 void AP_InertialSensor_Backend::_notify_new_accel_sensor_rate_sample(uint8_t instance, const Vector3f &accel)
 {
+#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
     if (!_imu.batchsampler.doing_sensor_rate_logging()) {
         return;
     }
 
     _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_ACCEL, AP_HAL::micros64(), accel);
+#endif
 }
 
 void AP_InertialSensor_Backend::_notify_new_gyro_sensor_rate_sample(uint8_t instance, const Vector3f &gyro)
 {
+#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
     if (!_imu.batchsampler.doing_sensor_rate_logging()) {
         return;
     }
     _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_GYRO, AP_HAL::micros64(), gyro);
+#endif
 }
 
 void AP_InertialSensor_Backend::log_accel_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &accel)
@@ -653,9 +692,11 @@ void AP_InertialSensor_Backend::log_accel_raw(uint8_t instance, const uint64_t s
     if (should_log_imu_raw()) {
         Write_ACC(instance, sample_us, accel);
     } else {
+#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
         if (!_imu.batchsampler.doing_sensor_rate_logging()) {
             _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_ACCEL, sample_us, accel);
         }
+#endif
     }
 #endif
 }
@@ -711,9 +752,9 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance) /* front end */
     }
     if (_imu._new_gyro_data[instance]) {
         _publish_gyro(instance, _imu._gyro_filtered[instance]);
-        // copy the gyro samples from the backend to the frontend window
 #if HAL_WITH_DSP
-        _imu._gyro_raw[instance] = _imu._last_raw_gyro[instance] * _imu._gyro_raw_sampling_multiplier[instance];
+        // copy the gyro samples from the backend to the frontend window for FFTs sampling at less than IMU rate
+        _imu._gyro_for_fft[instance] = _imu._last_gyro_for_fft[instance];
 #endif
         _imu._new_gyro_data[instance] = false;
     }
@@ -723,6 +764,9 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance) /* front end */
 
     if (_last_gyro_filter_hz != _gyro_filter_cutoff() || sensors_converging()) {
         _imu._gyro_filter[instance].set_cutoff_frequency(gyro_rate, _gyro_filter_cutoff());
+#if HAL_WITH_DSP
+        _imu._post_filter_gyro_filter[instance].set_cutoff_frequency(gyro_rate, _gyro_filter_cutoff());
+#endif
         _last_gyro_filter_hz = _gyro_filter_cutoff();
     }
 

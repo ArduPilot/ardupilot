@@ -27,4 +27,4 @@ md5sum $mplatest > .latest
 mv upgrade upgrade.old
 mv upgrade.new upgrade
 rm -rf upgrade.old
-find upgrade -type f -print0 | xargs -i -0 md5sum '{}' > checksums.txt
+find upgrade -type f  \( ! -iname "files.html" ! -iname ".makehtml" \) -print0 | xargs -i -0 md5sum '{}' > checksums.txt

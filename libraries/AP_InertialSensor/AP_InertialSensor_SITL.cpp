@@ -1,7 +1,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_InertialSensor_SITL.h"
+#include <AP_Logger/AP_Logger.h>
 #include <SITL/SITL.h>
-#include <stdio.h>
+#include <fcntl.h>
 
 #if AP_SIM_INS_ENABLED
 
@@ -185,6 +186,11 @@ void AP_InertialSensor_SITL::generate_accel()
 
         _notify_new_accel_sensor_rate_sample(accel_instance, accel);
 
+#if AP_SIM_INS_FILE_ENABLED
+        if (sitl->accel_file_rw == SITL::SIM::INSFileMode::INS_FILE_WRITE) {
+            write_accel_to_file(accel);
+        }
+#endif
         accel_accum += accel;
     }
 
@@ -280,6 +286,12 @@ void AP_InertialSensor_SITL::generate_gyro()
 
         gyro_accum += gyro;
         _notify_new_gyro_sensor_rate_sample(gyro_instance, gyro);
+
+#if AP_SIM_INS_FILE_ENABLED
+        if (sitl->gyro_file_rw == SITL::SIM::INSFileMode::INS_FILE_WRITE) {
+            write_gyro_to_file(gyro);
+        }
+#endif
     }
     gyro_accum /= nsamples;
     _rotate_and_correct_gyro(gyro_instance, gyro_accum);
@@ -301,6 +313,12 @@ void AP_InertialSensor_SITL::timer_update(void)
     }
     if (now >= next_accel_sample) {
         if (((1U << accel_instance) & sitl->accel_fail_mask) == 0) {
+#if AP_SIM_INS_FILE_ENABLED
+            if (sitl->accel_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ
+                || sitl->accel_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ_STOP_ON_EOF) {
+                read_accel_from_file();
+            } else
+#endif
             generate_accel();
             if (next_accel_sample == 0) {
                 next_accel_sample = now + 1000000UL / accel_sample_hz;
@@ -313,7 +331,14 @@ void AP_InertialSensor_SITL::timer_update(void)
     }
     if (now >= next_gyro_sample) {
         if (((1U << gyro_instance) & sitl->gyro_fail_mask) == 0) {
+#if AP_SIM_INS_FILE_ENABLED
+            if (sitl->gyro_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ
+                || sitl->gyro_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ_STOP_ON_EOF) {
+                read_gyro_from_file();
+            } else
+#endif
             generate_gyro();
+
             if (next_gyro_sample == 0) {
                 next_gyro_sample = now + 1000000UL / gyro_sample_hz;
             } else {
@@ -359,6 +384,159 @@ void AP_InertialSensor_SITL::start()
     }
     bus_id++;
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_SITL::timer_update, void));
+
+#if AP_SIM_INS_FILE_ENABLED
+    if (sitl->accel_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ
+        || sitl->accel_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ_STOP_ON_EOF) {
+        hal.console->printf("Reading accel data from file for IMU[%u]\n", accel_instance);
+    }
+    if (sitl->gyro_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ
+        || sitl->gyro_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ) {
+        hal.console->printf("Reading gyro data from file for IMU[%u]\n", gyro_instance);
+    }
+#endif
 }
+
+/*
+  temporary method to use file as GPS data
+ */
+#if AP_SIM_INS_FILE_ENABLED
+void AP_InertialSensor_SITL::read_gyro_from_file()
+{
+    if (gyro_fd == -1) {
+        char namebuf[32];
+        snprintf(namebuf, 32, "/tmp/gyro%d.dat", gyro_instance);
+        gyro_fd = open(namebuf, O_RDONLY|O_CLOEXEC);
+        if (gyro_fd == -1) {
+            AP_HAL::panic("gyro data file %s not found", namebuf);
+        }
+    }
+
+    float buf[8 * 3 * sizeof(float)];
+
+    uint8_t nsamples = enable_fast_sampling(gyro_instance) ? 8 : 1;
+    ssize_t ret = ::read(gyro_fd, buf, nsamples * 3 * sizeof(float));
+    if (ret == (ssize_t)(nsamples * 3 * sizeof(float))) {
+        read_gyro(buf, nsamples);
+    }
+
+    if (ret <= 0) {
+        if (sitl->gyro_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ_STOP_ON_EOF) {
+            //stop logging
+            if (AP_Logger::get_singleton()) {
+                AP::logger().StopLogging();
+            }
+            exit(0);
+        }
+        lseek(gyro_fd, 0, SEEK_SET);
+    }
+}
+
+void AP_InertialSensor_SITL::read_gyro(const float* buf, uint8_t nsamples)
+{
+    Vector3f gyro_accum;
+
+    for (uint8_t j = 0; j < nsamples; j++) {
+        float p = buf[j*3];
+        float q = buf[j*3+1];
+        float r = buf[j*3+2];
+
+        Vector3f gyro = Vector3f(p, q, r);
+
+        _notify_new_gyro_sensor_rate_sample(gyro_instance, gyro);
+
+        gyro_accum += gyro;
+    }
+    gyro_accum /= nsamples;
+    _rotate_and_correct_gyro(gyro_instance, gyro_accum);
+    _notify_new_gyro_raw_sample(gyro_instance, gyro_accum, AP_HAL::micros64());
+}
+
+void AP_InertialSensor_SITL::write_gyro_to_file(const Vector3f& gyro)
+{
+    if (gyro_fd == -1) {
+        char namebuf[32];
+        snprintf(namebuf, 32, "/tmp/gyro%d.dat", gyro_instance);
+        gyro_fd = open(namebuf, O_WRONLY|O_TRUNC|O_CREAT, S_IRWXU|S_IRGRP|S_IROTH);
+    }
+
+    float buf[] { gyro.x, gyro.y, gyro.z };
+
+    if (::write(gyro_fd, (void*)buf, sizeof(float) * 3) < 0) {
+        ::printf("Could not write to file\n");
+    }
+}
+
+void AP_InertialSensor_SITL::read_accel_from_file()
+{
+    if (accel_fd == -1) {
+        char namebuf[32];
+        snprintf(namebuf, 32, "/tmp/accel%d.dat", accel_instance);
+        accel_fd = open(namebuf, O_RDONLY|O_CLOEXEC);
+        if (accel_fd == -1) {
+            AP_HAL::panic("accel data file %s not found", namebuf);
+        }
+    }
+
+    float buf[4*3*sizeof(float)];
+
+    uint8_t nsamples = enable_fast_sampling(accel_instance) ? 4 : 1;
+    ssize_t ret = ::read(accel_fd, buf, nsamples * 3 * sizeof(float));
+    if (ret == (ssize_t)(nsamples * 3 * sizeof(float))) {
+        read_accel(buf, nsamples);
+    }
+
+    if (ret <= 0) {
+        if (sitl->accel_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ_STOP_ON_EOF) {
+            //stop logging
+            if (AP_Logger::get_singleton()) {
+                AP::logger().StopLogging();
+            }
+            exit(0);
+        }
+        lseek(accel_fd, 0, SEEK_SET);
+    }
+}
+
+void AP_InertialSensor_SITL::read_accel(const float* buf, uint8_t nsamples)
+{
+    Vector3f accel_accum;
+
+    for (uint8_t j = 0; j < nsamples; j++) {
+        float p = buf[j*3];
+        float q = buf[j*3+1];
+        float r = buf[j*3+2];
+
+        Vector3f accel = Vector3f(p, q, r);
+
+        _notify_new_accel_sensor_rate_sample(accel_instance, accel);
+
+        accel_accum += accel;
+    }
+
+    accel_accum /= nsamples;
+    _rotate_and_correct_accel(accel_instance, accel_accum);
+    _notify_new_accel_raw_sample(accel_instance, accel_accum, AP_HAL::micros64());
+
+    _publish_temperature(accel_instance, get_temperature());
+}
+
+void AP_InertialSensor_SITL::write_accel_to_file(const Vector3f& accel)
+{
+
+    if (accel_fd == -1) {
+        char namebuf[32];
+        snprintf(namebuf, 32, "/tmp/accel%d.dat", accel_instance);
+        accel_fd = open(namebuf, O_WRONLY|O_TRUNC|O_CREAT, S_IRWXU|S_IRGRP|S_IROTH);
+    }
+
+    float buf[] { accel.x, accel.y, accel.z };
+
+    if (::write(accel_fd, (void*)buf, sizeof(float) * 3) < 0) {
+        ::printf("Could not write to file\n");
+    }
+}
+
+#endif  // AP_SIM_INS_FILE_ENABLED
 
 #endif // AP_SIM_INS_ENABLED

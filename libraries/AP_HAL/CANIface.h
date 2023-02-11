@@ -220,8 +220,29 @@ public:
         return 0;
     }
 
+    typedef struct {
+        uint32_t tx_requests;
+        uint32_t tx_rejected;
+        uint32_t tx_overflow;
+        uint32_t tx_success;
+        uint32_t tx_timedout;
+        uint32_t tx_abort;
+        uint32_t rx_received;
+        uint32_t rx_overflow;
+        uint32_t rx_errors;
+        uint32_t num_busoff_err;
+    } bus_stats_t;
+
+#if !defined(HAL_BOOTLOADER_BUILD)
     //Get status info of the interface
     virtual void get_stats(ExpandingString &str) {}
+
+    /*
+      return bus statistics for logging
+      return nullptr if no statistics available
+     */
+    virtual const bus_stats_t *get_statistics(void) const { return nullptr; };
+#endif
 
     // return true if busoff was detected and not cleared
     virtual bool is_busoff() const

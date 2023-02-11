@@ -29,6 +29,9 @@ public:
     // get serial port number, -1 for not enabled
     virtual int8_t get_port(void) const { return -1; }
 
+    // Get model/type name
+    virtual const char* get_name() const = 0;
+
     // accessors for AP_AHRS
     virtual bool healthy(void) const = 0;
     virtual bool initialised(void) const = 0;
@@ -42,6 +45,7 @@ public:
 protected:
     AP_ExternalAHRS::state_t &state;
     uint16_t get_rate(void) const;
+    bool option_is_set(AP_ExternalAHRS::OPTIONS option) const;
 
 private:
     AP_ExternalAHRS &frontend;

@@ -254,10 +254,12 @@ singleton AP_Vehicle method get_pan_tilt_norm boolean float'Null float'Null
 singleton AP_Vehicle method nav_script_time boolean uint16_t'Null uint8_t'Null float'Null float'Null int16_t'Null int16_t'Null
 singleton AP_Vehicle method nav_script_time_done void uint16_t'skip_check
 singleton AP_Vehicle method set_target_throttle_rate_rpy void float -100 100 float'skip_check float'skip_check float'skip_check
+singleton AP_Vehicle method set_rudder_offset void float'skip_check boolean
 singleton AP_Vehicle method set_desired_turn_rate_and_speed boolean float'skip_check float'skip_check
 singleton AP_Vehicle method set_desired_speed boolean float'skip_check
 singleton AP_Vehicle method nav_scripting_enable boolean uint8_t'skip_check
 singleton AP_Vehicle method set_velocity_match boolean Vector2f
+singleton AP_Vehicle method set_land_descent_rate boolean float'skip_check
 singleton AP_Vehicle method has_ekf_failsafed boolean
 
 include AP_SerialLED/AP_SerialLED.h
@@ -279,6 +281,8 @@ singleton SRV_Channels method get_output_scaled float SRV_Channel::Aux_servo_fun
 singleton SRV_Channels method set_output_norm void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 float -1 1
 singleton SRV_Channels method set_angle void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'skip_check
 singleton SRV_Channels method set_range void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'skip_check
+singleton SRV_Channels method get_emergency_stop boolean
+singleton SRV_Channels manual get_safety_state SRV_Channels_get_safety_state 0
 
 ap_object RC_Channel method norm_input float
 ap_object RC_Channel method norm_input_dz float
@@ -356,6 +360,9 @@ userdata Parameter method set_and_save boolean float'skip_check
 userdata Parameter method configured boolean
 userdata Parameter method set_default boolean float'skip_check
 
+include AP_Scripting/AP_Scripting.h
+singleton AP_Scripting rename scripting
+singleton AP_Scripting method restart_all void
 
 include AP_Mission/AP_Mission.h
 singleton AP_Mission rename mission
@@ -371,6 +378,8 @@ singleton AP_Mission method num_commands uint16_t
 singleton AP_Mission method get_item boolean uint16_t'skip_check mavlink_mission_item_int_t'Null
 singleton AP_Mission method set_item boolean uint16_t'skip_check mavlink_mission_item_int_t
 singleton AP_Mission method clear boolean
+singleton AP_Mission method cmd_has_location boolean uint16_t'skip_check
+
 
 userdata mavlink_mission_item_int_t field param1 float'skip_check read write
 userdata mavlink_mission_item_int_t field param2 float'skip_check read write
@@ -407,6 +416,8 @@ singleton QuadPlane rename quadplane
 singleton QuadPlane depends APM_BUILD_TYPE(APM_BUILD_ArduPlane) && HAL_QUADPLANE_ENABLED
 singleton QuadPlane method in_vtol_mode boolean
 singleton QuadPlane method in_assisted_flight boolean
+singleton QuadPlane method abort_landing boolean
+singleton QuadPlane method in_vtol_land_descent boolean
 
 include AP_Motors/AP_MotorsMatrix.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AP_MotorsMatrix depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
@@ -516,6 +527,8 @@ singleton AP::motors() depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_CO
 singleton AP::motors() literal
 singleton AP::motors() rename motors
 singleton AP::motors() method set_frame_string void string
+singleton AP::motors() method get_interlock boolean
+singleton AP::motors() method get_desired_spool_state uint8_t
 
 include AP_Common/AP_FWVersion.h
 singleton AP::fwversion() literal
@@ -553,6 +566,10 @@ singleton AP_Mount method set_angle_target void uint8_t'skip_check float'skip_ch
 singleton AP_Mount method set_rate_target void uint8_t'skip_check float'skip_check float'skip_check float'skip_check boolean
 singleton AP_Mount method set_roi_target void uint8_t'skip_check Location
 singleton AP_Mount method get_attitude_euler boolean uint8_t'skip_check float'Null float'Null float'Null
+singleton AP_Mount method get_rate_target boolean uint8_t'skip_check float'Null float'Null float'Null boolean'Null
+singleton AP_Mount method get_angle_target boolean uint8_t'skip_check float'Null float'Null float'Null boolean'Null
+singleton AP_Mount method get_location_target boolean uint8_t'skip_check Location'Null
+singleton AP_Mount method set_attitude_euler void uint8_t'skip_check float'skip_check float'skip_check float'skip_check
 
 include AP_Winch/AP_Winch.h depends APM_BUILD_COPTER_OR_HELI
 singleton AP_Winch depends APM_BUILD_COPTER_OR_HELI
@@ -635,3 +652,5 @@ userdata uint32_t manual_operator __tostring uint32_t___tostring
 userdata uint32_t manual toint uint32_t_toint 0
 userdata uint32_t manual tofloat uint32_t_tofloat 0
 
+global manual dirlist lua_dirlist 1
+global manual remove lua_removefile 1

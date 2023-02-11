@@ -8,7 +8,7 @@ bool ModeQHover::_enter()
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(-quadplane.get_pilot_velocity_z_max_dn(), quadplane.pilot_velocity_z_max_up, quadplane.pilot_accel_z);
     pos_control->set_correction_speed_accel_z(-quadplane.get_pilot_velocity_z_max_dn(), quadplane.pilot_velocity_z_max_up, quadplane.pilot_accel_z);
-    quadplane.set_climb_rate_cms(0, false);
+    quadplane.set_climb_rate_cms(0);
 
     quadplane.init_throttle_wait();
     return true;

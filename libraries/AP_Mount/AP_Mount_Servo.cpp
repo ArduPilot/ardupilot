@@ -137,62 +137,50 @@ void AP_Mount_Servo::update_angle_outputs(const MountTarget& angle_rad)
 {
     const AP_AHRS &ahrs = AP::ahrs();
 
-    // roll and pitch are based on the ahrs roll and pitch angle plus any requested angle
+    // get target yaw in body-frame with limits applied
+    const float yaw_bf_rad = constrain_float(get_bf_yaw_angle(angle_rad), radians(_params.yaw_angle_min), radians(_params.yaw_angle_max));
+
+    // default output to target earth-frame roll and pitch angles, body-frame yaw
     _angle_bf_output_deg.x = degrees(angle_rad.roll);
     _angle_bf_output_deg.y = degrees(angle_rad.pitch);
-    _angle_bf_output_deg.z = degrees(get_bf_yaw_angle(angle_rad));
-    if (requires_stabilization) {
-        _angle_bf_output_deg.x -= degrees(ahrs.roll);
-        _angle_bf_output_deg.y -= degrees(ahrs.pitch);
+    _angle_bf_output_deg.z = degrees(yaw_bf_rad);
+
+    // this is sufficient for self-stabilising brushless gimbals
+    if (!requires_stabilization) {
+        return;
     }
+
+    // retrieve lean angles from ahrs
+    Vector2f ahrs_angle_rad = {ahrs.roll, ahrs.pitch};
+
+    // rotate ahrs roll and pitch angles to gimbal yaw
+    if (has_pan_control()) {
+        ahrs_angle_rad.rotate(-yaw_bf_rad);
+    }
+
+    // add roll and pitch lean angle correction
+    _angle_bf_output_deg.x -= degrees(ahrs_angle_rad.x);
+    _angle_bf_output_deg.y -= degrees(ahrs_angle_rad.y);
 
     // lead filter
     const Vector3f &gyro = ahrs.get_gyro();
 
-    if (requires_stabilization && !is_zero(_params.roll_stb_lead) && fabsf(ahrs.pitch) < M_PI/3.0f) {
+    if (!is_zero(_params.roll_stb_lead) && fabsf(ahrs.pitch) < M_PI/3.0f) {
         // Compute rate of change of euler roll angle
         float roll_rate = gyro.x + (ahrs.sin_pitch() / ahrs.cos_pitch()) * (gyro.y * ahrs.sin_roll() + gyro.z * ahrs.cos_roll());
         _angle_bf_output_deg.x -= degrees(roll_rate) * _params.roll_stb_lead;
     }
 
-    if (requires_stabilization && !is_zero(_params.pitch_stb_lead)) {
+    if (!is_zero(_params.pitch_stb_lead)) {
         // Compute rate of change of euler pitch angle
         float pitch_rate = ahrs.cos_pitch() * gyro.y - ahrs.sin_roll() * gyro.z;
         _angle_bf_output_deg.y -= degrees(pitch_rate) * _params.pitch_stb_lead;
     }
 }
 
-// closest_limit - returns closest angle to 'angle' taking into account limits.  all angles are in degrees * 10
-int16_t AP_Mount_Servo::closest_limit(int16_t angle, int16_t angle_min, int16_t angle_max)
-{
-    // Make sure the angle lies in the interval [-180 .. 180[ degrees
-    while (angle < -1800) angle += 3600;
-    while (angle >= 1800) angle -= 3600;
-
-    // Make sure the angle limits lie in the interval [-180 .. 180[ degrees
-    while (angle_min < -1800) angle_min += 3600;
-    while (angle_min >= 1800) angle_min -= 3600;
-    while (angle_max < -1800) angle_max += 3600;
-    while (angle_max >= 1800) angle_max -= 3600;
-
-    // If the angle is outside servo limits, saturate the angle to the closest limit
-    // On a circle the closest angular position must be carefully calculated to account for wrap-around
-    if ((angle < angle_min) && (angle > angle_max)) {
-        // angle error if min limit is used
-        int16_t err_min = angle_min - angle + (angle<angle_min ? 0 : 3600);     // add 360 degrees if on the "wrong side"
-        // angle error if max limit is used
-        int16_t err_max = angle - angle_max + (angle>angle_max ? 0 : 3600);     // add 360 degrees if on the "wrong side"
-        angle = err_min<err_max ? angle_min : angle_max;
-    }
-
-    return angle;
-}
-
 // move_servo - moves servo with the given id to the specified angle.  all angles are in degrees * 10
 void AP_Mount_Servo::move_servo(uint8_t function_idx, int16_t angle, int16_t angle_min, int16_t angle_max)
 {
-	// saturate to the closest angle limit if outside of [min max] angle interval
-	int16_t servo_out = closest_limit(angle, angle_min, angle_max);
-	SRV_Channels::move_servo((SRV_Channel::Aux_servo_function_t)function_idx, servo_out, angle_min, angle_max);
+	SRV_Channels::move_servo((SRV_Channel::Aux_servo_function_t)function_idx, angle, angle_min, angle_max);
 }
 #endif // HAL_MOUNT_SERVO_ENABLED

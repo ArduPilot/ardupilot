@@ -31,6 +31,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+
+// load a json file, actual return type is picojson::value
+void *load_json(const char *filename);
+
 /*
   use picojson to load optional frame files
  */

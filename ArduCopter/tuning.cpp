@@ -189,5 +189,9 @@ void Copter::tuning()
         copter.mode_systemid.set_magnitude(tuning_value);
 #endif
         break;
+
+    case TUNING_POS_CONTROL_ANGLE_MAX:
+        pos_control->set_lean_angle_max_cd(tuning_value * 100.0);
+        break;
     }
 }

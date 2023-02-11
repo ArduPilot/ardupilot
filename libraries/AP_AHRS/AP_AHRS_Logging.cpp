@@ -9,7 +9,7 @@
 void AP_AHRS::Write_AHRS2() const
 {
     Vector3f euler;
-    struct Location loc;
+    Location loc;
     Quaternion quat;
     if (!get_secondary_attitude(euler) || !get_secondary_position(loc) || !get_secondary_quaternion(quat)) {
         return;
@@ -160,21 +160,26 @@ void AP_AHRS_View::Write_Rate(const AP_Motors &motors, const AC_AttitudeControl 
         yaw_out         : motors.get_yaw()+motors.get_yaw_ff(),
         control_accel   : (float)accel_target.z,
         accel           : (float)(-(get_accel_ef().z + GRAVITY_MSS) * 100.0f),
-        accel_out       : motors.get_throttle()
+        accel_out       : motors.get_throttle(),
+        throttle_slew   : motors.get_throttle_slew_rate()
     };
     AP::logger().WriteBlock(&pkt_rate, sizeof(pkt_rate));
 
     /*
-      log P gain scale if not == 1.0
+      log P/PD gain scale if not == 1.0
      */
     const Vector3f &scale = attitude_control.get_angle_P_scale_logging();
-    if (!is_equal(scale.x,1.0f) || !is_equal(scale.y,1.0f) || !is_equal(scale.z,1.0f)) {
+    const Vector3f &pd_scale = attitude_control.get_PD_scale_logging();
+    if (scale != AC_AttitudeControl::VECTORF_111 || pd_scale != AC_AttitudeControl::VECTORF_111) {
         const struct log_ATSC pkt_ATSC {
             LOG_PACKET_HEADER_INIT(LOG_ATSC_MSG),
             time_us  : timeus,
             scaleP_x : scale.x,
             scaleP_y : scale.y,
             scaleP_z : scale.z,
+            scalePD_x : pd_scale.x,
+            scalePD_y : pd_scale.y,
+            scalePD_z : pd_scale.z,
         };
         AP::logger().WriteBlock(&pkt_ATSC, sizeof(pkt_ATSC));
     }

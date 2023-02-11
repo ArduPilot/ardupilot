@@ -41,12 +41,13 @@ the ground track.
 | 18 | Downline-45              | radius | height loss |             |            | No         |
 | 19 | Stall Turn(experimental) | radius | height      | direction   |            | Yes        |
 | 20 | Procedure Turn           | radius | bank angle  | step-out    |            | Yes        |
-| 21 | Derry Turn               | radius | bank angle  |             |            | No         |
 | 23 | Half Climbing Circle     | radius | height      | bank angle  |            | Yes        |
 | 25 | Laydown Humpty           | radius | height      |             |            | Yes        |
-| 25 | Barrel Roll              | radius | length      | num spirals |            | No         |
-| 26 | Straight Hold            | length | bank angle  |             |            | No         |
+| 26 | Barrel Roll              | radius | length      | num spirals |            | No         |
+| 27 | Straight Hold            | length | bank angle  |             |            | No         |
+| 28 | Partial Circle           | radius | bank angle  | arc angle   |            | No         |
 | 31 | Multi Point Roll         | length | num points  | hold frac   | pts to do  | No         |
+| 32 | Side Step                | width  | length      |             |            | No         |
 
 Some notes about maneuver arguments (arg1 - arg4):
 These are parameters each maneuver requires to execute. For example the length of a roll or radius of a loop (in meters), the number of rolls, the height of the maneuver, etc.
@@ -57,16 +58,19 @@ Length = 100, num points = 4, hold fraction = 0.5, pts to do = 2.
 Remember, the model is now exiting inverted so the next maneuver must be planned to start from this position.
 
 Note: In the script you will find other (specialised) manouvers which do not appear in the 
-'command table'. These tend to be specialised manouvers which may expect an inverted entry,a very high entry (270m), or 
-finish inverted and will not end well if started upright at a low altitude! These 
+'command table'. These are not intended to be used for 'tricks on a switch'. These 
 manouvers are used in some of the schedules defined below. 
 
+Some are explained in the README.md file for the Schedules examples.
 
 ## Available Schedules (pre-defined sequences of manouvers)
 
 See the Schedules subdirectory for a wide variety of pre-defined
 full aerobatic schedules you can use and instructions for how to
-install them.
+install them. They can be used either in AUTO missions (See below) or as
+"tricks on a switch".
+
+In addition, new tricks can be created and loaded from within these schedules files. See the "Airshow.txt" schedule for an example.
 
 ## Loading the script
 
@@ -186,4 +190,5 @@ tracking. Some of the key parameters are:
  - AEROM_THR_MIN : minumum throttle percentage for all aerobatic maneuvers
  - AEROM_THR_BOOST: minumum throttle percentage for maneuvers marked as throttle boost
  - AEROM_YAW_ACCEL: maximum yaw acceleration in degrees per second per second. Lower to soften yaw control
+ - AEROM_BOX_WIDTH: the length of the aerobatic box whose center is defined by the start of a schedule
  - AEROM_PATH_SCALE: scale factor for all maneuvers. A value above 1.0 will increase the size of the maneuvers. A value below 1.0 will decrease the size. A negative value will mirror the maneuvers, allowing a sequence designed for left-to-right to be flown right-to-left.

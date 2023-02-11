@@ -101,31 +101,25 @@ const AP_Param::GroupInfo AP_Button::var_info[] = {
     AP_GROUPINFO("OPTIONS4",  9, AP_Button, options[3], 0),
 
     // @Param: FUNC1
+    // @CopyFieldsFrom: RC1_OPTION
     // @DisplayName: Button Pin 1 RC Channel function
     // @Description: Auxiliary RC Options function executed on pin change
-    // @CopyValuesFrom: RC1_OPTION
     // @User: Standard
     AP_GROUPINFO("FUNC1",  10, AP_Button, pin_func[0], (uint16_t)RC_Channel::AUX_FUNC::DO_NOTHING),
 
     // @Param: FUNC2
+    // @CopyFieldsFrom: BTN_FUNC1
     // @DisplayName: Button Pin 2 RC Channel function
-    // @Description: Auxiliary RC Options function executed on pin change
-    // @CopyValuesFrom: RC1_OPTION
-    // @User: Standard
     AP_GROUPINFO("FUNC2",  11, AP_Button, pin_func[1], (uint16_t)RC_Channel::AUX_FUNC::DO_NOTHING),
 
     // @Param: FUNC3
+    // @CopyFieldsFrom: BTN_FUNC1
     // @DisplayName: Button Pin 3 RC Channel function
-    // @Description: Auxiliary RC Options function executed on pin change
-    // @CopyValuesFrom: RC1_OPTION
-    // @User: Standard
     AP_GROUPINFO("FUNC3",  12, AP_Button, pin_func[2], (uint16_t)RC_Channel::AUX_FUNC::DO_NOTHING),
 
     // @Param: FUNC4
+    // @CopyFieldsFrom: BTN_FUNC1
     // @DisplayName: Button Pin 4 RC Channel function
-    // @Description: Auxiliary RC Options function executed on pin change
-    // @CopyValuesFrom: RC1_OPTION
-    // @User: Standard
     AP_GROUPINFO("FUNC4",  13, AP_Button, pin_func[3], (uint16_t)RC_Channel::AUX_FUNC::DO_NOTHING),
 
     AP_GROUPEND    

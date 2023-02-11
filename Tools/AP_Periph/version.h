@@ -2,7 +2,7 @@
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
-#define THISFIRMWARE "AP_Periph V1.5dev"
+#define THISFIRMWARE "AP_Periph V1.5.0-dev"
 
 // the following line is parsed by the autotest scripts
 #define FIRMWARE_VERSION 1,5,0,FIRMWARE_VERSION_TYPE_DEV

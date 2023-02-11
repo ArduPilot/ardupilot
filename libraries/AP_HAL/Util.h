@@ -49,7 +49,9 @@ public:
     virtual bool run_debug_shell(AP_HAL::BetterStream *stream) = 0;
 
     enum safety_state : uint8_t {
-        SAFETY_NONE, SAFETY_DISARMED, SAFETY_ARMED
+        SAFETY_NONE,
+        SAFETY_DISARMED,
+        SAFETY_ARMED,
     };
 
     /*
@@ -153,7 +155,7 @@ public:
 #ifdef ENABLE_HEAP
     // heap functions, note that a heap once alloc'd cannot be dealloc'd
     virtual void *allocate_heap_memory(size_t size) = 0;
-    virtual void *heap_realloc(void *heap, void *ptr, size_t new_size) = 0;
+    virtual void *heap_realloc(void *heap, void *ptr, size_t old_size, size_t new_size) = 0;
 #if USE_LIBC_REALLOC
     virtual void *std_realloc(void *ptr, size_t new_size) { return realloc(ptr, new_size); }
 #else

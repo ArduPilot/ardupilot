@@ -50,6 +50,8 @@ public:
     void handle_mission_command(const class AP_Mission::Mission_Command& cmd);
 
     bool arming_checks(size_t buflen, char *buffer) const;
+    
+    void restart_all(void);
 
    // User parameters for inputs into scripts 
    AP_Float _user[6];

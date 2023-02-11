@@ -46,6 +46,7 @@ def build(bld):
                      'AP_SerialManager',
                      'AP_RTC',
                      'AP_Compass',
+                     'AP_NMEA_Output',
                      'AP_Baro',
                      'Filter',
                      'AP_InternalError',
@@ -67,6 +68,7 @@ def build(bld):
                      'AP_Stats',
                      'AP_EFI',
                      'AP_CheckFirmware',
+                     'AP_Proximity',
                      ]
     bld.ap_stlib(
         name= 'AP_Periph_libs',

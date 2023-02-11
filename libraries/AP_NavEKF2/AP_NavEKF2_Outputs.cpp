@@ -172,12 +172,14 @@ void NavEKF2_core::getVelNED(Vector3f &vel) const
 // returns false if estimate is unavailable
 bool NavEKF2_core::getAirSpdVec(Vector3f &vel) const
 {
-    if (inhibitWindStates || PV_AidingMode == AID_NONE) {
+    if (PV_AidingMode == AID_NONE) {
         return false;
     }
     vel = (outputDataNew.velocity + velOffsetNED).tofloat();
-    vel.x -= stateStruct.wind_vel.x;
-    vel.y -= stateStruct.wind_vel.y;
+    if (!inhibitWindStates) {
+        vel.x -= stateStruct.wind_vel.x;
+        vel.y -= stateStruct.wind_vel.y;
+    }
     Matrix3f Tnb; // rotation from nav to body frame
     outputDataNew.quat.inverse().rotation_matrix(Tnb);
     vel = Tnb * vel;
@@ -218,7 +220,7 @@ bool NavEKF2_core::getPosNE(Vector2f &posNE) const
         if(validOrigin) {
             if ((dal.gps().status(dal.gps().primary_sensor()) >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
                 // If the origin has been set and we have GPS, then return the GPS position relative to the origin
-                const struct Location &gpsloc = dal.gps().location();
+                const Location &gpsloc = dal.gps().location();
                 const Vector2F tempPosNE = EKF_origin.get_distance_NE_ftype(gpsloc);
                 posNE.x = tempPosNE.x;
                 posNE.y = tempPosNE.y;
@@ -278,7 +280,7 @@ bool NavEKF2_core::getHAGL(float &HAGL) const
 // If a calculated location isn't available, return a raw GPS measurement
 // The status will return true if a calculation or raw measurement is available
 // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
-bool NavEKF2_core::getLLH(struct Location &loc) const
+bool NavEKF2_core::getLLH(Location &loc) const
 {
     const auto &gps = dal.gps();
     Location origin;
@@ -300,7 +302,7 @@ bool NavEKF2_core::getLLH(struct Location &loc) const
             // in this mode we cannot use the EKF states to estimate position so will return the best available data
             if ((gps.status() >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
                 // we have a GPS position fix to return
-                const struct Location &gpsloc = gps.location();
+                const Location &gpsloc = gps.location();
                 loc.lat = gpsloc.lat;
                 loc.lng = gpsloc.lng;
                 return true;
@@ -345,7 +347,7 @@ void NavEKF2_core::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGa
 
 
 // return the LLH location of the filters NED origin
-bool NavEKF2_core::getOriginLLH(struct Location &loc) const
+bool NavEKF2_core::getOriginLLH(Location &loc) const
 {
     if (validOrigin) {
         loc = EKF_origin;

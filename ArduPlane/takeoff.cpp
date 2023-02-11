@@ -274,7 +274,7 @@ return_zero:
     return 0;
 }
 
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
 /*
   update landing gear
  */

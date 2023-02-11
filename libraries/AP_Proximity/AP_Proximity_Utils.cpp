@@ -54,6 +54,7 @@ bool AP_Proximity::get_rangefinder_alt(float &alt_m) const
 // Check if Obstacle defined by body-frame yaw and pitch is near ground
 bool AP_Proximity::check_obstacle_near_ground(float pitch, float yaw, float distance) const
 {
+#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
     if (!_ign_gnd_enable) {
         return false;
     }
@@ -83,6 +84,7 @@ bool AP_Proximity::check_obstacle_near_ground(float pitch, float yaw, float dist
             return true;
         }
     }
+#endif
     return false;
 }
 

@@ -1113,6 +1113,7 @@ def write_mcu_config(f):
 #define HAL_USE_EMPTY_STORAGE 1
 #ifndef HAL_STORAGE_SIZE
 #define HAL_STORAGE_SIZE 16384
+#define DISABLE_WATCHDOG 1
 #endif
 ''')
         else:
@@ -1149,6 +1150,7 @@ def write_mcu_config(f):
 #define HAL_USE_RTC FALSE
 #define DISABLE_SERIAL_ESC_COMM TRUE
 #define CH_CFG_USE_DYNAMIC FALSE
+#define DISABLE_WATCHDOG 1
 ''')
         if not env_vars['EXT_FLASH_SIZE_MB'] and not args.signed_fw:
             f.write('''
@@ -1865,8 +1867,7 @@ def write_I2C_config(f):
 ''')
         return
     if 'I2C_ORDER' not in config:
-        print("Missing I2C_ORDER config")
-        return
+        error("Missing I2C_ORDER config")
     i2c_list = config['I2C_ORDER']
     f.write('// I2C configuration\n')
     if len(i2c_list) == 0:
@@ -2367,10 +2368,6 @@ def write_hwdef_header(outfilename):
     write_BARO_config(f)
     write_AIRSPEED_config(f)
     write_board_validate_macro(f)
-    add_apperiph_defaults(f)
-    add_bootloader_defaults(f)
-    add_iomcu_firmware_defaults(f)
-    add_normal_firmware_defaults(f)
     write_check_firmware(f)
 
     write_peripheral_enable(f)
@@ -2491,6 +2488,11 @@ def write_hwdef_header(outfilename):
             for r in dma_required:
                 if fnmatch.fnmatch(d, r):
                     error("Missing required DMA for %s" % d)
+
+    add_apperiph_defaults(f)
+    add_bootloader_defaults(f)
+    add_iomcu_firmware_defaults(f)
+    add_normal_firmware_defaults(f)
 
     f.close()
     # see if we ended up with the same file, on an unnecessary reconfigure
@@ -2842,6 +2844,10 @@ def add_apperiph_defaults(f):
 #define HAL_RALLY_ENABLED 0
 #endif
 
+#ifndef HAL_NMEA_OUTPUT_ENABLED
+#define HAL_NMEA_OUTPUT_ENABLED 0
+#endif
+
 #ifndef HAL_CAN_DEFAULT_NODE_ID
 #define HAL_CAN_DEFAULT_NODE_ID 0
 #endif
@@ -2875,6 +2881,16 @@ def add_apperiph_defaults(f):
 
 #ifndef AP_ROBOTISSERVO_ENABLED
 #define AP_ROBOTISSERVO_ENABLED 0
+#endif
+
+// by default an AP_Periph defines as many servo output channels as
+// there are PWM outputs:
+#ifndef NUM_SERVO_CHANNELS
+#ifdef HAL_PWM_COUNT
+#define NUM_SERVO_CHANNELS HAL_PWM_COUNT
+#else
+#define NUM_SERVO_CHANNELS 0
+#endif
 #endif
 
 #ifndef AP_STATS_ENABLED
@@ -2961,6 +2977,29 @@ def add_apperiph_defaults(f):
 #ifndef AP_BATTMON_SYNTHETIC_CURRENT_ENABLED
 #define AP_BATTMON_SYNTHETIC_CURRENT_ENABLED 0
 #endif
+
+#ifndef AP_BATT_MONITOR_MAX_INSTANCES
+#define AP_BATT_MONITOR_MAX_INSTANCES 1
+#endif
+
+#ifndef RANGEFINDER_MAX_INSTANCES
+#define RANGEFINDER_MAX_INSTANCES 1
+#endif
+
+// by default AP_Periphs don't use INS:
+#ifndef AP_INERTIALSENSOR_ENABLED
+#define AP_INERTIALSENSOR_ENABLED 0
+#endif
+
+// no fence by default in AP_Periph:
+#ifndef AP_FENCE_ENABLED
+#define AP_FENCE_ENABLED 0
+#endif
+
+// periph does not save temperature cals etc:
+#ifndef HAL_ENABLE_SAVE_PERSISTENT_PARAMS
+#define HAL_ENABLE_SAVE_PERSISTENT_PARAMS 0
+#endif
 ''')
 
 def add_bootloader_defaults(f):
@@ -2984,7 +3023,21 @@ def add_bootloader_defaults(f):
 #define HAL_GCS_ENABLED 0
 #endif
 
+// by default bootloaders don't use INS:
+#ifndef AP_INERTIALSENSOR_ENABLED
+#define AP_INERTIALSENSOR_ENABLED 0
+#endif
+
 #define HAL_MAX_CAN_PROTOCOL_DRIVERS 0
+
+// bootloader does not save temperature cals etc:
+#ifndef HAL_ENABLE_SAVE_PERSISTENT_PARAMS
+#define HAL_ENABLE_SAVE_PERSISTENT_PARAMS 0
+#endif
+
+#ifndef HAL_GCS_ENABLED
+#define HAL_GCS_ENABLED 0
+#endif
 ''')
 
 def add_iomcu_firmware_defaults(f):
@@ -3002,6 +3055,15 @@ def add_iomcu_firmware_defaults(f):
 // IOMCUs *definitely* don't use the FFT library:
 #ifndef HAL_GYROFFT_ENABLED
 #define HAL_GYROFFT_ENABLED 0
+#endif
+
+// by default IOMCUs don't use INS:
+#ifndef AP_INERTIALSENSOR_ENABLED
+#define AP_INERTIALSENSOR_ENABLED 0
+#endif
+
+#ifndef AP_VIDEOTX_ENABLED
+#define AP_VIDEOTX_ENABLED 0
 #endif
 ''')
 

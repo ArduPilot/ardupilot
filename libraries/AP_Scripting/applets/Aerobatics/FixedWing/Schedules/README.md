@@ -33,3 +33,23 @@ right-to-left and you want to fly it left-to-right due to the wind
 direction. If you set AEROM_PATH_SCALE to -0.5 then it would do a
 half-scale mirrored schedule.
 
+
+## Alignment
+
+Two commands are provided to provide alignment within the aerobatic "box":
+align_center and align_box n. The start of a schedule defines the box center.
+The AEROM_BOX_WIDTH defines the overall length of the box, modified by AEROM_PATH_SCALE if not "1".
+
+align_center: Delays the start of the next trick until the center of the box.If already past it, in the direction of
+travel, the trick begins immediately.
+
+align_box n: Delays the start of the next trick until the n*(half box width-radius of trick) point of the box is reached in the direction of travel. If already past it, in the direction of travel, the trick begins immediately. So n = 1 means the end of the box for the next trick placement.
+
+## GCS/OSD messages
+
+name : string   displays string as the trick name when selected or executed
+message: string  displays the string. Put just preceeding the trick to display it as it begins execution
+
+## Throttle Boost
+
+thr_boost = true command demands increased throttle output if the trick requires it for the specific vehicle.

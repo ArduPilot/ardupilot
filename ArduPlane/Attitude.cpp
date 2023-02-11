@@ -108,7 +108,7 @@ bool Plane::stick_mixing_enabled(void)
   previously set nav_roll calculates roll servo_out to try to
   stabilize the plane at the given roll
  */
-void Plane::stabilize_roll(float speed_scaler)
+void Plane::stabilize_roll()
 {
     if (fly_inverted()) {
         // we want to fly upside down. We need to cope with wrap of
@@ -120,12 +120,13 @@ void Plane::stabilize_roll(float speed_scaler)
         if (ahrs.roll_sensor < 0) nav_roll_cd -= 36000;
     }
 
-    const float roll_out = stabilize_roll_get_roll_out(speed_scaler);
+    const float roll_out = stabilize_roll_get_roll_out();
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, roll_out);
 }
 
-float Plane::stabilize_roll_get_roll_out(float speed_scaler)
+float Plane::stabilize_roll_get_roll_out()
 {
+    const float speed_scaler = get_speed_scaler();
 #if HAL_QUADPLANE_ENABLED
     if (!quadplane.use_fw_attitude_controllers()) {
         // use the VTOL rate for control, to ensure consistency
@@ -152,7 +153,7 @@ float Plane::stabilize_roll_get_roll_out(float speed_scaler)
   previously set nav_pitch and calculates servo_out values to try to
   stabilize the plane at the given attitude.
  */
-void Plane::stabilize_pitch(float speed_scaler)
+void Plane::stabilize_pitch()
 {
     int8_t force_elevator = takeoff_tail_hold();
     if (force_elevator != 0) {
@@ -162,12 +163,13 @@ void Plane::stabilize_pitch(float speed_scaler)
         return;
     }
 
-    const float pitch_out = stabilize_pitch_get_pitch_out(speed_scaler);
+    const float pitch_out = stabilize_pitch_get_pitch_out();
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitch_out);
 }
 
-float Plane::stabilize_pitch_get_pitch_out(float speed_scaler)
+float Plane::stabilize_pitch_get_pitch_out()
 {
+    const float speed_scaler = get_speed_scaler();
 #if HAL_QUADPLANE_ENABLED
     if (!quadplane.use_fw_attitude_controllers()) {
         // use the VTOL rate for control, to ensure consistency
@@ -210,38 +212,16 @@ float Plane::stabilize_pitch_get_pitch_out(float speed_scaler)
 }
 
 /*
-  this gives the user control of the aircraft in stabilization modes
+  this gives the user control of the aircraft in stabilization modes, only used in Stabilize Mode
  */
 void Plane::stabilize_stick_mixing_direct()
 {
-    if (!stick_mixing_enabled() ||
-        control_mode == &mode_acro ||
-        control_mode == &mode_fbwa ||
-        control_mode == &mode_autotune ||
-        control_mode == &mode_fbwb ||
-        control_mode == &mode_cruise ||
-#if HAL_QUADPLANE_ENABLED
-        control_mode == &mode_qstabilize ||
-        control_mode == &mode_qhover ||
-        control_mode == &mode_qloiter ||
-        control_mode == &mode_qland ||
-        control_mode == &mode_qrtl ||
-        control_mode == &mode_qacro ||
-#if QAUTOTUNE_ENABLED
-        control_mode == &mode_qautotune ||
-#endif
-#endif
-        control_mode == &mode_training) {
+    if (!stick_mixing_enabled()) {
         return;
     }
     float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
     aileron = channel_roll->stick_mixing(aileron);
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron);
-
-    if ((control_mode == &mode_loiter) && (plane.g2.flight_options & FlightOptions::ENABLE_LOITER_ALT_CONTROL)) {
-        // loiter is using altitude control based on the pitch stick, don't use it again here
-        return;
-    }
 
     float elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
     elevator = channel_pitch->stick_mixing(elevator);
@@ -318,7 +298,7 @@ void Plane::stabilize_stick_mixing_fbw()
     - rate controlled with ground steering
     - yaw control for coordinated flight    
  */
-void Plane::stabilize_yaw(float speed_scaler)
+void Plane::stabilize_yaw()
 {
     if (landing.is_flaring()) {
         // in flaring then enable ground steering
@@ -351,14 +331,14 @@ void Plane::stabilize_yaw(float speed_scaler)
     /*
       now calculate steering_control.rudder for the rudder
      */
-    calc_nav_yaw_coordinated(speed_scaler);
+    calc_nav_yaw_coordinated();
 }
 
 
 /*
   a special stabilization function for training mode
  */
-void Plane::stabilize_training(float speed_scaler)
+void Plane::stabilize_training()
 {
     const float rexpo = roll_in_expo(false);
     const float pexpo = pitch_in_expo(false);
@@ -366,7 +346,7 @@ void Plane::stabilize_training(float speed_scaler)
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, rexpo);
     } else {
         // calculate what is needed to hold
-        stabilize_roll(speed_scaler);
+        stabilize_roll();
         if ((nav_roll_cd > 0 && rexpo < SRV_Channels::get_output_scaled(SRV_Channel::k_aileron)) ||
             (nav_roll_cd < 0 && rexpo > SRV_Channels::get_output_scaled(SRV_Channel::k_aileron))) {
             // allow user to get out of the roll
@@ -377,7 +357,7 @@ void Plane::stabilize_training(float speed_scaler)
     if (training_manual_pitch) {
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pexpo);
     } else {
-        stabilize_pitch(speed_scaler);
+        stabilize_pitch();
         if ((nav_pitch_cd > 0 && pexpo < SRV_Channels::get_output_scaled(SRV_Channel::k_elevator)) ||
             (nav_pitch_cd < 0 && pexpo > SRV_Channels::get_output_scaled(SRV_Channel::k_elevator))) {
             // allow user to get back to level
@@ -385,7 +365,7 @@ void Plane::stabilize_training(float speed_scaler)
         }
     }
 
-    stabilize_yaw(speed_scaler);
+    stabilize_yaw();
 }
 
 
@@ -393,14 +373,15 @@ void Plane::stabilize_training(float speed_scaler)
   this is the ACRO mode stabilization function. It does rate
   stabilization on roll and pitch axes
  */
-void Plane::stabilize_acro(float speed_scaler)
+void Plane::stabilize_acro()
 {
     if (g.acro_locking == 2 && g.acro_yaw_rate > 0 &&
         yawController.rate_control_enabled()) {
         // we can do 3D acro locking
-        stabilize_acro_quaternion(speed_scaler);
+        stabilize_acro_quaternion();
         return;
     }
+    const float speed_scaler = get_speed_scaler();
     const float rexpo = roll_in_expo(true);
     const float pexpo = pitch_in_expo(true);
     float roll_rate = (rexpo/SERVO_MAX) * g.acro_roll_rate;
@@ -470,7 +451,7 @@ void Plane::stabilize_acro(float speed_scaler)
         steering_control.steering = steering_control.rudder = yawController.get_rate_out(yaw_rate,  speed_scaler, false);
     } else if (plane.g2.flight_options & FlightOptions::ACRO_YAW_DAMPER) {
         // use yaw controller
-        calc_nav_yaw_coordinated(speed_scaler);
+        calc_nav_yaw_coordinated();
     } else {
         /*
           manual rudder
@@ -482,8 +463,9 @@ void Plane::stabilize_acro(float speed_scaler)
 /*
   quaternion based acro stabilization with continuous locking. Enabled with ACRO_LOCKING=2
  */
-void Plane::stabilize_acro_quaternion(float speed_scaler)
+void Plane::stabilize_acro_quaternion()
 {
+    const float speed_scaler = get_speed_scaler();
     auto &q = acro_state.q;
     const float rexpo = roll_in_expo(true);
     const float pexpo = pitch_in_expo(true);
@@ -589,7 +571,6 @@ void Plane::stabilize()
         steer_state.locked_course_err = 0;
         return;
     }
-    float speed_scaler = get_speed_scaler();
 
     uint32_t now = AP_HAL::millis();
     bool allow_stick_mixing = true;
@@ -613,21 +594,34 @@ void Plane::stabilize()
     last_stabilize_ms = now;
 
     if (control_mode == &mode_training) {
-        stabilize_training(speed_scaler);
+        stabilize_training();
 #if AP_SCRIPTING_ENABLED
     } else if (nav_scripting_active()) {
         // scripting is in control of roll and pitch rates and throttle
+        const float speed_scaler = get_speed_scaler();
         const float aileron = rollController.get_rate_out(nav_scripting.roll_rate_dps, speed_scaler);
         const float elevator = pitchController.get_rate_out(nav_scripting.pitch_rate_dps, speed_scaler);
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron);
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elevator);
         if (yawController.rate_control_enabled()) {
-            const float rudder = yawController.get_rate_out(nav_scripting.yaw_rate_dps, speed_scaler, false);
+            float rudder = nav_scripting.rudder_offset_pct * 45;
+            if (nav_scripting.run_yaw_rate_controller) {
+                rudder += yawController.get_rate_out(nav_scripting.yaw_rate_dps, speed_scaler, false);
+            } else {
+                yawController.reset_I();
+            }
             steering_control.rudder = rudder;
         }
 #endif
     } else if (control_mode == &mode_acro) {
-        stabilize_acro(speed_scaler);
+        stabilize_acro();
+    } else if (control_mode == &mode_stabilize) {
+        stabilize_roll();
+        stabilize_pitch();
+        if (allow_stick_mixing) {
+            stabilize_stick_mixing_direct();
+        }
+        stabilize_yaw();
 #if HAL_QUADPLANE_ENABLED
     } else if (control_mode->is_vtol_mode() && !quadplane.tailsitter.in_vtol_transition(now)) {
         // run controlers specific to this mode
@@ -635,22 +629,21 @@ void Plane::stabilize()
 
         // we also stabilize using fixed wing surfaces
         if (plane.control_mode->mode_number() == Mode::Number::QACRO) {
-            stabilize_acro(speed_scaler);
+            stabilize_acro();
         } else {
-            stabilize_roll(speed_scaler);
-            stabilize_pitch(speed_scaler);
+            stabilize_roll();
+            stabilize_pitch();
         }
 #endif
     } else {
-        if (allow_stick_mixing && g.stick_mixing == StickMixing::FBW && control_mode != &mode_stabilize) {
+        // Direct stick mixing functionality has been removed, so as not to remove all stick mixing from the user completely
+        // the old direct option is now used to enable fbw mixing, this is easier than doing a param conversion.
+        if (allow_stick_mixing && ((g.stick_mixing == StickMixing::FBW) || (g.stick_mixing == StickMixing::DIRECT_REMOVED))) {
             stabilize_stick_mixing_fbw();
         }
-        stabilize_roll(speed_scaler);
-        stabilize_pitch(speed_scaler);
-        if (allow_stick_mixing && (g.stick_mixing == StickMixing::DIRECT || control_mode == &mode_stabilize)) {
-            stabilize_stick_mixing_direct();
-        }
-        stabilize_yaw(speed_scaler);
+        stabilize_roll();
+        stabilize_pitch();
+        stabilize_yaw();
     }
 
     /*
@@ -704,8 +697,9 @@ void Plane::calc_throttle()
 /*
   calculate yaw control for coordinated flight
  */
-void Plane::calc_nav_yaw_coordinated(float speed_scaler)
+void Plane::calc_nav_yaw_coordinated()
 {
+    const float speed_scaler = get_speed_scaler();
     bool disable_integrator = false;
     int16_t rudder_in = rudder_input();
 
@@ -717,7 +711,7 @@ void Plane::calc_nav_yaw_coordinated(float speed_scaler)
             plane.guided_state.last_forced_rpy_ms.z > 0 &&
             millis() - plane.guided_state.last_forced_rpy_ms.z < 3000) {
         commanded_rudder = plane.guided_state.forced_rpy_cd.z;
-    } else if (control_mode == &mode_autotune && g.acro_yaw_rate > 0 && yawController.rate_control_enabled()) {
+    } else if (autotuning && g.acro_yaw_rate > 0 && yawController.rate_control_enabled()) {
         // user is doing an AUTOTUNE with yaw rate control
         const float rudd_expo = rudder_in_expo(true);
         const float yaw_rate = (rudd_expo/SERVO_MAX) * g.acro_yaw_rate;
@@ -863,8 +857,7 @@ void Plane::calc_nav_roll()
 
         float bank_limit = degrees(atanf(guided_state.target_heading_accel_limit/GRAVITY_MSS)) * 1e2f;
 
-        g2.guidedHeading.update_error(error); // push error into AC_PID , possible improvement is to use update_all instead.?
-        g2.guidedHeading.set_dt(delta);
+        g2.guidedHeading.update_error(error, delta); // push error into AC_PID , possible improvement is to use update_all instead.?
 
         float i = g2.guidedHeading.get_i(); // get integrator TODO
         if (((is_negative(error) && !guided_state.target_heading_limit_low) || (is_positive(error) && !guided_state.target_heading_limit_high))) {

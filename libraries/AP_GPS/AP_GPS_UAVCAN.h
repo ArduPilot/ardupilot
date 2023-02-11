@@ -111,6 +111,7 @@ private:
     bool seen_fix2;
     bool seen_aux;
     bool seen_status;
+    bool seen_relposheading;
 
     bool healthy;
     uint32_t status_flags;

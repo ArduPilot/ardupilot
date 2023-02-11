@@ -33,11 +33,17 @@
 // vel_error - specifies the direction of the velocity error used in limit handling.
 void update_vel_accel(float& vel, float accel, float dt, float limit, float vel_error)
 {
-    const float delta_vel = accel * dt;
+    float delta_vel = accel * dt;
     // do not add delta_vel if it will increase the velocity error in the direction of limit
-    if (!(is_positive(delta_vel * limit) && is_positive(vel_error * limit))) {
-        vel += delta_vel;
+    // unless adding delta_vel will reduce vel towards zero
+    if (is_positive(delta_vel * limit) && is_positive(vel_error * limit)) {
+        if (is_negative(vel * limit)) {
+            delta_vel = constrain_float(delta_vel, -fabsf(vel), fabsf(vel));
+        } else {
+            delta_vel = 0.0;
+        }
     }
+    vel += delta_vel;
 }
 
 // update_pos_vel_accel - single axis projection of position and velocity forward in time based on a time step of dt and acceleration of accel.
@@ -49,9 +55,10 @@ void update_pos_vel_accel(postype_t& pos, float& vel, float accel, float dt, flo
     // move position and velocity forward by dt if it does not increase error when limited.
     float delta_pos = vel * dt + accel * 0.5f * sq(dt);
     // do not add delta_pos if it will increase the velocity error in the direction of limit
-    if (!(is_positive(delta_pos * limit) && is_positive(pos_error * limit))) {
-        pos += delta_pos;
+    if (is_positive(delta_pos * limit) && is_positive(pos_error * limit)) {
+        delta_pos = 0.0;
     }
+    pos += delta_pos;
 
     update_vel_accel(vel, accel, dt, limit, vel_error);
 }
@@ -63,13 +70,12 @@ void update_pos_vel_accel(postype_t& pos, float& vel, float accel, float dt, flo
 void update_vel_accel_xy(Vector2f& vel, const Vector2f& accel, float dt, const Vector2f& limit, const Vector2f& vel_error)
 {
     // increase velocity by acceleration * dt if it does not increase error when limited.
+    // unless adding delta_vel will reduce the magnitude of vel
     Vector2f delta_vel = accel * dt;
     if (!limit.is_zero() && !delta_vel.is_zero()) {
         // check if delta_vel will increase the velocity error in the direction of limit
-        if (is_positive(delta_vel * limit) && is_positive(vel_error * limit)) {
-            // remove component of delta_vel in direction of limit
-            Vector2f limit_unit = limit.normalized();
-            delta_vel -= limit_unit * (limit_unit * delta_vel);
+        if (is_positive(delta_vel * limit) && is_positive(vel_error * limit) && !is_negative(vel * limit)) {
+            delta_vel.zero();
         }
     }
     vel += delta_vel;
@@ -112,9 +118,11 @@ void shape_accel(float accel_input, float& accel,
     }
 
     // jerk limit acceleration change
-    float accel_delta = accel_input - accel;
-    accel_delta = constrain_float(accel_delta, -jerk_max * dt, jerk_max * dt);
-    accel += accel_delta;
+    if (is_positive(dt)) {
+        float accel_delta = accel_input - accel;
+        accel_delta = constrain_float(accel_delta, -jerk_max * dt, jerk_max * dt);
+        accel += accel_delta;
+    }
 }
 
 // 2D version
@@ -128,9 +136,11 @@ void shape_accel_xy(const Vector2f& accel_input, Vector2f& accel,
     }
 
     // jerk limit acceleration change
-    Vector2f accel_delta = accel_input - accel;
-    accel_delta.limit_length(jerk_max * dt);
-    accel = accel + accel_delta;
+    if (is_positive(dt)) {
+        Vector2f accel_delta = accel_input - accel;
+        accel_delta.limit_length(jerk_max * dt);
+        accel = accel + accel_delta;
+    }
 }
 
 void shape_accel_xy(const Vector3f& accel_input, Vector3f& accel,
@@ -295,7 +305,9 @@ void shape_pos_vel_accel(postype_t pos_input, float vel_input, float accel_input
     float vel_target = sqrt_controller(pos_error, KPv, accel_tc_max, dt);
 
     // limit velocity between vel_min and vel_max
-    vel_target = constrain_float(vel_target, vel_min, vel_max);
+    if (is_negative(vel_min) || is_positive(vel_max)) {
+        vel_target = constrain_float(vel_target, vel_min, vel_max);
+    }
 
     // velocity correction with input velocity
     vel_target += vel_input;
@@ -332,7 +344,9 @@ void shape_pos_vel_accel_xy(const Vector2p& pos_input, const Vector2f& vel_input
     Vector2f vel_target = sqrt_controller(pos_error, KPv, accel_tc_max, dt);
 
     // limit velocity to vel_max
-    vel_target.limit_length(vel_max);
+    if (is_positive(vel_max)) {
+        vel_target.limit_length(vel_max);
+    }
 
     // velocity correction with input velocity
     vel_target = vel_target + vel_input;
@@ -410,7 +424,7 @@ float sqrt_controller(float error, float p, float second_ord_lim, float dt)
             correction_rate = error * p;
         }
     }
-    if (!is_zero(dt)) {
+    if (is_positive(dt)) {
         // this ensures we do not get small oscillations by over shooting the error correction in the last time step.
         return constrain_float(correction_rate, -fabsf(error) / dt, fabsf(error) / dt);
     } else {

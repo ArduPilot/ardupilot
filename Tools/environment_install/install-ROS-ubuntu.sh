@@ -4,6 +4,7 @@ set -e
 # set -x
 
 ROS_WS_ROOT=$HOME/ardupilot-ws
+AP_GZ_ROOT=$HOME/ardupilot_gz_ws
 
 red=`tput setaf 1`
 green=`tput setaf 2`
@@ -230,6 +231,7 @@ if maybe_prompt_user "Add ardupilot-ws to your home folder [N/y]?" ; then
     if [ ! -d $ROS_WS_ROOT ]; then
         mkdir -p $ROS_WS_ROOT/src
         pushd $ROS_WS_ROOT
+        source /opt/ros/${ROS_VERSION}/setup.bash
         catkin init
         pushd src
         git clone https://github.com/ArduPilot/ardupilot_ros.git
@@ -244,6 +246,30 @@ if maybe_prompt_user "Add ardupilot-ws to your home folder [N/y]?" ; then
     
 else
     echo "Skipping adding ardupilot_ws to your home folder."
+fi
+
+
+if maybe_prompt_user "Add ardupilot_gazebo to your home folder [N/y]?" ; then
+    if [ ! -d $AP_GZ_ROOT ]; then
+        sudo apt install gz-garden rapidjson-dev
+        mkdir -p $AP_GZ_ROOT/src
+        pushd $AP_GZ_ROOT/src
+        git clone https://github.com/ArduPilot/ardupilot_gazebo
+        pushd ardupilot_gazebo
+        mkdir build && pushd build
+        cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo
+        make -j4
+        popd
+        popd
+        popd
+        echo "export GZ_SIM_SYSTEM_PLUGIN_PATH=${AP_GZ_ROOT}/src/ardupilot_gazebo/build:${GZ_SIM_SYSTEM_PLUGIN_PATH}" >> ~/.bashrc
+        echo "export GZ_SIM_RESOURCE_PATH=${AP_GZ_ROOT}/src/ardupilot_gazebo/models:${AP_GZ_ROOT}/src/ardupilot_gazebo/worlds:${GZ_SIM_RESOURCE_PATH}" >> ~/.bashrc
+    else
+        heading "${red}ardupilot_gazebo already exists, skipping...${reset}"
+    fi
+    
+else
+    echo "Skipping adding ardupilot_gazebo to your home folder."
 fi
 
 heading "${green}Adding setup.bash, ROS_MASTER_URI and ROS_HOSTNAME to .bashrc ${reset}"

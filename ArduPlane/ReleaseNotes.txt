@@ -1,7 +1,38 @@
-Release 4.3.2-beta2 Dec 12th 2022
----------------------------------
+Release 4.3.3 Jan 19th 2023
+---------------------------
 
-Changes from 4.3.2-beta1:
+ - AIRLink LTE module enable pin added
+ - CUAV Nora/Nora+ bdshot firmware (allows Bi-directional DShot)
+ - CubeOrange, CubeYellow gets fast reset of ICM20602
+ - PixPilot-V6 support
+ - Attitude and Navigation controllers use real-time dt (better handles variable or slow main loop)
+ - Analog rangefinder GPIO pin arming check fixed
+ - Arming check of AHRS/EKF vs GPS location disabled if GPS disabled
+ - Position Controller limit handling improved to avoid overshooting and hard landings
+ - PSC_ANGLE_MAX param reduction causing WPNAV_ACCEL to be set too low fixed
+ - Servo gimbal yaw jump to opposite side fixed
+ - Siyi A8 gimbal driver's record video feature fixed
+ - SToRM32 serial gimbal driver actual angle reporting fixed (pitch and yaw angle signs were reversed)
+ - Takeoff in Auto, Guided fixed when target altitude is current altitude
+ - Takeoff in Auto handles baro drift before takeoff
+ - Takeoff twitch due to velocity integrator init bug fixed
+ - moved FTP MAVLink transfers to FTP thread and better control bandwidth
+ - switch to QRTL if inside RTL radius when using Q_RTL_MODE=3 (approach)
+ - check for 3 good frames for CRSF
+ - allow for ELRS at 420kbaud
+ - support MambaH743-v2
+ - support MambaF405-2022B
+ - fixed nullptr checks on new
+ - fixed a bug in terrain handling for ship landing lua script checks on new
+
+Happy flying!
+
+Release 4.3.2 Dec 23rd 2022
+---------------------------
+
+This is a minor release with bug fixes for the 4.3.x release series.
+
+Changes from 4.3.1:
 
  - improved uBlox M10 support
  - CubeOrange defaults to using 2nd IMU as primary
@@ -16,30 +47,24 @@ Changes from 4.3.2-beta1:
  - Param reset after firmware load fixed on several boards
  - Siyi A8 gimbal support fixed
  - Windows builds move to compiling only 64-bit executables
-
-
-Release 4.3.2-beta1 Nov 21st 2022
----------------------------------
-
-Changes from 4.3.1
-- ARKV6X support
-- MatekH743 supports 8 bi-directional dshot channels
-- Pixhawk1 boards support MS5607 baros
-- SpeedbyBee F405v3 support
-- DroneCAN Airspeed sensor support including hygrometer readings
-- Pre-arm warning if multiple UARTs with SERIALx_PROTOCOL = RCIN
-- Siyi gimbal support
-- Arm check warning loses duplicate "AHRS" prefix
-- AtomRCF405NAVI bootloader file name fixed
-- BRD_SAFETY_MASK fixed on boards with both FMU safety switch and IOMCU
-- Compass calibration continues even if a single compass's cal fails
-- Gremsy gimbal driver sends autopilot info at lower rate to save bandwidth
-- Invensense 42605 and 42609 IMUs use anti-aliasing filter and notch filter
-- OSD stats screen fix
-- RC input on serial port uses first UART with SERIALx_PROTOCOL = 23 (was using last)
-- RunCam caching fix with enablement and setup on 3-pos switch
-- RTK CAN GPS fix when GPSs conneted to separate CAN ports on autopilot
-- fixed yaw rate for fixed wing autotune
+ - ARKV6X support
+ - MatekH743 supports 8 bi-directional dshot channels
+ - Pixhawk1 boards support MS5607 baros
+ - SpeedbyBee F405v3 support
+ - DroneCAN Airspeed sensor support including hygrometer readings
+ - Pre-arm warning if multiple UARTs with SERIALx_PROTOCOL = RCIN
+ - Siyi gimbal support
+ - Arm check warning loses duplicate "AHRS" prefix
+ - AtomRCF405NAVI bootloader file name fixed
+ - BRD_SAFETY_MASK fixed on boards with both FMU safety switch and IOMCU
+ - Compass calibration continues even if a single compass's cal fails
+ - Gremsy gimbal driver sends autopilot info at lower rate to save bandwidth
+ - Invensense 42605 and 42609 IMUs use anti-aliasing filter and notch filter
+ - OSD stats screen fix
+ - RC input on serial port uses first UART with SERIALx_PROTOCOL = 23 (was using last)
+ - RunCam caching fix with enablement and setup on 3-pos switch
+ - RTK CAN GPS fix when GPSs conneted to separate CAN ports on autopilot
+ - fixed yaw rate for fixed wing autotune
 
 Release 4.3.1 24th Oct 2022
 ---------------------------

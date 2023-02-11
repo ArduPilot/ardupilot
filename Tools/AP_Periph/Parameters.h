@@ -3,6 +3,8 @@
 #include <AP_Common/AP_Common.h>
 #include "GCS_MAVLink.h"
 
+#define AP_PARAM_VEHICLE_NAME periph
+
 // Global parameter class.
 //
 class Parameters {
@@ -63,6 +65,11 @@ public:
         k_param_can_slcan_cport,
         k_param_temperature_sensor,
         k_param_esc_command_timeout_ms,
+        k_param_proximity,
+        k_param_proximity_baud,
+        k_param_proximity_port,
+        k_param_proximity_max_rate,
+        k_param_nmea,
     };
 
     AP_Int16 format_version;
@@ -95,6 +102,13 @@ public:
     AP_Int8 rangefinder_port;
     AP_Int16 rangefinder_max_rate;
 #endif
+
+#ifdef HAL_PERIPH_ENABLE_PRX
+    AP_Int32 proximity_baud;
+    AP_Int8 proximity_port;
+    AP_Int16 proximity_max_rate;
+#endif
+
 
 #ifdef HAL_PERIPH_ENABLE_ADSB
     AP_Int32 adsb_baudrate;

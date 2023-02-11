@@ -1,5 +1,7 @@
 #pragma once
 
+#include "AP_InertialSensor_config.h"
+
 // Gyro and Accelerometer calibration criteria
 #define AP_INERTIAL_SENSOR_ACCEL_TOT_MAX_OFFSET_CHANGE  4.0f
 #define AP_INERTIAL_SENSOR_ACCEL_MAX_OFFSET             250.0f
@@ -57,6 +59,10 @@
 
 #ifndef AP_SIM_INS_ENABLED
 #define AP_SIM_INS_ENABLED AP_SIM_ENABLED
+#endif
+
+#ifndef AP_SIM_INS_FILE_ENABLED
+#define AP_SIM_INS_FILE_ENABLED AP_SIM_ENABLED
 #endif
 
 class AP_InertialSensor_Backend;
@@ -182,11 +188,12 @@ public:
 
     // FFT support access
 #if HAL_WITH_DSP
-    const Vector3f     &get_raw_gyro(void) const { return _gyro_raw[_primary_gyro]; }
+    const Vector3f& get_gyro_for_fft(void) const { return _gyro_for_fft[_primary_gyro]; }
     FloatBuffer&  get_raw_gyro_window(uint8_t instance, uint8_t axis) { return _gyro_window[instance][axis]; }
     FloatBuffer&  get_raw_gyro_window(uint8_t axis) { return get_raw_gyro_window(_primary_gyro, axis); }
     uint16_t get_raw_gyro_rate_hz() const { return get_raw_gyro_rate_hz(_primary_gyro); }
     uint16_t get_raw_gyro_rate_hz(uint8_t instance) const { return _gyro_raw_sample_rates[_primary_gyro]; }
+    bool has_fft_notch() const;
 #endif
     bool set_gyro_window_size(uint16_t size);
     // get accel offsets in m/s/s
@@ -250,7 +257,7 @@ public:
     uint16_t get_accel_filter_hz(void) const { return _accel_filter_cutoff; }
 
     // setup the notch for throttle based tracking
-    bool setup_throttle_gyro_harmonic_notch(float center_freq_hz, float ref);
+    bool setup_throttle_gyro_harmonic_notch(float center_freq_hz, float lower_freq_hz, float ref, uint8_t harmonics);
 
     // write out harmonic notch log messages
     void write_notch_log_messages() const;
@@ -323,6 +330,7 @@ public:
         IMU_SENSOR_TYPE_GYRO = 1,
     };
 
+#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
     class BatchSampler {
     public:
         BatchSampler(const AP_InertialSensor &imu) :
@@ -408,6 +416,7 @@ public:
         const AP_InertialSensor &_imu;
     };
     BatchSampler batchsampler{*this};
+#endif
 
 #if HAL_EXTERNAL_AHRS_ENABLED
     // handle external AHRS data
@@ -521,9 +530,14 @@ private:
     Vector3f _gyro_filtered[INS_MAX_INSTANCES];
 #if HAL_WITH_DSP
     // Thread-safe public version of _last_raw_gyro
-    Vector3f _gyro_raw[INS_MAX_INSTANCES];
+    Vector3f _gyro_for_fft[INS_MAX_INSTANCES];
+    Vector3f _last_gyro_for_fft[INS_MAX_INSTANCES];
     FloatBuffer _gyro_window[INS_MAX_INSTANCES][XYZ_AXIS_COUNT];
     uint16_t _gyro_window_size;
+    // capture a gyro window after the filters
+    LowPassFilter2pVector3f _post_filter_gyro_filter[INS_MAX_INSTANCES];
+    bool _post_filter_fft;
+    uint8_t _fft_window_phase;
 #endif
     bool _new_accel_data[INS_MAX_INSTANCES];
     bool _new_gyro_data[INS_MAX_INSTANCES];

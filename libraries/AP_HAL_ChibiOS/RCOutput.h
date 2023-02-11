@@ -19,7 +19,6 @@
 #include "AP_HAL_ChibiOS.h"
 #include <AP_HAL/Semaphores.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
-#include <SRV_Channel/SRV_Channel.h>
 
 #include "shared_dma.h"
 #include "ch.h"

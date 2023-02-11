@@ -487,7 +487,6 @@ void CANIface::handleTxMailboxInterrupt(uint8_t mailbox_index, bool txok, const 
         rx_item.frame = txi.frame;
         rx_item.timestamp_us = timestamp_us;
         rx_item.flags = AP_HAL::CANIface::Loopback;
-        PERF_STATS(stats.tx_loopback);
         add_to_rx_queue(rx_item);
     }
 

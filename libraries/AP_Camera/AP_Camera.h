@@ -50,7 +50,7 @@ public:
     void            control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id);
 
     // set camera trigger distance in a mission
-    void            set_trigger_distance(uint32_t distance_m)
+    void            set_trigger_distance(float distance_m)
     {
         _trigg_dist.set(distance_m);
     }
@@ -128,7 +128,7 @@ private:
     AP_Int16        _max_roll;          // Maximum acceptable roll angle when trigging camera
     uint32_t        _last_photo_time;   // last time a photo was taken
     bool            _trigger_pending;   // true when we have delayed take_picture
-    struct Location _last_location;
+    Location        _last_location;
     uint16_t        _image_index;       // number of pictures taken since boot
 
     // pin number for accurate camera feedback messages

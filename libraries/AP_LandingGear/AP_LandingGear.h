@@ -2,6 +2,10 @@
 /// @brief  Landing gear control library
 #pragma once
 
+#include "AP_LandingGear_config.h"
+
+#if AP_LANDINGGEAR_ENABLED
+
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/AP_Common.h>
 
@@ -123,3 +127,5 @@ private:
 
     static AP_LandingGear *_singleton;
 };
+
+#endif  // AP_LANDINGGEAR_ENABLED

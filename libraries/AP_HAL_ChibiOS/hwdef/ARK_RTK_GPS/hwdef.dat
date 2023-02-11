@@ -1,0 +1,138 @@
+# hw definition file for processing by chibios_pins.py
+# hardware repository: https://github.com/ARK-Electronics/ARK_RTK_GPS
+
+# MCU class and specific type
+# note: the device is STM32F412CE, not all F412 pins are available
+MCU STM32F4xx STM32F412Rx
+
+# board ID for firmware load
+APJ_BOARD_ID 82
+
+env AP_PERIPH 1
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 5
+
+# bootloader starts firmware at 64k
+FLASH_RESERVE_START_KB 64
+
+# assume 512k flash size
+FLASH_SIZE_KB 512
+
+# order of I2C buses
+I2C_ORDER I2C1 I2C2
+
+define HAL_I2C_INTERNAL_MASK 3
+
+# order of UARTs
+# SERIAL_ORDER can be empty - only used to update firmware with uart in addition to can
+SERIAL_ORDER USART2 USART1
+
+# pin definitions
+# PWM output for buzzer
+PA0 TIM2_CH1 TIM2 GPIO(77) LOW ALARM
+
+# safety LED, active low
+PA1 SAFE_LED OUTPUT HIGH
+define SAFE_LED_ON 0
+
+# USART1 for GPS with DMA
+undef PA15
+undef PB3
+PA15 USART1_TX USART1 SPEED_HIGH
+PB3 USART1_RX USART1 SPEED_HIGH
+
+# GPS PPS
+PB2 GPS_PPS_IN INPUT
+
+# USART2 debug
+PA2 USART2_TX USART2
+PA3 USART2_RX USART2
+
+# SPI bus
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+# LEDs
+PA8  LED_R1 OUTPUT OPENDRAIN HIGH GPIO(0)
+PA9  LED_G1 OUTPUT OPENDRAIN LOW GPIO(1)
+PA10 LED_B1 OUTPUT OPENDRAIN LOW GPIO(2)
+
+define HAL_GPIO_A_LED_PIN 0
+define HAL_GPIO_B_LED_PIN 1
+define HAL_GPIO_C_LED_PIN 2
+
+define HAL_GPIO_LED_ON  0
+define HAL_GPIO_LED_OFF 1
+
+# use pixracer style 3-LED indicators
+define HAL_HAVE_PIXRACER_LED
+
+# CAN bus
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+
+# pins for SWD debugging with a STlink or black-magic probe.
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# CS and DRDY
+PB0 MPU_CS CS
+PB1 MPU_DRDY INPUT
+
+# I2C bus for magnetometer
+PB6 I2C1_SCL I2C1
+PB7 I2C1_SDA I2C1
+
+# SPI1 FSYNC for ICM42688p
+# PB8 TIM10_CH1 TIM10
+
+# I2C bus for barometer
+PB9  I2C2_SDA I2C2
+PB10 I2C2_SCL I2C2
+
+PB12 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+PB13 GPIO_CAN1_TERM OUTPUT PUSHPULL SPEED_LOW HIGH
+
+# magnetometer
+COMPASS BMM150 I2C:0:0x10 false ROTATION_NONE
+
+# barometer
+BARO BMP388 I2C:1:0x76
+
+# store parameters in pages 2 and 3
+STORAGE_FLASH_PAGE 2
+define HAL_STORAGE_SIZE 8192
+
+# no ADC pins
+define HAL_USE_ADC FALSE
+
+# safety button
+PB15 SAFE_BUTTON INPUT PULLDOWN
+
+# allow for F9P GPS modules with moving baseline
+define GPS_MOVING_BASELINE 1
+define GPS_MAX_RATE_MS 200
+
+# larger CAN pool for RTCM data
+undef HAL_CAN_POOL_SIZE
+define HAL_CAN_POOL_SIZE 12000
+
+define GPS_MAX_RECEIVERS 1
+define GPS_MAX_INSTANCES 1
+define HAL_COMPASS_MAX_SENSORS 1
+define HAL_PERIPH_ENABLE_GPS
+define HAL_PERIPH_ENABLE_MAG
+define HAL_PERIPH_ENABLE_BARO
+define HAL_PERIPH_ENABLE_BUZZER
+define HAL_PERIPH_ENABLE_NOTIFY
+define HAL_PERIPH_ENABLE_RC_OUT
+
+# GPS on 2nd port
+define HAL_PERIPH_GPS_PORT_DEFAULT 1
+
+define CAN_APP_NODE_NAME "org.ardupilot.ARK_RTK_GPS"

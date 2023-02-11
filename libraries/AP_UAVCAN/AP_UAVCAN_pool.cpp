@@ -24,6 +24,7 @@
 
 #include "AP_UAVCAN.h"
 #include "AP_UAVCAN_pool.h"
+#include <AP_InternalError/AP_InternalError.h>
 
 AP_PoolAllocator::AP_PoolAllocator(uint16_t _pool_size) :
     num_blocks(_pool_size / UAVCAN_NODE_POOL_BLOCK_SIZE)

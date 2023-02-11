@@ -25,6 +25,10 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Logger/AP_Logger.h>
 
+#if defined(APM_BUILD_TYPE)
+//  - this is just here to encourage the build system to supply the "legacy build defines".  The actual dependecy is in the AP_LandingGear.h and AP_LandingGear_config.h headers
+#endif
+
 void AP_Landing::type_slope_do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude)
 {
     initial_slope = 0;
@@ -111,7 +115,8 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
             }
             
             type_slope_stage = SlopeStage::FINAL;
-            
+
+#if AP_LANDINGGEAR_ENABLED
             // Check if the landing gear was deployed before landing
             // If not - go around
             AP_LandingGear *LG_inst = AP_LandingGear::get_singleton();
@@ -119,6 +124,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
                 type_slope_request_go_around();
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "Landing gear was not deployed");
             }
+#endif
         }
 
         if (gps.ground_speed() < 3) {
@@ -142,7 +148,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
       when landing we keep the L1 navigation waypoint 200m ahead. This
       prevents sudden turns if we overshoot the landing point
      */
-    struct Location land_WP_loc = next_WP_loc;
+    Location land_WP_loc = next_WP_loc;
 
     int32_t land_bearing_cd = prev_WP_loc.get_bearing_to(next_WP_loc);
     land_WP_loc.offset_bearing(land_bearing_cd * 0.01f, prev_WP_loc.get_distance(current_loc) + 200);
@@ -294,8 +300,8 @@ void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_lo
     float flare_distance = groundspeed * flare_time;
 
     // don't allow the flare before half way along the final leg
-    if (flare_distance > total_distance/2) {
-        flare_distance = total_distance/2;
+    if (flare_distance > total_distance*0.5f) {
+        flare_distance = total_distance*0.5f;
     }
 
     // project a point 500 meters past the landing point, passing
@@ -363,10 +369,13 @@ int32_t AP_Landing::type_slope_get_target_airspeed_cm(void)
     }
 
     // when landing, add half of head-wind.
-    const int32_t head_wind_compensation_cm = head_wind() * 0.5f * 100;
+    const float head_wind_comp = constrain_float(wind_comp, 0.0f, 100.0f)*0.01;
+    const int32_t head_wind_compensation_cm = head_wind() * head_wind_comp * 100;
 
-    // Do not lower it or exceed cruise speed
-    return constrain_int32(target_airspeed_cm + head_wind_compensation_cm, target_airspeed_cm, aparm.airspeed_cruise_cm);
+    const uint32_t max_airspeed_cm = AP_Landing::allow_max_airspeed_on_land() ? aparm.airspeed_max*100 : aparm.airspeed_cruise_cm;
+    
+    return constrain_int32(target_airspeed_cm + head_wind_compensation_cm, target_airspeed_cm, max_airspeed_cm);
+    
 }
 
 int32_t AP_Landing::type_slope_constrain_roll(const int32_t desired_roll_cd, const int32_t level_roll_limit_cd)

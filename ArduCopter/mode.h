@@ -122,6 +122,11 @@ public:
     virtual bool pause() { return false; };
     virtual bool resume() { return false; };
 
+    // true if weathervaning is allowed in the current mode
+#if WEATHERVANE_ENABLED == ENABLED
+    virtual bool allows_weathervaning() const { return false; }
+#endif
+
 protected:
 
     // helper functions
@@ -220,7 +225,6 @@ protected:
     static float auto_takeoff_no_nav_alt_cm;
 
     // auto takeoff variables
-    static float auto_takeoff_start_alt_cm;     // start altitude expressed as cm above ekf origin
     static float auto_takeoff_complete_alt_cm;  // completion altitude expressed in cm above ekf origin or above terrain (depending upon auto_takeoff_terrain_alt)
     static bool auto_takeoff_terrain_alt;       // true if altitudes are above terrain
     static bool auto_takeoff_complete;          // true when takeoff is complete
@@ -244,6 +248,7 @@ public:
             RATE =             7,  // turn at a specified rate (held in auto_yaw_rate)
             CIRCLE =           8,  // use AC_Circle's provided yaw (used during Loiter-Turns commands)
             PILOT_RATE =       9,  // target rate from pilot stick
+            WEATHERVANE =     10,  // yaw into wind
         };
 
         // mode(): current method of determining desired yaw:
@@ -267,6 +272,10 @@ public:
 
         bool reached_fixed_yaw_target();
 
+#if WEATHERVANE_ENABLED == ENABLED
+        void update_weathervane(const int16_t pilot_yaw_cds);
+#endif
+
         AC_AttitudeControl::HeadingCommand get_heading();
 
     private:
@@ -282,6 +291,7 @@ public:
 
         // auto flight mode's yaw mode
         Mode _mode = Mode::LOOK_AT_NEXT_WP;
+        Mode _last_mode;
 
         // Yaw will point at this location if mode is set to Mode::ROI
         Vector3f roi;
@@ -457,7 +467,7 @@ public:
     bool loiter_start();
     void rtl_start();
     void takeoff_start(const Location& dest_loc);
-    void wp_start(const Location& dest_loc);
+    bool wp_start(const Location& dest_loc);
     void land_start();
     void circle_movetoedge_start(const Location &circle_center, float radius_m);
     void circle_start();
@@ -498,6 +508,11 @@ public:
     // Mission change detector
     AP_Mission_ChangeDetector mis_change_detector;
 
+    // true if weathervaning is allowed in auto
+#if WEATHERVANE_ENABLED == ENABLED
+    bool allows_weathervaning(void) const override;
+#endif
+
 protected:
 
     const char *name() const override { return auto_RTL? "AUTO RTL" : "AUTO"; }
@@ -514,6 +529,7 @@ private:
         AllowArming                        = (1 << 0U),
         AllowTakeOffWithoutRaisingThrottle = (1 << 1U),
         IgnorePilotYaw                     = (1 << 2U),
+        AllowWeatherVaning                 = (1 << 7U),
     };
 
     bool start_command(const AP_Mission::Mission_Command& cmd);
@@ -537,7 +553,7 @@ private:
     void payload_place_run();
     bool payload_place_run_should_run();
     void payload_place_run_hover();
-    void payload_place_run_descend();
+    void payload_place_run_descent();
     void payload_place_run_release();
 
     SubMode _mode = SubMode::TAKEOFF;   // controls which auto controller is run
@@ -628,14 +644,13 @@ private:
     State state = State::FlyToLocation;
 
     struct {
-        PayloadPlaceStateType state = PayloadPlaceStateType_Calibrating_Hover_Start; // records state of place (descending, releasing, released, ...)
-        uint32_t hover_start_timestamp; // milliseconds
-        float hover_throttle_level;
-        uint32_t descend_start_timestamp; // milliseconds
-        uint32_t place_start_timestamp; // milliseconds
-        float descend_throttle_level;
-        float descend_start_altitude;
-        float descend_max; // centimetres
+        PayloadPlaceStateType state = PayloadPlaceStateType_Descent_Start; // records state of payload place
+        uint32_t descent_established_time_ms; // milliseconds
+        uint32_t place_start_time_ms; // milliseconds
+        float descent_thrust_level;
+        float descent_start_altitude_cm;
+        float descent_speed_cms;
+        float descent_max_cm;
     } nav_payload_place;
 
     bool waiting_to_start;  // true if waiting for vehicle to be armed or EKF origin before starting mission
@@ -1030,6 +1045,11 @@ public:
     bool pause() override;
     bool resume() override;
 
+    // true if weathervaning is allowed in guided
+#if WEATHERVANE_ENABLED == ENABLED
+    bool allows_weathervaning(void) const override;
+#endif
+
 protected:
 
     const char *name() const override { return "GUIDED"; }
@@ -1050,6 +1070,7 @@ private:
         DoNotStabilizePositionXY = (1U << 4),
         DoNotStabilizeVelocityXY = (1U << 5),
         WPNavUsedForPosControl = (1U << 6),
+        AllowWeatherVaning = (1U << 7)
     };
 
     // wp controller
@@ -1317,7 +1338,7 @@ public:
     void restart_without_terrain();
 
     // enum for RTL_ALT_TYPE parameter
-    enum class RTLAltType {
+    enum class RTLAltType : int8_t {
         RTL_ALTTYPE_RELATIVE = 0,
         RTL_ALTTYPE_TERRAIN = 1
     };

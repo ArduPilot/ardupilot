@@ -89,7 +89,9 @@ public:
     };
 
     enum flow_control {
-        FLOW_CONTROL_DISABLE=0, FLOW_CONTROL_ENABLE=1, FLOW_CONTROL_AUTO=2
+        FLOW_CONTROL_DISABLE=0,
+        FLOW_CONTROL_ENABLE=1,
+        FLOW_CONTROL_AUTO=2,
     };
     virtual void set_flow_control(enum flow_control flow_control_setting) {};
     virtual enum flow_control get_flow_control(void) { return FLOW_CONTROL_DISABLE; }
@@ -130,9 +132,11 @@ public:
      */
     virtual uint64_t receive_time_constraint_us(uint16_t nbytes) { return 0; }
 
-    virtual uint32_t bw_in_kilobytes_per_second() const {
-        return 57;
+    virtual uint32_t bw_in_bytes_per_second() const {
+        return 5760;
     }
+
+    virtual uint32_t get_baud_rate() const { return 0; }
 
     /*
       return true if this UART has DMA enabled on both RX and TX

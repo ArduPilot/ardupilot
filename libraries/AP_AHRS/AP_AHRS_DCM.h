@@ -61,7 +61,7 @@ public:
     }
 
     // dead-reckoning support
-    virtual bool get_location(struct Location &loc) const override;
+    virtual bool get_location(Location &loc) const override;
 
     // status reporting
     float           get_error_rp() const {
@@ -72,8 +72,9 @@ public:
     }
 
     // return a wind estimation vector, in m/s
-    Vector3f wind_estimate() const override {
-        return _wind;
+    bool wind_estimate(Vector3f &wind) const override {
+        wind = _wind;
+        return true;
     }
 
     // return an airspeed estimate if available. return true
@@ -88,7 +89,7 @@ public:
     // other than an actual airspeed sensor), if available. return
     // true if we have a synthetic airspeed.  ret will not be modified
     // on failure.
-    bool synthetic_airspeed(float &ret) const override WARN_IF_UNUSED {
+    bool synthetic_airspeed(float &ret) const WARN_IF_UNUSED {
         ret = _last_airspeed;
         return true;
     }
@@ -123,6 +124,11 @@ public:
     bool get_relative_position_D_origin(float &posD) const override;
 
     void send_ekf_status_report(class GCS_MAVLINK &link) const override;
+
+    // return true if DCM has a yaw source
+    bool yaw_source_available(void) const;
+
+    void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override;
 
 private:
 

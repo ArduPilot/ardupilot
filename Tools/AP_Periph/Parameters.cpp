@@ -62,13 +62,6 @@ extern const AP_HAL::HAL &hal;
  *
  */
 
-#define GSCALAR(v, name, def) { periph.g.v.vtype, name, Parameters::k_param_ ## v, &periph.g.v, {def_value : def} }
-#define GARRAY(v, index, name, def) { periph.g.v[index].vtype, name, Parameters::k_param_ ## v ## index, &periph.g.v[index], {def_value : def} }
-#define ASCALAR(v, name, def) { periph.aparm.v.vtype, name, Parameters::k_param_ ## v, (const void *)&periph.aparm.v, {def_value : def} }
-#define GGROUP(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &periph.g.v, {group_info : class::var_info} }
-#define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, (const void *)&periph.v, {group_info : class::var_info} }
-#define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, (const void *)&periph.v, {group_info : class::var_info} }
-
 const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Param: FORMAT_VERSION
     // @DisplayName: Eeprom format version number
@@ -274,9 +267,9 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
     // Airspeed driver
-    // @Group: ARSP
+    // @Group: ARSPD
     // @Path: ../libraries/AP_Airspeed/AP_Airspeed.cpp
-    GOBJECT(airspeed, "ARSP", AP_Airspeed),
+    GOBJECT(airspeed, "ARSPD", AP_Airspeed),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
@@ -490,6 +483,46 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(efi, "EFI", AP_EFI),
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_PRX
+    // @Param: PRX_BAUDRATE
+    // @DisplayName: Proximity Sensor serial baudrate
+    // @Description: Proximity Sensor serial baudrate.
+    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,230:230400,256:256000,460:460800,500:500000,921:921600,1500:1500000
+    // @Increment: 1
+    // @User: Standard
+    // @RebootRequired: True
+    GSCALAR(proximity_baud, "PRX_BAUDRATE", HAL_PERIPH_RANGEFINDER_BAUDRATE_DEFAULT),
+
+    // @Param: PRX_PORT
+    // @DisplayName: Proximity Sensor Serial Port
+    // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to Proximity Sensor.
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    GSCALAR(proximity_port, "PRX_PORT", AP_PERIPH_RANGEFINDER_PORT_DEFAULT),
+
+    // @Param: PRX_MAX_RATE
+    // @DisplayName: Proximity Sensor max rate
+    // @Description: This is the maximum rate we send Proximity Sensor data in Hz. Zero means no limit
+    // @Units: Hz
+    // @Range: 0 200
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(proximity_max_rate, "PRX_MAX_RATE", 50),
+
+    // Proximity driver
+    // @Group: PRX
+    // @Path: ../libraries/AP_RangeFinder/AP_Proximity.cpp
+    GOBJECT(proximity, "PRX", AP_Proximity),
+#endif
+
+#if HAL_NMEA_OUTPUT_ENABLED
+    // @Group: NMEA_
+    // @Path: ../libraries/AP_NMEA_Output/AP_NMEA_Output.cpp
+    GOBJECT(nmea, "NMEA_",   AP_NMEA_Output),
+#endif
+
     AP_VAREND
 };
 
@@ -498,10 +531,8 @@ void AP_Periph_FW::load_parameters(void)
 {
     AP_Param::setup_sketch_defaults();
 
-    if (!AP_Param::check_var_info()) {
-        hal.console->printf("Bad parameter table\n");
-        AP_HAL::panic("Bad parameter table");
-    }
+    AP_Param::check_var_info();
+
     if (!g.format_version.load() ||
         g.format_version != Parameters::k_format_version) {
         // erase all parameters

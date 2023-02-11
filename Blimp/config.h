@@ -18,10 +18,6 @@
 #error CONFIG_HAL_BOARD must be defined to build Blimp
 #endif
 
-#ifndef ADVANCED_FAILSAFE
-# define ADVANCED_FAILSAFE DISABLED
-#endif
-
 #ifndef ARMING_DELAY_SEC
 # define ARMING_DELAY_SEC 2.0f
 #endif

@@ -44,17 +44,16 @@
 #define AC_ATTITUDE_CONTROL_MAX                         5.0f    // maximum throttle mix default
 
 #define AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT             0.5f  // ratio controlling the max throttle output during competing requests of low throttle from the pilot (or autopilot) and higher throttle for attitude control.  Higher favours Attitude over pilot input
+#define AC_ATTITUDE_CONTROL_THR_G_BOOST_THRESH          1.0f  // default angle-p/pd throttle boost threshold
 
 class AC_AttitudeControl {
 public:
     AC_AttitudeControl( AP_AHRS_View &ahrs,
                         const AP_MultiCopter &aparm,
-                        AP_Motors& motors,
-                        float dt) :
+                        AP_Motors& motors) :
         _p_angle_roll(AC_ATTITUDE_CONTROL_ANGLE_P),
         _p_angle_pitch(AC_ATTITUDE_CONTROL_ANGLE_P),
         _p_angle_yaw(AC_ATTITUDE_CONTROL_ANGLE_P),
-        _dt(dt),
         _angle_boost(0),
         _use_sqrt_controller(true),
         _throttle_rpy_mix_desired(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
@@ -73,6 +72,12 @@ public:
 
     // Empty destructor to suppress compiler warning
     virtual ~AC_AttitudeControl() {}
+
+    // set_dt / get_dt - dt is the time since the last time the attitude controllers were updated
+    // _dt should be set based on the time of the last IMU read used by these controllers
+    // the attitude controller should run updates for active controllers on each loop to ensure normal operation
+    void set_dt(float dt) { _dt = dt; }
+    float get_dt() const { return _dt; }
 
     // pid accessors
     AC_P& get_angle_roll_p() { return _p_angle_roll; }
@@ -268,6 +273,9 @@ public:
     // Return angular velocity in radians used in the angular velocity controller
     Vector3f rate_bf_targets() const { return _ang_vel_body + _sysid_ang_vel_body; }
 
+    // return the angular velocity of the target (setpoint) attitude rad/s
+    const Vector3f& get_rate_ef_targets() const { return _euler_rate_target; }
+
     // Enable or disable body-frame feed forward
     void bf_feedforward(bool enable_or_disable) { _rate_bf_ff_enabled.set(enable_or_disable); }
 
@@ -389,8 +397,19 @@ public:
     // get the value of the angle P scale that was used in the last loop, for logging
     const Vector3f &get_angle_P_scale_logging(void) const { return _angle_P_scale_used; }
     
+    // setup a one loop PD scale multiplier, multiplying by any
+    // previously applied scale from this loop. This allows for more
+    // than one type of scale factor to be applied for different
+    // purposes
+    void set_PD_scale_mult(const Vector3f &pd_scale) { _pd_scale *= pd_scale; }
+
+    // get the value of the PD scale that was used in the last loop, for logging
+    const Vector3f &get_PD_scale_logging(void) const { return _pd_scale_used; }
+
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
+
+    static constexpr Vector3f VECTORF_111{1.0f,1.0f,1.0f};
 
 protected:
 
@@ -513,6 +532,12 @@ protected:
 
     // angle scale used for last loop, used for logging
     Vector3f            _angle_P_scale_used;
+
+    // PD scaling vector for roll, pitch, yaw
+    Vector3f            _pd_scale{1,1,1};
+
+    // PD scale used for last loop, used for logging
+    Vector3f            _pd_scale_used;
 
     // References to external libraries
     const AP_AHRS_View&  _ahrs;

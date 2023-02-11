@@ -27,10 +27,10 @@
 
 using namespace SITL;
 
-SerialDevice::SerialDevice()
+SerialDevice::SerialDevice(uint16_t tx_bufsize, uint16_t rx_bufsize)
 {
-    to_autopilot = new ByteBuffer{512};
-    from_autopilot = new ByteBuffer{512};
+    to_autopilot = new ByteBuffer{tx_bufsize};
+    from_autopilot = new ByteBuffer{rx_bufsize};
 }
 
 bool SerialDevice::init_sitl_pointer()

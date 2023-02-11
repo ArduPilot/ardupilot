@@ -142,8 +142,6 @@ float AP_RollController::_get_rate_out(float desired_rate, float scaler, bool di
     float aspeed;
     float old_I = rate_pid.get_i();
 
-    rate_pid.set_dt(dt);
-
     if (!_ahrs.airspeed_estimate(aspeed)) {
         aspeed = 0;
     }
@@ -157,7 +155,7 @@ float AP_RollController::_get_rate_out(float desired_rate, float scaler, bool di
     //
     // note that we run AC_PID in radians so that the normal scaling
     // range for IMAX in AC_PID applies (usually an IMAX value less than 1.0)
-    rate_pid.update_all(radians(desired_rate) * scaler * scaler, rate_x * scaler * scaler, limit_I);
+    rate_pid.update_all(radians(desired_rate) * scaler * scaler, rate_x * scaler * scaler, dt, limit_I);
 
     if (underspeed) {
         // when underspeed we lock the integrator
@@ -249,7 +247,6 @@ float AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool dis
 
 void AP_RollController::reset_I()
 {
-    _pid_info.I = 0;
     rate_pid.reset_I();
 }
 

@@ -35,3 +35,12 @@ define HAL_HOTT_TELEM_ENABLED 0
 
 # smaller boards lose SIRF GPS support
 define AP_GPS_SIRF_ENABLED 0
+
+# minimized boards don't get configuration via SmartAudio by default:
+define AP_SMARTAUDIO_ENABLED 0
+
+# minimized boards don't get configuration via Tramp by default:
+define AP_TRAMP_ENABLED 0
+
+# various structures increase the flash size when using >16 servos:
+define NUM_SERVO_CHANNELS 16

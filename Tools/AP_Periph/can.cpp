@@ -1734,6 +1734,7 @@ void AP_Periph_FW::can_update()
         can_baro_update();
         can_airspeed_update();
         can_rangefinder_update();
+        can_proximity_update();
     #if defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || defined (HAL_PERIPH_ENABLE_NOTIFY)
         can_buzzer_update();
     #endif
@@ -2049,6 +2050,26 @@ void AP_Periph_FW::can_gps_update(void)
                         total_size);
 
     }
+
+    // send Heading message if we are not sending RelPosHeading messages and have yaw
+    if (gps.have_gps_yaw() && last_relposheading_ms == 0) {
+        float yaw_deg, yaw_acc_deg;
+        uint32_t yaw_time_ms;
+        if (gps.gps_yaw_deg(yaw_deg, yaw_acc_deg, yaw_time_ms) && yaw_time_ms != last_gps_yaw_ms) {
+            ardupilot_gnss_Heading heading {};
+            heading.heading_valid = true;
+            heading.heading_accuracy_valid = is_positive(yaw_acc_deg);
+            heading.heading_rad = radians(yaw_deg);
+            heading.heading_accuracy_rad = radians(yaw_acc_deg);
+            uint8_t buffer[ARDUPILOT_GNSS_HEADING_MAX_SIZE] {};
+            const uint16_t total_size = ardupilot_gnss_Heading_encode(&heading, buffer, !periph.canfdout());
+            canard_broadcast(ARDUPILOT_GNSS_HEADING_SIGNATURE,
+                             ARDUPILOT_GNSS_HEADING_ID,
+                             CANARD_TRANSFER_PRIORITY_LOW,
+                             &buffer[0],
+                             total_size);
+        }
+    }
 #endif // HAL_PERIPH_ENABLE_GPS
 }
 
@@ -2109,20 +2130,19 @@ void AP_Periph_FW::send_relposheading_msg() {
     float relative_distance;
     float relative_down_pos;
     float reported_heading_acc;
-    static uint32_t last_timestamp = 0;
     uint32_t curr_timestamp = 0;
     gps.get_RelPosHeading(curr_timestamp, reported_heading, relative_distance, relative_down_pos, reported_heading_acc);
-    if (last_timestamp == curr_timestamp) {
+    if (last_relposheading_ms == curr_timestamp) {
         return;
     }
-    last_timestamp = curr_timestamp;
+    last_relposheading_ms = curr_timestamp;
     ardupilot_gnss_RelPosHeading relpos {};
     relpos.timestamp.usec = uint64_t(curr_timestamp)*1000LLU;
     relpos.reported_heading_deg = reported_heading;
     relpos.relative_distance_m = relative_distance;
     relpos.relative_down_pos_m = relative_down_pos;
     relpos.reported_heading_acc_deg = reported_heading_acc;
-    relpos.reported_heading_acc_available = true;
+    relpos.reported_heading_acc_available = !is_zero(relpos.reported_heading_acc_deg);
     uint8_t buffer[ARDUPILOT_GNSS_RELPOSHEADING_MAX_SIZE] {};
     const uint16_t total_size = ardupilot_gnss_RelPosHeading_encode(&relpos, buffer, !periph.canfdout());
     canard_broadcast(ARDUPILOT_GNSS_RELPOSHEADING_SIGNATURE,
@@ -2203,7 +2223,7 @@ void AP_Periph_FW::can_airspeed_update(void)
         static uint32_t last_probe_ms;
         if (now - last_probe_ms >= 1000) {
             last_probe_ms = now;
-            airspeed.init();
+            airspeed.allocate();
         }
     }
 #endif
@@ -2332,6 +2352,72 @@ void AP_Periph_FW::can_rangefinder_update(void)
 #endif // HAL_PERIPH_ENABLE_RANGEFINDER
 }
 
+
+void AP_Periph_FW::can_proximity_update()
+{
+#ifdef HAL_PERIPH_ENABLE_PRX
+    if (proximity.get_type(0) == AP_Proximity::Type::None) {
+        return;
+    }
+
+    uint32_t now = AP_HAL::native_millis();
+    static uint32_t last_update_ms;
+    if (g.proximity_max_rate > 0 &&
+        now - last_update_ms < 1000/g.proximity_max_rate) {
+        // limit to max rate
+        return;
+    }
+    last_update_ms = now;
+    proximity.update();
+    AP_Proximity::Status status = proximity.get_status();
+    if (status <= AP_Proximity::Status::NoData) {
+        // don't send any data
+        return;
+    }
+
+    ardupilot_equipment_proximity_sensor_Proximity pkt {};
+
+    const uint8_t obstacle_count = proximity.get_obstacle_count();
+
+    // if no objects return
+    if (obstacle_count == 0) {
+        return;
+    }
+
+    // calculate maximum roll, pitch values from objects
+    for (uint8_t i=0; i<obstacle_count; i++) {
+        if (!proximity.get_obstacle_info(i, pkt.yaw, pkt.pitch, pkt.distance)) {
+            // not a valid obstacle
+            continue;
+        }
+
+        pkt.sensor_id = proximity.get_address(0);
+
+        switch (status) {
+        case AP_Proximity::Status::NotConnected:
+            pkt.reading_type = ARDUPILOT_EQUIPMENT_PROXIMITY_SENSOR_PROXIMITY_READING_TYPE_NOT_CONNECTED;
+            break;
+        case AP_Proximity::Status::Good:
+            pkt.reading_type = ARDUPILOT_EQUIPMENT_PROXIMITY_SENSOR_PROXIMITY_READING_TYPE_GOOD;
+            break;
+        case AP_Proximity::Status::NoData:
+        default:
+            pkt.reading_type = ARDUPILOT_EQUIPMENT_PROXIMITY_SENSOR_PROXIMITY_READING_TYPE_NO_DATA;
+            break;
+        }
+
+        uint8_t buffer[ARDUPILOT_EQUIPMENT_PROXIMITY_SENSOR_PROXIMITY_MAX_SIZE] {};
+        uint16_t total_size = ardupilot_equipment_proximity_sensor_Proximity_encode(&pkt, buffer, !periph.canfdout());
+
+        canard_broadcast(ARDUPILOT_EQUIPMENT_PROXIMITY_SENSOR_PROXIMITY_SIGNATURE,
+                        ARDUPILOT_EQUIPMENT_PROXIMITY_SENSOR_PROXIMITY_ID,
+                        CANARD_TRANSFER_PRIORITY_LOW,
+                        &buffer[0],
+                        total_size);
+
+    }
+#endif
+}
 
 #ifdef HAL_PERIPH_ENABLE_ADSB
 /*

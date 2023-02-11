@@ -158,10 +158,6 @@
 #define HAL_HAVE_IMU_HEATER 0
 #endif
 
-#ifndef HAL_COMPASS_HMC5843_I2C_ADDR
-#define HAL_COMPASS_HMC5843_I2C_ADDR 0x1E
-#endif
-
 #ifndef HAL_NUM_CAN_IFACES
 #define HAL_NUM_CAN_IFACES 0
 #endif
@@ -261,10 +257,6 @@
 
 #ifndef HAL_ENABLE_THREAD_STATISTICS
 #define HAL_ENABLE_THREAD_STATISTICS 0
-#endif
-
-#ifndef HAL_INS_ENABLED
-#define HAL_INS_ENABLED (!defined(HAL_BUILD_AP_PERIPH))
 #endif
 
 #ifndef AP_STATS_ENABLED

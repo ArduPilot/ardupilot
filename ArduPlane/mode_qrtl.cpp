@@ -14,32 +14,51 @@ bool ModeQRTL::_enter()
     submode = SubMode::RTL;
     plane.prev_WP_loc = plane.current_loc;
 
-    const int32_t RTL_alt_abs_cm = plane.home.alt + quadplane.qrtl_alt*100UL;
+    int32_t RTL_alt_abs_cm = plane.home.alt + quadplane.qrtl_alt*100UL;
     if (quadplane.motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) {
         // VTOL motors are active, either in VTOL flight or assisted flight
         Location destination = plane.rally.calc_best_rally_or_home_location(plane.current_loc, RTL_alt_abs_cm);
 
         const float dist = plane.current_loc.get_distance(destination);
-        const float radius = MAX(fabsf(plane.aparm.loiter_radius), fabsf(plane.g.rtl_radius));
+        const float radius = get_VTOL_return_radius();
 
-        const float dist_to_climb = quadplane.qrtl_alt - plane.relative_ground_altitude(plane.g.rangefinder_landing);
-        if (dist < 1.5*radius) {
-            // we're close to destination and already running VTOL motors, don't transition and don't climb
-            gcs().send_text(MAV_SEVERITY_INFO,"VTOL position1 d=%.1f r=%.1f", dist, radius);
-            poscontrol.set_state(QuadPlane::QPOS_POSITION1);
+        // Climb at least to a cone around home of hight of QRTL alt and radius of radius
+        // Always climb up to at least Q_RTL_ALT_MIN, constrain Q_RTL_ALT_MIN between Q_LAND_FINAL_ALT and Q_RTL_ALT
+        const float min_climb = constrain_float(quadplane.qrtl_alt_min, quadplane.land_final_alt, quadplane.qrtl_alt);
+        const float target_alt = MAX(quadplane.qrtl_alt * (dist / MAX(radius, dist)), min_climb);
 
-        } else if (is_positive(dist_to_climb)) {
+
+#if AP_TERRAIN_AVAILABLE
+        const bool use_terrain = plane.terrain_enabled_in_mode(mode_number());
+#else
+        const bool use_terrain = false;
+#endif
+
+        const float dist_to_climb = target_alt - plane.relative_ground_altitude(plane.g.rangefinder_landing, use_terrain);
+        if (is_positive(dist_to_climb)) {
             // climb before returning, only next waypoint altitude is used
             submode = SubMode::climb;
             plane.next_WP_loc = plane.current_loc;
 #if AP_TERRAIN_AVAILABLE
-            if (plane.terrain_enabled_in_mode(mode_number())) {
-                plane.next_WP_loc.set_alt_cm(quadplane.qrtl_alt * 100UL, Location::AltFrame::ABOVE_TERRAIN);
+            int32_t curent_alt_terrain_cm;
+            if (use_terrain && plane.current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, curent_alt_terrain_cm)) {
+                plane.next_WP_loc.set_alt_cm(curent_alt_terrain_cm + dist_to_climb * 100UL, Location::AltFrame::ABOVE_TERRAIN);
                 return true;
             }
 #endif
             plane.next_WP_loc.set_alt_cm(plane.current_loc.alt + dist_to_climb * 100UL, plane.current_loc.get_alt_frame());
             return true;
+
+        } else if (dist < radius) {
+            // Above home "cone", return at curent altitude if lower than QRTL alt
+            int32_t current_alt_abs_cm;
+            if (plane.current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, current_alt_abs_cm)) {
+                RTL_alt_abs_cm = MIN(RTL_alt_abs_cm, current_alt_abs_cm);
+            }
+
+            // we're close to destination and already running VTOL motors, don't transition and don't climb
+            gcs().send_text(MAV_SEVERITY_INFO,"VTOL position1 d=%.1f r=%.1f", dist, radius);
+            poscontrol.set_state(QuadPlane::QPOS_POSITION1);
         }
     }
 
@@ -88,15 +107,35 @@ void ModeQRTL::run()
                                                                           quadplane.get_weathervane_yaw_rate_cds());
 
             // climb at full WP nav speed
-            quadplane.set_climb_rate_cms(quadplane.wp_nav->get_default_speed_up(), false);
+            quadplane.set_climb_rate_cms(quadplane.wp_nav->get_default_speed_up());
             quadplane.run_z_controller();
 
+            // Climb done when stopping point reaches target altitude
+            Vector3p stopping_point;
+            pos_control->get_stopping_point_z_cm(stopping_point.z);
+            Location stopping_loc = Location(stopping_point.tofloat(), Location::AltFrame::ABOVE_ORIGIN);
+
             ftype alt_diff;
-            if (!plane.current_loc.get_alt_distance(plane.next_WP_loc, alt_diff) || is_positive(alt_diff)) {
+            if (!stopping_loc.get_alt_distance(plane.next_WP_loc, alt_diff) || is_positive(alt_diff)) {
                 // climb finshed or cant get alt diff, head home
                 submode = SubMode::RTL;
                 plane.prev_WP_loc = plane.current_loc;
-                plane.do_RTL(plane.home.alt + quadplane.qrtl_alt*100UL);
+
+                int32_t RTL_alt_abs_cm = plane.home.alt + quadplane.qrtl_alt*100UL;
+                Location destination = plane.rally.calc_best_rally_or_home_location(plane.current_loc, RTL_alt_abs_cm);
+                const float dist = plane.current_loc.get_distance(destination);
+                const float radius = get_VTOL_return_radius();
+                if (dist < radius) {
+                    // if close to home return at current target altitude
+                    int32_t target_alt_abs_cm;
+                    if (plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, target_alt_abs_cm)) {
+                        RTL_alt_abs_cm = MIN(RTL_alt_abs_cm, target_alt_abs_cm);
+                    }
+                    gcs().send_text(MAV_SEVERITY_INFO,"VTOL position1 d=%.1f r=%.1f", dist, radius);
+                    poscontrol.set_state(QuadPlane::QPOS_POSITION1);
+                }
+
+                plane.do_RTL(RTL_alt_abs_cm);
                 quadplane.poscontrol_init_approach();
                 if (plane.current_loc.get_alt_distance(plane.next_WP_loc, alt_diff)) {
                     poscontrol.slow_descent = is_positive(alt_diff);
@@ -132,13 +171,14 @@ void ModeQRTL::run()
 /*
   update target altitude for QRTL profile
  */
-bool ModeQRTL::update_target_altitude()
+void ModeQRTL::update_target_altitude()
 {
     /*
       update height target in approach
      */
     if ((submode != SubMode::RTL) || (plane.quadplane.poscontrol.get_state() != QuadPlane::QPOS_APPROACH)) {
-        return false;
+        Mode::update_target_altitude();
+        return;
     }
 
     /*
@@ -158,13 +198,19 @@ bool ModeQRTL::update_target_altitude()
     Location loc = plane.next_WP_loc;
     loc.alt += alt*100;
     plane.set_target_altitude_location(loc);
-    return true;
+    plane.altitude_error_cm = plane.calc_altitude_error_cm();
 }
 
 // only nudge during approach
 bool ModeQRTL::allows_throttle_nudging() const
 {
     return (submode == SubMode::RTL) && (plane.quadplane.poscontrol.get_state() == QuadPlane::QPOS_APPROACH);
+}
+
+// Return the radius from destination at which pure VTOL flight should be used, no transition to FW
+float ModeQRTL::get_VTOL_return_radius() const
+{
+    return MAX(fabsf(plane.aparm.loiter_radius), fabsf(plane.g.rtl_radius)) * 1.5;
 }
 
 #endif

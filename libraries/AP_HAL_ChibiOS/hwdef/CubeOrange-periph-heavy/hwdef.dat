@@ -25,7 +25,7 @@ define HAL_PERIPH_ENABLE_RC_OUT
 define HAL_PERIPH_ENABLE_NOTIFY
 define HAL_LOGGING_ENABLED TRUE
 
-define HAL_INS_ENABLED 1
+define AP_INERTIALSENSOR_ENABLED 1
 
 
 # single GPS and compass for peripherals

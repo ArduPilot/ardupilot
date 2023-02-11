@@ -23,7 +23,7 @@ jobs:
     container: ardupilot/ardupilot-dev-base:latest
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
 
@@ -35,6 +35,7 @@ jobs:
       - name: build sitl # we don't really need to build the full code, just trigger docs re-gen with --scripting-docs, timeout after 10 seconds
         shell: bash
         run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
           PATH="/github/home/.local/bin:$PATH"
           ./waf configure --board sitl
           timeout 10 ./waf antennatracker --scripting-docs || code=$?; if [[ $code -ne 124 && $code -ne 0 ]]; then exit $code; fi

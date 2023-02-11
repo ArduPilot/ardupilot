@@ -13,7 +13,9 @@
 #include "AP_BattMonitor_FuelFlow.h"
 #include "AP_BattMonitor_FuelLevel_PWM.h"
 #include "AP_BattMonitor_Generator.h"
+#include "AP_BattMonitor_EFI.h"
 #include "AP_BattMonitor_INA2xx.h"
+#include "AP_BattMonitor_INA239.h"
 #include "AP_BattMonitor_LTC2946.h"
 #include "AP_BattMonitor_Torqeedo.h"
 #include "AP_BattMonitor_FuelLevel_Analog.h"
@@ -264,10 +266,12 @@ AP_BattMonitor::init()
             case Type::ANALOG_VOLTAGE_AND_CURRENT:
                 drivers[instance] = new AP_BattMonitor_Analog(*this, state[instance], _params[instance]);
                 break;
-#if AP_BATTMON_SMBUS_ENABLE
+#if AP_BATTMON_SMBUS_SOLO_ENABLED
             case Type::SOLO:
                 drivers[instance] = new AP_BattMonitor_SMBus_Solo(*this, state[instance], _params[instance]);
                 break;
+#endif
+#if AP_BATTMON_SMBUS_ENABLE
             case Type::SMBus_Generic:
                 drivers[instance] = new AP_BattMonitor_SMBus_Generic(*this, state[instance], _params[instance]);
                 break;
@@ -348,6 +352,16 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_Synthetic_Current(*this, state[instance], _params[instance]);
                 break;
 #endif
+#if HAL_BATTMON_INA239_ENABLED
+            case Type::INA239_SPI:
+                drivers[instance] = new AP_BattMonitor_INA239(*this, state[instance], _params[instance]);
+                break;
+#endif
+#if HAL_EFI_ENABLED
+            case Type::EFI:
+                drivers[instance] = new AP_BattMonitor_EFI(*this, state[instance], _params[instance]);
+                break;
+#endif // HAL_EFI_ENABLED
             case Type::NONE:
             default:
                 break;

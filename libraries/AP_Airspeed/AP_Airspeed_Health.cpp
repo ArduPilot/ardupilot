@@ -18,6 +18,7 @@ void AP_Airspeed::check_sensor_failures()
 
 void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
 {
+#ifndef HAL_BUILD_AP_PERIPH
     const uint32_t now_ms = AP_HAL::millis();
     if ((now_ms - state[i].failures.last_check_ms) <= 200) {
         // slow the checking rate
@@ -116,4 +117,5 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
         param[i].use.set_and_notify(state[i].failures.param_use_backup); // resume
         state[i].failures.param_use_backup = -1; // set to invalid so we don't use it
     }
+#endif // HAL_BUILD_AP_PERIPH
 }

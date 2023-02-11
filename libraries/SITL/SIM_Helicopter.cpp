@@ -65,6 +65,8 @@ Helicopter::Helicopter(const char *frame_str) :
 
     ground_behavior = GROUND_BEHAVIOR_NO_MOVEMENT;
     lock_step_scheduled = true;
+
+    motor_mask |= (1U<<0);
 }
 
 /*

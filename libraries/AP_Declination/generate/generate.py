@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 '''
-generate field tables from IGRF12. Note that this requires python3
+generate field tables from IGRF13. Note that this requires python3
 '''
 
-import igrf12 as igrf
+import igrf
 import numpy as np
 import datetime
 from pathlib import Path

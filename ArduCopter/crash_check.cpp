@@ -337,7 +337,7 @@ void Copter::parachute_release()
     // release parachute
     parachute.release();
 
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
     // deploy landing gear
     landinggear.set_position(AP_LandingGear::LandingGear_Deploy);
 #endif

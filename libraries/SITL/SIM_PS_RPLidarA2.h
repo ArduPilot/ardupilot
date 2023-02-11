@@ -58,6 +58,8 @@ namespace SITL {
 class PS_RPLidarA2 : public SerialProximitySensor {
 public:
 
+    using SerialProximitySensor::SerialProximitySensor;
+
     uint32_t packet_for_location(const Location &location,
                                  uint8_t *data,
                                  uint8_t buflen) override;

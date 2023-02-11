@@ -27,7 +27,7 @@ class ExpandingString;
 // on F7 and H7 we will try to save key persistent parameters at the
 // end of the bootloader sector. This enables temperature calibration
 // data to be saved persistently in the factory
-#define HAL_ENABLE_SAVE_PERSISTENT_PARAMS !defined(HAL_BOOTLOADER_BUILD) && !defined(HAL_BUILD_AP_PERIPH) && (defined(STM32F7) || defined(STM32H7))
+#define HAL_ENABLE_SAVE_PERSISTENT_PARAMS (defined(STM32F7) || defined(STM32H7))
 #endif
 
 class ChibiOS::Util : public AP_HAL::Util {
@@ -46,7 +46,7 @@ public:
 #ifdef ENABLE_HEAP
     // heap functions, note that a heap once alloc'd cannot be dealloc'd
     virtual void *allocate_heap_memory(size_t size) override;
-    virtual void *heap_realloc(void *heap, void *ptr, size_t new_size) override;
+    virtual void *heap_realloc(void *heap, void *ptr, size_t old_size, size_t new_size) override;
     virtual void *std_realloc(void *ptr, size_t new_size) override;
 #endif // ENABLE_HEAP
 

@@ -153,6 +153,8 @@ const char *AC_AutoTune::type_string() const
         return "Angle P Down";
     case MAX_GAINS:
         return "Find Max Gains";
+    case TUNE_CHECK:
+        return "Check Tune Frequency Response";
     case TUNE_COMPLETE:
         return "Tune Complete";
     }
@@ -437,6 +439,9 @@ void AC_AutoTune::control_attitude()
         case MAX_GAINS:
             updating_max_gains_all(axis);
             break;
+        case TUNE_CHECK:
+            counter = AUTOTUNE_SUCCESS_COUNT;
+            FALLTHROUGH;
         case TUNE_COMPLETE:
             break;
         }

@@ -118,7 +118,7 @@ void *Util::std_realloc(void *addr, size_t size)
     return new_mem;
 }
 
-void *Util::heap_realloc(void *heap, void *ptr, size_t new_size)
+void *Util::heap_realloc(void *heap, void *ptr, size_t old_size, size_t new_size)
 {
     if (heap == nullptr) {
         return nullptr;
@@ -134,7 +134,13 @@ void *Util::heap_realloc(void *heap, void *ptr, size_t new_size)
     }
     void *new_mem = chHeapAlloc((memory_heap_t *)heap, new_size);
     if (new_mem != nullptr) {
-        memcpy(new_mem, ptr, chHeapGetSize(ptr) > new_size ? new_size : chHeapGetSize(ptr));
+        const size_t old_size2 = chHeapGetSize(ptr);
+#ifdef HAL_DEBUG_BUILD
+        if (new_size != 0 && old_size2 != old_size) {
+            INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
+        }
+#endif
+        memcpy(new_mem, ptr, old_size2 > new_size ? new_size : old_size2);
         chHeapFree(ptr);
     }
     return new_mem;
@@ -249,12 +255,10 @@ uint64_t Util::get_hw_rtc() const
 
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
 
-#ifndef HAL_BOOTLOADER_BUILD
 #include <GCS_MAVLink/GCS.h>
 #if HAL_GCS_ENABLED
 #define Debug(fmt, args ...)  do { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } while (0)
 #endif // HAL_GCS_ENABLED
-#endif // ifndef HAL_BOOT_LOADER_BUILD
 
 #ifndef Debug
 #define Debug(fmt, args ...)  do { hal.console->printf(fmt, ## args); } while (0)

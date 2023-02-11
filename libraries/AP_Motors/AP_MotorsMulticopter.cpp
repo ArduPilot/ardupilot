@@ -219,8 +219,8 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 };
 
 // Constructor
-AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz) :
-                AP_Motors(loop_rate, speed_hz),
+AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t speed_hz) :
+                AP_Motors(speed_hz),
                 _lift_max(1.0f),
                 _throttle_limit(1.0f)
 {
@@ -291,8 +291,10 @@ void AP_MotorsMulticopter::output_min()
 // update the throttle input filter
 void AP_MotorsMulticopter::update_throttle_filter()
 {
+    const float last_thr = _throttle_filter.get();
+
     if (armed()) {
-        _throttle_filter.apply(_throttle_in, 1.0f / _loop_rate);
+        _throttle_filter.apply(_throttle_in, _dt);
         // constrain filtered throttle
         if (_throttle_filter.get() < 0.0f) {
             _throttle_filter.reset(0.0f);
@@ -303,6 +305,16 @@ void AP_MotorsMulticopter::update_throttle_filter()
     } else {
         _throttle_filter.reset(0.0f);
     }
+
+    float new_thr = _throttle_filter.get();
+
+    if (!is_equal(last_thr, new_thr)) {
+        _throttle_slew.update(new_thr, AP_HAL::micros());
+    }
+
+    // calculate slope normalized from per-micro
+    const float rate = fabsf(_throttle_slew.slope() * 1e6);
+    _throttle_slew_rate = _throttle_slew_filter.apply(rate, _dt);
 }
 
 // return current_limit as a number from 0 ~ 1 in the range throttle_min to throttle_max
@@ -331,8 +343,7 @@ float AP_MotorsMulticopter::get_current_limit_max_throttle()
 
     float batt_current_ratio = _batt_current / batt_current_max;
 
-    float loop_interval = 1.0f / _loop_rate;
-    _throttle_limit += (loop_interval / (loop_interval + _batt_current_time_constant)) * (1.0f - batt_current_ratio);
+    _throttle_limit += (_dt / (_dt + _batt_current_time_constant)) * (1.0f - batt_current_ratio);
 
     // throttle limit drops to 20% between hover and full throttle
     _throttle_limit = constrain_float(_throttle_limit, 0.2f, 1.0f);
@@ -396,7 +407,7 @@ void AP_MotorsMulticopter::update_lift_max_from_batt_voltage()
     _batt_voltage_resting_estimate = constrain_float(_batt_voltage_resting_estimate, _batt_voltage_min, _batt_voltage_max);
 
     // filter at 0.5 Hz
-    float batt_voltage_filt = _batt_voltage_filt.apply(_batt_voltage_resting_estimate / _batt_voltage_max, 1.0f / _loop_rate);
+    float batt_voltage_filt = _batt_voltage_filt.apply(_batt_voltage_resting_estimate / _batt_voltage_max, _dt);
 
     // calculate lift max
     float thrust_curve_expo = constrain_float(_thrust_curve_expo, -1.0f, 1.0f);
@@ -486,13 +497,13 @@ void AP_MotorsMulticopter::set_actuator_with_slew(float& actuator_output, float 
 
     // If MOT_SLEW_UP_TIME is set, calculate the highest allowed new output value, constrained 0.0~1.0
     if (is_positive(_slew_up_time)) {
-        float output_delta_up_max = 1.0f / (constrain_float(_slew_up_time, 0.0f, 0.5f) * _loop_rate);
+        float output_delta_up_max = _dt / (constrain_float(_slew_up_time, 0.0f, 0.5f));
         output_slew_limit_up = constrain_float(actuator_output + output_delta_up_max, 0.0f, 1.0f);
     }
 
     // If MOT_SLEW_DN_TIME is set, calculate the lowest allowed new output value, constrained 0.0~1.0
     if (is_positive(_slew_dn_time)) {
-        float output_delta_dn_max = 1.0f / (constrain_float(_slew_dn_time, 0.0f, 0.5f) * _loop_rate);
+        float output_delta_dn_max = _dt / (constrain_float(_slew_dn_time, 0.0f, 0.5f));
         output_slew_limit_dn = constrain_float(actuator_output - output_delta_dn_max, 0.0f, 1.0f);
     }
 
@@ -545,7 +556,7 @@ void AP_MotorsMulticopter::output_logic()
 {
     if (armed()) {
         if (_disarm_disable_pwm && (_disarm_safe_timer < _safe_time)) {
-            _disarm_safe_timer += 1.0f/_loop_rate;
+            _disarm_safe_timer += _dt;
         } else {
             _disarm_safe_timer = _safe_time;
         }
@@ -564,7 +575,7 @@ void AP_MotorsMulticopter::output_logic()
         _spool_up_time.set(0.05);
     }
 
-    const float spool_step = 1.0f / (_spool_up_time * _loop_rate);
+    const float spool_step = _dt / _spool_up_time;
     switch (_spool_state) {
     case SpoolState::SHUT_DOWN:
         // Motors should be stationary.

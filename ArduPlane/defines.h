@@ -48,7 +48,7 @@ enum failsafe_action_long {
 enum class StickMixing {
     NONE     = 0,
     FBW      = 1,
-    DIRECT   = 2,
+    DIRECT_REMOVED = 2,
     VTOL_YAW = 3,
 };
 

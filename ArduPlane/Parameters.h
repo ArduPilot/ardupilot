@@ -1,5 +1,7 @@
 #pragma once
 
+#define AP_PARAM_VEHICLE_NAME plane
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Gripper/AP_Gripper.h>
 
@@ -353,6 +355,7 @@ public:
         k_param_gcs6,          // stream rates
         k_param_fence,         // vehicle fence - unused
         k_param_acro_yaw_rate,
+        k_param_takeoff_throttle_max_t,
     };
 
     AP_Int16 format_version;
@@ -528,7 +531,7 @@ public:
     AP_Int8 takeoff_throttle_accel_count;
     AP_Int8 takeoff_timeout;
 
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
     AP_LandingGear landing_gear;
 #endif
 

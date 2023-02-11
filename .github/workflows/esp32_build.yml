@@ -38,7 +38,7 @@ jobs:
           sudo apt install cmake
 
 
-          git submodule update --init --recursive
+          git submodule update --init --recursive --depth=1
           ./Tools/scripts/esp32_get_idf.sh
 
           sudo ln -s /usr/bin/ninja /usr/bin/ninja-build
@@ -62,7 +62,7 @@ jobs:
           ./install.sh
           source ./export.sh
           cd ../..
-          python -m pip install future lxml pymavlink MAVProxy pexpect flake8 geocoder empy dronecan  
+          python -m pip install --progress-bar off future lxml pymavlink MAVProxy pexpect flake8 geocoder empy dronecan
           which cmake
           ./waf configure --board ${{matrix.config}}
           ./waf plane

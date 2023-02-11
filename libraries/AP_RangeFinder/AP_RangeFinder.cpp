@@ -771,6 +771,11 @@ bool RangeFinder::prearm_healthy(char *failure_msg, const uint8_t failure_msg_le
                 hal.util->snprintf(failure_msg, failure_msg_len, "RNGFND%u_PIN not set", unsigned(i + 1));
                 return false;
             }
+            if (drivers[i]->allocated_type() == Type::ANALOG) {
+                // Analog backend does not use GPIO pin
+                break;
+            }
+
             // ensure that the pin we're configured to use is available
             if (!hal.gpio->valid_pin(params[i].pin)) {
                 uint8_t servo_ch;

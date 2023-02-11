@@ -12,12 +12,15 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include "AP_Compass_LSM303D.h"
+
+#if AP_COMPASS_LSM303D_ENABLED
+
 #include <utility>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-
-#include "AP_Compass_LSM303D.h"
 
 extern const AP_HAL::HAL &hal;
 
@@ -428,3 +431,5 @@ bool AP_Compass_LSM303D::_mag_set_samplerate(uint16_t frequency)
 
     return true;
 }
+
+#endif  // AP_COMPASS_LSM303D_ENABLED

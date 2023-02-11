@@ -10,7 +10,7 @@ jobs:
     runs-on: 'windows-latest'
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
       - uses: cygwin/cygwin-install-action@master
@@ -21,8 +21,8 @@ jobs:
           HOME: ${{ runner.workspace }}/ardupilot
         run: |
           bash --login -c "ln -sf /usr/bin/python3.7 /usr/bin/python && ln -sf /usr/bin/pip3.7 /usr/bin/pip"
-          bash --login -c "python -m pip install empy pexpect"
-          bash --login -c "python -m pip install dronecan --upgrade"
+          bash --login -c "python -m pip install --progress-bar off empy pexpect"
+          bash --login -c "python -m pip install --progress-bar off dronecan --upgrade"
       - name: Build SITL
         env:
           HOME: ${{ runner.workspace }}/ardupilot
@@ -31,13 +31,13 @@ jobs:
 
       - name: Check build files
         id: check_files
-        uses: andstor/file-existence-action@v1
+        uses: andstor/file-existence-action@v2
         with:
           files: "artifacts/*"
-          allow_failure: true
+          fail: true
 
       - name: Archive build
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
            name: binaries
            path: artifacts

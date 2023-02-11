@@ -21,6 +21,7 @@
 #if HAL_WITH_ESC_TELEM
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_TemperatureSensor/AP_TemperatureSensor_config.h>
 
 //#define ESC_TELEM_DEBUG
 
@@ -209,7 +210,7 @@ bool AP_ESC_Telem::get_temperature(uint8_t esc_index, int16_t& temp) const
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS
         || AP_HAL::millis() - _telem_data[esc_index].last_update_ms > ESC_TELEM_DATA_TIMEOUT_MS
-        || !(_telem_data[esc_index].types & AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE)) {
+        || !(_telem_data[esc_index].types & (AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE | AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE_EXTERNAL))) {
         return false;
     }
     temp = _telem_data[esc_index].temperature_cdeg;
@@ -221,7 +222,7 @@ bool AP_ESC_Telem::get_motor_temperature(uint8_t esc_index, int16_t& temp) const
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS
         || AP_HAL::millis() - _telem_data[esc_index].last_update_ms > ESC_TELEM_DATA_TIMEOUT_MS
-        || !(_telem_data[esc_index].types & AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE)) {
+        || !(_telem_data[esc_index].types & (AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE | AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE_EXTERNAL))) {
         return false;
     }
     temp = _telem_data[esc_index].motor_temp_cdeg;
@@ -420,28 +421,23 @@ void AP_ESC_Telem::update_telem_data(const uint8_t esc_index, const AP_ESC_Telem
     _have_data = true;
 
 #if AP_TEMPERATURE_SENSOR_ENABLED
-    // if it's ever been set externally ignore normal "internal" updates
-    if (data_mask & AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE_EXTERNAL) {
-        _temperature_is_external[esc_index] = true;
-        _telem_data[esc_index].temperature_cdeg = new_data.temperature_cdeg;
-    } else if ((data_mask & AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE) && !_temperature_is_external[esc_index]) {
-        _telem_data[esc_index].temperature_cdeg = new_data.temperature_cdeg;
-    }
-    if (data_mask & AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE_EXTERNAL) {
-        _motor_temp_is_external[esc_index] = true;
-        _telem_data[esc_index].motor_temp_cdeg = new_data.motor_temp_cdeg;
-    } else if ((data_mask & AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE) && !_motor_temp_is_external[esc_index]) {
-        _telem_data[esc_index].motor_temp_cdeg = new_data.motor_temp_cdeg;
-    }
+    // always allow external data. Block "internal" if external has ever its ever been set externally then ignore normal "internal" updates
+    const bool has_temperature = (data_mask & AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE_EXTERNAL) ||
+        ((data_mask & AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE) && !(_telem_data[esc_index].types & AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE_EXTERNAL));
+
+    const bool has_motor_temperature = (data_mask & AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE_EXTERNAL) ||
+        ((data_mask & AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE) && !(_telem_data[esc_index].types & AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE_EXTERNAL));
 #else
-    if (data_mask & AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE) {
-        _telem_data[esc_index].temperature_cdeg = new_data.temperature_cdeg;
-    }
-    if (data_mask & AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE) {
-        _telem_data[esc_index].motor_temp_cdeg = new_data.motor_temp_cdeg;
-    }
+    const bool has_temperature = (data_mask & AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
+    const bool has_motor_temperature = (data_mask & AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE);
 #endif
 
+    if (has_temperature) {
+        _telem_data[esc_index].temperature_cdeg = new_data.temperature_cdeg;
+    }
+    if (has_motor_temperature) {
+        _telem_data[esc_index].motor_temp_cdeg = new_data.motor_temp_cdeg;
+    }
     if (data_mask & AP_ESC_Telem_Backend::TelemetryType::VOLTAGE) {
         _telem_data[esc_index].voltage = new_data.voltage;
     }
@@ -483,7 +479,7 @@ void AP_ESC_Telem::update_rpm(const uint8_t esc_index, const float new_rpm, cons
     rpmdata.error_rate = error_rate;
 
 #ifdef ESC_TELEM_DEBUG
-    hal.console->printf("RPM: rate=%.1fhz, rpm=%d)\n", rpmdata.update_rate_hz, new_rpm);
+    hal.console->printf("RPM: rate=%.1fhz, rpm=%f)\n", rpmdata.update_rate_hz, new_rpm);
 #endif
 }
 

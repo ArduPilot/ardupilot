@@ -440,6 +440,12 @@ int8_t AP_ExternalAHRS_LORD::get_port(void) const
     return port_num;
 };
 
+// Get model/type name
+const char* AP_ExternalAHRS_LORD::get_name() const
+{
+    return "LORD";
+}
+
 bool AP_ExternalAHRS_LORD::healthy(void) const
 {
     uint32_t now = AP_HAL::millis();

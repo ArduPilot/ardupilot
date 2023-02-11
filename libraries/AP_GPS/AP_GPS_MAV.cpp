@@ -82,8 +82,7 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t &msg)
                 }
 
                 state.velocity = vel;
-                state.ground_course = wrap_360(degrees(atan2f(vel.y, vel.x)));
-                state.ground_speed = vel.xy().length();
+                velocity_to_speed_course(state);
             }
 
             if (have_sa) {
@@ -125,6 +124,7 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t &msg)
                 state.corrected_timestamp_updated = true;
                 if (state.last_corrected_gps_time_us) {
                     _last_itow_ms = state.time_week_ms;
+                    _have_itow = true;
                 }
                 if (have_yaw) {
                     state.gps_yaw_time_ms = corrected_ms;

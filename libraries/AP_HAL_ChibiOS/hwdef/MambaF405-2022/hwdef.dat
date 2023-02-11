@@ -25,3 +25,5 @@ IMU Invensensev3 SPI:icm42688 ROTATION_ROLL_180_YAW_270
 BARO SPL06 I2C:0:0x76
 define AP_BARO_SPL06_ENABLED 1
 
+# minimal drivers to reduce flash usage
+include ../include/minimal.inc

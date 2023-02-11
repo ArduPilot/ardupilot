@@ -110,3 +110,10 @@ void ModeLoiter::navigate()
     plane.update_loiter(0);
 }
 
+void ModeLoiter::update_target_altitude()
+{
+    if (plane.stick_mixing_enabled() && (plane.g2.flight_options & FlightOptions::ENABLE_LOITER_ALT_CONTROL)) {
+        return;
+    }
+    Mode::update_target_altitude();
+}

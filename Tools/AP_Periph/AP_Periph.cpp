@@ -31,6 +31,10 @@
 #include <AP_HAL_ChibiOS/I2CDevice.h>
 #endif
 
+#ifndef HAL_PERIPH_HWESC_SERIAL_PORT
+#define HAL_PERIPH_HWESC_SERIAL_PORT 3
+#endif
+
 extern const AP_HAL::HAL &hal;
 
 AP_Periph_FW periph;
@@ -183,23 +187,21 @@ void AP_Periph_FW::init()
 #endif
     
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
-    if (airspeed.enabled()){
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-        const bool pins_enabled = ChibiOS::I2CBus::check_select_pins(0x01);
-        if (pins_enabled) {
-            ChibiOS::I2CBus::set_bus_to_floating(0);
+    const bool pins_enabled = ChibiOS::I2CBus::check_select_pins(0x01);
+    if (pins_enabled) {
+        ChibiOS::I2CBus::set_bus_to_floating(0);
 #ifdef HAL_GPIO_PIN_LED_CAN_I2C
-            palWriteLine(HAL_GPIO_PIN_LED_CAN_I2C, 1);
+        palWriteLine(HAL_GPIO_PIN_LED_CAN_I2C, 1);
 #endif
-        } else {
-            // Note: logging of ARSPD is not enabled currently. To enable, call airspeed.set_log_bit(); here
-            airspeed.init();
-        }
-#else
+    } else {
         // Note: logging of ARSPD is not enabled currently. To enable, call airspeed.set_log_bit(); here
         airspeed.init();
-#endif
     }
+#else
+    // Note: logging of ARSPD is not enabled currently. To enable, call airspeed.set_log_bit(); here
+    airspeed.init();
+#endif
 
 #endif
 
@@ -214,12 +216,23 @@ void AP_Periph_FW::init()
     }
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_PRX
+    if (proximity.get_type(0) != AP_Proximity::Type::None && g.proximity_port >= 0) {
+        auto *uart = hal.serial(g.proximity_port);
+        if (uart != nullptr) {
+            uart->begin(g.proximity_baud);
+            serial_manager.set_protocol_and_baud(g.proximity_port, AP_SerialManager::SerialProtocol_Lidar360, g.proximity_baud);
+            proximity.init();
+        }
+    }
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
     pwm_hardpoint_init();
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_HWESC
-    hwesc_telem.init(hal.serial(3));
+    hwesc_telem.init(hal.serial(HAL_PERIPH_HWESC_SERIAL_PORT));
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MSP
@@ -230,6 +243,10 @@ void AP_Periph_FW::init()
     
 #if AP_TEMPERATURE_SENSOR_ENABLED
     temperature_sensor.init();
+#endif
+
+#if HAL_NMEA_OUTPUT_ENABLED
+    nmea.init();
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_NOTIFY
@@ -428,6 +445,10 @@ void AP_Periph_FW::update()
         gcs().update_send();
 #endif
     }
+
+#if HAL_NMEA_OUTPUT_ENABLED
+    nmea.update();
+#endif
 
 #if AP_TEMPERATURE_SENSOR_ENABLED
     temperature_sensor.update();

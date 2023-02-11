@@ -19,11 +19,7 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-
-#ifndef HAL_NMEA_OUTPUT_ENABLED
-#define HAL_NMEA_OUTPUT_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
+#include "AP_NMEA_Output_config.h"
 
 #if HAL_NMEA_OUTPUT_ENABLED
 
@@ -31,25 +27,41 @@
 #define NMEA_MAX_OUTPUTS 3
 #endif
 
+#include <AP_Param/AP_Param.h>
+
 class AP_NMEA_Output {
 
 public:
-    static AP_NMEA_Output* probe();
+
+    AP_NMEA_Output() {
+        // setup parameter defaults
+        AP_Param::setup_object_defaults(this, var_info);
+    }
 
     /* Do not allow copies */
     CLASS_NO_COPY(AP_NMEA_Output);
 
     void update();
 
-private:
-    AP_NMEA_Output();
+    void init();
 
-    uint8_t _nmea_checksum(const char *str);
+    enum class Enabled_Messages {
+        GPGGA   = (1<<0),
+        GPRMC   = (1<<1),
+        PASHR   = (1<<2),
+    };
+
+    static const struct AP_Param::GroupInfo var_info[];
+
+private:
 
     uint8_t _num_outputs;
     AP_HAL::UARTDriver* _uart[NMEA_MAX_OUTPUTS];
 
     uint32_t _last_run_ms;
+
+    AP_Int16 _interval_ms;
+    AP_Int16 _message_enable_bitmask;
 };
 
-#endif  // !HAL_MINIMIZE_FEATURES
+#endif  // !HAL_NMEA_OUTPUT_ENABLED

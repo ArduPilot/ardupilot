@@ -1330,17 +1330,12 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(const ma
       any commands which use the x and y fields not as
       latitude/longitude.
      */
-    switch (packet.command) {
-    case MAV_CMD_DO_DIGICAM_CONTROL:
-    case MAV_CMD_DO_DIGICAM_CONFIGURE:
-    case MAV_CMD_NAV_ATTITUDE_TIME:
-    case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
+    if (!cmd_has_location(packet.command)) {
         mav_cmd.x = packet.x;
         mav_cmd.y = packet.y;
-        break;
 
-    default:
-        // all other commands use x and y as lat/lon. We need to
+    } else {
+         //these commands use x and y as lat/lon. We need to
         // multiply by 1e7 to convert to int32_t
         if (!check_lat(packet.x)) {
             return MAV_MISSION_INVALID_PARAM5_X;
@@ -1350,7 +1345,6 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(const ma
         }
         mav_cmd.x = packet.x * 1.0e7f;
         mav_cmd.y = packet.y * 1.0e7f;
-        break;
     }
 
     return MAV_MISSION_ACCEPTED;
@@ -1373,17 +1367,12 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_INT_to_MISSION_ITEM(const ma
     item.autocontinue = item_int.autocontinue;
     item.mission_type = item_int.mission_type;
 
-    switch (item_int.command) {
-    case MAV_CMD_DO_DIGICAM_CONTROL:
-    case MAV_CMD_DO_DIGICAM_CONFIGURE:
-    case MAV_CMD_NAV_ATTITUDE_TIME:
-    case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
+    if (!cmd_has_location(item_int.command)) {
         item.x = item_int.x;
         item.y = item_int.y;
-        break;
 
-    default:
-        // all other commands use x and y as lat/lon. We need to
+    } else {
+        // These commands use x and y as lat/lon. We need to
         // multiply by 1e-7 to convert to float
         item.x = item_int.x * 1.0e-7f;
         item.y = item_int.y * 1.0e-7f;
@@ -1393,7 +1382,6 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_INT_to_MISSION_ITEM(const ma
         if (!check_lng(item.y)) {
             return MAV_MISSION_INVALID_PARAM6_Y;
         }
-        break;
     }
 
     return MAV_MISSION_ACCEPTED;
@@ -2130,7 +2118,7 @@ uint16_t AP_Mission::num_commands_max(void) const
 // be found.
 uint16_t AP_Mission::get_landing_sequence_start()
 {
-    struct Location current_loc;
+    Location current_loc;
 
     if (!AP::ahrs().get_location(current_loc)) {
         return 0;
@@ -2198,7 +2186,7 @@ bool AP_Mission::jump_to_landing_sequence(void)
 // jumps the mission to the closest landing abort that is planned, returns false if unable to find a valid abort
 bool AP_Mission::jump_to_abort_landing_sequence(void)
 {
-    struct Location current_loc;
+    Location current_loc;
 
     uint16_t abort_index = 0;
     if (AP::ahrs().get_location(current_loc)) {
@@ -2303,7 +2291,7 @@ bool AP_Mission::distance_to_landing(uint16_t index, float &tot_distance, Locati
 {
     Mission_Command temp_cmd;
     tot_distance = 0.0f;
-    bool ret;
+    bool ret = false;  // reached end of loop without getting to a landing
 
     // back up jump tracking to reset after distance calculation
     jump_tracking_struct _jump_tracking_backup[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
@@ -2318,14 +2306,12 @@ bool AP_Mission::distance_to_landing(uint16_t index, float &tot_distance, Locati
             // get next command
             if (!get_next_cmd(cmd_index, temp_cmd, true, false)) {
                 // we got to the end of the mission
-                ret = false;
                 goto reset_do_jump_tracking;
             }
             if (temp_cmd.id == MAV_CMD_NAV_WAYPOINT || temp_cmd.id == MAV_CMD_NAV_SPLINE_WAYPOINT || is_landing_type_cmd(temp_cmd.id)) {
                 break;
             } else if (is_nav_cmd(temp_cmd) || temp_cmd.id == MAV_CMD_CONDITION_DELAY) {
                 // if we receive a nav command that we dont handle then give up as cant measure the distance e.g. MAV_CMD_NAV_LOITER_UNLIM
-                ret = false;
                 goto reset_do_jump_tracking;
             }
         }
@@ -2346,8 +2332,6 @@ bool AP_Mission::distance_to_landing(uint16_t index, float &tot_distance, Locati
             goto reset_do_jump_tracking;
         }
     }
-    // reached end of loop without getting to a landing
-    ret = false;
 
 reset_do_jump_tracking:
     for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
@@ -2505,7 +2489,7 @@ const char *AP_Mission::Mission_Command::type() const
 
 bool AP_Mission::contains_item(MAV_CMD command) const
 {
-    for (int i = 1; i < num_commands(); i++) {
+    for (uint16_t i = 1; i < num_commands(); i++) {
         Mission_Command tmp;
         if (!read_cmd_from_storage(i, tmp)) {
             continue;
@@ -2515,6 +2499,15 @@ bool AP_Mission::contains_item(MAV_CMD command) const
         }
     }
     return false;
+}
+
+/*
+  return true if the mission item has a location
+*/
+
+bool AP_Mission::cmd_has_location(const uint16_t command)
+{
+    return stored_in_location(command);
 }
 
 /*
@@ -2531,7 +2524,7 @@ bool AP_Mission::contains_terrain_alt_items(void)
 
 bool AP_Mission::calculate_contains_terrain_alt_items(void) const
 {
-    for (int i = 1; i < num_commands(); i++) {
+    for (uint16_t i = 1; i < num_commands(); i++) {
         Mission_Command tmp;
         if (!read_cmd_from_storage(i, tmp)) {
             continue;

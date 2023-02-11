@@ -62,7 +62,7 @@ jobs:
           esac
 
       # git checkout the PR
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
             submodules: 'recursive'
       - name: test install environment ${{matrix.os}}.${{matrix.name}}
@@ -102,6 +102,7 @@ jobs:
           TZ: Europe/Paris
         shell: 'script -q -e -c "bash {0}"'
         run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
           source ~/.bashrc
           git config --global --add safe.directory /__w/ardupilot/ardupilot
           ./waf configure
@@ -114,6 +115,7 @@ jobs:
           TZ: Europe/Paris
         shell: 'script -q -e -c "bash {0}"'
         run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
           source ~/.bashrc
           case ${{matrix.os}} in
             *"archlinux"*)

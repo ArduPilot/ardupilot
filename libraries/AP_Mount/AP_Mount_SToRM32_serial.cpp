@@ -269,9 +269,10 @@ void AP_Mount_SToRM32_serial::parse_reply() {
                 break;
             }
 
+            // Parse angles (Note: reversed pitch and yaw) to match ardupilot coordinate system
             _current_angle.x = _buffer.data.imu1_roll;
-            _current_angle.y = _buffer.data.imu1_pitch;
-            _current_angle.z = _buffer.data.imu1_yaw;
+            _current_angle.y = -_buffer.data.imu1_pitch;
+            _current_angle.z = -_buffer.data.imu1_yaw;
             break;
         default:
             break;
