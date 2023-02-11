@@ -36,9 +36,6 @@ static bool sdcard_running;
 
 #if HAL_USE_SDC
 static SDCConfig sdcconfig = {
-#if !defined(STM32H7)
-  NULL,
-#endif
   SDC_MODE_4BIT,
   0
 };
