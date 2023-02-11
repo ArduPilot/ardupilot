@@ -579,7 +579,7 @@ bool Plane::verify_takeoff()
     if (takeoff_state.start_time_ms != 0 && g2.takeoff_timeout > 0) {
         const float ground_speed = gps.ground_speed();
         const float takeoff_min_ground_speed = 4;
-        if (!hal.util->get_soft_armed()) {
+        if (!arming.is_armed_and_safety_off()) {
             return false;
         }
         if (ground_speed >= takeoff_min_ground_speed) {
@@ -872,7 +872,7 @@ bool Plane::verify_altitude_wait(const AP_Mission::Mission_Command &cmd)
 // verify_nav_delay - check if we have waited long enough
 bool Plane::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
-    if (hal.util->get_soft_armed()) {
+    if (arming.is_armed_and_safety_off()) {
         // don't delay while armed, we need a nav controller running
         return true;
     }
