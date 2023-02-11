@@ -110,6 +110,13 @@ void AP_IOMCU::thread_main(void)
     trigger_event(IOEVENT_INIT);
 
     while (!do_shutdown) {
+        // check if we have lost contact with the IOMCU
+        const uint32_t now_ms = AP_HAL::millis();
+        if (last_reg_read_ms != 0 && now_ms - last_reg_read_ms > 1000U) {
+            INTERNAL_ERROR(AP_InternalError::error_t::iomcu_reset);
+            last_reg_read_ms = 0;
+        }
+
         eventmask_t mask = chEvtWaitAnyTimeout(~0, chTimeMS2I(10));
 
         // check for pending IO events
@@ -323,6 +330,10 @@ void AP_IOMCU::read_status()
     uint16_t *r = (uint16_t *)&reg_status;
     if (!read_registers(PAGE_STATUS, 0, sizeof(reg_status)/2, r)) {
         read_status_errors++;
+        if (read_status_errors == 20 && last_iocmu_timestamp_ms != 0) {
+            // the IOMCU has stopped responding to status requests
+            INTERNAL_ERROR(AP_InternalError::error_t::iomcu_reset);
+        }
         return;
     }
     if (read_status_ok == 0) {
@@ -539,6 +550,7 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
     total_errors += protocol_fail_count;
     protocol_fail_count = 0;
     protocol_count++;
+    last_reg_read_ms = AP_HAL::millis();
     return true;
 }
 
@@ -851,6 +863,9 @@ bool AP_IOMCU::check_crc(void)
 
     const uint16_t magic = REBOOT_BL_MAGIC;
     write_registers(PAGE_SETUP, PAGE_REG_SETUP_REBOOT_BL, 1, &magic);
+
+    // avoid internal error on fw upload delay
+    last_reg_read_ms = 0;
 
     if (!upload_fw()) {
         AP_ROMFS::free(fw);
