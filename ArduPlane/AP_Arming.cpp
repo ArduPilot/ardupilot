@@ -291,7 +291,7 @@ void AP_Arming_Plane::change_arm_state(void)
 {
     update_soft_armed();
 #if HAL_QUADPLANE_ENABLED
-    plane.quadplane.set_armed(hal.util->get_soft_armed());
+    plane.quadplane.set_armed(is_armed_and_safety_off());
 #endif
 }
 
@@ -380,7 +380,6 @@ void AP_Arming_Plane::update_soft_armed()
         _armed = true;
     }
 #endif
-    _armed = _armed && hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED;
 
     hal.util->set_soft_armed(_armed);
     AP::logger().set_vehicle_armed(hal.util->get_soft_armed());
