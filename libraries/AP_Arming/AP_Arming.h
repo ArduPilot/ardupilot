@@ -85,10 +85,11 @@ public:
     void init(void);
 
     // these functions should not be used by Copter which holds the armed state in the motors library
-    Required arming_required();
+    Required arming_required() const;
     virtual bool arm(AP_Arming::Method method, bool do_arming_checks=true);
     virtual bool disarm(AP_Arming::Method method, bool do_disarm_checks=true);
-    bool is_armed();
+    bool is_armed() const;
+    bool is_armed_and_safety_off() const;
 
     // get bitmask of enabled checks
     uint32_t get_enabled_checks() const;

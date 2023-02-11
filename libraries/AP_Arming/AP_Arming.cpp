@@ -188,9 +188,17 @@ uint16_t AP_Arming::compass_magfield_expected() const
     return AP_ARMING_COMPASS_MAGFIELD_EXPECTED;
 }
 
-bool AP_Arming::is_armed()
+bool AP_Arming::is_armed() const
 {
     return armed || arming_required() == Required::NO;
+}
+
+/*
+  true if armed and safety is off
+ */
+bool AP_Arming::is_armed_and_safety_off() const
+{
+    return is_armed() && hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED;
 }
 
 uint32_t AP_Arming::get_enabled_checks() const
@@ -1616,7 +1624,7 @@ bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)
     return true;
 }
 
-AP_Arming::Required AP_Arming::arming_required() 
+AP_Arming::Required AP_Arming::arming_required() const
 {
 #if AP_OPENDRONEID_ENABLED
     // cannot be disabled if OpenDroneID is present
