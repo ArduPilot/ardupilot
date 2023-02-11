@@ -1084,6 +1084,7 @@ struct PACKED log_VER {
 // @Field: Instance: rangefinder instance number this data is from
 // @Field: Dist: Reported distance from sensor
 // @Field: Stat: Sensor state
+// @FieldValueEnum: Stat: RangeFinder::Status
 // @Field: Orient: Sensor orientation
 
 // @LoggerMessage: RSSI
