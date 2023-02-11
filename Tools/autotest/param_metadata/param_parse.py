@@ -90,7 +90,7 @@ def debug(str_to_print):
 
 def lua_applets():
     '''return list of Library objects for lua applets and drivers'''
-    lua_lib = Library("", reference="Lua Script", not_rst=True)
+    lua_lib = Library("", reference="Lua Script", not_rst=True, check_duplicates=True)
     patterns = ["libraries/AP_Scripting/applets/*.lua", "libraries/AP_Scripting/drivers/*.lua"]
     paths = []
     for p in patterns:
@@ -335,6 +335,9 @@ def process_library(vehicle, library, pathprefix=None):
                     continue
 
             p.path = path # Add path. Later deleted - only used for duplicates
+            if library.check_duplicates and library.has_param(p.name):
+                error("Duplicate parameter %s in %s" % (p.name, library.name))
+                continue
             library.params.append(p)
 
         group_matches = prog_groups.findall(p_text)
