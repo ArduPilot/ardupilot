@@ -16,7 +16,7 @@ bool Plane::auto_takeoff_check(void)
     uint16_t wait_time_ms = MIN(uint16_t(g.takeoff_throttle_delay)*100,12700);
 
     // reset all takeoff state if disarmed
-    if (!hal.util->get_soft_armed()) {
+    if (!arming.is_armed_and_safety_off()) {
         memset(&takeoff_state, 0, sizeof(takeoff_state));
         auto_state.baro_takeoff_alt = barometer.get_altitude();
         return false;

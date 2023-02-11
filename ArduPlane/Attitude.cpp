@@ -9,7 +9,7 @@ float Plane::calc_speed_scaler(void)
 {
     float aspeed, speed_scaler;
     if (ahrs.airspeed_estimate(aspeed)) {
-        if (aspeed > auto_state.highest_airspeed && hal.util->get_soft_armed()) {
+        if (aspeed > auto_state.highest_airspeed && arming.is_armed_and_safety_off()) {
             auto_state.highest_airspeed = aspeed;
         }
         // ensure we have scaling over the full configured airspeed
@@ -24,7 +24,7 @@ float Plane::calc_speed_scaler(void)
         speed_scaler = constrain_float(speed_scaler, scale_min, scale_max);
 
 #if HAL_QUADPLANE_ENABLED
-        if (quadplane.in_vtol_mode() && hal.util->get_soft_armed()) {
+        if (quadplane.in_vtol_mode() && arming.is_armed_and_safety_off()) {
             // when in VTOL modes limit surface movement at low speed to prevent instability
             float threshold = airspeed_min * 0.5;
             if (aspeed < threshold) {
@@ -39,7 +39,7 @@ float Plane::calc_speed_scaler(void)
             }
         }
 #endif
-    } else if (hal.util->get_soft_armed()) {
+    } else if (arming.is_armed_and_safety_off()) {
         // scale assumed surface movement using throttle output
         float throttle_out = MAX(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), 1);
         speed_scaler = sqrtf(THROTTLE_CRUISE / throttle_out);

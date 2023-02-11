@@ -167,7 +167,7 @@ float Tiltrotor::tilt_max_change(bool up, bool in_flap_range) const
         if (plane.control_mode == &plane.mode_manual) {
             fast_tilt = true;
         }
-        if (hal.util->get_soft_armed() && !quadplane.in_vtol_mode() && !quadplane.assisted_flight) {
+        if (plane.arming.is_armed_and_safety_off() && !quadplane.in_vtol_mode() && !quadplane.assisted_flight) {
             fast_tilt = true;
         }
         if (fast_tilt) {
@@ -217,12 +217,12 @@ void Tiltrotor::continuous_update(void)
     // the maximum rate of throttle change
     float max_change;
 
-    if (!quadplane.in_vtol_mode() && (!hal.util->get_soft_armed() || !quadplane.assisted_flight)) {
+    if (!quadplane.in_vtol_mode() && (!plane.arming.is_armed_and_safety_off() || !quadplane.assisted_flight)) {
         // we are in pure fixed wing mode. Move the tiltable motors all the way forward and run them as
         // a forward motor
 
         // option set then if disarmed move to VTOL position to prevent ground strikes, allow tilt forward in manual mode for testing
-        const bool disarmed_tilt_up = !hal.util->get_soft_armed() && (plane.control_mode != &plane.mode_manual) && quadplane.option_is_set(QuadPlane::OPTION::DISARMED_TILT_UP);
+        const bool disarmed_tilt_up = !plane.arming.is_armed_and_safety_off() && (plane.control_mode != &plane.mode_manual) && quadplane.option_is_set(QuadPlane::OPTION::DISARMED_TILT_UP);
         slew(disarmed_tilt_up ? 0.0 : get_forward_flight_tilt());
 
         max_change = tilt_max_change(false);
@@ -235,7 +235,7 @@ void Tiltrotor::continuous_update(void)
         } else {
             current_throttle = new_throttle;
         }
-        if (!hal.util->get_soft_armed()) {
+        if (!plane.arming.is_armed_and_safety_off()) {
             current_throttle = 0;
         } else {
             // prevent motor shutdown
@@ -512,7 +512,7 @@ void Tiltrotor::vectoring(void)
     // Wait TILT_DELAY_MS after disarming to allow props to spin down first.
     constexpr uint32_t TILT_DELAY_MS = 3000;
     uint32_t now = AP_HAL::millis();
-    if (!hal.util->get_soft_armed() && plane.quadplane.option_is_set(QuadPlane::OPTION::DISARMED_TILT)) {
+    if (!plane.arming.is_armed_and_safety_off() && plane.quadplane.option_is_set(QuadPlane::OPTION::DISARMED_TILT)) {
         // this test is subject to wrapping at ~49 days, but the consequences are insignificant
         if ((now - hal.util->get_last_armed_change()) > TILT_DELAY_MS) {
             if (quadplane.in_vtol_mode()) {
