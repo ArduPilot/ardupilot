@@ -146,6 +146,10 @@ PB1  TIM3_CH4 TIM3 PWM(6) GPIO(55)
 PC8  TIM8_CH3 TIM8 PWM(7) GPIO(56) BIDIR
 PC9  TIM8_CH4 TIM8 PWM(8) GPIO(57)
 
+# VTX Power control - should be high at startup to ensure power
+PC5 VTX_PWR OUTPUT HIGH GPIO(81)
+define RELAY2_PIN_DEFAULT 81
+
 # Motor order implies Betaflight/X for standard ESCs
 define HAL_FRAME_TYPE_DEFAULT 12
 
