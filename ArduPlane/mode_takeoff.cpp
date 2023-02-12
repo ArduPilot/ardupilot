@@ -61,7 +61,7 @@ void ModeTakeoff::update()
 {
     if (!takeoff_started) {
         // see if we will skip takeoff as already flying
-        if (plane.is_flying() && (millis() - plane.started_flying_ms > 10000U) && plane.ahrs.groundspeed() > 3) {
+        if (plane.is_flying() && (millis() - plane.started_flying_ms > 10000U) && ahrs.groundspeed() > 3) {
             gcs().send_text(MAV_SEVERITY_INFO, "Takeoff skipped - circling");
             plane.prev_WP_loc = plane.current_loc;
             plane.next_WP_loc = plane.current_loc;
@@ -75,7 +75,7 @@ void ModeTakeoff::update()
         // takeoff point, at a height of TKOFF_ALT
         const float dist = target_dist;
         const float alt = target_alt;
-        const float direction = degrees(plane.ahrs.yaw);
+        const float direction = degrees(ahrs.yaw);
 
         start_loc = plane.current_loc;
         plane.prev_WP_loc = plane.current_loc;

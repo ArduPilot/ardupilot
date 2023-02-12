@@ -5,7 +5,7 @@ bool ModeAcro::_enter()
 {
     plane.acro_state.locked_roll = false;
     plane.acro_state.locked_pitch = false;
-    IGNORE_RETURN(plane.ahrs.get_quaternion(plane.acro_state.q));
+    IGNORE_RETURN(ahrs.get_quaternion(plane.acro_state.q));
     return true;
 }
 
@@ -15,12 +15,12 @@ void ModeAcro::update()
     if (plane.acro_state.locked_roll) {
         plane.nav_roll_cd = plane.acro_state.locked_roll_err;
     } else {
-        plane.nav_roll_cd = plane.ahrs.roll_sensor;
+        plane.nav_roll_cd = ahrs.roll_sensor;
     }
     if (plane.acro_state.locked_pitch) {
         plane.nav_pitch_cd = plane.acro_state.locked_pitch_cd;
     } else {
-        plane.nav_pitch_cd = plane.ahrs.pitch_sensor;
+        plane.nav_pitch_cd = ahrs.pitch_sensor;
     }
 }
 
