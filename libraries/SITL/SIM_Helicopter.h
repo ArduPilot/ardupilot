@@ -68,10 +68,13 @@ private:
     float yaw_rate_max = radians(1400);
     float rsc_setpoint = 0.8f;
     float izz = 0.2f;
+    float iyy;
     float tr_dist = 0.85f;
     float cyclic_scalar = 7.2; // converts swashplate servo ouputs to cyclic blade pitch
     float thrust_scale;
     Vector2f _tpp_angle;
+    Vector2f _tpp_angle_1;
+    Vector2f _tpp_angle_2;
     float torque_scale;
     float torque_mpog;
     float hover_coll = 5.0f;

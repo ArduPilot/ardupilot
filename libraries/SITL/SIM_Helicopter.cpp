@@ -19,6 +19,7 @@
 #include "SIM_Helicopter.h"
 
 #include <stdio.h>
+#include <GCS_MAVLink/GCS.h>
 
 namespace SITL {
 
@@ -31,6 +32,8 @@ Helicopter::Helicopter(const char *frame_str) :
         frame_type = HELI_FRAME_DUAL;
         _time_delay = 30;
         nominal_rpm = 1300;
+        mass = 9.08f;
+        iyy = 0.2f;
     } else if (strstr(frame_str, "-compound")) {
         frame_type = HELI_FRAME_COMPOUND;
         _time_delay = 50;
@@ -82,12 +85,10 @@ void Helicopter::update(const struct sitl_input &input)
     motor_interlock = input.servos[7] > 1400;
 
     float rsc = constrain_float((input.servos[7]-1000) / 1000.0f, 0, 1);
-    float rsc_scale = rsc/rsc_setpoint;
 
     float thrust = 0;
-    float roll_rate = 0;
-    float pitch_rate = 0;
-    float yaw_rate = 0;
+    float thrust_1 = 0;
+    float thrust_2 = 0;
     float torque_effect_accel = 0;
     float lateral_x_thrust = 0;
     float lateral_y_thrust = 0;
@@ -118,7 +119,6 @@ void Helicopter::update(const struct sitl_input &input)
 
 
     Vector3f rot_accel;
-    Vector3f air_resistance;
 
     switch (frame_type) {
     case HELI_FRAME_CONVENTIONAL: {
@@ -215,48 +215,55 @@ void Helicopter::update(const struct sitl_input &input)
     }
 
     case HELI_FRAME_DUAL: {
-        // simulate a tandem helicopter
-        thrust_scale = (mass * GRAVITY_MSS) / hover_throttle;
+
+        float Ma1s = 617.5f;
+        float Lb1s = 3588.6f;
+        float Mu = 0.003f;
+        float Lv = -0.006f;
+        float Xu = -0.125f;
+        float Yv = -0.375f;
+        float Zw = -0.375f;
+        float hub_dist = 1.8f; //meters
 
         float swash4 = (_servos_delayed[3]-1000) / 1000.0f;
         float swash5 = (_servos_delayed[4]-1000) / 1000.0f;
         float swash6 = (_servos_delayed[5]-1000) / 1000.0f;
 
-        thrust = (rsc / rsc_setpoint) * (swash1+swash2+swash3+swash4+swash5+swash6) / 6.0f;
-        torque_effect_accel = (rsc_scale + rsc / rsc_setpoint) * rotor_rot_accel * ((swash1+swash2+swash3) - (swash4+swash5+swash6));
+        // Forward rotor is number 1
+        // thrust calculated based on 5 deg hover collective for 10lb aircraft at 1500RPM
+        float coll_1 = 50.0f * (swash1+swash2+swash3) / 3.0f - 25.0f;
 
-        roll_rate = (swash1-swash2) + (swash4-swash5);
-        pitch_rate = (swash1+swash2+swash3) - (swash4+swash5+swash6);
-        yaw_rate = (swash1-swash2) + (swash5-swash4);
+        // Calculate rotor tip path plane angle
+        float roll_cyclic_1 = 1.283 * (swash1 - swash2) / cyclic_scalar;
+        float pitch_cyclic_1 = 1.48 * ((swash1+swash2) / 2.0f - swash3) / cyclic_scalar;
+        Vector2f ctrl_pos_1 = Vector2f(roll_cyclic_1, pitch_cyclic_1);
+        update_rotor_dynamics(gyro, ctrl_pos_1, _tpp_angle_1, dt);
 
-        roll_rate *= rsc_scale;
-        pitch_rate *= rsc_scale;
-        yaw_rate *= rsc_scale;
+        // Aft rotor is number 2
+        // thrust calculated based on 5 deg hover collective for 10lb aircraft at 1500RPM
+        float coll_2 = 50.0f * (swash4+swash5+swash6) / 3.0f - 25.0f;
+
+        // Calculate rotor tip path plane angle
+        float roll_cyclic_2 = 1.283 * (swash4 - swash5) / cyclic_scalar;
+        float pitch_cyclic_2 = 1.48 * ((swash4+swash5) / 2.0f - swash6) / cyclic_scalar;
+        Vector2f ctrl_pos_2 = Vector2f(roll_cyclic_2, pitch_cyclic_2);
+        update_rotor_dynamics(gyro, ctrl_pos_2, _tpp_angle_2, dt);
+
+        // determine RPM
+        rpm[0] = update_rpm(rpm[0], rsc, torque_effect_accel, (coll_1 + coll_2) * 0.5f, dt);
+
+        thrust_1 = 0.5f * thrust_scale * sq(rpm[0] * 0.104667f) * (0.25* (coll_1 - hover_coll) + hover_coll);
+        thrust_2 = 0.5f * thrust_scale * sq(rpm[0] * 0.104667f) * (0.25* (coll_2 - hover_coll) + hover_coll);
 
         // rotational acceleration, in rad/s/s, in body frame
-        rot_accel.x = roll_rate * roll_rate_max;
-        rot_accel.y = pitch_rate * pitch_rate_max;
-        rot_accel.z = yaw_rate * yaw_rate_max;
+        rot_accel.x = (_tpp_angle_1.x + _tpp_angle_2.x) * Lb1s + Lv * velocity_air_bf.y;
+        rot_accel.y = (_tpp_angle_1.y + _tpp_angle_2.y) * Ma1s + (thrust_1 - thrust_2) * hub_dist / iyy + Mu * velocity_air_bf.x;
+        rot_accel.z = (_tpp_angle_1.x * thrust_1 - _tpp_angle_2.x * thrust_2) * hub_dist / (iyy * 2.0f) - 0.5f * gyro.z;
 
-        // rotational air resistance
-        rot_accel.x -= gyro.x * radians(5000.0) / terminal_rotation_rate;
-        rot_accel.y -= gyro.y * radians(5000.0) / terminal_rotation_rate;
-        rot_accel.z -= gyro.z * radians(400.0)  / terminal_rotation_rate;
+        lateral_y_thrust = GRAVITY_MSS * (_tpp_angle_1.x + _tpp_angle_2.x) + Yv * velocity_air_bf.y;
+        lateral_x_thrust = -1.0f * GRAVITY_MSS * (_tpp_angle_1.y + _tpp_angle_2.y) + Xu * velocity_air_bf.x;
+        accel_body = Vector3f(lateral_x_thrust, lateral_y_thrust, -(thrust_1 + thrust_2) / mass + velocity_air_bf.z * Zw);
 
-        // torque effect on tail
-        rot_accel.z += torque_effect_accel;
-
-        // air resistance
-        air_resistance = -velocity_air_ef * (GRAVITY_MSS/terminal_velocity);
-
-        // simulate rotor speed
-        rpm[0] = thrust * nominal_rpm;
-
-        // scale thrust to newtons
-        thrust *= thrust_scale;
-
-        accel_body = Vector3f(lateral_x_thrust, lateral_y_thrust, -thrust / mass);
-        accel_body += dcm.transposed() * air_resistance;
 
         break;
     }
@@ -341,6 +348,14 @@ void Helicopter::update_rotor_dynamics(Vector3f gyros, Vector2f ctrl_pos, Vector
         Lflg = -0.0286f;
         Mflt = 0.0344f;
         Mflg = 0.2292f;
+    } else if (frame_type == HELI_FRAME_DUAL) { // remove coupling in rotor
+        tf_inv = 1.0f / 0.068232f;
+        Lfa1s = 0.0f;
+        Mfb1s = 0.0f;
+        Lflt = 1.7635f;
+        Lflg = 0.0f;
+        Mflt = 0.0f;
+        Mflg = 1.9432f;
     } else {
         tf_inv = 1.0f / 0.068232f;
         Lfa1s = 1.2963f;
