@@ -868,7 +868,6 @@ private:
     void stabilize_stick_mixing_direct();
     void stabilize_stick_mixing_fbw();
     void stabilize_yaw();
-    void stabilize_training();
     void stabilize_acro();
     void stabilize_acro_quaternion();
     void calc_nav_yaw_coordinated();

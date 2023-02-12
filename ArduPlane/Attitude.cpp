@@ -338,34 +338,34 @@ void Plane::stabilize_yaw()
 /*
   a special stabilization function for training mode
  */
-void Plane::stabilize_training()
+void ModeTraining::run()
 {
-    const float rexpo = roll_in_expo(false);
-    const float pexpo = pitch_in_expo(false);
-    if (training_manual_roll) {
+    const float rexpo = plane.roll_in_expo(false);
+    const float pexpo = plane.pitch_in_expo(false);
+    if (plane.training_manual_roll) {
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, rexpo);
     } else {
         // calculate what is needed to hold
-        stabilize_roll();
-        if ((nav_roll_cd > 0 && rexpo < SRV_Channels::get_output_scaled(SRV_Channel::k_aileron)) ||
-            (nav_roll_cd < 0 && rexpo > SRV_Channels::get_output_scaled(SRV_Channel::k_aileron))) {
+        plane.stabilize_roll();
+        if ((plane.nav_roll_cd > 0 && rexpo < SRV_Channels::get_output_scaled(SRV_Channel::k_aileron)) ||
+            (plane.nav_roll_cd < 0 && rexpo > SRV_Channels::get_output_scaled(SRV_Channel::k_aileron))) {
             // allow user to get out of the roll
             SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, rexpo);
         }
     }
 
-    if (training_manual_pitch) {
+    if (plane.training_manual_pitch) {
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pexpo);
     } else {
-        stabilize_pitch();
-        if ((nav_pitch_cd > 0 && pexpo < SRV_Channels::get_output_scaled(SRV_Channel::k_elevator)) ||
-            (nav_pitch_cd < 0 && pexpo > SRV_Channels::get_output_scaled(SRV_Channel::k_elevator))) {
+        plane.stabilize_pitch();
+        if ((plane.nav_pitch_cd > 0 && pexpo < SRV_Channels::get_output_scaled(SRV_Channel::k_elevator)) ||
+            (plane.nav_pitch_cd < 0 && pexpo > SRV_Channels::get_output_scaled(SRV_Channel::k_elevator))) {
             // allow user to get back to level
             SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pexpo);
         }
     }
 
-    stabilize_yaw();
+    plane.stabilize_yaw();
 }
 
 
@@ -594,7 +594,7 @@ void Plane::stabilize()
     last_stabilize_ms = now;
 
     if (control_mode == &mode_training) {
-        stabilize_training();
+        plane.control_mode->run();
 #if AP_SCRIPTING_ENABLED
     } else if (nav_scripting_active()) {
         // scripting is in control of roll and pitch rates and throttle
