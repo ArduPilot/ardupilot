@@ -150,6 +150,7 @@ protected:
 
 class ModeAcro : public Mode
 {
+friend class ModeQAcro;
 public:
 
     Mode::Number mode_number() const override { return Mode::Number::ACRO; }
@@ -159,7 +160,25 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
+    void run() override;
+
+    void stabilize();
+
+    void stabilize_quaternion();
+
 protected:
+
+    // ACRO controller state
+    struct {
+        bool locked_roll;
+        bool locked_pitch;
+        float locked_roll_err;
+        int32_t locked_pitch_cd;
+        Quaternion q;
+        bool roll_active_last;
+        bool pitch_active_last;
+        bool yaw_active_last;
+    } acro_state;
 
     bool _enter() override;
 };
