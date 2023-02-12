@@ -85,34 +85,8 @@ public:
         _disabled_for_pulses |= (1U<<(uint8_t)protocol);
     }
 
-    // for protocols without strong CRCs we require 3 good frames to lock on
-    bool requires_3_frames(enum rcprotocol_t p) {
-        switch (p) {
-        case DSM:
-#if AP_RCPROTOCOL_FASTSBUS_ENABLED
-        case FASTSBUS:
-#endif
-        case SBUS:
-        case SBUS_NI:
-        case PPM:
-#if AP_RCPROTOCOL_FPORT_ENABLED
-        case FPORT:
-#endif
-#if AP_RCPROTOCOL_FPORT2_ENABLED
-        case FPORT2:
-#endif
-        case CRSF:
-            return true;
-        case IBUS:
-        case SUMD:
-        case SRXL:
-        case SRXL2:
-        case ST24:
-        case NONE:
-            return false;
-        }
-        return false;
-    }
+    // number of good frames to lock onto a protocol
+    uint8_t required_good_frames(enum rcprotocol_t p) const;
 
     uint8_t num_channels();
     uint16_t read(uint8_t chan);
