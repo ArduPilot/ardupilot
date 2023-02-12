@@ -7,6 +7,7 @@
 #include <AP_ADSB/AP_ADSB.h>
 #include <AP_Vehicle/ModeReason.h>
 #include "quadplane.h"
+#include <AP_AHRS/AP_AHRS.h>
 
 class AC_PosControl;
 class AC_AttitudeControl_Multi;
@@ -143,6 +144,7 @@ protected:
     QuadPlane& quadplane;
     QuadPlane::PosControlState &poscontrol;
 #endif
+    AP_AHRS& ahrs;
 };
 
 

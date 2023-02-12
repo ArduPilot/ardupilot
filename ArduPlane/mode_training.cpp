@@ -9,9 +9,9 @@ void ModeTraining::update()
 
     // if the roll is past the set roll limit, then
     // we set target roll to the limit
-    if (plane.ahrs.roll_sensor >= plane.roll_limit_cd) {
+    if (ahrs.roll_sensor >= plane.roll_limit_cd) {
         plane.nav_roll_cd = plane.roll_limit_cd;
-    } else if (plane.ahrs.roll_sensor <= -plane.roll_limit_cd) {
+    } else if (ahrs.roll_sensor <= -plane.roll_limit_cd) {
         plane.nav_roll_cd = -plane.roll_limit_cd;
     } else {
         plane.training_manual_roll = true;
@@ -20,9 +20,9 @@ void ModeTraining::update()
 
     // if the pitch is past the set pitch limits, then
     // we set target pitch to the limit
-    if (plane.ahrs.pitch_sensor >= plane.aparm.pitch_limit_max_cd) {
+    if (ahrs.pitch_sensor >= plane.aparm.pitch_limit_max_cd) {
         plane.nav_pitch_cd = plane.aparm.pitch_limit_max_cd;
-    } else if (plane.ahrs.pitch_sensor <= plane.pitch_limit_min_cd) {
+    } else if (ahrs.pitch_sensor <= plane.pitch_limit_min_cd) {
         plane.nav_pitch_cd = plane.pitch_limit_min_cd;
     } else {
         plane.training_manual_pitch = true;
