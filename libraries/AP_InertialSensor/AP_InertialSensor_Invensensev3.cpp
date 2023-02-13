@@ -899,7 +899,7 @@ bool AP_InertialSensor_Invensensev3::hardware_init(void)
         register_write(INV3REG_456_IOC_PAD_SCENARIO_AUX_OVRD, (0x1<<1U), true);
 
         // enable RTC MODE
-        register_write(INV3REG_456_RTC_CONFIG, (0x1<<5U), true);
+        register_write(INV3REG_456_RTC_CONFIG, (0x1<<5U));
 #endif
         /*************************CLKIN setting*************************/
         // disable STC
