@@ -11,6 +11,7 @@ CAN_P1_DRIVER 1 (First driver)
 CAN_D1_BITRATE 500000 (500 kbit/s)
 
 --]]
+-- luacheck: only 0
 
 -- Check Script uses a miniumum firmware version
 local SCRIPT_AP_VERSION = 4.3
