@@ -1,12 +1,9 @@
+#include "AP_Compass_LSM9DS1.h"
 
-#include <assert.h>
-#include <utility>
+#if AP_COMPASS_LSM9DS1_ENABLED
 
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
-
-#include "AP_Compass_LSM9DS1.h"
-
 
 #define LSM9DS1M_OFFSET_X_REG_L_M   0x05
 #define LSM9DS1M_OFFSET_X_REG_H_M   0x06
@@ -234,3 +231,5 @@ void AP_Compass_LSM9DS1::_register_modify(uint8_t reg, uint8_t clearbits, uint8_
     val |= setbits;
     _register_write(reg, val);
 }
+
+#endif
