@@ -1,4 +1,5 @@
 -- support follow in GUIDED mode in plane
+-- luacheck: only 0
 
 local PARAM_TABLE_KEY = 11
 local PARAM_TABLE_PREFIX = "GFOLL_"

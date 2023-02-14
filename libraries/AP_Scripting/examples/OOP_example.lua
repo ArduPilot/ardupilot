@@ -1,4 +1,5 @@
 -- this is an example of how to do object oriented programming in Lua
+-- luacheck: only 0
 
 function constrain(v, minv, maxv)
    -- constrain a value between two limits
