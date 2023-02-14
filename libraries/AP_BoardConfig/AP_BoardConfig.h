@@ -1,44 +1,14 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
+#include "AP_BoardConfig_config.h"
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_RTC/AP_RTC.h>
 #include <AC_PID/AC_PI.h>
 
-#ifndef AP_FEATURE_BOARD_DETECT
-#if defined(HAL_CHIBIOS_ARCH_FMUV3) || defined(HAL_CHIBIOS_ARCH_FMUV4) || defined(HAL_CHIBIOS_ARCH_FMUV5) || defined(HAL_CHIBIOS_ARCH_MINDPXV2) || defined(HAL_CHIBIOS_ARCH_FMUV4PRO) || defined(HAL_CHIBIOS_ARCH_BRAINV51) || defined(HAL_CHIBIOS_ARCH_BRAINV52) || defined(HAL_CHIBIOS_ARCH_UBRAINV51) || defined(HAL_CHIBIOS_ARCH_COREV10) || defined(HAL_CHIBIOS_ARCH_BRAINV54)
-#define AP_FEATURE_BOARD_DETECT 1
-#else
-#define AP_FEATURE_BOARD_DETECT 0
-#endif
-#endif
-
-#ifndef AP_FEATURE_RTSCTS
-#define AP_FEATURE_RTSCTS 0
-#endif
-
-#ifndef AP_FEATURE_SBUS_OUT
-#define AP_FEATURE_SBUS_OUT 0
-#endif
-
 #if HAL_RCINPUT_WITH_AP_RADIO
 #include <AP_Radio/AP_Radio.h>
 #endif
-
-#ifndef HAL_WATCHDOG_ENABLED_DEFAULT
-#define HAL_WATCHDOG_ENABLED_DEFAULT false
-#endif
-
-#if HAL_HAVE_IMU_HEATER
-#ifndef HAL_IMUHEAT_P_DEFAULT
-#define HAL_IMUHEAT_P_DEFAULT 200
-#endif
-#ifndef HAL_IMUHEAT_I_DEFAULT
-#define HAL_IMUHEAT_I_DEFAULT 0.3
-#endif
-#endif
-
 
 extern "C" typedef int (*main_fn_t)(int argc, char **);
 
@@ -221,6 +191,13 @@ public:
     bool get_board_heater_arming_temperature(int8_t &temperature) const;
 #endif
 
+#if AP_SDCARD_STORAGE_ENABLED
+    // return number of kb of mission storage to use on microSD
+    static uint16_t get_sdcard_mission_kb(void) {
+        return _singleton? _singleton->sdcard_storage.mission_kb.get() : 0;
+    }
+#endif
+
 private:
     static AP_BoardConfig *_singleton;
     
@@ -237,6 +214,12 @@ private:
         AP_Int8 board_type;
         AP_Int8 io_enable;
     } state;
+
+#if AP_SDCARD_STORAGE_ENABLED
+    struct {
+        AP_Int16 mission_kb;
+    } sdcard_storage;
+#endif
 
 #if AP_FEATURE_BOARD_DETECT
     static enum px4_board_type px4_configured_board;
