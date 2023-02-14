@@ -153,6 +153,11 @@
 #define ACRO_EXPO_DEFAULT          0.3f
 #endif
 
+// should be a subset of MAV_FRAME
+#ifndef CONTROL_FRAME_DEFAULT
+#define CONTROL_FRAME_DEFAULT      0.0f
+#endif
+
 // AUTO Mode
 #ifndef WP_YAW_BEHAVIOR_DEFAULT
 # define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_CORRECT_XTRACK

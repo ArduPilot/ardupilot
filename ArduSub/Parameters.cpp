@@ -407,6 +407,14 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Advanced
     GSCALAR(acro_expo,  "ACRO_EXPO",    ACRO_EXPO_DEFAULT),
 
+    // @Param: CONTROL_FRAME
+    // @DisplayName: Control Frame
+    // @Description: Control Frame used in stabilized modes
+    // @Values: 0: Standard, 1: Body frame Yaw/Pitch/Roll
+    // @User: Standard
+
+    GSCALAR(control_frame,  "CONTROL_FRAME",    CONTROL_FRAME_DEFAULT),
+
     // variables not in the g class which contain EEPROM saved variables
 
 #if CAMERA == ENABLED

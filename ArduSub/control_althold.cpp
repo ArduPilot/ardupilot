@@ -50,7 +50,7 @@ void Sub::handle_attitude()
     pos_control.set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
     motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-    // get pilot desired lean angles
+    // get pilot desired lean angles/rates
     float target_roll, target_pitch, target_yaw;
 
     // Check if set_attitude_target_no_gps is valid
@@ -69,23 +69,57 @@ void Sub::handle_attitude()
         last_pitch = target_pitch;
         last_pilot_heading = target_yaw;
         attitude_control.input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, target_yaw, true);
-    } else {
-        // If we don't have a mavlink attitude target, we use the pilot's input instead
-        get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control.get_althold_lean_angle_max());
-        float yaw_input =  channel_yaw->pwm_to_angle_dz_trim(channel_yaw->get_dead_zone() * gain, channel_yaw->get_radio_trim());
-        target_yaw = get_pilot_desired_yaw_rate(yaw_input);
-        if (abs(target_roll) > 50 || abs(target_pitch) > 50 || abs(target_yaw) > 50) {
-            last_roll = ahrs.roll_sensor;
-            last_pitch = ahrs.pitch_sensor;
-            last_pilot_heading = ahrs.yaw_sensor;
-            last_input_ms = tnow;
-            attitude_control.input_rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
-        } else if (tnow < last_input_ms + 250) {
-            // just brake for a few mooments so we don't bounce
-            attitude_control.input_rate_bf_roll_pitch_yaw(0, 0, 0);
-        } else {
-            // Lock attitude
-            attitude_control.input_euler_angle_roll_pitch_yaw(last_roll, last_pitch, last_pilot_heading, true);
+        return;
+    }
+    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control.get_althold_lean_angle_max());
+    float yaw_input =  channel_yaw->pwm_to_angle_dz_trim(channel_yaw->get_dead_zone() * gain, channel_yaw->get_radio_trim());
+    target_yaw = get_pilot_desired_yaw_rate(yaw_input);
+    // If we don't have a mavlink attitude target, we use the pilot's input instead
+    switch (g.control_frame) {
+        case MAV_FRAME_BODY_FRD:
+        {
+          if (abs(target_roll) > 50 || abs(target_pitch) > 50 || abs(target_yaw) > 50) {
+              last_input_ms = tnow;
+              attitude_control.input_rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
+              Quaternion attitude_target = attitude_control.get_attitude_target_quat();
+              last_roll = degrees(attitude_target.get_euler_roll()) * 100;
+              last_pitch = degrees(attitude_target.get_euler_pitch()) * 100;
+              last_pilot_heading = degrees(attitude_target.get_euler_yaw()) * 100;
+          } else {
+              attitude_control.input_euler_angle_roll_pitch_yaw(last_roll, last_pitch, last_pilot_heading, true);
+          } 
+        }
+        break;
+        default:
+        {
+            // call attitude controller
+            if (!is_zero(target_yaw)) { // call attitude controller with rate yaw determined by pilot input
+                attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(last_roll, last_pitch, target_yaw);
+                last_pilot_heading = ahrs.yaw_sensor;
+                last_pilot_yaw_input_ms = tnow; // time when pilot last changed heading
+
+            } else { // hold current heading
+
+                if (abs(target_roll) > 50 || abs(target_pitch) > 50 || abs(target_yaw) > 50) {
+                    last_roll = ahrs.roll_sensor;
+                    last_pitch = ahrs.pitch_sensor;
+                    last_pilot_heading = ahrs.yaw_sensor;
+                    last_input_ms = tnow;
+                    attitude_control.input_rate_bf_roll_pitch_yaw(target_roll, target_pitch, target_yaw);
+
+                // this check is required to prevent bounce back after very fast yaw maneuvers
+                // the inertia of the vehicle causes the heading to move slightly past the point when pilot input actually stopped
+                } else if (tnow < last_pilot_yaw_input_ms + 250) { // give 250ms to slow down, then set target heading
+                    target_yaw = 0; // Stop rotation on yaw axis
+
+                    // call attitude controller with target yaw rate = 0 to decelerate on yaw axis
+                    attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(last_roll, last_pitch, target_yaw);
+                    last_pilot_heading = ahrs.yaw_sensor; // update heading to hold
+
+                } else { // call attitude controller holding absolute absolute bearing
+                    attitude_control.input_euler_angle_roll_pitch_yaw(last_roll, last_pitch, last_pilot_heading, true);
+                }
+            }
         }
     }
 }
@@ -99,6 +133,7 @@ void Sub::althold_run()
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when not auto-armed (i.e. on the ground, pilot has never raised throttle)
         attitude_control.set_throttle_out(0.75,true,100.0);
+        attitude_control.relax_attitude_controllers();
         pos_control.init_z_controller();
         // initialise position and desired velocity
         float pos = stopping_distance();

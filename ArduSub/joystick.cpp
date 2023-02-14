@@ -1,5 +1,7 @@
 #include "Sub.h"
 
+#define TRIM_STEP 0.5 // trim step in degrees
+
 // Functions that will handle joystick/gamepad input
 // ----------------------------------------------------------------------------
 
@@ -141,12 +143,8 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
 {
     // Used for trimming level in vehicle frame
-    Quaternion attitudeTarget;
-    attitudeTarget.from_euler(
-        radians(last_roll * 0.01f),
-        radians(last_pitch * 0.01f),
-        radians(last_pilot_heading * 0.01f)
-        );
+    Quaternion attitude_target = attitude_control.get_attitude_target_quat();
+
     Vector3f localPitch = Vector3f(0, 1, 0);
     Vector3f localRoll = Vector3f(1, 0, 0);
 
@@ -340,28 +338,41 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
         }
         break;
     case JSButton::button_function_t::k_trim_roll_inc:
-        attitudeTarget.rotate(localRoll * radians(1));
-        last_roll = degrees(attitudeTarget.get_euler_roll()) * 100;
-        last_pitch = degrees(attitudeTarget.get_euler_pitch()) * 100;
-        last_pilot_heading = degrees(attitudeTarget.get_euler_yaw()) * 100;
+        last_roll += TRIM_STEP * 100;
+        if (g.control_frame == MAV_FRAME_BODY_FRD) {
+            // TODO: change these to use input_quaternion()
+            attitude_target.rotate(localRoll * radians(TRIM_STEP));
+            last_roll = degrees(attitude_target.get_euler_roll()) * 100;
+            last_pitch = degrees(attitude_target.get_euler_pitch()) * 100;
+            last_pilot_heading = degrees(attitude_target.get_euler_yaw()) * 100;
+        }
         break;
     case JSButton::button_function_t::k_trim_roll_dec:
-        attitudeTarget.rotate(localRoll * radians(-1));
-        last_roll = degrees(attitudeTarget.get_euler_roll()) * 100;
-        last_pitch = degrees(attitudeTarget.get_euler_pitch()) * 100;
-        last_pilot_heading = degrees(attitudeTarget.get_euler_yaw()) * 100;
+        last_roll -= TRIM_STEP * 100;
+        if (g.control_frame == MAV_FRAME_BODY_FRD) {
+            attitude_target.rotate(localRoll * radians(-TRIM_STEP));
+            last_roll = degrees(attitude_target.get_euler_roll()) * 100;
+            last_pitch = degrees(attitude_target.get_euler_pitch()) * 100;
+            last_pilot_heading = degrees(attitude_target.get_euler_yaw()) * 100;
+        }
         break;
     case JSButton::button_function_t::k_trim_pitch_inc:
-        attitudeTarget.rotate(localPitch * radians(1));
-        last_roll = degrees(attitudeTarget.get_euler_roll()) * 100;
-        last_pitch = degrees(attitudeTarget.get_euler_pitch()) * 100;
-        last_pilot_heading = degrees(attitudeTarget.get_euler_yaw()) * 100;
+            last_pitch += TRIM_STEP * 100;
+        if (g.control_frame == MAV_FRAME_BODY_FRD) {
+            attitude_target.rotate(localPitch * radians(TRIM_STEP));
+            last_roll = degrees(attitude_target.get_euler_roll()) * 100;
+            last_pitch = degrees(attitude_target.get_euler_pitch()) * 100;
+            last_pilot_heading = degrees(attitude_target.get_euler_yaw()) * 100;
+        }
         break;
     case JSButton::button_function_t::k_trim_pitch_dec:
-        attitudeTarget.rotate(localPitch * radians(-1));
-        last_roll = degrees(attitudeTarget.get_euler_roll()) * 100;
-        last_pitch = degrees(attitudeTarget.get_euler_pitch()) * 100;
-        last_pilot_heading = degrees(attitudeTarget.get_euler_yaw()) * 100;
+        last_pitch -= TRIM_STEP * 100;
+        if (g.control_frame == MAV_FRAME_BODY_FRD) {
+            attitude_target.rotate(localPitch * radians(-TRIM_STEP));
+            last_roll = degrees(attitude_target.get_euler_roll()) * 100;
+            last_pitch = degrees(attitude_target.get_euler_pitch()) * 100;
+            last_pilot_heading = degrees(attitude_target.get_euler_yaw()) * 100;
+        }
         break;
     case JSButton::button_function_t::k_input_hold_set:
         if(!motors.armed()) {
