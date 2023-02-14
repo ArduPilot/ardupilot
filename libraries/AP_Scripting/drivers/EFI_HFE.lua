@@ -1,6 +1,8 @@
 --[[ 
   EFI Scripting backend driver for HFE based on HFEDCN0191 Rev E
 --]]
+-- luacheck: only 0
+
 
 -- Check Script uses a miniumum firmware version
 local SCRIPT_AP_VERSION = 4.3
