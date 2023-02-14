@@ -243,6 +243,7 @@ public:
         CAMERA_MANUAL_FOCUS = 168,// camera manual focus.  high = long shot, middle = stop focus, low = close shot
         CAMERA_AUTO_FOCUS =  169, // camera auto focus
         QSTABILIZE =         170, // QuadPlane QStabilize mode
+        MAG_CAL =            171, // Calibrate compasses (disarmed only)
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
