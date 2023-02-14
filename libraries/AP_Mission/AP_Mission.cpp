@@ -53,6 +53,31 @@ HAL_Semaphore AP_Mission::_rsem;
 /// init - initialises this library including checks the version in eeprom matches this library
 void AP_Mission::init()
 {
+#if AP_SDCARD_STORAGE_ENABLED
+    // check for extra storage on microsd
+    const auto *bc = AP::boardConfig();
+    if (bc != nullptr) {
+        const auto size_kb = bc->get_sdcard_mission_kb();
+        if (size_kb > 0) {
+            _failed_sdcard_storage = !_storage.attach_file(AP_MISSION_SDCARD_FILENAME, size_kb);
+            if (_failed_sdcard_storage) {
+                // wipe mission if storage not available, but don't save. This allows sdcard error to be fixed and reboot
+                _cmd_total.set(0);
+            }
+        }
+    }
+#endif
+
+    // work out maximum index for our storage size
+    if (_storage.size() >= AP_MISSION_EEPROM_COMMAND_SIZE+4) {
+        _commands_max = (_storage.size()-4U) / AP_MISSION_EEPROM_COMMAND_SIZE;
+    }
+    if (_cmd_total.get() > _commands_max) {
+        // wipe mission if storage not available, but don't save. This allows sdcard error to be fixed and reboot
+        _cmd_total.set(0);
+    }
+
+
     // check_eeprom_version - checks version of missions stored in eeprom matches this library
     // command list will be cleared if they do not match
     check_eeprom_version();
@@ -601,7 +626,7 @@ bool AP_Mission::restart_current_nav_cmd()
 bool AP_Mission::set_item(uint16_t index, mavlink_mission_item_int_t& src_packet)
 {
     // this is the on-storage format
-    AP_Mission::Mission_Command cmd;
+    AP_Mission::Mission_Command cmd {};
 
     // can't handle request for anything bigger than the mission size+1...
     if (index > num_commands()) {
@@ -629,7 +654,7 @@ bool AP_Mission::get_item(uint16_t index, mavlink_mission_item_int_t& ret_packet
     //  means it contains invalid data after it leaves here.
 
     // this is the on-storage format
-    AP_Mission::Mission_Command cmd;
+    AP_Mission::Mission_Command cmd {};
 
     // can't handle request for anything bigger than the mission size...
     if (index >= num_commands()) {
@@ -719,8 +744,7 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
         cmd.content.location = AP::ahrs().get_home();
         return true;
     }
-
-    if (index >= (unsigned)_cmd_total) {
+    if (index >= (unsigned)_cmd_total || index >= _commands_max) {
         return false;
     }
 
@@ -2182,15 +2206,6 @@ void AP_Mission::check_eeprom_version()
     }
 }
 
-/*
-  return total number of commands that can fit in storage space
- */
-uint16_t AP_Mission::num_commands_max(void) const
-{
-    // -4 to remove space for eeprom version number
-    return (_storage.size() - 4) / AP_MISSION_EEPROM_COMMAND_SIZE;
-}
-
 // find the nearest landing sequence starting point (DO_LAND_START) and
 // return its index.  Returns 0 if no appropriate DO_LAND_START point can
 // be found.
@@ -2207,7 +2222,11 @@ uint16_t AP_Mission::get_landing_sequence_start()
     float min_distance = -1;
 
     // Go through mission looking for nearest landing start command
-    for (uint16_t i = 1; i < num_commands(); i++) {
+    const auto count = num_commands();
+    for (uint16_t i = 1; i < count; i++) {
+        if (get_command_id(i) != uint16_t(MAV_CMD_DO_LAND_START)) {
+            continue;
+        }
         Mission_Command tmp;
         if (!read_cmd_from_storage(i, tmp)) {
             continue;
@@ -2270,7 +2289,11 @@ bool AP_Mission::jump_to_abort_landing_sequence(void)
     if (AP::ahrs().get_location(current_loc)) {
         float min_distance = FLT_MAX;
 
-        for (uint16_t i = 1; i < num_commands(); i++) {
+        const auto count = num_commands();
+        for (uint16_t i = 1; i < count; i++) {
+            if (get_command_id(i) != uint16_t(MAV_CMD_DO_GO_AROUND)) {
+                continue;
+            }
             Mission_Command tmp;
             if (!read_cmd_from_storage(i, tmp)) {
                 continue;
@@ -2569,9 +2592,36 @@ const char *AP_Mission::Mission_Command::type() const
     }
 }
 
+/*
+  get the command ID of a mission index. Caller should have checked the index is in range
+ */
+uint16_t AP_Mission::get_command_id(uint16_t index) const
+{
+    const uint16_t pos_in_storage = 4 + (index * AP_MISSION_EEPROM_COMMAND_SIZE);
+    uint8_t b[3] {};
+    if (!_storage.read_block(b, pos_in_storage, sizeof(b))) {
+        return 0U;
+    }
+    uint16_t id = 0;
+    if (b[0] == 0 || b[0] == 1) {
+        memcpy((void*)&id, (void*)&b[1], 2);
+    } else {
+        id = b[0];
+    }
+    return id;
+}
+
+/*
+  see if the mission contains a particular item
+ */
 bool AP_Mission::contains_item(MAV_CMD command) const
 {
-    for (uint16_t i = 1; i < num_commands(); i++) {
+    const auto count = num_commands();
+    for (uint16_t i = 1; i < count; i++) {
+        if (get_command_id(i) != uint16_t(command)) {
+            continue;
+        }
+        // confirm with full read
         Mission_Command tmp;
         if (!read_cmd_from_storage(i, tmp)) {
             continue;
@@ -2606,7 +2656,11 @@ bool AP_Mission::contains_terrain_alt_items(void)
 
 bool AP_Mission::calculate_contains_terrain_alt_items(void) const
 {
-    for (uint16_t i = 1; i < num_commands(); i++) {
+    const auto count = num_commands();
+    for (uint16_t i = 1; i < count; i++) {
+        if (!stored_in_location(get_command_id(i))) {
+            continue;
+        }
         Mission_Command tmp;
         if (!read_cmd_from_storage(i, tmp)) {
             continue;
