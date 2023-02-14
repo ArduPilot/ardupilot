@@ -20,9 +20,9 @@ public:
     AC_Circle(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control);
 
     /// init - initialise circle controller setting center specifically
-    ///     set terrain_alt to true if center.z should be interpreted as an alt-above-terrain
+    ///     set terrain_alt to true if center.z should be interpreted as an alt-above-terrain. Rate should be +ve in deg/sec for cw turn
     ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
-    void init(const Vector3p& center, bool terrain_alt);
+    void init(const Vector3p& center, bool terrain_alt, float rate_deg_per_sec);
 
     /// init - initialise circle controller setting center using stopping point and projecting out based on the copter's heading
     ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
@@ -139,12 +139,13 @@ private:
 
     // parameters
     AP_Float    _radius_parm;   // radius of circle in cm loaded from params
-    AP_Float    _rate;          // rotation speed in deg/sec
+    AP_Float    _rate_parm;     // rotation speed in deg/sec
     AP_Int16    _options;       // stick control enable/disable
 
     // internal variables
     Vector3p    _center;        // center of circle in cm from home
     float       _radius;        // radius of circle in cm
+    float       _rate;          // rotation speed of circle in deg/sec. +ve for cw turn
     float       _yaw;           // yaw heading (normally towards circle center)
     float       _angle;         // current angular position around circle in radians (0=directly north of the center of the circle)
     float       _angle_total;   // total angle traveled in radians
