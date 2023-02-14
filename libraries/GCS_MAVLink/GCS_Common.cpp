@@ -4313,6 +4313,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_can(const mavlink_command_long_
 // the current waypoint, rather than this DO command.  It is hoped we
 // can move to this command in the future to avoid acknowledgement
 // issues with MISSION_SET_CURRENT
+// This also handles DO_JUMP_TAG by converting the tag to an index
+// and setting the index as if it was a normal do_set_mission_current
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_mission_current(const mavlink_command_long_t &packet)
 {
     AP_Mission *mission = AP::mission();
@@ -4321,7 +4323,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_mission_current(const mavlink_comm
     }
 
     const uint32_t seq = (uint32_t)packet.param1;
-    if (!mission->set_current_cmd(seq)) {
+    if (packet.command == MAV_CMD_DO_JUMP_TAG) {
+        if (!mission->jump_to_tag(seq)) {
+            return MAV_RESULT_FAILED;
+        }
+    } else if (!mission->set_current_cmd(seq)) {
         return MAV_RESULT_FAILED;
     }
 
@@ -4634,6 +4640,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         break;
 
 
+    case MAV_CMD_DO_JUMP_TAG:
     case MAV_CMD_DO_SET_MISSION_CURRENT:
         result = handle_command_do_set_mission_current(packet);
         break;
