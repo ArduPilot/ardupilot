@@ -2,7 +2,11 @@ Rover Release Notes:
 ------------------------------------------------------------------
 Rover 4.3.0-beta9 14-Feb-2023
 Changes from 4.3.0-beta8
-1) Bug fixes
+1) AutoPilot specific enhancements
+    a) CubeOrangePlusBG support
+    b) Foxeer ReaperF745 supports external compass
+    c) MambaH743v4 supports VTX power
+2) Bug fixes
     a) Arming check fix if BARO_FIELD_ELEV set
     b) Compass calibration diagonals set to 1,1,1 if incorrectly set to 0,0,0
     c) Gimbal's yaw feed-forward set to zero when landed (affects Gremsy gimbals)
