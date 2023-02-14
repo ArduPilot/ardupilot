@@ -797,8 +797,8 @@ bool AP_Arming::manual_transmitter_checks(bool report)
 
 bool AP_Arming::mission_checks(bool report)
 {
+    AP_Mission *mission = AP::mission();
     if (check_enabled(ARMING_CHECK_MISSION) && _required_mission_items) {
-        AP_Mission *mission = AP::mission();
         if (mission == nullptr) {
             check_failed(ARMING_CHECK_MISSION, report, "No mission library present");
             return false;
@@ -848,6 +848,13 @@ bool AP_Arming::mission_checks(bool report)
         }
     }
 
+#if AP_SDCARD_STORAGE_ENABLED
+    if (check_enabled(ARMING_CHECK_MISSION) &&
+        mission != nullptr &&
+        (mission->failed_sdcard_storage() || StorageManager::storage_failed())) {
+        check_failed(ARMING_CHECK_MISSION, report, "Failed to open %s", AP_MISSION_SDCARD_FILENAME);
+    }
+#endif
     return true;
 }
 
