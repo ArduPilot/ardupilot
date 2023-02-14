@@ -52,6 +52,12 @@
 #define AP_MISSION_MAX_WP_HISTORY           7       // The maximum number of previous wp commands that will be stored from the active missions history
 #define LAST_WP_PASSED (AP_MISSION_MAX_WP_HISTORY-2)
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#define AP_MISSION_SDCARD_FILENAME "APM/mission.stg"
+#else
+#define AP_MISSION_SDCARD_FILENAME "mission.stg"
+#endif
+
 union PackedContent;
 
 /// @class    AP_Mission
@@ -431,7 +437,9 @@ public:
     }
 
     /// num_commands_max - returns maximum number of commands that can be stored
-    uint16_t num_commands_max() const;
+    uint16_t num_commands_max() const {
+        return _commands_max;
+    }
 
     /// start - resets current commands to point to the beginning of the mission
     ///     To-Do: should we validate the mission first and return true/false?
@@ -674,6 +682,12 @@ public:
     // Returns 0 if no appropriate JUMP_TAG match can be found.
     uint16_t get_index_of_jump_tag(const uint16_t tag) const;
 
+#if AP_SDCARD_STORAGE_ENABLED
+    bool failed_sdcard_storage(void) const {
+        return _failed_sdcard_storage;
+    }
+#endif
+
 private:
     static AP_Mission *_singleton;
 
@@ -802,6 +816,16 @@ private:
     // last time that mission changed
     uint32_t _last_change_time_ms;
     uint32_t _last_change_time_prev_ms;
+
+    // maximum number of commands that will fit in storage
+    uint16_t _commands_max;
+
+#if AP_SDCARD_STORAGE_ENABLED
+    bool _failed_sdcard_storage;
+#endif
+
+    // fast call to get command ID of a mission index
+    uint16_t get_command_id(uint16_t index) const;
 
     // memoisation of contains-relative:
     bool _contains_terrain_alt_items;  // true if the mission has terrain-relative items
