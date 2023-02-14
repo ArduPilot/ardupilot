@@ -2,8 +2,12 @@ ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
 Copter 4.3.4-rc1 14-Feb-2023
 Changes from 4.3.3
-1) Precision landing option to resume tracking target after pilot repositioning
-2) Bug fixes
+1) AutoPilot specific enhancements
+    a) CubeOrangePlusBG support
+    b) Foxeer ReaperF745 supports external compass
+    c) MambaH743v4 supports VTX power
+2) Precision landing option to resume tracking target after pilot repositioning
+3) Bug fixes
     a) Arming check fix for terrain following with rangefinder (failed if terrain db was disabled)
     b) Arming check fix if BARO_FIELD_ELEV set
     c) Compass calibration diagonals set to 1,1,1 if incorrectly set to 0,0,0
