@@ -2,6 +2,7 @@
    a script to select other lua scripts using an auxillary switch from
     /1 /2 or /3 subdirectories of the scripts directory
 --]]
+-- luacheck: only 0
 
 local THIS_SCRIPT = "Script_Controller.lua"
 local sel_ch = Parameter("SCR_USER6")

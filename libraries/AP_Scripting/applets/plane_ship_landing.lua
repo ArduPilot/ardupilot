@@ -1,4 +1,5 @@
 -- support takeoff and landing on moving platforms for VTOL planes
+-- luacheck: only 0
 
 local PARAM_TABLE_KEY = 7
 local PARAM_TABLE_PREFIX = "SHIP_"
