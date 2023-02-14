@@ -2,6 +2,8 @@
 -- This file should be auto generated and then manual edited
 -- generate with --scripting-docs, eg  ./waf copter --scripting-docs
 -- see: https://github.com/sumneko/lua-language-server/wiki/EmmyLua-Annotations
+-- luacheck: ignore 212 (Unused argument)
+-- luacheck: ignore 241 (Local variable is mutated but never accessed)
 
 -- set and get for field types share function names
 ---@diagnostic disable: duplicate-set-field
