@@ -1,4 +1,6 @@
 -- This script is a test of param set and get
+-- luacheck: only 0
+
 local count = 0
 
 -- for fast param acess it is better to get a param object,
