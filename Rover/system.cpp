@@ -112,6 +112,11 @@ void Rover::init_ardupilot()
     camera_mount.init();
 #endif
 
+#if AP_CAMERA_ENABLED
+    // initialise camera
+    camera.init();
+#endif
+
 #if PRECISION_LANDING == ENABLED
     // initialise precision landing
     init_precland();

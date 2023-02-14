@@ -292,9 +292,9 @@ const AP_Param::Info Rover::var_info[] = {
     GOBJECT(ahrs,                   "AHRS_",    AP_AHRS),
 
 #if AP_CAMERA_ENABLED
-    // @Group: CAM_
+    // @Group: CAM
     // @Path: ../libraries/AP_Camera/AP_Camera.cpp
-    GOBJECT(camera,                  "CAM_", AP_Camera),
+    GOBJECT(camera, "CAM", AP_Camera),
 #endif
 
 #if PRECISION_LANDING == ENABLED
