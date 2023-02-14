@@ -745,9 +745,9 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(gps, "GPS", AP_GPS),
 
 #if AP_CAMERA_ENABLED
-    // @Group: CAM_
+    // @Group: CAM
     // @Path: ../libraries/AP_Camera/AP_Camera.cpp
-    GOBJECT(camera,                  "CAM_", AP_Camera),
+    GOBJECT(camera, "CAM", AP_Camera),
 #endif
 
     // @Group: ARMING_
