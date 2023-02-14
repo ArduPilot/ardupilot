@@ -124,7 +124,13 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
         check_failed(display_failure,"In landing sequence");
         ret = false;
     }
-    
+
+    char failure_msg[50] {};
+    if (!plane.control_mode->pre_arm_checks(ARRAY_SIZE(failure_msg), failure_msg)) {
+        check_failed(true, "%s %s", plane.control_mode->name(), failure_msg);
+        return false;
+    }
+
     return ret;
 }
 
@@ -186,27 +192,6 @@ bool AP_Arming_Plane::quadplane_checks(bool display_failure)
         ret = false;
     }
 
-    if (plane.quadplane.option_is_set(QuadPlane::OPTION::ONLY_ARM_IN_QMODE_OR_AUTO)) {
-        if (!plane.control_mode->is_vtol_mode() && (plane.control_mode != &plane.mode_auto) && (plane.control_mode != &plane.mode_guided)) {
-            check_failed(display_failure,"not in Q mode");
-            ret = false;
-        }
-        if ((plane.control_mode == &plane.mode_auto) && !plane.quadplane.is_vtol_takeoff(plane.mission.get_current_nav_cmd().id)) {
-            check_failed(display_failure,"not in VTOL takeoff");
-            ret = false;
-        }
-    }
-
-    if ((plane.control_mode == &plane.mode_auto) && !plane.mission.starts_with_takeoff_cmd()) {
-        check_failed(display_failure,"missing takeoff waypoint");
-        ret = false;
-    }
-
-    if (plane.control_mode == &plane.mode_rtl) {
-        check_failed(display_failure,"in RTL mode");
-        ret = false;
-    }
-    
     /*
       Q_ASSIST_SPEED really should be enabled for all quadplanes except tailsitters
      */
@@ -259,11 +244,6 @@ bool AP_Arming_Plane::arm_checks(AP_Arming::Method method)
             check_failed(true, "Non-zero throttle");
             return false;
         }
-    }
-
-    if (!plane.control_mode->allows_arming()) {
-        check_failed(true, "Mode does not allow arming");
-        return false;
     }
 
     //are arming checks disabled?
