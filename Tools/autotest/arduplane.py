@@ -938,6 +938,7 @@ class AutoTestPlane(AutoTest):
     def TestRCCamera(self):
         '''Test RC Option - Camera Trigger'''
         self.set_parameter("RC12_OPTION", 9) # CameraTrigger
+        self.set_parameter("CAM1_TYPE", 1)   # Camera with servo trigger
         self.reboot_sitl() # needed for RC12_OPTION to take effect
 
         x = self.mav.messages.get("CAMERA_FEEDBACK", None)
