@@ -216,7 +216,7 @@ int16_t RC_Channel::pwm_to_angle_dz(uint16_t _dead_zone) const
  */
 int16_t RC_Channel::pwm_to_angle() const
 {
-	return pwm_to_angle_dz(dead_zone);
+    return pwm_to_angle_dz(dead_zone);
 }
 
 
@@ -229,7 +229,7 @@ int16_t RC_Channel::pwm_to_range_dz(uint16_t _dead_zone) const
     int16_t r_in = constrain_int16(radio_in, radio_min.get(), radio_max.get());
 
     if (reversed) {
-	    r_in = radio_max.get() - (r_in - radio_min.get());
+        r_in = radio_max.get() - (r_in - radio_min.get());
     }
 
     int16_t radio_trim_low  = radio_min + _dead_zone;
@@ -418,12 +418,19 @@ bool RC_Channel::read_6pos_switch(int8_t& position)
         return false;  // This is an error condition
     }
 
-    if      (pulsewidth < 1231) position = 0;
-    else if (pulsewidth < 1361) position = 1;
-    else if (pulsewidth < 1491) position = 2;
-    else if (pulsewidth < 1621) position = 3;
-    else if (pulsewidth < 1750) position = 4;
-    else position = 5;
+    if (pulsewidth < 1231) {
+        position = 0;
+    } else if (pulsewidth < 1361) {
+        position = 1;
+    } else if (pulsewidth < 1491) {
+        position = 2;
+    } else if (pulsewidth < 1621) {
+        position = 3;
+    } else if (pulsewidth < 1750) {
+        position = 4;
+    } else {
+        position = 5;
+    }
 
     if (!debounce_completed(position)) {
         return false;
@@ -441,12 +448,12 @@ void RC_Channel::read_mode_switch()
     }
 }
 
-bool RC_Channel::debounce_completed(int8_t position) 
+bool RC_Channel::debounce_completed(int8_t position)
 {
     // switch change not detected
     if (switch_state.current_position == position) {
         // reset debouncing
-         switch_state.debounce_position = position;
+        switch_state.debounce_position = position;
     } else {
         // switch change detected
         const uint32_t tnow_ms = AP_HAL::millis();
@@ -473,7 +480,7 @@ bool RC_Channel::debounce_completed(int8_t position)
 void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
 {
     // init channel options
-    switch(ch_option) {
+    switch (ch_option) {
     // the following functions do not need to be initialised:
     case AUX_FUNC::ARMDISARM:
     case AUX_FUNC::CAMERA_TRIGGER:
@@ -554,10 +561,10 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
         break;
     default:
         gcs().send_text(MAV_SEVERITY_WARNING, "Failed to init: RC%u_OPTION: %u\n",
-                           (unsigned)(this->ch_in+1), (unsigned)ch_option);
+                        (unsigned)(this->ch_in+1), (unsigned)ch_option);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         AP_BoardConfig::config_error("Failed to init: RC%u_OPTION: %u",
-                           (unsigned)(this->ch_in+1), (unsigned)ch_option);
+                                     (unsigned)(this->ch_in+1), (unsigned)ch_option);
 #endif
         break;
     }
@@ -620,24 +627,24 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
 /* lookup the announcement for switch change */
 const char *RC_Channel::string_for_aux_function(AUX_FUNC function) const
 {
-     for (const struct LookupTable &entry : lookuptable) {
+    for (const struct LookupTable &entry : lookuptable) {
         if (entry.option == function) {
             return entry.announcement;
         }
-     }
-     return nullptr;
+    }
+    return nullptr;
 }
 
 /* find string for postion */
 const char *RC_Channel::string_for_aux_pos(AuxSwitchPos pos) const
 {
     switch (pos) {
-        case AuxSwitchPos::HIGH:
-            return "HIGH";
-        case AuxSwitchPos::MIDDLE:
-            return "MIDDLE";
-        case AuxSwitchPos::LOW:
-            return "LOW";
+    case AuxSwitchPos::HIGH:
+        return "HIGH";
+    case AuxSwitchPos::MIDDLE:
+        return "MIDDLE";
+    case AuxSwitchPos::LOW:
+        return "LOW";
     }
     return "";
 }
@@ -843,15 +850,15 @@ void RC_Channel::do_aux_function_runcam_control(const AuxSwitchPos ch_flag)
     }
 
     switch (ch_flag) {
-        case AuxSwitchPos::HIGH:
-            runcam->start_recording();
-            break;
-        case AuxSwitchPos::MIDDLE:
-            runcam->osd_option();
-            break;
-        case AuxSwitchPos::LOW:
-            runcam->stop_recording();
-            break;
+    case AuxSwitchPos::HIGH:
+        runcam->start_recording();
+        break;
+    case AuxSwitchPos::MIDDLE:
+        runcam->osd_option();
+        break;
+    case AuxSwitchPos::LOW:
+        runcam->stop_recording();
+        break;
     }
 #endif
 }
@@ -865,13 +872,13 @@ void RC_Channel::do_aux_function_runcam_osd_control(const AuxSwitchPos ch_flag)
     }
 
     switch (ch_flag) {
-        case AuxSwitchPos::HIGH:
-            runcam->enter_osd();
-            break;
-        case AuxSwitchPos::MIDDLE:
-        case AuxSwitchPos::LOW:
-            runcam->exit_osd();
-            break;
+    case AuxSwitchPos::HIGH:
+        runcam->enter_osd();
+        break;
+    case AuxSwitchPos::MIDDLE:
+    case AuxSwitchPos::LOW:
+        runcam->exit_osd();
+        break;
     }
 #endif
 }
@@ -953,7 +960,7 @@ void RC_Channel::do_aux_function_gripper(const AuxSwitchPos ch_flag)
         return;
     }
 
-    switch(ch_flag) {
+    switch (ch_flag) {
     case AuxSwitchPos::LOW:
         gripper->release();
         break;
@@ -1020,13 +1027,13 @@ void RC_Channel::do_aux_function_fft_notch_tune(const AuxSwitchPos ch_flag)
     }
 
     switch (ch_flag) {
-        case AuxSwitchPos::HIGH:
-            fft->start_notch_tune();
-            break;
-        case AuxSwitchPos::MIDDLE:
-        case AuxSwitchPos::LOW:
-            fft->stop_notch_tune();
-            break;
+    case AuxSwitchPos::HIGH:
+        fft->start_notch_tune();
+        break;
+    case AuxSwitchPos::MIDDLE:
+    case AuxSwitchPos::LOW:
+        fft->stop_notch_tune();
+        break;
     }
 #endif
 }
@@ -1059,13 +1066,13 @@ bool RC_Channel::run_aux_function(aux_func_t ch_option, AuxSwitchPos pos, AuxFun
         uint8_t(pos),
         uint8_t(source),
         uint8_t(ret)
-        );
+    );
     return ret;
 }
 
 bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
 {
-    switch(ch_option) {
+    switch (ch_option) {
 #if AP_FENCE_ENABLED
     case AUX_FUNC::FENCE:
         do_aux_function_fence(ch_flag);
@@ -1330,15 +1337,15 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
             break;
         }
         switch (ch_flag) {
-            case AuxSwitchPos::HIGH:
-                mount->set_mode(0,MAV_MOUNT_MODE_RETRACT);
-                break;
-            case AuxSwitchPos::MIDDLE:
-                // nothing
-                break;
-            case AuxSwitchPos::LOW:
-                mount->set_mode_to_default(0);
-                break;
+        case AuxSwitchPos::HIGH:
+            mount->set_mode(0,MAV_MOUNT_MODE_RETRACT);
+            break;
+        case AuxSwitchPos::MIDDLE:
+            // nothing
+            break;
+        case AuxSwitchPos::LOW:
+            mount->set_mode_to_default(0);
+            break;
         }
         break;
     }
@@ -1356,16 +1363,16 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
     case AUX_FUNC::LOG_PAUSE: {
         AP_Logger *logger = AP_Logger::get_singleton();
         switch (ch_flag) {
-           case AuxSwitchPos::LOW:
-               logger->log_pause(false);
-               break;
-           case AuxSwitchPos::MIDDLE:
-                // nothing
-                break;
-           case AuxSwitchPos::HIGH:
-               logger->log_pause(true);
-               break;
-           }
+        case AuxSwitchPos::LOW:
+            logger->log_pause(false);
+            break;
+        case AuxSwitchPos::MIDDLE:
+            // nothing
+            break;
+        case AuxSwitchPos::HIGH:
+            logger->log_pause(true);
+            break;
+        }
         break;
     }
     
@@ -1395,19 +1402,19 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
 
     case AUX_FUNC::ARM_EMERGENCY_STOP: {
         switch (ch_flag) {
-           case AuxSwitchPos::HIGH:
-               // request arm, disable emergency motor stop
-               SRV_Channels::set_emergency_stop(false);
-               AP::arming().arm(AP_Arming::Method::AUXSWITCH, true);
-               break;
-           case AuxSwitchPos::MIDDLE:
-               // disable emergency motor stop
-               SRV_Channels::set_emergency_stop(false);
-               break;
-           case AuxSwitchPos::LOW:
-               // enable emergency motor stop
-               SRV_Channels::set_emergency_stop(true);
-               break;
+        case AuxSwitchPos::HIGH:
+            // request arm, disable emergency motor stop
+            SRV_Channels::set_emergency_stop(false);
+            AP::arming().arm(AP_Arming::Method::AUXSWITCH, true);
+            break;
+        case AuxSwitchPos::MIDDLE:
+            // disable emergency motor stop
+            SRV_Channels::set_emergency_stop(false);
+            break;
+        case AuxSwitchPos::LOW:
+            // enable emergency motor stop
+            SRV_Channels::set_emergency_stop(true);
+            break;
         }
         break;
     }
@@ -1481,10 +1488,10 @@ bool RC_Channel::read_3pos_switch(RC_Channel::AuxSwitchPos &ret) const
     if (in <= RC_MIN_LIMIT_PWM || in >= RC_MAX_LIMIT_PWM) {
         return false;
     }
-    
+
     // switch is reversed if 'reversed' option set on channel and switches reverse is allowed by RC_OPTIONS
     bool switch_reversed = reversed && rc().switch_reverse_allowed();
-    
+
     if (in < AUX_SWITCH_PWM_TRIGGER_LOW) {
         ret = switch_reversed ? AuxSwitchPos::HIGH : AuxSwitchPos::LOW;
     } else if (in > AUX_SWITCH_PWM_TRIGGER_HIGH) {
@@ -1553,7 +1560,7 @@ bool RC_Channels::duplicate_options_exist()
             return true;
         }
     }
-   return false;
+    return false;
 }
 
 // convert option parameter from old to new
