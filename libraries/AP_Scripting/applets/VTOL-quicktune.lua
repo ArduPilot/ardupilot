@@ -5,6 +5,8 @@
  for copters, although it will work in other VTOL modes
 
 --]]
+-- luacheck: only 0
+
 
 --[[
  - TODO:

@@ -25,6 +25,7 @@ LEDs should now work!, if not try swapping AUX 5 and 6, either by physically swa
 To get colours to match either change the ordering in "local led_map ="  below or swap headers round on the LED distribution board
 If using 6 les add two extra colours to "local led_map =" e.g:  "local led_map = {red, red, red, green, green, green}"
 --]]
+-- luacheck: only 0
 
 -- helper colours, red, green, blue values from 0 to 255
 local red   = {255, 0,   0}
