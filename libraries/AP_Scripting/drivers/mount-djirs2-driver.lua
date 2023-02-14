@@ -1,4 +1,5 @@
 -- mount-djirs2-driver.lua: DJIRS2 mount/gimbal driver
+-- luacheck: only 0
 
 --[[
   How to use
