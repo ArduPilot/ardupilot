@@ -1354,6 +1354,24 @@ function mission:state() end
 ---@return boolean
 function mission:cmd_has_location(cmd)end
 
+-- desc
+---@param tag integer
+---@return boolean
+function mission:jump_to_tag(tag) end
+
+-- desc
+---@param tag integer
+---@return integer
+function mission:get_index_of_jump_tag(tag) end
+
+-- desc
+---@return integer
+function mission:get_last_jump_tag() end
+
+-- desc
+---@return integer
+function mission:get_last_jump_tag_age() end
+
 
 -- desc
 ---@class param
