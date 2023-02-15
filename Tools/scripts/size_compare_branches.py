@@ -56,6 +56,7 @@ class SizeCompareBranches(object):
                  all_vehicles=False,
                  all_boards=False,
                  use_merge_base=True,
+                 waf_consistent_builds=True,
                  extra_hwdef=[],
                  extra_hwdef_branch=[],
                  extra_hwdef_master=[]):
@@ -74,6 +75,7 @@ class SizeCompareBranches(object):
         self.all_vehicles = all_vehicles
         self.all_boards = all_boards
         self.use_merge_base = use_merge_base
+        self.waf_consistent_builds = waf_consistent_builds
 
         if self.bin_dir is None:
             self.bin_dir = self.find_bin_dir()
@@ -220,6 +222,8 @@ class SizeCompareBranches(object):
         self.run_git(["submodule", "update", "--recursive"])
         shutil.rmtree("build", ignore_errors=True)
         waf_configure_args = ["configure", "--board", board]
+        if self.waf_consistent_builds:
+            waf_configure_args.append("--consistent-builds")
 
         if extra_hwdef is not None:
             waf_configure_args.extend(["--extra-hwdef", extra_hwdef])
@@ -426,6 +430,11 @@ if __name__ == '__main__':
                       default=False,
                       help="do not use the merge-base for testing, do a direct comparison between branches")
     parser.add_option("",
+                      "--no-waf-consistent-builds",
+                      action="store_true",
+                      default=False,
+                      help="do not use the --consistent-builds waf command-line option (for older branches)")
+    parser.add_option("",
                       "--branch",
                       type="string",
                       default=None,
@@ -491,5 +500,6 @@ if __name__ == '__main__':
         all_vehicles=cmd_opts.all_vehicles,
         all_boards=cmd_opts.all_boards,
         use_merge_base=not cmd_opts.no_merge_base,
+        waf_consistent_builds=not cmd_opts.no_waf_consistent_builds,
     )
     x.run()
