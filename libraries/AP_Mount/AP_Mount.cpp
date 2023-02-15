@@ -528,6 +528,16 @@ void AP_Mount::set_roi_target(uint8_t instance, const Location &target_loc)
     backend->set_roi_target(target_loc);
 }
 
+// clear_roi_target - clears target location that mount should attempt to point towards
+void AP_Mount::clear_roi_target(uint8_t instance)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
+    }
+    backend->clear_roi_target();
+}
+
 //
 // camera controls for gimbals that include a camera
 //

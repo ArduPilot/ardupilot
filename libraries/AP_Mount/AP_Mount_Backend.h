@@ -72,6 +72,8 @@ public:
 
     // set_roi_target - sets target location that mount should attempt to point towards
     void set_roi_target(const Location &target_loc);
+    // clear_roi_target - clears target location that mount should attempt to point towards
+    void clear_roi_target();
 
     // set_sys_target - sets system that mount should attempt to point towards
     void set_target_sysid(uint8_t sysid);
