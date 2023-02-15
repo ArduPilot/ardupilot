@@ -404,8 +404,18 @@ bool AP_Mount::get_attitude_euler(uint8_t instance, float& roll_deg, float& pitc
         return false;
     }
 
-    // send command to backend
-    return _backends[instance]->get_attitude_euler(roll_deg, pitch_deg, yaw_bf_deg);
+    // re-use get_attitude_quaternion and convert to Euler angles
+    Quaternion att_quat;
+    if (!_backends[instance]->get_attitude_quaternion(att_quat)) {
+        return false;
+    }
+
+    float roll_rad, pitch_rad, yaw_rad;
+    att_quat.to_euler(roll_rad, pitch_rad, yaw_rad);
+    roll_deg = degrees(roll_rad);
+    pitch_deg = degrees(pitch_rad);
+    yaw_bf_deg = degrees(yaw_rad);
+    return true;
 }
 
 // run pre-arm check.  returns false on failure and fills in failure_msg
