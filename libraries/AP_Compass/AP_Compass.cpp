@@ -1127,7 +1127,7 @@ void Compass::_probe_external_i2c_compasses(void)
 #endif
 #endif // HAL_BUILD_AP_PERIPH
 
-#if AP_COMPASS_I2C_BACKEND_DEFAULT_ENABLED || defined(HAL_USE_I2C_MAG_LIS3MDL)
+#if AP_COMPASS_LIS3MDL_ENABLED
     // lis3mdl on bus 0 with default address
 #if !defined(HAL_SKIP_AUTO_INTERNAL_I2C_PROBE)
     FOREACH_I2C_INTERNAL(i) {
@@ -1152,7 +1152,7 @@ void Compass::_probe_external_i2c_compasses(void)
         ADD_BACKEND(DRIVER_LIS3MDL, AP_Compass_LIS3MDL::probe(GET_I2C_DEVICE(i, HAL_COMPASS_LIS3MDL_I2C_ADDR2),
                     true, ROTATION_YAW_90));
     }
-#endif
+#endif  // AP_COMPASS_LIS3MDL_ENABLED
 
 #if AP_COMPASS_I2C_BACKEND_DEFAULT_ENABLED || defined(HAL_USE_I2C_MAG_AK09916)
     // AK09916. This can be found twice, due to the ICM20948 i2c bus pass-thru, so we need to be careful to avoid that
@@ -1277,7 +1277,9 @@ void Compass::_detect_backends(void)
 #if AP_FEATURE_BOARD_DETECT
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2) {
         // default to disabling LIS3MDL on pixhawk2 due to hardware issue
-        _driver_type_mask.set_default(1U<<DRIVER_LIS3MDL);
+#if AP_COMPASS_LIS3MDL_ENABLED
+    _driver_type_mask.set_default(1U<<DRIVER_LIS3MDL);
+#endif
     }
 #endif
 
@@ -1402,8 +1404,10 @@ void Compass::_detect_backends(void)
 #if AP_COMPASS_AK8963_ENABLED
         ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(0, ROTATION_ROLL_180_YAW_90));
 #endif
+#if AP_COMPASS_LIS3MDL_ENABLED
         ADD_BACKEND(DRIVER_LIS3MDL, AP_Compass_LIS3MDL::probe(hal.spi->get_device(HAL_COMPASS_LIS3MDL_NAME),
                     false, ROTATION_NONE));
+#endif  // AP_COMPASS_LIS3MDL_ENABLED
         break;
 
     case AP_BoardConfig::PX4_BOARD_PHMINI:
