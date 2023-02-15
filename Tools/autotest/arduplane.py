@@ -4145,6 +4145,108 @@ class AutoTestPlane(AutoTest):
             0) # button mask
         self.fly_home_land_and_disarm()
 
+    def mission_home_point(self, target_system=1, target_component=1):
+        '''just an empty-ish item-int to store home'''
+        return self.mav.mav.mission_item_int_encode(
+            target_system,
+            target_component,
+            0, # seq
+            mavutil.mavlink.MAV_FRAME_GLOBAL,
+            mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+            0, # current
+            0, # autocontinue
+            0, # p1
+            0, # p2
+            0, # p3
+            0, # p4
+            0, # latitude
+            0, # longitude
+            0, # altitude
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+
+    def mission_jump_tag(self, tag, target_system=1, target_component=1):
+        '''create a jump tag mission item'''
+        return self.mav.mav.mission_item_int_encode(
+            target_system,
+            target_component,
+            0, # seq
+            mavutil.mavlink.MAV_FRAME_GLOBAL,
+            mavutil.mavlink.MAV_CMD_JUMP_TAG,
+            0, # current
+            0, # autocontinue
+            tag, # p1
+            0, # p2
+            0, # p3
+            0, # p4
+            0, # latitude
+            0, # longitude
+            0, # altitude
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+
+    def mission_anonymous_waypoint(self, target_system=1, target_component=1):
+        '''just a boring waypoint'''
+        return self.mav.mav.mission_item_int_encode(
+            target_system,
+            target_component,
+            0, # seq
+            mavutil.mavlink.MAV_FRAME_GLOBAL,
+            mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+            0, # current
+            0, # autocontinue
+            0, # p1
+            0, # p2
+            0, # p3
+            0, # p4
+            1, # latitude
+            1, # longitude
+            1, # altitude
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+
+    def renumber_mission_items(self, mission):
+        count = 0
+        for item in mission:
+            item.seq = count
+            count += 1
+
+    def MissionJumpTags_missing_jump_target(self, target_system=1, target_component=1):
+        self.start_subtest("Check missing-jump-tag behaviour")
+        jump_target = 2
+        mission = [
+            self.mission_home_point(),
+            self.mission_jump_tag(jump_target),
+            self.mission_anonymous_waypoint(),
+        ]
+        self.renumber_mission_items(mission)
+        self.check_mission_upload_download(mission)
+        self.progress("Checking incorrect tag behaviour")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_JUMP_TAG,
+            jump_target + 1, # p1
+            0,  # p2
+            0,  # p3
+            0,  # p4
+            0,  # p5
+            0,  # p6
+            0,  # p7
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED
+        )
+        self.progress("Checking correct tag behaviour")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_JUMP_TAG,
+            jump_target,  # p1
+            0,  # p2
+            0,  # p3
+            0,  # p4
+            0,  # p5
+            0,  # p6
+            0,  # p7
+        )
+
+    def MissionJumpTags(self):
+        '''test MAV_CMD_JUMP_TAG'''
+        self.wait_ready_to_arm()
+        self.MissionJumpTags_missing_jump_target()
+
     def AltResetBadGPS(self):
         '''Tests the handling of poor GPS lock pre-arm alt resets'''
         self.set_parameters({
@@ -4297,6 +4399,7 @@ class AutoTestPlane(AutoTest):
             self.WindEstimates,
             self.AltResetBadGPS,
             self.AirspeedCal,
+            self.MissionJumpTags,
         ])
         return ret
 
