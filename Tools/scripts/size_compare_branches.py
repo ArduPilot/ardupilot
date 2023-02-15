@@ -116,10 +116,61 @@ class SizeCompareBranches(object):
 
         # some boards we don't have a -bl.dat for, so skip them.
         # TODO: find a way to get this information from board_list:
-        self.bootloader_blacklist = frozenset([
-            'skyviper-v2450',
+        self.bootloader_blacklist = set([
+            'CubeOrange-SimOnHardWare',
+            'fmuv2',
+            'fmuv3-bdshot',
             'iomcu',
+            'iomcu',
+            'iomcu_f103_8MHz',
+            'luminousbee4',
+            'skyviper-v2450',
+            'skyviper-f412-rev1',
+            'skyviper-journey',
+            'Pixhawk1-1M-bdshot',
+            'SITL_arm_linux_gnueabihf',
         ])
+
+        # blacklist all linux boards for bootloader build:
+        self.bootloader_blacklist.update(self.linux_board_names())
+        # ... and esp32 boards:
+        self.bootloader_blacklist.update(self.esp32_board_names())
+
+    def linux_board_names(self):
+        '''return a list of all Linux board names; FIXME: get this dynamically'''
+        # grep 'class.*[(]linux' Tools/ardupilotwaf/boards.py  | perl -pe "s/class (.*)\(linux\).*/            '\\1',/"
+        return [
+            'navigator',
+            'erleboard',
+            'navio',
+            'navio2',
+            'edge',
+            'zynq',
+            'ocpoc_zynq',
+            'bbbmini',
+            'blue',
+            'pocket',
+            'pxf',
+            'bebop',
+            'vnav',
+            'disco',
+            'erlebrain2',
+            'bhat',
+            'dark',
+            'pxfmini',
+            'aero',
+            'rst_zynq',
+            'obal',
+            'SITL_x86_64_linux_gnu',
+        ]
+
+    def esp32_board_names(self):
+        return [
+            'esp32buzz',
+            'esp32empty',
+            'esp32icarous',
+            'esp32diy',
+        ]
 
     def find_bin_dir(self):
         '''attempt to find where the arm-none-eabi tools are'''
