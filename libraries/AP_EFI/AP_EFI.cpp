@@ -263,12 +263,10 @@ void AP_EFI::send_mavlink_status(mavlink_channel_t chan)
     // If fuel pressure is supported, but is exactly zero, shift it to 0.0001
     // to indicate that it is supported.
     float fuel_pressure = state.fuel_pressure;
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wfloat-equal" // suppress -Wfloat-equal as we only care about exact zero here
-    if (fuel_pressure == 0.0 && state.fuel_pressure_status != Fuel_Pressure_Status::NOT_SUPPORTED) {
+    if (is_zero(fuel_pressure) && state.fuel_pressure_status != Fuel_Pressure_Status::NOT_SUPPORTED) {
         fuel_pressure = 0.0001;
     }
-    #pragma GCC diagnostic pop
+
     mavlink_msg_efi_status_send(
         chan,
         AP_EFI::is_healthy(),
