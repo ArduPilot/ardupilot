@@ -417,9 +417,28 @@ const AP_Param::GroupInfo SIM::AirspeedParm::var_info[] = {
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
     AP_GROUPINFO("FAIL",    3, SIM::AirspeedParm,  fail, 0),
+    // @Param: ARSPD_FAILP
+    // @DisplayName: Fail Pressure
+    // @Description: pitot tube failure pressure
+    // @Units: Pa
+    // @User: Advanced
     AP_GROUPINFO("FAILP",   4, SIM::AirspeedParm,  fail_pressure, 0),
+    // @Param: ARSPD_PITOT
+    // @DisplayName: Pitot Fail Pressure
+    // @Description: pitot tube failure pressure
+    // @Units: Pa
+    // @User: Advanced
     AP_GROUPINFO("PITOT",   5, SIM::AirspeedParm,  fail_pitot_pressure, 0),
+    // @Param: ARSPD_SIGN
+    // @DisplayName: SignFlip
+    // @Description: flip sign to airspeed pressure (for simulating reversed pitot/static connections)
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Advanced
     AP_GROUPINFO("SIGN",    6, SIM::AirspeedParm,  signflip, 0),
+    // @Param: ARSPD_RATIO
+    // @DisplayName: Airspeed ratios
+    // @Description: Airspeed ratios
+    // @User: Advanced
     AP_GROUPINFO("RATIO",   7, SIM::AirspeedParm,  ratio, 1.99),
     AP_GROUPEND
 };
@@ -438,13 +457,27 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     AP_GROUPINFO("GPS_BYTELOSS",   4, SIM,  gps_byteloss[0],  0),
     AP_GROUPINFO("GPS_NUMSATS",    5, SIM,  gps_numsats[0],   10),
     AP_GROUPINFO("GPS_GLITCH",     6, SIM,  gps_glitch[0],  0),
+    // @Param: GPS_HZ
+    // @DisplayName: GPS update rate
+    // @Description: GPS update rate in Hz
+    // @Units: Hz
     AP_GROUPINFO("GPS_HZ",         7, SIM,  gps_hertz[0],  5),
     AP_GROUPINFO("GPS_DRIFTALT",   8, SIM,  gps_drift_alt[0], 0),
     AP_GROUPINFO("GPS_POS",        9, SIM,  gps_pos_offset[0], 0),
+    // @Param: GPS_NOISE
+    // @DisplayName: GPS noise
+    // @Description: Amplitude of simulated GPS altitude error for GPS
     AP_GROUPINFO("GPS_NOISE",     10, SIM,  gps_noise[0], 0),
     AP_GROUPINFO("GPS_LOCKTIME",  11, SIM,  gps_lock_time[0], 0),
     AP_GROUPINFO("GPS_ALT_OFS",   12, SIM,  gps_alt_offset[0], 0),
+    // @Param: GPS2_HDG
+    // @DisplayName: GPS 2 heading compass direction
+    // @Description: Enable the output of a NMEA heading HDT sentence or UBLOX RELPOSNED for GPS 2
+    // @Values: 0:GPS_HEADING_NONE, 1:GPS_HEADING_HDT, 2:GPS_HEADING_THS, 3:GPS_HEADING_KSXT
     AP_GROUPINFO("GPS_HDG",       13, SIM,  gps_hdg_enabled[0], SIM::GPS_HEADING_NONE),
+    // @Param: GPS_ACC
+    // @DisplayName: GPS Accuracy
+    // @Description: Vertical and Horizontal position accuracy estimate of GPS
     AP_GROUPINFO("GPS_ACC",       14, SIM,  gps_accuracy[0], 0.3),
     AP_GROUPINFO("GPS_VERR",      15, SIM,  gps_vel_err[0], 0),
     // @Param: GPS2_DISABLE
@@ -458,13 +491,27 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     AP_GROUPINFO("GPS2_BYTELOS",  33, SIM,  gps_byteloss[1],  0),
     AP_GROUPINFO("GPS2_NUMSATS",  34, SIM,  gps_numsats[1],   10),
     AP_GROUPINFO("GPS2_GLTCH",    35, SIM,  gps_glitch[1],  0),
+    // @Param: GPS2_HZ
+    // @DisplayName: GPS 2 update rate
+    // @Description: GPS 2 update rate in Hz
+    // @Units: Hz
     AP_GROUPINFO("GPS2_HZ",       36, SIM,  gps_hertz[1],  5),
     AP_GROUPINFO("GPS2_DRFTALT",  37, SIM,  gps_drift_alt[1], 0),
     AP_GROUPINFO("GPS2_POS",      38, SIM,  gps_pos_offset[1], 0),
+    // @Param: GPS2_NOISE
+    // @DisplayName: GPS 2 noise
+    // @Description: Amplitude of simulated GPS altitude error for GPS 2
     AP_GROUPINFO("GPS2_NOISE",    39, SIM,  gps_noise[1], 0),
     AP_GROUPINFO("GPS2_LCKTIME",  40, SIM,  gps_lock_time[1], 0),
     AP_GROUPINFO("GPS2_ALT_OFS",  41, SIM,  gps_alt_offset[1], 0),
+    // @Param: GPS2_HDG
+    // @DisplayName: GPS 2 heading compass direction
+    // @Description: Enable the output of a NMEA heading HDT sentence or UBLOX RELPOSNED for GPS 2
+    // @Values: 0:GPS_HEADING_NONE, 1:GPS_HEADING_HDT, 2:GPS_HEADING_THS, 3:GPS_HEADING_KSXT
     AP_GROUPINFO("GPS2_HDG",      42, SIM,  gps_hdg_enabled[1], SIM::GPS_HEADING_NONE),
+    // @Param: GPS2_ACC
+    // @DisplayName: GPS 2 accuracy
+    // @Description: Vertical and Horizontal position accuracy estimate of GPS2
     AP_GROUPINFO("GPS2_ACC",      43, SIM,  gps_accuracy[1], 0.3),
     AP_GROUPINFO("GPS2_VERR",     44, SIM,  gps_vel_err[1], 0),
 
@@ -563,37 +610,97 @@ const AP_Param::GroupInfo SIM::var_sfml_joystick[] = {
 // INS SITL parameters
 const AP_Param::GroupInfo SIM::var_ins[] = {
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
+    // @Param: IMUT_START
+    // @DisplayName: IMU Temp Start
+    // @Description: Temperature simulation parameter. Valid only if IMUT_FIXED=0
     AP_GROUPINFO("IMUT_START",    1, SIM, imu_temp_start,  25),
+    // @Param: IMUT_END
+    // @DisplayName: IMU Temp End
+    // @Description: Temperature simulation parameter. Valid only if IMUT_FIXED=0
     AP_GROUPINFO("IMUT_END",      2, SIM, imu_temp_end, 45),
+    // @Param: IMUT_TCONST
+    // @DisplayName: IMU Temp Constant
+    // @Description: Temperature simulation parameter. Valid only if IMUT_FIXED=0
     AP_GROUPINFO("IMUT_TCONST",   3, SIM, imu_temp_tconst, 300),
+    // @Param: IMUT_FIXED
+    // @DisplayName: IMU Temp Fixed
+    // @Description: Fixed temperature simulation value. If 0, temperature simulation is calculated from the current time with parameters IMUT_START, IMUT_END, IMUT_TCONST.
     AP_GROUPINFO("IMUT_FIXED",    4, SIM, imu_temp_fixed, 0),
 #endif
+    // @Param: ACC1_BIAS
+    // @DisplayName: ACCEL1 Bias
+    // @Description: Simulated Bias of ACCEL1
+    // @Units: m/s/s
     AP_GROUPINFO("ACC1_BIAS",     5, SIM, accel_bias[0], 0),
 #if INS_MAX_INSTANCES > 1
+    // @Param: ACC2_BIAS
+    // @DisplayName: ACCEL2 Bias
+    // @Description: Simulated Bias of ACCEL2
+    // @Units: m/s/s
     AP_GROUPINFO("ACC2_BIAS",     6, SIM, accel_bias[1], 0),
 #endif
 #if INS_MAX_INSTANCES > 2
+    // @Param: ACC3_BIAS
+    // @DisplayName: ACCEL3 Bias
+    // @Description: Simulated Bias of ACCEL3
+    // @Units: m/s/s
     AP_GROUPINFO("ACC3_BIAS",     7, SIM, accel_bias[2], 0),
 #endif
+    // @Param: GYR1_RND
+    // @DisplayName: GYR1 Random
+    // @Description: Simulated Noise of Gyroscope 1
+    // @Units: deg/s
     AP_GROUPINFO("GYR1_RND",      8, SIM, gyro_noise[0],  0),
 #if INS_MAX_INSTANCES > 1
+    // @Param: GYR2_RND
+    // @DisplayName: GYR2 Random
+    // @Description: Simulated Noise of Gyroscope 2
+    // @Units: deg/s
     AP_GROUPINFO("GYR2_RND",      9, SIM, gyro_noise[1],  0),
 #endif
 #if INS_MAX_INSTANCES > 2
+    // @Param: GYR3_RND
+    // @DisplayName: GYR3 Random
+    // @Description: Simulated Noise of Gyroscope 3
+    // @Units: deg/s
     AP_GROUPINFO("GYR3_RND",     10, SIM, gyro_noise[2],  0),
 #endif
+    // @Param: ACC1_RND
+    // @DisplayName: ACC1 Random
+    // @Description: Simulated Noise of ACCEL1
+    // @Units: m/s/s
     AP_GROUPINFO("ACC1_RND",     11, SIM, accel_noise[0], 0),
 #if INS_MAX_INSTANCES > 1
+    // @Param: ACC2_RND
+    // @DisplayName: ACC2 Random
+    // @Description: Simulated Noise of ACCEL2
+    // @Units: m/s/s
     AP_GROUPINFO("ACC2_RND",     12, SIM, accel_noise[1], 0),
 #endif
 #if INS_MAX_INSTANCES > 2
+    // @Param: ACC2_RND
+    // @DisplayName: ACC2 Random
+    // @Description: Simulated Noise of ACCEL2
+    // @Units: m/s/s
     AP_GROUPINFO("ACC3_RND",     13, SIM, accel_noise[2], 0),
 #endif
+    // @Param: GYR1_SCALE
+    // @DisplayName: GYR1 Scale
+    // @Description: GYR1 scale factor
+    // @Units: %
     AP_GROUPINFO("GYR1_SCALE",   14, SIM, gyro_scale[0], 0),
 #if INS_MAX_INSTANCES > 1
+    // @Param: GYR2_SCALE
+    // @DisplayName: GYR2 Scale
+    // @Description: GYR2 scale factor
+    // @Units: %
     AP_GROUPINFO("GYR2_SCALE",   15, SIM, gyro_scale[1], 0),
 #endif
 #if INS_MAX_INSTANCES > 2
+    // @Param: GYR3_SCALE
+    // @DisplayName: GYR3 Scale
+    // @Description: GYR3 scale factor
+    // @Units: %
     AP_GROUPINFO("GYR3_SCALE",   16, SIM, gyro_scale[2], 0),
 #endif
     // @Param: ACCEL1_FAIL
