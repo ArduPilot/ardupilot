@@ -456,6 +456,16 @@ class Board:
         if cfg.options.ekf_single:
             env.CXXFLAGS += ['-DHAL_WITH_EKF_DOUBLE=0']
 
+        if cfg.options.consistent_builds:
+            # squash all line numbers to be the number 17
+            env.CXXFLAGS += [
+                "-D__AP_LINE__=17",
+            ]
+        else:
+            env.CXXFLAGS += [
+                "-D__AP_LINE__=__LINE__",
+            ]
+
         # add files from ROMFS_custom
         custom_dir = 'ROMFS_custom'
         if os.path.exists(custom_dir):
