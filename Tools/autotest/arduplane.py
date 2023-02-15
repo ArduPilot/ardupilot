@@ -4183,6 +4183,25 @@ class AutoTestPlane(AutoTest):
             0, # altitude
             mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
 
+    def mission_do_jump_tag(self, tag, target_system=1, target_component=1):
+        '''create a jump tag mission item'''
+        return self.mav.mav.mission_item_int_encode(
+            target_system,
+            target_component,
+            0, # seq
+            mavutil.mavlink.MAV_FRAME_GLOBAL,
+            mavutil.mavlink.MAV_CMD_DO_JUMP_TAG,
+            0, # current
+            0, # autocontinue
+            tag, # p1
+            0, # p2
+            0, # p3
+            0, # p4
+            0, # latitude
+            0, # longitude
+            0, # altitude
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+
     def mission_anonymous_waypoint(self, target_system=1, target_component=1):
         '''just a boring waypoint'''
         return self.mav.mav.mission_item_int_encode(
@@ -4242,10 +4261,51 @@ class AutoTestPlane(AutoTest):
             0,  # p7
         )
 
+    def MissionJumpTags_do_jump_to_bad_tag(self, target_system=1, target_component=1):
+        mission = [
+            self.mission_home_point(),
+            self.mission_anonymous_waypoint(),
+            self.mission_do_jump_tag(17),
+            self.mission_anonymous_waypoint(),
+        ]
+        self.renumber_mission_items(mission)
+        self.check_mission_upload_download(mission)
+        self.change_mode('AUTO')
+        self.arm_vehicle()
+        self.set_current_waypoint(2, check_afterwards=False)
+        self.assert_mode('RTL')
+        self.disarm_vehicle()
+
+    def MissionJumpTags_jump_tag_at_end_of_mission(self, target_system=1, target_component=1):
+        mission = [
+            self.mission_home_point(),
+            self.mission_anonymous_waypoint(),
+            self.mission_jump_tag(17),
+        ]
+        self.renumber_mission_items(mission)
+        self.check_mission_upload_download(mission)
+        self.progress("Checking correct tag behaviour")
+        self.change_mode('AUTO')
+        self.arm_vehicle()
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_JUMP_TAG,
+            17,  # p1
+            0,  # p2
+            0,  # p3
+            0,  # p4
+            0,  # p5
+            0,  # p6
+            0,  # p7
+        )
+        self.assert_mode('RTL')
+        self.disarm_vehicle()
+
     def MissionJumpTags(self):
         '''test MAV_CMD_JUMP_TAG'''
         self.wait_ready_to_arm()
         self.MissionJumpTags_missing_jump_target()
+        self.MissionJumpTags_do_jump_to_bad_tag()
+        self.MissionJumpTags_jump_tag_at_end_of_mission()
 
     def AltResetBadGPS(self):
         '''Tests the handling of poor GPS lock pre-arm alt resets'''
