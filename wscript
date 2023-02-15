@@ -362,7 +362,12 @@ configuration in order to save typing.
         action='store_true',
         default=False,
         help='force single precision postype_t')
-    
+
+    g.add_option('--consistent-builds',
+        action='store_true',
+        default=False,
+        help='force consistent build outputs for things like __LINE__')
+
     g.add_option('--extra-hwdef',
 	    action='store',
 	    default=None,
