@@ -49,9 +49,8 @@ public:
     // returns true if this mount can control its pan (required for multicopters)
     virtual bool has_pan_control() const = 0;
 
-    // get mount's current attitude in euler angles in degrees.  yaw angle is in body-frame
-    // returns true on success
-    bool get_attitude_euler(float& roll_deg, float& pitch_deg, float& yaw_bf_deg);
+    // get attitude as a quaternion.  returns true on success
+    virtual bool get_attitude_quaternion(Quaternion& att_quat) = 0;
 
     // get mount's mode
     enum MAV_MOUNT_MODE get_mode() const { return _mode; }
@@ -154,9 +153,6 @@ protected:
 
     // returns true if mavlink heartbeat should be suppressed for this gimbal (only used by Solo gimbal)
     virtual bool suppress_heartbeat() const { return false; }
-
-    // get attitude as a quaternion.  returns true on success
-    virtual bool get_attitude_quaternion(Quaternion& att_quat) = 0;
 
     // get pilot input (in the range -1 to +1) received through RC
     void get_rc_input(float& roll_in, float& pitch_in, float& yaw_in) const;
