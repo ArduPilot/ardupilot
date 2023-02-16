@@ -5105,7 +5105,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 self.install_test_script(script)
                 self.reboot_sitl()
                 self.delay_sim_time(10)
-                self.remove_example_script(script)
+                self.remove_installed_script(script)
 
         except Exception as e:
             self.print_exception_caught(e)
