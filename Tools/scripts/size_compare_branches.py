@@ -118,8 +118,18 @@ class SizeCompareBranches(object):
         # TODO: find a way to get this information from board_list:
         self.bootloader_blacklist = set([
             'skyviper-v2450',
+            'skyviper-f412-rev1',
+            'skyviper-journey',
             'iomcu',
             'CubeOrange-SimOnHardWare',
+            'fmuv2',  # the fmuv3 bootloader auto-detects
+            'fmuv3-bdshot',
+            'luminousbee4',
+            'Pixhawk1-1M-bdshot',
+            'SITL_arm_linux_gnueabihf',
+            'SITL_x86_64_linux_gnu',
+            'iomcu',
+            'iomcu_f103_8MHz',
         ])
 
         # blacklist all linux boards for bootloader build:
