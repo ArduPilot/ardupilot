@@ -946,7 +946,13 @@ private:
 
     // commands.cpp
     void set_guided_WP(const Location &loc);
-    void update_home();
+
+    // update home position. Return true if update done
+    bool update_home();
+
+    // update current_loc
+    void update_current_loc(void);
+
     // set home location and store it persistently:
     bool set_home_persistently(const Location &loc) WARN_IF_UNUSED;
 
