@@ -4087,8 +4087,8 @@ class AutoTestPlane(AutoTest):
         self.progress("Finished trick, max error=%.1fm" % highest_error)
         self.disarm_vehicle(force=True)
 
-        self.remove_example_script(applet_script)
-        self.remove_example_script(trick72)
+        self.remove_installed_script(applet_script)
+        self.remove_installed_script(trick72)
         messages = self.context_collection('STATUSTEXT')
         self.context_pop()
         self.reboot_sitl()

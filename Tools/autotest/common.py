@@ -5566,7 +5566,7 @@ class AutoTest(ABC):
         for hook in dead.message_hooks:
             self.remove_message_hook(hook)
         for script in dead.example_scripts:
-            self.remove_example_script(script)
+            self.remove_installed_script(script)
         if dead.sitl_commandline_customised and len(self.contexts):
             self.contexts[-1].sitl_commandline_customised = True
 
@@ -7529,7 +7529,7 @@ Also, ignores heartbeats not from our target system'''
         source = self.script_applet_source_path(scriptname)
         self.install_script(source, scriptname, install_name=install_name)
 
-    def remove_example_script(self, scriptname):
+    def remove_installed_script(self, scriptname):
         dest = self.installed_script_path(os.path.basename(scriptname))
         try:
             os.unlink(dest)
