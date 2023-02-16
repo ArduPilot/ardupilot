@@ -5052,30 +5052,25 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def test_scripting_simple_loop(self):
         self.start_subtest("Scripting simple loop")
-        ex = None
-        example_script = "simple_loop.lua"
+
+        self.context_push()
+
         messages = []
 
         def my_message_hook(mav, message):
             if message.get_type() != 'STATUSTEXT':
                 return
             messages.append(message)
-        self.install_message_hook(my_message_hook)
-        try:
-            self.set_parameter("SCR_ENABLE", 1)
-            self.install_example_script(example_script)
-            self.reboot_sitl()
-            self.delay_sim_time(10)
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-        self.remove_example_script(example_script)
+
+        self.install_message_hook_context(my_message_hook)
+
+        self.set_parameter("SCR_ENABLE", 1)
+        self.install_example_script_context("simple_loop.lua")
         self.reboot_sitl()
+        self.delay_sim_time(10)
 
-        self.remove_message_hook(my_message_hook)
-
-        if ex is not None:
-            raise ex
+        self.context_pop()
+        self.reboot_sitl()
 
         # check all messages to see if we got our message
         count = 0
@@ -5139,138 +5134,85 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.context_push()
         self.context_collect("STATUSTEXT")
-
-        ex = None
-        example_script = "hello_world.lua"
-        try:
-            self.set_parameter("SCR_ENABLE", 1)
-            self.install_example_script(example_script)
-            self.reboot_sitl()
-            self.wait_statustext('hello, world', check_context=True, timeout=30)
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-
-        self.remove_example_script(example_script)
-
-        self.context_pop()
-
+        self.set_parameter("SCR_ENABLE", 1)
+        self.install_example_script_context("hello_world.lua")
         self.reboot_sitl()
 
-        if ex is not None:
-            raise ex
+        self.wait_statustext('hello, world', check_context=True, timeout=30)
+
+        self.context_pop()
+        self.reboot_sitl()
 
     def ScriptingSteeringAndThrottle(self):
         '''Scripting test - steering and throttle'''
         self.start_subtest("Scripting square")
-        ex = None
-        example_script = "rover-set-steering-and-throttle.lua"
-        try:
-            self.install_example_script(example_script)
-            self.set_parameter("SCR_ENABLE", 1)
-            self.reboot_sitl()
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-            self.set_rc(6, 2000)
-            tstart = self.get_sim_time()
-            while not self.mode_is("HOLD"):
-                if self.get_sim_time_cached() - tstart > 30:
-                    raise NotAchievedException("Did not move to hold")
-                m = self.mav.recv_match(type='VFR_HUD', blocking=True, timeout=1)
-                if m is not None:
-                    self.progress("Current speed: %f" % m.groundspeed)
-            self.disarm_vehicle()
-            self.reboot_sitl()
-        except Exception as e:
-            self.print_exception_caught(e)
-            self.disarm_vehicle()
-            ex = e
-        self.remove_example_script(example_script)
+
+        self.context_push()
+        self.install_example_script_context("rover-set-steering-and-throttle.lua")
+        self.set_parameter("SCR_ENABLE", 1)
         self.reboot_sitl()
 
-        if ex is not None:
-            raise ex
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(6, 2000)
+        tstart = self.get_sim_time()
+        while not self.mode_is("HOLD"):
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException("Did not move to hold")
+            m = self.mav.recv_match(type='VFR_HUD', blocking=True, timeout=1)
+            if m is not None:
+                self.progress("Current speed: %f" % m.groundspeed)
+        self.disarm_vehicle()
+
+        self.context_pop()
+        self.reboot_sitl()
 
     def test_scripting_auxfunc(self):
         self.start_subtest("Scripting aufunc triggering")
 
         self.context_push()
-        self.set_parameter('RELAY_PIN', 1)
         self.context_collect("STATUSTEXT")
-
-        ex = None
-        example_script = "RCIN_test.lua"
-        try:
-            self.set_parameter("SCR_ENABLE", 1)
-            self.install_example_script(example_script)
-            self.reboot_sitl()
-            self.wait_parameter_value("SIM_PIN_MASK", 121)
-            self.wait_parameter_value("SIM_PIN_MASK", 123)
-            self.wait_parameter_value("SIM_PIN_MASK", 121)
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-
-        self.remove_example_script(example_script)
-
-        self.context_pop()
-
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "RELAY_PIN": 1,
+        })
+        self.install_example_script_context("RCIN_test.lua")
         self.reboot_sitl()
 
-        if ex is not None:
-            raise ex
+        self.wait_parameter_value("SIM_PIN_MASK", 121)
+        self.wait_parameter_value("SIM_PIN_MASK", 123)
+        self.wait_parameter_value("SIM_PIN_MASK", 121)
+
+        self.context_pop()
+        self.reboot_sitl()
 
     def test_scripting_print_home_and_origin(self):
         self.start_subtest("Scripting print home and origin")
 
         self.context_push()
 
-        ex = None
-        example_script = "ahrs-print-home-and-origin.lua"
-        try:
-            self.set_parameter("SCR_ENABLE", 1)
-            self.install_example_script(example_script)
-            self.reboot_sitl()
-            self.wait_ready_to_arm()
-            self.wait_statustext("Home - ")
-            self.wait_statustext("Origin - ")
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-
-        self.remove_example_script(example_script)
+        self.set_parameter("SCR_ENABLE", 1)
+        self.install_example_script_context("ahrs-print-home-and-origin.lua")
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.wait_statustext("Home - ")
+        self.wait_statustext("Origin - ")
 
         self.context_pop()
-
         self.reboot_sitl()
-
-        if ex is not None:
-            raise ex
 
     def test_scripting_set_home_to_vehicle_location(self):
         self.start_subtest("Scripting set home to vehicle location")
 
         self.context_push()
-
-        ex = None
-        example_script = "ahrs-set-home-to-vehicle-location.lua"
-        try:
-            self.set_parameter("SCR_ENABLE", 1)
-            self.install_example_script(example_script)
-            self.reboot_sitl()
-            self.wait_statustext("Home position reset")
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-
-        self.remove_example_script(example_script)
-
-        self.context_pop()
-
+        self.set_parameter("SCR_ENABLE", 1)
+        self.install_example_script_context("ahrs-set-home-to-vehicle-location.lua")
         self.reboot_sitl()
 
-        if ex is not None:
-            raise ex
+        self.wait_statustext("Home position reset")
+
+        self.context_pop()
+        self.reboot_sitl()
 
     def Scripting(self):
         '''Scripting test'''
