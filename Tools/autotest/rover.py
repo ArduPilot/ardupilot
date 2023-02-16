@@ -5083,7 +5083,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def test_scripting_internal_test(self):
         self.start_subtest("Scripting internal test")
-        ex = None
+
+        self.context_push()
+
         test_scripts = ["scripting_test.lua", "math.lua", "strings.lua"]
         success_text = ["Internal tests passed", "Math tests passed", "String tests passed"]
 
@@ -5093,29 +5095,21 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             if message.get_type() != 'STATUSTEXT':
                 return
             messages.append(message)
-        self.install_message_hook(my_message_hook)
-        try:
-            self.set_parameters({
-                "SCR_ENABLE": 1,
-                "SCR_HEAP_SIZE": 1024000,
-                "SCR_VM_I_COUNT": 1000000,
-            })
 
-            for script in test_scripts:
-                self.install_test_script(script)
-                self.reboot_sitl()
-                self.delay_sim_time(10)
-                self.remove_installed_script(script)
-
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
+        self.install_message_hook_context(my_message_hook)
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_HEAP_SIZE": 1024000,
+            "SCR_VM_I_COUNT": 1000000,
+        })
+        for script in test_scripts:
+            self.install_test_script_context(script)
         self.reboot_sitl()
 
-        self.remove_message_hook(my_message_hook)
+        self.delay_sim_time(10)
 
-        if ex is not None:
-            raise ex
+        self.context_pop()
+        self.reboot_sitl()
 
         # check all messages to see if we got our message
         success = True
