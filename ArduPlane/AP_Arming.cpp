@@ -281,6 +281,18 @@ bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_c
         return false;
     }
 
+    if (plane.update_home()) {
+        // after update_home the home position could still be
+        // different from the current_loc if the EKF refused the
+        // resetHeightDatum call. If we are updating home then we want
+        // to force the home to be the current_loc so relative alt
+        // takeoffs work correctly
+        if (plane.ahrs.set_home(plane.current_loc)) {
+            // update current_loc
+            plane.update_current_loc();
+        }
+    }
+
     change_arm_state();
 
     // rising edge of delay_arming oneshot
