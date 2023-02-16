@@ -424,6 +424,7 @@ void AP_MotorsMulticopter::Log_Write()
         bat_volt        : _batt_voltage_filt.get(),
         th_limit        : _throttle_limit,
         th_average_max  : _throttle_avg_max,
+        th_out          : _throttle_out,
         mot_fail_flags  : (uint8_t)(_thrust_boost | (_thrust_balanced << 1U)),
     };
     AP::logger().WriteBlock(&pkt_mot, sizeof(pkt_mot));
