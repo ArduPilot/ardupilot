@@ -600,11 +600,15 @@ def MAVProxy_version():
 def start_MAVProxy_SITL(atype,
                         aircraft=None,
                         setup=False,
-                        master='tcp:127.0.0.1:5762',
+                        master=None,
                         options=[],
+                        sitl_rcin_port=5501,
                         pexpect_timeout=60,
                         logfile=sys.stdout):
     """Launch mavproxy connected to a SITL instance."""
+    if master is None:
+        raise ValueError("Expected a master")
+
     local_mp_modules_dir = os.path.abspath(
         os.path.join(__file__, '..', '..', '..', 'mavproxy_modules'))
     env = dict(os.environ)
@@ -617,6 +621,7 @@ def start_MAVProxy_SITL(atype,
     cmd = []
     cmd.append(mavproxy_cmd())
     cmd.extend(['--master', master])
+    cmd.extend(['--sitl', "localhost:%u" % sitl_rcin_port])
     if setup:
         cmd.append('--setup')
     if aircraft is None:
