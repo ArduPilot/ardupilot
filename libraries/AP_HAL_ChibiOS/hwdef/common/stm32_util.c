@@ -565,9 +565,9 @@ unsigned int stm32_rand_generate_nonblocking(unsigned char* output, unsigned int
 /*
   see if we should limit flash to 1M on devices with older revisions of STM32F427
  */
+#ifdef STM32F427xx
 bool check_limit_flash_1M(void)
 {
-#ifdef STM32F427xx
     const uint16_t revid = (*(uint32_t *)DBGMCU_BASE) >> 16;
     static const uint16_t badrevs[4] = { 0x1000, 0x1001, 0x1003, 0x1007 };
     for (uint8_t i=0; i<4; i++) {
@@ -575,6 +575,6 @@ bool check_limit_flash_1M(void)
             return true;
         }
     }
-#endif
     return false;
 }
+#endif
