@@ -56,6 +56,7 @@ public:
     static void handle_battery_info_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const BattInfoCb &cb);
     static void handle_battery_info_aux_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const BattInfoAuxCb &cb);
     static void handle_mppt_stream_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const MpptStreamCb &cb);
+    void handle_outputEnable_response(const uint8_t nodeId, const bool enabled);
 
 private:
     void handle_battery_info(const BattInfoCb &cb);
@@ -76,7 +77,7 @@ private:
     };
     void handle_mppt_stream(const MpptStreamCb &cb);
     void mppt_set_bootup_powered_state();
-    void mppt_set_armed_powered_state();
+    void mppt_check_powered_state();
     void mppt_set_powered_state(bool power_on, bool force);
 
 #if AP_BATTMONITOR_UAVCAN_MPPT_DEBUG
@@ -110,5 +111,6 @@ private:
         bool powered_state_changed;     // true if _mppt_powered_state has changed and should be sent to MPPT board
         bool vehicle_armed_last;        // latest vehicle armed state. used to detect changes and power on/off MPPT board
         uint8_t fault_flags;            // bits holding fault flags
+        uint32_t powered_state_remote_ms; // timestamp of when request was sent, zeroed on response. Used to retry
     } _mppt;
 };

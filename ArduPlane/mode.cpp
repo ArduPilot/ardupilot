@@ -169,3 +169,30 @@ void Mode::update_target_altitude()
 
     plane.altitude_error_cm = plane.calc_altitude_error_cm();
 }
+
+// returns true if the vehicle can be armed in this mode
+bool Mode::pre_arm_checks(size_t buflen, char *buffer) const
+{
+    if (!_pre_arm_checks(buflen, buffer)) {
+        if (strlen(buffer) == 0) {
+            // If no message is provided add a generic one
+            hal.util->snprintf(buffer, buflen, "mode not armable");
+        }
+        return false;
+    }
+
+    return true;
+}
+
+// Auto and Guided do not call this to bypass the q-mode check.
+bool Mode::_pre_arm_checks(size_t buflen, char *buffer) const
+{
+#if HAL_QUADPLANE_ENABLED
+    if (plane.quadplane.enabled() && !is_vtol_mode() &&
+            plane.quadplane.option_is_set(QuadPlane::OPTION::ONLY_ARM_IN_QMODE_OR_AUTO)) {
+        hal.util->snprintf(buffer, buflen, "not Q mode");
+        return false;
+    }
+#endif
+    return true;
+}

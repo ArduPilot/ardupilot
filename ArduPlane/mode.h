@@ -76,7 +76,7 @@ public:
     virtual const char *name4() const = 0;
 
     // returns true if the vehicle can be armed in this mode
-    virtual bool allows_arming() const { return true; }
+    bool pre_arm_checks(size_t buflen, char *buffer) const;
 
     //
     // methods that sub classes should override to affect movement of the vehicle in this mode
@@ -132,6 +132,9 @@ protected:
     // subclasses override this to perform any required cleanup when exiting the mode
     virtual void _exit() { return; }
 
+    // mode specific pre-arm checks
+    virtual bool _pre_arm_checks(size_t buflen, char *buffer) const;
+
 #if HAL_QUADPLANE_ENABLED
     // References for convenience, used by QModes
     AC_PosControl*& pos_control;
@@ -186,6 +189,7 @@ protected:
 
     bool _enter() override;
     void _exit() override;
+    bool _pre_arm_checks(size_t buflen, char *buffer) const override;
 };
 
 
@@ -238,6 +242,7 @@ public:
 protected:
 
     bool _enter() override;
+    bool _pre_arm_checks(size_t buflen, char *buffer) const override { return true; }
 
 private:
     float active_radius_m;
@@ -354,6 +359,7 @@ public:
 protected:
 
     bool _enter() override;
+    bool _pre_arm_checks(size_t buflen, char *buffer) const override { return false; }
 
 private:
 
@@ -398,11 +404,13 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override { }
 
-    bool allows_arming() const override { return false; }
-
     bool allows_throttle_nudging() const override { return true; }
 
     bool does_auto_throttle() const override { return true; }
+
+protected:
+    bool _pre_arm_checks(size_t buflen, char *buffer) const override { return false; }
+
 };
 
 class ModeFBWA : public Mode
@@ -591,11 +599,11 @@ public:
 
     void run() override;
 
-    bool allows_arming() const override { return false; }
-
 protected:
 
     bool _enter() override;
+    bool _pre_arm_checks(size_t buflen, char *buffer) const override { return false; }
+
 };
 
 class ModeQRTL : public Mode
@@ -613,8 +621,6 @@ public:
 
     void run() override;
 
-    bool allows_arming() const override { return false; }
-
     bool does_auto_throttle() const override { return true; }
 
     void update_target_altitude() override;
@@ -626,6 +632,7 @@ public:
 protected:
 
     bool _enter() override;
+    bool _pre_arm_checks(size_t buflen, char *buffer) const override { return false; }
 
 private:
 

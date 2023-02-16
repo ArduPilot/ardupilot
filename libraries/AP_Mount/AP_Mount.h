@@ -172,6 +172,7 @@ public:
     bool get_angle_target(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame);
     bool get_location_target(uint8_t instance, Location& target_loc);
     void set_attitude_euler(uint8_t instance, float roll_deg, float pitch_deg, float yaw_bf_deg);
+    bool get_camera_state(uint8_t instance, uint16_t& pic_count, bool& record_video, int8_t& zoom_step, int8_t& focus_step, bool& auto_focus);
 
     //
     // camera controls for gimbals that include a camera

@@ -2,6 +2,8 @@
 -- This file should be auto generated and then manual edited
 -- generate with --scripting-docs, eg  ./waf copter --scripting-docs
 -- see: https://github.com/sumneko/lua-language-server/wiki/EmmyLua-Annotations
+-- luacheck: ignore 212 (Unused argument)
+-- luacheck: ignore 241 (Local variable is mutated but never accessed)
 
 -- set and get for field types share function names
 ---@diagnostic disable: duplicate-set-field
@@ -966,6 +968,15 @@ function winch:healthy() end
 -- desc
 ---@class mount
 mount = {}
+
+-- desc
+---@param param1 integer
+---@return integer|nil  -- pic_count
+---@return boolean|nil  -- record_video
+---@return integer|nil  -- zoom_step
+---@return integer|nil  -- focus_step
+---@return boolean|nil  -- auto_focus
+function mount:get_camera_state(param1) end
 
 -- desc
 ---@param instance integer

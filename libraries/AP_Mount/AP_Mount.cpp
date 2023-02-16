@@ -469,6 +469,14 @@ void AP_Mount::set_attitude_euler(uint8_t instance, float roll_deg, float pitch_
     _backends[instance]->set_attitude_euler(roll_deg, pitch_deg, yaw_bf_deg);
 }
 
+bool AP_Mount::get_camera_state(uint8_t instance, uint16_t& pic_count, bool& record_video, int8_t& zoom_step, int8_t& focus_step, bool& auto_focus)
+{
+    if (!check_instance(instance)) {
+        return false;
+    }
+    return _backends[instance]->get_camera_state(pic_count, record_video, zoom_step, focus_step, auto_focus);
+}
+
 // point at system ID sysid
 void AP_Mount::set_target_sysid(uint8_t instance, uint8_t sysid)
 {
