@@ -374,10 +374,15 @@ class SizeCompareBranches(object):
             elf_filename = self.vehicle_map[vehicle]
             bin_filename = self.vehicle_map[vehicle] + '.bin'
 
-            master_bin_dir = os.path.join(outdir_1, board, "bin")
-            new_bin_dir = os.path.join(outdir_2, board, "bin")
-
             if self.run_elf_diff:
+                master_elf_dirname = "bin"
+                new_elf_dirname = "bin"
+                if vehicle == 'bootloader':
+                    # elfs for bootloaders are in the bootloader directory...
+                    master_elf_dirname = "bootloader"
+                    new_elf_dirname = "bootloader"
+                master_elf_dir = os.path.join(outdir_1, board, master_elf_dirname)
+                new_elf_dir = os.path.join(outdir_2, board, new_elf_dirname)
                 self.progress("Starting compare (~10 minutes!)")
                 elf_diff_commandline = [
                     "time",
@@ -388,11 +393,14 @@ class SizeCompareBranches(object):
                     "--old_alias", "%s %s" % (self.master_branch, elf_filename),
                     "--new_alias", "%s %s" % (self.branch, elf_filename),
                     "--html_dir", "../ELF_DIFF_%s_%s" % (board, vehicle),
-                    os.path.join(master_bin_dir, elf_filename),
-                    os.path.join(new_bin_dir, elf_filename)
+                    os.path.join(master_elf_dir, elf_filename),
+                    os.path.join(new_elf_dir, elf_filename)
                 ]
 
                 self.run_program("SCB", elf_diff_commandline)
+
+            master_bin_dir = os.path.join(outdir_1, board, "bin")
+            new_bin_dir = os.path.join(outdir_2, board, "bin")
 
             try:
                 master_path = os.path.join(master_bin_dir, bin_filename)
