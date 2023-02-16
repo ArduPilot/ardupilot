@@ -426,10 +426,14 @@ private:
 #if AP_COMPASS_BMM150_ENABLED
         DRIVER_BMM150   =3,
 #endif
+#if AP_COMPASS_LSM9DS1_ENABLED
         DRIVER_LSM9DS1  =4,
+#endif
         DRIVER_LIS3MDL  =5,
         DRIVER_AK09916  =6,
+#if AP_COMPASS_IST8310_ENABLED
         DRIVER_IST8310  =7,
+#endif
         DRIVER_ICM20948 =8,
         DRIVER_MMC3416  =9,
         DRIVER_UAVCAN   =11,

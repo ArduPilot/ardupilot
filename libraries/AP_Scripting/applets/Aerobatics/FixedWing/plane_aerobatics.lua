@@ -4,6 +4,7 @@
    Written by Matthew Hampsey, Andy Palmer and Andrew Tridgell, with controller
    assistance from Paul Riseborough, testing by Henry Wurzburg
 ]]--
+-- luacheck: only 0
 
 -- setup param block for aerobatics, reserving 30 params beginning with AERO_
 local PARAM_TABLE_KEY = 70

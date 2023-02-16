@@ -55,6 +55,8 @@
 --   a. SIM_WIND_DIR <-- sets direction wind is coming from
 --   b. SIM_WIND_SPD <-- sets wind speed in m/s
 --
+-- luacheck: only 0
+
 
 -- create and initialise parameters
 local PARAM_TABLE_KEY = 86  -- parameter table key must be used by only one script on a particular flight controller

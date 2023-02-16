@@ -195,6 +195,7 @@ class Context(object):
         self.collections = {}
         self.heartbeat_interval_ms = 1000
         self.original_heartbeat_interval_ms = None
+        self.example_scripts = []
 
 
 # https://stackoverflow.com/questions/616645/how-do-i-duplicate-sys-stdout-to-a-log-file-in-python
@@ -4136,6 +4137,14 @@ class AutoTest(ABC):
             return
         self.mav.message_hooks.remove(hook)
 
+    def install_example_script_context(self, scriptname):
+        '''installs an example script which will be removed when the context goes
+        away'''
+        if self.mav is None:
+            return
+        self.install_example_script(scriptname)
+        self.context_get().example_scripts.append(scriptname)
+
     def rootdir(self):
         this_dir = os.path.dirname(__file__)
         return os.path.realpath(os.path.join(this_dir, "../.."))
@@ -5556,6 +5565,8 @@ class AutoTest(ABC):
         # we really don't want...
         for hook in dead.message_hooks:
             self.remove_message_hook(hook)
+        for script in dead.example_scripts:
+            self.remove_example_script(script)
         if dead.sitl_commandline_customised and len(self.contexts):
             self.contexts[-1].sitl_commandline_customised = True
 

@@ -17,6 +17,7 @@
   For this test we'll use sensor ID 17 (0x71),
   Note: 17 is the index, 0x71 is the actual ID
 --]]
+-- luacheck: only 0
 
 local loop_time = 1000 -- number of ms between runs
 

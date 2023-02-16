@@ -1,4 +1,5 @@
 -- mount-djirs2-driver.lua: DJIRS2 mount/gimbal driver
+-- luacheck: only 0
 
 --[[
   How to use
@@ -268,6 +269,15 @@ function uint32_value(byte3, byte2, byte1, byte0)
   return (((byte3 & 0xFF) << 24) | ((byte2 & 0xFF) << 16) | ((byte1 & 0xFF) << 8) | (byte0 & 0xFF))
 end
 
+-- wrap yaw angle in degrees to value between 0 and 360
+function wrap_360(angle)
+   local res = math.fmod(angle, 360.0)
+    if res < 0 then
+        res = res + 360.0
+    end
+    return res
+end
+
 -- wrap yaw angle in degrees to value between -180 and +180
 function wrap_180(angle_deg)
   local res = wrap_360(angle_deg)
@@ -428,8 +438,8 @@ function send_target_angles(roll_angle_deg, pitch_angle_deg, yaw_angle_deg, time
   yaw_angle_deg = yaw_angle_deg or 0
   time_sec = time_sec or 2
 
-  -- ensure angles are integers
-  roll_angle_deg = math.floor(roll_angle_deg + 0.5)
+  -- ensure angles are integers. invert roll direction
+  roll_angle_deg = -math.floor(roll_angle_deg + 0.5)
   pitch_angle_deg = math.floor(pitch_angle_deg + 0.5)
   yaw_angle_deg = math.floor(yaw_angle_deg + 0.5)
   time_sec = math.floor(time_sec + 0.5)
@@ -482,8 +492,8 @@ function send_target_rates(roll_rate_degs, pitch_rate_degs, yaw_rate_degs)
   yaw_rate_degs = yaw_rate_degs or 0
   time_sec = time_sec or 2
 
-  -- ensure rates are integers
-  roll_rate_degs = math.floor(roll_rate_degs + 0.5)
+  -- ensure rates are integers. invert roll direction
+  roll_rate_degs = -math.floor(roll_rate_degs + 0.5)
   pitch_rate_degs = math.floor(pitch_rate_degs + 0.5)
   yaw_rate_degs = math.floor(yaw_rate_degs + 0.5)
 
@@ -502,7 +512,7 @@ function send_target_rates(roll_rate_degs, pitch_rate_degs, yaw_rate_degs)
   -- Field name                  SOF  LenL  LenH CmdTyp  Enc   RES   RES   RES  SeqL  SeqH  CrcL  CrcH CmdSet CmdId YawL  YawH  RollL RollH PitL  PitH  Ctrl CRC32 CRC32 CRC32 CRC32
   local set_target_speed_msg = {0xAA, 0x19, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0E, 0x01, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x88, 0x00, 0x00, 0x00, 0x00}
 
-  -- set angles
+  -- set rates
   set_target_speed_msg[15] = lowbyte(yaw_rate_degs * 10)
   set_target_speed_msg[16] = highbyte(yaw_rate_degs * 10)
   set_target_speed_msg[17] = lowbyte(roll_rate_degs * 10)
@@ -624,7 +634,7 @@ function parse_byte(b)
             local ret_code = parse_buff[13]
             if ret_code == RETURN_CODE.SUCCESS then
               local yaw_deg = int16_value(parse_buff[16],parse_buff[15]) * 0.1
-              local roll_deg = int16_value(parse_buff[18],parse_buff[17]) * 0.1 -- reversed with pitch below?
+              local roll_deg = -int16_value(parse_buff[18],parse_buff[17]) * 0.1
               local pitch_deg = int16_value(parse_buff[20],parse_buff[19]) * 0.1
               mount:set_attitude_euler(MOUNT_INSTANCE, roll_deg, pitch_deg, yaw_deg)
               if DJIR_DEBUG:get() > 1 then

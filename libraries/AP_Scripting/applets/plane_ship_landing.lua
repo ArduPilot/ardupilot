@@ -1,4 +1,5 @@
 -- support takeoff and landing on moving platforms for VTOL planes
+-- luacheck: only 0
 
 local PARAM_TABLE_KEY = 7
 local PARAM_TABLE_PREFIX = "SHIP_"
@@ -34,8 +35,32 @@ end
 
 -- setup SHIP specific parameters
 assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 3), 'could not add param table')
+--[[
+  // @Param: SHIP_ENABLE
+  // @DisplayName: Ship landing enable
+  // @Description: Enable ship landing system
+  // @Values: 0:Disabled,1:Enabled
+  // @User: Standard
+--]]
 SHIP_ENABLE     = bind_add_param('ENABLE', 1, 0)
+
+--[[
+  // @Param: SHIP_LAND_ANGLE
+  // @DisplayName: Ship landing angle
+  // @Description: Angle from the stern of the ship for landing approach. Use this to ensure that on a go-around that ship superstructure and cables are avoided. A value of zero means to approach from the rear of the ship. A value of 90 means the landing will approach from the port (left) side of the ship. A value of -90 will mean approaching from the starboard (right) side of the ship. A value of 180 will approach from the bow of the ship. This parameter is combined with the sign of the RTL_RADIUS parameter to determine the holdoff pattern. If RTL_RADIUS is positive then a clockwise loiter is performed, if RTL_RADIUS is negative then a counter-clockwise loiter is used.
+  // @Range: -180 180
+  // @Units: deg
+  // @User: Standard
+--]]
 SHIP_LAND_ANGLE = bind_add_param('LAND_ANGLE', 2, 0)
+
+--[[
+  // @Param: SHIP_AUTO_OFS
+  // @DisplayName: Ship automatic offset trigger
+  // @Description: Settings this parameter to one triggers an automatic follow offset calculation based on current position of the vehicle and the landing target. NOTE: This parameter will auto-reset to zero once the offset has been calculated.
+  // @Values: 0:Disabled,1:Trigger
+  // @User: Standard
+--]]
 SHIP_AUTO_OFS   = bind_add_param('AUTO_OFS', 3, 0)
 
 -- other parameters

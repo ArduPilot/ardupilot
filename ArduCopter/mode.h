@@ -469,7 +469,7 @@ public:
     void takeoff_start(const Location& dest_loc);
     bool wp_start(const Location& dest_loc);
     void land_start();
-    void circle_movetoedge_start(const Location &circle_center, float radius_m);
+    void circle_movetoedge_start(const Location &circle_center, float radius_m, bool ccw_turn);
     void circle_start();
     void nav_guided_start();
 

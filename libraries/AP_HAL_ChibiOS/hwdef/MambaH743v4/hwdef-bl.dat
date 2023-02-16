@@ -36,6 +36,8 @@ define HAL_LED_ON 1
 # default to all pins low to avoid ESD issues
 DEFAULTGPIO OUTPUT LOW PULLDOWN
 
+PC5 VTX_PWR OUTPUT HIGH
+
 # Add CS pins to ensure they are high in bootloader
 PA15 FLASH_CS CS
 PB12 MAX7456_CS CS

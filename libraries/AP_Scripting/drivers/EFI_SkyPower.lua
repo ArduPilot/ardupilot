@@ -11,6 +11,7 @@ CAN_P1_DRIVER 1 (First driver)
 CAN_D1_BITRATE 500000 (500 kbit/s)
 
 --]]
+-- luacheck: only 0
 
 -- Check Script uses a miniumum firmware version
 local SCRIPT_AP_VERSION = 4.3
@@ -70,16 +71,107 @@ local efi_backend = nil
 -- Setup EFI Parameters
 assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 15), 'could not add EFI_SP param table')
 
+--[[
+  // @Param: EFI_SP_ENABLE
+  // @DisplayName: Enable SkyPower EFI support
+  // @Description: Enable SkyPower EFI support
+  // @Values: 0:Disabled,1:Enabled
+  // @User: Standard
+--]]
 local EFI_SP_ENABLE     = bind_add_param('ENABLE',     1, 0)
+
+--[[
+  // @Param: EFI_SP_CANDRV
+  // @DisplayName: Set SkyPower EFI CAN driver
+  // @Description: Set SkyPower EFI CAN driver
+  // @Values: 0:None,1:1stCANDriver,2:2ndCanDriver
+  // @User: Standard
+--]]
 local EFI_SP_CANDRV     = bind_add_param('CANDRV',     2, 1)    -- CAN driver to use
+
+--[[
+  // @Param: EFI_SP_UPDATE_HZ
+  // @DisplayName: SkyPower EFI update rate
+  // @Description: SkyPower EFI update rate
+  // @Range: 10 200
+  // @Units: Hz
+  // @User: Advanced
+--]]
 local EFI_SP_UPDATE_HZ  = bind_add_param('UPDATE_HZ',  3, 200)  -- Script update frequency in Hz
+
+--[[
+  // @Param: EFI_SP_THR_FN
+  // @DisplayName: SkyPower EFI throttle function
+  // @Description: SkyPower EFI throttle function. This sets which SERVOn_FUNCTION to use for the target throttle. This should be 70 for fixed wing aircraft and 31 for helicopter rotor speed control
+  // @Values: 0:Disabled,70:FixedWing,31:HeliRSC
+  // @User: Standard
+--]]
 local EFI_SP_THR_FN     = bind_add_param('THR_FN',     4, 0)    -- servo function for throttle
+
+--[[
+  // @Param: EFI_SP_THR_RATE
+  // @DisplayName: SkyPower EFI throttle rate
+  // @Description: SkyPower EFI throttle rate. This sets rate at which throttle updates are sent to the engine
+  // @Range: 10 100
+  // @Units: Hz
+  // @User: Advanced
+--]]
 local EFI_SP_THR_RATE   = bind_add_param('THR_RATE',   5, 50)   -- throttle update rate
+
+--[[
+  // @Param: EFI_SP_START_FN
+  // @DisplayName: SkyPower EFI start function
+  // @Description: SkyPower EFI start function. This is the RCn_OPTION value to use to find the R/C channel used for controlling engine start
+  // @Values: 0:Disabled,300:300,301:301,302:302,303:303,304:304,305:305,306:306,307:307
+  // @User: Standard
+--]]
 local EFI_SP_START_FN   = bind_add_param('START_FN',   6, 0)    -- start control function (RC option)
+
+--[[
+  // @Param: EFI_SP_GEN_FN
+  // @DisplayName: SkyPower EFI generator control function
+  // @Description: SkyPower EFI generator control function. This is the RCn_OPTION value to use to find the R/C channel used for controlling generator start/stop
+  // @Values: 0:Disabled,300:300,301:301,302:302,303:303,304:304,305:305,306:306,307:307
+  // @User: Standard
+--]]
 local EFI_SP_GEN_FN     = bind_add_param('GEN_FN',     7, 0)    -- generator control function (RC option)
+
+--[[
+  // @Param: EFI_SP_MIN_RPM
+  // @DisplayName: SkyPower EFI minimum RPM
+  // @Description: SkyPower EFI minimum RPM. This is the RPM below which the engine is considered to be stopped
+  // @Range: 1 1000
+  // @User: Advanced
+--]]
 local EFI_SP_MIN_RPM    = bind_add_param('MIN_RPM',    8, 100)  -- min RPM, for engine restart
+
+--[[
+  // @Param: EFI_SP_TLM_RT
+  // @DisplayName: SkyPower EFI telemetry rate
+  // @Description: SkyPower EFI telemetry rate. This is the rate at which extra telemetry values are sent to the GCS
+  // @Range: 1 10
+  // @Units: Hz
+  // @User: Advanced
+--]]
 local EFI_SP_TLM_RT     = bind_add_param('TLM_RT',     9, 0)    -- rate for extra telemetry values
+
+--[[
+  // @Param: EFI_SP_LOG_RT
+  // @DisplayName: SkyPower EFI log rate
+  // @Description: SkyPower EFI log rate. This is the rate at which extra logging of the SkyPower EFI is performed
+  // @Range: 1 50
+  // @Units: Hz
+  // @User: Advanced
+--]]
 local EFI_SP_LOG_RT     = bind_add_param('LOG_RT',    10, 10)   -- rate for logging
+
+--[[
+  // @Param: EFI_SP_ST_DISARM
+  // @DisplayName: SkyPower EFI allow start disarmed
+  // @Description: SkyPower EFI allow start disarmed. This controls if starting the engine while disarmed is allowed
+  // @Values: 0:Disabled,1:Enabled
+  // @User: Standard
+--]]
 local EFI_SP_ST_DISARM  = bind_add_param('ST_DISARM', 11, 0)    -- allow start when disarmed
 
 if EFI_SP_ENABLE:get() == 0 then

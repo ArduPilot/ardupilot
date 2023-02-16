@@ -1,5 +1,25 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.3.4-rc1 14-Feb-2023
+Changes from 4.3.3
+1) AutoPilot specific enhancements
+    a) CubeOrangePlusBG support
+    b) Foxeer ReaperF745 supports external compass
+    c) MambaH743v4 supports VTX power
+2) Precision landing option to resume tracking target after pilot repositioning
+3) Bug fixes
+    a) Arming check fix for terrain following with rangefinder (failed if terrain db was disabled)
+    b) Arming check fix if BARO_FIELD_ELEV set
+    c) Compass calibration diagonals set to 1,1,1 if incorrectly set to 0,0,0
+    d) FFT notch tune feature disabled (will be re-released in 4.4)
+    e) Gimbal's yaw feed-forward set to zero when landed (affects Gremsy gimbals)
+    f) IOMCU double reset and safety disable fix
+    g) Logging fix for duplicate format messages
+    h) OpenDroneId sets emergency status on crash or chute deploy
+    i) Peripheral firmware updates using MAVCAN fixed
+    j) RC protocol cannot be changed once detected on boards with IOMCU
+    k) Surface tracking uses filtered and corrected rangefinder values
+------------------------------------------------------------------
 Copter 4.3.3 20-Jan-2023
 Changes from 4.3.3-rc1
 1) Bug fixes
