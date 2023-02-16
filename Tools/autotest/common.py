@@ -4140,9 +4140,19 @@ class AutoTest(ABC):
     def install_example_script_context(self, scriptname):
         '''installs an example script which will be removed when the context goes
         away'''
-        if self.mav is None:
-            return
         self.install_example_script(scriptname)
+        self.context_get().installed_scripts.append(scriptname)
+
+    def install_test_script_context(self, scriptname):
+        '''installs an test script which will be removed when the context goes
+        away'''
+        self.install_test_script(scriptname)
+        self.context_get().installed_scripts.append(scriptname)
+
+    def install_applet_script_context(self, scriptname):
+        '''installs an applet script which will be removed when the context goes
+        away'''
+        self.install_applet_script(scriptname)
         self.context_get().installed_scripts.append(scriptname)
 
     def rootdir(self):
