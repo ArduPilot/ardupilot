@@ -136,11 +136,6 @@ bool sdcard_init()
                     &USBD2,
     #endif
                     (BaseBlockDevice*)&SDCD1, blkbuf, txbuf,  NULL, NULL, block_filesys_access, free_filesys_access);
-            usbDisconnectBus(serusbcfg1.usbp);
-            usbStop(serusbcfg1.usbp);
-            chThdSleep(chTimeUS2I(1500));
-            usbStart(serusbcfg1.usbp, &usbcfg);
-            usbConnectBus(serusbcfg1.usbp);
         }
 #endif
         sdcard_running = true;
