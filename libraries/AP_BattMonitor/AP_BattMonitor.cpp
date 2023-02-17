@@ -835,6 +835,24 @@ uint32_t AP_BattMonitor::get_mavlink_fault_bitmask(const uint8_t instance) const
     return drivers[instance]->get_mavlink_fault_bitmask();
 }
 
+// Enable/Disable (Turn on/off) MPPT power to all backends who are MPPTs
+void AP_BattMonitor::MPPT_set_powered_state_to_all(const bool power_on)
+{
+    for (uint8_t i=0; i < _num_instances; i++) {
+        MPPT_set_powered_state(i, power_on);
+    }
+}
+
+// Enable/Disable (Turn on/off) MPPT power. When disabled, the MPPT does not
+// supply energy to the system regardless if it's capable to or not. When enabled
+// it will supply energy if available.
+void AP_BattMonitor::MPPT_set_powered_state(const uint8_t instance, const bool power_on)
+{
+    if (instance < _num_instances) {
+        drivers[instance]->mppt_set_powered_state(power_on);
+    }
+}
+
 /*
   check that all configured battery monitors are healthy
  */
