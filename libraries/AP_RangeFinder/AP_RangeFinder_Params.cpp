@@ -138,6 +138,13 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ORIENT", 53, AP_RangeFinder_Params, orientation, AP_RANGEFINDER_DEFAULT_ORIENTATION),
 
+    // @Param: OPTIONS
+    // @DisplayName: Rangefinder options
+    // @Description: Rangefinder options
+    // @Bitmask: 0:Send Earth-Frame compensated distance to GCS
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS", 54, AP_RangeFinder_Params, options, 0),
+
     AP_GROUPEND
 };
 

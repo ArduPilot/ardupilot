@@ -73,6 +73,11 @@ public:
     // parameter value which may be changed at runtime.
     RangeFinder::Type allocated_type() const { return _backend_type; }
 
+    // check if a option is set
+    bool option_is_set(AP_RangeFinder_Params::Options option) const {
+        return (uint16_t(params.options.get()) & uint16_t(option)) != 0;
+    }
+
 protected:
 
     // update status based on distance measurement

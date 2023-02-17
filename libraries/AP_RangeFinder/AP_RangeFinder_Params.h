@@ -12,6 +12,12 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(AP_RangeFinder_Params);
 
+    // bitmask of options
+    enum class Options : uint8_t {
+        GCS_USES_EARTH_FRAME            = (1U<<0),
+    };
+    AP_Int16 options;
+
     AP_Vector3f pos_offset; // position offset in body frame
     AP_Float scaling;
     AP_Float offset;
