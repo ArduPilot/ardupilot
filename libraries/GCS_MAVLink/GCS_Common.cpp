@@ -5085,7 +5085,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_long_t &
     // off support for MAV_CMD_DO_SET_ROI_LOCATION (which doesn't
     // support the extra fields).
     Location roi_loc;
-    if (!location_from_command_t(packet, MAV_FRAME_GLOBAL_RELATIVE_ALT, roi_loc)) {
+    if (!location_from_command_t(packet, MAV_FRAME_GLOBAL, roi_loc)) {
         return MAV_RESULT_DENIED;
     }
     return handle_command_do_set_roi(roi_loc);
