@@ -3066,6 +3066,10 @@ def add_bootloader_defaults(f):
 #define AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED 0
 #endif
 
+#ifndef AP_WATCHDOG_SAVE_FAULT_ENABLED
+#define AP_WATCHDOG_SAVE_FAULT_ENABLED 0
+#endif
+
 // end AP_Bootloader defaults
 ''')
 
