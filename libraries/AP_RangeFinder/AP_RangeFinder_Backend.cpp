@@ -17,6 +17,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Backend.h"
+#include <AP_AHRS/AP_AHRS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -80,3 +81,13 @@ void AP_RangeFinder_Backend::set_status(RangeFinder::Status _status)
     }
 }
 
+float AP_RangeFinder_Backend::gcs_distance() const
+{
+#ifndef HAL_BUILD_AP_PERIPH
+    if (option_is_set(AP_RangeFinder_Params::Options::GCS_USES_EARTH_FRAME) && state.status == RangeFinder::Status::Good) {
+        // only apply rotations to good data that is in range
+        return state.distance_m * AP::ahrs().get_rotation_body_to_ned().c.z;
+    }
+#endif
+    return state.distance_m;
+}
