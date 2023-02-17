@@ -757,6 +757,7 @@ void ModeAuto::exit_mission()
     } else {
         // if we've landed it's safe to disarm
         copter.arming.disarm(AP_Arming::Method::MISSIONEXIT);
+        waiting_to_start = true;
     }
 }
 
