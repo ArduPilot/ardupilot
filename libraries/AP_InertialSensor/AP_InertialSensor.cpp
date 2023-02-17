@@ -131,7 +131,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Units: rad/s
     // @User: Advanced
     // @Calibration: 1
-    AP_GROUPINFO("GYROFFS",     3, AP_InertialSensor, _gyro_offset[0],  0),
+    AP_GROUPINFO("GYROFFS",     3, AP_InertialSensor, _gyro_offset_old_param[0],  0),
 
     // @Param: GYR2OFFS_X
     // @DisplayName: Gyro2 offsets of X axis
@@ -155,7 +155,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Calibration: 1
 
 #if INS_MAX_INSTANCES > 1
-    AP_GROUPINFO("GYR2OFFS",    7, AP_InertialSensor, _gyro_offset[1],   0),
+    AP_GROUPINFO("GYR2OFFS",    7, AP_InertialSensor, _gyro_offset_old_param[1],   0),
 #endif
 
     // @Param: GYR3OFFS_X
@@ -180,7 +180,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Calibration: 1
 
 #if INS_MAX_INSTANCES > 2
-    AP_GROUPINFO("GYR3OFFS",   10, AP_InertialSensor, _gyro_offset[2],   0),
+    AP_GROUPINFO("GYR3OFFS",   10, AP_InertialSensor, _gyro_offset_old_param[2],   0),
 #endif
 
     // @Param: ACCSCAL_X
@@ -203,7 +203,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Range: 0.8 1.2
     // @User: Advanced
     // @Calibration: 1
-    AP_GROUPINFO("ACCSCAL",     12, AP_InertialSensor, _accel_scale[0],  1.0),
+    AP_GROUPINFO("ACCSCAL",     12, AP_InertialSensor, _accel_scale_old_param[0],  1.0),
 
     // @Param: ACCOFFS_X
     // @DisplayName: Accelerometer offsets of X axis
@@ -228,7 +228,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Range: -3.5 3.5
     // @User: Advanced
     // @Calibration: 1
-    AP_GROUPINFO("ACCOFFS",     13, AP_InertialSensor, _accel_offset[0], 0),
+    AP_GROUPINFO("ACCOFFS",     13, AP_InertialSensor, _accel_offset_old_param[0], 0),
 
     // @Param: ACC2SCAL_X
     // @DisplayName: Accelerometer2 scaling of X axis
@@ -252,7 +252,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Calibration: 1
 
 #if INS_MAX_INSTANCES > 1
-    AP_GROUPINFO("ACC2SCAL",    14, AP_InertialSensor, _accel_scale[1],   1.0),
+    AP_GROUPINFO("ACC2SCAL",    14, AP_InertialSensor, _accel_scale_old_param[1],   1.0),
 #endif
 
     // @Param: ACC2OFFS_X
@@ -280,7 +280,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Calibration: 1
 
 #if INS_MAX_INSTANCES > 1
-    AP_GROUPINFO("ACC2OFFS",    15, AP_InertialSensor, _accel_offset[1],  0),
+    AP_GROUPINFO("ACC2OFFS",    15, AP_InertialSensor, _accel_offset_old_param[1],  0),
 #endif
 
     // @Param: ACC3SCAL_X
@@ -305,7 +305,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Calibration: 1
 
 #if INS_MAX_INSTANCES > 2
-    AP_GROUPINFO("ACC3SCAL",    16, AP_InertialSensor, _accel_scale[2],   1.0),
+    AP_GROUPINFO("ACC3SCAL",    16, AP_InertialSensor, _accel_scale_old_param[2],   1.0),
 #endif
 
     // @Param: ACC3OFFS_X
@@ -333,7 +333,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Calibration: 1
 
 #if INS_MAX_INSTANCES > 2
-    AP_GROUPINFO("ACC3OFFS",    17, AP_InertialSensor, _accel_offset[2],  0),
+    AP_GROUPINFO("ACC3OFFS",    17, AP_InertialSensor, _accel_offset_old_param[2],  0),
 #endif
 
     // @Param: GYRO_FILTER
@@ -357,7 +357,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Description: Use first IMU for attitude, velocity and position estimates
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("USE", 20, AP_InertialSensor, _use[0],  1),
+    AP_GROUPINFO("USE", 20, AP_InertialSensor, _use_old_param[0],  1),
 
     // @Param: USE2
     // @DisplayName: Use second IMU for attitude, velocity and position estimates
@@ -366,7 +366,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
 
 #if INS_MAX_INSTANCES > 1
-    AP_GROUPINFO("USE2", 21, AP_InertialSensor, _use[1],  1),
+    AP_GROUPINFO("USE2", 21, AP_InertialSensor, _use_old_param[1],  1),
 #endif
 
     // @Param: USE3
@@ -376,7 +376,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
 
 #if INS_MAX_INSTANCES > 2
-    AP_GROUPINFO("USE3", 22, AP_InertialSensor, _use[2],  1),
+    AP_GROUPINFO("USE3", 22, AP_InertialSensor, _use_old_param[2],  1),
 #endif
 
     // @Param: STILL_THRESH
@@ -430,7 +430,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Range: -5 5
     // @Increment: 0.01
     // @User: Advanced
-    AP_GROUPINFO("POS1", 27, AP_InertialSensor, _accel_pos[0], 0.0f),
+    AP_GROUPINFO("POS1", 27, AP_InertialSensor, _accel_pos_old_param[0], 0.0f),
 
     // @Param: POS2_X
     // @DisplayName: IMU accelerometer X position
@@ -457,7 +457,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
 
 #if INS_MAX_INSTANCES > 1
-    AP_GROUPINFO("POS2", 28, AP_InertialSensor, _accel_pos[1], 0.0f),
+    AP_GROUPINFO("POS2", 28, AP_InertialSensor, _accel_pos_old_param[1], 0.0f),
 #endif
 
     // @Param: POS3_X
@@ -484,7 +484,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
 
 #if INS_MAX_INSTANCES > 2
-    AP_GROUPINFO("POS3", 29, AP_InertialSensor, _accel_pos[2], 0.0f),
+    AP_GROUPINFO("POS3", 29, AP_InertialSensor, _accel_pos_old_param[2], 0.0f),
 #endif
 
     // @Param: GYR_ID
@@ -492,7 +492,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Description: Gyro sensor ID, taking into account its type, bus and instance
     // @ReadOnly: True
     // @User: Advanced
-    AP_GROUPINFO("GYR_ID", 30, AP_InertialSensor, _gyro_id[0], 0),
+    AP_GROUPINFO("GYR_ID", 30, AP_InertialSensor, _gyro_id_old_param[0], 0),
 
     // @Param: GYR2_ID
     // @DisplayName: Gyro2 ID
@@ -501,7 +501,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
 
 #if INS_MAX_INSTANCES > 1
-    AP_GROUPINFO("GYR2_ID", 31, AP_InertialSensor, _gyro_id[1], 0),
+    AP_GROUPINFO("GYR2_ID", 31, AP_InertialSensor, _gyro_id_old_param[1], 0),
 #endif
 
     // @Param: GYR3_ID
@@ -511,7 +511,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
 
 #if INS_MAX_INSTANCES > 2
-    AP_GROUPINFO("GYR3_ID", 32, AP_InertialSensor, _gyro_id[2], 0),
+    AP_GROUPINFO("GYR3_ID", 32, AP_InertialSensor, _gyro_id_old_param[2], 0),
 #endif
 
     // @Param: ACC_ID
@@ -519,7 +519,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Description: Accelerometer sensor ID, taking into account its type, bus and instance
     // @ReadOnly: True
     // @User: Advanced
-    AP_GROUPINFO("ACC_ID", 33, AP_InertialSensor, _accel_id[0], 0),
+    AP_GROUPINFO("ACC_ID", 33, AP_InertialSensor, _accel_id_old_param[0], 0),
 
     // @Param: ACC2_ID
     // @DisplayName: Accelerometer2 ID
@@ -528,7 +528,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
 
 #if INS_MAX_INSTANCES > 1
-    AP_GROUPINFO("ACC2_ID", 34, AP_InertialSensor, _accel_id[1], 0),
+    AP_GROUPINFO("ACC2_ID", 34, AP_InertialSensor, _accel_id_old_param[1], 0),
 #endif
 
     // @Param: ACC3_ID
@@ -538,7 +538,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
 
 #if INS_MAX_INSTANCES > 2
-    AP_GROUPINFO("ACC3_ID", 35, AP_InertialSensor, _accel_id[2], 0),
+    AP_GROUPINFO("ACC3_ID", 35, AP_InertialSensor, _accel_id_old_param[2], 0),
 #endif
 
     // @Param: FAST_SAMPLE
@@ -585,18 +585,18 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
     // @Group: TCAL1_
     // @Path: AP_InertialSensor_tempcal.cpp
-    AP_SUBGROUPINFO(tcal[0], "TCAL1_", 43, AP_InertialSensor, AP_InertialSensor::TCal),
+    AP_SUBGROUPINFO(tcal_old_param[0], "TCAL1_", 43, AP_InertialSensor, AP_InertialSensor_TCal),
 
 #if INS_MAX_INSTANCES > 1
     // @Group: TCAL2_
     // @Path: AP_InertialSensor_tempcal.cpp
-    AP_SUBGROUPINFO(tcal[1], "TCAL2_", 44, AP_InertialSensor, AP_InertialSensor::TCal),
+    AP_SUBGROUPINFO(tcal_old_param[1], "TCAL2_", 44, AP_InertialSensor, AP_InertialSensor_TCal),
 #endif
 
 #if INS_MAX_INSTANCES > 2
     // @Group: TCAL3_
     // @Path: AP_InertialSensor_tempcal.cpp
-    AP_SUBGROUPINFO(tcal[2], "TCAL3_", 45, AP_InertialSensor, AP_InertialSensor::TCal),
+    AP_SUBGROUPINFO(tcal_old_param[2], "TCAL3_", 45, AP_InertialSensor, AP_InertialSensor_TCal),
 #endif
 
     // @Param: ACC1_CALTEMP
@@ -605,7 +605,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     // @Units: degC
     // @Calibration: 1
-    AP_GROUPINFO("ACC1_CALTEMP", 46, AP_InertialSensor, caltemp_accel[0], -300),
+    AP_GROUPINFO("ACC1_CALTEMP", 46, AP_InertialSensor, caltemp_accel_old_param[0], -300),
 
     // @Param: GYR1_CALTEMP
     // @DisplayName: Calibration temperature for 1st gyroscope
@@ -613,7 +613,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     // @Units: degC
     // @Calibration: 1
-    AP_GROUPINFO("GYR1_CALTEMP", 47, AP_InertialSensor, caltemp_gyro[0], -300),
+    AP_GROUPINFO("GYR1_CALTEMP", 47, AP_InertialSensor, caltemp_gyro_old_param[0], -300),
 
 #if INS_MAX_INSTANCES > 1
     // @Param: ACC2_CALTEMP
@@ -622,7 +622,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     // @Units: degC
     // @Calibration: 1
-    AP_GROUPINFO("ACC2_CALTEMP", 48, AP_InertialSensor, caltemp_accel[1], -300),
+    AP_GROUPINFO("ACC2_CALTEMP", 48, AP_InertialSensor, caltemp_accel_old_param[1], -300),
 
     // @Param: GYR2_CALTEMP
     // @DisplayName: Calibration temperature for 2nd gyroscope
@@ -630,7 +630,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     // @Units: degC
     // @Calibration: 1
-    AP_GROUPINFO("GYR2_CALTEMP", 49, AP_InertialSensor, caltemp_gyro[1], -300),
+    AP_GROUPINFO("GYR2_CALTEMP", 49, AP_InertialSensor, caltemp_gyro_old_param[1], -300),
 #endif
 
 #if INS_MAX_INSTANCES > 2
@@ -640,7 +640,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     // @Units: degC
     // @Calibration: 1
-    AP_GROUPINFO("ACC3_CALTEMP", 50, AP_InertialSensor, caltemp_accel[2], -300),
+    AP_GROUPINFO("ACC3_CALTEMP", 50, AP_InertialSensor, caltemp_accel_old_param[2], -300),
 
     // @Param: GYR3_CALTEMP
     // @DisplayName: Calibration temperature for 3rd gyroscope
@@ -648,7 +648,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     // @Units: degC
     // @Calibration: 1
-    AP_GROUPINFO("GYR3_CALTEMP", 51, AP_InertialSensor, caltemp_gyro[2], -300),
+    AP_GROUPINFO("GYR3_CALTEMP", 51, AP_InertialSensor, caltemp_gyro_old_param[2], -300),
 #endif
 
     // @Param: TCAL_OPTIONS
@@ -659,6 +659,19 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     AP_GROUPINFO("TCAL_OPTIONS", 52, AP_InertialSensor, tcal_options, 0),
     
 #endif // HAL_INS_TEMPERATURE_CAL_ENABLE
+
+
+#if INS_MAX_INSTANCES > 3
+    // @Group: 4_
+    // @Path: AP_InertialSensor_Params.cpp
+    AP_SUBGROUPINFO(params[0], "4_", 53, AP_InertialSensor, AP_InertialSensor_Params),
+#endif
+
+#if INS_MAX_INSTANCES > 4
+    // @Group: 5_
+    // @Path: AP_InertialSensor_Params.cpp
+    AP_SUBGROUPINFO(params[1], "5_", 54, AP_InertialSensor, AP_InertialSensor_Params),
+#endif
 
     /*
       NOTE: parameter indexes have gaps above. When adding new
@@ -717,20 +730,20 @@ bool AP_InertialSensor::register_gyro(uint8_t &instance, uint16_t raw_sample_rat
     _gyro_over_sampling[_gyro_count] = 1;
     _gyro_raw_sampling_multiplier[_gyro_count] = INT16_MAX/radians(2000);
 
-    bool saved = _gyro_id[_gyro_count].load();
+    bool saved = _gyro_id(_gyro_count).load();
 
-    if (saved && (uint32_t)_gyro_id[_gyro_count] != id) {
+    if (saved && (uint32_t)_gyro_id(_gyro_count) != id) {
         // inconsistent gyro id - mark it as needing calibration
         _gyro_cal_ok[_gyro_count] = false;
     }
 
-    _gyro_id[_gyro_count].set((int32_t) id);
+    _gyro_id(_gyro_count).set((int32_t) id);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (!saved) {
         // assume this is the same sensor and save its ID to allow seamless
         // transition from when we didn't have the IDs.
-        _gyro_id[_gyro_count].save();
+        _gyro_id(_gyro_count).save();
     }
 #endif
 
@@ -753,25 +766,25 @@ bool AP_InertialSensor::register_accel(uint8_t &instance, uint16_t raw_sample_ra
     _accel_over_sampling[_accel_count] = 1;
     _accel_raw_sampling_multiplier[_accel_count] = INT16_MAX/(16*GRAVITY_MSS);
 
-    bool saved = _accel_id[_accel_count].load();
+    bool saved = _accel_id(_accel_count).load();
 
     if (!saved) {
         // inconsistent accel id
         _accel_id_ok[_accel_count] = false;
-    } else if ((uint32_t)_accel_id[_accel_count] != id) {
+    } else if ((uint32_t)_accel_id(_accel_count) != id) {
         // inconsistent accel id
         _accel_id_ok[_accel_count] = false;
     } else {
         _accel_id_ok[_accel_count] = true;
     }
 
-    _accel_id[_accel_count].set((int32_t) id);
+    _accel_id(_accel_count).set((int32_t) id);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && AP_SIM_ENABLED)
         // assume this is the same sensor and save its ID to allow seamless
         // transition from when we didn't have the IDs.
         _accel_id_ok[_accel_count] = true;
-        _accel_id[_accel_count].save();
+        _accel_id(_accel_count).save();
 #endif
 
     instance = _accel_count++;
@@ -797,10 +810,10 @@ void AP_InertialSensor::_start_backends()
 
     // clear IDs for unused sensor instances
     for (uint8_t i=get_accel_count(); i<INS_MAX_INSTANCES; i++) {
-        _accel_id[i].set(0);
+        _accel_id(i).set(0);
     }
     for (uint8_t i=get_gyro_count(); i<INS_MAX_INSTANCES; i++) {
-        _gyro_id[i].set(0);
+        _gyro_id(i).set(0);
     }
 }
 
@@ -960,7 +973,7 @@ AP_InertialSensor::init(uint16_t loop_rate)
     // count number of used sensors
     uint8_t sensors_used = 0;
     for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
-        sensors_used += _use[i];
+        sensors_used += _use(i);
     }
 
     uint8_t num_filters = 0;
@@ -983,7 +996,7 @@ AP_InertialSensor::init(uint16_t loop_rate)
     // allocate notches
     for (uint8_t i=0; i<get_gyro_count(); i++) {
         // only allocate notches for IMUs in use
-        if (_use[i]) {
+        if (_use(i)) {
             for (auto &notch : harmonic_notches) {
                 if (notch.params.enabled() || fft_enabled) {
                     const bool double_notch = notch.params.hasOption(HarmonicNotchFilterParams::Options::DoubleNotch);
@@ -1042,8 +1055,8 @@ AP_InertialSensor::detect_backends(void)
     // boards. For users who really want limited IMUs they will need
     // to either use the INS_ENABLE_MASK or set INS_USE2=0 which will
     // enable the first IMU without triggering this check
-    if (_use[0] == 1 && _use[1] == 1 && _use[2] == 0) {
-        _use[2].set(1);
+    if (_use(0) == 1 && _use(1) == 1 && _use(2) == 0) {
+        _use(2).set(1);
     }
 #endif
 
@@ -1352,7 +1365,7 @@ bool AP_InertialSensor::gyro_calibrated_ok_all() const
         }
     }
     for (uint8_t i=get_gyro_count(); i<INS_MAX_INSTANCES; i++) {
-        if (_gyro_id[i] != 0) {
+        if (_gyro_id(i) != 0) {
             // missing gyro
             return false;
         }
@@ -1367,7 +1380,7 @@ bool AP_InertialSensor::use_gyro(uint8_t instance) const
         return false;
     }
 
-    return (get_gyro_health(instance) && _use[instance]);
+    return (get_gyro_health(instance) && _use(instance));
 }
 
 // get_accel_health_all - return true if all accels are healthy
@@ -1440,16 +1453,16 @@ bool AP_InertialSensor::accel_calibrated_ok_all() const
             return false;
         }
         // exactly 0.0 offset is extremely unlikely
-        if (_accel_offset[i].get().is_zero()) {
+        if (_accel_offset(i).get().is_zero()) {
             return false;
         }
         // zero scaling also indicates not calibrated
-        if (_accel_scale[i].get().is_zero()) {
+        if (_accel_scale(i).get().is_zero()) {
             return false;
         }
     }
     for (uint8_t i=get_accel_count(); i<INS_MAX_INSTANCES; i++) {
-        if (_accel_id[i] != 0) {
+        if (_accel_id(i) != 0) {
             // missing accel
             return false;
         }
@@ -1458,9 +1471,9 @@ bool AP_InertialSensor::accel_calibrated_ok_all() const
     // check calibrated accels matches number of accels (no unused accels should have offsets or scaling)
     if (get_accel_count() < INS_MAX_INSTANCES) {
         for (uint8_t i=get_accel_count(); i<INS_MAX_INSTANCES; i++) {
-            const Vector3f &scaling = _accel_scale[i].get();
+            const Vector3f &scaling = _accel_scale(i).get();
             bool have_scaling = (!is_zero(scaling.x) && !is_equal(scaling.x,1.0f)) || (!is_zero(scaling.y) && !is_equal(scaling.y,1.0f)) || (!is_zero(scaling.z) && !is_equal(scaling.z,1.0f));
-            bool have_offsets = !_accel_offset[i].get().is_zero();
+            bool have_offsets = !_accel_offset(i).get().is_zero();
             if (have_scaling || have_offsets) {
                 return false;
             }
@@ -1478,7 +1491,7 @@ bool AP_InertialSensor::use_accel(uint8_t instance) const
         return false;
     }
 
-    return (get_accel_health(instance) && _use[instance]);
+    return (get_accel_health(instance) && _use(instance));
 }
 
 void
@@ -1516,7 +1529,7 @@ AP_InertialSensor::_init_gyro()
 
     // remove existing gyro offsets
     for (uint8_t k=0; k<num_gyros; k++) {
-        _gyro_offset[k].set(Vector3f());
+        _gyro_offset(k).set(Vector3f());
         new_gyro_offset[k].zero();
         best_diff[k] = -1.f;
         last_average[k].zero();
@@ -1616,14 +1629,14 @@ AP_InertialSensor::_init_gyro()
                                 (unsigned)k,
                                 (double)ToDeg(best_diff[k]),
                                 (double)GYRO_INIT_MAX_DIFF_DPS);
-            _gyro_offset[k].set(best_avg[k]);
+            _gyro_offset(k).set(best_avg[k]);
             // flag calibration as failed for this gyro
             _gyro_cal_ok[k] = false;
         } else {
             _gyro_cal_ok[k] = true;
-            _gyro_offset[k].set(new_gyro_offset[k]);
+            _gyro_offset(k).set(new_gyro_offset[k]);
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-            caltemp_gyro[k].set(0.5 * (get_temperature(k) + start_temperature[k]));
+            caltemp_gyro(k).set(0.5 * (get_temperature(k) + start_temperature[k]));
 #endif
         }
     }
@@ -1642,17 +1655,17 @@ AP_InertialSensor::_init_gyro()
 void AP_InertialSensor::_save_gyro_calibration()
 {
     for (uint8_t i=0; i<_gyro_count; i++) {
-        _gyro_offset[i].save();
-        _gyro_id[i].save();
+        _gyro_offset(i).save();
+        _gyro_id(i).save();
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-        caltemp_gyro[i].save();
+        caltemp_gyro(i).save();
 #endif
     }
     for (uint8_t i=_gyro_count; i<INS_MAX_INSTANCES; i++) {
-        _gyro_offset[i].set_and_save(Vector3f());
-        _gyro_id[i].set_and_save(0);
+        _gyro_offset(i).set_and_save(Vector3f());
+        _gyro_id(i).set_and_save(0);
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-        caltemp_gyro[i].set_and_save_ifchanged(-300);
+        caltemp_gyro(i).set_and_save_ifchanged(-300);
 #endif
     }
 }
@@ -1754,13 +1767,13 @@ void AP_InertialSensor::update(void)
 
         // set primary to first healthy accel and gyro
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_gyro_healthy[i] && _use[i]) {
+            if (_gyro_healthy[i] && _use(i)) {
                 _primary_gyro = i;
                 break;
             }
         }
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_accel_healthy[i] && _use[i]) {
+            if (_accel_healthy[i] && _use(i)) {
                 _primary_accel = i;
                 break;
             }
@@ -1858,7 +1871,7 @@ check_sample:
                 if (_new_gyro_data[i]) {
                     const uint8_t imask = (1U<<i);
                     gyro_available_mask |= imask;
-                    if (_use[i]) {
+                    if (_use(i)) {
                         _gyro_wait_mask |= imask;
                     } else {
                         _gyro_wait_mask &= ~imask;
@@ -1869,7 +1882,7 @@ check_sample:
                 if (_new_accel_data[i]) {
                     const uint8_t imask = (1U<<i);
                     accel_available_mask |= imask;
-                    if (_use[i]) {
+                    if (_use(i)) {
                         _accel_wait_mask |= imask;
                     } else {
                         _accel_wait_mask &= ~imask;
@@ -2074,7 +2087,7 @@ bool AP_InertialSensor::temperature_cal_running() const
 {
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-        if (tcal[i].enable == TCal::Enable::LearnCalibration) {
+        if (tcal(i).enable == AP_InertialSensor_TCal::Enable::LearnCalibration) {
             return true;
         }
     }
@@ -2164,29 +2177,29 @@ void AP_InertialSensor::_acal_save_calibrations()
     for (uint8_t i=0; i<_accel_count; i++) {
         if (_accel_calibrator[i].get_status() == ACCEL_CAL_SUCCESS) {
             _accel_calibrator[i].get_calibration(bias, gain);
-            _accel_offset[i].set_and_save(bias);
-            _accel_scale[i].set_and_save(gain);
-            _accel_id[i].save();
+            _accel_offset(i).set_and_save(bias);
+            _accel_scale(i).set_and_save(gain);
+            _accel_id(i).save();
             _accel_id_ok[i] = true;
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-            caltemp_accel[i].set_and_save(get_temperature(i));
+            caltemp_accel(i).set_and_save(get_temperature(i));
 #endif
         } else {
-            _accel_offset[i].set_and_save(Vector3f());
-            _accel_scale[i].set_and_save(Vector3f());
+            _accel_offset(i).set_and_save(Vector3f());
+            _accel_scale(i).set_and_save(Vector3f());
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-            caltemp_accel[i].set_and_save(-300);
+            caltemp_accel(i).set_and_save(-300);
 #endif
         }
     }
 
     // clear any unused accels
     for (uint8_t i=_accel_count; i<INS_MAX_INSTANCES; i++) {
-        _accel_id[i].set_and_save(0);
-        _accel_offset[i].set_and_save(Vector3f());
-        _accel_scale[i].set_and_save(Vector3f());
+        _accel_id(i).set_and_save(0);
+        _accel_offset(i).set_and_save(Vector3f());
+        _accel_scale(i).set_and_save(Vector3f());
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-        caltemp_accel[i].set_and_save_ifchanged(-300);
+        caltemp_accel(i).set_and_save_ifchanged(-300);
 #endif
     }
     
@@ -2236,8 +2249,8 @@ void AP_InertialSensor::_acal_save_calibrations()
 void AP_InertialSensor::_acal_event_failure()
 {
     for (uint8_t i=0; i<_accel_count; i++) {
-        _accel_offset[i].set_and_notify(Vector3f(0,0,0));
-        _accel_scale[i].set_and_notify(Vector3f(1,1,1));
+        _accel_offset(i).set_and_notify(Vector3f(0,0,0));
+        _accel_scale(i).set_and_notify(Vector3f(1,1,1));
     }
 }
 
@@ -2331,14 +2344,14 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal()
     
     // save existing accel offsets
     for (uint8_t k=0; k<num_accels; k++) {
-        saved_offsets[k] = _accel_offset[k];
-        saved_scaling[k] = _accel_scale[k];
+        saved_offsets[k] = _accel_offset(k);
+        saved_scaling[k] = _accel_scale(k);
     }
     
     // remove existing accel offsets and scaling
     for (uint8_t k=0; k<num_accels; k++) {
-        _accel_offset[k].set(Vector3f());
-        _accel_scale[k].set(Vector3f(1,1,1));
+        _accel_offset(k).set(Vector3f());
+        _accel_scale(k).set(Vector3f(1,1,1));
         new_accel_offset[k].zero();
         last_average[k].zero();
         converged[k] = false;
@@ -2416,12 +2429,12 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal()
         for (uint8_t k=0; k<num_accels; k++) {
             // remove rotated gravity
             new_accel_offset[k] -= rotated_gravity;
-            _accel_offset[k].set_and_save(new_accel_offset[k]);
-            _accel_scale[k].save();
-            _accel_id[k].save();
+            _accel_offset(k).set_and_save(new_accel_offset[k]);
+            _accel_scale(k).save();
+            _accel_id(k).save();
             _accel_id_ok[k] = true;
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-            caltemp_accel[k].set_and_save(get_temperature(k));
+            caltemp_accel(k).set_and_save(get_temperature(k));
 #endif
         }
 
@@ -2431,8 +2444,8 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal()
         DEV_PRINTF("\nFAILED\n");
         // restore old values
         for (uint8_t k=0; k<num_accels; k++) {
-            _accel_offset[k].set(saved_offsets[k]);
-            _accel_scale[k].set(saved_scaling[k]);
+            _accel_offset(k).set(saved_offsets[k]);
+            _accel_scale(k).set(saved_scaling[k]);
         }
     }
 
@@ -2507,11 +2520,11 @@ void AP_InertialSensor::handle_external(const AP_ExternalAHRS::ins_data_message_
 void AP_InertialSensor::force_save_calibration(void)
 {
     for (uint8_t i=0; i<_accel_count; i++) {
-        if (_accel_id[i] != 0) {
-            _accel_id[i].save();
+        if (_accel_id(i) != 0) {
+            _accel_id(i).save();
             // we also save the scale as the default of 1.0 may be
             // over a stored value of 0.0
-            _accel_scale[i].save();
+            _accel_scale(i).save();
             _accel_id_ok[i] = true;
         }
     }
