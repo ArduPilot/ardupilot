@@ -244,6 +244,7 @@ public:
         CAMERA_AUTO_FOCUS =  169, // camera auto focus
         QSTABILIZE =         170, // QuadPlane QStabilize mode
         MAG_CAL =            171, // Calibrate compasses (disarmed only)
+        BATTERY_MPPT_ENABLE = 172,// Battery MPPT Power enable. high = ON, mid = auto (controlled by mppt/batt driver), low = OFF. This effects all MPPTs.
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
