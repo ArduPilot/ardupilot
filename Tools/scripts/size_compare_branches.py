@@ -379,7 +379,9 @@ class SizeCompareBranches(object):
                 if not board_info.is_ap_periph:
                     continue
             else:
-                if board_info.is_ap_periph:
+                # bootloaders for periph devices are *also* AP_Periphs
+                # (or we build uavcan rather than libcanard!)
+                if board_info.is_ap_periph and not vehicle == 'bootloader':
                     continue
                 # the bootloader target isn't an autobuild target, so
                 # it gets special treatment here:
