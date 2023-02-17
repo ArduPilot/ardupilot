@@ -1,3 +1,12 @@
+Release 4.3.4beta2 Feb 18th 2023
+--------------------------------
+
+- support CubeOrangePlus BG edition
+- enable VTX power on MambaH743v4
+- probe external compasses on Foxeer Reaper F745
+- fixed home update on bad GPS quality
+- fixed GPS unconfigured error for non-M10 uBlox GPS
+
 Release 4.3.4beta1 Feb 12th 2023
 --------------------------------
 
