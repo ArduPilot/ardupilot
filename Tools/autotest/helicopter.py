@@ -353,6 +353,62 @@ class AutoTestHelicopter(AutoTestCopter):
             raise NotAchievedException("Hit too hard")
         self.wait_disarmed()
 
+    def ManAutoRotation(self, timeout=600):
+        """Check autorotation power recovery behaviour"""
+        RAMP_TIME = 4
+        AROT_RAMP_TIME = 2
+        self.set_parameter("H_RSC_AROT_MN_EN", 1)
+        self.set_parameter("H_RSC_AROT_ENG_T", AROT_RAMP_TIME)
+        self.set_parameter("H_RSC_AROT_IDLE", 20)
+        self.set_parameter("H_RSC_RAMP_TIME", RAMP_TIME)
+        self.set_parameter("H_RSC_IDLE", 0)
+        start_alt = 100 # metres
+        self.set_parameter("PILOT_TKOFF_ALT", start_alt * 100)
+        self.change_mode('POSHOLD')
+        self.set_rc(3, 1000)
+        self.set_rc(8, 1000)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(8, 2000)
+        self.progress("wait for rotor runup to complete")
+        self.wait_servo_channel_value(8, 1659, timeout=10)
+        self.delay_sim_time(20)
+        self.set_rc(3, 2000)
+        self.wait_altitude(start_alt - 1,
+                           (start_alt + 5),
+                           relative=True,
+                           timeout=timeout)
+        self.context_collect('STATUSTEXT')
+        self.change_mode('STABILIZE')
+        self.progress("Triggering manual autorotation by disabling interlock")
+        self.set_rc(3, 1300)
+        self.set_rc(8, 1000)
+        self.wait_servo_channel_value(8, 1200, timeout=3)
+        self.progress("channel 8 set to autorotation window")
+
+        self.set_rc(8, 2000)
+        self.wait_servo_channel_value(8, 1659, timeout=AROT_RAMP_TIME * 1.1)
+
+        self.progress("in-flight power recovery")
+        self.set_rc(3, 1700)
+        self.delay_sim_time(5)
+
+        # initiate autorotation again
+        self.set_rc(3, 1200)
+        self.set_rc(8, 1000)
+
+        self.wait_statustext(r"SIM Hit ground at ([0-9.]+) m/s",
+                             check_context=True,
+                             regex=True)
+        speed = float(self.re_match.group(1))
+        if speed > 30:
+            raise NotAchievedException("Hit too hard")
+
+        self.set_rc(3, 1000)
+        # verify servo 8 resets to RSC_IDLE after land complete
+        self.wait_servo_channel_value(8, 1000, timeout=3)
+        self.wait_disarmed()
+
     def set_rc_default(self):
         super(AutoTestHelicopter, self).set_rc_default()
         self.progress("Lowering rotor speed")
@@ -441,6 +497,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.StabilizeTakeOff,
             self.SplineWaypoint,
             self.AutoRotation,
+            self.ManAutoRotation,
             self.FlyEachFrame,
             self.AirspeedDrivers,
         ])
