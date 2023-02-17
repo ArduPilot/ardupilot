@@ -11,51 +11,16 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
-/**
-   maximum number of INS instances available on this platform. If more
-   than 1 then redundant sensors may be available
- */
-#ifndef INS_MAX_INSTANCES
-#define INS_MAX_INSTANCES 3
-#endif
-#define INS_MAX_BACKENDS  2*INS_MAX_INSTANCES
-#define INS_MAX_NOTCHES 12
-#ifndef INS_VIBRATION_CHECK_INSTANCES
-  #if HAL_MEM_CLASS >= HAL_MEM_CLASS_300
-    #define INS_VIBRATION_CHECK_INSTANCES INS_MAX_INSTANCES
-  #else
-    #define INS_VIBRATION_CHECK_INSTANCES 1
-  #endif
-#endif
-#define XYZ_AXIS_COUNT    3
-// The maximum we need to store is gyro-rate / loop-rate, worst case ArduCopter with BMI088 is 2000/400
-#define INS_MAX_GYRO_WINDOW_SAMPLES 8
-
-#define DEFAULT_IMU_LOG_BAT_MASK 0
-
-#ifndef HAL_INS_TEMPERATURE_CAL_ENABLE
-#define HAL_INS_TEMPERATURE_CAL_ENABLE !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
-#endif
-
-#ifndef HAL_INS_NUM_HARMONIC_NOTCH_FILTERS
-#define HAL_INS_NUM_HARMONIC_NOTCH_FILTERS 2
-#endif
-
-// time for the estimated gyro rates to converge
-#ifndef HAL_INS_CONVERGANCE_MS
-#define HAL_INS_CONVERGANCE_MS 30000
-#endif
-
 #include <stdint.h>
 
 #include <AP_AccelCal/AP_AccelCal.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
-#include <Filter/LowPassFilter2p.h>
 #include <Filter/LowPassFilter.h>
 #include <Filter/HarmonicNotchFilter.h>
-#include <AP_Math/polyfit.h>
+#include "AP_InertialSensor_Params.h"
+#include "AP_InertialSensor_tempcal.h"
 
 #ifndef AP_SIM_INS_ENABLED
 #define AP_SIM_INS_ENABLED AP_SIM_ENABLED
@@ -143,7 +108,7 @@ public:
     const Vector3f     &get_gyro(void) const { return get_gyro(_primary_gyro); }
 
     // set gyro offsets in radians/sec
-    const Vector3f &get_gyro_offsets(uint8_t i) const { return _gyro_offset[i]; }
+    const Vector3f &get_gyro_offsets(uint8_t i) const { return _gyro_offset(i); }
     const Vector3f &get_gyro_offsets(void) const { return get_gyro_offsets(_primary_gyro); }
 
     //get delta angle if available
@@ -197,19 +162,19 @@ public:
 #endif
     bool set_gyro_window_size(uint16_t size);
     // get accel offsets in m/s/s
-    const Vector3f &get_accel_offsets(uint8_t i) const { return _accel_offset[i]; }
+    const Vector3f &get_accel_offsets(uint8_t i) const { return _accel_offset(i); }
     const Vector3f &get_accel_offsets(void) const { return get_accel_offsets(_primary_accel); }
 
     // get accel scale
-    const Vector3f &get_accel_scale(uint8_t i) const { return _accel_scale[i]; }
+    const Vector3f &get_accel_scale(uint8_t i) const { return _accel_scale(i); }
     const Vector3f &get_accel_scale(void) const { return get_accel_scale(_primary_accel); }
 
     // return a 3D vector defining the position offset of the IMU accelerometer in metres relative to the body frame origin
     const Vector3f &get_imu_pos_offset(uint8_t instance) const {
-        return _accel_pos[instance];
+        return _accel_pos(instance);
     }
     const Vector3f &get_imu_pos_offset(void) const {
-        return _accel_pos[_primary_accel];
+        return _accel_pos(_primary_accel);
     }
 
     // return the temperature if supported. Zero is returned if no
@@ -233,6 +198,9 @@ public:
 
     // class level parameters
     static const struct AP_Param::GroupInfo var_info[];
+#if INS_AUX_INSTANCES
+    AP_InertialSensor_Params params[INS_AUX_INSTANCES];
+#endif
 
     // set overall board orientation
     void set_board_orientation(enum Rotation orientation) {
@@ -357,6 +325,7 @@ public:
 
         // class level parameters
         static const struct AP_Param::GroupInfo var_info[];
+    
 
         // Parameters
         AP_Int16 _required_count;
@@ -567,16 +536,47 @@ private:
 
     // IDs to uniquely identify each sensor: shall remain
     // the same across reboots
-    AP_Int32 _accel_id[INS_MAX_INSTANCES];
-    AP_Int32 _gyro_id[INS_MAX_INSTANCES];
+    AP_Int32 _accel_id_old_param[INS_MAX_INSTANCES-INS_AUX_INSTANCES];
+    AP_Int32 _gyro_id_old_param[INS_MAX_INSTANCES-INS_AUX_INSTANCES];
 
     // accelerometer scaling and offsets
-    AP_Vector3f _accel_scale[INS_MAX_INSTANCES];
-    AP_Vector3f _accel_offset[INS_MAX_INSTANCES];
-    AP_Vector3f _gyro_offset[INS_MAX_INSTANCES];
+    AP_Vector3f _accel_scale_old_param[INS_MAX_INSTANCES-INS_AUX_INSTANCES];
+    AP_Vector3f _accel_offset_old_param[INS_MAX_INSTANCES-INS_AUX_INSTANCES];
+    AP_Vector3f _gyro_offset_old_param[INS_MAX_INSTANCES-INS_AUX_INSTANCES];
 
     // accelerometer position offset in body frame
-    AP_Vector3f _accel_pos[INS_MAX_INSTANCES];
+    AP_Vector3f _accel_pos_old_param[INS_MAX_INSTANCES-INS_AUX_INSTANCES];
+
+    // Use Accessor methods to access above variables
+#if INS_AUX_INSTANCES
+    #define INS_PARAM_WRAPPER(var) \
+        inline decltype(var##_old_param[0])& var(uint8_t i) { \
+            if (i<(INS_MAX_INSTANCES-INS_AUX_INSTANCES)) { \
+                return var##_old_param[i]; \
+            } else { \
+                return params[i-(INS_MAX_INSTANCES-INS_AUX_INSTANCES)].var; \
+            } \
+        } \
+        inline decltype(var##_old_param[0])& var(uint8_t i) const { \
+            return const_cast<AP_InertialSensor*>(this)->var(i); \
+        }
+#else
+    #define INS_PARAM_WRAPPER(var) \
+        inline decltype(var##_old_param[0])& var(uint8_t i) { \
+            return var##_old_param[i]; \
+        } \
+        inline decltype(var##_old_param[0])& var(uint8_t i) const { \
+            return const_cast<AP_InertialSensor*>(this)->var(i); \
+        }
+#endif
+
+    // Accessor methods for old parameters
+    INS_PARAM_WRAPPER(_accel_id);
+    INS_PARAM_WRAPPER(_gyro_id);
+    INS_PARAM_WRAPPER(_accel_scale);
+    INS_PARAM_WRAPPER(_accel_offset);
+    INS_PARAM_WRAPPER(_gyro_offset);
+    INS_PARAM_WRAPPER(_accel_pos);
 
     // accelerometer max absolute offsets to be used for calibration
     float _accel_max_abs_offsets[INS_MAX_INSTANCES];
@@ -609,7 +609,8 @@ private:
     AP_Int8     _gyro_cal_timing;
 
     // use for attitude, velocity, position estimates
-    AP_Int8     _use[INS_MAX_INSTANCES];
+    AP_Int8     _use_old_param[INS_MAX_INSTANCES - INS_AUX_INSTANCES];
+    INS_PARAM_WRAPPER(_use);
 
     // control enable of fast sampling
     AP_Int8     _fast_sampling_mask;
@@ -719,87 +720,28 @@ private:
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
 public:
-    // TCal class is public for use by SITL
-    class TCal {
-    public:
-        static const struct AP_Param::GroupInfo var_info[];
-        void correct_accel(float temperature, float cal_temp, Vector3f &accel) const;
-        void correct_gyro(float temperature, float cal_temp, Vector3f &accel) const;
-        void sitl_apply_accel(float temperature, Vector3f &accel) const;
-        void sitl_apply_gyro(float temperature, Vector3f &accel) const;
-
-        void update_accel_learning(const Vector3f &accel);
-        void update_gyro_learning(const Vector3f &accel);
-
-        enum class Enable : uint8_t {
-            Disabled = 0,
-            Enabled = 1,
-            LearnCalibration = 2,
-        };
-
-        // add samples for learning
-        void update_accel_learning(const Vector3f &gyro, float temperature);
-        void update_gyro_learning(const Vector3f &accel, float temperature);
-        
-        // class for online learning of calibration
-        class Learn {
-        public:
-            Learn(TCal &_tcal, float _start_temp);
-
-            // state for accel/gyro (accel first)
-            struct LearnState {
-                float last_temp;
-                uint32_t last_sample_ms;
-                Vector3f sum;
-                uint32_t sum_count;
-                LowPassFilter2p<float> temp_filter;
-                // double precision is needed for good results when we
-                // span a wide range of temperatures
-                PolyFit<4, double, Vector3f> pfit;
-            } state[2];
-
-            void add_sample(const Vector3f &sample, float temperature, LearnState &state);
-            void finish_calibration(float temperature);
-            bool save_calibration(float temperature);
-            void reset(float temperature);
-            float start_temp;
-            float start_tmax;
-            uint32_t last_save_ms;
-
-            TCal &tcal;
-            uint8_t instance(void) const {
-                return tcal.instance();
-            }
-            Vector3f accel_start;
-        };
-
-        AP_Enum<Enable> enable;
-
-        // get persistent params for this instance
-        void get_persistent_params(ExpandingString &str) const;
-
-    private:
-        AP_Float temp_max;
-        AP_Float temp_min;
-        AP_Vector3f accel_coeff[3];
-        AP_Vector3f gyro_coeff[3];
-        Vector3f accel_tref;
-        Vector3f gyro_tref;
-        Learn *learn;
-
-        void correct_sensor(float temperature, float cal_temp, const AP_Vector3f coeff[3], Vector3f &v) const;
-        Vector3f polynomial_eval(float temperature, const AP_Vector3f coeff[3]) const;
-
-        // get instance number
-        uint8_t instance(void) const;
-    };
-
     // instance number for logging
-    uint8_t tcal_instance(const TCal &tc) const {
-        return &tc - &tcal[0];
+#if INS_AUX_INSTANCES
+    uint8_t tcal_instance(const AP_InertialSensor_TCal &tc) const {
+        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+            if (&tc == &tcal_old_param[i]) {
+                return i;
+            }
+        }
+        for (uint8_t i=0; i<INS_AUX_INSTANCES; i++) {
+            if (&tc == &params[i].tcal) {
+                return i + INS_MAX_INSTANCES;
+            }
+        }
+        return 0;
     }
+#else
+    uint8_t tcal_instance(const AP_InertialSensor_TCal &tc) const {
+        return &tc - &tcal(0);
+    }
+#endif
 private:
-    TCal tcal[INS_MAX_INSTANCES];
+    AP_InertialSensor_TCal tcal_old_param[INS_MAX_INSTANCES - INS_AUX_INSTANCES];
 
     enum class TCalOptions : uint8_t {
         PERSIST_TEMP_CAL = (1U<<0),
@@ -807,8 +749,13 @@ private:
     };
 
     // temperature that last calibration was run at
-    AP_Float caltemp_accel[INS_MAX_INSTANCES];
-    AP_Float caltemp_gyro[INS_MAX_INSTANCES];
+    AP_Float caltemp_accel_old_param[INS_MAX_INSTANCES - INS_AUX_INSTANCES];
+    AP_Float caltemp_gyro_old_param[INS_MAX_INSTANCES - INS_AUX_INSTANCES];
+
+    INS_PARAM_WRAPPER(caltemp_accel);
+    INS_PARAM_WRAPPER(caltemp_gyro);
+    INS_PARAM_WRAPPER(tcal);
+
     AP_Int32 tcal_options;
     bool tcal_learning;
 #endif
