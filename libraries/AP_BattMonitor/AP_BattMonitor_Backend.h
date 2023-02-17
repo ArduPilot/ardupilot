@@ -78,6 +78,9 @@ public:
     void Log_Write_BAT(const uint8_t instance, const uint64_t time_us) const;
     void Log_Write_BCL(const uint8_t instance, const uint64_t time_us) const;
 
+    // set desired MPPT powered state (enabled/disabled)
+    virtual void mppt_set_powered_state(bool power_on) {};
+
     // amps: current (A)
     // dt_us: time between samples (micro-seconds)
     static float calculate_mah(float amps, float dt_us) { return (float) (amps * dt_us * AUS_TO_MAH); }

@@ -238,6 +238,10 @@ public:
     bool set_temperature_by_serial_number(const float temperature, const int32_t serial_number);
 #endif
 
+    // MPPT Control (Solar panels)
+    void MPPT_set_powered_state_to_all(const bool power_on);
+    void MPPT_set_powered_state(const uint8_t instance, const bool power_on);
+
     // cycle count
     bool get_cycle_count(uint8_t instance, uint16_t &cycles) const;
 
