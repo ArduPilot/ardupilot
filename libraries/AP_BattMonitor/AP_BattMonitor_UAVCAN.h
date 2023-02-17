@@ -58,6 +58,8 @@ public:
     static void handle_mppt_stream_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const MpptStreamCb &cb);
     void handle_outputEnable_response(const uint8_t nodeId, const bool enabled);
 
+    void mppt_set_powered_state(bool power_on) override;
+
 private:
     void handle_battery_info(const BattInfoCb &cb);
     void handle_battery_info_aux(const BattInfoAuxCb &cb);
@@ -77,7 +79,6 @@ private:
     };
     void handle_mppt_stream(const MpptStreamCb &cb);
     void mppt_check_powered_state();
-    void mppt_set_powered_state(bool power_on);
 
 #if AP_BATTMONITOR_UAVCAN_MPPT_DEBUG
     static void mppt_report_faults(const uint8_t instance, const uint8_t fault_flags);
