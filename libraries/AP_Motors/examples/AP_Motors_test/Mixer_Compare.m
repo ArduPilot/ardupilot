@@ -103,20 +103,21 @@ for i = numel(files):-1:1
     results(i).achieved_output = nan(numel(results(i).roll_in),numel(results(i).pitch_in),numel(results(i).yaw_in),numel(results(i).throttle_in),4);
     results(i).error = nan(numel(results(i).roll_in),numel(results(i).pitch_in),numel(results(i).yaw_in),numel(results(i).throttle_in),4);
     for j = 1:size(results(i).raw,1)
-        roll_index = find(results(i).roll_in == results(i).raw(j,1));
-        pitch_index = find(results(i).pitch_in == results(i).raw(j,2));
-        yaw_index = find(results(i).yaw_in == results(i).raw(j,3));
-        throttle_index = find(results(i).throttle_in == results(i).raw(j,4));
+        inputs = results(i).raw(j,1:4);
+        roll_index = find(results(i).roll_in == inputs(1));
+        pitch_index = find(results(i).pitch_in == inputs(2));
+        yaw_index = find(results(i).yaw_in == inputs(3));
+        throttle_index = find(results(i).throttle_in == inputs(4));
         if numel(roll_index) ~= 1 || numel(pitch_index) ~= 1 || numel(yaw_index) ~= 1 || numel(throttle_index) ~= 1
             error('%s - indeing issue', files(i).name)
         end
         results(i).norm_out(roll_index,pitch_index,yaw_index,throttle_index,:) = results(i).raw(j,num_motors+4+(1:num_motors));
         
         results(i).achieved_output(roll_index,pitch_index,yaw_index,throttle_index,:) = squeeze(results(i).norm_out(roll_index,pitch_index,yaw_index,throttle_index,:))'*motor_factors;
-        results(i).achieved_output(roll_index,pitch_index,yaw_index,throttle_index,4) = results(i).achieved_output(roll_index,pitch_index,yaw_index,throttle_index,4) / num_motors;
         results(i).achieved_output(roll_index,pitch_index,yaw_index,throttle_index,3) = results(i).achieved_output(roll_index,pitch_index,yaw_index,throttle_index,3) / yaw_scale;
+        results(i).achieved_output(roll_index,pitch_index,yaw_index,throttle_index,4) = results(i).achieved_output(roll_index,pitch_index,yaw_index,throttle_index,4) / num_motors;
 
-        results(i).error(roll_index,pitch_index,yaw_index,throttle_index,:) = abs(squeeze(results(i).achieved_output(roll_index,pitch_index,yaw_index,throttle_index,:)) - results(i).raw(j,1:4)');
+        results(i).error(roll_index,pitch_index,yaw_index,throttle_index,:) = abs(squeeze(results(i).achieved_output(roll_index,pitch_index,yaw_index,throttle_index,:)) - (inputs.*[roll_pitch_scale(1),roll_pitch_scale(2),1,1])');
 
         zlims_min = min(zlims_min,squeeze(results(i).achieved_output(roll_index,pitch_index,yaw_index,throttle_index,:)));
         zlims_max = max(zlims_max,squeeze(results(i).achieved_output(roll_index,pitch_index,yaw_index,throttle_index,:)));
