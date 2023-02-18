@@ -831,6 +831,10 @@ void AP_CRSF_Telem::update_vtx_params()
         }
         _telem_pending = true;
         // calculate command crc
+#pragma GCC diagnostic push
+#if defined(__GNUC__) &&  __GNUC__ >= 10
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#endif
         uint8_t* crcptr = &_telem.ext.command.destination;
         uint8_t crc = crc8_dvb(0, AP_RCProtocol_CRSF::CRSF_FRAMETYPE_COMMAND, 0xBA);
         for (uint8_t i = 0; i < len; i++) {
@@ -838,6 +842,7 @@ void AP_CRSF_Telem::update_vtx_params()
         }
         crcptr[len] = crc;
         _telem_size = len + 1;
+#pragma GCC diagnostic pop
     }
 }
 #endif  // AP_VIDEOTX_ENABLED
