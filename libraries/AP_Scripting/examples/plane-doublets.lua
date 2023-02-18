@@ -7,6 +7,7 @@
 -- It is suggested to allow the aircraft to trim for straight, level, unaccelerated flight (SLUF) in FBWB mode before
 -- starting a doublet
 -- Charlie Johnson, Oklahoma State University 2020
+-- luacheck: only 0
 
 local DOUBLET_ACTION_CHANNEL = 6 -- RCIN channel to start a doublet when high (>1700)
 local DOUBLET_CHOICE_CHANNEL = 7 -- RCIN channel to choose elevator (low) or rudder (high)

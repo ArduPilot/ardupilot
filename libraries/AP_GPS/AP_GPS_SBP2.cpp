@@ -103,6 +103,9 @@ AP_GPS_SBP2::_sbp_process()
     while (nleft > 0) {
         nleft--;
         uint8_t temp = port->read();
+#if AP_GPS_DEBUG_LOGGING_ENABLED
+        log_data(&temp, 1);
+#endif
         uint16_t crc;
 
         //This switch reads one character at a time,
@@ -309,10 +312,7 @@ AP_GPS_SBP2::_attempt_state_update()
         state.velocity[1]       = (float)(last_vel_ned.e * 1.0e-3);
         state.velocity[2]       = (float)(last_vel_ned.d * 1.0e-3);
 
-        float ground_vector_sq = state.velocity[0]*state.velocity[0] + state.velocity[1]*state.velocity[1];
-        state.ground_speed = safe_sqrt(ground_vector_sq);
-
-        state.ground_course = wrap_360(degrees(atan2f(state.velocity[1], state.velocity[0])));
+        velocity_to_speed_course(state);
 
         state.speed_accuracy        = safe_sqrt(
                                         powf((float)last_vel_ned.h_accuracy * 1.0e-3f, 2) + 

@@ -78,7 +78,7 @@ const AP_Param::GroupInfo AP_Scripting::var_info[] = {
     // @Param: DEBUG_OPTS
     // @DisplayName: Scripting Debug Level
     // @Description: Debugging options
-    // @Bitmask: 0:No Scripts to run message if all scripts have stopped, 1:Runtime messages for memory usage and execution time, 2:Suppress logging scripts to dataflash, 3:log runtime memory usage and execution time
+    // @Bitmask: 0:No Scripts to run message if all scripts have stopped, 1:Runtime messages for memory usage and execution time, 2:Suppress logging scripts to dataflash, 3:log runtime memory usage and execution time, 4:Disable pre-arm check
     // @User: Advanced
     AP_GROUPINFO("DEBUG_OPTS", 4, AP_Scripting, _debug_options, 0),
 
@@ -148,15 +148,14 @@ void AP_Scripting::init(void) {
     const char *dir_name = SCRIPTING_DIRECTORY;
     if (AP::FS().mkdir(dir_name)) {
         if (errno != EEXIST) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Lua: failed to create (%s)", dir_name);
+            gcs().send_text(MAV_SEVERITY_INFO, "Scripting: failed to create (%s)", dir_name);
         }
     }
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Scripting::thread, void),
                                       "Scripting", SCRIPTING_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_SCRIPTING, 0)) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Could not create scripting stack (%d)", SCRIPTING_STACK_SIZE);
-        gcs().send_text(MAV_SEVERITY_ERROR, "Scripting failed to start");
-        _init_failed = true;
+        gcs().send_text(MAV_SEVERITY_ERROR, "Scripting: %s", "failed to start");
+        _thread_failed = true;
     }
 }
 
@@ -192,7 +191,7 @@ bool AP_Scripting::repl_start(void) {
     if ((AP::FS().stat(REPL_DIRECTORY, &st) == -1) &&
         (AP::FS().unlink(REPL_DIRECTORY)  == -1) &&
         (errno != EEXIST)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Unable to delete old REPL %s", strerror(errno));
+        gcs().send_text(MAV_SEVERITY_INFO, "Scripting: Unable to delete old REPL %s", strerror(errno));
     }
 
     // create a new folder
@@ -204,7 +203,7 @@ bool AP_Scripting::repl_start(void) {
     // make the output pointer
     terminal.output_fd = AP::FS().open(REPL_OUT, O_WRONLY|O_CREAT|O_TRUNC);
     if (terminal.output_fd == -1) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Unable to make new REPL");
+        gcs().send_text(MAV_SEVERITY_INFO, "Scripting: %s", "Unable to make new REPL");
         return false;
     }
 
@@ -222,19 +221,28 @@ void AP_Scripting::thread(void) {
         // reset flags
         _stop = false;
         _restart = false;
+        _init_failed = false;
 
         lua_scripts *lua = new lua_scripts(_script_vm_exec_count, _script_heap_size, _debug_options, terminal);
         if (lua == nullptr || !lua->heap_allocated()) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Unable to allocate scripting memory");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting: %s", "Unable to allocate memory");
             _init_failed = true;
         } else {
             // run won't return while scripting is still active
             lua->run();
 
             // only reachable if the lua backend has died for any reason
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting has stopped");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting: %s", "stopped");
         }
         delete lua;
+        lua = nullptr;
+
+        // clear allocated i2c devices
+        for (uint8_t i=0; i<SCRIPTING_MAX_NUM_I2C_DEVICE; i++) {
+            delete _i2c_dev[i];
+            _i2c_dev[i] = nullptr;
+        }
+        num_i2c_devices = 0;
 
         bool cleared = false;
         while(true) {
@@ -247,11 +255,11 @@ void AP_Scripting::thread(void) {
             }
             // must be enabled to get this far
             if (cleared || _restart) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting restarted");
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting: %s", "restarted");
                 break;
             }
             if ((_debug_options.get() & uint8_t(lua_scripts::DebugLevel::NO_SCRIPTS_TO_RUN)) != 0) {
-                gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: scripting stopped");
+                gcs().send_text(MAV_SEVERITY_DEBUG, "Scripting: %s", "stopped");
             }
         }
     }
@@ -266,8 +274,12 @@ void AP_Scripting::handle_mission_command(const AP_Mission::Mission_Command& cmd
     if (mission_data == nullptr) {
         // load buffer
         mission_data = new ObjectBuffer<struct AP_Scripting::scripting_mission_cmd>(mission_cmd_queue_size);
+        if (mission_data != nullptr && mission_data->get_size() == 0) {
+            delete mission_data;
+            mission_data = nullptr;
+        }
         if (mission_data == nullptr) {
-            gcs().send_text(MAV_SEVERITY_INFO, "scripting: unable to receive mission command");
+            gcs().send_text(MAV_SEVERITY_INFO, "Scripting: %s", "unable to receive mission command");
             return;
         }
     }
@@ -279,6 +291,40 @@ void AP_Scripting::handle_mission_command(const AP_Mission::Mission_Command& cmd
                                       AP_HAL::millis()};
 
     mission_data->push(cmd);
+}
+
+bool AP_Scripting::arming_checks(size_t buflen, char *buffer) const
+{
+    if (!enabled() || ((_debug_options.get() & uint8_t(lua_scripts::DebugLevel::DISABLE_PRE_ARM)) != 0)) {
+        return true;
+    }
+
+    if (_thread_failed) {
+        hal.util->snprintf(buffer, buflen, "Scripting: %s", "failed to start");
+        return false;
+    }
+
+    if (_init_failed) {
+        hal.util->snprintf(buffer, buflen, "Scripting: %s", "out of memory");
+        return false;
+    }
+
+    lua_scripts::get_last_error_semaphore()->take_blocking();
+    const char *error_buf = lua_scripts::get_last_error_message();
+    if (error_buf != nullptr) {
+        hal.util->snprintf(buffer, buflen, "Scripting: %s", error_buf);
+        lua_scripts::get_last_error_semaphore()->give();
+        return false;
+    }
+    lua_scripts::get_last_error_semaphore()->give();
+
+    return true;
+}
+
+void AP_Scripting::restart_all()
+{
+    _restart = true;
+    _stop = true;
 }
 
 AP_Scripting *AP_Scripting::_singleton = nullptr;

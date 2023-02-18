@@ -20,7 +20,10 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_config.h>
+#if HAL_GCS_ENABLED
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#endif
 #include <AP_Math/AP_Math.h>
 
 class AP_VisualOdom_Backend;
@@ -90,8 +93,8 @@ public:
     // velocity in NED meters per second
     void handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter);
 
-    // calibrate camera attitude to align with vehicle's AHRS/EKF attitude
-    void align_sensor_to_vehicle();
+    // request sensor's yaw be aligned with vehicle's AHRS/EKF attitude
+    void request_align_yaw_to_ahrs();
 
     // update position offsets to align to AHRS position
     // should only be called when this library is not being used as the position source

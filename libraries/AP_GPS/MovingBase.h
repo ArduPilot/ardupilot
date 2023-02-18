@@ -10,8 +10,7 @@ public:
     MovingBase(void);
 
     /* Do not allow copies */
-    MovingBase(const MovingBase &other) = delete;
-    MovingBase &operator=(const MovingBase&) = delete;
+    CLASS_NO_COPY(MovingBase);
 
     enum class Type : int8_t {
         RelativeToAlternateInstance = 0,

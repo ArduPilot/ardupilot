@@ -5,12 +5,6 @@
  *
  */
 
-#define GSCALAR(v, name, def) { tracker.g.v.vtype, name, Parameters::k_param_ ## v, &tracker.g.v, {def_value : def} }
-#define ASCALAR(v, name, def) { tracker.aparm.v.vtype, name, Parameters::k_param_ ## v, (const void *)&tracker.aparm.v, {def_value : def} }
-#define GGROUP(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &tracker.g.v, {group_info : class::var_info} }
-#define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, (const void *)&tracker.v, {group_info : class::var_info} }
-#define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, (const void *)&tracker.v, {group_info : class::var_info} }
-
 const AP_Param::Info Tracker::var_info[] = {
     // @Param: FORMAT_VERSION
     // @DisplayName: Eeprom format version number
@@ -525,7 +519,7 @@ const AP_Param::Info Tracker::var_info[] = {
 
     // @Group:
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
-    { AP_PARAM_GROUP, "", Parameters::k_param_vehicle, (const void *)&tracker, {group_info : AP_Vehicle::var_info} },
+    PARAM_VEHICLE_INFO,
 
     // @Group: LOG
     // @Path: ../libraries/AP_Logger/AP_Logger.cpp

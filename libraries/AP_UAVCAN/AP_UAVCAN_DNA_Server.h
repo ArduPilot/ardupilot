@@ -103,8 +103,7 @@ public:
 
 
     // Do not allow copies
-    AP_UAVCAN_DNA_Server(const AP_UAVCAN_DNA_Server &other) = delete;
-    AP_UAVCAN_DNA_Server &operator=(const AP_UAVCAN_DNA_Server&) = delete;
+    CLASS_NO_COPY(AP_UAVCAN_DNA_Server);
 
     //Initialises publisher and Server Record for specified uavcan driver
     bool init();

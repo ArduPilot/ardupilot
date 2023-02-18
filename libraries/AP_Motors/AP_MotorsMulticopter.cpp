@@ -19,6 +19,13 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Logger/AP_Logger.h>
 
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    #define AP_MOTORS_PARAM_PREFIX "Q_M_"
+#else
+    #define AP_MOTORS_PARAM_PREFIX "MOT_"
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 // parameters for the motor class
@@ -104,7 +111,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Param: SPIN_MIN
     // @DisplayName: Motor Spin minimum
     // @Description: Point at which the thrust starts expressed as a number from 0 to 1 in the entire output range.  Should be higher than MOT_SPIN_ARM.
-    // @Values: 0.0:Low, 0.15:Default, 0.3:High
+    // @Values: 0.0:Low, 0.15:Default, 0.25:High
     // @User: Advanced
     AP_GROUPINFO("SPIN_MIN", 18, AP_MotorsMulticopter, _spin_min, AP_MOTORS_SPIN_MIN_DEFAULT),
 
@@ -212,8 +219,8 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 };
 
 // Constructor
-AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz) :
-                AP_Motors(loop_rate, speed_hz),
+AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t speed_hz) :
+                AP_Motors(speed_hz),
                 _lift_max(1.0f),
                 _throttle_limit(1.0f)
 {
@@ -284,8 +291,10 @@ void AP_MotorsMulticopter::output_min()
 // update the throttle input filter
 void AP_MotorsMulticopter::update_throttle_filter()
 {
+    const float last_thr = _throttle_filter.get();
+
     if (armed()) {
-        _throttle_filter.apply(_throttle_in, 1.0f / _loop_rate);
+        _throttle_filter.apply(_throttle_in, _dt);
         // constrain filtered throttle
         if (_throttle_filter.get() < 0.0f) {
             _throttle_filter.reset(0.0f);
@@ -296,6 +305,16 @@ void AP_MotorsMulticopter::update_throttle_filter()
     } else {
         _throttle_filter.reset(0.0f);
     }
+
+    float new_thr = _throttle_filter.get();
+
+    if (!is_equal(last_thr, new_thr)) {
+        _throttle_slew.update(new_thr, AP_HAL::micros());
+    }
+
+    // calculate slope normalized from per-micro
+    const float rate = fabsf(_throttle_slew.slope() * 1e6);
+    _throttle_slew_rate = _throttle_slew_filter.apply(rate, _dt);
 }
 
 // return current_limit as a number from 0 ~ 1 in the range throttle_min to throttle_max
@@ -324,8 +343,7 @@ float AP_MotorsMulticopter::get_current_limit_max_throttle()
 
     float batt_current_ratio = _batt_current / batt_current_max;
 
-    float loop_interval = 1.0f / _loop_rate;
-    _throttle_limit += (loop_interval / (loop_interval + _batt_current_time_constant)) * (1.0f - batt_current_ratio);
+    _throttle_limit += (_dt / (_dt + _batt_current_time_constant)) * (1.0f - batt_current_ratio);
 
     // throttle limit drops to 20% between hover and full throttle
     _throttle_limit = constrain_float(_throttle_limit, 0.2f, 1.0f);
@@ -389,7 +407,7 @@ void AP_MotorsMulticopter::update_lift_max_from_batt_voltage()
     _batt_voltage_resting_estimate = constrain_float(_batt_voltage_resting_estimate, _batt_voltage_min, _batt_voltage_max);
 
     // filter at 0.5 Hz
-    float batt_voltage_filt = _batt_voltage_filt.apply(_batt_voltage_resting_estimate / _batt_voltage_max, 1.0f / _loop_rate);
+    float batt_voltage_filt = _batt_voltage_filt.apply(_batt_voltage_resting_estimate / _batt_voltage_max, _dt);
 
     // calculate lift max
     float thrust_curve_expo = constrain_float(_thrust_curve_expo, -1.0f, 1.0f);
@@ -479,13 +497,13 @@ void AP_MotorsMulticopter::set_actuator_with_slew(float& actuator_output, float 
 
     // If MOT_SLEW_UP_TIME is set, calculate the highest allowed new output value, constrained 0.0~1.0
     if (is_positive(_slew_up_time)) {
-        float output_delta_up_max = 1.0f / (constrain_float(_slew_up_time, 0.0f, 0.5f) * _loop_rate);
+        float output_delta_up_max = _dt / (constrain_float(_slew_up_time, 0.0f, 0.5f));
         output_slew_limit_up = constrain_float(actuator_output + output_delta_up_max, 0.0f, 1.0f);
     }
 
     // If MOT_SLEW_DN_TIME is set, calculate the lowest allowed new output value, constrained 0.0~1.0
     if (is_positive(_slew_dn_time)) {
-        float output_delta_dn_max = 1.0f / (constrain_float(_slew_dn_time, 0.0f, 0.5f) * _loop_rate);
+        float output_delta_dn_max = _dt / (constrain_float(_slew_dn_time, 0.0f, 0.5f));
         output_slew_limit_dn = constrain_float(actuator_output - output_delta_dn_max, 0.0f, 1.0f);
     }
 
@@ -538,7 +556,7 @@ void AP_MotorsMulticopter::output_logic()
 {
     if (armed()) {
         if (_disarm_disable_pwm && (_disarm_safe_timer < _safe_time)) {
-            _disarm_safe_timer += 1.0f/_loop_rate;
+            _disarm_safe_timer += _dt;
         } else {
             _disarm_safe_timer = _safe_time;
         }
@@ -557,7 +575,7 @@ void AP_MotorsMulticopter::output_logic()
         _spool_up_time.set(0.05);
     }
 
-    const float spool_step = 1.0f / (_spool_up_time * _loop_rate);
+    const float spool_step = _dt / _spool_up_time;
     switch (_spool_state) {
     case SpoolState::SHUT_DOWN:
         // Motors should be stationary.
@@ -612,7 +630,10 @@ void AP_MotorsMulticopter::output_logic()
             // constrain ramp value and update mode
             if (_spin_up_ratio >= 1.0f) {
                 _spin_up_ratio = 1.0f;
-                _spool_state = SpoolState::SPOOLING_UP;
+                if (!get_spoolup_block()) {
+                    // Only advance from ground idle if spoolup checks have passed
+                    _spool_state = SpoolState::SPOOLING_UP;
+                }
             }
             break;
 
@@ -750,7 +771,7 @@ void AP_MotorsMulticopter::set_throttle_passthrough_for_esc_calibration(float th
 // output a thrust to all motors that match a given motor mask. This
 // is used to control tiltrotor motors in forward flight. Thrust is in
 // the range 0 to 1
-void AP_MotorsMulticopter::output_motor_mask(float thrust, uint8_t mask, float rudder_dt)
+void AP_MotorsMulticopter::output_motor_mask(float thrust, uint16_t mask, float rudder_dt)
 {
     const int16_t pwm_min = get_pwm_output_min();
     const int16_t pwm_range = get_pwm_output_max() - pwm_min;
@@ -798,4 +819,41 @@ void AP_MotorsMulticopter::convert_pwm_min_max_param(int16_t radio_min, int16_t 
     }
     _pwm_min.set_and_save(radio_min);
     _pwm_max.set_and_save(radio_max);
+}
+
+bool AP_MotorsMulticopter::arming_checks(size_t buflen, char *buffer) const
+{
+    // run base class checks
+    if (!AP_Motors::arming_checks(buflen, buffer)) {
+        return false;
+    }
+
+    // Check output function is setup for each motor
+    for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        if (!motor_enabled[i]) {
+            continue;
+        }
+        uint8_t chan;
+        SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
+        if (!SRV_Channels::find_channel(function, chan)) {
+            hal.util->snprintf(buffer, buflen, "no SERVOx_FUNCTION set to Motor%u", i + 1);
+            return false;
+        }
+    }
+
+    // Check param config
+    if (_spin_min > 0.3) {
+        hal.util->snprintf(buffer, buflen, "%sSPIN_MIN too high %.2f > 0.3", AP_MOTORS_PARAM_PREFIX, _spin_min.get());
+        return false;
+    }
+    if (_spin_arm > _spin_min) {
+        hal.util->snprintf(buffer, buflen, "%sSPIN_ARM > %sSPIN_MIN", AP_MOTORS_PARAM_PREFIX, AP_MOTORS_PARAM_PREFIX);
+        return false;
+    }
+    if (!check_mot_pwm_params()) {
+        hal.util->snprintf(buffer, buflen, "Check %sPWM_MIN and %sPWM_MAX", AP_MOTORS_PARAM_PREFIX, AP_MOTORS_PARAM_PREFIX);
+        return false;
+    }
+
+    return true;
 }

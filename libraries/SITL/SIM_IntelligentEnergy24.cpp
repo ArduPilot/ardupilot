@@ -102,8 +102,8 @@ void IntelligentEnergy24::update_send()
     int32_t battery_pwr = battery_voltage * amps; // Watts
 
     // These are non-physical values
-    const int32_t pwr_out = battery_pwr*1.4f;
-    const uint32_t spm_pwr = battery_pwr*0.3f;
+    const int32_t pwr_out = float_to_int32(battery_pwr*1.4f);
+    const uint32_t spm_pwr = float_to_uint32(battery_pwr*0.3f);
 
     uint32_t state = set_state;
     if (set_state == -1) {

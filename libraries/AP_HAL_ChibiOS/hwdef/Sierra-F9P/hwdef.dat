@@ -130,7 +130,6 @@ define HAL_PERIPH_ENABLE_BARO
 define HAL_PERIPH_ENABLE_RC_OUT
 define HAL_PERIPH_ENABLE_NOTIFY
 define CONFIGURE_PPS_PIN TRUE
-#define HAL_INS_ENABLED 1
 define GPS_MOVING_BASELINE 1
 
 # Logging
@@ -146,9 +145,6 @@ PC10 SDIO_D2 SDIO
 PC11 SDIO_D3 SDIO
 PB15 SDIO_CK SDIO
 PD2 SDIO_CMD SDIO
-
-# use the app descriptor needed by MissionPlanner for CAN upload
-env APP_DESCRIPTOR MissionPlanner
 
 # reserve 256 bytes for comms between app and bootloader
 RAM_RESERVE_START 256

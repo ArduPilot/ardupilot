@@ -15,13 +15,15 @@
 
 The following form will display the attenuation and phase lag for an
 ArduPilot 4.2 filter setup.
-<body onload="load_cookies(); fill_docs(); update_all_hidden(); calculate_filter(); calculate_pid(); ">
+<body onload="load(); fill_docs(); update_all_hidden(); check_nyquist(); calculate_filter(); calculate_pid();">
   <canvas id="Attenuation" style="width:100%;max-width:1200px"></canvas>
+  <canvas id="Phase" style="width:100%;max-width:1200px;"></canvas>
 <p>
   <input type="button" id="calculate" value="Calculate">
   <input type="button" id="SaveParams" value="Save Parameters" onclick="save_parameters();">
   <button class="styleClass" onclick="document.getElementById('param_file').click()">Load Parameters</button>
   <input type='file' id="param_file" style="display:none" onchange="load_parameters(this.files[0]);">
+  <input type="button" id="GetLink" value="Get Link" onclick="get_link();">
 
   <form id="params" action="">
 <fieldset style="max-width:1200px">
@@ -35,6 +37,15 @@ ArduPilot 4.2 filter setup.
                                         <label for="LogScale">dB</label><br>
                                         <input type="radio" id="ScaleLinear" name="Scale" value="Linear">
                                         <label for="LinearScale">Linear</label><br>
+                                </fieldset>
+                        </td>
+                        <td>
+                                <fieldset style="width:150px">
+                                        <legend>Phase scale</legend>
+                                        <input type="radio" id="ScaleUnWrap" name="PhaseScale" value="unwrap" checked>
+                                        <label for="ScaleUnWrap">un-wrapped</label><br>
+                                        <input type="radio" id="ScaleWrap" name="PhaseScale" value="wrap">
+                                        <label for="ScaleWrap">±180</label><br>
                                 </fieldset>
                         </td>
                         <td>
@@ -74,7 +85,7 @@ ArduPilot 4.2 filter setup.
   <legend>INS Settings</legend>
         <p>
                 <label for="GyroSampleRate">Gyro Sample Rate</label>
-                <input id="GyroSampleRate" name="GYRO_SAMPLE_RATE" type="number" step="1" value="2000"/>
+                <input id="GyroSampleRate" name="GYRO_SAMPLE_RATE" type="number" step="1" value="2000" onchange="check_nyquist();"/>
 	</p>
         <p>
                 <label for="INS_GYRO_FILTER">INS_GYRO_FILTER</label>
@@ -201,6 +212,7 @@ ArduPilot 4.2 filter setup.
 <h2>PIDs</h2>
 <h3><label id="PID_title">Title</label></h3>
 <canvas id="PID_Attenuation" style="width:100%;max-width:1200px"></canvas>
+<canvas id="PID_Phase" style="width:100%;max-width:1200px"></canvas>
 <p>
 <input type="button" id="CalculateRoll" value="Caculate Roll" onclick="calculate_pid(this.id);">
 <input type="button" id="CalculatePitch" value="Caculate Pitch" onclick="calculate_pid(this.id);">
@@ -219,6 +231,15 @@ ArduPilot 4.2 filter setup.
                                                         <label for="LogScale">dB</label><br>
                                                         <input type="radio" id="PID_ScaleLinear" name="PID_Scale" value="Linear">
                                                         <label for="LinearScale">Linear</label><br>
+                                                </fieldset>
+                                        </td>
+                                        <td>
+                                                <fieldset style="width:150px">
+                                                        <legend>Phase scale</legend>
+                                                        <input type="radio" id="PID_ScaleUnWrap" name="PID_PhaseScale" value="unwrap" checked>
+                                                        <label for="ScaleUnWrap">un-wrapped</label><br>
+                                                        <input type="radio" id="PID_ScaleWrap" name="PID_PhaseScale" value="wrap">
+                                                        <label for="ScaleWrap">±180</label><br>
                                                 </fieldset>
                                         </td>
                                         <td>
@@ -268,7 +289,7 @@ ArduPilot 4.2 filter setup.
         <legend>Loop Rate</legend>
                <p>
                         <label for="SCHED_LOOP_RATE">SCHED_LOOP_RATE</label>
-                        <input id="SCHED_LOOP_RATE" name="SCHED_LOOP_RATE" type="number" step="1" value="400"/>
+                        <input id="SCHED_LOOP_RATE" name="SCHED_LOOP_RATE" type="number" step="1" value="400" onchange="check_nyquist();"/>
                 </p>
         </fieldset>
         <fieldset style="max-width:1200px">

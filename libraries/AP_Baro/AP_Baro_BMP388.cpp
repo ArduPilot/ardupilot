@@ -17,6 +17,7 @@
 #if AP_BARO_BMP388_ENABLED
 
 #include <utility>
+#include <AP_Math/AP_Math.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -26,8 +27,10 @@ extern const AP_HAL::HAL &hal;
 #define BMP388_MODE BMP388_MODE_NORMAL
 
 #define BMP388_ID            0x50
+#define BMP390_ID            0x60
 
 #define BMP388_REG_ID        0x00
+#define BMP388_REV_ID_ADDR   0x01
 #define BMP388_REG_ERR       0x02
 #define BMP388_REG_STATUS    0x03
 #define BMP388_REG_PRESS     0x04 // 24 bit
@@ -89,9 +92,18 @@ bool AP_Baro_BMP388::init()
     dev->write_register(BMP388_REG_PWR_CTRL, 0x33, true);
     
     uint8_t whoami;
-    if (!read_registers(BMP388_REG_ID, &whoami, 1)  ||
-        whoami != BMP388_ID) {
-        // not a BMP388
+    if (!read_registers(BMP388_REG_ID, &whoami, 1)) {
+        return false;
+    }
+
+    switch (whoami) {
+    case BMP388_ID:
+        dev->set_device_type(DEVTYPE_BARO_BMP388);
+        break;
+    case BMP390_ID:
+        dev->set_device_type(DEVTYPE_BARO_BMP390);
+        break;
+    default:
         return false;
     }
 
@@ -108,7 +120,6 @@ bool AP_Baro_BMP388::init()
 
     instance = _frontend.register_sensor();
 
-    dev->set_device_type(DEVTYPE_BARO_BMP388);
     set_bus_id(instance, dev->get_bus_id());
 
     // request 50Hz update

@@ -20,7 +20,6 @@ import string
 import subprocess
 import sys
 import traceback
-import gzip
 
 # local imports
 import generate_manifest
@@ -114,7 +113,7 @@ class build_binaries(object):
                 raise Exception("BB-WAF: Missing compiler %s" % gcc_path)
         self.run_program("BB-WAF", cmd_list, env=env)
 
-    def run_program(self, prefix, cmd_list, show_output=True, env=None):
+    def run_program(self, prefix, cmd_list, show_output=True, env=None, force_success=False):
         if show_output:
             self.progress("Running (%s)" % " ".join(cmd_list))
         p = subprocess.Popen(cmd_list, bufsize=1, stdin=None,
@@ -139,7 +138,7 @@ class build_binaries(object):
             if show_output:
                 print("%s: %s" % (prefix, x))
         (_, status) = returncode
-        if status != 0 and show_output:
+        if status != 0 and not force_success:
             self.progress("Process failed (%s)" %
                           str(returncode))
             raise subprocess.CalledProcessError(
@@ -212,7 +211,12 @@ is bob we will attempt to checkout bob-AVR'''
         '''
 
         try:
-            out = self.run_program('waf', ['./waf', 'configure', '--board=BOARDTEST'], False)
+            out = self.run_program(
+                'waf',
+                ['./waf', 'configure', '--board=BOARDTEST'],
+                show_output=False,
+                force_success=True
+            )
             lines = out.split('\n')
             needles = ["BOARDTEST' (choose from", "BOARDTEST': choices are"]
             for line in lines:
@@ -225,7 +229,10 @@ is bob we will attempt to checkout bob-AVR'''
                     line = line.replace("'", "")
                     line = line.replace(" ", "")
                     boards = line.split(",")
-                    return board not in boards
+                    ret = board not in boards
+                    if ret:
+                        self.progress("Skipping board (%s) - not in board list" % board)
+                    return ret
         except IOError as e:
             if e.errno != 2:
                 raise
@@ -367,24 +374,6 @@ is bob we will attempt to checkout bob-AVR'''
             if e.errno != 17:  # EEXIST
                 raise e
 
-    def copyit(self, afile, adir, tag, src):
-        '''copies afile into various places, adding metadata'''
-        bname = os.path.basename(adir)
-        tdir = os.path.join(os.path.dirname(os.path.dirname(
-            os.path.dirname(adir))), tag, bname)
-        if tag == "latest":
-            # we keep a permanent archive of all "latest" builds,
-            # their path including a build timestamp:
-            self.mkpath(adir)
-            self.progress("Copying %s to %s" % (afile, adir,))
-            shutil.copy(afile, adir)
-            self.addfwversion(adir, src)
-        # the most recent build of every tag is kept around:
-        self.progress("Copying %s to %s" % (afile, tdir))
-        self.mkpath(tdir)
-        self.addfwversion(tdir, src)
-        shutil.copy(afile, tdir)
-
     def touch_filepath(self, filepath):
         '''creates a file at filepath, or updates the timestamp on filepath'''
         if os.path.exists(filepath):
@@ -502,16 +491,40 @@ is bob we will attempt to checkout bob-AVR'''
                 for extension in extensions:
                     filepath = "".join([bare_path, extension])
                     if os.path.exists(filepath):
-                        files_to_copy.append(filepath)
+                        files_to_copy.append((filepath, os.path.basename(filepath)))
                 if not os.path.exists(bare_path):
                     raise Exception("No elf file?!")
-                # only copy the elf if we don't have other files to copy
-                if len(files_to_copy) == 0:
-                    files_to_copy.append(bare_path)
+                # only rename the elf if we have have other files to
+                # copy.  So linux gets "arducopter" and stm32 gets
+                # "arducopter.elf"
+                target_elf_filename = os.path.basename(bare_path)
+                if len(files_to_copy) > 0:
+                    target_elf_filename += ".elf"
+                files_to_copy.append((bare_path, target_elf_filename))
 
-                for path in files_to_copy:
+                for (path, target_filename) in files_to_copy:
                     try:
-                        self.copyit(path, ddir, tag, vehicle)
+                        '''copy path into various places, adding metadata'''
+                        bname = os.path.basename(ddir)
+                        tdir = os.path.join(os.path.dirname(os.path.dirname(
+                            os.path.dirname(ddir))), tag, bname)
+                        if tag == "latest":
+                            # we keep a permanent archive of all
+                            # "latest" builds, their path including a
+                            # build timestamp:
+                            if not os.path.exists(ddir):
+                                self.mkpath(ddir)
+                            self.addfwversion(ddir, vehicle)
+                            self.progress("Copying %s to %s" % (path, ddir,))
+                            shutil.copy(path, os.path.join(ddir, target_filename))
+                        # the most recent build of every tag is kept around:
+                        self.progress("Copying %s to %s" % (path, tdir))
+                        if not os.path.exists(tdir):
+                            self.mkpath(tdir)
+                        # must addfwversion even if path already
+                        # exists as we re-use the "beta" directories
+                        self.addfwversion(tdir, vehicle)
+                        shutil.copy(path, os.path.join(tdir, target_filename))
                     except Exception as e:
                         self.print_exception_caught(e)
                         self.progress("Failed to copy %s to %s: %s" % (path, ddir, str(e)))
@@ -612,21 +625,9 @@ is bob we will attempt to checkout bob-AVR'''
         base_url = 'https://firmware.ardupilot.org'
         generator = generate_manifest.ManifestGenerator(self.binaries,
                                                         base_url)
-        content = generator.json()
-        new_json_filepath = os.path.join(self.binaries, "manifest.json.new")
-        self.write_string_to_filepath(content, new_json_filepath)
-        # provide a pre-compressed manifest.  For reference, a 7M manifest
-        # "gzip -9"s to 300k in 1 second, "xz -e"s to 80k in 26 seconds
-        new_json_filepath_gz = os.path.join(self.binaries,
-                                            "manifest.json.gz.new")
-        with gzip.open(new_json_filepath_gz, 'wb') as gf:
-            if running_python3:
-                content = bytes(content, 'ascii')
-            gf.write(content)
-        json_filepath = os.path.join(self.binaries, "manifest.json")
-        json_filepath_gz = os.path.join(self.binaries, "manifest.json.gz")
-        shutil.move(new_json_filepath, json_filepath)
-        shutil.move(new_json_filepath_gz, json_filepath_gz)
+        generator.run()
+
+        generator.write_manifest_json(os.path.join(self.binaries, "manifest.json"))
         self.progress("Manifest generation successful")
 
         self.progress("Generating stable releases")

@@ -1,4 +1,5 @@
 -- this is an example of how to do object oriented programming in Lua
+-- luacheck: only 0
 
 function constrain(v, minv, maxv)
    -- constrain a value between two limits
@@ -57,7 +58,7 @@ local function PIFF(kFF,kP,kI,iMax)
 
    -- log the controller internals
    function self.log(name)
-      logger.write(name,'Targ,Curr,FF,P,I,Total','ffffff',table.unpack(_log_data))
+      logger:write(name,'Targ,Curr,FF,P,I,Total','ffffff',table.unpack(_log_data))
    end
 
    -- return the instance
@@ -110,7 +111,7 @@ function PIFF2.update(self, target, current)
 end
 
 function PIFF2.log(self, name)
-   logger.write(name,'Targ,Curr,FF,P,I,Total','ffffff',table.unpack(self.log_data))
+   logger:write(name,'Targ,Curr,FF,P,I,Total','ffffff',table.unpack(self.log_data))
 end
 
 --[[

@@ -20,7 +20,9 @@
 
 #include <AP_Filesystem/posix_compat.h>
 #include <AP_Scripting/AP_Scripting.h>
-#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_HAL/Semaphores.h>
+#include <AP_Common/MultiHeap.h>
 
 #include "lua/src/lua.hpp"
 
@@ -58,7 +60,7 @@ public:
     CLASS_NO_COPY(lua_scripts);
 
     // return true if initialisation failed
-    bool heap_allocated() const { return _heap != nullptr; }
+    bool heap_allocated() const { return _heap.available(); }
 
     // run scripts, does not return unless an error occured
     void run(void);
@@ -70,6 +72,7 @@ public:
         RUNTIME_MSG = 1U << 1,
         SUPPRESS_SCRIPT_LOG = 1U << 2,
         LOG_RUNTIME = 1U << 3,
+        DISABLE_PRE_ARM = 1U << 4,
     };
 
 private:
@@ -129,16 +132,26 @@ private:
 
     static void *alloc(void *ud, void *ptr, size_t osize, size_t nsize);
 
-    static void *_heap;
+    static MultiHeap _heap;
+
+    // helper for print and log of runtime stats
+    void update_stats(const char *name, uint32_t run_time, int total_mem, int run_mem);
 
     // must be static for use in atpanic
     static void print_error(MAV_SEVERITY severity);
     static char *error_msg_buf;
+    static HAL_Semaphore error_msg_buf_sem;
     static uint8_t print_error_count;
     static uint32_t last_print_ms;
 
 public:
     // must be static for use in atpanic, public to allow bindings to issue none fatal warnings
     static void set_and_print_new_error_message(MAV_SEVERITY severity, const char *fmt, ...) FMT_PRINTF(2,3);
+
+    // return last error message, nullptr if none, must use semaphore as this is updated in the scripting thread
+    static const char* get_last_error_message() { return error_msg_buf; }
+
+    // get semaphore for above error buffer
+    static AP_HAL::Semaphore* get_last_error_semaphore() { return &error_msg_buf_sem; }
 
 };

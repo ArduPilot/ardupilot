@@ -1,5 +1,7 @@
 #pragma once
 
+#define AP_PARAM_VEHICLE_NAME sub
+
 #include <AP_Common/AP_Common.h>
 
 #include <AP_Gripper/AP_Gripper.h>
@@ -320,7 +322,7 @@ public:
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
-#if GRIPPER_ENABLED
+#if AP_GRIPPER_ENABLED
     AP_Gripper gripper;
 #endif
 

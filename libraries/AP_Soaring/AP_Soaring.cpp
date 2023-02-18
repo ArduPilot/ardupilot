@@ -1,10 +1,11 @@
 #include "AP_Soaring.h"
-#include <AP_Logger/AP_Logger.h>
-#include <GCS_MAVLink/GCS.h>
-#include <stdint.h>
-extern const AP_HAL::HAL& hal;
 
 #if HAL_SOARING_ENABLED
+
+#include <AP_Logger/AP_Logger.h>
+#include <AP_TECS/AP_TECS.h>
+#include <GCS_MAVLink/GCS.h>
+#include <stdint.h>
 
 // ArduSoar parameters
 const AP_Param::GroupInfo SoaringController::var_info[] = {
@@ -142,16 +143,16 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // 19 reserved for POLAR_LEARN.
 
     // @Param: THML_ARSPD
-    // @DisplayName: Specific setting for airspeed when thermalling.
-    // @Description: If non-zero this airspeed will be used when thermalling.
-    // @Range: 5 50
+    // @DisplayName: Specific setting for airspeed when soaring in THERMAL mode.
+    // @Description: If non-zero this airspeed will be used when thermalling. A value of 0 will use TRIM_ARSPD_CM.
+    // @Range: 0 50
     // @User: Advanced
     AP_GROUPINFO("THML_ARSPD", 20, SoaringController, soar_thermal_airspeed, 0),
 
     // @Param: CRSE_ARSPD
-    // @DisplayName: Specific setting for airspeed when cruising.
-    // @Description: If non-zero this airspeed will be used when cruising. If set to -1, airspeed will be selected based on speed-to-fly theory.
-    // @Range: 5 50
+    // @DisplayName: Specific setting for airspeed when soaring in AUTO mode.
+    // @Description: If non-zero this airspeed will be used when cruising between thermals in AUTO. If set to -1, airspeed will be selected based on speed-to-fly theory. If set to 0, then TRIM_ARSPD_CM will be used while cruising between thermals.
+    // @Range: -1 50
     // @User: Advanced
     AP_GROUPINFO("CRSE_ARSPD", 21, SoaringController, soar_cruise_airspeed, 0),
 
@@ -165,7 +166,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     AP_GROUPEND
 };
 
-SoaringController::SoaringController(AP_TECS &tecs, const AP_Vehicle::FixedWing &parms) :
+SoaringController::SoaringController(AP_TECS &tecs, const AP_FixedWing &parms) :
     _tecs(tecs),
     _vario(parms,_polarParams),
     _speedToFly(_polarParams),

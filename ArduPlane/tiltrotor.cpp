@@ -16,6 +16,7 @@ const AP_Param::GroupInfo Tiltrotor::var_info[] = {
     // @DisplayName: Tiltrotor mask
     // @Description: This is a bitmask of motors that are tiltable in a tiltrotor (or tiltwing). The mask is in terms of the standard motor order for the frame type.
     // @User: Standard
+    // @Bitmask: 0:Motor 1, 1:Motor 2, 2:Motor 3, 3:Motor 4, 4:Motor 5, 5:Motor 6, 6:Motor 7, 7:Motor 8, 8:Motor 9, 9:Motor 10, 10:Motor 11, 11:Motor 12
     AP_GROUPINFO("MASK", 2, Tiltrotor, tilt_mask, 0),
 
     // @Param: RATE_UP
@@ -123,7 +124,7 @@ void Tiltrotor::setup()
         }
     }
 
-    if (quadplane.motors_var_info == AP_MotorsMatrix::var_info && _is_vectored) {
+    if (_is_vectored) {
         // we will be using vectoring for yaw
         motors->disable_yaw_torque();
     }
@@ -219,7 +220,10 @@ void Tiltrotor::continuous_update(void)
     if (!quadplane.in_vtol_mode() && (!hal.util->get_soft_armed() || !quadplane.assisted_flight)) {
         // we are in pure fixed wing mode. Move the tiltable motors all the way forward and run them as
         // a forward motor
-        slew(get_forward_flight_tilt());
+
+        // option set then if disarmed move to VTOL position to prevent ground strikes, allow tilt forward in manual mode for testing
+        const bool disarmed_tilt_up = !hal.util->get_soft_armed() && (plane.control_mode != &plane.mode_manual) && quadplane.option_is_set(QuadPlane::OPTION::DISARMED_TILT_UP);
+        slew(disarmed_tilt_up ? 0.0 : get_forward_flight_tilt());
 
         max_change = tilt_max_change(false);
 
@@ -239,7 +243,7 @@ void Tiltrotor::continuous_update(void)
         }
         if (!quadplane.motor_test.running) {
             // the motors are all the way forward, start using them for fwd thrust
-            uint8_t mask = is_zero(current_throttle)?0:(uint8_t)tilt_mask.get();
+            const uint16_t mask = is_zero(current_throttle)?0U:tilt_mask.get();
             motors->output_motor_mask(current_throttle, mask, plane.rudder_dt);
         }
         return;
@@ -288,9 +292,9 @@ void Tiltrotor::continuous_update(void)
             // no manual throttle control, set angle to zero
             slew(0);
         } else {
-            // manual control of forward throttle
+            // manual control of forward throttle up to max VTOL angle
             float settilt = .01f * quadplane.forward_throttle_pct();
-            slew(settilt);
+            slew(MIN(settilt * max_angle_deg * (1/90.0), get_forward_flight_tilt())); 
         }
         return;
     }
@@ -343,7 +347,7 @@ void Tiltrotor::binary_update(void)
 
         float new_throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)*0.01f;
         if (current_tilt >= 1) {
-            uint8_t mask = is_zero(new_throttle)?0:(uint8_t)tilt_mask.get();
+            const uint16_t mask = is_zero(new_throttle)?0U:tilt_mask.get();
             // the motors are all the way forward, start using them for fwd thrust
             motors->output_motor_mask(new_throttle, mask, plane.rudder_dt);
         }
@@ -508,7 +512,7 @@ void Tiltrotor::vectoring(void)
     // Wait TILT_DELAY_MS after disarming to allow props to spin down first.
     constexpr uint32_t TILT_DELAY_MS = 3000;
     uint32_t now = AP_HAL::millis();
-    if (!hal.util->get_soft_armed() && (plane.quadplane.options & QuadPlane::OPTION_DISARMED_TILT)) {
+    if (!hal.util->get_soft_armed() && plane.quadplane.option_is_set(QuadPlane::OPTION::DISARMED_TILT)) {
         // this test is subject to wrapping at ~49 days, but the consequences are insignificant
         if ((now - hal.util->get_last_armed_change()) > TILT_DELAY_MS) {
             if (quadplane.in_vtol_mode()) {
@@ -558,7 +562,16 @@ void Tiltrotor::vectoring(void)
     } else {
         const float yaw_out = motors->get_yaw()+motors->get_yaw_ff();
         const float roll_out = motors->get_roll()+motors->get_roll_ff();
-        float yaw_range = zero_out;
+        const float yaw_range = zero_out;
+
+        // Scaling yaw with throttle
+        const float throttle = motors->get_throttle_out();
+        const float scale_min = 0.5;
+        const float scale_max = 2.0;
+        float throttle_scaler = scale_max;
+        if (is_positive(throttle)) {
+            throttle_scaler = constrain_float(motors->get_throttle_hover() / throttle, scale_min, scale_max);
+        }
 
         // now apply vectored thrust for yaw and roll.
         const float tilt_rad = radians(current_tilt*90);
@@ -568,13 +581,26 @@ void Tiltrotor::vectoring(void)
         // we need to use the same factor here to keep the same roll
         // gains when tilted as we have when not tilted
         const float avg_roll_factor = 0.5;
-        const float tilt_offset = constrain_float(yaw_out * cos_tilt + avg_roll_factor * roll_out * sin_tilt, -1, 1);
+        const float tilt_offset = (throttle_scaler * yaw_out * cos_tilt + avg_roll_factor * roll_out * sin_tilt) * yaw_range;
 
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft,  1000 * constrain_float(base_output + tilt_offset * yaw_range,0,1));
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, 1000 * constrain_float(base_output - tilt_offset * yaw_range,0,1));
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRear,  1000 * constrain_float(base_output,0,1));
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRearLeft,  1000 * constrain_float(base_output + tilt_offset * yaw_range,0,1));
-        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRearRight, 1000 * constrain_float(base_output - tilt_offset * yaw_range,0,1));
+        float left_tilt = base_output + tilt_offset;
+        float right_tilt = base_output - tilt_offset;
+
+        // if output saturation of both left and right then set yaw limit flag
+        if (((left_tilt > 1.0) || (left_tilt < 0.0)) &&
+            ((right_tilt > 1.0) || (right_tilt < 0.0))) {
+            motors->limit.yaw = true;
+        }
+
+        // constrain and scale to ouput range
+        left_tilt = constrain_float(left_tilt,0.0,1.0) * 1000.0;
+        right_tilt = constrain_float(right_tilt,0.0,1.0) * 1000.0;
+
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, left_tilt);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, right_tilt);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRear, 1000.0 * constrain_float(base_output,0.0,1.0));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRearLeft, left_tilt);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRearRight, right_tilt);
     }
 }
 

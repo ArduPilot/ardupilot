@@ -26,6 +26,8 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Math/AP_Math.h>
 #include <AC_PID/AC_PID.h>
+#include <AP_Scheduler/AP_Scheduler.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -45,7 +47,7 @@ extern const AP_HAL::HAL& hal;
 
 // constructor
 AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type,
-                         const AP_Vehicle::FixedWing &parms,
+                         const AP_FixedWing &parms,
                          AC_PID &_rpid) :
     current(_gains),
     rpid(_rpid),

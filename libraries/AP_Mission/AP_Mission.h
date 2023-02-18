@@ -12,11 +12,7 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-
-#ifndef HAL_MISSION_ENABLED
-#define HAL_MISSION_ENABLED 1
-#endif
+#include "AP_Mission_config.h"
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Math/AP_Math.h>
@@ -24,6 +20,7 @@
 #include <AP_Common/Location.h>
 #include <AP_Param/AP_Param.h>
 #include <StorageManager/StorageManager.h>
+#include <AP_Common/float16.h>
 
 // definitions
 #define AP_MISSION_EEPROM_VERSION           0x65AE  // version number stored in first four bytes of eeprom.  increment this by one when eeprom format is changed
@@ -54,6 +51,8 @@
 
 #define AP_MISSION_MAX_WP_HISTORY           7       // The maximum number of previous wp commands that will be stored from the active missions history
 #define LAST_WP_PASSED (AP_MISSION_MAX_WP_HISTORY-2)
+
+union PackedContent;
 
 /// @class    AP_Mission
 /// @brief    Object managing Mission
@@ -222,13 +221,26 @@ public:
         float p3;
     };
 
-    // Scripting NAV command (with verify)
-    struct PACKED nav_script_time_Command {
+#if AP_SCRIPTING_ENABLED
+    // Scripting NAV command old version of storage format
+    struct PACKED nav_script_time_Command_tag0 {
         uint8_t command;
         uint8_t timeout_s;
         float arg1;
         float arg2;
     };
+
+    // Scripting NAV command, new version of storage format
+    struct PACKED nav_script_time_Command {
+        uint8_t command;
+        uint8_t timeout_s;
+        Float16_t arg1;
+        Float16_t arg2;
+        // last 2 arguments need to be integers due to MISSION_ITEM_INT encoding
+        int16_t arg3;
+        int16_t arg4;
+    };
+#endif
 
     // Scripting NAV command (with verify)
     struct PACKED nav_attitude_time_Command {
@@ -236,7 +248,7 @@ public:
         int16_t roll_deg;
         int8_t pitch_deg;
         int16_t yaw_deg;
-        float climb_rate;
+        int16_t climb_rate;
     };
 
     // MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW support
@@ -319,8 +331,10 @@ public:
         // do scripting
         scripting_Command scripting;
 
+#if AP_SCRIPTING_ENABLED
         // nav scripting
         nav_script_time_Command nav_script_time;
+#endif
 
         // nav attitude time
         nav_attitude_time_Command nav_attitude_time;
@@ -387,8 +401,7 @@ public:
     }
 
     /* Do not allow copies */
-    AP_Mission(const AP_Mission &other) = delete;
-    AP_Mission &operator=(const AP_Mission&) = delete;
+    CLASS_NO_COPY(AP_Mission);
 
     // mission state enumeration
     enum mission_state {
@@ -619,6 +632,12 @@ public:
     // returns true if the mission contains the requested items
     bool contains_item(MAV_CMD command) const;
 
+    // returns true if the mission has a terrain relative mission item
+    bool contains_terrain_alt_items(void);
+    
+    // returns true if the mission cmd has a location
+    static bool cmd_has_location(const uint16_t command);
+
     // reset the mission history to prevent recalling previous mission histories when restarting missions.
     void reset_wp_history(void);
 
@@ -750,7 +769,7 @@ private:
     uint16_t                _prev_nav_cmd_id;       // id of the previous "navigation" command. (WAYPOINT, LOITER_TO_ALT, ect etc)
     uint16_t                _prev_nav_cmd_index;    // index of the previous "navigation" command.  Rarely used which is why we don't store the whole command
     uint16_t                _prev_nav_cmd_wp_index; // index of the previous "navigation" command that contains a waypoint.  Rarely used which is why we don't store the whole command
-    struct Location         _exit_position;  // the position in the mission that the mission was exited
+    Location         _exit_position;  // the position in the mission that the mission was exited
 
     // jump related variables
     struct jump_tracking_struct {
@@ -761,6 +780,10 @@ private:
     // last time that mission changed
     uint32_t _last_change_time_ms;
 
+    // memoisation of contains-relative:
+    bool _contains_terrain_alt_items;  // true if the mission has terrain-relative items
+    uint32_t _last_contains_relative_calculated_ms;  // will be equal to _last_change_time_ms if _contains_terrain_alt_items is up-to-date
+    bool calculate_contains_terrain_alt_items(void) const;
 
     // multi-thread support. This is static so it can be used from
     // const functions
@@ -777,6 +800,12 @@ private:
     bool start_command_do_sprayer(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_scripting(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Mission_Command& cmd);
+
+    /*
+      handle format conversion of storage format to allow us to update
+      format to take advantage of new packing
+     */
+    void format_conversion(uint8_t tag_byte, const Mission_Command &cmd, PackedContent &packed_content) const;
 };
 
 namespace AP

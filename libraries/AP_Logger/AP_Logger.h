@@ -3,56 +3,7 @@
 /* ************************************************************ */
 #pragma once
 
-#include <AP_Filesystem/AP_Filesystem_Available.h>
-
-#ifndef HAL_LOGGING_ENABLED
-#define HAL_LOGGING_ENABLED 1
-#endif
-
-// set default for HAL_LOGGING_DATAFLASH_ENABLED
-#ifndef HAL_LOGGING_DATAFLASH_ENABLED
-#define HAL_LOGGING_DATAFLASH_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
-#endif
-
-#ifndef HAL_LOGGING_MAVLINK_ENABLED
-    #define HAL_LOGGING_MAVLINK_ENABLED HAL_LOGGING_ENABLED
-#endif
-
-#ifndef HAL_LOGGING_FILESYSTEM_ENABLED
-    #if HAVE_FILESYSTEM_SUPPORT
-        #define HAL_LOGGING_FILESYSTEM_ENABLED HAL_LOGGING_ENABLED
-    #else
-        #define HAL_LOGGING_FILESYSTEM_ENABLED 0
-    #endif
-#endif
-
-#if HAL_LOGGING_DATAFLASH_ENABLED
-    #define HAL_LOGGING_BLOCK_ENABLED 1
-#else
-    #define HAL_LOGGING_BLOCK_ENABLED 0
-#endif
-
-#if HAL_LOGGING_FILESYSTEM_ENABLED
-
-#if !defined (HAL_BOARD_LOG_DIRECTORY)
-#error Need HAL_BOARD_LOG_DIRECTORY for filesystem backend support
-#endif
-
-#if !defined (HAVE_FILESYSTEM_SUPPORT)
-#error Need HAVE_FILESYSTEM_SUPPORT for filesystem backend support
-#endif
-
-#endif
-
-#ifndef HAL_LOGGER_FILE_CONTENTS_ENABLED
-#define HAL_LOGGER_FILE_CONTENTS_ENABLED HAL_LOGGING_FILESYSTEM_ENABLED
-#endif
-
-// range of IDs to allow for new messages during replay. It is very
-// useful to be able to add new messages during a replay, but we need
-// to avoid colliding with existing messages
-#define REPLAY_LOG_NEW_MSG_MAX 230
-#define REPLAY_LOG_NEW_MSG_MIN 220
+#include "AP_Logger_config.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
@@ -60,6 +11,10 @@
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Logger/LogStructure.h>
 #include <AP_Vehicle/ModeReason.h>
+
+#if HAL_LOGGER_FENCE_ENABLED
+    #include <AC_Fence/AC_Fence.h>
+#endif
 
 #include <stdint.h>
 
@@ -237,8 +192,7 @@ public:
     AP_Logger(const AP_Int32 &log_bitmask);
 
     /* Do not allow copies */
-    AP_Logger(const AP_Logger &other) = delete;
-    AP_Logger &operator=(const AP_Logger&) = delete;
+    CLASS_NO_COPY(AP_Logger);
 
     // get singleton instance
     static AP_Logger *get_singleton(void) {
@@ -294,6 +248,9 @@ public:
     void Write_RCOUT(void);
     void Write_RSSI();
     void Write_Rally();
+#if HAL_LOGGER_FENCE_ENABLED
+    void Write_Fence();
+#endif
     void Write_Power(void);
     void Write_Radio(const mavlink_radio_t &packet);
     void Write_Message(const char *message);
@@ -426,7 +383,7 @@ public:
     } *log_write_fmts;
 
     // return (possibly allocating) a log_write_fmt for a name
-    struct log_write_fmt *msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, const bool direct_comp = false);
+    struct log_write_fmt *msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, const bool direct_comp = false, const bool copy_strings = false);
 
     // output a FMT message for each backend if not already done so
     void Safe_Write_Emit_FMT(log_write_fmt *f);
@@ -515,6 +472,14 @@ private:
     bool _writes_enabled:1;
     bool _force_log_disarmed:1;
     bool _force_long_log_persist:1;
+
+    struct log_write_fmt_strings {
+        char name[LS_NAME_SIZE];
+        char format[LS_FORMAT_SIZE];
+        char labels[LS_LABELS_SIZE];
+        char units[LS_UNITS_SIZE];
+        char multipliers[LS_MULTIPLIERS_SIZE];
+    };
 
     // remember formats for replay
     void save_format_Replay(const void *pBuffer);

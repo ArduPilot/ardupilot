@@ -40,10 +40,6 @@ user_parameter *user_parameters;
 bool replay_force_ekf2;
 bool replay_force_ekf3;
 
-#define GSCALAR(v, name, def) { replayvehicle.g.v.vtype, name, Parameters::k_param_ ## v, &replayvehicle.g.v, {def_value : def} }
-#define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &replayvehicle.v, {group_info : class::var_info} }
-#define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, &replayvehicle.v, {group_info : class::var_info} }
-
 const AP_Param::Info ReplayVehicle::var_info[] = {
     GSCALAR(dummy,         "_DUMMY", 0),
 
@@ -90,9 +86,8 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
 
 void ReplayVehicle::load_parameters(void)
 {
-    if (!AP_Param::check_var_info()) {
-        AP_HAL::panic("Bad parameter table");
-    }
+    AP_Param::check_var_info();
+
     StorageManager::erase();
     AP_Param::erase_all();
     // Load all auto-loaded EEPROM variables - also registers thread

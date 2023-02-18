@@ -28,9 +28,9 @@ class AP_Mount_Backend
 {
 public:
     // Constructor
-    AP_Mount_Backend(AP_Mount &frontend, AP_Mount::mount_state& state, uint8_t instance) :
+    AP_Mount_Backend(AP_Mount &frontend, AP_Mount_Params &params, uint8_t instance) :
         _frontend(frontend),
-        _state(state),
+        _params(params),
         _instance(instance)
     {}
 
@@ -46,14 +46,17 @@ public:
     // return true if healthy
     virtual bool healthy() const { return true; }
 
-    // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
+    // returns true if this mount can control its pan (required for multicopters)
     virtual bool has_pan_control() const = 0;
+
+    // get attitude as a quaternion.  returns true on success
+    virtual bool get_attitude_quaternion(Quaternion& att_quat) = 0;
 
     // get mount's mode
     enum MAV_MOUNT_MODE get_mode() const { return _mode; }
 
     // set mount's mode
-    virtual void set_mode(enum MAV_MOUNT_MODE mode) { _mode = mode; }
+    void set_mode(enum MAV_MOUNT_MODE mode) { _mode = mode; }
 
     // set yaw_lock.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
     // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
@@ -73,8 +76,8 @@ public:
     // set_sys_target - sets system that mount should attempt to point towards
     void set_target_sysid(uint8_t sysid);
 
-    // control - control the mount
-    virtual void control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, MAV_MOUNT_MODE mount_mode);
+    // handle do_mount_control command.  Returns MAV_RESULT_ACCEPTED on success
+    MAV_RESULT handle_command_do_mount_control(const mavlink_command_long_t &packet);
     
     // process MOUNT_CONFIGURE messages received from GCS. deprecated.
     void handle_mount_configure(const mavlink_mount_configure_t &msg);
@@ -82,8 +85,8 @@ public:
     // process MOUNT_CONTROL messages received from GCS. deprecated.
     void handle_mount_control(const mavlink_mount_control_t &packet);
 
-    // send_mount_status - called to allow mounts to send their status to GCS via MAVLink
-    virtual void send_mount_status(mavlink_channel_t chan) = 0;
+    // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
+    void send_gimbal_device_attitude_status(mavlink_channel_t chan);
 
     // handle a GIMBAL_REPORT message
     virtual void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg) {}
@@ -100,6 +103,35 @@ public:
     // handle GIMBAL_DEVICE_ATTITUDE_STATUS message
     virtual void handle_gimbal_device_attitude_status(const mavlink_message_t &msg) {}
 
+    // accessors for scripting backends
+    virtual bool get_rate_target(float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame) { return false; }
+    virtual bool get_angle_target(float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame) { return false; }
+    virtual bool get_location_target(Location &target_loc) { return false; }
+    virtual void set_attitude_euler(float roll_deg, float pitch_deg, float yaw_bf_deg) {};
+    virtual bool get_camera_state(uint16_t& pic_count, bool& record_video, int8_t& zoom_step, int8_t& focus_step, bool& auto_focus) { return false; }
+
+    //
+    // camera controls for gimbals that include a camera
+    //
+
+    // take a picture.  returns true on success
+    virtual bool take_picture() { return false; }
+
+    // start or stop video recording.  returns true on success
+    // set start_recording = true to start record, false to stop recording
+    virtual bool record_video(bool start_recording) { return false; }
+
+    // set camera zoom step.  returns true on success
+    // zoom out = -1, hold = 0, zoom in = 1
+    virtual bool set_zoom_step(int8_t zoom_step) { return false; }
+
+    // set focus in, out or hold.  returns true on success
+    // focus in = -1, focus hold = 0, focus out = 1
+    virtual bool set_manual_focus_step(int8_t focus_step) { return false; }
+
+    // auto focus.  returns true on success
+    virtual bool set_auto_focus() { return false; }
+
 protected:
 
     enum class MountTargetType {
@@ -114,6 +146,13 @@ protected:
         float yaw;
         bool yaw_is_ef;
     };
+
+    // returns true if user has configured a valid yaw angle range
+    // allows user to disable yaw even on 3-axis gimbal
+    bool yaw_range_valid() const { return (_params.yaw_angle_min < _params.yaw_angle_max); }
+
+    // returns true if mavlink heartbeat should be suppressed for this gimbal (only used by Solo gimbal)
+    virtual bool suppress_heartbeat() const { return false; }
 
     // get pilot input (in the range -1 to +1) received through RC
     void get_rc_input(float& roll_in, float& pitch_in, float& yaw_in) const;
@@ -153,8 +192,14 @@ protected:
     // assumes a 50hz update rate
     void update_angle_target_from_rate(const MountTarget& rate_rad, MountTarget& angle_rad) const;
 
+    // helper function to provide GIMBAL_DEVICE_FLAGS for use in GIMBAL_DEVICE_ATTITUDE_STATUS message
+    uint16_t get_gimbal_device_flags() const;
+
+    // sent warning to GCS
+    void send_warning_to_GCS(const char* warning_str);
+
     AP_Mount    &_frontend; // reference to the front end which holds parameters
-    AP_Mount::mount_state &_state;    // references to the parameters and state for this backend
+    AP_Mount_Params &_params; // parameters for this backend
     uint8_t     _instance;  // this instance's number
 
     MAV_MOUNT_MODE  _mode;          // current mode (see MAV_MOUNT_MODE enum)
@@ -173,6 +218,8 @@ protected:
     uint8_t _target_sysid;          // sysid to track
     Location _target_sysid_location;// sysid target location
     bool _target_sysid_location_set;// true if _target_sysid has been set
+
+    uint32_t _last_warning_ms;      // system time of last warning sent to GCS
 };
 
 #endif // HAL_MOUNT_ENABLED

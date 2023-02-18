@@ -67,8 +67,7 @@ public:
     AP_FETtecOneWire();
 
     /// Do not allow copies
-    AP_FETtecOneWire(const AP_FETtecOneWire &other) = delete;
-    AP_FETtecOneWire &operator=(const AP_FETtecOneWire&) = delete;
+    CLASS_NO_COPY(AP_FETtecOneWire);
 
     static const struct AP_Param::GroupInfo var_info[];
 

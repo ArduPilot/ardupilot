@@ -1,4 +1,3 @@
-#include "mode.h"
 #include "Rover.h"
 
 bool ModeRTL::_enter()

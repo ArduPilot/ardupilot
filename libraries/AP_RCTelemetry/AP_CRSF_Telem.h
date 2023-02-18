@@ -15,10 +15,11 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_Frsky_Telem/AP_Frsky_config.h>
 #include <AP_OSD/AP_OSD.h>
 
 #ifndef HAL_CRSF_TELEM_ENABLED
-#define HAL_CRSF_TELEM_ENABLED !HAL_MINIMIZE_FEATURES
+#define HAL_CRSF_TELEM_ENABLED AP_FRSKY_SPORT_PASSTHROUGH_ENABLED
 #endif
 
 #ifndef HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
@@ -39,8 +40,7 @@ public:
     ~AP_CRSF_Telem() override;
 
     /* Do not allow copies */
-    AP_CRSF_Telem(const AP_CRSF_Telem &other) = delete;
-    AP_CRSF_Telem &operator=(const AP_CRSF_Telem&) = delete;
+    CLASS_NO_COPY(AP_CRSF_Telem);
 
     // init - perform required initialisation
     virtual bool init() override;
@@ -232,17 +232,13 @@ public:
     };
 
     // get the protocol string
-    const char* get_protocol_string() const {
-        if (_crsf_version.is_elrs) {
-            return "ELRS";
-        } else {
-            const AP_RCProtocol_CRSF* crsf = AP::crsf();
-            if (crsf && crsf->is_crsf_v3_active()) {
-                return "CRSFv3";
-            }
-            return "CRSFv2";
-        }
-    };
+    const char* get_protocol_string() const { return AP::crsf()->get_protocol_string(_crsf_version.protocol); }
+
+    // is the current protocol ELRS?
+    bool is_elrs() const { return _crsf_version.protocol == AP_RCProtocol_CRSF::ProtocolType::PROTOCOL_ELRS; }
+    // is the current protocol Tracer?
+    bool is_tracer() const { return _crsf_version.protocol == AP_RCProtocol_CRSF::ProtocolType::PROTOCOL_TRACER; }
+
     // Process a frame from the CRSF protocol decoder
     static bool process_frame(AP_RCProtocol_CRSF::FrameType frame_type, void* data);
     // process any changed settings and schedule for transmission
@@ -346,9 +342,8 @@ private:
         uint8_t major;
         uint8_t retry_count;
         bool use_rf_mode;
-        bool is_tracer;
+        AP_RCProtocol_CRSF::ProtocolType protocol;
         bool pending = true;
-        bool is_elrs;
     } _crsf_version;
 
     struct {

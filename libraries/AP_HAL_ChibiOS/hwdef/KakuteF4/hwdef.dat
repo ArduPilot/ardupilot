@@ -139,6 +139,8 @@ IMU Invensense SPI:mpu6000 ROTATION_YAW_180
 
 # one baro
 BARO BMP280 I2C:0:0x76
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+define AP_BARO_BMP280_ENABLED 1
 
 # enable logging to dataflash
 define HAL_LOGGING_DATAFLASH_ENABLED 1

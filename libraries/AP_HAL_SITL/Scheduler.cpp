@@ -38,7 +38,6 @@ bool Scheduler::_in_timer_proc = false;
 AP_HAL::MemberProc Scheduler::_io_proc[SITL_SCHEDULER_MAX_TIMER_PROCS] = {nullptr};
 uint8_t Scheduler::_num_io_procs = 0;
 bool Scheduler::_in_io_proc = false;
-bool Scheduler::_should_reboot = false;
 bool Scheduler::_should_exit = false;
 
 bool Scheduler::_in_semaphore_take_wait = false;
@@ -217,13 +216,8 @@ void Scheduler::sitl_end_atomic() {
 
 void Scheduler::reboot(bool hold_in_bootloader)
 {
-    if (AP_BoardConfig::in_config_error()) {
-        // the _should_reboot flag set below is not checked by the
-        // sensor-config-error loop, so force the reboot here:
-        HAL_SITL::actually_reboot();
-        abort();
-    }
-    _should_reboot = true;
+    HAL_SITL::actually_reboot();
+    abort();
 }
 
 void Scheduler::_run_timer_procs()
@@ -314,6 +308,7 @@ void Scheduler::stop_clock(uint64_t time_usec)
 void *Scheduler::thread_create_trampoline(void *ctx)
 {
     struct thread_attr *a = (struct thread_attr *)ctx;
+    a->thread = pthread_self();
     a->f[0]();
     
     WITH_SEMAPHORE(_thread_sem);
@@ -413,4 +408,16 @@ void Scheduler::check_thread_stacks(void)
             }
         }
     }
+}
+
+// get the name of the current thread, or nullptr if not known
+const char *Scheduler::get_current_thread_name(void) const
+{
+    const pthread_t self = pthread_self();
+    for (struct thread_attr *a=threads; a; a=a->next) {
+        if (a->thread == self) {
+            return a->name;
+        }
+    }
+    return nullptr;
 }

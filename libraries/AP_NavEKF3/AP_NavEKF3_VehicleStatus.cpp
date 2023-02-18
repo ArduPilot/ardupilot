@@ -1,8 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_NavEKF3_core.h"
-#include <AP_Vehicle/AP_Vehicle.h>
-#include <GCS_MAVLink/GCS.h>
 #include <AP_DAL/AP_DAL.h>
 
 /* Monitor GPS data to see if quality is good enough to initialise the EKF
@@ -50,7 +48,7 @@ void NavEKF3_core::calcGpsGoodToAlign(void)
     // This check can only be used when the vehicle is stationary
     const auto &gps = dal.gps();
 
-    const struct Location &gpsloc = gps.location(preferred_gps); // Current location
+    const Location &gpsloc = gps.location(preferred_gps); // Current location
     const ftype posFiltTimeConst = 10.0; // time constant used to decay position drift
     // calculate time lapsed since last update and limit to prevent numerical errors
     ftype deltaTime = constrain_ftype(ftype(imuDataDelayed.time_ms - lastPreAlignGpsCheckTime_ms)*0.001f,0.01f,posFiltTimeConst);

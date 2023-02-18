@@ -165,4 +165,4 @@ define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 define STM32_PWM_USE_ADVANCED TRUE
 
 # we are low on flash on this board
-define HAL_MINIMIZE_FEATURES 1
+include ../include/minimize_features.inc

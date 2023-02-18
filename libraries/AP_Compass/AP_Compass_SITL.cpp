@@ -1,6 +1,6 @@
 #include "AP_Compass_SITL.h"
 
-#if AP_SIM_COMPASS_ENABLED
+#if AP_COMPASS_SITL_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -154,4 +154,4 @@ void AP_Compass_SITL::read()
         drain_accumulated_samples(_compass_instance[i], nullptr);
     }
 }
-#endif  // AP_SIM_COMPASS_ENABLED
+#endif  // AP_COMPASS_SITL_ENABLED

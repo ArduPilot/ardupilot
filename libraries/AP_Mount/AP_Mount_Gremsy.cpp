@@ -2,14 +2,17 @@
 
 #if HAL_MOUNT_GREMSY_ENABLED
 
+#include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS.h>
+
 extern const AP_HAL::HAL& hal;
 
 #define AP_MOUNT_GREMSY_RESEND_MS  1000     // resend angle targets to gimbal at least once per second
 #define AP_MOUNT_GREMSY_SEARCH_MS  60000    // search for gimbal for 1 minute after startup
-#define AP_MOUNT_GREMSY_ATTITUDE_INTERVAL_US    10000  // send ATTITUDE and AUTOPILOT_STATE_FOR_GIMBAL_DEVICE at 100hz
+#define AP_MOUNT_GREMSY_ATTITUDE_INTERVAL_US    20000  // send ATTITUDE and AUTOPILOT_STATE_FOR_GIMBAL_DEVICE at 50hz
 
-AP_Mount_Gremsy::AP_Mount_Gremsy(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance) :
-    AP_Mount_Backend(frontend, state, instance)
+AP_Mount_Gremsy::AP_Mount_Gremsy(AP_Mount &frontend, AP_Mount_Params &params, uint8_t instance) :
+    AP_Mount_Backend(frontend, params, instance)
 {}
 
 // update mount position
@@ -32,7 +35,7 @@ void AP_Mount_Gremsy::update()
 
         // move mount to a neutral position, typically pointing forward
         case MAV_MOUNT_MODE_NEUTRAL: {
-            const Vector3f &angle_bf_target = _state._neutral_angles.get();
+            const Vector3f &angle_bf_target = _params.neutral_angles.get();
             send_gimbal_device_set_attitude(ToRad(angle_bf_target.x), ToRad(angle_bf_target.y), ToRad(angle_bf_target.z), false);
             }
             break;
@@ -121,31 +124,17 @@ bool AP_Mount_Gremsy::healthy() const
     return true;
 }
 
-// send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
-void AP_Mount_Gremsy::send_mount_status(mavlink_channel_t chan)
+// get attitude as a quaternion.  returns true on success
+bool AP_Mount_Gremsy::get_attitude_quaternion(Quaternion& att_quat)
 {
-    // check we have space for the message
-    if (!HAVE_PAYLOAD_SPACE(chan, GIMBAL_DEVICE_ATTITUDE_STATUS)) {
-        return;
-    }
-
     // check we have received an updated message
     if (_gimbal_device_attitude_status.time_boot_ms == _sent_gimbal_device_attitude_status_ms) {
-        return;
+        return false;
     }
     _sent_gimbal_device_attitude_status_ms = _gimbal_device_attitude_status.time_boot_ms;
 
-    // forward on message to GCS
-    mavlink_msg_gimbal_device_attitude_status_send(chan,
-                                                   0,    // target system
-                                                   0,    // target component
-                                                   AP_HAL::millis(),    // autopilot system time
-                                                   _gimbal_device_attitude_status.flags,
-                                                   _gimbal_device_attitude_status.q,
-                                                   _gimbal_device_attitude_status.angular_velocity_x,
-                                                   _gimbal_device_attitude_status.angular_velocity_y,
-                                                   _gimbal_device_attitude_status.angular_velocity_z,
-                                                   _gimbal_device_attitude_status.failure_flags);
+    att_quat = _gimbal_device_attitude_status.q;
+    return true;
 }
 
 // search for gimbal in GCS_MAVLink routing table
@@ -164,16 +153,12 @@ void AP_Mount_Gremsy::find_gimbal()
 
     // search for a mavlink enabled gimbal
     if (!_found_gimbal) {
-        mavlink_channel_t chan;
-        uint8_t sysid, compid;
-        if (GCS_MAVLINK::find_by_mavtype(MAV_TYPE_GIMBAL, sysid, compid, chan)) {
-            if (((_instance == 0) && (compid == MAV_COMP_ID_GIMBAL)) ||
-                ((_instance == 1) && (compid == MAV_COMP_ID_GIMBAL2))) {
-                _found_gimbal = true;
-                _sysid = sysid;
-                _compid = compid;
-                _chan = chan;
-            }
+        // we expect that instance 0 has compid = MAV_COMP_ID_GIMBAL, instance 1 has compid = MAV_COMP_ID_GIMBAL2, etc
+        uint8_t compid = (_instance == 0) ? MAV_COMP_ID_GIMBAL : MAV_COMP_ID_GIMBAL2 + (_instance - 1);
+        if (GCS_MAVLINK::find_by_mavtype_and_compid(MAV_TYPE_GIMBAL, compid, _sysid, _chan)) {
+            _compid = compid;
+            _found_gimbal = true;
+            return;
         } else {
             // have not yet found a gimbal so return
             return;
@@ -207,12 +192,12 @@ void AP_Mount_Gremsy::handle_gimbal_device_information(const mavlink_message_t &
     mavlink_msg_gimbal_device_information_decode(&msg, &info);
 
     // set parameter defaults from gimbal information
-    _state._roll_angle_min.set_default(degrees(info.roll_min) * 100);
-    _state._roll_angle_max.set_default(degrees(info.roll_max) * 100);
-    _state._tilt_angle_min.set_default(degrees(info.pitch_min) * 100);
-    _state._tilt_angle_max.set_default(degrees(info.pitch_max) * 100);
-    _state._pan_angle_min.set_default(degrees(info.yaw_min) * 100);
-    _state._pan_angle_max.set_default(degrees(info.yaw_max) * 100);
+    _params.roll_angle_min.set_default(degrees(info.roll_min));
+    _params.roll_angle_max.set_default(degrees(info.roll_max));
+    _params.pitch_angle_min.set_default(degrees(info.pitch_min));
+    _params.pitch_angle_max.set_default(degrees(info.pitch_max));
+    _params.yaw_angle_min.set_default(degrees(info.yaw_min));
+    _params.yaw_angle_max.set_default(degrees(info.yaw_max));
 
     const uint8_t fw_ver_major = info.firmware_version & 0x000000FF;
     const uint8_t fw_ver_minor = (info.firmware_version & 0x0000FF00) >> 8;

@@ -47,8 +47,7 @@ public:
     AP_BoardConfig();
 
     /* Do not allow copies */
-    AP_BoardConfig(const AP_BoardConfig &other) = delete;
-    AP_BoardConfig &operator=(const AP_BoardConfig&) = delete;
+    CLASS_NO_COPY(AP_BoardConfig);
 
     // singleton support
     static AP_BoardConfig *get_singleton(void) {
@@ -142,11 +141,7 @@ public:
 
     // return the value of BRD_SAFETY_MASK
     uint16_t get_safety_mask(void) const {
-#if AP_FEATURE_BOARD_DETECT || defined(AP_FEATURE_BRD_PWM_COUNT_PARAM)
         return uint32_t(state.ignore_safety_channels.get());
-#else
-        return 0;
-#endif
     }
 
 #if HAL_HAVE_BOARD_VOLTAGE

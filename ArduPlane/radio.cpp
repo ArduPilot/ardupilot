@@ -75,7 +75,7 @@ void Plane::init_rc_in()
 
 /*
   initialise RC output for main channels. This is done early to allow
-  for BRD_SAFETYENABLE=0 and early servo control
+  for BRD_SAFETY_DEFLT=0 and early servo control
  */
 void Plane::init_rc_out_main()
 {
@@ -118,9 +118,14 @@ void Plane::init_rc_out_aux()
 */
 void Plane::rudder_arm_disarm_check()
 {
+    const int16_t rudder_in = channel_rudder->get_control_in();
+    if (rudder_in == 0) {
+        // remember if we've seen neutral rudder, used for VTOL auto-takeoff
+        seen_neutral_rudder = true;
+    }
 	if (!arming.is_armed()) {
 		// when not armed, full right rudder starts arming counter
-		if (channel_rudder->get_control_in() > 4000) {
+        if (rudder_in > 4000) {
 			uint32_t now = millis();
 
 			if (rudder_arm_timer == 0 ||
@@ -132,15 +137,16 @@ void Plane::rudder_arm_disarm_check()
 			} else {
 				//time to arm!
 				arming.arm(AP_Arming::Method::RUDDER);
-				rudder_arm_timer = 0;
-			}
+                rudder_arm_timer = 0;
+                seen_neutral_rudder = false;
+            }
 		} else {
 			// not at full right rudder
 			rudder_arm_timer = 0;
 		}
 	} else {
 		// full left rudder starts disarming counter
-		if (channel_rudder->get_control_in() < -4000) {
+        if (rudder_in < -4000) {
 			uint32_t now = millis();
 
 			if (rudder_arm_timer == 0 ||

@@ -47,4 +47,8 @@ HAL_Semaphore &AP_EFI_Backend::get_sem(void)
     return frontend.sem;
 }
 
+float AP_EFI_Backend::get_ecu_fuel_density(void) const
+{
+    return frontend.ecu_fuel_density;
+}
 #endif // HAL_EFI_ENABLED

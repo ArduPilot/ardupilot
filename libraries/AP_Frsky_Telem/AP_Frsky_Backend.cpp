@@ -1,5 +1,7 @@
 #include "AP_Frsky_Backend.h"
 
+#if AP_FRSKY_TELEM_ENABLED
+
 #include <AP_Baro/AP_Baro.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_RPM/AP_RPM.h>
@@ -85,8 +87,8 @@ void AP_Frsky_Backend::calc_nav_alt(void)
         }
     }
 
-    _SPort_data.alt_nav_meters = (int16_t)current_height;
-    _SPort_data.alt_nav_cm = (current_height - _SPort_data.alt_nav_meters) * 100;
+    _SPort_data.alt_nav_meters = float_to_uint16(current_height);
+    _SPort_data.alt_nav_cm = float_to_uint16((current_height - _SPort_data.alt_nav_meters) * 100);
 }
 
 /*
@@ -121,12 +123,12 @@ void AP_Frsky_Backend::calc_gps_position(void)
         _SPort_data.lon_ew = (loc.lng < 0) ? 'W' : 'E';
 
         float alt = loc.alt * 0.01f;
-        _SPort_data.alt_gps_meters = (int16_t)alt;
-        _SPort_data.alt_gps_cm = (alt - _SPort_data.alt_gps_meters) * 100;
+        _SPort_data.alt_gps_meters = float_to_uint16(alt);
+        _SPort_data.alt_gps_cm = float_to_uint16((alt - _SPort_data.alt_gps_meters) * 100);
 
         const float speed = AP::ahrs().groundspeed();
-        _SPort_data.speed_in_meter = speed;
-        _SPort_data.speed_in_centimeter = (speed - _SPort_data.speed_in_meter) * 100;
+        _SPort_data.speed_in_meter = float_to_int16(speed);
+        _SPort_data.speed_in_centimeter = float_to_uint16((speed - _SPort_data.speed_in_meter) * 100);
     } else {
         _SPort_data.latdddmm = 0;
         _SPort_data.latmmmm = 0;
@@ -148,6 +150,7 @@ void AP_Frsky_Backend::calc_gps_position(void)
  */
 bool AP_Frsky_Backend::calc_rpm(const uint8_t instance, int32_t &value) const
 {
+#if AP_RPM_ENABLED
     const AP_RPM* rpm = AP::rpm();
     if (rpm == nullptr) {
         return false;
@@ -159,4 +162,9 @@ bool AP_Frsky_Backend::calc_rpm(const uint8_t instance, int32_t &value) const
     }
     value = static_cast<int32_t>(roundf(rpm_value));
     return true;
+#else
+    return false;
+#endif
 }
+
+#endif  // AP_FRSKY_TELEM_ENABLED

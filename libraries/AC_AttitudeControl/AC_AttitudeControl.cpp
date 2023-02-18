@@ -1,5 +1,7 @@
 #include "AC_AttitudeControl.h"
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_Scheduler/AP_Scheduler.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -151,6 +153,8 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     AP_GROUPEND
 };
 
+constexpr Vector3f AC_AttitudeControl::VECTORF_111;
+
 // get the slew yaw rate limit in deg/s
 float AC_AttitudeControl::get_slew_yaw_max_degs() const
 {
@@ -195,9 +199,9 @@ void AC_AttitudeControl::reset_rate_controller_I_terms()
 // reset rate controller I terms smoothly to zero in 0.5 seconds
 void AC_AttitudeControl::reset_rate_controller_I_terms_smoothly()
 {
-    get_rate_roll_pid().relax_integrator(0.0, AC_ATTITUDE_RATE_RELAX_TC);
-    get_rate_pitch_pid().relax_integrator(0.0, AC_ATTITUDE_RATE_RELAX_TC);
-    get_rate_yaw_pid().relax_integrator(0.0, AC_ATTITUDE_RATE_RELAX_TC);
+    get_rate_roll_pid().relax_integrator(0.0, _dt, AC_ATTITUDE_RATE_RELAX_TC);
+    get_rate_pitch_pid().relax_integrator(0.0, _dt, AC_ATTITUDE_RATE_RELAX_TC);
+    get_rate_yaw_pid().relax_integrator(0.0, _dt, AC_ATTITUDE_RATE_RELAX_TC);
 }
 
 // The attitude controller works around the concept of the desired attitude, target attitude
@@ -223,7 +227,7 @@ void AC_AttitudeControl::reset_rate_controller_I_terms_smoothly()
 //    trust vector drops below 2*AC_ATTITUDE_THRUST_ERROR_ANGLE. At this point the heading is also corrected.
 
 // Command a Quaternion attitude with feedforward and smoothing
-// attitude_desired_quat: is updated on each time_step (_dt) by the integral of the angular velocity
+// attitude_desired_quat: is updated on each time_step by the integral of the angular velocity
 void AC_AttitudeControl::input_quaternion(Quaternion& attitude_desired_quat, Vector3f ang_vel_target)
 {
     Quaternion attitude_error_quat = _attitude_target.inverse() * attitude_desired_quat;
@@ -653,6 +657,22 @@ void AC_AttitudeControl::input_thrust_vector_heading(const Vector3f& thrust_vect
     attitude_controller_run_quat();
 }
 
+// Command a thrust vector and heading rate
+void AC_AttitudeControl::input_thrust_vector_heading(const Vector3f& thrust_vector, HeadingCommand heading)
+{
+    switch (heading.heading_mode) {
+    case HeadingMode::Rate_Only:
+        input_thrust_vector_rate_heading(thrust_vector, heading.yaw_rate_cds);
+        break;
+    case HeadingMode::Angle_Only:
+        input_thrust_vector_heading(thrust_vector, heading.yaw_angle_cd, 0.0);
+        break;
+    case HeadingMode::Angle_And_Rate:
+        input_thrust_vector_heading(thrust_vector, heading.yaw_angle_cd, heading.yaw_rate_cds);
+        break;
+    }
+}
+
 Quaternion AC_AttitudeControl::attitude_from_thrust_vector(Vector3f thrust_vector, float heading_angle) const
 {
     const Vector3f thrust_vector_up{0.0f, 0.0f, -1.0f};
@@ -726,7 +746,6 @@ void AC_AttitudeControl::attitude_controller_run_quat()
         Quaternion attitude_target_update;
         attitude_target_update.from_axis_angle(Vector3f{_ang_vel_target.x * _dt, _ang_vel_target.y * _dt, _ang_vel_target.z * _dt});
         _attitude_target = _attitude_target * attitude_target_update;
-        _attitude_target.normalize();
     }
 
     // ensure Quaternion stay normalised
@@ -849,8 +868,10 @@ void AC_AttitudeControl::input_shaping_rate_predictor(const Vector2f &error_angl
         target_ang_vel.x = input_shaping_angle(wrap_PI(error_angle.x), _input_tc, get_accel_roll_max_radss(), target_ang_vel.x, dt);
         target_ang_vel.y = input_shaping_angle(wrap_PI(error_angle.y), _input_tc, get_accel_pitch_max_radss(), target_ang_vel.y, dt);
     } else {
-        target_ang_vel.x = _p_angle_roll.get_p(wrap_PI(error_angle.x));
-        target_ang_vel.y = _p_angle_pitch.get_p(wrap_PI(error_angle.y));
+        const float angleP_roll = _p_angle_roll.kP() * _angle_P_scale.x;
+        const float angleP_pitch = _p_angle_pitch.kP() * _angle_P_scale.y;
+        target_ang_vel.x = angleP_roll * wrap_PI(error_angle.x);
+        target_ang_vel.y = angleP_pitch * wrap_PI(error_angle.y);
     }
     // Limit the angular velocity correction
     Vector3f ang_vel(target_ang_vel.x, target_ang_vel.y, 0.0f);
@@ -987,26 +1008,35 @@ bool AC_AttitudeControl::ang_vel_to_euler_rate(const Vector3f& euler_rad, const 
 Vector3f AC_AttitudeControl::update_ang_vel_target_from_att_error(const Vector3f &attitude_error_rot_vec_rad)
 {
     Vector3f rate_target_ang_vel;
+
     // Compute the roll angular velocity demand from the roll angle error
+    const float angleP_roll = _p_angle_roll.kP() * _angle_P_scale.x;
     if (_use_sqrt_controller && !is_zero(get_accel_roll_max_radss())) {
-        rate_target_ang_vel.x = sqrt_controller(attitude_error_rot_vec_rad.x, _p_angle_roll.kP(), constrain_float(get_accel_roll_max_radss() / 2.0f, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS), _dt);
+        rate_target_ang_vel.x = sqrt_controller(attitude_error_rot_vec_rad.x, angleP_roll, constrain_float(get_accel_roll_max_radss() / 2.0f, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS), _dt);
     } else {
-        rate_target_ang_vel.x = _p_angle_roll.kP() * attitude_error_rot_vec_rad.x;
+        rate_target_ang_vel.x = angleP_roll * attitude_error_rot_vec_rad.x;
     }
 
     // Compute the pitch angular velocity demand from the pitch angle error
+    const float angleP_pitch = _p_angle_pitch.kP() * _angle_P_scale.y;
     if (_use_sqrt_controller && !is_zero(get_accel_pitch_max_radss())) {
-        rate_target_ang_vel.y = sqrt_controller(attitude_error_rot_vec_rad.y, _p_angle_pitch.kP(), constrain_float(get_accel_pitch_max_radss() / 2.0f, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS), _dt);
+        rate_target_ang_vel.y = sqrt_controller(attitude_error_rot_vec_rad.y, angleP_pitch, constrain_float(get_accel_pitch_max_radss() / 2.0f, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS), _dt);
     } else {
-        rate_target_ang_vel.y = _p_angle_pitch.kP() * attitude_error_rot_vec_rad.y;
+        rate_target_ang_vel.y = angleP_pitch * attitude_error_rot_vec_rad.y;
     }
 
     // Compute the yaw angular velocity demand from the yaw angle error
+    const float angleP_yaw = _p_angle_yaw.kP() * _angle_P_scale.z;
     if (_use_sqrt_controller && !is_zero(get_accel_yaw_max_radss())) {
-        rate_target_ang_vel.z = sqrt_controller(attitude_error_rot_vec_rad.z, _p_angle_yaw.kP(), constrain_float(get_accel_yaw_max_radss() / 2.0f, AC_ATTITUDE_ACCEL_Y_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS), _dt);
+        rate_target_ang_vel.z = sqrt_controller(attitude_error_rot_vec_rad.z, angleP_yaw, constrain_float(get_accel_yaw_max_radss() / 2.0f, AC_ATTITUDE_ACCEL_Y_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS), _dt);
     } else {
-        rate_target_ang_vel.z = _p_angle_yaw.kP() * attitude_error_rot_vec_rad.z;
+        rate_target_ang_vel.z = angleP_yaw * attitude_error_rot_vec_rad.z;
     }
+
+    // reset angle P scaling, saving used value for logging
+    _angle_P_scale_used = _angle_P_scale;
+    _angle_P_scale = VECTORF_111;
+
     return rate_target_ang_vel;
 }
 
@@ -1041,7 +1071,8 @@ float AC_AttitudeControl::get_althold_lean_angle_max_cd() const
 // Return roll rate step size in centidegrees/s that results in maximum output after 4 time steps
 float AC_AttitudeControl::max_rate_step_bf_roll()
 {
-    float alpha = MIN(get_rate_roll_pid().get_filt_E_alpha(), get_rate_roll_pid().get_filt_D_alpha());
+    float dt_average = AP::scheduler().get_filtered_loop_time();
+    float alpha = MIN(get_rate_roll_pid().get_filt_E_alpha(dt_average), get_rate_roll_pid().get_filt_D_alpha(dt_average));
     float alpha_remaining = 1 - alpha;
     // todo: When a thrust_max is available we should replace 0.5f with 0.5f * _motors.thrust_max
     float throttle_hover = constrain_float(_motors.get_throttle_hover(), 0.1f, 0.5f);
@@ -1055,7 +1086,8 @@ float AC_AttitudeControl::max_rate_step_bf_roll()
 // Return pitch rate step size in centidegrees/s that results in maximum output after 4 time steps
 float AC_AttitudeControl::max_rate_step_bf_pitch()
 {
-    float alpha = MIN(get_rate_pitch_pid().get_filt_E_alpha(), get_rate_pitch_pid().get_filt_D_alpha());
+    float dt_average = AP::scheduler().get_filtered_loop_time();
+    float alpha = MIN(get_rate_pitch_pid().get_filt_E_alpha(dt_average), get_rate_pitch_pid().get_filt_D_alpha(dt_average));
     float alpha_remaining = 1 - alpha;
     // todo: When a thrust_max is available we should replace 0.5f with 0.5f * _motors.thrust_max
     float throttle_hover = constrain_float(_motors.get_throttle_hover(), 0.1f, 0.5f);
@@ -1069,7 +1101,8 @@ float AC_AttitudeControl::max_rate_step_bf_pitch()
 // Return yaw rate step size in centidegrees/s that results in maximum output after 4 time steps
 float AC_AttitudeControl::max_rate_step_bf_yaw()
 {
-    float alpha = MIN(get_rate_yaw_pid().get_filt_E_alpha(), get_rate_yaw_pid().get_filt_D_alpha());
+    float dt_average = AP::scheduler().get_filtered_loop_time();
+    float alpha = MIN(get_rate_yaw_pid().get_filt_E_alpha(dt_average), get_rate_yaw_pid().get_filt_D_alpha(dt_average));
     float alpha_remaining = 1 - alpha;
     // todo: When a thrust_max is available we should replace 0.5f with 0.5f * _motors.thrust_max
     float throttle_hover = constrain_float(_motors.get_throttle_hover(), 0.1f, 0.5f);

@@ -36,9 +36,10 @@ bool AP_Declination::get_mag_field_ef(float latitude_deg, float longitude_deg, f
 {
     bool valid_input_data = true;
 
-    /* round down to nearest sampling resolution */
-    int32_t min_lat = static_cast<int32_t>(static_cast<int32_t>(floorf(latitude_deg / SAMPLING_RES)) * SAMPLING_RES);
-    int32_t min_lon = static_cast<int32_t>(static_cast<int32_t>(floorf(longitude_deg / SAMPLING_RES)) * SAMPLING_RES);
+    /* round down to nearest sampling resolution. On some platforms (e.g. clang on macOS),
+        the behaviour of implicit casts from int32 to float can be undefined thus making it explicit here. */
+    float min_lat = float(static_cast<int32_t>(static_cast<int32_t>(floorf(latitude_deg / SAMPLING_RES)) * SAMPLING_RES));
+    float min_lon = float(static_cast<int32_t>(static_cast<int32_t>(floorf(longitude_deg / SAMPLING_RES)) * SAMPLING_RES));
 
     /* for the rare case of hitting the bounds exactly
      * the rounding logic wouldn't fit, so enforce it.
@@ -46,22 +47,22 @@ bool AP_Declination::get_mag_field_ef(float latitude_deg, float longitude_deg, f
 
     /* limit to table bounds - required for maxima even when table spans full globe range */
     if (latitude_deg <= SAMPLING_MIN_LAT) {
-        min_lat = static_cast<int32_t>(SAMPLING_MIN_LAT);
+        min_lat = float(static_cast<int32_t>(SAMPLING_MIN_LAT));
         valid_input_data = false;
     }
 
     if (latitude_deg >= SAMPLING_MAX_LAT) {
-        min_lat = static_cast<int32_t>(static_cast<int32_t>(latitude_deg / SAMPLING_RES) * SAMPLING_RES - SAMPLING_RES);
+        min_lat = float(static_cast<int32_t>(static_cast<int32_t>(latitude_deg / SAMPLING_RES) * SAMPLING_RES - SAMPLING_RES));
         valid_input_data = false;
     }
 
     if (longitude_deg <= SAMPLING_MIN_LON) {
-        min_lon = static_cast<int32_t>(SAMPLING_MIN_LON);
+        min_lon = float(static_cast<int32_t>(SAMPLING_MIN_LON));
         valid_input_data = false;
     }
 
     if (longitude_deg >= SAMPLING_MAX_LON) {
-        min_lon = static_cast<int32_t>(static_cast<int32_t>(longitude_deg / SAMPLING_RES) * SAMPLING_RES - SAMPLING_RES);
+        min_lon = float(static_cast<int32_t>(static_cast<int32_t>(longitude_deg / SAMPLING_RES) * SAMPLING_RES - SAMPLING_RES));
         valid_input_data = false;
     }
 

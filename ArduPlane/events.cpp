@@ -4,7 +4,7 @@
 // for use in failsafe code.
 bool Plane::failsafe_in_landing_sequence() const
 {
-    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
+    if (flight_stage == AP_FixedWing::FlightStage::LAND) {
         return true;
     }
 #if HAL_QUADPLANE_ENABLED
@@ -24,7 +24,6 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
     failsafe.state = fstype;
     failsafe.short_timer_ms = millis();
     failsafe.saved_mode_number = control_mode->mode_number();
-    gcs().send_text(MAV_SEVERITY_WARNING, "RC Short Failsafe On");
     switch (control_mode->mode_number())
     {
     case Mode::Number::MANUAL:
@@ -46,7 +45,6 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
         } else {
             set_mode(mode_circle, reason); // circle if action = 0 or 1 
         }
-        gcs().send_text(MAV_SEVERITY_INFO, "Flight mode = %s", control_mode->name());
         break;
 
 #if HAL_QUADPLANE_ENABLED
@@ -57,14 +55,13 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
     case Mode::Number::QAUTOTUNE:
 #endif
     case Mode::Number::QACRO:
-        if (quadplane.options & QuadPlane::OPTION_FS_RTL) {
+        if (quadplane.option_is_set(QuadPlane::OPTION::FS_RTL)) {
             set_mode(mode_rtl, reason);
-        } else if (quadplane.options & QuadPlane::OPTION_FS_QRTL) {
+        } else if (quadplane.option_is_set(QuadPlane::OPTION::FS_QRTL)) {
             set_mode(mode_qrtl, reason);
         } else {
             set_mode(mode_qland, reason);
         }
-        gcs().send_text(MAV_SEVERITY_INFO, "Flight mode = %s", control_mode->name());
         break;
 #endif // HAL_QUADPLANE_ENABLED
 
@@ -88,7 +85,6 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
             } else {
                 set_mode(mode_circle, reason);
             }
-            gcs().send_text(MAV_SEVERITY_INFO, "Flight mode = %s", control_mode->name());
         }
          break;
     case Mode::Number::CIRCLE:  // these modes never take any short failsafe action and continue
@@ -102,17 +98,16 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
     case Mode::Number::INITIALISING:
         break;
     }
+    if (failsafe.saved_mode_number != control_mode->mode_number()) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "RC Short Failsafe: switched to %s", control_mode->name());
+    } else {
+        gcs().send_text(MAV_SEVERITY_WARNING, "RC Short Failsafe On");
+    }
 }
 
 void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason)
 {
     // This is how to handle a long loss of control signal failsafe.
-    if (reason == ModeReason:: GCS_FAILSAFE) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "GCS Failsafe On");
-    }
-    else {
-        gcs().send_text(MAV_SEVERITY_WARNING, "RC Long Failsafe On");
-    }
     //  If the GCS is locked up we allow control to revert to RC
     RC_Channels::clear_overrides();
     failsafe.state = fstype;
@@ -152,9 +147,9 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
 #if QAUTOTUNE_ENABLED
     case Mode::Number::QAUTOTUNE:
 #endif
-        if (quadplane.options & QuadPlane::OPTION_FS_RTL) {
+        if (quadplane.option_is_set(QuadPlane::OPTION::FS_RTL)) {
             set_mode(mode_rtl, reason);
-        } else if (quadplane.options & QuadPlane::OPTION_FS_QRTL) {
+        } else if (quadplane.option_is_set(QuadPlane::OPTION::FS_QRTL)) {
             set_mode(mode_qrtl, reason);
         } else {
             set_mode(mode_qland, reason);
@@ -192,7 +187,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
     case Mode::Number::INITIALISING:
         break;
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "Flight mode = %s", control_mode->name());
+    gcs().send_text(MAV_SEVERITY_WARNING, "%s Failsafe On: %s", (reason == ModeReason:: GCS_FAILSAFE) ? "GCS" : "RC Long", control_mode->name());
 }
 
 void Plane::failsafe_short_off_event(ModeReason reason)
@@ -238,7 +233,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             FALLTHROUGH;
 #endif // HAL_QUADPLANE_ENABLED
         case Failsafe_Action_Land: {
-            bool already_landing = flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND;
+            bool already_landing = flight_stage == AP_FixedWing::FlightStage::LAND;
 #if HAL_QUADPLANE_ENABLED
             if (control_mode == &mode_qland || control_mode == &mode_loiter_qland) {
                 already_landing = true;
@@ -259,7 +254,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             FALLTHROUGH;
         }
         case Failsafe_Action_RTL: {
-            bool already_landing = flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND;
+            bool already_landing = flight_stage == AP_FixedWing::FlightStage::LAND;
 #if HAL_QUADPLANE_ENABLED
             if (control_mode == &mode_qland || control_mode == &mode_loiter_qland ||
                 quadplane.in_vtol_land_sequence()) {
@@ -280,7 +275,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
         }
 
         case Failsafe_Action_Terminate:
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ADVANCEDFAILSAFE_ENABLED
             char battery_type_str[17];
             snprintf(battery_type_str, 17, "%s battery", type_str);
             afs.gcs_terminate(true, battery_type_str);

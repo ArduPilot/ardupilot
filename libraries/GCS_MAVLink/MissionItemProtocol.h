@@ -61,6 +61,10 @@ public:
 
     bool receiving; // currently sending requests and expecting items
 
+    // a method for GCS_MAVLINK to send warnings about received
+    // MISSION_ITEM messages (we should be getting MISSION_ITEM_INT)
+    void send_mission_item_warning();
+
 protected:
 
     GCS_MAVLINK *link; // link currently receiving waypoints on
@@ -85,6 +89,13 @@ private:
     uint32_t        timelast_receive_ms;
     uint32_t        timelast_request_ms;
     const uint16_t  upload_timeout_ms = 8000;
+
+    // if a transfer is made with MISSION_REQUEST rather than
+    // MISSION_REQUEST we issue a warning - once per transfer.
+    bool mission_request_warning_sent = false;
+    // if a GCS supplied a MISSION_ITEM instead of a MISSION_ITEM_INT
+    // then we issue a warning - once per transfer.
+    bool mission_item_warning_sent = false;
 
     // support for GCS getting waypoints etc from us:
     virtual MAV_MISSION_RESULT get_item(const GCS_MAVLINK &_link,

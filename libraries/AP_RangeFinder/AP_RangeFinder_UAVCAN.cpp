@@ -5,6 +5,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
+#include <GCS_MAVLink/GCS.h>
 
 #include <uavcan/equipment/range_sensor/Measurement.hpp>
 

@@ -32,9 +32,12 @@ extern const AP_HAL::HAL& hal;
 #include <AC_Sprayer/AC_Sprayer.h>
 #include <AP_Camera/AP_Camera.h>
 #include <AP_Camera/AP_RunCam.h>
+#include <AP_Compass/AP_Compass.h>
 #include <AP_Generator/AP_Generator.h>
 #include <AP_Gripper/AP_Gripper.h>
+#include <AP_GyroFFT/AP_GyroFFT.h>
 #include <AP_ADSB/AP_ADSB.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_LandingGear/AP_LandingGear.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
@@ -46,10 +49,10 @@ extern const AP_HAL::HAL& hal;
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Mount/AP_Mount.h>
+#include <AP_Notify/AP_Notify.h>
 #include <AP_VideoTX/AP_VideoTX.h>
 #include <AP_Torqeedo/AP_Torqeedo.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
-
 #define SWITCH_DEBOUNCE_TIME_MS  200
 
 const AP_Param::GroupInfo RC_Channel::var_info[] = {
@@ -98,10 +101,10 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Param: OPTION
     // @DisplayName: RC input option
     // @Description: Function assigned to this RC channel
-    // @Values{Copter}: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount, 28:Relay On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 37:Throw, 38:ADSB Avoidance En, 39:PrecLoiter, 40:Proximity Avoidance, 41:ArmDisarm (4.1 and lower), 42:SmartRTL, 43:InvertedFlight, 46:RC Override Enable, 47:User Function 1, 48:User Function 2, 49:User Function 3, 52:Acro, 55:Guided, 56:Loiter, 57:Follow, 58:Clear Waypoints, 60:ZigZag, 61:ZigZag SaveWP, 62:Compass Learn, 65:GPS Disable, 66:Relay5 On/Off, 67:Relay6 On/Off, 68:Stabilize, 69:PosHold, 70:AltHold, 71:FlowHold, 72:Circle, 73:Drift, 75:SurfaceTrackingUpDown, 76:Standby Mode, 78:RunCam Control, 79:RunCam OSD Control, 80:VisOdom Align, 81:Disarm, 83:ZigZag Auto, 84:Air Mode, 85:Generator, 90:EKF Pos Source, 94:VTX Power, 99:AUTO RTL, 100:KillIMU1, 101:KillIMU2, 102:Camera Mode Toggle, 105:GPS Disable Yaw, 151:Turtle, 152:simple heading reset, 153:ArmDisarm (4.2 and higher), 154:ArmDisarm with AirMode  (4.2 and higher), 158:Optflow Calibration, 159:Force Flying, 161:Turbine Start(heli), 162:FFT Tune, 163:Mount Lock, 164:Pause Stream Logging, 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8
-    // @Values{Rover}: 0:Do Nothing, 4:RTL, 5:Save Trim (4.1 and lower), 7:Save WP, 9:Camera Trigger, 11:Fence, 16:Auto, 19:Gripper, 24:Auto Mission Reset, 27:Retract Mount, 28:Relay On/Off, 30:Lost Rover Sound, 31:Motor Emergency Stop, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 40:Proximity Avoidance, 41:ArmDisarm (4.1 and lower), 42:SmartRTL, 46:RC Override Enable, 50:LearnCruise, 51:Manual, 52:Acro, 53:Steering, 54:Hold, 55:Guided, 56:Loiter, 57:Follow, 58:Clear Waypoints, 59:Simple Mode, 62:Compass Learn, 63:Sailboat Tack, 65:GPS Disable, 66:Relay5 On/Off, 67:Relay6 On/Off, 74:Sailboat motoring 3pos, 78:RunCam Control, 79:RunCam OSD Control, 80:Viso Align, 81:Disarm, 90:EKF Pos Source, 94:VTX Power, 97:Windvane home heading direction offset, 100:KillIMU1, 101:KillIMU2, 102:Camera Mode Toggle, 105:GPS Disable Yaw, 106:Disable Airspeed Use, 153:ArmDisarm (4.2 and higher), 155: set steering trim to current servo and RC, 156:Torqeedo Clear Err, 162:FFT Tune, 163:Mount Lock, 164:Pause Stream Logging, 201:Roll, 202:Pitch, 207:MainSail, 208:Flap, 211:Walking Height, 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8
-    // @Values{Plane}: 0:Do Nothing, 4:ModeRTL, 9:Camera Trigger, 11:Fence, 16:ModeAuto, 22:Parachute Release, 24:Auto Mission Reset, 27:Retract Mount, 28:Relay On/Off, 29:Landing Gear, 30:Lost Plane Sound, 31:Motor Emergency Stop, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 38:ADSB Avoidance En, 41:ArmDisarm (4.1 and lower), 43:InvertedFlight, 46:RC Override Enable, 51:ModeManual, 52: ModeACRO, 55:ModeGuided, 56:ModeLoiter, 58:Clear Waypoints, 62:Compass Learn, 64:Reverse Throttle, 65:GPS Disable, 66:Relay5 On/Off, 67:Relay6 On/Off, 72:ModeCircle, 77:ModeTakeoff, 78:RunCam Control, 79:RunCam OSD Control, 81:Disarm, 82:QAssist 3pos, 84:Air Mode, 85:Generator, 86: Non Auto Terrain Follow Disable, 87:Crow Select, 88:Soaring Enable, 89:Landing Flare, 90:EKF Pos Source, 91:Airspeed Ratio Calibration, 92:FBWA, 94:VTX Power, 95:FBWA taildragger takeoff mode, 96:trigger re-reading of mode switch, 98: ModeTraining, 100:KillIMU1, 101:KillIMU2, 102:Camera Mode Toggle, 105:GPS Disable Yaw, 106:Disable Airspeed Use, 107: EnableFixedWingAutotune, 108: ModeQRTL, 150: CRUISE, 153:ArmDisarm (4.2 and higher), 154:ArmDisarm with Quadplane AirMode (4.2 and higher), 155: set roll pitch and yaw trim to current servo and RC, 157: Force FS Action to FBWA, 158:Optflow Calibration, 160:Weathervane Enable, 162:FFT Tune, 163:Mount Lock, 164:Pause Stream Logging, 208:Flap, 209: Forward Throttle, 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8
-    // @Values{Blimp}: 0:Do Nothing, 18:Land, 46:RC Override Enable, 65:GPS Disable, 81:Disarm, 90:EKF Pos Source, 100:KillIMU1, 101:KillIMU2, 153:ArmDisarm, 164:Pause Stream Logging
+    // @Values{Copter}: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount1, 28:Relay On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 37:Throw, 38:ADSB Avoidance En, 39:PrecLoiter, 40:Proximity Avoidance, 41:ArmDisarm (4.1 and lower), 42:SmartRTL, 43:InvertedFlight, 44:Winch Enable, 46:RC Override Enable, 47:User Function 1, 48:User Function 2, 49:User Function 3, 52:Acro, 55:Guided, 56:Loiter, 57:Follow, 58:Clear Waypoints, 60:ZigZag, 61:ZigZag SaveWP, 62:Compass Learn, 65:GPS Disable, 66:Relay5 On/Off, 67:Relay6 On/Off, 68:Stabilize, 69:PosHold, 70:AltHold, 71:FlowHold, 72:Circle, 73:Drift, 75:SurfaceTrackingUpDown, 76:Standby Mode, 78:RunCam Control, 79:RunCam OSD Control, 80:VisOdom Align, 81:Disarm, 83:ZigZag Auto, 84:Air Mode, 85:Generator, 90:EKF Pos Source, 94:VTX Power, 99:AUTO RTL, 100:KillIMU1, 101:KillIMU2, 102:Camera Mode Toggle, 105:GPS Disable Yaw, 110:KillIMU3, 151:Turtle, 152:simple heading reset, 153:ArmDisarm (4.2 and higher), 154:ArmDisarm with AirMode  (4.2 and higher), 158:Optflow Calibration, 159:Force Flying, 161:Turbine Start(heli), 162:FFT Tune, 163:Mount Lock, 164:Pause Stream Logging, 165:Arm/Emergency Motor Stop, 166:Camera Record Video, 167:Camera Zoom, 168:Camera Manual Focus, 169:Camera Auto Focus, 212:Mount1 Roll, 213:Mount1 Pitch, 214:Mount1 Yaw, 215:Mount2 Roll, 216:Mount2 Pitch, 217:Mount2 Yaw, 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8
+    // @Values{Rover}: 0:Do Nothing, 4:RTL, 5:Save Trim (4.1 and lower), 7:Save WP, 9:Camera Trigger, 11:Fence, 16:Auto, 19:Gripper, 24:Auto Mission Reset, 27:Retract Mount1, 28:Relay On/Off, 30:Lost Rover Sound, 31:Motor Emergency Stop, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 40:Proximity Avoidance, 41:ArmDisarm (4.1 and lower), 42:SmartRTL, 46:RC Override Enable, 50:LearnCruise, 51:Manual, 52:Acro, 53:Steering, 54:Hold, 55:Guided, 56:Loiter, 57:Follow, 58:Clear Waypoints, 59:Simple Mode, 62:Compass Learn, 63:Sailboat Tack, 65:GPS Disable, 66:Relay5 On/Off, 67:Relay6 On/Off, 74:Sailboat motoring 3pos, 78:RunCam Control, 79:RunCam OSD Control, 80:Viso Align, 81:Disarm, 90:EKF Pos Source, 94:VTX Power, 97:Windvane home heading direction offset, 100:KillIMU1, 101:KillIMU2, 102:Camera Mode Toggle, 105:GPS Disable Yaw, 106:Disable Airspeed Use, 110:KillIMU3, 153:ArmDisarm (4.2 and higher), 155: set steering trim to current servo and RC, 156:Torqeedo Clear Err, 162:FFT Tune, 163:Mount Lock, 164:Pause Stream Logging, 165:Arm/Emergency Motor Stop, 166:Camera Record Video, 167:Camera Zoom, 168:Camera Manual Focus, 169:Camera Auto Focus, 201:Roll, 202:Pitch, 207:MainSail, 208:Flap, 211:Walking Height, 212:Mount1 Roll, 213:Mount1 Pitch, 214:Mount1 Yaw, 215:Mount2 Roll, 216:Mount2 Pitch, 217:Mount2 Yaw, 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8
+    // @Values{Plane}: 0:Do Nothing, 4:ModeRTL, 9:Camera Trigger, 11:Fence, 16:ModeAuto, 22:Parachute Release, 24:Auto Mission Reset, 27:Retract Mount1, 28:Relay On/Off, 29:Landing Gear, 30:Lost Plane Sound, 31:Motor Emergency Stop, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 38:ADSB Avoidance En, 41:ArmDisarm (4.1 and lower), 43:InvertedFlight, 46:RC Override Enable, 51:ModeManual, 52: ModeACRO, 55:ModeGuided, 56:ModeLoiter, 58:Clear Waypoints, 62:Compass Learn, 64:Reverse Throttle, 65:GPS Disable, 66:Relay5 On/Off, 67:Relay6 On/Off, 72:ModeCircle, 77:ModeTakeoff, 78:RunCam Control, 79:RunCam OSD Control, 81:Disarm, 82:QAssist 3pos, 84:Air Mode, 85:Generator, 86: Non Auto Terrain Follow Disable, 87:Crow Select, 88:Soaring Enable, 89:Landing Flare, 90:EKF Pos Source, 91:Airspeed Ratio Calibration, 92:FBWA, 94:VTX Power, 95:FBWA taildragger takeoff mode, 96:trigger re-reading of mode switch, 98: ModeTraining, 100:KillIMU1, 101:KillIMU2, 102:Camera Mode Toggle, 105:GPS Disable Yaw, 106:Disable Airspeed Use, 107: EnableFixedWingAutotune, 108: ModeQRTL, 110:KillIMU3, 150: CRUISE, 153:ArmDisarm (4.2 and higher), 154:ArmDisarm with Quadplane AirMode (4.2 and higher), 155: set roll pitch and yaw trim to current servo and RC, 157: Force FS Action to FBWA, 158:Optflow Calibration, 160:Weathervane Enable, 162:FFT Tune, 163:Mount Lock, 164:Pause Stream Logging, 165:Arm/Emergency Motor Stop, 166:Camera Record Video, 167:Camera Zoom, 168:Camera Manual Focus, 169:Camera Auto Focus, 170:Mode QStabilize, 208:Flap, 209: Forward Throttle, 210: Airbrakes, 212:Mount1 Roll, 213:Mount1 Pitch, 214:Mount1 Yaw, 215:Mount2 Roll, 216:Mount2 Pitch, 217:Mount2 Yaw, 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8
+    // @Values{Blimp}: 0:Do Nothing, 18:Land, 46:RC Override Enable, 65:GPS Disable, 81:Disarm, 90:EKF Pos Source, 100:KillIMU1, 101:KillIMU2, 110:KillIMU3, 153:ArmDisarm, 164:Pause Stream Logging, 166:Camera Record Video, 167:Camera Zoom, 168:Camera Manual Focus, 169:Camera Auto Focus
     // @User: Standard
     AP_GROUPINFO_FRAME("OPTION",  6, RC_Channel, option, 0, AP_PARAM_FRAME_COPTER|AP_PARAM_FRAME_ROVER|AP_PARAM_FRAME_PLANE|AP_PARAM_FRAME_BLIMP),
 
@@ -500,18 +503,34 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
     case AUX_FUNC::SCRIPTING_6:
     case AUX_FUNC::SCRIPTING_7:
     case AUX_FUNC::SCRIPTING_8:
+#if AP_VIDEOTX_ENABLED
     case AUX_FUNC::VTX_POWER:
+#endif
     case AUX_FUNC::OPTFLOW_CAL:
     case AUX_FUNC::TURBINE_START:
+    case AUX_FUNC::MOUNT1_ROLL:
+    case AUX_FUNC::MOUNT1_PITCH:
+    case AUX_FUNC::MOUNT1_YAW:
+    case AUX_FUNC::MOUNT2_ROLL:
+    case AUX_FUNC::MOUNT2_PITCH:
+    case AUX_FUNC::MOUNT2_YAW:
+    case AUX_FUNC::LOWEHEISER_STARTER:
+        break;
+
+    // not really aux functions:
+    case AUX_FUNC::LOWEHEISER_THROTTLE:
         break;
     case AUX_FUNC::AVOID_ADSB:
     case AUX_FUNC::AVOID_PROXIMITY:
     case AUX_FUNC::FENCE:
     case AUX_FUNC::GPS_DISABLE:
     case AUX_FUNC::GPS_DISABLE_YAW:
+#if AP_GRIPPER_ENABLED
     case AUX_FUNC::GRIPPER:
+#endif
     case AUX_FUNC::KILL_IMU1:
     case AUX_FUNC::KILL_IMU2:
+    case AUX_FUNC::KILL_IMU3:
     case AUX_FUNC::MISSION_RESET:
     case AUX_FUNC::MOTOR_ESTOP:
     case AUX_FUNC::RC_OVERRIDE_ENABLE:
@@ -521,11 +540,15 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
     case AUX_FUNC::DISABLE_AIRSPEED_USE:
     case AUX_FUNC::FFT_NOTCH_TUNE:
 #if HAL_MOUNT_ENABLED
-    case AUX_FUNC::RETRACT_MOUNT:
+    case AUX_FUNC::RETRACT_MOUNT1:
     case AUX_FUNC::MOUNT_LOCK:
 #endif
     case AUX_FUNC::LOG_PAUSE:
-
+    case AUX_FUNC::ARM_EMERGENCY_STOP:
+    case AUX_FUNC::CAMERA_REC_VIDEO:
+    case AUX_FUNC::CAMERA_ZOOM:
+    case AUX_FUNC::CAMERA_MANUAL_FOCUS:
+    case AUX_FUNC::CAMERA_AUTO_FOCUS:
         run_aux_function(ch_option, ch_flag, AuxFuncTriggerSource::INIT);
         break;
     default:
@@ -539,7 +562,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
     }
 }
 
-#if !HAL_MINIMIZE_FEATURES
+#if AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
 
 const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::SAVE_WP,"SaveWaypoint"},
@@ -551,7 +574,7 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::PARACHUTE_RELEASE,"ParachuteRelease"},
     { AUX_FUNC::PARACHUTE_3POS,"Parachute3Position"},
     { AUX_FUNC::MISSION_RESET,"MissionReset"},
-    { AUX_FUNC::RETRACT_MOUNT,"RetractMount"},
+    { AUX_FUNC::RETRACT_MOUNT1,"RetractMount1"},
     { AUX_FUNC::RELAY,"Relay1"},
     { AUX_FUNC::MOTOR_ESTOP,"MotorEStop"},
     { AUX_FUNC::MOTOR_INTERLOCK,"MotorInterlock"},
@@ -587,10 +610,14 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::FFT_NOTCH_TUNE, "FFT Notch Tuning"},
     { AUX_FUNC::MOUNT_LOCK, "MountLock"},
     { AUX_FUNC::LOG_PAUSE, "Pause Stream Logging"},
+    { AUX_FUNC::CAMERA_REC_VIDEO, "Camera Record Video"},
+    { AUX_FUNC::CAMERA_ZOOM, "Camera Zoom"},
+    { AUX_FUNC::CAMERA_MANUAL_FOCUS, "Camera Manual Focus"},
+    { AUX_FUNC::CAMERA_AUTO_FOCUS, "Camera Auto Focus"},
 };
 
 /* lookup the announcement for switch change */
-const char *RC_Channel::string_for_aux_function(AUX_FUNC function) const     
+const char *RC_Channel::string_for_aux_function(AUX_FUNC function) const
 {
      for (const struct LookupTable &entry : lookuptable) {
         if (entry.option == function) {
@@ -600,7 +627,21 @@ const char *RC_Channel::string_for_aux_function(AUX_FUNC function) const
      return nullptr;
 }
 
-#endif // HAL_MINIMIZE_FEATURES
+/* find string for postion */
+const char *RC_Channel::string_for_aux_pos(AuxSwitchPos pos) const
+{
+    switch (pos) {
+        case AuxSwitchPos::HIGH:
+            return "HIGH";
+        case AuxSwitchPos::MIDDLE:
+            return "MIDDLE";
+        case AuxSwitchPos::LOW:
+            return "LOW";
+    }
+    return "";
+}
+
+#endif // AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
 
 /*
   read an aux channel. Return true if a switch has changed
@@ -612,6 +653,7 @@ bool RC_Channel::read_aux()
         // may wish to add special cases for other "AUXSW" things
         // here e.g. RCMAP_ROLL etc once they become options
         return false;
+#if AP_VIDEOTX_ENABLED
     } else if (_option == AUX_FUNC::VTX_POWER) {
         int8_t position;
         if (read_6pos_switch(position)) {
@@ -619,6 +661,7 @@ bool RC_Channel::read_aux()
             return true;
         }
         return false;
+#endif  // AP_VIDEOTX_ENABLED
     }
 
     AuxSwitchPos new_position;
@@ -630,23 +673,11 @@ bool RC_Channel::read_aux()
         return false;
     }
 
-#if !HAL_MINIMIZE_FEATURES
+#if AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
     // announce the change to the GCS:
     const char *aux_string = string_for_aux_function(_option);
     if (aux_string != nullptr) {
-        const char *temp =  nullptr;
-        switch (new_position) {
-        case AuxSwitchPos::HIGH:
-            temp = "HIGH";           
-            break;
-        case AuxSwitchPos::MIDDLE:
-            temp = "MIDDLE";
-            break;
-        case AuxSwitchPos::LOW:
-            temp = "LOW";          
-            break;
-        }
-        gcs().send_text(MAV_SEVERITY_INFO, "%s %s", aux_string, temp);
+        gcs().send_text(MAV_SEVERITY_INFO, "RC%i: %s %s", ch_in+1, aux_string, string_for_aux_pos(new_position));
     }
 #endif
 
@@ -724,6 +755,7 @@ void RC_Channel::do_aux_function_avoid_proximity(const AuxSwitchPos ch_flag)
 #endif // !APM_BUILD_ArduPlane
 }
 
+#if AP_CAMERA_ENABLED
 void RC_Channel::do_aux_function_camera_trigger(const AuxSwitchPos ch_flag)
 {
     AP_Camera *camera = AP::camera();
@@ -734,6 +766,72 @@ void RC_Channel::do_aux_function_camera_trigger(const AuxSwitchPos ch_flag)
         camera->take_picture();
     }
 }
+
+bool RC_Channel::do_aux_function_record_video(const AuxSwitchPos ch_flag)
+{
+    AP_Camera *camera = AP::camera();
+    if (camera == nullptr) {
+        return false;
+    }
+    return camera->record_video(ch_flag == AuxSwitchPos::HIGH);
+}
+
+bool RC_Channel::do_aux_function_camera_zoom(const AuxSwitchPos ch_flag)
+{
+    AP_Camera *camera = AP::camera();
+    if (camera == nullptr) {
+        return false;
+    }
+    int8_t zoom_step = 0;   // zoom out = -1, hold = 0, zoom in = 1
+    switch (ch_flag) {
+    case AuxSwitchPos::HIGH:
+        zoom_step = 1;  // zoom in
+        break;
+    case AuxSwitchPos::MIDDLE:
+        zoom_step = 0;  // zoom hold
+        break;
+    case AuxSwitchPos::LOW:
+        zoom_step = -1; // zoom out
+        break;
+    }
+    return camera->set_zoom_step(zoom_step);
+}
+
+bool RC_Channel::do_aux_function_camera_manual_focus(const AuxSwitchPos ch_flag)
+{
+    AP_Camera *camera = AP::camera();
+    if (camera == nullptr) {
+        return false;
+    }
+    int8_t focus_step = 0;  // focus in = -1, focus hold = 0, focus out = 1
+    switch (ch_flag) {
+    case AuxSwitchPos::HIGH:
+        // wide shot, focus out
+        focus_step = 1;
+        break;
+    case AuxSwitchPos::MIDDLE:
+        focus_step = 0;
+        break;
+    case AuxSwitchPos::LOW:
+        // close shot, focus in
+        focus_step = -1;
+        break;
+    }
+    return camera->set_manual_focus_step(focus_step);
+}
+
+bool RC_Channel::do_aux_function_camera_auto_focus(const AuxSwitchPos ch_flag)
+{
+    AP_Camera *camera = AP::camera();
+    if (camera == nullptr) {
+        return false;
+    }
+    if (ch_flag == AuxSwitchPos::HIGH) {
+        return camera->set_auto_focus();
+    }
+    return false;
+}
+#endif
 
 void RC_Channel::do_aux_function_runcam_control(const AuxSwitchPos ch_flag)
 {
@@ -777,18 +875,18 @@ void RC_Channel::do_aux_function_runcam_osd_control(const AuxSwitchPos ch_flag)
 #endif
 }
 
+#if AP_FENCE_ENABLED
 // enable or disable the fence
 void RC_Channel::do_aux_function_fence(const AuxSwitchPos ch_flag)
 {
-#if AP_FENCE_ENABLED
     AC_Fence *fence = AP::fence();
     if (fence == nullptr) {
         return;
     }
 
     fence->enable(ch_flag == AuxSwitchPos::HIGH);
-#endif
 }
+#endif
 
 void RC_Channel::do_aux_function_clear_wp(const AuxSwitchPos ch_flag)
 {
@@ -832,9 +930,9 @@ void RC_Channel::do_aux_function_generator(const AuxSwitchPos ch_flag)
 }
 #endif
 
+#if HAL_SPRAYER_ENABLED
 void RC_Channel::do_aux_function_sprayer(const AuxSwitchPos ch_flag)
 {
-#if HAL_SPRAYER_ENABLED
     AC_Sprayer *sprayer = AP::sprayer();
     if (sprayer == nullptr) {
         return;
@@ -843,9 +941,10 @@ void RC_Channel::do_aux_function_sprayer(const AuxSwitchPos ch_flag)
     sprayer->run(ch_flag == AuxSwitchPos::HIGH);
     // if we are disarmed the pilot must want to test the pump
     sprayer->test_pump((ch_flag == AuxSwitchPos::HIGH) && !hal.util->get_soft_armed());
-#endif // HAL_SPRAYER_ENABLED
 }
+#endif // HAL_SPRAYER_ENABLED
 
+#if AP_GRIPPER_ENABLED
 void RC_Channel::do_aux_function_gripper(const AuxSwitchPos ch_flag)
 {
     AP_Gripper *gripper = AP::gripper();
@@ -865,6 +964,7 @@ void RC_Channel::do_aux_function_gripper(const AuxSwitchPos ch_flag)
         break;
     }
 }
+#endif  // AP_GRIPPER_ENABLED
 
 void RC_Channel::do_aux_function_lost_vehicle_sound(const AuxSwitchPos ch_flag)
 {
@@ -932,14 +1032,20 @@ void RC_Channel::do_aux_function_fft_notch_tune(const AuxSwitchPos ch_flag)
 
 bool RC_Channel::run_aux_function(aux_func_t ch_option, AuxSwitchPos pos, AuxFuncTriggerSource source)
 {
+#if AP_SCRIPTING_ENABLED
+    rc().set_aux_cached(ch_option, pos);
+#endif
     const bool ret = do_aux_function(ch_option, pos);
 
     // @LoggerMessage: AUXF
     // @Description: Auxiliary function invocation information
     // @Field: TimeUS: Time since system startup
     // @Field: function: ID of triggered function
+    // @FieldValueEnum: function: RC_Channel::AUX_FUNC
     // @Field: pos: switch position when function triggered
+    // @FieldValueEnum: pos: RC_Channel::AuxSwitchPos
     // @Field: source: source of auxiliary function invocation
+    // @FieldValueEnum: source: RC_Channel::AuxFuncTriggerSource
     // @Field: result: true if function was successful
     AP::logger().Write(
         "AUXF",
@@ -959,17 +1065,17 @@ bool RC_Channel::run_aux_function(aux_func_t ch_option, AuxSwitchPos pos, AuxFun
 bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
 {
     switch(ch_option) {
-    case AUX_FUNC::CAMERA_TRIGGER:
-        do_aux_function_camera_trigger(ch_flag);
-        break;
-
+#if AP_FENCE_ENABLED
     case AUX_FUNC::FENCE:
         do_aux_function_fence(ch_flag);
         break;
+#endif
 
+#if AP_GRIPPER_ENABLED
     case AUX_FUNC::GRIPPER:
         do_aux_function_gripper(ch_flag);
         break;
+#endif
 
     case AUX_FUNC::RC_OVERRIDE_ENABLE:
         // Allow or disallow RC_Override
@@ -1028,9 +1134,11 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         break;
 #endif
 
+#if HAL_SPRAYER_ENABLED
     case AUX_FUNC::SPRAYER:
         do_aux_function_sprayer(ch_flag);
         break;
+#endif
 
     case AUX_FUNC::LOST_VEHICLE_SOUND:
         do_aux_function_lost_vehicle_sound(ch_flag);
@@ -1053,6 +1161,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         }
         break;
 
+#if AP_LANDINGGEAR_ENABLED
     case AUX_FUNC::LANDING_GEAR: {
         AP_LandingGear *lg = AP_LandingGear::get_singleton();
         if (lg == nullptr) {
@@ -1071,6 +1180,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         }
         break;
     }
+#endif
 
     case AUX_FUNC::GPS_DISABLE:
         AP::gps().force_disable(ch_flag == AuxSwitchPos::HIGH);
@@ -1080,8 +1190,8 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         AP::gps().set_force_disable_yaw(ch_flag == AuxSwitchPos::HIGH);
         break;
 
-    case AUX_FUNC::DISABLE_AIRSPEED_USE: {
 #if AP_AIRSPEED_ENABLED
+    case AUX_FUNC::DISABLE_AIRSPEED_USE: {
         AP_Airspeed *airspeed = AP::airspeed();
         if (airspeed == nullptr) {
             break;
@@ -1096,20 +1206,14 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
             airspeed->force_disable_use(false);
             break;
         }
-#endif
         break;
     }
+#endif
 
     case AUX_FUNC::MOTOR_ESTOP:
         switch (ch_flag) {
         case AuxSwitchPos::HIGH: {
             SRV_Channels::set_emergency_stop(true);
-
-            // log E-stop
-            AP_Logger *logger = AP_Logger::get_singleton();
-            if (logger && logger->logging_enabled()) {
-                logger->Write_Event(LogEvent::MOTORS_EMERGENCY_STOPPED);
-            }
             break;
         }
         case AuxSwitchPos::MIDDLE:
@@ -1117,27 +1221,21 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
             break;
         case AuxSwitchPos::LOW: {
             SRV_Channels::set_emergency_stop(false);
-
-            // log E-stop cleared
-            AP_Logger *logger = AP_Logger::get_singleton();
-            if (logger && logger->logging_enabled()) {
-                logger->Write_Event(LogEvent::MOTORS_EMERGENCY_STOP_CLEARED);
-            }
             break;
         }
         }
         break;
 
-    case AUX_FUNC::VISODOM_ALIGN:
 #if HAL_VISUALODOM_ENABLED
+    case AUX_FUNC::VISODOM_ALIGN:
         if (ch_flag == AuxSwitchPos::HIGH) {
             AP_VisualOdom *visual_odom = AP::visualodom();
             if (visual_odom != nullptr) {
-                visual_odom->align_sensor_to_vehicle();
+                visual_odom->request_align_yaw_to_ahrs();
             }
         }
-#endif
         break;
+#endif
 
     case AUX_FUNC::EKF_POS_SOURCE:
         switch (ch_flag) {
@@ -1156,9 +1254,9 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         }
         break;
 
-    case AUX_FUNC::OPTFLOW_CAL: {
 #if AP_OPTICALFLOW_ENABLED
-        OpticalFlow *optflow = AP::opticalflow();
+    case AUX_FUNC::OPTFLOW_CAL: {
+        AP_OpticalFlow *optflow = AP::opticalflow();
         if (optflow == nullptr) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "OptFlow Cal: failed sensor not enabled");
             break;
@@ -1168,9 +1266,9 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         } else {
             optflow->stop_calibration();
         }
-#endif
         break;
     }
+#endif
 
 #if !HAL_MINIMIZE_FEATURES
     case AUX_FUNC::KILL_IMU1:
@@ -1180,7 +1278,16 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
     case AUX_FUNC::KILL_IMU2:
         AP::ins().kill_imu(1, ch_flag == AuxSwitchPos::HIGH);
         break;
+
+    case AUX_FUNC::KILL_IMU3:
+        AP::ins().kill_imu(2, ch_flag == AuxSwitchPos::HIGH);
+        break;
 #endif // HAL_MINIMIZE_FEATURES
+
+#if AP_CAMERA_ENABLED
+    case AUX_FUNC::CAMERA_TRIGGER:
+        do_aux_function_camera_trigger(ch_flag);
+        break;
 
     case AUX_FUNC::CAM_MODE_TOGGLE: {
         // Momentary switch to for cycling camera modes
@@ -1201,38 +1308,49 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         }
         break;
     }
+    case AUX_FUNC::CAMERA_REC_VIDEO:
+        return do_aux_function_record_video(ch_flag);
 
-    case AUX_FUNC::RETRACT_MOUNT: {
+    case AUX_FUNC::CAMERA_ZOOM:
+        return do_aux_function_camera_zoom(ch_flag);
+
+    case AUX_FUNC::CAMERA_MANUAL_FOCUS:
+        return do_aux_function_camera_manual_focus(ch_flag);
+
+    case AUX_FUNC::CAMERA_AUTO_FOCUS:
+        return do_aux_function_camera_auto_focus(ch_flag);
+
+#endif
+
 #if HAL_MOUNT_ENABLED
+    case AUX_FUNC::RETRACT_MOUNT1: {
         AP_Mount *mount = AP::mount();
         if (mount == nullptr) {
             break;
         }
         switch (ch_flag) {
             case AuxSwitchPos::HIGH:
-                mount->set_mode(MAV_MOUNT_MODE_RETRACT);
+                mount->set_mode(0,MAV_MOUNT_MODE_RETRACT);
                 break;
             case AuxSwitchPos::MIDDLE:
                 // nothing
                 break;
             case AuxSwitchPos::LOW:
-                mount->set_mode_to_default();
+                mount->set_mode_to_default(0);
                 break;
         }
-#endif
         break;
     }
 
     case AUX_FUNC::MOUNT_LOCK: {
-#if HAL_MOUNT_ENABLED
         AP_Mount *mount = AP::mount();
         if (mount == nullptr) {
             break;
         }
         mount->set_yaw_lock(ch_flag == AuxSwitchPos::HIGH);
-#endif
         break;
     }
+#endif
 
     case AUX_FUNC::LOG_PAUSE: {
         AP_Logger *logger = AP_Logger::get_singleton();
@@ -1250,6 +1368,25 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         break;
     }
 
+    case AUX_FUNC::ARM_EMERGENCY_STOP: {
+        switch (ch_flag) {
+           case AuxSwitchPos::HIGH:
+               // request arm, disable emergency motor stop
+               SRV_Channels::set_emergency_stop(false);
+               AP::arming().arm(AP_Arming::Method::AUXSWITCH, true);
+               break;
+           case AuxSwitchPos::MIDDLE:
+               // disable emergency motor stop
+               SRV_Channels::set_emergency_stop(false);
+               break;
+           case AuxSwitchPos::LOW:
+               // enable emergency motor stop
+               SRV_Channels::set_emergency_stop(true);
+               break;
+        }
+        break;
+    }
+
     case AUX_FUNC::EKF_LANE_SWITCH:
         // used to test emergency lane switch
         AP::ahrs().check_lane_switch();
@@ -1260,19 +1397,26 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         AP::ahrs().request_yaw_reset();
         break;
 
+#if HAL_TORQEEDO_ENABLED
     // clear torqeedo error
     case AUX_FUNC::TORQEEDO_CLEAR_ERR: {
-#if HAL_TORQEEDO_ENABLED
         if (ch_flag == AuxSwitchPos::HIGH) {
             AP_Torqeedo *torqeedo = AP_Torqeedo::get_singleton();
             if (torqeedo != nullptr) {
                 torqeedo->clear_motor_error();
             }
         }
-#endif
         break;
     }
+#endif
 
+    // do nothing for these functions
+    case AUX_FUNC::MOUNT1_ROLL:
+    case AUX_FUNC::MOUNT1_PITCH:
+    case AUX_FUNC::MOUNT1_YAW:
+    case AUX_FUNC::MOUNT2_ROLL:
+    case AUX_FUNC::MOUNT2_PITCH:
+    case AUX_FUNC::MOUNT2_YAW:
     case AUX_FUNC::SCRIPTING_1:
     case AUX_FUNC::SCRIPTING_2:
     case AUX_FUNC::SCRIPTING_3:
@@ -1281,6 +1425,11 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
     case AUX_FUNC::SCRIPTING_6:
     case AUX_FUNC::SCRIPTING_7:
     case AUX_FUNC::SCRIPTING_8:
+        break;
+
+    case AUX_FUNC::LOWEHEISER_THROTTLE:
+    case AUX_FUNC::LOWEHEISER_STARTER:
+        // monitored by the library itself
         break;
 
     default:

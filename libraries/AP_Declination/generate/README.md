@@ -1,8 +1,8 @@
 # Declination Table Generator
 
-To run the generator you need the igrf12 module. Install like this:
+To run the generator you need the igrf module. Install like this:
 
-  python3 -m pip install --user igrf12
+  python3 -m pip install --user igrf
 
 Note that python3 must be used.
 

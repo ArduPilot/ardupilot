@@ -20,7 +20,7 @@ const AP_Param::GroupInfo AP_RPM_Params::var_info[] = {
     // @Param: TYPE
     // @DisplayName: RPM type
     // @Description: What type of RPM sensor is connected
-    // @Values: 0:None,1:Not Used,2:GPIO,3:EFI,4:Harmonic Notch,5:ESC Telemetry Motors Bitmask
+    // @Values: 0:None,1:Not Used,2:GPIO,3:EFI,4:Harmonic Notch,5:ESC Telemetry Motors Bitmask,6:Generator
     // @User: Standard
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_RPM_Params, type, 0, AP_PARAM_FLAG_ENABLE),
     // Note, 1 was previously for type = PWM. This has been removed from docs to make setup less confusing for users.

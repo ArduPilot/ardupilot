@@ -24,6 +24,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -33,9 +34,9 @@ class DummyVehicle {
 public:
     AP_AHRS ahrs;  // Need since https://github.com/ArduPilot/ardupilot/pull/10890
     AP_Baro baro; // Compass tries to set magnetic model based on location.
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_COMPASS_EXTERNALAHRS_ENABLED
     AP_ExternalAHRS eAHRS;
-#endif // HAL_EXTERNAL_AHRS_ENABLED
+#endif  // AP_COMPASS_EXTERNALAHRS_ENABLED
 };
 
 static DummyVehicle vehicle;

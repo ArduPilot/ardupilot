@@ -358,6 +358,7 @@ void Sub::guided_vel_control_run()
         pos_control.set_vel_desired_cms(Vector3f(0,0,0));
     }
 
+    pos_control.stop_pos_xy_stabilisation();
     // call velocity controller which includes z axis controller
     pos_control.update_xy_controller();
     pos_control.update_z_controller();

@@ -123,6 +123,7 @@ public:
         DEVTYPE_BMI270       = 0x38,
         DEVTYPE_INS_BMI085   = 0x39,
         DEVTYPE_INS_ICM42670 = 0x3A,
+        DEVTYPE_INS_ICM45686 = 0x3B,
     };
 
 protected:
@@ -141,8 +142,9 @@ protected:
     // rotate gyro vector, offset and publish
     void _publish_gyro(uint8_t instance, const Vector3f &gyro) __RAMFUNC__; /* front end */
 
-    // apply notch and lowpass gyro filters
+    // apply notch and lowpass gyro filters and sample for FFT
     void apply_gyro_filters(const uint8_t instance, const Vector3f &gyro);
+    void save_gyro_window(const uint8_t instance, const Vector3f &gyro, uint8_t phase);
 
     // this should be called every time a new gyro raw sample is
     // available - be it published or not the sample is raw in the

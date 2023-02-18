@@ -299,7 +299,6 @@ static const ap_message STREAM_EXTRA1_msgs[] = {
 };
 static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
-    MSG_HWSTATUS,
     MSG_SIMSTATE,
     MSG_SYSTEM_TIME,
     MSG_AHRS2,
@@ -491,7 +490,7 @@ void GCS_MAVLINK_Tracker::handleMessage(const mavlink_message_t &msg)
 
         mavlink_msg_mission_item_decode(&msg, &packet);
 
-        struct Location tell_command;
+        Location tell_command;
 
         switch (packet.frame)
         {

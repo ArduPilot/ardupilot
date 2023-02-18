@@ -878,7 +878,7 @@ bool NavEKF2::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
     }
     for (uint8_t i = 0; i < num_cores; i++) {
         if (!core[i].healthy()) {
-            const char *failure = core[primary].prearm_failure_reason();
+            const char *failure = core[i].prearm_failure_reason();
             if (failure != nullptr) {
                 AP::dal().snprintf(failure_msg, failure_msg_len, failure);
             } else {
@@ -1070,7 +1070,7 @@ bool NavEKF2::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 // If a calculated location isn't available, return a raw GPS measurement
 // The status will return true if a calculation or raw measurement is available
 // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
-bool NavEKF2::getLLH(struct Location &loc) const
+bool NavEKF2::getLLH(Location &loc) const
 {
     if (!core) {
         return false;
@@ -1082,7 +1082,7 @@ bool NavEKF2::getLLH(struct Location &loc) const
 // An out of range instance (eg -1) returns data for the primary instance
 // All NED positions calculated by the filter are relative to this location
 // Returns false if the origin has not been set
-bool NavEKF2::getOriginLLH(struct Location &loc) const
+bool NavEKF2::getOriginLLH(Location &loc) const
 {
     if (!core) {
         return false;
@@ -1199,13 +1199,14 @@ bool NavEKF2::use_compass(void) const
 // The sign convention is that a RH physical rotation of the sensor about an axis produces both a positive flow and gyro rate
 // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
 // posOffset is the XYZ flow sensor position in the body frame in m
-void NavEKF2::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset)
+// heightOverride is the fixed height of the sensor above ground in m, when on rover vehicles. 0 if not used
+void NavEKF2::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride)
 {
-    AP::dal().writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset);
+    AP::dal().writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset, heightOverride);
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
-            core[i].writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset);
+            core[i].writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset, heightOverride);
         }
     }
 }
@@ -1274,10 +1275,10 @@ void  NavEKF2::getFilterGpsStatus(nav_gps_status &status) const
 }
 
 // send an EKF_STATUS_REPORT message to GCS
-void NavEKF2::send_status_report(mavlink_channel_t chan) const
+void NavEKF2::send_status_report(GCS_MAVLINK &link) const
 {
     if (core) {
-        core[primary].send_status_report(chan);
+        core[primary].send_status_report(link);
     }
 }
 

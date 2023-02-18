@@ -18,6 +18,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS.h>
 
 #include "AP_EFI_NWPMU.h"
 
@@ -45,7 +46,7 @@ void AP_EFI_NWPMU::handle_frame(AP_HAL::CANFrame &frame)
         memcpy(&data, frame.data, sizeof(data));
         internal_state.engine_speed_rpm = data.rpm;
         internal_state.throttle_position_percent = data.tps * 0.1f;
-        internal_state.cylinder_status[0].ignition_timing_deg = data.ignition_angle * 0.1f;
+        internal_state.cylinder_status.ignition_timing_deg = data.ignition_angle * 0.1f;
         break;
     }
 
@@ -65,7 +66,7 @@ void AP_EFI_NWPMU::handle_frame(AP_HAL::CANFrame &frame)
         default:
             break;
         }
-        internal_state.cylinder_status[0].lambda_coefficient = data.lambda * 0.01f;
+        internal_state.cylinder_status.lambda_coefficient = data.lambda * 0.01f;
         break;
     }
 
@@ -87,11 +88,11 @@ void AP_EFI_NWPMU::handle_frame(AP_HAL::CANFrame &frame)
         switch((NWPMU_TEMPERATURE_TYPE)data.temp_type) {
         case NWPMU_TEMPERATURE_TYPE::C:
             internal_state.coolant_temperature = C_TO_KELVIN(data.coolant_temp * 0.1f);
-            internal_state.cylinder_status[0].cylinder_head_temperature = C_TO_KELVIN(data.coolant_temp * 0.1f);
+            internal_state.cylinder_status.cylinder_head_temperature = C_TO_KELVIN(data.coolant_temp * 0.1f);
             break;
         case NWPMU_TEMPERATURE_TYPE::F:
             internal_state.coolant_temperature = F_TO_KELVIN(data.coolant_temp * 0.1f);
-            internal_state.cylinder_status[0].cylinder_head_temperature = F_TO_KELVIN(data.coolant_temp * 0.1f);
+            internal_state.cylinder_status.cylinder_head_temperature = F_TO_KELVIN(data.coolant_temp * 0.1f);
             break;
         default:
             break;

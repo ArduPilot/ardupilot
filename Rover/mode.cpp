@@ -1,4 +1,3 @@
-#include "mode.h"
 #include "Rover.h"
 
 Mode::Mode() :
@@ -318,7 +317,9 @@ void Mode::calc_throttle(float target_speed, bool avoidance_enabled)
             bool stopped;
             throttle_out = 100.0f * attitude_control.get_throttle_out_stop(g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt, stopped);
         } else {
-            throttle_out = 100.0f * attitude_control.get_throttle_out_speed(target_speed, g2.motors.limit.throttle_lower, g2.motors.limit.throttle_upper, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt);
+            bool motor_lim_low = g2.motors.limit.throttle_lower || attitude_control.pitch_limited();
+            bool motor_lim_high = g2.motors.limit.throttle_upper || attitude_control.pitch_limited();
+            throttle_out = 100.0f * attitude_control.get_throttle_out_speed(target_speed, motor_lim_low, motor_lim_high, g.speed_cruise, g.throttle_cruise * 0.01f, rover.G_Dt);
         }
 
         // if vehicle is balance bot, calculate actual throttle required for balancing
@@ -471,7 +472,7 @@ void Mode::calc_steering_from_turn_rate(float turn_rate)
                                                                       g2.motors.limit.steer_left,
                                                                       g2.motors.limit.steer_right,
                                                                       rover.G_Dt);
-    g2.motors.set_steering(steering_out * 4500.0f);
+    set_steering(steering_out * 4500.0f);
 }
 
 /*
@@ -551,6 +552,11 @@ Mode *Rover::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::INITIALISING:
         ret = &mode_initializing;
         break;
+#if MODE_DOCK_ENABLED == ENABLED
+    case Mode::Number::DOCK:
+        ret = (Mode *)g2.mode_dock_ptr;
+        break;
+#endif
     default:
         break;
     }

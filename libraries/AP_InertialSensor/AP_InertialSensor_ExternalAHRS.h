@@ -18,6 +18,7 @@ public:
     void accumulate() override;
 
     void handle_external(const AP_ExternalAHRS::ins_data_message_t &pkt) override;
+    bool get_output_banner(char* banner, uint8_t banner_len) override;
 
 private:
     uint8_t gyro_instance;

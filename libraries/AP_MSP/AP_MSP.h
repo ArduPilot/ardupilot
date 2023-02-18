@@ -44,8 +44,7 @@ public:
     AP_MSP();
 
     /* Do not allow copies */
-    AP_MSP(const AP_MSP &other) = delete;
-    AP_MSP &operator=(const AP_MSP&) = delete;
+    CLASS_NO_COPY(AP_MSP);
 
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];

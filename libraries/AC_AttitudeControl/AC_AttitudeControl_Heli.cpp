@@ -17,7 +17,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
 
     // @Param: RAT_RLL_P
     // @DisplayName: Roll axis rate controller P gain
-    // @Description: Roll axis rate controller P gain.  Converts the difference between desired roll rate and actual roll rate into a motor speed output
+    // @Description: Roll axis rate controller P gain.  Corrects in proportion to the difference between the desired roll rate vs actual roll rate
     // @Range: 0.0 0.35
     // @Increment: 0.005
     // @User: Standard
@@ -31,7 +31,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
 
     // @Param: RAT_RLL_IMAX
     // @DisplayName: Roll axis rate controller I gain maximum
-    // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
+    // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum that the I term will output
     // @Range: 0 1
     // @Increment: 0.01
     // @User: Standard
@@ -91,7 +91,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
 
     // @Param: RAT_PIT_P
     // @DisplayName: Pitch axis rate controller P gain
-    // @Description: Pitch axis rate controller P gain.  Converts the difference between desired pitch rate and actual pitch rate into a motor speed output
+    // @Description: Pitch axis rate controller P gain.  Corrects in proportion to the difference between the desired pitch rate vs actual pitch rate
     // @Range: 0.0 0.35
     // @Increment: 0.005
     // @User: Standard
@@ -105,7 +105,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
 
     // @Param: RAT_PIT_IMAX
     // @DisplayName: Pitch axis rate controller I gain maximum
-    // @Description: Pitch axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
+    // @Description: Pitch axis rate controller I gain maximum.  Constrains the maximum that the I term will output
     // @Range: 0 1
     // @Increment: 0.01
     // @User: Standard
@@ -165,7 +165,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
 
     // @Param: RAT_YAW_P
     // @DisplayName: Yaw axis rate controller P gain
-    // @Description: Yaw axis rate controller P gain.  Converts the difference between desired yaw rate and actual yaw rate into a motor speed output
+    // @Description: Yaw axis rate controller P gain.  Corrects in proportion to the difference between the desired yaw rate vs actual yaw rate
     // @Range: 0.180 0.60
     // @Increment: 0.005
     // @User: Standard
@@ -179,7 +179,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
 
     // @Param: RAT_YAW_IMAX
     // @DisplayName: Yaw axis rate controller I gain maximum
-    // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
+    // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum that the I term will output
     // @Range: 0 1
     // @Increment: 0.01
     // @User: Standard
@@ -387,13 +387,13 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(const Vector3f &rate_r
     if (_flags_heli.leaky_i) {
         _pid_rate_roll.update_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
     }
-    float roll_pid = _pid_rate_roll.update_all(rate_roll_target_rads, rate_rads.x,  _motors.limit.roll) + _actuator_sysid.x;
+    float roll_pid = _pid_rate_roll.update_all(rate_roll_target_rads, rate_rads.x, _dt, _motors.limit.roll) + _actuator_sysid.x;
 
     if (_flags_heli.leaky_i) {
         _pid_rate_pitch.update_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
     }
 
-    float pitch_pid = _pid_rate_pitch.update_all(rate_pitch_target_rads, rate_rads.y,  _motors.limit.pitch) + _actuator_sysid.y;
+    float pitch_pid = _pid_rate_pitch.update_all(rate_pitch_target_rads, rate_rads.y, _dt, _motors.limit.pitch) + _actuator_sysid.y;
 
     // use pid library to calculate ff
     float roll_ff = _pid_rate_roll.get_ff();
@@ -449,7 +449,7 @@ float AC_AttitudeControl_Heli::rate_target_to_motor_yaw(float rate_yaw_actual_ra
         _pid_rate_yaw.update_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
     }
 
-    float pid = _pid_rate_yaw.update_all(rate_target_rads, rate_yaw_actual_rads,  _motors.limit.yaw) + _actuator_sysid.z;
+    float pid = _pid_rate_yaw.update_all(rate_target_rads, rate_yaw_actual_rads, _dt,  _motors.limit.yaw) + _actuator_sysid.z;
 
     // use pid library to calculate ff
     float vff = _pid_rate_yaw.get_ff()*_feedforward_scalar;

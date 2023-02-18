@@ -32,7 +32,7 @@ param set SERIAL5_PROTOCOL 5
 #if HAL_SIM_GPS_ENABLED
 
 #ifndef HAL_SIM_GPS_EXTERNAL_FIFO_ENABLED
-#define HAL_SIM_GPS_EXTERNAL_FIFO_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#define HAL_SIM_GPS_EXTERNAL_FIFO_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL) && !defined(CYGWIN_BUILD)
 #endif
 
 #ifndef AP_SIM_GPS_FILE_ENABLED
@@ -67,6 +67,8 @@ public:
     void update();
 
     ssize_t write_to_autopilot(const char *p, size_t size) const override;
+
+    uint32_t device_baud() const override;  // 0 meaning unset
 
 private:
 

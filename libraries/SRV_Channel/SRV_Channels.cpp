@@ -19,8 +19,11 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
 #include "SRV_Channel.h"
+#include <AP_Logger/AP_Logger.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
@@ -236,7 +239,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
 
     // @Param: _GPIO_MASK
     // @DisplayName: Servo GPIO mask
-    // @Description: This sets a bitmask of outputs which will be available as GPIOs. Any auxiliary output with either the function set to -1 or with the corresponding bit set in this mask will be available for use as a GPIO pin
+    // @Description: This sets a bitmask of outputs which will be available as GPIOs. Any output with either the function set to -1 or with the corresponding bit set in this mask will be available for use as a GPIO pin
     // @Bitmask: 0:Servo 1, 1:Servo 2, 2:Servo 3, 3:Servo 4, 4:Servo 5, 5:Servo 6, 6:Servo 7, 7:Servo 8, 8:Servo 9, 9:Servo 10, 10:Servo 11, 11:Servo 12, 12:Servo 13, 13:Servo 14, 14:Servo 15, 15:Servo 16, 16:Servo 17, 17:Servo 18, 18:Servo 19, 19:Servo 20, 20:Servo 21, 21:Servo 22, 22:Servo 23, 23:Servo 24, 24:Servo 25, 25:Servo 26, 26:Servo 27, 27:Servo 28, 28:Servo 29, 29:Servo 30, 30:Servo 31, 31:Servo 32
     // @User: Advanced
     // @RebootRequired: True
@@ -394,11 +397,11 @@ SRV_Channels::SRV_Channels(void)
 }
 
 // SRV_Channels initialization
-void SRV_Channels::init(void)
+void SRV_Channels::init(uint32_t motor_mask, AP_HAL::RCOutput::output_mode mode)
 {
     // initialize BLHeli late so that all of the masks it might setup don't get trodden on by motor initialization
 #if HAL_SUPPORT_RCOUT_SERIAL
-    blheli_ptr->init();
+    blheli_ptr->init(motor_mask, mode);
 #endif
 #ifndef HAL_BUILD_AP_PERIPH
     hal.rcout->set_dshot_rate(_singleton->dshot_rate, AP::scheduler().get_loop_rate_hz());
@@ -601,4 +604,17 @@ bool SRV_Channels::is_GPIO(uint8_t channel)
         return true;
     }
     return false;
+}
+
+// Set E - stop
+void SRV_Channels::set_emergency_stop(bool state) {
+#if HAL_LOGGING_ENABLED
+    if (state != emergency_stop) {
+        AP_Logger *logger = AP_Logger::get_singleton();
+        if (logger && logger->logging_enabled()) {
+            logger->Write_Event(state ? LogEvent::MOTORS_EMERGENCY_STOPPED : LogEvent::MOTORS_EMERGENCY_STOP_CLEARED);
+        }
+    }
+#endif
+    emergency_stop = state;
 }

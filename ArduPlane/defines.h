@@ -6,6 +6,8 @@
 #define SERVO_MAX 4500.0  // This value represents 45 degrees and is just an
                         // arbitrary representation of servo max travel.
 
+#define MIN_AIRSPEED_MIN 5 // m/s, used for arming check and speed scaling
+
 // failsafe
 // ----------------------
 enum failsafe_state {
@@ -46,7 +48,7 @@ enum failsafe_action_long {
 enum class StickMixing {
     NONE     = 0,
     FBW      = 1,
-    DIRECT   = 2,
+    DIRECT_REMOVED = 2,
     VTOL_YAW = 3,
 };
 
@@ -97,10 +99,6 @@ enum log_messages {
     LOG_PIDG_MSG,
     LOG_AETR_MSG,
     LOG_OFG_MSG,
-    LOG_CMDI_MSG,
-    LOG_CMDA_MSG,
-    LOG_CMDS_MSG,
-    LOG_CMDH_MSG,
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)

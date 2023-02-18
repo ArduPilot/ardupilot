@@ -227,7 +227,6 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This is the number of msec that the Height measurements lag behind the inertial measurements.
     // @Range: 0 250
     // @Increment: 10
-    // @RebootRequired: True
     // @User: Advanced
     // @Units: ms
     // @RebootRequired: True
@@ -331,7 +330,6 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This is the number of msec that the optical flow measurements lag behind the inertial measurements. It is the time from the end of the optical flow averaging period and does not include the time delay due to the 100msec of averaging within the flow sensor.
     // @Range: 0 250
     // @Increment: 10
-    // @RebootRequired: True
     // @User: Advanced
     // @Units: ms
     // @RebootRequired: True
@@ -516,7 +514,6 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Description: This is the number of msec that the range beacon measurements lag behind the inertial measurements.
     // @Range: 0 250
     // @Increment: 10
-    // @RebootRequired: True
     // @User: Advanced
     // @Units: ms
     // @RebootRequired: True
@@ -1139,7 +1136,7 @@ bool NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
     }
     for (uint8_t i = 0; i < num_cores; i++) {
         if (!core[i].healthy()) {
-            const char *failure = core[primary].prearm_failure_reason();
+            const char *failure = core[i].prearm_failure_reason();
             if (failure != nullptr) {
                 AP::dal().snprintf(failure_msg, failure_msg_len, failure);
             } else {
@@ -1211,6 +1208,15 @@ bool NavEKF3::getAirSpdVec(Vector3f &vel) const
     return false;
 }
 
+// return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed
+bool NavEKF3::getAirSpdHealthData(float &innovation, float &innovationVariance, uint32_t &age_ms) const
+{
+    if (core) {
+        return core[primary].getAirSpdHealthData(innovation, innovationVariance, age_ms);
+    }
+    return false;
+}
+
 // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
 float NavEKF3::getPosDownDerivative() const
 {
@@ -1237,6 +1243,12 @@ void NavEKF3::getAccelBias(int8_t instance, Vector3f &accelBias) const
     if (core) {
         core[instance].getAccelBias(accelBias);
     }
+}
+
+// returns active source set used by EKF3
+uint8_t NavEKF3::get_active_source_set() const
+{
+    return sources.get_active_source_set();
 }
 
 // reset body axis gyro bias estimates
@@ -1344,7 +1356,7 @@ bool NavEKF3::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 // If a calculated location isn't available, return a raw GPS measurement
 // The status will return true if a calculation or raw measurement is available
 // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
-bool NavEKF3::getLLH(struct Location &loc) const
+bool NavEKF3::getLLH(Location &loc) const
 {
     if (!core) {
         return false;
@@ -1355,10 +1367,14 @@ bool NavEKF3::getLLH(struct Location &loc) const
 // Return the latitude and longitude and height used to set the NED origin
 // All NED positions calculated by the filter are relative to this location
 // Returns false if the origin has not been set
-bool NavEKF3::getOriginLLH(struct Location &loc) const
+bool NavEKF3::getOriginLLH(Location &loc) const
 {
     if (!core) {
         return false;
+    }
+    if (common_origin_valid) {
+        loc = common_EKF_origin;
+        return true;
     }
     return core[primary].getOriginLLH(loc);
 }
@@ -1507,13 +1523,14 @@ bool NavEKF3::configuredToUseGPSForPosXY(void) const
 // The sign convention is that a RH physical rotation of the sensor about an axis produces both a positive flow and gyro rate
 // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
 // posOffset is the XYZ flow sensor position in the body frame in m
-void NavEKF3::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset)
+// heightOverride is the fixed height of the sensor above ground in m, when on rover vehicles. 0 if not used
+void NavEKF3::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride)
 {
-    AP::dal().writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset);
+    AP::dal().writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset, heightOverride);
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
-            core[i].writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset);
+            core[i].writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset, heightOverride);
         }
     }
 }
@@ -1776,10 +1793,10 @@ void NavEKF3::getFilterStatus(nav_filter_status &status) const
 }
 
 // send an EKF_STATUS_REPORT message to GCS
-void NavEKF3::send_status_report(mavlink_channel_t chan) const
+void NavEKF3::send_status_report(GCS_MAVLINK &link) const
 {
     if (core) {
-        core[primary].send_status_report(chan);
+        core[primary].send_status_report(link);
     }
 }
 
@@ -1988,8 +2005,8 @@ void NavEKF3::updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_
 
     // Record the position delta between current core and new primary core and the timestamp of the core change
     // Add current delta in case it hasn't been consumed yet
-    core[old_primary].getPosD(posDownOldPrimary);
-    core[new_primary].getPosD(posDownNewPrimary);
+    core[old_primary].getPosD_local(posDownOldPrimary);
+    core[new_primary].getPosD_local(posDownNewPrimary);
     pos_down_reset_data.core_delta = posDownNewPrimary - posDownOldPrimary + pos_down_reset_data.core_delta;
     pos_down_reset_data.last_primary_change = imuSampleTime_us / 1000;
     pos_down_reset_data.core_changed = true;

@@ -5,6 +5,7 @@
  *       boolean failsafe reflects the current state
  */
 
+#include <AP_Vehicle/AP_MultiCopter.h>
 
 bool Blimp::failsafe_option(FailsafeOption opt) const
 {

@@ -26,7 +26,6 @@
 #include "SIM_IntelligentEnergy24.h"
 #include "SIM_Ship.h"
 #include "SIM_GPS.h"
-#include <AP_RangeFinder/AP_RangeFinder.h>
 
 namespace SITL {
 
@@ -64,8 +63,8 @@ struct sitl_fdm {
     double battery_current; // Amps
     double battery_remaining; // Ah, if non-zero capacity
     uint8_t num_motors;
-    uint8_t vtol_motor_start;
-    float rpm[12];         // RPM of all motors
+    uint32_t motor_mask;
+    float rpm[32];         // RPM of all motors
     uint8_t rcin_chan_count;
     float  rcin[12];         // RC input 0..1
     double range;           // rangefinder value
@@ -78,7 +77,8 @@ struct sitl_fdm {
         struct float_array ranges;
     } scanner;
 
-    float rangefinder_m[RANGEFINDER_MAX_INSTANCES];
+    #define SITL_NUM_RANGEFINDERS 10
+    float rangefinder_m[SITL_NUM_RANGEFINDERS];
     float airspeed_raw_pressure[AIRSPEED_MAX_SENSORS];
 
     struct {
@@ -127,8 +127,7 @@ public:
     }
 
     /* Do not allow copies */
-    SIM(const SIM &other) = delete;
-    SIM &operator=(const SIM&) = delete;
+    CLASS_NO_COPY(SIM);
 
     static SIM *_singleton;
     static SIM *get_singleton() { return _singleton; }
@@ -210,6 +209,9 @@ public:
     AP_Float gps_init_lon_ofs;
     AP_Float gps_init_alt_ofs;
 
+    // log number for GPS::update_file()
+    AP_Int16 gps_log_num;
+
     AP_Float batt_voltage; // battery voltage base
     AP_Float batt_capacity_ah; // battery capacity in Ah
     AP_Int8  rc_fail;     // fail RC input
@@ -231,7 +233,10 @@ public:
     AP_Int32 mag_devid[MAX_CONNECTED_MAGS]; // Mag devid
     AP_Float buoyancy; // submarine buoyancy in Newtons
     AP_Int16 loop_rate_hz;
+    AP_Int16 loop_time_jitter_us;
     AP_Int32 on_hardware_output_enable_mask;  // mask of output channels passed through to actual hardware
+
+    AP_Float uart_byte_loss_pct;
 
 #ifdef SFML_JOYSTICK
     AP_Int8 sfml_joystick_id;
@@ -254,6 +259,8 @@ public:
         AP_Float wcof_xn;
         AP_Float wcof_yp;
         AP_Float wcof_yn;
+        AP_Float wcof_zp;
+        AP_Float wcof_zn;
     };
     BaroParm baro[BARO_MAX_INSTANCES];
 
@@ -337,6 +344,9 @@ public:
     // what harmonics to generate
     AP_Int16 vibe_motor_harmonics;
 
+    // what servos are motors
+    AP_Int32 vibe_motor_mask;
+    
     // minimum throttle for addition of ins noise
     AP_Float ins_noise_throttle_min;
 
@@ -441,6 +451,8 @@ public:
 
     // ESC telemetry
     AP_Int8 esc_telem;
+    // RPM when motors are armed
+    AP_Float esc_rpm_armed;
 
     struct {
         // LED state, for serial LED emulation
@@ -496,6 +508,17 @@ public:
 
     // Master instance to use servos from with slave instances
     AP_Int8 ride_along_master;
+
+#if AP_SIM_INS_FILE_ENABLED
+    enum INSFileMode {
+        INS_FILE_NONE = 0,
+        INS_FILE_READ = 1,
+        INS_FILE_WRITE = 2,
+        INS_FILE_READ_STOP_ON_EOF = 3,
+    };
+    AP_Int8 gyro_file_rw;
+    AP_Int8 accel_file_rw;
+#endif
 };
 
 } // namespace SITL

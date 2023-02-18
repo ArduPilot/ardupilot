@@ -28,6 +28,7 @@
 #if !AP_AIS_DUMMY_METHODS_ENABLED
 
 #include <AP_Logger/AP_Logger.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -308,12 +309,12 @@ bool AP_AIS::get_vessel_index(uint32_t mmsi, uint16_t &index, uint32_t lat, uint
         return false;
     }
 
-    struct Location current_loc;
+    Location current_loc;
     if (!AP::ahrs().get_location(current_loc)) {
         return false;
     }
 
-    struct Location loc;
+    Location loc;
     float dist;
     float max_dist = 0;
     for (uint16_t i = 0; i < list_size; i++) {

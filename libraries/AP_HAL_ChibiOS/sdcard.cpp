@@ -20,6 +20,7 @@
 #include "hwdef/common/spi_hook.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#include "bouncebuffer.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -171,8 +172,10 @@ bool sdcard_retry(void)
 #ifdef USE_POSIX
     if (!sdcard_running) {
         if (sdcard_init()) {
+#if HAVE_FILESYSTEM_SUPPORT
             // create APM directory
             AP::FS().mkdir("/APM");
+#endif
         }
     }
     return sdcard_running;

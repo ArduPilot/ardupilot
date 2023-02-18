@@ -122,6 +122,10 @@ public:
                           uint8_t sequence,
                           const class RallyLocation &rally_point);
     bool Write_Rally();
+#if HAL_LOGGER_FENCE_ENABLED
+    bool Write_FencePoint(uint8_t total, uint8_t sequence, const AC_PolyFenceItem &fence_point);
+    bool Write_Fence();
+#endif
     bool Write_Format(const struct LogStructure *structure);
     bool Write_Message(const char *message);
     bool Write_MessageF(const char *fmt, ...);

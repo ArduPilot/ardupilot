@@ -13,8 +13,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
 #include "AP_Beacon_Pozyx.h"
+
+#if AP_BEACON_POZYX_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
 #include <stdio.h>
 
@@ -157,3 +160,5 @@ void AP_Beacon_Pozyx::parse_buffer()
         last_update_ms = AP_HAL::millis();
     }
 }
+
+#endif  // AP_BEACON_POZYX_ENABLED

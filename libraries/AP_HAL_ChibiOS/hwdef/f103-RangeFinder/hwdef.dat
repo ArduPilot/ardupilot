@@ -12,3 +12,6 @@ define AP_PERIPH_RANGEFINDER_PORT_DEFAULT 3
 
 # we're too low on flash with old compiler for bootloader
 define HAL_NO_ROMFS_SUPPORT
+
+# setup for MSP
+define HAL_MSP_ENABLED 1

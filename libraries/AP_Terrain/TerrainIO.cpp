@@ -16,17 +16,15 @@
   handle disk IO for terrain code
  */
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Common/AP_Common.h>
-#include <AP_Math/AP_Math.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <GCS_MAVLink/GCS.h>
-#include <stdio.h>
 #include "AP_Terrain.h"
 
 #if AP_TERRAIN_AVAILABLE
 
 #include <AP_Filesystem/AP_Filesystem.h>
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>
+#include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -224,7 +222,7 @@ uint32_t AP_Terrain::east_blocks(struct grid_block &block) const
     Location loc1, loc2;
     loc1.lat = block.lat_degrees*10*1000*1000L;
     loc1.lng = block.lon_degrees*10*1000*1000L;
-    loc2.lat = block.lat_degrees*10*1000*1000L;
+    loc2.lat = loc1.lat;
     loc2.lng = (block.lon_degrees+1)*10*1000*1000L;
 
     // shift another two blocks east to ensure room is available

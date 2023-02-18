@@ -175,6 +175,16 @@ def options(opt):
         default=False,
         help='Configure for building a bootloader.')
 
+    g.add_option('--signed-fw',
+        action='store_true',
+        default=False,
+        help='Configure for signed firmware support.')
+
+    g.add_option('--private-key',
+                 action='store',
+                 default=None,
+            help='path to private key for signing firmware.')
+    
     g.add_option('--no-autoconfig',
         dest='autoconfig',
         action='store_false',
@@ -225,6 +235,22 @@ submodules at specific revisions.
                  default=False,
                  help="enable generation of scripting documentation")
 
+    g.add_option('--enable-opendroneid', action='store_true',
+                 default=False,
+                 help="Enables OpenDroneID")
+
+    g.add_option('--enable-check-firmware', action='store_true',
+                 default=False,
+                 help="Enables firmware ID checking on boot")
+
+    g.add_option('--enable-custom-controller', action='store_true',
+                 default=False,
+                 help="Enables custom controller")
+
+    g.add_option('--enable-gps-logging', action='store_true',
+                 default=False,
+                 help="Enables GPS logging")
+    
     g = opt.ap_groups['linux']
 
     linux_options = ('--prefix', '--destdir', '--bindir', '--libdir')
@@ -336,7 +362,12 @@ configuration in order to save typing.
         action='store_true',
         default=False,
         help='force single precision postype_t')
-    
+
+    g.add_option('--consistent-builds',
+        action='store_true',
+        default=False,
+        help='force consistent build outputs for things like __LINE__')
+
     g.add_option('--extra-hwdef',
 	    action='store',
 	    default=None,
@@ -384,6 +415,10 @@ def configure(cfg):
     _set_build_context_variant(cfg.env.BOARD)
     cfg.setenv(cfg.env.BOARD)
 
+    if cfg.options.signed_fw:
+        cfg.env.AP_SIGNED_FIRMWARE = True
+        cfg.options.enable_check_firmware = True
+
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
     cfg.env.COVERAGE = cfg.options.coverage
@@ -417,7 +452,10 @@ def configure(cfg):
     cfg.load('clang_compilation_database')
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
-    cfg.load('uavcangen')
+    if cfg.options.board in cfg.ap_periph_boards():
+        cfg.load('dronecangen')
+    else:
+        cfg.load('uavcangen')
 
     cfg.env.SUBMODULE_UPDATE = cfg.options.submodule_update
 
@@ -515,26 +553,6 @@ def configure(cfg):
 
     _collect_autoconfig_files(cfg)
 
-def generate_dronecan_dsdlc(cfg):
-    dsdlc_gen_path = cfg.bldnode.make_node('modules/DroneCAN/libcanard/dsdlc_generated').abspath()
-    src = cfg.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_UAVCAN/dsdl/*', dir=True, src=False)
-    dsdlc_path = cfg.srcnode.make_node('modules/DroneCAN/dronecan_dsdlc/dronecan_dsdlc.py').abspath()
-    if not os.path.exists(dsdlc_path):
-        print("Please update submodules with: git submodule update --recursive --init")
-        sys.exit(1)
-    src = ' '.join([s.abspath() for s in src])
-    cmd = '{} {} -O {} {}'.format(cfg.env.get_flat('PYTHON'),
-                        dsdlc_path,
-                        dsdlc_gen_path,
-                        src)
-    print("Generating DSDLC for CANARD: " + cmd)
-    ret = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if ret.returncode != 0:
-        print('Failed to run: ', cmd)
-        print(ret.stdout.decode('utf-8'))
-        print(ret.stderr.decode('utf-8'))
-        raise RuntimeError('Failed to generate DSDL C bindings')
-
 def collect_dirs_to_recurse(bld, globs, **kw):
     dirs = []
     globs = Utils.to_list(globs)
@@ -631,9 +649,20 @@ def _build_dynamic_sources(bld):
             name='uavcan',
             export_includes=[
                 bld.bldnode.make_node('modules/uavcan/libuavcan/include/dsdlc_generated').abspath(),
+                bld.srcnode.find_dir('modules/uavcan/libuavcan/include').abspath()
             ]
         )
-
+    elif bld.env.AP_PERIPH:
+        bld(
+            features='dronecangen',
+            source=bld.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_UAVCAN/dsdl/*', dir=True, src=False),
+            output_dir='modules/DroneCAN/libcanard/dsdlc_generated/',
+            name='dronecan',
+            export_includes=[
+                bld.bldnode.make_node('modules/DroneCAN/libcanard/dsdlc_generated/include').abspath(),
+                bld.srcnode.find_dir('modules/DroneCAN/libcanard/').abspath(),
+            ]
+        )
 
     def write_version_header(tsk):
         bld = tsk.generator.bld
@@ -738,12 +767,6 @@ def _load_pre_build(bld):
     if bld.cmd == 'clean':
         return
     brd = bld.get_board()
-    if bld.env.AP_PERIPH:
-        dsdlc_gen_path = bld.bldnode.make_node('modules/DroneCAN/libcanard/dsdlc_generated/include').abspath()
-        #check if canard dsdlc directory empty
-        # check if directory exists
-        if not os.path.exists(dsdlc_gen_path) or not os.listdir(dsdlc_gen_path):
-            generate_dronecan_dsdlc(bld)
     if getattr(brd, 'pre_build', None):
         brd.pre_build(bld)    
 
@@ -765,6 +788,8 @@ def build(bld):
 
     if bld.get_board().with_can:
         bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['uavcan']
+    if bld.env.AP_PERIPH:
+        bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['dronecan']
 
     _build_cmd_tweaks(bld)
 

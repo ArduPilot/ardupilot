@@ -1,5 +1,3 @@
-#include <AP_HAL/AP_HAL.h>
-#include <AP_AHRS/AP_AHRS.h>
 #include "AP_Mount_SoloGimbal.h"
 #if HAL_SOLO_GIMBAL_ENABLED
 
@@ -8,10 +6,8 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
 
-extern const AP_HAL::HAL& hal;
-
-AP_Mount_SoloGimbal::AP_Mount_SoloGimbal(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance) :
-    AP_Mount_Backend(frontend, state, instance),
+AP_Mount_SoloGimbal::AP_Mount_SoloGimbal(AP_Mount &frontend, AP_Mount_Params &params, uint8_t instance) :
+    AP_Mount_Backend(frontend, params, instance),
     _gimbal()
 {}
 
@@ -19,7 +15,7 @@ AP_Mount_SoloGimbal::AP_Mount_SoloGimbal(AP_Mount &frontend, AP_Mount::mount_sta
 void AP_Mount_SoloGimbal::init()
 {
     _initialised = true;
-    set_mode((enum MAV_MOUNT_MODE)_state._default_mode.get());
+    set_mode((enum MAV_MOUNT_MODE)_params.default_mode.get());
 }
 
 void AP_Mount_SoloGimbal::update_fast()
@@ -47,7 +43,7 @@ void AP_Mount_SoloGimbal::update()
         // move mount to a neutral position, typically pointing forward
         case MAV_MOUNT_MODE_NEUTRAL: {
             _gimbal.set_lockedToBody(false);
-            const Vector3f &target = _state._neutral_angles.get();
+            const Vector3f &target = _params.neutral_angles.get();
             _angle_rad.roll = radians(target.x);
             _angle_rad.pitch = radians(target.y);
             _angle_rad.yaw = radians(target.z);
@@ -103,27 +99,14 @@ void AP_Mount_SoloGimbal::update()
     }
 }
 
-// set_mode - sets mount's mode
-void AP_Mount_SoloGimbal::set_mode(enum MAV_MOUNT_MODE mode)
+// get attitude as a quaternion.  returns true on success
+bool AP_Mount_SoloGimbal::get_attitude_quaternion(Quaternion& att_quat)
 {
-    // exit immediately if not initialised
-    if (!_initialised) {
-        return;
+    if (!_gimbal.aligned()) {
+        return false;
     }
-
-    // record the mode change
-    _mode = mode;
-}
-
-// send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
-void AP_Mount_SoloGimbal::send_mount_status(mavlink_channel_t chan)
-{
-    if (_gimbal.aligned()) {
-        mavlink_msg_mount_status_send(chan, 0, 0, degrees(_angle_rad.roll)*100, degrees(_angle_rad.pitch)*100, degrees(get_bf_yaw_angle(_angle_rad))*100, _mode);
-    }
-
-    // block heartbeat from transmitting to the GCS
-    GCS_MAVLINK::disable_channel_routing(chan);
+    att_quat.from_euler(_angle_rad.roll, _angle_rad.pitch, get_bf_yaw_angle(_angle_rad));
+    return true;
 }
 
 /*

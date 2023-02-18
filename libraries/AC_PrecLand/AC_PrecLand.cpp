@@ -9,8 +9,15 @@
 #include "AC_PrecLand_SITL.h"
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL& hal;
+
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+ # define AC_PRECLAND_ORIENT_DEFAULT Rotation::ROTATION_NONE
+#else
+ # define AC_PRECLAND_ORIENT_DEFAULT Rotation::ROTATION_PITCH_270
+#endif
 
 static const uint32_t EKF_INIT_TIME_MS = 2000; // EKF initialisation requires this many milliseconds of good sensor data
 static const uint32_t EKF_INIT_SENSOR_MIN_UPDATE_MS = 500; // Sensor must update within this many ms during EKF init, else init will fail
@@ -166,9 +173,17 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Precision Landing Extra Options
     // @Description: Precision Landing Extra Options
-    // @Bitmask: 0: Moving Landing Target
+    // @Bitmask: 0: Moving Landing Target, 1: Allow Precision Landing after manual reposition 
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 17, AC_PrecLand, _options, 0),
+
+    // @Param: ORIENT
+    // @DisplayName: Camera Orientation
+    // @Description: Orientation of camera/sensor on body
+    // @Values: 0:Forward, 4:Back, 25:Down
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO_FRAME("ORIENT", 18, AC_PrecLand, _orient, AC_PRECLAND_ORIENT_DEFAULT, AP_PARAM_FRAME_ROVER),
 
     AP_GROUPEND
 };
@@ -242,6 +257,9 @@ void AC_PrecLand::init(uint16_t update_rate_hz)
     if (_backend != nullptr) {
         _backend->init();
     }
+
+    _approach_vector_body.x = 1;
+    _approach_vector_body.rotate(_orient);
 }
 
 // update - give chance to driver to get updates from sensor
@@ -591,6 +609,21 @@ bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit_body)
             // Apply sensor yaw alignment rotation
             target_vec_unit_body.rotate_xy(radians(_yaw_align*0.01f));
         }
+
+
+        // rotate vector based on sensor oriention to get correct body frame vector
+        if (_orient != ROTATION_PITCH_270) {
+            // by default, the vector is constructed downwards in body frame
+            // hence, we do not do any rotation if the orientation is downwards
+            // if it is some other orientation, we first bring the vector to forward
+            // and then we rotate it to desired orientation
+            // because the rotations are measured with respect to a vector pointing towards front in body frame
+            // for eg, if orientation is back, i.e., ROTATION_YAW_180, 
+            // the vector is first brought to front and then rotation by YAW 180 to take it to the back of vehicle
+            target_vec_unit_body.rotate(ROTATION_PITCH_90); // bring vector to front
+            target_vec_unit_body.rotate(_orient);           // rotate it to desired orientation
+        }
+
         return true;
     } else {
         return false;
@@ -603,11 +636,13 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
     if (retrieve_los_meas(target_vec_unit_body)) {
         const struct inertial_data_frame_s *inertial_data_delayed = (*_inertial_history)[0];
 
+        const bool target_vec_valid = target_vec_unit_body.projected(_approach_vector_body).dot(_approach_vector_body) > 0.0f;
         const Vector3f target_vec_unit_ned = inertial_data_delayed->Tbn * target_vec_unit_body;
-        const bool target_vec_valid = target_vec_unit_ned.z > 0.0f;
+        const Vector3f approach_vector_NED = inertial_data_delayed->Tbn * _approach_vector_body;
         const bool alt_valid = (rangefinder_alt_valid && rangefinder_alt_m > 0.0f) || (_backend->distance_to_target() > 0.0f);
         if (target_vec_valid && alt_valid) {
-            float dist, alt;
+            // distance to target and distance to target along approach vector
+            float dist_to_target, dist_to_target_along_av;
             // figure out ned camera orientation w.r.t its offset
             Vector3f cam_pos_ned;
             if (!_cam_offset.get().is_zero()) {
@@ -617,13 +652,12 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
             }
             if (_backend->distance_to_target() > 0.0f) {
                 // sensor has provided distance to landing target
-                dist = _backend->distance_to_target();
-                alt = dist * target_vec_unit_ned.z;
+                dist_to_target = _backend->distance_to_target();
             } else {
                 // sensor only knows the horizontal location of the landing target
                 // rely on rangefinder for the vertical target
-                alt = MAX(rangefinder_alt_m - cam_pos_ned.z, 0.0f);
-                dist = alt / target_vec_unit_ned.z;
+                dist_to_target_along_av = MAX(rangefinder_alt_m - cam_pos_ned.projected(approach_vector_NED).length(), 0.0f);
+                dist_to_target = dist_to_target_along_av / target_vec_unit_ned.projected(approach_vector_NED).length();
             }
 
             // Compute camera position relative to IMU
@@ -631,7 +665,7 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
             const Vector3f cam_pos_ned_rel_imu = cam_pos_ned - accel_pos_ned;
 
             // Compute target position relative to IMU
-            _target_pos_rel_meas_NED = Vector3f{target_vec_unit_ned.x*dist, target_vec_unit_ned.y*dist, alt} + cam_pos_ned_rel_imu;
+            _target_pos_rel_meas_NED = (target_vec_unit_ned * dist_to_target) + cam_pos_ned_rel_imu;
 
             // store the current relative down position so that if we need to retry landing, we know at this height landing target can be found
             const AP_AHRS &_ahrs = AP::ahrs();

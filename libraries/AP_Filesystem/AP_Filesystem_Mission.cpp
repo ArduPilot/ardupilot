@@ -15,6 +15,11 @@
 /*
   ArduPilot filesystem interface for mission/fence/rally
  */
+
+#include "AP_Filesystem_config.h"
+
+#if AP_FILESYSTEM_MISSION_ENABLED
+
 #include "AP_Filesystem.h"
 #include "AP_Filesystem_Mission.h"
 #include <AP_Mission/AP_Mission.h>
@@ -22,8 +27,6 @@
 #include <AP_Rally/AP_Rally.h>
 #include <GCS_MAVLink/MissionItemProtocol_Rally.h>
 #include <GCS_MAVLink/MissionItemProtocol_Fence.h>
-
-#if HAL_MISSION_ENABLED
 
 extern const AP_HAL::HAL& hal;
 extern int errno;
@@ -212,14 +215,18 @@ bool AP_Filesystem_Mission::check_file_name(const char *name, enum MAV_MISSION_T
         mtype = MAV_MISSION_TYPE_MISSION;
         return true;
     }
+#if AP_FENCE_ENABLED
     if (strcmp(name, "fence.dat") == 0) {
         mtype = MAV_MISSION_TYPE_FENCE;
         return true;
     }
+#endif
+#if HAL_RALLY_ENABLED
     if (strcmp(name, "rally.dat") == 0) {
         mtype = MAV_MISSION_TYPE_RALLY;
         return true;
     }
+#endif
     return false;
 }
 
@@ -240,10 +247,10 @@ bool AP_Filesystem_Mission::get_item(uint32_t idx, enum MAV_MISSION_TYPE mtype, 
     case MAV_MISSION_TYPE_FENCE:
         return MissionItemProtocol_Fence::get_item_as_mission_item(idx, item);
 #endif
-
+#if HAL_RALLY_ENABLED
     case MAV_MISSION_TYPE_RALLY:
         return MissionItemProtocol_Rally::get_item_as_mission_item(idx, item);
-
+#endif
     default:
         break;
     }
@@ -274,6 +281,7 @@ uint32_t AP_Filesystem_Mission::get_num_items(enum MAV_MISSION_TYPE mtype) const
 #endif
     }
 
+#if HAL_RALLY_ENABLED
     case MAV_MISSION_TYPE_RALLY: {
         auto *rally = AP::rally();
         if (rally == nullptr) {
@@ -281,7 +289,8 @@ uint32_t AP_Filesystem_Mission::get_num_items(enum MAV_MISSION_TYPE mtype) const
         }
         return rally->get_rally_total();
     }
-        
+#endif
+
     default:
         break;
     }
@@ -406,4 +415,4 @@ bool AP_Filesystem_Mission::finish_upload(const rfile &r)
     return true;
 }
 
-#endif
+#endif  // AP_FILESYSTEM_MISSION_ENABLED

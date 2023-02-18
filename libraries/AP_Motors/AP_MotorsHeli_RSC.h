@@ -17,7 +17,8 @@
 // default main rotor ramp up time in seconds
 #define AP_MOTORS_HELI_RSC_RAMP_TIME            1       // 1 second to ramp output to main rotor ESC to setpoint
 #define AP_MOTORS_HELI_RSC_RUNUP_TIME           10      // 10 seconds for rotor to reach full speed
-#define AP_MOTORS_HELI_RSC_BAILOUT_TIME         1       // time in seconds to ramp motors when bailing out of autorotation
+#define AP_MOTORS_HELI_RSC_AROT_ENGAGE_TIME     1       // time in seconds to ramp motors when bailing out of autorotation
+#define AP_MOTORS_HELI_RSC_AROT_IDLE            0
 
 // Throttle Curve Defaults
 #define AP_MOTORS_HELI_RSC_THRCRV_0_DEFAULT     25
@@ -109,9 +110,15 @@ public:
     // use external governor autorotation window
     void        set_autorotation_flag(bool flag) { _in_autorotation = flag; }
 
-    // set the throttle percentage to be sent to external governor to signal that autorotation bailout ramp should be used within this instance of Heli_RSC
-    void        set_ext_gov_arot_bail(int16_t pct) { _rsc_arot_bailout_pct = pct; }
-	
+    // set the throttle percentage to be used during autorotation for this instance of Heli_RSC
+    void        set_arot_idle_output(int16_t idle) { _arot_idle_output.set(idle); }
+
+    // set the manual autorotation option for this instance of Heli_RSC
+    void        set_rsc_arot_man_enable(int8_t enable) { _rsc_arot_man_enable.set(enable); }
+
+    // set the autorotation power recovery time for this instance of Heli_RSC
+    void        set_rsc_arot_engage_time(int8_t eng_time) { _rsc_arot_engage_time.set(eng_time); }
+
     // turbine start initialize sequence
     void        set_turbine_start(bool turbine_start) {_turbine_start = turbine_start; }
 
@@ -128,7 +135,9 @@ public:
     AP_Int8         _runup_time;              // Time in seconds for the main rotor to reach full speed.  Must be longer than _rsc_ramp_time
     AP_Int16        _critical_speed;          // Rotor speed below which flight is not possible
     AP_Int16        _idle_output;             // Rotor control output while at idle
-    AP_Int16        _ext_gov_arot_pct;        // Percent value sent to external governor when in autorotation
+    AP_Int16        _arot_idle_output;           // Percent value used when in autorotation
+    AP_Int8         _rsc_arot_engage_time;    // time in seconds for in-flight power re-engagement
+    AP_Int8         _rsc_arot_man_enable;     // enables manual autorotation
 
 private:
     uint64_t        _last_update_us;
@@ -155,11 +164,14 @@ private:
     bool            _governor_fault;              // governor fault status flag
     bool            _use_bailout_ramp;            // true if allowing RSC to quickly ramp up engine
     bool            _in_autorotation;             // true if vehicle is currently in an autorotation
-    int16_t         _rsc_arot_bailout_pct;        // the throttle percentage sent to the external governor to signal that autorotation bailout ramp should be used
     bool            _spooldown_complete;          // flag for determining if spooldown is complete
     float           _fast_idle_timer;             // cooldown timer variable
     uint8_t         _governor_fault_count;        // variable for tracking governor speed sensor faults
     float           _governor_torque_reference;   // governor reference for load calculations
+    bool            _autorotating;                // flag that holds the status of autorotation
+    bool            _bailing_out;                 // flag that holds the status of bail out(power engagement)
+    float           _idle_throttle;               // current idle throttle setting
+    bool            _gov_bailing_out;             // flag that holds the status of governor bail out
 
     // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
     void            update_rotor_ramp(float rotor_ramp_input, float dt);
@@ -189,4 +201,5 @@ private:
     float       get_idle_output() const { return _idle_output * 0.01; }
     float       get_governor_torque() const { return _governor_torque * 0.01; }
     float       get_governor_compensator() const { return _governor_compensator * 0.000001; }
+    float       get_arot_idle_output() const { return _arot_idle_output * 0.01; }
 };

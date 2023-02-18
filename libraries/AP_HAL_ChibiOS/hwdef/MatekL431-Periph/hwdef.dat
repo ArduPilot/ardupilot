@@ -22,6 +22,9 @@ define GPS_MAX_INSTANCES 1
 
 define HAL_PERIPH_GPS_PORT_DEFAULT 2
 
+# allow for F9P GPS modules with moving baseline
+define GPS_MOVING_BASELINE 1
+
 
 # ---------------------- COMPASS ---------------------------
 define HAL_PERIPH_ENABLE_MAG

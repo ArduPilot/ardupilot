@@ -46,8 +46,7 @@ public:
     AP_WindVane();
 
     /* Do not allow copies */
-    AP_WindVane(const AP_WindVane &other) = delete;
-    AP_WindVane &operator=(const AP_WindVane&) = delete;
+    CLASS_NO_COPY(AP_WindVane);
 
     static AP_WindVane *get_singleton();
 

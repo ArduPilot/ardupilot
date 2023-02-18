@@ -20,6 +20,10 @@
 
 #include "NotchFilter.h"
 
+const static float NOTCH_MAX_SLEW       = 0.05f;
+const static float NOTCH_MAX_SLEW_LOWER = 1.0f - NOTCH_MAX_SLEW;
+const static float NOTCH_MAX_SLEW_UPPER = 1.0f / NOTCH_MAX_SLEW_LOWER;
+
 /*
    calculate the attenuation and quality factors of the filter
  */
@@ -43,6 +47,7 @@ void NotchFilter<T>::init(float sample_freq_hz, float center_freq_hz, float band
     // check center frequency is in the allowable range
     if ((center_freq_hz > 0.5 * bandwidth_hz) && (center_freq_hz < 0.5 * sample_freq_hz)) {
         float A, Q;
+        initialised = false;    // force center frequency change
         calculate_A_and_Q(center_freq_hz, bandwidth_hz, attenuation_dB, A, Q);
         init_with_A_and_Q(sample_freq_hz, center_freq_hz, A, Q);
     } else {
@@ -53,8 +58,21 @@ void NotchFilter<T>::init(float sample_freq_hz, float center_freq_hz, float band
 template <class T>
 void NotchFilter<T>::init_with_A_and_Q(float sample_freq_hz, float center_freq_hz, float A, float Q)
 {
-    if ((center_freq_hz > 0.0) && (center_freq_hz < 0.5 * sample_freq_hz) && (Q > 0.0)) {
-        float omega = 2.0 * M_PI * center_freq_hz / sample_freq_hz;
+    // don't update if no updates required
+    if (initialised && is_equal(center_freq_hz, _center_freq_hz) && is_equal(sample_freq_hz, _sample_freq_hz)) {
+        return;
+    }
+
+    float new_center_freq = center_freq_hz;
+
+    // constrain the new center frequency by a percentage of the old frequency
+    if (initialised && !need_reset && !is_zero(_center_freq_hz)) {
+        new_center_freq = constrain_float(new_center_freq, _center_freq_hz * NOTCH_MAX_SLEW_LOWER,
+                                          _center_freq_hz * NOTCH_MAX_SLEW_UPPER);
+    }
+
+    if ((new_center_freq > 0.0) && (new_center_freq < 0.5 * sample_freq_hz) && (Q > 0.0)) {
+        float omega = 2.0 * M_PI * new_center_freq / sample_freq_hz;
         float alpha = sinf(omega) / (2 * Q);
         b0 =  1.0 + alpha*sq(A);
         b1 = -2.0 * cosf(omega);
@@ -62,8 +80,11 @@ void NotchFilter<T>::init_with_A_and_Q(float sample_freq_hz, float center_freq_h
         a0_inv =  1.0/(1.0 + alpha);
         a1 = b1;
         a2 =  1.0 - alpha;
+        _center_freq_hz = new_center_freq;
+        _sample_freq_hz = sample_freq_hz;
         initialised = true;
     } else {
+        // leave center_freq_hz at last value
         initialised = false;
     }
 }

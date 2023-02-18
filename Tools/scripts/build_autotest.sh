@@ -58,9 +58,8 @@ echo "Updating APM"
 pushd APM
 git checkout -f master
 git fetch origin
-git submodule update --recursive --force
 git reset --hard origin/master
-git pull
+Tools/gittools/submodule-sync.sh
 git clean -f -f -x -d -d
 git tag autotest-$(date '+%Y-%m-%d-%H%M%S') -m "test tag `date`"
 popd

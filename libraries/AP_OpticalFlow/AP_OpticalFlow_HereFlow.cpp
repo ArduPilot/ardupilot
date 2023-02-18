@@ -20,7 +20,7 @@ AP_UAVCAN* AP_OpticalFlow_HereFlow::_ap_uavcan = nullptr;
 /*
   constructor - registers instance at top Flow driver
  */
-AP_OpticalFlow_HereFlow::AP_OpticalFlow_HereFlow(OpticalFlow &flow) :
+AP_OpticalFlow_HereFlow::AP_OpticalFlow_HereFlow(AP_OpticalFlow &flow) :
     OpticalFlow_backend(flow)
 {
     if (_driver) {
@@ -83,7 +83,7 @@ void AP_OpticalFlow_HereFlow::_push_state(void)
     if (!new_data) {
         return;
     }
-    struct OpticalFlow::OpticalFlow_state state;
+    struct AP_OpticalFlow::OpticalFlow_state state;
     const Vector2f flowScaler = _flowScaler();
     //setup scaling based on parameters
     float flowScaleFactorX = 1.0f + 0.001f * flowScaler.x;

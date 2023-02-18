@@ -18,7 +18,7 @@
 ./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:terarangertower --speedup=1 -l 51.8752066,14.6487840,54.15,0
 
 param set SERIAL5_PROTOCOL 11
-param set PRX_TYPE 3  # terarangertower
+param set PRX1_TYPE 3  # terarangertower
 reboot
 
 arm throttle
@@ -55,6 +55,8 @@ namespace SITL {
 
 class PS_TeraRangerTower : public SerialProximitySensor {
 public:
+
+    using SerialProximitySensor::SerialProximitySensor;
 
     uint32_t packet_for_location(const Location &location,
                                  uint8_t *data,

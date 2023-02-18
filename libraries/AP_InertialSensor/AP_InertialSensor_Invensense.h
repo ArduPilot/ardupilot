@@ -86,6 +86,8 @@ private:
 
     void _set_filter_register(void);
     void _fifo_reset(bool log_error) __RAMFUNC__;
+    void _fast_fifo_reset() __RAMFUNC__;
+
     bool _has_auxiliary_bus();
 
     /* Read samples from FIFO (FIFO enabled) */
@@ -129,11 +131,17 @@ private:
     LowPassFilter2pFloat _temp_filter;
     uint32_t last_reset_ms;
     uint8_t reset_count;
+    uint8_t fast_reset_count;
+    uint8_t last_fast_reset_count;
+    uint32_t last_fast_reset_count_report_ms;
 
     enum Rotation _rotation;
 
     // enable checking of unexpected resets of offsets
     bool _enable_offset_checking;
+
+    // enable fast fifo reset instead of full fifo reset
+    bool _enable_fast_fifo_reset;
 
     // ICM-20602 y offset register. See usage for explanation
     uint8_t _saved_y_ofs_high;

@@ -24,6 +24,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <stdio.h>
 #include <math.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #ifdef TELEM_DEBUG
 # define debug(fmt, args...)	hal.console->printf("Telem: " fmt "\n", ##args)

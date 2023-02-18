@@ -18,6 +18,7 @@
 #include <AC_Fence/AC_Fence.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 // parameter defaults
 const float OA_BENDYRULER_LOOKAHEAD_DEFAULT = 15.0f;

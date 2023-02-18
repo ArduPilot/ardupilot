@@ -20,6 +20,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_YawController.h"
 #include <AP_AHRS/AP_AHRS.h>
+#include <GCS_MAVLink/GCS.h>
+#include <AP_Scheduler/AP_Scheduler.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -79,7 +81,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] = {
 
     // @Param: _RATE_P
     // @DisplayName: Yaw axis rate controller P gain
-    // @Description: Yaw axis rate controller P gain.  Converts the difference between desired yaw rate and actual yaw rate into a motor speed output
+    // @Description: Yaw axis rate controller P gain.  Corrects in proportion to the difference between the desired yaw rate vs actual yaw rate
     // @Range: 0.08 0.35
     // @Increment: 0.005
     // @User: Standard
@@ -93,7 +95,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] = {
 
     // @Param: _RATE_IMAX
     // @DisplayName: Yaw axis rate controller I gain maximum
-    // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
+    // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum that the I term will output
     // @Range: 0 1
     // @Increment: 0.01
     // @User: Standard
@@ -148,7 +150,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] = {
     AP_GROUPEND
 };
 
-AP_YawController::AP_YawController(const AP_Vehicle::FixedWing &parms)
+AP_YawController::AP_YawController(const AP_FixedWing &parms)
     : aparm(parms)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -164,6 +166,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
     uint32_t dt = tnow - _last_t;
     if (_last_t == 0 || dt > 1000) {
         dt = 0;
+        _pid_info.I = 0;
     }
     _last_t = tnow;
 
@@ -278,8 +281,6 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
     float aspeed;
     float old_I = rate_pid.get_i();
 
-    rate_pid.set_dt(dt);
-
     if (!_ahrs.airspeed_estimate(aspeed)) {
         aspeed = 0;
     }
@@ -293,7 +294,7 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
     //
     // note that we run AC_PID in radians so that the normal scaling
     // range for IMAX in AC_PID applies (usually an IMAX value less than 1.0)
-    rate_pid.update_all(radians(desired_rate) * scaler * scaler, rate_z * scaler * scaler, limit_I);
+    rate_pid.update_all(radians(desired_rate) * scaler * scaler, rate_z * scaler * scaler, dt, limit_I);
 
     if (underspeed) {
         // when underspeed we lock the integrator
@@ -343,8 +344,15 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
 
 void AP_YawController::reset_I()
 {
-    _integrator = 0.0;
-    _pid_info.I = 0.0;
+    _pid_info.I = 0;
+    rate_pid.reset_I();
+    _integrator = 0;
+}
+
+void AP_YawController::reset_rate_PID()
+{
+    rate_pid.reset_I();
+    rate_pid.reset_filter();
 }
 
 /*

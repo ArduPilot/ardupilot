@@ -12,10 +12,8 @@
 #if HAL_MOUNT_STORM32SERIAL_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
 
 #define AP_MOUNT_STORM32_SERIAL_RESEND_MS   1000    // resend angle targets to gimbal once per second
 
@@ -24,7 +22,7 @@ class AP_Mount_SToRM32_serial : public AP_Mount_Backend
 
 public:
     // Constructor
-    AP_Mount_SToRM32_serial(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance);
+    AP_Mount_SToRM32_serial(AP_Mount &frontend, AP_Mount_Params &params, uint8_t instance);
 
     // init - performs any required initialisation for this instance
     void init() override;
@@ -32,14 +30,13 @@ public:
     // update mount position - should be called periodically
     void update() override;
 
-    // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
-    bool has_pan_control() const override;
+    // has_pan_control - returns true if this mount can control its pan (required for multicopters)
+    bool has_pan_control() const override { return yaw_range_valid(); };
 
-    // set_mode - sets mount's mode
-    void set_mode(enum MAV_MOUNT_MODE mode) override;
+protected:
 
-    // send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
-    void send_mount_status(mavlink_channel_t chan) override;
+    // get attitude as a quaternion.  returns true on success
+    bool get_attitude_quaternion(Quaternion& att_quat) override;
 
 private:
 

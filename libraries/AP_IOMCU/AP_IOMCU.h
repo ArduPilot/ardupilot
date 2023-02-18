@@ -161,6 +161,7 @@ private:
     uint32_t last_rc_read_ms;
     uint32_t last_servo_read_ms;
     uint32_t last_safety_option_check_ms;
+    uint32_t last_reg_read_ms;
 
     // last value of safety options
     uint16_t last_safety_options = 0xFFFF;
@@ -268,6 +269,8 @@ private:
     bool check_crc(void);
     void handle_repeated_failures();
     void check_iomcu_reset();
+
+    void write_log();  // handle onboard logging
 
     static AP_IOMCU *singleton;
 

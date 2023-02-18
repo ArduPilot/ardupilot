@@ -522,7 +522,7 @@ void AP_MotorsHeli::reset_swash_servo(SRV_Channel::Aux_servo_function_t function
 // update the throttle input filter
 void AP_MotorsHeli::update_throttle_filter()
 {
-    _throttle_filter.apply(_throttle_in, 1.0f/_loop_rate);
+    _throttle_filter.apply(_throttle_in,  _dt);
 
     // constrain filtered throttle
     if (_throttle_filter.get() < 0.0f) {
@@ -603,3 +603,17 @@ void AP_MotorsHeli::update_turbine_start()
     }
 }
 
+bool AP_MotorsHeli::arming_checks(size_t buflen, char *buffer) const
+{
+    // run base class checks
+    if (!AP_Motors::arming_checks(buflen, buffer)) {
+        return false;
+    }
+
+    if (_heliflags.servo_test_running) {
+        hal.util->snprintf(buffer, buflen, "Servo Test is still running");
+        return false;
+    }
+
+    return true;
+}

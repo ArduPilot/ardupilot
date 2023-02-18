@@ -120,6 +120,8 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const AuxS
     case AUX_FUNC::WINCH_ENABLE:
     case AUX_FUNC::AIRMODE:
     case AUX_FUNC::FORCEFLYING:
+    case AUX_FUNC::CUSTOM_CONTROLLER:
+    case AUX_FUNC::WEATHER_VANE_ENABLE:
         run_aux_function(ch_option, ch_flag, AuxFuncTriggerSource::INIT);
         break;
     default:
@@ -512,7 +514,7 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             break;
 
         case AUX_FUNC::FLOWHOLD:
-#if AP_OPTICALFLOW_ENABLED
+#if MODE_FLOWHOLD_ENABLED
             do_aux_function_change_mode(Mode::Number::FLOWHOLD, ch_flag);
 #endif
             break;
@@ -610,6 +612,28 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
                 copter.ap.armed_with_airmode_switch = true;
             }
             break;
+
+#if AC_CUSTOMCONTROL_MULTI_ENABLED == ENABLED
+        case AUX_FUNC::CUSTOM_CONTROLLER:
+            copter.custom_control.set_custom_controller(ch_flag == AuxSwitchPos::HIGH);
+            break;
+#endif
+
+#if WEATHERVANE_ENABLED == ENABLED
+    case AUX_FUNC::WEATHER_VANE_ENABLE: {
+        switch (ch_flag) {
+            case AuxSwitchPos::HIGH:
+                copter.g2.weathervane.allow_weathervaning(true);
+                break;
+            case AuxSwitchPos::MIDDLE:
+                break;
+            case AuxSwitchPos::LOW:
+                copter.g2.weathervane.allow_weathervaning(false);
+                break;
+        }
+        break;
+    }
+#endif
 
     default:
         return RC_Channel::do_aux_function(ch_option, ch_flag);

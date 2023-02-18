@@ -37,6 +37,10 @@
 #include <Filter/Filter.h>
 #include "SIM_JSON_Master.h"
 
+#ifndef USE_PICOJSON
+#define USE_PICOJSON (CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX)
+#endif
+
 namespace SITL {
 
 /*
@@ -90,16 +94,6 @@ public:
 
     // get frame rate of model in Hz
     float get_rate_hz(void) const { return rate_hz; }
-
-    // get number of motors for model
-    uint16_t get_num_motors() const {
-        return num_motors;
-    }
-
-    // get motor offset for model
-    virtual uint16_t get_motors_offset() const {
-        return 0;
-    }
 
     const Vector3f &get_gyro(void) const {
         return gyro;
@@ -189,9 +183,8 @@ protected:
     // battery model
     Battery battery;
 
-    uint8_t num_motors = 1;
-    uint8_t vtol_motor_start;
-    float rpm[12];
+    uint32_t motor_mask;
+    float rpm[32];
     uint8_t rcin_chan_count;
     float rcin[12];
 
@@ -205,7 +198,7 @@ protected:
     } scanner;
 
     // Rangefinder
-    float rangefinder_m[RANGEFINDER_MAX_INSTANCES];
+    float rangefinder_m[SITL_NUM_RANGEFINDERS];
 
     // Windvane apparent wind
     struct {

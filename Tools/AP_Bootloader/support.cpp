@@ -139,9 +139,9 @@ uint32_t flash_func_sector_size(uint32_t sector)
     return stm32_flash_getpagesize(flash_base_page+sector);
 }
 
-bool flash_func_erase_sector(uint32_t sector)
+bool flash_func_erase_sector(uint32_t sector, bool force_erase)
 {
-    if (!stm32_flash_ispageerased(flash_base_page+sector)) {
+    if (force_erase || !stm32_flash_ispageerased(flash_base_page+sector)) {
         return stm32_flash_erasepage(flash_base_page+sector);
     }
     return true;
@@ -272,24 +272,6 @@ uint32_t get_mcu_desc(uint32_t max, uint8_t *revstr)
     }
 
     return  strp - revstr;
-}
-
-/*
-  see if we should limit flash to 1M on devices with older revisions
- */
-bool check_limit_flash_1M(void)
-{
-#ifdef STM32F427xx
-    uint32_t idcode = (*(uint32_t *)DBGMCU_BASE);
-    uint16_t revid = ((idcode & REVID_MASK) >> 16);
-
-    for (int i = 0; i < ARRAY_SIZE(silicon_revs); i++) {
-        if (silicon_revs[i].revid == revid) {
-            return silicon_revs[i].limit_flash_size_1M;
-        }
-    }
-#endif
-    return false;
 }
 
 void led_on(unsigned led)

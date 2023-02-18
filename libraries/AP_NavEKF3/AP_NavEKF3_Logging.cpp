@@ -220,6 +220,7 @@ void NavEKF3_core::Log_Write_Quaternion(uint64_t time_us) const
     AP::logger().WriteBlock(&pktq1, sizeof(pktq1));
 }
 
+#if EK3_FEATURE_BEACON_FUSION
 // logs beacon information, one beacon per call
 void NavEKF3_core::Log_Write_Beacon(uint64_t time_us)
 {
@@ -266,6 +267,7 @@ void NavEKF3_core::Log_Write_Beacon(uint64_t time_us)
     AP::logger().WriteBlock(&pkt10, sizeof(pkt10));
     rngBcnFuseDataReportIndex++;
 }
+#endif  // EK3_FEATURE_BEACON_FUSION
 
 #if EK3_FEATURE_BODY_ODOM
 void NavEKF3_core::Log_Write_BodyOdom(uint64_t time_us)
@@ -388,8 +390,10 @@ void NavEKF3_core::Log_Write(uint64_t time_us)
     Log_Write_Quaternion(time_us);
 
 
+#if EK3_FEATURE_BEACON_FUSION
     // write range beacon fusion debug packet if the range value is non-zero
     Log_Write_Beacon(time_us);
+#endif
 
 #if EK3_FEATURE_BODY_ODOM
     // write debug data for body frame odometry fusion

@@ -7,7 +7,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: 'macos-latest'
+    runs-on: macos-latest
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
@@ -17,7 +17,7 @@ jobs:
         ]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
       - name: Install Prerequisites
@@ -31,11 +31,12 @@ jobs:
       # Put ccache into github cache for faster build
       - name: Prepare ccache timestamp
         id: ccache_cache_timestamp
+        shell: bash
         run: |
           NOW=$(date -u +"%F-%T")
-          echo "::set-output name=timestamp::${NOW}"
+          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
       - name: ccache cache files
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.ccache
           key: ${{github.workflow}}-ccache-${{matrix.config}}-${{steps.ccache_cache_timestamp.outputs.timestamp}}

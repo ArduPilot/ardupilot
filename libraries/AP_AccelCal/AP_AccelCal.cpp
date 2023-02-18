@@ -12,12 +12,13 @@
 */
 
 #include "AP_AccelCal.h"
-#include <stdarg.h>
-#include <GCS_MAVLink/GCS.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AP_HAL/AP_HAL.h>
 
 #if HAL_INS_ACCELCAL_ENABLED
+
+#include <stdarg.h>
+#include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS.h>
+
 #define AP_ACCELCAL_POSITION_REQUEST_INTERVAL_MS 1000
 
 #define _printf(fmt, args ...) do {                                     \

@@ -119,6 +119,8 @@ PE13 TIM1_CH3 TIM1 PWM(10) GPIO(59)			# PPM/Unused - for future use according to
 
 DMA_PRIORITY USART1* TIM1* TIM3*
 DMA_NOSHARE SPI1_TX SPI1_RX TIM1_CH2 TIM3_CH3
+NODMA I2C*
+define STM32_I2C_USE_DMA FALSE
 
 define HAL_STORAGE_SIZE 16384
 STORAGE_FLASH_PAGE 1
@@ -152,7 +154,7 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 define STM32_PWM_USE_ADVANCED TRUE
 
 # FFT option (disabled by default)
-# define HAL_WITH_DSP 1
+# define HAL_GYROFFT_ENABLED 1
 # define AC_OAPATHPLANNER_ENABLED 0
 
 # EK2 options (disabled by default)
@@ -160,11 +162,8 @@ define STM32_PWM_USE_ADVANCED TRUE
 # define HAL_NAVEKF3_AVAILABLE 0
 
 # save some flash
-define HAL_GENERATOR_ENABLED 0
-define AC_OAPATHPLANNER_ENABLED 0
-define PRECISION_LANDING 0
-define HAL_BARO_WIND_COMP_ENABLED 0
-define GRIPPER_ENABLED 0
+include ../include/save_some_flash.inc
+define AP_GRIPPER_ENABLED 0
 define HAL_PARACHUTE_ENABLED 0
 
 
@@ -172,5 +171,3 @@ define HAL_PARACHUTE_ENABLED 0
 include ../include/minimal.inc
 define HAL_SPRAYER_ENABLED 0
 define AP_BATTMON_SMBUS_ENABLE 0
-define AP_BATTMON_FUEL_ENABLE 0
-define AP_OPTICALFLOW_ENABLED 0

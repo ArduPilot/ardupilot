@@ -53,7 +53,6 @@ public:
     static void subscribe_msgs(AP_UAVCAN* ap_uavcan);
     static AP_GPS_Backend* probe(AP_GPS &_gps, AP_GPS::GPS_State &_state);
 
-    static void handle_fix_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const FixCb &cb);
     static void handle_fix2_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const Fix2Cb &cb);
     static void handle_aux_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const AuxCb &cb);
     static void handle_heading_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const HeadingCb &cb);
@@ -87,11 +86,11 @@ private:
     // returns true once configuration has finished
     bool do_config(void);
 
-    void handle_fix_msg(const FixCb &cb);
     void handle_fix2_msg(const Fix2Cb &cb);
     void handle_aux_msg(const AuxCb &cb);
     void handle_heading_msg(const HeadingCb &cb);
     void handle_status_msg(const StatusCb &cb);
+    void handle_velocity(const float vx, const float vy, const float vz);
 
 #if GPS_MOVING_BASELINE
     void handle_moving_baseline_msg(const MovingBaselineDataCb &cb, uint8_t node_id);
@@ -112,6 +111,7 @@ private:
     bool seen_fix2;
     bool seen_aux;
     bool seen_status;
+    bool seen_relposheading;
 
     bool healthy;
     uint32_t status_flags;

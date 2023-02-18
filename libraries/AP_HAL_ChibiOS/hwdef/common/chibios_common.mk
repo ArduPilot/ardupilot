@@ -7,6 +7,8 @@
 OPT    := $(USE_OPT)
 COPT   := $(USE_COPT)
 CPPOPT := $(USE_CPPOPT)
+ASOPT := $(USE_ASOPT)
+ASXOPT := $(USE_ASXOPT)
 
 # Garbage collection
 ifeq ($(USE_LINK_GC),yes)
@@ -117,8 +119,8 @@ LIBS      := $(DLIBS) $(ULIBS)
 # Various settings
 MCFLAGS   := -mcpu=$(MCU)
 ODFLAGS	  = -x --syms
-ASFLAGS   = $(MCFLAGS) $(ADEFS)
-ASXFLAGS  = $(MCFLAGS) $(ADEFS)
+ASFLAGS   = $(MCFLAGS) $(ADEFS) $(ASOPT)
+ASXFLAGS  = $(MCFLAGS) $(ADEFS) $(ASXOPT)
 ifneq ($(USE_FPU),no)
   LIBCC_ASXFLAGS = $(ASXFLAGS) $(USE_FPU_OPT)
 else

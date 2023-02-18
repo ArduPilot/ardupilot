@@ -365,6 +365,7 @@ struct method_alias {
   char *name;
   char *alias;
   int line;
+  int num_args;
   enum alias_type type;
 };
 
@@ -405,6 +406,7 @@ struct userdata {
   int flags; // flags from the userdata_flags enum
   char *dependency;
   char *creation; // name of a manual creation function if set, note that this will not be used internally
+  int creation_args; // number of args for custom creation function
 };
 
 static struct userdata *parsed_userdata;
@@ -494,6 +496,7 @@ unsigned int parse_access_flags(struct type * type) {
         }
       }
     } else {
+      error(ERROR_UNKNOWN_KEYWORD, "Unknown access provided: %s", state.token);
       break;
     }
     next_token();
@@ -608,6 +611,23 @@ int parse_type(struct type *type, const uint32_t restrictions, enum range_check_
     sanatize_name(&(type->data.ud.sanatized_name), type->data.ud.name);
   }
 
+  // only allow no range check on float, int32 and uint32
+  if (type->flags & TYPE_FLAGS_NO_RANGE_CHECK) {
+    switch (type->type) {
+      case TYPE_FLOAT:
+      case TYPE_INT8_T:
+      case TYPE_INT16_T:
+      case TYPE_INT32_T:
+      case TYPE_UINT8_T:
+      case TYPE_UINT16_T:
+      case TYPE_UINT32_T:
+        break;
+      default:
+        error(ERROR_USERDATA, "%s types cannot skip range check", data_type);
+        break;
+    }
+  }
+
   // sanity check that only supported types are nullable
   if (type->flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE)) {
     // a switch is a very verbose way to do this, but forces users to consider new types added
@@ -717,11 +737,11 @@ void handle_userdata_field(struct userdata *data) {
   char *attribute = strchr(token, '\'');
   if (attribute != NULL) {
     if (strcmp(attribute, keyword_attr_array) != 0) {
-      error(ERROR_USERDATA, "Unknown feild attribute %s for userdata %s feild %s", attribute, data->name, field_name);
+      error(ERROR_USERDATA, "Unknown field attribute %s for userdata %s field %s", attribute, data->name, field_name);
     }
     char * token = next_token();
     string_copy(&(field->array_len), token);
-    trace(TRACE_USERDATA, "userdata %s feild %s array length %s", data->name, field->name, field->array_len);
+    trace(TRACE_USERDATA, "userdata %s field %s array length %s", data->name, field->name, field->array_len);
   }
 
   parse_type(&(field->type), TYPE_RESTRICTION_NOT_NULLABLE, RANGE_CHECK_NONE);
@@ -842,13 +862,21 @@ void handle_manual(struct userdata *node, enum alias_type type) {
   }
   char *cpp_function_name = next_token();
   if (cpp_function_name == NULL) {
-    error(ERROR_SINGLETON, "Expected a cpp name for manual %s method",node->name);
+    error(ERROR_SINGLETON, "Expected a cpp name for manual method %s %s", node->name, name);
   }
   struct method_alias *alias = allocate(sizeof(struct method_alias));
   string_copy(&(alias->name), cpp_function_name);
   string_copy(&(alias->alias), name);
   alias->line = state.line_num;
   alias->type = type;
+
+  if (type != ALIAS_TYPE_MANUAL_OPERATOR) {
+    char *num_args = next_token();
+    if (num_args == NULL) {
+      error(ERROR_SINGLETON, "Expected number of args for manual method %s %s", node->name, name);
+    }
+    alias->num_args = atoi(num_args);
+  }
   alias->next = node->method_aliases;
   node->method_aliases = alias;
 }
@@ -956,10 +984,16 @@ void handle_userdata(void) {
       if (node->creation != NULL) {
         error(ERROR_SINGLETON, "Userdata only support a single creation function");
       }
-      char *creation = strtok(NULL, "");
+      char *creation = next_token();
       if (creation == NULL) {
         error(ERROR_USERDATA, "Expected a creation string for %s",node->name);
       }
+      char *num_args = next_token();
+      if (num_args == NULL) {
+        error(ERROR_SINGLETON, "Expected number of args for creation method %s", node->name);
+      }
+      node->creation_args = atoi(num_args);
+
       string_copy(&(node->creation), creation);
 
   } else if (strcmp(type, keyword_manual_operator) == 0) {
@@ -1111,8 +1145,11 @@ void handle_ap_object(void) {
       }
       string_copy(&(node->dependency), depends);
 
+  } else if (strcmp(type, keyword_manual) == 0) {
+    handle_manual(node, ALIAS_TYPE_MANUAL);
+
   } else {
-    error(ERROR_SINGLETON, "AP_Objects only support renames, methods or semaphore keyowrds (got %s)", type);
+    error(ERROR_SINGLETON, "AP_Objects only support renames, methods, semaphore or manual keywords (got %s)", type);
   }
 
   // check that we didn't just add 2 singleton flags
@@ -1193,7 +1230,6 @@ void emit_userdata_allocators(void) {
     fprintf(source, "int new_%s(lua_State *L) {\n", node->sanatized_name);
     fprintf(source, "    luaL_checkstack(L, 2, \"Out of stack\");\n"); // ensure we have sufficent stack to push the return
     fprintf(source, "    void *ud = lua_newuserdata(L, sizeof(%s));\n", node->name);
-    fprintf(source, "    memset(ud, 0, sizeof(%s));\n", node->name);
     fprintf(source, "    new (ud) %s();\n", node->name);
     fprintf(source, "    luaL_getmetatable(L, \"%s\");\n", node->rename ? node->rename :  node->name);
     fprintf(source, "    lua_setmetatable(L, -2);\n");
@@ -1210,12 +1246,7 @@ void emit_ap_object_allocators(void) {
   while (node) {
     start_dependency(source, node->dependency);
     fprintf(source, "int new_%s(lua_State *L) {\n", node->sanatized_name);
-    fprintf(source, "    luaL_checkstack(L, 2, \"Out of stack\");\n"); // ensure we have sufficent stack to push the return
-    fprintf(source, "    void *ud = lua_newuserdata(L, sizeof(%s *));\n", node->name);
-    fprintf(source, "    memset(ud, 0, sizeof(%s *));\n", node->name); // FIXME: memset is a ridiculously large hammer here
-    fprintf(source, "    luaL_getmetatable(L, \"%s\");\n", node->name);
-    fprintf(source, "    lua_setmetatable(L, -2);\n");
-    fprintf(source, "    return 1;\n");
+    fprintf(source, "    return new_ap_object(L, sizeof(%s *), \"%s\");\n", node->name, node->name);
     fprintf(source, "}\n");
     end_dependency(source, node->dependency);
     fprintf(source, "\n");
@@ -1242,11 +1273,36 @@ void emit_ap_object_checkers(void) {
   while (node) {
     start_dependency(source, node->dependency);
     fprintf(source, "%s ** check_%s(lua_State *L, int arg) {\n", node->name, node->sanatized_name);
-    fprintf(source, "    void *data = luaL_checkudata(L, arg, \"%s\");\n", node->name);
-    fprintf(source, "    return (%s **)data;\n", node->name);
+    fprintf(source, "    %s ** data = (%s**)luaL_checkudata(L, arg, \"%s\");\n", node->name, node->name, node->name);
+    fprintf(source, "    %s * ud = *data;\n", node->name);
+    fprintf(source, "    if (ud == NULL) {\n");
+    fprintf(source, "        // This error will never return, so there is no danger of returning a NULL\n");
+    fprintf(source, "        luaL_error(L, \"Internal error, null pointer\");\n");
+    fprintf(source, "    }\n");
+    fprintf(source, "    return data;\n");
     fprintf(source, "}\n");
     end_dependency(source, node->dependency);
     fprintf(source, "\n");
+    node = node->next;
+  }
+}
+
+void emit_singleton_checkers(void) {
+  struct userdata * node = parsed_singletons;
+  while (node) {
+    if (!(node->flags & UD_FLAG_LITERAL) && (node->methods != NULL)) {
+      start_dependency(source, node->dependency);
+      fprintf(source, "%s * check_%s(lua_State *L) {\n", node->name, node->sanatized_name);
+      fprintf(source, "    %s * ud = %s::get_singleton();\n", node->name, node->name);
+      fprintf(source, "    if (ud == nullptr) {\n");
+      fprintf(source, "        // This error will never return, so there is no danger of returning a nullptr\n");
+      fprintf(source, "        not_supported_error(L, 1, \"%s\");\n", node->rename ? node->rename : node->name);
+      fprintf(source, "    }\n");
+      fprintf(source, "    return ud;\n");
+      fprintf(source, "}\n");
+      end_dependency(source, node->dependency);
+      fprintf(source, "\n");
+    }
     node = node->next;
   }
 }
@@ -1274,7 +1330,7 @@ void emit_ap_object_declarations(void) {
 }
 
 #define NULLABLE_ARG_COUNT_BASE 5000
-void emit_checker(const struct type t, int arg_number, int skipped, const char *indentation, const char *name) {
+void emit_checker(const struct type t, int arg_number, int skipped, const char *indentation) {
   assert(indentation != NULL);
 
   if (arg_number > NULLABLE_ARG_COUNT_BASE) {
@@ -1377,20 +1433,45 @@ void emit_checker(const struct type t, int arg_number, int skipped, const char *
     }
 
     // non down cast
+    char * type_name;
+    char * get_name;
+    char * get_and_check_name;
     switch (t.type) {
       case TYPE_FLOAT:
-        fprintf(source, "%sconst float raw_data_%d = luaL_checknumber(L, %d);\n", indentation, arg_number, arg_number - skipped);
+        type_name = "float";
+        get_name = "luaL_checknumber";
+        get_and_check_name = "get_number";
         break;
       case TYPE_INT8_T:
+        type_name = (t.range == NULL)?"int8_t":"lua_Integer";
+        get_name = "get_int8_t";
+        get_and_check_name = "get_integer";
+        break;
       case TYPE_INT16_T:
-      case TYPE_INT32_T:
+        type_name = (t.range == NULL)?"int16_t":"lua_Integer";
+        get_name = "get_int16_t";
+        get_and_check_name = "get_integer";
+        break;
       case TYPE_UINT8_T:
+        type_name = (t.range == NULL)?"uint8_t":"lua_Integer";
+        get_name = "get_uint8_t";
+        get_and_check_name = "get_integer";
+        break;
       case TYPE_UINT16_T:
+        type_name = (t.range == NULL)?"uint16_t":"lua_Integer";
+        get_name = "get_uint16_t";
+        get_and_check_name = "get_integer";
+        break;
+      case TYPE_INT32_T:
       case TYPE_ENUM:
-        fprintf(source, "%sconst lua_Integer raw_data_%d = luaL_checkinteger(L, %d);\n", indentation, arg_number, arg_number - skipped);
+        type_name = "lua_Integer";
+        get_name = "luaL_checkinteger";
+        get_and_check_name = "get_integer";
         break;
       case TYPE_UINT32_T:
-        fprintf(source, "%sconst uint32_t raw_data_%d = coerce_to_uint32_t(L, %d);\n", indentation, arg_number, arg_number - skipped);
+        type_name = "uint32_t";
+        get_name = "coerce_to_uint32_t";
+        get_and_check_name = "get_uint32";
         break;
       case TYPE_AP_OBJECT:
       case TYPE_NONE:
@@ -1403,48 +1484,61 @@ void emit_checker(const struct type t, int arg_number, int skipped, const char *
         break;
     }
 
-    // range check
-    if (t.range != NULL) {
-      if ((forced_min != NULL) && (forced_max != NULL)) {
-        fprintf(source, "%sluaL_argcheck(L, ((raw_data_%d >= MAX(%s, %s)) && (raw_data_%d <= MIN(%s, %s))), %d, \"%s out of range\");\n",
-                indentation,
-                arg_number, t.range->low, forced_min,
-                arg_number, t.range->high, forced_max,
-                arg_number, name);
-       } else {
-         char * cast_target = "";
 
-         switch (t.type) {
-           case TYPE_FLOAT:
-             cast_target = "float";
-             break;
-           case TYPE_INT8_T:
-           case TYPE_INT16_T:
-           case TYPE_INT32_T:
-           case TYPE_UINT8_T:
-           case TYPE_UINT16_T:
-           case TYPE_ENUM:
-             cast_target = "int32_t";
-             break;
-           case TYPE_UINT32_T:
-             cast_target = "uint32_t";
-             break;
-           case TYPE_AP_OBJECT:
-           case TYPE_NONE:
-           case TYPE_STRING:
-           case TYPE_BOOLEAN:
-           case TYPE_USERDATA:
-           case TYPE_LITERAL:
-             assert(t.range == NULL); // we should have caught this during the parse phase
-             break;
-         }
+    switch (t.type) {
+      case TYPE_FLOAT:
+      case TYPE_INT8_T:
+      case TYPE_INT16_T:
+      case TYPE_INT32_T:
+      case TYPE_UINT8_T:
+      case TYPE_UINT16_T:
+      case TYPE_ENUM:
+      case TYPE_UINT32_T:
+        if (t.range == NULL) {
+            fprintf(source, "%sconst %s raw_data_%d = %s(L, %d);\n", indentation, type_name, arg_number, get_name, arg_number - skipped);
+        } else {
+          if ((forced_min != NULL) && (forced_max != NULL)) {
+            fprintf(source, "%sconst %s raw_data_%d = %s(L, %d, MAX(%s, %s), MIN(%s, %s));\n", indentation, type_name, arg_number, get_and_check_name, arg_number - skipped, t.range->low, forced_min,  t.range->high, forced_max);
+          } else {
+            char * cast_target = "";
 
-         fprintf(source, "%sluaL_argcheck(L, ((raw_data_%d >= static_cast<%s>(%s)) && (raw_data_%d <= static_cast<%s>(%s))), %d, \"%s out of range\");\n",
-                 indentation,
-                 arg_number, cast_target, t.range->low,
-                 arg_number, cast_target, t.range->high,
-                 arg_number - skipped, name);
-       }
+            switch (t.type) {
+              case TYPE_FLOAT:
+                cast_target = "float";
+                break;
+              case TYPE_INT8_T:
+              case TYPE_INT16_T:
+              case TYPE_INT32_T:
+              case TYPE_UINT8_T:
+              case TYPE_UINT16_T:
+              case TYPE_ENUM:
+                cast_target = "int32_t";
+                break;
+              case TYPE_UINT32_T:
+                cast_target = "uint32_t";
+                break;
+              case TYPE_AP_OBJECT:
+              case TYPE_NONE:
+              case TYPE_STRING:
+              case TYPE_BOOLEAN:
+              case TYPE_USERDATA:
+              case TYPE_LITERAL:
+                assert(t.range == NULL); // we should have caught this during the parse phase
+                break;
+            }
+            fprintf(source, "%sconst %s raw_data_%d = %s(L, %d, static_cast<%s>(%s), static_cast<%s>(%s));\n", indentation, type_name, arg_number, get_and_check_name, arg_number - skipped, cast_target, t.range->low, cast_target, t.range->high);
+
+          }
+        }
+
+        break;
+      case TYPE_AP_OBJECT:
+      case TYPE_NONE:
+      case TYPE_STRING:
+      case TYPE_BOOLEAN:
+      case TYPE_USERDATA:
+      case TYPE_LITERAL:
+        break;
     }
 
     // down cast
@@ -1496,9 +1590,18 @@ void emit_checker(const struct type t, int arg_number, int skipped, const char *
   }
 }
 
-void emit_userdata_field(const struct userdata *data, const struct userdata_field *field) {
-  fprintf(source, "static int %s_%s(lua_State *L) {\n", data->sanatized_name, field->name);
-  fprintf(source, "    %s *ud = check_%s(L, 1);\n", data->name, data->sanatized_name);
+void emit_field(const struct userdata_field *field, const char* object_name, const char* object_access) {
+  // if there is only one access type there is no need to deal with multiple arguments in a switch
+  int use_switch = TRUE;
+  int args = 1;
+  char *indent = "            ";
+  if (((field->access_flags & ACCESS_FLAG_READ) == 0) || ((field->access_flags & ACCESS_FLAG_WRITE) == 0)) {
+    use_switch = FALSE;
+    indent = "    ";
+    if (field->access_flags & ACCESS_FLAG_WRITE) {
+      args = 2;
+    }
+  }
 
   char *index_string = "";
   int write_arg_number = 2;
@@ -1506,24 +1609,33 @@ void emit_userdata_field(const struct userdata *data, const struct userdata_fiel
     index_string = "[index]";
     write_arg_number = 3;
 
-    fprintf(source, "\n    const lua_Integer raw_index = luaL_checkinteger(L, 2);\n");
-    fprintf(source, "    luaL_argcheck(L, ((raw_index >= 0) && (raw_index < MIN(%s, UINT8_MAX))), 2, \"index out of range\");\n",field->array_len);
+    if (!use_switch) {
+      fprintf(source, "    binding_argcheck(L, %d);\n",args+1);
+    }
+
+    fprintf(source, "\n    const lua_Integer raw_index = get_integer(L, 2, 0, MIN(%s-1, UINT8_MAX));\n",field->array_len);
     fprintf(source, "    const uint8_t index = static_cast<uint8_t>(raw_index);\n\n");
 
-    fprintf(source, "    switch(lua_gettop(L)-1) {\n");
+    if (use_switch) {
+      fprintf(source, "    switch(lua_gettop(L)-1) {\n");
+    }
 
-  } else {
+  } else if (use_switch) {
     fprintf(source, "    switch(lua_gettop(L)) {\n");
+  } else {
+    fprintf(source, "    binding_argcheck(L, %d);\n",args);
   }
 
   if (field->access_flags & ACCESS_FLAG_READ) {
-    fprintf(source, "        case 1:\n");
+    if (use_switch) {
+      fprintf(source, "        case 1:\n");
+    }
     switch (field->type.type) {
       case TYPE_BOOLEAN:
-        fprintf(source, "            lua_pushinteger(L, ud->%s%s);\n", field->name, index_string);
+        fprintf(source, "%slua_pushinteger(L, %s%s%s%s);\n", indent, object_name, object_access, field->name, index_string);
         break;
       case TYPE_FLOAT:
-        fprintf(source, "            lua_pushnumber(L, ud->%s%s);\n", field->name, index_string);
+        fprintf(source, "%slua_pushnumber(L, %s%s%s%s);\n", indent, object_name, object_access, field->name, index_string);
         break;
       case TYPE_INT8_T:
       case TYPE_INT16_T:
@@ -1531,11 +1643,11 @@ void emit_userdata_field(const struct userdata *data, const struct userdata_fiel
       case TYPE_UINT8_T:
       case TYPE_UINT16_T:
       case TYPE_ENUM:
-        fprintf(source, "            lua_pushinteger(L, ud->%s%s);\n", field->name, index_string);
+        fprintf(source, "%slua_pushinteger(L, %s%s%s%s);\n", indent, object_name, object_access, field->name, index_string);
         break;
       case TYPE_UINT32_T:
-        fprintf(source, "            new_uint32_t(L);\n");
-        fprintf(source, "            *static_cast<uint32_t *>(luaL_checkudata(L, -1, \"uint32_t\")) = ud->%s%s;\n", field->name, index_string);
+        fprintf(source, "%snew_uint32_t(L);\n", indent);
+        fprintf(source, "%s*static_cast<uint32_t *>(luaL_checkudata(L, -1, \"uint32_t\")) = %s%s%s%s;\n", indent, object_name, object_access, field->name, index_string);
         break;
       case TYPE_NONE:
         error(ERROR_INTERNAL, "Can't access a NONE field");
@@ -1544,7 +1656,7 @@ void emit_userdata_field(const struct userdata *data, const struct userdata_fiel
         error(ERROR_INTERNAL, "Can't access a literal field");
         break;
       case TYPE_STRING:
-        fprintf(source, "            lua_pushstring(L, ud->%s%s);\n", field->name, index_string);
+        fprintf(source, "%slua_pushstring(L, %s%s%s%s);\n", indent, object_name, object_access, field->name, index_string);
         break;
       case TYPE_USERDATA:
         error(ERROR_USERDATA, "Userdata does not currently support access to userdata field's");
@@ -1553,21 +1665,34 @@ void emit_userdata_field(const struct userdata *data, const struct userdata_fiel
         error(ERROR_USERDATA, "AP_Object does not currently support access to userdata field's");
         break;
     }
-    fprintf(source, "            return 1;\n");
+    fprintf(source, "%sreturn 1;\n", indent);
   }
 
   if (field->access_flags & ACCESS_FLAG_WRITE) {
-    fprintf(source, "        case 2: {\n");
-    emit_checker(field->type, write_arg_number, 0, "            ", field->name);
-    fprintf(source, "            ud->%s%s = data_%i;\n", field->name, index_string, write_arg_number);
-    fprintf(source, "            return 0;\n");
-    fprintf(source, "         }\n");
+    if (use_switch) {
+      fprintf(source, "        case 2: {\n");
+    }
+    emit_checker(field->type, write_arg_number, 0, indent);
+    fprintf(source, "%s%s%s%s%s = data_%i;\n", indent, object_name, object_access, field->name, index_string, write_arg_number);
+    fprintf(source, "%sreturn 0;\n", indent);
+    if (use_switch) {
+      fprintf(source, "         }\n");
+    }
   }
 
-  fprintf(source, "        default:\n");
-  fprintf(source, "            return luaL_argerror(L, lua_gettop(L), \"too many arguments\");\n");
-  fprintf(source, "    }\n");
+  if (use_switch) {
+    fprintf(source, "        default:\n");
+    fprintf(source, "            return luaL_argerror(L, lua_gettop(L), \"too many arguments\");\n");
+    fprintf(source, "    }\n");
+  }
+
   fprintf(source, "}\n\n");
+}
+
+void emit_userdata_field(const struct userdata *data, const struct userdata_field *field) {
+  fprintf(source, "static int %s_%s(lua_State *L) {\n", data->sanatized_name, field->name);
+  fprintf(source, "    %s *ud = check_%s(L, 1);\n", data->name, data->sanatized_name);
+  emit_field(field, "ud", "->");
 }
 
 void emit_userdata_fields() {
@@ -1592,82 +1717,13 @@ void emit_singleton_field(const struct userdata *data, const struct userdata_fie
   // emit comments on expected arg/type
   if (!(data->flags & UD_FLAG_LITERAL)) {
       // fetch and check the singleton pointer
-      fprintf(source, "    %s * ud = %s::get_singleton();\n", data->name, data->name);
-      fprintf(source, "    if (ud == nullptr) {\n");
-      fprintf(source, "        return not_supported_error(L, %d, \"%s\");\n", 1, data->rename ? data->rename : data->name);
-      fprintf(source, "    }\n\n");
+      fprintf(source, "    %s * ud = check_%s(L);\n", data->name, data->sanatized_name);
   }
   const char *ud_name = (data->flags & UD_FLAG_LITERAL)?data->name:"ud";
   const char *ud_access = (data->flags & UD_FLAG_REFERENCE)?".":"->";
 
-  char *index_string = "";
-  int write_arg_number = 2;
-  if (field->array_len != NULL) {
-    index_string = "[index]";
-    write_arg_number = 3;
+  emit_field(field, ud_name, ud_access);
 
-    fprintf(source, "\n    const lua_Integer raw_index = luaL_checkinteger(L, 2);\n");
-    fprintf(source, "    luaL_argcheck(L, ((raw_index >= 0) && (raw_index < MIN(%s, UINT8_MAX))), 2, \"index out of range\");\n",field->array_len);
-    fprintf(source, "    const uint8_t index = static_cast<uint8_t>(raw_index);\n\n");
-
-    fprintf(source, "    switch(lua_gettop(L)-1) {\n");
-
-  } else {
-    fprintf(source, "    switch(lua_gettop(L)) {\n");
-  }
-
-  if (field->access_flags & ACCESS_FLAG_READ) {
-    fprintf(source, "        case 1:\n");
-    switch (field->type.type) {
-      case TYPE_BOOLEAN:
-        fprintf(source, "            lua_pushinteger(L, %s%s%s%s);\n", ud_name, ud_access, field->name, index_string);
-        break;
-      case TYPE_FLOAT:
-        fprintf(source, "            lua_pushnumber(L, %s%s%s%s);\n", ud_name, ud_access, field->name, index_string);
-        break;
-      case TYPE_INT8_T:
-      case TYPE_INT16_T:
-      case TYPE_INT32_T:
-      case TYPE_UINT8_T:
-      case TYPE_UINT16_T:
-      case TYPE_ENUM:
-        fprintf(source, "            lua_pushinteger(L, %s%s%s%s);\n", ud_name, ud_access, field->name, index_string);
-        break;
-      case TYPE_UINT32_T:
-        fprintf(source, "            new_uint32_t(L);\n");
-        fprintf(source, "            *static_cast<uint32_t *>(luaL_checkudata(L, -1, \"uint32_t\")) = %s%s%s%s;\n", ud_name, ud_access, field->name, index_string);
-        break;
-      case TYPE_NONE:
-        error(ERROR_INTERNAL, "Can't access a NONE field");
-        break;
-      case TYPE_LITERAL:
-        error(ERROR_INTERNAL, "Can't access a literal field");
-        break;
-      case TYPE_STRING:
-        fprintf(source, "            lua_pushstring(L, %s%s%s%s);\n", ud_name, ud_access, field->name, index_string);
-        break;
-      case TYPE_USERDATA:
-        error(ERROR_USERDATA, "Userdata does not currently support access to userdata field's");
-        break;
-      case TYPE_AP_OBJECT: // FIXME: collapse the identical cases here, and use the type string function
-        error(ERROR_USERDATA, "AP_Object does not currently support access to userdata field's");
-        break;
-    }
-    fprintf(source, "            return 1;\n");
-  }
-
-  if (field->access_flags & ACCESS_FLAG_WRITE) {
-    fprintf(source, "        case 2: {\n");
-    emit_checker(field->type, write_arg_number, 0, "            ", field->name);
-    fprintf(source, "            %s%s%s%s = data_%i;\n", ud_name, ud_access, field->name, index_string, write_arg_number);
-    fprintf(source, "            return 0;\n");
-    fprintf(source, "         }\n");
-  }
-
-  fprintf(source, "        default:\n");
-  fprintf(source, "            return luaL_argerror(L, lua_gettop(L), \"too many arguments\");\n");
-  fprintf(source, "    }\n");
-  fprintf(source, "}\n\n");
 }
 
 void emit_singleton_fields() {
@@ -1742,7 +1798,6 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
 
   start_dependency(source, data->dependency);
 
-  const char *access_name = data->rename ? data->rename : data->name;
   // bind ud early if it's a singleton, so that we can use it in the range checks
   fprintf(source, "static int %s_%s(lua_State *L) {\n", data->sanatized_name, method->sanatized_name);
   // emit comments on expected arg/type
@@ -1750,10 +1805,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
 
   if ((data->ud_type == UD_SINGLETON) && !(data->flags & UD_FLAG_LITERAL)) {
       // fetch and check the singleton pointer
-      fprintf(source, "    %s * ud = %s::get_singleton();\n", data->name, data->name);
-      fprintf(source, "    if (ud == nullptr) {\n");
-      fprintf(source, "        return not_supported_error(L, %d, \"%s\");\n", arg_count, access_name);
-      fprintf(source, "    }\n\n");
+      fprintf(source, "    %s * ud = check_%s(L);\n", data->name, data->sanatized_name);
   }
 
   // emit warning if configured
@@ -1788,9 +1840,6 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
     case UD_AP_OBJECT:
       // extract the userdata, it was a pointer, so we need to grab it
       fprintf(source, "    %s * ud = *check_%s(L, 1);\n", data->name, data->sanatized_name);
-      fprintf(source, "    if (ud == NULL) {\n");
-      fprintf(source, "        return luaL_error(L, \"Internal error, null pointer\");\n");
-      fprintf(source, "    }\n");
       break;
   }
 
@@ -1801,7 +1850,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   while (arg != NULL) {
     if (arg->type.type != TYPE_LITERAL) {
       // emit_checker will emit a nullable argument for us
-      emit_checker(arg->type, arg_count, skipped, "    ", "argument");
+      emit_checker(arg->type, arg_count, skipped, "    ");
       arg_count++;
     }
     if (//arg->type.type == TYPE_LITERAL ||
@@ -2004,7 +2053,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
       fprintf(source, "        return 0;\n");
       fprintf(source, "    }\n");
       fprintf(source, "    new_%s(L);\n", method->return_type.data.ud.sanatized_name);
-      fprintf(source, "    *check_%s(L, -1) = data;\n", method->return_type.data.ud.sanatized_name);
+      fprintf(source, "    *(%s**)luaL_checkudata(L, -1, \"%s\") = data;\n", method->return_type.data.ud.name, method->return_type.data.ud.name);
       break;
     case TYPE_NONE:
     case TYPE_LITERAL:
@@ -2298,13 +2347,6 @@ void emit_sandbox(void) {
     end_dependency(source, data->dependency);
     data = data->next;
   }
-  data = parsed_ap_objects;
-  while (data) {
-    start_dependency(source, data->dependency);
-    fprintf(source, "    {\"%s\", new_%s},\n", data->name, data->sanatized_name);
-    end_dependency(source, data->dependency);
-    data = data->next;
-  }
   if (parsed_globals) {
     struct method_alias *manual_aliases = parsed_globals->method_aliases;
     while (manual_aliases) {
@@ -2339,7 +2381,7 @@ void emit_sandbox(void) {
 void emit_argcheck_helper(void) {
   // tagging this with NOINLINE can save a large amount of flash
   // but until we need it we will allow the compilier to choose to inline this for us
-  fprintf(source, "static int binding_argcheck(lua_State *L, int expected_arg_count) {\n");
+  fprintf(source, "int binding_argcheck(lua_State *L, int expected_arg_count) {\n");
   fprintf(source, "    const int args = lua_gettop(L);\n");
   fprintf(source, "    if (args > expected_arg_count) {\n");
   fprintf(source, "        return luaL_argerror(L, args, \"too many arguments\");\n");
@@ -2348,6 +2390,50 @@ void emit_argcheck_helper(void) {
   fprintf(source, "    }\n");
   fprintf(source, "    return 0;\n");
   fprintf(source, "}\n\n");
+
+  fprintf(source, "lua_Integer get_integer(lua_State *L, int arg_num, lua_Integer min_val, lua_Integer max_val) {\n");
+  fprintf(source, "    const lua_Integer lua_int = luaL_checkinteger(L, arg_num);\n");
+  fprintf(source, "    luaL_argcheck(L, (lua_int >= min_val) && (lua_int <= max_val), arg_num, \"out of range\");\n");
+  fprintf(source, "    return lua_int;\n");
+  fprintf(source, "}\n\n");
+
+  fprintf(source, "// helpers for full range types\n");
+  fprintf(source, "int8_t get_int8_t(lua_State *L, int arg_num) {\n");
+  fprintf(source, "    return static_cast<int8_t>(get_integer(L, arg_num, INT8_MIN, INT8_MAX));\n");
+  fprintf(source, "}\n\n");
+
+  fprintf(source, "int16_t get_int16_t(lua_State *L, int arg_num) {\n");
+  fprintf(source, "    return static_cast<int16_t>(get_integer(L, arg_num, INT16_MIN, INT16_MAX));\n");
+  fprintf(source, "}\n\n");
+
+  fprintf(source, "uint8_t get_uint8_t(lua_State *L, int arg_num) {\n");
+  fprintf(source, "    return static_cast<uint8_t>(get_integer(L, arg_num, 0, UINT8_MAX));\n");
+  fprintf(source, "}\n\n");
+
+  fprintf(source, "uint16_t get_uint16_t(lua_State *L, int arg_num) {\n");
+  fprintf(source, "    return static_cast<uint16_t>(get_integer(L, arg_num, 0, UINT16_MAX));\n");
+  fprintf(source, "}\n\n");
+
+  fprintf(source, "float get_number(lua_State *L, int arg_num, float min_val, float max_val) {\n");
+  fprintf(source, "    const float lua_num = luaL_checknumber(L, arg_num);\n");
+  fprintf(source, "    luaL_argcheck(L, (lua_num >= min_val) && (lua_num <= max_val), arg_num, \"out of range\");\n");
+  fprintf(source, "    return lua_num;\n");
+  fprintf(source, "}\n\n");
+
+  fprintf(source, "uint32_t get_uint32(lua_State *L, int arg_num, uint32_t min_val, uint32_t max_val) {\n");
+  fprintf(source, "    const uint32_t lua_unint32 = coerce_to_uint32_t(L, arg_num);\n");
+  fprintf(source, "    luaL_argcheck(L, (lua_unint32 >= min_val) && (lua_unint32 <= max_val), arg_num, \"out of range\");\n");
+  fprintf(source, "    return lua_unint32;\n");
+  fprintf(source, "}\n\n");
+
+  fprintf(source, "int new_ap_object(lua_State *L, size_t size, const char * name) {\n");
+  fprintf(source, "    luaL_checkstack(L, 2, \"Out of stack\");\n");
+  fprintf(source, "    lua_newuserdata(L, size);\n");
+  fprintf(source, "    luaL_getmetatable(L, name);\n");
+  fprintf(source, "    lua_setmetatable(L, -2);\n");
+  fprintf(source, "    return 1;\n");
+  fprintf(source, "}\n\n");
+
 }
 
 void emit_not_supported_helper(void) {
@@ -2486,7 +2572,19 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
       if (emit_creation) {
         // creation function
         fprintf(docs, "---@return %s\n", name);
-        fprintf(docs, "function %s() end\n\n", node->rename ? node->rename : node->sanatized_name);
+        fprintf(docs, "function %s(", node->rename ? node->rename : node->sanatized_name);
+        if (node->creation == NULL) {
+          fprintf(docs, ") end\n\n");
+        } else {
+          for (int i = 0; i < node->creation_args; ++i) {
+            fprintf(docs, "param%i", i+1);
+            if (i < node->creation_args-1) {
+              fprintf(docs, ", ");
+            }
+          }
+          fprintf(docs, ") end\n\n");
+        }
+
       }
     } else {
       // global
@@ -2499,7 +2597,7 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
       struct userdata_field *field = node->fields;
       while(field) {
           if (field->array_len == NULL) {
-            // single value feild
+            // single value field
             if (field->access_flags & ACCESS_FLAG_READ) {
               fprintf(docs, "-- get field\n");
               emit_docs_type(field->type, "---@return", "\n");
@@ -2511,7 +2609,7 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
               fprintf(docs, "function %s:%s(value) end\n\n", name, field->rename ? field->rename : field->name);
             }
           } else {
-            // array feild
+            // array field
             if (field->access_flags & ACCESS_FLAG_READ) {
               fprintf(docs, "-- get array field\n");
               fprintf(docs, "---@param index integer\n");
@@ -2540,7 +2638,6 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
     // aliases
     struct method_alias *alias = node->method_aliases;
     while(alias) {
-      // dont do manual bindings
       if (alias->type == ALIAS_TYPE_NONE) {
         // find the method this is a alias of
         struct method * method = node->methods;
@@ -2552,6 +2649,17 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
         }
 
         emit_docs_method(name, alias->alias, method);
+
+      } else if (alias->type == ALIAS_TYPE_MANUAL) {
+          // Cant do a great job, don't know types or return
+          fprintf(docs, "-- desc\nfunction %s:%s(", name, alias->alias);
+          for (int i = 0; i < alias->num_args; ++i) {
+            fprintf(docs, "param%i", i+1);
+            if (i < alias->num_args-1) {
+              fprintf(docs, ", ");
+            }
+          }
+          fprintf(docs, ") end\n\n");
       }
       alias = alias->next;
     }
@@ -2714,7 +2822,7 @@ int main(int argc, char **argv) {
 
   emit_ap_object_checkers();
 
-
+  emit_singleton_checkers();
 
   emit_singleton_fields();
   emit_methods(parsed_singletons);
@@ -2754,6 +2862,25 @@ int main(int argc, char **argv) {
 
   fprintf(header, "void load_generated_bindings(lua_State *L);\n");
   fprintf(header, "void load_generated_sandbox(lua_State *L);\n");
+  fprintf(header, "int binding_argcheck(lua_State *L, int expected_arg_count);\n");
+  fprintf(header, "lua_Integer get_integer(lua_State *L, int arg_num, lua_Integer min_val, lua_Integer max_val);\n");
+  fprintf(header, "int8_t get_int8_t(lua_State *L, int arg_num);\n");
+  fprintf(header, "int16_t get_int16_t(lua_State *L, int arg_num);\n");
+  fprintf(header, "uint8_t get_uint8_t(lua_State *L, int arg_num);\n");
+  fprintf(header, "uint16_t get_uint16_t(lua_State *L, int arg_num);\n");
+  fprintf(header, "float get_number(lua_State *L, int arg_num, float min_val, float max_val);\n");
+  fprintf(header, "uint32_t get_uint32(lua_State *L, int arg_num, uint32_t min_val, uint32_t max_val);\n");
+  fprintf(header, "int new_ap_object(lua_State *L, size_t size, const char * name);\n");
+
+  struct userdata * node = parsed_singletons;
+  while (node) {
+    if (!(node->flags & UD_FLAG_LITERAL) && (node->methods != NULL)) {
+      start_dependency(header, node->dependency);
+      fprintf(header, "%s * check_%s(lua_State *L);\n", node->name, node->sanatized_name);
+      end_dependency(header, node->dependency);
+    }
+    node = node->next;
+  }
 
   fclose(header);
   header = NULL;
@@ -2771,13 +2898,34 @@ int main(int argc, char **argv) {
   fprintf(docs, "-- ArduPilot lua scripting documentation in EmmyLua Annotations\n");
   fprintf(docs, "-- This file should be auto generated and then manual edited\n");
   fprintf(docs, "-- generate with --scripting-docs, eg  ./waf copter --scripting-docs\n");
-  fprintf(docs, "-- see: https://github.com/sumneko/lua-language-server/wiki/EmmyLua-Annotations\n\n");
+  fprintf(docs, "-- see: https://github.com/sumneko/lua-language-server/wiki/EmmyLua-Annotations\n");
+  fprintf(docs, "-- luacheck: ignore 212 (Unused argument)\n");
+  fprintf(docs, "-- luacheck: ignore 241 (Local variable is mutated but never accessed)\n\n");
 
   emit_docs(parsed_userdata, TRUE, TRUE);
 
   emit_docs(parsed_ap_objects, TRUE, FALSE);
 
   emit_docs(parsed_singletons, FALSE, FALSE);
+
+  // global aliases
+  if (parsed_globals != NULL) {
+    struct method_alias *alias = parsed_globals->method_aliases;
+    while(alias) {
+      if (alias->type == ALIAS_TYPE_MANUAL) {
+          // Cant do a great job, don't know types or return
+          fprintf(docs, "-- desc\nfunction %s(", alias->alias);
+          for (int i = 0; i < alias->num_args; ++i) {
+            fprintf(docs, "param%i", i+1);
+            if (i < alias->num_args-1) {
+              fprintf(docs, ", ");
+            }
+          }
+          fprintf(docs, ") end\n\n");
+      }
+      alias = alias->next;
+    }
+  }
 
   fclose(docs);
 

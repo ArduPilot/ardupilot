@@ -12,8 +12,7 @@ public:
     Semaphore() {}
 
     // do not allow copying
-    Semaphore(const Semaphore &other) = delete;
-    Semaphore &operator=(const Semaphore&) = delete;
+    CLASS_NO_COPY(Semaphore);
 
     virtual bool take(uint32_t timeout_ms) WARN_IF_UNUSED = 0 ;
     virtual bool take_nonblocking() WARN_IF_UNUSED = 0;
@@ -52,6 +51,7 @@ private:
 };
 
 // From: https://stackoverflow.com/questions/19666142/why-is-a-level-of-indirection-needed-for-this-concatenation-macro
-#define WITH_SEMAPHORE( sem ) JOIN( sem, __LINE__, __COUNTER__ )
+#define WITH_SEMAPHORE( sem ) JOIN( sem, __AP_LINE__, __COUNTER__ )
+
 #define JOIN( sem, line, counter ) _DO_JOIN( sem, line, counter )
 #define _DO_JOIN( sem, line, counter ) WithSemaphore _getsem ## counter(sem, line)

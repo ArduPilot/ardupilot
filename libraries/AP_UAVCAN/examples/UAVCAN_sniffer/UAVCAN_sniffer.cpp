@@ -14,7 +14,7 @@
 
 #include <uavcan/helpers/heap_based_pool_allocator.hpp>
 
-#include <uavcan/equipment/gnss/Fix.hpp>
+#include <uavcan/equipment/gnss/Fix2.hpp>
 #include <uavcan/equipment/gnss/Auxiliary.hpp>
 
 #include <uavcan/equipment/ahrs/MagneticFieldStrength.hpp>
@@ -111,7 +111,7 @@ static void count_msg(const char *name)
     static void cb_ ## cbname(const uavcan::ReceivedDataStructure<mtype>& msg) { count_msg(msg.getDataTypeFullName()); }
 
 MSG_CB(uavcan::protocol::NodeStatus, NodeStatus)
-MSG_CB(uavcan::equipment::gnss::Fix, Fix)
+MSG_CB(uavcan::equipment::gnss::Fix2, Fix2)
 MSG_CB(uavcan::equipment::gnss::Auxiliary, Auxiliary)
 MSG_CB(uavcan::equipment::ahrs::MagneticFieldStrength, MagneticFieldStrength)
 MSG_CB(uavcan::equipment::ahrs::MagneticFieldStrength2, MagneticFieldStrength2);
@@ -187,7 +187,7 @@ void UAVCAN_sniffer::init(void)
 #define START_CB(mtype, cbname) (new uavcan::Subscriber<mtype>(*_node))->start(cb_ ## cbname)
 
     START_CB(uavcan::protocol::NodeStatus, NodeStatus);
-    START_CB(uavcan::equipment::gnss::Fix, Fix);
+    START_CB(uavcan::equipment::gnss::Fix2, Fix2);
     START_CB(uavcan::equipment::gnss::Auxiliary, Auxiliary);
     START_CB(uavcan::equipment::ahrs::MagneticFieldStrength, MagneticFieldStrength);
     START_CB(uavcan::equipment::ahrs::MagneticFieldStrength2, MagneticFieldStrength2);

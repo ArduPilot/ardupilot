@@ -12,8 +12,7 @@ public:
     AP_NavEKF_Source();
 
     /* Do not allow copies */
-    AP_NavEKF_Source(const AP_NavEKF_Source &other) = delete;
-    AP_NavEKF_Source &operator=(const AP_NavEKF_Source&) = delete;
+    CLASS_NO_COPY(AP_NavEKF_Source);
 
     enum class SourceXY : uint8_t {
         NONE = 0,
@@ -102,6 +101,9 @@ public:
 
     // return true if wheel encoder is enabled on any source
     bool wheel_encoder_enabled(void) const;
+
+    // returns active source set 
+    uint8_t get_active_source_set() const;
 
     static const struct AP_Param::GroupInfo var_info[];
 

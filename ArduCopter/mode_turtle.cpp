@@ -18,12 +18,29 @@ bool ModeTurtle::init(bool ignore_checks)
         return false;
     }
 
-    // do not enter the mode if sticks are not centered
+    // do not enter the mode if sticks are not centered or throttle is not at zero
     if (!is_zero(channel_pitch->norm_input_dz())
         || !is_zero(channel_roll->norm_input_dz())
-        || !is_zero(channel_yaw->norm_input_dz())) {
+        || !is_zero(channel_yaw->norm_input_dz())
+        || !is_zero(channel_throttle->norm_input_dz())) {
         return false;
     }
+
+    // turn on notify leds
+    AP_Notify::flags.esc_calibration = true;
+
+    return true;
+}
+
+void ModeTurtle::arm_motors()
+{
+    if (hal.util->get_soft_armed()) {
+        return;
+    }
+
+    // stop the spoolup block activating
+    motors->set_spoolup_block(false);
+
     // reverse the motors
     hal.rcout->disable_channel_mask_updates();
     change_motor_direction(true);
@@ -36,8 +53,6 @@ bool ModeTurtle::init(bool ignore_checks)
     // arm
     motors->armed(true);
     hal.util->set_soft_armed(true);
-
-    return true;
 }
 
 bool ModeTurtle::allows_arming(AP_Arming::Method method) const
@@ -47,6 +62,18 @@ bool ModeTurtle::allows_arming(AP_Arming::Method method) const
 
 void ModeTurtle::exit()
 {
+    disarm_motors();
+
+    // turn off notify leds
+    AP_Notify::flags.esc_calibration = false;
+}
+
+void ModeTurtle::disarm_motors()
+{
+    if (!hal.util->get_soft_armed()) {
+        return;
+    }
+
     // disarm
     motors->armed(false);
     hal.util->set_soft_armed(false);
@@ -132,7 +159,7 @@ void ModeTurtle::run()
 
     // at this point we have a power value in the range 0..1
 
-    // notmalise the roll and pitch input to match the motors
+    // normalise the roll and pitch input to match the motors
     Vector2f input{sign_roll, sign_pitch};
     motors_input = input.normalized() * 0.5;
     // we bypass spin min and friends in the deadzone because we only want spin up when the sticks are moved
@@ -142,6 +169,20 @@ void ModeTurtle::run()
 // actually write values to the motors
 void ModeTurtle::output_to_motors()
 {
+    // throttle needs to be raised
+    if (is_zero(channel_throttle->norm_input_dz())) {
+        const uint32_t now = AP_HAL::millis();
+        if (now - last_throttle_warning_output_ms > 5000) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Turtle: raise throttle to arm");
+            last_throttle_warning_output_ms = now;
+        }
+
+        disarm_motors();
+        return;
+    }
+
+    arm_motors();
+
     // check if motor are allowed to spin
     const bool allow_output = motors->armed() && motors->get_interlock();
 

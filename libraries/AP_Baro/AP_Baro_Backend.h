@@ -2,10 +2,6 @@
 
 #include "AP_Baro.h"
 
-#ifndef AP_BARO_BACKEND_DEFAULT_ENABLED
-#define AP_BARO_BACKEND_DEFAULT_ENABLED 1
-#endif
-
 class AP_Baro_Backend
 {
 public:
@@ -58,6 +54,10 @@ public:
         DEVTYPE_BARO_MSP      = 0x0E,
         DEVTYPE_BARO_ICP101XX = 0x0F,
         DEVTYPE_BARO_ICP201XX = 0x10,
+        DEVTYPE_BARO_MS5607   = 0x11,
+        DEVTYPE_BARO_MS5837   = 0x12,
+        DEVTYPE_BARO_MS5637   = 0x13,
+        DEVTYPE_BARO_BMP390   = 0x14,
     };
     
 protected:

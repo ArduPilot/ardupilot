@@ -4,7 +4,6 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
-#include <SRV_Channel/SRV_Channel.h>
 #include "AP_MotorsMulticopter.h"
 
 // tail servo uses channel 7
@@ -18,8 +17,8 @@ class AP_MotorsTri : public AP_MotorsMulticopter {
 public:
 
     /// Constructor
-    AP_MotorsTri(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_MotorsMulticopter(loop_rate, speed_hz)
+    AP_MotorsTri(uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+        AP_MotorsMulticopter(speed_hz)
     {
     };
 
@@ -43,7 +42,7 @@ public:
     // mask. This is used to control tiltrotor motors in forward
     // flight. Thrust is in the range 0 to 1
     // rudder_dt applys diffential thrust for yaw in the range 0 to 1
-    void                output_motor_mask(float thrust, uint8_t mask, float rudder_dt) override;
+    void                output_motor_mask(float thrust, uint16_t mask, float rudder_dt) override;
 
     // return the roll factor of any motor, this is used for tilt rotors and tail sitters
     // using copter motors for forward flight

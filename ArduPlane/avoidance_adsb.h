@@ -12,8 +12,7 @@ public:
     using AP_Avoidance::AP_Avoidance;
 
     /* Do not allow copies */
-    AP_Avoidance_Plane(const AP_Avoidance_Plane &other) = delete;
-    AP_Avoidance_Plane &operator=(const AP_Avoidance_Plane&) = delete;
+    CLASS_NO_COPY(AP_Avoidance_Plane);
 
 protected:
     // override avoidance handler

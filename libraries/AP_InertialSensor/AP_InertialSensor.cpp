@@ -1,24 +1,27 @@
 #include <assert.h>
 
+#include "AP_InertialSensor.h"
+
+#if AP_INERTIALSENSOR_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-#if HAL_INS_ENABLED
 #include <AP_HAL/I2CDevice.h>
 #include <AP_HAL/SPIDevice.h>
 #include <AP_HAL/DSP.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Notify/AP_Notify.h>
-#include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_AHRS/AP_AHRS_View.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #if !APM_BUILD_TYPE(APM_BUILD_Rover)
 #include <AP_Motors/AP_Motors_Class.h>
 #endif
+#include <GCS_MAVLink/GCS.h>
 
-#include "AP_InertialSensor.h"
 #include "AP_InertialSensor_BMI160.h"
 #include "AP_InertialSensor_BMI270.h"
 #include "AP_InertialSensor_Backend.h"
@@ -547,9 +550,11 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
 
     // index 37 was NOTCH_
 
+#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
     // @Group: LOG_
     // @Path: ../AP_InertialSensor/BatchSampler.cpp
     AP_SUBGROUPINFO(batchsampler, "LOG_",  39, AP_InertialSensor, AP_InertialSensor::BatchSampler),
+#endif
 
     // @Param: ENABLE_MASK
     // @DisplayName: IMU enable mask
@@ -845,6 +850,18 @@ bool AP_InertialSensor::set_gyro_window_size(uint16_t size) {
     return true;
 }
 
+#if HAL_WITH_DSP
+bool AP_InertialSensor::has_fft_notch() const
+{
+    for (auto &notch : harmonic_notches) {
+        if (notch.params.enabled() && notch.params.tracking_mode() == HarmonicNotchDynamicMode::UpdateGyroFFT) {
+            return true;
+        }
+    }
+    return false;
+}
+#endif
+
 void
 AP_InertialSensor::init(uint16_t loop_rate)
 {
@@ -874,12 +891,41 @@ AP_InertialSensor::init(uint16_t loop_rate)
     _last_sample_usec = 0;
     _have_sample = false;
 
+#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
     // initialise IMU batch logging
     batchsampler.init();
+#endif
 
 #if HAL_WITH_DSP
     AP_GyroFFT* fft = AP::fft();
     bool fft_enabled = fft != nullptr && fft->enabled();
+    if (fft_enabled) {
+        _post_filter_fft = fft->using_post_filter_samples();
+    }
+
+    // calculate the position that the FFT window needs to be applied
+    // Use cases:
+    //  Gyro -> FFT window -> FFT Notch1/2 -> Non-FFT Notch2/1 -> LPF -> Filtered Gyro -- Phase 0
+    //  Gyro -> FFT window -> Non-FFT Notch1/2 -> LPF -> Filtered Gyro  -- Phase 0
+    //  Gyro -> Non-FFT Notch1 -> Filtered FFT Window -> FFT Notch2 -> LPF -> Filtered Gyro -- Phase 1
+    //  Gyro -> Non-FFT Notch1/2 -> Non-FFT Notch1/2 -> Filtered FFT Window -> LPF -> Filtered Gyro -- Phase 2
+    //  Gyro -> Non-FFT Notch1/2 -> Filtered FFT Window -> LPF -> Filtered Gyro -- Phase 1
+    //  Gyro -> Filtered FFT Window -> LPF -> Filtered Gyro -- Phase 0
+    //  Gyro -> FFT window -> LPF -> Filtered Gyro -- Phase 0
+    //  Gyro -> Notch1/2 -> LPF -> Filtered Gyro
+
+    if (_post_filter_fft) {
+        for (auto &notch : harmonic_notches) {
+            if (!notch.params.enabled()) {
+                continue;
+            }
+            // window must always come before any FFT notch
+            if (notch.params.tracking_mode() == HarmonicNotchDynamicMode::UpdateGyroFFT) {
+                break;
+            }
+            _fft_window_phase++;
+        }
+    }
 #else
     bool fft_enabled = false;
 #endif
@@ -1015,6 +1061,8 @@ AP_InertialSensor::detect_backends(void)
         probe_count++; \
 } while (0)
 
+#define ADD_BACKEND_INSTANCE(x, instance) if (instance == _backend_count) { ADD_BACKEND(x); }
+
 // support for adding IMUs conditioned on board type
 #define BOARD_MATCH(board_type) AP_BoardConfig::get_board_type()==AP_BoardConfig::board_type
 #define ADD_BACKEND_BOARD_MATCH(board_match, x) do { if (board_match) { ADD_BACKEND(x); } } while(0)
@@ -1024,7 +1072,7 @@ AP_InertialSensor::detect_backends(void)
 
 #if HAL_EXTERNAL_AHRS_ENABLED
     // if enabled, make the first IMU the external AHRS
-    const int8_t serial_port = AP::externalAHRS().get_port();
+    const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::IMU);
     if (serial_port >= 0) {
         ADD_BACKEND(new AP_InertialSensor_ExternalAHRS(*this, serial_port));
     }
@@ -1186,7 +1234,9 @@ AP_InertialSensor::detect_backends(void)
 // ins_periodic: 57500 events, 0 overruns, 208754us elapsed, 3us avg, min 1us max 218us 40.662us rms
 void AP_InertialSensor::periodic()
 {
+#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
     batchsampler.periodic();
+#endif
 }
 
 
@@ -1615,6 +1665,7 @@ void AP_InertialSensor::HarmonicNotch::update_params(uint8_t instance, bool conv
     const float center_freq = calculated_notch_freq_hz[0];
     if (!is_equal(last_bandwidth_hz[instance], params.bandwidth_hz()) ||
         !is_equal(last_attenuation_dB[instance], params.attenuation_dB()) ||
+        (params.tracking_mode() == HarmonicNotchDynamicMode::Fixed && !is_equal(last_center_freq_hz[instance], center_freq)) ||
         converging) {
         filter[instance].init(gyro_rate,
                               center_freq,
@@ -1623,7 +1674,7 @@ void AP_InertialSensor::HarmonicNotch::update_params(uint8_t instance, bool conv
         last_center_freq_hz[instance] = center_freq;
         last_bandwidth_hz[instance] = params.bandwidth_hz();
         last_attenuation_dB[instance] = params.attenuation_dB();
-    } else if (!is_equal(last_center_freq_hz[instance], center_freq)) {
+    } else if (params.tracking_mode() != HarmonicNotchDynamicMode::Fixed) {
         if (num_calculated_notch_frequencies > 1) {
             filter[instance].update(num_calculated_notch_frequencies, calculated_notch_freq_hz);
         } else {
@@ -2084,7 +2135,7 @@ void AP_InertialSensor::HarmonicNotch::update_frequencies_hz(uint8_t num_freqs, 
 }
 
 // setup the notch for throttle based tracking, called from FFT based tuning
-bool AP_InertialSensor::setup_throttle_gyro_harmonic_notch(float center_freq_hz, float ref)
+bool AP_InertialSensor::setup_throttle_gyro_harmonic_notch(float center_freq_hz, float lower_freq_hz, float ref, uint8_t harmonics)
 {
     for (auto &notch : harmonic_notches) {
         if (notch.params.tracking_mode() != HarmonicNotchDynamicMode::UpdateThrottle) {
@@ -2094,6 +2145,8 @@ bool AP_InertialSensor::setup_throttle_gyro_harmonic_notch(float center_freq_hz,
         notch.params.set_center_freq_hz(center_freq_hz);
         notch.params.set_reference(ref);
         notch.params.set_bandwidth_hz(center_freq_hz / 2.0f);
+        notch.params.set_freq_min_ratio(lower_freq_hz / center_freq_hz);
+        notch.params.set_harmonics(harmonics);
         notch.params.save_params();
         // only enable the first notch
         return true;
@@ -2473,5 +2526,4 @@ AP_InertialSensor &ins()
 
 };
 
-#endif //#if HAL_INS_ENABLED
-
+#endif  // AP_INERTIALSENSOR_ENABLED

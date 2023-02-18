@@ -43,23 +43,15 @@ void Plane::fence_check()
         return;
     }
 
-    const bool current_mode_breach = plane.control_mode_reason == ModeReason::FENCE_BREACHED;
-    const bool previous_mode_breach = plane.previous_mode_reason ==  ModeReason::FENCE_BREACHED;
-    const bool previous_mode_complete = (plane.control_mode_reason == ModeReason::RTL_COMPLETE_SWITCHING_TO_VTOL_LAND_RTL) ||
-                                        (plane.control_mode_reason == ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND) ||
-                                        (plane.control_mode_reason == ModeReason::QRTL_INSTEAD_OF_RTL) ||
-                                        (plane.control_mode_reason == ModeReason::QLAND_INSTEAD_OF_RTL);
-    if (orig_breaches && (current_mode_breach || (previous_mode_breach && previous_mode_complete))) {
+    if (in_fence_recovery()) {
         // we have already triggered, don't trigger again until the
         // user disables/re-enables using the fence channel switch
         return;
     }
-    
-     if(new_breaches && plane.is_flying()) {
-         GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence Breached");
-     }
 
-    if (new_breaches || orig_breaches) {
+    if (new_breaches) {
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence Breached");
+
         // if the user wants some kind of response and motors are armed
         const uint8_t fence_act = fence.get_action();
         switch (fence_act) {
@@ -133,13 +125,25 @@ bool Plane::fence_stickmixing(void) const
 {
     if (fence.enabled() &&
         fence.get_breaches() &&
-        control_mode->is_guided_mode())
+        in_fence_recovery())
     {
         // don't mix in user input
         return false;
     }
     // normal mixing rules
     return true;
+}
+
+bool Plane::in_fence_recovery() const
+{
+    const bool current_mode_breach = plane.control_mode_reason == ModeReason::FENCE_BREACHED;
+    const bool previous_mode_breach = plane.previous_mode_reason ==  ModeReason::FENCE_BREACHED;
+    const bool previous_mode_complete = (plane.control_mode_reason == ModeReason::RTL_COMPLETE_SWITCHING_TO_VTOL_LAND_RTL) ||
+                                        (plane.control_mode_reason == ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND) ||
+                                        (plane.control_mode_reason == ModeReason::QRTL_INSTEAD_OF_RTL) ||
+                                        (plane.control_mode_reason == ModeReason::QLAND_INSTEAD_OF_RTL);
+
+    return current_mode_breach || (previous_mode_breach && previous_mode_complete);
 }
 
 #endif

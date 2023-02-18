@@ -175,11 +175,32 @@ void SITL_State::_fdm_input_step(void)
 
 void SITL_State::wait_clock(uint64_t wait_time_usec)
 {
+    float speedup = sitl_model->get_speedup();
+    if (speedup < 1) {
+        // for purposes of sleeps treat low speedups as 1
+        speedup = 1.0;
+    }
     while (AP_HAL::micros64() < wait_time_usec) {
         if (hal.scheduler->in_main_thread() ||
             Scheduler::from(hal.scheduler)->semaphore_wait_hack_required()) {
             _fdm_input_step();
         } else {
+#ifdef CYGWIN_BUILD
+            if (speedup > 2 && hal.util->get_soft_armed()) {
+                const char *current_thread = Scheduler::from(hal.scheduler)->get_current_thread_name();
+                if (current_thread && strcmp(current_thread, "Scripting") == 0) {
+                    // this effectively does a yield of the CPU. The
+                    // granularity of sleeps on cygwin is very high,
+                    // so this is needed for good thread performance
+                    // in scripting. We don't do this at low speedups
+                    // as it causes the cpu to run hot
+                    // We also don't do it while disarmed, as lua performance is less
+                    // critical while disarmed
+                    usleep(0);
+                    continue;
+                }
+            }
+#endif
             usleep(1000);
         }
     }
@@ -187,7 +208,7 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
     // MAVProxy/pymavlink take too long to process packets and it ends
     // up seeing traffic well into our past and hits time-out
     // conditions.
-    if (sitl_model->get_speedup() > 1) {
+    if (speedup > 1 && hal.scheduler->in_main_thread()) {
         while (true) {
             const int queue_length = ((HALSITL::UARTDriver*)hal.serial(0))->get_system_outqueue_length();
             // ::fprintf(stderr, "queue_length=%d\n", (signed)queue_length);
@@ -236,6 +257,12 @@ SITL::SerialDevice *SITL_State::create_serial_sim(const char *name, const char *
         }
         benewake_tfmini = new SITL::RF_Benewake_TFmini();
         return benewake_tfmini;
+    } else if (streq(name, "teraranger_serial")) {
+        if (teraranger_serial != nullptr) {
+            AP_HAL::panic("Only one teraranger_serial at a time");
+        }
+        teraranger_serial = new SITL::RF_TeraRanger_Serial();
+        return teraranger_serial;
     } else if (streq(name, "lightwareserial")) {
         if (lightwareserial != nullptr) {
             AP_HAL::panic("Only one lightwareserial at a time");
@@ -434,6 +461,22 @@ bool SITL_State::_read_rc_sitl_input()
     } pwm_pkt;
 
     const ssize_t size = _sitl_rc_in.recv(&pwm_pkt, sizeof(pwm_pkt), 0);
+
+    // if we are simulating no pulses RC failure, do not update pwm_input
+    if (_sitl->rc_fail == SITL::SIM::SITL_RCFail_NoPulses) {
+        return size != -1; // we must continue to drain _sitl_rc
+    }
+
+    if (_sitl->rc_fail == SITL::SIM::SITL_RCFail_Throttle950) {
+        // discard anything we just read from the "receiver" and set
+        // values to bind values:
+        for (uint8_t i=0; i<ARRAY_SIZE(pwm_input); i++) {
+            pwm_input[0] = 1500;  // centre all inputs
+        }
+        pwm_input[2] = 950;  // reset throttle (assumed to be on channel 3...)
+        return size != -1;  // we must continue to drain _sitl_rc
+    }
+
     switch (size) {
     case -1:
         return false;
@@ -448,15 +491,6 @@ bool SITL_State::_read_rc_sitl_input()
             }
             uint16_t pwm = pwm_pkt.pwm[i];
             if (pwm != 0) {
-                if (_sitl->rc_fail == SITL::SIM::SITL_RCFail_Throttle950) {
-                    if (i == 2) {
-                        // set throttle (assumed to be on channel 3...)
-                        pwm = 950;
-                    } else {
-                        // centre all other inputs
-                        pwm = 1500;
-                    }
-                }
                 pwm_input[i] = pwm;
             }
         }
@@ -566,6 +600,9 @@ void SITL_State::_fdm_input_local(void)
     }
     if (benewake_tfmini != nullptr) {
         benewake_tfmini->update(sitl_model->rangefinder_range());
+    }
+    if (teraranger_serial != nullptr) {
+        teraranger_serial->update(sitl_model->rangefinder_range());
     }
     if (lightwareserial != nullptr) {
         lightwareserial->update(sitl_model->rangefinder_range());
@@ -792,8 +829,12 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
         // do a little quadplane dance
         float hover_throttle = 0.0f;
         uint8_t running_motors = 0;
-        for (uint8_t i=0; i < sitl_model->get_num_motors() - 1; i++) {
-            float motor_throttle = constrain_float((input.servos[sitl_model->get_motors_offset() + i] - 1000) / 1000.0f, 0.0f, 1.0f);
+        uint32_t mask = _sitl->state.motor_mask;
+        uint8_t bit;
+        while ((bit = __builtin_ffs(mask)) != 0) {
+            uint8_t motor = bit-1;
+            mask &= ~(1U<<motor);
+            float motor_throttle = constrain_float((input.servos[motor] - 1000) / 1000.0f, 0.0f, 1.0f);
             // update motor_on flag
             if (!is_zero(motor_throttle)) {
                 hover_throttle += motor_throttle;
@@ -815,8 +856,12 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
     } else {
         // run checks on each motor
         uint8_t running_motors = 0;
-        for (uint8_t i=0; i < sitl_model->get_num_motors(); i++) {
-            float motor_throttle = constrain_float((input.servos[i] - 1000) / 1000.0f, 0.0f, 1.0f);
+        uint32_t mask = _sitl->state.motor_mask;
+        uint8_t bit;
+        while ((bit = __builtin_ffs(mask)) != 0) {
+            const uint8_t motor = bit-1;
+            mask &= ~(1U<<motor);
+            float motor_throttle = constrain_float((input.servos[motor] - 1000) / 1000.0f, 0.0f, 1.0f);
             // update motor_on flag
             if (!is_zero(motor_throttle)) {
                 throttle += motor_throttle;
@@ -864,11 +909,11 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
     }
 
     // assume 3DR power brick
-    voltage_pin_value = ((voltage / 10.1f) / 5.0f) * 1024;
-    current_pin_value = ((_current / 17.0f) / 5.0f) * 1024;
+    voltage_pin_value = float_to_uint16(((voltage / 10.1f) / 5.0f) * 1024);
+    current_pin_value = float_to_uint16(((_current / 17.0f) / 5.0f) * 1024);
     // fake battery2 as just a 25% gain on the first one
-    voltage2_pin_value = ((voltage * 0.25f / 10.1f) / 5.0f) * 1024;
-    current2_pin_value = ((_current * 0.25f / 17.0f) / 5.0f) * 1024;
+    voltage2_pin_value = float_to_uint16(((voltage * 0.25f / 10.1f) / 5.0f) * 1024);
+    current2_pin_value = float_to_uint16(((_current * 0.25f / 17.0f) / 5.0f) * 1024);
 }
 
 void SITL_State::init(int argc, char * const argv[])
@@ -904,7 +949,7 @@ void SITL_State::set_height_agl(void)
         // get height above terrain from AP_Terrain. This assumes
         // AP_Terrain is working
         float terrain_height_amsl;
-        struct Location location;
+        Location location;
         location.lat = _sitl->state.latitude*1.0e7;
         location.lng = _sitl->state.longitude*1.0e7;
 

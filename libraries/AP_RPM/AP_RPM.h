@@ -14,6 +14,10 @@
  */
 #pragma once
 
+#include "AP_RPM_config.h"
+
+#if AP_RPM_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Param/AP_Param.h>
@@ -37,12 +41,23 @@ public:
     // RPM driver types
     enum RPM_Type {
         RPM_TYPE_NONE    = 0,
+#if AP_RPM_PIN_ENABLED
         RPM_TYPE_PWM     = 1,
         RPM_TYPE_PIN     = 2,
+#endif
+#if AP_RPM_EFI_ENABLED
         RPM_TYPE_EFI     = 3,
+#endif
+#if AP_RPM_HARMONICNOTCH_ENABLED
         RPM_TYPE_HNTCH   = 4,
+#endif
+#if AP_RPM_ESC_TELEM_ENABLED
         RPM_TYPE_ESC_TELEM  = 5,
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#endif
+#if AP_RPM_GENERATOR_ENABLED
+        RPM_TYPE_GENERATOR  = 6,
+#endif
+#if AP_RPM_SIM_ENABLED
         RPM_TYPE_SITL   = 10,
 #endif
     };
@@ -109,3 +124,5 @@ private:
 namespace AP {
     AP_RPM *rpm();
 };
+
+#endif  // AP_RPM_ENABLED

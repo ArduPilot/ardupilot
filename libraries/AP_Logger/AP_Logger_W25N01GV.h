@@ -42,6 +42,7 @@ private:
     bool flash_died;
     uint32_t erase_start_ms;
     uint16_t erase_block;
+    bool read_cache_valid;
 };
 
 #endif // HAL_LOGGING_DATAFLASH_ENABLED

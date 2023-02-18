@@ -15,6 +15,11 @@
 /*
   ArduPilot filesystem interface for parameters
  */
+
+#include "AP_Filesystem_config.h"
+
+#if AP_FILESYSTEM_PARAM_ENABLED
+
 #include "AP_Filesystem.h"
 #include "AP_Filesystem_Param.h"
 #include <AP_Param/AP_Param.h>
@@ -183,6 +188,11 @@ uint8_t AP_Filesystem_Param::pack_param(const struct rfile &r, struct cursor &c,
         ap = AP_Param::next_scalar(&c.token, &ptype, &default_val);
     }
     if (ap == nullptr || (r.count && c.idx >= r.count)) {
+        if (r.count == 0 && c.idx != AP_Param::count_parameters()) {
+            // the parameter count is incorrect, invalidate so a
+            // repeated param download avoids an error
+            AP_Param::invalidate_count();
+        }
         return 0;
     }
     ap->copy_name_token(c.token, name, AP_MAX_NAME_SIZE, true);
@@ -464,8 +474,8 @@ int AP_Filesystem_Param::stat(const char *name, struct stat *stbuf)
         return -1;
     }
     memset(stbuf, 0, sizeof(*stbuf));
-    // give fixed size to avoid needing to scan entire file
-    stbuf->st_size = 1024*1024;
+    // give size estimation to avoid needing to scan entire file
+    stbuf->st_size = AP_Param::count_parameters() * 12;
     return 0;
 }
 
@@ -646,3 +656,5 @@ bool AP_Filesystem_Param::finish_upload(const rfile &r)
     }
     return true;
 }
+
+#endif  // AP_FILESYSTEM_PARAM_ENABLED

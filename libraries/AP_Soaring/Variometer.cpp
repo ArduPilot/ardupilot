@@ -6,7 +6,7 @@ Manages the estimation of aircraft total energy, drag and vertical air velocity.
 
 #include <AP_Logger/AP_Logger.h>
 
-Variometer::Variometer(const AP_Vehicle::FixedWing &parms, const PolarParams &polarParams) :
+Variometer::Variometer(const AP_FixedWing &parms, const PolarParams &polarParams) :
     _aparm(parms),
     _polarParams(polarParams)
 {

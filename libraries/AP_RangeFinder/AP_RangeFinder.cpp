@@ -30,6 +30,7 @@
 #include "AP_RangeFinder_LeddarOne.h"
 #include "AP_RangeFinder_USD1_Serial.h"
 #include "AP_RangeFinder_TeraRangerI2C.h"
+#include "AP_RangeFinder_TeraRanger_Serial.h"
 #include "AP_RangeFinder_VL53L0X.h"
 #include "AP_RangeFinder_VL53L1X.h"
 #include "AP_RangeFinder_NMEA.h"
@@ -53,6 +54,7 @@
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL &hal;
@@ -175,88 +177,6 @@ RangeFinder::RangeFinder()
     _singleton = this;
 }
 
-void RangeFinder::convert_params(void) {
-    if (params[0].type.configured()) {
-        // _params[0]._type will always be configured after conversion is done the first time
-        // or the user has set a type in a defaults.parm file or via apj tool
-        return;
-    }
-
-    struct ConversionTable {
-        uint8_t old_element;
-        uint8_t new_index;
-        uint8_t instance;
-    };
-
-    const struct ConversionTable conversionTable[] = {
-        // PARAMETER_CONVERSION - Added: Feb-2019
-            // rangefinder 1
-            {0, 0, 0}, //0, TYPE 1
-            {1, 1, 0}, //1, PIN 1
-            {2, 2, 0}, //2, SCALING 1
-            {3, 3, 0}, //3, OFFSET 1
-            {4, 4, 0}, //4, FUNCTION 1
-            {5, 5, 0}, //5, MIN_CM 1
-            {6, 6, 0}, //6, MAX_CM 1
-            {7, 7, 0}, //7, STOP_PIN 1
-            {9, 8, 0}, //9, RMETRIC 1
-            {10, 9, 0}, //10, PWRRNG 1 (previously existed only once for all sensors)
-            {11, 10, 0}, //11, GNDCLEAR 1
-            {23, 11, 0}, //23, ADDR 1
-            {49, 12, 0}, //49, POS 1
-            {53, 13, 0}, //53, ORIENT 1
-
-            // rangefinder 2
-            {12, 0, 1}, //12, TYPE 2
-            {13, 1, 1}, //13, PIN 2
-            {14, 2, 1}, //14, SCALING 2
-            {15, 3, 1}, //15, OFFSET 2
-            {16, 4, 1}, //16, FUNCTION 2
-            {17, 5, 1}, //17, MIN_CM 2
-            {18, 6, 1}, //18, MAX_CM 2
-            {19, 7, 1}, //19, STOP_PIN 2
-            {21, 8, 1}, //21, RMETRIC 2
-            {10, 9, 1}, //10, PWRRNG 1 (previously existed only once for all sensors)
-            {22, 10, 1}, //22, GNDCLEAR 2
-            {24, 11, 1}, //24, ADDR 2
-            {50, 12, 1}, //50, POS 2
-            {54, 13, 1}, //54, ORIENT 2
-    };
-
-    char param_name[17] = {0};
-    AP_Param::ConversionInfo info;
-    info.new_name = param_name;
-
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    info.old_key = 71;
-#elif APM_BUILD_COPTER_OR_HELI
-    info.old_key = 53;
-#elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
-    info.old_key = 35;
-#elif APM_BUILD_TYPE(APM_BUILD_Rover)
-    info.old_key = 197;
-#else
-    params[0].type.save(true);
-    return; // no conversion is supported on this platform
-#endif
-
-    for (uint8_t i = 0; i < ARRAY_SIZE(conversionTable); i++) {
-        uint8_t param_instance = conversionTable[i].instance + 1;
-        uint8_t destination_index = conversionTable[i].new_index;
-
-        info.old_group_element = conversionTable[i].old_element;
-        info.type = (ap_var_type)AP_RangeFinder_Params::var_info[destination_index].type;
-
-        hal.util->snprintf(param_name, sizeof(param_name), "RNGFND%X_%s", param_instance, AP_RangeFinder_Params::var_info[destination_index].name);
-        param_name[sizeof(param_name)-1] = '\0';
-
-        AP_Param::convert_old_parameter(&info, 1.0f, 0);
-    }
-
-    // force _params[0]._type into storage to flag that conversion has been done
-    params[0].type.save(true);
-}
-
 /*
   initialise the RangeFinder class. We do detection of attached range
   finders here. For now we won't allow for hot-plugging of
@@ -269,8 +189,6 @@ void RangeFinder::init(enum Rotation orientation_default)
         return;
     }
     init_done = true;
-
-    convert_params();
 
     // set orientation defaults
     for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
@@ -537,6 +455,11 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     case Type::BenewakeTF03:
 #if AP_RANGEFINDER_BENEWAKE_TF03_ENABLED
         serial_create_fn = AP_RangeFinder_Benewake_TF03::create;
+#endif
+        break;
+    case Type::TeraRanger_Serial:
+#if AP_RANGEFINDER_TERARANGER_SERIAL_ENABLED
+        serial_create_fn = AP_RangeFinder_TeraRanger_Serial::create;
 #endif
         break;
     case Type::PWM:
@@ -848,6 +771,11 @@ bool RangeFinder::prearm_healthy(char *failure_msg, const uint8_t failure_msg_le
                 hal.util->snprintf(failure_msg, failure_msg_len, "RNGFND%u_PIN not set", unsigned(i + 1));
                 return false;
             }
+            if (drivers[i]->allocated_type() == Type::ANALOG) {
+                // Analog backend does not use GPIO pin
+                break;
+            }
+
             // ensure that the pin we're configured to use is available
             if (!hal.gpio->valid_pin(params[i].pin)) {
                 uint8_t servo_ch;

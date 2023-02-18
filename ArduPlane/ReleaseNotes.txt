@@ -1,3 +1,360 @@
+Release 4.3.4beta1 Feb 12th 2023
+--------------------------------
+
+- don't allow RC protocol change on IOMCU once detected
+- fixed FBWA pitch limits when in VTOL qassist
+- fixed handling of zero compass diagonals
+- added an output buffer to MAVCAN
+- set emergency status in OpenDroneID on crash or chute deploy
+- avoid logging duplicate format messages
+- fixed bug in alt error arming check with BARO_FIELD_ELEV set
+- fixed handling of double IOMCU reset and safety disable
+
+Release 4.3.3 Jan 19th 2023
+---------------------------
+
+ - AIRLink LTE module enable pin added
+ - CUAV Nora/Nora+ bdshot firmware (allows Bi-directional DShot)
+ - CubeOrange, CubeYellow gets fast reset of ICM20602
+ - PixPilot-V6 support
+ - Attitude and Navigation controllers use real-time dt (better handles variable or slow main loop)
+ - Analog rangefinder GPIO pin arming check fixed
+ - Arming check of AHRS/EKF vs GPS location disabled if GPS disabled
+ - Position Controller limit handling improved to avoid overshooting and hard landings
+ - PSC_ANGLE_MAX param reduction causing WPNAV_ACCEL to be set too low fixed
+ - Servo gimbal yaw jump to opposite side fixed
+ - Siyi A8 gimbal driver's record video feature fixed
+ - SToRM32 serial gimbal driver actual angle reporting fixed (pitch and yaw angle signs were reversed)
+ - Takeoff in Auto, Guided fixed when target altitude is current altitude
+ - Takeoff in Auto handles baro drift before takeoff
+ - Takeoff twitch due to velocity integrator init bug fixed
+ - moved FTP MAVLink transfers to FTP thread and better control bandwidth
+ - switch to QRTL if inside RTL radius when using Q_RTL_MODE=3 (approach)
+ - check for 3 good frames for CRSF
+ - allow for ELRS at 420kbaud
+ - support MambaH743-v2
+ - support MambaF405-2022B
+ - fixed nullptr checks on new
+ - fixed a bug in terrain handling for ship landing lua script checks on new
+
+Happy flying!
+
+Release 4.3.2 Dec 23rd 2022
+---------------------------
+
+This is a minor release with bug fixes for the 4.3.x release series.
+
+Changes from 4.3.1:
+
+ - improved uBlox M10 support
+ - CubeOrange defaults to using 2nd IMU as primary
+ - SIRF and SBP GPS disabled on BeastF7v2, MatekF405-STD, MAtekF405-Wing, omnibusf4pro
+ - fixed loading of autotune gains during pilot testing
+ - Fixed CAM_MIN_INTERVAL to cope with mission and pilot triggering
+ - EKF3 fix when using EK3_RNG_USE_HGT/SPD params and rangefinder provides bad readings
+ - Main loop slowdown after arming fixed (parameter logging was causing delays)
+ - changed to 'fast task' scheme for critical loop updates
+ - MAVLink commands received on private channels checked for valid target sysid
+ - ModalAI camera support fixed (ODOMETRY message frame was consumed incorrectly)
+ - Param reset after firmware load fixed on several boards
+ - Siyi A8 gimbal support fixed
+ - Windows builds move to compiling only 64-bit executables
+ - ARKV6X support
+ - MatekH743 supports 8 bi-directional dshot channels
+ - Pixhawk1 boards support MS5607 baros
+ - SpeedbyBee F405v3 support
+ - DroneCAN Airspeed sensor support including hygrometer readings
+ - Pre-arm warning if multiple UARTs with SERIALx_PROTOCOL = RCIN
+ - Siyi gimbal support
+ - Arm check warning loses duplicate "AHRS" prefix
+ - AtomRCF405NAVI bootloader file name fixed
+ - BRD_SAFETY_MASK fixed on boards with both FMU safety switch and IOMCU
+ - Compass calibration continues even if a single compass's cal fails
+ - Gremsy gimbal driver sends autopilot info at lower rate to save bandwidth
+ - Invensense 42605 and 42609 IMUs use anti-aliasing filter and notch filter
+ - OSD stats screen fix
+ - RC input on serial port uses first UART with SERIALx_PROTOCOL = 23 (was using last)
+ - RunCam caching fix with enablement and setup on 3-pos switch
+ - RTK CAN GPS fix when GPSs conneted to separate CAN ports on autopilot
+ - fixed yaw rate for fixed wing autotune
+
+Release 4.3.1 24th Oct 2022
+---------------------------
+
+This is a minor release with some important fixes:
+
+ - fixed build with gcc 11.3
+ - fixed random number generator in lua core
+ - scale VTOL angle P with airspeed in quadplane back-transiton
+ - added support for implementing AUX functions in lua scripts
+ - fixed BMI085 accel scaling
+ - fixed KSXT NMEA parsing affecting position resolution
+ - fixed race condition in TECS control leading to 'nod' in forward transiton
+ - allow for expansion of notch filters to fix notch of fwd motors in quadplanes
+ - added logging of TECS target alt
+ - fixed EKF3 altitude discrepancy with GPS or baro alt change on startup
+ - allow auto mode sequencing to land in a fence breach
+
+Happy flying!
+
+Release 4.3.0 9th Oct 2022
+--------------------------
+
+The is the first 4.3.x stable release for plane. It is a major release
+with a lot of changes since 4.2.3.
+
+Changes since 4.3.0beta3:
+
+ - added 1M and 2M flash warning checks for for fmuv2, fmuv3 and Pixhawk1-1M firmwares
+ - added support for multi-byte i2c reads in scripting
+
+The change list from 4.2.3 stable is very long. Here are the main changes:
+
+ - fixed BRD_SAFETY_MASK for enabling outputs when safety on
+ - fixed persistence of mapping of CAN airspeed sensors to instances
+ - fixed precision of NMEA serial output function
+ - added report of "Engine Running" when using ICE
+ - fixed handling of defaults.parm files with lines over 100 chars
+ - fixed handling of defaults.parm files with no newline on last line
+ - fixed possible divide by zero when changing to GUIDED on quadplanes
+ - fixes for VideoTX, fixing buffer overrun and tramp handling
+ - fixed spurious error about sending RPM when RPM disabled
+ - fixed an EKF3 lane switch issue that can cause incorrect height with dual GPS
+ - fixed mission cmd to mission int initialisation error
+ - fixed mission jump tracking init on startup
+ - fixed OSD view roll/pitch error for tailsitters
+ - added SkystarsH7HD-bdshot
+ - fixed SkystarsH7HD VTX control
+ - reduced memory usage on MatekF405-CAN board
+ - disable SLCAN when armed to reduce CPU load
+ - enable CAN battery mon on CUAV V6X by default
+ - added arming check for Q_M_SPIN_MIN value too high
+ - fixed reporting of RPM from harmonic notch
+ - improved handling of airspeed errors and airspeed auto disable
+ - fixed SERVO_AUTO_TRIM for multiple outputs of same type
+ - fixed auto baud rate detection on SBF/GSOF/NOVA GPS
+ - increased max board name length for mavlink statustext to 23
+ - fixed incorrect disable of notches for non-throttle notch
+ - added notch filter slew limit to reduce notch errors
+ - added ARMING_OPTIONS to control display of pre-arm errors
+ - several OSD fixes for params, font and resolution
+ - support PWM type transmission for CAN PWM output
+ - support Currawong ECU as EFI backend
+ - support lua scripts for EFI backends
+ - implement SkyPower and HFE CAN EFI lua scripts
+ - improved speed of log download with dataflash block backends
+ - disabled all GPS drivers except uBlox and NMEA on Pixhawk1-1M to save flash
+ - disabled all GPS drivers except uBlox on MatekF405-bdshot and omnibusf4pro-bdshot
+ - fixed FFT indexing bug
+ - added USART2 for AIRLink
+ - allow reset to default airspeed using mission item DO_CHANGE_SPEED
+ - added new boards AtomRCF405, KakuteH7Mini-Nand, SkystarsH7HD
+ - added bi-directional dshot for several new boards
+ - EK3_GPS_VACC_MAX threshold to control when GPS altitude is used as alt source
+ - EKF ring buffer fix for slow sensor updates
+ - EKF3 source set change captured in replay logs
+ - numerous gimbal support improvements
+ - improved RemoteId support
+ - SecureBoot support with remote update of secure boot public keys
+ - crash_dump.bin file saved to SD Card on startup (includes details re cause of software failures)
+ - several new pre-arm checks (AHRS type, scripts, terrain)
+ - numerous scripting improvements
+ - fixed scripting restart leaking memory
+ - Benewake H30 radar support
+ - BMI270 IMU performance improvements
+ - Logging pause with auxiliary switch
+ - TeraRanger Neo rangefinder support
+ - support for both AMSL and ellipsoid height in most GPS drivers
+ - Custom controller support
+ - parameter defaults sent with param FTP and onboard logs
+ - Sim on Hardware allows simulator to run on autopilot
+ - added Q_LAND_ALTCHG parameter
+ - added climb before QRTL for safer QRTL from low altitudes
+ - added support for logging pre and post filtered FFT data
+ - support triple-notch harmonic notch filter
+ - support up to 32 actuators (with SERVO_32_ENABLE parameter)
+ - support EFI input over DroneCAN
+ - by default only run notch filter on first IMU
+ - added ESC_TLM_MAV_OFS parameter for mapping ESCs to MAVLink ESC telemetry
+ - added Q_NAVALT_MIN for quadplane takeoff
+ - added ICE redline governor
+ - added in-flight FFT notch tuning option
+ - added Sagetech ADSB support
+ - added INS_HNTCH_FM_RAT parameter for handling under-hover throttle
+ - improvements to filtering on ICM42xxx IMUs
+ - added option parameters to NAV_VTOL_LAND mission item for fixed wing approach
+
+Many thanks to the huge number of developers, testers and documenters
+who contributed to the 4.3.0 release!
+
+Special thanks to all the ArduPilot Parters who have worked closely
+with us on the 4.3.x development and testing, with many partners
+contributing suggestions or supporting particular features.
+
+Release 4.3.0beta3 7th Oct 2022
+-------------------------------
+
+This is the third beta of the 4.3.0 stable release. Changes since
+beta1 are:
+
+ - fixed BRD_SAFETY_MASK for enabling outputs when safety on
+ - fixed persistence of mapping of CAN airspeed sensors to instances
+ - fixed precision of NMEA serial output function
+ - added report of "Engine Running" when using ICE
+ - fixed handling of defaults.parm files with lines over 100 chars
+ - fixed handling of defaults.parm files with no newline on last line
+ - fixed possible divide by zero when changing to GUIDED on quadplanes
+
+Happy flying!
+
+Release 4.3.0beta2 3rd Oct 2022
+-------------------------------
+
+This is the second beta of the 4.3.0 stable release. Changes since
+beta1 are:
+
+ - fixes for VideoTX, fixing buffer overrun and tramp handling
+ - fixed spurious error about sending RPM when RPM disabled
+ - fixed an EKF3 lane switch issue that can cause incorrect height with dual GPS
+ - fixed mission cmd to mission int initialisation error
+ - fixed mission jump tracking init on startup
+ - fixed OSD view roll/pitch error for tailsitters
+ - added SkystarsH7HD-bdshot
+ - fixed SkystarsH7HD VTX control
+ - reduced memory usage on MatekF405-CAN board
+ - disable SLCAN when armed to reduce CPU load
+ - enable CAN battery mon on CUAV V6X by default
+ - added arming check for Q_M_SPIN_MIN value too high
+ - fixed reporting of RPM from harmonic notch
+ - improved handling of airspeed errors and airspeed auto disable
+ - fixed SERVO_AUTO_TRIM for multiple outputs of same type
+ - fixed auto baud rate detection on SBF/GSOF/NOVA GPS
+ - increased max board name length for mavlink statustext to 23
+ - fixed incorrect disable of notches for non-throttle notch
+ - added notch filter slew limit to reduce notch errors
+ - added ARMING_OPTIONS to control display of pre-arm errors
+ - several OSD fixes for params, font and resolution
+ - support PWM type transmission for CAN PWM output
+ - support Currawong ECU as EFI backend
+ - support lua scripts for EFI backends
+ - implement SkyPower and HFE CAN EFI lua scripts
+ - improved speed of log download with dataflash block backends
+ - disabled all GPS drivers except uBlox and NMEA on Pixhawk1-1M to save flash
+ - disabled all GPS drivers except uBlox on MatekF405-bdshot and omnibusf4pro-bdshot
+ - fixed FFT indexing bug
+ - added USART2 for AIRLink
+ - allow reset to default airspeed using mission item DO_CHANGE_SPEED
+
+Happy flying!
+
+
+Release 4.3.0beta1 13th Sep 2022
+--------------------------------
+
+This is the first beta of the 4.3.0 stable release. There are a lot of
+changes since the 4.2.3 stable release. Key changes are:
+
+- added new boards AtomRCF405, KakuteH7Mini-Nand, SkystarsH7HD
+- added bi-directional dshot for several new boards
+- EK3_GPS_VACC_MAX threshold to control when GPS altitude is used as alt source
+- EKF ring buffer fix for slow sensor updates
+- EKF3 source set change captured in replay logs
+- numerous gimbal support improvements
+- improved RemoteId support
+- SecureBoot support with remote update of secure boot public keys
+- crash_dump.bin file saved to SD Card on startup (includes details re cause of software failures)
+- several new pre-arm checks (AHRS type, scripts, terrain)
+- numerous scripting improvements
+- fixed scripting restart leaking memory
+- Benewake H30 radar support
+- BMI270 IMU performance improvements
+- Logging pause with auxiliary switch
+- TeraRanger Neo rangefinder support
+- support for both AMSL and ellipsoid height in most GPS drivers
+- Custom controller support
+- parameter defaults sent with param FTP and onboard logs
+- Sim on Hardware allows simulator to run on autopilot
+- added Q_LAND_ALTCHG parameter
+- added climb before QRTL for safer QRTL from low altitudes
+- added support for logging pre and post filtered FFT data
+- support triple-notch harmonic notch filter
+- support up to 32 actuators (with SERVO_32_ENABLE parameter)
+- support EFI input over DroneCAN
+- by default only run notch filter on first IMU
+- added ESC_TLM_MAV_OFS parameter for mapping ESCs to MAVLink ESC telemetry
+- added Q_NAVALT_MIN for quadplane takeoff
+- added ICE redline governor
+- added in-flight FFT notch tuning option
+- added Sagetech ADSB support
+- added INS_HNTCH_FM_RAT parameter for handling under-hover throttle
+- improvements to filtering on ICM42xxx IMUs
+- added option parameters to NAV_VTOL_LAND mission item for fixed wing approach
+
+Please report flight tests of the 4.3.0beta series on discuss.ardupilot.org
+
+Happy flying!
+
+Release 4.2.3 21st August 2022
+------------------------------
+
+This is a minor stable release with a few new features and bug
+fixes. The changes from 4.2.0 are:
+
+- OpenDroneID improvements
+- added --enable-opendroneid configure option
+- added --enable-check-firmware configure option
+- enable OSD menus on KakuteH7
+- added prearm checks for rangefinder pin conflicts
+- added diagnostics for scurve internal error
+- allow absolute paths for linux boards in param defaults
+- fixed AIRBRAKE rc option warning
+- fixed notch filtering ordering issue on loss of RPM source
+- fixed Lutan EFI update serial flood
+- fixed --upload to work on WSL2
+- allow INA2xx battery to init after startup
+- fixed healthy check on battery monitors to check all enabled monitors
+- added Pixhawk6C and Pixhawk6X support
+- fixed alighment of QRTL start in fixed wing circle landing approach
+- added Foxeer Reaper F745 support
+- added MFE PixSurveyA1 support
+- fixed combination of waypoint passby with acceptance distance
+- cut throttle on ICE stop when armed
+- added ICE option for starting when disarmed
+- zero VFWD integrator on ICE override in quadplanes
+- don't failsafe when in fixed wing landing sequence with RTL_AUTOLAND
+- improved handling of overshoot in VTOL landing
+- improved choice of target airspeed in VTOL landing approach
+- improved ICM42xxx filter settings
+- allow for faster sample rates on ICM42xxx
+
+Release 4.2.3beta3 19th August 2022
+-----------------------------------
+
+This is a minor stable release with a few new features and bug
+fixes. The changes from beta1 are:
+
+- OpenDroneID improvements
+- added --enable-opendroneid configure option
+- added --enable-check-firmware configure option
+- reverted notch filter changes from beta3 due to issue on some aircraft
+- enable OSD menus on KakuteH7
+- added prearm checks for rangefinder pin conflicts
+- added diagnostics for scurve internal error
+- allow absolute paths for linux boards in param defaults
+- fixed AIRBRAKE rc option warning
+
+
+Release 4.2.3beta2 10th August 2022
+-----------------------------------
+
+This is a minor stable release with a few new features and bug
+fixes. The changes from beta1 are:
+
+- OpenDroneID support
+- fixed notch filtering ordering issue on loss of RPM source
+- fixed Lutan EFI update serial flood
+- fixed --upload to work on WSL2
+
 Release 4.2.3beta1 2nd August 2022
 ----------------------------------
 

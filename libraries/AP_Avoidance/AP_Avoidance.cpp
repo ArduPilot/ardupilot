@@ -7,6 +7,7 @@ extern const AP_HAL::HAL& hal;
 #include <limits>
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #define AVOIDANCE_DEBUGGING 0
 

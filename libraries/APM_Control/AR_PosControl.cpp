@@ -100,8 +100,8 @@ const AP_Param::GroupInfo AR_PosControl::var_info[] = {
 
 AR_PosControl::AR_PosControl(AR_AttitudeControl& atc) :
     _atc(atc),
-    _p_pos(AR_POSCON_POS_P, AR_POSCON_DT),
-    _pid_vel(AR_POSCON_VEL_P, AR_POSCON_VEL_I, AR_POSCON_VEL_D, AR_POSCON_VEL_FF, AR_POSCON_VEL_IMAX, AR_POSCON_VEL_FILT, AR_POSCON_VEL_FILT_D, AR_POSCON_DT)
+    _p_pos(AR_POSCON_POS_P),
+    _pid_vel(AR_POSCON_VEL_P, AR_POSCON_VEL_I, AR_POSCON_VEL_D, AR_POSCON_VEL_FF, AR_POSCON_VEL_IMAX, AR_POSCON_VEL_FILT, AR_POSCON_VEL_FILT_D)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -129,10 +129,6 @@ void AR_PosControl::update(float dt)
         _pid_vel.reset_filter();
     }
     _last_update_ms = AP_HAL::millis();
-
-    // update P, PID object's dt
-    _p_pos.set_dt(dt);
-    _pid_vel.set_dt(dt);
 
     // calculate position error and convert to desired velocity
     _vel_target.zero();
@@ -163,7 +159,7 @@ void AR_PosControl::update(float dt)
 
     // calculate desired acceleration
     // To-Do: fixup _limit_vel used below
-    _accel_target = _pid_vel.update_all(_vel_target, curr_vel_NED.xy(), _limit_vel);
+    _accel_target = _pid_vel.update_all(_vel_target, curr_vel_NED.xy(), dt, _limit_vel);
     if (_accel_desired_valid) {
         _accel_target += _accel_desired;
     }
@@ -244,7 +240,7 @@ bool AR_PosControl::init()
     // set target velocity and acceleration
     _vel_desired = vel_NED.xy();
     _vel_target.zero();
-    _accel_desired = AP::ahrs().get_accel_ef_blended().xy();
+    _accel_desired = AP::ahrs().get_accel_ef().xy();
     _accel_target.zero();
 
     // clear reversed setting
@@ -335,7 +331,7 @@ void AR_PosControl::write_log()
     }
 
     // get acceleration
-    const Vector3f curr_accel_NED = AP::ahrs().get_accel_ef_blended() * 100.0;
+    const Vector3f curr_accel_NED = AP::ahrs().get_accel_ef() * 100.0;
 
     // convert position to required format
     Vector2f pos_target_2d_cm = get_pos_target().tofloat() * 100.0;

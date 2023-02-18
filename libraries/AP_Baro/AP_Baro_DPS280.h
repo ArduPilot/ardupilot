@@ -2,10 +2,6 @@
 
 #include "AP_Baro_Backend.h"
 
-#ifndef AP_BARO_DPS280_ENABLED
-#define AP_BARO_DPS280_ENABLED AP_BARO_BACKEND_DEFAULT_ENABLED
-#endif
-
 #if AP_BARO_DPS280_ENABLED
 
 #include <AP_HAL/AP_HAL.h>

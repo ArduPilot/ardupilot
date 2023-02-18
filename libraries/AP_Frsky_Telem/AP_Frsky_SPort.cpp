@@ -1,5 +1,7 @@
 #include "AP_Frsky_SPort.h"
 
+#if AP_FRSKY_SPORT_TELEM_ENABLED
+
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_GPS/AP_GPS.h>
@@ -113,6 +115,7 @@ void AP_Frsky_SPort::send(void)
                 }
                 break;
             case SENSOR_ID_RPM: // Sensor ID 4
+#if AP_RPM_ENABLED
                 {
                     const AP_RPM* rpm = AP::rpm();
                     if (rpm == nullptr) {
@@ -132,6 +135,7 @@ void AP_Frsky_SPort::send(void)
                         _SPort.rpm_call = 0;
                     }
                 }
+#endif  // AP_RPM_ENABLED
                 break;
             case SENSOR_ID_SP2UR: // Sensor ID  6
                 switch (_SPort.various_call) {
@@ -470,3 +474,5 @@ namespace AP {
         return AP_Frsky_SPort::get_singleton();
     }
 };
+
+#endif  // AP_FRSKY_SPORT_TELEM_ENABLED

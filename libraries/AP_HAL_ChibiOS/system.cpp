@@ -23,7 +23,7 @@
 #include "hwdef/common/watchdog.h"
 #include "hwdef/common/stm32_util.h"
 #include <AP_Vehicle/AP_Vehicle_Type.h>
-#if HAL_CRASHDUMP_ENABLE
+#if AP_CRASHDUMP_ENABLED
 #include <CrashCatcher.h>
 #endif
 #include <ch.h>
@@ -52,7 +52,7 @@ extern "C"
 {
 #define bkpt() __asm volatile("BKPT #0\n")
 
-#if !HAL_CRASHDUMP_ENABLE
+#if !AP_CRASHDUMP_ENABLED
 // do legacy hardfault handling
 void HardFault_Handler(void);
 void HardFault_Handler(void) {
@@ -239,6 +239,28 @@ void __cxa_pure_virtual() { while (1); } //TODO: Handle properly, maybe generate
 
 void NMI_Handler(void);
 void NMI_Handler(void) { while (1); }
+
+#if defined(HAL_BOOTLOADER_BUILD) && HAL_ENABLE_DFU_BOOT
+void __entry_hook(void);
+void __entry_hook()
+{
+    // read the persistent data
+    AP_HAL::Util::PersistentData pd;
+    stm32_watchdog_load((uint32_t *)&pd, (sizeof(pd)+3)/4);
+    if (pd.boot_to_dfu) {
+        pd.boot_to_dfu = false;
+        stm32_watchdog_save((uint32_t *)&pd, (sizeof(pd)+3)/4);
+#if defined(STM32H7)
+        const uint32_t *app_base = (const uint32_t *)(0x1FF09800); 
+#else
+        const uint32_t *app_base = (const uint32_t *)(0x1FFF0000);
+#endif
+        __set_MSP(*app_base);
+        ((void (*)())*(&app_base[1]))();
+        while(true);
+    }
+}
+#endif
 
 }
 namespace AP_HAL {

@@ -13,14 +13,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "RPM_SITL.h"
 
-extern const AP_HAL::HAL& hal;
+#if AP_RPM_SIM_ENABLED
 
-/* 
+#include <AP_HAL/AP_HAL.h>
+
+/*
    open the sensor in constructor
 */
 AP_RPM_SITL::AP_RPM_SITL(AP_RPM &_ap_rpm, uint8_t _instance, AP_RPM::RPM_State &_state) :
@@ -35,10 +34,17 @@ void AP_RPM_SITL::update(void)
     if (sitl == nullptr) {
         return;
     }
-    if (instance == 0) {
-        state.rate_rpm = sitl->state.rpm[0];
-    } else {
-        state.rate_rpm = sitl->state.rpm[1];
+    const uint32_t motor_mask = sitl->state.motor_mask;
+    uint8_t count = 0;
+    // find the motor with the corresponding index
+    for (uint8_t i=0; i<32; i++) {
+        if (motor_mask & (1U<<i)) {
+            if (count == instance) {
+                state.rate_rpm = sitl->state.rpm[i];
+                break;
+            }
+            count++;
+        }
     }
     state.rate_rpm *= ap_rpm._params[state.instance].scaling;
     state.signal_quality = 0.5f;
@@ -46,4 +52,4 @@ void AP_RPM_SITL::update(void)
 
 }
 
-#endif // CONFIG_HAL_BOARD
+#endif // AP_RPM_SIM_ENABLED

@@ -27,11 +27,19 @@ public:
 private:
     bool init_sensor(void);
     void timer_update();
-    float gyro_drift(void);
+    float gyro_drift(void) const;
     void generate_accel();
     void generate_gyro();
     float get_temperature(void);
-
+    void update_file();
+#if AP_SIM_INS_FILE_ENABLED
+    void read_gyro(const float* buf, uint8_t nsamples);
+    void read_gyro_from_file();
+    void write_gyro_to_file(const Vector3f& gyro);
+    void read_accel(const float* buf, uint8_t nsamples);
+    void read_accel_from_file();
+    void write_accel_to_file(const Vector3f& accel);
+#endif
     SITL::SIM *sitl;
 
     const uint16_t gyro_sample_hz;
@@ -43,9 +51,13 @@ private:
     uint64_t next_accel_sample;
     float gyro_time;
     float accel_time;
-    float gyro_motor_phase[12];
-    float accel_motor_phase[12];
+    float gyro_motor_phase[32];
+    float accel_motor_phase[32];
     uint32_t temp_start_ms;
+#if AP_SIM_INS_FILE_ENABLED
+    int gyro_fd = -1;
+    int accel_fd = -1;
+#endif
 
     static uint8_t bus_id;
 };

@@ -32,8 +32,7 @@ public:
     AP_LTM_Telem() {}
 
     /* Do not allow copies */
-    AP_LTM_Telem(const AP_LTM_Telem &other) = delete;
-    AP_LTM_Telem &operator=(const AP_LTM_Telem&) = delete;
+    CLASS_NO_COPY(AP_LTM_Telem);
 
     // init - perform required initialisation
     void init();

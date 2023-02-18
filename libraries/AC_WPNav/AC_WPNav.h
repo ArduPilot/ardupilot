@@ -12,6 +12,9 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AC_Avoidance/AC_Avoid.h>                 // Stop at fence library
 
+// maximum velocities and accelerations
+#define WPNAV_ACCELERATION              250.0f      // maximum horizontal acceleration in cm/s/s that wp navigation will request
+
 class AC_WPNav
 {
 public:
@@ -81,7 +84,10 @@ public:
     float get_accel_z() const { return _wp_accel_z_cmss; }
 
     /// get_wp_acceleration - returns acceleration in cm/s/s during missions
-    float get_wp_acceleration() const { return _wp_accel_cmss.get(); }
+    float get_wp_acceleration() const { return (is_positive(_wp_accel_cmss)) ? _wp_accel_cmss : WPNAV_ACCELERATION; }
+
+    /// get_wp_acceleration - returns acceleration in cm/s/s during missions
+    float get_corner_acceleration() const { return (is_positive(_wp_accel_c_cmss)) ? _wp_accel_c_cmss : get_wp_acceleration(); }
 
     /// get_wp_destination waypoint using position vector
     /// x,y are distance from ekf origin in cm
@@ -235,6 +241,7 @@ protected:
     AP_Float    _wp_speed_down_cms;     // default maximum descent rate in cm/s
     AP_Float    _wp_radius_cm;          // distance from a waypoint in cm that, when crossed, indicates the wp has been reached
     AP_Float    _wp_accel_cmss;         // horizontal acceleration in cm/s/s during missions
+    AP_Float    _wp_accel_c_cmss;       // cornering acceleration in cm/s/s during missions
     AP_Float    _wp_accel_z_cmss;       // vertical acceleration in cm/s/s during missions
     AP_Float    _wp_jerk;               // maximum jerk used to generate scurve trajectories in m/s/s/s
     AP_Float    _terrain_margin;        // terrain following altitude margin. vehicle will stop if distance from target altitude is larger than this margin
@@ -247,7 +254,6 @@ protected:
     SCurve _scurve_prev_leg;            // previous scurve trajectory used to blend with current scurve trajectory
     SCurve _scurve_this_leg;            // current scurve trajectory
     SCurve _scurve_next_leg;            // next scurve trajectory used to blend with current scurve trajectory
-    float _scurve_accel_corner;         // scurve maximum corner acceleration in m/s/s
     float _scurve_jerk;                 // scurve jerk max in m/s/s/s
     float _scurve_snap;                 // scurve snap in m/s/s/s/s
 

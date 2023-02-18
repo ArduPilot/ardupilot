@@ -24,7 +24,7 @@
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES && HAL_CANMANAGER_ENABLED && HAL_ENABLE_CANTESTER
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <stdio.h>
-#include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
 #include <uavcan/protocol/dynamic_node_id_client.hpp>
 #include <uavcan/equipment/esc/Status.hpp>

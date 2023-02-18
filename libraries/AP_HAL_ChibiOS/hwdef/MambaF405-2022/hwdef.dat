@@ -15,3 +15,15 @@ PB1 TIM3_CH4 TIM3 PWM(6) GPIO(55)
 PB3 TIM2_CH2 TIM2 PWM(7) GPIO(56)
 
 PB11 USART3_RX USART3 NODMA
+
+# MambaF405-2022B board
+SPIDEV icm42688    SPI1 DEVID2 MPU6000_CS MODE3 1*MHZ 8*MHZ
+
+IMU Invensensev3 SPI:icm42688 ROTATION_ROLL_180_YAW_270
+
+# enable SPL06 baro
+BARO SPL06 I2C:0:0x76
+define AP_BARO_SPL06_ENABLED 1
+
+# minimal drivers to reduce flash usage
+include ../include/minimal.inc

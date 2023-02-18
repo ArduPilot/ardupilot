@@ -5,12 +5,6 @@
  *
  */
 
-#define GSCALAR(v, name, def) { plane.g.v.vtype, name, Parameters::k_param_ ## v, &plane.g.v, {def_value : def} }
-#define ASCALAR(v, name, def) { plane.aparm.v.vtype, name, Parameters::k_param_ ## v, (const void *)&plane.aparm.v, {def_value : def} }
-#define GGROUP(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &plane.g.v, {group_info : class::var_info} }
-#define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, (const void *)&plane.v, {group_info : class::var_info} }
-#define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, (const void *)&plane.v, {group_info : class::var_info} }
-
 const AP_Param::Info Plane::var_info[] = {
     // @Param: FORMAT_VERSION
     // @DisplayName: Eeprom format version number
@@ -71,7 +65,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: KFF_THR2PTCH
     // @DisplayName: Throttle to Pitch Mix
     // @Description: Pitch up to add in proportion to throttle. 100% throttle will add this number of degrees to the pitch target.
-    // @Range: 0 5
+    // @Range: -5 5
     // @Increment: 0.01
     // @User: Advanced
     GSCALAR(kff_throttle_to_pitch,  "KFF_THR2PTCH",   0),
@@ -105,8 +99,8 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: STICK_MIXING
     // @DisplayName: Stick Mixing
-    // @Description: When enabled, this adds user stick input to the control surfaces in auto modes, allowing the user to have some degree of flight control without changing modes.  There are two types of stick mixing available. If you set STICK_MIXING to 1 then it will use "fly by wire" mixing, which controls the roll and pitch in the same way that the FBWA mode does. This is the safest option if you usually fly ArduPlane in FBWA or FBWB mode. If you set STICK_MIXING to 2 then it will enable direct mixing mode, which is what the STABILIZE mode uses. That will allow for much more extreme maneuvers while in AUTO mode. If you set STICK_MIXING to 3 then it will apply to the yaw while in quadplane modes only, such as while doing an automatic VTOL takeoff or landing.
-    // @Values: 0:Disabled,1:FBWMixing,2:DirectMixing,3:VTOL Yaw only
+    // @Description: When enabled, this adds user stick input to the control surfaces in auto modes, allowing the user to have some degree of flight control without changing modes.  There are two types of stick mixing available. If you set STICK_MIXING to 1 then it will use "fly by wire" mixing, which controls the roll and pitch in the same way that the FBWA mode does. This is the safest option if you usually fly ArduPlane in FBWA or FBWB mode. If you set STICK_MIXING to 3 then it will apply to the yaw while in quadplane modes only, such as while doing an automatic VTOL takeoff or landing.
+    // @Values: 0:Disabled,1:FBWMixing,3:VTOL Yaw only
     // @User: Advanced
     GSCALAR(stick_mixing,           "STICK_MIXING",   uint8_t(StickMixing::FBW)),
 
@@ -137,6 +131,15 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(takeoff_throttle_delay,     "TKOFF_THR_DELAY",  2),
 
+    // @Param: TKOFF_THR_MAX_T
+    // @DisplayName: Takeoff throttle maximum time
+    // @Description: This sets the time that maximum throttle will be forced during a fixed wing takeoff without an airspeed sensor. If an airspeed sensor is being used then the throttle is set to maximum until the takeoff airspeed is reached.
+    // @Units: s
+    // @Range: 0 10
+    // @Increment: 0.5
+    // @User: Standard
+    ASCALAR(takeoff_throttle_max_t,     "TKOFF_THR_MAX_T",  4),
+    
     // @Param: TKOFF_TDRAG_ELEV
     // @DisplayName: Takeoff tail dragger elevator
     // @Description: This parameter sets the amount of elevator to apply during the initial stage of a takeoff. It is used to hold the tail wheel of a taildragger on the ground during the initial takeoff stage to give maximum steering. This option should be combined with the TKOFF_TDRAG_SPD1 option and the GROUND_STEER_ALT option along with tuning of the ground steering controller. A value of zero means to bypass the initial "tail hold" stage of takeoff. Set to zero for hand and catapult launch. For tail-draggers you should normally set this to 100, meaning full up elevator during the initial stage of takeoff. For most tricycle undercarriage aircraft a value of zero will work well, but for some tricycle aircraft a small negative value (say around -20 to -30) will apply down elevator which will hold the nose wheel firmly on the ground during initial acceleration. Only use a negative value if you find that the nosewheel doesn't grip well during takeoff. Too much down elevator on a tricycle undercarriage may cause instability in steering as the plane pivots around the nosewheel. Add down elevator 10 percent at a time.
@@ -193,7 +196,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: LEVEL_ROLL_LIMIT
     // @DisplayName: Level flight roll limit
-    // @Description: This controls the maximum bank angle in degrees during flight modes where level flight is desired, such as in the final stages of landing, and during auto takeoff. This should be a small angle (such as 5 degrees) to prevent a wing hitting the runway during takeoff or landing. Setting this to zero will completely disable heading hold on auto takeoff and final landing approach.
+    // @Description: This controls the maximum bank angle in degrees during flight modes where level flight is desired, such as in the final stages of landing, and during auto takeoff. This should be a small angle (such as 5 degrees) to prevent a wing hitting the runway during takeoff or landing. Setting this to zero will completely disable heading hold on auto takeoff while below 5 meters and during the flare portion of a final landing approach.
     // @Units: deg
     // @Range: 0 45
     // @Increment: 1
@@ -445,8 +448,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: FLTMODE_CH
     // @DisplayName: Flightmode channel
     // @Description: RC Channel to use for flight mode control
-    // @Range: 1 16
-    // @Increment: 1
+    // @Values: 0:Disabled,1:Channel 1,2:Channel 2,3:Channel 3,4:Channel 4,5:Channel 5,6:Channel 6,7:Channel 7,8:Channel 8,9:Channel 9,10:Channel 10,11:Channel 11,12:Channel 12,13:Channel 13,14:Channel 14,15:Channel 15,16:Channel 16
     // @User: Advanced
     GSCALAR(flight_mode_channel,    "FLTMODE_CH",     FLIGHT_MODE_CHANNEL),
 
@@ -458,38 +460,33 @@ const AP_Param::Info Plane::var_info[] = {
     GSCALAR(flight_mode1,           "FLTMODE1",       FLIGHT_MODE_1),
 
     // @Param: FLTMODE2
+    // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: FlightMode2
     // @Description: Flight mode for switch position 2 (1231 to 1360)
-    // @CopyValuesFrom: FLTMODE1
-    // @User: Standard
     GSCALAR(flight_mode2,           "FLTMODE2",       FLIGHT_MODE_2),
 
     // @Param: FLTMODE3
+    // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: FlightMode3
     // @Description: Flight mode for switch position 3 (1361 to 1490)
-    // @CopyValuesFrom: FLTMODE1
-    // @User: Standard
     GSCALAR(flight_mode3,           "FLTMODE3",       FLIGHT_MODE_3),
 
     // @Param: FLTMODE4
+    // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: FlightMode4
     // @Description: Flight mode for switch position 4 (1491 to 1620)
-    // @CopyValuesFrom: FLTMODE1
-    // @User: Standard
     GSCALAR(flight_mode4,           "FLTMODE4",       FLIGHT_MODE_4),
 
     // @Param: FLTMODE5
+    // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: FlightMode5
     // @Description: Flight mode for switch position 5 (1621 to 1749)
-    // @CopyValuesFrom: FLTMODE1
-    // @User: Standard
     GSCALAR(flight_mode5,           "FLTMODE5",       FLIGHT_MODE_5),
 
     // @Param: FLTMODE6
+    // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: FlightMode6
     // @Description: Flight mode for switch position 6 (1750 to 2049)
-    // @CopyValuesFrom: FLTMODE1
-    // @User: Standard
     GSCALAR(flight_mode6,           "FLTMODE6",       FLIGHT_MODE_6),
 
     // @Param: INITIAL_MODE
@@ -555,8 +552,8 @@ const AP_Param::Info Plane::var_info[] = {
     
     // @Param: ACRO_LOCKING
     // @DisplayName: ACRO mode attitude locking
-    // @Description: Enable attitude locking when sticks are released
-    // @Values: 0:Disabled,1:Enabled
+    // @Description: Enable attitude locking when sticks are released. If set to 2 then quaternion based locking is used if the yaw rate controller is enabled. Quaternion based locking will hold any attitude
+    // @Values: 0:Disabled,1:Enabled,2:Quaternion
     // @User: Standard
     GSCALAR(acro_locking,             "ACRO_LOCKING",     0),
 
@@ -617,8 +614,8 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
-    // @Description: Bitmap of what on-board log types to enable. This value is made up of the sum of each of the log types you want to be saved. It is usually best just to enable all log types by setting this to 65535. The individual bits are ATTITUDE_FAST=1, ATTITUDE_MEDIUM=2, GPS=4, PerformanceMonitoring=8, ControlTuning=16, NavigationTuning=32, Mode=64, IMU=128, Commands=256, Battery=512, Compass=1024, TECS=2048, Camera=4096, RCandServo=8192, Sonar=16384, Arming=32768, FullLogs=65535
-    // @Bitmask: 0:ATTITUDE_FAST,1:ATTITUDE_MED,2:GPS,3:PM,4:CTUN,5:NTUN,6:MODE,7:IMU,8:CMD,9:BATT_MON,10:COMPASS,11:TECS,12:CAMERA,13:RC,14:RANGEFINDER,15:ARM/DISARM,19:IMU_RAW,20:ATTITUDE_FULLRATE,21:VideoStabilization
+    // @Description: Bitmap of what on-board log types to enable. This value is made up of the sum of each of the log types you want to be saved. It is usually best just to enable all basic log types by setting this to 65535.
+    // @Bitmask: 0:Fast Attitude,1:Medium Attitude,2:GPS,3:Performance,4:Control Tuning,5:Navigation Tuning,7:IMU,8:Mission Commands,9:Battery Monitor,10:Compass,11:TECS,12:Camera,13:RC Input-Output,14:Rangefinder,19:Raw IMU,20:Fullrate Attitude,21:Video Stabilization
     // @User: Advanced
     GSCALAR(log_bitmask,            "LOG_BITMASK",    DEFAULT_LOG_BITMASK),
 
@@ -663,7 +660,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: ALT_HOLD_FBWCM
     // @DisplayName: Minimum altitude for FBWB mode
-    // @Description: This is the minimum altitude in centimeters that FBWB and CRUISE modes will allow. If you attempt to descend below this altitude then the plane will level off. A value of zero means no limit.
+    // @Description: This is the minimum altitude in centimeters (above home) that FBWB and CRUISE modes will allow. If you attempt to descend below this altitude then the plane will level off. It will also force a climb to this altitude if below in these modes. A value of zero means no limit.
     // @Units: cm
     // @User: Standard
     GSCALAR(FBWB_min_altitude_cm,   "ALT_HOLD_FBWCM", ALT_HOLD_FBW_CM),
@@ -747,7 +744,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_GPS/AP_GPS.cpp
     GOBJECT(gps, "GPS", AP_GPS),
 
-#if CAMERA == ENABLED
+#if AP_CAMERA_ENABLED
     // @Group: CAM_
     // @Path: ../libraries/AP_Camera/AP_Camera.cpp
     GOBJECT(camera,                  "CAM_", AP_Camera),
@@ -807,9 +804,9 @@ const AP_Param::Info Plane::var_info[] = {
 #if HAL_QUADPLANE_ENABLED
     // @Group: Q_A_
     // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp,../libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp
-    { AP_PARAM_GROUP, "Q_A_", Parameters::k_param_q_attitude_control,
-      (const void *)&plane.quadplane.attitude_control,
-      {group_info : AC_AttitudeControl_Multi::var_info}, AP_PARAM_FLAG_POINTER },
+    { "Q_A_", (const void *)&plane.quadplane.attitude_control,
+      {group_info : AC_AttitudeControl_Multi::var_info}, AP_PARAM_FLAG_POINTER,
+      Parameters::k_param_q_attitude_control, AP_PARAM_GROUP },
 #endif
 
     // @Group: RLL
@@ -930,7 +927,7 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(sitl, "SIM_", SITL::SIM),
 #endif
 
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_ADVANCEDFAILSAFE_ENABLED
     // @Group: AFS_
     // @Path: ../libraries/AP_AdvancedFailsafe/AP_AdvancedFailsafe.cpp
     GOBJECT(afs,  "AFS_", AP_AdvancedFailsafe),
@@ -939,7 +936,7 @@ const AP_Param::Info Plane::var_info[] = {
 #if AP_OPTICALFLOW_ENABLED
     // @Group: FLOW
     // @Path: ../libraries/AP_OpticalFlow/AP_OpticalFlow.cpp
-    GOBJECT(optflow,   "FLOW", OpticalFlow),
+    GOBJECT(optflow,   "FLOW", AP_OpticalFlow),
 #endif
 
     // @Group: MIS_
@@ -962,10 +959,12 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECTN(ahrs.EKF3, NavEKF3, "EK3_", NavEKF3),
 #endif
 
+#if AP_RPM_ENABLED
     // @Group: RPM
     // @Path: ../libraries/AP_RPM/AP_RPM.cpp
     GOBJECT(rpm_sensor, "RPM", AP_RPM),
-    
+#endif
+
     // @Group: RSSI_
     // @Path: ../libraries/AP_RSSI/AP_RSSI.cpp
     GOBJECT(rssi, "RSSI_",  AP_RSSI),
@@ -994,7 +993,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Group:
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
-    { AP_PARAM_GROUP, "", Parameters::k_param_vehicle, (const void *)&plane, {group_info : AP_Vehicle::var_info} },
+    PARAM_VEHICLE_INFO,
 
     AP_VAREND
 };
@@ -1069,7 +1068,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("HOME_RESET_ALT", 11, ParametersG2, home_reset_threshold, 0),
 
-#if GRIPPER_ENABLED == ENABLED
+#if AP_GRIPPER_ENABLED
     // @Group: GRIP_
     // @Path: ../libraries/AP_Gripper/AP_Gripper.cpp
     AP_SUBGROUPINFO(gripper, "GRIP_", 12, ParametersG2, AP_Gripper),
@@ -1078,7 +1077,19 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FLIGHT_OPTIONS
     // @DisplayName: Flight mode options
     // @Description: Flight mode specific options
-    // @Bitmask: 0:Rudder mixing in direct flight modes only (Manual / Stabilize / Acro),1:Use centered throttle in Cruise or FBWB to indicate trim airspeed, 2:Disable attitude check for takeoff arming, 3:Force target airspeed to trim airspeed in Cruise or FBWB, 4: Climb to ALT_HOLD_RTL before turning for RTL, 5: Enable yaw damper in acro mode, 6: Surpress speed scaling during auto takeoffs to be 1 or less to prevent oscillations without airpseed sensor., 7:EnableDefaultAirspeed for takeoff, 8: Remove the TRIM_PITCH_CD on the GCS horizon, 9: Remove the TRIM_PITCH_CD on the OSD horizon, 10: Adjust mid-throttle to be TRIM_THROTTLE in non-auto throttle modes except MANUAL, 11:Disable suppression of fixed wing rate gains in ground mode, 12: Enable FBWB style loiter altitude control
+    // @Bitmask: 0: Rudder mixing in direct flight modes only (Manual/Stabilize/Acro)
+    // @Bitmask: 1: Use centered throttle in Cruise or FBWB to indicate trim airspeed
+    // @Bitmask: 2: Disable attitude check for takeoff arming
+    // @Bitmask: 3: Force target airspeed to trim airspeed in Cruise or FBWB
+    // @Bitmask: 4: Climb to ALT_HOLD_RTL before turning for RTL
+    // @Bitmask: 5: Enable yaw damper in acro mode
+    // @Bitmask: 6: Supress speed scaling during auto takeoffs to be 1 or less to prevent oscillations without airspeed sensor.
+    // @Bitmask: 7: EnableDefaultAirspeed for takeoff
+    // @Bitmask: 8: Remove the TRIM_PITCH_CD on the GCS horizon
+    // @Bitmask: 9: Remove the TRIM_PITCH_CD on the OSD horizon
+    // @Bitmask: 10: Adjust mid-throttle to be TRIM_THROTTLE in non-auto throttle modes except MANUAL
+    // @Bitmask: 11: Disable suppression of fixed wing rate gains in ground mode
+    // @Bitmask: 12: Enable FBWB style loiter altitude control
     // @User: Advanced
     AP_GROUPINFO("FLIGHT_OPTIONS", 13, ParametersG2, flight_options, 0),
 
@@ -1095,7 +1106,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("TKOFF_ACCEL_CNT", 15, ParametersG2, takeoff_throttle_accel_count, 1),
 
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
     // @Group: LGR_
     // @Path: ../libraries/AP_LandingGear/AP_LandingGear.cpp
     AP_SUBGROUPINFO(landing_gear, "LGR_", 16, ParametersG2, AP_LandingGear),
@@ -1231,6 +1242,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/AP_Follow/AP_Follow.cpp
     AP_SUBGROUPINFO(follow, "FOLL", 33, ParametersG2, AP_Follow),
 #endif
+
+    // @Param: AUTOTUNE_AXES
+    // @DisplayName: Autotune axis bitmask
+    // @Description: 1-byte bitmap of axes to autotune
+    // @Bitmask: 0:Roll,1:Pitch,2:Yaw
+    // @User: Standard
+    AP_GROUPINFO("AUTOTUNE_AXES", 34, ParametersG2, axis_bitmask, 7),
+
+
     
     AP_GROUPEND
 };
@@ -1333,10 +1353,6 @@ static const RCConversionInfo rc_option_conversion[] = {
 
 void Plane::load_parameters(void)
 {
-    if (!AP_Param::check_var_info()) {
-        hal.console->printf("Bad parameter table\n");
-        AP_HAL::panic("Bad parameter table");
-    }
     if (!g.format_version.load() ||
         g.format_version != Parameters::k_format_version) {
 
@@ -1513,10 +1529,7 @@ void Plane::load_parameters(void)
             { Parameters::k_param_ins, 357, AP_PARAM_FLOAT, "INS_HNTC2_FREQ" },
             { Parameters::k_param_ins, 421, AP_PARAM_FLOAT, "INS_HNTC2_BW" },
         };
-        uint8_t notchfilt_table_size = ARRAY_SIZE(notchfilt_conversion_info);
-        for (uint8_t i=0; i<notchfilt_table_size; i++) {
-            AP_Param::convert_old_parameters(&notchfilt_conversion_info[i], 1.0f);
-        }
+        AP_Param::convert_old_parameters(&notchfilt_conversion_info[0], ARRAY_SIZE(notchfilt_conversion_info));
         AP_Param::set_default_by_name("INS_HNTC2_MODE", 0);
         AP_Param::set_default_by_name("INS_HNTC2_HMNCS", 1);
     }

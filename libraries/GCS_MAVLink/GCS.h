@@ -3,14 +3,11 @@
 // protocols.
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
-
-#ifndef HAL_GCS_ENABLED
-#define HAL_GCS_ENABLED 1
-#endif
+#include "GCS_config.h"
 
 #if HAL_GCS_ENABLED
 
+#include <AP_AdvancedFailsafe/AP_AdvancedFailsafe_config.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include "GCS_MAVLink.h"
@@ -21,18 +18,18 @@
 #include <AP_Common/Bitmask.h>
 #include <AP_LTM_Telem/AP_LTM_Telem.h>
 #include <AP_Devo_Telem/AP_Devo_Telem.h>
-#include <AP_Filesystem/AP_Filesystem_Available.h>
+#include <AP_Filesystem/AP_Filesystem_config.h>
+#include <AP_Frsky_Telem/AP_Frsky_config.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Mount/AP_Mount.h>
-#include <AC_Fence/AC_Fence.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 #include "ap_message.h"
 
 #define GCS_DEBUG_SEND_MESSAGE_TIMINGS 0
 
 #ifndef HAL_HIGH_LATENCY2_ENABLED
-#define HAL_HIGH_LATENCY2_ENABLED !HAL_MINIMIZE_FEATURES
+#define HAL_HIGH_LATENCY2_ENABLED 1
 #endif
 
 #ifndef HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
@@ -42,6 +39,7 @@
 // macros used to determine if a message will fit in the space available.
 
 void gcs_out_of_space_to_send(mavlink_channel_t chan);
+bool check_payload_size(mavlink_channel_t chan, uint16_t max_payload_len);
 
 // important note: despite the names, these messages do NOT check to
 // see if the payload will fit in the buffer.  They check to see if
@@ -65,7 +63,7 @@ void gcs_out_of_space_to_send(mavlink_channel_t chan);
 // immediately return false from the current function if there is no
 // room to fit the mavlink message with id id on the current object's
 // output
-#define CHECK_PAYLOAD_SIZE(id) if (txspace() < unsigned(packet_overhead()+MAVLINK_MSG_ID_ ## id ## _LEN)) { gcs_out_of_space_to_send(chan); return false; }
+#define CHECK_PAYLOAD_SIZE(id) if (!check_payload_size(MAVLINK_MSG_ID_ ## id ## _LEN)) return false
 
 // CHECK_PAYLOAD_SIZE2 - macro which inserts code which will
 // immediately return false from the current function if there is no
@@ -73,6 +71,12 @@ void gcs_out_of_space_to_send(mavlink_channel_t chan);
 // channel "chan".  It is expecting there to be a "chan" variable in
 // scope.
 #define CHECK_PAYLOAD_SIZE2(id) if (!HAVE_PAYLOAD_SPACE(chan, id)) return false
+
+// CHECK_PAYLOAD_SIZE2_VOID - macro which inserts code which will
+// immediately return from the current (void) function if there is no
+// room to fit the mavlink message with id id on the mavlink output
+// channel "chan".
+#define CHECK_PAYLOAD_SIZE2_VOID(chan, id) if (!HAVE_PAYLOAD_SPACE(chan, id)) return
 
 // convenience macros for defining which ap_message ids are in which streams:
 #define MAV_STREAM_ENTRY(stream_name)           \
@@ -82,6 +86,26 @@ void gcs_out_of_space_to_send(mavlink_channel_t chan);
         ARRAY_SIZE(stream_name ## _msgs)        \
     }
 #define MAV_STREAM_TERMINATOR { (streams)0, nullptr, 0 }
+
+// code generation; avoid each subclass duplicating these two methods
+// and just changing the name.  These methods allow retrieval of
+// objects specific to the vehicle's subclass, which the vehicle can
+// then call its own specific methods on
+#define GCS_MAVLINK_CHAN_METHOD_DEFINITIONS(subclass_name) \
+    subclass_name *chan(const uint8_t ofs) override {                   \
+        if (ofs >= _num_gcs) {                                           \
+            return nullptr;                                             \
+        }                                                               \
+        return (subclass_name *)_chan[ofs];                        \
+    }                                                                   \
+                                                                        \
+    const subclass_name *chan(const uint8_t ofs) const override { \
+        if (ofs >= _num_gcs) {                                           \
+            return nullptr;                                             \
+        }                                                               \
+        return (subclass_name *)_chan[ofs];                        \
+    }
+
 
 #define GCS_MAVLINK_NUM_STREAM_RATES 10
 class GCS_MAVLINK_Parameters
@@ -163,20 +187,21 @@ public:
         return MIN(_port->txspace(), 8192U);
     }
 
+    bool check_payload_size(uint16_t max_payload_len);
+
     // this is called when we discover we'd like to send something but can't:
     void out_of_space_to_send() { out_of_space_to_send_count++; }
 
     void send_mission_ack(const mavlink_message_t &msg,
                           MAV_MISSION_TYPE mission_type,
                           MAV_MISSION_RESULT result) const {
+        CHECK_PAYLOAD_SIZE2_VOID(chan, MISSION_ACK);
         mavlink_msg_mission_ack_send(chan,
                                      msg.sysid,
                                      msg.compid,
                                      result,
                                      mission_type);
     }
-
-    static const MAV_MISSION_TYPE supported_mission_types[3];
 
     // packetReceived is called on any successful decode of a mavlink message
     virtual void packetReceived(const mavlink_status_t &status,
@@ -206,6 +231,9 @@ public:
     virtual uint8_t sysid_my_gcs() const = 0;
     virtual bool sysid_enforce() const { return false; }
 
+    // NOTE: param_name here must point to a 16+1 byte buffer - so do
+    // NOT try to pass in a static-char-* unless it does have that
+    // length!
     void send_parameter_value(const char *param_name,
                               ap_var_type param_type,
                               float param_value);
@@ -287,10 +315,10 @@ public:
     void send_simstate() const;
     void send_sim_state() const;
     void send_ahrs();
+#if AP_MAVLINK_BATTERY2_ENABLED
     void send_battery2();
-#if AP_OPTICALFLOW_ENABLED
-    void send_opticalflow();
 #endif
+    void send_opticalflow();
     virtual void send_attitude() const;
     virtual void send_attitude_quaternion() const;
     void send_autopilot_version() const;
@@ -298,7 +326,7 @@ public:
     void send_local_position() const;
     void send_vfr_hud();
     void send_vibration() const;
-    void send_mount_status() const;
+    void send_gimbal_device_attitude_status() const;
     void send_named_float(const char *name, float value) const;
     void send_home_position() const;
     void send_gps_global_origin() const;
@@ -374,6 +402,12 @@ public:
       returns if a matching component is found
      */
     static bool find_by_mavtype(uint8_t mav_type, uint8_t &sysid, uint8_t &compid, mavlink_channel_t &channel) { return routing.find_by_mavtype(mav_type, sysid, compid, channel); }
+
+    /*
+      search for the first vehicle or component in the routing table with given mav_type and component id and retrieve its sysid and channel
+      returns true if a match is found
+     */
+    static bool find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint8_t &sysid, mavlink_channel_t &channel) { return routing.find_by_mavtype_and_compid(mav_type, compid, sysid, channel); }
 
     // update signing timestamp on GPS lock
     static void update_signing_timestamp(uint64_t timestamp_usec);
@@ -489,7 +523,7 @@ protected:
     void handle_common_message(const mavlink_message_t &msg);
     void handle_set_gps_global_origin(const mavlink_message_t &msg);
     void handle_setup_signing(const mavlink_message_t &msg) const;
-    virtual MAV_RESULT handle_preflight_reboot(const mavlink_command_long_t &packet);
+    virtual MAV_RESULT handle_preflight_reboot(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
 
     // reset a message interval via mavlink:
     MAV_RESULT handle_command_set_message_interval(const mavlink_command_long_t &packet);
@@ -498,6 +532,7 @@ protected:
     MAV_RESULT handle_command_request_message(const mavlink_command_long_t &packet);
 
     MAV_RESULT handle_rc_bind(const mavlink_command_long_t &packet);
+
     virtual MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet);
 
     void handle_send_autopilot_version(const mavlink_message_t &msg);
@@ -574,11 +609,11 @@ protected:
     MAV_RESULT handle_can_forward(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
     void handle_can_frame(const mavlink_message_t &msg) const;
 
-#if AP_OPTICALFLOW_ENABLED
     void handle_optical_flow(const mavlink_message_t &msg);
-#endif
 
     MAV_RESULT handle_fixed_mag_cal_yaw(const mavlink_command_long_t &packet);
+
+    void handle_manual_control(const mavlink_message_t &msg);
 
     // default empty handling of LANDING_TARGET
     virtual void handle_landing_target(const mavlink_landing_target_t &packet, uint32_t timestamp_ms) { }
@@ -649,7 +684,16 @@ private:
         uint32_t received_ms; // time RADIO_STATUS received
     } last_radio_status;
 
+    enum class Flags {
+        USING_SIGNING = (1<<0),
+        ACTIVE = (1<<1),
+        STREAMING = (1<<2),
+        PRIVATE = (1<<3),
+        LOCKED = (1<<4),
+    };
     void log_mavlink_stats();
+
+    uint32_t last_accel_cal_ms; // used to rate limit accel cals for bad links
 
     MAV_RESULT _set_mode_common(const MAV_MODE base_mode, const uint32_t custom_mode);
 
@@ -739,7 +783,6 @@ private:
     // if true is returned, interval will contain the default interval for id
     bool get_default_interval_for_ap_message(const ap_message id, uint16_t &interval) const;
     //  if true is returned, interval will contain the default interval for id
-    bool get_default_interval_for_mavlink_message_id(const uint32_t mavlink_message_id, uint16_t &interval) const;
     // returns an interval in milliseconds for any ap_message in stream id
     uint16_t get_interval_for_stream(GCS_MAVLINK::streams id) const;
     // set an inverval for a specific mavlink message.  Returns false
@@ -873,7 +916,6 @@ private:
 
     struct ftp_state {
         ObjectBuffer<pending_ftp> *requests;
-        ObjectBuffer<pending_ftp> *replies;
 
         // session specific info, currently only support a single session over all links
         int fd = -1;
@@ -890,7 +932,7 @@ private:
 
     bool ftp_init(void);
     void handle_file_transfer_protocol(const mavlink_message_t &msg);
-    void send_ftp_replies(void);
+    bool send_ftp_reply(const pending_ftp &reply);
     void ftp_worker(void);
     void ftp_push_replies(pending_ftp &reply);
 
@@ -899,6 +941,8 @@ private:
     virtual bool handle_guided_request(AP_Mission::Mission_Command &cmd) = 0;
     virtual void handle_change_alt_request(AP_Mission::Mission_Command &cmd) {};
     void handle_common_mission_message(const mavlink_message_t &msg);
+
+    virtual void handle_manual_control_axes(const mavlink_manual_control_t &packet, const uint32_t tnow) {};
 
     void handle_vicon_position_estimate(const mavlink_message_t &msg);
     void handle_vision_position_estimate(const mavlink_message_t &msg);
@@ -949,7 +993,7 @@ private:
     
     // we cache the current location and send it even if the AHRS has
     // no idea where we are:
-    struct Location global_position_current_loc;
+    Location global_position_current_loc;
 
     uint8_t last_tx_seq;
     uint16_t send_packet_count;
@@ -1062,11 +1106,12 @@ public:
                               ap_var_type param_type,
                               float param_value);
 
-    static class MissionItemProtocol_Waypoints *_missionitemprotocol_waypoints;
-    static class MissionItemProtocol_Rally *_missionitemprotocol_rally;
-#if AP_FENCE_ENABLED
-    static class MissionItemProtocol_Fence *_missionitemprotocol_fence;
-#endif
+    // an array of objects used to handle each of the different
+    // protocol types we support.  This is indexed by the enumeration
+    // MAV_MISSION_TYPE, taking advantage of the fact that fence,
+    // mission and rally have values 0, 1 and 2.  Indexing should be via
+    // get_prot_for_mission_type to do bounds checking.
+    static class MissionItemProtocol *missionitemprotocols[3];
     class MissionItemProtocol *get_prot_for_mission_type(const MAV_MISSION_TYPE mission_type) const;
     void try_send_queued_message_for_type(MAV_MISSION_TYPE type) const;
 
@@ -1087,8 +1132,10 @@ public:
 
     bool out_of_time() const;
 
+#if AP_FRSKY_TELEM_ENABLED
     // frsky backend
     class AP_Frsky_Telem *frsky;
+#endif
 
 #if AP_LTM_TELEM_ENABLED
     // LTM backend
@@ -1104,7 +1151,13 @@ public:
     bool install_alternative_protocol(mavlink_channel_t chan, GCS_MAVLINK::protocol_handler_fn_t handler);
 
     // get the VFR_HUD throttle
-    int16_t get_hud_throttle(void) const { return num_gcs()>0?chan(0)->vfr_hud_throttle():0; }
+    int16_t get_hud_throttle(void) const {
+        const GCS_MAVLINK *link = chan(0);
+        if (link == nullptr) {
+            return 0;
+        }
+        return link->vfr_hud_throttle();
+    }
 
     // update uart pass-thru
     void update_passthru();
@@ -1125,9 +1178,9 @@ public:
     void enable_high_latency_connections(bool enabled);
 #endif // HAL_HIGH_LATENCY2_ENABLED
 
-protected:
-
     virtual uint8_t sysid_this_mav() const = 0;
+
+protected:
 
     virtual GCS_MAVLINK *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
                                                  AP_HAL::UARTDriver &uart) = 0;

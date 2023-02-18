@@ -15,6 +15,10 @@
 
 #pragma once
 
+#include "AP_Filesystem_config.h"
+
+#if AP_FILESYSTEM_PARAM_ENABLED
+
 #include "AP_Filesystem_backend.h"
 #include <AP_Common/ExpandingString.h>
 
@@ -82,3 +86,5 @@ private:
     bool finish_upload(const rfile &r);
     bool param_upload_parse(const rfile &r, bool &need_retry);
 };
+
+#endif  // AP_FILESYSTEM_PARAM_ENABLED

@@ -22,6 +22,7 @@
 
 #include <utility>
 #include <stdio.h>
+#include <AP_Math/definitions.h>
 
 extern const AP_HAL::HAL &hal;
 

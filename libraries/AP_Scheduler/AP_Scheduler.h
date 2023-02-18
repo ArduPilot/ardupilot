@@ -79,8 +79,7 @@ public:
     AP_Scheduler();
 
     /* Do not allow copies */
-    AP_Scheduler(const AP_Scheduler &other) = delete;
-    AP_Scheduler &operator=(const AP_Scheduler&) = delete;
+    CLASS_NO_COPY(AP_Scheduler);
 
     static AP_Scheduler *get_singleton();
     static AP_Scheduler *_singleton;
@@ -124,6 +123,7 @@ public:
 
     // return current tick counter
     uint16_t ticks() const { return _tick_counter; }
+    uint32_t ticks32() const { return _tick_counter32; }
 
     // run the tasks. Call this once per 'tick'.
     // time_available is the amount of time available to run
@@ -163,8 +163,14 @@ public:
         return _loop_period_s;
     }
 
+    // get the filtered main loop time in seconds
     float get_filtered_loop_time(void) const {
         return perf_info.get_filtered_time();
+    }
+
+    // get the filtered active main loop rate
+    float get_filtered_loop_rate_hz() {
+        return perf_info.get_filtered_loop_rate_hz();
     }
 
     // get the time in seconds that the last loop took
@@ -219,6 +225,7 @@ private:
     // number of 'ticks' that have passed (number of times that
     // tick() has been called
     uint16_t _tick_counter;
+    uint32_t _tick_counter32;
 
     // tick counter at the time we last ran each task
     uint16_t *_last_run;

@@ -43,6 +43,9 @@
 #include <AP_HAL/utility/packetise.h>
 #endif
 
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_Filesystem/AP_Filesystem.h>
+
 extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
@@ -83,13 +86,15 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
              mcast:239.255.145.50:14550
              uart:/dev/ttyUSB0:57600
              sim:ParticleSensor_SDS021:
+             file:/tmp/my-device-capture.BIN
+             logic_async_csv:/tmp/logic_async.csv:
          */
         char *saveptr = nullptr;
         char *s = strdup(path);
         char *devtype = strtok_r(s, ":", &saveptr);
         char *args1 = strtok_r(nullptr, ":", &saveptr);
         char *args2 = strtok_r(nullptr, ":", &saveptr);
-#if !defined(HAL_BUILD_AP_PERIPH)
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
         if (_portNumber == 2 && AP::sitl()->adsb_plane_count >= 0) {
             // this is ordinarily port 5762.  The ADSB simulation assumed
             // this port, so if enabled we assume we'll be doing ADSB...
@@ -151,10 +156,35 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         } else if (strcmp(devtype,"none") == 0) {
             // skipping port
             ::printf("Skipping port %s\n", args1);
+        } else if (strcmp(devtype, "file") == 0) {
+            if (_connected) {
+                AP::FS().close(_fd);
+            }
+            ::printf("FILE connection %s\n", args1);
+            _fd = AP::FS().open(args1, O_RDONLY);
+            if (_fd == -1) {
+                AP_HAL::panic("Failed to open (%s): %m", args1);
+            }
+            _connected = true;
+        } else if (strcmp(devtype, "logic_async_csv") == 0) {
+            if (_connected) {
+                AP::FS().close(_fd);
+            }
+            ::printf("logic_async_csv connection %s\n", args1);
+            _fd = AP::FS().open(args1, O_RDONLY);
+            if (_fd == -1) {
+                AP_HAL::panic("Failed to open (%s): %m", args1);
+            }
+            _connected = true;
+            logic_async_csv.active = true;
         } else {
             AP_HAL::panic("Invalid device path: %s", path);
         }
         free(s);
+    }
+
+    if (_sim_serial_device != nullptr) {
+        _sim_serial_device->set_autopilot_baud(baud);
     }
 
     if (hal.console != this) { // don't clear USB buffers (allows early startup messages to escape)
@@ -264,7 +294,23 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
         // these have no effect
         tcdrain(_fd);
     } else {
-        _writebuffer.write(buffer, size);
+        /*
+          simulate byte loss at the link layer
+         */
+        size_t nwrite = size;
+#if !defined(HAL_BUILD_AP_PERIPH)
+        SITL::SIM *_sitl = AP::sitl();
+
+        if (_sitl && _sitl->uart_byte_loss_pct > 0) {
+            if (fabsf(rand_float()) < _sitl->uart_byte_loss_pct.get() * 0.01 * size) {
+                nwrite--;
+            }
+            if (nwrite == 0) {
+                return size;
+            }
+        }
+#endif // HAL_BUILD_AP_PERIPH
+        _writebuffer.write(buffer, nwrite);
     }
     return size;
 }
@@ -678,6 +724,98 @@ void UARTDriver::_check_reconnect(void)
     _uart_start_connection();
 }
 
+uint16_t UARTDriver::read_from_async_csv(uint8_t *buffer, uint16_t space)
+{
+    if (_fd == -1) {
+        return 0;
+    }
+    const uint32_t micros = AP_HAL::micros();
+    if (micros < 5000000) {
+        // don't inject for the first several seconds
+        return 0;
+    }
+
+    static uint32_t frame_number;
+    frame_number++;
+
+    uint8_t i;
+    for (i=0; i<space; i++) {
+        static uint32_t count;
+        if (logic_async_csv.loaded) {
+            const uint32_t emit_timestamp_us = micros - logic_async_csv.first_emit_micros_us;
+            const uint32_t data_timestamp_us = logic_async_csv.loaded_data.timestamp_us - logic_async_csv.first_timestamp_us;
+            if (data_timestamp_us > emit_timestamp_us) {
+                return i;
+            }
+            buffer[i] = logic_async_csv.loaded_data.b;
+            count++;
+            logic_async_csv.loaded = false;
+        }
+
+        while (!logic_async_csv.loaded) {
+            uint8_t c;
+            const ssize_t nread = ::read(_fd, &c, 1);
+            if (nread == 0) {
+                // EOF
+                close(_fd);
+                _fd = -1;
+                return i;
+            }
+
+            // feed data into CSV Reader, handle new state:
+            const auto retcode = logic_async_csv.csvreader.feed(c);
+            switch (retcode) {
+            case AP_CSVReader::RetCode::OK:
+                continue;
+            case AP_CSVReader::RetCode::ERROR:
+                AP_HAL::panic("Malformed CSV?");
+            case AP_CSVReader::RetCode::TERM_DONE:
+            case AP_CSVReader::RetCode::VECTOR_DONE:
+                switch (logic_async_csv.terms_seen) {
+                case 0:  // start_time
+                    if (!logic_async_csv.done_first_line) {
+                        break;
+                    }
+                    logic_async_csv.loaded_data.timestamp_us = atof((char*)logic_async_csv.term) * 1000000;  // seconds to microseconds
+                    break;
+                case 1:  // data
+                    if (!logic_async_csv.done_first_line) {
+                        break;
+                    }
+                    logic_async_csv.loaded_data.b = (char_to_hex(logic_async_csv.term[2]) << 4) | char_to_hex(logic_async_csv.term[3]);
+                    break;
+                case 2:  // error
+                case 3:  // framing error
+                    break;
+                case 4:
+                    AP_HAL::panic("Too many terms in CSV, want (name,type,start_time,duration,data");
+                }
+                logic_async_csv.terms_seen++;
+                if (retcode != AP_CSVReader::RetCode::VECTOR_DONE) {
+                    break;
+                }
+
+                // we've handled the last term, now handle the vector:
+                if (logic_async_csv.terms_seen != 4) {
+                    AP_HAL::panic("Incorrect number off terms in CSV, want (Time [s],Value,Parity Error,Framing Error)");
+                }
+                logic_async_csv.terms_seen = 0;
+                if (!logic_async_csv.done_first_line) {
+                    // skip the headers
+                    logic_async_csv.done_first_line = true;
+                    break;
+                }
+                if (logic_async_csv.first_timestamp_us == 0) {
+                    logic_async_csv.first_timestamp_us = logic_async_csv.loaded_data.timestamp_us;
+                    logic_async_csv.first_emit_micros_us = micros;
+                }
+                logic_async_csv.loaded = true;
+            }
+        }
+    }
+    return i;
+}
+
 void UARTDriver::_timer_tick(void)
 {
     if (!_connected) {
@@ -772,6 +910,8 @@ void UARTDriver::_timer_tick(void)
         }
     } else if (_sim_serial_device != nullptr) {
         nread = _sim_serial_device->read_from_device(buf, space);
+    } else if (logic_async_csv.active) {
+        nread = read_from_async_csv((uint8_t*)buf, space);
     } else if (!_use_send_recv) {
         if (!_select_check(_fd)) {
             return;
@@ -792,6 +932,14 @@ void UARTDriver::_timer_tick(void)
             _connected = false;
             fprintf(stdout, "Closed connection on serial port %u\n", _portNumber);
             fflush(stdout);
+#if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(CYGWIN_BUILD)
+            if (_portNumber == 0) {
+                // exit on cygwin port 0 is almost certainly closing the
+                // connection in MissionPlanner SITL. We want to exit or
+                // we leave a stray process which confuses restart
+                exit(0);
+            }
+#endif
             return;
         }
     }

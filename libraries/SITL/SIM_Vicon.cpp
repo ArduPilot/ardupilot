@@ -210,6 +210,7 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
 
     // send ODOMETRY message
     if (should_send(ViconTypeMask::ODOMETRY) && get_free_msg_buf_index(msg_buf_index)) {
+        const Vector3f vel_corrected_frd = attitude.inverse() * vel_corrected;
         mavlink_msg_odometry_pack_chan(
             system_id,
             component_id,
@@ -222,9 +223,9 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
             pos_corrected.y,
             pos_corrected.z,
             &attitude[0],
-            vel_corrected.x,
-            vel_corrected.y,
-            vel_corrected.z,
+            vel_corrected_frd.x,
+            vel_corrected_frd.y,
+            vel_corrected_frd.z,
             gyro.x,
             gyro.y,
             gyro.z,

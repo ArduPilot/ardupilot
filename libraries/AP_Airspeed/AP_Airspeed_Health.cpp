@@ -4,6 +4,8 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Logger/AP_Logger.h>
 
 void AP_Airspeed::check_sensor_failures()
 {
@@ -16,6 +18,7 @@ void AP_Airspeed::check_sensor_failures()
 
 void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
 {
+#ifndef HAL_BUILD_AP_PERIPH
     const uint32_t now_ms = AP_HAL::millis();
     if ((now_ms - state[i].failures.last_check_ms) <= 200) {
         // slow the checking rate
@@ -23,7 +26,7 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
     }
     state[i].failures.last_check_ms = now_ms;
 
-    if (!is_positive(_wind_max)) {
+    if (!is_positive(_wind_max) && !is_positive(_wind_gate)) {
         // nothing to do
         return;
     }
@@ -43,15 +46,34 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
         }
         return;
     }
-    const float speed_diff = fabsf(state[i].airspeed-gps.ground_speed());
 
+    // check for airspeed consistent with wind and vehicle velocity using the EKF
+    uint32_t age_ms;
+    float innovation, innovationVariance;
+    if (AP::ahrs().airspeed_health_data(innovation, innovationVariance, age_ms) && age_ms < 1000 && is_positive(innovationVariance)) {
+        state[i].failures.test_ratio = fabsf(innovation) / safe_sqrt(innovationVariance);
+    } else {
+        state[i].failures.test_ratio = 0.0f;
+    }
+    bool data_is_inconsistent = false;
+    if (is_positive(_wind_gate) && (AP_Airspeed::OptionsMask::USE_EKF_CONSISTENCY & _options) != 0) {
+        float gate_size = MAX(_wind_gate, 0.0f);
+        if (param[i].use == 0) {
+            // require a smaller inconsistency for a disabled sensor to be declared consistent
+            gate_size *= 0.7f;
+        }
+        data_is_inconsistent = state[i].failures.test_ratio > gate_size;
+    }
+
+    const float speed_diff = fabsf(state[i].airspeed-gps.ground_speed());
+    const bool data_is_implausible = is_positive(_wind_max) && speed_diff > _wind_max;
     // update health_probability with LowPassFilter
-    if (speed_diff > _wind_max) {
+    if (data_is_implausible || data_is_inconsistent) {
         // bad, decay fast
         const float probability_coeff = 0.90f;
         state[i].failures.health_probability = probability_coeff*state[i].failures.health_probability;
 
-    } else {
+    } else if (!data_is_implausible && !data_is_inconsistent) {
         // good, grow slow
         const float probability_coeff = 0.98f;
         state[i].failures.health_probability = probability_coeff*state[i].failures.health_probability + (1.0f-probability_coeff)*1.0f;
@@ -77,11 +99,11 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
 
         // set warn to max if not set or larger than max
         float wind_warn = _wind_warn;
-        if (!is_positive(wind_warn) || (wind_warn > _wind_max)) {
+        if ((!is_positive(wind_warn) || (wind_warn > _wind_max)) && is_positive(_wind_max)) {
             wind_warn = _wind_max;
         }
 
-        if ((speed_diff > wind_warn) && ((now_ms - state[i].failures.last_warn_ms) > 15000)) {
+        if (is_positive(wind_warn) && (speed_diff > wind_warn) && ((now_ms - state[i].failures.last_warn_ms) > 15000)) {
             state[i].failures.last_warn_ms = now_ms;
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Airspeed %d warning %0.1fm/s air to gnd speed diff", i+1, speed_diff);
         }
@@ -95,4 +117,5 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
         param[i].use.set_and_notify(state[i].failures.param_use_backup); // resume
         state[i].failures.param_use_backup = -1; // set to invalid so we don't use it
     }
+#endif // HAL_BUILD_AP_PERIPH
 }

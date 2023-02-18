@@ -7,7 +7,6 @@
 /*
  * Init and run calls for acro flight mode
  */
-
 void ModeAcro::run()
 {
     // convert the input to the desired body frame rate
@@ -17,24 +16,33 @@ void ModeAcro::run()
     if (!motors->armed()) {
         // Motors should be Stopped
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
-    } else if (copter.ap.throttle_zero && copter.air_mode != AirMode::AIRMODE_ENABLED) {
-        // Attempting to Land, if airmode is enabled only an actual landing will spool down the motors
+    } else if (copter.ap.throttle_zero
+               || (copter.air_mode == AirMode::AIRMODE_ENABLED && motors->get_spool_state() == AP_Motors::SpoolState::SHUT_DOWN)) {
+        // throttle_zero is never true in air mode, but the motors should be allowed to go through ground idle
+        // in order to facilitate the spoolup block
+
+        // Attempting to Land or motors not yet spinning
+        // if airmode is enabled only an actual landing will spool down the motors
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
     } else {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     }
+
+    float pilot_desired_throttle = get_pilot_desired_throttle();
 
     switch (motors->get_spool_state()) {
     case AP_Motors::SpoolState::SHUT_DOWN:
         // Motors Stopped
         attitude_control->reset_target_and_rate(true);
         attitude_control->reset_rate_controller_I_terms();
+        pilot_desired_throttle = 0.0f;
         break;
 
     case AP_Motors::SpoolState::GROUND_IDLE:
         // Landed
         attitude_control->reset_target_and_rate();
         attitude_control->reset_rate_controller_I_terms_smoothly();
+        pilot_desired_throttle = 0.0f;
         break;
 
     case AP_Motors::SpoolState::THROTTLE_UNLIMITED:
@@ -58,9 +66,7 @@ void ModeAcro::run()
     }
 
     // output pilot's throttle without angle boost
-    attitude_control->set_throttle_out(get_pilot_desired_throttle(),
-                                       false,
-                                       copter.g.throttle_filt);
+    attitude_control->set_throttle_out(pilot_desired_throttle, false, copter.g.throttle_filt);
 }
 
 bool ModeAcro::init(bool ignore_checks)

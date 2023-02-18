@@ -68,8 +68,8 @@ class AP_Mount_Alexmos : public AP_Mount_Backend
 {
 public:
     //constructor
-    AP_Mount_Alexmos(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance):
-        AP_Mount_Backend(frontend, state, instance)
+    AP_Mount_Alexmos(AP_Mount &frontend, AP_Mount_Params &params, uint8_t instance):
+        AP_Mount_Backend(frontend, params, instance)
     {}
 
     // init - performs any required initialisation for this instance
@@ -81,8 +81,10 @@ public:
     // has_pan_control - returns true if this mount can control its pan (required for multicopters)
     bool has_pan_control() const override;
 
-    // send_mount_status - called to allow mounts to send their status to GCS via MAVLink
-    void send_mount_status(mavlink_channel_t chan) override;
+protected:
+
+    // get attitude as a quaternion.  returns true on success
+    bool get_attitude_quaternion(Quaternion& att_quat) override;
 
 private:
 

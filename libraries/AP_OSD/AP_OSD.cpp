@@ -36,16 +36,17 @@
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RSSI/AP_RSSI.h>
+#include <GCS_MAVLink/GCS.h>
 
 // macro for easy use of var_info2
-#define AP_SUBGROUPINFO2(element, name, idx, thisclazz, elclazz) { AP_PARAM_GROUP, idx, name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info2 }, AP_PARAM_FLAG_NESTED_OFFSET }
+#define AP_SUBGROUPINFO2(element, name, idx, thisclazz, elclazz) { name, AP_VAROFFSET(thisclazz, element), { group_info : elclazz::var_info2 }, AP_PARAM_FLAG_NESTED_OFFSET, idx, AP_PARAM_GROUP }
 
 const AP_Param::GroupInfo AP_OSD::var_info[] = {
 
     // @Param: _TYPE
     // @DisplayName: OSD type
     // @Description: OSD type. TXONLY makes the OSD parameter selection available to other modules even if there is no native OSD support on the board, for instance CRSF.
-    // @Values: 0:None,1:MAX7456,2:SITL,3:MSP,4:TXONLY
+    // @Values: 0:None,1:MAX7456,2:SITL,3:MSP,4:TXONLY,5:MSP_DISPLAYPORT
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_OSD, osd_type, 0, AP_PARAM_FLAG_ENABLE),
@@ -205,6 +206,13 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Range: 0 100
     // @User: Standard
     AP_GROUPINFO("_W_RESTVOLT", 26, AP_OSD, warn_restvolt, 10.0f),
+       
+    // @Param: _W_ACRVOLT
+    // @DisplayName: Avg Cell Resting Volt warn level
+    // @Description: Set level at which ACRVOLT item will flash
+    // @Range: 0 100
+    // @User: Standard
+    AP_GROUPINFO("_W_ACRVOLT", 31, AP_OSD, warn_avgcellrestvolt, 3.6f),
 
 #endif //osd enabled
 #if OSD_PARAM_ENABLED
@@ -320,6 +328,9 @@ void AP_OSD::init()
 #if OSD_ENABLED
 void AP_OSD::osd_thread()
 {
+    // initialize thread specific code once
+    backend->osd_thread_run_once();
+
     while (true) {
         hal.scheduler->delay(100);
         update_osd();

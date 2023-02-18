@@ -27,7 +27,6 @@
 
 #include <AP_Logger/AP_Logger.h>
 
-#include <uavcan/equipment/gnss/Fix.hpp>
 #include <uavcan/equipment/gnss/Fix2.hpp>
 #include <uavcan/equipment/gnss/Auxiliary.hpp>
 #include <ardupilot/gnss/Heading.hpp>
@@ -60,7 +59,6 @@ extern const AP_HAL::HAL& hal;
 
 #define LOG_TAG "GPS"
 
-UC_REGISTRY_BINDER(FixCb, uavcan::equipment::gnss::Fix);
 UC_REGISTRY_BINDER(Fix2Cb, uavcan::equipment::gnss::Fix2);
 UC_REGISTRY_BINDER(AuxCb, uavcan::equipment::gnss::Auxiliary);
 UC_REGISTRY_BINDER(HeadingCb, ardupilot::gnss::Heading);
@@ -109,16 +107,6 @@ void AP_GPS_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
     }
 
     auto* node = ap_uavcan->get_node();
-
-    uavcan::Subscriber<uavcan::equipment::gnss::Fix, FixCb> *gnss_fix;
-    gnss_fix = new uavcan::Subscriber<uavcan::equipment::gnss::Fix, FixCb>(*node);
-    if (gnss_fix == nullptr) {
-        AP_BoardConfig::allocation_error("gnss_fix");
-    }
-    const int gnss_fix_start_res = gnss_fix->start(FixCb(ap_uavcan, &handle_fix_msg_trampoline));
-    if (gnss_fix_start_res < 0) {
-        AP_HAL::panic("UAVCAN GNSS subscriber start problem\n\r");
-    }
 
     uavcan::Subscriber<uavcan::equipment::gnss::Fix2, Fix2Cb> *gnss_fix2;
     gnss_fix2 = new uavcan::Subscriber<uavcan::equipment::gnss::Fix2, Fix2Cb>(*node);
@@ -367,126 +355,39 @@ AP_GPS_UAVCAN* AP_GPS_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t n
                 tempslot = _detected_modules[j];
                 _detected_modules[j] = _detected_modules[j-1];
                 _detected_modules[j-1] = tempslot;
+                // also fix the _detected_module in the driver so that RTCM injection
+                // can determine if it has the bus to itself
+                if (_detected_modules[j].driver) {
+                    _detected_modules[j].driver->_detected_module = j;
+                }
+                if (_detected_modules[j-1].driver) {
+                    _detected_modules[j-1].driver->_detected_module = j-1;
+                }
             }
         }
     }
     return nullptr;
 }
 
-void AP_GPS_UAVCAN::handle_fix_msg(const FixCb &cb)
+/*
+  handle velocity element of message
+ */
+void AP_GPS_UAVCAN::handle_velocity(const float vx, const float vy, const float vz)
 {
-    if (seen_fix2) {
-        // use Fix2 instead
-        return;
-    }
-    bool process = false;
-
-    WITH_SEMAPHORE(sem);
-
-    if (cb.msg->status == uavcan::equipment::gnss::Fix::STATUS_NO_FIX) {
-        interim_state.status = AP_GPS::GPS_Status::NO_FIX;
-    } else {
-        if (cb.msg->status == uavcan::equipment::gnss::Fix::STATUS_TIME_ONLY) {
-            interim_state.status = AP_GPS::GPS_Status::NO_FIX;
-        } else if (cb.msg->status == uavcan::equipment::gnss::Fix::STATUS_2D_FIX) {
-            interim_state.status = AP_GPS::GPS_Status::GPS_OK_FIX_2D;
-            process = true;
-        } else if (cb.msg->status == uavcan::equipment::gnss::Fix::STATUS_3D_FIX) {
-            interim_state.status = AP_GPS::GPS_Status::GPS_OK_FIX_3D;
-            process = true;
-        }
-
-        if (cb.msg->gnss_time_standard == uavcan::equipment::gnss::Fix::GNSS_TIME_STANDARD_UTC) {
-            uint64_t epoch_ms = uavcan::UtcTime(cb.msg->gnss_timestamp).toUSec();
-            if (epoch_ms != 0) {
-                epoch_ms /= 1000;
-                uint64_t gps_ms = epoch_ms - UNIX_OFFSET_MSEC;
-                interim_state.time_week = (uint16_t)(gps_ms / AP_MSEC_PER_WEEK);
-                interim_state.time_week_ms = (uint32_t)(gps_ms - (interim_state.time_week) * AP_MSEC_PER_WEEK);
-            }
-        }
-    }
-
-    if (process) {
-        Location loc = { };
-        loc.lat = cb.msg->latitude_deg_1e8 / 10;
-        loc.lng = cb.msg->longitude_deg_1e8 / 10;
-        loc.alt = cb.msg->height_msl_mm / 10;
-        interim_state.location = loc;
-
-        if (!uavcan::isNaN(cb.msg->ned_velocity[0])) {
-            Vector3f vel(cb.msg->ned_velocity[0], cb.msg->ned_velocity[1], cb.msg->ned_velocity[2]);
-            interim_state.velocity = vel;
-            interim_state.ground_speed = vel.xy().length();
-            interim_state.ground_course = wrap_360(degrees(atan2f(vel.y, vel.x)));
+    if (!uavcan::isNaN(vx)) {
+        const Vector3f vel(vx, vy, vz);
+        interim_state.velocity = vel;
+        velocity_to_speed_course(interim_state);
+        // assume we have vertical velocity if we ever get a non-zero Z velocity
+        if (!isnanf(vel.z) && !is_zero(vel.z)) {
             interim_state.have_vertical_velocity = true;
         } else {
-            interim_state.have_vertical_velocity = false;
+            interim_state.have_vertical_velocity = state.have_vertical_velocity;
         }
-
-        float pos_cov[9];
-        cb.msg->position_covariance.unpackSquareMatrix(pos_cov);
-        if (!uavcan::isNaN(pos_cov[8])) {
-            if (pos_cov[8] > 0) {
-                interim_state.vertical_accuracy = sqrtf(pos_cov[8]);
-                interim_state.have_vertical_accuracy = true;
-            } else {
-                interim_state.have_vertical_accuracy = false;
-            }
-        } else {
-            interim_state.have_vertical_accuracy = false;
-        }
-
-        const float horizontal_pos_variance = MAX(pos_cov[0], pos_cov[4]);
-        if (!uavcan::isNaN(horizontal_pos_variance)) {
-            if (horizontal_pos_variance > 0) {
-                interim_state.horizontal_accuracy = sqrtf(horizontal_pos_variance);
-                interim_state.have_horizontal_accuracy = true;
-            } else {
-                interim_state.have_horizontal_accuracy = false;
-            }
-        } else {
-            interim_state.have_horizontal_accuracy = false;
-        }
-
-        float vel_cov[9];
-        cb.msg->velocity_covariance.unpackSquareMatrix(vel_cov);
-        if (!uavcan::isNaN(vel_cov[0])) {
-            interim_state.speed_accuracy = sqrtf((vel_cov[0] + vel_cov[4] + vel_cov[8]) / 3.0);
-            interim_state.have_speed_accuracy = true;
-        } else {
-            interim_state.have_speed_accuracy = false;
-        }
-
-        interim_state.num_sats = cb.msg->sats_used;
     } else {
         interim_state.have_vertical_velocity = false;
-        interim_state.have_vertical_accuracy = false;
-        interim_state.have_horizontal_accuracy = false;
-        interim_state.have_speed_accuracy = false;
-        interim_state.num_sats = 0;
-    }
-
-    if (!seen_aux) {
-        // if we haven't seen an Aux message then populate vdop and
-        // hdop from pdop. Some GPS modules don't provide the Aux message
-        interim_state.hdop = interim_state.vdop = cb.msg->pdop * 100.0;
-    }
-
-    interim_state.last_gps_time_ms = AP_HAL::millis();
-
-    _new_data = true;
-    if (!seen_message) {
-        if (interim_state.status == AP_GPS::GPS_Status::NO_GPS) {
-            // the first time we see a fix message we change from
-            // NO_GPS to NO_FIX, indicating to user that a UAVCAN GPS
-            // has been seen
-            interim_state.status = AP_GPS::GPS_Status::NO_FIX;
-        }
-        seen_message = true;
     }
 }
-
 
 void AP_GPS_UAVCAN::handle_fix2_msg(const Fix2Cb &cb)
 {
@@ -536,17 +437,11 @@ void AP_GPS_UAVCAN::handle_fix2_msg(const Fix2Cb &cb)
         loc.lat = cb.msg->latitude_deg_1e8 / 10;
         loc.lng = cb.msg->longitude_deg_1e8 / 10;
         loc.alt = cb.msg->height_msl_mm / 10;
+        interim_state.have_undulation = true;
+        interim_state.undulation = (cb.msg->height_msl_mm - cb.msg->height_ellipsoid_mm) * 0.001;
         interim_state.location = loc;
 
-        if (!uavcan::isNaN(cb.msg->ned_velocity[0])) {
-            Vector3f vel(cb.msg->ned_velocity[0], cb.msg->ned_velocity[1], cb.msg->ned_velocity[2]);
-            interim_state.velocity = vel;
-            interim_state.ground_speed = vel.xy().length();
-            interim_state.ground_course = wrap_360(degrees(atan2f(vel.y, vel.x)));
-            interim_state.have_vertical_velocity = true;
-        } else {
-            interim_state.have_vertical_velocity = false;
-        }
+        handle_velocity(cb.msg->ned_velocity[0], cb.msg->ned_velocity[1], cb.msg->ned_velocity[2]);
 
         if (cb.msg->covariance.size() == 6) {
             if (!uavcan::isNaN(cb.msg->covariance[0])) {
@@ -650,6 +545,14 @@ void AP_GPS_UAVCAN::handle_aux_msg(const AuxCb &cb)
 
 void AP_GPS_UAVCAN::handle_heading_msg(const HeadingCb &cb)
 {
+#if GPS_MOVING_BASELINE
+    if (seen_relposheading && gps.mb_params[interim_state.instance].type.get() != 0) {
+        // we prefer to use the relposheading to get yaw as it allows
+        // the user to more easily control the relative antenna positions
+        return;
+    }
+#endif
+
     WITH_SEMAPHORE(sem);
 
     if (interim_state.gps_yaw_configured == false) {
@@ -708,14 +611,10 @@ void AP_GPS_UAVCAN::handle_moving_baseline_msg(const MovingBaselineDataCb &cb, u
 */
 void AP_GPS_UAVCAN::handle_relposheading_msg(const RelPosHeadingCb &cb, uint8_t node_id)
 {
-    if (role != AP_GPS::GPS_ROLE_MB_ROVER) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Incorrect Role set for UAVCAN GPS, %d should be Rover", node_id);
-        return;
-    }
-
     WITH_SEMAPHORE(sem);
 
     interim_state.gps_yaw_configured = true;
+    seen_relposheading = true;
     // push raw heading data to calculate moving baseline heading states
     if (calculate_moving_base_yaw(interim_state,
                                 cb.msg->reported_heading_deg,
@@ -749,16 +648,6 @@ void AP_GPS_UAVCAN::clear_RTCMV3(void)
 }
 
 #endif // GPS_MOVING_BASELINE
-
-void AP_GPS_UAVCAN::handle_fix_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const FixCb &cb)
-{
-    WITH_SEMAPHORE(_sem_registry);
-
-    AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id);
-    if (driver != nullptr) {
-        driver->handle_fix_msg(cb);
-    }
-}
 
 void AP_GPS_UAVCAN::handle_fix2_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const Fix2Cb &cb)
 {
@@ -881,6 +770,7 @@ bool AP_GPS_UAVCAN::read(void)
             // we have had a valid GPS message time, from which we calculate
             // the time of week.
             _last_itow_ms = interim_state.time_week_ms;
+            _have_itow = true;
         }
         return true;
     }
@@ -926,11 +816,13 @@ bool AP_GPS_UAVCAN::is_configured(void) const
  */
 void AP_GPS_UAVCAN::inject_data(const uint8_t *data, uint16_t len)
 {
-    // we only handle this if we are the first UAVCAN GPS, as we send
-    // the data as broadcast on all UAVCAN devive ports and we don't
-    // want to send duplicates
-    if (_detected_module == 0) {
-        _detected_modules[0].ap_uavcan->send_RTCMStream(data, len);
+    // we only handle this if we are the first UAVCAN GPS or we are
+    // using a different uavcan instance than the first GPS, as we
+    // send the data as broadcast on all UAVCAN devive ports and we
+    // don't want to send duplicates
+    if (_detected_module == 0 ||
+        _detected_modules[_detected_module].ap_uavcan != _detected_modules[0].ap_uavcan) {
+        _detected_modules[_detected_module].ap_uavcan->send_RTCMStream(data, len);
     }
 }
 

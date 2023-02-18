@@ -14,9 +14,10 @@
  */
 #pragma once
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-
 #include "AP_RPM.h"
+
+#if AP_RPM_SIM_ENABLED
+
 #include "RPM_Backend.h"
 #include <SITL/SITL.h>
 
@@ -33,4 +34,4 @@ private:
     uint8_t instance;
 };
 
-#endif // CONFIG_HAL_BOARD
+#endif // AP_RPM_SIM_ENABLED

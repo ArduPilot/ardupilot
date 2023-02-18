@@ -269,10 +269,12 @@ bool AP_BoardConfig::check_ms5611(const char* devname) {
 #define INV2_WHOAMI_ICM20649 0xE1
 
 #define INV3REG_WHOAMI        0x75
+#define INV3REG_456_WHOAMI        0x72
 
 #define INV3_WHOAMI_ICM42688  0x47
 #define INV3_WHOAMI_ICM42670  0x67
 
+#define INV3_WHOAMI_ICM45686  0xE9
 /*
   validation of the board type
  */
@@ -510,6 +512,7 @@ void AP_BoardConfig::detect_fmuv6_variant()
                 spi_check_register("bmi088_g", BMI088REG_CHIPID, CHIPID_BMI088_G))) {
         state.board_type.set_and_notify(FMUV6_BOARD_CUAV_6X);
         DEV_PRINTF("Detected CUAV 6X\n");
+        AP_Param::load_defaults_file("@ROMFS/param/CUAV_V6X_defaults.parm", false);
     }
 
 }

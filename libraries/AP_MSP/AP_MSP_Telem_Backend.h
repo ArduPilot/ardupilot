@@ -17,6 +17,7 @@
 #pragma once
 
 #include <AP_RCTelemetry/AP_RCTelemetry.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_OSD/AP_OSD.h>
 
 #include "msp.h"
@@ -88,6 +89,7 @@ public:
     virtual void msp_displayport_clear_screen();
     virtual void msp_displayport_draw_screen();
     virtual void msp_displayport_write_string(uint8_t col, uint8_t row, bool blink, const char *string);
+    virtual void msp_displayport_set_options(const uint8_t font_index, const uint8_t screen_resolution);
 #endif
 protected:
     enum msp_packet_type : uint8_t {
@@ -183,11 +185,9 @@ protected:
     void msp_handle_airspeed(const MSP::msp_airspeed_data_message_t &pkt);
 
     // implementation specific helpers
+    // we only set arming status
     // custom masks are needed for vendor specific settings
-    virtual uint32_t get_osd_flight_mode_bitmask(void)
-    {
-        return 0;
-    }
+    virtual uint32_t get_osd_flight_mode_bitmask(void);
 
     virtual bool is_scheduler_enabled() const = 0;                            // only osd backends should allow a push type telemetry
     virtual bool use_msp_thread() const {return true;};                       // is this backend hanlded by the MSP thread?

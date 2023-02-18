@@ -26,6 +26,9 @@ public:
     // set reversed
     void set_reversed(bool reversed) { _reversed = reversed; }
 
+    // accessor for _reversed
+    bool get_reversed() { return _reversed; }
+
     // get limits
     float get_speed_max() const { return _speed_max; }
     float get_accel_max() const { return _accel_max; }

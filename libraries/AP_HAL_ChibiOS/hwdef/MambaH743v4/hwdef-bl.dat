@@ -18,8 +18,6 @@ FLASH_RESERVE_START_KB 0
 # the location where the bootloader will put the firmware
 FLASH_BOOTLOADER_LOAD_KB 384
 
-STORAGE_FLASH_PAGE 1
-
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1
 
@@ -37,6 +35,8 @@ define HAL_LED_ON 1
 
 # default to all pins low to avoid ESD issues
 DEFAULTGPIO OUTPUT LOW PULLDOWN
+
+PC5 VTX_PWR OUTPUT HIGH
 
 # Add CS pins to ensure they are high in bootloader
 PA15 FLASH_CS CS

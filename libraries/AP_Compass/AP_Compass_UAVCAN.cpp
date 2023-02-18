@@ -13,11 +13,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
-
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
-
 #include "AP_Compass_UAVCAN.h"
+
+#if AP_COMPASS_UAVCAN_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
 
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
@@ -204,4 +204,4 @@ void AP_Compass_UAVCAN::read(void)
     drain_accumulated_samples(_instance);
 }
 
-#endif
+#endif  // AP_COMPASS_UAVCAN_ENABLED

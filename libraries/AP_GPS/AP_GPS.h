@@ -92,8 +92,7 @@ public:
     AP_GPS();
 
     /* Do not allow copies */
-    AP_GPS(const AP_GPS &other) = delete;
-    AP_GPS &operator=(const AP_GPS&) = delete;
+    CLASS_NO_COPY(AP_GPS);
 
     static AP_GPS *get_singleton() {
         return _singleton;
@@ -129,6 +128,8 @@ public:
         GPS_TYPE_EXTERNAL_AHRS = 21,
         GPS_TYPE_UAVCAN_RTK_BASE = 22,
         GPS_TYPE_UAVCAN_RTK_ROVER = 23,
+        GPS_TYPE_UNICORE_NMEA = 24,
+        GPS_TYPE_UNICORE_MOVINGBASE_NMEA = 25,
 #if HAL_SIM_GPS_ENABLED
         GPS_TYPE_SITL = 100,
 #endif
@@ -197,6 +198,8 @@ public:
         bool have_vertical_accuracy;      ///< does GPS give vertical position accuracy? Set to true only once available.
         bool have_gps_yaw;                ///< does GPS give yaw? Set to true only once available.
         bool have_gps_yaw_accuracy;       ///< does the GPS give a heading accuracy estimate? Set to true only once available
+        float undulation;                   //<height that WGS84 is above AMSL at the current location
+        bool have_undulation;               ///<do we have a value for the undulation
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
         uint64_t last_corrected_gps_time_us;///< the system time we got the last corrected GPS timestamp, microseconds
         bool corrected_timestamp_updated;  ///< true if the corrected timestamp has been updated
@@ -295,6 +298,16 @@ public:
     }
     const Location &location() const {
         return location(primary_instance);
+    }
+
+    // get the difference between WGS84 and AMSL. A positive value means
+    // the AMSL height is higher than WGS84 ellipsoid height
+    bool get_undulation(uint8_t instance, float &undulation) const;
+
+    // get the difference between WGS84 and AMSL. A positive value means
+    // the AMSL height is higher than WGS84 ellipsoid height
+    bool get_undulation(float &undulation) const {
+        return get_undulation(primary_instance, undulation);
     }
 
     // report speed accuracy

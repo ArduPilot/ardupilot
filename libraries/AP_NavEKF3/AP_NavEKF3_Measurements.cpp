@@ -34,7 +34,7 @@ void NavEKF3_core::readRangeFinder(void)
         // store samples and sample time into a ring buffer if valid
         // use data from two range finders if available
 
-        for (uint8_t sensorIndex = 0; sensorIndex <= 1; sensorIndex++) {
+        for (uint8_t sensorIndex = 0; sensorIndex < ARRAY_SIZE(rngMeasIndex); sensorIndex++) {
             const auto *sensor = _rng->get_backend(sensorIndex);
             if (sensor == nullptr) {
                 continue;
@@ -51,7 +51,7 @@ void NavEKF3_core::readRangeFinder(void)
             }
 
             // check for three fresh samples
-            bool sampleFresh[2][3] = {};
+            bool sampleFresh[DOWNWARD_RANGEFINDER_MAX_INSTANCES][3] = {};
             for (uint8_t index = 0; index <= 2; index++) {
                 sampleFresh[sensorIndex][index] = (imuSampleTime_ms - storedRngMeasTime_ms[sensorIndex][index]) < 500;
             }
@@ -90,7 +90,7 @@ void NavEKF3_core::readRangeFinder(void)
                 // indicate we have updated the measurement
                 rngValidMeaTime_ms = imuSampleTime_ms;
 
-            } else if (!takeOffDetected && ((imuSampleTime_ms - rngValidMeaTime_ms) > 200)) {
+            } else if (onGround && ((imuSampleTime_ms - rngValidMeaTime_ms) > 200)) {
                 // before takeoff we assume on-ground range value if there is no data
                 rangeDataNew.time_ms = imuSampleTime_ms;
                 rangeDataNew.rng = rngOnGnd;
@@ -137,9 +137,9 @@ void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, con
 #endif // EK3_FEATURE_BODY_ODOM
 }
 
-#if EK3_FEATURE_BODY_ODOM
 void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius)
 {
+#if EK3_FEATURE_BODY_ODOM
     // This is a simple hack to get wheel encoder data into the EKF and verify the interface sign conventions and units
     // It uses the exisiting body frame velocity fusion.
     // TODO implement a dedicated wheel odometry observation model
@@ -162,12 +162,12 @@ void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStam
     wheelOdmDataNew.time_ms = timeStamp_ms - (uint32_t)(500.0f * delTime);
 
     storedWheelOdm.push(wheelOdmDataNew);
-}
 #endif // EK3_FEATURE_BODY_ODOM
+}
 
 // write the raw optical flow measurements
 // this needs to be called externally.
-void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset)
+void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride)
 {
     // limit update rate to maximum allowed by sensor buffers
     if ((imuSampleTime_ms - flowMeaTime_ms) < frontend->sensorIntervalMin_ms) {
@@ -216,6 +216,8 @@ void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
         ofDataNew.flowRadXY = - rawFlowRates.toftype(); // raw (non motion compensated) optical flow angular rate about the X axis (rad/sec)
         // write the flow sensor position in body frame
         ofDataNew.body_offset = posOffset.toftype();
+        // write the flow sensor height override
+        ofDataNew.heightOverride = heightOverride;
         // write flow rate measurements corrected for body rates
         ofDataNew.flowRadXYcomp.x = ofDataNew.flowRadXY.x + ofDataNew.bodyRadXYZ.x;
         ofDataNew.flowRadXYcomp.y = ofDataNew.flowRadXY.y + ofDataNew.bodyRadXYZ.y;
@@ -643,7 +645,7 @@ void NavEKF3_core::readGpsData()
     calcGpsGoodForFlight();
 
     // Read the GPS location in WGS-84 lat,long,height coordinates
-    const struct Location &gpsloc = gps.location(selected_gps);
+    const Location &gpsloc = gps.location(selected_gps);
 
     // Set the EKF origin and magnetic field declination if not previously set and GPS checks have passed
     if (gpsGoodToAlign && !validOrigin) {
@@ -831,13 +833,12 @@ void NavEKF3_core::readAirSpdData()
 
     const auto *airspeed = dal.airspeed();
     if (airspeed &&
-        airspeed->use(selected_airspeed) &&
-        airspeed->healthy(selected_airspeed) &&
         (airspeed->last_update_ms(selected_airspeed) - timeTasReceived_ms) > frontend->sensorIntervalMin_ms) {
         tasDataNew.tas = airspeed->get_airspeed(selected_airspeed) * EAS2TAS;
         timeTasReceived_ms = airspeed->last_update_ms(selected_airspeed);
         tasDataNew.time_ms = timeTasReceived_ms - frontend->tasDelay_ms;
         tasDataNew.tasVariance = sq(MAX(frontend->_easNoise * EAS2TAS, 0.5f));
+        tasDataNew.allowFusion = airspeed->healthy(selected_airspeed) && airspeed->use(selected_airspeed);
 
         // Correct for the average intersampling delay due to the filter update rate
         tasDataNew.time_ms -= localFilterTimeStep_ms/2;
@@ -856,6 +857,7 @@ void NavEKF3_core::readAirSpdData()
         is_positive(defaultAirSpeed)) {
         tasDataDelayed.tas = defaultAirSpeed * EAS2TAS;
         tasDataDelayed.tasVariance = sq(MAX(defaultAirSpeedVariance, easErrVar));
+        tasDataDelayed.allowFusion = true;
         tasDataDelayed.time_ms = 0;
         usingDefaultAirspeed = true;
     } else {
@@ -863,6 +865,7 @@ void NavEKF3_core::readAirSpdData()
     }
 }
 
+#if EK3_FEATURE_BEACON_FUSION
 /********************************************************
 *              Range Beacon Measurements                *
 ********************************************************/
@@ -979,6 +982,7 @@ void NavEKF3_core::readRngBcnData()
     }
 
 }
+#endif  // EK3_FEATURE_BEACON_FUSION
 
 /********************************************************
 *              Independant yaw sensor measurements      *

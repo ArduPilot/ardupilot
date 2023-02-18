@@ -24,7 +24,7 @@ local stage = 0             -- stage0: fly North arg2 meters
 local prev_stage = -1       -- previous stage, used to initate call to move to next corner
 
 function update()
-  id, cmd, arg1, arg2 = vehicle:nav_script_time()
+  id, cmd, arg1, arg2, arg3, arg4 = vehicle:nav_script_time()
   if id then
     -- handle start of new command
     if id ~= last_id then

@@ -6,7 +6,7 @@ void Sub::read_barometer()
     barometer.update();
     // If we are reading a positive altitude, the sensor needs calibration
     // Even a few meters above the water we should have no significant depth reading
-    if(!motors.armed() && barometer.get_altitude() > 0) {
+    if(barometer.get_altitude() > 0) {
         barometer.update_calibration();
     }
 

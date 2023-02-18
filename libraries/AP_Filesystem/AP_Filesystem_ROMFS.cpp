@@ -15,13 +15,16 @@
 /*
   ArduPilot filesystem interface for ROMFS
  */
+
+#include "AP_Filesystem_config.h"
+
+#if AP_FILESYSTEM_ROMFS_ENABLED
+
 #include "AP_Filesystem.h"
 #include "AP_Filesystem_ROMFS.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_ROMFS/AP_ROMFS.h>
-
-#if defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
 
 int AP_Filesystem_ROMFS::open(const char *fname, int flags, bool allow_absolute_paths)
 {
@@ -236,4 +239,4 @@ void AP_Filesystem_ROMFS::unload_file(FileData *fd)
     AP_ROMFS::free(fd->data);
 }
 
-#endif // HAL_HAVE_AP_ROMFS_EMBEDDED_H
+#endif // AP_FILESYSTEM_ROMFS_ENABLED

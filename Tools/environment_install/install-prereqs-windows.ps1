@@ -19,7 +19,7 @@ Start-Process -wait -FilePath "C:\cygwin64\bin\bash" -ArgumentList "--login -i -
 Start-Process -wait -FilePath "C:\cygwin64\bin\bash" -ArgumentList "--login -i -c 'ln -sf /usr/bin/pip3.7 /usr/bin/pip'"
 
 Write-Output "Downloading extra Python packages (5/7)"
-Start-Process -wait -FilePath "C:\cygwin64\bin\bash" -ArgumentList "--login -i -c 'pip install empy pyserial pymavlink intelhex'"
+Start-Process -wait -FilePath "C:\cygwin64\bin\bash" -ArgumentList "--login -i -c 'pip install empy pyserial pymavlink intelhex dronecan pexpect'"
 
 Write-Output "Installing ARM GCC Compiler 10-2020-Q4-Major (6/7)"
 & $PSScriptRoot\gcc-arm-none-eabi-10-2020-q4-major-win32.exe /S /P /R

@@ -24,8 +24,6 @@
 
 #if AP_RANGEFINDER_SIM_ENABLED
 
-#include <SITL/SITL.h>
-
 class AP_RangeFinder_SITL : public AP_RangeFinder_Backend {
 public:
     // constructor. This incorporates initialisation as well.
@@ -39,9 +37,6 @@ protected:
     MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
         return MAV_DISTANCE_SENSOR_UNKNOWN;
     }
-
-private:
-    SITL::SIM *sitl;
 
     uint8_t _instance;
 

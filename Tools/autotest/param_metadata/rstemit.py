@@ -12,8 +12,6 @@ except Exception:
 # Emit docs in a RST format
 class RSTEmit(Emit):
     def blurb(self):
-        if self.sitl:
-            return """SITL parameters"""
         return """This is a complete list of the parameters which can be set (e.g. via the MAVLink protocol) to control vehicle behaviour. They are stored in persistent storage on the vehicle.
 
 This list is automatically generated from the latest ardupilot source code, and so may contain parameters which are not yet in the stable released versions of the code.
@@ -30,10 +28,8 @@ This list is automatically generated from the latest ardupilot source code, and 
         self.f = open(self.output_fname(), mode='w')
         self.spacer = re.compile("^", re.MULTILINE)
         self.rstescape = re.compile("([^a-zA-Z0-9\n 	])")
-        if self.sitl:
-            parameterlisttype = "SITL Parameter List"
-        else:
-            parameterlisttype = "Complete Parameter List"
+        self.emitted_sitl_heading = False
+        parameterlisttype = "Complete Parameter List"
         parameterlisttype += "\n" + "=" * len(parameterlisttype)
         self.preamble = """.. Dynamically generated list of documented parameters
 .. This page was generated using {toolname}
@@ -196,8 +192,17 @@ This list is automatically generated from the latest ardupilot source code, and 
         return ''
 
     def emit(self, g):
-        tag = '%s Parameters' % self.escape(g.reference)
-        reference = "parameters_" + g.reference
+        # make only a single group for SIM_ parameters
+        do_emit_heading = True
+        if g.reference.startswith("SIM_"):
+            if self.emitted_sitl_heading:
+                do_emit_heading = False
+            self.emitted_sitl_heading = True
+            tag = "Simulation Parameters"
+            reference = "parameters_sim"
+        else:
+            tag = '%s Parameters' % self.escape(g.reference)
+            reference = "parameters_" + g.reference
 
         field_table_info = {
             "Values": {
@@ -208,7 +213,9 @@ This list is automatically generated from the latest ardupilot source code, and 
             },
         }
 
-        ret = """
+        ret = ""
+        if do_emit_heading:
+            ret = """
 
 .. _{reference}:
 

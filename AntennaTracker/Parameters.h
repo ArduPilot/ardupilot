@@ -1,5 +1,7 @@
 #pragma once
 
+#define AP_PARAM_VEHICLE_NAME tracker
+
 #include <AC_PID/AC_PID.h>
 #include <AP_Param/AP_Param.h>
 

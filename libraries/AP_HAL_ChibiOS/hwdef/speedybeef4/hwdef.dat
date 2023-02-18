@@ -148,3 +148,4 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # minimal drivers to reduce flash usage
 include ../include/minimal.inc
+define AP_BATTMON_SYNTHETIC_CURRENT_ENABLED 0

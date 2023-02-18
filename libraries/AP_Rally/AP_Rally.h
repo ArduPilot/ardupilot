@@ -42,8 +42,7 @@ public:
     AP_Rally();
 
     /* Do not allow copies */
-    AP_Rally(const AP_Rally &other) = delete;
-    AP_Rally &operator=(const AP_Rally&) = delete;
+    CLASS_NO_COPY(AP_Rally);
 
     // data handling
     bool get_rally_point_with_index(uint8_t i, RallyLocation &ret) const;

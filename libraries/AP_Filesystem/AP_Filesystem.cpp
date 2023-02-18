@@ -15,6 +15,9 @@
 
 #include "AP_Filesystem.h"
 
+#include "AP_Filesystem_config.h"
+#include <AP_HAL/HAL.h>
+
 static AP_Filesystem fs;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
@@ -37,19 +40,22 @@ static AP_Filesystem_ESP32 fs_local;
 static AP_Filesystem_Posix fs_local;
 #endif
 
-#ifdef HAL_HAVE_AP_ROMFS_EMBEDDED_H
+#if AP_FILESYSTEM_ROMFS_ENABLED
 #include "AP_Filesystem_ROMFS.h"
 static AP_Filesystem_ROMFS fs_romfs;
 #endif
 
+#if AP_FILESYSTEM_PARAM_ENABLED
 #include "AP_Filesystem_Param.h"
 static AP_Filesystem_Param fs_param;
+#endif
 
+#if AP_FILESYSTEM_SYS_ENABLED
 #include "AP_Filesystem_Sys.h"
 static AP_Filesystem_Sys fs_sys;
+#endif
 
-#include <AP_Mission/AP_Mission.h>
-#if HAL_MISSION_ENABLED
+#if AP_FILESYSTEM_MISSION_ENABLED
 #include "AP_Filesystem_Mission.h"
 static AP_Filesystem_Mission fs_mission;
 #endif
@@ -59,13 +65,17 @@ static AP_Filesystem_Mission fs_mission;
  */
 const AP_Filesystem::Backend AP_Filesystem::backends[] = {
     { nullptr, fs_local },
-#ifdef HAL_HAVE_AP_ROMFS_EMBEDDED_H
+#if AP_FILESYSTEM_ROMFS_ENABLED
     { "@ROMFS/", fs_romfs },
 #endif
+#if AP_FILESYSTEM_PARAM_ENABLED
     { "@PARAM/", fs_param },
+#endif
+#if AP_FILESYSTEM_SYS_ENABLED
     { "@SYS/", fs_sys },
     { "@SYS", fs_sys },
-#if HAL_MISSION_ENABLED
+#endif
+#if AP_FILESYSTEM_MISSION_ENABLED
     { "@MISSION/", fs_mission },
 #endif
 };

@@ -4,11 +4,6 @@
   Rover parameter definitions
 */
 
-#define GSCALAR(v, name, def) { rover.g.v.vtype, name, Parameters::k_param_ ## v, &rover.g.v, {def_value:def} }
-#define GGROUP(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &rover.g.v, {group_info:class::var_info} }
-#define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &rover.v, {group_info:class::var_info} }
-#define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, &rover.v, {group_info : class::var_info} }
-
 const AP_Param::Info Rover::var_info[] = {
     // @Param: FORMAT_VERSION
     // @DisplayName: Eeprom format version number
@@ -18,8 +13,8 @@ const AP_Param::Info Rover::var_info[] = {
 
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
-    // @Description: Bitmap of what log types to enable in on-board logger. This value is made up of the sum of each of the log types you want to be saved. On boards supporting microSD cards or other large block-storage devices it is usually best just to enable all log types by setting this to 65535. The individual bits are ATTITUDE_FAST=1, ATTITUDE_MEDIUM=2, GPS=4, PerformanceMonitoring=8, ControlTuning=16, NavigationTuning=32, Mode=64, IMU=128, Commands=256, Battery=512, Compass=1024, TECS=2048, Camera=4096, RCandServo=8192, Rangefinder=16384, Arming=32768, FullLogs=65535
-    // @Bitmask: 0:ATTITUDE_FAST,1:ATTITUDE_MED,2:GPS,3:PM,4:THR,5:NTUN,7:IMU,8:CMD,9:CURRENT,10:RANGEFINDER,11:COMPASS,12:CAMERA,13:STEERING,14:RC,15:ARM/DISARM,19:IMU_RAW,20:VideoStabilization
+    // @Description: Bitmap of what log types to enable in on-board logger. This value is made up of the sum of each of the log types you want to be saved. On boards supporting microSD cards or other large block-storage devices it is usually best just to enable all basic log types by setting this to 65535.
+    // @Bitmask: 0:Fast Attitude,1:Medium Attitude,2:GPS,3:System Performance,4:Throttle,5:Navigation Tuning,7:IMU,8:Mission Commands,9:Battery Monitor,10:Rangefinder,11:Compass,12:Camera,13:Steering,14:RC Input-Output,19:Raw IMU,20:Video Stabilization,21:Optical Flow
     // @User: Advanced
     GSCALAR(log_bitmask,            "LOG_BITMASK",      DEFAULT_LOG_BITMASK),
 
@@ -189,31 +184,27 @@ const AP_Param::Info Rover::var_info[] = {
     GSCALAR(mode2,           "MODE2",         Mode::Number::MANUAL),
 
     // @Param: MODE3
+    // @CopyFieldsFrom: MODE1
     // @DisplayName: Mode3
     // @Description: Driving mode for switch position 3 (1361 to 1490)
-    // @CopyValuesFrom: MODE1
-    // @User: Standard
     GSCALAR(mode3,           "MODE3",         Mode::Number::MANUAL),
 
     // @Param: MODE4
+    // @CopyFieldsFrom: MODE1
     // @DisplayName: Mode4
     // @Description: Driving mode for switch position 4 (1491 to 1620)
-    // @CopyValuesFrom: MODE1
-    // @User: Standard
     GSCALAR(mode4,           "MODE4",         Mode::Number::MANUAL),
 
     // @Param: MODE5
+    // @CopyFieldsFrom: MODE1
     // @DisplayName: Mode5
     // @Description: Driving mode for switch position 5 (1621 to 1749)
-    // @CopyValuesFrom: MODE1
-    // @User: Standard
     GSCALAR(mode5,           "MODE5",         Mode::Number::MANUAL),
 
     // @Param: MODE6
+    // @CopyFieldsFrom: MODE1
     // @DisplayName: Mode6
     // @Description: Driving mode for switch position 6 (1750 to 2049)
-    // @CopyValuesFrom: MODE1
-    // @User: Standard
     GSCALAR(mode6,           "MODE6",         Mode::Number::MANUAL),
 
     // variables not in the g class which contain EEPROM saved variables
@@ -300,10 +291,16 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
     GOBJECT(ahrs,                   "AHRS_",    AP_AHRS),
 
-#if CAMERA == ENABLED
+#if AP_CAMERA_ENABLED
     // @Group: CAM_
     // @Path: ../libraries/AP_Camera/AP_Camera.cpp
     GOBJECT(camera,                  "CAM_", AP_Camera),
+#endif
+
+#if PRECISION_LANDING == ENABLED
+    // @Group: PLND_
+    // @Path: ../libraries/AC_PrecLand/AC_PrecLand.cpp
+    GOBJECT(precland,                "PLND_", AC_PrecLand),
 #endif
 
 #if HAL_MOUNT_ENABLED
@@ -351,9 +348,11 @@ const AP_Param::Info Rover::var_info[] = {
     GOBJECTN(ahrs.EKF3, NavEKF3, "EK3_", NavEKF3),
 #endif
 
+#if AP_RPM_ENABLED
     // @Group: RPM
     // @Path: ../libraries/AP_RPM/AP_RPM.cpp
     GOBJECT(rpm_sensor, "RPM", AP_RPM),
+#endif
 
     // @Group: MIS_
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
@@ -383,9 +382,15 @@ const AP_Param::Info Rover::var_info[] = {
     GOBJECT(osd, "OSD", AP_OSD),
 #endif
 
+#if AP_OPTICALFLOW_ENABLED
+    // @Group: FLOW
+    // @Path: ../libraries/AP_OpticalFlow/AP_OpticalFlow.cpp
+    GOBJECT(optflow,   "FLOW", AP_OpticalFlow),
+#endif
+
     // @Group:
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
-    { AP_PARAM_GROUP, "", Parameters::k_param_vehicle, (const void *)&rover, {group_info : AP_Vehicle::var_info} },
+    PARAM_VEHICLE_INFO,
 
     AP_VAREND
 };
@@ -494,10 +499,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @DisplayName: BalanceBot Maximum Pitch
     // @Description: Pitch angle in degrees at 100% throttle
     // @Units: deg
-    // @Range: 0 5
+    // @Range: 0 15
     // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("BAL_PITCH_MAX", 21, ParametersG2, bal_pitch_max, 2),
+    AP_GROUPINFO("BAL_PITCH_MAX", 21, ParametersG2, bal_pitch_max, 10),
 
     // @Param: CRASH_ANGLE
     // @DisplayName: Crash Angle
@@ -575,7 +580,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("MIS_DONE_BEHAVE", 38, ParametersG2, mis_done_behave, 0),
 
-#if GRIPPER_ENABLED == ENABLED
+#if AP_GRIPPER_ENABLED
     // @Group: GRIP_
     // @Path: ../libraries/AP_Gripper/AP_Gripper.cpp
     AP_SUBGROUPINFO(gripper, "GRIP_", 39, ParametersG2, AP_Gripper),
@@ -664,6 +669,20 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MANUAL_OPTIONS", 53, ParametersG2, manual_options, 0),
 
+#if MODE_DOCK_ENABLED == ENABLED
+    // @Group: DOCK
+    // @Path: mode_dock.cpp
+    AP_SUBGROUPPTR(mode_dock_ptr, "DOCK", 54, ParametersG2, ModeDock),
+#endif
+
+    // @Param: MANUAL_STR_EXPO
+    // @DisplayName: Manual Steering Expo
+    // @Description: Manual steering expo to allow faster steering when stick at edges
+    // @Values: 0:Disabled,0.1:Very Low,0.2:Low,0.3:Medium,0.4:High,0.5:Very High
+    // @Range: -0.5 0.95
+    // @User: Advanced
+    AP_GROUPINFO("MANUAL_STR_EXPO", 55, ParametersG2, manual_steering_expo, 0),
+
     AP_GROUPEND
 };
 
@@ -707,6 +726,9 @@ ParametersG2::ParametersG2(void)
     wheel_rate_control(wheel_encoder),
     attitude_control(),
     smart_rtl(),
+#if MODE_DOCK_ENABLED == ENABLED
+    mode_dock_ptr(&rover.mode_dock),
+#endif
 #if HAL_PROXIMITY_ENABLED
     proximity(),
 #endif
@@ -758,15 +780,24 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_g2,                36,      AP_PARAM_FLOAT,  "SAIL_NO_GO_ANGLE" },
     { Parameters::k_param_arming,             2,     AP_PARAM_INT16,  "ARMING_CHECK" },
     { Parameters::k_param_turn_max_g_old,     0,     AP_PARAM_FLOAT,  "ATC_TURN_MAX_G" },
+    { Parameters::k_param_g2,                82,     AP_PARAM_INT8 , "PRX1_TYPE" },
+    { Parameters::k_param_g2,               146,     AP_PARAM_INT8 , "PRX1_ORIENT" },
+    { Parameters::k_param_g2,               210,     AP_PARAM_INT16, "PRX1_YAW_CORR" },
+    { Parameters::k_param_g2,               274,     AP_PARAM_INT16, "PRX1_IGN_ANG1" },
+    { Parameters::k_param_g2,               338,     AP_PARAM_INT8,  "PRX1_IGN_WID1" },
+    { Parameters::k_param_g2,               402,     AP_PARAM_INT16, "PRX1_IGN_ANG2" },
+    { Parameters::k_param_g2,               466,     AP_PARAM_INT8,  "PRX1_IGN_WID2" },
+    { Parameters::k_param_g2,               530,     AP_PARAM_INT16, "PRX1_IGN_ANG3" },
+    { Parameters::k_param_g2,               594,     AP_PARAM_INT8,  "PRX1_IGN_WID3" },
+    { Parameters::k_param_g2,               658,     AP_PARAM_INT16, "PRX1_IGN_ANG4" },
+    { Parameters::k_param_g2,               722,     AP_PARAM_INT8,  "PRX1_IGN_WID4" },
+    { Parameters::k_param_g2,               1234,    AP_PARAM_FLOAT, "PRX1_MIN" },
+    { Parameters::k_param_g2,               1298,    AP_PARAM_FLOAT, "PRX1_MAX" },
 };
+
 
 void Rover::load_parameters(void)
 {
-    if (!AP_Param::check_var_info()) {
-        hal.console->printf("Bad var table\n");
-        AP_HAL::panic("Bad var table");
-    }
-
     if (!g.format_version.load() ||
          g.format_version != Parameters::k_format_version) {
         // erase all parameters
@@ -831,10 +862,7 @@ void Rover::load_parameters(void)
         { Parameters::k_param_g2, 25354, AP_PARAM_FLOAT, "ATC_SAIL_FLTE" },
         { Parameters::k_param_g2, 29450, AP_PARAM_FLOAT, "ATC_SAIL_FF" },
     };
-    uint8_t filt_table_size = ARRAY_SIZE(ff_and_filt_conversion_info);
-    for (uint8_t i=0; i<filt_table_size; i++) {
-        AP_Param::convert_old_parameters(&ff_and_filt_conversion_info[i], 1.0f);
-    }
+    AP_Param::convert_old_parameters(&ff_and_filt_conversion_info[0], ARRAY_SIZE(ff_and_filt_conversion_info));
 
     // configure safety switch to allow stopping the motors while armed
 #if HAL_HAVE_SAFETY_SWITCH

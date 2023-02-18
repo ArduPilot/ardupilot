@@ -1,13 +1,6 @@
 -- enable use of Lidar on quadplanes only for landing, by changing RNGFN_LANDING
 
--- bind a parameter to a variable
-function bind_param(name)
-   local p = Parameter()
-   assert(p:init(name), string.format('could not find %s parameter', name))
-   return p
-end
-
-local RNGFND_LANDING = bind_param("RNGFND_LANDING")
+local RNGFND_LANDING = Parameter("RNGFND_LANDING")
 
 MODE_QLAND = 20
 MODE_QRTL = 21

@@ -23,8 +23,7 @@ public:
     Mode(void);
 
     // do not allow copying
-    Mode(const Mode &other) = delete;
-    Mode &operator=(const Mode&) = delete;
+    CLASS_NO_COPY(Mode);
 
     // child classes should override these methods
     virtual bool init(bool ignore_checks)

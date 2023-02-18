@@ -27,3 +27,5 @@ define AIRSPEED_MAX_SENSORS 1
 # default ADSB off by setting 0 baudrate
 define HAL_PERIPH_ADSB_BAUD_DEFAULT 0
 
+# setup for MSP
+define HAL_MSP_ENABLED 1

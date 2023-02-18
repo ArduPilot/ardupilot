@@ -20,6 +20,8 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <GCS_MAVLink/GCS.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 #include <AP_HAL/utility/sparse-endian.h>
 
@@ -39,7 +41,7 @@ void AP_Generator_RichenPower::init()
     // Tell frontend what measurements are available for this generator
     _frontend._has_current = true;
     _frontend._has_consumed_energy = false;
-    _frontend._has_fuel_remaining = false;
+    _frontend._has_fuel_remaining_pct = false;
 }
 
 // find a RichenPower message in the buffer, starting at

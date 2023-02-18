@@ -22,6 +22,8 @@
 
 #if HAL_WITH_MSP_DISPLAYPORT
 
+#include <GCS_MAVLink/GCS.h>
+
 static const struct AP_Param::defaults_table_struct defaults_table[] = {
     /*
     { "PARAM_NAME",       value_float }
@@ -50,8 +52,24 @@ bool AP_OSD_MSP_DisplayPort::init(void)
     return true;
 }
 
+// called by the OSD thread once
+void AP_OSD_MSP_DisplayPort::osd_thread_run_once()
+{
+    if (_displayport != nullptr) {
+        _displayport->init_uart();
+    }
+}
+
 void AP_OSD_MSP_DisplayPort::clear(void)
 {
+    // check if we need to enable some options
+    // but only for actual OSD screens
+    if (_osd.get_current_screen() < AP_OSD_NUM_DISPLAY_SCREENS) {
+        const uint8_t txt_resolution = _osd.screen[_osd.get_current_screen()].get_txt_resolution();
+        const uint8_t font_index = _osd.screen[_osd.get_current_screen()].get_font_index();
+        _displayport->msp_displayport_set_options(font_index, txt_resolution);
+    }
+
     // clear remote MSP screen
     _displayport->msp_displayport_clear_screen();
 

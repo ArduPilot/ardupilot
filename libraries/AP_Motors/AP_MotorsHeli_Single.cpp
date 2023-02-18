@@ -46,13 +46,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
 
     // Index 7 was used for phase angle and should not be used
 
-    // @Param: COLYAW
-    // @DisplayName: Collective-Yaw Mixing
-    // @Description: Feed-forward compensation to automatically add rudder input when collective pitch is increased. Can be positive or negative depending on mechanics.
-    // @Range: -10 10
-    // @Increment: 0.1
-    // @User: Standard
-    AP_GROUPINFO("COLYAW", 8,  AP_MotorsHeli_Single, _collective_yaw_effect, 0),
+    // Indice 8 was used by COLYAW and should not be used
 
     // @Param: FLYBAR_MODE
     // @DisplayName: Flybar Mode Selector
@@ -135,6 +129,14 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Increment: 1
     AP_SUBGROUPINFO(_swashplate, "SW_", 20, AP_MotorsHeli_Single, AP_MotorsHeli_Swash),
 
+    // @Param: COL2YAW
+    // @DisplayName: Collective-Yaw Mixing
+    // @Description: Feed-forward compensation to automatically add rudder input when collective pitch is increased. Can be positive or negative depending on mechanics.
+    // @Range: -2 2
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("COL2YAW", 21,  AP_MotorsHeli_Single, _collective_yaw_scale, 0),
+
     AP_GROUPEND
 };
 
@@ -182,21 +184,6 @@ bool AP_MotorsHeli_Single::init_outputs()
             // external gyro output
             add_motor_num(AP_MOTORS_HELI_SINGLE_EXTGYRO);
         }
-    }
-
-    // set signal value for main rotor external governor to know when to use autorotation bailout ramp up
-    if (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SETPOINT  ||  _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_PASSTHROUGH) {
-        _main_rotor.set_ext_gov_arot_bail(_main_rotor._ext_gov_arot_pct.get());
-    } else {
-        _main_rotor.set_ext_gov_arot_bail(0);
-    }
-
-    // set signal value for tail rotor external governor to know when to use autorotation bailout ramp up
-    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPIT_EXT_GOV) {
-        // set point for tail rsc is the same as for main rotor to save on parameters
-        _tail_rotor.set_ext_gov_arot_bail(_main_rotor._ext_gov_arot_pct.get());
-    } else {
-        _tail_rotor.set_ext_gov_arot_bail(0);
     }
 
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
@@ -287,22 +274,22 @@ void AP_MotorsHeli_Single::calculate_armed_scalars()
         _main_rotor._rsc_mode.save();
         _heliflags.save_rsc_mode = false;
     }
-
-    // set bailout ramp time
-    _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
-    _tail_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
-
+	
     // allow use of external governor autorotation bailout
-    if (_main_rotor._ext_gov_arot_pct.get() > 0) {
-        // RSC only needs to know that the vehicle is in an autorotation if using the bailout window on an external governor
-        if (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SETPOINT  ||  _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_PASSTHROUGH) {
-            _main_rotor.set_autorotation_flag(_heliflags.in_autorotation);
-        }
-        if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPIT_EXT_GOV) {
+    if (_heliflags.in_autorotation) {        
+        _main_rotor.set_autorotation_flag(_heliflags.in_autorotation);
+        // set bailout ramp time
+        _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
+        if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPIT_EXT_GOV) {
             _tail_rotor.set_autorotation_flag(_heliflags.in_autorotation);
+            _tail_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
+        }
+    }else { 
+        _main_rotor.set_autorotation_flag(false);
+        if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPIT_EXT_GOV) {
+            _tail_rotor.set_autorotation_flag(false);
         }
     }
-
 }
 
 // calculate_scalars - recalculates various scalers used.
@@ -344,12 +331,18 @@ void AP_MotorsHeli_Single::calculate_scalars()
         _tail_rotor.set_runup_time(_main_rotor._runup_time.get());
         _tail_rotor.set_critical_speed(_main_rotor._critical_speed.get());
         _tail_rotor.set_idle_output(_main_rotor._idle_output.get());
+        _tail_rotor.set_arot_idle_output(_main_rotor._arot_idle_output.get());
+        _tail_rotor.set_rsc_arot_man_enable(_main_rotor._rsc_arot_man_enable.get());
+        _tail_rotor.set_rsc_arot_engage_time(_main_rotor._rsc_arot_engage_time.get());
     } else {
         _tail_rotor.set_control_mode(ROTOR_CONTROL_MODE_DISABLED);
         _tail_rotor.set_ramp_time(0);
         _tail_rotor.set_runup_time(0);
         _tail_rotor.set_critical_speed(0);
         _tail_rotor.set_idle_output(0);
+        _tail_rotor.set_arot_idle_output(0);
+        _tail_rotor.set_rsc_arot_man_enable(0);
+        _tail_rotor.set_rsc_arot_engage_time(0);
     }
 }
 
@@ -466,10 +459,11 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
         // the feed-forward is not required when the motor is stopped or at idle, and thus not creating torque
         // also not required if we are using external gyro
         if ((_main_rotor.get_control_output() > _main_rotor.get_idle_output()) && _tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
-            // sanity check collective_yaw_effect
-            _collective_yaw_effect.set(constrain_float(_collective_yaw_effect, -AP_MOTORS_HELI_SINGLE_COLYAW_RANGE, AP_MOTORS_HELI_SINGLE_COLYAW_RANGE));
-            // the 4.5 scaling factor is to bring the values in line with previous releases
-            yaw_offset = _collective_yaw_effect * fabsf(collective_out - _collective_zero_thrust_pct) / 4.5f;
+            // sanity check collective_yaw_scale
+            _collective_yaw_scale.set(constrain_float(_collective_yaw_scale, -AP_MOTORS_HELI_SINGLE_COLYAW_RANGE, AP_MOTORS_HELI_SINGLE_COLYAW_RANGE));
+            // This feedforward compensation follows the hover performance theory that hover power required
+            // is a function of gross weight to the 3/2 power
+            yaw_offset = _collective_yaw_scale * powf(fabsf(collective_out - _collective_zero_thrust_pct),1.5f);
         }
     } else {
         yaw_offset = 0.0f;
@@ -582,31 +576,31 @@ void AP_MotorsHeli_Single::output_to_motors()
 // servo_test - move servos through full range of movement
 void AP_MotorsHeli_Single::servo_test()
 {
-    _servo_test_cycle_time += 1.0f / _loop_rate;
+    _servo_test_cycle_time += _dt;
 
     if ((_servo_test_cycle_time >= 0.0f && _servo_test_cycle_time < 0.5f)||                                   // Tilt swash back
         (_servo_test_cycle_time >= 6.0f && _servo_test_cycle_time < 6.5f)){
-        _pitch_test += (1.0f / (_loop_rate / 2.0f));
-        _oscillate_angle += 8 * M_PI / _loop_rate;
+        _pitch_test += 2.0 * _dt;
+        _oscillate_angle += 8 * M_PI * _dt;
         _yaw_test = 0.5f * sinf(_oscillate_angle);
     } else if ((_servo_test_cycle_time >= 0.5f && _servo_test_cycle_time < 4.5f)||                            // Roll swash around
                (_servo_test_cycle_time >= 6.5f && _servo_test_cycle_time < 10.5f)){
-        _oscillate_angle += M_PI / (2 * _loop_rate);
+        _oscillate_angle += 0.5 * M_PI * _dt;
         _roll_test = sinf(_oscillate_angle);
         _pitch_test = cosf(_oscillate_angle);
         _yaw_test = sinf(_oscillate_angle);
     } else if ((_servo_test_cycle_time >= 4.5f && _servo_test_cycle_time < 5.0f)||                            // Return swash to level
                (_servo_test_cycle_time >= 10.5f && _servo_test_cycle_time < 11.0f)){
-        _pitch_test -= (1.0f / (_loop_rate / 2.0f));
-        _oscillate_angle += 8 * M_PI / _loop_rate;
+        _pitch_test -= 2.0 * _dt;
+        _oscillate_angle += 8 * M_PI * _dt;
         _yaw_test = 0.5f * sinf(_oscillate_angle);
     } else if (_servo_test_cycle_time >= 5.0f && _servo_test_cycle_time < 6.0f){                              // Raise swash to top
-        _collective_test += (1.0f / _loop_rate);
-        _oscillate_angle += 2 * M_PI / _loop_rate;
+        _collective_test += _dt;
+        _oscillate_angle += 2 * M_PI * _dt;
         _yaw_test = sinf(_oscillate_angle);
     } else if (_servo_test_cycle_time >= 11.0f && _servo_test_cycle_time < 12.0f){                            // Lower swash to bottom
-        _collective_test -= (1.0f / _loop_rate);
-        _oscillate_angle += 2 * M_PI / _loop_rate;
+        _collective_test -= _dt;
+        _oscillate_angle += 2 * M_PI * _dt;
         _yaw_test = sinf(_oscillate_angle);
     } else {                                                                                                  // reset cycle
         _servo_test_cycle_time = 0.0f;

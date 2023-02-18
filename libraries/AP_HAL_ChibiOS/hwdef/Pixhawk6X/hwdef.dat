@@ -364,3 +364,8 @@ define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
 define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
+
+# enable DFU reboot for installing bootloader
+# note that if firmware is build with --secure-bl then DFU is
+# disabled
+ENABLE_DFU_BOOT 1

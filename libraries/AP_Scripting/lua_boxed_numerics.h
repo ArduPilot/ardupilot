@@ -10,7 +10,6 @@ int uint32_t___sub(lua_State *L);
 int uint32_t___mul(lua_State *L);
 int uint32_t___div(lua_State *L);
 int uint32_t___mod(lua_State *L);
-int uint32_t___idiv(lua_State *L);
 int uint32_t___band(lua_State *L);
 int uint32_t___bor(lua_State *L);
 int uint32_t___bxor(lua_State *L);

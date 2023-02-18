@@ -110,6 +110,13 @@ bool ModeGuided::allows_arming(AP_Arming::Method method) const
     return (copter.g2.guided_options & (uint32_t)Options::AllowArmingFromTX) != 0;
 };
 
+#if WEATHERVANE_ENABLED == ENABLED
+bool ModeGuided::allows_weathervaning() const
+{
+    return (copter.g2.guided_options.get() & (uint32_t)Options::AllowWeatherVaning) != 0;
+}
+#endif
+
 // initialises position controller to implement take-off
 // takeoff_alt_cm is interpreted as alt-above-home (in cm) or alt-above-terrain if a rangefinder is available
 bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
@@ -142,10 +149,10 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
     guided_mode = SubMode::TakeOff;
 
     // initialise yaw
-    auto_yaw.set_mode(AUTO_YAW_HOLD);
+    auto_yaw.set_mode(AutoYaw::Mode::HOLD);
 
     // clear i term when we're taking off
-    set_throttle_takeoff();
+    pos_control->init_z_controller();
 
     // initialise alt for WP_NAVALT_MIN and set completion alt
     auto_takeoff_start(alt_target_cm, alt_target_terrain);
@@ -180,16 +187,6 @@ void ModeGuided::wp_control_start()
 // run guided mode's waypoint navigation controller
 void ModeGuided::wp_control_run()
 {
-    // process pilot's yaw input
-    float target_yaw_rate = 0;
-    if (!copter.failsafe.radio && use_pilot_yaw()) {
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
-        if (!is_zero(target_yaw_rate)) {
-            auto_yaw.set_mode(AUTO_YAW_HOLD);
-        }
-    }
-
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         // do not spool down tradheli when on the ground with motor interlock enabled
@@ -206,17 +203,8 @@ void ModeGuided::wp_control_run()
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control->update_z_controller();
 
-    // call attitude controller
-    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
-        // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control->input_thrust_vector_rate_heading(wp_nav->get_thrust_vector(), target_yaw_rate);
-    } else if (auto_yaw.mode() == AUTO_YAW_RATE) {
-        // roll & pitch from waypoint controller, yaw rate from mavlink command or mission item
-        attitude_control->input_thrust_vector_rate_heading(wp_nav->get_thrust_vector(), auto_yaw.rate_cds());
-    } else {
-        // roll, pitch from waypoint controller, yaw heading from GCS or auto_heading()
-        attitude_control->input_thrust_vector_heading(wp_nav->get_thrust_vector(), auto_yaw.yaw());
-    }
+    // call attitude controller with auto yaw
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // initialise position controller
@@ -334,7 +322,7 @@ void ModeGuided::angle_control_start()
     guided_angle_state.use_yaw_rate = false;
 
     // pilot always controls yaw
-    auto_yaw.set_mode(AUTO_YAW_HOLD);
+    auto_yaw.set_mode(AutoYaw::Mode::HOLD);
 }
 
 // set_destination - sets guided mode's target destination
@@ -694,7 +682,7 @@ void ModeGuided::takeoff_run()
     auto_takeoff_run();
     if (auto_takeoff_complete && !takeoff_complete) {
         takeoff_complete = true;
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
         // optionally retract landing gear
         copter.landinggear.retract_after_takeoff();
 #endif
@@ -705,17 +693,6 @@ void ModeGuided::takeoff_run()
 // called from guided_run
 void ModeGuided::pos_control_run()
 {
-    // process pilot's yaw input
-    float target_yaw_rate = 0;
-
-    if (!copter.failsafe.radio && use_pilot_yaw()) {
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
-        if (!is_zero(target_yaw_rate)) {
-            auto_yaw.set_mode(AUTO_YAW_HOLD);
-        }
-    }
-
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         // do not spool down tradheli when on the ground with motor interlock enabled
@@ -740,8 +717,8 @@ void ModeGuided::pos_control_run()
 
     // stop rotating if no updates received within timeout_ms
     if (millis() - update_time_ms > get_timeout_ms()) {
-        if ((auto_yaw.mode() == AUTO_YAW_RATE) || (auto_yaw.mode() == AUTO_YAW_ANGLE_RATE)) {
-            auto_yaw.set_rate(0.0f);
+        if ((auto_yaw.mode() == AutoYaw::Mode::RATE) || (auto_yaw.mode() == AutoYaw::Mode::ANGLE_RATE)) {
+            auto_yaw.set_mode(AutoYaw::Mode::HOLD);
         }
     }
 
@@ -755,33 +732,14 @@ void ModeGuided::pos_control_run()
     pos_control->update_xy_controller();
     pos_control->update_z_controller();
 
-    // call attitude controller
-    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
-        // roll & pitch from position controller, yaw rate from pilot
-        attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), target_yaw_rate);
-    } else if (auto_yaw.mode() == AUTO_YAW_RATE) {
-        // roll & pitch from position controller, yaw rate from mavlink command or mission item
-        attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), auto_yaw.rate_cds());
-    } else {
-        // roll & pitch from position controller, yaw heading from GCS or auto_heading()
-        attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.yaw(), auto_yaw.rate_cds());
-    }
+    // call attitude controller with auto yaw
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // velaccel_control_run - runs the guided velocity controller
 // called from guided_run
 void ModeGuided::accel_control_run()
 {
-    // process pilot's yaw input
-    float target_yaw_rate = 0;
-    if (!copter.failsafe.radio && use_pilot_yaw()) {
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
-        if (!is_zero(target_yaw_rate)) {
-            auto_yaw.set_mode(AUTO_YAW_HOLD);
-        }
-    }
-
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         // do not spool down tradheli when on the ground with motor interlock enabled
@@ -797,11 +755,11 @@ void ModeGuided::accel_control_run()
     if (tnow - update_time_ms > get_timeout_ms()) {
         guided_vel_target_cms.zero();
         guided_accel_target_cmss.zero();
-        if ((auto_yaw.mode() == AUTO_YAW_RATE) || (auto_yaw.mode() == AUTO_YAW_ANGLE_RATE)) {
-            auto_yaw.set_rate(0.0f);
+        if ((auto_yaw.mode() == AutoYaw::Mode::RATE) || (auto_yaw.mode() == AutoYaw::Mode::ANGLE_RATE)) {
+            auto_yaw.set_mode(AutoYaw::Mode::HOLD);
         }
         pos_control->input_vel_accel_xy(guided_vel_target_cms.xy(), guided_accel_target_cmss.xy(), false);
-        pos_control->input_vel_accel_z(guided_vel_target_cms.z, guided_accel_target_cmss.z, false, false);
+        pos_control->input_vel_accel_z(guided_vel_target_cms.z, guided_accel_target_cmss.z, false);
     } else {
         // update position controller with new target
         pos_control->input_accel_xy(guided_accel_target_cmss);
@@ -819,33 +777,14 @@ void ModeGuided::accel_control_run()
     pos_control->update_xy_controller();
     pos_control->update_z_controller();
 
-    // call attitude controller
-    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
-        // roll & pitch from position controller, yaw rate from pilot
-        attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), target_yaw_rate);
-    } else if (auto_yaw.mode() == AUTO_YAW_RATE) {
-        // roll & pitch from position controller, yaw rate from mavlink command or mission item
-        attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), auto_yaw.rate_cds());
-    } else {
-        // roll & pitch from position controller, yaw heading from GCS or auto_heading()
-        attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.yaw(), auto_yaw.rate_cds());
-    }
+    // call attitude controller with auto yaw
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // velaccel_control_run - runs the guided velocity and acceleration controller
 // called from guided_run
 void ModeGuided::velaccel_control_run()
 {
-    // process pilot's yaw input
-    float target_yaw_rate = 0;
-    if (!copter.failsafe.radio && use_pilot_yaw()) {
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
-        if (!is_zero(target_yaw_rate)) {
-            auto_yaw.set_mode(AUTO_YAW_HOLD);
-        }
-    }
-
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         // do not spool down tradheli when on the ground with motor interlock enabled
@@ -861,8 +800,8 @@ void ModeGuided::velaccel_control_run()
     if (tnow - update_time_ms > get_timeout_ms()) {
         guided_vel_target_cms.zero();
         guided_accel_target_cmss.zero();
-        if ((auto_yaw.mode() == AUTO_YAW_RATE) || (auto_yaw.mode() == AUTO_YAW_ANGLE_RATE)) {
-            auto_yaw.set_rate(0.0f);
+        if ((auto_yaw.mode() == AutoYaw::Mode::RATE) || (auto_yaw.mode() == AutoYaw::Mode::ANGLE_RATE)) {
+            auto_yaw.set_mode(AutoYaw::Mode::HOLD);
         }
     }
 
@@ -888,23 +827,14 @@ void ModeGuided::velaccel_control_run()
         // set position errors to zero
         pos_control->stop_pos_xy_stabilisation();
     }
-    pos_control->input_vel_accel_z(guided_vel_target_cms.z, guided_accel_target_cmss.z, false, false);
+    pos_control->input_vel_accel_z(guided_vel_target_cms.z, guided_accel_target_cmss.z, false);
 
     // call velocity controller which includes z axis controller
     pos_control->update_xy_controller();
     pos_control->update_z_controller();
 
-    // call attitude controller
-    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
-        // roll & pitch from position controller, yaw rate from pilot
-        attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), target_yaw_rate);
-    } else if (auto_yaw.mode() == AUTO_YAW_RATE) {
-        // roll & pitch from position controller, yaw rate from mavlink command or mission item
-        attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), auto_yaw.rate_cds());
-    } else {
-        // roll & pitch from position controller, yaw heading from GCS or auto_heading()
-        attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.yaw(), auto_yaw.rate_cds());
-    }
+    // call attitude controller with auto yaw
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // pause_control_run - runs the guided mode pause controller
@@ -927,7 +857,7 @@ void ModeGuided::pause_control_run()
 
     // set the vertical velocity and acceleration targets to zero
     float vel_z = 0.0;
-    pos_control->input_vel_accel_z(vel_z, 0.0, false, false);
+    pos_control->input_vel_accel_z(vel_z, 0.0, false);
 
     // call velocity controller which includes z axis controller
     pos_control->update_xy_controller();
@@ -941,17 +871,6 @@ void ModeGuided::pause_control_run()
 // called from guided_run
 void ModeGuided::posvelaccel_control_run()
 {
-    // process pilot's yaw input
-    float target_yaw_rate = 0;
-
-    if (!copter.failsafe.radio && use_pilot_yaw()) {
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
-        if (!is_zero(target_yaw_rate)) {
-            auto_yaw.set_mode(AUTO_YAW_HOLD);
-        }
-    }
-
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         // do not spool down tradheli when on the ground with motor interlock enabled
@@ -967,8 +886,8 @@ void ModeGuided::posvelaccel_control_run()
     if (tnow - update_time_ms > get_timeout_ms()) {
         guided_vel_target_cms.zero();
         guided_accel_target_cmss.zero();
-        if ((auto_yaw.mode() == AUTO_YAW_RATE) || (auto_yaw.mode() == AUTO_YAW_ANGLE_RATE)) {
-            auto_yaw.set_rate(0.0f);
+        if ((auto_yaw.mode() == AutoYaw::Mode::RATE) || (auto_yaw.mode() == AutoYaw::Mode::ANGLE_RATE)) {
+            auto_yaw.set_mode(AutoYaw::Mode::HOLD);
         }
     }
 
@@ -1006,17 +925,8 @@ void ModeGuided::posvelaccel_control_run()
     pos_control->update_xy_controller();
     pos_control->update_z_controller();
 
-    // call attitude controller
-    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
-        // roll & pitch from position controller, yaw rate from pilot
-        attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), target_yaw_rate);
-    } else if (auto_yaw.mode() == AUTO_YAW_RATE) {
-        // roll & pitch from position controller, yaw rate from mavlink command or mission item
-        attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), auto_yaw.rate_cds());
-    } else {
-        // roll & pitch from position controller, yaw heading from GCS or auto_heading()
-        attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.yaw(), auto_yaw.rate_cds());
-    }
+    // call attitude controller with auto yaw
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 
 // angle_control_run - runs the guided angle controller
@@ -1065,7 +975,7 @@ void ModeGuided::angle_control_run()
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
         if (motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
             set_land_complete(false);
-            set_throttle_takeoff();
+            pos_control->init_z_controller();
         }
         return;
     }

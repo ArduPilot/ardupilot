@@ -437,7 +437,7 @@ T Vector3<T>::angle(const Vector3<T> &v2) const
 
 // multiplication of transpose by a vector
 template <typename T>
-Vector3<T> Vector3<T>::operator *(const Matrix3<T> &m) const
+Vector3<T> Vector3<T>::row_times_mat(const Matrix3<T> &m) const
 {
     return Vector3<T>(*this * m.colx(),
                       *this * m.coly(),
@@ -632,5 +632,6 @@ bool Vector3<T>::segment_plane_intersect(const Vector3<T>& seg_start, const Vect
 template class Vector3<float>;
 template class Vector3<double>;
 
-// define needed ops for Vector3l
+// define needed ops for Vector3l, Vector3i as needed
 template Vector3<int32_t> &Vector3<int32_t>::operator +=(const Vector3<int32_t> &v);
+template bool Vector3<int16_t>::operator ==(const Vector3<int16_t> &v) const;

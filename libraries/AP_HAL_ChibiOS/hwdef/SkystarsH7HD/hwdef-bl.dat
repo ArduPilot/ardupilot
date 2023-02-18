@@ -21,6 +21,9 @@ FLASH_BOOTLOADER_LOAD_KB 128
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1
 
+# H743 has 16 pages of 128k each
+define HAL_STORAGE_SIZE 32768
+
 # PA10 IO-debug-console
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
@@ -44,6 +47,8 @@ PB12 AT7456E_CS CS
 PA15 FLASH_CS CS
 PE11 BMI270_CS2 CS
 
-PC5 VTX_PWR OUTPUT LOW      # labelled as "Pit-1"
-PC2 VID_SELECT OUTPUT LOW   # labelled as "PIN-EN"
+## pull up VTX power so that it is enabled in bootloader
+PC5 VTX_PWR OUTPUT HIGH     # labelled as "Pit-1"
+# pull up PIN-EN so that Video 1 is selected by default
+PC2 VID_SELECT OUTPUT HIGH   # labelled as "PIN-EN"
 PD2 CAM_C OUTPUT LOW        # labelled as "CAM-C"

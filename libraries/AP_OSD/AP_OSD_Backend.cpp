@@ -16,6 +16,7 @@
 
 #include <AP_OSD/AP_OSD_Backend.h>
 #include <AP_HAL/Util.h>
+#include <GCS_MAVLink/GCS.h>
 #include <ctype.h>
 
 extern const AP_HAL::HAL& hal;

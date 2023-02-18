@@ -348,15 +348,14 @@ float rand_float(void)
 #endif
 }
 
+// generate a random Vector3f with each value between -1.0 and 1.0
 Vector3f rand_vec3f(void)
 {
-    Vector3f v = Vector3f(rand_float(),
-                          rand_float(),
-                          rand_float());
-    if (!is_zero(v.length())) {
-        v.normalize();
-    }
-    return v;
+    return Vector3f{
+        rand_float(),
+        rand_float(),
+        rand_float()
+    };
 }
 #endif
 
@@ -400,11 +399,18 @@ Vector3F get_vel_correction_for_sensor_offset(const Vector3F &sensor_offset_bf, 
  */
 float calc_lowpass_alpha_dt(float dt, float cutoff_freq)
 {
-    if (dt <= 0.0f || cutoff_freq <= 0.0f) {
+    if (is_negative(dt) || is_negative(cutoff_freq)) {
+        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
         return 1.0;
     }
-    float rc = 1.0f/(M_2PI*cutoff_freq);
-    return dt/(dt+rc);
+    if (is_zero(cutoff_freq)) {
+        return 1.0;
+    }
+    if (is_zero(dt)) {
+        return 0.0;
+    }
+    float rc = 1.0f / (M_2PI * cutoff_freq);
+    return dt / (dt + rc);
 }
 
 #ifndef AP_MATH_FILL_NANF_USE_MEMCPY
@@ -509,4 +515,14 @@ uint16_t float_to_uint16(const float v)
 uint32_t float_to_uint32(const float v)
 {
     return uint32_t(constrain_float(v, 0, UINT32_MAX));
+}
+
+uint32_t double_to_uint32(const double v)
+{
+    return uint32_t(constrain_double(v, 0, UINT32_MAX));
+}
+
+int32_t double_to_int32(const double v)
+{
+    return int32_t(constrain_double(v, INT32_MIN, UINT32_MAX));
 }

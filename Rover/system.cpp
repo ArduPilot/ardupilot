@@ -25,7 +25,7 @@ void Rover::init_ardupilot()
 #endif
 
     // init gripper
-#if GRIPPER_ENABLED == ENABLED
+#if AP_GRIPPER_ENABLED
     g2.gripper.init();
 #endif
 
@@ -35,8 +35,10 @@ void Rover::init_ardupilot()
 
     battery.init();
 
+#if AP_RPM_ENABLED
     // Initialise RPM sensor
     rpm_sensor.init();
+#endif
 
     rssi.init();
 
@@ -98,11 +100,21 @@ void Rover::init_ardupilot()
     g2.torqeedo.init();
 #endif
 
+#if AP_OPTICALFLOW_ENABLED
+    // initialise optical flow sensor
+    optflow.init(MASK_LOG_OPTFLOW);
+#endif      // AP_OPTICALFLOW_ENABLED
+
     relay.init();
 
 #if HAL_MOUNT_ENABLED
     // initialise camera mount
     camera_mount.init();
+#endif
+
+#if PRECISION_LANDING == ENABLED
+    // initialise precision landing
+    init_precland();
 #endif
 
     /*
@@ -227,7 +239,7 @@ bool Rover::set_mode(Mode &new_mode, ModeReason reason)
     fence.manual_recovery_start();
 #endif
 
-#if CAMERA == ENABLED
+#if AP_CAMERA_ENABLED
     camera.set_is_auto_mode(control_mode->mode_number() == Mode::Number::AUTO);
 #endif
 

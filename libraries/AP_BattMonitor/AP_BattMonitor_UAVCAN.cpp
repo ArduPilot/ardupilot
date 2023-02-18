@@ -39,6 +39,9 @@ UC_REGISTRY_BINDER(BattInfoCb, uavcan::equipment::power::BatteryInfo);
 UC_REGISTRY_BINDER(BattInfoAuxCb, ardupilot::equipment::power::BatteryInfoAux);
 UC_REGISTRY_BINDER(MpptStreamCb, mppt::Stream);
 
+static void trampoline_handleOutputEnable(const uavcan::ServiceCallResult<mppt::OutputEnable>& resp);
+static uavcan::ServiceClient<mppt::OutputEnable>* outputEnable_client[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+
 /// Constructor
 AP_BattMonitor_UAVCAN::AP_BattMonitor_UAVCAN(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, BattMonitor_UAVCAN_Type type, AP_BattMonitor_Params &params) :
     AP_BattMonitor_Backend(mon, mon_state, params),
@@ -85,6 +88,15 @@ void AP_BattMonitor_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
         AP_BoardConfig::allocation_error("UAVCAN Mppt::Stream subscriber start problem");
         return;
     }
+
+    // set up callback to verify mppt::OutputEnable
+    const uint8_t driver_index = ap_uavcan->get_driver_index();
+    outputEnable_client[driver_index] = new uavcan::ServiceClient<mppt::OutputEnable>(*node);
+    if (outputEnable_client[driver_index] == nullptr || outputEnable_client[driver_index]->init() < 0) {
+        AP_BoardConfig::allocation_error("UAVCAN Mppt::outputEnable client start problem");
+        return;
+    }
+    outputEnable_client[driver_index]->setCallback(trampoline_handleOutputEnable);
 }
 
 AP_BattMonitor_UAVCAN* AP_BattMonitor_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t battery_id)
@@ -209,7 +221,12 @@ void AP_BattMonitor_UAVCAN::handle_mppt_stream(const MpptStreamCb &cb)
         mppt_set_bootup_powered_state();
     }
 
-    mppt_check_and_report_faults(cb.msg->fault_flags);
+#if AP_BATTMONITOR_UAVCAN_MPPT_DEBUG
+    if (_mppt.fault_flags != cb.msg->fault_flags) {
+        mppt_report_faults(_instance, cb.msg->fault_flags);
+    }
+#endif
+    _mppt.fault_flags = cb.msg->fault_flags;
 }
 
 void AP_BattMonitor_UAVCAN::handle_battery_info_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const BattInfoCb &cb)
@@ -267,7 +284,7 @@ void AP_BattMonitor_UAVCAN::read()
 
     // check if MPPT should be powered on/off depending upon arming state
     if (_mppt.is_detected) {
-        mppt_set_armed_powered_state();
+        mppt_check_powered_state();
     }
 }
 
@@ -317,8 +334,13 @@ void AP_BattMonitor_UAVCAN::mppt_set_bootup_powered_state()
 }
 
 // request MPPT board to power on/off depending upon vehicle arming state as specified by BATT_OPTIONS
-void AP_BattMonitor_UAVCAN::mppt_set_armed_powered_state()
+void AP_BattMonitor_UAVCAN::mppt_check_powered_state()
 {
+    if ((_mppt.powered_state_remote_ms != 0) && (AP_HAL::millis() - _mppt.powered_state_remote_ms >= 1000)) {
+        // there's already a set attempt that didnt' respond. Retry at 1Hz
+        mppt_set_powered_state(_mppt.powered_state, true);
+    }
+
     // check if vehicle armed state has changed
     const bool vehicle_armed = hal.util->get_soft_armed();
     if (vehicle_armed == _mppt.vehicle_armed_last) {
@@ -354,29 +376,64 @@ void AP_BattMonitor_UAVCAN::mppt_set_powered_state(bool power_on, bool force)
     _mppt.powered_state = power_on;
     _mppt.powered_state_changed = true;
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: powering %s", (unsigned)_instance+1, _mppt.powered_state ? "ON" : "OFF");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: powering %s%s", (unsigned)_instance+1, _mppt.powered_state ? "ON" : "OFF",
+        (_mppt.powered_state_remote_ms == 0) ? "" : " Retry");
 
+    // set up a request /w a status callback
     mppt::OutputEnable::Request request;
     request.enable = _mppt.powered_state;
     request.disable = !request.enable;
 
-    uavcan::ServiceClient<mppt::OutputEnable> client(*_node);
-    client.setCallback([](const uavcan::ServiceCallResult<mppt::OutputEnable>& handle_mppt_enable_output_response){});
-    client.call(_node_id, request);
+    _mppt.powered_state_remote_ms = AP_HAL::millis();
+    const uint8_t driver_index = _ap_uavcan->get_driver_index();
+    outputEnable_client[driver_index]->call(_node_id, request);
 }
 
-// report changes in MPPT faults
-void AP_BattMonitor_UAVCAN::mppt_check_and_report_faults(uint8_t fault_flags)
+// callback trampoline of outputEnable response to verify it is enabled or disabled
+void trampoline_handleOutputEnable(const uavcan::ServiceCallResult<mppt::OutputEnable>& resp)
 {
-    // return immediately if no changes
-    if (_mppt.fault_flags == fault_flags) {
+    uint8_t can_num_drivers = AP::can().get_num_drivers();
+    for (uint8_t i = 0; i < can_num_drivers; i++) {
+        AP_UAVCAN *uavcan = AP_UAVCAN::get_uavcan(i);
+        if (uavcan == nullptr) {
+            continue;
+        }
+
+        const uint8_t node_id = resp.getResponse().getSrcNodeID().get();
+        AP_BattMonitor_UAVCAN* driver = AP_BattMonitor_UAVCAN::get_uavcan_backend(uavcan, node_id, node_id);
+        if (driver == nullptr) {
+            continue;
+        }
+
+        const auto &response = resp.getResponse();
+        const uint8_t nodeId = response.getSrcNodeID().get();
+        const bool enabled = response.enabled;
+        driver->handle_outputEnable_response(nodeId, enabled);
+    }
+}
+
+// callback from outputEnable to verify it is enabled or disabled
+void AP_BattMonitor_UAVCAN::handle_outputEnable_response(const uint8_t nodeId, const bool enabled)
+{
+    if (nodeId != _node_id) {
+        // this response is not from the node we are looking for
         return;
     }
-    _mppt.fault_flags = fault_flags;
 
+    if (enabled == _mppt.powered_state) {
+        // we got back what we expected it to be. We set it on, it now says it on (or vice versa).
+        // Clear the timer so we don't re-request
+        _mppt.powered_state_remote_ms = 0;
+    }
+}
+
+#if AP_BATTMONITOR_UAVCAN_MPPT_DEBUG
+// report changes in MPPT faults
+void AP_BattMonitor_UAVCAN::mppt_report_faults(const uint8_t instance, const uint8_t fault_flags)
+{
     // handle recovery
-    if (_mppt.fault_flags == 0) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: OK", (unsigned)_instance+1);
+    if (fault_flags == 0) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: OK", (unsigned)instance+1);
         return;
     }
 
@@ -385,13 +442,13 @@ void AP_BattMonitor_UAVCAN::mppt_check_and_report_faults(uint8_t fault_flags)
         // this loop is to generate multiple messages if there are multiple concurrent faults, but also run once if there are no faults
         if ((fault_bit & fault_flags) != 0) {
             const MPPT_FaultFlags err = (MPPT_FaultFlags)fault_bit;
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: %s", (unsigned)_instance+1, mppt_fault_string(err));
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: %s", (unsigned)instance+1, mppt_fault_string(err));
         }
     }
 }
 
 // returns string description of MPPT fault bit. Only handles single bit faults
-const char* AP_BattMonitor_UAVCAN::mppt_fault_string(MPPT_FaultFlags fault)
+const char* AP_BattMonitor_UAVCAN::mppt_fault_string(const MPPT_FaultFlags fault)
 {
     switch (fault) {
         case MPPT_FaultFlags::OVER_VOLTAGE:
@@ -405,6 +462,7 @@ const char* AP_BattMonitor_UAVCAN::mppt_fault_string(MPPT_FaultFlags fault)
     }
     return "unknown";
 }
+#endif
 
 // return mavlink fault bitmask (see MAV_BATTERY_FAULT enum)
 uint32_t AP_BattMonitor_UAVCAN::get_mavlink_fault_bitmask() const

@@ -114,10 +114,10 @@ SPIDEV osd        SPI2 DEVID4 OSD_CS MODE0 10*MHZ 10*MHZ
 # One IMU rotated in yaw
 IMU Invensense SPI:mpu6000 ROTATION_YAW_90
 
-# Probe for I2C BMP280, but allow init on board variants without onboard baro too
+# Probe for I2C BMP280 only
 BARO BMP280 I2C:0:0x76
-define HAL_PROBE_EXTERNAL_I2C_BAROS
-define HAL_BARO_ALLOW_INIT_NO_BARO
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+define AP_BARO_BMP280_ENABLED 1
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types

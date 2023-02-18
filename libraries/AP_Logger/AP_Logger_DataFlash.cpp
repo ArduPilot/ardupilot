@@ -219,8 +219,17 @@ void AP_Logger_DataFlash::PageToBuffer(uint32_t pageNum)
     if (pageNum == 0 || pageNum > df_NumPages+1) {
         printf("Invalid page read %u\n", pageNum);
         memset(buffer, 0xFF, df_PageSize);
+        df_Read_PageAdr = pageNum;
         return;
     }
+
+    // we already just read this page
+    if (pageNum == df_Read_PageAdr && read_cache_valid) {
+        return;
+    }
+
+    df_Read_PageAdr = pageNum;
+
     WaitReady();
 
     uint32_t PageAdr = (pageNum-1) * df_PageSize;
@@ -230,6 +239,8 @@ void AP_Logger_DataFlash::PageToBuffer(uint32_t pageNum)
     send_command_addr(JEDEC_READ_DATA, PageAdr);
     dev->transfer(nullptr, 0, buffer, df_PageSize);
     dev->set_chip_select(false);
+
+    read_cache_valid = true;
 }
 
 void AP_Logger_DataFlash::BufferToPage(uint32_t pageNum)
@@ -238,6 +249,12 @@ void AP_Logger_DataFlash::BufferToPage(uint32_t pageNum)
         printf("Invalid page write %u\n", pageNum);
         return;
     }
+
+    // about to write the cached page
+    if (pageNum != df_Read_PageAdr) {
+        read_cache_valid = false;
+    }
+
     WriteEnable();
 
     WITH_SEMAPHORE(dev_sem);

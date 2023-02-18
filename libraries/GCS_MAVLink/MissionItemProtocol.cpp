@@ -20,6 +20,9 @@ void MissionItemProtocol::init_send_requests(GCS_MAVLINK &_link,
 
     timelast_request_ms = AP_HAL::millis();
     link->send_message(next_item_ap_message_id());
+
+    mission_item_warning_sent = false;
+    mission_request_warning_sent = false;
 }
 
 void MissionItemProtocol::handle_mission_clear_all(const GCS_MAVLINK &_link,
@@ -111,6 +114,7 @@ void MissionItemProtocol::handle_mission_request_list(
 
     // reply with number of commands in the mission.  The GCS will
     // then request each command separately
+    CHECK_PAYLOAD_SIZE2_VOID(_link.get_chan(), MISSION_COUNT);
     mavlink_msg_mission_count_send(_link.get_chan(),
                                    msg.sysid,
                                    msg.compid,
@@ -148,6 +152,7 @@ void MissionItemProtocol::handle_mission_request_int(const GCS_MAVLINK &_link,
         return;
     }
 
+    CHECK_PAYLOAD_SIZE2_VOID(_link.get_chan(), MISSION_ITEM_INT);
     _link.send_message(MAVLINK_MSG_ID_MISSION_ITEM_INT, (const char*)&ret_packet);
 }
 
@@ -186,7 +191,23 @@ void MissionItemProtocol::handle_mission_request(const GCS_MAVLINK &_link,
         return;
     }
 
+    CHECK_PAYLOAD_SIZE2_VOID(_link.get_chan(), MISSION_ITEM_INT);
+
+    if (!mission_request_warning_sent) {
+        mission_request_warning_sent = true;
+        gcs().send_text(MAV_SEVERITY_WARNING, "got MISSION_REQUEST; use MISSION_REQUEST_INT!");
+    }
+
     _link.send_message(MAVLINK_MSG_ID_MISSION_ITEM, (const char*)&ret_packet);
+}
+
+void MissionItemProtocol::send_mission_item_warning()
+{
+    if (mission_item_warning_sent) {
+        return;
+    }
+    mission_item_warning_sent = true;
+    gcs().send_text(MAV_SEVERITY_WARNING, "got MISSION_ITEM; GCS should send MISSION_ITEM_INT");
 }
 
 void MissionItemProtocol::handle_mission_write_partial_list(GCS_MAVLINK &_link,
@@ -293,6 +314,7 @@ void MissionItemProtocol::send_mission_ack(const GCS_MAVLINK &_link,
                                            const mavlink_message_t &msg,
                                            MAV_MISSION_RESULT result) const
 {
+    CHECK_PAYLOAD_SIZE2_VOID(_link.get_chan(), MISSION_ACK);
     mavlink_msg_mission_ack_send(_link.get_chan(),
                                  msg.sysid,
                                  msg.compid,
@@ -316,6 +338,7 @@ void MissionItemProtocol::queued_request_send()
         INTERNAL_ERROR(AP_InternalError::error_t::gcs_bad_missionprotocol_link);
         return;
     }
+    CHECK_PAYLOAD_SIZE2_VOID(link->get_chan(), MISSION_REQUEST);
     mavlink_msg_mission_request_send(
         link->get_chan(),
         dest_sysid,
@@ -340,11 +363,14 @@ void MissionItemProtocol::update()
     if (tnow - timelast_receive_ms > upload_timeout_ms) {
         receiving = false;
         timeout();
-        mavlink_msg_mission_ack_send(link->get_chan(),
-                                     dest_sysid,
-                                     dest_compid,
-                                     MAV_MISSION_OPERATION_CANCELLED,
-                                     mission_type());
+        const mavlink_channel_t chan = link->get_chan();
+        if (HAVE_PAYLOAD_SPACE(chan, MISSION_ACK)) {
+            mavlink_msg_mission_ack_send(chan,
+                                         dest_sysid,
+                                         dest_compid,
+                                         MAV_MISSION_OPERATION_CANCELLED,
+                                         mission_type());
+        }
         link = nullptr;
         free_upload_resources();
         return;

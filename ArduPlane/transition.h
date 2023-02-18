@@ -87,6 +87,8 @@ public:
 
     bool show_vtol_view() const override;
 
+    void set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& nav_roll_cd, bool& allow_stick_mixing) override;
+
     bool set_FW_roll_limit(int32_t& roll_limit_cd) override;
 
     bool allow_update_throttle_mix() const override;

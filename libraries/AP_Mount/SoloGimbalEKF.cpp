@@ -11,9 +11,9 @@
 #include "SoloGimbalEKF.h"
 #if HAL_SOLO_GIMBAL_ENABLED
 #include <AP_Param/AP_Param.h>
-#include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_NavEKF/AP_Nav_Common.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Compass/AP_Compass.h>
 
 #include <stdio.h>
 

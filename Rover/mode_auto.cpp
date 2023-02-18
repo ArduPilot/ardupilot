@@ -1,4 +1,3 @@
-#include "mode.h"
 #include "Rover.h"
 
 #define AUTO_GUIDED_SEND_TARGET_MS 1000
@@ -274,7 +273,7 @@ void ModeAuto::start_RTL()
 }
 
 // lua scripts use this to retrieve the contents of the active command
-bool ModeAuto::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2)
+bool ModeAuto::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4)
 {
 #if AP_SCRIPTING_ENABLED
     if (_submode == AutoSubMode::Auto_NavScriptTime) {
@@ -282,6 +281,8 @@ bool ModeAuto::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &a
         cmd = nav_scripting.command;
         arg1 = nav_scripting.arg1;
         arg2 = nav_scripting.arg2;
+        arg3 = nav_scripting.arg3;
+        arg4 = nav_scripting.arg4;
         return true;
     }
 #endif
@@ -890,8 +891,10 @@ void ModeAuto::do_nav_script_time(const AP_Mission::Mission_Command& cmd)
         nav_scripting.start_ms = millis();
         nav_scripting.command = cmd.content.nav_script_time.command;
         nav_scripting.timeout_s = cmd.content.nav_script_time.timeout_s;
-        nav_scripting.arg1 = cmd.content.nav_script_time.arg1;
-        nav_scripting.arg2 = cmd.content.nav_script_time.arg2;
+        nav_scripting.arg1 = cmd.content.nav_script_time.arg1.get();
+        nav_scripting.arg2 = cmd.content.nav_script_time.arg2.get();
+        nav_scripting.arg3 = cmd.content.nav_script_time.arg3;
+        nav_scripting.arg4 = cmd.content.nav_script_time.arg4;
     } else {
         // for safety we set nav_scripting to done to protect against the mission getting stuck
         nav_scripting.done = true;

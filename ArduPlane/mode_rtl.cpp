@@ -9,15 +9,32 @@ bool ModeRTL::_enter()
 #if HAL_QUADPLANE_ENABLED
     plane.vtol_approach_s.approach_stage = Plane::Landing_ApproachStage::RTL;
 
-    // treat RTL as QLAND if we are in guided wait takeoff state, to cope
-    // with failsafes during GUIDED->AUTO takeoff sequence
-    if (plane.quadplane.guided_wait_takeoff_on_mode_enter) {
-       plane.set_mode(plane.mode_qland, ModeReason::QLAND_INSTEAD_OF_RTL);
-       return true;
-    }
+    // Quadplane specific checks
+    if (plane.quadplane.available()) {
+        // treat RTL as QLAND if we are in guided wait takeoff state, to cope
+        // with failsafes during GUIDED->AUTO takeoff sequence
+        if (plane.quadplane.guided_wait_takeoff_on_mode_enter) {
+            plane.set_mode(plane.mode_qland, ModeReason::QLAND_INSTEAD_OF_RTL);
+            return true;
+        }
 
-    // do not check if we have reached the loiter target if switching from loiter this will trigger as the nav controller has not yet proceeded the new destination
-    switch_QRTL(false);
+        // if Q_RTL_MODE is QRTL always, immediately switch to QRTL mode
+        if (plane.quadplane.rtl_mode == QuadPlane::RTL_MODE::QRTL_ALWAYS) {
+            plane.set_mode(plane.mode_qrtl, ModeReason::QRTL_INSTEAD_OF_RTL);
+            return true;
+        }
+
+        // if VTOL landing is expected and quadplane motors are active and within QRTL radius and under QRTL altitude then switch to QRTL
+        const bool vtol_landing = (plane.quadplane.rtl_mode == QuadPlane::RTL_MODE::SWITCH_QRTL) || (plane.quadplane.rtl_mode == QuadPlane::RTL_MODE::VTOL_APPROACH_QRTL);
+        if (vtol_landing && (quadplane.motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED)) {
+            int32_t alt_cm;
+            if ((plane.current_loc.get_distance(plane.next_WP_loc) < plane.mode_qrtl.get_VTOL_return_radius()) &&
+                plane.current_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_cm) && (alt_cm < plane.quadplane.qrtl_alt*100)) {
+                plane.set_mode(plane.mode_qrtl, ModeReason::QRTL_INSTEAD_OF_RTL);
+                return true;
+            }
+        }
+    }
 #endif
 
     return true;
@@ -60,10 +77,8 @@ void ModeRTL::update()
 void ModeRTL::navigate()
 {
 #if HAL_QUADPLANE_ENABLED
-    if (plane.control_mode->mode_number() != QRTL) {
-        // QRTL shares this navigate function with RTL
-
-        if (plane.quadplane.available() && (plane.quadplane.rtl_mode == QuadPlane::RTL_MODE::VTOL_APPROACH_QRTL)) {
+    if (plane.quadplane.available()) {
+        if (plane.quadplane.rtl_mode == QuadPlane::RTL_MODE::VTOL_APPROACH_QRTL) {
             // VTOL approach landing
             AP_Mission::Mission_Command cmd;
             cmd.content.location = plane.next_WP_loc;
@@ -80,34 +95,28 @@ void ModeRTL::navigate()
     }
 #endif
 
-    if (plane.g.rtl_autoland == RtlAutoland::RTL_THEN_DO_LAND_START &&
-        !plane.auto_state.checked_for_autoland &&
-        plane.reached_loiter_target() && 
-        labs(plane.altitude_error_cm) < 1000) {
-        // we've reached the RTL point, see if we have a landing sequence
-        if (plane.mission.jump_to_landing_sequence()) {
-            // switch from RTL -> AUTO
-            plane.mission.set_force_resume(true);
-            plane.set_mode(plane.mode_auto, ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND);
-        }
+    if (!plane.auto_state.checked_for_autoland) {
+        if ((plane.g.rtl_autoland == RtlAutoland::RTL_IMMEDIATE_DO_LAND_START) ||
+            (plane.g.rtl_autoland == RtlAutoland::RTL_THEN_DO_LAND_START &&
+            plane.reached_loiter_target() && 
+            labs(plane.altitude_error_cm) < 1000))
+            {
+                // we've reached the RTL point, see if we have a landing sequence
+                if (plane.mission.jump_to_landing_sequence()) {
+                    // switch from RTL -> AUTO
+                    plane.mission.set_force_resume(true);
+                    if (plane.set_mode(plane.mode_auto, ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND)) {
+                        // return here so we don't change the radius and don't run the rtl update_loiter()
+                        return;
+                    }
+                }
 
-        // prevent running the expensive jump_to_landing_sequence
-        // on every loop
-        plane.auto_state.checked_for_autoland = true;
+                // prevent running the expensive jump_to_landing_sequence
+                // on every loop
+                plane.auto_state.checked_for_autoland = true;
+            }
     }
-    else if (plane.g.rtl_autoland == RtlAutoland::RTL_IMMEDIATE_DO_LAND_START &&
-        !plane.auto_state.checked_for_autoland) {
-        // Go directly to the landing sequence
-        if (plane.mission.jump_to_landing_sequence()) {
-            // switch from RTL -> AUTO
-            plane.mission.set_force_resume(true);
-            plane.set_mode(plane.mode_auto, ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND);
-        }
 
-        // prevent running the expensive jump_to_landing_sequence
-        // on every loop
-        plane.auto_state.checked_for_autoland = true;
-    }
     uint16_t radius = abs(plane.g.rtl_radius);
     if (radius > 0) {
         plane.loiter.direction = (plane.g.rtl_radius < 0) ? -1 : 1;
@@ -118,24 +127,18 @@ void ModeRTL::navigate()
 
 #if HAL_QUADPLANE_ENABLED
 // Switch to QRTL if enabled and within radius
-bool ModeRTL::switch_QRTL(bool check_loiter_target)
+bool ModeRTL::switch_QRTL()
 {
-    if (!plane.quadplane.available() || ((plane.quadplane.rtl_mode != QuadPlane::RTL_MODE::SWITCH_QRTL) && (plane.quadplane.rtl_mode != QuadPlane::RTL_MODE::QRTL_ALWAYS))) {  
+    if (plane.quadplane.rtl_mode != QuadPlane::RTL_MODE::SWITCH_QRTL) {
         return false;
     }
-
-   // if Q_RTL_MODE is QRTL always, then immediately switch to QRTL mode
-   if (plane.quadplane.rtl_mode == QuadPlane::RTL_MODE::QRTL_ALWAYS) {
-       plane.set_mode(plane.mode_qrtl, ModeReason::QRTL_INSTEAD_OF_RTL);
-       return true;
-   }
 
     uint16_t qrtl_radius = abs(plane.g.rtl_radius);
     if (qrtl_radius == 0) {
         qrtl_radius = abs(plane.aparm.loiter_radius);
     }
 
-    if ( (check_loiter_target && plane.nav_controller->reached_loiter_target()) ||
+    if (plane.nav_controller->reached_loiter_target() ||
          plane.current_loc.past_interval_finish_line(plane.prev_WP_loc, plane.next_WP_loc) ||
          plane.auto_state.wp_distance < MAX(qrtl_radius, plane.quadplane.stopping_distance())) {
         /*

@@ -59,6 +59,23 @@ fi
 
 # Checking Ubuntu release to adapt software version to install
 RELEASE_CODENAME=$(lsb_release -c -s)
+
+# translate Mint-codenames to Ubuntu-codenames based on https://www.linuxmint.com/download_all.php
+case ${RELEASE_CODENAME} in
+    vanessa)
+        RELEASE_CODENAME='jammy'
+        ;;
+    una | uma | ulyssa | ulyana)
+        RELEASE_CODENAME='focal'
+        ;;
+    tricia | tina | tessa | tara)
+        RELEASE_CODENAME='bionic'
+        ;;
+    elsie)
+        RELEASE_CODENAME='bullseye'
+        ;;
+esac
+
 PYTHON_V="python3"  # starting from ubuntu 20.04, python isn't symlink to default python interpreter
 PIP=pip3
 
@@ -72,7 +89,7 @@ elif [ ${RELEASE_CODENAME} == 'buster' ]; then
     SITLCFML_VERSION="2.5"
     PYTHON_V="python"
     PIP=pip2
-elif [ ${RELEASE_CODENAME} == 'focal' ] || [ ${RELEASE_CODENAME} == 'ulyssa' ]; then
+elif [ ${RELEASE_CODENAME} == 'focal' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
@@ -83,9 +100,7 @@ elif [ ${RELEASE_CODENAME} == 'jammy' ]; then
     PYTHON_V="python3"
     PIP=pip3
 elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
-         [ ${RELEASE_CODENAME} == 'hirsute' ] ||
-         [ ${RELEASE_CODENAME} == 'bullseye' ] ||
-         [ ${RELEASE_CODENAME} == 'impish' ]; then
+         [ ${RELEASE_CODENAME} == 'bullseye' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
@@ -129,9 +144,9 @@ fi
 BASE_PKGS="build-essential ccache g++ gawk git make wget"
 if [ ${RELEASE_CODENAME} == 'bionic' ]; then
     # use fixed version for package that drop python2 support
-    PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8==3.7.9 requests==2.27.1 monotonic==1.6 geocoder empy configparser==4.0.2 click==7.1.2 decorator==4.4.2"
+    PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8==3.7.9 requests==2.27.1 monotonic==1.6 geocoder empy configparser==4.0.2 click==7.1.2 decorator==4.4.2 dronecan"
 else
-    PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8 geocoder empy"
+    PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8 geocoder empy dronecan"
 fi
 
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
@@ -220,16 +235,13 @@ sudo usermod -a -G dialout $USER
 echo "Done!"
 
 # Add back python symlink to python interpreter on Ubuntu >= 20.04
-if [ ${RELEASE_CODENAME} == 'focal' ] ||
-       [ ${RELEASE_CODENAME} == 'ulyssa' ];
+if [ ${RELEASE_CODENAME} == 'focal' ];
 then
     BASE_PKGS+=" python-is-python3"
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
-         [ ${RELEASE_CODENAME} == 'hirsute' ] ||
          [ ${RELEASE_CODENAME} == 'bullseye' ] ||
-         [ ${RELEASE_CODENAME} == 'jammy' ] ||
-         [ ${RELEASE_CODENAME} == 'impish' ]; then
+         [ ${RELEASE_CODENAME} == 'jammy' ]; then
     BASE_PKGS+=" python-is-python3"
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 else
@@ -241,9 +253,7 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
   if [ ${RELEASE_CODENAME} == 'bullseye' ]; then
     SITL_PKGS+=" libjpeg62-turbo-dev"
   elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
-           [ ${RELEASE_CODENAME} == 'hirsute' ] ||
-           [ ${RELEASE_CODENAME} == 'focal' ] ||
-           [ ${RELEASE_CODENAME} == 'ulyssa'  ]; then
+           [ ${RELEASE_CODENAME} == 'focal' ]; then
     SITL_PKGS+=" libjpeg8-dev"
   elif apt-cache search python-wxgtk3.0 | grep wx; then
       SITL_PKGS+=" python-wxgtk3.0"
@@ -257,11 +267,8 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
   fi
   if [ ${RELEASE_CODENAME} == 'bullseye' ] ||
          [ ${RELEASE_CODENAME} == 'groovy' ] ||
-         [ ${RELEASE_CODENAME} == 'hirsute' ] ||
          [ ${RELEASE_CODENAME} == 'focal' ] ||
-         [ ${RELEASE_CODENAME} == 'ulyssa' ] ||
-         [ ${RELEASE_CODENAME} == 'jammy' ] ||
-         [ ${RELEASE_CODENAME} == 'impish' ]; then
+         [ ${RELEASE_CODENAME} == 'jammy' ]; then
     SITL_PKGS+=" python3-wxgtk4.0"
     SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   fi

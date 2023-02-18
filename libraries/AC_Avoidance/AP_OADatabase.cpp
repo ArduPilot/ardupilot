@@ -16,6 +16,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -186,6 +187,11 @@ void AP_OADatabase::init_queue()
     }
 
     _queue.items = new ObjectBuffer<OA_DbItem>(_queue.size);
+    if (_queue.items != nullptr && _queue.items->get_size() == 0) {
+        // allocation failed
+        delete _queue.items;
+        _queue.items = nullptr;
+    }
 }
 
 void AP_OADatabase::init_database()

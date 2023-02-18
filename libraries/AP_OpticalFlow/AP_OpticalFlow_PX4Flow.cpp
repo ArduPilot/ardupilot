@@ -34,15 +34,9 @@ extern const AP_HAL::HAL& hal;
 #define PX4FLOW_BASE_I2C_ADDR   0x42
 #define PX4FLOW_INIT_RETRIES    10      // attempt to initialise the sensor up to 10 times at startup
 
-// constructor
-AP_OpticalFlow_PX4Flow::AP_OpticalFlow_PX4Flow(OpticalFlow &_frontend) :
-    OpticalFlow_backend(_frontend)
-{
-}
-
 
 // detect the device
-AP_OpticalFlow_PX4Flow *AP_OpticalFlow_PX4Flow::detect(OpticalFlow &_frontend)
+AP_OpticalFlow_PX4Flow *AP_OpticalFlow_PX4Flow::detect(AP_OpticalFlow &_frontend)
 {
     AP_OpticalFlow_PX4Flow *sensor = new AP_OpticalFlow_PX4Flow(_frontend);
     if (!sensor) {
@@ -119,7 +113,7 @@ void AP_OpticalFlow_PX4Flow::timer(void)
     if (!dev->read_registers(REG_INTEGRAL_FRAME, (uint8_t *)&frame, sizeof(frame))) {
         return;
     }
-    struct OpticalFlow::OpticalFlow_state state {};
+    struct AP_OpticalFlow::OpticalFlow_state state {};
 
     if (frame.integration_timespan > 0) {
         const Vector2f flowScaler = _flowScaler();

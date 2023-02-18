@@ -21,38 +21,22 @@
  *
  */
 
-#include <AP_HAL/AP_HAL_Boards.h>
+#include "AP_AHRS_config.h"
+
 #include <AP_HAL/Semaphores.h>
-
-#ifndef HAL_NAVEKF2_AVAILABLE
-// only default to EK2 enabled on boards with over 1M flash
-#define HAL_NAVEKF2_AVAILABLE (BOARD_FLASH_SIZE>1024)
-#endif
-
-#ifndef HAL_NAVEKF3_AVAILABLE
-#define HAL_NAVEKF3_AVAILABLE 1
-#endif
-
-#ifndef AP_AHRS_SIM_ENABLED
-#define AP_AHRS_SIM_ENABLED AP_SIM_ENABLED
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-#include <SITL/SITL.h>
-#endif
 
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_NavEKF/AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
 
 #include "AP_AHRS_DCM.h"
+#include "AP_AHRS_SIM.h"
 
 // forward declare view class
 class AP_AHRS_View;
 
 #define AP_AHRS_NAVEKF_SETTLE_TIME_MS 20000     // time in milliseconds the ekf needs to settle after being started
 
-#include <AP_NMEA_Output/AP_NMEA_Output.h>
 
 // fwd declare GSF estimator
 class EKFGSF_yaw;
@@ -104,7 +88,7 @@ public:
     void            reset();
 
     // dead-reckoning support
-    bool get_location(struct Location &loc) const;
+    bool get_location(Location &loc) const;
 
     // get latest altitude estimate above ground level in meters and validity flag
     bool get_hagl(float &hagl) const WARN_IF_UNUSED;
@@ -123,7 +107,7 @@ public:
     // wind_estimation_enabled returns true if wind estimation is enabled
     bool get_wind_estimation_enabled() const { return wind_estimation_enabled; }
 
-    // return a wind estimation vector, in m/s
+    // return a wind estimation vector, in m/s; returns 0,0,0 on failure
     Vector3f wind_estimate() const;
 
     // instruct DCM to update its wind estimate:
@@ -155,6 +139,10 @@ public:
     // returns false if estimate is unavailable
     bool airspeed_vector_true(Vector3f &vec) const;
 
+    // return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed
+    // returns false if the data is unavailable
+    bool airspeed_health_data(float &innovation, float &innovationVariance, uint32_t &age_ms) const;
+
     // return true if airspeed comes from an airspeed sensor, as
     // opposed to an IMU estimate
     bool airspeed_sensor_enabled(void) const;
@@ -185,7 +173,7 @@ public:
     bool get_secondary_quaternion(Quaternion &quat) const;
 
     // return secondary position solution if available
-    bool get_secondary_position(struct Location &loc) const;
+    bool get_secondary_position(Location &loc) const;
 
     // EKF has a better ground speed vector estimate
     Vector2f groundspeed_vector();
@@ -193,14 +181,12 @@ public:
     // return ground speed estimate in meters/second. Used by ground vehicles.
     float groundspeed(void);
 
-    const Vector3f &get_accel_ef(uint8_t i) const;
-    const Vector3f &get_accel_ef() const;
+    const Vector3f &get_accel_ef() const {
+        return _accel_ef;
+    }
 
     // Retrieves the corrected NED delta velocity in use by the inertial navigation
     void getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const;
-
-    // blended accelerometer values in the earth frame in m/s/s
-    const Vector3f &get_accel_ef_blended() const;
 
     // set the EKF's origin location in 10e7 degrees.  This should only
     // be called when the EKF has no absolute position reference (i.e. GPS)
@@ -234,7 +220,7 @@ public:
     bool get_vert_pos_rate(float &velocity) const;
 
     // write optical flow measurements to EKF
-    void writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset);
+    void writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, const float heightOverride);
 
     // retrieve latest corrected optical flow samples (used for calibration)
     bool getOptFlowSample(uint32_t& timeStamp_ms, Vector2f& flowRate, Vector2f& bodyRate, Vector2f& losPred) const;
@@ -301,7 +287,7 @@ public:
     bool resetHeightDatum();
 
     // send a EKF_STATUS_REPORT for current EKF
-    void send_ekf_status_report(mavlink_channel_t chan) const;
+    void send_ekf_status_report(class GCS_MAVLINK &link) const;
 
     // get_hgt_ctrl_limit - get maximum height to be observed by the control loops in meters and a validity flag
     // this is used to limit height during optical flow navigation
@@ -359,6 +345,9 @@ public:
 
     // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
     void set_posvelyaw_source_set(uint8_t source_set_idx);
+
+    //returns index of active source set used, 0=primary, 1=secondary, 2=tertiary
+    uint8_t get_posvelyaw_source_set() const;
 
     void Log_Write();
 
@@ -443,7 +432,7 @@ public:
 
     // get the home location. This is const to prevent any changes to
     // home without telling AHRS about the change
-    const struct Location &get_home(void) const {
+    const Location &get_home(void) const {
         return _home;
     }
 
@@ -643,18 +632,18 @@ private:
     AP_Int8 _gps_minsats;
 
     enum class EKFType {
-        NONE = 0
+        NONE = 0,
 #if HAL_NAVEKF3_AVAILABLE
-        ,THREE = 3
+        THREE = 3,
 #endif
 #if HAL_NAVEKF2_AVAILABLE
-        ,TWO = 2
+        TWO = 2,
 #endif
 #if AP_AHRS_SIM_ENABLED
-        ,SIM = 10
+        SIM = 10,
 #endif
 #if HAL_EXTERNAL_AHRS_ENABLED
-        ,EXTERNAL = 11
+        EXTERNAL = 11,
 #endif
     };
     EKFType active_EKF_type(void) const;
@@ -685,6 +674,9 @@ private:
     // update roll_sensor, pitch_sensor and yaw_sensor
     void update_cd_values(void);
 
+    // return origin for a specified EKF type
+    bool get_origin(EKFType type, Location &ret) const;
+
     // helper trig variables
     float _cos_roll{1.0f};
     float _cos_pitch{1.0f};
@@ -707,8 +699,7 @@ private:
 
     Vector3f _gyro_drift;
     Vector3f _gyro_estimate;
-    Vector3f _accel_ef_ekf[INS_MAX_INSTANCES];
-    Vector3f _accel_ef_ekf_blended;
+    Vector3f _accel_ef;
     Vector3f _accel_bias;
 
     const uint16_t startup_delay_ms = 1000;
@@ -726,7 +717,7 @@ private:
      */
     void load_watchdog_home();
     bool _checked_watchdog_home;
-    struct Location _home;
+    Location _home;
     bool _home_is_set :1;
     bool _home_locked :1;
 
@@ -749,10 +740,8 @@ private:
     EKFType last_active_ekf_type;
 
 #if AP_AHRS_SIM_ENABLED
-    SITL::SIM *_sitl;
-    uint32_t _last_body_odm_update_ms;
     void update_SITL(void);
-#endif    
+#endif
 
 #if HAL_EXTERNAL_AHRS_ENABLED
     void update_external(void);
@@ -794,6 +783,9 @@ private:
      */
     bool wind_estimation_enabled;
 
+    // return a wind estimation vector, in m/s
+    bool wind_estimate(Vector3f &wind) const WARN_IF_UNUSED;
+
     /*
      * fly_forward is set by the vehicles to indicate the vehicle
      * should generally be moving in the direction of its heading.
@@ -810,6 +802,14 @@ private:
      */
     AP_AHRS_DCM dcm{_kp_yaw, _kp, gps_gain, beta, _gps_use, _gps_minsats};
     struct AP_AHRS_Backend::Estimates dcm_estimates;
+#if AP_AHRS_SIM_ENABLED
+#if HAL_NAVEKF3_AVAILABLE
+    AP_AHRS_SIM sim{EKF3};
+#else
+    AP_AHRS_SIM sim;
+#endif
+    struct AP_AHRS_Backend::Estimates sim_estimates;
+#endif
 
     /*
      * copy results from a backend over AP_AHRS canonical results.
@@ -822,10 +822,6 @@ private:
     void Write_AHRS2(void) const;
     // write POS (canonical vehicle position) message out:
     void Write_POS(void) const;
-
-#if HAL_NMEA_OUTPUT_ENABLED
-    class AP_NMEA_Output* _nmea_out;
-#endif
 };
 
 namespace AP {

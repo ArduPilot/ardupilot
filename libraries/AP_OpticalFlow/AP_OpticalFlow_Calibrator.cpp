@@ -310,7 +310,12 @@ void AP_OpticalFlow_Calibrator::log_sample(uint8_t axis, uint8_t sample_num, flo
     // @Field: BRate: Body rate
     // @Field: LPred: Los pred
 
-    AP::logger().Write("OFCA", "TimeUS,Axis,Num,FRate,BRate,LPred", "QBBfff",
+    AP::logger().Write(
+        "OFCA",
+        "TimeUS,Axis,Num,FRate,BRate,LPred",
+        "s#-EEE",
+        "F00000",
+        "QBBfff",
         AP_HAL::micros64(),
         (unsigned)axis,
         (unsigned)sample_num,

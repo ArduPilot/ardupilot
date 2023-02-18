@@ -14,9 +14,10 @@
 #pragma once
 
 #include "AP_Gripper.h"
-#include "AP_Gripper_Backend.h"
 
-#include <SRV_Channel/SRV_Channel.h>
+#if AP_GRIPPER_EPM_ENABLED
+
+#include "AP_Gripper_Backend.h"
 
 #define EPM_RETURN_TO_NEUTRAL_MS    500         // EPM PWM returns to neutral position this many milliseconds after grab or release
 
@@ -56,7 +57,6 @@ private:
 
     // UAVCAN driver fd
     int _uavcan_fd = -1;
-
-    // internal variables
-    uint32_t    _last_grab_or_release;
 };
+
+#endif  // AP_GRIPPER_EPM_ENABLED

@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Author: Oliver Walters
+ * Author: Oliver Walters / Currawong Engineering Pty Ltd
  */
 
 #pragma once
@@ -27,6 +27,8 @@
 #include "piccolo_protocol/LegacyESCPackets.h"
 
 #include "piccolo_protocol/ServoPackets.h"
+
+#include <AP_EFI/AP_EFI_Currawong_ECU.h>
 
 // maximum number of ESC allowed on CAN bus simultaneously
 #define PICCOLO_CAN_MAX_NUM_ESC 16
@@ -44,6 +46,8 @@
 #define PICCOLO_MSG_RATE_HZ_MIN 1
 #define PICCOLO_MSG_RATE_HZ_MAX 500
 #define PICCOLO_MSG_RATE_HZ_DEFAULT 50
+
+#define PICCOLO_CAN_ECU_ID_DEFAULT 0
 
 class AP_PiccoloCAN : public AP_CANDriver, public AP_ESC_Telem_Backend
 {
@@ -69,8 +73,7 @@ public:
     };
 
     /* Do not allow copies */
-    AP_PiccoloCAN(const AP_PiccoloCAN &other) = delete;
-    AP_PiccoloCAN &operator=(const AP_PiccoloCAN&) = delete;
+    CLASS_NO_COPY(AP_PiccoloCAN);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -130,6 +133,13 @@ private:
 
     // interpret a servo message received over CAN
     bool handle_servo_message(AP_HAL::CANFrame &frame);
+    
+#if HAL_EFI_CURRAWONG_ECU_ENABLED
+    void send_ecu_messages(void);
+
+    // interpret an ECU message received over CAN
+    bool handle_ecu_message(AP_HAL::CANFrame &frame);
+#endif
 
     bool _initialized;
     char _thread_name[16];
@@ -200,12 +210,20 @@ private:
 
     } _esc_info[PICCOLO_CAN_MAX_NUM_ESC];
 
+    struct CurrawongECU_Info_t {
+        float command;
+        bool newCommand;
+    } _ecu_info;
+
     // Piccolo CAN parameters
     AP_Int32 _esc_bm;       //! ESC selection bitmask
     AP_Int16 _esc_hz;       //! ESC update rate (Hz)
 
     AP_Int32 _srv_bm;       //! Servo selection bitmask
     AP_Int16 _srv_hz;       //! Servo update rate (Hz)
+
+    AP_Int16 _ecu_id;        //! ECU Node ID
+    AP_Int16 _ecu_hz;       //! ECU update rate (Hz)
 
     HAL_Semaphore _telem_sem;
 };

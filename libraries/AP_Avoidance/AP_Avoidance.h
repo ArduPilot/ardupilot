@@ -40,8 +40,7 @@ public:
     AP_Avoidance(class AP_ADSB &adsb);
 
     /* Do not allow copies */
-    AP_Avoidance(const AP_Avoidance &other) = delete;
-    AP_Avoidance &operator=(const AP_Avoidance&) = delete;
+    CLASS_NO_COPY(AP_Avoidance);
 
     // get singleton instance
     static AP_Avoidance *get_singleton() {

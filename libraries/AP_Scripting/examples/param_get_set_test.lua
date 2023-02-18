@@ -1,4 +1,6 @@
 -- This script is a test of param set and get
+-- luacheck: only 0
+
 local count = 0
 
 -- for fast param acess it is better to get a param object,
@@ -13,6 +15,20 @@ local fake_param = Parameter()
 if not fake_param:init('FAKE_PARAM') then
   gcs:send_text(6, 'get FAKE_PARAM failed')
 end
+
+-- Can also pass param string in constructor to remove the need to init manualy
+local user_param = Parameter('SCR_USER1')
+-- this will error out for a bad parameter
+-- Parameter('FAKE_PARAM')
+local success, err = pcall(Parameter,'FAKE_PARAM')
+gcs:send_text(0, "Lua Caught Error: " .. err)
+-- this allows this example to catch the otherwise fatal error
+-- not recommend if error is possible/expected, use separate construction and init
+
+-- local user_param = Parameter('SCR_USER1')
+-- is equivalent to:
+-- local user_param = Parameter()
+-- assert(user_param:init('SCR_USER1'), 'No parameter: SCR_USER1')
 
 function update() -- this is the loop which periodically runs
 
@@ -64,6 +80,12 @@ function update() -- this is the loop which periodically runs
     gcs:send_text(6, 'LUA: read SCR_VM_I_COUNT failed')
   end
 
+  local user = user_param:get()
+  if user then
+    gcs:send_text(6, string.format('LUA: SCR_USER1: %i', user))
+  else
+    gcs:send_text(6, 'LUA: read SCR_USER1 failed')
+  end
 
   count = count + 1;
 

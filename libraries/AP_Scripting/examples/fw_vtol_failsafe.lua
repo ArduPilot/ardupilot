@@ -13,17 +13,10 @@ local PARAM_TABLE_KEY = 77
 local PARAM_TABLE_PREFIX = "VTFS_"
 assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 4), 'could not add param table')
 
--- bind a parameter to a variable
-function bind_param(name)
-   local p = Parameter()
-   assert(p:init(name), string.format('could not find %s parameter', name))
-   return p
-end
-
 -- add a parameter and bind it to a variable
 function bind_add_param(name, idx, default_value)
    assert(param:add_param(PARAM_TABLE_KEY, idx, name, default_value), string.format('could not add param %s', name))
-   return bind_param(PARAM_TABLE_PREFIX .. name)
+   return Parameter(PARAM_TABLE_PREFIX .. name)
 end
 
 -- consider engine stopped when vibe is low and RPM low for more than 4s

@@ -249,7 +249,7 @@ static void main_loop()
     utilInstance.apply_persistent_params();
 #endif
 
-#ifdef HAL_FLASH_PROTECTION
+#if HAL_FLASH_PROTECTION
     if (AP_BoardConfig::unlock_flash()) {
         stm32_flash_unprotect_flash();
     } else {
@@ -261,7 +261,7 @@ static void main_loop()
 #if !defined(DISABLE_WATCHDOG)
 #ifdef IOMCU_FW
     stm32_watchdog_init();
-#elif !defined(HAL_BOOTLOADER_BUILD)
+#else
     // setup watchdog to reset if main loop stops
     if (AP_BoardConfig::watchdog_enabled()) {
         stm32_watchdog_init();

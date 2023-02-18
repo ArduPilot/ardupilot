@@ -13,7 +13,6 @@
 #include <AP_InertialNav/AP_InertialNav.h>  // Inertial Navigation library
 #include "AC_AttitudeControl.h"     // Attitude control library
 
-
 // position controller default definitions
 #define POSCONTROL_ACCEL_XY                     100.0f  // default horizontal acceleration in cm/s/s.  This is overwritten by waypoint and loiter controllers
 #define POSCONTROL_JERK_XY                      5.0f    // default horizontal jerk m/s/s/s
@@ -40,9 +39,14 @@ public:
 
     /// Constructor
     AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
-                  const class AP_Motors& motors, AC_AttitudeControl& attitude_control, float dt);
+                  const class AP_Motors& motors, AC_AttitudeControl& attitude_control);
 
-    /// get_dt - gets time delta in seconds for all position controllers
+
+
+    /// set_dt / get_dt - dt is the time since the last time the position controllers were updated
+    ///   _dt should be set based on the time of the last IMU read used by these controllers
+    ///   the position controller should run updates for active controllers on each loop to ensure normal operation
+    void set_dt(float dt) { _dt = dt; }
     float get_dt() const { return _dt; }
 
     /// get_shaping_jerk_xy_cmsss - gets the jerk limit of the xy kinematic path generation in cm/s/s/s
@@ -197,7 +201,7 @@ public:
     ///     The kinematic path is constrained by the maximum acceleration and jerk set using the function set_max_speed_accel_z.
     ///     The function alters the vel to be the kinematic path based on accel
     ///     The parameter limit_output specifies if the velocity and acceleration limits are applied to the sum of commanded and correction values or just correction.
-    virtual void input_vel_accel_z(float &vel, float accel, bool ignore_descent_limit, bool limit_output = true);
+    virtual void input_vel_accel_z(float &vel, float accel, bool limit_output = true);
 
     /// set_pos_target_z_from_climb_rate_cm - adjusts target up or down using a commanded climb rate in cm/s
     ///     using the default position control kinematic path.
@@ -387,15 +391,15 @@ public:
     ///     aircraft when in standby.
     void standby_xyz_reset();
 
+    // get earth-frame Z-axis acceleration with gravity removed in cm/s/s with +ve being up
+    float get_z_accel_cmss() const { return -(_ahrs.get_accel_ef().z + GRAVITY_MSS) * 100.0f; }
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
 
     // get throttle using vibration-resistant calculation (uses feed forward with manually calculated gain)
     float get_throttle_with_vibration_override();
-
-    // get earth-frame Z-axis acceleration with gravity removed in cm/s/s with +ve being up
-    float get_z_accel_cmss() const { return -(_ahrs.get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f; }
 
     // lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
     void accel_to_lean_angles(float accel_x_cmss, float accel_y_cmss, float& roll_target, float& pitch_target) const;
@@ -418,7 +422,7 @@ protected:
     // references to inertial nav and ahrs libraries
     AP_AHRS_View&           _ahrs;
     const AP_InertialNav&   _inav;
-    const class AP_Motors&        _motors;
+    const class AP_Motors&  _motors;
     AC_AttitudeControl&     _attitude_control;
 
     // parameters
@@ -432,9 +436,9 @@ protected:
     AC_PID          _pid_accel_z;       // Z axis acceleration controller to convert desired acceleration to throttle output
 
     // internal variables
-    float       _dt;                    // time difference (in seconds) between calls from the main program
-    uint64_t    _last_update_xy_us;     // system time (in microseconds) since last update_xy_controller call
-    uint64_t    _last_update_z_us;      // system time (in microseconds) since last update_z_controller call
+    float       _dt;                    // time difference (in seconds) since the last loop time
+    uint32_t    _last_update_xy_ticks;  // ticks of last last update_xy_controller call
+    uint32_t    _last_update_z_ticks;   // ticks of last update_z_controller call
     float       _vel_max_xy_cms;        // max horizontal speed in cm/s used for kinematic shaping
     float       _vel_max_up_cms;        // max climb rate in cm/s used for kinematic shaping
     float       _vel_max_down_cms;      // max descent rate in cm/s used for kinematic shaping

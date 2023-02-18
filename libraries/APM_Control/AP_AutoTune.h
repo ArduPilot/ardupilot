@@ -1,9 +1,11 @@
 #pragma once
 
+#include <AP_Logger/AP_Logger.h>
 #include <AP_Logger/LogStructure.h>
-
+#include <AP_Param/AP_Param.h>
+#include <AP_Vehicle/AP_FixedWing.h>
 #include <Filter/SlewLimiter.h>
-#include <AP_Vehicle/AP_Vehicle.h>
+
 #include <Filter/ModeFilter.h>
 
 class AP_AutoTune
@@ -41,9 +43,8 @@ public:
         float tau;
     };
 
-
     // constructor
-    AP_AutoTune(ATGains &_gains, ATType type, const AP_Vehicle::FixedWing &parms, class AC_PID &rpid);
+    AP_AutoTune(ATGains &_gains, ATType type, const AP_FixedWing &parms, class AC_PID &rpid);
 
     // called when autotune mode is entered
     void start(void);
@@ -67,7 +68,7 @@ private:
     // what type of autotune is this
     ATType type;
 
-    const AP_Vehicle::FixedWing &aparm;
+    const AP_FixedWing &aparm;
 
     // values to restore if we leave autotune mode
     ATGains restore;

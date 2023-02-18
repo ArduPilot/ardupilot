@@ -1,4 +1,5 @@
 -- This script checks RangeFinder
+-- luacheck: only 0
 
 local rotation_downward = 25
 local rotation_forward = 0
@@ -25,7 +26,7 @@ function info(rotation)
   local offset = rangefinder:get_pos_offset_orient(rotation)
   local distance_cm = rangefinder:distance_cm_orient(rotation)
 
-  gcs:send_text(0, string.format("Ratation %d %.0f cm range %d - %d offset %.0f %.0f %.0f ground clearance %.0f", rotation, distance_cm, distance_min, distance_max, offset:x(), offset:y(), offset:z(), ground_clearance))
+  gcs:send_text(0, string.format("Rotation %d %.0f cm range %d - %d offset %.0f %.0f %.0f ground clearance %.0f", rotation, distance_cm, distance_min, distance_max, offset:x(), offset:y(), offset:z(), ground_clearance))
 end
 
 return update(), 1000 -- first message may be displayed 1 seconds after start-up

@@ -69,13 +69,8 @@ void AP_MSP_Telem_DJI::hide_osd_items(void)
 
 uint32_t AP_MSP_Telem_DJI::get_osd_flight_mode_bitmask(void)
 {
-    uint32_t mode_mask = 0;
+    uint32_t mode_mask = AP_MSP_Telem_Backend::get_osd_flight_mode_bitmask();
     const AP_Notify& notify = AP::notify();
-
-    // set arming status
-    if (notify.flags.armed) {
-        BIT_SET(mode_mask, DJI_FLAG_ARM);
-    }
 
     // check failsafe
     if (notify.flags.failsafe_battery || notify.flags.failsafe_gcs || notify.flags.failsafe_radio || notify.flags.ekf_bad ) {

@@ -299,6 +299,7 @@ void AP_RCProtocol_SRXL2::send_on_uart(uint8_t* pBuffer, uint8_t length)
     }
 }
 
+#if AP_VIDEOTX_ENABLED
 // configure the video transmitter, the input values are Spektrum-oriented
 void AP_RCProtocol_SRXL2::configure_vtx(uint8_t band, uint8_t channel, uint8_t power, uint8_t pitmode)
 {
@@ -351,6 +352,7 @@ void AP_RCProtocol_SRXL2::configure_vtx(uint8_t band, uint8_t channel, uint8_t p
         break;
     }
 }
+#endif  // AP_VIDEOTX_ENABLED
 
 // send data to the uart
 void AP_RCProtocol_SRXL2::_send_on_uart(uint8_t* pBuffer, uint8_t length)
@@ -455,5 +457,7 @@ bool srxlOnBind(SrxlFullID device, SrxlBindData info)
 // User-provided callback routine to handle reception of a VTX control packet.
 void srxlOnVtx(SrxlVtxData* pVtxData)
 {
+#if AP_VIDEOTX_ENABLED
     AP_RCProtocol_SRXL2::configure_vtx(pVtxData->band, pVtxData->channel, pVtxData->power, pVtxData->pit);
+#endif
 }

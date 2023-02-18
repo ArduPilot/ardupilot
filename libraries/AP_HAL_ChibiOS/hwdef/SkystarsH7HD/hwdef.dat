@@ -96,9 +96,11 @@ PC0 BATT_VOLTAGE_SENS ADC1 SCALE(1)
 PC1 BATT_CURRENT_SENS ADC1 SCALE(1)
 
 # VTX Power control - should be high at startup to ensure power
-PC5 VTX_PWR OUTPUT LOW GPIO(81)     # labelled as "Pit-1"
-PC2 VID_SELECT OUTPUT LOW GPIO(82)  # labelled as "PIN-EN"
-PD2 CAM_C OUTPUT LOW GPIO(83)       # labelled as "CAM-C"
+PC5 VTX_PWR OUTPUT HIGH GPIO(81)     # labelled as "Pit-1"
+# Camera selection - should be high so that Video 1 is selected by default
+PC2 VID_SELECT OUTPUT HIGH GPIO(82)  # labelled as "PIN-EN"
+# OSD pad for TTL based OSD control, not supported by AP
+PD2 CAM_C OUTPUT LOW GPIO(83)        # labelled as "CAM-C"
 
 
 # define default battery setup

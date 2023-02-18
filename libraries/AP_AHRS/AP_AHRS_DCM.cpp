@@ -27,6 +27,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -85,7 +86,7 @@ AP_AHRS_DCM::update()
     }
 
     // Integrate the DCM matrix using gyro inputs
-    matrix_update(delta_t);
+    matrix_update();
 
     // Normalize the DCM matrix
     normalize();
@@ -122,10 +123,7 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     results.dcm_matrix = _body_dcm_matrix;
     results.gyro_estimate = _omega;
     results.gyro_drift = _omega_I;
-
-    const uint8_t to_copy = MIN(sizeof(results.accel_ef), sizeof(_accel_ef));
-    memcpy(results.accel_ef, _accel_ef, to_copy);
-    results.accel_ef_blended = _accel_ef_blended;
+    results.accel_ef = _accel_ef;
 }
 
 /*
@@ -140,41 +138,28 @@ void AP_AHRS_DCM::backup_attitude(void)
 }
 
 // update the DCM matrix using only the gyros
-void
-AP_AHRS_DCM::matrix_update(float _G_Dt)
+void AP_AHRS_DCM::matrix_update(void)
 {
+    // use only the primary gyro so our bias estimate is valid, allowing us to return the right filtered gyro
+    // for rate controllers
+    const auto &_ins = AP::ins();
+    Vector3f delta_angle;
+    float dangle_dt;
+    if (_ins.get_delta_angle(delta_angle, dangle_dt) && dangle_dt > 0) {
+        _omega = delta_angle / dangle_dt;
+        _omega += _omega_I;
+        _dcm_matrix.rotate((_omega + _omega_P + _omega_yaw_P) * dangle_dt);
+    }
+
+    // now update _omega from the filtered value from the primary IMU. We need to use
+    // the primary IMU as the notch filters will only be running on one IMU
+
     // note that we do not include the P terms in _omega. This is
     // because the spin_rate is calculated from _omega.length(),
     // and including the P terms would give positive feedback into
     // the _P_gain() calculation, which can lead to a very large P
     // value
-    _omega.zero();
-
-    // average across first two healthy gyros. This reduces noise on
-    // systems with more than one gyro. We don't use the 3rd gyro
-    // unless another is unhealthy as 3rd gyro on PH2 has a lot more
-    // noise
-    uint8_t healthy_count = 0;
-    Vector3f delta_angle;
-    const AP_InertialSensor &_ins = AP::ins();
-    for (uint8_t i=0; i<_ins.get_gyro_count(); i++) {
-        if (_ins.use_gyro(i) && healthy_count < 2) {
-            Vector3f dangle;
-            float dangle_dt;
-            if (_ins.get_delta_angle(i, dangle, dangle_dt)) {
-                healthy_count++;
-                delta_angle += dangle;
-            }
-        }
-    }
-    if (healthy_count > 1) {
-        delta_angle /= healthy_count;
-    }
-    if (_G_Dt > 0) {
-        _omega = delta_angle / _G_Dt;
-        _omega += _omega_I;
-        _dcm_matrix.rotate((_omega + _omega_P + _omega_yaw_P) * _G_Dt);
-    }
+    _omega = _ins.get_gyro() + _omega_I;
 }
 
 
@@ -410,7 +395,7 @@ AP_AHRS_DCM::_P_gain(float spin_rate)
 float
 AP_AHRS_DCM::_yaw_gain(void) const
 {
-    const float VdotEFmag = _accel_ef[_active_accel_instance].xy().length();
+    const float VdotEFmag = _accel_ef.xy().length();
 
     if (VdotEFmag <= 4.0f) {
         return 0.2f*(4.5f - VdotEFmag);
@@ -667,9 +652,8 @@ AP_AHRS_DCM::drift_correction(float deltat)
     const AP_InertialSensor &_ins = AP::ins();
 
     // rotate accelerometer values into the earth frame
-    uint8_t healthy_count = 0;
     for (uint8_t i=0; i<_ins.get_accel_count(); i++) {
-        if (_ins.use_accel(i) && healthy_count < 2) {
+        if (_ins.use_accel(i)) {
             /*
               by using get_delta_velocity() instead of get_accel() the
               accel value is sampled over the right time delta for
@@ -679,26 +663,15 @@ AP_AHRS_DCM::drift_correction(float deltat)
             float delta_velocity_dt;
             _ins.get_delta_velocity(i, delta_velocity, delta_velocity_dt);
             if (delta_velocity_dt > 0) {
-                _accel_ef[i] = _dcm_matrix * (delta_velocity / delta_velocity_dt);
+                Vector3f accel_ef = _dcm_matrix * (delta_velocity / delta_velocity_dt);
                 // integrate the accel vector in the earth frame between GPS readings
-                _ra_sum[i] += _accel_ef[i] * deltat;
+                _ra_sum[i] += accel_ef * deltat;
             }
-            healthy_count++;
         }
     }
 
-    //update _accel_ef_blended
-#if INS_MAX_INSTANCES > 1
-    if (_ins.get_accel_count() == 2 && _ins.use_accel(0) && _ins.use_accel(1)) {
-        const float imu1_weight_target = _active_accel_instance == 0 ? 1.0f : 0.0f;
-        // slew _imu1_weight over one second
-        _imu1_weight += constrain_float(imu1_weight_target-_imu1_weight, -deltat, deltat);
-        _accel_ef_blended = _accel_ef[0] * _imu1_weight + _accel_ef[1] * (1.0f - _imu1_weight);
-    } else
-#endif
-    {
-        _accel_ef_blended = _accel_ef[_ins.get_primary_accel()];
-    }
+    // set _accel_ef_blended based on filtered accel
+    _accel_ef = _dcm_matrix * _ins.get_accel();
 
     // keep a sum of the deltat values, so we know how much time
     // we have integrated over
@@ -1049,7 +1022,7 @@ void AP_AHRS_DCM::estimate_wind(void)
 
 // return our current position estimate using
 // dead-reckoning or GPS
-bool AP_AHRS_DCM::get_location(struct Location &loc) const
+bool AP_AHRS_DCM::get_location(Location &loc) const
 {
     loc.lat = _last_lat;
     loc.lng = _last_lng;
@@ -1278,6 +1251,19 @@ bool AP_AHRS_DCM::get_relative_position_D_origin(float &posD) const
     return true;
 }
 
-void AP_AHRS_DCM::send_ekf_status_report(mavlink_channel_t chan) const
+void AP_AHRS_DCM::send_ekf_status_report(GCS_MAVLINK &link) const
 {
+}
+
+// return true if DCM has a yaw source available
+bool AP_AHRS_DCM::yaw_source_available(void) const
+{
+    return AP::compass().use_for_yaw();
+}
+
+void AP_AHRS_DCM::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
+{
+    // lower gains in VTOL controllers when flying on DCM
+    ekfGndSpdLimit = 50.0;
+    ekfNavVelGainScaler = 0.5;
 }

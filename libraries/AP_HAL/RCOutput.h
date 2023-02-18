@@ -337,6 +337,16 @@ public:
     virtual void timer_info(ExpandingString &str) {}
 
     /*
+      Can this driver handle gpio as well as RC
+    */
+    virtual bool supports_gpio() { return false; };
+
+    /*
+      Writes gpio state to a channel
+    */
+    virtual void write_gpio(uint8_t chan, bool active) {};
+
+    /*
      * calculate the prescaler required to achieve the desire bitrate
      */
     static uint32_t calculate_bitrate_prescaler(uint32_t timer_clock, uint32_t target_frequency, bool is_dshot);
@@ -365,9 +375,9 @@ public:
     static uint32_t DSHOT_BIT_1_TICKS;
 
     // See WS2812B spec for expected pulse widths
-    static constexpr uint32_t NEOP_BIT_WIDTH_TICKS = 20;
-    static constexpr uint32_t NEOP_BIT_0_TICKS = 7;
-    static constexpr uint32_t NEOP_BIT_1_TICKS = 14;
+    static constexpr uint32_t NEOP_BIT_WIDTH_TICKS = 8;
+    static constexpr uint32_t NEOP_BIT_0_TICKS = 3;
+    static constexpr uint32_t NEOP_BIT_1_TICKS = 6;
     // neopixel does not use pulse widths at all
     static constexpr uint32_t PROFI_BIT_0_TICKS = 7;
     static constexpr uint32_t PROFI_BIT_1_TICKS = 14;

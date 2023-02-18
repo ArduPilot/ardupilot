@@ -303,6 +303,13 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
         Vector3F posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
         range -= posOffsetEarth.z / prevTnb.c.z;
     }
+    
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+    // override with user specified height (if given, for rover)
+    if (ofDataDelayed.heightOverride > 0) {
+        range = ofDataDelayed.heightOverride;
+    }
+#endif
 
     // Fuse X and Y axis measurements sequentially assuming observation errors are uncorrelated
     for (uint8_t obsIndex=0; obsIndex<=1; obsIndex++) { // fuse X axis data first

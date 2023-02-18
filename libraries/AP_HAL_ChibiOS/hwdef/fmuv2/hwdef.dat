@@ -9,10 +9,13 @@ FLASH_SIZE_KB 1024
 # actually needed as of February 2018 as the full build does fit in
 # 1M, but it prepares us for when large features such as scripting are
 # added to the build
-define HAL_MINIMIZE_FEATURES 1
+include ../include/minimize_features.inc
 
 # we don't have a flash page spare to write parameters to:
 undef STORAGE_FLASH_PAGE
 
 # minimal drivers to reduce flash usage
 include ../include/minimal.inc
+
+# produce this error if we are on a 2M board and using 1M firmware
+define BOARD_CHECK_F427_USE_2M "2M flash - use fmuv3 firmware"

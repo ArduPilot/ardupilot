@@ -5,6 +5,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Logger/AP_Logger.h>
 #include <StorageManager/StorageManager.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #if HAL_RALLY_ENABLED
 // storage object

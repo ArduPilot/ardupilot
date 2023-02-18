@@ -3,7 +3,7 @@
 
 #include "AP_Mission_ChangeDetector.h"
 
-#if HAL_MISSION_ENABLED
+#if AP_MISSION_ENABLED
 
 // detect external changes to mission
 bool AP_Mission_ChangeDetector::check_for_mission_change()

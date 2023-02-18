@@ -35,12 +35,15 @@ public:
     // get serial port number, -1 for not enabled
     int8_t get_port(void) const override;
 
+    // Get model/type name
+    const char* get_name() const override;
+
     // accessors for AP_AHRS
     bool healthy(void) const override;
     bool initialised(void) const override;
     bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const override;
     void get_filter_status(nav_filter_status &status) const override;
-    void send_status_report(mavlink_channel_t chan) const override;
+    void send_status_report(class GCS_MAVLINK &link) const override;
 
     // check for new data
     void update() override {

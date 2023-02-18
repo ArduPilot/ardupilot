@@ -41,16 +41,22 @@ public:
     void set_default_location(float lat, float lon, int16_t yaw);
     static const struct AP_Param::GroupInfo var_info[];
 
+    // enum for SIM_PLD_OPTIONS parameter
+    enum class Option : uint8_t {
+        ENABLE_TARGET_DISTANCE   = (1U << 0),
+    };
+
     AP_Int8 _enable;
-    AP_Float _origin_lat;
-    AP_Float _origin_lon;
-    AP_Float _origin_height;
+    AP_Float _device_lat;
+    AP_Float _device_lon;
+    AP_Float _device_height;
     AP_Int16 _orient_yaw;
     AP_Int8 _type;
     AP_Int32 _rate;
     AP_Float _alt_limit;
     AP_Float _dist_limit;
     AP_Int8 _orient;
+    AP_Enum<Option> _options;
     bool _over_precland_base;
 
     enum PreclandType {
@@ -58,6 +64,10 @@ public:
         PRECLAND_TYPE_CONE = 1,
         PRECLAND_TYPE_SPHERE = 2,
     };
+
+    bool option_enabled(Option option) const {
+        return (_options & uint8_t(option)) != 0;
+    }
 private:
     uint32_t _last_update_ms;
     bool _healthy;

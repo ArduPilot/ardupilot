@@ -14,7 +14,7 @@ static uint32_t land_detector_count = 0;
 void Copter::update_land_and_crash_detectors()
 {
     // update 1hz filtered acceleration
-    Vector3f accel_ef = ahrs.get_accel_ef_blended();
+    Vector3f accel_ef = ahrs.get_accel_ef();
     accel_ef.z += GRAVITY_MSS;
     land_accel_ef_filter.apply(accel_ef, scheduler.get_loop_period_s());
 
@@ -48,10 +48,13 @@ void Copter::update_land_detector()
     } else if (ap.land_complete) {
 #if FRAME_CONFIG == HELI_FRAME
         // if rotor speed and collective pitch are high then clear landing flag
-        if (motors->get_takeoff_collective() && motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
+        if (!flightmode->is_taking_off() && motors->get_takeoff_collective() && motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
 #else
         // if throttle output is high then clear landing flag
-        if (motors->get_throttle() > get_non_takeoff_throttle()) {
+        if (!flightmode->is_taking_off() && motors->get_throttle_out() > get_non_takeoff_throttle() && motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
+            // this should never happen because take-off should be detected at the flight mode level
+            // this here to highlight there is a bug or missing take-off detection
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
 #endif
             set_land_complete(false);
         }
@@ -70,6 +73,9 @@ void Copter::update_land_detector()
         // check if landing
         const bool landing = flightmode->is_landing();
         bool motor_at_lower_limit = (flightmode->has_manual_throttle() && (motors->get_below_land_min_coll() || heli_flags.coll_stk_low) && fabsf(ahrs.get_roll()) < M_PI/2.0f)
+#if MODE_AUTOROTATE_ENABLED == ENABLED
+                                    || (flightmode->mode_number() == Mode::Number::AUTOROTATE && motors->get_below_land_min_coll())
+#endif
                                     || ((!force_flying || landing) && motors->limit.throttle_lower && pos_control->get_vel_desired_cms().z < 0.0f);
         bool throttle_mix_at_min = true;
 #else
@@ -85,7 +91,7 @@ void Copter::update_land_detector()
 #endif
 
         uint8_t land_detector_scalar = 1;
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
         if (landinggear.get_wow_state() != AP_LandingGear::LG_WOW_UNKNOWN) {
             // we have a WoW sensor so lets loosen the strictness of the landing detector
             land_detector_scalar = 2;
@@ -102,7 +108,7 @@ void Copter::update_land_detector()
         bool rangefinder_check = (!rangefinder_alt_ok() || rangefinder_state.alt_cm_filt.get() < LAND_RANGEFINDER_MIN_ALT_CM);
 
         // if we have weight on wheels (WoW) or ambiguous unknown. never no WoW
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
         const bool WoW_check = (landinggear.get_wow_state() == AP_LandingGear::LG_WOW || landinggear.get_wow_state() == AP_LandingGear::LG_WOW_UNKNOWN);
 #else
         const bool WoW_check = true;

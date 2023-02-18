@@ -36,7 +36,7 @@ extern const AP_HAL::HAL& hal;
 using namespace SITL;
 
 GPS::GPS(uint8_t _instance) :
-    SerialDevice(),
+    SerialDevice(8192, 2048),
     instance{_instance}
 {
 
@@ -55,6 +55,27 @@ GPS::GPS(uint8_t _instance) :
         }
     }
 #endif
+}
+
+uint32_t GPS::device_baud() const
+{
+    if (_sitl == nullptr) {
+        return 0;
+    }
+    switch ((Type)_sitl->gps_type[instance].get()) {
+        case Type::NOVA:
+            return 19200;
+        case Type::NONE:
+        case Type::UBLOX:
+        case Type::NMEA:
+        case Type::SBP:
+        case Type::SBP2:
+#if AP_SIM_GPS_FILE_ENABLED
+        case Type::FILE:
+#endif
+            return 0;  // 0 meaning unset
+    }
+    return 0;  // 0 meaning unset
 }
 
 /*
@@ -520,7 +541,7 @@ void GPS::update_nmea(const struct gps_data *d)
                      lng_string,
                      d->have_lock?1:0,
                      d->have_lock?_sitl->gps_numsats[instance]:3,
-                     2.0,
+                     1.2,
                      d->altitude);
     const float speed_mps = norm(d->speedN, d->speedE);
     const float speed_knots = speed_mps * M_PER_SEC_TO_KNOTS;
@@ -998,39 +1019,57 @@ uint32_t GPS::CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc
 }
 
 /*
-  temporary method to use file as GPS data
+  read file data logged from AP_GPS_DEBUG_LOGGING_ENABLED
  */
 #if AP_SIM_GPS_FILE_ENABLED
 void GPS::update_file()
 {
-    static int fd = -1;
-    static int fd2 = -1;
-    int temp_fd;
-    if (instance == 0) {
-        if (fd == -1) {
-            fd = open("/tmp/gps.dat", O_RDONLY|O_CLOEXEC);
-        }
-        temp_fd = fd;
-    } else {
-        if (fd2 == -1) {
-            fd2 = open("/tmp/gps2.dat", O_RDONLY|O_CLOEXEC);
-        }
-        temp_fd = fd2;
-    }
-
-    if (temp_fd == -1) {
+    static int fd[2] = {-1,-1};
+    static uint32_t base_time[2];
+    const uint16_t lognum = uint16_t(_sitl->gps_log_num.get());
+    if (instance > 1) {
         return;
     }
-    char buf[200];
-    ssize_t ret = ::read(temp_fd, buf, sizeof(buf));
-    if (ret > 0) {
-        ::printf("wrote gps %u bytes\n", (unsigned)ret);
-        write_to_autopilot((const char *)buf, ret);
+    if (fd[instance] == -1) {
+        char fname[] = "gpsN_NNN.log";
+        hal.util->snprintf(fname, 13, "gps%u_%03u.log", instance+1, lognum);
+        fd[instance] = open(fname, O_RDONLY|O_CLOEXEC);
+        if (fd[instance] == -1) {
+            return;
+        }
     }
-    if (ret == 0) {
-        ::printf("gps rewind\n");
-        lseek(temp_fd, 0, SEEK_SET);
+    const uint32_t magic = 0x7fe53b04;
+    struct {
+        uint32_t magic;
+        uint32_t time_ms;
+        uint32_t n;
+    } header;
+    uint8_t *buf = nullptr;
+    while (true) {
+        if (::read(fd[instance], (void *)&header, sizeof(header)) != sizeof(header) ||
+            header.magic != magic) {
+            goto rewind_file;
+        }
+        if (header.time_ms+base_time[instance] > AP_HAL::millis()) {
+            // not ready for this data yet
+            ::lseek(fd[instance], -sizeof(header), SEEK_CUR);
+            return;
+        }
+        buf = new uint8_t[header.n];
+        if (buf != nullptr && ::read(fd[instance], buf, header.n) == ssize_t(header.n)) {
+            write_to_autopilot((const char *)buf, header.n);
+            delete[] buf;
+            buf = nullptr;
+            continue;
+        }
+        goto rewind_file;
     }
+
+rewind_file:
+    ::printf("GPS[%u] rewind\n", unsigned(instance));
+    base_time[instance] = AP_HAL::millis();
+    ::lseek(fd[instance], 0, SEEK_SET);
+    delete[] buf;
 }
 #endif  // AP_SIM_GPS_FILE_ENABLED
 

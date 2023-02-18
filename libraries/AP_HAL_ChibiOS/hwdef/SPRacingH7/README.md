@@ -5,8 +5,8 @@ The SPRacingH7 Extreme is a flight controller produced by [Seriously Pro Racing]
 ## Features
 
  - MCU - STM32H750 32-bit processor running at 400 MHz
- - 16MByte Serial NOR flash via QuadSPI
- - IMUs - 2x ICM20602
+ - 128MByte Serial NOR flash via QuadSPI
+ - IMUs - 2x ICM20602 (only one enabled by default due to CPU limitations)
  - Barometer - BMP388
  - OSD - AT7456E
  - Onboard Flash: 128Mbits
@@ -25,8 +25,8 @@ The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
 receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
  - SERIAL0 -> USB
- - SERIAL1 -> UART1 (DMA-enabled)
- - SERIAL2 -> UART2 (RCIN one wire, DMA-enabled)
+ - SERIAL1 -> UART1 (DMA-enabled) RCin
+ - SERIAL2 -> UART2 (SmartPort, DMA-enabled, only TX pin)
  - SERIAL3 -> UART3 (DMA-enabled)
  - SERIAL4 -> UART4 (DMA-enabled)
  - SERIAL5 -> UART5 (DMA-enabled)
@@ -35,9 +35,9 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
 ## RC Input
 
-RC input is configured on the T2 (UART2_TX) pin. It supports all serial RC
+RC input is configured on the R1 (UART1_RX) pin. It supports all serial RC
 protocols. For protocols requiring half-duplex serial to transmit
-telemetry (such as FPort) you should setup SERIAL2 as an RC input serial port,
+telemetry (such as FPort) you should setup SERIAL1 
 with half-duplex, pin-swap and inversion enabled.
  
 ## FrSky Telemetry
@@ -45,7 +45,7 @@ with half-duplex, pin-swap and inversion enabled.
 FrSky Telemetry is supported using the T2 pin (UART2 transmit). You need to set the following parameters to enable support for FrSky S.PORT
  
   - SERIAL2_PROTOCOL 10
-  - SERIAL2_OPTIONS 7
+  - SERIAL2_OPTIONS 15
   
 ## OSD Support
 
@@ -61,9 +61,9 @@ The PWM is in 5 groups:
 
  - PWM 1-4   in group1
  - PWM 5, 6  in group2
- - PWM 7, 8  in group3
+ - PWM 7, 8  in group3 (can be changed to UART6 TX/RX with alt config 1)
  - PWM 9, 10 in group4
- - PWM 11    in group5
+ - PWM 11    in group5 (used for NeoPixel LED)
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -80,8 +80,8 @@ The correct battery setting parameters are:
  - BATT_MONITOR 4
  - BATT_VOLT_PIN 10
  - BATT_CURR_PIN 11
- - BATT_VOLT_MULT 11.1
- - BATT_AMP_PERVLT 59.5
+ - BATT_VOLT_MULT 10.9
+ - BATT_AMP_PERVLT 28.5
 
 ## Compass
 

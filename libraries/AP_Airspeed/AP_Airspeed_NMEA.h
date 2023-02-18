@@ -11,7 +11,6 @@
 
 #include "AP_Airspeed_Backend.h"
 #include <AP_HAL/AP_HAL.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 
 class AP_Airspeed_NMEA : public AP_Airspeed_Backend
 {

@@ -22,6 +22,7 @@
 #include <AP_Math/AP_Math.h>
 #include "AP_MotorsTailsitter.h"
 #include <GCS_MAVLink/GCS.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -55,8 +56,8 @@ void AP_MotorsTailsitter::init(motor_frame_class frame_class, motor_frame_type f
 
 
 /// Constructor
-AP_MotorsTailsitter::AP_MotorsTailsitter(uint16_t loop_rate, uint16_t speed_hz) :
-    AP_MotorsMulticopter(loop_rate, speed_hz)
+AP_MotorsTailsitter::AP_MotorsTailsitter(uint16_t speed_hz) :
+    AP_MotorsMulticopter(speed_hz)
 {
     set_update_rate(speed_hz);
 }

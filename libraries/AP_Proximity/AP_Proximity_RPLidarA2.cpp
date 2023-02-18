@@ -305,8 +305,8 @@ void AP_Proximity_RPLidarA2::parse_response_data()
             Debug(2, "UART %02x %02x%02x %02x%02x", payload[0], payload[2], payload[1], payload[4], payload[3]); //show HEX values
             // check if valid SCAN packet: a valid packet starts with startbits which are complementary plus a checkbit in byte+1
             if ((payload.sensor_scan.startbit == !payload.sensor_scan.not_startbit) && payload.sensor_scan.checkbit) {
-                const float angle_sign = (frontend.get_orientation(state.instance) == 1) ? -1.0f : 1.0f;
-                const float angle_deg = wrap_360(payload.sensor_scan.angle_q6/64.0f * angle_sign + frontend.get_yaw_correction(state.instance));
+                const float angle_sign = (params.orientation == 1) ? -1.0f : 1.0f;
+                const float angle_deg = wrap_360(payload.sensor_scan.angle_q6/64.0f * angle_sign + params.yaw_correction);
                 const float distance_m = (payload.sensor_scan.distance_q2/4000.0f);
 #if RP_DEBUG_LEVEL >= 2
                 const uint8_t quality = payload.sensor_scan.quality;
@@ -314,15 +314,15 @@ void AP_Proximity_RPLidarA2::parse_response_data()
 #endif
                 _last_distance_received_ms = AP_HAL::millis();
                 if (!ignore_reading(angle_deg, distance_m)) {
-                    const AP_Proximity_Boundary_3D::Face face = boundary.get_face(angle_deg);
+                    const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(angle_deg);
 
                     if (face != _last_face) {
                         // distance is for a new face, the previous one can be updated now
                         if (_last_distance_valid) {
-                            boundary.set_face_attributes(_last_face, _last_angle_deg, _last_distance_m);
+                            frontend.boundary.set_face_attributes(_last_face, _last_angle_deg, _last_distance_m, state.instance);
                         } else {
                             // reset distance from last face
-                            boundary.reset_face(face);
+                            frontend.boundary.reset_face(face, state.instance);
                         }
 
                         // initialize the new face

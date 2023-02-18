@@ -1,15 +1,7 @@
 #pragma once
 
 #include "AC_Fence_config.h"
-
-#if AP_FENCE_ENABLED
-
-#include <AP_Common/AP_Common.h>
-#include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-
-#define AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT 1
 
 // CIRCLE_INCLUSION_INT stores the radius an a 32-bit integer in
 // metres.  This was a bug, and CIRCLE_INCLUSION was created to store
@@ -41,6 +33,14 @@ public:
     float radius;
 };
 
+#if AP_FENCE_ENABLED
+
+#include <AP_Common/AP_Common.h>
+#include <AP_Common/Location.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
+
+#define AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT 1
+
 class AC_PolyFence_loader
 {
 
@@ -49,8 +49,8 @@ public:
     AC_PolyFence_loader(AP_Int8 &total) :
         _total(total) {}
 
-    AC_PolyFence_loader(const AC_PolyFence_loader &other) = delete;
-    AC_PolyFence_loader &operator=(const AC_PolyFence_loader&) = delete;
+    /* Do not allow copies */
+    CLASS_NO_COPY(AC_PolyFence_loader);
 
     void init();
 

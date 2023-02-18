@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <AP_Common/NMEA.h>
 
 using namespace SITL;
 
@@ -29,21 +30,16 @@ VectorNav::VectorNav() :
 }
 
 struct PACKED VN_packet1 {
-    uint64_t timeStartup;
-    uint64_t timeGPS;
+    float uncompMag[3];
     float uncompAccel[3];
     float uncompAngRate[3];
     float pressure;
     float mag[3];
     float accel[3];
     float gyro[3];
-    uint16_t sensSat;
-    uint16_t AHRSStatus;
     float ypr[3];
     float quaternion[4];
-    float linAccBody[3];
     float yprU[3];
-    uint16_t INSStatus;
     double positionLLA[3];
     float velNED[3];
     float posU;
@@ -60,11 +56,10 @@ struct PACKED VN_packet2 {
     float GPS1DOP[7];
     uint8_t numGPS2Sats;
     uint8_t GPS2Fix;
-    float GPS2DOP[7];
 };
 
-#define VN_PKT1_HEADER { 0xfa, 0x35, 0x03, 0x00, 0x2c, 0x0f, 0x47, 0x01, 0x13, 0x06 }
-#define VN_PKT2_HEADER { 0xfa, 0x4e, 0x02, 0x00, 0x10, 0x00, 0xb8, 0x20, 0x18, 0x20 }
+#define VN_PKT1_HEADER { 0xFA, 0x34, 0x2E, 0x07, 0x06, 0x01, 0x12, 0x06 }
+#define VN_PKT2_HEADER { 0xFA, 0x4E, 0x02, 0x00, 0x10, 0x00, 0xB8, 0x20, 0x18, 0x00 }
 
 /*
   get timeval using simulation time
@@ -91,15 +86,6 @@ void VectorNav::send_packet1(void)
 
     struct VN_packet1 pkt {};
 
-    struct timeval tv;
-    simulation_timeval(&tv);
-
-    if (start_us == 0) {
-        start_us = tv.tv_usec * 1000;
-    }
-
-    pkt.timeStartup = start_us;
-    pkt.timeGPS = tv.tv_usec * 1000;
     pkt.uncompAccel[0] = fdm.xAccel;
     pkt.uncompAccel[1] = fdm.yAccel;
     pkt.uncompAccel[2] = fdm.zAccel;
@@ -115,6 +101,9 @@ void VectorNav::send_packet1(void)
     pkt.mag[0] = fdm.bodyMagField.x*0.001;
     pkt.mag[1] = fdm.bodyMagField.y*0.001;
     pkt.mag[2] = fdm.bodyMagField.z*0.001;
+    pkt.uncompMag[0] = pkt.mag[0];
+    pkt.uncompMag[1] = pkt.mag[1];
+    pkt.uncompMag[2] = pkt.mag[2];
 
     pkt.accel[0] = fdm.xAccel;
     pkt.accel[1] = fdm.yAccel;
@@ -122,9 +111,6 @@ void VectorNav::send_packet1(void)
     pkt.gyro[0] = radians(fdm.rollRate + rand_float() * gyro_noise);
     pkt.gyro[1] = radians(fdm.pitchRate + rand_float() * gyro_noise);
     pkt.gyro[2] = radians(fdm.yawRate + rand_float() * gyro_noise);
-    
-    // pkt.sensSat = ???
-    // pkt.AHRSStatus = ???
 
     pkt.ypr[0] = fdm.yawDeg;
     pkt.ypr[1] = fdm.pitchDeg;
@@ -134,14 +120,6 @@ void VectorNav::send_packet1(void)
     pkt.quaternion[1] = fdm.quaternion.q3;
     pkt.quaternion[2] = fdm.quaternion.q4;
     pkt.quaternion[3] = fdm.quaternion.q1;
-
-    pkt.linAccBody[0] = fdm.xAccel;
-    pkt.linAccBody[1] = fdm.yAccel;
-    pkt.linAccBody[2] = fdm.zAccel;
-
-    // pkt.yprU[3] = attitude uncertainty
-
-    // pkt.INSStatus = ??
 
     pkt.positionLLA[0] = fdm.latitude;
     pkt.positionLLA[1] = fdm.longitude;
@@ -187,7 +165,6 @@ void VectorNav::send_packet2(void)
     // pkt.GPS1DOP =
     pkt.numGPS2Sats = 18;
     pkt.GPS2Fix = 3;
-    // pkt.GPS2DOP =
 
     const uint8_t header[] VN_PKT2_HEADER;
 
@@ -201,6 +178,19 @@ void VectorNav::send_packet2(void)
     swab(&crc, &crc2, 2);
 
     write_to_autopilot((char *)&crc2, sizeof(crc2));
+}
+
+void VectorNav::nmea_printf(const char *fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    char *s = nmea_vaprintf(fmt, ap);
+    va_end(ap);
+    if (s != nullptr) {
+        write_to_autopilot((const char*)s, strlen(s));
+        free(s);
+    }
 }
 
 /*
@@ -222,5 +212,13 @@ void VectorNav::update(void)
         last_pkt2_us = now;
         send_packet2();
     }
+
+    // Strictly we should send this in responce to the request
+    // but sending it occasionally acheaves the same thing
+    if (now - last_type_us >= 1000000) {
+        last_type_us = now;
+        nmea_printf("$VNRRG,01,VN-300-SITL");
+    }
+
 }
 

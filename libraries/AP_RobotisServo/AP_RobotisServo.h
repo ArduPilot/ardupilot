@@ -34,8 +34,7 @@ public:
     AP_RobotisServo();
 
     /* Do not allow copies */
-    AP_RobotisServo(const AP_RobotisServo &other) = delete;
-    AP_RobotisServo &operator=(const AP_RobotisServo&) = delete;
+    CLASS_NO_COPY(AP_RobotisServo);
 
     static const struct AP_Param::GroupInfo var_info[];
     

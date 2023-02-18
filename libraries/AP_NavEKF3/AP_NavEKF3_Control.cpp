@@ -77,7 +77,7 @@ void NavEKF3_core::setWindMagStateLearningMode()
             Vector3F tempEuler;
             stateStruct.quat.to_euler(tempEuler.x, tempEuler.y, tempEuler.z);
             ftype trueAirspeedVariance;
-            const bool haveAirspeedMeasurement = usingDefaultAirspeed || (imuDataDelayed.time_ms - tasDataDelayed.time_ms < 500 && useAirspeed());
+            const bool haveAirspeedMeasurement = usingDefaultAirspeed || (tasDataDelayed.allowFusion && (imuDataDelayed.time_ms - tasDataDelayed.time_ms < 500) && useAirspeed());
             if (haveAirspeedMeasurement) {
                 trueAirspeedVariance = constrain_ftype(tasDataDelayed.tasVariance, WIND_VEL_VARIANCE_MIN, WIND_VEL_VARIANCE_MAX);
                 const ftype windSpeed =  sqrtF(sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y)) - tasDataDelayed.tas;
@@ -302,8 +302,12 @@ void NavEKF3_core::setAidingMode()
             // check if drag data is being used
             bool dragUsed = (imuSampleTime_ms - lastDragPassTime_ms <= minTestTime_ms);
 
+#if EK3_FEATURE_BEACON_FUSION
             // Check if range beacon data is being used
-            bool rngBcnUsed = (imuSampleTime_ms - lastRngBcnPassTime_ms <= minTestTime_ms);
+            const bool rngBcnUsed = (imuSampleTime_ms - lastRngBcnPassTime_ms <= minTestTime_ms);
+#else
+            const bool rngBcnUsed = false;
+#endif
 
             // Check if GPS or external nav is being used
             bool posUsed = (imuSampleTime_ms - lastPosPassTime_ms <= minTestTime_ms);
@@ -323,7 +327,9 @@ void NavEKF3_core::setAidingMode()
             if (!attAiding) {
             	attAidLossCritical = (imuSampleTime_ms - prevFlowFuseTime_ms > frontend->tiltDriftTimeMax_ms) &&
                 		(imuSampleTime_ms - lastTasPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
+#if EK3_FEATURE_BEACON_FUSION
                         (imuSampleTime_ms - lastRngBcnPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
+#endif
                         (imuSampleTime_ms - lastPosPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
                         (imuSampleTime_ms - lastVelPassTime_ms > frontend->tiltDriftTimeMax_ms);
             }
@@ -337,8 +343,11 @@ void NavEKF3_core::setAidingMode()
                 } else {
                     maxLossTime_ms = frontend->posRetryTimeUseVel_ms;
                 }
-                posAidLossCritical = (imuSampleTime_ms - lastRngBcnPassTime_ms > maxLossTime_ms) &&
-                                     (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms);
+                posAidLossCritical =
+#if EK3_FEATURE_BEACON_FUSION
+                    (imuSampleTime_ms - lastRngBcnPassTime_ms > maxLossTime_ms) &&
+#endif
+                    (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms);
             }
 
             if (attAidLossCritical) {
@@ -381,6 +390,9 @@ void NavEKF3_core::setAidingMode()
             meaHgtAtTakeOff = baroDataDelayed.hgt;
             // reset the vertical position state to faster recover from baro errors experienced during touchdown
             stateStruct.position.z = -meaHgtAtTakeOff;
+            // store the current height to be used to keep reporting
+            // the last known position
+            lastKnownPositionD = stateStruct.position.z;
             // reset relative aiding sensor fusion activity status
             flowFusionActive = false;
             bodyVelFusionActive = false;
@@ -408,12 +420,14 @@ void NavEKF3_core::setAidingMode()
                 posResetSource = resetDataSource::GPS;
                 velResetSource = resetDataSource::GPS;
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u is using GPS",(unsigned)imu_index);
+#if EK3_FEATURE_BEACON_FUSION
             } else if (readyToUseRangeBeacon()) {
                 // We are commencing aiding using range beacons
                 posResetSource = resetDataSource::RNGBCN;
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u is using range beacons",(unsigned)imu_index);
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u initial pos NE = %3.1f,%3.1f (m)",(unsigned)imu_index,(double)receiverPos.x,(double)receiverPos.y);
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u initial beacon pos D offset = %3.1f (m)",(unsigned)imu_index,(double)bcnPosOffsetNED.z);
+#endif  // EK3_FEATURE_BEACON_FUSION
 #if EK3_FEATURE_EXTERNAL_NAV
             } else if (readyToUseExtNav()) {
                 // we are commencing aiding using external nav
@@ -438,7 +452,9 @@ void NavEKF3_core::setAidingMode()
             // reset the last fusion accepted times to prevent unwanted activation of timeout logic
             lastPosPassTime_ms = imuSampleTime_ms;
             lastVelPassTime_ms = imuSampleTime_ms;
+#if EK3_FEATURE_BEACON_FUSION
             lastRngBcnPassTime_ms = imuSampleTime_ms;
+#endif
             break;
         }
 
@@ -538,11 +554,15 @@ bool NavEKF3_core::readyToUseGPS(void) const
 // return true if the filter to be ready to use the beacon range measurements
 bool NavEKF3_core::readyToUseRangeBeacon(void) const
 {
+#if EK3_FEATURE_BEACON_FUSION
     if (frontend->sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::BEACON) {
         return false;
     }
 
     return tiltAlignComplete && yawAlignComplete && delAngBiasLearned && rngBcnAlignmentCompleted && rngBcnDataToFuse;
+#else
+    return false;
+#endif  // EK3_FEATURE_BEACON_FUSION
 }
 
 // return true if the filter is ready to use external nav data
@@ -669,8 +689,8 @@ void NavEKF3_core::checkGyroCalStatus(void)
         (yaw_source != AP_NavEKF_Source::SourceYaw::EXTNAV)) {
         // rotate the variances into earth frame and evaluate horizontal terms only as yaw component is poorly observable without a yaw reference
         // which can make this check fail
-        Vector3F delAngBiasVarVec = Vector3F(P[10][10],P[11][11],P[12][12]);
-        Vector3F temp = prevTnb * delAngBiasVarVec;
+        const Vector3F delAngBiasVarVec { P[10][10], P[11][11], P[12][12] };
+        const Vector3F temp = prevTnb * delAngBiasVarVec;
         delAngBiasLearned = (fabsF(temp.x) < delAngBiasVarMax) &&
                             (fabsF(temp.y) < delAngBiasVarMax);
     } else {
@@ -735,7 +755,7 @@ void NavEKF3_core::runYawEstimatorPrediction()
     }
 
     ftype trueAirspeed;
-    if (assume_zero_sideslip()) {
+    if (tasDataDelayed.allowFusion && assume_zero_sideslip()) {
         trueAirspeed = MAX(tasDataDelayed.tas, 0.0f);
     } else {
         trueAirspeed = 0.0f;

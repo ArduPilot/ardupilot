@@ -1,4 +1,6 @@
 -- this script reads data from a serial port and dumps it to a file
+-- luacheck: only 0
+
 local file_name = 'raw serial dump.txt'
 local file_name_plain = 'serial dump.txt'
 local baud_rate = 9600

@@ -13,6 +13,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Rally/AP_Rally.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 AP_Logger *AP_Logger::_singleton;
 
@@ -89,14 +90,14 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
 
     // @Param: _DISARMED
     // @DisplayName: Enable logging while disarmed
-    // @Description: If LOG_DISARMED is set to 1 then logging will be enabled while disarmed. This can make for very large logfiles but can help a lot when tracking down startup issues
-    // @Values: 0:Disabled,1:Enabled
+    // @Description: If LOG_DISARMED is set to 1 then logging will be enabled at all times including when disarmed. Logging before arming can make for very large logfiles but can help a lot when tracking down startup issues and is necessary if logging of EKF replay data is selected via the LOG_REPLAY parameter. If LOG_DISARMED is set to 2, then logging will be enabled when disarmed, but not if a USB connection is detected. This can be used to prevent unwanted data logs being generated when the vehicle is connected via USB for log downloading or parameter changes.
+    // @Values: 0:Disabled,1:Enabled,2:Disabled on USB connection
     // @User: Standard
     AP_GROUPINFO("_DISARMED",  2, AP_Logger, _params.log_disarmed,       0),
 
     // @Param: _REPLAY
     // @DisplayName: Enable logging of information needed for Replay
-    // @Description: If LOG_REPLAY is set to 1 then the EKF2 state estimator will log detailed information needed for diagnosing problems with the Kalman filter. It is suggested that you also raise LOG_FILE_BUFSIZE to give more buffer space for logging and use a high quality microSD card to ensure no sensor data is lost
+    // @Description: If LOG_REPLAY is set to 1 then the EKF2 and EKF3 state estimators will log detailed information needed for diagnosing problems with the Kalman filter. LOG_DISARMED must be set to 1 or 2 or else the log will not contain the pre-flight data required for replay testing of the EKF's. It is suggested that you also raise LOG_FILE_BUFSIZE to give more buffer space for logging and use a high quality microSD card to ensure no sensor data is lost.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     AP_GROUPINFO("_REPLAY",  3, AP_Logger, _params.log_replay,       0),
@@ -891,6 +892,13 @@ void AP_Logger::Write_Rally()
 }
 #endif
 
+#if HAL_LOGGER_FENCE_ENABLED
+void AP_Logger::Write_Fence()
+{
+    FOR_EACH_BACKEND(Write_Fence());
+}
+#endif
+
 // output a FMT message for each backend if not already done so
 void AP_Logger::Safe_Write_Emit_FMT(log_write_fmt *f)
 {
@@ -1068,7 +1076,7 @@ bool AP_Logger::assert_same_fmt_for_name(const AP_Logger::log_write_fmt *f,
 }
 #endif
 
-AP_Logger::log_write_fmt *AP_Logger::msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, const bool direct_comp)
+AP_Logger::log_write_fmt *AP_Logger::msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, const bool direct_comp, const bool copy_strings)
 {
     WITH_SEMAPHORE(log_write_fmts_sem);
     struct log_write_fmt *f;
@@ -1109,11 +1117,40 @@ AP_Logger::log_write_fmt *AP_Logger::msg_fmt_for_name(const char *name, const ch
         return nullptr;
     }
     f->msg_type = msg_type;
-    f->name = name;
-    f->fmt = fmt;
-    f->labels = labels;
-    f->units = units;
-    f->mults = mults;
+
+    if (copy_strings) {
+        // cannot use pointers to memory that might move, must allocate and copy
+        struct log_write_fmt_strings *ls_copy = (struct log_write_fmt_strings*)malloc(sizeof(log_write_fmt_strings));
+        if (ls_copy == nullptr) {
+            free(f);
+            return nullptr;
+        }
+
+        strncpy_noterm(ls_copy->name, name, sizeof(ls_copy->name));
+        strncpy_noterm(ls_copy->format, fmt, sizeof(ls_copy->format));
+        strncpy_noterm(ls_copy->labels, labels, sizeof(ls_copy->labels));
+
+        f->name = ls_copy->name;
+        f->fmt = ls_copy->format;
+        f->labels = ls_copy->labels;
+
+        if (units != nullptr) {
+            strncpy_noterm(ls_copy->units, units, sizeof(ls_copy->units));
+            f->units = ls_copy->units;
+        }
+
+        if (mults != nullptr) {
+            strncpy_noterm(ls_copy->multipliers, mults, sizeof(ls_copy->multipliers));
+            f->mults = ls_copy->multipliers;
+        }
+
+    } else {
+        f->name = name;
+        f->fmt = fmt;
+        f->labels = labels;
+        f->units = units;
+        f->mults = mults;
+    }
 
     int16_t tmp = Write_calc_msg_len(fmt);
     if (tmp == -1) {
@@ -1123,37 +1160,41 @@ AP_Logger::log_write_fmt *AP_Logger::msg_fmt_for_name(const char *name, const ch
 
     f->msg_len = tmp;
 
-    // add to front of list
-    f->next = log_write_fmts;
-    log_write_fmts = f;
+    // add direct_comp formats to start of list, otherwise add to the end, this minimises the number of string comparisons when walking the list in future calls
+    if (direct_comp || (log_write_fmts == nullptr)) {
+        f->next = log_write_fmts;
+        log_write_fmts = f;
+    } else {
+        struct log_write_fmt *list_end = log_write_fmts;
+        while (list_end->next) {
+            list_end=list_end->next;
+        }
+        list_end->next = f;
+    }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    char ls_name[LS_NAME_SIZE] = {};
-    char ls_format[LS_FORMAT_SIZE] = {};
-    char ls_labels[LS_LABELS_SIZE] = {};
-    char ls_units[LS_UNITS_SIZE] = {};
-    char ls_multipliers[LS_MULTIPLIERS_SIZE] = {};
+    struct log_write_fmt_strings ls_strings = {};
     struct LogStructure ls = {
         f->msg_type,
         f->msg_len,
-        ls_name,
-        ls_format,
-        ls_labels,
-        ls_units,
-        ls_multipliers
+        ls_strings.name,
+        ls_strings.format,
+        ls_strings.labels,
+        ls_strings.units,
+        ls_strings.multipliers
     };
-    memcpy((char*)ls_name, f->name, MIN(sizeof(ls_name), strlen(f->name)));
-    memcpy((char*)ls_format, f->fmt, MIN(sizeof(ls_format), strlen(f->fmt)));
-    memcpy((char*)ls_labels, f->labels, MIN(sizeof(ls_labels), strlen(f->labels)));
+    memcpy((char*)ls_strings.name, f->name, MIN(sizeof(ls_strings.name), strlen(f->name)));
+    memcpy((char*)ls_strings.format, f->fmt, MIN(sizeof(ls_strings.format), strlen(f->fmt)));
+    memcpy((char*)ls_strings.labels, f->labels, MIN(sizeof(ls_strings.labels), strlen(f->labels)));
     if (f->units != nullptr) {
-        memcpy((char*)ls_units, f->units, MIN(sizeof(ls_units), strlen(f->units)));
+        memcpy((char*)ls_strings.units, f->units, MIN(sizeof(ls_strings.units), strlen(f->units)));
     } else {
-        memset((char*)ls_units, '?', MIN(sizeof(ls_format), strlen(f->fmt)));
+        memset((char*)ls_strings.units, '?', MIN(sizeof(ls_strings.format), strlen(f->fmt)));
     }
     if (f->mults != nullptr) {
-        memcpy((char*)ls_multipliers, f->mults, MIN(sizeof(ls_multipliers), strlen(f->mults)));
+        memcpy((char*)ls_strings.multipliers, f->mults, MIN(sizeof(ls_strings.multipliers), strlen(f->mults)));
     } else {
-        memset((char*)ls_multipliers, '?', MIN(sizeof(ls_format), strlen(f->fmt)));
+        memset((char*)ls_strings.multipliers, '?', MIN(sizeof(ls_strings.format), strlen(f->fmt)));
     }
     if (!validate_structure(&ls, (int16_t)-1)) {
         AP_BoardConfig::config_error("See console: Log structure invalid");
@@ -1427,7 +1468,7 @@ bool AP_Logger::log_while_disarmed(void) const
     if (_force_log_disarmed) {
         return true;
     }
-    if (_params.log_disarmed != 0) {
+    if (_params.log_disarmed == 1 || (_params.log_disarmed == 2 && !hal.gpio->usb_connected())) {
         return true;
     }
 

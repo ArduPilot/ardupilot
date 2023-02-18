@@ -95,7 +95,7 @@ const AP_Param::GroupInfo Tailsitter::var_info[] = {
     // @DisplayName: Tailsitter motor mask
     // @Description: Bitmask of motors to remain active in forward flight for a 'Copter' tailsitter. Non-zero indicates airframe is a Copter tailsitter and uses copter style motor layouts determined by Q_FRAME_CLASS and Q_FRAME_TYPE. This should be zero for non-Copter tailsitters.
     // @User: Standard
-    // @Bitmask: 0:Motor 1,1:Motor 2,2:Motor 3,3:Motor 4, 4:Motor 5,5:Motor 6,6:Motor 7,7:Motor 8
+    // @Bitmask: 0:Motor 1, 1:Motor 2, 2:Motor 3, 3:Motor 4, 4:Motor 5, 5:Motor 6, 6:Motor 7, 7:Motor 8, 8:Motor 9, 9:Motor 10, 10:Motor 11, 11:Motor 12
     AP_GROUPINFO("MOTMX", 12, Tailsitter, motor_mask, 0),
 
     // @Param: GSCMSK
@@ -223,6 +223,8 @@ void Tailsitter::setup()
     _have_elevator = SRV_Channels::function_assigned(SRV_Channel::k_elevator);
     _have_aileron = SRV_Channels::function_assigned(SRV_Channel::k_aileron);
     _have_rudder = SRV_Channels::function_assigned(SRV_Channel::k_rudder);
+    _have_elevon = SRV_Channels::function_assigned(SRV_Channel::k_elevon_left) || SRV_Channels::function_assigned(SRV_Channel::k_elevon_right);
+    _have_v_tail = SRV_Channels::function_assigned(SRV_Channel::k_vtail_left) || SRV_Channels::function_assigned(SRV_Channel::k_vtail_right);
 
     // set defaults for dual/single motor tailsitter
     if (quadplane.frame_class == AP_Motors::MOTOR_FRAME_TAILSITTER) {
@@ -236,7 +238,7 @@ void Tailsitter::setup()
 
         // Do not allow arming in forward flight modes
         // motors will become active due to assisted flight airmode, the vehicle will try very hard to get level
-        quadplane.options.set(quadplane.options.get() | QuadPlane::OPTION_ONLY_ARM_IN_QMODE_OR_AUTO);
+        quadplane.options.set(quadplane.options.get() | int32_t(QuadPlane::OPTION::ONLY_ARM_IN_QMODE_OR_AUTO));
     }
 
     transition = new Tailsitter_Transition(quadplane, motors, *this);
@@ -361,10 +363,25 @@ void Tailsitter::output(void)
         quadplane.hold_stabilize(throttle);
         quadplane.motors_output(true);
 
-        if ((quadplane.options & QuadPlane::OPTION_TAILSIT_Q_ASSIST_MOTORS_ONLY) != 0) {
-            // only use motors for Q assist, control surfaces remain under plane control
-            // zero copter I terms and use plane
-            quadplane.attitude_control->reset_rate_controller_I_terms();
+        if (quadplane.option_is_set(QuadPlane::OPTION::TAILSIT_Q_ASSIST_MOTORS_ONLY)) {
+            // only use motors for Q assist, control surfaces remain under plane control. Zero copter I terms and use plane.
+            // Smoothly relax to zero so there is no step change in output, must also set limit flags so integrator cannot build faster than the relax.
+            // Assume there is always roll and pitch control surfaces, otherwise motors only assist should not be set.
+            const float dt = quadplane.attitude_control->get_dt();
+            quadplane.attitude_control->get_rate_pitch_pid().relax_integrator(0.0, dt, AC_ATTITUDE_RATE_RELAX_TC);
+            motors->limit.pitch = true;
+            quadplane.attitude_control->get_rate_yaw_pid().relax_integrator(0.0, dt, AC_ATTITUDE_RATE_RELAX_TC);
+            motors->limit.yaw = true;
+
+            if (_have_rudder || _have_v_tail) {
+                // there are yaw control  surfaces, zero motor I term
+                quadplane.attitude_control->get_rate_roll_pid().relax_integrator(0.0, dt, AC_ATTITUDE_RATE_RELAX_TC);
+                motors->limit.roll = true;
+            } else {
+                // no yaw control surfaces, zero plane I terms and use motors
+                // We skip the outputing to surfaces for this axis from the copter controller but there are none setup
+                plane.yawController.reset_I();
+            }
 
             // output tilt motors
             tilt_left = 0.0f;
@@ -447,18 +464,18 @@ void Tailsitter::output(void)
     if (is_positive(headroom)) {
         if (fabsf(aileron_mix) > headroom) {
             aileron_mix *= headroom / fabsf(aileron_mix);
-            yaw_lim = true;
+            yaw_lim |= _have_elevon;
         }
         if (fabsf(rudder_mix) > headroom) {
             rudder_mix *= headroom / fabsf(rudder_mix);
-            roll_lim = true;
+            roll_lim |= _have_v_tail;
         }
     } else {
         aileron_mix = 0.0;
         rudder_mix = 0.0;
-        roll_lim = true;
-        pitch_lim = true;
-        yaw_lim = true;
+        yaw_lim |= _have_elevon;
+        pitch_lim |= _have_elevon || _have_v_tail;
+        roll_lim |= _have_v_tail;
     }
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevon_left, elevator_mix - aileron_mix);
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevon_right, elevator_mix + aileron_mix);

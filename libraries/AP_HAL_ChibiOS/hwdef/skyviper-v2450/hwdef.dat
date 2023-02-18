@@ -27,6 +27,9 @@ undef SDIO
 undef HAL_BOARD_LOG_DIRECTORY
 undef HAL_BOARD_TERRAIN_DIRECTORY
 
+# short board name override (13 chars) to match original max length; can't change because name is used for transmitter bind CRC
+define CHIBIOS_SHORT_BOARD_NAME "skyviper-v245"
+
 SERIAL_ORDER OTG1 USART2 EMPTY UART4
 
 # enable AP_Radio support
@@ -67,14 +70,14 @@ env BUILD_ABIN True
 
 # Disable un-needed hardware drivers
 define AP_AIRSPEED_ENABLED 0
+define AP_BEACON_ENABLED 0
 define AP_OPTICALFLOW_ENABLED 0
+define AP_FRSKY_TELEM_ENABLED 0
 define BEACON_ENABLED 0
 define GPS_MOVING_BASELINE 0
-define GRIPPER_ENABLED 0
 define HAL_ADSB_SAGETECH_ENABLED 0
 define HAL_ADSB_UAVIONIX_MAVLINK_ENABLED 0
 define AP_AIS_ENABLED 0
-define AP_BATTMON_FUEL_ENABLE 0
 define HAL_BATTMON_INA2XX_ENABLED 0
 define AP_BATTMON_SMBUS_ENABLE 0
 define HAL_CRSF_TELEM_ENABLED 0
@@ -88,13 +91,15 @@ define HAL_NMEA_OUTPUT_ENABLED 0
 define HAL_PARACHUTE_ENABLED 0
 define HAL_PICCOLO_CAN_ENABLE 0
 define HAL_RUNCAM_ENABLED 0
-define HAL_SMARTAUDIO_ENABLED 0
+define AP_SMARTAUDIO_ENABLED 0
 define HAL_SPEKTRUM_TELEM_ENABLED 0
 define HAL_SPRAYER_ENABLED 0
 define HAL_WITH_ESC_TELEM 0
-define LANDING_GEAR_ENABLED 0
+define AP_LANDINGGEAR_ENABLED 0
 define MODE_TURTLE_ENABLED 0
 define WINCH_ENABLED 0
+define AP_ICENGINE_ENABLED 0
+define HAL_DISPLAY_ENABLED 0
 
 # serially-attached actuators aren't relevant on SkyViper:
 define AP_FETTEC_ONEWIRE_ENABLED 0
@@ -118,11 +123,43 @@ define AP_MOTORS_FRAME_QUAD_ENABLED 1
 
 # SkyViper isn't going to sprout new compasses:
 define COMPASS_MAX_SENSORS 1
+define AP_COMPASS_BACKEND_DEFAULT_ENABLED 0
+define AP_COMPASS_BMM150_ENABLED 1
+# avoid trying to detect BMM150 backends; the one compass is
+#specifed as part of PCNC1:
+define AP_COMPASS_BMM150_DETECT_BACKENDS_ENABLED 0
+
 define BARO_MAX_INSTANCES 1
 define INS_MAX_INSTANCES 1
 
 # SkyViper doesn't have any rangefinder, but might get mavlink?
 define AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED 0
 define AP_RANGEFINDER_MAVLINK_ENABLED 1
+
+# SkyViper doesn't have RPM sensors:
+define AP_RPM_ENABLED 0
+
+# SkyViper doesn't have a gripper:
+define AP_GRIPPER_ENABLED 0
+
+# SkyViper has a very limited set of blinkenlights
+define AP_NOTIFY_NCP5623_ENABLED 0
+define AP_NOTIFY_PCA9685_ENABLED 0
+define AP_NOTIFY_TOSHIBALED_ENABLED 0
+undef AP_NOTIFY_OREOLED_ENABLED
+define AP_NOTIFY_OREOLED_ENABLED 0
+define HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED 0
+
+define AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED 0
+
+# SkyViper really doesn't need advanced failsafe features:
+define AP_ADVANCEDFAILSAFE_ENABLED 0
+
+// EKF3 features:
+define EK3_FEATURE_EXTERNAL_NAV 0
+define EK3_FEATURE_BODY_ODOM 0
+
+// video on SkyViper is via the Sonix
+define AP_VIDEOTX_ENABLED 0
 
 AUTOBUILD_TARGETS Copter

@@ -17,6 +17,7 @@ parser.add_argument('--build', action='store_true', default=False, help='build a
 parser.add_argument('--build-target', default='copter', help='build target')
 parser.add_argument('--stop', action='store_true', default=False, help='stop on configure or build failure')
 parser.add_argument('--no-bl', action='store_true', default=False, help="don't check bootloader builds")
+parser.add_argument('--only-bl', action='store_true', default=False, help="only check bootloader builds")
 parser.add_argument('--Werror', action='store_true', default=False, help="build with -Werror")
 parser.add_argument('--pattern', default='*')
 parser.add_argument('--start', default=None, type=int, help='continue from specified build number')
@@ -83,7 +84,8 @@ for board in board_list:
     config_opts = ["--board", board]
     if args.Werror:
         config_opts += ["--Werror"]
-    run_program([args.python, "waf", "configure"] + config_opts, "configure: " + board)
+    if not args.only_bl:
+        run_program([args.python, "waf", "configure"] + config_opts, "configure: " + board)
     if args.copy_hwdef_incs_to_directory is not None:
         source = os.path.join("build", board, "hwdef.h")
         if board == "iomcu":

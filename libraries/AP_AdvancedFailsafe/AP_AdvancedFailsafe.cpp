@@ -19,14 +19,18 @@
     This is an advanced failsafe module originally modelled on the
     failsafe rules of the Outback Challenge
 */
-#include <AP_HAL/AP_HAL.h>
 #include "AP_AdvancedFailsafe.h"
+
+#if AP_ADVANCEDFAILSAFE_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
 #include <RC_Channel/RC_Channel.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Mission/AP_Mission.h>
+#include <AC_Fence/AC_Fence.h>
 
 AP_AdvancedFailsafe *AP_AdvancedFailsafe::_singleton;
 
@@ -165,21 +169,24 @@ const AP_Param::GroupInfo AP_AdvancedFailsafe::var_info[] = {
 // check for Failsafe conditions. This is called at 10Hz by the main
 // ArduPlane code
 void
-AP_AdvancedFailsafe::check(bool geofence_breached, uint32_t last_valid_rc_ms)
-{    
+AP_AdvancedFailsafe::check(uint32_t last_valid_rc_ms)
+{
     if (!_enable) {
         return;
     }
 
+#if AP_FENCE_ENABLED
     // we always check for fence breach
     if(_enable_geofence_fs) {
-        if (geofence_breached || check_altlimit()) {
+        const AC_Fence *ap_fence = AP::fence();
+        if ((ap_fence != nullptr && ap_fence->get_breaches() != 0) || check_altlimit()) {
             if (!_terminate) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "Terminating due to fence breach");
                 _terminate.set_and_notify(1);
             }
         }
     }
+#endif
 
     // update max range check
     max_range_update();
@@ -303,11 +310,7 @@ AP_AdvancedFailsafe::check(bool geofence_breached, uint32_t last_valid_rc_ms)
 
     // if we are not terminating or if there is a separate terminate
     // pin configured then toggle the heartbeat pin at 10Hz
-    if (_heartbeat_pin != -1 && (_terminate_pin != -1 || !_terminate)) {
-        _heartbeat_pin_value = !_heartbeat_pin_value;
-        hal.gpio->pinMode(_heartbeat_pin, HAL_GPIO_OUTPUT);
-        hal.gpio->write(_heartbeat_pin, _heartbeat_pin_value);
-    }    
+    heartbeat();
 
     // set the terminate pin
     if (_terminate_pin != -1) {
@@ -472,3 +475,5 @@ AP_AdvancedFailsafe *advancedfailsafe()
 }
 
 };
+
+#endif  // AP_ADVANCEDFAILSAFE_ENABLED

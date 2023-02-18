@@ -2,7 +2,7 @@
 
 #include "AP_Compass.h"
 
-#if AP_SIM_COMPASS_ENABLED
+#if AP_COMPASS_SITL_ENABLED
 
 #include "AP_Compass_Backend.h"
 
@@ -44,4 +44,4 @@ private:
     Vector3f _last_odi;
     Vector3f _last_data[MAX_SITL_COMPASSES];
 };
-#endif // AP_SIM_COMPASS_ENABLED
+#endif // AP_COMPASS_SITL_ENABLED

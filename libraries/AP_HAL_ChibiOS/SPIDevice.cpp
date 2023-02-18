@@ -500,7 +500,7 @@ void SPIDevice::test_clock_freq(void)
         uint32_t t0 = AP_HAL::micros();
         spiStartExchange(spi_devices[i].driver, len, buf1, buf2);
         chSysLock();
-        msg_t msg = osalThreadSuspendTimeoutS(&spi_devices[i].driver->thread, TIME_MS2I(100));
+        msg_t msg = osalThreadSuspendTimeoutS(&spi_devices[i].driver->thread, chTimeMS2I(100));
         chSysUnlock();
         if (msg == MSG_TIMEOUT) {
             spiAbort(spi_devices[i].driver);

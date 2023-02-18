@@ -12,6 +12,7 @@
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Logger/AP_Logger.h>
 
 #include <stdio.h>
 
@@ -205,7 +206,7 @@ bool AC_PolyFence_loader::load_point_from_eeprom(uint16_t i, Vector2l& point) co
 
 bool AC_PolyFence_loader::breached() const
 {
-    struct Location loc;
+    Location loc;
     if (!AP::ahrs().get_location(loc)) {
         return false;
     }
@@ -647,7 +648,7 @@ bool AC_PolyFence_loader::load_from_eeprom()
         return _load_time_ms != 0;
     }
 
-    struct Location ekf_origin{};
+    Location ekf_origin{};
     if (!AP::ahrs().get_origin(ekf_origin)) {
 //        Debug("fence load requires origin");
         return false;
@@ -1179,6 +1180,9 @@ bool AC_PolyFence_loader::write_fence(const AC_PolyFenceItem *new_items, uint16_
     }
     gcs().send_text(MAV_SEVERITY_DEBUG, "Fence Indexed OK");
 #endif
+
+    // start logger logging new fence
+    AP::logger().Write_Fence();
 
     void_index();
 

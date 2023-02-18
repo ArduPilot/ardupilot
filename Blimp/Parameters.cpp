@@ -20,14 +20,6 @@
  *
  */
 
-#define GSCALAR(v, name, def) { blimp.g.v.vtype, name, Parameters::k_param_ ## v, &blimp.g.v, {def_value : def} }
-#define ASCALAR(v, name, def) { blimp.aparm.v.vtype, name, Parameters::k_param_ ## v, (const void *)&blimp.aparm.v, {def_value : def} }
-#define GGROUP(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, &blimp.g.v, {group_info : class::var_info} }
-#define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, (const void *)&blimp.v, {group_info : class::var_info} }
-#define GOBJECTPTR(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, (const void *)&blimp.v, {group_info : class::var_info}, AP_PARAM_FLAG_POINTER }
-#define GOBJECTVARPTR(v, name, var_info_ptr) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, (const void *)&blimp.v, {group_info_ptr : var_info_ptr}, AP_PARAM_FLAG_POINTER | AP_PARAM_FLAG_INFO_POINTER }
-#define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, (const void *)&blimp.v, {group_info : class::var_info} }
-
 #define DEFAULT_FRAME_CLASS 0
 
 const AP_Param::Info Blimp::var_info[] = {
@@ -146,38 +138,33 @@ const AP_Param::Info Blimp::var_info[] = {
     GSCALAR(flight_mode1, "FLTMODE1",               (uint8_t)FLIGHT_MODE_1),
 
     // @Param: FLTMODE2
+    // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: Flight Mode 2
     // @Description: Flight mode when Channel 5 pwm is >1230, <= 1360
-    // @CopyValuesFrom: FLTMODE1
-    // @User: Standard
     GSCALAR(flight_mode2, "FLTMODE2",               (uint8_t)FLIGHT_MODE_2),
 
     // @Param: FLTMODE3
+    // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: Flight Mode 3
     // @Description: Flight mode when Channel 5 pwm is >1360, <= 1490
-    // @CopyValuesFrom: FLTMODE1
-    // @User: Standard
     GSCALAR(flight_mode3, "FLTMODE3",               (uint8_t)FLIGHT_MODE_3),
 
     // @Param: FLTMODE4
+    // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: Flight Mode 4
     // @Description: Flight mode when Channel 5 pwm is >1490, <= 1620
-    // @CopyValuesFrom: FLTMODE1
-    // @User: Standard
     GSCALAR(flight_mode4, "FLTMODE4",               (uint8_t)FLIGHT_MODE_4),
 
     // @Param: FLTMODE5
+    // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: Flight Mode 5
     // @Description: Flight mode when Channel 5 pwm is >1620, <= 1749
-    // @CopyValuesFrom: FLTMODE1
-    // @User: Standard
     GSCALAR(flight_mode5, "FLTMODE5",               (uint8_t)FLIGHT_MODE_5),
 
     // @Param: FLTMODE6
+    // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: Flight Mode 6
     // @Description: Flight mode when Channel 5 pwm is >=1750
-    // @CopyValuesFrom: FLTMODE1
-    // @User: Standard
     GSCALAR(flight_mode6, "FLTMODE6",               (uint8_t)FLIGHT_MODE_6),
 
     // @Param: FLTMODE_CH
@@ -196,8 +183,8 @@ const AP_Param::Info Blimp::var_info[] = {
 
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
-    // @Description: 4 byte bitmap of log types to enable
-    // @Bitmask: 0:ATTITUDE_FAST,1:ATTITUDE_MED,2:GPS,3:PM,4:CTUN,5:NTUN,6:RCIN,7:IMU,8:CMD,9:CURRENT,10:RCOUT,11:OPTFLOW,12:PID,13:COMPASS,14:INAV,15:CAMERA,17:MOTBATT,18:IMU_FAST,19:IMU_RAW
+    // @Description: Bitmap of what log types to enable in on-board logger. This value is made up of the sum of each of the log types you want to be saved. On boards supporting microSD cards or other large block-storage devices it is usually best just to enable all basic log types by setting this to 65535.
+    // @Bitmask: 0:Fast Attitude,1:Medium Attitude,2:GPS,3:System Performance,4:Control Tuning,6:RC Input,7:IMU,9:Battery Monitor,10:RC Output,11:Optical Flow,12:PID,13:Compass
     // @User: Standard
     GSCALAR(log_bitmask,    "LOG_BITMASK",          DEFAULT_LOG_BITMASK),
 
@@ -739,7 +726,7 @@ const AP_Param::Info Blimp::var_info[] = {
 
     // @Group:
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
-    { AP_PARAM_GROUP, "", Parameters::k_param_vehicle, (const void *)&blimp, {group_info : AP_Vehicle::var_info} },
+    PARAM_VEHICLE_INFO,
 
     AP_VAREND
 };
@@ -837,11 +824,6 @@ ParametersG2::ParametersG2(void)
 
 void Blimp::load_parameters(void)
 {
-    if (!AP_Param::check_var_info()) {
-        hal.console->printf("Bad var table\n");
-        AP_HAL::panic("Bad var table");
-    }
-
     hal.util->set_soft_armed(false);
 
     if (!g.format_version.load() ||

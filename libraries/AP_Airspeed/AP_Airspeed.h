@@ -1,29 +1,39 @@
 #pragma once
 
-#include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL_Boards.h>
+#include "AP_Airspeed_config.h"
+
 #include <AP_Param/AP_Param.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_MSP/msp.h>
-
-#ifndef AP_AIRSPEED_ENABLED
-#define AP_AIRSPEED_ENABLED 1
-#endif
-
-#ifndef AP_AIRSPEED_MSP_ENABLED
-#define AP_AIRSPEED_MSP_ENABLED (AP_AIRSPEED_ENABLED && HAL_MSP_SENSORS_ENABLED)
-#endif
 
 class AP_Airspeed_Backend;
 
-#ifndef AIRSPEED_MAX_SENSORS
-#define AIRSPEED_MAX_SENSORS 2
+class AP_Airspeed_Params {
+public:
+    // Constructor
+    AP_Airspeed_Params(void);
+
+    // parameters for each instance
+    AP_Int32 bus_id;
+#ifndef HAL_BUILD_AP_PERIPH
+    AP_Float offset;
+    AP_Float ratio;
+#endif
+    AP_Float psi_range;
+#ifndef HAL_BUILD_AP_PERIPH
+    AP_Int8  use;
+    AP_Int8  pin;
+    AP_Int8  skip_cal;
+    AP_Int8  tube_order;
+#endif
+    AP_Int8  type;
+    AP_Int8  bus;
+#if AP_AIRSPEED_AUTOCAL_ENABLE
+    AP_Int8  autocal;
 #endif
 
-#ifndef AP_AIRSPEED_AUTOCAL_ENABLE
-#define AP_AIRSPEED_AUTOCAL_ENABLE AP_AIRSPEED_ENABLED
-#endif
+    static const struct AP_Param::GroupInfo var_info[];
+};
+
 
 class Airspeed_Calibration {
 public:
@@ -55,7 +65,11 @@ public:
     // constructor
     AP_Airspeed();
 
+    void set_fixedwing_parameters(const class AP_FixedWing *_fixed_wing_parameters);
+
     void init(void);
+    void allocate();
+
 
     // indicate which bit in LOG_BITMASK indicates we should log airspeed readings
     void set_log_bit(uint32_t log_bit) { _log_bit = log_bit; }
@@ -82,7 +96,11 @@ public:
 
     // return the current airspeed ratio (dimensionless)
     float get_airspeed_ratio(uint8_t i) const {
+#ifndef HAL_BUILD_AP_PERIPH
         return param[i].ratio;
+#else
+        return 0.0;
+#endif
     }
     float get_airspeed_ratio(void) const { return get_airspeed_ratio(primary); }
 
@@ -91,10 +109,12 @@ public:
     bool get_temperature(float &temperature) { return get_temperature(primary, temperature); }
 
     // set the airspeed ratio (dimensionless)
+#ifndef HAL_BUILD_AP_PERIPH
     void set_airspeed_ratio(uint8_t i, float ratio) {
         param[i].ratio.set(ratio);
     }
     void set_airspeed_ratio(float ratio) { set_airspeed_ratio(primary, ratio); }
+#endif
 
     // return true if airspeed is enabled, and airspeed use is set
     bool use(uint8_t i) const;
@@ -127,6 +147,10 @@ public:
     uint32_t last_update_ms(uint8_t i) const { return state[i].last_update_ms; }
     uint32_t last_update_ms(void) const { return last_update_ms(primary); }
 
+#if AP_AIRSPEED_HYGROMETER_ENABLE
+    bool get_hygrometer(uint8_t i, uint32_t &last_sample_ms, float &temperature, float &humidity) const;
+#endif
+
     static const struct AP_Param::GroupInfo var_info[];
 
     enum pitot_tube_order { PITOT_TUBE_ORDER_POSITIVE = 0,
@@ -137,6 +161,7 @@ public:
         ON_FAILURE_AHRS_WIND_MAX_DO_DISABLE                   = (1<<0),   // If set then use airspeed failure check
         ON_FAILURE_AHRS_WIND_MAX_RECOVERY_DO_REENABLE         = (1<<1),   // If set then automatically enable the airspeed sensor use when healthy again.
         DISABLE_VOLTAGE_CORRECTION                            = (1<<2),
+        USE_EKF_CONSISTENCY                                   = (1<<3),
     };
 
     enum airspeed_type {
@@ -180,24 +205,17 @@ public:
 private:
     static AP_Airspeed *_singleton;
 
+    AP_Int8 _enable;
+    bool lib_enabled() const;
+
     AP_Int8 primary_sensor;
+    AP_Int8 max_speed_pcnt;
     AP_Int32 _options;    // bitmask options for airspeed
     AP_Float _wind_max;
     AP_Float _wind_warn;
+    AP_Float _wind_gate;
 
-    struct {
-        AP_Float offset;
-        AP_Float ratio;
-        AP_Float psi_range;
-        AP_Int8  use;
-        AP_Int8  type;
-        AP_Int8  pin;
-        AP_Int8  bus;
-        AP_Int8  autocal;
-        AP_Int8  tube_order;
-        AP_Int8  skip_cal;
-        AP_Int32 bus_id;
-    } param[AIRSPEED_MAX_SENSORS];
+    AP_Airspeed_Params param[AIRSPEED_MAX_SENSORS];
 
     struct airspeed_state {
         float   raw_airspeed;
@@ -226,9 +244,14 @@ private:
         struct {
             uint32_t last_check_ms;
             float health_probability;
+            float test_ratio;
             int8_t param_use_backup;
             uint32_t last_warn_ms;
         } failures;
+
+#if AP_AIRSPEED_HYGROMETER_ENABLE
+        uint32_t last_hygrometer_log_ms;
+#endif
     } state[AIRSPEED_MAX_SENSORS];
 
     bool calibration_enabled;
@@ -255,12 +278,24 @@ private:
         return get_health_probability(primary);
     }
 
+    // get the consistency test ratio
+    float get_test_ratio(uint8_t i) const {
+        return state[i].failures.test_ratio;
+    }
+    float get_test_ratio(void) const {
+        return get_test_ratio(primary);
+    }
+
     void update_calibration(uint8_t i, float raw_pressure);
     void update_calibration(uint8_t i, const Vector3f &vground, int16_t max_airspeed_allowed_during_cal);
     void send_airspeed_calibration(const Vector3f &vg);
     // return the current calibration offset
     float get_offset(uint8_t i) const {
+#ifndef HAL_BUILD_AP_PERIPH
         return param[i].offset;
+#else
+        return 0.0;
+#endif
     }
     float get_offset(void) const { return get_offset(primary); }
 
@@ -272,6 +307,11 @@ private:
     void Log_Airspeed();
 
     bool add_backend(AP_Airspeed_Backend *backend);
+    
+    const AP_FixedWing *fixed_wing_parameters;
+
+    void convert_per_instance();
+
 };
 
 namespace AP {

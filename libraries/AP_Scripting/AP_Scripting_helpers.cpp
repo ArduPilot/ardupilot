@@ -1,6 +1,39 @@
 #include "AP_Scripting_helpers.h"
+#include <AP_Scripting/lua_generated_bindings.h>
 
 /// Fast param access via pointer helper class
+
+// Custom lua constructor with optional param name
+int lua_new_Parameter(lua_State *L) {
+
+    const int args = lua_gettop(L);
+    if (args > 1) {
+        return luaL_argerror(L, args, "too many arguments");
+    }
+    const char * name = nullptr;
+    if (args == 1) {
+        name = luaL_checkstring(L, 1);
+    }
+
+    // This chunk is the same as the auto generated constructor
+    luaL_checkstack(L, 2, "Out of stack");
+    void *ud = lua_newuserdata(L, sizeof(Parameter));
+    memset(ud, 0, sizeof(Parameter));
+    new (ud) Parameter();
+    luaL_getmetatable(L, "Parameter");
+    lua_setmetatable(L, -2);
+
+    if (args == 0) {
+        // no arguments, nothing to do
+        return 1;
+    }
+
+    if (!static_cast<Parameter*>(ud)->init(name)) {
+        return luaL_error(L, "No parameter: %s", name);
+    }
+
+    return 1;
+}
 
 // init by name
 bool Parameter::init(const char *name)

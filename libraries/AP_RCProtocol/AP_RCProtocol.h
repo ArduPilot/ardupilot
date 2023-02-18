@@ -15,6 +15,9 @@
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #pragma once
+
+#include "AP_RCProtocol_config.h"
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 
@@ -48,8 +51,12 @@ public:
         SRXL2      =  7,
         CRSF       =  8,
         ST24       =  9,
+#if AP_RCPROTOCOL_FPORT_ENABLED
         FPORT      = 10,
+#endif
+#if AP_RCPROTOCOL_FPORT2_ENABLED
         FPORT2     = 11,
+#endif
 #if AP_RCPROTOCOL_FASTSBUS_ENABLED
         FASTSBUS   = 12,
 #endif
@@ -88,14 +95,18 @@ public:
         case SBUS:
         case SBUS_NI:
         case PPM:
+#if AP_RCPROTOCOL_FPORT_ENABLED
         case FPORT:
+#endif
+#if AP_RCPROTOCOL_FPORT2_ENABLED
         case FPORT2:
+#endif
+        case CRSF:
             return true;
         case IBUS:
         case SUMD:
         case SRXL:
         case SRXL2:
-        case CRSF:
         case ST24:
         case NONE:
             return false;
@@ -124,6 +135,7 @@ public:
 
     // add a UART for RCIN
     void add_uart(AP_HAL::UARTDriver* uart);
+    bool has_uart() const { return added.uart != nullptr; }
 
 #ifdef IOMCU_FW
     // set allowed RC protocols

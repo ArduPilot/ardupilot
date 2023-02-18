@@ -14,6 +14,9 @@
  */
 
 #include "AP_Beacon.h"
+
+#if AP_BEACON_ENABLED
+
 #include "AP_Beacon_Backend.h"
 #include "AP_Beacon_Pozyx.h"
 #include "AP_Beacon_Marvelmind.h"
@@ -426,3 +429,5 @@ AP_Beacon *beacon()
 }
 
 }
+
+#endif

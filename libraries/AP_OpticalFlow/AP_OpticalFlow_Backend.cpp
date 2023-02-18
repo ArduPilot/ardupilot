@@ -19,7 +19,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-OpticalFlow_backend::OpticalFlow_backend(OpticalFlow &_frontend) :
+OpticalFlow_backend::OpticalFlow_backend(AP_OpticalFlow &_frontend) :
     frontend(_frontend)
 {
 }
@@ -29,7 +29,7 @@ OpticalFlow_backend::~OpticalFlow_backend(void)
 }
 
 // update the frontend
-void OpticalFlow_backend::_update_frontend(const struct OpticalFlow::OpticalFlow_state &state)
+void OpticalFlow_backend::_update_frontend(const struct AP_OpticalFlow::OpticalFlow_state &state)
 {
     frontend.update_state(state);
 }
