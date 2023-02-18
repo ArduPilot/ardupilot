@@ -124,7 +124,7 @@ private:
     uint32_t _last_send_system_update_ms;
     uint32_t _last_send_static_messages_ms;
     const uint32_t _mavlink_dynamic_period_ms = 1000; //how often are mavlink dynamic messages sent in ms. E.g. 1000 = 1 Hz
-    const uint32_t _mavlink_static_period_ms = 5000; //how often are mavlink static messages sent in ms
+    const uint32_t _mavlink_static_period_ms = 3000; //how often are mavlink static messages sent in ms
 
     bool     _have_height_above_takeoff;
     Location _takeoff_location;
