@@ -597,7 +597,7 @@ bool AP_MotorsMatrix::setup_quad_matrix(motor_frame_type frame_type)
         add_motors(motors, ARRAY_SIZE(motors));
         break;
     }
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
     case MOTOR_FRAME_TYPE_NYT_PLUS: {
         _frame_type_string = "NYT_PLUS";
         static const AP_MotorsMatrix::MotorDef motors[] {
@@ -620,7 +620,7 @@ bool AP_MotorsMatrix::setup_quad_matrix(motor_frame_type frame_type)
         add_motors(motors, ARRAY_SIZE(motors));
         break;
     }
-#endif //APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#endif //APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
     case MOTOR_FRAME_TYPE_BF_X: {
         // betaflight quad X order
         // see: https://fpvfrenzy.com/betaflight-motor-order/
@@ -1364,6 +1364,30 @@ void AP_MotorsMatrix::disable_yaw_torque(void)
         _yaw_factor[i] = 0;
     }
 }
+
+#if APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+// examples can pull values direct
+float AP_MotorsMatrix::get_thrust_rpyt_out(uint8_t i) const
+{
+    if (i < AP_MOTORS_MAX_NUM_MOTORS) {
+        return _thrust_rpyt_out[i];
+    }
+    return 0.0;
+}
+
+bool AP_MotorsMatrix::get_factors(uint8_t i, float &roll, float &pitch, float &yaw, float &throttle, uint8_t &testing_order) const
+{
+    if ((i < AP_MOTORS_MAX_NUM_MOTORS) && motor_enabled[i]) {
+        roll = _roll_factor[i];
+        pitch = _pitch_factor[i];
+        yaw = _yaw_factor[i];
+        throttle = _throttle_factor[i];
+        testing_order = _test_order[i];
+        return true;
+    }
+    return false;
+}
+#endif
 
 // singleton instance
 AP_MotorsMatrix *AP_MotorsMatrix::_singleton;
