@@ -383,9 +383,13 @@ void AP_TECS::_update_speed(float load_factor)
         _TASmin = _TAS_dem;
     }
 
+    // limit the airspeed to a minimum of 3 m/s
+    const float min_airspeed = 3.0;
+
     // Reset states of time since last update is too large
     if (DT > 1.0f) {
         _TAS_state = (_EAS * EAS2TAS);
+        _TAS_state = MAX(_TAS_state, min_airspeed);
         _integDTAS_state = 0.0f;
         DT            = 0.1f; // when first starting TECS, use a
         // small time constant
@@ -411,8 +415,7 @@ void AP_TECS::_update_speed(float load_factor)
     _integDTAS_state = _integDTAS_state + integDTAS_input * DT;
     float TAS_input = _integDTAS_state + _vel_dot + aspdErr * _spdCompFiltOmega * 1.4142f;
     _TAS_state = _TAS_state + TAS_input * DT;
-    // limit the airspeed to a minimum of 3 m/s
-    _TAS_state = MAX(_TAS_state, 3.0f);
+    _TAS_state = MAX(_TAS_state, min_airspeed);
 
 }
 
