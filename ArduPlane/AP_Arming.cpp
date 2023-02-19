@@ -127,7 +127,7 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
 
     char failure_msg[50] {};
     if (!plane.control_mode->pre_arm_checks(ARRAY_SIZE(failure_msg), failure_msg)) {
-        check_failed(true, "%s %s", plane.control_mode->name(), failure_msg);
+        check_failed(display_failure, "%s %s", plane.control_mode->name(), failure_msg);
         return false;
     }
 
