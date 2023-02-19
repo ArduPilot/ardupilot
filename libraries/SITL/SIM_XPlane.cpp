@@ -457,8 +457,9 @@ bool XPlane::receive_data(void)
                 gyro.y = radians(data[2]);
                 gyro.z = radians(data[3]);
             } else {
-                gyro.x = data[1];
-                gyro.y = data[2];
+                // xplane 11
+                gyro.x = data[2];
+                gyro.y = data[1];
                 gyro.z = data[3];
             }
             // we only count gyro data towards data counts
