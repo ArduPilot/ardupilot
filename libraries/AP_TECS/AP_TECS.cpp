@@ -430,9 +430,13 @@ void AP_TECS::_update_speed(float DT)
         _EAS = constrain_float(0.01f * (float)aparm.airspeed_cruise_cm.get(), (float)aparm.airspeed_min.get(), (float)aparm.airspeed_max.get());
     }
 
+    // limit the airspeed to a minimum of 3 m/s
+    const float min_airspeed = 3.0;
+
     // Reset states of time since last update is too large
     if (_flags.reset) {
         _TAS_state = (_EAS * EAS2TAS);
+        _TAS_state = MAX(_TAS_state, min_airspeed);
         _integDTAS_state = 0.0f;
         return;
     }
@@ -449,8 +453,7 @@ void AP_TECS::_update_speed(float DT)
     _integDTAS_state = _integDTAS_state + integDTAS_input * DT;
     float TAS_input = _integDTAS_state + _vel_dot + aspdErr * _spdCompFiltOmega * 1.4142f;
     _TAS_state = _TAS_state + TAS_input * DT;
-    // limit the airspeed to a minimum of 3 m/s
-    _TAS_state = MAX(_TAS_state, 3.0f);
+    _TAS_state = MAX(_TAS_state, min_airspeed);
 
 }
 
