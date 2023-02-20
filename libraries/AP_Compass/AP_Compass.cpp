@@ -1273,7 +1273,7 @@ void Compass::_detect_backends(void)
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
     const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::COMPASS);
     if (serial_port >= 0) {
-        ADD_BACKEND(DRIVER_SERIAL, new AP_Compass_ExternalAHRS(serial_port));
+        ADD_BACKEND(DRIVER_EXTERNALAHRS, new AP_Compass_ExternalAHRS(serial_port));
     }
 #endif
     
@@ -2116,7 +2116,7 @@ void Compass::handle_msp(const MSP::msp_compass_data_message_t &pkt)
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
 void Compass::handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt)
 {
-    if (!_driver_enabled(DRIVER_SERIAL)) {
+    if (!_driver_enabled(DRIVER_EXTERNALAHRS)) {
         return;
     }
     for (uint8_t i=0; i<_backend_count; i++) {
