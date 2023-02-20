@@ -451,6 +451,7 @@ ap_object AP_HAL::I2CDevice semaphore-pointer
 ap_object AP_HAL::I2CDevice method set_retries void uint8_t 0 20
 ap_object AP_HAL::I2CDevice method write_register boolean uint8_t'skip_check uint8_t'skip_check
 ap_object AP_HAL::I2CDevice manual read_registers AP_HAL__I2CDevice_read_registers 2
+ap_object AP_HAL::I2CDevice manual write_registers AP_HAL__I2CDevice_write_registers 2
 ap_object AP_HAL::I2CDevice method set_address void uint8_t'skip_check
 
 

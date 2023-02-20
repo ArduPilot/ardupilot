@@ -1,4 +1,3 @@
-#include <AP_Common/AP_Common.h>
 #include <AP_HAL/HAL.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Filesystem/AP_Filesystem.h>
@@ -446,6 +445,41 @@ int AP_HAL__I2CDevice_read_registers(lua_State *L) {
         }
     }
     return success;
+}
+
+int AP_HAL__I2CDevice_write_registers(lua_State *L) {
+    const int args = lua_gettop(L);
+    bool multi_byte;
+    if (args == 2) {
+        multi_byte = false;
+    } else if (args == 3) {
+        multi_byte = true;
+    } else {
+        return luaL_argerror(L, args, "expected 1 or 2 arguments");
+    }
+
+    AP_HAL::I2CDevice * ud = *check_AP_HAL__I2CDevice(L, 1);
+
+    const uint8_t addr = get_uint8_t(L, 2);
+
+    std::vector<uint8_t> values;
+    values.push_back(addr);
+    
+    if (multi_byte) {
+        const int table_index = 3;
+        const int table_value_index = 4;
+        for(lua_Integer i = 1; lua_geti(L, table_index, i) != LUA_TNIL; ++i) { 
+            values.push_back(get_uint8_t(L, table_value_index));
+            lua_settop(L, 3);
+        }
+    }
+
+    ud->get_semaphore()->take_blocking();
+    const bool result = static_cast<bool>(ud->transfer(&values[0], values.size(), nullptr, 0));
+    ud->get_semaphore()->give();
+
+    lua_pushboolean(L, result);
+    return 0;
 }
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
