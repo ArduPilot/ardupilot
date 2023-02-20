@@ -1064,6 +1064,7 @@ void Compass::_probe_external_i2c_compasses(void)
 {
 #if !defined(HAL_SKIP_AUTO_INTERNAL_I2C_PROBE)
     bool all_external = (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2);
+    (void)all_external;  // in case all backends using this are compiled out
 #endif
 #if AP_COMPASS_HMC5843_ENABLED
     // external i2c bus
