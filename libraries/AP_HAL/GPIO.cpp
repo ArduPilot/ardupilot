@@ -6,6 +6,15 @@
 
 extern const AP_HAL::HAL& hal;
 
+AP_HAL::PWMSource::~PWMSource()
+{
+    if (interrupt_attached) {
+        // Assume this is always successful
+        hal.gpio->detach_interrupt(_pin);
+        interrupt_attached = false;
+    }
+}
+
 bool AP_HAL::PWMSource::set_pin(int16_t new_pin, const char *subsystem)
 {
     if (new_pin == _pin) {
