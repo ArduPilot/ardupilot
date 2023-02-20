@@ -401,16 +401,19 @@ bool AP_Arming::ins_gyros_consistent(const AP_InertialSensor &ins)
         if (vec_diff.length() > radians(5)) {
             // this sensor disagrees with the primary sensor, so
             // gyros are inconsistent:
+            last_gyro_pass_ms = 0;
             return false;
         }
     }
 
     // we didn't return false in the loop above, so sensors are
     // consistent right now:
-    last_gyro_pass_ms = now;
+    if (last_gyro_pass_ms == 0) {
+        last_gyro_pass_ms = now;
+    }
 
     // must pass for at least 10 seconds before we're considered consistent:
-    if (now - last_gyro_pass_ms > 10000) {
+    if (now - last_gyro_pass_ms < 10000) {
         return false;
     }
 
