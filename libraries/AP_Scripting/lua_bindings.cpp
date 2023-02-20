@@ -1,3 +1,4 @@
+#include <AP_Common/AP_Common.h>
 #include <AP_HAL/HAL.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Filesystem/AP_Filesystem.h>
@@ -466,10 +467,8 @@ int AP_HAL__I2CDevice_write_registers(lua_State *L) {
     values.push_back(addr);
     
     if (multi_byte) {
-        const int table_index = 3;
-        const int table_value_index = 4;
-        for(lua_Integer i = 1; lua_geti(L, table_index, i) != LUA_TNIL; ++i) { 
-            values.push_back(get_uint8_t(L, table_value_index));
+        for(lua_Integer i = 1; lua_geti(L, 3, i) != LUA_TNIL; ++i) { 
+            values.push_back(get_uint8_t(L, 4));
             lua_settop(L, 3);
         }
     }
