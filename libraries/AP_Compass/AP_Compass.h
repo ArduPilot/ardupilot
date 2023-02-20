@@ -447,7 +447,9 @@ private:
 #if AP_COMPASS_UAVCAN_ENABLED
         DRIVER_UAVCAN   =11,
 #endif
+#if AP_COMPASS_QMC5883L_ENABLED
         DRIVER_QMC5883L =12,
+#endif
 #if AP_COMPASS_SITL_ENABLED
         DRIVER_SITL     =13,
 #endif

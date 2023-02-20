@@ -1085,7 +1085,7 @@ void Compass::_probe_external_i2c_compasses(void)
 #endif  // !defined(HAL_SKIP_AUTO_INTERNAL_I2C_PROBE)
 #endif  // AP_COMPASS_HMC5843_ENABLED
 
-#if AP_COMPASS_I2C_BACKEND_DEFAULT_ENABLED || defined(HAL_USE_I2C_MAG_QMC5883L)
+#if AP_COMPASS_QMC5883L_ENABLED
     //external i2c bus
     FOREACH_I2C_EXTERNAL(i) {
         ADD_BACKEND(DRIVER_QMC5883L, AP_Compass_QMC5883L::probe(GET_I2C_DEVICE(i, HAL_COMPASS_QMC5883L_I2C_ADDR),
@@ -1103,7 +1103,7 @@ void Compass::_probe_external_i2c_compasses(void)
         }
     }
 #endif
-#endif
+#endif  // AP_COMPASS_QMC5883L_ENABLED
 
 #ifndef HAL_BUILD_AP_PERIPH
     // AK09916 on ICM20948
