@@ -500,6 +500,8 @@ int lua_get_CAN_device2(lua_State *L) {
   directory listing, return table of files in a directory
  */
 int lua_dirlist(lua_State *L) {
+    binding_argcheck(L, 1);
+
     struct dirent *entry;
     int i;
     const char *path = luaL_checkstring(L, 1);
@@ -529,8 +531,9 @@ int lua_dirlist(lua_State *L) {
   remove a file
  */
 int lua_removefile(lua_State *L) {
-  const char *filename = luaL_checkstring(L, 1);
-  return luaL_fileresult(L, remove(filename) == 0, filename);
+    binding_argcheck(L, 1);
+    const char *filename = luaL_checkstring(L, 1);
+    return luaL_fileresult(L, remove(filename) == 0, filename);
 }
 
 // Manual binding to allow SRV_Channels table to see safety state
@@ -538,5 +541,26 @@ int SRV_Channels_get_safety_state(lua_State *L) {
     binding_argcheck(L, 1);
     const bool data = hal.util->safety_switch_state() !=  AP_HAL::Util::SAFETY_ARMED;
     lua_pushboolean(L, data);
+    return 1;
+}
+
+int lua_get_PWMSource(lua_State *L) {
+    binding_argcheck(L, 0);
+
+    static_assert(SCRIPTING_MAX_NUM_PWM_SOURCE >= 0, "There cannot be a negative number of PWMSources");
+    if (AP::scripting()->num_pwm_source >= SCRIPTING_MAX_NUM_PWM_SOURCE) {
+        return luaL_argerror(L, 1, "no PWMSources available");
+    }
+
+    AP::scripting()->_pwm_source[AP::scripting()->num_pwm_source] = new AP_HAL::PWMSource;
+    if (AP::scripting()->_pwm_source[AP::scripting()->num_pwm_source] == nullptr) {
+        return luaL_argerror(L, 1, "PWMSources device nullptr");
+    }
+
+    new_AP_HAL__PWMSource(L);
+    *((AP_HAL::PWMSource**)luaL_checkudata(L, -1, "AP_HAL::PWMSource")) = AP::scripting()->_pwm_source[AP::scripting()->num_pwm_source];
+
+    AP::scripting()->num_pwm_source++;
+
     return 1;
 }

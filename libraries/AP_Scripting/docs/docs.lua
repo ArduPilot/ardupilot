@@ -309,24 +309,24 @@ function motor_factor_table_ud:roll(index, value) end
 
 
 -- desc
----@class PWMSource_ud
-local PWMSource_ud = {}
+---@class AP_HAL__PWMSource_ud
+local AP_HAL__PWMSource_ud = {}
 
----@return PWMSource_ud
+---@return AP_HAL__PWMSource_ud
 function PWMSource() end
 
 -- desc
 ---@return integer
-function PWMSource_ud:get_pwm_avg_us() end
+function AP_HAL__PWMSource_ud:get_pwm_avg_us() end
 
 -- desc
 ---@return integer
-function PWMSource_ud:get_pwm_us() end
+function AP_HAL__PWMSource_ud:get_pwm_us() end
 
 -- desc
 ---@param pin_number integer
 ---@return boolean
-function PWMSource_ud:set_pin(pin_number) end
+function AP_HAL__PWMSource_ud:set_pin(pin_number) end
 
 
 -- desc
