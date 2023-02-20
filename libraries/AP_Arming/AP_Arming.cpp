@@ -362,16 +362,19 @@ bool AP_Arming::ins_accels_consistent(const AP_InertialSensor &ins)
         if (vec_diff.length() > threshold) {
             // this sensor disagrees with the primary sensor, so
             // accels are inconsistent:
+            last_accel_pass_ms = 0;
             return false;
         }
     }
 
-    // we didn't return false in the loop above, so sensors are
-    // consistent right now:
-    last_accel_pass_ms = now;
+    if (last_accel_pass_ms == 0) {
+        // we didn't return false in the loop above, so sensors are
+        // consistent right now:
+        last_accel_pass_ms = now;
+    }
 
     // must pass for at least 10 seconds before we're considered consistent:
-    if (now - last_accel_pass_ms > 10000) {
+    if (now - last_accel_pass_ms < 10000) {
         return false;
     }
 
