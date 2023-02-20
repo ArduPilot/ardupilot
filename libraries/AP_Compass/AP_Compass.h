@@ -438,15 +438,21 @@ private:
 #endif
         DRIVER_ICM20948 =8,
         DRIVER_MMC3416  =9,
+#if AP_COMPASS_UAVCAN_ENABLED
         DRIVER_UAVCAN   =11,
+#endif
         DRIVER_QMC5883L =12,
+#if AP_COMPASS_SITL_ENABLED
         DRIVER_SITL     =13,
+#endif
         DRIVER_MAG3110  =14,
 #if AP_COMPASS_IST8308_ENABLED
         DRIVER_IST8308  =15,
 #endif
 		DRIVER_RM3100   =16,
+#if AP_COMPASS_MSP_ENABLED
         DRIVER_MSP      =17,
+#endif
         DRIVER_SERIAL   =18,
         DRIVER_MMC5XX3  =19,
     };
