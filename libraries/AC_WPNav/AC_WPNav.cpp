@@ -216,6 +216,7 @@ void AC_WPNav::set_speed_xy(float speed_cms)
 
         // initialize the desired wp speed
         _wp_desired_speed_xy_cms = speed_cms;
+        _wp_speed_cms.set_and_save_ifchanged(speed_cms);
 
         // update position controller speed and acceleration
         _pos_control.set_max_speed_accel_xy(_wp_desired_speed_xy_cms, get_wp_acceleration());
