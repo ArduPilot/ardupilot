@@ -453,7 +453,9 @@ private:
 #if AP_COMPASS_SITL_ENABLED
         DRIVER_SITL     =13,
 #endif
+#if AP_COMPASS_MAG3110_ENABLED
         DRIVER_MAG3110  =14,
+#endif
 #if AP_COMPASS_IST8308_ENABLED
         DRIVER_IST8308  =15,
 #endif
