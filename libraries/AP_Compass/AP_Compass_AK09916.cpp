@@ -17,6 +17,8 @@
  */
 #include "AP_Compass_AK09916.h"
 
+#if AP_COMPASS_AK09916_ENABLED
+
 #include <assert.h>
 #include <AP_HAL/AP_HAL.h>
 #include <utility>
@@ -491,3 +493,5 @@ uint32_t AP_AK09916_BusDriver_Auxiliary::get_bus_id(void) const
 {
     return _bus->get_bus_id();
 }
+
+#endif  // AP_COMPASS_AK09916_ENABLED

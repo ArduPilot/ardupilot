@@ -14,6 +14,10 @@
  */
 #pragma once
 
+#include "AP_Compass_config.h"
+
+#if AP_COMPASS_AK09916_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
@@ -191,3 +195,5 @@ private:
     AuxiliaryBusSlave *_slave;
     bool _started;
 };
+
+#endif  // AP_COMPASS_AK09916_ENABLED
