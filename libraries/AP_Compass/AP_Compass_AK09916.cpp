@@ -100,6 +100,7 @@ AP_Compass_Backend *AP_Compass_AK09916::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> 
     return sensor;
 }
 
+#if AP_COMPASS_ICM20948_ENABLED
 AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
                                                      AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev_icm,
                                                      bool force_external,
@@ -221,6 +222,7 @@ AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948_I2C(uint8_t inv2_instance
 
     return sensor;
 }
+#endif  // AP_COMPASS_ICM20948_ENABLED
 
 bool AP_Compass_AK09916::init()
 {
