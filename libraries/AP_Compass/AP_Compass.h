@@ -463,7 +463,9 @@ private:
 #if AP_COMPASS_MSP_ENABLED
         DRIVER_MSP      =17,
 #endif
-        DRIVER_SERIAL   =18,
+#if AP_COMPASS_EXTERNALAHRS_ENABLED
+        DRIVER_EXTERNALAHRS   =18,
+#endif
         DRIVER_MMC5XX3  =19,
     };
 
