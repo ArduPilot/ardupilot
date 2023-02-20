@@ -352,7 +352,9 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     // Roundup all subscribers from supported drivers
     AP_UAVCAN_DNA_Server::subscribe_msgs(this);
     AP_GPS_UAVCAN::subscribe_msgs(this);
+#if AP_COMPASS_UAVCAN_ENABLED
     AP_Compass_UAVCAN::subscribe_msgs(this);
+#endif
 #if AP_BARO_UAVCAN_ENABLED
     AP_Baro_UAVCAN::subscribe_msgs(this);
 #endif
