@@ -244,6 +244,15 @@ void AP_Scripting::thread(void) {
         }
         num_i2c_devices = 0;
 
+        // clear allocated PWM sources
+        for (uint8_t i=0; i<SCRIPTING_MAX_NUM_PWM_SOURCE; i++) {
+            if (_pwm_source[i] != nullptr) {
+                delete _pwm_source[i];
+                _pwm_source[i] = nullptr;
+            }
+        }
+        num_pwm_source = 0;
+
         bool cleared = false;
         while(true) {
             // 1hz check if we should restart
