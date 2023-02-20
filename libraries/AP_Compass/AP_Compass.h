@@ -468,7 +468,9 @@ private:
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
         DRIVER_EXTERNALAHRS   =18,
 #endif
+#if AP_COMPASS_MMC5XX3_ENABLED
         DRIVER_MMC5XX3  =19,
+#endif
     };
 
     bool _driver_enabled(enum DriverType driver_type);
