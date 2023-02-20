@@ -147,7 +147,7 @@ bool Plane::suppress_throttle(void)
     }
 
 #if HAL_QUADPLANE_ENABLED
-    if (quadplane.is_flying()) {
+    if (quadplane.is_flying_vtol()) {
         throttle_suppressed = false;
         return false;
     }

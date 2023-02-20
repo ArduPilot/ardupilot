@@ -1132,24 +1132,6 @@ float QuadPlane::get_pilot_land_throttle(void) const
     return constrain_float(throttle_in, 0, 1);
 }
 
-// helper for is_flying()
-bool QuadPlane::is_flying(void)
-{
-    if (!available()) {
-        return false;
-    }
-    if (plane.control_mode == &plane.mode_guided && guided_takeoff) {
-        return true;
-    }
-    if (motors->get_throttle() > 0.01f && !motors->limit.throttle_lower) {
-        return true;
-    }
-    if (tailsitter.in_vtol_transition()) {
-        return true;
-    }
-    return false;
-}
-
 // crude landing detector to prevent tipover
 bool QuadPlane::should_relax(void)
 {
@@ -1181,8 +1163,11 @@ bool QuadPlane::is_flying_vtol(void) const
         // assume that with no motor outputs we're not flying in VTOL mode
         return false;
     }
-    if (motors->get_throttle() > 0.01f) {
-        // if we are demanding more than 1% throttle then don't consider aircraft landed
+    if (motors->get_throttle() > 0.01f && !motors->limit.throttle_lower) {
+        // if we are demanding more than 1% throttle or not on the lower throttle limit then don't consider aircraft landed
+        return true;
+    }
+    if (tailsitter.in_vtol_transition()) {
         return true;
     }
     if (plane.control_mode->is_vtol_man_throttle() && air_mode_active()) {
@@ -1793,6 +1778,12 @@ void QuadPlane::update(void)
         }
         // todo: do you want to set the throttle at this point?
         pos_control->relax_z_controller(0);
+
+    } else if (!plane.is_flying()) {
+        // probbibly on the ground, relax rate I terms
+        // not a full relax, rate controllers will still work if is_flying is wrong
+        // smmoth reset will not cause any step change in output
+        attitude_control->reset_rate_controller_I_terms_smoothly();
     }
 
     const uint32_t now = AP_HAL::millis();
@@ -3752,7 +3743,7 @@ bool QuadPlane::do_user_takeoff(float takeoff_altitude)
         gcs().send_text(MAV_SEVERITY_INFO, "Must be armed for takeoff");
         return false;
     }
-    if (is_flying()) {
+    if (is_flying_vtol()) {
         gcs().send_text(MAV_SEVERITY_INFO, "Already flying - no takeoff");
         return false;
     }

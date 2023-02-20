@@ -35,7 +35,7 @@ void Plane::update_is_flying_5Hz(void)
     }
 
 #if HAL_QUADPLANE_ENABLED
-    is_flying_bool = quadplane.is_flying();
+    is_flying_bool = quadplane.is_flying_vtol();
 #endif
     if (is_flying_bool) {
         // no need to look further

@@ -118,9 +118,6 @@ public:
     void update_throttle_hover();
     bool show_vtol_view() const;
 
-    // vtol help for is_flying()
-    bool is_flying(void);
-
     // return desired forward throttle percentage
     float forward_throttle_pct();
     float get_weathervane_yaw_rate_cds(void);
