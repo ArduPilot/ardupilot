@@ -88,6 +88,24 @@ assert(param:add_table(PARAM_TABLE_KEY, "DJIR_", 2), "could not add param table"
 assert(param:add_param(PARAM_TABLE_KEY, 1, "DEBUG", 0), "could not add DJIR_DEBUG param")
 assert(param:add_param(PARAM_TABLE_KEY, 2, "UPSIDEDOWN", 0), "could not add DJIR_UPSIDEDOWN param")
 
+--[[
+  // @Param: DJIR_DEBUG
+  // @DisplayName: DJIRS2 debug
+  // @Description: Enable DJIRS2 debug
+  // @Values: 0:Disabled,1:Enabled,2:Enabled with attitude reporting
+  // @User: Advanced
+--]]
+local DJIR_DEBUG = Parameter("DJIR_DEBUG")              -- debug level. 0:disabled 1:enabled 2:enabled with attitude reporting
+
+--[[
+  // @Param: DJIR_UPSIDEDOWN
+  // @DisplayName: DJIRS2 upside down
+  // @Description: DJIRS2 upside down
+  // @Values: 0:Right side up,1:Upside down
+  // @User: Standard
+--]]
+local DJIR_UPSIDEDOWN = Parameter("DJIR_UPSIDEDOWN")    -- 0:rightsideup, 1:upsidedown
+
 -- bind parameters to variables
 local CAN_P1_DRIVER = Parameter("CAN_P1_DRIVER")        -- If using CAN1, should be 1:First driver
 local CAN_P1_BITRATE = Parameter("CAN_P1_BITRATE")      -- If using CAN1, should be 1000000
@@ -96,8 +114,6 @@ local CAN_P2_DRIVER = Parameter("CAN_P2_DRIVER")        -- If using CAN2, should
 local CAN_P2_BITRATE = Parameter("CAN_P2_BITRATE")      -- If using CAN2, should be 1000000
 local CAN_D2_PROTOCOL = Parameter("CAN_D2_PROTOCOL")    -- If using CAN2, should be 10:Scripting
 local MNT1_TYPE = Parameter("MNT1_TYPE")                -- should be 9:Scripting
-local DJIR_DEBUG = Parameter("DJIR_DEBUG")              -- debug level. 0:disabled 1:enabled 2:enabled with attitude reporting
-local DJIR_UPSIDEDOWN = Parameter("DJIR_UPSIDEDOWN")    -- 0:rightsideup, 1:upsidedown
 
 -- message definitions
 local HEADER = 0xAA
