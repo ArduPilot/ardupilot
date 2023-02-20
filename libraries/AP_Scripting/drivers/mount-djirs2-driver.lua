@@ -438,7 +438,7 @@ function send_target_angles(roll_angle_deg, pitch_angle_deg, yaw_angle_deg, time
   yaw_angle_deg = yaw_angle_deg or 0
   time_sec = time_sec or 2
 
-  -- ensure angles are integers. invert roll direction
+  -- ensure angles are integers
   roll_angle_deg = -math.floor(roll_angle_deg + 0.5)
   pitch_angle_deg = math.floor(pitch_angle_deg + 0.5)
   yaw_angle_deg = math.floor(yaw_angle_deg + 0.5)
