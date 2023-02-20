@@ -9363,6 +9363,18 @@ class AutoTestCopter(AutoTest):
         if self.get_sim_time() - tstart < 8:
             raise NotAchievedException("Should take 10 seconds to become armableafter IMU upset")
 
+        self.start_subsubtest("prearm checks for gyro inconsistency")
+        self.context_push()
+        self.set_parameters({
+            "SIM_GYR1_BIAS_X": math.radians(10),
+        })
+        self.assert_prearm_failure("Gyros inconsistent")
+        self.context_pop()
+        tstart = self.get_sim_time()
+        self.wait_ready_to_arm()
+        if self.get_sim_time() - tstart < 8:
+            raise NotAchievedException("Should take 10 seconds to become armableafter IMU upset")
+
     def Sprayer(self):
         """Test sprayer functionality."""
         self.context_push()
