@@ -1107,6 +1107,7 @@ void Compass::_probe_external_i2c_compasses(void)
 
 #ifndef HAL_BUILD_AP_PERIPH
     // AK09916 on ICM20948
+#if AP_COMPASS_AK09916_ENABLED
     FOREACH_I2C_EXTERNAL(i) {
         ADD_BACKEND(DRIVER_ICM20948, AP_Compass_AK09916::probe_ICM20948(GET_I2C_DEVICE(i, HAL_COMPASS_AK09916_I2C_ADDR),
                     GET_I2C_DEVICE(i, HAL_COMPASS_ICM20948_I2C_ADDR),
@@ -1126,6 +1127,7 @@ void Compass::_probe_external_i2c_compasses(void)
                     all_external, ROTATION_PITCH_180_YAW_90));
     }
 #endif
+#endif  // AP_COMPASS_AK09916_ENABLED
 #endif // HAL_BUILD_AP_PERIPH
 
 #if AP_COMPASS_LIS3MDL_ENABLED
@@ -1155,7 +1157,7 @@ void Compass::_probe_external_i2c_compasses(void)
     }
 #endif  // AP_COMPASS_LIS3MDL_ENABLED
 
-#if AP_COMPASS_I2C_BACKEND_DEFAULT_ENABLED || defined(HAL_USE_I2C_MAG_AK09916)
+#if AP_COMPASS_AK09916_ENABLED
     // AK09916. This can be found twice, due to the ICM20948 i2c bus pass-thru, so we need to be careful to avoid that
     FOREACH_I2C_EXTERNAL(i) {
         ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe(GET_I2C_DEVICE(i, HAL_COMPASS_AK09916_I2C_ADDR),
@@ -1167,7 +1169,7 @@ void Compass::_probe_external_i2c_compasses(void)
                     all_external, all_external?ROTATION_YAW_270:ROTATION_NONE));
     }
 #endif
-#endif
+#endif  // AP_COMPASS_AK09916_ENABLED
 
 #if AP_COMPASS_IST8310_ENABLED
     // IST8310 on external and internal bus
@@ -1378,7 +1380,9 @@ void Compass::_detect_backends(void)
         // first MPU9250 to run without disturbance at high rate
         ADD_BACKEND(DRIVER_AK8963, AP_Compass_AK8963::probe_mpu9250(1, ROTATION_YAW_270));
 #endif
+#if AP_COMPASS_AK09916_ENABLED
         ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe_ICM20948(0, ROTATION_ROLL_180_YAW_90));
+#endif
         break;
 
     case AP_BoardConfig::PX4_BOARD_FMUV5:
