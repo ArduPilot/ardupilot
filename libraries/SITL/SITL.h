@@ -494,6 +494,7 @@ public:
     // IMU control parameters
     AP_Float gyro_noise[INS_MAX_INSTANCES];  // in degrees/second
     AP_Vector3f gyro_scale[INS_MAX_INSTANCES];  // percentage
+    AP_Vector3f gyro_bias[INS_MAX_INSTANCES]; // in rad/s
     AP_Float accel_noise[INS_MAX_INSTANCES]; // in m/s/s
     AP_Vector3f accel_bias[INS_MAX_INSTANCES]; // in m/s/s
     AP_Vector3f accel_scale[INS_MAX_INSTANCES]; // in m/s/s
