@@ -679,19 +679,23 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm42670(void)
 void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm456xy(void)
 {
     uint8_t odr_config = 4;
-    backend_rate_hz = 3200;
+    backend_rate_hz = 1600;
+    // always fast sampling
+    fast_sampling = dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
 
     if (enable_fast_sampling(accel_instance) && get_fast_sampling_rate() > 1) {
-        fast_sampling = dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
-
-        if (fast_sampling) {
-            backend_rate_hz = calculate_fast_sampling_backend_rate(backend_rate_hz, backend_rate_hz * 4);
-        }
+        backend_rate_hz = calculate_fast_sampling_backend_rate(backend_rate_hz, backend_rate_hz * 4);
     }
+
+    // this sensor actually only supports 2 speeds
+    backend_rate_hz = constrain_int16(backend_rate_hz, 3200, 6400);
 
     switch (backend_rate_hz) {
     case 6400: // 6.4Khz
         odr_config = 3;
+        break;
+    case 3200: // 3.2Khz
+        odr_config = 4;
         break;
     default:
         break;
