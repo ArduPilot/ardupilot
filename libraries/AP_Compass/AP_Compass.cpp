@@ -1228,7 +1228,7 @@ void Compass::_probe_external_i2c_compasses(void)
 #endif
 #endif  // AP_COMPASS_MMC3416_ENABLED
 
-#if AP_COMPASS_I2C_BACKEND_DEFAULT_ENABLED || defined(HAL_USE_I2C_MAG_RM3100)
+#if AP_COMPASS_RM3100_ENABLED
 #ifdef HAL_COMPASS_RM3100_I2C_ADDR
     const uint8_t rm3100_addresses[] = { HAL_COMPASS_RM3100_I2C_ADDR };
 #else
@@ -1252,7 +1252,7 @@ void Compass::_probe_external_i2c_compasses(void)
         }
     }
 #endif
-#endif
+#endif  // AP_COMPASS_RM3100_ENABLED
 
 #if AP_COMPASS_BMM150_DETECT_BACKENDS_ENABLED
     // BMM150 on I2C

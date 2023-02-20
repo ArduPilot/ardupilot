@@ -459,7 +459,9 @@ private:
 #if AP_COMPASS_IST8308_ENABLED
         DRIVER_IST8308  =15,
 #endif
+#if AP_COMPASS_RM3100_ENABLED
 		DRIVER_RM3100   =16,
+#endif
 #if AP_COMPASS_MSP_ENABLED
         DRIVER_MSP      =17,
 #endif
