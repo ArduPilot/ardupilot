@@ -251,6 +251,12 @@ private:
     // periodic logging
     void logging();
     
+    // init all the DroneCAN message callbacks and handlers
+    void init_ap_library_msgs();
+    void init_service_client_msgs(const uint8_t driver_index);
+    void init_listen_msgs(const uint8_t driver_index);
+    void init_publish_msgs(const uint8_t driver_index);
+
     // set parameter on a node
     ParamGetSetIntCb *param_int_cb;
     ParamGetSetFloatCb *param_float_cb;

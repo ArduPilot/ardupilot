@@ -255,8 +255,6 @@ bool AP_UAVCAN::add_interface(AP_HAL::CANIface* can_iface) {
     return true;
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic error "-Wframe-larger-than=1700"
 void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
 {
     _driver_index = driver_index;
@@ -349,6 +347,36 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
         return;
     }
 
+    init_ap_library_msgs();
+    init_publish_msgs(driver_index);
+    init_service_client_msgs(driver_index);
+    init_listen_msgs(driver_index);
+
+    _led_conf.devices_count = 0;
+
+    /*
+     * Informing other nodes that we're ready to work.
+     * Default mode is INITIALIZING.
+     */
+    _node->setModeOperational();
+
+    // Spin node for device discovery
+    _node->spin(uavcan::MonotonicDuration::fromMSec(5000));
+
+    snprintf(_thread_name, sizeof(_thread_name), "uavcan_%u", driver_index);
+
+    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_UAVCAN::loop, void), _thread_name, UAVCAN_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_CAN, 0)) {
+        _node->setModeOfflineAndPublish();
+        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: couldn't create thread\n\r");
+        return;
+    }
+
+    _initialized = true;
+    debug_uavcan(AP_CANManager::LOG_INFO, "UAVCAN: init done\n\r");
+}
+
+void AP_UAVCAN::init_ap_library_msgs()
+{
     // Roundup all subscribers from supported drivers
     AP_UAVCAN_DNA_Server::subscribe_msgs(this);
     AP_GPS_UAVCAN::subscribe_msgs(this);
@@ -373,7 +401,10 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
 #if AP_PROXIMITY_DRONECAN_ENABLED
     AP_Proximity_DroneCAN::subscribe_msgs(this);
 #endif
+}
 
+void AP_UAVCAN::init_publish_msgs(const uint8_t driver_index)
+{
     act_out_array[driver_index] = new uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>(*_node);
     act_out_array[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
     act_out_array[driver_index]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
@@ -405,11 +436,17 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     notify_state[driver_index] = new uavcan::Publisher<ardupilot::indication::NotifyState>(*_node);
     notify_state[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
     notify_state[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
+}
 
+void AP_UAVCAN::init_service_client_msgs(const uint8_t driver_index)
+{
     param_get_set_client[driver_index] = new uavcan::ServiceClient<uavcan::protocol::param::GetSet, ParamGetSetCb>(*_node, ParamGetSetCb(this, &AP_UAVCAN::handle_param_get_set_response));
 
     param_execute_opcode_client[driver_index] = new uavcan::ServiceClient<uavcan::protocol::param::ExecuteOpcode, ParamExecuteOpcodeCb>(*_node, ParamExecuteOpcodeCb(this, &AP_UAVCAN::handle_param_save_response));
+}
 
+void AP_UAVCAN::init_listen_msgs(const uint8_t driver_index)
+{
     safety_button_listener[driver_index] = new uavcan::Subscriber<ardupilot::indication::Button, ButtonCb>(*_node);
     if (safety_button_listener[driver_index]) {
         safety_button_listener[driver_index]->start(ButtonCb(this, &handle_button));
@@ -441,30 +478,7 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     if (debug_listener[driver_index]) {
         debug_listener[driver_index]->start(DebugCb(this, &handle_debug));
     }
-    
-    _led_conf.devices_count = 0;
-
-    /*
-     * Informing other nodes that we're ready to work.
-     * Default mode is INITIALIZING.
-     */
-    _node->setModeOperational();
-
-    // Spin node for device discovery
-    _node->spin(uavcan::MonotonicDuration::fromMSec(5000));
-
-    snprintf(_thread_name, sizeof(_thread_name), "uavcan_%u", driver_index);
-
-    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_UAVCAN::loop, void), _thread_name, UAVCAN_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_CAN, 0)) {
-        _node->setModeOfflineAndPublish();
-        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: couldn't create thread\n\r");
-        return;
-    }
-
-    _initialized = true;
-    debug_uavcan(AP_CANManager::LOG_INFO, "UAVCAN: init done\n\r");
 }
-#pragma GCC diagnostic pop
 
 void AP_UAVCAN::loop(void)
 {
@@ -522,7 +536,6 @@ void AP_UAVCAN::loop(void)
         logging();
     }
 }
-
 
 ///// SRV output /////
 
