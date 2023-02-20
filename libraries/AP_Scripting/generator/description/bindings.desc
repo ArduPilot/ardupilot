@@ -478,10 +478,11 @@ ap_object AP_HAL::AnalogSource method voltage_average float
 ap_object AP_HAL::AnalogSource method voltage_latest float
 ap_object AP_HAL::AnalogSource method voltage_average_ratiometric float
 
-userdata AP_HAL::PWMSource rename PWMSource
-userdata AP_HAL::PWMSource method set_pin boolean uint8_t'skip_check "Scripting"'literal
-userdata AP_HAL::PWMSource method get_pwm_us uint16_t
-userdata AP_HAL::PWMSource method get_pwm_avg_us uint16_t
+global manual PWMSource lua_get_PWMSource 0
+
+ap_object AP_HAL::PWMSource method set_pin boolean uint8_t'skip_check "Scripting"'literal
+ap_object AP_HAL::PWMSource method get_pwm_us uint16_t
+ap_object AP_HAL::PWMSource method get_pwm_avg_us uint16_t
 
 singleton hal.gpio rename gpio
 singleton hal.gpio literal
