@@ -19,6 +19,11 @@ void Sub::init_ardupilot()
     can_mgr.init();
 #endif
 
+#if STATS_ENABLED == ENABLED
+    // initialise stats module
+    g2.stats.init();
+#endif
+
     // init cargo gripper
 #if AP_GRIPPER_ENABLED
     g2.gripper.init();

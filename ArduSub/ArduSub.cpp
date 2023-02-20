@@ -101,6 +101,9 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 #if AP_GRIPPER_ENABLED
     SCHED_TASK_CLASS(AP_Gripper,          &sub.g2.gripper,   update,              10,  75,  75),
 #endif
+#if STATS_ENABLED == ENABLED
+    SCHED_TASK(stats_update,           1,    200,  76),
+#endif
 #ifdef USERHOOK_FASTLOOP
     SCHED_TASK(userhook_FastLoop,    100,     75,  78),
 #endif
@@ -346,5 +349,16 @@ bool Sub::get_wp_crosstrack_error_m(float &xtrack_error) const
     xtrack_error = 0;
     return true;
 }
+
+#if STATS_ENABLED == ENABLED
+/*
+  update AP_Stats
+*/
+void Sub::stats_update(void)
+{
+    g2.stats.set_flying(motors.armed());
+    g2.stats.update();
+}
+#endif
 
 AP_HAL_MAIN_CALLBACKS(&sub);
