@@ -9347,6 +9347,22 @@ class AutoTestCopter(AutoTest):
         self.context_pop()
         self.reboot_sitl()
 
+    def IMUConsistency(self):
+        '''test IMUs must be consistent with one another'''
+        self.wait_ready_to_arm()
+
+        self.start_subsubtest("prearm checks for accel inconsistency")
+        self.context_push()
+        self.set_parameters({
+            "SIM_ACC1_BIAS_X": 5,
+        })
+        self.assert_prearm_failure("Accels inconsistent")
+        self.context_pop()
+        tstart = self.get_sim_time()
+        self.wait_ready_to_arm()
+        if self.get_sim_time() - tstart < 8:
+            raise NotAchievedException("Should take 10 seconds to become armableafter IMU upset")
+
     def Sprayer(self):
         """Test sprayer functionality."""
         self.context_push()
@@ -9673,6 +9689,7 @@ class AutoTestCopter(AutoTest):
             self.ThrottleGainBoost,
             self.ScriptMountPOI,
             self.FlyMissionTwice,
+            self.IMUConsistency,
         ])
         return ret
 
