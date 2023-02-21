@@ -317,8 +317,10 @@ void NavEKF3_core::setAidingMode()
             // Check if attitude drift has been constrained by a measurement source
             bool attAiding = posUsed || gpsVelUsed || optFlowUsed || airSpdUsed || dragUsed || rngBcnUsed || bodyOdmUsed;
 
-            // check if velocity drift has been constrained by a measurement source
-            bool velAiding = gpsVelUsed || airSpdUsed || dragUsed || optFlowUsed || bodyOdmUsed;
+            // Check if velocity drift has been constrained by a measurement source
+            // Currently these are all the same source as will stabilise attitude because we do not currently have
+            // a sensor that only observes attitude
+            velAiding = posUsed || gpsVelUsed || optFlowUsed || airSpdUsed || dragUsed || rngBcnUsed || bodyOdmUsed;
 
             // check if position drift has been constrained by a measurement source
             bool posAiding = posUsed || rngBcnUsed;
