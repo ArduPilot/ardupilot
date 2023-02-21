@@ -182,6 +182,12 @@ int AP_Filesystem::mkdir(const char *pathname)
     return backend.fs.mkdir(pathname);
 }
 
+int AP_Filesystem::rename(const char *oldpath, const char *newpath)
+{
+    const Backend &backend = backend_by_path(oldpath);
+    return backend.fs.rename(oldpath, newpath);
+}
+
 AP_Filesystem::DirHandle *AP_Filesystem::opendir(const char *pathname)
 {
     const Backend &backend = backend_by_path(pathname);
