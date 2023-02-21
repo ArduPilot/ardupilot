@@ -40,9 +40,8 @@ public:
 
     virtual uint32_t available() = 0;
 
-    /* return value for read():
-     * -1 if nothing available, uint8_t value otherwise. */
-    virtual int16_t read() = 0;
+    int16_t read();  // old function; prefer calling the boolean method
+    virtual bool read(uint8_t &b) WARN_IF_UNUSED = 0;
 
     // no base-class implementation to force descendants to
     // do things efficiently.  Looping over 2^32-1 bytes would be bad.
