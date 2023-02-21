@@ -136,6 +136,11 @@ CSRC += $(HWDEF)/common/stubs.c \
        $(HWDEF)/common/bouncebuffer.c \
        $(HWDEF)/common/watchdog.c
 
+ifeq ($(USE_USB_MSD),yes)
+CSRC += $(CHIBIOS)/os/various/scsi_bindings/lib_scsi.c \
+        $(CHIBIOS)/os/hal/src/hal_usb_msd.c
+endif
+
 #	   $(TESTSRC) \
 #	   test.c
 ifneq ($(CRASHCATCHER),)
@@ -179,6 +184,11 @@ INCDIR = $(CHIBIOS)/os/license \
 ifneq ($(CRASHCATCHER),)
 INCDIR += $(CRASHCATCHER)/include
 endif
+
+ifeq ($(USE_USB_MSD),yes)
+INCDIR += $(CHIBIOS)/os/various/scsi_bindings
+endif
+
 #
 # Project, sources and paths
 ##############################################################################
