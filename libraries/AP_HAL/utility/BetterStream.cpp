@@ -20,6 +20,15 @@ size_t AP_HAL::BetterStream::write(const char *str)
     return write((const uint8_t *)str, strlen(str));
 }
 
+int16_t AP_HAL::BetterStream::read()
+{
+    uint8_t b;
+    if (!read(b)) {
+        return -1;
+    }
+    return b;
+}
+
 ssize_t AP_HAL::BetterStream::read(uint8_t *buffer, uint16_t count) {
     uint16_t offset = 0;
     while (count--) {
