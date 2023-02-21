@@ -548,6 +548,20 @@ void NavEKF3_core::readGpsData()
     // check for new GPS data
     const auto &gps = dal.gps();
 
+    if (gps.status(selected_gps) < AP_DAL_GPS::GPS_OK_FIX_3D) {
+        // The GPS has dropped lock so force quality checks to restart
+        gpsGoodToAlign = false;
+        lastGpsVelFail_ms = imuSampleTime_ms;
+        lastGpsVelPass_ms = 0;
+        if (filterStatus.flags.horiz_pos_rel && !filterStatus.flags.horiz_pos_abs) {
+            // If we can do dead reckoning with a data source other than GPS there is time to wait
+            // for GPS alignment checks to pass before using GPS inside the EKF.
+            waitingForGpsChecks = true;
+        } else {
+            waitingForGpsChecks = false;
+        }
+    }
+
     // limit update rate to avoid overflowing the FIFO buffer
     if (gps.last_message_time_ms(selected_gps) - lastTimeGpsReceived_ms <= frontend->sensorIntervalMin_ms) {
         return;

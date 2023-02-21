@@ -230,6 +230,10 @@ void NavEKF3_core::calcGpsGoodToAlign(void)
     } else if (gpsGoodToAlign && imuSampleTime_ms - lastGpsVelPass_ms > 5000) {
         gpsGoodToAlign = false;
     }
+
+    if (gpsGoodToAlign && waitingForGpsChecks) {
+        waitingForGpsChecks = false;
+    }
 }
 
 // update inflight calculaton that determines if GPS data is good enough for reliable navigation
