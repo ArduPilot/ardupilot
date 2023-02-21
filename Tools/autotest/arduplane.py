@@ -2195,8 +2195,28 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.delay_sim_time(20)
             self.change_mode("RTL")
             self.wait_distance_to_home(100, 200, timeout=200)
+            # go into LOITER to create additonal time for a GPS re-enable test
+            self.change_mode("LOITER")
             self.set_parameter("SIM_GPS_DISABLE", 0)
+            t_enabled = self.get_sim_time()
+            # The EKF should wait for GPS checks to pass when we are still able to navigate using dead reckoning
+            # to prevent bad GPS being used when coming back after loss of lock due to interence.
+            self.wait_ekf_flags(mavutil.mavlink.ESTIMATOR_POS_HORIZ_ABS, 0, timeout=15)
+            if self.get_sim_time() < (t_enabled+9):
+                raise NotAchievedException("GPS use re-started too quickly")
+            # wait for EKF and vehicle position to stabilise, then test response to jamming
+            self.delay_sim_time(20)
+
+            self.set_parameter("AHRS_OPTIONS", 1)
+            self.set_parameter("SIM_GPS_JAM", 1)
             self.delay_sim_time(10)
+            self.set_parameter("SIM_GPS_JAM", 0)
+            t_enabled = self.get_sim_time()
+            # The EKF should wait for GPS checks to pass when we are still able to navigate using dead reckoning
+            # to prevent bad GPS being used when coming back after loss of lock due to interence.
+            self.wait_ekf_flags(mavutil.mavlink.ESTIMATOR_POS_HORIZ_ABS, 0, timeout=15)
+            if self.get_sim_time() < (t_enabled+9):
+                raise NotAchievedException("GPS use re-started too quickly after jamming")
             self.set_rc(3, 1000)
             self.fly_home_land_and_disarm()
             self.progress("max-divergence: %fm" % (self.max_divergence,))
