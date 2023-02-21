@@ -1151,6 +1151,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def CameraMission(self):
         '''Test Camera Mission Items'''
+        self.set_parameter("CAM1_TYPE", 1) # Camera with servo trigger
+        self.reboot_sitl() # needed for CAM1_TYPE to take effect
         self.load_mission("rover-camera-mission.txt")
         self.wait_ready_to_arm()
         self.change_mode("AUTO")
@@ -5407,6 +5409,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def SendToComponents(self):
         '''Test ArduPilot send_to_components function'''
+        self.set_parameter("CAM1_TYPE", 5) # Camera with MAVlink trigger
+        self.reboot_sitl() # needed for CAM1_TYPE to take effect
         self.progress("Introducing ourselves to the autopilot as a component")
         old_srcSystem = self.mav.mav.srcSystem
         self.mav.mav.srcSystem = 1
@@ -5424,7 +5428,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             1, # zoom_pos
             0, # zoom_step
             0, # focus_lock
-            1, # 1 shot or start filming
+            0, # 1 shot or start filming
             17, # command id (de-dupe field)
             0, # extra_param
             0.0, # extra_value
