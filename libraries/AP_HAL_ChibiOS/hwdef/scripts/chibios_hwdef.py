@@ -942,6 +942,9 @@ def write_mcu_config(f):
             if result:
                 intdefines[result.group(1)] = int(result.group(2))
 
+    if intdefines.get('HAL_USE_USB_MSD',0) == 1:
+        build_flags.append('USE_USB_MSD=yes')
+
     if have_type_prefix('CAN') and not using_chibios_can:
         enable_can(f)
     flash_size = get_config('FLASH_SIZE_KB', type=int)
