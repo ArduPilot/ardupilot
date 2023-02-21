@@ -1154,7 +1154,6 @@ void UARTDriver::write_pending_bytes(void)
  */
 void UARTDriver::half_duplex_setup_tx(void)
 {
-#ifdef HAVE_USB_SERIAL
     if (!hd_tx_active) {
         chEvtGetAndClearFlags(&hd_listener);
         // half-duplex transmission is done when both the output is empty and the transmission is ended
@@ -1165,7 +1164,6 @@ void UARTDriver::half_duplex_setup_tx(void)
         sercfg.cr3 &= ~USART_CR3_HDSEL;
         sdStart(sd, &sercfg);
     }
-#endif
 }
 
 /*
