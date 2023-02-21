@@ -9730,6 +9730,8 @@ Also, ignores heartbeats not from our target system'''
 
     def SET_MESSAGE_INTERVAL(self):
         '''Test MAV_CMD_SET_MESSAGE_INTERVAL'''
+        self.set_parameter("CAM1_TYPE", 1) # Camera with servo trigger
+        self.reboot_sitl() # needed for CAM1_TYPE to take effect
         self.start_subtest('Basic tests')
         self.test_set_message_interval_basic()
         self.start_subtest('Many-message tests')
@@ -9895,6 +9897,8 @@ Also, ignores heartbeats not from our target system'''
 
     def REQUEST_MESSAGE(self, timeout=60):
         '''Test MAV_CMD_REQUEST_MESSAGE'''
+        self.set_parameter("CAM1_TYPE", 1) # Camera with servo trigger
+        self.reboot_sitl() # needed for CAM1_TYPE to take effect
         rate = round(self.get_message_rate("CAMERA_FEEDBACK", 10))
         if rate != 0:
             raise PreconditionFailedException("Receiving camera feedback")
