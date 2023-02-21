@@ -503,8 +503,8 @@ void AP_Periph_FW::check_for_serial_reboot_cmd(const int8_t serial_index)
             const char reboot_string_len = sizeof(reboot_string)-1; // -1 is to remove the null termination
             static uint16_t index[hal.num_serial];
 
-            const int16_t data = uart->read();
-            if (data < 0 || data > 0xff) {
+            uint8_t data;
+            if (!uart->read(data)) {
                 // read error
                 continue;
             }
