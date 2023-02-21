@@ -334,40 +334,6 @@ void Plane::stabilize_yaw()
     calc_nav_yaw_coordinated();
 }
 
-
-/*
-  a special stabilization function for training mode
- */
-void ModeTraining::run()
-{
-    const float rexpo = plane.roll_in_expo(false);
-    const float pexpo = plane.pitch_in_expo(false);
-    if (plane.training_manual_roll) {
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, rexpo);
-    } else {
-        // calculate what is needed to hold
-        plane.stabilize_roll();
-        if ((plane.nav_roll_cd > 0 && rexpo < SRV_Channels::get_output_scaled(SRV_Channel::k_aileron)) ||
-            (plane.nav_roll_cd < 0 && rexpo > SRV_Channels::get_output_scaled(SRV_Channel::k_aileron))) {
-            // allow user to get out of the roll
-            SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, rexpo);
-        }
-    }
-
-    if (plane.training_manual_pitch) {
-        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pexpo);
-    } else {
-        plane.stabilize_pitch();
-        if ((plane.nav_pitch_cd > 0 && pexpo < SRV_Channels::get_output_scaled(SRV_Channel::k_elevator)) ||
-            (plane.nav_pitch_cd < 0 && pexpo > SRV_Channels::get_output_scaled(SRV_Channel::k_elevator))) {
-            // allow user to get back to level
-            SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pexpo);
-        }
-    }
-
-    plane.stabilize_yaw();
-}
-
 /*
   main stabilization function for all 3 axes
  */
