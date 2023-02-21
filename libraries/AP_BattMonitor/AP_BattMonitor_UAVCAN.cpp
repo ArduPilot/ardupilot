@@ -202,7 +202,7 @@ void AP_BattMonitor_UAVCAN::handle_battery_info_aux(const BattInfoAuxCb &cb)
 
 void AP_BattMonitor_UAVCAN::handle_mppt_stream(const MpptStreamCb &cb)
 {
-    const bool use_input_value = _params.option_is_set(AP_BattMonitor_Params::Options::MPPT_Use_Input_Value);
+    const bool use_input_value = option_is_set(AP_BattMonitor_Params::Options::MPPT_Use_Input_Value);
     const float voltage = use_input_value ? cb.msg->input_voltage : cb.msg->output_voltage;
     const float current = use_input_value ? cb.msg->input_current : cb.msg->output_current;
 
@@ -220,9 +220,9 @@ void AP_BattMonitor_UAVCAN::handle_mppt_stream(const MpptStreamCb &cb)
         _mppt.is_detected = true;
 
         // Boot/Power-up event
-        if (_params.option_is_set(AP_BattMonitor_Params::Options::MPPT_Power_On_At_Boot)) {
+        if (option_is_set(AP_BattMonitor_Params::Options::MPPT_Power_On_At_Boot)) {
             mppt_set_powered_state(true);
-        } else if (_params.option_is_set(AP_BattMonitor_Params::Options::MPPT_Power_Off_At_Boot)) {
+        } else if (option_is_set(AP_BattMonitor_Params::Options::MPPT_Power_Off_At_Boot)) {
             mppt_set_powered_state(false);
         }
     }
@@ -335,10 +335,10 @@ void AP_BattMonitor_UAVCAN::mppt_check_powered_state()
 
     // check if vehicle armed state has changed
     const bool vehicle_armed = hal.util->get_soft_armed();
-    if ((!_mppt.vehicle_armed_last && vehicle_armed) && _params.option_is_set(AP_BattMonitor_Params::Options::MPPT_Power_On_At_Arm)) {
+    if ((!_mppt.vehicle_armed_last && vehicle_armed) && option_is_set(AP_BattMonitor_Params::Options::MPPT_Power_On_At_Arm)) {
         // arm event
         mppt_set_powered_state(true);
-    }else if ((_mppt.vehicle_armed_last && !vehicle_armed) && _params.option_is_set(AP_BattMonitor_Params::Options::MPPT_Power_Off_At_Disarm)) {
+    } else if ((_mppt.vehicle_armed_last && !vehicle_armed) && option_is_set(AP_BattMonitor_Params::Options::MPPT_Power_Off_At_Disarm)) {
         // disarm event
         mppt_set_powered_state(false);
     }
