@@ -550,8 +550,28 @@ void GCS_MAVLINK::ftp_worker(void) {
                         }
                         break;
                     }
+
+                case FTP_OP::Rename: {
+                    // sanity check that the request looks well formed
+                    const char *filename1 = (char*)request.data;
+                    const size_t len1 = strnlen(filename1, sizeof(request.data)-2);
+                    const char *filename2 = (char*)&request.data[len1+1];
+                    const size_t len2 = strnlen(filename2, sizeof(request.data)-(len1+1));
+                    if (filename1[len1] != 0 || (len1+len2+1 != request.size) || (request.size == 0)) {
+                        ftp_error(reply, FTP_ERROR::InvalidDataSize);
+                        break;
+                    }
+                    request.data[sizeof(request.data) - 1] = 0; // ensure the 2nd path is null terminated
+                    // remove the file/dir
+                    if (AP::FS().rename(filename1, filename2) != 0) {
+                        ftp_error(reply, FTP_ERROR::FailErrno);
+                        break;
+                    }
+                    reply.opcode = FTP_OP::Ack;
+                    break;
+                }
+
                 case FTP_OP::TruncateFile:
-                case FTP_OP::Rename:
                 default:
                     // this was bad data, just nack it
                     gcs().send_text(MAV_SEVERITY_DEBUG, "Unsupported FTP: %d", static_cast<int>(request.opcode));
