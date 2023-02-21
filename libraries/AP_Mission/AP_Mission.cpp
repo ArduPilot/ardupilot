@@ -2103,6 +2103,9 @@ uint16_t AP_Mission::get_index_of_jump_tag(const uint16_t tag) const
 {
     const auto count = num_commands();
     for (uint16_t i = 1; i < count; i++) {
+        if (get_command_id(i) != uint16_t(MAV_CMD_JUMP_TAG)) {
+            continue;
+        }
         Mission_Command tmp;
         if (!read_cmd_from_storage(i, tmp)) {
             continue;
