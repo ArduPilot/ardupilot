@@ -4232,7 +4232,10 @@ class AutoTestPlane(AutoTest):
         jump_target = 2
         mission = [
             self.mission_home_point(),
+            self.mission_anonymous_waypoint(),
+            self.mission_anonymous_waypoint(),
             self.mission_jump_tag(jump_target),
+            self.mission_anonymous_waypoint(),
             self.mission_anonymous_waypoint(),
         ]
         self.renumber_mission_items(mission)
@@ -4260,6 +4263,7 @@ class AutoTestPlane(AutoTest):
             0,  # p6
             0,  # p7
         )
+        self.assert_current_waypoint(4)
 
     def MissionJumpTags_do_jump_to_bad_tag(self, target_system=1, target_component=1):
         mission = [
@@ -4282,6 +4286,12 @@ class AutoTestPlane(AutoTest):
             self.mission_anonymous_waypoint(),
             self.mission_jump_tag(17),
         ]
+        # Jumping to an end of a mission, either DO_JUMP or DO_JUMP_TAG will result in a failed attempt.
+        # The failure is from mission::set_current_cmd() returning false if it can not find any NAV
+        # commands on or after the index. Two scenarios:
+        # 1) AUTO mission triggered: The the set_command will fail and it will cause an RTL event
+        #       (Harder to test, need vehicle to actually reach the waypoint)
+        # 2) GCS/MAVLink: It will return MAV_RESULT_FAILED and there's on change to the mission. (Easy to test)
         self.renumber_mission_items(mission)
         self.check_mission_upload_download(mission)
         self.progress("Checking correct tag behaviour")
@@ -4296,8 +4306,8 @@ class AutoTestPlane(AutoTest):
             0,  # p5
             0,  # p6
             0,  # p7
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED
         )
-        self.assert_mode('RTL')
         self.disarm_vehicle()
 
     def MissionJumpTags(self):
