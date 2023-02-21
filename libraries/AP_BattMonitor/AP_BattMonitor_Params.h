@@ -26,11 +26,6 @@ public:
         GCS_Resting_Voltage                 = (1U<<6),  // send resistance resting voltage to GCS
     };
 
-    // check if a option is set
-    bool option_is_set(const Options option) const {
-        return (uint16_t(_options.get()) & uint16_t(option)) != 0;
-    }
-
     BattMonitor_LowVoltage_Source failsafe_voltage_source(void) const { return (enum BattMonitor_LowVoltage_Source)_failsafe_voltage_source.get(); }
 
     AP_Int32 _pack_capacity;            /// battery pack capacity less reserve in mAh
