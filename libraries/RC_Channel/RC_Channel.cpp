@@ -718,11 +718,11 @@ void RC_Channel::do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag)
     if (avoidance == nullptr) {
         return;
     }
-    AP_ADSB *adsb = AP::ADSB();
-    if (adsb == nullptr) {
-        return;
-    }
     if (ch_flag == AuxSwitchPos::HIGH) {
+        AP_ADSB *adsb = AP::ADSB();
+        if (adsb == nullptr) {
+            return;
+        }
         // try to enable AP_Avoidance
         if (!adsb->enabled() || !adsb->healthy()) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "ADSB not available");
@@ -766,11 +766,11 @@ void RC_Channel::do_aux_function_avoid_proximity(const AuxSwitchPos ch_flag)
 #if AP_CAMERA_ENABLED
 void RC_Channel::do_aux_function_camera_trigger(const AuxSwitchPos ch_flag)
 {
-    AP_Camera *camera = AP::camera();
-    if (camera == nullptr) {
-        return;
-    }
     if (ch_flag == AuxSwitchPos::HIGH) {
+        AP_Camera *camera = AP::camera();
+        if (camera == nullptr) {
+            return;
+        }
         camera->take_picture();
     }
 }
@@ -830,11 +830,11 @@ bool RC_Channel::do_aux_function_camera_manual_focus(const AuxSwitchPos ch_flag)
 
 bool RC_Channel::do_aux_function_camera_auto_focus(const AuxSwitchPos ch_flag)
 {
-    AP_Camera *camera = AP::camera();
-    if (camera == nullptr) {
-        return false;
-    }
     if (ch_flag == AuxSwitchPos::HIGH) {
+        AP_Camera *camera = AP::camera();
+        if (camera == nullptr) {
+            return false;
+        }
         return camera->set_auto_focus();
     }
     return false;
@@ -898,11 +898,11 @@ void RC_Channel::do_aux_function_fence(const AuxSwitchPos ch_flag)
 
 void RC_Channel::do_aux_function_clear_wp(const AuxSwitchPos ch_flag)
 {
-    AP_Mission *mission = AP::mission();
-    if (mission == nullptr) {
-        return;
-    }
     if (ch_flag == AuxSwitchPos::HIGH) {
+        AP_Mission *mission = AP::mission();
+        if (mission == nullptr) {
+            return;
+        }
         mission->clear();
     }
 }
