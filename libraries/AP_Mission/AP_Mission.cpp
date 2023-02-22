@@ -2091,6 +2091,18 @@ uint16_t AP_Mission::get_index_of_jump_tag(const uint16_t tag) const
     return 0;
 }
 
+#if AP_SCRIPTING_ENABLED
+bool AP_Mission::get_last_jump_tag(uint16_t &tag, uint16_t &age) const
+{
+    if (_jump_tag.age == 0) {
+        return false;
+    }
+    tag = _jump_tag.tag;
+    age = _jump_tag.age;
+    return true;
+}
+#endif
+
 // init_jump_tracking - initialise jump_tracking variables
 void AP_Mission::init_jump_tracking()
 {

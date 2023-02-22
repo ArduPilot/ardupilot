@@ -659,6 +659,13 @@ public:
     bool get_item(uint16_t index, mavlink_mission_item_int_t& result) const ;
     bool set_item(uint16_t index, mavlink_mission_item_int_t& source) ;
 
+    // Jump Tags. When a JUMP_TAG is run in the mission, either via DO_JUMP_TAG or
+    // by just being the next item, the tag is remembered and the age is set to 1.
+    // Only the most recent tag is remembered. It's age is how many NAV items have
+    // progressed since the tag was seen. While executing the tag, the
+    // age will be 1. The next NAV command after it will tick the age to 2, and so on.
+    bool get_last_jump_tag(uint16_t &tag, uint16_t &age) const;
+
     // Set the mission index to the first JUMP_TAG with this tag.
     // Returns true on success, else false if no appropriate JUMP_TAG match can be found or if setting the index failed
     bool jump_to_tag(const uint16_t tag);
