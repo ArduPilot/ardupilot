@@ -659,12 +659,25 @@ public:
     bool get_item(uint16_t index, mavlink_mission_item_int_t& result) const ;
     bool set_item(uint16_t index, mavlink_mission_item_int_t& source) ;
 
+    // Set the mission index to the first JUMP_TAG with this tag.
+    // Returns true on success, else false if no appropriate JUMP_TAG match can be found or if setting the index failed
+    bool jump_to_tag(const uint16_t tag);
+
+    // find the first JUMP_TAG with this tag and return its index.
+    // Returns 0 if no appropriate JUMP_TAG match can be found.
+    uint16_t get_index_of_jump_tag(const uint16_t tag) const;
+
 private:
     static AP_Mission *_singleton;
 
     static StorageAccess _storage;
 
     static bool stored_in_location(uint16_t id);
+
+    struct {
+        uint16_t age;   // a value of 0 means we have never seen a tag. Once a tag is seen, age will increment every time the mission index changes.
+        uint16_t tag;   // most recent tag that was successfully jumped to. Only valid if age > 0
+    } _jump_tag;
 
     struct Mission_Flags {
         mission_state state;
@@ -744,6 +757,8 @@ private:
     // update progress made in mission to store last position in the event of mission exit
     void update_exit_position(void);
 
+    void on_mission_timestamp_change();
+
     /// sanity checks that the masked fields are not NaN's or infinite
     static MAV_MISSION_RESULT sanity_check_params(const mavlink_mission_item_int_t& packet);
 
@@ -779,6 +794,7 @@ private:
 
     // last time that mission changed
     uint32_t _last_change_time_ms;
+    uint32_t _last_change_time_prev_ms;
 
     // memoisation of contains-relative:
     bool _contains_terrain_alt_items;  // true if the mission has terrain-relative items
