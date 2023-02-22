@@ -551,7 +551,29 @@ void AP_ExternalAHRS_VectorNav::process_packet2(const uint8_t *b)
     // get ToW in milliseconds
     gps.gps_week = pkt2.timeGPS / (AP_MSEC_PER_WEEK * 1000000ULL);
     gps.ms_tow = (pkt2.timeGPS / 1000000ULL) % (60*60*24*7*1000ULL);
-    gps.fix_type = pkt2.GPS1Fix;
+    switch (pkt2.GPS1Fix) {
+    case 0:
+    case 1:
+        gps.fix_type = AP_GPS::NO_FIX;
+        break;
+    case 2:
+        gps.fix_type = AP_GPS::GPS_OK_FIX_2D;
+        break;
+    case 3:
+        gps.fix_type = AP_GPS::GPS_OK_FIX_3D;
+        break;
+    case 4:
+    case 5:
+    case 6:
+        gps.fix_type = AP_GPS::GPS_OK_FIX_3D_DGPS;
+        break;
+    case 7:
+        gps.fix_type = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+        break;
+    case 8:
+        gps.fix_type = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
+        break;
+    }
     gps.satellites_in_view = pkt2.numGPS1Sats;
 
     gps.horizontal_pos_accuracy = pkt1.posU;
@@ -813,6 +835,14 @@ void AP_ExternalAHRS_VectorNav::send_status_report(GCS_MAVLINK &link) const
     mavlink_msg_ekf_status_report_send(link.get_chan(), flags,
                                        pkt1.velU/vel_gate, pkt1.posU/pos_gate, pkt1.posU/hgt_gate,
                                        mag_var, 0, 0);
+}
+
+// inject data (for RTCMv3)
+void AP_ExternalAHRS_VectorNav::inject_data(const uint8_t *data, uint16_t len)
+{
+    if (setup_complete && uart->txspace() >= len) {
+        uart->write(data, len);
+    }
 }
 
 #endif  // HAL_EXTERNAL_AHRS_ENABLED

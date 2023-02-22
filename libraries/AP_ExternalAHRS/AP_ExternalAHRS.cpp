@@ -236,6 +236,14 @@ const char* AP_ExternalAHRS::get_name() const
     return nullptr;
 }
 
+// inject data (for RTCMv3)
+void AP_ExternalAHRS::inject_data(const uint8_t *data, uint16_t len)
+{
+    if (backend) {
+        backend->inject_data(data, len);
+    }
+}
+
 namespace AP {
 
 AP_ExternalAHRS &externalAHRS()

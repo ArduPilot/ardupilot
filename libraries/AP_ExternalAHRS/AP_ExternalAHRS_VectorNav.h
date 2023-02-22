@@ -37,6 +37,9 @@ public:
     void get_filter_status(nav_filter_status &status) const override;
     void send_status_report(class GCS_MAVLINK &link) const override;
 
+    // inject data (for RTCMv3)
+    void inject_data(const uint8_t *data, uint16_t len) override;
+
     // check for new data
     void update() override {
         check_uart();

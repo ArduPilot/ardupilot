@@ -141,6 +141,9 @@ public:
         float temperature;
     } ins_data_message_t;
 
+    // inject data (for RTCMv3)
+    void inject_data(const uint8_t *data, uint16_t len);
+
 protected:
 
     enum class OPTIONS {
