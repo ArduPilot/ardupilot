@@ -9190,6 +9190,7 @@ class AutoTestCopter(AutoTest):
         self.context_push()
         self.set_parameter("SERVO_FTW_MASK", mask)
         self.reboot_sitl()
+        self.delay_sim_time(12)  # allow accels/gyros to be happy
         tstart = self.get_sim_time()
         while True:
             if self.get_sim_time_cached() - tstart > 20:
