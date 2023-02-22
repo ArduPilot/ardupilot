@@ -9339,6 +9339,7 @@ Also, ignores heartbeats not from our target system'''
     def ArmFeatures(self):
         '''Arm features'''
         # TEST ARMING/DISARM
+        self.delay_sim_time(12)  # wait for gyros/accels to be happy
         if self.get_parameter("ARMING_CHECK") != 1.0 and not self.is_sub():
             raise ValueError("Arming check should be 1")
         if not self.is_sub() and not self.is_tracker():

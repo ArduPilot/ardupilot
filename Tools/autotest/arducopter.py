@@ -6444,6 +6444,7 @@ class AutoTestCopter(AutoTest):
             "EK3_SRC1_VELXY": 0,
         })
         self.reboot_sitl()
+        self.delay_sim_time(30)  # wait for accels/gyros to settle
 
         # check for expected EKF flags
         ahrs_ekf_type = self.get_parameter("AHRS_EKF_TYPE")
