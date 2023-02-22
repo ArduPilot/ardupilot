@@ -45,6 +45,7 @@ void AP_Camera_Backend::Write_CameraInfo(enum LogMessages msg, uint64_t timestam
         LOG_PACKET_HEADER_INIT(static_cast<uint8_t>(msg)),
         time_us     : timestamp_us ? timestamp_us : AP_HAL::micros64(),
         instance    : _instance,
+        image_number: image_index,
         gps_time    : gps.time_week_ms(),
         gps_week    : gps.time_week(),
         latitude    : current_loc.lat,
