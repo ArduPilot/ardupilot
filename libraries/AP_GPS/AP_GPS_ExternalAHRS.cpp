@@ -88,5 +88,13 @@ bool AP_GPS_ExternalAHRS::get_lag(float &lag_sec) const
     return true;
 }
 
+/*
+  support RTCMv3 injection
+ */
+void AP_GPS_ExternalAHRS::inject_data(const uint8_t *data, uint16_t len)
+{
+    AP::externalAHRS().inject_data(data, len);
+}
+
 #endif // HAL_EXTERNAL_AHRS_ENABLED
 

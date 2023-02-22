@@ -38,6 +38,7 @@ public:
     const char *name() const override { return "ExternalAHRS"; }
 
     bool get_lag(float &lag_sec) const override;
+    void inject_data(const uint8_t *data, uint16_t len) override;
 
 private:
     bool new_data;
