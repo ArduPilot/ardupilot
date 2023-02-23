@@ -540,3 +540,54 @@ int SRV_Channels_get_safety_state(lua_State *L) {
     lua_pushboolean(L, data);
     return 1;
 }
+
+AP_Scripting::NamedValue *AP_Scripting::NamedValue::named_values = nullptr;
+HAL_Semaphore AP_Scripting::NamedValue::sem;
+
+int lua_register_named_value(lua_State *L) {
+    binding_argcheck(L, 2);
+    const char * reg_name = luaL_checkstring(L, 2);
+    AP_Scripting::NamedValue::register_name(reg_name);
+    return 1;
+}
+
+int lua_get_named_value(lua_State *L) {
+    binding_argcheck(L, 2);
+    const char* value_name = luaL_checkstring(L, 2);
+
+    AP_Scripting::NamedValue* named_value = AP_Scripting::NamedValue::get(value_name);
+    if (named_value == nullptr) {
+        return luaL_argerror(L, lua_gettop(L), "named value has not been registered");
+    }
+    uint8_t sysid, compid;
+    AP_Scripting::NamedValue::Value value;
+    AP_Scripting::NamedValue::TYPE type;
+    uint32_t timestamp_ms;
+    {
+        WITH_SEMAPHORE(AP_Scripting::NamedValue::sem);
+        value = named_value->value;
+        timestamp_ms = named_value->timestamp_ms;
+        sysid = named_value->sysid;
+        compid = named_value->compid;
+        type = named_value->type;
+    }
+    // switch value type and push accordingly
+    switch(type) {
+        case AP_Scripting::NamedValue::TYPE_NIL:
+            lua_pushnil(L);
+            break;
+        case AP_Scripting::NamedValue::TYPE_INT:
+            lua_pushinteger(L, value.i);
+            break;
+        case AP_Scripting::NamedValue::TYPE_FLOAT:
+            lua_pushnumber(L, value.f);
+            break;
+    }
+
+    new_uint32_t(L);
+    *check_uint32_t(L, -1) = timestamp_ms;
+
+    lua_pushinteger(L, sysid);
+    lua_pushinteger(L, compid);
+    return 4;
+}

@@ -670,3 +670,6 @@ userdata uint32_t manual tofloat uint32_t_tofloat 0
 
 global manual dirlist lua_dirlist 1
 global manual remove lua_removefile 1
+
+singleton nv manual register lua_register_named_value string
+singleton nv manual get lua_get_named_value string

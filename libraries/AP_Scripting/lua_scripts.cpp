@@ -19,6 +19,7 @@
 #include <AP_Logger/AP_Logger.h>
 
 #include <AP_Scripting/lua_generated_bindings.h>
+#include "lua_bindings.h"
 
 #define DISABLE_INTERRUPTS_FOR_SCRIPT_RUN 0
 

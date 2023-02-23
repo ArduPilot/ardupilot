@@ -23,6 +23,7 @@
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <AP_HAL/I2CDevice.h>
 #include "AP_Scripting_CANSensor.h"
+#include <AP_RTC/JitterCorrection.h>
 
 #ifndef SCRIPTING_MAX_NUM_I2C_DEVICE
   #define SCRIPTING_MAX_NUM_I2C_DEVICE 4
@@ -88,6 +89,101 @@ public:
         uint32_t time_ms;
     };
     ObjectBuffer<struct scripting_mission_cmd> * mission_data;
+
+
+    // linked list of named values and type
+    class NamedValue {
+    public:
+        enum TYPE {
+            TYPE_NIL = 0,
+            TYPE_INT = 1,
+            TYPE_FLOAT = 2,
+        } type;
+        NamedValue(const char *_name, enum TYPE _type, NamedValue *_next) :
+            type(_type),
+            next(_next)
+        {
+            strncpy_noterm(name, _name, sizeof(name));
+        }
+        char name[10];
+        union Value {
+            int32_t i;
+            float f;
+        } value;
+
+        NamedValue *next;
+        uint32_t timestamp_ms;
+        uint8_t sysid;
+        uint8_t compid;
+        JitterCorrection jitter;
+
+        // add value to linked list, return true if added or already exists, false if out of memory
+        static bool register_name(const char *name) {
+            WITH_SEMAPHORE(sem);
+            NamedValue *nv = named_values;
+            if (strlen(name) > 10) {
+                return false;
+            }
+            while (nv) {
+                if (strncmp(nv->name, name, 10) == 0) {
+                    return true;
+                }
+                nv = nv->next;
+            }
+            nv = new NamedValue(name, TYPE_NIL, named_values);
+            if (nv == nullptr) {
+                return false;
+            }
+            nv->next = named_values;
+            named_values = nv;
+            return true;
+        }
+        
+        static NamedValue* get(const char* _name) {
+            WITH_SEMAPHORE(sem);
+            NamedValue *nv = named_values;
+            if (strlen(_name) > 10) {
+                return nullptr;
+            }
+            while (nv) {
+                if (strncmp(nv->name, _name, 10) == 0) {
+                    return nv;
+                }
+                nv = nv->next;
+            }
+            return nullptr;
+        }
+
+        static HAL_Semaphore sem;
+    private:
+        static NamedValue *named_values;
+    };
+
+    void set_named_value(const char *name, int32_t value, uint32_t timestamp_ms, uint8_t sysid, uint8_t compid) {
+        NamedValue *nv = NamedValue::get(name);
+        if (nv == nullptr) {
+            return;
+        }
+        WITH_SEMAPHORE(NamedValue::sem);
+        nv->type = NamedValue::TYPE_INT;
+        nv->value.i = value;
+        nv->timestamp_ms = nv->jitter.correct_offboard_timestamp_msec(timestamp_ms, AP_HAL::millis());
+        nv->sysid = sysid;
+        nv->compid = compid;
+    }
+
+    void set_named_value(const char *name, float value, uint32_t timestamp_ms, uint8_t sysid, uint8_t compid) {
+        NamedValue *nv = NamedValue::get(name);
+        if (nv == nullptr) {
+            return;
+        }
+        WITH_SEMAPHORE(NamedValue::sem);
+        nv->type = NamedValue::TYPE_FLOAT;
+        nv->value.f = value;
+        nv->timestamp_ms = nv->jitter.correct_offboard_timestamp_msec(timestamp_ms, AP_HAL::millis());
+        nv->sysid = sysid;
+        nv->compid = compid;
+    }
 
 private:
 
