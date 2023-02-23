@@ -3336,6 +3336,32 @@ void GCS_MAVLINK::handle_named_value(const mavlink_message_t &msg) const
     mavlink_msg_named_value_float_decode(&msg, &p);
     char s[11] {};
     strncpy(s, p.name, sizeof(s)-1);
+    AP::scripting()->set_named_value(s, p.value, p.time_boot_ms, msg.sysid, msg.compid);
+
+    logger->Write("NVAL", "TimeUS,TimeBootMS,Name,Value,SSys,SCom", "ss#---", "FC----", "QINfBB",
+                  AP_HAL::micros64(),
+                  p.time_boot_ms,
+                  s,
+                  p.value,
+                  msg.sysid,
+                  msg.compid);
+}
+
+/*
+  handle logging of named values from mavlink.
+ */
+void GCS_MAVLINK::handle_named_value_int(const mavlink_message_t &msg) const
+{
+    auto *logger = AP_Logger::get_singleton();
+    if (logger == nullptr) {
+        return;
+    }
+    mavlink_named_value_int_t p;
+    mavlink_msg_named_value_int_decode(&msg, &p);
+    char s[11] {};
+    strncpy(s, p.name, sizeof(s)-1);
+    AP::scripting()->set_named_value(s, p.value, p.time_boot_ms, msg.sysid, msg.compid);
+
     logger->Write("NVAL", "TimeUS,TimeBootMS,Name,Value,SSys,SCom", "ss#---", "FC----", "QINfBB",
                   AP_HAL::micros64(),
                   p.time_boot_ms,
@@ -4034,6 +4060,10 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
 
     case MAVLINK_MSG_ID_NAMED_VALUE_FLOAT:
         handle_named_value(msg);
+        break;
+    
+    case MAVLINK_MSG_ID_NAMED_VALUE_INT:
+        handle_named_value_int(msg);
         break;
 
     case MAVLINK_MSG_ID_CAN_FRAME:
