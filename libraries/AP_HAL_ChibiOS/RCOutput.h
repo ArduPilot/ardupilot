@@ -105,6 +105,11 @@ public:
     void timer_tick(uint64_t last_run_us);
 
     /*
+      LED push
+     */
+    void led_timer_tick(uint64_t last_run_us);
+
+    /*
       setup for serial output to a set of ESCs, using the given
       baudrate. Assumes 1 start bit, 1 stop bit, LSB first and 8
       databits. This is used for ESC configuration and firmware
@@ -414,6 +419,17 @@ private:
     thread_t *rcout_thread_ctx;
 
     /*
+      timer thread for use by led events
+     */
+    thread_t *led_thread_ctx;
+
+    /*
+      mutex to control LED thread creation
+     */
+    HAL_Semaphore led_thread_sem;
+    bool led_thread_created;
+
+    /*
       structure for IRQ handler for soft-serial input
      */
     static struct irq_state {
@@ -582,6 +598,10 @@ private:
     // update safety switch and LED
     void safety_update(void);
 
+    // LED thread
+    void led_thread();
+    bool start_led_thread();
+
     uint32_t telem_request_mask;
 
     /*
@@ -605,7 +625,7 @@ private:
     static void dshot_update_tick(virtual_timer_t*, void* p);
     static void dshot_send_next_group(void* p);
     // release locks on the groups that are pending in reverse order
-    void dshot_collect_dma_locks(uint64_t last_run_us);
+    void dshot_collect_dma_locks(uint64_t last_run_us, bool led_thread = false);
     static void dma_up_irq_callback(void *p, uint32_t flags);
     static void dma_unlock(virtual_timer_t*, void *p);
     void dma_cancel(pwm_group& group);
