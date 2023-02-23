@@ -1103,6 +1103,57 @@ class AutoTestQuadPlane(AutoTest):
         self.set_current_waypoint(0, check_afterwards=False)
         self.fly_mission('mission.txt')
 
+    def VTOLQuicktune(self):
+        '''VTOL Quicktune'''
+        applet_script = "VTOL-quicktune.lua"
+
+        self.install_applet_script(applet_script)
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SIM_SPEEDUP": 20, # need to give some cycles to lua
+            "RC7_OPTION": 300,
+        })
+
+        self.reboot_sitl()
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "QUIK_ENABLE" : 1,
+            "QUIK_DOUBLE_TIME" : 5, # run faster for autotest
+            })
+
+        self.scripting_restart()
+        self.wait_text("Quicktune for quadplane loaded", check_context=True)
+
+        self.wait_ready_to_arm()
+        self.change_mode("QLOITER")
+        self.arm_vehicle()
+        self.takeoff(20, 'QLOITER')
+
+        # use rc switch to start tune
+        self.set_rc(7, 1500)
+
+        self.wait_text("Tuning: starting tune", check_context=True)
+        for axis in ['RLL', 'PIT', 'YAW']:
+            self.wait_text("Starting %s tune" % axis, check_context=True)
+            self.wait_text("Tuning: %s_D done" % axis, check_context=True, timeout=120)
+            self.wait_text("Tuning: %s_P done" % axis, check_context=True, timeout=120)
+            self.wait_text("Tuning: %s done" % axis, check_context=True, timeout=120)
+        self.wait_text("Tuning: YAW done", check_context=True, timeout=120)
+
+        # to test aux function method, use aux fn for save
+        self.run_auxfunc(300, 2)
+        self.wait_text("Tuning: saved", check_context=True)
+        self.change_mode("QLAND")
+
+        self.wait_disarmed(timeout=120)
+        self.set_parameter("QUIK_ENABLE", 0)
+        self.context_pop()
+        self.remove_installed_script(applet_script)
+        self.reboot_sitl()
+
     def tests(self):
         '''return list of all tests'''
 
@@ -1127,5 +1178,6 @@ class AutoTestQuadPlane(AutoTest):
             self.MAV_CMD_NAV_LOITER_TO_ALT,
             self.LoiterAltQLand,
             self.VTOLLandSpiral,
+            self.VTOLQuicktune,
         ])
         return ret
