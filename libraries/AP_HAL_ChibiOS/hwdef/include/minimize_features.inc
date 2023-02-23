@@ -44,3 +44,8 @@ define AP_TRAMP_ENABLED 0
 
 # various structures increase the flash size when using >16 servos:
 define NUM_SERVO_CHANNELS 16
+
+# remove various OSD features by default:
+define HAL_PLUSCODE_ENABLE 0
+define HAL_OSD_SIDEBAR_ENABLE 0
+define OSD_PARAM_ENABLED 0
