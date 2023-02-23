@@ -422,7 +422,7 @@ void AP_ExternalAHRS_LORD::post_filter() const
         ned_vel_down: filter_data.ned_velocity_down,
     };
 
-    if (gps.fix_type >= 3 && !state.have_origin) {
+    if (gps.fix_type >= GPS_FIX_TYPE_3D_FIX && !state.have_origin) {
         WITH_SEMAPHORE(state.sem);
         state.origin = Location{int32_t(filter_data.lat),
                                 int32_t(filter_data.lon),
@@ -465,7 +465,7 @@ bool AP_ExternalAHRS_LORD::pre_arm_check(char *failure_msg, uint8_t failure_msg_
         hal.util->snprintf(failure_msg, failure_msg_len, "LORD unhealthy");
         return false;
     }
-    if (gnss_data.fix_type < 3) {
+    if (gnss_data.fix_type < GPS_FIX_TYPE_3D_FIX) {
         hal.util->snprintf(failure_msg, failure_msg_len, "LORD no GPS lock");
         return false;
     }
@@ -488,7 +488,7 @@ void AP_ExternalAHRS_LORD::get_filter_status(nav_filter_status &status) const
         status.flags.vert_vel = 1;
         status.flags.vert_pos = 1;
 
-        if (gnss_data.fix_type >= 3) {
+        if (gnss_data.fix_type >= GPS_FIX_TYPE_3D_FIX) {
             status.flags.horiz_vel = 1;
             status.flags.horiz_pos_rel = 1;
             status.flags.horiz_pos_abs = 1;
