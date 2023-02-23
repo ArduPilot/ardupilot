@@ -1552,10 +1552,8 @@ bool RC_Channels::duplicate_options_exist()
         auxsw_option_counts[option]++;
     }
 
-    for (uint16_t i=0; i<sizeof(auxsw_option_counts); i++) {
-        if (i == 0) { // MAGIC VALUE! This is AUXSW_DO_NOTHING
-            continue;
-        }
+    // Do not check RC_Channel::aux_func_t::DO_NOTHING
+    for (uint16_t i=1; i<sizeof(auxsw_option_counts); i++) {
         if (auxsw_option_counts[i] > 1) {
             return true;
         }
