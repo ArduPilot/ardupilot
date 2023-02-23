@@ -112,13 +112,13 @@ local function MAVLinkProcessor()
     local _txseqid = 0
 
     -- AUTOGEN from MAVLink generator
-    _crc_extra = {}
+    local _crc_extra = {}
     _crc_extra[75] = 0x9e
     _crc_extra[76] = 0x98
     _crc_extra[235] = 0xb3
     _crc_extra[73] = 0x26
     
-    _messages = {}
+    local _messages = {}
     _messages[75] = { -- COMMAND_INT
         {"param1", "<f"}, {"param2", "<f"}, {"param3", "<f"}, {"param4", "<f"},
         {"x", "<i4"}, {"y", "<i4"}, {"z", "<f"}, {"command", "<I2"},
