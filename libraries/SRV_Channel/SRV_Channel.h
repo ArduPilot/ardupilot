@@ -22,6 +22,7 @@
 #include <AP_SBusOut/AP_SBusOut.h>
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_FETtecOneWire/AP_FETtecOneWire.h>
+#include <AP_IQMotor/AP_IQMotor.h>
 
 #include "SRV_Channel_config.h"
 
@@ -287,6 +288,9 @@ public:
     // used by DO_SET_SERVO commands
     void ignore_small_rcin_changes() { ign_small_rcin_changes = true; }
 
+    // get normalised output from -1 to 1, assuming 0 at mid point of servo_min/servo_max
+    float get_output_norm(void);
+
 private:
     AP_Int16 servo_min;
     AP_Int16 servo_max;
@@ -327,9 +331,6 @@ private:
 
     // return PWM for a given limit value
     uint16_t get_limit_pwm(Limit limit) const;
-
-    // get normalised output from -1 to 1, assuming 0 at mid point of servo_min/servo_max
-    float get_output_norm(void);
 
     // a bitmask type wide enough for NUM_SERVO_CHANNELS
     typedef uint32_t servo_mask_t;
@@ -628,6 +629,11 @@ private:
     AP_FETtecOneWire fetteconwire;
     static AP_FETtecOneWire *fetteconwire_ptr;
 #endif  // AP_FETTEC_ONEWIRE_ENABLED
+
+#if AP_IQUART_ENABLED
+    AP_IQMotor iq;
+    static AP_IQMotor *iq_ptr;
+#endif  // AP_IQUART_ENABLED
 
     // mask of disabled channels
     static uint32_t disabled_mask;
