@@ -231,15 +231,15 @@ void AP_Mount_Gremsy::request_gimbal_device_information() const
     if (_link == nullptr) {
         return;
     }
-    const mavlink_channel_t _chan = _link->get_chan();
+    const mavlink_channel_t chan = _link->get_chan();
 
     // check we have space for the message
-    if (!HAVE_PAYLOAD_SPACE(_chan, COMMAND_LONG)) {
+    if (!HAVE_PAYLOAD_SPACE(chan, COMMAND_LONG)) {
         return;
     }
 
     mavlink_msg_command_long_send(
-        _chan,
+        chan,
         _sysid,
         _compid,
         MAV_CMD_REQUEST_MESSAGE,
@@ -266,16 +266,16 @@ void AP_Mount_Gremsy::send_gimbal_device_retract() const
     if (_link == nullptr) {
         return;
     }
-    const mavlink_channel_t _chan = _link->get_chan();
+    const mavlink_channel_t chan = _link->get_chan();
 
     // check we have space for the message
-    if (!HAVE_PAYLOAD_SPACE(_chan, GIMBAL_DEVICE_SET_ATTITUDE)) {
+    if (!HAVE_PAYLOAD_SPACE(chan, GIMBAL_DEVICE_SET_ATTITUDE)) {
         return;
     }
 
     // send command_long command containing a do_mount_control command
     const float quat_array[4] = {NAN, NAN, NAN, NAN};
-    mavlink_msg_gimbal_device_set_attitude_send(_chan,
+    mavlink_msg_gimbal_device_set_attitude_send(chan,
                                                 _sysid,     // target system
                                                 _compid,    // target component
                                                 GIMBAL_DEVICE_FLAGS_RETRACT,    // gimbal device flags
@@ -290,10 +290,10 @@ void AP_Mount_Gremsy::send_gimbal_device_set_rate(float roll_rads, float pitch_r
     if (_link == nullptr) {
         return;
     }
-    const mavlink_channel_t _chan = _link->get_chan();
+    const mavlink_channel_t chan = _link->get_chan();
 
     // check we have space for the message
-    if (!HAVE_PAYLOAD_SPACE(_chan, GIMBAL_DEVICE_SET_ATTITUDE)) {
+    if (!HAVE_PAYLOAD_SPACE(chan, GIMBAL_DEVICE_SET_ATTITUDE)) {
         return;
     }
 
@@ -302,7 +302,7 @@ void AP_Mount_Gremsy::send_gimbal_device_set_rate(float roll_rads, float pitch_r
     const float quat_array[4] = {NAN, NAN, NAN, NAN};
 
     // send command_long command containing a do_mount_control command
-    mavlink_msg_gimbal_device_set_attitude_send(_chan,
+    mavlink_msg_gimbal_device_set_attitude_send(chan,
                                                 _sysid,     // target system
                                                 _compid,    // target component
                                                 flags,      // gimbal device flags
@@ -322,10 +322,10 @@ void AP_Mount_Gremsy::send_gimbal_device_set_attitude(float roll_rad, float pitc
     if (_link == nullptr) {
         return;
     }
-    const mavlink_channel_t _chan = _link->get_chan();
+    const mavlink_channel_t chan = _link->get_chan();
 
     // check we have space for the message
-    if (!HAVE_PAYLOAD_SPACE(_chan, GIMBAL_DEVICE_SET_ATTITUDE)) {
+    if (!HAVE_PAYLOAD_SPACE(chan, GIMBAL_DEVICE_SET_ATTITUDE)) {
         return;
     }
 
@@ -338,7 +338,7 @@ void AP_Mount_Gremsy::send_gimbal_device_set_attitude(float roll_rad, float pitc
     const float quat_array[4] = {q.q1, q.q2, q.q3, q.q4};
 
     // send command_long command containing a do_mount_control command
-    mavlink_msg_gimbal_device_set_attitude_send(_chan,
+    mavlink_msg_gimbal_device_set_attitude_send(chan,
                                                 _sysid,     // target system
                                                 _compid,    // target component
                                                 flags,      // gimbal device flags
