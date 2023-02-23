@@ -24,6 +24,8 @@ The param SCR_VM_I_COUNT may need to be increased in some circumstances
 Written by Stephen Dade (stephen_dade@hotmail.com)
 ]]--
 
+-- luacheck: only 0
+
 local PARAM_TABLE_KEY = 10
 local PARAM_TABLE_PREFIX = "RCK_"
 

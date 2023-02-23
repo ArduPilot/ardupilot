@@ -17,6 +17,9 @@ Caveats:
 
 Written by Stephen Dade (stephen_dade@hotmail.com)
 --]]
+
+-- luacheck: only 0
+
 local port = serial:find_serial(0)
 
 if not port or baud == 0 then
