@@ -71,11 +71,10 @@ private:
     void send_gimbal_device_set_attitude(float roll_rad, float pitch_rad, float yaw_rad, bool earth_frame) const;
 
     // internal variables
-    bool _found_gimbal;             // true once a MAVLink enabled gimbal has been found
     bool _got_device_info;          // true once gimbal has provided device info
     bool _initialised;              // true once the gimbal has provided a GIMBAL_DEVICE_INFORMATION
     uint32_t _last_devinfo_req_ms;  // system time that GIMBAL_DEVICE_INFORMATION was last requested (used to throttle requests)
-    mavlink_channel_t _chan;        // mavlink channel used to communicate with gimbal
+    class GCS_MAVLINK *_link;       // link we have found gimbal on; nullptr if not seen yet
     uint8_t _sysid;                 // sysid of gimbal
     uint8_t _compid;                // component id of gimbal
     mavlink_gimbal_device_attitude_status_t _gimbal_device_attitude_status;  // copy of most recently received gimbal status
