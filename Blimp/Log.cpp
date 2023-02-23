@@ -232,73 +232,6 @@ tuning_max     : tune_max
     logger.WriteBlock(&pkt_tune, sizeof(pkt_tune));
 }
 
-struct PACKED log_SysIdD {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float    waveform_time;
-    float    waveform_sample;
-    float    waveform_freq;
-    float    angle_x;
-    float    angle_y;
-    float    angle_z;
-    float    accel_x;
-    float    accel_y;
-    float    accel_z;
-};
-
-// Write an rate packet
-void Blimp::Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z)
-{
-#if MODE_SYSTEMID_ENABLED == ENABLED
-    struct log_SysIdD pkt_sidd = {
-        LOG_PACKET_HEADER_INIT(LOG_SYSIDD_MSG),
-time_us         : AP_HAL::micros64(),
-waveform_time   : waveform_time,
-waveform_sample : waveform_sample,
-waveform_freq   : waveform_freq,
-angle_x         : angle_x,
-angle_y         : angle_y,
-angle_z         : angle_z,
-accel_x         : accel_x,
-accel_y         : accel_y,
-accel_z         : accel_z
-    };
-    logger.WriteBlock(&pkt_sidd, sizeof(pkt_sidd));
-#endif
-}
-
-struct PACKED log_SysIdS {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t  systemID_axis;
-    float    waveform_magnitude;
-    float    frequency_start;
-    float    frequency_stop;
-    float    time_fade_in;
-    float    time_const_freq;
-    float    time_record;
-    float    time_fade_out;
-};
-
-// Write an rate packet
-void Blimp::Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitude, float frequency_start, float frequency_stop, float time_fade_in, float time_const_freq, float time_record, float time_fade_out)
-{
-#if MODE_SYSTEMID_ENABLED == ENABLED
-    struct log_SysIdS pkt_sids = {
-        LOG_PACKET_HEADER_INIT(LOG_SYSIDS_MSG),
-time_us             : AP_HAL::micros64(),
-systemID_axis       : systemID_axis,
-waveform_magnitude  : waveform_magnitude,
-frequency_start     : frequency_start,
-frequency_stop      : frequency_stop,
-time_fade_in        : time_fade_in,
-time_const_freq     : time_const_freq,
-time_record         : time_record,
-time_fade_out       : time_fade_out
-    };
-    logger.WriteBlock(&pkt_sids, sizeof(pkt_sids));
-#endif
-}
 
 // type and unit information can be found in
 // libraries/AP_Logger/Logstructure.h; search for "log_Units" for
@@ -440,41 +373,6 @@ const struct LogStructure Blimp::log_structure[] = {
     {
         LOG_DATA_FLOAT_MSG, sizeof(log_Data_Float),
         "DFLT",  "QBf",         "TimeUS,Id,Value", "s--", "F--"
-    },
-
-    // @LoggerMessage: SIDD
-    // @Description: System ID data
-    // @Field: TimeUS: Time since system startup
-    // @Field: Time: Time reference for waveform
-    // @Field: Targ: Current waveform sample
-    // @Field: F: Instantaneous waveform frequency
-    // @Field: Gx: Delta angle, X-Axis
-    // @Field: Gy: Delta angle, Y-Axis
-    // @Field: Gz: Delta angle, Z-Axis
-    // @Field: Ax: Delta velocity, X-Axis
-    // @Field: Ay: Delta velocity, Y-Axis
-    // @Field: Az: Delta velocity, Z-Axis
-
-    {
-        LOG_SYSIDD_MSG, sizeof(log_SysIdD),
-        "SIDD", "Qfffffffff",  "TimeUS,Time,Targ,F,Gx,Gy,Gz,Ax,Ay,Az", "ss-zkkkooo", "F---------"
-    },
-
-    // @LoggerMessage: SIDS
-    // @Description: System ID settings
-    // @Field: TimeUS: Time since system startup
-    // @Field: Ax: The axis which is being excited
-    // @Field: Mag: Magnitude of the chirp waveform
-    // @Field: FSt: Frequency at the start of chirp
-    // @Field: FSp: Frequency at the end of chirp
-    // @Field: TFin: Time to reach maximum amplitude of chirp
-    // @Field: TC: Time at constant frequency before chirp starts
-    // @Field: TR: Time taken to complete chirp waveform
-    // @Field: TFout: Time to reach zero amplitude after chirp finishes
-
-    {
-        LOG_SYSIDS_MSG, sizeof(log_SysIdS),
-        "SIDS", "QBfffffff",  "TimeUS,Ax,Mag,FSt,FSp,TFin,TC,TR,TFout", "s--ssssss", "F--------"
     },
 };
 
