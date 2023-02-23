@@ -18,6 +18,10 @@
 #ifndef INS_MAX_INSTANCES
 #define INS_MAX_INSTANCES 3
 #endif
+#ifndef INS_DEFAULT_TEMP_INSTANCES
+// 255 nothing is defined
+#define INS_DEFAULT_TEMP_INSTANCES 255
+#endif
 #define INS_MAX_BACKENDS  2*INS_MAX_INSTANCES
 #define INS_MAX_NOTCHES 12
 #ifndef INS_VIBRATION_CHECK_INSTANCES
@@ -598,7 +602,9 @@ private:
     
     // temperatures for an instance if available
     float _temperature[INS_MAX_INSTANCES];
-
+    uint8_t _min_internal_imu_index = INS_MAX_INSTANCES;
+    uint8_t _main_temprature_sensor = INS_DEFAULT_TEMP_INSTANCES;
+    
     // filtering frequency (0 means default)
     AP_Int16    _accel_filter_cutoff;
     AP_Int16    _gyro_filter_cutoff;
