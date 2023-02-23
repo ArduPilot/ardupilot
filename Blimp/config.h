@@ -150,12 +150,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Nav-Guided - allows external nav computer to control vehicle
-#ifndef NAV_GUIDED
-# define NAV_GUIDED    !HAL_MINIMIZE_FEATURES
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // Acro - fly vehicle in acrobatic mode
 #ifndef MODE_ACRO_ENABLED
 # define MODE_ACRO_ENABLED ENABLED
@@ -192,21 +186,9 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Follow - follow another vehicle or GCS
-#ifndef MODE_FOLLOW_ENABLED
-# define MODE_FOLLOW_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // Guided mode - control vehicle's position or angles from GCS
 #ifndef MODE_GUIDED_ENABLED
 # define MODE_GUIDED_ENABLED ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// GuidedNoGPS mode - control vehicle's angles from GCS
-#ifndef MODE_GUIDED_NOGPS_ENABLED
-# define MODE_GUIDED_NOGPS_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -231,12 +213,6 @@
 // SmartRTL - allows vehicle to retrace a (loop-eliminated) breadcrumb home
 #ifndef MODE_SMARTRTL_ENABLED
 # define MODE_SMARTRTL_ENABLED ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Sport - fly vehicle in rate-controlled (earth-frame) mode
-#ifndef MODE_SPORT_ENABLED
-# define MODE_SPORT_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
