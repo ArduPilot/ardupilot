@@ -164,18 +164,14 @@ bool GCS_MAVLINK::init(uint8_t instance)
     mavlink_comm_port[chan] = _port;
 
     const auto mavlink_protocol = uartstate->get_protocol();
-    mavlink_status_t *status = mavlink_get_channel_status(chan);
-    if (status == nullptr) {
-        return false;
-    }
-    
+
     if (mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLink2 ||
         mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLinkHL) {
         // load signing key
         load_signing_key();
     } else {
         // user has asked to only send MAVLink1
-        status->flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
+        _channel_status.flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
     }
 
 #if HAL_HIGH_LATENCY2_ENABLED
@@ -1512,11 +1508,8 @@ void GCS_MAVLINK::update_send()
     // update the number of packets transmitted base on seqno, making
     // the assumption that we don't send more than 256 messages
     // between the last pass through here
-    mavlink_status_t *status = mavlink_get_channel_status(chan);
-    if (status != nullptr) {
-        send_packet_count += uint8_t(status->current_tx_seq - last_tx_seq);
-        last_tx_seq = status->current_tx_seq;
-    }
+    send_packet_count += uint8_t(_channel_status.current_tx_seq - last_tx_seq);
+    last_tx_seq = _channel_status.current_tx_seq;
 }
 
 void GCS_MAVLINK::remove_message_from_bucket(int8_t bucket, ap_message id)
@@ -1686,10 +1679,7 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
         // if we receive any MAVLink2 packets on a connection
         // currently sending MAVLink1 then switch to sending
         // MAVLink2
-        mavlink_status_t *cstatus = mavlink_get_channel_status(chan);
-        if (cstatus != nullptr) {
-            cstatus->flags &= ~MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
-        }
+        _channel_status.flags &= ~MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
     }
     if (!routing.check_and_forward(*this, msg)) {
         // the routing code has indicated we should not handle this packet locally
@@ -1878,11 +1868,6 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
 */
 void GCS_MAVLINK::log_mavlink_stats()
 {
-    mavlink_status_t *status = mavlink_get_channel_status(chan);
-    if (status == nullptr) {
-        return;
-    }
-
     uint8_t flags = 0;
     if (signing_enabled()) {
         flags |= (uint8_t)Flags::USING_SIGNING;
@@ -1905,8 +1890,8 @@ void GCS_MAVLINK::log_mavlink_stats()
     time_us                : AP_HAL::micros64(),
     chan                   : (uint8_t)chan,
     packet_tx_count        : send_packet_count,
-    packet_rx_success_count: status->packet_rx_success_count,
-    packet_rx_drop_count   : status->packet_rx_drop_count,
+    packet_rx_success_count: _channel_status.packet_rx_success_count,
+    packet_rx_drop_count   : _channel_status.packet_rx_drop_count,
     flags                  : flags,
     stream_slowdown_ms     : stream_slowdown_ms,
     times_full             : out_of_space_to_send_count,
@@ -1965,12 +1950,7 @@ void GCS_MAVLINK::send_rc_channels() const
 
 bool GCS_MAVLINK::sending_mavlink1() const
 {
-    const mavlink_status_t *status = mavlink_get_channel_status(chan);
-    if (status == nullptr) {
-        // should not happen
-        return true;
-    }
-    return ((status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) != 0);
+    return ((_channel_status.flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) != 0);
 }
 
 void GCS_MAVLINK::send_rc_channels_raw() const

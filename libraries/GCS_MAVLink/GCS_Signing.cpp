@@ -132,11 +132,6 @@ void GCS_MAVLINK::load_signing_key(void)
     if (!signing_key_load(key)) {
         return;
     }
-    mavlink_status_t *status = mavlink_get_channel_status(chan);
-    if (status == nullptr) {
-        DEV_PRINTF("Failed to load signing key - no status");
-        return;        
-    }
     memcpy(signing.secret_key, key.secret_key, 32);
     signing.link_id = (uint8_t)chan;
     // use a timestamp 1 minute past the last recorded
@@ -156,11 +151,11 @@ void GCS_MAVLINK::load_signing_key(void)
     }
     if (all_zero) {
         // disable signing
-        status->signing = nullptr;
-        status->signing_streams = nullptr;
+        _channel_status.signing = nullptr;
+        _channel_status.signing_streams = nullptr;
     } else {
-        status->signing = &signing;
-        status->signing_streams = &signing_streams;
+        _channel_status.signing = &signing;
+        _channel_status.signing_streams = &signing_streams;
     }
 }
 
