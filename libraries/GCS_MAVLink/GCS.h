@@ -244,15 +244,17 @@ public:
                                 const mavlink_message_t &msg);
 
     // send a mavlink_message_t out this GCS_MAVLINK connection.
-    // Caller is responsible for ensuring space.
-    void send_message(uint32_t msgid, const char *pkt) const {
+    void send_message(uint32_t msgid, const char *pkt) {
         const mavlink_msg_entry_t *entry = mavlink_get_msg_entry(msgid);
         if (entry == nullptr) {
             return;
         }
         send_message(pkt, entry);
     }
-    void send_message(const char *pkt, const mavlink_msg_entry_t *entry) const {
+    void send_message(const char *pkt, const mavlink_msg_entry_t *entry) {
+        if (!check_payload_size(entry->max_msg_len)) {
+            return;
+        }
         _mav_finalize_message_chan_send(chan,
                                         entry->msgid,
                                         pkt,
@@ -519,9 +521,9 @@ protected:
     MAV_RESULT handle_command_do_aux_function(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_storage_format(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     void handle_mission_request_list(const mavlink_message_t &msg);
-    void handle_mission_request(const mavlink_message_t &msg) const;
-    void handle_mission_request_int(const mavlink_message_t &msg) const;
-    void handle_mission_clear_all(const mavlink_message_t &msg) const;
+    void handle_mission_request(const mavlink_message_t &msg);
+    void handle_mission_request_int(const mavlink_message_t &msg);
+    void handle_mission_clear_all(const mavlink_message_t &msg);
 
     // Note that there exists a relatively new mavlink DO command,
     // MAV_CMD_DO_SET_MISSION_CURRENT which provides an acknowledgement

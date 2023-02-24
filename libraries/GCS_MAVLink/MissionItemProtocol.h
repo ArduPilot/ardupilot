@@ -30,10 +30,10 @@ public:
     void handle_mission_request_list(const class GCS_MAVLINK &link,
                                      const mavlink_mission_request_list_t &packet,
                                      const mavlink_message_t &msg);
-    void handle_mission_request_int(const GCS_MAVLINK &link,
+    void handle_mission_request_int(GCS_MAVLINK &link,
                                     const mavlink_mission_request_int_t &packet,
                                     const mavlink_message_t &msg);
-    void handle_mission_request(const GCS_MAVLINK &link,
+    void handle_mission_request(GCS_MAVLINK &link,
                                 const mavlink_mission_request_t &packet,
                                 const mavlink_message_t &msg);
 
