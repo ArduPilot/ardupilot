@@ -93,10 +93,7 @@ void GCS::send_to_active_channels(uint32_t msgid, const char *pkt)
         if (!c.is_active()) {
             continue;
         }
-        if (entry->max_msg_len + c.packet_overhead() > c.txspace()) {
-            // no room on this channel
-            continue;
-        }
+        // size checks done by this method:
         c.send_message(pkt, entry);
     }
 }
