@@ -1324,6 +1324,10 @@ void QuadPlane::set_armed(bool armed)
     if (plane.control_mode == &plane.mode_guided) {
         guided_wait_takeoff = armed;
     }
+
+    // re-init throttle wait on arm and disarm, to prevent rudder
+    // arming on 2nd flight causing yaw
+    init_throttle_wait();
 }
 
 
