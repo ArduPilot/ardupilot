@@ -589,7 +589,7 @@ void GCS_MAVLINK::handle_mission_request_list(const mavlink_message_t &msg)
 /*
   handle a MISSION_REQUEST mavlink packet
  */
-void GCS_MAVLINK::handle_mission_request_int(const mavlink_message_t &msg) const
+void GCS_MAVLINK::handle_mission_request_int(const mavlink_message_t &msg)
 {
         // decode
         mavlink_mission_request_int_t packet;
@@ -602,7 +602,7 @@ void GCS_MAVLINK::handle_mission_request_int(const mavlink_message_t &msg) const
         prot->handle_mission_request_int(*this, packet, msg);
 }
 
-void GCS_MAVLINK::handle_mission_request(const mavlink_message_t &msg) const
+void GCS_MAVLINK::handle_mission_request(const mavlink_message_t &msg)
 {
         // decode
         mavlink_mission_request_t packet;
@@ -674,7 +674,7 @@ void GCS_MAVLINK::handle_mission_count(const mavlink_message_t &msg)
 /*
   handle a MISSION_CLEAR_ALL mavlink packet
  */
-void GCS_MAVLINK::handle_mission_clear_all(const mavlink_message_t &msg) const
+void GCS_MAVLINK::handle_mission_clear_all(const mavlink_message_t &msg)
 {
     // decode
     mavlink_mission_clear_all_t packet;
