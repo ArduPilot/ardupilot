@@ -1,0 +1,16 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+def build(bld):
+
+    # bld.ap_example(
+    #     use='ap',
+    # )
+
+    bld.ap_program(
+        use='ap',
+        program_groups=['examples'],
+        source = [
+          'sfml_display.cpp'
+        ]
+    )

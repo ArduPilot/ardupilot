@@ -40,9 +40,12 @@ private:
 
     uint8_t _displaybuffer[COLUMNS * ROWS];
     bool _need_hw_update;
+    bool _is_closing {false};
 
     static void *update_thread_start(void *obj);
     void update_thread(void);
+    void poll_events();
+
     sf::RenderWindow *w;
     pthread_t thread;
     HAL_Semaphore mutex;

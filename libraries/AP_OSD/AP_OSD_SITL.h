@@ -37,6 +37,9 @@ public:
     //initilize display port and underlying hardware
     bool init() override;
 
+    // updates for display and events that must be called from main loop
+    void update() override;
+
     //flush framebuffer to screen
     void flush() override;
 
@@ -48,6 +51,7 @@ private:
     AP_OSD_SITL(AP_OSD &osd);
 
     sf::RenderWindow *w;
+    bool is_closing {false};
 
     sf::Texture font[256];
     uint8_t last_font;
@@ -67,6 +71,7 @@ private:
     void update_thread();
     static void *update_thread_start(void *obj);
     void load_font();
+    void poll_events();
 
     pthread_t thread;
     HAL_Semaphore mutex;

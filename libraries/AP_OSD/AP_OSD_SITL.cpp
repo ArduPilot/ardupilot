@@ -27,10 +27,13 @@
 #include <AP_HAL/Semaphores.h>
 #include <AP_HAL/Scheduler.h>
 #include <AP_ROMFS/AP_ROMFS.h>
+#include <AP_Common/AP_FEHideExcept.h>
+
 #include <utility>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <fenv.h>
 #include <unistd.h>
 #include "pthread.h"
 
@@ -121,26 +124,9 @@ void AP_OSD_SITL::flush(void)
 // main loop of graphics thread
 void AP_OSD_SITL::update_thread(void)
 {
-    load_font();
-    {
-        WITH_SEMAPHORE(AP::notify().sf_window_mutex);
-        w = new sf::RenderWindow(sf::VideoMode(video_cols*(char_width+char_spacing)*char_scale,
-                                               video_lines*(char_height+char_spacing)*char_scale),
-                                 "OSD");
-    }
-    if (!w) {
-        AP_HAL::panic("Unable to create OSD window");
-    }
-
     while (true) {
         {
             WITH_SEMAPHORE(AP::notify().sf_window_mutex);
-            sf::Event event;
-            while (w->pollEvent(event)) {
-                if (event.type == sf::Event::Closed) {
-                    w->close();
-                }
-            }
             if (!w->isOpen()) {
                 break;
             }
@@ -187,8 +173,51 @@ void *AP_OSD_SITL::update_thread_start(void *obj)
 // initialise backend
 bool AP_OSD_SITL::init(void)
 {
+    // initialise the window on the main thread (macOS compatibility)
+    load_font();
+    {
+        WITH_SEMAPHORE(AP::notify().sf_window_mutex);
+        is_closing = false;
+
+        FEHideExcept hide_except;
+        w = new sf::RenderWindow(sf::VideoMode(video_cols*(char_width+char_spacing)*char_scale,
+                                               video_lines*(char_height+char_spacing)*char_scale),
+                                 "OSD");
+    }
+    if (!w) {
+        AP_HAL::panic("Unable to create OSD window");
+    }
+
+    poll_events();
+
     pthread_create(&thread, NULL, update_thread_start, this);
     return true;
+}
+
+void AP_OSD_SITL::update()
+{
+    poll_events();
+}
+
+void AP_OSD_SITL::poll_events()
+{
+    if (!w) {
+        return;
+    }
+
+    WITH_SEMAPHORE(AP::notify().sf_window_mutex);
+    if (is_closing) {
+        w->close();
+    }
+
+    FEHideExcept hide_except;
+    sf::Event event;
+    while (w->pollEvent(event)) {
+        if (event.type == sf::Event::Closed) {
+            w->setVisible(false);
+            is_closing = true;
+        }
+    }
 }
 
 AP_OSD_Backend *AP_OSD_SITL::probe(AP_OSD &osd)

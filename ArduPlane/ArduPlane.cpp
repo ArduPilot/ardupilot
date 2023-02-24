@@ -136,6 +136,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if AP_LANDINGGEAR_ENABLED
     SCHED_TASK(landing_gear_update, 5, 50, 159),
 #endif
+#ifdef WITH_SITL_OSD
+    SCHED_TASK_CLASS(AP_OSD,     &plane.osd,        update, 50, 300, 180),
+#endif
 };
 
 void Plane::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
