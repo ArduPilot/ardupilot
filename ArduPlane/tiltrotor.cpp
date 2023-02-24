@@ -581,7 +581,14 @@ void Tiltrotor::vectoring(void)
         // we need to use the same factor here to keep the same roll
         // gains when tilted as we have when not tilted
         const float avg_roll_factor = 0.5;
-        const float tilt_offset = (throttle_scaler * yaw_out * cos_tilt + avg_roll_factor * roll_out * sin_tilt) * yaw_range;
+        float tilt_scale = throttle_scaler * yaw_out * cos_tilt + avg_roll_factor * roll_out * sin_tilt;
+
+        if (fabsf(tilt_scale) > 1.0) {
+            tilt_scale = constrain_float(tilt_scale, -1.0, 1.0);
+            motors->limit.yaw = true;
+        }
+
+        const float tilt_offset = tilt_scale * yaw_range;
 
         float left_tilt = base_output + tilt_offset;
         float right_tilt = base_output - tilt_offset;
