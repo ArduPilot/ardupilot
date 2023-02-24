@@ -2056,6 +2056,8 @@ void AP_Periph_FW::can_gps_update(void)
         float yaw_deg, yaw_acc_deg;
         uint32_t yaw_time_ms;
         if (gps.gps_yaw_deg(yaw_deg, yaw_acc_deg, yaw_time_ms) && yaw_time_ms != last_gps_yaw_ms) {
+            last_gps_yaw_ms = yaw_time_ms;
+            
             ardupilot_gnss_Heading heading {};
             heading.heading_valid = true;
             heading.heading_accuracy_valid = is_positive(yaw_acc_deg);
