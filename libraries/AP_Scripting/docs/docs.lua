@@ -1318,54 +1318,79 @@ function RPM:get_rpm(instance) end
 ---@field MISSION_STOPPED number
 mission = {}
 
--- desc
+-- clear - clears out mission
 ---@return boolean
 function mission:clear() end
 
--- desc
+-- set any WP items in any order in a mavlink-ish kinda way.
 ---@param index integer
 ---@param item mavlink_mission_item_int_t_ud
 ---@return boolean
 function mission:set_item(index, item) end
 
--- desc
+-- get any WP items in any order in a mavlink-ish kinda way.
 ---@param index integer
 ---@return mavlink_mission_item_int_t_ud|nil
 function mission:get_item(index) end
 
--- desc
+-- num_commands - returns total number of commands in the mission
+--                 this number includes offset 0, the home location
 ---@return integer
 function mission:num_commands() end
 
--- desc
+-- get_current_do_cmd_id - returns id of the active "do" command
 ---@return integer
 function mission:get_current_do_cmd_id() end
 
--- desc
+-- get_current_nav_id - return the id of the current nav command
 ---@return integer
 function mission:get_current_nav_id() end
 
--- desc
+-- get_prev_nav_cmd_id - returns the previous "navigation" command id
+--     if there was no previous nav command it returns AP_MISSION_CMD_ID_NONE (0)
+--      we do not return the entire command to save on RAM
 ---@return integer
 function mission:get_prev_nav_cmd_id() end
 
--- desc
+-- set_current_cmd - jumps to command specified by index
 ---@param index integer
 ---@return boolean
 function mission:set_current_cmd(index) end
 
--- desc
+-- get_current_nav_index - returns the current "navigation" command index
+-- Note that this will return 0 if there is no command. This is
+-- used in MAVLink reporting of the mission command
 ---@return integer
 function mission:get_current_nav_index() end
 
--- desc
+-- status - returns the status of the mission (i.e. Mission_Started, Mission_Complete, Mission_Stopped
 ---@return integer
 function mission:state() end
 
--- desc
+-- returns true if the mission cmd has a location
 ---@param cmd integer
 ---@return boolean
 function mission:cmd_has_location(cmd)end
+
+-- Set the mission index to the first JUMP_TAG with this tag.
+-- Returns true on success, else false if no appropriate JUMP_TAG match can be found or if setting the index failed
+---@param tag integer
+---@return boolean
+function mission:jump_to_tag(tag) end
+
+-- desc
+---@param tag integer
+---@return integer
+function mission:get_index_of_jump_tag(tag) end
+
+-- Jump Tags. When a JUMP_TAG is run in the mission, either via DO_JUMP_TAG or
+-- by just being the next item, the tag is remembered and the age is set to 1.
+-- Only the most recent tag is remembered. It's age is how many NAV items have
+-- progressed since the tag was seen. While executing the tag, the
+-- age will be 1. The next NAV command after it will tick the age to 2, and so on.
+---@return integer|nil
+---@return integer|nil
+function mission:get_last_jump_tag() end
 
 
 -- desc
@@ -1485,13 +1510,18 @@ baro = {}
 ---@return number
 function baro:get_external_temperature() end
 
--- desc
+-- temperature in degrees C
 ---@return number
 function baro:get_temperature() end
 
--- desc
+-- pressure in Pascal. Divide by 100 for millibars or hectopascals
 ---@return number
 function baro:get_pressure() end
+
+-- get current altitude in meters relative to altitude at the time
+-- of the last calibrate() call, typically at boot
+---@return number
+function baro:get_altitude() end
 
 
 -- desc
