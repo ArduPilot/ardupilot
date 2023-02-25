@@ -250,7 +250,7 @@ bool Copter::ekf_has_absolute_position() const
 {
     if (!ahrs.have_inertial_nav()) {
         // do not allow navigation with dcm position
-        return false;
+        return !ahrs.always_use_EKF();
     }
 
     // with EKF use filter status and ekf check
@@ -269,7 +269,7 @@ bool Copter::ekf_has_absolute_position() const
 bool Copter::ekf_has_relative_position() const
 {
     // return immediately if EKF not used
-    if (!ahrs.have_inertial_nav()) {
+    if (ahrs.always_use_EKF() && !ahrs.have_inertial_nav()) {
         return false;
     }
 
@@ -307,8 +307,7 @@ bool Copter::ekf_has_relative_position() const
 bool Copter::ekf_alt_ok() const
 {
     if (!ahrs.have_inertial_nav()) {
-        // do not allow alt control with only dcm
-        return false;
+        return !ahrs.always_use_EKF();
     }
 
     // with EKF use filter status and ekf check
