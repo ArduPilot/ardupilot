@@ -18,7 +18,10 @@ for headroom in $YAW_HEADROOM; do
     echo "Yaw Headroom: $headroom"
     for Thr in $THR_AVERAGE_MAX; do
         echo "    Throttle average max: $Thr"
-        ./build/linux/examples/AP_Motors_test s yaw_headroom=$headroom throttle_avg_max=$Thr > MotorTestSweep/$COUNTER.csv
+        # Test with and without boost
+        ./build/linux/examples/AP_Motors_test s yaw_headroom=$headroom throttle_avg_max=$Thr thrust_boost=0 > MotorTestSweep/$COUNTER.csv
+        let COUNTER++
+        ./build/linux/examples/AP_Motors_test s yaw_headroom=$headroom throttle_avg_max=$Thr thrust_boost=1 > MotorTestSweep/$COUNTER.csv
         let COUNTER++
     done
     echo
