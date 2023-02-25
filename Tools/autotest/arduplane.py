@@ -1164,6 +1164,24 @@ class AutoTestPlane(AutoTest):
             raise NotAchievedException("Fence not enabled after RC fail")
         self.do_fence_disable() # Ensure the fence is disabled after test
 
+    def GCSFailsafe(self):
+        '''Ensure Long-Failsafe works on GCS loss'''
+        self.start_subtest("Test Failsafe: RTL")
+        self.load_sample_mission()
+        self.set_parameter("RTL_AUTOLAND", 1)
+        self.change_mode("AUTO")
+        self.takeoff()
+        self.set_parameter("FS_GCS_ENABL", 1)
+        self.set_parameter("FS_LONG_ACTN", 1)
+        self.progress("Disconnecting GCS")
+        self.set_heartbeat_rate(0)
+        self.delay_sim_time(5)
+        self.wait_mode("RTL")
+        self.set_heartbeat_rate(self.speedup)
+        self.fly_home_land_and_disarm()
+        self.end_subtest("Completed RTL Failsafe test")
+
+
     def TestGripperMission(self):
         '''Test Gripper mission items'''
         self.context_push()
@@ -4470,6 +4488,7 @@ class AutoTestPlane(AutoTest):
             self.AltResetBadGPS,
             self.AirspeedCal,
             self.MissionJumpTags,
+            self.GCSFailsafe,
         ])
         return ret
 
