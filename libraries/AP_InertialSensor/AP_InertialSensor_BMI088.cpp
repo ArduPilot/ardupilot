@@ -416,7 +416,6 @@ void AP_InertialSensor_BMI088::read_fifo_gyro(void)
     // data is 16 bits with 2000dps range
     for (uint8_t i = 0; i < num_frames; i++) {
         if (data[i] == bad_frame) {
-            _inc_gyro_error_count(gyro_instance);
             continue;
         }
         Vector3f gyro(data[i].x, data[i].y, data[i].z);
