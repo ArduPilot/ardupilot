@@ -9657,6 +9657,20 @@ class AutoTestCopter(AutoTest):
         self.context_pop()
         self.reboot_sitl()
 
+    def AHRSTrimLand(self):
+        '''test land detector with significant AHRS trim'''
+        self.context_push()
+        self.set_parameters({
+            "SIM_ACC_TRIM_X": 0.12,
+            "AHRS_TRIM_X": 0.12,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(alt_min=20, mode='LOITER')
+        self.land_and_disarm()
+        self.context_pop()
+        self.reboot_sitl()
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -9710,6 +9724,7 @@ class AutoTestCopter(AutoTest):
             self.ScriptMountPOI,
             self.FlyMissionTwice,
             self.IMUConsistency,
+            self.AHRSTrimLand,
         ])
         return ret
 
