@@ -50,7 +50,7 @@ public:
     };
 
     // Constructor
-    AP_AHRS(uint8_t flags = 0);
+    AP_AHRS();
 
     // initialise
     void init(void);
@@ -365,6 +365,11 @@ public:
         return _ekf_type;
     }
 
+    // set the ekf flags
+    void set_ekf_flags(int8_t flags) {
+        _ekf_flags.set(flags);
+    }
+
     // these are only out here so vehicles can reference them for parameters
 #if HAL_NAVEKF2_AVAILABLE
     NavEKF2 EKF2;
@@ -595,6 +600,10 @@ public:
     // get access to an EKFGSF_yaw estimator
     const EKFGSF_yaw *get_yaw_estimator(void) const;
 
+    bool always_use_EKF() const {
+        return _ekf_flags & FLAG_ALWAYS_USE_EKF;
+    }
+
 private:
 
     // optional view class
@@ -630,6 +639,7 @@ private:
 
     AP_Enum<GPSUse> _gps_use;
     AP_Int8 _gps_minsats;
+    AP_Int8 _ekf_flags; // bitmask from Flags enumeration
 
     enum class EKFType {
         NONE = 0,
@@ -651,10 +661,6 @@ private:
     // if successful returns true and sets secondary_ekf_type to None (for DCM), EKF3 or EKF3
     // returns false if no secondary (i.e. only using DCM)
     bool get_secondary_EKF_type(EKFType &secondary_ekf_type) const;
-
-    bool always_use_EKF() const {
-        return _ekf_flags & FLAG_ALWAYS_USE_EKF;
-    }
 
     // check all cores providing consistent attitudes for prearm checks
     bool attitudes_consistent(char *failure_msg, const uint8_t failure_msg_len) const;
@@ -704,7 +710,6 @@ private:
 
     const uint16_t startup_delay_ms = 1000;
     uint32_t start_time_ms;
-    uint8_t _ekf_flags; // bitmask from Flags enumeration
 
     EKFType ekf_type(void) const;
     void update_DCM();

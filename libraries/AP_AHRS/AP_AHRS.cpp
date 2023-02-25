@@ -42,6 +42,15 @@
 #define HAL_AHRS_EKF_TYPE_DEFAULT 3
 #endif
 
+#ifndef HAL_AHRS_EKF_FLAGS_DEFAULT
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+// Copter and Sub force the use of EKF by default
+#define HAL_AHRS_EKF_FLAGS_DEFAULT 1
+#else
+#define HAL_AHRS_EKF_FLAGS_DEFAULT 0
+#endif
+#endif
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // index 0 and 1 are for old parameters that are no longer not used
@@ -178,24 +187,26 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
 
     // index 17
 
+    // @Param: EKF_FLAGS
+    // @DisplayName: Flags to modify use of NavEKF Kalman filter for attitude and position estimation
+    // @Description: This controls how the active NavEKF Kalman filter version is used for attitude and position estimation
+    // @Bitmask: 0:AlwaysUseEKF
+    // @User: Advanced
+    AP_GROUPINFO("EKF_FLAGS",  18, AP_AHRS, _ekf_flags, HAL_AHRS_EKF_FLAGS_DEFAULT),
+
     AP_GROUPEND
 };
 
 extern const AP_HAL::HAL& hal;
 
 // constructor
-AP_AHRS::AP_AHRS(uint8_t flags) :
-    _ekf_flags(flags)
+AP_AHRS::AP_AHRS()
 {
     _singleton = this;
 
     // load default values from var_info table
     AP_Param::setup_object_defaults(this, var_info);
 
-#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduSub)
-    // Copter and Sub force the use of EKF
-    _ekf_flags |= AP_AHRS::FLAG_ALWAYS_USE_EKF;
-#endif
     _dcm_matrix.identity();
 
     // initialise the controller-to-autopilot-body trim state:
@@ -1787,6 +1798,7 @@ AP_AHRS::EKFType AP_AHRS::active_EKF_type(void) const
      */
     if (ret != EKFType::NONE &&
         (_vehicle_class == VehicleClass::FIXED_WING ||
+         (_vehicle_class == VehicleClass::COPTER && !always_use_EKF())||
          _vehicle_class == VehicleClass::GROUND)) {
         if (!dcm.yaw_source_available() && !fly_forward) {
             // if we don't have a DCM yaw source available and we are
