@@ -12,7 +12,7 @@ public:
     bool start_cmd(const AP_Mission::Mission_Command& cmd) { return true; };
     bool verify_cmd(const AP_Mission::Mission_Command& cmd) { return true; };
     void mission_complete() { };
-    AP_AHRS ahrs{AP_AHRS::FLAG_ALWAYS_USE_EKF};
+    AP_AHRS ahrs;
 
     AP_Mission mission{
         FUNCTOR_BIND_MEMBER(&DummyVehicle::start_cmd, bool, const AP_Mission::Mission_Command &),
