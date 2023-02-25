@@ -45,7 +45,7 @@ public:
     bool tilt_over_max_angle(void) const;
 
     bool is_motor_tilting(uint8_t motor) const {
-        return (((uint8_t)tilt_mask.get()) & (1U<<motor));
+        return tilt_mask.get() & (1U<<motor);
     }
 
     bool fully_fwd() const;
