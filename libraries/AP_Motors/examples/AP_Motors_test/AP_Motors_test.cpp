@@ -42,6 +42,8 @@ AP_MotorsMatrix   motors(400);
 
 AP_BattMonitor _battmonitor{0, nullptr, nullptr};
 
+bool thrust_boost = false;
+
 // setup
 void setup()
 {
@@ -90,6 +92,9 @@ void setup()
 
             } else if (strcmp(cmd,"throttle_avg_max") == 0) {
                 motors.set_throttle_avg_max(value);
+
+            } else if (strcmp(cmd,"thrust_boost") == 0) {
+                thrust_boost = value > 0.0;
 
             } else {
                 ::printf("Expected \"yaw_headroom\" or \"throttle_avg_max\"\n");
@@ -162,6 +167,7 @@ void stability_test()
 {
     hal.console->printf("Throttle average max: %0.4f\n",  motors.get_throttle_avg_max());
     hal.console->printf("Yaw headroom: %i\n", motors.get_yaw_headroom());
+    hal.console->printf("Thrust boost: %s\n", thrust_boost?"True":"False");
 
     const float throttle_tests[] = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
     const uint8_t throttle_tests_num = ARRAY_SIZE(throttle_tests);
@@ -229,6 +235,7 @@ void update_motors()
 {
     // call update motors 1000 times to get any ramp limiting complete
     for (uint16_t i=0; i<1000; i++) {
+        motors.set_thrust_boost(thrust_boost);
         motors.output();
     }
 }
