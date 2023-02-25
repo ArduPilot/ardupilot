@@ -3038,6 +3038,11 @@ def add_bootloader_defaults(f):
 #ifndef HAL_GCS_ENABLED
 #define HAL_GCS_ENABLED 0
 #endif
+
+// make diagnosing Faults (e.g. HardFault) harder, but save bytes:
+#ifndef AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED
+#define AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED 0
+#endif
 ''')
 
 def add_iomcu_firmware_defaults(f):
@@ -3064,6 +3069,11 @@ def add_iomcu_firmware_defaults(f):
 
 #ifndef AP_VIDEOTX_ENABLED
 #define AP_VIDEOTX_ENABLED 0
+#endif
+
+// make diagnosing Faults (e.g. HardFault) harder, but save bytes:
+#ifndef AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED
+#define AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED 0
 #endif
 ''')
 
