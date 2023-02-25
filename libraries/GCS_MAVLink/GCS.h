@@ -151,6 +151,42 @@ private:
 };
 #endif
 
+class GCS_MAVLINK_InProgress
+{
+public:
+    enum class Type {
+        NONE,
+        AIRSPEED_CAL,
+        SD_FORMAT,
+    };
+
+    // these can fail if there's no space on the channel to send the ack:
+    bool conclude(MAV_RESULT result);
+    bool send_in_progress();
+    // abort task without sending any further ACKs:
+    void abort() { task = Type::NONE; }
+
+    Type task;
+    MAV_CMD mav_cmd;
+
+    static class GCS_MAVLINK_InProgress *get_task(MAV_CMD cmd, Type t, uint8_t sysid, uint8_t compid);
+
+    static void check_tasks();
+
+private:
+
+    uint8_t requesting_sysid;
+    uint8_t requesting_compid;
+    mavlink_channel_t chan;
+
+    bool send_ack(MAV_RESULT result);
+
+    static GCS_MAVLINK_InProgress in_progress_tasks[1];
+
+    // allocate a task-tracking ID
+    static uint32_t last_check_ms;
+};
+
 ///
 /// @class	GCS_MAVLINK
 /// @brief	MAVLink transport control class
@@ -382,8 +418,8 @@ public:
     bool is_private(void) const { return is_private(chan); }
 
 #if HAL_HIGH_LATENCY2_ENABLED
-    // return true if the link should be sending. Will return false if is a high latency link AND is not active
-    bool should_send() { return is_high_latency_link ? high_latency_link_enabled : true; }
+    // true if this is a high latency link
+    bool is_high_latency_link;
 #endif
 
     /*
@@ -408,6 +444,9 @@ public:
       returns true if a match is found
      */
     static bool find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint8_t &sysid, mavlink_channel_t &channel) { return routing.find_by_mavtype_and_compid(mav_type, compid, sysid, channel); }
+    // same as above, but returns a pointer to the GCS_MAVLINK object
+    // corresponding to the channel
+    static GCS_MAVLINK *find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint8_t &sysid);
 
     // update signing timestamp on GPS lock
     static void update_signing_timestamp(uint64_t timestamp_usec);
@@ -478,6 +517,7 @@ protected:
     virtual MAV_RESULT handle_command_component_arm_disarm(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_set_home(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_aux_function(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_storage_format(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     void handle_mission_request_list(const mavlink_message_t &msg);
     void handle_mission_request(const mavlink_message_t &msg) const;
     void handle_mission_request_int(const mavlink_message_t &msg) const;
@@ -571,10 +611,10 @@ protected:
 
     // generally this should not be overridden; Plane overrides it to ensure
     // failsafe isn't triggered during calibration
-    virtual MAV_RESULT handle_command_preflight_calibration(const mavlink_command_long_t &packet);
+    virtual MAV_RESULT handle_command_preflight_calibration(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
 
-    virtual MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet);
-    virtual MAV_RESULT _handle_command_preflight_calibration_baro();
+    virtual MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
+    virtual MAV_RESULT _handle_command_preflight_calibration_baro(const mavlink_message_t &msg);
 
     MAV_RESULT handle_command_preflight_can(const mavlink_command_long_t &packet);
 
@@ -646,9 +686,6 @@ protected:
 
     MAV_RESULT handle_control_high_latency(const mavlink_command_long_t &packet);
 
-    // true if this is a high latency link
-    bool is_high_latency_link;
-    bool high_latency_link_enabled;
 #endif // HAL_HIGH_LATENCY2_ENABLED
     
     static constexpr const float magic_force_arm_value = 2989.0f;
@@ -1175,7 +1212,9 @@ public:
     uint8_t get_channel_from_port_number(uint8_t port_num);
 
 #if HAL_HIGH_LATENCY2_ENABLED
+    bool high_latency_link_enabled;
     void enable_high_latency_connections(bool enabled);
+    bool get_high_latency_status();
 #endif // HAL_HIGH_LATENCY2_ENABLED
 
     virtual uint8_t sysid_this_mav() const = 0;

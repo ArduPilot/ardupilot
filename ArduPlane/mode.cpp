@@ -1,8 +1,9 @@
 #include "Plane.h"
 
-Mode::Mode()
+Mode::Mode() :
+    ahrs(plane.ahrs)
 #if HAL_QUADPLANE_ENABLED
-    : quadplane(plane.quadplane),
+    , quadplane(plane.quadplane),
     pos_control(plane.quadplane.pos_control),
     attitude_control(plane.quadplane.attitude_control),
     loiter_nav(plane.quadplane.loiter_nav),
@@ -64,7 +65,7 @@ bool Mode::enter()
 
     // zero initial pitch and highest airspeed on mode change
     plane.auto_state.highest_airspeed = 0;
-    plane.auto_state.initial_pitch_cd = plane.ahrs.pitch_sensor;
+    plane.auto_state.initial_pitch_cd = ahrs.pitch_sensor;
 
     // disable taildrag takeoff on mode change
     plane.auto_state.fbwa_tdrag_takeoff_mode = false;

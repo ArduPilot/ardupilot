@@ -288,7 +288,7 @@ protected:
     }
 
     // if fast sampling is enabled, the rate to use in kHz
-    uint8_t get_fast_sampling_rate() {
+    uint8_t get_fast_sampling_rate() const {
         return (1 << uint8_t(_imu._fast_sampling_rate));
     }
 

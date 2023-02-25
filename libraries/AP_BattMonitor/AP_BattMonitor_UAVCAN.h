@@ -76,9 +76,8 @@ private:
         OVER_TEMPERATURE    = (1U<<3),
     };
     void handle_mppt_stream(const MpptStreamCb &cb);
-    void mppt_set_bootup_powered_state();
     void mppt_check_powered_state();
-    void mppt_set_powered_state(bool power_on, bool force);
+    void mppt_set_powered_state(bool power_on);
 
 #if AP_BATTMONITOR_UAVCAN_MPPT_DEBUG
     static void mppt_report_faults(const uint8_t instance, const uint8_t fault_flags);
@@ -108,7 +107,6 @@ private:
     struct {
         bool is_detected;               // true if this UAVCAN device is a Packet Digital MPPT
         bool powered_state;             // true if the mppt is powered on, false if powered off
-        bool powered_state_changed;     // true if _mppt_powered_state has changed and should be sent to MPPT board
         bool vehicle_armed_last;        // latest vehicle armed state. used to detect changes and power on/off MPPT board
         uint8_t fault_flags;            // bits holding fault flags
         uint32_t powered_state_remote_ms; // timestamp of when request was sent, zeroed on response. Used to retry

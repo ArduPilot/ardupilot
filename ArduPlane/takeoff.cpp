@@ -16,7 +16,7 @@ bool Plane::auto_takeoff_check(void)
     uint16_t wait_time_ms = MIN(uint16_t(g.takeoff_throttle_delay)*100,12700);
 
     // reset all takeoff state if disarmed
-    if (!hal.util->get_soft_armed()) {
+    if (!arming.is_armed_and_safety_off()) {
         memset(&takeoff_state, 0, sizeof(takeoff_state));
         auto_state.baro_takeoff_alt = barometer.get_altitude();
         return false;
@@ -155,11 +155,8 @@ void Plane::takeoff_calc_roll(void)
 void Plane::takeoff_calc_pitch(void)
 {
     if (auto_state.highest_airspeed < g.takeoff_rotate_speed) {
-        // we have not reached rotate speed, use a target pitch of 5
-        // degrees. This should be enough to get the tail off the
-        // ground, while making it unlikely that overshoot in the
-        // pitch controller will cause a prop strike
-        nav_pitch_cd = 500;
+        // we have not reached rotate speed, use the specified takeoff target pitch angle
+        nav_pitch_cd = int32_t(100.0f * mode_takeoff.ground_pitch);
         return;
     }
 

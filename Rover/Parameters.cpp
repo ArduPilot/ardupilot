@@ -683,6 +683,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MANUAL_STR_EXPO", 55, ParametersG2, manual_steering_expo, 0),
 
+    // @Param: FS_GCS_TIMEOUT
+    // @DisplayName: GCS failsafe timeout
+    // @Description: Timeout before triggering the GCS failsafe
+    // @Units: s
+    // @Range: 2 120
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("FS_GCS_TIMEOUT", 56, ParametersG2, fs_gcs_timeout, 5),
+
     AP_GROUPEND
 };
 

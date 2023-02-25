@@ -41,6 +41,15 @@ const AP_Param::GroupInfo ModeTakeoff::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("DIST", 4, ModeTakeoff, target_dist, 200),
     
+    // @Param: GND_PITCH
+    // @DisplayName: Takeoff run pitch demand
+    // @Description: Degrees of pitch angle demanded during the takeoff run before speed reaches TKOFF_ROTATE_SPD. For taildraggers set to 3-point ground pitch angle and use TKOFF_TDRAG_ELEV to prevent nose tipover. For nose-wheel steer aircraft set to the ground pitch angle and if a reduction in nose-wheel load is required as speed rises, use a positive offset in TKOFF_GND_PITCH of up to 5 degrees above the angle on ground, starting at the mesured pitch angle and incrementing in 1 degree steps whilst checking for premature rotation and takeoff with each increment. To increase nose-wheel load, use a negative TKOFF_TDRAG_ELEV and refer to notes on TKOFF_TDRAG_ELEV before making adjustments.
+    // @Units: deg
+    // @Range: -5.0 10.0
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("GND_PITCH", 5, ModeTakeoff, ground_pitch, 5),
+
     AP_GROUPEND
 };
 
@@ -61,7 +70,7 @@ void ModeTakeoff::update()
 {
     if (!takeoff_started) {
         // see if we will skip takeoff as already flying
-        if (plane.is_flying() && (millis() - plane.started_flying_ms > 10000U) && plane.ahrs.groundspeed() > 3) {
+        if (plane.is_flying() && (millis() - plane.started_flying_ms > 10000U) && ahrs.groundspeed() > 3) {
             gcs().send_text(MAV_SEVERITY_INFO, "Takeoff skipped - circling");
             plane.prev_WP_loc = plane.current_loc;
             plane.next_WP_loc = plane.current_loc;
@@ -75,7 +84,7 @@ void ModeTakeoff::update()
         // takeoff point, at a height of TKOFF_ALT
         const float dist = target_dist;
         const float alt = target_alt;
-        const float direction = degrees(plane.ahrs.yaw);
+        const float direction = degrees(ahrs.yaw);
 
         start_loc = plane.current_loc;
         plane.prev_WP_loc = plane.current_loc;

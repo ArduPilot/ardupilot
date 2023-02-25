@@ -202,7 +202,7 @@ void AP_BattMonitor_UAVCAN::handle_battery_info_aux(const BattInfoAuxCb &cb)
 
 void AP_BattMonitor_UAVCAN::handle_mppt_stream(const MpptStreamCb &cb)
 {
-    const bool use_input_value = (uint32_t(_params._options.get()) & uint32_t(AP_BattMonitor_Params::Options::MPPT_Use_Input_Value)) != 0;
+    const bool use_input_value = option_is_set(AP_BattMonitor_Params::Options::MPPT_Use_Input_Value);
     const float voltage = use_input_value ? cb.msg->input_voltage : cb.msg->output_voltage;
     const float current = use_input_value ? cb.msg->input_current : cb.msg->output_current;
 
@@ -218,7 +218,13 @@ void AP_BattMonitor_UAVCAN::handle_mppt_stream(const MpptStreamCb &cb)
         // this is the first time the mppt message has been received
         // so set powered up state
         _mppt.is_detected = true;
-        mppt_set_bootup_powered_state();
+
+        // Boot/Power-up event
+        if (option_is_set(AP_BattMonitor_Params::Options::MPPT_Power_On_At_Boot)) {
+            mppt_set_powered_state(true);
+        } else if (option_is_set(AP_BattMonitor_Params::Options::MPPT_Power_Off_At_Boot)) {
+            mppt_set_powered_state(false);
+        }
     }
 
 #if AP_BATTMONITOR_UAVCAN_MPPT_DEBUG
@@ -319,62 +325,36 @@ bool AP_BattMonitor_UAVCAN::get_cycle_count(uint16_t &cycles) const
     return false;
 }
 
-// request MPPT board to power on/off at boot as specified by BATT_OPTIONS
-void AP_BattMonitor_UAVCAN::mppt_set_bootup_powered_state()
-{
-    const uint32_t options = uint32_t(_params._options.get());
-    const bool on_at_boot = (options & uint32_t(AP_BattMonitor_Params::Options::MPPT_Power_On_At_Boot)) != 0;
-    const bool off_at_boot = (options & uint32_t(AP_BattMonitor_Params::Options::MPPT_Power_Off_At_Boot)) != 0;
-
-    if (on_at_boot) {
-        mppt_set_powered_state(true, true);
-    } else if (off_at_boot) {
-        mppt_set_powered_state(false, true);
-    }
-}
-
 // request MPPT board to power on/off depending upon vehicle arming state as specified by BATT_OPTIONS
 void AP_BattMonitor_UAVCAN::mppt_check_powered_state()
 {
     if ((_mppt.powered_state_remote_ms != 0) && (AP_HAL::millis() - _mppt.powered_state_remote_ms >= 1000)) {
         // there's already a set attempt that didnt' respond. Retry at 1Hz
-        mppt_set_powered_state(_mppt.powered_state, true);
+        mppt_set_powered_state(_mppt.powered_state);
     }
 
     // check if vehicle armed state has changed
     const bool vehicle_armed = hal.util->get_soft_armed();
-    if (vehicle_armed == _mppt.vehicle_armed_last) {
-        return;
+    if ((!_mppt.vehicle_armed_last && vehicle_armed) && option_is_set(AP_BattMonitor_Params::Options::MPPT_Power_On_At_Arm)) {
+        // arm event
+        mppt_set_powered_state(true);
+    } else if ((_mppt.vehicle_armed_last && !vehicle_armed) && option_is_set(AP_BattMonitor_Params::Options::MPPT_Power_Off_At_Disarm)) {
+        // disarm event
+        mppt_set_powered_state(false);
     }
     _mppt.vehicle_armed_last = vehicle_armed;
-
-    // check options for arming state change events
-    const uint32_t options = uint32_t(_params._options.get());
-    const bool power_on_at_arm = (options & uint32_t(AP_BattMonitor_Params::Options::MPPT_Power_On_At_Arm)) != 0;
-    const bool power_off_at_disarm = (options & uint32_t(AP_BattMonitor_Params::Options::MPPT_Power_Off_At_Disarm)) != 0;
-
-    if (vehicle_armed && power_on_at_arm) {
-        mppt_set_powered_state(true, false);
-    } else if (!vehicle_armed && power_off_at_disarm) {
-        mppt_set_powered_state(false, false);
-    }
 }
 
 // request MPPT board to power on or off
 // power_on should be true to power on the MPPT, false to power off
 // force should be true to force sending the state change request to the MPPT
-void AP_BattMonitor_UAVCAN::mppt_set_powered_state(bool power_on, bool force)
+void AP_BattMonitor_UAVCAN::mppt_set_powered_state(bool power_on)
 {
     if (_ap_uavcan == nullptr || _node == nullptr || !_mppt.is_detected) {
         return;
     }
 
-    // return immediately if already desired state and not forced
-    if ((_mppt.powered_state == power_on) && !force) {
-        return;
-    }
     _mppt.powered_state = power_on;
-    _mppt.powered_state_changed = true;
 
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: powering %s%s", (unsigned)_instance+1, _mppt.powered_state ? "ON" : "OFF",
         (_mppt.powered_state_remote_ms == 0) ? "" : " Retry");

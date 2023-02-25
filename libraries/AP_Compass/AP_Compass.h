@@ -432,23 +432,45 @@ private:
 #if AP_COMPASS_LIS3MDL_ENABLED
         DRIVER_LIS3MDL  =5,
 #endif
+#if AP_COMPASS_AK09916_ENABLED
         DRIVER_AK09916  =6,
+#endif
 #if AP_COMPASS_IST8310_ENABLED
         DRIVER_IST8310  =7,
 #endif
+#if AP_COMPASS_ICM20948_ENABLED
         DRIVER_ICM20948 =8,
+#endif
+#if AP_COMPASS_MMC3416_ENABLED
         DRIVER_MMC3416  =9,
+#endif
+#if AP_COMPASS_UAVCAN_ENABLED
         DRIVER_UAVCAN   =11,
+#endif
+#if AP_COMPASS_QMC5883L_ENABLED
         DRIVER_QMC5883L =12,
+#endif
+#if AP_COMPASS_SITL_ENABLED
         DRIVER_SITL     =13,
+#endif
+#if AP_COMPASS_MAG3110_ENABLED
         DRIVER_MAG3110  =14,
+#endif
 #if AP_COMPASS_IST8308_ENABLED
         DRIVER_IST8308  =15,
 #endif
+#if AP_COMPASS_RM3100_ENABLED
 		DRIVER_RM3100   =16,
+#endif
+#if AP_COMPASS_MSP_ENABLED
         DRIVER_MSP      =17,
-        DRIVER_SERIAL   =18,
+#endif
+#if AP_COMPASS_EXTERNALAHRS_ENABLED
+        DRIVER_EXTERNALAHRS   =18,
+#endif
+#if AP_COMPASS_MMC5XX3_ENABLED
         DRIVER_MMC5XX3  =19,
+#endif
     };
 
     bool _driver_enabled(enum DriverType driver_type);

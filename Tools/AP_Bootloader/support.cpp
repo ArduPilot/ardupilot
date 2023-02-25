@@ -243,16 +243,16 @@ uint32_t get_mcu_desc(uint32_t max, uint8_t *revstr)
 
     mcu_des_t des = mcu_descriptions[STM32_UNKNOWN];
 
-    for (int i = 0; i < ARRAY_SIZE(mcu_descriptions); i++) {
-        if (mcuid == mcu_descriptions[i].mcuid) {
-            des = mcu_descriptions[i];
+    for (const auto &desc : mcu_descriptions) {
+        if (mcuid == desc.mcuid) {
+            des = desc;
             break;
         }
     }
 
-    for (int i = 0; i < ARRAY_SIZE(silicon_revs); i++) {
-        if (silicon_revs[i].revid == revid) {
-            des.rev = silicon_revs[i].rev;
+    for (const auto &rev : silicon_revs) {
+        if (rev.revid == revid) {
+            des.rev = rev.rev;
         }
     }
 
@@ -433,14 +433,14 @@ void init_uarts(void)
 
 #if HAL_USE_SERIAL == TRUE
     sercfg.speed = BOOTLOADER_BAUDRATE;
-    
-    for (uint8_t i=0; i<ARRAY_SIZE(uarts); i++) {
+
+    for (const auto &uart : uarts) {
 #if HAL_USE_SERIAL_USB == TRUE
-        if (uarts[i] == (BaseChannel *)&SDU1) {
+        if (uart == (BaseChannel *)&SDU1) {
             continue;
         }
 #endif
-        sdStart((SerialDriver *)uarts[i], &sercfg);
+        sdStart((SerialDriver *)uart, &sercfg);
     }
 #endif
 }

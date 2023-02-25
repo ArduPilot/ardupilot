@@ -516,11 +516,7 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
         protocol_fail_count++;
         return false;
     }
-    for (uint8_t i=0; i<n; i++) {
-        if (i < sizeof(pkt)) {
-            b[i] = uart.read();
-        }
-    }
+    uart.read(b, MIN(n, sizeof(pkt)));
 
     uint8_t got_crc = pkt.crc;
     pkt.crc = 0;
