@@ -9492,6 +9492,62 @@ class AutoTestCopter(AutoTest):
         if ex:
             raise ex
 
+    def DCMFallback(self):
+        '''Really annoy the EKF and force fallback'''
+        self.reboot_sitl()
+        self.delay_sim_time(30)
+
+        self.set_parameters({
+            "AHRS_EKF_FLAGS": 0,
+        })
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        self.takeoff(50, mode='GUIDED')
+        self.change_mode('CIRCLE')
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "EK3_POS_I_GATE": 0,
+            "SIM_GPS_HZ": 1,
+            "SIM_GPS_LAG_MS": 1000,
+        })
+        self.wait_statustext("DCM Active", check_context=True, timeout=60)
+        self.wait_statustext("EKF3 Active", check_context=True)
+        self.wait_statustext("DCM Active", check_context=True)
+        self.wait_statustext("EKF3 Active", check_context=True)
+        self.wait_statustext("DCM Active", check_context=True)
+        self.wait_statustext("EKF3 Active", check_context=True)
+        self.context_stop_collecting('STATUSTEXT')
+
+        self.change_mode('RTL')
+        self.wait_disarmed()
+        self.assert_at_home()
+        self.context_pop()
+        self.reboot_sitl()
+
+    def ForcedDCM(self):
+        '''Switch to DCM mid-flight'''
+        self.reboot_sitl()
+
+        self.set_parameters({
+            "AHRS_EKF_FLAGS": 0,
+        })
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        self.takeoff(50, mode='GUIDED')
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("AHRS_EKF_TYPE", 0)
+        self.wait_statustext("DCM Active", check_context=True)
+        self.context_stop_collecting('STATUSTEXT')
+
+        self.change_mode('RTL')
+        self.wait_disarmed()
+        self.assert_at_home()
+
     def tests1a(self):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()  # about 5 mins and ~20 initial tests from autotest/common.py
@@ -9710,6 +9766,8 @@ class AutoTestCopter(AutoTest):
             self.ScriptMountPOI,
             self.FlyMissionTwice,
             self.IMUConsistency,
+            self.DCMFallback,
+            self.ForcedDCM,
         ])
         return ret
 
