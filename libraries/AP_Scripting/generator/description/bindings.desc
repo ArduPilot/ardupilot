@@ -332,6 +332,7 @@ singleton AP_Baro rename baro
 singleton AP_Baro method get_pressure float
 singleton AP_Baro method get_temperature float
 singleton AP_Baro method get_external_temperature float
+singleton AP_Baro method get_altitude float
 
 include AP_OpticalFlow/AP_OpticalFlow.h
 singleton AP_OpticalFlow depends AP_OPTICALFLOW_ENABLED
@@ -394,6 +395,9 @@ singleton AP_Mission method get_item boolean uint16_t'skip_check mavlink_mission
 singleton AP_Mission method set_item boolean uint16_t'skip_check mavlink_mission_item_int_t
 singleton AP_Mission method clear boolean
 singleton AP_Mission method cmd_has_location boolean uint16_t'skip_check
+singleton AP_Mission method jump_to_tag boolean uint16_t 0 UINT16_MAX
+singleton AP_Mission method get_index_of_jump_tag uint16_t uint16_t 0 UINT16_MAX
+singleton AP_Mission method get_last_jump_tag boolean uint16_t'Null uint16_t'Null
 
 
 userdata mavlink_mission_item_int_t field param1 float'skip_check read write
