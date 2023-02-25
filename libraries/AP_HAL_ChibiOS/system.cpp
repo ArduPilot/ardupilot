@@ -47,6 +47,12 @@ static_assert(HAL_EXPECTED_SYSCLOCK == STM32_HCLK, "unexpected STM32_HCLK value"
 #endif
 #endif
 
+// debug variables chew up flash, but are handy if you've got a Fault and need
+// easy access to the fault data iun the debugger:
+#ifndef AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED
+#define AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED 1
+#endif
+
 extern const AP_HAL::HAL& hal;
 extern "C"
 {
@@ -67,6 +73,7 @@ void HardFault_Handler(void) {
     //For HardFault/BusFault this is the address that was accessed causing the error
     uint32_t faultAddress = SCB->BFAR;
     (void)faultAddress;
+#if AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED
     bool forced = SCB->HFSR & SCB_HFSR_FORCED_Msk;
     (void)forced;
     uint32_t cfsr = SCB->CFSR;
@@ -83,6 +90,7 @@ void HardFault_Handler(void) {
     (void)isFaultOnUnstacking;
     (void)isFaultOnStacking;
     (void)isFaultAddressValid;
+#endif  // #if AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED
 
     save_fault_watchdog(__LINE__, faultType, faultAddress, (uint32_t)ctx.lr_thd);
 
@@ -132,6 +140,7 @@ void UsageFault_Handler(void) {
     FaultType faultType = (FaultType)__get_IPSR();
     (void)faultType;
     uint32_t faultAddress = SCB->BFAR;
+#if AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED
     //Flags about hardfault / busfault
     //See http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0552a/Cihdjcfc.html for reference
     bool isUndefinedInstructionFault = ((SCB->CFSR >> SCB_CFSR_USGFAULTSR_Pos) & (1 << 0) ? true : false);
@@ -146,6 +155,7 @@ void UsageFault_Handler(void) {
     (void)isNoCoprocessorFault;
     (void)isUnalignedAccessFault;
     (void)isDivideByZeroFault;
+#endif  // AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED
 
     save_fault_watchdog(__LINE__, faultType, faultAddress, (uint32_t)ctx.lr_thd);
 
@@ -165,6 +175,7 @@ void MemManage_Handler(void) {
     (void)faultType;
     //For HardFault/BusFault this is the address that was accessed causing the error
     uint32_t faultAddress = SCB->MMFAR;
+#if AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED
     (void)faultAddress;
     //Flags about hardfault / busfault
     //See http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0552a/Cihdjcfc.html for reference
@@ -178,6 +189,7 @@ void MemManage_Handler(void) {
     (void)isExceptionUnstackingFault;
     (void)isExceptionStackingFault;
     (void)isFaultAddressValid;
+#endif  // AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED
 
     save_fault_watchdog(__LINE__, faultType, faultAddress, (uint32_t)ctx.lr_thd);
 
