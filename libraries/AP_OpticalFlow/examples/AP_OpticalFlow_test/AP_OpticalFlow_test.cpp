@@ -28,7 +28,7 @@ public:
     AP_InertialSensor ins;
     AP_SerialManager serial_manager;
     RangeFinder sonar;
-    AP_AHRS ahrs{AP_AHRS::FLAG_ALWAYS_USE_EKF};
+    AP_AHRS ahrs;
 };
 
 static DummyVehicle vehicle;
