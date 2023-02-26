@@ -32,6 +32,8 @@
 #include "AP_AHRS_DCM.h"
 #include "AP_AHRS_SIM.h"
 
+#include <AP_HAL/utility/functor.h>
+
 // forward declare view class
 class AP_AHRS_View;
 
@@ -49,11 +51,14 @@ public:
         FLAG_ALWAYS_USE_EKF = 0x1,
     };
 
+
+    FUNCTOR_TYPEDEF(ekf_failsafe_check_t, bool);
+
     // Constructor
     AP_AHRS();
 
     // initialise
-    void init(void);
+    void init(ekf_failsafe_check_t failsafe_check_cb = ekf_failsafe_check_t());
 
     /* Do not allow copies */
     CLASS_NO_COPY(AP_AHRS);
@@ -608,6 +613,9 @@ private:
 
     // optional view class
     AP_AHRS_View *_view;
+
+    // optional failsafe check callback
+    ekf_failsafe_check_t _failsafe_check_cb;
 
     static AP_AHRS *_singleton;
 

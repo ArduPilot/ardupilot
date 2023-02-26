@@ -216,8 +216,10 @@ AP_AHRS::AP_AHRS()
 }
 
 // init sets up INS board orientation
-void AP_AHRS::init()
+void AP_AHRS::init(ekf_failsafe_check_t failsafe_check_cb)
 {
+    _failsafe_check_cb = failsafe_check_cb;
+
     // EKF1 is no longer supported - handle case where it is selected
     if (_ekf_type.get() == 1) {
         AP_BoardConfig::config_error("EKF1 not available");
@@ -1832,7 +1834,8 @@ AP_AHRS::EKFType AP_AHRS::active_EKF_type(void) const
 #endif
         if (hal.util->get_soft_armed() &&
             (!filt_state.flags.using_gps ||
-             !filt_state.flags.horiz_pos_abs) &&
+             !filt_state.flags.horiz_pos_abs ||
+              (_failsafe_check_cb && _failsafe_check_cb())) &&
             should_use_gps &&
             AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
             // if the EKF is not fusing GPS or doesn't have a 2D fix
@@ -1842,7 +1845,8 @@ AP_AHRS::EKFType AP_AHRS::active_EKF_type(void) const
             // out
             return EKFType::NONE;
         }
-        if (hal.util->get_soft_armed() && filt_state.flags.const_pos_mode) {
+        if (hal.util->get_soft_armed() && (filt_state.flags.const_pos_mode ||
+            (_failsafe_check_cb && _failsafe_check_cb()))) {
             return EKFType::NONE;
         }
         if (!filt_state.flags.attitude ||
