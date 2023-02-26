@@ -398,7 +398,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
 // check ekf attitude is acceptable
 bool AP_Arming_Copter::pre_arm_ekf_attitude_check()
 {
-    if (!copter.ahrs.always_use_EKF()) {
+    if (!AP::ahrs().always_use_EKF() && !AP::ahrs().have_inertial_nav()) {
         return true;
     }
     // get ekf filter status
@@ -488,7 +488,7 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
     }
 
     // check EKF's compass, position, height and velocity variances are below failsafe threshold
-    if (ahrs.always_use_EKF() && copter.g.fs_ekf_thresh > 0.0f) {
+    if ((ahrs.always_use_EKF() || ahrs.have_inertial_nav()) && copter.g.fs_ekf_thresh > 0.0f) {
         float vel_variance, pos_variance, hgt_variance, tas_variance;
         Vector3f mag_variance;
         ahrs.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance);

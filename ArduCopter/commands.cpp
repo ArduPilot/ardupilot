@@ -59,7 +59,7 @@ bool Copter::set_home(const Location& loc, bool lock)
 {
     // check EKF origin has been set
     Location ekf_origin;
-    if (ahrs.always_use_EKF() && !ahrs.get_origin(ekf_origin)) {
+    if ((ahrs.always_use_EKF() || ahrs.have_inertial_nav()) && !ahrs.get_origin(ekf_origin)) {
         return false;
     }
     // check home is close to EKF origin
@@ -87,7 +87,7 @@ bool Copter::far_from_EKF_origin(const Location& loc)
 {
     // check distance to EKF origin
     Location ekf_origin;
-    if (ahrs.always_use_EKF() && ahrs.get_origin(ekf_origin)) {
+    if ((ahrs.always_use_EKF() || ahrs.have_inertial_nav()) && ahrs.get_origin(ekf_origin)) {
         if (labs(ekf_origin.alt - loc.alt)*0.01 > EKF_ORIGIN_MAX_ALT_KM*1000.0) {
             return true;
         }
