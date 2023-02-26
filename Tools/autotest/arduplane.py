@@ -1171,8 +1171,10 @@ class AutoTestPlane(AutoTest):
         self.set_parameter("RTL_AUTOLAND", 1)
         self.change_mode("AUTO")
         self.takeoff()
-        self.set_parameter("FS_GCS_ENABL", 1)
-        self.set_parameter("FS_LONG_ACTN", 1)
+        self.set_parameters({
+            "FS_GCS_ENABL": 1,
+            "FS_LONG_ACTN": 1,
+        })
         self.progress("Disconnecting GCS")
         self.set_heartbeat_rate(0)
         self.delay_sim_time(5)
@@ -1181,11 +1183,12 @@ class AutoTestPlane(AutoTest):
         self.end_subtest("Completed RTL Failsafe test")
 
         self.start_subtest("Test Failsafe: FBWA Glide")
-        self.set_parameter("RTL_AUTOLAND", 1)
+        self.set_parameters({
+            "RTL_AUTOLAND": 1,
+            "FS_LONG_ACTN": 2,
+        })
         self.change_mode("AUTO")
         self.takeoff()
-        self.set_parameter("FS_GCS_ENABL", 1)
-        self.set_parameter("FS_LONG_ACTN", 2)
         self.progress("Disconnecting GCS")
         self.set_heartbeat_rate(0)
         self.delay_sim_time(5)
@@ -1202,9 +1205,9 @@ class AutoTestPlane(AutoTest):
             "SERVO9_FUNCTION": 27,
             "SIM_PARA_ENABLE": 1,
             "SIM_PARA_PIN": 9,
+            "FS_LONG_ACTN": 3,
         })
         self.change_mode("AUTO")
-        self.set_parameter("FS_LONG_ACTN", 3)
         self.progress("Disconnecting GCS")
         self.set_heartbeat_rate(0)
         self.wait_statustext("BANG", timeout=60)
