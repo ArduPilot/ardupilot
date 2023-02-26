@@ -38,8 +38,8 @@ void Copter::ekf_check()
         return;
     }
 
-    // return immediately if ekf check is disabled
-    if (g.fs_ekf_thresh <= 0.0f) {
+    // return immediately if ekf check is disabled or we have fallen back to DCM
+    if ((!ahrs.always_use_EKF() && !ahrs.have_inertial_nav()) || g.fs_ekf_thresh <= 0.0f) {
         ekf_check_state.fail_count = 0;
         ekf_check_state.bad_variance = false;
         AP_Notify::flags.ekf_bad = ekf_check_state.bad_variance;
@@ -108,6 +108,12 @@ void Copter::ekf_check()
     AP_Notify::flags.ekf_bad = ekf_check_state.bad_variance;
 
     // To-Do: add ekf variances to extended status
+}
+
+// ekf_check_failsafe - returns true if the ekf's failsafe checks are over the tolerance
+bool Copter::ekf_check_failsafe()
+{
+    return ekf_check_state.fail_count >= (EKF_CHECK_ITERATIONS_MAX-1);
 }
 
 // ekf_over_threshold - returns true if the ekf's variance are over the tolerance

@@ -741,6 +741,7 @@ private:
     // ekf_check.cpp
     void ekf_check();
     bool ekf_over_threshold();
+    bool ekf_check_failsafe();
     void failsafe_ekf_event();
     void failsafe_ekf_off_event(void);
     void failsafe_ekf_recheck();
