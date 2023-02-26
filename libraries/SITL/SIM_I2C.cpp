@@ -29,6 +29,7 @@
 #include "SIM_Temperature_TSYS01.h"
 #include "SIM_Temperature_MCP9600.h"
 #include "SIM_ICM40609.h"
+#include "SIM_LP5562.h"
 #include "SIM_MS5525.h"
 #include "SIM_MS5611.h"
 
@@ -63,6 +64,7 @@ static MCP9600 mcp9600;
 static ICM40609 icm40609;
 static MS5525 ms5525;
 static MS5611 ms5611;
+static LP5562 lp5562;
 
 struct i2c_device_at_address {
     uint8_t bus;
@@ -85,6 +87,7 @@ struct i2c_device_at_address {
     { 2, 0x0B, maxell },        // Maxell: BATTx_MONITOR 16, BATTx_I2C_ADDR 13
     { 3, 0x0B, smbus_generic},  // BATTx_MONITOR 7, BATTx_I2C_ADDR 13
     { 2, 0x28, airspeed_dlvr }, // ARSPD_TYPE = 7 5inch H2O sensor
+    { 2, 0x30, lp5562 },        // LP5562 RGB LED driver
     { 2, 0x77, ms5611 },        // MS5611: BARO_PROBE_EXT = 2
 };
 
