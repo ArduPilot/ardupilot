@@ -1177,8 +1177,7 @@ class AutoTestPlane(AutoTest):
         })
         self.progress("Disconnecting GCS")
         self.set_heartbeat_rate(0)
-        self.delay_sim_time(5)
-        self.wait_mode("RTL")
+        self.wait_mode("RTL", timeout=5)
         self.set_heartbeat_rate(self.speedup)
         self.end_subtest("Completed RTL Failsafe test")
 
@@ -1191,8 +1190,7 @@ class AutoTestPlane(AutoTest):
         self.takeoff()
         self.progress("Disconnecting GCS")
         self.set_heartbeat_rate(0)
-        self.delay_sim_time(5)
-        self.wait_mode("FBWA")
+        self.wait_mode("FBWA", timeout=5)
         self.set_heartbeat_rate(self.speedup)
         self.end_subtest("Completed FBWA Failsafe test")
 
