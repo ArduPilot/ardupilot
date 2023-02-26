@@ -919,6 +919,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_SCALED_PRESSURE,       MSG_SCALED_PRESSURE},
         { MAVLINK_MSG_ID_SCALED_PRESSURE2,      MSG_SCALED_PRESSURE2},
         { MAVLINK_MSG_ID_SCALED_PRESSURE3,      MSG_SCALED_PRESSURE3},
+        { MAVLINK_MSG_ID_ALTITUDE,              MSG_ALTITUDE},
         { MAVLINK_MSG_ID_GPS_RAW_INT,           MSG_GPS_RAW},
         { MAVLINK_MSG_ID_GPS_RTK,               MSG_GPS_RTK},
 #if GPS_MAX_RECEIVERS > 1
@@ -2082,6 +2083,20 @@ void GCS_MAVLINK::send_scaled_pressure2()
 void GCS_MAVLINK::send_scaled_pressure3()
 {
     send_scaled_pressure_instance(2, mavlink_msg_scaled_pressure3_send);
+}
+
+void GCS_MAVLINK::send_altitude()
+{
+    mavlink_msg_altitude_send(
+        chan,
+        1,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+    );
 }
 
 void GCS_MAVLINK::send_ahrs()
@@ -5797,6 +5812,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_SCALED_PRESSURE3:
         CHECK_PAYLOAD_SIZE(SCALED_PRESSURE3);
         send_scaled_pressure3();
+        break;
+
+    case MSG_ALTITUDE:
+        CHECK_PAYLOAD_SIZE(ALTITUDE);
+        send_altitude();
         break;
 
     case MSG_SERVO_OUTPUT_RAW:

@@ -27,6 +27,7 @@ enum ap_message : uint8_t {
     MSG_SCALED_PRESSURE,
     MSG_SCALED_PRESSURE2,
     MSG_SCALED_PRESSURE3,
+    MSG_ALTITUDE,
     MSG_GPS_RAW,
     MSG_GPS_RTK,
     MSG_GPS2_RAW,
