@@ -56,6 +56,7 @@
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
+#include <AP_Terrain/AP_Terrain.h>
 
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"
@@ -2087,15 +2088,29 @@ void GCS_MAVLINK::send_scaled_pressure3()
 
 void GCS_MAVLINK::send_altitude()
 {
+    const AP_AHRS &ahrs = AP::ahrs();
+    Location now;
+    IGNORE_RETURN(ahrs.get_location(now));
+    Location home = ahrs.get_home();
+
+    float altitude_terrain = -2000; // Values smaller than -1000 should be interpreted as unknown.
+
+#if AP_TERRAIN_AVAILABLE
+    AP_Terrain *terr = AP::terrain();
+    if (!terr->height_above_terrain(altitude_terrain)) {
+        altitude_terrain = -2000;
+    }
+#endif
+
     mavlink_msg_altitude_send(
         chan,
-        1,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-        1.0
+        AP_HAL::millis(),
+        home.alt * 0.01f,             // altitude_monotonic
+        now.alt * 0.01f,              // altitude_amsl
+        now.alt * 0.01f,              // altitude_local
+        (now.alt - home.alt) * 0.01f, // altitude_relative
+        altitude_terrain,             // altitude_terrain
+        -1000                         // bottom_clearance
     );
 }
 
