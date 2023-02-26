@@ -209,7 +209,7 @@ uint32_t get_fattime()
     return fattime;
 }
 
-#if !defined(NO_FASTBOOT)
+#if AP_FASTBOOT_ENABLED
 
 // get RTC backup registers starting at given idx
 void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n)
@@ -272,7 +272,7 @@ void set_fast_reboot(enum rtc_boot_magic v)
     }
 }
 
-#else // NO_FASTBOOT
+#else // AP_FASTBOOT_ENABLED is not set
 
 // set n RTC backup registers starting at given idx
 void set_rtc_backup(uint8_t idx, const uint32_t *v, uint8_t n)
@@ -289,7 +289,7 @@ void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n)
     (void)v;
     (void)n;
 }
-#endif // NO_FASTBOOT
+#endif // AP_FASTBOOT_ENABLED
 
 /*
   enable peripheral power if needed This is done late to prevent

@@ -285,7 +285,7 @@ void Scheduler::reboot(bool hold_in_bootloader)
     AP::FS().unmount();
 #endif
 
-#if !defined(NO_FASTBOOT)
+#if AP_FASTBOOT_ENABLED
     // setup RTC for fast reboot
     set_fast_reboot(hold_in_bootloader?RTC_BOOT_HOLD:RTC_BOOT_FAST);
 #endif

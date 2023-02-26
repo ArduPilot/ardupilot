@@ -20,6 +20,10 @@
 #define AP_WATCHDOG_SAVE_FAULT_ENABLED 1
 #endif
 
+#ifndef AP_FASTBOOT_ENABLED
+#define AP_FASTBOOT_ENABLED 1
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
