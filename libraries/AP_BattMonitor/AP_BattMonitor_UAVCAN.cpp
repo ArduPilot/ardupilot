@@ -157,7 +157,7 @@ void AP_BattMonitor_UAVCAN::update_interim_state(const float voltage, const floa
     _interim_state.current_amps = _curr_mult * current;
     _soc = soc;
 
-    if (!isnanf(temperature_K) && temperature_K > 0) {
+    if (!isnan(temperature_K) && temperature_K > 0) {
         // Temperature reported from battery in kelvin and stored internally in Celsius.
         _interim_state.temperature = KELVIN_TO_C(temperature_K);
         _interim_state.temperature_time = AP_HAL::millis();
@@ -210,7 +210,7 @@ void AP_BattMonitor_UAVCAN::handle_mppt_stream(const MpptStreamCb &cb)
     const uint8_t soc = 127;
 
     // convert C to Kelvin
-    const float temperature_K = isnanf(cb.msg->temperature) ? 0 : C_TO_KELVIN(cb.msg->temperature);
+    const float temperature_K = isnan(cb.msg->temperature) ? 0 : C_TO_KELVIN(cb.msg->temperature);
 
     update_interim_state(voltage, current, temperature_K, soc); 
 
