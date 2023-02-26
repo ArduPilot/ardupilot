@@ -30,6 +30,7 @@
 #include "SIM_Temperature_MCP9600.h"
 #include "SIM_ICM40609.h"
 #include "SIM_LP5562.h"
+#include "SIM_LM2755.h"
 #include "SIM_MS5525.h"
 #include "SIM_MS5611.h"
 
@@ -67,6 +68,9 @@ static MS5611 ms5611;
 #if AP_SIM_LP5562_ENABLED
 static LP5562 lp5562;
 #endif
+#if AP_SIM_LM2755_ENABLED
+static LM2755 lm2755;
+#endif
 
 struct i2c_device_at_address {
     uint8_t bus;
@@ -91,6 +95,9 @@ struct i2c_device_at_address {
     { 2, 0x28, airspeed_dlvr }, // ARSPD_TYPE = 7 5inch H2O sensor
 #if AP_SIM_LP5562_ENABLED
     { 2, 0x30, lp5562 },        // LP5562 RGB LED driver
+#endif
+#if AP_SIM_LM2755_ENABLED
+    { 2, 0x67, lm2755 },        // LM2755 RGB LED driver
 #endif
     { 2, 0x77, ms5611 },        // MS5611: BARO_PROBE_EXT = 2
 };
