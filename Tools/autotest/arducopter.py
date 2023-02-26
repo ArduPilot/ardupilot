@@ -7999,9 +7999,10 @@ class AutoTestCopter(AutoTest):
             self.set_parameters({
                 "SIM_BARO_DISABLE": 1,
                 "SIM_BARO2_DISABL": 1,
+                "SIM_GPS_DISABLE": 1,
             })
 
-            self.wait_gps_disable(position_vertical=True)
+            self.wait_gps_disabled(position_vertical=True)
 
             # turn off arming checks (mandatory arming checks will still be run)
             self.set_parameter("ARMING_CHECK", 0)

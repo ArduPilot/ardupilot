@@ -7252,8 +7252,8 @@ class AutoTest(ABC):
             now = self.get_sim_time_cached()
             if now - tstart > timeout:
                 raise NotAchievedException(
-                    "Did not see failure-to-arm messages (statustext=%s command_ack=%s" %
-                    (seen_statustext, seen_command_ack))
+                    "Did not see failure-to-arm messages (statustext=%s command_ack=%s (want=%s)" %
+                    (seen_statustext, seen_command_ack, expected_statustext))
             if now - arm_last_send > 1:
                 arm_last_send = now
                 self.send_mavlink_run_prearms_command()
@@ -7291,8 +7291,8 @@ class AutoTest(ABC):
             now = self.get_sim_time_cached()
             if now - tstart > timeout:
                 raise NotAchievedException(
-                    "Did not see failure-to-arm messages (statustext=%s command_ack=%s" %
-                    (seen_statustext, seen_command_ack))
+                    "Did not see failure-to-arm messages (statustext=%s command_ack=%s want=%s" %
+                    (seen_statustext, seen_command_ack, expected_statustext))
             if now - arm_last_send > 1:
                 arm_last_send = now
                 self.send_mavlink_arm_command()
@@ -7397,9 +7397,8 @@ Also, ignores heartbeats not from our target system'''
         raise AutoTestTimeoutException("Failed to get EKF.flags=%u" %
                                        required_value)
 
-    def wait_gps_disable(self, position_horizontal=True, position_vertical=False, timeout=30):
+    def wait_gps_disabled(self, position_horizontal=True, position_vertical=False, timeout=30):
         """Disable GPS and wait for EKF to report the end of assistance from GPS."""
-        self.set_parameter("SIM_GPS_DISABLE", 1)
         tstart = self.get_sim_time()
 
         """ if using SITL estimates directly """
@@ -9525,17 +9524,8 @@ Also, ignores heartbeats not from our target system'''
                 else:
                     self.progress("Not armable mode : %s" % mode)
                     self.change_mode(mode)
-                    self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
-                                 1,  # ARM
-                                 0,
-                                 0,
-                                 0,
-                                 0,
-                                 0,
-                                 0,
-                                 want_result=mavutil.mavlink.MAV_RESULT_FAILED
-                                 )
-                self.progress("PASS not able to arm in mode : %s" % mode)
+                    self.assert_arm_failure('mode not armable')
+                    self.progress("PASS not able to arm in mode : %s" % mode)
             if mode in self.get_position_armable_modes_list():
                 self.progress("Armable mode needing Position : %s" % mode)
                 self.wait_ekf_happy()
@@ -9545,32 +9535,27 @@ Also, ignores heartbeats not from our target system'''
                 self.disarm_vehicle()
                 self.progress("PASS arm mode : %s" % mode)
                 self.progress("Not armable mode without Position : %s" % mode)
-                self.wait_gps_disable()
+                self.context_push()
+                self.set_parameter("SIM_GPS_DISABLE", 1)
+                self.wait_gps_disabled()
                 self.change_mode(mode)
-                self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
-                             1,  # ARM
-                             0,
-                             0,
-                             0,
-                             0,
-                             0,
-                             0,
-                             want_result=mavutil.mavlink.MAV_RESULT_FAILED
-                             )
-                self.set_parameter("SIM_GPS_DISABLE", 0)
+                self.assert_prearm_failure('GPS 1: Bad fix')
+                self.context_pop()
                 self.wait_ekf_happy() # EKF may stay unhappy for a while
                 self.progress("PASS not able to arm without Position in mode : %s" % mode)
             if mode in self.get_no_position_not_settable_modes_list():
                 self.progress("Setting mode need Position : %s" % mode)
                 self.wait_ekf_happy()
-                self.wait_gps_disable()
+                self.context_push()
+                self.set_parameter("SIM_GPS_DISABLE", 1)
+                self.wait_gps_disabled()
                 try:
                     self.change_mode(mode, timeout=15)
                 except AutoTestTimeoutException:
-                    self.set_parameter("SIM_GPS_DISABLE", 0)
+                    self.context_pop()
                     self.progress("PASS not able to set mode without Position : %s" % mode)
                 except ValueError:
-                    self.set_parameter("SIM_GPS_DISABLE", 0)
+                    self.context_pop()
                     self.progress("PASS not able to set mode without Position : %s" % mode)
             if mode == "FOLLOW":
                 self.set_parameter("FOLL_ENABLE", 0)

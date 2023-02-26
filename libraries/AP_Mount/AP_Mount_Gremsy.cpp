@@ -182,6 +182,8 @@ void AP_Mount_Gremsy::find_gimbal()
 // handle GIMBAL_DEVICE_INFORMATION message
 void AP_Mount_Gremsy::handle_gimbal_device_information(const mavlink_message_t &msg)
 {
+    gcs().send_text(MAV_SEVERITY_INFO, "Got device info");
+
     // exit immediately if this is not our message
     if (msg.sysid != _sysid || msg.compid != _compid) {
         return;
@@ -218,6 +220,7 @@ void AP_Mount_Gremsy::handle_gimbal_device_information(const mavlink_message_t &
 // handle GIMBAL_DEVICE_ATTITUDE_STATUS message
 void AP_Mount_Gremsy::handle_gimbal_device_attitude_status(const mavlink_message_t &msg)
 {
+    gcs().send_text(MAV_SEVERITY_INFO, "Got device attitude status");
     // exit immediately if this is not our message
     if (msg.sysid != _sysid || msg.compid != _compid) {
         return;
