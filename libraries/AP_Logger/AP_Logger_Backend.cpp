@@ -458,6 +458,11 @@ bool AP_Logger_Backend::ShouldLog(bool is_critical)
         // logs show the wrong flight mode if you disarm then arm again
         return true;
     }
+
+    if (_front.motor_test_is_active() && !_front._params.log_disarmed) {
+        // if motor test is active, and disarm logging is off dont log
+        return false;
+    }
     
     if (!_front.vehicle_is_armed() && !_front.log_while_disarmed()) {
         return false;
@@ -623,7 +628,7 @@ void AP_Logger_Backend::vehicle_was_disarmed()
 // this sensor is enabled if we should be logging at the moment
 bool AP_Logger_Backend::logging_enabled() const
 {
-    if (hal.util->get_soft_armed() ||
+    if ((hal.util->get_soft_armed() && !_front.motor_test_is_active()) ||
         _front.log_while_disarmed()) {
         return true;
     }
