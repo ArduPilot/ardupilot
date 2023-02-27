@@ -15,7 +15,7 @@
 
 #include "AP_Generator_IE_650_800.h"
 
-#if HAL_GENERATOR_ENABLED
+#if AP_GENERATOR_IE650_800_ENABLED
 
 extern const AP_HAL::HAL& hal;
 
@@ -122,4 +122,5 @@ AP_BattMonitor::Failsafe AP_Generator_IE_650_800::update_failsafes() const
     return AP_BattMonitor::Failsafe::None;
 }
 
-#endif
+#endif  // AP_GENERATOR_IE650_800_ENABLED
+
