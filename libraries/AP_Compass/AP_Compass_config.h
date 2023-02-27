@@ -43,7 +43,7 @@
 #endif
 
 #ifndef AP_COMPASS_BMM150_ENABLED
-#define AP_COMPASS_BMM150_ENABLED AP_COMPASS_I2C_BACKEND_DEFAULT_ENABLED && !defined(STM32F1)
+#define AP_COMPASS_BMM150_ENABLED AP_COMPASS_I2C_BACKEND_DEFAULT_ENABLED
 #endif
 
 // this define dictates whether we iterate over the external i2c
