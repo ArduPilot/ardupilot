@@ -2,7 +2,7 @@
 
 #include "AP_Generator_IE_FuelCell.h"
 
-#if HAL_GENERATOR_ENABLED
+#if AP_GENERATOR_IE650_800_ENABLED
 
 class AP_Generator_IE_650_800 : public AP_Generator_IE_FuelCell
 {
@@ -95,4 +95,4 @@ private:
                                 | ERROR_BAT_UT;               // (0x8), Battery undertemperature (<-15 degC)
 
 };
-#endif
+#endif  // AP_GENERATOR_IE650_800_ENABLED
