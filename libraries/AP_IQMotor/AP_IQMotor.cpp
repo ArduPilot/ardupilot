@@ -37,7 +37,7 @@ const AP_Param::GroupInfo AP_IQMotor::var_info[] = {
 
 AP_IQMotor::AP_IQMotor(void)
 {
-    // AP_Param::setup_object_defaults(this, var_info);
+    AP_Param::setup_object_defaults(this, var_info);
 }
 
 void AP_IQMotor::init(void)
@@ -153,22 +153,33 @@ void AP_IQMotor::update_motor_outputs()
     }
 }
 
+#if HAL_WITH_ESC_TELEM 
 void AP_IQMotor::update_telemetry() 
 {
     bool got_reply = false;
     if (motors[telem_motor_id].obs_velocity_.IsFresh())
     {
-        // float supply_volts = motors[telem_motor_id].obs_supply_volts_.get_reply();
-        // float velocity = motors[telem_motor_id].obs_velocity_.get_reply();
-        // AP::logger().Write_ESC(telem_motor_id,
-        //               AP_HAL::micros64(), // Time stamp
-        //               int32_t(velocity), // RPM
-        //               uint16_t(supply_volts),    // voltage
-        //               0,    // current
-        //               0,    // esc temp
-        //               0,    // amp hours?
-        //               0,    // motor temp
-        //               0);   // error rate
+        // This doesn't work for now. Client reading is broken
+        // GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "got data of some sort");
+        float velocity = abs(motors[telem_motor_id].obs_velocity_.get_reply());
+        update_rpm(telem_motor_id, velocity * M_1_PI * 0.5 * 60, 0.0);
+        TelemetryData t {};
+        t.temperature_cdeg = motors[telem_motor_id].uc_temp_.get_reply() * 100;
+        t.voltage = motors[telem_motor_id].volts_.get_reply();
+        t.current = motors[telem_motor_id].amps_.get_reply();
+        t.consumption_mah = motors[telem_motor_id].joules_.get_reply() * 0.00027777777; // watt hours TODO fix to milliamp hours
+        t.usage_s = motors[telem_motor_id].time_.get_reply();
+        t.motor_temp_cdeg = motors[telem_motor_id].temp_.get_reply() * 100;
+        update_telem_data(
+            telem_motor_id,
+            t,
+            TelemetryType::TEMPERATURE|
+            TelemetryType::MOTOR_TEMPERATURE|
+            TelemetryType::VOLTAGE|
+            TelemetryType::CURRENT|
+            TelemetryType::CONSUMPTION|
+            TelemetryType::USAGE
+        );
         got_reply = true;
     }
     bool timeout = AP_HAL::millis() - last_request_time > TELEM_TIMEOUT;
@@ -181,11 +192,17 @@ void AP_IQMotor::update_telemetry()
         
         find_next_telem_motor();
         // out_flag = true;
-        motors[telem_motor_id].obs_supply_volts_.get(com);
+        motors[telem_motor_id].uc_temp_.get(com);
+        motors[telem_motor_id].volts_.get(com);
+        motors[telem_motor_id].amps_.get(com);
+        motors[telem_motor_id].joules_.get(com);
+        motors[telem_motor_id].time_.get(com);
+        motors[telem_motor_id].temp_.get(com);
         motors[telem_motor_id].obs_velocity_.get(com);
         last_request_time = AP_HAL::millis();
     }
 }
+#endif
 
 void AP_IQMotor::find_next_telem_motor()
 {
