@@ -16,6 +16,16 @@
 */
 #pragma once
 
+/*
+  cp libraries/AP_Scripting/examples/LED_roll.lua scripts/
+  param set SCR_ENABLE 1
+  param set SIM_LED_LAYOUT 1
+  param set SERVO10_FUNCTION 94  # script1
+  param set SERVO11_FUNCTION 132  # profiled clock
+  param set NTF_LED_TYPES 1024
+  reboot
+ */
+
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <SITL/SITL.h>
 
