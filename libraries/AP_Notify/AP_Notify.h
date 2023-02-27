@@ -102,6 +102,10 @@ public:
 #if HAL_WITH_IO_MCU && AP_IOMCU_PROFILED_SUPPORT_ENABLED
         Notify_LED_ProfiLED_IOMCU           = (1 << 19), // ProfiLED IOMCU
 #endif
+#if AP_NOTIFY_LM2755_ENABLED
+        Notify_LED_LM2755_I2C_External             = (1 << 19), // LM2755
+        Notify_LED_LM2755_I2C_Internal             = (1 << 20), // LM2755
+#endif
         Notify_LED_MAX
     };
 
