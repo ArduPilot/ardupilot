@@ -141,6 +141,18 @@ void SITL_SFML_LED::update_serial_LEDs()
         w->clear(sf::Color(0, 0, 0, 255));
     }
 
+    WITH_SEMAPHORE(AP::notify().sf_window_mutex);
+    sf::Event event;
+    while (w->pollEvent(event)) {
+        if (event.type == sf::Event::Closed) {
+            w->close();
+            break;
+        }
+    }
+    if (!w->isOpen()) {
+        return;
+    }
+
     for (uint8_t chan=0; chan<16; chan++) {
         for (uint8_t led=0; led<sitl->led.num_leds[chan]; led++) {
             uint8_t *rgb = &sitl->led.rgb[chan][led].rgb[0];
