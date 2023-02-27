@@ -2,7 +2,7 @@
 
 void Copter::update_ground_effect_detector(void)
 {
-    if(!g2.gndeffect_comp_enabled || !motors->armed()) {
+    if(!g2.gndeffect_comp_enabled || !motors->armed() || ap.compass_mot) {
         // disarmed - disable ground effect and return
         gndeffect_state.takeoff_expected = false;
         gndeffect_state.touchdown_expected = false;
