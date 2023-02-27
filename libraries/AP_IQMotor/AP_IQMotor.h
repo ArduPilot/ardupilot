@@ -7,12 +7,13 @@
 #define AP_IQUART_ENABLED !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
 #endif
 
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <AP_Param/AP_Param.h>
 #include "generic_interface.hpp"
 #include "client_communication.hpp"
-#include <AP_IQMotor/brushless_drive_client.hpp>
+#include <AP_IQMotor/ardupilot_client.hpp>
 
-class AP_IQMotor {
+class AP_IQMotor : public AP_ESC_Telem_Backend {
 public:
     AP_IQMotor();
 
@@ -88,23 +89,23 @@ private:
     uint8_t rx_buf[128];
     uint8_t ser_length;
     uint8_t total_channels = 0;
-    BrushlessDriveClient motors[16] = {
-        BrushlessDriveClient(0),
-        BrushlessDriveClient(1),
-        BrushlessDriveClient(2),
-        BrushlessDriveClient(3),
-        BrushlessDriveClient(4),
-        BrushlessDriveClient(5),
-        BrushlessDriveClient(6),
-        BrushlessDriveClient(7),
-        BrushlessDriveClient(8),
-        BrushlessDriveClient(9),
-        BrushlessDriveClient(0),
-        BrushlessDriveClient(11),
-        BrushlessDriveClient(12),
-        BrushlessDriveClient(13),
-        BrushlessDriveClient(14),
-        BrushlessDriveClient(15),
+    ArdupilotClient motors[16] = {
+        ArdupilotClient(0),
+        ArdupilotClient(1),
+        ArdupilotClient(2),
+        ArdupilotClient(3),
+        ArdupilotClient(4),
+        ArdupilotClient(5),
+        ArdupilotClient(6),
+        ArdupilotClient(7),
+        ArdupilotClient(8),
+        ArdupilotClient(9),
+        ArdupilotClient(0),
+        ArdupilotClient(11),
+        ArdupilotClient(12),
+        ArdupilotClient(13),
+        ArdupilotClient(14),
+        ArdupilotClient(15),
     }; // TODO change how this works
     ClientAbstract *clients[client_limit]; // how do I make a list of virtual classes?
     uint8_t client_size = 0;
