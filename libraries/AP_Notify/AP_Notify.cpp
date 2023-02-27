@@ -28,6 +28,7 @@
 #include "RCOutputRGBLed.h"
 #include "ToneAlarm.h"
 #include "ToshibaLED_I2C.h"
+#include "LP5562.h"
 #include "VRBoard_LED.h"
 #include "DiscreteRGBLed.h"
 #include "DiscoLED.h"
@@ -60,8 +61,14 @@ AP_Notify *AP_Notify::_singleton;
 #define ALL_NCP5623_I2C 0
 #endif
 
+#if AP_NOTIFY_LP5562_ENABLED
+#define ALL_LP5562_I2C (Notify_LED_LP5562_I2C_Internal | Notify_LED_LP5562_I2C_External)
+#else
+#define ALL_LP5562_I2C 0
+#endif
+
 // all I2C_LEDS
-#define I2C_LEDS (ALL_TOSHIBALED_I2C | ALL_NCP5623_I2C)
+#define I2C_LEDS (ALL_TOSHIBALED_I2C | ALL_NCP5623_I2C | ALL_LP5562_I2C)
 
 
 #ifndef DEFAULT_NTF_LED_TYPES
@@ -194,7 +201,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Param: LED_TYPES
     // @DisplayName: LED Driver Types
     // @Description: Controls what types of LEDs will be enabled
-    // @Bitmask: 0:Built-in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:DroneCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel, 9:ProfiLED, 10:Scripting, 11:DShot, 12:ProfiLED_SPI
+    // @Bitmask: 0:Built-in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:DroneCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel, 9:ProfiLED, 10:Scripting, 11:DShot, 12:ProfiLED_SPI, 13:LP5562 External, 14: LP5562 Internal
     // @User: Advanced
     AP_GROUPINFO("LED_TYPES", 6, AP_Notify, _led_type, DEFAULT_NTF_LED_TYPES),
 
@@ -363,6 +370,18 @@ void AP_Notify::add_backends(void)
                 ADD_BACKEND(new DShotLED());
 #endif
                 break;
+#if AP_NOTIFY_LP5562_ENABLED
+            case Notify_LED_LP5562_I2C_External:
+                FOREACH_I2C_EXTERNAL(b) {
+                    ADD_BACKEND(new LP5562(b, 0x30));
+                }
+                break;
+            case Notify_LED_LP5562_I2C_Internal:
+                FOREACH_I2C_INTERNAL(b) {
+                    ADD_BACKEND(new LP5562(b, 0x30));
+                }
+                break;
+#endif
         }
     }
 
