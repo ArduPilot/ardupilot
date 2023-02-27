@@ -680,6 +680,14 @@ void AP_Logger::set_vehicle_armed(const bool armed_state)
     }
 }
 
+void AP_Logger::set_motor_test_active(const bool motor_test_active)
+{
+    if (_motor_test_active && !motor_test_active) {
+        _last_motor_test_end_ms = AP_HAL::millis();
+    }
+    _motor_test_active = motor_test_active;
+}
+
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
 /*
   remember formats for replay. This allows WriteV() to work within
