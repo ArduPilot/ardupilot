@@ -33,6 +33,7 @@ class AC_WeatherVane {
 
         enum class Options {
             PITCH_ENABLE = (1<<0),
+            TAKEOFF_OR_LAND_ONLY = (1<<1),
         };
     
         // Paramaters

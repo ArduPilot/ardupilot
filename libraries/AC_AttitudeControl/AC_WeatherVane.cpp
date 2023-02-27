@@ -90,7 +90,7 @@ const AP_Param::GroupInfo AC_WeatherVane::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Weathervaning options
     // @Description: Options impacting weathervaning behaviour
-    // @Bitmask: 0:Use pitch when nose or tail-in for faster weathervaning
+    // @Bitmask: 0:Use pitch when nose or tail-in for faster weathervaning, 1:Only Weathervane in landings or takeoffs
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 9, AC_WeatherVane, _options, 0),
     
@@ -107,10 +107,11 @@ AC_WeatherVane::AC_WeatherVane(void)
 bool AC_WeatherVane::get_yaw_out(float &yaw_output, const int16_t pilot_yaw, const float hgt, const float roll_cdeg, const float pitch_cdeg, const bool is_takeoff, const bool is_landing)
 {
     Direction dir = (Direction)_direction.get();
-    if ((dir == Direction::OFF) || !allowed || (pilot_yaw != 0) || !is_positive(_gain)) {
+    if ((dir == Direction::OFF) || !allowed || (pilot_yaw != 0) || !is_positive(_gain)|| (!(is_takeoff || is_landing) && (bool(uint8_t(_options.get()) & uint8_t(Options::TAKEOFF_OR_LAND_ONLY))))) {
         // parameter disabled, or 0 gain
         // disabled temporarily
         // dont't override pilot
+        // not in takeoff and landing when option for only those cases is set
         reset();
         return false;
     }
