@@ -36,6 +36,10 @@
 #define UAVCAN_SRV_NUMBER NUM_SERVO_CHANNELS
 #endif
 
+#ifndef AP_DRONECAN_SEND_GPS
+#define AP_DRONECAN_SEND_GPS (BOARD_FLASH_SIZE > 1024)
+#endif
+
 #define AP_UAVCAN_SW_VERS_MAJOR 1
 #define AP_UAVCAN_SW_VERS_MINOR 0
 
@@ -205,6 +209,7 @@ public:
         CANFD_ENABLED             = (1U<<2),
         DNA_IGNORE_UNHEALTHY_NODE = (1U<<3),
         USE_ACTUATOR_PWM          = (1U<<4),
+        SEND_GNSS                 = (1U<<5),
     };
 
     // check if a option is set
@@ -325,6 +330,19 @@ private:
         float duration;
         uint8_t pending_mask; // mask of interfaces to send to
     } _buzzer;
+
+#if AP_DRONECAN_SEND_GPS
+    // send GNSS Fix and yaw, same thing AP_GPS_UAVCAN would receive
+    void gnss_send_fix();
+    void gnss_send_yaw();
+    
+    // GNSS Fix and Status
+    struct {
+        uint32_t last_gps_lib_fix_ms;
+        uint32_t last_send_status_ms;
+        uint32_t last_lib_yaw_time_ms;
+    } _gnss;
+#endif
 
     // GNSS RTCM injection
     struct {
