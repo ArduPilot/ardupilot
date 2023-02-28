@@ -444,6 +444,14 @@ good_yaw:
 
 #if HAL_LOGGING_ENABLED
     // this log message helps diagnose GPS yaw issues
+    // @LoggerMessage: GPYW
+    // @Description: GPS Yaw
+    // @Field: TimeUS: Time since system startup
+    // @Field: Id: instance
+    // @Field: RHD: reported heading,deg
+    // @Field: RDist: antenna separation,m
+    // @Field: RDown: vertical antenna separation,m
+    // @Field: OK: 1 if have yaw
     AP::logger().WriteStreaming("GPYW", "TimeUS,Id,RHD,RDist,RDown,OK",
                                 "s#dmm-",
                                 "F-----",
