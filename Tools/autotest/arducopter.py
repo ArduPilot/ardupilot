@@ -3770,6 +3770,46 @@ class AutoTestCopter(AutoTest):
         self.wait_statustext("finished motor test")
         self.end_subtest("Testing percentage output")
 
+        self.start_subtest("Testing motor test logging - disarm logging off")
+        self.reboot_sitl()  # force us to generate a new log
+        self.set_parameter("LOG_DISARMED", 0)
+        original_list = self.log_list()
+        self.progress("original list: %s" % str(original_list))
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST,
+                     2, # start motor
+                     mavutil.mavlink.MOTOR_TEST_THROTTLE_PWM,
+                     pwm_in, # pwm-to-output
+                     2, # timeout in seconds
+                     2, # number of motors to output
+                     0, # compass learning
+                     0,
+                     timeout=timeout)
+        self.wait_statustext("finished motor test")
+        new_list = self.log_list()
+        if (len(new_list) != len(original_list) or
+                self.current_onboard_log_contains_msg("starting motor test") or
+                self.current_onboard_log_contains_msg("finished motor test")):
+            raise NotAchievedException("Logfile generated during motor test while disarm logging is off")
+        self.end_subtest("Testing motor test logging - disarm logging off")
+
+        self.start_subtest("Testing motor test logging - disarm logging on")
+        self.set_parameter("LOG_DISARMED", 1)
+        self.reboot_sitl()  # force us to generate a new log
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST,
+                     2, # start motor
+                     mavutil.mavlink.MOTOR_TEST_THROTTLE_PWM,
+                     pwm_in, # pwm-to-output
+                     2, # timeout in seconds
+                     2, # number of motors to output
+                     0, # compass learning
+                     0,
+                     timeout=timeout)
+        self.wait_statustext("finished motor test")
+        if (not self.current_onboard_log_contains_msg("starting motor test") or not
+                self.current_onboard_log_contains_msg("finished motor test")):
+            raise NotAchievedException("Logfile does not contain a motor test while disarm logging is on")
+        self.end_subtest("Testing motor test logging - disarm logging on")
+
     def PrecisionLanding(self):
         """Use PrecLand backends precision messages to land aircraft."""
 
