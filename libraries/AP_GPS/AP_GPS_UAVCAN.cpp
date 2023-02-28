@@ -889,4 +889,16 @@ void AP_GPS_UAVCAN::handle_param_save_response(AP_UAVCAN* ap_uavcan, const uint8
     ap_uavcan->send_reboot_request(node_id);
 }
 
+#if AP_DRONECAN_SEND_GPS
+bool AP_GPS_UAVCAN::instance_exists(const AP_UAVCAN* ap_uavcan)
+{
+    for (uint8_t i=0; i<ARRAY_SIZE(_detected_modules); i++) {
+        if (ap_uavcan == _detected_modules[i].ap_uavcan) {
+            return true;
+        }
+    }
+    return false;
+}
+#endif // AP_DRONECAN_SEND_GPS
+
 #endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
