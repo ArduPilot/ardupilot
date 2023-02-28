@@ -6728,12 +6728,12 @@ class AutoTestCopter(AutoTest):
         })
         sensors = [  # tuples of name, prx_type
             ('sf45b', 8, {
-                mavutil.mavlink.MAV_SENSOR_ROTATION_NONE: 292,
-                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_45: 257,
-                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_90: 1130,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_NONE: 285,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_45: 256,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_90: 1131,
                 mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_135: 1283,
-                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_180: 627,
-                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_225: 967,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_180: 625,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_225: 968,
                 mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_270: 760,
                 mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_315: 762,
             }),
