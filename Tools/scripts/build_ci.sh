@@ -314,9 +314,9 @@ for t in $CI_BUILD_TARGET; do
 
     if [ "$t" == "iofirmware" ]; then
         echo "Building iofirmware"
-        $waf configure --board iomcu
-        $waf clean
-        $waf iofirmware
+        Tools/scripts/build_iofirmware.py
+        # now clean up the stuff that's copied into the source tree:
+        git checkout Tools/IO_Firmware/
         continue
     fi
 
