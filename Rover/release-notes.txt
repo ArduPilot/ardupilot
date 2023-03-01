@@ -1,5 +1,15 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.3.0-beta10 01-Mar-2023
+Changes from 4.3.0-beta9
+1) Bug fixes
+    a) GPS unconfigured error fix for non-M10 uBlox GPS
+    b) Gremsy gimbal fix when attached to autopilot's serial3 (or higher)
+    c) MambaF405 2022 gets VTX power on support
+    d) MCU voltage enabled on H757 CPUs (including CubeOrangePlus)
+    e) PiccoloCAN fix for ESC voltage and current scaling 
+    f) Servo gimbal mount yaw handling fix (only affects 3-axis servo gimbals)
+------------------------------------------------------------------
 Rover 4.3.0-beta9 14-Feb-2023
 Changes from 4.3.0-beta8
 1) AutoPilot specific enhancements
