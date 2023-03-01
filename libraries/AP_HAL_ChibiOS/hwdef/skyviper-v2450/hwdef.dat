@@ -142,9 +142,13 @@ define AP_RPM_ENABLED 0
 # SkyViper doesn't have a gripper:
 define AP_GRIPPER_ENABLED 0
 
+# SkyViper doesn't have serially-connected LEDs:
+define AP_SERIALLED_ENABLED 0
+
 # SkyViper has a very limited set of blinkenlights
 define AP_NOTIFY_NCP5623_ENABLED 0
 define AP_NOTIFY_PCA9685_ENABLED 0
+define AP_NOTIFY_PROFILED_SPI_ENABLED 0
 define AP_NOTIFY_TOSHIBALED_ENABLED 0
 undef AP_NOTIFY_OREOLED_ENABLED
 define AP_NOTIFY_OREOLED_ENABLED 0
