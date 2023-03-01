@@ -45,7 +45,7 @@ void AP_ADSB_uAvionix_MAVLink::update()
         // haven't gotten a heartbeat health status packet in a while, assume hardware failure
         _frontend.out_state.chan = -1;
         _frontend.out_state.chan_last_ms = 0; // if the time isn't reset we spam the message
-        gcs().send_text(MAV_SEVERITY_ERROR, "ADSB: Transceiver heartbeat timed out");
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ADSB: Transceiver heartbeat timed out");
     } else if (_frontend.out_state.chan >= 0 && !_frontend._my_loc.is_zero() && _frontend.out_state.chan < MAVLINK_COMM_NUM_BUFFERS) {
         const mavlink_channel_t chan = (mavlink_channel_t)(MAVLINK_COMM_0 + _frontend.out_state.chan);
         if (now - _frontend.out_state.last_config_ms >= 5000 && HAVE_PAYLOAD_SPACE(chan, UAVIONIX_ADSB_OUT_CFG)) {
@@ -253,4 +253,4 @@ void AP_ADSB_uAvionix_MAVLink::send_configure(const mavlink_channel_t chan)
             (uint8_t)_frontend.out_state.cfg.rfSelect);
 }
 
-#endif // HAL_ADSB_ENABLED
+#endif // HAL_ADSB_UAVIONIX_MAVLINK_ENABLED
