@@ -8851,6 +8851,14 @@ class AutoTestCopter(AutoTest):
         self.send_pause_command()
         self.wait_groundspeed(speed_min=0, speed_max=1, minimum_duration=5)
         self.send_resume_command()
+        
+        # sending a pause, or resume, to the aircraft twice, doesn't result in reporting a failure
+        self.wait_current_waypoint(wpnum=5, timeout=500)
+        self.send_pause_command()
+        self.send_pause_command()
+        self.wait_groundspeed(speed_min=0, speed_max=1, minimum_duration=5)
+        self.send_resume_command()
+        self.send_resume_command()
 
         self.wait_disarmed(timeout=500)
 
