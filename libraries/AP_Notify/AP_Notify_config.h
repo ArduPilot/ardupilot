@@ -23,7 +23,7 @@
 #endif
 
 #ifndef AP_NOTIFY_PROFILED_SPI_ENABLED
-#define AP_NOTIFY_PROFILED_SPI_ENABLED 1
+#define AP_NOTIFY_PROFILED_SPI_ENABLED 0  // requires hwdef to have SPI line
 #endif
 
 #ifndef AP_NOTIFY_SERIALLED_ENABLED
