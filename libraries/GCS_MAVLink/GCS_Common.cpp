@@ -350,7 +350,7 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
                                     current,      // current in centiampere
                                     consumed_mah, // total consumed current in milliampere.hour
                                     consumed_wh,  // consumed energy in hJ (hecto-Joules)
-                                    percentage,
+                                    constrain_int16(percentage, -1, 100),
                                     time_remaining, // time remaining, seconds
                                     battery.get_mavlink_charge_state(instance), // battery charge state
                                     cell_mvolts_ext, // Cell 11..14 voltages
