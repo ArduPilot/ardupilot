@@ -198,7 +198,7 @@ void AP_ADSB::init(void)
         if (in_state.vehicle_list == nullptr) {
             // dynamic RAM allocation of in_state.vehicle_list[] failed
             _init_failed = true; // this keeps us from constantly trying to init forever in main update
-            gcs().send_text(MAV_SEVERITY_INFO, "ADSB: Unable to initialize ADSB vehicle list");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ADSB: Unable to initialize ADSB vehicle list");
             return;
         }
         in_state.list_size_allocated = in_state.list_size_param;
@@ -222,7 +222,7 @@ void AP_ADSB::init(void)
 
     if (detected_num_instances == 0) {
         _init_failed = true;
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "ADSB: Unable to initialize ADSB driver");
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ADSB: Unable to initialize ADSB driver");
     }
 }
 
@@ -632,7 +632,7 @@ void AP_ADSB::handle_out_cfg(const mavlink_uavionix_adsb_out_cfg_t &packet)
     // guard against string with non-null end char
     const char c = out_state.cfg.callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN-1];
     out_state.cfg.callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN-1] = 0;
-    gcs().send_text(MAV_SEVERITY_INFO, "ADSB: Using ICAO_id %d and Callsign %s", (int)out_state.cfg.ICAO_id, out_state.cfg.callsign);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ADSB: Using ICAO_id %d and Callsign %s", (int)out_state.cfg.ICAO_id, out_state.cfg.callsign);
     out_state.cfg.callsign[MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG_FIELD_CALLSIGN_LEN-1] = c;
 
     // send now
@@ -666,7 +666,7 @@ void AP_ADSB::handle_out_control(const mavlink_uavionix_adsb_out_control_t &pack
 void AP_ADSB::handle_transceiver_report(const mavlink_channel_t chan, const mavlink_uavionix_adsb_transceiver_health_report_t &packet)
 {
     if (out_state.chan != chan) {
-        gcs().send_text(MAV_SEVERITY_DEBUG, "ADSB: Found transceiver on channel %d", chan);
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "ADSB: Found transceiver on channel %d", chan);
     }
 
     out_state.chan_last_ms = AP_HAL::millis();
@@ -825,6 +825,7 @@ bool AP_ADSB::get_vehicle_by_ICAO(const uint32_t icao, adsb_vehicle_t &vehicle) 
  */
 void AP_ADSB::write_log(const adsb_vehicle_t &vehicle) const
 {
+#if HAL_LOGGING_ENABLED
     switch (_log) {
         case logging::SPECIAL_ONLY:
             if (!is_special_vehicle(vehicle.info.ICAO_address)) {
@@ -853,6 +854,7 @@ void AP_ADSB::write_log(const adsb_vehicle_t &vehicle) const
         squawk        : vehicle.info.squawk,
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
+#endif // HAL_LOGGING_ENABLED
 }
 
 /**
