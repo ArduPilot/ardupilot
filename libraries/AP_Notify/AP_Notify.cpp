@@ -325,15 +325,21 @@ void AP_Notify::add_backends(void)
                 ADD_BACKEND(new PCA9685LED_I2C());
                 break;
 #endif
+#if AP_NOTIFY_NEOPIXEL_ENABLED
             case Notify_LED_NeoPixel:
                 ADD_BACKEND(new NeoPixel());
                 break;
+#endif
+#if AP_NOTIFY_PROFILED_ENABLED
             case Notify_LED_ProfiLED:
                 ADD_BACKEND(new ProfiLED());
                 break;
+#endif
+#if AP_NOTIFY_PROFILED_SPI_ENABLED
             case Notify_LED_ProfiLED_SPI:
                 ADD_BACKEND(new ProfiLED_SPI());
                 break;
+#endif
             case Notify_LED_OreoLED:
 #if AP_NOTIFY_OREOLED_ENABLED
                 if (_oreo_theme) {
