@@ -29,7 +29,7 @@ The Flywoo GOKU F405 AIO is a flight controller produced by [Flywoo](https://fly
 
 ## Pinout
 
-![GOKU F405 12A AIO](GOKUF405AIO_Pinout.png "GOKU F405 12A AIO")
+![GOKU F405 12A AIO](GOKUF405AIO_Pinout.PNG "GOKU F405 12A AIO")
 
 ## UART Mapping
 
