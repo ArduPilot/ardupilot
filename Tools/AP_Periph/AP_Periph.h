@@ -2,6 +2,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
+#include <AP_ADSB/AP_ADSB.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Baro/AP_Baro.h>
@@ -29,6 +30,10 @@
 #if HAL_NMEA_OUTPUT_ENABLED && !(HAL_GCS_ENABLED && defined(HAL_PERIPH_ENABLE_GPS))
     // Needs SerialManager + (AHRS or GPS)
     #error "AP_NMEA_Output requires Serial/GCS and either AHRS or GPS. Needs HAL_GCS_ENABLED and HAL_PERIPH_ENABLE_GPS"
+#endif
+
+#if defined(AP_PERIPH_ENABLE_ADSB_OUT) && !HAL_GCS_ENABLED
+    #error "AP_PERIPH_ENABLE_ADSB_OUT requires HAL_GCS_ENABLED. Using 'env AP_PERIPH_HEAVY 1' is also recommended"
 #endif
 
 #if HAL_GCS_ENABLED
@@ -190,6 +195,9 @@ public:
         mavlink_message_t msg;
         mavlink_status_t status;
     } adsb;
+#endif
+#ifdef AP_PERIPH_ENABLE_ADSB_OUT
+    AP_ADSB adsb_lib;
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED

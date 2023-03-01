@@ -466,6 +466,9 @@ void AP_Periph_FW::update()
 #ifdef HAL_PERIPH_ENABLE_ADSB
     adsb_update();
 #endif
+#ifdef AP_PERIPH_ENABLE_ADSB_OUT
+    adsb_lib.update();
+#endif
 }
 
 #ifdef HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT
