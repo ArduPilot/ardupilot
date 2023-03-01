@@ -1,5 +1,16 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.3.5-rc1 01-Mar-2023
+Changes from 4.3.4
+1) Bug fixes
+    a) GPS unconfigured error fix for non-M10 uBlox GPS
+    b) Gremsy gimbal fix when attached to autopilot's serial3 (or higher)
+    c) Landing detector fix with large AHRS_TRIM values (>0.1)
+    d) MambaF405 2022 gets VTX power on support
+    e) MCU voltage enabled on H757 CPUs (including CubeOrangePlus)
+    f) PiccoloCAN fix for ESC voltage and current scaling 
+    g) Servo gimbal mount yaw handling fix (only affects 3-axis servo gimbals)
+------------------------------------------------------------------
 Copter 4.3.4 01-Mar-2023
 Changes from 4.3.4-rc1
 1) Lua script PWMSource feature disabled (will be back in 4.4.x)
