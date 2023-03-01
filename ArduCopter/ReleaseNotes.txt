@@ -1,5 +1,9 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.3.4 01-Mar-2023
+Changes from 4.3.4-rc1
+1) Lua script PWMSource feature disabled (will be back in 4.4.x)
+------------------------------------------------------------------
 Copter 4.3.4-rc1 14-Feb-2023
 Changes from 4.3.3
 1) AutoPilot specific enhancements
