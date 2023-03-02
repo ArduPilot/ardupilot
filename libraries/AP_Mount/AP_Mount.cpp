@@ -205,6 +205,9 @@ MAV_MOUNT_MODE AP_Mount::get_mode(uint8_t instance) const
 //      this operation requires 60us on a Pixhawk/PX4
 void AP_Mount::set_mode_to_default(uint8_t instance)
 {
+    if (instance > ARRAY_SIZE(_params)) {
+        return;
+    }
     set_mode(instance, (enum MAV_MOUNT_MODE)_params[instance].default_mode.get());
 }
 
