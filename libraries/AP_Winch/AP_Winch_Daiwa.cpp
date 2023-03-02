@@ -22,8 +22,8 @@ void AP_Winch_Daiwa::init()
     const AP_SerialManager &serial_manager = AP::serialmanager();
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Winch, 0);
     if (uart != nullptr) {
-        // always use baudrate of 115200
-        uart->begin(115200);
+        // always use baudrate of 38400
+        uart->begin(38400);
     }
 }
 
