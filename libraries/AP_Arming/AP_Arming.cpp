@@ -464,6 +464,15 @@ bool AP_Arming::ins_checks(bool report)
             check_failed(ARMING_CHECK_INS, report, "temperature cal running");
             return false;
         }
+
+#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
+        // If Batch sampling enabled it must be initialized
+        if (ins.batchsampler.enabled() && !ins.batchsampler.is_initialised()) {
+            check_failed(ARMING_CHECK_INS, report, "Batch sampling requires reboot");
+            return false;
+        }
+#endif
+
     }
 
 #if HAL_GYROFFT_ENABLED
