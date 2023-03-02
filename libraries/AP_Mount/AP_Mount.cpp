@@ -279,22 +279,6 @@ MAV_RESULT AP_Mount::handle_command_do_mount_control(const mavlink_command_long_
 
 MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_command_long_t &packet)
 {
-    if (!check_primary()) {
-        return MAV_RESULT_FAILED;
-    }
-
-    // check flags for change to RETRACT
-    uint32_t flags = (uint32_t)packet.param5;
-    if ((flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
-        _backends[_primary]->set_mode(MAV_MOUNT_MODE_RETRACT);
-        return MAV_RESULT_ACCEPTED;
-    }
-    // check flags for change to NEUTRAL
-    if ((flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
-        _backends[_primary]->set_mode(MAV_MOUNT_MODE_NEUTRAL);
-        return MAV_RESULT_ACCEPTED;
-    }
-
     // check gimbal device id.  0 is primary, 1 is 1st gimbal, 2 is 2nd gimbal, etc
     if ((packet.param7 < 0) || (packet.param7 > AP_MOUNT_MAX_INSTANCES)) {
         return MAV_RESULT_FAILED;
@@ -302,6 +286,18 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
     const uint8_t gimbal_instance = (packet.param7 < 1) ? get_primary() : (uint8_t)packet.param7 - 1;
     if (!check_instance(gimbal_instance)) {
         return MAV_RESULT_FAILED;
+    }
+
+    // check flags for change to RETRACT
+    uint32_t flags = (uint32_t)packet.param5;
+    if ((flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
+        _backends[gimbal_instance]->set_mode(MAV_MOUNT_MODE_RETRACT);
+        return MAV_RESULT_ACCEPTED;
+    }
+    // check flags for change to NEUTRAL
+    if ((flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
+        _backends[gimbal_instance]->set_mode(MAV_MOUNT_MODE_NEUTRAL);
+        return MAV_RESULT_ACCEPTED;
     }
 
     // param1 : pitch_angle (in degrees)
