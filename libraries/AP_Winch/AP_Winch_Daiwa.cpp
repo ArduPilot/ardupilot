@@ -23,10 +23,6 @@ void AP_Winch_Daiwa::init()
     // initialise serial connection to winch
     const AP_SerialManager &serial_manager = AP::serialmanager();
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Winch, 0);
-    if (uart != nullptr) {
-        // always use baudrate of 115200
-        uart->begin(115200);
-    }
 }
 
 void AP_Winch_Daiwa::update()
