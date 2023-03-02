@@ -23,7 +23,7 @@
   Author: Matthew Piccoli
   Contributors: Raphael Van Hoffelen
 */
-
+#include <GCS_MAVLink/GCS.h>
 #include "client_communication.hpp"
 
 int8_t ParseMsg(uint8_t* rx_data, uint8_t rx_length,
@@ -37,16 +37,24 @@ int8_t ParseMsg(uint8_t* rx_data, uint8_t rx_length,
   // if we have a reply (we only parse replies here)
   if(dir == kReply)
   {
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "reply");
     // if sub_idn is within array range (safe to access array at this location)
     if(sub_idn < entry_length)
     {
+      GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "subidn %u < %u", sub_idn, entry_length);
       // if there is a ClientEntry object at this sub_idn
       if(entry_array[sub_idn] != nullptr)
       {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "entry exists");
+
         // if the type and obj identifiers match
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "type %u, des %u, obj %u, des %u", entry_array[sub_idn]->type_idn_, type_idn, entry_array[sub_idn]->obj_idn_, obj_idn);
+
         if(entry_array[sub_idn]->type_idn_ == type_idn &&
         entry_array[sub_idn]->obj_idn_ == obj_idn)
         {
+          GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "we're in");
+
           // ... then we have a valid message
           entry_array[sub_idn]->Reply(&rx_data[3],rx_length-3);
           return 1; // I parsed something

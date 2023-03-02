@@ -22,7 +22,7 @@
 #include <AP_SBusOut/AP_SBusOut.h>
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_FETtecOneWire/AP_FETtecOneWire.h>
-#include <AP_IQMotor/AP_IQMotor.h>
+#include <AP_IQ_Motor/AP_IQ_Motor.h>
 
 #include "SRV_Channel_config.h"
 
@@ -631,8 +631,8 @@ private:
 #endif  // AP_FETTEC_ONEWIRE_ENABLED
 
 #if AP_IQUART_ENABLED
-    AP_IQMotor iq;
-    static AP_IQMotor *iq_ptr;
+    AP_IQ_Motor iq;
+    static AP_IQ_Motor *iq_ptr;
 #endif  // AP_IQUART_ENABLED
 
     // mask of disabled channels
