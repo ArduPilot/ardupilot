@@ -3533,10 +3533,10 @@ float QuadPlane::forward_throttle_pct()
             return 0;
         } else {
             // calculate fwd throttle demand from manual input
-            float fwd_thr = rc_fwd_thr_ch->percent_input();
+            float fwd_thr = rc_fwd_thr_ch->norm_input() * 100.0f;
 
-            // set forward throttle to fwd_thr_max * (manual input + mix): range [0,100]
-            fwd_thr *= .01f * constrain_float(fwd_thr_max, 0, 100);
+            // set forward throttle to fwd_thr_max * (manual input + mix): range [-100,100]
+            fwd_thr *= .01f * constrain_float(fwd_thr_max, -100, 100);
             return fwd_thr;
         }
     }
@@ -3603,8 +3603,8 @@ float QuadPlane::forward_throttle_pct()
     // integrator as throttle percentage (-100 to 100)
     vel_forward.integrator += fwd_vel_error * deltat * vel_forward.gain * 100;
 
-    // inhibit reverse throttle and allow petrol engines with min > 0
-    int8_t fwd_throttle_min = plane.have_reverse_thrust() ? 0 : plane.aparm.throttle_min;
+    // inhibit to minimum throttle
+    int8_t fwd_throttle_min = plane.aparm.throttle_min;
     vel_forward.integrator = constrain_float(vel_forward.integrator, fwd_throttle_min, plane.aparm.throttle_cruise);
 
     if (in_vtol_land_approach()) {
