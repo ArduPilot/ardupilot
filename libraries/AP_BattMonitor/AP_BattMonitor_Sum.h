@@ -25,6 +25,15 @@ public:
 
 private:
 
+    // Return true if this instance should be included in calculation
+    bool include_instance(uint8_t i) const;
+
+    // Read sum of monitors
+    void read_sum();
+
+    // Read max of monitors
+    void read_max();
+
     AP_Int16  _sum_mask;
     uint8_t _instance;
     bool _has_current;

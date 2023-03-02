@@ -307,6 +307,7 @@ AP_BattMonitor::init()
 #endif
                 break;
             case Type::Sum:
+            case Type::Max_of:
                 drivers[instance] = new AP_BattMonitor_Sum(*this, state[instance], _params[instance], instance);
                 break;
 #if AP_BATTMON_FUELFLOW_ENABLE
