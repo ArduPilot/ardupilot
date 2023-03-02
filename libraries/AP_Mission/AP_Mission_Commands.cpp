@@ -219,7 +219,7 @@ bool AP_Mission::start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Miss
     }
 
     // check gimbal device id.  0 is primary, 1 is 1st gimbal, 2 is 2nd gimbal, etc
-    uint8_t gimbal_instance = mount->get_primary();
+    uint8_t gimbal_instance = mount->get_primary_instance();
     if (cmd.content.gimbal_manager_pitchyaw.gimbal_id > 0) {
         gimbal_instance = cmd.content.gimbal_manager_pitchyaw.gimbal_id - 1;
     }
