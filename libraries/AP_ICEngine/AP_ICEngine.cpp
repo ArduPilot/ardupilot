@@ -212,7 +212,7 @@ void AP_ICEngine::update(void)
     // If the cached value is the same, reset timer
     if (start_chan_last_value == cvalue) {
         start_chan_last_ms = now;
-    } else if (now - start_chan_last_ms >= AP_ICENGINE_START_CHAN_DEBOUNCE_MS) {
+    } else if (now - start_chan_last_ms >= always_realtime_interval_ms(AP_ICENGINE_START_CHAN_DEBOUNCE_MS)) {
         // if it has changed, and stayed changed for the duration, then use that new value
         start_chan_last_value = cvalue;
     }
@@ -261,7 +261,7 @@ void AP_ICEngine::update(void)
     case ICE_START_DELAY:
         if (!should_run) {
             state = ICE_OFF;
-        } else if (now - starter_last_run_ms >= starter_delay*1000) {
+        } else if (now - starter_last_run_ms >= always_realtime_interval_ms(starter_delay*1000)) {
             gcs().send_text(MAV_SEVERITY_INFO, "Starting engine");
             state = ICE_STARTING;
         }
@@ -270,7 +270,7 @@ void AP_ICEngine::update(void)
     case ICE_STARTING:
         if (!should_run) {
             state = ICE_OFF;
-        } else if (now - starter_start_time_ms >= starter_time*1000) {
+        } else if (now - starter_start_time_ms >= always_realtime_interval_ms(starter_time*1000)) {
             gcs().send_text(MAV_SEVERITY_INFO, "Engine running");
             state = ICE_RUNNING;
         }
