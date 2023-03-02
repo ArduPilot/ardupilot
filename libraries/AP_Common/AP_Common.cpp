@@ -20,6 +20,11 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Common.h"
 
+#include <AP_HAL/AP_HAL_Boards.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 /*
@@ -99,3 +104,13 @@ int16_t char_to_hex(char a)
     else
         return a - '0';
 }
+
+uint32_t always_realtime_interval_ms(const uint32_t interval_ms)
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+    return interval_ms * AP::sitl()->speedup;
+#else
+    return interval_ms;
+#endif
+}
+
