@@ -628,6 +628,8 @@ protected:
     MAV_RESULT handle_command_do_set_roi_sysid(const uint8_t sysid);
     MAV_RESULT handle_command_do_set_roi_sysid(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_set_roi_sysid(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_do_set_roi_none();
+
     virtual MAV_RESULT handle_command_mount(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_mag_cal(const mavlink_command_long_t &packet);
     virtual MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet);

@@ -4758,6 +4758,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         break;
     }
 
+    case MAV_CMD_DO_SET_ROI_NONE:
+        return handle_command_do_set_roi_none();
+
     case MAV_CMD_DO_SET_ROI_SYSID:
         return handle_command_do_set_roi_sysid(packet);
 
@@ -5041,6 +5044,19 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_do_set_home(const mavlink_command_int
     return MAV_RESULT_ACCEPTED;
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_none()
+{
+#if HAL_MOUNT_ENABLED
+    AP_Mount *mount = AP::mount();
+    if (mount == nullptr) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+    mount->set_mode_to_default();
+    return MAV_RESULT_ACCEPTED;
+#else
+    return MAV_RESULT_UNSUPPORTED;
+#endif
+}
 
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_sysid(const uint8_t sysid)
 {
