@@ -58,7 +58,7 @@ AP_FETtecOneWire *SRV_Channels::fetteconwire_ptr;
 #endif
 
 #if AP_IQUART_ENABLED
-AP_IQMotor *SRV_Channels::iq_ptr;
+AP_IQ_Motor *SRV_Channels::iq_ptr;
 #endif
 
 uint16_t SRV_Channels::override_counter[NUM_SERVO_CHANNELS];
@@ -225,8 +225,8 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
 
 #if AP_IQUART_ENABLED
     // @Group: _IQ_
-    // @Path: ../AP_IQMotor/AP_IQMotor.cpp
-    AP_SUBGROUPINFO(iq, "_IQ_",  44, SRV_Channels, AP_IQMotor),
+    // @Path: ../AP_IQ_Motor/AP_IQ_Motor.cpp
+    AP_SUBGROUPINFO(iq, "_IQ_",  44, SRV_Channels, AP_IQ_Motor),
 #endif
 
     // @Param: _DSHOT_RATE

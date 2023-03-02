@@ -11,14 +11,14 @@
 #include <AP_Param/AP_Param.h>
 #include "generic_interface.hpp"
 #include "client_communication.hpp"
-#include <AP_IQMotor/ardupilot_client.hpp>
+#include <AP_IQ_Motor/ardupilot_client.hpp>
 
-class AP_IQMotor : public AP_ESC_Telem_Backend {
+class AP_IQ_Motor : public AP_ESC_Telem_Backend {
 public:
-    AP_IQMotor();
+    AP_IQ_Motor();
 
-    AP_IQMotor(const AP_IQMotor &other) = delete;
-    AP_IQMotor &operator=(const AP_IQMotor&) = delete;
+    AP_IQ_Motor(const AP_IQ_Motor &other) = delete;
+    AP_IQ_Motor &operator=(const AP_IQ_Motor&) = delete;
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -34,36 +34,33 @@ public:
     // TODO: always return a client. If it exists already return that pointer, else create a new one. Maybe this should be a new function called "get_client"
 	uint8_t find_client(ClientAbstract **set_client, uint8_t client_type, uint8_t obj_id);
 
-    // Return the single com interface pointer owned by AP_IQMotor
+    // Return the single com interface pointer owned by AP_IQ_Motor
     // Currently only one UART can be used, but maybe if more than one is required the behavior might need to change
     // Takes no input
     // Returns the pointer to the single GenericInterface
-    GenericInterface  *get_com_interface() { return &com; };
+    GenericInterface *get_com_interface() { return &_com; }
     
     // This function returns whether the writing function is happening right now or not. The code isn't multithreaded, but maybe useful for interrupts?
     // Takes no input
     // Returns whether writing is happening
-    bool get_writing() { return writing; };
+    bool get_writing() { return _writing; }
 
 
-    // Returns the AP_IQMotor object singleton. Trying to copy other ardupilot structure here.
-    static AP_IQMotor *get_singleton(void) {
-        return _singleton;
-    }
+    // Returns the AP_IQ_Motor object singleton. Trying to copy other ardupilot structure here.
+    static AP_IQ_Motor *get_singleton(void) { return _singleton; }
 
 private:
-    static AP_IQMotor *_singleton;
+    static AP_IQ_Motor *_singleton;
 
     AP_HAL::UARTDriver *iq_uart;
-    GenericInterface com;
+    GenericInterface _com;
     
     
-    AP_Int8 motor_input_type;
-    AP_Int8 broadcast_length;
-    AP_Int16 telemetry_bitmask;
-    AP_Int16 motor_dir_bitmask;
+    AP_Int8 _broadcast_length;
+    AP_Int16 _telemetry_bitmask;
+    AP_Int16 _motor_dir_bitmask;
     
-    static const uint8_t client_limit = 128;
+    static const uint8_t _client_limit = 128;
 
     // Initialize the the AP IQmotor object
     void init(void);
@@ -81,15 +78,15 @@ private:
     // Writes out the com buffer to the uart in the generic interface
     void write(void);
 
-    bool initialized = false;
+    bool _initialized = false;
 
-    bool writing = false;
+    bool _writing = false;
 
-    uint8_t tx_buf[128];
-    uint8_t rx_buf[128];
-    uint8_t ser_length;
-    uint8_t total_channels = 0;
-    ArdupilotClient motors[16] = {
+    uint8_t _tx_buf[128];
+    uint8_t _rx_buf[128];
+    uint8_t _ser_length;
+    uint8_t _total_channels = 0;
+    ArdupilotClient _motors[16] = {
         ArdupilotClient(0),
         ArdupilotClient(1),
         ArdupilotClient(2),
@@ -107,12 +104,11 @@ private:
         ArdupilotClient(14),
         ArdupilotClient(15),
     }; // TODO change how this works
-    ClientAbstract *clients[client_limit]; // how do I make a list of virtual classes?
-    uint8_t client_size = 0;
-    uint8_t telem_motor_id = 0;
-    uint32_t last_request_time = 0;
-    uint32_t TELEM_TIMEOUT = 50;
-    uint8_t first_telem_motor = 0;
-    uint8_t last_telem_motor = 0;
-    bool out_flag = false;
+    ClientAbstract *_clients[_client_limit]; // how do I make a list of virtual classes?
+    uint8_t _client_size = 0;
+    uint8_t _telem_motor_id = 0;
+    uint32_t _last_request_time = 0;
+    static const uint32_t _telem_timeout = 50;
+    uint8_t _first_telem_motor = 0;
+    uint8_t _last_telem_motor = 0;
 };
