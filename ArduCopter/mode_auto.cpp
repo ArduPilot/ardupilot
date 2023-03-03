@@ -725,7 +725,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
-#if WINCH_ENABLED == ENABLED
+#if AP_WINCH_ENABLED
     case MAV_CMD_DO_WINCH:                             // Mission command to control winch
         do_winch(cmd);
         break;
@@ -1901,7 +1901,7 @@ void ModeAuto::do_mount_control(const AP_Mission::Mission_Command& cmd)
 #endif
 }
 
-#if WINCH_ENABLED == ENABLED
+#if AP_WINCH_ENABLED
 // control winch based on mission command
 void ModeAuto::do_winch(const AP_Mission::Mission_Command& cmd)
 {

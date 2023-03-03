@@ -852,7 +852,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(smart_rtl, "SRTL_", 21, ParametersG2, AP_SmartRTL),
 #endif
 
-#if WINCH_ENABLED == ENABLED
+#if AP_WINCH_ENABLED
     // 22 was AP_WheelEncoder
 
     // @Group: WINCH

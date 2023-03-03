@@ -32,7 +32,7 @@ void Copter::init_ardupilot()
 #endif
 
     // init winch
-#if WINCH_ENABLED == ENABLED
+#if AP_WINCH_ENABLED
     g2.winch.init();
 #endif
 
