@@ -3019,6 +3019,10 @@ def add_apperiph_defaults(f):
 #define HAL_ENABLE_SAVE_PERSISTENT_PARAMS 0
 #endif
 
+#ifndef AP_WINCH_ENABLED
+#define AP_WINCH_ENABLED 0
+#endif
+
 // end AP_Periph defaults
 ''')
 
