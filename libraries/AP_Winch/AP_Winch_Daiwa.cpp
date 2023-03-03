@@ -1,5 +1,7 @@
 #include <AP_Winch/AP_Winch_Daiwa.h>
 
+#if AP_WINCH_DAIWA_ENABLED
+
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -223,3 +225,5 @@ void AP_Winch_Daiwa::control_winch()
     }
     SRV_Channels::set_output_scaled(SRV_Channel::k_winch, scaled_output);
 }
+
+#endif  // AP_WINCH_DAIWA_ENABLED
