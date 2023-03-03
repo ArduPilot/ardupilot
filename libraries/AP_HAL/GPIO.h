@@ -110,4 +110,8 @@ public:
 
     // optional timer tick
     virtual void timer_tick(void) {};
+
+    // Run arming checks
+    virtual bool arming_checks(size_t buflen, char *buffer) const { return true; }
+
 };
