@@ -1011,6 +1011,11 @@ bool AP_Arming::system_checks(bool report)
         return false;
     }
 
+    if (!hal.gpio->arming_checks(sizeof(buffer), buffer)) {
+        check_failed(report, "%s", buffer);
+        return false;
+    }
+
     if (check_enabled(ARMING_CHECK_PARAMETERS)) {
 #if AP_RPM_ENABLED
         auto *rpm = AP::rpm();
