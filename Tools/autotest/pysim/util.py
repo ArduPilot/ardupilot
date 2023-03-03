@@ -117,6 +117,7 @@ def waf_configure(board,
                   extra_hwdef=None,
                   ubsan=False,
                   ubsan_abort=False,
+                  num_aux_imus=0,
                   extra_defines={}):
     cmd_configure = [relwaf(), "configure", "--board", board]
     if debug:
@@ -135,6 +136,8 @@ def waf_configure(board,
         cmd_configure.append('--ubsan')
     if ubsan_abort:
         cmd_configure.append('--ubsan-abort')
+    if num_aux_imus > 0:
+        cmd_configure.append('--num-aux-imus=%u' % num_aux_imus)
     if extra_hwdef is not None:
         cmd_configure.extend(['--extra-hwdef', extra_hwdef])
     for nv in extra_defines.items():
@@ -174,6 +177,7 @@ def build_SITL(
         sitl_32bit=False,
         ubsan=False,
         ubsan_abort=False,
+        num_aux_imus=0,
 ):
 
     # first configure
@@ -189,7 +193,8 @@ def build_SITL(
                       ubsan=ubsan,
                       ubsan_abort=ubsan_abort,
                       extra_defines=extra_defines,
-                      extra_args=extra_configure_args)
+                      num_aux_imus=num_aux_imus,
+                      extra_args=extra_configure_args,)
 
     # then clean
     if clean:
@@ -204,7 +209,7 @@ def build_SITL(
 
 
 def build_examples(board, j=None, debug=False, clean=False, configure=True, math_check_indexes=False, coverage=False,
-                   ekf_single=False, postype_single=False, sitl_32bit=False, ubsan=False, ubsan_abort=False,
+                   ekf_single=False, postype_single=False, sitl_32bit=False, ubsan=False, ubsan_abort=False, num_aux_imus=0,
                    extra_configure_args=[]):
     # first configure
     if configure:
@@ -256,6 +261,7 @@ def build_tests(board,
                 sitl_32bit=False,
                 ubsan=False,
                 ubsan_abort=False,
+                num_aux_imus=0,
                 extra_configure_args=[]):
 
     # first configure
