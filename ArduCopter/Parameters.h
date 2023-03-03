@@ -565,7 +565,7 @@ public:
 #endif
 
     // wheel encoder and winch
-#if WINCH_ENABLED == ENABLED
+#if AP_WINCH_ENABLED
     AP_Winch winch;
 #endif
 
