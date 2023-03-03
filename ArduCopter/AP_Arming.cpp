@@ -536,7 +536,7 @@ bool AP_Arming_Copter::gcs_failsafe_check(bool display_failure)
 // check winch
 bool AP_Arming_Copter::winch_checks(bool display_failure) const
 {
-#if WINCH_ENABLED == ENABLED
+#if AP_WINCH_ENABLED
     // pass if parameter or all arming checks disabled
     if (!check_enabled(ARMING_CHECK_PARAMETERS)) {
         return true;

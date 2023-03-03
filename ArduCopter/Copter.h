@@ -147,7 +147,7 @@
 #if TOY_MODE_ENABLED == ENABLED
  # include "toy_mode.h"
 #endif
-#if WINCH_ENABLED == ENABLED
+#if AP_WINCH_ENABLED
  # include <AP_Winch/AP_Winch.h>
 #endif
 #include <AP_RPM/AP_RPM.h>
