@@ -12,6 +12,10 @@
 
 #define SENSOR_RATE_DEBUG 0
 
+#ifndef AP_HEATER_IMU_INSTANCE
+#define AP_HEATER_IMU_INSTANCE 0
+#endif
+
 const extern AP_HAL::HAL& hal;
 
 AP_InertialSensor_Backend::AP_InertialSensor_Backend(AP_InertialSensor &imu) :
@@ -731,7 +735,7 @@ void AP_InertialSensor_Backend::_publish_temperature(uint8_t instance, float tem
 
 #if HAL_HAVE_IMU_HEATER
     /* give the temperature to the control loop in order to keep it constant*/
-    if (instance == 0) {
+    if (instance == AP_HEATER_IMU_INSTANCE) {
         AP_BoardConfig *bc = AP::boardConfig();
         if (bc) {
             bc->set_imu_temp(temperature);
