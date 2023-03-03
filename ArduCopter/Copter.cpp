@@ -938,7 +938,14 @@ void Copter::update_altitude()
 #endif
 }
 
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
 // vehicle specific waypoint info helpers
+bool Copter::get_wp_location(Location &loc) const
+{
+    return flightmode->get_wp(loc);
+}
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+
 bool Copter::get_wp_distance_m(float &distance) const
 {
     // see GCS_MAVLINK_Copter::send_nav_controller_output()
