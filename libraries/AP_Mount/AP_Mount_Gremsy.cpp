@@ -75,6 +75,16 @@ void AP_Mount_Gremsy::update()
             }
             break;
 
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+        case MAV_MOUNT_MODE_WPNEXT_OFFSET: {
+            MountTarget angle_target_rad {};
+            if (get_angle_target_to_wpnext_offset(angle_target_rad)) {
+                mnt_target.target_type = MountTargetType::ANGLE;
+            }
+            break;
+        }
+#endif
+
         default:
             // unknown mode so do nothing
             break;

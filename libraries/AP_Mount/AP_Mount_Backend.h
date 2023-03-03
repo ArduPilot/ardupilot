@@ -100,6 +100,11 @@ public:
     // set_sys_target - sets system that mount should attempt to point towards
     void set_target_sysid(uint8_t sysid);
 
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+    // set_roi_target_wpnext_offset - point to next waypoint, with offsets
+    void set_roi_target_wpnext_offset(const Vector3f &rpy);
+#endif
+
     // handle do_mount_control command.  Returns MAV_RESULT_ACCEPTED on success
     MAV_RESULT handle_command_do_mount_control(const mavlink_command_int_t &packet);
 
@@ -273,6 +278,12 @@ protected:
     // returns true on success, false on failure
     bool get_angle_target_to_home(MountTarget& angle_rad) const WARN_IF_UNUSED;
 
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+    // get angle targets (in radians) to next waypoint, with offsets previously supplied
+    // returns true on success, false on failure
+    bool get_angle_target_to_wpnext_offset(MountTarget& angle_rad) const WARN_IF_UNUSED;
+#endif
+
     // get angle targets (in radians) to a vehicle with sysid of _target_sysid
     // returns true on success, false on failure
     bool get_angle_target_to_sysid(MountTarget& angle_rad) const WARN_IF_UNUSED;
@@ -334,6 +345,8 @@ private:
 
     Location _roi_target;           // roi target location
     bool _roi_target_set;           // true if the roi target has been set
+
+    Vector3f _roi_wpnext_rpy;       // angular offsets for pointing-at-waypoint
 
     uint8_t _target_sysid;          // sysid to track
     Location _target_sysid_location;// sysid target location
