@@ -373,3 +373,27 @@ bool AP_Mission::start_command_fence(const AP_Mission::Mission_Command& cmd)
 }
 
 #endif  // AP_MISSION_ENABLED
+
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
+bool AP_Mission::start_command_do_set_roi_wpnext_offset(const AP_Mission::Mission_Command& cmd)
+{
+#if HAL_MOUNT_ENABLED
+    AP_Mount *mount = AP::mount();
+    if (mount == nullptr) {
+        return false;
+    }
+
+    // we do not use the gimbal ID here; we want to use the proper
+    // mavlink semantics and lack the infrastructure.
+    mount->set_roi_target_wpnext_offset(Vector3f{
+        cmd.content.wpnext_offset.roll_offset_cd * 0.01f,
+        cmd.content.wpnext_offset.pitch_offset_cd * 0.01f,
+        cmd.content.wpnext_offset.yaw_offset_cd * 0.01f
+    });
+
+    return true;
+#else
+    return false;
+#endif // HAL_MOUNT_ENABLED
+}
+#endif // AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
