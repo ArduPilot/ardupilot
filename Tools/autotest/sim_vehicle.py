@@ -402,6 +402,9 @@ def do_build(opts, frame_options):
     if opts.ubsan_abort:
         cmd_configure.append("--ubsan-abort")
 
+    if opts.num_aux_imus:
+        cmd_configure.append("--num-aux-imus=%s" % opts.num_aux_imus)
+
     for nv in opts.define:
         cmd_configure.append("--define=%s" % nv)
 
@@ -1064,6 +1067,11 @@ group_build.add_option("", "--ubsan-abort",
                        action='store_true',
                        dest="ubsan_abort",
                        help="compile sitl with undefined behaviour sanitiser and abort on error")
+group_build.add_option("--num-aux-imus",
+                       dest="num_aux_imus",
+                       default=0,
+                       type='int',
+                       help='number of auxiliary IMUs to simulate')
 parser.add_option_group(group_build)
 
 group_sim = optparse.OptionGroup(parser, "Simulation options")
