@@ -49,3 +49,6 @@ define NUM_SERVO_CHANNELS 16
 define HAL_PLUSCODE_ENABLE 0
 define HAL_OSD_SIDEBAR_ENABLE 0
 define OSD_PARAM_ENABLED 0
+
+# no Winch if minimized:
+define AP_WINCH_ENABLED 0

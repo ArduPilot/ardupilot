@@ -70,6 +70,7 @@
 #include <AP_ADSB/AP_ADSB.h>                // ADS-B RF based collision avoidance module library
 #include <AP_Proximity/AP_Proximity.h>      // ArduPilot proximity sensor library
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
+#include <AP_Winch/AP_Winch_config.h>
 
 // Configuration
 #include "defines.h"
