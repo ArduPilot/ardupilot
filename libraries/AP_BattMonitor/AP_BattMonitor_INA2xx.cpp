@@ -65,11 +65,11 @@ extern const AP_HAL::HAL& hal;
 
 
 /*I2C bus and address*/
-#ifndef HAL_BATTMON_INA2xx_BUS
-#define HAL_BATTMON_INA2xx_BUS  0                          
+#ifndef HAL_BATTMON_INA2XX_BUS
+#define HAL_BATTMON_INA2XX_BUS  0                          
 #endif
-#ifndef HAL_BATTMON_INA2xx_ADDR
-#define HAL_BATTMON_INA2xx_ADDR 64                         //address 0x40 = 64 when A1 and A0 are GND
+#ifndef HAL_BATTMON_INA2XX_ADDR
+#define HAL_BATTMON_INA2XX_ADDR 64                         //address 0x40 = 64 when A1 and A0 are GND
 #endif
 
 const AP_Param::GroupInfo AP_BattMonitor_INA2XX::var_info[] = {
