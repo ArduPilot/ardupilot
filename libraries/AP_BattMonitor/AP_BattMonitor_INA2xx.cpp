@@ -295,7 +295,7 @@ void AP_BattMonitor_INA2XX::timer(void)
         }
     }else{
         _device_detected = true;
-        // GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "_configured");               //only for debugging
+        // GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "configured");               //only for debugging
     }
 
     if(_device_detected){
