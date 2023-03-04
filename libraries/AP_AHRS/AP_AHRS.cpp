@@ -1992,12 +1992,6 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
         return false;
     }
 
-    // ensure we're using the configured backend, but bypass in compass-less cases:
-    if (ekf_type() != active_EKF_type() && AP::compass().use_for_yaw()) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "not using configured AHRS type");
-        return false;
-    }
-
     switch (ekf_type()) {
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
@@ -2032,6 +2026,13 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
 
     // if we get here then ekf type is invalid
     hal.util->snprintf(failure_msg, failure_msg_len, "invalid EKF type");
+
+    // ensure we're using the configured backend, but bypass in compass-less cases:
+    if (ekf_type() != active_EKF_type() && AP::compass().use_for_yaw()) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "not using configured AHRS type");
+        return false;
+    }
+
     return false;
 }
 
