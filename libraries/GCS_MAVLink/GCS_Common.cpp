@@ -409,8 +409,8 @@ void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor, con
         instance,                                // onboard ID of the sensor == instance
         sensor->orientation(),                   // direction the sensor faces from MAV_SENSOR_ORIENTATION enum
         0,                                       // Measurement covariance in centimeters, 0 for unknown / invalid readings
-        0,                                       // horizontal FOV
-        0,                                       // vertical FOV
+        sensor->horizontal_fov(),                // horizontal FOV
+        sensor->vertical_fov(),                  // vertical FOV
         (const float *)nullptr,                  // quaternion of sensor orientation for MAV_SENSOR_ROTATION_CUSTOM
         quality);                                // Signal quality of the sensor. 0 = unknown/unset signal quality, 1 = invalid signal, 100 = perfect signal.
 }
