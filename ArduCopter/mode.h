@@ -257,7 +257,6 @@ public:
         void set_mode(Mode new_mode);
         Mode default_mode(bool rtl) const;
 
-
         void set_rate(float new_rate_cds);
 
         // set_roi(...): set a "look at" location:
@@ -280,11 +279,11 @@ public:
 
     private:
 
-        // yaw(): main product of AutoYaw; the heading:
-        float yaw();
+        // yaw_cd(): main product of AutoYaw; the heading:
+        float yaw_cd();
 
         // rate_cds(): desired yaw rate in centidegrees/second:
-        float rate_cds() const;
+        float rate_cds();
 
         float look_ahead_yaw();
         float roi_yaw() const;
