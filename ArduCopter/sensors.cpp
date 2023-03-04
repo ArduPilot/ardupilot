@@ -74,6 +74,7 @@ void Copter::read_rangefinder(void)
             // clear glitch and record time so consumers (i.e. surface tracking) can reset their target altitudes
             rf_state.glitch_count = 0;
             rf_state.alt_cm_glitch_protected = rf_state.alt_cm;
+            rf_state.terrain_offset_cm = rf_state.inertial_alt_cm - rf_state.alt_cm;
             rf_state.glitch_cleared_ms = AP_HAL::millis();
         }
 
@@ -84,6 +85,7 @@ void Copter::read_rangefinder(void)
             if (timed_out) {
                 // reset filter if we haven't used it within the last second
                 rf_state.alt_cm_filt.reset(rf_state.alt_cm);
+                rf_state.terrain_offset_cm = rf_state.inertial_alt_cm - rf_state.alt_cm;
             } else {
                 rf_state.alt_cm_filt.apply(rf_state.alt_cm, 0.05f);
             }
@@ -91,17 +93,13 @@ void Copter::read_rangefinder(void)
         }
 
         // send downward facing lidar altitude and health to the libraries that require it
+#if HAL_PROXIMITY_ENABLED
         if (rf_orient == ROTATION_PITCH_270) {
             if (rangefinder_state.alt_healthy || timed_out) {
-                wp_nav->set_rangefinder_alt(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
-#if MODE_CIRCLE_ENABLED
-                circle_nav->set_rangefinder_alt(rangefinder_state.enabled && wp_nav->rangefinder_used(), rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
-#endif
-#if HAL_PROXIMITY_ENABLED
                 g2.proximity.set_rangefinder_alt(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
-#endif
             }
         }
+#endif
     }
 
 #else
@@ -127,6 +125,24 @@ bool Copter::rangefinder_alt_ok() const
 bool Copter::rangefinder_up_ok() const
 {
     return (rangefinder_up_state.enabled && rangefinder_up_state.alt_healthy);
+}
+
+// update rangefinder based terrain offset
+// terrain offset is the terrain's height above the EKF origin
+void Copter::update_rangefinder_terrain_offset()
+{
+    float terrain_offset_cm = rangefinder_state.inertial_alt_cm - rangefinder_state.alt_cm_glitch_protected;
+    rangefinder_state.terrain_offset_cm += (terrain_offset_cm - rangefinder_state.terrain_offset_cm) * (copter.G_Dt / MAX(copter.g2.surftrak_tc, copter.G_Dt));
+
+    terrain_offset_cm = rangefinder_up_state.inertial_alt_cm + rangefinder_up_state.alt_cm_glitch_protected;
+    rangefinder_up_state.terrain_offset_cm += (terrain_offset_cm - rangefinder_up_state.terrain_offset_cm) * (copter.G_Dt / MAX(copter.g2.surftrak_tc, copter.G_Dt));
+
+    if (rangefinder_state.alt_healthy || (AP_HAL::millis() - rangefinder_state.last_healthy_ms > RANGEFINDER_TIMEOUT_MS)) {
+        wp_nav->set_rangefinder_terrain_offset(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.terrain_offset_cm);
+#if MODE_CIRCLE_ENABLED
+        circle_nav->set_rangefinder_terrain_offset(rangefinder_state.enabled && wp_nav->rangefinder_used(), rangefinder_state.alt_healthy, rangefinder_state.terrain_offset_cm);
+#endif
+    }
 }
 
 /*
