@@ -376,7 +376,12 @@ configuration in order to save typing.
     g.add_option('--assert-cc-version',
                  default=None,
                  help='fail configure if not using the specified gcc version')
-    
+
+    g.add_option('--num-aux-imus',
+                 type='int',
+                 default=0,
+                 help='number of auxiliary IMUs')
+
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
         paths = []
@@ -443,6 +448,9 @@ def configure(cfg):
     if cfg.options.static:
         cfg.msg('Using static linking', 'yes', color='YELLOW')
         cfg.env.STATIC_LINKING = True
+
+    if cfg.options.num_aux_imus > 0:
+        cfg.define('INS_AUX_INSTANCES', cfg.options.num_aux_imus)
 
     cfg.load('ap_library')
 
