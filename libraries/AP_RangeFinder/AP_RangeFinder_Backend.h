@@ -51,6 +51,8 @@ public:
     uint16_t voltage_mv() const { return state.voltage_mv; }
     virtual int16_t max_distance_cm() const { return params.max_distance_cm; }
     virtual int16_t min_distance_cm() const { return params.min_distance_cm; }
+    virtual float horizontal_fov() const { return params.horizontal_fov; }
+    virtual float vertical_fov() const { return params.vertical_fov; }
     int16_t ground_clearance_cm() const { return params.ground_clearance_cm; }
     MAV_DISTANCE_SENSOR get_mav_distance_sensor_type() const;
     RangeFinder::Status status() const;

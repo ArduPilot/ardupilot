@@ -18,6 +18,8 @@ public:
     AP_Int16 powersave_range;
     AP_Int16 min_distance_cm;
     AP_Int16 max_distance_cm;
+    AP_Float horizontal_fov;
+    AP_Float vertical_fov;
     AP_Int8  type;
     AP_Int8  pin;
     AP_Int8  ratiometric;

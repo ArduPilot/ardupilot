@@ -138,6 +138,24 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ORIENT", 53, AP_RangeFinder_Params, orientation, AP_RANGEFINDER_DEFAULT_ORIENTATION),
 
+    // @Param: H_FOV
+    // @DisplayName: horizontal FOV
+    // @Description: At different horizontal distances, the size of the spot, namely the edge length of the detection range, is different.
+    // @Units: deg
+    // @Range: 0.0 359.9
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("H_FOV", 54, AP_RangeFinder_Params, horizontal_fov, 0),
+
+    // @Param: V_FOV
+    // @DisplayName: vertical FOV
+    // @Description: At different vertical distances, the size of the spot, namely the edge length of the detection range, is different.
+    // @Units: deg
+    // @Range: 0.0 359.9
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("V_FOV", 55, AP_RangeFinder_Params, vertical_fov, 0),
+
     AP_GROUPEND
 };
 
