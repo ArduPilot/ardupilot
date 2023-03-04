@@ -1151,6 +1151,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def CameraMission(self):
         '''Test Camera Mission Items'''
+        self.set_parameter("CAM1_TYPE", 1) # Camera with servo trigger
+        self.reboot_sitl() # needed for CAM1_TYPE to take effect
         self.load_mission("rover-camera-mission.txt")
         self.wait_ready_to_arm()
         self.change_mode("AUTO")
@@ -1191,6 +1193,33 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         '''Set mode via MAV_COMMAND_DO_SET_MODE'''
         self.do_set_mode_via_command_long("HOLD")
         self.do_set_mode_via_command_long("MANUAL")
+
+    def InitialMode(self):
+        '''test INITIAL_MODE parameter works'''
+        # from mavproxy_rc.py
+        self.wait_ready_to_arm()
+        mapping = [0, 1165, 1295, 1425, 1555, 1685, 1815]
+        mode_ch = 8
+        throttle_ch = 3
+        self.set_parameter('MODE5', 3)
+        self.set_rc(mode_ch, mapping[5])
+        self.wait_mode('STEERING')
+        self.set_rc(mode_ch, mapping[6])
+        self.wait_mode('MANUAL')
+        self.set_parameter("INITIAL_MODE", 1) # acro
+        # stop the vehicle polling the mode switch at boot:
+        self.set_parameter('FS_ACTION', 0)  # do nothing when radio fails
+        self.set_rc(throttle_ch, 900)  # RC fail
+        self.reboot_sitl()
+        self.wait_mode(1)
+        self.progress("Make sure we stay in this mode")
+        self.delay_sim_time(5)
+        self.wait_mode(1)
+        # now change modes with a switch:
+        self.set_rc(throttle_ch, 1100)
+        self.delay_sim_time(3)
+        self.set_rc(mode_ch, mapping[5])
+        self.wait_mode('STEERING')
 
     def MAVProxy_DO_SET_MODE(self):
         '''Set mode using MAVProxy commandline DO_SET_MODE'''
@@ -1718,6 +1747,107 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 continue
             if statustext_fragment in m.text:
                 break
+
+    def GCSFailsafe(self, side=60, timeout=360):
+        """Test GCS Failsafe"""
+        try:
+            self.test_gcs_failsafe(side=side, timeout=timeout)
+        except Exception as ex:
+            self.setGCSfailsafe(0)
+            self.set_parameter('FS_ACTION', 0)
+            self.disarm_vehicle(force=True)
+            self.reboot_sitl()
+            raise ex
+
+    def test_gcs_failsafe(self, side=60, timeout=360):
+        self.set_parameter("SYSID_MYGCS", self.mav.source_system)
+        self.set_parameter("FS_ACTION", 1)
+        self.set_parameter("FS_THR_ENABLE", 0)  # disable radio FS as it inhibt GCS one's
+
+        def go_somewhere():
+            self.change_mode("MANUAL")
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.set_rc(3, 2000)
+            self.delay_sim_time(5)
+            self.set_rc(3, 1500)
+        # Trigger telemetry loss with failsafe disabled. Verify no action taken.
+        self.start_subtest("GCS failsafe disabled test: FS_GCS_ENABLE=0 should take no failsafe action")
+        self.setGCSfailsafe(0)
+        go_somewhere()
+        self.set_heartbeat_rate(0)
+        self.delay_sim_time(5)
+        self.wait_mode("MANUAL")
+        self.set_heartbeat_rate(self.speedup)
+        self.delay_sim_time(5)
+        self.wait_mode("MANUAL")
+        self.end_subtest("Completed GCS failsafe disabled test")
+
+        # Trigger telemetry loss with failsafe enabled. Verify
+        # failsafe triggers to RTL. Restore telemetry, verify failsafe
+        # clears, and change modes.
+        # TODO not implemented
+        # self.start_subtest("GCS failsafe recovery test: FS_GCS_ENABLE=1")
+        # self.setGCSfailsafe(1)
+        # self.set_heartbeat_rate(0)
+        # self.wait_mode("RTL")
+        # self.set_heartbeat_rate(self.speedup)
+        # self.wait_statustext("GCS Failsafe Cleared", timeout=60)
+        # self.change_mode("MANUAL")
+        # self.end_subtest("Completed GCS failsafe recovery test")
+
+        # Trigger telemetry loss with failsafe enabled. Verify failsafe triggers and RTL completes
+        self.start_subtest("GCS failsafe RTL with no options test: FS_GCS_ENABLE=1")
+        self.setGCSfailsafe(1)
+        self.set_heartbeat_rate(0)
+        self.wait_mode("RTL")
+        self.wait_statustext("Reached destination", timeout=60)
+        self.set_heartbeat_rate(self.speedup)
+        self.wait_statustext("GCS Failsafe Cleared", timeout=60)
+        self.end_subtest("Completed GCS failsafe RTL")
+
+        # Trigger telemetry loss with an invalid failsafe value. Verify failsafe triggers and RTL completes
+        self.start_subtest("GCS failsafe invalid value with no options test: FS_GCS_ENABLE=99")
+        self.setGCSfailsafe(99)
+        go_somewhere()
+        self.set_heartbeat_rate(0)
+        self.wait_mode("RTL")
+        self.wait_statustext("Reached destination", timeout=60)
+        self.set_heartbeat_rate(self.speedup)
+        self.wait_statustext("GCS Failsafe Cleared", timeout=60)
+        self.end_subtest("Completed GCS failsafe invalid value")
+
+        self.start_subtest("Testing continue in auto mission")
+        self.disarm_vehicle()
+        self.setGCSfailsafe(2)
+        self.load_mission("test_arming.txt")
+        self.change_mode("AUTO")
+        self.delay_sim_time(5)
+        self.set_heartbeat_rate(0)
+        self.wait_statustext("Failsafe - Continuing Auto Mode", timeout=60)
+        self.delay_sim_time(5)
+        self.wait_mode("AUTO")
+        self.set_heartbeat_rate(self.speedup)
+        self.wait_statustext("GCS Failsafe Cleared", timeout=60)
+
+        self.start_subtest("GCS failsafe RTL with no options test: FS_GCS_ENABLE=1 and FS_GCS_TIMEOUT=10")
+        self.setGCSfailsafe(1)
+        old_gcs_timeout = self.get_parameter("FS_GCS_TIMEOUT")
+        new_gcs_timeout = old_gcs_timeout * 2
+        self.set_parameter("FS_GCS_TIMEOUT", new_gcs_timeout)
+        go_somewhere()
+        self.set_heartbeat_rate(0)
+        self.delay_sim_time(old_gcs_timeout + (new_gcs_timeout - old_gcs_timeout) / 2)
+        self.assert_mode("MANUAL")
+        self.wait_mode("RTL")
+        self.wait_statustext("Reached destination", timeout=60)
+        self.set_heartbeat_rate(self.speedup)
+        self.wait_statustext("GCS Failsafe Cleared", timeout=60)
+        self.disarm_vehicle()
+        self.end_subtest("Completed GCS failsafe RTL")
+
+        self.setGCSfailsafe(0)
+        self.progress("All GCS failsafe tests complete")
 
     def test_gcs_fence_centroid(self, target_system=1, target_component=1):
         self.start_subtest("Ensuring if we don't have a centroid it gets calculated")
@@ -5052,30 +5182,25 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def test_scripting_simple_loop(self):
         self.start_subtest("Scripting simple loop")
-        ex = None
-        example_script = "simple_loop.lua"
+
+        self.context_push()
+
         messages = []
 
         def my_message_hook(mav, message):
             if message.get_type() != 'STATUSTEXT':
                 return
             messages.append(message)
-        self.install_message_hook(my_message_hook)
-        try:
-            self.set_parameter("SCR_ENABLE", 1)
-            self.install_example_script(example_script)
-            self.reboot_sitl()
-            self.delay_sim_time(10)
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-        self.remove_example_script(example_script)
+
+        self.install_message_hook_context(my_message_hook)
+
+        self.set_parameter("SCR_ENABLE", 1)
+        self.install_example_script_context("simple_loop.lua")
         self.reboot_sitl()
+        self.delay_sim_time(10)
 
-        self.remove_message_hook(my_message_hook)
-
-        if ex is not None:
-            raise ex
+        self.context_pop()
+        self.reboot_sitl()
 
         # check all messages to see if we got our message
         count = 0
@@ -5088,7 +5213,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def test_scripting_internal_test(self):
         self.start_subtest("Scripting internal test")
-        ex = None
+
+        self.context_push()
+
         test_scripts = ["scripting_test.lua", "math.lua", "strings.lua"]
         success_text = ["Internal tests passed", "Math tests passed", "String tests passed"]
 
@@ -5098,29 +5225,21 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             if message.get_type() != 'STATUSTEXT':
                 return
             messages.append(message)
-        self.install_message_hook(my_message_hook)
-        try:
-            self.set_parameters({
-                "SCR_ENABLE": 1,
-                "SCR_HEAP_SIZE": 1024000,
-                "SCR_VM_I_COUNT": 1000000,
-            })
 
-            for script in test_scripts:
-                self.install_test_script(script)
-                self.reboot_sitl()
-                self.delay_sim_time(10)
-                self.remove_example_script(script)
-
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
+        self.install_message_hook_context(my_message_hook)
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_HEAP_SIZE": 1024000,
+            "SCR_VM_I_COUNT": 1000000,
+        })
+        for script in test_scripts:
+            self.install_test_script_context(script)
         self.reboot_sitl()
 
-        self.remove_message_hook(my_message_hook)
+        self.delay_sim_time(10)
 
-        if ex is not None:
-            raise ex
+        self.context_pop()
+        self.reboot_sitl()
 
         # check all messages to see if we got our message
         success = True
@@ -5139,138 +5258,85 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.context_push()
         self.context_collect("STATUSTEXT")
-
-        ex = None
-        example_script = "hello_world.lua"
-        try:
-            self.set_parameter("SCR_ENABLE", 1)
-            self.install_example_script(example_script)
-            self.reboot_sitl()
-            self.wait_statustext('hello, world', check_context=True, timeout=30)
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-
-        self.remove_example_script(example_script)
-
-        self.context_pop()
-
+        self.set_parameter("SCR_ENABLE", 1)
+        self.install_example_script_context("hello_world.lua")
         self.reboot_sitl()
 
-        if ex is not None:
-            raise ex
+        self.wait_statustext('hello, world', check_context=True, timeout=30)
+
+        self.context_pop()
+        self.reboot_sitl()
 
     def ScriptingSteeringAndThrottle(self):
         '''Scripting test - steering and throttle'''
         self.start_subtest("Scripting square")
-        ex = None
-        example_script = "rover-set-steering-and-throttle.lua"
-        try:
-            self.install_example_script(example_script)
-            self.set_parameter("SCR_ENABLE", 1)
-            self.reboot_sitl()
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-            self.set_rc(6, 2000)
-            tstart = self.get_sim_time()
-            while not self.mode_is("HOLD"):
-                if self.get_sim_time_cached() - tstart > 30:
-                    raise NotAchievedException("Did not move to hold")
-                m = self.mav.recv_match(type='VFR_HUD', blocking=True, timeout=1)
-                if m is not None:
-                    self.progress("Current speed: %f" % m.groundspeed)
-            self.disarm_vehicle()
-            self.reboot_sitl()
-        except Exception as e:
-            self.print_exception_caught(e)
-            self.disarm_vehicle()
-            ex = e
-        self.remove_example_script(example_script)
+
+        self.context_push()
+        self.install_example_script_context("rover-set-steering-and-throttle.lua")
+        self.set_parameter("SCR_ENABLE", 1)
         self.reboot_sitl()
 
-        if ex is not None:
-            raise ex
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(6, 2000)
+        tstart = self.get_sim_time()
+        while not self.mode_is("HOLD"):
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException("Did not move to hold")
+            m = self.mav.recv_match(type='VFR_HUD', blocking=True, timeout=1)
+            if m is not None:
+                self.progress("Current speed: %f" % m.groundspeed)
+        self.disarm_vehicle()
+
+        self.context_pop()
+        self.reboot_sitl()
 
     def test_scripting_auxfunc(self):
         self.start_subtest("Scripting aufunc triggering")
 
         self.context_push()
-        self.set_parameter('RELAY_PIN', 1)
         self.context_collect("STATUSTEXT")
-
-        ex = None
-        example_script = "RCIN_test.lua"
-        try:
-            self.set_parameter("SCR_ENABLE", 1)
-            self.install_example_script(example_script)
-            self.reboot_sitl()
-            self.wait_parameter_value("SIM_PIN_MASK", 121)
-            self.wait_parameter_value("SIM_PIN_MASK", 123)
-            self.wait_parameter_value("SIM_PIN_MASK", 121)
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-
-        self.remove_example_script(example_script)
-
-        self.context_pop()
-
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "RELAY_PIN": 1,
+        })
+        self.install_example_script_context("RCIN_test.lua")
         self.reboot_sitl()
 
-        if ex is not None:
-            raise ex
+        self.wait_parameter_value("SIM_PIN_MASK", 121)
+        self.wait_parameter_value("SIM_PIN_MASK", 123)
+        self.wait_parameter_value("SIM_PIN_MASK", 121)
+
+        self.context_pop()
+        self.reboot_sitl()
 
     def test_scripting_print_home_and_origin(self):
         self.start_subtest("Scripting print home and origin")
 
         self.context_push()
 
-        ex = None
-        example_script = "ahrs-print-home-and-origin.lua"
-        try:
-            self.set_parameter("SCR_ENABLE", 1)
-            self.install_example_script(example_script)
-            self.reboot_sitl()
-            self.wait_ready_to_arm()
-            self.wait_statustext("Home - ")
-            self.wait_statustext("Origin - ")
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-
-        self.remove_example_script(example_script)
+        self.set_parameter("SCR_ENABLE", 1)
+        self.install_example_script_context("ahrs-print-home-and-origin.lua")
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.wait_statustext("Home - ")
+        self.wait_statustext("Origin - ")
 
         self.context_pop()
-
         self.reboot_sitl()
-
-        if ex is not None:
-            raise ex
 
     def test_scripting_set_home_to_vehicle_location(self):
         self.start_subtest("Scripting set home to vehicle location")
 
         self.context_push()
-
-        ex = None
-        example_script = "ahrs-set-home-to-vehicle-location.lua"
-        try:
-            self.set_parameter("SCR_ENABLE", 1)
-            self.install_example_script(example_script)
-            self.reboot_sitl()
-            self.wait_statustext("Home position reset")
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-
-        self.remove_example_script(example_script)
-
-        self.context_pop()
-
+        self.set_parameter("SCR_ENABLE", 1)
+        self.install_example_script_context("ahrs-set-home-to-vehicle-location.lua")
         self.reboot_sitl()
 
-        if ex is not None:
-            raise ex
+        self.wait_statustext("Home position reset")
+
+        self.context_pop()
+        self.reboot_sitl()
 
     def Scripting(self):
         '''Scripting test'''
@@ -5471,6 +5537,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def SendToComponents(self):
         '''Test ArduPilot send_to_components function'''
+        self.set_parameter("CAM1_TYPE", 5) # Camera with MAVlink trigger
+        self.reboot_sitl() # needed for CAM1_TYPE to take effect
         self.progress("Introducing ourselves to the autopilot as a component")
         old_srcSystem = self.mav.mav.srcSystem
         self.mav.mav.srcSystem = 1
@@ -5488,7 +5556,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             1, # zoom_pos
             0, # zoom_step
             0, # focus_lock
-            1, # 1 shot or start filming
+            0, # 1 shot or start filming
             17, # command id (de-dupe field)
             0, # extra_param
             0.0, # extra_value
@@ -6278,6 +6346,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.StickMixingAuto,
             self.AutoDock,
             self.PrivateChannel,
+            self.GCSFailsafe,
+            self.InitialMode,
         ])
         return ret
 

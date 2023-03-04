@@ -39,6 +39,9 @@ UC_REGISTRY_BINDER(BattInfoCb, uavcan::equipment::power::BatteryInfo);
 UC_REGISTRY_BINDER(BattInfoAuxCb, ardupilot::equipment::power::BatteryInfoAux);
 UC_REGISTRY_BINDER(MpptStreamCb, mppt::Stream);
 
+static void trampoline_handleOutputEnable(const uavcan::ServiceCallResult<mppt::OutputEnable>& resp);
+static uavcan::ServiceClient<mppt::OutputEnable>* outputEnable_client[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+
 /// Constructor
 AP_BattMonitor_UAVCAN::AP_BattMonitor_UAVCAN(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, BattMonitor_UAVCAN_Type type, AP_BattMonitor_Params &params) :
     AP_BattMonitor_Backend(mon, mon_state, params),
@@ -85,6 +88,15 @@ void AP_BattMonitor_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
         AP_BoardConfig::allocation_error("UAVCAN Mppt::Stream subscriber start problem");
         return;
     }
+
+    // set up callback to verify mppt::OutputEnable
+    const uint8_t driver_index = ap_uavcan->get_driver_index();
+    outputEnable_client[driver_index] = new uavcan::ServiceClient<mppt::OutputEnable>(*node);
+    if (outputEnable_client[driver_index] == nullptr || outputEnable_client[driver_index]->init() < 0) {
+        AP_BoardConfig::allocation_error("UAVCAN Mppt::outputEnable client start problem");
+        return;
+    }
+    outputEnable_client[driver_index]->setCallback(trampoline_handleOutputEnable);
 }
 
 AP_BattMonitor_UAVCAN* AP_BattMonitor_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t battery_id)
@@ -145,7 +157,7 @@ void AP_BattMonitor_UAVCAN::update_interim_state(const float voltage, const floa
     _interim_state.current_amps = _curr_mult * current;
     _soc = soc;
 
-    if (!isnanf(temperature_K) && temperature_K > 0) {
+    if (!isnan(temperature_K) && temperature_K > 0) {
         // Temperature reported from battery in kelvin and stored internally in Celsius.
         _interim_state.temperature = KELVIN_TO_C(temperature_K);
         _interim_state.temperature_time = AP_HAL::millis();
@@ -190,7 +202,7 @@ void AP_BattMonitor_UAVCAN::handle_battery_info_aux(const BattInfoAuxCb &cb)
 
 void AP_BattMonitor_UAVCAN::handle_mppt_stream(const MpptStreamCb &cb)
 {
-    const bool use_input_value = (uint32_t(_params._options.get()) & uint32_t(AP_BattMonitor_Params::Options::MPPT_Use_Input_Value)) != 0;
+    const bool use_input_value = option_is_set(AP_BattMonitor_Params::Options::MPPT_Use_Input_Value);
     const float voltage = use_input_value ? cb.msg->input_voltage : cb.msg->output_voltage;
     const float current = use_input_value ? cb.msg->input_current : cb.msg->output_current;
 
@@ -198,7 +210,7 @@ void AP_BattMonitor_UAVCAN::handle_mppt_stream(const MpptStreamCb &cb)
     const uint8_t soc = 127;
 
     // convert C to Kelvin
-    const float temperature_K = isnanf(cb.msg->temperature) ? 0 : C_TO_KELVIN(cb.msg->temperature);
+    const float temperature_K = isnan(cb.msg->temperature) ? 0 : C_TO_KELVIN(cb.msg->temperature);
 
     update_interim_state(voltage, current, temperature_K, soc); 
 
@@ -206,7 +218,13 @@ void AP_BattMonitor_UAVCAN::handle_mppt_stream(const MpptStreamCb &cb)
         // this is the first time the mppt message has been received
         // so set powered up state
         _mppt.is_detected = true;
-        mppt_set_bootup_powered_state();
+
+        // Boot/Power-up event
+        if (option_is_set(AP_BattMonitor_Params::Options::MPPT_Power_On_At_Boot)) {
+            mppt_set_powered_state(true);
+        } else if (option_is_set(AP_BattMonitor_Params::Options::MPPT_Power_Off_At_Boot)) {
+            mppt_set_powered_state(false);
+        }
     }
 
 #if AP_BATTMONITOR_UAVCAN_MPPT_DEBUG
@@ -272,7 +290,7 @@ void AP_BattMonitor_UAVCAN::read()
 
     // check if MPPT should be powered on/off depending upon arming state
     if (_mppt.is_detected) {
-        mppt_set_armed_powered_state();
+        mppt_check_powered_state();
     }
 }
 
@@ -307,67 +325,86 @@ bool AP_BattMonitor_UAVCAN::get_cycle_count(uint16_t &cycles) const
     return false;
 }
 
-// request MPPT board to power on/off at boot as specified by BATT_OPTIONS
-void AP_BattMonitor_UAVCAN::mppt_set_bootup_powered_state()
-{
-    const uint32_t options = uint32_t(_params._options.get());
-    const bool on_at_boot = (options & uint32_t(AP_BattMonitor_Params::Options::MPPT_Power_On_At_Boot)) != 0;
-    const bool off_at_boot = (options & uint32_t(AP_BattMonitor_Params::Options::MPPT_Power_Off_At_Boot)) != 0;
-
-    if (on_at_boot) {
-        mppt_set_powered_state(true, true);
-    } else if (off_at_boot) {
-        mppt_set_powered_state(false, true);
-    }
-}
-
 // request MPPT board to power on/off depending upon vehicle arming state as specified by BATT_OPTIONS
-void AP_BattMonitor_UAVCAN::mppt_set_armed_powered_state()
+void AP_BattMonitor_UAVCAN::mppt_check_powered_state()
 {
+    if ((_mppt.powered_state_remote_ms != 0) && (AP_HAL::millis() - _mppt.powered_state_remote_ms >= 1000)) {
+        // there's already a set attempt that didnt' respond. Retry at 1Hz
+        mppt_set_powered_state(_mppt.powered_state);
+    }
+
     // check if vehicle armed state has changed
     const bool vehicle_armed = hal.util->get_soft_armed();
-    if (vehicle_armed == _mppt.vehicle_armed_last) {
-        return;
+    if ((!_mppt.vehicle_armed_last && vehicle_armed) && option_is_set(AP_BattMonitor_Params::Options::MPPT_Power_On_At_Arm)) {
+        // arm event
+        mppt_set_powered_state(true);
+    } else if ((_mppt.vehicle_armed_last && !vehicle_armed) && option_is_set(AP_BattMonitor_Params::Options::MPPT_Power_Off_At_Disarm)) {
+        // disarm event
+        mppt_set_powered_state(false);
     }
     _mppt.vehicle_armed_last = vehicle_armed;
-
-    // check options for arming state change events
-    const uint32_t options = uint32_t(_params._options.get());
-    const bool power_on_at_arm = (options & uint32_t(AP_BattMonitor_Params::Options::MPPT_Power_On_At_Arm)) != 0;
-    const bool power_off_at_disarm = (options & uint32_t(AP_BattMonitor_Params::Options::MPPT_Power_Off_At_Disarm)) != 0;
-
-    if (vehicle_armed && power_on_at_arm) {
-        mppt_set_powered_state(true, false);
-    } else if (!vehicle_armed && power_off_at_disarm) {
-        mppt_set_powered_state(false, false);
-    }
 }
 
 // request MPPT board to power on or off
 // power_on should be true to power on the MPPT, false to power off
 // force should be true to force sending the state change request to the MPPT
-void AP_BattMonitor_UAVCAN::mppt_set_powered_state(bool power_on, bool force)
+void AP_BattMonitor_UAVCAN::mppt_set_powered_state(bool power_on)
 {
     if (_ap_uavcan == nullptr || _node == nullptr || !_mppt.is_detected) {
         return;
     }
 
-    // return immediately if already desired state and not forced
-    if ((_mppt.powered_state == power_on) && !force) {
-        return;
-    }
     _mppt.powered_state = power_on;
-    _mppt.powered_state_changed = true;
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: powering %s", (unsigned)_instance+1, _mppt.powered_state ? "ON" : "OFF");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: powering %s%s", (unsigned)_instance+1, _mppt.powered_state ? "ON" : "OFF",
+        (_mppt.powered_state_remote_ms == 0) ? "" : " Retry");
 
+    // set up a request /w a status callback
     mppt::OutputEnable::Request request;
     request.enable = _mppt.powered_state;
     request.disable = !request.enable;
 
-    uavcan::ServiceClient<mppt::OutputEnable> client(*_node);
-    client.setCallback([](const uavcan::ServiceCallResult<mppt::OutputEnable>& handle_mppt_enable_output_response){});
-    client.call(_node_id, request);
+    _mppt.powered_state_remote_ms = AP_HAL::millis();
+    const uint8_t driver_index = _ap_uavcan->get_driver_index();
+    outputEnable_client[driver_index]->call(_node_id, request);
+}
+
+// callback trampoline of outputEnable response to verify it is enabled or disabled
+void trampoline_handleOutputEnable(const uavcan::ServiceCallResult<mppt::OutputEnable>& resp)
+{
+    uint8_t can_num_drivers = AP::can().get_num_drivers();
+    for (uint8_t i = 0; i < can_num_drivers; i++) {
+        AP_UAVCAN *uavcan = AP_UAVCAN::get_uavcan(i);
+        if (uavcan == nullptr) {
+            continue;
+        }
+
+        const uint8_t node_id = resp.getResponse().getSrcNodeID().get();
+        AP_BattMonitor_UAVCAN* driver = AP_BattMonitor_UAVCAN::get_uavcan_backend(uavcan, node_id, node_id);
+        if (driver == nullptr) {
+            continue;
+        }
+
+        const auto &response = resp.getResponse();
+        const uint8_t nodeId = response.getSrcNodeID().get();
+        const bool enabled = response.enabled;
+        driver->handle_outputEnable_response(nodeId, enabled);
+    }
+}
+
+// callback from outputEnable to verify it is enabled or disabled
+void AP_BattMonitor_UAVCAN::handle_outputEnable_response(const uint8_t nodeId, const bool enabled)
+{
+    if (nodeId != _node_id) {
+        // this response is not from the node we are looking for
+        return;
+    }
+
+    if (enabled == _mppt.powered_state) {
+        // we got back what we expected it to be. We set it on, it now says it on (or vice versa).
+        // Clear the timer so we don't re-request
+        _mppt.powered_state_remote_ms = 0;
+    }
 }
 
 #if AP_BATTMONITOR_UAVCAN_MPPT_DEBUG

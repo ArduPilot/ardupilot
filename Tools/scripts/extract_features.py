@@ -145,6 +145,7 @@ class ExtractFeatures(object):
             ('WINCH_ENABLED', 'AP_Winch::AP_Winch',),
 
             ('AP_VOLZ_ENABLED', r'AP_Volz_Protocol::init\b',),
+            ('AP_DRONECAN_VOLZ_FEEDBACK_ENABLED', r'AP_UAVCAN::handle_actuator_status_Volz\b',),
             ('AP_ROBOTISSERVO_ENABLED', r'AP_RobotisServo::init\b',),
             ('AP_FETTEC_ONEWIRE_ENABLED', r'AP_FETtecOneWire::init\b',),
 
@@ -152,6 +153,7 @@ class ExtractFeatures(object):
             ('AP_RPM_{type}_ENABLED', r'AP_RPM_(?P<type>.*)::update',),
 
             ('GPS_MOVING_BASELINE', r'AP_GPS_Backend::calculate_moving_base_yaw\b',),
+            ('AP_DRONECAN_SEND_GPS', r'AP_GPS_UAVCAN::instance_exists\b',),
 
             ('HAL_WITH_DSP', r'AP_HAL::DSP::find_peaks\b',),
             ('HAL_GYROFFT_ENABLED', r'AP_GyroFFT::AP_GyroFFT\b',),

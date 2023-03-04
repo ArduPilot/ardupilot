@@ -309,19 +309,6 @@ class AutoTestCopter(AutoTest):
         )
         self.hover()
 
-    def setGCSfailsafe(self, paramValue=0):
-        # Slow down the sim rate if GCS Failsafe is in use
-        if paramValue == 0:
-            self.set_parameters({
-                "FS_GCS_ENABLE": paramValue,
-                "SIM_SPEEDUP": 10,
-            })
-        else:
-            self.set_parameters({
-                "SIM_SPEEDUP": 4,
-                "FS_GCS_ENABLE": paramValue,
-            })
-
     def RecordThenPlayMission(self, side=50, timeout=300):
         '''Use switches to toggle in mission, then fly it'''
         self.takeoff(20, mode="ALT_HOLD")
@@ -796,6 +783,25 @@ class AutoTestCopter(AutoTest):
         self.set_heartbeat_rate(self.speedup)
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
         self.change_mode("LOITER")
+        self.end_subtest("Completed GCS failsafe recovery test")
+
+        # Trigger telemetry loss with failsafe enabled. Verify
+        # failsafe triggers to RTL. Restore telemetry, verify failsafe
+        # clears, and change modes.
+        self.start_subtest("GCS failsafe recovery test: FS_GCS_ENABLE=1 & FS_OPTIONS=0 & FS_GCS_TIMEOUT=10")
+        self.setGCSfailsafe(1)
+        self.set_parameter('FS_OPTIONS', 0)
+        old_gcs_timeout = self.get_parameter("FS_GCS_TIMEOUT")
+        new_gcs_timeout = old_gcs_timeout * 2
+        self.set_parameter("FS_GCS_TIMEOUT", new_gcs_timeout)
+        self.set_heartbeat_rate(0)
+        self.delay_sim_time(old_gcs_timeout + (new_gcs_timeout - old_gcs_timeout) / 2)
+        self.assert_mode("LOITER")
+        self.wait_mode("RTL")
+        self.set_heartbeat_rate(self.speedup)
+        self.wait_statustext("GCS Failsafe Cleared", timeout=60)
+        self.change_mode("LOITER")
+        self.set_parameter('FS_GCS_TIMEOUT', old_gcs_timeout)
         self.end_subtest("Completed GCS failsafe recovery test")
 
         # Trigger telemetry loss with failsafe enabled. Verify failsafe triggers and RTL completes
@@ -3096,6 +3102,27 @@ class AutoTestCopter(AutoTest):
         self.wait_disarmed()
         if not self.current_onboard_log_contains_message("XKFD"):
             raise NotAchievedException("Did not find expected XKFD message")
+
+    def FlyMissionTwice(self):
+        '''fly a mission twice in a row without changing modes in between.
+        Seeks to show bugs in mission state machine'''
+
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 20, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+
+        num_wp = self.get_mission_count()
+        self.set_parameter("AUTO_OPTIONS", 3)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        for i in 1, 2:
+            self.progress("run %u" % i)
+            self.arm_vehicle()
+            self.wait_waypoint(num_wp-1, num_wp-1)
+            self.wait_disarmed()
+            self.delay_sim_time(20)
 
     def GPSViconSwitching(self):
         """Fly GPS and Vicon switching test"""
@@ -6423,6 +6450,7 @@ class AutoTestCopter(AutoTest):
             "EK3_SRC1_VELXY": 0,
         })
         self.reboot_sitl()
+        self.delay_sim_time(30)  # wait for accels/gyros to settle
 
         # check for expected EKF flags
         ahrs_ekf_type = self.get_parameter("AHRS_EKF_TYPE")
@@ -6700,12 +6728,12 @@ class AutoTestCopter(AutoTest):
         })
         sensors = [  # tuples of name, prx_type
             ('sf45b', 8, {
-                mavutil.mavlink.MAV_SENSOR_ROTATION_NONE: 292,
-                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_45: 257,
-                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_90: 1130,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_NONE: 285,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_45: 256,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_90: 1131,
                 mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_135: 1283,
-                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_180: 627,
-                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_225: 967,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_180: 625,
+                mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_225: 968,
                 mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_270: 760,
                 mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_315: 762,
             }),
@@ -9169,6 +9197,7 @@ class AutoTestCopter(AutoTest):
         self.context_push()
         self.set_parameter("SERVO_FTW_MASK", mask)
         self.reboot_sitl()
+        self.delay_sim_time(12)  # allow accels/gyros to be happy
         tstart = self.get_sim_time()
         while True:
             if self.get_sim_time_cached() - tstart > 20:
@@ -9325,6 +9354,34 @@ class AutoTestCopter(AutoTest):
                                            other_prearm_failures_fatal=False)
         self.context_pop()
         self.reboot_sitl()
+
+    def IMUConsistency(self):
+        '''test IMUs must be consistent with one another'''
+        self.wait_ready_to_arm()
+
+        self.start_subsubtest("prearm checks for accel inconsistency")
+        self.context_push()
+        self.set_parameters({
+            "SIM_ACC1_BIAS_X": 5,
+        })
+        self.assert_prearm_failure("Accels inconsistent")
+        self.context_pop()
+        tstart = self.get_sim_time()
+        self.wait_ready_to_arm()
+        if self.get_sim_time() - tstart < 8:
+            raise NotAchievedException("Should take 10 seconds to become armableafter IMU upset")
+
+        self.start_subsubtest("prearm checks for gyro inconsistency")
+        self.context_push()
+        self.set_parameters({
+            "SIM_GYR1_BIAS_X": math.radians(10),
+        })
+        self.assert_prearm_failure("Gyros inconsistent")
+        self.context_pop()
+        tstart = self.get_sim_time()
+        self.wait_ready_to_arm()
+        if self.get_sim_time() - tstart < 8:
+            raise NotAchievedException("Should take 10 seconds to become armableafter IMU upset")
 
     def Sprayer(self):
         """Test sprayer functionality."""
@@ -9577,6 +9634,43 @@ class AutoTestCopter(AutoTest):
         ])
         return ret
 
+    def ScriptMountPOI(self):
+        '''test the MountPOI example script'''
+        self.context_push()
+
+        self.install_terrain_handlers_context()
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "RC12_OPTION": 300,
+        })
+        self.setup_servo_mount()
+        self.reboot_sitl()
+        self.set_rc(6, 1300)
+        self.install_example_script_context('mount-poi.lua')
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.context_collect('STATUSTEXT')
+        self.set_rc(12, 2000)
+        self.wait_statustext('POI.*-35.*149', check_context=True, regex=True)
+        self.set_rc(12, 1000)
+
+        self.context_pop()
+        self.reboot_sitl()
+
+    def AHRSTrimLand(self):
+        '''test land detector with significant AHRS trim'''
+        self.context_push()
+        self.set_parameters({
+            "SIM_ACC_TRIM_X": 0.12,
+            "AHRS_TRIM_X": 0.12,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(alt_min=20, mode='LOITER')
+        self.land_and_disarm()
+        self.context_pop()
+        self.reboot_sitl()
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -9627,6 +9721,10 @@ class AutoTestCopter(AutoTest):
             self.EK3_RNG_USE_HGT,
             self.TerrainDBPreArm,
             self.ThrottleGainBoost,
+            self.ScriptMountPOI,
+            self.FlyMissionTwice,
+            self.IMUConsistency,
+            self.AHRSTrimLand,
         ])
         return ret
 
@@ -9654,6 +9752,7 @@ class AutoTestCopter(AutoTest):
             "AltEstimation": "See https://github.com/ArduPilot/ardupilot/issues/15191",
             "GroundEffectCompensation_takeOffExpected": "Flapping",
             "GroundEffectCompensation_touchDownExpected": "Flapping",
+            "FlyMissionTwice": "See https://github.com/ArduPilot/ardupilot/pull/18561",
         }
 
 

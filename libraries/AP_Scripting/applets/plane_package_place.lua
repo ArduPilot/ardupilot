@@ -1,6 +1,8 @@
 --[[
  support package place for quadplanes
 --]]
+-- luacheck: only 0
+
 
 local PARAM_TABLE_KEY = 9
 local PARAM_TABLE_PREFIX = "PKG_"

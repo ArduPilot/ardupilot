@@ -56,6 +56,7 @@ class SizeCompareBranches(object):
                  all_vehicles=False,
                  all_boards=False,
                  use_merge_base=True,
+                 waf_consistent_builds=True,
                  extra_hwdef=[],
                  extra_hwdef_branch=[],
                  extra_hwdef_master=[]):
@@ -74,6 +75,7 @@ class SizeCompareBranches(object):
         self.all_vehicles = all_vehicles
         self.all_boards = all_boards
         self.use_merge_base = use_merge_base
+        self.waf_consistent_builds = waf_consistent_builds
 
         if self.bin_dir is None:
             self.bin_dir = self.find_bin_dir()
@@ -114,10 +116,61 @@ class SizeCompareBranches(object):
 
         # some boards we don't have a -bl.dat for, so skip them.
         # TODO: find a way to get this information from board_list:
-        self.bootloader_blacklist = frozenset([
-            'skyviper-v2450',
+        self.bootloader_blacklist = set([
+            'CubeOrange-SimOnHardWare',
+            'fmuv2',
+            'fmuv3-bdshot',
             'iomcu',
+            'iomcu',
+            'iomcu_f103_8MHz',
+            'luminousbee4',
+            'skyviper-v2450',
+            'skyviper-f412-rev1',
+            'skyviper-journey',
+            'Pixhawk1-1M-bdshot',
+            'SITL_arm_linux_gnueabihf',
         ])
+
+        # blacklist all linux boards for bootloader build:
+        self.bootloader_blacklist.update(self.linux_board_names())
+        # ... and esp32 boards:
+        self.bootloader_blacklist.update(self.esp32_board_names())
+
+    def linux_board_names(self):
+        '''return a list of all Linux board names; FIXME: get this dynamically'''
+        # grep 'class.*[(]linux' Tools/ardupilotwaf/boards.py  | perl -pe "s/class (.*)\(linux\).*/            '\\1',/"
+        return [
+            'navigator',
+            'erleboard',
+            'navio',
+            'navio2',
+            'edge',
+            'zynq',
+            'ocpoc_zynq',
+            'bbbmini',
+            'blue',
+            'pocket',
+            'pxf',
+            'bebop',
+            'vnav',
+            'disco',
+            'erlebrain2',
+            'bhat',
+            'dark',
+            'pxfmini',
+            'aero',
+            'rst_zynq',
+            'obal',
+            'SITL_x86_64_linux_gnu',
+        ]
+
+    def esp32_board_names(self):
+        return [
+            'esp32buzz',
+            'esp32empty',
+            'esp32icarous',
+            'esp32diy',
+        ]
 
     def find_bin_dir(self):
         '''attempt to find where the arm-none-eabi tools are'''
@@ -220,6 +273,8 @@ class SizeCompareBranches(object):
         self.run_git(["submodule", "update", "--recursive"])
         shutil.rmtree("build", ignore_errors=True)
         waf_configure_args = ["configure", "--board", board]
+        if self.waf_consistent_builds:
+            waf_configure_args.append("--consistent-builds")
 
         if extra_hwdef is not None:
             waf_configure_args.extend(["--extra-hwdef", extra_hwdef])
@@ -370,10 +425,15 @@ class SizeCompareBranches(object):
             elf_filename = self.vehicle_map[vehicle]
             bin_filename = self.vehicle_map[vehicle] + '.bin'
 
-            master_bin_dir = os.path.join(outdir_1, board, "bin")
-            new_bin_dir = os.path.join(outdir_2, board, "bin")
-
             if self.run_elf_diff:
+                master_elf_dirname = "bin"
+                new_elf_dirname = "bin"
+                if vehicle == 'bootloader':
+                    # elfs for bootloaders are in the bootloader directory...
+                    master_elf_dirname = "bootloader"
+                    new_elf_dirname = "bootloader"
+                master_elf_dir = os.path.join(outdir_1, board, master_elf_dirname)
+                new_elf_dir = os.path.join(outdir_2, board, new_elf_dirname)
                 self.progress("Starting compare (~10 minutes!)")
                 elf_diff_commandline = [
                     "time",
@@ -384,11 +444,14 @@ class SizeCompareBranches(object):
                     "--old_alias", "%s %s" % (self.master_branch, elf_filename),
                     "--new_alias", "%s %s" % (self.branch, elf_filename),
                     "--html_dir", "../ELF_DIFF_%s_%s" % (board, vehicle),
-                    os.path.join(master_bin_dir, elf_filename),
-                    os.path.join(new_bin_dir, elf_filename)
+                    os.path.join(master_elf_dir, elf_filename),
+                    os.path.join(new_elf_dir, elf_filename)
                 ]
 
                 self.run_program("SCB", elf_diff_commandline)
+
+            master_bin_dir = os.path.join(outdir_1, board, "bin")
+            new_bin_dir = os.path.join(outdir_2, board, "bin")
 
             try:
                 master_path = os.path.join(master_bin_dir, bin_filename)
@@ -425,6 +488,11 @@ if __name__ == '__main__':
                       action="store_true",
                       default=False,
                       help="do not use the merge-base for testing, do a direct comparison between branches")
+    parser.add_option("",
+                      "--no-waf-consistent-builds",
+                      action="store_true",
+                      default=False,
+                      help="do not use the --consistent-builds waf command-line option (for older branches)")
     parser.add_option("",
                       "--branch",
                       type="string",
@@ -491,5 +559,6 @@ if __name__ == '__main__':
         all_vehicles=cmd_opts.all_vehicles,
         all_boards=cmd_opts.all_boards,
         use_merge_base=not cmd_opts.no_merge_base,
+        waf_consistent_builds=not cmd_opts.no_waf_consistent_builds,
     )
     x.run()

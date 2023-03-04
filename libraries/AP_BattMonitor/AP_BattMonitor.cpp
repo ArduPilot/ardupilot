@@ -506,14 +506,13 @@ float AP_BattMonitor::voltage_resting_estimate(uint8_t instance) const
 /// voltage - returns battery voltage in volts for GCS, may be resting voltage if option enabled
 float AP_BattMonitor::gcs_voltage(uint8_t instance) const
 {
-    if ((_params[instance]._options.get() & uint32_t(AP_BattMonitor_Params::Options::GCS_Resting_Voltage)) != 0) {
-        return voltage_resting_estimate(instance);
-    }
-    if (instance < _num_instances) {
-        return state[instance].voltage;
-    } else {
+    if (instance >= _num_instances || drivers[instance] == nullptr) {
         return 0.0f;
     }
+    if (drivers[instance]->option_is_set(AP_BattMonitor_Params::Options::GCS_Resting_Voltage)) {
+        return voltage_resting_estimate(instance);
+    }
+    return state[instance].voltage;
 }
 
 /// current_amps - returns the instantaneous current draw in amperes
@@ -678,7 +677,7 @@ const AP_BattMonitor::cells & AP_BattMonitor::get_cell_voltages(const uint8_t in
 // returns true if there is a temperature reading
 bool AP_BattMonitor::get_temperature(float &temperature, const uint8_t instance) const
 {
-    if (instance >= AP_BATT_MONITOR_MAX_INSTANCES || drivers[instance] == nullptr) {
+    if (instance >= _num_instances || drivers[instance] == nullptr) {
         return false;
     } 
     
@@ -698,7 +697,7 @@ bool AP_BattMonitor::get_temperature(float &temperature, const uint8_t instance)
 // return true when successfully setting a battery temperature from an external source by instance
 bool AP_BattMonitor::set_temperature(const float temperature, const uint8_t instance)
 {
-    if (instance >= AP_BATT_MONITOR_MAX_INSTANCES || drivers[instance] == nullptr) {
+    if (instance >= _num_instances || drivers[instance] == nullptr) {
         return false;
     }
     state[instance].temperature_external = temperature;
@@ -722,7 +721,7 @@ bool AP_BattMonitor::set_temperature_by_serial_number(const float temperature, c
 // return true if cycle count can be provided and fills in cycles argument
 bool AP_BattMonitor::get_cycle_count(uint8_t instance, uint16_t &cycles) const
 {
-    if (instance >= AP_BATT_MONITOR_MAX_INSTANCES || (drivers[instance] == nullptr)) {
+    if (instance >= _num_instances || (drivers[instance] == nullptr)) {
         return false;
     }
     return drivers[instance]->get_cycle_count(cycles);
@@ -732,7 +731,7 @@ bool AP_BattMonitor::arming_checks(size_t buflen, char *buffer) const
 {
     char temp_buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
 
-    for (uint8_t i = 0; i < AP_BATT_MONITOR_MAX_INSTANCES; i++) {
+    for (uint8_t i = 0; i < _num_instances; i++) {
         if (drivers[i] != nullptr && !(drivers[i]->arming_checks(temp_buffer, sizeof(temp_buffer)))) {
             hal.util->snprintf(buffer, buflen, "Battery %d %s", i + 1, temp_buffer);
             return false;
@@ -830,7 +829,7 @@ MAV_BATTERY_CHARGE_STATE AP_BattMonitor::get_mavlink_charge_state(const uint8_t 
 // Returns mavlink fault state
 uint32_t AP_BattMonitor::get_mavlink_fault_bitmask(const uint8_t instance) const
 {
-    if (drivers[instance] == nullptr) {
+    if (instance >= _num_instances || drivers[instance] == nullptr) {
         return 0;
     }
     return drivers[instance]->get_mavlink_fault_bitmask();

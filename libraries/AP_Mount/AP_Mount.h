@@ -103,8 +103,8 @@ public:
     // used for gimbals that need to read INS data at full rate
     void update_fast();
 
-    // return primary instance
-    uint8_t get_primary() const { return _primary; }
+    // return primary instance ID
+    uint8_t get_primary_instance() const { return _primary; }
 
     // get_mount_type - returns the type of mount
     AP_Mount::MountType get_mount_type() const { return get_mount_type(_primary); }
@@ -172,6 +172,7 @@ public:
     bool get_angle_target(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame);
     bool get_location_target(uint8_t instance, Location& target_loc);
     void set_attitude_euler(uint8_t instance, float roll_deg, float pitch_deg, float yaw_bf_deg);
+    bool get_camera_state(uint8_t instance, uint16_t& pic_count, bool& record_video, int8_t& zoom_step, int8_t& focus_step, bool& auto_focus);
 
     //
     // camera controls for gimbals that include a camera
@@ -212,8 +213,8 @@ protected:
 
 private:
     // Check if instance backend is ok
-    bool check_primary() const;
-    bool check_instance(uint8_t instance) const;
+    AP_Mount_Backend *get_primary() const;
+    AP_Mount_Backend *get_instance(uint8_t instance) const;
 
     void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg);
     void handle_mount_configure(const mavlink_message_t &msg);

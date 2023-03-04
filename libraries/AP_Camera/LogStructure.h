@@ -9,6 +9,8 @@
 // @LoggerMessage: CAM,TRIG
 // @Description: Camera shutter information
 // @Field: TimeUS: Time since system startup
+// @Field: I: Instance number
+// @Field: Img: Image number
 // @Field: GPSTime: milliseconds since start of GPS week
 // @Field: GPSWeek: weeks since 5 Jan 1980
 // @Field: Lat: current latitude
@@ -16,12 +18,14 @@
 // @Field: Alt: current altitude
 // @Field: RelAlt: current altitude relative to home
 // @Field: GPSAlt: altitude as reported by GPS
-// @Field: Roll: current vehicle roll
-// @Field: Pitch: current vehicle pitch
-// @Field: Yaw: current vehicle yaw
+// @Field: R: current vehicle roll
+// @Field: P: current vehicle pitch
+// @Field: Y: current vehicle yaw
 struct PACKED log_Camera {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t  instance;
+    uint16_t image_number;
     uint32_t gps_time;
     uint16_t gps_week;
     int32_t  latitude;
@@ -36,6 +40,6 @@ struct PACKED log_Camera {
 
 #define LOG_STRUCTURE_FROM_CAMERA \
     { LOG_CAMERA_MSG, sizeof(log_Camera), \
-      "CAM", "QIHLLeeeccC","TimeUS,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,Roll,Pitch,Yaw", "s--DUmmmddd", "F--GGBBBBBB" }, \
+      "CAM", "QBHIHLLeeeccC","TimeUS,I,Img,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,R,P,Y", "s#---DUmmmddd", "F----GGBBBBBB" }, \
     { LOG_TRIGGER_MSG, sizeof(log_Camera), \
-      "TRIG", "QIHLLeeeccC","TimeUS,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,Roll,Pitch,Yaw", "s--DUmmmddd", "F--GGBBBBBB" },
+      "TRIG", "QBHIHLLeeeccC","TimeUS,I,Img,GPSTime,GPSWeek,Lat,Lng,Alt,RelAlt,GPSAlt,R,P,Y", "s#---DUmmmddd", "F----GGBBBBBB" },

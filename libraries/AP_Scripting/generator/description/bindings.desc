@@ -179,6 +179,13 @@ singleton AP_Proximity method get_closest_object boolean float'Null float'Null
 singleton AP_Proximity method get_object_angle_and_distance boolean uint8_t'skip_check float'Null float'Null
 
 include AP_RangeFinder/AP_RangeFinder.h
+include AP_RangeFinder/AP_RangeFinder_Backend.h
+
+ap_object AP_RangeFinder_Backend method distance float
+ap_object AP_RangeFinder_Backend method orientation Rotation'enum
+ap_object AP_RangeFinder_Backend method type uint8_t
+ap_object AP_RangeFinder_Backend method status uint8_t
+ap_object AP_RangeFinder_Backend method handle_script_msg boolean float'skip_check
 
 singleton RangeFinder rename rangefinder
 singleton RangeFinder method num_sensors uint8_t
@@ -190,6 +197,8 @@ singleton RangeFinder method ground_clearance_cm_orient uint16_t Rotation'enum R
 singleton RangeFinder method status_orient uint8_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method has_data_orient boolean Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method get_pos_offset_orient Vector3f Rotation'enum ROTATION_NONE ROTATION_MAX-1
+
+singleton RangeFinder method get_backend AP_RangeFinder_Backend uint8_t'skip_check
 
 include AP_Terrain/AP_Terrain.h
 
@@ -216,6 +225,12 @@ singleton GCS rename gcs
 singleton GCS method send_text void MAV_SEVERITY'enum MAV_SEVERITY_EMERGENCY MAV_SEVERITY_DEBUG "%s"'literal string
 singleton GCS method set_message_interval MAV_RESULT'enum uint8_t 0 MAVLINK_COMM_NUM_BUFFERS uint32_t'skip_check int32_t -1 INT32_MAX
 singleton GCS method send_named_float void string float'skip_check
+singleton GCS method frame_type MAV_TYPE'enum
+singleton GCS method get_hud_throttle int16_t
+
+singleton GCS depends HAL_HIGH_LATENCY2_ENABLED == 1
+singleton GCS method get_high_latency_status boolean
+singleton GCS method enable_high_latency_connections void boolean
 
 include AP_ONVIF/AP_ONVIF.h depends ENABLE_ONVIF == 1
 singleton AP_ONVIF depends ENABLE_ONVIF == 1
@@ -317,6 +332,7 @@ singleton AP_Baro rename baro
 singleton AP_Baro method get_pressure float
 singleton AP_Baro method get_temperature float
 singleton AP_Baro method get_external_temperature float
+singleton AP_Baro method get_altitude float
 
 include AP_OpticalFlow/AP_OpticalFlow.h
 singleton AP_OpticalFlow depends AP_OPTICALFLOW_ENABLED
@@ -379,6 +395,9 @@ singleton AP_Mission method get_item boolean uint16_t'skip_check mavlink_mission
 singleton AP_Mission method set_item boolean uint16_t'skip_check mavlink_mission_item_int_t
 singleton AP_Mission method clear boolean
 singleton AP_Mission method cmd_has_location boolean uint16_t'skip_check
+singleton AP_Mission method jump_to_tag boolean uint16_t 0 UINT16_MAX
+singleton AP_Mission method get_index_of_jump_tag uint16_t uint16_t 0 UINT16_MAX
+singleton AP_Mission method get_last_jump_tag boolean uint16_t'Null uint16_t'Null
 
 
 userdata mavlink_mission_item_int_t field param1 float'skip_check read write
@@ -570,6 +589,7 @@ singleton AP_Mount method get_rate_target boolean uint8_t'skip_check float'Null 
 singleton AP_Mount method get_angle_target boolean uint8_t'skip_check float'Null float'Null float'Null boolean'Null
 singleton AP_Mount method get_location_target boolean uint8_t'skip_check Location'Null
 singleton AP_Mount method set_attitude_euler void uint8_t'skip_check float'skip_check float'skip_check float'skip_check
+singleton AP_Mount method get_camera_state boolean uint8_t'skip_check uint16_t'Null boolean'Null int8_t'Null int8_t'Null boolean'Null
 
 include AP_Winch/AP_Winch.h depends APM_BUILD_COPTER_OR_HELI
 singleton AP_Winch depends APM_BUILD_COPTER_OR_HELI

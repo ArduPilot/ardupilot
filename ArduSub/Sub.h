@@ -426,7 +426,7 @@ private:
     void auto_wp_start(const Vector3f& destination);
     void auto_wp_start(const Location& dest_loc);
     void auto_wp_run();
-    void auto_circle_movetoedge_start(const Location &circle_center, float radius_m);
+    void auto_circle_movetoedge_start(const Location &circle_center, float radius_m, bool ccw_turn);
     void auto_circle_start();
     void auto_circle_run();
     void auto_nav_guided_start();

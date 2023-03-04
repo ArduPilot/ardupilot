@@ -103,6 +103,11 @@ void Sub::init_ardupilot()
     camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
 #endif
 
+#if AP_CAMERA_ENABLED
+    // initialise camera
+    camera.init();
+#endif
+
 #ifdef USERHOOK_INIT
     USERHOOK_INIT
 #endif

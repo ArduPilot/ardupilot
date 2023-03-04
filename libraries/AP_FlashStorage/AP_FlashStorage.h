@@ -73,7 +73,7 @@
 #endif
 
 /*
-  The StorageManager holds the layout of non-volatile storeage
+  The StorageManager holds the layout of non-volatile storage
  */
 class AP_FlashStorage {
 private:

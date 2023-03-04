@@ -110,9 +110,15 @@ public:
     // use external governor autorotation window
     void        set_autorotation_flag(bool flag) { _in_autorotation = flag; }
 
-    // set the throttle percentage to be sent to external governor to signal that autorotation bailout ramp should be used within this instance of Heli_RSC
-    void        set_ext_gov_arot_bail(int16_t pct) { _rsc_arot_bailout_pct = pct; }
-	
+    // set the throttle percentage to be used during autorotation for this instance of Heli_RSC
+    void        set_arot_idle_output(int16_t idle) { _arot_idle_output.set(idle); }
+
+    // set the manual autorotation option for this instance of Heli_RSC
+    void        set_rsc_arot_man_enable(int8_t enable) { _rsc_arot_man_enable.set(enable); }
+
+    // set the autorotation power recovery time for this instance of Heli_RSC
+    void        set_rsc_arot_engage_time(int8_t eng_time) { _rsc_arot_engage_time.set(eng_time); }
+
     // turbine start initialize sequence
     void        set_turbine_start(bool turbine_start) {_turbine_start = turbine_start; }
 
@@ -158,7 +164,6 @@ private:
     bool            _governor_fault;              // governor fault status flag
     bool            _use_bailout_ramp;            // true if allowing RSC to quickly ramp up engine
     bool            _in_autorotation;             // true if vehicle is currently in an autorotation
-    int16_t         _rsc_arot_bailout_pct;        // the throttle percentage sent to the external governor to signal that autorotation bailout ramp should be used
     bool            _spooldown_complete;          // flag for determining if spooldown is complete
     float           _fast_idle_timer;             // cooldown timer variable
     uint8_t         _governor_fault_count;        // variable for tracking governor speed sensor faults

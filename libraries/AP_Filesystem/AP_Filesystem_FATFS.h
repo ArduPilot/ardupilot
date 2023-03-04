@@ -48,10 +48,11 @@ public:
     // unmount filesystem for reboot
     void unmount(void) override;
 
-    // format sdcard
+    // format sdcard.  This is async, monitor get_format_status for progress
     bool format(void) override;
+    AP_Filesystem_Backend::FormatStatus get_format_status() const override;
 
 private:
     void format_handler(void);
-    bool format_pending;
+    FormatStatus format_status;
 };

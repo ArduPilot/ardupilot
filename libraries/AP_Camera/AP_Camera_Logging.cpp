@@ -1,4 +1,4 @@
-#include "AP_Camera.h"
+#include "AP_Camera_Backend.h"
 
 #if AP_CAMERA_ENABLED
 
@@ -6,8 +6,19 @@
 #include <AP_GPS/AP_GPS.h>
 
 // Write a Camera packet
-void AP_Camera::Write_CameraInfo(enum LogMessages msg, uint64_t timestamp_us)
+void AP_Camera_Backend::Write_CameraInfo(enum LogMessages msg, uint64_t timestamp_us)
 {
+    // exit immediately if no logger
+    AP_Logger *logger = AP_Logger::get_singleton();
+    if (logger == nullptr) {
+        return;
+    }
+
+    // exit immediately if should not log camera messages
+    if (!logger->should_log(_frontend.get_log_camera_bit())) {
+        return;
+    }
+
     const AP_AHRS &ahrs = AP::ahrs();
 
     Location current_loc;
@@ -32,7 +43,9 @@ void AP_Camera::Write_CameraInfo(enum LogMessages msg, uint64_t timestamp_us)
 
     const struct log_Camera pkt{
         LOG_PACKET_HEADER_INIT(static_cast<uint8_t>(msg)),
-        time_us     : timestamp_us?timestamp_us:AP_HAL::micros64(),
+        time_us     : timestamp_us ? timestamp_us : AP_HAL::micros64(),
+        instance    : _instance,
+        image_number: image_index,
         gps_time    : gps.time_week_ms(),
         gps_week    : gps.time_week(),
         latitude    : current_loc.lat,
@@ -48,13 +61,13 @@ void AP_Camera::Write_CameraInfo(enum LogMessages msg, uint64_t timestamp_us)
 }
 
 // Write a Camera packet
-void AP_Camera::Write_Camera(uint64_t timestamp_us)
+void AP_Camera_Backend::Write_Camera(uint64_t timestamp_us)
 {
     Write_CameraInfo(LOG_CAMERA_MSG, timestamp_us);
 }
 
 // Write a Trigger packet
-void AP_Camera::Write_Trigger(void)
+void AP_Camera_Backend::Write_Trigger()
 {
     Write_CameraInfo(LOG_TRIGGER_MSG, 0);
 }

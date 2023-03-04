@@ -36,6 +36,10 @@
 #define UAVCAN_SRV_NUMBER NUM_SERVO_CHANNELS
 #endif
 
+#ifndef AP_DRONECAN_SEND_GPS
+#define AP_DRONECAN_SEND_GPS (BOARD_FLASH_SIZE > 1024)
+#endif
+
 #define AP_UAVCAN_SW_VERS_MAJOR 1
 #define AP_UAVCAN_SW_VERS_MINOR 0
 
@@ -48,6 +52,7 @@
 class ButtonCb;
 class TrafficReportCb;
 class ActuatorStatusCb;
+class ActuatorStatusVolzCb;
 class ESCStatusCb;
 class DebugCb;
 class ParamGetSetCb;
@@ -204,6 +209,7 @@ public:
         CANFD_ENABLED             = (1U<<2),
         DNA_IGNORE_UNHEALTHY_NODE = (1U<<3),
         USE_ACTUATOR_PWM          = (1U<<4),
+        SEND_GNSS                 = (1U<<5),
     };
 
     // check if a option is set
@@ -325,6 +331,19 @@ private:
         uint8_t pending_mask; // mask of interfaces to send to
     } _buzzer;
 
+#if AP_DRONECAN_SEND_GPS
+    // send GNSS Fix and yaw, same thing AP_GPS_UAVCAN would receive
+    void gnss_send_fix();
+    void gnss_send_yaw();
+    
+    // GNSS Fix and Status
+    struct {
+        uint32_t last_gps_lib_fix_ms;
+        uint32_t last_send_status_ms;
+        uint32_t last_lib_yaw_time_ms;
+    } _gnss;
+#endif
+
     // GNSS RTCM injection
     struct {
         HAL_Semaphore sem;
@@ -346,6 +365,7 @@ private:
     static void handle_button(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ButtonCb &cb);
     static void handle_traffic_report(AP_UAVCAN* ap_uavcan, uint8_t node_id, const TrafficReportCb &cb);
     static void handle_actuator_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ActuatorStatusCb &cb);
+    static void handle_actuator_status_Volz(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ActuatorStatusVolzCb &cb);
     static void handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ESCStatusCb &cb);
     static bool is_esc_data_index_valid(const uint8_t index);
     static void handle_debug(AP_UAVCAN* ap_uavcan, uint8_t node_id, const DebugCb &cb);

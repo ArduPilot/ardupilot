@@ -1,5 +1,31 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.3.0-beta10 01-Mar-2023
+Changes from 4.3.0-beta9
+1) Bug fixes
+    a) GPS unconfigured error fix for non-M10 uBlox GPS
+    b) Gremsy gimbal fix when attached to autopilot's serial3 (or higher)
+    c) MambaF405 2022 gets VTX power on support
+    d) MCU voltage enabled on H757 CPUs (including CubeOrangePlus)
+    e) PiccoloCAN fix for ESC voltage and current scaling 
+    f) Servo gimbal mount yaw handling fix (only affects 3-axis servo gimbals)
+------------------------------------------------------------------
+Rover 4.3.0-beta9 14-Feb-2023
+Changes from 4.3.0-beta8
+1) AutoPilot specific enhancements
+    a) CubeOrangePlusBG support
+    b) Foxeer ReaperF745 supports external compass
+    c) MambaH743v4 supports VTX power
+2) Bug fixes
+    a) Arming check fix if BARO_FIELD_ELEV set
+    b) Compass calibration diagonals set to 1,1,1 if incorrectly set to 0,0,0
+    c) Gimbal's yaw feed-forward set to zero when landed (affects Gremsy gimbals)
+    d) IOMCU double reset and safety disable fix
+    e) Logging fix for duplicate format messages
+    f) OpenDroneId sets emergency status on crash or chute deploy
+    g) Peripheral firmware updates using MAVCAN fixed
+    h) RC protocol cannot be changed once detected on boards with IOMCU
+------------------------------------------------------------------
 Rover 4.3.0-beta8 20-Jan-2023
 Changes from 4.3.0-beta7
 1) Bug fixes

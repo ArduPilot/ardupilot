@@ -209,7 +209,7 @@ uint32_t get_fattime()
     return fattime;
 }
 
-#if !defined(NO_FASTBOOT)
+#if AP_FASTBOOT_ENABLED
 
 // get RTC backup registers starting at given idx
 void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n)
@@ -272,7 +272,7 @@ void set_fast_reboot(enum rtc_boot_magic v)
     }
 }
 
-#else // NO_FASTBOOT
+#else // AP_FASTBOOT_ENABLED is not set
 
 // set n RTC backup registers starting at given idx
 void set_rtc_backup(uint8_t idx, const uint32_t *v, uint8_t n)
@@ -289,7 +289,7 @@ void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n)
     (void)v;
     (void)n;
 }
-#endif // NO_FASTBOOT
+#endif // AP_FASTBOOT_ENABLED
 
 /*
   enable peripheral power if needed This is done late to prevent
@@ -565,9 +565,9 @@ unsigned int stm32_rand_generate_nonblocking(unsigned char* output, unsigned int
 /*
   see if we should limit flash to 1M on devices with older revisions of STM32F427
  */
+#ifdef STM32F427xx
 bool check_limit_flash_1M(void)
 {
-#ifdef STM32F427xx
     const uint16_t revid = (*(uint32_t *)DBGMCU_BASE) >> 16;
     static const uint16_t badrevs[4] = { 0x1000, 0x1001, 0x1003, 0x1007 };
     for (uint8_t i=0; i<4; i++) {
@@ -575,6 +575,6 @@ bool check_limit_flash_1M(void)
             return true;
         }
     }
-#endif
     return false;
 }
+#endif

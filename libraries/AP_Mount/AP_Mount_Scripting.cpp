@@ -222,6 +222,16 @@ void AP_Mount_Scripting::set_attitude_euler(float roll_deg, float pitch_deg, flo
     current_angle_deg.z = yaw_bf_deg;
 }
 
+bool AP_Mount_Scripting::get_camera_state(uint16_t& pic_count, bool& record_video, int8_t& zoom_step, int8_t& focus_step, bool& auto_focus)
+{
+    pic_count = picture_count;
+    record_video = recording_video;
+    zoom_step = manual_zoom_step;
+    focus_step = manual_focus_step;
+    auto_focus = auto_focus_active;
+    return true;
+}
+
 // get attitude as a quaternion.  returns true on success
 bool AP_Mount_Scripting::get_attitude_quaternion(Quaternion& att_quat)
 {

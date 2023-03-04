@@ -1,4 +1,5 @@
 -- mount-djirs2-driver.lua: DJIRS2 mount/gimbal driver
+-- luacheck: only 0
 
 --[[
   How to use
@@ -83,8 +84,27 @@ local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTI
 
 -- parameters
 local PARAM_TABLE_KEY = 38
-assert(param:add_table(PARAM_TABLE_KEY, "DJIR_", 1), "could not add param table")
+assert(param:add_table(PARAM_TABLE_KEY, "DJIR_", 2), "could not add param table")
 assert(param:add_param(PARAM_TABLE_KEY, 1, "DEBUG", 0), "could not add DJIR_DEBUG param")
+assert(param:add_param(PARAM_TABLE_KEY, 2, "UPSIDEDOWN", 0), "could not add DJIR_UPSIDEDOWN param")
+
+--[[
+  // @Param: DJIR_DEBUG
+  // @DisplayName: DJIRS2 debug
+  // @Description: Enable DJIRS2 debug
+  // @Values: 0:Disabled,1:Enabled,2:Enabled with attitude reporting
+  // @User: Advanced
+--]]
+local DJIR_DEBUG = Parameter("DJIR_DEBUG")              -- debug level. 0:disabled 1:enabled 2:enabled with attitude reporting
+
+--[[
+  // @Param: DJIR_UPSIDEDOWN
+  // @DisplayName: DJIRS2 upside down
+  // @Description: DJIRS2 upside down
+  // @Values: 0:Right side up,1:Upside down
+  // @User: Standard
+--]]
+local DJIR_UPSIDEDOWN = Parameter("DJIR_UPSIDEDOWN")    -- 0:rightsideup, 1:upsidedown
 
 -- bind parameters to variables
 local CAN_P1_DRIVER = Parameter("CAN_P1_DRIVER")        -- If using CAN1, should be 1:First driver
@@ -94,7 +114,6 @@ local CAN_P2_DRIVER = Parameter("CAN_P2_DRIVER")        -- If using CAN2, should
 local CAN_P2_BITRATE = Parameter("CAN_P2_BITRATE")      -- If using CAN2, should be 1000000
 local CAN_D2_PROTOCOL = Parameter("CAN_D2_PROTOCOL")    -- If using CAN2, should be 10:Scripting
 local MNT1_TYPE = Parameter("MNT1_TYPE")                -- should be 9:Scripting
-local DJIR_DEBUG = Parameter("DJIR_DEBUG")              -- debug level. 0:disabled 1:enabled 2:enabled with attitude reporting
 
 -- message definitions
 local HEADER = 0xAA
@@ -268,6 +287,15 @@ function uint32_value(byte3, byte2, byte1, byte0)
   return (((byte3 & 0xFF) << 24) | ((byte2 & 0xFF) << 16) | ((byte1 & 0xFF) << 8) | (byte0 & 0xFF))
 end
 
+-- wrap yaw angle in degrees to value between 0 and 360
+function wrap_360(angle)
+   local res = math.fmod(angle, 360.0)
+    if res < 0 then
+        res = res + 360.0
+    end
+    return res
+end
+
 -- wrap yaw angle in degrees to value between -180 and +180
 function wrap_180(angle_deg)
   local res = wrap_360(angle_deg)
@@ -428,8 +456,13 @@ function send_target_angles(roll_angle_deg, pitch_angle_deg, yaw_angle_deg, time
   yaw_angle_deg = yaw_angle_deg or 0
   time_sec = time_sec or 2
 
+  -- if upsidedown, add 180deg to yaw
+  if DJIR_UPSIDEDOWN:get() > 0 then
+    yaw_angle_deg = wrap_180(yaw_angle_deg + 180)
+  end
+
   -- ensure angles are integers
-  roll_angle_deg = math.floor(roll_angle_deg + 0.5)
+  roll_angle_deg = -math.floor(roll_angle_deg + 0.5)
   pitch_angle_deg = math.floor(pitch_angle_deg + 0.5)
   yaw_angle_deg = math.floor(yaw_angle_deg + 0.5)
   time_sec = math.floor(time_sec + 0.5)
@@ -482,8 +515,8 @@ function send_target_rates(roll_rate_degs, pitch_rate_degs, yaw_rate_degs)
   yaw_rate_degs = yaw_rate_degs or 0
   time_sec = time_sec or 2
 
-  -- ensure rates are integers
-  roll_rate_degs = math.floor(roll_rate_degs + 0.5)
+  -- ensure rates are integers. invert roll direction
+  roll_rate_degs = -math.floor(roll_rate_degs + 0.5)
   pitch_rate_degs = math.floor(pitch_rate_degs + 0.5)
   yaw_rate_degs = math.floor(yaw_rate_degs + 0.5)
 
@@ -502,7 +535,7 @@ function send_target_rates(roll_rate_degs, pitch_rate_degs, yaw_rate_degs)
   -- Field name                  SOF  LenL  LenH CmdTyp  Enc   RES   RES   RES  SeqL  SeqH  CrcL  CrcH CmdSet CmdId YawL  YawH  RollL RollH PitL  PitH  Ctrl CRC32 CRC32 CRC32 CRC32
   local set_target_speed_msg = {0xAA, 0x19, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0E, 0x01, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x88, 0x00, 0x00, 0x00, 0x00}
 
-  -- set angles
+  -- set rates
   set_target_speed_msg[15] = lowbyte(yaw_rate_degs * 10)
   set_target_speed_msg[16] = highbyte(yaw_rate_degs * 10)
   set_target_speed_msg[17] = lowbyte(roll_rate_degs * 10)
@@ -624,7 +657,7 @@ function parse_byte(b)
             local ret_code = parse_buff[13]
             if ret_code == RETURN_CODE.SUCCESS then
               local yaw_deg = int16_value(parse_buff[16],parse_buff[15]) * 0.1
-              local roll_deg = int16_value(parse_buff[18],parse_buff[17]) * 0.1 -- reversed with pitch below?
+              local roll_deg = -int16_value(parse_buff[18],parse_buff[17]) * 0.1
               local pitch_deg = int16_value(parse_buff[20],parse_buff[19]) * 0.1
               mount:set_attitude_euler(MOUNT_INSTANCE, roll_deg, pitch_deg, yaw_deg)
               if DJIR_DEBUG:get() > 1 then

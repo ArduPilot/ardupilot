@@ -1,6 +1,7 @@
 --[[
  An example of using the copy() method on userdata
 --]]
+-- luacheck: only 0
 
 
 local loc1 = Location()

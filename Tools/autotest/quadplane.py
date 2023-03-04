@@ -1103,6 +1103,111 @@ class AutoTestQuadPlane(AutoTest):
         self.set_current_waypoint(0, check_afterwards=False)
         self.fly_mission('mission.txt')
 
+    def VTOLQuicktune(self):
+        '''VTOL Quicktune'''
+        applet_script = "VTOL-quicktune.lua"
+
+        self.install_applet_script(applet_script)
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SIM_SPEEDUP": 20, # need to give some cycles to lua
+            "RC7_OPTION": 300,
+        })
+
+        self.reboot_sitl()
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "QUIK_ENABLE" : 1,
+            "QUIK_DOUBLE_TIME" : 5, # run faster for autotest
+            })
+
+        self.scripting_restart()
+        self.wait_text("Quicktune for quadplane loaded", check_context=True)
+
+        self.wait_ready_to_arm()
+        self.change_mode("QLOITER")
+        self.arm_vehicle()
+        self.takeoff(20, 'QLOITER')
+
+        # use rc switch to start tune
+        self.set_rc(7, 1500)
+
+        self.wait_text("Tuning: starting tune", check_context=True)
+        for axis in ['RLL', 'PIT', 'YAW']:
+            self.wait_text("Starting %s tune" % axis, check_context=True)
+            self.wait_text("Tuning: %s_D done" % axis, check_context=True, timeout=120)
+            self.wait_text("Tuning: %s_P done" % axis, check_context=True, timeout=120)
+            self.wait_text("Tuning: %s done" % axis, check_context=True, timeout=120)
+        self.wait_text("Tuning: YAW done", check_context=True, timeout=120)
+
+        # to test aux function method, use aux fn for save
+        self.run_auxfunc(300, 2)
+        self.wait_text("Tuning: saved", check_context=True)
+        self.change_mode("QLAND")
+
+        self.wait_disarmed(timeout=120)
+        self.set_parameter("QUIK_ENABLE", 0)
+        self.context_pop()
+        self.remove_installed_script(applet_script)
+        self.reboot_sitl()
+
+    def RCDisableAirspeedUse(self):
+        '''check disabling airspeed using RC switch'''
+        self.set_parameter("RC9_OPTION", 106)
+        self.delay_sim_time(5)
+        self.set_rc(9, 1000)
+        self.wait_sensor_state(
+            mavutil.mavlink.MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE,
+            True,
+            True,
+            True)
+        self.set_rc(9, 2000)
+        self.wait_sensor_state(
+            mavutil.mavlink.MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE,
+            True,
+            False,
+            True)
+        self.set_rc(9, 1000)
+        self.wait_sensor_state(
+            mavutil.mavlink.MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE,
+            True,
+            True,
+            True)
+
+        self.progress("Disabling airspeed sensor")
+        self.context_push()
+        self.set_rc(9, 2000)
+        self.set_parameters({
+            "COMPASS_ENABLE": 0,
+            "EK2_ENABLE": 0,
+            "AHRS_EKF_TYPE": 3,
+            "COMPASS_USE": 0,
+            "COMPASS_USE2": 0,
+            "COMPASS_USE3": 0,
+            "ARMING_CHECK": 589818,  # from a logfile, disables compass
+        })
+
+        self.reboot_sitl()
+
+        self.context_collect('STATUSTEXT')
+        self.wait_prearm_sys_status_healthy(timeout=120)
+        self.change_mode('QLOITER')
+        self.arm_vehicle()
+        self.set_rc(3, 2000)
+        self.wait_altitude(10, 30, relative=True)
+        self.change_mode('FBWA')
+        self.wait_statustext('Transition done')
+        # the vehicle stays in DCM until there's velocity - make sure
+        # we did go to EK3 evenutally, 'though:
+        self.wait_statustext('EKF3 active', check_context=True)
+
+        self.disarm_vehicle(force=True)
+        self.context_pop()
+        self.reboot_sitl()
+
     def tests(self):
         '''return list of all tests'''
 
@@ -1127,5 +1232,7 @@ class AutoTestQuadPlane(AutoTest):
             self.MAV_CMD_NAV_LOITER_TO_ALT,
             self.LoiterAltQLand,
             self.VTOLLandSpiral,
+            self.VTOLQuicktune,
+            self.RCDisableAirspeedUse,
         ])
         return ret

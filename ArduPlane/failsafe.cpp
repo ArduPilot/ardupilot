@@ -68,7 +68,7 @@ void Plane::failsafe_check(void)
         float throttle = get_throttle_input(true);
         float rudder = rudder_in_expo(false);
 
-        if (!hal.util->get_soft_armed()) {
+        if (!arming.is_armed_and_safety_off()) {
             throttle = 0;
         }
         

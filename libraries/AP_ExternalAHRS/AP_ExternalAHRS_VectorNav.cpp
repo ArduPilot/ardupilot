@@ -486,6 +486,7 @@ void AP_ExternalAHRS_VectorNav::process_packet1(const uint8_t *b)
     }
 #endif
 
+#if AP_COMPASS_EXTERNALAHRS_ENABLED
     {
         AP_ExternalAHRS::mag_data_message_t mag;
         mag.field = Vector3f{pkt1.mag[0], pkt1.mag[1], pkt1.mag[2]};
@@ -493,6 +494,7 @@ void AP_ExternalAHRS_VectorNav::process_packet1(const uint8_t *b)
 
         AP::compass().handle_external(mag);
     }
+#endif
 
     {
         AP_ExternalAHRS::ins_data_message_t ins;
@@ -617,6 +619,7 @@ void AP_ExternalAHRS_VectorNav::process_packet_VN_100(const uint8_t *b)
     }
 #endif
 
+#if AP_COMPASS_EXTERNALAHRS_ENABLED
     {
         AP_ExternalAHRS::mag_data_message_t mag;
         if (use_uncomp) {
@@ -628,6 +631,7 @@ void AP_ExternalAHRS_VectorNav::process_packet_VN_100(const uint8_t *b)
 
         AP::compass().handle_external(mag);
     }
+#endif
 
     {
         AP_ExternalAHRS::ins_data_message_t ins;

@@ -42,6 +42,12 @@
 #include <ardupilot/indication/Button.hpp>
 #include <ardupilot/indication/NotifyState.hpp>
 #include <ardupilot/equipment/trafficmonitor/TrafficReport.hpp>
+#if AP_DRONECAN_SEND_GPS
+#include <uavcan/equipment/gnss/Fix2.hpp>
+#include <uavcan/equipment/gnss/Auxiliary.hpp>
+#include <ardupilot/gnss/Heading.hpp>
+#include <ardupilot/gnss/Status.hpp>
+#endif
 #include <uavcan/equipment/gnss/RTCMStream.hpp>
 #include <uavcan/protocol/debug/LogMessage.hpp>
 
@@ -50,6 +56,7 @@
 #include <AP_RangeFinder/AP_RangeFinder_UAVCAN.h>
 #include <AP_EFI/AP_EFI_DroneCAN.h>
 #include <AP_GPS/AP_GPS_UAVCAN.h>
+#include <AP_GPS/AP_GPS.h>
 #include <AP_BattMonitor/AP_BattMonitor_UAVCAN.h>
 #include <AP_Compass/AP_Compass_UAVCAN.h>
 #include <AP_Airspeed/AP_Airspeed_UAVCAN.h>
@@ -80,6 +87,14 @@ extern const AP_HAL::HAL& hal;
 #define UAVCAN_STACK_SIZE     8192
 #else
 #define UAVCAN_STACK_SIZE     4096
+#endif
+
+#ifndef AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
+#define AP_DRONECAN_VOLZ_FEEDBACK_ENABLED 0
+#endif
+
+#if AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
+#include <com/volz/servo/ActuatorStatus.hpp>
 #endif
 
 #define debug_uavcan(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "UAVCAN", fmt, ##args); } while (0)
@@ -124,7 +139,7 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @Param: OPTION
     // @DisplayName: UAVCAN options
     // @Description: Option flags
-    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM
+    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM,5:SendGNSS
     // @User: Advanced
     AP_GROUPINFO("OPTION", 5, AP_UAVCAN, _options, 0),
     
@@ -164,6 +179,12 @@ static uavcan::Publisher<uavcan::equipment::indication::LightsCommand>* rgb_led[
 static uavcan::Publisher<uavcan::equipment::indication::BeepCommand>* buzzer[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 static uavcan::Publisher<ardupilot::indication::SafetyState>* safety_state[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 static uavcan::Publisher<uavcan::equipment::safety::ArmingStatus>* arming_status[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+#if AP_DRONECAN_SEND_GPS
+static uavcan::Publisher<uavcan::equipment::gnss::Fix2>* gnss_fix2[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+static uavcan::Publisher<uavcan::equipment::gnss::Auxiliary>* gnss_auxiliary[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+static uavcan::Publisher<ardupilot::gnss::Heading>* gnss_heading[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+static uavcan::Publisher<ardupilot::gnss::Status>* gnss_status[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+#endif
 static uavcan::Publisher<uavcan::equipment::gnss::RTCMStream>* rtcm_stream[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 static uavcan::Publisher<ardupilot::indication::NotifyState>* notify_state[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 
@@ -190,6 +211,11 @@ static uavcan::Subscriber<ardupilot::equipment::trafficmonitor::TrafficReport, T
 // handler actuator status
 UC_REGISTRY_BINDER(ActuatorStatusCb, uavcan::equipment::actuator::Status);
 static uavcan::Subscriber<uavcan::equipment::actuator::Status, ActuatorStatusCb> *actuator_status_listener[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+
+#if AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
+UC_REGISTRY_BINDER(ActuatorStatusVolzCb, com::volz::servo::ActuatorStatus);
+static uavcan::Subscriber<com::volz::servo::ActuatorStatus, ActuatorStatusVolzCb> *actuator_status_Volz_listener[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+#endif
 
 // handler ESC status
 UC_REGISTRY_BINDER(ESCStatusCb, uavcan::equipment::esc::Status);
@@ -243,7 +269,7 @@ bool AP_UAVCAN::add_interface(AP_HAL::CANIface* can_iface) {
 }
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic error "-Wframe-larger-than=1700"
+#pragma GCC diagnostic error "-Wframe-larger-than=2200"
 void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
 {
     _driver_index = driver_index;
@@ -339,7 +365,9 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     // Roundup all subscribers from supported drivers
     AP_UAVCAN_DNA_Server::subscribe_msgs(this);
     AP_GPS_UAVCAN::subscribe_msgs(this);
+#if AP_COMPASS_UAVCAN_ENABLED
     AP_Compass_UAVCAN::subscribe_msgs(this);
+#endif
 #if AP_BARO_UAVCAN_ENABLED
     AP_Baro_UAVCAN::subscribe_msgs(this);
 #endif
@@ -385,6 +413,24 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     arming_status[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
     arming_status[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
 
+#if AP_DRONECAN_SEND_GPS
+    gnss_fix2[driver_index] = new uavcan::Publisher<uavcan::equipment::gnss::Fix2>(*_node);
+    gnss_fix2[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+    gnss_fix2[driver_index]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
+
+    gnss_auxiliary[driver_index] = new uavcan::Publisher<uavcan::equipment::gnss::Auxiliary>(*_node);
+    gnss_auxiliary[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+    gnss_auxiliary[driver_index]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
+
+    gnss_heading[driver_index] = new uavcan::Publisher<ardupilot::gnss::Heading>(*_node);
+    gnss_heading[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+    gnss_heading[driver_index]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
+
+    gnss_status[driver_index] = new uavcan::Publisher<ardupilot::gnss::Status>(*_node);
+    gnss_status[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
+    gnss_status[driver_index]->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
+#endif
+
     rtcm_stream[driver_index] = new uavcan::Publisher<uavcan::equipment::gnss::RTCMStream>(*_node);
     rtcm_stream[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(20));
     rtcm_stream[driver_index]->setPriority(uavcan::TransferPriority::OneHigherThanLowest);
@@ -411,6 +457,13 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     if (actuator_status_listener[driver_index]) {
         actuator_status_listener[driver_index]->start(ActuatorStatusCb(this, &handle_actuator_status));
     }
+
+#if AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
+    actuator_status_Volz_listener[driver_index] = new uavcan::Subscriber<com::volz::servo::ActuatorStatus, ActuatorStatusVolzCb>(*_node);
+    if (actuator_status_Volz_listener[driver_index]) {
+        actuator_status_Volz_listener[driver_index]->start(ActuatorStatusVolzCb(this, &handle_actuator_status_Volz));
+    }
+#endif
 
     esc_status_listener[driver_index] = new uavcan::Subscriber<uavcan::equipment::esc::Status, ESCStatusCb>(*_node);
     if (esc_status_listener[driver_index]) {
@@ -499,6 +552,15 @@ void AP_UAVCAN::loop(void)
 #if AP_OPENDRONEID_ENABLED
         AP::opendroneid().dronecan_send(this);
 #endif
+
+#if AP_DRONECAN_SEND_GPS
+        if (option_is_set(AP_UAVCAN::Options::SEND_GNSS) && !AP_GPS_UAVCAN::instance_exists(this)) {
+            // send if enabled and this interface/driver is not used by the AP_GPS driver
+            gnss_send_fix();
+            gnss_send_yaw();
+        }
+#endif
+
         logging();
     }
 }
@@ -808,6 +870,156 @@ void AP_UAVCAN::notify_state_send()
     _last_notify_state_ms = AP_HAL::native_millis();
 }
 
+#if AP_DRONECAN_SEND_GPS
+void AP_UAVCAN::gnss_send_fix()
+{
+    const AP_GPS &gps = AP::gps();
+
+    const uint32_t gps_lib_time_ms = gps.last_message_time_ms();
+    if (_gnss.last_gps_lib_fix_ms == gps_lib_time_ms) {
+        return;
+    }
+    _gnss.last_gps_lib_fix_ms = gps_lib_time_ms;
+
+    /*
+        send Fix2 packet
+    */
+
+    uavcan::equipment::gnss::Fix2 pkt {};
+    const Location &loc = gps.location();
+    const Vector3f &vel = gps.velocity();
+
+    pkt.timestamp.usec = AP_HAL::native_micros64();
+    pkt.gnss_timestamp.usec = gps.time_epoch_usec();
+    if (pkt.gnss_timestamp.usec == 0) {
+        pkt.gnss_time_standard = uavcan::equipment::gnss::Fix2::GNSS_TIME_STANDARD_NONE;
+    } else {
+        pkt.gnss_time_standard = uavcan::equipment::gnss::Fix2::GNSS_TIME_STANDARD_UTC;
+    }
+    pkt.longitude_deg_1e8 = uint64_t(loc.lng) * 10ULL;
+    pkt.latitude_deg_1e8 = uint64_t(loc.lat) * 10ULL;
+    pkt.height_ellipsoid_mm = loc.alt * 10;
+    pkt.height_msl_mm = loc.alt * 10;
+    for (uint8_t i=0; i<3; i++) {
+        pkt.ned_velocity[i] = vel[i];
+    }
+    pkt.sats_used = gps.num_sats();
+    switch (gps.status()) {
+    case AP_GPS::GPS_Status::NO_GPS:
+    case AP_GPS::GPS_Status::NO_FIX:
+        pkt.status = uavcan::equipment::gnss::Fix2::STATUS_NO_FIX;
+        pkt.mode = uavcan::equipment::gnss::Fix2::MODE_SINGLE;
+        pkt.sub_mode = uavcan::equipment::gnss::Fix2::SUB_MODE_DGPS_OTHER;
+        break;
+    case AP_GPS::GPS_Status::GPS_OK_FIX_2D:
+        pkt.status = uavcan::equipment::gnss::Fix2::STATUS_2D_FIX;
+        pkt.mode = uavcan::equipment::gnss::Fix2::MODE_SINGLE;
+        pkt.sub_mode = uavcan::equipment::gnss::Fix2::SUB_MODE_DGPS_OTHER;
+        break;
+    case AP_GPS::GPS_Status::GPS_OK_FIX_3D:
+        pkt.status = uavcan::equipment::gnss::Fix2::STATUS_3D_FIX;
+        pkt.mode = uavcan::equipment::gnss::Fix2::MODE_SINGLE;
+        pkt.sub_mode = uavcan::equipment::gnss::Fix2::SUB_MODE_DGPS_OTHER;
+        break;
+    case AP_GPS::GPS_Status::GPS_OK_FIX_3D_DGPS:
+        pkt.status = uavcan::equipment::gnss::Fix2::STATUS_3D_FIX;
+        pkt.mode = uavcan::equipment::gnss::Fix2::MODE_DGPS;
+        pkt.sub_mode = uavcan::equipment::gnss::Fix2::SUB_MODE_DGPS_SBAS;
+        break;
+    case AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FLOAT:
+        pkt.status = uavcan::equipment::gnss::Fix2::STATUS_3D_FIX;
+        pkt.mode = uavcan::equipment::gnss::Fix2::MODE_RTK;
+        pkt.sub_mode = uavcan::equipment::gnss::Fix2::SUB_MODE_RTK_FLOAT;
+        break;
+    case AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FIXED:
+        pkt.status = uavcan::equipment::gnss::Fix2::STATUS_3D_FIX;
+        pkt.mode = uavcan::equipment::gnss::Fix2::MODE_RTK;
+        pkt.sub_mode = uavcan::equipment::gnss::Fix2::SUB_MODE_RTK_FIXED;
+        break;
+    }
+
+    pkt.covariance.resize(6);
+    float hacc;
+    if (gps.horizontal_accuracy(hacc)) {
+        pkt.covariance[0] = pkt.covariance[1] = sq(hacc);
+    }
+    float vacc;
+    if (gps.vertical_accuracy(vacc)) {
+        pkt.covariance[2] = sq(vacc);
+    }
+    float sacc;
+    if (gps.speed_accuracy(sacc)) {
+        const float vc3 = sq(sacc);
+        pkt.covariance[3] = pkt.covariance[4] = pkt.covariance[5] = vc3;
+    }
+
+    gnss_fix2[_driver_index]->broadcast(pkt);
+
+
+
+    const uint32_t now_ms = AP_HAL::native_millis();
+    if (now_ms - _gnss.last_send_status_ms >= 1000) {
+        _gnss.last_send_status_ms = now_ms;
+
+        /*
+        send aux packet
+        */
+        uavcan::equipment::gnss::Auxiliary pkt_auxiliary {};
+        pkt_auxiliary.hdop = gps.get_hdop() * 0.01;
+        pkt_auxiliary.vdop = gps.get_vdop() * 0.01;
+
+        gnss_auxiliary[_driver_index]->broadcast(pkt_auxiliary);
+
+
+        /*
+        send Status packet
+        */
+        ardupilot::gnss::Status pkt_status {};
+        pkt_status.healthy = gps.is_healthy();
+        if (gps.logging_present() && gps.logging_enabled() && !gps.logging_failed()) {
+            pkt_status.status |= ardupilot::gnss::Status::STATUS_LOGGING;
+        }
+        uint8_t idx; // unused
+        if (pkt_status.healthy && !gps.first_unconfigured_gps(idx)) {
+            pkt_status.status |= ardupilot::gnss::Status::STATUS_ARMABLE;
+        }
+
+        uint32_t error_codes;
+        if (gps.get_error_codes(error_codes)) {
+            pkt_status.error_codes = error_codes;
+        }
+
+        gnss_status[_driver_index]->broadcast(pkt_status);
+    }
+}
+
+void AP_UAVCAN::gnss_send_yaw()
+{
+    const AP_GPS &gps = AP::gps();
+
+    if (!gps.have_gps_yaw()) {
+        return;
+    }
+
+    float yaw_deg, yaw_acc_deg;
+    uint32_t yaw_time_ms;
+    if (!gps.gps_yaw_deg(yaw_deg, yaw_acc_deg, yaw_time_ms) && yaw_time_ms != _gnss.last_lib_yaw_time_ms) {
+        return;
+    }
+
+    _gnss.last_lib_yaw_time_ms = yaw_time_ms;
+
+    ardupilot::gnss::Heading pkt_heading {};
+    pkt_heading.heading_valid = true;
+    pkt_heading.heading_accuracy_valid = is_positive(yaw_acc_deg);
+    pkt_heading.heading_rad = radians(yaw_deg);
+    pkt_heading.heading_accuracy_rad = radians(yaw_acc_deg);
+
+    gnss_heading[_driver_index]->broadcast(pkt_heading);
+}
+#endif // AP_DRONECAN_SEND_GPS
+
+
 void AP_UAVCAN::rtcm_stream_send()
 {
     WITH_SEMAPHORE(_rtcm_stream.sem);
@@ -992,6 +1204,25 @@ void AP_UAVCAN::handle_actuator_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, co
                                    cb.msg->power_rating_pct);
 }
 
+#if AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
+void AP_UAVCAN::handle_actuator_status_Volz(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ActuatorStatusVolzCb &cb)
+{
+    AP::logger().WriteStreaming(
+        "CVOL",
+        "TimeUS,Id,Pos,Cur,V,Pow,T",
+        "s#dAv%O",
+        "F-00000",
+        "QBfffBh",
+        AP_HAL::native_micros64(),
+        cb.msg->actuator_id,
+        ToDeg(cb.msg->actual_position),
+        cb.msg->current * 0.025f,
+        cb.msg->voltage * 0.2f,
+        cb.msg->motor_pwm * (100.0/255.0),
+        int16_t(cb.msg->motor_temperature) - 50);
+}
+#endif
+
 /*
   handle ESC status message
  */
@@ -1013,9 +1244,9 @@ void AP_UAVCAN::handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const E
 
     ap_uavcan->update_rpm(esc_index, cb.msg->rpm, cb.msg->error_count);
     ap_uavcan->update_telem_data(esc_index, t,
-        (isnanf(cb.msg->current) ? 0 : AP_ESC_Telem_Backend::TelemetryType::CURRENT)
-            | (isnanf(cb.msg->voltage) ? 0 : AP_ESC_Telem_Backend::TelemetryType::VOLTAGE)
-            | (isnanf(cb.msg->temperature) ? 0 : AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE));
+        (isnan(cb.msg->current) ? 0 : AP_ESC_Telem_Backend::TelemetryType::CURRENT)
+            | (isnan(cb.msg->voltage) ? 0 : AP_ESC_Telem_Backend::TelemetryType::VOLTAGE)
+            | (isnan(cb.msg->temperature) ? 0 : AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE));
 #endif
 }
 

@@ -22,6 +22,7 @@ jobs:
             Durandal,
             MatekF405,
             Pixhawk1-1M,
+            MatekF405-CAN,  # see special "build bootloader" code below
             Hitec-Airspeed,  # see special code for Periph below (3 places!)
             f103-GPS  # see special code for Periph below (3 places!)
         ]
@@ -42,7 +43,7 @@ jobs:
         id: ccache_cache_timestamp
         run: |
           NOW=$(date -u +"%F-%T")
-          echo "{timestamp}=${NOW}" >> $GITHUB_OUTPUT
+          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
       - name: ccache cache files
         uses: actions/cache@v3
         with:
@@ -57,18 +58,44 @@ jobs:
           CI_BUILD_TARGET: ${{matrix.config}}
         shell: bash
         run: |
-          git config --global --add safe.directory ${GITHUB_WORKSPACE}
-          PATH="/github/home/.local/bin:$PATH"
-          cd base_branch
-          ./waf configure --board ${{matrix.config}}
+          set -ex
+          # set up some variables based on what sort of build we're doing:
+          BOOTLOADER=0
+          AP_PERIPH=0
           if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
              [ "${{matrix.config}}" = "f103-GPS" ]; then
+            AP_PERIPH=1
+          elif [ "${{matrix.config}}" = "MatekF405-CAN" ]; then
+            BOOTLOADER=1
+          fi
+          if [ $BOOTLOADER -eq 1 ]; then
+             BIN_SRC="build/${{matrix.config}}/bootloader"
+          else
+             BIN_SRC="build/${{matrix.config}}/bin"
+          fi
+
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          PATH="/github/home/.local/bin:$PATH"
+
+          # build the base branch
+          cd base_branch
+          # configure:
+          if [ $BOOTLOADER -eq 1 ]; then
+            ./waf configure --board ${{matrix.config}} --bootloader
+          else
+            ./waf configure --board ${{matrix.config}}
+          fi
+          # build:
+          if [ $AP_PERIPH -eq 1 ]; then
             ./waf AP_Periph
+          elif [ $BOOTLOADER -eq 1 ]; then
+            ./waf bootloader
           else
             ./waf
           fi
           mkdir -p $GITHUB_WORKSPACE/base_branch_bin
-          cp -r build/${{matrix.config}}/bin/* $GITHUB_WORKSPACE/base_branch_bin/
+
+          cp -r $BIN_SRC/* $GITHUB_WORKSPACE/base_branch_bin/
 
           # build a set of binaries without symbols so we can check if
           #  the binaries have changed.
@@ -83,13 +110,14 @@ jobs:
           export GIT_VERSION="abcdef"
           export GIT_VERSION_INT="15"
 
-          if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
-             [ "${{matrix.config}}" = "f103-GPS" ]; then
+          if [ $AP_PERIPH -eq 1 ]; then
             ./waf AP_Periph
+          elif [ $BOOTLOADER -eq 1 ]; then
+            ./waf bootloader
           else
             ./waf
           fi
-          cp -r build/${{matrix.config}}/bin/* "$NO_VERSIONS_DIR"
+          cp -r $BIN_SRC/* "$NO_VERSIONS_DIR"
 
           echo [`date`] Built ${{ github.event.pull_request.base.ref }} with no versions
 
@@ -103,6 +131,21 @@ jobs:
           CI_BUILD_TARGET: ${{matrix.config}}
         shell: bash
         run: |
+          set -ex
+          # set up some variables based on what sort of build we're doing:
+          BOOTLOADER=0
+          AP_PERIPH=0
+          if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
+             [ "${{matrix.config}}" = "f103-GPS" ]; then
+            AP_PERIPH=1
+          elif [ "${{matrix.config}}" = "MatekF405-CAN" ]; then
+            BOOTLOADER=1
+          fi
+          if [ $BOOTLOADER -eq 1 ]; then
+             BIN_SRC="build/${{matrix.config}}/bootloader"
+          else
+             BIN_SRC="build/${{matrix.config}}/bin"
+          fi
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           PATH="/github/home/.local/bin:$PATH"
           cd pr/
@@ -112,15 +155,22 @@ jobs:
           git fetch --no-tags --prune --progress ardupilot ${{ github.event.pull_request.base.ref }}
           git rebase ardupilot/${{ github.event.pull_request.base.ref }}
           git submodule update --init --recursive --depth=1
-          ./waf configure --board ${{matrix.config}}
-          if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
-             [ "${{matrix.config}}" = "f103-GPS" ]; then
+          # configure
+          if [ $BOOTLOADER -eq 1 ]; then
+            ./waf configure --board ${{matrix.config}} --bootloader
+          else
+            ./waf configure --board ${{matrix.config}}
+          fi
+          # build
+          if [ $AP_PERIPH -eq 1 ]; then
             ./waf AP_Periph
+          elif [ $BOOTLOADER -eq 1 ]; then
+            ./waf bootloader
           else
             ./waf
           fi
           mkdir $GITHUB_WORKSPACE/pr_bin
-          cp -r build/${{matrix.config}}/bin/* $GITHUB_WORKSPACE/pr_bin/
+          cp -r $BIN_SRC/* $GITHUB_WORKSPACE/pr_bin/
 
           # build a set of binaries without symbols so we can check if
           #  the binaries have changed.
@@ -129,13 +179,20 @@ jobs:
           NO_VERSIONS_DIR="$GITHUB_WORKSPACE/pr_bin_no_versions"
           mkdir "$NO_VERSIONS_DIR"
 
-          if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
-             [ "${{matrix.config}}" = "f103-GPS" ]; then
-            CHIBIOS_GIT_VERSION="12345678" GIT_VERSION="abcdef" GIT_VERSION_INT="15" ./waf AP_Periph
+          # export some environment variables designed to get
+          #            repeatable builds from the same source:
+          export CHIBIOS_GIT_VERSION="12345678"
+          export GIT_VERSION="abcdef"
+          export GIT_VERSION_INT="15"
+
+          if [ $AP_PERIPH -eq 1 ]; then
+            ./waf AP_Periph
+          elif [ $BOOTLOADER -eq 1 ]; then
+            ./waf bootloader
           else
-            CHIBIOS_GIT_VERSION="12345678" GIT_VERSION="abcdef" GIT_VERSION_INT="15" ./waf
+            ./waf
           fi
-          cp -r build/${{matrix.config}}/bin/* "$NO_VERSIONS_DIR"
+          cp -r $BIN_SRC/* "$NO_VERSIONS_DIR"
 
           echo [`date`] Built PR with no versions
 
@@ -168,9 +225,18 @@ jobs:
           if [ "${{matrix.toolchain}}" = "armhf" ]; then
              BIN_PREFIX="arm-linux-gnueabihf-"
           fi
+          BOOTLOADER=0
+          AP_PERIPH=0
           if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
              [ "${{matrix.config}}" = "f103-GPS" ]; then
+            AP_PERIPH=1
+          elif [ "${{matrix.config}}" = "MatekF405-CAN" ]; then
+            BOOTLOADER=1
+          fi
+          if [ $AP_PERIPH -eq 1 ]; then
               EF_BINARY_NAME="AP_Periph"
+          elif [ $BOOTLOADER -eq 1 ]; then
+              EF_BINARY_NAME="AP_Bootloader"
           else
               EF_BINARY_NAME="arduplane"
           fi
@@ -196,13 +262,26 @@ jobs:
           if [ "${{ matrix.toolchain }}" = "armhf" ]; then
              BIN_PREFIX="arm-linux-gnueabihf-"
           fi
+          BOOTLOADER=0
+          AP_PERIPH=0
           if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
              [ "${{matrix.config}}" = "f103-GPS" ]; then
-             python3 -m elf_diff --bin_prefix="$BIN_PREFIX" --html_dir=elf_diff/AP_Periph $GITHUB_WORKSPACE/base_branch_bin/AP_Periph $GITHUB_WORKSPACE/pr_bin/AP_Periph
-          else
-             python3 -m elf_diff --bin_prefix="$BIN_PREFIX" --html_dir=elf_diff/plane $GITHUB_WORKSPACE/base_branch_bin/arduplane $GITHUB_WORKSPACE/pr_bin/arduplane
-             python3 -m elf_diff --bin_prefix="$BIN_PREFIX" --html_dir=elf_diff/copter $GITHUB_WORKSPACE/base_branch_bin/arducopter $GITHUB_WORKSPACE/pr_bin/arducopter
+            AP_PERIPH=1
+          elif [ "${{matrix.config}}" = "MatekF405-CAN" ]; then
+            BOOTLOADER=1
           fi
+
+          if [ $AP_PERIPH -eq 1 ]; then
+             TO_CHECK="AP_Periph"
+          elif [ $BOOTLOADER -eq 1 ]; then
+             TO_CHECK="AP_Bootloader"
+          else
+             TO_CHECK="arduplane arducopter"
+          fi
+          for CHECK in $TO_CHECK; do
+             python3 -m elf_diff --bin_prefix="$BIN_PREFIX" --html_dir=elf_diff/AP_Periph $GITHUB_WORKSPACE/base_branch_bin/$CHECK $GITHUB_WORKSPACE/pr_bin/$CHECK
+          done
+
           zip -r elf_diff.zip elf_diff
 
       - name: Archive elf_diff output

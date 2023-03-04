@@ -73,9 +73,18 @@ public:
     // unmount filesystem for reboot
     virtual void unmount(void) {}
 
-    // format sdcard
+    enum class FormatStatus {
+        NOT_STARTED,
+        PENDING,
+        IN_PROGRESS,
+        SUCCESS,
+        FAILURE,
+    };
+
+    // format sdcard.  This is async, monitor get_format_status for progress
     virtual bool format(void) { return false; }
-    
+    virtual AP_Filesystem_Backend::FormatStatus get_format_status() const { return FormatStatus::NOT_STARTED; }
+
     /*
       load a full file. Use delete to free the data
      */

@@ -1,4 +1,5 @@
 -- Example script for accessing waypoint info
+-- luacheck: only 0
 
 local wp_index
 local wp_distance

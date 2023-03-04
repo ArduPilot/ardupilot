@@ -1,6 +1,7 @@
 -- this shows how to protect against faults in your scripts
 -- you can wrap your update() call (or any other call) in a pcall()
 -- which catches errors, allowing you to take an appropriate action
+-- luacheck: only 0
 
 
 -- example main loop function

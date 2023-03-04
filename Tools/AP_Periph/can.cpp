@@ -1620,7 +1620,7 @@ void AP_Periph_FW::hwesc_telem_update()
     pkt.esc_index = g.esc_number;
     pkt.voltage = t.voltage;
     pkt.current = t.current;
-    pkt.temperature = MAX(t.mos_temperature, t.cap_temperature);
+    pkt.temperature = C_TO_KELVIN(MAX(t.mos_temperature, t.cap_temperature));
     pkt.rpm = t.rpm;
     pkt.power_rating_pct = t.phase_current;
     pkt.error_count = t.error_count;
@@ -2056,6 +2056,8 @@ void AP_Periph_FW::can_gps_update(void)
         float yaw_deg, yaw_acc_deg;
         uint32_t yaw_time_ms;
         if (gps.gps_yaw_deg(yaw_deg, yaw_acc_deg, yaw_time_ms) && yaw_time_ms != last_gps_yaw_ms) {
+            last_gps_yaw_ms = yaw_time_ms;
+            
             ardupilot_gnss_Heading heading {};
             heading.heading_valid = true;
             heading.heading_accuracy_valid = is_positive(yaw_acc_deg);

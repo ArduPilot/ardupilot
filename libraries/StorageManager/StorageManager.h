@@ -45,7 +45,7 @@
 #endif
 
 /*
-  The StorageManager holds the layout of non-volatile storeage
+  The StorageManager holds the layout of non-volatile storage
  */
 class StorageManager {
     friend class StorageAccess;

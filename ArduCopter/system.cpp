@@ -32,7 +32,7 @@ void Copter::init_ardupilot()
 #endif
 
     // init winch
-#if WINCH_ENABLED == ENABLED
+#if AP_WINCH_ENABLED
     g2.winch.init();
 #endif
 
@@ -125,6 +125,11 @@ void Copter::init_ardupilot()
 #if HAL_MOUNT_ENABLED
     // initialise camera mount
     camera_mount.init();
+#endif
+
+#if AP_CAMERA_ENABLED
+    // initialise camera
+    camera.init();
 #endif
 
 #if PRECISION_LANDING == ENABLED

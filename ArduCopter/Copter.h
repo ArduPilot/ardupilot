@@ -70,6 +70,7 @@
 #include <AP_ADSB/AP_ADSB.h>                // ADS-B RF based collision avoidance module library
 #include <AP_Proximity/AP_Proximity.h>      // ArduPilot proximity sensor library
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
+#include <AP_Winch/AP_Winch_config.h>
 
 // Configuration
 #include "defines.h"
@@ -146,7 +147,7 @@
 #if TOY_MODE_ENABLED == ENABLED
  # include "toy_mode.h"
 #endif
-#if WINCH_ENABLED == ENABLED
+#if AP_WINCH_ENABLED
  # include <AP_Winch/AP_Winch.h>
 #endif
 #include <AP_RPM/AP_RPM.h>
