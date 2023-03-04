@@ -80,7 +80,7 @@ const AP_Param::GroupInfo AP_BattMonitor_INA2XX::var_info[] = {
     // @Range: 0 3
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("I2C_BUS", 25, AP_BattMonitor_INA2XX, i2c_bus, HAL_BATTMON_INA2XX_BUS),
+    AP_GROUPINFO("I2C_BUS", 25, AP_BattMonitor_INA2XX, _i2c_bus, HAL_BATTMON_INA2XX_BUS),
 
     // @Param: I2C_ADDR
     // @DisplayName: Battery monitor I2C address
@@ -88,7 +88,7 @@ const AP_Param::GroupInfo AP_BattMonitor_INA2XX::var_info[] = {
     // @Range: 0 127
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("I2C_ADDR", 26, AP_BattMonitor_INA2XX, i2c_address, HAL_BATTMON_INA2XX_ADDR),
+    AP_GROUPINFO("I2C_ADDR", 26, AP_BattMonitor_INA2XX, _i2c_address, HAL_BATTMON_INA2XX_ADDR),
 
     AP_GROUPEND
 };
