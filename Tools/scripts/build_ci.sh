@@ -83,6 +83,9 @@ function run_autotest() {
     if [ "x$CI_BUILD_DEBUG" != "x" ]; then
         w="$w --debug"
     fi
+    if [ "$NAME" == "Plane" ]; then
+        w="$w --num-aux-imus=2"
+    fi
     if [ "$NAME" == "Examples" ]; then
         w="$w --speedup=5 --timeout=14400 --debug --no-clean"
     fi
