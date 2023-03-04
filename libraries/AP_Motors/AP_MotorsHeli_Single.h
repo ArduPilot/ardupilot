@@ -38,16 +38,13 @@
 class AP_MotorsHeli_Single : public AP_MotorsHeli {
 public:
     // constructor
-    AP_MotorsHeli_Single(uint16_t speed_hz = AP_MOTORS_HELI_SPEED_DEFAULT) :
-        AP_MotorsHeli(speed_hz),
+    AP_MotorsHeli_Single() :
+        AP_MotorsHeli(),
         _tail_rotor(SRV_Channel::k_heli_tail_rsc, AP_MOTORS_HELI_SINGLE_TAILRSC),
         _swashplate()
     {
         AP_Param::setup_object_defaults(this, var_info);
     };
-
-    // set update rate to motors - a value in hertz
-    void set_update_rate(uint16_t speed_hz) override;
 
     // output_to_motors - sends values out to the motors
     void output_to_motors() override;
@@ -118,6 +115,9 @@ protected:
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     virtual void _output_test_seq(uint8_t motor_seq, int16_t pwm) override;
+
+    // set update rate to motors - a value in hertz
+    void set_update_rate(uint16_t speed_hz) override;
 
     // external objects we depend upon
     AP_MotorsHeli_RSC   _tail_rotor;            // tail rotor

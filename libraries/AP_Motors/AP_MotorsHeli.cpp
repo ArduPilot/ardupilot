@@ -146,6 +146,9 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("COL_LAND_MIN", 32, AP_MotorsHeli, _collective_land_min_deg, AP_MOTORS_HELI_COLLECTIVE_LAND_MIN),
 
+    // Parent class params
+    AP_NESTEDGROUPINFO(AP_Motors, 33),
+
     AP_GROUPEND
 };
 

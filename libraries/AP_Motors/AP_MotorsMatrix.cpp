@@ -62,6 +62,9 @@ bool AP_MotorsMatrix::init(uint8_t expected_num_motors)
         return false;
     }
 
+    // set update rate
+    set_update_rate(_speed_hz);
+
     switch (num_motors) {
         case 3:
             _mav_type = MAV_TYPE_TRICOPTER;
@@ -114,16 +117,13 @@ bool AP_MotorsMatrix::set_throttle_factor(int8_t motor_num, float throttle_facto
 // set update rate to motors - a value in hertz
 void AP_MotorsMatrix::set_update_rate(uint16_t speed_hz)
 {
-    // record requested speed
-    _speed_hz = speed_hz;
-
     uint32_t mask = 0;
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             mask |= 1U << i;
         }
     }
-    rc_set_freq(mask, _speed_hz);
+    rc_set_freq(mask, speed_hz);
 }
 
 // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)

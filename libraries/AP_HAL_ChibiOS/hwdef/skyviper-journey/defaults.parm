@@ -6,9 +6,9 @@ MOT_PWM_MIN 1000
 MOT_PWM_MAX 2000
 #TERRAIN_ENABLE 0
 
-# RC_SPEED at 7.1kHz for minimal radio interference, without
+# MOT_PWM_RATE at 7.1kHz for minimal radio interference, without
 # being a multiple of IMU sample rate
-RC_SPEED 7100
+MOT_PWM_RATE 7100
 
 # toy mode setup
 TMODE_ENABLE 2

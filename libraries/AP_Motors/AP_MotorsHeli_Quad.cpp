@@ -33,16 +33,13 @@ const AP_Param::GroupInfo AP_MotorsHeli_Quad::var_info[] = {
 // set update rate to motors - a value in hertz
 void AP_MotorsHeli_Quad::set_update_rate( uint16_t speed_hz )
 {
-    // record requested speed
-    _speed_hz = speed_hz;
-
     // setup fast channels
     uint32_t mask = 0;
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
         mask |= 1U << (AP_MOTORS_MOT_1+i);
     }
 
-    rc_set_freq(mask, _speed_hz);
+    rc_set_freq(mask, speed_hz);
 }
 
 // init_outputs

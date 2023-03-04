@@ -30,8 +30,8 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 class AP_MotorsMulticopter_test : public AP_MotorsMulticopter {
 public:
 
-    AP_MotorsMulticopter_test(uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_MotorsMulticopter(speed_hz)
+    AP_MotorsMulticopter_test() :
+        AP_MotorsMulticopter()
     {
     };
 
@@ -42,6 +42,7 @@ public:
     const char* _get_frame_string() const override { return "TEST"; }
     void output_armed_stabilizing() override {};
     void output_to_motors() override {};
+    void set_update_rate( uint16_t speed_hz ) override {};
 
     // helper function to allow setting of expo
     void set_expo(float v) { _thrust_curve_expo.set(v); }

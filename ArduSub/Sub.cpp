@@ -26,7 +26,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 Sub::Sub()
     : logger(g.log_bitmask),
           control_mode(MANUAL),
-          motors(MAIN_LOOP_RATE),
+          motors(),
           auto_mode(Auto_WP),
           guided_mode(Guided_WP),
           auto_yaw_mode(AUTO_YAW_LOOK_AT_NEXT_WP),
