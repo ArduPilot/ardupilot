@@ -20,7 +20,7 @@
 #if HAL_BATTMON_INA2XX_ENABLED
 
 //enable or disable only one of the sensor at a given time (enable at least one of the following sensor)
-#define HAL_BATTMON_INA260_ENABLED  0                   
+#define HAL_BATTMON_INA260_ENABLED  0                 
 #define HAL_BATTMON_INA219_ENABLED  1
 #define HAL_BATTMON_INA226_ENABLED  0
 
