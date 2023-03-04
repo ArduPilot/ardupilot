@@ -717,14 +717,94 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     AP_GROUPINFO("GYR3_BIAS",     33, SIM, gyro_bias[2], 0),
 #endif
 
+#if INS_MAX_INSTANCES > 3
+    AP_GROUPINFO("ACC4_SCAL",    34, SIM, accel_scale[3], 0),
+
+    // @Param: ACCEL4_FAIL
+    // @DisplayName: ACCEL4 Failure
+    // @Description: Simulated failure of ACCEL4
+    // @Values: 0:Disabled, 1:ACCEL4 Failure
+    // @User: Advanced
+    AP_GROUPINFO("ACCEL4_FAIL",  35, SIM, accel_fail[3],  0),
+
+    AP_GROUPINFO("GYR4_SCALE",   36, SIM, gyro_scale[3], 0),
+
+    AP_GROUPINFO("ACC4_RND",     37, SIM, accel_noise[3], 0),
+
+    AP_GROUPINFO("GYR4_RND",     38, SIM, gyro_noise[3],  0),
+
+    AP_GROUPINFO("ACC4_BIAS",    39, SIM, accel_bias[3], 0),
+
+    // @Param: GYR4_BIAS_X
+    // @CopyFieldsFrom: SIM_GYR1_BIAS_X
+    // @DisplayName: Fourth Gyro bias on X axis
+    // @Description: Fourth Gyro bias on X axis
+
+    // @Param: GYR4_BIAS_Y
+    // @CopyFieldsFrom: SIM_GYR1_BIAS_Y
+    // @DisplayName: Fourth Gyro bias on Y axis
+    // @Description: Fourth Gyro bias on Y axis
+
+    // @Param: GYR4_BIAS_Z
+    // @CopyFieldsFrom: SIM_GYR1_BIAS_Z
+    // @DisplayName: Fourth Gyro bias on Z axis
+    // @Description: Fourth Gyro bias on Z axis
+
+    AP_GROUPINFO("GYR4_BIAS",    40, SIM, gyro_bias[3], 0),
+
+#endif
+
+#if INS_MAX_INSTANCES > 4
+    AP_GROUPINFO("ACC5_SCAL",    41, SIM, accel_scale[4], 0),
+
+
+    // @Param: ACCEL5_FAIL
+    // @DisplayName: ACCEL5 Failure
+    // @Description: Simulated failure of ACCEL5
+    // @Values: 0:Disabled, 1:ACCEL5 Failure
+    // @User: Advanced
+    AP_GROUPINFO("ACCEL5_FAIL",  42, SIM, accel_fail[4],  0),
+
+    AP_GROUPINFO("GYR5_SCALE",   43, SIM, gyro_scale[4], 0),
+
+    AP_GROUPINFO("ACC5_RND",     44, SIM, accel_noise[4], 0),
+
+    AP_GROUPINFO("GYR5_RND",     45, SIM, gyro_noise[4],  0),
+
+    AP_GROUPINFO("ACC5_BIAS",    46, SIM, accel_bias[4], 0),
+
+    // @Param: GYR5_BIAS_X
+    // @CopyFieldsFrom: SIM_GYR1_BIAS_X
+    // @DisplayName: Fifth Gyro bias on X axis
+    // @Description: Fifth Gyro bias on X axis
+
+    // @Param: GYR5_BIAS_Y
+    // @CopyFieldsFrom: SIM_GYR1_BIAS_Y
+    // @DisplayName: Fifth Gyro bias on Y axis
+    // @Description: Fifth Gyro bias on Y axis
+
+    // @Param: GYR5_BIAS_Z
+    // @CopyFieldsFrom: SIM_GYR1_BIAS_Z
+    // @DisplayName: Fifth Gyro bias on Z axis
+    // @Description: Fifth Gyro bias on Z axis
+
+    AP_GROUPINFO("GYR5_BIAS",    47, SIM, gyro_bias[4], 0),
+#endif
+
     // the IMUT parameters must be last due to the enable parameters
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-    AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SIM, AP_InertialSensor::TCal),
+    AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SIM, AP_InertialSensor_TCal),
 #if INS_MAX_INSTANCES > 1
-    AP_SUBGROUPINFO(imu_tcal[1], "IMUT2_", 62, SIM, AP_InertialSensor::TCal),
+    AP_SUBGROUPINFO(imu_tcal[1], "IMUT2_", 62, SIM, AP_InertialSensor_TCal),
 #endif
 #if INS_MAX_INSTANCES > 2
-    AP_SUBGROUPINFO(imu_tcal[2], "IMUT3_", 63, SIM, AP_InertialSensor::TCal),
+    AP_SUBGROUPINFO(imu_tcal[2], "IMUT3_", 63, SIM, AP_InertialSensor_TCal),
+#endif
+#if INS_MAX_INSTANCES > 3
+    AP_SUBGROUPINFO(imu_tcal[3], "IMUT4_", 60, SIM, AP_InertialSensor_TCal),
+#endif
+#if INS_MAX_INSTANCES > 4
+    AP_SUBGROUPINFO(imu_tcal[4], "IMUT5_", 59, SIM, AP_InertialSensor_TCal),
 #endif
 #endif  // HAL_INS_TEMPERATURE_CAL_ENABLE
     AP_GROUPEND
