@@ -674,6 +674,7 @@ public:
     AP_Int8                 surftrak_mode;
     AP_Int8                 failsafe_dr_enable;
     AP_Int16                failsafe_dr_timeout;
+    AP_Float                surftrak_tc;
 
     // ramp time of throttle during take-off
     AP_Float takeoff_throttle_slew_time;
