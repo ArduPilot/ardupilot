@@ -89,8 +89,9 @@ public:
     /// true if pilot control of radius and turn rate is enabled
     bool pilot_control_enabled() const { return (_options.get() & CircleOptions::MANUAL_CONTROL) != 0; }
 
-    /// provide rangefinder altitude
-    void set_rangefinder_alt(bool use, bool healthy, float alt_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_alt_cm = alt_cm; }
+    /// provide rangefinder based terrain offset
+    /// terrain offset is the terrain's height above the EKF origin
+    void set_rangefinder_terrain_offset(bool use, bool healthy, float terrain_offset_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_terrain_offset_cm = terrain_offset_cm;}
 
     /// check for a change in the radius params
     void check_param_change();
@@ -159,5 +160,5 @@ private:
     bool        _terrain_alt;           // true if _center.z is alt-above-terrain, false if alt-above-ekf-origin
     bool        _rangefinder_available; // true if range finder could be used
     bool        _rangefinder_healthy;   // true if range finder is healthy
-    float       _rangefinder_alt_cm;    // latest rangefinder altitude
+    float       _rangefinder_terrain_offset_cm; // latest rangefinder based terrain offset (e.g. terrain's height above EKF origin)
 };
