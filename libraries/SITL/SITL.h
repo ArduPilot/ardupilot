@@ -488,7 +488,7 @@ public:
     AP_Float imu_temp_end;
     AP_Float imu_temp_tconst;
     AP_Float imu_temp_fixed;
-    AP_InertialSensor::TCal imu_tcal[INS_MAX_INSTANCES];
+    AP_InertialSensor_TCal imu_tcal[INS_MAX_INSTANCES];
 #endif
 
     // IMU control parameters
