@@ -5,10 +5,6 @@
 
 #include "AP_Mount_Backend.h"
 
-#ifndef HAL_MOUNT_ALEXMOS_ENABLED
-#define HAL_MOUNT_ALEXMOS_ENABLED HAL_MOUNT_ENABLED
-#endif
-
 #if HAL_MOUNT_ALEXMOS_ENABLED
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
