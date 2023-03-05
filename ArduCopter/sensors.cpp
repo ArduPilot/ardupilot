@@ -62,6 +62,7 @@ void Copter::read_rangefinder(void)
         // glitches clear after RANGEFINDER_GLITCH_NUM_SAMPLES samples in a row.
         // glitch_cleared_ms is set so surface tracking (or other consumers) can trigger a target reset
         const int32_t glitch_cm = rf_state.alt_cm - rf_state.alt_cm_glitch_protected;
+        bool reset_terrain_offset = false;
         if (glitch_cm >= RANGEFINDER_GLITCH_ALT_CM) {
             rf_state.glitch_count = MAX(rf_state.glitch_count+1, 1);
         } else if (glitch_cm <= -RANGEFINDER_GLITCH_ALT_CM) {
@@ -74,8 +75,8 @@ void Copter::read_rangefinder(void)
             // clear glitch and record time so consumers (i.e. surface tracking) can reset their target altitudes
             rf_state.glitch_count = 0;
             rf_state.alt_cm_glitch_protected = rf_state.alt_cm;
-            rf_state.terrain_offset_cm = rf_state.inertial_alt_cm - rf_state.alt_cm;
             rf_state.glitch_cleared_ms = AP_HAL::millis();
+            reset_terrain_offset = true;
         }
 
         // filter rangefinder altitude
@@ -85,11 +86,23 @@ void Copter::read_rangefinder(void)
             if (timed_out) {
                 // reset filter if we haven't used it within the last second
                 rf_state.alt_cm_filt.reset(rf_state.alt_cm);
-                rf_state.terrain_offset_cm = rf_state.inertial_alt_cm - rf_state.alt_cm;
+                reset_terrain_offset = true;
+
             } else {
                 rf_state.alt_cm_filt.apply(rf_state.alt_cm, 0.05f);
             }
             rf_state.last_healthy_ms = now;
+        }
+
+        // handle reset of terrain offset
+        if (reset_terrain_offset) {
+            if (rf_orient == ROTATION_PITCH_90) {
+                // upward facing
+                rf_state.terrain_offset_cm = rf_state.inertial_alt_cm + rf_state.alt_cm;
+            } else {
+                // assume downward facing
+                rf_state.terrain_offset_cm = rf_state.inertial_alt_cm - rf_state.alt_cm;
+            }
         }
 
         // send downward facing lidar altitude and health to the libraries that require it
