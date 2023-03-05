@@ -256,10 +256,6 @@ void NavEKF3_core::SelectBetaDragFusion()
             // we are required to correct only wind states
             airDataFusionWindOnly = true;
         }
-        // Fuse estimated airspeed to aid wind estimation
-        if (usingDefaultAirspeed) {
-            FuseAirspeed();
-        }
         FuseSideslip();
         prevBetaDragStep_ms = imuSampleTime_ms;
     }
