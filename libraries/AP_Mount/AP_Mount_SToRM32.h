@@ -5,10 +5,6 @@
 
 #include "AP_Mount_Backend.h"
 
-#ifndef HAL_MOUNT_STORM32MAVLINK_ENABLED
-#define HAL_MOUNT_STORM32MAVLINK_ENABLED HAL_MOUNT_ENABLED
-#endif
-
 #if HAL_MOUNT_STORM32MAVLINK_ENABLED
 
 #include <AP_Math/AP_Math.h>

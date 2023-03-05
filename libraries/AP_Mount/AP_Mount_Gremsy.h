@@ -5,10 +5,6 @@
 
 #include "AP_Mount_Backend.h"
 
-#ifndef HAL_MOUNT_GREMSY_ENABLED
-#define HAL_MOUNT_GREMSY_ENABLED (HAL_MOUNT_ENABLED && !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024)
-#endif
-
 #if HAL_MOUNT_GREMSY_ENABLED
 
 #include <AP_Math/AP_Math.h>
