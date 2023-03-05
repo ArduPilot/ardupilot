@@ -412,13 +412,13 @@ class AutoTestCopter(AutoTest):
         self.land_and_disarm()
 
     # enter RTL mode and wait for the vehicle to disarm
-    def do_RTL(self, distance_min=None, check_alt=True, distance_max=10, timeout=250):
+    def do_RTL(self, distance_min=None, check_alt=True, distance_max=10, timeout=250, quiet=False):
         """Enter RTL mode and wait for the vehicle to disarm at Home."""
         self.change_mode("RTL")
         self.hover()
-        self.wait_rtl_complete(check_alt=check_alt, distance_max=distance_max, timeout=timeout)
+        self.wait_rtl_complete(check_alt=check_alt, distance_max=distance_max, timeout=timeout, quiet=True)
 
-    def wait_rtl_complete(self, check_alt=True, distance_max=10, timeout=250):
+    def wait_rtl_complete(self, check_alt=True, distance_max=10, timeout=250, quiet=False):
         """Wait for RTL to reach home and disarm"""
         self.progress("Waiting RTL to reach Home and disarm")
         tstart = self.get_sim_time()
@@ -435,8 +435,9 @@ class AutoTestCopter(AutoTest):
             else:
                 if distance_valid:
                     home = "HOME"
-            self.progress("Alt: %.02f  HomeDist: %.02f %s" %
-                          (alt, home_distance, home))
+            if not quiet:
+                self.progress("Alt: %.02f  HomeDist: %.02f %s" %
+                              (alt, home_distance, home))
 
             # our post-condition is that we are disarmed:
             if not self.armed():
@@ -4865,6 +4866,19 @@ class AutoTestCopter(AutoTest):
             0, # pitch rate (rad/s)
             0, # yaw rate   (rad/s)
             0.5) # thrust, 0 to 1, translated to a climb/descent rate
+
+    def do_yaw_rate(self, yaw_rate):
+        '''yaw aircraft in guided/rate mode'''
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+            60,  # target angle
+            0,  # degrees/second
+            1,  # -1 is counter-clockwise, 1 clockwise
+            1,  # 1 for relative, 0 for absolute
+            0,  # p5
+            0,  # p6
+            0,  # p7
+            quiet=True)
 
     def setup_servo_mount(self, roll_servo=5, pitch_servo=6, yaw_servo=7):
         '''configure a rpy servo mount; caller responsible for required rebooting'''
@@ -9753,6 +9767,38 @@ class AutoTestCopter(AutoTest):
         self.context_pop()
         self.reboot_sitl()
 
+    def GuidedYawRate(self):
+        '''ensuer guided yaw rate is not affected by rate of sewt-attitude messages'''
+        self.takeoff(30, mode='GUIDED')
+        rates = {}
+        for rate in 1, 10:
+            # command huge yaw rate for a while
+            tstart = self.get_sim_time()
+            interval = 1/rate
+            yawspeed_rads_sum = 0
+            yawspeed_rads_count = 0
+            last_sent = 0
+            while True:
+                self.drain_mav()
+                tnow = self.get_sim_time_cached()
+                if tnow - last_sent > interval:
+                    self.do_yaw_rate(60)  # this is... unlikely
+                    last_sent = tnow
+                if tnow - tstart < 5:  # let it spin up to speed first
+                    continue
+                yawspeed_rads_sum += self.mav.messages['ATTITUDE'].yawspeed
+                yawspeed_rads_count += 1
+                if tnow - tstart > 15:  # 10 seconds of measurements
+                    break
+            yawspeed_degs = math.degrees(yawspeed_rads_sum / yawspeed_rads_count)
+            rates[rate] = yawspeed_degs
+            self.progress("Input rate %u hz: average yaw rate %f deg/s" % (rate, yawspeed_degs))
+
+        if rates[10] < rates[1] * 0.95:
+            raise NotAchievedException("Guided yaw rate slower for higher rate updates")
+
+        self.do_RTL()
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -9807,6 +9853,7 @@ class AutoTestCopter(AutoTest):
             self.FlyMissionTwice,
             self.IMUConsistency,
             self.AHRSTrimLand,
+            self.GuidedYawRate,
         ])
         return ret
 
