@@ -206,13 +206,16 @@ void AP_Periph_FW::init()
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
-    if (rangefinder.get_type(0) != RangeFinder::Type::NONE && g.rangefinder_port >= 0) {
-        auto *uart = hal.serial(g.rangefinder_port);
-        if (uart != nullptr) {
-            uart->begin(g.rangefinder_baud);
-            serial_manager.set_protocol_and_baud(g.rangefinder_port, AP_SerialManager::SerialProtocol_Rangefinder, g.rangefinder_baud);
-            rangefinder.init(ROTATION_NONE);
+    if (rangefinder.get_type(0) != RangeFinder::Type::NONE) {
+        if (g.rangefinder_port >= 0) {
+            // init uart for serial rangefinders
+            auto *uart = hal.serial(g.rangefinder_port);
+            if (uart != nullptr) {
+                uart->begin(g.rangefinder_baud);
+                serial_manager.set_protocol_and_baud(g.rangefinder_port, AP_SerialManager::SerialProtocol_Rangefinder, g.rangefinder_baud);
+            }
         }
+        rangefinder.init(ROTATION_NONE);
     }
 #endif
 
