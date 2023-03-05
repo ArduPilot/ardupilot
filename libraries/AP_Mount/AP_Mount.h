@@ -19,15 +19,7 @@
 ************************************************************/
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
-
-#ifndef HAL_MOUNT_ENABLED
-#define HAL_MOUNT_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
-#ifndef HAL_SOLO_GIMBAL_ENABLED
-#define HAL_SOLO_GIMBAL_ENABLED 0
-#endif
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_ENABLED
 
