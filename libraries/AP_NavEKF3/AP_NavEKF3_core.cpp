@@ -268,6 +268,9 @@ void NavEKF3_core::InitialiseVariables()
     prevInFlight = false;
     manoeuvring = false;
     inhibitWindStates = true;
+    windStateLastObs.zero();
+    windStateIsObservable = false;
+    windStateLastObsIsValid = false;
     windStatesAligned = false;
     inhibitDelVelBiasStates = true;
     inhibitDelAngBiasStates = true;

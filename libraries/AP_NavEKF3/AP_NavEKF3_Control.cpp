@@ -64,6 +64,7 @@ void NavEKF3_core::setWindMagStateLearningMode()
                                  PV_AidingMode != AID_NONE;
     if (!inhibitWindStates && !canEstimateWind) {
         inhibitWindStates = true;
+        windStateLastObsIsValid = false;
         updateStateIndexLim();
     } else if (inhibitWindStates && canEstimateWind &&
                (sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y) > sq(5.0f) || dragFusionEnabled)) {
@@ -77,7 +78,7 @@ void NavEKF3_core::setWindMagStateLearningMode()
             Vector3F tempEuler;
             stateStruct.quat.to_euler(tempEuler.x, tempEuler.y, tempEuler.z);
             ftype trueAirspeedVariance;
-            const bool haveAirspeedMeasurement = usingDefaultAirspeed || (tasDataDelayed.allowFusion && (imuDataDelayed.time_ms - tasDataDelayed.time_ms < 500) && useAirspeed());
+            const bool haveAirspeedMeasurement = (tasDataDelayed.allowFusion && (imuDataDelayed.time_ms - tasDataDelayed.time_ms < 500) && useAirspeed());
             if (haveAirspeedMeasurement) {
                 trueAirspeedVariance = constrain_ftype(tasDataDelayed.tasVariance, WIND_VEL_VARIANCE_MIN, WIND_VEL_VARIANCE_MAX);
                 const ftype windSpeed =  sqrtF(sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y)) - tasDataDelayed.tas;
@@ -321,6 +322,15 @@ void NavEKF3_core::setAidingMode()
             // Currently these are all the same source as will stabilise attitude because we do not currently have
             // a sensor that only observes attitude
             velAiding = posUsed || gpsVelUsed || optFlowUsed || airSpdUsed || dragUsed || rngBcnUsed || bodyOdmUsed;
+
+            // Store the last wind states whose errors were constrained by measurements
+            // This will be used to synthesise an airspeed measurement to enable dead reckoning
+            bool newWindStateIsObservable = !inhibitWindStates && (posUsed || gpsVelUsed || optFlowUsed || rngBcnUsed || bodyOdmUsed);
+            if (!inhibitWindStates && !newWindStateIsObservable && windStateIsObservable) {
+                windStateLastObs = stateStruct.wind_vel;
+                windStateLastObsIsValid = true;
+            }
+            windStateIsObservable = newWindStateIsObservable;
 
             // check if position drift has been constrained by a measurement source
             bool posAiding = posUsed || rngBcnUsed;
