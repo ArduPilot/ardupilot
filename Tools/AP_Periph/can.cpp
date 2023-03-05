@@ -154,8 +154,8 @@ uint8_t PreferredNodeID = HAL_CAN_DEFAULT_NODE_ID;
 #define AP_PERIPH_BATTERY_MODEL_NAME CAN_APP_NODE_NAME
 #endif
 
-#ifndef CAN_PROBE_CONTINUOUS
-#define CAN_PROBE_CONTINUOUS 0
+#ifndef AP_PERIPH_PROBE_CONTINUOUS
+#define AP_PERIPH_PROBE_CONTINUOUS 0
 #endif
 
 #ifndef AP_PERIPH_ENFORCE_AT_LEAST_ONE_PORT_IS_UAVCAN_1MHz
@@ -1778,7 +1778,7 @@ void AP_Periph_FW::can_mag_update(void)
         return;
     }
     compass.read();
-#if CAN_PROBE_CONTINUOUS
+#if AP_PERIPH_PROBE_CONTINUOUS
     if (compass.get_count() == 0) {
         static uint32_t last_probe_ms;
         uint32_t now = AP_HAL::native_millis();
@@ -2219,7 +2219,7 @@ void AP_Periph_FW::can_airspeed_update(void)
     if (!airspeed.enabled()) {
         return;
     }
-#if CAN_PROBE_CONTINUOUS
+#if AP_PERIPH_PROBE_CONTINUOUS
     if (!airspeed.healthy()) {
         uint32_t now = AP_HAL::native_millis();
         static uint32_t last_probe_ms;
@@ -2279,7 +2279,7 @@ void AP_Periph_FW::can_rangefinder_update(void)
     if (rangefinder.get_type(0) == RangeFinder::Type::NONE) {
         return;
     }
-#if CAN_PROBE_CONTINUOUS
+#if AP_PERIPH_PROBE_CONTINUOUS
     if (rangefinder.num_sensors() == 0) {
         uint32_t now = AP_HAL::native_millis();
         static uint32_t last_probe_ms;
