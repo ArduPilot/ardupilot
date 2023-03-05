@@ -93,6 +93,7 @@ public:
     int stat(const char *pathname, struct stat *stbuf);
     int unlink(const char *pathname);
     int mkdir(const char *pathname);
+    int rename(const char *oldpath, const char *newpath);
 
     DirHandle *opendir(const char *pathname);
     struct dirent *readdir(DirHandle *dirp);

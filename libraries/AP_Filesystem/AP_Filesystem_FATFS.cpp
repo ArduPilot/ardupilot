@@ -665,6 +665,22 @@ int AP_Filesystem_FATFS::mkdir(const char *pathname)
     return 0;
 }
 
+int AP_Filesystem_FATFS::rename(const char *oldpath, const char *newpath)
+{
+    FS_CHECK_ALLOWED(-1);
+    WITH_SEMAPHORE(sem);
+
+    errno = 0;
+
+    int res = f_rename(oldpath, newpath);
+    if (res != FR_OK) {
+        errno = fatfs_to_errno((FRESULT)res);
+        return -1;
+    }
+
+    return 0;
+}
+
 /*
   wrapper structure to associate a dirent with a DIR
  */

@@ -382,26 +382,28 @@ int lua_get_i2c_device(lua_State *L) {
         }
     }
 
+    auto *scripting = AP::scripting();
+
     static_assert(SCRIPTING_MAX_NUM_I2C_DEVICE >= 0, "There cannot be a negative number of I2C devices");
-    if (AP::scripting()->num_i2c_devices >= SCRIPTING_MAX_NUM_I2C_DEVICE) {
+    if (scripting->num_i2c_devices >= SCRIPTING_MAX_NUM_I2C_DEVICE) {
         return luaL_argerror(L, 1, "no i2c devices available");
     }
 
-    AP::scripting()->_i2c_dev[AP::scripting()->num_i2c_devices] = new AP_HAL::OwnPtr<AP_HAL::I2CDevice>;
-    if (AP::scripting()->_i2c_dev[AP::scripting()->num_i2c_devices] == nullptr) {
+    scripting->_i2c_dev[scripting->num_i2c_devices] = new AP_HAL::OwnPtr<AP_HAL::I2CDevice>;
+    if (scripting->_i2c_dev[scripting->num_i2c_devices] == nullptr) {
         return luaL_argerror(L, 1, "i2c device nullptr");
     }
 
-    *AP::scripting()->_i2c_dev[AP::scripting()->num_i2c_devices] = std::move(hal.i2c_mgr->get_device(bus, address, bus_clock, use_smbus));
+    *scripting->_i2c_dev[scripting->num_i2c_devices] = std::move(hal.i2c_mgr->get_device(bus, address, bus_clock, use_smbus));
 
-    if (AP::scripting()->_i2c_dev[AP::scripting()->num_i2c_devices] == nullptr || AP::scripting()->_i2c_dev[AP::scripting()->num_i2c_devices]->get() == nullptr) {
+    if (scripting->_i2c_dev[scripting->num_i2c_devices] == nullptr || scripting->_i2c_dev[scripting->num_i2c_devices]->get() == nullptr) {
         return luaL_argerror(L, 1, "i2c device nullptr");
     }
 
     new_AP_HAL__I2CDevice(L);
-    *((AP_HAL::I2CDevice**)luaL_checkudata(L, -1, "AP_HAL::I2CDevice")) = AP::scripting()->_i2c_dev[AP::scripting()->num_i2c_devices]->get();
+    *((AP_HAL::I2CDevice**)luaL_checkudata(L, -1, "AP_HAL::I2CDevice")) = scripting->_i2c_dev[scripting->num_i2c_devices]->get();
 
-    AP::scripting()->num_i2c_devices++;
+    scripting->num_i2c_devices++;
 
     return 1;
 }
@@ -459,15 +461,17 @@ int lua_get_CAN_device(lua_State *L) {
     const uint32_t raw_buffer_len = get_uint32(L, 1 + arg_offset, 1, 25);
     const uint32_t buffer_len = static_cast<uint32_t>(raw_buffer_len);
 
-    if (AP::scripting()->_CAN_dev == nullptr) {
-        AP::scripting()->_CAN_dev = new ScriptingCANSensor(AP_CANManager::Driver_Type::Driver_Type_Scripting);
-        if (AP::scripting()->_CAN_dev == nullptr) {
+    auto *scripting = AP::scripting();
+
+    if (scripting->_CAN_dev == nullptr) {
+        scripting->_CAN_dev = new ScriptingCANSensor(AP_CANManager::Driver_Type::Driver_Type_Scripting);
+        if (scripting->_CAN_dev == nullptr) {
             return luaL_argerror(L, 1, "CAN device nullptr");
         }
     }
 
     new_ScriptingCANBuffer(L);
-    *((ScriptingCANBuffer**)luaL_checkudata(L, -1, "ScriptingCANBuffer")) = AP::scripting()->_CAN_dev->add_buffer(buffer_len);
+    *((ScriptingCANBuffer**)luaL_checkudata(L, -1, "ScriptingCANBuffer")) = scripting->_CAN_dev->add_buffer(buffer_len);
 
     return 1;
 }
@@ -482,15 +486,17 @@ int lua_get_CAN_device2(lua_State *L) {
     const uint32_t raw_buffer_len = get_uint32(L, 1 + arg_offset, 1, 25);
     const uint32_t buffer_len = static_cast<uint32_t>(raw_buffer_len);
 
-    if (AP::scripting()->_CAN_dev2 == nullptr) {
-        AP::scripting()->_CAN_dev2 = new ScriptingCANSensor(AP_CANManager::Driver_Type::Driver_Type_Scripting2);
-        if (AP::scripting()->_CAN_dev2 == nullptr) {
+    auto *scripting = AP::scripting();
+
+    if (scripting->_CAN_dev2 == nullptr) {
+        scripting->_CAN_dev2 = new ScriptingCANSensor(AP_CANManager::Driver_Type::Driver_Type_Scripting2);
+        if (scripting->_CAN_dev2 == nullptr) {
             return luaL_argerror(L, 1, "CAN device nullptr");
         }
     }
 
     new_ScriptingCANBuffer(L);
-    *((ScriptingCANBuffer**)luaL_checkudata(L, -1, "ScriptingCANBuffer")) = AP::scripting()->_CAN_dev2->add_buffer(buffer_len);
+    *((ScriptingCANBuffer**)luaL_checkudata(L, -1, "ScriptingCANBuffer")) = scripting->_CAN_dev2->add_buffer(buffer_len);
 
     return 1;
 }
@@ -500,6 +506,8 @@ int lua_get_CAN_device2(lua_State *L) {
   directory listing, return table of files in a directory
  */
 int lua_dirlist(lua_State *L) {
+    binding_argcheck(L, 1);
+
     struct dirent *entry;
     int i;
     const char *path = luaL_checkstring(L, 1);
@@ -529,8 +537,9 @@ int lua_dirlist(lua_State *L) {
   remove a file
  */
 int lua_removefile(lua_State *L) {
-  const char *filename = luaL_checkstring(L, 1);
-  return luaL_fileresult(L, remove(filename) == 0, filename);
+    binding_argcheck(L, 1);
+    const char *filename = luaL_checkstring(L, 1);
+    return luaL_fileresult(L, remove(filename) == 0, filename);
 }
 
 // Manual binding to allow SRV_Channels table to see safety state
@@ -538,5 +547,28 @@ int SRV_Channels_get_safety_state(lua_State *L) {
     binding_argcheck(L, 1);
     const bool data = hal.util->safety_switch_state() !=  AP_HAL::Util::SAFETY_ARMED;
     lua_pushboolean(L, data);
+    return 1;
+}
+
+int lua_get_PWMSource(lua_State *L) {
+    binding_argcheck(L, 0);
+
+    auto *scripting = AP::scripting();
+
+    static_assert(SCRIPTING_MAX_NUM_PWM_SOURCE >= 0, "There cannot be a negative number of PWMSources");
+    if (scripting->num_pwm_source >= SCRIPTING_MAX_NUM_PWM_SOURCE) {
+        return luaL_argerror(L, 1, "no PWMSources available");
+    }
+
+    scripting->_pwm_source[scripting->num_pwm_source] = new AP_HAL::PWMSource;
+    if (scripting->_pwm_source[scripting->num_pwm_source] == nullptr) {
+        return luaL_argerror(L, 1, "PWMSources device nullptr");
+    }
+
+    new_AP_HAL__PWMSource(L);
+    *((AP_HAL::PWMSource**)luaL_checkudata(L, -1, "AP_HAL::PWMSource")) = scripting->_pwm_source[scripting->num_pwm_source];
+
+    scripting->num_pwm_source++;
+
     return 1;
 }
