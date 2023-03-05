@@ -18,7 +18,7 @@ class AP_Mount_SToRM32_serial : public AP_Mount_Backend
 
 public:
     // Constructor
-    AP_Mount_SToRM32_serial(AP_Mount &frontend, AP_Mount_Params &params, uint8_t instance);
+    using AP_Mount_Backend::AP_Mount_Backend;
 
     // init - performs any required initialisation for this instance
     void init() override;
@@ -135,7 +135,7 @@ private:
 
     uint8_t _reply_length;
     uint8_t _reply_counter;
-    ReplyType _reply_type;
+    ReplyType _reply_type = ReplyType_UNKNOWN;
 
 
     union PACKED SToRM32_reply {
