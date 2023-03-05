@@ -150,6 +150,11 @@ void Plane::init_ardupilot()
         optflow.init(-1);
     }
 #endif
+#if AP_RADAR_ENABLED
+    if (radar.enabled()) {
+        radar.init(-1);
+    }
+#endif
 
 // init cargo gripper
 #if AP_GRIPPER_ENABLED

@@ -939,6 +939,12 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(optflow,   "FLOW", AP_OpticalFlow),
 #endif
 
+#if AP_RADAR_ENABLED
+    // @Group: RADAR
+    // @Path: ../libraries/AP_Radar/AP_Radar.cpp
+    GOBJECT(radar,   "RADAR", AP_Radar),
+#endif
+
     // @Group: MIS_
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
     GOBJECT(mission, "MIS_",       AP_Mission),

@@ -24,6 +24,7 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
+#include <AP_Radar/AP_Radar.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_RCMapper/AP_RCMapper.h>
 #include <AP_RSSI/AP_RSSI.h>
@@ -421,7 +422,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_command(msp_packet_t *cmd, ms
     // initialize reply by default
     reply->cmd = cmd->cmd;
 
-    if (MSP2_IS_SENSOR_MESSAGE(cmd_msp)) {
+    if (MSP2_IS_SENSOR_MESSAGE(cmd_msp) || cmd_msp == MSP2_SET_RADAR_POS) {
         ret = msp_process_sensor_command(cmd_msp, src);
     } else {
         ret = msp_process_out_command(cmd_msp, dst);
@@ -519,10 +520,27 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_sensor_command(uint16_t cmd_m
         msp_handle_airspeed(*pkt);
     }
     break;
+    case MSP2_SET_RADAR_POS: {
+        const MSP::msp_radar_pos_message_t *pkt = (const MSP::msp_radar_pos_message_t *)src->ptr;
+        msp_handle_radar(*pkt);
+    }
+    break;
     }
 
     return MSP_RESULT_NO_REPLY;
 }
+
+void AP_MSP_Telem_Backend::msp_handle_radar(const MSP::msp_radar_pos_message_t &pkt)
+{
+#if HAL_MSP_RADAR_ENABLED
+    AP_Radar *radar = AP::radar();
+    if (radar == nullptr) {
+        return;
+    }
+    radar->handle_msp(pkt);
+#endif
+}
+
 
 void AP_MSP_Telem_Backend::msp_handle_opflow(const MSP::msp_opflow_data_message_t &pkt)
 {
