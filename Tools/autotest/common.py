@@ -5811,6 +5811,7 @@ class AutoTest(ABC):
             target_sysid=target_sysid,
             target_compid=target_compid,
             mav=mav,
+            quiet=quiet,
         )
         self.run_cmd_get_ack(command, want_result, timeout, quiet=quiet, mav=mav)
 
