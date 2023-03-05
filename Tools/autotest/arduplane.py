@@ -173,7 +173,7 @@ class AutoTestPlane(AutoTest):
                 raise NotAchievedException("Did not get correct failure reason")
             self.run_cmd_run_prearms()
             try:
-                self.wait_statustext(".*AHRS: not using configured AHRS type.*", timeout=1, check_context=True, regex=True)
+                self.wait_statustext(".*AHRS: (EKF3 not started|Not healthy).*", timeout=1, check_context=True, regex=True)
                 success = True
                 continue
             except AutoTestTimeoutException:
