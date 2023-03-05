@@ -185,11 +185,10 @@ RangeFinder::RangeFinder()
  */
 void RangeFinder::init(enum Rotation orientation_default)
 {
-    if (init_done) {
-        // init called a 2nd time?
+    if (num_instances != 0) {
+        // don't re-init if we've found some sensors already
         return;
     }
-    init_done = true;
 
     // set orientation defaults
     for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
@@ -298,9 +297,11 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
 #if AP_RANGEFINDER_LWI2C_ENABLED
         if (params[instance].address) {
             // the LW20 needs a long time to boot up, so we delay 1.5s here
+#ifndef HAL_BUILD_AP_PERIPH
             if (!hal.util->was_watchdog_armed()) {
                 hal.scheduler->delay(1500);
             }
+#endif
 #ifdef HAL_RANGEFINDER_LIGHTWARE_I2C_BUS
             _add_backend(AP_RangeFinder_LightWareI2C::detect(state[instance], params[instance],
                                                              hal.i2c_mgr->get_device(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, params[instance].address)),
