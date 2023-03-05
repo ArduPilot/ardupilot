@@ -865,18 +865,29 @@ void NavEKF3_core::readAirSpdData()
     // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
     tasDataToFuse = storedTAS.recall(tasDataDelayed,imuDataDelayed.time_ms);
 
-    float easErrVar = sq(MAX(frontend->_easNoise, 0.5f));
-    // Allow use of a default value if enabled
-    if (!useAirspeed() &&
-        imuDataDelayed.time_ms - tasDataDelayed.time_ms > 200 &&
-        is_positive(defaultAirSpeed)) {
-        tasDataDelayed.tas = defaultAirSpeed * EAS2TAS;
-        tasDataDelayed.tasVariance = sq(MAX(defaultAirSpeedVariance, easErrVar));
-        tasDataDelayed.allowFusion = true;
-        tasDataDelayed.time_ms = 0;
-        usingDefaultAirspeed = true;
-    } else {
-        usingDefaultAirspeed = false;
+    // Allow use of a default value or a value synthesised from a stored wind velocity vector
+    if (!useAirspeed()) {
+        if (is_positive(defaultAirSpeed)) {
+            if (imuDataDelayed.time_ms - tasDataDelayed.time_ms > 200) {
+                tasDataDelayed.tas = defaultAirSpeed * EAS2TAS;
+                tasDataDelayed.tasVariance = MAX(defaultAirSpeedVariance, sq(MAX(frontend->_easNoise, 0.5f)));
+                tasDataToFuse = true;
+                tasDataDelayed.allowFusion = true;
+            } else {
+                tasDataToFuse = false;
+            }
+        } else if (windStateLastObsIsValid && !windStateIsObservable) {
+            if (imuDataDelayed.time_ms - tasDataDelayed.time_ms > 200) {
+                // use stored wind state to synthesise an airspeed measurement
+                const Vector3F windRelVel = stateStruct.velocity - Vector3F(windStateLastObs.x, windStateLastObs.y, 0.0F);
+                tasDataDelayed.tas = windRelVel.length();
+                tasDataDelayed.tasVariance = sq(MAX(frontend->_easNoise, 0.5f));
+                tasDataToFuse = true;
+                tasDataDelayed.allowFusion = true;
+            } else {
+                tasDataToFuse = false;
+            }
+        }
     }
 }
 
