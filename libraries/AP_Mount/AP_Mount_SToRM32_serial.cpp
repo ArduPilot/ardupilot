@@ -6,11 +6,6 @@
 #include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
-AP_Mount_SToRM32_serial::AP_Mount_SToRM32_serial(AP_Mount &frontend, AP_Mount_Params &params, uint8_t instance) :
-    AP_Mount_Backend(frontend, params, instance),
-    _reply_type(ReplyType_UNKNOWN)
-{}
-
 // init - performs any required initialisation for this instance
 void AP_Mount_SToRM32_serial::init()
 {
