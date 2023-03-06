@@ -161,6 +161,26 @@ void AP_Mount_Gremsy::find_gimbal()
             return;
         }
 
+#if AP_MAVLINK_FORWARD_FILTERING_ENABLED
+        // install a list of IDs which should not be forwarded from
+        // the Gremsy to other places:
+        // this list *must* be numerically sorted low-to-high as it is
+        // used for a bisection search:
+        static const uint16_t noforward_ids[] {
+            1,  // MAVLINK_MSG_ID_SYS_STATUS
+            27, // MAVLINK_MSG_ID_RAW_IMU
+            158, // MAVLINK_MSG_ID_MOUNT_STATUS
+            265, // MAVLINK_MSG_ID_MOUNT_ORIENTATION
+            285,  // MAVLINK_MSG_ID_GIMBAL_DEVICE_ATTITUDE_STATUS (we consume and re-emit)
+        };
+
+        static const GCS_MAVLink_NoForwardTable noforward_from_table {
+            noforward_ids,
+            ARRAY_SIZE(noforward_ids),
+        };
+        _link->set_noforward_from_table(&noforward_from_table);
+#endif
+
         _compid = compid;
     }
 
