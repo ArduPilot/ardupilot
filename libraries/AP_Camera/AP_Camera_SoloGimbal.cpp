@@ -1,6 +1,6 @@
 #include "AP_Camera_SoloGimbal.h"
 
-#if AP_CAMERA_ENABLED && HAL_SOLO_GIMBAL_ENABLED
+#if AP_CAMERA_SOLOGIMBAL_ENABLED
 
 #include <GCS_MAVLink/GCS.h>
 
@@ -114,4 +114,4 @@ void AP_Camera_SoloGimbal::handle_message(mavlink_channel_t chan, const mavlink_
     }
 }
 
-#endif // AP_CAMERA_ENABLED && HAL_SOLO_GIMBAL_ENABLED
+#endif // AP_CAMERA_SOLOGIMBAL_ENABLED
