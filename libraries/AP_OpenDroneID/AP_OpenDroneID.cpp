@@ -133,7 +133,7 @@ bool AP_OpenDroneID::pre_arm_check(char* failmsg, uint8_t failmsg_len)
         return false;
     }
     
-    if (arm_status.status != MAV_ODID_GOOD_TO_ARM) {
+    if (arm_status.status != MAV_ODID_ARM_STATUS_GOOD_TO_ARM) {
         strncpy(failmsg, arm_status.error, failmsg_len);
         return false;
     }
