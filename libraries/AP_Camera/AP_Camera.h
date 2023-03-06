@@ -47,7 +47,9 @@ public:
     // enums
     enum class CameraType {
         NONE = 0,           // None
+#if AP_CAMERA_SERVO_ENABLED
         SERVO = 1,          // Servo/PWM controlled camera
+#endif
 #if AP_CAMERA_RELAY_ENABLED
         RELAY = 2,          // Relay controlled camera
 #endif

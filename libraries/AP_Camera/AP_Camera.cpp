@@ -86,9 +86,12 @@ void AP_Camera::init()
         CameraType camera_type = get_type(instance);
 
         // check for servo camera
-        if (camera_type == CameraType::SERVO) {
+        if (false) {
+#if AP_CAMERA_SERVO_ENABLED
+        } else if (camera_type == CameraType::SERVO) {
             _backends[instance] = new AP_Camera_Servo(*this, _params[instance], instance);
             _num_instances++;
+#endif
 
 #if AP_CAMERA_RELAY_ENABLED
         // check for relay camera
