@@ -99,9 +99,10 @@ bool AP_Compass_MMC5XX3::init()
     // 10ms minimum startup time
     hal.scheduler->delay(15);
 
-    if (!dev->write_register(REG_CONTROL1, REG_CONTROL1_BW0 | REG_CONTROL1_BW1)) {
+    // setup for 100Hz output
+    if (!dev->write_register(REG_CONTROL1, 0)) {
         return false;
-    } //  // This BW config sets the sensor measurement time to 0.5ms and filter bandwidth to 800Hz
+    }
 
 
     /* register the compass instance in the frontend */
@@ -122,8 +123,8 @@ bool AP_Compass_MMC5XX3::init()
 
     dev->set_retries(1);
 
-    // call timer() at 1kHz
-    dev->register_periodic_callback(1000,
+    // call timer() at 100Hz
+    dev->register_periodic_callback(10000U,
                                     FUNCTOR_BIND_MEMBER(&AP_Compass_MMC5XX3::timer, void));
 
     return true;
@@ -132,10 +133,10 @@ bool AP_Compass_MMC5XX3::init()
 void AP_Compass_MMC5XX3::timer()
 {
     // recalculate the offset with set/reset operation every measure_count_limit measurements
-    // sensor is read at about 500Hz, so about every 10 seconds
-    const uint16_t measure_count_limit = 5000;
-    const uint16_t zero_offset = 32768; // 16 bit mode
-    const uint16_t sensitivity = 4096; // counts per Gauss, 16 bit mode
+    // sensor is read at about 100Hz, so about every 10 seconds
+    const uint16_t measure_count_limit = 1000U;
+    const uint16_t zero_offset = 32768U; // 16 bit mode
+    const uint16_t sensitivity = 4096U; // counts per Gauss, 16 bit mode
     constexpr float counts_to_milliGauss = 1.0e3f / sensitivity;
 
     /*
