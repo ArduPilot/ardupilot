@@ -115,8 +115,12 @@ function EFI_State_ud:fuel_consumption_rate_cm3pm(value) end
 function EFI_State_ud:fuel_pressure(value) end
 
 -- set field
----@param value integer
-function EFI_State_ud:fuel_pressure_status(value) end
+---@param status integer
+---| '0' # Not supported
+---| '1' # Ok
+---| '2' # Below nominal
+---| '3' # Above nominal
+function EFI_State_ud:fuel_pressure_status(status) end
 
 -- set field
 ---@param value number
