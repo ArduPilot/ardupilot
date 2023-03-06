@@ -53,7 +53,9 @@ public:
 #if AP_CAMERA_MOUNT_ENABLED
         MOUNT = 4,          // Mount library implements camera
 #endif
+#if AP_CAMERA_MAVLINK_ENABLED
         MAVLINK = 5,        // MAVLink enabled camera
+#endif
     };
 
     // returns camera type of the given instance
