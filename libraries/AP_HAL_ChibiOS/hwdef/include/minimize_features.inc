@@ -52,3 +52,6 @@ define OSD_PARAM_ENABLED 0
 
 # no Winch if minimized:
 define AP_WINCH_ENABLED 0
+
+# prune out some odd camera backends:
+define AP_CAMERA_MOUNT_ENABLED 0
