@@ -48,7 +48,9 @@ public:
     enum class CameraType {
         NONE = 0,           // None
         SERVO = 1,          // Servo/PWM controlled camera
+#if AP_CAMERA_RELAY_ENABLED
         RELAY = 2,          // Relay controlled camera
+#endif
 #if AP_CAMERA_SOLOGIMBAL_ENABLED
         SOLOGIMBAL = 3,     // GoPro in Solo gimbal
 #endif

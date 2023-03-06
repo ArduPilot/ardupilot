@@ -90,10 +90,12 @@ void AP_Camera::init()
             _backends[instance] = new AP_Camera_Servo(*this, _params[instance], instance);
             _num_instances++;
 
+#if AP_CAMERA_RELAY_ENABLED
         // check for relay camera
         } else if (camera_type == CameraType::RELAY) {
             _backends[instance] = new AP_Camera_Relay(*this, _params[instance], instance);
             _num_instances++;
+#endif
 
 #if AP_CAMERA_SOLOGIMBAL_ENABLED
         // check for GoPro in Solo camera
