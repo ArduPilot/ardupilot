@@ -139,6 +139,14 @@ bool MAVLink_routing::check_and_forward(GCS_MAVLINK &in_link, const mavlink_mess
         return process_locally;
     }
 
+#if AP_MAVLINK_FORWARD_FILTERING_ENABLED
+    // if the link itself says we should not forward this message from
+    // it, then don't:
+    if (!in_link.should_forward_message(msg)) {
+        return process_locally;
+    }
+#endif
+
     if (process_locally && !broadcast_system && !broadcast_component) {
         // nothing more to do - it can only be for us
         return true;

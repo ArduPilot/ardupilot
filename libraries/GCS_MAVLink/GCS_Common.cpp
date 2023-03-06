@@ -56,6 +56,7 @@
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
+#include <AP_Common/sorting.h>
 
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"
@@ -6621,3 +6622,37 @@ MAV_RESULT GCS_MAVLINK::handle_control_high_latency(const mavlink_command_long_t
     return MAV_RESULT_ACCEPTED;
 }
 #endif // HAL_HIGH_LATENCY2_ENABLED
+
+#if AP_MAVLINK_FORWARD_FILTERING_ENABLED
+bool GCS_MAVLink_NoForwardTable::contains(uint16_t id) const
+{
+    return bisect_search_uint16(ids, num_ids, id);
+}
+
+void GCS_MAVLINK::set_noforward_from_table(const GCS_MAVLink_NoForwardTable *table)
+{
+    no_forward_from_table = table;
+}
+
+// return true if the message - *coming in from this link* - should
+// be forwarded to the other links:
+bool GCS_MAVLINK::should_forward_message(const mavlink_message_t &msg) const
+{
+    if (no_forward_from_table == nullptr) {
+        return true;
+    }
+
+    const uint32_t id = msg.msgid;
+    if (id > UINT16_MAX) {
+        // this shouldn't happen as mavlink IDs are (conventionally) <65535
+        return true;
+    }
+
+    if (no_forward_from_table->contains((uint16_t)id)) {
+        return false;
+    }
+
+    return true;
+}
+
+#endif  // AP_MAVLINK_FORWARD_FILTERING_ENABLED

@@ -120,6 +120,16 @@ public:
     AP_Int16        streamRates[GCS_MAVLINK_NUM_STREAM_RATES];
 };
 
+#if AP_MAVLINK_FORWARD_FILTERING_ENABLED
+// a class containing a list of MAVLink IDs to *not* forward on a link
+class GCS_MAVLink_NoForwardTable {
+public:
+    const uint16_t *ids;  // IDs are 24-bit - but we don't use >65535 so save RAM
+    uint8_t num_ids;
+    bool contains(uint16_t id) const;
+};
+#endif
+
 #if HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
 class DefaultIntervalsFromFiles
 {
@@ -410,6 +420,17 @@ public:
     // set a channel as private. Private channels get sent heartbeats, but
     // don't get broadcast packets or forwarded packets
     static void set_channel_private(mavlink_channel_t chan);
+
+#if AP_MAVLINK_FORWARD_FILTERING_ENABLED
+    // register a list of MAVLink IDs not to forward *from* this link.
+    // Note that this table is *not* copied!  Caller must ensure the
+    // passed-in object remains valid and unchanged.
+    void set_noforward_from_table(const GCS_MAVLink_NoForwardTable *table);
+
+    // return true if the message - *coming in from this link* - should
+    // be forwarded to the other links:
+    bool should_forward_message(const mavlink_message_t &msg) const;
+#endif
 
     // return true if channel is private
     static bool is_private(mavlink_channel_t _chan) {
@@ -750,6 +771,13 @@ private:
     static bool command_long_stores_location(const MAV_CMD command);
 
     bool calibrate_gyros();
+
+#if AP_MAVLINK_FORWARD_FILTERING_ENABLED
+    // a list of MAVLink IDs not to forward *from* this link.  Note
+    // that this table is *not* copied!  Caller must ensure the
+    // passed-in object remains valid and unchanged.
+    const GCS_MAVLink_NoForwardTable *no_forward_from_table;
+#endif
 
     /// The stream we are communicating over
     AP_HAL::UARTDriver *_port;
