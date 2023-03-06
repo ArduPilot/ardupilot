@@ -1,7 +1,16 @@
 #pragma once
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_Mount/AP_Mount_config.h>
 
 #ifndef AP_CAMERA_ENABLED
 #define AP_CAMERA_ENABLED 1
+#endif
+
+#ifndef AP_CAMERA_BACKEND_DEFAULT_ENABLED
+#define AP_CAMERA_BACKEND_DEFAULT_ENABLED AP_CAMERA_ENABLED
+#endif
+
+#ifndef AP_CAMERA_MOUNT_ENABLED
+#define AP_CAMERA_MOUNT_ENABLED AP_CAMERA_BACKEND_DEFAULT_ENABLED && HAL_MOUNT_ENABLED
 #endif

@@ -50,7 +50,9 @@ public:
         SERVO = 1,          // Servo/PWM controlled camera
         RELAY = 2,          // Relay controlled camera
         SOLOGIMBAL = 3,     // GoPro in Solo gimbal
+#if AP_CAMERA_MOUNT_ENABLED
         MOUNT = 4,          // Mount library implements camera
+#endif
         MAVLINK = 5,        // MAVLink enabled camera
     };
 
