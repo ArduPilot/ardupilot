@@ -109,10 +109,12 @@ void AP_Camera::init()
             _num_instances++;
 #endif
 
+#if AP_CAMERA_MAVLINK_ENABLED
         // check for MAVLink enabled camera driver
         } else if (camera_type == CameraType::MAVLINK) {
             _backends[instance] = new AP_Camera_MAVLink(*this, _params[instance], instance);
             _num_instances++;
+#endif
         }
 
         // set primary to first non-null index
