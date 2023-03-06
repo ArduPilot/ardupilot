@@ -11,6 +11,7 @@
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AP_Camera_Params.h"
+#include "AP_Mount/AP_Mount_config.h"
 
 #define AP_CAMERA_MAX_INSTANCES             2       // maximum number of camera backends
 
@@ -64,9 +65,6 @@ public:
 #endif
     };
 
-    // returns camera type of the given instance
-    CameraType get_type(uint8_t instance) const;
-
     // detect and initialise backends
     void init();
 
@@ -86,34 +84,34 @@ public:
     void control(uint8_t instance, float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id);
 
     // set camera trigger distance in a mission
-    void set_trigger_distance(float distance_m) { set_trigger_distance(primary, distance_m); }
+    void set_trigger_distance(float distance_m);
     void set_trigger_distance(uint8_t instance, float distance_m);
 
     // momentary switch to change camera between picture and video modes
-    void cam_mode_toggle() { cam_mode_toggle(primary); }
+    void cam_mode_toggle();
     void cam_mode_toggle(uint8_t instance);
 
     // take a picture
-    void take_picture() { take_picture(primary); }
+    void take_picture();
     void take_picture(uint8_t instance);
 
     // start/stop recording video
     // start_recording should be true to start recording, false to stop recording
-    bool record_video(bool start_recording) { return record_video(primary, start_recording); }
+    bool record_video(bool start_recording);
     bool record_video(uint8_t instance, bool start_recording);
 
     // zoom in, out or hold
     // zoom out = -1, hold = 0, zoom in = 1
-    bool set_zoom_step(int8_t zoom_step) { return set_zoom_step(primary, zoom_step); }
+    bool set_zoom_step(int8_t zoom_step);
     bool set_zoom_step(uint8_t instance, int8_t zoom_step);
 
     // focus in, out or hold
     // focus in = -1, focus hold = 0, focus out = 1
-    bool set_manual_focus_step(int8_t focus_step) { return set_manual_focus_step(primary, focus_step); }
+    bool set_manual_focus_step(int8_t focus_step);
     bool set_manual_focus_step(uint8_t instance, int8_t focus_step);
 
     // auto focus
-    bool set_auto_focus() { return set_auto_focus(primary); }
+    bool set_auto_focus();
     bool set_auto_focus(uint8_t instance);
 
     // set if vehicle is in AUTO mode
@@ -145,15 +143,14 @@ private:
     AP_Int16 _max_roll;         // Maximum acceptable roll angle when trigging camera
 
     // check instance number is valid
-    bool is_valid_instance(uint8_t instance) const;
+    AP_Camera_Backend *get_instance(uint8_t instance);
 
     // perform any required parameter conversion
     void convert_params();
 
-    uint8_t primary;                    // index of primary backend (normally the first one)
+    AP_Camera_Backend *primary;         // primary camera backed
     bool _is_in_auto_mode;              // true if in AUTO mode
     uint32_t log_camera_bit;            // logging bit (from LOG_BITMASK) to enable camera logging
-    uint8_t _num_instances;             // number of camera backends instantiated
     AP_Camera_Backend *_backends[AP_CAMERA_MAX_INSTANCES];  // pointers to instantiated backends
 };
 
