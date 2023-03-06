@@ -95,7 +95,7 @@ void AP_Camera::init()
             _backends[instance] = new AP_Camera_Relay(*this, _params[instance], instance);
             _num_instances++;
 
-#if HAL_SOLO_GIMBAL_ENABLED
+#if AP_CAMERA_SOLOGIMBAL_ENABLED
         // check for GoPro in Solo camera
         } else if (camera_type == CameraType::SOLOGIMBAL) {
             _backends[instance] = new AP_Camera_SoloGimbal(*this, _params[instance], instance);
