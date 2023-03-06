@@ -168,4 +168,7 @@ define AP_VIDEOTX_ENABLED 0
 // good luck fitting a winch onto SkyViper:
 define AP_WINCH_ENABLED 0
 
+define AP_CAMERA_BACKEND_DEFAULT_ENABLED 0
+define AP_CAMERA_MAVLINK_ENABLED 1
+
 AUTOBUILD_TARGETS Copter
