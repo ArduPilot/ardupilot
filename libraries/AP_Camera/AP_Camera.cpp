@@ -102,10 +102,12 @@ void AP_Camera::init()
             _num_instances++;
 #endif
 
+#if AP_CAMERA_MOUNT_ENABLED
         // check for Mount camera
         } else if (camera_type == CameraType::MOUNT) {
             _backends[instance] = new AP_Camera_Mount(*this, _params[instance], instance);
             _num_instances++;
+#endif
 
         // check for MAVLink enabled camera driver
         } else if (camera_type == CameraType::MAVLINK) {
