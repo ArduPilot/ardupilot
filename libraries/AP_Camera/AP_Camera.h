@@ -49,7 +49,9 @@ public:
         NONE = 0,           // None
         SERVO = 1,          // Servo/PWM controlled camera
         RELAY = 2,          // Relay controlled camera
+#if AP_CAMERA_SOLOGIMBAL_ENABLED
         SOLOGIMBAL = 3,     // GoPro in Solo gimbal
+#endif
 #if AP_CAMERA_MOUNT_ENABLED
         MOUNT = 4,          // Mount library implements camera
 #endif
