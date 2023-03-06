@@ -73,6 +73,10 @@ extern AP_Periph_FW periph;
 #endif
 #endif
 
+#ifndef AP_PERIPH_MAG_MAX_RATE
+#define AP_PERIPH_MAG_MAX_RATE 25U
+#endif
+
 #define DEBUG_PRINTS 0
 #define DEBUG_PKTS 0
 #if DEBUG_PRINTS
@@ -1777,6 +1781,15 @@ void AP_Periph_FW::can_mag_update(void)
     if (!compass.available()) {
         return;
     }
+
+#if AP_PERIPH_MAG_MAX_RATE > 0
+    // don't flood the bus with very high rate magnetometers
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_mag_update_ms < (1000U / AP_PERIPH_MAG_MAX_RATE)) {
+        return;
+    }
+#endif
+
     compass.read();
 #if AP_PERIPH_PROBE_CONTINUOUS
     if (compass.get_count() == 0) {
