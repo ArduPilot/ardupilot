@@ -2658,4 +2658,4 @@ function crsf:pop() end
 -- Get/set Ardupilot CRSF Telemetry enabled state
 ---@param enable boolean|nil
 ---@return boolean -- state of the flag
-function crsf:telemetry_enabled(enable)
+function crsf:telemetry_enabled(enable) end
