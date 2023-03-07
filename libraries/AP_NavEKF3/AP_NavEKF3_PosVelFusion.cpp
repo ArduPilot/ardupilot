@@ -770,6 +770,16 @@ void NavEKF3_core::FuseVelPosNED()
             if (posTestRatio < 1.0f || (PV_AidingMode == AID_NONE)) {
                 posCheckPassed = true;
                 lastPosPassTime_ms = imuSampleTime_ms;
+            } else if ((frontend->_gpsGlitchRadiusMax <= 0) && (PV_AidingMode != AID_NONE)) {
+                // handle special case where the glitch radius parameter has been set to a non-positive number
+                // to indicate that large velocity and position innovations should be clipped instead of rejected.
+                posCheckPassed = true;
+                lastPosPassTime_ms = imuSampleTime_ms;
+                const ftype scaleFactor = 1.0F / sqrtF(posTestRatio);
+                innovVelPos[3] *= scaleFactor;
+                innovVelPos[4] *= scaleFactor;
+                posCheckPassed = true;
+                lastPosPassTime_ms = imuSampleTime_ms;
             }
 
             // Use position data if healthy or timed out or bad IMU data
@@ -777,7 +787,9 @@ void NavEKF3_core::FuseVelPosNED()
             // from the measurement un-opposed if test threshold is exceeded.
             if (posCheckPassed || posTimeout || badIMUdata) {
                 // if timed out or outside the specified uncertainty radius, reset to the external sensor
-                if (posTimeout || ((P[8][8] + P[7][7]) > sq(ftype(frontend->_gpsGlitchRadiusMax)))) {
+                // if velocity drift is being constrained, dont reset until gps passes quality checks
+                const bool posVarianceIsTooLarge = (frontend->_gpsGlitchRadiusMax > 0) && (P[8][8] + P[7][7]) > sq(ftype(frontend->_gpsGlitchRadiusMax));
+                if (posTimeout || posVarianceIsTooLarge) {
                     // reset the position to the current external sensor position
                     ResetPosition(resetDataSource::DEFAULT);
 
@@ -833,6 +845,18 @@ void NavEKF3_core::FuseVelPosNED()
             if (velTestRatio < 1.0) {
                 velCheckPassed = true;
                 lastVelPassTime_ms = imuSampleTime_ms;
+            } else if (frontend->_gpsGlitchRadiusMax <= 0) {
+                // handle special case where the glitch radius parameter has been set to a non-positive number
+                // to indicate that large velocity and position innovations should be clipped instead of rejected.
+                posCheckPassed = true;
+                lastPosPassTime_ms = imuSampleTime_ms;
+                const ftype scaleFactor = 1.0F / sqrtF(velTestRatio);
+                for (uint8_t i = 0; i<=imax; i++) {
+                    innovVelPos[i] *= scaleFactor;
+                }
+                innovVelPos[4] *= scaleFactor;
+                velCheckPassed = true;
+                lastVelPassTime_ms = imuSampleTime_ms;
             }
 
             // Use velocity data if healthy, timed out or when IMU fault has been detected
@@ -867,6 +891,15 @@ void NavEKF3_core::FuseVelPosNED()
             // bias errors without rejecting the height sensor.
             const float maxTestRatio = (PV_AidingMode == AID_NONE && onGround)? 3.0f : 1.0f;
             if (hgtTestRatio < maxTestRatio) {
+                hgtCheckPassed = true;
+                lastHgtPassTime_ms = imuSampleTime_ms;
+            } else if ((frontend->_gpsGlitchRadiusMax <= 0) && (activeHgtSource == AP_NavEKF_Source::SourceZ::GPS)) {
+                // handle special case where the glitch radius parameter has been set to a non-positive number
+                // to indicate that large GPS velocity and position innovations should be clipped instead of rejected.
+                posCheckPassed = true;
+                lastPosPassTime_ms = imuSampleTime_ms;
+                const ftype scaleFactor = 1.0F / sqrtF(hgtTestRatio);
+                innovVelPos[5] *= scaleFactor;
                 hgtCheckPassed = true;
                 lastHgtPassTime_ms = imuSampleTime_ms;
             }
