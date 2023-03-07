@@ -8,6 +8,7 @@
   <license>GLP-3.0</license>
 
   <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>ardupilot_sitl</exec_depend>
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_pytest</exec_depend>
   <exec_depend>launch_ros</exec_depend>
@@ -18,6 +19,7 @@
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>
+  <test_depend>ardupilot_sitl</test_depend>
   <test_depend>launch</test_depend>
   <test_depend>launch_pytest</test_depend>
   <test_depend>launch_ros</test_depend>

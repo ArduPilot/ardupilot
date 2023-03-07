@@ -18,7 +18,7 @@ Launch ArduPilot SITL, MAVProxy and the microROS DDS agent.
 
 Run with default arguments:
 
-ros2 launch ardupilot_sitl sitl_dds.launch.py
+ros2 launch ardupilot_sitl sitl_dds_serial.launch.py
 """
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription
@@ -28,9 +28,9 @@ from launch.substitutions import PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 
 
-def generate_launch_description():
+def generate_launch_description() -> LaunchDescription:
     """Generate a launch description to bring up ArduPilot SITL with DDS."""
-    # Include component launch files.
+    # Compose launch files.
     virtual_ports = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             [
