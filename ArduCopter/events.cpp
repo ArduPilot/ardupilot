@@ -36,6 +36,9 @@ void Copter::failsafe_radio_on_event()
         case FS_THR_ENABLED_AUTO_RTL_OR_RTL:
             desired_action = FailsafeAction::AUTO_DO_LAND_START;
             break;
+        case FS_THR_ENABLED_BRAKE_OR_LAND:
+            desired_action = FailsafeAction::BRAKE_LAND;
+            break;
         default:
             desired_action = FailsafeAction::LAND;
     }
@@ -425,6 +428,21 @@ void Copter::set_mode_auto_do_land_start_or_RTL(ModeReason reason)
     set_mode_RTL_or_land_with_pause(reason);
 }
 
+// Sets mode to Brake or LAND with 4 second delay before descent starts
+// This can come from failsafe or RC option
+void Copter::set_mode_brake_or_land_with_pause(ModeReason reason)
+{
+#if MODE_BRAKE_ENABLED == ENABLED
+    if (set_mode(Mode::Number::BRAKE, reason)) {
+        AP_Notify::events.failsafe_mode_change = 1;
+        return;
+    }
+#endif
+
+    gcs().send_text(MAV_SEVERITY_WARNING, "Trying Land Mode");
+    set_mode_land_with_pause(reason);
+}
+
 bool Copter::should_disarm_on_failsafe() {
     if (ap.in_arming_delay) {
         return true;
@@ -475,6 +493,9 @@ void Copter::do_failsafe_action(FailsafeAction action, ModeReason reason){
         }
         case FailsafeAction::AUTO_DO_LAND_START:
             set_mode_auto_do_land_start_or_RTL(reason);
+            break;
+        case FailsafeAction::BRAKE_LAND:
+            set_mode_brake_or_land_with_pause(reason);
             break;
     }
 
