@@ -1,0 +1,23 @@
+/sitl:
+    wipe: true
+    speedup: 1
+    instance: 0
+    synthetic_clock: true
+    model: quad
+    slave: 0
+    sim_address: 127.0.0.1
+    defaults: copter.parm
+
+    # unused
+    # rate: 400
+    # console: true
+    # home: [lat, lon, alt, yaw]
+    # uartA: /dev/tty0
+    # uartB: /dev/tty1
+    # serial0: /dev/usb0
+    # serial1: /dev/usb1
+    # sim_port_in: 5501
+    # sim_port_out: 5501
+    # irlock_port: 5501
+    # sysid: 255
+
