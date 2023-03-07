@@ -41,12 +41,12 @@ BUILD_OPTIONS = [
     Feature('Safety', 'AC_AVOID', 'AC_AVOID_ENABLED', 'Enable Avoidance', 0, 'FENCE'),
     Feature('Safety', 'AC_OAPATHPLANNER', 'AC_OAPATHPLANNER_ENABLED', 'Enable Object Avoidance Path Planner', 0, 'FENCE'),
 
-    Feature('Battery', 'BATTMON_FUELFLOW', 'AP_BATTMON_FUELFLOW_ENABLE', 'Enable Fuel Flow BatteryMonitor', 0, None),
-    Feature('Battery', 'BATTMON_FUELLEVEL_PWM', 'AP_BATTMON_FUELLEVEL_PWM_ENABLE', 'Enable Flow Level PWM BattryMonitor', 0, None),  # noqa: E501
-    Feature('Battery', 'BATTMON_FUELLEVEL_ANALOG', 'AP_BATTMON_FUELLEVEL_ANALOG_ENABLE', 'Enable Flow Level Analog BattryMonitor', 0, None),  # noqa: E501
-    Feature('Battery', 'BATTMON_SMBUS', 'AP_BATTMON_SMBUS_ENABLE', 'Enable SMBUS BatteryMonitor', 0, None),
-    Feature('Battery', 'BATTMON_INA2XX', 'HAL_BATTMON_INA2XX_ENABLED', 'Enable INA2XX BatteryMonitor', 0, None),
-    Feature('Battery', 'BATTMON_SYNTHETIC_CURRENT', 'AP_BATTMON_SYNTHETIC_CURRENT_ENABLED', 'Enable Synthetic Current Monitor', 0, None), # noqa: E501
+    Feature('Battery', 'BATTERY_FUELFLOW', 'AP_BATTERY_FUELFLOW_ENABLED', 'Enable Fuel Flow BatteryMonitor', 0, None),
+    Feature('Battery', 'BATTERY_FUELLEVEL_PWM', 'AP_BATTERY_FUELLEVEL_PWM_ENABLED', 'Enable Flow Level PWM BatteryMonitor', 0, None),  # noqa: E501
+    Feature('Battery', 'BATTERY_FUELLEVEL_ANALOG', 'AP_BATTERY_FUELLEVEL_ANALOG_ENABLED', 'Enable Flow Level Analog BattryMonitor', 0, None),  # noqa: E501
+    Feature('Battery', 'BATTERY_SMBUS', 'AP_BATTERY_SMBUS_ENABLED', 'Enable SMBUS BatteryMonitor', 0, None),
+    Feature('Battery', 'BATTERY_INA2XX', 'AP_BATTERY_INA2XX_ENABLED', 'Enable INA2XX BatteryMonitor', 0, None),
+    Feature('Battery', 'BATTERY_SYNTHETIC_CURRENT', 'AP_BATTERY_SYNTHETIC_CURRENT_ENABLED', 'Enable Synthetic Current Monitor', 0, None), # noqa: E501
 
     Feature('Ident', 'ADSB', 'HAL_ADSB_ENABLED', 'Enable ADSB', 0, None),
     Feature('Ident', 'ADSB_SAGETECH', 'HAL_ADSB_SAGETECH_ENABLED', 'Enable SageTech ADSB', 0, 'ADSB'),
