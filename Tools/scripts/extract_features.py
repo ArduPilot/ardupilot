@@ -86,9 +86,7 @@ class ExtractFeatures(object):
             ('HAL_WITH_MSP_DISPLAYPORT', r'AP_OSD_MSP_DisplayPort::init\b',),
 
 
-            ('AP_BATTMON_{type}_ENABLE', r'AP_BattMonitor_(?P<type>.*)::init\b',),
-            ('HAL_BATTMON_{type}_ENABLED', r'AP_BattMonitor_(?P<type>.*)::init\b',),
-            ('AP_BATTMON_{type}_ENABLED', r'AP_BattMonitor_(?P<type>.*)::init\b',),
+            ('AP_BATTERY_{type}_ENABLED', r'AP_BattMonitor_(?P<type>.*)::init\b',),
 
             ('HAL_MOUNT_ENABLED', 'AP_Mount::AP_Mount',),
             ('HAL_MOUNT_{type}_ENABLED', r'AP_Mount_(?P<type>.*)::update\b',),
