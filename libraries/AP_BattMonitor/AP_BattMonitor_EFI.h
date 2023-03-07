@@ -1,11 +1,8 @@
 #pragma once
 
-#include <AP_EFI/AP_EFI_config.h>
-
-#if HAL_EFI_ENABLED
-
-#include "AP_BattMonitor.h"
 #include "AP_BattMonitor_Backend.h"
+
+#if AP_BATTERY_EFI_ENABLED
 
 class AP_BattMonitor_EFI : public AP_BattMonitor_Backend
 {
@@ -25,5 +22,4 @@ public:
         return true;
     }
 };
-#endif // HAL_EFI_ENABLED
-
+#endif // AP_BATTERY_EFI_ENABLED

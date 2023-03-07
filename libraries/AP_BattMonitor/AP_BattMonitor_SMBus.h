@@ -1,10 +1,13 @@
 #pragma once
 
+#include "AP_BattMonitor_Backend.h"
+
+#if AP_BATTERY_SMBUS_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/I2CDevice.h>
-#include "AP_BattMonitor_Backend.h"
 #include <utility>
 
 #define AP_BATTMONITOR_SMBUS_BUS_INTERNAL           0
@@ -111,3 +114,5 @@ protected:
     AP_Int8  _address;      // I2C address
 
 };
+
+#endif  // AP_BATTERY_SMBUS_ENABLED
