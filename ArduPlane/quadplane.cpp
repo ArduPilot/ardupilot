@@ -4511,8 +4511,9 @@ void QuadPlane::setup_rp_fw_angle_gains(void)
  */
 bool QuadPlane::abort_landing(void)
 {
-    if (poscontrol.get_state() == QPOS_LAND_ABORT) {
-        // already aborted?
+    if (poscontrol.get_state() == QPOS_LAND_ABORT ||
+        !(plane.control_mode == &plane.mode_auto)) {
+        // already aborted or not in AUTO?
         return false;
     }
 
