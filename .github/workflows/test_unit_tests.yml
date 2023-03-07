@@ -24,11 +24,15 @@ jobs:
         config: [
             unit-tests,
             python-cleanliness,
+            validate_board_list,
             sitl
             # examples,
         ]
         exclude:
-          - config: python-cleanliness
+          - config: [
+                python-cleanliness,
+                validate_board_list
+            ]
             toolchain: clang
     steps:
       # git checkout the PR
