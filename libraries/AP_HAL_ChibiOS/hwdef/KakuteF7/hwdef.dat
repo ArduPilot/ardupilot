@@ -144,14 +144,15 @@ define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 define STM32_PWM_USE_ADVANCED TRUE
 
-# disable SMBUS battery monitors to save flash
-define AP_BATTERY_SMBUS_ENABLED 0
-
 # disable parachute to save flash
 define HAL_PARACHUTE_ENABLED 0
 
 # save FLASH, but leave above when flash issue is fixed
 include ../include/minimize_features.inc
+
+# disable SMBUS battery monitors to save flash
+undef AP_BATTERY_SMBUS_ENABLED
+define AP_BATTERY_SMBUS_ENABLED 0
 
 # setup for OSD
 undef OSD_ENABLED  # minimize_features.inc removes this
