@@ -73,6 +73,7 @@ public:
 
     // MAVLink methods
     void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg);
+    MAV_RESULT handle_command_long(const mavlink_command_long_t &packet);
     void send_feedback(mavlink_channel_t chan) const;
 
     // configure camera
