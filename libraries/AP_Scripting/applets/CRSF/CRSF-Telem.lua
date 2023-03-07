@@ -164,7 +164,6 @@ function telem.apLat()
     local n = 0
     if(val<0) then n = 0x40000000 end
     n = bit32_replace(n, math.abs(val), 0, 29)
-    math.floor(gps:location(s):lat() or 0),
     return crsftelem.PassthroughSingle(0x0800, n)
 end
 
