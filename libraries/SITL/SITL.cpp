@@ -89,6 +89,10 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Values: 0:Disabled,1:No RC pusles,2:All Channels neutral except Throttle is 950us
     // @User: Advanced
     AP_GROUPINFO("RC_FAIL",       25, SIM,  rc_fail, 0),
+    // @Param: FLOAT_EXCEPT
+    // @DisplayName: Generate floating point exceptions
+    // @Description: If set, if a numerical error occurs SITL will die with a floating point exception.
+    // @User: Advanced
     AP_GROUPINFO("FLOAT_EXCEPT",  28, SIM,  float_exception, 1),
     AP_GROUPINFO("SONAR_SCALE",   32, SIM,  sonar_scale, 12.1212f),
     AP_GROUPINFO("FLOW_ENABLE",   33, SIM,  flow_enable, 0),
@@ -204,9 +208,25 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     AP_GROUPINFO("TIDE_SPEED",  50, SIM,  tide.speed, 0.0f),
 
     // the following coordinates are for CMAC, in Canberra
+    // @Param: OPOS_LAT
+    // @DisplayName: Original Position (Latitude)
+    // @Description: Specifies vehicle's startup latitude
+    // @User: Advanced
     AP_GROUPINFO("OPOS_LAT",    51, SIM,  opos.lat, -35.363261f),
+    // @Param: OPOS_LNG
+    // @DisplayName: Original Position (Longitude)
+    // @Description: Specifies vehicle's startup longitude
+    // @User: Advanced
     AP_GROUPINFO("OPOS_LNG",    52, SIM,  opos.lng, 149.165230f),
+    // @Param: OPOS_ALT
+    // @DisplayName: Original Position (Altitude)
+    // @Description: Specifies vehicle's startup altitude (AMSL)
+    // @User: Advanced
     AP_GROUPINFO("OPOS_ALT",    53, SIM,  opos.alt, 584.0f),
+    // @Param: OPOS_HDG
+    // @DisplayName: Original Position (Heading)
+    // @Description: Specifies vehicle's startup heading (0-360)
+    // @User: Advanced
     AP_GROUPINFO("OPOS_HDG",    54, SIM,  opos.hdg, 353.0f),
 
     // extra delay per main loop
