@@ -217,6 +217,54 @@ MAV_RESULT AP_Camera::handle_command_long(const mavlink_command_long_t &packet)
             take_picture();
         }
         return MAV_RESULT_ACCEPTED;
+    case MAV_CMD_SET_CAMERA_ZOOM:
+        if (is_equal(packet.param1, (float)ZOOM_TYPE_CONTINUOUS)) {
+            set_zoom_step((int8_t)packet.param2);
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_UNSUPPORTED;
+    case MAV_CMD_SET_CAMERA_FOCUS:
+        // accept any of the auto focus types
+        if (is_equal(packet.param1, (float)FOCUS_TYPE_AUTO) ||
+            is_equal(packet.param1, (float)FOCUS_TYPE_AUTO_SINGLE) ||
+            is_equal(packet.param1, (float)FOCUS_TYPE_AUTO_CONTINUOUS)) {
+            set_auto_focus();
+            return MAV_RESULT_ACCEPTED;
+        }
+        // accept step or continuous manual focus
+        if (is_equal(packet.param1, (float)FOCUS_TYPE_CONTINUOUS)) {
+            set_manual_focus_step((int8_t)packet.param2);
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_UNSUPPORTED;
+    case MAV_CMD_IMAGE_START_CAPTURE:
+        if (!is_zero(packet.param2) || !is_equal(packet.param3, 1.0f) || !is_zero(packet.param4)) {
+            // time interval is not supported
+            // multiple image capture is not supported
+            // capture sequence number is not supported
+            return MAV_RESULT_UNSUPPORTED;
+        }
+        take_picture();
+        return MAV_RESULT_ACCEPTED;
+    case MAV_CMD_VIDEO_START_CAPTURE:
+    case MAV_CMD_VIDEO_STOP_CAPTURE:
+    {
+        bool success = false;
+        const bool start_recording = (packet.command == MAV_CMD_VIDEO_START_CAPTURE);
+        const uint8_t stream_id = packet.param1;  // Stream ID
+        if (stream_id == 0) {
+            // stream id of 0 interpreted as primary camera
+            success = record_video(start_recording);
+        } else {
+            // convert stream id to instance id
+            success = record_video(stream_id - 1, start_recording);
+        }
+        if (success) {
+            return MAV_RESULT_ACCEPTED;
+        } else {
+            return MAV_RESULT_FAILED;
+        }
+    }
     default:
         return MAV_RESULT_UNSUPPORTED;
     }
