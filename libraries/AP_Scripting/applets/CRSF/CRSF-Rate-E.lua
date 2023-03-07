@@ -13,7 +13,6 @@ local hz = 3 -- requested telemetry rate
 local len = 6 -- requested packet size (crsf size = len+4)
 local minlen = 5
 local actual_fc_len = 0 -- the fc sends packages of this len
-local actual_fc_hz = 0 -- the fc is running at this rate
 
 --transmit/receive stats
 local rx_cnt = 0
@@ -70,21 +69,19 @@ local function rotaryIncDec(diff)
 end
 
 local function run(event)
-  local loop_start = getTime()
-
   --first run (lcd.clear() in init does not work)
   if not initdone then
     hline = 8 --default line spacing for BW displays
     initdone = true
     if lcd.sizeText then --BW does not have lcd.sizeText
-      local dummy
-      dummy, hline = lcd.sizeText("XXX", SMLSIZE)
+      _, hline = lcd.sizeText("XXX", SMLSIZE)
     end
   end
 
   --handle events
   if event == EVT_EXIT_BREAK then
     --RTN button
+    do end -- do nothing
   elseif event == EVT_ENTER_BREAK or event == 34 then
     --Rotary enter button
     edit_item = edit_item + 1
@@ -138,7 +135,6 @@ local function run(event)
     actual_loop_hz = loop_cnt / dt
     loop_cnt = 0
     ts = now
-    dt = 0
   end
 
   --gui
