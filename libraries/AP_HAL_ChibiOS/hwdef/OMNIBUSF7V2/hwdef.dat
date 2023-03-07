@@ -126,7 +126,7 @@ define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 
 # disable SMBUS monitors to save flash
-define AP_BATTMON_SMBUS_ENABLE 0
+define AP_BATTERY_SMBUS_ENABLED 0
 
 # disable parachute and sprayer to save flash
 define HAL_PARACHUTE_ENABLED 0
