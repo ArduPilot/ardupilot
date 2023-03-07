@@ -202,7 +202,6 @@ function prot.decode(pkt)
   local u = {} --u = unpack
   local ui = 1
   local pkt_pos = 3
-  local i = 1
   for i = 1, #fmt do
     local c = string.sub(fmt,i,i)
     if c == "z" then
