@@ -17,6 +17,9 @@
  */
 
 #include "AP_SerialLED.h"
+
+#if AP_SERIALLED_ENABLED
+
 #include <AP_Math/AP_Math.h>
 #include "SRV_Channel/SRV_Channel.h"
 
@@ -65,3 +68,5 @@ void AP_SerialLED::send(uint8_t chan)
     }
 
 }
+
+#endif  // AP_SERIALLED_ENABLED

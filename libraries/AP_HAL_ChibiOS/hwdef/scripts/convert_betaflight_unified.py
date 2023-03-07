@@ -11,9 +11,13 @@ import sys, re
 import argparse
 
 timers = {}
+timers_by_name = {}
 resources = {}
 features = []
 chip_select = {}
+chip_select_by_type = {}
+defines = {}
+
 functions = {
     "SPI" : {},
     "MOTOR" : {},
@@ -174,6 +178,7 @@ define STORAGE_FLASH_PAGE 1
 
             if (resource[3].endswith("_CS")):
                 chip_select[resource[1]] = resource
+                chip_select_by_type[resource[3] + resource[0]] = resource[0]
 
             print("resource: %s %s %s %s" % (resource[0], resource[1], resource[2], resource[3]))
 
@@ -187,6 +192,7 @@ define STORAGE_FLASH_PAGE 1
             pin = convert_pin(a[1])
             timer = [ pin, pindef[3] , pindef[4] ]
             timers[pin] = timer
+            timers_by_name[pindef[3]] = pin
 
             print("timer: %s %s %s" % (timer[0], timer[1], timer[2]))
 
@@ -201,7 +207,20 @@ define STORAGE_FLASH_PAGE 1
             settings[a[1]] = a[3]
 
             print("settings: %s %s" % (a[1], a[3]))
+
+        elif line.startswith('#define'):
+            a = line.split()
+            defines[a[1]] = a[1]
+
+            print("define: %s" % (a[1]))
+
     #open(fname, 'w').write(''.join(lines))
+
+    # system timer
+    if 'TIM2' in timers_by_name and mcuclass != 'H7':
+        f.write("\nSTM32_ST_USE_TIMER 5\n")
+    elif 'TIM5' in timers_by_name:
+        f.write("\nSTM32_ST_USE_TIMER 2\n")
 
     f.write("\n# SPI devices\n")
     # PIN FN SPI
@@ -231,7 +250,7 @@ define HAL_BUZZER_OFF 0
         while (uartn < int(uart)):
             uartn = uartn + 1
             usarts += " EMPTY"
-        name = ("USART" if int(uartn) < 4 else "UART") + uart
+        name = ("USART" if int(uartn) < 4 or int(uartn) == 6 else "UART") + uart
         usarts += (" " + name)
         uartn = uartn + 1
     
@@ -247,7 +266,7 @@ PA12 OTG_FS_DP OTG1
     for uart in sorted(functions["SERIAL"].values()):
         if (serialn != uart[0]):
             serialn = uart[0]
-            name = "USART" if int(serialn) < 4 else "UART"
+            name = "USART" if int(serialn) < 4 or int(serialn) == 6 else "UART"
             name += serialn
             f.write("\n# %s\n" % name)
         # no need for all UARTs to have DMA. Picking the first four is better than nothing
@@ -346,10 +365,13 @@ define HAL_GPIO_%s_LED_PIN %u
         write_osd_config(f, settings['max7456_spi_bus'])
 
     if 'baro_i2c_device' in settings:
-        f.write('''
+        for define in defines:
+            if define.startswith('USE_BARO_'):
+                baro = define[len('USE_BARO_'):]
+                f.write('''
 # Barometer setup
-BARO DPS280 I2C:%s:0x76
-''' % (int(settings['baro_i2c_device']) - 1))
+BARO %s I2C:%s:0x76
+        ''' % (baro, int(settings['baro_i2c_device']) - 1))
     else:
         f.write("define HAL_BARO_ALLOW_INIT_NO_BARO 1\n")
 
@@ -357,11 +379,10 @@ BARO DPS280 I2C:%s:0x76
 # IMU setup
 ''')
 
-
-    if 'gyro_1_spibus' in settings:
+    if 'gyro_1_spibus' in settings and 'GYRO_CS1' in chip_select_by_type:
         write_imu_config(f, "1")
 
-    if 'gyro_2_spibus' in settings:
+    if 'gyro_2_spibus' in settings and 'GYRO_CS2' in chip_select_by_type:
         write_imu_config(f, "2")
 
     if len(dma_noshare) > 0:

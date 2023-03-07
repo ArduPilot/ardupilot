@@ -118,13 +118,8 @@ PC5 PRESSURE_SENS ADC1 SCALE(2)
 PC6 USART6_TX USART6
 PC7 USART6_RX USART6
 
-# Now setup the pins for the microSD card, if available.
-PC8 SDMMC1_D0 SDMMC1
-PC9 SDMMC1_D1 SDMMC1
-PC10 SDMMC1_D2 SDMMC1
-PC11 SDMMC1_D3 SDMMC1
-PC12 SDMMC1_CK SDMMC1
-PD2 SDMMC1_CMD SDMMC1
+# Now setup the pins for the microSD card
+include sdcard.inc
 
 # More CS pins for more sensors. The labels for all CS pins need to
 # match the SPI device table later in this file.

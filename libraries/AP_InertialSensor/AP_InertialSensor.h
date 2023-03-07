@@ -351,6 +351,10 @@ public:
                 || (_doing_pre_post_filter_logging && post_filter);
         }
 
+        // Getters for arming check
+        bool is_initialised() const { return initialised; }
+        bool enabled() const { return _sensor_mask > 0; }
+
         // class level parameters
         static const struct AP_Param::GroupInfo var_info[];
 

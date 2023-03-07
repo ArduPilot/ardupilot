@@ -565,7 +565,7 @@ public:
 #endif
 
     // wheel encoder and winch
-#if WINCH_ENABLED == ENABLED
+#if AP_WINCH_ENABLED
     AP_Winch winch;
 #endif
 
@@ -674,6 +674,7 @@ public:
     AP_Int8                 surftrak_mode;
     AP_Int8                 failsafe_dr_enable;
     AP_Int16                failsafe_dr_timeout;
+    AP_Float                surftrak_tc;
 
     // ramp time of throttle during take-off
     AP_Float takeoff_throttle_slew_time;

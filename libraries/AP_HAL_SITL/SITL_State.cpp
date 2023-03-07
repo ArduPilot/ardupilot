@@ -519,6 +519,7 @@ void SITL_State::_output_to_flightgear(void)
     fdm.phi   = radians(sfdm.rollDeg);
     fdm.theta = radians(sfdm.pitchDeg);
     fdm.psi   = radians(sfdm.yawDeg);
+    fdm.vcas  = sfdm.velocity_air_bf.length()/0.3048;
     if (_vehicle == ArduCopter) {
         fdm.num_engines = 4;
         for (uint8_t i=0; i<4; i++) {

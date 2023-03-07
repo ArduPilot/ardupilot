@@ -24,7 +24,7 @@ const AP_Param::GroupInfo AC_WeatherVane::var_info[] = {
     // @Param: ENABLE
     // @DisplayName: Enable
     // @Description: Enable weather vaning.  When active, the aircraft will automatically yaw into wind when in a VTOL position controlled mode. Pilot yaw commands overide the weathervaning action.
-    // @Values: 0:Disabled,1:Nose into wind,2:Nose or tail into wind,3:Side into wind,4:tail into wind
+    // @Values: -1:Only use during takeoffs or landing see weathervane takeoff and land override parameters,0:Disabled,1:Nose into wind,2:Nose or tail into wind,3:Side into wind,4:tail into wind
     // @User: Standard
     AP_GROUPINFO_FLAGS("ENABLE", 1, AC_WeatherVane, _direction, WVANE_PARAM_ENABLED, AP_PARAM_FLAG_ENABLE),
 
@@ -122,8 +122,9 @@ bool AC_WeatherVane::get_yaw_out(float &yaw_output, const int16_t pilot_yaw, con
     if (is_landing && (_landing_direction >= 0)) {
         dir = (Direction)_landing_direction.get();
     }
-    if (dir == Direction::OFF) {
+    if (dir == Direction::OFF || (dir == Direction::TAKEOFF_OR_LAND_ONLY)) {
         // Disabled for takeoff or landing
+        // Disabled if in flight and dir = -1
         reset();
         return false;
     }
@@ -172,6 +173,7 @@ bool AC_WeatherVane::get_yaw_out(float &yaw_output, const int16_t pilot_yaw, con
 
     switch (dir) {
         case Direction::OFF:
+        case Direction::TAKEOFF_OR_LAND_ONLY:
             reset();
             return false;
 

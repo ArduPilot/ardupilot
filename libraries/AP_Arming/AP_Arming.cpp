@@ -188,9 +188,17 @@ uint16_t AP_Arming::compass_magfield_expected() const
     return AP_ARMING_COMPASS_MAGFIELD_EXPECTED;
 }
 
-bool AP_Arming::is_armed()
+bool AP_Arming::is_armed() const
 {
     return armed || arming_required() == Required::NO;
+}
+
+/*
+  true if armed and safety is off
+ */
+bool AP_Arming::is_armed_and_safety_off() const
+{
+    return is_armed() && hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED;
 }
 
 uint32_t AP_Arming::get_enabled_checks() const
@@ -354,16 +362,19 @@ bool AP_Arming::ins_accels_consistent(const AP_InertialSensor &ins)
         if (vec_diff.length() > threshold) {
             // this sensor disagrees with the primary sensor, so
             // accels are inconsistent:
+            last_accel_pass_ms = 0;
             return false;
         }
     }
 
-    // we didn't return false in the loop above, so sensors are
-    // consistent right now:
-    last_accel_pass_ms = now;
+    if (last_accel_pass_ms == 0) {
+        // we didn't return false in the loop above, so sensors are
+        // consistent right now:
+        last_accel_pass_ms = now;
+    }
 
     // must pass for at least 10 seconds before we're considered consistent:
-    if (now - last_accel_pass_ms > 10000) {
+    if (now - last_accel_pass_ms < 10000) {
         return false;
     }
 
@@ -390,16 +401,19 @@ bool AP_Arming::ins_gyros_consistent(const AP_InertialSensor &ins)
         if (vec_diff.length() > radians(5)) {
             // this sensor disagrees with the primary sensor, so
             // gyros are inconsistent:
+            last_gyro_pass_ms = 0;
             return false;
         }
     }
 
     // we didn't return false in the loop above, so sensors are
     // consistent right now:
-    last_gyro_pass_ms = now;
+    if (last_gyro_pass_ms == 0) {
+        last_gyro_pass_ms = now;
+    }
 
     // must pass for at least 10 seconds before we're considered consistent:
-    if (now - last_gyro_pass_ms > 10000) {
+    if (now - last_gyro_pass_ms < 10000) {
         return false;
     }
 
@@ -450,6 +464,15 @@ bool AP_Arming::ins_checks(bool report)
             check_failed(ARMING_CHECK_INS, report, "temperature cal running");
             return false;
         }
+
+#if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
+        // If Batch sampling enabled it must be initialized
+        if (ins.batchsampler.enabled() && !ins.batchsampler.is_initialised()) {
+            check_failed(ARMING_CHECK_INS, report, "Batch sampling requires reboot");
+            return false;
+        }
+#endif
+
     }
 
 #if HAL_GYROFFT_ENABLED
@@ -1616,7 +1639,7 @@ bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)
     return true;
 }
 
-AP_Arming::Required AP_Arming::arming_required() 
+AP_Arming::Required AP_Arming::arming_required() const
 {
 #if AP_OPENDRONEID_ENABLED
     // cannot be disabled if OpenDroneID is present

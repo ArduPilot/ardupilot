@@ -392,18 +392,6 @@ private:
                            FUNCTOR_BIND_MEMBER(&Plane::handle_battery_failsafe, void, const char*, const int8_t),
                            _failsafe_priorities};
 
-    // ACRO controller state
-    struct {
-        bool locked_roll;
-        bool locked_pitch;
-        float locked_roll_err;
-        int32_t locked_pitch_cd;
-        Quaternion q;
-        bool roll_active_last;
-        bool pitch_active_last;
-        bool yaw_active_last;
-    } acro_state;
-
     struct {
         uint32_t last_tkoff_arm_time;
         uint32_t last_check_ms;
@@ -868,9 +856,6 @@ private:
     void stabilize_stick_mixing_direct();
     void stabilize_stick_mixing_fbw();
     void stabilize_yaw();
-    void stabilize_training();
-    void stabilize_acro();
-    void stabilize_acro_quaternion();
     void calc_nav_yaw_coordinated();
     void calc_nav_yaw_course(void);
     void calc_nav_yaw_ground(void);
@@ -962,7 +947,13 @@ private:
 
     // commands.cpp
     void set_guided_WP(const Location &loc);
-    void update_home();
+
+    // update home position. Return true if update done
+    bool update_home();
+
+    // update current_loc
+    void update_current_loc(void);
+
     // set home location and store it persistently:
     bool set_home_persistently(const Location &loc) WARN_IF_UNUSED;
 

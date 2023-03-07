@@ -4,3 +4,6 @@
 MCU STM32H7xx STM32H743xx
 
 include hwdef.inc
+
+# build ABIN for flash-from-bootloader support:
+env BUILD_ABIN True

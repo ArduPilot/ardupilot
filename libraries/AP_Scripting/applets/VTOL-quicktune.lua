@@ -300,9 +300,6 @@ end
 reset_axes_done()
 get_all_params()
 
--- 3 position switch
-local quick_switch = nil
-
 function axis_enabled(axis)
    local axes = QUIK_AXES:get()
    for i = 1, #axis_names do
@@ -455,18 +452,14 @@ end
 -- main update function
 local last_warning = get_time()
 function update()
-   if quick_switch == nil then
-      quick_switch = rc:find_channel_for_option(math.floor(QUIK_RC_FUNC:get()))
-   end
-   if quick_switch == nil or QUIK_ENABLE:get() < 1 then
-      return
-   end
-
    if have_pilot_input() then
       last_pilot_input = get_time()
    end
 
-   local sw_pos = quick_switch:get_aux_switch_pos()
+   local sw_pos = rc:get_aux_cached(QUIK_RC_FUNC:get())
+   if not sw_pos then
+      return
+   end
    if sw_pos == 1 and (not arming:is_armed() or not vehicle:get_likely_flying()) and get_time() > last_warning + 5 then
       gcs:send_text(MAV_SEVERITY_EMERGENCY, string.format("Tuning: Must be flying to tune"))
       last_warning = get_time()

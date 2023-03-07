@@ -7,6 +7,7 @@
 #include <AP_ADSB/AP_ADSB.h>
 #include <AP_Vehicle/ModeReason.h>
 #include "quadplane.h"
+#include <AP_AHRS/AP_AHRS.h>
 
 class AC_PosControl;
 class AC_AttitudeControl_Multi;
@@ -143,11 +144,13 @@ protected:
     QuadPlane& quadplane;
     QuadPlane::PosControlState &poscontrol;
 #endif
+    AP_AHRS& ahrs;
 };
 
 
 class ModeAcro : public Mode
 {
+friend class ModeQAcro;
 public:
 
     Mode::Number mode_number() const override { return Mode::Number::ACRO; }
@@ -157,7 +160,25 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
+    void run() override;
+
+    void stabilize();
+
+    void stabilize_quaternion();
+
 protected:
+
+    // ACRO controller state
+    struct {
+        bool locked_roll;
+        bool locked_pitch;
+        float locked_roll_err;
+        int32_t locked_pitch_cd;
+        Quaternion q;
+        bool roll_active_last;
+        bool pitch_active_last;
+        bool yaw_active_last;
+    } acro_state;
 
     bool _enter() override;
 };
@@ -389,6 +410,9 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+
+    void run() override;
+
 };
 
 class ModeInitializing : public Mode
@@ -713,10 +737,12 @@ public:
     // var_info for holding parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
-protected:
     AP_Int16 target_alt;
-    AP_Int16 target_dist;
     AP_Int16 level_alt;
+    AP_Float ground_pitch;
+
+protected:
+    AP_Int16 target_dist;
     AP_Int8 level_pitch;
 
     bool takeoff_started;

@@ -81,7 +81,7 @@ private:
     uint32_t _last_init_ms;                 // system time of last re-initialisation
     uint32_t _last_distance_received_ms;    // system time of last distance measurement received from sensor
     bool _init_complete;                    // true once sensor initialisation is complete
-    ModeFilterInt16_Size5 _distance_filt{2};// mode filter to reduce glitches
+    ModeFilterInt16_Size3 _distance_filt{1};// mode filter to reduce glitches
 
     // 3D boundary face and distance for latest readings
     AP_Proximity_Boundary_3D::Face _face;   // face of most recently received distance

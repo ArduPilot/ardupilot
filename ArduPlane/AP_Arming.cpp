@@ -127,7 +127,7 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
 
     char failure_msg[50] {};
     if (!plane.control_mode->pre_arm_checks(ARRAY_SIZE(failure_msg), failure_msg)) {
-        check_failed(true, "%s %s", plane.control_mode->name(), failure_msg);
+        check_failed(display_failure, "%s %s", plane.control_mode->name(), failure_msg);
         return false;
     }
 
@@ -271,7 +271,7 @@ void AP_Arming_Plane::change_arm_state(void)
 {
     update_soft_armed();
 #if HAL_QUADPLANE_ENABLED
-    plane.quadplane.set_armed(hal.util->get_soft_armed());
+    plane.quadplane.set_armed(is_armed_and_safety_off());
 #endif
 }
 
@@ -279,6 +279,18 @@ bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_c
 {
     if (!AP_Arming::arm(method, do_arming_checks)) {
         return false;
+    }
+
+    if (plane.update_home()) {
+        // after update_home the home position could still be
+        // different from the current_loc if the EKF refused the
+        // resetHeightDatum call. If we are updating home then we want
+        // to force the home to be the current_loc so relative alt
+        // takeoffs work correctly
+        if (plane.ahrs.set_home(plane.current_loc)) {
+            // update current_loc
+            plane.update_current_loc();
+        }
     }
 
     change_arm_state();
@@ -360,7 +372,6 @@ void AP_Arming_Plane::update_soft_armed()
         _armed = true;
     }
 #endif
-    _armed = _armed && hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED;
 
     hal.util->set_soft_armed(_armed);
     AP::logger().set_vehicle_armed(hal.util->get_soft_armed());

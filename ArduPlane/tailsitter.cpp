@@ -296,7 +296,7 @@ void Tailsitter::output(void)
     // handle forward flight modes and transition to VTOL modes
     if (!active() || in_vtol_transition()) {
         // get FW controller throttle demand and mask of motors enabled during forward flight
-        if (hal.util->get_soft_armed() && in_vtol_transition() && !quadplane.throttle_wait) {
+        if (plane.arming.is_armed_and_safety_off() && in_vtol_transition() && !quadplane.throttle_wait) {
             /*
               during transitions to vtol mode set the throttle to hover thrust, center the rudder
             */
@@ -417,7 +417,7 @@ void Tailsitter::output(void)
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, (motors->get_pitch()+motors->get_pitch_ff())*SERVO_MAX*VTOL_pitch_scale);
     SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, (motors->get_roll()+motors->get_roll_ff())*SERVO_MAX*VTOL_roll_scale);
 
-    if (hal.util->get_soft_armed()) {
+    if (plane.arming.is_armed_and_safety_off()) {
         // scale surfaces for throttle
         speed_scaling();
     } else if (tailsitter_motors != nullptr) {
@@ -500,7 +500,7 @@ void Tailsitter::output(void)
  */
 bool Tailsitter::transition_fw_complete(void)
 {
-    if (!hal.util->get_soft_armed()) {
+    if (!plane.arming.is_armed_and_safety_off()) {
         // instant trainsition when disarmed, no message
         return true;
     }
@@ -526,7 +526,7 @@ bool Tailsitter::transition_fw_complete(void)
  */
 bool Tailsitter::transition_vtol_complete(void) const
 {
-    if (!hal.util->get_soft_armed()) {
+    if (!plane.arming.is_armed_and_safety_off()) {
         // instant trainsition when disarmed, no message
         return true;
     }
@@ -799,7 +799,7 @@ void Tailsitter_Transition::update()
     case TRANSITION_ANGLE_WAIT_FW: {
         if (tailsitter.transition_fw_complete()) {
             transition_state = TRANSITION_DONE;
-            if (hal.util->get_soft_armed()) {
+            if (plane.arming.is_armed_and_safety_off()) {
                 fw_limit_start_ms = now;
                 fw_limit_initial_pitch = constrain_float(quadplane.ahrs.pitch_sensor,-8500,8500);
                 plane.nav_pitch_cd = fw_limit_initial_pitch;
@@ -856,7 +856,7 @@ void Tailsitter_Transition::VTOL_update()
             return;
         }
         // transition to VTOL complete, if armed set vtol rate limit starting point
-        if (hal.util->get_soft_armed()) {
+        if (plane.arming.is_armed_and_safety_off()) {
             vtol_limit_start_ms = now;
             vtol_limit_initial_pitch = quadplane.ahrs_view->pitch_sensor;
         }

@@ -585,7 +585,7 @@ private:
 #if PARACHUTE == ENABLED
     void do_parachute(const AP_Mission::Mission_Command& cmd);
 #endif
-#if WINCH_ENABLED == ENABLED
+#if AP_WINCH_ENABLED
     void do_winch(const AP_Mission::Mission_Command& cmd);
 #endif
     void do_payload_place(const AP_Mission::Mission_Command& cmd);

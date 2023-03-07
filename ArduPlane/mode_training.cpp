@@ -9,9 +9,9 @@ void ModeTraining::update()
 
     // if the roll is past the set roll limit, then
     // we set target roll to the limit
-    if (plane.ahrs.roll_sensor >= plane.roll_limit_cd) {
+    if (ahrs.roll_sensor >= plane.roll_limit_cd) {
         plane.nav_roll_cd = plane.roll_limit_cd;
-    } else if (plane.ahrs.roll_sensor <= -plane.roll_limit_cd) {
+    } else if (ahrs.roll_sensor <= -plane.roll_limit_cd) {
         plane.nav_roll_cd = -plane.roll_limit_cd;
     } else {
         plane.training_manual_roll = true;
@@ -20,9 +20,9 @@ void ModeTraining::update()
 
     // if the pitch is past the set pitch limits, then
     // we set target pitch to the limit
-    if (plane.ahrs.pitch_sensor >= plane.aparm.pitch_limit_max_cd) {
+    if (ahrs.pitch_sensor >= plane.aparm.pitch_limit_max_cd) {
         plane.nav_pitch_cd = plane.aparm.pitch_limit_max_cd;
-    } else if (plane.ahrs.pitch_sensor <= plane.pitch_limit_min_cd) {
+    } else if (ahrs.pitch_sensor <= plane.pitch_limit_min_cd) {
         plane.nav_pitch_cd = plane.pitch_limit_min_cd;
     } else {
         plane.training_manual_pitch = true;
@@ -33,3 +33,35 @@ void ModeTraining::update()
     }
 }
 
+/*
+  a special stabilization function for training mode
+ */
+void ModeTraining::run()
+{
+    const float rexpo = plane.roll_in_expo(false);
+    const float pexpo = plane.pitch_in_expo(false);
+    if (plane.training_manual_roll) {
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, rexpo);
+    } else {
+        // calculate what is needed to hold
+        plane.stabilize_roll();
+        if ((plane.nav_roll_cd > 0 && rexpo < SRV_Channels::get_output_scaled(SRV_Channel::k_aileron)) ||
+            (plane.nav_roll_cd < 0 && rexpo > SRV_Channels::get_output_scaled(SRV_Channel::k_aileron))) {
+            // allow user to get out of the roll
+            SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, rexpo);
+        }
+    }
+
+    if (plane.training_manual_pitch) {
+        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pexpo);
+    } else {
+        plane.stabilize_pitch();
+        if ((plane.nav_pitch_cd > 0 && pexpo < SRV_Channels::get_output_scaled(SRV_Channel::k_elevator)) ||
+            (plane.nav_pitch_cd < 0 && pexpo > SRV_Channels::get_output_scaled(SRV_Channel::k_elevator))) {
+            // allow user to get back to level
+            SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pexpo);
+        }
+    }
+
+    plane.stabilize_yaw();
+}

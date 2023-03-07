@@ -71,6 +71,10 @@ public:
     void clear_RTCMV3() override;
 #endif
 
+#if AP_DRONECAN_SEND_GPS
+    static bool instance_exists(const AP_UAVCAN* ap_uavcan);
+#endif
+
 private:
 
     bool param_configured = true;

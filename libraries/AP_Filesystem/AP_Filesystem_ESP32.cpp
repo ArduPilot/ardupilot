@@ -91,6 +91,14 @@ int AP_Filesystem_ESP32::unlink(const char *pathname)
     return ::unlink(pathname);
 }
 
+int AP_Filesystem_ESP32::rename(const char *oldpath, const char *newpath)
+{
+#if FSDEBUG
+    printf("DO rename %s \n", oldpath, newpath);
+#endif
+    return ::rename(oldpath, newpath);
+}
+
 int AP_Filesystem_ESP32::mkdir(const char *pathname)
 {
 #if FSDEBUG

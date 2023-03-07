@@ -186,21 +186,6 @@ bool AP_MotorsHeli_Single::init_outputs()
         }
     }
 
-    // set signal value for main rotor external governor to know when to use autorotation bailout ramp up
-    if (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SETPOINT  ||  _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_PASSTHROUGH) {
-        _main_rotor.set_ext_gov_arot_bail(_main_rotor._arot_idle_output.get());
-    } else {
-        _main_rotor.set_ext_gov_arot_bail(0);
-    }
-
-    // set signal value for tail rotor external governor to know when to use autorotation bailout ramp up
-    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPIT_EXT_GOV) {
-        // set point for tail rsc is the same as for main rotor to save on parameters
-        _tail_rotor.set_ext_gov_arot_bail(_main_rotor._arot_idle_output.get());
-    } else {
-        _tail_rotor.set_ext_gov_arot_bail(0);
-    }
-
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
         // External Gyro uses PWM output thus servo endpoints are forced
         SRV_Channels::set_output_min_max(SRV_Channels::get_motor_function(AP_MOTORS_HELI_SINGLE_EXTGYRO), 1000, 2000);
@@ -290,24 +275,20 @@ void AP_MotorsHeli_Single::calculate_armed_scalars()
         _heliflags.save_rsc_mode = false;
     }
 	
-    if (_heliflags.start_engine) {
-        _main_rotor.set_turbine_start(true);
-    } else {
-        _main_rotor.set_turbine_start(false);
-    }
-
     // allow use of external governor autorotation bailout
     if (_heliflags.in_autorotation) {        
         _main_rotor.set_autorotation_flag(_heliflags.in_autorotation);
         // set bailout ramp time
         _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
-        _tail_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
-        if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPIT_EXT_GOV) {
+        if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPIT_EXT_GOV) {
             _tail_rotor.set_autorotation_flag(_heliflags.in_autorotation);
             _tail_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
         }
     }else { 
         _main_rotor.set_autorotation_flag(false);
+        if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPIT_EXT_GOV) {
+            _tail_rotor.set_autorotation_flag(false);
+        }
     }
 }
 
@@ -350,12 +331,18 @@ void AP_MotorsHeli_Single::calculate_scalars()
         _tail_rotor.set_runup_time(_main_rotor._runup_time.get());
         _tail_rotor.set_critical_speed(_main_rotor._critical_speed.get());
         _tail_rotor.set_idle_output(_main_rotor._idle_output.get());
+        _tail_rotor.set_arot_idle_output(_main_rotor._arot_idle_output.get());
+        _tail_rotor.set_rsc_arot_man_enable(_main_rotor._rsc_arot_man_enable.get());
+        _tail_rotor.set_rsc_arot_engage_time(_main_rotor._rsc_arot_engage_time.get());
     } else {
         _tail_rotor.set_control_mode(ROTOR_CONTROL_MODE_DISABLED);
         _tail_rotor.set_ramp_time(0);
         _tail_rotor.set_runup_time(0);
         _tail_rotor.set_critical_speed(0);
         _tail_rotor.set_idle_output(0);
+        _tail_rotor.set_arot_idle_output(0);
+        _tail_rotor.set_rsc_arot_man_enable(0);
+        _tail_rotor.set_rsc_arot_engage_time(0);
     }
 }
 

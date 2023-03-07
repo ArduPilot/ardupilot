@@ -16,3 +16,4 @@ int SRV_Channels_get_safety_state(lua_State *L);
 int lua_crsf_pop(lua_State *L);
 int lua_crsf_push(lua_State *L);
 int lua_crsf_telemetry_enabled(lua_State *L);
+int lua_get_PWMSource(lua_State *L);

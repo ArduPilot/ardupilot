@@ -207,6 +207,13 @@ AP_HW_Sierra-TrueSpeed               1094
 AP_HW_Sierra-PrecisionPoint          1095
 AP_HW_PixPilot-V3                    1096
 AP_HW_PixSurveyA2                    1097
+AP_HW_mRoCANPWM                      1098
+AP_HW_FlywooF405S_AIO                1099
+AP_HW_mRoCANPower                    1100
+AP_HW_mRoControlOne                  1101
+
+AP_HW_rFCU                           1102
+AP_HW_rGNSS                          1103
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206

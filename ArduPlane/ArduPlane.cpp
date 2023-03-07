@@ -402,10 +402,7 @@ void Plane::update_GPS_50Hz(void)
 {
     gps.update();
 
-    // get position from AHRS
-    have_position = ahrs.get_location(current_loc);
-    ahrs.get_relative_position_D_home(relative_altitude);
-    relative_altitude *= -1.0f;
+    update_current_loc();
 }
 
 /*
@@ -831,6 +828,18 @@ void Plane::get_osd_roll_pitch_rad(float &roll, float &pitch) const
     if (!(g2.flight_options & FlightOptions::OSD_REMOVE_TRIM_PITCH_CD)) {  // correct for TRIM_PITCH_CD
         pitch -= g.pitch_trim_cd * 0.01 * DEG_TO_RAD;
     }
+}
+
+/*
+  update current_loc Location
+ */
+void Plane::update_current_loc(void)
+{
+    have_position = plane.ahrs.get_location(plane.current_loc);
+
+    // re-calculate relative altitude
+    ahrs.get_relative_position_D_home(plane.relative_altitude);
+    relative_altitude *= -1.0f;
 }
 
 AP_HAL_MAIN_CALLBACKS(&plane);

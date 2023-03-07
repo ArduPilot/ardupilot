@@ -2,6 +2,8 @@
 -- This file should be auto generated and then manual edited
 -- generate with --scripting-docs, eg  ./waf copter --scripting-docs
 -- see: https://github.com/sumneko/lua-language-server/wiki/EmmyLua-Annotations
+-- luacheck: ignore 121 (Setting a read-only global variable)
+-- luacheck: ignore 122 (Setting a read-only field of a global variable)
 -- luacheck: ignore 212 (Unused argument)
 -- luacheck: ignore 241 (Local variable is mutated but never accessed)
 
@@ -111,6 +113,14 @@ function EFI_State_ud:fuel_consumption_rate_cm3pm(value) end
 -- set field
 ---@param value number
 function EFI_State_ud:fuel_pressure(value) end
+
+-- set field
+---@param status integer
+---| '0' # Not supported
+---| '1' # Ok
+---| '2' # Below nominal
+---| '3' # Above nominal
+function EFI_State_ud:fuel_pressure_status(status) end
 
 -- set field
 ---@param value number
@@ -307,24 +317,24 @@ function motor_factor_table_ud:roll(index, value) end
 
 
 -- desc
----@class PWMSource_ud
-local PWMSource_ud = {}
+---@class AP_HAL__PWMSource_ud
+local AP_HAL__PWMSource_ud = {}
 
----@return PWMSource_ud
+---@return AP_HAL__PWMSource_ud
 function PWMSource() end
 
 -- desc
 ---@return integer
-function PWMSource_ud:get_pwm_avg_us() end
+function AP_HAL__PWMSource_ud:get_pwm_avg_us() end
 
 -- desc
 ---@return integer
-function PWMSource_ud:get_pwm_us() end
+function AP_HAL__PWMSource_ud:get_pwm_us() end
 
 -- desc
 ---@param pin_number integer
 ---@return boolean
-function PWMSource_ud:set_pin(pin_number) end
+function AP_HAL__PWMSource_ud:set_pin(pin_number) end
 
 
 -- desc
@@ -1054,6 +1064,35 @@ motors = {}
 ---| false # motors inactive
 function motors:get_interlock() end
 
+-- get lateral motor output
+---@return number
+function motors:get_lateral() end
+
+-- set external limit flags for each axis to prevent integrator windup
+---@param roll boolean
+---@param pitch boolean
+---@param yaw boolean
+---@param throttle_lower boolean
+---@param throttle_upper boolean
+function motors:set_external_limits(roll, pitch, yaw, throttle_lower, throttle_upper) end
+
+-- get forward motor output
+---@return number
+function motors:get_forward() end
+
+-- get throttle motor output
+---@return number
+function motors:get_throttle() end
+
+-- get throttle motor output
+---@return integer
+---| '0' # Shut down
+---| '1' # Ground idle
+---| '2' # Spooling up
+---| '3' # Throttle unlimited
+---| '4' # Spooling down
+function motors:get_spool_state() end
+
 -- desc
 ---@param param1 string
 function motors:set_frame_string(param1) end
@@ -1061,6 +1100,30 @@ function motors:set_frame_string(param1) end
 -- desc
 ---@return integer
 function motors:get_desired_spool_state() end
+
+-- get yaw FF output
+---@return number
+function motors:get_yaw_ff() end
+
+-- get yaw P+I+D
+---@return number
+function motors:get_yaw() end
+
+-- get pitch FF out
+---@return number
+function motors:get_pitch_ff() end
+
+-- get pitch P+I+D out
+---@return number
+function motors:get_pitch() end
+
+-- get roll FF out
+---@return number
+function motors:get_roll_ff() end
+
+-- get roll P+I+D
+---@return number
+function motors:get_roll() end
 
 -- desc
 ---@class FWVersion
@@ -1316,54 +1379,79 @@ function RPM:get_rpm(instance) end
 ---@field MISSION_STOPPED number
 mission = {}
 
--- desc
+-- clear - clears out mission
 ---@return boolean
 function mission:clear() end
 
--- desc
+-- set any WP items in any order in a mavlink-ish kinda way.
 ---@param index integer
 ---@param item mavlink_mission_item_int_t_ud
 ---@return boolean
 function mission:set_item(index, item) end
 
--- desc
+-- get any WP items in any order in a mavlink-ish kinda way.
 ---@param index integer
 ---@return mavlink_mission_item_int_t_ud|nil
 function mission:get_item(index) end
 
--- desc
+-- num_commands - returns total number of commands in the mission
+--                 this number includes offset 0, the home location
 ---@return integer
 function mission:num_commands() end
 
--- desc
+-- get_current_do_cmd_id - returns id of the active "do" command
 ---@return integer
 function mission:get_current_do_cmd_id() end
 
--- desc
+-- get_current_nav_id - return the id of the current nav command
 ---@return integer
 function mission:get_current_nav_id() end
 
--- desc
+-- get_prev_nav_cmd_id - returns the previous "navigation" command id
+--     if there was no previous nav command it returns AP_MISSION_CMD_ID_NONE (0)
+--      we do not return the entire command to save on RAM
 ---@return integer
 function mission:get_prev_nav_cmd_id() end
 
--- desc
+-- set_current_cmd - jumps to command specified by index
 ---@param index integer
 ---@return boolean
 function mission:set_current_cmd(index) end
 
--- desc
+-- get_current_nav_index - returns the current "navigation" command index
+-- Note that this will return 0 if there is no command. This is
+-- used in MAVLink reporting of the mission command
 ---@return integer
 function mission:get_current_nav_index() end
 
--- desc
+-- status - returns the status of the mission (i.e. Mission_Started, Mission_Complete, Mission_Stopped
 ---@return integer
 function mission:state() end
 
--- desc
+-- returns true if the mission cmd has a location
 ---@param cmd integer
 ---@return boolean
 function mission:cmd_has_location(cmd)end
+
+-- Set the mission index to the first JUMP_TAG with this tag.
+-- Returns true on success, else false if no appropriate JUMP_TAG match can be found or if setting the index failed
+---@param tag integer
+---@return boolean
+function mission:jump_to_tag(tag) end
+
+-- desc
+---@param tag integer
+---@return integer
+function mission:get_index_of_jump_tag(tag) end
+
+-- Jump Tags. When a JUMP_TAG is run in the mission, either via DO_JUMP_TAG or
+-- by just being the next item, the tag is remembered and the age is set to 1.
+-- Only the most recent tag is remembered. It's age is how many NAV items have
+-- progressed since the tag was seen. While executing the tag, the
+-- age will be 1. The next NAV command after it will tick the age to 2, and so on.
+---@return integer|nil
+---@return integer|nil
+function mission:get_last_jump_tag() end
 
 
 -- desc
@@ -1483,13 +1571,18 @@ baro = {}
 ---@return number
 function baro:get_external_temperature() end
 
--- desc
+-- temperature in degrees C
 ---@return number
 function baro:get_temperature() end
 
--- desc
+-- pressure in Pascal. Divide by 100 for millibars or hectopascals
 ---@return number
 function baro:get_pressure() end
+
+-- get current altitude in meters relative to altitude at the time
+-- of the last calibrate() call, typically at boot
+---@return number
+function baro:get_altitude() end
 
 
 -- desc
@@ -1882,6 +1975,67 @@ function gcs:send_named_float(name, value) end
 ---| '4' # Failed
 function gcs:set_message_interval(port_num, msg_id, interval_us) end
 
+-- get the vehicle MAV_TYPE
+---@return integer
+---| '0' # MAV_TYPE_GENERIC=0, /* Generic micro air vehicle | */
+---| '1' # MAV_TYPE_FIXED_WING=1, /* Fixed wing aircraft. | */
+---| '2' # MAV_TYPE_QUADROTOR=2, /* Quadrotor | */
+---| '3' # MAV_TYPE_COAXIAL=3, /* Coaxial helicopter | */
+---| '4' # MAV_TYPE_HELICOPTER=4, /* Normal helicopter with tail rotor. | */
+---| '5' # MAV_TYPE_ANTENNA_TRACKER=5, /* Ground installation | */
+---| '6' # MAV_TYPE_GCS=6, /* Operator control unit / ground control station | */
+---| '7' # MAV_TYPE_AIRSHIP=7, /* Airship, controlled | */
+---| '8' # MAV_TYPE_FREE_BALLOON=8, /* Free balloon, uncontrolled | */
+---| '9' # MAV_TYPE_ROCKET=9, /* Rocket | */
+---| '10' # MAV_TYPE_GROUND_ROVER=10, /* Ground rover | */
+---| '11' # MAV_TYPE_SURFACE_BOAT=11, /* Surface vessel, boat, ship | */
+---| '12' # MAV_TYPE_SUBMARINE=12, /* Submarine | */
+---| '13' # MAV_TYPE_HEXAROTOR=13, /* Hexarotor | */
+---| '14' # MAV_TYPE_OCTOROTOR=14, /* Octorotor | */
+---| '15' # MAV_TYPE_TRICOPTER=15, /* Tricopter | */
+---| '16' # MAV_TYPE_FLAPPING_WING=16, /* Flapping wing | */
+---| '17' # MAV_TYPE_KITE=17, /* Kite | */
+---| '18' # MAV_TYPE_ONBOARD_CONTROLLER=18, /* Onboard companion controller | */
+---| '19' # MAV_TYPE_VTOL_DUOROTOR=19, /* Two-rotor VTOL using control surfaces in vertical operation in addition. Tailsitter. | */
+---| '20' # MAV_TYPE_VTOL_QUADROTOR=20, /* Quad-rotor VTOL using a V-shaped quad config in vertical operation. Tailsitter. | */
+---| '21' # MAV_TYPE_VTOL_TILTROTOR=21, /* Tiltrotor VTOL | */
+---| '22' # MAV_TYPE_VTOL_RESERVED2=22, /* VTOL reserved 2 | */
+---| '23' # MAV_TYPE_VTOL_RESERVED3=23, /* VTOL reserved 3 | */
+---| '24' # MAV_TYPE_VTOL_RESERVED4=24, /* VTOL reserved 4 | */
+---| '25' # MAV_TYPE_VTOL_RESERVED5=25, /* VTOL reserved 5 | */
+---| '26' # MAV_TYPE_GIMBAL=26, /* Gimbal | */
+---| '27' # MAV_TYPE_ADSB=27, /* ADSB system | */
+---| '28' # MAV_TYPE_PARAFOIL=28, /* Steerable, nonrigid airfoil | */
+---| '29' # MAV_TYPE_DODECAROTOR=29, /* Dodecarotor | */
+---| '30' # MAV_TYPE_CAMERA=30, /* Camera | */
+---| '31' # MAV_TYPE_CHARGING_STATION=31, /* Charging station | */
+---| '32' # MAV_TYPE_FLARM=32, /* FLARM collision avoidance system | */
+---| '33' # MAV_TYPE_SERVO=33, /* Servo | */
+---| '34' # MAV_TYPE_ODID=34, /* Open Drone ID. See https://mavlink.io/en/services/opendroneid.html. | */
+---| '35' # MAV_TYPE_DECAROTOR=35, /* Decarotor | */
+---| '36' # MAV_TYPE_BATTERY=36, /* Battery | */
+---| '37' # MAV_TYPE_PARACHUTE=37, /* Parachute | */
+---| '38' # MAV_TYPE_LOG=38, /* Log | */
+---| '39' # MAV_TYPE_OSD=39, /* OSD | */
+---| '40' # MAV_TYPE_IMU=40, /* IMU | */
+---| '41' # MAV_TYPE_GPS=41, /* GPS | */
+---| '42' # MAV_TYPE_WINCH=42, /* Winch | */
+---| '43' # MAV_TYPE_ENUM_END=43, /*  | */
+function gcs:frame_type() end
+
+-- get the throttle value in %
+---@return integer
+function gcs:get_hud_throttle() end
+
+-- set high latency control state. Analogous to MAV_CMD_CONTROL_HIGH_LATENCY
+---@param enabled boolean -- true to enable or false to disable
+---@return void
+function gcs:enable_high_latency_connections(enabled) end
+
+-- get the the current state of high latency control
+---@return boolean
+function gcs:get_high_latency_status() end
+
 -- send text with severity level
 ---@param severity integer
 ---| '0' # Emergency: System is unusable. This is a "panic" condition.
@@ -1953,10 +2107,39 @@ function terrain:status() end
 ---@return boolean
 function terrain:enabled() end
 
+-- RangeFinder backend
+---@class AP_RangeFinder_Backend_ud
+local AP_RangeFinder_Backend_ud = {}
+
+-- Send distance to lua rangefinder backend. Returns false if failed
+---@param distance number
+---@return boolean
+function AP_RangeFinder_Backend_ud:handle_script_msg(distance) end
+
+-- Status of this rangefinder instance
+---@return integer
+function AP_RangeFinder_Backend_ud:status() end
+
+-- Type of rangefinder of this instance
+---@return integer
+function AP_RangeFinder_Backend_ud:type() end
+
+-- Orintation of the rangefinder of this instance
+---@return integer
+function AP_RangeFinder_Backend_ud:orientation() end
+
+-- Current distance of the sensor instance
+---@return number
+function AP_RangeFinder_Backend_ud:distance() end
 
 -- desc
 ---@class rangefinder
 rangefinder = {}
+
+-- get backend based on rangefinder instance provided
+---@param rangefinder_instance integer
+---@return AP_RangeFinder_Backend_ud
+function rangefinder:get_backend(rangefinder_instance) end
 
 -- desc
 ---@param orientation integer

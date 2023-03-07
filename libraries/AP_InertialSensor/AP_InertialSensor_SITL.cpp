@@ -284,6 +284,10 @@ void AP_InertialSensor_SITL::generate_gyro()
         gyro.y *= (1 + scale.y * 0.01f);
         gyro.z *= (1 + scale.z * 0.01f);
 
+        // apply bias
+        const Vector3f &gyro_bias = sitl->gyro_bias[gyro_instance].get();
+        gyro += gyro_bias;
+
         gyro_accum += gyro;
         _notify_new_gyro_sensor_rate_sample(gyro_instance, gyro);
 

@@ -93,10 +93,7 @@ void GCS::send_to_active_channels(uint32_t msgid, const char *pkt)
         if (!c.is_active()) {
             continue;
         }
-        if (entry->max_msg_len + c.packet_overhead() > c.txspace()) {
-            // no room on this channel
-            continue;
-        }
+        // size checks done by this method:
         c.send_message(pkt, entry);
     }
 }
@@ -116,11 +113,13 @@ void GCS::send_named_float(const char *name, float value) const
 #if HAL_HIGH_LATENCY2_ENABLED
 void GCS::enable_high_latency_connections(bool enabled)
 {
-    for (uint8_t i=0; i<num_gcs(); i++) {
-        GCS_MAVLINK &c = *chan(i);
-        c.high_latency_link_enabled = enabled && c.is_high_latency_link;
-    } 
+    high_latency_link_enabled = enabled;
     gcs().send_text(MAV_SEVERITY_NOTICE, "High Latency %s", enabled ? "enabled" : "disabled");
+}
+
+bool GCS::get_high_latency_status()
+{
+    return high_latency_link_enabled;
 }
 #endif // HAL_HIGH_LATENCY2_ENABLED
 

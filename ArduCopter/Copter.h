@@ -70,6 +70,7 @@
 #include <AP_ADSB/AP_ADSB.h>                // ADS-B RF based collision avoidance module library
 #include <AP_Proximity/AP_Proximity.h>      // ArduPilot proximity sensor library
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
+#include <AP_Winch/AP_Winch_config.h>
 
 // Configuration
 #include "defines.h"
@@ -146,7 +147,7 @@
 #if TOY_MODE_ENABLED == ENABLED
  # include "toy_mode.h"
 #endif
-#if WINCH_ENABLED == ENABLED
+#if AP_WINCH_ENABLED
  # include <AP_Winch/AP_Winch.h>
 #endif
 #include <AP_RPM/AP_RPM.h>
@@ -261,6 +262,7 @@ private:
         int16_t alt_cm_glitch_protected;    // last glitch protected altitude
         int8_t glitch_count;    // non-zero number indicates rangefinder is glitching
         uint32_t glitch_cleared_ms; // system time glitch cleared
+        float terrain_offset_cm;    // filtered terrain offset (e.g. terrain's height above EKF origin)
     } rangefinder_state, rangefinder_up_state;
 
     // return rangefinder height interpolated using inertial altitude
@@ -268,6 +270,7 @@ private:
 
     class SurfaceTracking {
     public:
+
         // update_surface_offset - manages the vertical offset of the position controller to follow the
         //   measured ground or ceiling level measured using the range finder.
         void update_surface_offset();
@@ -899,6 +902,7 @@ private:
     void read_rangefinder(void);
     bool rangefinder_alt_ok() const;
     bool rangefinder_up_ok() const;
+    void update_rangefinder_terrain_offset();
     void update_optical_flow(void);
 
     // takeoff_check.cpp

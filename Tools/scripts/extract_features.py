@@ -153,6 +153,7 @@ class ExtractFeatures(object):
             ('AP_RPM_{type}_ENABLED', r'AP_RPM_(?P<type>.*)::update',),
 
             ('GPS_MOVING_BASELINE', r'AP_GPS_Backend::calculate_moving_base_yaw\b',),
+            ('AP_DRONECAN_SEND_GPS', r'AP_GPS_UAVCAN::instance_exists\b',),
 
             ('HAL_WITH_DSP', r'AP_HAL::DSP::find_peaks\b',),
             ('HAL_GYROFFT_ENABLED', r'AP_GyroFFT::AP_GyroFFT\b',),
@@ -165,6 +166,12 @@ class ExtractFeatures(object):
 
             ('AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED', r'RC_Channel::lookuptable',),
 
+            ('AP_NOTIFY_MAVLINK_PLAY_TUNE_SUPPORT_ENABLED', r'AP_Notify::play_tune'),
+            ('AP_NOTIFY_MAVLINK_LED_CONTROL_SUPPORT_ENABLED', r'AP_Notify::handle_led_control'),
+            ('AP_NOTIFY_NCP5623_ENABLED', r'NCP5623::write'),
+            ('AP_NOTIFY_PROFILED_ENABLED', r'ProfiLED::init_ports'),
+            ('AP_NOTIFY_PROFILED_SPI_ENABLED', r'ProfiLED_SPI::rgb_set_id'),
+            ('AP_NOTIFY_NEOPIXEL_ENABLED', r'NeoPixel::init_ports'),
         ]
 
     def progress(self, msg):

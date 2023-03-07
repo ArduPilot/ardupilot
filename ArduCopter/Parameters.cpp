@@ -444,9 +444,9 @@ const AP_Param::Info Copter::var_info[] = {
     // variables not in the g class which contain EEPROM saved variables
 
 #if AP_CAMERA_ENABLED
-    // @Group: CAM_
+    // @Group: CAM
     // @Path: ../libraries/AP_Camera/AP_Camera.cpp
-    GOBJECT(camera,           "CAM_", AP_Camera),
+    GOBJECT(camera, "CAM", AP_Camera),
 #endif
 
     // @Group: RELAY_
@@ -852,7 +852,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(smart_rtl, "SRTL_", 21, ParametersG2, AP_SmartRTL),
 #endif
 
-#if WINCH_ENABLED == ENABLED
+#if AP_WINCH_ENABLED
     // 22 was AP_WheelEncoder
 
     // @Group: WINCH
@@ -1199,6 +1199,14 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @Range: 0 5
     // @User: Standard
     AP_GROUPINFO("PLDP_SPEED_DN", 4, ParametersG2, pldp_descent_speed_ms, 0.0),
+
+    // @Param: SURFTRAK_TC
+    // @DisplayName: Surface Tracking Filter Time Constant
+    // @Description: Time to achieve 63.2% of the surface altitude measurement change.  If 0 filtering is disabled
+    // @Units: s
+    // @Range: 0 5
+    // @User: Advanced
+    AP_GROUPINFO("SURFTRAK_TC", 5, ParametersG2, surftrak_tc, 1.0),
 
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 

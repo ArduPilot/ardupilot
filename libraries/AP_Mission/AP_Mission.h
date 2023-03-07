@@ -659,12 +659,32 @@ public:
     bool get_item(uint16_t index, mavlink_mission_item_int_t& result) const ;
     bool set_item(uint16_t index, mavlink_mission_item_int_t& source) ;
 
+    // Jump Tags. When a JUMP_TAG is run in the mission, either via DO_JUMP_TAG or
+    // by just being the next item, the tag is remembered and the age is set to 1.
+    // Only the most recent tag is remembered. It's age is how many NAV items have
+    // progressed since the tag was seen. While executing the tag, the
+    // age will be 1. The next NAV command after it will tick the age to 2, and so on.
+    bool get_last_jump_tag(uint16_t &tag, uint16_t &age) const;
+
+    // Set the mission index to the first JUMP_TAG with this tag.
+    // Returns true on success, else false if no appropriate JUMP_TAG match can be found or if setting the index failed
+    bool jump_to_tag(const uint16_t tag);
+
+    // find the first JUMP_TAG with this tag and return its index.
+    // Returns 0 if no appropriate JUMP_TAG match can be found.
+    uint16_t get_index_of_jump_tag(const uint16_t tag) const;
+
 private:
     static AP_Mission *_singleton;
 
     static StorageAccess _storage;
 
     static bool stored_in_location(uint16_t id);
+
+    struct {
+        uint16_t age;   // a value of 0 means we have never seen a tag. Once a tag is seen, age will increment every time the mission index changes.
+        uint16_t tag;   // most recent tag that was successfully jumped to. Only valid if age > 0
+    } _jump_tag;
 
     struct Mission_Flags {
         mission_state state;
@@ -744,6 +764,8 @@ private:
     // update progress made in mission to store last position in the event of mission exit
     void update_exit_position(void);
 
+    void on_mission_timestamp_change();
+
     /// sanity checks that the masked fields are not NaN's or infinite
     static MAV_MISSION_RESULT sanity_check_params(const mavlink_mission_item_int_t& packet);
 
@@ -779,6 +801,7 @@ private:
 
     // last time that mission changed
     uint32_t _last_change_time_ms;
+    uint32_t _last_change_time_prev_ms;
 
     // memoisation of contains-relative:
     bool _contains_terrain_alt_items;  // true if the mission has terrain-relative items

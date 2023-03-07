@@ -1360,6 +1360,12 @@ void QuadPlane::set_armed(bool armed)
     if (plane.control_mode == &plane.mode_guided) {
         guided_wait_takeoff = armed;
     }
+
+    // re-init throttle wait on arm and disarm, to prevent rudder
+    // arming on 2nd flight causing yaw
+    if (!air_mode_active()) {
+        init_throttle_wait();
+    }
 }
 
 
@@ -1410,7 +1416,7 @@ float QuadPlane::desired_auto_yaw_rate_cds(void) const
  */
 bool QuadPlane::should_assist(float aspeed, bool have_airspeed)
 {
-    if (!hal.util->get_soft_armed() || (q_assist_state == Q_ASSIST_STATE_ENUM::Q_ASSIST_DISABLED) || tailsitter.is_control_surface_tailsitter()) {
+    if (!plane.arming.is_armed_and_safety_off() || (q_assist_state == Q_ASSIST_STATE_ENUM::Q_ASSIST_DISABLED) || tailsitter.is_control_surface_tailsitter()) {
         // disarmed or disabled by aux switch or because a control surface tailsitter
         in_angle_assist = false;
         angle_error_start_ms = 0;
@@ -1524,7 +1530,7 @@ void SLT_Transition::update()
 {
     const uint32_t now = millis();
     
-    if (!hal.util->get_soft_armed()) {
+    if (!plane.arming.is_armed_and_safety_off()) {
         // reset the failure timer if we are disarmed
         transition_start_ms = now;
     }
@@ -1780,7 +1786,7 @@ void QuadPlane::update(void)
         attitude_control->reset_rate_controller_I_terms();
     }
 
-    if (!hal.util->get_soft_armed()) {
+    if (!plane.arming.is_armed_and_safety_off()) {
         /*
           make sure we don't have any residual control from previous flight stages
          */
@@ -1991,11 +1997,11 @@ void QuadPlane::motors_output(bool run_rate_controller)
     }
 
 #if AP_ADVANCEDFAILSAFE_ENABLED
-    if (!hal.util->get_soft_armed() ||
+    if (!plane.arming.is_armed_and_safety_off() ||
         (plane.afs.should_crash_vehicle() && !plane.afs.terminating_vehicle_via_landing()) ||
          SRV_Channels::get_emergency_stop()) {
 #else
-    if (!hal.util->get_soft_armed() || SRV_Channels::get_emergency_stop()) {
+    if (!plane.arming.is_armed_and_safety_off() || SRV_Channels::get_emergency_stop()) {
 #endif
         set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
         motors->output();
@@ -2337,7 +2343,7 @@ void QuadPlane::vtol_position_controller(void)
     // target speed when we reach position2 threshold
     const float position2_target_speed = 3.0;
 
-    if (hal.util->get_soft_armed()) {
+    if (plane.arming.is_armed_and_safety_off()) {
         poscontrol.last_run_ms = now_ms;
     }
 
@@ -2926,7 +2932,7 @@ void QuadPlane::setup_target_position(void)
  */
 void QuadPlane::takeoff_controller(void)
 {
-    if (!hal.util->get_soft_armed()) {
+    if (!plane.arming.is_armed_and_safety_off()) {
         return;
     }
 
@@ -3239,7 +3245,7 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     const uint32_t now = millis();
 
     // reset takeoff if we aren't armed
-    if (!hal.util->get_soft_armed()) {
+    if (!plane.arming.is_armed_and_safety_off()) {
         do_vtol_takeoff(cmd);
         return false;
     }
@@ -3748,7 +3754,7 @@ bool QuadPlane::do_user_takeoff(float takeoff_altitude)
         gcs().send_text(MAV_SEVERITY_INFO, "User Takeoff only in GUIDED mode");
         return false;
     }
-    if (!hal.util->get_soft_armed()) {
+    if (!plane.arming.is_armed_and_safety_off()) {
         gcs().send_text(MAV_SEVERITY_INFO, "Must be armed for takeoff");
         return false;
     }

@@ -30,6 +30,8 @@
 
 #include <AP_Winch/AP_Winch_Backend.h>
 
+#if AP_WINCH_DAIWA_ENABLED
+
 class AP_Winch_Daiwa : public AP_Winch_Backend {
 public:
 
@@ -105,3 +107,5 @@ private:
         WAITING_FOR_MOTOR_TEMP
     } parse_state;
 };
+
+#endif  // AP_WINCH_DAIWA_ENABLED

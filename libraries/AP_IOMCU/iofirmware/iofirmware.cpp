@@ -536,6 +536,9 @@ bool AP_IOMCU_FW::handle_code_write()
             } else {
                 palSetLine(HAL_GPIO_PIN_SBUS_OUT_EN);
             }
+            if (reg_setup.features & P_SETUP_FEATURES_HEATER) {
+                has_heater = true;
+            }
             break;
 
         case PAGE_REG_SETUP_HEATER_DUTY_CYCLE:

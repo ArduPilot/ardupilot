@@ -44,6 +44,10 @@ enum ioevents {
 // an error
 #define IOMCU_MAX_REPEATED_FAILURES 20
 
+#ifndef AP_IOMCU_FORCE_ENABLE_HEATER
+#define AP_IOMCU_FORCE_ENABLE_HEATER 0
+#endif
+
 AP_IOMCU::AP_IOMCU(AP_HAL::UARTDriver &_uart) :
     uart(_uart)
 {
@@ -142,6 +146,14 @@ void AP_IOMCU::thread_main(void)
                 event_failed(mask);
                 continue;
             }
+
+#if AP_IOMCU_FORCE_ENABLE_HEATER
+            if (!modify_register(PAGE_SETUP, PAGE_REG_SETUP_FEATURES, 0,
+                                 P_SETUP_FEATURES_HEATER)) {
+                event_failed(mask);
+                continue;
+            }
+#endif
         }
         mask &= ~EVENT_MASK(IOEVENT_INIT);
 
@@ -516,11 +528,7 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
         protocol_fail_count++;
         return false;
     }
-    for (uint8_t i=0; i<n; i++) {
-        if (i < sizeof(pkt)) {
-            b[i] = uart.read();
-        }
-    }
+    uart.read(b, MIN(n, sizeof(pkt)));
 
     uint8_t got_crc = pkt.crc;
     pkt.crc = 0;

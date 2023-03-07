@@ -640,6 +640,63 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     AP_GROUPINFO("GYR_FILE_RW", 29, SIM, gyro_file_rw, INSFileMode::INS_FILE_NONE),
     AP_GROUPINFO("ACC_FILE_RW", 30, SIM, accel_file_rw, INSFileMode::INS_FILE_NONE),
 #endif
+
+    // @Param: GYR1_BIAS_X
+    // @DisplayName: First Gyro bias on X axis
+    // @Description: First Gyro bias on X axis
+    // @Units: rad/s
+    // @User: Advanced
+
+    // @Param: GYR1_BIAS_Y
+    // @DisplayName: First Gyro bias on Y axis
+    // @Description: First Gyro bias on Y axis
+    // @Units: rad/s
+    // @User: Advanced
+
+    // @Param: GYR1_BIAS_Z
+    // @DisplayName: First Gyro bias on Z axis
+    // @Description: First Gyro bias on Z axis
+    // @Units: rad/s
+    // @User: Advanced
+
+
+    AP_GROUPINFO("GYR1_BIAS",     31, SIM, gyro_bias[0], 0),
+#if INS_MAX_INSTANCES > 1
+    // @Param: GYR2_BIAS_X
+    // @CopyFieldsFrom: SIM_GYR1_BIAS_X
+    // @DisplayName: Second Gyro bias on X axis
+    // @Description: Second Gyro bias on X axis
+
+    // @Param: GYR2_BIAS_Y
+    // @CopyFieldsFrom: SIM_GYR1_BIAS_Y
+    // @DisplayName: Second Gyro bias on Y axis
+    // @Description: Second Gyro bias on Y axis
+
+    // @Param: GYR2_BIAS_Z
+    // @CopyFieldsFrom: SIM_GYR1_BIAS_Z
+    // @DisplayName: Second Gyro bias on Z axis
+    // @Description: Second Gyro bias on Z axis
+    AP_GROUPINFO("GYR2_BIAS",     32, SIM, gyro_bias[1], 0),
+#endif
+#if INS_MAX_INSTANCES > 2
+    // @Param: GYR3_BIAS_X
+    // @CopyFieldsFrom: SIM_GYR1_BIAS_X
+    // @DisplayName: Third Gyro bias on X axis
+    // @Description: Third Gyro bias on X axis
+
+    // @Param: GYR3_BIAS_Y
+    // @CopyFieldsFrom: SIM_GYR1_BIAS_Y
+    // @DisplayName: Third Gyro bias on Y axis
+    // @Description: Third Gyro bias on Y axis
+
+    // @Param: GYR3_BIAS_Z
+    // @CopyFieldsFrom: SIM_GYR1_BIAS_Z
+    // @DisplayName: Third Gyro bias on Z axis
+    // @Description: Third Gyro bias on Z axis
+
+    AP_GROUPINFO("GYR3_BIAS",     33, SIM, gyro_bias[2], 0),
+#endif
+
     // the IMUT parameters must be last due to the enable parameters
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
     AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SIM, AP_InertialSensor::TCal),

@@ -195,7 +195,7 @@ class Context(object):
         self.collections = {}
         self.heartbeat_interval_ms = 1000
         self.original_heartbeat_interval_ms = None
-        self.example_scripts = []
+        self.installed_scripts = []
 
 
 # https://stackoverflow.com/questions/616645/how-do-i-duplicate-sys-stdout-to-a-log-file-in-python
@@ -4140,10 +4140,20 @@ class AutoTest(ABC):
     def install_example_script_context(self, scriptname):
         '''installs an example script which will be removed when the context goes
         away'''
-        if self.mav is None:
-            return
         self.install_example_script(scriptname)
-        self.context_get().example_scripts.append(scriptname)
+        self.context_get().installed_scripts.append(scriptname)
+
+    def install_test_script_context(self, scriptname):
+        '''installs an test script which will be removed when the context goes
+        away'''
+        self.install_test_script(scriptname)
+        self.context_get().installed_scripts.append(scriptname)
+
+    def install_applet_script_context(self, scriptname):
+        '''installs an applet script which will be removed when the context goes
+        away'''
+        self.install_applet_script(scriptname)
+        self.context_get().installed_scripts.append(scriptname)
 
     def rootdir(self):
         this_dir = os.path.dirname(__file__)
@@ -4157,6 +4167,7 @@ class AutoTest(ABC):
             mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH,
             mavutil.mavlink.MAV_CMD_NAV_LOITER_TIME,
             mavutil.mavlink.MAV_CMD_DO_JUMP,
+            mavutil.mavlink.MAV_CMD_DO_JUMP_TAG,
             mavutil.mavlink.MAV_CMD_DO_DIGICAM_CONTROL,
             mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
             mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
@@ -5565,8 +5576,8 @@ class AutoTest(ABC):
         # we really don't want...
         for hook in dead.message_hooks:
             self.remove_message_hook(hook)
-        for script in dead.example_scripts:
-            self.remove_example_script(script)
+        for script in dead.installed_scripts:
+            self.remove_installed_script(script)
         if dead.sitl_commandline_customised and len(self.contexts):
             self.contexts[-1].sitl_commandline_customised = True
 
@@ -5736,11 +5747,13 @@ class AutoTest(ABC):
         )
         self.run_cmd_get_ack(command, want_result, timeout, quiet=quiet, mav=mav)
 
-    def run_cmd_get_ack(self, command, want_result, timeout, quiet=False, mav=None):
+    def run_cmd_get_ack(self, command, want_result, timeout, quiet=False, mav=None, ignore_in_progress=None):
         # note that the caller should ensure that this cached
         # timestamp is reasonably up-to-date!
         if mav is None:
             mav = self.mav
+        if ignore_in_progress is None:
+            ignore_in_progress = want_result != mavutil.mavlink.MAV_RESULT_IN_PROGRESS
         tstart = self.get_sim_time_cached()
         while True:
             if mav != self.mav:
@@ -5756,6 +5769,8 @@ class AutoTest(ABC):
             if not quiet:
                 self.progress("ACK received: %s (%fs)" % (str(m), delta_time))
             if m.command == command:
+                if m.result == mavutil.mavlink.MAV_RESULT_IN_PROGRESS and ignore_in_progress:
+                    continue
                 if m.result != want_result:
                     raise ValueError("Expected %s got %s" % (
                         mavutil.mavlink.enums["MAV_RESULT"][want_result].name,
@@ -7206,7 +7221,10 @@ class AutoTest(ABC):
             t2 = self.get_sim_time_cached()
             if t2 - tstart > timeout:
                 self.progress("Prearm bit never went true.  Attempting arm to elicit reason from autopilot")
-                self.arm_vehicle()
+                try:
+                    self.arm_vehicle()
+                except Exception:
+                    pass
                 raise AutoTestTimeoutException("Prearm bit never went true")
             if self.sensor_has_state(mavutil.mavlink.MAV_SYS_STATUS_PREARM_CHECK, True, True, True):
                 break
@@ -7309,11 +7327,11 @@ class AutoTest(ABC):
         self.wait_ekf_happy(timeout=timeout, require_absolute=require_absolute)
         if require_absolute:
             self.wait_gps_sys_status_not_present_or_enabled_and_healthy()
-        armable_time = self.get_sim_time() - start
         if require_absolute:
             self.poll_home_position()
         if check_prearm_bit:
             self.wait_prearm_sys_status_healthy(timeout=timeout)
+        armable_time = self.get_sim_time() - start
         self.progress("Took %u seconds to become armable" % armable_time)
         self.total_waiting_to_arm_time += armable_time
         self.waiting_to_arm_count += 1
@@ -7529,7 +7547,7 @@ Also, ignores heartbeats not from our target system'''
         source = self.script_applet_source_path(scriptname)
         self.install_script(source, scriptname, install_name=install_name)
 
-    def remove_example_script(self, scriptname):
+    def remove_installed_script(self, scriptname):
         dest = self.installed_script_path(os.path.basename(scriptname))
         try:
             os.unlink(dest)
@@ -9325,6 +9343,7 @@ Also, ignores heartbeats not from our target system'''
     def ArmFeatures(self):
         '''Arm features'''
         # TEST ARMING/DISARM
+        self.delay_sim_time(12)  # wait for gyros/accels to be happy
         if self.get_parameter("ARMING_CHECK") != 1.0 and not self.is_sub():
             raise ValueError("Arming check should be 1")
         if not self.is_sub() and not self.is_tracker():
@@ -9711,6 +9730,8 @@ Also, ignores heartbeats not from our target system'''
 
     def SET_MESSAGE_INTERVAL(self):
         '''Test MAV_CMD_SET_MESSAGE_INTERVAL'''
+        self.set_parameter("CAM1_TYPE", 1) # Camera with servo trigger
+        self.reboot_sitl() # needed for CAM1_TYPE to take effect
         self.start_subtest('Basic tests')
         self.test_set_message_interval_basic()
         self.start_subtest('Many-message tests')
@@ -9876,6 +9897,8 @@ Also, ignores heartbeats not from our target system'''
 
     def REQUEST_MESSAGE(self, timeout=60):
         '''Test MAV_CMD_REQUEST_MESSAGE'''
+        self.set_parameter("CAM1_TYPE", 1) # Camera with servo trigger
+        self.reboot_sitl() # needed for CAM1_TYPE to take effect
         rate = round(self.get_message_rate("CAMERA_FEEDBACK", 10))
         if rate != 0:
             raise PreconditionFailedException("Receiving camera feedback")
@@ -11918,14 +11941,18 @@ switch value'''
         text = ""
 
         self.context_collect('STATUSTEXT')
-        self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
-                     0, # p1
-                     0, # p2
-                     1, # p3, baro
-                     0, # p4
-                     0, # p5
-                     0, # p6
-                     0) # p7
+        command = mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION
+        self.send_cmd(command,
+                      0, # p1
+                      0, # p2
+                      1, # p3, baro
+                      0, # p4
+                      0, # p5
+                      0, # p6
+                      0) # p7
+        # this is a test for asynchronous handling of mavlink messages:
+        self.run_cmd_get_ack(command, mavutil.mavlink.MAV_RESULT_IN_PROGRESS, 2)
+        self.run_cmd_get_ack(command, mavutil.mavlink.MAV_RESULT_ACCEPTED, 5)
 
         received_frsky_texts = []
         last_len_received_statustexts = 0
@@ -13282,3 +13309,16 @@ SERIAL5_BAUD 128
 
             self.progress("vtol and landed states match")
             return
+
+    def setGCSfailsafe(self, paramValue):
+        # Slow down the sim rate if GCS Failsafe is in use
+        if paramValue == 0:
+            self.set_parameters({
+                "FS_GCS_ENABLE": paramValue,
+                "SIM_SPEEDUP": 10,
+            })
+        else:
+            self.set_parameters({
+                "SIM_SPEEDUP": 4,
+                "FS_GCS_ENABLE": paramValue,
+            })

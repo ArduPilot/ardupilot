@@ -102,6 +102,7 @@ public:
         USD1_CAN = 33,
         Benewake_CAN = 34,
         TeraRanger_Serial = 35,
+        Lua_Scripting = 36,
         SIM = 100,
     };
 
@@ -218,7 +219,6 @@ private:
     RangeFinder_State state[RANGEFINDER_MAX_INSTANCES];
     AP_RangeFinder_Backend *drivers[RANGEFINDER_MAX_INSTANCES];
     uint8_t num_instances;
-    bool init_done;
     HAL_Semaphore detect_sem;
     float estimated_terrain_height;
     Vector3f pos_offset_zero;   // allows returning position offsets of zero for invalid requests
