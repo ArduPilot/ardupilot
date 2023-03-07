@@ -3977,7 +3977,6 @@ class AutoTestPlane(AutoTest):
         # reboot to clear potentially bad state
         self.reboot_sitl()
 
-
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
