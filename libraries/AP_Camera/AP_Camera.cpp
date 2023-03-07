@@ -204,6 +204,27 @@ void AP_Camera::handle_message(mavlink_channel_t chan, const mavlink_message_t &
     }
 }
 
+// handle command_long mavlink messages
+MAV_RESULT AP_Camera::handle_command_long(const mavlink_command_long_t &packet)
+{
+    switch (packet.command) {
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:
+        configure(packet.param1, packet.param2, packet.param3, packet.param4, packet.param5, packet.param6, packet.param7);
+        return MAV_RESULT_ACCEPTED;
+    case MAV_CMD_DO_DIGICAM_CONTROL:
+        control(packet.param1, packet.param2, packet.param3, packet.param4, packet.param5, packet.param6);
+        return MAV_RESULT_ACCEPTED;
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+        set_trigger_distance(packet.param1);
+        if (is_equal(packet.param3, 1.0f)) {
+            take_picture();
+        }
+        return MAV_RESULT_ACCEPTED;
+    default:
+        return MAV_RESULT_UNSUPPORTED;
+    }
+}
+
 // set camera trigger distance in a mission
 void AP_Camera::set_trigger_distance(uint8_t instance, float distance_m)
 {
