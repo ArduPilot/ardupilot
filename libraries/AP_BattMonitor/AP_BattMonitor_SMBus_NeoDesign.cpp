@@ -1,6 +1,11 @@
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_SMBUS_NEODESIGN_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include "AP_BattMonitor.h"
+
 #include "AP_BattMonitor_SMBus_NeoDesign.h"
 
 #define BATTMONITOR_ND_CELL_COUNT                0x5C    // cell-count register
@@ -75,3 +80,5 @@ void AP_BattMonitor_SMBus_NeoDesign::timer()
     read_remaining_capacity();
     read_temp();
 }
+
+#endif  // AP_BATTERY_SMBUS_NEODESIGN_ENABLED

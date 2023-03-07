@@ -17,9 +17,12 @@
 
 #pragma once
 
+#include "AP_BattMonitor_Backend.h"
+
+#if AP_BATTERY_FUELLEVEL_ANALOG_ENABLED
+
 #include <Filter/LowPassFilter.h>
 #include "AP_BattMonitor.h"
-#include "AP_BattMonitor_Backend.h"
 
 class AP_BattMonitor_FuelLevel_Analog : public AP_BattMonitor_Backend
 {
@@ -52,3 +55,5 @@ private:
 
     LowPassFilterFloat _voltage_filter;
 };
+
+#endif  // AP_BATTERY_FUELLEVEL_ANALOG_ENABLED

@@ -1,9 +1,14 @@
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_SMBUS_SOLO_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_BattMonitor.h"
-#include "AP_BattMonitor_SMBus_Solo.h"
 #include <utility>
+
+#include "AP_BattMonitor_SMBus_Solo.h"
 
 #define BATTMONITOR_SMBUS_SOLO_CELL_VOLTAGE         0x28    // cell voltage register
 #define BATTMONITOR_SMBUS_SOLO_CURRENT              0x2a    // current register
@@ -95,3 +100,5 @@ void AP_BattMonitor_SMBus_Solo::timer()
 
     read_cycle_count();
 }
+
+#endif  // AP_BATTERY_SMBUS_SOLO_ENABLED

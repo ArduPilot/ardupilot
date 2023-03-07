@@ -13,14 +13,14 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AP_BattMonitor_Generator.h"
+#include "AP_BattMonitor_config.h"
 
-#if HAL_GENERATOR_ENABLED
+#if AP_BATTERY_GENERATOR_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 
-extern const AP_HAL::HAL& hal;
+#include "AP_BattMonitor_Generator.h"
 
 /*
     Fuel class
@@ -156,4 +156,4 @@ AP_BattMonitor::Failsafe AP_BattMonitor_Generator_Elec::update_failsafes()
     }
     return MAX(AP_BattMonitor_Backend::update_failsafes(), failsafe);
 }
-#endif
+#endif  // AP_BATTERY_GENERATOR_ENABLED

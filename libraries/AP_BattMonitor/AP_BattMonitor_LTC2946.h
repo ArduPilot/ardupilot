@@ -5,9 +5,7 @@
 #include "AP_BattMonitor_Backend.h"
 #include <utility>
 
-#define HAL_BATTMON_LTC2946_ENABLED defined(HAL_BATTMON_LTC2946_BUS) && defined(HAL_BATTMON_LTC2946_ADDR)
-
-#if HAL_BATTMON_LTC2946_ENABLED
+#if AP_BATTERY_LTC2946_ENABLED
 
 class AP_BattMonitor_LTC2946 : public AP_BattMonitor_Backend
 {
@@ -40,4 +38,4 @@ private:
     float voltage_LSB;
 };
 
-#endif // HAL_BATTMON_LTC2946_ENABLED
+#endif // AP_BATTERY_LTC2946_ENABLED

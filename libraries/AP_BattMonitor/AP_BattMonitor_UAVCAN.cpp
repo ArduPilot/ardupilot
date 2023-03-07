@@ -1,7 +1,8 @@
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_UAVCAN_BATTERYINFO_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
-
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
-
 #include "AP_BattMonitor.h"
 #include "AP_BattMonitor_UAVCAN.h"
 
@@ -466,4 +467,4 @@ uint32_t AP_BattMonitor_UAVCAN::get_mavlink_fault_bitmask() const
     return mav_fault_bitmask;
 }
 
-#endif
+#endif  // AP_BATTERY_UAVCAN_BATTERYINFO_ENABLED

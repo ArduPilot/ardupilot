@@ -1,8 +1,10 @@
-#include "AP_BattMonitor_INA2xx.h"
-#include <GCS_MAVLink/GCS.h>
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_INA2XX_ENABLED
+
 #include <AP_HAL/utility/sparse-endian.h>
 
-#if HAL_BATTMON_INA2XX_ENABLED
+#include "AP_BattMonitor_INA2xx.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -178,4 +180,4 @@ void AP_BattMonitor_INA2XX::timer(void)
     accumulate.count++;
 }
 
-#endif // HAL_BATTMON_INA2XX_ENABLED
+#endif // AP_BATTERY_INA2XX_ENABLED
