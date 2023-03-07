@@ -2992,8 +2992,8 @@ def add_apperiph_defaults(f):
 #endif
 
 // disable various battery monitor backends:
-#ifndef AP_BATTMON_SYNTHETIC_CURRENT_ENABLED
-#define AP_BATTMON_SYNTHETIC_CURRENT_ENABLED 0
+#ifndef AP_BATTERY_SYNTHETIC_CURRENT_ENABLED
+#define AP_BATTERY_SYNTHETIC_CURRENT_ENABLED 0
 #endif
 
 #ifndef AP_BATT_MONITOR_MAX_INSTANCES

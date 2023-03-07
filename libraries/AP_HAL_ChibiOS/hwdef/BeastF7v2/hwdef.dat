@@ -65,7 +65,7 @@ include ../include/save_some_flash.inc
 define AP_GRIPPER_ENABLED 0
 define HAL_PARACHUTE_ENABLED 0
 define HAL_SPRAYER_ENABLED 0
-define AP_BATTMON_SMBUS_ENABLE 0
+define AP_BATTERY_SMBUS_ENABLED 0
 
 # only include ublox GPS driver
 include ../include/minimal_GPS.inc

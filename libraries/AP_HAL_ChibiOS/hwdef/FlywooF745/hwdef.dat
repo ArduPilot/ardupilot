@@ -170,4 +170,4 @@ define HAL_PARACHUTE_ENABLED 0
 # minimal drivers to reduce flash usage
 include ../include/minimal.inc
 define HAL_SPRAYER_ENABLED 0
-define AP_BATTMON_SMBUS_ENABLE 0
+define AP_BATTERY_SMBUS_ENABLED 0
