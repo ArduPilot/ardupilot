@@ -24,14 +24,20 @@ Show launch arguments:
 
 ros2 launch ardupilot_sitl mavproxy.launch.py --show-args
 """
+from typing import List
+
+from launch import LaunchContext
 from launch import LaunchDescription
+from launch import LaunchDescriptionEntity
 from launch.actions import DeclareLaunchArgument
 from launch.actions import ExecuteProcess
 from launch.actions import OpaqueFunction
 from launch.substitutions import LaunchConfiguration
 
 
-def launch_mavproxy(context, *args, **kwargs):
+def launch_mavproxy(
+    context: LaunchContext, *args, **kwargs
+) -> List[LaunchDescriptionEntity]:
     """Return a non-interactive MAVProxy process."""
     # Declare the command.
     command = "mavproxy.py"
@@ -58,40 +64,43 @@ def launch_mavproxy(context, *args, **kwargs):
                 f"--master {master} ",
                 f"--sitl {sitl} ",
                 "--non-interactive ",
-                # "--daemon "
             ]
         ],
         shell=True,
         output="both",
         respawn=False,
     )
-
-    launch_processes = [mavproxy_process]
-    return launch_processes
+    return [mavproxy_process]
 
 
-def generate_launch_description():
+def generate_launch_description() -> LaunchDescription:
     """Generate a launch description for MAVProxy."""
-    # Create launch description.
+    launch_arguments = generate_launch_arguments()
+
     return LaunchDescription(
-        [
-            # Launch arguments.
-            DeclareLaunchArgument(
-                "master",
-                default_value="tcp:127.0.0.1:5760",
-                description="MAVLink master port and optional baud rate.",
-            ),
-            DeclareLaunchArgument(
-                "out",
-                default_value="127.0.0.1:14550",
-                description="MAVLink output port and optional baud rate.",
-            ),
-            DeclareLaunchArgument(
-                "sitl",
-                default_value="127.0.0.1:5501",
-                description="SITL output port.",
-            ),
-            # Launch function.
+        launch_arguments
+        + [
             OpaqueFunction(function=launch_mavproxy),
         ]
     )
+
+
+def generate_launch_arguments() -> List[DeclareLaunchArgument]:
+    """Generate a list of launch arguments."""
+    return [
+        DeclareLaunchArgument(
+            "master",
+            default_value="tcp:127.0.0.1:5760",
+            description="MAVLink master port and optional baud rate.",
+        ),
+        DeclareLaunchArgument(
+            "out",
+            default_value="127.0.0.1:14550",
+            description="MAVLink output port and optional baud rate.",
+        ),
+        DeclareLaunchArgument(
+            "sitl",
+            default_value="127.0.0.1:5501",
+            description="SITL output port.",
+        ),
+    ]

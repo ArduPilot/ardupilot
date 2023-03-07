@@ -20,15 +20,21 @@ Run with default arguments:
 
 ros2 launch ardupilot_sitl micro_ros_agent.launch.py
 """
+from typing import List
+
+from launch import LaunchContext
 from launch import LaunchDescription
+from launch import LaunchDescriptionEntity
 from launch.actions import DeclareLaunchArgument
 from launch.actions import OpaqueFunction
 from launch.substitutions import LaunchConfiguration
 
-import launch_ros
+from launch_ros.actions import Node
 
 
-def launch_micro_ros_agent(context, *args, **kwargs):
+def launch_micro_ros_agent(
+    context: LaunchContext, *args, **kwargs
+) -> List[LaunchDescriptionEntity]:
     """Launch the micro_ros_agent node."""
     # ROS arguments.
     micro_ros_agent_ns = LaunchConfiguration("micro_ros_agent_ns").perform(context)
@@ -56,11 +62,11 @@ def launch_micro_ros_agent(context, *args, **kwargs):
     print(f"device:           {device}")
 
     # Create action.
-    micro_ros_agent_node = launch_ros.actions.Node(
+    micro_ros_agent_node = Node(
         package="micro_ros_agent",
-        namespace=f"{micro_ros_agent_ns}",
         executable="micro_ros_agent",
         name="micro_ros_agent",
+        namespace=f"{micro_ros_agent_ns}",
         output="both",
         arguments=[
             {transport},
@@ -73,56 +79,60 @@ def launch_micro_ros_agent(context, *args, **kwargs):
             "--baudrate",
             {baudrate},
         ],
-        # additional_env={"PYTHONUNBUFFERED": "1"},
     )
-
-    launch_processes = [micro_ros_agent_node]
-    return launch_processes
+    return [micro_ros_agent_node]
 
 
-def generate_launch_description():
+def generate_launch_description() -> LaunchDescription:
     """Generate a launch description for the micro_ros_agent."""
+    launch_arguments = generate_launch_arguments()
+
     return LaunchDescription(
-        [
-            # Launch arguments.
-            DeclareLaunchArgument(
-                "micro_ros_agent_ns",
-                default_value="",
-                description="Set the micro_ros_agent namespace.",
-            ),
-            DeclareLaunchArgument(
-                "transport",
-                default_value="serial",
-                description="Set the transport.",
-                choices=["serial"],
-            ),
-            DeclareLaunchArgument(
-                "middleware",
-                default_value="dds",
-                description="Set the middleware.",
-                choices=["ced", "dds", "rtps"],
-            ),
-            DeclareLaunchArgument(
-                "refs",
-                default_value="",
-                description="Set the refs file.",
-            ),
-            DeclareLaunchArgument(
-                "verbose",
-                default_value="",
-                description="Set the verbosity level.",
-            ),
-            DeclareLaunchArgument(
-                "baudrate",
-                default_value="",
-                description="Set the baudrate.",
-            ),
-            DeclareLaunchArgument(
-                "device",
-                default_value="",
-                description="Set the device.",
-            ),
-            # Launch function.
+        launch_arguments
+        + [
             OpaqueFunction(function=launch_micro_ros_agent),
         ]
     )
+
+
+def generate_launch_arguments() -> List[DeclareLaunchArgument]:
+    """Generate a list of launch arguments."""
+    return [
+        DeclareLaunchArgument(
+            "micro_ros_agent_ns",
+            default_value="",
+            description="Set the micro_ros_agent namespace.",
+        ),
+        DeclareLaunchArgument(
+            "transport",
+            default_value="serial",
+            description="Set the transport.",
+            choices=["serial"],
+        ),
+        DeclareLaunchArgument(
+            "middleware",
+            default_value="dds",
+            description="Set the middleware.",
+            choices=["ced", "dds", "rtps"],
+        ),
+        DeclareLaunchArgument(
+            "refs",
+            default_value="",
+            description="Set the refs file.",
+        ),
+        DeclareLaunchArgument(
+            "verbose",
+            default_value="",
+            description="Set the verbosity level.",
+        ),
+        DeclareLaunchArgument(
+            "baudrate",
+            default_value="",
+            description="Set the baudrate.",
+        ),
+        DeclareLaunchArgument(
+            "device",
+            default_value="",
+            description="Set the device.",
+        ),
+    ]

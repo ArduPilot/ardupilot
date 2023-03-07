@@ -20,6 +20,8 @@ Run with default arguments:
 
 ros2 launch ardupilot_sitl sitl_dds.launch.py
 """
+from typing import List
+
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
@@ -28,9 +30,9 @@ from launch.substitutions import PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 
 
-def generate_launch_description():
+def generate_launch_description() -> LaunchDescription:
     """Generate a launch description to bring up ArduPilot SITL with DDS."""
-    # Include component launch files.
+    # Compose launch files.
     virtual_ports = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             [

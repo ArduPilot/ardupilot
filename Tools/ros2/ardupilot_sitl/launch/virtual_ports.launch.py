@@ -20,16 +20,25 @@ Run with default arguments:
 
 ros2 launch ardupilot_sitl virtual_ports.launch.py
 """
+from typing import List
+
+from launch import LaunchContext
 from launch import LaunchDescription
+from launch import LaunchDescriptionEntity
 from launch.actions import DeclareLaunchArgument
 from launch.actions import ExecuteProcess
 from launch.actions import OpaqueFunction
 from launch.substitutions import LaunchConfiguration
 
 
-def launch_socat(context, *args, **kwargs):
+def launch_socat(
+    context: LaunchContext, *args, **kwargs
+) -> List[LaunchDescriptionEntity]:
     """Launch a process to create virtual ports using `socat`."""
+    # Declare commands.
     command = "socat"
+
+    # Retrieve launch arguments.
     tty0 = LaunchConfiguration("tty0").perform(context)
     tty1 = LaunchConfiguration("tty1").perform(context)
 
@@ -52,27 +61,32 @@ def launch_socat(context, *args, **kwargs):
         output="both",
         respawn=False,
     )
-
-    launch_processes = [socat_process]
-    return launch_processes
+    return [socat_process]
 
 
-def generate_launch_description():
+def generate_launch_description() -> LaunchDescription:
     """Generate a launch description for creating virtual ports using `socat`."""
+    launch_arguments = generate_launch_arguments()
+
     return LaunchDescription(
-        [
-            # Launch arguments.
-            DeclareLaunchArgument(
-                "tty0",
-                default_value="tty0",
-                description="Symbolic link name for tty0.",
-            ),
-            DeclareLaunchArgument(
-                "tty1",
-                default_value="tty1",
-                description="Symbolic link name for tty1.",
-            ),
-            # Launch function.
+        launch_arguments
+        + [
             OpaqueFunction(function=launch_socat),
         ]
     )
+
+
+def generate_launch_arguments() -> List[DeclareLaunchArgument]:
+    """Generate a list of launch arguments."""
+    return [
+        DeclareLaunchArgument(
+            "tty0",
+            default_value="tty0",
+            description="Symbolic link name for tty0.",
+        ),
+        DeclareLaunchArgument(
+            "tty1",
+            default_value="tty1",
+            description="Symbolic link name for tty1.",
+        ),
+    ]
