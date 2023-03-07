@@ -40,8 +40,7 @@ local function run(event)
     initdone = true
     lcd.clear()
     if lcd.sizeText then --BW does not have lcd.sizeText
-      local dummy
-      dummy, hline = lcd.sizeText("XXX", SMLSIZE)
+      _, hline = lcd.sizeText("XXX", SMLSIZE)
     end
     lcd.drawText(0, y, "Waiting for data...", SMLSIZE)
     y = y + hline
