@@ -3361,39 +3361,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_long_t &pack
         return MAV_RESULT_UNSUPPORTED;
     }
 
-    MAV_RESULT result = MAV_RESULT_FAILED;
-    switch (packet.command) {
-    case MAV_CMD_DO_DIGICAM_CONFIGURE:
-        camera->configure(packet.param1,
-                          packet.param2,
-                          packet.param3,
-                          packet.param4,
-                          packet.param5,
-                          packet.param6,
-                          packet.param7);
-        result = MAV_RESULT_ACCEPTED;
-        break;
-    case MAV_CMD_DO_DIGICAM_CONTROL:
-        camera->control(packet.param1,
-                        packet.param2,
-                        packet.param3,
-                        packet.param4,
-                        packet.param5,
-                        packet.param6);
-        result = MAV_RESULT_ACCEPTED;
-        break;
-    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
-        camera->set_trigger_distance(packet.param1);
-        if (is_equal(packet.param3, 1.0f)) {
-            camera->take_picture();
-        }
-        result = MAV_RESULT_ACCEPTED;
-        break;
-    default:
-        result = MAV_RESULT_UNSUPPORTED;
-        break;
-    }
-    return result;
+    return camera->handle_command_long(packet);
 }
 #endif
 
