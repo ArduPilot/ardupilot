@@ -1,3 +1,7 @@
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_SMBUS_ROTOYE_ENABLED
+
 #include "AP_BattMonitor_SMBus_Rotoye.h"
 
 #include <AP_HAL/AP_HAL.h>
@@ -25,3 +29,5 @@ void AP_BattMonitor_SMBus_Rotoye::read_temp(void) {
     _state.temperature_time = AP_HAL::millis();
     _state.temperature = KELVIN_TO_C(0.1f * float(MAX(t_int, t_ext)));
 }
+
+#endif  // AP_BATTERY_SMBUS_ROTOYE_ENABLED

@@ -1,0 +1,7 @@
+#pragma once
+
+#include <AP_HAL/AP_HAL.h>
+
+#ifndef HAL_GENERATOR_ENABLED
+#define HAL_GENERATOR_ENABLED !HAL_MINIMIZE_FEATURES && !defined(HAL_BUILD_AP_PERIPH)
+#endif

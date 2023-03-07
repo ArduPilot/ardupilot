@@ -1,3 +1,7 @@
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_SMBUS_ENABLED
+
 #include "AP_BattMonitor_SMBus.h"
 
 #define AP_BATTMONITOR_SMBUS_PEC_POLYNOME 0x07 // Polynome for CRC generation
@@ -250,3 +254,5 @@ uint8_t AP_BattMonitor_SMBus::get_PEC(const uint8_t i2c_addr, uint8_t cmd, bool 
     // return result
     return crc;
 }
+
+#endif  // AP_BATTERY_SMBUS_ENABLED
