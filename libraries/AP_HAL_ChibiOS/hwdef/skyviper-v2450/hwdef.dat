@@ -97,7 +97,6 @@ define HAL_SPRAYER_ENABLED 0
 define HAL_WITH_ESC_TELEM 0
 define AP_LANDINGGEAR_ENABLED 0
 define MODE_TURTLE_ENABLED 0
-define WINCH_ENABLED 0
 define AP_ICENGINE_ENABLED 0
 define HAL_DISPLAY_ENABLED 0
 
@@ -142,6 +141,9 @@ define AP_RPM_ENABLED 0
 # SkyViper doesn't have a gripper:
 define AP_GRIPPER_ENABLED 0
 
+# SkyViper doesn't have serially-connected LEDs:
+define AP_SERIALLED_ENABLED 0
+
 # SkyViper has a very limited set of blinkenlights
 define AP_NOTIFY_NCP5623_ENABLED 0
 define AP_NOTIFY_PCA9685_ENABLED 0
@@ -161,5 +163,8 @@ define EK3_FEATURE_BODY_ODOM 0
 
 // video on SkyViper is via the Sonix
 define AP_VIDEOTX_ENABLED 0
+
+// good luck fitting a winch onto SkyViper:
+define AP_WINCH_ENABLED 0
 
 AUTOBUILD_TARGETS Copter

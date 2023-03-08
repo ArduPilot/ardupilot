@@ -5,10 +5,6 @@
 
 #include "AP_Mount_Backend.h"
 
-#ifndef HAL_MOUNT_GREMSY_ENABLED
-#define HAL_MOUNT_GREMSY_ENABLED (HAL_MOUNT_ENABLED && !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024)
-#endif
-
 #if HAL_MOUNT_GREMSY_ENABLED
 
 #include <AP_Math/AP_Math.h>
@@ -20,7 +16,7 @@ class AP_Mount_Gremsy : public AP_Mount_Backend
 
 public:
     // Constructor
-    AP_Mount_Gremsy(AP_Mount &frontend, AP_Mount_Params &params, uint8_t instance);
+    using AP_Mount_Backend::AP_Mount_Backend;
 
     // init
     void init() override {}

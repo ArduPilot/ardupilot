@@ -22,8 +22,8 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
-#ifndef HAL_SCHEDULER_ENABLED
-#define HAL_SCHEDULER_ENABLED 1
+#ifndef AP_SCHEDULER_ENABLED
+#define AP_SCHEDULER_ENABLED 1
 #endif
 
 #include <AP_Param/AP_Param.h>

@@ -766,7 +766,7 @@ class sitl_periph_gps(sitl):
             HAL_LOGGING_MAVLINK_ENABLED = 0,
             AP_MISSION_ENABLED = 0,
             HAL_RALLY_ENABLED = 0,
-            HAL_SCHEDULER_ENABLED = 0,
+            AP_SCHEDULER_ENABLED = 0,
             CANARD_ENABLE_CANFD = 1,
             CANARD_MULTI_IFACE = 1,
             HAL_CANMANAGER_ENABLED = 0,

@@ -332,6 +332,7 @@ singleton AP_Baro rename baro
 singleton AP_Baro method get_pressure float
 singleton AP_Baro method get_temperature float
 singleton AP_Baro method get_external_temperature float
+singleton AP_Baro method get_altitude float
 
 include AP_OpticalFlow/AP_OpticalFlow.h
 singleton AP_OpticalFlow depends AP_OPTICALFLOW_ENABLED
@@ -394,6 +395,9 @@ singleton AP_Mission method get_item boolean uint16_t'skip_check mavlink_mission
 singleton AP_Mission method set_item boolean uint16_t'skip_check mavlink_mission_item_int_t
 singleton AP_Mission method clear boolean
 singleton AP_Mission method cmd_has_location boolean uint16_t'skip_check
+singleton AP_Mission method jump_to_tag boolean uint16_t 0 UINT16_MAX
+singleton AP_Mission method get_index_of_jump_tag uint16_t uint16_t 0 UINT16_MAX
+singleton AP_Mission method get_last_jump_tag boolean uint16_t'Null uint16_t'Null
 
 
 userdata mavlink_mission_item_int_t field param1 float'skip_check read write
@@ -475,10 +479,11 @@ ap_object AP_HAL::AnalogSource method voltage_average float
 ap_object AP_HAL::AnalogSource method voltage_latest float
 ap_object AP_HAL::AnalogSource method voltage_average_ratiometric float
 
-userdata AP_HAL::PWMSource rename PWMSource
-userdata AP_HAL::PWMSource method set_pin boolean uint8_t'skip_check "Scripting"'literal
-userdata AP_HAL::PWMSource method get_pwm_us uint16_t
-userdata AP_HAL::PWMSource method get_pwm_avg_us uint16_t
+global manual PWMSource lua_get_PWMSource 0
+
+ap_object AP_HAL::PWMSource method set_pin boolean uint8_t'skip_check "Scripting"'literal
+ap_object AP_HAL::PWMSource method get_pwm_us uint16_t
+ap_object AP_HAL::PWMSource method get_pwm_avg_us uint16_t
 
 singleton hal.gpio rename gpio
 singleton hal.gpio literal
@@ -545,6 +550,17 @@ singleton AP::motors() rename motors
 singleton AP::motors() method set_frame_string void string
 singleton AP::motors() method get_interlock boolean
 singleton AP::motors() method get_desired_spool_state uint8_t
+singleton AP::motors() method get_roll float
+singleton AP::motors() method get_roll_ff float
+singleton AP::motors() method get_pitch float
+singleton AP::motors() method get_pitch_ff float
+singleton AP::motors() method get_yaw float
+singleton AP::motors() method get_yaw_ff float
+singleton AP::motors() method get_throttle float
+singleton AP::motors() method get_forward float
+singleton AP::motors() method get_lateral float
+singleton AP::motors() method get_spool_state uint8_t
+singleton AP::motors() method set_external_limits void boolean boolean boolean boolean boolean
 
 include AP_Common/AP_FWVersion.h
 singleton AP::fwversion() literal
@@ -622,6 +638,7 @@ userdata EFI_State field coolant_temperature float'skip_check write
 userdata EFI_State field oil_pressure float'skip_check write
 userdata EFI_State field oil_temperature float'skip_check write
 userdata EFI_State field fuel_pressure float'skip_check write
+userdata EFI_State field fuel_pressure_status Fuel_Pressure_Status'enum write Fuel_Pressure_Status::NOT_SUPPORTED Fuel_Pressure_Status::ABOVE_NOMINAL
 userdata EFI_State field fuel_consumption_rate_cm3pm float'skip_check write
 userdata EFI_State field estimated_consumed_fuel_volume_cm3 float'skip_check write
 userdata EFI_State field throttle_position_percent uint8_t'skip_check write

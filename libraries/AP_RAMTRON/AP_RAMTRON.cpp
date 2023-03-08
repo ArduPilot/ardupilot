@@ -39,6 +39,7 @@ const AP_RAMTRON::ramtron_id AP_RAMTRON::ramtron_ids[] = {
     { 0x27, 0x03, 128, 3, RDID_type::Fujitsu }, // MB85RS1MT
     { 0x05, 0x09,  32, 2, RDID_type::Fujitsu }, // MB85RS256B
     { 0x24, 0x03,  16, 2, RDID_type::Fujitsu }, // MB85RS128TY
+    { 0x25, 0x03,  32, 2, RDID_type::Fujitsu }, // MB85RS256TY
 };
 
 // initialise the driver

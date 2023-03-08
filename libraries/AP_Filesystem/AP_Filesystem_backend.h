@@ -57,6 +57,7 @@ public:
     virtual void *opendir(const char *pathname) { return nullptr; }
     virtual struct dirent *readdir(void *dirp) { return nullptr; }
     virtual int closedir(void *dirp) { return -1; }
+    virtual int rename(const char *oldpath, const char *newpath) { return -1; }
 
     // return free disk space in bytes, -1 on error
     virtual int64_t disk_free(const char *path) { return 0; }

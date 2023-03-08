@@ -7221,7 +7221,10 @@ class AutoTest(ABC):
             t2 = self.get_sim_time_cached()
             if t2 - tstart > timeout:
                 self.progress("Prearm bit never went true.  Attempting arm to elicit reason from autopilot")
-                self.arm_vehicle()
+                try:
+                    self.arm_vehicle()
+                except Exception:
+                    pass
                 raise AutoTestTimeoutException("Prearm bit never went true")
             if self.sensor_has_state(mavutil.mavlink.MAV_SYS_STATUS_PREARM_CHECK, True, True, True):
                 break
@@ -9727,6 +9730,8 @@ Also, ignores heartbeats not from our target system'''
 
     def SET_MESSAGE_INTERVAL(self):
         '''Test MAV_CMD_SET_MESSAGE_INTERVAL'''
+        self.set_parameter("CAM1_TYPE", 1) # Camera with servo trigger
+        self.reboot_sitl() # needed for CAM1_TYPE to take effect
         self.start_subtest('Basic tests')
         self.test_set_message_interval_basic()
         self.start_subtest('Many-message tests')
@@ -9892,6 +9897,8 @@ Also, ignores heartbeats not from our target system'''
 
     def REQUEST_MESSAGE(self, timeout=60):
         '''Test MAV_CMD_REQUEST_MESSAGE'''
+        self.set_parameter("CAM1_TYPE", 1) # Camera with servo trigger
+        self.reboot_sitl() # needed for CAM1_TYPE to take effect
         rate = round(self.get_message_rate("CAMERA_FEEDBACK", 10))
         if rate != 0:
             raise PreconditionFailedException("Receiving camera feedback")
@@ -13303,7 +13310,7 @@ SERIAL5_BAUD 128
             self.progress("vtol and landed states match")
             return
 
-    def setGCSfailsafe(self, paramValue=0):
+    def setGCSfailsafe(self, paramValue):
         # Slow down the sim rate if GCS Failsafe is in use
         if paramValue == 0:
             self.set_parameters({

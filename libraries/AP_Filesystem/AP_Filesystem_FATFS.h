@@ -30,6 +30,7 @@ public:
     int unlink(const char *pathname) override;
     int mkdir(const char *pathname) override;
     void *opendir(const char *pathname) override;
+    int rename(const char *oldpath, const char *newpath) override;
     struct dirent *readdir(void *dirp) override;
     int closedir(void *dirp) override;
 

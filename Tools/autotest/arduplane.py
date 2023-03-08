@@ -938,6 +938,7 @@ class AutoTestPlane(AutoTest):
     def TestRCCamera(self):
         '''Test RC Option - Camera Trigger'''
         self.set_parameter("RC12_OPTION", 9) # CameraTrigger
+        self.set_parameter("CAM1_TYPE", 1)   # Camera with servo trigger
         self.reboot_sitl() # needed for RC12_OPTION to take effect
 
         x = self.mav.messages.get("CAMERA_FEEDBACK", None)
@@ -1163,6 +1164,56 @@ class AutoTestPlane(AutoTest):
         if (not (m.onboard_control_sensors_enabled & fence_bit)):
             raise NotAchievedException("Fence not enabled after RC fail")
         self.do_fence_disable() # Ensure the fence is disabled after test
+
+    def GCSFailsafe(self):
+        '''Ensure Long-Failsafe works on GCS loss'''
+        self.start_subtest("Test Failsafe: RTL")
+        self.load_sample_mission()
+        self.set_parameter("RTL_AUTOLAND", 1)
+        self.change_mode("AUTO")
+        self.takeoff()
+        self.set_parameters({
+            "FS_GCS_ENABL": 1,
+            "FS_LONG_ACTN": 1,
+        })
+        self.progress("Disconnecting GCS")
+        self.set_heartbeat_rate(0)
+        self.wait_mode("RTL", timeout=5)
+        self.set_heartbeat_rate(self.speedup)
+        self.end_subtest("Completed RTL Failsafe test")
+
+        self.start_subtest("Test Failsafe: FBWA Glide")
+        self.set_parameters({
+            "RTL_AUTOLAND": 1,
+            "FS_LONG_ACTN": 2,
+        })
+        self.change_mode("AUTO")
+        self.takeoff()
+        self.progress("Disconnecting GCS")
+        self.set_heartbeat_rate(0)
+        self.wait_mode("FBWA", timeout=5)
+        self.set_heartbeat_rate(self.speedup)
+        self.end_subtest("Completed FBWA Failsafe test")
+
+        self.start_subtest("Test Failsafe: Deploy Parachute")
+        self.load_mission("plane-parachute-mission.txt")
+        self.set_current_waypoint(1)
+        self.set_parameters({
+            "CHUTE_ENABLED": 1,
+            "CHUTE_TYPE": 10,
+            "SERVO9_FUNCTION": 27,
+            "SIM_PARA_ENABLE": 1,
+            "SIM_PARA_PIN": 9,
+            "FS_LONG_ACTN": 3,
+        })
+        self.change_mode("AUTO")
+        self.progress("Disconnecting GCS")
+        self.set_heartbeat_rate(0)
+        self.wait_statustext("BANG", timeout=60)
+        self.set_heartbeat_rate(self.speedup)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+        self.end_subtest("Completed Parachute Failsafe test")
 
     def TestGripperMission(self):
         '''Test Gripper mission items'''
@@ -4470,6 +4521,7 @@ class AutoTestPlane(AutoTest):
             self.AltResetBadGPS,
             self.AirspeedCal,
             self.MissionJumpTags,
+            self.GCSFailsafe,
         ])
         return ret
 
