@@ -582,6 +582,10 @@ private:
 
     /* end support for retrieving logs via mavlink: */
 
+    // convenience method for writing out the identical NED PIDs - and
+    // to save bytes
+    void Write_PSCx(LogMessages ID, float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
+
 #if HAL_LOGGER_FILE_CONTENTS_ENABLED
     void log_file_content(FileContent &file_content, const char *filename);
     void file_content_update(FileContent &file_content);
