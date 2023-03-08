@@ -277,9 +277,9 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder.cpp
     GOBJECT(rangefinder,                 "RNGFND", RangeFinder),
 
-    // @Group: INS_
+    // @Group: INS
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
-    GOBJECT(ins,                            "INS_", AP_InertialSensor),
+    GOBJECT(ins,                            "INS", AP_InertialSensor),
 
 #if AP_SIM_ENABLED
     // @Group: SIM_
