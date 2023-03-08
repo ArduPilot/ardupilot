@@ -255,11 +255,15 @@ AP_BattMonitor::init()
 #ifdef HAL_BATT_MONITOR_DEFAULT
     _params[0]._type.set_default(int8_t(HAL_BATT_MONITOR_DEFAULT));
 #endif
+#ifdef HAL_BATT2_MONITOR_DEFAULT
+    _params[1]._type.set_default(int8_t(HAL_BATT2_MONITOR_DEFAULT));
+#endif
 
     // create each instance
     for (uint8_t instance=0; instance<AP_BATT_MONITOR_MAX_INSTANCES; instance++) {
         // clear out the cell voltages
         memset(&state[instance].cell_voltages, 0xFF, sizeof(cells));
+        state[instance].instance = instance;
 
         switch (get_type(instance)) {
             case Type::ANALOG_VOLTAGE_ONLY:
