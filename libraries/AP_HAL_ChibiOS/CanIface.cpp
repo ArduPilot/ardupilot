@@ -774,7 +774,13 @@ void CANIface::initOnce(bool enable_irq)
             RCC->APB1RSTR &= ~RCC_APB1RSTR_CAN1RST;
 #endif
             break;
-#ifdef RCC_APB1ENR_CAN2EN
+#if defined(RCC_APB1ENR1_CAN2EN)
+        case 1:
+            RCC->APB1ENR1  |=  RCC_APB1ENR1_CAN2EN;
+            RCC->APB1RSTR1 |=  RCC_APB1RSTR1_CAN2RST;
+            RCC->APB1RSTR1 &= ~RCC_APB1RSTR1_CAN2RST;
+            break;
+#elif defined(RCC_APB1ENR_CAN2EN)
         case 1:
             RCC->APB1ENR  |=  RCC_APB1ENR_CAN2EN;
             RCC->APB1RSTR |=  RCC_APB1RSTR_CAN2RST;
