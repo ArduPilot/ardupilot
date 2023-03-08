@@ -2236,26 +2236,18 @@ bool ModeAuto::verify_nav_attitude_time(const AP_Mission::Mission_Command& cmd)
 bool ModeAuto::pause()
 {
     // do not pause if not in the WP sub mode or already reached to the destination
-    if(_mode != SubMode::WP || wp_nav->reached_wp_destination()) {
+    if (_mode != SubMode::WP || wp_nav->reached_wp_destination()) {
         return false;
     }
 
-    // do not pause if already paused
-    if (!wp_nav->paused()) {
-        wp_nav->set_pause();
-    }
-
+    wp_nav->set_pause();
     return true;
 }
 
 // resume - Allow aircraft to progress along the track
 bool ModeAuto::resume()
 {
-    // do not resume if not paused before
-    if(wp_nav->paused()) {
-        wp_nav->set_resume();
-    }
-
+    wp_nav->set_resume();
     return true;
 }
 
