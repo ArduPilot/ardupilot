@@ -135,6 +135,9 @@ private:
         PLND_OPTION_PRECLAND_AFTER_REPOSITION = (1 << 1),
     };
 
+    // converts old parameters to new ones
+    void convert_params();
+
     // check the status of the target
     void check_target_status(float rangefinder_alt_m, bool rangefinder_alt_valid);
 
