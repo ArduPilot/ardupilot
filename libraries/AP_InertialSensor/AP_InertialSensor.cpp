@@ -111,43 +111,43 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
       CALSENSFRAME : 11
      */
 
-    // @Param: GYROFFS_X
+    // @Param: _GYROFFS_X
     // @DisplayName: Gyro offsets of X axis
     // @Description: Gyro sensor offsets of X axis. This is setup on each boot during gyro calibrations
     // @Units: rad/s
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: GYROFFS_Y
+    // @Param: _GYROFFS_Y
     // @DisplayName: Gyro offsets of Y axis
     // @Description: Gyro sensor offsets of Y axis. This is setup on each boot during gyro calibrations
     // @Units: rad/s
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: GYROFFS_Z
+    // @Param: _GYROFFS_Z
     // @DisplayName: Gyro offsets of Z axis
     // @Description: Gyro sensor offsets of Z axis. This is setup on each boot during gyro calibrations
     // @Units: rad/s
     // @User: Advanced
     // @Calibration: 1
-    AP_GROUPINFO("GYROFFS",     3, AP_InertialSensor, _gyro_offset_old_param[0],  0),
+    AP_GROUPINFO("_GYROFFS",     3, AP_InertialSensor, _gyro_offset_old_param[0],  0),
 
-    // @Param: GYR2OFFS_X
+    // @Param: _GYR2OFFS_X
     // @DisplayName: Gyro2 offsets of X axis
     // @Description: Gyro2 sensor offsets of X axis. This is setup on each boot during gyro calibrations
     // @Units: rad/s
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: GYR2OFFS_Y
+    // @Param: _GYR2OFFS_Y
     // @DisplayName: Gyro2 offsets of Y axis
     // @Description: Gyro2 sensor offsets of Y axis. This is setup on each boot during gyro calibrations
     // @Units: rad/s
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: GYR2OFFS_Z
+    // @Param: _GYR2OFFS_Z
     // @DisplayName: Gyro2 offsets of Z axis
     // @Description: Gyro2 sensor offsets of Z axis. This is setup on each boot during gyro calibrations
     // @Units: rad/s
@@ -155,24 +155,24 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Calibration: 1
 
 #if INS_MAX_INSTANCES > 1
-    AP_GROUPINFO("GYR2OFFS",    7, AP_InertialSensor, _gyro_offset_old_param[1],   0),
+    AP_GROUPINFO("_GYR2OFFS",    7, AP_InertialSensor, _gyro_offset_old_param[1],   0),
 #endif
 
-    // @Param: GYR3OFFS_X
+    // @Param: _GYR3OFFS_X
     // @DisplayName: Gyro3 offsets of X axis
     // @Description: Gyro3 sensor offsets of X axis. This is setup on each boot during gyro calibrations
     // @Units: rad/s
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: GYR3OFFS_Y
+    // @Param: _GYR3OFFS_Y
     // @DisplayName: Gyro3 offsets of Y axis
     // @Description: Gyro3 sensor offsets of Y axis. This is setup on each boot during gyro calibrations
     // @Units: rad/s
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: GYR3OFFS_Z
+    // @Param: _GYR3OFFS_Z
     // @DisplayName: Gyro3 offsets of Z axis
     // @Description: Gyro3 sensor offsets of Z axis. This is setup on each boot during gyro calibrations
     // @Units: rad/s
@@ -180,32 +180,32 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Calibration: 1
 
 #if INS_MAX_INSTANCES > 2
-    AP_GROUPINFO("GYR3OFFS",   10, AP_InertialSensor, _gyro_offset_old_param[2],   0),
+    AP_GROUPINFO("_GYR3OFFS",   10, AP_InertialSensor, _gyro_offset_old_param[2],   0),
 #endif
 
-    // @Param: ACCSCAL_X
+    // @Param: _ACCSCAL_X
     // @DisplayName: Accelerometer scaling of X axis
     // @Description: Accelerometer scaling of X axis.  Calculated during acceleration calibration routine
     // @Range: 0.8 1.2
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: ACCSCAL_Y
+    // @Param: _ACCSCAL_Y
     // @DisplayName: Accelerometer scaling of Y axis
     // @Description: Accelerometer scaling of Y axis  Calculated during acceleration calibration routine
     // @Range: 0.8 1.2
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: ACCSCAL_Z
+    // @Param: _ACCSCAL_Z
     // @DisplayName: Accelerometer scaling of Z axis
     // @Description: Accelerometer scaling of Z axis  Calculated during acceleration calibration routine
     // @Range: 0.8 1.2
     // @User: Advanced
     // @Calibration: 1
-    AP_GROUPINFO("ACCSCAL",     12, AP_InertialSensor, _accel_scale_old_param[0],  1.0),
+    AP_GROUPINFO("_ACCSCAL",     12, AP_InertialSensor, _accel_scale_old_param[0],  1.0),
 
-    // @Param: ACCOFFS_X
+    // @Param: _ACCOFFS_X
     // @DisplayName: Accelerometer offsets of X axis
     // @Description: Accelerometer offsets of X axis. This is setup using the acceleration calibration or level operations
     // @Units: m/s/s
@@ -213,7 +213,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: ACCOFFS_Y
+    // @Param: _ACCOFFS_Y
     // @DisplayName: Accelerometer offsets of Y axis
     // @Description: Accelerometer offsets of Y axis. This is setup using the acceleration calibration or level operations
     // @Units: m/s/s
@@ -221,30 +221,30 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: ACCOFFS_Z
+    // @Param: _ACCOFFS_Z
     // @DisplayName: Accelerometer offsets of Z axis
     // @Description: Accelerometer offsets of Z axis. This is setup using the acceleration calibration or level operations
     // @Units: m/s/s
     // @Range: -3.5 3.5
     // @User: Advanced
     // @Calibration: 1
-    AP_GROUPINFO("ACCOFFS",     13, AP_InertialSensor, _accel_offset_old_param[0], 0),
+    AP_GROUPINFO("_ACCOFFS",     13, AP_InertialSensor, _accel_offset_old_param[0], 0),
 
-    // @Param: ACC2SCAL_X
+    // @Param: _ACC2SCAL_X
     // @DisplayName: Accelerometer2 scaling of X axis
     // @Description: Accelerometer2 scaling of X axis.  Calculated during acceleration calibration routine
     // @Range: 0.8 1.2
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: ACC2SCAL_Y
+    // @Param: _ACC2SCAL_Y
     // @DisplayName: Accelerometer2 scaling of Y axis
     // @Description: Accelerometer2 scaling of Y axis  Calculated during acceleration calibration routine
     // @Range: 0.8 1.2
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: ACC2SCAL_Z
+    // @Param: _ACC2SCAL_Z
     // @DisplayName: Accelerometer2 scaling of Z axis
     // @Description: Accelerometer2 scaling of Z axis  Calculated during acceleration calibration routine
     // @Range: 0.8 1.2
@@ -252,10 +252,10 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Calibration: 1
 
 #if INS_MAX_INSTANCES > 1
-    AP_GROUPINFO("ACC2SCAL",    14, AP_InertialSensor, _accel_scale_old_param[1],   1.0),
+    AP_GROUPINFO("_ACC2SCAL",    14, AP_InertialSensor, _accel_scale_old_param[1],   1.0),
 #endif
 
-    // @Param: ACC2OFFS_X
+    // @Param: _ACC2OFFS_X
     // @DisplayName: Accelerometer2 offsets of X axis
     // @Description: Accelerometer2 offsets of X axis. This is setup using the acceleration calibration or level operations
     // @Units: m/s/s
@@ -263,7 +263,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: ACC2OFFS_Y
+    // @Param: _ACC2OFFS_Y
     // @DisplayName: Accelerometer2 offsets of Y axis
     // @Description: Accelerometer2 offsets of Y axis. This is setup using the acceleration calibration or level operations
     // @Units: m/s/s
@@ -271,7 +271,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: ACC2OFFS_Z
+    // @Param: _ACC2OFFS_Z
     // @DisplayName: Accelerometer2 offsets of Z axis
     // @Description: Accelerometer2 offsets of Z axis. This is setup using the acceleration calibration or level operations
     // @Units: m/s/s
@@ -280,24 +280,24 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Calibration: 1
 
 #if INS_MAX_INSTANCES > 1
-    AP_GROUPINFO("ACC2OFFS",    15, AP_InertialSensor, _accel_offset_old_param[1],  0),
+    AP_GROUPINFO("_ACC2OFFS",    15, AP_InertialSensor, _accel_offset_old_param[1],  0),
 #endif
 
-    // @Param: ACC3SCAL_X
+    // @Param: _ACC3SCAL_X
     // @DisplayName: Accelerometer3 scaling of X axis
     // @Description: Accelerometer3 scaling of X axis.  Calculated during acceleration calibration routine
     // @Range: 0.8 1.2
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: ACC3SCAL_Y
+    // @Param: _ACC3SCAL_Y
     // @DisplayName: Accelerometer3 scaling of Y axis
     // @Description: Accelerometer3 scaling of Y axis  Calculated during acceleration calibration routine
     // @Range: 0.8 1.2
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: ACC3SCAL_Z
+    // @Param: _ACC3SCAL_Z
     // @DisplayName: Accelerometer3 scaling of Z axis
     // @Description: Accelerometer3 scaling of Z axis  Calculated during acceleration calibration routine
     // @Range: 0.8 1.2
@@ -305,10 +305,10 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Calibration: 1
 
 #if INS_MAX_INSTANCES > 2
-    AP_GROUPINFO("ACC3SCAL",    16, AP_InertialSensor, _accel_scale_old_param[2],   1.0),
+    AP_GROUPINFO("_ACC3SCAL",    16, AP_InertialSensor, _accel_scale_old_param[2],   1.0),
 #endif
 
-    // @Param: ACC3OFFS_X
+    // @Param: _ACC3OFFS_X
     // @DisplayName: Accelerometer3 offsets of X axis
     // @Description: Accelerometer3 offsets of X axis. This is setup using the acceleration calibration or level operations
     // @Units: m/s/s
@@ -316,7 +316,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: ACC3OFFS_Y
+    // @Param: _ACC3OFFS_Y
     // @DisplayName: Accelerometer3 offsets of Y axis
     // @Description: Accelerometer3 offsets of Y axis. This is setup using the acceleration calibration or level operations
     // @Units: m/s/s
@@ -324,7 +324,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: ACC3OFFS_Z
+    // @Param: _ACC3OFFS_Z
     // @DisplayName: Accelerometer3 offsets of Z axis
     // @Description: Accelerometer3 offsets of Z axis. This is setup using the acceleration calibration or level operations
     // @Units: m/s/s
@@ -333,81 +333,81 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Calibration: 1
 
 #if INS_MAX_INSTANCES > 2
-    AP_GROUPINFO("ACC3OFFS",    17, AP_InertialSensor, _accel_offset_old_param[2],  0),
+    AP_GROUPINFO("_ACC3OFFS",    17, AP_InertialSensor, _accel_offset_old_param[2],  0),
 #endif
 
-    // @Param: GYRO_FILTER
+    // @Param: _GYRO_FILTER
     // @DisplayName: Gyro filter cutoff frequency
     // @Description: Filter cutoff frequency for gyroscopes. This can be set to a lower value to try to cope with very high vibration levels in aircraft. A value of zero means no filtering (not recommended!)
     // @Units: Hz
     // @Range: 0 256
     // @User: Advanced
-    AP_GROUPINFO("GYRO_FILTER", 18, AP_InertialSensor, _gyro_filter_cutoff,  DEFAULT_GYRO_FILTER),
+    AP_GROUPINFO("_GYRO_FILTER", 18, AP_InertialSensor, _gyro_filter_cutoff,  DEFAULT_GYRO_FILTER),
 
-    // @Param: ACCEL_FILTER
+    // @Param: _ACCEL_FILTER
     // @DisplayName: Accel filter cutoff frequency
     // @Description: Filter cutoff frequency for accelerometers. This can be set to a lower value to try to cope with very high vibration levels in aircraft. A value of zero means no filtering (not recommended!)
     // @Units: Hz
     // @Range: 0 256
     // @User: Advanced
-    AP_GROUPINFO("ACCEL_FILTER", 19, AP_InertialSensor, _accel_filter_cutoff,  DEFAULT_ACCEL_FILTER),
+    AP_GROUPINFO("_ACCEL_FILTER", 19, AP_InertialSensor, _accel_filter_cutoff,  DEFAULT_ACCEL_FILTER),
 
-    // @Param: USE
+    // @Param: _USE
     // @DisplayName: Use first IMU for attitude, velocity and position estimates
     // @Description: Use first IMU for attitude, velocity and position estimates
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("USE", 20, AP_InertialSensor, _use_old_param[0],  1),
+    AP_GROUPINFO("_USE", 20, AP_InertialSensor, _use_old_param[0],  1),
 
-    // @Param: USE2
+    // @Param: _USE2
     // @DisplayName: Use second IMU for attitude, velocity and position estimates
     // @Description: Use second IMU for attitude, velocity and position estimates
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
 
 #if INS_MAX_INSTANCES > 1
-    AP_GROUPINFO("USE2", 21, AP_InertialSensor, _use_old_param[1],  1),
+    AP_GROUPINFO("_USE2", 21, AP_InertialSensor, _use_old_param[1],  1),
 #endif
 
-    // @Param: USE3
+    // @Param: _USE3
     // @DisplayName: Use third IMU for attitude, velocity and position estimates
     // @Description: Use third IMU for attitude, velocity and position estimates
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
 
 #if INS_MAX_INSTANCES > 2
-    AP_GROUPINFO("USE3", 22, AP_InertialSensor, _use_old_param[2],  1),
+    AP_GROUPINFO("_USE3", 22, AP_InertialSensor, _use_old_param[2],  1),
 #endif
 
-    // @Param: STILL_THRESH
+    // @Param: _STILL_THRESH
     // @DisplayName: Stillness threshold for detecting if we are moving
     // @Description: Threshold to tolerate vibration to determine if vehicle is motionless. This depends on the frame type and if there is a constant vibration due to motors before launch or after landing. Total motionless is about 0.05. Suggested values: Planes/rover use 0.1, multirotors use 1, tradHeli uses 5
     // @Range: 0.05 50
     // @User: Advanced
-    AP_GROUPINFO("STILL_THRESH", 23, AP_InertialSensor, _still_threshold,  DEFAULT_STILL_THRESH),
+    AP_GROUPINFO("_STILL_THRESH", 23, AP_InertialSensor, _still_threshold,  DEFAULT_STILL_THRESH),
 
-    // @Param: GYR_CAL
+    // @Param: _GYR_CAL
     // @DisplayName: Gyro Calibration scheme
     // @Description: Conrols when automatic gyro calibration is performed
     // @Values: 0:Never, 1:Start-up only
     // @User: Advanced
-    AP_GROUPINFO("GYR_CAL", 24, AP_InertialSensor, _gyro_cal_timing, 1),
+    AP_GROUPINFO("_GYR_CAL", 24, AP_InertialSensor, _gyro_cal_timing, 1),
 
-    // @Param: TRIM_OPTION
+    // @Param: _TRIM_OPTION
     // @DisplayName: Accel cal trim option
     // @Description: Specifies how the accel cal routine determines the trims
     // @User: Advanced
     // @Values: 0:Don't adjust the trims,1:Assume first orientation was level,2:Assume ACC_BODYFIX is perfectly aligned to the vehicle
-    AP_GROUPINFO("TRIM_OPTION", 25, AP_InertialSensor, _trim_option, 1),
+    AP_GROUPINFO("_TRIM_OPTION", 25, AP_InertialSensor, _trim_option, 1),
 
-    // @Param: ACC_BODYFIX
+    // @Param: _ACC_BODYFIX
     // @DisplayName: Body-fixed accelerometer
     // @Description: The body-fixed accelerometer to be used for trim calculation
     // @User: Advanced
     // @Values: 1:IMU 1,2:IMU 2,3:IMU 3
-    AP_GROUPINFO("ACC_BODYFIX", 26, AP_InertialSensor, _acc_body_aligned, 2),
+    AP_GROUPINFO("_ACC_BODYFIX", 26, AP_InertialSensor, _acc_body_aligned, 2),
 
-    // @Param: POS1_X
+    // @Param: _POS1_X
     // @DisplayName: IMU accelerometer X position
     // @Description: X position of the first IMU Accelerometer in body frame. Positive X is forward of the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.
     // @Units: m
@@ -415,7 +415,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Increment: 0.01
     // @User: Advanced
 
-    // @Param: POS1_Y
+    // @Param: _POS1_Y
     // @DisplayName: IMU accelerometer Y position
     // @Description: Y position of the first IMU accelerometer in body frame. Positive Y is to the right of the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.
     // @Units: m
@@ -423,16 +423,16 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Increment: 0.01
     // @User: Advanced
 
-    // @Param: POS1_Z
+    // @Param: _POS1_Z
     // @DisplayName: IMU accelerometer Z position
     // @Description: Z position of the first IMU accelerometer in body frame. Positive Z is down from the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
     // @User: Advanced
-    AP_GROUPINFO("POS1", 27, AP_InertialSensor, _accel_pos_old_param[0], 0.0f),
+    AP_GROUPINFO("_POS1", 27, AP_InertialSensor, _accel_pos_old_param[0], 0.0f),
 
-    // @Param: POS2_X
+    // @Param: _POS2_X
     // @DisplayName: IMU accelerometer X position
     // @Description: X position of the second IMU accelerometer in body frame. Positive X is forward of the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.
     // @Units: m
@@ -440,7 +440,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Increment: 0.01
     // @User: Advanced
 
-    // @Param: POS2_Y
+    // @Param: _POS2_Y
     // @DisplayName: IMU accelerometer Y position
     // @Description: Y position of the second IMU accelerometer in body frame. Positive Y is to the right of the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.
     // @Units: m
@@ -448,7 +448,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Increment: 0.01
     // @User: Advanced
 
-    // @Param: POS2_Z
+    // @Param: _POS2_Z
     // @DisplayName: IMU accelerometer Z position
     // @Description: Z position of the second IMU accelerometer in body frame. Positive Z is down from the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.
     // @Units: m
@@ -457,17 +457,17 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
 
 #if INS_MAX_INSTANCES > 1
-    AP_GROUPINFO("POS2", 28, AP_InertialSensor, _accel_pos_old_param[1], 0.0f),
+    AP_GROUPINFO("_POS2", 28, AP_InertialSensor, _accel_pos_old_param[1], 0.0f),
 #endif
 
-    // @Param: POS3_X
+    // @Param: _POS3_X
     // @DisplayName: IMU accelerometer X position
     // @Description: X position of the third IMU accelerometer in body frame. Positive X is forward of the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.
     // @Units: m
     // @Range: -10 10
     // @User: Advanced
 
-    // @Param: POS3_Y
+    // @Param: _POS3_Y
     // @DisplayName: IMU accelerometer Y position
     // @Description: Y position of the third IMU accelerometer in body frame. Positive Y is to the right of the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.
     // @Units: m
@@ -475,7 +475,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Increment: 0.01
     // @User: Advanced
 
-    // @Param: POS3_Z
+    // @Param: _POS3_Z
     // @DisplayName: IMU accelerometer Z position
     // @Description: Z position of the third IMU accelerometer in body frame. Positive Z is down from the origin. Attention: The IMU should be located as close to the vehicle c.g. as practical so that the value of this parameter is minimised. Failure to do so can result in noisy navigation velocity measurements due to vibration and IMU gyro noise. If the IMU cannot be moved and velocity noise is a problem, a location closer to the IMU can be used as the body frame origin.
     // @Units: m
@@ -484,179 +484,179 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @User: Advanced
 
 #if INS_MAX_INSTANCES > 2
-    AP_GROUPINFO("POS3", 29, AP_InertialSensor, _accel_pos_old_param[2], 0.0f),
+    AP_GROUPINFO("_POS3", 29, AP_InertialSensor, _accel_pos_old_param[2], 0.0f),
 #endif
 
-    // @Param: GYR_ID
+    // @Param: _GYR_ID
     // @DisplayName: Gyro ID
     // @Description: Gyro sensor ID, taking into account its type, bus and instance
     // @ReadOnly: True
     // @User: Advanced
-    AP_GROUPINFO("GYR_ID", 30, AP_InertialSensor, _gyro_id_old_param[0], 0),
+    AP_GROUPINFO("_GYR_ID", 30, AP_InertialSensor, _gyro_id_old_param[0], 0),
 
-    // @Param: GYR2_ID
+    // @Param: _GYR2_ID
     // @DisplayName: Gyro2 ID
     // @Description: Gyro2 sensor ID, taking into account its type, bus and instance
     // @ReadOnly: True
     // @User: Advanced
 
 #if INS_MAX_INSTANCES > 1
-    AP_GROUPINFO("GYR2_ID", 31, AP_InertialSensor, _gyro_id_old_param[1], 0),
+    AP_GROUPINFO("_GYR2_ID", 31, AP_InertialSensor, _gyro_id_old_param[1], 0),
 #endif
 
-    // @Param: GYR3_ID
+    // @Param: _GYR3_ID
     // @DisplayName: Gyro3 ID
     // @Description: Gyro3 sensor ID, taking into account its type, bus and instance
     // @ReadOnly: True
     // @User: Advanced
 
 #if INS_MAX_INSTANCES > 2
-    AP_GROUPINFO("GYR3_ID", 32, AP_InertialSensor, _gyro_id_old_param[2], 0),
+    AP_GROUPINFO("_GYR3_ID", 32, AP_InertialSensor, _gyro_id_old_param[2], 0),
 #endif
 
-    // @Param: ACC_ID
+    // @Param: _ACC_ID
     // @DisplayName: Accelerometer ID
     // @Description: Accelerometer sensor ID, taking into account its type, bus and instance
     // @ReadOnly: True
     // @User: Advanced
-    AP_GROUPINFO("ACC_ID", 33, AP_InertialSensor, _accel_id_old_param[0], 0),
+    AP_GROUPINFO("_ACC_ID", 33, AP_InertialSensor, _accel_id_old_param[0], 0),
 
-    // @Param: ACC2_ID
+    // @Param: _ACC2_ID
     // @DisplayName: Accelerometer2 ID
     // @Description: Accelerometer2 sensor ID, taking into account its type, bus and instance
     // @ReadOnly: True
     // @User: Advanced
 
 #if INS_MAX_INSTANCES > 1
-    AP_GROUPINFO("ACC2_ID", 34, AP_InertialSensor, _accel_id_old_param[1], 0),
+    AP_GROUPINFO("_ACC2_ID", 34, AP_InertialSensor, _accel_id_old_param[1], 0),
 #endif
 
-    // @Param: ACC3_ID
+    // @Param: _ACC3_ID
     // @DisplayName: Accelerometer3 ID
     // @Description: Accelerometer3 sensor ID, taking into account its type, bus and instance
     // @ReadOnly: True
     // @User: Advanced
 
 #if INS_MAX_INSTANCES > 2
-    AP_GROUPINFO("ACC3_ID", 35, AP_InertialSensor, _accel_id_old_param[2], 0),
+    AP_GROUPINFO("_ACC3_ID", 35, AP_InertialSensor, _accel_id_old_param[2], 0),
 #endif
 
-    // @Param: FAST_SAMPLE
+    // @Param: _FAST_SAMPLE
     // @DisplayName: Fast sampling mask
     // @Description: Mask of IMUs to enable fast sampling on, if available
     // @User: Advanced
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU
-    AP_GROUPINFO("FAST_SAMPLE",  36, AP_InertialSensor, _fast_sampling_mask,   HAL_DEFAULT_INS_FAST_SAMPLE),
+    AP_GROUPINFO("_FAST_SAMPLE",  36, AP_InertialSensor, _fast_sampling_mask,   HAL_DEFAULT_INS_FAST_SAMPLE),
 
     // index 37 was NOTCH_
 
 #if AP_INERTIALSENSOR_BATCHSAMPLER_ENABLED
-    // @Group: LOG_
+    // @Group: _LOG_
     // @Path: ../AP_InertialSensor/BatchSampler.cpp
-    AP_SUBGROUPINFO(batchsampler, "LOG_",  39, AP_InertialSensor, AP_InertialSensor::BatchSampler),
+    AP_SUBGROUPINFO(batchsampler, "_LOG_",  39, AP_InertialSensor, AP_InertialSensor::BatchSampler),
 #endif
 
-    // @Param: ENABLE_MASK
+    // @Param: _ENABLE_MASK
     // @DisplayName: IMU enable mask
     // @Description: Bitmask of IMUs to enable. It can be used to prevent startup of specific detected IMUs
     // @User: Advanced
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU,3:FourthIMU,4:FifthIMU,5:SixthIMU,6:SeventhIMU
-    AP_GROUPINFO("ENABLE_MASK",  40, AP_InertialSensor, _enable_mask, 0x7F),
+    AP_GROUPINFO("_ENABLE_MASK",  40, AP_InertialSensor, _enable_mask, 0x7F),
 
-    // @Group: HNTCH_
+    // @Group: _HNTCH_
     // @Path: ../Filter/HarmonicNotchFilter.cpp
-    AP_SUBGROUPINFO(harmonic_notches[0].params, "HNTCH_",  41, AP_InertialSensor, HarmonicNotchFilterParams),
+    AP_SUBGROUPINFO(harmonic_notches[0].params, "_HNTCH_",  41, AP_InertialSensor, HarmonicNotchFilterParams),
 
 #if HAL_INS_NUM_HARMONIC_NOTCH_FILTERS > 1
-    // @Group: HNTC2_
+    // @Group: _HNTC2_
     // @Path: ../Filter/HarmonicNotchFilter.cpp
-    AP_SUBGROUPINFO(harmonic_notches[1].params, "HNTC2_",  53, AP_InertialSensor, HarmonicNotchFilterParams),
+    AP_SUBGROUPINFO(harmonic_notches[1].params, "_HNTC2_",  53, AP_InertialSensor, HarmonicNotchFilterParams),
 #endif
 
-    // @Param: GYRO_RATE
+    // @Param: _GYRO_RATE
     // @DisplayName: Gyro rate for IMUs with Fast Sampling enabled
     // @Description: Gyro rate for IMUs with fast sampling enabled. The gyro rate is the sample rate at which the IMU filters operate and needs to be at least double the maximum filter frequency. If the sensor does not support the selected rate the next highest supported rate will be used. For IMUs which do not support fast sampling this setting is ignored and the default gyro rate of 1Khz is used.
     // @User: Advanced
     // @Values: 0:1kHz,1:2kHz,2:4kHz,3:8kHz
     // @RebootRequired: True
-    AP_GROUPINFO("GYRO_RATE",  42, AP_InertialSensor, _fast_sampling_rate, MPU_FIFO_FASTSAMPLE_DEFAULT),
+    AP_GROUPINFO("_GYRO_RATE",  42, AP_InertialSensor, _fast_sampling_rate, MPU_FIFO_FASTSAMPLE_DEFAULT),
 
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-    // @Group: TCAL1_
+    // @Group: _TCAL1_
     // @Path: AP_InertialSensor_tempcal.cpp
-    AP_SUBGROUPINFO(tcal_old_param[0], "TCAL1_", 43, AP_InertialSensor, AP_InertialSensor_TCal),
+    AP_SUBGROUPINFO(tcal_old_param[0], "_TCAL1_", 43, AP_InertialSensor, AP_InertialSensor_TCal),
 
 #if INS_MAX_INSTANCES > 1
-    // @Group: TCAL2_
+    // @Group: _TCAL2_
     // @Path: AP_InertialSensor_tempcal.cpp
-    AP_SUBGROUPINFO(tcal_old_param[1], "TCAL2_", 44, AP_InertialSensor, AP_InertialSensor_TCal),
+    AP_SUBGROUPINFO(tcal_old_param[1], "_TCAL2_", 44, AP_InertialSensor, AP_InertialSensor_TCal),
 #endif
 
 #if INS_MAX_INSTANCES > 2
-    // @Group: TCAL3_
+    // @Group: _TCAL3_
     // @Path: AP_InertialSensor_tempcal.cpp
-    AP_SUBGROUPINFO(tcal_old_param[2], "TCAL3_", 45, AP_InertialSensor, AP_InertialSensor_TCal),
+    AP_SUBGROUPINFO(tcal_old_param[2], "_TCAL3_", 45, AP_InertialSensor, AP_InertialSensor_TCal),
 #endif
 
-    // @Param: ACC1_CALTEMP
+    // @Param: _ACC1_CALTEMP
     // @DisplayName: Calibration temperature for 1st accelerometer
     // @Description: Temperature that the 1st accelerometer was calibrated at
     // @User: Advanced
     // @Units: degC
     // @Calibration: 1
-    AP_GROUPINFO("ACC1_CALTEMP", 46, AP_InertialSensor, caltemp_accel_old_param[0], -300),
+    AP_GROUPINFO("_ACC1_CALTEMP", 46, AP_InertialSensor, caltemp_accel_old_param[0], -300),
 
-    // @Param: GYR1_CALTEMP
+    // @Param: _GYR1_CALTEMP
     // @DisplayName: Calibration temperature for 1st gyroscope
     // @Description: Temperature that the 1st gyroscope was calibrated at
     // @User: Advanced
     // @Units: degC
     // @Calibration: 1
-    AP_GROUPINFO("GYR1_CALTEMP", 47, AP_InertialSensor, caltemp_gyro_old_param[0], -300),
+    AP_GROUPINFO("_GYR1_CALTEMP", 47, AP_InertialSensor, caltemp_gyro_old_param[0], -300),
 
 #if INS_MAX_INSTANCES > 1
-    // @Param: ACC2_CALTEMP
+    // @Param: _ACC2_CALTEMP
     // @DisplayName: Calibration temperature for 2nd accelerometer
     // @Description: Temperature that the 2nd accelerometer was calibrated at
     // @User: Advanced
     // @Units: degC
     // @Calibration: 1
-    AP_GROUPINFO("ACC2_CALTEMP", 48, AP_InertialSensor, caltemp_accel_old_param[1], -300),
+    AP_GROUPINFO("_ACC2_CALTEMP", 48, AP_InertialSensor, caltemp_accel_old_param[1], -300),
 
-    // @Param: GYR2_CALTEMP
+    // @Param: _GYR2_CALTEMP
     // @DisplayName: Calibration temperature for 2nd gyroscope
     // @Description: Temperature that the 2nd gyroscope was calibrated at
     // @User: Advanced
     // @Units: degC
     // @Calibration: 1
-    AP_GROUPINFO("GYR2_CALTEMP", 49, AP_InertialSensor, caltemp_gyro_old_param[1], -300),
+    AP_GROUPINFO("_GYR2_CALTEMP", 49, AP_InertialSensor, caltemp_gyro_old_param[1], -300),
 #endif
 
 #if INS_MAX_INSTANCES > 2
-    // @Param: ACC3_CALTEMP
+    // @Param: _ACC3_CALTEMP
     // @DisplayName: Calibration temperature for 3rd accelerometer
     // @Description: Temperature that the 3rd accelerometer was calibrated at
     // @User: Advanced
     // @Units: degC
     // @Calibration: 1
-    AP_GROUPINFO("ACC3_CALTEMP", 50, AP_InertialSensor, caltemp_accel_old_param[2], -300),
+    AP_GROUPINFO("_ACC3_CALTEMP", 50, AP_InertialSensor, caltemp_accel_old_param[2], -300),
 
-    // @Param: GYR3_CALTEMP
+    // @Param: _GYR3_CALTEMP
     // @DisplayName: Calibration temperature for 3rd gyroscope
     // @Description: Temperature that the 3rd gyroscope was calibrated at
     // @User: Advanced
     // @Units: degC
     // @Calibration: 1
-    AP_GROUPINFO("GYR3_CALTEMP", 51, AP_InertialSensor, caltemp_gyro_old_param[2], -300),
+    AP_GROUPINFO("_GYR3_CALTEMP", 51, AP_InertialSensor, caltemp_gyro_old_param[2], -300),
 #endif
 
-    // @Param: TCAL_OPTIONS
+    // @Param: _TCAL_OPTIONS
     // @DisplayName: Options for temperature calibration
     // @Description: This enables optional temperature calibration features. Setting PersistParams will save the accelerometer and temperature calibration parameters in the bootloader sector on the next update of the bootloader.
     // @Bitmask: 0:PersistParams
     // @User: Advanced
-    AP_GROUPINFO("TCAL_OPTIONS", 52, AP_InertialSensor, tcal_options, 0),
+    AP_GROUPINFO("_TCAL_OPTIONS", 52, AP_InertialSensor, tcal_options, 0),
     
 #endif // HAL_INS_TEMPERATURE_CAL_ENABLE
 
@@ -664,13 +664,13 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
 #if INS_MAX_INSTANCES > 3
     // @Group: 4_
     // @Path: AP_InertialSensor_Params.cpp
-    AP_SUBGROUPINFO(params[0], "4_", 53, AP_InertialSensor, AP_InertialSensor_Params),
+    AP_SUBGROUPINFO(params[0], "4_", 54, AP_InertialSensor, AP_InertialSensor_Params),
 #endif
 
 #if INS_MAX_INSTANCES > 4
     // @Group: 5_
     // @Path: AP_InertialSensor_Params.cpp
-    AP_SUBGROUPINFO(params[1], "5_", 54, AP_InertialSensor, AP_InertialSensor_Params),
+    AP_SUBGROUPINFO(params[1], "5_", 55, AP_InertialSensor, AP_InertialSensor_Params),
 #endif
 
     /*
