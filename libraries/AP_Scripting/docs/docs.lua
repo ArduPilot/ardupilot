@@ -2644,6 +2644,10 @@ function dirlist(directoryname) end
 --@param filename
 function remove(filename) end
 
+-- desc
+---@class crsf
+crsf = {}
+
 -- Send CRSF frame
 ---@param cmd integer -- byte CRSF type
 ---@param data string -- byte data to send
