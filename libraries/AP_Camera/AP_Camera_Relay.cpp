@@ -1,10 +1,8 @@
 #include "AP_Camera_Relay.h"
 
-#if AP_CAMERA_ENABLED
+#if AP_CAMERA_RELAY_ENABLED
 
 #include <AP_Relay/AP_Relay.h>
-
-extern const AP_HAL::HAL& hal;
 
 // update - should be called at 50hz
 void AP_Camera_Relay::update()
@@ -53,5 +51,4 @@ bool AP_Camera_Relay::trigger_pic()
     return true;
 }
 
-
-#endif // AP_CAMERA_ENABLED
+#endif // AP_CAMERA_RELAY_ENABLED

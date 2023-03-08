@@ -20,7 +20,7 @@
 
 #include "AP_Camera_Backend.h"
 
-#if AP_CAMERA_ENABLED
+#if AP_CAMERA_MAVLINK_ENABLED
 
 class AP_Camera_MAVLink : public AP_Camera_Backend
 {
@@ -42,4 +42,4 @@ public:
     void control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id) override;
 };
 
-#endif // AP_CAMERA_ENABLED
+#endif // AP_CAMERA_MAVLINK_ENABLED

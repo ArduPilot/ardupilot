@@ -86,31 +86,40 @@ void AP_Camera::init()
         CameraType camera_type = get_type(instance);
 
         // check for servo camera
-        if (camera_type == CameraType::SERVO) {
+        if (false) {
+#if AP_CAMERA_SERVO_ENABLED
+        } else if (camera_type == CameraType::SERVO) {
             _backends[instance] = new AP_Camera_Servo(*this, _params[instance], instance);
             _num_instances++;
+#endif
 
+#if AP_CAMERA_RELAY_ENABLED
         // check for relay camera
         } else if (camera_type == CameraType::RELAY) {
             _backends[instance] = new AP_Camera_Relay(*this, _params[instance], instance);
             _num_instances++;
+#endif
 
-#if HAL_SOLO_GIMBAL_ENABLED
+#if AP_CAMERA_SOLOGIMBAL_ENABLED
         // check for GoPro in Solo camera
         } else if (camera_type == CameraType::SOLOGIMBAL) {
             _backends[instance] = new AP_Camera_SoloGimbal(*this, _params[instance], instance);
             _num_instances++;
 #endif
 
+#if AP_CAMERA_MOUNT_ENABLED
         // check for Mount camera
         } else if (camera_type == CameraType::MOUNT) {
             _backends[instance] = new AP_Camera_Mount(*this, _params[instance], instance);
             _num_instances++;
+#endif
 
+#if AP_CAMERA_MAVLINK_ENABLED
         // check for MAVLink enabled camera driver
         } else if (camera_type == CameraType::MAVLINK) {
             _backends[instance] = new AP_Camera_MAVLink(*this, _params[instance], instance);
             _num_instances++;
+#endif
         }
 
         // set primary to first non-null index

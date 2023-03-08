@@ -47,11 +47,21 @@ public:
     // enums
     enum class CameraType {
         NONE = 0,           // None
+#if AP_CAMERA_SERVO_ENABLED
         SERVO = 1,          // Servo/PWM controlled camera
+#endif
+#if AP_CAMERA_RELAY_ENABLED
         RELAY = 2,          // Relay controlled camera
+#endif
+#if AP_CAMERA_SOLOGIMBAL_ENABLED
         SOLOGIMBAL = 3,     // GoPro in Solo gimbal
+#endif
+#if AP_CAMERA_MOUNT_ENABLED
         MOUNT = 4,          // Mount library implements camera
+#endif
+#if AP_CAMERA_MAVLINK_ENABLED
         MAVLINK = 5,        // MAVLink enabled camera
+#endif
     };
 
     // returns camera type of the given instance
