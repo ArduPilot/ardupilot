@@ -149,6 +149,7 @@ public:
         bool        powerOffNotified;          // only send powering off notification once
         uint32_t    time_remaining;            // remaining battery time
         bool        has_time_remaining;        // time_remaining is only valid if this is true
+        uint8_t     instance;                  // instance number of this backend
         const struct AP_Param::GroupInfo *var_info;
     };
 
