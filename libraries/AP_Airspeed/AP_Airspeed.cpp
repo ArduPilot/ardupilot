@@ -246,7 +246,7 @@ void AP_Airspeed::convert_per_instance()
         return;
     }
 
-    const struct convert_table {
+    static const struct convert_table {
         uint32_t element[2];
         ap_var_type type;
         const char* name;
