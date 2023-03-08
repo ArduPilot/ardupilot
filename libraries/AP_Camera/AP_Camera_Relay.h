@@ -20,7 +20,7 @@
 
 #include "AP_Camera_Backend.h"
 
-#if AP_CAMERA_ENABLED
+#if AP_CAMERA_RELAY_ENABLED
 
 class AP_Camera_Relay : public AP_Camera_Backend
 {
@@ -43,4 +43,4 @@ private:
     uint16_t trigger_counter;   // count of number of cycles shutter should be held open
 };
 
-#endif // AP_CAMERA_ENABLED
+#endif // AP_CAMERA_RELAY_ENABLED
