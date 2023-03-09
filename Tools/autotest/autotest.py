@@ -415,7 +415,7 @@ def run_specific_test(step, *args, **kwargs):
     global tester
     tester = tester_class(*args, **kwargs)
 
-    print("Got %s" % str(tester))
+    # print("Got %s" % str(tester))
     for a in tester.tests():
         if type(a) != Test:
             a = Test(a)
