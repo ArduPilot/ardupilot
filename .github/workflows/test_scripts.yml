@@ -16,7 +16,9 @@ jobs:
         config: [
             check_autotest_options,
             param_parse,
-        ]
+            python-cleanliness,
+            validate_board_list,
+       ]
     steps:
       # git checkout the PR
       - uses: actions/checkout@v3
