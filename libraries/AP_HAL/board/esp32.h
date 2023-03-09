@@ -23,9 +23,11 @@
 #define O_CLOEXEC 0
 #define HAL_STORAGE_SIZE (16384)
 
+#ifdef __cplusplus
 // allow for static semaphores
 #include <AP_HAL_ESP32/Semaphores.h>
 #define HAL_Semaphore ESP32::Semaphore
+#endif
 
 #define HAL_NUM_CAN_IFACES 0
 #define HAL_MEM_CLASS HAL_MEM_CLASS_192
