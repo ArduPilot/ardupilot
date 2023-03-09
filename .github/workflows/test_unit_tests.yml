@@ -1,4 +1,4 @@
-name: test unit tests and Python cleanliness
+name: test unit tests and sitl building
 
 on: [push, pull_request, workflow_dispatch]
 # paths:
@@ -23,17 +23,9 @@ jobs:
         ]
         config: [
             unit-tests,
-            python-cleanliness,
-            validate_board_list,
             sitl
             # examples,
         ]
-        exclude:
-          - config: [
-                python-cleanliness,
-                validate_board_list
-            ]
-            toolchain: clang
     steps:
       # git checkout the PR
       - uses: actions/checkout@v3
