@@ -128,7 +128,7 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
             backend[i]->process_pulse(width_s0, width_s1);
             const uint32_t frame_count2 = backend[i]->get_rc_frame_count();
             if (frame_count2 > frame_count) {
-                if (requires_3_frames((rcprotocol_t)i) && frame_count2 < 3) {
+                if (frame_count2 < required_good_frames((rcprotocol_t)i)) {
                     continue;
                 }
                 _new_input = (input_count != backend[i]->get_rc_input_count());
@@ -209,7 +209,7 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
             backend[i]->process_byte(byte, baudrate);
             const uint32_t frame_count2 = backend[i]->get_rc_frame_count();
             if (frame_count2 > frame_count) {
-                if (requires_3_frames((rcprotocol_t)i) && frame_count2 < 3) {
+                if (frame_count2 < required_good_frames((rcprotocol_t)i)) {
                     continue;
                 }
                 _new_input = (input_count != backend[i]->get_rc_input_count());
@@ -467,6 +467,45 @@ bool AP_RCProtocol::protocol_enabled(rcprotocol_t protocol) const
         return true;
     }
     return ((1U<<(uint8_t(protocol)+1)) & rc_protocols_mask) != 0;
+}
+
+/*
+  number of good frames required to lock onto a protocol
+ */
+uint8_t AP_RCProtocol::required_good_frames(enum rcprotocol_t p) const
+{
+    switch (p) {
+    case IBUS:
+    case SUMD:
+    case SRXL:
+    case SRXL2:
+    case ST24:
+        // strong protocol, less frames
+        return 2;
+
+    case SBUS:
+    case SBUS_NI:
+#if AP_RCPROTOCOL_FASTSBUS_ENABLED
+    case FASTSBUS:
+#endif
+#if AP_RCPROTOCOL_FPORT_ENABLED
+    case FPORT:
+#endif
+#if AP_RCPROTOCOL_FPORT2_ENABLED
+    case FPORT2:
+#endif
+        // moderate protocol (parity bits)
+        return 5;
+            
+    case PPM:
+    case DSM:
+    case CRSF:
+    case NONE:
+        // very weak
+        break;
+    }
+    // weak protocol, require more good frames
+    return 10;
 }
 
 namespace AP {

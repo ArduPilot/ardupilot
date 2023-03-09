@@ -722,6 +722,10 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
 {
     static uint32_t last_update_usec;
 
+    if (AP::sitl() == nullptr) {
+        return;
+    }
+
     /* this maps the registers used for PWM outputs. The RC
      * driver updates these whenever it wants the channel output
      * to change */

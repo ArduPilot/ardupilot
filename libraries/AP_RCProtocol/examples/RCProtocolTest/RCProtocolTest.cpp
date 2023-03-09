@@ -74,11 +74,12 @@ static bool check_result(const char *name, bool bytes, const uint16_t *values, u
 static bool test_byte_protocol(const char *name, uint32_t baudrate,
                                const uint8_t *bytes, uint8_t nbytes,
                                const uint16_t *values, uint8_t nvalues,
-                               uint8_t repeats,
                                uint8_t pause_at)
 {
+    const uint8_t initial_frames = 20;
+    const uint8_t test_frames = 10;
     bool ret = true;
-    for (uint8_t repeat=0; repeat<repeats+4; repeat++) {
+    for (uint8_t repeat=0; repeat<initial_frames+test_frames; repeat++) {
         for (uint8_t i=0; i<nbytes; i++) {
             if (pause_at > 0 && i > 0 && ((i % pause_at) == 0)) {
                 hal.scheduler->delay(10);
@@ -86,7 +87,7 @@ static bool test_byte_protocol(const char *name, uint32_t baudrate,
             rcprot->process_byte(bytes[i], baudrate);
         }
         hal.scheduler->delay(10);
-        if (repeat > repeats) {
+        if (repeat > initial_frames) {
             ret &= check_result(name, true, values, nvalues);
         }
     }
@@ -157,11 +158,13 @@ static void send_pause(uint8_t b, uint32_t baudrate, uint32_t pause_us, bool inv
 static bool test_pulse_protocol(const char *name, uint32_t baudrate,
                                 const uint8_t *bytes, uint8_t nbytes,
                                 const uint16_t *values, uint8_t nvalues,
-                                uint8_t repeats, uint8_t pause_at,
+                                uint8_t pause_at,
                                 bool inverted)
 {
+    const uint8_t initial_frames = 20;
+    const uint8_t test_frames = 10;
     bool ret = true;
-    for (uint8_t repeat=0; repeat<repeats+4; repeat++) {
+    for (uint8_t repeat=0; repeat<initial_frames+test_frames; repeat++) {
         send_pause(1, baudrate, 6000, inverted);
         for (uint8_t i=0; i<nbytes; i++) {
             if (pause_at > 0 && i > 0 && ((i % pause_at) == 0)) {
@@ -170,7 +173,7 @@ static bool test_pulse_protocol(const char *name, uint32_t baudrate,
             send_byte(bytes[i], baudrate, inverted);
         }
         send_pause(1, baudrate, 6000, inverted);
-        if (repeat > repeats) {
+        if (repeat > initial_frames) {
             ret &= check_result(name, false, values, nvalues);
         }
     }
@@ -183,7 +186,6 @@ static bool test_pulse_protocol(const char *name, uint32_t baudrate,
 static bool test_protocol(const char *name, uint32_t baudrate,
                           const uint8_t *bytes, uint8_t nbytes,
                           const uint16_t *values, uint8_t nvalues,
-                          uint8_t repeats=1,
                           int8_t pause_at=0,
                           bool inverted=false)
 {
@@ -191,12 +193,12 @@ static bool test_protocol(const char *name, uint32_t baudrate,
     rcprot = new AP_RCProtocol();
     rcprot->init();
 
-    ret &= test_byte_protocol(name, baudrate, bytes, nbytes, values, nvalues, repeats, pause_at);
+    ret &= test_byte_protocol(name, baudrate, bytes, nbytes, values, nvalues, pause_at);
     delete rcprot;
 
     rcprot = new AP_RCProtocol();
     rcprot->init();
-    ret &= test_pulse_protocol(name, baudrate, bytes, nbytes, values, nvalues, repeats, pause_at, inverted);
+    ret &= test_pulse_protocol(name, baudrate, bytes, nbytes, values, nvalues, pause_at, inverted);
     delete rcprot;
 
     return ret;
@@ -340,29 +342,27 @@ void loop()
     // we only decode up to 18ch
     const uint16_t fport2_24ch_output[] = {1495, 1495, 986, 1495, 982, 1495, 982, 982, 1495, 2006, 982, 1495, 1495, 1495, 1495, 1495, 1495, 1495};
 
-    test_protocol("SRXL", 115200, srxl_bytes, sizeof(srxl_bytes), srxl_output, ARRAY_SIZE(srxl_output), 1);
-    test_protocol("SUMD", 115200, sumd_bytes, sizeof(sumd_bytes), sumd_output, ARRAY_SIZE(sumd_output), 1);
-    test_protocol("SUMD2", 115200, sumd_bytes2, sizeof(sumd_bytes2), sumd_output2, ARRAY_SIZE(sumd_output2), 1);
-    test_protocol("SUMD3", 115200, sumd_bytes3, sizeof(sumd_bytes3), sumd_output3, ARRAY_SIZE(sumd_output3), 1);
-    test_protocol("IBUS", 115200, ibus_bytes, sizeof(ibus_bytes), ibus_output, ARRAY_SIZE(ibus_output), 1);
+    test_protocol("SRXL", 115200, srxl_bytes, sizeof(srxl_bytes), srxl_output, ARRAY_SIZE(srxl_output));
+    test_protocol("SUMD", 115200, sumd_bytes, sizeof(sumd_bytes), sumd_output, ARRAY_SIZE(sumd_output));
+    test_protocol("SUMD2", 115200, sumd_bytes2, sizeof(sumd_bytes2), sumd_output2, ARRAY_SIZE(sumd_output2));
+    test_protocol("SUMD3", 115200, sumd_bytes3, sizeof(sumd_bytes3), sumd_output3, ARRAY_SIZE(sumd_output3));
+    test_protocol("IBUS", 115200, ibus_bytes, sizeof(ibus_bytes), ibus_output, ARRAY_SIZE(ibus_output));
 
-    // SBUS needs 3 repeats to pass the RCProtocol 3 frames test
-    test_protocol("SBUS", 100000, sbus_bytes, sizeof(sbus_bytes), sbus_output, ARRAY_SIZE(sbus_output), 3, 0, true);
+    test_protocol("SBUS", 100000, sbus_bytes, sizeof(sbus_bytes), sbus_output, ARRAY_SIZE(sbus_output), 0, true);
 
-    // DSM needs 8 repeats, 5 to guess the format, then 3 to pass the RCProtocol 3 frames test
-    test_protocol("DSM1", 115200, dsm_bytes,  sizeof(dsm_bytes),  dsm_output,  ARRAY_SIZE(dsm_output), 9);
-    test_protocol("DSM2", 115200, dsm_bytes2, sizeof(dsm_bytes2), dsm_output2, ARRAY_SIZE(dsm_output2), 9, 16);
-    test_protocol("DSM3", 115200, dsm_bytes3, sizeof(dsm_bytes3), dsm_output3, ARRAY_SIZE(dsm_output3), 9, 16);
-    test_protocol("DSM4", 115200, dsm_bytes4, sizeof(dsm_bytes4), dsm_output4, ARRAY_SIZE(dsm_output4), 9, 16);
-    test_protocol("DSM5", 115200, dsm_bytes5, sizeof(dsm_bytes5), dsm_output5, ARRAY_SIZE(dsm_output5), 9);
-    test_protocol("DSMX22", 115200, dsmx22ms_bytes, sizeof(dsmx22ms_bytes), dsmx22ms_output, ARRAY_SIZE(dsmx22ms_output), 9, 16);
-    test_protocol("DSMX22_VTX", 115200, dsmx22ms_vtx_bytes, sizeof(dsmx22ms_vtx_bytes), dsmx22ms_vtx_output, ARRAY_SIZE(dsmx22ms_vtx_output), 9, 16);
-    test_protocol("DSMX11", 115200, dsmx11ms_bytes, sizeof(dsmx11ms_bytes), dsmx11ms_output, ARRAY_SIZE(dsmx11ms_output), 9, 16);
-    test_protocol("DSMX11_VTX", 115200, dsmx11ms_vtx_bytes, sizeof(dsmx11ms_vtx_bytes), dsmx11ms_vtx_output, ARRAY_SIZE(dsmx11ms_vtx_output), 9, 16);
+    test_protocol("DSM1", 115200, dsm_bytes,  sizeof(dsm_bytes),  dsm_output,  ARRAY_SIZE(dsm_output));
+    test_protocol("DSM2", 115200, dsm_bytes2, sizeof(dsm_bytes2), dsm_output2, ARRAY_SIZE(dsm_output2), 16);
+    test_protocol("DSM3", 115200, dsm_bytes3, sizeof(dsm_bytes3), dsm_output3, ARRAY_SIZE(dsm_output3), 16);
+    test_protocol("DSM4", 115200, dsm_bytes4, sizeof(dsm_bytes4), dsm_output4, ARRAY_SIZE(dsm_output4), 16);
+    test_protocol("DSM5", 115200, dsm_bytes5, sizeof(dsm_bytes5), dsm_output5, ARRAY_SIZE(dsm_output5));
+    test_protocol("DSMX22", 115200, dsmx22ms_bytes, sizeof(dsmx22ms_bytes), dsmx22ms_output, ARRAY_SIZE(dsmx22ms_output), 16);
+    test_protocol("DSMX22_VTX", 115200, dsmx22ms_vtx_bytes, sizeof(dsmx22ms_vtx_bytes), dsmx22ms_vtx_output, ARRAY_SIZE(dsmx22ms_vtx_output), 16);
+    test_protocol("DSMX11", 115200, dsmx11ms_bytes, sizeof(dsmx11ms_bytes), dsmx11ms_output, ARRAY_SIZE(dsmx11ms_output), 16);
+    test_protocol("DSMX11_VTX", 115200, dsmx11ms_vtx_bytes, sizeof(dsmx11ms_vtx_bytes), dsmx11ms_vtx_output, ARRAY_SIZE(dsmx11ms_vtx_output), 16);
 
-    test_protocol("FPORT", 115200, fport_bytes, sizeof(fport_bytes), fport_output, ARRAY_SIZE(fport_output), 3, 0, true);
-    test_protocol("FPORT2_16CH", 115200, fport2_16ch_bytes, sizeof(fport2_16ch_bytes), fport2_16ch_output, ARRAY_SIZE(fport2_16ch_output), 3, 0, true);
-    test_protocol("FPORT2_24CH", 115200, fport2_24ch_bytes, sizeof(fport2_24ch_bytes), fport2_24ch_output, ARRAY_SIZE(fport2_24ch_output), 3, 0, true);
+    test_protocol("FPORT", 115200, fport_bytes, sizeof(fport_bytes), fport_output, ARRAY_SIZE(fport_output), 0, true);
+    test_protocol("FPORT2_16CH", 115200, fport2_16ch_bytes, sizeof(fport2_16ch_bytes), fport2_16ch_output, ARRAY_SIZE(fport2_16ch_output), 0, true);
+    test_protocol("FPORT2_24CH", 115200, fport2_24ch_bytes, sizeof(fport2_24ch_bytes), fport2_24ch_output, ARRAY_SIZE(fport2_24ch_output), 0, true);
 }
 
 AP_HAL_MAIN();
