@@ -74,7 +74,9 @@ static const int CLIBS = 0;
 /*
 ** unload library 'lib'
 */
+#if !defined(ARDUPILOT_BUILD)
 static void lsys_unloadlib (void *lib);
+#endif
 
 /*
 ** load C library in file 'path'. If 'seeglb', load with all names in
@@ -227,10 +229,11 @@ static lua_CFunction lsys_sym (lua_State *L, void *lib, const char *sym) {
 
 #define DLMSG	"dynamic libraries not enabled; check your Lua installation"
 
-
+#if !defined(ARDUPILOT_BUILD)
 static void lsys_unloadlib (void *lib) {
   (void)(lib);  /* not used */
 }
+#endif
 
 
 static void *lsys_load (lua_State *L, const char *path, int seeglb) {
@@ -342,6 +345,7 @@ static void addtoclib (lua_State *L, const char *path, void *plib) {
 ** __gc tag method for CLIBS table: calls 'lsys_unloadlib' for all lib
 ** handles in list CLIBS
 */
+#if !defined(ARDUPILOT_BUILD)
 static int gctm (lua_State *L) {
   lua_Integer n = luaL_len(L, 1);
   for (; n >= 1; n--) {  /* for each handle, in reverse order */
@@ -351,6 +355,7 @@ static int gctm (lua_State *L) {
   }
   return 0;
 }
+#endif
 
 
 
@@ -509,6 +514,7 @@ static int searcher_Lua (lua_State *L) {
 ** fails, it also tries "luaopen_Y".) If there is no ignore mark,
 ** look for a function named "luaopen_modname".
 */
+#if !defined(ARDUPILOT_BUILD)
 static int loadfunc (lua_State *L, const char *filename, const char *modname) {
   const char *openfunc;
   const char *mark;
@@ -564,12 +570,30 @@ static int searcher_preload (lua_State *L) {
     lua_pushfstring(L, "\n\tno field package.preload['%s']", name);
   return 1;
 }
-
+#endif
 
 static void findloader (lua_State *L, const char *name) {
-  int i;
   luaL_Buffer msg;  /* to build error message */
   luaL_buffinit(L, &msg);
+  lua_pushstring(L, name);
+#if defined(ARDUPILOT_BUILD)
+  // since we only use lua modules there's no point
+  // in searching for C or other types of modules
+  // so we just call the lua searcher
+  searcher_Lua(L);
+  if (lua_isfunction(L, -2)) {  /* module loader found? */
+    return;  /* module loader already on stack */
+  } else if (lua_isstring(L, -2)) {  /* searcher returned error message? */
+    lua_pop(L, 1);  /* remove extra return */
+    luaL_addvalue(&msg);  /* concatenate error message */
+  } else {
+    lua_pop(L, 2);  /* remove both returns */
+  }
+  // module not found
+  lua_pop(L, 1);  /* remove nil */
+  luaL_pushresult(&msg);  /* create error message */
+  luaL_error(L, "module '%s' not found:%s", name, lua_tostring(L, -1));
+#else
   /* push 'package.searchers' to index 3 in the stack */
   if (lua_getfield(L, lua_upvalueindex(1), "searchers") != LUA_TTABLE)
     luaL_error(L, "'package.searchers' must be a table");
@@ -591,28 +615,33 @@ static void findloader (lua_State *L, const char *name) {
     else
       lua_pop(L, 2);  /* remove both returns */
   }
+#endif
 }
 
 
 static int ll_require (lua_State *L) {
   const char *name = luaL_checkstring(L, 1);
-  lua_settop(L, 1);  /* LOADED table will be at index 2 */
-  lua_getfield(L, LUA_REGISTRYINDEX, LUA_LOADED_TABLE);
-  lua_getfield(L, 2, name);  /* LOADED[name] */
+  lua_settop(L, 1);
+  lua_rawgeti(L, LUA_REGISTRYINDEX, lua_get_current_ref()); /* get the current script */
+  lua_getupvalue(L, 2, 1); /* get the environment of the script */
+  lua_getfield(L, 3, LUA_LOADED_TABLE); /* get _LOADED */
+  lua_getfield(L, 4, name);  /* LOADED[name] */
   if (lua_toboolean(L, -1))  /* is it there? */
     return 1;  /* package is already loaded */
   /* else must load package */
   lua_pop(L, 1);  /* remove 'getfield' result */
   findloader(L, name);
+  lua_pushvalue(L, 3); /* push current script's environment */
+  lua_setupvalue(L, -3, 1); /* set the environment of the module */
   lua_pushstring(L, name);  /* pass name as argument to module loader */
   lua_insert(L, -2);  /* name is 1st argument (before search data) */
   lua_call(L, 2, 1);  /* run loader to load module */
   if (!lua_isnil(L, -1))  /* non-nil return? */
-    lua_setfield(L, 2, name);  /* LOADED[name] = returned value */
-  if (lua_getfield(L, 2, name) == LUA_TNIL) {   /* module set no value? */
+    lua_setfield(L, 4, name);  /* LOADED[name] = returned value */
+  if (lua_getfield(L, 4, name) == LUA_TNIL) {   /* module set no value? */
     lua_pushboolean(L, 1);  /* use true as result */
     lua_pushvalue(L, -1);  /* extra copy to be returned */
-    lua_setfield(L, 2, name);  /* LOADED[name] = true */
+    lua_setfield(L, 4, name);  /* LOADED[name] = true */
   }
   return 1;
 }
@@ -713,9 +742,9 @@ static const luaL_Reg pk_funcs[] = {
 #endif
   /* placeholders */
   {"preload", NULL},
-  {"cpath", NULL},
+  // {"cpath", NULL},
   {"path", NULL},
-  {"searchers", NULL},
+  // {"searchers", NULL},
   {"loaded", NULL},
   {NULL, NULL}
 };
@@ -729,7 +758,7 @@ static const luaL_Reg ll_funcs[] = {
   {NULL, NULL}
 };
 
-
+#if !defined(ARDUPILOT_BUILD)
 static void createsearcherstable (lua_State *L) {
   static const lua_CFunction searchers[] =
     {searcher_preload, searcher_Lua, searcher_C, searcher_Croot, NULL};
@@ -762,29 +791,31 @@ static void createclibstable (lua_State *L) {
   lua_setmetatable(L, -2);
   lua_rawsetp(L, LUA_REGISTRYINDEX, &CLIBS);  /* set CLIBS table in registry */
 }
-
+#endif
 
 LUAMOD_API int luaopen_package (lua_State *L) {
-  createclibstable(L);
+  // createclibstable(L);
   luaL_newlib(L, pk_funcs);  /* create 'package' table */
-  createsearcherstable(L);
+  // createsearcherstable(L);
   /* set paths */
   setpath(L, "path", LUA_PATH_VAR, LUA_PATH_DEFAULT);
-  setpath(L, "cpath", LUA_CPATH_VAR, LUA_CPATH_DEFAULT);
+  // setpath(L, "cpath", LUA_CPATH_VAR, LUA_CPATH_DEFAULT);
   /* store config information */
   lua_pushliteral(L, LUA_DIRSEP "\n" LUA_PATH_SEP "\n" LUA_PATH_MARK "\n"
                      LUA_EXEC_DIR "\n" LUA_IGMARK "\n");
   lua_setfield(L, -2, "config");
   /* set field 'loaded' */
-  luaL_getsubtable(L, LUA_REGISTRYINDEX, LUA_LOADED_TABLE);
+  luaL_getsubtable(L, -3, LUA_LOADED_TABLE);
   lua_setfield(L, -2, "loaded");
+
   /* set field 'preload' */
-  luaL_getsubtable(L, LUA_REGISTRYINDEX, LUA_PRELOAD_TABLE);
+  luaL_getsubtable(L, -3, LUA_PRELOAD_TABLE);
   lua_setfield(L, -2, "preload");
-  lua_pushglobaltable(L);
+
+  lua_pushvalue(L, -3);
   lua_pushvalue(L, -2);  /* set 'package' as upvalue for next lib */
   luaL_setfuncs(L, ll_funcs, 1);  /* open lib into global table */
-  lua_pop(L, 1);  /* pop global table */
+  lua_pop(L, 1);
+
   return 1;  /* return 'package' table */
 }
-
