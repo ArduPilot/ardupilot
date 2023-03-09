@@ -1,0 +1,29 @@
+name: test scripts
+
+on: [push, pull_request, workflow_dispatch]
+
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    container: ardupilot/ardupilot-dev-base:latest
+    strategy:
+      fail-fast: false  # don't cancel if a job from the matrix fails
+      matrix:
+        config: [
+            check_autotest_options
+        ]
+    steps:
+      # git checkout the PR
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+      - name: test ${{matrix.config}}
+        env:
+          CI_BUILD_TARGET: ${{matrix.config}}
+        shell: bash
+        run: |
+          Tools/scripts/build_ci.sh
