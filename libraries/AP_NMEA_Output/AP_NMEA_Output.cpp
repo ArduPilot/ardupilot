@@ -104,16 +104,22 @@ void AP_NMEA_Output::update()
 
     // format time string
     char tstring[11];
-    snprintf(tstring, sizeof(tstring), "%02u%02u%06.3f", tm->tm_hour, tm->tm_min, tm->tm_sec + (time_usec % 1000000) * 1.0e-6);
+    snprintf(tstring, sizeof(tstring), "%02u%02u%06.2f", tm->tm_hour, tm->tm_min, tm->tm_sec + (time_usec % 1000000) * 1.0e-6);
 
     // get location (note: get_location from AHRS always returns true after having GPS position once)
     Location loc;
+    uint8_t num_sats;
+    uint16_t hdop;
+    uint8_t gps_status;
 #ifndef HAL_BUILD_AP_PERIPH
     auto &ahrs = AP::ahrs();
     const bool pos_valid = ahrs.get_location(loc);
 #else
     const bool pos_valid = AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D;
     loc = AP::gps().location();
+    num_sats = AP::gps().num_sats();
+    hdop = AP::gps().get_hdop();
+    gps_status = AP::gps().status();
 #endif
 
     // format latitude
@@ -144,13 +150,13 @@ void AP_NMEA_Output::update()
     if ((_message_enable_bitmask.get() & static_cast<int16_t>(Enabled_Messages::GPGGA)) != 0) {
         // format GGA message
         gga_length = nmea_printf_buffer(gga, sizeof(gga),
-                                    "$GPGGA,%s,%s,%s,%01d,%02d,%04.1f,%07.2f,M,0.0,M,,",
+                                    "$GPGGA,%s,%s,%s,%01d,%02d,%04.1f,%07.1f,M,0.0,M,,",
                                     tstring,
                                     lat_string,
                                     lng_string,
-                                    pos_valid ? 1 : 0,
-                                    pos_valid ? 6 : 3,
-                                    2.0,
+                                    status,
+                                    num_sats,
+                                    hdop,
                                     loc.alt * 0.01f);
 
         space_required += gga_length;
