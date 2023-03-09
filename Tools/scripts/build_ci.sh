@@ -406,6 +406,13 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "param_parse" ]; then
+        for v in Rover AntennaTracker ArduCopter ArduPlane ArduSub Blimp; do
+            python Tools/autotest/param_metadata/param_parse.py --vehicle $v
+        done
+        continue
+    fi
+
     if [[ -z ${CI_CRON_JOB+1} ]]; then
         echo "Starting waf build for board ${t}..."
         $waf configure --board "$t" \
@@ -423,13 +430,6 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 done
-
-python Tools/autotest/param_metadata/param_parse.py --vehicle Rover
-python Tools/autotest/param_metadata/param_parse.py --vehicle AntennaTracker
-python Tools/autotest/param_metadata/param_parse.py --vehicle ArduCopter
-python Tools/autotest/param_metadata/param_parse.py --vehicle ArduPlane
-python Tools/autotest/param_metadata/param_parse.py --vehicle ArduSub
-python Tools/autotest/param_metadata/param_parse.py --vehicle Blimp
 
 echo build OK
 exit 0
