@@ -339,6 +339,12 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "validate_board_list" ]; then
+        echo "Validating board list"
+        ./Tools/autotest/validate_board_list.py
+        continue
+    fi
+
     if [ "$t" == "signing" ]; then
         echo "Building signed firmwares"
         sudo apt-get update

@@ -378,10 +378,9 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     case MAV_CMD_DO_REPEAT_SERVO:
     case MAV_CMD_DO_REPEAT_RELAY:
         return start_command_do_servorelayevents(cmd);
-    case MAV_CMD_DO_CONTROL_VIDEO:
+#if AP_CAMERA_ENABLED
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
     case MAV_CMD_DO_DIGICAM_CONTROL:
-#if AP_CAMERA_ENABLED
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
         return start_command_camera(cmd);
 #endif
@@ -2481,8 +2480,6 @@ const char *AP_Mission::Mission_Command::type() const
         return "RepeatServo";
     case MAV_CMD_DO_REPEAT_RELAY:
         return "RepeatRelay";
-    case MAV_CMD_DO_CONTROL_VIDEO:
-        return "CtrlVideo";
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
         return "DigiCamCfg";
     case MAV_CMD_DO_DIGICAM_CONTROL:
