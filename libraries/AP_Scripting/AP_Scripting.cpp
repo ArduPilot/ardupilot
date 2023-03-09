@@ -140,8 +140,6 @@ AP_Scripting::AP_Scripting() {
     }
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
     _singleton = this;
-
-    memset(mavlink_data.accept_msg_ids, -1, sizeof(mavlink_data.accept_msg_ids));
 }
 
 void AP_Scripting::init(void) {
@@ -341,7 +339,7 @@ void AP_Scripting::restart_all()
 }
 
 void AP_Scripting::handle_message(const mavlink_message_t &msg, const mavlink_channel_t chan) {
-    if (mavlink_data.input == nullptr) {
+    if (mavlink_data.rx_buffer == nullptr) {
         return;
     }
 
@@ -349,41 +347,13 @@ void AP_Scripting::handle_message(const mavlink_message_t &msg, const mavlink_ch
 
     WITH_SEMAPHORE(mavlink_data.sem);
 
-    for (int32_t id : mavlink_data.accept_msg_ids) {
-        if (id == -1) {
+    for (uint16_t i = 0; i < mavlink_data.accept_msg_ids_size; i++) {
+        if (mavlink_data.accept_msg_ids[i] == -1) {
             return;
         }
-        if (id == msg.msgid) {
-            mavlink_data.input->push(data);
+        if (mavlink_data.accept_msg_ids[i] == msg.msgid) {
+            mavlink_data.rx_buffer->push(data);
             return;
-        }
-    }
-}
-
-void AP_Scripting::send_message(const mavlink_channel_t chan) {
-    if (mavlink_data.output == nullptr) {
-        return;
-    }
-
-    struct mavlink_output data;
-    if (mavlink_data.output->peek(data) && (data.chan == chan)) {
-        // FIXME: The data thats in this mavlink_msg_entry_t should be provided from the script, which allows
-        //        sending entirely new messages as outputs. At the moment we can only encode messages that
-        //        are known at compile time. This is fine as a starting point as this is symmetrical to the
-        //        decoding side of the scripting support
-        const mavlink_msg_entry_t *entry = mavlink_get_msg_entry(data.msgid);
-        if (entry == nullptr) {
-            return;
-        }
-        if (comm_get_txspace(chan) >= (GCS_MAVLINK::packet_overhead_chan(chan) + entry->max_msg_len)) {
-            _mav_finalize_message_chan_send(chan,
-                                            entry->msgid,
-                                            data.data,
-                                            entry->min_msg_len,
-                                            entry->max_msg_len,
-                                            entry->crc_extra);
-
-            UNUSED_RESULT(mavlink_data.output->pop(data));
         }
     }
 }
