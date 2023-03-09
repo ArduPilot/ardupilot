@@ -45,14 +45,7 @@ function install_pymavlink() {
     fi
 }
 
-function run_autotest() {
-    NAME="$1"
-    BVEHICLE="$2"
-    RVEHICLE="$3"
-
-    # report on what cpu's we have for later log review if needed
-    cat /proc/cpuinfo
-
+function install_mavproxy() {
     if [ $mavproxy_installed -eq 0 ]; then
         echo "Installing MAVProxy"
         pushd /tmp
@@ -65,6 +58,17 @@ function run_autotest() {
         # now uninstall the version of pymavlink pulled in by MAVProxy deps:
         python -m pip uninstall -y pymavlink
     fi
+}
+
+function run_autotest() {
+    NAME="$1"
+    BVEHICLE="$2"
+    RVEHICLE="$3"
+
+    # report on what cpu's we have for later log review if needed
+    cat /proc/cpuinfo
+
+    install_mavproxy
     install_pymavlink
     unset BUILDROOT
     echo "Running SITL $NAME test"
@@ -342,6 +346,16 @@ for t in $CI_BUILD_TARGET; do
     if [ "$t" == "validate_board_list" ]; then
         echo "Validating board list"
         ./Tools/autotest/validate_board_list.py
+        continue
+    fi
+
+    if [ "$t" == "check_autotest_options" ]; then
+        echo "Checking autotest options"
+        install_mavproxy
+        install_pymavlink
+        ./Tools/autotest/autotest.py --help
+        ./Tools/autotest/autotest.py --list
+        ./Tools/autotest/autotest.py --list-subtests
         continue
     fi
 
