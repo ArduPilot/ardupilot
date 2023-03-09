@@ -29,7 +29,7 @@
 
 // Common dependencies
 #include <AP_Common/AP_Common.h>            // Common definitions and utility routines for the ArduPilot libraries
-#include <AP_Common/Location.h>             // Library having the implementation of location class         
+#include <AP_Common/Location.h>             // Library having the implementation of location class
 #include <AP_Param/AP_Param.h>              // A system for managing and storing variables that are of general interest to the system.
 #include <StorageManager/StorageManager.h>  // library for Management for hal.storage to allow for backwards compatible mapping of storage offsets to available storage
 
@@ -97,6 +97,7 @@
 #include "GCS_Copter.h"
 #include "AP_Rally.h"           // Rally point library
 #include "AP_Arming.h"
+#include "motor_test.h"
 
 // libraries which are dependent on #defines in defines.h and/or config.h
 #if BEACON_ENABLED == ENABLED
@@ -224,6 +225,8 @@ public:
     friend class ModeZigZag;
     friend class ModeAutorotate;
     friend class ModeTurtle;
+
+    friend class Motor_Test;
 
     Copter(void);
 
@@ -852,11 +855,12 @@ private:
     void set_mode_land_with_pause(ModeReason reason);
     bool landing_with_GPS();
 
-    // motor_test.cpp
+    //motor_test.cpp
     void motor_test_output();
     bool mavlink_motor_control_check(const GCS_MAVLINK &gcs_chan, bool check_rc, const char* mode);
     MAV_RESULT mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, uint8_t motor_seq, uint8_t throttle_type, float throttle_value, float timeout_sec, uint8_t motor_count);
     void motor_test_stop();
+
 
     // motors.cpp
     void arm_motors_check();
