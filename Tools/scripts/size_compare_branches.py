@@ -474,10 +474,10 @@ class SizeCompareBranches(object):
 if __name__ == '__main__':
     parser = optparse.OptionParser("size_compare_branches.py")
     parser.add_option("",
-                      "--no-elf-diff",
+                      "--elf-diff",
                       action="store_true",
                       default=False,
-                      help="do not run elf_diff on output files")
+                      help="run elf_diff on output files")
     parser.add_option("",
                       "--master-branch",
                       type="string",
@@ -555,7 +555,7 @@ if __name__ == '__main__':
         extra_hwdef=cmd_opts.extra_hwdef,
         extra_hwdef_branch=cmd_opts.extra_hwdef_branch,
         extra_hwdef_master=cmd_opts.extra_hwdef_master,
-        run_elf_diff=(not cmd_opts.no_elf_diff),
+        run_elf_diff=(cmd_opts.elf_diff),
         all_vehicles=cmd_opts.all_vehicles,
         all_boards=cmd_opts.all_boards,
         use_merge_base=not cmd_opts.no_merge_base,
