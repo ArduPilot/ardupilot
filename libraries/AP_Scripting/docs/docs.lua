@@ -1145,8 +1145,16 @@ function FWVersion:minor() end
 ---@return integer
 function FWVersion:major() end
 
--- get field
+--get APM_BUILD_? value from AP_Vehicle/AP_Vehicle_Type.h that is checked against APM_BUILD_TYPE()
 ---@return integer
+---| '1' # Rover
+---| '2' # ArduCopter
+---| '3' # ArduPlane
+---| '4' # AntennaTracker
+---| '7' # ArduSub
+---| '9' # AP_Periph
+---| '12' # Blimp
+---| '13' # Heli
 function FWVersion:type() end
 
 -- get field
