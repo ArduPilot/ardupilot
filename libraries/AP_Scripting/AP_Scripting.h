@@ -43,6 +43,8 @@ public:
     bool enabled(void) const { return _enable != 0; };
     bool should_run(void) const { return enabled() && !_stop; }
 
+    void handle_message(const mavlink_message_t &msg, const mavlink_channel_t chan);
+
     static AP_Scripting * get_singleton(void) { return _singleton; }
 
     static const struct AP_Param::GroupInfo var_info[];
@@ -96,6 +98,21 @@ public:
     AP_HAL::PWMSource *_pwm_source[SCRIPTING_MAX_NUM_PWM_SOURCE];
     int get_current_ref() { return current_ref; }
     void set_current_ref(int ref) { current_ref = ref; }
+
+    struct mavlink_msg {
+        mavlink_message_t msg;
+        mavlink_channel_t chan;
+    };
+
+    static const int mavlink_input_queue_size = 5;
+    static const int mavlink_output_queue_size = 3;
+
+    struct mavlink {
+        ObjectBuffer<struct mavlink_msg> *rx_buffer;
+        int *accept_msg_ids;
+        uint16_t accept_msg_ids_size;
+        HAL_Semaphore sem;
+    } mavlink_data;
 
 private:
 

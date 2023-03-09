@@ -348,6 +348,26 @@ void AP_Scripting::restart_all()
     _stop = true;
 }
 
+void AP_Scripting::handle_message(const mavlink_message_t &msg, const mavlink_channel_t chan) {
+    if (mavlink_data.rx_buffer == nullptr) {
+        return;
+    }
+
+    struct mavlink_msg data {msg, chan};
+
+    WITH_SEMAPHORE(mavlink_data.sem);
+
+    for (uint16_t i = 0; i < mavlink_data.accept_msg_ids_size; i++) {
+        if (mavlink_data.accept_msg_ids[i] == -1) {
+            return;
+        }
+        if (mavlink_data.accept_msg_ids[i] == msg.msgid) {
+            mavlink_data.rx_buffer->push(data);
+            return;
+        }
+    }
+}
+
 AP_Scripting *AP_Scripting::_singleton = nullptr;
 
 namespace AP {
