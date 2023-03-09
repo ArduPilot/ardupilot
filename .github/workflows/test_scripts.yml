@@ -14,7 +14,8 @@ jobs:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
         config: [
-            check_autotest_options
+            check_autotest_options,
+            param_parse,
         ]
     steps:
       # git checkout the PR
