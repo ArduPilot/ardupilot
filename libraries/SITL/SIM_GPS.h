@@ -91,6 +91,9 @@ private:
         double roll_deg;
         double pitch_deg;
         bool have_lock;
+        float horizontal_acc;
+        float vertical_acc;
+        float speed_acc;
     };
     // last 20 samples, allowing for up to 20 samples of delay
     gps_data _gps_history[20];
