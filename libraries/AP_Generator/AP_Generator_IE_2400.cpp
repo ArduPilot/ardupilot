@@ -29,7 +29,7 @@ void AP_Generator_IE_2400::init()
     // Tell frontend what measurements are available for this generator
     _frontend._has_current = true;
     _frontend._has_consumed_energy = true;
-    _frontend._has_fuel_remaining_pct = true;
+    _frontend._has_fuel_remaining = true;
 }
 
 // Update fuel cell, expected to be called at 20hz
@@ -43,10 +43,10 @@ void AP_Generator_IE_2400::assign_measurements(const uint32_t now)
     _state = (State)_parsed.state;
     _err_code = _parsed.err_code;
 
-    // Scale tank pressure linearly to a percentage.
+    // Scale tank pressure linearly to a value between 0 and 1
     // Min = 5 bar, max = 300 bar, PRESS_GRAD = 1/295.
     const float PRESS_GRAD = 0.003389830508f;
-    _fuel_remain_pct = constrain_float((_parsed.tank_bar-5)*PRESS_GRAD,0,1);
+    _fuel_remaining = constrain_float((_parsed.tank_bar-5)*PRESS_GRAD,0,1);
 
     // Update battery voltage
     _voltage = _parsed.battery_volt;
@@ -197,7 +197,7 @@ void AP_Generator_IE_2400::log_write()
         "F2---",
         "Qfiii",
         AP_HAL::micros64(),
-        _fuel_remain_pct,
+        _fuel_remaining,
         _spm_pwr,
         _pwr_out,
         _err_code
