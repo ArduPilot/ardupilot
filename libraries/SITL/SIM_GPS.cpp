@@ -152,6 +152,71 @@ static void simulation_timeval(struct timeval *tv)
 }
 
 /*
+  simple simulation of jamming
+ */
+void GPS::simulate_jamming(struct gps_data &d)
+{
+    auto &jam = jamming[instance];
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - jam.last_jam_ms > 1000) {
+        jam.jam_start_ms = now_ms;
+        jam.latitude = d.latitude;
+        jam.longitude = d.longitude;
+    }
+    jam.last_jam_ms = now_ms;
+
+    // how often each of the key state variables change during jamming
+    const float vz_change_hz = 0.5;
+    const float vel_change_hz = 0.8;
+    const float pos_change_hz = 1.1;
+    const float sats_change_hz = 3;
+    const float acc_change_hz = 3;
+
+    if (now_ms - jam.jam_start_ms < unsigned(1000U+(get_random16()%5000))) {
+        // total loss of signal for a period at the start is common
+        d.num_sats = 0;
+        d.have_lock = false;
+    } else {
+        if ((now_ms - jam.last_sats_change_ms)*0.001 > 2*fabsf(rand_float())/sats_change_hz) {
+            jam.last_sats_change_ms = now_ms;
+            d.num_sats = 2 + (get_random16() % 15);
+            if (d.num_sats >= 4) {
+                if (get_random16() % 2 == 0) {
+                    d.have_lock = false;
+                } else {
+                    d.have_lock = true;
+                }
+            } else {
+                d.have_lock = false;
+            }
+        }
+        if ((now_ms - jam.last_vz_change_ms)*0.001 > 2*fabsf(rand_float())/vz_change_hz) {
+            jam.last_vz_change_ms = now_ms;
+            d.speedD = rand_float() * 400;
+        }
+        if ((now_ms - jam.last_vel_change_ms)*0.001 > 2*fabsf(rand_float())/vel_change_hz) {
+            jam.last_vel_change_ms = now_ms;
+            d.speedN = rand_float() * 400;
+            d.speedE = rand_float() * 400;
+        }
+        if ((now_ms - jam.last_pos_change_ms)*0.001 > 2*fabsf(rand_float())/pos_change_hz) {
+            jam.last_pos_change_ms = now_ms;
+            jam.latitude += rand_float()*200 * LATLON_TO_M_INV * 1e-7;
+            jam.longitude += rand_float()*200 * LATLON_TO_M_INV * 1e-7;
+        }
+        if ((now_ms - jam.last_acc_change_ms)*0.001 > 2*fabsf(rand_float())/acc_change_hz) {
+            jam.last_acc_change_ms = now_ms;
+            d.vertical_acc = fabsf(rand_float())*300;
+            d.horizontal_acc = fabsf(rand_float())*300;
+            d.speed_acc = fabsf(rand_float())*50;
+        }
+    }
+
+    d.latitude = constrain_float(jam.latitude, -90, 90);
+    d.longitude = constrain_float(jam.longitude, -180, 180);
+}
+
+/*
   send a UBLOX GPS message
  */
 void GPS::send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size)
@@ -383,7 +448,7 @@ void GPS::update_ubx(const struct gps_data *d)
     memset(&sol, 0, sizeof(sol));
     sol.fix_type = d->have_lock?3:0;
     sol.fix_status = 221;
-    sol.satellites = d->have_lock?_sitl->gps_numsats[instance]:3;
+    sol.satellites = d->have_lock?d->num_sats:3;
     sol.time = time_week_ms;
     sol.week = time_week;
 
@@ -409,7 +474,7 @@ void GPS::update_ubx(const struct gps_data *d)
     pvt.fix_type = d->have_lock? 0x3 : 0;
     pvt.flags = 0b10000011; // carrsoln=fixed, psm = na, diffsoln and fixok
     pvt.flags2 =0; 
-    pvt.num_sv = d->have_lock?_sitl->gps_numsats[instance]:3;
+    pvt.num_sv = d->have_lock?d->num_sats:3;
     pvt.lon = d->longitude * 1.0e7;
     pvt.lat  = d->latitude * 1.0e7;
     pvt.height = d->altitude * 1000.0f;
@@ -470,7 +535,7 @@ void GPS::update_ubx(const struct gps_data *d)
         for (uint8_t i = 0; i < SV_COUNT; i++) {
             svinfo.sv[i].chn = i;
             svinfo.sv[i].svid = i;
-            svinfo.sv[i].flags = (i < _sitl->gps_numsats[instance]) ? 0x7 : 0x6; // sv used, diff correction data, orbit information
+            svinfo.sv[i].flags = (i < d->num_sats) ? 0x7 : 0x6; // sv used, diff correction data, orbit information
             svinfo.sv[i].quality = 7; // code and carrier lock and time synchronized
             svinfo.sv[i].cno = MAX(20, 30 - i);
             svinfo.sv[i].elev = MAX(30, 90 - i);
@@ -540,7 +605,7 @@ void GPS::update_nmea(const struct gps_data *d)
                      lat_string,
                      lng_string,
                      d->have_lock?1:0,
-                     d->have_lock?_sitl->gps_numsats[instance]:3,
+                     d->have_lock?d->num_sats:3,
                      1.2,
                      d->altitude);
     const float speed_mps = norm(d->speedN, d->speedE);
@@ -587,8 +652,8 @@ void GPS::update_nmea(const struct gps_data *d)
                     d->roll_deg,
                     d->have_lock?1:0, // 2=rtkfloat 3=rtkfixed,
                     3, // fixed rtk yaw solution,
-                    d->have_lock?_sitl->gps_numsats[instance]:3,
-                    d->have_lock?_sitl->gps_numsats[instance]:3,
+                    d->have_lock?d->num_sats:3,
+                    d->have_lock?d->num_sats:3,
                     d->speedE * 3.6,
                     d->speedN * 3.6,
                     -d->speedD * 3.6);
@@ -693,7 +758,7 @@ void GPS::update_sbp(const struct gps_data *d)
     pos.height = d->altitude;
     pos.h_accuracy = d->horizontal_acc*1000;
     pos.v_accuracy = d->vertical_acc*1000;
-    pos.n_sats = _sitl->gps_numsats[instance];
+    pos.n_sats = d->num_sats;
 
     // Send single point position solution
     pos.flags = 0;
@@ -708,7 +773,7 @@ void GPS::update_sbp(const struct gps_data *d)
     velned.d = 1e3 * d->speedD;
     velned.h_accuracy = 5e3;
     velned.v_accuracy = 5e3;
-    velned.n_sats = _sitl->gps_numsats[instance];
+    velned.n_sats = d->num_sats;
     velned.flags = 0;
     sbp_send_message(SBP_VEL_NED_MSGTYPE, 0x2222, sizeof(velned), (uint8_t*)&velned);
 
@@ -810,7 +875,7 @@ void GPS::update_sbp2(const struct gps_data *d)
     pos.height = d->altitude;
     pos.h_accuracy = d->horizontal_acc*1000;
     pos.v_accuracy = d->vertical_acc*1000;
-    pos.n_sats = _sitl->gps_numsats[instance];
+    pos.n_sats = d->num_sats;
 
     // Send single point position solution
     pos.flags = 1;
@@ -825,7 +890,7 @@ void GPS::update_sbp2(const struct gps_data *d)
     velned.d = 1e3 * d->speedD;
     velned.h_accuracy = 5e3;
     velned.v_accuracy = 5e3;
-    velned.n_sats = _sitl->gps_numsats[instance];
+    velned.n_sats = d->num_sats;
     velned.flags = 1;
     sbp_send_message(SBP_VEL_NED_MSGTYPE, 0x2222, sizeof(velned), (uint8_t*)&velned);
 
@@ -973,7 +1038,7 @@ void GPS::update_nova(const struct gps_data *d)
     bestpos.lat = d->latitude;
     bestpos.lng = d->longitude;
     bestpos.hgt = d->altitude;
-    bestpos.svsused = _sitl->gps_numsats[instance];
+    bestpos.svsused = d->num_sats;
     bestpos.latsdev=0.2;
     bestpos.lngsdev=0.2;
     bestpos.hgtsdev=0.2;
@@ -1113,7 +1178,7 @@ void GPS::update()
 
     const uint8_t idx = instance;  // alias to avoid code churn
 
-        struct gps_data d;
+    struct gps_data d {};
 
         // simulate delayed lock times
         bool have_lock = (!_sitl->gps_disable[idx] && now_ms >= _sitl->gps_lock_time[idx]*1000UL);
@@ -1129,6 +1194,7 @@ void GPS::update()
 
         last_update = now_ms;
 
+        d.num_sats = _sitl->gps_numsats[idx];
         d.latitude = latitude;
         d.longitude = longitude;
         d.yaw_deg = _sitl->state.yawDeg;
@@ -1149,6 +1215,7 @@ void GPS::update()
         d.horizontal_acc = _sitl->gps_accuracy[idx];
         d.vertical_acc = _sitl->gps_accuracy[idx];
         d.speed_acc = 0.4;
+
 
         if (_sitl->gps_drift_alt[idx] > 0) {
             // slow altitude drift
@@ -1198,6 +1265,9 @@ void GPS::update()
         d.longitude += glitch_offsets.y;
         d.altitude += glitch_offsets.z;
 
+        if (_sitl->gps_jam[idx] == 1) {
+            simulate_jamming(d);
+        }
 
     // do GPS-type-dependent updates:
     switch ((Type)_sitl->gps_type[instance].get()) {

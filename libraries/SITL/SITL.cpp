@@ -427,6 +427,7 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     AP_GROUPINFO("GPS_HDG",       13, SIM,  gps_hdg_enabled[0], SIM::GPS_HEADING_NONE),
     AP_GROUPINFO("GPS_ACC",       14, SIM,  gps_accuracy[0], 0.3),
     AP_GROUPINFO("GPS_VERR",      15, SIM,  gps_vel_err[0], 0),
+    AP_GROUPINFO("GPS_JAM",       16, SIM,  gps_jam[0], 0),
     // @Param: GPS2_DISABLE
     // @DisplayName: GPS 2 disable
     // @Description: Disables GPS 2
@@ -453,6 +454,7 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     AP_GROUPINFO("INIT_ALT_OFS",  47, SIM,  gps_init_alt_ofs, 0),
 
     AP_GROUPINFO("GPS_LOG_NUM",   48, SIM,  gps_log_num, 0),
+    AP_GROUPINFO("GPS2_JAM",      49, SIM,  gps_jam[1], 0),
 
     AP_GROUPEND
 };
