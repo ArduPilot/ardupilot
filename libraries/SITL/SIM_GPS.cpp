@@ -356,8 +356,8 @@ void GPS::update_ubx(const struct gps_data *d)
     pos.latitude  = d->latitude * 1.0e7;
     pos.altitude_ellipsoid = d->altitude * 1000.0f;
     pos.altitude_msl = d->altitude * 1000.0f;
-    pos.horizontal_accuracy = _sitl->gps_accuracy[instance]*1000;
-    pos.vertical_accuracy = _sitl->gps_accuracy[instance]*1000;
+    pos.horizontal_accuracy = d->horizontal_acc*1000;
+    pos.vertical_accuracy = d->vertical_acc*1000;
 
     status.time = time_week_ms;
     status.fix_type = d->have_lock?3:0;
@@ -377,7 +377,7 @@ void GPS::update_ubx(const struct gps_data *d)
     if (velned.heading_2d < 0.0f) {
         velned.heading_2d += 360.0f * 100000.0f;
     }
-    velned.speed_accuracy = 40;
+    velned.speed_accuracy = d->speed_acc*100;
     velned.heading_accuracy = 4;
 
     memset(&sol, 0, sizeof(sol));
@@ -414,14 +414,14 @@ void GPS::update_ubx(const struct gps_data *d)
     pvt.lat  = d->latitude * 1.0e7;
     pvt.height = d->altitude * 1000.0f;
     pvt.h_msl = d->altitude * 1000.0f;
-    pvt.h_acc = _sitl->gps_accuracy[instance] * 1000;
-    pvt.v_acc = _sitl->gps_accuracy[instance] * 1000;
+    pvt.h_acc = d->horizontal_acc * 1000;
+    pvt.v_acc = d->vertical_acc * 1000;
     pvt.velN = 1000.0f * d->speedN;
     pvt.velE = 1000.0f * d->speedE;
     pvt.velD = 1000.0f * d->speedD;
     pvt.gspeed = norm(d->speedN, d->speedE) * 1000; 
     pvt.head_mot = ToDeg(atan2f(d->speedE, d->speedN)) * 1.0e5; 
-    pvt.s_acc = 40; 
+    pvt.s_acc = d->speed_acc*100;
     pvt.head_acc = 38 * 1.0e5; 
     pvt.p_dop = 65535; 
     memset(pvt.reserved1, '\0', ARRAY_SIZE(pvt.reserved1));
@@ -691,8 +691,8 @@ void GPS::update_sbp(const struct gps_data *d)
     pos.lon = d->longitude;
     pos.lat= d->latitude;
     pos.height = d->altitude;
-    pos.h_accuracy = _sitl->gps_accuracy[instance]*1000;
-    pos.v_accuracy = _sitl->gps_accuracy[instance]*1000;
+    pos.h_accuracy = d->horizontal_acc*1000;
+    pos.v_accuracy = d->vertical_acc*1000;
     pos.n_sats = _sitl->gps_numsats[instance];
 
     // Send single point position solution
@@ -808,8 +808,8 @@ void GPS::update_sbp2(const struct gps_data *d)
     pos.lon = d->longitude;
     pos.lat= d->latitude;
     pos.height = d->altitude;
-    pos.h_accuracy = _sitl->gps_accuracy[instance]*1000;
-    pos.v_accuracy = _sitl->gps_accuracy[instance]*1000;
+    pos.h_accuracy = d->horizontal_acc*1000;
+    pos.v_accuracy = d->vertical_acc*1000;
     pos.n_sats = _sitl->gps_numsats[instance];
 
     // Send single point position solution
@@ -1144,6 +1144,11 @@ void GPS::update()
         d.speedE = speedE + (velErrorNED.y * rand_float()); 
         d.speedD = speedD + (velErrorNED.z * rand_float());
         d.have_lock = have_lock;
+
+        // fill in accuracies
+        d.horizontal_acc = _sitl->gps_accuracy[idx];
+        d.vertical_acc = _sitl->gps_accuracy[idx];
+        d.speed_acc = 0.4;
 
         if (_sitl->gps_drift_alt[idx] > 0) {
             // slow altitude drift
