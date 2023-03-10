@@ -2942,6 +2942,10 @@ def add_apperiph_defaults(f):
 #define COMPASS_LEARN_ENABLED 0
 #endif
 
+#ifndef HAL_EXTERNAL_AHRS_ENABLED
+#define HAL_EXTERNAL_AHRS_ENABLED 0
+#endif
+
 /*
  * GPS Backends - we selectively turn backends on.
  *   Note also that f103-GPS explicitly disables some of these backends.
