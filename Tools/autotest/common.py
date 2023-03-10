@@ -3903,14 +3903,14 @@ class AutoTest(ABC):
         self.assert_message_field_values(m, fieldvalues, verbose=verbose, epsilon=epsilon)
         return m
 
-    def wait_message_field_values(self, message, fieldvalues, timeout=10, epsilon=None):
+    def wait_message_field_values(self, message, fieldvalues, timeout=10, epsilon=None, instance=None):
         tstart = self.get_sim_time_cached()
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("Field never reached values")
-            m = self.assert_receive_message(message)
+            m = self.assert_receive_message(message, instance=instance)
             if self.message_has_field_values(m, fieldvalues, epsilon=epsilon):
-                break
+                return m
 
     def onboard_logging_not_log_disarmed(self):
         self.start_subtest("Test LOG_DISARMED-is-false behaviour")
@@ -4281,13 +4281,17 @@ class AutoTest(ABC):
                                very_verbose=False,
                                mav=None,
                                condition=None,
-                               delay_fn=None):
+                               delay_fn=None,
+                               instance=None):
         if mav is None:
             mav = self.mav
         m = None
         tstart = time.time()  # timeout in wallclock
         while True:
             m = mav.recv_match(type=type, blocking=True, timeout=0.05, condition=condition)
+            if instance is not None:
+                if getattr(m, m._instance_field) != instance:
+                    continue
             if m is not None:
                 break
             if time.time() - tstart > timeout:
