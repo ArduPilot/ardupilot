@@ -100,12 +100,13 @@ class upload_fw(Task.Task):
         if not where_python or ("\Python\Python" not in where_python and "python.exe" not in where_python):
             print(self.get_full_wsl2_error_msg("Windows python.exe not found"))
             return False
-        available_versions = where_python.split()
+        # skip versions installed through the windows app store
+        available_versions = [found_version for found_version in where_python.split() if "/AppData/Local/Microsoft/WindowsApps/" not in found_version]
         for test_version in available_versions:
             drive_letter = test_version.split("\\")[0][0].lower()
             corrected_path = "/" + os.path.join("mnt", drive_letter, *test_version.split("\\")[1:])
             python_version = subprocess.check_output(corrected_path + " --version", shell=True, text=True)
-            if "3.9." in python_version:
+            if any([version_string in python_version for version_string in ["3.9.", "3.10."]]):
                 return corrected_path
         else:
             print(self.get_full_wsl2_error_msg("Your Windows %s version is not compatible" % python_version.strip()))
@@ -117,11 +118,11 @@ class upload_fw(Task.Task):
         WSL2 firmware uploads use the host's Windows Python.exe so it has access to the COM ports.
 
         %s
-        Please download Windows Installer 3.9.x (not 3.10) from https://www.python.org/downloads/
-        (the last version to release with binaries was 3.9.13)
+        Please download Windows Installer 3.9.x or 3.10.x from https://www.python.org/downloads/
+        (the last 3.9 version to release with Windows binaries was 3.9.13)
         and make sure to add it to your path during the installation. Once installed, run this
         command in Powershell or Command Prompt to install some packages:
-        
+
         python.exe -m pip install empy pyserial
         ****************************************
         ****************************************
