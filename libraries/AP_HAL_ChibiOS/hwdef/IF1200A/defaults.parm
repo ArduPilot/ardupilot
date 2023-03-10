@@ -225,3 +225,11 @@ WP_NAVALT_MIN,2
 WP_YAW_BEHAVIOR,1
 WPNAV_SPEED,600
 WPNAV_SPEED_UP,350
+
+# enforce OpenDroneID on DroneCAN. Note that we need to lock down key parameters
+# to ensure the integrity of the RemoteID system
+DID_ENABLE 1 @READONLY
+DID_OPTIONS 1 @READONLY
+DID_MAVPORT -1 @READONLY
+DID_CANDRIVER 1 @READONLY
+AHRS_EKF_TYPE 3 @READONLY
