@@ -2931,6 +2931,17 @@ def add_apperiph_defaults(f):
 #define AP_BATTERY_ESC_ENABLED 0
 #endif
 
+// disable compass calibrations on periphs; cal is done on the autopilot
+#ifndef COMPASS_CAL_ENABLED
+#define COMPASS_CAL_ENABLED 0
+#endif
+#ifndef COMPASS_MOT_ENABLED
+#define COMPASS_MOT_ENABLED 0
+#endif
+#ifndef COMPASS_LEARN_ENABLED
+#define COMPASS_LEARN_ENABLED 0
+#endif
+
 /*
  * GPS Backends - we selectively turn backends on.
  *   Note also that f103-GPS explicitly disables some of these backends.
