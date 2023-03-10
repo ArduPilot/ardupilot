@@ -36,10 +36,14 @@
 #endif
 
 #ifndef COMPASS_CAL_ENABLED
-#define COMPASS_CAL_ENABLED !defined(HAL_BUILD_AP_PERIPH)
+#define COMPASS_CAL_ENABLED 1
 #endif
-#define COMPASS_MOT_ENABLED !defined(HAL_BUILD_AP_PERIPH)
-#define COMPASS_LEARN_ENABLED !defined(HAL_BUILD_AP_PERIPH)
+#ifndef COMPASS_MOT_ENABLED
+#define COMPASS_MOT_ENABLED 1
+#endif
+#ifndef COMPASS_LEARN_ENABLED
+#define COMPASS_LEARN_ENABLED 1
+#endif
 
 // define default compass calibration fitness and consistency checks
 #define AP_COMPASS_CALIBRATION_FITNESS_DEFAULT 16.0f
