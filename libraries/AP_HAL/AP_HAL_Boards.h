@@ -260,7 +260,7 @@
 #endif
 
 #ifndef AP_STATS_ENABLED
-#define AP_STATS_ENABLED (!defined(HAL_BUILD_AP_PERIPH))
+#define AP_STATS_ENABLED 1
 #endif
 
 #ifndef HAL_WITH_MCU_MONITORING
