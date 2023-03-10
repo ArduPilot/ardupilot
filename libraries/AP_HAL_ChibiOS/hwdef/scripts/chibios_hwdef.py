@@ -2881,6 +2881,10 @@ def add_apperiph_defaults(f):
 #define AP_FETTEC_ONEWIRE_ENABLED 0
 #endif
 
+#ifndef HAL_GENERATOR_ENABLED
+#define HAL_GENERATOR_ENABLED 0
+#endif
+
 #ifndef HAL_BARO_WIND_COMP_ENABLED
 #define HAL_BARO_WIND_COMP_ENABLED 0
 #endif
