@@ -509,7 +509,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(prog='extract_features.py', description='Extract ArduPilot features from binaries')
     parser.add_argument('firmware_file', help='firmware binary')
-    parser.add_argument('-nm', type=str, default="arm-none-eabi-nm", help='nm binary to use.')
+    parser.add_argument('--nm', type=str, default="arm-none-eabi-nm", help='nm binary to use.')
     args = parser.parse_args()
     # print(args.firmware_file, args.nm)
 
