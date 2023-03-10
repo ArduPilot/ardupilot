@@ -94,10 +94,24 @@ private:
         float horizontal_acc;
         float vertical_acc;
         float speed_acc;
+        uint8_t num_sats;
     };
     // last 20 samples, allowing for up to 20 samples of delay
     gps_data _gps_history[20];
 
+    // state of jamming simulation
+    struct {
+        uint32_t last_jam_ms;
+        uint32_t jam_start_ms;
+        uint32_t last_sats_change_ms;
+        uint32_t last_vz_change_ms;
+        uint32_t last_vel_change_ms;
+        uint32_t last_pos_change_ms;
+        uint32_t last_acc_change_ms;
+        double latitude;
+        double longitude;
+    } jamming[2];
+    
 
 #if HAL_SIM_GPS_EXTERNAL_FIFO_ENABLED
     // this will be allocated if needed:
@@ -127,6 +141,8 @@ private:
     void nova_send_message(uint8_t *header, uint8_t headerlength, uint8_t *payload, uint8_t payloadlen);
     uint32_t CRC32Value(uint32_t icrc);
     uint32_t CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc);
+
+    void simulate_jamming(struct gps_data &d);
 
     // get delayed data
     gps_data interpolate_data(const gps_data &d, uint32_t delay_ms);
