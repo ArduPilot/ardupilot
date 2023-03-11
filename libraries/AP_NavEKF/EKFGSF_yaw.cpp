@@ -229,6 +229,11 @@ void EKFGSF_yaw::predictAHRS(const uint8_t mdl_idx)
     if (spinRate_squared < sq(0.175f)) {
         AHRS[mdl_idx].gyro_bias -= tilt_error_gyro_correction * (EKFGSF_gyroBiasGain * angle_dt);
 
+        // sanity check
+        if (AHRS[mdl_idx].gyro_bias.is_nan()) {
+            AHRS[mdl_idx].gyro_bias.zero();
+        }
+
         for (uint8_t i = 0; i < 3; i++) {
             AHRS[mdl_idx].gyro_bias[i] = constrain_ftype(AHRS[mdl_idx].gyro_bias[i], -gyro_bias_limit, gyro_bias_limit);
         }
