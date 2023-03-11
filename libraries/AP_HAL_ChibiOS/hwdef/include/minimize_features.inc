@@ -57,3 +57,6 @@ define AP_WINCH_ENABLED 0
 define AP_CAMERA_BACKEND_DEFAULT_ENABLED 0
 define AP_CAMERA_RELAY_ENABLED 1
 define AP_CAMERA_SERVO_ENABLED 1
+
+# no SLCAN on these boards (use can-over-mavlink if required)
+define AP_CAN_SLCAN_ENABLED 0
