@@ -172,7 +172,7 @@ ChibiOS::CANIface* AP_Periph_FW::can_iface_periph[HAL_NUM_CAN_IFACES];
 HALSITL::CANIface* AP_Periph_FW::can_iface_periph[HAL_NUM_CAN_IFACES];
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_SLCAN
+#if AP_CAN_SLCAN_ENABLED
 SLCAN::CANIface AP_Periph_FW::slcan_interface;
 #endif
 
@@ -1537,7 +1537,7 @@ void AP_Periph_FW::can_start()
         }
     }
 
-#ifdef HAL_PERIPH_ENABLE_SLCAN
+#if AP_CAN_SLCAN_ENABLED
     const uint8_t slcan_selected_index = g.can_slcan_cport - 1;
     if (slcan_selected_index < HAL_NUM_CAN_IFACES) {
         slcan_interface.set_can_iface(can_iface_periph[slcan_selected_index]);

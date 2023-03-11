@@ -80,7 +80,7 @@ public:
     AP_Enum<AP_CANManager::Driver_Type> can_protocol[HAL_NUM_CAN_IFACES];
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_SLCAN
+#if AP_CAN_SLCAN_ENABLED
     AP_Int8 can_slcan_cport;
 #endif
 
