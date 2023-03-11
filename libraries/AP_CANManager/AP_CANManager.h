@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "AP_CANManager_config.h"
+
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
@@ -166,7 +168,10 @@ private:
 
     AP_Int8 _loglevel;
     uint8_t _num_drivers;
+#if AP_CAN_SLCAN_ENABLED
     SLCAN::CANIface _slcan_interface;
+#endif
+
     static AP_CANManager *_singleton;
 
     char* _log_buf;
