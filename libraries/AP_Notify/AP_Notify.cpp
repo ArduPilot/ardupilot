@@ -412,10 +412,6 @@ void AP_Notify::add_backends(void)
 // initialisation
 void AP_Notify::init(void)
 {
-    // clear all flags and events
-    memset(&AP_Notify::flags, 0, sizeof(AP_Notify::flags));
-    memset(&AP_Notify::events, 0, sizeof(AP_Notify::events));
-
     // add all the backends
     add_backends();
 }
