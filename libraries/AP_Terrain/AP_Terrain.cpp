@@ -75,7 +75,7 @@ const AP_Param::GroupInfo AP_Terrain::var_info[] = {
     // @Units: m
     // @Range: 0 50
     // @User: Advanced
-    AP_GROUPINFO("OFS_MAX",  4, AP_Terrain, offset_max, 15),
+    AP_GROUPINFO("OFS_MAX",  4, AP_Terrain, offset_max, 30),
     
     AP_GROUPEND
 };
