@@ -251,6 +251,10 @@ submodules at specific revisions.
                  default=False,
                  help="Enables GPS logging")
     
+    g.add_option('--enable-dds', action='store_true',
+                 help="Enable the dds client to connect with ROS2/DDS"
+    )
+
     g = opt.ap_groups['linux']
 
     linux_options = ('--prefix', '--destdir', '--bindir', '--libdir')
@@ -663,6 +667,9 @@ def _build_dynamic_sources(bld):
                 bld.srcnode.find_dir('modules/DroneCAN/libcanard/').abspath(),
             ]
         )
+
+    if bld.env.ENABLE_DDS:
+        bld.recurse("libraries/AP_DDS")
 
     def write_version_header(tsk):
         bld = tsk.generator.bld
