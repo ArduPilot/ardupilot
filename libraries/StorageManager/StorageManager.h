@@ -84,6 +84,9 @@ private:
 
 /*
   A StorageAccess object allows access to one type of storage
+
+  NOTE: this object may be declared on the stack, so it will not be
+  zero initialised
  */
 class StorageAccess {
 public:
