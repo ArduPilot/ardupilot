@@ -121,6 +121,9 @@ StorageAccess::StorageAccess(StorageManager::StorageType _type) :
 {
     // calculate available bytes
     total_size = 0;
+#if AP_SDCARD_STORAGE_ENABLED
+    file = nullptr;
+#endif
     for (uint8_t i=0; i<STORAGE_NUM_AREAS; i++) {
         const StorageManager::StorageArea &area = StorageManager::layout[i];
         if (area.type == type) {
