@@ -3007,6 +3007,11 @@ def add_apperiph_defaults(f):
 // no CAN manager in AP_Periph:
 #define HAL_CANMANAGER_ENABLED 0
 
+// SLCAN is off by default:
+#ifndef AP_CAN_SLCAN_ENABLED
+#define AP_CAN_SLCAN_ENABLED 0
+#endif
+
 // Periphs don't use the FFT library:
 #ifndef HAL_GYROFFT_ENABLED
 #define HAL_GYROFFT_ENABLED 0
