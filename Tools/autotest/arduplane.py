@@ -4185,18 +4185,18 @@ class AutoTestPlane(AutoTest):
         self.progress("Creating spiral mission of size %s" % count)
         self.set_parameter("SCR_USER1", count)
 
-        self.wait_text("Created spiral of size %u" % count)
+        self.wait_text("Created spiral of size %u" % count, check_context=True)
 
         self.progress("Checking spiral before reboot")
         self.set_parameter("SCR_USER6", count)
-        self.wait_text("Compared spiral of size %u OK" % count)
+        self.wait_text("Compared spiral of size %u OK" % count, check_context=True)
         self.set_parameter("SCR_USER6", 0)
 
         self.wait_ready_to_arm()
         self.reboot_sitl()
         self.progress("Checking spiral after reboot")
         self.set_parameter("SCR_USER6", count)
-        self.wait_text("Compared spiral of size %u OK" % count)
+        self.wait_text("Compared spiral of size %u OK" % count, check_context=True)
 
         self.remove_installed_script(spiral_script)
 
