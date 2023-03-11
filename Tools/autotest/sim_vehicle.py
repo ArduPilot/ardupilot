@@ -405,6 +405,9 @@ def do_build(opts, frame_options):
     for nv in opts.define:
         cmd_configure.append("--define=%s" % nv)
 
+    if opts.enable_dds:
+        cmd_configure.append("--enable-dds")
+
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
         cmd_configure.extend(piece)
@@ -1273,6 +1276,9 @@ group_sim.add_option("", "--sim-address",
                      type=str,
                      default="127.0.0.1",
                      help="IP address of the simulator. Defaults to localhost")
+group_sim.add_option("--enable-dds", action='store_true',
+                     help="Enable the dds client to connect with ROS2/DDS")
+
 parser.add_option_group(group_sim)
 
 
