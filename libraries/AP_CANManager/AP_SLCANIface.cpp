@@ -19,7 +19,7 @@
 
 #include "AP_SLCANIface.h"
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if AP_CAN_SLCAN_ENABLED
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 
@@ -770,4 +770,4 @@ void SLCAN::CANIface::reset_params()
 {
     _slcan_ser_port.set_and_save(-1);
 }
-#endif
+#endif  // AP_CAN_SLCAN_ENABLED
