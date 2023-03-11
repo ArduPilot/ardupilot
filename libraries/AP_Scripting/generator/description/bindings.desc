@@ -614,7 +614,7 @@ singleton AP_Winch method get_rate_max float
 
 -- ----EFI Library----
 include AP_EFI/AP_EFI.h depends HAL_EFI_ENABLED
-include AP_EFI/AP_EFI_Scripting.h depends HAL_EFI_ENABLED
+include AP_EFI/AP_EFI_Scripting.h depends AP_EFI_SCRIPTING_ENABLED
 include AP_EFI/AP_EFI_config.h
 
 userdata Cylinder_Status depends (AP_EFI_SCRIPTING_ENABLED == 1)
