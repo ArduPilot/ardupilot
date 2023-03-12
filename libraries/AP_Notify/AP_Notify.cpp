@@ -473,7 +473,7 @@ void AP_Notify::play_tune(const char *tune)
 // set flight mode string
 void AP_Notify::set_flight_mode_str(const char *str)
 {
-    strncpy(_flight_mode_str, str, 4);
+    strncpy(_flight_mode_str, str, sizeof(_flight_mode_str));
     _flight_mode_str[sizeof(_flight_mode_str)-1] = 0;
 }
 
