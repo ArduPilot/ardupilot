@@ -184,6 +184,14 @@ void Plane::read_radio()
 
     control_failsafe();
 
+    // if disarmed and seeing rc for the first time, reset mission so in landing prearm does not occur
+    if (!arming.is_armed() && seen_valid_rc == false)
+    {
+           mission.reset();
+    }
+
+    seen_valid_rc = true;
+
 #if AP_FENCE_ENABLED
     const bool stickmixing = fence_stickmixing();
 #else

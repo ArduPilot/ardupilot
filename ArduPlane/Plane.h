@@ -1041,6 +1041,7 @@ private:
     void trim_radio();
     bool rc_throttle_value_ok(void) const;
     bool rc_failsafe_active(void) const;
+    bool seen_valid_rc ;
 
     // sensors.cpp
     void read_rangefinder(void);
