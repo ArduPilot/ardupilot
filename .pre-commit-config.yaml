@@ -36,18 +36,19 @@ repos:
         -   id: check-xml
         -   id: check-yaml
 
-# Use to sort python imports by name and put system import first.
-  -   repo: https://github.com/pycqa/isort
-      rev: 5.10.1
-      hooks:
-        - id: isort
-          args: [--check-only]
-          name: isort (python)
+# Disable isort and mypy temporarily due to config conflicts
+# # Use to sort python imports by name and put system import first.
+#   -   repo: https://github.com/pycqa/isort
+#       rev: 5.10.1
+#       hooks:
+#         - id: isort
+#           args: [--check-only]
+#           name: isort (python)
 
-# Use to check python typing to show errors.
-  -   repo: https://github.com/pre-commit/mirrors-mypy
-      rev: 'v0.950'
-      hooks:
-        - id: mypy
-          args: [--no-strict-optional, --ignore-missing-imports]
-          additional_dependencies: [types-PyYAML, types-requests]
+# # Use to check python typing to show errors.
+#   -   repo: https://github.com/pre-commit/mirrors-mypy
+#       rev: 'v0.950'
+#       hooks:
+#         - id: mypy
+#           args: [--no-strict-optional, --ignore-missing-imports]
+#           additional_dependencies: [types-PyYAML, types-requests]
