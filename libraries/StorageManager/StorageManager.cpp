@@ -351,6 +351,7 @@ bool StorageAccess::attach_file(const char *filename, uint16_t size_kbyte)
     auto *newfile = new FileStorage;
     if (newfile == nullptr) {
         AP_BoardConfig::allocation_error("StorageFile");
+        return false;
     }
     ssize_t nread;
 
