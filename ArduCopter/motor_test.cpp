@@ -53,8 +53,6 @@ void Copter::motor_test_output()
         switch (motor_test_throttle_type) {
 
             case MOTOR_TEST_COMPASS_CAL:
-                compass.set_voltage(battery.voltage());
-                compass.per_motor_calibration_update();
                 FALLTHROUGH;
 
             case MOTOR_TEST_THROTTLE_PERCENT:
@@ -185,10 +183,6 @@ MAV_RESULT Copter::mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, uint8_t
     motor_test_throttle_type = throttle_type;
     motor_test_throttle_value = throttle_value;
 
-    if (motor_test_throttle_type == MOTOR_TEST_COMPASS_CAL) {
-        compass.per_motor_calibration_start();
-    }            
-
     // return success
     return MAV_RESULT_ACCEPTED;
 }
@@ -218,10 +212,6 @@ void Copter::motor_test_stop()
     g.failsafe_throttle.load();
     g.failsafe_gcs.load();
     g.fs_ekf_action.load();
-
-    if (motor_test_throttle_type == MOTOR_TEST_COMPASS_CAL) {
-        compass.per_motor_calibration_end();
-    }
 
     // turn off notify leds
     AP_Notify::flags.esc_calibration = false;
