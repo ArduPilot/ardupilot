@@ -86,10 +86,13 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
 
     // default compensation type to use current if possible
     if (battery.current_amps(current)) {
+#if AP_COMPASS_PMOT_ENABLED
         if (compass.per_motor_compensation_enabled()) {
             comp_type = AP_COMPASS_MOT_COMP_PER_MOTOR;
             current_amps_min = 1.0f;
-        } else {
+        } else
+#endif
+        {
             comp_type = AP_COMPASS_MOT_COMP_CURRENT;
         }
     } else {
@@ -189,6 +192,7 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
             update_motor = true;
         } else {
             if (update_motor) {
+#if AP_COMPASS_PMOT_ENABLED
                 if (updated) {
                     for (uint8_t i=0; i<compass.get_count(); i++) {
                         compass.per_motor_set_compensation(i, motor_num, motor_compensation[i]);
@@ -208,6 +212,7 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
                     current_amps_max = current;
                 } while (!motors->is_motor_enabled(motor_num));
                 motors->set_throttle_passthrough_per_motor(0.0f, prev_motor);
+#endif
                 update_motor = false;
                 updated = false;
             }
