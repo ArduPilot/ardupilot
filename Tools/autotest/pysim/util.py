@@ -7,7 +7,6 @@ AP_FLAKE8_CLEAN
 import atexit
 import math
 import os
-import random
 import re
 import shlex
 import signal
@@ -15,11 +14,9 @@ import subprocess
 import sys
 import tempfile
 import time
-from math import acos, atan2, cos, pi, sqrt
+
 
 import pexpect
-
-from pymavlink.rotmat import Vector3, Matrix3
 
 if sys.version_info[0] >= 3:
     ENCODING = 'ascii'
@@ -616,7 +613,6 @@ def start_MAVProxy_SITL(atype,
     if old is not None:
         env['PYTHONPATH'] += os.path.pathsep + old
 
-    import pexpect
     global close_list
     cmd = []
     cmd.append(mavproxy_cmd())
@@ -641,8 +637,6 @@ def start_MAVProxy_SITL(atype,
 def expect_setup_callback(e, callback):
     """Setup a callback that is called once a second while waiting for
        patterns."""
-    import pexpect
-
     def _expect_callback(pattern, timeout=e.timeout):
         tstart = time.time()
         while time.time() < tstart + timeout:
@@ -707,51 +701,6 @@ def check_parent(parent_pid=None):
         sys.exit(1)
 
 
-def EarthRatesToBodyRates(dcm, earth_rates):
-    """Convert the angular velocities from earth frame to
-    body frame. Thanks to James Goppert for the formula
-
-    all inputs and outputs are in radians
-
-    returns a gyro vector in body frame, in rad/s .
-    """
-    from math import sin, cos
-
-    (phi, theta, psi) = dcm.to_euler()
-    phiDot   = earth_rates.x
-    thetaDot = earth_rates.y
-    psiDot   = earth_rates.z
-
-    p = phiDot - psiDot * sin(theta)
-    q = cos(phi) * thetaDot + sin(phi) * psiDot * cos(theta)
-    r = cos(phi) * psiDot * cos(theta) - sin(phi) * thetaDot
-    return Vector3(p, q, r)
-
-
-def BodyRatesToEarthRates(dcm, gyro):
-    """Convert the angular velocities from body frame to
-    earth frame.
-
-    all inputs and outputs are in radians/s
-
-    returns a earth rate vector.
-    """
-    from math import sin, cos, tan, fabs
-
-    p      = gyro.x
-    q      = gyro.y
-    r      = gyro.z
-
-    (phi, theta, psi) = dcm.to_euler()
-
-    phiDot   = p + tan(theta) * (q * sin(phi) + r * cos(phi))
-    thetaDot = q * cos(phi) - r * sin(phi)
-    if fabs(cos(theta)) < 1.0e-20:
-        theta += 1.0e-10
-    psiDot   = (q * sin(phi) + r * cos(phi)) / cos(theta)
-    return Vector3(phiDot, thetaDot, psiDot)
-
-
 def gps_newpos(lat, lon, bearing, distance):
     """Extrapolate latitude/longitude given a heading and distance
     thanks to http://www.movable-type.co.uk/scripts/latlong.html .
@@ -800,132 +749,6 @@ def gps_bearing(lat1, lon1, lat2, lon2):
     if bearing < 0:
         bearing += 360.0
     return bearing
-
-
-class Wind(object):
-    """A wind generation object."""
-    def __init__(self, windstring, cross_section=0.1):
-        a = windstring.split(',')
-        if len(a) != 3:
-            raise RuntimeError("Expected wind in speed,direction,turbulance form, not %s" % windstring)
-        self.speed      = float(a[0])  # m/s
-        self.direction  = float(a[1])  # direction the wind is going in
-        self.turbulance = float(a[2])  # turbulance factor (standard deviation)
-
-        # the cross-section of the aircraft to wind. This is multiplied by the
-        # difference in the wind and the velocity of the aircraft to give the acceleration
-        self.cross_section = cross_section
-
-        # the time constant for the turbulance - the average period of the
-        # changes over time
-        self.turbulance_time_constant = 5.0
-
-        # wind time record
-        self.tlast = time.time()
-
-        # initial turbulance multiplier
-        self.turbulance_mul = 1.0
-
-    def current(self, deltat=None):
-        """Return current wind speed and direction as a tuple
-        speed is in m/s, direction in degrees."""
-        if deltat is None:
-            tnow = time.time()
-            deltat = tnow - self.tlast
-            self.tlast = tnow
-
-        # update turbulance random walk
-        w_delta = math.sqrt(deltat) * (1.0 - random.gauss(1.0, self.turbulance))
-        w_delta -= (self.turbulance_mul - 1.0) * (deltat / self.turbulance_time_constant)
-        self.turbulance_mul += w_delta
-        speed = self.speed * math.fabs(self.turbulance_mul)
-        return speed, self.direction
-
-    # Calculate drag.
-    def drag(self, velocity, deltat=None):
-        """Return current wind force in Earth frame.  The velocity parameter is
-           a Vector3 of the current velocity of the aircraft in earth frame, m/s ."""
-        from math import radians
-
-        # (m/s, degrees) : wind vector as a magnitude and angle.
-        (speed, direction) = self.current(deltat=deltat)
-        # speed = self.speed
-        # direction = self.direction
-
-        # Get the wind vector.
-        w = toVec(speed, radians(direction))
-
-        obj_speed = velocity.length()
-
-        # Compute the angle between the object vector and wind vector by taking
-        # the dot product and dividing by the magnitudes.
-        d = w.length() * obj_speed
-        if d == 0:
-            alpha = 0
-        else:
-            alpha = acos((w * velocity) / d)
-
-        # Get the relative wind speed and angle from the object.  Note that the
-        # relative wind speed includes the velocity of the object; i.e., there
-        # is a headwind equivalent to the object's speed even if there is no
-        # absolute wind.
-        (rel_speed, beta) = apparent_wind(speed, obj_speed, alpha)
-
-        # Return the vector of the relative wind, relative to the coordinate
-        # system.
-        relWindVec = toVec(rel_speed, beta + atan2(velocity.y, velocity.x))
-
-        # Combine them to get the acceleration vector.
-        return Vector3(acc(relWindVec.x, drag_force(self, relWindVec.x)), acc(relWindVec.y, drag_force(self, relWindVec.y)), 0)
-
-
-def apparent_wind(wind_sp, obj_speed, alpha):
-    """http://en.wikipedia.org/wiki/Apparent_wind
-
-    Returns apparent wind speed and angle of apparent wind.  Alpha is the angle
-    between the object and the true wind.  alpha of 0 rads is a headwind; pi a
-    tailwind.  Speeds should always be positive."""
-    delta = wind_sp * cos(alpha)
-    x = wind_sp**2 + obj_speed**2 + 2 * obj_speed * delta
-    rel_speed = sqrt(x)
-    if rel_speed == 0:
-        beta = pi
-    else:
-        beta = acos((delta + obj_speed) / rel_speed)
-
-    return rel_speed, beta
-
-
-def drag_force(wind, sp):
-    """See http://en.wikipedia.org/wiki/Drag_equation
-
-    Drag equation is F(a) = cl * p/2 * v^2 * a, where cl : drag coefficient
-    (let's assume it's low, .e.g., 0.2), p : density of air (assume about 1
-    kg/m^3, the density just over 1500m elevation), v : relative speed of wind
-    (to the body), a : area acted on (this is captured by the cross_section
-    parameter).
-
-    So then we have
-    F(a) = 0.2 * 1/2 * v^2 * cross_section = 0.1 * v^2 * cross_section."""
-    return (sp**2.0) * 0.1 * wind.cross_section
-
-
-def acc(val, mag):
-    """ Function to make the force vector.  relWindVec is the direction the apparent
-    wind comes *from*.  We want to compute the accleration vector in the direction
-    the wind blows to."""
-    if val == 0:
-        return mag
-    else:
-        return (val / abs(val)) * (0 - mag)
-
-
-def toVec(magnitude, angle):
-    """Converts a magnitude and angle (radians) to a vector in the xy plane."""
-    v = Vector3(magnitude, 0, 0)
-    m = Matrix3()
-    m.from_euler(0, 0, angle)
-    return m.transposed() * v
 
 
 def constrain(value, minv, maxv):
