@@ -118,11 +118,6 @@ def ap_library(bld, library, vehicle):
         for s in bld.env.AP_LIB_EXTRA_SOURCES[library]:
             src.append(bld.bldnode.find_or_declare(os.path.join('libraries', library, s)))
 
-    # include the dependencies for XRCE-DDS
-    if len(bld.env.XRCE_DEPENDENCIES):
-        for s in bld.env.XRCE_DEPENDENCIES:
-            src.append(bld.bldnode.find_or_declare(s))    
-
     if not common_tg:
         kw = dict(bld.env.AP_LIBRARIES_OBJECTS_KW)
         kw['features'] = kw.get('features', []) + ['ap_library_object']
