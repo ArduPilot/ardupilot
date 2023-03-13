@@ -1,0 +1,109 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+import os
+
+
+def configure(cfg):
+    extra_src = [
+        'modules/Micro-XRCE-DDS-Client/src/c/core/session/stream/*.c',
+        'modules/Micro-XRCE-DDS-Client/src/c/core/session/*.c',
+        'modules/Micro-XRCE-DDS-Client/src/c/core/serialization/*.c',
+        'modules/Micro-XRCE-DDS-Client/src/c/util/*.c',
+        'modules/Micro-XRCE-DDS-Client/src/c/profile/transport/serial/serial_transport.c',
+        'modules/Micro-XRCE-DDS-Client/src/c/profile/transport/stream_framing/stream_framing_protocol.c',
+        'modules/Micro-CDR/src/c/types/*.c',
+        'modules/Micro-CDR/src/c/common.c',
+    ]
+
+    cfg.env.AP_LIB_EXTRA_SOURCES['AP_DDS'] = []
+    for pattern in extra_src:
+        s = cfg.srcnode.ant_glob(pattern, dir=False, src=True)
+        for x in s:
+            cfg.env.AP_LIB_EXTRA_SOURCES['AP_DDS'].append(str(x))
+
+    extra_src_inc = [
+        'modules/Micro-XRCE-DDS-Client/include',
+        'modules/Micro-XRCE-DDS-Client/include/uxr/client',
+        'modules/Micro-CDR/src/c',
+        'modules/Micro-CDR/include',
+        'modules/Micro-CDR/include/ucdr',
+    ]
+    for inc in extra_src_inc:
+        cfg.env.INCLUDES += [str(cfg.srcnode.make_node(inc))]
+
+    # auto update submodules
+    cfg.env.append_value('GIT_SUBMODULES', 'Micro-XRCE-DDS-Client')
+    cfg.env.append_value('GIT_SUBMODULES', 'Micro-CDR')
+
+
+def build(bld):
+    config_h_in = [
+        'modules/Micro-XRCE-DDS-Client/include/uxr/client/config.h.in',
+        'modules/Micro-CDR/include/ucdr/config.h.in',
+    ]
+    config_h_in_nodes = [bld.srcnode.make_node(h) for h in config_h_in]
+    config_h_nodes = [bld.bldnode.find_or_declare(h[:-3]) for h in config_h_in]
+
+    gen_path = "libraries/AP_DDS"
+    extra_bld_inc = [
+        'modules/Micro-CDR/include',
+        'modules/Micro-XRCE-DDS-Client/include',
+        gen_path,
+    ]
+    for inc in extra_bld_inc:
+        bld.env.INCLUDES += [bld.bldnode.find_or_declare(inc).abspath()]
+
+    for i in range(len(config_h_nodes)):
+        print("building %s" % config_h_nodes[i].abspath())
+        bld(
+            # build config.h file
+            source=config_h_in_nodes[i],
+            target=config_h_nodes[i],
+            rule="%s %s/%s %s %s"
+            % (
+                bld.env.get_flat('PYTHON'),
+                bld.env.SRCROOT,
+                "libraries/AP_DDS/gen_config_h.py",
+                config_h_in_nodes[i].abspath(),
+                config_h_nodes[i].abspath(),
+            ),
+            group='dynamic_sources',
+        )
+
+    # temporary whitelist while include issue is sorted out
+    whitelist = [
+        'BatteryState.idl',
+        'Duration.idl',
+        'Header.idl',
+        'NavSatFix.idl',
+        'NavSatStatus.idl',
+        'Point.idl',
+        'Pose.idl',
+        'PoseStamped.idl',
+        'Quaternion.idl',
+        'Time.idl',
+        'Twist.idl',
+        'TwistStamped.idl',
+        'Vector3.idl',
+    ]
+
+    idl_files = bld.srcnode.ant_glob('libraries/AP_DDS/Idl/**/*.idl')
+    for idl in idl_files:
+        b = os.path.basename(idl.abspath())
+        if not b in whitelist:
+            continue
+        gen_h = b.replace('.idl', '.h')
+        gen_c = b.replace('.idl', '.c')
+        gen = [
+            bld.bldnode.find_or_declare(os.path.join(gen_path, "generated", gen_h)),
+            bld.bldnode.find_or_declare(os.path.join(gen_path, "generated", gen_c)),
+        ]
+        bld(
+            # build IDL file
+            source=idl,
+            target=gen,
+            rule=f"{bld.env.MICROXRCEDDSGEN[0]} -replace -d {os.path.join(gen_path, 'generated')} {idl}",
+            group='dynamic_sources',
+        )
+        bld.env.AP_LIB_EXTRA_SOURCES['AP_DDS'] += [os.path.join('generated', gen_c)]
