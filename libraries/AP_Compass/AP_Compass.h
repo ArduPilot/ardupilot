@@ -166,14 +166,12 @@ public:
     void cal_update();
 
 #if COMPASS_MOT_ENABLED
-    bool per_motor_compensation_enabled(void) {
-        return _per_motor.enabled();
+    bool per_motor_compensation_enabled(uint8_t i=0) {
+        return _get_state(Priority(i)).per_motor.enabled();
     }
     // per-motor calibration access
     void per_motor_set_compensation(uint8_t i, uint8_t motor, const Vector3f& offset) {
-        if (i==0) {
-            _per_motor.set_compensation(motor, offset);
-        }
+        _state[_get_state_id(Priority(i))].per_motor.set_compensation(motor, offset);
     }
 #endif
 
@@ -563,6 +561,11 @@ private:
         // accumulated samples, protected by _sem, used by AP_Compass_Backend
         Vector3f accum;
         uint32_t accum_count;
+
+#if COMPASS_MOT_ENABLED
+        // per-motor compass compensation
+        Compass_PerMotor per_motor;
+#endif
         // We only copy persistent params
         void copy_from(const mag_state& state);
     };
@@ -614,11 +617,6 @@ private:
 
 #if COMPASS_CAL_ENABLED
     RestrictIDTypeArray<CompassCalibrator*, COMPASS_MAX_INSTANCES, Priority> _calibrator;
-#endif
-
-#if COMPASS_MOT_ENABLED
-    // per-motor compass compensation
-    Compass_PerMotor _per_motor;
 #endif
     
     AP_Float _calibration_threshold;

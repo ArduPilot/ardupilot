@@ -30,6 +30,8 @@ public:
     void set_compensation(uint8_t motor, const Vector3f& offset) {
         compensation[motor].set_and_save(offset);
     }
+
+    void copy_from(const Compass_PerMotor per_motor);
     
 private:
     AP_Int8 enable;

@@ -89,7 +89,75 @@ const AP_Param::GroupInfo Compass_PerMotor::var_info[] = {
     // @Description: Compensation for Z axis of motor4
     // @User: Advanced
     AP_GROUPINFO("4",  6, Compass_PerMotor, compensation[3], 0),
-    
+
+#if AP_COMPASS_PMOT_MAX_NUM_MOTORS > 4
+    // @Param: 5_X
+    // @DisplayName: Compass per-motor5 X
+    // @Description: Compensation for X axis of motor5
+    // @User: Advanced
+
+    // @Param: 5_Y
+    // @DisplayName: Compass per-motor4 Y
+    // @Description: Compensation for Y axis of motor5
+    // @User: Advanced
+
+    // @Param: 5_Z
+    // @DisplayName: Compass per-motor5 Z
+    // @Description: Compensation for Z axis of motor5
+    // @User: Advanced
+    AP_GROUPINFO("5",  7, Compass_PerMotor, compensation[4], 0),
+#endif
+#if AP_COMPASS_PMOT_MAX_NUM_MOTORS > 5
+    // @Param: 6_X
+    // @DisplayName: Compass per-motor6 X
+    // @Description: Compensation for X axis of motor6
+    // @User: Advanced
+
+    // @Param: 6_Y
+    // @DisplayName: Compass per-motor6 Y
+    // @Description: Compensation for Y axis of motor6
+    // @User: Advanced
+
+    // @Param: 6_Z
+    // @DisplayName: Compass per-motor4 6
+    // @Description: Compensation for Z axis of motor6
+    // @User: Advanced
+    AP_GROUPINFO("6",  8, Compass_PerMotor, compensation[5], 0),
+#endif
+#if AP_COMPASS_PMOT_MAX_NUM_MOTORS > 6
+    // @Param: 7_X
+    // @DisplayName: Compass per-motor7 X
+    // @Description: Compensation for X axis of motor7
+    // @User: Advanced
+
+    // @Param: 7_Y
+    // @DisplayName: Compass per-motor7 Y
+    // @Description: Compensation for Y axis of motor7
+    // @User: Advanced
+
+    // @Param: 7_Z
+    // @DisplayName: Compass per-motor74 Z
+    // @Description: Compensation for Z axis of motor7
+    // @User: Advanced
+    AP_GROUPINFO("7",  9, Compass_PerMotor, compensation[6], 0),
+#endif
+#if AP_COMPASS_PMOT_MAX_NUM_MOTORS > 7
+    // @Param: 8_X
+    // @DisplayName: Compass per-motor8 X
+    // @Description: Compensation for X axis of motor8
+    // @User: Advanced
+
+    // @Param: 8_Y
+    // @DisplayName: Compass per-motor8 Y
+    // @Description: Compensation for Y axis of motor8
+    // @User: Advanced
+
+    // @Param: 8_Z
+    // @DisplayName: Compass per-motor8 Z
+    // @Description: Compensation for Z axis of motor8
+    // @User: Advanced
+    AP_GROUPINFO("8",  10, Compass_PerMotor, compensation[7], 0),
+#endif
     AP_GROUPEND
 };
 
@@ -134,4 +202,11 @@ Vector3f Compass_PerMotor::compensate(float current)
     }
 
     return offset;
+}
+
+void Compass_PerMotor::copy_from(const Compass_PerMotor per_motor)
+{
+    for (uint8_t i=0; i<AP_COMPASS_PMOT_MAX_NUM_MOTORS; i++) {
+        compensation[i].set_and_save_ifchanged(per_motor.compensation[i]);
+    }
 }

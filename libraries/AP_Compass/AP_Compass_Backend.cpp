@@ -118,7 +118,7 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
     if (_compass._motor_comp_type == AP_COMPASS_MOT_COMP_PER_MOTOR && i == 0) {
         float current;
         if (AP::battery().current_amps(current)) {
-            state.motor_offset = _compass._per_motor.compensate(current);
+            state.motor_offset = state.per_motor.compensate(current);
         }
     } else if (_compass._motor_comp_type == AP_COMPASS_MOT_COMP_THROTTLE) {
         state.motor_offset = mot * _compass._thr;
