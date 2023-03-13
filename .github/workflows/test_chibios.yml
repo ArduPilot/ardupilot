@@ -30,6 +30,7 @@ jobs:
             revo-mini,
             MatekF405-Wing,
             CubeOrange-ODID,
+            enable-dds,
             configure-all,
             build-options-defaults-test,
             signing
