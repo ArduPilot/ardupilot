@@ -48,6 +48,10 @@
 #define AP_COMPASS_MAX_XY_ANG_DIFF radians(60.0f)
 #define AP_COMPASS_MAX_XY_LENGTH_DIFF 200.0f
 
+#ifndef AP_COMPASS_PMOT_ENABLED
+#define AP_COMPASS_PMOT_ENABLED (BOARD_FLASH_SIZE>1024) && COMPASS_MOT_ENABLED
+#endif
+
 /**
    maximum number of compass instances available on this platform. If more
    than 1 then redundant sensors may be available
@@ -165,7 +169,7 @@ public:
     // compass calibrator interface
     void cal_update();
 
-#if COMPASS_MOT_ENABLED
+#if AP_COMPASS_PMOT_ENABLED
     bool per_motor_compensation_enabled(uint8_t i=0) {
         return _get_state(Priority(i)).per_motor.enabled();
     }
@@ -562,7 +566,7 @@ private:
         Vector3f accum;
         uint32_t accum_count;
 
-#if COMPASS_MOT_ENABLED
+#if AP_COMPASS_PMOT_ENABLED
         // per-motor compass compensation
         Compass_PerMotor per_motor;
 #endif

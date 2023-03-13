@@ -6,10 +6,6 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Math/AP_Math.h>
 
-#ifndef AP_COMPASS_PMOT_ENABLED
-#define AP_COMPASS_PMOT_ENABLED (BOARD_FLASH_SIZE>1024)
-#endif
-
 #define AP_COMPASS_PMOT_MAX_NUM_MOTORS 4
 
 class Compass;
