@@ -57,6 +57,7 @@ class SizeCompareBranches(object):
                  all_boards=False,
                  use_merge_base=True,
                  waf_consistent_builds=True,
+                 show_empty=True,
                  extra_hwdef=[],
                  extra_hwdef_branch=[],
                  extra_hwdef_master=[]):
@@ -76,6 +77,7 @@ class SizeCompareBranches(object):
         self.all_boards = all_boards
         self.use_merge_base = use_merge_base
         self.waf_consistent_builds = waf_consistent_builds
+        self.show_empty = show_empty
 
         if self.bin_dir is None:
             self.bin_dir = self.find_bin_dir()
@@ -336,6 +338,10 @@ class SizeCompareBranches(object):
                     else:
                         bytes_delta = result.bytes_delta
                 line.append(str(bytes_delta))
+            # do not add to ret value if we're not showing empty results:
+            if not self.show_empty:
+                if len(list(filter(lambda x : x != "", line[1:]))) == 0:
+                    continue
             ret += ",".join(line) + "\n"
         return ret
 
@@ -504,6 +510,11 @@ if __name__ == '__main__':
                       default=[],
                       help="vehicle to build for")
     parser.add_option("",
+                      "--show-empty",
+                      action='store_true',
+                      default=False,
+                      help="Show result lines even if no builds were done for the board")
+    parser.add_option("",
                       "--board",
                       action='append',
                       default=[],
@@ -560,5 +571,6 @@ if __name__ == '__main__':
         all_boards=cmd_opts.all_boards,
         use_merge_base=not cmd_opts.no_merge_base,
         waf_consistent_builds=not cmd_opts.no_waf_consistent_builds,
+        show_empty=cmd_opts.show_empty,
     )
     x.run()
