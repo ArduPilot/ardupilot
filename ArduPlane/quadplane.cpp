@@ -428,7 +428,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @DisplayName: VTOL minimum forward throttle max percent
     // @Description: Minimum value for manual forward throttle; allows for aft translation using backward tilt angles
     // @Range: -100 0
-    AP_GROUPINFO("FWD_MANTHR_MAX", 21, QuadPlane, fwd_thr_min, 0),
+    AP_GROUPINFO("FWD_MANTHR_MIN", 21, QuadPlane, fwd_thr_min, 0),
 
     // 21: TAILSIT_DSKLD
     // 22: TILT_FIX_ANGLE
