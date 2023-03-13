@@ -305,21 +305,21 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_SMBus_NeoDesign(*this, state[instance], _params[instance]);
                 break;
 #endif
-            case Type::BEBOP:
 #if AP_BATTERY_BEBOP_ENABLED
+            case Type::BEBOP:
                 drivers[instance] = new AP_BattMonitor_Bebop(*this, state[instance], _params[instance]);
-#endif
                 break;
-            case Type::UAVCAN_BatteryInfo:
+#endif
 #if AP_BATTERY_UAVCAN_BATTERYINFO_ENABLED
+            case Type::UAVCAN_BatteryInfo:
                 drivers[instance] = new AP_BattMonitor_DroneCAN(*this, state[instance], AP_BattMonitor_DroneCAN::UAVCAN_BATTERY_INFO, _params[instance]);
-#endif
                 break;
-            case Type::BLHeliESC:
+#endif
 #if AP_BATTERY_ESC_ENABLED
+            case Type::BLHeliESC:
                 drivers[instance] = new AP_BattMonitor_ESC(*this, state[instance], _params[instance]);
-#endif
                 break;
+#endif
 #if AP_BATTERY_SUM_ENABLED
             case Type::Sum:
                 drivers[instance] = new AP_BattMonitor_Sum(*this, state[instance], _params[instance], instance);
