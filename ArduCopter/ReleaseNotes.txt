@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 4.3.5-rc1 01-Mar-2023
+Copter Copter 4.3.5 14-Mar-2023 / 4.3.5-rc1 01-Mar-2023
 Changes from 4.3.4
 1) Bug fixes
     a) GPS unconfigured error fix for non-M10 uBlox GPS
