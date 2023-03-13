@@ -53,11 +53,11 @@ void AP_IQ_Motor::init(void)
     {
         const int8_t length = _broadcast_length.get();
         _total_channels = NUM_SERVO_CHANNELS > length ? length : NUM_SERVO_CHANNELS;
-        // loop through all servos
-        for (uint8_t servo = 0; servo < _total_channels; ++servo)
-        {
-            add_client(&_motors[servo]);
-        }
+        // // loop through all servos
+        // for (uint8_t servo = 0; servo < _total_channels; ++servo)
+        // {
+        //     add_client(&_motors[servo]);
+        // }
 
         // find the last motor for telemetry
         const uint8_t bitmask = _telemetry_bitmask.get();
@@ -130,40 +130,38 @@ void AP_IQ_Motor::update(void)
 
 void AP_IQ_Motor::update_motor_outputs()
 {
-    const uint8_t bitmask = _motor_dir_bitmask.get();
+    // const uint8_t bitmask = _motor_dir_bitmask.get();
+    uint16_t raw_control_values[_total_channels];
     for (unsigned ii = 0; ii < _total_channels; ++ii) {
         SRV_Channel *c = SRV_Channels::srv_channel(ii);
         if (c == nullptr) {
             continue;
         }
-        float dir = 1.0;
-        if (bitmask & 1 << ii)
-        {
-            dir = -1.0;
-        }
-        float output = constrain_float((c->get_output_norm() + 1.0) * 0.5, 0, 1);
-        output *= dir;
-        _motors[ii].drive_spin_pwm_.set(_com, output);
+        uint16_t output = uint16_t(constrain_float((c->get_output_norm() + 1.0) * 0.5, 0, 1) * 65535);
+        raw_control_values[ii] = output;
     }
+    _motor_interface.BroadcastPackedControlMessage(_com, raw_control_values, _total_channels, _telem_request_id);
+    _telem_request_id = 255;
 }
 
 #if HAL_WITH_ESC_TELEM 
 void AP_IQ_Motor::update_telemetry() 
 {
     bool got_reply = false;
-    if (_motors[_telem_motor_id].obs_velocity_.IsFresh())
+    if (_motor_interface.telemetry_.IsFresh())
     {
-        float velocity = abs(_motors[_telem_motor_id].obs_velocity_.get_reply());
-        update_rpm(_telem_motor_id, velocity * M_1_PI * 0.5 * 60, 0.0);
+        IFCITelemetryData motor_telem = _motor_interface.telemetry_.get_reply();
+        float velocity = abs(motor_telem.speed * M_1_PI * 0.5 * 60);
+        update_rpm(_motor_interface.get_last_telemetry_receeived_id(), velocity, 0.0);
         TelemetryData t {};
-        t.temperature_cdeg = _motors[_telem_motor_id].uc_temp_.get_reply() * 100;
-        t.voltage = _motors[_telem_motor_id].volts_.get_reply();
-        t.current = _motors[_telem_motor_id].amps_.get_reply();
-        t.consumption_mah = _motors[_telem_motor_id].joules_.get_reply() * 0.00027777777; // watt hours TODO fix to milliamp hours
-        t.usage_s = _motors[_telem_motor_id].time_.get_reply();
-        t.motor_temp_cdeg = _motors[_telem_motor_id].temp_.get_reply() * 100;
+        t.temperature_cdeg = motor_telem.mcu_temp;
+        t.motor_temp_cdeg = motor_telem.coil_temp;
+        t.voltage = motor_telem.voltage * 0.01;
+        t.current = motor_telem.current * 0.01;
+        t.consumption_mah = motor_telem.consumption;
+        t.usage_s = motor_telem.uptime;
         update_telem_data(
-            _telem_motor_id,
+            _motor_interface.get_last_telemetry_receeived_id(),
             t,
             TelemetryType::TEMPERATURE|
             TelemetryType::MOTOR_TEMPERATURE|
@@ -174,17 +172,41 @@ void AP_IQ_Motor::update_telemetry()
         );
         got_reply = true;
     }
+    // if (_motors[_telem_motor_id].obs_velocity_.IsFresh())
+    // {
+    //     float velocity = abs(_motors[_telem_motor_id].obs_velocity_.get_reply());
+    //     update_rpm(_telem_motor_id, velocity * M_1_PI * 0.5 * 60, 0.0);
+    //     TelemetryData t {};
+    //     t.temperature_cdeg = _motors[_telem_motor_id].uc_temp_.get_reply() * 100;
+    //     t.voltage = _motors[_telem_motor_id].volts_.get_reply();
+    //     t.current = _motors[_telem_motor_id].amps_.get_reply();
+    //     t.consumption_mah = _motors[_telem_motor_id].joules_.get_reply() * 0.00027777777; // watt hours TODO fix to milliamp hours
+    //     t.usage_s = _motors[_telem_motor_id].time_.get_reply();
+    //     t.motor_temp_cdeg = _motors[_telem_motor_id].temp_.get_reply() * 100;
+    //     update_telem_data(
+    //         _telem_motor_id,
+    //         t,
+    //         TelemetryType::TEMPERATURE|
+    //         TelemetryType::MOTOR_TEMPERATURE|
+    //         TelemetryType::VOLTAGE|
+    //         TelemetryType::CURRENT|
+    //         TelemetryType::CONSUMPTION|
+    //         TelemetryType::USAGE
+    //     );
+    //     got_reply = true;
+    // }
     bool timeout = AP_HAL::millis() - _last_request_time > _telem_timeout;
     if (got_reply || timeout)
     {
         find_next_telem_motor();
-        _motors[_telem_motor_id].uc_temp_.get(_com);
-        _motors[_telem_motor_id].volts_.get(_com);
-        _motors[_telem_motor_id].amps_.get(_com);
-        _motors[_telem_motor_id].joules_.get(_com);
-        _motors[_telem_motor_id].time_.get(_com);
-        _motors[_telem_motor_id].temp_.get(_com);
-        _motors[_telem_motor_id].obs_velocity_.get(_com);
+        _telem_request_id = _telem_motor_id;
+        // _motors[_telem_motor_id].uc_temp_.get(_com);
+        // _motors[_telem_motor_id].volts_.get(_com);
+        // _motors[_telem_motor_id].amps_.get(_com);
+        // _motors[_telem_motor_id].joules_.get(_com);
+        // _motors[_telem_motor_id].time_.get(_com);
+        // _motors[_telem_motor_id].temp_.get(_com);
+        // _motors[_telem_motor_id].obs_velocity_.get(_com);
         _last_request_time = AP_HAL::millis();
     }
 }
@@ -219,6 +241,7 @@ void AP_IQ_Motor::read()
         uint8_t *packet_buf_point = _rx_buf;
         while(_com.PeekPacket(&packet_buf_point, &_ser_length) == 1)
         {
+            _motor_interface.ReadTelemetry(packet_buf_point, _ser_length);
             for (int client = 0; client < _client_size; ++client)
             {
                 _clients[client]->ReadMsg(packet_buf_point, _ser_length);
