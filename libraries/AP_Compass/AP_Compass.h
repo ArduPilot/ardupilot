@@ -175,15 +175,6 @@ public:
             _per_motor.set_compensation(motor, offset);
         }
     }
-    void per_motor_calibration_start(void) {
-        _per_motor.calibration_start();
-    }
-    void per_motor_calibration_update(void) {
-        _per_motor.calibration_update();
-    }
-    void per_motor_calibration_end(void) {
-        _per_motor.calibration_end();
-    }
 #endif
 
     // start_calibration_all will only return false if there are no
@@ -298,13 +289,6 @@ public:
             _thr = thr_pct;
         }
     }
-
-#if COMPASS_MOT_ENABLED
-    /// Set the battery voltage for per-motor compensation
-    void set_voltage(float voltage) {
-        _per_motor.set_voltage(voltage);
-    }
-#endif
     
     /// Returns True if the compasses have been configured (i.e. offsets saved)
     ///
@@ -634,7 +618,7 @@ private:
 
 #if COMPASS_MOT_ENABLED
     // per-motor compass compensation
-    Compass_PerMotor _per_motor{*this};
+    Compass_PerMotor _per_motor;
 #endif
     
     AP_Float _calibration_threshold;

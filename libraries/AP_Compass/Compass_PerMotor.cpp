@@ -17,15 +17,15 @@ const AP_Param::GroupInfo Compass_PerMotor::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO_FLAGS("_EN",  1, Compass_PerMotor, enable, 0, AP_PARAM_FLAG_ENABLE),
-#if !AP_COMPASS_PMOT_USE_THRUST
+
     // @Param: _EXP
     // @DisplayName: per-motor exponential correction
     // @Description: This is the exponential correction for the power output of the motor for per-motor compass correction
     // @Range: 0 2
     // @Increment: 0.01
     // @User: Advanced
-    AP_GROUPINFO("_EXP", 2, Compass_PerMotor, expo, 0.65),
-#endif
+    // index 2
+
     // @Param: 1_X
     // @DisplayName: Compass per-motor1 X
     // @Description: Compensation for X axis of motor1
@@ -94,13 +94,11 @@ const AP_Param::GroupInfo Compass_PerMotor::var_info[] = {
 };
 
 // constructor
-Compass_PerMotor::Compass_PerMotor(Compass &_compass) :
-    compass(_compass)
+Compass_PerMotor::Compass_PerMotor()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-#if AP_COMPASS_PMOT_USE_THRUST
 float Compass_PerMotor::scaled_output(uint8_t motor)
 {
 #if APM_BUILD_COPTER_OR_HELI
@@ -115,124 +113,6 @@ float Compass_PerMotor::scaled_output(uint8_t motor)
     return 0.0f;
 #endif
 }
-#else
-// return current scaled motor output
-float Compass_PerMotor::scaled_output(uint8_t motor)
-{
-    if (!have_motor_map) {
-        if (SRV_Channels::find_channel(SRV_Channel::k_motor1, motor_map[0]) &&
-            SRV_Channels::find_channel(SRV_Channel::k_motor2, motor_map[1]) &&
-            SRV_Channels::find_channel(SRV_Channel::k_motor3, motor_map[2]) &&
-            SRV_Channels::find_channel(SRV_Channel::k_motor4, motor_map[3])) {
-            have_motor_map = true;
-        }
-    }
-    if (!have_motor_map) {
-        return 0;
-    }
-    
-    // this currently assumes first 4 channels. 
-    uint16_t pwm = hal.rcout->read_last_sent(motor_map[motor]);
-
-    // get 0 to 1 motor demand
-    float output = (hal.rcout->scale_esc_to_unity(pwm)+1) * 0.5f;
-
-    if (output <= 0) {
-        return 0;
-    }
-    
-    // scale for voltage
-    output *= voltage;
-
-    // apply expo correction
-    output = powf(output, expo);
-    return output;
-}
-#endif
-
-// per-motor calibration update
-void Compass_PerMotor::calibration_start(void)
-{
-    for (uint8_t i=0; i<AP_COMPASS_PMOT_MAX_NUM_MOTORS; i++) {
-        field_sum[i].zero();
-        output_sum[i] = 0;
-        count[i] = 0;
-        start_ms[i] = 0;
-    }
-
-    // we need to ensure we get current data by throwing away several
-    // samples. The offsets may have just changed from an offset
-    // calibration
-    for (uint8_t i=0; i<4; i++) {
-        compass.read();
-        hal.scheduler->delay(50);
-    }
-    
-    base_field = compass.get_field(0);
-    running = true;
-}
-
-// per-motor calibration update
-void Compass_PerMotor::calibration_update(void)
-{
-    uint32_t now = AP_HAL::millis();
-
-    float current = 1.0;
-#if AP_COMPASS_PMOT_USE_THRUST
-    if (!AP::battery().current_amps(current)) {
-        return;
-    }
-#endif
-    // accumulate per-motor sums
-    for (uint8_t i=0; i<AP_COMPASS_PMOT_MAX_NUM_MOTORS; i++) {
-        float output = scaled_output(i) * current;
-
-        if (output <= 0) {
-            // motor is off
-            start_ms[i] = 0;
-            continue;
-        }
-        if (start_ms[i] == 0) {
-            start_ms[i] = now;
-        }
-        if (now - start_ms[i] < 500) {
-            // motor must run for 0.5s to settle
-            continue;
-        }
-
-        // accumulate a sample
-        field_sum[i] += compass.get_field(0);
-        output_sum[i] += output;
-        count[i]++;
-    }
-}
-
-// calculate per-motor calibration values
-void Compass_PerMotor::calibration_end(void)
-{
-    for (uint8_t i=0; i<AP_COMPASS_PMOT_MAX_NUM_MOTORS; i++) {
-        if (count[i] == 0) {
-            continue;
-        }
-
-        // calculate effective output
-        float output = output_sum[i] / count[i];
-
-        // calculate amount that field changed from base field
-        Vector3f field_change = base_field - (field_sum[i] / count[i]);
-        if (output <= 0) {
-            continue;
-        }
-        
-        Vector3f c = field_change / output;
-        compensation[i].set_and_save(c);
-    }
-
-    // enable per-motor compensation
-    enable.set_and_save(1);
-    
-    running = false;
-}
 
 /*
   calculate total offset for per-motor compensation
@@ -240,7 +120,7 @@ void Compass_PerMotor::calibration_end(void)
 Vector3f Compass_PerMotor::compensate(float current)
 {
     Vector3f offset;
-    if (running || !enable) {
+    if (!enable) {
         // don't compensate while calibrating
         return offset;
     }
