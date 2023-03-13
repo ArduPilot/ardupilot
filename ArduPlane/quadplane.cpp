@@ -424,6 +424,12 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Range: 0 100
     AP_GROUPINFO("FWD_MANTHR_MAX", 20, QuadPlane, fwd_thr_max, 0),
 
+    // @Param: FWD_THR_MIN
+    // @DisplayName: VTOL minimum forward throttle percent
+    // @Description: Minimum value for manual forward throttle; allows for aft translation using backward tilt angles in tiltrotor configurations
+    // @Range: -100 0
+    AP_GROUPINFO("FWD_THR_MIN", 21, QuadPlane, fwd_thr_min, 0),
+
     // 21: TAILSIT_DSKLD
     // 22: TILT_FIX_ANGLE
     // 23: TILT_FIX_GAIN
@@ -3533,10 +3539,10 @@ float QuadPlane::forward_throttle_pct()
             return 0;
         } else {
             // calculate fwd throttle demand from manual input
-            float fwd_thr = rc_fwd_thr_ch->norm_input() * 100.0f;
+            float fwd_thr = rc_fwd_thr_ch->norm_input()*100.0f;
 
-            // set forward throttle to fwd_thr_max * (manual input + mix): range [-100,100]
-            fwd_thr *= .01f * constrain_float(fwd_thr_max, -100, 100);
+            // set forward throttle to fwd_thr_max * (manual input + mix): range [0,100]
+            fwd_thr *= .01f * constrain_float(fwd_thr_max, 0, 100);
             return fwd_thr;
         }
     }
@@ -3603,10 +3609,14 @@ float QuadPlane::forward_throttle_pct()
     // integrator as throttle percentage (-100 to 100)
     vel_forward.integrator += fwd_vel_error * deltat * vel_forward.gain * 100;
 
-    // inhibit to minimum throttle
-    int8_t fwd_throttle_min = plane.aparm.throttle_min;
+    // inhibit to minimum throttle unless fwd_thr_min is set
+    int8_t fwd_throttle_min;
+    if (fwd_thr_min < 0){
+        fwd_throttle_min = fwd_thr_min;
+    } else{
+        fwd_throttle_min = plane.have_reverse_thrust() ? 0 : plane.aparm.throttle_min;
+    }
     vel_forward.integrator = constrain_float(vel_forward.integrator, fwd_throttle_min, plane.aparm.throttle_cruise);
-
     if (in_vtol_land_approach()) {
         // when we are doing horizontal positioning in a VTOL land
         // we always allow the fwd motor to run. Otherwise a bad
