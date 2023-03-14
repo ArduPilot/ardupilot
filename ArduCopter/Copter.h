@@ -115,7 +115,7 @@
 #if AP_GRIPPER_ENABLED
  # include <AP_Gripper/AP_Gripper.h>
 #endif
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED == ENABLED
  # include <AC_PrecLand/AC_PrecLand.h>
  # include <AC_PrecLand/AC_PrecLand_StateMachine.h>
 #endif
@@ -529,7 +529,7 @@ private:
 #endif
 
     // Precision Landing
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED == ENABLED
     AC_PrecLand precland;
     AC_PrecLand_StateMachine precland_statemachine;
 #endif
