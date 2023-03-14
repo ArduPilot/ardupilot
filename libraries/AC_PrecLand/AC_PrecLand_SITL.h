@@ -1,8 +1,12 @@
 #pragma once
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <AP_Math/AP_Math.h>
+
 #include <AC_PrecLand/AC_PrecLand_Backend.h>
+
+#if AC_PRECLAND_SITL_ENABLED
+
+#include <AP_Math/AP_Math.h>
 #include <SITL/SITL.h>
 
 /*
@@ -42,5 +46,7 @@ private:
     bool                _have_los_meas;         // true if there is a valid measurement from the camera
     float               _distance_to_target;    // distance to target in meters
 };
+
+#endif  // AC_PRECLAND_ENABLED
 
 #endif
