@@ -30,12 +30,12 @@
 
 #include <AP_EFI/AP_EFI_Currawong_ECU.h>
 
+#include "AP_PiccoloCAN_Servo.h"
+
+
 // maximum number of ESC allowed on CAN bus simultaneously
 #define PICCOLO_CAN_MAX_NUM_ESC 16
 #define PICCOLO_CAN_MAX_GROUP_ESC (PICCOLO_CAN_MAX_NUM_ESC / 4)
-
-#define PICCOLO_CAN_MAX_NUM_SERVO 16
-#define PICCOLO_CAN_MAX_GROUP_SERVO (PICCOLO_CAN_MAX_NUM_SERVO / 4)
 
 #ifndef HAL_PICCOLO_CAN_ENABLE
 #define HAL_PICCOLO_CAN_ENABLE (HAL_NUM_CAN_IFACES && !HAL_MINIMIZE_FEATURES)
@@ -66,8 +66,8 @@ public:
         SYSTEM = 0x19,          // System messages (e.g. bootloader)
     };
 
-    // Piccolo actuator types differentiate between actuator frames
-    enum class ActuatorType : uint8_t {
+    // Piccolo device types differentiate between devices
+    enum class DeviceType : uint8_t {
         SERVO = 0x00,
         ESC = 0x20,
     };
@@ -96,14 +96,8 @@ public:
     // return true if a particular ESC is 'active' on the Piccolo interface
     bool is_esc_channel_active(uint8_t chan);
 
-    // return true if a particular servo has been detected on the CAN interface
-    bool is_servo_present(uint8_t chan, uint64_t timeout_ms = 2000);
-
     // return true if a particular ESC has been detected on the CAN interface
     bool is_esc_present(uint8_t chan, uint64_t timeout_ms = 2000);
-
-    // return true if a particular servo is enabled
-    bool is_servo_enabled(uint8_t chan);
 
     // return true if a particular ESC is enabled
     bool is_esc_enabled(uint8_t chan);
@@ -122,6 +116,9 @@ private:
     // read frame on CAN bus, returns true on succses
     bool read_frame(AP_HAL::CANFrame &recv_frame, uint64_t timeout);
 
+    // decode a single CAN frame
+    bool decode_frame(AP_HAL::CANFrame &frame);
+
     // send ESC commands over CAN
     void send_esc_messages(void);
 
@@ -130,9 +127,6 @@ private:
 
     // send servo commands over CAN
     void send_servo_messages(void);
-
-    // interpret a servo message received over CAN
-    bool handle_servo_message(AP_HAL::CANFrame &frame);
     
 #if HAL_EFI_CURRAWONG_ECU_ENABLED
     void send_ecu_messages(void);
@@ -147,29 +141,8 @@ private:
     AP_HAL::CANIface* _can_iface;
     HAL_EventHandle _event_handle;
 
-    // Data structure for representing the state of a CBS servo
-    struct CBSServo_Info_t {
-
-        /* Telemetry data provided across multiple packets */
-        Servo_StatusA_t statusA;
-        Servo_StatusB_t statusB;
-
-        /* Servo configuration information */
-        Servo_Firmware_t firmware;
-        Servo_Address_t address;
-        Servo_SettingsInfo_t settings;
-        Servo_SystemInfo_t systemInfo;
-        Servo_TelemetryConfig_t telemetry;
-
-        /* Internal state information */
-
-        int16_t command;    //! Raw command to send to each servo
-        bool newCommand;    //! Is the command "new"?
-        bool newTelemetry;  //! Is there new telemetry data available?
-
-        uint64_t last_rx_msg_timestamp = 0; //! Time of most recently received message
-
-    } _servo_info[PICCOLO_CAN_MAX_NUM_SERVO];
+    // Keep track of multiple connected servos
+    AP_PiccoloCAN_Servo servo_devices[PICCOLO_CAN_MAX_NUM_SERVO];
 
     // Data structure for representing the state of a Velocity ESC
     struct VelocityESC_Info_t {
