@@ -649,6 +649,56 @@ void Plane::disarm_if_autoland_complete()
     }
 }
 
+bool Plane::trigger_land_abort(const float climb_to_alt_m)
+{
+    if (plane.control_mode != &plane.mode_auto) {
+        return false;
+    }
+#if HAL_QUADPLANE_ENABLED
+    if (plane.quadplane.in_vtol_auto()) {
+        return quadplane.abort_landing();
+    }
+#endif
+
+    uint16_t mission_id = plane.mission.get_current_nav_cmd().id;
+    bool is_in_landing = (plane.flight_stage == AP_FixedWing::FlightStage::LAND) ||
+        plane.is_land_command(mission_id);
+    if (is_in_landing) {
+        // fly a user planned abort pattern if available
+        if (plane.mission.jump_to_abort_landing_sequence()) {
+            return true;
+        }
+
+        // only fly a fixed wing abort if we aren't doing quadplane stuff, or potentially
+        // shooting a quadplane approach
+#if HAL_QUADPLANE_ENABLED
+        const bool attempt_go_around =
+            (!plane.quadplane.available()) ||
+            ((!plane.quadplane.in_vtol_auto()) &&
+                (!plane.quadplane.landing_with_fixed_wing_spiral_approach()));
+#else
+        const bool attempt_go_around = true;
+#endif
+        if (attempt_go_around) {
+            // Initiate an aborted landing. This will trigger a pitch-up and
+            // climb-out to a safe altitude holding heading then one of the
+            // following actions will occur, check for in this order:
+            // - If MAV_CMD_CONTINUE_AND_CHANGE_ALT is next command in mission,
+            //      increment mission index to execute it
+            // - else if DO_LAND_START is available, jump to it
+            // - else decrement the mission index to repeat the landing approach
+
+            if (!is_zero(climb_to_alt_m)) {
+                plane.auto_state.takeoff_altitude_rel_cm = climb_to_alt_m * 100;
+            }
+            if (plane.landing.request_go_around()) {
+                plane.auto_state.next_wp_crosstrack = false;
+                return true;
+            }
+        }
+    }
+    return false;
+}
 
 
 /*
