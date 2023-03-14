@@ -246,6 +246,7 @@ public:
         MAG_CAL =            171, // Calibrate compasses (disarmed only)
         BATTERY_MPPT_ENABLE = 172,// Battery MPPT Power enable. high = ON, mid = auto (controlled by mppt/batt driver), low = OFF. This effects all MPPTs.
         AUTO_VTOL_LANDING_ABORT = 173, // Abort VTOL landing during mission payload place
+        FIXED_WING_LANDING_ABORT = 174, // Abort Glide-slope fixed wing landings to perform a go-around
 
 
         // inputs from 200 will eventually used to replace RCMAP
