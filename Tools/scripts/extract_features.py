@@ -162,6 +162,7 @@ class ExtractFeatures(object):
 
             ('HAL_PICCOLO_CAN_ENABLE', r'AP_PiccoloCAN::update',),
             ('EK3_FEATURE_EXTERNAL_NAV', r'NavEKF3::writeExtNavVelData'),
+            ('EK3_FEATURE_DRAG_FUSION', r'NavEKF3_core::FuseDragForces'),
 
             ('AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED', r'RC_Channel::lookuptable',),
 
