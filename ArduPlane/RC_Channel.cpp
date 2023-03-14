@@ -168,6 +168,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::ARMDISARM_AIRMODE:
     case AUX_FUNC::AUTO_VTOL_LANDING_ABORT:
 #endif
+    case AUX_FUNC::FIXED_WING_LANDING_ABORT:
     case AUX_FUNC::TRIM_TO_CURRENT_SERVO_RC:
     case AUX_FUNC::EMERGENCY_LANDING_EN:
     case AUX_FUNC::FW_AUTOTUNE:
@@ -399,6 +400,17 @@ bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
         break;
     }
 #endif
+
+    case AUX_FUNC::FIXED_WING_LANDING_ABORT:
+        switch(ch_flag) {
+        case AuxSwitchPos::HIGH:
+            IGNORE_RETURN(plane.trigger_fixed_wing_go_around(0));
+            break;
+        case AuxSwitchPos::MIDDLE:
+        case AuxSwitchPos::LOW:
+            break;
+        }
+        break;
 
     case AUX_FUNC::TRIM_TO_CURRENT_SERVO_RC:
         if (ch_flag == AuxSwitchPos::HIGH) {

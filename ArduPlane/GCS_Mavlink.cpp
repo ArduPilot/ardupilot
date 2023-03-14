@@ -1036,46 +1036,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         return MAV_RESULT_FAILED;
 
     case MAV_CMD_DO_GO_AROUND:
-        {
-            uint16_t mission_id = plane.mission.get_current_nav_cmd().id;
-            bool is_in_landing = (plane.flight_stage == AP_FixedWing::FlightStage::LAND) ||
-                plane.is_land_command(mission_id);
-            if (is_in_landing) {
-                // fly a user planned abort pattern if available
-                if (plane.mission.jump_to_abort_landing_sequence()) {
-                    return MAV_RESULT_ACCEPTED;
-                }
-
-                // only fly a fixed wing abort if we aren't doing quadplane stuff, or potentially
-                // shooting a quadplane approach
-#if HAL_QUADPLANE_ENABLED
-                const bool attempt_go_around =
-                    (!plane.quadplane.available()) ||
-                    ((!plane.quadplane.in_vtol_auto()) &&
-                     (!plane.quadplane.landing_with_fixed_wing_spiral_approach()));
-#else
-                const bool attempt_go_around = true;
-#endif
-                if (attempt_go_around) {
-                    // Initiate an aborted landing. This will trigger a pitch-up and
-                    // climb-out to a safe altitude holding heading then one of the
-                    // following actions will occur, check for in this order:
-                    // - If MAV_CMD_CONTINUE_AND_CHANGE_ALT is next command in mission,
-                    //      increment mission index to execute it
-                    // - else if DO_LAND_START is available, jump to it
-                    // - else decrement the mission index to repeat the landing approach
-
-                    if (!is_zero(packet.param1)) {
-                        plane.auto_state.takeoff_altitude_rel_cm = packet.param1 * 100;
-                    }
-                    if (plane.landing.request_go_around()) {
-                        plane.auto_state.next_wp_crosstrack = false;
-                        return MAV_RESULT_ACCEPTED;
-                    }
-                }
-            }
-        }
-        return MAV_RESULT_FAILED;
+        return plane.trigger_fixed_wing_go_around(packet.param1) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
 
     case MAV_CMD_DO_AUTOTUNE_ENABLE:
         // param1 : enable/disable

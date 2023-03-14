@@ -987,6 +987,7 @@ private:
 
     // ArduPlane.cpp
     void disarm_if_autoland_complete();
+    bool trigger_fixed_wing_go_around(const float climb_to_alt_m);
     void get_osd_roll_pitch_rad(float &roll, float &pitch) const override;
     float tecs_hgt_afe(void);
     void efi_update(void);
