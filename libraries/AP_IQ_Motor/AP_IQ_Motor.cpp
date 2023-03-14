@@ -137,6 +137,10 @@ void AP_IQ_Motor::update_motor_outputs()
         if (c == nullptr) {
             continue;
         }
+        if (!hal.util->get_soft_armed()) {
+            c->set_output_pwm(c->get_trim());
+            
+        }
         uint16_t output = uint16_t(constrain_float((c->get_output_norm() + 1.0) * 0.5, 0, 1) * 65535);
         raw_control_values[ii] = output;
     }
