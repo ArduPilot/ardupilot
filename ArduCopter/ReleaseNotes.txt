@@ -278,6 +278,9 @@ Changes from 4.2.3
     e) Sim on Hardware allows simulator to run on autopilot (good for exhibitions)
     f) Timer info available in real-time using @SYS/timers.txt
 ------------------------------------------------------------------
+Copter 4.2.4 16-Aug-2023
+1) Loiter fix to avoid potential wobble or flip on takeoff
+------------------------------------------------------------------
 Copter 4.2.3 30-Aug-2022
 Changes from 4.2.3-rc3
 1) OpenDroneId bug fix to consume open-drone-id-system-update message
