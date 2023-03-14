@@ -47,7 +47,9 @@ public:
         SBUS_NI    =  3,
         DSM        =  4,
         SUMD       =  5,
+#if AP_RCPROTOCOL_SRXL_ENABLED
         SRXL       =  6,
+#endif
         SRXL2      =  7,
         CRSF       =  8,
         ST24       =  9,
@@ -105,7 +107,9 @@ public:
             return true;
         case IBUS:
         case SUMD:
+#if AP_RCPROTOCOL_SRXL_ENABLED
         case SRXL:
+#endif
         case SRXL2:
         case ST24:
         case NONE:
