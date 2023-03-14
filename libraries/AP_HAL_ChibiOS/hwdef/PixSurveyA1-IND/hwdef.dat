@@ -1,0 +1,213 @@
+# MCU class and specific type
+MCU STM32F4xx STM32F427xx
+
+# board ID for firmware load
+APJ_BOARD_ID 1107
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 5
+
+# flash size
+FLASH_SIZE_KB 2048
+
+env OPTIMIZE -O2
+
+
+# serial port for stdout, disabled so console is on USB
+#STDOUT_SERIAL SD7
+#STDOUT_BAUDRATE 57600
+
+# order of I2C buses
+I2C_ORDER I2C3 I2C2 I2C1
+
+# now the UART order. These map to the hal.uartA to hal.uartF
+# objects. If you use a shorter list then HAL_Empty::UARTDriver
+# objects are substituted for later UARTs, or you can leave a gap by
+# listing one or more of the uarts as EMPTY
+# 1) SERIAL0: console (primary mavlink, usually USB)
+# 2) SERIAL3: primary GPS
+# 3) SERIAL1: telem1
+# 4) SERIAL2: telem2
+# 5) SERIAL4: GPS2
+# 6) SERIAL5: extra UART (usually RTOS debug console)
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8  UART7
+
+# UART for IOMCU
+IOMCU_UART USART6
+
+# UART4 is GPS
+PA0 UART4_TX UART4 NODMA
+PA1 UART4_RX UART4 NODMA
+PA2 BATT_VOLTAGE_SENS ADC1
+PA3 BATT_CURRENT_SENS ADC1
+PA4 VDD_5V_SENS ADC1 SCALE(2)
+
+# SPI1 is sensors bus
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+PA9 VBUS INPUT
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# PWM output for buzzer
+PA15 TIM2_CH1 TIM2 GPIO(77) ALARM
+
+PB2 BOOT1 INPUT
+
+PB8 I2C1_SCL I2C1
+PB9 I2C1_SDA I2C1
+
+PB10 I2C2_SCL I2C2
+PB11 I2C2_SDA I2C2
+
+PA8 I2C3_SCL I2C3
+PC9 I2C3_SDA I2C3
+
+# SPI2 is FRAM
+PB13 SPI2_SCK SPI2
+PB14 SPI2_MISO SPI2
+PB15 SPI2_MOSI SPI2
+
+PB12 CAN2_RX CAN2
+PB6 CAN2_TX CAN2
+
+
+PC0 VBUS_nVALID INPUT PULLUP
+PC3 AUX_POWER ADC1 SCALE(1)
+PC4 AUX_ADC2 ADC1 SCALE(1)
+
+#  USART6 to IO
+PC6 USART6_TX USART6
+PC7 USART6_RX USART6
+
+
+PD0 CAN1_RX CAN1
+PD1 CAN1_TX CAN1
+
+# USART2 serial2 telem1
+PD5 USART2_TX USART2
+PD6 USART2_RX USART2
+
+# USART3 serial3 telem2
+PD8 USART3_TX USART3
+PD9 USART3_RX USART3
+
+PD10 FRAM_CS CS
+
+
+PD13 TIM4_CH2 TIM4 PWM(5) GPIO(54)
+PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55)
+
+# UART8 serial4 FrSky
+PE0 UART8_RX UART8
+PE1 UART8_TX UART8
+# allow this uart to be inverted for transmit under user control
+# the polarity is the value to use on the GPIO to change the polarity
+# to the opposite of the default
+PA10 UART8_TXINV OUTPUT HIGH GPIO(78) POL(0)
+
+PE3 VDD_3V3_SENSORS_EN OUTPUT HIGH
+
+# Now setup SPI bus4.
+PE2 SPI4_SCK  SPI4
+PE5 SPI4_MISO SPI4
+PE6 SPI4_MOSI SPI4
+
+# start peripheral power off, then enable after init
+# this prevents a problem with radios that use RTS for
+# bootloader hold
+
+PE10 VDD_5V_HIPOWER_nOC INPUT PULLUP
+PE15 VDD_5V_PERIPH_nOC INPUT PULLUP
+
+# UART7 is debug
+PE7 UART7_RX UART7 NODMA
+PE8 UART7_TX UART7 NODMA
+
+# SPI1 CS pins
+PE4 42688_EXT_CS CS
+PC14 BARO_EXT_CS CS
+PC13 40605_EXT_CS CS
+PC2 42688_CS CS
+PD7 BARO_CS CS
+PC1 MAG_CS CS
+PB1 SDCARD_CS CS
+
+PE9 TIM1_CH1 TIM1 PWM(4) GPIO(53)
+PE11 TIM1_CH2 TIM1 PWM(3) GPIO(52)
+PE13 TIM1_CH3 TIM1 PWM(2) GPIO(51)
+PE14 TIM1_CH4 TIM1 PWM(1) GPIO(50)
+
+# Power flag pins: these tell the MCU the status of the various power
+# supplies that are available. The pin names need to exactly match the
+# names used in AnalogIn.cpp. 
+PB5 VDD_BRICK_nVALID INPUT PULLUP
+PG5 VDD_BRICK2_nVALID INPUT PULLUP
+
+
+# SPI device table
+SPIDEV ms5611           SPI1 DEVID3  BARO_CS      MODE3   20*MHZ 20*MHZ
+SPIDEV ms5611_ext       SPI4 DEVID2  BARO_EXT_CS  MODE3   20*MHZ 20*MHZ
+SPIDEV ICM40605_ext     SPI4 DEVID4  40605_EXT_CS  MODE3   2*MHZ   4*MHZ
+SPIDEV ICM42688_ext     SPI4 DEVID5  42688_EXT_CS   MODE3   2*MHZ   4*MHZ
+SPIDEV ICM42688         SPI1 DEVID6  42688_CS       MODE3   2*MHZ   4*MHZ
+SPIDEV ramtron          SPI2 DEVID10 FRAM_CS      MODE3   8*MHZ   8*MHZ
+SPIDEV sdcard           SPI2 DEVID1  SDCARD_CS    MODE0  400*KHZ 25*MHZ
+
+define HAL_DEFAULT_INS_FAST_SAMPLE 7
+
+IMU Invensensev3 SPI:ICM42688         ROTATION_NONE
+IMU Invensensev3 SPI:ICM42688_ext     ROTATION_NONE
+IMU Invensensev3 SPI:ICM40605_ext     ROTATION_NONE
+
+
+BARO MS56XX SPI:ms5611
+BARO MS56XX SPI:ms5611_ext
+
+
+COMPASS IST8310 I2C:0:0x0E false ROTATION_ROLL_180_YAW_270
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define HAL_I2C_INTERNAL_MASK 1
+
+
+define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
+define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
+
+define HAL_STORAGE_SIZE 16384
+define HAL_WITH_RAMTRON 1
+
+# enable FAT filesystem support (needs a microSD defined via SDIO)
+define HAL_OS_FATFS_IO 1
+
+# battery setup
+define HAL_BATT_VOLT_PIN 2
+define HAL_BATT_CURR_PIN 3
+define HAL_BATT_VOLT_SCALE 18
+define HAL_BATT_CURR_SCALE 24
+define HAL_BATT2_VOLT_PIN 14
+define HAL_BATT2_CURR_PIN 13
+define HAL_BATT2_VOLT_SCALE 18
+define HAL_BATT2_CURR_SCALE 24
+
+define HAL_HAVE_IMU_HEATER 1
+define HAL_IMU_TEMP_DEFAULT 45
+define HAL_IMUHEAT_P_DEFAULT 50
+define HAL_IMUHEAT_I_DEFAULT 0.07
+define HAL_IMU_TEMP_MARGIN_LOW_DEFAULT 5
+
+# We can't share the IO UART (USART6).
+DMA_NOSHARE USART6_TX USART6_RX ADC1
+DMA_PRIORITY USART6*
+
+ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
