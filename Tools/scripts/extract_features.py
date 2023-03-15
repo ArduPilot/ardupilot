@@ -49,7 +49,7 @@ class ExtractFeatures(object):
             ('AP_AIS_ENABLED', 'AP_AIS::AP_AIS',),
 
             ('HAL_EFI_ENABLED', 'AP_EFI::AP_EFI',),
-            ('HAL_EFI_{type}_ENABLED', 'AP_EFI_(?P<type>.*)::update',),
+            ('AP_EFI_{type}_ENABLED', 'AP_EFI_(?P<type>.*)::update',),
 
             ('AP_TEMPERATURE_SENSOR_ENABLED', 'AP_TemperatureSensor::AP_TemperatureSensor',),
             ('AP_TEMPERATURE_SENSOR_{type}_ENABLED', 'AP_TemperatureSensor_(?P<type>.*)::update',),
@@ -119,8 +119,8 @@ class ExtractFeatures(object):
 
             ('AP_ICENGINE_ENABLED', 'AP_ICEngine::AP_ICEngine',),
             ('HAL_EFI_ENABLED', 'AP_RPM_EFI::AP_RPM_EFI',),
-            ('HAL_EFI_NWPWU_ENABLED', r'AP_EFI_NWPMU::update\b',),
-            ('HAL_EFI_CURRAWONG_ECU_ENABLED', r'AP_EFI_Currawong_ECU::update\b',),
+            ('AP_EFI_NWPWU_ENABLED', r'AP_EFI_NWPMU::update\b',),
+            ('AP_EFI_CURRAWONG_ECU_ENABLED', r'AP_EFI_Currawong_ECU::update\b',),
             ('HAL_GENERATOR_ENABLED', 'AP_Generator::AP_Generator',),
             ('AP_GENERATOR_{type}_ENABLED', r'AP_Generator_(?P<type>.*)::update',),
 
