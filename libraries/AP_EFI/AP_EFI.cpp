@@ -94,17 +94,17 @@ void AP_EFI::init(void)
         backend = new AP_EFI_Serial_Lutan(*this);
         break;
     case Type::NWPMU:
-#if HAL_EFI_NWPWU_ENABLED
+#if AP_EFI_NWPWU_ENABLED
         backend = new AP_EFI_NWPMU(*this);
 #endif
         break;
     case Type::DroneCAN:
-#if HAL_EFI_DRONECAN_ENABLED
+#if AP_EFI_DRONECAN_ENABLED
         backend = new AP_EFI_DroneCAN(*this);
 #endif
         break;
     case Type::CurrawongECU:
-#if HAL_EFI_CURRAWONG_ECU_ENABLED
+#if AP_EFI_CURRAWONG_ECU_ENABLED
         backend = new AP_EFI_Currawong_ECU(*this);
 #endif
         break;
