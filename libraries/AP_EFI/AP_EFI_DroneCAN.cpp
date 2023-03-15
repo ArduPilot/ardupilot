@@ -2,7 +2,7 @@
 
 #include "AP_EFI_DroneCAN.h"
 
-#if HAL_EFI_DRONECAN_ENABLED
+#if AP_EFI_DRONECAN_ENABLED
 
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
@@ -165,5 +165,5 @@ void AP_EFI_DroneCAN::handle_status(const uavcan::equipment::ice::reciprocating:
     copy_to_frontend();
 }
 
-#endif // HAL_EFI_DRONECAN_ENABLED
+#endif // AP_EFI_DRONECAN_ENABLED
 
