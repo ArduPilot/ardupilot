@@ -72,7 +72,7 @@ void AP_CANTester_KDECAN::loop(void)
         return;
     }
 
-    AP_HAL::CANFrame empty_frame { (0 | AP_HAL::CANFrame::FlagEFF), nullptr, 0 };
+    AP_HAL::CANFrame empty_frame((0 | AP_HAL::CANFrame::FlagEFF), nullptr, 0);
     bool read_select = true;
     bool write_select = false;
     bool select_ret = _can_iface->select(read_select, write_select, nullptr, AP_HAL::micros64() + 1000);
@@ -224,9 +224,9 @@ bool AP_CANTester_KDECAN::send_enumeration(uint8_t num)
     while (true) {
         uint64_t mcu = 0;
         mcu = htobe64(_esc_info[num].mcu_id);
-        AP_HAL::CANFrame res_frame { (_esc_info[num].node_id << 16) | START_ENUM_OBJ_ADDR | AP_HAL::CANFrame::FlagEFF,
+        AP_HAL::CANFrame res_frame((_esc_info[num].node_id << 16) | START_ENUM_OBJ_ADDR | AP_HAL::CANFrame::FlagEFF,
                                      (uint8_t*)&mcu,
-                                     8 };
+                                     8);
         int16_t res = _can_iface->send(res_frame, AP_HAL::micros64() + 1000, 0);
         if (res == 1) {
             return true;
