@@ -19,15 +19,13 @@
 
 #include "AP_RCProtocol_config.h"
 
-// this define is out here because SRXL2 uses it - probably incorrectly
-#define SRXL_MAX_CHANNELS 20U           /* Maximum number of channels from srxl datastream  */
-
 #if AP_RCPROTOCOL_SRXL_ENABLED
 
 #include "AP_RCProtocol.h"
 #include "SoftSerial.h"
 
 #define SRXL_MIN_FRAMESPACE_US 8000U    /* Minumum space between srxl frames in us (applies to all variants)  */
+#define SRXL_MAX_CHANNELS 20U           /* Maximum number of channels from srxl datastream  */
 
 /* Variant specific SRXL datastream characteristics */
 /* Framelength in byte */
