@@ -46,7 +46,7 @@ public:
 
 private:
 
-    const uint8_t MAX_CHANNELS = MIN((uint8_t)SRXL_MAX_CHANNELS, (uint8_t)MAX_RCIN_CHANNELS);
+    const uint8_t MAX_CHANNELS = MIN((uint8_t)SRXL2_MAX_CHANNELS, (uint8_t)MAX_RCIN_CHANNELS);
 
     static AP_RCProtocol_SRXL2* _singleton;
 
