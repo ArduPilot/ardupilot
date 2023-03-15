@@ -30,12 +30,8 @@
 
 #include <AP_EFI/AP_EFI_Currawong_ECU.h>
 
+#include "AP_PiccoloCAN_ESC.h"
 #include "AP_PiccoloCAN_Servo.h"
-
-
-// maximum number of ESC allowed on CAN bus simultaneously
-#define PICCOLO_CAN_MAX_NUM_ESC 16
-#define PICCOLO_CAN_MAX_GROUP_ESC (PICCOLO_CAN_MAX_NUM_ESC / 4)
 
 #ifndef HAL_PICCOLO_CAN_ENABLE
 #define HAL_PICCOLO_CAN_ENABLE (HAL_NUM_CAN_IFACES && !HAL_MINIMIZE_FEATURES)
@@ -49,7 +45,7 @@
 
 #define PICCOLO_CAN_ECU_ID_DEFAULT 0
 
-class AP_PiccoloCAN : public AP_CANDriver, public AP_ESC_Telem_Backend
+class AP_PiccoloCAN : public AP_CANDriver
 {
 public:
     AP_PiccoloCAN();
@@ -96,12 +92,6 @@ public:
     // return true if a particular ESC is 'active' on the Piccolo interface
     bool is_esc_channel_active(uint8_t chan);
 
-    // return true if a particular ESC has been detected on the CAN interface
-    bool is_esc_present(uint8_t chan, uint64_t timeout_ms = 2000);
-
-    // return true if a particular ESC is enabled
-    bool is_esc_enabled(uint8_t chan);
-
     // test if the Piccolo CAN driver is ready to be armed
     bool pre_arm_check(char* reason, uint8_t reason_len);
 
@@ -122,17 +112,11 @@ private:
     // send ESC commands over CAN
     void send_esc_messages(void);
 
-    // interpret an ESC message received over CAN
-    bool handle_esc_message(AP_HAL::CANFrame &frame);
-
     // send servo commands over CAN
     void send_servo_messages(void);
     
 #if HAL_EFI_CURRAWONG_ECU_ENABLED
     void send_ecu_messages(void);
-
-    // interpret an ECU message received over CAN
-    bool handle_ecu_message(AP_HAL::CANFrame &frame);
 #endif
 
     bool _initialized;
@@ -144,44 +128,8 @@ private:
     // Keep track of multiple connected servos
     AP_PiccoloCAN_Servo servo_devices[PICCOLO_CAN_MAX_NUM_SERVO];
 
-    // Data structure for representing the state of a Velocity ESC
-    struct VelocityESC_Info_t {
-
-        /* Telemetry data provided in the PKT_ESC_STATUS_A packet */
-        uint8_t mode;                   //! ESC operational mode
-        ESC_StatusBits_t status;        //! ESC status information
-        uint16_t setpoint;              //!< ESC operational command - value depends on 'mode' available in this packet. If the ESC is disabled, data reads 0x0000. If the ESC is in open-loop PWM mode, this value is the PWM command in units of 1us, in the range 1000us to 2000us. If the ESC is in closed-loop RPM mode, this value is the RPM command in units of 1RPM
-        uint16_t rpm;                   //!< Motor speed
-
-        /* Telemetry data provided in the PKT_ESC_STATUS_B packet */
-        uint16_t voltage;          //!< ESC Rail Voltage
-        int16_t  current;          //!< ESC Current. Current IN to the ESC is positive. Current OUT of the ESC is negative
-        uint16_t dutyCycle;        //!< ESC Motor Duty Cycle
-        int8_t   escTemperature;   //!< ESC Logic Board Temperature
-        uint8_t  motorTemperature; //!< ESC Motor Temperature
-
-        /* Telemetry data provided in the PKT_ESC_STATUS_C packet */
-        float    fetTemperature; //!< ESC Phase Board Temperature
-        uint16_t pwmFrequency;   //!< Current motor PWM frequency (10 Hz per bit)
-        uint16_t timingAdvance;  //!< Current timing advance (0.1 degree per bit)
-        
-        /* ESC status information provided in the PKT_ESC_WARNINGS_ERRORS packet */
-        ESC_WarningBits_t warnings;     //! ESC warning information
-        ESC_ErrorBits_t errors;         //! ESC error information
-
-        ESC_Firmware_t firmware;        //! Firmware / checksum information
-        ESC_Address_t address;          //! Serial number
-        ESC_EEPROMSettings_t eeprom;    //! Non-volatile settings info
-
-        // Output information
-
-        int16_t command;    //! Raw command to send to each ESC
-        bool newCommand;    //! Is the command "new"?
-        bool newTelemetry;  //! Is there new telemetry data available?
-
-        uint64_t last_rx_msg_timestamp = 0;    //! Time of most recently received message
-
-    } _esc_info[PICCOLO_CAN_MAX_NUM_ESC];
+    // Keep track of multiple connected ESCs
+    AP_PiccoloCAN_ESC esc_devices[PICCOLO_CAN_MAX_NUM_ESC];
 
     struct CurrawongECU_Info_t {
         float command;
