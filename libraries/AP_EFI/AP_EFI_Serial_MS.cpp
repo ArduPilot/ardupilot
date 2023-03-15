@@ -81,7 +81,7 @@ bool AP_EFI_Serial_MS::read_incoming_realtime_data()
     }
     
     // Iterate over the payload bytes 
-    for ( uint8_t offset=RT_FIRST_OFFSET; offset < (RT_FIRST_OFFSET + message_length - 1); offset++) {
+    for (uint16_t offset=RT_FIRST_OFFSET; offset < (RT_FIRST_OFFSET + message_length - 1); offset++) {
         uint8_t data = read_byte_CRC32();
         float temp_float;
         switch (offset) {
