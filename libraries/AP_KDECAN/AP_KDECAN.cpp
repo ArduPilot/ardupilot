@@ -120,11 +120,14 @@ void AP_KDECAN::init(uint8_t driver_index, bool enable_filters)
                       .priority = 0,
                       .unused = 0 } };
 
-    AP_HAL::CANFrame frame { (id.value | AP_HAL::CANFrame::FlagEFF), nullptr, 0 };
+    AP_HAL::CANFrame frame((id.value | AP_HAL::CANFrame::FlagEFF), nullptr, 0);
 
-    if(!_can_iface->send(frame, AP_HAL::micros() + 1000000, 0)) {
-        debug_can(AP_CANManager::LOG_DEBUG, "couldn't send discovery message");
-        return;
+    {
+        int16_t res = _can_iface->send(frame, AP_HAL::micros() + 1000000, 0);
+        if(res != 1) {
+            debug_can(AP_CANManager::LOG_DEBUG, "couldn't send discovery message %d %u %u", res, (unsigned)frame.id, (unsigned)frame.dlc);
+            return;
+        }
     }
 
     debug_can(AP_CANManager::LOG_DEBUG, "discovery message sent");
@@ -196,7 +199,7 @@ void AP_KDECAN::loop()
     uint8_t sending_esc_num = 0;
 
     uint64_t telemetry_last_request = 0;
-    AP_HAL::CANFrame empty_frame { (0 | AP_HAL::CANFrame::FlagEFF), nullptr, 0 };
+    AP_HAL::CANFrame empty_frame((0 | AP_HAL::CANFrame::FlagEFF), nullptr, 0 );
 
     while (true) {
         if (!_initialized) {
@@ -244,7 +247,7 @@ void AP_KDECAN::loop()
                                       .priority = 0,
                                       .unused = 0 } };
                     be16_t data = htobe16((uint16_t) ENUMERATION_TIMEOUT_MS);
-                    AP_HAL::CANFrame frame { (id.value | AP_HAL::CANFrame::FlagEFF), (uint8_t*) &data, sizeof(data) };
+                    AP_HAL::CANFrame frame((id.value | AP_HAL::CANFrame::FlagEFF), (uint8_t*) &data, sizeof(data));
 
 
                     // wait for write space to be available
@@ -321,7 +324,7 @@ void AP_KDECAN::loop()
                                             .source_id = AUTOPILOT_NODE_ID,
                                             .priority = 0,
                                             .unused = 0 } };
-                                AP_HAL::CANFrame send_frame { (id.value | AP_HAL::CANFrame::FlagEFF), (uint8_t*) &recv_frame.data, recv_frame.dlc };
+                                AP_HAL::CANFrame send_frame((id.value | AP_HAL::CANFrame::FlagEFF), (uint8_t*) &recv_frame.data, recv_frame.dlc);
                                 read_select = false;
                                 write_select = true;
                                 select_ret = _can_iface->select(read_select, write_select, &send_frame, timeout);
@@ -358,7 +361,7 @@ void AP_KDECAN::loop()
                                       .priority = 0,
                                       .unused = 0 } };
                     le16_t data = htole16((uint16_t) ENUMERATION_TIMEOUT_MS);
-                    AP_HAL::CANFrame frame { (id.value | AP_HAL::CANFrame::FlagEFF), (uint8_t*) &data, sizeof(data) };
+                    AP_HAL::CANFrame frame((id.value | AP_HAL::CANFrame::FlagEFF), (uint8_t*) &data, sizeof(data));
 
 
                     // wait for write space to be available
@@ -525,7 +528,7 @@ void AP_KDECAN::loop()
                                       .priority = 0,
                                       .unused = 0 } };
 
-                    AP_HAL::CANFrame frame { (id.value | AP_HAL::CANFrame::FlagEFF), (uint8_t*) &kde_pwm, sizeof(kde_pwm) };
+                    AP_HAL::CANFrame frame((id.value | AP_HAL::CANFrame::FlagEFF), (uint8_t*) &kde_pwm, sizeof(kde_pwm));
 
                     if (esc_num == 0) {
                         timeout = now + SET_PWM_TIMEOUT_US;
@@ -558,7 +561,7 @@ void AP_KDECAN::loop()
                                   .priority = 0,
                                   .unused = 0 } };
 
-                AP_HAL::CANFrame frame { (id.value | AP_HAL::CANFrame::FlagEFF), nullptr, 0 };
+                AP_HAL::CANFrame frame((id.value | AP_HAL::CANFrame::FlagEFF), nullptr, 0);
                 timeout = now + TELEMETRY_TIMEOUT_US;
                 int16_t res = _can_iface->send(frame, timeout, 0);
                 if (res == 1) {
