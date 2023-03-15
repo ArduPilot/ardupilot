@@ -46,8 +46,6 @@ public:
 
 private:
 
-    const uint8_t MAX_CHANNELS = MIN((uint8_t)SRXL2_MAX_CHANNELS, (uint8_t)MAX_RCIN_CHANNELS);
-
     static AP_RCProtocol_SRXL2* _singleton;
 
     void _process_byte(uint32_t timestamp_us, uint8_t byte);
@@ -60,7 +58,7 @@ private:
     uint8_t _buffer[SRXL2_FRAMELEN_MAX];       /* buffer for raw srxl frame data in correct order --> buffer[0]=byte0  buffer[1]=byte1  */
     uint8_t _buflen;                          /* length in number of bytes of received srxl dataframe in buffer  */
     uint32_t _last_run_ms;                    // last time the state machine was run
-    uint16_t _channels[SRXL2_MAX_CHANNELS];    /* buffer for extracted RC channel data as pulsewidth in microseconds */
+    uint16_t _channels[SRXL2_MAX_CHANNELS < MAX_RCIN_CHANNELS ? SRXL2_MAX_CHANNELS : MAX_RCIN_CHANNELS];    /* buffer for extracted RC channel data as pulsewidth in microseconds */
     bool _in_bootstrap_or_failsafe;         // controls whether we allow UART sends outside a receive time constraint
     uint8_t _device_id;
 
