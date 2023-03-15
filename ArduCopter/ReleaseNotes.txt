@@ -559,6 +559,10 @@ Changes from 4.1.5
     p) Real-Time-Clock (RTC) oldest possible date updated to Jan-2022
     q) Tricopter, Coax copter fin trim fix when using DShot/BLheli
 ------------------------------------------------------------------
+Copter 4.1.6 16-Mar-2023
+Changes from 4.1.5
+1) Loiter fix to avoid potential wobble or flip on takeoff
+------------------------------------------------------------------
 Copter 4.1.5 19-Feb-2022 / 4.1.5-rc1 10-Feb-2022
 Changes from 4.1.4
 1) Bug fixes
