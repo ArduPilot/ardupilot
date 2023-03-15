@@ -21,11 +21,8 @@
 #include "AP_EFI.h"
 #include "AP_EFI_Backend.h"
 
-// RPM Threshold for fuel consumption estimator
-#define RPM_THRESHOLD                100
-
 class AP_EFI_Serial_MS: public AP_EFI_Backend {
-    
+
 public:
     // Constructor with initialization
     AP_EFI_Serial_MS(AP_EFI &_frontend);
@@ -34,22 +31,13 @@ public:
     void update() override;
 
 private:
+
     AP_HAL::UARTDriver *port;
-    void parse_realtime_data();
     bool read_incoming_realtime_data();
     void send_request(uint8_t table, uint16_t first_offset, uint16_t last_offset);
-    uint8_t read_byte_CRC32();
-    uint32_t CRC32_compute_byte(uint32_t inCrc32, uint8_t data);
 
-    // Serial Protocol Variables
-    uint32_t checksum;
-    uint8_t step;
-    uint8_t response_flag;
-    uint16_t message_counter;
-    uint32_t last_response_ms;
-
-    // confirmed that last command was ok
-    bool last_command_confirmed;
+    uint32_t CRC32_compute_byte(uint32_t inCrc32, uint8_t data) const;
+    uint32_t calc_CRC32_buffer(uint8_t *buffer, uint8_t len) const;
 
     // Command Response Codes
     enum response_codes {
@@ -78,7 +66,7 @@ private:
         ERR_TXMODE_RANGE,
         ERR_UNKNOWN
     };
-    
+
     // Realtime Data Table Locations
     enum realtime_data {
         PW1_MSB = 2,
@@ -106,11 +94,13 @@ private:
         DWELL_LSB,
         LOAD = 66,
         FUEL_PRESSURE_MSB = 128,
-        FUEL_PRESSURE_LSB, 
+        FUEL_PRESSURE_LSB,
         // Helpers used when sending request
         RT_FIRST_OFFSET = PW1_MSB,
         RT_LAST_OFFSET = FUEL_PRESSURE_LSB
     };
+
+    uint32_t last_response_ms;
 };
 
 #endif  // AP_EFI_SERIAL_MS_ENABLED
