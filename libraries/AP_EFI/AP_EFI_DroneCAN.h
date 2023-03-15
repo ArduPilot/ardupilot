@@ -3,7 +3,7 @@
 #include "AP_EFI.h"
 #include "AP_EFI_Backend.h"
 
-#if HAL_EFI_DRONECAN_ENABLED
+#if AP_EFI_DRONECAN_ENABLED
 #include <AP_UAVCAN/AP_UAVCAN.h>
 #include <uavcan/equipment/ice/reciprocating/Status.hpp>
 
@@ -24,5 +24,5 @@ private:
     // singleton for trampoline
     static AP_EFI_DroneCAN *driver;
 };
-#endif // HAL_EFI_DRONECAN_ENABLED
+#endif // AP_EFI_DRONECAN_ENABLED
 
