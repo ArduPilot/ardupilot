@@ -98,7 +98,7 @@ AP_HAL::CANFrame::CANFrame(uint32_t can_id, const uint8_t* can_data, uint8_t dat
         id(can_id),
         canfd(canfd_frame)
 {
-    if ((can_data == nullptr) || (data_len == 0) || (data_len > MaxDataLen)) {
+    if (((can_data == nullptr) && (data_len != 0)) || (data_len > MaxDataLen)) {
         return;
     }
     memcpy(this->data, can_data, data_len);
