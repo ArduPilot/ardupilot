@@ -3997,14 +3997,26 @@ class AutoTestPlane(AutoTest):
             'EFI_TYPE': 1,
             'SERIAL5_PROTOCOL': 24,
         })
-        self.customise_SITL_commandline(["--uartF=sim:megasquirt"])
+        model = "plane-ice"
+        self.customise_SITL_commandline(
+            ["--uartF=sim:megasquirt"],
+            model=model,
+            defaults_filepath=self.model_defaults_filepath(model),
+            wipe=False,
+        )
         self.delay_sim_time(5)
         m = self.assert_receive_message('EFI_STATUS')
         mavutil.dump_message_verbose(sys.stdout, m)
-        if m.throttle_out != 0:
-            raise NotAchievedException("Expected zero throttle")
-        if m.health != 1:
-            raise NotAchievedException("Not healthy")
+        # note that there is a discrepancy between whwere where the
+        # simulator things spark-dwelltime is and where this driver
+        # does.
+        self.assert_message_field_values(m, {
+            "throttle_out": 0,
+            "health": 1,
+            # "spark_dwell_time": 2,  # magic values from SIM_EFI_MegaSquirt.cpp
+            "throttle_position": 58,
+        })
+
         if m.intake_manifold_temperature < 20:
             raise NotAchievedException("Bad intake manifold temperature")
 
@@ -4303,7 +4315,7 @@ class AutoTestPlane(AutoTest):
                   "Split-S", "RollingCircle", "HumptyBump", "HalfCubanEight",
                   "BarrelRoll", "CrossBoxTopHat", "TriangularLoop",
                   "Finishing SuperAirShow!"]
-        texts = [m.text for m in messages]
+        texts = [my_m.text for my_m in messages]
         for t in tricks:
             if t in texts:
                 self.progress("Completed trick %s" % t)
