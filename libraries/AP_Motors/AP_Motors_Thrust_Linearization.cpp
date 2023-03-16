@@ -83,8 +83,9 @@ void Thrust_Linearization::update_lift_max_from_batt_voltage()
 {
     // sanity check battery_voltage_min is not too small
     // if disabled or misconfigured exit immediately
-    float _batt_voltage_resting_estimate = AP::battery().voltage_resting_estimate(batt_idx);
-    if ((batt_voltage_max <= 0) || (batt_voltage_min >= batt_voltage_max) || (_batt_voltage_resting_estimate < 0.25 * batt_voltage_min)) {
+    float _batt_voltage = motors.has_option(AP_Motors::MotorOptions::BATT_RAW_VOLTAGE) ? AP::battery().voltage(batt_idx) : AP::battery().voltage_resting_estimate(batt_idx);
+
+    if ((batt_voltage_max <= 0) || (batt_voltage_min >= batt_voltage_max) || (_batt_voltage < 0.25 * batt_voltage_min)) {
         batt_voltage_filt.reset(1.0);
         lift_max = 1.0;
         return;
@@ -92,15 +93,20 @@ void Thrust_Linearization::update_lift_max_from_batt_voltage()
 
     batt_voltage_min.set(MAX(batt_voltage_min, batt_voltage_max * 0.6));
 
-    // contrain resting voltage estimate (resting voltage is actual voltage with sag removed based on current draw and resistance)
-    _batt_voltage_resting_estimate = constrain_float(_batt_voltage_resting_estimate, batt_voltage_min, batt_voltage_max);
+    // constrain resting voltage estimate (resting voltage is actual voltage with sag removed based on current draw and resistance)
+    _batt_voltage = constrain_float(_batt_voltage, batt_voltage_min, batt_voltage_max);
 
-    // filter at 0.5 Hz
-    float batt_voltage_flittered = batt_voltage_filt.apply(_batt_voltage_resting_estimate / batt_voltage_max, motors.get_dt());
+    if (!motors.has_option(AP_Motors::MotorOptions::BATT_RAW_VOLTAGE)) {
+        // filter at 0.5 Hz
+        batt_voltage_filt.apply(_batt_voltage / batt_voltage_max, motors.get_dt());
+    } else {
+        // reset is equivalent to no filtering
+        batt_voltage_filt.reset(_batt_voltage / batt_voltage_max);
+    }
 
     // calculate lift max
     float thrust_curve_expo = constrain_float(curve_expo, -1.0, 1.0);
-    lift_max = batt_voltage_flittered * (1 - thrust_curve_expo) + thrust_curve_expo * batt_voltage_flittered * batt_voltage_flittered;
+    lift_max = batt_voltage_filt.get() * (1 - thrust_curve_expo) + thrust_curve_expo * batt_voltage_filt.get() * batt_voltage_filt.get();
 }
 
 // return gain scheduling gain based on voltage and air density
