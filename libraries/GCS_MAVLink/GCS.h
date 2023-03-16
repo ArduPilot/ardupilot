@@ -525,12 +525,15 @@ protected:
     void handle_mission_request_int(const mavlink_message_t &msg);
     void handle_mission_clear_all(const mavlink_message_t &msg);
 
+#if AP_MAVLINK_MISSION_SET_CURRENT_ENABLED
     // Note that there exists a relatively new mavlink DO command,
     // MAV_CMD_DO_SET_MISSION_CURRENT which provides an acknowledgement
     // that the command has been received, rather than the GCS having to
     // rely on getting back an identical sequence number as some currently
     // do.
     virtual void handle_mission_set_current(AP_Mission &mission, const mavlink_message_t &msg);
+#endif
+
     void handle_mission_count(const mavlink_message_t &msg);
     void handle_mission_write_partial_list(const mavlink_message_t &msg);
     void handle_mission_item(const mavlink_message_t &msg);
