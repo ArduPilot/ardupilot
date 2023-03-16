@@ -1,6 +1,6 @@
 #pragma once
 
-#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef AP_GRIPPER_ENABLED
 #define AP_GRIPPER_ENABLED 1
