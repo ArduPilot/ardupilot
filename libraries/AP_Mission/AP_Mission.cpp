@@ -8,6 +8,7 @@
 #include <AP_Camera/AP_Camera.h>
 #include <AP_Gripper/AP_Gripper_config.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 const AP_Param::GroupInfo AP_Mission::var_info[] = {
 
