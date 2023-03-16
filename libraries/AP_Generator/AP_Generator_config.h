@@ -1,6 +1,6 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef HAL_GENERATOR_ENABLED
 #define HAL_GENERATOR_ENABLED !HAL_MINIMIZE_FEATURES
