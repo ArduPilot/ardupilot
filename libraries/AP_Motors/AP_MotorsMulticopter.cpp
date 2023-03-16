@@ -215,6 +215,13 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SAFE_TIME", 42, AP_MotorsMulticopter, _safe_time, AP_MOTORS_SAFE_TIME_DEFAULT),
 
+    // @Param: OPTIONS
+    // @DisplayName: Motor options
+    // @Description: Motor options
+    // @Bitmask: 0:Voltage compensation uses raw voltage
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS", 43, AP_MotorsMulticopter, _options, 0),
+
     AP_GROUPEND
 };
 
@@ -361,7 +368,6 @@ float AP_MotorsMulticopter::get_current_limit_max_throttle()
     // limit max throttle
     return get_throttle_hover() + ((1.0 - get_throttle_hover()) * _throttle_limit);
 }
-
 
 // 10hz logging of voltage scaling and max trust
 void AP_MotorsMulticopter::Log_Write()
