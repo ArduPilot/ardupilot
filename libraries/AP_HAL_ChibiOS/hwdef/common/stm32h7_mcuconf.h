@@ -57,7 +57,7 @@
 /*
  * General settings.
  */
-#define STM32_NO_INIT                       FALSE
+#define STM32_NO_INIT                       TRUE
 #define STM32_TARGET_CORE                   1
 
 /*
