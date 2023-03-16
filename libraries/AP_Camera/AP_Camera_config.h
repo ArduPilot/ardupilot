@@ -1,6 +1,6 @@
 #pragma once
 
-#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Mount/AP_Mount_config.h>
 
 #ifndef AP_CAMERA_ENABLED
