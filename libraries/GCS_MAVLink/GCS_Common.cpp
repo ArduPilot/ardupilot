@@ -614,6 +614,7 @@ void GCS_MAVLINK::handle_mission_request(const mavlink_message_t &msg)
         prot->handle_mission_request(*this, packet, msg);
 }
 
+#if AP_MAVLINK_MISSION_SET_CURRENT_ENABLED
 /*
   handle a MISSION_SET_CURRENT mavlink packet
 
@@ -625,6 +626,8 @@ void GCS_MAVLINK::handle_mission_request(const mavlink_message_t &msg)
  */
 void GCS_MAVLINK::handle_mission_set_current(AP_Mission &mission, const mavlink_message_t &msg)
 {
+    // send_received_message_deprecation_warning("MISSION_SET_CURRENT");
+
     // decode
     mavlink_mission_set_current_t packet;
     mavlink_msg_mission_set_current_decode(&msg, &packet);
@@ -647,6 +650,7 @@ void GCS_MAVLINK::handle_mission_set_current(AP_Mission &mission, const mavlink_
         }
     }
 }
+#endif  // AP_MAVLINK_MISSION_SET_CURRENT_ENABLED
 
 /*
   handle a MISSION_COUNT mavlink packet
@@ -4060,6 +4064,7 @@ void GCS_MAVLINK::handle_common_mission_message(const mavlink_message_t &msg)
         handle_mission_request(msg);
         break;
 
+#if AP_MAVLINK_MISSION_SET_CURRENT_ENABLED
     case MAVLINK_MSG_ID_MISSION_SET_CURRENT:    // MAV ID: 41
     {
         AP_Mission *_mission = AP::mission();
@@ -4068,6 +4073,7 @@ void GCS_MAVLINK::handle_common_mission_message(const mavlink_message_t &msg)
         }
         break;
     }
+#endif
 
     // GCS request the full list of commands, we return just the number and leave the GCS to then request each command individually
     case MAVLINK_MSG_ID_MISSION_REQUEST_LIST:       // MAV ID: 43
