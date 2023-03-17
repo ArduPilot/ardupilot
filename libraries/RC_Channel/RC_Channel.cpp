@@ -102,10 +102,145 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Param: OPTION
     // @DisplayName: RC input option
     // @Description: Function assigned to this RC channel
-    // @Values{Copter}: 0:Do Nothing, 2:Flip, 3:Simple Mode, 4:RTL, 5:Save Trim, 7:Save WP, 9:Camera Trigger, 10:RangeFinder, 11:Fence, 13:Super Simple Mode, 14:Acro Trainer, 15:Sprayer, 16:Auto, 17:AutoTune, 18:Land, 19:Gripper, 21:Parachute Enable, 22:Parachute Release, 23:Parachute 3pos, 24:Auto Mission Reset, 25:AttCon Feed Forward, 26:AttCon Accel Limits, 27:Retract Mount1, 28:Relay On/Off, 29:Landing Gear, 30:Lost Copter Sound, 31:Motor Emergency Stop, 32:Motor Interlock, 33:Brake, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 37:Throw, 38:ADSB Avoidance En, 39:PrecLoiter, 40:Proximity Avoidance, 41:ArmDisarm (4.1 and lower), 42:SmartRTL, 43:InvertedFlight, 44:Winch Enable, 46:RC Override Enable, 47:User Function 1, 48:User Function 2, 49:User Function 3, 52:Acro, 55:Guided, 56:Loiter, 57:Follow, 58:Clear Waypoints, 60:ZigZag, 61:ZigZag SaveWP, 62:Compass Learn, 65:GPS Disable, 66:Relay5 On/Off, 67:Relay6 On/Off, 68:Stabilize, 69:PosHold, 70:AltHold, 71:FlowHold, 72:Circle, 73:Drift, 75:SurfaceTrackingUpDown, 76:Standby Mode, 78:RunCam Control, 79:RunCam OSD Control, 80:VisOdom Align, 81:Disarm, 83:ZigZag Auto, 84:Air Mode, 85:Generator, 90:EKF Pos Source, 94:VTX Power, 99:AUTO RTL, 100:KillIMU1, 101:KillIMU2, 102:Camera Mode Toggle, 105:GPS Disable Yaw, 110:KillIMU3, 151:Turtle, 152:simple heading reset, 153:ArmDisarm (4.2 and higher), 154:ArmDisarm with AirMode  (4.2 and higher), 158:Optflow Calibration, 159:Force Flying, 161:Turbine Start(heli), 162:FFT Tune, 163:Mount Lock, 164:Pause Stream Logging, 165:Arm/Emergency Motor Stop, 166:Camera Record Video, 167:Camera Zoom, 168:Camera Manual Focus, 169:Camera Auto Focus, 171:Calibrate Compasses, 172:Battery MPPT Enable, 212:Mount1 Roll, 213:Mount1 Pitch, 214:Mount1 Yaw, 215:Mount2 Roll, 216:Mount2 Pitch, 217:Mount2 Yaw, 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8
-    // @Values{Rover}: 0:Do Nothing, 4:RTL, 5:Save Trim (4.1 and lower), 7:Save WP, 9:Camera Trigger, 11:Fence, 16:Auto, 19:Gripper, 24:Auto Mission Reset, 27:Retract Mount1, 28:Relay On/Off, 30:Lost Rover Sound, 31:Motor Emergency Stop, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 40:Proximity Avoidance, 41:ArmDisarm (4.1 and lower), 42:SmartRTL, 46:RC Override Enable, 50:LearnCruise, 51:Manual, 52:Acro, 53:Steering, 54:Hold, 55:Guided, 56:Loiter, 57:Follow, 58:Clear Waypoints, 59:Simple Mode, 62:Compass Learn, 63:Sailboat Tack, 65:GPS Disable, 66:Relay5 On/Off, 67:Relay6 On/Off, 74:Sailboat motoring 3pos, 78:RunCam Control, 79:RunCam OSD Control, 80:Viso Align, 81:Disarm, 90:EKF Pos Source, 94:VTX Power, 97:Windvane home heading direction offset, 100:KillIMU1, 101:KillIMU2, 102:Camera Mode Toggle, 105:GPS Disable Yaw, 106:Disable Airspeed Use, 110:KillIMU3, 153:ArmDisarm (4.2 and higher), 155: set steering trim to current servo and RC, 156:Torqeedo Clear Err, 162:FFT Tune, 163:Mount Lock, 164:Pause Stream Logging, 165:Arm/Emergency Motor Stop, 166:Camera Record Video, 167:Camera Zoom, 168:Camera Manual Focus, 169:Camera Auto Focus, 171:Calibrate Compasses, 172:Battery MPPT Enable, 201:Roll, 202:Pitch, 207:MainSail, 208:Flap, 211:Walking Height, 212:Mount1 Roll, 213:Mount1 Pitch, 214:Mount1 Yaw, 215:Mount2 Roll, 216:Mount2 Pitch, 217:Mount2 Yaw, 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8
-    // @Values{Plane}: 0:Do Nothing, 4:ModeRTL, 9:Camera Trigger, 11:Fence, 16:ModeAuto, 22:Parachute Release, 24:Auto Mission Reset, 27:Retract Mount1, 28:Relay On/Off, 29:Landing Gear, 30:Lost Plane Sound, 31:Motor Emergency Stop, 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off, 38:ADSB Avoidance En, 41:ArmDisarm (4.1 and lower), 43:InvertedFlight, 46:RC Override Enable, 51:ModeManual, 52: ModeACRO, 55:ModeGuided, 56:ModeLoiter, 58:Clear Waypoints, 62:Compass Learn, 64:Reverse Throttle, 65:GPS Disable, 66:Relay5 On/Off, 67:Relay6 On/Off, 72:ModeCircle, 77:ModeTakeoff, 78:RunCam Control, 79:RunCam OSD Control, 81:Disarm, 82:QAssist 3pos, 84:Air Mode, 85:Generator, 86: Non Auto Terrain Follow Disable, 87:Crow Select, 88:Soaring Enable, 89:Landing Flare, 90:EKF Pos Source, 91:Airspeed Ratio Calibration, 92:FBWA, 94:VTX Power, 95:FBWA taildragger takeoff mode, 96:trigger re-reading of mode switch, 98: ModeTraining, 100:KillIMU1, 101:KillIMU2, 102:Camera Mode Toggle, 105:GPS Disable Yaw, 106:Disable Airspeed Use, 107: EnableFixedWingAutotune, 108: ModeQRTL, 110:KillIMU3, 150: CRUISE, 153:ArmDisarm (4.2 and higher), 154:ArmDisarm with Quadplane AirMode (4.2 and higher), 155: set roll pitch and yaw trim to current servo and RC, 157: Force FS Action to FBWA, 158:Optflow Calibration, 160:Weathervane Enable, 162:FFT Tune, 163:Mount Lock, 164:Pause Stream Logging, 165:Arm/Emergency Motor Stop, 166:Camera Record Video, 167:Camera Zoom, 168:Camera Manual Focus, 169:Camera Auto Focus, 170:Mode QStabilize, 171:Calibrate Compasses, 172:Battery MPPT Enable, 173:Plane landing abort for VTOL Payload Place or glide-slope go-around, 208:Flap, 209: Forward Throttle, 210: Airbrakes, 212:Mount1 Roll, 213:Mount1 Pitch, 214:Mount1 Yaw, 215:Mount2 Roll, 216:Mount2 Pitch, 217:Mount2 Yaw, 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8
-    // @Values{Blimp}: 0:Do Nothing, 18:Land, 46:RC Override Enable, 65:GPS Disable, 81:Disarm, 90:EKF Pos Source, 100:KillIMU1, 101:KillIMU2, 110:KillIMU3, 153:ArmDisarm, 164:Pause Stream Logging, 166:Camera Record Video, 167:Camera Zoom, 168:Camera Manual Focus, 169:Camera Auto Focus, 171:Calibrate Compasses, 172:Battery MPPT Enable
+    // @Values{Copter, Rover, Plane, Blimp}: 0:Do Nothing
+    // @Values{Copter}: 2:Flip
+    // @Values{Copter}: 3:Simple Mode
+    // @Values{Copter, Rover}: 4:RTL
+    // @Values{Plane}: 4:ModeRTL
+    // @Values{Copter}: 5:Save Trim
+    // @Values{Rover}: 5:Save Trim (4.1 and lower)
+    // @Values{Copter, Rover}: 7:Save WP
+    // @Values{Copter, Rover, Plane}: 9:Camera Trigger
+    // @Values{Copter}: 10:RangeFinder
+    // @Values{Copter, Rover, Plane}: 11:Fence
+    // @Values{Copter}: 13:Super Simple Mode
+    // @Values{Copter}: 14:Acro Trainer
+    // @Values{Copter}: 15:Sprayer
+    // @Values{Copter, Rover}: 16:Auto
+    // @Values{Plane}: 16:ModeAuto
+    // @Values{Copter}: 17:AutoTune
+    // @Values{Copter, Blimp}: 18:Land
+    // @Values{Copter, Rover}: 19:Gripper
+    // @Values{Copter}: 21:Parachute Enable
+    // @Values{Copter, Plane}: 22:Parachute Release
+    // @Values{Copter}: 23:Parachute 3pos
+    // @Values{Copter, Rover, Plane}: 24:Auto Mission Reset
+    // @Values{Copter}: 25:AttCon Feed Forward
+    // @Values{Copter}: 26:AttCon Accel Limits
+    // @Values{Copter, Rover, Plane}: 27:Retract Mount1
+    // @Values{Copter, Rover, Plane}: 28:Relay On/Off
+    // @Values{Copter, Plane}: 29:Landing Gear
+    // @Values{Copter}: 30:Lost Copter Sound
+    // @Values{Rover}: 30:Lost Rover Sound
+    // @Values{Plane}: 30:Lost Plane Sound
+    // @Values{Copter, Rover, Plane}: 31:Motor Emergency Stop
+    // @Values{Copter}: 32:Motor Interlock
+    // @Values{Copter}: 33:Brake
+    // @Values{Copter, Rover, Plane}: 34:Relay2 On/Off, 35:Relay3 On/Off, 36:Relay4 On/Off
+    // @Values{Copter}: 37:Throw
+    // @Values{Copter, Plane}: 38:ADSB Avoidance En
+    // @Values{Copter}: 39:PrecLoiter
+    // @Values{Copter, Rover}: 40:Proximity Avoidance
+    // @Values{Copter, Rover, Plane}: 41:ArmDisarm (4.1 and lower)
+    // @Values{Copter, Rover}: 42:SmartRTL
+    // @Values{Copter, Plane}: 43:InvertedFlight
+    // @Values{Copter}: 44:Winch Enable
+    // @Values{Copter, Rover, Plane, Blimp}: 46:RC Override Enable
+    // @Values{Copter}: 47:User Function 1, 48:User Function 2, 49:User Function 3
+    // @Values{Rover}: 50:LearnCruise
+    // @Values{Rover}: 51:Manual
+    // @Values{Plane}: 51:ModeManual
+    // @Values{Copter, Rover}: 52:Acro
+    // @Values{Plane}: 52:ModeACRO
+    // @Values{Rover}: 53:Steering
+    // @Values{Rover}: 54:Hold
+    // @Values{Copter, Rover}: 55:Guided
+    // @Values{Plane}: 55:ModeGuided
+    // @Values{Copter, Rover}: 56:Loiter
+    // @Values{Plane}: 56:ModeLoiter
+    // @Values{Copter, Rover}: 57:Follow
+    // @Values{Copter, Rover, Plane}: 58:Clear Waypoints
+    // @Values{Rover}: 59:Simple Mode
+    // @Values{Copter}: 60:ZigZag
+    // @Values{Copter}: 61:ZigZag SaveWP
+    // @Values{Copter, Rover, Plane}: 62:Compass Learn
+    // @Values{Rover}: 63:Sailboat Tack
+    // @Values{Plane}: 64:Reverse Throttle
+    // @Values{Copter, Rover, Plane, Blimp}: 65:GPS Disable
+    // @Values{Copter, Rover, Plane}: 66:Relay5 On/Off, 67:Relay6 On/Off
+    // @Values{Copter}: 68:Stabilize
+    // @Values{Copter}: 69:PosHold
+    // @Values{Copter}: 70:AltHold
+    // @Values{Copter}: 71:FlowHold
+    // @Values{Copter}: 72:Circle
+    // @Values{Plane}: 72:ModeCircle
+    // @Values{Copter}: 73:Drift
+    // @Values{Rover}: 74:Sailboat motoring 3pos
+    // @Values{Copter}: 75:SurfaceTrackingUpDown
+    // @Values{Copter}: 76:Standby Mode
+    // @Values{Plane}: 77:ModeTakeoff
+    // @Values{Copter, Rover, Plane}: 78:RunCam Control
+    // @Values{Copter, Rover, Plane}: 79:RunCam OSD Control
+    // @Values{Copter}: 80:VisOdom Align
+    // @Values{Rover}: 80:Viso Align
+    // @Values{Copter, Rover, Plane, Blimp}: 81:Disarm
+    // @Values{Plane}: 82:QAssist 3pos
+    // @Values{Copter}: 83:ZigZag Auto
+    // @Values{Copter, Plane}: 84:Air Mode
+    // @Values{Copter, Plane}: 85:Generator
+    // @Values{Plane}: 86: Non Auto Terrain Follow Disable
+    // @Values{Plane}: 87:Crow Select
+    // @Values{Plane}: 88:Soaring Enable
+    // @Values{Plane}: 89:Landing Flare
+    // @Values{Copter, Rover, Plane, Blimp}: 90:EKF Pos Source
+    // @Values{Plane}: 91:Airspeed Ratio Calibration
+    // @Values{Plane}: 92:FBWA
+    // @Values{Copter, Rover, Plane}: 94:VTX Power
+    // @Values{Plane}: 95:FBWA taildragger takeoff mode
+    // @Values{Plane}: 96:trigger re-reading of mode switch
+    // @Values{Rover}: 97:Windvane home heading direction offset
+    // @Values{Plane}: 98: ModeTraining
+    // @Values{Copter}: 99:AUTO RTL
+    // @Values{Copter, Rover, Plane, Blimp}: 100:KillIMU1, 101:KillIMU2
+    // @Values{Copter, Rover, Plane}: 102:Camera Mode Toggle
+    // @Values{Copter, Rover, Plane}: 105:GPS Disable Yaw
+    // @Values{Rover, Plane}: 106:Disable Airspeed Use
+    // @Values{Plane}: 107: EnableFixedWingAutotune
+    // @Values{Plane}: 108: ModeQRTL
+    // @Values{Copter, Rover, Plane, Blimp}:  110:KillIMU3
+    // @Values{Plane}: 150: CRUISE
+    // @Values{Copter}: 151:Turtle
+    // @Values{Copter}: 152:simple heading reset
+    // @Values{Copter, Rover, Plane}: 153:ArmDisarm (4.2 and higher)
+    // @Values{Blimp}: 153:ArmDisarm
+    // @Values{Copter}: 154:ArmDisarm with AirMode  (4.2 and higher)
+    // @Values{Plane}: 154:ArmDisarm with Quadplane AirMode (4.2 and higher)
+    // @Values{Rover}: 155: set steering trim to current servo and RC
+    // @Values{Plane}: 155: set roll pitch and yaw trim to current servo and RC
+    // @Values{Rover}: 156:Torqeedo Clear Err
+    // @Values{Plane}: 157: Force FS Action to FBWA
+    // @Values{Copter, Plane}: 158:Optflow Calibration
+    // @Values{Copter}: 159:Force Flying
+    // @Values{Plane}: 160:Weathervane Enable
+    // @Values{Copter}: 161:Turbine Start(heli)
+    // @Values{Copter, Rover, Plane}: 162:FFT Tune
+    // @Values{Copter, Rover, Plane}: 163:Mount Lock
+    // @Values{Copter, Rover, Plane, Blimp}: 164:Pause Stream Logging
+    // @Values{Copter, Rover, Plane}: 165:Arm/Emergency Motor Stop
+    // @Values{Copter, Rover, Plane, Blimp}: 166:Camera Record Video, 167:Camera Zoom, 168:Camera Manual Focus, 169:Camera Auto Focus
+    // @Values{Plane}: 170:Mode QStabilize
+    // @Values{Copter, Rover, Plane, Blimp}: 171:Calibrate Compasses
+    // @Values{Copter, Rover, Plane, Blimp}: 172:Battery MPPT Enable
+    // @Values{Plane}: 173:Plane landing abort for VTOL Payload Place or glide-slope go-around
+    // @Values{Rover}: 201:Roll
+    // @Values{Rover}: 202:Pitch
+    // @Values{Rover}: 207:MainSail
+    // @Values{Rover, Plane}:  208:Flap
+    // @Values{Plane}: 209: Forward Throttle
+    // @Values{Plane}: 210: Airbrakes
+    // @Values{Rover}: 211:Walking Height
+    // @Values{Copter, Rover, Plane}: 212:Mount1 Roll, 213:Mount1 Pitch, 214:Mount1 Yaw, 215:Mount2 Roll, 216:Mount2 Pitch, 217:Mount2 Yaw
+    // @Values{Copter, Rover, Plane}: 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8
     // @User: Standard
     AP_GROUPINFO_FRAME("OPTION",  6, RC_Channel, option, 0, AP_PARAM_FRAME_COPTER|AP_PARAM_FRAME_ROVER|AP_PARAM_FRAME_PLANE|AP_PARAM_FRAME_BLIMP),
 
