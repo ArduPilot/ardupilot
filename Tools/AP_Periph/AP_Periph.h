@@ -13,6 +13,7 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_EFI/AP_EFI.h>
+#include <AP_KDECAN/AP_KDECAN.h>
 #include <AP_MSP/AP_MSP.h>
 #include <AP_MSP/msp.h>
 #include <AP_TemperatureSensor/AP_TemperatureSensor.h>
@@ -227,7 +228,11 @@ public:
     AP_EFI efi;
     uint32_t efi_update_ms;
 #endif
-    
+
+#if AP_KDECAN_ENABLED
+    AP_KDECAN kdecan;
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
 #if HAL_WITH_ESC_TELEM
     AP_ESC_Telem esc_telem;
