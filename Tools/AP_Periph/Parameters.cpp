@@ -513,7 +513,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
     // Proximity driver
     // @Group: PRX
-    // @Path: ../libraries/AP_RangeFinder/AP_Proximity.cpp
+    // @Path: ../libraries/AP_Proximity/AP_Proximity.cpp
     GOBJECT(proximity, "PRX", AP_Proximity),
 #endif
 
