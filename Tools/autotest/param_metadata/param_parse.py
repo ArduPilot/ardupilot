@@ -300,6 +300,7 @@ def process_library(vehicle, library, pathprefix=None):
             # a parameter is considered to be vehicle-specific if
             # there does not exist a Values: or Values{VehicleName}
             # for that vehicle but @Values{OtherVehicle} exists.
+            seen_values_or_bitmask_for_this_vehicle = False
             seen_values_or_bitmask_for_other_vehicle = False
             for field in fields:
                 only_for_vehicles = field[1].split(",")
@@ -313,11 +314,26 @@ def process_library(vehicle, library, pathprefix=None):
                     error("tagged param: unknown parameter metadata field '%s'" % field[0])
                     continue
                 if vehicle.name not in only_for_vehicles:
-                    if len(only_for_vehicles) and field[0] in ['Values', 'Bitmask']:
+                    if len(only_for_vehicles) and field[0] in documentation_tags_which_are_comma_separated_nv_pairs:
                         seen_values_or_bitmask_for_other_vehicle = True
                     continue
+
+                append_value = False
+                if field[0] in documentation_tags_which_are_comma_separated_nv_pairs:
+                    if vehicle.name in only_for_vehicles:
+                        if seen_values_or_bitmask_for_this_vehicle:
+                            append_value = hasattr(p, field[0])
+                        seen_values_or_bitmask_for_this_vehicle = True
+                    else:
+                        if seen_values_or_bitmask_for_this_vehicle:
+                            continue
+                        append_value = hasattr(p, field[0])
+
                 value = re.sub('@PREFIX@', library.name, field[2])
-                setattr(p, field[0], value)
+                if append_value:
+                    setattr(p, field[0], getattr(p, field[0]) + ',' + value)
+                else:
+                    setattr(p, field[0], value)
 
             if (getattr(p, 'Values', None) is not None and
                     getattr(p, 'Bitmask', None) is not None):
@@ -516,7 +532,7 @@ def validate(param, is_library=False):
             i = i.replace(" ", "")
             values.append(i.partition(":")[0])
         if (len(values) != len(set(values))):
-            error("Duplicate values found")
+            error("Duplicate values found" + str({x for x in values if values.count(x) > 1}))
     # Validate units
     if (hasattr(param, "Units")):
         if (param.__dict__["Units"] != "") and (param.__dict__["Units"] not in known_units):
