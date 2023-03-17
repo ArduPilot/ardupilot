@@ -375,6 +375,11 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
     case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
     case MAV_CMD_JUMP_TAG:
+    case MAV_CMD_IMAGE_START_CAPTURE:
+    case MAV_CMD_SET_CAMERA_ZOOM:
+    case MAV_CMD_SET_CAMERA_FOCUS:
+    case MAV_CMD_VIDEO_START_CAPTURE:
+    case MAV_CMD_VIDEO_STOP_CAPTURE:
         return true;
     default:
         return _cmd_verify_fn(cmd);
@@ -407,6 +412,11 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+    case MAV_CMD_IMAGE_START_CAPTURE:
+    case MAV_CMD_SET_CAMERA_ZOOM:
+    case MAV_CMD_SET_CAMERA_FOCUS:
+    case MAV_CMD_VIDEO_START_CAPTURE:
+    case MAV_CMD_VIDEO_STOP_CAPTURE:
         return start_command_camera(cmd);
 #endif
     case MAV_CMD_DO_PARACHUTE:
@@ -1292,6 +1302,30 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.gimbal_manager_pitchyaw.gimbal_id = packet.z;
         break;
 
+    case MAV_CMD_IMAGE_START_CAPTURE:
+        cmd.content.image_start_capture.interval_s = packet.param2;
+        cmd.content.image_start_capture.total_num_images = packet.param3;
+        cmd.content.image_start_capture.start_seq_number = packet.param4;
+        break;
+
+    case MAV_CMD_SET_CAMERA_ZOOM:
+        cmd.content.set_camera_zoom.zoom_type = packet.param1;
+        cmd.content.set_camera_zoom.zoom_value = packet.param2;
+        break;
+
+    case MAV_CMD_SET_CAMERA_FOCUS:
+        cmd.content.set_camera_focus.focus_type = packet.param1;
+        cmd.content.set_camera_focus.focus_value = packet.param2;
+        break;
+
+    case MAV_CMD_VIDEO_START_CAPTURE:
+        cmd.content.video_start_capture.video_stream_id = packet.param1;
+        break;
+
+    case MAV_CMD_VIDEO_STOP_CAPTURE:
+        cmd.content.video_stop_capture.video_stream_id = packet.param1;
+        break;
+
     default:
         // unrecognised command
         return MAV_MISSION_UNSUPPORTED;
@@ -1779,6 +1813,30 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param4 = cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs;
         packet.x = cmd.content.gimbal_manager_pitchyaw.flags;
         packet.z = cmd.content.gimbal_manager_pitchyaw.gimbal_id;
+        break;
+
+    case MAV_CMD_IMAGE_START_CAPTURE:
+        packet.param2 = cmd.content.image_start_capture.interval_s;
+        packet.param3 = cmd.content.image_start_capture.total_num_images;
+        packet.param4 = cmd.content.image_start_capture.start_seq_number;
+        break;
+
+    case MAV_CMD_SET_CAMERA_ZOOM:
+        packet.param1 = cmd.content.set_camera_zoom.zoom_type;
+        packet.param2 = cmd.content.set_camera_zoom.zoom_value;
+        break;
+
+    case MAV_CMD_SET_CAMERA_FOCUS:
+        packet.param1 = cmd.content.set_camera_focus.focus_type;
+        packet.param2 = cmd.content.set_camera_focus.focus_value;
+        break;
+
+    case MAV_CMD_VIDEO_START_CAPTURE:
+        packet.param1 = cmd.content.video_start_capture.video_stream_id;
+        break;
+
+    case MAV_CMD_VIDEO_STOP_CAPTURE:
+        packet.param1 = cmd.content.video_stop_capture.video_stream_id;
         break;
 
     default:
@@ -2584,6 +2642,16 @@ const char *AP_Mission::Mission_Command::type() const
         return "PauseContinue";
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
         return "GimbalPitchYaw";
+    case MAV_CMD_IMAGE_START_CAPTURE:
+        return "ImageStartCapture";
+    case MAV_CMD_SET_CAMERA_ZOOM:
+        return "SetCameraZoom";
+    case MAV_CMD_SET_CAMERA_FOCUS:
+        return "SetCameraFocus";
+    case MAV_CMD_VIDEO_START_CAPTURE:
+        return "VideoStartCapture";
+    case MAV_CMD_VIDEO_STOP_CAPTURE:
+        return "VideoStopCapture";
     default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         AP_HAL::panic("Mission command with ID %u has no string", id);

@@ -6348,12 +6348,12 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.PrivateChannel,
             self.GCSFailsafe,
             self.InitialMode,
+            self.DriveMaxRCIN,
         ])
         return ret
 
     def disabled_tests(self):
         return {
-            "DriveMaxRCIN": "currently triggers Arithmetic Exception",
             "SlewRate": "got timing report failure on CI",
         }
 

@@ -45,7 +45,9 @@ void AP_RCProtocol::init()
 #endif
     backend[AP_RCProtocol::DSM] = new AP_RCProtocol_DSM(*this);
     backend[AP_RCProtocol::SUMD] = new AP_RCProtocol_SUMD(*this);
+#if AP_RCPROTOCOL_SRXL_ENABLED
     backend[AP_RCProtocol::SRXL] = new AP_RCProtocol_SRXL(*this);
+#endif
 #ifndef IOMCU_FW
     backend[AP_RCProtocol::SBUS_NI] = new AP_RCProtocol_SBUS(*this, false, 100000);
     backend[AP_RCProtocol::SRXL2] = new AP_RCProtocol_SRXL2(*this);
@@ -420,8 +422,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
         return "DSM";
     case SUMD:
         return "SUMD";
+#if AP_RCPROTOCOL_SRXL_ENABLED
     case SRXL:
         return "SRXL";
+#endif
     case SRXL2:
         return "SRXL2";
     case CRSF:

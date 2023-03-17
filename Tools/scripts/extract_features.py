@@ -143,6 +143,9 @@ class ExtractFeatures(object):
             ('AP_LANDINGGEAR_ENABLED', r'AP_LandingGear::init\b',),
             ('WINCH_ENABLED', 'AP_Winch::AP_Winch',),
 
+            ('AP_RCPROTOCOL_{type}_ENABLED', r'AP_RCProtocol_(?P<type>.*)::_process_byte\b',),
+            ('AP_RCPROTOCOL_{type}_ENABLED', r'AP_RCProtocol_(?P<type>.*)::_process_pulse\b',),
+
             ('AP_VOLZ_ENABLED', r'AP_Volz_Protocol::init\b',),
             ('AP_DRONECAN_VOLZ_FEEDBACK_ENABLED', r'AP_UAVCAN::handle_actuator_status_Volz\b',),
             ('AP_ROBOTISSERVO_ENABLED', r'AP_RobotisServo::init\b',),
@@ -162,6 +165,7 @@ class ExtractFeatures(object):
 
             ('HAL_PICCOLO_CAN_ENABLE', r'AP_PiccoloCAN::update',),
             ('EK3_FEATURE_EXTERNAL_NAV', r'NavEKF3::writeExtNavVelData'),
+            ('EK3_FEATURE_DRAG_FUSION', r'NavEKF3_core::FuseDragForces'),
 
             ('AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED', r'RC_Channel::lookuptable',),
 

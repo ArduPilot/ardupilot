@@ -67,6 +67,24 @@ AP_BattMonitor_Analog::AP_BattMonitor_Analog(AP_BattMonitor &mon,
     AP_BattMonitor_Backend(mon, mon_state, params)
 {
     AP_Param::setup_object_defaults(this, var_info);
+
+    // no other good way of setting these defaults
+#if AP_BATT_MONITOR_MAX_INSTANCES > 1
+    if (mon_state.instance == 1) {
+#ifdef HAL_BATT2_VOLT_PIN
+        _volt_pin.set_default(HAL_BATT2_VOLT_PIN);
+#endif
+#ifdef HAL_BATT2_CURR_PIN
+        _curr_pin.set_default(HAL_BATT2_CURR_PIN);
+#endif
+#ifdef HAL_BATT2_VOLT_SCALE
+        _volt_multiplier.set_default(HAL_BATT2_VOLT_SCALE);
+#endif
+#ifdef HAL_BATT2_CURR_SCALE
+        _curr_amp_per_volt.set_default(HAL_BATT2_VOLT_SCALE);
+#endif
+    }
+#endif
     _state.var_info = var_info;
     
     _volt_pin_analog_source = hal.analogin->channel(_volt_pin);

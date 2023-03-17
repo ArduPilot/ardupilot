@@ -85,7 +85,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @RebootRequired: True
     GARRAY(can_baudrate,     0, "CAN_BAUDRATE", 1000000),
 
-#ifdef HAL_PERIPH_ENABLE_SLCAN
+#if AP_CAN_SLCAN_ENABLED
     // @Param: CAN_SLCAN_CPORT
     // @DisplayName: SLCAN Route
     // @Description: CAN Interface ID to be routed to SLCAN, 0 means no routing
