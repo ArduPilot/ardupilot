@@ -214,8 +214,8 @@ AP_HW_mRoControlOne                  1101
 
 AP_HW_rFCU                           1102
 AP_HW_rGNSS                          1103
-
 AP_HW_AEROFOX_AIRSPEED_DLVR          1104
+AP_HW_KakuteH7-Wing                  1105
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
