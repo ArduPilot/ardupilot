@@ -90,8 +90,12 @@ public:
     virtual bool is_rx_active() const {
         return true;
     }
-    
+
+    // called by static methods to confiig video transmitters:
+    static void configure_vtx(uint8_t band, uint8_t channel, uint8_t power, uint8_t pitmode);
+
 protected:
+
     struct Channels11Bit_8Chan {
 #if __BYTE_ORDER != __LITTLE_ENDIAN
 #error "Only supported on little-endian architectures"
