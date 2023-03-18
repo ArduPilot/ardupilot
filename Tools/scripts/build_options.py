@@ -106,6 +106,13 @@ BUILD_OPTIONS = [
 
     Feature('AP_Periph', 'LONG_TEXT', 'HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF', 'Enable extended length text strings', 0, None),
 
+    Feature('Camera', 'Camera', 'AP_CAMERA_ENABLED', 'Enable Camera Trigger support', 0, None),
+    Feature('Camera', 'Camera_MAVLink', 'AP_CAMERA_MAVLINK_ENABLED', 'Enable MAVLink Camera support', 0, 'Camera'),
+    Feature('Camera', 'Camera_Mount', 'AP_CAMERA_MOUNT_ENABLED', 'Enable Camera-in-Mount support', 0, 'Camera,MOUNT'),
+    Feature('Camera', 'Camera_Relay', 'AP_CAMERA_RELAY_ENABLED', 'Enable Camera Trigger via Relay support', 0, 'Camera'),
+    Feature('Camera', 'Camera_Servo', 'AP_CAMERA_SERVO_ENABLED', 'Enable Camera Trigger via Servo support', 0, 'Camera'),
+    Feature('Camera', 'Camera_Solo', 'AP_CAMERA_SOLOGIMBAL_ENABLED', 'Enable Solo Gimbal support', 0, 'Camera'),
+
     Feature('Camera', 'RUNCAM', 'HAL_RUNCAM_ENABLED', 'Enable RunCam Control', 0, None),
 
     Feature('Copter', 'MODE_ZIGZAG', 'MODE_ZIGZAG_ENABLED', 'Enable Mode ZigZag', 0, None),
@@ -272,7 +279,6 @@ BUILD_OPTIONS = [
     Feature('Actuators', 'RobotisServo', 'AP_ROBOTISSERVO_ENABLED', 'Enable RobotisServo Protocol', 0, None),
     Feature('Actuators', 'FETTecOneWire', 'AP_FETTEC_ONEWIRE_ENABLED', 'Enable FETTec OneWire ESCs', 0, None),
 
-    Feature('Payload', 'Camera', 'AP_CAMERA_ENABLED', 'Enable Camera Trigger support', 0, None),
 ]
 
 BUILD_OPTIONS.sort(key=lambda x: (x.category + x.label))
