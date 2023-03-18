@@ -231,7 +231,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Plane}: 170:Mode QStabilize
     // @Values{Copter, Rover, Plane, Blimp}: 171:Calibrate Compasses
     // @Values{Copter, Rover, Plane, Blimp}: 172:Battery MPPT Enable
-    // @Values{Plane}: 173:Plane landing abort for VTOL Payload Place or glide-slope go-around
+    // @Values{Plane}: 173:Plane AUTO Mode Landing Abort
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
     // @Values{Rover}: 207:MainSail
