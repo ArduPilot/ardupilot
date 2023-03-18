@@ -19,10 +19,6 @@
  */
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include "AP_RCProtocol_DSM.h"
-#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
-#include "AP_RCProtocol_SRXL2.h"
-#endif
-
 #include <AP_VideoTX/AP_VideoTX_config.h>
 
 extern const AP_HAL::HAL& hal;
