@@ -137,6 +137,7 @@ include ../include/minimize_features.inc
 # one baro
 BARO BMP280 SPI:bmp280
 
+undef OSD_ENABLED  # minimize_features.inc removes this
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
