@@ -254,37 +254,7 @@ void __early_init(void) {
 #endif
 }
 
-#if STM32_NO_INIT == TRUE && defined(STM32H7)
-/*
-  this is a copy of the RCC reset code from hal_lld_init(), moved here
-  as we need to modify it for ArduPilot. See notes below. We set
-  STM32_NO_INIT to TRUE to ensure that the copy in hal_lld_init() is
-  not run
- */
-static void stm32h7_rcc_init(void)
-{
-    /*
-      resetting bit 0x80000000 of AHB1 can cause memory corruption in
-      SRAM1, causing BSS data to be initialised incorrectly. Only
-      observed with STM32H757, but may affect other H7
-     */
-    rccResetAHB1(0x7fffffffU);
-    rccResetAHB2(~0);
-    rccResetAHB3(~(RCC_AHB3RSTR_FMCRST | RCC_AHB3RSTR_QSPIRST |
-                   0x80000000U));     /* Was RCC_AHB3RSTR_CPURST in Rev-V.*/
-    rccResetAHB4(~(RCC_APB4RSTR_SYSCFGRST | STM32_GPIO_EN_MASK));
-    rccResetAPB1L(~0);
-    rccResetAPB1H(~0);
-    rccResetAPB2(~0);
-    rccResetAPB3(~0);
-    rccResetAPB4(~0);
-}
-#endif
-
 void __late_init(void) {
-#if STM32_NO_INIT == TRUE
-  stm32h7_rcc_init();
-#endif
   halInit();
   chSysInit();
 
