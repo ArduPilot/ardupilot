@@ -131,6 +131,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPPTR(dds_client, "XRCE_", 18, AP_Vehicle, AP_DDS_Client),
 #endif
 
+#if AP_KDECAN_ENABLED
+    // @Group: KDE_
+    // @Path: ../AP_KDECAN/AP_KDECAN.cpp
+    AP_SUBGROUPINFO(kdecan, "KDE_",  19, AP_Vehicle, AP_KDECAN),
+#endif
+
     AP_GROUPEND
 };
 
@@ -281,6 +287,10 @@ void AP_Vehicle::setup()
 
 #if AP_TEMPERATURE_SENSOR_ENABLED
     temperature_sensor.init();
+#endif
+
+#if AP_KDECAN_ENABLED
+    kdecan.init();
 #endif
 
 #if AP_AIS_ENABLED
