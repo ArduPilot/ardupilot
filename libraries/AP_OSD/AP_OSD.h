@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "AP_OSD_config.h"
+
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
@@ -30,22 +32,6 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #endif
 #include <AC_Fence/AC_Fence_config.h>
-
-#ifndef OSD_ENABLED
-#define OSD_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
-#ifndef HAL_WITH_OSD_BITMAP
-#define HAL_WITH_OSD_BITMAP OSD_ENABLED && (defined(HAL_WITH_SPI_OSD) || defined(WITH_SITL_OSD))
-#endif
-
-#ifndef OSD_PARAM_ENABLED
-#define OSD_PARAM_ENABLED 1
-#endif
-
-#ifndef HAL_OSD_SIDEBAR_ENABLE
-#define HAL_OSD_SIDEBAR_ENABLE 1
-#endif
 
 class AP_OSD_Backend;
 class AP_MSP;
