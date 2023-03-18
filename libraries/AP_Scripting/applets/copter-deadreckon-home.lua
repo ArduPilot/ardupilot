@@ -55,8 +55,6 @@
 --   a. SIM_WIND_DIR <-- sets direction wind is coming from
 --   b. SIM_WIND_SPD <-- sets wind speed in m/s
 --
--- luacheck: only 0
-
 
 -- create and initialise parameters
 local PARAM_TABLE_KEY = 86  -- parameter table key must be used by only one script on a particular flight controller
@@ -73,14 +71,87 @@ assert(param:add_param(PARAM_TABLE_KEY, 8, 'FLY_TIMEOUT', 30), 'could not add DR
 assert(param:add_param(PARAM_TABLE_KEY, 9, 'NEXT_MODE', 6), 'could not add DR_NEXT_MODE param')     -- mode to switch to after GPS recovers or timeout elapses
 
 -- bind parameters to variables
+--[[
+  // @Param: DR_ENABLE
+  // @DisplayName: Deadreckoning Enable
+  // @Description: Deadreckoning Enable
+  // @Values: 0:Disabled,1:Enabled
+  // @User: Standard
+--]]
 local enable = Parameter("DR_ENABLE")                  -- 1 = enabled, 0 = disabled
+
+--[[
+  // @Param: DR_ENABLE_DIST
+  // @DisplayName: Deadreckoning Enable Distance
+  // @Description: Distance from home (in meters) beyond which the dead reckoning will be enabled
+  // @Units: m
+  // @User: Standard
+--]]
 local enable_dist = Parameter("DR_ENABLE_DIST")        -- distance from home (in meters) beyond which the dead reckoning will be enabled
+
+--[[
+  // @Param: DR_GPS_SACC_MAX
+  // @DisplayName: Deadreckoning GPS speed accuracy maximum threshold
+  // @Description: GPS speed accuracy maximum, above which deadreckoning home will begin (default is 0.8).  Lower values trigger with good GPS quality, higher values will allow poorer GPS before triggering. Set to 0 to disable use of GPS speed accuracy
+  // @Range: 0 10
+  // @User: Standard
+--]]
 local gps_speed_acc_max = Parameter("DR_GPS_SACC_MAX") -- GPS speed accuracy max threshold
+
+--[[
+  // @Param: DR_GPS_SAT_MIN
+  // @DisplayName: Deadreckoning GPS satellite count min threshold
+  // @Description: GPS satellite count threshold below which deadreckoning home will begin (default is 6).  Higher values trigger with good GPS quality, Lower values trigger with worse GPS quality. Set to 0 to disable use of GPS satellite count
+  // @Range: 0 30
+  // @User: Standard
+--]]
 local gps_sat_count_min = Parameter("DR_GPS_SAT_MIN")  -- GPS satellite count min threshold
+
+--[[
+  // @Param: DR_GPS_TRIGG_SEC
+  // @DisplayName: Deadreckoning GPS check trigger seconds
+  // @Description: GPS checks must fail for this many seconds before dead reckoning will be triggered
+  // @Units: s
+  // @User: Standard
+--]]
 local gps_trigger_sec = Parameter("DR_GPS_TRIGG_SEC")  -- GPS checks must fail for this many seconds before dead reckoning will be triggered
+
+--[[
+  // @Param: DR_FLY_ANGLE
+  // @DisplayName: Deadreckoning Lean Angle
+  // @Description: lean angle (in degrees) during deadreckoning
+  // @Units: deg
+  // @Range: 0 45
+  // @User: Standard
+--]]
 local fly_angle = Parameter("DR_FLY_ANGLE")            -- lean angle (in degrees) during deadreckoning
+
+--[[
+  // @Param: DR_FLY_ALT_MIN
+  // @DisplayName: Deadreckoning Altitude Min
+  // @Description: Copter will fly at at least this altitude (in meters) above home during deadreckoning
+  // @Units: m
+  // @Range: 0 1000
+  // @User: Standard
+--]]
 local fly_alt_min = Parameter("DR_FLY_ALT_MIN")        -- min alt above home (in meters) during deadreckoning
+
+--[[
+  // @Param: DR_FLY_TIMEOUT
+  // @DisplayName: Deadreckoning flight timeout
+  // @Description: Copter will attempt to switch to NEXT_MODE after this many seconds of deadreckoning.  If it cannot switch modes it will continue in Guided_NoGPS.  Set to 0 to disable timeout
+  // @Units: s
+  // @User: Standard
+--]]
 local fly_timeoout = Parameter("DR_FLY_TIMEOUT")       -- deadreckoning timeout (in seconds)
+
+--[[
+  // @Param: DR_NEXT_MODE
+  // @DisplayName: Deadreckoning Next Mode
+  // @Description: Copter switch to this mode after GPS recovers or DR_FLY_TIMEOUT has elapsed.  Default is 6/RTL.  Set to -1 to return to mode used before deadreckoning was triggered
+  // @Values: 2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,16:PosHold,17:Brake,20:Guided_NoGPS,21:Smart_RTL,27:Auto RTL
+  // @User: Standard
+--]]
 local next_mode = Parameter("DR_NEXT_MODE")            -- mode to switch to after GPS recovers or timeout elapses
 local wpnav_speedup = Parameter("WPNAV_SPEED_UP")      -- maximum climb rate from WPNAV_SPEED_UP
 local wpnav_accel_z = Parameter("WPNAV_ACCEL_Z")       -- maximum vertical acceleration from WPNAV_ACCEL_Z
@@ -121,7 +192,6 @@ local gps_or_ekf_bad = true         -- true if GPS and/or EKF is bad, true once 
 local flight_stage = 0  -- 0. wait for good-gps and dist-from-home, 1=wait for bad gps or ekf, 2=level vehicle, 3=deadreckon home
 local gps_bad_start_time_ms = 0 -- system time GPS quality went bad (0 if not bad)
 local recovery_start_time_ms = 0-- system time GPS quality and EKF failsafe recovered (0 if not recovered)
-local fly_start_time_ms = 0     -- system time fly using deadreckoning started
 
 local home_dist = 0     -- distance to home in meters
 local home_yaw = 0      -- direction to home in degrees
@@ -151,7 +221,6 @@ function update()
   end
 
   -- check GPS
-  local gps_primary = gps:primary_sensor()
   local gps_speed_acc = gps:speed_accuracy(gps:primary_sensor())
   if gps_speed_acc == nil then
     gps_speed_acc = 99
@@ -178,7 +247,7 @@ function update()
 
   -- check EKF failsafe
   local fs_ekf = vehicle:has_ekf_failsafed()
-  if not (ekf_bad == fs_ekf) then
+  if ekf_bad ~= fs_ekf then
     ekf_bad = fs_ekf
   end
 
@@ -217,7 +286,6 @@ function update()
   -- reset flight_stage when disarmed
   if not arming:is_armed() then 
     flight_stage = 0
-    fly_start_time_ms = 0
     transition_start_time_ms = 0
     return update, interval_ms
   end
