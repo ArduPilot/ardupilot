@@ -3,7 +3,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef OSD_ENABLED
-#define OSD_ENABLED !HAL_MINIMIZE_FEATURES
+#define OSD_ENABLED 1
 #endif
 
 #ifndef HAL_WITH_OSD_BITMAP
