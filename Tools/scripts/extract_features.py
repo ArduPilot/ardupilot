@@ -109,6 +109,7 @@ class ExtractFeatures(object):
             ('MODE_GUIDED_NOGPS_ENABLED', r'ModeGuidedNoGPS::init',),
 
             ('AP_CAMERA_ENABLED', 'AP_Camera::var_info',),
+            ('AP_CAMERA_{type}_ENABLED', 'AP_Camera_(?P<type>.*)::trigger_pic',),
             ('HAL_RUNCAM_ENABLED', 'AP_RunCam::AP_RunCam',),
 
             ('HAL_PARACHUTE_ENABLED', 'AP_Parachute::update',),
