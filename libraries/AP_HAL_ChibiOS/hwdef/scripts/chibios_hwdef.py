@@ -2946,6 +2946,11 @@ def add_apperiph_defaults(f):
 #define HAL_EXTERNAL_AHRS_ENABLED 0
 #endif
 
+// disable RC_Channels library:
+#ifndef AP_RC_CHANNEL_ENABLED
+#define AP_RC_CHANNEL_ENABLED 0
+#endif
+
 /*
  * GPS Backends - we selectively turn backends on.
  *   Note also that f103-GPS explicitly disables some of these backends.
@@ -3133,6 +3138,11 @@ def add_iomcu_firmware_defaults(f):
 // by default IOMCUs don't use INS:
 #ifndef AP_INERTIALSENSOR_ENABLED
 #define AP_INERTIALSENSOR_ENABLED 0
+#endif
+
+// no RC_Channels library:
+#ifndef AP_RC_CHANNEL_ENABLED
+#define AP_RC_CHANNEL_ENABLED 0
 #endif
 
 #ifndef AP_VIDEOTX_ENABLED
