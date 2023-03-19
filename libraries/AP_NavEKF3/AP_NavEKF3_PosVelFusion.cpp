@@ -516,7 +516,7 @@ void NavEKF3_core::SelectVelPosFusion()
 
     // we have GPS data to fuse and a request to align the yaw using the GPS course
     if (gpsYawResetRequest) {
-        realignYawGPS();
+        realignYawGPS(false);
     }
 
     // Select height data to be fused from the available baro, range finder and GPS sources
