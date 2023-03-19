@@ -24,14 +24,6 @@
 #define MAX_RCIN_CHANNELS 18
 #define MIN_RCIN_CHANNELS  5
 
-#ifndef AP_RCPROTOCOL_FASTSBUS_ENABLED
-  #ifdef IOMCU_FW
-    #define AP_RCPROTOCOL_FASTSBUS_ENABLED 0
-  #else
-    #define AP_RCPROTOCOL_FASTSBUS_ENABLED 1
-  #endif
-#endif
-
 class AP_RCProtocol_Backend;
 
 class AP_RCProtocol {
