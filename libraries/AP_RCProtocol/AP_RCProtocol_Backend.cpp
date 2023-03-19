@@ -65,7 +65,7 @@ void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool
     _num_channels = num_values;
     rc_frame_count++;
     frontend.set_failsafe_active(in_failsafe);
-#if APM_BUILD_TYPE(APM_BUILD_iofirmware)
+#if !AP_RC_CHANNEL_ENABLED
     // failsafed is sorted out in AP_IOMCU.cpp
     in_failsafe = false;
 #else
