@@ -110,7 +110,7 @@ void AP_RCProtocol_Backend::decode_11bit_channels(const uint8_t* data, uint8_t n
  */
 void AP_RCProtocol_Backend::log_data(AP_RCProtocol::rcprotocol_t prot, uint32_t timestamp, const uint8_t *data, uint8_t len) const
 {
-#if !APM_BUILD_TYPE(APM_BUILD_iofirmware) && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+#if HAL_LOGGING_ENABLED
     if (rc().log_raw_data()) {
         uint32_t u32[10] {};
         if (len > sizeof(u32)) {
@@ -141,5 +141,5 @@ void AP_RCProtocol_Backend::log_data(AP_RCProtocol::rcprotocol_t prot, uint32_t 
                            u32[0], u32[1], u32[2], u32[3], u32[4],
                            u32[5], u32[6], u32[7], u32[8], u32[9]);
     }
-#endif
+#endif  // HAL_LOGGING_ENABLED
 }
