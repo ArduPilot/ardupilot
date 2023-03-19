@@ -795,7 +795,7 @@ private:
     void SelectBetaDragFusion();
 
     // force alignment of the yaw angle using GPS velocity data
-    void realignYawGPS();
+    void realignYawGPS(bool emergency_reset);
 
     // initialise the earth magnetic field states using declination and current attitude and magnetometer measurements
 
