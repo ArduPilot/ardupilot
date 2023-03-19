@@ -129,6 +129,7 @@ bool AP_Logger_Backend::Write_Parameter(const AP_Param *ap,
     return Write_Parameter(name, ap->cast_to_float(type), default_val);
 }
 
+#if AP_RC_CHANNEL_ENABLED
 // Write an RCIN packet
 void AP_Logger::Write_RCIN(void)
 {
@@ -179,6 +180,7 @@ void AP_Logger::Write_RCIN(void)
     };
     WriteBlock(&pkt2, sizeof(pkt2));
 }
+#endif  // AP_RC_CHANNEL_ENABLED
 
 // Write an SERVO packet
 void AP_Logger::Write_RCOUT(void)
