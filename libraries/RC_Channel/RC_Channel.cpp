@@ -17,6 +17,10 @@
  *       RC_Channel.cpp - class for one RC channel input
  */
 
+#include "RC_Channel_config.h"
+
+#if AP_RC_CHANNEL_ENABLED
+
 #include <stdlib.h>
 #include <cmath>
 
@@ -1721,3 +1725,5 @@ void RC_Channels::convert_options(const RC_Channel::aux_func_t old_option, const
         }
     }
 }
+
+#endif  // AP_RC_CHANNEL_ENABLED
