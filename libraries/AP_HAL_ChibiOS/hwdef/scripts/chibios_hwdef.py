@@ -3144,6 +3144,9 @@ def add_iomcu_firmware_defaults(f):
 #define AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED 0
 #endif
 
+// disable some protocols on iomcu:
+#define AP_RCPROTOCOL_FASTSBUS_ENABLED 0
+
 // end IOMCU Firmware defaults
 ''')
 
