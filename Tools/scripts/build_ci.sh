@@ -308,9 +308,18 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
-    if [ "$t" == "enable-dds" ]; then
+    if [ "$t" == "dds-stm32h7" ]; then
         echo "Building with DDS support on a STM32H7"
         $waf configure --board Durandal --enable-dds
+        $waf clean
+        $waf copter
+        $waf plane
+        continue
+    fi
+
+    if [ "$t" == "dds-sitl" ]; then
+        echo "Building with DDS support on SITL"
+        $waf configure --board sitl --enable-dds
         $waf clean
         $waf copter
         $waf plane
