@@ -115,7 +115,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 
     // @Param: RUDDER
     // @DisplayName: Arming with Rudder enable/disable
-    // @Description: Allow arm/disarm by rudder input. When enabled arming can be done with right rudder, disarming with left rudder. Rudder arming only works in manual throttle modes with throttle at zero +- deadzone (RCx_DZ)
+    // @Description: Allow arm/disarm by rudder input. When enabled arming can be done with right rudder, disarming with left rudder. Rudder arming only works with throttle at zero +- deadzone (RCx_DZ). Depending on vehicle type, arming in certain modes is prevented. See the wiki for each vehicle. Caution is recommended when arming if it is allowed in an auto-throttle mode!
     // @Values: 0:Disabled,1:ArmingOnly,2:ArmOrDisarm
     // @User: Advanced
     AP_GROUPINFO_FRAME("RUDDER",  6,     AP_Arming, _rudder_arming, ARMING_RUDDER_DEFAULT, AP_PARAM_FRAME_PLANE |
