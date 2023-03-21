@@ -178,6 +178,13 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
 
     // index 17
 
+    // @Param: OPTIONS
+    // @DisplayName: Optional AHRS behaviour
+    // @Description: This controls optional AHRS behaviour. Setting DisableDCMFallbackFW will change the AHRS behaviour for fixed wing aircraft in fly-forward flight to not fall back to DCM when the EKF stops navigating. Setting DisableDCMFallbackVTOL will change the AHRS behaviour for fixed wing aircraft in non fly-forward (VTOL) flight to not fall back to DCM when the EKF stops navigating. 
+    // @Bitmask: 0:DisableDCMFallbackFW, 1:DisableDCMFallbackVTOL
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS",  18, AP_AHRS, _options, 0),
+    
     AP_GROUPEND
 };
 
@@ -1890,21 +1897,11 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
     }
 
 #if AP_AHRS_DCM_ENABLED
-    /*
-      fixed wing and rover will fall back to DCM if the EKF doesn't
-      have GPS. This is the safest option as DCM is very robust. Note
-      that we also check the filter status when fly_forward is false
-      and we are disarmed. This is to ensure that the arming checks do
-      wait for good GPS position on fixed wing and rover
-     */
+    // Handle fallback for fixed wing planes (including VTOL's) and ground vehicles.
     if (ret != EKFType::DCM &&
         (_vehicle_class == VehicleClass::FIXED_WING ||
          _vehicle_class == VehicleClass::GROUND)) {
-        if (!dcm.yaw_source_available() && !fly_forward) {
-            // if we don't have a DCM yaw source available and we are
-            // in a non-fly-forward mode then we are best off using the EKF
-            return ret;
-        }
+
         bool should_use_gps = true;
         nav_filter_status filt_state;
 #if HAL_NAVEKF2_AVAILABLE
@@ -1930,26 +1927,53 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
             should_use_gps = true;
         }
 #endif
+
+        // Handle fallback for the case where the DCM or EKF is unable to provide attitude or height data.
+        const bool can_use_dcm = dcm.yaw_source_available() || fly_forward;
+        const bool can_use_ekf = filt_state.flags.attitude && filt_state.flags.vert_vel && filt_state.flags.vert_pos;
+        if (!can_use_dcm && can_use_ekf) {
+            // no choice - continue to use EKF
+            return ret;
+        } else if (!can_use_ekf) {
+            // No choice - we have to use DCM
+            return EKFType::DCM;
+        }
+
+        const bool disable_dcm_fallback = fly_forward?
+            option_set(Options::DISABLE_DCM_FALLBACK_FW) : option_set(Options::DISABLE_DCM_FALLBACK_VTOL);
+        if (disable_dcm_fallback) {
+            // don't fallback
+            return ret;
+        }
+        
+        // Handle loss of global position when we still have a GPS fix
         if (hal.util->get_soft_armed() &&
-            (!filt_state.flags.using_gps ||
-             !filt_state.flags.horiz_pos_abs) &&
             should_use_gps &&
-            AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
-            // if the EKF is not fusing GPS or doesn't have a 2D fix
-            // and we have a 3D lock, then plane and rover would
-            // prefer to use the GPS position from DCM. This is a
-            // safety net while some issues with the EKF get sorted
-            // out
+            AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D &&
+            (!filt_state.flags.using_gps || !filt_state.flags.horiz_pos_abs)) {
+            /*
+               If the EKF is not fusing GPS or doesn't have a 2D fix and we have a 3D GPS lock,
+               then plane and rover would prefer to use the GPS position from DCM unless the
+               fallback has been inhibited by the user.
+               Note: The aircraft could be dead reckoning with acceptable accuracy and rejecting a bad GPS
+               Note: This is a last resort fallback and makes the navigation highly vulnerable to GPS noise.
+               Note: When operating in a VTOL flight mode that actively controls height such as QHOVER,
+               the EKF gives better vertical velocity and position estimates and height control characteristics.
+            */
             return EKFType::DCM;
         }
+
+        // Handle complete loss of navigation
         if (hal.util->get_soft_armed() && filt_state.flags.const_pos_mode) {
+            /*
+               Provided the EKF has been configured to use GPS, ie should_use_gps is true, then the
+               key difference to the case handled above is only the absence of a GPS fix which means
+               that DCM will not be able to navigate either so we are primarily concerned with
+               providing an attitude, vertical position and vertical velocity estimate.
+            */
             return EKFType::DCM;
         }
-        if (!filt_state.flags.attitude ||
-            !filt_state.flags.vert_vel ||
-            !filt_state.flags.vert_pos) {
-            return EKFType::DCM;
-        }
+
         if (!filt_state.flags.horiz_vel ||
             (!filt_state.flags.horiz_pos_abs && !filt_state.flags.horiz_pos_rel)) {
             if ((!AP::compass().use_for_yaw()) &&
