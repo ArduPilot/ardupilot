@@ -553,7 +553,11 @@ void NavEKF3_core::readGpsData()
         gpsGoodToAlign = false;
         lastGpsVelFail_ms = imuSampleTime_ms;
         lastGpsVelPass_ms = 0;
-        if (filterStatus.flags.horiz_pos_rel && !filterStatus.flags.horiz_pos_abs) {
+        const bool doingBodyVelNav = (imuSampleTime_ms - prevBodyVelFuseTime_ms < 1000);
+        const bool doingFlowNav = (imuSampleTime_ms - prevFlowFuseTime_ms < 1000);;
+        const bool doingWindRelNav = (!tasTimeout && assume_zero_sideslip());
+        const bool canDeadReckon = ((doingFlowNav && gndOffsetValid) || doingWindRelNav || doingBodyVelNav);
+        if (canDeadReckon) {
             // If we can do dead reckoning with a data source other than GPS there is time to wait
             // for GPS alignment checks to pass before using GPS inside the EKF.
             waitingForGpsChecks = true;
