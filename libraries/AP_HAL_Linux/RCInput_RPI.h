@@ -28,9 +28,10 @@
 #define RCIN_RPI_CHN_NUM 1
 #endif
 
-namespace Linux {
+namespace Linux
+{
 
-enum state_t{
+enum state_t {
     RCIN_RPI_INITIAL_STATE = -1,
     RCIN_RPI_ZERO_STATE = 0,
     RCIN_RPI_ONE_STATE = 1
@@ -46,13 +47,14 @@ typedef struct {
 
 //DMA control block structure
 typedef struct {
-  uint32_t info, src, dst, length,
-    stride, next, pad[2];
+    uint32_t info, src, dst, length,
+             stride, next, pad[2];
 } dma_cb_t;
 
-class Memory_table {
-// Allow RCInput_RPI access to private members of Memory_table
-friend class RCInput_RPI;
+class Memory_table
+{
+    // Allow RCInput_RPI access to private members of Memory_table
+    friend class RCInput_RPI;
 
 private:
     void** _virt_pages;
@@ -133,7 +135,7 @@ private:
 
     bool _initialized = false;
     int _version =0;
-    
+
     void init_dma_cb(dma_cb_t** cbp, uint32_t mode, uint32_t source, uint32_t dest, uint32_t length, uint32_t stride, uint32_t next_cb);
     void* map_peripheral(uint32_t base, uint32_t len);
     void init_registers();

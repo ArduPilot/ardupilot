@@ -15,7 +15,8 @@ template <uint8_t pin> constexpr uint8_t RPI_GPIO_()
     return pin;
 }
 
-namespace Linux {
+namespace Linux
+{
 
 /**
  * @brief Class for Raspberry PI GPIO control
@@ -23,7 +24,8 @@ namespace Linux {
  *  For more information: https://elinux.org/RPi_BCM2835_GPIOs
  *
  */
-class GPIO_RPI : public AP_HAL::GPIO {
+class GPIO_RPI : public AP_HAL::GPIO
+{
 public:
     GPIO_RPI();
     void    init() override;

@@ -51,12 +51,12 @@ static uint16_t RcChnGpioTbl[RCIN_RPI_CHN_NUM] = {
     RPI_GPIO_<13>(), RPI_GPIO_<19>(), RPI_GPIO_<20>(),
     RPI_GPIO_<21>(), RPI_GPIO_<26>()
 };
-#elif (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1) 
+#elif (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1)
 #define RCIN_RPI_SIG_HIGH        0
 #define RCIN_RPI_SIG_LOW         1
 static uint16_t RcChnGpioTbl[RCIN_RPI_CHN_NUM] = {
     RPI_GPIO_<5>(),  RPI_GPIO_<6>(),  RPI_GPIO_<13>(),
-    RPI_GPIO_<19>(), RPI_GPIO_<26>(), RPI_GPIO_<21>(), 
+    RPI_GPIO_<19>(), RPI_GPIO_<26>(), RPI_GPIO_<21>(),
     RPI_GPIO_<20>(), RPI_GPIO_<16>()
 };
 #else
@@ -90,7 +90,7 @@ static uint16_t RcChnGpioTbl[RCIN_RPI_CHN_NUM] = {
 #define RCIN_RPI_RPI3_PCM_BASE 0x3F203000
 
 #define RCIN_RPI_RPI4_DMA_BASE 0xFE007000
-#define RCIN_RPI_RPI4_CLK_BASE 0xFE101000 
+#define RCIN_RPI_RPI4_CLK_BASE 0xFE101000
 #define RCIN_RPI_RPI4_PCM_BASE 0xFE203000
 
 #define RCIN_RPI_GPIO_LEV0_ADDR  0x7e200034
@@ -100,7 +100,7 @@ static uint16_t RcChnGpioTbl[RCIN_RPI_CHN_NUM] = {
 #define RCIN_RPI_TIMER_BASE      0x7e003004
 
 #define RCIN_RPI_DMA_SRC_INC     (1<<8)
-#define RCIN_RPI_DMA_DEST_INC    (1<<4) 
+#define RCIN_RPI_DMA_DEST_INC    (1<<4)
 #define RCIN_RPI_DMA_NO_WIDE_BURSTS  (1<<26)
 #define RCIN_RPI_DMA_WAIT_RESP   (1<<3)
 #define RCIN_RPI_DMA_D_DREQ      (1<<6)
@@ -369,12 +369,12 @@ void RCInput_RPI::init_ctrl_data()
         if (i % 7 == 0) {
             cbp_curr = (dma_cb_t*)con_blocks->get_page(con_blocks->_virt_pages, cbp);
 
-            init_dma_cb(&cbp_curr, RCIN_RPI_DMA_NO_WIDE_BURSTS | RCIN_RPI_DMA_WAIT_RESP , RCIN_RPI_TIMER_BASE,
+            init_dma_cb(&cbp_curr, RCIN_RPI_DMA_NO_WIDE_BURSTS | RCIN_RPI_DMA_WAIT_RESP, RCIN_RPI_TIMER_BASE,
                         (uintptr_t)circle_buffer->get_page(circle_buffer->_phys_pages, dest),
                         8,
                         0,
                         (uintptr_t)con_blocks->get_page(con_blocks->_phys_pages,
-                                                        cbp + sizeof(dma_cb_t)));
+                                cbp + sizeof(dma_cb_t)));
             dest += 8;
             cbp += sizeof(dma_cb_t);
         }
@@ -386,7 +386,7 @@ void RCInput_RPI::init_ctrl_data()
                     8,
                     0,
                     (uintptr_t)con_blocks->get_page(con_blocks->_phys_pages,
-                                                    cbp + sizeof(dma_cb_t)));
+                            cbp + sizeof(dma_cb_t)));
 
         dest += 8;
         cbp += sizeof(dma_cb_t);
@@ -401,7 +401,7 @@ void RCInput_RPI::init_ctrl_data()
                     4,
                     0,
                     (uintptr_t)con_blocks->get_page(con_blocks->_phys_pages,
-                                                    cbp + sizeof(dma_cb_t)));
+                            cbp + sizeof(dma_cb_t)));
 
         cbp += sizeof(dma_cb_t);
     }
@@ -414,7 +414,7 @@ void RCInput_RPI::init_ctrl_data()
 /*Initialise PCM
   See BCM2835 documentation:
   http://www.raspberrypi.org/wp-content/uploads/2012/02/BCM2835-ARM-Peripherals.pdf
-  
+
   See BCM2711 documentation:
   https://datasheets.raspberrypi.org/bcm2711/bcm2711-peripherals.pdf
 */
@@ -426,8 +426,7 @@ void RCInput_RPI::init_PCM()
     hal.scheduler->delay_microseconds(100);
     if (_version != 3) {
         clk_reg[RCIN_RPI_PCMCLK_DIV] = 0x5A000000 | ((RCIN_RPI_PLL_CLK/RCIN_RPI_SAMPLE_FREQ)<<12);   // Set pcm div for BCM2835 500MHZ clock. If we need to configure DMA frequency.
-    }
-    else {
+    } else {
         clk_reg[RCIN_RPI_PCMCLK_DIV] = 0x5A000000 | ((RCIN_RPI4_PLL_CLK/RCIN_RPI_SAMPLE_FREQ)<< 12); // Set pcm div for BCM2711 700MHz clock. If we need to configure DMA frequency.
     }
     hal.scheduler->delay_microseconds(100);
@@ -459,7 +458,7 @@ void RCInput_RPI::init_DMA()
     dma_reg[RCIN_RPI_DMA_CS | RCIN_RPI_DMA_CHANNEL << 8] = RCIN_RPI_DMA_INT | RCIN_RPI_DMA_END;
     dma_reg[RCIN_RPI_DMA_CONBLK_AD | RCIN_RPI_DMA_CHANNEL << 8] = reinterpret_cast<uintptr_t>(con_blocks->get_page(con_blocks->_phys_pages, 0));//Set first control block address
     dma_reg[RCIN_RPI_DMA_DEBUG | RCIN_RPI_DMA_CHANNEL << 8] = 7;                      // clear debug error flags
-    dma_reg[RCIN_RPI_DMA_CS | RCIN_RPI_DMA_CHANNEL << 8] = 0x10880001;                // go, mid priority, wait for outstanding writes    
+    dma_reg[RCIN_RPI_DMA_CS | RCIN_RPI_DMA_CHANNEL << 8] = 0x10880001;                // go, mid priority, wait for outstanding writes
 }
 
 
@@ -559,7 +558,7 @@ void RCInput_RPI::init()
     for (uint32_t i = 0; i < RCIN_RPI_CHN_NUM; ++i) {
         rc_channels[i].prev_tick = curr_tick;
         rc_channels[i].curr_signal = (signal_states & (1 << RcChnGpioTbl[i])) ? RCIN_RPI_SIG_HIGH
-                                                                              : RCIN_RPI_SIG_LOW;
+                                     : RCIN_RPI_SIG_LOW;
         rc_channels[i].last_signal = rc_channels[i].curr_signal;
     }
     curr_pointer += 8;
@@ -592,19 +591,18 @@ void RCInput_RPI::_timer_tick()
 
     const uint32_t offset = con_blocks->get_offset(con_blocks->_virt_pages,(uintptr_t)ad);
     for (int j = 1; j >= -1; j--) {
-        
+
         // Get address of next or previous (dma_cb_t)
         ad = (dma_cb_t *)con_blocks->get_page(con_blocks->_virt_pages,offset + (uint32_t)(sizeof(dma_cb_t) * j));
-        if (!ad) 
-        {
-           continue ;
+        if (!ad) {
+            continue ;
         }
-        
+
         void *x = circle_buffer->get_virt_addr((ad)->dst);
-        
+
         if (x != nullptr) {
             counter = circle_buffer->bytes_available(curr_pointer,
-                                                     circle_buffer->get_offset(circle_buffer->_virt_pages, (uintptr_t)x));
+                      circle_buffer->get_offset(circle_buffer->_virt_pages, (uintptr_t)x));
             break;
         }
     }
@@ -621,7 +619,7 @@ void RCInput_RPI::_timer_tick()
     }
 
     // Processing ready bytes
-    for (;counter > 0x40;) {
+    for (; counter > 0x40;) {
         // Is it timer sample?
         if (curr_pointer % (64) == 0) {
             curr_tick = *((uint64_t *)circle_buffer->get_page(circle_buffer->_virt_pages, curr_pointer));
@@ -632,36 +630,35 @@ void RCInput_RPI::_timer_tick()
         signal_states = *((uint64_t *)circle_buffer->get_page(circle_buffer->_virt_pages, curr_pointer));
         for (uint32_t i = 0; i < RCIN_RPI_CHN_NUM; ++i) {
             rc_channels[i].curr_signal = (signal_states & (1 << RcChnGpioTbl[i])) ? RCIN_RPI_SIG_HIGH
-                                                                                  : RCIN_RPI_SIG_LOW;
+                                         : RCIN_RPI_SIG_LOW;
 
             // If the signal changed
             if (rc_channels[i].curr_signal != rc_channels[i].last_signal) {
                 rc_channels[i].delta_time = curr_tick - rc_channels[i].prev_tick;
                 rc_channels[i].prev_tick = curr_tick;
                 switch (rc_channels[i].state) {
-                    case RCIN_RPI_INITIAL_STATE:
+                case RCIN_RPI_INITIAL_STATE:
+                    rc_channels[i].state = RCIN_RPI_ZERO_STATE;
+                    break;
+                case RCIN_RPI_ZERO_STATE:
+                    if (rc_channels[i].curr_signal == 0) {
+                        rc_channels[i].width_s0 = (uint16_t)rc_channels[i].delta_time;
+                        rc_channels[i].state = RCIN_RPI_ONE_STATE;
+                    }
+                    break;
+                case RCIN_RPI_ONE_STATE:
+                    if (rc_channels[i].curr_signal == 1) {
+                        rc_channels[i].width_s1 = (uint16_t)rc_channels[i].delta_time;
                         rc_channels[i].state = RCIN_RPI_ZERO_STATE;
-                        break;
-                    case RCIN_RPI_ZERO_STATE:
-                        if (rc_channels[i].curr_signal == 0) {
-                            rc_channels[i].width_s0 = (uint16_t)rc_channels[i].delta_time;
-                            rc_channels[i].state = RCIN_RPI_ONE_STATE;
+                        if (1 == RCIN_RPI_CHN_NUM) {
+                            _process_rc_pulse(rc_channels[i].width_s0,
+                                              rc_channels[i].width_s1);
+                        } else {
+                            _process_pwm_pulse(i, rc_channels[i].width_s0,
+                                               rc_channels[i].width_s1);
                         }
-                        break;
-                    case RCIN_RPI_ONE_STATE:
-                        if (rc_channels[i].curr_signal == 1) {
-                            rc_channels[i].width_s1 = (uint16_t)rc_channels[i].delta_time;
-                            rc_channels[i].state = RCIN_RPI_ZERO_STATE;
-                            if (1 == RCIN_RPI_CHN_NUM) {
-                                _process_rc_pulse(rc_channels[i].width_s0,
-                                                  rc_channels[i].width_s1);
-                            }
-                            else {
-                                _process_pwm_pulse(i, rc_channels[i].width_s0,
-                                                   rc_channels[i].width_s1);
-                            }
-                        }
-                        break;
+                    }
+                    break;
                 }
             }
             rc_channels[i].last_signal = rc_channels[i].curr_signal;

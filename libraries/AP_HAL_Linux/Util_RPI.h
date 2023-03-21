@@ -2,13 +2,16 @@
 
 #include "Util.h"
 
-namespace Linux {
+namespace Linux
+{
 
-class UtilRPI : public Util {
+class UtilRPI : public Util
+{
 public:
     UtilRPI();
 
-    static UtilRPI *from(AP_HAL::Util *util) {
+    static UtilRPI *from(AP_HAL::Util *util)
+    {
         return static_cast<UtilRPI*>(util);
     }
 

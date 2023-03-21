@@ -125,13 +125,13 @@ uint32_t GPIO_RPI::get_address(GPIO_RPI::Address address, GPIO_RPI::PeripheralOf
 volatile uint32_t* GPIO_RPI::get_memory_pointer(uint32_t address, uint32_t range) const
 {
     auto pointer = mmap(
-        nullptr,                         // Any adddress in our space will do
-        range,                           // Map length
-        PROT_READ|PROT_WRITE|PROT_EXEC,  // Enable reading & writing to mapped memory
-        MAP_SHARED|MAP_LOCKED,           // Shared with other processes
-        _system_memory_device,           // File to map
-        address                          // Offset to GPIO peripheral
-    );
+                       nullptr,                         // Any adddress in our space will do
+                       range,                           // Map length
+                       PROT_READ|PROT_WRITE|PROT_EXEC,  // Enable reading & writing to mapped memory
+                       MAP_SHARED|MAP_LOCKED,           // Shared with other processes
+                       _system_memory_device,           // File to map
+                       address                          // Offset to GPIO peripheral
+                   );
 
     if (pointer == MAP_FAILED) {
         return nullptr;
@@ -163,7 +163,7 @@ void GPIO_RPI::init()
     const int rpi_version = UtilRPI::from(hal.util)->get_rpi_version();
 
     GPIO_RPI::Address peripheral_base;
-    if(rpi_version == 0) {
+    if (rpi_version == 0) {
         peripheral_base = Address::BCM2708_PERIPHERAL_BASE;
     } else if (rpi_version == 1 || rpi_version == 2) {
         peripheral_base = Address::BCM2709_PERIPHERAL_BASE;
