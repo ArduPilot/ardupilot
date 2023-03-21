@@ -1800,13 +1800,14 @@ AP_AHRS::EKFType AP_AHRS::active_EKF_type(void) const
         if (hal.util->get_soft_armed() &&
             (!filt_state.flags.using_gps ||
              !filt_state.flags.horiz_pos_abs) &&
+             !filt_state.flags.horiz_pos_rel &&
             should_use_gps &&
             AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
             // if the EKF is not fusing GPS or doesn't have a 2D fix
+            // and is not doing ground or wind relative dead reckoning
             // and we have a 3D lock, then plane and rover would
-            // prefer to use the GPS position from DCM. This is a
-            // safety net while some issues with the EKF get sorted
-            // out
+            // prefer to use the GPS position from DCM.
+            // Note: This is a last resort fallback and makes the navigation highly vulnerable to GPS noise.
             return EKFType::NONE;
         }
         if (hal.util->get_soft_armed() && filt_state.flags.const_pos_mode) {
