@@ -154,6 +154,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::RTL:
     case AUX_FUNC::TAKEOFF:
     case AUX_FUNC::FBWA:
+    case AUX_FUNC::AIRBRAKE:
 #if HAL_QUADPLANE_ENABLED
     case AUX_FUNC::QRTL:
     case AUX_FUNC::QSTABILIZE:
