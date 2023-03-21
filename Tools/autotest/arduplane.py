@@ -2029,9 +2029,20 @@ class AutoTestPlane(AutoTest):
             t_enabled = self.get_sim_time()
             # The EKF should wait for GPS checks to pass when we are still able to navigate using dead reckoning
             # to prevent bad GPS being used when coming back after loss of lock due to interence.
-            self.wait_statustext("EKF3 Active", timeout=15)
+            self.wait_ekf_flags(mavutil.mavlink.ESTIMATOR_POS_HORIZ_ABS, 0, timeout=15)
             if self.get_sim_time() < (t_enabled+9):
                 raise NotAchievedException("GPS use re-started too quickly")
+            # wait for EKF and vehicle position to stabilise, then test response to jamming
+            self.delay_sim_time(20)
+            self.set_parameter("SIM_GPS_JAM", 1)
+            self.delay_sim_time(10)
+            self.set_parameter("SIM_GPS_JAM", 0)
+            t_enabled = self.get_sim_time()
+            # The EKF should wait for GPS checks to pass when we are still able to navigate using dead reckoning
+            # to prevent bad GPS being used when coming back after loss of lock due to interence.
+            self.wait_ekf_flags(mavutil.mavlink.ESTIMATOR_POS_HORIZ_ABS, 0, timeout=15)
+            if self.get_sim_time() < (t_enabled+9):
+                raise NotAchievedException("GPS use re-started too quickly after jamming")
             self.set_rc(3, 1000)
             self.fly_home_land_and_disarm()
             self.progress("max-divergence: %fm" % (self.max_divergence,))
