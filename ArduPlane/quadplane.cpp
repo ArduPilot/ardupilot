@@ -3044,8 +3044,7 @@ void QuadPlane::waypoint_controller(void)
 
     const Location &loc = plane.next_WP_loc;
     const uint32_t now = AP_HAL::millis();
-    if (!loc.same_latlon_as(last_auto_target) ||
-        plane.next_WP_loc.alt != last_auto_target.alt ||
+    if (!loc.same_loc_as(last_auto_target) ||
         now - last_loiter_ms > 500) {
         wp_nav->set_wp_destination(poscontrol.target_cm.tofloat());
         last_auto_target = loc;
