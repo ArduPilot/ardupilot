@@ -1208,6 +1208,13 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("SURFTRAK_TC", 5, ParametersG2, surftrak_tc, 1.0),
 
+    // @Param: TKOFF_THR_MAX
+    // @DisplayName: Takeoff maximum throttle during take-off ramp up
+    // @Description: Takeoff maximum throttle allowed before controllers assume the aircraft is airborne during the takeoff process.
+    // @Range: 0.0 0.9
+    // @User: Advanced
+    AP_GROUPINFO("TKOFF_THR_MAX", 6, ParametersG2, takeoff_throttle_max, 0.9),
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND
