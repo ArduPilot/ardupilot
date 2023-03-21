@@ -821,12 +821,7 @@ bool Plane::get_target_location(Location& target_loc)
  */
 bool Plane::update_target_location(const Location &old_loc, const Location &new_loc)
 {
-    if (!old_loc.same_latlon_as(next_WP_loc)) {
-        return false;
-    }
-    ftype alt_diff;
-    if (!old_loc.get_alt_distance(next_WP_loc, alt_diff) ||
-        !is_zero(alt_diff)) {
+    if (!old_loc.same_loc_as(next_WP_loc)) {
         return false;
     }
     next_WP_loc = new_loc;
