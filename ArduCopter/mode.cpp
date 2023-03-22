@@ -594,7 +594,7 @@ void Mode::land_run_vertical_control(bool pause_descent)
         // Constrain the demanded vertical velocity so that it is between the configured maximum descent speed and the configured minimum descent speed.
         cmb_rate = constrain_float(cmb_rate, max_land_descent_velocity, -abs(g.land_speed));
 
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
         const bool navigating = pos_control->is_active_xy();
         bool doing_precision_landing = !copter.ap.land_repo_active && copter.precland.target_acquired() && navigating;
 
@@ -668,7 +668,7 @@ void Mode::land_run_horizontal_control()
                     AP::logger().Write_Event(LogEvent::LAND_REPO_ACTIVE);
                 }
                 copter.ap.land_repo_active = true;
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
             } else {
                 // no override right now, check if we should allow precland
                 if (copter.precland.allow_precland_after_reposition()) {
@@ -681,7 +681,7 @@ void Mode::land_run_horizontal_control()
 
     // this variable will be updated if prec land target is in sight and pilot isn't trying to reposition the vehicle
     copter.ap.prec_land_active = false;
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
     copter.ap.prec_land_active = !copter.ap.land_repo_active && copter.precland.target_acquired();
     // run precision landing
     if (copter.ap.prec_land_active) {
@@ -738,7 +738,7 @@ void Mode::land_run_horizontal_control()
 // pause_descent is true if vehicle should not descend
 void Mode::land_run_normal_or_precland(bool pause_descent)
 {
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
     if (pause_descent || !copter.precland.enabled()) {
         // we don't want to start descending immediately or prec land is disabled
         // in both cases just run simple land controllers
@@ -753,7 +753,7 @@ void Mode::land_run_normal_or_precland(bool pause_descent)
 #endif
 }
 
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
 // Go towards a position commanded by prec land state machine in order to retry landing
 // The passed in location is expected to be NED and in m
 void Mode::precland_retry_position(const Vector3f &retry_pos)
