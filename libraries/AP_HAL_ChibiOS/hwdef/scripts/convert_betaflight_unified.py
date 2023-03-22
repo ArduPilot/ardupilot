@@ -45,6 +45,7 @@ alignment = {
     "CW90FLIP" : "ROTATION_ROLL_180",
     "CW180FLIP" : "ROTATION_ROLL_180_YAW_90",
     "CW270FLIP" : "ROTATION_PITCH_180",
+    "DEFAULT" : "ROTATION_NONE",
 }
 
 parser = argparse.ArgumentParser("convert_betaflight_unified.py")
@@ -156,6 +157,11 @@ def convert_file(fname, board_id):
         reserve_start = 96
     elif mcuclass == "H7":
         reserve_start = 384
+    else:
+        mcuclass = "F4"
+        mcu = "F405"
+        flash_size = 1024
+        reserve_start = 48
 
     # preamble
 
@@ -454,6 +460,11 @@ def convert_bootloader(fname, board_id):
         reserve_start = 96
     elif mcuclass == "H7":
         reserve_start = 384
+    else:
+        mcuclass = "F4"
+        mcu = "F405"
+        flash_size = 1024
+        reserve_start = 48
 
     # preamble
 
