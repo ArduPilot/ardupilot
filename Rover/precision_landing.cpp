@@ -4,7 +4,7 @@
 
 #include "Rover.h"
 
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
 
 void Rover::init_precland()
 {
