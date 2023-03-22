@@ -1,0 +1,43 @@
+
+# hw definition file for processing by chibios_hwdef.py
+# for FLYWOOF405PRO hardware.
+# thanks to betaflight for pin information
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID for firmware load
+APJ_BOARD_ID 1137
+
+# crystal frequency, setup to use external oscillator
+OSCILLATOR_HZ 8000000
+
+FLASH_SIZE_KB 1024
+
+# bootloader starts at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 48
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1
+
+# PA10 IO-debug-console
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# default to all pins low to avoid ESD issues
+DEFAULTGPIO OUTPUT LOW PULLDOWN
+
+
+# Chip select pins
+PB3 FLASH1_CS CS
+PB14 OSD1_CS CS
+PB12 GYRO1_CS CS
+
+PA9 LED_BOOTLOADER OUTPUT LOW
+define HAL_LED_ON 0
