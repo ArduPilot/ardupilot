@@ -1524,8 +1524,12 @@ def write_IMU_config(f):
         driver = dev[0]
         # get instance number if mentioned
         instance = -1
+        aux_devid = -1
         if dev[-1].startswith("INSTANCE:"):
             instance = int(dev[-1][9:])
+            dev = dev[:-1]
+        if dev[-1].startswith("AUX:"):
+            aux_devid = int(dev[-1][4:])
             dev = dev[:-1]
         for i in range(1, len(dev)):
             if dev[i].startswith("SPI:"):
@@ -1534,7 +1538,11 @@ def write_IMU_config(f):
                 (wrapper, dev[i]) = parse_i2c_device(dev[i])
         n = len(devlist)+1
         devlist.append('HAL_INS_PROBE%u' % n)
-        if instance != -1:
+        if aux_devid != -1:
+            f.write(
+            '#define HAL_INS_PROBE%u %s ADD_BACKEND_AUX(AP_InertialSensor_%s::probe(*this,%s),%d)\n'
+            % (n, wrapper, driver, ','.join(dev[1:]), aux_devid))
+        elif instance != -1:
             f.write(
             '#define HAL_INS_PROBE%u %s ADD_BACKEND_INSTANCE(AP_InertialSensor_%s::probe(*this,%s),%d)\n'
             % (n, wrapper, driver, ','.join(dev[1:]), instance))
