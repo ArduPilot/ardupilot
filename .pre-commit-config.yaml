@@ -36,6 +36,11 @@ repos:
         -   id: check-xml
         -   id: check-yaml
 
+  -   repo: https://github.com/lsst-ts/pre-commit-xmllint
+      rev: v1.0.0
+      hooks:
+        - id: format-xmllint
+          files: libraries/AP_DDS/dds_xrce_profile.xml
 # Disable isort and mypy temporarily due to config conflicts
 # # Use to sort python imports by name and put system import first.
 #   -   repo: https://github.com/pycqa/isort
