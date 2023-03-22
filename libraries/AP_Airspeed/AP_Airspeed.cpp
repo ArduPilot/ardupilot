@@ -188,8 +188,8 @@ AP_Airspeed::AP_Airspeed()
 
     // Setup defaults that only apply to first sensor
     param[0].type.set_default(ARSPD_DEFAULT_TYPE);
-    param[0].bus.set_default(HAL_AIRSPEED_BUS_DEFAULT);
 #ifndef HAL_BUILD_AP_PERIPH
+    param[0].bus.set_default(HAL_AIRSPEED_BUS_DEFAULT);
     param[0].pin.set_default(ARSPD_DEFAULT_PIN);
 #endif
 
