@@ -46,7 +46,7 @@ bool ModeLand::init(bool ignore_checks)
     copter.fence.auto_disable_fence_for_landing();
 #endif
 
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
     // initialise precland state machine
     copter.precland_statemachine.init();
 #endif
