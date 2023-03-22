@@ -48,7 +48,7 @@
  *     101 4.0
  *     110 5.0    -- gives a max airspeed of ~50 m/s
  *     111 10.0   -- gives a max airspeed of ~75 m/s
- * _selectedPressureRange should match (or drive) the value of PressureRange
+ * _selected_pressure_range should match (or drive) the value of PressureRange
  *
  * Watchdog Enable bit
  * Bit 3 is the I/O Watchdog Enable bit. When set, the I/O watchdog is enabled.
@@ -73,7 +73,7 @@
  *  (NotchFilterEnable << 7) | (BandWidth << 6) | (WatchdogEnable << 4) | PressureRange;
  */
 // TODO How do we access a parameter to allow tweeking this during operations.
-#define MODE_CONTROL_REGISTER 0xF7 // 0xF6 is default
+static constexpr uint8_t MODE_CONTROL_REGISTER = 0xF7; // 0xF6 is default
 
 /*
  * The Rate Control Register controls the rate at which the DAV
@@ -92,7 +92,7 @@
  * 00000001 = 444Hz
  * 00000010 = 222Hz ...
  */
-#define RATE_CONTROL_REGISTER 0x00 // Auto Select aka (BW = 1Hz, so Rate will be 3Hz)
+static constexpr uint8_t RATE_CONTROL_REGISTER = 0x00; // Auto Select aka (BW = 1Hz, so Rate will be 3Hz)
 
 extern const AP_HAL::HAL &hal;
 
@@ -104,9 +104,9 @@ AP_Airspeed_ND210::AP_Airspeed_ND210(AP_Airspeed &_frontend, uint8_t _instance) 
 /*
   send a 16 bit command code
  */
-bool AP_Airspeed_ND210::_send_command(uint8_t modeCtl, uint8_t rateCtl)
+bool AP_Airspeed_ND210::_send_configuration_command()
 {
-    uint8_t b[2] {modeCtl, rateCtl};
+    uint8_t b[2] {MODE_CONTROL_REGISTER, RATE_CONTROL_REGISTER};
     return _dev->transfer(b, 2, nullptr, 0);
 }
 
@@ -123,7 +123,7 @@ bool AP_Airspeed_ND210::init()
     _dev->set_retries(10);
 
     // set Mode and Rate modes
-    if (!_send_command(MODE_CONTROL_REGISTER, RATE_CONTROL_REGISTER)) {
+    if (!_send_configuration_command()) {
         _dev->get_semaphore()->give();
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ND210[%u]: Init Send Command Failed.", get_instance());
         return false;
@@ -137,33 +137,33 @@ bool AP_Airspeed_ND210::init()
     switch(MODE_CONTROL_REGISTER & 0x07) {
         case 0b000:
         case 0b001:
-            _selectedPressureRange = 0.25;
+            _selected_pressure_range = 0.25;
             break;
         case 0b010:
-            _selectedPressureRange = 0.5;
+            _selected_pressure_range = 0.5;
             break;
         case 0b011:
-            _selectedPressureRange = 1.0;
+            _selected_pressure_range = 1.0;
             break;
         case 0b100:
-            _selectedPressureRange = 2.0;
+            _selected_pressure_range = 2.0;
             break;
         case 0b101:
-            _selectedPressureRange = 4.0;
+            _selected_pressure_range = 4.0;
             break;
         case 0b110:
-            _selectedPressureRange = 5.0;
+            _selected_pressure_range = 5.0;
             break;
         case 0b111:
-            _selectedPressureRange = 10.0;
+            _selected_pressure_range = 10.0;
             break;
     }
 
 #if HAL_GCS_ENABLED
     GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                  "ND210: Found addr 0x%02x _selectedPressureRange=%f",
+                  "ND210: Found addr 0x%02x _selected_pressure_range=%f",
                   ND210_I2C_ADDR,
-                  _selectedPressureRange);
+                  _selected_pressure_range);
 #endif
 
     /*
@@ -195,14 +195,14 @@ void AP_Airspeed_ND210::_timer()
     if (ret == false) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ND210 Read Failed");
         if (now - _last_sample_time_ms > 200) {
-            // try and re-connect
-            _send_command(MODE_CONTROL_REGISTER, RATE_CONTROL_REGISTER);
+            // reset configuration
+            _send_configuration_command();
         }
         return;
     }
 
     int16_t P = (((int16_t)val[0]) << 8) | val[1];
-    float diff_pressure_h20 = (float(P) / ND210_SCALE_PRESSURE_ND210) * _selectedPressureRange;
+    float diff_pressure_h20 = (float(P) / ND210_SCALE_PRESSURE_ND210) * _selected_pressure_range;
 
 
     uint8_t temperatureInteger = val[2];

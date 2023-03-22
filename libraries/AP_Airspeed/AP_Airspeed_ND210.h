@@ -56,16 +56,16 @@ public:
 
 private:
     void _timer();
-    bool _send_command(uint8_t modeCtl, uint8_t rateCtl);
+    bool _send_configuration_command();
 
-    float _temp;
-    float _press;
+    float _temp;  // temperature in Celsius
+    float _press; // differential pressure in Pascal
     uint16_t _temp_count;
     uint16_t _press_count;
     float _temp_sum;
-    float _press_sum;
+    float _press_sum; // pressure accumulator in Pascal
     uint32_t _last_sample_time_ms;
-    float _selectedPressureRange;
+    float _selected_pressure_range;
 
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 };
