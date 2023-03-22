@@ -173,8 +173,6 @@ end
 if (AP_VERSION_NUM_ < 41) then
   gcs:send_text(4, "Rev_Throttle Script: must be running Plane4.1 or higher")
   return
-els
-
 end
 
 gcs:send_text(4, "Auto Reverse Thrust Script Loaded")
