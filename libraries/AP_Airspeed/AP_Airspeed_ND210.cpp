@@ -39,16 +39,16 @@
  *
  * PressureRange
  * Bits 0-2 control the output pressure range.
- *     Pressure Range, 3 bits, in H20
- *     000 0.25
- * 001 0.25
- * 010 0.5
- * 011 1.0
- * 100 2.0
- * 101 4.0
- * 110 5.0
- * 111 10.0
- * SelectedPressureRange should match what PressureRange indicates
+ *   Pressure Range, 3 bits, in H20
+ *     000 0.25  -- gives a max airspeed of 11 m/s
+ *     001 0.25
+ *     010 0.5
+ *     011 1.0
+ *     100 2.0
+ *     101 4.0
+ *     110 5.0    -- gives a max airspeed of ~50 m/s
+ *     111 10.0   -- gives a max airspeed of ~75 m/s
+ * _selectedPressureRange should match (or drive) the value of PressureRange
  *
  * Watchdog Enable bit
  * Bit 3 is the I/O Watchdog Enable bit. When set, the I/O watchdog is enabled.
@@ -72,7 +72,8 @@
  *  ModeControlRegister default value is 0xF6 (b1 111 0 110 ) Notch (1), 200Hz (b111), No Watchdog, PressureRange = 5 (b110)
  *  (NotchFilterEnable << 7) | (BandWidth << 6) | (WatchdogEnable << 4) | PressureRange;
  */
-#define MODE_CONTROL_REGISTER 0xF6  // default
+// TODO How do we access a parameter to allow tweeking this during operations.
+#define MODE_CONTROL_REGISTER 0xF7 // 0xF6 is default
 
 /*
  * The Rate Control Register controls the rate at which the DAV
@@ -92,10 +93,6 @@
  * 00000010 = 222Hz ...
  */
 #define RATE_CONTROL_REGISTER 0x00 // Auto Select aka (BW = 1Hz, so Rate will be 3Hz)
-
-// see ND210 spec for values.
-#define ND210_MODE_RATE_REGISTER  ( (MODE_CONTROL_REGISTER << 8) & RATE_CONTROL_REGISTER) // 0xF600
-
 
 extern const AP_HAL::HAL &hal;
 
@@ -138,6 +135,7 @@ bool AP_Airspeed_ND210::init()
     _dev->get_semaphore()->give();
 
     switch(MODE_CONTROL_REGISTER & 0x07) {
+        case 0b000:
         case 0b001:
             _selectedPressureRange = 0.25;
             break;
@@ -171,9 +169,11 @@ bool AP_Airspeed_ND210::init()
     /*
       this sensor uses zero offset and skips cal
      */
+#if 0  // Airspeed seems more accurate without these.
     set_use_zero_offset();
     set_skip_cal();
     set_offset(0);
+#endif
 
     _dev->set_device_type(uint8_t(DevType::ND210));
     set_bus_id(_dev->get_bus_id());
@@ -235,7 +235,6 @@ bool AP_Airspeed_ND210::get_differential_pressure(float &pressure)
     }
 
     pressure = _press;
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ND210: Pressure Requested = %f", pressure);
 
     return true;
 }
@@ -256,7 +255,6 @@ bool AP_Airspeed_ND210::get_temperature(float &temperature)
     }
 
     temperature = _temp;
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ND210: Temperature Requested = %f", temperature);
 
     return true;
 }
