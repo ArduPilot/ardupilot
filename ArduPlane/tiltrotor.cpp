@@ -311,13 +311,13 @@ void Tiltrotor::continuous_update(void)
         // relies heavily on Q_VFWD_GAIN being set appropriately.
        const float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
        float settilt = 0.0f;
-       if (throttle > 0) {
+       if (quadplane.fwd_thr_min < 0) {
             // Remove throttle min
-            settilt = constrain_float((throttle - MAX(plane.aparm.throttle_min.get(),0)) * 0.02, 0, 1);
-       } else if (quadplane.fwd_thr_min < 0) {
-           settilt = constrain_float(throttle * 0.02, -1, 1);
+            settilt = constrain_float(throttle * 0.02, -1, 1);
+       } else {
+           settilt = constrain_float((throttle - MAX(plane.aparm.throttle_min.get(),0)) * 0.02, 0, 1);
        }
-       slew(MIN(settilt * max_angle_deg * (1/90.0), get_forward_flight_tilt())); 
+       slew(MIN(settilt * max_angle_deg * (1/90.0), get_forward_flight_tilt()));
     }
 }
 

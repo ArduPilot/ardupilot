@@ -424,12 +424,6 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Range: 0 100
     AP_GROUPINFO("FWD_MANTHR_MAX", 20, QuadPlane, fwd_thr_max, 0),
 
-    // @Param: FWD_THR_MIN
-    // @DisplayName: VTOL minimum forward throttle percent
-    // @Description: Minimum value for manual forward throttle; allows for aft translation using backward tilt angles in tiltrotor configurations
-    // @Range: -100 0
-    AP_GROUPINFO("FWD_THR_MIN", 21, QuadPlane, fwd_thr_min, 0),
-
     // 21: TAILSIT_DSKLD
     // 22: TILT_FIX_ANGLE
     // 23: TILT_FIX_GAIN
@@ -509,6 +503,12 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("RTL_ALT_MIN", 34, QuadPlane, qrtl_alt_min, 10),
+
+    // @Param: FWD_THR_MIN
+    // @DisplayName: VTOL minimum forward throttle percent
+    // @Description: Minimum value for manual forward throttle; allows for aft translation using backward tilt angles in tiltrotor configurations
+    // @Range: -100 0
+    AP_GROUPINFO("FWD_THR_MIN", 35, QuadPlane, fwd_thr_min, 0),
 
     AP_GROUPEND
 };
@@ -3539,10 +3539,19 @@ float QuadPlane::forward_throttle_pct()
             return 0;
         } else {
             // calculate fwd throttle demand from manual input
-            float fwd_thr = rc_fwd_thr_ch->norm_input()*100.0f;
+            float fwd_thr;
 
-            // set forward throttle to fwd_thr_max * (manual input + mix): range [0,100]
-            fwd_thr *= .01f * constrain_float(fwd_thr_max, 0, 100);
+            if (fwd_thr_min < 0){
+                fwd_thr = rc_fwd_thr_ch->norm_input()*100.0f;
+            } else {
+                fwd_thr = rc_fwd_thr_ch->percent_input();
+            }
+            if (!is_negative(fwd_thr)) {
+                fwd_thr *= 0.01 * constrain_float(fwd_thr_max, 0, 100);
+            } else {
+                fwd_thr *= 0.01 * constrain_float(-fwd_thr_min, 0, 100);
+            }
+            
             return fwd_thr;
         }
     }
