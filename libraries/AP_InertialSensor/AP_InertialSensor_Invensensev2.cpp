@@ -538,7 +538,10 @@ check_registers:
 */
 bool AP_InertialSensor_Invensensev2::_check_raw_temp(int16_t t2)
 {
-    if (abs(t2 - _raw_temp) < 400) {
+    // we have increased this threshold from 400 to 800 to cope with
+    // few instances observed where the temperature was varying more than 
+    // 400 units on ICM20649
+    if (abs(t2 - _raw_temp) < 800) {
         // cached copy OK
         return true;
     }
@@ -546,7 +549,7 @@ bool AP_InertialSensor_Invensensev2::_check_raw_temp(int16_t t2)
     if (_block_read(INV2REG_TEMP_OUT_H, trx, 2)) {
         _raw_temp = int16_val(trx, 0);
     }
-    return (abs(t2 - _raw_temp) < 400);
+    return (abs(t2 - _raw_temp) < 800);
 }
 
 bool AP_InertialSensor_Invensensev2::_block_read(uint16_t reg, uint8_t *buf,
