@@ -1,7 +1,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AC_PrecLand_SITL.h"
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if AC_PRECLAND_SITL_ENABLED
 
 #include "AP_AHRS/AP_AHRS.h"
 // init - perform initialisation of this backend
@@ -54,4 +54,4 @@ bool AC_PrecLand_SITL::get_los_body(Vector3f& ret) {
     return true;
 }
 
-#endif
+#endif  // AC_PRECLAND_SITL_ENABLED
