@@ -2,11 +2,26 @@
 a script to test handling of 32 bit micros timer wrap with BDShot
 
 - Requires bdshot output on SERVO9 to 12
+   - SERVO_BLH_MASK set to 3840
+   - SERVO_BLH_OTYPE set to 4
+   - SERVO_BLH_BDSHOT set to 3840
 - Requires a wire from one of SERVO9 to 12 to SERVO14 (AUX6, pin 55)
 - needs SERVO13_FUNCTION and SERVO14_FUNCTION set to -1
 - needs firmware with change for time to start 30s before 32 bit usec wrap and to allow lua reboot
-- BRD_SAFETY_DFLT must be 0
-- BDShot must be enabled on outputs 9-12
+   - build with ./waf configure --board CubeOrange-bdshot --board-start-time=0xFE363C7F for 30s delay
+   - build with 0xFF1B1E3F for 15s delay
+- BRD_SAFETY_DEFLT must be 0
+- SCR_VM_I_COUNT set to 1000000
+- INS_GYR_CAL set to 0
+- To reset the metrics set WRAP32_RESET to 1
+
+- To test with actual motors on copter - DANGER must be done with props off!
+   - WRAP32_MTEST set to 1
+   - DISARM_DELAY set to 40
+   - RC_FS_TIMEOUT set to 40
+   - ARMING_CHECKS set to 0
+   - FS_THR_ENABLE set to 0
+- To actually start the test set WRAP32_RESET to 1
 --]]
 
 local PARAM_TABLE_KEY = 138
@@ -33,7 +48,10 @@ local WRAP32_FAIL = bind_add_param('FAIL', 2, 0)
 local WRAP32_ERR = bind_add_param('ERR', 3, 0)
 local WRAP32_PIN = bind_add_param('PIN', 4, 55)
 local WRAP32_PASS = bind_add_param('PASS', 5, 0)
+local WRAP32_RESET = bind_add_param('RESET', 6, 0)
+local WRAP32_MTEST = bind_add_param('MTEST', 7, 0)
 
+-- UINT_MAX -1
 local wrap_time_ms = uint32_t(0x418937)
 
 --[[
@@ -93,8 +111,40 @@ function check_failure()
    end
 end
 
+function reset_and_reboot()
+   gcs:send_text(0,string.format("RESETTING"))
+   WRAP32_COUNT:set_and_save(0)
+   WRAP32_ERR:set_and_save(0)
+   WRAP32_FAIL:set_and_save(0)
+   WRAP32_PASS:set_and_save(0)
+   WRAP32_RESET:set_and_save(0)
+   vehicle:reboot(false)
+end
+
+function arm_and_start_motors()
+   gcs:send_text(0,string.format("ARMING"))
+   arming:arm()
+   if arming:is_armed() then
+      MotorsMatrix:set_throttle_passthrough_for_esc_calibration(0.1)
+      WRAP32_RESET:set_and_save(0)
+      done_post_wrap = true
+   end
+end
+
 function update()
-   check_failure()
+   if WRAP32_RESET:get() > 0 then
+      if WRAP32_MTEST:get() > 0 then
+         arm_and_start_motors()
+      else
+         reset_and_reboot()
+      end
+   end
+
+   if WRAP32_MTEST:get() == 0 then
+      check_failure()
+   else
+      gcs:send_text(0,string.format("Time to wrap: %.1f", time_to_wrap()))
+   end
    gcs:send_text(0,string.format("Boots:%.0f fail:%.0f err:%.0f pass:%.0f",
                                  WRAP32_COUNT:get(),
                                  WRAP32_FAIL:get(),
@@ -102,6 +152,9 @@ function update()
                                  WRAP32_PASS:get()))
    if done_post_wrap and time_to_wrap() < -6 then
       gcs:send_text(0,string.format("REBOOTING"))
+      if WRAP32_MTEST:get() > 0 then
+         WRAP32_RESET:set_and_save(1)
+      end
       vehicle:reboot(false)
    end
    return update, 1000
