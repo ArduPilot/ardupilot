@@ -1388,16 +1388,6 @@ void GCS_MAVLINK::update_send()
         AP::logger().handle_log_send();
     }
 #endif
-
-#ifdef AP_SCRIPTING_ENABLED
-    {
-        AP_Scripting *scripting = AP_Scripting::get_singleton();
-        if (scripting != nullptr) {
-            scripting->send_message(chan);
-        }
-    }
-#endif // AP_SCRIPTING_ENABLED
-
     if (!deferred_messages_initialised) {
         initialise_message_intervals_from_streamrates();
 #if HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
