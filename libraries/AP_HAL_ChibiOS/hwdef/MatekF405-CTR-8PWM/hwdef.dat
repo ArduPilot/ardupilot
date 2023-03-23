@@ -1,0 +1,17 @@
+# hw definition file for Mateksys F405-CTR board, enables two extra PWM outputs on TX2 and RSSI pads.
+
+include ../MatekF405/hwdef.dat
+
+undef STM32_ST_USE_TIMER CH_CFG_ST_RESOLUTION
+undef PB1 PA2 PA3
+
+# Use TIM5 for ST clock
+define STM32_ST_USE_TIMER 5
+define CH_CFG_ST_RESOLUTION 32
+
+# Add PWM on RSSI TX2
+PB1  TIM3_CH4 TIM3 PWM(7) GPIO(56)
+PA2  TIM2_CH3 TIM2 PWM(8) GPIO(57)
+
+# RC input RX2 using timer
+PA3 TIM9_CH2 TIM9 RCININT PULLDOWN
