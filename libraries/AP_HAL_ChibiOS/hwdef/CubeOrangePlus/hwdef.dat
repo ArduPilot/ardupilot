@@ -45,7 +45,7 @@ PG1 ICM45686_CS CS
 SPIDEV icm42688_ext   SPI4 DEVID4  ACCEL_EXT_CS  MODE3  2*MHZ  8*MHZ
 
 #IMU 1
-SPIDEV icm42688_ext2  SPI4 DEVID4  GYRO_EXT_CS   MODE3  2*MHZ  8*MHZ
+SPIDEV icm42688_ext2  SPI4 DEVID5  GYRO_EXT_CS   MODE3  2*MHZ  8*MHZ
 
 #IMU 2
 SPIDEV icm45686       SPI1 DEVID4  ICM45686_CS   MODE1  2*MHZ  8*MHZ
@@ -69,9 +69,15 @@ IMU Invensensev3 SPI:icm45686 ROTATION_ROLL_180_YAW_135 INSTANCE:2
 
 define ICM45686_CLKIN 1
 
-IMU Invensensev2 SPI:icm20948_aux ROTATION_PITCH_180
+# AUX:<devid> keyword is used to check for the presence of the sensor
+# in the detected IMUs list. If the IMU with the given devid is found
+# then we skip the probe for the sensor the second time. This is useful
+# if you have multiple choices for IMU over same instance number, and still 
+# want to instantiate the sensor after main IMUs are detected.
 
-IMU Invensensev3 SPI:icm45686_aux ROTATION_ROLL_180_YAW_135
+IMU Invensensev2 SPI:icm20948_aux ROTATION_PITCH_180 AUX:2883874
+
+IMU Invensensev3 SPI:icm45686_aux ROTATION_ROLL_180_YAW_135 AUX:3867658
 
 define INS_AUX_INSTANCES 2
 
