@@ -1,4 +1,4 @@
-// generated from rosidl_adapter/resource/msg.idl.em
+/// generated from rosidl_adapter/resource/msg.idl.em
 // with input from sensor_msgs/msg/NavSatFix.msg
 // generated code does not contain a copyright notice
 
@@ -11,10 +11,10 @@ module sensor_msgs {
     module NavSatFix_Constants {
       @verbatim (language="comment", text=
         "If the covariance of the fix is known, fill it in completely. If the" "\n"        "GPS receiver provides the variance of each measurement, put them" "\n"        "along the diagonal. If only Dilution of Precision is available," "\n"        "estimate an approximate covariance from that.")
-      const octet COVARIANCE_TYPE_UNKNOWN = 0;
-      const octet COVARIANCE_TYPE_APPROXIMATED = 1;
-      const octet COVARIANCE_TYPE_DIAGONAL_KNOWN = 2;
-      const octet COVARIANCE_TYPE_KNOWN = 3;
+      const uint8 COVARIANCE_TYPE_UNKNOWN = 0;
+      const uint8 COVARIANCE_TYPE_APPROXIMATED = 1;
+      const uint8 COVARIANCE_TYPE_DIAGONAL_KNOWN = 2;
+      const uint8 COVARIANCE_TYPE_KNOWN = 3;
     };
     @verbatim (language="comment", text=
       "Navigation Satellite fix for any Global Navigation Satellite System" "\n"
@@ -59,9 +59,9 @@ module sensor_msgs {
         "" "\n"
         "Beware: this coordinate system exhibits singularities at the poles.")
       @unit (value="m^2")
-      double position_covariance[9];
+      double__9 position_covariance;
 
-      octet position_covariance_type;
+      uint8 position_covariance_type;
     };
   };
 };
