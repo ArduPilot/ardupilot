@@ -1227,7 +1227,7 @@ void RCOutput::timer_tick(uint32_t time_out_us)
     }
 
     // if we have enough time left send out LED data
-    if (serial_led_pending && (time_out_us > (AP_HAL::micros() + (_dshot_period_us >> 1)))) {
+    if (serial_led_pending && ((time_out_us - AP_HAL::micros()) > (_dshot_period_us >> 1))) {
         serial_led_pending = false;
         for (auto &group : pwm_group_list) {
             serial_led_pending |= !serial_led_send(group);
@@ -1394,7 +1394,7 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
 
     // if we are sharing UP channels then it might have taken a long time to get here,
     // if there's not enough time to actually send a pulse then cancel
-    if (AP_HAL::micros() + group.dshot_pulse_time_us > time_out_us) {
+    if (group.dshot_pulse_time_us > time_out_us - AP_HAL::micros()) {
         group.dma_handle->unlock();
         return;
     }
