@@ -496,6 +496,8 @@ def load_env_vars(env):
         env.CHIBIOS_BUILD_FLAGS += ' ENABLE_STATS=yes'
     if env.ENABLE_DFU_BOOT and env.BOOTLOADER:
         env.CHIBIOS_BUILD_FLAGS += ' USE_ASXOPT=-DCRT0_ENTRY_HOOK=TRUE'
+    if env.AP_BOARD_START_TIME:
+        env.CHIBIOS_BUILD_FLAGS += ' AP_BOARD_START_TIME=0x%x' % env.AP_BOARD_START_TIME
 
 
 def setup_optimization(env):
