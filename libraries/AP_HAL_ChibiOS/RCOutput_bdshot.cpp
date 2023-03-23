@@ -576,7 +576,7 @@ bool RCOutput::bdshot_decode_dshot_telemetry(pwm_group& group, uint8_t chan)
 #endif
     }
 #if !defined(IOMCU_FW)
-    uint64_t now = AP_HAL::micros64();
+    rcout_timer_t now = rcout_micros();
     if (chan == DEBUG_CHANNEL && (now  - group.bdshot.last_print) > 1000000) {
         hal.console->printf("TELEM: %d <%d Hz, %.1f%% err>", group.bdshot.erpm[chan], group.bdshot.telem_rate[chan],
             100.0f * float(group.bdshot.telem_err_rate[chan]) / (group.bdshot.telem_err_rate[chan] + group.bdshot.telem_rate[chan]));
