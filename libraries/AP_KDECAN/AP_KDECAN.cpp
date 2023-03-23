@@ -122,7 +122,7 @@ void AP_KDECAN::init(uint8_t driver_index, bool enable_filters)
 
     AP_HAL::CANFrame frame { (id.value | AP_HAL::CANFrame::FlagEFF), nullptr, 0 };
 
-    if(!_can_iface->send(frame, AP_HAL::micros() + 1000000, 0)) {
+    if(!_can_iface->send(frame, AP_HAL::micros64() + 1000000, 0)) {
         debug_can(AP_CANManager::LOG_DEBUG, "couldn't send discovery message");
         return;
     }
