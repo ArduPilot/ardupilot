@@ -315,11 +315,11 @@ void panic(const char *errormsg, ...)
 #endif
 }
 
-__FASTRAMFUNC__ uint32_t micros()
+__FASTRAMFUNC__ micros_t micros()
 {
 #if CH_CFG_ST_RESOLUTION == 32 && CH_CFG_ST_FREQUENCY==1000000U
     // special case optimisation for 32 bit timers
-    return st_lld_get_counter();
+    return micros_t(uint32_t(st_lld_get_counter()));
 #else
     return hrt_micros32();
 #endif
