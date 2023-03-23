@@ -276,6 +276,7 @@ singleton AP_Vehicle method nav_scripting_enable boolean uint8_t'skip_check
 singleton AP_Vehicle method set_velocity_match boolean Vector2f
 singleton AP_Vehicle method set_land_descent_rate boolean float'skip_check
 singleton AP_Vehicle method has_ekf_failsafed boolean
+singleton AP_Vehicle method reboot void boolean
 
 include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED rename serialLED
