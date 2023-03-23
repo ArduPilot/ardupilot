@@ -117,7 +117,7 @@ if TRIK_ENABLE:get() > 0 then
    for i = 1, count do
       local k = 5*i
       local prefix = string.format("%u", i)
-      TRICKS[i] = TrickDef(bind_add_param2(prefix .. "_ID",   k+0, i),
+      TRICKS[i] = TrickDef(bind_add_param2(prefix .. "_ID",   k+0, -1),
                            bind_add_param2(prefix .. "_ARG1", k+1, 30),
                            bind_add_param2(prefix .. "_ARG2", k+2, 0),
                            bind_add_param2(prefix .. "_ARG3", k+3, 0),
