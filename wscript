@@ -382,6 +382,11 @@ configuration in order to save typing.
                  default=0,
                  help='number of auxiliary IMUs')
 
+    g.add_option('--board-start-time',
+                 type='int',
+                 default=0,
+                 help='zero time on boot in microseconds')
+    
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
         paths = []
@@ -451,6 +456,11 @@ def configure(cfg):
 
     if cfg.options.num_aux_imus > 0:
         cfg.define('INS_AUX_INSTANCES', cfg.options.num_aux_imus)
+
+    if cfg.options.board_start_time != 0:
+        cfg.define('AP_BOARD_START_TIME', cfg.options.board_start_time)
+        # also in env for hrt.c
+        cfg.env.AP_BOARD_START_TIME = cfg.options.board_start_time
 
     cfg.load('ap_library')
 
