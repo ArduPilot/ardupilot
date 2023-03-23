@@ -233,6 +233,10 @@ ifeq ($(ENABLE_STATS),yes)
  ASXFLAGS += -DHAL_ENABLE_THREAD_STATISTICS
 endif
 
+ifneq ($(AP_BOARD_START_TIME),)
+ UDEFS += -DAP_BOARD_START_TIME=$(AP_BOARD_START_TIME)
+endif
+
 # Define ASM defines here
 UADEFS =
 
