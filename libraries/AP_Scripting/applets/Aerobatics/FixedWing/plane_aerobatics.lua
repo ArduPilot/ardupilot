@@ -2481,6 +2481,11 @@ function check_trick()
    end
    if action == 1 and selection ~= last_trick_selection then
       local id = TRICKS[selection].id:get()
+         if id == -1 then
+            gcs:send_text(0,string.format("Trick %u not setup",selection))
+            last_trick_selection = selection
+            return
+         end
       load_trick(id)
       if command_table[id] ~= nil then
          local cmd = command_table[id]
@@ -2501,6 +2506,11 @@ function check_trick()
          return
       end
       local id = TRICKS[selection].id:get()
+      if id == -1 then
+         gcs:send_text(0,string.format("Trick %u not setup",selection))
+         last_trick_selection = selection
+         return
+      end
       load_trick(id)
       if command_table[id] == nil then
          gcs:send_text(0, string.format("Invalid trick ID %u", id))
