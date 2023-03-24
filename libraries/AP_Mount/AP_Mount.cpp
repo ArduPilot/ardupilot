@@ -337,6 +337,60 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
     return MAV_RESULT_FAILED;
 }
 
+void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg){
+    mavlink_gimbal_manager_set_attitude_t packet;
+    mavlink_msg_gimbal_manager_set_attitude_decode(&msg,&packet);
+
+    AP_Mount_Backend *backend;
+
+    // check gimbal device id.  0 is primary, 1 is 1st gimbal, 2 is
+    // 2nd gimbal, etc
+    const uint8_t instance = packet.gimbal_device_id;
+    if (instance == 0) {
+        backend = get_primary();
+    } else {
+        backend = get_instance(instance - 1);
+    }
+
+    if (backend == nullptr) {
+        return;
+    }
+
+    // check flags for change to RETRACT
+    const uint32_t flags = packet.flags;
+    if ((flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
+        backend->set_mode(MAV_MOUNT_MODE_RETRACT);
+        return;
+    }
+
+    // check flags for change to NEUTRAL
+    if ((flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
+        backend->set_mode(MAV_MOUNT_MODE_NEUTRAL);
+        return;
+    }
+
+    const Quaternion att_quat{packet.q};
+    if (!att_quat.is_nan()) {
+        // convert quaternion to euler angles
+        float roll_rad, pitch_rad, yaw_rad;
+        att_quat.to_euler(roll_rad, pitch_rad, yaw_rad);
+
+        // radian to deg conversion
+        const float roll_deg = degrees(roll_rad);
+        const float pitch_deg = degrees(pitch_rad);
+        const float yaw_deg = degrees(yaw_rad);
+        backend->set_angle_target(roll_deg, pitch_deg, yaw_deg, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        return;
+    }
+
+    if (!isnan(packet.angular_velocity_x) && !isnan(packet.angular_velocity_y) && !isnan(packet.angular_velocity_y)) {
+        const float roll_rate_degs = degrees(packet.angular_velocity_x);
+        const float pitch_rate_degs = degrees(packet.angular_velocity_y);
+        const float yaw_rate_degs = degrees(packet.angular_velocity_z);
+        backend->set_rate_target(roll_rate_degs, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        return;
+    }
+}
 
 MAV_RESULT AP_Mount::handle_command_long(const mavlink_command_long_t &packet)
 {
@@ -623,6 +677,9 @@ void AP_Mount::handle_message(mavlink_channel_t chan, const mavlink_message_t &m
         break;
     case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
         handle_global_position_int(msg);
+        break;
+    case MAVLINK_MSG_ID_GIMBAL_MANAGER_SET_ATTITUDE:
+        handle_gimbal_manager_set_attitude(msg);
         break;
     case MAVLINK_MSG_ID_GIMBAL_DEVICE_INFORMATION:
         handle_gimbal_device_information(msg);
