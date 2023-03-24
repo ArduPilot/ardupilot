@@ -64,6 +64,12 @@ uint16_t RTCM3_Parser::get_id(void) const
     return (pkt[3]<<8 | pkt[4]) >> 4;
 }
 
+// return length of found packet
+uint16_t RTCM3_Parser::get_found_len(void) const
+{
+    return found_len;
+}
+
 // look for preamble to try to resync
 void RTCM3_Parser::resync(void)
 {
