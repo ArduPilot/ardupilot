@@ -353,7 +353,12 @@ configuration in order to save typing.
     g.add_option('--assert-cc-version',
                  default=None,
                  help='fail configure if not using the specified gcc version')
-    
+
+    g.add_option('--board-start-time',
+                 type='int',
+                 default=0,
+                 help='zero time on boot in microseconds')
+
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
         paths = []
@@ -416,6 +421,11 @@ def configure(cfg):
     if cfg.options.static:
         cfg.msg('Using static linking', 'yes', color='YELLOW')
         cfg.env.STATIC_LINKING = True
+
+    if cfg.options.board_start_time != 0:
+        cfg.define('AP_BOARD_START_TIME', cfg.options.board_start_time)
+        # also in env for hrt.c
+        cfg.env.AP_BOARD_START_TIME = cfg.options.board_start_time
 
     cfg.load('ap_library')
 

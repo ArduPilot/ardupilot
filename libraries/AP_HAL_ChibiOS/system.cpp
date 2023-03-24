@@ -276,7 +276,11 @@ __FASTRAMFUNC__ uint32_t micros()
 {
 #if CH_CFG_ST_RESOLUTION == 32 && CH_CFG_ST_FREQUENCY==1000000U
     // special case optimisation for 32 bit timers
+#ifdef AP_BOARD_START_TIME
+    return st_lld_get_counter() + AP_BOARD_START_TIME;
+#else
     return st_lld_get_counter();
+#endif
 #else
     return hrt_micros32();
 #endif
