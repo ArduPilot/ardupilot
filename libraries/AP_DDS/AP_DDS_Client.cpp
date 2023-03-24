@@ -53,7 +53,10 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
     msg.status.service = 0; // SERVICE_GPS
     msg.status.status = -1; // STATUS_NO_FIX
 
-    if (!AP::gps().is_healthy(instance)) {
+    auto &gps = AP::gps();
+    WITH_SEMAPHORE(gps.get_semaphore());
+
+    if (!gps.is_healthy(instance)) {
         msg.status.status = -1; // STATUS_NO_FIX
         msg.status.service = 0; // No services supported
         msg.position_covariance_type = 0; // COVARIANCE_TYPE_UNKNOWN
@@ -65,7 +68,7 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
     //! This will be properly designed and implemented to spec in #23277
     msg.status.service = 1; // SERVICE_GPS
 
-    const auto status = AP::gps().status(instance);
+    const auto status = gps.status(instance);
     switch (status) {
     case AP_GPS::NO_GPS:
     case AP_GPS::NO_FIX:
@@ -91,7 +94,7 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
         //! @todo Can we not just use an enum class and not worry about this condition?
         break;
     }
-    const auto loc = AP::gps().location(instance);
+    const auto loc = gps.location(instance);
     msg.latitude = loc.lat * 1E-7;
     msg.longitude = loc.lng * 1E-7;
 
@@ -108,9 +111,9 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
     // https://github.com/ros-drivers/nmea_navsat_driver/blob/indigo-devel/src/libnmea_navsat_driver/driver.py#L110-L114
     //! @todo This calculation will be moved to AP::gps and fixed in #23259
     //! It is a placeholder for now matching the ROS1 nmea_navsat_driver behavior
-    const auto hdop = AP::gps().get_hdop(instance);
+    const auto hdop = gps.get_hdop(instance);
     const auto hdopSq = hdop * hdop;
-    const auto vdop = AP::gps().get_vdop(instance);
+    const auto vdop = gps.get_vdop(instance);
     const auto vdopSq = vdop * vdop;
     msg.position_covariance[0] = hdopSq;
     msg.position_covariance[4] = hdopSq;
