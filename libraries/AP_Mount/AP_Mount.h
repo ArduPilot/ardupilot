@@ -215,6 +215,7 @@ private:
     MAV_RESULT handle_command_do_mount_configure(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_mount_control(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_gimbal_manager_pitchyaw(const mavlink_command_long_t &packet);
+    void handle_gimbal_manager_set_attitude(const mavlink_message_t &msg);
     void handle_global_position_int(const mavlink_message_t &msg);
     void handle_gimbal_device_information(const mavlink_message_t &msg);
     void handle_gimbal_device_attitude_status(const mavlink_message_t &msg);
