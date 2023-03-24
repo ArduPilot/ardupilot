@@ -48,7 +48,7 @@ private:
     bool connected = true;
 
     static void update_topic(builtin_interfaces_msg_Time& msg);
-    static void update_topic(sensor_msgs_msg_NavSatFix& msg);
+    static void update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t instance);
 
     // The last ms timestamp AP_DDS wrote a Time message
     uint64_t last_time_time_ms;
