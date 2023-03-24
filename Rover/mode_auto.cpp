@@ -44,6 +44,12 @@ void ModeAuto::_exit()
 
 void ModeAuto::update()
 {
+    // check if mission exists (due to being cleared while disarmed in AUTO,
+    // if no mission, then stop...needs mode change out of AUTO, mission load,
+    // and change back to AUTO to run a mission at this point
+    if (!hal.util->get_soft_armed() && mission.num_commands() <= 1) {
+        start_stop();
+    }
     // start or update mission
     if (waiting_to_start) {
         // don't start the mission until we have an origin
