@@ -329,3 +329,5 @@ DMA_NOSHARE SPI1* SPI4* USART6*
 # for users who have replaced their CubeSolo with a CubeOrange:
 define HAL_OREO_LED_ENABLED 1
 define HAL_SOLO_GIMBAL_ENABLED HAL_MOUNT_ENABLED
+
+define HAL_ENABLE_FAST_FIFO_RESET_ICM20602 1
