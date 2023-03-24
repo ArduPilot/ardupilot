@@ -12,7 +12,6 @@
 
 static constexpr uint16_t DELAY_TIME_TOPIC_MS = 10;
 static constexpr uint16_t DELAY_NAV_SAT_FIX_TOPIC_MS = 1000;
-static constexpr uint8_t GPS_INSTANCE_NO = 0; // Use primary GPS
 static char WGS_84_FRAME_ID[] = "WGS-84";
 
 AP_HAL::UARTDriver *dds_port;
@@ -37,20 +36,24 @@ void AP_DDS_Client::update_topic(builtin_interfaces_msg_Time& msg)
 
 }
 
-void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg)
+void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t instance)
 {
     // Add a lambda that takes in navsatfix msg and populates the cov
     // Make it constexpr if possible
     // https://www.fluentcpp.com/2021/12/13/the-evolutions-of-lambdas-in-c14-c17-and-c20/
     // constexpr auto times2 = [] (sensor_msgs_msg_NavSatFix* msg) { return n * 2; };
 
+    // assert(instance >= GPS_MAX_RECEIVERS);
+    if (instance >= GPS_MAX_RECEIVERS) {
+        return;
+    }
 
     update_topic(msg.header.stamp);
     strcpy(msg.header.frame_id, WGS_84_FRAME_ID);
     msg.status.service = 0; // SERVICE_GPS
     msg.status.status = -1; // STATUS_NO_FIX
 
-    if (!AP::gps().is_healthy()) {
+    if (!AP::gps().is_healthy(instance)) {
         msg.status.status = -1; // STATUS_NO_FIX
         msg.status.service = 0; // No services supported
         msg.position_covariance_type = 0; // COVARIANCE_TYPE_UNKNOWN
@@ -62,7 +65,7 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg)
     //! This will be properly designed and implemented to spec in #23277
     msg.status.service = 1; // SERVICE_GPS
 
-    const auto status = AP::gps().status(GPS_INSTANCE_NO);
+    const auto status = AP::gps().status(instance);
     switch (status) {
     case AP_GPS::NO_GPS:
     case AP_GPS::NO_FIX:
@@ -88,7 +91,7 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg)
         //! @todo Can we not just use an enum class and not worry about this condition?
         break;
     }
-    const auto loc = AP::gps().location(GPS_INSTANCE_NO);
+    const auto loc = AP::gps().location(instance);
     msg.latitude = loc.lat * 1E-7;
     msg.longitude = loc.lng * 1E-7;
 
@@ -105,9 +108,9 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg)
     // https://github.com/ros-drivers/nmea_navsat_driver/blob/indigo-devel/src/libnmea_navsat_driver/driver.py#L110-L114
     //! @todo This calculation will be moved to AP::gps and fixed in #23259
     //! It is a placeholder for now matching the ROS1 nmea_navsat_driver behavior
-    const auto hdop = AP::gps().get_hdop(GPS_INSTANCE_NO);
+    const auto hdop = AP::gps().get_hdop(instance);
     const auto hdopSq = hdop * hdop;
-    const auto vdop = AP::gps().get_vdop(GPS_INSTANCE_NO);
+    const auto vdop = AP::gps().get_vdop(instance);
     const auto vdopSq = vdop * vdop;
     msg.position_covariance[0] = hdopSq;
     msg.position_covariance[4] = hdopSq;
@@ -287,7 +290,8 @@ void AP_DDS_Client::update()
     }
 
     if (cur_time_ms - last_nav_sat_fix_time_ms > DELAY_NAV_SAT_FIX_TOPIC_MS) {
-        update_topic(nav_sat_fix_topic);
+        constexpr uint8_t instance = 0;
+        update_topic(nav_sat_fix_topic, instance);
         last_nav_sat_fix_time_ms = cur_time_ms;
         write_nav_sat_fix_topic();
     }
