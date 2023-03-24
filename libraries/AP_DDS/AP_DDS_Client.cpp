@@ -196,9 +196,9 @@ bool AP_DDS_Client::create()
 
     constexpr int maxTimeMsPerRequestMs = 250;
     constexpr int requestTimeoutParticipantMs = nRequestsParticipant * maxTimeMsPerRequestMs;
-    uint8_t statusPartipant[nRequestsParticipant];
-    if (!uxr_run_session_until_all_status(&session, requestTimeoutParticipantMs, requestsParticipant, statusPartipant, nRequestsParticipant)) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Partipant session request failure");
+    uint8_t statusParticipant[nRequestsParticipant];
+    if (!uxr_run_session_until_all_status(&session, requestTimeoutParticipantMs, requestsParticipant, statusParticipant, nRequestsParticipant)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Participant session request failure");
         // TODO add a failure log message sharing the status results
         return false;
     }
