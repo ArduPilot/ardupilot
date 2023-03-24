@@ -756,22 +756,25 @@ void AC_AttitudeControl::attitude_controller_run_quat()
 }
 
 // thrust_heading_rotation_angles - calculates two ordered rotations to move the attitude_body quaternion to the attitude_target quaternion.
-// The maximum error in the yaw axis is limited based on the angle yaw P value and acceleration.
-void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& attitude_target, const Quaternion& attitude_body, Vector3f& attitude_error, float& thrust_angle, float& thrust_error_angle) const
+// The maximum error in the yaw axis is limited based on static output saturation.
+void AC_AttitudeControl::thrust_heading_rotation_angles(Quaternion& attitude_target, const Quaternion& attitude_body, Vector3f& attitude_error, float& thrust_angle, float& thrust_error_angle)
 {
     Quaternion thrust_vector_correction;
     thrust_vector_rotation_angles(attitude_target, attitude_body, thrust_vector_correction, attitude_error, thrust_angle, thrust_error_angle);
 
     // Todo: Limit roll an pitch error based on output saturation and maximum error.
 
-    // Limit Yaw Error based on maximum acceleration - Update to include output saturation and maximum error.
-    // Currently the limit is based on the maximum acceleration using the linear part of the SQRT controller.
-    // This should be updated to be based on an angle limit, saturation, or unlimited based on user defined parameters.
-    Quaternion yaw_vec_correction_quat;
-    if (!is_zero(_p_angle_yaw.kP()) && fabsf(attitude_error.z) > AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS / _p_angle_yaw.kP()) {
-        attitude_error.z = constrain_float(wrap_PI(attitude_error.z), -AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS / _p_angle_yaw.kP(), AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS / _p_angle_yaw.kP());
-        yaw_vec_correction_quat.from_axis_angle(Vector3f{0.0f, 0.0f, attitude_error.z});
-        attitude_target = attitude_body * thrust_vector_correction * yaw_vec_correction_quat;
+    // Limit Yaw Error based to the maximum that would saturate the output when yaw rate is zero.
+    Quaternion heading_vec_correction_quat;
+
+    float heading_accel_max = constrain_float(get_accel_yaw_max_radss() / 2.0f, AC_ATTITUDE_ACCEL_Y_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS);
+    if (!is_zero(get_rate_yaw_pid().kP())) {
+        float heading_error_max = inv_sqrt_controller(1.0 / get_rate_yaw_pid().kP(), _p_angle_yaw.kP(), heading_accel_max);
+        if (!is_zero(_p_angle_yaw.kP()) && fabsf(attitude_error.z) > heading_error_max) {
+            attitude_error.z = constrain_float(wrap_PI(attitude_error.z), -heading_error_max, heading_error_max);
+            heading_vec_correction_quat.from_axis_angle(Vector3f{0.0f, 0.0f, attitude_error.z});
+            attitude_target = attitude_body * thrust_vector_correction * heading_vec_correction_quat;
+        }
     }
 }
 
@@ -910,6 +913,7 @@ Vector3f AC_AttitudeControl::euler_accel_limit(const Vector3f &euler_rad, const 
     float sin_phi = constrain_float(fabsf(sinf(euler_rad.x)), 0.1f, 1.0f);
     float cos_phi = constrain_float(fabsf(cosf(euler_rad.x)), 0.1f, 1.0f);
     float sin_theta = constrain_float(fabsf(sinf(euler_rad.y)), 0.1f, 1.0f);
+    float cos_theta = constrain_float(fabsf(cosf(euler_rad.y)), 0.1f, 1.0f);
 
     Vector3f rot_accel;
     if (is_zero(euler_accel.x) || is_zero(euler_accel.y) || is_zero(euler_accel.z) || is_negative(euler_accel.x) || is_negative(euler_accel.y) || is_negative(euler_accel.z)) {
@@ -919,7 +923,7 @@ Vector3f AC_AttitudeControl::euler_accel_limit(const Vector3f &euler_rad, const 
     } else {
         rot_accel.x = euler_accel.x;
         rot_accel.y = MIN(euler_accel.y / cos_phi, euler_accel.z / sin_phi);
-        rot_accel.z = MIN(MIN(euler_accel.x / sin_theta, euler_accel.y / sin_phi), euler_accel.z / cos_phi);
+        rot_accel.z = MIN(MIN(euler_accel.x / sin_theta, euler_accel.y / (sin_phi * cos_theta)), euler_accel.z / (cos_phi * cos_theta));
     }
     return rot_accel;
 }
