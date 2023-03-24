@@ -755,8 +755,8 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
     copter.sprayer.test_pump(false);
 #endif
 
-    // enable output to motors
-    copter.enable_motor_output();
+    // output lowest possible value to motors
+    copter.motors->output_min();
 
     // finally actually arm the motors
     copter.motors->armed(true);
