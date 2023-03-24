@@ -1689,23 +1689,6 @@ bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channe
             check_failed(ARMING_CHECK_RC, display_failure, "%s radio max too low", channel_name);
             ret = false;
         }
-        bool fail = true;
-        if (i == 2) {
-            // skip checking trim for throttle as older code did not check it
-            fail = false;
-        }
-        if (channel->get_radio_trim() < channel->get_radio_min()) {
-            check_failed(ARMING_CHECK_RC, display_failure, "%s radio trim below min", channel_name);
-            if (fail) {
-                ret = false;
-            }
-        }
-        if (channel->get_radio_trim() > channel->get_radio_max()) {
-            check_failed(ARMING_CHECK_RC, display_failure, "%s radio trim above max", channel_name);
-            if (fail) {
-                ret = false;
-            }
-        }
     }
     return ret;
 }
