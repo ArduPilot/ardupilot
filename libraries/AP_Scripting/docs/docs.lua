@@ -1327,6 +1327,9 @@ function MotorsMatrix:add_motor_raw(motor_num, roll_factor, pitch_factor, yaw_fa
 ---@return boolean
 function MotorsMatrix:init(expected_num_motors) end
 
+-- desc
+---@param throttle number
+function MotorsMatrix:set_throttle_passthrough_for_esc_calibration(throttle) end
 
 -- desc
 ---@class quadplane
