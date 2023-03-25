@@ -75,6 +75,9 @@ static uint32_t get_systime_us32(void)
 {
     static uint32_t last_us32;
     uint32_t now = system_time_u32_us();
+#ifdef AP_BOARD_START_TIME
+    now += AP_BOARD_START_TIME;
+#endif
     if (now < last_us32) {
         const uint64_t dt_us = 0x100000000ULL;
         timer_base_us64 += dt_us;

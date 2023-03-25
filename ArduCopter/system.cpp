@@ -208,7 +208,7 @@ void Copter::init_ardupilot()
 
     // enable output to motors
     if (arming.rc_calibration_checks(true)) {
-        enable_motor_output();
+        motors->output_min();  // output lowest possible value to motors
     }
 
     // attempt to set the intial_mode, else set to STABILIZE

@@ -1027,6 +1027,11 @@ bool AP_Arming::system_checks(bool report)
         return false;
     }
 
+    if (!hal.gpio->arming_checks(sizeof(buffer), buffer)) {
+        check_failed(report, "%s", buffer);
+        return false;
+    }
+
     if (check_enabled(ARMING_CHECK_PARAMETERS)) {
 #if AP_RPM_ENABLED
         auto *rpm = AP::rpm();
@@ -1683,23 +1688,6 @@ bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channe
         if (channel->get_radio_max() < RC_Channel::RC_CALIB_MAX_LIMIT_PWM) {
             check_failed(ARMING_CHECK_RC, display_failure, "%s radio max too low", channel_name);
             ret = false;
-        }
-        bool fail = true;
-        if (i == 2) {
-            // skip checking trim for throttle as older code did not check it
-            fail = false;
-        }
-        if (channel->get_radio_trim() < channel->get_radio_min()) {
-            check_failed(ARMING_CHECK_RC, display_failure, "%s radio trim below min", channel_name);
-            if (fail) {
-                ret = false;
-            }
-        }
-        if (channel->get_radio_trim() > channel->get_radio_max()) {
-            check_failed(ARMING_CHECK_RC, display_failure, "%s radio trim above max", channel_name);
-            if (fail) {
-                ret = false;
-            }
         }
     }
     return ret;

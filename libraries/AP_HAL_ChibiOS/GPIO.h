@@ -77,6 +77,9 @@ public:
 #ifndef IOMCU_FW
     // timer tick
     void timer_tick(void) override;
+
+    // Check for ISR floods
+    bool arming_checks(size_t buflen, char *buffer) const override;
 #endif
 
     // check if a pin number is valid

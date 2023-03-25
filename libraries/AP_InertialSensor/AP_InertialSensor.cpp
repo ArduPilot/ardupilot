@@ -1074,7 +1074,33 @@ AP_InertialSensor::detect_backends(void)
         probe_count++; \
 } while (0)
 
+// Can be used by adding INSTANCE:<num> keyword in hwdef.
+// This keyword is used to denote the instance number of the sensor
+// while probing. Probing is skipped if the instance number doesn't match the
+// backend count. Its important the IMUs are listed in order of precedence globally
+// (i.e. INSTANCE:0 IMUs are listed before INSTANCE:1 IMUs) and locally (i.e. IMUs
+// on the same bus are listed in order of detection precedence)
+
 #define ADD_BACKEND_INSTANCE(x, instance) if (instance == _backend_count) { ADD_BACKEND(x); }
+
+// Can be used by adding AUX:<devid> keyword in hwdef.
+// AUX:<devid> keyword is used to check for the presence of the sensor
+// in the detected IMUs list. If the IMU with the given devid is found
+// then we skip the probe for the sensor the second time. This is useful
+// if you have multiple choices for IMU over same instance number, and still 
+// want to instantiate the sensor after main IMUs are detected.
+
+#define ADD_BACKEND_AUX(x, devid) do { \
+        bool init_aux = true; \
+        for (uint8_t i=0; i<_backend_count; i++) { \
+            if (((uint32_t)_accel_id(i) == devid) || ((uint32_t)_gyro_id(i) == devid)) { \
+                init_aux = false; \
+            } \
+        } \
+        if (init_aux) { \
+            ADD_BACKEND(x); \
+        } \
+} while (0)
 
 // support for adding IMUs conditioned on board type
 #define BOARD_MATCH(board_type) AP_BoardConfig::get_board_type()==AP_BoardConfig::board_type

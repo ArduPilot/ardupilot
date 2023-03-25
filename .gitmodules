@@ -34,3 +34,11 @@
 [submodule "modules/DroneCAN/libcanard"]
 	path = modules/DroneCAN/libcanard
 	url = https://github.com/DroneCAN/libcanard
+[submodule "modules/Micro-XRCE-DDS-Client"]
+	path = modules/Micro-XRCE-DDS-Client
+	url = https://github.com/ardupilot/Micro-XRCE-DDS-Client.git
+	branch = develop
+[submodule "modules/Micro-CDR"]
+	path = modules/Micro-CDR
+	url = https://github.com/ardupilot/Micro-CDR.git
+	branch = develop
