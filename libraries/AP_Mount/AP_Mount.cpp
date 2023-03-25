@@ -370,6 +370,19 @@ void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg){
     }
 
     const Quaternion att_quat{packet.q};
+    const Vector3f att_rate_degs {
+        packet.angular_velocity_x,
+        packet.angular_velocity_y,
+        packet.angular_velocity_y
+    };
+
+    // ensure that we are only demanded to a specific attitude or to
+    // achieve a specific rate.  Do not allow both to be specified at
+    // the same time:
+    if (!att_quat.is_nan() && !att_rate_degs.is_nan()) {
+        return;
+    }
+
     if (!att_quat.is_nan()) {
         // convert quaternion to euler angles
         float roll_rad, pitch_rad, yaw_rad;
@@ -383,7 +396,7 @@ void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg){
         return;
     }
 
-    if (!isnan(packet.angular_velocity_x) && !isnan(packet.angular_velocity_y) && !isnan(packet.angular_velocity_y)) {
+    {
         const float roll_rate_degs = degrees(packet.angular_velocity_x);
         const float pitch_rate_degs = degrees(packet.angular_velocity_y);
         const float yaw_rate_degs = degrees(packet.angular_velocity_z);
