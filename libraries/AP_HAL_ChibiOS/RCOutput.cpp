@@ -1656,9 +1656,15 @@ void RCOutput::dma_cancel(pwm_group& group)
     chSysLock();
     dmaStreamDisable(group.dma);
 #ifdef HAL_WITH_BIDIR_DSHOT
-    if (group.ic_dma_enabled()) {
+    if (group.ic_dma_enabled() && !group.has_shared_ic_up_dma()) {
         dmaStreamDisable(group.bdshot.ic_dma[group.bdshot.curr_telem_chan]);
     }
+#if STM32_DMA_SUPPORTS_DMAMUX
+    // the DMA request source has been switched by the receive path, so reinstate the correct one
+    if (group.dshot_state == DshotState::RECV_START && group.has_shared_ic_up_dma()) {
+        dmaSetRequestSource(group.dma, group.dma_up_channel);
+    }
+#endif
 #endif
     // normally the CCR registers are reset by the final 0 in the DMA buffer
     // since we are cancelling early they need to be reset to avoid infinite pulses
