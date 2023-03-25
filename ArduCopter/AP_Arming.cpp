@@ -49,7 +49,13 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
         check_failed(display_failure, "Motors: %s", failure_msg);
         return false;
     }
-
+    
+    // check if in AUTO that a mission is present
+    if (copter.flightmode->mode_number() == Mode::Number::AUTO && copter.mode_auto.mission.num_commands() <= 1) {
+        check_failed(display_failure, "AUTO requires mission");
+        return false;
+    }
+    
     // if pre arm checks are disabled run only the mandatory checks
     if (checks_to_perform == 0) {
         return mandatory_checks(display_failure);
