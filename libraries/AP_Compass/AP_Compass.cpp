@@ -1031,7 +1031,7 @@ bool Compass::_have_i2c_driver(uint8_t bus, uint8_t address) const
         if (!_state[i].registered) {
             continue;
         }
-        if (AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_I2C, bus, address, 0) ==
+        if (AP_HAL::Device::make_dev_id(AP_HAL::Device::BUS_TYPE_I2C, bus, address, 0) ==
             AP_HAL::Device::change_bus_id(uint32_t(_state[i].dev_id.get()), 0)) {
             // we are already using this device
             return true;

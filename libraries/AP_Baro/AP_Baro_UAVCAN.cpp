@@ -73,7 +73,7 @@ AP_Baro_Backend* AP_Baro_UAVCAN::probe(AP_Baro &baro)
                 backend->_node_id = _detected_modules[i].node_id;
 
                 backend->_instance = backend->_frontend.register_sensor();
-                backend->set_bus_id(backend->_instance, AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_UAVCAN,
+                backend->set_bus_id(backend->_instance, AP_HAL::Device::make_dev_id(AP_HAL::Device::BUS_TYPE_UAVCAN,
                                                                                     _detected_modules[i].ap_uavcan->get_driver_index(),
                                                                                     backend->_node_id, 0));
 

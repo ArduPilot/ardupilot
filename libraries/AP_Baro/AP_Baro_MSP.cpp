@@ -7,7 +7,7 @@ AP_Baro_MSP::AP_Baro_MSP(AP_Baro &baro, uint8_t _msp_instance) :
 {
     msp_instance = _msp_instance;
     instance = _frontend.register_sensor();
-    set_bus_id(instance, AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_MSP,0,msp_instance,0));
+    set_bus_id(instance, AP_HAL::Device::make_dev_id(AP_HAL::Device::BUS_TYPE_MSP,0,msp_instance,0));
 }
 
 // Read the sensor

@@ -46,7 +46,7 @@ bool AP_Airspeed_NMEA::init()
         return false;
     }
 
-    set_bus_id(AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SERIAL,0,0,0));
+    set_bus_id(AP_HAL::Device::make_dev_id(AP_HAL::Device::BUS_TYPE_SERIAL,0,0,0));
 
     _uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_AirSpeed, 0));
 

@@ -6,7 +6,7 @@ AP_Baro_ExternalAHRS::AP_Baro_ExternalAHRS(AP_Baro &baro, uint8_t port) :
     AP_Baro_Backend(baro)
 {
     instance = _frontend.register_sensor();
-    set_bus_id(instance, AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SERIAL,port,0,0));
+    set_bus_id(instance, AP_HAL::Device::make_dev_id(AP_HAL::Device::BUS_TYPE_SERIAL,port,0,0));
 }
 
 // Read the sensor

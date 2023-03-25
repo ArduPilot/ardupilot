@@ -312,7 +312,7 @@ public:
      * device type This is for use by devices that do not use one of
      * the standard HAL Device types, such as UAVCAN devices
      */
-    static uint32_t make_bus_id(enum BusType bus_type, uint8_t bus, uint8_t address, uint8_t devtype);
+    static uint32_t make_dev_id(enum BusType bus_type, uint8_t bus, uint8_t address, uint8_t devtype);
 
     /**
      * return a new bus ID for the same bus connection but a new device type.
