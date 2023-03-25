@@ -1582,7 +1582,9 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
       up with this great method.
      */
     TOGGLE_PIN_DEBUG(54);
-
+#if STM32_DMA_SUPPORTS_DMAMUX
+    dmaSetRequestSource(group.dma, group.dma_up_channel);
+#endif
     dmaStreamSetPeripheral(group.dma, &(group.pwm_drv->tim->DMAR));
     stm32_cacheBufferFlush(group.dma_buffer, buffer_length);
     dmaStreamSetMemory0(group.dma, group.dma_buffer);
