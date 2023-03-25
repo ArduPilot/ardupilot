@@ -5256,7 +5256,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 despitch = self.constrained_mount_pitch(despitch)
 
             '''retrieve latest angles from GIMBAL_DEVICE_ATTITUDE_STATUS'''
-            mount_roll, mount_pitch, mount_yaw = self.get_mount_roll_pitch_yaw_deg()
+            mount_roll, mount_pitch, mount_yaw, mount_yaw_is_absolute = self.get_mount_roll_pitch_yaw_deg()
 
             # self.progress("despitch=%f roll=%f pitch=%f yaw=%f" % (despitch, mount_roll, mount_pitch, mount_yaw))
             if abs(despitch - mount_pitch) > despitch_tolerance:
@@ -5314,10 +5314,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # wait for gimbal attitude message
         m = self.assert_receive_message('GIMBAL_DEVICE_ATTITUDE_STATUS', timeout=5)
 
+        yaw_is_absolute = m.flags & mavutil.mavlink.GIMBAL_DEVICE_FLAGS_YAW_LOCK
         # convert quaternion to euler angles and return
         q = quaternion.Quaternion(m.q)
         euler = q.euler
-        return math.degrees(euler[0]), math.degrees(euler[1]), math.degrees(euler[2])
+        return math.degrees(euler[0]), math.degrees(euler[1]), math.degrees(euler[2]), yaw_is_absolute
 
     def set_mount_mode(self, mount_mode):
         '''set mount mode'''
@@ -5435,7 +5436,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_NEUTRAL)
 
             # test pitch is not neutral to start with
-            mount_roll_deg, mount_pitch_deg, mount_yaw_deg = self.get_mount_roll_pitch_yaw_deg()
+            mount_roll_deg, mount_pitch_deg, mount_yaw_deg, mount_yaw_is_absolute = self.get_mount_roll_pitch_yaw_deg()
             if mount_roll_deg != 0 or mount_pitch_deg != 0 or mount_yaw_deg != 0:
                 raise NotAchievedException("Mount not neutral")
 
@@ -5451,7 +5452,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.wait_pitch(despitch, despitch_tolerance)
 
             # check gimbal is still not stabilising
-            mount_roll_deg, mount_pitch_deg, mount_yaw_deg = self.get_mount_roll_pitch_yaw_deg()
+            mount_roll_deg, mount_pitch_deg, mount_yaw_deg, mount_yaw_is_absolute = self.get_mount_roll_pitch_yaw_deg()
             if mount_roll_deg != 0 or mount_pitch_deg != 0 or mount_yaw_deg != 0:
                 raise NotAchievedException("Mount stabilising when not requested")
 
@@ -5657,6 +5658,28 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
             self.disarm_vehicle(force=True)
 
+            self.test_mount_body_yaw()
+
+    def test_mount_body_yaw(self):
+        '''check reporting of yaw'''
+        # change mount to neutral mode (point forward, not stabilising)
+        self.takeoff(10, mode='GUIDED')
+
+        self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_NEUTRAL)
+
+        for heading in 30, 45, 150:
+            self.guided_achieve_heading(heading)
+
+            r, p , y, yaw_is_absolute = self.get_mount_roll_pitch_yaw_deg()
+
+            if yaw_is_absolute:
+                raise NotAchievedException("Expected a relative yaw")
+
+            if y > 1:
+                raise NotAchievedException("Bad yaw (y=%f)")
+
+        self.do_RTL()
+
     def Mount(self):
         '''test servo mount'''
         self.setup_servo_mount()
@@ -5680,7 +5703,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def assert_mount_rpy(self, r, p, y, tolerance=1):
         '''assert mount atttiude in degrees'''
-        got_r, got_p, got_y = self.get_mount_roll_pitch_yaw_deg()
+        got_r, got_p, got_y, yaw_is_absolute = self.get_mount_roll_pitch_yaw_deg()
         for (want, got, name) in (r, got_r, "roll"), (p, got_p, "pitch"), (y, got_y, "yaw"):
             if abs(want - got) > tolerance:
                 raise NotAchievedException("%s incorrect; want=%f got=%f" %
