@@ -4202,20 +4202,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_set_sensor_offsets(const mavlin
     return MAV_RESULT_ACCEPTED;
 }
 
-bool GCS_MAVLINK::calibrate_gyros()
-{
-#if AP_INERTIALSENSOR_ENABLED
-    AP::ins().init_gyro();
-    if (!AP::ins().gyro_calibrated_ok_all()) {
-        return false;
-    }
-    AP::ahrs().reset_gyro_drift();
-    return true;
-#else
-    return false;
-#endif
-}
-
 MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro(const mavlink_message_t &msg)
 {
     // fast barometer calibration
@@ -4244,9 +4230,13 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
 
     EXPECT_DELAY_MS(30000);
     if (is_equal(packet.param1,1.0f)) {
-        if (!calibrate_gyros()) {
+#if AP_INERTIALSENSOR_ENABLED
+        if (!AP::ins().calibrate_gyros()) {
             return MAV_RESULT_FAILED;
         }
+#else
+        return MAV_RESULT_UNSUPPORTED;
+#endif
         return MAV_RESULT_ACCEPTED;
     }
 
@@ -4259,7 +4249,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
 #if HAL_INS_ACCELCAL_ENABLED
     if (is_equal(packet.param5,1.0f)) {
         // start with gyro calibration
-        if (!calibrate_gyros()) {
+        if (!AP::ins().calibrate_gyros()) {
             return MAV_RESULT_FAILED;
         }
         // start accel cal
@@ -4270,35 +4260,12 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
 #endif
 
 #if AP_INERTIALSENSOR_ENABLED
-    const uint32_t now = AP_HAL::millis();
     if (is_equal(packet.param5,2.0f)) {
-        // reject any time we've done a calibration recently
-        if ((now - last_accel_cal_ms) < 5000) {
-            return MAV_RESULT_TEMPORARILY_REJECTED;
-        }
-
-        if (!calibrate_gyros()) {
-            last_accel_cal_ms = AP_HAL::millis();
-            return MAV_RESULT_FAILED;
-        }
-        Vector3f trim_rad = AP::ahrs().get_trim();
-        if (!AP::ins().calibrate_trim(trim_rad)) {
-            last_accel_cal_ms = AP_HAL::millis();
-            return MAV_RESULT_FAILED;
-        }
-        // reset ahrs's trim to suggested values from calibration routine
-        AP::ahrs().set_trim(trim_rad);
-        last_accel_cal_ms = AP_HAL::millis();
-        return MAV_RESULT_ACCEPTED;
+        return AP::ins().calibrate_trim();
     }
 
     if (is_equal(packet.param5,4.0f)) {
-        if ((now - last_accel_cal_ms) < 5000) {
-            return MAV_RESULT_TEMPORARILY_REJECTED;
-        }
-
         // simple accel calibration
-        last_accel_cal_ms = AP_HAL::millis();
         return AP::ins().simple_accel_cal();
     }
 
