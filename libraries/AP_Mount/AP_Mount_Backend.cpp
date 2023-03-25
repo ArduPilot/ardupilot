@@ -331,27 +331,27 @@ bool AP_Mount_Backend::get_angle_target_to_roi(MountTarget& angle_rad) const
 }
 
 // return body-frame yaw angle from a mount target
-float AP_Mount_Backend::get_bf_yaw_angle(const MountTarget& angle_rad) const
+float AP_Mount_Backend::MountTarget::get_bf_yaw() const
 {
-    if (angle_rad.yaw_is_ef) {
+    if (yaw_is_ef) {
         // convert to body-frame
-        return wrap_PI(angle_rad.yaw - AP::ahrs().yaw);
+        return wrap_PI(yaw - AP::ahrs().yaw);
     }
 
     // target is already body-frame
-    return angle_rad.yaw;
+    return yaw;
 }
 
 // return earth-frame yaw angle from a mount target
-float AP_Mount_Backend::get_ef_yaw_angle(const MountTarget& angle_rad) const
+float AP_Mount_Backend::MountTarget::get_ef_yaw() const
 {
-    if (angle_rad.yaw_is_ef) {
+    if (yaw_is_ef) {
         // target is already earth-frame
-        return angle_rad.yaw;
+        return yaw;
     }
 
     // convert to earth-frame
-    return wrap_PI(angle_rad.yaw + AP::ahrs().yaw);
+    return wrap_PI(yaw + AP::ahrs().yaw);
 }
 
 // update angle targets using a given rate target
@@ -366,9 +366,9 @@ void AP_Mount_Backend::update_angle_target_from_rate(const MountTarget& rate_rad
     // ensure angle yaw frames matches rate yaw frame
     if (angle_rad.yaw_is_ef != rate_rad.yaw_is_ef) {
         if (rate_rad.yaw_is_ef) {
-            angle_rad.yaw = get_ef_yaw_angle(angle_rad);
+            angle_rad.yaw = angle_rad.get_ef_yaw();
         } else {
-            angle_rad.yaw = get_bf_yaw_angle(angle_rad);
+            angle_rad.yaw = angle_rad.get_bf_yaw();
         }
         angle_rad.yaw_is_ef = rate_rad.yaw_is_ef;
     }

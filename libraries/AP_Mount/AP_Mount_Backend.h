@@ -145,6 +145,12 @@ protected:
         float pitch;
         float yaw;
         bool yaw_is_ef;
+
+        // return body-frame yaw angle from a mount target (in radians)
+        float get_bf_yaw() const;
+
+        // return earth-frame yaw angle from a mount target (in radians)
+        float get_ef_yaw() const;
     };
 
     // returns true if user has configured a valid yaw angle range
@@ -180,12 +186,6 @@ protected:
     // get angle targets (in radians) to a vehicle with sysid of _target_sysid
     // returns true on success, false on failure
     bool get_angle_target_to_sysid(MountTarget& angle_rad) const WARN_IF_UNUSED;
-
-    // return body-frame yaw angle from a mount target
-    float get_bf_yaw_angle(const MountTarget& angle_rad) const;
-
-    // return earth-frame yaw angle from a mount target
-    float get_ef_yaw_angle(const MountTarget& angle_rad) const;
 
     // update angle targets using a given rate target
     // the resulting angle_rad yaw frame will match the rate_rad yaw frame
