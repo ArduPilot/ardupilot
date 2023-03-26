@@ -285,6 +285,8 @@ BUILD_OPTIONS = [
     Feature('Actuators', 'FETTecOneWire', 'AP_FETTEC_ONEWIRE_ENABLED', 'Enable FETTec OneWire ESCs', 0, None),
 
     Feature('Precision Landing', 'PrecLand', 'AC_PRECLAND_ENABLED', 'Enable Precision Landing support', 0, None),
+    Feature('Precision Landing', 'PrecLand - Companion', 'AC_PRECLAND_COMPANION_ENABLED', 'Enable Companion-Supported Precision Landing support', 0, "PrecLand"),  # noqa
+    Feature('Precision Landing', 'PrecLand - IRLock', 'AC_PRECLAND_IRLOCK_ENABLED', 'Enable IRLock-Supported Precision Landing support', 0, "PrecLand"),  # noqa
 ]
 
 BUILD_OPTIONS.sort(key=lambda x: (x.category + x.label))
