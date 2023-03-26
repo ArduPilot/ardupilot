@@ -33,20 +33,25 @@ Currently, serial is the only supported transport, but there are plans to add IP
 
 While DDS support in Ardupilot is mostly through git submodules, another tool needs to be available on your system: Micro XRCE DDS Gen.
 
-1. Go to a directory on your system to clone the repo (perhaps next to `ardupilot`)
-1. Install java
+- Go to a directory on your system to clone the repo (perhaps next to `ardupilot`)
+- Install java
   ```console
-  sudo apt install java
+  sudo apt install default-jre
   ````
-1. Follow instructions [here](https://micro-xrce-dds.docs.eprosima.com/en/latest/installation.html#installing-the-micro-xrce-dds-gen-tool) to install the generator, but use `develop` branch instead of `master` (for now).
+- Follow instructions [here](https://micro-xrce-dds.docs.eprosima.com/en/latest/installation.html#installing-the-micro-xrce-dds-gen-tool) to install the generator, but use `develop` branch instead of `master` (for now).
   ```console
   git clone -b develop --recurse-submodules https://github.com/eProsima/Micro-XRCE-DDS-Gen.git
   cd Micro-XRCE-DDS-Gen
   ./gradlew assemble
   ```
 
-1. Add the generator directory to $PATH, like [so](https://github.com/eProsima/Micro-XRCE-DDS-docs/issues/83). 
-1. Test it
+- Add the generator directory to $PATH, like [so](https://github.com/eProsima/Micro-XRCE-DDS-docs/issues/83). 
+  ```console
+  # Add this to ~/.bashrc
+
+  export PATH=$PATH:/your/path/to/Micro-XRCE-DDS-Gen/scripts
+  ```
+- Test it
   ```console
   cd /path/to/ardupilot
   microxrceddsgen -version
@@ -67,7 +72,7 @@ section, you should remove it and switch to local install.
 
 | Name | Description |
 | - | - |
-| SERIAL1_BAUD | The serial baud rate for DDS |
+| SERIAL1_BAUD | The serial baud rate for DDS, use 115 |
 | SERIAL1_PROTOCOL | Set this to 45 to use DDS on the serial port |
 
 
@@ -100,11 +105,7 @@ param set SERIAL1_BAUD 115
 # See libraries/AP_SerialManager/AP_SerialManager.h AP_SerialManager SerialProtocol_DDS_XRCE
 param set SERIAL1_PROTOCOL 45
 ```
-
-# Start the sim now with the new params
-```
-sim_vehicle.py -v ArduPlane -D --console --enable-dds -A "--uartC=uart:/dev/pts/1"
-```
+Alternatively it is possible to change the parameters on a GCS
 
 ## Starting with microROS Agent
 
@@ -116,9 +117,9 @@ Follow the steps to use the microROS Agent
 
 - Install and run the microROS agent (as descibed here). Make sure to use the `humble` branch.
 
-- https://micro.ros.org/docs/tutorials/core/first_application_linux/
+  - https://micro.ros.org/docs/tutorials/core/first_application_linux/
 
-Until this [PR](https://github.com/micro-ROS/micro-ROS.github.io) is merged, ignore the notes about `foxy`. It works on `humble`.
+Until this [PR](https://github.com/micro-ROS/micro-ROS.github.io/pull/401) is merged, ignore the notes about `foxy`. It works on `humble`.
 
 Follow the instructions for the following:
 
@@ -129,7 +130,7 @@ Follow the instructions for the following:
 * Do "Creating the micro-ROS agent"
 * Source your ROS workspace
 
-- Run microROS agent with the following command
+Run microROS agent with the following command to test the agent
 
 ```bash
 cd ardupilot/libraries/AP_DDS
@@ -140,35 +141,43 @@ ros2 run micro_ros_agent micro_ros_agent serial -b 115200 -D /dev/pts/2  -r dds_
 
 ### Using the ROS2 CLI to Read Ardupilot Data
 
-If you have installed the microROS agent and ROS-2 Humble
+If you have installed the microROS agent and ROS2 Humble
 
 - Source the ros2 installation
-  - ```source /opt/ros/humble/setup.bash```
+  ```bash
+  source /opt/ros/humble/setup.bash
+  ```
+- Run the microROS agent
+  ```bash
+  cd ardupilot/libraries/AP_DDS
+  ros2 run micro_ros_agent micro_ros_agent serial -b 115200 -D /dev/pts/2  -r dds_xrce_profile.xml # (assuming we are using tty/pts/2 for Ardupilot)
+  ```
+- Run SITL
+  ```bash
+  sim_vehicle.py -v ArduPlane -D --console --enable-dds -A "--uartC=uart:/dev/pts/1"
+  ```
+- You should be able to see the agent here and view the data output.
+  ```bash
+  $ ros2 node list
+  /Ardupilot_DDS_XRCE_Client
 
-- If SITL is running alongise MicroROS Agent, you should be able to see the agent here and view the data output.
+  $ ros2 topic list  -v
+  Published topics:
+  * /ROS2_Time [builtin_interfaces/msg/Time] 1 publisher
+  * /parameter_events [rcl_interfaces/msg/ParameterEvent] 1 publisher
+  * /rosout [rcl_interfaces/msg/Log] 1 publisher
 
+  Subscribed topics:
 
-```
-$ ros2 node list
-/Ardupilot_DDS_XRCE_Client
+  $ ros2 topic hz /ROS2_Time
+  average rate: 50.115
+          min: 0.012s max: 0.024s std dev: 0.00328s window: 52
 
-$ ros2 topic list  -v
-Published topics:
- * /ROS2_Time [builtin_interfaces/msg/Time] 1 publisher
- * /parameter_events [rcl_interfaces/msg/ParameterEvent] 1 publisher
- * /rosout [rcl_interfaces/msg/Log] 1 publisher
-
-Subscribed topics:
-
-$ ros2 topic hz /ROS2_Time
-average rate: 50.115
-        min: 0.012s max: 0.024s std dev: 0.00328s window: 52
-
-$ ros2 topic echo /ROS2_Time 
-sec: 1678668735
-nanosec: 729410000
----
-```
+  $ ros2 topic echo /ROS2_Time 
+  sec: 1678668735
+  nanosec: 729410000
+  ---
+  ```
 
 ## Adding DDS messages to Ardupilot
 
