@@ -47,22 +47,22 @@ end
 assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 12), 'could not add param table')
 
 --REV arming parameters
-local REV_ENABLE_                    = bind_add_param('ENABLE',                   1, 0):get()
-local RC_ARM_CHANNEL_                = bind_add_param('ARM_CHANNEL',              2, 6):get()
-local ARM_CHANNEL_HI_PWM_            = bind_add_param('ARM_HI_PWM',               3, 1500):get()
+local REV_ENABLE_                    = bind_add_param('ENABLE',                   1, 0)
+local RC_ARM_CHANNEL_                = bind_add_param('ARM_CHANNEL',              2, 6)
+local ARM_CHANNEL_HI_PWM_            = bind_add_param('ARM_HI_PWM',               3, 1500)
 
 --REV activation and spool up parameters
-local LAND_DET_TIME_                 = bind_add_param('LAND_TIME',                4, 1):get()
-local THRESH_LAND_HEIGHT_            = bind_add_param('LAND_HEIGHT',              5, 0.12):get()
-local TIME_THROT_WAIT_MS_            = bind_add_param('WAIT_MS',                  6, 1000):get()
-local REV_THRUST_SPOOL_DPWM_         = bind_add_param('SPOOL_DPWM',               7, 60):get()
-local REV_THRUST_CHG_PWM_PS_         = bind_add_param('CHGPWM_PS',                8, 150):get()
+local LAND_DET_TIME_                 = bind_add_param('LAND_TIME',                4, 1)
+local THRESH_LAND_HEIGHT_            = bind_add_param('LAND_HEIGHT',              5, 0.12)
+local TIME_THROT_WAIT_MS_            = bind_add_param('WAIT_MS',                  6, 1000)
+local REV_THRUST_SPOOL_DPWM_         = bind_add_param('SPOOL_DPWM',               7, 60)
+local REV_THRUST_CHG_PWM_PS_         = bind_add_param('CHGPWM_PS',                8, 150)
 
 --REV strength and duration setup
-local REV_THRUST_IDLE_PWM_           = bind_add_param('THR_IDLE_PWM',             9, 990):get()
-local REV_THRUST_HIGH_PWM_           =  bind_add_param('HI_PWM',                 10, 1600):get()
-local MAXTIME_REV_THRUST_APPLIED_MS_ = bind_add_param('MAXTIME_MS',              11, 10000):get()
-local MIN_GROUND_SPEED_              = bind_add_param('GNDSPEED_MIN',            12, -1):get()
+local REV_THRUST_IDLE_PWM_           = bind_add_param('THR_IDLE_PWM',             9, 990)
+local REV_THRUST_HIGH_PWM_           =  bind_add_param('HI_PWM',                 10, 1600)
+local MAXTIME_REV_THRUST_APPLIED_MS_ = bind_add_param('MAXTIME_MS',              11, 10000)
+local MIN_GROUND_SPEED_              = bind_add_param('GNDSPEED_MIN',            12, -1)
 
 -- *****---INTERNAL VARIABLES AND BOOL FLAGS --- DO NOT CHANGE ANYTHING HERE UNLESS MODIFYING THE CODE---*****
 local AP_VERSION_NUM_ = 10 * tonumber(FWVersion:major()) + tonumber(FWVersion:minor())
@@ -81,16 +81,16 @@ local IS_THR_SUP_ = true
 local IS_IN_REV_THRUST_ = false
 local REV_THRUST_SW_ = false
 
-local REV_THRUST_CUR_PWM_ = REV_THRUST_IDLE_PWM_ + REV_THRUST_SPOOL_DPWM_
-local TIM_AFTER_TOUCHDN_ = LAND_DET_TIME_ * 1000 * 0.01
+local REV_THRUST_CUR_PWM_ = REV_THRUST_IDLE_PWM_:get() + REV_THRUST_SPOOL_DPWM_:get()
+local TIM_AFTER_TOUCHDN_ = LAND_DET_TIME_:get() * 1000 * 0.01
 
 function UPDATE()
-  if (REV_ENABLE_ < 1) then
+  if (REV_ENABLE_:get() < 1) then
     return
   end
   if (vehicle:get_mode() == MODE_FBWA and (arming:is_armed())
-      and (rc:get_pwm(RC_ARM_CHANNEL_) > ARM_CHANNEL_HI_PWM_)) then
-    if (RFND_READING() < THRESH_LAND_HEIGHT_) then
+      and (rc:get_pwm(RC_ARM_CHANNEL_:get()) > ARM_CHANNEL_HI_PWM_:get())) then
+    if (RFND_READING() < THRESH_LAND_HEIGHT_:get()) then
       if (COUNT_IN_RANGE_ > TIM_AFTER_TOUCHDN_) then
         TIME_SEC_ = millis():tofloat()
         return ENGAGE_REV_THRUST()
@@ -111,7 +111,7 @@ function RFND_READING()
 end
 
 function DISENGAGE_REV_THRUST()
-  THROT_CHANNEL_:set_override(REV_THRUST_IDLE_PWM_)
+  THROT_CHANNEL_:set_override(REV_THRUST_IDLE_PWM_:get())
   REV_THRUST_AUX_SW_:set_override(REV_THRUST_SW_LOW_PWM_)
   gcs:send_text(4, "Reverse Thrust Disengaged")
   IS_IN_REV_THRUST_ = false
@@ -121,8 +121,8 @@ function ENGAGE_REV_THRUST()
   local groundspeed = ahrs:groundspeed_vector():length()
 
   if (IS_THR_SUP_ and (vehicle:get_mode() == MODE_FBWA)) then
-    if (millis():tofloat() - TIME_SEC_ < TIME_THROT_WAIT_MS_) then
-      THROT_CHANNEL_:set_override(REV_THRUST_IDLE_PWM_) -- set idle throttle and prepare for reverse, letting the motors stop
+    if (millis():tofloat() - TIME_SEC_ < TIME_THROT_WAIT_MS_:get()) then
+      THROT_CHANNEL_:set_override(REV_THRUST_IDLE_PWM_:get()) -- set idle throttle and prepare for reverse, letting the motors stop
     else
       REV_THRUST_AUX_SW_:set_override(REV_THRUST_SW_HIGH_PWM_)
       if (REV_THRUST_AUX_SW_:get_aux_switch_pos() == 2) then
@@ -143,12 +143,12 @@ function ENGAGE_REV_THRUST()
   end
 
   if (IS_IN_REV_THRUST_) then
-    if (groundspeed > MIN_GROUND_SPEED_) then
+    if (groundspeed > MIN_GROUND_SPEED_:get()) then
       if (REV_THRUST_AUX_SW_:get_aux_switch_pos() == 2) then
         REV_THRUST_AUX_SW_:set_override(REV_THRUST_SW_HIGH_PWM_)
-        THROT_CHANNEL_:set_override(math.min(REV_THRUST_CUR_PWM_, REV_THRUST_HIGH_PWM_)) -- set rev thrust
-        REV_THRUST_CUR_PWM_ = REV_THRUST_CUR_PWM_ + math.floor(REV_THRUST_CHG_PWM_PS_ * CALLBACK_TIME_ / 1000)
-        if (millis():tofloat() - TIME_SEC_ > MAXTIME_REV_THRUST_APPLIED_MS_) then
+        THROT_CHANNEL_:set_override(math.min(REV_THRUST_CUR_PWM_, REV_THRUST_HIGH_PWM_:get())) -- set rev thrust
+        REV_THRUST_CUR_PWM_ = REV_THRUST_CUR_PWM_ + math.floor(REV_THRUST_CHG_PWM_PS_:get() * CALLBACK_TIME_ / 1000)
+        if (millis():tofloat() - TIME_SEC_ > MAXTIME_REV_THRUST_APPLIED_MS_:get()) then
           DISENGAGE_REV_THRUST()
           return --stop the script
         end
