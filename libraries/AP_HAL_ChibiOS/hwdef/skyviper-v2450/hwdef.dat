@@ -173,4 +173,8 @@ define AP_CAMERA_MAVLINK_ENABLED 1
 // remove RC Protocol support:
 define AP_RCPROTOCOL_BACKEND_DEFAULT_ENABLED 0
 
+// few prelcnad backends are applicable
+define AC_PRECLAND_BACKEND_DEFAULT_ENABLED 0
+define AC_PRECLAND_COMPANION_ENABLED 1
+
 AUTOBUILD_TARGETS Copter
