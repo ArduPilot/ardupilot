@@ -1,3 +1,16 @@
+Release 1.5.0 27th Mar 2023
+---------------------------
+
+This is a major release with the following changes:
+
+- fixed airspeed bus default
+- limit mag to 25Hz by default
+- fixed send rate of GPS yaw
+- fixed HW ESC telem temp units
+- allow set of port for HW telem
+- send GNSS heading message if available
+- stop sending old GNSS Fix message
+
 Release 1.4.1 27th Sep 2022
 ---------------------------
 
