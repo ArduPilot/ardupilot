@@ -1,5 +1,5 @@
-Release 4.3.5beta1 24th March  2023
------------------------------------
+Release 4.3.5 26th March  2023
+------------------------------
 
 - fixed 32 bit microsecond wrap in BDShot code
 
