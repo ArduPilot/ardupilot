@@ -68,34 +68,24 @@ For now, avoid having simultaneous local and global installs.
 If you followed the [global install](https://fast-dds.docs.eprosima.com/en/latest/installation/sources/sources_linux.html#global-installation)
 section, you should remove it and switch to local install.
 
-## Parameters for DDS
+## Setup serial for SITL with DDS
 
-| Name | Description |
-| - | - |
-| SERIAL1_BAUD | The serial baud rate for DDS |
-| SERIAL1_PROTOCOL | Set this to 45 to use DDS on the serial port |
-
-
-## Testing with a UART
-
-On Linux, first create a virtual serial port for use with SITL like [this](https://stackoverflow.com/questions/52187/virtual-serial-port-for-linux)
+On Linux, creating a virtual serial port will be necessary to use serial in SITL, because of that install socat.
 
 ```
 sudo apt-get update
 sudo apt-get install socat
 ```
 
-Then, start a virtual serial port with socat. Take note of the two `/dev/pts/*` ports. If yours are different, substitute as needed.
-```
-socat -d -d pty,raw,echo=0 pty,raw,echo=0
->>> 2023/02/21 05:26:06 socat[334] N PTY is /dev/pts/1
->>> 2023/02/21 05:26:06 socat[334] N PTY is /dev/pts/2
->>> 2023/02/21 05:26:06 socat[334] N starting data transfer loop with FDs [5,5] and [7,7]
-```
+## Setup ardupilot for SITL with DDS
 
 Set up your [SITL](https://ardupilot.org/dev/docs/setting-up-sitl-on-linux.html).
-Run the simulator with the following command (assuming we are using /dev/pts/1 for Ardupilot SITL). Take note how two parameters need adjusting from default to use DDS.
-```
+Run the simulator with the following command. Take note how two parameters need adjusting from default to use DDS.
+| Name | Description |
+| - | - |
+| SERIAL1_BAUD | The serial baud rate for DDS |
+| SERIAL1_PROTOCOL | Set this to 45 to use DDS on the serial port |
+```bash
 # Wipe params till you see "AP: ArduPilot Ready"
 # Select your favorite vehicle type
 sim_vehicle.py -w -v ArduPlane
@@ -105,8 +95,7 @@ param set SERIAL1_BAUD 115
 # See libraries/AP_SerialManager/AP_SerialManager.h AP_SerialManager SerialProtocol_DDS_XRCE
 param set SERIAL1_PROTOCOL 45
 ```
-
-## Starting with microROS Agent
+## Setup ROS 2 and micro-ROS
 
 Follow the steps to use the microROS Agent
 
@@ -115,45 +104,40 @@ Follow the steps to use the microROS Agent
   - https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html
 
 - Install and run the microROS agent (as descibed here). Make sure to use the `humble` branch.
+  - Follow [the instructions](https://micro.ros.org/docs/tutorials/core/first_application_linux/) for the following:
 
-  - https://micro.ros.org/docs/tutorials/core/first_application_linux/
+    - Do "Installing ROS 2 and the micro-ROS build system"
+      - Skip the docker run command, build it locally instead
+    - Skip "Creating a new firmware workspace"
+    - Skip "Building the firmware"
+    - Do "Creating the micro-ROS agent"
+    - Source your ROS workspace
 
 Until this [PR](https://github.com/micro-ROS/micro-ROS.github.io/pull/401) is merged, ignore the notes about `foxy`. It works on `humble`.
 
-Follow the instructions for the following:
+## Using the ROS2 CLI to Read Ardupilot Data
 
-* Do "Installing ROS 2 and the micro-ROS build system"
-  * Skip the docker run command, build it locally instead
-* Skip "Creating a new firmware workspace"
-* Skip "Building the firmware"
-* Do "Creating the micro-ROS agent"
-* Source your ROS workspace
-
-Run microROS agent with the following command
-
-```bash
-cd ardupilot/libraries/AP_DDS
-ros2 run micro_ros_agent micro_ros_agent serial -b 115200 -D /dev/pts/2  -r dds_xrce_profile.xml # (assuming we are using tty/pts/2 for Ardupilot)
-```
-
-## Tutorial
-
-### Using the ROS2 CLI to Read Ardupilot Data
-
-If you have installed the microROS agent and ROS 2 Humble
+After your setups are complete, do the following:
 
 - Source the ros2 installation
   ```bash
   source /opt/ros/humble/setup.bash
   ```
+- Start a virtual serial port with socat. Take note of the two `/dev/pts/*` ports. If yours are different, substitute as needed.
+  ```bash
+  socat -d -d pty,raw,echo=0 pty,raw,echo=0
+  >>> 2023/02/21 05:26:06 socat[334] N PTY is /dev/pts/1
+  >>> 2023/02/21 05:26:06 socat[334] N PTY is /dev/pts/2
+  >>> 2023/02/21 05:26:06 socat[334] N starting data transfer loop with FDs [5,5] and [7,7]
+  ```
 - Run the microROS agent
   ```bash
   cd ardupilot/libraries/AP_DDS
-  ros2 run micro_ros_agent micro_ros_agent serial -b 115200 -D /dev/pts/2  -r dds_xrce_profile.xml # (assuming we are using tty/pts/2 for Ardupilot)
+  ros2 run micro_ros_agent micro_ros_agent serial -b 115200 -D /dev/pts/2  -r dds_xrce_profile.xml # (assuming we are using tty/pts/2 for DDS Application)
   ```
-- Run SITL
+- Run SITL (remember to kill any terminals running ardupilot SITL beforehand)
   ```bash
-  sim_vehicle.py -v ArduPlane -D --console --enable-dds -A "--uartC=uart:/dev/pts/1"
+  sim_vehicle.py -v ArduPlane -D --console --enable-dds -A "--uartC=uart:/dev/pts/1" # (assuming we are using /dev/pts/1 for Ardupilot SITL)
   ```
 - You should be able to see the agent here and view the data output.
   ```bash
