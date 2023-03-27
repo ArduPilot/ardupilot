@@ -723,7 +723,7 @@ public:
     // instance number for logging
 #if INS_AUX_INSTANCES
     uint8_t tcal_instance(const AP_InertialSensor_TCal &tc) const {
-        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        for (uint8_t i=0; i<INS_MAX_INSTANCES - INS_AUX_INSTANCES; i++) {
             if (&tc == &tcal_old_param[i]) {
                 return i;
             }
