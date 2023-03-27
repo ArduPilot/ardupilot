@@ -957,6 +957,20 @@ def generate_frame_help():
     return ret
 
 
+# map from some vehicle aliases back to directory names.  APMrover2
+# was the old name / directory name for Rover.
+vehicle_map = {
+    "APMrover2": "Rover",
+    "Copter": "ArduCopter",
+    "Plane": "ArduPlane",
+    "Sub": "ArduSub",
+    "Blimp" : "Blimp",
+    "Rover": "Rover",
+}
+# add lower-case equivalents too
+for k in list(vehicle_map.keys()):
+    vehicle_map[k.lower()] = vehicle_map[k]
+
 # define and run parser
 parser = CompatOptionParser(
     "sim_vehicle.py",
@@ -968,15 +982,10 @@ parser = CompatOptionParser(
     "simulate ArduPlane")
 
 vehicle_choices = list(vinfo.options.keys())
-# add an alias for people with too much m
-vehicle_choices.append("APMrover2")
-vehicle_choices.append("Copter")  # should change to ArduCopter at some stage
-vehicle_choices.append("Plane")  # should change to ArduPlane at some stage
-vehicle_choices.append("Sub")  # should change to Sub at some stage
-vehicle_choices.append("copter")  # should change to ArduCopter at some stage
-vehicle_choices.append("plane")  # should change to ArduPlane at some stage
-vehicle_choices.append("sub")  # should change to Sub at some stage
-vehicle_choices.append("blimp")  # should change to Blimp at some stage
+
+# add vehicle aliases to argument parser options:
+for c in vehicle_map.keys():
+    vehicle_choices.append(c)
 
 parser.add_option("-v", "--vehicle",
                   type='choice',
@@ -1401,22 +1410,10 @@ if cmd_opts.vehicle not in vinfo.options:
             break
         cwd = os.path.dirname(cwd)
 
-# map from some vehicle aliases back to canonical names.  APMrover2
-# was the old name / directory name for Rover.
-vehicle_map = {
-    "APMrover2": "Rover",
-    "Copter": "ArduCopter",  # will switch eventually
-    "Plane": "ArduPlane",  # will switch eventually
-    "Sub": "ArduSub",  # will switch eventually
-    "copter": "ArduCopter",  # will switch eventually
-    "plane": "ArduPlane",  # will switch eventually
-    "sub": "ArduSub",  # will switch eventually
-    "blimp" : "Blimp", # will switch eventually
-}
 if cmd_opts.vehicle in vehicle_map:
-    progress("%s is now known as %s" %
-             (cmd_opts.vehicle, vehicle_map[cmd_opts.vehicle]))
     cmd_opts.vehicle = vehicle_map[cmd_opts.vehicle]
+elif cmd_opts.vehicle.lower() in vehicle_map:
+    cmd_opts.vehicle = vehicle_map[cmd_opts.vehicle.lower()]
 
 # try to validate vehicle
 if cmd_opts.vehicle not in vinfo.options:
