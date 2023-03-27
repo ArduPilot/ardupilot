@@ -45,7 +45,7 @@ While DDS support in Ardupilot is mostly through git submodules, another tool ne
   ./gradlew assemble
   ```
 
-- Add the generator directory to $PATH, like [so](https://github.com/eProsima/Micro-XRCE-DDS-docs/issues/83). 
+- Add the generator directory to $PATH. 
   ```console
   # Add this to ~/.bashrc
 
@@ -72,7 +72,7 @@ section, you should remove it and switch to local install.
 
 | Name | Description |
 | - | - |
-| SERIAL1_BAUD | The serial baud rate for DDS, use 115 |
+| SERIAL1_BAUD | The serial baud rate for DDS |
 | SERIAL1_PROTOCOL | Set this to 45 to use DDS on the serial port |
 
 
@@ -105,7 +105,6 @@ param set SERIAL1_BAUD 115
 # See libraries/AP_SerialManager/AP_SerialManager.h AP_SerialManager SerialProtocol_DDS_XRCE
 param set SERIAL1_PROTOCOL 45
 ```
-Alternatively it is possible to change the parameters on a GCS
 
 ## Starting with microROS Agent
 
@@ -130,7 +129,7 @@ Follow the instructions for the following:
 * Do "Creating the micro-ROS agent"
 * Source your ROS workspace
 
-Run microROS agent with the following command to test the agent
+Run microROS agent with the following command
 
 ```bash
 cd ardupilot/libraries/AP_DDS
@@ -141,7 +140,7 @@ ros2 run micro_ros_agent micro_ros_agent serial -b 115200 -D /dev/pts/2  -r dds_
 
 ### Using the ROS2 CLI to Read Ardupilot Data
 
-If you have installed the microROS agent and ROS2 Humble
+If you have installed the microROS agent and ROS 2 Humble
 
 - Source the ros2 installation
   ```bash
