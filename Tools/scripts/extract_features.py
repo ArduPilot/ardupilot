@@ -40,6 +40,8 @@ class ExtractFeatures(object):
             ('AP_AIRSPEED_{type}_ENABLED', r'AP_Airspeed_(?P<type>.*)::init',),
 
             ('AC_PRECLAND_ENABLED', 'AC_PrecLand::AC_PrecLand',),
+            ('AC_PRECLAND_ENABLED', 'AC_PrecLand::AC_PrecLand',),
+            ('AC_PRECLAND_{type}_ENABLED', 'AC_PrecLand_(?P<type>.*)::update',),
 
             ('HAL_ADSB_ENABLED', 'AP_ADSB::AP_ADSB',),
             ('HAL_ADSB_{type}_ENABLED', r'AP_ADSB_(?P<type>.*)::update',),
