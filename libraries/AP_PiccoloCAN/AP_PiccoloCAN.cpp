@@ -277,7 +277,7 @@ bool AP_PiccoloCAN::decode_frame(AP_HAL::CANFrame &frame)
                     if ((node_id > 0) && (node_id <= PICCOLO_CAN_MAX_NUM_ESC)) {
                         AP_PiccoloCAN_ESC &esc = esc_devices[node_id - 1];
 
-                        return esc.decode_esc_packet(frame, node_id, timestamp);
+                        return esc.decode_esc_packet(frame, node_id - 1, timestamp);
                     }
                     break;
                 }
