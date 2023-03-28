@@ -39,17 +39,11 @@ void AP_MotorsTri::init(motor_frame_class frame_class, motor_frame_type frame_ty
     motor_enabled[AP_MOTORS_MOT_2] = true;
     motor_enabled[AP_MOTORS_MOT_4] = true;
 
-#if !APM_BUILD_TYPE(APM_BUILD_ArduPlane) // Tilt Rotors do not need a yaw servo
-    // find the yaw servo
-    if (!SRV_Channels::get_channel_for(SRV_Channel::k_motor7, AP_MOTORS_CH_TRI_YAW)) {
-        gcs().send_text(MAV_SEVERITY_ERROR, "MotorsTri: unable to setup yaw channel");
-        // don't set initialised_ok
-        return;
-    }
-#endif
-
     // allow mapping of motor7
     add_motor_num(AP_MOTORS_CH_TRI_YAW);
+
+    // Check for tail servo
+    _have_tail_servo = SRV_Channels::function_assigned(SRV_Channel::k_motor7);
 
     SRV_Channels::set_angle(SRV_Channels::get_motor_function(AP_MOTORS_CH_TRI_YAW), _yaw_servo_angle_max_deg*100);
 
@@ -175,11 +169,16 @@ void AP_MotorsTri::output_armed_stabilizing()
         pitch_thrust *= -1.0f;
     }
 
-    // calculate angle of yaw pivot
-    _pivot_angle = safe_asin(yaw_thrust);
-    if (fabsf(_pivot_angle) > radians(_yaw_servo_angle_max_deg)) {
-        limit.yaw = true;
-        _pivot_angle = constrain_float(_pivot_angle, -radians(_yaw_servo_angle_max_deg), radians(_yaw_servo_angle_max_deg));
+    // VTOL plane may not have tail servo
+    if (!_have_tail_servo) {
+        _pivot_angle = 0.0;
+    } else {
+        // calculate angle of yaw pivot
+        _pivot_angle = safe_asin(yaw_thrust);
+        if (fabsf(_pivot_angle) > radians(_yaw_servo_angle_max_deg)) {
+            limit.yaw = true;
+            _pivot_angle = constrain_float(_pivot_angle, -radians(_yaw_servo_angle_max_deg), radians(_yaw_servo_angle_max_deg));
+        }
     }
 
     float pivot_thrust_max = cosf(_pivot_angle);
@@ -359,4 +358,19 @@ float AP_MotorsTri::get_roll_factor(uint8_t i)
     }
 
     return ret;
+}
+
+// Run arming checks
+bool AP_MotorsTri::arming_checks(size_t buflen, char *buffer) const
+{
+#if !APM_BUILD_TYPE(APM_BUILD_ArduPlane) // Tilt Rotors do not need a yaw servo
+    // Check for yaw servo
+    if (!_have_tail_servo) {
+        hal.util->snprintf(buffer, buflen, "no SERVOx_FUNCTION set to Motor7 for tail servo");
+        return false;
+    }
+#endif
+
+    // run base class checks
+    return AP_MotorsMulticopter::arming_checks(buflen, buffer);
 }
