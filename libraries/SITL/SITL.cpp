@@ -379,6 +379,12 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     AP_SUBGROUPINFO(airspeed[1], "ARSPD2_", 51, SIM, SIM::AirspeedParm),
 #endif
 
+    // @Param: GND_RES_F
+    // @DisplayName: Ground Resonance Frequency
+    // @Description: Enables a ground resonance model in yaw
+    // @Units: Hz
+    // @User: Advanced
+    AP_GROUPINFO("GND_RES_F",       52, SIM,  gnd_res_freq,  0),
 
 #ifdef SFML_JOYSTICK
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_sfml_joystick),

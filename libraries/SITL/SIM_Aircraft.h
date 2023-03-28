@@ -335,6 +335,9 @@ private:
     IntelligentEnergy24 *ie24;
     SIM_Precland *precland;
     class I2C *i2c;
+
+    // Notch filter used to approximate the dynamic behaviour of landing gear when on ground
+    NotchFilterFloat landing_gear_structure;
 };
 
 } // namespace SITL

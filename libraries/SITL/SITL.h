@@ -238,6 +238,8 @@ public:
 
     AP_Float uart_byte_loss_pct;
 
+    AP_Float gnd_res_freq;  // natural frequency of fundamental mode for yaw structural oscillation on ground
+
 #ifdef SFML_JOYSTICK
     AP_Int8 sfml_joystick_id;
     AP_Int8 sfml_joystick_axis[8];

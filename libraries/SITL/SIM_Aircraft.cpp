@@ -77,6 +77,9 @@ Aircraft::Aircraft(const char *frame_str) :
     for (uint8_t i = 0; i < ARRAY_SIZE(rangefinder_m); i++){
         rangefinder_m[i] = -1.0f;
     }
+
+    // Negative attenuation gives us a gain
+    landing_gear_structure.init(rate_hz, sitl->gnd_res_freq.get(), 2.0, -40.0);
 }
 
 void Aircraft::set_start_location(const Location &start_loc, const float start_yaw)
@@ -142,7 +145,7 @@ float Aircraft::hagl() const
 */
 bool Aircraft::on_ground() const
 {
-    return hagl() <= 0.001f;  // prevent bouncing around ground
+    return hagl() <= 0.005f;  // prevent bouncing around ground
 }
 
 /*
@@ -679,7 +682,14 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
             // zero roll/pitch, but keep yaw
             float r, p, y;
             dcm.to_euler(&r, &p, &y);
-            y = y + yaw_rate * delta_time;
+
+            // Add a ground resonance component to yaw
+            float gnd_res_angle = 0.0;
+            if (on_ground()) {
+               gnd_res_angle = 0.05*landing_gear_structure.apply(rot_accel.z);
+            }
+            
+            y = y + yaw_rate * delta_time + gnd_res_angle;
             dcm.from_euler(0.0f, 0.0f, y);
             // X, Y movement tracks ground movement
             velocity_ef.x = gnd_movement.x;
