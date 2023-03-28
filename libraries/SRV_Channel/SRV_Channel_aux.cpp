@@ -559,12 +559,9 @@ bool SRV_Channels::find_channel(SRV_Channel::Aux_servo_function_t function, uint
 /*
   get a pointer to first auxiliary channel for a channel function
 */
-SRV_Channel *SRV_Channels::get_channel_for(SRV_Channel::Aux_servo_function_t function, int8_t default_chan)
+SRV_Channel *SRV_Channels::get_channel_for(SRV_Channel::Aux_servo_function_t function)
 {
     uint8_t chan;
-    if (default_chan >= 0) {
-        set_aux_channel_default(function, default_chan);
-    }
     if (!find_channel(function, chan)) {
         return nullptr;
     }
