@@ -668,6 +668,7 @@ ap_object AP_EFI_Backend method handle_scripting boolean EFI_State
 singleton AP_EFI depends (AP_EFI_SCRIPTING_ENABLED == 1)
 singleton AP_EFI rename efi
 singleton AP_EFI method get_backend AP_EFI_Backend uint8_t'skip_check
+singleton AP_EFI method get_state void EFI_State'Ref
 
 -- ----END EFI Library----
 
