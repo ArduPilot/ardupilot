@@ -1,3 +1,19 @@
+Release 4.3.5 26th March  2023
+------------------------------
+
+- fixed 32 bit microsecond wrap in BDShot code
+
+This release has a single bug fix for a critical bug for anyone using
+bi-directional DShot on their vehicle. If using bi-directional DShot
+and the vehicle is running its motors when 32 bit microsecond time
+wraps at 71 minutes (or multiples of 71 minutes) then the bug that is
+fixed in this release has an approximately 1 in 3 chance of causing
+the motor to stop.
+
+Note that the time is the time since boot, not the time since arming,
+so even vehicles flying for a short time could be vulnerable if they
+sit for a long time on the ground before takeoff.
+
 Release 4.3.4 1st March  2023
 -----------------------------
 

@@ -89,7 +89,7 @@ const AP_Param::GroupInfo AP_PiccoloCAN::var_info[] = {
     // @User: Advanced
     // @Range: 1 500
     AP_GROUPINFO("SRV_RT", 4, AP_PiccoloCAN, _srv_hz, PICCOLO_MSG_RATE_HZ_DEFAULT),
-#if HAL_EFI_CURRAWONG_ECU_ENABLED
+#if AP_EFI_CURRAWONG_ECU_ENABLED
     // @Param: ECU_ID
     // @DisplayName: ECU Node ID
     // @Description: Node ID to send ECU throttle messages to. Set to zero to disable ECU throttle messages. Set to 255 to broadcast to all ECUs.
@@ -182,7 +182,7 @@ void AP_PiccoloCAN::loop()
 
     uint16_t esc_tx_counter = 0;
     uint16_t servo_tx_counter = 0;
-#if HAL_EFI_CURRAWONG_ECU_ENABLED
+#if AP_EFI_CURRAWONG_ECU_ENABLED
     uint16_t ecu_tx_counter = 0;
 #endif
 
@@ -203,7 +203,7 @@ void AP_PiccoloCAN::loop()
         _srv_hz.set(constrain_int16(_srv_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX));
 
         uint16_t servoCmdRateMs = 1000 / _srv_hz;
-#if HAL_EFI_CURRAWONG_ECU_ENABLED
+#if AP_EFI_CURRAWONG_ECU_ENABLED
         _ecu_hz.set(constrain_int16(_ecu_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX));
 
         uint16_t ecuCmdRateMs = 1000 / _ecu_hz;
@@ -225,7 +225,7 @@ void AP_PiccoloCAN::loop()
             send_servo_messages();
         }
 
-#if HAL_EFI_CURRAWONG_ECU_ENABLED
+#if AP_EFI_CURRAWONG_ECU_ENABLED
         // Transmit ecu throttle commands at regular intervals
         if (ecu_tx_counter++ > ecuCmdRateMs) {
             ecu_tx_counter = 0;
@@ -287,7 +287,7 @@ bool AP_PiccoloCAN::decode_frame(AP_HAL::CANFrame &frame)
             break;
         }
         case MessageGroup::ECU_OUT: {
-        #if HAL_EFI_CURRAWONG_ECU_ENABLED
+        #if AP_EFI_CURRAWONG_ECU_ENABLED
             AP_EFI_Currawong_ECU* ecu = AP_EFI_Currawong_ECU::get_instance();
 
             if (ecu != nullptr) {
@@ -381,12 +381,12 @@ void AP_PiccoloCAN::update()
         }
     }
 
-#if HAL_EFI_CURRAWONG_ECU_ENABLED
+#if AP_EFI_CURRAWONG_ECU_ENABLED
     if (_ecu_id != 0) {
         _ecu_info.command = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
         _ecu_info.newCommand = true;
     }
-#endif // HAL_EFI_CURRAWONG_ECU_ENABLED
+#endif // AP_EFI_CURRAWONG_ECU_ENABLED
 
     AP_Logger *logger = AP_Logger::get_singleton();
 
@@ -629,7 +629,7 @@ void AP_PiccoloCAN::send_esc_messages(void)
 }
 
 
-#if HAL_EFI_CURRAWONG_ECU_ENABLED
+#if AP_EFI_CURRAWONG_ECU_ENABLED
 void AP_PiccoloCAN::send_ecu_messages(void)
 {
     AP_HAL::CANFrame txFrame {};
@@ -650,7 +650,7 @@ void AP_PiccoloCAN::send_ecu_messages(void)
         write_frame(txFrame, timeout);
     }
 }
-#endif // HAL_EFI_CURRAWONG_ECU_ENABLED
+#endif // AP_EFI_CURRAWONG_ECU_ENABLED
 
 /**
  * Check if a given servo channel is "active" (has been configured for Piccolo control output)

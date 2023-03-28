@@ -1,6 +1,10 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 4.3.5-rc1 01-Mar-2023
+Copter 4.3.6-beta1/beta2 27-Mar-2023
+Changes from 4.3.5
+1) Bi-directional DShot fix for possible motor stop approx 72min after startup 
+------------------------------------------------------------------
+Copter Copter 4.3.5 14-Mar-2023 / 4.3.5-rc1 01-Mar-2023
 Changes from 4.3.4
 1) Bug fixes
     a) GPS unconfigured error fix for non-M10 uBlox GPS
@@ -277,6 +281,9 @@ Changes from 4.2.3
     d) ROS+ArduPilot environment installation script
     e) Sim on Hardware allows simulator to run on autopilot (good for exhibitions)
     f) Timer info available in real-time using @SYS/timers.txt
+------------------------------------------------------------------
+Copter 4.2.4 16-Aug-2023
+1) Loiter fix to avoid potential wobble or flip on takeoff
 ------------------------------------------------------------------
 Copter 4.2.3 30-Aug-2022
 Changes from 4.2.3-rc3
@@ -558,6 +565,10 @@ Changes from 4.1.5
     o) Precision landing in RTL activates even if pilot had earlier deactivated by repositioning in Land
     p) Real-Time-Clock (RTC) oldest possible date updated to Jan-2022
     q) Tricopter, Coax copter fin trim fix when using DShot/BLheli
+------------------------------------------------------------------
+Copter 4.1.6 16-Mar-2023
+Changes from 4.1.5
+1) Loiter fix to avoid potential wobble or flip on takeoff
 ------------------------------------------------------------------
 Copter 4.1.5 19-Feb-2022 / 4.1.5-rc1 10-Feb-2022
 Changes from 4.1.4

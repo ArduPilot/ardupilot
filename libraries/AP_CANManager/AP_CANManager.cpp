@@ -87,9 +87,11 @@ const AP_Param::GroupInfo AP_CANManager::var_info[] = {
     AP_SUBGROUPINFO(_drv_param[2], "D3_", 6, AP_CANManager, AP_CANManager::CANDriver_Params),
 #endif
 
+#if AP_CAN_SLCAN_ENABLED
     // @Group: SLCAN_
     // @Path: ../AP_CANManager/AP_SLCANIface.cpp
     AP_SUBGROUPINFO(_slcan_interface, "SLCAN_", 7, AP_CANManager, SLCAN::CANIface),
+#endif
 
     // @Param: LOGLEVEL
     // @DisplayName: Loglevel
@@ -134,8 +136,10 @@ void AP_CANManager::init()
         _log_pos = 0;
     }
 
+#if AP_CAN_SLCAN_ENABLED
     //Reset all SLCAN related params that needs resetting at boot
     _slcan_interface.reset_params();
+#endif
 
     Driver_Type drv_type[HAL_MAX_CAN_PROTOCOL_DRIVERS] = {};
     // loop through interfaces and allocate and initialise Iface,
@@ -165,11 +169,15 @@ void AP_CANManager::init()
         bool can_initialised = false;
         // Check if this interface need hooking up to slcan passthrough
         // instead of a driver
+#if AP_CAN_SLCAN_ENABLED
         if (_slcan_interface.init_passthrough(i)) {
             // we have slcan bridge setup pass that on as can iface
             can_initialised = hal.can[i]->init(_interfaces[i]._bitrate, _interfaces[i]._fdbitrate*1000000, AP_HAL::CANIface::NormalMode);
             iface = &_slcan_interface;
         } else {
+#else
+        if (true) {
+#endif
             can_initialised = hal.can[i]->init(_interfaces[i]._bitrate, _interfaces[i]._fdbitrate*1000000, AP_HAL::CANIface::NormalMode);
         }
 

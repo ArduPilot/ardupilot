@@ -736,31 +736,32 @@ ssize_t UARTDriver::read(uint8_t *buffer, uint16_t count)
     return ret;
 }
 
-int16_t UARTDriver::read()
+bool UARTDriver::read(uint8_t &b)
 {
     if (_uart_owner_thd != chThdGetSelfX()) {
-        return -1;
+        return false;
     }
 
-    return UARTDriver::read_locked(0);
+    return UARTDriver::read_locked(0, b);
 }
 
-int16_t UARTDriver::read_locked(uint32_t key)
+bool UARTDriver::read_locked(uint32_t key, uint8_t &b)
 {
     if (lock_read_key != 0 && key != lock_read_key) {
-        return -1;
+        return false;
     }
     if (!_rx_initialised) {
-        return -1;
+        return false;
     }
     uint8_t byte;
     if (!_readbuf.read_byte(&byte)) {
-        return -1;
+        return false;
     }
     if (!_rts_is_active) {
         update_rts_line();
     }
-    return byte;
+    b = byte;
+    return true;
 }
 
 /* write one byte to the port */

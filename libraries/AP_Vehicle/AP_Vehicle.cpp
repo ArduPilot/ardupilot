@@ -17,6 +17,7 @@
 #include <AP_HAL_ChibiOS/sdcard.h>
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
 #endif
+#include <AP_DDS/AP_DDS_Client.h>
 
 #define SCHED_TASK(func, rate_hz, max_time_micros, prio) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros, prio)
 
@@ -122,6 +123,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Group: NMEA_
     // @Path: ../AP_NMEA_Output/AP_NMEA_Output.cpp
     AP_SUBGROUPINFO(nmea, "NMEA_", 17, AP_Vehicle, AP_NMEA_Output),
+#endif
+
+#if AP_DDS_ENABLED
+    // @Group: XRCE
+    // @Path: ../AP_DDS/AP_DDS_Client.cpp
+    AP_SUBGROUPPTR(dds_client, "XRCE_", 18, AP_Vehicle, AP_DDS_Client),
 #endif
 
     AP_GROUPEND
@@ -301,6 +308,12 @@ void AP_Vehicle::setup()
     AP_Param::invalidate_count();
 
     gcs().send_text(MAV_SEVERITY_INFO, "ArduPilot Ready");
+
+#if AP_DDS_ENABLED
+    if (!init_dds_client()) {
+        gcs().send_text(MAV_SEVERITY_ERROR, "DDS Client: Failed to Initialize");
+    }
+#endif
 }
 
 void AP_Vehicle::loop()
@@ -816,6 +829,16 @@ void AP_Vehicle::check_motor_noise()
     }
 #endif
 }
+
+#if AP_DDS_ENABLED
+bool AP_Vehicle::init_dds_client()
+{
+    if (AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_DDS_XRCE, 0)) {
+        dds_client = new AP_DDS_Client();
+    }
+    return dds_client != nullptr;
+}
+#endif // AP_DDS_ENABLED
 
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;
 

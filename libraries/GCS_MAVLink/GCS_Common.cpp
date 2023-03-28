@@ -3361,39 +3361,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_long_t &pack
         return MAV_RESULT_UNSUPPORTED;
     }
 
-    MAV_RESULT result = MAV_RESULT_FAILED;
-    switch (packet.command) {
-    case MAV_CMD_DO_DIGICAM_CONFIGURE:
-        camera->configure(packet.param1,
-                          packet.param2,
-                          packet.param3,
-                          packet.param4,
-                          packet.param5,
-                          packet.param6,
-                          packet.param7);
-        result = MAV_RESULT_ACCEPTED;
-        break;
-    case MAV_CMD_DO_DIGICAM_CONTROL:
-        camera->control(packet.param1,
-                        packet.param2,
-                        packet.param3,
-                        packet.param4,
-                        packet.param5,
-                        packet.param6);
-        result = MAV_RESULT_ACCEPTED;
-        break;
-    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
-        camera->set_trigger_distance(packet.param1);
-        if (is_equal(packet.param3, 1.0f)) {
-            camera->take_picture();
-        }
-        result = MAV_RESULT_ACCEPTED;
-        break;
-    default:
-        result = MAV_RESULT_UNSUPPORTED;
-        break;
-    }
-    return result;
+    return camera->handle_command_long(packet);
 }
 #endif
 
@@ -4733,6 +4701,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+    case MAV_CMD_SET_CAMERA_ZOOM:
+    case MAV_CMD_SET_CAMERA_FOCUS:
+    case MAV_CMD_IMAGE_START_CAPTURE:
+    case MAV_CMD_VIDEO_START_CAPTURE:
+    case MAV_CMD_VIDEO_STOP_CAPTURE:
         result = handle_command_camera(packet);
         break;
 #endif
@@ -6370,12 +6343,12 @@ void GCS::passthru_timer(void)
         _passthru.port1->begin_locked(baud, lock_key);
     }
 
-    int16_t b;
+    uint8_t b;
     uint8_t buf[64];
     uint8_t nbytes = 0;
 
     // read from port1, and write to port2
-    while (nbytes < sizeof(buf) && (b = _passthru.port1->read_locked(lock_key)) >= 0) {
+    while (nbytes < sizeof(buf) && _passthru.port1->read_locked(lock_key, b)) {
         buf[nbytes++] = b;
     }
     if (nbytes > 0) {
@@ -6385,7 +6358,7 @@ void GCS::passthru_timer(void)
 
     // read from port2, and write to port1
     nbytes = 0;
-    while (nbytes < sizeof(buf) && (b = _passthru.port2->read_locked(lock_key)) >= 0) {
+    while (nbytes < sizeof(buf) && _passthru.port2->read_locked(lock_key, b)) {
         buf[nbytes++] = b;
     }
     if (nbytes > 0) {

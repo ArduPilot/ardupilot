@@ -1497,6 +1497,7 @@ class AutoTest(ABC):
                  sitl_32bit=False,
                  ubsan=False,
                  ubsan_abort=False,
+                 num_aux_imus=0,
                  build_opts={}):
 
         self.start_time = time.time()
@@ -1524,6 +1525,7 @@ class AutoTest(ABC):
         self.ubsan = ubsan
         self.ubsan_abort = ubsan_abort
         self.build_opts = build_opts
+        self.num_aux_imus = num_aux_imus
 
         self.mavproxy = None
         self._mavproxy = None  # for auto-cleanup on failed tests
@@ -2149,6 +2151,20 @@ class AutoTest(ABC):
             "SIM_ACC3_SCAL_X",
             "SIM_ACC3_SCAL_Y",
             "SIM_ACC3_SCAL_Z",
+            "SIM_ACC4_RND",
+            "SIM_ACC4_SCAL_X",
+            "SIM_ACC4_SCAL_Y",
+            "SIM_ACC4_SCAL_Z",
+            "SIM_ACC4_BIAS_X",
+            "SIM_ACC4_BIAS_Y",
+            "SIM_ACC4_BIAS_Z",
+            "SIM_ACC5_RND",
+            "SIM_ACC5_SCAL_X",
+            "SIM_ACC5_SCAL_Y",
+            "SIM_ACC5_SCAL_Z",
+            "SIM_ACC5_BIAS_X",
+            "SIM_ACC5_BIAS_Y",
+            "SIM_ACC5_BIAS_Z",
             "SIM_ACC_FILE_RW",
             "SIM_ACC_TRIM_X",
             "SIM_ACC_TRIM_Y",
@@ -2210,7 +2226,6 @@ class AutoTest(ABC):
             "SIM_ENGINE_FAIL",
             "SIM_ENGINE_MUL",
             "SIM_ESC_ARM_RPM",
-            "SIM_FLOAT_EXCEPT",
             "SIM_FLOW_DELAY",
             "SIM_FLOW_ENABLE",
             "SIM_FLOW_POS_X",
@@ -2274,6 +2289,14 @@ class AutoTest(ABC):
             "SIM_GYR3_SCALE_X",
             "SIM_GYR3_SCALE_Y",
             "SIM_GYR3_SCALE_Z",
+            "SIM_GYR4_RND",
+            "SIM_GYR4_SCALE_X",
+            "SIM_GYR4_SCALE_Y",
+            "SIM_GYR4_SCALE_Z",
+            "SIM_GYR5_RND",
+            "SIM_GYR5_SCALE_X",
+            "SIM_GYR5_SCALE_Y",
+            "SIM_GYR5_SCALE_Z",
             "SIM_GYR_FAIL_MSK",
             "SIM_GYR_FILE_RW",
             "SIM_IE24_ENABLE",
@@ -2346,6 +2369,48 @@ class AutoTest(ABC):
             "SIM_IMUT3_GYR3_Z",
             "SIM_IMUT3_TMAX",
             "SIM_IMUT3_TMIN",
+            "SIM_IMUT4_ACC1_X",
+            "SIM_IMUT4_ACC1_Y",
+            "SIM_IMUT4_ACC1_Z",
+            "SIM_IMUT4_ACC2_X",
+            "SIM_IMUT4_ACC2_Y",
+            "SIM_IMUT4_ACC2_Z",
+            "SIM_IMUT4_ACC3_X",
+            "SIM_IMUT4_ACC3_Y",
+            "SIM_IMUT4_ACC3_Z",
+            "SIM_IMUT4_ENABLE",
+            "SIM_IMUT4_GYR1_X",
+            "SIM_IMUT4_GYR1_Y",
+            "SIM_IMUT4_GYR1_Z",
+            "SIM_IMUT4_GYR2_X",
+            "SIM_IMUT4_GYR2_Y",
+            "SIM_IMUT4_GYR2_Z",
+            "SIM_IMUT4_GYR3_X",
+            "SIM_IMUT4_GYR3_Y",
+            "SIM_IMUT4_GYR3_Z",
+            "SIM_IMUT4_TMAX",
+            "SIM_IMUT4_TMIN",
+            "SIM_IMUT5_ACC1_X",
+            "SIM_IMUT5_ACC1_Y",
+            "SIM_IMUT5_ACC1_Z",
+            "SIM_IMUT5_ACC2_X",
+            "SIM_IMUT5_ACC2_Y",
+            "SIM_IMUT5_ACC2_Z",
+            "SIM_IMUT5_ACC3_X",
+            "SIM_IMUT5_ACC3_Y",
+            "SIM_IMUT5_ACC3_Z",
+            "SIM_IMUT5_ENABLE",
+            "SIM_IMUT5_GYR1_X",
+            "SIM_IMUT5_GYR1_Y",
+            "SIM_IMUT5_GYR1_Z",
+            "SIM_IMUT5_GYR2_X",
+            "SIM_IMUT5_GYR2_Y",
+            "SIM_IMUT5_GYR2_Z",
+            "SIM_IMUT5_GYR3_X",
+            "SIM_IMUT5_GYR3_Y",
+            "SIM_IMUT5_GYR3_Z",
+            "SIM_IMUT5_TMAX",
+            "SIM_IMUT5_TMIN",
             "SIM_IMUT_END",
             "SIM_IMUT_FIXED",
             "SIM_IMUT_START",
@@ -2407,10 +2472,6 @@ class AutoTest(ABC):
             "SIM_MAG1_ORIENT",
             "SIM_MAG_RND",
             "SIM_ODOM_ENABLE",
-            "SIM_OPOS_ALT",
-            "SIM_OPOS_HDG",
-            "SIM_OPOS_LAT",
-            "SIM_OPOS_LNG",
             "SIM_PARA_ENABLE",
             "SIM_PARA_PIN",
             "SIM_PIN_MASK",
@@ -2719,7 +2780,7 @@ class AutoTest(ABC):
                         continue
                     if "#if FRAME_CONFIG == HELI_FRAME" in line:
                         continue
-                    if "#if PRECISION_LANDING == ENABLED" in line:
+                    if "#if AC_PRECLAND_ENABLED" in line:
                         continue
                     if "#end" in line:
                         continue
@@ -3011,6 +3072,8 @@ class AutoTest(ABC):
             if self.force_ahrs_type == 3:
                 ret["EK3_ENABLE"] = 1
             ret["AHRS_EKF_TYPE"] = self.force_ahrs_type
+        if self.num_aux_imus > 0:
+            ret["SIM_IMU_COUNT"] = self.num_aux_imus + 3
         if self.replay:
             ret["LOG_REPLAY"] = 1
         return ret
@@ -5748,6 +5811,7 @@ class AutoTest(ABC):
             target_sysid=target_sysid,
             target_compid=target_compid,
             mav=mav,
+            quiet=quiet,
         )
         self.run_cmd_get_ack(command, want_result, timeout, quiet=quiet, mav=mav)
 

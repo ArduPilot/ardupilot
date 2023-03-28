@@ -2,14 +2,14 @@
 /// @brief	RC_Channel manager, with EEPROM-backed storage of constants.
 #pragma once
 
+#include "RC_Channel_config.h"
+
+#if AP_RC_CHANNEL_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/Bitmask.h>
-
-#ifndef AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
-#define AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED 1
-#endif
 
 #define NUM_RC_CHANNELS 16
 
@@ -245,6 +245,8 @@ public:
         QSTABILIZE =         170, // QuadPlane QStabilize mode
         MAG_CAL =            171, // Calibrate compasses (disarmed only)
         BATTERY_MPPT_ENABLE = 172,// Battery MPPT Power enable. high = ON, mid = auto (controlled by mppt/batt driver), low = OFF. This effects all MPPTs.
+        PLANE_AUTO_LANDING_ABORT = 173, // Abort Glide-slope or VTOL landing during payload place or do_land type mission items
+
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
@@ -678,3 +680,5 @@ private:
 };
 
 RC_Channels &rc();
+
+#endif  // AP_RC_CHANNEL_ENABLED

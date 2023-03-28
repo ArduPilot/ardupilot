@@ -39,7 +39,7 @@ repos:
 # Disable isort and mypy temporarily due to config conflicts
 # # Use to sort python imports by name and put system import first.
 #   -   repo: https://github.com/pycqa/isort
-#       rev: 5.10.1
+#       rev: 5.12.0
 #       hooks:
 #         - id: isort
 #           args: [--check-only]

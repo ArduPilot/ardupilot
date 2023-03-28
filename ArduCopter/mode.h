@@ -147,7 +147,7 @@ protected:
     // pause_descent is true if vehicle should not descend
     void land_run_normal_or_precland(bool pause_descent = false);
 
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
     // Go towards a position commanded by prec land state machine in order to retry landing
     // The passed in location is expected to be NED and in meters
     void precland_retry_position(const Vector3f &retry_pos);
@@ -257,7 +257,6 @@ public:
         void set_mode(Mode new_mode);
         Mode default_mode(bool rtl) const;
 
-
         void set_rate(float new_rate_cds);
 
         // set_roi(...): set a "look at" location:
@@ -280,11 +279,11 @@ public:
 
     private:
 
-        // yaw(): main product of AutoYaw; the heading:
-        float yaw();
+        // yaw_cd(): main product of AutoYaw; the heading:
+        float yaw_cd();
 
         // rate_cds(): desired yaw rate in centidegrees/second:
-        float rate_cds() const;
+        float rate_cds();
 
         float look_ahead_yaw();
         float roi_yaw() const;
@@ -1182,7 +1181,7 @@ public:
     bool has_user_takeoff(bool must_navigate) const override { return true; }
     bool allows_autotune() const override { return true; }
 
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
     void set_precision_loiter_enabled(bool value) { _precision_loiter_enabled = value; }
 #endif
 
@@ -1195,14 +1194,14 @@ protected:
     int32_t wp_bearing() const override;
     float crosstrack_error() const override { return pos_control->crosstrack_error();}
 
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
     bool do_precision_loiter();
     void precision_loiter_xy();
 #endif
 
 private:
 
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
     bool _precision_loiter_enabled;
     bool _precision_loiter_active; // true if user has switched on prec loiter
 #endif
@@ -1795,6 +1794,9 @@ protected:
 
     const char *name() const override { return "ZIGZAG"; }
     const char *name4() const override { return "ZIGZ"; }
+    uint32_t wp_distance() const override;
+    int32_t wp_bearing() const override;
+    float crosstrack_error() const override;
 
 private:
 

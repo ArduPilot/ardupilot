@@ -267,6 +267,35 @@ public:
         uint8_t gimbal_id;
     };
 
+    // MAV_CMD_IMAGE_START_CAPTURE support
+    struct PACKED image_start_capture_Command {
+        float interval_s;
+        uint16_t total_num_images;
+        uint16_t start_seq_number;
+    };
+
+    // MAV_CMD_SET_CAMERA_ZOOM support
+    struct PACKED set_camera_zoom_Command {
+        uint8_t zoom_type;
+        float zoom_value;
+    };
+
+    // MAV_CMD_SET_CAMERA_FOCUS support
+    struct PACKED set_camera_focus_Command {
+        uint8_t focus_type;
+        float focus_value;
+    };
+
+    // MAV_CMD_VIDEO_START_CAPTURE support
+    struct PACKED video_start_capture_Command {
+        uint8_t video_stream_id;
+    };
+
+    // MAV_CMD_VIDEO_STOP_CAPTURE support
+    struct PACKED video_stop_capture_Command {
+        uint8_t video_stream_id;
+    };
+
     union Content {
         // jump structure
         Jump_Command jump;
@@ -347,6 +376,21 @@ public:
 
         // MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW
         gimbal_manager_pitchyaw_Command gimbal_manager_pitchyaw;
+
+        // MAV_CMD_IMAGE_START_CAPTURE support
+        image_start_capture_Command image_start_capture;
+
+        // MAV_CMD_SET_CAMERA_ZOOM support
+        set_camera_zoom_Command set_camera_zoom;
+
+        // MAV_CMD_SET_CAMERA_FOCUS support
+        set_camera_focus_Command set_camera_focus;
+
+        // MAV_CMD_VIDEO_START_CAPTURE support
+        video_start_capture_Command video_start_capture;
+
+        // MAV_CMD_VIDEO_STOP_CAPTURE support
+        video_stop_capture_Command video_stop_capture;
 
         // location
         Location location{};      // Waypoint location

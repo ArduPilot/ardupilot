@@ -251,6 +251,10 @@ submodules at specific revisions.
                  default=False,
                  help="Enables GPS logging")
     
+    g.add_option('--enable-dds', action='store_true',
+                 help="Enable the dds client to connect with ROS2/DDS"
+    )
+
     g = opt.ap_groups['linux']
 
     linux_options = ('--prefix', '--destdir', '--bindir', '--libdir')
@@ -376,6 +380,16 @@ configuration in order to save typing.
     g.add_option('--assert-cc-version',
                  default=None,
                  help='fail configure if not using the specified gcc version')
+
+    g.add_option('--num-aux-imus',
+                 type='int',
+                 default=0,
+                 help='number of auxiliary IMUs')
+
+    g.add_option('--board-start-time',
+                 type='int',
+                 default=0,
+                 help='zero time on boot in microseconds')
     
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
@@ -443,6 +457,14 @@ def configure(cfg):
     if cfg.options.static:
         cfg.msg('Using static linking', 'yes', color='YELLOW')
         cfg.env.STATIC_LINKING = True
+
+    if cfg.options.num_aux_imus > 0:
+        cfg.define('INS_AUX_INSTANCES', cfg.options.num_aux_imus)
+
+    if cfg.options.board_start_time != 0:
+        cfg.define('AP_BOARD_START_TIME', cfg.options.board_start_time)
+        # also in env for hrt.c
+        cfg.env.AP_BOARD_START_TIME = cfg.options.board_start_time
 
     cfg.load('ap_library')
 
@@ -663,6 +685,9 @@ def _build_dynamic_sources(bld):
                 bld.srcnode.find_dir('modules/DroneCAN/libcanard/').abspath(),
             ]
         )
+
+    if bld.env.ENABLE_DDS:
+        bld.recurse("libraries/AP_DDS")
 
     def write_version_header(tsk):
         bld = tsk.generator.bld

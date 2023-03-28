@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<profiles>
+  <participant profile_name="participant_profile">
+    <rtps>
+      <name>Ardupilot_DDS_XRCE_Client</name>
+    </rtps>
+  </participant>
+  <topic profile_name="time__t">
+    <name>rt/ROS2_Time</name>
+    <dataType>builtin_interfaces::msg::dds_::Time_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>20</depth>
+    </historyQos>
+  </topic>
+  <data_writer profile_name="time__dw">
+    <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+    <qos>
+      <reliability>
+        <kind>RELIABLE</kind>
+      </reliability>
+    </qos>
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/ROS2_Time</name>
+      <dataType>builtin_interfaces::msg::dds_::Time_</dataType>
+      <historyQos>
+        <kind>KEEP_LAST</kind>
+        <depth>20</depth>
+      </historyQos>
+    </topic>
+  </data_writer>
+</profiles>

@@ -115,7 +115,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 
     // @Param: RUDDER
     // @DisplayName: Arming with Rudder enable/disable
-    // @Description: Allow arm/disarm by rudder input. When enabled arming can be done with right rudder, disarming with left rudder. Rudder arming only works in manual throttle modes with throttle at zero +- deadzone (RCx_DZ)
+    // @Description: Allow arm/disarm by rudder input. When enabled arming can be done with right rudder, disarming with left rudder. Rudder arming only works with throttle at zero +- deadzone (RCx_DZ). Depending on vehicle type, arming in certain modes is prevented. See the wiki for each vehicle. Caution is recommended when arming if it is allowed in an auto-throttle mode!
     // @Values: 0:Disabled,1:ArmingOnly,2:ArmOrDisarm
     // @User: Advanced
     AP_GROUPINFO_FRAME("RUDDER",  6,     AP_Arming, _rudder_arming, ARMING_RUDDER_DEFAULT, AP_PARAM_FRAME_PLANE |
@@ -1027,6 +1027,11 @@ bool AP_Arming::system_checks(bool report)
         return false;
     }
 
+    if (!hal.gpio->arming_checks(sizeof(buffer), buffer)) {
+        check_failed(report, "%s", buffer);
+        return false;
+    }
+
     if (check_enabled(ARMING_CHECK_PARAMETERS)) {
 #if AP_RPM_ENABLED
         auto *rpm = AP::rpm();
@@ -1301,6 +1306,7 @@ bool AP_Arming::fettec_checks(bool display_failure) const
     return true;
 }
 
+#if AP_ARMING_AUX_AUTH_ENABLED
 // request an auxiliary authorisation id.  This id should be used in subsequent calls to set_aux_auth_passed/failed
 // returns true on success
 bool AP_Arming::get_aux_auth_id(uint8_t& auth_id)
@@ -1417,6 +1423,7 @@ bool AP_Arming::aux_auth_checks(bool display_failure)
     // if we got this far all auxiliary checks must have passed
     return true;
 }
+#endif  // AP_ARMING_AUX_AUTH_ENABLED
 
 bool AP_Arming::generator_checks(bool display_failure) const
 {
@@ -1494,7 +1501,9 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  mount_checks(report)
         &  fettec_checks(report)
         &  visodom_checks(report)
+#if AP_ARMING_AUX_AUTH_ENABLED
         &  aux_auth_checks(report)
+#endif
         &  disarm_switch_checks(report)
         &  fence_checks(report)
         &  opendroneid_checks(report)
@@ -1683,23 +1692,6 @@ bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channe
         if (channel->get_radio_max() < RC_Channel::RC_CALIB_MAX_LIMIT_PWM) {
             check_failed(ARMING_CHECK_RC, display_failure, "%s radio max too low", channel_name);
             ret = false;
-        }
-        bool fail = true;
-        if (i == 2) {
-            // skip checking trim for throttle as older code did not check it
-            fail = false;
-        }
-        if (channel->get_radio_trim() < channel->get_radio_min()) {
-            check_failed(ARMING_CHECK_RC, display_failure, "%s radio trim below min", channel_name);
-            if (fail) {
-                ret = false;
-            }
-        }
-        if (channel->get_radio_trim() > channel->get_radio_max()) {
-            check_failed(ARMING_CHECK_RC, display_failure, "%s radio trim above max", channel_name);
-            if (fail) {
-                ret = false;
-            }
         }
     }
     return ret;

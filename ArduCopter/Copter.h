@@ -69,6 +69,7 @@
 #include <AC_Sprayer/AC_Sprayer.h>          // Crop sprayer library
 #include <AP_ADSB/AP_ADSB.h>                // ADS-B RF based collision avoidance module library
 #include <AP_Proximity/AP_Proximity.h>      // ArduPilot proximity sensor library
+#include <AC_PrecLand/AC_PrecLand_config.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Winch/AP_Winch_config.h>
 
@@ -115,7 +116,7 @@
 #if AP_GRIPPER_ENABLED
  # include <AP_Gripper/AP_Gripper.h>
 #endif
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
  # include <AC_PrecLand/AC_PrecLand.h>
  # include <AC_PrecLand/AC_PrecLand_StateMachine.h>
 #endif
@@ -529,7 +530,7 @@ private:
 #endif
 
     // Precision Landing
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
     AC_PrecLand precland;
     AC_PrecLand_StateMachine precland_statemachine;
 #endif
@@ -891,7 +892,6 @@ private:
     void default_dead_zones();
     void init_rc_in();
     void init_rc_out();
-    void enable_motor_output();
     void read_radio();
     void set_throttle_and_failsafe(uint16_t throttle_pwm);
     void set_throttle_zero_flag(int16_t throttle_control);

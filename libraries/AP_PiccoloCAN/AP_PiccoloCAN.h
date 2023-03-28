@@ -115,7 +115,7 @@ private:
     // send servo commands over CAN
     void send_servo_messages(void);
     
-#if HAL_EFI_CURRAWONG_ECU_ENABLED
+#if AP_EFI_CURRAWONG_ECU_ENABLED
     void send_ecu_messages(void);
 #endif
 

@@ -75,6 +75,20 @@ class Board:
         if cfg.options.no_gcs:
             env.CXXFLAGS += ['-DHAL_GCS_ENABLED=0']
 
+        # configurations for XRCE-DDS
+        if cfg.options.enable_dds:
+            cfg.recurse('libraries/AP_DDS')
+            env.ENABLE_DDS = True
+            env.AP_LIBRARIES += [
+                'AP_DDS'
+            ]
+            env.DEFINES.update(AP_DDS_ENABLED = 1)
+            # check for microxrceddsgen
+            cfg.find_program('microxrceddsgen',mandatory=True)
+        else:
+            env.ENABLE_DDS = False
+            env.DEFINES.update(AP_DDS_ENABLED = 0)
+
         # setup for supporting onvif cam control
         if cfg.options.enable_onvif:
             cfg.recurse('libraries/AP_ONVIF')
@@ -778,6 +792,7 @@ class sitl_periph_gps(sitl):
             HAL_GENERATOR_ENABLED = 0,
             AP_STATS_ENABLED = 0,
             HAL_SUPPORT_RCOUT_SERIAL = 0,
+            AP_CAN_SLCAN_ENABLED = 0,
         )
         # libcanard is written for 32bit platforms
         env.CXXFLAGS += [

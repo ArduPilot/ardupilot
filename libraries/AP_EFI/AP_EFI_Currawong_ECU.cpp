@@ -21,7 +21,7 @@
 
 #include "AP_EFI_Currawong_ECU.h"
 
-#if HAL_EFI_CURRAWONG_ECU_ENABLED
+#if AP_EFI_CURRAWONG_ECU_ENABLED
 
 #include <AP_Param/AP_Param.h>
 #include <AP_PiccoloCAN/piccolo_protocol/ECUPackets.h>
@@ -103,4 +103,4 @@ bool AP_EFI_Currawong_ECU::handle_message(AP_HAL::CANFrame &frame)
     return valid;
 }
 
-#endif // HAL_EFI_CURRAWONG_ECU_ENABLED
+#endif // AP_EFI_CURRAWONG_ECU_ENABLED

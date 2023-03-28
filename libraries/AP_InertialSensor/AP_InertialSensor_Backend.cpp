@@ -12,6 +12,10 @@
 
 #define SENSOR_RATE_DEBUG 0
 
+#ifndef AP_HEATER_IMU_INSTANCE
+#define AP_HEATER_IMU_INSTANCE 0
+#endif
+
 const extern AP_HAL::HAL& hal;
 
 AP_InertialSensor_Backend::AP_InertialSensor_Backend(AP_InertialSensor &imu) :
@@ -99,7 +103,7 @@ void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vect
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
     if (_imu.tcal_learning) {
-        _imu.tcal[instance].update_accel_learning(accel, _imu.get_temperature(instance));
+        _imu.tcal(instance).update_accel_learning(accel, _imu.get_temperature(instance));
     }
 #endif
 
@@ -111,15 +115,15 @@ void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vect
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
         // apply temperature corrections
-        _imu.tcal[instance].correct_accel(_imu.get_temperature(instance), _imu.caltemp_accel[instance], accel);
+        _imu.tcal(instance).correct_accel(_imu.get_temperature(instance), _imu.caltemp_accel(instance), accel);
 #endif
 
         // apply offsets
-        accel -= _imu._accel_offset[instance];
+        accel -= _imu._accel_offset(instance);
 
 
         // apply scaling
-        const Vector3f &accel_scale = _imu._accel_scale[instance].get();
+        const Vector3f &accel_scale = _imu._accel_scale(instance).get();
         accel.x *= accel_scale.x;
         accel.y *= accel_scale.y;
         accel.z *= accel_scale.z;
@@ -136,7 +140,7 @@ void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vecto
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
     if (_imu.tcal_learning) {
-        _imu.tcal[instance].update_gyro_learning(gyro, _imu.get_temperature(instance));
+        _imu.tcal(instance).update_gyro_learning(gyro, _imu.get_temperature(instance));
     }
 #endif
     
@@ -144,11 +148,11 @@ void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vecto
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
         // apply temperature corrections
-        _imu.tcal[instance].correct_gyro(_imu.get_temperature(instance), _imu.caltemp_gyro[instance], gyro);
+        _imu.tcal(instance).correct_gyro(_imu.get_temperature(instance), _imu.caltemp_gyro(instance), gyro);
 #endif
 
         // gyro calibration is always assumed to have been done in sensor frame
-        gyro -= _imu._gyro_offset[instance];
+        gyro -= _imu._gyro_offset(instance);
     }
 
     gyro.rotate(_imu._board_orientation);
@@ -731,7 +735,7 @@ void AP_InertialSensor_Backend::_publish_temperature(uint8_t instance, float tem
 
 #if HAL_HAVE_IMU_HEATER
     /* give the temperature to the control loop in order to keep it constant*/
-    if (instance == 0) {
+    if (instance == AP_HEATER_IMU_INSTANCE) {
         AP_BoardConfig *bc = AP::boardConfig();
         if (bc) {
             bc->set_imu_temp(temperature);

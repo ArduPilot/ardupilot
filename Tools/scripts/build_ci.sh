@@ -83,6 +83,9 @@ function run_autotest() {
     if [ "x$CI_BUILD_DEBUG" != "x" ]; then
         w="$w --debug"
     fi
+    if [ "$NAME" == "Plane" ]; then
+        w="$w --num-aux-imus=2"
+    fi
     if [ "$NAME" == "Examples" ]; then
         w="$w --speedup=5 --timeout=14400 --debug --no-clean"
     fi
@@ -302,6 +305,24 @@ for t in $CI_BUILD_TARGET; do
     if [ "$t" == "CubeOrange-ODID" ]; then
         echo "Building CubeOrange-ODID"
         $waf configure --board CubeOrange-ODID
+        $waf clean
+        $waf copter
+        $waf plane
+        continue
+    fi
+
+    if [ "$t" == "dds-stm32h7" ]; then
+        echo "Building with DDS support on a STM32H7"
+        $waf configure --board Durandal --enable-dds
+        $waf clean
+        $waf copter
+        $waf plane
+        continue
+    fi
+
+    if [ "$t" == "dds-sitl" ]; then
+        echo "Building with DDS support on SITL"
+        $waf configure --board sitl --enable-dds
         $waf clean
         $waf copter
         $waf plane

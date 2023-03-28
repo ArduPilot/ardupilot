@@ -89,6 +89,10 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Values: 0:Disabled,1:No RC pusles,2:All Channels neutral except Throttle is 950us
     // @User: Advanced
     AP_GROUPINFO("RC_FAIL",       25, SIM,  rc_fail, 0),
+    // @Param: FLOAT_EXCEPT
+    // @DisplayName: Generate floating point exceptions
+    // @Description: If set, if a numerical error occurs SITL will die with a floating point exception.
+    // @User: Advanced
     AP_GROUPINFO("FLOAT_EXCEPT",  28, SIM,  float_exception, 1),
     AP_GROUPINFO("SONAR_SCALE",   32, SIM,  sonar_scale, 12.1212f),
     AP_GROUPINFO("FLOW_ENABLE",   33, SIM,  flow_enable, 0),
@@ -204,9 +208,25 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     AP_GROUPINFO("TIDE_SPEED",  50, SIM,  tide.speed, 0.0f),
 
     // the following coordinates are for CMAC, in Canberra
+    // @Param: OPOS_LAT
+    // @DisplayName: Original Position (Latitude)
+    // @Description: Specifies vehicle's startup latitude
+    // @User: Advanced
     AP_GROUPINFO("OPOS_LAT",    51, SIM,  opos.lat, -35.363261f),
+    // @Param: OPOS_LNG
+    // @DisplayName: Original Position (Longitude)
+    // @Description: Specifies vehicle's startup longitude
+    // @User: Advanced
     AP_GROUPINFO("OPOS_LNG",    52, SIM,  opos.lng, 149.165230f),
+    // @Param: OPOS_ALT
+    // @DisplayName: Original Position (Altitude)
+    // @Description: Specifies vehicle's startup altitude (AMSL)
+    // @User: Advanced
     AP_GROUPINFO("OPOS_ALT",    53, SIM,  opos.alt, 584.0f),
+    // @Param: OPOS_HDG
+    // @DisplayName: Original Position (Heading)
+    // @Description: Specifies vehicle's startup heading (0-360)
+    // @User: Advanced
     AP_GROUPINFO("OPOS_HDG",    54, SIM,  opos.hdg, 353.0f),
 
     // extra delay per main loop
@@ -697,14 +717,94 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     AP_GROUPINFO("GYR3_BIAS",     33, SIM, gyro_bias[2], 0),
 #endif
 
+#if INS_MAX_INSTANCES > 3
+    AP_GROUPINFO("ACC4_SCAL",    34, SIM, accel_scale[3], 0),
+
+    // @Param: ACCEL4_FAIL
+    // @DisplayName: ACCEL4 Failure
+    // @Description: Simulated failure of ACCEL4
+    // @Values: 0:Disabled, 1:ACCEL4 Failure
+    // @User: Advanced
+    AP_GROUPINFO("ACCEL4_FAIL",  35, SIM, accel_fail[3],  0),
+
+    AP_GROUPINFO("GYR4_SCALE",   36, SIM, gyro_scale[3], 0),
+
+    AP_GROUPINFO("ACC4_RND",     37, SIM, accel_noise[3], 0),
+
+    AP_GROUPINFO("GYR4_RND",     38, SIM, gyro_noise[3],  0),
+
+    AP_GROUPINFO("ACC4_BIAS",    39, SIM, accel_bias[3], 0),
+
+    // @Param: GYR4_BIAS_X
+    // @CopyFieldsFrom: SIM_GYR1_BIAS_X
+    // @DisplayName: Fourth Gyro bias on X axis
+    // @Description: Fourth Gyro bias on X axis
+
+    // @Param: GYR4_BIAS_Y
+    // @CopyFieldsFrom: SIM_GYR1_BIAS_Y
+    // @DisplayName: Fourth Gyro bias on Y axis
+    // @Description: Fourth Gyro bias on Y axis
+
+    // @Param: GYR4_BIAS_Z
+    // @CopyFieldsFrom: SIM_GYR1_BIAS_Z
+    // @DisplayName: Fourth Gyro bias on Z axis
+    // @Description: Fourth Gyro bias on Z axis
+
+    AP_GROUPINFO("GYR4_BIAS",    40, SIM, gyro_bias[3], 0),
+
+#endif
+
+#if INS_MAX_INSTANCES > 4
+    AP_GROUPINFO("ACC5_SCAL",    41, SIM, accel_scale[4], 0),
+
+
+    // @Param: ACCEL5_FAIL
+    // @DisplayName: ACCEL5 Failure
+    // @Description: Simulated failure of ACCEL5
+    // @Values: 0:Disabled, 1:ACCEL5 Failure
+    // @User: Advanced
+    AP_GROUPINFO("ACCEL5_FAIL",  42, SIM, accel_fail[4],  0),
+
+    AP_GROUPINFO("GYR5_SCALE",   43, SIM, gyro_scale[4], 0),
+
+    AP_GROUPINFO("ACC5_RND",     44, SIM, accel_noise[4], 0),
+
+    AP_GROUPINFO("GYR5_RND",     45, SIM, gyro_noise[4],  0),
+
+    AP_GROUPINFO("ACC5_BIAS",    46, SIM, accel_bias[4], 0),
+
+    // @Param: GYR5_BIAS_X
+    // @CopyFieldsFrom: SIM_GYR1_BIAS_X
+    // @DisplayName: Fifth Gyro bias on X axis
+    // @Description: Fifth Gyro bias on X axis
+
+    // @Param: GYR5_BIAS_Y
+    // @CopyFieldsFrom: SIM_GYR1_BIAS_Y
+    // @DisplayName: Fifth Gyro bias on Y axis
+    // @Description: Fifth Gyro bias on Y axis
+
+    // @Param: GYR5_BIAS_Z
+    // @CopyFieldsFrom: SIM_GYR1_BIAS_Z
+    // @DisplayName: Fifth Gyro bias on Z axis
+    // @Description: Fifth Gyro bias on Z axis
+
+    AP_GROUPINFO("GYR5_BIAS",    47, SIM, gyro_bias[4], 0),
+#endif
+
     // the IMUT parameters must be last due to the enable parameters
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-    AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SIM, AP_InertialSensor::TCal),
+    AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SIM, AP_InertialSensor_TCal),
 #if INS_MAX_INSTANCES > 1
-    AP_SUBGROUPINFO(imu_tcal[1], "IMUT2_", 62, SIM, AP_InertialSensor::TCal),
+    AP_SUBGROUPINFO(imu_tcal[1], "IMUT2_", 62, SIM, AP_InertialSensor_TCal),
 #endif
 #if INS_MAX_INSTANCES > 2
-    AP_SUBGROUPINFO(imu_tcal[2], "IMUT3_", 63, SIM, AP_InertialSensor::TCal),
+    AP_SUBGROUPINFO(imu_tcal[2], "IMUT3_", 63, SIM, AP_InertialSensor_TCal),
+#endif
+#if INS_MAX_INSTANCES > 3
+    AP_SUBGROUPINFO(imu_tcal[3], "IMUT4_", 60, SIM, AP_InertialSensor_TCal),
+#endif
+#if INS_MAX_INSTANCES > 4
+    AP_SUBGROUPINFO(imu_tcal[4], "IMUT5_", 59, SIM, AP_InertialSensor_TCal),
 #endif
 #endif  // HAL_INS_TEMPERATURE_CAL_ENABLE
     AP_GROUPEND

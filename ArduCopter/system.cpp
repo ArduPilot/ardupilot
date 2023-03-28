@@ -132,7 +132,7 @@ void Copter::init_ardupilot()
     camera.init();
 #endif
 
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
     // initialise precision landing
     init_precland();
 #endif
@@ -206,10 +206,7 @@ void Copter::init_ardupilot()
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
-    // enable output to motors
-    if (arming.rc_calibration_checks(true)) {
-        enable_motor_output();
-    }
+    motors->output_min();  // output lowest possible value to motors
 
     // attempt to set the intial_mode, else set to STABILIZE
     if (!set_mode((enum Mode::Number)g.initial_mode.get(), ModeReason::INITIALISED)) {

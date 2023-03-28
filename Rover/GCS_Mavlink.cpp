@@ -1063,7 +1063,7 @@ void GCS_MAVLINK_Rover::handle_radio(const mavlink_message_t &msg)
 */
 void GCS_MAVLINK_Rover::handle_landing_target(const mavlink_landing_target_t &packet, uint32_t timestamp_ms)
 {
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
     rover.precland.handle_msg(packet, timestamp_ms);
 #endif
 }

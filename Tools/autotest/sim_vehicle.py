@@ -402,8 +402,14 @@ def do_build(opts, frame_options):
     if opts.ubsan_abort:
         cmd_configure.append("--ubsan-abort")
 
+    if opts.num_aux_imus:
+        cmd_configure.append("--num-aux-imus=%s" % opts.num_aux_imus)
+
     for nv in opts.define:
         cmd_configure.append("--define=%s" % nv)
+
+    if opts.enable_dds:
+        cmd_configure.append("--enable-dds")
 
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
@@ -1064,6 +1070,11 @@ group_build.add_option("", "--ubsan-abort",
                        action='store_true',
                        dest="ubsan_abort",
                        help="compile sitl with undefined behaviour sanitiser and abort on error")
+group_build.add_option("--num-aux-imus",
+                       dest="num_aux_imus",
+                       default=0,
+                       type='int',
+                       help='number of auxiliary IMUs to simulate')
 parser.add_option_group(group_build)
 
 group_sim = optparse.OptionGroup(parser, "Simulation options")
@@ -1273,6 +1284,9 @@ group_sim.add_option("", "--sim-address",
                      type=str,
                      default="127.0.0.1",
                      help="IP address of the simulator. Defaults to localhost")
+group_sim.add_option("--enable-dds", action='store_true',
+                     help="Enable the dds client to connect with ROS2/DDS")
+
 parser.add_option_group(group_sim)
 
 

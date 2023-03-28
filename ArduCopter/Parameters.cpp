@@ -475,9 +475,9 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
     GOBJECT(compass,        "COMPASS_", Compass),
 
-    // @Group: INS_
+    // @Group: INS
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
-    GOBJECT(ins,            "INS_", AP_InertialSensor),
+    GOBJECT(ins,            "INS", AP_InertialSensor),
 
     // @Group: WPNAV_
     // @Path: ../libraries/AC_WPNav/AC_WPNav.cpp
@@ -664,7 +664,7 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(optflow,   "FLOW", AP_OpticalFlow),
 #endif
 
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
     // @Group: PLND_
     // @Path: ../libraries/AC_PrecLand/AC_PrecLand.cpp
     GOBJECT(precland, "PLND_", AC_PrecLand),
@@ -1207,6 +1207,13 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @Range: 0 5
     // @User: Advanced
     AP_GROUPINFO("SURFTRAK_TC", 5, ParametersG2, surftrak_tc, 1.0),
+
+    // @Param: TKOFF_THR_MAX
+    // @DisplayName: Takeoff maximum throttle during take-off ramp up
+    // @Description: Takeoff maximum throttle allowed before controllers assume the aircraft is airborne during the takeoff process.
+    // @Range: 0.0 0.9
+    // @User: Advanced
+    AP_GROUPINFO("TKOFF_THR_MAX", 6, ParametersG2, takeoff_throttle_max, 0.9),
 
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 

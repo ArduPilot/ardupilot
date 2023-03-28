@@ -146,7 +146,9 @@ bool AP_Baro_LPS2XH::_init()
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 
     // top bit is for read on SPI
-    _dev->set_read_flag(0x80);
+    if (_dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
+        _dev->set_read_flag(0x80);
+    }
 
     if (!_check_whoami()) {
         _dev->get_semaphore()->give();

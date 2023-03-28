@@ -15,7 +15,7 @@
 
 #include "AP_Generator_IE_650_800.h"
 
-#if HAL_GENERATOR_ENABLED
+#if AP_GENERATOR_IE650_800_ENABLED
 
 extern const AP_HAL::HAL& hal;
 
@@ -28,7 +28,7 @@ void AP_Generator_IE_650_800::init()
     // This unit does not have current but this needs to be true to make use of consumed_mah in BattMonitor
     _frontend._has_current = true;
     _frontend._has_consumed_energy = true;
-    _frontend._has_fuel_remaining_pct = false;
+    _frontend._has_fuel_remaining = false;
 }
 
 // Update fuel cell, expected to be called at 20hz
@@ -40,7 +40,7 @@ void AP_Generator_IE_650_800::assign_measurements(const uint32_t now)
     _err_code = _parsed.err_code;
 
     // Update variables to be returned to front end
-    _fuel_remain_pct = _parsed.tank_pct * 0.01;
+    _fuel_remaining = _parsed.tank_pct * 0.01;
 
     // Invert bat remaining percent to match AP_BattMonitor convention
     _consumed_mah = 100.0f - _parsed.battery_pct;
@@ -122,4 +122,5 @@ AP_BattMonitor::Failsafe AP_Generator_IE_650_800::update_failsafes() const
     return AP_BattMonitor::Failsafe::None;
 }
 
-#endif
+#endif  // AP_GENERATOR_IE650_800_ENABLED
+

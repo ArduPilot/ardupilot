@@ -18,7 +18,8 @@
 
 #define AP_INLINE_VECTOR_OPS
 
-#include "AP_InertialSensor.h"
+#include "AP_InertialSensor_tempcal.h"
+#include "AP_InertialSensor_config.h"
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
 #include <GCS_MAVLink/GCS.h>
@@ -44,7 +45,7 @@
 extern const AP_HAL::HAL& hal;
 
 // temperature calibration parameters, per IMU
-const AP_Param::GroupInfo AP_InertialSensor::TCal::var_info[] = {
+const AP_Param::GroupInfo AP_InertialSensor_TCal::var_info[] = {
 
     // @Param: ENABLE
     // @DisplayName: Enable temperature calibration
@@ -52,7 +53,7 @@ const AP_Param::GroupInfo AP_InertialSensor::TCal::var_info[] = {
     // @Values: 0:Disabled,1:Enabled,2:LearnCalibration
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO_FLAGS("ENABLE", 1, AP_InertialSensor::TCal, enable,  float(Enable::Disabled), AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLE", 1, AP_InertialSensor_TCal, enable,  float(Enable::Disabled), AP_PARAM_FLAG_ENABLE),
 
     // @Param: TMIN
     // @DisplayName: Temperature calibration min
@@ -61,7 +62,7 @@ const AP_Param::GroupInfo AP_InertialSensor::TCal::var_info[] = {
     // @Units: degC
     // @User: Advanced
     // @Calibration: 1
-    AP_GROUPINFO("TMIN", 2, AP_InertialSensor::TCal, temp_min,  0),
+    AP_GROUPINFO("TMIN", 2, AP_InertialSensor_TCal, temp_min,  0),
 
     // @Param: TMAX
     // @DisplayName: Temperature calibration max
@@ -70,7 +71,7 @@ const AP_Param::GroupInfo AP_InertialSensor::TCal::var_info[] = {
     // @Units: degC
     // @User: Advanced
     // @Calibration: 1
-    AP_GROUPINFO("TMAX", 3, AP_InertialSensor::TCal, temp_max,  70),
+    AP_GROUPINFO("TMAX", 3, AP_InertialSensor_TCal, temp_max,  70),
 
     // @Param: ACC1_X
     // @DisplayName: Accelerometer 1st order temperature coefficient X axis
@@ -90,7 +91,7 @@ const AP_Param::GroupInfo AP_InertialSensor::TCal::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
     
-    AP_GROUPINFO("ACC1", 4, AP_InertialSensor::TCal, accel_coeff[0], 0),
+    AP_GROUPINFO("ACC1", 4, AP_InertialSensor_TCal, accel_coeff[0], 0),
 
     // @Param: ACC2_X
     // @DisplayName: Accelerometer 2nd order temperature coefficient X axis
@@ -110,7 +111,7 @@ const AP_Param::GroupInfo AP_InertialSensor::TCal::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
 
-    AP_GROUPINFO("ACC2", 5, AP_InertialSensor::TCal, accel_coeff[1], 0),
+    AP_GROUPINFO("ACC2", 5, AP_InertialSensor_TCal, accel_coeff[1], 0),
 
     // @Param: ACC3_X
     // @DisplayName: Accelerometer 3rd order temperature coefficient X axis
@@ -130,7 +131,7 @@ const AP_Param::GroupInfo AP_InertialSensor::TCal::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
 
-    AP_GROUPINFO("ACC3", 6, AP_InertialSensor::TCal, accel_coeff[2], 0),
+    AP_GROUPINFO("ACC3", 6, AP_InertialSensor_TCal, accel_coeff[2], 0),
 
     // @Param: GYR1_X
     // @DisplayName: Gyroscope 1st order temperature coefficient X axis
@@ -150,7 +151,7 @@ const AP_Param::GroupInfo AP_InertialSensor::TCal::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
     
-    AP_GROUPINFO("GYR1", 7, AP_InertialSensor::TCal, gyro_coeff[0], 0),
+    AP_GROUPINFO("GYR1", 7, AP_InertialSensor_TCal, gyro_coeff[0], 0),
 
     // @Param: GYR2_X
     // @DisplayName: Gyroscope 2nd order temperature coefficient X axis
@@ -170,7 +171,7 @@ const AP_Param::GroupInfo AP_InertialSensor::TCal::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
 
-    AP_GROUPINFO("GYR2", 8, AP_InertialSensor::TCal, gyro_coeff[1], 0),
+    AP_GROUPINFO("GYR2", 8, AP_InertialSensor_TCal, gyro_coeff[1], 0),
 
     // @Param: GYR3_X
     // @DisplayName: Gyroscope 3rd order temperature coefficient X axis
@@ -190,7 +191,7 @@ const AP_Param::GroupInfo AP_InertialSensor::TCal::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
 
-    AP_GROUPINFO("GYR3", 9, AP_InertialSensor::TCal, gyro_coeff[2], 0),
+    AP_GROUPINFO("GYR3", 9, AP_InertialSensor_TCal, gyro_coeff[2], 0),
 
     AP_GROUPEND
 };
@@ -199,7 +200,7 @@ const AP_Param::GroupInfo AP_InertialSensor::TCal::var_info[] = {
 /*
   evaluate a 3rd order polynomial (without the constant term) given a set of coefficients
  */
-Vector3f AP_InertialSensor::TCal::polynomial_eval(float tdiff, const AP_Vector3f coeff[3]) const
+Vector3f AP_InertialSensor_TCal::polynomial_eval(float tdiff, const AP_Vector3f coeff[3]) const
 {
     // evaluate order 3 polynomial
     const Vector3f *c = (Vector3f *)&coeff[0];
@@ -209,7 +210,7 @@ Vector3f AP_InertialSensor::TCal::polynomial_eval(float tdiff, const AP_Vector3f
 /*
   correct a single sensor for the current temperature
  */
-void AP_InertialSensor::TCal::correct_sensor(float temperature, float cal_temp, const AP_Vector3f coeff[3], Vector3f &v) const
+void AP_InertialSensor_TCal::correct_sensor(float temperature, float cal_temp, const AP_Vector3f coeff[3], Vector3f &v) const
 {
     if (enable != Enable::Enabled) {
         return;
@@ -229,12 +230,12 @@ void AP_InertialSensor::TCal::correct_sensor(float temperature, float cal_temp, 
     v += polynomial_eval(cal_temp - TEMP_REFERENCE, coeff);
 }
 
-void AP_InertialSensor::TCal::correct_accel(float temperature, float cal_temp, Vector3f &accel) const
+void AP_InertialSensor_TCal::correct_accel(float temperature, float cal_temp, Vector3f &accel) const
 {
     correct_sensor(temperature, cal_temp, accel_coeff, accel);
 }
 
-void AP_InertialSensor::TCal::correct_gyro(float temperature, float cal_temp, Vector3f &gyro) const
+void AP_InertialSensor_TCal::correct_gyro(float temperature, float cal_temp, Vector3f &gyro) const
 {
     correct_sensor(temperature, cal_temp, gyro_coeff, gyro);
 }
@@ -244,19 +245,19 @@ void AP_InertialSensor::TCal::correct_gyro(float temperature, float cal_temp, Ve
   reference. This makes the SITL data independent of TEMP_REFERENCE
   and prevents an abrupt change at the endpoints
  */
-void AP_InertialSensor::TCal::sitl_apply_accel(float temperature, Vector3f &accel) const
+void AP_InertialSensor_TCal::sitl_apply_accel(float temperature, Vector3f &accel) const
 {
     const float tmid = 0.5*(temp_max+temp_min);
     accel += polynomial_eval(temperature - tmid, accel_coeff);
 }
 
-void AP_InertialSensor::TCal::sitl_apply_gyro(float temperature, Vector3f &gyro) const
+void AP_InertialSensor_TCal::sitl_apply_gyro(float temperature, Vector3f &gyro) const
 {
     const float tmid = 0.5*(temp_max+temp_min);
     gyro += polynomial_eval(temperature - tmid, gyro_coeff);
 }
 
-AP_InertialSensor::TCal::Learn::Learn(TCal &_tcal, float _start_temp) :
+AP_InertialSensor_TCal::Learn::Learn(AP_InertialSensor_TCal &_tcal, float _start_temp) :
     start_temp(_start_temp),
     tcal(_tcal)
 {
@@ -266,7 +267,7 @@ AP_InertialSensor::TCal::Learn::Learn(TCal &_tcal, float _start_temp) :
 /*
   update polyfit with new sample
  */
-void AP_InertialSensor::TCal::Learn::add_sample(const Vector3f &sample, float temperature, struct LearnState &st)
+void AP_InertialSensor_TCal::Learn::add_sample(const Vector3f &sample, float temperature, struct LearnState &st)
 {
     temperature = st.temp_filter.apply(temperature);
 
@@ -341,7 +342,7 @@ void AP_InertialSensor::TCal::Learn::add_sample(const Vector3f &sample, float te
 /*
   update accel temperature compensation learning
  */
-void AP_InertialSensor::TCal::update_accel_learning(const Vector3f &accel, float temperature)
+void AP_InertialSensor_TCal::update_accel_learning(const Vector3f &accel, float temperature)
 {
     if (enable != Enable::LearnCalibration) {
         return;
@@ -364,7 +365,7 @@ void AP_InertialSensor::TCal::update_accel_learning(const Vector3f &accel, float
 /*
   update gyro temperature compensation learning
  */
-void AP_InertialSensor::TCal::update_gyro_learning(const Vector3f &gyro, float temperature)
+void AP_InertialSensor_TCal::update_gyro_learning(const Vector3f &gyro, float temperature)
 {
     if (enable != Enable::LearnCalibration) {
         return;
@@ -377,7 +378,7 @@ void AP_InertialSensor::TCal::update_gyro_learning(const Vector3f &gyro, float t
 /*
   reset calibration
  */
-void AP_InertialSensor::TCal::Learn::reset(float temperature)
+void AP_InertialSensor_TCal::Learn::reset(float temperature)
 {
     memset((void*)&state[0], 0, sizeof(state));
     start_tmax = tcal.temp_max;
@@ -392,24 +393,24 @@ void AP_InertialSensor::TCal::Learn::reset(float temperature)
 /*
   finish and save calibration
  */
-void AP_InertialSensor::TCal::Learn::finish_calibration(float temperature)
+void AP_InertialSensor_TCal::Learn::finish_calibration(float temperature)
 {
     if (!save_calibration(temperature)) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: failed fit", instance()+1);
         AP_Notify::events.temp_cal_failed = 1;
-        tcal.enable.set_and_save_ifchanged(int8_t(TCal::Enable::Disabled));
+        tcal.enable.set_and_save_ifchanged(int8_t(AP_InertialSensor_TCal::Enable::Disabled));
         return;
     }
     GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: completed calibration tmin=%.1f tmax=%.1f",
                   instance()+1,
                   tcal.temp_min.get(), tcal.temp_max.get());
-    tcal.enable.set_and_save_ifchanged(int8_t(TCal::Enable::Enabled));
+    tcal.enable.set_and_save_ifchanged(int8_t(AP_InertialSensor_TCal::Enable::Enabled));
 }
 
 /*
   save calibration state
  */
-bool AP_InertialSensor::TCal::Learn::save_calibration(float temperature)
+bool AP_InertialSensor_TCal::Learn::save_calibration(float temperature)
 {
     Vector3f coefficients[3];
 
@@ -440,7 +441,7 @@ bool AP_InertialSensor::TCal::Learn::save_calibration(float temperature)
     return true;
 }
 
-uint8_t AP_InertialSensor::TCal::instance(void) const
+uint8_t AP_InertialSensor_TCal::instance(void) const
 {
     return AP::ins().tcal_instance(*this);
 }
@@ -448,12 +449,30 @@ uint8_t AP_InertialSensor::TCal::instance(void) const
 /*
   get a string representation of parameters for this calibration set
 */
-void AP_InertialSensor::TCal::get_persistent_params(ExpandingString &str) const
+void AP_InertialSensor_TCal::get_persistent_params(ExpandingString &str) const
 {
-    if (enable != TCal::Enable::Enabled) {
+    if (enable != AP_InertialSensor_TCal::Enable::Enabled) {
         return;
     }
     const uint8_t imu = instance()+1;
+#if INS_AUX_INSTANCES
+    if (imu > 3) {
+        str.printf("INS%u_TCAL_ENABLE=1\n", imu);
+        str.printf("INS%u_TCAL_TMIN=%.2f\n", imu, temp_min.get());
+        str.printf("INS%u_TCAL_TMAX=%.2f\n", imu, temp_max.get());
+        for (uint8_t k=0; k<3; k++) {
+            const Vector3f &acc = accel_coeff[k].get();
+            const Vector3f &gyr = gyro_coeff[k].get();
+            str.printf("INS%u_TCAL_ACC%u_X=%f\n", imu, k+1, acc.x);
+            str.printf("INS%u_TCAL_ACC%u_Y=%f\n", imu, k+1, acc.y);
+            str.printf("INS%u_TCAL_ACC%u_Z=%f\n", imu, k+1, acc.z);
+            str.printf("INS%u_TCAL_GYR%u_X=%f\n", imu, k+1, gyr.x);
+            str.printf("INS%u_TCAL_GYR%u_Y=%f\n", imu, k+1, gyr.y);
+            str.printf("INS%u_TCAL_GYR%u_Z=%f\n", imu, k+1, gyr.z);
+        }
+        return;
+    }
+#endif
     str.printf("INS_TCAL%u_ENABLE=1\n", imu);
     str.printf("INS_TCAL%u_TMIN=%.2f\n", imu, temp_min.get());
     str.printf("INS_TCAL%u_TMAX=%.2f\n", imu, temp_max.get());
@@ -478,28 +497,47 @@ void AP_InertialSensor::get_persistent_params(ExpandingString &str) const
     bool save_options = false;
     if (uint32_t(tcal_options.get()) & uint32_t(TCalOptions::PERSIST_ACCEL_CAL)) {
         save_options = true;
-        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        for (uint8_t i=0; i<(INS_MAX_INSTANCES-INS_AUX_INSTANCES); i++) {
             const uint8_t imu = i+1;
-            const Vector3f &aoff = _accel_offset[i].get();
-            const Vector3f &ascl = _accel_scale[i].get();
+            const Vector3f &aoff = _accel_offset(i).get();
+            const Vector3f &ascl = _accel_scale(i).get();
             char id[2] = "";
             if (i > 0) {
                 id[0] = '1'+i;
             }
-            str.printf("INS_ACC%s_ID=%u\n", id, unsigned(_accel_id[i].get()));
+            str.printf("INS_ACC%s_ID=%u\n", id, unsigned(_accel_id(i).get()));
             str.printf("INS_ACC%sOFFS_X=%f\n", id, aoff.x);
             str.printf("INS_ACC%sOFFS_Y=%f\n", id, aoff.y);
             str.printf("INS_ACC%sOFFS_Z=%f\n", id, aoff.z);
             str.printf("INS_ACC%sSCAL_X=%f\n", id, ascl.x);
             str.printf("INS_ACC%sSCAL_Y=%f\n", id, ascl.y);
             str.printf("INS_ACC%sSCAL_Z=%f\n", id, ascl.z);
-            str.printf("INS_ACC%u_CALTEMP=%.2f\n", imu, caltemp_accel[i].get());
+            str.printf("INS_ACC%u_CALTEMP=%.2f\n", imu, caltemp_accel(i).get());
         }
+#if INS_AUX_INSTANCES
+        for (uint8_t i=0; i<INS_AUX_INSTANCES; i++) {
+            const uint8_t imu = i+(INS_MAX_INSTANCES-INS_AUX_INSTANCES);
+            const Vector3f &aoff = params[i]._accel_offset.get();
+            const Vector3f &ascl = params[i]._accel_scale.get();
+            str.printf("INS%u_ACC_ID=%u\n", imu, unsigned(params[i]._accel_id.get()));
+            str.printf("INS%u_ACCOFFS_X=%f\n", imu, aoff.x);
+            str.printf("INS%u_ACCOFFS_Y=%f\n", imu, aoff.y);
+            str.printf("INS%u_ACCOFFS_Z=%f\n", imu, aoff.z);
+            str.printf("INS%u_ACCSCAL_X=%f\n", imu, ascl.x);
+            str.printf("INS%u_ACCSCAL_Y=%f\n", imu, ascl.y);
+            str.printf("INS%u_ACC_CALTEMP=%.2f\n", imu, params[i].caltemp_accel.get());
+        }
+#endif
     }
     if (uint32_t(tcal_options.get()) & uint32_t(TCalOptions::PERSIST_TEMP_CAL)) {
-        for (auto &tc : tcal) {
+        for (auto &tc : tcal_old_param) {
             tc.get_persistent_params(str);
         }
+#if INS_AUX_INSTANCES
+        for (uint8_t i=0; i<INS_AUX_INSTANCES; i++) {
+            params[i].tcal.get_persistent_params(str);
+        }
+#endif
         save_options = true;
     }
     if (save_options) {

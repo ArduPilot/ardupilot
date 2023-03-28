@@ -42,6 +42,7 @@ AEROM_STALL_PIT = bind_add_param('STALL_PIT', 24, -20)
 -- 25 was AEROM_KE_TC
 AEROM_KE_RUDD = bind_add_param('KE_RUDD', 26, 25)
 AEROM_KE_RUDD_LK = bind_add_param('KE_RUDD_LK', 27, 0.25)
+AEROM_ALT_ABORT = bind_add_param('ALT_ABORT',28,15)
 
 -- cope with old param values
 if AEROM_ANG_ACCEL:get() < 100 and AEROM_ANG_ACCEL:get() > 0 then
@@ -2172,6 +2173,12 @@ function do_path()
    if now - last_named_float_t > 1.0 / NAME_FLOAT_RATE then
       last_named_float_t = now
       gcs:send_named_float("PERR", pos_error_ef:length())
+   end
+
+   local alt_error = (current_measured_pos_ef - path_var.initial_ef_pos):z()
+   if alt_error > AEROM_ALT_ABORT:get() then
+     gcs:send_text(0,"Too low altitude, aborting")
+     return false
    end
 
    return true

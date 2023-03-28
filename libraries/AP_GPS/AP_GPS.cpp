@@ -87,6 +87,26 @@ const char AP_GPS::_initialisation_blob[] =
     ""   // to compile we need *some_initialiser if all backends compiled out
     ;
 
+#if HAL_GCS_ENABLED
+// ensure that our GPS_Status enumeration is 1:1 with the mavlink
+// numbers of the same fix type.  This allows us to do a simple cast
+// from one to the other when sending GPS mavlink messages, rather
+// than having some sort of mapping function from our internal
+// enumeration into the mavlink enumeration.  Doing things this way
+// has two advantages - in the future we could add that mapping
+// function and change our enumeration, and the other is that it
+// allows us to build the GPS library without having the mavlink
+// headers built (for example, in AP_Periph we shouldn't need mavlink
+// headers).
+static_assert((uint32_t)AP_GPS::GPS_Status::NO_GPS == (uint32_t)GPS_FIX_TYPE_NO_GPS, "NO_GPS incorrect");
+static_assert((uint32_t)AP_GPS::GPS_Status::NO_FIX == (uint32_t)GPS_FIX_TYPE_NO_FIX, "NO_FIX incorrect");
+static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_2D == (uint32_t)GPS_FIX_TYPE_2D_FIX, "FIX_2D incorrect");
+static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D == (uint32_t)GPS_FIX_TYPE_3D_FIX, "FIX_3D incorrect");
+static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_DGPS == (uint32_t)GPS_FIX_TYPE_DGPS, "FIX_DGPS incorrect");
+static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FLOAT == (uint32_t)GPS_FIX_TYPE_RTK_FLOAT, "FIX_RTK_FLOAT incorrect");
+static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FIXED == (uint32_t)GPS_FIX_TYPE_RTK_FIXED, "FIX_RTK_FIXED incorrect");
+#endif
+
 AP_GPS *AP_GPS::_singleton;
 
 // table of user settable parameters
