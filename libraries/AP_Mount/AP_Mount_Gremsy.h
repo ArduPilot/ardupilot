@@ -36,6 +36,10 @@ public:
     // handle GIMBAL_DEVICE_ATTITUDE_STATUS message
     void handle_gimbal_device_attitude_status(const mavlink_message_t &msg) override;
 
+    // accessors for scripting
+    void send_command_long(uint8_t target_component, uint16_t command, float param1, float param2, float param3, float param4, float param5, float param6, float param7) override;
+    void send_param_set(uint8_t target_component, const char *param_id, float param_value, uint8_t param_type) override;
+
 protected:
 
     // get attitude as a quaternion.  returns true on success

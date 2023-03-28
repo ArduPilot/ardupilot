@@ -111,6 +111,8 @@ public:
     virtual bool get_location_target(Location &target_loc) { return false; }
     virtual void set_attitude_euler(float roll_deg, float pitch_deg, float yaw_bf_deg) {};
     virtual bool get_camera_state(uint16_t& pic_count, bool& record_video, int8_t& zoom_step, int8_t& focus_step, bool& auto_focus) { return false; }
+    virtual void send_command_long(uint8_t target_component, uint16_t command, float param1, float param2, float param3, float param4, float param5, float param6, float param7) {};
+    virtual void send_param_set(uint8_t target_component, const char *param_id, float param_value, uint8_t param_type) {};
 
     //
     // camera controls for gimbals that include a camera

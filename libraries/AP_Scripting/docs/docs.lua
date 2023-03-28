@@ -995,6 +995,27 @@ function mount:get_camera_state(param1) end
 ---@param yaw_deg number
 function mount:set_attitude_euler(instance, roll_deg, pitch_deg, yaw_deg) end
 
+--desc
+---@param instance integer
+---@param target_component integer
+---@param command integer
+---@param param1 number
+---@param param2 number
+---@param param3 number
+---@param param4 number
+---@param param5 number
+---@param param6 number
+---@param param7 number
+function mount:send_command_long(instance, target_component, command, param1, param2, param3, param4, param5, param6, param7) end
+
+-- desc
+---@param instance integer
+---@param target_component integer
+---@param param_id string
+---@param param_value number
+---@param param_type integer
+function mount:send_param_set(instance, target_component, param_id, param_value, param_type) end
+
 -- desc
 ---@param instance integer
 ---@return Location_ud|nil

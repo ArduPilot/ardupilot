@@ -507,6 +507,50 @@ bool AP_Mount::get_camera_state(uint8_t instance, uint16_t& pic_count, bool& rec
     return backend->get_camera_state(pic_count, record_video, zoom_step, focus_step, auto_focus);
 }
 
+void AP_Mount::send_command_long(uint8_t instance, uint8_t target_component, uint16_t command, float param1, float param2, float param3, float param4, float param5, float param6, float param7) {
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
+    }
+    _backends[instance]->send_command_long(target_component, command, param1, param2, param3, param4, param5, param6, param7);
+}
+
+void AP_Mount::send_param_set(uint8_t instance, uint8_t target_component, const char *param_id, float param_value, uint8_t param_type) {
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
+    }
+
+    mavlink_param_union_t param_union;
+
+    switch (param_type) {
+    case MAV_PARAM_TYPE_UINT8:
+        param_union.param_uint8 = (uint8_t)param_value;
+        break;
+    case MAV_PARAM_TYPE_INT8:
+        param_union.param_int8 = (int8_t)param_value;
+        break;
+    case MAV_PARAM_TYPE_UINT16: 
+        param_union.param_uint16 = (uint16_t)param_value;
+        break;
+    case MAV_PARAM_TYPE_INT16:
+        param_union.param_int16 = (int16_t)param_value;
+        break;
+    case MAV_PARAM_TYPE_UINT32:
+        param_union.param_uint32 = (uint32_t)param_value;
+        break;
+    case MAV_PARAM_TYPE_INT32:
+        param_union.param_int32 = (int32_t)param_value;
+        break;
+    case MAV_PARAM_TYPE_REAL32:
+    default:
+        param_union.param_float = param_value;
+        break;
+    }
+
+    _backends[instance]->send_param_set(target_component, param_id, param_union.param_float, param_type);
+}
+
 // point at system ID sysid
 void AP_Mount::set_target_sysid(uint8_t instance, uint8_t sysid)
 {

@@ -224,6 +224,55 @@ void AP_Mount_Gremsy::handle_gimbal_device_attitude_status(const mavlink_message
     _last_attitude_status_ms = AP_HAL::millis();
 }
 
+// send COMMAND_LONG message from script
+void AP_Mount_Gremsy::send_command_long(uint8_t target_component, uint16_t command, float param1, float param2, float param3, float param4, float param5, float param6, float param7)
+{
+    if (_link == nullptr) {
+        return;
+    }
+
+    const mavlink_command_long_t pkt {
+        .param1 = param1,
+        .param2 = param2,
+        .param3 = param3,
+        .param4 = param4,
+        .param5 = param5,
+        .param6 = param6,
+        .param7 = param7,
+        .command = command,
+        .target_system = _sysid,
+        .target_component = target_component,
+        .confirmation = 0
+    };
+
+    _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt);
+}
+
+// send PARAM_SET message from script
+void AP_Mount_Gremsy::send_param_set(uint8_t target_component, const char *param_id, float param_value, uint8_t param_type)
+{
+    if (_link == nullptr) {
+        return;
+    }
+
+    mavlink_param_set_t pkt {
+        .param_value = param_value,
+        .target_system = _sysid,
+        .target_component = target_component,
+        .param_id = {},
+        .param_type = param_type
+    };
+
+    // send message only if length of parameter id is less than or equal to 16 chars
+    size_t param_id_len = strlen(param_id);
+    if (param_id_len <= MAVLINK_MSG_PARAM_SET_FIELD_PARAM_ID_LEN) {
+        // truncate null termination byte if length is exactly 16
+        memcpy(pkt.param_id, param_id, param_id_len);
+
+        _link->send_message(MAVLINK_MSG_ID_PARAM_SET, (const char*)&pkt);
+    }
+}
+
 // request GIMBAL_DEVICE_INFORMATION message
 void AP_Mount_Gremsy::request_gimbal_device_information() const
 {
