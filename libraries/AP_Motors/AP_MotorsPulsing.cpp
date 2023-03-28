@@ -3,6 +3,7 @@
 #include "AP_MotorsPulsing.h"
 #include <GCS_MAVLink/GCS.h>
 #include <SRV_Channel/SRV_Channel.h>
+
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_MotorsPulsing::var_info[] = {
@@ -53,7 +54,7 @@ void AP_MotorsPulsing::init(motor_frame_class frame_class, motor_frame_type fram
 
 
     _mav_type = MAV_TYPE_QUADROTOR;
-
+    rpm = AP_RPM::get_singleton();
     // record successful initialisation if what we setup was the desired frame_class
     // GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Frame");
     set_initialised_ok(frame_class == MOTOR_FRAME_PULSING);
@@ -136,25 +137,23 @@ void AP_MotorsPulsing::output_armed_stabilizing()
     float   rp_scale = 1.0f;           // this is used to scale the roll, pitch and yaw to fit within the motor limits
 
     // gyro ff and yaw ff. Also need rotor height above COM
-    // float yaw_ff_gain = g2.user_parameters.get_yaw_ff_gain();
-    // float gyro_ff = g2.user_parameters.get_gyro_ff_gain();
-    Vector3f gyro_latest = ahrs.get_gyro_latest();
-    // float yaw_ff = yaw_ff_gain * velocity_0 * velocity_0;
-    // Vector3f blade_omega(gyro_latest.x, gyro_latest.y, gyro_latest.z-velocity_0);
+    Vector3f gyro_latest = _ahrs_view->get_gyro_latest();
+    float velocity_0 = 0;
+    rpm->get_rpm(0, velocity_0);
+    float rotor_yaw_ff = _rotor_yaw_ff * velocity_0 * velocity_0;
+    Vector3f blade_omega(gyro_latest.x, gyro_latest.y, gyro_latest.z-velocity_0);
 
-    // Vector3f omega_cross = gyro_latest%blade_omega;
+    Vector3f omega_cross = gyro_latest%blade_omega;
 
+    float gyro_x_ff = omega_cross.x * _gyro_ff_gain;
+    float gyro_y_ff = omega_cross.y * _gyro_ff_gain;
 
-    // float x_roll = (roll + omega_cross.x * gyro_ff) * max_pulse_volts;
-    // float y_pitch = (pitch + omega_cross.y * gyro_ff) * max_pulse_volts;
-    // float yaw_des = (yaw + yaw_ff) * g2.user_parameters.get_yaw_dir();
-    // float z_yaw = MAX(MIN(yaw_des * (max_tail-idle_tail) + idle_tail, max_tail), idle_tail);
 
     // apply voltage and air pressure compensation
     const float compensation_gain = get_compensation_gain();
-    roll_thrust = (_roll_in + _roll_in_ff) * compensation_gain;
-    pitch_thrust = (_pitch_in + _pitch_in_ff) * compensation_gain;
-    yaw_thrust = (_yaw_in + _yaw_in_ff) * compensation_gain;
+    roll_thrust = (_roll_in + _roll_in_ff + gyro_x_ff) * compensation_gain;
+    pitch_thrust = (_pitch_in + _pitch_in_ff + gyro_y_ff) * compensation_gain;
+    yaw_thrust = (_yaw_in + _yaw_in_ff + rotor_yaw_ff) * compensation_gain;
     throttle_thrust = get_throttle() * compensation_gain;
     throttle_avg_max = _throttle_avg_max * compensation_gain;
 

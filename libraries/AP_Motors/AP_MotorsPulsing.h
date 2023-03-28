@@ -1,6 +1,8 @@
 #pragma once
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
+#include <AP_AHRS/AP_AHRS_View.h>
+#include <AP_RPM/AP_RPM.h>
 #include "AP_MotorsMulticopter.h"
 
 #define AP_MOTORS_COAX_POSITIVE      1
@@ -10,8 +12,8 @@
 
 class AP_MotorsPulsing : public AP_MotorsMulticopter {
 public:
-    AP_MotorsPulsing(uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
-        AP_MotorsMulticopter(speed_hz)
+    AP_MotorsPulsing(AP_AHRS_View  *ahrs_view, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
+        AP_MotorsMulticopter(speed_hz), _ahrs_view(ahrs_view)
     {
         AP_Param::setup_object_defaults(this, var_info);
     }
@@ -32,6 +34,9 @@ protected:
     float           _tail_thrust;
     float           _pitch_action;
     float           _roll_action;
+
+    AP_AHRS_View    *_ahrs_view;
+    AP_RPM          *rpm;
     
     AP_Int8         _yaw_dir;
     AP_Float        _rotor_yaw_ff;
