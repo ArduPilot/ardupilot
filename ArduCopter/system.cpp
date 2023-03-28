@@ -370,6 +370,10 @@ bool Copter::should_log(uint32_t mask)
  */
 void Copter::allocate_motors(void)
 {
+    ahrs_view = ahrs.create_view(ROTATION_NONE);
+    if (ahrs_view == nullptr) {
+        AP_BoardConfig::allocation_error("AP_AHRS_View");
+    }
     switch ((AP_Motors::motor_frame_class)g2.frame_class.get()) {
 #if FRAME_CONFIG != HELI_FRAME
         case AP_Motors::MOTOR_FRAME_QUAD:
@@ -385,7 +389,7 @@ void Copter::allocate_motors(void)
             motors_var_info = AP_MotorsMatrix::var_info;
             break;
         case AP_Motors::MOTOR_FRAME_PULSING:
-            motors = new AP_MotorsPulsing(copter.scheduler.get_loop_rate_hz());
+            motors = new AP_MotorsPulsing(ahrs_view, copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsPulsing::var_info;
             break;
         case AP_Motors::MOTOR_FRAME_TRI:
@@ -443,10 +447,7 @@ void Copter::allocate_motors(void)
     }
     AP_Param::load_object_from_eeprom(motors, motors_var_info);
 
-    ahrs_view = ahrs.create_view(ROTATION_NONE);
-    if (ahrs_view == nullptr) {
-        AP_BoardConfig::allocation_error("AP_AHRS_View");
-    }
+
 
     const struct AP_Param::GroupInfo *ac_var_info;
 
