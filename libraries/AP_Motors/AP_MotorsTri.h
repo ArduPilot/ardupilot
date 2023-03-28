@@ -48,6 +48,9 @@ public:
     // using copter motors for forward flight
     float               get_roll_factor(uint8_t i) override;
 
+    // Run arming checks
+    bool arming_checks(size_t buflen, char *buffer) const override;
+
 protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing() override;
@@ -71,4 +74,5 @@ protected:
 
     // reverse pitch
     bool _pitch_reversed;
+    bool _have_tail_servo;
 };
