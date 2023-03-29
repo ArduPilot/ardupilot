@@ -57,6 +57,7 @@ public:
 private:
     void _timer();
     bool _send_configuration_command();
+    void _print_info();
 
     float _temp;  // temperature in Celsius
     float _press; // differential pressure in Pascal

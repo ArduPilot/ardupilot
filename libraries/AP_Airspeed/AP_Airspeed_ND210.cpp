@@ -72,7 +72,6 @@
  *  ModeControlRegister default value is 0xF6 (b1 111 0 110 ) Notch (1), 200Hz (b111), No Watchdog, PressureRange = 5 (b110)
  *  (NotchFilterEnable << 7) | (BandWidth << 6) | (WatchdogEnable << 4) | PressureRange;
  */
-// TODO How do we access a parameter to allow tweeking this during operations.
 static constexpr uint8_t MODE_CONTROL_REGISTER = 0xF7; // 0xF6 is default
 
 /*
@@ -129,9 +128,6 @@ bool AP_Airspeed_ND210::init()
         return false;
     }
 
-    // these delays are needed for reliable operation
-    _dev->get_semaphore()->give();
-    hal.scheduler->delay_microseconds(20000);
     _dev->get_semaphore()->give();
 
     switch(MODE_CONTROL_REGISTER & 0x07) {
@@ -159,13 +155,6 @@ bool AP_Airspeed_ND210::init()
             break;
     }
 
-#if HAL_GCS_ENABLED
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                  "ND210: Found addr 0x%02x _selected_pressure_range=%f",
-                  ND210_I2C_ADDR,
-                  _selected_pressure_range);
-#endif
-
     /*
       this sensor uses zero offset and skips cal
      */
@@ -182,8 +171,58 @@ bool AP_Airspeed_ND210::init()
     _dev->set_retries(2);
 
     _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&AP_Airspeed_ND210::_timer, void));
+
+    _print_info();
+
     return true;
 }
+
+void AP_Airspeed_ND210::_print_info()
+{
+#if HAL_GCS_ENABLED
+    _dev->get_semaphore()->take_blocking();
+
+    uint8_t val[22];
+    bool ret = _dev->transfer(nullptr, 0, val, sizeof(val));
+    if (ret == false) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ND210 Init Read Failed");
+        _dev->get_semaphore()->give();
+        return;
+    }
+    _dev->get_semaphore()->give();
+
+    // Model, 5-12, 8 byte, ASCII, null terminated,   
+    // Right reading ASCII with null terminator, 
+    // eg  4EH,44H,32H,31H,30H,00H,xxH,xxH = ND210
+    char model[8];
+    memcpy(model, &val[4], sizeof(model));
+    // Serial Number, 13-16, 4 byte, Hex, 
+    // Unique 4 byte serial for each part, 
+    // eg  2FD627A4H
+    uint32_t serialNumber = ( (((uint32_t)val[12]) << 24) | (((uint32_t)val[13]) << 16) | ( ((uint32_t)val[14]) << 8 ) | (uint32_t)val[15] );
+    // Build Number,  17-22, 6 byte, ASCII, null terminated,  
+    // Right reading ASCII with null  termination, 
+    // eg 30H,30H,30H,33H,43H,00H = 0003C
+    char buildNumber[6];
+    memcpy(buildNumber, &val[16], sizeof(buildNumber) );
+
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO,
+                  "ND210: Model=%s at address=0x%02x",
+                  model,
+                  ND210_I2C_ADDR
+                  );
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO,
+                  "ND210: Serial#=0x%04X, Build#=%s",
+                  (unsigned int) serialNumber,
+                  buildNumber
+                  );
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO,
+                  "ND210: _selected_pressure_range=%f",
+                  _selected_pressure_range
+                  );
+#endif
+}
+
 
 // read the values from the sensor. Called at 50Hz
 void AP_Airspeed_ND210::_timer()
@@ -201,13 +240,14 @@ void AP_Airspeed_ND210::_timer()
         return;
     }
 
-    int16_t P = (((int16_t)val[0]) << 8) | val[1];
+    uint16_t P = (((uint16_t)val[0]) << 8) | val[1];
     float diff_pressure_h20 = (float(P) / ND210_SCALE_PRESSURE_ND210) * _selected_pressure_range;
-
+    // GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ND210 Raw Pressure = 0x%02X", P);
 
     uint8_t temperatureInteger = val[2];
     float temperatureFractional = val[3] / 256; // convert byte to fraction.
     float temperatureCelsius = temperatureInteger + temperatureFractional;
+    // GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ND210 Temperature Celcius = %f", temperatureCelsius);
 
     WITH_SEMAPHORE(sem);
 
