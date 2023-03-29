@@ -293,9 +293,8 @@ bool AP_PiccoloCAN::decode_frame(AP_HAL::CANFrame &frame)
             if (ecu != nullptr) {
                 return ecu->handle_message(frame);
             }
-        #else
-            break;
         #endif
+            break;
         }
         default:
             break;
