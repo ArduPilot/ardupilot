@@ -23,6 +23,7 @@
 #include "AP_PiccoloCAN.h"
 #include "AP_PiccoloCAN_ESC.h"
 
+#if HAL_PICCOLO_CAN_ENABLE
 
 AP_PiccoloCAN_ESC::AP_PiccoloCAN_ESC() : AP_PiccoloCAN_Device()
 {
@@ -234,3 +235,5 @@ uint32_t getESCVelocityPacketID(const void* pkt)
     // Extract the message ID field from the 29-bit ID
     return (uint32_t) ((frame->id >> 16) & 0xFF);
 }
+
+#endif // HAL_PICCOLO_CAN_ENABLE

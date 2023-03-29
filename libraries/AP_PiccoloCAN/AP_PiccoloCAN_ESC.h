@@ -21,10 +21,11 @@
 
 #include "AP_PiccoloCAN_Device.h"
 
+#if HAL_PICCOLO_CAN_ENABLE
+
 // Protocol files for the Velocity ESC
 #include <AP_PiccoloCAN/piccolo_protocol/ESCVelocityProtocol.h>
 #include <AP_PiccoloCAN/piccolo_protocol/ESCPackets.h>
-
 
 // Maximum number of ESC allowed on CAN bus simultaneously
 #define PICCOLO_CAN_MAX_NUM_ESC 16
@@ -85,3 +86,5 @@ public:
     bool telemAvailableTelltale;
     bool telemAvailableMotorStatusFlags;
 };
+
+#endif // HAL_PICCOLO_CAN_ENABLE

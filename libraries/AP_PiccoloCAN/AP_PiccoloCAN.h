@@ -23,19 +23,11 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 
-#include "piccolo_protocol/ESCPackets.h"
-#include "piccolo_protocol/LegacyESCPackets.h"
-
-#include "piccolo_protocol/ServoPackets.h"
-
 #include <AP_EFI/AP_EFI_Currawong_ECU.h>
 
+#include "AP_PiccoloCAN_Device.h"
 #include "AP_PiccoloCAN_ESC.h"
 #include "AP_PiccoloCAN_Servo.h"
-
-#ifndef HAL_PICCOLO_CAN_ENABLE
-#define HAL_PICCOLO_CAN_ENABLE (HAL_NUM_CAN_IFACES && !HAL_MINIMIZE_FEATURES)
-#endif
 
 #if HAL_PICCOLO_CAN_ENABLE
 

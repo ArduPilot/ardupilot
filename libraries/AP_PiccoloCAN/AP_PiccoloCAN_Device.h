@@ -19,6 +19,13 @@
 
 #include <stdint.h>
 
+#include "piccolo_protocol/ESCPackets.h"
+#include "piccolo_protocol/ServoPackets.h"
+
+#ifndef HAL_PICCOLO_CAN_ENABLE
+#define HAL_PICCOLO_CAN_ENABLE (HAL_NUM_CAN_IFACES && !HAL_MINIMIZE_FEATURES)
+#endif
+
 /**
  * Class definition for a "base" PiccoloCAN device.
  * Other PiccoloCAN devices (such as servos / ESCs) will inherit from this

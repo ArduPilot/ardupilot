@@ -21,6 +21,8 @@
 
 #include "AP_PiccoloCAN_Device.h"
 
+#if HAL_PICCOLO_CAN_ENABLE
+
 // Protocol files for the CBS servo
 #include <AP_PiccoloCAN/piccolo_protocol/ServoProtocol.h>
 #include <AP_PiccoloCAN/piccolo_protocol/ServoPackets.h>
@@ -61,3 +63,5 @@ public:
     int16_t command = 0;        //! Raw command to send to each servo
     bool newCommand = false;    //! Is the command "new"?
 };
+
+#endif // HAL_PICCOLO_CAN_ENABLE
