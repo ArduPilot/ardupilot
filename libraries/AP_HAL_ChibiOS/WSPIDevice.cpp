@@ -68,19 +68,19 @@ WSPIDesc WSPIDeviceManager::device_table[] = { HAL_WSPI_DEVICE_LIST };
 #endif
 
 #if defined(STM32_WSPI_USE_OCTOSPI1) && STM32_WSPI_USE_OCTOSPI1
-#if (STM32_OSPICLK < HAL_OSPI1_CLK)
+#if (STM32_OCTOSPICLK < HAL_OSPI1_CLK)
 #error "Flash speed must not be greater than OSPI Clock"
 #endif
-#if (STM32_OSPICLK % HAL_OSPI1_CLK)
+#if (STM32_OCTOSPICLK % HAL_OSPI1_CLK)
 #warning "OSPI clock not an integer multiple of flash speed"
 #endif
 #endif
 
 #if defined(STM32_WSPI_USE_OCTOSPI2) && STM32_WSPI_USE_OCTOSPI2
-#if (STM32_OSPICLK < HAL_OSPI2_CLK)
+#if (STM32_OCTOSPICLK < HAL_OSPI2_CLK)
 #error "Flash speed must not be greater than OSPI Clock"
 #endif
-#if (STM32_OSPICLK % HAL_OSPI2_CLK)
+#if (STM32_OCTOSPICLK % HAL_OSPI2_CLK)
 #warning "OSPI clock not an integer multiple of flash speed"
 #endif
 #endif
