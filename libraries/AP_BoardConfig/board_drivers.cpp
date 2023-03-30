@@ -54,7 +54,7 @@ void AP_BoardConfig::board_init_safety()
  */
 void AP_BoardConfig::board_init_debug()
 {
-#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_DEBUG_BUILD)
+#ifndef HAL_BUILD_AP_PERIPH
     if ((_options & BOARD_OPTION_DEBUG_ENABLE) == 0) {
 #ifdef HAL_GPIO_PIN_JTCK_SWCLK
         palSetLineMode(HAL_GPIO_PIN_JTCK_SWCLK, PAL_MODE_INPUT);
@@ -63,7 +63,7 @@ void AP_BoardConfig::board_init_debug()
         palSetLineMode(HAL_GPIO_PIN_JTMS_SWDIO, PAL_MODE_INPUT);
 #endif
     }
-#endif // HAL_BUILD_AP_PERIPH && HAL_DEBUG_BUILD
+#endif // HAL_BUILD_AP_PERIPH
 }
 
 
