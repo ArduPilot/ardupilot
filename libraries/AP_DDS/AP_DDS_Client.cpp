@@ -8,12 +8,13 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 
 #include "AP_DDS_Client.h"
 
-
 static constexpr uint16_t DELAY_TIME_TOPIC_MS = 10;
 static constexpr uint16_t DELAY_NAV_SAT_FIX_TOPIC_MS = 1000;
+static constexpr uint16_t DELAY_BATTERY_STATE_TOPIC_MS = 1000;
 static char WGS_84_FRAME_ID[] = "WGS-84";
 // https://www.ros.org/reps/rep-0105.html#base-link
 static char BASE_LINK_FRAME_ID[] = "base_link";
@@ -160,6 +161,78 @@ void AP_DDS_Client::populate_static_transforms(tf2_msgs_msg_TFMessage& msg)
 
 }
 
+void AP_DDS_Client::update_topic(sensor_msgs_msg_BatteryState& msg, const uint8_t instance)
+{
+    if (instance >= AP_BATT_MONITOR_MAX_INSTANCES) {
+        return;
+    }
+
+    update_topic(msg.header.stamp);
+    auto &battery = AP::battery();
+
+    if (!battery.healthy(instance))
+    {
+        msg.power_supply_status = 3; //POWER_SUPPLY_HEALTH_DEAD
+        msg.present = false;
+        return;
+    }
+    msg.present = true;
+
+    msg.voltage = battery.voltage(instance);
+
+    float temperature;
+    msg.temperature = (battery.get_temperature(temperature, instance)) ? temperature : NAN;
+
+    float current;
+    msg.current = (battery.current_amps(current, instance)) ? -1 * current : NAN;
+
+    const float design_capacity = (float)battery.pack_capacity_mah(instance)/1000.0;
+    msg.design_capacity = design_capacity;
+
+    uint8_t percentage;
+    if (battery.capacity_remaining_pct(percentage, instance))
+    {
+        msg.percentage = percentage/100.0;
+        msg.charge = (percentage * design_capacity)/100.0;
+    }
+    else
+    {
+        msg.percentage = NAN;
+        msg.charge = NAN;
+    }
+
+    msg.capacity = NAN;
+
+    if (battery.current_amps(current, instance))
+    {
+        if (percentage == 100) {
+            msg.power_supply_status = 4;   //POWER_SUPPLY_STATUS_FULL
+        }
+        else if (current < 0.0) {
+            msg.power_supply_status = 1;   //POWER_SUPPLY_STATUS_CHARGING
+        }
+        else if (current > 0.0) {
+            msg.power_supply_status = 2;   //POWER_SUPPLY_STATUS_DISCHARGING
+        }
+        else {
+            msg.power_supply_status = 3;   //POWER_SUPPLY_STATUS_NOT_CHARGING
+        }
+    }
+    else
+    {
+        msg.power_supply_status = 0; //POWER_SUPPLY_STATUS_UNKNOWN
+    }
+
+    msg.power_supply_health = (battery.overpower_detected(instance)) ? 4 : 1; //POWER_SUPPLY_HEALTH_OVERVOLTAGE or POWER_SUPPLY_HEALTH_GOOD
+
+    msg.power_supply_technology = 0; //POWER_SUPPLY_TECHNOLOGY_UNKNOWN
+
+    if (battery.has_cell_voltages(instance))
+    {
+        const uint16_t* cellVoltages = battery.get_cell_voltages(instance).cells;
+        std::copy(cellVoltages, cellVoltages + AP_BATT_MONITOR_CELLS_MAX, msg.cell_voltage);
+    }
+}
 
 /*
   class constructor
@@ -339,10 +412,24 @@ void AP_DDS_Client::write_static_transforms()
     }
 }
 
+void AP_DDS_Client::write_battery_state_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub;
+        const uint32_t topic_size = sensor_msgs_msg_BatteryState_size_of_topic(&battery_state_topic, 0);
+        uxr_prepare_output_stream(&session,reliable_out,topics[3].dw_id,&ub,topic_size);
+        const bool success = sensor_msgs_msg_BatteryState_serialize_topic(&ub, &battery_state_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        }
+    }
+}
+
 void AP_DDS_Client::update()
 {
     WITH_SEMAPHORE(csem);
-
     const auto cur_time_ms = AP_HAL::millis64();
 
     if (cur_time_ms - last_time_time_ms > DELAY_TIME_TOPIC_MS) {
@@ -356,6 +443,13 @@ void AP_DDS_Client::update()
         update_topic(nav_sat_fix_topic, instance);
         last_nav_sat_fix_time_ms = cur_time_ms;
         write_nav_sat_fix_topic();
+    }
+
+    if (cur_time_ms - last_battery_state_time_ms > DELAY_BATTERY_STATE_TOPIC_MS) {
+        constexpr uint8_t instance = 0;
+        update_topic(battery_state_topic, instance);
+        last_battery_state_time_ms = cur_time_ms;
+        write_battery_state_topic();
     }
 
     connected = uxr_run_session_time(&session, 1);

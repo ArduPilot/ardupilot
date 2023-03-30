@@ -86,4 +86,29 @@
       </historyQos>
     </topic>
   </data_writer>
+  <topic profile_name="batterystate0__t">
+    <name>rt/ROS2_BatteryState0</name>
+    <dataType>sensor_msgs::msg::dds_::BatteryState_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>20</depth>
+    </historyQos>
+  </topic>
+  <data_writer profile_name="batterystate0__dw">
+    <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+    <qos>
+      <reliability>
+        <kind>RELIABLE</kind>
+      </reliability>
+    </qos>
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/ROS2_BatteryState0</name>
+      <dataType>sensor_msgs::msg::dds_::BatteryState_</dataType>
+      <historyQos>
+        <kind>KEEP_LAST</kind>
+        <depth>20</depth>
+      </historyQos>
+    </topic>
+  </data_writer>
 </profiles>
