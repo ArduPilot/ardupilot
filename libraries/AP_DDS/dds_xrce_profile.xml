@@ -35,15 +35,18 @@
     <dataType>sensor_msgs::msg::dds_::NavSatFix_</dataType>
     <historyQos>
       <kind>KEEP_LAST</kind>
-      <depth>20</depth>
+      <depth>5</depth>
     </historyQos>
   </topic>
   <data_writer profile_name="navsatfix0__dw">
     <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
     <qos>
       <reliability>
-        <kind>RELIABLE</kind>
+        <kind>BEST_EFFORT</kind>
       </reliability>
+      <durability>
+        <kind>VOLATILE</kind>
+      </durability>
     </qos>
     <topic>
       <kind>NO_KEY</kind>
@@ -51,7 +54,7 @@
       <dataType>sensor_msgs::msg::dds_::NavSatFix_</dataType>
       <historyQos>
         <kind>KEEP_LAST</kind>
-        <depth>20</depth>
+        <depth>5</depth>
       </historyQos>
     </topic>
   </data_writer>
