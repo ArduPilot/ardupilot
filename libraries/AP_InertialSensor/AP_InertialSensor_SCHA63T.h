@@ -78,7 +78,7 @@ private:
 
     int16_t gyro_x;
     bool RegisterRead(int tp, reg_scha63t reg, uint8_t* val);
-    bool RegisterWrite(int tp, reg_scha63t reg, uint8_t val);
+    bool RegisterWrite(int tp, reg_scha63t reg, uint8_t val = 0);
     void set_temperature(uint8_t instance, uint8_t temper1, uint8_t temper2);
     uint8_t CalcTblCrc(uint8_t* ptr, short nLen);
 
