@@ -8,16 +8,16 @@ module sensor_msgs {
     module NavSatStatus_Constants {
       @verbatim (language="comment", text=
         "unable to fix position")
-      const char STATUS_NO_FIX = -1;
+      const int8 STATUS_NO_FIX = -1;
       @verbatim (language="comment", text=
         "unaugmented fix")
-      const char STATUS_FIX = 0;
+      const int8 STATUS_FIX = 0;
       @verbatim (language="comment", text=
         "with satellite-based augmentation")
-      const char STATUS_SBAS_FIX = 1;
+      const int8 STATUS_SBAS_FIX = 1;
       @verbatim (language="comment", text=
         "with ground-based augmentation")
-      const char STATUS_GBAS_FIX = 2;
+      const int8 STATUS_GBAS_FIX = 2;
       @verbatim (language="comment", text=
         "Bits defining which Global Navigation Satellite System signals were" "\n"        "used by the receiver.")
       const uint16 SERVICE_GPS = 1;
@@ -34,7 +34,7 @@ module sensor_msgs {
       "type and the last time differential corrections were received.  A" "\n"
       "fix is valid when status >= STATUS_FIX.")
     struct NavSatStatus {
-      char status;
+      int8 status;
 
       uint16 service;
     };

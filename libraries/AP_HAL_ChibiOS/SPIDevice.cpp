@@ -363,9 +363,9 @@ bool SPIDevice::acquire_bus(bool set, bool skip_cs)
     } else {
         bus.dma_handle->lock();
         spiAcquireBus(spi_devices[device_desc.bus].driver);              /* Acquire ownership of the bus.    */
-        bus.spicfg.end_cb = nullptr;
         bus.spicfg.ssport = PAL_PORT(device_desc.pal_line);
         bus.spicfg.sspad = PAL_PAD(device_desc.pal_line);
+        bus.spicfg.end_cb = nullptr;
 #if defined(STM32H7)
         bus.spicfg.cfg1 = freq_flag;
         bus.spicfg.cfg2 = device_desc.mode;

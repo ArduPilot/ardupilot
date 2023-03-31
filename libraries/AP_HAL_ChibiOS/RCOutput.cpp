@@ -212,7 +212,7 @@ void RCOutput::rcout_thread()
     }
 }
 
-__RAMFUNC__ void RCOutput::dshot_update_tick(void* p)
+__RAMFUNC__ void RCOutput::dshot_update_tick(virtual_timer_t* vt, void* p)
 {
     chSysLockFromISR();
     RCOutput* rcout = (RCOutput*)p;
@@ -1582,7 +1582,9 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
       up with this great method.
      */
     TOGGLE_PIN_DEBUG(54);
-
+#if STM32_DMA_SUPPORTS_DMAMUX
+    dmaSetRequestSource(group.dma, group.dma_up_channel);
+#endif
     dmaStreamSetPeripheral(group.dma, &(group.pwm_drv->tim->DMAR));
     stm32_cacheBufferFlush(group.dma_buffer, buffer_length);
     dmaStreamSetMemory0(group.dma, group.dma_buffer);
@@ -1612,7 +1614,7 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
 /*
   unlock DMA channel after a dshot send completes and no return value is expected
  */
-__RAMFUNC__ void RCOutput::dma_unlock(void *p)
+__RAMFUNC__ void RCOutput::dma_unlock(virtual_timer_t* vt, void *p)
 {
     chSysLockFromISR();
     pwm_group *group = (pwm_group *)p;
@@ -1656,9 +1658,15 @@ void RCOutput::dma_cancel(pwm_group& group)
     chSysLock();
     dmaStreamDisable(group.dma);
 #ifdef HAL_WITH_BIDIR_DSHOT
-    if (group.ic_dma_enabled()) {
+    if (group.ic_dma_enabled() && !group.has_shared_ic_up_dma()) {
         dmaStreamDisable(group.bdshot.ic_dma[group.bdshot.curr_telem_chan]);
     }
+#if STM32_DMA_SUPPORTS_DMAMUX
+    // the DMA request source has been switched by the receive path, so reinstate the correct one
+    if (group.dshot_state == DshotState::RECV_START && group.has_shared_ic_up_dma()) {
+        dmaSetRequestSource(group.dma, group.dma_up_channel);
+    }
+#endif
 #endif
     // normally the CCR registers are reset by the final 0 in the DMA buffer
     // since we are cancelling early they need to be reset to avoid infinite pulses
@@ -1879,7 +1887,7 @@ void RCOutput::serial_bit_irq(void)
 /*
   timeout a byte read
  */
-void RCOutput::serial_byte_timeout(void *ctx)
+void RCOutput::serial_byte_timeout(virtual_timer_t* vt, void *ctx)
 {
     chSysLockFromISR();
     irq.timed_out = true;

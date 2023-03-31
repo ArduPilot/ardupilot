@@ -3,7 +3,7 @@
 #include "AP_RangeFinder_Backend.h"
 
 #ifndef AP_RANGEFINDER_UAVCAN_ENABLED
-#define AP_RANGEFINDER_UAVCAN_ENABLED (HAL_CANMANAGER_ENABLED && AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED)
+#define AP_RANGEFINDER_UAVCAN_ENABLED (HAL_ENABLE_LIBUAVCAN_DRIVERS && AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED)
 #endif
 
 #if AP_RANGEFINDER_UAVCAN_ENABLED
@@ -23,7 +23,7 @@ public:
     static AP_RangeFinder_UAVCAN* get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t address, bool create_new);
     static AP_RangeFinder_Backend* detect(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params);
 
-    static void handle_measurement(AP_UAVCAN* ap_uavcan, uint8_t node_id, const MeasurementCb &cb);
+    static void handle_measurement(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const uavcan_equipment_range_sensor_Measurement &msg);
 
 protected:
     virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {

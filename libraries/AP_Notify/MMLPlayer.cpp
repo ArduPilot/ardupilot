@@ -64,7 +64,7 @@ void MMLPlayer::start_note(float duration, float frequency, float volume)
     _note_duration_us = duration*1e6;
     hal.util->toneAlarm_set_buzzer_tone(frequency, volume, _note_duration_us/1000U);
 
-#if HAL_CANMANAGER_ENABLED
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
     // support CAN buzzers too
     uint8_t can_num_drivers = AP::can().get_num_drivers();
 

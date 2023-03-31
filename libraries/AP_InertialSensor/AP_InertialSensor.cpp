@@ -840,7 +840,7 @@ AP_InertialSensor_Backend *AP_InertialSensor::_find_backend(int16_t backend_id, 
 }
 
 bool AP_InertialSensor::set_gyro_window_size(uint16_t size) {
-#if HAL_WITH_DSP
+#if HAL_GYROFFT_ENABLED
     _gyro_window_size = size;
 
     // allocate FFT gyro window
@@ -909,7 +909,7 @@ AP_InertialSensor::init(uint16_t loop_rate)
     batchsampler.init();
 #endif
 
-#if HAL_WITH_DSP
+#if HAL_GYROFFT_ENABLED
     AP_GyroFFT* fft = AP::fft();
     bool fft_enabled = fft != nullptr && fft->enabled();
     if (fft_enabled) {
@@ -954,7 +954,7 @@ AP_InertialSensor::init(uint16_t loop_rate)
         notch.num_dynamic_notches = 1;
 #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
         if (notch.params.hasOption(HarmonicNotchFilterParams::Options::DynamicHarmonic)) {
-#if HAL_WITH_DSP
+#if HAL_GYROFFT_ENABLED
             if (notch.params.tracking_mode() == HarmonicNotchDynamicMode::UpdateGyroFFT) {
                 notch.num_dynamic_notches = AP_HAL::DSP::MAX_TRACKED_PEAKS; // only 3 peaks supported currently
             } else

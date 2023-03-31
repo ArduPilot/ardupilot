@@ -220,6 +220,8 @@ AP_HW_KakuteH7-Wing                  1105
 
 AP_HW_PixSurveyA-IND                 1107
 
+AP_HW_JFB110                         1110
+
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
 

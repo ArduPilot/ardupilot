@@ -1494,10 +1494,11 @@ class AutoTest(ABC):
                  replay=False,
                  sup_binaries=[],
                  reset_after_every_test=False,
-                 sitl_32bit=False,
+                 force_32bit=False,
                  ubsan=False,
                  ubsan_abort=False,
                  num_aux_imus=0,
+                 dronecan_tests=False,
                  build_opts={}):
 
         self.start_time = time.time()
@@ -1521,7 +1522,7 @@ class AutoTest(ABC):
             self.speedup = self.default_speedup()
         self.sup_binaries = sup_binaries
         self.reset_after_every_test = reset_after_every_test
-        self.sitl_32bit = sitl_32bit
+        self.force_32bit = force_32bit
         self.ubsan = ubsan
         self.ubsan_abort = ubsan_abort
         self.build_opts = build_opts
@@ -1578,6 +1579,7 @@ class AutoTest(ABC):
             offline=self.terrain_in_offline_mode
         )
         self.terrain_data_messages_sent = 0  # count of messages back
+        self.dronecan_tests = dronecan_tests
 
     def __del__(self):
         if self.rc_thread is not None:
@@ -2780,7 +2782,7 @@ class AutoTest(ABC):
                         continue
                     if "#if FRAME_CONFIG == HELI_FRAME" in line:
                         continue
-                    if "#if PRECISION_LANDING == ENABLED" in line:
+                    if "#if AC_PRECLAND_ENABLED" in line:
                         continue
                     if "#end" in line:
                         continue

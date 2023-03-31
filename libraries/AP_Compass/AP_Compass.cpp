@@ -1286,7 +1286,7 @@ void Compass::_detect_backends(void)
     }
 #endif
 
-#if AP_COMPASS_SITL_ENABLED
+#if AP_COMPASS_SITL_ENABLED && !AP_TEST_DRONECAN_DRIVERS
     ADD_BACKEND(DRIVER_SITL, new AP_Compass_SITL());
 #endif
 

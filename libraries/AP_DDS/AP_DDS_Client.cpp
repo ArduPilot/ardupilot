@@ -2,12 +2,17 @@
 
 #if AP_DDS_ENABLED
 
+#include <AP_GPS/AP_GPS.h>
 #include <AP_RTC/AP_RTC.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <GCS_MAVLink/GCS.h>
 
 #include "AP_DDS_Client.h"
 #include "generated/Time.h"
+
+static constexpr uint16_t DELAY_TIME_TOPIC_MS = 10;
+static constexpr uint16_t DELAY_NAV_SAT_FIX_TOPIC_MS = 1000;
+static char WGS_84_FRAME_ID[] = "WGS-84";
 
 AP_HAL::UARTDriver *dds_port;
 
@@ -29,6 +34,90 @@ void AP_DDS_Client::update_topic(builtin_interfaces_msg_Time& msg)
     msg.sec = utc_usec / 1000000ULL;
     msg.nanosec = (utc_usec % 1000000ULL) * 1000UL;
 
+}
+
+void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t instance)
+{
+    // Add a lambda that takes in navsatfix msg and populates the cov
+    // Make it constexpr if possible
+    // https://www.fluentcpp.com/2021/12/13/the-evolutions-of-lambdas-in-c14-c17-and-c20/
+    // constexpr auto times2 = [] (sensor_msgs_msg_NavSatFix* msg) { return n * 2; };
+
+    // assert(instance >= GPS_MAX_RECEIVERS);
+    if (instance >= GPS_MAX_RECEIVERS) {
+        return;
+    }
+
+    update_topic(msg.header.stamp);
+    strcpy(msg.header.frame_id, WGS_84_FRAME_ID);
+    msg.status.service = 0; // SERVICE_GPS
+    msg.status.status = -1; // STATUS_NO_FIX
+
+    auto &gps = AP::gps();
+    WITH_SEMAPHORE(gps.get_semaphore());
+
+    if (!gps.is_healthy(instance)) {
+        msg.status.status = -1; // STATUS_NO_FIX
+        msg.status.service = 0; // No services supported
+        msg.position_covariance_type = 0; // COVARIANCE_TYPE_UNKNOWN
+        return;
+    }
+
+
+    //! @todo What about glonass, compass, galileo?
+    //! This will be properly designed and implemented to spec in #23277
+    msg.status.service = 1; // SERVICE_GPS
+
+    const auto status = gps.status(instance);
+    switch (status) {
+    case AP_GPS::NO_GPS:
+    case AP_GPS::NO_FIX:
+        msg.status.status = -1; // STATUS_NO_FIX
+        msg.position_covariance_type = 0; // COVARIANCE_TYPE_UNKNOWN
+        return;
+    case AP_GPS::GPS_OK_FIX_2D:
+    case AP_GPS::GPS_OK_FIX_3D:
+        msg.status.status = 0; // STATUS_FIX
+        msg.position_covariance_type = 1; // COVARIANCE_TYPE_APPROXIMATED
+        break;
+    case AP_GPS::GPS_OK_FIX_3D_DGPS:
+        msg.status.status = 1; // STATUS_SBAS_FIX
+        msg.position_covariance_type = 1; // COVARIANCE_TYPE_APPROXIMATED
+        break;
+    case AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT:
+    case AP_GPS::GPS_OK_FIX_3D_RTK_FIXED:
+        msg.status.status = 2; // STATUS_SBAS_FIX
+        msg.position_covariance_type = 1; // COVARIANCE_TYPE_APPROXIMATED
+        // RTK provides "rtk_accuracy" member, should it be used for the covariance?
+        break;
+    default:
+        //! @todo Can we not just use an enum class and not worry about this condition?
+        break;
+    }
+    const auto loc = gps.location(instance);
+    msg.latitude = loc.lat * 1E-7;
+    msg.longitude = loc.lng * 1E-7;
+
+    int32_t alt_cm;
+    if (!loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_cm)) {
+        // With absolute frame, this condition is unlikely
+        msg.status.status = -1; // STATUS_NO_FIX
+        msg.position_covariance_type = 0; // COVARIANCE_TYPE_UNKNOWN
+        return;
+    }
+    msg.altitude = alt_cm / 100.0;
+
+    // Calculate covariance: https://answers.ros.org/question/10310/calculate-navsatfix-covariance/
+    // https://github.com/ros-drivers/nmea_navsat_driver/blob/indigo-devel/src/libnmea_navsat_driver/driver.py#L110-L114
+    //! @todo This calculation will be moved to AP::gps and fixed in #23259
+    //! It is a placeholder for now matching the ROS1 nmea_navsat_driver behavior
+    const auto hdop = gps.get_hdop(instance);
+    const auto hdopSq = hdop * hdop;
+    const auto vdop = gps.get_vdop(instance);
+    const auto vdopSq = vdop * vdop;
+    msg.position_covariance[0] = hdopSq;
+    msg.position_covariance[4] = hdopSq;
+    msg.position_covariance[8] = vdopSq;
 }
 
 
@@ -107,64 +196,109 @@ bool AP_DDS_Client::create()
     const char* participant_ref = "participant_profile";
     const auto participant_req_id = uxr_buffer_create_participant_ref(&session, reliable_out, participant_id,0,participant_ref,UXR_REPLACE);
 
-    // Topic
-    const uxrObjectId topic_id = {
-        .id = topics[0].topic_id,
-        .type = UXR_TOPIC_ID
-    };
-    const char* topic_ref = topics[0].topic_profile_label;
-    const auto topic_req_id = uxr_buffer_create_topic_ref(&session,reliable_out,topic_id,participant_id,topic_ref,UXR_REPLACE);
-
-    // Publisher
-    const uxrObjectId pub_id = {
-        .id = topics[0].pub_id,
-        .type = UXR_PUBLISHER_ID
-    };
-    const char* pub_xml = "";
-    const auto pub_req_id = uxr_buffer_create_publisher_xml(&session,reliable_out,pub_id,participant_id,pub_xml,UXR_REPLACE);
-
-    // Data Writer
-    const char* data_writer_ref = topics[0].dw_profile_label;
-    const auto dwriter_req_id = uxr_buffer_create_datawriter_ref(&session,reliable_out,dwriter_id,pub_id,data_writer_ref,UXR_REPLACE);
-
-    //Status requests
-    constexpr uint8_t nRequests = 4;
-    const uint16_t requests[nRequests] = {participant_req_id, topic_req_id, pub_req_id, dwriter_req_id};
+    //Participant requests
+    constexpr uint8_t nRequestsParticipant = 1;
+    const uint16_t requestsParticipant[nRequestsParticipant] = {participant_req_id};
 
     constexpr int maxTimeMsPerRequestMs = 250;
-    constexpr int requestTimeoutMs = nRequests * maxTimeMsPerRequestMs;
-    uint8_t status[nRequests];
-    if (!uxr_run_session_until_all_status(&session, requestTimeoutMs, requests, status, nRequests)) {
+    constexpr int requestTimeoutParticipantMs = nRequestsParticipant * maxTimeMsPerRequestMs;
+    uint8_t statusParticipant[nRequestsParticipant];
+    if (!uxr_run_session_until_all_status(&session, requestTimeoutParticipantMs, requestsParticipant, statusParticipant, nRequestsParticipant)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Participant session request failure");
         // TODO add a failure log message sharing the status results
         return false;
+    }
+
+    for (size_t i = 0 ; i < ARRAY_SIZE(topics); i++) {
+        // Topic
+        const uxrObjectId topic_id = {
+            .id = topics[i].topic_id,
+            .type = UXR_TOPIC_ID
+        };
+        const char* topic_ref = topics[i].topic_profile_label;
+        const auto topic_req_id = uxr_buffer_create_topic_ref(&session,reliable_out,topic_id,participant_id,topic_ref,UXR_REPLACE);
+
+        // Publisher
+        const uxrObjectId pub_id = {
+            .id = topics[i].pub_id,
+            .type = UXR_PUBLISHER_ID
+        };
+        const char* pub_xml = "";
+        const auto pub_req_id = uxr_buffer_create_publisher_xml(&session,reliable_out,pub_id,participant_id,pub_xml,UXR_REPLACE);
+
+        // Data Writer
+        const char* data_writer_ref = topics[i].dw_profile_label;
+        const auto dwriter_req_id = uxr_buffer_create_datawriter_ref(&session,reliable_out,topics[i].dw_id,pub_id,data_writer_ref,UXR_REPLACE);
+
+        // Status requests
+        constexpr uint8_t nRequests = 3;
+        const uint16_t requests[nRequests] = {topic_req_id, pub_req_id, dwriter_req_id};
+        constexpr int requestTimeoutMs = nRequests * maxTimeMsPerRequestMs;
+        uint8_t status[nRequests];
+        if (!uxr_run_session_until_all_status(&session, requestTimeoutMs, requests, status, nRequests)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Topic/Pub/Writer session request failure for index 'TODO'");
+            for (int s = 0 ; s < nRequests; s++) {
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Status '%d' result '%u'", s, status[s]);
+            }
+            // TODO add a failure log message sharing the status results
+            return false;
+        } else {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"XRCE Client: Topic/Pub/Writer session pass for index 'TOOO'");
+        }
     }
 
     return true;
 }
 
-void AP_DDS_Client::write()
+void AP_DDS_Client::write_time_topic()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
         ucdrBuffer ub;
-        uint32_t topic_size = builtin_interfaces_msg_Time_size_of_topic(&time_topic, 0);
-        uxr_prepare_output_stream(&session,reliable_out,dwriter_id,&ub,topic_size);
+        const uint32_t topic_size = builtin_interfaces_msg_Time_size_of_topic(&time_topic, 0);
+        uxr_prepare_output_stream(&session,reliable_out,topics[0].dw_id,&ub,topic_size);
         const bool success = builtin_interfaces_msg_Time_serialize_topic(&ub, &time_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: XRCE_Client failed to serialize\n");
+        }
+    }
+}
+
+void AP_DDS_Client::write_nav_sat_fix_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub;
+        const uint32_t topic_size = sensor_msgs_msg_NavSatFix_size_of_topic(&nav_sat_fix_topic, 0);
+        uxr_prepare_output_stream(&session,reliable_out,topics[1].dw_id,&ub,topic_size);
+        const bool success = sensor_msgs_msg_NavSatFix_serialize_topic(&ub, &nav_sat_fix_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
             // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
         }
-
     }
-
 }
 
 void AP_DDS_Client::update()
 {
     WITH_SEMAPHORE(csem);
 
-    update_topic(time_topic);
-    write();
+    const auto cur_time_ms = AP_HAL::millis64();
+
+    if (cur_time_ms - last_time_time_ms > DELAY_TIME_TOPIC_MS) {
+        update_topic(time_topic);
+        last_time_time_ms = cur_time_ms;
+        write_time_topic();
+    }
+
+    if (cur_time_ms - last_nav_sat_fix_time_ms > DELAY_NAV_SAT_FIX_TOPIC_MS) {
+        constexpr uint8_t instance = 0;
+        update_topic(nav_sat_fix_topic, instance);
+        last_nav_sat_fix_time_ms = cur_time_ms;
+        write_nav_sat_fix_topic();
+    }
+
     connected = uxr_run_session_time(&session, 1);
 }
 

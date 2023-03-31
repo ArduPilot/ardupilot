@@ -109,7 +109,7 @@ include $(CHIBIOS)/$(CHIBIOS_PLATFORM_MK)
 include $(CHIBIOS)/os/hal/osal/rt-nil/osal.mk
 # RTOS files (optional).
 include $(CHIBIOS)/os/rt/rt.mk
-include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/port_v7m.mk
+include $(CHIBIOS)/os/common/ports/ARMv7-M/compilers/GCC/mk/port.mk
 # Other files (optional).
 #include $(CHIBIOS)/test/rt/test.mk
 include $(CHIBIOS)/os/hal/lib/streams/streams.mk
@@ -135,6 +135,11 @@ CSRC += $(HWDEF)/common/stubs.c \
        $(HWDEF)/common/stm32_util.c \
        $(HWDEF)/common/bouncebuffer.c \
        $(HWDEF)/common/watchdog.c
+
+ifeq ($(USE_USB_MSD),yes)
+CSRC += $(CHIBIOS)/os/various/scsi_bindings/lib_scsi.c \
+        $(CHIBIOS)/os/hal/src/hal_usb_msd.c
+endif
 
 #	   $(TESTSRC) \
 #	   test.c
@@ -179,6 +184,11 @@ INCDIR = $(CHIBIOS)/os/license \
 ifneq ($(CRASHCATCHER),)
 INCDIR += $(CRASHCATCHER)/include
 endif
+
+ifeq ($(USE_USB_MSD),yes)
+INCDIR += $(CHIBIOS)/os/various/scsi_bindings
+endif
+
 #
 # Project, sources and paths
 ##############################################################################

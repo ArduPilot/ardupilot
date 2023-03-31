@@ -49,7 +49,9 @@ public:
     // returns true if this mount can control its pan (required for multicopters)
     virtual bool has_pan_control() const = 0;
 
-    // get attitude as a quaternion.  returns true on success
+    // get attitude as a quaternion.  returns true on success.
+    // att_quat will be an earth-frame quaternion rotated such that
+    // yaw is in body-frame.
     virtual bool get_attitude_quaternion(Quaternion& att_quat) = 0;
 
     // get mount's mode

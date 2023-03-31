@@ -6,6 +6,7 @@
 #include "ucdr/microcdr.h"
 #include "generated/Time.h"
 #include "AP_DDS_Generic_Fn_T.h"
+#include "generated/NavSatFix.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Scheduler.h>
@@ -39,12 +40,7 @@ private:
 
     // Topic
     builtin_interfaces_msg_Time time_topic;
-
-    // Data Writer
-    const uxrObjectId dwriter_id = {
-        .id = 0x01,
-        .type = UXR_DATAWRITER_ID
-    };
+    sensor_msgs_msg_NavSatFix nav_sat_fix_topic;
 
     HAL_Semaphore csem;
 
@@ -52,6 +48,13 @@ private:
     bool connected = true;
 
     static void update_topic(builtin_interfaces_msg_Time& msg);
+    static void update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t instance);
+
+    // The last ms timestamp AP_DDS wrote a Time message
+    uint64_t last_time_time_ms;
+    // The last ms timestamp AP_DDS wrote a NavSatFix message
+    uint64_t last_nav_sat_fix_time_ms;
+
 
 public:
     // Constructor
@@ -61,15 +64,17 @@ public:
 
     //! @brief Initialize the client's transport, uxr session, and IO stream(s)
     //! @return True on successful initialization, false on failure
-    bool init() WARN_IF_UNUSED; 
+    bool init() WARN_IF_UNUSED;
 
     //! @brief Set up the client's participants, data read/writes,
     //         publishers, subscribers
     //! @return True on successful creation, false on failure
     bool create() WARN_IF_UNUSED;
 
-    //! @brief Serialize the current data state and publish to to the IO stream(s)
-    void write();
+    //! @brief Serialize the current time state and publish to to the IO stream(s)
+    void write_time_topic();
+    //! @brief Serialize the current nav_sat_fix state and publish to to the IO stream(s)
+    void write_nav_sat_fix_topic();
     //! @brief Update the internally stored DDS messages with latest data
     void update();
 
@@ -80,6 +85,7 @@ public:
     struct Topic_table {
         const uint8_t topic_id;
         const uint8_t pub_id;
+        const uxrObjectId dw_id;
         const char* topic_profile_label;
         const char* dw_profile_label;
         Generic_serialize_topic_fn_t serialize;

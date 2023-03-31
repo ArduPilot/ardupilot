@@ -573,6 +573,15 @@ public:
         return channel_function(channel) == SRV_Channel::k_alarm_inverted;
     }
 
+    // return true if 32 channels are enabled
+    static bool have_32_channels() {
+#if NUM_SERVO_CHANNELS >= 17
+        return _singleton->enable_32_channels.get() > 0;
+#else
+        return false;
+#endif
+    }
+
 private:
 
     static bool disabled_passthrough;
