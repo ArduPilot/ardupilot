@@ -168,6 +168,18 @@ void GCS_MAVLINK_Plane::send_aoa_ssa()
         ahrs.getSSA());
 }
 
+
+// Precise landing target handling
+void GCS_MAVLINK_Plane::handle_landing_target(const mavlink_landing_target_t &packet, uint32_t timestamp_ms)
+{
+    
+    #if PRECISION_LANDING==ENABLED
+    plane.precland.handle_msg(packet, timestamp_ms);
+    #endif
+
+    
+}
+
 void GCS_MAVLINK_Plane::send_nav_controller_output() const
 {
     if (plane.control_mode == &plane.mode_manual) {

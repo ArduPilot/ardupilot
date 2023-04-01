@@ -30,5 +30,14 @@ Plane::Plane(void)
     auto_state.takeoff_complete = true;
 }
 
+#if PRECISION_LANDING == ENABLED
+void Plane::update_precland()
+{
+  // alt will be unused if we pass false through as the second parameter:
+  return precland.update(0,true);
+  
+}
+#endif
+
 Plane plane;
 AP_Vehicle& vehicle = plane;
