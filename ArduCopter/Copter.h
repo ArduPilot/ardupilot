@@ -321,7 +321,7 @@ private:
 
     // system time in milliseconds of last recorded yaw reset from ekf
     uint32_t ekfYawReset_ms;
-    int8_t ekf_primary_core;
+    int8_t ekf_primary_core = -1;        // Check for changes in the primary ekf lane initialize to -1 as the user could start with a EKx_PRIMARY other than 0 (the first lane)
 
     // vibration check
     struct {
