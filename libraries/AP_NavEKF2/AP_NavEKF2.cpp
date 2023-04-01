@@ -707,10 +707,10 @@ bool NavEKF2::InitialiseFilter(void)
                 num_cores++;
             }
         }
-
-        // Set the primary initially to be users selected primary
-        primary = uint8_t(_primary_core) < num_cores? _primary_core : 0;
     }
+
+    // Set the primary initially to be users selected primary
+    primary = uint8_t(_primary_core) < num_cores? _primary_core : 0;
 
     // invalidate shared origin
     common_origin_valid = false;
