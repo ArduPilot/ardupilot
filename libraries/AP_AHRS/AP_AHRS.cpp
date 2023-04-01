@@ -2896,6 +2896,7 @@ int8_t AP_AHRS::get_primary_core_index() const
 {
     switch (active_EKF_type()) {
     case EKFType::NONE:
+        return -1;
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
 #endif
