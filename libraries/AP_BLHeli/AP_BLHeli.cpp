@@ -1458,10 +1458,10 @@ void AP_BLHeli::read_telemetry_packet(void)
     };
 
     update_telem_data(motor_idx - chan_offset, t,
-        AP_ESC_Telem_Backend::TelemetryType::CURRENT
-            | AP_ESC_Telem_Backend::TelemetryType::VOLTAGE
-            | AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION
-            | AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
+        (isnan(msg.current) ? 0 : AP_ESC_Telem_Backend::TelemetryType::CURRENT
+            | (isnan(msg.voltage) ? 0 : AP_ESC_Telem_Backend::TelemetryType::VOLTAGE
+            | (isnan(msg.consumption) ? 0 : AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION
+            | (isnan(msg.temperature) ? 0 : AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
 
     if (debug_level >= 2) {
         uint16_t trpm = new_rpm;
