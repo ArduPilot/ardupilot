@@ -31,6 +31,7 @@
 
 #include "AP_AHRS_DCM.h"
 #include "AP_AHRS_SIM.h"
+#include "AP_AHRS_External.h"
 
 // forward declare view class
 class AP_AHRS_View;
@@ -809,6 +810,11 @@ private:
     AP_AHRS_SIM sim;
 #endif
     struct AP_AHRS_Backend::Estimates sim_estimates;
+#endif
+
+#if HAL_EXTERNAL_AHRS_ENABLED
+    AP_AHRS_External external;
+    struct AP_AHRS_Backend::Estimates external_estimates;
 #endif
 
     /*
