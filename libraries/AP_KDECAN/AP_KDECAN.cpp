@@ -460,9 +460,9 @@ void AP_KDECAN::loop()
                                 .current = float(uint16_t(frame.data[2] << 8 | frame.data[3])) * 0.01f,
                             };
                             update_telem_data(idx, t,
-                                (isnan(msg.current) ? 0 : AP_ESC_Telem_Backend::TelemetryType::CURRENT )
-                                    | (isnan(msg.voltage) ? 0 : AP_ESC_Telem_Backend::TelemetryType::VOLTAGE)
-                                    | (isnan(msg.temperature) ? 0 : AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE));
+                                (isnan(t.current) ? 0 : AP_ESC_Telem_Backend::TelemetryType::CURRENT )
+                                    | (isnan(t.voltage) ? 0 : AP_ESC_Telem_Backend::TelemetryType::VOLTAGE)
+                                    | (isnan(t.temperature_cdeg) ? 0 : AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE));
 
                             break;
                         }

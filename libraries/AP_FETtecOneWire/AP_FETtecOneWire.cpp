@@ -436,12 +436,11 @@ void AP_FETtecOneWire::handle_message_telem(ESC &esc)
     t.current = tlm.current * 0.01f;
     t.consumption_mah = tlm.consumption_mah;
     update_telem_data(
-        esc.servo_ofs,
-        t,
-        TelemetryType::TEMPERATURE|
-          TelemetryType::VOLTAGE|
-          TelemetryType::CURRENT|
-          TelemetryType::CONSUMPTION);
+        esc.servo_ofs, t,
+        (isnan(tlm.temp) ? 0 : TelemetryType::TEMPERATURE) |
+        (isnan(tlm.voltage) ? 0 : TelemetryType::VOLTAGE)|
+        (isnan(tlm.current) ? 0 :  TelemetryType::CURRENT)|
+        (isnan(tlm.consumption_mah) ? 0 :  TelemetryType::CONSUMPTION));
 
     esc.last_telem_us = AP_HAL::micros();
 }

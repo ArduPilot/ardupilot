@@ -748,9 +748,9 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
         telem.motor_temp_cdeg = int16_t(esc.motorTemperature * 100);
 
         update_telem_data(addr, telem,
-            AP_ESC_Telem_Backend::TelemetryType::CURRENT
-                | AP_ESC_Telem_Backend::TelemetryType::VOLTAGE
-                | AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE);
+            (isnan(esc.current) ? 0 : AP_ESC_Telem_Backend::TelemetryType::CURRENT)
+                | (isnan(esc.voltage) ? 0 : AP_ESC_Telem_Backend::TelemetryType::VOLTAGE)
+                | (isnan(esc.motorTemperature ) ? 0 : AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE));
 
         esc.newTelemetry = true;
     } else if (decodeESC_StatusCPacket(&frame, &esc.fetTemperature, &esc.pwmFrequency, &esc.timingAdvance)) {

@@ -1127,10 +1127,10 @@ void AP_Torqeedo::update_esc_telem(float rpm, float voltage, float current_amps,
     telem_dat.motor_temp_cdeg = motor_tempC * 100;  // motor temperature in centi-degrees
 
     // send telem and rpm data
-    update_telem_data(telem_esc_index, telem_dat, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE |
-                                                  AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE |
-                                                  AP_ESC_Telem_Backend::TelemetryType::CURRENT |
-                                                  AP_ESC_Telem_Backend::TelemetryType::VOLTAGE);
+    update_telem_data(telem_esc_index, telem_dat, (isnan(esc_tempC) ? 0 : AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE )|
+                                                  (isnan(motor_tempC) ? 0 : AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE ) |
+                                                  (isnan(current_amps) ? 0 : AP_ESC_Telem_Backend::TelemetryType::CURRENT) |
+                                                  (isnan(voltage) ? 0 : AP_ESC_Telem_Backend::TelemetryType::VOLTAGE));
 
     update_rpm(telem_esc_index, rpm);
 #endif
