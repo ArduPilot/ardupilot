@@ -22,9 +22,13 @@
 
 #include "Plane.h"
 
+#include <GCS_MAVLink/GCS.h>
+
 #define SCHED_TASK(func, rate_hz, max_time_micros, priority) SCHED_TASK_CLASS(Plane, &plane, func, rate_hz, max_time_micros, priority)
 #define FAST_TASK(func) FAST_TASK_CLASS(Plane, &plane, func)
 
+int user_distance_in_meter = 0;
+int previous_distance  = 0;
 
 /*
   scheduler table - all regular tasks should be listed here.
@@ -343,6 +347,15 @@ void Plane::one_second_loop()
         !is_equal(G_Dt, scheduler.get_loop_period_s())) {
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
     }
+
+    
+    user_distance_in_meter += airspeed.get_airspeed();
+    if((user_distance_in_meter - previous_distance) > 1000)
+    {
+        previous_distance = user_distance_in_meter;
+        gcs().send_text(MAV_SEVERITY_INFO, "Total Distance Traveled %ikm", user_distance_in_meter/1000);
+    }
+    //gcs().send_text(MAV_SEVERITY_INFO, "Total Distance Traveled %ikm", user_distance_in_meter/1000);
 }
 
 void Plane::three_hz_loop()
