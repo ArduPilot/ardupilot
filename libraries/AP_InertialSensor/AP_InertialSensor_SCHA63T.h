@@ -82,6 +82,8 @@ private:
      */
     bool init();
 
+//    void set_filter_register(void);
+
     /*
       read data from the FIFOs
      */
@@ -101,4 +103,6 @@ private:
     enum Rotation rotation;
 
     uint16_t error_scha63t;
+    bool read_summary;
+    uint8_t staertup_attempt;
 };

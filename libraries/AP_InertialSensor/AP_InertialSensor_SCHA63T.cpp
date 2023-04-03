@@ -83,6 +83,9 @@ void AP_InertialSensor_SCHA63T::start()
         return;
     }
 
+    // setup ODR and on-sensor filtering
+//    set_filter_register();
+
     // setup sensor rotations from probe()
     set_gyro_orientation(gyro_instance, rotation);
     set_accel_orientation(accel_instance, rotation);
@@ -93,6 +96,95 @@ void AP_InertialSensor_SCHA63T::start()
     dev_gyro->register_periodic_callback(1000000UL / GYRO_BACKEND_SAMPLE_RATE,
                                          FUNCTOR_BIND_MEMBER(&AP_InertialSensor_SCHA63T::read_gyro, void));
 }
+
+#if 0
+/*
+  set the DLPF filter frequency. Assumes caller has taken semaphore
+ */
+void AP_InertialSensor_Invensense::set_filter_register(void)
+{
+    uint8_t config;
+
+#if INVENSENSE_EXT_SYNC_ENABLE
+    // add in EXT_SYNC bit if enabled
+    config = (MPUREG_CONFIG_EXT_SYNC_AZ << MPUREG_CONFIG_EXT_SYNC_SHIFT);
+#else
+    config = 0;
+#endif
+
+    // assume 1kHz sampling to start
+    _gyro_fifo_downsample_rate = _accel_fifo_downsample_rate = 1;
+    _gyro_to_accel_sample_ratio = 2;
+    _gyro_backend_rate_hz = _accel_backend_rate_hz =  1000;
+    
+    if (enable_fast_sampling(_accel_instance)) {
+        _fast_sampling = _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
+        if (_fast_sampling) {
+            // constrain the gyro rate to be at least the loop rate
+            uint8_t loop_limit = 1;
+            if (get_loop_rate_hz() > 1000) {
+                loop_limit = 2;
+            }
+            if (get_loop_rate_hz() > 2000) {
+                loop_limit = 4;
+            }
+            // constrain the gyro rate to be a 2^N multiple
+            uint8_t fast_sampling_rate = constrain_int16(get_fast_sampling_rate(), loop_limit, 8);
+
+            // calculate rate we will be giving gyro samples to the backend
+            _gyro_fifo_downsample_rate = 8 / fast_sampling_rate;
+            _gyro_backend_rate_hz *= fast_sampling_rate;
+
+            // calculate rate we will be giving accel samples to the backend
+            if (_mpu_type >= Invensense_MPU9250) {
+                _accel_fifo_downsample_rate = MAX(4 / fast_sampling_rate, 1);
+                _accel_backend_rate_hz *= MIN(fast_sampling_rate, 4);
+            } else {
+                _gyro_to_accel_sample_ratio = 8;
+                _accel_fifo_downsample_rate = 1;
+                _accum.accel_filter.set_cutoff_frequency(1000, 188);
+            }
+
+            // for logging purposes set the oversamping rate
+            _set_accel_oversampling(_accel_instance, _accel_fifo_downsample_rate);
+            _set_gyro_oversampling(_gyro_instance, _gyro_fifo_downsample_rate);
+
+            _set_accel_sensor_rate_sampling_enabled(_accel_instance, true);
+            _set_gyro_sensor_rate_sampling_enabled(_gyro_instance, true);
+
+            /* set divider for internal sample rate to 0x1F when fast
+             sampling enabled. This reduces the impact of the slave
+             sensor on the sample rate. It ends up with around 75Hz
+             slave rate, and reduces the impact on the gyro and accel
+             sample rate, ending up with around 7760Hz gyro rate and
+             3880Hz accel rate
+             */
+            _register_write(MPUREG_I2C_SLV4_CTRL, 0x1F);
+        }
+    }
+    
+    if (_fast_sampling) {
+        // this gives us 8kHz sampling on gyros and 4kHz on accels
+        config |= BITS_DLPF_CFG_256HZ_NOLPF2;
+    } else {
+        // limit to 1kHz if not on SPI
+        config |= BITS_DLPF_CFG_188HZ;
+    }
+
+    config |= MPUREG_CONFIG_FIFO_MODE_STOP;
+    _register_write(MPUREG_CONFIG, config, true);
+
+    if (_mpu_type != Invensense_MPU6000) {
+        if (_fast_sampling) {
+            // setup for 4kHz accels
+            _register_write(ICMREG_ACCEL_CONFIG2, ICM_ACC_FCHOICE_B, true);
+        } else {
+            uint8_t fifo_size = (_mpu_type == Invensense_ICM20789 || _mpu_type == Invensense_ICM20689) ? 1:0;
+            _register_write(ICMREG_ACCEL_CONFIG2, ICM_ACC_DLPF_CFG_218HZ | (fifo_size<<6), true);
+        }
+    }
+}
+#endif
 
 /*
   probe and initialise accelerometer
@@ -159,12 +251,10 @@ bool AP_InertialSensor_SCHA63T::init()
     if (!RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM)) {
         error_scha63t = 1;
     }
-
     // set UNO operation mode on
     if (!RegisterWrite(SCHA63T_UNO, MODE, MODE_NORM)) {
         error_scha63t = 1;
     }
-
     // wait 70ms initial startup
     hal.scheduler->delay(70);
 
@@ -180,7 +270,6 @@ bool AP_InertialSensor_SCHA63T::init()
     if (!RegisterWrite(SCHA63T_DUE, RESCTRL, HW_RES)) {
         error_scha63t = 1;
     }
-
     // wait 25ms for non-volatile memory (NVM) read
     hal.scheduler->delay(25);
 
@@ -191,7 +280,6 @@ bool AP_InertialSensor_SCHA63T::init()
     if (!RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM)) {
         error_scha63t = 1;
     }
-
     // wait 1ms (50ms has already passed)
     hal.scheduler->delay(1);
 
@@ -200,6 +288,10 @@ bool AP_InertialSensor_SCHA63T::init()
         error_scha63t = 1;
     }
 
+    // staertup clear
+    staertup_attempt = 0;
+
+staertup_failed:
     // wait 405ms (300Hz filter)
     hal.scheduler->delay(405);
 
@@ -218,7 +310,6 @@ bool AP_InertialSensor_SCHA63T::init()
     if (!RegisterRead(SCHA63T_DUE, S_SUM, val)) {
         error_scha63t = 1;
     }
-
     // 2.5ms or more
     hal.scheduler->delay(3);
 
@@ -229,21 +320,69 @@ bool AP_InertialSensor_SCHA63T::init()
     if (!RegisterRead(SCHA63T_DUE, S_SUM, val)) {
         error_scha63t = 1;
     }
-
     // 2.5ms or more
     hal.scheduler->delay(3);
 
     // read summary status
+    read_summary = false;
     if (!RegisterRead(SCHA63T_UNO, S_SUM, val)) {
         error_scha63t = 1;
+        read_summary = true;
     }
     if (!RegisterRead(SCHA63T_DUE, S_SUM, val)) {
         error_scha63t = 1;
+        read_summary = true;
     }
 
     // check error
-    if (error_scha63t) {
-        return false;
+    if (read_summary) {
+        if (staertup_attempt != 0) {
+            // system in FAILURE mode 
+            return false;
+        }
+        // startup failed restart UNO & DUE
+        staertup_attempt = 1;
+        // reset UNO write (0001h) to register 18h
+        if (!RegisterWrite(SCHA63T_UNO, RESCTRL, HW_RES)) {
+           error_scha63t = 1;
+        }
+        // reset DUE write (0001h) to register 18h
+        if (!RegisterWrite(SCHA63T_DUE, RESCTRL, HW_RES)) {
+           error_scha63t = 1;
+        }
+        // wait 25ms for non-volatile memory (NVM) read
+        hal.scheduler->delay(25);
+ 
+        // set DUE operation mode on (must be less than 1ms)
+        if (!RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM)) {
+            error_scha63t = 1;
+        }
+        if (!RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM)) {
+            error_scha63t = 1;
+        }
+        // set UNO operation mode on
+        if (!RegisterWrite(SCHA63T_UNO, MODE, MODE_NORM)) {
+            error_scha63t = 1;
+        }
+        // wait 70ms initial startup
+        hal.scheduler->delay(50);
+
+        // set UNO configuration (data filter, flag filter)
+        if (!RegisterWrite(SCHA63T_UNO, G_FILT_DYN, G_FILT)) {
+            error_scha63t = 1;
+        }
+        if (!RegisterWrite(SCHA63T_UNO, A_FILT_DYN, A_FILT)) {
+            error_scha63t = 1;
+        }
+        // set DUE configuration (data filter, flag filter)
+        if (!RegisterWrite(SCHA63T_DUE, G_FILT_DYN, G_FILT)) {
+            error_scha63t = 1;
+        }
+
+        // wait 45ms (adjust restart duration to 500ms)
+        hal.scheduler->delay(50);
+
+        goto staertup_failed;
     }
 
     return true;
