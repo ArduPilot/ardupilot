@@ -1370,46 +1370,7 @@ void Copter::load_parameters(void)
 // handle conversion of PID gains
 void Copter::convert_pid_parameters(void)
 {
-    // conversion info
-    const AP_Param::ConversionInfo pid_conversion_info[] = {
-        // PARAMETER_CONVERSION - Added: Apr-2016
-        { Parameters::k_param_pid_rate_roll, 0, AP_PARAM_FLOAT, "ATC_RAT_RLL_P" },
-        { Parameters::k_param_pid_rate_roll, 1, AP_PARAM_FLOAT, "ATC_RAT_RLL_I" },
-        { Parameters::k_param_pid_rate_roll, 2, AP_PARAM_FLOAT, "ATC_RAT_RLL_D" },
-        { Parameters::k_param_pid_rate_pitch, 0, AP_PARAM_FLOAT, "ATC_RAT_PIT_P" },
-        { Parameters::k_param_pid_rate_pitch, 1, AP_PARAM_FLOAT, "ATC_RAT_PIT_I" },
-        { Parameters::k_param_pid_rate_pitch, 2, AP_PARAM_FLOAT, "ATC_RAT_PIT_D" },
-        { Parameters::k_param_pid_rate_yaw, 0, AP_PARAM_FLOAT, "ATC_RAT_YAW_P" },
-        { Parameters::k_param_pid_rate_yaw, 1, AP_PARAM_FLOAT, "ATC_RAT_YAW_I" },
-        { Parameters::k_param_pid_rate_yaw, 2, AP_PARAM_FLOAT, "ATC_RAT_YAW_D" },
-#if FRAME_CONFIG == HELI_FRAME
-        // PARAMETER_CONVERSION - Added: May-2016
-        { Parameters::k_param_pid_rate_roll,  4, AP_PARAM_FLOAT, "ATC_RAT_RLL_VFF" },
-        { Parameters::k_param_pid_rate_pitch, 4, AP_PARAM_FLOAT, "ATC_RAT_PIT_VFF" },
-        { Parameters::k_param_pid_rate_yaw  , 4, AP_PARAM_FLOAT, "ATC_RAT_YAW_VFF" },
-#endif
-    };
-    const AP_Param::ConversionInfo imax_conversion_info[] = {
-        // PARAMETER_CONVERSION - Added: Apr-2016
-        { Parameters::k_param_pid_rate_roll,  5, AP_PARAM_FLOAT, "ATC_RAT_RLL_IMAX" },
-        { Parameters::k_param_pid_rate_pitch, 5, AP_PARAM_FLOAT, "ATC_RAT_PIT_IMAX" },
-        { Parameters::k_param_pid_rate_yaw,   5, AP_PARAM_FLOAT, "ATC_RAT_YAW_IMAX" },
-#if FRAME_CONFIG == HELI_FRAME
-        // PARAMETER_CONVERSION - Added: May-2016
-        { Parameters::k_param_pid_rate_roll,  7, AP_PARAM_FLOAT, "ATC_RAT_RLL_ILMI" },
-        { Parameters::k_param_pid_rate_pitch, 7, AP_PARAM_FLOAT, "ATC_RAT_PIT_ILMI" },
-        { Parameters::k_param_pid_rate_yaw,   7, AP_PARAM_FLOAT, "ATC_RAT_YAW_ILMI" },
-#endif
-    };
-    // conversion from Copter-3.3 to Copter-3.4
     const AP_Param::ConversionInfo angle_and_filt_conversion_info[] = {
-        // PARAMETER_CONVERSION - Added: May-2016
-        { Parameters::k_param_p_stabilize_roll, 0, AP_PARAM_FLOAT, "ATC_ANG_RLL_P" },
-        { Parameters::k_param_p_stabilize_pitch, 0, AP_PARAM_FLOAT, "ATC_ANG_PIT_P" },
-        { Parameters::k_param_p_stabilize_yaw, 0, AP_PARAM_FLOAT, "ATC_ANG_YAW_P" },
-        // PARAMETER_CONVERSION - Added: Apr-2016
-        { Parameters::k_param_pid_rate_roll, 6, AP_PARAM_FLOAT, "ATC_RAT_RLL_FILT" },
-        { Parameters::k_param_pid_rate_pitch, 6, AP_PARAM_FLOAT, "ATC_RAT_PIT_FILT" },
         // PARAMETER_CONVERSION - Added: Jan-2018
         { Parameters::k_param_pid_rate_yaw, 6, AP_PARAM_FLOAT, "ATC_RAT_YAW_FILT" },
         { Parameters::k_param_pi_vel_xy, 0, AP_PARAM_FLOAT, "PSC_VELXY_P" },
@@ -1429,11 +1390,6 @@ void Copter::convert_pid_parameters(void)
         { Parameters::k_param_p_alt_hold, 0, AP_PARAM_FLOAT, "PSC_POSZ_P" },
         { Parameters::k_param_p_pos_xy, 0, AP_PARAM_FLOAT, "PSC_POSXY_P" },
     };
-    const AP_Param::ConversionInfo throttle_conversion_info[] = {
-        // PARAMETER_CONVERSION - Added: Jun-2016
-        { Parameters::k_param_throttle_min, 0, AP_PARAM_FLOAT, "MOT_SPIN_MIN" },
-        { Parameters::k_param_throttle_mid, 0, AP_PARAM_FLOAT, "MOT_THST_HOVER" }
-    };
     const AP_Param::ConversionInfo loiter_conversion_info[] = {
         // PARAMETER_CONVERSION - Added: Apr-2018
         { Parameters::k_param_wp_nav, 4, AP_PARAM_FLOAT, "LOIT_SPEED" },
@@ -1442,33 +1398,9 @@ void Copter::convert_pid_parameters(void)
         { Parameters::k_param_wp_nav, 9, AP_PARAM_FLOAT, "LOIT_BRK_ACCEL" }
     };
 
-    // PARAMETER_CONVERSION - Added: Apr-2016
-    // gains increase by 27% due to attitude controller's switch to use radians instead of centi-degrees
-    // and motor libraries switch to accept inputs in -1 to +1 range instead of -4500 ~ +4500
-    float pid_scaler = 1.27f;
-
-#if FRAME_CONFIG != HELI_FRAME
-    // Multicopter x-frame gains are 40% lower because -1 or +1 input to motors now results in maximum rotation
-    if (g.frame_type == AP_Motors::MOTOR_FRAME_TYPE_X || g.frame_type == AP_Motors::MOTOR_FRAME_TYPE_V || g.frame_type == AP_Motors::MOTOR_FRAME_TYPE_H) {
-        pid_scaler = 0.9f;
-    }
-#endif
-
-    // scale PID gains
-    for (const auto &info : pid_conversion_info) {
-        AP_Param::convert_old_parameter(&info, pid_scaler);
-    }
-    // reduce IMAX into -1 ~ +1 range
-    for (const auto &info : imax_conversion_info) {
-        AP_Param::convert_old_parameter(&info, 1.0f/4500.0f);
-    }
     // convert angle controller gain and filter without scaling
     for (const auto &info : angle_and_filt_conversion_info) {
         AP_Param::convert_old_parameter(&info, 1.0f);
-    }
-    // convert throttle parameters (multicopter only)
-    for (const auto &info : throttle_conversion_info) {
-        AP_Param::convert_old_parameter(&info, 0.001f);
     }
     // convert RC_FEEL_RP to ATC_INPUT_TC
     // PARAMETER_CONVERSION - Added: Mar-2018
