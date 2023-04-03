@@ -131,7 +131,7 @@ private:
 
     static void irq_handler_thd(void* arg);
     static void trigger_irq_radio_event(void);
-    static void trigger_timeout_event(void *arg);
+    static void trigger_timeout_event(virtual_timer_t* vt, void *arg);
 
     static const uint8_t max_channels = 16;
 
