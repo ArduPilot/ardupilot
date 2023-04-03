@@ -25,7 +25,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
  */
 Sub::Sub()
     : logger(g.log_bitmask),
-          control_mode(MANUAL),
+          control_mode(Mode::Number::MANUAL),
           motors(MAIN_LOOP_RATE),
           auto_mode(Auto_WP),
           guided_mode(Guided_WP),
@@ -37,7 +37,8 @@ Sub::Sub()
           wp_nav(inertial_nav, ahrs_view, pos_control, attitude_control),
           loiter_nav(inertial_nav, ahrs_view, pos_control, attitude_control),
           circle_nav(inertial_nav, ahrs_view, pos_control),
-          param_loader(var_info)
+          param_loader(var_info),
+          flightmode(&mode_manual)
 {
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     failsafe.pilot_input = true;

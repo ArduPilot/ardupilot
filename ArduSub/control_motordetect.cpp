@@ -45,7 +45,7 @@ namespace {
     static int16_t current_direction;
 }
 
-bool Sub::motordetect_init()
+bool ModeMotordetect::init(bool ignore_checks)
 {
     current_motor = 0;
     md_state = STANDBY;
@@ -53,7 +53,7 @@ bool Sub::motordetect_init()
     return true;
 }
 
-void Sub::motordetect_run()
+void ModeMotordetect::run()
 {
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
@@ -167,8 +167,8 @@ void Sub::motordetect_run()
         break;
     }
     case DONE:
-        control_mode = prev_control_mode;
-        arming.disarm(AP_Arming::Method::MOTORDETECTDONE);
+        set_mode(sub.prev_control_mode, ModeReason::MISSION_END);
+        sub.arming.disarm(AP_Arming::Method::MOTORDETECTDONE);
         break;
     }
 }
