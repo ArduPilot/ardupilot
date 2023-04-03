@@ -134,7 +134,7 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
     sub.motors.armed(true);
 
     // log flight mode in case it was changed while vehicle was disarmed
-    AP::logger().Write_Mode(sub.control_mode, sub.control_mode_reason);
+    AP::logger().Write_Mode((uint8_t)sub.control_mode, sub.control_mode_reason);
 
     // reenable failsafe
     sub.mainloop_failsafe_enable();

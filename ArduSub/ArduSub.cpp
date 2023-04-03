@@ -140,7 +140,7 @@ void Sub::run_rate_controller()
     pos_control.set_dt(last_loop_time_s);
 
     //don't run rate controller in manual or motordetection modes
-    if (control_mode != MANUAL && control_mode != MOTOR_DETECT) {
+    if (control_mode != Mode::Number::MANUAL && control_mode != Mode::Number::MOTOR_DETECT) {
         // run low level rate controllers that only require IMU data and set loop time
         attitude_control.rate_controller_run();
     }
@@ -201,7 +201,7 @@ void Sub::ten_hz_logging_loop()
     if (should_log(MASK_LOG_RCOUT)) {
         logger.Write_RCOUT();
     }
-    if (should_log(MASK_LOG_NTUN) && (mode_requires_GPS(control_mode) || !mode_has_manual_throttle(control_mode))) {
+    if (should_log(MASK_LOG_NTUN) && (sub.flightmode->requires_GPS() || !sub.flightmode->has_manual_throttle())) {
         pos_control.write_log();
     }
     if (should_log(MASK_LOG_IMU) || should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW)) {

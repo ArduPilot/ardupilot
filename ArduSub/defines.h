@@ -29,20 +29,6 @@ enum autopilot_yaw_mode {
     AUTO_YAW_CORRECT_XTRACK =    6   // steer the sub in order to correct for crosstrack error during line following
 };
 
-// Auto Pilot Modes enumeration
-enum control_mode_t : uint8_t {
-    STABILIZE =     0,  // manual angle with manual depth/throttle
-    ACRO =          1,  // manual body-frame angular rate with manual depth/throttle
-    ALT_HOLD =      2,  // manual angle with automatic depth/throttle
-    AUTO =          3,  // fully automatic waypoint control using mission commands
-    GUIDED =        4,  // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
-    CIRCLE =        7,  // automatic circular flight with automatic throttle
-    SURFACE =       9,  // automatically return to surface, pilot maintains horizontal control
-    POSHOLD =      16,  // automatic position hold with manual override, with automatic throttle
-    MANUAL =       19,  // Pass-through input with no stabilization
-    MOTOR_DETECT = 20   // Automatically detect motors orientation
-};
-
 // Acro Trainer types
 #define ACRO_TRAINER_DISABLED   0
 #define ACRO_TRAINER_LEVELING   1
@@ -55,32 +41,7 @@ enum control_mode_t : uint8_t {
 #define WP_YAW_BEHAVIOR_LOOK_AHEAD                    3   // auto pilot will look ahead during missions and rtl (primarily meant for traditional helicotpers)
 #define WP_YAW_BEHAVIOR_CORRECT_XTRACK                4   // point towards intermediate position target during line following
 
-// Auto modes
-enum AutoMode {
-    Auto_WP,
-    Auto_CircleMoveToEdge,
-    Auto_Circle,
-    Auto_NavGuided,
-    Auto_Loiter,
-    Auto_TerrainRecover
-};
 
-// Guided modes
-enum GuidedMode {
-    Guided_WP,
-    Guided_Velocity,
-    Guided_PosVel,
-    Guided_Angle,
-};
-
-// RTL states
-enum RTLState {
-    RTL_InitialClimb,
-    RTL_ReturnHome,
-    RTL_LoiterAtHome,
-    RTL_FinalDescent,
-    RTL_Land
-};
 
 //  Logging parameters - only 32 messages are available to the vehicle here.
 enum LoggingParameters {
