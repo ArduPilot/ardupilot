@@ -1675,6 +1675,7 @@ AP_InertialSensor::_init_gyro()
 
     // stop flashing leds
     AP_Notify::flags.initialising = false;
+    AP_Notify::flags.gyro_calibrated = true;
 }
 
 // save parameters to eeprom
