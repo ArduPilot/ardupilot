@@ -243,10 +243,10 @@ bool AP_InertialSensor_SCHA63T::init()
 
     // check error
     if (error_scha63t) {
-        return true;
+        return false;
     }
 
-    return false;
+    return true;
 #endif
 }
 
@@ -431,7 +431,6 @@ void AP_InertialSensor_SCHA63T::read_gyro(void)
 
 void AP_InertialSensor_SCHA63T::set_temperature(uint8_t instance, uint16_t temper)
 {
-//    int16_t temper  = combine(temper1, temper2);
     float temperature = 25.0f + ( temper / 30 );
     float temp_degc = (0.5f * temperature) + 23.0f;
     _publish_temperature(instance, temp_degc);
@@ -471,12 +470,12 @@ bool AP_InertialSensor_SCHA63T::RegisterRead(int uno_due, reg_scha63t reg_addr, 
     switch ( uno_due ) {
     case SCHA63T_UNO:
         memcpy(buf, cmd, 4);
-        dev_accel->transfer(buf, 4, buf, 4);
+        ret = dev_accel->transfer(buf, 4, buf, 4);
         memcpy(val, buf, 4);
         break;
     case SCHA63T_DUE:
         memcpy(buf, cmd, 4);
-        dev_accel->transfer(buf, 4, buf, 4);
+        ret = dev_accel->transfer(buf, 4, buf, 4);
         memcpy(val, buf, 4);
         break;
     default:
@@ -519,15 +518,15 @@ bool AP_InertialSensor_SCHA63T::RegisterWrite(int uno_due, reg_scha63t reg_addr,
     }
 #else
     uint8_t buf[4];
-    switch ( tp ) {
+    switch ( uno_due ) {
     case SCHA63T_UNO:
         memcpy(buf, cmd, 4);
-        dev_accel->transfer(buf, 4, buf, 4);
+        ret = dev_accel->transfer(buf, 4, buf, 4);
         memcpy(res, buf, 4);
         break;
     case SCHA63T_DUE:
         memcpy(buf, cmd, 4);
-        dev_accel->transfer(buf, 4, buf, 4);
+        ret = dev_accel->transfer(buf, 4, buf, 4);
         memcpy(res, buf, 4);
         break;
     default:

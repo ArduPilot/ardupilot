@@ -64,12 +64,12 @@ public:
         SEL_BANK    = 0x1F,
     };
 
-    #define G_FILT     0x2424
-    #define HW_RES     0x0001
-    #define RES_EOI    0x0002
-    #define MODE_NORM  0x0000
-    #define A_FILT     0x0444
-    #define SEL_BANK   0x0000
+    #define G_FILT     0x2424    // Ry/Ry2 filter 300Hz 3rd order filter
+    #define HW_RES     0x0001    // HardReset
+    #define RES_EOI    0x0002    // End Of Initialization
+    #define MODE_NORM  0x0000    // Mode
+    #define A_FILT     0x0444    // Ax/Ay/Az filter 300Hz 3rd order filter
+    #define SEL_BANK   0x0000    // SelBnk
 
 private:
     AP_InertialSensor_SCHA63T(AP_InertialSensor &imu,
