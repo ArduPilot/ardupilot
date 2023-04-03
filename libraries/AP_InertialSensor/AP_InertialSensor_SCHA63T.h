@@ -43,6 +43,12 @@ public:
     bool update() override;
 
     enum reg_scha63t {
+        RATE_XZ     = 0x01,
+        RATE_Y      = 0x03,
+        ACC_X       = 0x04,
+        ACC_Y       = 0x05,
+        ACC_Z       = 0x06,
+        TEMP        = 0x07,
         S_SUM       = 0x0E,
         R_S1        = 0x10,
         A_S1        = 0x12,
@@ -52,12 +58,18 @@ public:
         RESCTRL     = 0x18,
         MODE        = 0x19,
         A_FILT_DYN  = 0x1A,
-        X_1C        = 0x1C,
-        X_1D        = 0x1D,
-        X_1E        = 0x1E,
+        T_ID2       = 0x1C,
+        T_ID0       = 0x1D,
+        T_ID1       = 0x1E,
         SEL_BANK    = 0x1F,
-        SET_EOI     = 0x20,
     };
+
+    #define G_FILT     0x2424
+    #define HW_RES     0x0001
+    #define RES_EOI    0x0002
+    #define MODE_NORM  0x0000
+    #define A_FILT     0x0444
+    #define SEL_BANK   0x0000
 
 private:
     AP_InertialSensor_SCHA63T(AP_InertialSensor &imu,
@@ -73,13 +85,12 @@ private:
     /*
       read data from the FIFOs
      */
-    void read_fifo_accel();
-    void read_fifo_gyro();
+    void read_accel();
+    void read_gyro();
 
-    int16_t gyro_x;
     bool RegisterRead(int tp, reg_scha63t reg, uint8_t* val);
-    bool RegisterWrite(int tp, reg_scha63t reg, uint8_t val = 0);
-    void set_temperature(uint8_t instance, uint8_t temper1, uint8_t temper2);
+    bool RegisterWrite(int tp, reg_scha63t reg, uint16_t val);
+    void set_temperature(uint8_t instance, uint16_t temper);
     uint8_t CalcTblCrc(uint8_t* ptr, short nLen);
 
     AP_HAL::OwnPtr<AP_HAL::Device> dev_accel;
@@ -88,4 +99,6 @@ private:
     uint8_t accel_instance;
     uint8_t gyro_instance;
     enum Rotation rotation;
+
+    uint16_t error_scha63t;
 };
