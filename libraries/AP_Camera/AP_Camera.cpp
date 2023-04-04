@@ -164,7 +164,8 @@ void AP_Camera::init()
         case CameraType::MAVLINK:
             _backends[instance] = new AP_Camera_MAVLink(*this, _params[instance], instance);
             break;
-
+#endif
+#if AP_CAMERA_MAVLINKCAMV2_ENABLED
         // check for MAVLink Camv2 driver
         case CameraType::MAVLINK_CAMV2:
             _backends[instance] = new AP_Camera_MAVLinkCamV2(*this, _params[instance], instance);

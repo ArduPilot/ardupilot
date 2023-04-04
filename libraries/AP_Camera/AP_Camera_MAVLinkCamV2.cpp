@@ -1,6 +1,6 @@
 #include "AP_Camera_MAVLinkCamV2.h"
 
-#if AP_CAMERA_MAVLINK_ENABLED
+#if AP_CAMERA_MAVLINKCAMV2_ENABLED
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
@@ -219,4 +219,4 @@ void AP_Camera_MAVLinkCamV2::request_camera_information() const
     _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt);
 }
 
-#endif // AP_CAMERA_MAVLINK_ENABLED
+#endif // AP_CAMERA_MAVLINKCAMV2_ENABLED
