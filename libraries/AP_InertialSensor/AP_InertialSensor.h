@@ -329,6 +329,7 @@ public:
 
         // Parameters
         AP_Int16 _required_count;
+        uint16_t _real_required_count;
         AP_Int8 _sensor_mask;
         AP_Int8 _batch_options_mask;
 

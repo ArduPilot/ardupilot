@@ -111,7 +111,7 @@ bool AP_InertialSensor::BatchSampler::Write_ISBH(const float sample_rate_hz) con
         sensor_type    : (uint8_t)type,
         instance       : instance_to_write,
         multiplier     : multiplier,
-        sample_count   : (uint16_t)_required_count,
+        sample_count   : (uint16_t)_real_required_count,
         sample_us      : measurement_started_us,
         sample_rate_hz : sample_rate_hz,
     };
