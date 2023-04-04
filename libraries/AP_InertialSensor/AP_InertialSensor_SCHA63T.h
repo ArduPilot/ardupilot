@@ -94,6 +94,7 @@ private:
     bool RegisterWrite(int tp, reg_scha63t reg, uint16_t val);
     void set_temperature(uint8_t instance, uint16_t temper);
     uint8_t CalcTblCrc(uint8_t* ptr, short nLen);
+    bool check_startup_failed();
 
     AP_HAL::OwnPtr<AP_HAL::Device> dev_accel;
     AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro;
@@ -103,6 +104,5 @@ private:
     enum Rotation rotation;
 
     uint16_t error_scha63t;
-    bool read_summary;
-    uint8_t staertup_attempt;
+    uint8_t startup_attempt;
 };

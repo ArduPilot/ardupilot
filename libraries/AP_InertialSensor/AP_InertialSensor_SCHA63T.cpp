@@ -237,8 +237,6 @@ bool AP_InertialSensor_SCHA63T::init()
     return ret_uno && ret_due;
 
 #else
-    uint8_t val[4];
-
     error_scha63t = 0;
 
     // wait 25ms for non-volatile memory (NVM) read
@@ -288,10 +286,23 @@ bool AP_InertialSensor_SCHA63T::init()
         error_scha63t = 1;
     }
 
-    // staertup clear
-    staertup_attempt = 0;
+    // startup clear
+    startup_attempt = 0;
+    if (!check_startup_failed()) {
+        if (!check_startup_failed()) {
+            return false;    // check FAILED
+        }
+    }
 
-staertup_failed:
+    // check ok
+    return true;
+#endif
+}
+
+bool AP_InertialSensor_SCHA63T::check_startup_failed()
+{
+    uint8_t val[4];
+
     // wait 405ms (300Hz filter)
     hal.scheduler->delay(405);
 
@@ -324,8 +335,13 @@ staertup_failed:
     hal.scheduler->delay(3);
 
     // read summary status
-    read_summary = false;
+    bool read_summary = false;
     if (!RegisterRead(SCHA63T_UNO, S_SUM, val)) {
+        error_scha63t = 1;
+        read_summary = true;
+    }
+    // check UNO summary status
+    if (!(val[1] & 0x7f)) {
         error_scha63t = 1;
         read_summary = true;
     }
@@ -333,15 +349,20 @@ staertup_failed:
         error_scha63t = 1;
         read_summary = true;
     }
+    // check DUE summary status
+    if (!(val[1] & 0x7f)) {
+        error_scha63t = 1;
+        read_summary = true;
+    }
 
     // check error
     if (read_summary) {
-        if (staertup_attempt != 0) {
+        if (startup_attempt != 0) {
             // system in FAILURE mode 
             return false;
         }
         // startup failed restart UNO & DUE
-        staertup_attempt = 1;
+        startup_attempt = 1;
         // reset UNO write (0001h) to register 18h
         if (!RegisterWrite(SCHA63T_UNO, RESCTRL, HW_RES)) {
            error_scha63t = 1;
@@ -380,13 +401,12 @@ staertup_failed:
         }
 
         // wait 45ms (adjust restart duration to 500ms)
-        hal.scheduler->delay(50);
+        hal.scheduler->delay(45);
 
-        goto staertup_failed;
+        return false;
     }
 
     return true;
-#endif
 }
 
 /*
