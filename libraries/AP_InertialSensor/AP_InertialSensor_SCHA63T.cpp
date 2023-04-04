@@ -78,121 +78,47 @@ AP_InertialSensor_SCHA63T::probe(AP_InertialSensor &imu,
 
 void AP_InertialSensor_SCHA63T::start()
 {
-    if (!_imu.register_accel(_accel_instance, ACCEL_BACKEND_SAMPLE_RATE, dev_accel->get_bus_id_devtype(DEVTYPE_INS_SCHA63T)) ||
-        !_imu.register_gyro(_gyro_instance, GYRO_BACKEND_SAMPLE_RATE,   dev_gyro->get_bus_id_devtype(DEVTYPE_INS_SCHA63T))) {
+    if (!_imu.register_accel(accel_instance, ACCEL_BACKEND_SAMPLE_RATE, dev_accel->get_bus_id_devtype(DEVTYPE_INS_SCHA63T)) ||
+        !_imu.register_gyro(gyro_instance, GYRO_BACKEND_SAMPLE_RATE, dev_gyro->get_bus_id_devtype(DEVTYPE_INS_SCHA63T))) {
         return;
     }
 
-    // setup ODR and on-sensor filtering
-    set_filter_register();
+    // set backend rate
+    backend_rate_hz = 1000;
+    if (enable_fast_sampling(accel_instance) && get_fast_sampling_rate() > 1) {
+        fast_sampling = dev_accel->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
+        if (fast_sampling) {
+            backend_rate_hz = calculate_fast_sampling_backend_rate(backend_rate_hz, 8 * backend_rate_hz);
+        }
+    }
+    backend_period_us = 1000000UL / backend_rate_hz;
 
     // setup sensor rotations from probe()
-    set_gyro_orientation(_gyro_instance, rotation);
-    set_accel_orientation(_accel_instance, rotation);
+    set_gyro_orientation(gyro_instance, rotation);
+    set_accel_orientation(accel_instance, rotation);
 
     // setup callbacks
-//    dev_accel->register_periodic_callback(1000000UL / ACCEL_BACKEND_SAMPLE_RATE,
-    dev_accel->register_periodic_callback(1000000UL / _accel_backend_rate_hz,
-                                          FUNCTOR_BIND_MEMBER(&AP_InertialSensor_SCHA63T::read_accel, void));
-//    dev_gyro->register_periodic_callback(1000000UL / GYRO_BACKEND_SAMPLE_RATE,
-    dev_gyro->register_periodic_callback(1000000UL / _gyro_backend_rate_hz,
-                                         FUNCTOR_BIND_MEMBER(&AP_InertialSensor_SCHA63T::read_gyro, void));
+    dev_accel->register_periodic_callback(backend_period_us, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_SCHA63T::read_accel, void));
+    dev_gyro->register_periodic_callback(backend_period_us, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_SCHA63T::read_gyro, void));
 }
 
-#if 1
-/*
-  set the DLPF filter frequency. Assumes caller has taken semaphore
- */
-void AP_InertialSensor_SCHA63T::set_filter_register(void)
+// calculate the fast sampling backend rate
+uint16_t AP_InertialSensor_SCHA63T::calculate_fast_sampling_backend_rate(uint16_t base_odr, uint16_t max_odr) const
 {
-//    uint8_t config;
-
-//#if INVENSENSE_EXT_SYNC_ENABLE
-    // add in EXT_SYNC bit if enabled
-//    config = (MPUREG_CONFIG_EXT_SYNC_AZ << MPUREG_CONFIG_EXT_SYNC_SHIFT);
-//#else
-//    config = 0;
-//#endif
-
-    // assume 1kHz sampling to start
-    _gyro_fifo_downsample_rate = _accel_fifo_downsample_rate = 1;
-    _gyro_to_accel_sample_ratio = 2;
-    _gyro_backend_rate_hz = _accel_backend_rate_hz =  1000;
-    
-    if (enable_fast_sampling(_accel_instance)) {
-//        _fast_sampling = _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
-        _fast_sampling = dev_accel->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
-        if (_fast_sampling) {
-            // constrain the gyro rate to be at least the loop rate
-            uint8_t loop_limit = 1;
-            if (get_loop_rate_hz() > 1000) {
-                loop_limit = 2;
-            }
-            if (get_loop_rate_hz() > 2000) {
-                loop_limit = 4;
-            }
-            // constrain the gyro rate to be a 2^N multiple
-            uint8_t fast_sampling_rate = constrain_int16(get_fast_sampling_rate(), loop_limit, 8);
-
-            // calculate rate we will be giving gyro samples to the backend
-            _gyro_fifo_downsample_rate = 8 / fast_sampling_rate;
-            _gyro_backend_rate_hz *= fast_sampling_rate;
-
-            // calculate rate we will be giving accel samples to the backend
-//            if (_mpu_type >= Invensense_MPU9250) {
-                _accel_fifo_downsample_rate = MAX(4 / fast_sampling_rate, 1);
-                _accel_backend_rate_hz *= MIN(fast_sampling_rate, 4);
-//            } else {
-//                _gyro_to_accel_sample_ratio = 8;
-//                _accel_fifo_downsample_rate = 1;
-//                _accum.accel_filter.set_cutoff_frequency(1000, 188);
-//            }
-
-
-//GCS_SEND_TEXT(MAV_SEVERITY_INFO, ">> %d, %d, %d, %d, %d", get_fast_sampling_rate(), loop_limit, fast_sampling_rate, _gyro_backend_rate_hz, _accel_backend_rate_hz);
-
-            // for logging purposes set the oversamping rate
-            _set_accel_oversampling(_accel_instance, _accel_fifo_downsample_rate);
-            _set_gyro_oversampling(_gyro_instance, _gyro_fifo_downsample_rate);
-
-            _set_accel_sensor_rate_sampling_enabled(_accel_instance, true);
-            _set_gyro_sensor_rate_sampling_enabled(_gyro_instance, true);
-
-            /* set divider for internal sample rate to 0x1F when fast
-             sampling enabled. This reduces the impact of the slave
-             sensor on the sample rate. It ends up with around 75Hz
-             slave rate, and reduces the impact on the gyro and accel
-             sample rate, ending up with around 7760Hz gyro rate and
-             3880Hz accel rate
-             */
-//            _register_write(MPUREG_I2C_SLV4_CTRL, 0x1F);
-        }
+    // constrain the gyro rate to be at least the loop rate
+    uint8_t loop_limit = 1;
+    if (get_loop_rate_hz() > base_odr) {
+        loop_limit = 2;
     }
-
-#if 0
-    if (_fast_sampling) {
-        // this gives us 8kHz sampling on gyros and 4kHz on accels
-        config |= BITS_DLPF_CFG_256HZ_NOLPF2;
-    } else {
-        // limit to 1kHz if not on SPI
-        config |= BITS_DLPF_CFG_188HZ;
+    if (get_loop_rate_hz() > base_odr * 2) {
+        loop_limit = 4;
     }
+    // constrain the gyro rate to be a 2^N multiple
+    uint8_t fast_sampling_rate = constrain_int16(get_fast_sampling_rate(), loop_limit, 8);
 
-    config |= MPUREG_CONFIG_FIFO_MODE_STOP;
-    _register_write(MPUREG_CONFIG, config, true);
-
-    if (_mpu_type != Invensense_MPU6000) {
-        if (_fast_sampling) {
-            // setup for 4kHz accels
-            _register_write(ICMREG_ACCEL_CONFIG2, ICM_ACC_FCHOICE_B, true);
-        } else {
-            uint8_t fifo_size = (_mpu_type == Invensense_ICM20789 || _mpu_type == Invensense_ICM20689) ? 1:0;
-            _register_write(ICMREG_ACCEL_CONFIG2, ICM_ACC_DLPF_CFG_218HZ | (fifo_size<<6), true);
-        }
-    }
-#endif
+    // calculate rate we will be giving samples to the backend
+    return constrain_int16(base_odr * fast_sampling_rate, base_odr, max_odr);
 }
-#endif
 
 /*
   probe and initialise accelerometer
@@ -288,10 +214,10 @@ bool AP_InertialSensor_SCHA63T::check_startup()
     hal.scheduler->delay(3);
 
     // second read summary status
-//    error_scha63t |= RegisterRead(SCHA63T_UNO, S_SUM, val);
-//    error_scha63t |= RegisterRead(SCHA63T_DUE, S_SUM, val);
+    error_scha63t |= RegisterRead(SCHA63T_UNO, S_SUM, val);
+    error_scha63t |= RegisterRead(SCHA63T_DUE, S_SUM, val);
     // 2.5ms or more
-//    hal.scheduler->delay(3);
+    hal.scheduler->delay(3);
 
     // read summary status
     error_scha63t |= RegisterRead(SCHA63T_UNO, S_SUM, val);
@@ -329,29 +255,15 @@ void AP_InertialSensor_SCHA63T::read_accel(void)
     int16_t uno_temp = 0;
 
     // ACCL_X Cmd Send (This Response rsp_accl_x is Dust!!)
-    if (!RegisterRead(SCHA63T_UNO, ACC_X, rsp_accl_x)) {
-        error_scha63t = 1;
-    }
-
+    error_scha63t |= RegisterRead(SCHA63T_UNO, ACC_X, rsp_accl_x);
     // ACCL_Y Cmd Send + ACCL_X Response Receive
-    if (!RegisterRead(SCHA63T_UNO, ACC_Y, rsp_accl_x)) {
-        error_scha63t = 1;
-    }
-
+    error_scha63t |= RegisterRead(SCHA63T_UNO, ACC_Y, rsp_accl_x);
     // ACCL_Z Cmd Send + ACCL_Y Response Receive
-    if (!RegisterRead(SCHA63T_UNO, ACC_Z, rsp_accl_y)) {
-        error_scha63t = 1;
-    }
-
+    error_scha63t |= RegisterRead(SCHA63T_UNO, ACC_Z, rsp_accl_y);
     // TEMPER Cmd Send + RATE_X Response Receive
-    if (!RegisterRead(SCHA63T_UNO, TEMP, rsp_accl_z)) {
-        error_scha63t = 1;
-    }
-
+    error_scha63t |= RegisterRead(SCHA63T_UNO, TEMP, rsp_accl_z);
     // TEMPER Cmd Send + TEMPRE Response Receive
-    if (!RegisterRead(SCHA63T_UNO, TEMP, rsp_temper)) {
-        error_scha63t = 1;
-    }
+    error_scha63t |= RegisterRead(SCHA63T_UNO, TEMP, rsp_temper);
 
     // response data address check
     if (((rsp_accl_x[0] & 0x7C) >> 2) == ACC_X) {
@@ -374,7 +286,7 @@ void AP_InertialSensor_SCHA63T::read_accel(void)
     } else {
         error_scha63t = 1;
     }
-    set_temperature(_accel_instance, uno_temp);
+    set_temperature(accel_instance, uno_temp);
 
     // change coordinate system from left hand too right hand 
     accel_z = (accel_z == INT16_MIN) ? INT16_MAX : -accel_z;
@@ -382,13 +294,13 @@ void AP_InertialSensor_SCHA63T::read_accel(void)
     Vector3f accel(accel_x, accel_y, accel_z);
     accel *= (CONSTANTS_ONE_G / 4905.f); // 4905 LSB/g, 0.204mg/LSB
 
-    _rotate_and_correct_accel(_accel_instance, accel);
-    _notify_new_accel_raw_sample(_accel_instance, accel);
+    _rotate_and_correct_accel(accel_instance, accel);
+    _notify_new_accel_raw_sample(accel_instance, accel);
 
     AP_HAL::Device::checkreg reg;
     if (!dev_accel->check_next_register(reg)) {
         log_register_change(dev_accel->get_bus_id(), reg);
-        _inc_accel_error_count(_accel_instance);
+        _inc_accel_error_count(accel_instance);
     }
 }
 
@@ -410,39 +322,19 @@ void AP_InertialSensor_SCHA63T::read_gyro(void)
     int16_t due_temp = 0;
 
     // RATE_Y Cmd Send (This Response rsp_rate_y is Dust!!)
-    if (!RegisterRead(SCHA63T_DUE, RATE_Y, rsp_rate_y)) {
-        error_scha63t = 1;
-    }
-
+    error_scha63t |= RegisterRead(SCHA63T_DUE, RATE_Y, rsp_rate_y);
     // RATE_Z Cmd Send + RATE_Y Response Receive
-    if (!RegisterRead(SCHA63T_DUE, RATE_XZ, rsp_rate_y)) {
-        error_scha63t = 1;
-    }
-
+    error_scha63t |= RegisterRead(SCHA63T_DUE, RATE_XZ, rsp_rate_y);
     // TEMPER Cmd Send + RATE_Z Response Receive
-    if (!RegisterRead(SCHA63T_DUE, TEMP, rsp_rate_z)) {
-        error_scha63t = 1;
-    }
-
+    error_scha63t |= RegisterRead(SCHA63T_DUE, TEMP, rsp_rate_z);
     // TEMPER Cmd Send + TEMPRE Response Receive
-    if (!RegisterRead(SCHA63T_DUE, TEMP, rsp_due_temper)) {
-        error_scha63t = 1;
-    }
-
+    error_scha63t |= RegisterRead(SCHA63T_DUE, TEMP, rsp_due_temper);
     // RATE_X Cmd Send + ACCL_Z Response Receive
-    if (!RegisterRead(SCHA63T_UNO, RATE_XZ, rsp_rate_x)) {
-        error_scha63t = 1;
-    }
-
+    error_scha63t |= RegisterRead(SCHA63T_UNO, RATE_XZ, rsp_rate_x);
     // TEMPER Cmd Send + TEMPRE Response Receive
-    if (!RegisterRead(SCHA63T_UNO, TEMP, rsp_rate_x)) {
-        error_scha63t = 1;
-    }
-
+    error_scha63t |= RegisterRead(SCHA63T_UNO, TEMP, rsp_rate_x);
     // TEMPER Cmd Send + TEMPRE Response Receive
-    if (!RegisterRead(SCHA63T_UNO, TEMP, rsp_uno_temper)) {
-        error_scha63t = 1;
-    }
+    error_scha63t |= RegisterRead(SCHA63T_UNO, TEMP, rsp_uno_temper);
 
     // response data address check
     if (((rsp_rate_x[0] & 0x7C) >> 2) == RATE_XZ) {
@@ -470,7 +362,7 @@ void AP_InertialSensor_SCHA63T::read_gyro(void)
     } else {
         error_scha63t = 1;
     }
-    set_temperature(_gyro_instance, (uno_temp + due_temp) / 2);
+    set_temperature(gyro_instance, (uno_temp + due_temp) / 2);
 
     // change coordinate system from left hand too right hand 
     gyro_z = (gyro_z == INT16_MIN) ? INT16_MAX : -gyro_z;
@@ -478,13 +370,13 @@ void AP_InertialSensor_SCHA63T::read_gyro(void)
     Vector3f gyro(gyro_x, gyro_y, gyro_z);
     gyro *= radians(1.f / 80.f);
 
-    _rotate_and_correct_gyro(_gyro_instance, gyro);
-    _notify_new_gyro_raw_sample(_gyro_instance, gyro);
+    _rotate_and_correct_gyro(gyro_instance, gyro);
+    _notify_new_gyro_raw_sample(gyro_instance, gyro);
 
     AP_HAL::Device::checkreg reg;
     if (!dev_gyro->check_next_register(reg)) {
         log_register_change(dev_gyro->get_bus_id(), reg);
-        _inc_gyro_error_count(_gyro_instance);
+        _inc_gyro_error_count(gyro_instance);
     }
 }
 
@@ -497,8 +389,8 @@ void AP_InertialSensor_SCHA63T::set_temperature(uint8_t instance, uint16_t tempe
 
 bool AP_InertialSensor_SCHA63T::update()
 {
-    update_accel(_accel_instance);
-    update_gyro(_gyro_instance);
+    update_accel(accel_instance);
+    update_gyro(gyro_instance);
     return true;
 }
 

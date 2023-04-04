@@ -81,8 +81,7 @@ private:
       initialise driver
      */
     bool init();
-
-    void set_filter_register(void);
+    uint16_t calculate_fast_sampling_backend_rate(uint16_t base_odr, uint16_t max_odr) const;
 
     /*
       read data from the FIFOs
@@ -99,29 +98,15 @@ private:
     AP_HAL::OwnPtr<AP_HAL::Device> dev_accel;
     AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro;
 
-    uint8_t _accel_instance;
-    uint8_t _gyro_instance;
+    uint8_t accel_instance;
+    uint8_t gyro_instance;
     enum Rotation rotation;
     bool error_scha63t;
 
     // are we doing more than 1kHz sampling?
-    bool _fast_sampling;
-
-    // what downsampling rate are we using from the FIFO for gyros?
-    uint8_t _gyro_fifo_downsample_rate;
-
-    // what downsampling rate are we using from the FIFO for accels?
-    uint8_t _accel_fifo_downsample_rate;
-
-    // ratio of raw gyro to accel sample rate
-    uint8_t _gyro_to_accel_sample_ratio;
-
-    // what rate are we generating samples into the backend for gyros?
-    uint16_t _gyro_backend_rate_hz;
-
-    // what rate are we generating samples into the backend for accels?
-    uint16_t _accel_backend_rate_hz;
-
-    // Last status from register user control
-    uint8_t _last_stat_user_ctrl;    
+    bool fast_sampling;
+    // what rate are we generating samples into the backend for gyros and accels?
+    uint16_t backend_rate_hz;
+    // pre-calculated backend period
+    uint32_t backend_period_us;
 };
