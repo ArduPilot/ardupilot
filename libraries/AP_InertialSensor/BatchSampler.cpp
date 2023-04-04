@@ -58,12 +58,14 @@ void AP_InertialSensor::BatchSampler::init()
 
     _required_count.set(_required_count - (_required_count % 32)); // round down to nearest multiple of 32
 
-    const uint32_t total_allocation = 3*_required_count*sizeof(uint16_t);
+    _real_required_count = _required_count;
+
+    const uint32_t total_allocation = 3*_real_required_count*sizeof(uint16_t);
     GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "INS: alloc %u bytes for ISB (free=%u)", (unsigned int)total_allocation, (unsigned int)hal.util->available_memory());
 
-    data_x = (int16_t*)calloc(_required_count, sizeof(int16_t));
-    data_y = (int16_t*)calloc(_required_count, sizeof(int16_t));
-    data_z = (int16_t*)calloc(_required_count, sizeof(int16_t));
+    data_x = (int16_t*)calloc(_real_required_count, sizeof(int16_t));
+    data_y = (int16_t*)calloc(_real_required_count, sizeof(int16_t));
+    data_z = (int16_t*)calloc(_real_required_count, sizeof(int16_t));
     if (data_x == nullptr || data_y == nullptr || data_z == nullptr) {
         free(data_x);
         free(data_y);
@@ -226,7 +228,7 @@ void AP_InertialSensor::BatchSampler::push_data_to_log()
 
     data_read_offset += samples_per_msg;
     last_sent_ms = AP_HAL::millis();
-    if (data_read_offset >= _required_count) {
+    if (data_read_offset >= _real_required_count) {
         // that was the last one.  Clean up:
         data_read_offset = 0;
         isb_seqnum++;
@@ -251,7 +253,7 @@ bool AP_InertialSensor::BatchSampler::should_log(uint8_t _instance, IMU_SENSOR_T
     if (_type != type) {
         return false;
     }
-    if (data_write_offset >= _required_count) {
+    if (data_write_offset >= _real_required_count) {
         return false;
     }
     AP_Logger *logger = AP_Logger::get_singleton();
