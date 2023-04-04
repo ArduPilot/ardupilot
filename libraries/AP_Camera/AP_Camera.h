@@ -65,6 +65,8 @@ public:
 #endif
 #if AP_CAMERA_MAVLINK_ENABLED
         MAVLINK = 5,        // MAVLink enabled camera
+#endif
+#if AP_CAMERA_MAVLINKCAMV2_ENABLED
         MAVLINK_CAMV2 = 6,  // MAVLink camera v2
 #endif
     };

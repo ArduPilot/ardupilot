@@ -21,7 +21,7 @@
 
 #include "AP_Camera_Backend.h"
 
-#if AP_CAMERA_MAVLINK_ENABLED
+#if AP_CAMERA_MAVLINKCAMV2_ENABLED
 
 class AP_Camera_MAVLinkCamV2 : public AP_Camera_Backend
 {
@@ -75,4 +75,4 @@ private:
     uint32_t _cap_flags;        // capability flags from CAMERA_INFORMATION msg, see MAVLink CAMERA_CAP_FLAGS enum
 };
 
-#endif // AP_CAMERA_MAVLINK_ENABLED
+#endif // AP_CAMERA_MAVLINKCAMV2_ENABLED
