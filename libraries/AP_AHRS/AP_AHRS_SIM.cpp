@@ -209,13 +209,14 @@ bool AP_AHRS_SIM::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector
     return true;
 }
 
-bool AP_AHRS_SIM::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
+bool AP_AHRS_SIM::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
 {
     velVar = 0;
     posVar = 0;
     hgtVar = 0;
     magVar.zero();
     tasVar = 0;
+    offset.zero();
 
     return true;
 }

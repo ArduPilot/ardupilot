@@ -690,7 +690,6 @@ private:
     bool _ekf2_started;
 #endif
 #if HAL_NAVEKF3_AVAILABLE
-    bool _ekf3_started;
     void update_EKF3(void);
 #endif
 
@@ -810,6 +809,12 @@ private:
 #endif
     struct AP_AHRS_Backend::Estimates sim_estimates;
 #endif
+
+#if HAL_NAVEKF3_AVAILABLE
+    // the EKF3 object is public!
+    struct AP_AHRS_Backend::Estimates ekf3_estimates;
+#endif
+
 
     /*
      * copy results from a backend over AP_AHRS canonical results.
