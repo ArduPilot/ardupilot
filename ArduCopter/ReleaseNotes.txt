@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 4.3.6-beta1/beta2 27-Mar-2023
+Copter 4.3.6 05-Apr-2023 / 4.3.6-beta1, 4.3.6--beta2 27-Mar-2023
 Changes from 4.3.5
 1) Bi-directional DShot fix for possible motor stop approx 72min after startup 
 ------------------------------------------------------------------
