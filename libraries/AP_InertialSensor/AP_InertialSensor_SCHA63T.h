@@ -82,7 +82,7 @@ private:
      */
     bool init();
 
-//    void set_filter_register(void);
+    void set_filter_register(void);
 
     /*
       read data from the FIFOs
@@ -94,15 +94,34 @@ private:
     bool RegisterWrite(int tp, reg_scha63t reg, uint16_t val);
     void set_temperature(uint8_t instance, uint16_t temper);
     uint8_t CalcTblCrc(uint8_t* ptr, short nLen);
-    bool check_startup_failed();
+    bool check_startup();
 
     AP_HAL::OwnPtr<AP_HAL::Device> dev_accel;
     AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro;
 
-    uint8_t accel_instance;
-    uint8_t gyro_instance;
+    uint8_t _accel_instance;
+    uint8_t _gyro_instance;
     enum Rotation rotation;
+    bool error_scha63t;
 
-    uint16_t error_scha63t;
-    uint8_t startup_attempt;
+    // are we doing more than 1kHz sampling?
+    bool _fast_sampling;
+
+    // what downsampling rate are we using from the FIFO for gyros?
+    uint8_t _gyro_fifo_downsample_rate;
+
+    // what downsampling rate are we using from the FIFO for accels?
+    uint8_t _accel_fifo_downsample_rate;
+
+    // ratio of raw gyro to accel sample rate
+    uint8_t _gyro_to_accel_sample_ratio;
+
+    // what rate are we generating samples into the backend for gyros?
+    uint16_t _gyro_backend_rate_hz;
+
+    // what rate are we generating samples into the backend for accels?
+    uint16_t _accel_backend_rate_hz;
+
+    // Last status from register user control
+    uint8_t _last_stat_user_ctrl;    
 };

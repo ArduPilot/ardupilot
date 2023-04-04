@@ -78,39 +78,41 @@ AP_InertialSensor_SCHA63T::probe(AP_InertialSensor &imu,
 
 void AP_InertialSensor_SCHA63T::start()
 {
-    if (!_imu.register_accel(accel_instance, ACCEL_BACKEND_SAMPLE_RATE, dev_accel->get_bus_id_devtype(DEVTYPE_INS_SCHA63T)) ||
-        !_imu.register_gyro(gyro_instance, GYRO_BACKEND_SAMPLE_RATE,   dev_gyro->get_bus_id_devtype(DEVTYPE_INS_SCHA63T))) {
+    if (!_imu.register_accel(_accel_instance, ACCEL_BACKEND_SAMPLE_RATE, dev_accel->get_bus_id_devtype(DEVTYPE_INS_SCHA63T)) ||
+        !_imu.register_gyro(_gyro_instance, GYRO_BACKEND_SAMPLE_RATE,   dev_gyro->get_bus_id_devtype(DEVTYPE_INS_SCHA63T))) {
         return;
     }
 
     // setup ODR and on-sensor filtering
-//    set_filter_register();
+    set_filter_register();
 
     // setup sensor rotations from probe()
-    set_gyro_orientation(gyro_instance, rotation);
-    set_accel_orientation(accel_instance, rotation);
+    set_gyro_orientation(_gyro_instance, rotation);
+    set_accel_orientation(_accel_instance, rotation);
 
     // setup callbacks
-    dev_accel->register_periodic_callback(1000000UL / ACCEL_BACKEND_SAMPLE_RATE,
+//    dev_accel->register_periodic_callback(1000000UL / ACCEL_BACKEND_SAMPLE_RATE,
+    dev_accel->register_periodic_callback(1000000UL / _accel_backend_rate_hz,
                                           FUNCTOR_BIND_MEMBER(&AP_InertialSensor_SCHA63T::read_accel, void));
-    dev_gyro->register_periodic_callback(1000000UL / GYRO_BACKEND_SAMPLE_RATE,
+//    dev_gyro->register_periodic_callback(1000000UL / GYRO_BACKEND_SAMPLE_RATE,
+    dev_gyro->register_periodic_callback(1000000UL / _gyro_backend_rate_hz,
                                          FUNCTOR_BIND_MEMBER(&AP_InertialSensor_SCHA63T::read_gyro, void));
 }
 
-#if 0
+#if 1
 /*
   set the DLPF filter frequency. Assumes caller has taken semaphore
  */
-void AP_InertialSensor_Invensense::set_filter_register(void)
+void AP_InertialSensor_SCHA63T::set_filter_register(void)
 {
-    uint8_t config;
+//    uint8_t config;
 
-#if INVENSENSE_EXT_SYNC_ENABLE
+//#if INVENSENSE_EXT_SYNC_ENABLE
     // add in EXT_SYNC bit if enabled
-    config = (MPUREG_CONFIG_EXT_SYNC_AZ << MPUREG_CONFIG_EXT_SYNC_SHIFT);
-#else
-    config = 0;
-#endif
+//    config = (MPUREG_CONFIG_EXT_SYNC_AZ << MPUREG_CONFIG_EXT_SYNC_SHIFT);
+//#else
+//    config = 0;
+//#endif
 
     // assume 1kHz sampling to start
     _gyro_fifo_downsample_rate = _accel_fifo_downsample_rate = 1;
@@ -118,7 +120,8 @@ void AP_InertialSensor_Invensense::set_filter_register(void)
     _gyro_backend_rate_hz = _accel_backend_rate_hz =  1000;
     
     if (enable_fast_sampling(_accel_instance)) {
-        _fast_sampling = _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
+//        _fast_sampling = _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
+        _fast_sampling = dev_accel->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
         if (_fast_sampling) {
             // constrain the gyro rate to be at least the loop rate
             uint8_t loop_limit = 1;
@@ -136,14 +139,17 @@ void AP_InertialSensor_Invensense::set_filter_register(void)
             _gyro_backend_rate_hz *= fast_sampling_rate;
 
             // calculate rate we will be giving accel samples to the backend
-            if (_mpu_type >= Invensense_MPU9250) {
+//            if (_mpu_type >= Invensense_MPU9250) {
                 _accel_fifo_downsample_rate = MAX(4 / fast_sampling_rate, 1);
                 _accel_backend_rate_hz *= MIN(fast_sampling_rate, 4);
-            } else {
-                _gyro_to_accel_sample_ratio = 8;
-                _accel_fifo_downsample_rate = 1;
-                _accum.accel_filter.set_cutoff_frequency(1000, 188);
-            }
+//            } else {
+//                _gyro_to_accel_sample_ratio = 8;
+//                _accel_fifo_downsample_rate = 1;
+//                _accum.accel_filter.set_cutoff_frequency(1000, 188);
+//            }
+
+
+//GCS_SEND_TEXT(MAV_SEVERITY_INFO, ">> %d, %d, %d, %d, %d", get_fast_sampling_rate(), loop_limit, fast_sampling_rate, _gyro_backend_rate_hz, _accel_backend_rate_hz);
 
             // for logging purposes set the oversamping rate
             _set_accel_oversampling(_accel_instance, _accel_fifo_downsample_rate);
@@ -159,10 +165,11 @@ void AP_InertialSensor_Invensense::set_filter_register(void)
              sample rate, ending up with around 7760Hz gyro rate and
              3880Hz accel rate
              */
-            _register_write(MPUREG_I2C_SLV4_CTRL, 0x1F);
+//            _register_write(MPUREG_I2C_SLV4_CTRL, 0x1F);
         }
     }
-    
+
+#if 0
     if (_fast_sampling) {
         // this gives us 8kHz sampling on gyros and 4kHz on accels
         config |= BITS_DLPF_CFG_256HZ_NOLPF2;
@@ -183,6 +190,7 @@ void AP_InertialSensor_Invensense::set_filter_register(void)
             _register_write(ICMREG_ACCEL_CONFIG2, ICM_ACC_DLPF_CFG_218HZ | (fifo_size<<6), true);
         }
     }
+#endif
 }
 #endif
 
@@ -194,215 +202,111 @@ bool AP_InertialSensor_SCHA63T::init()
     WITH_SEMAPHORE(dev_accel->get_semaphore());
     WITH_SEMAPHORE(dev_gyro->get_semaphore());
 
-#if 0
-    uint8_t v[4];
-
-    hal.scheduler->delay(25);
-
-    RegisterWrite(0, SEL_BANK, 0);
-    RegisterWrite(0, RESCTRL, 0);
-    hal.scheduler->delay(1);
-    RegisterWrite(1, SEL_BANK, 0);
-    RegisterWrite(1, RESCTRL, 0);
-
-    hal.scheduler->delay(50);
-
-    RegisterWrite(0, MODE, 0);
-    RegisterWrite(0, G_FILT_DYN, 0);
-    RegisterWrite(0, A_FILT_DYN, 0);
-    hal.scheduler->delay(1);
-    RegisterWrite(1, MODE, 0);
-    RegisterWrite(1, MODE, 0);
-    RegisterWrite(1, G_FILT_DYN, 0);
-
-    hal.scheduler->delay(500);
-
-    RegisterWrite(0, SET_EOI, 0);
-    RegisterWrite(1, SET_EOI, 0);
-
-    hal.scheduler->delay(50);
-
-    RegisterRead(0, S_SUM, v);
-    RegisterRead(1, S_SUM, v);
-    hal.scheduler->delay(50);
-    RegisterRead(0, S_SUM, v);
-    RegisterRead(1, S_SUM, v);
-    hal.scheduler->delay(50);
-    RegisterRead(0, S_SUM, v);
-    RegisterRead(1, S_SUM, v);
-    hal.scheduler->delay(50);
-    int ret_uno = RegisterRead(0, S_SUM, v);
-    int ret_due = RegisterRead(1, S_SUM, v);
-
-    return ret_uno && ret_due;
-
-#else
-    error_scha63t = 0;
+    error_scha63t = false;
 
     // wait 25ms for non-volatile memory (NVM) read
     hal.scheduler->delay(25);
 
     // set DUE operation mode on (must be less than 1ms)
-    if (!RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM)) {
-        error_scha63t = 1;
-    }
-    if (!RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM)) {
-        error_scha63t = 1;
-    }
+    error_scha63t |= RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM);
+    error_scha63t |= RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM);
     // set UNO operation mode on
-    if (!RegisterWrite(SCHA63T_UNO, MODE, MODE_NORM)) {
-        error_scha63t = 1;
-    }
+    error_scha63t |= RegisterWrite(SCHA63T_UNO, MODE, MODE_NORM);
     // wait 70ms initial startup
     hal.scheduler->delay(70);
 
     // set UNO configuration (data filter, flag filter)
-    if (!RegisterWrite(SCHA63T_UNO, G_FILT_DYN, G_FILT)) {
-        error_scha63t = 1;
-    }
-    if (!RegisterWrite(SCHA63T_UNO, A_FILT_DYN, A_FILT)) {
-        error_scha63t = 1;
-    }
+    error_scha63t |= RegisterWrite(SCHA63T_UNO, G_FILT_DYN, G_FILT);
+    error_scha63t |= RegisterWrite(SCHA63T_UNO, A_FILT_DYN, A_FILT);
 
     // reset DUE write (0001h) to register 18h
-    if (!RegisterWrite(SCHA63T_DUE, RESCTRL, HW_RES)) {
-        error_scha63t = 1;
-    }
+    error_scha63t |= RegisterWrite(SCHA63T_DUE, RESCTRL, HW_RES);
     // wait 25ms for non-volatile memory (NVM) read
     hal.scheduler->delay(25);
 
     // set DUE operation mode on (must be less than 1ms)
-    if (!RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM)) {
-        error_scha63t = 1;
-    }
-    if (!RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM)) {
-        error_scha63t = 1;
-    }
+    error_scha63t |= RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM);
+    error_scha63t |= RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM);
     // wait 1ms (50ms has already passed)
     hal.scheduler->delay(1);
 
     // set DUE configuration (data filter, flag filter)
-    if (!RegisterWrite(SCHA63T_DUE, G_FILT_DYN, G_FILT)) {
-        error_scha63t = 1;
-    }
+    error_scha63t |= RegisterWrite(SCHA63T_DUE, G_FILT_DYN, G_FILT);
 
-    // startup clear
-    startup_attempt = 0;
-    if (!check_startup_failed()) {
-        if (!check_startup_failed()) {
+    // startup clear (startup_attempt = 0)
+    if (!check_startup()) {
+        // system in FAILURE mode (startup_attempt not equl 0 startup_attempt = 1) 
+        // reset UNO write (0001h) to register 18h
+        error_scha63t |= RegisterWrite(SCHA63T_UNO, RESCTRL, HW_RES);
+        // reset DUE write (0001h) to register 18h
+        error_scha63t |= RegisterWrite(SCHA63T_DUE, RESCTRL, HW_RES);
+        // wait 25ms for non-volatile memory (NVM) read
+        hal.scheduler->delay(25);
+ 
+        // set DUE operation mode on (must be less than 1ms)
+        error_scha63t |= RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM);
+        error_scha63t |= RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM);
+        // set UNO operation mode on
+        error_scha63t |= RegisterWrite(SCHA63T_UNO, MODE, MODE_NORM);
+        // wait 70ms initial startup
+        hal.scheduler->delay(50);
+
+        // set UNO configuration (data filter, flag filter)
+        error_scha63t |= RegisterWrite(SCHA63T_UNO, G_FILT_DYN, G_FILT);
+        error_scha63t |= RegisterWrite(SCHA63T_UNO, A_FILT_DYN, A_FILT);
+        // set DUE configuration (data filter, flag filter)
+        error_scha63t |= RegisterWrite(SCHA63T_DUE, G_FILT_DYN, G_FILT);
+
+        // wait 45ms (adjust restart duration to 500ms)
+        hal.scheduler->delay(45);
+
+        if (!check_startup()) {
             return false;    // check FAILED
         }
     }
 
     // check ok
     return true;
-#endif
 }
 
-bool AP_InertialSensor_SCHA63T::check_startup_failed()
+bool AP_InertialSensor_SCHA63T::check_startup()
 {
     uint8_t val[4];
+    bool read_summary_error = false;
 
     // wait 405ms (300Hz filter)
     hal.scheduler->delay(405);
 
     // start EOI = 1
-    if (!RegisterWrite(SCHA63T_UNO, RESCTRL, RES_EOI)) {
-        error_scha63t = 1;
-    }
-    if (!RegisterWrite(SCHA63T_DUE, RESCTRL, RES_EOI)) {
-        error_scha63t = 1;
-    }
+    error_scha63t |= RegisterWrite(SCHA63T_UNO, RESCTRL, RES_EOI);
+    error_scha63t |= RegisterWrite(SCHA63T_DUE, RESCTRL, RES_EOI);
 
     // first read summary status
-    if (!RegisterRead(SCHA63T_UNO, S_SUM, val)) {
-        error_scha63t = 1;
-    }
-    if (!RegisterRead(SCHA63T_DUE, S_SUM, val)) {
-        error_scha63t = 1;
-    }
+    error_scha63t |= RegisterRead(SCHA63T_UNO, S_SUM, val);
+    error_scha63t |= RegisterRead(SCHA63T_DUE, S_SUM, val);
     // 2.5ms or more
     hal.scheduler->delay(3);
 
     // second read summary status
-    if (!RegisterRead(SCHA63T_UNO, S_SUM, val)) {
-        error_scha63t = 1;
-    }
-    if (!RegisterRead(SCHA63T_DUE, S_SUM, val)) {
-        error_scha63t = 1;
-    }
+//    error_scha63t |= RegisterRead(SCHA63T_UNO, S_SUM, val);
+//    error_scha63t |= RegisterRead(SCHA63T_DUE, S_SUM, val);
     // 2.5ms or more
-    hal.scheduler->delay(3);
+//    hal.scheduler->delay(3);
 
     // read summary status
-    bool read_summary = false;
-    if (!RegisterRead(SCHA63T_UNO, S_SUM, val)) {
-        error_scha63t = 1;
-        read_summary = true;
-    }
+    error_scha63t |= RegisterRead(SCHA63T_UNO, S_SUM, val);
     // check UNO summary status
-    if (!(val[1] & 0x7f)) {
-        error_scha63t = 1;
-        read_summary = true;
+    if (!((val[1] & 0x9e) && (val[2] & 0xda))) {
+        read_summary_error = true;
     }
-    if (!RegisterRead(SCHA63T_DUE, S_SUM, val)) {
-        error_scha63t = 1;
-        read_summary = true;
-    }
+    error_scha63t |= RegisterRead(SCHA63T_DUE, S_SUM, val);
     // check DUE summary status
-    if (!(val[1] & 0x7f)) {
-        error_scha63t = 1;
-        read_summary = true;
+    if (!((val[1] & 0xf8) && (val[2] & 0x03))) {
+        read_summary_error = true;
     }
 
     // check error
-    if (read_summary) {
-        if (startup_attempt != 0) {
-            // system in FAILURE mode 
-            return false;
-        }
-        // startup failed restart UNO & DUE
-        startup_attempt = 1;
-        // reset UNO write (0001h) to register 18h
-        if (!RegisterWrite(SCHA63T_UNO, RESCTRL, HW_RES)) {
-           error_scha63t = 1;
-        }
-        // reset DUE write (0001h) to register 18h
-        if (!RegisterWrite(SCHA63T_DUE, RESCTRL, HW_RES)) {
-           error_scha63t = 1;
-        }
-        // wait 25ms for non-volatile memory (NVM) read
-        hal.scheduler->delay(25);
- 
-        // set DUE operation mode on (must be less than 1ms)
-        if (!RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM)) {
-            error_scha63t = 1;
-        }
-        if (!RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM)) {
-            error_scha63t = 1;
-        }
-        // set UNO operation mode on
-        if (!RegisterWrite(SCHA63T_UNO, MODE, MODE_NORM)) {
-            error_scha63t = 1;
-        }
-        // wait 70ms initial startup
-        hal.scheduler->delay(50);
-
-        // set UNO configuration (data filter, flag filter)
-        if (!RegisterWrite(SCHA63T_UNO, G_FILT_DYN, G_FILT)) {
-            error_scha63t = 1;
-        }
-        if (!RegisterWrite(SCHA63T_UNO, A_FILT_DYN, A_FILT)) {
-            error_scha63t = 1;
-        }
-        // set DUE configuration (data filter, flag filter)
-        if (!RegisterWrite(SCHA63T_DUE, G_FILT_DYN, G_FILT)) {
-            error_scha63t = 1;
-        }
-
-        // wait 45ms (adjust restart duration to 500ms)
-        hal.scheduler->delay(45);
-
+    if (read_summary_error) {
         return false;
     }
 
@@ -470,7 +374,7 @@ void AP_InertialSensor_SCHA63T::read_accel(void)
     } else {
         error_scha63t = 1;
     }
-    set_temperature(accel_instance, uno_temp);
+    set_temperature(_accel_instance, uno_temp);
 
     // change coordinate system from left hand too right hand 
     accel_z = (accel_z == INT16_MIN) ? INT16_MAX : -accel_z;
@@ -478,16 +382,14 @@ void AP_InertialSensor_SCHA63T::read_accel(void)
     Vector3f accel(accel_x, accel_y, accel_z);
     accel *= (CONSTANTS_ONE_G / 4905.f); // 4905 LSB/g, 0.204mg/LSB
 
-    _rotate_and_correct_accel(accel_instance, accel);
-    _notify_new_accel_raw_sample(accel_instance, accel);
+    _rotate_and_correct_accel(_accel_instance, accel);
+    _notify_new_accel_raw_sample(_accel_instance, accel);
 
     AP_HAL::Device::checkreg reg;
     if (!dev_accel->check_next_register(reg)) {
         log_register_change(dev_accel->get_bus_id(), reg);
-        _inc_accel_error_count(accel_instance);
+        _inc_accel_error_count(_accel_instance);
     }
-
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "accl error : %d", error_scha63t);
 }
 
 /*
@@ -568,7 +470,7 @@ void AP_InertialSensor_SCHA63T::read_gyro(void)
     } else {
         error_scha63t = 1;
     }
-    set_temperature(gyro_instance, (uno_temp + due_temp) / 2);
+    set_temperature(_gyro_instance, (uno_temp + due_temp) / 2);
 
     // change coordinate system from left hand too right hand 
     gyro_z = (gyro_z == INT16_MIN) ? INT16_MAX : -gyro_z;
@@ -576,16 +478,14 @@ void AP_InertialSensor_SCHA63T::read_gyro(void)
     Vector3f gyro(gyro_x, gyro_y, gyro_z);
     gyro *= radians(1.f / 80.f);
 
-    _rotate_and_correct_gyro(gyro_instance, gyro);
-    _notify_new_gyro_raw_sample(gyro_instance, gyro);
+    _rotate_and_correct_gyro(_gyro_instance, gyro);
+    _notify_new_gyro_raw_sample(_gyro_instance, gyro);
 
     AP_HAL::Device::checkreg reg;
     if (!dev_gyro->check_next_register(reg)) {
         log_register_change(dev_gyro->get_bus_id(), reg);
-        _inc_gyro_error_count(gyro_instance);
+        _inc_gyro_error_count(_gyro_instance);
     }
-
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "gyro error : %d", error_scha63t);
 }
 
 void AP_InertialSensor_SCHA63T::set_temperature(uint8_t instance, uint16_t temper)
@@ -597,8 +497,8 @@ void AP_InertialSensor_SCHA63T::set_temperature(uint8_t instance, uint16_t tempe
 
 bool AP_InertialSensor_SCHA63T::update()
 {
-    update_accel(accel_instance);
-    update_gyro(gyro_instance);
+    update_accel(_accel_instance);
+    update_gyro(_gyro_instance);
     return true;
 }
 
