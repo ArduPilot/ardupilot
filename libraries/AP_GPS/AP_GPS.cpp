@@ -525,6 +525,25 @@ bool AP_GPS::vertical_accuracy(uint8_t instance, float &vacc) const
     return false;
 }
 
+AP_GPS::CovarianceType AP_GPS::position_covariance(const uint8_t instance, Matrix3f& cov) const
+{
+    AP_GPS::CovarianceType cov_type = AP_GPS::CovarianceType::UNKNOWN;
+    cov.zero();
+    float hacc, vacc;
+    if (horizontal_accuracy(instance, hacc) && vertical_accuracy(instance, vacc))
+    {
+        cov_type = AP_GPS::CovarianceType::DIAGONAL_KNOWN;
+        const auto hacc_variance = hacc * hacc;
+        cov[0][0] = hacc_variance;
+        cov[1][1] = hacc_variance;
+        cov[2][2] = vacc * vacc;
+    }
+    // There may be a receiver that implements hdop+vdop but not accuracy
+    // If so, there could be a condition here to attempt to calculate it
+
+    return cov_type;
+}
+
 
 /**
    convert GPS week and milliseconds to unix epoch in milliseconds
