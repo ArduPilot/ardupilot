@@ -113,7 +113,7 @@ void LR_MsgHandler_REV3::process_message(uint8_t *msgbytes)
     switch ((AP_DAL::Event)msg.event) {
 
     case AP_DAL::Event::resetGyroBias:
-        ekf3.resetGyroBias();
+        ekf3.reset_gyro_drift();
         break;
     case AP_DAL::Event::resetHeightDatum:
         ekf3.resetHeightDatum();
