@@ -298,6 +298,11 @@ class SizeCompareBranches(object):
             # need special configuration directive
             bootloader_waf_configure_args = copy.copy(waf_configure_args)
             bootloader_waf_configure_args.append('--bootloader')
+            # hopefully temporary hack so you can build bootloader
+            # after building other vehicles without a clean:
+            dsdl_generated_path = os.path.join('build', board, "modules", "DroneCAN", "libcanard", "dsdlc_generated")
+            self.progress("HACK: Removing (%s)" % dsdl_generated_path)
+            shutil.rmtree(dsdl_generated_path, ignore_errors=True)
             self.run_waf(bootloader_waf_configure_args)
             self.run_waf([v])
         self.run_program("rsync", ["rsync", "-aP", "build/", outdir])
