@@ -197,6 +197,7 @@ class Context(object):
         self.heartbeat_interval_ms = 1000
         self.original_heartbeat_interval_ms = None
         self.installed_scripts = []
+        self.installed_modules = []
 
 
 # https://stackoverflow.com/questions/616645/how-do-i-duplicate-sys-stdout-to-a-log-file-in-python
@@ -5663,6 +5664,9 @@ class AutoTest(ABC):
             self.remove_message_hook(hook)
         for script in dead.installed_scripts:
             self.remove_installed_script(script)
+        for module in dead.installed_modules:
+            print("Removing module (%s)" % module)
+            self.remove_installed_modules(module)
         if dead.sitl_commandline_customised and len(self.contexts):
             self.contexts[-1].sitl_commandline_customised = True
 
@@ -7653,6 +7657,15 @@ Also, ignores heartbeats not from our target system'''
         dest = self.installed_script_path(os.path.basename(scriptname))
         try:
             os.unlink(dest)
+        except IOError:
+            pass
+        except OSError:
+            pass
+
+    def remove_installed_modules(self, modulename):
+        dest = os.path.join("scripts", "modules", modulename)
+        try:
+            shutil.rmtree(dest)
         except IOError:
             pass
         except OSError:
