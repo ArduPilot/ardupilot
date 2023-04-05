@@ -2,13 +2,8 @@
 // with input from geometry_msgs/msg/TwistStamped.msg
 // generated code does not contain a copyright notice
 
-#include "Vector3.idl"
-#include "Header.idl"
-
-struct Twist {
-  geometry_msgs::msg::Vector3 linear;
-  geometry_msgs::msg::Vector3 angular;
-};
+#include "geometry_msgs/msg/Twist.idl"
+#include "std_msgs/msg/Header.idl"
 
 module geometry_msgs {
   module msg {
@@ -17,7 +12,8 @@ module geometry_msgs {
     struct TwistStamped {
       std_msgs::msg::Header header;
 
-      Twist twist;
+      geometry_msgs::msg::Twist twist;
     };
   };
 };
+

@@ -2,7 +2,7 @@
 // with input from geometry_msgs/msg/Twist.msg
 // generated code does not contain a copyright notice
 
-#include "Vector3.idl"
+#include "geometry_msgs/msg/Vector3.idl"
 
 module geometry_msgs {
   module msg {
@@ -15,3 +15,4 @@ module geometry_msgs {
     };
   };
 };
+

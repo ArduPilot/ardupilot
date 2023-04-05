@@ -1,6 +1,6 @@
-#include "generated/Time.h"
-#include "generated/NavSatFix.h"
-#include "generated/TransformStamped.h"
+#include "builtin_interfaces/msg/Time.h"
+#include "sensor_msgs/msg/NavSatFix.h"
+#include "tf2_msgs/msg/TFMessage.h"
 
 
 #include "AP_DDS_Generic_Fn_T.h"

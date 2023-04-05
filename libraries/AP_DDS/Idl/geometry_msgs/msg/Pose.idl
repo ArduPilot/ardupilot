@@ -2,8 +2,8 @@
 // with input from geometry_msgs/msg/Pose.msg
 // generated code does not contain a copyright notice
 
-#include "Point.idl"
-#include "Quaternion.idl"
+#include "geometry_msgs/msg/Point.idl"
+#include "geometry_msgs/msg/Quaternion.idl"
 
 module geometry_msgs {
   module msg {
@@ -16,3 +16,4 @@ module geometry_msgs {
     };
   };
 };
+

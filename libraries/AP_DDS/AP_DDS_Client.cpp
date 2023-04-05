@@ -9,7 +9,6 @@
 #include <GCS_MAVLink/GCS.h>
 
 #include "AP_DDS_Client.h"
-#include "generated/Time.h"
 
 
 static constexpr uint16_t DELAY_TIME_TOPIC_MS = 10;
@@ -123,8 +122,6 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
     msg.position_covariance[4] = hdopSq;
     msg.position_covariance[8] = vdopSq;
 }
-
-#include "generated/TransformStamped.h"
 
 void AP_DDS_Client::populate_static_transforms(tf2_msgs_msg_TFMessage& msg)
 {
