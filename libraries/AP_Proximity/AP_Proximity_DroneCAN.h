@@ -1,14 +1,12 @@
 #pragma once
 
+#include "AP_Proximity_config.h"
+
+#if AP_PROXIMITY_DRONECAN_ENABLED
+
 #include "AP_Proximity_Backend.h"
 
 #include <AP_DroneCAN/AP_DroneCAN.h>
-
-#ifndef AP_PROXIMITY_DRONECAN_ENABLED
-#define AP_PROXIMITY_DRONECAN_ENABLED (HAL_ENABLE_DRONECAN_DRIVERS && HAL_PROXIMITY_ENABLED)
-#endif
-
-#if AP_PROXIMITY_DRONECAN_ENABLED
 
 class AP_Proximity_DroneCAN : public AP_Proximity_Backend
 {
