@@ -18,6 +18,6 @@ public:
     };
 
     AP_Int8 type;            // an option from MovingBaseType
-    AP_Vector3f base_offset; // base position offset from the selected GPS reciever
+    AP_Vector3f base_offset; // base position offset from the selected GPS receiver
 
 };
