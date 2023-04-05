@@ -2,10 +2,6 @@
 
 #include "AP_Proximity.h"
 
-#ifndef AP_PROXIMITY_CYGBOT_ENABLED
-#define AP_PROXIMITY_CYGBOT_ENABLED HAL_PROXIMITY_ENABLED
-#endif
-
 #if (HAL_PROXIMITY_ENABLED && AP_PROXIMITY_CYGBOT_ENABLED)
 #include "AP_Proximity_Backend_Serial.h"
 
