@@ -291,9 +291,9 @@ void AP_OpticalFlow_UPFLOW::init()
             Each time the module receives an 0xBB instruction, it will return a corresponding status.
     */
 
-    uint32_t nbytes = 0;
+    // uint32_t nbytes = 0;
     uint8_t bcc_sum = 0;
-    uint8_t recv_buf[3];
+    // uint8_t recv_buf[3];
 
     // (0xAA)start configuration
     uart->write((uint8_t)0xAA);
