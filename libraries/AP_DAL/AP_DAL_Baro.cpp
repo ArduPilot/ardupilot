@@ -2,6 +2,7 @@
 
 #include <AP_Logger/AP_Logger.h>
 #include "AP_DAL.h"
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 AP_DAL_Baro::AP_DAL_Baro()
 {
@@ -31,5 +32,7 @@ void AP_DAL_Baro::start_frame()
 
 void AP_DAL_Baro::update_calibration()
 {
+#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone)
     AP::baro().update_calibration();
+#endif
 }
