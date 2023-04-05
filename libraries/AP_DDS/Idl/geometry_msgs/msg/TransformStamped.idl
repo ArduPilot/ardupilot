@@ -2,8 +2,8 @@
 // with input from geometry_msgs/msg/TransformStamped.msg
 // generated code does not contain a copyright notice
 
-#include "Transform.idl"
-#include "Header.idl"
+#include "geometry_msgs/msg/Transform.idl"
+#include "std_msgs/msg/Header.idl"
 
 module geometry_msgs {
   module msg {
