@@ -1,5 +1,6 @@
 #pragma once
 
+#include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
@@ -118,6 +119,11 @@ public:
 
     static AP_BattMonitor *get_singleton() {
         return _singleton;
+    }
+
+    // allow threads to lock against Battery updates
+    HAL_Semaphore &get_semaphore(void) {
+        return rsem;
     }
 
     // cell voltages in millivolts
@@ -275,6 +281,7 @@ protected:
 
 private:
     static AP_BattMonitor *_singleton;
+    HAL_Semaphore rsem;
 
     BattMonitor_State state[AP_BATT_MONITOR_MAX_INSTANCES];
     AP_BattMonitor_Backend *drivers[AP_BATT_MONITOR_MAX_INSTANCES];

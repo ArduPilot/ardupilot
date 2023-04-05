@@ -464,6 +464,8 @@ void AP_BattMonitor::convert_dynamic_param_groups(uint8_t instance)
 // read - For all active instances read voltage & current; log BAT, BCL, POWR
 void AP_BattMonitor::read()
 {
+    WITH_SEMAPHORE(rsem);
+    
 #if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger != nullptr && logger->should_log(_log_battery_bit)) {
