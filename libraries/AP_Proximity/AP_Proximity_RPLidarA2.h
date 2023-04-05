@@ -29,9 +29,11 @@
 
 #pragma once
 
-#include "AP_Proximity_Backend_Serial.h"
+#include "AP_Proximity_config.h"
 
-#if HAL_PROXIMITY_ENABLED
+#if AP_PROXIMITY_RPLIDARA2_ENABLED
+
+#include "AP_Proximity_Backend_Serial.h"
 
 class AP_Proximity_RPLidarA2 : public AP_Proximity_Backend_Serial
 {
@@ -121,4 +123,4 @@ private:
     } payload;
 };
 
-#endif // HAL_PROXIMITY_ENABLED
+#endif // AP_PROXIMITY_RPLIDARA2_ENABLED
