@@ -853,6 +853,7 @@ bool AP_Arming::mission_checks(bool report)
         mission != nullptr &&
         (mission->failed_sdcard_storage() || StorageManager::storage_failed())) {
         check_failed(ARMING_CHECK_MISSION, report, "Failed to open %s", AP_MISSION_SDCARD_FILENAME);
+        return false;
     }
 #endif
     return true;
