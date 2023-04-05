@@ -3,6 +3,7 @@
 -- heavily commented, and may require quite a bit more RAM to run in
 
 local loop_time = 500 -- number of ms between runs
+local require_test_global = require('test/nested')
 
 function is_equal(v1, v2, tolerance)
   return math.abs(v1 - v2) < (tolerance or 0.0001)
@@ -36,6 +37,20 @@ end
 
 function update()
   local all_tests_passed = true
+  local require_test_local = require('test/nested')
+  -- test require()ing a script
+  if require_test_local.call_fn() ~= 'nested' then
+    gcs:send_text(0, "Failed to require() the same script multiple times")
+    all_tests_passed = false
+  end
+  if require_test_global.call_fn() ~= 'nested' then
+    gcs:send_text(0, "Failed to require() the script once")
+    all_tests_passed = false
+  end
+  if require_test_global.top.call_fn() ~= 'top' then
+    gcs:send_text(0, "Failed to call a function nested in a required script")
+    all_tests_passed = false
+  end
   -- each test should run then and it's result with the previous ones
   all_tests_passed = test_offset(500, 200) and all_tests_passed
 
