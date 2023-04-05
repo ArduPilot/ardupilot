@@ -6,6 +6,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_RTC/AP_RTC.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
 
 #include "AP_DDS_Client.h"
@@ -81,17 +82,13 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
     case AP_GPS::GPS_OK_FIX_2D:
     case AP_GPS::GPS_OK_FIX_3D:
         msg.status.status = 0; // STATUS_FIX
-        msg.position_covariance_type = 1; // COVARIANCE_TYPE_APPROXIMATED
         break;
     case AP_GPS::GPS_OK_FIX_3D_DGPS:
         msg.status.status = 1; // STATUS_SBAS_FIX
-        msg.position_covariance_type = 1; // COVARIANCE_TYPE_APPROXIMATED
         break;
     case AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT:
     case AP_GPS::GPS_OK_FIX_3D_RTK_FIXED:
         msg.status.status = 2; // STATUS_SBAS_FIX
-        msg.position_covariance_type = 1; // COVARIANCE_TYPE_APPROXIMATED
-        // RTK provides "rtk_accuracy" member, should it be used for the covariance?
         break;
     default:
         //! @todo Can we not just use an enum class and not worry about this condition?
@@ -110,17 +107,18 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
     }
     msg.altitude = alt_cm / 100.0;
 
-    // Calculate covariance: https://answers.ros.org/question/10310/calculate-navsatfix-covariance/
-    // https://github.com/ros-drivers/nmea_navsat_driver/blob/indigo-devel/src/libnmea_navsat_driver/driver.py#L110-L114
-    //! @todo This calculation will be moved to AP::gps and fixed in #23259
-    //! It is a placeholder for now matching the ROS1 nmea_navsat_driver behavior
-    const auto hdop = gps.get_hdop(instance);
-    const auto hdopSq = hdop * hdop;
-    const auto vdop = gps.get_vdop(instance);
-    const auto vdopSq = vdop * vdop;
-    msg.position_covariance[0] = hdopSq;
-    msg.position_covariance[4] = hdopSq;
-    msg.position_covariance[8] = vdopSq;
+    // ROS allows double precision, ArduPilot exposes float precision today
+    Matrix3f cov;
+    msg.position_covariance_type = (uint8_t)gps.position_covariance(instance, cov);
+    msg.position_covariance[0] = cov[0][0];
+    msg.position_covariance[1] = cov[0][1];
+    msg.position_covariance[2] = cov[0][2];
+    msg.position_covariance[3] = cov[1][0];
+    msg.position_covariance[4] = cov[1][1];
+    msg.position_covariance[5] = cov[1][2];
+    msg.position_covariance[6] = cov[2][0];
+    msg.position_covariance[7] = cov[2][1];
+    msg.position_covariance[8] = cov[2][2];
 }
 
 void AP_DDS_Client::populate_static_transforms(tf2_msgs_msg_TFMessage& msg)
