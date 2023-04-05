@@ -17,6 +17,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_DAL/AP_DAL.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -309,6 +310,7 @@ void AP_NavEKF_Source::mark_configured()
 // requires_position should be true if vertical or horizontal position configuration should be checked
 bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
 {
+#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone)
     auto &dal = AP::dal();
     bool baro_required = false;
     bool beacon_required = false;
@@ -491,6 +493,7 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
         hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "WheelEncoder");
         return false;
     }
+#endif
 
     return true;
 }
