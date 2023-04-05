@@ -401,6 +401,12 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "astyle-cleanliness" ]; then
+        echo "Checking AStyle code cleanliness"
+        ./Tools/scripts/run_astyle.py
+        continue
+    fi
+
     if [ "$t" == "configure-all" ]; then
         echo "Checking configure of all boards"
         ./Tools/scripts/configure_all.py
