@@ -191,5 +191,4 @@ void AP_Proximity_DroneCAN::handle_measurement(AP_DroneCAN *ap_dronecan, const C
     }
 }
 
-
 #endif // AP_PROXIMITY_DRONECAN_ENABLED
