@@ -37,6 +37,7 @@ from pymavlink import mavwp, mavutil, DFReader
 from pymavlink import mavextra
 from pymavlink.rotmat import Vector3
 from pymavlink import quaternion
+from pymavlink.generator import mavgen
 
 from pysim import util, vehicleinfo
 
@@ -4237,6 +4238,12 @@ class AutoTest(ABC):
         self.install_test_modules()
         self.context_get().installed_modules.append("test")
 
+    def install_mavlink_module_context(self):
+        '''installs mavlink module which will be removed when the context goes
+        away'''
+        self.install_mavlink_module()
+        self.context_get().installed_modules.append("mavlink")
+
     def install_applet_script_context(self, scriptname):
         '''installs an applet script which will be removed when the context goes
         away'''
@@ -7666,6 +7673,13 @@ Also, ignores heartbeats not from our target system'''
         dest = os.path.join("scripts", "modules", "test")
         self.progress("Copying (%s) to (%s)" % (source, dest))
         shutil.copytree(source, dest)
+
+    def install_mavlink_module(self):
+        dest = os.path.join("scripts", "modules", "mavlink")
+        ardupilotmega_xml = os.path.join(self.rootdir(), "modules", "mavlink",
+                                         "message_definitions", "v1.0", "ardupilotmega.xml")
+        mavgen.mavgen(mavgen.Opts(output=dest, wire_protocol='2.0', language='Lua'), [ardupilotmega_xml])
+        self.progress("Installed mavlink module")
 
     def install_example_script(self, scriptname):
         source = self.script_example_source_path(scriptname)
