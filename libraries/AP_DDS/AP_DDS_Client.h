@@ -7,6 +7,8 @@
 #include "generated/Time.h"
 #include "AP_DDS_Generic_Fn_T.h"
 #include "generated/NavSatFix.h"
+#include "generated/TFMessage.h"
+
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Scheduler.h>
@@ -41,6 +43,7 @@ private:
     // Topic
     builtin_interfaces_msg_Time time_topic;
     sensor_msgs_msg_NavSatFix nav_sat_fix_topic;
+    tf2_msgs_msg_TFMessage static_transforms_topic;
 
     HAL_Semaphore csem;
 
@@ -49,6 +52,7 @@ private:
 
     static void update_topic(builtin_interfaces_msg_Time& msg);
     static void update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t instance);
+    static void populate_static_transforms(tf2_msgs_msg_TFMessage& msg);
 
     // The last ms timestamp AP_DDS wrote a Time message
     uint64_t last_time_time_ms;
@@ -71,10 +75,12 @@ public:
     //! @return True on successful creation, false on failure
     bool create() WARN_IF_UNUSED;
 
-    //! @brief Serialize the current time state and publish to to the IO stream(s)
+    //! @brief Serialize the current time state and publish to the IO stream(s)
     void write_time_topic();
-    //! @brief Serialize the current nav_sat_fix state and publish to to the IO stream(s)
+    //! @brief Serialize the current nav_sat_fix state and publish to the IO stream(s)
     void write_nav_sat_fix_topic();
+    //! @brief Serialize the static transforms and publish to the IO stream(s)
+    void write_static_transforms();
     //! @brief Update the internally stored DDS messages with latest data
     void update();
 

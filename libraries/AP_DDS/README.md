@@ -146,9 +146,11 @@ After your setups are complete, do the following:
 
   $ ros2 topic list  -v
   Published topics:
-  * /ROS2_Time [builtin_interfaces/msg/Time] 1 publisher
-  * /parameter_events [rcl_interfaces/msg/ParameterEvent] 1 publisher
-  * /rosout [rcl_interfaces/msg/Log] 1 publisher
+   * /ROS2_NavSatFix0 [sensor_msgs/msg/NavSatFix] 1 publisher
+   * /ROS2_Time [builtin_interfaces/msg/Time] 1 publisher
+   * /parameter_events [rcl_interfaces/msg/ParameterEvent] 1 publisher
+   * /rosout [rcl_interfaces/msg/Log] 1 publisher
+   * /tf [tf2_msgs/msg/TFMessage] 1 publisher
 
   Subscribed topics:
 
@@ -161,6 +163,12 @@ After your setups are complete, do the following:
   nanosec: 729410000
   ---
   ```
+
+  The static transforms for enabled sensors are also published, and can be recieved like so:
+  ```console
+  ros2 topic echo /tf --qos-depth 1 --qos-history keep_last --qos-reliability reliable --qos-durability transient_local --once
+  ```
+  In order to consume the transforms, it's highly recommended to [create and run a transform broadcaster in ROS 2](https://docs.ros.org/en/humble/Concepts/About-Tf2.html#tutorials). 
 
 ## Adding DDS messages to Ardupilot
 
