@@ -27,10 +27,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-void AP_AHRS_Backend::init()
-{
-}
-
 // return a smoothed and corrected gyro vector using the latest ins data (which may not have been consumed by the EKF yet)
 Vector3f AP_AHRS::get_gyro_latest(void) const
 {
@@ -158,6 +154,11 @@ Vector2f AP_AHRS_DCM::groundspeed_vector(void)
     return Vector2f(0.0f, 0.0f);
 }
 
+void AP_AHRS_Backend::getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const {
+    ret.zero();
+    AP::ins().get_delta_velocity(ret, dt);
+}
+
 Vector2f AP_AHRS_Backend::groundspeed_vector(void)
 {
     // base-class imnplementation extracts the groundspeed from the
@@ -248,6 +249,18 @@ AP_AHRS_View *AP_AHRS::create_view(enum Rotation rotation, float pitch_trim_deg)
     }
     _view = new AP_AHRS_View(*this, rotation, pitch_trim_deg);
     return _view;
+}
+
+// get the index of the current primary accelerometer sensor
+uint8_t AP_AHRS_Backend::get_primary_accel_index(void) const
+{
+    return AP::ins().get_primary_accel();
+}
+
+// get the index of the current primary gyro sensor
+uint8_t AP_AHRS_Backend::get_primary_gyro_index(void) const
+{
+    return AP::ins().get_primary_gyro();
 }
 
 /*

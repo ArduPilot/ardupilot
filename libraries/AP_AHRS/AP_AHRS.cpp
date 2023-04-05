@@ -2838,6 +2838,11 @@ uint8_t AP_AHRS::get_primary_IMU_index() const
     return imu;
 }
 
+const Vector3f &AP_AHRS::get_accel(void) const
+{
+    return AP::ins().get_accel();
+}
+
 // return the index of the primary core or -1 if no primary core selected
 int8_t AP_AHRS::get_primary_core_index() const
 {

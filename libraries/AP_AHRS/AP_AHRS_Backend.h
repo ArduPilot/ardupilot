@@ -60,20 +60,16 @@ public:
     };
 
     // init sets up INS board orientation
-    virtual void init();
+    virtual void init() {}
 
     // return the index of the primary core or -1 if no primary core selected
     virtual int8_t get_primary_core_index() const { return -1; }
 
     // get the index of the current primary accelerometer sensor
-    virtual uint8_t get_primary_accel_index(void) const {
-        return AP::ins().get_primary_accel();
-    }
+    virtual uint8_t get_primary_accel_index(void) const;
 
     // get the index of the current primary gyro sensor
-    virtual uint8_t get_primary_gyro_index(void) const {
-        return AP::ins().get_primary_gyro();
-    }
+    virtual uint8_t get_primary_gyro_index(void) const;
 
     // Methods
     virtual void update() = 0;
@@ -303,10 +299,7 @@ public:
     virtual void send_ekf_status_report(class GCS_MAVLINK &link) const = 0;
 
     // Retrieves the corrected NED delta velocity in use by the inertial navigation
-    virtual void getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const {
-        ret.zero();
-        AP::ins().get_delta_velocity(ret, dt);
-    }
+    virtual void getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const;
 
     // get_hgt_ctrl_limit - get maximum height to be observed by the
     // control loops in meters and a validity flag.  It will return
