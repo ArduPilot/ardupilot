@@ -100,7 +100,7 @@ private:
     uint8_t accel_instance;
     uint8_t gyro_instance;
     enum Rotation rotation;
-    bool error_scha63t;
+    bool error_scha63t;    // this flag is not used yet
 
     // are we doing more than 1kHz sampling?
     bool fast_sampling;
