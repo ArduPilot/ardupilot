@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 
-import os
+import pathlib
 
 
 def configure(cfg):
@@ -49,13 +49,13 @@ def build(bld):
     extra_bld_inc = [
         'modules/Micro-CDR/include',
         'modules/Micro-XRCE-DDS-Client/include',
-        gen_path,
+        str(pathlib.PurePath(gen_path, "generated")),
     ]
     for inc in extra_bld_inc:
         bld.env.INCLUDES += [bld.bldnode.find_or_declare(inc).abspath()]
 
     for i in range(len(config_h_nodes)):
-        print("building %s" % config_h_nodes[i].abspath())
+        print(f"building {config_h_nodes[i].abspath()}")
         bld(
             # build config.h file
             source=config_h_in_nodes[i],
@@ -71,42 +71,27 @@ def build(bld):
             group='dynamic_sources',
         )
 
-    # temporary whitelist while include issue is sorted out
-    whitelist = [
-        'BatteryState.idl',
-        'Duration.idl',
-        'Header.idl',
-        'NavSatFix.idl',
-        'NavSatStatus.idl',
-        'Point.idl',
-        'Pose.idl',
-        'PoseStamped.idl',
-        'Quaternion.idl',
-        'Time.idl',
-        'Transform.idl',
-        'TransformStamped.idl',
-        "TFMessage.idl",
-        'Twist.idl',
-        'TwistStamped.idl',
-        'Vector3.idl',
-    ]
-
+    # TODO instead of keeping standard IDL files in the source tree, copy them with "ros2 pkg prefix --share " tools
     idl_files = bld.srcnode.ant_glob('libraries/AP_DDS/Idl/**/*.idl')
+    idl_include_path = bld.srcnode.make_node(str(pathlib.PurePath(gen_path, "Idl"))).abspath()
+
     for idl in idl_files:
-        b = os.path.basename(idl.abspath())
-        if not b in whitelist:
-            continue
-        gen_h = b.replace('.idl', '.h')
-        gen_c = b.replace('.idl', '.c')
-        gen = [
-            bld.bldnode.find_or_declare(os.path.join(gen_path, "generated", gen_h)),
-            bld.bldnode.find_or_declare(os.path.join(gen_path, "generated", gen_c)),
-        ]
+        idl_path = pathlib.PurePath(idl.abspath())
+        b = idl_path.name
+
+        gen_h = idl_path.with_suffix('.h').name
+        gen_c = idl_path.with_suffix('.c').name
+
+        idl_folder = idl_path.parts[-3:-1]
+        dst_dir = pathlib.PurePath(gen_path, "generated", *idl_folder)
+        gen = [bld.bldnode.find_or_declare(str(dst_dir / name)) for name in [gen_h, gen_c]]
+        gen_cmd = f"{bld.env.MICROXRCEDDSGEN[0]} -cs -replace -d {dst_dir} -I {idl_include_path} {idl}"
         bld(
             # build IDL file
             source=idl,
             target=gen,
-            rule=f"{bld.env.MICROXRCEDDSGEN[0]} -cs -replace -d {os.path.join(gen_path, 'generated')} {idl}",
+            rule=gen_cmd,
             group='dynamic_sources',
         )
-        bld.env.AP_LIB_EXTRA_SOURCES['AP_DDS'] += [os.path.join('generated', gen_c)]
+
+        bld.env.AP_LIB_EXTRA_SOURCES['AP_DDS'] += [str(gen[1])]
