@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  * sensor information url
  * <https://www.murata.com/ja-jp/products/sensor/gyro/overview/lineup/scha600>.
  */
@@ -23,12 +23,12 @@
 #include "AP_InertialSensor_SCHA63T.h"
 #include <GCS_MAVLink/GCS.h>
 
-#if defined(HAL_GPIO_PIN_RESET)
+#if defined(HAL_GPIO_PIN_SCHA63T_RESET)
 #include <hal.h>
 #endif
 
-#define ACCEL_BACKEND_SAMPLE_RATE   1000
-#define GYRO_BACKEND_SAMPLE_RATE    1000
+#define BACKEND_SAMPLE_RATE       1000
+#define BACKEND_SAMPLE_RATE_MAX   4000
 
 extern const AP_HAL::HAL& hal;
 
@@ -64,8 +64,8 @@ AP_InertialSensor_SCHA63T::probe(AP_InertialSensor &imu,
         return nullptr;
     }
 
-#if defined(HAL_GPIO_PIN_RESET)
-    palSetLine(HAL_GPIO_PIN_RESET);
+#if defined(HAL_GPIO_PIN_SCHA63T_RESET)
+    palSetLine(HAL_GPIO_PIN_SCHA63T_RESET);
 #endif
 
     if (!sensor->init()) {
@@ -78,17 +78,20 @@ AP_InertialSensor_SCHA63T::probe(AP_InertialSensor &imu,
 
 void AP_InertialSensor_SCHA63T::start()
 {
-    if (!_imu.register_accel(accel_instance, ACCEL_BACKEND_SAMPLE_RATE, dev_accel->get_bus_id_devtype(DEVTYPE_INS_SCHA63T)) ||
-        !_imu.register_gyro(gyro_instance, GYRO_BACKEND_SAMPLE_RATE, dev_gyro->get_bus_id_devtype(DEVTYPE_INS_SCHA63T))) {
+    if (!_imu.register_accel(accel_instance, BACKEND_SAMPLE_RATE, dev_accel->get_bus_id_devtype(DEVTYPE_INS_SCHA63T)) ||
+        !_imu.register_gyro(gyro_instance, BACKEND_SAMPLE_RATE, dev_gyro->get_bus_id_devtype(DEVTYPE_INS_SCHA63T))) {
         return;
     }
 
     // set backend rate
-    backend_rate_hz = 1000;
+    backend_rate_hz = BACKEND_SAMPLE_RATE;
     if (enable_fast_sampling(accel_instance) && get_fast_sampling_rate() > 1) {
         fast_sampling = dev_accel->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
         if (fast_sampling) {
-            backend_rate_hz = calculate_fast_sampling_backend_rate(backend_rate_hz, 8 * backend_rate_hz);
+            // constrain the gyro rate to be a 2^N multiple
+            uint8_t fast_sampling_rate = constrain_int16(get_fast_sampling_rate(), 1, 4);
+            // calculate rate we will be giving samples to the backend
+            backend_rate_hz = constrain_int16(backend_rate_hz * fast_sampling_rate, backend_rate_hz, BACKEND_SAMPLE_RATE_MAX);
         }
     }
     backend_period_us = 1000000UL / backend_rate_hz;
@@ -100,24 +103,6 @@ void AP_InertialSensor_SCHA63T::start()
     // setup callbacks
     dev_accel->register_periodic_callback(backend_period_us, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_SCHA63T::read_accel, void));
     dev_gyro->register_periodic_callback(backend_period_us, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_SCHA63T::read_gyro, void));
-}
-
-// calculate the fast sampling backend rate
-uint16_t AP_InertialSensor_SCHA63T::calculate_fast_sampling_backend_rate(uint16_t base_odr, uint16_t max_odr) const
-{
-    // constrain the gyro rate to be at least the loop rate
-    uint8_t loop_limit = 1;
-    if (get_loop_rate_hz() > base_odr) {
-        loop_limit = 2;
-    }
-    if (get_loop_rate_hz() > base_odr * 2) {
-        loop_limit = 4;
-    }
-    // constrain the gyro rate to be a 2^N multiple
-    uint8_t fast_sampling_rate = constrain_int16(get_fast_sampling_rate(), loop_limit, 8);
-
-    // calculate rate we will be giving samples to the backend
-    return constrain_int16(base_odr * fast_sampling_rate, base_odr, max_odr);
 }
 
 /*
@@ -161,14 +146,14 @@ bool AP_InertialSensor_SCHA63T::init()
 
     // startup clear (startup_attempt = 0)
     if (!check_startup()) {
-        // system in FAILURE mode (startup_attempt not equl 0 startup_attempt = 1) 
+        // system in FAILURE mode (startup_attempt not equl 0 startup_attempt = 1)
         // reset UNO write (0001h) to register 18h
         error_scha63t |= RegisterWrite(SCHA63T_UNO, RESCTRL, HW_RES);
         // reset DUE write (0001h) to register 18h
         error_scha63t |= RegisterWrite(SCHA63T_DUE, RESCTRL, HW_RES);
         // wait 25ms for non-volatile memory (NVM) read
         hal.scheduler->delay(25);
- 
+
         // set DUE operation mode on (must be less than 1ms)
         error_scha63t |= RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM);
         error_scha63t |= RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM);
@@ -288,7 +273,7 @@ void AP_InertialSensor_SCHA63T::read_accel(void)
     }
     set_temperature(accel_instance, uno_temp);
 
-    // change coordinate system from left hand too right hand 
+    // change coordinate system from left hand too right hand
     accel_z = (accel_z == INT16_MIN) ? INT16_MAX : -accel_z;
 
     Vector3f accel(accel_x, accel_y, accel_z);
@@ -364,7 +349,7 @@ void AP_InertialSensor_SCHA63T::read_gyro(void)
     }
     set_temperature(gyro_instance, (uno_temp + due_temp) / 2);
 
-    // change coordinate system from left hand too right hand 
+    // change coordinate system from left hand too right hand
     gyro_z = (gyro_z == INT16_MIN) ? INT16_MAX : -gyro_z;
 
     Vector3f gyro(gyro_x, gyro_y, gyro_z);
@@ -405,7 +390,6 @@ bool AP_InertialSensor_SCHA63T::RegisterRead(int uno_due, reg_scha63t reg_addr, 
     cmd[0] &= 0x7f;
     cmd[3] = crc8_sae(cmd, 3);
 
-#if 1
     switch ( uno_due ) {
     case SCHA63T_UNO:
         ret = dev_accel->transfer_fullduplex(cmd, val, 4);
@@ -416,23 +400,6 @@ bool AP_InertialSensor_SCHA63T::RegisterRead(int uno_due, reg_scha63t reg_addr, 
     default:
         break;
     }
-#else
-    uint8_t buf[4];
-    switch ( uno_due ) {
-    case SCHA63T_UNO:
-        memcpy(buf, cmd, 4);
-        ret = dev_accel->transfer(buf, 4, buf, 4);
-        memcpy(val, buf, 4);
-        break;
-    case SCHA63T_DUE:
-        memcpy(buf, cmd, 4);
-        ret = dev_accel->transfer(buf, 4, buf, 4);
-        memcpy(val, buf, 4);
-        break;
-    default:
-        break;
-    }
-#endif
 
     if (ret == true) {
         bCrc = crc8_sae(val, 3);
@@ -456,7 +423,6 @@ bool AP_InertialSensor_SCHA63T::RegisterWrite(int uno_due, reg_scha63t reg_addr,
     cmd[2] = val;
     cmd[3] = crc8_sae(cmd, 3);
 
-#if 1
     switch ( uno_due ) {
     case SCHA63T_UNO:
         ret = dev_accel->transfer_fullduplex(cmd, res, 4);
@@ -467,22 +433,6 @@ bool AP_InertialSensor_SCHA63T::RegisterWrite(int uno_due, reg_scha63t reg_addr,
     default:
         break;
     }
-#else
-    uint8_t buf[4];
-    switch ( uno_due ) {
-    case SCHA63T_UNO:
-        memcpy(buf, cmd, 4);
-        ret = dev_accel->transfer(buf, 4, buf, 4);
-        memcpy(res, buf, 4);
-        break;
-    case SCHA63T_DUE:
-        memcpy(buf, cmd, 4);
-        ret = dev_accel->transfer(buf, 4, buf, 4);
-        memcpy(res, buf, 4);
-        break;
-    default:
-        break;
-    }
-#endif
+
     return ret;
 }
