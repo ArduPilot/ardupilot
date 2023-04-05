@@ -889,7 +889,7 @@ void NavEKF3::update(void)
         if (start_time_ms == 0) {
             start_time_ms = AP_HAL::millis();
         }
-#if !APM_BUILD_TYPE(APM_BUILD_Replay)
+#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
         extern const AP_HAL::HAL& hal;
         // if we're doing Replay logging then don't allow any data
         // into the EKF yet.  Don't allow it to block us for long.
@@ -912,6 +912,7 @@ void NavEKF3::update(void)
 
 void NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
 {
+#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
     Vector3f eulers;
     getRotationBodyToNED(results.dcm_matrix);
     getEulerAngles(eulers);
@@ -943,6 +944,7 @@ void NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
     Vector3f accel = _ins.get_accel(primary_accel);
     accel -= abias;
     results.accel_ef = results.dcm_matrix * AP::ahrs().get_rotation_autopilot_body_to_vehicle_body() * accel;
+#endif
 }
 
 /*
@@ -1884,9 +1886,11 @@ void NavEKF3::getFilterStatus(nav_filter_status &status) const
 // send an EKF_STATUS_REPORT message to GCS
 void NavEKF3::send_ekf_status_report(GCS_MAVLINK &link) const
 {
+#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
     if (core) {
         core[primary].send_status_report(link);
     }
+#endif
 }
 
 // provides the height limit to be observed by the control loops
@@ -2140,3 +2144,11 @@ const EKFGSF_yaw *NavEKF3::get_yawEstimator(void) const
     }
     return nullptr;
 }
+
+// methods so we build Standalone even if we are an AP_AHRS_Backend
+#if APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone)
+uint8_t AP_AHRS_Backend::get_primary_gyro_index() const { return 0; }
+uint8_t AP_AHRS_Backend::get_primary_accel_index() const { return 0; }
+Vector2f AP_AHRS_Backend::groundspeed_vector(void) { return Vector2f{}; }
+void AP_AHRS_Backend::getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const {}
+#endif
