@@ -14,7 +14,7 @@
  */
 
 /*
-  Camera driver for cameras included in Mount
+  Camera driver for cameras that implement the older MAVLink camera protocol
  */
 #pragma once
 

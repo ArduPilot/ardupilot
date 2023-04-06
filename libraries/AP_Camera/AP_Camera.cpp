@@ -13,9 +13,10 @@
 #include "AP_Camera_Backend.h"
 #include "AP_Camera_Servo.h"
 #include "AP_Camera_Relay.h"
+#include "AP_Camera_SoloGimbal.h"
 #include "AP_Camera_Mount.h"
 #include "AP_Camera_MAVLink.h"
-#include "AP_Camera_SoloGimbal.h"
+#include "AP_Camera_MAVLinkCamV2.h"
 
 const AP_Param::GroupInfo AP_Camera::var_info[] = {
 
@@ -162,6 +163,12 @@ void AP_Camera::init()
         // check for MAVLink enabled camera driver
         case CameraType::MAVLINK:
             _backends[instance] = new AP_Camera_MAVLink(*this, _params[instance], instance);
+            break;
+#endif
+#if AP_CAMERA_MAVLINKCAMV2_ENABLED
+        // check for MAVLink Camv2 driver
+        case CameraType::MAVLINK_CAMV2:
+            _backends[instance] = new AP_Camera_MAVLinkCamV2(*this, _params[instance], instance);
             break;
 #endif
         case CameraType::NONE:
