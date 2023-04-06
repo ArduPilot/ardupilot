@@ -84,9 +84,9 @@ void AP_InertialSensor_SCHA63T::start()
     }
 
     // set backend rate
-    backend_rate_hz = BACKEND_SAMPLE_RATE;
+    uint16_t backend_rate_hz = BACKEND_SAMPLE_RATE;
     if (enable_fast_sampling(accel_instance) && get_fast_sampling_rate() > 1) {
-        fast_sampling = dev_uno->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
+        bool fast_sampling = dev_uno->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
         if (fast_sampling) {
             // constrain the gyro rate to be a 2^N multiple
             uint8_t fast_sampling_rate = constrain_int16(get_fast_sampling_rate(), 1, 4);
@@ -94,7 +94,7 @@ void AP_InertialSensor_SCHA63T::start()
             backend_rate_hz = constrain_int16(backend_rate_hz * fast_sampling_rate, backend_rate_hz, BACKEND_SAMPLE_RATE_MAX);
         }
     }
-    backend_period_us = 1000000UL / backend_rate_hz;
+    uint32_t backend_period_us = 1000000UL / backend_rate_hz;
 
     // setup sensor rotations from probe()
     set_gyro_orientation(gyro_instance, rotation);
@@ -255,22 +255,22 @@ void AP_InertialSensor_SCHA63T::read_accel(void)
     if (((rsp_accl_x[0] & 0x7C) >> 2) == ACC_X) {
         accel_x = combine(rsp_accl_x[1], rsp_accl_x[2]);
     } else {
-        ret_scha63t = 1;
+        ret_scha63t &= false;
     }
     if (((rsp_accl_y[0] & 0x7C) >> 2) == ACC_Y) {
         accel_y = combine(rsp_accl_y[1], rsp_accl_y[2]);
     } else {
-        ret_scha63t = 1;
+        ret_scha63t &= false;
     }
     if (((rsp_accl_z[0] & 0x7C) >> 2) == ACC_Z) {
         accel_z = combine(rsp_accl_z[1], rsp_accl_z[2]);
     } else {
-        ret_scha63t = 1;
+        ret_scha63t &= false;
     }
     if (((rsp_temper[0] & 0x7C) >> 2) == TEMP) {
         uno_temp = combine(rsp_temper[1], rsp_temper[2]);
     } else {
-        ret_scha63t = 1;
+        ret_scha63t &= false;
     }
     set_temperature(accel_instance, uno_temp);
 
@@ -326,27 +326,27 @@ void AP_InertialSensor_SCHA63T::read_gyro(void)
     if (((rsp_rate_x[0] & 0x7C) >> 2) == RATE_XZ) {
         gyro_x = combine(rsp_rate_x[1], rsp_rate_x[2]);
     } else {
-        ret_scha63t = 1;
+        ret_scha63t &= false;
     }
     if (((rsp_rate_y[0] & 0x7C) >> 2) == RATE_Y) {
         gyro_y = combine(rsp_rate_y[1], rsp_rate_y[2]);
     } else {
-        ret_scha63t = 1;
+        ret_scha63t &= false;
     }
     if (((rsp_rate_z[0] & 0x7C) >> 2) == RATE_XZ) {
         gyro_z = combine(rsp_rate_z[1], rsp_rate_z[2]);
     } else {
-        ret_scha63t = 1;
+        ret_scha63t &= false;
     }
     if (((rsp_uno_temper[0] & 0x7C) >> 2) == TEMP) {
         uno_temp = combine(rsp_uno_temper[1], rsp_uno_temper[2]);
     } else {
-        ret_scha63t = 1;
+        ret_scha63t &= false;
     }
     if (((rsp_due_temper[0] & 0x7C) >> 2) == TEMP) {
         due_temp = combine(rsp_due_temper[1], rsp_due_temper[2]);
     } else {
-        ret_scha63t = 1;
+        ret_scha63t &= false;
     }
     set_temperature(gyro_instance, (uno_temp + due_temp) / 2);
 

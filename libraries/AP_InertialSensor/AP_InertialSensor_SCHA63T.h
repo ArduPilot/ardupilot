@@ -101,11 +101,4 @@ private:
     uint8_t gyro_instance;
     enum Rotation rotation;
     bool ret_scha63t;    // this flag is not used yet
-
-    // are we doing more than 1kHz sampling?
-    bool fast_sampling;
-    // what rate are we generating samples into the backend for gyros and accels?
-    uint16_t backend_rate_hz;
-    // pre-calculated backend period
-    uint32_t backend_period_us;
 };
