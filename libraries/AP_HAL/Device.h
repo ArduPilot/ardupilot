@@ -118,8 +118,6 @@ public:
     virtual bool transfer(const uint8_t *send, uint32_t send_len,
                           uint8_t *recv, uint32_t recv_len) = 0;
 
-    virtual bool transfer_fullduplex(const uint8_t *send, uint8_t *recv,
-                             uint32_t len) = 0;
 
     /*
      * Sets the required flags before transaction starts
@@ -145,8 +143,6 @@ public:
      */
     bool read_registers(uint8_t first_reg, uint8_t *recv, uint32_t recv_len);
 
-    bool read_registers_fullduplex(uint8_t *send, uint8_t *recv, uint32_t len);
-
     /**
      * Wrapper function over #transfer() to write a byte to the register reg.
      * The transfer is done by sending reg and val in that order.
@@ -154,9 +150,7 @@ public:
      * Return: true on a successful transfer, false on failure.
      */
     bool write_register(uint8_t reg, uint8_t val, bool checked=false);
-
-    bool write_register_fullduplex(uint8_t *send, uint8_t *recv, uint32_t len);
-
+    
     /*
      * Sets a callback to be called when a register is read or written.
      */
