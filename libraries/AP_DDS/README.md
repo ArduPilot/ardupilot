@@ -183,5 +183,5 @@ mkdir -p libraries/AP_DDS/Idl/builtin_interfaces/msg/
 # Copy the IDL
 cp -r /opt/ros/humble/share/builtin_interfaces/msg/Time.idl libraries/AP_DDS/Idl/builtin_interfaces/msg/
 # Now, apply the necessary mods manually to be compliant with MicroXRCEDDSGen limitations
-# Build the code again as desribed above
+# Build the code again with the `enable-dds` flag as desribed above 
 ```
