@@ -14,26 +14,17 @@
  */
 
 //
-//  UAVCAN GPS driver
+//  DroneCAN GPS driver
 //
 #pragma once
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 #include "RTCM3_Parser.h"
 #include <AP_UAVCAN/AP_UAVCAN.h>
-
-class FixCb;
-class Fix2Cb;
-class AuxCb;
-class HeadingCb;
-class StatusCb;
-#if GPS_MOVING_BASELINE
-class MovingBaselineDataCb;
-class RelPosHeadingCb;
-#endif
 
 class AP_GPS_UAVCAN : public AP_GPS_Backend {
 public:
@@ -53,13 +44,14 @@ public:
     static void subscribe_msgs(AP_UAVCAN* ap_uavcan);
     static AP_GPS_Backend* probe(AP_GPS &_gps, AP_GPS::GPS_State &_state);
 
-    static void handle_fix2_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const Fix2Cb &cb);
-    static void handle_aux_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const AuxCb &cb);
-    static void handle_heading_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const HeadingCb &cb);
-    static void handle_status_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const StatusCb &cb);
+    static void handle_fix2_msg_trampoline(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const uavcan_equipment_gnss_Fix2& msg);
+
+    static void handle_aux_msg_trampoline(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const uavcan_equipment_gnss_Auxiliary& msg);
+    static void handle_heading_msg_trampoline(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const ardupilot_gnss_Heading& msg);
+    static void handle_status_msg_trampoline(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const ardupilot_gnss_Status& msg);
 #if GPS_MOVING_BASELINE
-    static void handle_moving_baseline_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const MovingBaselineDataCb &cb);
-    static void handle_relposheading_msg_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const RelPosHeadingCb &cb);
+    static void handle_moving_baseline_msg_trampoline(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const ardupilot_gnss_MovingBaselineData& msg);
+    static void handle_relposheading_msg_trampoline(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const ardupilot_gnss_RelPosHeading& msg);
 #endif
     static bool backends_healthy(char failure_msg[], uint16_t failure_msg_len);
     void inject_data(const uint8_t *data, uint16_t len) override;
@@ -90,15 +82,15 @@ private:
     // returns true once configuration has finished
     bool do_config(void);
 
-    void handle_fix2_msg(const Fix2Cb &cb);
-    void handle_aux_msg(const AuxCb &cb);
-    void handle_heading_msg(const HeadingCb &cb);
-    void handle_status_msg(const StatusCb &cb);
+    void handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uint64_t timestamp_usec);
+    void handle_aux_msg(const uavcan_equipment_gnss_Auxiliary& msg);
+    void handle_heading_msg(const ardupilot_gnss_Heading& msg);
+    void handle_status_msg(const ardupilot_gnss_Status& msg);
     void handle_velocity(const float vx, const float vy, const float vz);
 
 #if GPS_MOVING_BASELINE
-    void handle_moving_baseline_msg(const MovingBaselineDataCb &cb, uint8_t node_id);
-    void handle_relposheading_msg(const RelPosHeadingCb &cb, uint8_t node_id);
+    void handle_moving_baseline_msg(const ardupilot_gnss_MovingBaselineData& msg, uint8_t node_id);
+    void handle_relposheading_msg(const ardupilot_gnss_RelPosHeading& msg, uint8_t node_id);
 #endif
 
     static bool take_registry();
@@ -147,3 +139,4 @@ private:
     bool handle_param_get_set_response_float(AP_UAVCAN* ap_uavcan, const uint8_t node_id, const char* name, float &value);
     void handle_param_save_response(AP_UAVCAN* ap_uavcan, const uint8_t node_id, bool success);
 };
+#endif

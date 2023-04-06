@@ -1116,12 +1116,18 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
     lastInhibitMagStates = inhibitMagStates;
 
     if (!inhibitWindStates) {
-        ftype windVelVar  = sq(dt * constrain_ftype(frontend->_windVelProcessNoise, 0.0f, 1.0f) * (1.0f + constrain_ftype(frontend->_wndVarHgtRateScale, 0.0f, 1.0f) * fabsF(hgtRate)));
-        if (!tasDataDelayed.allowFusion) {
-            // Allow wind states to recover faster when using sideslip fusion with a failed airspeed sesnor
-            windVelVar *= 10.0f;
+        const bool isDragFusionDeadReckoning = filterStatus.flags.dead_reckoning && !dragTimeout;
+        if (isDragFusionDeadReckoning) {
+            // when dead reckoning using drag fusion stop learning wind states to provide a more stable velocity estimate
+            P[23][23] = P[22][22] = 0.0f;
+        } else {
+	        ftype windVelVar  = sq(dt * constrain_ftype(frontend->_windVelProcessNoise, 0.0f, 1.0f) * (1.0f + constrain_ftype(frontend->_wndVarHgtRateScale, 0.0f, 1.0f) * fabsF(hgtRate)));
+	        if (!tasDataDelayed.allowFusion) {
+	            // Allow wind states to recover faster when using sideslip fusion with a failed airspeed sesnor
+	            windVelVar *= 10.0f;
+	        }
+	        for (uint8_t i=12; i<=13; i++) processNoiseVariance[i] = windVelVar;
         }
-        for (uint8_t i=12; i<=13; i++) processNoiseVariance[i] = windVelVar;
     }
 
     // set variables used to calculate covariance growth

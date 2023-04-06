@@ -534,7 +534,7 @@ void SRV_Channels::push()
     fetteconwire_ptr->update();
 #endif
 
-#if HAL_CANMANAGER_ENABLED
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
     // push outputs to CAN
     uint8_t can_num_drivers = AP::can().get_num_drivers();
     for (uint8_t i = 0; i < can_num_drivers; i++) {

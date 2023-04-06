@@ -152,7 +152,7 @@ public:
     uint16_t get_accel_rate_hz(uint8_t instance) const { return uint16_t(_accel_raw_sample_rates[instance] * _accel_over_sampling[instance]); }
 
     // FFT support access
-#if HAL_WITH_DSP
+#if HAL_GYROFFT_ENABLED
     const Vector3f& get_gyro_for_fft(void) const { return _gyro_for_fft[_primary_gyro]; }
     FloatBuffer&  get_raw_gyro_window(uint8_t instance, uint8_t axis) { return _gyro_window[instance][axis]; }
     FloatBuffer&  get_raw_gyro_window(uint8_t axis) { return get_raw_gyro_window(_primary_gyro, axis); }
@@ -329,6 +329,7 @@ public:
 
         // Parameters
         AP_Int16 _required_count;
+        uint16_t _real_required_count;
         AP_Int8 _sensor_mask;
         AP_Int8 _batch_options_mask;
 
@@ -501,7 +502,7 @@ private:
     LowPassFilter2pVector3f _gyro_filter[INS_MAX_INSTANCES];
     Vector3f _accel_filtered[INS_MAX_INSTANCES];
     Vector3f _gyro_filtered[INS_MAX_INSTANCES];
-#if HAL_WITH_DSP
+#if HAL_GYROFFT_ENABLED
     // Thread-safe public version of _last_raw_gyro
     Vector3f _gyro_for_fft[INS_MAX_INSTANCES];
     Vector3f _last_gyro_for_fft[INS_MAX_INSTANCES];

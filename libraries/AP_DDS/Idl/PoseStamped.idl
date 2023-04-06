@@ -2,14 +2,9 @@
 // with input from geometry_msgs/msg/PoseStamped.msg
 // generated code does not contain a copyright notice
 
-#include "Point.idl"
-#include "Quaternion.idl"
+#include "Pose.idl"
 #include "Header.idl"
-struct Pose {
-  geometry_msgs::msg::Point position;
 
-  geometry_msgs::msg::Quaternion orientation;
-};
 module geometry_msgs {
   module msg {
     @verbatim (language="comment", text=
@@ -17,7 +12,7 @@ module geometry_msgs {
     struct PoseStamped {
       std_msgs::msg::Header header;
 
-      Pose pose;
+      geometry_msgs::msg::Pose pose;
     };
   };
 };

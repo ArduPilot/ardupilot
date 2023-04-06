@@ -12,9 +12,6 @@
 
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
-class AirspeedCb;
-class HygrometerCb;
-
 class AP_Airspeed_UAVCAN : public AP_Airspeed_Backend {
 public:
     AP_Airspeed_UAVCAN(AP_Airspeed &_frontend, uint8_t _instance);
@@ -38,8 +35,8 @@ public:
 
 private:
 
-    static void handle_airspeed(AP_UAVCAN* ap_uavcan, uint8_t node_id, const AirspeedCb &cb);
-    static void handle_hygrometer(AP_UAVCAN* ap_uavcan, uint8_t node_id, const HygrometerCb &cb);
+    static void handle_airspeed(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const uavcan_equipment_air_data_RawAirData &msg);
+    static void handle_hygrometer(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const dronecan_sensors_hygrometer_Hygrometer &msg);
 
     static AP_Airspeed_UAVCAN* get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id);
 

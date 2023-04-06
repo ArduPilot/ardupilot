@@ -13,6 +13,7 @@ sys.path.insert(0, 'Tools/ardupilotwaf/')
 
 import ardupilotwaf
 import boards
+import shutil
 
 from waflib import Build, ConfigSet, Configure, Context, Utils
 from waflib.Configure import conf
@@ -255,6 +256,9 @@ submodules at specific revisions.
                  help="Enable the dds client to connect with ROS2/DDS"
     )
 
+    g.add_option('--enable-dronecan-tests', action='store_true',
+                 default=False,
+                 help="Enables DroneCAN tests in sitl")
     g = opt.ap_groups['linux']
 
     linux_options = ('--prefix', '--destdir', '--bindir', '--libdir')
@@ -324,9 +328,9 @@ configuration in order to save typing.
                  default=False,
                  help="Enable SITL RGBLed")
 
-    g.add_option('--sitl-32bit', action='store_true',
+    g.add_option('--force-32bit', action='store_true',
                  default=False,
-                 help="Enable SITL 32bit")
+                 help="Force 32bit build")
 
     g.add_option('--build-dates', action='store_true',
                  default=False,
@@ -436,7 +440,7 @@ def configure(cfg):
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
     cfg.env.COVERAGE = cfg.options.coverage
-    cfg.env.SITL32BIT = cfg.options.sitl_32bit
+    cfg.env.FORCE32BIT = cfg.options.force_32bit
     cfg.env.ENABLE_ASSERTS = cfg.options.enable_asserts
     cfg.env.BOOTLOADER = cfg.options.bootloader
     cfg.env.ENABLE_MALLOC_GUARD = cfg.options.enable_malloc_guard
@@ -478,6 +482,8 @@ def configure(cfg):
         cfg.load('dronecangen')
     else:
         cfg.load('uavcangen')
+        if cfg.options.force_32bit or (cfg.options.board != 'sitl' and cfg.options.board != 'linux'):
+            cfg.load('dronecangen')
 
     cfg.env.SUBMODULE_UPDATE = cfg.options.submodule_update
 
@@ -536,8 +542,8 @@ def configure(cfg):
     else:
         cfg.end_msg('disabled', color='YELLOW')
 
-    cfg.start_msg('SITL 32-bit build')
-    if cfg.env.SITL32BIT:
+    cfg.start_msg('Force 32-bit build')
+    if cfg.env.FORCE32BIT:
         cfg.end_msg('enabled')
     else:
         cfg.end_msg('disabled', color='YELLOW')
@@ -674,6 +680,24 @@ def _build_dynamic_sources(bld):
                 bld.srcnode.find_dir('modules/uavcan/libuavcan/include').abspath()
             ]
         )
+        if (not bld.env.FORCE32BIT) and (bld.env.BOARD == 'sitl' or bld.env.BOARD == 'linux'):
+            # remove generated files
+            dronecan_dir = bld.bldnode.make_node('modules/DroneCAN/libcanard/dsdlc_generated/').abspath()
+            if os.path.exists(dronecan_dir):
+                print("Removing DroneCAN generated files")
+                shutil.rmtree(dronecan_dir)
+        else:
+            bld(
+                features='dronecangen',
+                source=bld.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_UAVCAN/dsdl/*', dir=True, src=False),
+                output_dir='modules/DroneCAN/libcanard/dsdlc_generated/',
+                name='dronecan',
+                export_includes=[
+                    bld.bldnode.make_node('modules/DroneCAN/libcanard/dsdlc_generated/include').abspath(),
+                    bld.srcnode.find_dir('modules/DroneCAN/libcanard/').abspath(),
+                    bld.srcnode.find_dir('libraries/AP_UAVCAN/canard/').abspath(),
+                ]
+            )
     elif bld.env.AP_PERIPH:
         bld(
             features='dronecangen',
@@ -812,8 +836,6 @@ def build(bld):
     _load_pre_build(bld)
 
     if bld.get_board().with_can:
-        bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['uavcan']
-    if bld.env.AP_PERIPH:
         bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['dronecan']
 
     _build_cmd_tweaks(bld)

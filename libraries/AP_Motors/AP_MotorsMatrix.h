@@ -101,6 +101,10 @@ public:
     };
     void add_motors_raw(const struct MotorDefRaw *motors, uint8_t num_motors);
 
+    // pull values direct, (examples only)
+    float get_thrust_rpyt_out(uint8_t i) const;
+    bool get_factors(uint8_t i, float &roll, float &pitch, float &yaw, float &throttle, uint8_t &testing_order) const;
+
 protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing() override;
@@ -152,6 +156,10 @@ protected:
     const char*         _frame_type_string = "";  //  string representation of frame type
 
 private:
+
+    // helper to return value scaled between boost and normal based on the value of _thrust_boost_ratio
+    float boost_ratio(float boost_value, float normal_value) const;
+
     // setup motors matrix
     bool setup_quad_matrix(motor_frame_type frame_type);
     bool setup_hexa_matrix(motor_frame_type frame_type);

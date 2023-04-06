@@ -840,7 +840,7 @@ def write_mcu_config(f):
     f.write('// MCU type (ChibiOS define)\n')
     f.write('#define %s_MCUCONF\n' % get_config('MCU'))
     mcu_subtype = get_config('MCU', 1)
-    if mcu_subtype.endswith('xx'):
+    if mcu_subtype[-1:] == 'x' or mcu_subtype[-2:-1] == 'x':
         f.write('#define %s_MCUCONF\n\n' % mcu_subtype[:-2])
     f.write('#define %s\n\n' % mcu_subtype)
     f.write('// crystal frequency\n')
@@ -942,6 +942,9 @@ def write_mcu_config(f):
             if result:
                 intdefines[result.group(1)] = int(result.group(2))
 
+    if intdefines.get('HAL_USE_USB_MSD',0) == 1:
+        build_flags.append('USE_USB_MSD=yes')
+
     if have_type_prefix('CAN') and not using_chibios_can:
         enable_can(f)
     flash_size = get_config('FLASH_SIZE_KB', type=int)
@@ -963,13 +966,13 @@ def write_mcu_config(f):
     env_vars['EXT_FLASH_SIZE_MB'] = get_config('EXT_FLASH_SIZE_MB', default=0, type=int)
 
     if env_vars['EXT_FLASH_SIZE_MB'] and not args.bootloader:
-        f.write('#define CRT1_AREAS_NUMBER 3\n')
+        f.write('#define CRT0_AREAS_NUMBER 3\n')
         f.write('#define CRT1_RAMFUNC_ENABLE TRUE\n') # this will enable loading program sections to RAM
         f.write('#define __FASTRAMFUNC__ __attribute__ ((__section__(".fastramfunc")))\n')
         f.write('#define __RAMFUNC__ __attribute__ ((__section__(".ramfunc")))\n')
         f.write('#define PORT_IRQ_ATTRIBUTES __FASTRAMFUNC__\n')
     else:
-        f.write('#define CRT1_AREAS_NUMBER 1\n')
+        f.write('#define CRT0_AREAS_NUMBER 1\n')
         f.write('#define CRT1_RAMFUNC_ENABLE FALSE\n')
 
     storage_flash_page = get_storage_flash_page()
@@ -1082,6 +1085,14 @@ def write_mcu_config(f):
     elif get_mcu_config('EXPECTED_CLOCK', required=True):
         f.write('#define HAL_EXPECTED_SYSCLOCK %u\n' % get_mcu_config('EXPECTED_CLOCK'))
 
+    if get_mcu_config('EXPECTED_CLOCKS', required=False):
+        clockrate = get_config('MCU_CLOCKRATE_MHZ', required=False)
+        for mcu_clock, mcu_clock_speed in get_mcu_config('EXPECTED_CLOCKS'):
+            if (mcu_clock == 'STM32_HCLK' or mcu_clock == 'STM32_SYS_CK') and clockrate:
+                f.write('#define HAL_EXPECTED_%s %u\n' % (mcu_clock, int(clockrate) * 1000000))
+            else:
+                f.write('#define HAL_EXPECTED_%s %u\n' % (mcu_clock, mcu_clock_speed))
+
     env_vars['CORTEX'] = cortex
 
     if not args.bootloader:
@@ -1153,6 +1164,7 @@ def write_mcu_config(f):
 #endif
 #define CH_CFG_USE_EVENTS FALSE
 #define CH_CFG_USE_EVENTS_TIMEOUT FALSE
+#define CH_CFG_OPTIMIZE_SPEED FALSE
 #define HAL_USE_EMPTY_STORAGE 1
 #ifndef HAL_STORAGE_SIZE
 #define HAL_STORAGE_SIZE 16384
@@ -1451,6 +1463,11 @@ def write_QSPI_table(f):
 def write_QSPI_config(f):
     '''write SPI config defines'''
     global qspi_list
+    # only the bootloader must reset the QSPI clock otherwise it is not possible to 
+    # bootstrap into external flash
+    if not args.bootloader:
+        f.write('#define STM32_QSPI_NO_RESET TRUE\n')
+
     if len(qspidev) == 0:
         # nothing to do
         return

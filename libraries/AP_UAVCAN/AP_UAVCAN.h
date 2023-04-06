@@ -20,17 +20,20 @@
 
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
 
-#include <uavcan/uavcan.hpp>
-#include "AP_UAVCAN_IfaceMgr.h"
-#include "AP_UAVCAN_Clock.h"
+#include "AP_Canard_iface.h"
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
-#include <uavcan/protocol/param/GetSet.hpp>
-#include <uavcan/protocol/param/ExecuteOpcode.hpp>
 #include <SRV_Channel/SRV_Channel_config.h>
-
+#include <canard/publisher.h>
+#include <canard/subscriber.h>
+#include <canard/service_client.h>
+#include <canard/service_server.h>
+#include <stdio.h>
+#include "AP_UAVCAN_DNA_Server.h"
+#include <canard.h>
+#include <dronecan_msgs.h>
 
 #ifndef UAVCAN_SRV_NUMBER
 #define UAVCAN_SRV_NUMBER NUM_SERVO_CHANNELS
@@ -49,63 +52,12 @@
 #define AP_UAVCAN_MAX_LED_DEVICES 4
 
 // fwd-declare callback classes
-class ButtonCb;
-class TrafficReportCb;
-class ActuatorStatusCb;
-class ActuatorStatusVolzCb;
-class ESCStatusCb;
-class DebugCb;
-class ParamGetSetCb;
-class ParamExecuteOpcodeCb;
-class AP_PoolAllocator;
 class AP_UAVCAN_DNA_Server;
-
-#if defined(__GNUC__) && (__GNUC__ > 8)
-#define DISABLE_W_CAST_FUNCTION_TYPE_PUSH \
-    _Pragma("GCC diagnostic push") \
-    _Pragma("GCC diagnostic ignored \"-Wcast-function-type\"")
-#define DISABLE_W_CAST_FUNCTION_TYPE_POP \
-    _Pragma("GCC diagnostic pop")
-#else
-#define DISABLE_W_CAST_FUNCTION_TYPE_PUSH
-#define DISABLE_W_CAST_FUNCTION_TYPE_POP
-#endif
-#if defined(__GNUC__) && (__GNUC__ >= 11)
-#define DISABLE_W_CAST_FUNCTION_TYPE_WITH_VOID (void*)
-#else
-#define DISABLE_W_CAST_FUNCTION_TYPE_WITH_VOID
-#endif
-
-/*
-    Frontend Backend-Registry Binder: Whenever a message of said DataType_ from new node is received,
-    the Callback will invoke registry to register the node as separate backend.
-*/
-#define UC_REGISTRY_BINDER(ClassName_, DataType_) \
-    class ClassName_ : public AP_UAVCAN::RegistryBinder<DataType_> { \
-        typedef void (*CN_Registry)(AP_UAVCAN*, uint8_t, const ClassName_&); \
-        public: \
-            ClassName_() : RegistryBinder() {} \
-            DISABLE_W_CAST_FUNCTION_TYPE_PUSH \
-            ClassName_(AP_UAVCAN* uc,  CN_Registry ffunc) : \
-                RegistryBinder(uc, (Registry)DISABLE_W_CAST_FUNCTION_TYPE_WITH_VOID ffunc) {} \
-            DISABLE_W_CAST_FUNCTION_TYPE_POP \
-    }
-
-#define UC_CLIENT_CALL_REGISTRY_BINDER(ClassName_, DataType_) \
-    class ClassName_ : public AP_UAVCAN::ClientCallRegistryBinder<DataType_> { \
-        typedef void (*CN_Registry)(AP_UAVCAN*, uint8_t, const ClassName_&); \
-        public: \
-            ClassName_() : ClientCallRegistryBinder() {} \
-            DISABLE_W_CAST_FUNCTION_TYPE_PUSH \
-            ClassName_(AP_UAVCAN* uc,  CN_Registry ffunc) : \
-                ClientCallRegistryBinder(uc, (ClientCallRegistry)DISABLE_W_CAST_FUNCTION_TYPE_WITH_VOID ffunc) {} \
-            DISABLE_W_CAST_FUNCTION_TYPE_POP \
-    }
 
 class AP_UAVCAN : public AP_CANDriver, public AP_ESC_Telem_Backend {
     friend class AP_UAVCAN_DNA_Server;
 public:
-    AP_UAVCAN();
+    AP_UAVCAN(const int driver_index);
     ~AP_UAVCAN();
 
     static const struct AP_Param::GroupInfo var_info[];
@@ -117,12 +69,13 @@ public:
     void init(uint8_t driver_index, bool enable_filters) override;
     bool add_interface(AP_HAL::CANIface* can_iface) override;
 
-    uavcan::Node<0>* get_node() { return _node; }
     uint8_t get_driver_index() const { return _driver_index; }
 
     FUNCTOR_TYPEDEF(ParamGetSetIntCb, bool, AP_UAVCAN*, const uint8_t, const char*, int32_t &);
     FUNCTOR_TYPEDEF(ParamGetSetFloatCb, bool, AP_UAVCAN*, const uint8_t, const char*, float &);
     FUNCTOR_TYPEDEF(ParamSaveCb, void, AP_UAVCAN*,  const uint8_t, bool);
+
+    void send_node_status();
 
     ///// SRV output /////
     void SRV_push_servos(void);
@@ -138,7 +91,7 @@ public:
 
     // Send Reboot command
     // Note: Do not call this from outside UAVCAN thread context,
-    // you can call this from uavcan callbacks and handlers.
+    // you can call this from dronecan callbacks and handlers.
     // THIS IS NOT A THREAD SAFE API!
     void send_reboot_request(uint8_t node_id);
 
@@ -150,57 +103,6 @@ public:
 
     // Save parameters
     bool save_parameters_on_node(uint8_t node_id, ParamSaveCb *cb);
-
-    template <typename DataType_>
-    class RegistryBinder {
-    protected:
-        typedef void (*Registry)(AP_UAVCAN* _ap_uavcan, uint8_t _node_id, const RegistryBinder& _cb);
-        AP_UAVCAN* _uc;
-        Registry _ffunc;
-
-    public:
-        RegistryBinder() :
-            _uc(),
-            _ffunc(),
-            msg() {}
-
-        RegistryBinder(AP_UAVCAN* uc, Registry ffunc) :
-            _uc(uc),
-            _ffunc(ffunc),
-            msg(nullptr) {}
-
-        void operator()(const uavcan::ReceivedDataStructure<DataType_>& _msg) {
-            msg = &_msg;
-            _ffunc(_uc, _msg.getSrcNodeID().get(), *this);
-        }
-
-        const uavcan::ReceivedDataStructure<DataType_> *msg;
-    };
-
-    // ClientCallRegistryBinder
-    template <typename DataType_>
-    class ClientCallRegistryBinder {
-    protected:
-        typedef void (*ClientCallRegistry)(AP_UAVCAN* _ap_uavcan, uint8_t _node_id, const ClientCallRegistryBinder& _cb);
-        AP_UAVCAN* _uc;
-        ClientCallRegistry _ffunc;
-    public:
-        ClientCallRegistryBinder() :
-            _uc(),
-            _ffunc(),
-            rsp() {}
-
-        ClientCallRegistryBinder(AP_UAVCAN* uc, ClientCallRegistry ffunc) :
-            _uc(uc),
-            _ffunc(ffunc),
-            rsp(nullptr) {}
-
-        void operator()(const uavcan::ServiceCallResult<DataType_>& _rsp) {
-            rsp = &_rsp;
-            _ffunc(_uc, _rsp.getCallID().server_node_id.get(), *this);
-        }
-        const uavcan::ServiceCallResult<DataType_> *rsp;
-    };
 
     // options bitmask
     enum class Options : uint16_t {
@@ -221,9 +123,7 @@ public:
     // 0. return true if it was set
     bool check_and_reset_option(Options option);
 
-    // This will be needed to implement if UAVCAN is used with multithreading
-    // Such cases will be firmware update, etc.
-    class RaiiSynchronizer {};
+    CanardInterface& get_canard_iface() { return canard_iface; }
 
 private:
     void loop(void);
@@ -270,7 +170,7 @@ private:
     uint8_t param_save_request_node_id;
 
     // UAVCAN parameters
-    AP_Int8 _uavcan_node;
+    AP_Int8 _dronecan_node;
     AP_Int32 _servo_bm;
     AP_Int32 _esc_bm;
     AP_Int8 _esc_offset;
@@ -279,14 +179,12 @@ private:
     AP_Int16 _notify_state_hz;
     AP_Int16 _pool_size;
 
-    AP_PoolAllocator *_allocator;
-    AP_UAVCAN_DNA_Server *_dna_server;
+    uint32_t *mem_pool;
 
-    uavcan::Node<0> *_node;
+    AP_UAVCAN_DNA_Server _dna_server;
 
     uint8_t _driver_index;
 
-    uavcan::CanIfaceMgr* _iface_mgr;
     char _thread_name[13];
     bool _initialized;
     ///// SRV output /////
@@ -355,22 +253,80 @@ private:
 
     static HAL_Semaphore _telem_sem;
 
+    // node status send
+    uint32_t _node_status_last_send_ms;
+
     // safety status send state
     uint32_t _last_safety_state_ms;
 
     // notify vehicle state
     uint32_t _last_notify_state_ms;
+    uavcan_protocol_NodeStatus node_status_msg;
+
+    CanardInterface canard_iface;
+    Canard::Publisher<uavcan_protocol_NodeStatus> node_status{canard_iface};
+    Canard::Publisher<uavcan_equipment_actuator_ArrayCommand> act_out_array{canard_iface};
+    Canard::Publisher<uavcan_equipment_esc_RawCommand> esc_raw{canard_iface};
+    Canard::Publisher<uavcan_equipment_indication_LightsCommand> rgb_led{canard_iface};
+    Canard::Publisher<uavcan_equipment_indication_BeepCommand> buzzer{canard_iface};
+    Canard::Publisher<ardupilot_indication_SafetyState> safety_state{canard_iface};
+    Canard::Publisher<uavcan_equipment_safety_ArmingStatus> arming_status{canard_iface};
+    Canard::Publisher<uavcan_equipment_gnss_RTCMStream> rtcm_stream{canard_iface};
+    Canard::Publisher<ardupilot_indication_NotifyState> notify_state{canard_iface};
+
+#if AP_DRONECAN_SEND_GPS
+    Canard::Publisher<uavcan_equipment_gnss_Fix2> gnss_fix2{canard_iface};
+    Canard::Publisher<uavcan_equipment_gnss_Auxiliary> gnss_auxiliary{canard_iface};
+    Canard::Publisher<ardupilot_gnss_Heading> gnss_heading{canard_iface};
+    Canard::Publisher<ardupilot_gnss_Status> gnss_status{canard_iface};
+#endif
+    // incoming messages
+    Canard::ObjCallback<AP_UAVCAN, ardupilot_indication_Button> safety_button_cb{this, &AP_UAVCAN::handle_button};
+    Canard::Subscriber<ardupilot_indication_Button> safety_button_listener{safety_button_cb, _driver_index};
+
+    Canard::ObjCallback<AP_UAVCAN, ardupilot_equipment_trafficmonitor_TrafficReport> traffic_report_cb{this, &AP_UAVCAN::handle_traffic_report};
+    Canard::Subscriber<ardupilot_equipment_trafficmonitor_TrafficReport> traffic_report_listener{traffic_report_cb, _driver_index};
+
+    Canard::ObjCallback<AP_UAVCAN, uavcan_equipment_actuator_Status> actuator_status_cb{this, &AP_UAVCAN::handle_actuator_status};
+    Canard::Subscriber<uavcan_equipment_actuator_Status> actuator_status_listener{actuator_status_cb, _driver_index};
+
+    Canard::ObjCallback<AP_UAVCAN, uavcan_equipment_esc_Status> esc_status_cb{this, &AP_UAVCAN::handle_ESC_status};
+    Canard::Subscriber<uavcan_equipment_esc_Status> esc_status_listener{esc_status_cb, _driver_index};
+
+    Canard::ObjCallback<AP_UAVCAN, uavcan_protocol_debug_LogMessage> debug_cb{this, &AP_UAVCAN::handle_debug};
+    Canard::Subscriber<uavcan_protocol_debug_LogMessage> debug_listener{debug_cb, _driver_index};
+
+    // param client
+    Canard::ObjCallback<AP_UAVCAN, uavcan_protocol_param_GetSetResponse> param_get_set_res_cb{this, &AP_UAVCAN::handle_param_get_set_response};
+    Canard::Client<uavcan_protocol_param_GetSetResponse> param_get_set_client{canard_iface, param_get_set_res_cb};
+
+    Canard::ObjCallback<AP_UAVCAN, uavcan_protocol_param_ExecuteOpcodeResponse> param_save_res_cb{this, &AP_UAVCAN::handle_param_save_response};
+    Canard::Client<uavcan_protocol_param_ExecuteOpcodeResponse> param_save_client{canard_iface, param_save_res_cb};
+
+    // reboot client
+    void handle_restart_node_response(const CanardRxTransfer& transfer, const uavcan_protocol_RestartNodeResponse& msg) {}
+    Canard::ObjCallback<AP_UAVCAN, uavcan_protocol_RestartNodeResponse> restart_node_res_cb{this, &AP_UAVCAN::handle_restart_node_response};
+    Canard::Client<uavcan_protocol_RestartNodeResponse> restart_node_client{canard_iface, restart_node_res_cb};
+
+    uavcan_protocol_param_ExecuteOpcodeRequest param_save_req;
+    uavcan_protocol_param_GetSetRequest param_getset_req;
+
+    // Node Info Server
+    Canard::ObjCallback<AP_UAVCAN, uavcan_protocol_GetNodeInfoRequest> node_info_req_cb{this, &AP_UAVCAN::handle_node_info_request};
+    Canard::Server<uavcan_protocol_GetNodeInfoRequest> node_info_server{canard_iface, node_info_req_cb};
+    uavcan_protocol_GetNodeInfoResponse node_info_rsp;
 
     // incoming button handling
-    static void handle_button(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ButtonCb &cb);
-    static void handle_traffic_report(AP_UAVCAN* ap_uavcan, uint8_t node_id, const TrafficReportCb &cb);
-    static void handle_actuator_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ActuatorStatusCb &cb);
-    static void handle_actuator_status_Volz(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ActuatorStatusVolzCb &cb);
-    static void handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ESCStatusCb &cb);
+    void handle_button(const CanardRxTransfer& transfer, const ardupilot_indication_Button& msg);
+    void handle_traffic_report(const CanardRxTransfer& transfer, const ardupilot_equipment_trafficmonitor_TrafficReport& msg);
+    void handle_actuator_status(const CanardRxTransfer& transfer, const uavcan_equipment_actuator_Status& msg);
+    void handle_actuator_status_Volz(const CanardRxTransfer& transfer, const uavcan_equipment_actuator_Status& msg);
+    void handle_ESC_status(const CanardRxTransfer& transfer, const uavcan_equipment_esc_Status& msg);
     static bool is_esc_data_index_valid(const uint8_t index);
-    static void handle_debug(AP_UAVCAN* ap_uavcan, uint8_t node_id, const DebugCb &cb);
-    static void handle_param_get_set_response(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ParamGetSetCb &cb);
-    static void handle_param_save_response(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ParamExecuteOpcodeCb &cb);
+    void handle_debug(const CanardRxTransfer& transfer, const uavcan_protocol_debug_LogMessage& msg);
+    void handle_param_get_set_response(const CanardRxTransfer& transfer, const uavcan_protocol_param_GetSetResponse& rsp);
+    void handle_param_save_response(const CanardRxTransfer& transfer, const uavcan_protocol_param_ExecuteOpcodeResponse& rsp);
+    void handle_node_info_request(const CanardRxTransfer& transfer, const uavcan_protocol_GetNodeInfoRequest& req);
 };
 
 #endif // #if HAL_ENABLE_LIBUAVCAN_DRIVERS

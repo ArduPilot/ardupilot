@@ -458,7 +458,7 @@ void system_halt_hook(void)
 #ifdef HAL_GPIO_PIN_FAULT
     // optionally print the message on a fault pin
     while (true) {
-        fault_printf("PANIC:%s\n", ch.dbg.panic_msg);
+        fault_printf("PANIC:%s\n", currcore->dbg.panic_msg);
         fault_printf("RA0:0x%08x\n", __builtin_return_address(0));
     }
 #endif

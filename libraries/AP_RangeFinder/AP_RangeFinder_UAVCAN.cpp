@@ -6,15 +6,11 @@
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
 #include <GCS_MAVLink/GCS.h>
-
-#include <uavcan/equipment/range_sensor/Measurement.hpp>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 extern const AP_HAL::HAL& hal;
 
 #define debug_range_finder_uavcan(level_debug, can_driver, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(can_driver)) { hal.console->printf(fmt, ##args); }} while (0)
-
-//UAVCAN Frontend Registry Binder
-UC_REGISTRY_BINDER(MeasurementCb, uavcan::equipment::range_sensor::Measurement);
 
 //links the rangefinder uavcan message to this backend
 void AP_RangeFinder_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
@@ -22,16 +18,8 @@ void AP_RangeFinder_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
     if (ap_uavcan == nullptr) {
         return;
     }
-
-    auto* node = ap_uavcan->get_node();
-
-    uavcan::Subscriber<uavcan::equipment::range_sensor::Measurement, MeasurementCb> *measurement_listener;
-    measurement_listener = new uavcan::Subscriber<uavcan::equipment::range_sensor::Measurement, MeasurementCb>(*node);
-    // Register method to handle incoming RangeFinder measurement
-    const int measurement_listener_res = measurement_listener->start(MeasurementCb(ap_uavcan, &handle_measurement));
-    if (measurement_listener_res < 0) {
-        AP_HAL::panic("UAVCAN RangeFinder subscriber start problem\n\r");
-        return;
+    if (Canard::allocate_sub_arg_callback(ap_uavcan, &handle_measurement, ap_uavcan->get_driver_index()) == nullptr) {
+        AP_BoardConfig::allocation_error("measurement_sub");
     }
 }
 
@@ -112,32 +100,32 @@ void AP_RangeFinder_UAVCAN::update()
 }
 
 //RangeFinder message handler
-void AP_RangeFinder_UAVCAN::handle_measurement(AP_UAVCAN* ap_uavcan, uint8_t node_id, const MeasurementCb &cb)
+void AP_RangeFinder_UAVCAN::handle_measurement(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const uavcan_equipment_range_sensor_Measurement &msg)
 {
     //fetch the matching uavcan driver, node id and sensor id backend instance
-    AP_RangeFinder_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id, cb.msg->sensor_id, true);
+    AP_RangeFinder_UAVCAN* driver = get_uavcan_backend(ap_uavcan, transfer.source_node_id, msg.sensor_id, true);
     if (driver == nullptr) {
         return;
     }
     WITH_SEMAPHORE(driver->_sem);
-    switch (cb.msg->reading_type) {
-        case uavcan::equipment::range_sensor::Measurement::READING_TYPE_VALID_RANGE:
+    switch (msg.reading_type) {
+        case UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_READING_TYPE_VALID_RANGE:
         {
             //update the states in backend instance
-            driver->_distance_cm = cb.msg->range*100.0f;
+            driver->_distance_cm = msg.range*100.0f;
             driver->_last_reading_ms = AP_HAL::millis();
             driver->_status = RangeFinder::Status::Good;
             driver->new_data = true;
             break;
         }
         //Additional states supported by RFND message
-        case uavcan::equipment::range_sensor::Measurement::READING_TYPE_TOO_CLOSE:
+        case UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_READING_TYPE_TOO_CLOSE:
         {
             driver->_last_reading_ms = AP_HAL::millis();
             driver->_status = RangeFinder::Status::OutOfRangeLow;
             break;
         }
-        case uavcan::equipment::range_sensor::Measurement::READING_TYPE_TOO_FAR:
+        case UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_READING_TYPE_TOO_FAR:
         {
             driver->_last_reading_ms = AP_HAL::millis();
             driver->_status = RangeFinder::Status::OutOfRangeHigh;
@@ -149,18 +137,18 @@ void AP_RangeFinder_UAVCAN::handle_measurement(AP_UAVCAN* ap_uavcan, uint8_t nod
         }
     }
     //copy over the sensor type of Rangefinder 
-    switch (cb.msg->sensor_type) {
-        case uavcan::equipment::range_sensor::Measurement::SENSOR_TYPE_SONAR:
+    switch (msg.sensor_type) {
+        case UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_SENSOR_TYPE_SONAR:
         {
             driver->_sensor_type = MAV_DISTANCE_SENSOR_ULTRASOUND;
             break;
         }
-        case uavcan::equipment::range_sensor::Measurement::SENSOR_TYPE_LIDAR:
+        case UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_SENSOR_TYPE_LIDAR:
         {
             driver->_sensor_type = MAV_DISTANCE_SENSOR_LASER;
             break;
         }
-        case uavcan::equipment::range_sensor::Measurement::SENSOR_TYPE_RADAR:
+        case UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_SENSOR_TYPE_RADAR:
         {
             driver->_sensor_type = MAV_DISTANCE_SENSOR_RADAR;
             break;

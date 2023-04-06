@@ -8,9 +8,6 @@
 
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
-class MagCb;
-class Mag2Cb;
-
 class AP_Compass_UAVCAN : public AP_Compass_Backend {
 public:
     AP_Compass_UAVCAN(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t sensor_id, uint32_t devid);
@@ -20,13 +17,13 @@ public:
     static void subscribe_msgs(AP_UAVCAN* ap_uavcan);
     static AP_Compass_Backend* probe(uint8_t index);
     static uint32_t get_detected_devid(uint8_t index) { return _detected_modules[index].devid; }
-    static void handle_magnetic_field(AP_UAVCAN* ap_uavcan, uint8_t node_id, const MagCb &cb);
-    static void handle_magnetic_field_2(AP_UAVCAN* ap_uavcan, uint8_t node_id, const Mag2Cb &cb);
+    static void handle_magnetic_field(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const uavcan_equipment_ahrs_MagneticFieldStrength& msg);
+    static void handle_magnetic_field_2(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const uavcan_equipment_ahrs_MagneticFieldStrength2 &msg);
 
 private:
     bool init();
 
-    // callback for UAVCAN messages
+    // callback for DroneCAN messages
     void handle_mag_msg(const Vector3f &mag);
 
     static AP_Compass_UAVCAN* get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t sensor_id);

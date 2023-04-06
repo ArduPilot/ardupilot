@@ -246,6 +246,11 @@ public:
         _board_orientation = orientation;
     }
 
+    // get overall board orientation
+    enum Rotation get_board_orientation(void) const {
+        return _board_orientation;
+    }
+
     /// Set the motor compensation type
     ///
     /// @param  comp_type           0 = disabled, 1 = enabled use throttle, 2 = enabled use current

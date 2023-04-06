@@ -115,6 +115,7 @@ AP_CANManager::AP_CANManager()
     _singleton = this;
 }
 
+#if !AP_TEST_DRONECAN_DRIVERS
 void AP_CANManager::init()
 {
     WITH_SEMAPHORE(_sem);
@@ -202,8 +203,9 @@ void AP_CANManager::init()
         }
 
         // Allocate the set type of Driver
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
         if (drv_type[drv_num] == Driver_Type_UAVCAN) {
-            _drivers[drv_num] = _drv_param[drv_num]._uavcan = new AP_UAVCAN;
+            _drivers[drv_num] = _drv_param[drv_num]._uavcan = new AP_UAVCAN(drv_num);
 
             if (_drivers[drv_num] == nullptr) {
                 AP_BoardConfig::allocation_error("uavcan %d", i + 1);
@@ -211,7 +213,9 @@ void AP_CANManager::init()
             }
 
             AP_Param::load_object_from_eeprom((AP_UAVCAN*)_drivers[drv_num], AP_UAVCAN::var_info);
-        } else if (drv_type[drv_num] == Driver_Type_KDECAN) {
+        } else
+#endif
+        if (drv_type[drv_num] == Driver_Type_KDECAN) {
 #if (APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub))
             // To be replaced with macro saying if KDECAN library is included
             _drivers[drv_num] = _drv_param[drv_num]._kdecan = new AP_KDECAN;
@@ -279,7 +283,26 @@ void AP_CANManager::init()
         _driver_type_cache[drv_num] = drv_type[drv_num];
     }
 }
+#else
+void AP_CANManager::init()
+{
+    WITH_SEMAPHORE(_sem);
+    for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
+        if ((Driver_Type) _drv_param[i]._driver_type.get() == Driver_Type_UAVCAN) {
+            _drivers[i] = _drv_param[i]._uavcan = new AP_UAVCAN(i);
 
+            if (_drivers[i] == nullptr) {
+                AP_BoardConfig::allocation_error("uavcan %d", i + 1);
+                continue;
+            }
+
+            AP_Param::load_object_from_eeprom((AP_UAVCAN*)_drivers[i], AP_UAVCAN::var_info);
+            _drivers[i]->init(i, true);
+            _driver_type_cache[i] = (Driver_Type) _drv_param[i]._driver_type.get();
+        }
+    }
+}
+#endif
 /*
   register a new CAN driver
  */

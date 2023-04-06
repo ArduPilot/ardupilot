@@ -873,3 +873,16 @@ bool AP_MotorsMulticopter::arming_checks(size_t buflen, char *buffer) const
 
     return true;
 }
+
+#if APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+// Getters for AP_Motors example, not used by vehicles
+float AP_MotorsMulticopter::get_throttle_avg_max() const
+{
+    return _throttle_avg_max;
+}
+
+int16_t AP_MotorsMulticopter::get_yaw_headroom() const
+{
+    return _yaw_headroom;
+}
+#endif

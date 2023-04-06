@@ -30,4 +30,32 @@
       </historyQos>
     </topic>
   </data_writer>
+  <topic profile_name="navsatfix0__t">
+    <name>rt/ROS2_NavSatFix0</name>
+    <dataType>sensor_msgs::msg::dds_::NavSatFix_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>5</depth>
+    </historyQos>
+  </topic>
+  <data_writer profile_name="navsatfix0__dw">
+    <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+    <qos>
+      <reliability>
+        <kind>BEST_EFFORT</kind>
+      </reliability>
+      <durability>
+        <kind>VOLATILE</kind>
+      </durability>
+    </qos>
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/ROS2_NavSatFix0</name>
+      <dataType>sensor_msgs::msg::dds_::NavSatFix_</dataType>
+      <historyQos>
+        <kind>KEEP_LAST</kind>
+        <depth>5</depth>
+      </historyQos>
+    </topic>
+  </data_writer>
 </profiles>

@@ -5,11 +5,10 @@
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
 #ifndef AP_PROXIMITY_DRONECAN_ENABLED
-#define AP_PROXIMITY_DRONECAN_ENABLED (HAL_CANMANAGER_ENABLED && HAL_PROXIMITY_ENABLED)
+#define AP_PROXIMITY_DRONECAN_ENABLED (HAL_ENABLE_LIBUAVCAN_DRIVERS && HAL_PROXIMITY_ENABLED)
 #endif
 
 #if AP_PROXIMITY_DRONECAN_ENABLED
-class MeasurementCb;
 
 class AP_Proximity_DroneCAN : public AP_Proximity_Backend
 {
@@ -30,7 +29,7 @@ public:
 
     static void subscribe_msgs(AP_UAVCAN* ap_uavcan);
 
-    static void handle_measurement(AP_UAVCAN* ap_uavcan, uint8_t node_id, const MeasurementCb &cb);
+    static void handle_measurement(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const ardupilot_equipment_proximity_sensor_Proximity &msg);
 
 private:
 

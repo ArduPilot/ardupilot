@@ -444,10 +444,11 @@ def run_step(step):
         "postype_single": opts.postype_single,
         "extra_configure_args": opts.waf_configure_args,
         "coverage": opts.coverage,
-        "sitl_32bit" : opts.sitl_32bit,
+        "force_32bit" : opts.force_32bit,
         "ubsan" : opts.ubsan,
         "ubsan_abort" : opts.ubsan_abort,
         "num_aux_imus" : opts.num_aux_imus,
+        "dronecan_tests" : opts.dronecan_tests,
     }
 
     if opts.Werror:
@@ -958,10 +959,10 @@ if __name__ == "__main__":
                            action="store_true",
                            dest="ekf_single",
                            help="force single precision EKF")
-    group_build.add_option("--sitl-32bit",
+    group_build.add_option("--force-32bit",
                            default=False,
                            action='store_true',
-                           dest="sitl_32bit",
+                           dest="force_32bit",
                            help="compile sitl using 32-bit")
     group_build.add_option("", "--ubsan",
                            default=False,
@@ -978,6 +979,11 @@ if __name__ == "__main__":
                            default=0,
                            type='int',
                            help='number of auxiliary IMUs to simulate')
+    group_build.add_option("--enable-dronecan-tests",
+                           default=False,
+                           action='store_true',
+                           dest="dronecan_tests",
+                           help="enable dronecan tests")
     parser.add_option_group(group_build)
 
     group_sim = optparse.OptionGroup(parser, "Simulation options")
