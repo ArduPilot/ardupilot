@@ -94,13 +94,13 @@ private:
     uint8_t CalcTblCrc(uint8_t* ptr, short nLen);
     bool check_startup();
 
-    AP_HAL::OwnPtr<AP_HAL::Device> dev_accel;
-    AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro;
+    AP_HAL::OwnPtr<AP_HAL::Device> dev_uno;
+    AP_HAL::OwnPtr<AP_HAL::Device> dev_due;
 
     uint8_t accel_instance;
     uint8_t gyro_instance;
     enum Rotation rotation;
-    bool error_scha63t;    // this flag is not used yet
+    bool ret_scha63t;    // this flag is not used yet
 
     // are we doing more than 1kHz sampling?
     bool fast_sampling;

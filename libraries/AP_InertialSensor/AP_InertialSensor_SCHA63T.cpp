@@ -39,26 +39,26 @@ extern const AP_HAL::HAL& hal;
 #define SCHA63T_DUE 1
 
 AP_InertialSensor_SCHA63T::AP_InertialSensor_SCHA63T(AP_InertialSensor &imu,
-        AP_HAL::OwnPtr<AP_HAL::Device> _dev_accel,
-        AP_HAL::OwnPtr<AP_HAL::Device> _dev_gyro,
+        AP_HAL::OwnPtr<AP_HAL::Device> _dev_uno,
+        AP_HAL::OwnPtr<AP_HAL::Device> _dev_due,
         enum Rotation _rotation)
     : AP_InertialSensor_Backend(imu)
-    , dev_accel(std::move(_dev_accel))
-    , dev_gyro(std::move(_dev_gyro))
+    , dev_uno(std::move(_dev_uno))
+    , dev_due(std::move(_dev_due))
     , rotation(_rotation)
 {
 }
 
 AP_InertialSensor_Backend *
 AP_InertialSensor_SCHA63T::probe(AP_InertialSensor &imu,
-                                 AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_accel,
-                                 AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_gyro,
+                                 AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_uno,
+                                 AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev_due,
                                  enum Rotation rotation)
 {
-    if (!dev_accel || !dev_gyro) {
+    if (!dev_uno || !dev_due) {
         return nullptr;
     }
-    auto sensor = new AP_InertialSensor_SCHA63T(imu, std::move(dev_accel), std::move(dev_gyro), rotation);
+    auto sensor = new AP_InertialSensor_SCHA63T(imu, std::move(dev_uno), std::move(dev_due), rotation);
 
     if (!sensor) {
         return nullptr;
@@ -78,15 +78,15 @@ AP_InertialSensor_SCHA63T::probe(AP_InertialSensor &imu,
 
 void AP_InertialSensor_SCHA63T::start()
 {
-    if (!_imu.register_accel(accel_instance, BACKEND_SAMPLE_RATE, dev_accel->get_bus_id_devtype(DEVTYPE_INS_SCHA63T)) ||
-        !_imu.register_gyro(gyro_instance, BACKEND_SAMPLE_RATE, dev_gyro->get_bus_id_devtype(DEVTYPE_INS_SCHA63T))) {
+    if (!_imu.register_accel(accel_instance, BACKEND_SAMPLE_RATE, dev_uno->get_bus_id_devtype(DEVTYPE_INS_SCHA63T)) ||
+        !_imu.register_gyro(gyro_instance, BACKEND_SAMPLE_RATE, dev_due->get_bus_id_devtype(DEVTYPE_INS_SCHA63T))) {
         return;
     }
 
     // set backend rate
     backend_rate_hz = BACKEND_SAMPLE_RATE;
     if (enable_fast_sampling(accel_instance) && get_fast_sampling_rate() > 1) {
-        fast_sampling = dev_accel->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
+        fast_sampling = dev_uno->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
         if (fast_sampling) {
             // constrain the gyro rate to be a 2^N multiple
             uint8_t fast_sampling_rate = constrain_int16(get_fast_sampling_rate(), 1, 4);
@@ -101,8 +101,8 @@ void AP_InertialSensor_SCHA63T::start()
     set_accel_orientation(accel_instance, rotation);
 
     // setup callbacks
-    dev_accel->register_periodic_callback(backend_period_us, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_SCHA63T::read_accel, void));
-    dev_gyro->register_periodic_callback(backend_period_us, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_SCHA63T::read_gyro, void));
+    dev_uno->register_periodic_callback(backend_period_us, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_SCHA63T::read_accel, void));
+    dev_due->register_periodic_callback(backend_period_us, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_SCHA63T::read_gyro, void));
 }
 
 /*
@@ -110,64 +110,64 @@ void AP_InertialSensor_SCHA63T::start()
  */
 bool AP_InertialSensor_SCHA63T::init()
 {
-    WITH_SEMAPHORE(dev_accel->get_semaphore());
-    WITH_SEMAPHORE(dev_gyro->get_semaphore());
+    WITH_SEMAPHORE(dev_uno->get_semaphore());
+    WITH_SEMAPHORE(dev_due->get_semaphore());
 
     // error initialise is OK
-    error_scha63t = true;
+    ret_scha63t = true;
 
     // wait 25ms for non-volatile memory (NVM) read
     hal.scheduler->delay(25);
 
     // set DUE operation mode on (must be less than 1ms)
-    error_scha63t &= RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM);
-    error_scha63t &= RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM);
+    ret_scha63t &= RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM);
+    ret_scha63t &= RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM);
     // set UNO operation mode on
-    error_scha63t &= RegisterWrite(SCHA63T_UNO, MODE, MODE_NORM);
+    ret_scha63t &= RegisterWrite(SCHA63T_UNO, MODE, MODE_NORM);
     // wait 70ms initial startup
     hal.scheduler->delay(70);
 
     // set UNO configuration (data filter, flag filter)
-    error_scha63t &= RegisterWrite(SCHA63T_UNO, G_FILT_DYN, G_FILT);
-    error_scha63t &= RegisterWrite(SCHA63T_UNO, A_FILT_DYN, A_FILT);
+    ret_scha63t &= RegisterWrite(SCHA63T_UNO, G_FILT_DYN, G_FILT);
+    ret_scha63t &= RegisterWrite(SCHA63T_UNO, A_FILT_DYN, A_FILT);
 
     // reset DUE write (0001h) to register 18h
-    error_scha63t &= RegisterWrite(SCHA63T_DUE, RESCTRL, HW_RES);
+    ret_scha63t &= RegisterWrite(SCHA63T_DUE, RESCTRL, HW_RES);
     // wait 25ms for non-volatile memory (NVM) read
     hal.scheduler->delay(25);
 
     // set DUE operation mode on (must be less than 1ms)
-    error_scha63t &= RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM);
-    error_scha63t &= RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM);
+    ret_scha63t &= RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM);
+    ret_scha63t &= RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM);
     // wait 1ms (50ms has already passed)
     hal.scheduler->delay(1);
 
     // set DUE configuration (data filter, flag filter)
-    error_scha63t &= RegisterWrite(SCHA63T_DUE, G_FILT_DYN, G_FILT);
+    ret_scha63t &= RegisterWrite(SCHA63T_DUE, G_FILT_DYN, G_FILT);
 
     // startup clear (startup_attempt = 0)
     if (!check_startup()) {
         // system in FAILURE mode (startup_attempt not equl 0 startup_attempt = 1)
         // reset UNO write (0001h) to register 18h
-        error_scha63t &= RegisterWrite(SCHA63T_UNO, RESCTRL, HW_RES);
+        ret_scha63t &= RegisterWrite(SCHA63T_UNO, RESCTRL, HW_RES);
         // reset DUE write (0001h) to register 18h
-        error_scha63t &= RegisterWrite(SCHA63T_DUE, RESCTRL, HW_RES);
+        ret_scha63t &= RegisterWrite(SCHA63T_DUE, RESCTRL, HW_RES);
         // wait 25ms for non-volatile memory (NVM) read
         hal.scheduler->delay(25);
 
         // set DUE operation mode on (must be less than 1ms)
-        error_scha63t &= RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM);
-        error_scha63t &= RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM);
+        ret_scha63t &= RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM);
+        ret_scha63t &= RegisterWrite(SCHA63T_DUE, MODE, MODE_NORM);
         // set UNO operation mode on
-        error_scha63t &= RegisterWrite(SCHA63T_UNO, MODE, MODE_NORM);
+        ret_scha63t &= RegisterWrite(SCHA63T_UNO, MODE, MODE_NORM);
         // wait 70ms initial startup
         hal.scheduler->delay(50);
 
         // set UNO configuration (data filter, flag filter)
-        error_scha63t &= RegisterWrite(SCHA63T_UNO, G_FILT_DYN, G_FILT);
-        error_scha63t &= RegisterWrite(SCHA63T_UNO, A_FILT_DYN, A_FILT);
+        ret_scha63t &= RegisterWrite(SCHA63T_UNO, G_FILT_DYN, G_FILT);
+        ret_scha63t &= RegisterWrite(SCHA63T_UNO, A_FILT_DYN, A_FILT);
         // set DUE configuration (data filter, flag filter)
-        error_scha63t &= RegisterWrite(SCHA63T_DUE, G_FILT_DYN, G_FILT);
+        ret_scha63t &= RegisterWrite(SCHA63T_DUE, G_FILT_DYN, G_FILT);
 
         // wait 45ms (adjust restart duration to 500ms)
         hal.scheduler->delay(45);
@@ -190,28 +190,28 @@ bool AP_InertialSensor_SCHA63T::check_startup()
     hal.scheduler->delay(405);
 
     // start EOI = 1
-    error_scha63t &= RegisterWrite(SCHA63T_UNO, RESCTRL, RES_EOI);
-    error_scha63t &= RegisterWrite(SCHA63T_DUE, RESCTRL, RES_EOI);
+    ret_scha63t &= RegisterWrite(SCHA63T_UNO, RESCTRL, RES_EOI);
+    ret_scha63t &= RegisterWrite(SCHA63T_DUE, RESCTRL, RES_EOI);
 
     // first read summary status
-    error_scha63t &= RegisterRead(SCHA63T_UNO, S_SUM, val);
-    error_scha63t &= RegisterRead(SCHA63T_DUE, S_SUM, val);
+    ret_scha63t &= RegisterRead(SCHA63T_UNO, S_SUM, val);
+    ret_scha63t &= RegisterRead(SCHA63T_DUE, S_SUM, val);
     // 2.5ms or more
     hal.scheduler->delay(3);
 
     // second read summary status
-    error_scha63t &= RegisterRead(SCHA63T_UNO, S_SUM, val);
-    error_scha63t &= RegisterRead(SCHA63T_DUE, S_SUM, val);
+    ret_scha63t &= RegisterRead(SCHA63T_UNO, S_SUM, val);
+    ret_scha63t &= RegisterRead(SCHA63T_DUE, S_SUM, val);
     // 2.5ms or more
     hal.scheduler->delay(3);
 
     // read summary status
-    error_scha63t &= RegisterRead(SCHA63T_UNO, S_SUM, val);
+    ret_scha63t &= RegisterRead(SCHA63T_UNO, S_SUM, val);
     // check UNO summary status
     if (!((val[1] & 0x9e) && (val[2] & 0xda))) {
         read_summary_error = true;
     }
-    error_scha63t &= RegisterRead(SCHA63T_DUE, S_SUM, val);
+    ret_scha63t &= RegisterRead(SCHA63T_DUE, S_SUM, val);
     // check DUE summary status
     if (!((val[1] & 0xf8) && (val[2] & 0x03))) {
         read_summary_error = true;
@@ -241,36 +241,36 @@ void AP_InertialSensor_SCHA63T::read_accel(void)
     int16_t uno_temp = 0;
 
     // ACCL_X Cmd Send (This Response rsp_accl_x is Dust!!)
-    error_scha63t &= RegisterRead(SCHA63T_UNO, ACC_X, rsp_accl_x);
+    ret_scha63t &= RegisterRead(SCHA63T_UNO, ACC_X, rsp_accl_x);
     // ACCL_Y Cmd Send + ACCL_X Response Receive
-    error_scha63t &= RegisterRead(SCHA63T_UNO, ACC_Y, rsp_accl_x);
+    ret_scha63t &= RegisterRead(SCHA63T_UNO, ACC_Y, rsp_accl_x);
     // ACCL_Z Cmd Send + ACCL_Y Response Receive
-    error_scha63t &= RegisterRead(SCHA63T_UNO, ACC_Z, rsp_accl_y);
+    ret_scha63t &= RegisterRead(SCHA63T_UNO, ACC_Z, rsp_accl_y);
     // TEMPER Cmd Send + RATE_X Response Receive
-    error_scha63t &= RegisterRead(SCHA63T_UNO, TEMP, rsp_accl_z);
+    ret_scha63t &= RegisterRead(SCHA63T_UNO, TEMP, rsp_accl_z);
     // TEMPER Cmd Send + TEMPRE Response Receive
-    error_scha63t &= RegisterRead(SCHA63T_UNO, TEMP, rsp_temper);
+    ret_scha63t &= RegisterRead(SCHA63T_UNO, TEMP, rsp_temper);
 
     // response data address check
     if (((rsp_accl_x[0] & 0x7C) >> 2) == ACC_X) {
         accel_x = combine(rsp_accl_x[1], rsp_accl_x[2]);
     } else {
-        error_scha63t = 1;
+        ret_scha63t = 1;
     }
     if (((rsp_accl_y[0] & 0x7C) >> 2) == ACC_Y) {
         accel_y = combine(rsp_accl_y[1], rsp_accl_y[2]);
     } else {
-        error_scha63t = 1;
+        ret_scha63t = 1;
     }
     if (((rsp_accl_z[0] & 0x7C) >> 2) == ACC_Z) {
         accel_z = combine(rsp_accl_z[1], rsp_accl_z[2]);
     } else {
-        error_scha63t = 1;
+        ret_scha63t = 1;
     }
     if (((rsp_temper[0] & 0x7C) >> 2) == TEMP) {
         uno_temp = combine(rsp_temper[1], rsp_temper[2]);
     } else {
-        error_scha63t = 1;
+        ret_scha63t = 1;
     }
     set_temperature(accel_instance, uno_temp);
 
@@ -284,8 +284,8 @@ void AP_InertialSensor_SCHA63T::read_accel(void)
     _notify_new_accel_raw_sample(accel_instance, accel);
 
     AP_HAL::Device::checkreg reg;
-    if (!dev_accel->check_next_register(reg)) {
-        log_register_change(dev_accel->get_bus_id(), reg);
+    if (!dev_uno->check_next_register(reg)) {
+        log_register_change(dev_uno->get_bus_id(), reg);
         _inc_accel_error_count(accel_instance);
     }
 }
@@ -308,45 +308,45 @@ void AP_InertialSensor_SCHA63T::read_gyro(void)
     int16_t due_temp = 0;
 
     // RATE_Y Cmd Send (This Response rsp_rate_y is Dust!!)
-    error_scha63t &= RegisterRead(SCHA63T_DUE, RATE_Y, rsp_rate_y);
+    ret_scha63t &= RegisterRead(SCHA63T_DUE, RATE_Y, rsp_rate_y);
     // RATE_Z Cmd Send + RATE_Y Response Receive
-    error_scha63t &= RegisterRead(SCHA63T_DUE, RATE_XZ, rsp_rate_y);
+    ret_scha63t &= RegisterRead(SCHA63T_DUE, RATE_XZ, rsp_rate_y);
     // TEMPER Cmd Send + RATE_Z Response Receive
-    error_scha63t &= RegisterRead(SCHA63T_DUE, TEMP, rsp_rate_z);
+    ret_scha63t &= RegisterRead(SCHA63T_DUE, TEMP, rsp_rate_z);
     // TEMPER Cmd Send + TEMPRE Response Receive
-    error_scha63t &= RegisterRead(SCHA63T_DUE, TEMP, rsp_due_temper);
+    ret_scha63t &= RegisterRead(SCHA63T_DUE, TEMP, rsp_due_temper);
     // RATE_X Cmd Send + ACCL_Z Response Receive
-    error_scha63t &= RegisterRead(SCHA63T_UNO, RATE_XZ, rsp_rate_x);
+    ret_scha63t &= RegisterRead(SCHA63T_UNO, RATE_XZ, rsp_rate_x);
     // TEMPER Cmd Send + TEMPRE Response Receive
-    error_scha63t &= RegisterRead(SCHA63T_UNO, TEMP, rsp_rate_x);
+    ret_scha63t &= RegisterRead(SCHA63T_UNO, TEMP, rsp_rate_x);
     // TEMPER Cmd Send + TEMPRE Response Receive
-    error_scha63t &= RegisterRead(SCHA63T_UNO, TEMP, rsp_uno_temper);
+    ret_scha63t &= RegisterRead(SCHA63T_UNO, TEMP, rsp_uno_temper);
 
     // response data address check
     if (((rsp_rate_x[0] & 0x7C) >> 2) == RATE_XZ) {
         gyro_x = combine(rsp_rate_x[1], rsp_rate_x[2]);
     } else {
-        error_scha63t = 1;
+        ret_scha63t = 1;
     }
     if (((rsp_rate_y[0] & 0x7C) >> 2) == RATE_Y) {
         gyro_y = combine(rsp_rate_y[1], rsp_rate_y[2]);
     } else {
-        error_scha63t = 1;
+        ret_scha63t = 1;
     }
     if (((rsp_rate_z[0] & 0x7C) >> 2) == RATE_XZ) {
         gyro_z = combine(rsp_rate_z[1], rsp_rate_z[2]);
     } else {
-        error_scha63t = 1;
+        ret_scha63t = 1;
     }
     if (((rsp_uno_temper[0] & 0x7C) >> 2) == TEMP) {
         uno_temp = combine(rsp_uno_temper[1], rsp_uno_temper[2]);
     } else {
-        error_scha63t = 1;
+        ret_scha63t = 1;
     }
     if (((rsp_due_temper[0] & 0x7C) >> 2) == TEMP) {
         due_temp = combine(rsp_due_temper[1], rsp_due_temper[2]);
     } else {
-        error_scha63t = 1;
+        ret_scha63t = 1;
     }
     set_temperature(gyro_instance, (uno_temp + due_temp) / 2);
 
@@ -360,8 +360,8 @@ void AP_InertialSensor_SCHA63T::read_gyro(void)
     _notify_new_gyro_raw_sample(gyro_instance, gyro);
 
     AP_HAL::Device::checkreg reg;
-    if (!dev_gyro->check_next_register(reg)) {
-        log_register_change(dev_gyro->get_bus_id(), reg);
+    if (!dev_due->check_next_register(reg)) {
+        log_register_change(dev_due->get_bus_id(), reg);
         _inc_gyro_error_count(gyro_instance);
     }
 }
@@ -391,34 +391,21 @@ bool AP_InertialSensor_SCHA63T::RegisterRead(int uno_due, reg_scha63t reg_addr, 
     cmd[0] &= 0x7f;
     cmd[3] = crc8_sae(cmd, 3);
 
-#if 0
-    switch ( uno_due ) {
-    case SCHA63T_UNO:
-        ret = dev_accel->transfer_fullduplex(cmd, val, 4);
-        break;
-    case SCHA63T_DUE:
-        ret = dev_gyro->transfer_fullduplex(cmd, val, 4);
-        break;
-    default:
-        break;
-    }
-#else
     uint8_t buf[4];
     switch ( uno_due ) {
     case SCHA63T_UNO:
         memcpy(buf, cmd, 4);
-        ret = dev_accel->transfer(buf, 4, buf, 4);
+        ret = dev_uno->transfer(buf, 4, buf, 4);
         memcpy(val, buf, 4);
         break;
     case SCHA63T_DUE:
         memcpy(buf, cmd, 4);
-        ret = dev_gyro->transfer(buf, 4, buf, 4);
+        ret = dev_due->transfer(buf, 4, buf, 4);
         memcpy(val, buf, 4);
         break;
     default:
         break;
     }
-#endif
 
     if (ret == true) {
         bCrc = crc8_sae(val, 3);
@@ -443,34 +430,21 @@ bool AP_InertialSensor_SCHA63T::RegisterWrite(int uno_due, reg_scha63t reg_addr,
     cmd[2] = val;
     cmd[3] = crc8_sae(cmd, 3);
 
-#if 0
-    switch ( uno_due ) {
-    case SCHA63T_UNO:
-        ret = dev_accel->transfer_fullduplex(cmd, res, 4);
-        break;
-    case SCHA63T_DUE:
-        ret = dev_gyro->transfer_fullduplex(cmd, res, 4);
-        break;
-    default:
-        break;
-    }
-#else
     uint8_t buf[4];
     switch ( uno_due ) {
     case SCHA63T_UNO:
         memcpy(buf, cmd, 4);
-        ret = dev_accel->transfer(buf, 4, buf, 4);
+        ret = dev_uno->transfer(buf, 4, buf, 4);
         memcpy(res, buf, 4);
         break;
     case SCHA63T_DUE:
         memcpy(buf, cmd, 4);
-        ret = dev_gyro->transfer(buf, 4, buf, 4);
+        ret = dev_due->transfer(buf, 4, buf, 4);
         memcpy(res, buf, 4);
         break;
     default:
         break;
     }
-#endif
 
     // true:OK. false:FAILED
     return ret;
