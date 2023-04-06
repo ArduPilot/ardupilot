@@ -38,9 +38,9 @@ While DDS support in Ardupilot is mostly through git submodules, another tool ne
   ```console
   sudo apt install default-jre
   ````
-- Follow instructions [here](https://micro-xrce-dds.docs.eprosima.com/en/latest/installation.html#installing-the-micro-xrce-dds-gen-tool) to install the generator, but use `develop` branch instead of `master` (for now).
+- Follow instructions [here](https://micro-xrce-dds.docs.eprosima.com/en/latest/installation.html#installing-the-micro-xrce-dds-gen-tool) to install the latest version of the generator
   ```console
-  git clone -b develop --recurse-submodules https://github.com/eProsima/Micro-XRCE-DDS-Gen.git
+  git clone --recurse-submodules https://github.com/eProsima/Micro-XRCE-DDS-Gen.git
   cd Micro-XRCE-DDS-Gen
   ./gradlew assemble
   ```
@@ -167,7 +167,6 @@ After your setups are complete, do the following:
 Unlike the use of ROS 2 `.msg` files, since Ardupilot supports native DDS, the message files follow [OMG IDL DDS v4.2](https://www.omg.org/spec/IDL/4.2/PDF).
 This package is intended to work with any `.idl` file complying with those extensions, with some limitations. 
 
-1. IDL files need to be in the same folder, and modified includes.
 1. Topic types can't use alias types.
 1. Arrays need manually edited type names. 
 
@@ -179,14 +178,10 @@ cd ardupilot
 source /opt/ros/humble/setup.bash
 # Find the IDL file
 find /opt/ros/$ROS_DISTRO -type f -wholename \*builtin_interfaces/msg/Time.idl
-# Create the directory in the source tree if it doesn't exist
-mkdir -p libraries/AP_DDS_Client/Idl/builtin_interfaces/msg/
+# Create the directory in the source tree if it doesn't exist similar to the one found in the ros directory
+mkdir -p libraries/AP_DDS/Idl/builtin_interfaces/msg/
 # Copy the IDL
-cp -r /opt/ros/humble/share/builtin_interfaces/msg/Time.idl libraries/AP_DDS_Client/Idl/builtin_interfaces/msg/
-# Now, apply the mods manually to be compliant with MicroXRCEDDSGen limitations
-# Create an output directory to test it
-mkdir -p /tmp/xrce_out
-# Run the generator
-microxrceddsgen -replace -d /tmp/xrce_out libraries/AP_DDS_Client/Idl/builtin_interfaces/msg/Time.idl
-# cat /tmp/xrce_out/
+cp -r /opt/ros/humble/share/builtin_interfaces/msg/Time.idl libraries/AP_DDS/Idl/builtin_interfaces/msg/
+# Now, apply the necessary mods manually to be compliant with MicroXRCEDDSGen limitations
+# Build the code again as desribed above
 ```
