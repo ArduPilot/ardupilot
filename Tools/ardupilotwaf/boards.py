@@ -429,15 +429,10 @@ class Board:
             ]
 
         if self.with_can and not cfg.env.AP_PERIPH:
-            if not cfg.env.FORCE32BIT and (cfg.env.BOARD == 'sitl' or cfg.env.BOARD == 'linux'):
-                env.DEFINES.update(
-                    HAL_ENABLE_LIBUAVCAN_DRIVERS = 0
-                )
-            else:
-                env.AP_LIBRARIES += [
-                    'AP_DroneCAN',
-                    'modules/DroneCAN/libcanard/*.c',
-                    ]
+            env.AP_LIBRARIES += [
+                'AP_DroneCAN',
+                'modules/DroneCAN/libcanard/*.c',
+                ]
             if cfg.options.enable_dronecan_tests:
                 env.DEFINES.update(
                     AP_TEST_DRONECAN_DRIVERS = 1
@@ -1142,7 +1137,7 @@ class linux(Board):
             self.with_can = False
 
     def configure_env(self, cfg, env):
-        if cfg.options.board == 'linux' and cfg.options.force_32bit:
+        if cfg.options.board == 'linux':
             self.with_can = True
         super(linux, self).configure_env(cfg, env)
 
@@ -1189,7 +1184,7 @@ class linux(Board):
             env.DEFINES.update(
                 HAL_FORCE_32BIT = 0,
             )
-        if self.with_can and cfg.options.board == 'linux' and cfg.options.force_32bit:
+        if self.with_can and cfg.options.board == 'linux':
             cfg.env.HAL_NUM_CAN_IFACES = 2
             cfg.define('HAL_NUM_CAN_IFACES', 2)
             cfg.define('UAVCAN_EXCEPTIONS', 0)
