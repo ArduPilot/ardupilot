@@ -20,11 +20,11 @@ bool AP_Camera_Scripting::record_video(bool start_recording)
     return true;
 }
 
-// set camera zoom step.  returns true on success
-// zoom out = -1, hold = 0, zoom in = 1
-bool AP_Camera_Scripting::set_zoom_step(int8_t zoom_step)
+// set zoom specified as a rate or percentage
+bool AP_Camera_Scripting::set_zoom(AP_Camera::ZoomType zoom_type, float zoom_value)
 {
-    _cam_state.zoom_step = zoom_step;
+    _cam_state.zoom_type = (uint8_t)zoom_type;
+    _cam_state.zoom_value = zoom_value;
     return true;
 }
 
