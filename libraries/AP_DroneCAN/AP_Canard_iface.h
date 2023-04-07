@@ -3,9 +3,9 @@
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
 #include <canard/interface.h>
 
-class AP_UAVCAN;
+class AP_DroneCAN;
 class CanardInterface : public Canard::Interface {
-    friend class AP_UAVCAN;
+    friend class AP_DroneCAN;
 public:
 
     /// @brief delete copy constructor and assignment operator
