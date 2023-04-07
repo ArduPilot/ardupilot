@@ -152,7 +152,7 @@ class ExtractFeatures(object):
             ('AP_RCPROTOCOL_{type}_ENABLED', r'AP_RCProtocol_(?P<type>.*)::_process_pulse\b',),
 
             ('AP_VOLZ_ENABLED', r'AP_Volz_Protocol::init\b',),
-            ('AP_DRONECAN_VOLZ_FEEDBACK_ENABLED', r'AP_UAVCAN::handle_actuator_status_Volz\b',),
+            ('AP_DRONECAN_VOLZ_FEEDBACK_ENABLED', r'AP_DroneCAN::handle_actuator_status_Volz\b',),
             ('AP_ROBOTISSERVO_ENABLED', r'AP_RobotisServo::init\b',),
             ('AP_FETTEC_ONEWIRE_ENABLED', r'AP_FETtecOneWire::init\b',),
 
