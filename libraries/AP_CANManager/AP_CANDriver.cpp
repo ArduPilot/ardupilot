@@ -19,7 +19,7 @@
 #include "AP_CANManager.h"
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
-#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_DroneCAN/AP_DroneCAN.h>
 #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 #include "AP_CANTester.h"
 #include <AP_KDECAN/AP_KDECAN.h>
@@ -38,8 +38,8 @@ const AP_Param::GroupInfo AP_CANManager::CANDriver_Params::var_info[] = {
 
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
     // @Group: UC_
-    // @Path: ../AP_UAVCAN/AP_UAVCAN.cpp
-    AP_SUBGROUPPTR(_uavcan, "UC_", 2, AP_CANManager::CANDriver_Params, AP_UAVCAN),
+    // @Path: ../AP_DroneCAN/AP_DroneCAN.cpp
+    AP_SUBGROUPPTR(_uavcan, "UC_", 2, AP_CANManager::CANDriver_Params, AP_DroneCAN),
 #endif
 
 #if (APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub))

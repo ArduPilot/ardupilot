@@ -25,7 +25,7 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <stdio.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
-#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_DroneCAN/AP_DroneCAN.h>
 #include <uavcan/protocol/dynamic_node_id_client.hpp>
 #include <uavcan/equipment/esc/Status.hpp>
 #include <uavcan/equipment/esc/RawCommand.hpp>
