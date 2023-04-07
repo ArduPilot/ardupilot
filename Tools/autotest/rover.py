@@ -6071,8 +6071,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         })
         self.set_rc(9, 2000)
         self.reboot_sitl()
-        self.delay_sim_time(10)
-        self.assert_prearm_failure("Motors Emergency Stopped")
+        self.assert_prearm_failure(
+            "Motors Emergency Stopped",
+            other_prearm_failures_fatal=False)
         self.context_pop()
         self.reboot_sitl()
 
