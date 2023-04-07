@@ -435,7 +435,7 @@ class Board:
                 )
             else:
                 env.AP_LIBRARIES += [
-                    'AP_UAVCAN',
+                    'AP_DroneCAN',
                     'modules/DroneCAN/libcanard/*.c',
                     ]
             if cfg.options.enable_dronecan_tests:
