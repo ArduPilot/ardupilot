@@ -442,7 +442,7 @@ def setup_canmgr_build(cfg):
     the build based on the presence of CAN pins in hwdef.dat except for AP_Periph builds'''
     env = cfg.env
     env.AP_LIBRARIES += [
-        'AP_UAVCAN',
+        'AP_DroneCAN',
         'modules/DroneCAN/libcanard/*.c',
         ]
     env.INCLUDES += [
