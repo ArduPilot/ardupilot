@@ -33,7 +33,6 @@ import helicopter
 
 import examples
 from pysim import util
-from pymavlink import mavutil
 from pymavlink.generator import mavtemplate
 
 from common import Test
@@ -56,47 +55,6 @@ def buildlogs_path(path):
     else:
         bits.append(path)
     return os.path.join(*bits)
-
-
-def get_default_params(atype, binary):
-    """Get default parameters."""
-    # use rover simulator so SITL is not starved of input
-    HOME = mavutil.location(40.071374969556928,
-                            -105.22978898137808,
-                            1583.702759,
-                            246)
-    if "plane" in binary or "rover" in binary:
-        frame = "rover"
-    else:
-        frame = "+"
-
-    home = "%f,%f,%u,%u" % (HOME.lat, HOME.lng, HOME.alt, HOME.heading)
-    mavproxy_master = 'tcp:127.0.0.1:5760'
-    sitl = util.start_SITL(binary,
-                           wipe=True,
-                           model=frame,
-                           home=home,
-                           speedup=10,
-                           unhide_parameters=True)
-    mavproxy = util.start_MAVProxy_SITL(atype,
-                                        master=mavproxy_master)
-    print("Dumping defaults")
-    idx = mavproxy.expect([r'Saved [0-9]+ parameters to (\S+)'])
-    if idx == 0:
-        # we need to restart it after eeprom erase
-        util.pexpect_close(mavproxy)
-        util.pexpect_close(sitl)
-        sitl = util.start_SITL(binary, model=frame, home=home, speedup=10)
-        mavproxy = util.start_MAVProxy_SITL(atype,
-                                            master=mavproxy_master)
-        mavproxy.expect(r'Saved [0-9]+ parameters to (\S+)')
-    parmfile = mavproxy.match.group(1)
-    dest = buildlogs_path('%s-defaults.parm' % atype)
-    shutil.copy(parmfile, dest)
-    util.pexpect_close(mavproxy)
-    util.pexpect_close(sitl)
-    print("Saved defaults for %s to %s" % (atype, dest))
-    return True
 
 
 def build_all_filepath():
@@ -484,6 +442,11 @@ def run_step(step):
         return util.build_replay(board='SITL')
 
     if vehicle_binary is not None:
+        try:
+            binary = binary_path(step, debug=opts.debug)
+            os.unlink(binary)
+        except (FileNotFoundError, ValueError):
+            pass
         if len(vehicle_binary.split(".")) == 1:
             return util.build_SITL(vehicle_binary, **build_opts)
         else:
@@ -495,9 +458,6 @@ def run_step(step):
 
     binary = binary_path(step, debug=opts.debug)
 
-    if step.startswith("defaults"):
-        vehicle = step[9:]
-        return get_default_params(vehicle, binary)
     supplementary_binaries = []
     if step in suplementary_test_binary_map:
         for supplementary_test_binary in suplementary_test_binary_map[step]:
@@ -690,9 +650,10 @@ def write_fullresults():
     results.addglob("GPX track", '*.gpx')
 
     # results common to all vehicles:
-    vehicle_files = [('{vehicle} defaults', '{vehicle}-defaults.parm'),
-                     ('{vehicle} core', '{vehicle}.core'),
-                     ('{vehicle} ELF', '{vehicle}.elf'), ]
+    vehicle_files = [
+        ('{vehicle} core', '{vehicle}.core'),
+        ('{vehicle} ELF', '{vehicle}.elf'),
+    ]
     vehicle_globs = [('{vehicle} log', '{vehicle}-*.BIN'), ]
     for vehicle in all_vehicles():
         subs = {'vehicle': vehicle}
@@ -1082,33 +1043,28 @@ if __name__ == "__main__":
         'run.examples',
 
         'build.Plane',
-        'defaults.Plane',
         'test.Plane',
         'test.QuadPlane',
 
         'build.Rover',
-        'defaults.Rover',
         'test.Rover',
         'test.BalanceBot',
         'test.Sailboat',
 
         'build.Copter',
-        'defaults.Copter',
         'test.Copter',
 
         'build.Helicopter',
         'test.Helicopter',
 
         'build.Tracker',
-        'defaults.Tracker',
         'test.Tracker',
 
         'build.Sub',
-        'defaults.Sub',
         'test.Sub',
 
         'build.Blimp',
-        'defaults.Blimp',
+        'test.Blimp',
 
         'build.SITLPeriphGPS',
         'test.CAN',
@@ -1149,11 +1105,6 @@ if __name__ == "__main__":
         "drive.balancebot": "test.BalanceBot",
         "fly.CopterAVC": "test.Helicopter",
         "test.AntennaTracker": "test.Tracker",
-        "defaults.ArduCopter": "defaults.Copter",
-        "defaults.ArduPlane": "defaults.Plane",
-        "defaults.ArduSub": "defaults.Sub",
-        "defaults.APMrover2": "defaults.Rover",
-        "defaults.AntennaTracker": "defaults.Tracker",
         "fly.ArduCopterTests1a": "test.CopterTests1a",
         "fly.ArduCopterTests1b": "test.CopterTests1b",
         "fly.ArduCopterTests1c": "test.CopterTests1c",
