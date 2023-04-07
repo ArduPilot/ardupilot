@@ -20,8 +20,8 @@
 
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
 
-#include "AP_UAVCAN_DNA_Server.h"
-#include "AP_UAVCAN.h"
+#include "AP_DroneCAN_DNA_Server.h"
+#include "AP_DroneCAN.h"
 #include <StorageManager/StorageManager.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
@@ -36,18 +36,18 @@ extern const AP_HAL::HAL& hal;
 
 #define debug_uavcan(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "UAVCAN", fmt, ##args); } while (0)
 
-AP_UAVCAN_DNA_Server::AP_UAVCAN_DNA_Server(AP_UAVCAN &ap_uavcan) :
-    _ap_uavcan(ap_uavcan),
-    _canard_iface(ap_uavcan.canard_iface),
+AP_DroneCAN_DNA_Server::AP_DroneCAN_DNA_Server(AP_DroneCAN &ap_dronecan) :
+    _ap_dronecan(ap_dronecan),
+    _canard_iface(ap_dronecan.canard_iface),
     storage(StorageManager::StorageCANDNA),
-    allocation_sub(allocation_cb, _ap_uavcan.get_driver_index()),
-    node_status_sub(node_status_cb, _ap_uavcan.get_driver_index()),
+    allocation_sub(allocation_cb, _ap_dronecan.get_driver_index()),
+    node_status_sub(node_status_cb, _ap_dronecan.get_driver_index()),
     node_info_client(_canard_iface, node_info_cb)
 {}
 
 /* Method to generate 6byte hash from the Unique ID.
 We return it packed inside the referenced NodeData structure */
-void AP_UAVCAN_DNA_Server::getHash(NodeData &node_data, const uint8_t unique_id[], uint8_t size) const
+void AP_DroneCAN_DNA_Server::getHash(NodeData &node_data, const uint8_t unique_id[], uint8_t size) const
 {
     uint64_t hash = FNV_1_OFFSET_BASIS_64;
     hash_fnv_1a(size, unique_id, &hash);
@@ -62,7 +62,7 @@ void AP_UAVCAN_DNA_Server::getHash(NodeData &node_data, const uint8_t unique_id[
 }
 
 //Read Node Data from Storage Region
-bool AP_UAVCAN_DNA_Server::readNodeData(NodeData &data, uint8_t node_id)
+bool AP_DroneCAN_DNA_Server::readNodeData(NodeData &data, uint8_t node_id)
 {
     if (node_id > MAX_NODE_ID) {
         return false;
@@ -77,7 +77,7 @@ bool AP_UAVCAN_DNA_Server::readNodeData(NodeData &data, uint8_t node_id)
 }
 
 //Write Node Data to Storage Region
-bool AP_UAVCAN_DNA_Server::writeNodeData(const NodeData &data, uint8_t node_id)
+bool AP_DroneCAN_DNA_Server::writeNodeData(const NodeData &data, uint8_t node_id)
 {
     if (node_id > MAX_NODE_ID) {
         return false;
@@ -93,7 +93,7 @@ bool AP_UAVCAN_DNA_Server::writeNodeData(const NodeData &data, uint8_t node_id)
 
 /* Set Occupation Mask, handy for keeping track of all node ids that
 are allocated and all that are available. */
-bool AP_UAVCAN_DNA_Server::setOccupationMask(uint8_t node_id)
+bool AP_DroneCAN_DNA_Server::setOccupationMask(uint8_t node_id)
 {
     if (node_id > MAX_NODE_ID) {
         return false;
@@ -104,7 +104,7 @@ bool AP_UAVCAN_DNA_Server::setOccupationMask(uint8_t node_id)
 
 /* Remove Node Data from Server Record in Storage,
 and also clear Occupation Mask */
-bool AP_UAVCAN_DNA_Server::freeNodeID(uint8_t node_id)
+bool AP_DroneCAN_DNA_Server::freeNodeID(uint8_t node_id)
 {
     if (node_id > MAX_NODE_ID) {
         return false;
@@ -125,7 +125,7 @@ bool AP_UAVCAN_DNA_Server::freeNodeID(uint8_t node_id)
 /* Sets the verification mask. This is to be called, once
 The Seen Node has been both registered and verified against the
 Server Records. */
-void AP_UAVCAN_DNA_Server::setVerificationMask(uint8_t node_id)
+void AP_DroneCAN_DNA_Server::setVerificationMask(uint8_t node_id)
 {
     if (node_id > MAX_NODE_ID) {
         return;
@@ -135,7 +135,7 @@ void AP_UAVCAN_DNA_Server::setVerificationMask(uint8_t node_id)
 
 /* Checks if the NodeID is occupied, i.e. its recorded
 in the Server Records against a unique ID */
-bool AP_UAVCAN_DNA_Server::isNodeIDOccupied(uint8_t node_id) const
+bool AP_DroneCAN_DNA_Server::isNodeIDOccupied(uint8_t node_id) const
 {
     if (node_id > MAX_NODE_ID) {
         return false;
@@ -145,7 +145,7 @@ bool AP_UAVCAN_DNA_Server::isNodeIDOccupied(uint8_t node_id) const
 
 /* Checks if NodeID is verified, i.e. the unique id in
 Storage Records matches the one provided by Device with this node id. */
-bool AP_UAVCAN_DNA_Server::isNodeIDVerified(uint8_t node_id) const
+bool AP_DroneCAN_DNA_Server::isNodeIDVerified(uint8_t node_id) const
 {
     if (node_id > MAX_NODE_ID) {
         return false;
@@ -156,7 +156,7 @@ bool AP_UAVCAN_DNA_Server::isNodeIDVerified(uint8_t node_id) const
 /* Go through Server Records, and fetch node id that matches the provided
 Unique IDs hash.
 Returns 255 if no Node ID was detected */
-uint8_t AP_UAVCAN_DNA_Server::getNodeIDForUniqueID(const uint8_t unique_id[], uint8_t size)
+uint8_t AP_DroneCAN_DNA_Server::getNodeIDForUniqueID(const uint8_t unique_id[], uint8_t size)
 {
     uint8_t node_id = 255;
     NodeData node_data, cmp_node_data;
@@ -179,7 +179,7 @@ uint8_t AP_UAVCAN_DNA_Server::getNodeIDForUniqueID(const uint8_t unique_id[], ui
 
 /* Hash the Unique ID and add it to the Server Record
 for specified Node ID. */
-bool AP_UAVCAN_DNA_Server::addNodeIDForUniqueID(uint8_t node_id, const uint8_t unique_id[], uint8_t size)
+bool AP_DroneCAN_DNA_Server::addNodeIDForUniqueID(uint8_t node_id, const uint8_t unique_id[], uint8_t size)
 {
     NodeData node_data;
     getHash(node_data, unique_id, size);
@@ -198,7 +198,7 @@ bool AP_UAVCAN_DNA_Server::addNodeIDForUniqueID(uint8_t node_id, const uint8_t u
 }
 
 //Checks if a valid Server Record is present for specified Node ID
-bool AP_UAVCAN_DNA_Server::isValidNodeDataAvailable(uint8_t node_id)
+bool AP_DroneCAN_DNA_Server::isValidNodeDataAvailable(uint8_t node_id)
 {
     NodeData node_data;
     readNodeData(node_data, node_id);
@@ -213,9 +213,9 @@ bool AP_UAVCAN_DNA_Server::isValidNodeDataAvailable(uint8_t node_id)
 Also resets the Server Record in case there is a mismatch
 between specified node id and unique id against the existing
 Server Record. */
-bool AP_UAVCAN_DNA_Server::init(uint8_t own_unique_id[], uint8_t own_unique_id_len, uint8_t node_id)
+bool AP_DroneCAN_DNA_Server::init(uint8_t own_unique_id[], uint8_t own_unique_id_len, uint8_t node_id)
 {
-    //Read the details from AP_UAVCAN
+    //Read the details from AP_DroneCAN
     server_state = HEALTHY;
     /* Go through our records and look for valid NodeData, to initialise
     occupation mask */
@@ -235,7 +235,7 @@ bool AP_UAVCAN_DNA_Server::init(uint8_t own_unique_id[], uint8_t own_unique_id_l
         //Its not there a reset should write it in the Storage
         reset();
     }
-    if (_ap_uavcan.check_and_reset_option(AP_UAVCAN::Options::DNA_CLEAR_DATABASE)) {
+    if (_ap_dronecan.check_and_reset_option(AP_DroneCAN::Options::DNA_CLEAR_DATABASE)) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UC DNA database reset");
         reset();
     }
@@ -281,7 +281,7 @@ bool AP_UAVCAN_DNA_Server::init(uint8_t own_unique_id[], uint8_t own_unique_id_l
 
 
 //Reset the Server Records
-void AP_UAVCAN_DNA_Server::reset()
+void AP_DroneCAN_DNA_Server::reset()
 {
     NodeData node_data;
     memset(&node_data, 0, sizeof(node_data));
@@ -300,7 +300,7 @@ void AP_UAVCAN_DNA_Server::reset()
 /* Go through the Occupation mask for available Node ID
 based on pseudo code provided in
 uavcan/protocol/dynamic_node_id/1.Allocation.uavcan */
-uint8_t AP_UAVCAN_DNA_Server::findFreeNodeID(uint8_t preferred)
+uint8_t AP_DroneCAN_DNA_Server::findFreeNodeID(uint8_t preferred)
 {
     // Search up
     uint8_t candidate = (preferred > 0) ? preferred : 125;
@@ -323,7 +323,7 @@ uint8_t AP_UAVCAN_DNA_Server::findFreeNodeID(uint8_t preferred)
 }
 
 //Check if we have received Node Status from this node_id
-bool AP_UAVCAN_DNA_Server::isNodeSeen(uint8_t node_id)
+bool AP_DroneCAN_DNA_Server::isNodeSeen(uint8_t node_id)
 {
     if (node_id > MAX_NODE_ID) {
         return false;
@@ -333,7 +333,7 @@ bool AP_UAVCAN_DNA_Server::isNodeSeen(uint8_t node_id)
 
 /* Set the Seen Node Mask, to be called when received
 Node Status from the node id */
-void AP_UAVCAN_DNA_Server::addToSeenNodeMask(uint8_t node_id)
+void AP_DroneCAN_DNA_Server::addToSeenNodeMask(uint8_t node_id)
 {
     if (node_id > MAX_NODE_ID) {
         return;
@@ -345,7 +345,7 @@ void AP_UAVCAN_DNA_Server::addToSeenNodeMask(uint8_t node_id)
 than once per 5 second. We continually verify the nodes in our 
 seen list, So that we can raise issue if there are duplicates
 on the bus. */
-void AP_UAVCAN_DNA_Server::verify_nodes()
+void AP_DroneCAN_DNA_Server::verify_nodes()
 {
     uint32_t now = AP_HAL::millis();
     if ((now - last_verification_request) < 5000) {
@@ -398,14 +398,14 @@ void AP_UAVCAN_DNA_Server::verify_nodes()
 /* Handles Node Status Message, adds to the Seen Node list
 Also starts the Service call for Node Info to complete the
 Verification process. */
-void AP_UAVCAN_DNA_Server::handleNodeStatus(const CanardRxTransfer& transfer, const uavcan_protocol_NodeStatus& msg)
+void AP_DroneCAN_DNA_Server::handleNodeStatus(const CanardRxTransfer& transfer, const uavcan_protocol_NodeStatus& msg)
 {
     if (transfer.source_node_id > MAX_NODE_ID || transfer.source_node_id == 0) {
         return;
     }
     if ((msg.health != UAVCAN_PROTOCOL_NODESTATUS_HEALTH_OK ||
         msg.mode != UAVCAN_PROTOCOL_NODESTATUS_MODE_OPERATIONAL) &&
-        !_ap_uavcan.option_is_set(AP_UAVCAN::Options::DNA_IGNORE_UNHEALTHY_NODE)) {
+        !_ap_dronecan.option_is_set(AP_DroneCAN::Options::DNA_IGNORE_UNHEALTHY_NODE)) {
         //if node is not healthy or operational, clear resp health mask, and set fault_node_id
         fault_node_id = transfer.source_node_id;
         server_state = NODE_STATUS_UNHEALTHY;
@@ -430,7 +430,7 @@ Handle responses from GetNodeInfo Request. We verify the node info
 against our records. Marks Verification mask if already recorded,
 Or register if the node id is available and not recorded for the
 received Unique ID */
-void AP_UAVCAN_DNA_Server::handleNodeInfo(const CanardRxTransfer& transfer, const uavcan_protocol_GetNodeInfoResponse& rsp)
+void AP_DroneCAN_DNA_Server::handleNodeInfo(const CanardRxTransfer& transfer, const uavcan_protocol_GetNodeInfoResponse& rsp)
 {
     if (transfer.source_node_id > MAX_NODE_ID) {
         return;
@@ -470,7 +470,7 @@ void AP_UAVCAN_DNA_Server::handleNodeInfo(const CanardRxTransfer& transfer, cons
                 nodeInfo_resp_rcvd = true;
             }
             setVerificationMask(transfer.source_node_id);
-        } else if (!_ap_uavcan.option_is_set(AP_UAVCAN::Options::DNA_IGNORE_DUPLICATE_NODE)) {
+        } else if (!_ap_dronecan.option_is_set(AP_DroneCAN::Options::DNA_IGNORE_DUPLICATE_NODE)) {
             /* This is a device with node_id already registered
             for another device */
             server_state = DUPLICATE_NODES;
@@ -497,7 +497,7 @@ void AP_UAVCAN_DNA_Server::handleNodeInfo(const CanardRxTransfer& transfer, cons
 
 /* Handle the allocation message from the devices supporting
 dynamic node allocation. */
-void AP_UAVCAN_DNA_Server::handleAllocation(const CanardRxTransfer& transfer, const uavcan_protocol_dynamic_node_id_Allocation& msg)
+void AP_DroneCAN_DNA_Server::handleAllocation(const CanardRxTransfer& transfer, const uavcan_protocol_dynamic_node_id_Allocation& msg)
 {
     if (transfer.source_node_id != 0) {
         //Ignore Allocation messages that are not DNA requests
@@ -575,7 +575,7 @@ void AP_UAVCAN_DNA_Server::handleAllocation(const CanardRxTransfer& transfer, co
 }
 
 //report the server state, along with failure message if any
-bool AP_UAVCAN_DNA_Server::prearm_check(char* fail_msg, uint8_t fail_msg_len) const
+bool AP_DroneCAN_DNA_Server::prearm_check(char* fail_msg, uint8_t fail_msg_len) const
 {
     switch (server_state) {
     case HEALTHY:
@@ -585,7 +585,7 @@ bool AP_UAVCAN_DNA_Server::prearm_check(char* fail_msg, uint8_t fail_msg_len) co
         return false;
     }
     case DUPLICATE_NODES: {
-        if (_ap_uavcan.option_is_set(AP_UAVCAN::Options::DNA_IGNORE_DUPLICATE_NODE)) {
+        if (_ap_dronecan.option_is_set(AP_DroneCAN::Options::DNA_IGNORE_DUPLICATE_NODE)) {
             // ignore error
             return true;
         }
@@ -597,7 +597,7 @@ bool AP_UAVCAN_DNA_Server::prearm_check(char* fail_msg, uint8_t fail_msg_len) co
         return false;
     }
     case NODE_STATUS_UNHEALTHY: {
-        if (_ap_uavcan.option_is_set(AP_UAVCAN::Options::DNA_IGNORE_UNHEALTHY_NODE)) {
+        if (_ap_dronecan.option_is_set(AP_DroneCAN::Options::DNA_IGNORE_UNHEALTHY_NODE)) {
             // ignore error
             return true;
         }

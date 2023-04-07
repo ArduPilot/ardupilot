@@ -8,7 +8,7 @@
 
 #include <AP_HAL/Semaphores.h>
 
-#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_DroneCAN/AP_DroneCAN.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/CANSocketIface.h>
@@ -135,11 +135,11 @@ void UAVCAN_sniffer::init(void)
 
     node_info.name.len = snprintf((char*)node_info.name.data, sizeof(node_info.name.data), "org.ardupilot:%u", driver_index);
 
-    node_info.software_version.major = AP_UAVCAN_SW_VERS_MAJOR;
-    node_info.software_version.minor = AP_UAVCAN_SW_VERS_MINOR;
+    node_info.software_version.major = AP_DRONECAN_SW_VERS_MAJOR;
+    node_info.software_version.minor = AP_DRONECAN_SW_VERS_MINOR;
 
-    node_info.hardware_version.major = AP_UAVCAN_HW_VERS_MAJOR;
-    node_info.hardware_version.minor = AP_UAVCAN_HW_VERS_MINOR;
+    node_info.hardware_version.major = AP_DRONECAN_HW_VERS_MAJOR;
+    node_info.hardware_version.minor = AP_DRONECAN_HW_VERS_MINOR;
 
 #define START_CB(mtype, cbname) Canard::allocate_sub_static_callback(cb_ ## cbname,driver_index)
 
