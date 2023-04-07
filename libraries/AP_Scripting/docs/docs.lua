@@ -976,6 +976,25 @@ function winch:relax() end
 function winch:healthy() end
 
 -- desc
+---@class camera
+camera = {}
+
+-- desc
+---@param instance integer
+---@param distance_m number
+function camera:set_trigger_distance(instance, distance_m) end
+
+-- desc
+---@param instance integer
+---@param start_recording boolean
+---@return boolean
+function camera:record_video(instance, start_recording) end
+
+-- desc
+---@param instance integer
+function camera:take_picture(instance) end
+
+-- desc
 ---@class mount
 mount = {}
 
