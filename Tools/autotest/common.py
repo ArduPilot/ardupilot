@@ -7858,6 +7858,9 @@ Also, ignores heartbeats not from our target system'''
             passed = False
             reset_needed = True
 
+        # if we haven't already reset ArduPilot because it's dead,
+        # then ensure the vehicle was disarmed at the end of the test.
+        # If it wasn't then the test is considered failed:
         if ardupilot_alive and self.armed() and not self.is_tracker():
             if ex is None:
                 ex = ArmedAtEndOfTestException("Still armed at end of test")
@@ -7874,6 +7877,10 @@ Also, ignores heartbeats not from our target system'''
                 self.progress("Force-rebooting SITL")
                 self.reboot_sitl() # that'll learn it
             passed = False
+        elif not passed:  # implicit reboot after a failed test:
+            self.progress("Test failed but ArduPilot process alive; rebooting")
+            self.progress("Force-rebooting SITL")
+            self.reboot_sitl() # that'll learn it
 
         if self._mavproxy is not None:
             self.progress("Stopping auto-started mavproxy")
