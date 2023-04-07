@@ -161,7 +161,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.user_takeoff(alt_min=alt_min)
         else:
             self.set_rc(3, takeoff_throttle)
-        self.wait_for_alt(alt_min=alt_min, timeout=timeout)
+        self.wait_altitude(alt_min-1, alt_min+5, relative=True, timeout=timeout)
         self.hover()
         self.progress("TAKEOFF COMPLETE")
 

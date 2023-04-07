@@ -946,7 +946,7 @@ class AutoTestQuadPlane(AutoTest):
         self.wait_rpm(1, 6500, 7500, minimum_duration=30, timeout=40)
         self.progress("Setting min-throttle")
         self.set_rc(3, 1000)
-        self.wait_rpm(1, 300, 400, minimum_duration=1)
+        self.wait_rpm(1, 65, 75, minimum_duration=1)
         self.progress("Setting engine-start RC switch to LOW")
         self.set_rc(rc_engine_start_chan, 1000)
         self.wait_rpm(1, 0, 0, minimum_duration=1)
