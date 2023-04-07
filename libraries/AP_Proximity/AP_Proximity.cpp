@@ -185,7 +185,7 @@ void AP_Proximity::init()
 
         case  Type::DroneCAN:
             num_instances = instance+1;
-        break;
+            break;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         case Type::SITL:
