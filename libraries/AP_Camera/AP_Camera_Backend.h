@@ -56,9 +56,8 @@ public:
     // set start_recording = true to start record, false to stop recording
     virtual bool record_video(bool start_recording) { return false; }
 
-    // set camera zoom step.  returns true on success
-    // zoom out = -1, hold = 0, zoom in = 1
-    virtual bool set_zoom_step(int8_t zoom_step) { return false; }
+    // set zoom specified as a rate or percentage
+    virtual bool set_zoom(AP_Camera::ZoomType zoom_type, float zoom_value) { return false; }
 
     // set focus in, out or hold.  returns true on success
     // focus in = -1, focus hold = 0, focus out = 1
