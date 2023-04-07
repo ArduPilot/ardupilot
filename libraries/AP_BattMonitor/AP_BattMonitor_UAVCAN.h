@@ -3,7 +3,7 @@
 #include "AP_BattMonitor.h"
 #include "AP_BattMonitor_Backend.h"
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
-#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_DroneCAN/AP_DroneCAN.h>
 
 #define AP_BATTMONITOR_UAVCAN_TIMEOUT_MICROS         5000000 // sensor becomes unhealthy if no successful readings for 5 seconds
 
@@ -46,11 +46,11 @@ public:
     // return mavlink fault bitmask (see MAV_BATTERY_FAULT enum)
     uint32_t get_mavlink_fault_bitmask() const override;
 
-    static void subscribe_msgs(AP_UAVCAN* ap_uavcan);
-    static AP_BattMonitor_UAVCAN* get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t battery_id);
-    static void handle_battery_info_trampoline(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const uavcan_equipment_power_BatteryInfo &msg);
-    static void handle_battery_info_aux_trampoline(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const ardupilot_equipment_power_BatteryInfoAux &msg);
-    static void handle_mppt_stream_trampoline(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const mppt_Stream &msg);
+    static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
+    static AP_BattMonitor_UAVCAN* get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t battery_id);
+    static void handle_battery_info_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_power_BatteryInfo &msg);
+    static void handle_battery_info_aux_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_equipment_power_BatteryInfoAux &msg);
+    static void handle_mppt_stream_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const mppt_Stream &msg);
 
     void mppt_set_powered_state(bool power_on) override;
 
@@ -84,7 +84,7 @@ private:
 
     HAL_Semaphore _sem_battmon;
 
-    AP_UAVCAN* _ap_uavcan;
+    AP_DroneCAN* _ap_dronecan;
     uint8_t _soc;
     uint8_t _node_id;
     uint16_t _cycle_count;
