@@ -40,7 +40,7 @@ def check_log(logfile, progress=print, ekf2_only=False, ekf3_only=False, verbose
         if not hasattr(m,'C'):
             continue
         mtype = m.get_type()
-        if not mtype in counts:
+        if mtype not in counts:
             counts[mtype] = 0
             base_counts[mtype] = 0
         core = m.C
