@@ -17,7 +17,7 @@
 
 #include "AP_CANDriver.h"
 #include <AP_HAL/Semaphores.h>
-#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_DroneCAN/AP_DroneCAN.h>
 #ifndef HAL_ENABLE_CANTESTER
 #define HAL_ENABLE_CANTESTER 0
 #endif
