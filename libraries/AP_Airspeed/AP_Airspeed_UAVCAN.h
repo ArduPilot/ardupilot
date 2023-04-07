@@ -10,7 +10,7 @@
 
 #include "AP_Airspeed_Backend.h"
 
-#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_DroneCAN/AP_DroneCAN.h>
 
 class AP_Airspeed_UAVCAN : public AP_Airspeed_Backend {
 public:
@@ -29,16 +29,16 @@ public:
     bool get_hygrometer(uint32_t &last_sample_ms, float &temperature, float &humidity) override;
 #endif
 
-    static void subscribe_msgs(AP_UAVCAN* ap_uavcan);
+    static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
 
     static AP_Airspeed_Backend* probe(AP_Airspeed &_fronted, uint8_t _instance, uint32_t previous_devid);
 
 private:
 
-    static void handle_airspeed(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const uavcan_equipment_air_data_RawAirData &msg);
-    static void handle_hygrometer(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const dronecan_sensors_hygrometer_Hygrometer &msg);
+    static void handle_airspeed(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_air_data_RawAirData &msg);
+    static void handle_hygrometer(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const dronecan_sensors_hygrometer_Hygrometer &msg);
 
-    static AP_Airspeed_UAVCAN* get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id);
+    static AP_Airspeed_UAVCAN* get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id);
 
     float _pressure; // Pascal
     float _temperature; // Celcius
@@ -55,7 +55,7 @@ private:
 
     // Module Detection Registry
     static struct DetectedModules {
-        AP_UAVCAN* ap_uavcan;
+        AP_DroneCAN* ap_dronecan;
         uint8_t node_id;
         AP_Airspeed_UAVCAN *driver;
     } _detected_modules[AIRSPEED_MAX_SENSORS];
