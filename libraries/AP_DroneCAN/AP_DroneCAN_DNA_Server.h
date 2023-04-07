@@ -12,9 +12,9 @@
 #include "AP_Canard_iface.h"
 #include <dronecan_msgs.h>
 
-class AP_UAVCAN;
+class AP_DroneCAN;
 //Forward declaring classes
-class AP_UAVCAN_DNA_Server
+class AP_DroneCAN_DNA_Server
 {
     StorageAccess storage;
 
@@ -89,26 +89,26 @@ class AP_UAVCAN_DNA_Server
     bool isValidNodeDataAvailable(uint8_t node_id);
 
     HAL_Semaphore storage_sem;
-    AP_UAVCAN &_ap_uavcan;
+    AP_DroneCAN &_ap_dronecan;
     CanardInterface &_canard_iface;
 
     Canard::Publisher<uavcan_protocol_dynamic_node_id_Allocation> allocation_pub{_canard_iface};
 
-    Canard::ObjCallback<AP_UAVCAN_DNA_Server, uavcan_protocol_dynamic_node_id_Allocation> allocation_cb{this, &AP_UAVCAN_DNA_Server::handleAllocation};
+    Canard::ObjCallback<AP_DroneCAN_DNA_Server, uavcan_protocol_dynamic_node_id_Allocation> allocation_cb{this, &AP_DroneCAN_DNA_Server::handleAllocation};
     Canard::Subscriber<uavcan_protocol_dynamic_node_id_Allocation> allocation_sub;
 
-    Canard::ObjCallback<AP_UAVCAN_DNA_Server, uavcan_protocol_NodeStatus> node_status_cb{this, &AP_UAVCAN_DNA_Server::handleNodeStatus};
+    Canard::ObjCallback<AP_DroneCAN_DNA_Server, uavcan_protocol_NodeStatus> node_status_cb{this, &AP_DroneCAN_DNA_Server::handleNodeStatus};
     Canard::Subscriber<uavcan_protocol_NodeStatus> node_status_sub;
 
-    Canard::ObjCallback<AP_UAVCAN_DNA_Server, uavcan_protocol_GetNodeInfoResponse> node_info_cb{this, &AP_UAVCAN_DNA_Server::handleNodeInfo};
+    Canard::ObjCallback<AP_DroneCAN_DNA_Server, uavcan_protocol_GetNodeInfoResponse> node_info_cb{this, &AP_DroneCAN_DNA_Server::handleNodeInfo};
     Canard::Client<uavcan_protocol_GetNodeInfoResponse> node_info_client;
 
 public:
-    AP_UAVCAN_DNA_Server(AP_UAVCAN &ap_uavcan);
+    AP_DroneCAN_DNA_Server(AP_DroneCAN &ap_dronecan);
 
 
     // Do not allow copies
-    CLASS_NO_COPY(AP_UAVCAN_DNA_Server);
+    CLASS_NO_COPY(AP_DroneCAN_DNA_Server);
 
     //Initialises publisher and Server Record for specified uavcan driver
     bool init(uint8_t own_unique_id[], uint8_t own_unique_id_len, uint8_t node_id);
@@ -124,7 +124,7 @@ public:
 
     /* Subscribe to the messages to be handled for maintaining and allocating
     Node ID list */
-    static void subscribe_msgs(AP_UAVCAN* ap_uavcan);
+    static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
 
     //report the server state, along with failure message if any
     bool prearm_check(char* fail_msg, uint8_t fail_msg_len) const;
