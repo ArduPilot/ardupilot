@@ -804,17 +804,6 @@ class sitl_periph_gps(sitl):
             HAL_SUPPORT_RCOUT_SERIAL = 0,
             AP_CAN_SLCAN_ENABLED = 0,
         )
-        # libcanard is written for 32bit platforms
-        env.CXXFLAGS += [
-            '-m32',
-        ]
-        env.CFLAGS += [
-            '-m32',
-        ]
-        env.LDFLAGS += [
-            '-m32',
-        ]
-
 
 
 class esp32(Board):
