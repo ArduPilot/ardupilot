@@ -5,14 +5,14 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include <AP_CANManager/AP_CANManager.h>
-#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_DroneCAN/AP_DroneCAN.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 extern const AP_HAL::HAL& hal;
 
 uint8_t AP_OpticalFlow_HereFlow::_node_id = 0;
 AP_OpticalFlow_HereFlow* AP_OpticalFlow_HereFlow::_driver = nullptr;
-AP_UAVCAN* AP_OpticalFlow_HereFlow::_ap_uavcan = nullptr;
+AP_DroneCAN* AP_OpticalFlow_HereFlow::_ap_dronecan = nullptr;
 /*
   constructor - registers instance at top Flow driver
  */
@@ -26,31 +26,31 @@ AP_OpticalFlow_HereFlow::AP_OpticalFlow_HereFlow(AP_OpticalFlow &flow) :
 }
 
 //links the HereFlow messages to the backend
-void AP_OpticalFlow_HereFlow::subscribe_msgs(AP_UAVCAN* ap_uavcan)
+void AP_OpticalFlow_HereFlow::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
-    if (ap_uavcan == nullptr) {
+    if (ap_dronecan == nullptr) {
         return;
     }
 
-    if (Canard::allocate_sub_arg_callback(ap_uavcan, &handle_measurement, ap_uavcan->get_driver_index()) == nullptr) {
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_measurement, ap_dronecan->get_driver_index()) == nullptr) {
         AP_BoardConfig::allocation_error("measurement_sub");
     }
 }
 
 //updates driver states based on received HereFlow messages
-void AP_OpticalFlow_HereFlow::handle_measurement(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const com_hex_equipment_flow_Measurement &msg)
+void AP_OpticalFlow_HereFlow::handle_measurement(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const com_hex_equipment_flow_Measurement &msg)
 {
     if (_driver == nullptr) {
         return;
     }
     //protect from data coming from duplicate sensors,
     //as we only handle one Here Flow at a time as of now
-    if (_ap_uavcan == nullptr) {
-        _ap_uavcan = ap_uavcan;
+    if (_ap_dronecan == nullptr) {
+        _ap_dronecan = ap_dronecan;
         _node_id = transfer.source_node_id;
     }
 
-    if (_ap_uavcan == ap_uavcan && _node_id == transfer.source_node_id) {
+    if (_ap_dronecan == ap_dronecan && _node_id == transfer.source_node_id) {
         WITH_SEMAPHORE(_driver->_sem);
         _driver->new_data = true;
         _driver->flowRate = Vector2f(msg.flow_integral[0], msg.flow_integral[1]);
