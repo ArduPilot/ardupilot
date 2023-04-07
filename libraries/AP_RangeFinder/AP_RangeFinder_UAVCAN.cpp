@@ -4,7 +4,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_CANManager/AP_CANManager.h>
-#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_DroneCAN/AP_DroneCAN.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
@@ -13,20 +13,20 @@ extern const AP_HAL::HAL& hal;
 #define debug_range_finder_uavcan(level_debug, can_driver, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(can_driver)) { hal.console->printf(fmt, ##args); }} while (0)
 
 //links the rangefinder uavcan message to this backend
-void AP_RangeFinder_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
+void AP_RangeFinder_UAVCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
-    if (ap_uavcan == nullptr) {
+    if (ap_dronecan == nullptr) {
         return;
     }
-    if (Canard::allocate_sub_arg_callback(ap_uavcan, &handle_measurement, ap_uavcan->get_driver_index()) == nullptr) {
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_measurement, ap_dronecan->get_driver_index()) == nullptr) {
         AP_BoardConfig::allocation_error("measurement_sub");
     }
 }
 
 //Method to find the backend relating to the node id
-AP_RangeFinder_UAVCAN* AP_RangeFinder_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t address, bool create_new)
+AP_RangeFinder_UAVCAN* AP_RangeFinder_UAVCAN::get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t address, bool create_new)
 {
-    if (ap_uavcan == nullptr) {
+    if (ap_dronecan == nullptr) {
         return nullptr;
     }
     AP_RangeFinder_UAVCAN* driver = nullptr;
@@ -39,7 +39,7 @@ AP_RangeFinder_UAVCAN* AP_RangeFinder_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_u
         }
         //Double check if the driver was initialised as UAVCAN Type
         if (driver != nullptr && (driver->_backend_type == RangeFinder::Type::UAVCAN)) {
-            if (driver->_ap_uavcan == ap_uavcan && 
+            if (driver->_ap_dronecan == ap_dronecan && 
                 driver->_node_id == node_id) {
                 return driver;
             } else {
@@ -68,8 +68,8 @@ AP_RangeFinder_UAVCAN* AP_RangeFinder_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_u
                 gcs().send_text(MAV_SEVERITY_INFO, "RangeFinder[%u]: added UAVCAN node %u addr %u",
                                 unsigned(i), unsigned(node_id), unsigned(address));
                 //Assign node id and respective uavcan driver, for identification
-                if (driver->_ap_uavcan == nullptr) {
-                    driver->_ap_uavcan = ap_uavcan;
+                if (driver->_ap_dronecan == nullptr) {
+                    driver->_ap_dronecan = ap_dronecan;
                     driver->_node_id = node_id;
                     break;
                 }
@@ -100,10 +100,10 @@ void AP_RangeFinder_UAVCAN::update()
 }
 
 //RangeFinder message handler
-void AP_RangeFinder_UAVCAN::handle_measurement(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const uavcan_equipment_range_sensor_Measurement &msg)
+void AP_RangeFinder_UAVCAN::handle_measurement(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_range_sensor_Measurement &msg)
 {
     //fetch the matching uavcan driver, node id and sensor id backend instance
-    AP_RangeFinder_UAVCAN* driver = get_uavcan_backend(ap_uavcan, transfer.source_node_id, msg.sensor_id, true);
+    AP_RangeFinder_UAVCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id, msg.sensor_id, true);
     if (driver == nullptr) {
         return;
     }
