@@ -24,7 +24,7 @@
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 #include "RTCM3_Parser.h"
-#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_DroneCAN/AP_DroneCAN.h>
 
 class AP_GPS_UAVCAN : public AP_GPS_Backend {
 public:
@@ -41,17 +41,17 @@ public:
 
     const char *name() const override { return _name; }
 
-    static void subscribe_msgs(AP_UAVCAN* ap_uavcan);
+    static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
     static AP_GPS_Backend* probe(AP_GPS &_gps, AP_GPS::GPS_State &_state);
 
-    static void handle_fix2_msg_trampoline(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const uavcan_equipment_gnss_Fix2& msg);
+    static void handle_fix2_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_gnss_Fix2& msg);
 
-    static void handle_aux_msg_trampoline(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const uavcan_equipment_gnss_Auxiliary& msg);
-    static void handle_heading_msg_trampoline(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const ardupilot_gnss_Heading& msg);
-    static void handle_status_msg_trampoline(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const ardupilot_gnss_Status& msg);
+    static void handle_aux_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_gnss_Auxiliary& msg);
+    static void handle_heading_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_gnss_Heading& msg);
+    static void handle_status_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_gnss_Status& msg);
 #if GPS_MOVING_BASELINE
-    static void handle_moving_baseline_msg_trampoline(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const ardupilot_gnss_MovingBaselineData& msg);
-    static void handle_relposheading_msg_trampoline(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const ardupilot_gnss_RelPosHeading& msg);
+    static void handle_moving_baseline_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_gnss_MovingBaselineData& msg);
+    static void handle_relposheading_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_gnss_RelPosHeading& msg);
 #endif
     static bool backends_healthy(char failure_msg[], uint16_t failure_msg_len);
     void inject_data(const uint8_t *data, uint16_t len) override;
@@ -64,7 +64,7 @@ public:
 #endif
 
 #if AP_DRONECAN_SEND_GPS
-    static bool instance_exists(const AP_UAVCAN* ap_uavcan);
+    static bool instance_exists(const AP_DroneCAN* ap_dronecan);
 #endif
 
 private:
@@ -95,7 +95,7 @@ private:
 
     static bool take_registry();
     static void give_registry();
-    static AP_GPS_UAVCAN* get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id);
+    static AP_GPS_UAVCAN* get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id);
 
     bool _new_data;
     AP_GPS::GPS_State interim_state;
@@ -116,7 +116,7 @@ private:
 
     // Module Detection Registry
     static struct DetectedModules {
-        AP_UAVCAN* ap_uavcan;
+        AP_DroneCAN* ap_dronecan;
         uint8_t node_id;
         uint8_t instance;
         AP_GPS_UAVCAN* driver;
@@ -131,12 +131,12 @@ private:
     // the role set from GPS_TYPE
     AP_GPS::GPS_Role role;
 
-    FUNCTOR_DECLARE(param_int_cb, bool, AP_UAVCAN*, const uint8_t, const char*, int32_t &);
-    FUNCTOR_DECLARE(param_float_cb, bool, AP_UAVCAN*, const uint8_t, const char*, float &);
-    FUNCTOR_DECLARE(param_save_cb, void, AP_UAVCAN*, const uint8_t, bool);
+    FUNCTOR_DECLARE(param_int_cb, bool, AP_DroneCAN*, const uint8_t, const char*, int32_t &);
+    FUNCTOR_DECLARE(param_float_cb, bool, AP_DroneCAN*, const uint8_t, const char*, float &);
+    FUNCTOR_DECLARE(param_save_cb, void, AP_DroneCAN*, const uint8_t, bool);
 
-    bool handle_param_get_set_response_int(AP_UAVCAN* ap_uavcan, const uint8_t node_id, const char* name, int32_t &value);
-    bool handle_param_get_set_response_float(AP_UAVCAN* ap_uavcan, const uint8_t node_id, const char* name, float &value);
-    void handle_param_save_response(AP_UAVCAN* ap_uavcan, const uint8_t node_id, bool success);
+    bool handle_param_get_set_response_int(AP_DroneCAN* ap_dronecan, const uint8_t node_id, const char* name, int32_t &value);
+    bool handle_param_get_set_response_float(AP_DroneCAN* ap_dronecan, const uint8_t node_id, const char* name, float &value);
+    void handle_param_save_response(AP_DroneCAN* ap_dronecan, const uint8_t node_id, bool success);
 };
 #endif
