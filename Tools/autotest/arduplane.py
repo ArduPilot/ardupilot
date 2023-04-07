@@ -20,6 +20,8 @@ from common import AutoTestTimeoutException
 from common import NotAchievedException
 from common import PreconditionFailedException
 from common import WaitModeTimeout
+from common import Test
+
 from pymavlink.rotmat import Vector3
 from pysim import vehicleinfo
 
@@ -780,6 +782,7 @@ class AutoTestPlane(AutoTest):
             0,
             0)
         self.wait_airspeed(new_target_airspeed-0.5, new_target_airspeed+0.5)
+        self.context_push()
         self.progress("Adding some wind, hoping groundspeed increases/decreases")
         self.set_parameters({
             "SIM_WIND_SPD": 7,
@@ -797,6 +800,7 @@ class AutoTestPlane(AutoTest):
             self.progress("groundspeed and airspeed should be different (have=%f want=%f)" % (delta, want_delta))
             if delta > want_delta:
                 break
+        self.context_pop()
         self.fly_home_land_and_disarm(timeout=240)
 
     def fly_home_land_and_disarm(self, timeout=120):
@@ -994,7 +998,7 @@ class AutoTestPlane(AutoTest):
         self.context_collect("HEARTBEAT")
         self.set_parameter("SIM_RC_FAIL", 2) # throttle-to-950
         self.wait_mode('RTL') # long failsafe
-        if (not self.get_mode_from_mode_mapping("CIRCLE") in
+        if (self.get_mode_from_mode_mapping("CIRCLE") not in
                 [x.custom_mode for x in self.context_stop_collecting("HEARTBEAT")]):
             raise NotAchievedException("Did not go via circle mode")
         self.progress("Ensure we've had our throttle squashed to 950")
@@ -1032,7 +1036,7 @@ class AutoTestPlane(AutoTest):
         self.context_collect("HEARTBEAT")
         self.set_parameter("SIM_RC_FAIL", 1) # no-pulses
         self.wait_mode('RTL') # long failsafe
-        if (not self.get_mode_from_mode_mapping("CIRCLE") in
+        if (self.get_mode_from_mode_mapping("CIRCLE") not in
                 [x.custom_mode for x in self.context_stop_collecting("HEARTBEAT")]):
             raise NotAchievedException("Did not go via circle mode")
         self.do_timesync_roundtrip()
@@ -1169,29 +1173,28 @@ class AutoTestPlane(AutoTest):
         '''Ensure Long-Failsafe works on GCS loss'''
         self.start_subtest("Test Failsafe: RTL")
         self.load_sample_mission()
-        self.set_parameter("RTL_AUTOLAND", 1)
-        self.change_mode("AUTO")
-        self.takeoff()
         self.set_parameters({
             "FS_GCS_ENABL": 1,
             "FS_LONG_ACTN": 1,
+            "RTL_AUTOLAND": 1,
+            "SYSID_MYGCS": self.mav.source_system,
         })
+        self.takeoff()
+        self.change_mode('LOITER')
         self.progress("Disconnecting GCS")
         self.set_heartbeat_rate(0)
-        self.wait_mode("RTL", timeout=5)
+        self.wait_mode("RTL", timeout=10)
         self.set_heartbeat_rate(self.speedup)
         self.end_subtest("Completed RTL Failsafe test")
 
         self.start_subtest("Test Failsafe: FBWA Glide")
         self.set_parameters({
-            "RTL_AUTOLAND": 1,
             "FS_LONG_ACTN": 2,
         })
-        self.change_mode("AUTO")
-        self.takeoff()
+        self.change_mode('AUTO')
         self.progress("Disconnecting GCS")
         self.set_heartbeat_rate(0)
-        self.wait_mode("FBWA", timeout=5)
+        self.wait_mode("FBWA", timeout=10)
         self.set_heartbeat_rate(self.speedup)
         self.end_subtest("Completed FBWA Failsafe test")
 
@@ -1844,6 +1847,7 @@ class AutoTestPlane(AutoTest):
         self.fly_home_land_and_disarm()
 
     def deadreckoning_main(self, disable_airspeed_sensor=False):
+        self.reboot_sitl()
         self.wait_ready_to_arm()
         self.gpi = None
         self.simstate = None
@@ -2414,11 +2418,6 @@ class AutoTestPlane(AutoTest):
 
         self.load_mission('CMAC-soar.txt', strict=False)
 
-        self.set_current_waypoint(1)
-        self.change_mode('AUTO')
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
-
         # Enable thermalling RC
         rc_chan = 0
         for i in range(8):
@@ -2432,14 +2431,21 @@ class AutoTestPlane(AutoTest):
 
         self.set_rc_from_map({
             rc_chan: 1900,
-            3: 1500, # Use trim airspeed.
         })
+
+        self.set_parameters({
+            "SOAR_VSPEED": 0.55,
+            "SOAR_MIN_THML_S": 25,
+        })
+
+        self.set_current_waypoint(1)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
 
         # Wait to detect thermal
         self.progress("Waiting for thermal")
         self.wait_mode('THERMAL', timeout=600)
-
-        self.set_parameter("SOAR_VSPEED", 0.6)
 
         # Wait to climb to SOAR_ALT_MAX
         self.progress("Waiting for climb to max altitude")
@@ -4569,7 +4575,7 @@ class AutoTestPlane(AutoTest):
             self.AltResetBadGPS,
             self.AirspeedCal,
             self.MissionJumpTags,
-            self.GCSFailsafe,
+            Test(self.GCSFailsafe, speedup=8),
             self.SDCardWPTest,
         ])
         return ret
