@@ -8,7 +8,7 @@
 
 #if AP_OPTICALFLOW_HEREFLOW_ENABLED
 
-#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_DroneCAN/AP_DroneCAN.h>
 
 class AP_OpticalFlow_HereFlow : public OpticalFlow_backend {
 public:
@@ -18,9 +18,9 @@ public:
 
     void update() override;
 
-    static void subscribe_msgs(AP_UAVCAN* ap_uavcan);
+    static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
 
-    static void handle_measurement(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const com_hex_equipment_flow_Measurement &msg);
+    static void handle_measurement(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const com_hex_equipment_flow_Measurement &msg);
 
 private:
 
@@ -31,7 +31,7 @@ private:
     static uint8_t _node_id;
 
     static AP_OpticalFlow_HereFlow* _driver;
-    static AP_UAVCAN* _ap_uavcan;
+    static AP_DroneCAN* _ap_dronecan;
     void _push_state(void);
 
 };
