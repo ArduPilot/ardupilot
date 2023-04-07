@@ -2191,7 +2191,7 @@ def write_ADC_config(f):
     '''write ADC config defines'''
     f.write('// ADC config\n')
     adc_chans = [[], [], []]
-    index = 0
+    analogset = {252, 253, 254} # reserved values for VSENSE, VREF and VBAT in H7
     for l in bylabel:
         p = bylabel[l]
         if not p.type.startswith('ADC'):
@@ -2208,45 +2208,79 @@ def write_ADC_config(f):
         else:
             raise ValueError("Unknown ADC type %s" % p.type)
         scale = p.extra_value('SCALE', default=None)
+        analog = p.extra_value('ANALOG', type=int, default=chan) # default to ADC channel if not specified
+        if analog in analogset:
+            error("Duplicate analog pin %u" % analog)
+        analogset.add(analog)
         if p.label == 'VDD_5V_SENS':
-            f.write('#define ANALOG_VCC_5V_PIN %u\n' % (chan + index*20))
+            f.write('#define ANALOG_VCC_5V_PIN %u\n' % (analog))
             f.write('#define HAL_HAVE_BOARD_VOLTAGE 1\n')
         if p.label == 'FMU_SERVORAIL_VCC_SENS':
-            f.write('#define FMU_SERVORAIL_ADC_CHAN %u\n' % (chan + index*20))
+            f.write('#define FMU_SERVORAIL_ADC_PIN %u\n' % (analog))
             f.write('#define HAL_HAVE_SERVO_VOLTAGE 1\n')
-        adc_chans[index].append((chan, scale, p.label, p.portpin))
-    adc_chans[index] = sorted(adc_chans[index])
+        adc_chans[index].append((chan, analog, scale, p.label, p.portpin))
+    
+    # sort by ADC channel
+    for index in range(3):
+        adc_chans[index] = sorted(adc_chans[index])
+    
+    if len(adc_chans[1]) > 0:
+        # ensure ADC1 and ADC2 are of same size
+        if len(adc_chans[0]) > len(adc_chans[1]):
+            # add dummy channel that's not already in adc_chans[1]
+            for chan in range(1,19):
+                if chan not in [c[0] for c in adc_chans[1]]:
+                    adc_chans[1].append((chan, 255, None, 'dummy', 'dummy'))
+                    break
+        elif len(adc_chans[0]) < len(adc_chans[1]):
+            # add dummy channel that's not already in adc_chans[0]
+            for chan in range(1,19):
+                if chan not in [c[0] for c in adc_chans[0]]:
+                    adc_chans[0].append((chan, 255, None, 'dummy', 'dummy'))
+                    break
+        # check if ADC1 and ADC2 list if they have the same channel for same index
+        # if not then jumble the channels around to have no matching channels
+        for i in range(len(adc_chans[0])):
+            if adc_chans[0][i][0] == adc_chans[1][i][0]:
+                # found a match, jumble the channels around
+                for j in range(len(adc_chans[0])):
+                    if adc_chans[0][j][0] != adc_chans[1][j][0]:
+                        # found a non-match, swap the channels
+                        adc_chans[0][i], adc_chans[0][j] = adc_chans[0][j], adc_chans[0][i]
+                        break
+
     vdd = get_config('STM32_VDD', default='330U')
     if vdd[-1] == 'U':
         vdd = vdd[:-1]
     vdd = float(vdd) * 0.01
     f.write('#define HAL_ANALOG_PINS \\\n')
-    for (chan, scale, label, portpin) in adc_chans[0]:
+    for (chan, analog, scale, label, portpin) in adc_chans[0]:
         scale_str = '%.2f/4096' % vdd
         if scale is not None and scale != '1':
             scale_str = scale + '*' + scale_str
-        f.write('{ %2u, %12s }, /* %s %s */ \\\n' % (chan, scale_str, portpin,
+        f.write('{ %2u, %2u, %12s }, /* %s %s */ \\\n' % (chan, analog, scale_str,  portpin,
                                                      label))
     f.write('\n\n')
     if len(adc_chans[1]) > 0:
         f.write('#define STM32_ADC_SAMPLES_SIZE 32\n')
+        f.write('#define ADC12_CCR_DUAL ADC_CCR_DUAL_REG_INTERL\n')
         f.write('#define STM32_ADC_DUAL_MODE TRUE\n')
         f.write('#define HAL_ANALOG2_PINS \\\n')
-        for (chan, scale, label, portpin) in adc_chans[1]:
+        for (chan, analog, scale, label, portpin) in adc_chans[1]:
             scale_str = '%.2f/4096' % vdd
             if scale is not None and scale != '1':
                 scale_str = scale + '*' + scale_str
-            f.write('{ %2u, %12s }, /* %s %s */ \\\n' % (chan, scale_str, portpin,
+            f.write('{ %2u, %2u, %12s }, /* %s %s */ \\\n' % (chan, analog, scale_str, portpin,
                                                         label))
         f.write('\n\n')
     if len(adc_chans[2]) > 0:
         f.write('#define STM32_ADC_USE_ADC3 TRUE\n')    
         f.write('#define HAL_ANALOG3_PINS \\\n')
-        for (chan, scale, label, portpin) in adc_chans[2]:
+        for (chan, analog, scale, label, portpin) in adc_chans[2]:
             scale_str = '%.2f/4096' % vdd
             if scale is not None and scale != '1':
                 scale_str = scale + '*' + scale_str
-            f.write('{ %2u, %12s }, /* %s %s */ \\\n' % (chan, scale_str, portpin,
+            f.write('{ %2u, %2u, %12s }, /* %s %s */ \\\n' % (chan, analog, scale_str, portpin,
                                                         label))
         f.write('\n\n')
 
