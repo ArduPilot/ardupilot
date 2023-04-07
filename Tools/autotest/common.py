@@ -11665,10 +11665,12 @@ switch value'''
                 0,
                 want_result=mavutil.mavlink.MAV_RESULT_FAILED
             )
-            self.wait_statustext("PreArm: Motors Emergency Stopped", check_context=True)
+            self.assert_prearm_failure("Motors Emergency Stopped",
+                                       other_prearm_failures_fatal=False)
             self.reboot_sitl()
-            self.delay_sim_time(10)
-            self.assert_prearm_failure("Motors Emergency Stopped")
+            self.assert_prearm_failure(
+                "Motors Emergency Stopped",
+                other_prearm_failures_fatal=False)
             self.context_pop()
             self.reboot_sitl()
 
