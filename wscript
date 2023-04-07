@@ -678,19 +678,19 @@ def _build_dynamic_sources(bld):
         else:
             bld(
                 features='dronecangen',
-                source=bld.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_UAVCAN/dsdl/*', dir=True, src=False),
+                source=bld.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_DroneCAN/dsdl/*', dir=True, src=False),
                 output_dir='modules/DroneCAN/libcanard/dsdlc_generated/',
                 name='dronecan',
                 export_includes=[
                     bld.bldnode.make_node('modules/DroneCAN/libcanard/dsdlc_generated/include').abspath(),
                     bld.srcnode.find_dir('modules/DroneCAN/libcanard/').abspath(),
-                    bld.srcnode.find_dir('libraries/AP_UAVCAN/canard/').abspath(),
+                    bld.srcnode.find_dir('libraries/AP_DroneCAN/canard/').abspath(),
                 ]
             )
     elif bld.env.AP_PERIPH:
         bld(
             features='dronecangen',
-            source=bld.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_UAVCAN/dsdl/*', dir=True, src=False),
+            source=bld.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_DroneCAN/dsdl/*', dir=True, src=False),
             output_dir='modules/DroneCAN/libcanard/dsdlc_generated/',
             name='dronecan',
             export_includes=[
