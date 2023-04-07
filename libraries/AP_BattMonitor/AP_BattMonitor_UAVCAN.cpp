@@ -10,7 +10,7 @@
 #include <AP_Common/AP_Common.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_DroneCAN/AP_DroneCAN.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 #define LOG_TAG "BattMon"
@@ -43,28 +43,28 @@ AP_BattMonitor_UAVCAN::AP_BattMonitor_UAVCAN(AP_BattMonitor &mon, AP_BattMonitor
     _state.healthy = false;
 }
 
-void AP_BattMonitor_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
+void AP_BattMonitor_UAVCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
-    if (ap_uavcan == nullptr) {
+    if (ap_dronecan == nullptr) {
         return;
     }
 
-    if (Canard::allocate_sub_arg_callback(ap_uavcan, &handle_battery_info_trampoline, ap_uavcan->get_driver_index()) == nullptr) {
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_battery_info_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
         AP_BoardConfig::allocation_error("battinfo_sub");
     }
 
-    if (Canard::allocate_sub_arg_callback(ap_uavcan, &handle_battery_info_aux_trampoline, ap_uavcan->get_driver_index()) == nullptr) {
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_battery_info_aux_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
         AP_BoardConfig::allocation_error("battinfo_aux_sub");
     }
 
-    if (Canard::allocate_sub_arg_callback(ap_uavcan, &handle_mppt_stream_trampoline, ap_uavcan->get_driver_index()) == nullptr) {
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_mppt_stream_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
         AP_BoardConfig::allocation_error("mppt_stream_sub");
     }
 }
 
-AP_BattMonitor_UAVCAN* AP_BattMonitor_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t battery_id)
+AP_BattMonitor_UAVCAN* AP_BattMonitor_UAVCAN::get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t battery_id)
 {
-    if (ap_uavcan == nullptr) {
+    if (ap_dronecan == nullptr) {
         return nullptr;
     }
     for (uint8_t i = 0; i < AP::battery()._num_instances; i++) {
@@ -73,7 +73,7 @@ AP_BattMonitor_UAVCAN* AP_BattMonitor_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_u
             continue;
         }
         AP_BattMonitor_UAVCAN* driver = (AP_BattMonitor_UAVCAN*)AP::battery().drivers[i];
-        if (driver->_ap_uavcan == ap_uavcan && driver->_node_id == node_id && match_battery_id(i, battery_id)) {
+        if (driver->_ap_dronecan == ap_dronecan && driver->_node_id == node_id && match_battery_id(i, battery_id)) {
             return driver;
         }
     }
@@ -84,10 +84,10 @@ AP_BattMonitor_UAVCAN* AP_BattMonitor_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_u
             match_battery_id(i, battery_id)) {
 
             AP_BattMonitor_UAVCAN* batmon = (AP_BattMonitor_UAVCAN*)AP::battery().drivers[i];
-            if(batmon->_ap_uavcan != nullptr || batmon->_node_id != 0) {
+            if(batmon->_ap_dronecan != nullptr || batmon->_node_id != 0) {
                 continue;
             }
-            batmon->_ap_uavcan = ap_uavcan;
+            batmon->_ap_dronecan = ap_dronecan;
             batmon->_node_id = node_id;
             batmon->_instance = i;
             batmon->init();
@@ -95,7 +95,7 @@ AP_BattMonitor_UAVCAN* AP_BattMonitor_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_u
                             LOG_TAG,
                             "Registered BattMonitor Node %d on Bus %d\n",
                             node_id,
-                            ap_uavcan->get_driver_index());
+                            ap_dronecan->get_driver_index());
             return batmon;
         }
     }
@@ -197,27 +197,27 @@ void AP_BattMonitor_UAVCAN::handle_mppt_stream(const mppt_Stream &msg)
     _mppt.fault_flags = msg.fault_flags;
 }
 
-void AP_BattMonitor_UAVCAN::handle_battery_info_trampoline(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const uavcan_equipment_power_BatteryInfo &msg)
+void AP_BattMonitor_UAVCAN::handle_battery_info_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_power_BatteryInfo &msg)
 {
-    AP_BattMonitor_UAVCAN* driver = get_uavcan_backend(ap_uavcan, transfer.source_node_id, msg.battery_id);
+    AP_BattMonitor_UAVCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id, msg.battery_id);
     if (driver == nullptr) {
         return;
     }
     driver->handle_battery_info(msg);
 }
 
-void AP_BattMonitor_UAVCAN::handle_battery_info_aux_trampoline(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const ardupilot_equipment_power_BatteryInfoAux &msg)
+void AP_BattMonitor_UAVCAN::handle_battery_info_aux_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_equipment_power_BatteryInfoAux &msg)
 {
-    AP_BattMonitor_UAVCAN* driver = get_uavcan_backend(ap_uavcan, transfer.source_node_id, msg.battery_id);
+    AP_BattMonitor_UAVCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id, msg.battery_id);
     if (driver == nullptr) {
         return;
     }
     driver->handle_battery_info_aux(msg);
 }
 
-void AP_BattMonitor_UAVCAN::handle_mppt_stream_trampoline(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const mppt_Stream &msg)
+void AP_BattMonitor_UAVCAN::handle_mppt_stream_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const mppt_Stream &msg)
 {
-    AP_BattMonitor_UAVCAN* driver = get_uavcan_backend(ap_uavcan, transfer.source_node_id, transfer.source_node_id);
+    AP_BattMonitor_UAVCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id, transfer.source_node_id);
     if (driver == nullptr) {
         return;
     }
@@ -312,7 +312,7 @@ void AP_BattMonitor_UAVCAN::mppt_check_powered_state()
 // force should be true to force sending the state change request to the MPPT
 void AP_BattMonitor_UAVCAN::mppt_set_powered_state(bool power_on)
 {
-    if (_ap_uavcan == nullptr || !_mppt.is_detected) {
+    if (_ap_dronecan == nullptr || !_mppt.is_detected) {
         return;
     }
 
@@ -326,7 +326,7 @@ void AP_BattMonitor_UAVCAN::mppt_set_powered_state(bool power_on)
     request.disable = !request.enable;
 
     if (mppt_outputenable_client == nullptr) {
-        mppt_outputenable_client = new Canard::Client<mppt_OutputEnableResponse>{_ap_uavcan->get_canard_iface(), mppt_outputenable_res_cb};
+        mppt_outputenable_client = new Canard::Client<mppt_OutputEnableResponse>{_ap_dronecan->get_canard_iface(), mppt_outputenable_res_cb};
         if (mppt_outputenable_client == nullptr) {
             return;
         }
