@@ -8,6 +8,11 @@
 #if HAL_GCS_ENABLED
 
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe_config.h>
+
+// #if AP_DDS_ENABLED
+// #include <AP_DDS/AP_DDS_Client.h>
+// #endif 
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include "GCS_MAVLink.h"

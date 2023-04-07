@@ -10,6 +10,7 @@
 #include "AP_DDS_Client.h"
 #include "generated/Time.h"
 
+static char NODE_NAME[] = "Ardupilot_DDS_XRCE_Client";
 static constexpr uint16_t DELAY_TIME_TOPIC_MS = 10;
 static constexpr uint16_t DELAY_NAV_SAT_FIX_TOPIC_MS = 1000;
 static char WGS_84_FRAME_ID[] = "WGS-84";
@@ -143,6 +144,16 @@ void AP_DDS_Client::main_loop(void)
         return;
     }
     GCS_SEND_TEXT(MAV_SEVERITY_INFO,"DDS Client: Initialization passed");
+
+    rcl_interfaces_msg_Log log;
+    update_topic(log.stamp);
+    strcpy(log.name, NODE_NAME);
+    strcpy(log.msg, "hello world");
+    strcpy(log.file, __FILE__);
+    strcpy(log.function, __FUNCTION__);
+    log.line  = __LINE__;
+    log.level = 2;
+    write_log(log);
     while (true) {
         hal.scheduler->delay(1);
         update();
@@ -273,6 +284,21 @@ void AP_DDS_Client::write_nav_sat_fix_topic()
         const uint32_t topic_size = sensor_msgs_msg_NavSatFix_size_of_topic(&nav_sat_fix_topic, 0);
         uxr_prepare_output_stream(&session,reliable_out,topics[1].dw_id,&ub,topic_size);
         const bool success = sensor_msgs_msg_NavSatFix_serialize_topic(&ub, &nav_sat_fix_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        }
+    }
+}
+
+void AP_DDS_Client::write_log(rcl_interfaces_msg_Log& log)
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub;
+        const uint32_t topic_size = rcl_interfaces_msg_Log_size_of_topic(&log, 0);
+        uxr_prepare_output_stream(&session,reliable_out,topics[2].dw_id,&ub,topic_size);
+        const bool success = rcl_interfaces_msg_Log_serialize_topic(&ub, &log);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
             // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
