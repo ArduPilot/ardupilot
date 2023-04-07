@@ -65,7 +65,7 @@
   #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
     #include <AP_KDECAN/AP_KDECAN.h>
   #endif
-  #include <AP_UAVCAN/AP_UAVCAN.h>
+  #include <AP_DroneCAN/AP_DroneCAN.h>
 #endif
 
 #include <AP_Logger/AP_Logger.h>
@@ -1176,8 +1176,8 @@ bool AP_Arming::can_checks(bool report)
                 case AP_CANManager::Driver_Type_UAVCAN:
                 {
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
-                    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
-                    if (ap_uavcan != nullptr && !ap_uavcan->prearm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
+                    AP_DroneCAN *ap_dronecan = AP_DroneCAN::get_uavcan(i);
+                    if (ap_dronecan != nullptr && !ap_dronecan->prearm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
                         check_failed(ARMING_CHECK_SYSTEM, report, "UAVCAN: %s", fail_msg);
                         return false;
                     }
