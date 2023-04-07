@@ -8,7 +8,7 @@ Viewpro gimbal driver lua script
   Set SERIALx_PROTOCOL = 28 (Scripting) where "x" corresponds to the serial port connected to the gimbal
   Set SCR_ENABLE = 1 to enable scripting and reboot the autopilot
   Set MNT1_TYPE = 9 (Scripting) to enable the mount/gimbal scripting driver
-  Set CAM1_TYPE = 4 (Mount) to enable camera control using the mount driver
+  Set CAM1_TYPE = 7 (Scripting) to enable camera control using the scripting driver
   Set RCx_OPTION = 300 (Scripting1) to allow real-time selection of the video feed and camera control
   Copy this script to the autopilot's SD card in the APM/scripts directory and reboot the autopilot
   Set VIEP_CAM_SWLOW, VIEP_CAM_SWMID, VIEP_CAM_SWHIGH to which cameras are controlled by the auxiliary switch

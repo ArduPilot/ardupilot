@@ -6,7 +6,7 @@
     Set SERIALx_PROTOCOL = 28 (Scripting) where "x" corresponds to the serial port connected to the gimbal
     Set SCR_ENABLE = 1 to enable scripting and reboot the autopilot
     Set MNT1_TYPE = 9 (Scripting) to enable the mount/gimbal scripting driver
-    Set CAM1_TYPE = 4 (Mount) to enable the camera driver
+    Set CAM1_TYPE = 7 (Scripting) to enable the camera scripting driver
     Set RCx_OPTION = 300 (Scripting1) to allow real-time selection of the video feed and camera control
     Copy this script to the autopilot's SD card in the APM/scripts directory and reboot the autopilot
     Set VIEP_CAM_SWLOW, VIEP_CAM_SWMID, VIEP_CAM_SWHIGH to which cameras are controlled by the auxiliary switch
@@ -93,6 +93,7 @@ local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTI
 local INIT_INTERVAL_MS = 3000           -- attempt to initialise the gimbal at this interval
 local UPDATE_INTERVAL_MS = 100          -- update at 10hz
 local MOUNT_INSTANCE = 0                -- always control the first mount/gimbal
+local CAMERA_INSTANCE = 0               -- always use the first camera
 
 -- packet parsing definitions
 local HEADER1 = 0x55                    -- 1st header byte
@@ -210,6 +211,12 @@ function init()
   -- check mount parameter
   if MNT1_TYPE:get() ~= 9 then
     gcs:send_text(MAV_SEVERITY.CRITICAL, "ViewPro: set MNT1_TYPE=9")
+    do return end
+  end
+
+  -- check cam type parametr
+  if CAM1_TYPE:get() ~= 7 then
+    gcs:send_text(MAV_SEVERITY.CRITICAL, "ViewPro: set CAM1_TYPE=7")
     do return end
   end
 
@@ -504,12 +511,15 @@ function check_camera_state()
     send_camera_control(cam_choice, CAM_COMMAND_NO_ACTION)
   end
 
-  -- get latest state from AP driver
-  local pic_count, rec_video, zoom_step, focus_step, auto_focus = mount:get_camera_state(MOUNT_INSTANCE)
+  -- get latest camera state from AP driver
+  local cam_state = camera:get_state(CAMERA_INSTANCE)
+  if not cam_state then
+    return
+  end
 
   -- check for take picture
-  if pic_count and pic_count ~= cam_pic_count then
-    cam_pic_count = pic_count
+  if cam_state:take_pic_incr() and cam_state:take_pic_incr() ~= cam_pic_count then
+    cam_pic_count = cam_state:take_pic_incr()
     send_camera_control(cam_choice, CAM_COMMAND_TAKE_PICTURE)
     if VIEP_DEBUG:get() > 0 then
       gcs:send_text(MAV_SEVERITY.INFO, string.format("ViewPro: took pic %u", pic_count))
@@ -517,22 +527,24 @@ function check_camera_state()
   end
 
   -- check for start/stop recording video
-  if rec_video ~= cam_rec_video then
-    cam_rec_video = rec_video
-    if cam_rec_video == true then
+  if cam_state:recording_video() ~= cam_rec_video then
+    cam_rec_video = cam_state:recording_video()
+    if cam_rec_video > 0 then
       send_camera_control(cam_choice, CAM_COMMAND_START_RECORD)
-    elseif cam_rec_video == false then
+      gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: start recording")
+    else
       send_camera_control(cam_choice, CAM_COMMAND_STOP_RECORD)
+      gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: stop recording")
     end
     if VIEP_DEBUG:get() > 0 then
       gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: rec video:" .. tostring(cam_rec_video))
     end
   end
-    
+
   -- check manual zoom
   -- zoom out = -1, hold = 0, zoom in = 1
-  if zoom_step ~= cam_zoom_step then
-    cam_zoom_step = zoom_step
+  if cam_state:zoom_step() and cam_state:zoom_step() ~= cam_zoom_step then
+    cam_zoom_step = cam_state:zoom_step()
     if cam_zoom_step < 0 then
       send_camera_control(cam_choice, CAM_COMMAND_ZOOM_OUT)
     elseif cam_zoom_step == 0 then
@@ -547,8 +559,8 @@ function check_camera_state()
 
   -- check manual focus
   -- focus in = -1, focus hold = 0, focus out = 1
-  if focus_step ~= cam_focus_step then
-    cam_focus_step = focus_step
+  if cam_state:focus_step() and cam_state:focus_step() ~= cam_focus_step then
+    cam_focus_step = cam_state:focus_step()
     if cam_focus_step < 0 then
       send_camera_control(cam_choice, CAM_COMMAND_MANUAL_FOCUS)
       send_camera_control(cam_choice, CAM_COMMAND_FOCUS_MINUS)
@@ -564,8 +576,8 @@ function check_camera_state()
   end
 
   -- check auto focus
-  if auto_focus ~= cam_autofocus then
-    cam_autofocus = auto_focus
+  if cam_state:auto_focus() and cam_state:auto_focus() ~= cam_autofocus then
+    cam_autofocus = cam_state:auto_focus()
     if cam_autofocus then
       send_camera_control(cam_choice, CAM_COMMAND_AUTO_FOCUS)
     end
