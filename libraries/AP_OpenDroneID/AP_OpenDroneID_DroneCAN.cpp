@@ -20,7 +20,7 @@
 
 #if AP_OPENDRONEID_ENABLED
 
-#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_DroneCAN/AP_DroneCAN.h>
 
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
 #include <GCS_MAVLink/GCS.h>
@@ -31,9 +31,9 @@ static Canard::Publisher<dronecan_remoteid_SelfID>* dc_self_id[HAL_MAX_CAN_PROTO
 static Canard::Publisher<dronecan_remoteid_System>* dc_system[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 static Canard::Publisher<dronecan_remoteid_OperatorID>* dc_operator_id[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 
-static void handle_arm_status(AP_UAVCAN* ap_uavcan, const CanardRxTransfer &transfer, const dronecan_remoteid_ArmStatus &msg);
+static void handle_arm_status(AP_DroneCAN* ap_dronecan, const CanardRxTransfer &transfer, const dronecan_remoteid_ArmStatus &msg);
 
-void AP_OpenDroneID::dronecan_init(AP_UAVCAN *uavcan)
+void AP_OpenDroneID::dronecan_init(AP_DroneCAN *uavcan)
 {
     const uint8_t driver_index = uavcan->get_driver_index();
     const uint8_t driver_mask = 1U<<driver_index;
@@ -93,7 +93,7 @@ alloc_failed:
 /*
   send pending DroneCAN OpenDroneID packets
  */
-void AP_OpenDroneID::dronecan_send(AP_UAVCAN *uavcan)
+void AP_OpenDroneID::dronecan_send(AP_DroneCAN *uavcan)
 {
     const uint8_t driver_index = uavcan->get_driver_index();
     const uint8_t driver_mask = 1U<<driver_index;
@@ -140,7 +140,7 @@ void AP_OpenDroneID::dronecan_send(AP_UAVCAN *uavcan)
 #define ODID_COPY_STR(name) do { msg.name.len = strncpy_noterm((char*)msg.name.data, (const char*)pkt.name, sizeof(msg.name.data)); } while(0)
 
 
-void AP_OpenDroneID::dronecan_send_location(AP_UAVCAN *uavcan)
+void AP_OpenDroneID::dronecan_send_location(AP_DroneCAN *uavcan)
 {
     dronecan_remoteid_Location msg {};
     const auto &pkt = pkt_location;
@@ -164,7 +164,7 @@ void AP_OpenDroneID::dronecan_send_location(AP_UAVCAN *uavcan)
     dc_location[uavcan->get_driver_index()]->broadcast(msg);
 }
 
-void AP_OpenDroneID::dronecan_send_basic_id(AP_UAVCAN *uavcan)
+void AP_OpenDroneID::dronecan_send_basic_id(AP_DroneCAN *uavcan)
 {
     dronecan_remoteid_BasicID msg {};
     const auto &pkt = pkt_basic_id;
@@ -175,7 +175,7 @@ void AP_OpenDroneID::dronecan_send_basic_id(AP_UAVCAN *uavcan)
     dc_basic_id[uavcan->get_driver_index()]->broadcast(msg);
 }
 
-void AP_OpenDroneID::dronecan_send_system(AP_UAVCAN *uavcan)
+void AP_OpenDroneID::dronecan_send_system(AP_DroneCAN *uavcan)
 {
     dronecan_remoteid_System msg {};
     const auto &pkt = pkt_system;
@@ -195,7 +195,7 @@ void AP_OpenDroneID::dronecan_send_system(AP_UAVCAN *uavcan)
     dc_system[uavcan->get_driver_index()]->broadcast(msg);
 }
 
-void AP_OpenDroneID::dronecan_send_self_id(AP_UAVCAN *uavcan)
+void AP_OpenDroneID::dronecan_send_self_id(AP_DroneCAN *uavcan)
 {
     dronecan_remoteid_SelfID msg {};
     const auto &pkt = pkt_self_id;
@@ -205,7 +205,7 @@ void AP_OpenDroneID::dronecan_send_self_id(AP_UAVCAN *uavcan)
     dc_self_id[uavcan->get_driver_index()]->broadcast(msg);
 }
 
-void AP_OpenDroneID::dronecan_send_operator_id(AP_UAVCAN *uavcan)
+void AP_OpenDroneID::dronecan_send_operator_id(AP_DroneCAN *uavcan)
 {
     dronecan_remoteid_OperatorID msg {};
     const auto &pkt = pkt_operator_id;
@@ -218,7 +218,7 @@ void AP_OpenDroneID::dronecan_send_operator_id(AP_UAVCAN *uavcan)
 /*
   handle ArmStatus message from DroneCAN
  */
-static void handle_arm_status(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const dronecan_remoteid_ArmStatus &msg)
+static void handle_arm_status(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const dronecan_remoteid_ArmStatus &msg)
 {
     mavlink_open_drone_id_arm_status_t status {};
 
