@@ -176,9 +176,7 @@ void AP_Camera::init()
         }
 
         // set primary to first non-null instance
-        if (primary == nullptr) {
-            primary = _backends[instance];
-        }
+        primary = _backends[instance];
     }
 
     // init each instance, do it after all instances were created, so that they all know things
