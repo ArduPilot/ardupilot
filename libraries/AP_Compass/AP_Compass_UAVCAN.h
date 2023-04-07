@@ -6,19 +6,19 @@
 
 #include "AP_Compass_Backend.h"
 
-#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_DroneCAN/AP_DroneCAN.h>
 
 class AP_Compass_UAVCAN : public AP_Compass_Backend {
 public:
-    AP_Compass_UAVCAN(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t sensor_id, uint32_t devid);
+    AP_Compass_UAVCAN(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t sensor_id, uint32_t devid);
 
     void        read(void) override;
 
-    static void subscribe_msgs(AP_UAVCAN* ap_uavcan);
+    static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
     static AP_Compass_Backend* probe(uint8_t index);
     static uint32_t get_detected_devid(uint8_t index) { return _detected_modules[index].devid; }
-    static void handle_magnetic_field(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const uavcan_equipment_ahrs_MagneticFieldStrength& msg);
-    static void handle_magnetic_field_2(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const uavcan_equipment_ahrs_MagneticFieldStrength2 &msg);
+    static void handle_magnetic_field(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_ahrs_MagneticFieldStrength& msg);
+    static void handle_magnetic_field_2(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_ahrs_MagneticFieldStrength2 &msg);
 
 private:
     bool init();
@@ -26,18 +26,18 @@ private:
     // callback for DroneCAN messages
     void handle_mag_msg(const Vector3f &mag);
 
-    static AP_Compass_UAVCAN* get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t sensor_id);
+    static AP_Compass_UAVCAN* get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t sensor_id);
 
     uint8_t  _instance;
 
-    AP_UAVCAN* _ap_uavcan;
+    AP_DroneCAN* _ap_dronecan;
     uint8_t _node_id;
     uint8_t _sensor_id;
     uint32_t _devid;
 
     // Module Detection Registry
     static struct DetectedModules {
-        AP_UAVCAN* ap_uavcan;
+        AP_DroneCAN* ap_dronecan;
         uint8_t node_id;
         uint8_t sensor_id;
         AP_Compass_UAVCAN *driver;
