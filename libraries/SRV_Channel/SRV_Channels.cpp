@@ -27,7 +27,7 @@
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
-  #include <AP_UAVCAN/AP_UAVCAN.h>
+  #include <AP_DroneCAN/AP_DroneCAN.h>
 
   // To be replaced with macro saying if KDECAN library is included
   #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
@@ -540,11 +540,11 @@ void SRV_Channels::push()
     for (uint8_t i = 0; i < can_num_drivers; i++) {
         switch (AP::can().get_driver_type(i)) {
             case AP_CANManager::Driver_Type_UAVCAN: {
-                AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
-                if (ap_uavcan == nullptr) {
+                AP_DroneCAN *ap_dronecan = AP_DroneCAN::get_uavcan(i);
+                if (ap_dronecan == nullptr) {
                     continue;
                 }
-                ap_uavcan->SRV_push_servos();
+                ap_dronecan->SRV_push_servos();
                 break;
             }
             case AP_CANManager::Driver_Type_KDECAN: {
