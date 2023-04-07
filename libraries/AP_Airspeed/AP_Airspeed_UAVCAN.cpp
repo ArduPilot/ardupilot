@@ -3,7 +3,7 @@
 #if AP_AIRSPEED_UAVCAN_ENABLED
 
 #include <AP_CANManager/AP_CANManager.h>
-#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_DroneCAN/AP_DroneCAN.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 extern const AP_HAL::HAL& hal;
@@ -18,18 +18,18 @@ AP_Airspeed_UAVCAN::AP_Airspeed_UAVCAN(AP_Airspeed &_frontend, uint8_t _instance
     AP_Airspeed_Backend(_frontend, _instance)
 {}
 
-void AP_Airspeed_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
+void AP_Airspeed_UAVCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
-    if (ap_uavcan == nullptr) {
+    if (ap_dronecan == nullptr) {
         return;
     }
 
-    if (Canard::allocate_sub_arg_callback(ap_uavcan, &handle_airspeed, ap_uavcan->get_driver_index()) == nullptr) {
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_airspeed, ap_dronecan->get_driver_index()) == nullptr) {
         AP_BoardConfig::allocation_error("airspeed_sub");
     }
 
 #if AP_AIRSPEED_HYGROMETER_ENABLE
-    if (Canard::allocate_sub_arg_callback(ap_uavcan, &handle_hygrometer, ap_uavcan->get_driver_index()) == nullptr) {
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_hygrometer, ap_dronecan->get_driver_index()) == nullptr) {
         AP_BoardConfig::allocation_error("hygrometer_sub");
     }
 #endif
@@ -42,9 +42,9 @@ AP_Airspeed_Backend* AP_Airspeed_UAVCAN::probe(AP_Airspeed &_frontend, uint8_t _
     AP_Airspeed_UAVCAN* backend = nullptr;
 
     for (uint8_t i = 0; i < AIRSPEED_MAX_SENSORS; i++) {
-        if (_detected_modules[i].driver == nullptr && _detected_modules[i].ap_uavcan != nullptr) {
+        if (_detected_modules[i].driver == nullptr && _detected_modules[i].ap_dronecan != nullptr) {
             const auto bus_id = AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_UAVCAN,
-                                                            _detected_modules[i].ap_uavcan->get_driver_index(),
+                                                            _detected_modules[i].ap_dronecan->get_driver_index(),
                                                             _detected_modules[i].node_id, 0);
             if (previous_devid != 0 && previous_devid != bus_id) {
                 // match with previous ID only
@@ -56,14 +56,14 @@ AP_Airspeed_Backend* AP_Airspeed_UAVCAN::probe(AP_Airspeed &_frontend, uint8_t _
                                    LOG_TAG,
                                    "Failed register UAVCAN Airspeed Node %d on Bus %d\n",
                                    _detected_modules[i].node_id,
-                                   _detected_modules[i].ap_uavcan->get_driver_index());
+                                   _detected_modules[i].ap_dronecan->get_driver_index());
             } else {
                 _detected_modules[i].driver = backend;
                 AP::can().log_text(AP_CANManager::LOG_INFO,
                                    LOG_TAG,
                                    "Registered UAVCAN Airspeed Node %d on Bus %d\n",
                                    _detected_modules[i].node_id,
-                                   _detected_modules[i].ap_uavcan->get_driver_index());
+                                   _detected_modules[i].ap_dronecan->get_driver_index());
                 backend->set_bus_id(bus_id);
             }
             break;
@@ -73,15 +73,15 @@ AP_Airspeed_Backend* AP_Airspeed_UAVCAN::probe(AP_Airspeed &_frontend, uint8_t _
     return backend;
 }
 
-AP_Airspeed_UAVCAN* AP_Airspeed_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id)
+AP_Airspeed_UAVCAN* AP_Airspeed_UAVCAN::get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id)
 {
-    if (ap_uavcan == nullptr) {
+    if (ap_dronecan == nullptr) {
         return nullptr;
     }
 
     for (uint8_t i = 0; i < AIRSPEED_MAX_SENSORS; i++) {
         if (_detected_modules[i].driver != nullptr &&
-            _detected_modules[i].ap_uavcan == ap_uavcan &&
+            _detected_modules[i].ap_dronecan == ap_dronecan &&
             _detected_modules[i].node_id == node_id ) {
             return _detected_modules[i].driver;
         }
@@ -89,7 +89,7 @@ AP_Airspeed_UAVCAN* AP_Airspeed_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan,
 
     bool detected = false;
     for (uint8_t i = 0; i < AIRSPEED_MAX_SENSORS; i++) {
-        if (_detected_modules[i].ap_uavcan == ap_uavcan && _detected_modules[i].node_id == node_id) {
+        if (_detected_modules[i].ap_dronecan == ap_dronecan && _detected_modules[i].node_id == node_id) {
             // detected
             detected = true;
             break;
@@ -98,8 +98,8 @@ AP_Airspeed_UAVCAN* AP_Airspeed_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan,
 
     if (!detected) {
         for (uint8_t i = 0; i < AIRSPEED_MAX_SENSORS; i++) {
-            if (_detected_modules[i].ap_uavcan == nullptr) {
-                _detected_modules[i].ap_uavcan = ap_uavcan;
+            if (_detected_modules[i].ap_dronecan == nullptr) {
+                _detected_modules[i].ap_dronecan = ap_dronecan;
                 _detected_modules[i].node_id = node_id;
                 break;
             }
@@ -109,11 +109,11 @@ AP_Airspeed_UAVCAN* AP_Airspeed_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan,
     return nullptr;
 }
 
-void AP_Airspeed_UAVCAN::handle_airspeed(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const uavcan_equipment_air_data_RawAirData &msg)
+void AP_Airspeed_UAVCAN::handle_airspeed(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_air_data_RawAirData &msg)
 {
     WITH_SEMAPHORE(_sem_registry);
 
-    AP_Airspeed_UAVCAN* driver = get_uavcan_backend(ap_uavcan, transfer.source_node_id);
+    AP_Airspeed_UAVCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id);
 
     if (driver != nullptr) {
         WITH_SEMAPHORE(driver->_sem_airspeed);
@@ -128,11 +128,11 @@ void AP_Airspeed_UAVCAN::handle_airspeed(AP_UAVCAN *ap_uavcan, const CanardRxTra
 }
 
 #if AP_AIRSPEED_HYGROMETER_ENABLE
-void AP_Airspeed_UAVCAN::handle_hygrometer(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const dronecan_sensors_hygrometer_Hygrometer &msg)
+void AP_Airspeed_UAVCAN::handle_hygrometer(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const dronecan_sensors_hygrometer_Hygrometer &msg)
 {
     WITH_SEMAPHORE(_sem_registry);
 
-    AP_Airspeed_UAVCAN* driver = get_uavcan_backend(ap_uavcan, transfer.source_node_id);
+    AP_Airspeed_UAVCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id);
 
     if (driver != nullptr) {
         WITH_SEMAPHORE(driver->_sem_airspeed);
