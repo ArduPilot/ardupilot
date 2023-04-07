@@ -914,15 +914,16 @@ void AP_DroneCAN::safety_state_send()
         switch (hal.util->safety_switch_state()) {
         case AP_HAL::Util::SAFETY_ARMED:
             safety_msg.status = ARDUPILOT_INDICATION_SAFETYSTATE_STATUS_SAFETY_OFF;
+            safety_state.broadcast(safety_msg);
             break;
         case AP_HAL::Util::SAFETY_DISARMED:
             safety_msg.status = ARDUPILOT_INDICATION_SAFETYSTATE_STATUS_SAFETY_ON;
+            safety_state.broadcast(safety_msg);
             break;
         default:
             // nothing to send
             break;
         }
-        safety_state.broadcast(safety_msg);
     }
 
     { // handle ArmingStatus

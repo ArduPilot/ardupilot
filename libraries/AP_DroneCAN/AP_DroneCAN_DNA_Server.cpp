@@ -544,7 +544,7 @@ void AP_DroneCAN_DNA_Server::handleAllocation(const CanardRxTransfer& transfer, 
     rcvd_unique_id_offset += msg.unique_id.len;
 
     //send follow up message
-    uavcan_protocol_dynamic_node_id_Allocation rsp;
+    uavcan_protocol_dynamic_node_id_Allocation rsp {};
 
     /* Respond with the message containing the received unique ID so far
     or with node id if we successfully allocated one. */
