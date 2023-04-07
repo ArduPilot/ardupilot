@@ -943,9 +943,11 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
     GOBJECT(mission, "MIS_",       AP_Mission),
 
+#if HAL_RALLY_ENABLED
     // @Group: RALLY_
     // @Path: ../libraries/AP_Rally/AP_Rally.cpp
     GOBJECT(rally,  "RALLY_",       AP_Rally),
+#endif
 
 #if HAL_NAVEKF2_AVAILABLE
     // @Group: EK2_
