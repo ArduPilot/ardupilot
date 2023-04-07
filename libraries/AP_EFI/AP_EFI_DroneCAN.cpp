@@ -5,7 +5,7 @@
 #if AP_EFI_DRONECAN_ENABLED
 
 #include <AP_CANManager/AP_CANManager.h>
-#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_DroneCAN/AP_DroneCAN.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 extern const AP_HAL::HAL& hal;
@@ -20,13 +20,13 @@ AP_EFI_DroneCAN::AP_EFI_DroneCAN(AP_EFI &_frontend) :
 }
 
 // links the DroneCAN message to this backend
-void AP_EFI_DroneCAN::subscribe_msgs(AP_UAVCAN *ap_uavcan)
+void AP_EFI_DroneCAN::subscribe_msgs(AP_DroneCAN *ap_dronecan)
 {
-    if (ap_uavcan == nullptr) {
+    if (ap_dronecan == nullptr) {
         return;
     }
 
-    if (Canard::allocate_sub_arg_callback(ap_uavcan, &trampoline_status, ap_uavcan->get_driver_index()) == nullptr) {
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &trampoline_status, ap_dronecan->get_driver_index()) == nullptr) {
         AP_BoardConfig::allocation_error("status_sub");
     }
 }
@@ -37,7 +37,7 @@ void AP_EFI_DroneCAN::update()
 }
 
 // EFI message handler
-void AP_EFI_DroneCAN::trampoline_status(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const uavcan_equipment_ice_reciprocating_Status &msg)
+void AP_EFI_DroneCAN::trampoline_status(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_ice_reciprocating_Status &msg)
 {
     if (driver == nullptr) {
         return;
