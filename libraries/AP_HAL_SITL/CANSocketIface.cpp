@@ -57,7 +57,8 @@ uint8_t CANIface::next_interface;
 
 static can_frame makeSocketCanFrame(const AP_HAL::CANFrame& uavcan_frame)
 {
-    can_frame sockcan_frame { uavcan_frame.id& AP_HAL::CANFrame::MaskExtID, uavcan_frame.dlc, { } };
+    can_frame sockcan_frame { uavcan_frame.id& AP_HAL::CANFrame::MaskExtID, uavcan_frame.dlc, { }, };
+    memset(sockcan_frame.data, 0, sizeof(sockcan_frame.data));
     std::copy(uavcan_frame.data, uavcan_frame.data + uavcan_frame.dlc, sockcan_frame.data);
     if (uavcan_frame.isExtended()) {
         sockcan_frame.can_id |= CAN_EFF_FLAG;
@@ -73,7 +74,8 @@ static can_frame makeSocketCanFrame(const AP_HAL::CANFrame& uavcan_frame)
 
 static canfd_frame makeSocketCanFDFrame(const AP_HAL::CANFrame& uavcan_frame)
 {
-    canfd_frame sockcan_frame { uavcan_frame.id& AP_HAL::CANFrame::MaskExtID, AP_HAL::CANFrame::dlcToDataLength(uavcan_frame.dlc), CANFD_BRS, 0, 0, { } };
+    canfd_frame sockcan_frame { uavcan_frame.id& AP_HAL::CANFrame::MaskExtID, AP_HAL::CANFrame::dlcToDataLength(uavcan_frame.dlc), CANFD_BRS, 0, 0, { }, };
+    memset(sockcan_frame.data, 0, sizeof(sockcan_frame.data));
     std::copy(uavcan_frame.data, uavcan_frame.data + AP_HAL::CANFrame::dlcToDataLength(uavcan_frame.dlc), sockcan_frame.data);
     if (uavcan_frame.isExtended()) {
         sockcan_frame.can_id |= CAN_EFF_FLAG;
