@@ -20,7 +20,7 @@
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
 #include "UAVCAN_RGB_LED.h"
 
-#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_DroneCAN/AP_DroneCAN.h>
 
 #include <AP_CANManager/AP_CANManager.h>
 
@@ -47,7 +47,7 @@ bool UAVCAN_RGB_LED::init()
 {
     const uint8_t can_num_drivers = AP::can().get_num_drivers();
     for (uint8_t i = 0; i < can_num_drivers; i++) {
-        AP_UAVCAN *uavcan = AP_UAVCAN::get_uavcan(i);
+        AP_DroneCAN *uavcan = AP_DroneCAN::get_uavcan(i);
         if (uavcan != nullptr) {
             return true;
         }
@@ -63,7 +63,7 @@ bool UAVCAN_RGB_LED::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
     uint8_t can_num_drivers = AP::can().get_num_drivers();
 
     for (uint8_t i = 0; i < can_num_drivers; i++) {
-        AP_UAVCAN *uavcan = AP_UAVCAN::get_uavcan(i);
+        AP_DroneCAN *uavcan = AP_DroneCAN::get_uavcan(i);
         if (uavcan != nullptr) {
             success = uavcan->led_write(_led_index, red, green, blue) || success;
         }
