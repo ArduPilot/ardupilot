@@ -5,6 +5,7 @@
 
 #include "AC_AttitudeControl.h"
 #include <AP_Motors/AP_MotorsMulticopter.h>
+#include <Filter/NotchFilterIncParams.h>
 
 // default rate controller PID gains
 #ifndef AC_ATC_MULTI_RATE_RP_P
@@ -91,6 +92,8 @@ protected:
 
     // get maximum value throttle can be raised to based on throttle vs attitude prioritisation
     float get_throttle_avg_max(float throttle_in);
+
+    NotchFilterIncParamVectors3f _input_notch;
 
     AP_MotorsMulticopter& _motors_multi;
     AC_PID                _pid_rate_roll;

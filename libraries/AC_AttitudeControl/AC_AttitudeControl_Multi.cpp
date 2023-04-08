@@ -1,6 +1,7 @@
 #include "AC_AttitudeControl_Multi.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Logger/AP_Logger.h>
 
 // table of user settable parameters
 const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
@@ -239,6 +240,8 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THR_G_BOOST", 7, AC_AttitudeControl_Multi, _throttle_gain_boost, 0.0f),
 
+    AP_SUBGROUPINFO(_input_notch, "FF_NTCH_", 8, AC_AttitudeControl_Multi, NotchFilterIncParamVectors3f),
+
     AP_GROUPEND
 };
 
@@ -250,6 +253,8 @@ AC_AttitudeControl_Multi::AC_AttitudeControl_Multi(AP_AHRS_View &ahrs, const AP_
     _pid_rate_yaw(AC_ATC_MULTI_RATE_YAW_P, AC_ATC_MULTI_RATE_YAW_I, AC_ATC_MULTI_RATE_YAW_D, 0.0f, AC_ATC_MULTI_RATE_YAW_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, AC_ATC_MULTI_RATE_YAW_FILT_HZ, 0.0f)
 {
     AP_Param::setup_object_defaults(this, var_info);
+    //_input_notch.init(1.0 / constrain_float(get_dt(), 1e-3, 1.0));
+    _input_notch.init(400.0);
 }
 
 // Update Alt_Hold angle maximum
@@ -369,6 +374,22 @@ void AC_AttitudeControl_Multi::rate_controller_run()
     update_throttle_rpy_mix();
 
     _ang_vel_body += _sysid_ang_vel_body;
+
+    // notch filter on the input to prevent the controller from exciting a structural resonance
+    Vector3f pre_filter = _ang_vel_body;
+
+    _ang_vel_body = _input_notch.apply(_ang_vel_body);
+
+    AP::logger().WriteStreaming("TEST",
+                       "TimeUS,PreX,PreY,PreZ,PosX,PosY,PosZ",
+                         "Qffffff",
+                        AP_HAL::micros64(),
+                        (double)pre_filter.x,
+                        (double)pre_filter.y,
+                        (double)pre_filter.z,
+                        (double)_ang_vel_body.x,
+                        (double)_ang_vel_body.y,
+                        (double)_ang_vel_body.z);
 
     Vector3f gyro_latest = _ahrs.get_gyro_latest();
 
