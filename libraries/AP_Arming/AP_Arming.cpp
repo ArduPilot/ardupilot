@@ -1173,9 +1173,9 @@ bool AP_Arming::can_checks(bool report)
 #endif
                     break;
                 }
-                case AP_CANManager::Driver_Type_UAVCAN:
+                case AP_CANManager::Driver_Type_DroneCAN:
                 {
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_ENABLE_DRONECAN_DRIVERS
                     AP_DroneCAN *ap_dronecan = AP_DroneCAN::get_uavcan(i);
                     if (ap_dronecan != nullptr && !ap_dronecan->prearm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
                         check_failed(ARMING_CHECK_SYSTEM, report, "UAVCAN: %s", fail_msg);
