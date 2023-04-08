@@ -24,7 +24,7 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
-#include "AP_BattMonitor_UAVCAN.h"
+#include "AP_BattMonitor_DroneCAN.h"
 #endif
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -52,7 +52,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Group: _
     // @Path: AP_BattMonitor_Sum.cpp
     // @Group: _
-    // @Path: AP_BattMonitor_UAVCAN.cpp
+    // @Path: AP_BattMonitor_DroneCAN.cpp
     // @Group: _
     // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
     // @Group: _
@@ -71,7 +71,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Group: 2_
     // @Path: AP_BattMonitor_Sum.cpp
     // @Group: 2_
-    // @Path: AP_BattMonitor_UAVCAN.cpp
+    // @Path: AP_BattMonitor_DroneCAN.cpp
     // @Group: 2_
     // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
     // @Group: 2_
@@ -91,7 +91,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Group: 3_
     // @Path: AP_BattMonitor_Sum.cpp
     // @Group: 3_
-    // @Path: AP_BattMonitor_UAVCAN.cpp
+    // @Path: AP_BattMonitor_DroneCAN.cpp
     // @Group: 3_
     // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
     // @Group: 3_
@@ -111,7 +111,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Group: 4_
     // @Path: AP_BattMonitor_Sum.cpp
     // @Group: 4_
-    // @Path: AP_BattMonitor_UAVCAN.cpp
+    // @Path: AP_BattMonitor_DroneCAN.cpp
     // @Group: 4_
     // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
     // @Group: 4_
@@ -131,7 +131,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Group: 5_
     // @Path: AP_BattMonitor_Sum.cpp
     // @Group: 5_
-    // @Path: AP_BattMonitor_UAVCAN.cpp
+    // @Path: AP_BattMonitor_DroneCAN.cpp
     // @Group: 5_
     // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
     // @Group: 5_
@@ -151,7 +151,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Group: 6_
     // @Path: AP_BattMonitor_Sum.cpp
     // @Group: 6_
-    // @Path: AP_BattMonitor_UAVCAN.cpp
+    // @Path: AP_BattMonitor_DroneCAN.cpp
     // @Group: 6_
     // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
     // @Group: 6_
@@ -171,7 +171,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Group: 7_
     // @Path: AP_BattMonitor_Sum.cpp
     // @Group: 7_
-    // @Path: AP_BattMonitor_UAVCAN.cpp
+    // @Path: AP_BattMonitor_DroneCAN.cpp
     // @Group: 7_
     // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
     // @Group: 7_
@@ -191,7 +191,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Group: 8_
     // @Path: AP_BattMonitor_Sum.cpp
     // @Group: 8_
-    // @Path: AP_BattMonitor_UAVCAN.cpp
+    // @Path: AP_BattMonitor_DroneCAN.cpp
     // @Group: 8_
     // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
     // @Group: 8_
@@ -211,7 +211,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Group: 9_
     // @Path: AP_BattMonitor_Sum.cpp
     // @Group: 9_
-    // @Path: AP_BattMonitor_UAVCAN.cpp
+    // @Path: AP_BattMonitor_DroneCAN.cpp
     // @Group: 9_
     // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
     // @Group: 9_

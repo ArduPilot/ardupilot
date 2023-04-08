@@ -4,7 +4,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_BattMonitor.h"
-#include "AP_BattMonitor_UAVCAN.h"
+#include "AP_BattMonitor_DroneCAN.h"
 
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_Common/AP_Common.h>
