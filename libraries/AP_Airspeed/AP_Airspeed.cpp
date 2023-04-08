@@ -415,7 +415,7 @@ void AP_Airspeed::allocate()
 #endif
             break;
         case TYPE_UAVCAN:
-#if AP_AIRSPEED_UAVCAN_ENABLED
+#if AP_AIRSPEED_DRONECAN_ENABLED
             sensor[i] = AP_Airspeed_UAVCAN::probe(*this, i, uint32_t(param[i].bus_id.get()));
 #endif
             break;
@@ -442,7 +442,7 @@ void AP_Airspeed::allocate()
         }
     }
 
-#if AP_AIRSPEED_UAVCAN_ENABLED
+#if AP_AIRSPEED_DRONECAN_ENABLED
     // we need a 2nd pass for DroneCAN sensors so we can match order by DEVID
     // the 2nd pass accepts any devid
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
@@ -453,7 +453,7 @@ void AP_Airspeed::allocate()
             }
         }
     }
-#endif // AP_AIRSPEED_UAVCAN_ENABLED
+#endif // AP_AIRSPEED_DRONECAN_ENABLED
 #endif // HAL_AIRSPEED_PROBE_LIST
 
     // set DEVID to zero for any sensors not found. This allows backends to order
