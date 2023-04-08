@@ -8,7 +8,7 @@ const AP_Param::GroupInfo AP_Camera_Params::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Camera shutter (trigger) type
     // @Description: how to trigger the camera to take a picture
-    // @Values: 1:Servo,2:Relay, 3:GoPro in Solo Gimbal, 4:Mount (Siyi), 5:MAVLink, 6:MAVLinkCamV2
+    // @Values: 1:Servo,2:Relay, 3:GoPro in Solo Gimbal, 4:Mount (Siyi), 5:MAVLink, 6:MAVLinkCamV2, 7:Scripting
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE",  1, AP_Camera_Params, type, 0, AP_PARAM_FLAG_ENABLE),
 

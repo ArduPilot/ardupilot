@@ -17,6 +17,7 @@
 #include "AP_Camera_Mount.h"
 #include "AP_Camera_MAVLink.h"
 #include "AP_Camera_MAVLinkCamV2.h"
+#include "AP_Camera_Scripting.h"
 
 const AP_Param::GroupInfo AP_Camera::var_info[] = {
 
@@ -169,6 +170,12 @@ void AP_Camera::init()
         // check for MAVLink Camv2 driver
         case CameraType::MAVLINK_CAMV2:
             _backends[instance] = new AP_Camera_MAVLinkCamV2(*this, _params[instance], instance);
+            break;
+#endif
+#if AP_CAMERA_SCRIPTING_ENABLED
+        // check for Scripting driver
+        case CameraType::SCRIPTING:
+            _backends[instance] = new AP_Camera_Scripting(*this, _params[instance], instance);
             break;
 #endif
         case CameraType::NONE:
@@ -429,6 +436,19 @@ bool AP_Camera::set_auto_focus(uint8_t instance)
     // call backend
     return backend->set_auto_focus();
 }
+
+#if AP_CAMERA_SCRIPTING_ENABLED
+// accessor to allow scripting backend to retrieve state
+// returns true on success and cam_state is filled in
+bool AP_Camera::get_state(uint8_t instance, camera_state_t& cam_state) const
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+    return backend->get_state(cam_state);
+}
+#endif // #if AP_CAMERA_SCRIPTING_ENABLED
 
 // return backend for instance number
 AP_Camera_Backend *AP_Camera::get_instance(uint8_t instance) const
