@@ -431,7 +431,7 @@ bool AP_Camera::set_auto_focus(uint8_t instance)
 }
 
 // return backend for instance number
-AP_Camera_Backend *AP_Camera::get_instance(uint8_t instance)
+AP_Camera_Backend *AP_Camera::get_instance(uint8_t instance) const
 {
     if (instance >= ARRAY_SIZE(_backends)) {
         return nullptr;
