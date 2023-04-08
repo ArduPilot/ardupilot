@@ -3,7 +3,7 @@
 #include "AP_RangeFinder_Backend.h"
 
 #ifndef AP_RANGEFINDER_DRONECAN_ENABLED
-#define AP_RANGEFINDER_DRONECAN_ENABLED (HAL_ENABLE_LIBUAVCAN_DRIVERS && AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED)
+#define AP_RANGEFINDER_DRONECAN_ENABLED (HAL_ENABLE_DRONECAN_DRIVERS && AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED)
 #endif
 
 #if AP_RANGEFINDER_DRONECAN_ENABLED
@@ -12,7 +12,7 @@
 
 class MeasurementCb;
 
-class AP_RangeFinder_UAVCAN : public AP_RangeFinder_Backend {
+class AP_RangeFinder_DroneCAN : public AP_RangeFinder_Backend {
 public:
     //constructor - registers instance at top RangeFinder driver
     using AP_RangeFinder_Backend::AP_RangeFinder_Backend;
@@ -20,7 +20,7 @@ public:
     void update() override;
 
     static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
-    static AP_RangeFinder_UAVCAN* get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t address, bool create_new);
+    static AP_RangeFinder_DroneCAN* get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t address, bool create_new);
     static AP_RangeFinder_Backend* detect(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params);
 
     static void handle_measurement(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_range_sensor_Measurement &msg);

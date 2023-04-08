@@ -13,7 +13,7 @@ extern const AP_HAL::HAL& hal;
 #define debug_range_finder_uavcan(level_debug, can_driver, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(can_driver)) { hal.console->printf(fmt, ##args); }} while (0)
 
 //links the rangefinder uavcan message to this backend
-void AP_RangeFinder_UAVCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
+void AP_RangeFinder_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
     if (ap_dronecan == nullptr) {
         return;
@@ -24,18 +24,18 @@ void AP_RangeFinder_UAVCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 }
 
 //Method to find the backend relating to the node id
-AP_RangeFinder_UAVCAN* AP_RangeFinder_UAVCAN::get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t address, bool create_new)
+AP_RangeFinder_DroneCAN* AP_RangeFinder_DroneCAN::get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t address, bool create_new)
 {
     if (ap_dronecan == nullptr) {
         return nullptr;
     }
-    AP_RangeFinder_UAVCAN* driver = nullptr;
+    AP_RangeFinder_DroneCAN* driver = nullptr;
     RangeFinder &frontend = *AP::rangefinder();
     //Scan through the Rangefinder params to find UAVCAN RFND with matching address.
     for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
         if ((RangeFinder::Type)frontend.params[i].type.get() == RangeFinder::Type::UAVCAN &&
             frontend.params[i].address == address) {
-            driver = (AP_RangeFinder_UAVCAN*)frontend.drivers[i];
+            driver = (AP_RangeFinder_DroneCAN*)frontend.drivers[i];
         }
         //Double check if the driver was initialised as UAVCAN Type
         if (driver != nullptr && (driver->_backend_type == RangeFinder::Type::UAVCAN)) {
@@ -60,8 +60,8 @@ AP_RangeFinder_UAVCAN* AP_RangeFinder_UAVCAN::get_uavcan_backend(AP_DroneCAN* ap
                     //it up as UAVCAN type
                     return nullptr;
                 }
-                frontend.drivers[i] = new AP_RangeFinder_UAVCAN(frontend.state[i], frontend.params[i]);
-                driver = (AP_RangeFinder_UAVCAN*)frontend.drivers[i];
+                frontend.drivers[i] = new AP_RangeFinder_DroneCAN(frontend.state[i], frontend.params[i]);
+                driver = (AP_RangeFinder_DroneCAN*)frontend.drivers[i];
                 if (driver == nullptr) {
                     break;
                 }
@@ -81,7 +81,7 @@ AP_RangeFinder_UAVCAN* AP_RangeFinder_UAVCAN::get_uavcan_backend(AP_DroneCAN* ap
 }
 
 //Called from frontend to update with the readings received by handler
-void AP_RangeFinder_UAVCAN::update()
+void AP_RangeFinder_DroneCAN::update()
 {
     WITH_SEMAPHORE(_sem);
     if ((AP_HAL::millis() - _last_reading_ms) > 500) {
@@ -100,10 +100,10 @@ void AP_RangeFinder_UAVCAN::update()
 }
 
 //RangeFinder message handler
-void AP_RangeFinder_UAVCAN::handle_measurement(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_range_sensor_Measurement &msg)
+void AP_RangeFinder_DroneCAN::handle_measurement(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_range_sensor_Measurement &msg)
 {
     //fetch the matching uavcan driver, node id and sensor id backend instance
-    AP_RangeFinder_UAVCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id, msg.sensor_id, true);
+    AP_RangeFinder_DroneCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id, msg.sensor_id, true);
     if (driver == nullptr) {
         return;
     }
