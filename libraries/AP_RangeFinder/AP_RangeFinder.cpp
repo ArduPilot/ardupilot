@@ -488,7 +488,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         break;
 
     case Type::UAVCAN:
-#if AP_RANGEFINDER_UAVCAN_ENABLED
+#if AP_RANGEFINDER_DRONECAN_ENABLED
         /*
           the UAVCAN driver gets created when we first receive a
           measurement. We take the instance slot now, even if we don't

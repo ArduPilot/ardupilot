@@ -1,6 +1,6 @@
 #include "AP_RangeFinder_DroneCAN.h"
 
-#if AP_RANGEFINDER_UAVCAN_ENABLED
+#if AP_RANGEFINDER_DRONECAN_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_CANManager/AP_CANManager.h>
@@ -161,4 +161,4 @@ void AP_RangeFinder_UAVCAN::handle_measurement(AP_DroneCAN *ap_dronecan, const C
     }
 }
 
-#endif  // AP_RANGEFINDER_UAVCAN_ENABLED
+#endif  // AP_RANGEFINDER_DRONECAN_ENABLED
