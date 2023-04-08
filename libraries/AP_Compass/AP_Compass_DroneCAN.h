@@ -8,9 +8,9 @@
 
 #include <AP_DroneCAN/AP_DroneCAN.h>
 
-class AP_Compass_UAVCAN : public AP_Compass_Backend {
+class AP_Compass_DroneCAN : public AP_Compass_Backend {
 public:
-    AP_Compass_UAVCAN(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t sensor_id, uint32_t devid);
+    AP_Compass_DroneCAN(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t sensor_id, uint32_t devid);
 
     void        read(void) override;
 
@@ -26,7 +26,7 @@ private:
     // callback for DroneCAN messages
     void handle_mag_msg(const Vector3f &mag);
 
-    static AP_Compass_UAVCAN* get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t sensor_id);
+    static AP_Compass_DroneCAN* get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t sensor_id);
 
     uint8_t  _instance;
 
@@ -40,7 +40,7 @@ private:
         AP_DroneCAN* ap_dronecan;
         uint8_t node_id;
         uint8_t sensor_id;
-        AP_Compass_UAVCAN *driver;
+        AP_Compass_DroneCAN *driver;
         uint32_t devid;
     } _detected_modules[COMPASS_MAX_BACKEND];
 
