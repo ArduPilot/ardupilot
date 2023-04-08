@@ -1537,15 +1537,21 @@ def write_WSPI_config(f):
     global wspi_list
     # only the bootloader must reset the QSPI clock otherwise it is not possible to 
     # bootstrap into external flash
-    if not args.bootloader:
-        f.write('#define STM32_QSPI_NO_RESET TRUE\n')
+    for t in list(bytype.keys()) + list(alttype.keys()):
+        if t.startswith('QUADSPI') and not args.bootloader:
+            f.write('#define STM32_QSPI_NO_RESET TRUE\n')
+        if t.startswith('OCTOSPI') and not args.bootloader:
+            f.write('#define STM32_OSPI1_NO_RESET TRUE\n')
 
     if len(wspidev) == 0:
-        # nothing to do
+        # nothing else to do
         return
+
     for t in list(bytype.keys()) + list(alttype.keys()):
+        print(t)
         if t.startswith('QUADSPI') or t.startswith('OCTOSPI'):
             wspi_list.append(t)
+
     wspi_list = sorted(wspi_list)
     if len(wspi_list) == 0:
         return
