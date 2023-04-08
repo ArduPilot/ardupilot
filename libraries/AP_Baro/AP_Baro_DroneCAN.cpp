@@ -46,7 +46,7 @@ AP_Baro_Backend* AP_Baro_DroneCAN::probe(AP_Baro &baro)
             if (backend == nullptr) {
                 AP::can().log_text(AP_CANManager::LOG_ERROR,
                             LOG_TAG,
-                            "Failed register UAVCAN Baro Node %d on Bus %d\n",
+                            "Failed register DroneCAN Baro Node %d on Bus %d\n",
                             _detected_modules[i].node_id,
                             _detected_modules[i].ap_dronecan->get_driver_index());
             } else {
@@ -63,7 +63,7 @@ AP_Baro_Backend* AP_Baro_DroneCAN::probe(AP_Baro &baro)
 
                 AP::can().log_text(AP_CANManager::LOG_INFO,
                             LOG_TAG,
-                            "Registered UAVCAN Baro Node %d on Bus %d\n",
+                            "Registered DroneCAN Baro Node %d on Bus %d\n",
                             _detected_modules[i].node_id,
                             _detected_modules[i].ap_dronecan->get_driver_index());
             }
@@ -73,7 +73,7 @@ AP_Baro_Backend* AP_Baro_DroneCAN::probe(AP_Baro &baro)
     return backend;
 }
 
-AP_Baro_DroneCAN* AP_Baro_DroneCAN::get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, bool create_new)
+AP_Baro_DroneCAN* AP_Baro_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, bool create_new)
 {
     if (ap_dronecan == nullptr) {
         return nullptr;
@@ -126,7 +126,7 @@ void AP_Baro_DroneCAN::handle_pressure(AP_DroneCAN *ap_dronecan, const CanardRxT
     AP_Baro_DroneCAN* driver;
     {
         WITH_SEMAPHORE(_sem_registry);
-        driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id, true);
+        driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id, true);
         if (driver == nullptr) {
             return;
         }
@@ -143,7 +143,7 @@ void AP_Baro_DroneCAN::handle_temperature(AP_DroneCAN *ap_dronecan, const Canard
     AP_Baro_DroneCAN* driver;
     {
         WITH_SEMAPHORE(_sem_registry);
-        driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id, false);
+        driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id, false);
         if (driver == nullptr) {
             return;
         }
