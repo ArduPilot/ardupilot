@@ -69,7 +69,7 @@ void MMLPlayer::start_note(float duration, float frequency, float volume)
     uint8_t can_num_drivers = AP::can().get_num_drivers();
 
     for (uint8_t i = 0; i < can_num_drivers; i++) {
-        AP_DroneCAN *uavcan = AP_DroneCAN::get_uavcan(i);
+        AP_DroneCAN *uavcan = AP_DroneCAN::get_dronecan(i);
         if (uavcan != nullptr &&
             (AP::notify().get_buzzer_types() & AP_Notify::Notify_Buzz_UAVCAN)) {
             uavcan->set_buzzer_tone(frequency, _note_duration_us*1.0e-6);
