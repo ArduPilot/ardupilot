@@ -180,7 +180,7 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
     if (backend == nullptr) {
         AP::can().log_text(AP_CANManager::LOG_ERROR,
                             LOG_TAG,
-                            "Failed to register UAVCAN GPS Node %d on Bus %d\n",
+                            "Failed to register DroneCAN GPS Node %d on Bus %d\n",
                             _detected_modules[found_match].node_id,
                             _detected_modules[found_match].ap_dronecan->get_driver_index());
     } else {
@@ -188,11 +188,11 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
         backend->_detected_module = found_match;
         AP::can().log_text(AP_CANManager::LOG_INFO,
                             LOG_TAG,
-                            "Registered UAVCAN GPS Node %d on Bus %d as instance %d\n",
+                            "Registered DroneCAN GPS Node %d on Bus %d as instance %d\n",
                             _detected_modules[found_match].node_id,
                             _detected_modules[found_match].ap_dronecan->get_driver_index(),
                             _state.instance);
-        snprintf(backend->_name, ARRAY_SIZE(backend->_name), "UAVCAN%u-%u", _detected_modules[found_match].ap_dronecan->get_driver_index()+1, _detected_modules[found_match].node_id);
+        snprintf(backend->_name, ARRAY_SIZE(backend->_name), "DroneCAN%u-%u", _detected_modules[found_match].ap_dronecan->get_driver_index()+1, _detected_modules[found_match].node_id);
         _detected_modules[found_match].instance = _state.instance;
         for (uint8_t i=0; i < GPS_MAX_RECEIVERS; i++) {
             if (_detected_modules[found_match].node_id == AP::gps()._node_id[i]) {
@@ -210,7 +210,7 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
         if (backend->role == AP_GPS::GPS_ROLE_MB_BASE) {
             backend->rtcm3_parser = new RTCM3_Parser;
             if (backend->rtcm3_parser == nullptr) {
-                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "UAVCAN%u-%u: failed RTCMv3 parser allocation", _detected_modules[found_match].ap_dronecan->get_driver_index()+1, _detected_modules[found_match].node_id);
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "DroneCAN%u-%u: failed RTCMv3 parser allocation", _detected_modules[found_match].ap_dronecan->get_driver_index()+1, _detected_modules[found_match].node_id);
             }
         }
 #endif // GPS_MOVING_BASELINE
@@ -254,7 +254,7 @@ bool AP_GPS_DroneCAN::backends_healthy(char failure_msg[], uint16_t failure_msg_
     return true;
 }
 
-AP_GPS_DroneCAN* AP_GPS_DroneCAN::get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id)
+AP_GPS_DroneCAN* AP_GPS_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id)
 {
     if (ap_dronecan == nullptr) {
         return nullptr;
@@ -464,7 +464,7 @@ void AP_GPS_DroneCAN::handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uin
     if (!seen_message) {
         if (interim_state.status == AP_GPS::GPS_Status::NO_GPS) {
             // the first time we see a fix message we change from
-            // NO_GPS to NO_FIX, indicating to user that a UAVCAN GPS
+            // NO_GPS to NO_FIX, indicating to user that a DroneCAN GPS
             // has been seen
             interim_state.status = AP_GPS::GPS_Status::NO_FIX;
         }
@@ -538,7 +538,7 @@ void AP_GPS_DroneCAN::handle_moving_baseline_msg(const ardupilot_gnss_MovingBase
 {
     WITH_SEMAPHORE(sem);
     if (role != AP_GPS::GPS_ROLE_MB_BASE) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Incorrect Role set for UAVCAN GPS, %d should be Base", node_id);
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Incorrect Role set for DroneCAN GPS, %d should be Base", node_id);
         return;
     }
 
@@ -597,7 +597,7 @@ void AP_GPS_DroneCAN::handle_fix2_msg_trampoline(AP_DroneCAN *ap_dronecan, const
 {
     WITH_SEMAPHORE(_sem_registry);
 
-    AP_GPS_DroneCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id);
+    AP_GPS_DroneCAN* driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id);
     if (driver != nullptr) {
         driver->handle_fix2_msg(msg, transfer.timestamp_usec);
     }
@@ -607,7 +607,7 @@ void AP_GPS_DroneCAN::handle_aux_msg_trampoline(AP_DroneCAN *ap_dronecan, const 
 {
     WITH_SEMAPHORE(_sem_registry);
 
-    AP_GPS_DroneCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id);
+    AP_GPS_DroneCAN* driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id);
     if (driver != nullptr) {
         driver->handle_aux_msg(msg);
     }
@@ -617,7 +617,7 @@ void AP_GPS_DroneCAN::handle_heading_msg_trampoline(AP_DroneCAN *ap_dronecan, co
 {
     WITH_SEMAPHORE(_sem_registry);
 
-    AP_GPS_DroneCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id);
+    AP_GPS_DroneCAN* driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id);
     if (driver != nullptr) {
         driver->handle_heading_msg(msg);
     }
@@ -627,7 +627,7 @@ void AP_GPS_DroneCAN::handle_status_msg_trampoline(AP_DroneCAN *ap_dronecan, con
 {
     WITH_SEMAPHORE(_sem_registry);
 
-    AP_GPS_DroneCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id);
+    AP_GPS_DroneCAN* driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id);
     if (driver != nullptr) {
         driver->handle_status_msg(msg);
     }
@@ -638,7 +638,7 @@ void AP_GPS_DroneCAN::handle_status_msg_trampoline(AP_DroneCAN *ap_dronecan, con
 void AP_GPS_DroneCAN::handle_moving_baseline_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_gnss_MovingBaselineData& msg)
 {
     WITH_SEMAPHORE(_sem_registry);
-    AP_GPS_DroneCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id);
+    AP_GPS_DroneCAN* driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id);
     if (driver != nullptr) {
         driver->handle_moving_baseline_msg(msg, transfer.source_node_id);
     }
@@ -648,7 +648,7 @@ void AP_GPS_DroneCAN::handle_moving_baseline_msg_trampoline(AP_DroneCAN *ap_dron
 void AP_GPS_DroneCAN::handle_relposheading_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_gnss_RelPosHeading& msg)
 {
     WITH_SEMAPHORE(_sem_registry);
-    AP_GPS_DroneCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id);
+    AP_GPS_DroneCAN* driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id);
     if (driver != nullptr) {
         driver->handle_relposheading_msg(msg, transfer.source_node_id);
     }
@@ -702,7 +702,7 @@ bool AP_GPS_DroneCAN::read(void)
     if (_new_data) {
         _new_data = false;
 
-        // the encoding of accuracies in UAVCAN can result in infinite
+        // the encoding of accuracies in DroneCAN can result in infinite
         // values. These cause problems with blending. Use 1000m and 1000m/s instead
         interim_state.horizontal_accuracy = MIN(interim_state.horizontal_accuracy, 1000.0);
         interim_state.vertical_accuracy = MIN(interim_state.vertical_accuracy, 1000.0);
@@ -760,9 +760,9 @@ bool AP_GPS_DroneCAN::is_configured(void) const
  */
 void AP_GPS_DroneCAN::inject_data(const uint8_t *data, uint16_t len)
 {
-    // we only handle this if we are the first UAVCAN GPS or we are
+    // we only handle this if we are the first DroneCAN GPS or we are
     // using a different uavcan instance than the first GPS, as we
-    // send the data as broadcast on all UAVCAN devive ports and we
+    // send the data as broadcast on all DroneCAN devive ports and we
     // don't want to send duplicates
     if (_detected_module == 0 ||
         _detected_modules[_detected_module].ap_dronecan != _detected_modules[0].ap_dronecan) {
@@ -828,7 +828,7 @@ void AP_GPS_DroneCAN::handle_param_save_response(AP_DroneCAN* ap_dronecan, const
         cfg_step++;
     }
     // Also send reboot command
-    // this is ok as we are sending from UAVCAN thread context
+    // this is ok as we are sending from DroneCAN thread context
     Debug("AP_GPS_DroneCAN: sending reboot command %d\n", node_id);
     ap_dronecan->send_reboot_request(node_id);
 }

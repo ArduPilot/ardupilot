@@ -95,7 +95,7 @@ private:
 
     static bool take_registry();
     static void give_registry();
-    static AP_GPS_DroneCAN* get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id);
+    static AP_GPS_DroneCAN* get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id);
 
     bool _new_data;
     AP_GPS::GPS_State interim_state;
