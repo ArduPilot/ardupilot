@@ -102,7 +102,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Values: 0:Disabled,1:UAVCAN,4:PiccoloCAN,5:CANTester,6:EFI_NWPMU,7:USD1,8:KDECAN
     // @User: Advanced
     // @RebootRequired: True
-    GARRAY(can_protocol,     0, "CAN_PROTOCOL", AP_CANManager::Driver_Type_UAVCAN),
+    GARRAY(can_protocol,     0, "CAN_PROTOCOL", AP_CANManager::Driver_Type_DroneCAN),
     
     // @Param: CAN2_BAUDRATE
     // @DisplayName: Bitrate of CAN2 interface
@@ -118,7 +118,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Values: 0:Disabled,1:UAVCAN,4:PiccoloCAN,5:CANTester,6:EFI_NWPMU,7:USD1,8:KDECAN
     // @User: Advanced
     // @RebootRequired: True
-    GARRAY(can_protocol,     1, "CAN2_PROTOCOL", AP_CANManager::Driver_Type_UAVCAN),
+    GARRAY(can_protocol,     1, "CAN2_PROTOCOL", AP_CANManager::Driver_Type_DroneCAN),
 #endif
 
 #if HAL_NUM_CAN_IFACES >= 3
@@ -136,7 +136,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Values: 0:Disabled,1:UAVCAN,4:PiccoloCAN,5:CANTester,6:EFI_NWPMU,7:USD1,8:KDECAN
     // @User: Advanced
     // @RebootRequired: True
-    GARRAY(can_protocol,    2, "CAN3_PROTOCOL", AP_CANManager::Driver_Type_UAVCAN),
+    GARRAY(can_protocol,    2, "CAN3_PROTOCOL", AP_CANManager::Driver_Type_DroneCAN),
 #endif
 
 #if HAL_CANFD_SUPPORTED
