@@ -1031,15 +1031,6 @@ function camera:get_state(instance) end
 mount = {}
 
 -- desc
----@param param1 integer
----@return integer|nil  -- pic_count
----@return boolean|nil  -- record_video
----@return integer|nil  -- zoom_step
----@return integer|nil  -- focus_step
----@return boolean|nil  -- auto_focus
-function mount:get_camera_state(param1) end
-
--- desc
 ---@param instance integer
 ---@param roll_deg number
 ---@param pitch_deg number
