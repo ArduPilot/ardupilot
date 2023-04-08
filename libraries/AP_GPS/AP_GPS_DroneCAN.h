@@ -112,7 +112,7 @@ private:
     bool healthy;
     uint32_t status_flags;
     uint32_t error_code;
-    char _name[15];
+    char _name[16];
 
     // Module Detection Registry
     static struct DetectedModules {
