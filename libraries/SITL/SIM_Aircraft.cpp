@@ -79,7 +79,7 @@ Aircraft::Aircraft(const char *frame_str) :
     }
 
     // Negative attenuation gives us a gain
-    landing_gear_structure.init(rate_hz, sitl->gnd_res_freq.get(), 2.0, -40.0);
+    landing_gear_structure.init(rate_hz, sitl->gnd_res_freq.get(), 1.0, -10.0);
 }
 
 void Aircraft::set_start_location(const Location &start_loc, const float start_yaw)
@@ -685,10 +685,10 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
 
             // Add a ground resonance component to yaw
             float gnd_res_angle = 0.0;
-            if (on_ground()) {
-               gnd_res_angle = 0.05*landing_gear_structure.apply(rot_accel.z);
+            if (on_ground() && (sitl->gnd_res_freq.get() >= 1.0)) {
+                gnd_res_angle = 0.1*landing_gear_structure.apply(rot_accel.z);
             }
-            
+
             y = y + yaw_rate * delta_time + gnd_res_angle;
             dcm.from_euler(0.0f, 0.0f, y);
             // X, Y movement tracks ground movement
