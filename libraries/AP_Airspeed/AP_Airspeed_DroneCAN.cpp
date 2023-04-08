@@ -54,14 +54,14 @@ AP_Airspeed_Backend* AP_Airspeed_DroneCAN::probe(AP_Airspeed &_frontend, uint8_t
             if (backend == nullptr) {
                 AP::can().log_text(AP_CANManager::LOG_INFO,
                                    LOG_TAG,
-                                   "Failed register UAVCAN Airspeed Node %d on Bus %d\n",
+                                   "Failed register DroneCAN Airspeed Node %d on Bus %d\n",
                                    _detected_modules[i].node_id,
                                    _detected_modules[i].ap_dronecan->get_driver_index());
             } else {
                 _detected_modules[i].driver = backend;
                 AP::can().log_text(AP_CANManager::LOG_INFO,
                                    LOG_TAG,
-                                   "Registered UAVCAN Airspeed Node %d on Bus %d\n",
+                                   "Registered DroneCAN Airspeed Node %d on Bus %d\n",
                                    _detected_modules[i].node_id,
                                    _detected_modules[i].ap_dronecan->get_driver_index());
                 backend->set_bus_id(bus_id);
@@ -73,7 +73,7 @@ AP_Airspeed_Backend* AP_Airspeed_DroneCAN::probe(AP_Airspeed &_frontend, uint8_t
     return backend;
 }
 
-AP_Airspeed_DroneCAN* AP_Airspeed_DroneCAN::get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id)
+AP_Airspeed_DroneCAN* AP_Airspeed_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id)
 {
     if (ap_dronecan == nullptr) {
         return nullptr;
@@ -113,7 +113,7 @@ void AP_Airspeed_DroneCAN::handle_airspeed(AP_DroneCAN *ap_dronecan, const Canar
 {
     WITH_SEMAPHORE(_sem_registry);
 
-    AP_Airspeed_DroneCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id);
+    AP_Airspeed_DroneCAN* driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id);
 
     if (driver != nullptr) {
         WITH_SEMAPHORE(driver->_sem_airspeed);
@@ -132,7 +132,7 @@ void AP_Airspeed_DroneCAN::handle_hygrometer(AP_DroneCAN *ap_dronecan, const Can
 {
     WITH_SEMAPHORE(_sem_registry);
 
-    AP_Airspeed_DroneCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id);
+    AP_Airspeed_DroneCAN* driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id);
 
     if (driver != nullptr) {
         WITH_SEMAPHORE(driver->_sem_airspeed);
