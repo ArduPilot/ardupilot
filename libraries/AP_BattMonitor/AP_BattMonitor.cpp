@@ -23,7 +23,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_ENABLE_DRONECAN_DRIVERS
 #include "AP_BattMonitor_DroneCAN.h"
 #endif
 
@@ -312,7 +312,7 @@ AP_BattMonitor::init()
                 break;
             case Type::UAVCAN_BatteryInfo:
 #if AP_BATTERY_UAVCAN_BATTERYINFO_ENABLED
-                drivers[instance] = new AP_BattMonitor_UAVCAN(*this, state[instance], AP_BattMonitor_UAVCAN::UAVCAN_BATTERY_INFO, _params[instance]);
+                drivers[instance] = new AP_BattMonitor_DroneCAN(*this, state[instance], AP_BattMonitor_DroneCAN::UAVCAN_BATTERY_INFO, _params[instance]);
 #endif
                 break;
             case Type::BLHeliESC:

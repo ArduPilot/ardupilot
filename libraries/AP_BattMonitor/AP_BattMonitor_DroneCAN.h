@@ -2,7 +2,7 @@
 
 #include "AP_BattMonitor.h"
 #include "AP_BattMonitor_Backend.h"
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_ENABLE_DRONECAN_DRIVERS
 #include <AP_DroneCAN/AP_DroneCAN.h>
 
 #define AP_BATTMONITOR_UAVCAN_TIMEOUT_MICROS         5000000 // sensor becomes unhealthy if no successful readings for 5 seconds
@@ -11,15 +11,15 @@
 #define AP_BATTMONITOR_UAVCAN_MPPT_DEBUG 0
 #endif
 
-class AP_BattMonitor_UAVCAN : public AP_BattMonitor_Backend
+class AP_BattMonitor_DroneCAN : public AP_BattMonitor_Backend
 {
 public:
-    enum BattMonitor_UAVCAN_Type {
+    enum BattMonitor_DroneCAN_Type {
         UAVCAN_BATTERY_INFO = 0
     };
 
     /// Constructor
-    AP_BattMonitor_UAVCAN(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, BattMonitor_UAVCAN_Type type, AP_BattMonitor_Params &params);
+    AP_BattMonitor_DroneCAN(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, BattMonitor_DroneCAN_Type type, AP_BattMonitor_Params &params);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -47,7 +47,7 @@ public:
     uint32_t get_mavlink_fault_bitmask() const override;
 
     static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
-    static AP_BattMonitor_UAVCAN* get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t battery_id);
+    static AP_BattMonitor_DroneCAN* get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t battery_id);
     static void handle_battery_info_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_power_BatteryInfo &msg);
     static void handle_battery_info_aux_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_equipment_power_BatteryInfoAux &msg);
     static void handle_mppt_stream_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const mppt_Stream &msg);
@@ -80,7 +80,7 @@ private:
 #endif
 
     AP_BattMonitor::BattMonitor_State _interim_state;
-    BattMonitor_UAVCAN_Type _type;
+    BattMonitor_DroneCAN_Type _type;
 
     HAL_Semaphore _sem_battmon;
 
@@ -109,7 +109,7 @@ private:
 
     void handle_outputEnable_response(const CanardRxTransfer&, const mppt_OutputEnableResponse&);
 
-    Canard::ObjCallback<AP_BattMonitor_UAVCAN, mppt_OutputEnableResponse> mppt_outputenable_res_cb{this, &AP_BattMonitor_UAVCAN::handle_outputEnable_response};
+    Canard::ObjCallback<AP_BattMonitor_DroneCAN, mppt_OutputEnableResponse> mppt_outputenable_res_cb{this, &AP_BattMonitor_DroneCAN::handle_outputEnable_response};
     Canard::Client<mppt_OutputEnableResponse> *mppt_outputenable_client;
 };
 #endif

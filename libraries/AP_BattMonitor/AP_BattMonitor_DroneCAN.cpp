@@ -17,14 +17,14 @@
 
 extern const AP_HAL::HAL& hal;
 
-const AP_Param::GroupInfo AP_BattMonitor_UAVCAN::var_info[] = {
+const AP_Param::GroupInfo AP_BattMonitor_DroneCAN::var_info[] = {
 
     // @Param: CURR_MULT
     // @DisplayName: Scales reported power monitor current
     // @Description: Multiplier applied to all current related reports to allow for adjustment if no UAVCAN param access or current splitting applications
     // @Range: .1 10
     // @User: Advanced
-    AP_GROUPINFO("CURR_MULT", 30, AP_BattMonitor_UAVCAN, _curr_mult, 1.0),
+    AP_GROUPINFO("CURR_MULT", 30, AP_BattMonitor_DroneCAN, _curr_mult, 1.0),
 
     // Param indexes must be between 30 and 39 to avoid conflict with other battery monitor param tables loaded by pointer
 
@@ -32,7 +32,7 @@ const AP_Param::GroupInfo AP_BattMonitor_UAVCAN::var_info[] = {
 };
 
 /// Constructor
-AP_BattMonitor_UAVCAN::AP_BattMonitor_UAVCAN(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, BattMonitor_UAVCAN_Type type, AP_BattMonitor_Params &params) :
+AP_BattMonitor_DroneCAN::AP_BattMonitor_DroneCAN(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, BattMonitor_DroneCAN_Type type, AP_BattMonitor_Params &params) :
     AP_BattMonitor_Backend(mon, mon_state, params),
     _type(type)
 {
@@ -43,7 +43,7 @@ AP_BattMonitor_UAVCAN::AP_BattMonitor_UAVCAN(AP_BattMonitor &mon, AP_BattMonitor
     _state.healthy = false;
 }
 
-void AP_BattMonitor_UAVCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
+void AP_BattMonitor_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
     if (ap_dronecan == nullptr) {
         return;
@@ -62,7 +62,7 @@ void AP_BattMonitor_UAVCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
     }
 }
 
-AP_BattMonitor_UAVCAN* AP_BattMonitor_UAVCAN::get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t battery_id)
+AP_BattMonitor_DroneCAN* AP_BattMonitor_DroneCAN::get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t battery_id)
 {
     if (ap_dronecan == nullptr) {
         return nullptr;
@@ -72,7 +72,7 @@ AP_BattMonitor_UAVCAN* AP_BattMonitor_UAVCAN::get_uavcan_backend(AP_DroneCAN* ap
             AP::battery().get_type(i) != AP_BattMonitor::Type::UAVCAN_BatteryInfo) {
             continue;
         }
-        AP_BattMonitor_UAVCAN* driver = (AP_BattMonitor_UAVCAN*)AP::battery().drivers[i];
+        AP_BattMonitor_DroneCAN* driver = (AP_BattMonitor_DroneCAN*)AP::battery().drivers[i];
         if (driver->_ap_dronecan == ap_dronecan && driver->_node_id == node_id && match_battery_id(i, battery_id)) {
             return driver;
         }
@@ -83,7 +83,7 @@ AP_BattMonitor_UAVCAN* AP_BattMonitor_UAVCAN::get_uavcan_backend(AP_DroneCAN* ap
             AP::battery().get_type(i) == AP_BattMonitor::Type::UAVCAN_BatteryInfo &&
             match_battery_id(i, battery_id)) {
 
-            AP_BattMonitor_UAVCAN* batmon = (AP_BattMonitor_UAVCAN*)AP::battery().drivers[i];
+            AP_BattMonitor_DroneCAN* batmon = (AP_BattMonitor_DroneCAN*)AP::battery().drivers[i];
             if(batmon->_ap_dronecan != nullptr || batmon->_node_id != 0) {
                 continue;
             }
@@ -102,7 +102,7 @@ AP_BattMonitor_UAVCAN* AP_BattMonitor_UAVCAN::get_uavcan_backend(AP_DroneCAN* ap
     return nullptr;
 }
 
-void AP_BattMonitor_UAVCAN::handle_battery_info(const uavcan_equipment_power_BatteryInfo &msg)
+void AP_BattMonitor_DroneCAN::handle_battery_info(const uavcan_equipment_power_BatteryInfo &msg)
 {
     update_interim_state(msg.voltage, msg.current, msg.temperature, msg.state_of_charge_pct); 
 
@@ -111,7 +111,7 @@ void AP_BattMonitor_UAVCAN::handle_battery_info(const uavcan_equipment_power_Bat
     _full_charge_capacity_wh = msg.full_charge_capacity_wh;
 }
 
-void AP_BattMonitor_UAVCAN::update_interim_state(const float voltage, const float current, const float temperature_K, const uint8_t soc)
+void AP_BattMonitor_DroneCAN::update_interim_state(const float voltage, const float current, const float temperature_K, const uint8_t soc)
 {
     WITH_SEMAPHORE(_sem_battmon);
 
@@ -139,7 +139,7 @@ void AP_BattMonitor_UAVCAN::update_interim_state(const float voltage, const floa
     _interim_state.healthy = true;
 }
 
-void AP_BattMonitor_UAVCAN::handle_battery_info_aux(const ardupilot_equipment_power_BatteryInfoAux &msg)
+void AP_BattMonitor_DroneCAN::handle_battery_info_aux(const ardupilot_equipment_power_BatteryInfoAux &msg)
 {
     WITH_SEMAPHORE(_sem_battmon);
     uint8_t cell_count = MIN(ARRAY_SIZE(_interim_state.cell_voltages.cells), msg.voltage_cell.len);
@@ -162,7 +162,7 @@ void AP_BattMonitor_UAVCAN::handle_battery_info_aux(const ardupilot_equipment_po
     _has_battery_info_aux = true;
 }
 
-void AP_BattMonitor_UAVCAN::handle_mppt_stream(const mppt_Stream &msg)
+void AP_BattMonitor_DroneCAN::handle_mppt_stream(const mppt_Stream &msg)
 {
     const bool use_input_value = option_is_set(AP_BattMonitor_Params::Options::MPPT_Use_Input_Value);
     const float voltage = use_input_value ? msg.input_voltage : msg.output_voltage;
@@ -197,27 +197,27 @@ void AP_BattMonitor_UAVCAN::handle_mppt_stream(const mppt_Stream &msg)
     _mppt.fault_flags = msg.fault_flags;
 }
 
-void AP_BattMonitor_UAVCAN::handle_battery_info_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_power_BatteryInfo &msg)
+void AP_BattMonitor_DroneCAN::handle_battery_info_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_power_BatteryInfo &msg)
 {
-    AP_BattMonitor_UAVCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id, msg.battery_id);
+    AP_BattMonitor_DroneCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id, msg.battery_id);
     if (driver == nullptr) {
         return;
     }
     driver->handle_battery_info(msg);
 }
 
-void AP_BattMonitor_UAVCAN::handle_battery_info_aux_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_equipment_power_BatteryInfoAux &msg)
+void AP_BattMonitor_DroneCAN::handle_battery_info_aux_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_equipment_power_BatteryInfoAux &msg)
 {
-    AP_BattMonitor_UAVCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id, msg.battery_id);
+    AP_BattMonitor_DroneCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id, msg.battery_id);
     if (driver == nullptr) {
         return;
     }
     driver->handle_battery_info_aux(msg);
 }
 
-void AP_BattMonitor_UAVCAN::handle_mppt_stream_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const mppt_Stream &msg)
+void AP_BattMonitor_DroneCAN::handle_mppt_stream_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const mppt_Stream &msg)
 {
-    AP_BattMonitor_UAVCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id, transfer.source_node_id);
+    AP_BattMonitor_DroneCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id, transfer.source_node_id);
     if (driver == nullptr) {
         return;
     }
@@ -225,7 +225,7 @@ void AP_BattMonitor_UAVCAN::handle_mppt_stream_trampoline(AP_DroneCAN *ap_dronec
 }
 
 // read - read the voltage and current
-void AP_BattMonitor_UAVCAN::read()
+void AP_BattMonitor_DroneCAN::read()
 {
     uint32_t tnow = AP_HAL::micros();
 
@@ -257,7 +257,7 @@ void AP_BattMonitor_UAVCAN::read()
 }
 
 /// capacity_remaining_pct - returns true if the percentage is valid and writes to percentage argument
-bool AP_BattMonitor_UAVCAN::capacity_remaining_pct(uint8_t &percentage) const
+bool AP_BattMonitor_DroneCAN::capacity_remaining_pct(uint8_t &percentage) const
 {
     if ((uint32_t(_params._options.get()) & uint32_t(AP_BattMonitor_Params::Options::Ignore_UAVCAN_SoC)) ||
         _mppt.is_detected ||
@@ -278,7 +278,7 @@ bool AP_BattMonitor_UAVCAN::capacity_remaining_pct(uint8_t &percentage) const
 }
 
 /// get_cycle_count - return true if cycle count can be provided and fills in cycles argument
-bool AP_BattMonitor_UAVCAN::get_cycle_count(uint16_t &cycles) const
+bool AP_BattMonitor_DroneCAN::get_cycle_count(uint16_t &cycles) const
 {
     if (_has_battery_info_aux) {
         cycles = _cycle_count;
@@ -288,7 +288,7 @@ bool AP_BattMonitor_UAVCAN::get_cycle_count(uint16_t &cycles) const
 }
 
 // request MPPT board to power on/off depending upon vehicle arming state as specified by BATT_OPTIONS
-void AP_BattMonitor_UAVCAN::mppt_check_powered_state()
+void AP_BattMonitor_DroneCAN::mppt_check_powered_state()
 {
     if ((_mppt.powered_state_remote_ms != 0) && (AP_HAL::millis() - _mppt.powered_state_remote_ms >= 1000)) {
         // there's already a set attempt that didnt' respond. Retry at 1Hz
@@ -310,7 +310,7 @@ void AP_BattMonitor_UAVCAN::mppt_check_powered_state()
 // request MPPT board to power on or off
 // power_on should be true to power on the MPPT, false to power off
 // force should be true to force sending the state change request to the MPPT
-void AP_BattMonitor_UAVCAN::mppt_set_powered_state(bool power_on)
+void AP_BattMonitor_DroneCAN::mppt_set_powered_state(bool power_on)
 {
     if (_ap_dronecan == nullptr || !_mppt.is_detected) {
         return;
@@ -335,7 +335,7 @@ void AP_BattMonitor_UAVCAN::mppt_set_powered_state(bool power_on)
 }
 
 // callback from outputEnable to verify it is enabled or disabled
-void AP_BattMonitor_UAVCAN::handle_outputEnable_response(const CanardRxTransfer& transfer, const mppt_OutputEnableResponse& response)
+void AP_BattMonitor_DroneCAN::handle_outputEnable_response(const CanardRxTransfer& transfer, const mppt_OutputEnableResponse& response)
 {
     if (transfer.source_node_id != _node_id) {
         // this response is not from the node we are looking for
@@ -351,7 +351,7 @@ void AP_BattMonitor_UAVCAN::handle_outputEnable_response(const CanardRxTransfer&
 
 #if AP_BATTMONITOR_UAVCAN_MPPT_DEBUG
 // report changes in MPPT faults
-void AP_BattMonitor_UAVCAN::mppt_report_faults(const uint8_t instance, const uint8_t fault_flags)
+void AP_BattMonitor_DroneCAN::mppt_report_faults(const uint8_t instance, const uint8_t fault_flags)
 {
     // handle recovery
     if (fault_flags == 0) {
@@ -370,7 +370,7 @@ void AP_BattMonitor_UAVCAN::mppt_report_faults(const uint8_t instance, const uin
 }
 
 // returns string description of MPPT fault bit. Only handles single bit faults
-const char* AP_BattMonitor_UAVCAN::mppt_fault_string(const MPPT_FaultFlags fault)
+const char* AP_BattMonitor_DroneCAN::mppt_fault_string(const MPPT_FaultFlags fault)
 {
     switch (fault) {
         case MPPT_FaultFlags::OVER_VOLTAGE:
@@ -387,7 +387,7 @@ const char* AP_BattMonitor_UAVCAN::mppt_fault_string(const MPPT_FaultFlags fault
 #endif
 
 // return mavlink fault bitmask (see MAV_BATTERY_FAULT enum)
-uint32_t AP_BattMonitor_UAVCAN::get_mavlink_fault_bitmask() const
+uint32_t AP_BattMonitor_DroneCAN::get_mavlink_fault_bitmask() const
 {
     // return immediately if not mppt or no faults
     if (!_mppt.is_detected || (_mppt.fault_flags == 0)) {
