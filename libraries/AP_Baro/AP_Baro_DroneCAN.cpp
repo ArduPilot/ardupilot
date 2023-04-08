@@ -1,6 +1,6 @@
 #include "AP_Baro_DroneCAN.h"
 
-#if AP_BARO_UAVCAN_ENABLED
+#if AP_BARO_DRONECAN_ENABLED
 
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -174,4 +174,4 @@ void AP_Baro_UAVCAN::update(void)
     }
 }
 
-#endif // AP_BARO_UAVCAN_ENABLED
+#endif // AP_BARO_DRONECAN_ENABLED
