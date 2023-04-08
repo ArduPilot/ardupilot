@@ -150,7 +150,7 @@ private:
     AP_Int16 _max_roll;         // Maximum acceptable roll angle when trigging camera
 
     // check instance number is valid
-    AP_Camera_Backend *get_instance(uint8_t instance);
+    AP_Camera_Backend *get_instance(uint8_t instance) const;
 
     // perform any required parameter conversion
     void convert_params();
