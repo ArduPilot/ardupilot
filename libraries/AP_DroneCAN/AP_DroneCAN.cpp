@@ -53,11 +53,11 @@
 extern const AP_HAL::HAL& hal;
 
 // setup default pool size
-#ifndef UAVCAN_NODE_POOL_SIZE
+#ifndef DRONECAN_NODE_POOL_SIZE
 #if HAL_CANFD_SUPPORTED
-#define UAVCAN_NODE_POOL_SIZE 16384
+#define DRONECAN_NODE_POOL_SIZE 16384
 #else
-#define UAVCAN_NODE_POOL_SIZE 8192
+#define DRONECAN_NODE_POOL_SIZE 8192
 #endif
 #endif
 
@@ -141,7 +141,7 @@ const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     // @Description: Amount of memory in bytes to allocate for the DroneCAN memory pool. More memory is needed for higher CAN bus loads
     // @Range: 1024 16384
     // @User: Advanced
-    AP_GROUPINFO("POOL", 8, AP_DroneCAN, _pool_size, UAVCAN_NODE_POOL_SIZE),
+    AP_GROUPINFO("POOL", 8, AP_DroneCAN, _pool_size, DRONECAN_NODE_POOL_SIZE),
     
     AP_GROUPEND
 };

@@ -1,5 +1,5 @@
 /*
-  simple UAVCAN network sniffer as an ArduPilot firmware
+  simple DroneCAN network sniffer as an ArduPilot firmware
  */
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
@@ -24,16 +24,16 @@ void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-#define UAVCAN_NODE_POOL_SIZE 8192
+#define DRONECAN_NODE_POOL_SIZE 8192
 
-static uint8_t node_memory_pool[UAVCAN_NODE_POOL_SIZE];
+static uint8_t node_memory_pool[DRONECAN_NODE_POOL_SIZE];
 
 #define debug_uavcan(fmt, args...) do { hal.console->printf(fmt, ##args); } while (0)
 
-class UAVCAN_sniffer {
+class DroneCAN_sniffer {
 public:
-    UAVCAN_sniffer();
-    ~UAVCAN_sniffer();
+    DroneCAN_sniffer();
+    ~DroneCAN_sniffer();
 
     void init(void);
     void loop(void);
@@ -96,7 +96,7 @@ static void cb_GetNodeInfoRequest(const CanardRxTransfer &transfer, const uavcan
     node_info_srv->respond(transfer, node_info);
 }
 
-void UAVCAN_sniffer::init(void)
+void DroneCAN_sniffer::init(void)
 {
     const_cast <AP_HAL::HAL&> (hal).can[driver_index] = new HAL_CANIface(driver_index);
     
@@ -156,7 +156,7 @@ void UAVCAN_sniffer::init(void)
     START_CB(uavcan_equipment_indication_LightsCommand, LightsCommand);
     START_CB(com_hex_equipment_flow_Measurement, Measurement);
 
-    debug_uavcan("UAVCAN: init done\n\r");
+    debug_uavcan("DroneCAN: init done\n\r");
 }
 
 static void send_node_status()
@@ -171,7 +171,7 @@ static void send_node_status()
 }
 
 uint32_t last_status_send = 0;
-void UAVCAN_sniffer::loop(void)
+void DroneCAN_sniffer::loop(void)
 {
     if (AP_HAL::millis() - last_status_send > 1000) {
         last_status_send = AP_HAL::millis();
@@ -180,7 +180,7 @@ void UAVCAN_sniffer::loop(void)
     _uavcan_iface_mgr->process(1);
 }
 
-void UAVCAN_sniffer::print_stats(void)
+void DroneCAN_sniffer::print_stats(void)
 {
     hal.console->printf("%lu\n", (unsigned long)AP_HAL::micros());
     for (uint16_t i=0;i<100;i++) {
@@ -193,19 +193,19 @@ void UAVCAN_sniffer::print_stats(void)
     hal.console->printf("\n");
 }
 
-static UAVCAN_sniffer sniffer;
+static DroneCAN_sniffer sniffer;
 
-UAVCAN_sniffer::UAVCAN_sniffer()
+DroneCAN_sniffer::DroneCAN_sniffer()
 {}
 
-UAVCAN_sniffer::~UAVCAN_sniffer()
+DroneCAN_sniffer::~DroneCAN_sniffer()
 {
 }
 
 void setup(void)
 {
     hal.scheduler->delay(2000);
-    hal.console->printf("Starting UAVCAN sniffer\n");
+    hal.console->printf("Starting DroneCAN sniffer\n");
     sniffer.init();
 }
 
