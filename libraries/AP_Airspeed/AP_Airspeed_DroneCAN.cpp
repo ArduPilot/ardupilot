@@ -1,6 +1,6 @@
 #include "AP_Airspeed_DroneCAN.h"
 
-#if AP_AIRSPEED_UAVCAN_ENABLED
+#if AP_AIRSPEED_DRONECAN_ENABLED
 
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_DroneCAN/AP_DroneCAN.h>
@@ -194,4 +194,4 @@ bool AP_Airspeed_UAVCAN::get_hygrometer(uint32_t &last_sample_ms, float &tempera
     return true;
 }
 #endif // AP_AIRSPEED_HYGROMETER_ENABLE
-#endif // AP_AIRSPEED_UAVCAN_ENABLED
+#endif // AP_AIRSPEED_DRONECAN_ENABLED
