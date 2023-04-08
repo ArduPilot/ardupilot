@@ -20,16 +20,16 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_ENABLE_DRONECAN_DRIVERS
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 #include "RTCM3_Parser.h"
 #include <AP_DroneCAN/AP_DroneCAN.h>
 
-class AP_GPS_UAVCAN : public AP_GPS_Backend {
+class AP_GPS_DroneCAN : public AP_GPS_Backend {
 public:
-    AP_GPS_UAVCAN(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_GPS::GPS_Role role);
-    ~AP_GPS_UAVCAN();
+    AP_GPS_DroneCAN(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_GPS::GPS_Role role);
+    ~AP_GPS_DroneCAN();
 
     bool read() override;
 
@@ -95,7 +95,7 @@ private:
 
     static bool take_registry();
     static void give_registry();
-    static AP_GPS_UAVCAN* get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id);
+    static AP_GPS_DroneCAN* get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id);
 
     bool _new_data;
     AP_GPS::GPS_State interim_state;
@@ -119,7 +119,7 @@ private:
         AP_DroneCAN* ap_dronecan;
         uint8_t node_id;
         uint8_t instance;
-        AP_GPS_UAVCAN* driver;
+        AP_GPS_DroneCAN* driver;
     } _detected_modules[GPS_MAX_RECEIVERS];
 
     static HAL_Semaphore _sem_registry;
