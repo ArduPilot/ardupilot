@@ -1,4 +1,4 @@
-#include "AP_Airspeed_UAVCAN.h"
+#include "AP_Airspeed_DroneCAN.h"
 
 #if AP_AIRSPEED_UAVCAN_ENABLED
 
