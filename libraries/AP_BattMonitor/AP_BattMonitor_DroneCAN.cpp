@@ -62,7 +62,7 @@ void AP_BattMonitor_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
     }
 }
 
-AP_BattMonitor_DroneCAN* AP_BattMonitor_DroneCAN::get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t battery_id)
+AP_BattMonitor_DroneCAN* AP_BattMonitor_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t battery_id)
 {
     if (ap_dronecan == nullptr) {
         return nullptr;
@@ -199,7 +199,7 @@ void AP_BattMonitor_DroneCAN::handle_mppt_stream(const mppt_Stream &msg)
 
 void AP_BattMonitor_DroneCAN::handle_battery_info_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_power_BatteryInfo &msg)
 {
-    AP_BattMonitor_DroneCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id, msg.battery_id);
+    AP_BattMonitor_DroneCAN* driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id, msg.battery_id);
     if (driver == nullptr) {
         return;
     }
@@ -208,7 +208,7 @@ void AP_BattMonitor_DroneCAN::handle_battery_info_trampoline(AP_DroneCAN *ap_dro
 
 void AP_BattMonitor_DroneCAN::handle_battery_info_aux_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_equipment_power_BatteryInfoAux &msg)
 {
-    AP_BattMonitor_DroneCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id, msg.battery_id);
+    AP_BattMonitor_DroneCAN* driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id, msg.battery_id);
     if (driver == nullptr) {
         return;
     }
@@ -217,7 +217,7 @@ void AP_BattMonitor_DroneCAN::handle_battery_info_aux_trampoline(AP_DroneCAN *ap
 
 void AP_BattMonitor_DroneCAN::handle_mppt_stream_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const mppt_Stream &msg)
 {
-    AP_BattMonitor_DroneCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id, transfer.source_node_id);
+    AP_BattMonitor_DroneCAN* driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id, transfer.source_node_id);
     if (driver == nullptr) {
         return;
     }
