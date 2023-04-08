@@ -43,7 +43,7 @@
 #include "AP_Baro_DPS280.h"
 #include "AP_Baro_BMP388.h"
 #include "AP_Baro_Dummy.h"
-#include "AP_Baro_UAVCAN.h"
+#include "AP_Baro_DroneCAN.h"
 #include "AP_Baro_MSP.h"
 #include "AP_Baro_ExternalAHRS.h"
 #include "AP_Baro_ICP101XX.h"
