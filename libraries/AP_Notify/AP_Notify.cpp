@@ -32,7 +32,7 @@
 #include "DiscreteRGBLed.h"
 #include "DiscoLED.h"
 #include "Led_Sysfs.h"
-#include "UAVCAN_RGB_LED.h"
+#include "DroneCAN_RGB_LED.h"
 #include "SITL_SFML_LED.h"
 #include <stdio.h>
 #include "AP_BoardLED2.h"
@@ -79,7 +79,7 @@ AP_Notify *AP_Notify::_singleton;
 
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
     #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS |\
-                                    Notify_LED_UAVCAN)
+                                    Notify_LED_DroneCAN)
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE || \
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET || \
@@ -347,10 +347,10 @@ void AP_Notify::add_backends(void)
                 }
 #endif
                 break;
-            case Notify_LED_UAVCAN:
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
-                ADD_BACKEND(new UAVCAN_RGB_LED(0));
-#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
+            case Notify_LED_DroneCAN:
+#if HAL_ENABLE_DRONECAN_DRIVERS
+                ADD_BACKEND(new DroneCAN_RGB_LED(0));
+#endif // HAL_ENABLE_DRONECAN_DRIVERS
                 break;
 
             case Notify_LED_Scripting:

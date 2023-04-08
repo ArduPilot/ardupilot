@@ -2,11 +2,11 @@
 
 #include "RGBLed.h"
 
-class UAVCAN_RGB_LED: public RGBLed {
+class DroneCAN_RGB_LED: public RGBLed {
 public:
-    UAVCAN_RGB_LED(uint8_t led_index, uint8_t led_off, uint8_t led_full,
+    DroneCAN_RGB_LED(uint8_t led_index, uint8_t led_off, uint8_t led_full,
                    uint8_t led_medium, uint8_t led_dim);
-    UAVCAN_RGB_LED(uint8_t led_index);
+    DroneCAN_RGB_LED(uint8_t led_index);
     bool init() override;
 
 protected:
