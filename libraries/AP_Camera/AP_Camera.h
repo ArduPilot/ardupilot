@@ -13,6 +13,17 @@
 #include "AP_Camera_Params.h"
 #include "AP_Mount/AP_Mount_config.h"
 
+#if AP_CAMERA_SCRIPTING_ENABLED
+    // structure and accessors for use by scripting backends
+    typedef struct {
+        uint16_t take_pic_incr; // incremented each time camera is requested to take a picture
+        bool recording_video;   // true when recording video
+        int8_t zoom_step;       // zoom out = -1, hold = 0, zoom in = 1
+        int8_t focus_step;      // focus in = -1, focus hold = 0, focus out = 1
+        bool auto_focus;        // true when auto focusing
+    } camera_state_t;
+#endif
+
 #define AP_CAMERA_MAX_INSTANCES             2       // maximum number of camera backends
 
 // declare backend classes
@@ -23,6 +34,7 @@ class AP_Camera_SoloGimbal;
 class AP_Camera_Mount;
 class AP_Camera_MAVLink;
 class AP_Camera_MAVLinkCamV2;
+class AP_Camera_Scripting;
 
 /// @class	Camera
 /// @brief	Object managing a Photo or video camera
@@ -36,6 +48,7 @@ class AP_Camera {
     friend class AP_Camera_Mount;
     friend class AP_Camera_MAVLink;
     friend class AP_Camera_MAVLinkCamV2;
+    friend class AP_Camera_Scripting;
 
 public:
 
@@ -68,6 +81,9 @@ public:
 #endif
 #if AP_CAMERA_MAVLINKCAMV2_ENABLED
         MAVLINK_CAMV2 = 6,  // MAVLink camera v2
+#endif
+#if AP_CAMERA_SCRIPTING_ENABLED
+        SCRIPTING = 7,  // Scripting backend
 #endif
     };
 
@@ -123,6 +139,12 @@ public:
 
     // set if vehicle is in AUTO mode
     void set_is_auto_mode(bool enable) { _is_in_auto_mode = enable; }
+
+#if AP_CAMERA_SCRIPTING_ENABLED
+    // accessor to allow scripting backend to retrieve state
+    // returns true on success and cam_state is filled in
+    bool get_state(uint8_t instance, camera_state_t& cam_state) const;
+#endif
 
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
