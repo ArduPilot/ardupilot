@@ -1,4 +1,4 @@
-#include "AP_Baro_UAVCAN.h"
+#include "AP_Baro_DroneCAN.h"
 
 #if AP_BARO_UAVCAN_ENABLED
 
