@@ -44,7 +44,7 @@
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_DroneCAN/AP_DroneCAN.h>
-#include "AP_GPS_UAVCAN.h"
+#include "AP_GPS_DroneCAN.h"
 #endif
 
 #include <AP_AHRS/AP_AHRS.h>
