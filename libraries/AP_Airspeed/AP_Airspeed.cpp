@@ -416,7 +416,7 @@ void AP_Airspeed::allocate()
             break;
         case TYPE_UAVCAN:
 #if AP_AIRSPEED_DRONECAN_ENABLED
-            sensor[i] = AP_Airspeed_UAVCAN::probe(*this, i, uint32_t(param[i].bus_id.get()));
+            sensor[i] = AP_Airspeed_DroneCAN::probe(*this, i, uint32_t(param[i].bus_id.get()));
 #endif
             break;
         case TYPE_NMEA_WATER:
@@ -447,7 +447,7 @@ void AP_Airspeed::allocate()
     // the 2nd pass accepts any devid
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
         if (sensor[i] == nullptr && (enum airspeed_type)param[i].type.get() == TYPE_UAVCAN) {
-            sensor[i] = AP_Airspeed_UAVCAN::probe(*this, i, 0);
+            sensor[i] = AP_Airspeed_DroneCAN::probe(*this, i, 0);
             if (sensor[i] != nullptr) {
                 num_sensors = i+1;
             }
