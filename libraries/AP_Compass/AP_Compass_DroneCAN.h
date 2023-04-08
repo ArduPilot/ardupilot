@@ -2,7 +2,7 @@
 
 #include "AP_Compass.h"
 
-#if AP_COMPASS_UAVCAN_ENABLED
+#if AP_COMPASS_DRONECAN_ENABLED
 
 #include "AP_Compass_Backend.h"
 
@@ -47,4 +47,4 @@ private:
     static HAL_Semaphore _sem_registry;
 };
 
-#endif  // AP_COMPASS_UAVCAN_ENABLED
+#endif  // AP_COMPASS_DRONECAN_ENABLED
