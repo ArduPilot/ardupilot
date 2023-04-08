@@ -25,7 +25,7 @@
 #include "AP_Compass_AK09916.h"
 #include "AP_Compass_QMC5883L.h"
 #if AP_COMPASS_UAVCAN_ENABLED
-#include "AP_Compass_UAVCAN.h"
+#include "AP_Compass_DroneCAN.h"
 #endif
 #include "AP_Compass_MMC3416.h"
 #include "AP_Compass_MMC5xx3.h"
