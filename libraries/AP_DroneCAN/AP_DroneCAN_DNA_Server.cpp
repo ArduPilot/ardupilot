@@ -34,7 +34,7 @@ extern const AP_HAL::HAL& hal;
 #define NODEDATA_MAGIC_LEN 2
 #define MAX_NODE_ID    125
 
-#define debug_uavcan(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "UAVCAN", fmt, ##args); } while (0)
+#define debug_dronecan(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "DroneCAN", fmt, ##args); } while (0)
 
 AP_DroneCAN_DNA_Server::AP_DroneCAN_DNA_Server(AP_DroneCAN &ap_dronecan) :
     _ap_dronecan(ap_dronecan),
@@ -520,11 +520,11 @@ void AP_DroneCAN_DNA_Server::handleAllocation(const CanardRxTransfer& transfer, 
     }
 
     if (rcvd_unique_id_offset) {
-        debug_uavcan(AP_CANManager::LOG_DEBUG, "TIME: %ld  -- Accepting Followup part! %u\n",
+        debug_dronecan(AP_CANManager::LOG_DEBUG, "TIME: %ld  -- Accepting Followup part! %u\n",
                      (long int)AP_HAL::millis(),
                      unsigned((now - last_alloc_msg_ms)));
     } else {
-        debug_uavcan(AP_CANManager::LOG_DEBUG, "TIME: %ld  -- Accepting First part! %u\n",
+        debug_dronecan(AP_CANManager::LOG_DEBUG, "TIME: %ld  -- Accepting First part! %u\n",
                      (long int)AP_HAL::millis(),
                      unsigned((now - last_alloc_msg_ms)));
     }

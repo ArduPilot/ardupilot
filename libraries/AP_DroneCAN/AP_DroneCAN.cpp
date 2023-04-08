@@ -62,9 +62,9 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #if HAL_CANFD_SUPPORTED
-#define UAVCAN_STACK_SIZE     8192
+#define DRONECAN_STACK_SIZE     8192
 #else
-#define UAVCAN_STACK_SIZE     4096
+#define DRONECAN_STACK_SIZE     4096
 #endif
 
 #ifndef AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
@@ -75,9 +75,9 @@ extern const AP_HAL::HAL& hal;
 #include <com/volz/servo/ActuatorStatus.hpp>
 #endif
 
-#define debug_uavcan(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "UAVCAN", fmt, ##args); } while (0)
+#define debug_dronecan(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "DroneCAN", fmt, ##args); } while (0)
 
-// Translation of all messages from UAVCAN structures into AP structures is done
+// Translation of all messages from DroneCAN structures into AP structures is done
 // in AP_DroneCAN and not in corresponding drivers.
 // The overhead of including definitions of DSDL is very high and it is best to
 // concentrate in one place.
@@ -85,23 +85,23 @@ extern const AP_HAL::HAL& hal;
 // table of user settable CAN bus parameters
 const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     // @Param: NODE
-    // @DisplayName: UAVCAN node that is used for this network
-    // @Description: UAVCAN node should be set implicitly
+    // @DisplayName: DroneCAN node that is used for this network
+    // @Description: DroneCAN node should be set implicitly
     // @Range: 1 250
     // @User: Advanced
     AP_GROUPINFO("NODE", 1, AP_DroneCAN, _dronecan_node, 10),
 
     // @Param: SRV_BM
-    // @DisplayName: Output channels to be transmitted as servo over UAVCAN
-    // @Description: Bitmask with one set for channel to be transmitted as a servo command over UAVCAN
+    // @DisplayName: Output channels to be transmitted as servo over DroneCAN
+    // @Description: Bitmask with one set for channel to be transmitted as a servo command over DroneCAN
     // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8, 8: Servo 9, 9: Servo 10, 10: Servo 11, 11: Servo 12, 12: Servo 13, 13: Servo 14, 14: Servo 15, 15: Servo 16, 16: Servo 17, 17: Servo 18, 18: Servo 19, 19: Servo 20, 20: Servo 21, 21: Servo 22, 22: Servo 23, 23: Servo 24, 24: Servo 25, 25: Servo 26, 26: Servo 27, 27: Servo 28, 28: Servo 29, 29: Servo 30, 30: Servo 31, 31: Servo 32
 
     // @User: Advanced
     AP_GROUPINFO("SRV_BM", 2, AP_DroneCAN, _servo_bm, 0),
 
     // @Param: ESC_BM
-    // @DisplayName: Output channels to be transmitted as ESC over UAVCAN
-    // @Description: Bitmask with one set for channel to be transmitted as a ESC command over UAVCAN
+    // @DisplayName: Output channels to be transmitted as ESC over DroneCAN
+    // @Description: Bitmask with one set for channel to be transmitted as a ESC command over DroneCAN
     // @Bitmask: 0: ESC 1, 1: ESC 2, 2: ESC 3, 3: ESC 4, 4: ESC 5, 5: ESC 6, 6: ESC 7, 7: ESC 8, 8: ESC 9, 9: ESC 10, 10: ESC 11, 11: ESC 12, 12: ESC 13, 13: ESC 14, 14: ESC 15, 15: ESC 16, 16: ESC 17, 17: ESC 18, 18: ESC 19, 19: ESC 20, 20: ESC 21, 21: ESC 22, 22: ESC 23, 23: ESC 24, 24: ESC 25, 25: ESC 26, 26: ESC 27, 27: ESC 28, 28: ESC 29, 29: ESC 30, 30: ESC 31, 31: ESC 32
     // @User: Advanced
     AP_GROUPINFO("ESC_BM", 3, AP_DroneCAN, _esc_bm, 0),
@@ -115,7 +115,7 @@ const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     AP_GROUPINFO("SRV_RT", 4, AP_DroneCAN, _servo_rate_hz, 50),
 
     // @Param: OPTION
-    // @DisplayName: UAVCAN options
+    // @DisplayName: DroneCAN options
     // @Description: Option flags
     // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM,5:SendGNSS
     // @User: Advanced
@@ -157,19 +157,19 @@ _dna_server(*this)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
-    for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
+    for (uint8_t i = 0; i < DRONECAN_SRV_NUMBER; i++) {
         _SRV_conf[i].esc_pending = false;
         _SRV_conf[i].servo_pending = false;
     }
 
-    debug_uavcan(AP_CANManager::LOG_INFO, "AP_DroneCAN constructed\n\r");
+    debug_dronecan(AP_CANManager::LOG_INFO, "AP_DroneCAN constructed\n\r");
 }
 
 AP_DroneCAN::~AP_DroneCAN()
 {
 }
 
-AP_DroneCAN *AP_DroneCAN::get_uavcan(uint8_t driver_index)
+AP_DroneCAN *AP_DroneCAN::get_dronecan(uint8_t driver_index)
 {
     if (driver_index >= AP::can().get_num_drivers() ||
         AP::can().get_driver_type(driver_index) != AP_CANManager::Driver_Type_DroneCAN) {
@@ -181,7 +181,7 @@ AP_DroneCAN *AP_DroneCAN::get_uavcan(uint8_t driver_index)
 bool AP_DroneCAN::add_interface(AP_HAL::CANIface* can_iface)
 {
     if (!canard_iface.add_interface(can_iface)) {
-        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: can't add UAVCAN interface\n\r");
+        debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: can't add DroneCAN interface\n\r");
         return false;   
     }
     return true;
@@ -190,11 +190,11 @@ bool AP_DroneCAN::add_interface(AP_HAL::CANIface* can_iface)
 void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
 {
     if (driver_index != _driver_index) {
-        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: init called with wrong driver_index");
+        debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: init called with wrong driver_index");
         return;
     }
     if (_initialized) {
-        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: init called more than once\n\r");
+        debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: init called more than once\n\r");
         return;
     }
 
@@ -216,7 +216,7 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
 
     mem_pool = new uint32_t[_pool_size/sizeof(uint32_t)];
     if (mem_pool == nullptr) {
-        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: Failed to allocate memory pool\n\r");
+        debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: Failed to allocate memory pool\n\r");
         return;
     }
     canard_iface.init(mem_pool, (_pool_size/sizeof(uint32_t))*sizeof(uint32_t), _dronecan_node);
@@ -229,7 +229,7 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
 
     //Start Servers
     if (!_dna_server.init(unique_id, uid_len, _dronecan_node)) {
-        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: Failed to start DNA Server\n\r");
+        debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: Failed to start DNA Server\n\r");
         return;
     }
 
@@ -321,15 +321,15 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
         canard_iface.process(1000);
     }
 
-    snprintf(_thread_name, sizeof(_thread_name), "uavcan_%u", driver_index);
+    snprintf(_thread_name, sizeof(_thread_name), "dronecan_%u", driver_index);
 
-    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_DroneCAN::loop, void), _thread_name, UAVCAN_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_CAN, 0)) {
-        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: couldn't create thread\n\r");
+    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_DroneCAN::loop, void), _thread_name, DRONECAN_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_CAN, 0)) {
+        debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: couldn't create thread\n\r");
         return;
     }
 
     _initialized = true;
-    debug_uavcan(AP_CANManager::LOG_INFO, "UAVCAN: init done\n\r");
+    debug_dronecan(AP_CANManager::LOG_INFO, "DroneCAN: init done\n\r");
 }
 
 void AP_DroneCAN::loop(void)
@@ -353,7 +353,7 @@ void AP_DroneCAN::loop(void)
                     _SRV_last_send_us = now;
                     SRV_send_actuator();
                     sent_servos = true;
-                    for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
+                    for (uint8_t i = 0; i < DRONECAN_SRV_NUMBER; i++) {
                         _SRV_conf[i].servo_pending = false;
                     }
                 }
@@ -364,7 +364,7 @@ void AP_DroneCAN::loop(void)
                 SRV_send_esc();
             }
 
-            for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
+            for (uint8_t i = 0; i < DRONECAN_SRV_NUMBER; i++) {
                 _SRV_conf[i].esc_pending = false;
             }
         }
@@ -429,14 +429,14 @@ void AP_DroneCAN::SRV_send_actuator(void)
         uavcan_equipment_actuator_ArrayCommand msg;
 
         uint8_t i;
-        // UAVCAN can hold maximum of 15 commands in one frame
-        for (i = 0; starting_servo < UAVCAN_SRV_NUMBER && i < 15; starting_servo++) {
+        // DroneCAN can hold maximum of 15 commands in one frame
+        for (i = 0; starting_servo < DRONECAN_SRV_NUMBER && i < 15; starting_servo++) {
             uavcan_equipment_actuator_Command cmd;
 
             /*
              * Servo output uses a range of 1000-2000 PWM for scaling.
              * This converts output PWM from [1000:2000] range to [-1:1] range that
-             * is passed to servo as unitless type via UAVCAN.
+             * is passed to servo as unitless type via DroneCAN.
              * This approach allows for MIN/TRIM/MAX values to be used fully on
              * autopilot side and for servo it should have the setup to provide maximum
              * physically possible throws at [-1:1] limits.
@@ -484,10 +484,10 @@ void AP_DroneCAN::SRV_send_esc(void)
     WITH_SEMAPHORE(SRV_sem);
 
     // esc offset allows for efficient packing of higher ESC numbers in RawCommand
-    const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, UAVCAN_SRV_NUMBER);
+    const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
 
     // find out how many esc we have enabled and if they are active at all
-    for (uint8_t i = esc_offset; i < UAVCAN_SRV_NUMBER; i++) {
+    for (uint8_t i = esc_offset; i < DRONECAN_SRV_NUMBER; i++) {
         if ((((uint32_t) 1) << i) & _esc_bm) {
             max_esc_num = i + 1;
             if (_SRV_conf[i].esc_pending) {
@@ -528,7 +528,7 @@ void AP_DroneCAN::SRV_push_servos()
 {
     WITH_SEMAPHORE(SRV_sem);
 
-    for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
+    for (uint8_t i = 0; i < DRONECAN_SRV_NUMBER; i++) {
         // Check if this channels has any function assigned
         if (SRV_Channels::channel_function(i) >= SRV_Channel::k_none) {
             _SRV_conf[i].pulse = SRV_Channels::srv_channel(i)->get_output_pwm();
@@ -935,7 +935,7 @@ void AP_DroneCAN::safety_state_send()
 }
 
 /*
- send RTCMStream packet on all active UAVCAN drivers
+ send RTCMStream packet on all active DroneCAN drivers
 */
 void AP_DroneCAN::send_RTCMStream(const uint8_t *data, uint32_t len)
 {
@@ -1078,7 +1078,7 @@ void AP_DroneCAN::handle_actuator_status_Volz(AP_DroneCAN* ap_dronecan, uint8_t 
 void AP_DroneCAN::handle_ESC_status(const CanardRxTransfer& transfer, const uavcan_equipment_esc_Status& msg)
 {
 #if HAL_WITH_ESC_TELEM
-    const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, UAVCAN_SRV_NUMBER);
+    const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
     const uint8_t esc_index = msg.esc_index + esc_offset;
 
     if (!is_esc_data_index_valid(esc_index)) {
@@ -1100,8 +1100,8 @@ void AP_DroneCAN::handle_ESC_status(const CanardRxTransfer& transfer, const uavc
 }
 
 bool AP_DroneCAN::is_esc_data_index_valid(const uint8_t index) {
-    if (index > UAVCAN_SRV_NUMBER) {
-        // printf("UAVCAN: invalid esc index: %d. max index allowed: %d\n\r", index, UAVCAN_SRV_NUMBER);
+    if (index > DRONECAN_SRV_NUMBER) {
+        // printf("DroneCAN: invalid esc index: %d. max index allowed: %d\n\r", index, DRONECAN_SRV_NUMBER);
         return false;
     }
     return true;
@@ -1277,7 +1277,7 @@ void AP_DroneCAN::handle_param_save_response(const CanardRxTransfer& transfer, c
 }
 
 // Send Reboot command
-// Note: Do not call this from outside UAVCAN thread context,
+// Note: Do not call this from outside DroneCAN thread context,
 // THIS IS NOT A THREAD SAFE API!
 void AP_DroneCAN::send_reboot_request(uint8_t node_id)
 {

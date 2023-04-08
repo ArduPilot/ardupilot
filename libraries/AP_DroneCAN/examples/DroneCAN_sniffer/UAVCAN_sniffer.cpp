@@ -28,7 +28,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static uint8_t node_memory_pool[DRONECAN_NODE_POOL_SIZE];
 
-#define debug_uavcan(fmt, args...) do { hal.console->printf(fmt, ##args); } while (0)
+#define debug_dronecan(fmt, args...) do { hal.console->printf(fmt, ##args); } while (0)
 
 class DroneCAN_sniffer {
 public:
@@ -107,7 +107,7 @@ void DroneCAN_sniffer::init(void)
     hal.can[driver_index]->init(1000000, AP_HAL::CANIface::NormalMode);
 
     if (!hal.can[driver_index]->is_initialized()) {
-        debug_uavcan("Can not initialised\n");
+        debug_dronecan("Can not initialised\n");
         return;
     }
     _uavcan_iface_mgr = new CanardInterface{driver_index};
@@ -117,7 +117,7 @@ void DroneCAN_sniffer::init(void)
     }
 
     if (!_uavcan_iface_mgr->add_interface(hal.can[driver_index])) {
-        debug_uavcan("Failed to add iface");
+        debug_dronecan("Failed to add iface");
         return;
     }
 
@@ -156,7 +156,7 @@ void DroneCAN_sniffer::init(void)
     START_CB(uavcan_equipment_indication_LightsCommand, LightsCommand);
     START_CB(com_hex_equipment_flow_Measurement, Measurement);
 
-    debug_uavcan("DroneCAN: init done\n\r");
+    debug_dronecan("DroneCAN: init done\n\r");
 }
 
 static void send_node_status()
