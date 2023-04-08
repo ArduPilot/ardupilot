@@ -203,8 +203,8 @@ void AP_CANManager::init()
         }
 
         // Allocate the set type of Driver
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
-        if (drv_type[drv_num] == Driver_Type_UAVCAN) {
+#if HAL_ENABLE_DRONECAN_DRIVERS
+        if (drv_type[drv_num] == Driver_Type_DroneCAN) {
             _drivers[drv_num] = _drv_param[drv_num]._uavcan = new AP_DroneCAN(drv_num);
 
             if (_drivers[drv_num] == nullptr) {
@@ -288,7 +288,7 @@ void AP_CANManager::init()
 {
     WITH_SEMAPHORE(_sem);
     for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
-        if ((Driver_Type) _drv_param[i]._driver_type.get() == Driver_Type_UAVCAN) {
+        if ((Driver_Type) _drv_param[i]._driver_type.get() == Driver_Type_DroneCAN) {
             _drivers[i] = _drv_param[i]._uavcan = new AP_DroneCAN(i);
 
             if (_drivers[i] == nullptr) {
