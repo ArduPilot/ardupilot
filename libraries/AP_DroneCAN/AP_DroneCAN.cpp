@@ -18,7 +18,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_ENABLE_DRONECAN_DRIVERS
 #include "AP_DroneCAN.h"
 #include <GCS_MAVLink/GCS.h>
 
@@ -172,7 +172,7 @@ AP_DroneCAN::~AP_DroneCAN()
 AP_DroneCAN *AP_DroneCAN::get_uavcan(uint8_t driver_index)
 {
     if (driver_index >= AP::can().get_num_drivers() ||
-        AP::can().get_driver_type(driver_index) != AP_CANManager::Driver_Type_UAVCAN) {
+        AP::can().get_driver_type(driver_index) != AP_CANManager::Driver_Type_DroneCAN) {
         return nullptr;
     }
     return static_cast<AP_DroneCAN*>(AP::can().get_driver(driver_index));
@@ -234,22 +234,22 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
     }
 
     // Roundup all subscribers from supported drivers
-    AP_GPS_UAVCAN::subscribe_msgs(this);
+    AP_GPS_DroneCAN::subscribe_msgs(this);
 #if AP_COMPASS_DRONECAN_ENABLED
-    AP_Compass_UAVCAN::subscribe_msgs(this);
+    AP_Compass_DroneCAN::subscribe_msgs(this);
 #endif
 #if AP_BARO_DRONECAN_ENABLED
-    AP_Baro_UAVCAN::subscribe_msgs(this);
+    AP_Baro_DroneCAN::subscribe_msgs(this);
 #endif
-    AP_BattMonitor_UAVCAN::subscribe_msgs(this);
+    AP_BattMonitor_DroneCAN::subscribe_msgs(this);
 #if AP_AIRSPEED_DRONECAN_ENABLED
-    AP_Airspeed_UAVCAN::subscribe_msgs(this);
+    AP_Airspeed_DroneCAN::subscribe_msgs(this);
 #endif
 #if AP_OPTICALFLOW_HEREFLOW_ENABLED
     AP_OpticalFlow_HereFlow::subscribe_msgs(this);
 #endif
 #if AP_RANGEFINDER_DRONECAN_ENABLED
-    AP_RangeFinder_UAVCAN::subscribe_msgs(this);
+    AP_RangeFinder_DroneCAN::subscribe_msgs(this);
 #endif
 #if AP_EFI_DRONECAN_ENABLED
     AP_EFI_DroneCAN::subscribe_msgs(this);
@@ -383,7 +383,7 @@ void AP_DroneCAN::loop(void)
 #endif
 
 #if AP_DRONECAN_SEND_GPS
-        if (option_is_set(AP_DroneCAN::Options::SEND_GNSS) && !AP_GPS_UAVCAN::instance_exists(this)) {
+        if (option_is_set(AP_DroneCAN::Options::SEND_GNSS) && !AP_GPS_DroneCAN::instance_exists(this)) {
             // send if enabled and this interface/driver is not used by the AP_GPS driver
             gnss_send_fix();
             gnss_send_yaw();
