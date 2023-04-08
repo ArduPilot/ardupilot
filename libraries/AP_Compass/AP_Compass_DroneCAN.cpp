@@ -15,7 +15,7 @@
 
 #include "AP_Compass_DroneCAN.h"
 
-#if AP_COMPASS_UAVCAN_ENABLED
+#if AP_COMPASS_DRONECAN_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -205,4 +205,4 @@ void AP_Compass_UAVCAN::read(void)
 {
     drain_accumulated_samples(_instance);
 }
-#endif  // AP_COMPASS_UAVCAN_ENABLED
+#endif  // AP_COMPASS_DRONECAN_ENABLED
