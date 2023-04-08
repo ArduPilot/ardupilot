@@ -108,7 +108,7 @@ bool AP_Compass_DroneCAN::init()
     return true;
 }
 
-AP_Compass_DroneCAN* AP_Compass_DroneCAN::get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t sensor_id)
+AP_Compass_DroneCAN* AP_Compass_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t sensor_id)
 {
     if (ap_dronecan == nullptr) {
         return nullptr;
@@ -177,7 +177,7 @@ void AP_Compass_DroneCAN::handle_magnetic_field(AP_DroneCAN *ap_dronecan, const 
     WITH_SEMAPHORE(_sem_registry);
 
     Vector3f mag_vector;
-    AP_Compass_DroneCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id, 0);
+    AP_Compass_DroneCAN* driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id, 0);
     if (driver != nullptr) {
         mag_vector[0] = msg.magnetic_field_ga[0];
         mag_vector[1] = msg.magnetic_field_ga[1];
@@ -192,7 +192,7 @@ void AP_Compass_DroneCAN::handle_magnetic_field_2(AP_DroneCAN *ap_dronecan, cons
 
     Vector3f mag_vector;
     uint8_t sensor_id = msg.sensor_id;
-    AP_Compass_DroneCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id, sensor_id);
+    AP_Compass_DroneCAN* driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id, sensor_id);
     if (driver != nullptr) {
         mag_vector[0] = msg.magnetic_field_ga[0];
         mag_vector[1] = msg.magnetic_field_ga[1];
