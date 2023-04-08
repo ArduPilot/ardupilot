@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AP_Compass_UAVCAN.h"
+#include "AP_Compass_DroneCAN.h"
 
 #if AP_COMPASS_UAVCAN_ENABLED
 
