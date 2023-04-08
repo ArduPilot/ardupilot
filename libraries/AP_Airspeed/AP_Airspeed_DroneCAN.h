@@ -3,7 +3,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef AP_AIRSPEED_DRONECAN_ENABLED
-#define AP_AIRSPEED_DRONECAN_ENABLED HAL_ENABLE_LIBUAVCAN_DRIVERS
+#define AP_AIRSPEED_DRONECAN_ENABLED HAL_ENABLE_DRONECAN_DRIVERS
 #endif
 
 #if AP_AIRSPEED_DRONECAN_ENABLED
@@ -12,9 +12,9 @@
 
 #include <AP_DroneCAN/AP_DroneCAN.h>
 
-class AP_Airspeed_UAVCAN : public AP_Airspeed_Backend {
+class AP_Airspeed_DroneCAN : public AP_Airspeed_Backend {
 public:
-    AP_Airspeed_UAVCAN(AP_Airspeed &_frontend, uint8_t _instance);
+    AP_Airspeed_DroneCAN(AP_Airspeed &_frontend, uint8_t _instance);
 
     bool init(void) override;
 
@@ -38,7 +38,7 @@ private:
     static void handle_airspeed(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_air_data_RawAirData &msg);
     static void handle_hygrometer(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const dronecan_sensors_hygrometer_Hygrometer &msg);
 
-    static AP_Airspeed_UAVCAN* get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id);
+    static AP_Airspeed_DroneCAN* get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id);
 
     float _pressure; // Pascal
     float _temperature; // Celcius
@@ -57,7 +57,7 @@ private:
     static struct DetectedModules {
         AP_DroneCAN* ap_dronecan;
         uint8_t node_id;
-        AP_Airspeed_UAVCAN *driver;
+        AP_Airspeed_DroneCAN *driver;
     } _detected_modules[AIRSPEED_MAX_SENSORS];
 
     static HAL_Semaphore _sem_registry;
