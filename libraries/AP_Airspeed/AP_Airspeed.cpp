@@ -45,7 +45,7 @@
 #include "AP_Airspeed_analog.h"
 #include "AP_Airspeed_ASP5033.h"
 #include "AP_Airspeed_Backend.h"
-#include "AP_Airspeed_UAVCAN.h"
+#include "AP_Airspeed_DroneCAN.h"
 #include "AP_Airspeed_NMEA.h"
 #include "AP_Airspeed_MSP.h"
 #include "AP_Airspeed_SITL.h"
