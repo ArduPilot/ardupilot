@@ -182,14 +182,14 @@ void CANTester::main_thread()
             break;
         case CANTester::TEST_UAVCAN_DNA:
             if (_can_ifaces[1] == nullptr) {
-                gcs().send_text(MAV_SEVERITY_ALERT, "********Running UAVCAN DNA Test********");
+                gcs().send_text(MAV_SEVERITY_ALERT, "********Running DroneCAN DNA Test********");
                 if (test_uavcan_dna()) {
-                    gcs().send_text(MAV_SEVERITY_ALERT, "********UAVCAN DNA Test Pass********");
+                    gcs().send_text(MAV_SEVERITY_ALERT, "********DroneCAN DNA Test Pass********");
                 } else {
-                    gcs().send_text(MAV_SEVERITY_ALERT, "********UAVCAN DNA Test Fail********");
+                    gcs().send_text(MAV_SEVERITY_ALERT, "********DroneCAN DNA Test Fail********");
                 }
             } else {
-                gcs().send_text(MAV_SEVERITY_ALERT, "Only one iface needs to be set for UAVCAN_DNA_TEST");
+                gcs().send_text(MAV_SEVERITY_ALERT, "Only one iface needs to be set for DroneCAN_DNA_TEST");
             }
             break;
         case CANTester::TEST_KDE_CAN:
@@ -206,23 +206,23 @@ void CANTester::main_thread()
             break;
         case CANTester::TEST_UAVCAN_ESC:
             if (_can_ifaces[1] == nullptr) {
-                gcs().send_text(MAV_SEVERITY_ALERT, "********Running UAVCAN ESC Test********");
+                gcs().send_text(MAV_SEVERITY_ALERT, "********Running DroneCAN ESC Test********");
                 if (test_uavcan_esc(false)) {
-                    gcs().send_text(MAV_SEVERITY_ALERT, "********UAVCAN ESC Test Pass********");
+                    gcs().send_text(MAV_SEVERITY_ALERT, "********DroneCAN ESC Test Pass********");
                 } else {
-                    gcs().send_text(MAV_SEVERITY_ALERT, "********UAVCAN ESC Test Fail********");
+                    gcs().send_text(MAV_SEVERITY_ALERT, "********DroneCAN ESC Test Fail********");
                 }
             } else {
-                gcs().send_text(MAV_SEVERITY_ALERT, "Only one iface needs to be set for UAVCAN_ESC_TEST");
+                gcs().send_text(MAV_SEVERITY_ALERT, "Only one iface needs to be set for DroneCAN_ESC_TEST");
             }
             break;
         case CANTester::TEST_UAVCAN_FD_ESC:
             if (_can_ifaces[1] == nullptr) {
-                gcs().send_text(MAV_SEVERITY_ALERT, "********Running UAVCAN FD ESC Test********");
+                gcs().send_text(MAV_SEVERITY_ALERT, "********Running DroneCAN FD ESC Test********");
                 if (test_uavcan_esc(true)) {
-                    gcs().send_text(MAV_SEVERITY_ALERT, "********UAVCAN FD ESC Test Pass********");
+                    gcs().send_text(MAV_SEVERITY_ALERT, "********DroneCAN FD ESC Test Pass********");
                 } else {
-                    gcs().send_text(MAV_SEVERITY_ALERT, "********UAVCAN FD ESC Test Fail********");
+                    gcs().send_text(MAV_SEVERITY_ALERT, "********DroneCAN FD ESC Test Fail********");
                 }
             } else {
                 gcs().send_text(MAV_SEVERITY_ALERT, "Only one iface needs to be set for UAVCAN_FD_ESC_TEST");
@@ -417,7 +417,7 @@ bool CANTester::test_busoff_recovery()
 }
 
 /*****************************************
- *             UAVCAN DNA Test           *
+ *             DroneCAN DNA Test           *
  * ***************************************/
 
 bool CANTester::test_uavcan_dna()
@@ -542,7 +542,7 @@ bool CANTester::run_kdecan_enumeration(bool start_stop)
 }
 
 /***********************************************
- *                UAVCAN ESC                   *
+ *                DroneCAN ESC                   *
  * *********************************************/
 
 #define NUM_ESCS 4
