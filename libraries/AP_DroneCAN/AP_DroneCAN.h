@@ -35,8 +35,8 @@
 #include <canard.h>
 #include <dronecan_msgs.h>
 
-#ifndef UAVCAN_SRV_NUMBER
-#define UAVCAN_SRV_NUMBER NUM_SERVO_CHANNELS
+#ifndef DRONECAN_SRV_NUMBER
+#define DRONECAN_SRV_NUMBER NUM_SERVO_CHANNELS
 #endif
 
 #ifndef AP_DRONECAN_SEND_GPS
@@ -63,7 +63,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // Return uavcan from @driver_index or nullptr if it's not ready or doesn't exist
-    static AP_DroneCAN *get_uavcan(uint8_t driver_index);
+    static AP_DroneCAN *get_dronecan(uint8_t driver_index);
     bool prearm_check(char* fail_msg, uint8_t fail_msg_len) const;
 
     void init(uint8_t driver_index, bool enable_filters) override;
@@ -192,7 +192,7 @@ private:
         uint16_t pulse;
         bool esc_pending;
         bool servo_pending;
-    } _SRV_conf[UAVCAN_SRV_NUMBER];
+    } _SRV_conf[DRONECAN_SRV_NUMBER];
 
     uint32_t _esc_send_count;
     uint32_t _srv_send_count;
