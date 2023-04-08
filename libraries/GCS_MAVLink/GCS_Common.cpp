@@ -4391,7 +4391,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_can(const mavlink_command_long_
             case AP_CANManager::Driver_Type_PiccoloCAN:
                 // TODO - Run PiccoloCAN pre-flight checks here
                 break;
-            case AP_CANManager::Driver_Type_UAVCAN:
+            case AP_CANManager::Driver_Type_DroneCAN:
             case AP_CANManager::Driver_Type_None:
             default:
                 break;
