@@ -602,7 +602,6 @@ singleton AP_Mount method get_rate_target boolean uint8_t'skip_check float'Null 
 singleton AP_Mount method get_angle_target boolean uint8_t'skip_check float'Null float'Null float'Null boolean'Null
 singleton AP_Mount method get_location_target boolean uint8_t'skip_check Location'Null
 singleton AP_Mount method set_attitude_euler void uint8_t'skip_check float'skip_check float'skip_check float'skip_check
-singleton AP_Mount method get_camera_state boolean uint8_t'skip_check uint16_t'Null boolean'Null int8_t'Null int8_t'Null boolean'Null
 
 include AP_Camera/AP_Camera.h
 singleton AP_Camera depends AP_CAMERA_ENABLED == 1
