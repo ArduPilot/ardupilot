@@ -2,7 +2,7 @@
 
 #include "AP_Baro_Backend.h"
 
-#if AP_BARO_UAVCAN_ENABLED
+#if AP_BARO_DRONECAN_ENABLED
 
 #include <AP_DroneCAN/AP_DroneCAN.h>
 #if AP_TEST_DRONECAN_DRIVERS
@@ -49,4 +49,4 @@ private:
     static HAL_Semaphore _sem_registry;
 };
 
-#endif  // AP_BARO_UAVCAN_ENABLED
+#endif  // AP_BARO_DRONECAN_ENABLED
