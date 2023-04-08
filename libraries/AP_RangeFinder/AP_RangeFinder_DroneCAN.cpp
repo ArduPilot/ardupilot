@@ -1,4 +1,4 @@
-#include "AP_RangeFinder_UAVCAN.h"
+#include "AP_RangeFinder_DroneCAN.h"
 
 #if AP_RANGEFINDER_UAVCAN_ENABLED
 
