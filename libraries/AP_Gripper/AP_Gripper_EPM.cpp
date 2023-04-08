@@ -32,7 +32,7 @@ void AP_Gripper_EPM::init_gripper()
 #ifdef UAVCAN_NODE_FILE
     _uavcan_fd = ::open(UAVCAN_NODE_FILE, O_CLOEXEC);
     // https://ardupilot.org/dev/docs/learning-ardupilot-uarts-and-the-console.html
-    ::printf("EPM: UAVCAN fd %d\n", _uavcan_fd);
+    ::printf("EPM: DroneCAN fd %d\n", _uavcan_fd);
 #endif
 
     // initialise the EPM to the neutral position
