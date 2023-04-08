@@ -19,7 +19,7 @@
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
-#include "AP_GPS_UAVCAN.h"
+#include "AP_GPS_DroneCAN.h"
 
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_DroneCAN/AP_DroneCAN.h>
