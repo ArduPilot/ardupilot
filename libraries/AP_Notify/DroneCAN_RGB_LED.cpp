@@ -17,8 +17,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/system.h>
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
-#include "UAVCAN_RGB_LED.h"
+#if HAL_ENABLE_DRONECAN_DRIVERS
+#include "DroneCAN_RGB_LED.h"
 
 #include <AP_DroneCAN/AP_DroneCAN.h>
 
@@ -29,13 +29,13 @@
 #define LED_MEDIUM ((LED_FULL_BRIGHT / 5) * 4)
 #define LED_DIM ((LED_FULL_BRIGHT / 5) * 2)
 
-UAVCAN_RGB_LED::UAVCAN_RGB_LED(uint8_t led_index)
-    : UAVCAN_RGB_LED(led_index, LED_OFF,
+DroneCAN_RGB_LED::DroneCAN_RGB_LED(uint8_t led_index)
+    : DroneCAN_RGB_LED(led_index, LED_OFF,
                      LED_FULL_BRIGHT, LED_MEDIUM, LED_DIM)
 {
 }
 
-UAVCAN_RGB_LED::UAVCAN_RGB_LED(uint8_t led_index, uint8_t led_off,
+DroneCAN_RGB_LED::DroneCAN_RGB_LED(uint8_t led_index, uint8_t led_off,
                                uint8_t led_full, uint8_t led_medium,
                                uint8_t led_dim)
     : RGBLed(led_off, led_full, led_medium, led_dim)
@@ -43,7 +43,7 @@ UAVCAN_RGB_LED::UAVCAN_RGB_LED(uint8_t led_index, uint8_t led_off,
 {
 }
 
-bool UAVCAN_RGB_LED::init()
+bool DroneCAN_RGB_LED::init()
 {
     const uint8_t can_num_drivers = AP::can().get_num_drivers();
     for (uint8_t i = 0; i < can_num_drivers; i++) {
@@ -57,7 +57,7 @@ bool UAVCAN_RGB_LED::init()
 }
 
 
-bool UAVCAN_RGB_LED::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
+bool DroneCAN_RGB_LED::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
     bool success = false;
     uint8_t can_num_drivers = AP::can().get_num_drivers();
