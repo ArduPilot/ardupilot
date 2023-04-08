@@ -47,7 +47,7 @@ bool DroneCAN_RGB_LED::init()
 {
     const uint8_t can_num_drivers = AP::can().get_num_drivers();
     for (uint8_t i = 0; i < can_num_drivers; i++) {
-        AP_DroneCAN *uavcan = AP_DroneCAN::get_uavcan(i);
+        AP_DroneCAN *uavcan = AP_DroneCAN::get_dronecan(i);
         if (uavcan != nullptr) {
             return true;
         }
@@ -63,7 +63,7 @@ bool DroneCAN_RGB_LED::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
     uint8_t can_num_drivers = AP::can().get_num_drivers();
 
     for (uint8_t i = 0; i < can_num_drivers; i++) {
-        AP_DroneCAN *uavcan = AP_DroneCAN::get_uavcan(i);
+        AP_DroneCAN *uavcan = AP_DroneCAN::get_dronecan(i);
         if (uavcan != nullptr) {
             success = uavcan->led_write(_led_index, red, green, blue) || success;
         }
