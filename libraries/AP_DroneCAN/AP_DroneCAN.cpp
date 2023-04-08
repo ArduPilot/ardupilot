@@ -235,20 +235,20 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
 
     // Roundup all subscribers from supported drivers
     AP_GPS_UAVCAN::subscribe_msgs(this);
-#if AP_COMPASS_UAVCAN_ENABLED
+#if AP_COMPASS_DRONECAN_ENABLED
     AP_Compass_UAVCAN::subscribe_msgs(this);
 #endif
-#if AP_BARO_UAVCAN_ENABLED
+#if AP_BARO_DRONECAN_ENABLED
     AP_Baro_UAVCAN::subscribe_msgs(this);
 #endif
     AP_BattMonitor_UAVCAN::subscribe_msgs(this);
-#if AP_AIRSPEED_UAVCAN_ENABLED
+#if AP_AIRSPEED_DRONECAN_ENABLED
     AP_Airspeed_UAVCAN::subscribe_msgs(this);
 #endif
 #if AP_OPTICALFLOW_HEREFLOW_ENABLED
     AP_OpticalFlow_HereFlow::subscribe_msgs(this);
 #endif
-#if AP_RANGEFINDER_UAVCAN_ENABLED
+#if AP_RANGEFINDER_DRONECAN_ENABLED
     AP_RangeFinder_UAVCAN::subscribe_msgs(this);
 #endif
 #if AP_EFI_DRONECAN_ENABLED
