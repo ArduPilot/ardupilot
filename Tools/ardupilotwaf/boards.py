@@ -643,8 +643,6 @@ class sitl(Board):
 
         if self.with_can:
             cfg.define('HAL_NUM_CAN_IFACES', 2)
-            cfg.define('UAVCAN_EXCEPTIONS', 0)
-            cfg.define('UAVCAN_SUPPORT_CANFD', 1)
             env.DEFINES.update(CANARD_MULTI_IFACE=1,
                                CANARD_IFACE_ALL = 0x3,
                                 CANARD_ENABLE_CANFD = 1)
@@ -1177,8 +1175,6 @@ class linux(Board):
         if self.with_can and cfg.options.board == 'linux':
             cfg.env.HAL_NUM_CAN_IFACES = 2
             cfg.define('HAL_NUM_CAN_IFACES', 2)
-            cfg.define('UAVCAN_EXCEPTIONS', 0)
-            cfg.define('UAVCAN_SUPPORT_CANFD', 1)
             cfg.define('HAL_CANFD_SUPPORTED', 1)
             cfg.define('CANARD_ENABLE_CANFD', 1)
         
