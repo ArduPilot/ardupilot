@@ -534,12 +534,12 @@ void SRV_Channels::push()
     fetteconwire_ptr->update();
 #endif
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_ENABLE_DRONECAN_DRIVERS
     // push outputs to CAN
     uint8_t can_num_drivers = AP::can().get_num_drivers();
     for (uint8_t i = 0; i < can_num_drivers; i++) {
         switch (AP::can().get_driver_type(i)) {
-            case AP_CANManager::Driver_Type_UAVCAN: {
+            case AP_CANManager::Driver_Type_DroneCAN: {
                 AP_DroneCAN *ap_dronecan = AP_DroneCAN::get_uavcan(i);
                 if (ap_dronecan == nullptr) {
                     continue;
