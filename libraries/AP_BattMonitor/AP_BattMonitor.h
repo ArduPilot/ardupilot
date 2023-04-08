@@ -37,7 +37,7 @@ class AP_BattMonitor_SMBus_Solo;
 class AP_BattMonitor_SMBus_Generic;
 class AP_BattMonitor_SMBus_Maxell;
 class AP_BattMonitor_SMBus_Rotoye;
-class AP_BattMonitor_UAVCAN;
+class AP_BattMonitor_DroneCAN;
 class AP_BattMonitor_Generator;
 class AP_BattMonitor_INA2XX;
 class AP_BattMonitor_INA239;
@@ -56,7 +56,7 @@ class AP_BattMonitor
     friend class AP_BattMonitor_SMBus_Generic;
     friend class AP_BattMonitor_SMBus_Maxell;
     friend class AP_BattMonitor_SMBus_Rotoye;
-    friend class AP_BattMonitor_UAVCAN;
+    friend class AP_BattMonitor_DroneCAN;
     friend class AP_BattMonitor_Sum;
     friend class AP_BattMonitor_FuelFlow;
     friend class AP_BattMonitor_FuelLevel_PWM;
