@@ -26,7 +26,7 @@ private:
     // callback for DroneCAN messages
     void handle_mag_msg(const Vector3f &mag);
 
-    static AP_Compass_DroneCAN* get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t sensor_id);
+    static AP_Compass_DroneCAN* get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t sensor_id);
 
     uint8_t  _instance;
 
