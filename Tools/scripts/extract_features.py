@@ -319,9 +319,8 @@ class ExtractFeatures(object):
 
         return ret
 
-    def create_string(self):
-
-        ret = ""
+    def extract(self):
+        '''returns two sets - compiled_in and not_compiled_in'''
 
         build_options_defines = set([x.define for x in build_options.BUILD_OPTIONS])
 
@@ -350,10 +349,18 @@ class ExtractFeatures(object):
                     continue
                 compiled_in_feature_defines.append(some_define)
                 remaining_build_options_defines.discard(some_define)
+        return (compiled_in_feature_defines, remaining_build_options_defines)
+
+    def create_string(self):
+        '''returns a string with compiled in and not compiled-in features'''
+
+        (compiled_in_feature_defines, not_compiled_in_feature_defines) = self.extract()
+
+        ret = ""
 
         for compiled_in_feature_define in sorted(compiled_in_feature_defines):
             ret += compiled_in_feature_define + "\n"
-        for remaining in sorted(remaining_build_options_defines):
+        for remaining in sorted(not_compiled_in_feature_defines):
             ret += "!" + remaining + "\n"
 
         return ret
