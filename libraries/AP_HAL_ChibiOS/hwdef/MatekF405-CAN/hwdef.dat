@@ -82,7 +82,7 @@ PB9 CAN1_TX CAN1
 PC13 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW GPIO(70)
 
 # reduce memory usage
-define UAVCAN_NODE_POOL_SIZE 1024
+define DRONECAN_NODE_POOL_SIZE 1024
 
 
 # --------------------- UARTs ---------------------------
