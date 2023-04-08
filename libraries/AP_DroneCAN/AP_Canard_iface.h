@@ -1,6 +1,6 @@
 #pragma once
 #include <AP_HAL/AP_HAL.h>
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_ENABLE_DRONECAN_DRIVERS
 #include <canard/interface.h>
 
 class AP_DroneCAN;
@@ -65,4 +65,4 @@ private:
     bool initialized;
     HAL_Semaphore _sem;
 };
-#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
+#endif // HAL_ENABLE_DRONECAN_DRIVERS

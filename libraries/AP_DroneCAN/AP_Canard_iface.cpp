@@ -1,7 +1,7 @@
 #include "AP_Canard_iface.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_CANManager/AP_CANManager.h>
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_ENABLE_DRONECAN_DRIVERS
 #include <canard/handler_list.h>
 #include <canard/transfer_object.h>
 extern const AP_HAL::HAL& hal;
@@ -309,4 +309,4 @@ bool CanardInterface::add_interface(AP_HAL::CANIface *can_iface)
     num_ifaces++;
     return true;
 }
-#endif // #if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#endif // #if HAL_ENABLE_DRONECAN_DRIVERS

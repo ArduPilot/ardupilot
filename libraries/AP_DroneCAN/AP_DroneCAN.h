@@ -18,7 +18,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_ENABLE_DRONECAN_DRIVERS
 
 #include "AP_Canard_iface.h"
 #include <AP_CANManager/AP_CANManager.h>
@@ -230,7 +230,7 @@ private:
     } _buzzer;
 
 #if AP_DRONECAN_SEND_GPS
-    // send GNSS Fix and yaw, same thing AP_GPS_UAVCAN would receive
+    // send GNSS Fix and yaw, same thing AP_GPS_DroneCAN would receive
     void gnss_send_fix();
     void gnss_send_yaw();
     
@@ -329,4 +329,4 @@ private:
     void handle_node_info_request(const CanardRxTransfer& transfer, const uavcan_protocol_GetNodeInfoRequest& req);
 };
 
-#endif // #if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#endif // #if HAL_ENABLE_DRONECAN_DRIVERS
