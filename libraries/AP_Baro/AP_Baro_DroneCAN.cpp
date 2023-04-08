@@ -11,17 +11,17 @@ extern const AP_HAL::HAL& hal;
 
 #define LOG_TAG "Baro"
 
-AP_Baro_UAVCAN::DetectedModules AP_Baro_UAVCAN::_detected_modules[];
-HAL_Semaphore AP_Baro_UAVCAN::_sem_registry;
+AP_Baro_DroneCAN::DetectedModules AP_Baro_DroneCAN::_detected_modules[];
+HAL_Semaphore AP_Baro_DroneCAN::_sem_registry;
 
 /*
   constructor - registers instance at top Baro driver
  */
-AP_Baro_UAVCAN::AP_Baro_UAVCAN(AP_Baro &baro) :
+AP_Baro_DroneCAN::AP_Baro_DroneCAN(AP_Baro &baro) :
     AP_Baro_Backend(baro)
 {}
 
-void AP_Baro_UAVCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
+void AP_Baro_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
     if (ap_dronecan == nullptr) {
         return;
@@ -35,14 +35,14 @@ void AP_Baro_UAVCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
     }
 }
 
-AP_Baro_Backend* AP_Baro_UAVCAN::probe(AP_Baro &baro)
+AP_Baro_Backend* AP_Baro_DroneCAN::probe(AP_Baro &baro)
 {
     WITH_SEMAPHORE(_sem_registry);
 
-    AP_Baro_UAVCAN* backend = nullptr;
+    AP_Baro_DroneCAN* backend = nullptr;
     for (uint8_t i = 0; i < BARO_MAX_DRIVERS; i++) {
         if (_detected_modules[i].driver == nullptr && _detected_modules[i].ap_dronecan != nullptr) {
-            backend = new AP_Baro_UAVCAN(baro);
+            backend = new AP_Baro_DroneCAN(baro);
             if (backend == nullptr) {
                 AP::can().log_text(AP_CANManager::LOG_ERROR,
                             LOG_TAG,
@@ -73,7 +73,7 @@ AP_Baro_Backend* AP_Baro_UAVCAN::probe(AP_Baro &baro)
     return backend;
 }
 
-AP_Baro_UAVCAN* AP_Baro_UAVCAN::get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, bool create_new)
+AP_Baro_DroneCAN* AP_Baro_DroneCAN::get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, bool create_new)
 {
     if (ap_dronecan == nullptr) {
         return nullptr;
@@ -111,7 +111,7 @@ AP_Baro_UAVCAN* AP_Baro_UAVCAN::get_uavcan_backend(AP_DroneCAN* ap_dronecan, uin
 }
 
 
-void AP_Baro_UAVCAN::_update_and_wrap_accumulator(float *accum, float val, uint8_t *count, const uint8_t max_count)
+void AP_Baro_DroneCAN::_update_and_wrap_accumulator(float *accum, float val, uint8_t *count, const uint8_t max_count)
 {
     *accum += val;
     *count += 1;
@@ -121,9 +121,9 @@ void AP_Baro_UAVCAN::_update_and_wrap_accumulator(float *accum, float val, uint8
     }
 }
 
-void AP_Baro_UAVCAN::handle_pressure(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_air_data_StaticPressure &msg)
+void AP_Baro_DroneCAN::handle_pressure(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_air_data_StaticPressure &msg)
 {
-    AP_Baro_UAVCAN* driver;
+    AP_Baro_DroneCAN* driver;
     {
         WITH_SEMAPHORE(_sem_registry);
         driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id, true);
@@ -138,9 +138,9 @@ void AP_Baro_UAVCAN::handle_pressure(AP_DroneCAN *ap_dronecan, const CanardRxTra
     }
 }
 
-void AP_Baro_UAVCAN::handle_temperature(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_air_data_StaticTemperature &msg)
+void AP_Baro_DroneCAN::handle_temperature(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_air_data_StaticTemperature &msg)
 {
-    AP_Baro_UAVCAN* driver;
+    AP_Baro_DroneCAN* driver;
     {
         WITH_SEMAPHORE(_sem_registry);
         driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id, false);
@@ -155,7 +155,7 @@ void AP_Baro_UAVCAN::handle_temperature(AP_DroneCAN *ap_dronecan, const CanardRx
 }
 
 // Read the sensor
-void AP_Baro_UAVCAN::update(void)
+void AP_Baro_DroneCAN::update(void)
 {
     float pressure = 0;
 
