@@ -61,3 +61,6 @@ define AP_CAMERA_SERVO_ENABLED AP_CAMERA_ENABLED
 
 # no SLCAN on these boards (use can-over-mavlink if required)
 define AP_CAN_SLCAN_ENABLED 0
+
+# no beacon support on minimized boards:
+define AP_BEACON_ENABLED 0
