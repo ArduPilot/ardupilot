@@ -925,6 +925,11 @@ static void onTransferReceived(CanardInstance* ins,
     palToggleLine(HAL_GPIO_PIN_LED_CAN1);
 #endif
 
+#if HAL_CANFD_SUPPORTED
+    // enable tao for decoding when not on CANFD
+    transfer->tao = !transfer->canfd;
+#endif
+
     /*
      * Dynamic node ID allocation protocol.
      * Taking this branch only if we don't have a node ID, ignoring otherwise.
@@ -1477,6 +1482,7 @@ static bool can_do_dna()
                                                 ,(1U << dronecan.dna_interface)
 #endif
 #if HAL_CANFD_SUPPORTED
+                                                // always send allocation request as non-FD
                                                 ,false
 #endif
                                                 );
@@ -1767,6 +1773,12 @@ void AP_Periph_FW::can_update()
     const uint32_t now_us = AP_HAL::micros();
     while ((AP_HAL::micros() - now_us) < 1000) {
         hal.scheduler->delay_microseconds(HAL_PERIPH_LOOP_DELAY_US);
+
+#if HAL_CANFD_SUPPORTED
+        // allow for user enabling/disabling CANFD at runtime
+        dronecan.canard.tao_disabled = periph.g.can_fdmode == 1;
+#endif
+
         processTx();
         processRx();
     }
