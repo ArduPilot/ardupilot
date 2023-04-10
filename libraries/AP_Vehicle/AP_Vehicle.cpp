@@ -115,7 +115,7 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
 #endif
 
 #if PRECISION_LANDING
-    // @Group: PLND_
+    // @Group: PLAND_
     // @Path: ../AC_PrecLand/AC_PrecLand.cpp
     AP_SUBGROUPINFO(precland, "PLND_", 17, AP_Vehicle, AC_PrecLand),
 #endif
