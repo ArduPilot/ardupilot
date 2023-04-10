@@ -440,20 +440,16 @@ static void handle_begin_firmware_update(CanardInstance* ins, CanardRxTransfer* 
     memset(comms, 0, sizeof(struct app_bootloader_comms));
     comms->magic = APP_BOOTLOADER_COMMS_MAGIC;
 
-    // manual decoding due to TAO bug in libcanard generated code
-    if (transfer->payload_len < 1 || transfer->payload_len > sizeof(comms->path)+1) {
+    uavcan_protocol_file_BeginFirmwareUpdateRequest req;
+    if (uavcan_protocol_file_BeginFirmwareUpdateRequest_decode(transfer, &req)) {
         return;
     }
-    uint32_t offset = 0;
-    canardDecodeScalar(transfer, 0, 8, false, (void*)&comms->server_node_id);
-    offset += 8;
-    for (uint8_t i=0; i<transfer->payload_len-1; i++) {
-        canardDecodeScalar(transfer, offset, 8, false, (void*)&comms->path[i]);
-        offset += 8;
-    }
+
+    comms->server_node_id = req.source_node_id;
     if (comms->server_node_id == 0) {
         comms->server_node_id = transfer->source_node_id;
     }
+    memcpy(comms->path, req.image_file_remote_path.path.data, req.image_file_remote_path.path.len);
     comms->my_node_id = canardGetLocalNodeID(ins);
 
     uint8_t buffer[UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_RESPONSE_MAX_SIZE] {};
@@ -786,42 +782,19 @@ static void handle_esc_rawcommand(CanardInstance* ins, CanardRxTransfer* transfe
 
 static void handle_act_command(CanardInstance* ins, CanardRxTransfer* transfer)
 {
-    // manual decoding due to TAO bug in libcanard generated code
-    if (transfer->payload_len < 1 || transfer->payload_len > UAVCAN_EQUIPMENT_ACTUATOR_ARRAYCOMMAND_MAX_SIZE+1) {
+    uavcan_equipment_actuator_ArrayCommand cmd;
+    if (uavcan_equipment_actuator_ArrayCommand_decode(transfer, &cmd)) {
         return;
     }
 
-    const uint8_t data_count = (transfer->payload_len / UAVCAN_EQUIPMENT_ACTUATOR_COMMAND_MAX_SIZE);
-    uavcan_equipment_actuator_Command data[data_count] {};
-
-    uint32_t offset = 0;
-    for (uint8_t i=0; i<data_count; i++) {
-        canardDecodeScalar(transfer, offset, 8, false, (void*)&data[i].actuator_id);
-        offset += 8;
-        canardDecodeScalar(transfer, offset, 8, false, (void*)&data[i].command_type);
-        offset += 8;
-
-#ifndef CANARD_USE_FLOAT16_CAST
-    uint16_t tmp_float = 0;
-#else
-    CANARD_USE_FLOAT16_CAST tmp_float = 0;
-#endif
-        canardDecodeScalar(transfer, offset, 16, false, (void*)&tmp_float);
-        offset += 16;
-#ifndef CANARD_USE_FLOAT16_CAST
-        data[i].command_value = canardConvertFloat16ToNativeFloat(tmp_float);
-#else
-        data[i].command_value = (float)tmp_float;
-#endif
-    }
-
-    for (uint8_t i=0; i < data_count; i++) {
-        switch (data[i].command_type) {
+    for (uint8_t i=0; i < cmd.commands.len; i++) {
+        const auto &c = cmd.commands.data[i];
+        switch (c.command_type) {
         case UAVCAN_EQUIPMENT_ACTUATOR_COMMAND_COMMAND_TYPE_UNITLESS:
-            periph.rcout_srv_unitless(data[i].actuator_id, data[i].command_value);
+            periph.rcout_srv_unitless(c.actuator_id, c.command_value);
             break;
         case UAVCAN_EQUIPMENT_ACTUATOR_COMMAND_COMMAND_TYPE_PWM:
-            periph.rcout_srv_PWM(data[i].actuator_id, data[i].command_value);
+            periph.rcout_srv_PWM(c.actuator_id, c.command_value);
             break;
         }
     }
