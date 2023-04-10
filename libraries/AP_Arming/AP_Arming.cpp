@@ -1466,6 +1466,26 @@ bool AP_Arming::serial_protocol_checks(bool display_failure)
     return true;
 }
 
+//Check for estop
+bool AP_Arming::estop_checks(bool display_failure)
+{
+    if (!SRV_Channels::get_emergency_stop()) {
+       // not emergency-stopped, so no prearm failure:
+       return true;
+    }
+    // vehicle is emergency-stopped; if this *appears* to have been done via switch then we do not fail prearms:
+    const RC_Channel *chan = rc().find_channel_for_option(RC_Channel::AUX_FUNC::ARM_EMERGENCY_STOP);
+    if (chan != nullptr) {
+        // an RC channel is configured for arm_emergency_stop option, so estop maybe activated via this switch
+        if (chan->get_aux_switch_pos() == RC_Channel::AuxSwitchPos::LOW) {
+            // switch is configured and is in estop position, so likely the reason we are estopped, so no prearm failure
+            return true;  // no prearm failure
+        }
+    }   
+    check_failed(display_failure,"Motors Emergency Stopped");
+    return false;
+}
+
 bool AP_Arming::pre_arm_checks(bool report)
 {
 #if !APM_BUILD_COPTER_OR_HELI
@@ -1507,7 +1527,8 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  disarm_switch_checks(report)
         &  fence_checks(report)
         &  opendroneid_checks(report)
-        &  serial_protocol_checks(report);
+        &  serial_protocol_checks(report)
+        &  estop_checks(report);
 }
 
 bool AP_Arming::arm_checks(AP_Arming::Method method)
