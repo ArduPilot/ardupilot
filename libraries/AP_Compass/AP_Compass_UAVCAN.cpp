@@ -20,7 +20,7 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include <AP_CANManager/AP_CANManager.h>
-#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_DroneCAN/AP_DroneCAN.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <SITL/SITL.h>
 
@@ -31,24 +31,24 @@ extern const AP_HAL::HAL& hal;
 AP_Compass_UAVCAN::DetectedModules AP_Compass_UAVCAN::_detected_modules[];
 HAL_Semaphore AP_Compass_UAVCAN::_sem_registry;
 
-AP_Compass_UAVCAN::AP_Compass_UAVCAN(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t sensor_id, uint32_t devid)
-    : _ap_uavcan(ap_uavcan)
+AP_Compass_UAVCAN::AP_Compass_UAVCAN(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t sensor_id, uint32_t devid)
+    : _ap_dronecan(ap_dronecan)
     , _node_id(node_id)
     , _sensor_id(sensor_id)
     , _devid(devid)
 {
 }
 
-void AP_Compass_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
+void AP_Compass_UAVCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
-    if (ap_uavcan == nullptr) {
+    if (ap_dronecan == nullptr) {
         return;
     }
-    if (Canard::allocate_sub_arg_callback(ap_uavcan, &handle_magnetic_field, ap_uavcan->get_driver_index()) == nullptr) {
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_magnetic_field, ap_dronecan->get_driver_index()) == nullptr) {
         AP_BoardConfig::allocation_error("mag_sub");
     }
 
-    if (Canard::allocate_sub_arg_callback(ap_uavcan, &handle_magnetic_field_2, ap_uavcan->get_driver_index()) == nullptr) {
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_magnetic_field_2, ap_dronecan->get_driver_index()) == nullptr) {
         AP_BoardConfig::allocation_error("mag2_sub");
     }
 }
@@ -56,10 +56,10 @@ void AP_Compass_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
 AP_Compass_Backend* AP_Compass_UAVCAN::probe(uint8_t index)
 {
     AP_Compass_UAVCAN* driver = nullptr;
-    if (!_detected_modules[index].driver && _detected_modules[index].ap_uavcan) {
+    if (!_detected_modules[index].driver && _detected_modules[index].ap_dronecan) {
         WITH_SEMAPHORE(_sem_registry);
         // Register new Compass mode to a backend
-        driver = new AP_Compass_UAVCAN(_detected_modules[index].ap_uavcan, _detected_modules[index].node_id, _detected_modules[index].sensor_id, _detected_modules[index].devid);
+        driver = new AP_Compass_UAVCAN(_detected_modules[index].ap_dronecan, _detected_modules[index].node_id, _detected_modules[index].sensor_id, _detected_modules[index].devid);
         if (driver) {
             if (!driver->init()) {
                 delete driver;
@@ -70,7 +70,7 @@ AP_Compass_Backend* AP_Compass_UAVCAN::probe(uint8_t index)
                                 LOG_TAG,
                                 "Found Mag Node %d on Bus %d Sensor ID %d\n",
                                 _detected_modules[index].node_id,
-                                _detected_modules[index].ap_uavcan->get_driver_index(),
+                                _detected_modules[index].ap_dronecan->get_driver_index(),
                                 _detected_modules[index].sensor_id);
 #if AP_TEST_DRONECAN_DRIVERS
             // Scroll through the registered compasses, and set the offsets
@@ -108,14 +108,14 @@ bool AP_Compass_UAVCAN::init()
     return true;
 }
 
-AP_Compass_UAVCAN* AP_Compass_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t sensor_id)
+AP_Compass_UAVCAN* AP_Compass_UAVCAN::get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t sensor_id)
 {
-    if (ap_uavcan == nullptr) {
+    if (ap_dronecan == nullptr) {
         return nullptr;
     }
     for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
         if (_detected_modules[i].driver &&
-            _detected_modules[i].ap_uavcan == ap_uavcan &&
+            _detected_modules[i].ap_dronecan == ap_dronecan &&
             _detected_modules[i].node_id == node_id &&
             _detected_modules[i].sensor_id == sensor_id) {
             return _detected_modules[i].driver;
@@ -125,7 +125,7 @@ AP_Compass_UAVCAN* AP_Compass_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, u
     bool already_detected = false;
     // Check if there's an empty spot for possible registeration
     for (uint8_t i = 0; i < COMPASS_MAX_BACKEND; i++) {
-        if (_detected_modules[i].ap_uavcan == ap_uavcan && 
+        if (_detected_modules[i].ap_dronecan == ap_dronecan && 
             _detected_modules[i].node_id == node_id &&
             _detected_modules[i].sensor_id == sensor_id) {
             // Already Detected
@@ -135,12 +135,12 @@ AP_Compass_UAVCAN* AP_Compass_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, u
     }
     if (!already_detected) {
         for (uint8_t i = 0; i < COMPASS_MAX_BACKEND; i++) {
-            if (nullptr == _detected_modules[i].ap_uavcan) {
-                _detected_modules[i].ap_uavcan = ap_uavcan;
+            if (nullptr == _detected_modules[i].ap_dronecan) {
+                _detected_modules[i].ap_dronecan = ap_dronecan;
                 _detected_modules[i].node_id = node_id;
                 _detected_modules[i].sensor_id = sensor_id;
                 _detected_modules[i].devid = AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_UAVCAN,
-                                                 ap_uavcan->get_driver_index(),
+                                                 ap_dronecan->get_driver_index(),
                                                  node_id,
                                                  sensor_id + 1); // we use sensor_id as devtype
                 break;
@@ -172,12 +172,12 @@ void AP_Compass_UAVCAN::handle_mag_msg(const Vector3f &mag)
     accumulate_sample(raw_field, _instance);
 }
 
-void AP_Compass_UAVCAN::handle_magnetic_field(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const uavcan_equipment_ahrs_MagneticFieldStrength& msg)
+void AP_Compass_UAVCAN::handle_magnetic_field(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_ahrs_MagneticFieldStrength& msg)
 {
     WITH_SEMAPHORE(_sem_registry);
 
     Vector3f mag_vector;
-    AP_Compass_UAVCAN* driver = get_uavcan_backend(ap_uavcan, transfer.source_node_id, 0);
+    AP_Compass_UAVCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id, 0);
     if (driver != nullptr) {
         mag_vector[0] = msg.magnetic_field_ga[0];
         mag_vector[1] = msg.magnetic_field_ga[1];
@@ -186,13 +186,13 @@ void AP_Compass_UAVCAN::handle_magnetic_field(AP_UAVCAN *ap_uavcan, const Canard
     }
 }
 
-void AP_Compass_UAVCAN::handle_magnetic_field_2(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const uavcan_equipment_ahrs_MagneticFieldStrength2 &msg)
+void AP_Compass_UAVCAN::handle_magnetic_field_2(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_ahrs_MagneticFieldStrength2 &msg)
 {
     WITH_SEMAPHORE(_sem_registry);
 
     Vector3f mag_vector;
     uint8_t sensor_id = msg.sensor_id;
-    AP_Compass_UAVCAN* driver = get_uavcan_backend(ap_uavcan, transfer.source_node_id, sensor_id);
+    AP_Compass_UAVCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id, sensor_id);
     if (driver != nullptr) {
         mag_vector[0] = msg.magnetic_field_ga[0];
         mag_vector[1] = msg.magnetic_field_ga[1];

@@ -22,7 +22,7 @@
 #include "AP_GPS_UAVCAN.h"
 
 #include <AP_CANManager/AP_CANManager.h>
-#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_DroneCAN/AP_DroneCAN.h>
 #include <GCS_MAVLink/GCS.h>
 
 #include <AP_Logger/AP_Logger.h>
@@ -65,9 +65,9 @@ AP_GPS_UAVCAN::AP_GPS_UAVCAN(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_GPS::GP
     interim_state(_state),
     role(_role)
 {
-    param_int_cb = FUNCTOR_BIND_MEMBER(&AP_GPS_UAVCAN::handle_param_get_set_response_int, bool, AP_UAVCAN*, const uint8_t, const char*, int32_t &);
-    param_float_cb = FUNCTOR_BIND_MEMBER(&AP_GPS_UAVCAN::handle_param_get_set_response_float, bool, AP_UAVCAN*, const uint8_t, const char*, float &);
-    param_save_cb = FUNCTOR_BIND_MEMBER(&AP_GPS_UAVCAN::handle_param_save_response, void, AP_UAVCAN*, const uint8_t, bool);
+    param_int_cb = FUNCTOR_BIND_MEMBER(&AP_GPS_UAVCAN::handle_param_get_set_response_int, bool, AP_DroneCAN*, const uint8_t, const char*, int32_t &);
+    param_float_cb = FUNCTOR_BIND_MEMBER(&AP_GPS_UAVCAN::handle_param_get_set_response_float, bool, AP_DroneCAN*, const uint8_t, const char*, float &);
+    param_save_cb = FUNCTOR_BIND_MEMBER(&AP_GPS_UAVCAN::handle_param_save_response, void, AP_DroneCAN*, const uint8_t, bool);
 }
 
 AP_GPS_UAVCAN::~AP_GPS_UAVCAN()
@@ -83,33 +83,33 @@ AP_GPS_UAVCAN::~AP_GPS_UAVCAN()
 #endif
 }
 
-void AP_GPS_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
+void AP_GPS_UAVCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
-    if (ap_uavcan == nullptr) {
+    if (ap_dronecan == nullptr) {
         return;
     }
 
-    if (Canard::allocate_sub_arg_callback(ap_uavcan, &handle_fix2_msg_trampoline, ap_uavcan->get_driver_index()) == nullptr) {
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_fix2_msg_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
         AP_BoardConfig::allocation_error("status_sub");
     }
 
-    if (Canard::allocate_sub_arg_callback(ap_uavcan, &handle_aux_msg_trampoline, ap_uavcan->get_driver_index()) == nullptr) {
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_aux_msg_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
         AP_BoardConfig::allocation_error("status_sub");
     }
 
-    if (Canard::allocate_sub_arg_callback(ap_uavcan, &handle_heading_msg_trampoline, ap_uavcan->get_driver_index()) == nullptr) {
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_heading_msg_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
         AP_BoardConfig::allocation_error("status_sub");
     }
 
-    if (Canard::allocate_sub_arg_callback(ap_uavcan, &handle_status_msg_trampoline, ap_uavcan->get_driver_index()) == nullptr) {
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_status_msg_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
         AP_BoardConfig::allocation_error("status_sub");
     }
 #if GPS_MOVING_BASELINE
-    if (Canard::allocate_sub_arg_callback(ap_uavcan, &handle_moving_baseline_msg_trampoline, ap_uavcan->get_driver_index()) == nullptr) {
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_moving_baseline_msg_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
         AP_BoardConfig::allocation_error("moving_baseline_sub");
     }
 
-    if (Canard::allocate_sub_arg_callback(ap_uavcan, &handle_relposheading_msg_trampoline, ap_uavcan->get_driver_index()) == nullptr) {
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_relposheading_msg_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
         AP_BoardConfig::allocation_error("relposheading_sub");
     }
 #endif
@@ -122,7 +122,7 @@ AP_GPS_Backend* AP_GPS_UAVCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
     AP_GPS_UAVCAN* backend = nullptr;
     bool bad_override_config = false;
     for (int8_t i = GPS_MAX_RECEIVERS - 1; i >= 0; i--) {
-        if (_detected_modules[i].driver == nullptr && _detected_modules[i].ap_uavcan != nullptr) {
+        if (_detected_modules[i].driver == nullptr && _detected_modules[i].ap_dronecan != nullptr) {
             if (_gps._override_node_id[_state.instance] != 0 &&
                 _gps._override_node_id[_state.instance] != _detected_modules[i].node_id) {
                 continue; // This device doesn't match the correct node
@@ -182,7 +182,7 @@ AP_GPS_Backend* AP_GPS_UAVCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
                             LOG_TAG,
                             "Failed to register UAVCAN GPS Node %d on Bus %d\n",
                             _detected_modules[found_match].node_id,
-                            _detected_modules[found_match].ap_uavcan->get_driver_index());
+                            _detected_modules[found_match].ap_dronecan->get_driver_index());
     } else {
         _detected_modules[found_match].driver = backend;
         backend->_detected_module = found_match;
@@ -190,9 +190,9 @@ AP_GPS_Backend* AP_GPS_UAVCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
                             LOG_TAG,
                             "Registered UAVCAN GPS Node %d on Bus %d as instance %d\n",
                             _detected_modules[found_match].node_id,
-                            _detected_modules[found_match].ap_uavcan->get_driver_index(),
+                            _detected_modules[found_match].ap_dronecan->get_driver_index(),
                             _state.instance);
-        snprintf(backend->_name, ARRAY_SIZE(backend->_name), "UAVCAN%u-%u", _detected_modules[found_match].ap_uavcan->get_driver_index()+1, _detected_modules[found_match].node_id);
+        snprintf(backend->_name, ARRAY_SIZE(backend->_name), "UAVCAN%u-%u", _detected_modules[found_match].ap_dronecan->get_driver_index()+1, _detected_modules[found_match].node_id);
         _detected_modules[found_match].instance = _state.instance;
         for (uint8_t i=0; i < GPS_MAX_RECEIVERS; i++) {
             if (_detected_modules[found_match].node_id == AP::gps()._node_id[i]) {
@@ -210,7 +210,7 @@ AP_GPS_Backend* AP_GPS_UAVCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
         if (backend->role == AP_GPS::GPS_ROLE_MB_BASE) {
             backend->rtcm3_parser = new RTCM3_Parser;
             if (backend->rtcm3_parser == nullptr) {
-                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "UAVCAN%u-%u: failed RTCMv3 parser allocation", _detected_modules[found_match].ap_uavcan->get_driver_index()+1, _detected_modules[found_match].node_id);
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "UAVCAN%u-%u: failed RTCMv3 parser allocation", _detected_modules[found_match].ap_dronecan->get_driver_index()+1, _detected_modules[found_match].node_id);
             }
         }
 #endif // GPS_MOVING_BASELINE
@@ -254,15 +254,15 @@ bool AP_GPS_UAVCAN::backends_healthy(char failure_msg[], uint16_t failure_msg_le
     return true;
 }
 
-AP_GPS_UAVCAN* AP_GPS_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id)
+AP_GPS_UAVCAN* AP_GPS_UAVCAN::get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id)
 {
-    if (ap_uavcan == nullptr) {
+    if (ap_dronecan == nullptr) {
         return nullptr;
     }
 
     for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
         if (_detected_modules[i].driver != nullptr &&
-            _detected_modules[i].ap_uavcan == ap_uavcan && 
+            _detected_modules[i].ap_dronecan == ap_dronecan && 
             _detected_modules[i].node_id == node_id) {
             return _detected_modules[i].driver;
         }
@@ -271,7 +271,7 @@ AP_GPS_UAVCAN* AP_GPS_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t n
     bool already_detected = false;
     // Check if there's an empty spot for possible registeration
     for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
-        if (_detected_modules[i].ap_uavcan == ap_uavcan && _detected_modules[i].node_id == node_id) {
+        if (_detected_modules[i].ap_dronecan == ap_dronecan && _detected_modules[i].node_id == node_id) {
             // Already Detected
             already_detected = true;
             break;
@@ -279,8 +279,8 @@ AP_GPS_UAVCAN* AP_GPS_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t n
     }
     if (!already_detected) {
         for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
-            if (_detected_modules[i].ap_uavcan == nullptr) {
-                _detected_modules[i].ap_uavcan = ap_uavcan;
+            if (_detected_modules[i].ap_dronecan == nullptr) {
+                _detected_modules[i].ap_dronecan = ap_dronecan;
                 _detected_modules[i].node_id = node_id;
                 // Just set the Node ID in order of appearance
                 // This will be used to set select ids
@@ -593,41 +593,41 @@ void AP_GPS_UAVCAN::clear_RTCMV3(void)
 
 #endif // GPS_MOVING_BASELINE
 
-void AP_GPS_UAVCAN::handle_fix2_msg_trampoline(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const uavcan_equipment_gnss_Fix2& msg)
+void AP_GPS_UAVCAN::handle_fix2_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_gnss_Fix2& msg)
 {
     WITH_SEMAPHORE(_sem_registry);
 
-    AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_uavcan, transfer.source_node_id);
+    AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id);
     if (driver != nullptr) {
         driver->handle_fix2_msg(msg, transfer.timestamp_usec);
     }
 }
 
-void AP_GPS_UAVCAN::handle_aux_msg_trampoline(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const uavcan_equipment_gnss_Auxiliary& msg)
+void AP_GPS_UAVCAN::handle_aux_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_gnss_Auxiliary& msg)
 {
     WITH_SEMAPHORE(_sem_registry);
 
-    AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_uavcan, transfer.source_node_id);
+    AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id);
     if (driver != nullptr) {
         driver->handle_aux_msg(msg);
     }
 }
 
-void AP_GPS_UAVCAN::handle_heading_msg_trampoline(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const ardupilot_gnss_Heading& msg)
+void AP_GPS_UAVCAN::handle_heading_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_gnss_Heading& msg)
 {
     WITH_SEMAPHORE(_sem_registry);
 
-    AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_uavcan, transfer.source_node_id);
+    AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id);
     if (driver != nullptr) {
         driver->handle_heading_msg(msg);
     }
 }
 
-void AP_GPS_UAVCAN::handle_status_msg_trampoline(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const ardupilot_gnss_Status& msg)
+void AP_GPS_UAVCAN::handle_status_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_gnss_Status& msg)
 {
     WITH_SEMAPHORE(_sem_registry);
 
-    AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_uavcan, transfer.source_node_id);
+    AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id);
     if (driver != nullptr) {
         driver->handle_status_msg(msg);
     }
@@ -635,20 +635,20 @@ void AP_GPS_UAVCAN::handle_status_msg_trampoline(AP_UAVCAN *ap_uavcan, const Can
 
 #if GPS_MOVING_BASELINE
 // Moving Baseline msg trampoline
-void AP_GPS_UAVCAN::handle_moving_baseline_msg_trampoline(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const ardupilot_gnss_MovingBaselineData& msg)
+void AP_GPS_UAVCAN::handle_moving_baseline_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_gnss_MovingBaselineData& msg)
 {
     WITH_SEMAPHORE(_sem_registry);
-    AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_uavcan, transfer.source_node_id);
+    AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id);
     if (driver != nullptr) {
         driver->handle_moving_baseline_msg(msg, transfer.source_node_id);
     }
 }
 
 // RelPosHeading msg trampoline
-void AP_GPS_UAVCAN::handle_relposheading_msg_trampoline(AP_UAVCAN *ap_uavcan, const CanardRxTransfer& transfer, const ardupilot_gnss_RelPosHeading& msg)
+void AP_GPS_UAVCAN::handle_relposheading_msg_trampoline(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_gnss_RelPosHeading& msg)
 {
     WITH_SEMAPHORE(_sem_registry);
-    AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_uavcan, transfer.source_node_id);
+    AP_GPS_UAVCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id);
     if (driver != nullptr) {
         driver->handle_relposheading_msg(msg, transfer.source_node_id);
     }
@@ -657,26 +657,26 @@ void AP_GPS_UAVCAN::handle_relposheading_msg_trampoline(AP_UAVCAN *ap_uavcan, co
 
 bool AP_GPS_UAVCAN::do_config()
 {
-    AP_UAVCAN *ap_uavcan = _detected_modules[_detected_module].ap_uavcan;
-    if (ap_uavcan == nullptr) {
+    AP_DroneCAN *ap_dronecan = _detected_modules[_detected_module].ap_dronecan;
+    if (ap_dronecan == nullptr) {
         return false;
     }
     uint8_t node_id = _detected_modules[_detected_module].node_id;
     
     switch(cfg_step) {
         case STEP_SET_TYPE:
-            ap_uavcan->get_parameter_on_node(node_id, "GPS_TYPE", &param_int_cb);
+            ap_dronecan->get_parameter_on_node(node_id, "GPS_TYPE", &param_int_cb);
             break;
         case STEP_SET_MB_CAN_TX:
             if (role != AP_GPS::GPS_Role::GPS_ROLE_NORMAL) {
-                ap_uavcan->get_parameter_on_node(node_id, "GPS_MB_ONLY_PORT", &param_int_cb);
+                ap_dronecan->get_parameter_on_node(node_id, "GPS_MB_ONLY_PORT", &param_int_cb);
             } else {
                 cfg_step++;
             }
             break;
         case STEP_SAVE_AND_REBOOT:
             if (requires_save_and_reboot) {
-                ap_uavcan->save_parameters_on_node(node_id, &param_save_cb);
+                ap_dronecan->save_parameters_on_node(node_id, &param_save_cb);
             } else {
                 cfg_step++;
             }
@@ -765,15 +765,15 @@ void AP_GPS_UAVCAN::inject_data(const uint8_t *data, uint16_t len)
     // send the data as broadcast on all UAVCAN devive ports and we
     // don't want to send duplicates
     if (_detected_module == 0 ||
-        _detected_modules[_detected_module].ap_uavcan != _detected_modules[0].ap_uavcan) {
-        _detected_modules[_detected_module].ap_uavcan->send_RTCMStream(data, len);
+        _detected_modules[_detected_module].ap_dronecan != _detected_modules[0].ap_dronecan) {
+        _detected_modules[_detected_module].ap_dronecan->send_RTCMStream(data, len);
     }
 }
 
 /*
     handle param get/set response
 */
-bool AP_GPS_UAVCAN::handle_param_get_set_response_int(AP_UAVCAN* ap_uavcan, uint8_t node_id, const char* name, int32_t &value)
+bool AP_GPS_UAVCAN::handle_param_get_set_response_int(AP_DroneCAN* ap_dronecan, uint8_t node_id, const char* name, int32_t &value)
 {
     Debug("AP_GPS_UAVCAN: param set/get response from %d %s %ld\n", node_id, name, value);
     if (strcmp(name, "GPS_TYPE") == 0 && cfg_step == STEP_SET_TYPE) {
@@ -810,13 +810,13 @@ bool AP_GPS_UAVCAN::handle_param_get_set_response_int(AP_UAVCAN* ap_uavcan, uint
     return false;
 }
 
-bool AP_GPS_UAVCAN::handle_param_get_set_response_float(AP_UAVCAN* ap_uavcan, uint8_t node_id, const char* name, float &value)
+bool AP_GPS_UAVCAN::handle_param_get_set_response_float(AP_DroneCAN* ap_dronecan, uint8_t node_id, const char* name, float &value)
 {
     Debug("AP_GPS_UAVCAN: param set/get response from %d %s %f\n", node_id, name, value);
     return false;
 }
 
-void AP_GPS_UAVCAN::handle_param_save_response(AP_UAVCAN* ap_uavcan, const uint8_t node_id, bool success)
+void AP_GPS_UAVCAN::handle_param_save_response(AP_DroneCAN* ap_dronecan, const uint8_t node_id, bool success)
 {
     Debug("AP_GPS_UAVCAN: param save response from %d %s\n", node_id, success ? "success" : "failure");
 
@@ -830,14 +830,14 @@ void AP_GPS_UAVCAN::handle_param_save_response(AP_UAVCAN* ap_uavcan, const uint8
     // Also send reboot command
     // this is ok as we are sending from UAVCAN thread context
     Debug("AP_GPS_UAVCAN: sending reboot command %d\n", node_id);
-    ap_uavcan->send_reboot_request(node_id);
+    ap_dronecan->send_reboot_request(node_id);
 }
 
 #if AP_DRONECAN_SEND_GPS
-bool AP_GPS_UAVCAN::instance_exists(const AP_UAVCAN* ap_uavcan)
+bool AP_GPS_UAVCAN::instance_exists(const AP_DroneCAN* ap_dronecan)
 {
     for (uint8_t i=0; i<ARRAY_SIZE(_detected_modules); i++) {
-        if (ap_uavcan == _detected_modules[i].ap_uavcan) {
+        if (ap_dronecan == _detected_modules[i].ap_dronecan) {
             return true;
         }
     }

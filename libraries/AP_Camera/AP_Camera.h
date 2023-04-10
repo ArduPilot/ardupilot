@@ -21,6 +21,8 @@ class AP_Camera_Servo;
 class AP_Camera_Relay;
 class AP_Camera_SoloGimbal;
 class AP_Camera_Mount;
+class AP_Camera_MAVLink;
+class AP_Camera_MAVLinkCamV2;
 
 /// @class	Camera
 /// @brief	Object managing a Photo or video camera
@@ -33,6 +35,7 @@ class AP_Camera {
     friend class AP_Camera_SoloGimbal;
     friend class AP_Camera_Mount;
     friend class AP_Camera_MAVLink;
+    friend class AP_Camera_MAVLinkCamV2;
 
 public:
 
@@ -62,6 +65,9 @@ public:
 #endif
 #if AP_CAMERA_MAVLINK_ENABLED
         MAVLINK = 5,        // MAVLink enabled camera
+#endif
+#if AP_CAMERA_MAVLINKCAMV2_ENABLED
+        MAVLINK_CAMV2 = 6,  // MAVLink camera v2
 #endif
     };
 

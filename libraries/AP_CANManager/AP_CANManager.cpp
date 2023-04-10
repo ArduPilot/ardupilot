@@ -24,7 +24,7 @@
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
-#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_DroneCAN/AP_DroneCAN.h>
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
@@ -205,14 +205,14 @@ void AP_CANManager::init()
         // Allocate the set type of Driver
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
         if (drv_type[drv_num] == Driver_Type_UAVCAN) {
-            _drivers[drv_num] = _drv_param[drv_num]._uavcan = new AP_UAVCAN(drv_num);
+            _drivers[drv_num] = _drv_param[drv_num]._uavcan = new AP_DroneCAN(drv_num);
 
             if (_drivers[drv_num] == nullptr) {
                 AP_BoardConfig::allocation_error("uavcan %d", i + 1);
                 continue;
             }
 
-            AP_Param::load_object_from_eeprom((AP_UAVCAN*)_drivers[drv_num], AP_UAVCAN::var_info);
+            AP_Param::load_object_from_eeprom((AP_DroneCAN*)_drivers[drv_num], AP_DroneCAN::var_info);
         } else
 #endif
         if (drv_type[drv_num] == Driver_Type_KDECAN) {
@@ -289,14 +289,14 @@ void AP_CANManager::init()
     WITH_SEMAPHORE(_sem);
     for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
         if ((Driver_Type) _drv_param[i]._driver_type.get() == Driver_Type_UAVCAN) {
-            _drivers[i] = _drv_param[i]._uavcan = new AP_UAVCAN(i);
+            _drivers[i] = _drv_param[i]._uavcan = new AP_DroneCAN(i);
 
             if (_drivers[i] == nullptr) {
                 AP_BoardConfig::allocation_error("uavcan %d", i + 1);
                 continue;
             }
 
-            AP_Param::load_object_from_eeprom((AP_UAVCAN*)_drivers[i], AP_UAVCAN::var_info);
+            AP_Param::load_object_from_eeprom((AP_DroneCAN*)_drivers[i], AP_DroneCAN::var_info);
             _drivers[i]->init(i, true);
             _driver_type_cache[i] = (Driver_Type) _drv_param[i]._driver_type.get();
         }
