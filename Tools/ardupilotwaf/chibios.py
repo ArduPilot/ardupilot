@@ -348,7 +348,7 @@ class generate_apj(Task.Task):
 class build_abin(Task.Task):
     '''build an abin file for skyviper firmware upload via web UI'''
     color='CYAN'
-    run_str='${TOOLS_SCRIPTS}/make_abin.sh ${SRC}.bin ${SRC}.abin'
+    run_str='${TOOLS_SCRIPTS}/make_abin.sh ${SRC} ${TGT}'
     always_run = True
     def keyword(self):
         return "Generating"
@@ -400,7 +400,7 @@ def chibios_firmware(self):
 
     if self.env.BUILD_ABIN:
         abin_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.abin').name)
-        abin_task = self.create_task('build_abin', src=link_output, tgt=abin_target)
+        abin_task = self.create_task('build_abin', src=bin_target, tgt=abin_target)
         abin_task.set_run_after(generate_apj_task)
 
     cleanup_task = self.create_task('build_normalized_bins', src=bin_target)
