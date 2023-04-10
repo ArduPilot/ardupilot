@@ -17,6 +17,27 @@
 
 #include "CANIface.h"
 #include "system.h"
+#include <tiny-AES-c/aes.h>
+
+const uint8_t encryption_key[16] = { 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0 };
+
+void encrypt_message(uint8_t* message, uint32_t message_length, const uint8_t* key) {
+    struct AES_ctx ctx;
+    AES_init_ctx(&ctx, key);
+
+    for (uint32_t i = 0; i < message_length; i += 16) {
+        AES_ECB_encrypt(&ctx, message + i);
+    }
+}
+
+void decrypt_message(uint8_t* message, uint32_t message_length, const uint8_t* key) {
+    struct AES_ctx ctx;
+    AES_init_ctx(&ctx, key);
+
+    for (uint32_t i = 0; i < message_length; i += 16) {
+        AES_ECB_decrypt(&ctx, message + i);
+    }
+}
 
 bool AP_HAL::CANFrame::priorityHigherThan(const CANFrame& rhs) const
 {
@@ -58,6 +79,8 @@ bool AP_HAL::CANFrame::priorityHigherThan(const CANFrame& rhs) const
  */
 int16_t AP_HAL::CANIface::receive(CANFrame& out_frame, uint64_t& out_ts_monotonic, CanIOFlags& out_flags)
 {
+    decrypt_message(out_frame.data, out_frame.dlc, encryption_key);
+
     auto cb = frame_callback;
     if (cb && (out_flags & IsMAVCAN)==0) {
         cb(get_iface_num(), out_frame);
@@ -68,8 +91,10 @@ int16_t AP_HAL::CANIface::receive(CANFrame& out_frame, uint64_t& out_ts_monotoni
 /*
   parent class send handling for MAVCAN
  */
-int16_t AP_HAL::CANIface::send(const CANFrame& frame, uint64_t tx_deadline, CanIOFlags flags)
+int16_t AP_HAL::CANIface::send(CANFrame& frame, uint64_t tx_deadline, CanIOFlags flags)
 {
+    encrypt_message(frame.data, frame.dlc, encryption_key);
+
     auto cb = frame_callback;
     if (cb) {
         if ((flags & IsMAVCAN) == 0) {

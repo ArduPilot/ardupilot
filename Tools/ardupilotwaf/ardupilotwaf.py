@@ -111,6 +111,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Torqeedo',
     'AP_OpenDroneID',
     'AP_CheckFirmware',
+    'tiny-AES-c',
 ]
 
 def get_legacy_defines(sketch_name, bld):
