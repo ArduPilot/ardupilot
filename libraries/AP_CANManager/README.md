@@ -18,10 +18,6 @@ This test simply creates a uavcan node allocation client and tries to get node a
 
 This test simply emulates a ToshibaCan ESC on a bus and handles the data sent by Toshiba CAN driver, and and also responds with ESC telemetry.
 
-**5: TEST_KDE_CAN**
-
-This test simply emulates a KDECAN ESC on a bus and handles the data sent by KDE CAN driver, and and also responds with ESC telemetry. Need to supply this command `long MAV_CMD_PREFLIGHT_UAVCAN 1` after enabling KDECAN because need to do Enumeration before use.
-
 A lot more tests will be needing to be added overtime to ensure robustness and maintainability of CAN Ecosystem.
 
 **Testing under SITL**
