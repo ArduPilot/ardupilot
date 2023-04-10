@@ -1,5 +1,15 @@
 APM:Sub Release Notes:
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.1 Beta5 10-April-2023
+
+ - drop MMC5xx3 sample rate to 100Hz
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.1 Beta4 1-December-2022
+
+ - Introduce CONTROL_FRAME parameter, allowing users to switch control frame for yaw
+ - Fix missing deadzone in yaw input for AUTO, SURFACE, GUIDED, and CIRCLE modes
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 4.1.1 Beta3 1-December-2022
