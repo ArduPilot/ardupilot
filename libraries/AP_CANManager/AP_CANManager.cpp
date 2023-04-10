@@ -521,7 +521,7 @@ void AP_CANManager::process_frame_buffer(void)
         }
         const int16_t retcode = hal.can[frame.bus]->send(frame.frame,
                                                          AP_HAL::native_micros64() + timeout_us,
-                                                         frame.frame.isCanFDFrame()?AP_HAL::CANIface::IsMAVCAN:0);
+                                                         AP_HAL::CANIface::IsMAVCAN);
         if (retcode == 0) {
             // no space in the CAN output slots, try again later
             break;
