@@ -216,16 +216,10 @@ void AP_CANManager::init()
         } else
 #endif
         if (drv_type[drv_num] == Driver_Type_KDECAN) {
-#if (APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub))
-            // To be replaced with macro saying if KDECAN library is included
-            _drivers[drv_num] = _drv_param[drv_num]._kdecan = new AP_KDECAN;
-
-            if (_drivers[drv_num] == nullptr) {
-                AP_BoardConfig::allocation_error("KDECAN %d", drv_num + 1);
-                continue;
-            }
-
-            AP_Param::load_object_from_eeprom((AP_KDECAN*)_drivers[drv_num], AP_KDECAN::var_info);
+#if AP_KDECAN_ENABLED
+            // cache the driver type so we can detect that it is in the params via get_driver_type().
+            // Normally it is cached after init but this driver's init is handled by CANSensor later on
+            _driver_type_cache[drv_num] = drv_type[drv_num];
 #endif
         } else if (drv_type[drv_num] == Driver_Type_PiccoloCAN) {
 #if HAL_PICCOLO_CAN_ENABLE
