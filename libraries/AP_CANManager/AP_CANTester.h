@@ -40,7 +40,6 @@ public:
 
     void init(uint8_t driver_index, bool enable_filters) override;
     bool add_interface(AP_HAL::CANIface* can_iface) override;
-    bool run_kdecan_enumeration(bool start_stop);
 
     static CANTester *get_cantester(uint8_t driver_index);
 
@@ -51,8 +50,8 @@ private:
         TEST_LOOPBACK,
         TEST_BUSOFF_RECOVERY,
         TEST_UAVCAN_DNA,
-        TEST_KDE_CAN,
-        TEST_UAVCAN_ESC,
+
+        TEST_UAVCAN_ESC = 6,
         TEST_UAVCAN_FD_ESC,
         TEST_END,
     };
@@ -78,8 +77,6 @@ private:
 
     bool test_uavcan_dna();
 
-    bool test_kdecan();
-
     bool test_uavcan_esc(bool enable_canfd);
 
     // write frame on CAN bus, returns true on success
@@ -104,7 +101,6 @@ private:
     AP_Int32 _test_id;
     AP_Int32 _loop_rate;
     uint8_t _num_ifaces;
-    bool _kdecan_enumeration;
 };
 #endif //#if HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES && HAL_MAX_CAN_PROTOCOL_DRIVERS
 

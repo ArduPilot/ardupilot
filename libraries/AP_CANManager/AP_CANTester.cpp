@@ -30,7 +30,6 @@
 #include <uavcan/equipment/esc/Status.hpp>
 #include <uavcan/equipment/esc/RawCommand.hpp>
 #include <AP_HAL/utility/sparse-endian.h>
-#include "AP_CANTester_KDECAN.h"
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo CANTester::var_info[] = {
@@ -38,7 +37,7 @@ const AP_Param::GroupInfo CANTester::var_info[] = {
     // @DisplayName: CAN Test Index
     // @Description: Selects the Index of Test that needs to be run recursively, this value gets reset to 0 at boot.
     // @Range: 0 4
-    // @Values: 0:TEST_NONE, 1:TEST_LOOPBACK,2:TEST_BUSOFF_RECOVERY,3:TEST_UAVCAN_DNA,5:TEST_KDE_CAN, 6:TEST_UAVCAN_ESC,  7:TEST_UAVCAN_FD_ESC
+    // @Values: 0:TEST_NONE, 1:TEST_LOOPBACK,2:TEST_BUSOFF_RECOVERY,3:TEST_UAVCAN_DNA,6:TEST_UAVCAN_ESC,7:TEST_UAVCAN_FD_ESC
     // @User: Advanced
     AP_GROUPINFO("ID", 1, CANTester, _test_id, 0),
 
@@ -190,18 +189,6 @@ void CANTester::main_thread()
                 }
             } else {
                 gcs().send_text(MAV_SEVERITY_ALERT, "Only one iface needs to be set for DroneCAN_DNA_TEST");
-            }
-            break;
-        case CANTester::TEST_KDE_CAN:
-            if (_can_ifaces[1] == nullptr) {
-                gcs().send_text(MAV_SEVERITY_ALERT, "********Running KDE CAN Test********");
-                if (test_kdecan()) {
-                    gcs().send_text(MAV_SEVERITY_ALERT, "********KDE CAN Test Pass********");
-                } else {
-                    gcs().send_text(MAV_SEVERITY_ALERT, "********KDE CAN Test Fail********");
-                }
-            } else {
-                gcs().send_text(MAV_SEVERITY_ALERT, "Only one iface needs to be set for TEST_KDE_CAN");
             }
             break;
         case CANTester::TEST_UAVCAN_ESC:
@@ -497,47 +484,6 @@ bool CANTester::test_uavcan_dna()
     }
     delete client;
     delete node;
-    return true;
-}
-
-/*****************************************
- *              KDE CAN Test             *
- *****************************************/
-bool CANTester::test_kdecan()
-{
-    AP_CANTester_KDECAN* kdecan_test = new AP_CANTester_KDECAN;
-    if (kdecan_test == nullptr) {
-        gcs().send_text(MAV_SEVERITY_ERROR, "Failed to allocate KDECAN Tester");
-        return false;
-    }
-    kdecan_test->init(_can_ifaces[0]);
-
-    while (true) {
-        kdecan_test->loop();
-        static uint32_t last_print_ms;
-        static uint32_t last_enumsend_ms;
-        static uint8_t enum_count = 0;
-        uint32_t now = AP_HAL::millis();
-        if (now - last_print_ms >= 1000) {
-            last_print_ms = now;
-            kdecan_test->print_stats();
-        }
-        if (!_kdecan_enumeration) {
-            enum_count = 0;
-        }
-        if (now - last_enumsend_ms >= 2000 && enum_count < 4 && _kdecan_enumeration) {
-            last_enumsend_ms = now;
-            if (kdecan_test->send_enumeration(enum_count)) {
-                enum_count++;
-            }
-        }
-    }
-    return true;
-}
-
-bool CANTester::run_kdecan_enumeration(bool start_stop)
-{
-    _kdecan_enumeration = start_stop;
     return true;
 }
 
