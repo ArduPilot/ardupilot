@@ -319,6 +319,7 @@ public:
         NONE = 0,
         LOG_WHILE_DISARMED = 1,
         LOG_WHILE_DISARMED_NOT_USB = 2,
+        LOG_WHILE_DISARMED_DISCARD = 3,
     };
 
     // parameter support
