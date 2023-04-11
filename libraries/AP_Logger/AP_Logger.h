@@ -315,13 +315,19 @@ public:
 
     vehicle_startup_message_Writer _vehicle_messages;
 
+    enum class LogDisarmed : uint8_t {
+        NONE = 0,
+        LOG_WHILE_DISARMED = 1,
+        LOG_WHILE_DISARMED_NOT_USB = 2,
+    };
+
     // parameter support
     static const struct AP_Param::GroupInfo        var_info[];
     struct {
         AP_Int8 backend_types;
         AP_Int16 file_bufsize; // in kilobytes
         AP_Int8 file_disarm_rot;
-        AP_Int8 log_disarmed;
+        AP_Enum<LogDisarmed> log_disarmed;
         AP_Int8 log_replay;
         AP_Int8 mav_bufsize; // in kilobytes
         AP_Int16 file_timeout; // in seconds
