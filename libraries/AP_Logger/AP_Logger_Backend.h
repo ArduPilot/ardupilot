@@ -12,15 +12,16 @@ class LoggerMessageWriter_DFLogStart;
 class AP_Logger_RateLimiter
 {
 public:
-    AP_Logger_RateLimiter(const AP_Logger &_front, const AP_Float &_limit_hz);
+    AP_Logger_RateLimiter(const AP_Logger &_front, const AP_Float &_limit_hz, const AP_Float &_disarm_limit_hz);
 
     // return true if message passes the rate limit test
     bool should_log(uint8_t msgid, bool writev_streaming);
-    bool should_log_streaming(uint8_t msgid);
+    bool should_log_streaming(uint8_t msgid, float rate_hz);
 
 private:
     const AP_Logger &front;
     const AP_Float &rate_limit_hz;
+    const AP_Float &disarm_rate_limit_hz;
 
     // time in ms we last sent this message
     uint16_t last_send_ms[256];

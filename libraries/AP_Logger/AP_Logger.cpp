@@ -163,6 +163,15 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_BLK_RATEMAX", 10, AP_Logger, _params.blk_ratemax, 0),
 #endif
+
+    // @Param: _DARM_RATEMAX
+    // @DisplayName: Maximum logging rate when disarmed
+    // @Description: This sets the maximum rate that streaming log messages will be logged to any backend when disarmed. A value of zero means that the normal backend rate limit is applied.
+    // @Units: Hz
+    // @Range: 0 1000
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("_DARM_RATEMAX",  11, AP_Logger, _params.disarm_ratemax, 0),
     
     AP_GROUPEND
 };
@@ -1461,19 +1470,11 @@ void AP_Logger::Write_Error(LogErrorSubsystem sub_system,
 }
 
 /*
-  return true if we should log while disarmed
+  return true if we are in a logging persistance state, where we keep
+  logging after a disarm or an arming failure
  */
-bool AP_Logger::log_while_disarmed(void) const
+bool AP_Logger::in_log_persistance(void) const
 {
-    if (_force_log_disarmed) {
-        return true;
-    }
-    if (_params.log_disarmed == LogDisarmed::LOG_WHILE_DISARMED ||
-        _params.log_disarmed == LogDisarmed::LOG_WHILE_DISARMED_DISCARD ||
-        (_params.log_disarmed == LogDisarmed::LOG_WHILE_DISARMED_NOT_USB && !hal.gpio->usb_connected())) {
-        return true;
-    }
-
     uint32_t now = AP_HAL::millis();
     uint32_t persist_ms = HAL_LOGGER_ARM_PERSIST*1000U;
     if (_force_long_log_persist) {
@@ -1493,6 +1494,24 @@ bool AP_Logger::log_while_disarmed(void) const
     }
 
     return false;
+}
+
+
+/*
+  return true if we should log while disarmed
+ */
+bool AP_Logger::log_while_disarmed(void) const
+{
+    if (_force_log_disarmed) {
+        return true;
+    }
+    if (_params.log_disarmed == LogDisarmed::LOG_WHILE_DISARMED ||
+        _params.log_disarmed == LogDisarmed::LOG_WHILE_DISARMED_DISCARD ||
+        (_params.log_disarmed == LogDisarmed::LOG_WHILE_DISARMED_NOT_USB && !hal.gpio->usb_connected())) {
+        return true;
+    }
+
+    return in_log_persistance();
 }
 
 #if HAL_LOGGER_FILE_CONTENTS_ENABLED

@@ -311,6 +311,7 @@ public:
     void set_force_log_disarmed(bool force_logging) { _force_log_disarmed = force_logging; }
     void set_long_log_persist(bool b) { _force_long_log_persist = b; }
     bool log_while_disarmed(void) const;
+    bool in_log_persistance(void) const;
     uint8_t log_replay(void) const { return _params.log_replay; }
 
     vehicle_startup_message_Writer _vehicle_messages;
@@ -336,6 +337,7 @@ public:
         AP_Float file_ratemax;
         AP_Float mav_ratemax;
         AP_Float blk_ratemax;
+        AP_Float disarm_ratemax;
     } _params;
 
     const struct LogStructure *structure(uint16_t num) const;
