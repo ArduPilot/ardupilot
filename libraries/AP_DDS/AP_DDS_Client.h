@@ -7,6 +7,7 @@
 #include "generated/Time.h"
 #include "AP_DDS_Generic_Fn_T.h"
 #include "generated/NavSatFix.h"
+#include "generated/Log.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Scheduler.h>
@@ -41,6 +42,7 @@ private:
     // Topic
     builtin_interfaces_msg_Time time_topic;
     sensor_msgs_msg_NavSatFix nav_sat_fix_topic;
+    rcl_interfaces_msg_Log log_topic;
 
     HAL_Semaphore csem;
 
@@ -75,6 +77,9 @@ public:
     void write_time_topic();
     //! @brief Serialize the current nav_sat_fix state and publish to to the IO stream(s)
     void write_nav_sat_fix_topic();
+    //! @brief Write a log message via DDS
+    void write_log(rcl_interfaces_msg_Log& log);
+
     //! @brief Update the internally stored DDS messages with latest data
     void update();
 

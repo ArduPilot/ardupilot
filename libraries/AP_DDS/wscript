@@ -76,6 +76,7 @@ def build(bld):
         'BatteryState.idl',
         'Duration.idl',
         'Header.idl',
+        'Log.idl',
         'NavSatFix.idl',
         'NavSatStatus.idl',
         'Point.idl',

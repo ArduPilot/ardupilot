@@ -58,4 +58,32 @@
       </historyQos>
     </topic>
   </data_writer>
+  <topic profile_name="rosout__t">
+    <name>rt/rosout</name>
+    <dataType>rcl_interfaces::msg::dds_::Log_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>5</depth>
+    </historyQos>
+  </topic>
+  <data_writer profile_name="rosout__dw">
+    <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+    <qos>
+      <reliability>
+        <kind>RELIABLE</kind>
+      </reliability>
+      <durability>
+        <kind>TRANSIENT_LOCAL</kind>
+      </durability>
+    </qos>
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/rosout</name>
+      <dataType>rcl_interfaces::msg::dds_::Log_</dataType>
+      <historyQos>
+        <kind>KEEP_LAST</kind>
+        <depth>5</depth>
+      </historyQos>
+    </topic>
+  </data_writer>
 </profiles>
