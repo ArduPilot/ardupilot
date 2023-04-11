@@ -90,8 +90,8 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
 
     // @Param: _DISARMED
     // @DisplayName: Enable logging while disarmed
-    // @Description: If LOG_DISARMED is set to 1 then logging will be enabled at all times including when disarmed. Logging before arming can make for very large logfiles but can help a lot when tracking down startup issues and is necessary if logging of EKF replay data is selected via the LOG_REPLAY parameter. If LOG_DISARMED is set to 2, then logging will be enabled when disarmed, but not if a USB connection is detected. This can be used to prevent unwanted data logs being generated when the vehicle is connected via USB for log downloading or parameter changes.
-    // @Values: 0:Disabled,1:Enabled,2:Disabled on USB connection
+    // @Description: If LOG_DISARMED is set to 1 then logging will be enabled at all times including when disarmed. Logging before arming can make for very large logfiles but can help a lot when tracking down startup issues and is necessary if logging of EKF replay data is selected via the LOG_REPLAY parameter. If LOG_DISARMED is set to 2, then logging will be enabled when disarmed, but not if a USB connection is detected. This can be used to prevent unwanted data logs being generated when the vehicle is connected via USB for log downloading or parameter changes. If LOG_DISARMED is set to 3 then logging will happen while disarmed, but if the vehicle never arms then the logs using the filesystem backend will be discarded on the next boot.
+    // @Values: 0:Disabled,1:Enabled,2:Disabled on USB connection,3:Discard log on reboot if never armed
     // @User: Standard
     AP_GROUPINFO("_DISARMED",  2, AP_Logger, _params.log_disarmed,       0),
 
@@ -1469,6 +1469,7 @@ bool AP_Logger::log_while_disarmed(void) const
         return true;
     }
     if (_params.log_disarmed == LogDisarmed::LOG_WHILE_DISARMED ||
+        _params.log_disarmed == LogDisarmed::LOG_WHILE_DISARMED_DISCARD ||
         (_params.log_disarmed == LogDisarmed::LOG_WHILE_DISARMED_NOT_USB && !hal.gpio->usb_connected())) {
         return true;
     }
