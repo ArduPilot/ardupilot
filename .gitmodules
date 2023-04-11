@@ -1,6 +1,3 @@
-[submodule "modules/uavcan"]
-	path = modules/uavcan
-	url = https://github.com/DroneCAN/libuavcan.git
 [submodule "modules/waf"]
 	path = modules/waf
 	url = https://github.com/ArduPilot/waf.git

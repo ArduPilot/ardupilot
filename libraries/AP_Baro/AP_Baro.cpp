@@ -43,7 +43,7 @@
 #include "AP_Baro_DPS280.h"
 #include "AP_Baro_BMP388.h"
 #include "AP_Baro_Dummy.h"
-#include "AP_Baro_UAVCAN.h"
+#include "AP_Baro_DroneCAN.h"
 #include "AP_Baro_MSP.h"
 #include "AP_Baro_ExternalAHRS.h"
 #include "AP_Baro_ICP101XX.h"
@@ -613,10 +613,10 @@ void AP_Baro::init(void)
 #endif
 #endif
 
-#if AP_BARO_UAVCAN_ENABLED
+#if AP_BARO_DRONECAN_ENABLED
     // Detect UAVCAN Modules, try as many times as there are driver slots
     for (uint8_t i = 0; i < BARO_MAX_DRIVERS; i++) {
-        ADD_BACKEND(AP_Baro_UAVCAN::probe(*this));
+        ADD_BACKEND(AP_Baro_DroneCAN::probe(*this));
     }
 #endif
 

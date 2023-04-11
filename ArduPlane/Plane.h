@@ -244,8 +244,14 @@ private:
     AP_OpticalFlow optflow;
 #endif
 
+#if HAL_RALLY_ENABLED
     // Rally Ponints
     AP_Rally rally;
+#endif
+
+    // returns a Location for a rally point or home; if
+    // HAL_RALLY_ENABLED is false, just home.
+    Location calc_best_rally_or_home_location(const Location &current_loc, float rtl_home_alt_amsl_cm) const;
 
 #if OSD_ENABLED || OSD_PARAM_ENABLED
     AP_OSD osd;

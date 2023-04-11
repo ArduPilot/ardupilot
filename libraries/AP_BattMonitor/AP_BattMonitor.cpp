@@ -23,8 +23,8 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
-#include "AP_BattMonitor_UAVCAN.h"
+#if HAL_ENABLE_DRONECAN_DRIVERS
+#include "AP_BattMonitor_DroneCAN.h"
 #endif
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -52,7 +52,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Group: _
     // @Path: AP_BattMonitor_Sum.cpp
     // @Group: _
-    // @Path: AP_BattMonitor_UAVCAN.cpp
+    // @Path: AP_BattMonitor_DroneCAN.cpp
     // @Group: _
     // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
     // @Group: _
@@ -71,7 +71,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Group: 2_
     // @Path: AP_BattMonitor_Sum.cpp
     // @Group: 2_
-    // @Path: AP_BattMonitor_UAVCAN.cpp
+    // @Path: AP_BattMonitor_DroneCAN.cpp
     // @Group: 2_
     // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
     // @Group: 2_
@@ -91,7 +91,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Group: 3_
     // @Path: AP_BattMonitor_Sum.cpp
     // @Group: 3_
-    // @Path: AP_BattMonitor_UAVCAN.cpp
+    // @Path: AP_BattMonitor_DroneCAN.cpp
     // @Group: 3_
     // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
     // @Group: 3_
@@ -111,7 +111,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Group: 4_
     // @Path: AP_BattMonitor_Sum.cpp
     // @Group: 4_
-    // @Path: AP_BattMonitor_UAVCAN.cpp
+    // @Path: AP_BattMonitor_DroneCAN.cpp
     // @Group: 4_
     // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
     // @Group: 4_
@@ -131,7 +131,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Group: 5_
     // @Path: AP_BattMonitor_Sum.cpp
     // @Group: 5_
-    // @Path: AP_BattMonitor_UAVCAN.cpp
+    // @Path: AP_BattMonitor_DroneCAN.cpp
     // @Group: 5_
     // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
     // @Group: 5_
@@ -151,7 +151,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Group: 6_
     // @Path: AP_BattMonitor_Sum.cpp
     // @Group: 6_
-    // @Path: AP_BattMonitor_UAVCAN.cpp
+    // @Path: AP_BattMonitor_DroneCAN.cpp
     // @Group: 6_
     // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
     // @Group: 6_
@@ -171,7 +171,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Group: 7_
     // @Path: AP_BattMonitor_Sum.cpp
     // @Group: 7_
-    // @Path: AP_BattMonitor_UAVCAN.cpp
+    // @Path: AP_BattMonitor_DroneCAN.cpp
     // @Group: 7_
     // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
     // @Group: 7_
@@ -191,7 +191,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Group: 8_
     // @Path: AP_BattMonitor_Sum.cpp
     // @Group: 8_
-    // @Path: AP_BattMonitor_UAVCAN.cpp
+    // @Path: AP_BattMonitor_DroneCAN.cpp
     // @Group: 8_
     // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
     // @Group: 8_
@@ -211,7 +211,7 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Group: 9_
     // @Path: AP_BattMonitor_Sum.cpp
     // @Group: 9_
-    // @Path: AP_BattMonitor_UAVCAN.cpp
+    // @Path: AP_BattMonitor_DroneCAN.cpp
     // @Group: 9_
     // @Path: AP_BattMonitor_FuelLevel_Analog.cpp
     // @Group: 9_
@@ -266,10 +266,12 @@ AP_BattMonitor::init()
         state[instance].instance = instance;
 
         switch (get_type(instance)) {
+#if AP_BATTERY_ANALOG_ENABLED
             case Type::ANALOG_VOLTAGE_ONLY:
             case Type::ANALOG_VOLTAGE_AND_CURRENT:
                 drivers[instance] = new AP_BattMonitor_Analog(*this, state[instance], _params[instance]);
                 break;
+#endif
 #if AP_BATTERY_SMBUS_SOLO_ENABLED
             case Type::SOLO:
                 drivers[instance] = new AP_BattMonitor_SMBus_Solo(*this, state[instance], _params[instance]);
@@ -310,7 +312,7 @@ AP_BattMonitor::init()
                 break;
             case Type::UAVCAN_BatteryInfo:
 #if AP_BATTERY_UAVCAN_BATTERYINFO_ENABLED
-                drivers[instance] = new AP_BattMonitor_UAVCAN(*this, state[instance], AP_BattMonitor_UAVCAN::UAVCAN_BATTERY_INFO, _params[instance]);
+                drivers[instance] = new AP_BattMonitor_DroneCAN(*this, state[instance], AP_BattMonitor_DroneCAN::UAVCAN_BATTERY_INFO, _params[instance]);
 #endif
                 break;
             case Type::BLHeliESC:

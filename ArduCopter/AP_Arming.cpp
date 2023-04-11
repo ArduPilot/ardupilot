@@ -33,12 +33,6 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
         return false;
     }
 
-    // if we are using motor Estop switch, it must not be in Estop position
-    if (SRV_Channels::get_emergency_stop()){
-        check_failed(display_failure, "Motor Emergency Stopped");
-        return false;
-    }
-
     if (!disarm_switch_checks(display_failure)) {
         return false;
     }

@@ -18,7 +18,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_ENABLE_DRONECAN_DRIVERS
 
 #include "AP_Canard_iface.h"
 #include <AP_CANManager/AP_CANManager.h>
@@ -31,39 +31,39 @@
 #include <canard/service_client.h>
 #include <canard/service_server.h>
 #include <stdio.h>
-#include "AP_UAVCAN_DNA_Server.h"
+#include "AP_DroneCAN_DNA_Server.h"
 #include <canard.h>
 #include <dronecan_msgs.h>
 
-#ifndef UAVCAN_SRV_NUMBER
-#define UAVCAN_SRV_NUMBER NUM_SERVO_CHANNELS
+#ifndef DRONECAN_SRV_NUMBER
+#define DRONECAN_SRV_NUMBER NUM_SERVO_CHANNELS
 #endif
 
 #ifndef AP_DRONECAN_SEND_GPS
 #define AP_DRONECAN_SEND_GPS (BOARD_FLASH_SIZE > 1024)
 #endif
 
-#define AP_UAVCAN_SW_VERS_MAJOR 1
-#define AP_UAVCAN_SW_VERS_MINOR 0
+#define AP_DRONECAN_SW_VERS_MAJOR 1
+#define AP_DRONECAN_SW_VERS_MINOR 0
 
-#define AP_UAVCAN_HW_VERS_MAJOR 1
-#define AP_UAVCAN_HW_VERS_MINOR 0
+#define AP_DRONECAN_HW_VERS_MAJOR 1
+#define AP_DRONECAN_HW_VERS_MINOR 0
 
-#define AP_UAVCAN_MAX_LED_DEVICES 4
+#define AP_DRONECAN_MAX_LED_DEVICES 4
 
 // fwd-declare callback classes
-class AP_UAVCAN_DNA_Server;
+class AP_DroneCAN_DNA_Server;
 
-class AP_UAVCAN : public AP_CANDriver, public AP_ESC_Telem_Backend {
-    friend class AP_UAVCAN_DNA_Server;
+class AP_DroneCAN : public AP_CANDriver, public AP_ESC_Telem_Backend {
+    friend class AP_DroneCAN_DNA_Server;
 public:
-    AP_UAVCAN(const int driver_index);
-    ~AP_UAVCAN();
+    AP_DroneCAN(const int driver_index);
+    ~AP_DroneCAN();
 
     static const struct AP_Param::GroupInfo var_info[];
 
     // Return uavcan from @driver_index or nullptr if it's not ready or doesn't exist
-    static AP_UAVCAN *get_uavcan(uint8_t driver_index);
+    static AP_DroneCAN *get_dronecan(uint8_t driver_index);
     bool prearm_check(char* fail_msg, uint8_t fail_msg_len) const;
 
     void init(uint8_t driver_index, bool enable_filters) override;
@@ -71,9 +71,9 @@ public:
 
     uint8_t get_driver_index() const { return _driver_index; }
 
-    FUNCTOR_TYPEDEF(ParamGetSetIntCb, bool, AP_UAVCAN*, const uint8_t, const char*, int32_t &);
-    FUNCTOR_TYPEDEF(ParamGetSetFloatCb, bool, AP_UAVCAN*, const uint8_t, const char*, float &);
-    FUNCTOR_TYPEDEF(ParamSaveCb, void, AP_UAVCAN*,  const uint8_t, bool);
+    FUNCTOR_TYPEDEF(ParamGetSetIntCb, bool, AP_DroneCAN*, const uint8_t, const char*, int32_t &);
+    FUNCTOR_TYPEDEF(ParamGetSetFloatCb, bool, AP_DroneCAN*, const uint8_t, const char*, float &);
+    FUNCTOR_TYPEDEF(ParamSaveCb, void, AP_DroneCAN*,  const uint8_t, bool);
 
     void send_node_status();
 
@@ -181,7 +181,7 @@ private:
 
     uint32_t *mem_pool;
 
-    AP_UAVCAN_DNA_Server _dna_server;
+    AP_DroneCAN_DNA_Server _dna_server;
 
     uint8_t _driver_index;
 
@@ -192,7 +192,7 @@ private:
         uint16_t pulse;
         bool esc_pending;
         bool servo_pending;
-    } _SRV_conf[UAVCAN_SRV_NUMBER];
+    } _SRV_conf[DRONECAN_SRV_NUMBER];
 
     uint32_t _esc_send_count;
     uint32_t _srv_send_count;
@@ -214,7 +214,7 @@ private:
     };
 
     struct {
-        led_device devices[AP_UAVCAN_MAX_LED_DEVICES];
+        led_device devices[AP_DRONECAN_MAX_LED_DEVICES];
         uint8_t devices_count;
         uint64_t last_update;
     } _led_conf;
@@ -230,7 +230,7 @@ private:
     } _buzzer;
 
 #if AP_DRONECAN_SEND_GPS
-    // send GNSS Fix and yaw, same thing AP_GPS_UAVCAN would receive
+    // send GNSS Fix and yaw, same thing AP_GPS_DroneCAN would receive
     void gnss_send_fix();
     void gnss_send_yaw();
     
@@ -281,38 +281,38 @@ private:
     Canard::Publisher<ardupilot_gnss_Status> gnss_status{canard_iface};
 #endif
     // incoming messages
-    Canard::ObjCallback<AP_UAVCAN, ardupilot_indication_Button> safety_button_cb{this, &AP_UAVCAN::handle_button};
+    Canard::ObjCallback<AP_DroneCAN, ardupilot_indication_Button> safety_button_cb{this, &AP_DroneCAN::handle_button};
     Canard::Subscriber<ardupilot_indication_Button> safety_button_listener{safety_button_cb, _driver_index};
 
-    Canard::ObjCallback<AP_UAVCAN, ardupilot_equipment_trafficmonitor_TrafficReport> traffic_report_cb{this, &AP_UAVCAN::handle_traffic_report};
+    Canard::ObjCallback<AP_DroneCAN, ardupilot_equipment_trafficmonitor_TrafficReport> traffic_report_cb{this, &AP_DroneCAN::handle_traffic_report};
     Canard::Subscriber<ardupilot_equipment_trafficmonitor_TrafficReport> traffic_report_listener{traffic_report_cb, _driver_index};
 
-    Canard::ObjCallback<AP_UAVCAN, uavcan_equipment_actuator_Status> actuator_status_cb{this, &AP_UAVCAN::handle_actuator_status};
+    Canard::ObjCallback<AP_DroneCAN, uavcan_equipment_actuator_Status> actuator_status_cb{this, &AP_DroneCAN::handle_actuator_status};
     Canard::Subscriber<uavcan_equipment_actuator_Status> actuator_status_listener{actuator_status_cb, _driver_index};
 
-    Canard::ObjCallback<AP_UAVCAN, uavcan_equipment_esc_Status> esc_status_cb{this, &AP_UAVCAN::handle_ESC_status};
+    Canard::ObjCallback<AP_DroneCAN, uavcan_equipment_esc_Status> esc_status_cb{this, &AP_DroneCAN::handle_ESC_status};
     Canard::Subscriber<uavcan_equipment_esc_Status> esc_status_listener{esc_status_cb, _driver_index};
 
-    Canard::ObjCallback<AP_UAVCAN, uavcan_protocol_debug_LogMessage> debug_cb{this, &AP_UAVCAN::handle_debug};
+    Canard::ObjCallback<AP_DroneCAN, uavcan_protocol_debug_LogMessage> debug_cb{this, &AP_DroneCAN::handle_debug};
     Canard::Subscriber<uavcan_protocol_debug_LogMessage> debug_listener{debug_cb, _driver_index};
 
     // param client
-    Canard::ObjCallback<AP_UAVCAN, uavcan_protocol_param_GetSetResponse> param_get_set_res_cb{this, &AP_UAVCAN::handle_param_get_set_response};
+    Canard::ObjCallback<AP_DroneCAN, uavcan_protocol_param_GetSetResponse> param_get_set_res_cb{this, &AP_DroneCAN::handle_param_get_set_response};
     Canard::Client<uavcan_protocol_param_GetSetResponse> param_get_set_client{canard_iface, param_get_set_res_cb};
 
-    Canard::ObjCallback<AP_UAVCAN, uavcan_protocol_param_ExecuteOpcodeResponse> param_save_res_cb{this, &AP_UAVCAN::handle_param_save_response};
+    Canard::ObjCallback<AP_DroneCAN, uavcan_protocol_param_ExecuteOpcodeResponse> param_save_res_cb{this, &AP_DroneCAN::handle_param_save_response};
     Canard::Client<uavcan_protocol_param_ExecuteOpcodeResponse> param_save_client{canard_iface, param_save_res_cb};
 
     // reboot client
     void handle_restart_node_response(const CanardRxTransfer& transfer, const uavcan_protocol_RestartNodeResponse& msg) {}
-    Canard::ObjCallback<AP_UAVCAN, uavcan_protocol_RestartNodeResponse> restart_node_res_cb{this, &AP_UAVCAN::handle_restart_node_response};
+    Canard::ObjCallback<AP_DroneCAN, uavcan_protocol_RestartNodeResponse> restart_node_res_cb{this, &AP_DroneCAN::handle_restart_node_response};
     Canard::Client<uavcan_protocol_RestartNodeResponse> restart_node_client{canard_iface, restart_node_res_cb};
 
     uavcan_protocol_param_ExecuteOpcodeRequest param_save_req;
     uavcan_protocol_param_GetSetRequest param_getset_req;
 
     // Node Info Server
-    Canard::ObjCallback<AP_UAVCAN, uavcan_protocol_GetNodeInfoRequest> node_info_req_cb{this, &AP_UAVCAN::handle_node_info_request};
+    Canard::ObjCallback<AP_DroneCAN, uavcan_protocol_GetNodeInfoRequest> node_info_req_cb{this, &AP_DroneCAN::handle_node_info_request};
     Canard::Server<uavcan_protocol_GetNodeInfoRequest> node_info_server{canard_iface, node_info_req_cb};
     uavcan_protocol_GetNodeInfoResponse node_info_rsp;
 
@@ -329,4 +329,4 @@ private:
     void handle_node_info_request(const CanardRxTransfer& transfer, const uavcan_protocol_GetNodeInfoRequest& req);
 };
 
-#endif // #if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#endif // #if HAL_ENABLE_DRONECAN_DRIVERS

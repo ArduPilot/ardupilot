@@ -23,8 +23,12 @@ from __future__ import print_function
 import fnmatch
 import optparse
 import os
+import sys
 
 from pysim import util
+
+sys.path.insert(1, os.path.join(os.path.dirname(__file__), '..', 'scripts'))
+import extract_features  # noqa
 
 
 class TestBuildOptionsResult(object):
@@ -160,6 +164,29 @@ class TestBuildOptions(object):
 
         self.test_compile_with_defines(defines)
 
+        # if the feature is truly disabled then extract_features.py
+        # should say so:
+        for target in self.build_targets:
+            path = self.target_to_elf_path(target)
+            extracter = extract_features.ExtractFeatures(path)
+            (compiled_in_feature_defines, not_compiled_in_feature_defines) = extracter.extract()
+            for define in defines:
+                # the following defines are known not to work on some
+                # or all vehicles:
+                feature_define_whitelist = set([
+                    'AP_RANGEFINDER_ENABLED',  # only at vehicle level ATM
+                    'AC_AVOID_ENABLED',  # Rover doesn't obey this
+                    'AC_OAPATHPLANNER_ENABLED',   # Rover doesn't obey this
+                    'BEACON_ENABLED',  # Rover doesn't obey this (should also be AP_BEACON_ENABLED)
+                    'WINCH_ENABLED',  # Copter doesn't use this; should use AP_WINCH_ENABLED
+                ])
+                if define in compiled_in_feature_defines:
+                    error = f"feature gated by {define} still compiled into ({target}); extract_features.py bug?"
+                    if define in feature_define_whitelist:
+                        print("warn: " + error)
+                    else:
+                        raise ValueError(error)
+
     def test_enable_feature(self, feature, options):
         defines = self.get_enable_defines(feature, options)
 
@@ -195,9 +222,9 @@ class TestBuildOptions(object):
                       (t,))
                 raise
 
-    def find_build_sizes(self):
-        '''returns a hash with size of all build targets'''
-        ret = {}
+    def target_to_path(self, target, extension=None):
+        '''given a build target (e.g. copter), return expected path to .bin
+        file for that target'''
         target_to_binpath = {
             "copter": "arducopter",
             "plane": "arduplane",
@@ -206,8 +233,26 @@ class TestBuildOptions(object):
             "sub": "ardusub",
             "blimp": "blimp",
         }
+        filename = target_to_binpath[target]
+        if extension is not None:
+            filename += "." + extension
+        return os.path.join("build", self.board(), "bin", filename)
+
+    def target_to_bin_path(self, target):
+        '''given a build target (e.g. copter), return expected path to .bin
+        file for that target'''
+        return self.target_to_path(target, 'bin')
+
+    def target_to_elf_path(self, target):
+        '''given a build target (e.g. copter), return expected path to .elf
+        file for that target'''
+        return self.target_to_path(target)
+
+    def find_build_sizes(self):
+        '''returns a hash with size of all build targets'''
+        ret = {}
         for target in self.build_targets:
-            path = os.path.join("build", self.board(), "bin", "%s.bin" % target_to_binpath[target])
+            path = self.target_to_bin_path(target)
             ret[target] = os.path.getsize(path)
         return ret
 
@@ -253,9 +298,15 @@ class TestBuildOptions(object):
             options = list(filter(lambda x : fnmatch.fnmatch(x.define, self.match_glob), options))
         count = 1
         for feature in sorted(options, key=lambda x : x.define):
+            with open("/tmp/run-disable-in-turn-progress", "w") as f:
+                print(f.write(f"{count}/{len(options)} {feature.define}\n"))
+                #            if feature.define < "WINCH_ENABLED":
+                #                count += 1
+                #                continue
             if feature.define in self.must_have_defines_for_board(self._board):
                 self.progress("Feature %s(%s) (%u/%u) is a MUST-HAVE" %
                               (feature.label, feature.define, count, len(options)))
+                count += 1
                 continue
             self.progress("Disabling feature %s(%s) (%u/%u)" %
                           (feature.label, feature.define, count, len(options)))

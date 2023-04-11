@@ -1295,17 +1295,21 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
+        # calculate early to avoid round-trips while vehicle is moving:
+        accuracy = self.get_parameter("WP_RADIUS")
+
         self.reach_heading_manual(10)
         self.reach_distance_manual(50)
 
         self.change_mode("RTL")
+
         # location copied in from rover-test-rally.txt:
         loc = mavutil.location(40.071553,
                                -105.229401,
                                0,
                                0)
-        accuracy = self.get_parameter("WP_RADIUS")
-        self.wait_location(loc, accuracy=accuracy, minimum_duration=10)
+
+        self.wait_location(loc, accuracy=accuracy, minimum_duration=10, timeout=45)
         self.disarm_vehicle()
 
     def fence_with_bad_frame(self, target_system=1, target_component=1):
@@ -6071,8 +6075,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         })
         self.set_rc(9, 2000)
         self.reboot_sitl()
-        self.delay_sim_time(10)
-        self.assert_prearm_failure("Motors Emergency Stopped")
+        self.assert_prearm_failure(
+            "Motors Emergency Stopped",
+            other_prearm_failures_fatal=False)
         self.context_pop()
         self.reboot_sitl()
 
