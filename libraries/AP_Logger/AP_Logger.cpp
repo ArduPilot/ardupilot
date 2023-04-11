@@ -187,7 +187,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
 
     if (hal.util->was_watchdog_armed()) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Forcing logging for watchdog reset");
-        _params.log_disarmed.set(1);
+        _params.log_disarmed.set(LogDisarmed::LOG_WHILE_DISARMED);
     }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     validate_structures(structures, num_types);
@@ -1468,7 +1468,8 @@ bool AP_Logger::log_while_disarmed(void) const
     if (_force_log_disarmed) {
         return true;
     }
-    if (_params.log_disarmed == 1 || (_params.log_disarmed == 2 && !hal.gpio->usb_connected())) {
+    if (_params.log_disarmed == LogDisarmed::LOG_WHILE_DISARMED ||
+        (_params.log_disarmed == LogDisarmed::LOG_WHILE_DISARMED_NOT_USB && !hal.gpio->usb_connected())) {
         return true;
     }
 
