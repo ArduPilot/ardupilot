@@ -8,6 +8,8 @@
 
 #define MIN_AIRSPEED_MIN 5 // m/s, used for arming check and speed scaling
 
+#define TAKEOFF_RUDDER_WARNING_TIMEOUT 3000 //ms that GCS warning about not returning arming rudder to neutral repeats
+
 // failsafe
 // ----------------------
 enum failsafe_state {
@@ -161,7 +163,7 @@ enum FlightOptions {
     CENTER_THROTTLE_TRIM = (1<<10),
     DISABLE_GROUND_PID_SUPPRESSION = (1<<11),
     ENABLE_LOITER_ALT_CONTROL = (1<<12),
-
+    INDICATE_WAITING_FOR_RUDDER_NEUTRAL = (1<<13),
 };
 
 enum CrowFlapOptions {

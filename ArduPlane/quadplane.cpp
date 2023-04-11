@@ -2955,9 +2955,9 @@ void QuadPlane::takeoff_controller(void)
         // start motor spinning if not spinning already so user sees it is armed
         set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         takeoff_start_time_ms = now;
-        if (now - rudder_takeoff_warn_ms > 3000) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "takeoff wait rudder release");
-            rudder_takeoff_warn_ms = now;
+        if (now - plane.takeoff_state.rudder_takeoff_warn_ms > TAKEOFF_RUDDER_WARNING_TIMEOUT) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Takeoff waiting for rudder release");
+            plane.takeoff_state.rudder_takeoff_warn_ms = now;
         }
         return;
     }

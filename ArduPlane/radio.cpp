@@ -139,6 +139,7 @@ void Plane::rudder_arm_disarm_check()
 				arming.arm(AP_Arming::Method::RUDDER);
                 rudder_arm_timer = 0;
                 seen_neutral_rudder = false;
+                takeoff_state.rudder_takeoff_warn_ms = now;
             }
 		} else {
 			// not at full right rudder
