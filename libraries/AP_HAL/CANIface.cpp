@@ -91,17 +91,18 @@ int16_t AP_HAL::CANIface::receive(CANFrame& out_frame, uint64_t& out_ts_monotoni
 /*
   parent class send handling for MAVCAN
  */
-int16_t AP_HAL::CANIface::send(CANFrame& frame, uint64_t tx_deadline, CanIOFlags flags)
+int16_t AP_HAL::CANIface::send(const CANFrame& frame, uint64_t tx_deadline, CanIOFlags flags)
 {
-    encrypt_message(frame.data, frame.dlc, encryption_key);
+    CANFrame encrypt_fram = frame;
+    encrypt_message(encrypt_fram.data, encrypt_fram.dlc, encryption_key);
 
     auto cb = frame_callback;
     if (cb) {
         if ((flags & IsMAVCAN) == 0) {
-            cb(get_iface_num(), frame);
+            cb(get_iface_num(), encrypt_fram);
         } else {
             CanRxItem rx_item;
-            rx_item.frame = frame;
+            rx_item.frame = encrypt_fram;
             rx_item.timestamp_us = AP_HAL::native_micros64();
             rx_item.flags = AP_HAL::CANIface::IsMAVCAN;
             add_to_rx_queue(rx_item);
