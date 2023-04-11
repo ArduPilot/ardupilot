@@ -178,6 +178,13 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
 
     // index 17
 
+    // @Param: OPTIONS
+    // @DisplayName: AHRS options
+    // @Description: Options to change the behaviour of the AHRS backends
+    // @Bitmask: 0:Disable use of learned EKF accel biases
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS",  18, AP_AHRS, _options, 0),
+    
     AP_GROUPEND
 };
 
@@ -538,7 +545,9 @@ void AP_AHRS::update_EKF2(void)
 
             // get z accel bias estimate from active EKF (this is usually for the primary IMU)
             float &abias = _accel_bias.z;
-            EKF2.getAccelZBias(abias);
+            if (!option_set(AHRS_Option::DISABLE_ACCEL_BIAS)) {
+                EKF2.getAccelZBias(abias);
+            }
 
             // This EKF is currently using primary_imu, and abias applies to only that IMU
             Vector3f accel = _ins.get_accel(primary_accel);
@@ -605,7 +614,9 @@ void AP_AHRS::update_EKF3(void)
 
             // get 3-axis accel bias festimates for active EKF (this is usually for the primary IMU)
             Vector3f &abias = _accel_bias;
-            EKF3.getAccelBias(-1,abias);
+            if (!option_set(AHRS_Option::DISABLE_ACCEL_BIAS)) {
+                EKF3.getAccelBias(-1,abias);
+            }
 
             // use the primary IMU for accel earth frame
             Vector3f accel = _ins.get_accel(primary_accel);
@@ -2250,13 +2261,17 @@ void AP_AHRS::getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
         imu_idx = EKF2.getPrimaryCoreIMUIndex();
-        EKF2.getAccelZBias(accel_bias.z);
+        if (!option_set(AHRS_Option::DISABLE_ACCEL_BIAS)) {
+            EKF2.getAccelZBias(accel_bias.z);
+        }
         break;
 #endif
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
         imu_idx = EKF3.getPrimaryCoreIMUIndex();
-        EKF3.getAccelBias(-1,accel_bias);
+        if (!option_set(AHRS_Option::DISABLE_ACCEL_BIAS)) {
+            EKF3.getAccelBias(-1,accel_bias);
+        }
         break;
 #endif
 #if AP_AHRS_SIM_ENABLED
