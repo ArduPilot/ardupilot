@@ -1018,6 +1018,9 @@ public:
     operator const eclass () const {
         return (eclass)_value;
     }
+    void set(eclass v) {
+        AP_Int8::set(int8_t(v));
+    }
 };
 
 template<typename eclass>
@@ -1026,5 +1029,8 @@ class AP_Enum16 : public AP_Int16
 public:
     operator const eclass () const {
         return (eclass)_value;
+    }
+    void set(eclass v) {
+        AP_Int16::set(int16_t(v));
     }
 };
