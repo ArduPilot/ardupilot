@@ -402,11 +402,13 @@ private:
     struct {
         uint32_t last_tkoff_arm_time;
         uint32_t last_check_ms;
+        uint32_t rudder_takeoff_warn_ms;
         uint32_t last_report_ms;
         bool launchTimerStarted;
         uint8_t accel_event_counter;
         uint32_t accel_event_ms;
         uint32_t start_time_ms;
+        bool waiting_for_rudder_neutral;
     } takeoff_state;
 
     // ground steering controller state
@@ -1103,6 +1105,7 @@ private:
     void channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, SRV_Channel::Aux_servo_function_t func2_in,
                                 SRV_Channel::Aux_servo_function_t func1_out, SRV_Channel::Aux_servo_function_t func2_out) const;
     void flaperon_update();
+    void indicate_waiting_for_rud_neutral_to_takeoff(void);
 
     // is_flying.cpp
     void update_is_flying_5Hz(void);

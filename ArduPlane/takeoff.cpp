@@ -29,6 +29,24 @@ bool Plane::auto_takeoff_check(void)
     }
 
     takeoff_state.last_check_ms = now;
+    
+    //check if waiting for rudder neutral after rudder arm
+    if (plane.arming.last_arm_method() == AP_Arming::Method::RUDDER &&
+        !seen_neutral_rudder) {
+        // we were armed with rudder but have not seen rudder neutral yet
+        takeoff_state.waiting_for_rudder_neutral = true;
+        // warn if we have been waiting a long time
+        if (now - takeoff_state.rudder_takeoff_warn_ms > TAKEOFF_RUDDER_WARNING_TIMEOUT) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Takeoff waiting for rudder release");
+            takeoff_state.rudder_takeoff_warn_ms = now;
+        }
+        // since we are still waiting, dont takeoff
+        return false;
+    } else {
+       // we did not arm by rudder or rudder has returned to neutral
+       // make sure we dont indicate we are in the waiting state with servo position indicator
+       takeoff_state.waiting_for_rudder_neutral = false;
+    }  
 
     // Check for bad GPS
     if (gps.status() < AP_GPS::GPS_OK_FIX_3D) {
