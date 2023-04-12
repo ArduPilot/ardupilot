@@ -348,6 +348,7 @@ void Plane::do_RTL(int32_t rtl_altitude_AMSL_cm)
     next_WP_loc = calc_best_rally_or_home_location(current_loc, rtl_altitude_AMSL_cm);
     setup_terrain_target_alt(next_WP_loc);
     set_target_altitude_location(next_WP_loc);
+    plane.altitude_error_cm = calc_altitude_error_cm();
 
     if (aparm.loiter_radius < 0) {
         loiter.direction = -1;
