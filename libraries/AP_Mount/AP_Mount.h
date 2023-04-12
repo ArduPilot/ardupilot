@@ -27,6 +27,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Camera/AP_Camera.h>
 #include "AP_Mount_Params.h"
 
 // maximum number of mounts
@@ -180,9 +181,8 @@ public:
     // set start_recording = true to start record, false to stop recording
     bool record_video(uint8_t instance, bool start_recording);
 
-    // set camera zoom step
-    // zoom out = -1, hold = 0, zoom in = 1
-    bool set_zoom_step(uint8_t instance, int8_t zoom_step);
+    // set zoom specified as a rate or percentage
+    bool set_zoom(uint8_t instance, AP_Camera::ZoomType zoom_type, float zoom_value);
 
     // set focus in, out or hold
     // focus in = -1, focus hold = 0, focus out = 1
