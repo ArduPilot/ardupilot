@@ -143,7 +143,7 @@ float AnalogSource::_pin_scaler(void)
 {
     float scaling = VOLTAGE_SCALING;
     for (uint8_t i=0; i<ADC_GRP1_NUM_CHANNELS; i++) {
-        if (AnalogIn::pin_config[i].analog_pin == _pin) {
+        if (AnalogIn::pin_config[i].analog_pin == _pin && (_pin != ANALOG_INPUT_NONE)) {
             scaling = AnalogIn::pin_config[i].scaling;
             break;
         }
@@ -183,7 +183,7 @@ bool AnalogSource::set_pin(uint8_t pin)
         return true;
     }
     bool found_pin = false;
-    if (pin == ANALOG_SERVO_VRSSI_PIN) {
+    if (pin == ANALOG_SERVO_VRSSI_PIN || pin == ANALOG_INPUT_NONE) {
         found_pin = true;
     } else {
         for (uint8_t i=0; i<ADC_GRP1_NUM_CHANNELS; i++) {
@@ -663,7 +663,7 @@ void AnalogIn::_timer_tick(void)
             for (uint8_t j=0; j < ANALOG_MAX_CHANNELS; j++) {
                 ChibiOS::AnalogSource *c = _channels[j];
                 if (c != nullptr) {
-                    if (get_analog_pin(index, i) == c->_pin) {
+                    if ((get_analog_pin(index, i) == c->_pin) && (c->_pin != ANALOG_INPUT_NONE)) {
                         // add a value
                         c->_add_value(buf_adc[i] * ADC_BOARD_SCALING, _board_voltage);
                     } else if (c->_pin == ANALOG_SERVO_VRSSI_PIN) {
