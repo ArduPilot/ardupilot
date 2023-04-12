@@ -41,6 +41,7 @@ assert(param:add_param(PARAM_TABLE_KEY, 5, "ZOOM_SPEED", 7), "could not add VIEP
 
 -- bind parameters to variables
 local MNT1_TYPE = Parameter("MNT1_TYPE")    -- should be 9:Scripting
+local CAM1_TYPE = Parameter("CAM1_TYPE")    -- should be 7:Scripting
 
 --[[
   // @Param: VIEP_DEBUG
