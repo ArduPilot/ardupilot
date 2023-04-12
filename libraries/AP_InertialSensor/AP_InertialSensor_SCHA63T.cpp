@@ -38,6 +38,11 @@ extern const AP_HAL::HAL& hal;
 #define SCHA63T_UNO 0
 #define SCHA63T_DUE 1
 
+static constexpr int16_t combine(uint8_t msb, uint8_t lsb)
+{
+    return (msb << 8u) | lsb;
+}
+
 AP_InertialSensor_SCHA63T::AP_InertialSensor_SCHA63T(AP_InertialSensor &imu,
         AP_HAL::OwnPtr<AP_HAL::Device> _dev_uno,
         AP_HAL::OwnPtr<AP_HAL::Device> _dev_due,
@@ -230,17 +235,17 @@ bool AP_InertialSensor_SCHA63T::check_startup()
  */
 void AP_InertialSensor_SCHA63T::read_accel(void)
 {
-    uint8_t rsp_accl_x[3];
-    uint8_t rsp_accl_y[3];
-    uint8_t rsp_accl_z[3];
-    uint8_t rsp_temper[3];
+    uint8_t rsp_accl_x[4];
+    uint8_t rsp_accl_y[4];
+    uint8_t rsp_accl_z[4];
+    uint8_t rsp_temper[4];
 
     int16_t accel_x = 0;
     int16_t accel_y = 0;
     int16_t accel_z = 0;
     int16_t uno_temp = 0;
 
-    // ACCL_X Cmd Send (This Response rsp_accl_x is Dust!!)
+    // ACCL_X Cmd Send (first response is undefined)
     ret_scha63t &= RegisterRead(SCHA63T_UNO, ACC_X, rsp_accl_x);
     // ACCL_Y Cmd Send + ACCL_X Response Receive
     ret_scha63t &= RegisterRead(SCHA63T_UNO, ACC_Y, rsp_accl_x);
@@ -295,11 +300,11 @@ void AP_InertialSensor_SCHA63T::read_accel(void)
  */
 void AP_InertialSensor_SCHA63T::read_gyro(void)
 {
-    uint8_t rsp_rate_x[3];
-    uint8_t rsp_rate_y[3];
-    uint8_t rsp_rate_z[3];
-    uint8_t rsp_uno_temper[3];
-    uint8_t rsp_due_temper[3];
+    uint8_t rsp_rate_x[4];
+    uint8_t rsp_rate_y[4];
+    uint8_t rsp_rate_z[4];
+    uint8_t rsp_uno_temper[4];
+    uint8_t rsp_due_temper[4];
 
     int16_t gyro_x = 0;
     int16_t gyro_y = 0;
@@ -307,7 +312,7 @@ void AP_InertialSensor_SCHA63T::read_gyro(void)
     int16_t uno_temp = 0;
     int16_t due_temp = 0;
 
-    // RATE_Y Cmd Send (This Response rsp_rate_y is Dust!!)
+    // RATE_Y Cmd Send (first response is undefined)
     ret_scha63t &= RegisterRead(SCHA63T_DUE, RATE_Y, rsp_rate_y);
     // RATE_Z Cmd Send + RATE_Y Response Receive
     ret_scha63t &= RegisterRead(SCHA63T_DUE, RATE_XZ, rsp_rate_y);

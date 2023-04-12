@@ -23,11 +23,6 @@
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
 
-static constexpr int16_t combine(uint8_t msb, uint8_t lsb)
-{
-    return (msb << 8u) | lsb;
-}
-
 class AP_InertialSensor_SCHA63T : public AP_InertialSensor_Backend
 {
 public:
