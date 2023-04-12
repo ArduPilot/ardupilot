@@ -606,6 +606,7 @@ singleton AP_Mount method set_attitude_euler void uint8_t'skip_check float'skip_
 include AP_Camera/AP_Camera.h
 singleton AP_Camera depends AP_CAMERA_ENABLED == 1
 singleton AP_Camera rename camera
+singleton AP_Camera semaphore
 singleton AP_Camera method take_picture void uint8_t'skip_check
 singleton AP_Camera method record_video boolean uint8_t'skip_check boolean
 singleton AP_Camera method set_trigger_distance void uint8_t'skip_check float'skip_check
