@@ -974,6 +974,10 @@ private:
     bool mode_allows_autotuning(void);
     uint8_t get_mode() const override { return (uint8_t)control_mode->mode_number(); }
     Mode *mode_from_mode_num(const enum Mode::Number num);
+    bool current_mode_requires_mission() const override {
+        return control_mode == &mode_auto;
+    }
+
     bool autotuning;
 
     // events.cpp
