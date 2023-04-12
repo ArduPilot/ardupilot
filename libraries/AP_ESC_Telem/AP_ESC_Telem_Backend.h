@@ -1,13 +1,6 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-#include <SRV_Channel/SRV_Channel_config.h>
-
-#if defined(NUM_SERVO_CHANNELS) && NUM_SERVO_CHANNELS == 0
-#define HAL_WITH_ESC_TELEM 0
-#elif !defined(HAL_WITH_ESC_TELEM)
-#define HAL_WITH_ESC_TELEM (HAL_SUPPORT_RCOUT_SERIAL || HAL_MAX_CAN_PROTOCOL_DRIVERS) && !defined(HAL_BUILD_AP_PERIPH)
-#endif
+#include "AP_ESC_Telem_config.h"
 
 #if HAL_WITH_ESC_TELEM
 

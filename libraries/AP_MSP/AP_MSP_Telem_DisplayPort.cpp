@@ -41,4 +41,16 @@ MSPCommandResult AP_MSP_Telem_DisplayPort::msp_process_out_fc_variant(sbuf_t *ds
     return MSP_RESULT_ACK;
 }
 
+bool AP_MSP_Telem_DisplayPort::init_uart()
+{
+    if (_msp_port.uart != nullptr)  {
+        // re-init port here for use in this thread
+        // displayport needs a bigger tx buffer
+        // rx buffer can be small for we mostly write
+        _msp_port.uart->begin(0, 256, 768);
+        return true;
+    }
+    return false;
+}
+
 #endif //HAL_WITH_MSP_DISPLAYPORT

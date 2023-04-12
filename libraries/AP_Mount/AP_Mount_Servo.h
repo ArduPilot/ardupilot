@@ -5,10 +5,6 @@
 
 #include "AP_Mount_Backend.h"
 
-#ifndef HAL_MOUNT_SERVO_ENABLED
-#define HAL_MOUNT_SERVO_ENABLED HAL_MOUNT_ENABLED
-#endif
-
 #if HAL_MOUNT_SERVO_ENABLED
 
 #include <AP_Math/AP_Math.h>

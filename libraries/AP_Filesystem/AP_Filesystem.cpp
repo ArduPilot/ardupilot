@@ -182,6 +182,12 @@ int AP_Filesystem::mkdir(const char *pathname)
     return backend.fs.mkdir(pathname);
 }
 
+int AP_Filesystem::rename(const char *oldpath, const char *newpath)
+{
+    const Backend &backend = backend_by_path(oldpath);
+    return backend.fs.rename(oldpath, newpath);
+}
+
 AP_Filesystem::DirHandle *AP_Filesystem::opendir(const char *pathname)
 {
     const Backend &backend = backend_by_path(pathname);
@@ -294,6 +300,14 @@ bool AP_Filesystem::format(void)
     return LOCAL_BACKEND.fs.format();
 #else
     return false;
+#endif
+}
+AP_Filesystem_Backend::FormatStatus AP_Filesystem::get_format_status(void) const
+{
+#if AP_FILESYSTEM_FORMAT_ENABLED
+    return LOCAL_BACKEND.fs.get_format_status();
+#else
+    return AP_Filesystem_Backend::FormatStatus::NOT_STARTED;
 #endif
 }
 

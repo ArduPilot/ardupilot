@@ -116,8 +116,11 @@ bool AP_Proximity_TeraRangerTowerEvo::read_sensor_data()
     }
 
     while (nbytes-- > 0) {
-        char c = _uart->read();
-        if (c == 'T' ) {
+        int16_t c = _uart->read();
+        if (c==-1) {
+            return false;
+        }
+        if (char(c) == 'T' ) {
             buffer_count = 0;
         }
         buffer[buffer_count++] = c;

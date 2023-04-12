@@ -255,12 +255,10 @@ uint64_t Util::get_hw_rtc() const
 
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
 
-#ifndef HAL_BOOTLOADER_BUILD
 #include <GCS_MAVLink/GCS.h>
 #if HAL_GCS_ENABLED
 #define Debug(fmt, args ...)  do { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } while (0)
 #endif // HAL_GCS_ENABLED
-#endif // ifndef HAL_BOOT_LOADER_BUILD
 
 #ifndef Debug
 #define Debug(fmt, args ...)  do { hal.console->printf(fmt, ## args); } while (0)
@@ -419,7 +417,7 @@ bool Util::was_watchdog_reset() const
 __RAMFUNC__ void Util::thread_info(ExpandingString &str)
 {
 #if HAL_ENABLE_THREAD_STATISTICS
-    uint64_t cumulative_cycles = ch.kernel_stats.m_crit_isr.cumulative;
+    uint64_t cumulative_cycles = currcore->kernel_stats.m_crit_isr.cumulative;
     for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
         if (tp->stats.best > 0) { // not run
             cumulative_cycles += (uint64_t)tp->stats.cumulative;
@@ -432,8 +430,8 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
     str.printf("ThreadsV2\nISR           PRI=255 sp=%p STACK=%u/%u LOAD=%4.1f%%\n",
                 &__main_stack_base__,
                 unsigned(stack_free(&__main_stack_base__)),
-                unsigned(isr_stack_size), 100.0f * float(ch.kernel_stats.m_crit_isr.cumulative) / float(cumulative_cycles));
-    ch.kernel_stats.m_crit_isr.cumulative = 0U;
+                unsigned(isr_stack_size), 100.0f * float(currcore->kernel_stats.m_crit_isr.cumulative) / float(cumulative_cycles));
+    currcore->kernel_stats.m_crit_isr.cumulative = 0U;
 #else
     str.printf("ThreadsV2\nISR           PRI=255 sp=%p STACK=%u/%u\n",
                 &__main_stack_base__,

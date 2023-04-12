@@ -27,6 +27,12 @@
 
 -- This code is copied from https://github.com/lua/tests and slightly modified to work within ArduPilot
 
+-- luacheck: ignore 211 (Unused local variable)
+-- luacheck: ignore 213 (Unused loop variable)
+-- luacheck: ignore 411 (Redefining a local variable)
+-- luacheck: ignore 421 (Shadowing a local variable)
+-- luacheck: ignore 581 (Negation of a relational operator - operator can be flipped)
+
 gcs:send_text(6, "testing numbers and math lib")
 
 local minint = math.mininteger

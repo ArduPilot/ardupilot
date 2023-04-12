@@ -1,4 +1,7 @@
 #include "AP_Winch.h"
+
+#if AP_WINCH_ENABLED
+
 #include "AP_Winch_PWM.h"
 #include "AP_Winch_Daiwa.h"
 
@@ -157,3 +160,5 @@ AP_Winch *winch()
 }
 
 };
+
+#endif  // AP_WINCH_ENABLED

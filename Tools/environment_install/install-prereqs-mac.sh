@@ -118,7 +118,7 @@ if maybe_prompt_user "Install python using pyenv [N/y]?" ; then
 
         pushd $HOME/.pyenv
         git fetch --tags
-        git checkout v2.3.9
+        git checkout v2.3.12
         popd
         exportline="export PYENV_ROOT=\$HOME/.pyenv"
         echo $exportline >> ~/$SHELL_LOGIN

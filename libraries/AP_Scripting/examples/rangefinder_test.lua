@@ -1,4 +1,5 @@
 -- This script checks RangeFinder
+-- luacheck: only 0
 
 local rotation_downward = 25
 local rotation_forward = 0

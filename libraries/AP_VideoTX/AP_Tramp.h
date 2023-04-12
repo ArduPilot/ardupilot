@@ -17,15 +17,12 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_OSD/AP_OSD.h>
-
-#ifndef AP_TRAMP_ENABLED
-#define AP_TRAMP_ENABLED OSD_ENABLED && BOARD_FLASH_SIZE>1024 && !HAL_MINIMIZE_FEATURES
-#endif
+#include "AP_VideoTX_config.h"
 
 #if AP_TRAMP_ENABLED
 
+#include <AP_HAL/AP_HAL.h>
+#include <AP_OSD/AP_OSD.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include "AP_VideoTX.h"

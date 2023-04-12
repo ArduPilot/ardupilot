@@ -12,6 +12,10 @@
 
 #define SENSOR_RATE_DEBUG 0
 
+#ifndef AP_HEATER_IMU_INSTANCE
+#define AP_HEATER_IMU_INSTANCE 0
+#endif
+
 const extern AP_HAL::HAL& hal;
 
 AP_InertialSensor_Backend::AP_InertialSensor_Backend(AP_InertialSensor &imu) :
@@ -99,7 +103,7 @@ void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vect
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
     if (_imu.tcal_learning) {
-        _imu.tcal[instance].update_accel_learning(accel, _imu.get_temperature(instance));
+        _imu.tcal(instance).update_accel_learning(accel, _imu.get_temperature(instance));
     }
 #endif
 
@@ -111,15 +115,15 @@ void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vect
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
         // apply temperature corrections
-        _imu.tcal[instance].correct_accel(_imu.get_temperature(instance), _imu.caltemp_accel[instance], accel);
+        _imu.tcal(instance).correct_accel(_imu.get_temperature(instance), _imu.caltemp_accel(instance), accel);
 #endif
 
         // apply offsets
-        accel -= _imu._accel_offset[instance];
+        accel -= _imu._accel_offset(instance);
 
 
         // apply scaling
-        const Vector3f &accel_scale = _imu._accel_scale[instance].get();
+        const Vector3f &accel_scale = _imu._accel_scale(instance).get();
         accel.x *= accel_scale.x;
         accel.y *= accel_scale.y;
         accel.z *= accel_scale.z;
@@ -136,7 +140,7 @@ void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vecto
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
     if (_imu.tcal_learning) {
-        _imu.tcal[instance].update_gyro_learning(gyro, _imu.get_temperature(instance));
+        _imu.tcal(instance).update_gyro_learning(gyro, _imu.get_temperature(instance));
     }
 #endif
     
@@ -144,11 +148,11 @@ void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vecto
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
         // apply temperature corrections
-        _imu.tcal[instance].correct_gyro(_imu.get_temperature(instance), _imu.caltemp_gyro[instance], gyro);
+        _imu.tcal(instance).correct_gyro(_imu.get_temperature(instance), _imu.caltemp_gyro(instance), gyro);
 #endif
 
         // gyro calibration is always assumed to have been done in sensor frame
-        gyro -= _imu._gyro_offset[instance];
+        gyro -= _imu._gyro_offset(instance);
     }
 
     gyro.rotate(_imu._board_orientation);
@@ -177,7 +181,7 @@ void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &
 
 void AP_InertialSensor_Backend::save_gyro_window(const uint8_t instance, const Vector3f &gyro, uint8_t phase)
 {
-#if HAL_WITH_DSP
+#if HAL_GYROFFT_ENABLED
     // capture gyro window for FFT analysis
     if (_imu._fft_window_phase == phase) {
         if (_imu._gyro_window_size > 0) {
@@ -239,7 +243,7 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
     // if the filtering failed in any way then reset the filters and keep the old value
     if (gyro_filtered.is_nan() || gyro_filtered.is_inf()) {
         _imu._gyro_filter[instance].reset();
-#if HAL_WITH_DSP
+#if HAL_GYROFFT_ENABLED
         _imu._post_filter_gyro_filter[instance].reset();
 #endif
         for (auto &notch : _imu.harmonic_notches) {
@@ -731,7 +735,7 @@ void AP_InertialSensor_Backend::_publish_temperature(uint8_t instance, float tem
 
 #if HAL_HAVE_IMU_HEATER
     /* give the temperature to the control loop in order to keep it constant*/
-    if (instance == 0) {
+    if (instance == AP_HEATER_IMU_INSTANCE) {
         AP_BoardConfig *bc = AP::boardConfig();
         if (bc) {
             bc->set_imu_temp(temperature);
@@ -752,7 +756,7 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance) /* front end */
     }
     if (_imu._new_gyro_data[instance]) {
         _publish_gyro(instance, _imu._gyro_filtered[instance]);
-#if HAL_WITH_DSP
+#if HAL_GYROFFT_ENABLED
         // copy the gyro samples from the backend to the frontend window for FFTs sampling at less than IMU rate
         _imu._gyro_for_fft[instance] = _imu._last_gyro_for_fft[instance];
 #endif
@@ -764,7 +768,7 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance) /* front end */
 
     if (_last_gyro_filter_hz != _gyro_filter_cutoff() || sensors_converging()) {
         _imu._gyro_filter[instance].set_cutoff_frequency(gyro_rate, _gyro_filter_cutoff());
-#if HAL_WITH_DSP
+#if HAL_GYROFFT_ENABLED
         _imu._post_filter_gyro_filter[instance].set_cutoff_frequency(gyro_rate, _gyro_filter_cutoff());
 #endif
         _last_gyro_filter_hz = _gyro_filter_cutoff();

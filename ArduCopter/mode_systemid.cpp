@@ -299,6 +299,7 @@ void ModeSystemId::log_data() const
 
     // Full rate logging of attitude, rate and pid loops
     copter.Log_Write_Attitude();
+    copter.Log_Write_PIDS();
 }
 
 #endif

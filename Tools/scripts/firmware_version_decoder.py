@@ -29,6 +29,7 @@ class VehicleType(enum.Enum):
     ArduSub = 7
     iofirmware = 8
     AP_Periph = 9
+    NONE = 256
 
 
 class BoardType(enum.Enum):
@@ -84,9 +85,9 @@ class FWVersion:
     header: int = 0x61706677766572FB
     header_version: bytes = bytes([0, 0])
     pointer_size: int = 0
-    vehicle_type: int = 0
-    board_type: int = 0
-    board_subtype: int = 0
+    vehicle_type: VehicleType = VehicleType.NONE
+    board_type: BoardType = BoardType.EMPTY
+    board_subtype: BoardSubType = BoardSubType.NONE
     major: int = 0
     minor: int = 0
     patch: int = 0
@@ -117,13 +118,13 @@ class FWVersion:
         pointer_size: {self.pointer_size}
     firmware:
         string: {self.firmware_string}
-        vehicle: {VehicleType(self.vehicle_type).name}
-        board: {BoardType(self.board_type).name}
-        board subtype: {BoardSubType(self.board_subtype).name}
+        vehicle: {self.vehicle_type.name}
+        board: {self.board_type.name}
+        board subtype: {self.board_subtype.name}
         hash: {self.firmware_hash_string}
         hash integer: 0x{self.firmware_hash:02x}
         version: {self.major}.{self.minor}.{self.patch}
-        type: {FirmwareVersionType(self.firmware_type).name}
+        type: {self.firmware_type.name}
     os:
         name: {self.os_name}
         hash: {self.os_hash_string}
@@ -184,14 +185,14 @@ class Decoder:
         self.pointer_size = self.unpack("B")
         self.fwversion.pointer_size = self.pointer_size
         self.unpack("B")  # reserved
-        self.fwversion.vehicle_type = self.unpack("B")
-        self.fwversion.board_type = self.unpack("B")
-        self.fwversion.board_subtype = self.unpack("H")
+        self.fwversion.vehicle_type = VehicleType(self.unpack("B"))
+        self.fwversion.board_type = BoardType(self.unpack("B"))
+        self.fwversion.board_subtype = BoardSubType(self.unpack("H"))
 
         self.fwversion.major = self.unpack("B")
         self.fwversion.minor = self.unpack("B")
         self.fwversion.patch = self.unpack("B")
-        self.fwversion.firmware_type = self.unpack("B")
+        self.fwversion.firmware_type = FirmwareVersionType(self.unpack("B"))
         self.fwversion.os_software_version = self.unpack("I")
 
         self.fwversion.firmware_string = self.unpack_string_from_pointer()

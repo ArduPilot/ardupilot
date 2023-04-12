@@ -1,0 +1,10 @@
+include ../PixPilot-V6/hwdef-bl.dat
+
+undef APJ_BOARD_ID
+APJ_BOARD_ID 1097
+
+undef PC2 PC13 PE4
+
+PE4  42652_CS CS
+PC2  42652_EXT_CS CS
+PC13 42688_EXT_CS CS

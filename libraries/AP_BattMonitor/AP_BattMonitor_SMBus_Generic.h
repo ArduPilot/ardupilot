@@ -2,6 +2,8 @@
 
 #include "AP_BattMonitor_SMBus.h"
 
+#if AP_BATTERY_SMBUS_GENERIC_ENABLED
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #define BATTMONITOR_SMBUS_NUM_CELLS_MAX 14
 #else
@@ -31,3 +33,5 @@ private:
     uint8_t _cell_count;    // number of cells returning voltages
     bool _cell_count_fixed; // true when cell count check is complete
 };
+
+#endif  // AP_BATTERY_SMBUS_GENERIC_ENABLED

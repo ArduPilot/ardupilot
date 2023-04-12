@@ -14,6 +14,10 @@
  */
 #pragma once
 
+#include "AP_Compass_config.h"
+
+#if AP_COMPASS_RM3100_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Device.h>
@@ -58,3 +62,5 @@ private:
     enum Rotation rotation;
     float _scaler = 1.0;
 };
+
+#endif  // AP_COMPASS_RM3100_ENABLED

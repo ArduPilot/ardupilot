@@ -1,8 +1,13 @@
 #pragma once
 
+#include "AC_PrecLand_config.h"
+
+#if AC_PRECLAND_ENABLED
+
+#include "AC_PrecLand.h"
 #include <AP_Math/AP_Math.h>
 #include <AC_PID/AC_PID.h>
-#include "AC_PrecLand.h"
+
 
 class AC_PrecLand_Backend
 {
@@ -44,3 +49,5 @@ protected:
     const AC_PrecLand&  _frontend;          // reference to precision landing front end
     AC_PrecLand::precland_state &_state;    // reference to this instances state
 };
+
+#endif // AC_PRECLAND_ENABLED

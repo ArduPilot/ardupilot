@@ -13,15 +13,15 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_BEBOP_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX && \
-    (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO)
-
-#include "AP_BattMonitor_Bebop.h"
 #include <AP_HAL_Linux/RCOutput_Bebop.h>
 #include <AP_HAL_Linux/RCOutput_Disco.h>
+
+#include "AP_BattMonitor_Bebop.h"
 
 #define BATTERY_VOLTAGE_COMPENSATION_LANDED (0.2f)
 
@@ -217,4 +217,4 @@ void AP_BattMonitor_Bebop::read(void)
     _state.consumed_mah = capacity - (remaining * capacity) * 0.01f;
 }
 
-#endif
+#endif  // AP_BATTERY_BEBOP_ENABLED

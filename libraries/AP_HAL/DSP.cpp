@@ -358,6 +358,8 @@ uint16_t DSP::fft_stop_average(FFTWindowState* fft, uint16_t start_bin, uint16_t
         scratch_space, peaks, MAX_TRACKED_PEAKS, 0.0f, -1.0f, smoothwidth, 2);
     hal.util->free_type(scratch_space, sizeof(float) * fft->_num_stored_freqs, DSP_MEM_REGION);
 
+    numpeaks = MIN(numpeaks, uint16_t(MAX_TRACKED_PEAKS));
+
     // now try and find the lowest harmonic
     for (uint16_t i = 0; i < numpeaks; i++) {
         const uint16_t bin = peaks[i] + start_bin;

@@ -7,24 +7,6 @@ extern const AP_HAL::HAL& hal;
 
 #define AP_MOUNT_UPDATE_DT 0.02     // update rate in seconds.  update() should be called at this rate
 
-// get mount's current attitude in euler angles in degrees.  yaw angle is in body-frame
-// returns true on success
-bool AP_Mount_Backend::get_attitude_euler(float& roll_deg, float& pitch_deg, float& yaw_bf_deg)
-{
-    // by default re-use get_attitude_quaternion and convert to Euler angles
-    Quaternion att_quat;
-    if (!get_attitude_quaternion(att_quat)) {
-        return false;
-    }
-
-    float roll_rad, pitch_rad, yaw_rad;
-    att_quat.to_euler(roll_rad, pitch_rad, yaw_rad);
-    roll_deg = degrees(roll_rad);
-    pitch_deg = degrees(pitch_rad);
-    yaw_bf_deg = degrees(yaw_rad);
-    return true;
-}
-
 // set angle target in degrees
 // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
 void AP_Mount_Backend::set_angle_target(float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame)
@@ -64,6 +46,19 @@ void AP_Mount_Backend::set_roi_target(const Location &target_loc)
 
     // set the mode to GPS tracking mode
     set_mode(MAV_MOUNT_MODE_GPS_POINT);
+}
+
+// clear_roi_target - clears target location that mount should attempt to point towards
+void AP_Mount_Backend::clear_roi_target()
+{
+    // clear the target GPS location
+    _roi_target_set = false;
+
+    // reset the mode if in GPS tracking mode
+    if (_mode == MAV_MOUNT_MODE_GPS_POINT) {
+        MAV_MOUNT_MODE default_mode = (MAV_MOUNT_MODE)_params.default_mode.get();
+        set_mode(default_mode);
+    }
 }
 
 // set_sys_target - sets system that mount should attempt to point towards

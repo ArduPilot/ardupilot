@@ -143,6 +143,11 @@ public:
 #endif // CONFIG_HAL_BOARD != HAL_BOARD_SITL
     }
 
+    bool get_error_codes(uint32_t &error_codes) const override {
+        error_codes = _unconfigured_messages;
+        return true;
+    };
+
     void broadcast_configuration_failure_reason(void) const override;
     void Write_AP_Logger_Log_Startup_messages() const override;
 

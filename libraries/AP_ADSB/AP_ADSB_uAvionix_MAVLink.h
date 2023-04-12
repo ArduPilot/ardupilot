@@ -17,10 +17,6 @@
 
 #include "AP_ADSB_Backend.h"
 
-#ifndef HAL_ADSB_UAVIONIX_MAVLINK_ENABLED
-#define HAL_ADSB_UAVIONIX_MAVLINK_ENABLED HAL_ADSB_ENABLED
-#endif
-
 #if HAL_ADSB_UAVIONIX_MAVLINK_ENABLED
 class AP_ADSB_uAvionix_MAVLink : public AP_ADSB_Backend {
 public:

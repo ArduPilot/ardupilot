@@ -18,6 +18,7 @@
 #include <AP_RCProtocol/AP_RCProtocol.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Arming/AP_Arming.h>
 #include <ch.h>
 
 extern const AP_HAL::HAL &hal;
@@ -42,6 +43,10 @@ enum ioevents {
 // max number of consecutve protocol failures we accept before raising
 // an error
 #define IOMCU_MAX_REPEATED_FAILURES 20
+
+#ifndef AP_IOMCU_FORCE_ENABLE_HEATER
+#define AP_IOMCU_FORCE_ENABLE_HEATER 0
+#endif
 
 AP_IOMCU::AP_IOMCU(AP_HAL::UARTDriver &_uart) :
     uart(_uart)
@@ -109,6 +114,13 @@ void AP_IOMCU::thread_main(void)
     trigger_event(IOEVENT_INIT);
 
     while (!do_shutdown) {
+        // check if we have lost contact with the IOMCU
+        const uint32_t now_ms = AP_HAL::millis();
+        if (last_reg_read_ms != 0 && now_ms - last_reg_read_ms > 1000U) {
+            INTERNAL_ERROR(AP_InternalError::error_t::iomcu_reset);
+            last_reg_read_ms = 0;
+        }
+
         eventmask_t mask = chEvtWaitAnyTimeout(~0, chTimeMS2I(10));
 
         // check for pending IO events
@@ -134,6 +146,14 @@ void AP_IOMCU::thread_main(void)
                 event_failed(mask);
                 continue;
             }
+
+#if AP_IOMCU_FORCE_ENABLE_HEATER
+            if (!modify_register(PAGE_SETUP, PAGE_REG_SETUP_FEATURES, 0,
+                                 P_SETUP_FEATURES_HEATER)) {
+                event_failed(mask);
+                continue;
+            }
+#endif
         }
         mask &= ~EVENT_MASK(IOEVENT_INIT);
 
@@ -322,6 +342,10 @@ void AP_IOMCU::read_status()
     uint16_t *r = (uint16_t *)&reg_status;
     if (!read_registers(PAGE_STATUS, 0, sizeof(reg_status)/2, r)) {
         read_status_errors++;
+        if (read_status_errors == 20 && last_iocmu_timestamp_ms != 0) {
+            // the IOMCU has stopped responding to status requests
+            INTERNAL_ERROR(AP_InternalError::error_t::iomcu_reset);
+        }
         return;
     }
     if (read_status_ok == 0) {
@@ -504,11 +528,7 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
         protocol_fail_count++;
         return false;
     }
-    for (uint8_t i=0; i<n; i++) {
-        if (i < sizeof(pkt)) {
-            b[i] = uart.read();
-        }
-    }
+    uart.read(b, MIN(n, sizeof(pkt)));
 
     uint8_t got_crc = pkt.crc;
     pkt.crc = 0;
@@ -538,6 +558,7 @@ bool AP_IOMCU::read_registers(uint8_t page, uint8_t offset, uint8_t count, uint1
     total_errors += protocol_fail_count;
     protocol_fail_count = 0;
     protocol_count++;
+    last_reg_read_ms = AP_HAL::millis();
     return true;
 }
 
@@ -785,7 +806,7 @@ void AP_IOMCU::update_safety_options(void)
     if (!(options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)) {
         desired_options |= P_SETUP_ARMING_SAFETY_DISABLE_ON;
     }
-    if (!(options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED) && hal.util->get_soft_armed()) {
+    if (!(options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED) && AP::arming().is_armed()) {
         desired_options |= (P_SETUP_ARMING_SAFETY_DISABLE_ON | P_SETUP_ARMING_SAFETY_DISABLE_OFF);
     }
     if (last_safety_options != desired_options) {
@@ -851,6 +872,9 @@ bool AP_IOMCU::check_crc(void)
     const uint16_t magic = REBOOT_BL_MAGIC;
     write_registers(PAGE_SETUP, PAGE_REG_SETUP_REBOOT_BL, 1, &magic);
 
+    // avoid internal error on fw upload delay
+    last_reg_read_ms = 0;
+
     if (!upload_fw()) {
         AP_ROMFS::free(fw);
         fw = nullptr;
@@ -915,7 +939,7 @@ void AP_IOMCU::shutdown(void)
  */
 void AP_IOMCU::bind_dsm(uint8_t mode)
 {
-    if (!is_chibios_backend || hal.util->get_soft_armed()) {
+    if (!is_chibios_backend || AP::arming().is_armed()) {
         // only with ChibiOS IO firmware, and disarmed
         return;
     }
@@ -1021,7 +1045,9 @@ void AP_IOMCU::check_iomcu_reset(void)
         return;
     }
     uint32_t dt_ms = reg_status.timestamp_ms - last_iocmu_timestamp_ms;
-    uint32_t ts1 = last_iocmu_timestamp_ms;
+#if IOMCU_DEBUG_ENABLE
+    const uint32_t ts1 = last_iocmu_timestamp_ms;
+#endif
     // when we are in an expected delay allow for a larger time
     // delta. This copes with flash erase, such as bootloader update
     const uint32_t max_delay = hal.scheduler->in_expected_delay()?5000:500;
@@ -1034,19 +1060,23 @@ void AP_IOMCU::check_iomcu_reset(void)
     }
     detected_io_reset = true;
     INTERNAL_ERROR(AP_InternalError::error_t::iomcu_reset);
-    hal.console->printf("IOMCU reset t=%u %u %u dt=%u\n",
-                        unsigned(AP_HAL::millis()), unsigned(ts1), unsigned(reg_status.timestamp_ms), unsigned(dt_ms));
+    debug("IOMCU reset t=%u %u %u dt=%u\n",
+          unsigned(AP_HAL::millis()), unsigned(ts1), unsigned(reg_status.timestamp_ms), unsigned(dt_ms));
 
-    if (last_safety_off && !reg_status.flag_safety_off && hal.util->get_soft_armed()) {
+    bool have_forced_off = false;
+    if (last_safety_off && !reg_status.flag_safety_off && AP::arming().is_armed()) {
         AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
         uint16_t options = boardconfig?boardconfig->get_safety_button_options():0;
         if (safety_forced_off || (options & AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED) == 0) {
             // IOMCU has reset while armed with safety off - force it off
             // again so we can keep flying
+            have_forced_off = true;
             force_safety_off();
         }
     }
-    last_safety_off = reg_status.flag_safety_off;
+    if (!have_forced_off) {
+        last_safety_off = reg_status.flag_safety_off;
+    }
 
     // we need to ensure the mixer data and the rates are sent over to
     // the IOMCU

@@ -69,7 +69,9 @@ private:
     int16_t _rssi = -1;
     int16_t _rx_link_quality = -1;
     uint32_t _rcin_timestamp_last_signal;
+#if HAL_WITH_IO_MCU
     uint32_t _rcin_last_iomcu_ms;
+#endif
     bool _init;
     const char *last_protocol;
 

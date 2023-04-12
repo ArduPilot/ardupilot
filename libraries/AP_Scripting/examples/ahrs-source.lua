@@ -14,6 +14,7 @@
 -- SCR_USER3 holds the threshold for Non-GPS vertical speed innovation (about 0.3 is a good choice)
 --     if both GPS speed accuracy <= SCR_USER2 and ExternalNav speed variance >= SCR_USER3, source1 will be used
 --     otherwise source2 (T265) or source3 (optical flow) will be used based on rangefinder distance
+-- luacheck: only 0
 
 local rangefinder_rotation = 25     -- check downward (25) facing lidar
 local source_prev = 0               -- previous source, defaults to primary source

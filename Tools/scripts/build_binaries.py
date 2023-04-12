@@ -56,9 +56,6 @@ def get_required_compiler(vehicle, tag, board):
     if not is_chibios_build(board):
         # only override compiler for ChibiOS builds
         return None
-    if vehicle == 'Sub' and tag in ['stable', 'beta']:
-        # sub stable and beta is on the old compiler
-        return "g++-6.3.1"
     # use 10.2.1 compiler for all other builds
     return "g++-10.2.1"
 
@@ -113,7 +110,7 @@ class build_binaries(object):
                 raise Exception("BB-WAF: Missing compiler %s" % gcc_path)
         self.run_program("BB-WAF", cmd_list, env=env)
 
-    def run_program(self, prefix, cmd_list, show_output=True, env=None):
+    def run_program(self, prefix, cmd_list, show_output=True, env=None, force_success=False):
         if show_output:
             self.progress("Running (%s)" % " ".join(cmd_list))
         p = subprocess.Popen(cmd_list, bufsize=1, stdin=None,
@@ -138,7 +135,7 @@ class build_binaries(object):
             if show_output:
                 print("%s: %s" % (prefix, x))
         (_, status) = returncode
-        if status != 0 and show_output:
+        if status != 0 and not force_success:
             self.progress("Process failed (%s)" %
                           str(returncode))
             raise subprocess.CalledProcessError(
@@ -211,7 +208,12 @@ is bob we will attempt to checkout bob-AVR'''
         '''
 
         try:
-            out = self.run_program('waf', ['./waf', 'configure', '--board=BOARDTEST'], False)
+            out = self.run_program(
+                'waf',
+                ['./waf', 'configure', '--board=BOARDTEST'],
+                show_output=False,
+                force_success=True
+            )
             lines = out.split('\n')
             needles = ["BOARDTEST' (choose from", "BOARDTEST': choices are"]
             for line in lines:

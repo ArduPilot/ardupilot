@@ -25,7 +25,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 #if CONFIG_HAL_BOARD != HAL_BOARD_LINUX
 
 // On H750 we want to measure external flash to ram performance
-#if defined(EXT_FLASH_SIZE_MB) && defined(STM32H7)
+#if defined(EXT_FLASH_SIZE_MB) && EXT_FLASH_SIZE_MB>0 && defined(STM32H7)
 #define DISABLE_CACHES
 #endif
 

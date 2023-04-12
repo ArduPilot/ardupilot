@@ -26,7 +26,7 @@ public:
     const size_t _size;
 
     uint32_t available() override { return 0; }
-    int16_t read() override { return -1; }
+    bool read(uint8_t &c) override { return false; };
     uint32_t txspace() override { return 0; }
     bool discard_input() override { return false; }
 };
@@ -53,7 +53,7 @@ public:
     bool tx_pending() override { return false; };
     uint32_t available() override { return 1; };
     uint32_t txspace() override { return _txspace; };
-    int16_t read() override { return 1; };
+    bool read(uint8_t &c) override { return false; };
 
     bool discard_input() override { return true; };
     size_t write(uint8_t c) override { return 1; };

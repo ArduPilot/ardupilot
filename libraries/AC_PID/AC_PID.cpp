@@ -8,29 +8,29 @@ const AP_Param::GroupInfo AC_PID::var_info[] = {
     // @Param: P
     // @DisplayName: PID Proportional Gain
     // @Description: P Gain which produces an output value that is proportional to the current error value
-    AP_GROUPINFO("P", 0, AC_PID, _kp, 0),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("P", 0, AC_PID, _kp, default_kp),
 
     // @Param: I
     // @DisplayName: PID Integral Gain
     // @Description: I Gain which produces an output that is proportional to both the magnitude and the duration of the error
-    AP_GROUPINFO("I", 1, AC_PID, _ki, 0),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("I", 1, AC_PID, _ki, default_ki),
 
     // @Param: D
     // @DisplayName: PID Derivative Gain
     // @Description: D Gain which produces an output that is proportional to the rate of change of the error
-    AP_GROUPINFO("D", 2, AC_PID, _kd, 0),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("D", 2, AC_PID, _kd, default_kd),
 
     // 3 was for uint16 IMAX
 
     // @Param: FF
     // @DisplayName: FF FeedForward Gain
     // @Description: FF Gain which produces an output value that is proportional to the demanded input
-    AP_GROUPINFO("FF", 4, AC_PID, _kff, 0),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("FF", 4, AC_PID, _kff, default_kff),
 
     // @Param: IMAX
     // @DisplayName: PID Integral Maximum
     // @Description: The maximum/minimum value that the I term can output
-    AP_GROUPINFO("IMAX", 5, AC_PID, _kimax, 0),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("IMAX", 5, AC_PID, _kimax, default_kimax),
 
     // 6 was for float FILT
 
@@ -42,19 +42,19 @@ const AP_Param::GroupInfo AC_PID::var_info[] = {
     // @DisplayName: PID Target filter frequency in Hz
     // @Description: Target filter frequency in Hz
     // @Units: Hz
-    AP_GROUPINFO("FLTT", 9, AC_PID, _filt_T_hz, AC_PID_TFILT_HZ_DEFAULT),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("FLTT", 9, AC_PID, _filt_T_hz, default_filt_T_hz),
 
     // @Param: FLTE
     // @DisplayName: PID Error filter frequency in Hz
     // @Description: Error filter frequency in Hz
     // @Units: Hz
-    AP_GROUPINFO("FLTE", 10, AC_PID, _filt_E_hz, AC_PID_EFILT_HZ_DEFAULT),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("FLTE", 10, AC_PID, _filt_E_hz, default_filt_E_hz),
 
     // @Param: FLTD
     // @DisplayName: PID Derivative term filter frequency in Hz
     // @Description: Derivative filter frequency in Hz
     // @Units: Hz
-    AP_GROUPINFO("FLTD", 11, AC_PID, _filt_D_hz, AC_PID_DFILT_HZ_DEFAULT),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("FLTD", 11, AC_PID, _filt_D_hz, default_filt_D_hz),
 
     // @Param: SMAX
     // @DisplayName: Slew rate limit
@@ -62,28 +62,29 @@ const AP_Param::GroupInfo AC_PID::var_info[] = {
     // @Range: 0 200
     // @Increment: 0.5
     // @User: Advanced
-    AP_GROUPINFO("SMAX", 12, AC_PID, _slew_rate_max, 0),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("SMAX", 12, AC_PID, _slew_rate_max, default_slew_rate_max),
 
     AP_GROUPEND
 };
 
 // Constructor
 AC_PID::AC_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz,
-               float initial_srmax, float initial_srtau)
+               float initial_srmax, float initial_srtau) :
+    default_kp(initial_p),
+    default_ki(initial_i),
+    default_kd(initial_d),
+    default_kff(initial_ff),
+    default_kimax(initial_imax),
+    default_filt_T_hz(initial_filt_T_hz),
+    default_filt_E_hz(initial_filt_E_hz),
+    default_filt_D_hz(initial_filt_D_hz),
+    default_slew_rate_max(initial_srmax)
 {
     // load parameter values from eeprom
     AP_Param::setup_object_defaults(this, var_info);
 
-    _kp.set_and_default(initial_p);
-    _ki.set_and_default(initial_i);
-    _kd.set_and_default(initial_d);
-    _kff.set_and_default(initial_ff);
-    _kimax.set_and_default(initial_imax);
-    _filt_T_hz.set_and_default(initial_filt_T_hz);
-    _filt_E_hz.set_and_default(initial_filt_E_hz);
-    _filt_D_hz.set_and_default(initial_filt_D_hz);
-    _slew_rate_max.set_and_default(initial_srmax);
-    _slew_rate_tau.set_and_default(initial_srtau);
+    // this param is not in the table, so its default is no loaded in the call above
+    _slew_rate_tau.set(initial_srtau);
 
     // reset input filter to first value received
     _flags._reset_filter = true;

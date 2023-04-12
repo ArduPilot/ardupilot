@@ -29,5 +29,9 @@ protected:
     AP_Float rate;          // maximum rate
     AP_Float expo;          // expo shaping
 
+private:
+    const float default_rate_tc;
+    const float default_rate;
+    const float default_expo;
 };
 

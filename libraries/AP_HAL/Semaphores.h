@@ -51,6 +51,7 @@ private:
 };
 
 // From: https://stackoverflow.com/questions/19666142/why-is-a-level-of-indirection-needed-for-this-concatenation-macro
-#define WITH_SEMAPHORE( sem ) JOIN( sem, __LINE__, __COUNTER__ )
+#define WITH_SEMAPHORE( sem ) JOIN( sem, __AP_LINE__, __COUNTER__ )
+
 #define JOIN( sem, line, counter ) _DO_JOIN( sem, line, counter )
 #define _DO_JOIN( sem, line, counter ) WithSemaphore _getsem ## counter(sem, line)

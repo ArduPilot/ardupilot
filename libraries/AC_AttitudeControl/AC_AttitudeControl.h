@@ -457,9 +457,6 @@ protected:
     // rate controller input smoothing time constant
     AP_Float            _input_tc;
 
-    // angle_p/pd boost multiplier
-    AP_Float            _throttle_gain_boost;
-
     // Intersampling period in seconds
     float               _dt;
 

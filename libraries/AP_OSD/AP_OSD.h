@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "AP_OSD_config.h"
+
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
@@ -30,22 +32,6 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #endif
 #include <AC_Fence/AC_Fence_config.h>
-
-#ifndef OSD_ENABLED
-#define OSD_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
-#ifndef HAL_WITH_OSD_BITMAP
-#define HAL_WITH_OSD_BITMAP OSD_ENABLED && (defined(HAL_WITH_SPI_OSD) || defined(WITH_SITL_OSD))
-#endif
-
-#ifndef OSD_PARAM_ENABLED
-#define OSD_PARAM_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
-#ifndef HAL_OSD_SIDEBAR_ENABLE
-#define HAL_OSD_SIDEBAR_ENABLE !HAL_MINIMIZE_FEATURES
-#endif
 
 class AP_OSD_Backend;
 class AP_MSP;
@@ -72,11 +58,15 @@ public:
     AP_Int8 xpos;
     AP_Int8 ypos;
 
-    AP_OSD_Setting();
-    AP_OSD_Setting(bool enabled, uint8_t x, uint8_t y);
+    AP_OSD_Setting(bool enabled = 0, uint8_t x = 0, uint8_t y = 0);
 
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
+
+private:
+    const float default_enabled;
+    const float default_xpos;
+    const float default_ypos;
 };
 
 class AP_OSD;
@@ -165,12 +155,20 @@ private:
     //typical fpv camera has 80deg vertical field of view, 16 row of chars
     static constexpr float ah_pitch_rad_to_char = 16.0f/(DEG_TO_RAD * 80);
 
+    enum class VoltageType {
+        VOLTAGE,
+        RESTING_VOLTAGE,
+        AVG_CELL,
+        RESTING_CELL,
+    };
+
     AP_OSD_Setting altitude{true, 23, 8};
     AP_OSD_Setting bat_volt{true, 24, 1};
     AP_OSD_Setting rssi{true, 1, 1};
     AP_OSD_Setting link_quality{false,1,1};
     AP_OSD_Setting restvolt{false, 24, 2};
     AP_OSD_Setting avgcellvolt{false, 24, 3};
+    AP_OSD_Setting avgcellrestvolt{false, 24, 4};
     AP_OSD_Setting current{true, 25, 2};
     AP_OSD_Setting batused{true, 23, 3};
     AP_OSD_Setting sats{true, 1, 3};
@@ -239,8 +237,10 @@ private:
 #endif
 
     void draw_altitude(uint8_t x, uint8_t y);
+    void draw_bat_volt(uint8_t instance,VoltageType  type,uint8_t x, uint8_t y);
     void draw_bat_volt(uint8_t x, uint8_t y);
     void draw_avgcellvolt(uint8_t x, uint8_t y);
+    void draw_avgcellrestvolt(uint8_t x, uint8_t y);
     void draw_restvolt(uint8_t x, uint8_t y);
     void draw_rssi(uint8_t x, uint8_t y);
     void draw_link_quality(uint8_t x, uint8_t y);
@@ -271,6 +271,7 @@ private:
     //helper functions
     void draw_speed(uint8_t x, uint8_t y, float angle_rad, float magnitude);
     void draw_distance(uint8_t x, uint8_t y, float distance);
+    char get_arrow_font_index (int32_t angle_cd);
 #if HAL_WITH_ESC_TELEM
     void draw_esc_temp(uint8_t x, uint8_t y);
     void draw_esc_rpm(uint8_t x, uint8_t y);
@@ -384,6 +385,13 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    float default_enabled;
+    float default_ypos;
+    float default_param_group;
+    float default_param_idx;
+    float default_param_key;
+    float default_type;
+
 };
 
 /*
@@ -437,8 +445,10 @@ private:
     void modify_parameter(uint8_t number, Event ev);
     void modify_configured_parameter(uint8_t number, Event ev);
 
+#if AP_RC_CHANNEL_ENABLED
     Event map_rc_input_to_event() const;
     RC_Channel::AuxSwitchPos get_channel_pos(uint8_t rcmapchan) const;
+#endif
 
     uint8_t _selected_param = 1;
     MenuState _menu_state = MenuState::PARAM_SELECT;
@@ -513,6 +523,7 @@ public:
     AP_Float max_battery_voltage;
     AP_Int8 cell_count;
     AP_Float warn_restvolt;
+    AP_Float warn_avgcellrestvolt;
     AP_Float warn_batvolt;
     AP_Float warn_bat2volt;
     AP_Int8 msgtime_s;
@@ -527,6 +538,7 @@ public:
         OPTION_INVERTED_AH_ROLL = 1U<<2,
         OPTION_IMPERIAL_MILES = 1U<<3,
         OPTION_DISABLE_CROSSHAIR = 1U<<4,
+        OPTION_BF_ARROWS = 1U<<5,
     };
 
     enum {

@@ -100,9 +100,9 @@ public:
         k_param_mavlink_update_rate,
         k_param_pitch_min,
         k_param_pitch_max,
-        k_param_gcs4,               // stream rates for fourth MAVLink port
-        k_param_gcs5,               // stream rates for fourth MAVLink port
-        k_param_gcs6,               // stream rates for fourth MAVLink port
+        k_param_gcs4,
+        k_param_gcs5,
+        k_param_gcs6,
 
         //
         // 200 : Radio settings

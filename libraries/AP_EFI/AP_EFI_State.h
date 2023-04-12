@@ -199,7 +199,7 @@ struct EFI_State {
     Cylinder_Status cylinder_status;
 
     // ignition voltage in Volts
-    float ignition_voltage;
+    float ignition_voltage = -1;  // -1 is "unknown";
 
     // throttle output percentage
     float throttle_out;

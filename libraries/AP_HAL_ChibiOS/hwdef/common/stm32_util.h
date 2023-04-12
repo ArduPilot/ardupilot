@@ -16,6 +16,14 @@
 
 #include "hal.h"
 
+#ifndef AP_WATCHDOG_SAVE_FAULT_ENABLED
+#define AP_WATCHDOG_SAVE_FAULT_ENABLED 1
+#endif
+
+#ifndef AP_FASTBOOT_ENABLED
+#define AP_FASTBOOT_ENABLED 1
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -156,7 +164,10 @@ typedef enum  {
 } FaultType;
 
 // Record information about a fault
+#if AP_WATCHDOG_SAVE_FAULT_ENABLED
 void save_fault_watchdog(uint16_t line, FaultType fault_type, uint32_t fault_addr, uint32_t lr);
+#endif
+
 /**
  * Generates a block of random values, returns total values generated
  * if nonblocking, for blocking returns if successful or not

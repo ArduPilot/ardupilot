@@ -736,31 +736,32 @@ ssize_t UARTDriver::read(uint8_t *buffer, uint16_t count)
     return ret;
 }
 
-int16_t UARTDriver::read()
+bool UARTDriver::read(uint8_t &b)
 {
     if (_uart_owner_thd != chThdGetSelfX()) {
-        return -1;
+        return false;
     }
 
-    return UARTDriver::read_locked(0);
+    return UARTDriver::read_locked(0, b);
 }
 
-int16_t UARTDriver::read_locked(uint32_t key)
+bool UARTDriver::read_locked(uint32_t key, uint8_t &b)
 {
     if (lock_read_key != 0 && key != lock_read_key) {
-        return -1;
+        return false;
     }
     if (!_rx_initialised) {
-        return -1;
+        return false;
     }
     uint8_t byte;
     if (!_readbuf.read_byte(&byte)) {
-        return -1;
+        return false;
     }
     if (!_rts_is_active) {
         update_rts_line();
     }
-    return byte;
+    b = byte;
+    return true;
 }
 
 /* write one byte to the port */
@@ -1154,7 +1155,6 @@ void UARTDriver::write_pending_bytes(void)
  */
 void UARTDriver::half_duplex_setup_tx(void)
 {
-#ifdef HAVE_USB_SERIAL
     if (!hd_tx_active) {
         chEvtGetAndClearFlags(&hd_listener);
         // half-duplex transmission is done when both the output is empty and the transmission is ended
@@ -1165,7 +1165,6 @@ void UARTDriver::half_duplex_setup_tx(void)
         sercfg.cr3 &= ~USART_CR3_HDSEL;
         sdStart(sd, &sercfg);
     }
-#endif
 }
 
 /*

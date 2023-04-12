@@ -173,8 +173,8 @@ void AP_Proximity::init()
             }
             break;
 
-        case Type::CYGBOT_D1:
 #if AP_PROXIMITY_CYGBOT_ENABLED
+        case Type::CYGBOT_D1:
         if (AP_Proximity_Cygbot_D1::detect(serial_instance)) {
             state[instance].instance = instance;
             drivers[instance] = new AP_Proximity_Cygbot_D1(*this, state[instance], params[instance], serial_instance);

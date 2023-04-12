@@ -61,7 +61,7 @@ public:
     uint32_t txspace() override;
 
     ssize_t read(uint8_t *buffer, uint16_t count) override;
-    int16_t read() override;
+    bool read(uint8_t &b) override WARN_IF_UNUSED;
     //ssize_t read(uint8_t *buffer, uint16_t count) override;
     //int16_t read_locked(uint32_t key) override;
 
@@ -71,9 +71,9 @@ public:
     size_t write(const uint8_t *buffer, size_t size) override;
 
     bool discard_input() override; // discard all bytes available for reading
-    uint32_t bw_in_kilobytes_per_second() const override
+    uint32_t bw_in_bytes_per_second() const override
     {
-        return 10;
+        return 10*1024;
     }
 
     //bool lock_port(uint32_t write_key, uint32_t read_key) override;

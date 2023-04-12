@@ -59,7 +59,9 @@ public:
         SITL    = 10,
         AirSimSITL = 12,
 #endif
+#if AP_PROXIMITY_CYGBOT_ENABLED
         CYGBOT_D1 = 13,
+#endif
         DroneCAN = 14,
     };
 

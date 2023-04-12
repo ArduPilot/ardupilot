@@ -7,6 +7,7 @@
 
 #if HAL_GCS_ENABLED
 
+#include <AP_AdvancedFailsafe/AP_AdvancedFailsafe_config.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include "GCS_MAVLink.h"
@@ -92,16 +93,14 @@ bool check_payload_size(mavlink_channel_t chan, uint16_t max_payload_len);
 // then call its own specific methods on
 #define GCS_MAVLINK_CHAN_METHOD_DEFINITIONS(subclass_name) \
     subclass_name *chan(const uint8_t ofs) override {                   \
-        if (ofs > _num_gcs) {                                           \
-            INTERNAL_ERROR(AP_InternalError::error_t::gcs_offset);      \
+        if (ofs >= _num_gcs) {                                           \
             return nullptr;                                             \
         }                                                               \
         return (subclass_name *)_chan[ofs];                        \
     }                                                                   \
                                                                         \
     const subclass_name *chan(const uint8_t ofs) const override { \
-        if (ofs > _num_gcs) {                                           \
-            INTERNAL_ERROR(AP_InternalError::error_t::gcs_offset);      \
+        if (ofs >= _num_gcs) {                                           \
             return nullptr;                                             \
         }                                                               \
         return (subclass_name *)_chan[ofs];                        \
@@ -151,6 +150,42 @@ private:
     uint16_t _max_intervals;
 };
 #endif
+
+class GCS_MAVLINK_InProgress
+{
+public:
+    enum class Type {
+        NONE,
+        AIRSPEED_CAL,
+        SD_FORMAT,
+    };
+
+    // these can fail if there's no space on the channel to send the ack:
+    bool conclude(MAV_RESULT result);
+    bool send_in_progress();
+    // abort task without sending any further ACKs:
+    void abort() { task = Type::NONE; }
+
+    Type task;
+    MAV_CMD mav_cmd;
+
+    static class GCS_MAVLINK_InProgress *get_task(MAV_CMD cmd, Type t, uint8_t sysid, uint8_t compid);
+
+    static void check_tasks();
+
+private:
+
+    uint8_t requesting_sysid;
+    uint8_t requesting_compid;
+    mavlink_channel_t chan;
+
+    bool send_ack(MAV_RESULT result);
+
+    static GCS_MAVLINK_InProgress in_progress_tasks[1];
+
+    // allocate a task-tracking ID
+    static uint32_t last_check_ms;
+};
 
 ///
 /// @class	GCS_MAVLINK
@@ -209,15 +244,17 @@ public:
                                 const mavlink_message_t &msg);
 
     // send a mavlink_message_t out this GCS_MAVLINK connection.
-    // Caller is responsible for ensuring space.
-    void send_message(uint32_t msgid, const char *pkt) const {
+    void send_message(uint32_t msgid, const char *pkt) {
         const mavlink_msg_entry_t *entry = mavlink_get_msg_entry(msgid);
         if (entry == nullptr) {
             return;
         }
         send_message(pkt, entry);
     }
-    void send_message(const char *pkt, const mavlink_msg_entry_t *entry) const {
+    void send_message(const char *pkt, const mavlink_msg_entry_t *entry) {
+        if (!check_payload_size(entry->max_msg_len)) {
+            return;
+        }
         _mav_finalize_message_chan_send(chan,
                                         entry->msgid,
                                         pkt,
@@ -232,6 +269,9 @@ public:
     virtual uint8_t sysid_my_gcs() const = 0;
     virtual bool sysid_enforce() const { return false; }
 
+    // NOTE: param_name here must point to a 16+1 byte buffer - so do
+    // NOT try to pass in a static-char-* unless it does have that
+    // length!
     void send_parameter_value(const char *param_name,
                               ap_var_type param_type,
                               float param_value);
@@ -380,8 +420,8 @@ public:
     bool is_private(void) const { return is_private(chan); }
 
 #if HAL_HIGH_LATENCY2_ENABLED
-    // return true if the link should be sending. Will return false if is a high latency link AND is not active
-    bool should_send() { return is_high_latency_link ? high_latency_link_enabled : true; }
+    // true if this is a high latency link
+    bool is_high_latency_link;
 #endif
 
     /*
@@ -406,6 +446,9 @@ public:
       returns true if a match is found
      */
     static bool find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint8_t &sysid, mavlink_channel_t &channel) { return routing.find_by_mavtype_and_compid(mav_type, compid, sysid, channel); }
+    // same as above, but returns a pointer to the GCS_MAVLINK object
+    // corresponding to the channel
+    static GCS_MAVLINK *find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint8_t &sysid);
 
     // update signing timestamp on GPS lock
     static void update_signing_timestamp(uint64_t timestamp_usec);
@@ -476,10 +519,11 @@ protected:
     virtual MAV_RESULT handle_command_component_arm_disarm(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_set_home(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_aux_function(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_storage_format(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     void handle_mission_request_list(const mavlink_message_t &msg);
-    void handle_mission_request(const mavlink_message_t &msg) const;
-    void handle_mission_request_int(const mavlink_message_t &msg) const;
-    void handle_mission_clear_all(const mavlink_message_t &msg) const;
+    void handle_mission_request(const mavlink_message_t &msg);
+    void handle_mission_request_int(const mavlink_message_t &msg);
+    void handle_mission_clear_all(const mavlink_message_t &msg);
 
     // Note that there exists a relatively new mavlink DO command,
     // MAV_CMD_DO_SET_MISSION_CURRENT which provides an acknowledgement
@@ -530,6 +574,7 @@ protected:
     MAV_RESULT handle_command_request_message(const mavlink_command_long_t &packet);
 
     MAV_RESULT handle_rc_bind(const mavlink_command_long_t &packet);
+
     virtual MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet);
 
     void handle_send_autopilot_version(const mavlink_message_t &msg);
@@ -568,10 +613,10 @@ protected:
 
     // generally this should not be overridden; Plane overrides it to ensure
     // failsafe isn't triggered during calibration
-    virtual MAV_RESULT handle_command_preflight_calibration(const mavlink_command_long_t &packet);
+    virtual MAV_RESULT handle_command_preflight_calibration(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
 
-    virtual MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet);
-    virtual MAV_RESULT _handle_command_preflight_calibration_baro();
+    virtual MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
+    virtual MAV_RESULT _handle_command_preflight_calibration_baro(const mavlink_message_t &msg);
 
     MAV_RESULT handle_command_preflight_can(const mavlink_command_long_t &packet);
 
@@ -583,6 +628,8 @@ protected:
     MAV_RESULT handle_command_do_set_roi_sysid(const uint8_t sysid);
     MAV_RESULT handle_command_do_set_roi_sysid(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_set_roi_sysid(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_do_set_roi_none();
+
     virtual MAV_RESULT handle_command_mount(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_mag_cal(const mavlink_command_long_t &packet);
     virtual MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet);
@@ -643,9 +690,6 @@ protected:
 
     MAV_RESULT handle_control_high_latency(const mavlink_command_long_t &packet);
 
-    // true if this is a high latency link
-    bool is_high_latency_link;
-    bool high_latency_link_enabled;
 #endif // HAL_HIGH_LATENCY2_ENABLED
     
     static constexpr const float magic_force_arm_value = 2989.0f;
@@ -681,6 +725,13 @@ private:
         uint32_t received_ms; // time RADIO_STATUS received
     } last_radio_status;
 
+    enum class Flags {
+        USING_SIGNING = (1<<0),
+        ACTIVE = (1<<1),
+        STREAMING = (1<<2),
+        PRIVATE = (1<<3),
+        LOCKED = (1<<4),
+    };
     void log_mavlink_stats();
 
     uint32_t last_accel_cal_ms; // used to rate limit accel cals for bad links
@@ -983,7 +1034,7 @@ private:
     
     // we cache the current location and send it even if the AHRS has
     // no idea where we are:
-    struct Location global_position_current_loc;
+    Location global_position_current_loc;
 
     uint8_t last_tx_seq;
     uint16_t send_packet_count;
@@ -1141,7 +1192,13 @@ public:
     bool install_alternative_protocol(mavlink_channel_t chan, GCS_MAVLINK::protocol_handler_fn_t handler);
 
     // get the VFR_HUD throttle
-    int16_t get_hud_throttle(void) const { return num_gcs()>0?chan(0)->vfr_hud_throttle():0; }
+    int16_t get_hud_throttle(void) const {
+        const GCS_MAVLINK *link = chan(0);
+        if (link == nullptr) {
+            return 0;
+        }
+        return link->vfr_hud_throttle();
+    }
 
     // update uart pass-thru
     void update_passthru();
@@ -1159,7 +1216,9 @@ public:
     uint8_t get_channel_from_port_number(uint8_t port_num);
 
 #if HAL_HIGH_LATENCY2_ENABLED
+    bool high_latency_link_enabled;
     void enable_high_latency_connections(bool enabled);
+    bool get_high_latency_status();
 #endif // HAL_HIGH_LATENCY2_ENABLED
 
     virtual uint8_t sysid_this_mav() const = 0;

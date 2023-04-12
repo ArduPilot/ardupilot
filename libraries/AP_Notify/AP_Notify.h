@@ -69,13 +69,17 @@ public:
         Notify_LED_PCA9685LED_I2C_External  = (1 << 3), // External PCA9685_I2C
 #endif
         Notify_LED_OreoLED                  = (1 << 4), // Oreo
-        Notify_LED_UAVCAN                   = (1 << 5), // UAVCAN RGB LED
+        Notify_LED_DroneCAN                   = (1 << 5), // UAVCAN RGB LED
 #if AP_NOTIFY_NCP5623_ENABLED
         Notify_LED_NCP5623_I2C_External     = (1 << 6), // External NCP5623
         Notify_LED_NCP5623_I2C_Internal     = (1 << 7), // Internal NCP5623
 #endif
+#if AP_NOTIFY_NEOPIXEL_ENABLED
         Notify_LED_NeoPixel                 = (1 << 8), // NeoPixel 5050 AdaFruit 1655 SK6812  Worldsemi WS2812B
+#endif
+#if AP_NOTIFY_PROFILED_ENABLED
         Notify_LED_ProfiLED                 = (1 << 9), // ProfiLED
+#endif
         Notify_LED_Scripting                = (1 << 10),// Colour accessor for scripting
         Notify_LED_DShot                    = (1 << 11),// Use dshot commands to set ESC LEDs
         Notify_LED_ProfiLED_SPI             = (1 << 12), // ProfiLED
@@ -119,6 +123,7 @@ public:
         bool powering_off;        // true when the vehicle is powering off
         bool video_recording;     // true when the vehicle is recording video
         bool temp_cal_running;    // true if a temperature calibration is running
+        bool gyro_calibrated;     // true if calibrated gyro/acc
     };
 
     /// notify_events_type - bitmask of active events.

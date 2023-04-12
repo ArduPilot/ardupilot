@@ -35,7 +35,7 @@ const AP_Param::GroupInfo AP_OSD_ParamSetting::var_info[] = {
     // @Description: Enable setting
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-    AP_GROUPINFO("_EN", 1, AP_OSD_ParamSetting, enabled, 0),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("_EN", 1, AP_OSD_ParamSetting, enabled, default_enabled),
 
     // @Param: _X
     // @DisplayName: X position
@@ -49,7 +49,7 @@ const AP_Param::GroupInfo AP_OSD_ParamSetting::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     // @User: Standard
-    AP_GROUPINFO("_Y", 3, AP_OSD_ParamSetting, ypos, 0),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("_Y", 3, AP_OSD_ParamSetting, ypos, default_ypos),
 
     // Parameter access keys. These default to -1 too allow user overrides
     // to work properly
@@ -58,19 +58,19 @@ const AP_Param::GroupInfo AP_OSD_ParamSetting::var_info[] = {
     // @DisplayName: Parameter key
     // @Description: Key of the parameter to be displayed and modified
     // @User: Standard
-    AP_GROUPINFO("_KEY", 4, AP_OSD_ParamSetting, _param_key, -1),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("_KEY", 4, AP_OSD_ParamSetting, _param_key, default_param_key),
 
     // @Param: _IDX
     // @DisplayName: Parameter index
     // @Description: Index of the parameter to be displayed and modified
     // @User: Standard
-    AP_GROUPINFO("_IDX", 5, AP_OSD_ParamSetting, _param_idx, -1),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("_IDX", 5, AP_OSD_ParamSetting, _param_idx, default_param_idx),
 
     // @Param: _GRP
     // @DisplayName: Parameter group
     // @Description: Group of the parameter to be displayed and modified
     // @User: Standard
-    AP_GROUPINFO("_GRP", 6, AP_OSD_ParamSetting, _param_group, -1),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("_GRP", 6, AP_OSD_ParamSetting, _param_group, default_param_group),
 
     // @Param: _MIN
     // @DisplayName: Parameter minimum
@@ -94,7 +94,7 @@ const AP_Param::GroupInfo AP_OSD_ParamSetting::var_info[] = {
     // @DisplayName: Parameter type
     // @Description: Type of the parameter to be displayed and modified
     // @User: Standard
-    AP_GROUPINFO("_TYPE", 10, AP_OSD_ParamSetting, _type, 0),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("_TYPE", 10, AP_OSD_ParamSetting, _type, default_type),
 
     AP_GROUPEND
 };
@@ -237,26 +237,27 @@ const AP_OSD_ParamSetting::ParamMetadata AP_OSD_ParamSetting::_param_metadata[OS
 extern const AP_HAL::HAL& hal;
 
 // default constructor that just sets some sensible defaults that exist on all platforms
-AP_OSD_ParamSetting::AP_OSD_ParamSetting(uint8_t param_number)
-    : _param_number(param_number)
+AP_OSD_ParamSetting::AP_OSD_ParamSetting(uint8_t param_number) :
+    _param_number(param_number),
+    default_ypos(param_number + 1),
+    default_param_group(-1),
+    default_param_idx(-1),
+    default_param_key(-1)
 {
     AP_Param::setup_object_defaults(this, var_info);
-
-    ypos.set(param_number + 1);
 }
 
 // construct a setting from a compact static initializer structure
-AP_OSD_ParamSetting::AP_OSD_ParamSetting(const Initializer& initializer)
-    : _param_number(initializer.index)
+AP_OSD_ParamSetting::AP_OSD_ParamSetting(const Initializer& initializer) :
+    _param_number(initializer.index),
+    default_enabled(true),
+    default_ypos(initializer.index + 1),
+    default_param_group(initializer.token.group_element),
+    default_param_idx(initializer.token.idx),
+    default_param_key(initializer.token.key),
+    default_type(initializer.type)
 {
     AP_Param::setup_object_defaults(this, var_info);
-
-    enabled.set(true);
-    ypos.set(initializer.index + 1);
-    _param_group.set(initializer.token.group_element);
-    _param_idx.set(initializer.token.idx);
-    _param_key.set(initializer.token.key);
-    _type.set(initializer.type);
 }
 
 // update the contained parameter

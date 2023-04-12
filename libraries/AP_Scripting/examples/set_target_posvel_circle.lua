@@ -7,6 +7,7 @@
 --      2) switch to GUIDED mode 
 --      3) the vehilce will follow a circle in clockwise direction with increasing speed until ramp_up_time_s time has passed.
 --      4) switch out of and into the GUIDED mode any time to restart the trajectory from the start.
+-- luacheck: only 0
 
 -- Edit these variables
 local rad_xy_m = 10.0   -- circle radius in xy plane in m

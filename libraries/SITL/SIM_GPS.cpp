@@ -59,6 +59,9 @@ GPS::GPS(uint8_t _instance) :
 
 uint32_t GPS::device_baud() const
 {
+    if (_sitl == nullptr) {
+        return 0;
+    }
     switch ((Type)_sitl->gps_type[instance].get()) {
         case Type::NOVA:
             return 19200;

@@ -12,13 +12,15 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "AP_Compass_MAG3110.h"
+
+#if AP_COMPASS_MAG3110_ENABLED
+
 #include <utility>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <stdio.h>
-
-#include "AP_Compass_MAG3110.h"
 
 extern const AP_HAL::HAL &hal;
 
@@ -219,3 +221,5 @@ void AP_Compass_MAG3110::read()
 
     drain_accumulated_samples(_compass_instance);
 }
+
+#endif  // AP_COMPASS_MAG3110_ENABLED

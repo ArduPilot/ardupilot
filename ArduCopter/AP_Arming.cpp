@@ -33,12 +33,6 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
         return false;
     }
 
-    // if we are using motor Estop switch, it must not be in Estop position
-    if (SRV_Channels::get_emergency_stop()){
-        check_failed(display_failure, "Motor Emergency Stopped");
-        return false;
-    }
-
     if (!disarm_switch_checks(display_failure)) {
         return false;
     }
@@ -69,8 +63,7 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
 
 bool AP_Arming_Copter::rc_throttle_failsafe_checks(bool display_failure) const
 {
-    if ((checks_to_perform != ARMING_CHECK_ALL) &&
-        (checks_to_perform & ARMING_CHECK_RC) == 0) {
+    if (!check_enabled(ARMING_CHECK_RC)) {
         // this check has been disabled
         return true;
     }
@@ -114,7 +107,7 @@ bool AP_Arming_Copter::barometer_checks(bool display_failure)
 
     bool ret = true;
     // check Baro
-    if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_BARO)) {
+    if (check_enabled(ARMING_CHECK_BARO)) {
         // Check baro & inav alt are within 1m if EKF is operating in an absolute position mode.
         // Do not check if intending to operate in a ground relative height mode as EKF will output a ground relative height
         // that may differ from the baro height due to baro drift.
@@ -134,7 +127,7 @@ bool AP_Arming_Copter::ins_checks(bool display_failure)
 {
     bool ret = AP_Arming::ins_checks(display_failure);
 
-    if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_INS)) {
+    if (check_enabled(ARMING_CHECK_INS)) {
 
         // get ekf attitude (if bad, it's usually the gyro biases)
         if (!pre_arm_ekf_attitude_check()) {
@@ -153,7 +146,7 @@ bool AP_Arming_Copter::board_voltage_checks(bool display_failure)
     }
 
     // check battery voltage
-    if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_VOLTAGE)) {
+    if (check_enabled(ARMING_CHECK_VOLTAGE)) {
         if (copter.battery.has_failsafed()) {
             check_failed(ARMING_CHECK_VOLTAGE, display_failure, "Battery failsafe");
             return false;
@@ -183,7 +176,7 @@ bool AP_Arming_Copter::terrain_database_required() const
 bool AP_Arming_Copter::parameter_checks(bool display_failure)
 {
     // check various parameter values
-    if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_PARAMETERS)) {
+    if (check_enabled(ARMING_CHECK_PARAMETERS)) {
 
         // failsafe parameter checks
         if (copter.g.failsafe_throttle) {
@@ -379,7 +372,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
     }
 
     // return true immediately if gps check is disabled
-    if (!(checks_to_perform == ARMING_CHECK_ALL || checks_to_perform & ARMING_CHECK_GPS)) {
+    if (!check_enabled(ARMING_CHECK_GPS)) {
         AP_Notify::flags.pre_arm_gps_check = true;
         return true;
     }
@@ -414,7 +407,7 @@ bool AP_Arming_Copter::proximity_checks(bool display_failure) const
         return false;
     }
 
-    if (!((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_PARAMETERS))) {
+    if (!check_enabled(ARMING_CHECK_PARAMETERS)) {
         // check is disabled
         return true;
     }
@@ -537,7 +530,7 @@ bool AP_Arming_Copter::gcs_failsafe_check(bool display_failure)
 // check winch
 bool AP_Arming_Copter::winch_checks(bool display_failure) const
 {
-#if WINCH_ENABLED == ENABLED
+#if AP_WINCH_ENABLED
     // pass if parameter or all arming checks disabled
     if (!check_enabled(ARMING_CHECK_PARAMETERS)) {
         return true;
@@ -605,7 +598,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
     }
 
     // check lean angle
-    if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_INS)) {
+    if (check_enabled(ARMING_CHECK_INS)) {
         if (degrees(acosf(ahrs.cos_roll()*ahrs.cos_pitch()))*100.0f > copter.aparm.angle_max) {
             check_failed(ARMING_CHECK_INS, true, "Leaning");
             return false;
@@ -614,7 +607,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
 
     // check adsb
 #if HAL_ADSB_ENABLED
-    if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_PARAMETERS)) {
+    if (check_enabled(ARMING_CHECK_PARAMETERS)) {
         if (copter.failsafe.adsb) {
             check_failed(ARMING_CHECK_PARAMETERS, true, "ADSB threat detected");
             return false;
@@ -623,14 +616,14 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
 #endif
 
     // check throttle
-    if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_RC)) {
+    if (check_enabled(ARMING_CHECK_RC)) {
          #if FRAME_CONFIG == HELI_FRAME
         const char *rc_item = "Collective";
         #else
         const char *rc_item = "Throttle";
         #endif
-        // check throttle is not too high - skips checks if arming from GCS in Guided
-        if (!(method == AP_Arming::Method::MAVLINK && (copter.flightmode->mode_number() == Mode::Number::GUIDED || copter.flightmode->mode_number() == Mode::Number::GUIDED_NOGPS || copter.flightmode->mode_number() == Mode::Number::AUTO))) {
+        // check throttle is not too high - skips checks if arming from GCS/scripting in Guided,Guided_NoGPS or Auto 
+        if (!((method == AP_Arming::Method::MAVLINK || method == AP_Arming::Method::SCRIPTING) && (copter.flightmode->mode_number() == Mode::Number::GUIDED || copter.flightmode->mode_number() == Mode::Number::GUIDED_NOGPS || copter.flightmode->mode_number() == Mode::Number::AUTO))) {
             // above top of deadband is too always high
             if (copter.get_pilot_desired_climb_rate(copter.channel_throttle->get_control_in()) > 0.0f) {
                 check_failed(ARMING_CHECK_RC, true, "%s too high", rc_item);
@@ -756,8 +749,8 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
     copter.sprayer.test_pump(false);
 #endif
 
-    // enable output to motors
-    copter.enable_motor_output();
+    // output lowest possible value to motors
+    copter.motors->output_min();
 
     // finally actually arm the motors
     copter.motors->armed(true);

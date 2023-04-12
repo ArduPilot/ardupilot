@@ -218,8 +218,8 @@ void AP_VisualOdom::handle_vision_speed_estimate(uint64_t remote_time_us, uint32
     }
 }
 
-// calibrate camera attitude to align with vehicle's AHRS/EKF attitude
-void AP_VisualOdom::align_sensor_to_vehicle()
+// request sensor's yaw be aligned with vehicle's AHRS/EKF attitude
+void AP_VisualOdom::request_align_yaw_to_ahrs()
 {
     // exit immediately if not enabled
     if (!enabled()) {
@@ -228,7 +228,7 @@ void AP_VisualOdom::align_sensor_to_vehicle()
 
     // call backend
     if (_driver != nullptr) {
-        _driver->align_sensor_to_vehicle();
+        _driver->request_align_yaw_to_ahrs();
     }
 }
 

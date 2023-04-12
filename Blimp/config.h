@@ -18,10 +18,6 @@
 #error CONFIG_HAL_BOARD must be defined to build Blimp
 #endif
 
-#ifndef ADVANCED_FAILSAFE
-# define ADVANCED_FAILSAFE DISABLED
-#endif
-
 #ifndef ARMING_DELAY_SEC
 # define ARMING_DELAY_SEC 2.0f
 #endif
@@ -142,21 +138,9 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Precision Landing with companion computer or IRLock sensor
-#ifndef PRECISION_LANDING
-# define PRECISION_LANDING ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // Parachute release
 #ifndef PARACHUTE
 # define PARACHUTE HAL_PARACHUTE_ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Nav-Guided - allows external nav computer to control vehicle
-#ifndef NAV_GUIDED
-# define NAV_GUIDED    !HAL_MINIMIZE_FEATURES
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -196,21 +180,9 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Follow - follow another vehicle or GCS
-#ifndef MODE_FOLLOW_ENABLED
-# define MODE_FOLLOW_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // Guided mode - control vehicle's position or angles from GCS
 #ifndef MODE_GUIDED_ENABLED
 # define MODE_GUIDED_ENABLED ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// GuidedNoGPS mode - control vehicle's angles from GCS
-#ifndef MODE_GUIDED_NOGPS_ENABLED
-# define MODE_GUIDED_NOGPS_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -235,18 +207,6 @@
 // SmartRTL - allows vehicle to retrace a (loop-eliminated) breadcrumb home
 #ifndef MODE_SMARTRTL_ENABLED
 # define MODE_SMARTRTL_ENABLED ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Sport - fly vehicle in rate-controlled (earth-frame) mode
-#ifndef MODE_SPORT_ENABLED
-# define MODE_SPORT_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// System ID - conduct system identification tests on vehicle
-#ifndef MODE_SYSTEMID_ENABLED
-# define MODE_SYSTEMID_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

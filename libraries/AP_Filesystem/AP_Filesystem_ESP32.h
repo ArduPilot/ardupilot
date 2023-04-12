@@ -33,6 +33,7 @@ public:
     void *opendir(const char *pathname) override;
     struct dirent *readdir(void *dirp) override;
     int closedir(void *dirp) override;
+    int rename(const char *oldpath, const char *newpath) override;
 
     // return free disk space in bytes, -1 on error
     int64_t disk_free(const char *path) override;

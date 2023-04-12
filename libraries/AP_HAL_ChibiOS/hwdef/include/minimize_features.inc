@@ -35,3 +35,32 @@ define HAL_HOTT_TELEM_ENABLED 0
 
 # smaller boards lose SIRF GPS support
 define AP_GPS_SIRF_ENABLED 0
+
+# minimized boards don't get configuration via SmartAudio by default:
+define AP_SMARTAUDIO_ENABLED 0
+
+# minimized boards don't get configuration via Tramp by default:
+define AP_TRAMP_ENABLED 0
+
+# various structures increase the flash size when using >16 servos:
+define NUM_SERVO_CHANNELS 16
+
+# remove various OSD features by default:
+define OSD_ENABLED 0
+define HAL_PLUSCODE_ENABLE 0
+define HAL_OSD_SIDEBAR_ENABLE 0
+define OSD_PARAM_ENABLED 0
+
+# no Winch if minimized:
+define AP_WINCH_ENABLED 0
+
+# prune out some odd camera backends:
+define AP_CAMERA_BACKEND_DEFAULT_ENABLED 0
+define AP_CAMERA_RELAY_ENABLED AP_CAMERA_ENABLED
+define AP_CAMERA_SERVO_ENABLED AP_CAMERA_ENABLED
+
+# no SLCAN on these boards (use can-over-mavlink if required)
+define AP_CAN_SLCAN_ENABLED 0
+
+# no beacon support on minimized boards:
+define AP_BEACON_ENABLED 0

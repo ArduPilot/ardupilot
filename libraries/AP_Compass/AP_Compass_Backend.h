@@ -29,6 +29,8 @@
 #include <AP_MSP/msp.h>
 #endif
 
+#include <AP_Math/AP_Math.h>
+
 class Compass;  // forward declaration
 class AP_Compass_Backend
 {

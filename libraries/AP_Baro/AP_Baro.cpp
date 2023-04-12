@@ -43,7 +43,7 @@
 #include "AP_Baro_DPS280.h"
 #include "AP_Baro_BMP388.h"
 #include "AP_Baro_Dummy.h"
-#include "AP_Baro_UAVCAN.h"
+#include "AP_Baro_DroneCAN.h"
 #include "AP_Baro_MSP.h"
 #include "AP_Baro_ExternalAHRS.h"
 #include "AP_Baro_ICP101XX.h"
@@ -605,20 +605,23 @@ void AP_Baro::init(void)
     if (sitl == nullptr) {
         AP_HAL::panic("No SITL pointer");
     }
+#if !AP_TEST_DRONECAN_DRIVERS
+    // use dronecan instances instead of SITL instances
     for(uint8_t i = 0; i < sitl->baro_count; i++) {
         ADD_BACKEND(new AP_Baro_SITL(*this));
     }
 #endif
+#endif
 
-#if AP_BARO_UAVCAN_ENABLED
+#if AP_BARO_DRONECAN_ENABLED
     // Detect UAVCAN Modules, try as many times as there are driver slots
     for (uint8_t i = 0; i < BARO_MAX_DRIVERS; i++) {
-        ADD_BACKEND(AP_Baro_UAVCAN::probe(*this));
+        ADD_BACKEND(AP_Baro_DroneCAN::probe(*this));
     }
 #endif
 
 #if AP_BARO_EXTERNALAHRS_ENABLED
-    const int8_t serial_port = AP::externalAHRS().get_port();
+    const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::BARO);
     if (serial_port >= 0) {
         ADD_BACKEND(new AP_Baro_ExternalAHRS(*this, serial_port));
     }
@@ -1112,7 +1115,8 @@ bool AP_Baro::arming_checks(size_t buflen, char *buffer) const
     const auto &gps = AP::gps();
     if (_alt_error_max > 0 && gps.status() >= AP_GPS::GPS_Status::GPS_OK_FIX_3D) {
         const float alt_amsl = gps.location().alt*0.01;
-        const float alt_pressure = get_altitude_difference(SSL_AIR_PRESSURE, get_pressure());
+        // note the addition of _field_elevation_active as this is subtracted in get_altitude_difference()
+        const float alt_pressure = get_altitude_difference(SSL_AIR_PRESSURE, get_pressure()) + _field_elevation_active;
         const float error = fabsf(alt_amsl - alt_pressure);
         if (error > _alt_error_max) {
             hal.util->snprintf(buffer, buflen, "GPS alt error %.0fm (see BARO_ALTERR_MAX)", error);

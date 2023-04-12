@@ -61,10 +61,10 @@ public:
     bool get_vector_from_origin_NEU(Vector3f &vec_neu) const WARN_IF_UNUSED;
 
     // return horizontal distance in meters between two locations
-    ftype get_distance(const struct Location &loc2) const;
+    ftype get_distance(const Location &loc2) const;
 
     // return the altitude difference in meters taking into account alt frame.
-    bool get_alt_distance(const struct Location &loc2, ftype &distance) const WARN_IF_UNUSED;
+    bool get_alt_distance(const Location &loc2, ftype &distance) const WARN_IF_UNUSED;
 
     // return the distance in meters in North/East/Down plane as a N/E/D vector to loc2
     // NOT CONSIDERING ALT FRAME!
@@ -97,20 +97,28 @@ public:
     void zero(void);
 
     // return the bearing in radians, from 0 to 2*Pi
-    ftype get_bearing(const struct Location &loc2) const;
+    ftype get_bearing(const Location &loc2) const;
 
     // return bearing in centi-degrees from location to loc2, return is 0 to 35999
-    int32_t get_bearing_to(const struct Location &loc2) const {
+    int32_t get_bearing_to(const Location &loc2) const {
         return int32_t(get_bearing(loc2) * DEGX100 + 0.5);
     }
 
     // check if lat and lng match. Ignore altitude and options
     bool same_latlon_as(const Location &loc2) const;
 
+    // check if altitude matches.
+    bool same_alt_as(const Location &loc2) const;
+
+    // check if lat, lng, and alt match.
+    bool same_loc_as(const Location &loc2) const {
+        return same_latlon_as(loc2) && same_alt_as(loc2);
+    }
+
     /*
      * convert invalid waypoint with useful data. return true if location changed
      */
-    bool sanitize(const struct Location &defaultLoc);
+    bool sanitize(const Location &defaultLoc);
 
     // return true when lat and lng are within range
     bool check_latlng() const;

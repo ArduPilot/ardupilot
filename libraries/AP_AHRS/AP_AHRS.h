@@ -37,7 +37,6 @@ class AP_AHRS_View;
 
 #define AP_AHRS_NAVEKF_SETTLE_TIME_MS 20000     // time in milliseconds the ekf needs to settle after being started
 
-#include <AP_NMEA_Output/AP_NMEA_Output.h>
 
 // fwd declare GSF estimator
 class EKFGSF_yaw;
@@ -89,7 +88,7 @@ public:
     void            reset();
 
     // dead-reckoning support
-    bool get_location(struct Location &loc) const;
+    bool get_location(Location &loc) const;
 
     // get latest altitude estimate above ground level in meters and validity flag
     bool get_hagl(float &hagl) const WARN_IF_UNUSED;
@@ -174,7 +173,7 @@ public:
     bool get_secondary_quaternion(Quaternion &quat) const;
 
     // return secondary position solution if available
-    bool get_secondary_position(struct Location &loc) const;
+    bool get_secondary_position(Location &loc) const;
 
     // EKF has a better ground speed vector estimate
     Vector2f groundspeed_vector();
@@ -433,7 +432,7 @@ public:
 
     // get the home location. This is const to prevent any changes to
     // home without telling AHRS about the change
-    const struct Location &get_home(void) const {
+    const Location &get_home(void) const {
         return _home;
     }
 
@@ -718,7 +717,7 @@ private:
      */
     void load_watchdog_home();
     bool _checked_watchdog_home;
-    struct Location _home;
+    Location _home;
     bool _home_is_set :1;
     bool _home_locked :1;
 
@@ -823,10 +822,6 @@ private:
     void Write_AHRS2(void) const;
     // write POS (canonical vehicle position) message out:
     void Write_POS(void) const;
-
-#if HAL_NMEA_OUTPUT_ENABLED
-    class AP_NMEA_Output* _nmea_out;
-#endif
 };
 
 namespace AP {

@@ -55,8 +55,9 @@ void Sub::read_rangefinder()
     }
 
     // send rangefinder altitude and health to waypoint navigation library
-    wp_nav.set_rangefinder_alt(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
-    circle_nav.set_rangefinder_alt(rangefinder_state.enabled && wp_nav.rangefinder_used(), rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
+    const float terrain_offset_cm = inertial_nav.get_position_z_up_cm() - rangefinder_state.alt_cm_filt.get();
+    wp_nav.set_rangefinder_terrain_offset(rangefinder_state.enabled, rangefinder_state.alt_healthy, terrain_offset_cm);
+    circle_nav.set_rangefinder_terrain_offset(rangefinder_state.enabled && wp_nav.rangefinder_used(), rangefinder_state.alt_healthy, terrain_offset_cm);
 
 #else
     rangefinder_state.enabled = false;

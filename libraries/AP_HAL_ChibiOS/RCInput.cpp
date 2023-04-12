@@ -176,11 +176,15 @@ void RCInput::_timer_tick(void)
     }
 #endif
 
+#if HAL_WITH_IO_MCU
     uint32_t now = AP_HAL::millis();
     const bool have_iocmu_rc = (_rcin_last_iomcu_ms != 0 && now - _rcin_last_iomcu_ms < 400);
     if (!have_iocmu_rc) {
         _rcin_last_iomcu_ms = 0;
     }
+#else
+    const bool have_iocmu_rc = false;
+#endif
 
     if (rcprot.new_input() && !have_iocmu_rc) {
         WITH_SEMAPHORE(rcin_mutex);

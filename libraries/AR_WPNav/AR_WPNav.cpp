@@ -199,7 +199,7 @@ void AR_WPNav::set_nudge_speed_max(float nudge_speed_max)
 
 // set desired location and (optionally) next_destination
 // next_destination should be provided if known to allow smooth cornering
-bool AR_WPNav::set_desired_location(const struct Location& destination, Location next_destination)
+bool AR_WPNav::set_desired_location(const Location& destination, Location next_destination)
 {
     // re-initialise if inactive, previous destination has been interrupted or different controller was used
     if (!is_active() || !_reached_destination || (_nav_control_type != NavControllerType::NAV_SCURVE)) {

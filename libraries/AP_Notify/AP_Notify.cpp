@@ -32,7 +32,7 @@
 #include "DiscreteRGBLed.h"
 #include "DiscoLED.h"
 #include "Led_Sysfs.h"
-#include "UAVCAN_RGB_LED.h"
+#include "DroneCAN_RGB_LED.h"
 #include "SITL_SFML_LED.h"
 #include <stdio.h>
 #include "AP_BoardLED2.h"
@@ -79,7 +79,7 @@ AP_Notify *AP_Notify::_singleton;
 
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
     #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS |\
-                                    Notify_LED_UAVCAN)
+                                    Notify_LED_DroneCAN)
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE || \
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET || \
@@ -325,15 +325,21 @@ void AP_Notify::add_backends(void)
                 ADD_BACKEND(new PCA9685LED_I2C());
                 break;
 #endif
+#if AP_NOTIFY_NEOPIXEL_ENABLED
             case Notify_LED_NeoPixel:
                 ADD_BACKEND(new NeoPixel());
                 break;
+#endif
+#if AP_NOTIFY_PROFILED_ENABLED
             case Notify_LED_ProfiLED:
                 ADD_BACKEND(new ProfiLED());
                 break;
+#endif
+#if AP_NOTIFY_PROFILED_SPI_ENABLED
             case Notify_LED_ProfiLED_SPI:
                 ADD_BACKEND(new ProfiLED_SPI());
                 break;
+#endif
             case Notify_LED_OreoLED:
 #if AP_NOTIFY_OREOLED_ENABLED
                 if (_oreo_theme) {
@@ -341,10 +347,10 @@ void AP_Notify::add_backends(void)
                 }
 #endif
                 break;
-            case Notify_LED_UAVCAN:
-#if HAL_CANMANAGER_ENABLED
-                ADD_BACKEND(new UAVCAN_RGB_LED(0));
-#endif // HAL_CANMANAGER_ENABLED
+            case Notify_LED_DroneCAN:
+#if HAL_ENABLE_DRONECAN_DRIVERS
+                ADD_BACKEND(new DroneCAN_RGB_LED(0));
+#endif // HAL_ENABLE_DRONECAN_DRIVERS
                 break;
 
             case Notify_LED_Scripting:
@@ -406,10 +412,6 @@ void AP_Notify::add_backends(void)
 // initialisation
 void AP_Notify::init(void)
 {
-    // clear all flags and events
-    memset(&AP_Notify::flags, 0, sizeof(AP_Notify::flags));
-    memset(&AP_Notify::events, 0, sizeof(AP_Notify::events));
-
     // add all the backends
     add_backends();
 }
@@ -471,7 +473,7 @@ void AP_Notify::play_tune(const char *tune)
 // set flight mode string
 void AP_Notify::set_flight_mode_str(const char *str)
 {
-    strncpy(_flight_mode_str, str, 4);
+    strncpy(_flight_mode_str, str, sizeof(_flight_mode_str));
     _flight_mode_str[sizeof(_flight_mode_str)-1] = 0;
 }
 

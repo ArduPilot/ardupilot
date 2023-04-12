@@ -19,12 +19,12 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
 
     // @Param: RATE
     // @DisplayName: Circle rate
-    // @Description: Circle mode's turn rate in deg/sec.  Positive to turn clockwise, negative for counter clockwise
+    // @Description: Circle mode's turn rate in deg/sec.  Positive to turn clockwise, negative for counter clockwise. Circle rate must be less than ATC_SLEW_YAW parameter.
     // @Units: deg/s
     // @Range: -90 90
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("RATE",    1, AC_Circle, _rate,    AC_CIRCLE_RATE_DEFAULT),
+    AP_GROUPINFO("RATE",    1, AC_Circle, _rate_parm,    AC_CIRCLE_RATE_DEFAULT),
 
     // @Param: OPTIONS
     // @DisplayName: Circle options
@@ -55,15 +55,18 @@ AC_Circle::AC_Circle(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_Po
 
     // init flags
     _flags.panorama = false;
+    _rate = _rate_parm;
 }
 
 /// init - initialise circle controller setting center specifically
-///     set terrain_alt to true if center.z should be interpreted as an alt-above-terrain
+///     set terrain_alt to true if center.z should be interpreted as an alt-above-terrain. Rate should be +ve in deg/sec for cw turn
 ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
-void AC_Circle::init(const Vector3p& center, bool terrain_alt)
+void AC_Circle::init(const Vector3p& center, bool terrain_alt, float rate_deg_per_sec)
 {
     _center = center;
     _terrain_alt = terrain_alt;
+    _rate = rate_deg_per_sec;
+
     // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
     _pos_control.init_xy_controller_stopping_point();
     _pos_control.init_z_controller_stopping_point();
@@ -79,9 +82,10 @@ void AC_Circle::init(const Vector3p& center, bool terrain_alt)
 ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
 void AC_Circle::init()
 {
-    // initialize radius from params
+    // initialize radius and rate from params
     _radius = _radius_parm;
     _last_radius_param = _radius_parm;
+    _rate = _rate_parm;
 
     // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
     _pos_control.init_xy_controller_stopping_point();
@@ -134,8 +138,8 @@ void AC_Circle::set_center(const Location& center)
 /// set_circle_rate - set circle rate in degrees per second
 void AC_Circle::set_rate(float deg_per_sec)
 {
-    if (!is_equal(deg_per_sec, _rate.get())) {
-        _rate.set(deg_per_sec);
+    if (!is_equal(deg_per_sec, _rate)) {
+        _rate = deg_per_sec;
     }
 }
 
@@ -354,7 +358,7 @@ bool AC_Circle::get_terrain_offset(float& offset_cm)
         return false;
     case AC_Circle::TerrainSource::TERRAIN_FROM_RANGEFINDER:
         if (_rangefinder_healthy) {
-            offset_cm = _inav.get_position_z_up_cm() - _rangefinder_alt_cm;
+            offset_cm = _rangefinder_terrain_offset_cm;
             return true;
         }
         return false;

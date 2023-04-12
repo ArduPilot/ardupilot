@@ -1068,7 +1068,7 @@ bool CompassCalibrator::fix_radius(void)
         _params.scale_factor = 0;
         return true;
     }
-    const struct Location &loc = AP::gps().location();
+    const Location &loc = AP::gps().location();
     float intensity;
     float declination;
     float inclination;

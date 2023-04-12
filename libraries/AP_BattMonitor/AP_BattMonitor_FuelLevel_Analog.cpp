@@ -15,8 +15,13 @@
  * Code by Charlie Johnson
  */
 
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_FUELLEVEL_ANALOG_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
+
 #include "AP_BattMonitor_FuelLevel_Analog.h"
 
 extern const AP_HAL::HAL& hal;
@@ -116,3 +121,5 @@ void AP_BattMonitor_FuelLevel_Analog::read()
     // record time
     _state.last_time_micros = tnow;
 }
+
+#endif  // AP_BATTERY_FUELLEVEL_ANALOG_ENABLED

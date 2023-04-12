@@ -4,7 +4,6 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
-#include <SRV_Channel/SRV_Channel.h>
 #include "AP_MotorsMulticopter.h"
 
 // tail servo uses channel 7
@@ -49,6 +48,9 @@ public:
     // using copter motors for forward flight
     float               get_roll_factor(uint8_t i) override;
 
+    // Run arming checks
+    bool arming_checks(size_t buflen, char *buffer) const override;
+
 protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing() override;
@@ -72,4 +74,5 @@ protected:
 
     // reverse pitch
     bool _pitch_reversed;
+    bool _have_tail_servo;
 };

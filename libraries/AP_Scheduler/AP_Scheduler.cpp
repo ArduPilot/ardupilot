@@ -154,6 +154,7 @@ void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks, uint
 void AP_Scheduler::tick(void)
 {
     _tick_counter++;
+    _tick_counter32++;
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL

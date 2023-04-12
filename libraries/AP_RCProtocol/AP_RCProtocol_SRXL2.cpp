@@ -146,7 +146,7 @@ void AP_RCProtocol_SRXL2::_process_byte(uint32_t timestamp_us, uint8_t byte)
             }
             // Try to parse SRXL packet -- this internally calls srxlRun() after packet is parsed and resets timeout
             if (srxlParsePacket(0, _buffer, _frame_len_full)) {
-                add_input(MAX_CHANNELS, _channels, _in_failsafe, _new_rssi);
+                add_input(ARRAY_SIZE(_channels), _channels, _in_failsafe, _new_rssi);
             }
             _last_run_ms = AP_HAL::millis();
 
@@ -200,7 +200,7 @@ void AP_RCProtocol_SRXL2::_capture_scaled_input(const uint8_t *values_p, bool in
         _new_rssi = new_rssi * 255 / 100;
     }
 
-    for (uint8_t i = 0; i < MAX_CHANNELS; i++) {
+    for (uint8_t i = 0; i < ARRAY_SIZE(_channels); i++) {
         /*
          * Store the decoded channel into the R/C input buffer, taking into
          * account the different ideas about channel assignement that we have.
@@ -299,6 +299,7 @@ void AP_RCProtocol_SRXL2::send_on_uart(uint8_t* pBuffer, uint8_t length)
     }
 }
 
+#if AP_VIDEOTX_ENABLED
 // configure the video transmitter, the input values are Spektrum-oriented
 void AP_RCProtocol_SRXL2::configure_vtx(uint8_t band, uint8_t channel, uint8_t power, uint8_t pitmode)
 {
@@ -351,6 +352,7 @@ void AP_RCProtocol_SRXL2::configure_vtx(uint8_t band, uint8_t channel, uint8_t p
         break;
     }
 }
+#endif  // AP_VIDEOTX_ENABLED
 
 // send data to the uart
 void AP_RCProtocol_SRXL2::_send_on_uart(uint8_t* pBuffer, uint8_t length)
@@ -455,5 +457,7 @@ bool srxlOnBind(SrxlFullID device, SrxlBindData info)
 // User-provided callback routine to handle reception of a VTX control packet.
 void srxlOnVtx(SrxlVtxData* pVtxData)
 {
+#if AP_VIDEOTX_ENABLED
     AP_RCProtocol_SRXL2::configure_vtx(pVtxData->band, pVtxData->channel, pVtxData->power, pVtxData->pit);
+#endif
 }

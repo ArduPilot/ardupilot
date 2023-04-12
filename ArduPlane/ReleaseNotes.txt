@@ -1,3 +1,42 @@
+Release 4.3.5 26th March  2023
+------------------------------
+
+- fixed 32 bit microsecond wrap in BDShot code
+
+This release has a single bug fix for a critical bug for anyone using
+bi-directional DShot on their vehicle. If using bi-directional DShot
+and the vehicle is running its motors when 32 bit microsecond time
+wraps at 71 minutes (or multiples of 71 minutes) then the bug that is
+fixed in this release has an approximately 1 in 3 chance of causing
+the motor to stop.
+
+Note that the time is the time since boot, not the time since arming,
+so even vehicles flying for a short time could be vulnerable if they
+sit for a long time on the ground before takeoff.
+
+Release 4.3.4 1st March  2023
+-----------------------------
+
+- support CubeOrangePlus BG edition
+- enable VTX power on MambaH743v4
+- probe external compasses on Foxeer Reaper F745
+- fixed home update on bad GPS quality
+- fixed GPS unconfigured error for non-M10 uBlox GPS
+- don't allow RC protocol change on IOMCU once detected
+- fixed FBWA pitch limits when in VTOL qassist
+- fixed handling of zero compass diagonals
+- added an output buffer to MAVCAN
+- set emergency status in OpenDroneID on crash or chute deploy
+- avoid logging duplicate format messages
+- fixed bug in alt error arming check with BARO_FIELD_ELEV set
+- fixed handling of double IOMCU reset and safety disable
+- enable VTX power on MambaF405 2022
+- disable PWMSource feature in lua scripts (will be back in 4.4.x)
+- fixed throttle wait on rudder arming in quadplanes
+- fixed earth frame accel compensation for AHRS_TRIM
+
+Happy flying!
+
 Release 4.3.3 Jan 19th 2023
 ---------------------------
 
@@ -17,7 +56,7 @@ Release 4.3.3 Jan 19th 2023
  - Takeoff in Auto handles baro drift before takeoff
  - Takeoff twitch due to velocity integrator init bug fixed
  - moved FTP MAVLink transfers to FTP thread and better control bandwidth
- - switch to QRTL if indide RTL radius when using Q_RTL_MODE=3 (approach)
+ - switch to QRTL if inside RTL radius when using Q_RTL_MODE=3 (approach)
  - check for 3 good frames for CRSF
  - allow for ELRS at 420kbaud
  - support MambaH743-v2

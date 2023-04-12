@@ -234,7 +234,7 @@ bool Location::get_vector_from_origin_NEU(Vector3f &vec_neu) const
 }
 
 // return horizontal distance in meters between two locations
-ftype Location::get_distance(const struct Location &loc2) const
+ftype Location::get_distance(const Location &loc2) const
 {
     ftype dlat = (ftype)(loc2.lat - lat);
     ftype dlng = ((ftype)diff_longitude(loc2.lng,lng)) * longitude_scale((lat+loc2.lat)/2);
@@ -242,7 +242,7 @@ ftype Location::get_distance(const struct Location &loc2) const
 }
 
 // return the altitude difference in meters taking into account alt frame.
-bool Location::get_alt_distance(const struct Location &loc2, ftype &distance) const
+bool Location::get_alt_distance(const Location &loc2, ftype &distance) const
 {
     int32_t alt1, alt2;
     if (!get_alt_cm(AltFrame::ABSOLUTE, alt1) || !loc2.get_alt_cm(AltFrame::ABSOLUTE, alt2)) {
@@ -374,7 +374,7 @@ assert_storage_size<Location, 16> _assert_storage_size_Location;
 
 
 // return bearing in radians from location to loc2, return is 0 to 2*Pi
-ftype Location::get_bearing(const struct Location &loc2) const
+ftype Location::get_bearing(const Location &loc2) const
 {
     const int32_t off_x = diff_longitude(loc2.lng,lng);
     const int32_t off_y = (loc2.lat - lat) / loc2.longitude_scale((lat+loc2.lat)/2);
@@ -391,6 +391,20 @@ ftype Location::get_bearing(const struct Location &loc2) const
 bool Location::same_latlon_as(const Location &loc2) const
 {
     return (lat == loc2.lat) && (lng == loc2.lng);
+}
+
+bool Location::same_alt_as(const Location &loc2) const
+{
+    // fast path if the altitude frame is the same
+    if (this->get_alt_frame() == loc2.get_alt_frame()) {
+        return this->alt == loc2.alt;
+    }
+
+    ftype alt_diff;
+    bool have_diff = this->get_alt_distance(loc2, alt_diff);
+
+    const ftype tolerance = FLT_EPSILON;
+    return have_diff && (fabsF(alt_diff) < tolerance);
 }
 
 // return true when lat and lng are within range

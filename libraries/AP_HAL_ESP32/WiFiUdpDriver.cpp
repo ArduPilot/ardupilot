@@ -101,19 +101,18 @@ uint32_t WiFiUdpDriver::txspace()
     return MAX(result, 0);
 }
 
-int16_t WiFiUdpDriver::read()
+bool WiFiUdpDriver::read(uint8_t &c)
 {
     if (!_read_mutex.take_nonblocking()) {
-        return 0;
+        return false;
     }
 
-    uint8_t byte;
-    if (!_readbuf.read_byte(&byte)) {
-        return -1;
+    if (!_readbuf.read_byte(&c)) {
+        return false;
     }
 
     _read_mutex.give();
-    return byte;
+    return true;
 }
 
 bool WiFiUdpDriver::start_listen()

@@ -38,7 +38,7 @@ devtype=(devid>>16)
 bustypes = {
     1: "I2C",
     2: "SPI",
-    3: "UAVCAN",
+    3: "DRONECAN",
     4: "SITL",
     5: "MSP",
     6: "SERIAL",
@@ -114,7 +114,7 @@ baro_types = {
     0x0A : "DEVTYPE_BARO_LPS2XH",
     0x0B : "DEVTYPE_BARO_MS5611",
     0x0C : "DEVTYPE_BARO_SPL06",
-    0x0D : "DEVTYPE_BARO_UAVCAN",
+    0x0D : "DEVTYPE_BARO_DRONECAN",
     0x0E : "DEVTYPE_BARO_MSP",
     0x0F : "DEVTYPE_BARO_ICP101XX",
     0x10 : "DEVTYPE_BARO_ICP201XX",
@@ -131,7 +131,7 @@ airspeed_types = {
     0x04 : "DEVTYPE_AIRSPEED_DLVR",
     0x05 : "DEVTYPE_AIRSPEED_MSP",
     0x06 : "DEVTYPE_AIRSPEED_SDP3X",
-    0x07 : "DEVTYPE_AIRSPEED_UAVCAN",
+    0x07 : "DEVTYPE_AIRSPEED_DRONECAN",
     0x08 : "DEVTYPE_AIRSPEED_ANALOG",
     0x09 : "DEVTYPE_AIRSPEED_NMEA",
     0x0A : "DEVTYPE_AIRSPEED_ASP5033",
@@ -152,7 +152,7 @@ if opts.airspeed:
     decoded_devname = airspeed_types.get(devtype, "UNKNOWN")
     
 if bus_type == 3:
-    #uavcan devtype represents sensor_id
+    #dronecan devtype represents sensor_id
     print("bus_type:%s(%u)  bus:%u address:%u(0x%x) sensor_id:%u(0x%x) %s" % (
         bustypes.get(bus_type,"UNKNOWN"), bus_type,
         bus, address, address, devtype-1, devtype-1, decoded_devname))

@@ -75,7 +75,7 @@ const AP_Param::GroupInfo AP_GyroFFT::var_info[] = {
     // @Range: 20 400
     // @Units: Hz
     // @User: Advanced
-    AP_GROUPINFO("MINHZ", 2, AP_GyroFFT, _fft_min_hz, 80),
+    AP_GROUPINFO("MINHZ", 2, AP_GyroFFT, _fft_min_hz, 50),
 
     // @Param: MAXHZ
     // @DisplayName: Maximum Frequency
@@ -83,7 +83,7 @@ const AP_Param::GroupInfo AP_GyroFFT::var_info[] = {
     // @Range: 20 495
     // @Units: Hz
     // @User: Advanced
-    AP_GROUPINFO("MAXHZ", 3, AP_GyroFFT, _fft_max_hz, 200),
+    AP_GROUPINFO("MAXHZ", 3, AP_GyroFFT, _fft_max_hz, 450),
 
     // @Param: SAMPLE_MODE
     // @DisplayName: Sample Mode
@@ -701,7 +701,40 @@ void AP_GyroFFT::start_notch_tune()
     if (!hal.dsp->fft_start_average(_state)) {
         gcs().send_text(MAV_SEVERITY_WARNING, "FFT: Unable to start FFT averaging");
     }
+    // throttle averaging for average fft calculation
     _avg_throttle_out = 0.0f;
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    AP_Motors* motors = AP::motors();
+    if (motors != nullptr) {
+        _avg_throttle_out = motors->get_throttle_hover();
+    }
+#endif
+}
+
+// calculate the frequency to be used for the harmonic notch
+float AP_GyroFFT::calculate_notch_frequency(float* freqs, uint16_t numpeaks, float harmonic_fit, uint8_t& harmonics)
+{
+    float harmonic = freqs[0];
+    harmonics = 1;
+
+    for (uint8_t i = 1; i < numpeaks; i++) {
+        if (freqs[i] < harmonic) {
+            for (uint8_t x = 2; x <=HNF_MAX_HARMONICS; x++) {
+                if (is_harmonic_of(harmonic, freqs[i], x, harmonic_fit)) {
+                    harmonic = freqs[i];
+                }
+            }
+        }
+    }
+    // select the harmonics that were matched
+    for (uint8_t i = 0; i < numpeaks; i++) {
+        for (uint8_t x = 1; x <=HNF_MAX_HARMONICS; x++) {
+            if (is_harmonic_of(freqs[i], harmonic, x, harmonic_fit)) {
+                harmonics |= 1<<(x - 1);
+            }
+        }
+    }
+    return harmonic;
 }
 
 void AP_GyroFFT::stop_notch_tune()
@@ -718,39 +751,29 @@ void AP_GyroFFT::stop_notch_tune()
         return;
     }
 
-    float harmonic = freqs[0];
-    float harmonic_fit = 100.0f;
-
-    for (uint8_t i = 1; i < numpeaks; i++) {
-        if (freqs[i] < harmonic) {
-            const float fit = 100.0f * fabsf(harmonic - freqs[i] * _harmonic_multiplier) / harmonic;
-            if (isfinite(fit) && fit < _harmonic_fit && fit < harmonic_fit) {
-                harmonic = freqs[i];
-                harmonic_fit = fit;
-            }
-        }
-    }
+    uint8_t harmonics;
+    float harmonic = calculate_notch_frequency(freqs, numpeaks, _harmonic_fit, harmonics);
 
     gcs().send_text(MAV_SEVERITY_INFO, "FFT: Found peaks at %.1f/%.1f/%.1fHz", freqs[0], freqs[1], freqs[2]);
-    gcs().send_text(MAV_SEVERITY_NOTICE, "FFT: Selected %.1fHz with fit %.1f%%\n", harmonic, is_equal(harmonic_fit, 100.0f) ? 100.0f : 100.0f - harmonic_fit);
+    gcs().send_text(MAV_SEVERITY_NOTICE, "FFT: Selected %.1fHz\n", harmonic);
 
     // if we don't have a throttle value then all bets are off
     if (is_zero(_avg_throttle_out) || is_zero(harmonic)) {
         gcs().send_text(MAV_SEVERITY_WARNING, "FFT: Unable to calculate notch: need stable hover");
+        AP_Notify::events.autotune_failed = true;
         return;
     }
 
-    // pick a ref which means the notch covers all the way down to FFT_MINHZ
-    const float thr_ref = _avg_throttle_out * sq((float)_fft_min_hz.get() / harmonic);
-
-    if (!_ins->setup_throttle_gyro_harmonic_notch((float)_fft_min_hz.get(), thr_ref)) {
+    if (!_ins->setup_throttle_gyro_harmonic_notch(harmonic, (float)_fft_min_hz.get(), _avg_throttle_out, harmonics)) {
         gcs().send_text(MAV_SEVERITY_WARNING, "FFT: Unable to set throttle notch with %.1fHz/%.2f",
-            (float)_fft_min_hz.get(), thr_ref);
+            harmonic, _avg_throttle_out);
+        AP_Notify::events.autotune_failed = true;
         // save results to FFT slots
-        _throttle_ref.set(thr_ref);
+        _throttle_ref.set(_avg_throttle_out);
         _freq_hover_hz.set(harmonic);
     } else {
-        gcs().send_text(MAV_SEVERITY_NOTICE, "FFT: Notch frequency %.1fHz and ref %.2f selected", (float)_fft_min_hz.get(), thr_ref);
+        gcs().send_text(MAV_SEVERITY_NOTICE, "FFT: Notch frequency %.1fHz and ref %.2f selected", harmonic, _avg_throttle_out);
+        AP_Notify::events.autotune_complete = true;
     }
 }
 

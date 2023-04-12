@@ -87,24 +87,28 @@ void AP_EFI::init(void)
     switch ((Type)type.get()) {
     case Type::NONE:
         break;
+#if AP_EFI_SERIAL_MS_ENABLED
     case Type::MegaSquirt:
         backend = new AP_EFI_Serial_MS(*this);
         break;
+#endif
+#if AP_EFI_SERIAL_LUTAN_ENABLED
     case Type::Lutan:
         backend = new AP_EFI_Serial_Lutan(*this);
         break;
+#endif
     case Type::NWPMU:
-#if HAL_EFI_NWPWU_ENABLED
+#if AP_EFI_NWPWU_ENABLED
         backend = new AP_EFI_NWPMU(*this);
 #endif
         break;
     case Type::DroneCAN:
-#if HAL_EFI_DRONECAN_ENABLED
+#if AP_EFI_DRONECAN_ENABLED
         backend = new AP_EFI_DroneCAN(*this);
 #endif
         break;
     case Type::CurrawongECU:
-#if HAL_EFI_CURRAWONG_ECU_ENABLED
+#if AP_EFI_CURRAWONG_ECU_ENABLED
         backend = new AP_EFI_Currawong_ECU(*this);
 #endif
         break;
@@ -247,6 +251,26 @@ void AP_EFI::send_mavlink_status(mavlink_channel_t chan)
     if (!backend) {
         return;
     }
+
+    float ignition_voltage;
+    if (isnan(state.ignition_voltage) ||
+        is_equal(state.ignition_voltage, -1.0f)) {
+        // zero means "unknown" in mavlink, 0.0001 means 0 volts
+        ignition_voltage = 0;
+    } else if (is_zero(state.ignition_voltage)) {
+        // zero means "unknown" in mavlink, 0.0001 means 0 volts
+        ignition_voltage = 0.0001f;
+    } else {
+        ignition_voltage = state.ignition_voltage;
+    };
+
+    // If fuel pressure is supported, but is exactly zero, shift it to 0.0001
+    // to indicate that it is supported.
+    float fuel_pressure = state.fuel_pressure;
+    if (is_zero(fuel_pressure) && state.fuel_pressure_status != Fuel_Pressure_Status::NOT_SUPPORTED) {
+        fuel_pressure = 0.0001;
+    }
+
     mavlink_msg_efi_status_send(
         chan,
         AP_EFI::is_healthy(),
@@ -266,7 +290,8 @@ void AP_EFI::send_mavlink_status(mavlink_channel_t chan)
         KELVIN_TO_C(state.cylinder_status.exhaust_gas_temperature),
         state.throttle_out,
         state.pt_compensation,
-        state.ignition_voltage
+        ignition_voltage,
+        fuel_pressure
         );
 }
 

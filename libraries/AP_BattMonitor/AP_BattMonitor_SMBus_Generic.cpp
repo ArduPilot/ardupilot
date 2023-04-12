@@ -1,7 +1,12 @@
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_SMBUS_GENERIC_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_BattMonitor.h"
+
 #include "AP_BattMonitor_SMBus_Generic.h"
 
 uint8_t smbus_cell_ids[] = { 0x3f,  // cell 1
@@ -168,3 +173,5 @@ bool AP_BattMonitor_SMBus_Generic::check_pec_support()
 	_pec_confirmed = true;
 	return true;
 }
+
+#endif  // AP_BATTERY_SMBUS_GENERIC_ENABLED

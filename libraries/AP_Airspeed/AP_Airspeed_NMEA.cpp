@@ -73,8 +73,11 @@ bool AP_Airspeed_NMEA::get_airspeed(float &airspeed)
     uint16_t count = 0;
     int16_t nbytes = _uart->available();
     while (nbytes-- > 0) {
-        char c = _uart->read();
-        if (decode(c)) {
+        int16_t c = _uart->read();
+        if (c==-1) {
+            return false;
+        }
+        if (decode(char(c))) {
             _last_update_ms = now;
             if (_sentence_type == TYPE_VHW) {
                 sum += _speed;

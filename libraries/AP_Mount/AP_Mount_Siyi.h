@@ -21,10 +21,6 @@
 
 #include "AP_Mount_Backend.h"
 
-#ifndef HAL_MOUNT_SIYI_ENABLED
-#define HAL_MOUNT_SIYI_ENABLED HAL_MOUNT_ENABLED
-#endif
-
 #if HAL_MOUNT_SIYI_ENABLED
 
 #include <AP_HAL/AP_HAL.h>

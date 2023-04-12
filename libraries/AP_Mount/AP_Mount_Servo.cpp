@@ -137,25 +137,41 @@ void AP_Mount_Servo::update_angle_outputs(const MountTarget& angle_rad)
 {
     const AP_AHRS &ahrs = AP::ahrs();
 
-    // roll and pitch are based on the ahrs roll and pitch angle plus any requested angle
+    // get target yaw in body-frame with limits applied
+    const float yaw_bf_rad = constrain_float(get_bf_yaw_angle(angle_rad), radians(_params.yaw_angle_min), radians(_params.yaw_angle_max));
+
+    // default output to target earth-frame roll and pitch angles, body-frame yaw
     _angle_bf_output_deg.x = degrees(angle_rad.roll);
     _angle_bf_output_deg.y = degrees(angle_rad.pitch);
-    _angle_bf_output_deg.z = degrees(get_bf_yaw_angle(angle_rad));
-    if (requires_stabilization) {
-        _angle_bf_output_deg.x -= degrees(ahrs.roll);
-        _angle_bf_output_deg.y -= degrees(ahrs.pitch);
+    _angle_bf_output_deg.z = degrees(yaw_bf_rad);
+
+    // this is sufficient for self-stabilising brushless gimbals
+    if (!requires_stabilization) {
+        return;
     }
+
+    // retrieve lean angles from ahrs
+    Vector2f ahrs_angle_rad = {ahrs.roll, ahrs.pitch};
+
+    // rotate ahrs roll and pitch angles to gimbal yaw
+    if (has_pan_control()) {
+        ahrs_angle_rad.rotate(-yaw_bf_rad);
+    }
+
+    // add roll and pitch lean angle correction
+    _angle_bf_output_deg.x -= degrees(ahrs_angle_rad.x);
+    _angle_bf_output_deg.y -= degrees(ahrs_angle_rad.y);
 
     // lead filter
     const Vector3f &gyro = ahrs.get_gyro();
 
-    if (requires_stabilization && !is_zero(_params.roll_stb_lead) && fabsf(ahrs.pitch) < M_PI/3.0f) {
+    if (!is_zero(_params.roll_stb_lead) && fabsf(ahrs.pitch) < M_PI/3.0f) {
         // Compute rate of change of euler roll angle
         float roll_rate = gyro.x + (ahrs.sin_pitch() / ahrs.cos_pitch()) * (gyro.y * ahrs.sin_roll() + gyro.z * ahrs.cos_roll());
         _angle_bf_output_deg.x -= degrees(roll_rate) * _params.roll_stb_lead;
     }
 
-    if (requires_stabilization && !is_zero(_params.pitch_stb_lead)) {
+    if (!is_zero(_params.pitch_stb_lead)) {
         // Compute rate of change of euler pitch angle
         float pitch_rate = ahrs.cos_pitch() * gyro.y - ahrs.sin_roll() * gyro.z;
         _angle_bf_output_deg.y -= degrees(pitch_rate) * _params.pitch_stb_lead;

@@ -1,23 +1,37 @@
 #pragma once
 
-#include <GCS_MAVLink/GCS_MAVLink.h>
+#include "AP_Camera_Backend.h"
 #include <AP_Mount/AP_Mount.h>
 
-#if HAL_SOLO_GIMBAL_ENABLED
+#if AP_CAMERA_SOLOGIMBAL_ENABLED
 
-class AP_Camera_SoloGimbal {
+#include <GCS_MAVLink/GCS_MAVLink.h>
+
+class AP_Camera_SoloGimbal : public AP_Camera_Backend
+{
 public:
 
-    static void gopro_shutter_toggle();
-    static void gopro_capture_mode_toggle();
-    static void handle_gopro_heartbeat(mavlink_channel_t chan, const mavlink_message_t &msg);
+    // Constructor
+    using AP_Camera_Backend::AP_Camera_Backend;
+
+    /* Do not allow copies */
+    CLASS_NO_COPY(AP_Camera_SoloGimbal);
+
+    // entry point to actually take a picture.  returns true on success
+    bool trigger_pic() override;
+
+    // momentary switch to change camera between picture and video modes
+    void cam_mode_toggle() override;
+
+    // handle incoming mavlink message
+    void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg) override;
 
 private:
 
-    static GOPRO_CAPTURE_MODE gopro_capture_mode;
-    static GOPRO_HEARTBEAT_STATUS gopro_status;
-    static bool gopro_is_recording;
-    static mavlink_channel_t heartbeat_channel;
+    GOPRO_CAPTURE_MODE gopro_capture_mode;
+    GOPRO_HEARTBEAT_STATUS gopro_status;
+    bool gopro_is_recording;
+    mavlink_channel_t heartbeat_channel;
 };
 
-#endif // HAL_SOLO_GIMBAL_ENABLED
+#endif // AP_CAMERA_SOLOGIMBAL_ENABLED

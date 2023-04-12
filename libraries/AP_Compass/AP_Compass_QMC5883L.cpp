@@ -19,6 +19,8 @@
  */
 #include "AP_Compass_QMC5883L.h"
 
+#if AP_COMPASS_QMC5883L_ENABLED
+
 #include <stdio.h>
 #include <utility>
 
@@ -216,3 +218,4 @@ void AP_Compass_QMC5883L::_dump_registers()
 	    }
 }
 
+#endif  // AP_COMPASS_QMC5883L_ENABLED

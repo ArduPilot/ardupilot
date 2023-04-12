@@ -9,30 +9,29 @@ const AP_Param::GroupInfo AC_PI::var_info[] = {
     // @Param: P
     // @DisplayName: PID Proportional Gain
     // @Description: P Gain which produces an output value that is proportional to the current error value
-    AP_GROUPINFO("P",    1, AC_PI, kP, 0),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("P",    1, AC_PI, kP, default_kp),
 
     // @Param: I
     // @DisplayName: PID Integral Gain
     // @Description: I Gain which produces an output that is proportional to both the magnitude and the duration of the error
-    AP_GROUPINFO("I",    2, AC_PI, kI, 0),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("I",    2, AC_PI, kI, default_ki),
 
     // @Param: IMAX
     // @DisplayName: PID Integral Maximum
     // @Description: The maximum/minimum value that the I term can output
-    AP_GROUPINFO("IMAX", 3, AC_PI, imax, 0),
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("IMAX", 3, AC_PI, imax, default_imax),
 
     AP_GROUPEND
 };
 
 // Constructor
-AC_PI::AC_PI(float initial_p, float initial_i, float initial_imax)
+AC_PI::AC_PI(float initial_p, float initial_i, float initial_imax) :
+    default_kp(initial_p),
+    default_ki(initial_i),
+    default_imax(initial_imax)
 {
     // load parameter values from eeprom
     AP_Param::setup_object_defaults(this, var_info);
-
-    kP.set_and_default(initial_p);
-    kI.set_and_default(initial_i);
-    imax.set_and_default(initial_imax);
 }
 
 float AC_PI::update(float measurement, float target, float dt)

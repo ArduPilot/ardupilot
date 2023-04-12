@@ -18,6 +18,7 @@
 -- Output12: back right tibia (shin) servo
 --
 -- CAUTION: This script should only be used with ArduPilot Rover's firmware
+-- luacheck: only 0
 
 
 local FRAME_LEN = 80    -- frame length in mm

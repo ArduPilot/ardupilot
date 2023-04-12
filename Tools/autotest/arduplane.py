@@ -938,6 +938,7 @@ class AutoTestPlane(AutoTest):
     def TestRCCamera(self):
         '''Test RC Option - Camera Trigger'''
         self.set_parameter("RC12_OPTION", 9) # CameraTrigger
+        self.set_parameter("CAM1_TYPE", 1)   # Camera with servo trigger
         self.reboot_sitl() # needed for RC12_OPTION to take effect
 
         x = self.mav.messages.get("CAMERA_FEEDBACK", None)
@@ -1163,6 +1164,56 @@ class AutoTestPlane(AutoTest):
         if (not (m.onboard_control_sensors_enabled & fence_bit)):
             raise NotAchievedException("Fence not enabled after RC fail")
         self.do_fence_disable() # Ensure the fence is disabled after test
+
+    def GCSFailsafe(self):
+        '''Ensure Long-Failsafe works on GCS loss'''
+        self.start_subtest("Test Failsafe: RTL")
+        self.load_sample_mission()
+        self.set_parameter("RTL_AUTOLAND", 1)
+        self.change_mode("AUTO")
+        self.takeoff()
+        self.set_parameters({
+            "FS_GCS_ENABL": 1,
+            "FS_LONG_ACTN": 1,
+        })
+        self.progress("Disconnecting GCS")
+        self.set_heartbeat_rate(0)
+        self.wait_mode("RTL", timeout=5)
+        self.set_heartbeat_rate(self.speedup)
+        self.end_subtest("Completed RTL Failsafe test")
+
+        self.start_subtest("Test Failsafe: FBWA Glide")
+        self.set_parameters({
+            "RTL_AUTOLAND": 1,
+            "FS_LONG_ACTN": 2,
+        })
+        self.change_mode("AUTO")
+        self.takeoff()
+        self.progress("Disconnecting GCS")
+        self.set_heartbeat_rate(0)
+        self.wait_mode("FBWA", timeout=5)
+        self.set_heartbeat_rate(self.speedup)
+        self.end_subtest("Completed FBWA Failsafe test")
+
+        self.start_subtest("Test Failsafe: Deploy Parachute")
+        self.load_mission("plane-parachute-mission.txt")
+        self.set_current_waypoint(1)
+        self.set_parameters({
+            "CHUTE_ENABLED": 1,
+            "CHUTE_TYPE": 10,
+            "SERVO9_FUNCTION": 27,
+            "SIM_PARA_ENABLE": 1,
+            "SIM_PARA_PIN": 9,
+            "FS_LONG_ACTN": 3,
+        })
+        self.change_mode("AUTO")
+        self.progress("Disconnecting GCS")
+        self.set_heartbeat_rate(0)
+        self.wait_statustext("BANG", timeout=60)
+        self.set_heartbeat_rate(self.speedup)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+        self.end_subtest("Completed Parachute Failsafe test")
 
     def TestGripperMission(self):
         '''Test Gripper mission items'''
@@ -3749,11 +3800,10 @@ class AutoTestPlane(AutoTest):
         '''Really annoy the EKF and force fallback'''
         self.reboot_sitl()
         self.delay_sim_time(30)
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
 
         self.takeoff(50)
         self.change_mode('CIRCLE')
+        self.context_push()
         self.context_collect('STATUSTEXT')
         self.set_parameters({
             "EK3_POS_I_GATE": 0,
@@ -3769,6 +3819,8 @@ class AutoTestPlane(AutoTest):
         self.context_stop_collecting('STATUSTEXT')
 
         self.fly_home_land_and_disarm()
+        self.context_pop()
+        self.reboot_sitl()
 
     def ForcedDCM(self):
         '''Switch to DCM mid-flight'''
@@ -4086,8 +4138,8 @@ class AutoTestPlane(AutoTest):
         self.progress("Finished trick, max error=%.1fm" % highest_error)
         self.disarm_vehicle(force=True)
 
-        self.remove_example_script(applet_script)
-        self.remove_example_script(trick72)
+        self.remove_installed_script(applet_script)
+        self.remove_installed_script(trick72)
         messages = self.context_collection('STATUSTEXT')
         self.context_pop()
         self.reboot_sitl()
@@ -4103,6 +4155,54 @@ class AutoTestPlane(AutoTest):
                 self.progress("Completed trick %s" % t)
             else:
                 raise NotAchievedException("Missing trick %s" % t)
+
+    def SDCardWPTest(self):
+        '''test BRD_SD_MISSION support'''
+        spiral_script = "mission_spiral.lua"
+
+        self.context_push()
+        self.install_example_script(spiral_script)
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "BRD_SD_MISSION" : 64,
+            "SCR_ENABLE" : 1,
+            "SCR_VM_I_COUNT" : 1000000
+            })
+
+        self.wait_ready_to_arm()
+        self.reboot_sitl()
+
+        self.wait_text("Loaded spiral mission creator", check_context=True)
+        self.set_parameters({
+            "SCR_USER2": 19, # radius
+            "SCR_USER3": -35.36322, # lat
+            "SCR_USER4": 149.16525, # lon
+            "SCR_USER5": 684.13, # alt
+        })
+
+        count = (65536 // 15) - 1
+
+        self.progress("Creating spiral mission of size %s" % count)
+        self.set_parameter("SCR_USER1", count)
+
+        self.wait_text("Created spiral of size %u" % count, check_context=True)
+
+        self.progress("Checking spiral before reboot")
+        self.set_parameter("SCR_USER6", count)
+        self.wait_text("Compared spiral of size %u OK" % count, check_context=True)
+        self.set_parameter("SCR_USER6", 0)
+
+        self.wait_ready_to_arm()
+        self.reboot_sitl()
+        self.progress("Checking spiral after reboot")
+        self.set_parameter("SCR_USER6", count)
+        self.wait_text("Compared spiral of size %u OK" % count, check_context=True)
+
+        self.remove_installed_script(spiral_script)
+
+        self.context_pop()
+        self.wait_ready_to_arm()
+        self.reboot_sitl()
 
     def MANUAL_CONTROL(self):
         '''test MANUAL_CONTROL mavlink message'''
@@ -4143,6 +4243,248 @@ class AutoTestPlane(AutoTest):
             32767, # r (yaw)
             0) # button mask
         self.fly_home_land_and_disarm()
+
+    def mission_home_point(self, target_system=1, target_component=1):
+        '''just an empty-ish item-int to store home'''
+        return self.mav.mav.mission_item_int_encode(
+            target_system,
+            target_component,
+            0, # seq
+            mavutil.mavlink.MAV_FRAME_GLOBAL,
+            mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+            0, # current
+            0, # autocontinue
+            0, # p1
+            0, # p2
+            0, # p3
+            0, # p4
+            0, # latitude
+            0, # longitude
+            0, # altitude
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+
+    def mission_jump_tag(self, tag, target_system=1, target_component=1):
+        '''create a jump tag mission item'''
+        return self.mav.mav.mission_item_int_encode(
+            target_system,
+            target_component,
+            0, # seq
+            mavutil.mavlink.MAV_FRAME_GLOBAL,
+            mavutil.mavlink.MAV_CMD_JUMP_TAG,
+            0, # current
+            0, # autocontinue
+            tag, # p1
+            0, # p2
+            0, # p3
+            0, # p4
+            0, # latitude
+            0, # longitude
+            0, # altitude
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+
+    def mission_do_jump_tag(self, tag, target_system=1, target_component=1):
+        '''create a jump tag mission item'''
+        return self.mav.mav.mission_item_int_encode(
+            target_system,
+            target_component,
+            0, # seq
+            mavutil.mavlink.MAV_FRAME_GLOBAL,
+            mavutil.mavlink.MAV_CMD_DO_JUMP_TAG,
+            0, # current
+            0, # autocontinue
+            tag, # p1
+            0, # p2
+            0, # p3
+            0, # p4
+            0, # latitude
+            0, # longitude
+            0, # altitude
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+
+    def mission_anonymous_waypoint(self, target_system=1, target_component=1):
+        '''just a boring waypoint'''
+        return self.mav.mav.mission_item_int_encode(
+            target_system,
+            target_component,
+            0, # seq
+            mavutil.mavlink.MAV_FRAME_GLOBAL,
+            mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+            0, # current
+            0, # autocontinue
+            0, # p1
+            0, # p2
+            0, # p3
+            0, # p4
+            1, # latitude
+            1, # longitude
+            1, # altitude
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+
+    def renumber_mission_items(self, mission):
+        count = 0
+        for item in mission:
+            item.seq = count
+            count += 1
+
+    def MissionJumpTags_missing_jump_target(self, target_system=1, target_component=1):
+        self.start_subtest("Check missing-jump-tag behaviour")
+        jump_target = 2
+        mission = [
+            self.mission_home_point(),
+            self.mission_anonymous_waypoint(),
+            self.mission_anonymous_waypoint(),
+            self.mission_jump_tag(jump_target),
+            self.mission_anonymous_waypoint(),
+            self.mission_anonymous_waypoint(),
+        ]
+        self.renumber_mission_items(mission)
+        self.check_mission_upload_download(mission)
+        self.progress("Checking incorrect tag behaviour")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_JUMP_TAG,
+            jump_target + 1, # p1
+            0,  # p2
+            0,  # p3
+            0,  # p4
+            0,  # p5
+            0,  # p6
+            0,  # p7
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED
+        )
+        self.progress("Checking correct tag behaviour")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_JUMP_TAG,
+            jump_target,  # p1
+            0,  # p2
+            0,  # p3
+            0,  # p4
+            0,  # p5
+            0,  # p6
+            0,  # p7
+        )
+        self.assert_current_waypoint(4)
+
+    def MissionJumpTags_do_jump_to_bad_tag(self, target_system=1, target_component=1):
+        mission = [
+            self.mission_home_point(),
+            self.mission_anonymous_waypoint(),
+            self.mission_do_jump_tag(17),
+            self.mission_anonymous_waypoint(),
+        ]
+        self.renumber_mission_items(mission)
+        self.check_mission_upload_download(mission)
+        self.change_mode('AUTO')
+        self.arm_vehicle()
+        self.set_current_waypoint(2, check_afterwards=False)
+        self.assert_mode('RTL')
+        self.disarm_vehicle()
+
+    def MissionJumpTags_jump_tag_at_end_of_mission(self, target_system=1, target_component=1):
+        mission = [
+            self.mission_home_point(),
+            self.mission_anonymous_waypoint(),
+            self.mission_jump_tag(17),
+        ]
+        # Jumping to an end of a mission, either DO_JUMP or DO_JUMP_TAG will result in a failed attempt.
+        # The failure is from mission::set_current_cmd() returning false if it can not find any NAV
+        # commands on or after the index. Two scenarios:
+        # 1) AUTO mission triggered: The the set_command will fail and it will cause an RTL event
+        #       (Harder to test, need vehicle to actually reach the waypoint)
+        # 2) GCS/MAVLink: It will return MAV_RESULT_FAILED and there's on change to the mission. (Easy to test)
+        self.renumber_mission_items(mission)
+        self.check_mission_upload_download(mission)
+        self.progress("Checking correct tag behaviour")
+        self.change_mode('AUTO')
+        self.arm_vehicle()
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_JUMP_TAG,
+            17,  # p1
+            0,  # p2
+            0,  # p3
+            0,  # p4
+            0,  # p5
+            0,  # p6
+            0,  # p7
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED
+        )
+        self.disarm_vehicle()
+
+    def MissionJumpTags(self):
+        '''test MAV_CMD_JUMP_TAG'''
+        self.wait_ready_to_arm()
+        self.MissionJumpTags_missing_jump_target()
+        self.MissionJumpTags_do_jump_to_bad_tag()
+        self.MissionJumpTags_jump_tag_at_end_of_mission()
+
+    def AltResetBadGPS(self):
+        '''Tests the handling of poor GPS lock pre-arm alt resets'''
+        self.set_parameters({
+            "SIM_GPS_GLITCH_Z": 0,
+            "SIM_GPS_ACC": 0.3,
+        })
+        self.wait_ready_to_arm()
+
+        m = self.assert_receive_message('GLOBAL_POSITION_INT')
+        relalt = m.relative_alt*0.001
+        if abs(relalt) > 3:
+            raise NotAchievedException("Bad relative alt %.1f" % relalt)
+
+        self.progress("Setting low accuracy, glitching GPS")
+        self.set_parameter("SIM_GPS_ACC", 40)
+        self.set_parameter("SIM_GPS_GLITCH_Z", -47)
+
+        self.progress("Waiting 10s for height update")
+        self.delay_sim_time(10)
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        m = self.assert_receive_message('GLOBAL_POSITION_INT')
+        relalt = m.relative_alt*0.001
+        if abs(relalt) > 3:
+            raise NotAchievedException("Bad glitching relative alt %.1f" % relalt)
+
+        self.disarm_vehicle()
+        # reboot to clear potentially bad state
+
+    def trigger_airspeed_cal(self):
+        self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+                     0, 0, 1, 0, 0, 0, 0)
+
+    def AirspeedCal(self):
+        '''test Airspeed calibration'''
+
+        self.start_subtest('1 airspeed sensor')
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.trigger_airspeed_cal()
+        self.wait_statustext('Airspeed 1 calibrated', check_context=True)
+        self.context_pop()
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.start_subtest('0 airspeed sensors')
+        self.set_parameter('ARSPD_TYPE', 0)
+        self.reboot_sitl()
+        self.wait_statustext('No airspeed sensor present or enabled', check_context=True)
+        self.trigger_airspeed_cal()
+        self.delay_sim_time(5)
+        if self.statustext_in_collections('Airspeed 1 calibrated'):
+            raise NotAchievedException("Did not disable airspeed sensor?!")
+        self.context_pop()
+
+        self.start_subtest('2 airspeed sensors')
+        self.set_parameter('ARSPD_TYPE', 100)
+        self.set_parameter('ARSPD2_TYPE', 100)
+        self.reboot_sitl()
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.trigger_airspeed_cal()
+        self.wait_statustext('Airspeed 1 calibrated', check_context=True)
+        self.wait_statustext('Airspeed 2 calibrated', check_context=True)
+        self.context_pop()
+
+        self.reboot_sitl()
 
     def tests(self):
         '''return list of all tests'''
@@ -4224,6 +4566,11 @@ class AutoTestPlane(AutoTest):
             self.AerobaticsScripting,
             self.MANUAL_CONTROL,
             self.WindEstimates,
+            self.AltResetBadGPS,
+            self.AirspeedCal,
+            self.MissionJumpTags,
+            self.GCSFailsafe,
+            self.SDCardWPTest,
         ])
         return ret
 

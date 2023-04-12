@@ -293,7 +293,7 @@ public:
     /// set_vel_desired_z_cms - sets desired velocity in cm/s in z axis
     void set_vel_desired_z_cms(float vel_z_cms) {_vel_desired.z = vel_z_cms;}
 
-    /// get_vel_target_z_cms - returns current vertical speed in cm/s
+    /// get_vel_target_z_cms - returns target vertical speed in cm/s
     float get_vel_target_z_cms() const { return _vel_target.z; }
 
 
@@ -437,8 +437,8 @@ protected:
 
     // internal variables
     float       _dt;                    // time difference (in seconds) since the last loop time
-    uint64_t    _last_update_xy_us;     // system time (in microseconds) since last update_xy_controller call
-    uint64_t    _last_update_z_us;      // system time (in microseconds) since last update_z_controller call
+    uint32_t    _last_update_xy_ticks;  // ticks of last last update_xy_controller call
+    uint32_t    _last_update_z_ticks;   // ticks of last update_z_controller call
     float       _vel_max_xy_cms;        // max horizontal speed in cm/s used for kinematic shaping
     float       _vel_max_up_cms;        // max climb rate in cm/s used for kinematic shaping
     float       _vel_max_down_cms;      // max descent rate in cm/s used for kinematic shaping

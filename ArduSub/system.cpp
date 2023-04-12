@@ -103,6 +103,11 @@ void Sub::init_ardupilot()
     camera_mount.set_mode(MAV_MOUNT_MODE_RC_TARGETING);
 #endif
 
+#if AP_CAMERA_ENABLED
+    // initialise camera
+    camera.init();
+#endif
+
 #ifdef USERHOOK_INIT
     USERHOOK_INIT
 #endif
@@ -275,8 +280,11 @@ bool Sub::should_log(uint32_t mask)
 #include <AP_ADSB/AP_ADSB.h>
 
 // dummy method to avoid linking AFS
+#if AP_ADVANCEDFAILSAFE_ENABLED
 bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) { return false; }
 AP_AdvancedFailsafe *AP::advancedfailsafe() { return nullptr; }
+#endif
+
 #if HAL_ADSB_ENABLED
 // dummy method to avoid linking AP_Avoidance
 AP_Avoidance *AP::ap_avoidance() { return nullptr; }

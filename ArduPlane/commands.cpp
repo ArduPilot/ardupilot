@@ -7,7 +7,7 @@
 /*
  *  set_next_WP - sets the target location the vehicle should fly to
  */
-void Plane::set_next_WP(const struct Location &loc)
+void Plane::set_next_WP(const Location &loc)
 {
     if (auto_state.next_wp_crosstrack) {
         // copy the current WP into the OldWP slot
@@ -113,11 +113,13 @@ void Plane::set_guided_WP(const Location &loc)
   update home location from GPS
   this is called as long as we have 3D lock and the arming switch is
   not pushed
+
+  returns true if home is changed
 */
-void Plane::update_home()
+bool Plane::update_home()
 {
     if (hal.util->was_watchdog_armed()) {
-        return;
+        return false;
     }
     if ((g2.home_reset_threshold == -1) ||
         ((g2.home_reset_threshold > 0) &&
@@ -126,24 +128,30 @@ void Plane::update_home()
         // significantly. This allows us to cope with slow baro drift
         // but not re-do home and the baro if we have changed height
         // significantly
-        return;
+        return false;
     }
-    if (ahrs.home_is_set() && !ahrs.home_is_locked()) {
+    bool ret = false;
+    if (ahrs.home_is_set() && !ahrs.home_is_locked() && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
         Location loc;
-        if(ahrs.get_location(loc) && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        if (ahrs.get_location(loc)) {
             // we take the altitude directly from the GPS as we are
             // about to reset the baro calibration. We can't use AHRS
             // altitude or we can end up perpetuating a bias in
             // altitude, as AHRS alt depends on home alt, which means
             // we would have a circular dependency
             loc.alt = gps.location().alt;
-            if (!AP::ahrs().set_home(loc)) {
-                // silently fail
-            }
+            ret = AP::ahrs().set_home(loc);
         }
     }
+
+    // even if home is not updated we do a baro reset to stop baro
+    // drift errors while disarmed
     barometer.update_calibration();
     ahrs.resetHeightDatum();
+
+    update_current_loc();
+
+    return ret;
 }
 
 bool Plane::set_home_persistently(const Location &loc)

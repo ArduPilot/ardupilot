@@ -4,7 +4,7 @@
 
 #include "AP_AHRS.h"
 
-bool AP_AHRS_SIM::get_location(struct Location &loc) const
+bool AP_AHRS_SIM::get_location(Location &loc) const
 {
     if (_sitl == nullptr) {
         return false;

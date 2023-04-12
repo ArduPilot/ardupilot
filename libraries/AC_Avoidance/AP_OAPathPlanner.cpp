@@ -240,7 +240,7 @@ void AP_OAPathPlanner::avoidance_thread()
     bool origin_set = false;
     while (!origin_set) {
         hal.scheduler->delay(500);
-        struct Location ekf_origin {};
+        Location ekf_origin {};
         {
             WITH_SEMAPHORE(AP::ahrs().get_semaphore());
             origin_set = AP::ahrs().get_origin(ekf_origin);    

@@ -27,8 +27,10 @@
 #if HAL_SIM_XPLANE_ENABLED
 
 #include <AP_HAL/utility/Socket.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 
 #include "SIM_Aircraft.h"
+#include "picojson.h"
 
 namespace SITL {
 
@@ -48,11 +50,22 @@ public:
     }
 
 private:
+
     bool receive_data(void);
     void send_dref(const char *name, float value);
-    void send_data(const struct sitl_input &input);
-    void select_data(uint64_t usel_mask, uint64_t sel_mask);
+    void request_drefs(void);
+    void request_dref(const char *name, uint8_t code, uint32_t rate_hz);
+    void send_drefs(const struct sitl_input &input);
+    void handle_rref(const uint8_t *p, uint32_t len);
+    void select_data(void);
+    void deselect_code(uint8_t code);
+    int8_t find_data_index(uint8_t id);
 
+    // return true if at least X
+    bool is_xplane12(void) const {
+        return xplane_version / 10000 >= 12;
+    }
+    
     const char *xplane_ip = "127.0.0.1";
     uint16_t xplane_port = 49000;
     uint16_t bind_port = 49001;
@@ -64,58 +77,63 @@ private:
     uint32_t last_data_time_ms;
     Vector3d position_zero;
     Vector3f accel_earth;
-    float throttle_sent = -1;
     bool connected = false;
     uint32_t xplane_frame_time;
+    uint64_t seen_mask;
+
     struct {
         uint32_t last_report_ms;
         uint32_t data_count;
         uint32_t frame_count;
     } report;
-    float last_flap;
 
-    // are we controlling a heli?
-    bool heli_frame;
+    enum class DRefType {
+        ANGLE = 0,
+        RANGE = 1,
+        FIXED = 2,
+    };
 
-    uint64_t unselected_mask;
-    
-    // throttle joystick input is very weird. See comments in the main code
-    const float throttle_magic = 0.000123f;
-    const float throttle_magic_scale = 1.0e6;
-    
-    // DATA@ frame types. Thanks to TauLabs xplanesimulator.h
-    // (which strangely enough acknowledges APM as a source!)
-    enum {
-		FramRate            = 0,
-		Times               = 1,
-		SimStats            = 2,
-		Speed               = 3,
-		Gload               = 4,
-		AtmosphereWeather   = 5,
-		AtmosphereAircraft  = 6,
-		SystemPressures     = 7,
-		Joystick1           = 8,
-		Joystick2           = 9,
-		ArtStab             = 10,
-		FlightCon           = 11,
-		WingSweep           = 12,
-		Trim                = 13,
-		Brakes              = 14,
-		AngularMoments      = 15,
-        AngularVelocities   = 16,
-        PitchRollHeading    = 17,
-		AoA                 = 18,
-        MagCompass          = 19,
-        LatLonAlt           = 20,
-		LocVelDistTraveled  = 21,
-        ThrottleCommand     = 25,
-        Mixture             = 29,
-        CarbHeat            = 30,
-        EngineRPM           = 37,
-        PropRPM             = 38,
-        PropPitch           = 39,
-        Generator           = 58,
-	};
+    struct DRef {
+        struct DRef *next;
+        char *name;
+        DRefType type;
+        uint8_t channel;
+        float range;
+        float fixed_value;
+    };
+
+    // list of DRefs;
+    struct DRef *drefs;
+    uint32_t dref_debug;
+
+    enum class JoyType {
+        AXIS = 0,
+        BUTTON = 1,
+    };
+
+    // list of joystick inputs
+    struct JoyInput {
+        struct JoyInput *next;
+        uint8_t axis;
+        uint8_t channel;
+        JoyType type;
+        float input_min, input_max;
+        uint32_t mask;
+    };
+    struct JoyInput *joyinputs;
+
+    char *map_filename;
+    struct stat map_st;
+
+    bool load_dref_map(const char *map_json);
+    void add_dref(const char *name, DRefType type, const picojson::value &dref);
+    void add_joyinput(const char *name, JoyType type, const picojson::value &d);
+    void handle_setting(const picojson::value &d);
+
+    void check_reload_dref(void);
+
+    uint32_t xplane_version;
+    bool have_ref_lat;
 };
 
 

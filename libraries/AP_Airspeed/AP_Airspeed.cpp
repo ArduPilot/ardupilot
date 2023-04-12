@@ -45,7 +45,7 @@
 #include "AP_Airspeed_analog.h"
 #include "AP_Airspeed_ASP5033.h"
 #include "AP_Airspeed_Backend.h"
-#include "AP_Airspeed_UAVCAN.h"
+#include "AP_Airspeed_DroneCAN.h"
 #include "AP_Airspeed_NMEA.h"
 #include "AP_Airspeed_MSP.h"
 #include "AP_Airspeed_SITL.h"
@@ -188,8 +188,8 @@ AP_Airspeed::AP_Airspeed()
 
     // Setup defaults that only apply to first sensor
     param[0].type.set_default(ARSPD_DEFAULT_TYPE);
-    param[0].bus.set_default(HAL_AIRSPEED_BUS_DEFAULT);
 #ifndef HAL_BUILD_AP_PERIPH
+    param[0].bus.set_default(HAL_AIRSPEED_BUS_DEFAULT);
     param[0].pin.set_default(ARSPD_DEFAULT_PIN);
 #endif
 
@@ -246,7 +246,7 @@ void AP_Airspeed::convert_per_instance()
         return;
     }
 
-    const struct convert_table {
+    static const struct convert_table {
         uint32_t element[2];
         ap_var_type type;
         const char* name;
@@ -415,8 +415,8 @@ void AP_Airspeed::allocate()
 #endif
             break;
         case TYPE_UAVCAN:
-#if AP_AIRSPEED_UAVCAN_ENABLED
-            sensor[i] = AP_Airspeed_UAVCAN::probe(*this, i, uint32_t(param[i].bus_id.get()));
+#if AP_AIRSPEED_DRONECAN_ENABLED
+            sensor[i] = AP_Airspeed_DroneCAN::probe(*this, i, uint32_t(param[i].bus_id.get()));
 #endif
             break;
         case TYPE_NMEA_WATER:
@@ -442,18 +442,18 @@ void AP_Airspeed::allocate()
         }
     }
 
-#if AP_AIRSPEED_UAVCAN_ENABLED
+#if AP_AIRSPEED_DRONECAN_ENABLED
     // we need a 2nd pass for DroneCAN sensors so we can match order by DEVID
     // the 2nd pass accepts any devid
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
         if (sensor[i] == nullptr && (enum airspeed_type)param[i].type.get() == TYPE_UAVCAN) {
-            sensor[i] = AP_Airspeed_UAVCAN::probe(*this, i, 0);
+            sensor[i] = AP_Airspeed_DroneCAN::probe(*this, i, 0);
             if (sensor[i] != nullptr) {
                 num_sensors = i+1;
             }
         }
     }
-#endif // AP_AIRSPEED_UAVCAN_ENABLED
+#endif // AP_AIRSPEED_DRONECAN_ENABLED
 #endif // HAL_AIRSPEED_PROBE_LIST
 
     // set DEVID to zero for any sensors not found. This allows backends to order
@@ -523,6 +523,7 @@ void AP_Airspeed::calibrate(bool in_startup)
         state[i].cal.count = 0;
         state[i].cal.sum = 0;
         state[i].cal.read_count = 0;
+        calibration_state[i] = CalibrationState::IN_PROGRESS;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Airspeed %u calibration started", i+1);
     }
 #endif // HAL_BUILD_AP_PERIPH
@@ -544,6 +545,7 @@ void AP_Airspeed::update_calibration(uint8_t i, float raw_pressure)
         state[i].cal.read_count > 15) {
         if (state[i].cal.count == 0) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Airspeed %u unhealthy", i + 1);
+            calibration_state[i] = CalibrationState::FAILED;
         } else {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Airspeed %u calibrated", i + 1);
             float calibrated_offset = state[i].cal.sum / state[i].cal.count;
@@ -557,6 +559,7 @@ void AP_Airspeed::update_calibration(uint8_t i, float raw_pressure)
                 }
             }
             param[i].offset.set_and_save(calibrated_offset);
+            calibration_state[i] = CalibrationState::SUCCESS;
         }
         state[i].cal.start_ms = 0;
         return;
@@ -568,6 +571,23 @@ void AP_Airspeed::update_calibration(uint8_t i, float raw_pressure)
     }
     state[i].cal.read_count++;
 #endif // HAL_BUILD_AP_PERIPH
+}
+
+// get aggregate calibration state for the Airspeed library:
+AP_Airspeed::CalibrationState AP_Airspeed::get_calibration_state() const
+{
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        switch (calibration_state[i]) {
+        case CalibrationState::SUCCESS:
+        case CalibrationState::NOT_STARTED:
+            continue;
+        case CalibrationState::IN_PROGRESS:
+            return CalibrationState::IN_PROGRESS;
+        case CalibrationState::FAILED:
+            return CalibrationState::FAILED;
+        }
+    }
+    return CalibrationState::SUCCESS;
 }
 
 // read one airspeed sensor
@@ -873,6 +893,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = { AP_GROUPEND };
 void AP_Airspeed::update() {};
 bool AP_Airspeed::get_temperature(uint8_t i, float &temperature) { return false; }
 void AP_Airspeed::calibrate(bool in_startup) {}
+AP_Airspeed::CalibrationState AP_Airspeed::get_calibration_state() const { return CalibrationState::NOT_STARTED; }
 bool AP_Airspeed::use(uint8_t i) const { return false; }
 bool AP_Airspeed::enabled(uint8_t i) const { return false; }
 bool AP_Airspeed::healthy(uint8_t i) const { return false; }

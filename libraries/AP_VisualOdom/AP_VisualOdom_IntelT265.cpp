@@ -33,10 +33,13 @@ void AP_VisualOdom_IntelT265::handle_vision_position_estimate(uint64_t remote_ti
     Vector3f pos{x * scale_factor, y * scale_factor, z * scale_factor};
     Quaternion att = attitude;
 
-    // handle user request to align camera
-    if (_align_camera) {
-        if (align_sensor_to_vehicle(pos, attitude)) {
-            _align_camera = false;
+    // handle voxl camera reset jumps in attitude and position
+    handle_voxl_camera_reset_jump(pos, att, reset_counter);
+
+    // handle request to align sensor's yaw with vehicle's AHRS/EKF attitude
+    if (_align_yaw) {
+        if (align_yaw_to_ahrs(pos, attitude)) {
+            _align_yaw = false;
         }
     }
     if (_align_posxy || _align_posz) {
@@ -48,6 +51,9 @@ void AP_VisualOdom_IntelT265::handle_vision_position_estimate(uint64_t remote_ti
     // rotate position and attitude to align with vehicle
     rotate_and_correct_position(pos);
     rotate_attitude(att);
+
+    // record position for voxl reset jump handling
+    record_voxl_position_and_reset_count(pos, reset_counter);
 
     posErr = constrain_float(posErr, _frontend.get_pos_noise(), 100.0f);
     angErr = constrain_float(angErr, _frontend.get_yaw_noise(), 1.5f);
@@ -128,7 +134,7 @@ void AP_VisualOdom_IntelT265::rotate_attitude(Quaternion &attitude) const
 }
 
 // use sensor provided attitude to calculate rotation to align sensor with AHRS/EKF attitude
-bool AP_VisualOdom_IntelT265::align_sensor_to_vehicle(const Vector3f &position, const Quaternion &attitude)
+bool AP_VisualOdom_IntelT265::align_yaw_to_ahrs(const Vector3f &position, const Quaternion &attitude)
 {
     // do not align to ahrs if we are its yaw source
     if (AP::ahrs().using_extnav_for_yaw()) {
@@ -140,6 +146,13 @@ bool AP_VisualOdom_IntelT265::align_sensor_to_vehicle(const Vector3f &position, 
         return false;
     }
 
+    align_yaw(position, attitude, AP::ahrs().get_yaw());
+    return true;
+}
+
+// align sensor yaw with any new yaw (in radians)
+void AP_VisualOdom_IntelT265::align_yaw(const Vector3f &position, const Quaternion &attitude, float yaw_rad)
+{
     // clear any existing errors
     _error_orientation = false;
 
@@ -161,7 +174,7 @@ bool AP_VisualOdom_IntelT265::align_sensor_to_vehicle(const Vector3f &position, 
 
     // trim yaw by difference between ahrs and sensor yaw
     const float yaw_trim_orig = _yaw_trim;
-    _yaw_trim = wrap_2PI(AP::ahrs().get_yaw() - sens_yaw);
+    _yaw_trim = wrap_2PI(yaw_rad - sens_yaw);
     gcs().send_text(MAV_SEVERITY_INFO, "VisOdom: yaw shifted %d to %d deg",
                     (int)degrees(_yaw_trim - yaw_trim_orig),
                     (int)wrap_360(degrees(sens_yaw + _yaw_trim)));
@@ -186,8 +199,6 @@ bool AP_VisualOdom_IntelT265::align_sensor_to_vehicle(const Vector3f &position, 
 
     // update position correction to remove change due to rotation
     _pos_correction += (pos_orig - pos_new);
-
-    return true;
 }
 
 // align position with ahrs position by updating _pos_correction
@@ -200,20 +211,27 @@ bool AP_VisualOdom_IntelT265::align_position_to_ahrs(const Vector3f &sensor_pos,
         return false;
     }
 
+    align_position(sensor_pos, ahrs_pos_ned, align_xy, align_z);
+    return true;
+}
+
+// align position with a new position by updating _pos_correction
+// sensor_pos should be the position directly from the sensor with only scaling applied (i.e. no yaw or position corrections)
+// new_pos should be a NED position offset from the EKF origin
+void AP_VisualOdom_IntelT265::align_position(const Vector3f &sensor_pos, const Vector3f &new_pos, bool align_xy, bool align_z)
+{
     // calculate position with current rotation and correction
     Vector3f pos_orig = sensor_pos;
     rotate_and_correct_position(pos_orig);
 
     // update position correction
     if (align_xy) {
-        _pos_correction.x += (ahrs_pos_ned.x - pos_orig.x);
-        _pos_correction.y += (ahrs_pos_ned.y - pos_orig.y);
+        _pos_correction.x += (new_pos.x - pos_orig.x);
+        _pos_correction.y += (new_pos.y - pos_orig.y);
     }
     if (align_z) {
-        _pos_correction.z += (ahrs_pos_ned.z - pos_orig.z);
+        _pos_correction.z += (new_pos.z - pos_orig.z);
     }
-
-    return true;
 }
 
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
@@ -283,6 +301,47 @@ bool AP_VisualOdom_IntelT265::should_consume_sensor_data(bool vision_position_es
     }
 
     return (_pos_reset_ignore_start_ms == 0);
+}
+
+// record voxl camera's position and reset counter for reset jump handling
+// position is post scaling, offset and orientation corrections
+void AP_VisualOdom_IntelT265::record_voxl_position_and_reset_count(const Vector3f &position, uint8_t reset_counter)
+{
+    // return immediately if not using VOXL camera
+    if (get_type() != AP_VisualOdom::VisualOdom_Type::VOXL) {
+        return;
+    }
+
+    _voxl_position_last = position;
+    _voxl_reset_counter_last = reset_counter;
+}
+
+// handle voxl camera reset jumps in attitude and position
+// sensor_pos should be the position directly from the sensor with only scaling applied (i.e. no yaw or position corrections)
+// sensor_att is similarly the attitude directly from the sensor
+void AP_VisualOdom_IntelT265::handle_voxl_camera_reset_jump(const Vector3f &sensor_pos, const Quaternion &sensor_att, uint8_t reset_counter)
+{
+    // return immediately if not using VOXL camera
+    if (get_type() != AP_VisualOdom::VisualOdom_Type::VOXL) {
+        return;
+    }
+
+    // return immediately if no change in reset counter
+    if (reset_counter == _voxl_reset_counter_last) {
+        return;
+    }
+
+    // warng user of reset
+    gcs().send_text(MAV_SEVERITY_WARNING, "VisOdom: reset");
+
+    // align sensor yaw to match current yaw estimate
+    align_yaw_to_ahrs(sensor_pos, sensor_att);
+
+    // align psoition to match last recorded position
+    align_position(sensor_pos, _voxl_position_last, true, true);
+
+    // record change in reset counter
+    _voxl_reset_counter_last = reset_counter;
 }
 
 #endif

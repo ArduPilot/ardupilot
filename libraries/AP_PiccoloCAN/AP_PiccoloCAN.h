@@ -133,8 +133,8 @@ private:
 
     // interpret a servo message received over CAN
     bool handle_servo_message(AP_HAL::CANFrame &frame);
-    
-#if HAL_EFI_CURRAWONG_ECU_ENABLED
+
+#if AP_EFI_CURRAWONG_ECU_ENABLED
     void send_ecu_messages(void);
 
     // interpret an ECU message received over CAN

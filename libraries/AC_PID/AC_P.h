@@ -20,10 +20,10 @@ public:
     ///
     /// @param  initial_p       Initial value for the P term.
     ///
-    AC_P(const float &initial_p = 0.0f)
+    AC_P(const float &initial_p = 0.0f) :
+        default_kp(initial_p)
     {
-		AP_Param::setup_object_defaults(this, var_info);
-        _kp.set_and_default(initial_p);
+        AP_Param::setup_object_defaults(this, var_info);
     }
 
     CLASS_NO_COPY(AC_P);
@@ -65,4 +65,6 @@ public:
 
 private:
     AP_Float        _kp;
+
+    const float default_kp;
 };

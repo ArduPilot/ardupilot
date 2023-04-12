@@ -6,6 +6,7 @@
 #include <AP_TemperatureSensor/AP_TemperatureSensor_config.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AP_BattMonitor_Params.h"
+#include "AP_BattMonitor_config.h"
 
 // maximum number of battery monitors
 #ifndef AP_BATT_MONITOR_MAX_INSTANCES
@@ -28,26 +29,6 @@
 #define AP_BATT_MONITOR_CELLS_MAX           12
 #endif
 
-#ifndef AP_BATTMON_SMBUS_ENABLE
-#define AP_BATTMON_SMBUS_ENABLE 1
-#endif
-
-#ifndef AP_BATTMON_FUELFLOW_ENABLE
-#define AP_BATTMON_FUELFLOW_ENABLE (BOARD_FLASH_SIZE > 1024)
-#endif
-
-#ifndef AP_BATTMON_FUELLEVEL_PWM_ENABLE
-#define AP_BATTMON_FUELLEVEL_PWM_ENABLE (BOARD_FLASH_SIZE > 1024)
-#endif
-
-#ifndef AP_BATTMON_FUELLEVEL_ANALOG_ENABLE
-#define AP_BATTMON_FUELLEVEL_ANALOG_ENABLE (BOARD_FLASH_SIZE > 1024)
-#endif
-
-#ifndef AP_BATTMON_SYNTHETIC_CURRENT_ENABLED
-#define AP_BATTMON_SYNTHETIC_CURRENT_ENABLED  1
-#endif
-
 // declare backend class
 class AP_BattMonitor_Backend;
 class AP_BattMonitor_Analog;
@@ -56,13 +37,14 @@ class AP_BattMonitor_SMBus_Solo;
 class AP_BattMonitor_SMBus_Generic;
 class AP_BattMonitor_SMBus_Maxell;
 class AP_BattMonitor_SMBus_Rotoye;
-class AP_BattMonitor_UAVCAN;
+class AP_BattMonitor_DroneCAN;
 class AP_BattMonitor_Generator;
 class AP_BattMonitor_INA2XX;
 class AP_BattMonitor_INA239;
 class AP_BattMonitor_LTC2946;
 class AP_BattMonitor_Torqeedo;
 class AP_BattMonitor_FuelLevel_Analog;
+class AP_BattMonitor_EFI;
 
 
 class AP_BattMonitor
@@ -74,11 +56,12 @@ class AP_BattMonitor
     friend class AP_BattMonitor_SMBus_Generic;
     friend class AP_BattMonitor_SMBus_Maxell;
     friend class AP_BattMonitor_SMBus_Rotoye;
-    friend class AP_BattMonitor_UAVCAN;
+    friend class AP_BattMonitor_DroneCAN;
     friend class AP_BattMonitor_Sum;
     friend class AP_BattMonitor_FuelFlow;
     friend class AP_BattMonitor_FuelLevel_PWM;
     friend class AP_BattMonitor_Generator;
+    friend class AP_BattMonitor_EFI;
     friend class AP_BattMonitor_INA2XX;
     friend class AP_BattMonitor_INA239;
     friend class AP_BattMonitor_LTC2946;
@@ -123,6 +106,7 @@ public:
         FuelLevel_Analog               = 24,
         Analog_Volt_Synthetic_Current  = 25,
         INA239_SPI                     = 26,
+        EFI                            = 27,
     };
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
@@ -165,6 +149,7 @@ public:
         bool        powerOffNotified;          // only send powering off notification once
         uint32_t    time_remaining;            // remaining battery time
         bool        has_time_remaining;        // time_remaining is only valid if this is true
+        uint8_t     instance;                  // instance number of this backend
         const struct AP_Param::GroupInfo *var_info;
     };
 
@@ -253,6 +238,10 @@ public:
     bool set_temperature(const float temperature, const uint8_t instance);
     bool set_temperature_by_serial_number(const float temperature, const int32_t serial_number);
 #endif
+
+    // MPPT Control (Solar panels)
+    void MPPT_set_powered_state_to_all(const bool power_on);
+    void MPPT_set_powered_state(const uint8_t instance, const bool power_on);
 
     // cycle count
     bool get_cycle_count(uint8_t instance, uint16_t &cycles) const;

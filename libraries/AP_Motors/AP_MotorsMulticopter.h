@@ -105,6 +105,10 @@ public:
     // Run arming checks
     bool arming_checks(size_t buflen, char *buffer) const override;
 
+    // Getters for AP_Motors example, not used by vehicles
+    float get_throttle_avg_max() const;
+    int16_t get_yaw_headroom() const;
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -153,6 +157,9 @@ protected:
 
     // save parameters as part of disarming
     void                save_params_on_disarm() override;
+
+    // update external limits from scripting
+    void                update_external_limits();
 
     // enum values for HOVER_LEARN parameter
     enum HoverLearn {

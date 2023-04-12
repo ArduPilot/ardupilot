@@ -20,9 +20,9 @@ public:
     AC_Circle(const AP_InertialNav& inav, const AP_AHRS_View& ahrs, AC_PosControl& pos_control);
 
     /// init - initialise circle controller setting center specifically
-    ///     set terrain_alt to true if center.z should be interpreted as an alt-above-terrain
+    ///     set terrain_alt to true if center.z should be interpreted as an alt-above-terrain. Rate should be +ve in deg/sec for cw turn
     ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
-    void init(const Vector3p& center, bool terrain_alt);
+    void init(const Vector3p& center, bool terrain_alt, float rate_deg_per_sec);
 
     /// init - initialise circle controller setting center using stopping point and projecting out based on the copter's heading
     ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
@@ -89,8 +89,9 @@ public:
     /// true if pilot control of radius and turn rate is enabled
     bool pilot_control_enabled() const { return (_options.get() & CircleOptions::MANUAL_CONTROL) != 0; }
 
-    /// provide rangefinder altitude
-    void set_rangefinder_alt(bool use, bool healthy, float alt_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_alt_cm = alt_cm; }
+    /// provide rangefinder based terrain offset
+    /// terrain offset is the terrain's height above the EKF origin
+    void set_rangefinder_terrain_offset(bool use, bool healthy, float terrain_offset_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_terrain_offset_cm = terrain_offset_cm;}
 
     /// check for a change in the radius params
     void check_param_change();
@@ -139,12 +140,13 @@ private:
 
     // parameters
     AP_Float    _radius_parm;   // radius of circle in cm loaded from params
-    AP_Float    _rate;          // rotation speed in deg/sec
+    AP_Float    _rate_parm;     // rotation speed in deg/sec
     AP_Int16    _options;       // stick control enable/disable
 
     // internal variables
     Vector3p    _center;        // center of circle in cm from home
     float       _radius;        // radius of circle in cm
+    float       _rate;          // rotation speed of circle in deg/sec. +ve for cw turn
     float       _yaw;           // yaw heading (normally towards circle center)
     float       _angle;         // current angular position around circle in radians (0=directly north of the center of the circle)
     float       _angle_total;   // total angle traveled in radians
@@ -158,5 +160,5 @@ private:
     bool        _terrain_alt;           // true if _center.z is alt-above-terrain, false if alt-above-ekf-origin
     bool        _rangefinder_available; // true if range finder could be used
     bool        _rangefinder_healthy;   // true if range finder is healthy
-    float       _rangefinder_alt_cm;    // latest rangefinder altitude
+    float       _rangefinder_terrain_offset_cm; // latest rangefinder based terrain offset (e.g. terrain's height above EKF origin)
 };

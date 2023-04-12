@@ -1,7 +1,6 @@
 //This class converts horizontal acceleration commands to fin flapping commands.
 #pragma once
 #include <AP_Notify/AP_Notify.h>
-#include <SRV_Channel/SRV_Channel.h>
 
 extern const AP_HAL::HAL& hal;
 

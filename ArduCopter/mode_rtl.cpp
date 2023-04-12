@@ -28,7 +28,7 @@ bool ModeRTL::init(bool ignore_checks)
     // this will be set true if prec land is later active
     copter.ap.prec_land_active = false;
 
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
     // initialise precland state machine
     copter.precland_statemachine.init();
 #endif
@@ -49,10 +49,12 @@ void ModeRTL::restart_without_terrain()
 ModeRTL::RTLAltType ModeRTL::get_alt_type() const
 {
     // sanity check parameter
-    if (g.rtl_alt_type < 0 || g.rtl_alt_type > (int)RTLAltType::RTL_ALTTYPE_TERRAIN) {
-        return RTLAltType::RTL_ALTTYPE_RELATIVE;
+    switch ((ModeRTL::RTLAltType)g.rtl_alt_type) {
+    case RTLAltType::RTL_ALTTYPE_RELATIVE ... RTLAltType::RTL_ALTTYPE_TERRAIN:
+        return g.rtl_alt_type;
     }
-    return (RTLAltType)g.rtl_alt_type.get();
+    // user has an invalid value
+    return RTLAltType::RTL_ALTTYPE_RELATIVE;
 }
 
 // rtl_run - runs the return-to-launch controller

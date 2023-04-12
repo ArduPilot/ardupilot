@@ -1,7 +1,10 @@
 #include <AP_Winch/AP_Winch_Daiwa.h>
 
+#if AP_WINCH_DAIWA_ENABLED
+
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -20,10 +23,6 @@ void AP_Winch_Daiwa::init()
     // initialise serial connection to winch
     const AP_SerialManager &serial_manager = AP::serialmanager();
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Winch, 0);
-    if (uart != nullptr) {
-        // always use baudrate of 115200
-        uart->begin(115200);
-    }
 }
 
 void AP_Winch_Daiwa::update()
@@ -222,3 +221,5 @@ void AP_Winch_Daiwa::control_winch()
     }
     SRV_Channels::set_output_scaled(SRV_Channel::k_winch, scaled_output);
 }
+
+#endif  // AP_WINCH_DAIWA_ENABLED

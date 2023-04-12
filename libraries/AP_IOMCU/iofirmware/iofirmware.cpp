@@ -41,8 +41,13 @@ void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
-// enable testing of IOMCU watchdog using safety switch
-#define IOMCU_ENABLE_WATCHDOG_TEST 0
+/*
+ enable testing of IOMCU reset using safety switch
+ a value of 0 means normal operation
+ a value of 1 means test with watchdog
+ a value of 2 means test with reboot
+*/
+#define IOMCU_ENABLE_RESET_TEST 0
 
 // pending events on the main thread
 enum ioevents {
@@ -531,6 +536,9 @@ bool AP_IOMCU_FW::handle_code_write()
             } else {
                 palSetLine(HAL_GPIO_PIN_SBUS_OUT_EN);
             }
+            if (reg_setup.features & P_SETUP_FEATURES_HEATER) {
+                has_heater = true;
+            }
             break;
 
         case PAGE_REG_SETUP_HEATER_DUTY_CYCLE:
@@ -707,21 +715,40 @@ void AP_IOMCU_FW::safety_update(void)
         }
     }
 
-#if IOMCU_ENABLE_WATCHDOG_TEST
-    if (safety_button_counter == 50) {
+#if IOMCU_ENABLE_RESET_TEST
+    {
         // deliberate lockup of IOMCU on 5s button press, for testing
         // watchdog
-        while (true) {
-            hal.scheduler->delay(50);
-            palToggleLine(HAL_GPIO_PIN_SAFETY_LED);
-            if (palReadLine(HAL_GPIO_PIN_SAFETY_INPUT)) {
-                // only trigger watchdog on button release, so we
-                // don't end up stuck in the bootloader
-                stm32_watchdog_pat();
+        static uint32_t safety_test_counter;
+        static bool should_lockup;
+        if (palReadLine(HAL_GPIO_PIN_SAFETY_INPUT)) {
+            safety_test_counter++;
+        } else {
+            safety_test_counter = 0;
+        }
+        if (safety_test_counter == 50) {
+            should_lockup = true;
+        }
+        // wait for lockup for safety to be released so we don't end
+        // up in the bootloader
+        if (should_lockup && palReadLine(HAL_GPIO_PIN_SAFETY_INPUT) == 0) {
+#if IOMCU_ENABLE_RESET_TEST == 1
+            // lockup with watchdog
+            while (true) {
+                hal.scheduler->delay(50);
+                palToggleLine(HAL_GPIO_PIN_SAFETY_LED);
             }
+#else
+            // hard fault to simulate power reset or software fault
+            void *foo = (void*)0xE000ED38;
+            typedef void (*fptr)();
+            fptr gptr = (fptr) (void *) foo;
+            gptr();
+            while (true) {}
+#endif
         }
     }
-#endif
+#endif // IOMCU_ENABLE_RESET_TEST
 
     led_counter = (led_counter+1) % 16;
     const uint16_t led_pattern = reg_status.flag_safety_off?0xFFFF:0x5500;

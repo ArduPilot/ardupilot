@@ -57,14 +57,14 @@ const AP_Param::GroupInfo AP_TemperatureSensor_Params::var_info[] = {
 
     // @Param: SRC
     // @DisplayName: Sensor Source
-    // @Description: Sensor Source is used to match up the source of the temperature data and populate the appropriate system-component. If 0 (None) then the data is only available via log.
-    // @Values: 0: None, 1:ESC, 2:Motor, 3:Battery Index, 4:Battery ID/SerialNumber
+    // @Description: Sensor Source is used to designate which device's temperature report will be replaced by this temperature sensor's data. If 0 (None) then the data is only available via log. In the future a new Motor temperature report will be created for returning data directly.
+    // @Values: 0: None, 1:ESC, 2:Motor(not implemented yet), 3:Battery Index, 4:Battery ID/SerialNumber
     // @User: Standard
     AP_GROUPINFO("SRC", 4, AP_TemperatureSensor_Params, source, (float)Source::None),
 
     // @Param: SRC_ID
     // @DisplayName: Sensor Source Identification
-    // @Description: Sensor Source Identification is used to populate a specific instance of a system component. Examples: TEMP_SRC = 1 (ESC), TEMP_SRC_INDEX = 1 will set the temp of ESC1. TEMP_SRC = 3 (BatteryIndex),TEMP_SRC_INDEX=2 will set the temp of BATT2. TEMP_SRC = 4 (BatteryId?SerialNum),TEMP_SRC_INDEX=42 will set the temp of all batteries that have param BATTn_SERIAL = 42.
+    // @Description: Sensor Source Identification is used to replace a specific instance of a system component's temperature report with the temp sensor's. Examples: TEMP_SRC = 1 (ESC), TEMP_SRC_ID = 1 will set the temp of ESC1. TEMP_SRC = 3 (BatteryIndex),TEMP_SRC_ID = 2 will set the temp of BATT2. TEMP_SRC = 4 (BatteryId/SerialNum),TEMP_SRC_ID=42 will set the temp of all batteries that have param BATTn_SERIAL = 42.
     AP_GROUPINFO("SRC_ID", 5, AP_TemperatureSensor_Params, source_id, AP_TEMPERATURE_SENSOR_SOURCE_ID_DEFAULT),
 
     AP_GROUPEND

@@ -236,10 +236,6 @@ void AP_AHRS::init()
     // init backends
     dcm.init();
 
-#if HAL_NMEA_OUTPUT_ENABLED
-    _nmea_out = AP_NMEA_Output::probe();
-#endif
-
 #if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
     // convert to new custom rotaton
     // PARAMETER_CONVERSION - Added: Nov-2021
@@ -389,13 +385,6 @@ void AP_AHRS::update(bool skip_ins_update)
 
     // update AOA and SSA
     update_AOA_SSA();
-
-#if HAL_NMEA_OUTPUT_ENABLED
-    // update NMEA output
-    if (_nmea_out != nullptr) {
-        _nmea_out->update();
-    }
-#endif
 
     EKFType active = active_EKF_type();
     if (active != last_active_ekf_type) {
@@ -621,7 +610,7 @@ void AP_AHRS::update_EKF3(void)
             // use the primary IMU for accel earth frame
             Vector3f accel = _ins.get_accel(primary_accel);
             accel -= abias;
-            _accel_ef = _dcm_matrix * accel;
+            _accel_ef = _dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * accel;
 
             nav_filter_status filt_state;
             EKF3.getFilterStatus(filt_state);
@@ -681,7 +670,7 @@ void AP_AHRS::reset()
 }
 
 // dead-reckoning support
-bool AP_AHRS::get_location(struct Location &loc) const
+bool AP_AHRS::get_location(Location &loc) const
 {
     switch (active_EKF_type()) {
     case EKFType::NONE:
@@ -1158,7 +1147,7 @@ bool AP_AHRS::get_secondary_quaternion(Quaternion &quat) const
 }
 
 // return secondary position solution if available
-bool AP_AHRS::get_secondary_position(struct Location &loc) const
+bool AP_AHRS::get_secondary_position(Location &loc) const
 {
     EKFType secondary_ekf_type;
     if (!get_secondary_EKF_type(secondary_ekf_type)) {

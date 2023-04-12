@@ -91,4 +91,13 @@ protected:
     bool _reset_filter; // true when input filter should be reset during next call to set_input
 
     AP_PIDInfo _pid_info;
+
+private:
+    const float default_kp;
+    const float default_ki;
+    const float default_kd;
+    const float default_kff;
+    const float default_kimax;
+    const float default_filt_E_hz;
+    const float default_filt_D_hz;
 };

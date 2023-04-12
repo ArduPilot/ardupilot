@@ -4,6 +4,8 @@
 #include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
 
+#include "AP_Arming_config.h"
+
 class AP_Arming {
 public:
 
@@ -85,10 +87,11 @@ public:
     void init(void);
 
     // these functions should not be used by Copter which holds the armed state in the motors library
-    Required arming_required();
+    Required arming_required() const;
     virtual bool arm(AP_Arming::Method method, bool do_arming_checks=true);
     virtual bool disarm(AP_Arming::Method method, bool do_disarm_checks=true);
-    bool is_armed();
+    bool is_armed() const;
+    bool is_armed_and_safety_off() const;
 
     // get bitmask of enabled checks
     uint32_t get_enabled_checks() const;
@@ -113,10 +116,12 @@ public:
 
     RudderArming get_rudder_arming_type() const { return (RudderArming)_rudder_arming.get(); }
 
+#if AP_ARMING_AUX_AUTH_ENABLED
     // auxiliary authorisation methods
     bool get_aux_auth_id(uint8_t& auth_id);
     void set_aux_auth_passed(uint8_t auth_id);
     void set_aux_auth_failed(uint8_t auth_id, const char* fail_msg);
+#endif
 
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -124,6 +129,10 @@ public:
     // vehicle has been disarmed at least once.
     Method last_disarm_method() const { return _last_disarm_method; }
 
+    // method that was last used for arm; invalid unless the
+    // vehicle has been disarmed at least once.
+    Method last_arm_method() const { return _last_arm_method; }
+    
     // enum for ARMING_OPTIONS parameter
     enum class Option : int32_t {
         DISABLE_PREARM_DISPLAY   = (1U << 0),
@@ -195,13 +204,17 @@ protected:
 
     bool mount_checks(bool display_failure) const;
 
+#if AP_ARMING_AUX_AUTH_ENABLED
     bool aux_auth_checks(bool display_failure);
+#endif
 
     bool generator_checks(bool report) const;
 
     bool opendroneid_checks(bool display_failure);
     
     bool serial_protocol_checks(bool display_failure);
+    
+    bool estop_checks(bool display_failure);
 
     virtual bool system_checks(bool report);
 
@@ -250,6 +263,7 @@ private:
         MIS_ITEM_CHECK_MAX
     };
 
+#if AP_ARMING_AUX_AUTH_ENABLED
     // auxiliary authorisation
     static const uint8_t aux_auth_count_max = 3;    // maximum number of auxiliary authorisers
     static const uint8_t aux_auth_str_len = 42;     // maximum length of failure message (50-8 for "PreArm: ")
@@ -263,10 +277,12 @@ private:
     char* aux_auth_fail_msg;    // buffer for holding failure messages
     bool aux_auth_error;        // true if too many auxiliary authorisers
     HAL_Semaphore aux_auth_sem; // semaphore for accessing the aux_auth_state and aux_auth_fail_msg
+#endif
 
-    // method that was last used for disarm; invalid unless the
+    // method that was last used for arm/disarm; invalid unless the
     // vehicle has been disarmed at least once.
     Method _last_disarm_method = Method::UNKNOWN;
+    Method _last_arm_method = Method::UNKNOWN;
 
     uint32_t last_prearm_display_ms;  // last time we send statustexts for prearm failures
     bool running_arming_checks;  // true if the arming checks currently being performed are being done because the vehicle is trying to arm the vehicle

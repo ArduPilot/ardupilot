@@ -37,6 +37,10 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#if USE_PICOJSON
+#include "picojson.h"
+#include <AP_Filesystem/AP_Filesystem.h>
+#endif
 
 using namespace SITL;
 
@@ -1012,6 +1016,12 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
     if (ie24) {
         ie24->update(input);
     }
+
+#if AP_TEST_DRONECAN_DRIVERS
+    if (dronecan) {
+        dronecan->update();
+    }
+#endif
 }
 
 void Aircraft::add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel)
@@ -1135,4 +1145,3 @@ Vector3d Aircraft::get_position_relhome() const
     pos.xy() += home.get_distance_NE_double(origin);
     return pos;
 }
-

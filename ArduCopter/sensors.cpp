@@ -62,6 +62,7 @@ void Copter::read_rangefinder(void)
         // glitches clear after RANGEFINDER_GLITCH_NUM_SAMPLES samples in a row.
         // glitch_cleared_ms is set so surface tracking (or other consumers) can trigger a target reset
         const int32_t glitch_cm = rf_state.alt_cm - rf_state.alt_cm_glitch_protected;
+        bool reset_terrain_offset = false;
         if (glitch_cm >= RANGEFINDER_GLITCH_ALT_CM) {
             rf_state.glitch_count = MAX(rf_state.glitch_count+1, 1);
         } else if (glitch_cm <= -RANGEFINDER_GLITCH_ALT_CM) {
@@ -75,6 +76,7 @@ void Copter::read_rangefinder(void)
             rf_state.glitch_count = 0;
             rf_state.alt_cm_glitch_protected = rf_state.alt_cm;
             rf_state.glitch_cleared_ms = AP_HAL::millis();
+            reset_terrain_offset = true;
         }
 
         // filter rangefinder altitude
@@ -84,24 +86,33 @@ void Copter::read_rangefinder(void)
             if (timed_out) {
                 // reset filter if we haven't used it within the last second
                 rf_state.alt_cm_filt.reset(rf_state.alt_cm);
+                reset_terrain_offset = true;
+
             } else {
                 rf_state.alt_cm_filt.apply(rf_state.alt_cm, 0.05f);
             }
             rf_state.last_healthy_ms = now;
         }
 
-        // send downward facing lidar altitude and health to the libraries that require it
-        if (rf_orient == ROTATION_PITCH_270) {
-            if (rangefinder_state.alt_healthy || timed_out) {
-                wp_nav->set_rangefinder_alt(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
-#if MODE_CIRCLE_ENABLED
-                circle_nav->set_rangefinder_alt(rangefinder_state.enabled && wp_nav->rangefinder_used(), rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
-#endif
-#if HAL_PROXIMITY_ENABLED
-                g2.proximity.set_rangefinder_alt(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
-#endif
+        // handle reset of terrain offset
+        if (reset_terrain_offset) {
+            if (rf_orient == ROTATION_PITCH_90) {
+                // upward facing
+                rf_state.terrain_offset_cm = rf_state.inertial_alt_cm + rf_state.alt_cm;
+            } else {
+                // assume downward facing
+                rf_state.terrain_offset_cm = rf_state.inertial_alt_cm - rf_state.alt_cm;
             }
         }
+
+        // send downward facing lidar altitude and health to the libraries that require it
+#if HAL_PROXIMITY_ENABLED
+        if (rf_orient == ROTATION_PITCH_270) {
+            if (rangefinder_state.alt_healthy || timed_out) {
+                g2.proximity.set_rangefinder_alt(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.alt_cm_filt.get());
+            }
+        }
+#endif
     }
 
 #else
@@ -127,6 +138,24 @@ bool Copter::rangefinder_alt_ok() const
 bool Copter::rangefinder_up_ok() const
 {
     return (rangefinder_up_state.enabled && rangefinder_up_state.alt_healthy);
+}
+
+// update rangefinder based terrain offset
+// terrain offset is the terrain's height above the EKF origin
+void Copter::update_rangefinder_terrain_offset()
+{
+    float terrain_offset_cm = rangefinder_state.inertial_alt_cm - rangefinder_state.alt_cm_glitch_protected;
+    rangefinder_state.terrain_offset_cm += (terrain_offset_cm - rangefinder_state.terrain_offset_cm) * (copter.G_Dt / MAX(copter.g2.surftrak_tc, copter.G_Dt));
+
+    terrain_offset_cm = rangefinder_up_state.inertial_alt_cm + rangefinder_up_state.alt_cm_glitch_protected;
+    rangefinder_up_state.terrain_offset_cm += (terrain_offset_cm - rangefinder_up_state.terrain_offset_cm) * (copter.G_Dt / MAX(copter.g2.surftrak_tc, copter.G_Dt));
+
+    if (rangefinder_state.alt_healthy || (AP_HAL::millis() - rangefinder_state.last_healthy_ms > RANGEFINDER_TIMEOUT_MS)) {
+        wp_nav->set_rangefinder_terrain_offset(rangefinder_state.enabled, rangefinder_state.alt_healthy, rangefinder_state.terrain_offset_cm);
+#if MODE_CIRCLE_ENABLED
+        circle_nav->set_rangefinder_terrain_offset(rangefinder_state.enabled && wp_nav->rangefinder_used(), rangefinder_state.alt_healthy, rangefinder_state.terrain_offset_cm);
+#endif
+    }
 }
 
 /*

@@ -1,0 +1,16 @@
+# hw definition file for processing by chibios_hwdef.py for bdshot version of Qiotek ZealotH743
+
+include ../QioTekZealotH743/hwdef.dat
+
+undef PD12 PD13 PD14 PD15 PC6 PC7
+
+# PWM AUX channels (1-8 have level shifters so cannot be used for bdshot)
+PD12 TIM4_CH1 TIM4 PWM(9)  GPIO(58) BIDIR
+PD13 TIM4_CH2 TIM4 PWM(10) GPIO(59)
+PD14 TIM4_CH3 TIM4 PWM(11) GPIO(60) BIDIR
+PD15 TIM4_CH4 TIM4 PWM(12) GPIO(61) 
+PC6  TIM3_CH1 TIM3 PWM(13) GPIO(62) BIDIR
+PC7  TIM3_CH2 TIM3 PWM(14) GPIO(63)
+
+NODMA I2C*
+define STM32_I2C_USE_DMA FALSE

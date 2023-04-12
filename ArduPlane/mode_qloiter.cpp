@@ -100,7 +100,7 @@ void ModeQLoiter::run()
         float descent_rate_cms = quadplane.landing_descent_rate_cms(height_above_ground);
 
         if (poscontrol.get_state() == QuadPlane::QPOS_LAND_FINAL && !quadplane.option_is_set(QuadPlane::OPTION::DISABLE_GROUND_EFFECT_COMP)) {
-            quadplane.ahrs.set_touchdown_expected(true);
+            ahrs.set_touchdown_expected(true);
         }
 
         pos_control->land_at_climb_rate_cm(-descent_rate_cms, descent_rate_cms>0);

@@ -150,13 +150,6 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("INPUT_TC", 20, AC_AttitudeControl, _input_tc, AC_ATTITUDE_CONTROL_INPUT_TC_DEFAULT),
 
-    // @Param: THR_G_BOOST
-    // @DisplayName: Throttle-gain boost
-    // @Description: Throttle-gain boost ratio. A value of 0 means no boosting is applied, a value of 1 means full boosting is applied. Describes the ratio increase that is applied to angle P and PD on pitch and roll.
-    // @Range: 0 1
-    // @User: Advanced
-    AP_GROUPINFO("THR_G_BOOST", 21, AC_AttitudeControl, _throttle_gain_boost, 0.0f),
-
     AP_GROUPEND
 };
 
@@ -1015,12 +1008,6 @@ bool AC_AttitudeControl::ang_vel_to_euler_rate(const Vector3f& euler_rad, const 
 Vector3f AC_AttitudeControl::update_ang_vel_target_from_att_error(const Vector3f &attitude_error_rot_vec_rad)
 {
     Vector3f rate_target_ang_vel;
-
-    // Boost Angle P one very rapid throttle changes
-    if (_motors.get_throttle_slew_rate() > AC_ATTITUDE_CONTROL_THR_G_BOOST_THRESH) {
-        float angle_p_boost = constrain_float((_throttle_gain_boost + 1.0f) * (_throttle_gain_boost + 1.0f), 1.0, 4.0);
-        set_angle_P_scale_mult(Vector3f(angle_p_boost, angle_p_boost, 1.0f));
-    }
 
     // Compute the roll angular velocity demand from the roll angle error
     const float angleP_roll = _p_angle_roll.kP() * _angle_P_scale.x;

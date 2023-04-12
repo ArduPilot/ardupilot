@@ -88,7 +88,7 @@ UINT32_T_BOX_OP_BOOL(le, <=)
 
 #define UINT32_T_BOX_OP_UNARY(name, sym) \
     int uint32_t___##name(lua_State *L) { \
-        binding_argcheck(L, 1); \
+        binding_argcheck(L, 2); \
           \
         uint32_t v1 = coerce_to_uint32_t(L, 1); \
           \

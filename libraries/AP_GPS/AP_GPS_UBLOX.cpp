@@ -425,12 +425,14 @@ AP_GPS_UBLOX::_request_next_config(void)
 
 
     case STEP_M10: {
-        // special handling of M10 config
-        const config_list *list = config_M10;
-        const uint8_t list_length = ARRAY_SIZE(config_M10);
-        Debug("Sending M10 settings");
-        if (!_configure_config_set(list, list_length, CONFIG_M10, UBX_VALSET_LAYER_RAM | UBX_VALSET_LAYER_BBR)) {
-            _next_message--;
+        if (_hardware_generation == UBLOX_M10) {
+            // special handling of M10 config
+            const config_list *list = config_M10;
+            const uint8_t list_length = ARRAY_SIZE(config_M10);
+            Debug("Sending M10 settings");
+            if (!_configure_config_set(list, list_length, CONFIG_M10, UBX_VALSET_LAYER_RAM | UBX_VALSET_LAYER_BBR)) {
+                _next_message--;
+            }
         }
         break;
     }

@@ -112,4 +112,4 @@ extern "C" {
 }
 
 #define INTERNAL_ERROR(error_number) \
-    AP::internalerror().error(error_number, __LINE__);
+    AP::internalerror().error(error_number, __AP_LINE__);

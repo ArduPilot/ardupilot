@@ -213,14 +213,6 @@ void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target
 // @Field: DCRt: desired climb rate
 // @Field: CRt: climb rate
 
-// @LoggerMessage: MOTB
-// @Description: Battery information
-// @Field: TimeUS: Time since system startup
-// @Field: LiftMax: Maximum motor compensation gain
-// @Field: BatVolt: Ratio betwen detected battery voltage and maximum battery voltage
-// @Field: BatRes: Estimated battery resistance
-// @Field: ThLimit: Throttle limit set due to battery current limitations
-
 // @LoggerMessage: D16
 // @Description: Generic 16-bit-signed-integer storage
 // @Field: TimeUS: Time since system startup

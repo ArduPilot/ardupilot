@@ -5,6 +5,8 @@ define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_gps"
 
 # and support all external compass types
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+# .... except BMM150:
+define AP_COMPASS_BMM150_ENABLED 0
 
 # increase TX size for RTCM
 undef HAL_UART_MIN_TX_SIZE

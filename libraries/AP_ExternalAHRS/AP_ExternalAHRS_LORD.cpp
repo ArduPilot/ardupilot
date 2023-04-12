@@ -111,9 +111,8 @@ void AP_ExternalAHRS_LORD::build_packet()
     WITH_SEMAPHORE(sem);
     uint32_t nbytes = MIN(uart->available(), 2048u);
     while (nbytes--> 0) {
-        const int16_t b = uart->read();
-
-        if (b < 0) {
+        uint8_t b;
+        if (!uart->read(b)) {
             break;
         }
 
@@ -262,12 +261,14 @@ void AP_ExternalAHRS_LORD::post_imu() const
         AP::ins().handle_external(ins);
     }
 
+#if AP_COMPASS_EXTERNALAHRS_ENABLED
     {
         AP_ExternalAHRS::mag_data_message_t mag {
             field: imu_data.mag
         };
         AP::compass().handle_external(mag);
     }
+#endif
 
 #if AP_BARO_EXTERNALAHRS_ENABLED
     {

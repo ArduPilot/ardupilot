@@ -19,7 +19,7 @@ class dronecangen(Task.Task):
         python = self.env.get_flat('PYTHON')
         out = self.env.get_flat('OUTPUT_DIR')
         src = self.env.get_flat('SRC')
-        dsdlc = self.env.get_flat("DSDL_COMPILER")
+        dsdlc = self.env.get_flat("DC_DSDL_COMPILER")
 
         ret = self.exec_command(['{}'.format(python),
                                  '{}'.format(dsdlc),
@@ -70,6 +70,6 @@ def configure(cfg):
     cfg.check_python_version(minver=(2,7,0))
 
     env = cfg.env
-    env.DSDL_COMPILER_DIR = cfg.srcnode.make_node('modules/DroneCAN/dronecan_dsdlc/').abspath()
-    env.DSDL_COMPILER = env.DSDL_COMPILER_DIR + '/dronecan_dsdlc.py'
-    cfg.msg('DSDL compiler', env.DSDL_COMPILER)
+    env.DC_DSDL_COMPILER_DIR = cfg.srcnode.make_node('modules/DroneCAN/dronecan_dsdlc/').abspath()
+    env.DC_DSDL_COMPILER = env.DC_DSDL_COMPILER_DIR + '/dronecan_dsdlc.py'
+    cfg.msg('DC_DSDL compiler', env.DC_DSDL_COMPILER)

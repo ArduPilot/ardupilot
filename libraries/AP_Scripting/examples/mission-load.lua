@@ -1,5 +1,6 @@
 -- Example of loading a mission from the SD card using Scripting
 -- Would be trivial to select a mission based on scripting params or RC switch
+-- luacheck: only 0
 
 
 

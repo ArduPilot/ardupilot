@@ -98,4 +98,13 @@ protected:
 
     AP_PIDInfo _pid_info_x;
     AP_PIDInfo _pid_info_y;
+
+private:
+    const float default_kp;
+    const float default_ki;
+    const float default_kd;
+    const float default_kff;
+    const float default_kimax;
+    const float default_filt_E_hz;
+    const float default_filt_D_hz;
 };

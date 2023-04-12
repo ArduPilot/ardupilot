@@ -21,6 +21,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_BoardConfig/AP_BoardConfig_config.h>
 
 /*
   use just one area per storage type for boards with 4k of
@@ -45,7 +46,7 @@
 #endif
 
 /*
-  The StorageManager holds the layout of non-volatile storeage
+  The StorageManager holds the layout of non-volatile storage
  */
 class StorageManager {
     friend class StorageAccess;
@@ -64,7 +65,13 @@ public:
     // erase whole of storage
     static void erase(void);
 
+    static bool storage_failed(void) {
+        return last_io_failed;
+    }
+
 private:
+    static bool last_io_failed;
+
     struct StorageArea {
         StorageType type;
         uint16_t    offset;
@@ -77,6 +84,9 @@ private:
 
 /*
   A StorageAccess object allows access to one type of storage
+
+  NOTE: this object may be declared on the stack, so it will not be
+  zero initialised
  */
 class StorageAccess {
 public:
@@ -106,7 +116,29 @@ public:
     // copy from one storage area to another
     bool copy_area(const StorageAccess &source) const;
 
+    // attach a storage file from microSD
+    bool attach_file(const char *fname, uint16_t size_kbyte);
+
 private:
     const StorageManager::StorageType type;
     uint16_t total_size;
+
+#if AP_SDCARD_STORAGE_ENABLED
+    /*
+      support for storage regions on microSD. Only the StorageMission
+      for now
+     */
+    struct FileStorage {
+        HAL_Semaphore sem;
+        int fd;
+        uint8_t *buffer;
+        uint32_t bufsize;
+        uint32_t last_clean_ms;
+        uint32_t last_io_fail_ms;
+        // each bit of the dirty mask covers 1k of data
+        uint64_t dirty_mask;
+    } *file;
+
+    void flush_file(void);
+#endif
 };

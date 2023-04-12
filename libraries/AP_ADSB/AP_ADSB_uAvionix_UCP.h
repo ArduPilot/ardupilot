@@ -20,10 +20,6 @@
 #pragma once
 #include "AP_ADSB_Backend.h"
 
-#ifndef HAL_ADSB_UCP_ENABLED
-#define HAL_ADSB_UCP_ENABLED HAL_ADSB_ENABLED
-#endif
-
 #if HAL_ADSB_UCP_ENABLED
 
 #define AP_ADSB_UAVIONIX_UCP_CAPTURE_ALL_RX_PACKETS         1

@@ -114,6 +114,15 @@ You can find more info here : [ESPTOOL](https://github.com/espressif/esptool)
 
 You can also find the cmake esp-idf project at `libraries/AP_HAL_ESP32/targets/esp-idf` for idf.py command. But see next section to understand how ardupilot is compiled on ESP32.
 
+
+For flashing from another machine you need the following files:
+```
+build/<board>/esp-idf_build/bootloader/bootloader.bin 
+build/<board>/esp-idf_build/ardupilot.bin
+build/<board>/esp-idf_build/partition_table/partition-table.bin 
+```
+see build/<board>/esp-idf_build/flash_project_args (after building) for hints on what arguments to use
+
 ---
 OLD
 
@@ -160,13 +169,13 @@ After flashing the esp32 , u can connect with a terminal app of your preference 
 | GND         |      GND  |
 | 5v          |      Pwr  |
 
-### RC reciever connection:
+### RC receiver connection:
 
-|ESP32| RCRECIEVER |
-| --- |    ---     |
-| D4  |  CPPM-out  |
-| GND |       GND  |
-| 5v  |       Pwr  |
+|ESP32| RC Receiver |
+| --- |    ---      |
+| D4  |  CPPM-out   |
+| GND |       GND   |
+| 5v  |       Pwr   |
 
 
 ###  I2C connection ( for gps with leds/compass-es/etc onboard, or digital airspeed sensorrs, etc):

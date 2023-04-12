@@ -49,7 +49,9 @@ public:
     virtual bool run_debug_shell(AP_HAL::BetterStream *stream) = 0;
 
     enum safety_state : uint8_t {
-        SAFETY_NONE, SAFETY_DISARMED, SAFETY_ARMED
+        SAFETY_NONE,
+        SAFETY_DISARMED,
+        SAFETY_ARMED,
     };
 
     /*

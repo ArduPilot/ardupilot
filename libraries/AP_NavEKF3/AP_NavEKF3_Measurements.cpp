@@ -137,9 +137,9 @@ void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, con
 #endif // EK3_FEATURE_BODY_ODOM
 }
 
-#if EK3_FEATURE_BODY_ODOM
 void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius)
 {
+#if EK3_FEATURE_BODY_ODOM
     // This is a simple hack to get wheel encoder data into the EKF and verify the interface sign conventions and units
     // It uses the exisiting body frame velocity fusion.
     // TODO implement a dedicated wheel odometry observation model
@@ -162,8 +162,8 @@ void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStam
     wheelOdmDataNew.time_ms = timeStamp_ms - (uint32_t)(500.0f * delTime);
 
     storedWheelOdm.push(wheelOdmDataNew);
-}
 #endif // EK3_FEATURE_BODY_ODOM
+}
 
 // write the raw optical flow measurements
 // this needs to be called externally.
@@ -645,7 +645,7 @@ void NavEKF3_core::readGpsData()
     calcGpsGoodForFlight();
 
     // Read the GPS location in WGS-84 lat,long,height coordinates
-    const struct Location &gpsloc = gps.location(selected_gps);
+    const Location &gpsloc = gps.location(selected_gps);
 
     // Set the EKF origin and magnetic field declination if not previously set and GPS checks have passed
     if (gpsGoodToAlign && !validOrigin) {

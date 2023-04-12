@@ -69,6 +69,7 @@ public:
         k_param_proximity_baud,
         k_param_proximity_port,
         k_param_proximity_max_rate,
+        k_param_nmea,
     };
 
     AP_Int16 format_version;
@@ -79,7 +80,7 @@ public:
     AP_Enum<AP_CANManager::Driver_Type> can_protocol[HAL_NUM_CAN_IFACES];
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_SLCAN
+#if AP_CAN_SLCAN_ENABLED
     AP_Int8 can_slcan_cport;
 #endif
 

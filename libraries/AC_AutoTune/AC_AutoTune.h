@@ -26,6 +26,7 @@
 #define AUTOTUNE_AXIS_BITMASK_ROLL            1
 #define AUTOTUNE_AXIS_BITMASK_PITCH           2
 #define AUTOTUNE_AXIS_BITMASK_YAW             4
+#define AUTOTUNE_AXIS_BITMASK_YAW_D           8
 
 #define AUTOTUNE_SUCCESS_COUNT                4     // The number of successful iterations we need to freeze at current gains
 
@@ -69,7 +70,8 @@ protected:
     enum AxisType {
         ROLL = 0,                 // roll axis is being tuned (either angle or rate)
         PITCH = 1,                // pitch axis is being tuned (either angle or rate)
-        YAW = 2,                  // pitch axis is being tuned (either angle or rate)
+        YAW = 2,                  // yaw axis is being tuned using FLTE (either angle or rate)
+        YAW_D = 3,                // yaw axis is being tuned using D (either angle or rate)
     };
 
     //
@@ -122,6 +124,7 @@ protected:
     bool roll_enabled() const;
     bool pitch_enabled() const;
     bool yaw_enabled() const;
+    bool yaw_d_enabled() const;
 
     // update gains for the rate p up tune type
     virtual void updating_rate_p_up_all(AxisType test_axis)=0;
@@ -201,7 +204,8 @@ protected:
         SP_UP = 4,                // angle P is being tuned up
         SP_DOWN = 5,              // angle P is being tuned down
         MAX_GAINS = 6,            // max allowable stable gains are determined
-        TUNE_COMPLETE = 7         // Reached end of tuning
+        TUNE_CHECK = 7,           // frequency sweep with tuned gains
+        TUNE_COMPLETE = 8         // Reached end of tuning
     };
     TuneType tune_seq[6];         // holds sequence of tune_types to be performed
     uint8_t tune_seq_curr;        // current tune sequence step

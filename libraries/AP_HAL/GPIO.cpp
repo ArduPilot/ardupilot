@@ -2,15 +2,18 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#ifndef HAL_BOOTLOADER_BUILD
 #include <GCS_MAVLink/GCS.h>
-#endif
-
-#ifndef GCS_SEND_TEXT
-#define GCS_SEND_TEXT(severity, format, args...)
-#endif
 
 extern const AP_HAL::HAL& hal;
+
+AP_HAL::PWMSource::~PWMSource()
+{
+    if (interrupt_attached) {
+        // Assume this is always successful
+        hal.gpio->detach_interrupt(_pin);
+        interrupt_attached = false;
+    }
+}
 
 bool AP_HAL::PWMSource::set_pin(int16_t new_pin, const char *subsystem)
 {

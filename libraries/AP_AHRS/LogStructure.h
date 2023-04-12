@@ -78,6 +78,7 @@ struct PACKED log_Attitude {
 // @Description: Vehicle navigation origin or other notable position
 // @Field: TimeUS: Time since system startup
 // @Field: Type: Position type
+// @FieldValueEnum: Type: AP_AHRS::LogOriginType
 // @Field: Lat: Position latitude
 // @Field: Lng: Position longitude
 // @Field: Alt: Position altitude

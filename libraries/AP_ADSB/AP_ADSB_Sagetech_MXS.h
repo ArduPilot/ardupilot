@@ -24,11 +24,6 @@
 
 #include "AP_ADSB_Backend.h"
 
-#ifndef HAL_ADSB_SAGETECH_MXS_ENABLED
-    // this feature is only enabled by default by select hardware
-    #define HAL_ADSB_SAGETECH_MXS_ENABLED HAL_ADSB_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#endif
-
 #if HAL_ADSB_SAGETECH_MXS_ENABLED
 
 #include "sagetech-sdk/sagetech_mxs.h"

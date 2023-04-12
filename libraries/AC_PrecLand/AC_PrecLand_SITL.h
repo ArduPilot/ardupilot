@@ -1,8 +1,11 @@
 #pragma once
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <AP_Math/AP_Math.h>
+#include "AC_PrecLand_config.h"
+
+#if AC_PRECLAND_SITL_ENABLED
+
 #include <AC_PrecLand/AC_PrecLand_Backend.h>
+#include <AP_Math/AP_Math.h>
 #include <SITL/SITL.h>
 
 /*
@@ -43,4 +46,4 @@ private:
     float               _distance_to_target;    // distance to target in meters
 };
 
-#endif
+#endif  // AC_PRECLAND_SITL_ENABLED

@@ -18,6 +18,7 @@
 --   9. repeat step 6, 7 and 8 until the test_loc's altitude falls below the terrain altitude
 --  10. interpolate between test_loc and prev_test_loc to find the lat, lon, alt (above sea-level) where alt-above-terrain is zero
 --  11. display the POI to the user
+-- luacheck: only 0
 
 -- global definitions
 local ALT_FRAME_ABSOLUTE = 0

@@ -16,13 +16,23 @@ class Vehicle(object):
 
 
 class Library(object):
-    def __init__(self, name):
+    def __init__(self, name, reference=None, not_rst=False, check_duplicates=False):
         self.set_name(name)
         self.params = []
+        if reference is not None:
+            self.reference = reference
+        self.not_rst = not_rst
+        self.check_duplicates = check_duplicates
 
     def set_name(self, name):
         self.name = name
         self.reference = name
+
+    def has_param(self, pname):
+        for p in self.params:
+            if pname == p.name:
+                return True
+        return False
 
 known_param_fields = [
              'Description',

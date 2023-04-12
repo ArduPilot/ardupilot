@@ -135,6 +135,14 @@ int AP_Filesystem_Posix::closedir(void *dirp)
     return ::closedir((DIR *)dirp);
 }
 
+int AP_Filesystem_Posix::rename(const char *oldpath, const char *newpath)
+{
+    FS_CHECK_ALLOWED(-1);
+    oldpath = map_filename(oldpath);
+    newpath = map_filename(newpath);
+    return ::rename(oldpath, newpath);
+}
+
 // return free disk space in bytes
 int64_t AP_Filesystem_Posix::disk_free(const char *path)
 {

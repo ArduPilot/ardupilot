@@ -859,8 +859,7 @@ void AP_GPS_NMEA::send_config(void)
     switch (get_type()) {
 #if AP_GPS_NMEA_UNICORE_ENABLED
     case AP_GPS::GPS_TYPE_UNICORE_MOVINGBASE_NMEA:
-        port->printf("\r\nMODE MOVINGBASE\r\n" \
-                     "CONFIG HEADING FIXLENGTH\r\n" \
+        port->printf("\r\nCONFIG HEADING FIXLENGTH\r\n" \
                      "CONFIG UNDULATION AUTO\r\n" \
                      "CONFIG\r\n" \
                      "UNIHEADINGA %.3f\r\n",
@@ -870,6 +869,7 @@ void AP_GPS_NMEA::send_config(void)
 
     case AP_GPS::GPS_TYPE_UNICORE_NMEA: {
         port->printf("\r\nAGRICA %.3f\r\n" \
+                     "MODE MOVINGBASE\r\n" \
                      "GNGGA %.3f\r\n" \
                      "GNRMC %.3f\r\n",
                      rate_s, rate_s, rate_s);

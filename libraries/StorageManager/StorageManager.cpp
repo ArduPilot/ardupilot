@@ -23,12 +23,17 @@
 #include <AP_Math/AP_Math.h>
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_Filesystem/AP_Filesystem.h>
+#include <GCS_MAVLink/GCS.h>
 
 #include "StorageManager.h"
 
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
+
+bool StorageManager::last_io_failed;
 
 /*
   the layouts below are carefully designed to ensure backwards
@@ -116,6 +121,9 @@ StorageAccess::StorageAccess(StorageManager::StorageType _type) :
 {
     // calculate available bytes
     total_size = 0;
+#if AP_SDCARD_STORAGE_ENABLED
+    file = nullptr;
+#endif
     for (uint8_t i=0; i<STORAGE_NUM_AREAS; i++) {
         const StorageManager::StorageArea &area = StorageManager::layout[i];
         if (area.type == type) {
@@ -131,6 +139,19 @@ StorageAccess::StorageAccess(StorageManager::StorageType _type) :
 bool StorageAccess::read_block(void *data, uint16_t addr, size_t n) const
 {
     uint8_t *b = (uint8_t *)data;
+
+#if AP_SDCARD_STORAGE_ENABLED
+    if (file != nullptr) {
+        // using microSD data
+        if (addr > file->bufsize) {
+            return false;
+        }
+        const size_t n2 = MIN(n, file->bufsize - addr);
+        memcpy(b, &file->buffer[addr], n2);
+        return n == n2;
+    }
+#endif
+
     for (uint8_t i=0; i<STORAGE_NUM_AREAS; i++) {
         const StorageManager::StorageArea &area = StorageManager::layout[i];
         uint16_t length = area.length;
@@ -143,7 +164,7 @@ bool StorageAccess::read_block(void *data, uint16_t addr, size_t n) const
             addr -= length;
             continue;
         }
-        uint8_t count = n;
+        uint16_t count = n;
         if (count+addr > length) {
             // the data crosses a boundary between two areas
             count = length - addr;
@@ -160,6 +181,7 @@ bool StorageAccess::read_block(void *data, uint16_t addr, size_t n) const
         // continue writing at the beginning of next valid area
         addr = 0;
     }
+
     return (n == 0);
 }
 
@@ -171,6 +193,23 @@ bool StorageAccess::read_block(void *data, uint16_t addr, size_t n) const
 bool StorageAccess::write_block(uint16_t addr, const void *data, size_t n) const
 {
     const uint8_t *b = (const uint8_t *)data;
+
+#if AP_SDCARD_STORAGE_ENABLED
+    if (file != nullptr) {
+        if (addr > file->bufsize) {
+            return false;
+        }
+        // using microSD data
+        WITH_SEMAPHORE(file->sem);
+        const size_t n2 = MIN(n, file->bufsize - addr);
+        memcpy(&file->buffer[addr], b, n2);
+        for (uint8_t i=addr/1024U; i<(addr+n2+1023U)/1024U; i++) {
+            file->dirty_mask |= (1ULL<<i);
+        }
+        return n == n2;
+    }
+#endif
+
     for (uint8_t i=0; i<STORAGE_NUM_AREAS; i++) {
         const StorageManager::StorageArea &area = StorageManager::layout[i];
         uint16_t length = area.length;
@@ -183,7 +222,7 @@ bool StorageAccess::write_block(uint16_t addr, const void *data, size_t n) const
             addr -= length;
             continue;
         }
-        uint8_t count = n;
+        uint16_t count = n;
         if (count+addr > length) {
             // the data crosses a boundary between two areas
             count = length - addr;
@@ -200,6 +239,7 @@ bool StorageAccess::write_block(uint16_t addr, const void *data, size_t n) const
         // continue writing at the beginning of next valid area
         addr = 0;
     }
+
     return (n == 0);
 }
 
@@ -296,3 +336,115 @@ bool StorageAccess::copy_area(const StorageAccess &source) const
     }
     return true;
 }
+
+#if AP_SDCARD_STORAGE_ENABLED
+/*
+  attach a file to a storage region
+ */
+bool StorageAccess::attach_file(const char *filename, uint16_t size_kbyte)
+{
+    if (file != nullptr) {
+        // only one attach per boot
+        return false;
+    }
+    const uint32_t size = MIN(0xFFFFU, size_kbyte * 1024U);
+    auto *newfile = new FileStorage;
+    if (newfile == nullptr) {
+        AP_BoardConfig::allocation_error("StorageFile");
+    }
+    ssize_t nread;
+
+    newfile->fd = AP::FS().open(filename, O_RDWR | O_CREAT);
+    if (newfile->fd == -1) {
+        goto fail;
+    }
+    newfile->buffer = new uint8_t[size];
+    if (newfile->buffer == nullptr) {
+        AP_BoardConfig::allocation_error("StorageFile");
+    }
+    newfile->bufsize = size;
+    nread = AP::FS().read(newfile->fd, newfile->buffer, size);
+    if (nread == -1) {
+        goto fail;
+    }
+    if (nread == 0) {
+        // new file, copy storage from existing to allow users to
+        // start with existing mission
+        read_block(newfile->buffer, 0, total_size);
+    }
+    if (nread < int32_t(size)) {
+        if (AP::FS().write(newfile->fd, &newfile->buffer[nread], size-nread) != int32_t(size-nread)) {
+            goto fail;
+        }
+        if (AP::FS().fsync(newfile->fd) != 0) {
+            goto fail;
+        }
+    }
+
+    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&StorageAccess::flush_file, void));
+
+    file = newfile;
+    total_size = newfile->bufsize;
+
+    return true;
+
+fail:
+    if (newfile->fd != -1) {
+        AP::FS().close(newfile->fd);
+    }
+    if (newfile->buffer != nullptr) {
+        delete[] newfile->buffer;
+    }
+    delete newfile;
+    return false;
+}
+
+/*
+  flush file changes to microSD
+ */
+void StorageAccess::flush_file(void)
+{
+    if (file == nullptr || file->dirty_mask == 0) {
+        return;
+    }
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - file->last_clean_ms < 1000U) {
+        return;
+    }
+    WITH_SEMAPHORE(file->sem);
+
+    if (StorageManager::last_io_failed &&
+        now_ms - file->last_io_fail_ms < 2000U) {
+        // don't retry too fast
+        return;
+    }
+
+    // write out 1k at a time
+    bool io_fail = false;
+    const int b = __builtin_ffsll(file->dirty_mask);
+    const uint32_t ofs = (b-1)*1024;
+    const uint32_t len = MIN(1024U, file->bufsize-ofs);
+    if (AP::FS().lseek(file->fd, ofs, SEEK_SET) != int32_t(ofs) ||
+        AP::FS().write(file->fd, &file->buffer[ofs], len) != int32_t(len)) {
+        io_fail = true;
+    } else {
+        file->dirty_mask &= ~(1ULL<<(b-1));
+    }
+    if (file->dirty_mask == 0) {
+        file->last_clean_ms = now_ms;
+        if (AP::FS().fsync(file->fd) != 0) {
+            io_fail = true;
+        }
+    }
+    if (io_fail && !StorageManager::last_io_failed) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Mission storage failed");
+    } else if (!io_fail && StorageManager::last_io_failed) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Mission storage OK");
+    }
+    StorageManager::last_io_failed = io_fail;
+    if (io_fail) {
+        file->last_io_fail_ms = now_ms;
+    }
+}
+#endif // AP_SDCARD_STORAGE_ENABLED
+

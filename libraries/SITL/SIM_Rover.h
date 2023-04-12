@@ -38,6 +38,7 @@ public:
     }
 
 private:
+    static constexpr float MAX_YAW_RATE = 360.0;  // MAX 360 deg/s yaw rate speed to not nuke the ekf gsf
     float max_speed = 20.0f;            // vehicle's maximum forward speed in m/s
     float max_accel = 10.0f;            // vehicle's maximum forward acceleration in m/s/s
     float max_wheel_turn = 35.0f;       // ackermann steering vehicle's maximum steering angle

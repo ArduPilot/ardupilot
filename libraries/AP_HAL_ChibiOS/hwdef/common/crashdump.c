@@ -99,7 +99,7 @@ const CrashCatcherMemoryRegion* CrashCatcher_GetMemoryRegions(void)
     // do a full dump if on serial
     static CrashCatcherMemoryRegion regions[60] = {
     {(uint32_t)&__ram0_start__, (uint32_t)&__ram0_end__, CRASH_CATCHER_BYTE},
-    {(uint32_t)&ch, (uint32_t)&ch + sizeof(ch), CRASH_CATCHER_BYTE}};
+    {(uint32_t)&ch_system, (uint32_t)&ch_system + sizeof(ch_system), CRASH_CATCHER_BYTE}};
     uint32_t total_dump_size = dump_size + buf_off + REMAINDER_MEM_REGION_SIZE;
     // loop through chibios threads and add their stack info
     uint8_t curr_region = 2;

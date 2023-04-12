@@ -258,7 +258,22 @@ void AP_MotorsMulticopter::output()
 
     // output raw roll/pitch/yaw/thrust
     output_rpyt();
+
+    // check for any external limit flags
+    update_external_limits();
+
 };
+
+void AP_MotorsMulticopter::update_external_limits()
+{
+#if AP_SCRIPTING_ENABLED
+    limit.roll |= external_limits.roll;
+    limit.pitch |= external_limits.pitch;
+    limit.yaw |= external_limits.yaw;
+    limit.throttle_lower |= external_limits.throttle_lower;
+    limit.throttle_upper |= external_limits.throttle_upper;
+#endif
+}
 
 // output booster throttle, if any
 void AP_MotorsMulticopter::output_boost_throttle(void)
@@ -424,6 +439,7 @@ void AP_MotorsMulticopter::Log_Write()
         bat_volt        : _batt_voltage_filt.get(),
         th_limit        : _throttle_limit,
         th_average_max  : _throttle_avg_max,
+        th_out          : _throttle_out,
         mot_fail_flags  : (uint8_t)(_thrust_boost | (_thrust_balanced << 1U)),
     };
     AP::logger().WriteBlock(&pkt_mot, sizeof(pkt_mot));
@@ -857,3 +873,16 @@ bool AP_MotorsMulticopter::arming_checks(size_t buflen, char *buffer) const
 
     return true;
 }
+
+#if APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+// Getters for AP_Motors example, not used by vehicles
+float AP_MotorsMulticopter::get_throttle_avg_max() const
+{
+    return _throttle_avg_max;
+}
+
+int16_t AP_MotorsMulticopter::get_yaw_headroom() const
+{
+    return _yaw_headroom;
+}
+#endif

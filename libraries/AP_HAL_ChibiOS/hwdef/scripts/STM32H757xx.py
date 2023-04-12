@@ -69,6 +69,7 @@ mcu = {
 
     'DEFINES' : {
         'HAL_HAVE_HARDWARE_DOUBLE' : '1',
+        'HAL_WITH_MCU_MONITORING' : '1',
         'STM32H7' : '1',
     }
 }

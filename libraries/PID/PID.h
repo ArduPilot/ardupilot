@@ -16,13 +16,13 @@ public:
     PID(const float &   initial_p = 0.0f,
         const float &   initial_i = 0.0f,
         const float &   initial_d = 0.0f,
-        const int16_t & initial_imax = 0)
+        const int16_t & initial_imax = 0):
+            default_kp(initial_p),
+            default_ki(initial_i),
+            default_kd(initial_d),
+            default_kimax(initial_imax)
     {
 		AP_Param::setup_object_defaults(this, var_info);
-        _kp.set_and_default(initial_p);
-        _ki.set_and_default(initial_i);
-        _kd.set_and_default(initial_d);
-        _imax.set_and_default(initial_imax);
 
 		// set _last_derivative as invalid when we startup
 		_last_derivative = NAN;
@@ -121,4 +121,9 @@ private:
     /// http://en.wikipedia.org/wiki/Low-pass_filter.
     ///
     static const uint8_t        _fCut = 20;
+
+    const float default_kp;
+    const float default_ki;
+    const float default_kd;
+    const float default_kimax;
 };

@@ -33,7 +33,9 @@
 #endif // !defined(SCRIPTING_STACK_MAX_SIZE)
 
 #if !defined(SCRIPTING_HEAP_SIZE)
-  #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX || HAL_MEM_CLASS >= HAL_MEM_CLASS_500
+  #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX || HAL_MEM_CLASS >= HAL_MEM_CLASS_1000
+    #define SCRIPTING_HEAP_SIZE (200 * 1024)
+  #elif HAL_MEM_CLASS >= HAL_MEM_CLASS_500
     #define SCRIPTING_HEAP_SIZE (100 * 1024)
   #else
     #define SCRIPTING_HEAP_SIZE (43 * 1024)
@@ -243,6 +245,15 @@ void AP_Scripting::thread(void) {
             _i2c_dev[i] = nullptr;
         }
         num_i2c_devices = 0;
+
+        // clear allocated PWM sources
+        for (uint8_t i=0; i<SCRIPTING_MAX_NUM_PWM_SOURCE; i++) {
+            if (_pwm_source[i] != nullptr) {
+                delete _pwm_source[i];
+                _pwm_source[i] = nullptr;
+            }
+        }
+        num_pwm_source = 0;
 
         bool cleared = false;
         while(true) {

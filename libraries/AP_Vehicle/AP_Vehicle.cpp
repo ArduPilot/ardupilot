@@ -17,6 +17,7 @@
 #include <AP_HAL_ChibiOS/sdcard.h>
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
 #endif
+#include <AP_DDS/AP_DDS_Client.h>
 
 #define SCHED_TASK(func, rate_hz, max_time_micros, prio) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros, prio)
 
@@ -41,9 +42,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Path: ../AP_VisualOdom/AP_VisualOdom.cpp
     AP_SUBGROUPINFO(visual_odom, "VISO",  3, AP_Vehicle, AP_VisualOdom),
 #endif
+
+#if AP_VIDEOTX_ENABLED
     // @Group: VTX_
     // @Path: ../AP_VideoTX/AP_VideoTX.cpp
     AP_SUBGROUPINFO(vtx, "VTX_",  4, AP_Vehicle, AP_VideoTX),
+#endif
 
 #if HAL_MSP_ENABLED
     // @Group: MSP
@@ -113,6 +117,18 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Group: TEMP
     // @Path: ../AP_TemperatureSensor/AP_TemperatureSensor.cpp
     AP_SUBGROUPINFO(temperature_sensor, "TEMP", 16, AP_Vehicle, AP_TemperatureSensor),
+#endif
+
+#if HAL_NMEA_OUTPUT_ENABLED
+    // @Group: NMEA_
+    // @Path: ../AP_NMEA_Output/AP_NMEA_Output.cpp
+    AP_SUBGROUPINFO(nmea, "NMEA_", 17, AP_Vehicle, AP_NMEA_Output),
+#endif
+
+#if AP_DDS_ENABLED
+    // @Group: XRCE
+    // @Path: ../AP_DDS/AP_DDS_Client.cpp
+    AP_SUBGROUPPTR(dds_client, "XRCE_", 18, AP_Vehicle, AP_DDS_Client),
 #endif
 
     AP_GROUPEND
@@ -232,9 +248,11 @@ void AP_Vehicle::setup()
     visual_odom.init();
 #endif
 
+#if AP_VIDEOTX_ENABLED
     vtx.init();
+#endif
 
-#if HAL_SMARTAUDIO_ENABLED
+#if AP_SMARTAUDIO_ENABLED
     smartaudio.init();
 #endif
 
@@ -269,6 +287,10 @@ void AP_Vehicle::setup()
     ais.init();
 #endif
 
+#if HAL_NMEA_OUTPUT_ENABLED
+    nmea.init();
+#endif
+
 #if AP_FENCE_ENABLED
     fence.init();
 #endif
@@ -286,6 +308,12 @@ void AP_Vehicle::setup()
     AP_Param::invalidate_count();
 
     gcs().send_text(MAV_SEVERITY_INFO, "ArduPilot Ready");
+
+#if AP_DDS_ENABLED
+    if (!init_dds_client()) {
+        gcs().send_text(MAV_SEVERITY_ERROR, "DDS Client: Failed to Initialize");
+    }
+#endif
 }
 
 void AP_Vehicle::loop()
@@ -354,6 +382,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if COMPASS_CAL_ENABLED
     SCHED_TASK_CLASS(Compass,      &vehicle.compass,        cal_update,     100, 200, 75),
 #endif
+#if HAL_NMEA_OUTPUT_ENABLED
+    SCHED_TASK_CLASS(AP_NMEA_Output, &vehicle.nmea,         update,                   50, 50, 180),
+#endif
 #if HAL_RUNCAM_ENABLED
     SCHED_TASK_CLASS(AP_RunCam,    &vehicle.runcam,         update,                   50, 50, 200),
 #endif
@@ -362,7 +393,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update_parameters,         1, 50, 210),
 #endif
     SCHED_TASK(update_dynamic_notch_at_specified_rate,      LOOP_RATE,                    200, 215),
+#if AP_VIDEOTX_ENABLED
     SCHED_TASK_CLASS(AP_VideoTX,   &vehicle.vtx,            update,                    2, 100, 220),
+#endif
 #if AP_TRAMP_ENABLED
     SCHED_TASK_CLASS(AP_Tramp,     &vehicle.tramp,          update,                   50,  50, 225),
 #endif
@@ -796,6 +829,16 @@ void AP_Vehicle::check_motor_noise()
     }
 #endif
 }
+
+#if AP_DDS_ENABLED
+bool AP_Vehicle::init_dds_client()
+{
+    if (AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_DDS_XRCE, 0)) {
+        dds_client = new AP_DDS_Client();
+    }
+    return dds_client != nullptr;
+}
+#endif // AP_DDS_ENABLED
 
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;
 

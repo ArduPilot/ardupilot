@@ -73,6 +73,10 @@ extern AP_Periph_FW periph;
 #endif
 #endif
 
+#ifndef AP_PERIPH_MAG_MAX_RATE
+#define AP_PERIPH_MAG_MAX_RATE 25U
+#endif
+
 #define DEBUG_PRINTS 0
 #define DEBUG_PKTS 0
 #if DEBUG_PRINTS
@@ -154,8 +158,8 @@ uint8_t PreferredNodeID = HAL_CAN_DEFAULT_NODE_ID;
 #define AP_PERIPH_BATTERY_MODEL_NAME CAN_APP_NODE_NAME
 #endif
 
-#ifndef CAN_PROBE_CONTINUOUS
-#define CAN_PROBE_CONTINUOUS 0
+#ifndef AP_PERIPH_PROBE_CONTINUOUS
+#define AP_PERIPH_PROBE_CONTINUOUS 0
 #endif
 
 #ifndef AP_PERIPH_ENFORCE_AT_LEAST_ONE_PORT_IS_UAVCAN_1MHz
@@ -168,7 +172,7 @@ ChibiOS::CANIface* AP_Periph_FW::can_iface_periph[HAL_NUM_CAN_IFACES];
 HALSITL::CANIface* AP_Periph_FW::can_iface_periph[HAL_NUM_CAN_IFACES];
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_SLCAN
+#if AP_CAN_SLCAN_ENABLED
 SLCAN::CANIface AP_Periph_FW::slcan_interface;
 #endif
 
@@ -436,20 +440,16 @@ static void handle_begin_firmware_update(CanardInstance* ins, CanardRxTransfer* 
     memset(comms, 0, sizeof(struct app_bootloader_comms));
     comms->magic = APP_BOOTLOADER_COMMS_MAGIC;
 
-    // manual decoding due to TAO bug in libcanard generated code
-    if (transfer->payload_len < 1 || transfer->payload_len > sizeof(comms->path)+1) {
+    uavcan_protocol_file_BeginFirmwareUpdateRequest req;
+    if (uavcan_protocol_file_BeginFirmwareUpdateRequest_decode(transfer, &req)) {
         return;
     }
-    uint32_t offset = 0;
-    canardDecodeScalar(transfer, 0, 8, false, (void*)&comms->server_node_id);
-    offset += 8;
-    for (uint8_t i=0; i<transfer->payload_len-1; i++) {
-        canardDecodeScalar(transfer, offset, 8, false, (void*)&comms->path[i]);
-        offset += 8;
-    }
+
+    comms->server_node_id = req.source_node_id;
     if (comms->server_node_id == 0) {
         comms->server_node_id = transfer->source_node_id;
     }
+    memcpy(comms->path, req.image_file_remote_path.path.data, req.image_file_remote_path.path.len);
     comms->my_node_id = canardGetLocalNodeID(ins);
 
     uint8_t buffer[UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_RESPONSE_MAX_SIZE] {};
@@ -782,42 +782,19 @@ static void handle_esc_rawcommand(CanardInstance* ins, CanardRxTransfer* transfe
 
 static void handle_act_command(CanardInstance* ins, CanardRxTransfer* transfer)
 {
-    // manual decoding due to TAO bug in libcanard generated code
-    if (transfer->payload_len < 1 || transfer->payload_len > UAVCAN_EQUIPMENT_ACTUATOR_ARRAYCOMMAND_MAX_SIZE+1) {
+    uavcan_equipment_actuator_ArrayCommand cmd;
+    if (uavcan_equipment_actuator_ArrayCommand_decode(transfer, &cmd)) {
         return;
     }
 
-    const uint8_t data_count = (transfer->payload_len / UAVCAN_EQUIPMENT_ACTUATOR_COMMAND_MAX_SIZE);
-    uavcan_equipment_actuator_Command data[data_count] {};
-
-    uint32_t offset = 0;
-    for (uint8_t i=0; i<data_count; i++) {
-        canardDecodeScalar(transfer, offset, 8, false, (void*)&data[i].actuator_id);
-        offset += 8;
-        canardDecodeScalar(transfer, offset, 8, false, (void*)&data[i].command_type);
-        offset += 8;
-
-#ifndef CANARD_USE_FLOAT16_CAST
-    uint16_t tmp_float = 0;
-#else
-    CANARD_USE_FLOAT16_CAST tmp_float = 0;
-#endif
-        canardDecodeScalar(transfer, offset, 16, false, (void*)&tmp_float);
-        offset += 16;
-#ifndef CANARD_USE_FLOAT16_CAST
-        data[i].command_value = canardConvertFloat16ToNativeFloat(tmp_float);
-#else
-        data[i].command_value = (float)tmp_float;
-#endif
-    }
-
-    for (uint8_t i=0; i < data_count; i++) {
-        switch (data[i].command_type) {
+    for (uint8_t i=0; i < cmd.commands.len; i++) {
+        const auto &c = cmd.commands.data[i];
+        switch (c.command_type) {
         case UAVCAN_EQUIPMENT_ACTUATOR_COMMAND_COMMAND_TYPE_UNITLESS:
-            periph.rcout_srv_unitless(data[i].actuator_id, data[i].command_value);
+            periph.rcout_srv_unitless(c.actuator_id, c.command_value);
             break;
         case UAVCAN_EQUIPMENT_ACTUATOR_COMMAND_COMMAND_TYPE_PWM:
-            periph.rcout_srv_PWM(data[i].actuator_id, data[i].command_value);
+            periph.rcout_srv_PWM(c.actuator_id, c.command_value);
             break;
         }
     }
@@ -919,6 +896,11 @@ static void onTransferReceived(CanardInstance* ins,
 {
 #ifdef HAL_GPIO_PIN_LED_CAN1
     palToggleLine(HAL_GPIO_PIN_LED_CAN1);
+#endif
+
+#if HAL_CANFD_SUPPORTED
+    // enable tao for decoding when not on CANFD
+    transfer->tao = !transfer->canfd;
 #endif
 
     /*
@@ -1215,7 +1197,7 @@ static void processTx(void)
             }
     #endif
     #if HAL_NUM_CAN_IFACES >= 2
-            if (periph.can_protocol_cached[ins.index] != AP_CANManager::Driver_Type_UAVCAN) {
+            if (periph.can_protocol_cached[ins.index] != AP_CANManager::Driver_Type_DroneCAN) {
                 continue;
             }
     #endif
@@ -1247,7 +1229,7 @@ static void processRx(void)
             continue;
         }
 #if HAL_NUM_CAN_IFACES >= 2
-        if (periph.can_protocol_cached[ins.index] != AP_CANManager::Driver_Type_UAVCAN) {
+        if (periph.can_protocol_cached[ins.index] != AP_CANManager::Driver_Type_DroneCAN) {
             continue;
         }
 #endif
@@ -1473,6 +1455,7 @@ static bool can_do_dna()
                                                 ,(1U << dronecan.dna_interface)
 #endif
 #if HAL_CANFD_SUPPORTED
+                                                // always send allocation request as non-FD
                                                 ,false
 #endif
                                                 );
@@ -1502,12 +1485,12 @@ void AP_Periph_FW::can_start()
 #if AP_PERIPH_ENFORCE_AT_LEAST_ONE_PORT_IS_UAVCAN_1MHz && HAL_NUM_CAN_IFACES >= 2
     bool has_uavcan_at_1MHz = false;
     for (uint8_t i=0; i<HAL_NUM_CAN_IFACES; i++) {
-        if (g.can_protocol[i] == AP_CANManager::Driver_Type_UAVCAN && g.can_baudrate[i] == 1000000) {
+        if (g.can_protocol[i] == AP_CANManager::Driver_Type_DroneCAN && g.can_baudrate[i] == 1000000) {
             has_uavcan_at_1MHz = true;
         }
     }
     if (!has_uavcan_at_1MHz) {
-        g.can_protocol[0].set_and_save(AP_CANManager::Driver_Type_UAVCAN);
+        g.can_protocol[0].set_and_save(AP_CANManager::Driver_Type_DroneCAN);
         g.can_baudrate[0].set_and_save(1000000);
     }
 #endif // HAL_PERIPH_ENFORCE_AT_LEAST_ONE_PORT_IS_UAVCAN_1MHz
@@ -1533,7 +1516,7 @@ void AP_Periph_FW::can_start()
         }
     }
 
-#ifdef HAL_PERIPH_ENABLE_SLCAN
+#if AP_CAN_SLCAN_ENABLED
     const uint8_t slcan_selected_index = g.can_slcan_cport - 1;
     if (slcan_selected_index < HAL_NUM_CAN_IFACES) {
         slcan_interface.set_can_iface(can_iface_periph[slcan_selected_index]);
@@ -1620,7 +1603,7 @@ void AP_Periph_FW::hwesc_telem_update()
     pkt.esc_index = g.esc_number;
     pkt.voltage = t.voltage;
     pkt.current = t.current;
-    pkt.temperature = MAX(t.mos_temperature, t.cap_temperature);
+    pkt.temperature = C_TO_KELVIN(MAX(t.mos_temperature, t.cap_temperature));
     pkt.rpm = t.rpm;
     pkt.power_rating_pct = t.phase_current;
     pkt.error_count = t.error_count;
@@ -1763,6 +1746,12 @@ void AP_Periph_FW::can_update()
     const uint32_t now_us = AP_HAL::micros();
     while ((AP_HAL::micros() - now_us) < 1000) {
         hal.scheduler->delay_microseconds(HAL_PERIPH_LOOP_DELAY_US);
+
+#if HAL_CANFD_SUPPORTED
+        // allow for user enabling/disabling CANFD at runtime
+        dronecan.canard.tao_disabled = periph.g.can_fdmode == 1;
+#endif
+
         processTx();
         processRx();
     }
@@ -1777,8 +1766,17 @@ void AP_Periph_FW::can_mag_update(void)
     if (!compass.available()) {
         return;
     }
+
+#if AP_PERIPH_MAG_MAX_RATE > 0
+    // don't flood the bus with very high rate magnetometers
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_mag_update_ms < (1000U / AP_PERIPH_MAG_MAX_RATE)) {
+        return;
+    }
+#endif
+
     compass.read();
-#if CAN_PROBE_CONTINUOUS
+#if AP_PERIPH_PROBE_CONTINUOUS
     if (compass.get_count() == 0) {
         static uint32_t last_probe_ms;
         uint32_t now = AP_HAL::native_millis();
@@ -2056,6 +2054,8 @@ void AP_Periph_FW::can_gps_update(void)
         float yaw_deg, yaw_acc_deg;
         uint32_t yaw_time_ms;
         if (gps.gps_yaw_deg(yaw_deg, yaw_acc_deg, yaw_time_ms) && yaw_time_ms != last_gps_yaw_ms) {
+            last_gps_yaw_ms = yaw_time_ms;
+            
             ardupilot_gnss_Heading heading {};
             heading.heading_valid = true;
             heading.heading_accuracy_valid = is_positive(yaw_acc_deg);
@@ -2217,7 +2217,7 @@ void AP_Periph_FW::can_airspeed_update(void)
     if (!airspeed.enabled()) {
         return;
     }
-#if CAN_PROBE_CONTINUOUS
+#if AP_PERIPH_PROBE_CONTINUOUS
     if (!airspeed.healthy()) {
         uint32_t now = AP_HAL::native_millis();
         static uint32_t last_probe_ms;
@@ -2277,7 +2277,7 @@ void AP_Periph_FW::can_rangefinder_update(void)
     if (rangefinder.get_type(0) == RangeFinder::Type::NONE) {
         return;
     }
-#if CAN_PROBE_CONTINUOUS
+#if AP_PERIPH_PROBE_CONTINUOUS
     if (rangefinder.num_sensors() == 0) {
         uint32_t now = AP_HAL::native_millis();
         static uint32_t last_probe_ms;

@@ -199,15 +199,20 @@ public:
 
     // structure for holding motor limit flags
     struct AP_Motors_limit {
-        uint8_t roll            : 1; // we have reached roll or pitch limit
-        uint8_t pitch           : 1; // we have reached roll or pitch limit
-        uint8_t yaw             : 1; // we have reached yaw limit
-        uint8_t throttle_lower  : 1; // we have reached throttle's lower limit
-        uint8_t throttle_upper  : 1; // we have reached throttle's upper limit
+        bool roll;           // we have reached roll or pitch limit
+        bool pitch;          // we have reached roll or pitch limit
+        bool yaw;            // we have reached yaw limit
+        bool throttle_lower; // we have reached throttle's lower limit
+        bool throttle_upper; // we have reached throttle's upper limit
     } limit;
 
     // set limit flag for pitch, roll and yaw
     void set_limit_flag_pitch_roll_yaw(bool flag);
+
+#if AP_SCRIPTING_ENABLED
+    // set limit flag for pitch, roll and yaw
+    void set_external_limits(bool roll, bool pitch, bool yaw, bool throttle_lower, bool throttle_upper);
+#endif
 
     //
     // virtual functions that should be implemented by child classes
@@ -367,6 +372,9 @@ protected:
 #if AP_SCRIPTING_ENABLED
     // Custom frame string set from scripting
     char* custom_frame_string;
+
+    // external limits from scripting
+    AP_Motors_limit external_limits;
 #endif
 
 private:

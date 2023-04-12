@@ -2,6 +2,7 @@
    a script to select other lua scripts using an auxillary switch from
     /1 /2 or /3 subdirectories of the scripts directory
 --]]
+-- luacheck: only 0
 
 local THIS_SCRIPT = "Script_Controller.lua"
 local sel_ch = Parameter("SCR_USER6")
@@ -222,11 +223,6 @@ function mission_load(n)
      error(string.format('failed to load mission at seq num %u', index))
   end
   gcs:send_text(0, string.format("Loaded %u mission items", index))
-end
-
-function update()
-  read_mission('mission1.txt')
-  return
 end
 
 --[[

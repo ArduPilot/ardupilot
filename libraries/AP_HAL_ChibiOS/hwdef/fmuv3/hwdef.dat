@@ -210,7 +210,7 @@ PA7 SPI1_MOSI SPI1
 # This defines an output pin which will default to output LOW. It is a
 # pin that enables peripheral power on this board.
 
-PA8 VDD_5V_PERIPH_EN OUTPUT LOW
+PA8 nVDD_5V_PERIPH_EN OUTPUT LOW
 
 # This is the pin that senses USB being connected. It is an input pin
 # setup as OPENDRAIN.
@@ -472,6 +472,9 @@ ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
 # for users running fmuv3 on their Solo:
 define AP_NOTIFY_OREOLED_ENABLED (BOARD_FLASH_SIZE > 1024)
 define HAL_SOLO_GIMBAL_ENABLED (HAL_MOUNT_ENABLED && BOARD_FLASH_SIZE > 1024)
+
+undef AP_BATTERY_SMBUS_SOLO_ENABLED
+define AP_BATTERY_SMBUS_SOLO_ENABLED (AP_BATTERY_SMBUS_ENABLED && BOARD_FLASH_SIZE > 1024)
 
 # produce this error if we are on a 1M board
 define BOARD_CHECK_F427_USE_1M "ERROR: 1M flash use fmuv2"

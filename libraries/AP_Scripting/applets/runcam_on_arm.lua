@@ -19,6 +19,8 @@
 -- presses, I want the script to be responsive and start recording as
 -- soon as the vehicle arms, so there I use a shorter delay.
 
+-- luacheck: only 0
+
 
 -- constants
 local RC_OPTION = {RunCamControl=78}

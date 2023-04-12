@@ -38,14 +38,14 @@ public:
 
     uint32_t available() override;
     uint32_t txspace() override;
-    int16_t read() override;
+    bool read(uint8_t &c) override;
 
     size_t write(uint8_t c) override;
     size_t write(const uint8_t *buffer, size_t size) override;
 
-    uint32_t bw_in_kilobytes_per_second() const override
+    uint32_t bw_in_bytes_per_second() const override
     {
-        return 1000;
+        return 1000*1024;
     }
 
 

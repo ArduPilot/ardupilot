@@ -1,7 +1,11 @@
 #pragma once
 
-#include <AP_Math/AP_Math.h>
+#include "AC_PrecLand_config.h"
+
+#if AC_PRECLAND_ENABLED
+
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Math/AP_Math.h>
 #include <stdint.h>
 #include "PosVelEKF.h"
 #include <AP_HAL/utility/RingBuffer.h>
@@ -109,6 +113,8 @@ public:
     float get_min_retry_time_sec() const { return _retry_timeout_sec; }
     AC_PrecLand_StateMachine::RetryAction get_retry_behaviour() const { return static_cast<AC_PrecLand_StateMachine::RetryAction>(_retry_behave.get()); }
 
+    bool allow_precland_after_reposition() const { return _options & PLND_OPTION_PRECLAND_AFTER_REPOSITION; }
+
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -121,15 +127,24 @@ private:
     // types of precision landing (used for PRECLAND_TYPE parameter)
     enum class Type : uint8_t {
         NONE = 0,
+#if AC_PRECLAND_COMPANION_ENABLED
         COMPANION = 1,
+#endif
+#if AC_PRECLAND_IRLOCK_ENABLED
         IRLOCK = 2,
+#endif
+#if AC_PRECLAND_SITL_GAZEBO_ENABLED
         SITL_GAZEBO = 3,
+#endif
+#if AC_PRECLAND_SITL_ENABLED
         SITL = 4,
+#endif
     };
 
     enum PLndOptions {
         PLND_OPTION_DISABLED = 0,
         PLND_OPTION_MOVING_TARGET = (1 << 0),
+        PLND_OPTION_PRECLAND_AFTER_REPOSITION = (1 << 1),
     };
 
     // check the status of the target
@@ -228,3 +243,5 @@ private:
 namespace AP {
     AC_PrecLand *ac_precland();
 };
+
+#endif // AC_PRECLAND_ENABLED

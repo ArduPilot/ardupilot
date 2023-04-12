@@ -4,6 +4,7 @@
    Written by Matthew Hampsey, Andy Palmer and Andrew Tridgell, with controller
    assistance from Paul Riseborough, testing by Henry Wurzburg
 ]]--
+-- luacheck: only 0
 
 -- setup param block for aerobatics, reserving 30 params beginning with AERO_
 local PARAM_TABLE_KEY = 70
@@ -18,7 +19,7 @@ end
 
 AEROM_ANG_ACCEL = bind_add_param('ANG_ACCEL', 1, 6000)
 AEROM_ANG_TC = bind_add_param('ANG_TC', 2, 0.1)
-AEROM_KE_ANG = bind_add_param('KE_ANG', 3, 0)
+-- 3 was AEROM_KE_ANG
 THR_PIT_FF = bind_add_param('THR_PIT_FF', 4, 80)
 SPD_P = bind_add_param('SPD_P', 5, 5)
 SPD_I = bind_add_param('SPD_I', 6, 25)
@@ -30,15 +31,49 @@ ERR_CORR_D = bind_add_param('ERR_COR_D', 13, 2.8)
 AEROM_ENTRY_RATE = bind_add_param('ENTRY_RATE', 14, 60)
 AEROM_THR_LKAHD = bind_add_param('THR_LKAHD', 15, 1)
 AEROM_DEBUG = bind_add_param('DEBUG', 16, 0)
+--[[
+  // @Param: AEROM_THR_MIN
+  // @DisplayName: Minimum Throttle
+  // @Description: Lowest throttle used during maneuvers
+  // @Units: %
+--]]
 AEROM_THR_MIN = bind_add_param('THR_MIN', 17, 0)
 AEROM_THR_BOOST = bind_add_param('THR_BOOST', 18, 50)
 AEROM_YAW_ACCEL = bind_add_param('YAW_ACCEL', 19, 1500)
 AEROM_LKAHD = bind_add_param('LKAHD', 20, 0.5)
+--[[
+    // @Param: AEROM_PATH_SCALE
+    // @DisplayName: Path Scale
+    // @Description: Scale factor for Path/Box size. 0.5 would half the distances in maneuvers. Radii are unaffected.
+    // @Range: 0.1 100
+--]]
 AEROM_PATH_SCALE = bind_add_param('PATH_SCALE', 21, 1.0)
+--[[
+    // @Param: AEROM_BOX_WIDTH
+    // @DisplayName: Box Width
+    // @Description: Length of aerobatic "box" 
+    // @Units: m
+--]]
 AEROM_BOX_WIDTH = bind_add_param('BOX_WIDTH', 22, 400)
 AEROM_STALL_THR = bind_add_param('STALL_THR', 23, 40)
 AEROM_STALL_PIT = bind_add_param('STALL_PIT', 24, -20)
-AEROM_KE_TC = bind_add_param('KE_TC', 25, 0.5)
+-- 25 was AEROM_KE_TC
+
+--[[
+    // @Param: AEROM_KE_RUDD
+    // @DisplayName: KnifeEdge Rudder
+    // @Description: Percent of rudder normally uses to sustain knife-edge at trick speed
+    // @Units: %
+--]]
+AEROM_KE_RUDD = bind_add_param('KE_RUDD', 26, 25)
+AEROM_KE_RUDD_LK = bind_add_param('KE_RUDD_LK', 27, 0.25)
+--[[
+    // @Param: AEROM_ALT_ABORT
+    // @DisplayName: Altitude Abort
+    // @Description: Maximum allowable loss in altitude during a trick or sequence from its starting altitude.
+    // @Units: m
+--]]
+AEROM_ALT_ABORT = bind_add_param('ALT_ABORT',28,15)
 
 -- cope with old param values
 if AEROM_ANG_ACCEL:get() < 100 and AEROM_ANG_ACCEL:get() > 0 then
@@ -73,21 +108,16 @@ function bind_add_param2(name, idx, default_value)
     assert(param:add_param(PARAM_TABLE_KEY2, idx, name, default_value), string.format('could not add param %s', name))
     return Parameter(PARAM_TABLE_PREFIX2 .. name)
 end
-
+--[[
+    // @Param: TRIK_ENABLE
+    // @DisplayName: Tricks on Switch Enable
+    // @Description: Enables Tricks on Switch. TRIK params hidden until enabled
+--]]
 local TRIK_ENABLE = bind_add_param2("_ENABLE", 1, 0)
 local TRICKS = nil
 local TRIK_SEL_FN = nil
 local TRIK_ACT_FN = nil
 local TRIK_COUNT  = nil
-
---[[
-   find our rudder channel for stall turns
---]]
-local K_RUDDER = 21
-local rudder_chan = SRV_Channels:find_channel(K_RUDDER)
-local RUDD_REVERSED = Parameter(string.format("SERVO%u_REVERSED", rudder_chan+1))
-local RUDD_MIN = Parameter(string.format("SERVO%u_MIN", rudder_chan+1))
-local RUDD_MAX = Parameter(string.format("SERVO%u_MAX", rudder_chan+1))
 
 local function TrickDef(id, arg1, arg2, arg3, arg4)
    local self = {}
@@ -112,8 +142,26 @@ local function sq(x)
 end
 
 if TRIK_ENABLE:get() > 0 then
+--[[
+    // @Param: TRIK_SEL_FN
+    // @DisplayName: Trik Selection Scripting Function
+    // @Description: Setting an RC channel's _OPTION to this value will use it for trick selection
+    // @Range: 301 307
+--]]
    TRIK_SEL_FN = bind_add_param2("_SEL_FN", 2, 301)
+--[[
+    // @Param: TRIK_ACT_FN
+    // @DisplayName: Trik Action Scripting Function
+    // @Description: Setting an RC channel's _OPTION to this value will use it for trick action (abort,announce,execute)
+    // @Range: 301 307
+--]]
    TRIK_ACT_FN = bind_add_param2("_ACT_FN", 3, 300)
+--[[
+    // @Param: TRIK_COUNT
+    // @DisplayName: Trik Count
+    // @Description: Number of tricks which can be selected over the range of the trik selection RC channel
+    // @Range: 1 11
+--]]
    TRIK_COUNT  = bind_add_param2("_COUNT",  4, 3)
    TRICKS = {}
 
@@ -122,7 +170,7 @@ if TRIK_ENABLE:get() > 0 then
    for i = 1, count do
       local k = 5*i
       local prefix = string.format("%u", i)
-      TRICKS[i] = TrickDef(bind_add_param2(prefix .. "_ID",   k+0, i),
+      TRICKS[i] = TrickDef(bind_add_param2(prefix .. "_ID",   k+0, -1),
                            bind_add_param2(prefix .. "_ARG1", k+1, 30),
                            bind_add_param2(prefix .. "_ARG2", k+2, 0),
                            bind_add_param2(prefix .. "_ARG3", k+3, 0),
@@ -792,10 +840,15 @@ end
 local _path_cylinder = inheritsFrom(_PathComponent, "path_cylinder")
 function _path_cylinder:get_pos(t)
    local t2ang = t * self.num_spirals * math.pi * 2
-   local v = makeVector3f(self.length*t, math.abs(self.radius)*math.sin(t2ang+math.pi), -self.radius*(1.0 - math.cos(t2ang)))
+   local v = makeVector3f(self.length*t, math.abs(self.radius)*math.sin(t2ang+math.pi), -math.abs(self.radius)*(1.0 - math.cos(t2ang)))
    local qrot = Quaternion()
    qrot:from_axis_angle(makeVector3f(0,0,1), (0.5*math.pi)-self.gamma)
-   return quat_earth_to_body(qrot, v)
+   v = quat_earth_to_body(qrot, v)
+   if self.radius < 0 then
+      -- mirror for reverse radius
+      v:y(-v:y())
+   end
+   return v
 end
 
 function _path_cylinder:get_length()
@@ -809,7 +862,7 @@ end
    roll correction for the rotation caused by the path
 --]]
 function _path_cylinder:get_roll_correction(t)
-   return t*360*math.sin(self.gamma)*self.num_spirals
+   return sgn(self.radius)*t*360*math.sin(self.gamma)*self.num_spirals
 end
 
 function path_cylinder(radius, length, num_spirals)
@@ -817,7 +870,7 @@ function path_cylinder(radius, length, num_spirals)
    self.radius = radius
    self.length = length
    self.num_spirals = num_spirals
-   self.gamma = math.atan((length/num_spirals)/(2*math.pi*radius))
+   self.gamma = math.atan((length/num_spirals)/(2*math.pi*math.abs(radius)))
    return self
 end
 
@@ -1149,7 +1202,7 @@ function immelmann_turn(r, arg2, arg3, arg4)
    local rabs = math.abs(r)
    return make_paths("immelmann_turn", {
          { path_vertical_arc(r, 180),      roll_angle(0) },
-         { path_straight(rabs/2),          roll_angle(180) },
+         { path_straight(rabs),            roll_angle(180) },
    })
 end
 
@@ -1240,15 +1293,8 @@ function rolling_circle(radius, num_rolls, arg3, arg4)
    })
 end
 
-
-function cylinder(radius, length, num_spirals, arg4)
-   return make_paths("cylinder", {
-         { path_cylinder(radius, length, num_spirals), roll_angle(0), thr_boost=true },
-   })
-end
-
 function barrel_roll(radius, length, num_spirals, arg4)
-   local gamma_deg = math.deg(math.atan((length/num_spirals)/(2*math.pi*radius)))
+   local gamma_deg = math.deg(math.atan((length/num_spirals)/(2*math.pi*math.abs(radius))))
    local speed = target_groundspeed()
    local bank = math.deg(math.atan((speed*speed) / (radius * GRAVITY_MSS)))
    local radius2 = radius/(1.0 - math.cos(math.rad(90-gamma_deg)))
@@ -1325,6 +1371,7 @@ function rudder_over(_direction, _min_speed)
    local initial_q = nil
    local last_t = nil
    local initial_z = nil
+   local desired_direction = nil
 
    --[[
       the update() method is called during the rudder over, it
@@ -1399,25 +1446,22 @@ function rudder_over(_direction, _min_speed)
          override rudder to maximum, basing PWM on the MIN/MAX of the channel
          according to the desired direction
       --]]
-      local rudd_pwm = nil
-      local desired_direction = direction
-      if desired_direction == 0 then
-         local c_y = get_ahrs_dcm_c_y()
-         if c_y > 0 then
-            desired_direction = 1
-         else
-            desired_direction = -1
+      if desired_direction == nil then
+         desired_direction = direction
+         if desired_direction == 0 then
+            local c_y = get_ahrs_dcm_c_y()
+            if c_y > 0 then
+               desired_direction = 1
+            else
+               desired_direction = -1
+            end
          end
       end
-      if desired_direction * (RUDD_REVERSED:get()*2-1) < 0 then
-         rudd_pwm = RUDD_MAX:get()
-      else
-         rudd_pwm = RUDD_MIN:get()
-      end
       if not pitch2_done then
-         SRV_Channels:set_output_pwm_chan_timeout(rudder_chan, rudd_pwm, math.floor(4*1000/LOOP_RATE))
+         vehicle:set_rudder_offset(desired_direction * 100, false)
+      else
+         vehicle:set_rudder_offset(0, true)
       end
-
       if not kick_started then
          return false
       end
@@ -1454,9 +1498,6 @@ function rudder_over(_direction, _min_speed)
       path_var.pos = rotate_path(path, path_var.path_t, path_var.initial_ori, path_var.initial_ef_pos)
       -- ensure that the path will move fwd on the next step
       path_var.pos:z(path_var.pos:z()-10)
-
-      -- cancel rudder override
-      SRV_Channels:set_output_pwm_chan_timeout(rudder_chan, rudd_pwm, 0)
 
       return false
    end
@@ -1751,6 +1792,26 @@ function quat_projection_ground_plane(q)
 end
 
 
+--[[
+   calculate rudder offset
+--]]
+function calculate_rudder_offset(ahrs_quat, ahrs_gyro, airspeed_constrained)
+   --[[
+      look ahead for what our y projection will be at AEROM_KE_RUDD_LK
+      seconds forward in time
+   --]]
+   local qchange = Quaternion()
+   qchange:from_angular_velocity(ahrs_gyro, -AEROM_KE_RUDD_LK:get())
+   local qnew = qchange * ahrs_quat
+
+   local airspeed_scaling = SCALING_SPEED:get()/airspeed_constrained
+   local y_projection = get_quat_dcm_c_y(qnew:inverse())
+   local rudder_ofs = -y_projection * AEROM_KE_RUDD:get() * sq(airspeed_scaling)
+   rudder_ofs = constrain(rudder_ofs, -100, 100)
+
+   return rudder_ofs
+end
+
 path_var.count = 0
 
 function do_path()
@@ -1804,7 +1865,6 @@ function do_path()
       path_var.filtered_angular_velocity = Vector3f()
 
       path_var.last_time = now - 1.0/LOOP_RATE
-      path_var.ff_yaw_rate_rads = 0.0
       path_var.last_ang_rate_dps = ahrs_gyro:scale(math.deg(1))
 
       path_var.path_t = 0.0
@@ -1813,6 +1873,9 @@ function do_path()
       path_var.roll = 0.0
       path_var.last_shift_xy = nil
       path_var.path_shift = Vector3f()
+
+      path_var.ss_angle = 0.0
+      path_var.ss_angle_filt = 0.0
 
       -- get initial tangent
       local p1, r1 = rotate_path(path, path_var.path_t + 0.1/(path_var.total_time*LOOP_RATE),
@@ -2073,17 +2136,8 @@ function do_path()
    --[[
       calculate an additional yaw rate to get us to the right angle of sideslip for knifeedge
    --]]
-   -- look ahead by AEROM_KE_TC seconds to get predicted attitude
-   local lookahead_rotation = Quaternion()
-   lookahead_rotation:from_angular_velocity(path_rate_bf_dps:scale(math.rad(1)), AEROM_KE_TC:get())
-   local lkahead_q = orientation_rel_ef_with_roll_angle * lookahead_rotation
-   -- get sin(roll)*cos(pitch) for scaling the KE angle
-   local ke_angle = get_quat_dcm_c_y(lkahead_q)
-   -- scale by square of airspeed
-   local airspeed_scaling = SCALING_SPEED:get()/airspeed_constrained
-   local ff_yaw_rate_rads = math.rad(AEROM_KE_ANG:get()) * (-ke_angle) * sq(airspeed_scaling)
-
-   local sideslip_rate_bf_dps = makeVector3f(0, 0, ff_yaw_rate_rads):scale(math.deg(1))
+   -- local sideslip_rate_bf_dps = calculate_side_slip_aoa(path_rate_bf_dps, ahrs_quat, airspeed_constrained, tv_unit, ahrs_velned, actual_dt)
+   local sideslip_rate_bf_dps = Vector3f()
 
    --[[
       total angular rate is sum of path rate, correction rate and roll correction rate
@@ -2111,6 +2165,13 @@ function do_path()
    tot_ang_vel_bf_dps = path_var.last_ang_rate_dps + ang_rate_diff_dps
    path_var.last_ang_rate_dps = tot_ang_vel_bf_dps
 
+   --[[
+      calculate a rudder offset for knife-edge
+   --]]
+   local rudder_offset_pct = 0
+   if AEROM_KE_RUDD:get() > 0 then
+      rudder_offset_pct = calculate_rudder_offset(ahrs_quat, ahrs_gyro, airspeed_constrained)
+   end
 
    --[[
       log POSM is pose-measured, POST is pose-track, POSB is pose-track without the roll
@@ -2124,14 +2185,15 @@ function do_path()
                 q_change_t,
                 actual_dt)
 
-   logger.write('AERT','Cx,Cy,Cz,Px,Py,Pz,Ex,Tx,Ty,Tz,Perr,Aerr,Yff', 'fffffffffffff',
+   logger.write('AERT','Cx,Cy,Cz,Px,Py,Pz,Ex,Tx,Ty,Tz,Perr,Aerr,Yff,Rofs', 'ffffffffffffff',
                 cor_ang_vel_bf_dps:x(), cor_ang_vel_bf_dps:y(), cor_ang_vel_bf_dps:z(),
                 path_rate_bf_dps:x(), path_rate_bf_dps:y(), path_rate_bf_dps:z(),
                 err_angle_rate_bf_dps:x(),
                 tot_ang_vel_bf_dps:x(), tot_ang_vel_bf_dps:y(), tot_ang_vel_bf_dps:z(),
                 pos_error_ef:length(),
                 wrap_180(math.deg(err_angle_rad)),
-                math.deg(ff_yaw_rate_rads))
+                sideslip_rate_bf_dps:z(),
+                rudder_offset_pct)
 
    --log_pose('POSB', p1, path_var.accumulated_orientation_rel_ef)
 
@@ -2159,10 +2221,17 @@ function do_path()
    end
 
    vehicle:set_target_throttle_rate_rpy(throttle, tot_ang_vel_bf_dps:x(), tot_ang_vel_bf_dps:y(), tot_ang_vel_bf_dps:z())
+   vehicle:set_rudder_offset(rudder_offset_pct, true)
 
    if now - last_named_float_t > 1.0 / NAME_FLOAT_RATE then
       last_named_float_t = now
       gcs:send_named_float("PERR", pos_error_ef:length())
+   end
+
+   local alt_error = (current_measured_pos_ef - path_var.initial_ef_pos):z()
+   if alt_error > AEROM_ALT_ABORT:get() then
+     gcs:send_text(0,"Too low altitude, aborting")
+     return false
    end
 
    return true
@@ -2465,6 +2534,11 @@ function check_trick()
    end
    if action == 1 and selection ~= last_trick_selection then
       local id = TRICKS[selection].id:get()
+         if id == -1 then
+            gcs:send_text(0,string.format("Trick %u not setup",selection))
+            last_trick_selection = selection
+            return
+         end
       load_trick(id)
       if command_table[id] ~= nil then
          local cmd = command_table[id]
@@ -2485,6 +2559,11 @@ function check_trick()
          return
       end
       local id = TRICKS[selection].id:get()
+      if id == -1 then
+         gcs:send_text(0,string.format("Trick %u not setup",selection))
+         last_trick_selection = selection
+         return
+      end
       load_trick(id)
       if command_table[id] == nil then
          gcs:send_text(0, string.format("Invalid trick ID %u", id))

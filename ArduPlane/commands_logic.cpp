@@ -98,6 +98,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         return quadplane.do_vtol_takeoff(cmd);
 
     case MAV_CMD_NAV_VTOL_LAND:
+    case MAV_CMD_NAV_PAYLOAD_PLACE:
         if (quadplane.landing_with_fixed_wing_spiral_approach()) {
             // the user wants to approach the landing in a fixed wing flight mode
             // the waypoint will be used as a loiter_to_alt
@@ -243,7 +244,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_NAV_LAND:
 #if HAL_QUADPLANE_ENABLED
         if (quadplane.is_vtol_land(cmd.id)) {
-            return quadplane.verify_vtol_land();            
+            return quadplane.verify_vtol_land();
         }
 #endif
         if (flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
@@ -286,6 +287,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_NAV_VTOL_TAKEOFF:
         return quadplane.verify_vtol_takeoff(cmd);
     case MAV_CMD_NAV_VTOL_LAND:
+    case MAV_CMD_NAV_PAYLOAD_PLACE:
         if (quadplane.landing_with_fixed_wing_spiral_approach() && !verify_landing_vtol_approach(cmd)) {
             // verify_landing_vtol_approach will return true once we have completed the approach,
             // in which case we fall over to normal vtol landing code
@@ -318,7 +320,6 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_DO_LAND_START:
     case MAV_CMD_DO_FENCE_ENABLE:
     case MAV_CMD_DO_AUTOTUNE_ENABLE:
-    case MAV_CMD_DO_CONTROL_VIDEO:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
     case MAV_CMD_DO_SET_ROI:
     case MAV_CMD_DO_MOUNT_CONTROL:
@@ -343,7 +344,7 @@ void Plane::do_RTL(int32_t rtl_altitude_AMSL_cm)
     auto_state.next_wp_crosstrack = false;
     auto_state.crosstrack = false;
     prev_WP_loc = current_loc;
-    next_WP_loc = rally.calc_best_rally_or_home_location(current_loc, rtl_altitude_AMSL_cm);
+    next_WP_loc = calc_best_rally_or_home_location(current_loc, rtl_altitude_AMSL_cm);
     setup_terrain_target_alt(next_WP_loc);
     set_target_altitude_location(next_WP_loc);
 
@@ -357,6 +358,17 @@ void Plane::do_RTL(int32_t rtl_altitude_AMSL_cm)
     setup_turn_angle();
 
     logger.Write_Mode(control_mode->mode_number(), control_mode_reason);
+}
+
+Location Plane::calc_best_rally_or_home_location(const Location &_current_loc, float rtl_home_alt_amsl_cm) const
+{
+#if HAL_RALLY_ENABLED
+    return plane.rally.calc_best_rally_or_home_location(_current_loc, rtl_home_alt_amsl_cm);
+#else
+    Location destination = plane.home;
+    destination.set_alt_cm(rtl_home_alt_amsl_cm, Location::AltFrame::ABSOLUTE);
+    return destination;
+#endif
 }
 
 /*
@@ -577,7 +589,7 @@ bool Plane::verify_takeoff()
     if (takeoff_state.start_time_ms != 0 && g2.takeoff_timeout > 0) {
         const float ground_speed = gps.ground_speed();
         const float takeoff_min_ground_speed = 4;
-        if (!hal.util->get_soft_armed()) {
+        if (!arming.is_armed_and_safety_off()) {
             return false;
         }
         if (ground_speed >= takeoff_min_ground_speed) {
@@ -870,7 +882,7 @@ bool Plane::verify_altitude_wait(const AP_Mission::Mission_Command &cmd)
 // verify_nav_delay - check if we have waited long enough
 bool Plane::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
-    if (hal.util->get_soft_armed()) {
+    if (arming.is_armed_and_safety_off()) {
         // don't delay while armed, we need a nav controller running
         return true;
     }
@@ -1184,6 +1196,8 @@ bool Plane::verify_nav_script_time(const AP_Mission::Mission_Command& cmd)
         if (now - nav_scripting.start_ms > cmd.content.nav_script_time.timeout_s*1000U) {
             gcs().send_text(MAV_SEVERITY_INFO, "NavScriptTime timed out");
             nav_scripting.enabled = false;
+            nav_scripting.rudder_offset_pct = 0;
+            nav_scripting.run_yaw_rate_controller = true;
         }
     }
     return !nav_scripting.enabled;
@@ -1196,6 +1210,8 @@ bool Plane::nav_scripting_active(void)
         // set_target_throttle_rate_rpy has not been called from script in last 1000ms
         nav_scripting.enabled = false;
         nav_scripting.current_ms = 0;
+        nav_scripting.rudder_offset_pct = 0;
+        nav_scripting.run_yaw_rate_controller = true;
         gcs().send_text(MAV_SEVERITY_INFO, "NavScript time out");
     }
     if (control_mode == &mode_auto &&
@@ -1240,6 +1256,13 @@ void Plane::set_target_throttle_rate_rpy(float throttle_pct, float roll_rate_dps
     nav_scripting.current_ms = AP_HAL::millis();
 }
 
+// support for rudder offset override in aerobatic scripting
+void Plane::set_rudder_offset(float rudder_pct, bool run_yaw_rate_controller)
+{
+    nav_scripting.rudder_offset_pct = rudder_pct;
+    nav_scripting.run_yaw_rate_controller = run_yaw_rate_controller;
+}
+
 // enable NAV_SCRIPTING takeover in modes other than AUTO using script time mission commands
 bool Plane::nav_scripting_enable(uint8_t mode)
 {
@@ -1265,3 +1288,24 @@ bool Plane::nav_scripting_enable(uint8_t mode)
    return nav_scripting.enabled;
 }
 #endif // AP_SCRIPTING_ENABLED
+
+/*
+  return true if this is a LAND command
+  note that we consider a PAYLOAD_PLACE to be a land command as it
+  follows the landing logic for quadplanes
+ */
+bool Plane::is_land_command(uint16_t command) const
+{
+    return
+        command == MAV_CMD_NAV_VTOL_LAND ||
+        command == MAV_CMD_NAV_LAND ||
+        command == MAV_CMD_NAV_PAYLOAD_PLACE;
+}
+
+/*
+  return true if in a specific AUTO mission command
+ */
+bool Plane::in_auto_mission_id(uint16_t command) const
+{
+    return control_mode == &mode_auto && mission.get_current_nav_id() == command;
+}

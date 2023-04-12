@@ -101,6 +101,8 @@ public:
     void set_bandwidth_hz(float bandwidth_hz) { _bandwidth_hz.set(bandwidth_hz); }
     // harmonics enabled on the harmonic notch
     uint8_t harmonics(void) const { return _harmonics; }
+    // set the harmonics value
+    void set_harmonics(uint8_t hmncs) { _harmonics.set(hmncs); }
     // has the user set the harmonics value
     void set_default_harmonics(uint8_t hmncs) { _harmonics.set_default(hmncs); }
     // reference value of the harmonic notch
@@ -116,6 +118,7 @@ public:
     float freq_min_ratio(void) const {
         return _freq_min_ratio;
     }
+    void set_freq_min_ratio(float ratio) { _freq_min_ratio.set(ratio); }
 
     // save parameters
     void save_params();

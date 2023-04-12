@@ -57,4 +57,6 @@ private:
     float _error_min; // error limit in negative direction
     float _error_max; // error limit in positive direction
     float _D1_max;      // maximum first derivative of output
+
+    const float default_kp;
 };

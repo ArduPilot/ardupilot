@@ -341,7 +341,6 @@ void NavEKF2_core::FuseMagnetometer()
     Vector6 SK_MY;
     Vector6 SK_MZ;
 
-    // copy required states to local variable names
     q0       = stateStruct.quat[0];
     q1       = stateStruct.quat[1];
     q2       = stateStruct.quat[2];

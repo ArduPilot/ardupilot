@@ -19,6 +19,9 @@ public:
 class AP_HAL::PWMSource {
 public:
 
+    // Destructor detaches interrupt
+    ~PWMSource();
+
     bool set_pin(int16_t new_pin, const char *subsystem);
     int16_t pin() const { return _pin; }  // returns pin this is attached to
 
@@ -110,4 +113,8 @@ public:
 
     // optional timer tick
     virtual void timer_tick(void) {};
+
+    // Run arming checks
+    virtual bool arming_checks(size_t buflen, char *buffer) const { return true; }
+
 };

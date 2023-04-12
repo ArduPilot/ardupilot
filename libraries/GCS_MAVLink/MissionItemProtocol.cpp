@@ -122,7 +122,7 @@ void MissionItemProtocol::handle_mission_request_list(
                                    mission_type());
 }
 
-void MissionItemProtocol::handle_mission_request_int(const GCS_MAVLINK &_link,
+void MissionItemProtocol::handle_mission_request_int(GCS_MAVLINK &_link,
                                                      const mavlink_mission_request_int_t &packet,
                                                      const mavlink_message_t &msg)
 {
@@ -152,11 +152,10 @@ void MissionItemProtocol::handle_mission_request_int(const GCS_MAVLINK &_link,
         return;
     }
 
-    CHECK_PAYLOAD_SIZE2_VOID(_link.get_chan(), MISSION_ITEM_INT);
     _link.send_message(MAVLINK_MSG_ID_MISSION_ITEM_INT, (const char*)&ret_packet);
 }
 
-void MissionItemProtocol::handle_mission_request(const GCS_MAVLINK &_link,
+void MissionItemProtocol::handle_mission_request(GCS_MAVLINK &_link,
                                                  const mavlink_mission_request_t &packet,
                                                  const mavlink_message_t &msg
 )
@@ -191,13 +190,12 @@ void MissionItemProtocol::handle_mission_request(const GCS_MAVLINK &_link,
         return;
     }
 
-    CHECK_PAYLOAD_SIZE2_VOID(_link.get_chan(), MISSION_ITEM_INT);
-
     if (!mission_request_warning_sent) {
         mission_request_warning_sent = true;
         gcs().send_text(MAV_SEVERITY_WARNING, "got MISSION_REQUEST; use MISSION_REQUEST_INT!");
     }
 
+    // buffer space is checked by send_message
     _link.send_message(MAVLINK_MSG_ID_MISSION_ITEM, (const char*)&ret_packet);
 }
 

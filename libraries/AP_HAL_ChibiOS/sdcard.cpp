@@ -17,22 +17,25 @@
 #include <hal.h>
 #include "SPIDevice.h"
 #include "sdcard.h"
+#include "bouncebuffer.h"
 #include "hwdef/common/spi_hook.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 #include "bouncebuffer.h"
+#include "stm32_util.h"
 
 extern const AP_HAL::HAL& hal;
 
 #ifdef USE_POSIX
 static FATFS SDC_FS; // FATFS object
-static bool sdcard_running;
+#ifndef HAL_BOOTLOADER_BUILD
 static HAL_Semaphore sem;
+#endif
+static bool sdcard_running;
 #endif
 
 #if HAL_USE_SDC
 static SDCConfig sdcconfig = {
-  NULL,
   SDC_MODE_4BIT,
   0
 };
@@ -52,9 +55,13 @@ static SPIConfig highspeed;
 bool sdcard_init()
 {
 #ifdef USE_POSIX
+#ifndef HAL_BOOTLOADER_BUILD
     WITH_SEMAPHORE(sem);
 
     uint8_t sd_slowdown = AP_BoardConfig::get_sdcard_slowdown();
+#else
+    uint8_t sd_slowdown = 0;  // maybe take from a define?
+#endif
 #if HAL_USE_SDC
 
 #if STM32_SDC_USE_SDMMC2 == TRUE
@@ -92,6 +99,11 @@ bool sdcard_init()
         return true;
     }
 #elif HAL_USE_MMC_SPI
+    if (MMCD1.buffer == nullptr) {
+        // allocate 16 byte non-cacheable buffer for microSD
+        MMCD1.buffer = (uint8_t*)malloc_axi_sram(MMC_BUFFER_SIZE);
+    }
+
     if (sdcard_running) {
         sdcard_stop();
     }
@@ -106,7 +118,7 @@ bool sdcard_init()
     }
     device->set_slowdown(sd_slowdown);
 
-    mmcObjectInit(&MMCD1);
+    mmcObjectInit(&MMCD1, MMCD1.buffer);
 
     mmcconfig.spip =
             static_cast<ChibiOS::SPIDevice*>(device.get())->get_driver();
@@ -134,7 +146,7 @@ bool sdcard_init()
     }
 #endif
     sdcard_running = false;
-#endif
+#endif  // USE_POSIX
     return false;
 }
 

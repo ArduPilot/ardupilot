@@ -689,8 +689,8 @@ void NavEKF3_core::checkGyroCalStatus(void)
         (yaw_source != AP_NavEKF_Source::SourceYaw::EXTNAV)) {
         // rotate the variances into earth frame and evaluate horizontal terms only as yaw component is poorly observable without a yaw reference
         // which can make this check fail
-        Vector3F delAngBiasVarVec = Vector3F(P[10][10],P[11][11],P[12][12]);
-        Vector3F temp = prevTnb * delAngBiasVarVec;
+        const Vector3F delAngBiasVarVec { P[10][10], P[11][11], P[12][12] };
+        const Vector3F temp = prevTnb * delAngBiasVarVec;
         delAngBiasLearned = (fabsF(temp.x) < delAngBiasVarMax) &&
                             (fabsF(temp.y) < delAngBiasVarMax);
     } else {

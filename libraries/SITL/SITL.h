@@ -26,6 +26,7 @@
 #include "SIM_IntelligentEnergy24.h"
 #include "SIM_Ship.h"
 #include "SIM_GPS.h"
+#include "SIM_DroneCANDevice.h"
 
 namespace SITL {
 
@@ -448,6 +449,9 @@ public:
     RichenPower richenpower_sim;
     IntelligentEnergy24 ie24_sim;
     FETtecOneWireESC fetteconewireesc_sim;
+#if AP_TEST_DRONECAN_DRIVERS
+    DroneCANDevice dronecan_sim;
+#endif
 
     // ESC telemetry
     AP_Int8 esc_telem;
@@ -488,12 +492,13 @@ public:
     AP_Float imu_temp_end;
     AP_Float imu_temp_tconst;
     AP_Float imu_temp_fixed;
-    AP_InertialSensor::TCal imu_tcal[INS_MAX_INSTANCES];
+    AP_InertialSensor_TCal imu_tcal[INS_MAX_INSTANCES];
 #endif
 
     // IMU control parameters
     AP_Float gyro_noise[INS_MAX_INSTANCES];  // in degrees/second
     AP_Vector3f gyro_scale[INS_MAX_INSTANCES];  // percentage
+    AP_Vector3f gyro_bias[INS_MAX_INSTANCES]; // in rad/s
     AP_Float accel_noise[INS_MAX_INSTANCES]; // in m/s/s
     AP_Vector3f accel_bias[INS_MAX_INSTANCES]; // in m/s/s
     AP_Vector3f accel_scale[INS_MAX_INSTANCES]; // in m/s/s

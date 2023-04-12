@@ -116,7 +116,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: LAND_ARSPD
     // @DisplayName: Airspeed during landing approach (m/s)
-    // @Description: When performing an autonomus landing, this value is used as the goal airspeed during approach.  Note that this parameter is not useful if your platform does not have an airspeed sensor (use TECS_LAND_THR instead).  If negative then this value is not used during landing.
+    // @Description: When performing an autonomus landing, this value is used as the goal airspeed during approach.  Max airspeed allowed is Trim Airspeed or ARSPD_FBW_MAX as defined by LAND_OPTIONS bitmask.  Note that this parameter is not useful if your platform does not have an airspeed sensor (use TECS_LAND_THR instead).  If negative then this value is not used during landing.
     // @Range: -1 127
     // @Increment: 1
     // @User: Standard
@@ -268,10 +268,9 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: FLARE_HGT
     // @DisplayName: Flare holdoff height
-    // @Description: When height above ground is below this, the sink rate will be held at TECS_LAND_SINK. Use this to perform a hold-of manoeuvre when combined with small values for TECS_LAND_SINK.
-    // @Range: -10 15
-    // @Units: deg
-    // @Increment: 1
+    // @Description: When height above ground is below this, the sink rate will be held at TECS_LAND_SINK. Use this to perform a hold-off manoeuvre when combined with small values for TECS_LAND_SINK.
+    // @Range: 0 15
+    // @Units: m
     // @User: Advanced
     AP_GROUPINFO("FLARE_HGT", 32, AP_TECS, _flare_holdoff_hgt, 1.0f),
 
@@ -430,9 +429,13 @@ void AP_TECS::_update_speed(float DT)
         _EAS = constrain_float(0.01f * (float)aparm.airspeed_cruise_cm.get(), (float)aparm.airspeed_min.get(), (float)aparm.airspeed_max.get());
     }
 
+    // limit the airspeed to a minimum of 3 m/s
+    const float min_airspeed = 3.0;
+
     // Reset states of time since last update is too large
     if (_flags.reset) {
         _TAS_state = (_EAS * EAS2TAS);
+        _TAS_state = MAX(_TAS_state, min_airspeed);
         _integDTAS_state = 0.0f;
         return;
     }
@@ -449,8 +452,7 @@ void AP_TECS::_update_speed(float DT)
     _integDTAS_state = _integDTAS_state + integDTAS_input * DT;
     float TAS_input = _integDTAS_state + _vel_dot + aspdErr * _spdCompFiltOmega * 1.4142f;
     _TAS_state = _TAS_state + TAS_input * DT;
-    // limit the airspeed to a minimum of 3 m/s
-    _TAS_state = MAX(_TAS_state, 3.0f);
+    _TAS_state = MAX(_TAS_state, min_airspeed);
 
 }
 

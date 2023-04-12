@@ -18,7 +18,9 @@ public:
     }
 
     enum OA_DbItemImportance {
-        Low, Normal, High
+        Low,
+        Normal,
+        High,
     };
 
     struct OA_DbItem {

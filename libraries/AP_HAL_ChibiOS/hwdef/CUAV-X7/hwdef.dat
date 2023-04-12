@@ -191,6 +191,9 @@ PA1 BATT_CURRENT_SENS ADC1 SCALE(1)
 
 # ADC3.3/ADC6.6
 PC4 SPARE1_ADC1 ADC1 SCALE(1)
+
+# Note that this should be SCALE(2), but we don't want to break existing setups
+# See: https://github.com/ArduPilot/ardupilot/pull/22831
 PA4 SPARE2_ADC1 ADC1 SCALE(1)
 
 PF12 RSSI_IN ADC1 SCALE(1)

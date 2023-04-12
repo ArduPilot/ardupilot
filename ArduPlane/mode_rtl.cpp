@@ -27,12 +27,8 @@ bool ModeRTL::_enter()
         // if VTOL landing is expected and quadplane motors are active and within QRTL radius and under QRTL altitude then switch to QRTL
         const bool vtol_landing = (plane.quadplane.rtl_mode == QuadPlane::RTL_MODE::SWITCH_QRTL) || (plane.quadplane.rtl_mode == QuadPlane::RTL_MODE::VTOL_APPROACH_QRTL);
         if (vtol_landing && (quadplane.motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED)) {
-            uint16_t qrtl_radius = abs(plane.g.rtl_radius);
-            if (qrtl_radius == 0) {
-                qrtl_radius = abs(plane.aparm.loiter_radius);
-            }
             int32_t alt_cm;
-            if ((plane.current_loc.get_distance(plane.next_WP_loc) < qrtl_radius) &&
+            if ((plane.current_loc.get_distance(plane.next_WP_loc) < plane.mode_qrtl.get_VTOL_return_radius()) &&
                 plane.current_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_cm) && (alt_cm < plane.quadplane.qrtl_alt*100)) {
                 plane.set_mode(plane.mode_qrtl, ModeReason::QRTL_INSTEAD_OF_RTL);
                 return true;

@@ -1,7 +1,10 @@
 #include "AP_Winch_PWM.h"
 
+#if AP_WINCH_PWM_ENABLED
+
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -105,3 +108,5 @@ void AP_Winch_PWM::write_log()
             0,              // voltage (unsupported)
             0);             // temp (unsupported)
 }
+
+#endif  // AP_WINCH_PWM_ENABLED

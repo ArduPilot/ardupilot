@@ -9,7 +9,7 @@
 void AP_AHRS::Write_AHRS2() const
 {
     Vector3f euler;
-    struct Location loc;
+    Location loc;
     Quaternion quat;
     if (!get_secondary_attitude(euler) || !get_secondary_position(loc) || !get_secondary_quaternion(quat)) {
         return;

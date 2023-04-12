@@ -665,6 +665,22 @@ int AP_Filesystem_FATFS::mkdir(const char *pathname)
     return 0;
 }
 
+int AP_Filesystem_FATFS::rename(const char *oldpath, const char *newpath)
+{
+    FS_CHECK_ALLOWED(-1);
+    WITH_SEMAPHORE(sem);
+
+    errno = 0;
+
+    int res = f_rename(oldpath, newpath);
+    if (res != FR_OK) {
+        errno = fatfs_to_errno((FRESULT)res);
+        return -1;
+    }
+
+    return 0;
+}
+
 /*
   wrapper structure to associate a dirent with a DIR
  */
@@ -862,8 +878,8 @@ bool AP_Filesystem_FATFS::format(void)
     WITH_SEMAPHORE(sem);
     hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Filesystem_FATFS::format_handler, void));
     // the format is handled asyncronously, we inform user of success
-    // via a text message
-    format_pending = true;
+    // via a text message.  format_status can be polled for progress
+    format_status = FormatStatus::PENDING;
     return true;
 #else
     return false;
@@ -876,11 +892,11 @@ bool AP_Filesystem_FATFS::format(void)
 void AP_Filesystem_FATFS::format_handler(void)
 {
 #if FF_USE_MKFS
-    if (!format_pending) {
+    if (format_status != FormatStatus::PENDING) {
         return;
     }
     WITH_SEMAPHORE(sem);
-    format_pending = false;
+    format_status = FormatStatus::IN_PROGRESS;
     GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Formatting SDCard");
     uint8_t *buf = (uint8_t *)hal.util->malloc_type(FF_MAX_SS, AP_HAL::Util::MEM_DMA_SAFE);
     if (buf == nullptr) {
@@ -890,13 +906,22 @@ void AP_Filesystem_FATFS::format_handler(void)
     auto ret = f_mkfs("0:", 0, buf, FF_MAX_SS);
     hal.util->free_type(buf, FF_MAX_SS, AP_HAL::Util::MEM_DMA_SAFE);
     if (ret == FR_OK) {
+        format_status = FormatStatus::SUCCESS;
         GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Format: OK");
     } else {
+        format_status = FormatStatus::FAILURE;
         GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Format: Failed (%d)", int(ret));
     }
     sdcard_stop();
     sdcard_retry();
 #endif
+}
+
+// returns true if we are currently formatting the SD card:
+AP_Filesystem_Backend::FormatStatus AP_Filesystem_FATFS::get_format_status(void) const
+{
+    // note that format_handler holds sem, so we can't take it here.
+    return format_status;
 }
 
 /*

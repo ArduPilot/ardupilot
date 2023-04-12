@@ -17,7 +17,7 @@
 
 #include "AP_CANDriver.h"
 #include <AP_HAL/Semaphores.h>
-#include <AP_UAVCAN/AP_UAVCAN.h>
+#include <AP_DroneCAN/AP_DroneCAN.h>
 #ifndef HAL_ENABLE_CANTESTER
 #define HAL_ENABLE_CANTESTER 0
 #endif
@@ -96,7 +96,7 @@ private:
 
     // Classes required for UAVCAN Test
     class RaiiSynchronizer {};
-    uavcan::PoolAllocator<UAVCAN_NODE_POOL_SIZE, UAVCAN_NODE_POOL_BLOCK_SIZE, CANTester::RaiiSynchronizer> _node_allocator;
+    uavcan::PoolAllocator<DRONECAN_NODE_POOL_SIZE, UAVCAN_NODE_POOL_BLOCK_SIZE, CANTester::RaiiSynchronizer> _node_allocator;
 
     HAL_EventHandle _event_handle;
     AP_Int8 _test_driver_index;

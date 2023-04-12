@@ -15,6 +15,8 @@
  */
 #pragma once
 
+#include <stdbool.h>
+
 bool sdcard_init();
 void sdcard_stop();
 bool sdcard_retry();

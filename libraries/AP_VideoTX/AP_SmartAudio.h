@@ -15,13 +15,9 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
+#include "AP_VideoTX_config.h"
 
-#ifndef HAL_SMARTAUDIO_ENABLED
-#define HAL_SMARTAUDIO_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
-#if HAL_SMARTAUDIO_ENABLED
+#if AP_SMARTAUDIO_ENABLED
 
 #include <AP_Param/AP_Param.h>
 #include <AP_HAL/utility/RingBuffer.h>

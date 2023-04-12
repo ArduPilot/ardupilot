@@ -1,6 +1,8 @@
 --[[ 
    example for getting cached aux function value
 --]]
+-- luacheck: only 0
+
 
 local RATE_HZ = 10
 

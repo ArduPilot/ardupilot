@@ -43,7 +43,7 @@ void AP_Proximity_Cygbot_D1::read_sensor_data()
 {
     uint32_t nbytes = _uart->available();
     while (nbytes-- > 0) {
-        uint8_t byte = _uart->read();
+        int16_t byte = _uart->read();
         if (!parse_byte(byte)) {
             // reset
             reset();

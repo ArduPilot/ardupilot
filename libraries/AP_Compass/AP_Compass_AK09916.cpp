@@ -17,6 +17,8 @@
  */
 #include "AP_Compass_AK09916.h"
 
+#if AP_COMPASS_AK09916_ENABLED
+
 #include <assert.h>
 #include <AP_HAL/AP_HAL.h>
 #include <utility>
@@ -98,6 +100,7 @@ AP_Compass_Backend *AP_Compass_AK09916::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> 
     return sensor;
 }
 
+#if AP_COMPASS_ICM20948_ENABLED
 AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
                                                      AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev_icm,
                                                      bool force_external,
@@ -219,6 +222,7 @@ AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948_I2C(uint8_t inv2_instance
 
     return sensor;
 }
+#endif  // AP_COMPASS_ICM20948_ENABLED
 
 bool AP_Compass_AK09916::init()
 {
@@ -491,3 +495,5 @@ uint32_t AP_AK09916_BusDriver_Auxiliary::get_bus_id(void) const
 {
     return _bus->get_bus_id();
 }
+
+#endif  // AP_COMPASS_AK09916_ENABLED

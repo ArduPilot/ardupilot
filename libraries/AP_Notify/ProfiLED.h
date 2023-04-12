@@ -14,9 +14,12 @@
  */
 #pragma once
 
-#include "RGBLed.h"
-#include "SerialLED.h"
+#include "AP_Notify_config.h"
+
 #include <AP_Common/AP_Common.h>
+
+#if AP_NOTIFY_PROFILED_ENABLED
+#include "SerialLED.h"
 
 class ProfiLED: public SerialLED {
 public:
@@ -25,6 +28,11 @@ public:
     uint16_t init_ports() override;
 
 };
+#endif  // AP_NOTIFY_PROFILED_ENABLED
+
+#if AP_NOTIFY_PROFILED_SPI_ENABLED
+#include <AP_HAL/SPIDevice.h>
+#include "RGBLed.h"
 
 class ProfiLED_SPI: public RGBLed {
 public:
@@ -53,3 +61,6 @@ private:
     uint32_t    _last_init_ms;
     void update_led_strip();
 };
+
+
+#endif  // AP_NOTIFY_PROFILED_SPI_ENABLED

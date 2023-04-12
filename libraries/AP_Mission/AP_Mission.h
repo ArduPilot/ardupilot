@@ -52,6 +52,12 @@
 #define AP_MISSION_MAX_WP_HISTORY           7       // The maximum number of previous wp commands that will be stored from the active missions history
 #define LAST_WP_PASSED (AP_MISSION_MAX_WP_HISTORY-2)
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#define AP_MISSION_SDCARD_FILENAME "APM/mission.stg"
+#else
+#define AP_MISSION_SDCARD_FILENAME "mission.stg"
+#endif
+
 union PackedContent;
 
 /// @class    AP_Mission
@@ -261,6 +267,35 @@ public:
         uint8_t gimbal_id;
     };
 
+    // MAV_CMD_IMAGE_START_CAPTURE support
+    struct PACKED image_start_capture_Command {
+        float interval_s;
+        uint16_t total_num_images;
+        uint16_t start_seq_number;
+    };
+
+    // MAV_CMD_SET_CAMERA_ZOOM support
+    struct PACKED set_camera_zoom_Command {
+        uint8_t zoom_type;
+        float zoom_value;
+    };
+
+    // MAV_CMD_SET_CAMERA_FOCUS support
+    struct PACKED set_camera_focus_Command {
+        uint8_t focus_type;
+        float focus_value;
+    };
+
+    // MAV_CMD_VIDEO_START_CAPTURE support
+    struct PACKED video_start_capture_Command {
+        uint8_t video_stream_id;
+    };
+
+    // MAV_CMD_VIDEO_STOP_CAPTURE support
+    struct PACKED video_stop_capture_Command {
+        uint8_t video_stream_id;
+    };
+
     union Content {
         // jump structure
         Jump_Command jump;
@@ -341,6 +376,21 @@ public:
 
         // MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW
         gimbal_manager_pitchyaw_Command gimbal_manager_pitchyaw;
+
+        // MAV_CMD_IMAGE_START_CAPTURE support
+        image_start_capture_Command image_start_capture;
+
+        // MAV_CMD_SET_CAMERA_ZOOM support
+        set_camera_zoom_Command set_camera_zoom;
+
+        // MAV_CMD_SET_CAMERA_FOCUS support
+        set_camera_focus_Command set_camera_focus;
+
+        // MAV_CMD_VIDEO_START_CAPTURE support
+        video_start_capture_Command video_start_capture;
+
+        // MAV_CMD_VIDEO_STOP_CAPTURE support
+        video_stop_capture_Command video_stop_capture;
 
         // location
         Location location{};      // Waypoint location
@@ -431,7 +481,9 @@ public:
     }
 
     /// num_commands_max - returns maximum number of commands that can be stored
-    uint16_t num_commands_max() const;
+    uint16_t num_commands_max() const {
+        return _commands_max;
+    }
 
     /// start - resets current commands to point to the beginning of the mission
     ///     To-Do: should we validate the mission first and return true/false?
@@ -659,12 +711,38 @@ public:
     bool get_item(uint16_t index, mavlink_mission_item_int_t& result) const ;
     bool set_item(uint16_t index, mavlink_mission_item_int_t& source) ;
 
+    // Jump Tags. When a JUMP_TAG is run in the mission, either via DO_JUMP_TAG or
+    // by just being the next item, the tag is remembered and the age is set to 1.
+    // Only the most recent tag is remembered. It's age is how many NAV items have
+    // progressed since the tag was seen. While executing the tag, the
+    // age will be 1. The next NAV command after it will tick the age to 2, and so on.
+    bool get_last_jump_tag(uint16_t &tag, uint16_t &age) const;
+
+    // Set the mission index to the first JUMP_TAG with this tag.
+    // Returns true on success, else false if no appropriate JUMP_TAG match can be found or if setting the index failed
+    bool jump_to_tag(const uint16_t tag);
+
+    // find the first JUMP_TAG with this tag and return its index.
+    // Returns 0 if no appropriate JUMP_TAG match can be found.
+    uint16_t get_index_of_jump_tag(const uint16_t tag) const;
+
+#if AP_SDCARD_STORAGE_ENABLED
+    bool failed_sdcard_storage(void) const {
+        return _failed_sdcard_storage;
+    }
+#endif
+
 private:
     static AP_Mission *_singleton;
 
     static StorageAccess _storage;
 
     static bool stored_in_location(uint16_t id);
+
+    struct {
+        uint16_t age;   // a value of 0 means we have never seen a tag. Once a tag is seen, age will increment every time the mission index changes.
+        uint16_t tag;   // most recent tag that was successfully jumped to. Only valid if age > 0
+    } _jump_tag;
 
     struct Mission_Flags {
         mission_state state;
@@ -744,6 +822,8 @@ private:
     // update progress made in mission to store last position in the event of mission exit
     void update_exit_position(void);
 
+    void on_mission_timestamp_change();
+
     /// sanity checks that the masked fields are not NaN's or infinite
     static MAV_MISSION_RESULT sanity_check_params(const mavlink_mission_item_int_t& packet);
 
@@ -769,7 +849,7 @@ private:
     uint16_t                _prev_nav_cmd_id;       // id of the previous "navigation" command. (WAYPOINT, LOITER_TO_ALT, ect etc)
     uint16_t                _prev_nav_cmd_index;    // index of the previous "navigation" command.  Rarely used which is why we don't store the whole command
     uint16_t                _prev_nav_cmd_wp_index; // index of the previous "navigation" command that contains a waypoint.  Rarely used which is why we don't store the whole command
-    struct Location         _exit_position;  // the position in the mission that the mission was exited
+    Location         _exit_position;  // the position in the mission that the mission was exited
 
     // jump related variables
     struct jump_tracking_struct {
@@ -779,6 +859,17 @@ private:
 
     // last time that mission changed
     uint32_t _last_change_time_ms;
+    uint32_t _last_change_time_prev_ms;
+
+    // maximum number of commands that will fit in storage
+    uint16_t _commands_max;
+
+#if AP_SDCARD_STORAGE_ENABLED
+    bool _failed_sdcard_storage;
+#endif
+
+    // fast call to get command ID of a mission index
+    uint16_t get_command_id(uint16_t index) const;
 
     // memoisation of contains-relative:
     bool _contains_terrain_alt_items;  // true if the mission has terrain-relative items

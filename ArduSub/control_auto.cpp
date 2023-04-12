@@ -173,7 +173,7 @@ void Sub::auto_wp_run()
 // auto_circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location
 //  we assume the caller has set the circle's circle with circle_nav.set_center()
 //  we assume the caller has performed all required GPS_ok checks
-void Sub::auto_circle_movetoedge_start(const Location &circle_center, float radius_m)
+void Sub::auto_circle_movetoedge_start(const Location &circle_center, float radius_m, bool ccw_turn)
 {
     // set circle center
     circle_nav.set_center(circle_center);
@@ -182,6 +182,11 @@ void Sub::auto_circle_movetoedge_start(const Location &circle_center, float radi
     if (!is_zero(radius_m)) {
         circle_nav.set_radius_cm(radius_m * 100.0f);
     }
+
+     // set circle direction by using rate
+    float current_rate = circle_nav.get_rate();
+    current_rate = ccw_turn ? -fabsf(current_rate) : fabsf(current_rate);
+    circle_nav.set_rate(current_rate);
 
     // check our distance from edge of circle
     Vector3f circle_edge_neu;
@@ -225,7 +230,7 @@ void Sub::auto_circle_start()
     auto_mode = Auto_Circle;
 
     // initialise circle controller
-    circle_nav.init(circle_nav.get_center(), circle_nav.center_is_terrain_alt());
+    circle_nav.init(circle_nav.get_center(), circle_nav.center_is_terrain_alt(), circle_nav.get_rate());
 }
 
 // auto_circle_run - circle in AUTO flight mode

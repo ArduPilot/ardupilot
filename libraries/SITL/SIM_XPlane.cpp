@@ -28,14 +28,68 @@
 #include <sys/types.h>
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include "picojson.h"
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 // ignore cast errors in this case to keep complexity down
 #pragma GCC diagnostic ignored "-Wcast-align"
 
 extern const AP_HAL::HAL& hal;
 
-namespace SITL {
+#if APM_BUILD_TYPE(APM_BUILD_Heli)
+#define XPLANE_JSON "xplane_heli.json"
+#else
+#define XPLANE_JSON "xplane_plane.json"
+#endif
+
+// DATA@ frame types. Thanks to TauLabs xplanesimulator.h
+// (which strangely enough acknowledges APM as a source!)
+enum {
+    FramRate            = 0,
+    Times               = 1,
+    SimStats            = 2,
+    Speed               = 3,
+    Gload               = 4,
+    AtmosphereWeather   = 5,
+    AtmosphereAircraft  = 6,
+    SystemPressures     = 7,
+    Joystick1           = 8,
+    Joystick2           = 9,
+    ArtStab             = 10,
+    FlightCon           = 11,
+    WingSweep           = 12,
+    Trim                = 13,
+    Brakes              = 14,
+    AngularMoments      = 15,
+    AngularVelocities   = 16,
+    PitchRollHeading    = 17,
+    AoA                 = 18,
+    MagCompass          = 19,
+    LatLonAlt           = 20,
+    LocVelDistTraveled  = 21,
+    ThrottleCommand     = 25,
+    CarbHeat            = 30,
+    EngineRPM           = 37,
+    PropRPM             = 38,
+    PropPitch           = 39,
+    Generator           = 58,
+    JoystickRaw         = 136,
+};
+
+enum RREF {
+    RREF_VERSION = 1,
+};
+
+static const uint8_t required_data[] {
+        Times, LatLonAlt, Speed, PitchRollHeading,
+        LocVelDistTraveled, AngularVelocities, Gload,
+        Trim,
+        PropPitch, EngineRPM, PropRPM,
+        JoystickRaw };
+
+using namespace SITL;
 
 XPlane::XPlane(const char *frame_str) :
     Aircraft(frame_str)
@@ -46,79 +100,248 @@ XPlane::XPlane(const char *frame_str) :
         xplane_ip = colon+1;
     }
 
-    heli_frame = (strstr(frame_str, "-heli") != nullptr);
-
     socket_in.bind("0.0.0.0", bind_port);
     printf("Waiting for XPlane data on UDP port %u and sending to port %u\n",
            (unsigned)bind_port, (unsigned)xplane_port);
 
     // XPlane sensor data is not good enough for EKF. Use fake EKF by default
     AP_Param::set_default_by_name("AHRS_EKF_TYPE", 10);
+    AP_Param::set_default_by_name("GPS_TYPE", 100);
     AP_Param::set_default_by_name("INS_GYR_CAL", 0);
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    // default flaps to channel 5
+    AP_Param::set_default_by_name("SERVO5_FUNCTION", 3);
+    AP_Param::set_default_by_name("SERVO5_MIN", 1000);
+    AP_Param::set_default_by_name("SERVO5_MAX", 2000);
+#endif
+
+    if (!load_dref_map(XPLANE_JSON)) {
+        AP_HAL::panic("%s failed to load\n", XPLANE_JSON);
+    }
+}
+
+/*
+  add one DRef to list
+ */
+void XPlane::add_dref(const char *name, DRefType type, const picojson::value &dref)
+{
+    struct DRef *d = new struct DRef;
+    if (d == nullptr) {
+        AP_HAL::panic("out of memory for DRef %s", name);
+    }
+    d->name = strdup(name);
+    d->type = type;
+    if (d->name == nullptr) {
+        AP_HAL::panic("out of memory for DRef %s", name);
+    }
+    if (d->type == DRefType::FIXED) {
+        d->fixed_value = dref.get("value").get<double>();
+    } else {
+        d->range = dref.get("range").get<double>();
+        d->channel = dref.get("channel").get<double>();
+    }
+    // add to linked list
+    d->next = drefs;
+    drefs = d;
+}
+
+/*
+  add one joystick axis to list
+ */
+void XPlane::add_joyinput(const char *label, JoyType type, const picojson::value &d)
+{
+    if (strncmp(label, "axis", 4) == 0) {
+        struct JoyInput *j = new struct JoyInput;
+        if (j == nullptr) {
+            AP_HAL::panic("out of memory for JoyInput %s", label);
+        }
+        j->axis = atoi(label+4);
+        j->type = JoyType::AXIS;
+        j->channel = d.get("channel").get<double>();
+        j->input_min = d.get("input_min").get<double>();
+        j->input_max = d.get("input_max").get<double>();
+        j->next = joyinputs;
+        joyinputs = j;
+    }
+    if (strncmp(label, "button", 6) == 0) {
+        struct JoyInput *j = new struct JoyInput;
+        if (j == nullptr) {
+            AP_HAL::panic("out of memory for JoyInput %s", label);
+        }
+        j->type = JoyType::BUTTON;
+        j->channel = d.get("channel").get<double>();
+        j->mask = d.get("mask").get<double>();
+        j->next = joyinputs;
+        joyinputs = j;
+    }
+}
+
+/*
+  handle a setting
+ */
+void XPlane::handle_setting(const picojson::value &d)
+{
+    if (d.contains("debug")) {
+        dref_debug = d.get("debug").get<double>();
+    }
+}
+
+
+/*
+  load mapping of channels to datarefs from a json file
+ */
+bool XPlane::load_dref_map(const char *map_json)
+{
+    char *fname = nullptr;
+    if (AP::FS().stat(map_json, &map_st) == 0) {
+        fname = strdup(map_json);
+    } else {
+        IGNORE_RETURN(asprintf(&fname, "@ROMFS/models/%s", map_json));
+        if (AP::FS().stat(fname, &map_st) != 0) {
+            return false;
+        }
+    }
+    if (fname == nullptr) {
+        return false;
+    }
+    picojson::value *obj = (picojson::value *)load_json(fname);
+    if (obj == nullptr) {
+        return false;
+    }
+
+    free(map_filename);
+    map_filename = fname;
+
+    // free old drefs
+    while (drefs) {
+        auto *d = drefs->next;
+        free(drefs->name);
+        delete drefs;
+        drefs = d;
+    }
+
+    // free old joystick
+    while (joyinputs) {
+        auto *j = joyinputs->next;
+        delete joyinputs;
+        joyinputs = j;
+    }
+    
+    uint32_t count = 0;
+    // obtain a const reference to the map, and print the contents
+    const picojson::value::object& o = obj->get<picojson::object>();
+    for (picojson::value::object::const_iterator i = o.begin();
+         i != o.end();
+         ++i) {
+        const char *label = i->first.c_str();
+        const auto &d = i->second;
+        if (strchr(label, '/') != nullptr) {
+            const char *type_s = d.get("type").to_str().c_str();
+            if (strcmp(type_s, "angle") == 0) {
+                add_dref(label, DRefType::ANGLE, d);
+            } else if (strcmp(type_s, "range") == 0) {
+                add_dref(label, DRefType::RANGE, d);
+            } else if (strcmp(type_s, "fixed") == 0) {
+                add_dref(label, DRefType::FIXED, d);
+            } else {
+                ::printf("Invalid dref type %s for %s in %s", type_s, label, map_filename);
+            }
+        } else if (strcmp(label, "settings") == 0) {
+            handle_setting(d);
+        } else if (strncmp(label, "axis", 4) == 0) {
+            add_joyinput(label, JoyType::AXIS, d);
+        } else if (strncmp(label, "button", 6) == 0) {
+            add_joyinput(label, JoyType::BUTTON, d);
+        } else {
+            ::printf("Invalid json type %s in %s", label, map_json);
+            continue;
+        }
+        count++;
+    }
+    delete obj;
+
+    ::printf("Loaded %u DRefs from %s\n", unsigned(count), map_filename);
+    return true;
+}
+
+/*
+  load mapping of channels to datarefs from a json file
+ */
+void XPlane::check_reload_dref(void)
+{
+    if (!hal.util->get_soft_armed()) {
+        struct stat st;
+        if (AP::FS().stat(map_filename, &st) == 0 && st.st_mtime != map_st.st_mtime) {
+            load_dref_map(map_filename);
+        }
+    }
+}
+
+int8_t XPlane::find_data_index(uint8_t code)
+{
+    for (uint8_t i = 0; i<ARRAY_SIZE(required_data); i++) {
+        if (required_data[i] == code) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 /*
  change what data is requested from XPlane. This saves the user from
  having to setup the data screen correctly
  */
-void XPlane::select_data(uint64_t usel_mask, uint64_t sel_mask)
+void XPlane::select_data(void)
 {
+    const uint64_t all_mask = (1U<<ARRAY_SIZE(required_data))-1;
+    if ((seen_mask & all_mask) == all_mask) {
+        // got it all
+        return;
+    }
     struct PACKED {
         uint8_t  marker[5] { 'D', 'S', 'E', 'L', '0' };
         uint32_t data[8] {};
     } dsel;
     uint8_t count = 0;
-    for (uint8_t i=0; i<64 && count<8; i++) {
-        if ((((uint64_t)1)<<i) & sel_mask) {
-            dsel.data[count++] = i;
-            printf("i=%u\n", (unsigned)i);
+    for (uint8_t i=0; i<ARRAY_SIZE(required_data); i++) {
+        if (seen_mask & (1U<<i)) {
+            // got this one
+            continue;
         }
+        dsel.data[count++] = required_data[i];
     }
     if (count != 0) {
         socket_out.send(&dsel, sizeof(dsel));
-        printf("Selecting %u data types 0x%llx\n", (unsigned)count, (unsigned long long)sel_mask);
+        printf("Selecting %u data types\n", (unsigned)count);
     }
+}
 
+void XPlane::deselect_code(uint8_t code)
+{
     struct PACKED {
         uint8_t  marker[5] { 'U', 'S', 'E', 'L', '0' };
         uint32_t data[8] {};
     } usel;
-    count = 0;
-
-    // only de-select an output once, so we don't fight the user
-    usel_mask &= ~unselected_mask;
-    unselected_mask |= usel_mask;
-
-    for (uint8_t i=0; i<64 && count<8; i++) {
-        if ((((uint64_t)1)<<i) & usel_mask) {
-            usel.data[count++] = i;
-        }
-    }
-    if (count != 0) {
-        socket_out.send(&usel, sizeof(usel));
-        printf("De-selecting %u data types 0x%llx\n", (unsigned)count, (unsigned long long)usel_mask);
-    }
+    usel.data[0] = code;
+    socket_out.send(&usel, sizeof(usel));
+    printf("De-selecting code %u\n", code);
 }
-    
+
 /*
   receive data from X-Plane via UDP
+  return true if we get a gyro frame
 */
 bool XPlane::receive_data(void)
 {
     uint8_t pkt[10000];
     uint8_t *p = &pkt[5];
     const uint8_t pkt_len = 36;
-    uint64_t data_mask = 0;
-    const uint64_t one = 1U;
-    const uint64_t required_mask = (one<<Times | one<<LatLonAlt | one<<Speed | one<<PitchRollHeading |
-                                    one<<LocVelDistTraveled | one<<AngularVelocities | one<<Gload |
-                                    one << Joystick1 | one << ThrottleCommand | one << Trim |
-                                    one << PropPitch | one << EngineRPM | one << PropRPM | one << Generator |
-                                    one << Mixture);
     Location loc {};
     Vector3d pos;
     uint32_t wait_time_ms = 1;
     uint32_t now = AP_HAL::millis();
+    bool ret = false;
 
     // if we are about to get another frame from X-Plane then wait longer
     if (xplane_frame_time > wait_time_ms &&
@@ -127,12 +350,29 @@ bool XPlane::receive_data(void)
     }
     ssize_t len = socket_in.recv(pkt, sizeof(pkt), wait_time_ms);
     
-    if (len < pkt_len+5 || memcmp(pkt, "DATA", 4) != 0) {
+    if (len < 5) {
+        // bad packet
+        goto failed;
+    }
+
+    if (memcmp(pkt, "RREF", 4) == 0) {
+        handle_rref(pkt, len);
+        return false;
+    }
+
+    if (memcmp(pkt, "DATA", 4) != 0) {
         // not a data packet we understand
+        ::printf("PACKET: %4.4s\n", (const char *)pkt);
         goto failed;
     }
     len -= 5;
 
+    if (len < pkt_len) {
+        // bad packet
+        goto failed;
+    }
+
+    
     if (!connected) {
         // we now know the IP X-Plane is using
         uint16_t port;
@@ -145,10 +385,15 @@ bool XPlane::receive_data(void)
     while (len >= pkt_len) {
         const float *data = (const float *)p;
         uint8_t code = p[0];
-        // keep a mask of what codes we have received
-        if (code < 64) {
-            data_mask |= (((uint64_t)1) << code);
+        int8_t idx = find_data_index(code);
+        if (idx == -1) {
+            deselect_code(code);
+            len -= pkt_len;
+            p += pkt_len;
+            continue;
         }
+        seen_mask |= (1U<<idx);
+
         switch (code) {
         case Times: {
             uint64_t tus = data[3] * 1.0e6f;
@@ -184,13 +429,6 @@ bool XPlane::receive_data(void)
             // ignored
             break;
 
-        case Trim:
-            if (heli_frame) {
-                // use flaps for collective as no direct collective data input
-                rcin[2] = data[4];
-            }
-            break;
-            
         case PitchRollHeading: {
             float roll, pitch, yaw;
             pitch = radians(data[1]);
@@ -214,9 +452,18 @@ bool XPlane::receive_data(void)
             break;
 
         case AngularVelocities:
-            gyro.y = data[1];
-            gyro.x = data[2];
-            gyro.z = data[3];
+            if (is_xplane12()) {
+                gyro.x = radians(data[1]);
+                gyro.y = radians(data[2]);
+                gyro.z = radians(data[3]);
+            } else {
+                // xplane 11
+                gyro.x = data[2];
+                gyro.y = data[1];
+                gyro.z = data[3];
+            }
+            // we only count gyro data towards data counts
+            ret = true;
             break;
 
         case Gload:
@@ -225,84 +472,56 @@ bool XPlane::receive_data(void)
             accel_body.y = data[7] * GRAVITY_MSS;
             break;
 
-        case Joystick1:
-            rcin_chan_count = 4;
-            rcin[0] = (data[2] + 1)*0.5f;
-            rcin[1] = (data[1] + 1)*0.5f;
-            rcin[3] = (data[3] + 1)*0.5f;
-            break;
-
-        case ThrottleCommand: {
-            if (!heli_frame) {
-                /* getting joystick throttle input is very weird. The
-                 * problem is that XPlane sends the ThrottleCommand packet
-                 * both for joystick throttle input and for throttle that
-                 * we have provided over the link. So we need some way to
-                 * detect when we get our own values back. The trick used
-                 * is to add throttle_magic to the values we send, then
-                 * detect this offset in the data coming back. Very ugly,
-                 * but I can't find a better way of allowing joystick
-                 * input from XPlane10
-                 */
-                bool has_magic = ((uint32_t)(data[1] * throttle_magic_scale) % 1000U) == (uint32_t)(throttle_magic * throttle_magic_scale);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal"
-                if (data[1] < 0 ||
-                    data[1] == throttle_sent ||
-                    has_magic) {
-                    break;
-                }
-#pragma GCC diagnostic pop
-                rcin[2] = data[1];
-            }
-            break;
-        }
-
         case PropPitch: {
             break;
         }
 
         case EngineRPM:
             rpm[0] = data[1];
+            motor_mask |= 1;
             break;
 
         case PropRPM:
             rpm[1] = data[1];
+            motor_mask |= 2;
             break;
             
-        case Joystick2:
-            break;
-
-        case Generator:
-            /*
-              in order to get interlock switch on helis we map the
-              "generator1 on/off" function of XPlane 10 to channel 8.
-             */
-            rcin_chan_count = 8;
-            rcin[7] = data[1];
-            break;
-
-        case Mixture:
-            // map channel 6 and 7 from Mixture3 and Mixture4 for extra channels
-            rcin_chan_count = MAX(7, rcin_chan_count);
-            rcin[5] = data[3];
-            rcin[6] = data[4];
-            break;
+        case JoystickRaw: {
+            for (auto *j = joyinputs; j; j=j->next) {
+                switch (j->type) {
+                case JoyType::AXIS: {
+                    if (j->axis >= 1 && j->axis <= 6) {
+                        float v = (data[j->axis] - j->input_min) / (j->input_max - j->input_min);
+                        rcin[j->channel-1] = v;
+                        rcin_chan_count = MAX(rcin_chan_count, j->channel);
+                    }
+                    break;
+                }
+                case JoyType::BUTTON: {
+                    uint32_t m = uint32_t(data[7]) & j->mask;
+                    float v = 0;
+                    if (m == 0) {
+                        v = 0;
+                    } else if (1U<<(__builtin_ffs(j->mask)-1) != m) {
+                        v = 0.5;
+                    } else {
+                        v = 1;
+                    }
+                    rcin[j->channel-1] = v;
+                    rcin_chan_count = MAX(rcin_chan_count, j->channel);
+                    break;
+                }
+                }
+            }
+        }
         }
         len -= pkt_len;
         p += pkt_len;
     }
 
-    if (data_mask != required_mask) {
-        // ask XPlane to change what data it sends
-        uint64_t usel = data_mask & ~required_mask;
-        uint64_t sel = required_mask & ~data_mask;
-        usel &= ~unselected_mask;
-        if (usel || sel) {
-            select_data(usel, sel);
-            goto failed;
-        }
-    }
+    // update data selection
+    select_data();
+
     position = pos + position_zero;
     position.xy() += origin.get_distance_NE_double(home);
     update_position();
@@ -335,9 +554,12 @@ bool XPlane::receive_data(void)
     }
     last_data_time_ms = AP_HAL::millis();
 
-    report.data_count++;
-    report.frame_count++;
-    return true;
+    if (ret) {
+        report.data_count++;
+        report.frame_count++;
+    }
+    
+    return ret;
         
 failed:
     if (AP_HAL::millis() - last_data_time_ms > 200) {
@@ -359,94 +581,57 @@ failed:
     report.frame_count++;
     return false;
 }
-    
 
 /*
-  send data to X-Plane via UDP
+  receive RREF replies
 */
-void XPlane::send_data(const struct sitl_input &input)
+void XPlane::handle_rref(const uint8_t *pkt, uint32_t len)
 {
-    float aileron  = (input.servos[0]-1500)/500.0f;
-    float elevator = (input.servos[1]-1500)/500.0f;
-    float throttle = (input.servos[2]-1000)/1000.0;
-    float rudder   = (input.servos[3]-1500)/500.0f;
-    struct PACKED {
-        uint8_t  marker[5] { 'D', 'A', 'T', 'A', '0' };
+    const uint8_t *p = &pkt[5];
+    const struct PACKED RRefPacket {
         uint32_t code;
-        float    data[8];
-    } d {};
+        union PACKED {
+            float value_f;
+            double value_d;
+        };
+    } *ref = (const struct RRefPacket *)p;
+    switch (ref->code) {
+    case RREF_VERSION:
+        if (xplane_version == 0) {
+            ::printf("XPlane version %.0f\n", ref->value_f);
+        }
+        xplane_version = uint32_t(ref->value_f);
+        break;
+    }
+}
 
-    if (input.servos[0] == 0) {
-        aileron = 0;
-    }
-    if (input.servos[1] == 0) {
-        elevator = 0;
-    }
-    if (input.servos[2] == 0) {
-        throttle = 0;
-    }
-    if (input.servos[3] == 0) {
-        rudder = 0;
-    }
-    
-    // we add the throttle_magic to the throttle value we send so we
-    // can detect when we get it back
-    throttle = ((uint32_t)(throttle * 1000)) * 1.0e-3f + throttle_magic;
-    
-    uint8_t flap_chan;
-    if (SRV_Channels::find_channel(SRV_Channel::k_flap, flap_chan) ||
-        SRV_Channels::find_channel(SRV_Channel::k_flap_auto, flap_chan)) {
-        float flap = (input.servos[flap_chan]-1000)/1000.0;
-        if (!is_equal(flap, last_flap)) {
-            send_dref("sim/flightmodel/controls/flaprqst", flap);
-            send_dref("sim/aircraft/overflow/acf_flap_arm", flap>0?1:0);
+
+/*
+  send DRef data to X-Plane via UDP
+*/
+void XPlane::send_drefs(const struct sitl_input &input)
+{
+    for (const auto *d = drefs; d; d=d->next) {
+        switch (d->type) {
+
+        case DRefType::ANGLE: {
+            float v  = d->range * (input.servos[d->channel-1]-1500)/500.0;
+            send_dref(d->name, v);
+            break;
+        }
+
+        case DRefType::RANGE: {
+            float v  = d->range * (input.servos[d->channel-1]-1000)/1000.0;
+            send_dref(d->name, v);
+            break;
+        }
+
+        case DRefType::FIXED: {
+            send_dref(d->name, d->fixed_value);
+            break;
+        }
         }
     }
-
-    d.code = FlightCon;
-    d.data[0] = elevator;
-    d.data[1] = aileron;
-    d.data[2] = rudder;
-    d.data[4] = rudder;
-    socket_out.send(&d, sizeof(d));
-
-    if (!heli_frame) {
-        d.code = ThrottleCommand;
-        d.data[0] = throttle;
-        d.data[1] = throttle;
-        d.data[2] = throttle;
-        d.data[3] = throttle;
-        d.data[4] = 0;
-        socket_out.send(&d, sizeof(d));
-    } else {
-        // send chan3 as collective pitch, on scale from -10 to +10
-        float collective = 10*(input.servos[2]-1500)/500.0;
-
-        // and send throttle from channel 8
-        throttle = (input.servos[7]-1000)/1000.0;
-
-        // allow for extra throttle outputs for special aircraft
-        float throttle2 = (input.servos[5]-1000)/1000.0;
-        float throttle3 = (input.servos[6]-1000)/1000.0;
-
-        d.code = PropPitch;
-        d.data[0] = collective;
-        d.data[1] = -rudder*15; // reverse sense of rudder, 15 degrees pitch range
-        d.data[2] = 0;
-        d.data[3] = 0;
-        d.data[4] = 0;
-        socket_out.send(&d, sizeof(d));
-
-        d.code = ThrottleCommand;
-        d.data[0] = throttle;
-        d.data[1] = throttle;
-        d.data[2] = throttle2;
-        d.data[3] = throttle3;
-        d.data[4] = 0;
-        socket_out.send(&d, sizeof(d));
-    }
-
-    throttle_sent = throttle;
 }
 
 
@@ -462,21 +647,47 @@ void XPlane::send_dref(const char *name, float value)
     } d {};
     d.value = value;
     strcpy(d.name, name);
-    socket_out.send(&d, sizeof(d));        
+    socket_out.send(&d, sizeof(d));
+    if (dref_debug > 0) {
+        ::printf("-> %s : %.3f\n", name, value);
+    }
 }
-    
+
+/*
+  request a dref
+*/
+void XPlane::request_dref(const char *name, uint8_t code, uint32_t rate)
+{
+    struct PACKED {
+        uint8_t  marker[5] { 'R', 'R', 'E', 'F', '0' };
+        uint32_t rate_hz;
+        uint32_t code;
+        char name[400];
+    } d {};
+    d.rate_hz = rate;
+    d.code = code; // given back in responses
+    strcpy(d.name, name);
+    socket_in.sendto(&d, sizeof(d), xplane_ip, xplane_port);
+}
+
+void XPlane::request_drefs(void)
+{
+    request_dref("sim/version/xplane_internal_version", RREF_VERSION, 1);
+}
+
 /*
   update the XPlane simulation by one time step
  */
 void XPlane::update(const struct sitl_input &input)
 {
     if (receive_data()) {
-        send_data(input);
+        send_drefs(input);
     }
 
     uint32_t now = AP_HAL::millis();
     if (report.last_report_ms == 0) {
         report.last_report_ms = now;
+        request_drefs();
     }
     if (now - report.last_report_ms > 5000) {
         float dt = (now - report.last_report_ms) * 1.0e-3f;
@@ -485,9 +696,9 @@ void XPlane::update(const struct sitl_input &input)
         report.last_report_ms = now;
         report.data_count = 0;
         report.frame_count = 0;
+        request_drefs();
     }
+    check_reload_dref();
 }
-
-} // namespace SITL
 
 #endif  // HAL_SIM_XPLANE_ENABLED

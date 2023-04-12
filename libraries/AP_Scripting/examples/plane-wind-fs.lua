@@ -2,6 +2,7 @@
 -- the average battery consumption, and the wind to decide when to failsafe
 --
 -- CAUTION: This script only works for Plane
+-- luacheck: only 0
 
 -- store the batt info as { instance, filtered, capacity, margin_mah }
 -- instance: the battery monitor instance (zero indexed)

@@ -2,14 +2,14 @@
 /// @brief	RC_Channel manager, with EEPROM-backed storage of constants.
 #pragma once
 
+#include "RC_Channel_config.h"
+
+#if AP_RC_CHANNEL_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/Bitmask.h>
-
-#ifndef AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
-#define AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED 1
-#endif
 
 #define NUM_RC_CHANNELS 16
 
@@ -215,6 +215,9 @@ public:
         FW_AUTOTUNE =          107, // fixed wing auto tune
         QRTL =               108, // QRTL mode
         CUSTOM_CONTROLLER =  109,
+        KILL_IMU3 =          110, // disable third IMU (for IMU failure testing)
+        LOWEHEISER_STARTER = 111,  // allows for manually running starter
+
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
 
@@ -240,6 +243,10 @@ public:
         CAMERA_MANUAL_FOCUS = 168,// camera manual focus.  high = long shot, middle = stop focus, low = close shot
         CAMERA_AUTO_FOCUS =  169, // camera auto focus
         QSTABILIZE =         170, // QuadPlane QStabilize mode
+        MAG_CAL =            171, // Calibrate compasses (disarmed only)
+        BATTERY_MPPT_ENABLE = 172,// Battery MPPT Power enable. high = ON, mid = auto (controlled by mppt/batt driver), low = OFF. This effects all MPPTs.
+        PLANE_AUTO_LANDING_ABORT = 173, // Abort Glide-slope or VTOL landing during payload place or do_land type mission items
+
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
@@ -257,6 +264,7 @@ public:
         MOUNT2_ROLL =        215, // mount2 roll input
         MOUNT2_PITCH =       216, // mount3 pitch input
         MOUNT2_YAW =         217, // mount4 yaw input
+        LOWEHEISER_THROTTLE= 218,  // allows for throttle on slider
 
         // inputs 248-249 are reserved for the Skybrush fork at
         // https://github.com/skybrush-io/ardupilot
@@ -574,7 +582,7 @@ public:
     // get mask of enabled protocols
     uint32_t enabled_protocols() const;
 
-    // returns true if we have had a direct detach RC reciever, does not include overrides
+    // returns true if we have had a direct detach RC receiver, does not include overrides
     bool has_had_rc_receiver() const { return _has_had_rc_receiver; }
 
     // returns true if we have had an override on any channel
@@ -645,7 +653,7 @@ private:
 
     uint32_t last_update_ms;
     bool has_new_overrides;
-    bool _has_had_rc_receiver; // true if we have had a direct detach RC reciever, does not include overrides
+    bool _has_had_rc_receiver; // true if we have had a direct detach RC receiver, does not include overrides
     bool _has_had_override; // true if we have had an override on any channel
 
     AP_Float _override_timeout;
@@ -672,3 +680,5 @@ private:
 };
 
 RC_Channels &rc();
+
+#endif  // AP_RC_CHANNEL_ENABLED

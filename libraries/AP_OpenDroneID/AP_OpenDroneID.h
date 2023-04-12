@@ -63,7 +63,7 @@
 #define ODID_AREA_COUNT_MIN  1
 #define ODID_AREA_COUNT_MAX  65000
 
-class AP_UAVCAN;
+class AP_DroneCAN;
 
 class AP_OpenDroneID
 {
@@ -81,7 +81,7 @@ public:
     void update();
 
     // send pending dronecan messages
-    void dronecan_send(AP_UAVCAN *);
+    void dronecan_send(AP_DroneCAN *);
 
     // handle a message from the GCS
     void handle_msg(mavlink_channel_t chan, const mavlink_message_t &msg);
@@ -124,7 +124,7 @@ private:
     uint32_t _last_send_system_update_ms;
     uint32_t _last_send_static_messages_ms;
     const uint32_t _mavlink_dynamic_period_ms = 1000; //how often are mavlink dynamic messages sent in ms. E.g. 1000 = 1 Hz
-    const uint32_t _mavlink_static_period_ms = 5000; //how often are mavlink static messages sent in ms
+    const uint32_t _mavlink_static_period_ms = 3000; //how often are mavlink static messages sent in ms
 
     bool     _have_height_above_takeoff;
     Location _takeoff_location;
@@ -193,12 +193,12 @@ private:
 
     uint8_t dronecan_done_init;
     uint8_t dronecan_init_failed;
-    void dronecan_init(AP_UAVCAN *uavcan);
-    void dronecan_send_location(AP_UAVCAN *uavcan);
-    void dronecan_send_basic_id(AP_UAVCAN *uavcan);
-    void dronecan_send_system(AP_UAVCAN *uavcan);
-    void dronecan_send_self_id(AP_UAVCAN *uavcan);
-    void dronecan_send_operator_id(AP_UAVCAN *uavcan);
+    void dronecan_init(AP_DroneCAN *uavcan);
+    void dronecan_send_location(AP_DroneCAN *uavcan);
+    void dronecan_send_basic_id(AP_DroneCAN *uavcan);
+    void dronecan_send_system(AP_DroneCAN *uavcan);
+    void dronecan_send_self_id(AP_DroneCAN *uavcan);
+    void dronecan_send_operator_id(AP_DroneCAN *uavcan);
 };
 
 namespace AP
