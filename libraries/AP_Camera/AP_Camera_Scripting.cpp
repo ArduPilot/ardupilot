@@ -47,7 +47,7 @@ bool AP_Camera_Scripting::set_auto_focus()
 
 // access for scripting backend to retrieve state
 // returns true on success and cam_state is filled in
-bool AP_Camera_Scripting::get_state(camera_state_t& cam_state) const
+bool AP_Camera_Scripting::get_state(camera_state_t& cam_state)
 {
     cam_state = _cam_state;
     return true;
