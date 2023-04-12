@@ -21,4 +21,5 @@ Viewpro gimbal driver lua script
       6: IR1 13mm
       7: IR2 52mm
   Set VIEP_ZOOM_SPEED to control speed of zoom (value between 0 and 7)
-  Set VIEP_DEBUG = 1 or 2 to increase level of debug output to the GCS
+  Set VIEP_ZOOM_MAX to the maximum zoom.  E.g. for a camera with 20x zoom, set to 20
+  Optionally set VIEP_DEBUG = 1 or 2 to increase level of debug output to the GCS
