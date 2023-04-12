@@ -19,7 +19,8 @@
         6: IR1 13mm
         7: IR2 52mm
     Set VIEP_ZOOM_SPEED to control speed of zoom (value between 0 and 7)
-    Set VIEP_DEBUG = 1 or 2 to increase level of debug output to the GCS
+    Set VIEP_ZOOM_MAX to the maximum zoom.  E.g. for a camera with 20x zoom, set to 20
+    Optionally set VIEP_DEBUG = 1 or 2 to increase level of debug output to the GCS
  
   Packet format
      byte      description     notes
@@ -32,12 +33,13 @@
 
 -- parameters
 local PARAM_TABLE_KEY = 39
-assert(param:add_table(PARAM_TABLE_KEY, "VIEP_", 5), "could not add param table")
+assert(param:add_table(PARAM_TABLE_KEY, "VIEP_", 6), "could not add param table")
 assert(param:add_param(PARAM_TABLE_KEY, 1, "DEBUG", 0), "could not add VIEP_DEBUG param")
 assert(param:add_param(PARAM_TABLE_KEY, 2, "CAM_SWLOW", 1), "could not add VIEP_CAM_SWLOW param")
 assert(param:add_param(PARAM_TABLE_KEY, 3, "CAM_SWMID", 2), "could not add VIEP_CAM_SWMID param")
 assert(param:add_param(PARAM_TABLE_KEY, 4, "CAM_SWHIGH", 6), "could not add VIEP_CAM_CAM_SWHIGH param")
 assert(param:add_param(PARAM_TABLE_KEY, 5, "ZOOM_SPEED", 7), "could not add VIEP_ZOOM_SPEED param")
+assert(param:add_param(PARAM_TABLE_KEY, 6, "ZOOM_MAX", 20), "could not add VIEP_ZOOM_MAX param")
 
 -- bind parameters to variables
 local MNT1_TYPE = Parameter("MNT1_TYPE")    -- should be 9:Scripting
@@ -88,6 +90,15 @@ local VIEP_CAM_SWHIGH = Parameter("VIEP_CAM_SWHIGH")    -- RC swith high positio
 --]]
 local VIEP_ZOOM_SPEED = Parameter("VIEP_ZOOM_SPEED")    -- zoom speed from 0 (slow) to 7 (fast)
 
+--[[
+  // @Param: VIEP_ZOOM_MAX
+  // @DisplayName: ViewPro Zoom Times Max
+  // @Description: ViewPro Zoom Times Max
+  // @Range: 0 30
+  // @User: Standard
+--]]
+local VIEP_ZOOM_MAX = Parameter("VIEP_ZOOM_MAX")        -- zoom times max
+
 -- global definitions
 local CAM_SELECT_RC_OPTION = 300        -- rc channel option used to control which camera/video is used. RCx_OPTION = 300 (scripting1)
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
@@ -127,6 +138,9 @@ local CAM_COMMAND_STOP_RECORD = 0x15
 local CAM_COMMAND_AUTO_FOCUS = 0x19
 local CAM_COMMAND_MANUAL_FOCUS = 0x1A
 
+-- camera control2 commands
+local CAM_COMMAND2_SET_EO_ZOOM = 0x53
+
 -- hardcoded outgoing messages
 local HEARTBEAT_MSG = {0x55,0xAA,0xDC,0x44,0x00,0x00,0x44}
 
@@ -143,7 +157,8 @@ local last_frame_counter = 0            -- last frame counter sent to gimbal.  a
 local cam_choice = 0                    -- last camera choice (see VIEP_CAM_SWLOW/MID/HIGH parameters)
 local cam_pic_count = 0                 -- last picture count.  used to detect trigger pic
 local cam_rec_video = false             -- last record video state.  used to detect record video
-local cam_zoom_step = 0                 -- last zoom step state.  zoom out = -1, hold = 0, zoom in = 1
+local cam_zoom_type = 0                 -- last zoom type 1:Rate 2:Pct
+local cam_zoom_value = 0                -- last zoom value.  If rate, zoom out = -1, hold = 0, zoom in = 1.  If Pct then value from 0 to 100
 local cam_focus_step = 0                -- last focus step state.  focus in = -1, focus hold = 0, focus out = 1
 local cam_autofocus = false             -- last auto focus state
 
@@ -489,6 +504,30 @@ function send_camera_control(camera_choice, cam_command)
   write_byte(checksum, 0)                               -- checksum
 end
 
+-- send camera commands using C2 message
+function send_camera_control2(cam_command, cam_value)
+
+  -- ensure cam_value is an integer
+  cam_value = math.floor(cam_value + 0.5)
+
+  -- prepare C2 message, FrameId 0x2C
+  -- byte0 : command (0x50:set brightness, 0x51:set contrast, 0x52: set aperture, 0x53:set EO zoom, 0x54:set focus, 0x55:set ISO, 0x56:set thermal cam digital zoom)
+  -- byte1~2 : value related to command
+  local length_and_frame_counter = calc_length_and_frame_byte(0x06)
+  cam_command = cam_command & 0xFF
+  local data_bytes = cam_value & 0xFFFF
+
+  write_byte(HEADER1, 0)
+  write_byte(HEADER2, 0)
+  write_byte(HEADER3, 0)
+  local checksum = write_byte(length_and_frame_counter, 0)  -- length and frame count
+  checksum = write_byte(0x2C, checksum)                 -- 0x2C: C2 FrameId
+  checksum = write_byte(cam_command, checksum)          -- command
+  checksum = write_byte(highbyte(data_bytes), checksum) -- msb
+  checksum = write_byte(lowbyte(data_bytes), checksum)  -- lsb
+  write_byte(checksum, 0)                               -- checksum
+end
+
 -- return camera selection according to RC switch position and VIEW_CAM_SWxxx parameter
 -- used in C1 message's "video choose" to specify which cameras should be controlled
 function get_camera_choice()
@@ -542,19 +581,33 @@ function check_camera_state()
     end
   end
 
-  -- check manual zoom
+  -- check zoom
   -- zoom out = -1, hold = 0, zoom in = 1
-  if cam_state:zoom_step() and cam_state:zoom_step() ~= cam_zoom_step then
-    cam_zoom_step = cam_state:zoom_step()
-    if cam_zoom_step < 0 then
-      send_camera_control(cam_choice, CAM_COMMAND_ZOOM_OUT)
-    elseif cam_zoom_step == 0 then
-      send_camera_control(cam_choice, CAM_COMMAND_STOP_FOCUS_AND_ZOOM)
-    elseif cam_zoom_step > 0 then
-      send_camera_control(cam_choice, CAM_COMMAND_ZOOM_IN)
+  local zoom_type_changed = cam_state:zoom_type() and (cam_state:zoom_type() ~= cam_zoom_type)
+  local zoom_value_changed = cam_state:zoom_value() and (cam_state:zoom_value() ~= cam_zoom_value)
+  if (zoom_type_changed or zoom_value_changed) then
+    cam_zoom_type = cam_state:zoom_type()
+    cam_zoom_value = cam_state:zoom_value()
+
+    -- zoom rate
+    if cam_zoom_type == 1 then
+      if cam_zoom_value < 0 then
+        send_camera_control(cam_choice, CAM_COMMAND_ZOOM_OUT)
+      elseif cam_zoom_value > 0 then
+        send_camera_control(cam_choice, CAM_COMMAND_ZOOM_IN)
+      else
+        send_camera_control(cam_choice, CAM_COMMAND_STOP_FOCUS_AND_ZOOM)
+      end
     end
+
+    -- zoom percent
+    if cam_zoom_type == 2 then
+      -- convert zoom percentage (in the range 0 to 100) to value in the range of 0 to VIEW_ZOOM_MAX * 10
+      send_camera_control2(CAM_COMMAND2_SET_EO_ZOOM, VIEP_ZOOM_MAX:get() * cam_zoom_value * 0.1)
+    end
+
     if VIEP_DEBUG:get() > 0 then
-      gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: zoom:" .. tostring(cam_zoom_step))
+      gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: zoom type:" .. tostring(cam_zoom_type) .. " value:" .. tostring(cam_zoom_value))
     end
   end
 
