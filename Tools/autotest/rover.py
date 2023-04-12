@@ -6354,6 +6354,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.GCSFailsafe,
             self.InitialMode,
             self.DriveMaxRCIN,
+            self.NoArmWithoutMissionItems,
         ])
         return ret
 

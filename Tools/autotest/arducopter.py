@@ -9854,6 +9854,7 @@ class AutoTestCopter(AutoTest):
             self.IMUConsistency,
             self.AHRSTrimLand,
             self.GuidedYawRate,
+            self.NoArmWithoutMissionItems,
         ])
         return ret
 
