@@ -133,6 +133,9 @@ static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(32), KB(32), KB(32
 #elif defined(STM32G4)
 #define STM32_FLASH_NPAGES (BOARD_FLASH_SIZE/2)
 #define STM32_FLASH_FIXED_PAGE_SIZE 2
+#elif defined(STM32L4PLUS)
+#define STM32_FLASH_NPAGES (BOARD_FLASH_SIZE/4)
+#define STM32_FLASH_FIXED_PAGE_SIZE 4 
 #elif defined(STM32L4)
 #define STM32_FLASH_NPAGES (BOARD_FLASH_SIZE/2)
 #define STM32_FLASH_FIXED_PAGE_SIZE 2
@@ -464,6 +467,15 @@ bool stm32_flash_erasepage(uint32_t page)
     // there is an 8th bit
     FLASH->CR |= page<<FLASH_CR_PNB_Pos;
     FLASH->CR |= FLASH_CR_STRT;
+#elif defined(STM32L4PLUS)
+    FLASH->CR |= FLASH_CR_PER;
+    if (page >= 256) {
+      FLASH->CR |= FLASH_CR_BKER;
+    }
+    FLASH->CR &= ~FLASH_CR_PNB;
+
+    FLASH->CR |= (page<256 ?page: (page -256))<<FLASH_CR_PNB_Pos;
+    FLASH->CR |= FLASH_CR_STRT;
 #elif defined(STM32L4)
     FLASH->CR = FLASH_CR_PER;
     FLASH->CR |= page<<FLASH_CR_PNB_Pos;
@@ -753,7 +765,7 @@ failed:
 }
 #endif // STM32F1 or STM32F3
 
-#if defined(STM32G4) || defined(STM32L4)
+#if defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
 static bool stm32_flash_write_g4(uint32_t addr, const void *buf, uint32_t count)
 {
     uint32_t *b = (uint32_t *)buf;
@@ -838,7 +850,7 @@ bool stm32_flash_write(uint32_t addr, const void *buf, uint32_t count)
     return stm32_flash_write_f4f7(addr, buf, count);
 #elif defined(STM32H7)
     return stm32_flash_write_h7(addr, buf, count);
-#elif defined(STM32G4) || defined(STM32L4)
+#elif defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS) 
     return stm32_flash_write_g4(addr, buf, count);
 #else
 #error "Unsupported MCU"

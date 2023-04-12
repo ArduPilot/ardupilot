@@ -764,9 +764,19 @@ def get_flash_pages_sizes():
         return [ 1 ] * get_config('FLASH_SIZE_KB', type=int)
     elif (mcu_series.startswith('STM32F105') or
           mcu_series.startswith('STM32F3') or
-          mcu_series.startswith('STM32G4') or
-          mcu_series.startswith('STM32L4')):
+          mcu_series.startswith('STM32G4')):
         return [ 2 ] * (get_config('FLASH_SIZE_KB', type=int)//2)
+    elif mcu_series.startswith('STM32L4'):
+        defines = get_mcu_config('DEFINES', False)
+        if defines is not None:
+            if 'STM32L4PLUS' in defines.keys():
+                # STM32L4PLUS
+                return [ 4 ] * (get_config('FLASH_SIZE_KB', type=int)//4)
+            else:
+                # STM32L4
+                return [ 2 ] * (get_config('FLASH_SIZE_KB', type=int)//2)
+        else:
+            return [ 2 ] * (get_config('FLASH_SIZE_KB', type=int)//2)
     else:
         raise Exception("Unsupported flash size MCU %s" % mcu_series)
 
