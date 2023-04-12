@@ -1111,7 +1111,11 @@ function camera_state_t_ud:focus_step() end
 
 -- get field
 ---@return integer
-function camera_state_t_ud:zoom_step() end
+function camera_state_t_ud:zoom_type() end
+
+-- get field
+---@return number
+function camera_state_t_ud:zoom_value() end
 
 -- get field
 ---@return boolean

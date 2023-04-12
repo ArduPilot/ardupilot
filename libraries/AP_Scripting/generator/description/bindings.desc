@@ -613,7 +613,8 @@ singleton AP_Camera method set_trigger_distance void uint8_t'skip_check float'sk
 userdata camera_state_t depends (AP_CAMERA_SCRIPTING_ENABLED == 1)
 userdata camera_state_t field take_pic_incr uint16_t'skip_check read
 userdata camera_state_t field recording_video boolean read
-userdata camera_state_t field zoom_step int8_t'skip_check read
+userdata camera_state_t field zoom_type uint8_t'skip_check read
+userdata camera_state_t field zoom_value float'skip_check read
 userdata camera_state_t field focus_step int8_t'skip_check read
 userdata camera_state_t field auto_focus boolean read
 singleton AP_Camera method get_state boolean uint8_t'skip_check camera_state_t'Null
