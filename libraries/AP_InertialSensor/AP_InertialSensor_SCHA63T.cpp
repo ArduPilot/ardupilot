@@ -245,7 +245,7 @@ void AP_InertialSensor_SCHA63T::read_accel(void)
     int16_t accel_z = 0;
     int16_t uno_temp = 0;
 
-    // ACCL_X Cmd Send (first response is undefined)
+    // ACCL_X Cmd Send (first response is undefined data)
     ret_scha63t &= RegisterRead(SCHA63T_UNO, ACC_X, rsp_accl_x);
     // ACCL_Y Cmd Send + ACCL_X Response Receive
     ret_scha63t &= RegisterRead(SCHA63T_UNO, ACC_Y, rsp_accl_x);
@@ -312,7 +312,7 @@ void AP_InertialSensor_SCHA63T::read_gyro(void)
     int16_t uno_temp = 0;
     int16_t due_temp = 0;
 
-    // RATE_Y Cmd Send (first response is undefined)
+    // RATE_Y Cmd Send (first response is undefined data)
     ret_scha63t &= RegisterRead(SCHA63T_DUE, RATE_Y, rsp_rate_y);
     // RATE_Z Cmd Send + RATE_Y Response Receive
     ret_scha63t &= RegisterRead(SCHA63T_DUE, RATE_XZ, rsp_rate_y);
