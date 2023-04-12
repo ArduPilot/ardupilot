@@ -179,11 +179,14 @@ float AnalogSource::voltage_latest()
 
 bool AnalogSource::set_pin(uint8_t pin)
 {
+    if (pin == ANALOG_INPUT_NONE) {
+        return false;
+    }
     if (_pin == pin) {
         return true;
     }
     bool found_pin = false;
-    if (pin == ANALOG_SERVO_VRSSI_PIN || pin == ANALOG_INPUT_NONE) {
+    if (pin == ANALOG_SERVO_VRSSI_PIN) {
         found_pin = true;
     } else {
         for (uint8_t i=0; i<ADC_GRP1_NUM_CHANNELS; i++) {
@@ -240,16 +243,20 @@ uint8_t AnalogIn::get_pin_channel(uint8_t adc_index, uint8_t pin_index)
 {
     switch(adc_index) {
     case 0:
+        osalDbgAssert(pin_index < ADC_GRP1_NUM_CHANNELS, "invalid pin_index");
         return pin_config[pin_index].channel;
 #if defined(HAL_ANALOG2_PINS)
     case 1:
+        osalDbgAssert(pin_index < ADC2_GRP1_NUM_CHANNELS, "invalid pin_index");
         return pin_config_2[pin_index].channel;
 #endif
 #if defined(HAL_ANALOG3_PINS)
     case 2:
+        osalDbgAssert(pin_index < ADC3_GRP1_NUM_CHANNELS, "invalid pin_index");
         return pin_config_3[pin_index].channel;
 #endif
     };
+    osalDbgAssert(false, "invalid adc_index");
     return 255;
 }
 
@@ -267,6 +274,7 @@ uint8_t AnalogIn::get_analog_pin(uint8_t adc_index, uint8_t pin_index)
         return pin_config_3[pin_index].analog_pin;
 #endif
     };
+    osalDbgAssert(false, "invalid adc_index");
     return 255;
 }
 /*
@@ -286,6 +294,7 @@ float AnalogIn::get_pin_scaling(uint8_t adc_index, uint8_t pin_index)
         return pin_config_3[pin_index].scaling;
 #endif
     };
+    osalDbgAssert(false, "invalid adc_index");
     return 0;
 }
 
@@ -362,6 +371,7 @@ uint8_t AnalogIn::get_adc_index(ADCDriver* adcp)
         return 2;
     }
 #endif
+    osalDbgAssert(false, "invalid ADC");
     return 255;
 }
 
@@ -379,6 +389,7 @@ uint8_t AnalogIn::get_num_grp_channels(uint8_t index)
         return ADC3_GRP1_NUM_CHANNELS;
 #endif
     };
+    osalDbgAssert(false, "invalid adc_index");
     return 0;
 }
 
@@ -712,6 +723,7 @@ AP_HAL::AnalogSource* AnalogIn::channel(int16_t pin)
             return _channels[j];
         }
     }
+    osalDbgAssert(false, "Out of analog channels");
     DEV_PRINTF("Out of analog channels\n");
     return nullptr;
 }
