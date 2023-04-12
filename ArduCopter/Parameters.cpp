@@ -776,7 +776,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DEV_OPTIONS", 7, ParametersG2, dev_options, 0),
 
-#if BEACON_ENABLED == ENABLED
+#if AP_BEACON_ENABLED
     // @Group: BCN
     // @Path: ../libraries/AP_Beacon/AP_Beacon.cpp
     AP_SUBGROUPINFO(beacon, "BCN", 14, ParametersG2, AP_Beacon),
@@ -1225,7 +1225,7 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
  */
 ParametersG2::ParametersG2(void)
     : temp_calibration() // this doesn't actually need constructing, but removing it here is problematic syntax-wise
-#if BEACON_ENABLED == ENABLED
+#if AP_BEACON_ENABLED
     , beacon()
 #endif
 #if HAL_PROXIMITY_ENABLED

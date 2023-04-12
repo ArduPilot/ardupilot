@@ -6,7 +6,7 @@
     Set SERIALx_PROTOCOL = 28 (Scripting) where "x" corresponds to the serial port connected to the gimbal
     Set SCR_ENABLE = 1 to enable scripting and reboot the autopilot
     Set MNT1_TYPE = 9 (Scripting) to enable the mount/gimbal scripting driver
-    Set CAM_TRIGG_TYPE = 3 (Mount) to enable the camera driver
+    Set CAM1_TYPE = 4 (Mount) to enable the camera driver
     Set RCx_OPTION = 300 (Scripting1) to allow real-time selection of the video feed and camera control
     Copy this script to the autopilot's SD card in the APM/scripts directory and reboot the autopilot
     Set VIEP_CAM_SWLOW, VIEP_CAM_SWMID, VIEP_CAM_SWHIGH to which cameras are controlled by the auxiliary switch
@@ -41,10 +41,50 @@ assert(param:add_param(PARAM_TABLE_KEY, 5, "ZOOM_SPEED", 7), "could not add VIEP
 
 -- bind parameters to variables
 local MNT1_TYPE = Parameter("MNT1_TYPE")    -- should be 9:Scripting
+
+--[[
+  // @Param: VIEP_DEBUG
+  // @DisplayName: ViewPro debug
+  // @Description: ViewPro debug
+  // @Values: 0:Disabled, 1:Enabled, 2:Enabled including attitude reporting
+  // @User: Advanced
+--]]
 local VIEP_DEBUG = Parameter("VIEP_DEBUG")  -- debug level. 0:disabled 1:enabled 2:enabled with attitude reporting
+
+--[[
+  // @Param: VIEP_CAM_SWLOW
+  // @DisplayName: ViewPro Camera For Switch Low
+  // @Description: Camera selection when switch is in low position
+  // @Values: 0:No change in camera selection, 1:EO1, 2:IR thermal, 3:EO1 + IR Picture-in-picture, 4:IR + EO1 Picture-in-picture, 5:Fusion, 6:IR1 13mm, 7:IR2 52mm
+  // @User: Standard
+--]]
 local VIEP_CAM_SWLOW = Parameter("VIEP_CAM_SWLOW")      -- RC swith low position's camera selection
+
+--[[
+  // @Param: VIEP_CAM_SWMID
+  // @DisplayName: ViewPro Camera For Switch Mid
+  // @Description: Camera selection when switch is in middle position
+  // @Values: 0:No change in camera selection, 1:EO1, 2:IR thermal, 3:EO1 + IR Picture-in-picture, 4:IR + EO1 Picture-in-picture, 5:Fusion, 6:IR1 13mm, 7:IR2 52mm
+  // @User: Standard
+--]]
 local VIEP_CAM_SWMID = Parameter("VIEP_CAM_SWMID")      -- RC swith middle position's camera selection
+
+--[[
+  // @Param: VIEP_CAM_SWHIGH
+  // @DisplayName: ViewPro Camera For Switch High
+  // @Description: Camera selection when switch is in high position
+  // @Values: 0:No change in camera selection, 1:EO1, 2:IR thermal, 3:EO1 + IR Picture-in-picture, 4:IR + EO1 Picture-in-picture, 5:Fusion, 6:IR1 13mm, 7:IR2 52mm
+  // @User: Standard
+--]]
 local VIEP_CAM_SWHIGH = Parameter("VIEP_CAM_SWHIGH")    -- RC swith high position's camera selection
+
+--[[
+  // @Param: VIEP_ZOOM_SPEED
+  // @DisplayName: ViewPro Zoom Speed
+  // @Description: ViewPro Zoom Speed.  Higher numbers result in faster zooming
+  // @Range: 0 7
+  // @User: Standard
+--]]
 local VIEP_ZOOM_SPEED = Parameter("VIEP_ZOOM_SPEED")    -- zoom speed from 0 (slow) to 7 (fast)
 
 -- global definitions

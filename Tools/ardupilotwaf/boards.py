@@ -439,9 +439,6 @@ class Board:
                 )
 
             env.DEFINES.update(
-                UAVCAN_CPP_VERSION = 'UAVCAN_CPP03',
-                UAVCAN_NO_ASSERTIONS = 1,
-                UAVCAN_NULLPTR = 'nullptr',
                 DRONECAN_CXX_WRAPPERS = 1,
                 USE_USER_HELPERS = 1,
                 CANARD_ENABLE_DEADLINE = 1,
@@ -643,8 +640,6 @@ class sitl(Board):
 
         if self.with_can:
             cfg.define('HAL_NUM_CAN_IFACES', 2)
-            cfg.define('UAVCAN_EXCEPTIONS', 0)
-            cfg.define('UAVCAN_SUPPORT_CANFD', 1)
             env.DEFINES.update(CANARD_MULTI_IFACE=1,
                                CANARD_IFACE_ALL = 0x3,
                                 CANARD_ENABLE_CANFD = 1)
@@ -1177,8 +1172,6 @@ class linux(Board):
         if self.with_can and cfg.options.board == 'linux':
             cfg.env.HAL_NUM_CAN_IFACES = 2
             cfg.define('HAL_NUM_CAN_IFACES', 2)
-            cfg.define('UAVCAN_EXCEPTIONS', 0)
-            cfg.define('UAVCAN_SUPPORT_CANFD', 1)
             cfg.define('HAL_CANFD_SUPPORTED', 1)
             cfg.define('CANARD_ENABLE_CANFD', 1)
         

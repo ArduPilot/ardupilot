@@ -27,7 +27,6 @@
 #if AP_AIRSPEED_MS5525_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Param/AP_Param.h>
 #include <AP_HAL/utility/OwnPtr.h>
 #include <AP_HAL/I2CDevice.h>
 #include <utility>

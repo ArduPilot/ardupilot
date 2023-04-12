@@ -22,7 +22,7 @@
 
 #include <AP_DroneCAN/AP_DroneCAN.h>
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_ENABLE_DRONECAN_DRIVERS
 #include <GCS_MAVLink/GCS.h>
 
 static Canard::Publisher<dronecan_remoteid_Location>* dc_location[HAL_MAX_CAN_PROTOCOL_DRIVERS];
@@ -239,5 +239,5 @@ void AP_OpenDroneID::set_arm_status(mavlink_open_drone_id_arm_status_t &status)
     last_arm_status_ms = AP_HAL::millis();
 }
 
-#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
+#endif // HAL_ENABLE_DRONECAN_DRIVERS
 #endif // AP_OPENDRONEID_ENABLED

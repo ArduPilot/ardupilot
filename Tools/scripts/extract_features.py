@@ -58,7 +58,7 @@ class ExtractFeatures(object):
             ('AP_TEMPERATURE_SENSOR_ENABLED', 'AP_TemperatureSensor::AP_TemperatureSensor',),
             ('AP_TEMPERATURE_SENSOR_{type}_ENABLED', 'AP_TemperatureSensor_(?P<type>.*)::update',),
 
-            ('BEACON_ENABLED', 'AP_Beacon::AP_Beacon',),
+            ('AP_BEACON_ENABLED', 'AP_Beacon::AP_Beacon',),
             ('HAL_TORQEEDO_ENABLED', 'AP_Torqeedo::AP_Torqeedo'),
 
             ('HAL_NAVEKF3_AVAILABLE', 'NavEKF3::NavEKF3',),
@@ -129,7 +129,7 @@ class ExtractFeatures(object):
             ('HAL_GENERATOR_ENABLED', 'AP_Generator::AP_Generator',),
             ('AP_GENERATOR_{type}_ENABLED', r'AP_Generator_(?P<type>.*)::update',),
 
-            ('OSD_ENABLED', 'AP_OSD::AP_OSD',),
+            ('OSD_ENABLED', 'AP_OSD::update_osd',),
             ('HAL_PLUSCODE_ENABLE', 'AP_OSD_Screen::draw_pluscode',),
             ('OSD_PARAM_ENABLED', 'AP_OSD_ParamScreen::AP_OSD_ParamScreen',),
             ('HAL_OSD_SIDEBAR_ENABLE', 'AP_OSD_Screen::draw_sidebars',),
@@ -160,7 +160,7 @@ class ExtractFeatures(object):
             ('AP_RPM_{type}_ENABLED', r'AP_RPM_(?P<type>.*)::update',),
 
             ('GPS_MOVING_BASELINE', r'AP_GPS_Backend::calculate_moving_base_yaw\b',),
-            ('AP_DRONECAN_SEND_GPS', r'AP_GPS_UAVCAN::instance_exists\b',),
+            ('AP_DRONECAN_SEND_GPS', r'AP_GPS_DroneCAN::instance_exists\b',),
 
             ('HAL_WITH_DSP', r'AP_HAL::DSP::find_peaks\b',),
             ('HAL_GYROFFT_ENABLED', r'AP_GyroFFT::AP_GyroFFT\b',),

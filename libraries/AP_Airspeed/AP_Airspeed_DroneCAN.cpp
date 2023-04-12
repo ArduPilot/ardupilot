@@ -1,6 +1,6 @@
-#include "AP_Airspeed_UAVCAN.h"
+#include "AP_Airspeed_DroneCAN.h"
 
-#if AP_AIRSPEED_UAVCAN_ENABLED
+#if AP_AIRSPEED_DRONECAN_ENABLED
 
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_DroneCAN/AP_DroneCAN.h>
@@ -10,15 +10,10 @@ extern const AP_HAL::HAL& hal;
 
 #define LOG_TAG "AirSpeed"
 
-AP_Airspeed_UAVCAN::DetectedModules AP_Airspeed_UAVCAN::_detected_modules[];
-HAL_Semaphore AP_Airspeed_UAVCAN::_sem_registry;
+AP_Airspeed_DroneCAN::DetectedModules AP_Airspeed_DroneCAN::_detected_modules[];
+HAL_Semaphore AP_Airspeed_DroneCAN::_sem_registry;
 
-// constructor
-AP_Airspeed_UAVCAN::AP_Airspeed_UAVCAN(AP_Airspeed &_frontend, uint8_t _instance) :
-    AP_Airspeed_Backend(_frontend, _instance)
-{}
-
-void AP_Airspeed_UAVCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
+void AP_Airspeed_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
     if (ap_dronecan == nullptr) {
         return;
@@ -35,11 +30,11 @@ void AP_Airspeed_UAVCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 #endif
 }
 
-AP_Airspeed_Backend* AP_Airspeed_UAVCAN::probe(AP_Airspeed &_frontend, uint8_t _instance, uint32_t previous_devid)
+AP_Airspeed_Backend* AP_Airspeed_DroneCAN::probe(AP_Airspeed &_frontend, uint8_t _instance, uint32_t previous_devid)
 {
     WITH_SEMAPHORE(_sem_registry);
 
-    AP_Airspeed_UAVCAN* backend = nullptr;
+    AP_Airspeed_DroneCAN* backend = nullptr;
 
     for (uint8_t i = 0; i < AIRSPEED_MAX_SENSORS; i++) {
         if (_detected_modules[i].driver == nullptr && _detected_modules[i].ap_dronecan != nullptr) {
@@ -50,18 +45,18 @@ AP_Airspeed_Backend* AP_Airspeed_UAVCAN::probe(AP_Airspeed &_frontend, uint8_t _
                 // match with previous ID only
                 continue;
             }
-            backend = new AP_Airspeed_UAVCAN(_frontend, _instance);
+            backend = new AP_Airspeed_DroneCAN(_frontend, _instance);
             if (backend == nullptr) {
                 AP::can().log_text(AP_CANManager::LOG_INFO,
                                    LOG_TAG,
-                                   "Failed register UAVCAN Airspeed Node %d on Bus %d\n",
+                                   "Failed register DroneCAN Airspeed Node %d on Bus %d\n",
                                    _detected_modules[i].node_id,
                                    _detected_modules[i].ap_dronecan->get_driver_index());
             } else {
                 _detected_modules[i].driver = backend;
                 AP::can().log_text(AP_CANManager::LOG_INFO,
                                    LOG_TAG,
-                                   "Registered UAVCAN Airspeed Node %d on Bus %d\n",
+                                   "Registered DroneCAN Airspeed Node %d on Bus %d\n",
                                    _detected_modules[i].node_id,
                                    _detected_modules[i].ap_dronecan->get_driver_index());
                 backend->set_bus_id(bus_id);
@@ -73,7 +68,7 @@ AP_Airspeed_Backend* AP_Airspeed_UAVCAN::probe(AP_Airspeed &_frontend, uint8_t _
     return backend;
 }
 
-AP_Airspeed_UAVCAN* AP_Airspeed_UAVCAN::get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id)
+AP_Airspeed_DroneCAN* AP_Airspeed_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id)
 {
     if (ap_dronecan == nullptr) {
         return nullptr;
@@ -109,11 +104,11 @@ AP_Airspeed_UAVCAN* AP_Airspeed_UAVCAN::get_uavcan_backend(AP_DroneCAN* ap_drone
     return nullptr;
 }
 
-void AP_Airspeed_UAVCAN::handle_airspeed(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_air_data_RawAirData &msg)
+void AP_Airspeed_DroneCAN::handle_airspeed(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_air_data_RawAirData &msg)
 {
     WITH_SEMAPHORE(_sem_registry);
 
-    AP_Airspeed_UAVCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id);
+    AP_Airspeed_DroneCAN* driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id);
 
     if (driver != nullptr) {
         WITH_SEMAPHORE(driver->_sem_airspeed);
@@ -128,11 +123,11 @@ void AP_Airspeed_UAVCAN::handle_airspeed(AP_DroneCAN *ap_dronecan, const CanardR
 }
 
 #if AP_AIRSPEED_HYGROMETER_ENABLE
-void AP_Airspeed_UAVCAN::handle_hygrometer(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const dronecan_sensors_hygrometer_Hygrometer &msg)
+void AP_Airspeed_DroneCAN::handle_hygrometer(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const dronecan_sensors_hygrometer_Hygrometer &msg)
 {
     WITH_SEMAPHORE(_sem_registry);
 
-    AP_Airspeed_UAVCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id);
+    AP_Airspeed_DroneCAN* driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id);
 
     if (driver != nullptr) {
         WITH_SEMAPHORE(driver->_sem_airspeed);
@@ -143,13 +138,13 @@ void AP_Airspeed_UAVCAN::handle_hygrometer(AP_DroneCAN *ap_dronecan, const Canar
 }
 #endif // AP_AIRSPEED_HYGROMETER_ENABLE
 
-bool AP_Airspeed_UAVCAN::init()
+bool AP_Airspeed_DroneCAN::init()
 {
     // always returns true
     return true;
 }
 
-bool AP_Airspeed_UAVCAN::get_differential_pressure(float &pressure)
+bool AP_Airspeed_DroneCAN::get_differential_pressure(float &pressure)
 {
     WITH_SEMAPHORE(_sem_airspeed);
 
@@ -162,7 +157,7 @@ bool AP_Airspeed_UAVCAN::get_differential_pressure(float &pressure)
     return true;
 }
 
-bool AP_Airspeed_UAVCAN::get_temperature(float &temperature)
+bool AP_Airspeed_DroneCAN::get_temperature(float &temperature)
 {
     if (!_have_temperature) {
         return false;
@@ -182,7 +177,7 @@ bool AP_Airspeed_UAVCAN::get_temperature(float &temperature)
 /*
   return hygrometer data if available
  */
-bool AP_Airspeed_UAVCAN::get_hygrometer(uint32_t &last_sample_ms, float &temperature, float &humidity)
+bool AP_Airspeed_DroneCAN::get_hygrometer(uint32_t &last_sample_ms, float &temperature, float &humidity)
 {
     if (_hygrometer.last_sample_ms == 0) {
         return false;
@@ -194,4 +189,4 @@ bool AP_Airspeed_UAVCAN::get_hygrometer(uint32_t &last_sample_ms, float &tempera
     return true;
 }
 #endif // AP_AIRSPEED_HYGROMETER_ENABLE
-#endif // AP_AIRSPEED_UAVCAN_ENABLED
+#endif // AP_AIRSPEED_DRONECAN_ENABLED

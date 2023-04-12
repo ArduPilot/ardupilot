@@ -31,17 +31,48 @@ ERR_CORR_D = bind_add_param('ERR_COR_D', 13, 2.8)
 AEROM_ENTRY_RATE = bind_add_param('ENTRY_RATE', 14, 60)
 AEROM_THR_LKAHD = bind_add_param('THR_LKAHD', 15, 1)
 AEROM_DEBUG = bind_add_param('DEBUG', 16, 0)
+--[[
+  // @Param: AEROM_THR_MIN
+  // @DisplayName: Minimum Throttle
+  // @Description: Lowest throttle used during maneuvers
+  // @Units: %
+--]]
 AEROM_THR_MIN = bind_add_param('THR_MIN', 17, 0)
 AEROM_THR_BOOST = bind_add_param('THR_BOOST', 18, 50)
 AEROM_YAW_ACCEL = bind_add_param('YAW_ACCEL', 19, 1500)
 AEROM_LKAHD = bind_add_param('LKAHD', 20, 0.5)
+--[[
+    // @Param: AEROM_PATH_SCALE
+    // @DisplayName: Path Scale
+    // @Description: Scale factor for Path/Box size. 0.5 would half the distances in maneuvers. Radii are unaffected.
+    // @Range: 0.1 100
+--]]
 AEROM_PATH_SCALE = bind_add_param('PATH_SCALE', 21, 1.0)
+--[[
+    // @Param: AEROM_BOX_WIDTH
+    // @DisplayName: Box Width
+    // @Description: Length of aerobatic "box" 
+    // @Units: m
+--]]
 AEROM_BOX_WIDTH = bind_add_param('BOX_WIDTH', 22, 400)
 AEROM_STALL_THR = bind_add_param('STALL_THR', 23, 40)
 AEROM_STALL_PIT = bind_add_param('STALL_PIT', 24, -20)
 -- 25 was AEROM_KE_TC
+
+--[[
+    // @Param: AEROM_KE_RUDD
+    // @DisplayName: KnifeEdge Rudder
+    // @Description: Percent of rudder normally uses to sustain knife-edge at trick speed
+    // @Units: %
+--]]
 AEROM_KE_RUDD = bind_add_param('KE_RUDD', 26, 25)
 AEROM_KE_RUDD_LK = bind_add_param('KE_RUDD_LK', 27, 0.25)
+--[[
+    // @Param: AEROM_ALT_ABORT
+    // @DisplayName: Altitude Abort
+    // @Description: Maximum allowable loss in altitude during a trick or sequence from its starting altitude.
+    // @Units: m
+--]]
 AEROM_ALT_ABORT = bind_add_param('ALT_ABORT',28,15)
 
 -- cope with old param values
@@ -77,7 +108,11 @@ function bind_add_param2(name, idx, default_value)
     assert(param:add_param(PARAM_TABLE_KEY2, idx, name, default_value), string.format('could not add param %s', name))
     return Parameter(PARAM_TABLE_PREFIX2 .. name)
 end
-
+--[[
+    // @Param: TRIK_ENABLE
+    // @DisplayName: Tricks on Switch Enable
+    // @Description: Enables Tricks on Switch. TRIK params hidden until enabled
+--]]
 local TRIK_ENABLE = bind_add_param2("_ENABLE", 1, 0)
 local TRICKS = nil
 local TRIK_SEL_FN = nil
@@ -107,8 +142,26 @@ local function sq(x)
 end
 
 if TRIK_ENABLE:get() > 0 then
+--[[
+    // @Param: TRIK_SEL_FN
+    // @DisplayName: Trik Selection Scripting Function
+    // @Description: Setting an RC channel's _OPTION to this value will use it for trick selection
+    // @Range: 301 307
+--]]
    TRIK_SEL_FN = bind_add_param2("_SEL_FN", 2, 301)
+--[[
+    // @Param: TRIK_ACT_FN
+    // @DisplayName: Trik Action Scripting Function
+    // @Description: Setting an RC channel's _OPTION to this value will use it for trick action (abort,announce,execute)
+    // @Range: 301 307
+--]]
    TRIK_ACT_FN = bind_add_param2("_ACT_FN", 3, 300)
+--[[
+    // @Param: TRIK_COUNT
+    // @DisplayName: Trik Count
+    // @Description: Number of tricks which can be selected over the range of the trik selection RC channel
+    // @Range: 1 11
+--]]
    TRIK_COUNT  = bind_add_param2("_COUNT",  4, 3)
    TRICKS = {}
 
@@ -117,7 +170,7 @@ if TRIK_ENABLE:get() > 0 then
    for i = 1, count do
       local k = 5*i
       local prefix = string.format("%u", i)
-      TRICKS[i] = TrickDef(bind_add_param2(prefix .. "_ID",   k+0, i),
+      TRICKS[i] = TrickDef(bind_add_param2(prefix .. "_ID",   k+0, -1),
                            bind_add_param2(prefix .. "_ARG1", k+1, 30),
                            bind_add_param2(prefix .. "_ARG2", k+2, 0),
                            bind_add_param2(prefix .. "_ARG3", k+3, 0),
@@ -2481,6 +2534,11 @@ function check_trick()
    end
    if action == 1 and selection ~= last_trick_selection then
       local id = TRICKS[selection].id:get()
+         if id == -1 then
+            gcs:send_text(0,string.format("Trick %u not setup",selection))
+            last_trick_selection = selection
+            return
+         end
       load_trick(id)
       if command_table[id] ~= nil then
          local cmd = command_table[id]
@@ -2501,6 +2559,11 @@ function check_trick()
          return
       end
       local id = TRICKS[selection].id:get()
+      if id == -1 then
+         gcs:send_text(0,string.format("Trick %u not setup",selection))
+         last_trick_selection = selection
+         return
+      end
       load_trick(id)
       if command_table[id] == nil then
          gcs:send_text(0, string.format("Invalid trick ID %u", id))

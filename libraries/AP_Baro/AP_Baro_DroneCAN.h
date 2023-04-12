@@ -2,21 +2,21 @@
 
 #include "AP_Baro_Backend.h"
 
-#if AP_BARO_UAVCAN_ENABLED
+#if AP_BARO_DRONECAN_ENABLED
 
 #include <AP_DroneCAN/AP_DroneCAN.h>
 #if AP_TEST_DRONECAN_DRIVERS
 #include <SITL/SITL.h>
 #endif
 
-class AP_Baro_UAVCAN : public AP_Baro_Backend {
+class AP_Baro_DroneCAN : public AP_Baro_Backend {
 public:
-    AP_Baro_UAVCAN(AP_Baro &baro);
+    AP_Baro_DroneCAN(AP_Baro &baro);
 
     void update() override;
 
     static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
-    static AP_Baro_UAVCAN* get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, bool create_new);
+    static AP_Baro_DroneCAN* get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, bool create_new);
     static AP_Baro_Backend* probe(AP_Baro &baro);
 
     static void handle_pressure(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_air_data_StaticPressure &msg);
@@ -43,10 +43,10 @@ private:
     static struct DetectedModules {
         AP_DroneCAN* ap_dronecan;
         uint8_t node_id;
-        AP_Baro_UAVCAN* driver;
+        AP_Baro_DroneCAN* driver;
     } _detected_modules[BARO_MAX_DRIVERS];
 
     static HAL_Semaphore _sem_registry;
 };
 
-#endif  // AP_BARO_UAVCAN_ENABLED
+#endif  // AP_BARO_DRONECAN_ENABLED

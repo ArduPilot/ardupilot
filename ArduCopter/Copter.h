@@ -100,8 +100,8 @@
 #include "AP_Rally.h"           // Rally point library
 #include "AP_Arming.h"
 
-// libraries which are dependent on #defines in defines.h and/or config.h
-#if BEACON_ENABLED == ENABLED
+#include <AP_Beacon/AP_Beacon_config.h>
+#if AP_BEACON_ENABLED
  #include <AP_Beacon/AP_Beacon.h>
 #endif
 
