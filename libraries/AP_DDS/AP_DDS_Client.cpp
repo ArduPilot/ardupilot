@@ -160,11 +160,6 @@ void AP_DDS_Client::populate_static_transforms(tf2_msgs_msg_TFMessage& msg)
         msg.transforms_size++;
     }
 
-    // msg.transforms[0] = transform;
-
-
-
-    // const auto offset = AP::GPS::
 }
 
 
