@@ -27,9 +27,10 @@ static bool remount_needed;
 #define FATFS_W (S_IWUSR | S_IWGRP | S_IWOTH)	/*< FatFs Write perms */
 #define FATFS_X (S_IXUSR | S_IXGRP | S_IXOTH)	/*< FatFs Execute perms */
 
-// don't write more than 4k at a time to prevent needing too much
-// DMAable memory
-#define MAX_IO_SIZE 4096
+// don't read or write more than 512 bytes at a time to prevent
+// needing too much DMAable memory. On boards with SDIO reading more
+// than 512 bytes can result in corrupted reads
+#define MAX_IO_SIZE 512
 
 // use a semaphore to ensure that only one filesystem operation is
 // happening at a time. A recursive semaphore is used to cope with the
