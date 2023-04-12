@@ -107,7 +107,7 @@ void AP_Camera_Backend::control(float session, float zoom_pos, float zoom_step, 
 }
 
 // send camera feedback message to GCS
-void AP_Camera_Backend::send_camera_feedback(mavlink_channel_t chan) const
+void AP_Camera_Backend::send_camera_feedback(mavlink_channel_t chan)
 {
     int32_t altitude = 0;
     if (camera_feedback.location.initialised() && !camera_feedback.location.get_alt_cm(Location::AltFrame::ABSOLUTE, altitude)) {
