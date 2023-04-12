@@ -618,15 +618,14 @@ bool AP_Mount::record_video(uint8_t instance, bool start_recording)
     return backend->record_video(start_recording);
 }
 
-// set camera zoom step.  returns true on success
-// zoom out = -1, hold = 0, zoom in = 1
-bool AP_Mount::set_zoom_step(uint8_t instance, int8_t zoom_step)
+// set zoom specified as a rate or percentage
+bool AP_Mount::set_zoom(uint8_t instance, AP_Camera::ZoomType zoom_type, float zoom_value)
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
         return false;
     }
-    return backend->set_zoom_step(zoom_step);
+    return backend->set_zoom(zoom_type, zoom_value);
 }
 
 // set focus in, out or hold.  returns true on success

@@ -625,11 +625,22 @@ bool AP_Mount_Siyi::record_video(bool start_recording)
     return ret;
 }
 
-// set camera zoom step.  returns true on success
-// zoom out = -1, hold = 0, zoom in = 1
-bool AP_Mount_Siyi::set_zoom_step(int8_t zoom_step)
+// set zoom specified as a rate or percentage
+bool AP_Mount_Siyi::set_zoom(AP_Camera::ZoomType zoom_type, float zoom_value)
 {
-    return send_1byte_packet(SiyiCommandId::MANUAL_ZOOM_AND_AUTO_FOCUS, (uint8_t)zoom_step);
+    if (zoom_type == AP_Camera::ZoomType::RATE) {
+        uint8_t zoom_step = 0;
+        if (zoom_value > 0) {
+            zoom_step = 1;
+        }
+        if (zoom_value < 0) {
+            zoom_step = UINT8_MAX;
+        }
+        return send_1byte_packet(SiyiCommandId::MANUAL_ZOOM_AND_AUTO_FOCUS, zoom_step);
+    }
+
+    // unsupported zoom type
+    return false;
 }
 
 // set focus in, out or hold.  returns true on success
