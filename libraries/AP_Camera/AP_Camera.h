@@ -96,7 +96,7 @@ public:
     // MAVLink methods
     void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg);
     MAV_RESULT handle_command_long(const mavlink_command_long_t &packet);
-    void send_feedback(mavlink_channel_t chan) const;
+    void send_feedback(mavlink_channel_t chan);
 
     // configure camera
     void configure(float shooting_mode, float shutter_speed, float aperture, float ISO, float exposure_type, float cmd_id, float engine_cutoff_time);
@@ -143,8 +143,11 @@ public:
 #if AP_CAMERA_SCRIPTING_ENABLED
     // accessor to allow scripting backend to retrieve state
     // returns true on success and cam_state is filled in
-    bool get_state(uint8_t instance, camera_state_t& cam_state) const;
+    bool get_state(uint8_t instance, camera_state_t& cam_state);
 #endif
+
+    // allow threads to lock against AHRS update
+    HAL_Semaphore &get_semaphore() { return _rsem; }
 
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
@@ -177,6 +180,7 @@ private:
     // perform any required parameter conversion
     void convert_params();
 
+    HAL_Semaphore _rsem;                // semaphore for multi-thread access
     AP_Camera_Backend *primary;         // primary camera backed
     bool _is_in_auto_mode;              // true if in AUTO mode
     uint32_t log_camera_bit;            // logging bit (from LOG_BITMASK) to enable camera logging

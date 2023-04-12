@@ -51,7 +51,7 @@ public:
     bool set_auto_focus() override;
 
     // returns true on success and cam_state is filled in
-    bool get_state(camera_state_t& cam_state) const override;
+    bool get_state(camera_state_t& cam_state) override;
 
 private:
 
