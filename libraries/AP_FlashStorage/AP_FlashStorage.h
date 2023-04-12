@@ -59,7 +59,7 @@
   STM32H7 can only write in 32 byte chunks, and must only write when all bits are 1
  */
 #define AP_FLASHSTORAGE_TYPE AP_FLASHSTORAGE_TYPE_H7
-#elif defined(STM32G4) || defined(STM32L4)
+#elif defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
 /*
   STM32G4 can only write in 8 byte chunks, and must only write when all bits are 1
  */
