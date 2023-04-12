@@ -1,18 +1,18 @@
-mavlink_msgs = require("mavlink/mavlink_msgs")
+local mavlink_msgs = require("mavlink/mavlink_msgs")
 
-msg_map = {}
+local msg_map = {}
 
-heartbeat_msgid = mavlink_msgs.get_msgid("HEARTBEAT")
+local heartbeat_msgid = mavlink_msgs.get_msgid("HEARTBEAT")
 
 msg_map[heartbeat_msgid] = "HEARTBEAT"
 -- initialise mavlink rx with number of messages, and buffer depth
 mavlink.init(1, 10)
 -- register message id to receive
 mavlink.receive_msgid(heartbeat_msgid)
-test_named_value = 0.0
+local test_named_value = 0.0
 function str_to_bytes(str)
-    str_len = string.len(str)
-    bytes =  {}
+    local str_len = string.len(str)
+    local bytes =  {}
     for i = 1, str_len do
         bytes[i] = string.byte(str, i)
     end
@@ -21,7 +21,7 @@ end
 function update()
     local msg = mavlink.receive()
     if msg then
-        parsed_msg = mavlink_msgs.decode(msg, msg_map)
+        local parsed_msg = mavlink_msgs.decode(msg, msg_map)
         if parsed_msg.msgid == heartbeat_msgid then
             gcs:send_text(6, string.format("Received heartbeat from %d", parsed_msg.sysid))
         end
