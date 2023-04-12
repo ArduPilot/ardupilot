@@ -505,7 +505,7 @@ static void init_uarts(void)
 
     /* Baud rate setting.*/
     uint32_t fck;
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
     fck = (uint32_t)(((HAL_CRASH_SERIAL_PORT_CLOCK + ((HAL_CRASH_SERIAL_PORT_BAUD)/2)) / HAL_CRASH_SERIAL_PORT_BAUD));
 #else
 #if STM32_HAS_USART6
@@ -516,11 +516,11 @@ static void init_uarts(void)
         fck = (STM32_PCLK2+((HAL_CRASH_SERIAL_PORT_BAUD)/2)) / HAL_CRASH_SERIAL_PORT_BAUD;
     else
         fck = (STM32_PCLK1+((HAL_CRASH_SERIAL_PORT_BAUD)/2)) / HAL_CRASH_SERIAL_PORT_BAUD;
-#endif //defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#endif //defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
 
     u->BRR = fck;
 
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
     /* Resetting eventual pending status flags.*/
     u->ICR = 0xFFFFFFFFU;
 #else
@@ -545,7 +545,7 @@ int CrashCatcher_getc(void)
     static const char* wait_for_string = "dump_crash_log";
     uint8_t curr_off = 0;
     while (true) {
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
         while (!(USART_ISR_RXNE & u->ISR)) {}
         uint8_t c = u->RDR;
 #else
@@ -571,12 +571,12 @@ void CrashCatcher_putc(int c)
         init_uarts();
     }
     USART_TypeDef *u = HAL_CRASH_SERIAL_PORT;
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
     u->TDR = c & 0xFF;
 #else
     u->DR = c & 0xFF;
 #endif
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
     while (!(USART_ISR_TC & u->ISR)) {
 #else
     while (!(USART_SR_TC & u->SR)) {
