@@ -268,10 +268,9 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
 
     // @Param: FLARE_HGT
     // @DisplayName: Flare holdoff height
-    // @Description: When height above ground is below this, the sink rate will be held at TECS_LAND_SINK. Use this to perform a hold-of manoeuvre when combined with small values for TECS_LAND_SINK.
-    // @Range: -10 15
-    // @Units: deg
-    // @Increment: 1
+    // @Description: When height above ground is below this, the sink rate will be held at TECS_LAND_SINK. Use this to perform a hold-off manoeuvre when combined with small values for TECS_LAND_SINK.
+    // @Range: 0 15
+    // @Units: m
     // @User: Advanced
     AP_GROUPINFO("FLARE_HGT", 32, AP_TECS, _flare_holdoff_hgt, 1.0f),
 

@@ -478,11 +478,7 @@ def configure(cfg):
     cfg.load('clang_compilation_database')
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
-    if cfg.options.board in cfg.ap_periph_boards():
-        cfg.load('dronecangen')
-    else:
-        if cfg.options.force_32bit or (cfg.options.board != 'sitl' and cfg.options.board != 'linux'):
-            cfg.load('dronecangen')
+    cfg.load('dronecangen')
 
     cfg.env.SUBMODULE_UPDATE = cfg.options.submodule_update
 
@@ -669,22 +665,15 @@ def _build_dynamic_sources(bld):
             )
 
     if (bld.get_board().with_can or bld.env.HAL_NUM_CAN_IFACES) and not bld.env.AP_PERIPH:
-        if (not bld.env.FORCE32BIT) and (bld.env.BOARD == 'sitl' or bld.env.BOARD == 'linux'):
-            # remove generated files
-            dronecan_dir = bld.bldnode.make_node('modules/DroneCAN/libcanard/dsdlc_generated/').abspath()
-            if os.path.exists(dronecan_dir):
-                print("Removing DroneCAN generated files")
-                shutil.rmtree(dronecan_dir)
-        else:
-            bld(
-                features='dronecangen',
-                source=bld.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_DroneCAN/dsdl/*', dir=True, src=False),
-                output_dir='modules/DroneCAN/libcanard/dsdlc_generated/',
-                name='dronecan',
-                export_includes=[
-                    bld.bldnode.make_node('modules/DroneCAN/libcanard/dsdlc_generated/include').abspath(),
-                    bld.srcnode.find_dir('modules/DroneCAN/libcanard/').abspath(),
-                    bld.srcnode.find_dir('libraries/AP_DroneCAN/canard/').abspath(),
+        bld(
+            features='dronecangen',
+            source=bld.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_DroneCAN/dsdl/*', dir=True, src=False),
+            output_dir='modules/DroneCAN/libcanard/dsdlc_generated/',
+            name='dronecan',
+            export_includes=[
+                bld.bldnode.make_node('modules/DroneCAN/libcanard/dsdlc_generated/include').abspath(),
+                bld.srcnode.find_dir('modules/DroneCAN/libcanard/').abspath(),
+                bld.srcnode.find_dir('libraries/AP_DroneCAN/canard/').abspath(),
                 ]
             )
     elif bld.env.AP_PERIPH:

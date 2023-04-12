@@ -429,24 +429,16 @@ class Board:
             ]
 
         if self.with_can and not cfg.env.AP_PERIPH:
-            if not cfg.env.FORCE32BIT and (cfg.env.BOARD == 'sitl' or cfg.env.BOARD == 'linux'):
-                env.DEFINES.update(
-                    HAL_ENABLE_LIBUAVCAN_DRIVERS = 0
-                )
-            else:
-                env.AP_LIBRARIES += [
-                    'AP_DroneCAN',
-                    'modules/DroneCAN/libcanard/*.c',
-                    ]
+            env.AP_LIBRARIES += [
+                'AP_DroneCAN',
+                'modules/DroneCAN/libcanard/*.c',
+                ]
             if cfg.options.enable_dronecan_tests:
                 env.DEFINES.update(
                     AP_TEST_DRONECAN_DRIVERS = 1
                 )
 
             env.DEFINES.update(
-                UAVCAN_CPP_VERSION = 'UAVCAN_CPP03',
-                UAVCAN_NO_ASSERTIONS = 1,
-                UAVCAN_NULLPTR = 'nullptr',
                 DRONECAN_CXX_WRAPPERS = 1,
                 USE_USER_HELPERS = 1,
                 CANARD_ENABLE_DEADLINE = 1,
@@ -648,8 +640,6 @@ class sitl(Board):
 
         if self.with_can:
             cfg.define('HAL_NUM_CAN_IFACES', 2)
-            cfg.define('UAVCAN_EXCEPTIONS', 0)
-            cfg.define('UAVCAN_SUPPORT_CANFD', 1)
             env.DEFINES.update(CANARD_MULTI_IFACE=1,
                                CANARD_IFACE_ALL = 0x3,
                                 CANARD_ENABLE_CANFD = 1)
@@ -796,6 +786,7 @@ class sitl_periph_gps(sitl):
             AP_MISSION_ENABLED = 0,
             HAL_RALLY_ENABLED = 0,
             AP_SCHEDULER_ENABLED = 0,
+            CANARD_ENABLE_TAO_OPTION = 1,
             CANARD_ENABLE_CANFD = 1,
             CANARD_MULTI_IFACE = 1,
             HAL_CANMANAGER_ENABLED = 0,
@@ -809,17 +800,6 @@ class sitl_periph_gps(sitl):
             HAL_SUPPORT_RCOUT_SERIAL = 0,
             AP_CAN_SLCAN_ENABLED = 0,
         )
-        # libcanard is written for 32bit platforms
-        env.CXXFLAGS += [
-            '-m32',
-        ]
-        env.CFLAGS += [
-            '-m32',
-        ]
-        env.LDFLAGS += [
-            '-m32',
-        ]
-
 
 
 class esp32(Board):
@@ -1142,7 +1122,7 @@ class linux(Board):
             self.with_can = False
 
     def configure_env(self, cfg, env):
-        if cfg.options.board == 'linux' and cfg.options.force_32bit:
+        if cfg.options.board == 'linux':
             self.with_can = True
         super(linux, self).configure_env(cfg, env)
 
@@ -1189,11 +1169,9 @@ class linux(Board):
             env.DEFINES.update(
                 HAL_FORCE_32BIT = 0,
             )
-        if self.with_can and cfg.options.board == 'linux' and cfg.options.force_32bit:
+        if self.with_can and cfg.options.board == 'linux':
             cfg.env.HAL_NUM_CAN_IFACES = 2
             cfg.define('HAL_NUM_CAN_IFACES', 2)
-            cfg.define('UAVCAN_EXCEPTIONS', 0)
-            cfg.define('UAVCAN_SUPPORT_CANFD', 1)
             cfg.define('HAL_CANFD_SUPPORTED', 1)
             cfg.define('CANARD_ENABLE_CANFD', 1)
         

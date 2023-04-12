@@ -44,7 +44,7 @@ void AP_Proximity_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 }
 
 //Method to find the backend relating to the node id
-AP_Proximity_DroneCAN* AP_Proximity_DroneCAN::get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t address, bool create_new)
+AP_Proximity_DroneCAN* AP_Proximity_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t address, bool create_new)
 {
     if (ap_dronecan == nullptr) {
         return nullptr;
@@ -157,7 +157,7 @@ float AP_Proximity_DroneCAN::distance_min() const
 void AP_Proximity_DroneCAN::handle_measurement(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const ardupilot_equipment_proximity_sensor_Proximity &msg)
 {
     //fetch the matching DroneCAN driver, node id and sensor id backend instance
-    AP_Proximity_DroneCAN* driver = get_uavcan_backend(ap_dronecan, transfer.source_node_id, msg.sensor_id, true);
+    AP_Proximity_DroneCAN* driver = get_dronecan_backend(ap_dronecan, transfer.source_node_id, msg.sensor_id, true);
     if (driver == nullptr) {
         return;
     }

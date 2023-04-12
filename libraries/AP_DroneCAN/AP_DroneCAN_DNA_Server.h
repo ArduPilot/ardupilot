@@ -2,7 +2,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/Semaphores.h>
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_ENABLE_DRONECAN_DRIVERS
 #include <AP_Common/Bitmask.h>
 #include <StorageManager/StorageManager.h>
 #include <AP_CANManager/AP_CANManager.h>

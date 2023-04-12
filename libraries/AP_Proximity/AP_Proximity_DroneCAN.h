@@ -5,7 +5,7 @@
 #include <AP_DroneCAN/AP_DroneCAN.h>
 
 #ifndef AP_PROXIMITY_DRONECAN_ENABLED
-#define AP_PROXIMITY_DRONECAN_ENABLED (HAL_ENABLE_LIBUAVCAN_DRIVERS && HAL_PROXIMITY_ENABLED)
+#define AP_PROXIMITY_DRONECAN_ENABLED (HAL_ENABLE_DRONECAN_DRIVERS && HAL_PROXIMITY_ENABLED)
 #endif
 
 #if AP_PROXIMITY_DRONECAN_ENABLED
@@ -24,7 +24,7 @@ public:
     float distance_min() const override;
 
 
-   static AP_Proximity_DroneCAN* get_uavcan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t address, bool create_new);
+   static AP_Proximity_DroneCAN* get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t address, bool create_new);
 
 
     static void subscribe_msgs(AP_DroneCAN* ap_dronecan);

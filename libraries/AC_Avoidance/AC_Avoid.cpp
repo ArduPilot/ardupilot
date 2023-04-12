@@ -126,9 +126,11 @@ void AC_Avoid::adjust_velocity_fence(float kP, float accel_cmss, Vector3f &desir
 {   
     // Only horizontal component needed for most fences, since fences are 2D
     Vector2f desired_velocity_xy_cms{desired_vel_cms.x, desired_vel_cms.y};
-    
+
+#if AP_FENCE_ENABLED || AP_BEACON_ENABLED
     // limit acceleration
     const float accel_cmss_limited = MIN(accel_cmss, AC_AVOID_ACCEL_CMSS_MAX);
+#endif
 
     // maximum component of desired  backup velocity in each quadrant 
     Vector2f quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel;

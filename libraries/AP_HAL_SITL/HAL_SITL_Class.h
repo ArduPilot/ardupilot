@@ -47,7 +47,7 @@ private:
     void setup_signal_handlers() const;
     static void exit_signal_handler(int);
 
-    bool storage_posix_enabled;
+    bool storage_posix_enabled = true;
     bool storage_flash_enabled;
     bool storage_fram_enabled;
 
