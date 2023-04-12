@@ -1986,7 +1986,8 @@ class AutoTest(ABC):
         self.progress("Rebooting SITL")
         self.reboot_sitl_mav(required_bootcount=required_bootcount, force=force)
         self.do_heartbeats(force=True)
-        self.assert_simstate_location_is_at_startup_location()
+        if self.frame != 'sailboat':  # sailboats drift with wind!
+            self.assert_simstate_location_is_at_startup_location()
 
     def reboot_sitl_mavproxy(self, required_bootcount=None):
         """Reboot SITL instance using MAVProxy and wait for it to reconnect."""
@@ -7879,7 +7880,6 @@ Also, ignores heartbeats not from our target system'''
             passed = False
         elif not passed:  # implicit reboot after a failed test:
             self.progress("Test failed but ArduPilot process alive; rebooting")
-            self.progress("Force-rebooting SITL")
             self.reboot_sitl() # that'll learn it
 
         if self._mavproxy is not None:
