@@ -99,6 +99,8 @@ public:
         return control_mode_reason;
     }
 
+    virtual bool current_mode_requires_mission() const { return false; }
+
     // perform any notifications required to indicate a mode change
     // failed due to a bad mode number being supplied.  This can
     // happen for many reasons - bad mavlink packet and bad mode
