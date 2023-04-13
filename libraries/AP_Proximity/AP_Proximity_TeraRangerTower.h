@@ -1,8 +1,11 @@
 #pragma once
 
+#include "AP_Proximity_config.h"
+
+#if AP_PROXIMITY_TERARANGERTOWER_ENABLED
+
 #include "AP_Proximity_Backend_Serial.h"
 
-#if HAL_PROXIMITY_ENABLED
 #define PROXIMITY_TRTOWER_TIMEOUT_MS            300                               // requests timeout after 0.3 seconds
 
 class AP_Proximity_TeraRangerTower : public AP_Proximity_Backend_Serial
@@ -33,4 +36,4 @@ private:
     uint32_t _last_distance_received_ms;    // system time of last distance measurement received from sensor
 };
 
-#endif // HAL_PROXIMITY_ENABLED
+#endif // AP_PROXIMITY_TERARANGERTOWER_ENABLED

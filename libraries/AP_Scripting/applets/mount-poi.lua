@@ -18,9 +18,9 @@
 --   9. repeat step 6, 7 and 8 until the test_loc's altitude falls below the terrain altitude
 --  10. interpolate between test_loc and prev_test_loc to find the lat, lon, alt (above sea-level) where alt-above-terrain is zero
 --  11. display the POI to the user
--- luacheck: only 0
 
 -- global definitions
+local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 local ALT_FRAME_ABSOLUTE = 0
 local UPDATE_INTERVAL_MS = 100
 
@@ -29,15 +29,19 @@ local PARAM_TABLE_KEY = 78
 assert(param:add_table(PARAM_TABLE_KEY, "POI_", 1), "could not add param table")
 assert(param:add_param(PARAM_TABLE_KEY, 1, "DIST_MAX", 10000), "could not add POI_DIST_MAX param")
 
-local poi_dist_max = Parameter()
-assert(poi_dist_max:init("POI_DIST_MAX"), "could not find POI_DIST_MAX param")
+--[[
+  // @Param: POI_DIST_MAX
+  // @DisplayName: Mount POI distance max
+  // @Description: POI's max distance (in meters) from the vehicle
+  // @Range: 0 10000
+  // @User: Standard
+--]]
+local POI_DIST_MAX = Parameter("POI_DIST_MAX")
 
 -- bind to other parameters this script depends upon
 TERRAIN_SPACING = Parameter("TERRAIN_SPACING")
 
 -- local variables and definitions
-local user_update_interval_ms = 10000   -- send user updates every 10 sec
-local last_user_update_ms = 0           -- system time that update was last sent to user
 local last_rc_switch_pos = 0            -- last known rc switch position.  Used to detect change in RC switch position
 
 -- helper functions
@@ -81,13 +85,10 @@ end
 -- the main update function that performs a simplified version of RTL
 function update()
 
-  -- get current system time
-  local now_ms = millis()
-
   -- find RC channel used to trigger POI
   rc_switch_ch = rc:find_channel_for_option(300) --scripting ch 1
   if (rc_switch_ch == nil) then
-      gcs:send_text(3, 'MountPOI: RCx_OPTION = 300 not set')    -- MAV_SEVERITY_ERROR
+      gcs:send_text(MAV_SEVERITY.ERROR, 'MountPOI: RCx_OPTION = 300 not set')    -- MAV_SEVERITY_ERROR
       return update, 10000  -- check again in 10 seconds
   end
 
@@ -108,7 +109,7 @@ function update()
   -- retrieve vehicle location
   local vehicle_loc = ahrs:get_location()
   if vehicle_loc == nil then
-    gcs:send_text(3, "POI: vehicle pos unavailable") -- MAV_SEVERITY_ERROR
+    gcs:send_text(MAV_SEVERITY.ERROR, "POI: vehicle pos unavailable") -- MAV_SEVERITY_ERROR
     return update, UPDATE_INTERVAL_MS
   end
   
@@ -116,9 +117,9 @@ function update()
   vehicle_loc:change_alt_frame(ALT_FRAME_ABSOLUTE)
 
   -- retrieve gimbal attitude
-  local roll_deg, pitch_deg, yaw_bf_deg = mount:get_attitude_euler(0)
+  local _, pitch_deg, yaw_bf_deg = mount:get_attitude_euler(0)
   if pitch_deg == nil or yaw_bf_deg == nil then
-    gcs:send_text(3, "POI: gimbal attitude unavailable") -- MAV_SEVERITY_ERROR
+    gcs:send_text(MAV_SEVERITY.ERROR, "POI: gimbal attitude unavailable") -- MAV_SEVERITY_ERROR
     return update, UPDATE_INTERVAL_MS
   end
 
@@ -133,7 +134,7 @@ function update()
 
   -- fail if terrain alt cannot be retrieved
   if terrain_amsl_m == nil then
-    gcs:send_text(3, "POI: failed to get terrain alt") -- MAV_SEVERITY_ERROR
+    gcs:send_text(MAV_SEVERITY.ERROR, "POI: failed to get terrain alt") -- MAV_SEVERITY_ERROR
     return update, UPDATE_INTERVAL_MS
   end
 
@@ -144,7 +145,7 @@ function update()
 
   -- initialise total distance test_loc has moved
   local total_dist = 0
-  local dist_max = poi_dist_max:get()
+  local dist_max = POI_DIST_MAX:get()
 
   -- iteratively move test_loc forward until its alt-above-sea-level is below terrain-alt-above-sea-level
   while (total_dist < dist_max) and ((test_loc:alt() * 0.01) > terrain_amsl_m) do
@@ -162,24 +163,23 @@ function update()
 
     -- fail if terrain alt cannot be retrieved
     if terrain_amsl_m == nil then
-      gcs:send_text(3, "POI: failed to get terrain alt") -- MAV_SEVERITY_ERROR
+      gcs:send_text(MAV_SEVERITY.ERROR, "POI: failed to get terrain alt") -- MAV_SEVERITY_ERROR
       return update, UPDATE_INTERVAL_MS
     end
   end
 
   -- check for errors
   if (total_dist >= dist_max) then
-    gcs:send_text(3, "POI: unable to find terrain within " .. tostring(dist_max) .. " m")
+    gcs:send_text(MAV_SEVERITY.ERROR, "POI: unable to find terrain within " .. tostring(dist_max) .. " m")
   elseif not terrain_amsl_m then
-    gcs:send_text(3, "POI: failed to retrieve terrain alt")
+    gcs:send_text(MAV_SEVERITY.ERROR, "POI: failed to retrieve terrain alt")
   else
     -- test location has dropped below terrain
     -- interpolate along line between prev_test_loc and test_loc
     local dist_interp_m = interpolate(0, dist_increment_m, 0, prev_test_loc:alt() * 0.01 - prev_terrain_amsl_m, test_loc:alt() * 0.01 - terrain_amsl_m)
     local poi_loc = prev_test_loc:copy()
     poi_loc:offset_bearing_and_pitch(mount_yaw_ef_deg, mount_pitch_deg, dist_interp_m)
-    local poi_terr_asml_m = terrain:height_amsl(poi_loc, true) 
-    gcs:send_text(6, string.format("POI %.7f, %.7f, %.2f (asml)", poi_loc:lat()/10000000.0, poi_loc:lng()/10000000.0, poi_loc:alt() * 0.01))
+    gcs:send_text(MAV_SEVERITY.INFO, string.format("POI %.7f, %.7f, %.2f (asml)", poi_loc:lat()/10000000.0, poi_loc:lng()/10000000.0, poi_loc:alt() * 0.01))
   end
 
   return update, UPDATE_INTERVAL_MS

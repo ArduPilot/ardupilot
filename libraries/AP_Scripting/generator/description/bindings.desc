@@ -602,7 +602,21 @@ singleton AP_Mount method get_rate_target boolean uint8_t'skip_check float'Null 
 singleton AP_Mount method get_angle_target boolean uint8_t'skip_check float'Null float'Null float'Null boolean'Null
 singleton AP_Mount method get_location_target boolean uint8_t'skip_check Location'Null
 singleton AP_Mount method set_attitude_euler void uint8_t'skip_check float'skip_check float'skip_check float'skip_check
-singleton AP_Mount method get_camera_state boolean uint8_t'skip_check uint16_t'Null boolean'Null int8_t'Null int8_t'Null boolean'Null
+
+include AP_Camera/AP_Camera.h
+singleton AP_Camera depends AP_CAMERA_ENABLED == 1
+singleton AP_Camera rename camera
+singleton AP_Camera semaphore
+singleton AP_Camera method take_picture void uint8_t'skip_check
+singleton AP_Camera method record_video boolean uint8_t'skip_check boolean
+singleton AP_Camera method set_trigger_distance void uint8_t'skip_check float'skip_check
+userdata camera_state_t depends (AP_CAMERA_SCRIPTING_ENABLED == 1)
+userdata camera_state_t field take_pic_incr uint16_t'skip_check read
+userdata camera_state_t field recording_video boolean read
+userdata camera_state_t field zoom_step int8_t'skip_check read
+userdata camera_state_t field focus_step int8_t'skip_check read
+userdata camera_state_t field auto_focus boolean read
+singleton AP_Camera method get_state boolean uint8_t'skip_check camera_state_t'Null
 
 include AP_Winch/AP_Winch.h
 singleton AP_Winch depends AP_WINCH_ENABLED && APM_BUILD_COPTER_OR_HELI
