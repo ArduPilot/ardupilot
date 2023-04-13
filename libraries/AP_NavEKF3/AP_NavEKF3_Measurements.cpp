@@ -453,6 +453,21 @@ void NavEKF3_core::readIMUData()
     Matrix3F deltaRotMat;
     imuQuatDownSampleNew.rotation_matrix(deltaRotMat);
 
+    // correct for the acceleration due to the IMU position offset and angular acceleration
+    // correct for the centripetal acceleration
+    if (!accelPosOffset.is_zero()) {
+        // calculate sensed acceleration due to lever arm effect
+        // Note: the % operator has been overloaded to provide a cross product
+        const Vector3F angAccel = imuDataNew.delAng * (1.0/imuDataNew.delAngDT);
+        const Vector3F lever_arm_accel = angAccel % accelPosOffset;
+
+        // calculate sensed acceleration due to centripetal acceleration
+        const Vector3F centripetal_accel = imuDataNew.delAng % (imuDataNew.delAng % accelPosOffset);
+
+        // apply corrections
+        imuDataNew.delVel -= lever_arm_accel + centripetal_accel;
+    }
+
     // Apply the delta velocity to the delta velocity accumulator
     imuDataDownSampledNew.delVel += deltaRotMat*imuDataNew.delVel;
 
