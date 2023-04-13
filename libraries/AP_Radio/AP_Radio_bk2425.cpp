@@ -378,7 +378,7 @@ void AP_Radio_beken::trigger_irq_radio_event()
 }
 
 // ----------------------------------------------------------------------------
-void AP_Radio_beken::trigger_timeout_event(void *arg)
+void AP_Radio_beken::trigger_timeout_event(virtual_timer_t* vt, void *arg)
 {
     (void)arg;
     //we are called from ISR context
