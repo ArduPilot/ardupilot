@@ -293,7 +293,12 @@ void AP_OpticalFlow_UPFLOW::init()
 
     // uint32_t nbytes = 0;
     uint8_t bcc_sum = 0;
-    // uint8_t recv_buf[3];
+    uint8_t recv_buf[3];
+
+    //delay 100ms before initialization
+    hal.scheduler->delay(100);
+    
+    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UPFLOW: Start initialization!");
 
     // (0xAA)start configuration
     uart->write((uint8_t)0xAA);
@@ -305,14 +310,15 @@ void AP_OpticalFlow_UPFLOW::init()
         bcc_sum ^= upflow_internal_para[i];
     }
     uart->write(bcc_sum);
-    // for (int i = 0; i < 3; i++) {
-    //     recv_buf[i] = uart->read();
-    // }
-    // // if failed to receive response code, you can start over from 0xAA.
-    // if ((recv_buf[0] ^ recv_buf[1]) != recv_buf[2]) {
-    //     UPFLOW_INIT_FAILED;
-    //     return;
-    // }
+    hal.scheduler->delay(10);
+    for (int i = 0; i < 3; i++) {
+        recv_buf[i] = uart->read();
+    }
+    // if failed to receive response code, you can start over from 0xAA.
+    if ((recv_buf[0] ^ recv_buf[1]) != recv_buf[2]) {
+        UPFLOW_INIT_FAILED;
+        return;
+    }
 
     // (0xBB)sensor parameter configuration
     uint32_t cfg_cnt = 0;
@@ -322,21 +328,22 @@ void AP_OpticalFlow_UPFLOW::init()
         uart->write(upflow_sensor_cfg[cfg_cnt]); // address
         uart->write(upflow_sensor_cfg[cfg_cnt + 1]); // data
         uart->write(UPFLOW_SENSOR_IIC_ADDR ^ upflow_sensor_cfg[cfg_cnt] ^ upflow_sensor_cfg[cfg_cnt + 1]);
-        // for (int i = 0; i < 3; i++) {
-        //     recv_buf[i] = uart->read();
-        // }
-        // // if failed to receive response code, you can start over from 0xBB.
-        // if ((recv_buf[0] ^ recv_buf[1]) != recv_buf[2]) {
-        //     UPFLOW_INIT_FAILED;
-        //     return;
-        // }
+        hal.scheduler->delay(10);
+        for (int i = 0; i < 3; i++) {
+            recv_buf[i] = uart->read();
+        }
+        // if failed to receive response code, you can start over from 0xBB.
+        if ((recv_buf[0] ^ recv_buf[1]) != recv_buf[2]) {
+            UPFLOW_INIT_FAILED;
+            return;
+        }
         cfg_cnt += 2;
     }
 
     // (0xDD)End configuration
     uart->write((uint8_t)0xDD);
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UPFLOW: initialized successfully!");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UPFLOW: initialized Done!");
 }
 
 // read latest values from sensor and fill in x,y and totals.
