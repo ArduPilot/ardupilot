@@ -3619,7 +3619,7 @@ float QuadPlane::forward_throttle_pct()
     vel_forward.integrator += fwd_vel_error * deltat * vel_forward.gain * 100;
 
     // inhibit to minimum throttle unless fwd_thr_min is set
-    int8_t fwd_throttle_min;
+    int8_t fwd_throttle_min = 0;
     if (fwd_thr_min < 0) {
         fwd_throttle_min = fwd_thr_min;
     } else {
