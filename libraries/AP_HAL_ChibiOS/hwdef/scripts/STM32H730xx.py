@@ -44,7 +44,7 @@ mcu = {
         (0x24044000,  16, 4), # non-cacheable AXI SRAM. Use this for SDMMC IDMA ops.
 		(0x30000000,  32, 0), # SRAM1, SRAM2
         (0x20000000,  64, 2), # DTCM, tightly coupled, no DMA, fast
-        (0x38000000,  16, 1), # SRAM4. Use this for DMA and BDMA ops.
+        (0x38000000,  16, 1), # non-cacheable SRAM4. Use this for DMA and BDMA ops.
     ],
     'INSTRUCTION_RAM' : (0x00000400,  63), # ITCM (first 1k removed, to keep address 0 unused)
     'FLASH_RAM' : 		(0x24048000,  32), # AXI SRAM used for process stack and ram functions
@@ -56,13 +56,21 @@ mcu = {
     'RAM_MAP_BOOTLOADER' : [
         (0x20000000, 128, 2), # DTCM, tightly coupled, no DMA, fast
         (0x30000000,  32, 0), # SRAM1, SRAM2
-        (0x24000000, 240, 0), # AXI SRAM.
-        (0x2403C000,  16, 4), # non-cacheable AXI SRAM. Use this for SDMMC IDMA ops.
+        (0x24000000, 272, 0), # AXI SRAM.
+        (0x24044000,  16, 4), # non-cacheable AXI SRAM. Use this for SDMMC IDMA ops.
         (0x00000400,  63, 2), # ITCM (first 1k removed, to keep address 0 unused)
         (0x38000000,  16, 1), # SRAM4.
     ],
 
     'EXPECTED_CLOCK' : 400000000,
+    
+	'EXPECTED_CLOCKS' : [
+		('STM32_SYS_CK',	520000000),
+		('STM32_OSPICLK', 	200000000),
+		('STM32_SDMMC1CLK',  86666666),
+		('STM32_SPI45CLK',  100000000),
+		('STM32_FDCANCLK',   86666666),
+	],
 
     # this MCU has M7 instructions and hardware double precision
     'CORTEX'    : 'cortex-m7',
