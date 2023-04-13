@@ -1005,11 +1005,10 @@ def write_mcu_config(f):
     env_vars['EXT_FLASH_SIZE_MB'] = get_config('EXT_FLASH_SIZE_MB', default=0, type=int)
     env_vars['INT_FLASH_PRIMARY'] = get_config('INT_FLASH_PRIMARY', default=False, type=bool)
     if env_vars['EXT_FLASH_SIZE_MB'] and not args.bootloader and not env_vars['INT_FLASH_PRIMARY']:
-        f.write('#define CRT0_AREAS_NUMBER 3\n')
+        f.write('#define CRT0_AREAS_NUMBER 4\n')
         f.write('#define CRT1_RAMFUNC_ENABLE TRUE\n') # this will enable loading program sections to RAM
         f.write('#define __FASTRAMFUNC__ __attribute__ ((__section__(".fastramfunc")))\n')
-        if not mcu_type.startswith('STM32H730'):
-            f.write('#define __RAMFUNC__ __attribute__ ((__section__(".ramfunc")))\n')
+        f.write('#define __RAMFUNC__ __attribute__ ((__section__(".ramfunc")))\n')
         f.write('#define PORT_IRQ_ATTRIBUTES __FASTRAMFUNC__\n')
     else:
         f.write('#define CRT0_AREAS_NUMBER 1\n')
@@ -1372,8 +1371,8 @@ MEMORY
     default_flash (rx) : org = 0x%08x, len = %uK
     instram : org = 0x%08x, len = %uK
     ram0  : org = 0x%08x, len = %u
-    ram1  : org = 0x%08x, len = %u
-    ram2  : org = 0x%08x, len = %u
+    flashram  : org = 0x%08x, len = %u
+    dataram  : org = 0x%08x, len = %u
 }
 
 INCLUDE common.ld

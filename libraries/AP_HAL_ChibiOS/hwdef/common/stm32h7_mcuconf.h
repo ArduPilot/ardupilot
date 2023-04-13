@@ -81,7 +81,7 @@
 // enable memory protection on part of AXI used for SDMMC
 #if defined(STM32H730xx)
 #define STM32_NOCACHE_MPU_REGION_2          MPU_REGION_4
-#define STM32_NOCACHE_MPU_REGION_2_BASE     0x2403C000
+#define STM32_NOCACHE_MPU_REGION_2_BASE     0x24044000
 #define STM32_NOCACHE_MPU_REGION_2_SIZE     MPU_RASR_SIZE_16K
 #endif
 /*

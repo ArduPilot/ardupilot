@@ -79,7 +79,7 @@ mcu = {
         'STM32H7' : '1',
     },
 
-    'LINKER_CONFIG' : 'common_extf.ld'
+    'LINKER_CONFIG' : 'common_extf_h750.ld'
 }
 
 pincount = {
