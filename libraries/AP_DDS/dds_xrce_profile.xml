@@ -58,4 +58,32 @@
       </historyQos>
     </topic>
   </data_writer>
+  <topic profile_name="statictransforms__t">
+    <name>rt/tf</name>
+    <dataType>tf2_msgs::msg::dds_::TFMessage_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>1</depth>
+    </historyQos>
+  </topic>
+  <data_writer profile_name="statictransforms__dw">
+    <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+    <qos>
+      <reliability>
+        <kind>RELIABLE</kind>
+      </reliability>
+      <durability>
+        <kind>TRANSIENT_LOCAL</kind>
+      </durability>
+    </qos>
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/tf</name>
+      <dataType>tf2_msgs::msg::dds_::TFMessage_</dataType>
+      <historyQos>
+        <kind>KEEP_LAST</kind>
+        <depth>1</depth>
+      </historyQos>
+    </topic>
+  </data_writer>
 </profiles>

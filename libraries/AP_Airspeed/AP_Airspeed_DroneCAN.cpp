@@ -13,11 +13,6 @@ extern const AP_HAL::HAL& hal;
 AP_Airspeed_DroneCAN::DetectedModules AP_Airspeed_DroneCAN::_detected_modules[];
 HAL_Semaphore AP_Airspeed_DroneCAN::_sem_registry;
 
-// constructor
-AP_Airspeed_DroneCAN::AP_Airspeed_DroneCAN(AP_Airspeed &_frontend, uint8_t _instance) :
-    AP_Airspeed_Backend(_frontend, _instance)
-{}
-
 void AP_Airspeed_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
     if (ap_dronecan == nullptr) {

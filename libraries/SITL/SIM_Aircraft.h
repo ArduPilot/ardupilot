@@ -176,7 +176,7 @@ protected:
     Vector3f accel_body{0.0f, 0.0f, -GRAVITY_MSS}; // m/s/s NED, body frame
     float airspeed;                      // m/s, apparent airspeed
     float airspeed_pitot;                // m/s, apparent airspeed, as seen by fwd pitot tube
-    float battery_voltage = -1.0f;
+    float battery_voltage = 0.0f;
     float battery_current;
     float local_ground_level;            // ground level at local position
     bool lock_step_scheduled;

@@ -976,17 +976,59 @@ function winch:relax() end
 function winch:healthy() end
 
 -- desc
----@class mount
-mount = {}
+---@class camera
+camera = {}
 
 -- desc
----@param param1 integer
----@return integer|nil  -- pic_count
----@return boolean|nil  -- record_video
----@return integer|nil  -- zoom_step
----@return integer|nil  -- focus_step
----@return boolean|nil  -- auto_focus
-function mount:get_camera_state(param1) end
+---@param instance integer
+---@param distance_m number
+function camera:set_trigger_distance(instance, distance_m) end
+
+-- desc
+---@param instance integer
+---@param start_recording boolean
+---@return boolean
+function camera:record_video(instance, start_recording) end
+
+-- desc
+---@param instance integer
+function camera:take_picture(instance) end
+
+-- desc
+---@class camera_state_t_ud
+local camera_state_t_ud = {}
+
+---@return camera_state_t_ud
+function camera_state_t() end
+
+-- get field
+---@return boolean
+function camera_state_t_ud:auto_focus() end
+
+-- get field
+---@return integer
+function camera_state_t_ud:focus_step() end
+
+-- get field
+---@return integer
+function camera_state_t_ud:zoom_step() end
+
+-- get field
+---@return boolean
+function camera_state_t_ud:recording_video() end
+
+-- get field
+---@return integer
+function camera_state_t_ud:take_pic_incr() end
+
+-- desc
+---@param instance integer
+---@return camera_state_t_ud|nil
+function camera:get_state(instance) end
+
+-- desc
+---@class mount
+mount = {}
 
 -- desc
 ---@param instance integer
