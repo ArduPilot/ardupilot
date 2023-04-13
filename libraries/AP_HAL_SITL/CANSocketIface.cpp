@@ -57,7 +57,8 @@ uint8_t CANIface::next_interface;
 
 static can_frame makeSocketCanFrame(const AP_HAL::CANFrame& uavcan_frame)
 {
-    can_frame sockcan_frame { uavcan_frame.id& AP_HAL::CANFrame::MaskExtID, uavcan_frame.dlc, { } };
+    can_frame sockcan_frame { uavcan_frame.id& AP_HAL::CANFrame::MaskExtID, uavcan_frame.dlc, { }, };
+    memset(sockcan_frame.data, 0, sizeof(sockcan_frame.data));
     std::copy(uavcan_frame.data, uavcan_frame.data + uavcan_frame.dlc, sockcan_frame.data);
     if (uavcan_frame.isExtended()) {
         sockcan_frame.can_id |= CAN_EFF_FLAG;
@@ -73,7 +74,8 @@ static can_frame makeSocketCanFrame(const AP_HAL::CANFrame& uavcan_frame)
 
 static canfd_frame makeSocketCanFDFrame(const AP_HAL::CANFrame& uavcan_frame)
 {
-    canfd_frame sockcan_frame { uavcan_frame.id& AP_HAL::CANFrame::MaskExtID, AP_HAL::CANFrame::dlcToDataLength(uavcan_frame.dlc), CANFD_BRS, 0, 0, { } };
+    canfd_frame sockcan_frame { uavcan_frame.id& AP_HAL::CANFrame::MaskExtID, AP_HAL::CANFrame::dlcToDataLength(uavcan_frame.dlc), CANFD_BRS, 0, 0, { }, };
+    memset(sockcan_frame.data, 0, sizeof(sockcan_frame.data));
     std::copy(uavcan_frame.data, uavcan_frame.data + AP_HAL::CANFrame::dlcToDataLength(uavcan_frame.dlc), sockcan_frame.data);
     if (uavcan_frame.isExtended()) {
         sockcan_frame.can_id |= CAN_EFF_FLAG;
@@ -104,7 +106,7 @@ static AP_HAL::CANFrame makeCanFrame(const can_frame& sockcan_frame)
 
 static AP_HAL::CANFrame makeCanFDFrame(const canfd_frame& sockcan_frame)
 {
-    AP_HAL::CANFrame can_frame(sockcan_frame.can_id & CAN_EFF_MASK, sockcan_frame.data, sockcan_frame.len);
+    AP_HAL::CANFrame can_frame(sockcan_frame.can_id & CAN_EFF_MASK, sockcan_frame.data, sockcan_frame.len, true);
     if (sockcan_frame.can_id & CAN_EFF_FLAG) {
         can_frame.id |= AP_HAL::CANFrame::FlagEFF;
     }
@@ -339,16 +341,11 @@ bool CANIface::_pollRead()
     uint8_t iterations_count = 0;
     while (iterations_count < CAN_MAX_POLL_ITERATIONS_COUNT)
     {
-        iterations_count++;
         CanRxItem rx;
         rx.timestamp_us = AP_HAL::native_micros64();  // Monotonic timestamp is not required to be precise (unlike UTC)
         bool loopback = false;
         int res;
-        if (iterations_count % 2 == 0) {
-            res = _read(rx.frame, rx.timestamp_us, loopback);
-        } else {
-            res = _readfd(rx.frame, rx.timestamp_us, loopback);
-        }
+        res = _read(rx.frame, rx.timestamp_us, loopback);
         if (res == 1) {
             bool accept = true;
             if (loopback) {           // We receive loopback for all CAN frames
@@ -409,76 +406,20 @@ int CANIface::_read(AP_HAL::CANFrame& frame, uint64_t& timestamp_us, bool& loopb
     if (_fd < 0) {
         return -1;
     }
-    auto iov = iovec();
-    auto sockcan_frame = can_frame();
-    iov.iov_base = &sockcan_frame;
-    iov.iov_len  = sizeof(sockcan_frame);
     union {
-        uint8_t data[CMSG_SPACE(sizeof(::timeval))];
-        struct cmsghdr align;
-    } control;
+        can_frame frame;
+        canfd_frame frame_fd;
+    } frames;
 
-    auto msg = msghdr();
-    msg.msg_iov    = &iov;
-    msg.msg_iovlen = 1;
-    msg.msg_control = control.data;
-    msg.msg_controllen = sizeof(control.data);
-
-    const int res = recvmsg(_fd, &msg, MSG_DONTWAIT);
+    const int res = read(_fd, &frames, sizeof(frames));
     if (res <= 0) {
         return (res < 0 && errno == EWOULDBLOCK) ? 0 : res;
     }
-    /*
-     * Flags
-     */
-    loopback = (msg.msg_flags & static_cast<int>(MSG_CONFIRM)) != 0;
-
-    if (!loopback && !_checkHWFilters(sockcan_frame)) {
-        return 0;
+    if (res == sizeof(can_frame)) {
+        frame = makeCanFrame(frames.frame);
+    } else {
+        frame = makeCanFDFrame(frames.frame_fd);
     }
-
-    frame = makeCanFrame(sockcan_frame);
-    /*
-     * Timestamp
-     */
-    timestamp_us = AP_HAL::native_micros64();
-    return 1;
-}
-
-int CANIface::_readfd(AP_HAL::CANFrame& frame, uint64_t& timestamp_us, bool& loopback) const
-{
-    if (_fd < 0) {
-        return -1;
-    }
-    auto iov = iovec();
-    auto sockcan_frame = canfd_frame();
-    iov.iov_base = &sockcan_frame;
-    iov.iov_len  = sizeof(sockcan_frame);
-    union {
-        uint8_t data[CMSG_SPACE(sizeof(::timeval))];
-        struct cmsghdr align;
-    } control;
-
-    auto msg = msghdr();
-    msg.msg_iov    = &iov;
-    msg.msg_iovlen = 1;
-    msg.msg_control = control.data;
-    msg.msg_controllen = sizeof(control.data);
-
-    const int res = recvmsg(_fd, &msg, MSG_DONTWAIT);
-    if (res <= 0) {
-        return (res < 0 && errno == EWOULDBLOCK) ? 0 : res;
-    }
-    /*
-     * Flags
-     */
-    loopback = (msg.msg_flags & static_cast<int>(MSG_CONFIRM)) != 0;
-
-    if (!loopback && !_checkHWFilters(sockcan_frame)) {
-        return 0;
-    }
-
-    frame = makeCanFDFrame(sockcan_frame);
     /*
      * Timestamp
      */

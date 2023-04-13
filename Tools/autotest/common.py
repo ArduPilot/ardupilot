@@ -1986,7 +1986,8 @@ class AutoTest(ABC):
         self.progress("Rebooting SITL")
         self.reboot_sitl_mav(required_bootcount=required_bootcount, force=force)
         self.do_heartbeats(force=True)
-        self.assert_simstate_location_is_at_startup_location()
+        if self.frame != 'sailboat':  # sailboats drift with wind!
+            self.assert_simstate_location_is_at_startup_location()
 
     def reboot_sitl_mavproxy(self, required_bootcount=None):
         """Reboot SITL instance using MAVProxy and wait for it to reconnect."""
@@ -7858,6 +7859,9 @@ Also, ignores heartbeats not from our target system'''
             passed = False
             reset_needed = True
 
+        # if we haven't already reset ArduPilot because it's dead,
+        # then ensure the vehicle was disarmed at the end of the test.
+        # If it wasn't then the test is considered failed:
         if ardupilot_alive and self.armed() and not self.is_tracker():
             if ex is None:
                 ex = ArmedAtEndOfTestException("Still armed at end of test")
@@ -7874,6 +7878,9 @@ Also, ignores heartbeats not from our target system'''
                 self.progress("Force-rebooting SITL")
                 self.reboot_sitl() # that'll learn it
             passed = False
+        elif not passed:  # implicit reboot after a failed test:
+            self.progress("Test failed but ArduPilot process alive; rebooting")
+            self.reboot_sitl() # that'll learn it
 
         if self._mavproxy is not None:
             self.progress("Stopping auto-started mavproxy")
@@ -11665,10 +11672,12 @@ switch value'''
                 0,
                 want_result=mavutil.mavlink.MAV_RESULT_FAILED
             )
-            self.wait_statustext("PreArm: Motors Emergency Stopped", check_context=True)
+            self.assert_prearm_failure("Motors Emergency Stopped",
+                                       other_prearm_failures_fatal=False)
             self.reboot_sitl()
-            self.delay_sim_time(10)
-            self.assert_prearm_failure("Motors Emergency Stopped")
+            self.assert_prearm_failure(
+                "Motors Emergency Stopped",
+                other_prearm_failures_fatal=False)
             self.context_pop()
             self.reboot_sitl()
 

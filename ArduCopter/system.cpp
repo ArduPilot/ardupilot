@@ -159,7 +159,7 @@ void Copter::init_ardupilot()
     g2.proximity.init();
 #endif
 
-#if BEACON_ENABLED == ENABLED
+#if AP_BEACON_ENABLED
     // init beacons used for non-gps position estimation
     g2.beacon.init();
 #endif

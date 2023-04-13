@@ -80,10 +80,6 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
     if (checks_to_perform == 0) {
         return true;
     }
-    if (SRV_Channels::get_emergency_stop()) {
-        check_failed(report, "Motors Emergency Stopped");
-        return false;
-    }
 
     if (rover.g2.sailboat.sail_enabled() && !rover.g2.windvane.enabled()) {
         check_failed(report, "Sailing enabled with no WindVane");

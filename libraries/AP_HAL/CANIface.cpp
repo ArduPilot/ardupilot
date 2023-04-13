@@ -105,6 +105,7 @@ AP_HAL::CANFrame::CANFrame(uint32_t can_id, const uint8_t* can_data, uint8_t dat
         return;
     }
     memcpy(this->data, can_data, data_len);
+    memset(&this->data[data_len], 0, MaxDataLen-data_len);
     if (data_len <= NonFDCANMaxDataLen) {
         dlc = data_len;
     } else {

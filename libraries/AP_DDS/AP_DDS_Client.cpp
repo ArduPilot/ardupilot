@@ -3,6 +3,7 @@
 #if AP_DDS_ENABLED
 
 #include <AP_GPS/AP_GPS.h>
+#include <AP_HAL/AP_HAL.h>
 #include <AP_RTC/AP_RTC.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <GCS_MAVLink/GCS.h>
@@ -10,9 +11,12 @@
 #include "AP_DDS_Client.h"
 #include "generated/Time.h"
 
+
 static constexpr uint16_t DELAY_TIME_TOPIC_MS = 10;
 static constexpr uint16_t DELAY_NAV_SAT_FIX_TOPIC_MS = 1000;
 static char WGS_84_FRAME_ID[] = "WGS-84";
+// https://www.ros.org/reps/rep-0105.html#base-link
+static char BASE_LINK_FRAME_ID[] = "base_link";
 
 AP_HAL::UARTDriver *dds_port;
 
@@ -120,6 +124,52 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
     msg.position_covariance[8] = vdopSq;
 }
 
+#include "generated/TransformStamped.h"
+
+void AP_DDS_Client::populate_static_transforms(tf2_msgs_msg_TFMessage& msg)
+{
+    msg.transforms_size = 0;
+
+    auto &gps = AP::gps();
+    for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+        const auto gps_type = gps.get_type(i);
+        if (gps_type == AP_GPS::GPS_Type::GPS_TYPE_NONE) {
+            continue;
+        }
+        update_topic(msg.transforms[i].header.stamp);
+        char gps_frame_id[16];
+        //! @todo should GPS frame ID's be 0 or 1 indexed in ROS?
+        hal.util->snprintf(gps_frame_id, sizeof(gps_frame_id), "GPS_%u", i);
+        strcpy(msg.transforms[i].header.frame_id, BASE_LINK_FRAME_ID);
+        strcpy(msg.transforms[i].child_frame_id, gps_frame_id);
+        // The body-frame offsets
+        // X - Forward
+        // Y - Right
+        // Z - Down
+        // https://ardupilot.org/copter/docs/common-sensor-offset-compensation.html#sensor-position-offset-compensation
+
+        const auto offset = gps.get_antenna_offset(i);
+
+        // In ROS REP 103, it follows this convention
+        // X - Forward
+        // Y - Left
+        // Z - Up
+        // https://www.ros.org/reps/rep-0103.html#axis-orientation
+
+        msg.transforms[i].transform.translation.x = offset[0];
+        msg.transforms[i].transform.translation.y = -1 * offset[1];
+        msg.transforms[i].transform.translation.z = -1 * offset[2];
+
+        msg.transforms_size++;
+    }
+
+    // msg.transforms[0] = transform;
+
+
+
+    // const auto offset = AP::GPS::
+}
+
 
 /*
   class constructor
@@ -143,6 +193,10 @@ void AP_DDS_Client::main_loop(void)
         return;
     }
     GCS_SEND_TEXT(MAV_SEVERITY_INFO,"DDS Client: Initialization passed");
+
+    populate_static_transforms(static_transforms_topic);
+    write_static_transforms();
+
     while (true) {
         hal.scheduler->delay(1);
         update();
@@ -273,6 +327,21 @@ void AP_DDS_Client::write_nav_sat_fix_topic()
         const uint32_t topic_size = sensor_msgs_msg_NavSatFix_size_of_topic(&nav_sat_fix_topic, 0);
         uxr_prepare_output_stream(&session,reliable_out,topics[1].dw_id,&ub,topic_size);
         const bool success = sensor_msgs_msg_NavSatFix_serialize_topic(&ub, &nav_sat_fix_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        }
+    }
+}
+
+void AP_DDS_Client::write_static_transforms()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub;
+        const uint32_t topic_size = tf2_msgs_msg_TFMessage_size_of_topic(&static_transforms_topic, 0);
+        uxr_prepare_output_stream(&session,reliable_out,topics[2].dw_id,&ub,topic_size);
+        const bool success = tf2_msgs_msg_TFMessage_serialize_topic(&ub, &static_transforms_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
             // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");

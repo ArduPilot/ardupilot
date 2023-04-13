@@ -1,5 +1,6 @@
 #include "generated/Time.h"
 #include "generated/NavSatFix.h"
+#include "generated/TransformStamped.h"
 
 
 #include "AP_DDS_Generic_Fn_T.h"
@@ -30,5 +31,15 @@ const struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .serialize = Generic_serialize_topic_fn_t(&sensor_msgs_msg_NavSatFix_serialize_topic),
         .deserialize = Generic_deserialize_topic_fn_t(&sensor_msgs_msg_NavSatFix_deserialize_topic),
         .size_of = Generic_size_of_topic_fn_t(&sensor_msgs_msg_NavSatFix_size_of_topic),
+    },
+    {
+        .topic_id = 0x03,
+        .pub_id = 0x03,
+        .dw_id = uxrObjectId{.id=0x03, .type=UXR_DATAWRITER_ID},
+        .topic_profile_label = "statictransforms__t",
+        .dw_profile_label = "statictransforms__dw",
+        .serialize = Generic_serialize_topic_fn_t(&tf2_msgs_msg_TFMessage_serialize_topic),
+        .deserialize = Generic_deserialize_topic_fn_t(&tf2_msgs_msg_TFMessage_deserialize_topic),
+        .size_of = Generic_size_of_topic_fn_t(&tf2_msgs_msg_TFMessage_size_of_topic),
     },
 };

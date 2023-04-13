@@ -42,7 +42,7 @@ protected:
     // Internal state for this driver (before copying to frontend)
     EFI_State internal_state;
 
-    int8_t get_uavcan_node_id(void) const;
+    int8_t get_dronecan_node_id(void) const;
     float get_coef1(void) const;
     float get_coef2(void) const;
     float get_ecu_fuel_density(void) const;
