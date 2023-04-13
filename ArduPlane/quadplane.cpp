@@ -3542,14 +3542,14 @@ float QuadPlane::forward_throttle_pct()
             float fwd_thr;
 
             if (fwd_thr_min < 0){
-                fwd_thr = rc_fwd_thr_ch->norm_input()*100.0f;
+                fwd_thr = rc_fwd_thr_ch->norm_input();
             } else {
-                fwd_thr = rc_fwd_thr_ch->percent_input();
+                fwd_thr = rc_fwd_thr_ch->percent_input() * 0.01;
             }
             if (!is_negative(fwd_thr)) {
-                fwd_thr *= 0.01 * constrain_float(fwd_thr_max, 0, 100);
+                fwd_thr *= constrain_float(fwd_thr_max, 0, 100);
             } else {
-                fwd_thr *= 0.01 * constrain_float(-fwd_thr_min, 0, 100);
+                fwd_thr *= constrain_float(-fwd_thr_min, 0, 100);
             }
             
             return fwd_thr;
