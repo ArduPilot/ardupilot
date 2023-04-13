@@ -26,11 +26,11 @@ REGION_ALIAS("FASTCODE_RAM", flashram)
    better performance can be achieved by using DTCM for stack but this will break SSBL. */
 /* RAM region to be used for Main stack. This stack accommodates the processing
    of all exceptions and interrupts*/
-REGION_ALIAS("MAIN_STACK_RAM", ram0);
+REGION_ALIAS("MAIN_STACK_RAM", flashram);
 
 /* RAM region to be used for the process stack. This is the stack used by
    the main() function.*/
-REGION_ALIAS("PROCESS_STACK_RAM", ram0);
+REGION_ALIAS("PROCESS_STACK_RAM", flashram);
 
 /* RAM region to be used for data segment.*/
 REGION_ALIAS("DATA_RAM", ram0);
@@ -95,7 +95,7 @@ SECTIONS
         __fini_array_end__ = .;
     } > default_flash
 
-    /* INSTRUCTION_RAM area is fast-access ITCM used for RAM-based code, 63k on H730 */
+    /* INSTRUCTION_RAM area is fast-access ITCM used for RAM-based code, 64k on H7 */
     .fastramfunc : ALIGN(4) SUBALIGN(4)
     {
         . = ALIGN(4);
@@ -117,9 +117,6 @@ SECTIONS
         lib/lib*.a:AP_Math.*(.text*)
         lib/lib*.a:vector3.*(.text*)
         lib/lib*.a:matrix3.*(.text*)
-        /* the attitude controller runs at loop rate and needs to be optimized */
-        lib/lib*.a:AC_AttitudeControl*.*(.text*)
-        lib/lib*.a:AC_PID*.*(.text*)
         /* only used on debug builds */
         /**libg_nano.a:*memset*(.text*)
         *libg_nano.a:*memcpy*(.text*)*/
@@ -149,21 +146,31 @@ SECTIONS
         __ram1_init_text__ = LOADADDR(.ramfunc);
         __ram1_init__ = .;
         /* a selection of larger performance critical functions */
-        lib/lib*.a:LowPassFilter2p.*(.text* .rodata*)
-        lib/lib*.a:LowPassFilter.*(.text* .rodata*)
-        lib/lib*.a:NotchFilter.*(.text* .rodata*)
-        lib/lib*.a:HarmonicNotchFilter.*(.text* .rodata*)
+        lib/lib*.a:*Filter.*(.text* .rodata*)
+        lib/lib*.a:*Filter2p.*(.text* .rodata*)
+        lib/lib*.a:SPIDevice.*(.text* .rodata*)
+        lib/lib*.a:I2CDevice.*(.text* .rodata*)
         lib/lib*.a:Util.*(.text* .rodata*)
         lib/lib*.a:Device.*(.text* .rodata*)
         lib/lib*.a:Scheduler.*(.text* .rodata*)
-        lib/lib*.a:RingBuffer.*(.text* .rodata*)
         lib/lib*.a:shared_dma.*(.text* .rodata*)
+        lib/lib*.a:RingBuffer.*(.text* .rodata*)
         lib/lib*.a:crc.*(.text* .rodata*)
         lib/lib*.a:matrixN.*(.text* .rodata*)
         lib/lib*.a:matrix_alg.*(.text* .rodata*)
+        lib/lib*.a:AP_NavEKF3*.*(.text* .rodata*)
+        lib/lib*.a:AP_NavEKF_*.*(.text* .rodata*)
+        lib/lib*.a:EKF*.*(.text* .rodata*)
+        lib/lib*.a:AP_Compass_Backend.*(.text* .rodata*)
+        lib/lib*.a:AP_RCProtocol_Backend.*(.text* .rodata*)
+        lib/lib*.a:AP_RCProtocol.*(.text* .rodata*)
+        lib/lib*.a:AP_RCProtocol_CRSF.*(.text* .rodata*)
+        lib/lib*.a:AP_RCTelemetry.*(.text* .rodata*)
+        lib/lib*.a:AP_CRSF_Telem.*(.text* .rodata*)
         lib/lib*.a:vector2.*(.text* .rodata*)
         lib/lib*.a:quaternion.*(.text* .rodata*)
         lib/lib*.a:polygon.*(.text* .rodata*)
+        lib/lib*.a:flash.*(.text* .rodata*) /* flash ops in RAM so that both banks can be erased */
         /* uncomment these to test CPUInfo in FLASH_RAM */
         /*Tools/CPUInfo/CPUInfo.*(.text* .rodata*)
         Tools/CPUInfo/EKF_Maths.*(.text* .rodata*)*/
@@ -182,7 +189,7 @@ SECTIONS
         . = ALIGN(4);
     } > flashram
 
-    /* DATA_RAM area is DTCM primarily used for RAM-based data, e.g. vtables. 64k on H730 */
+    /* DATA_RAM area is DTCM primarily used for RAM-based data, e.g. vtables */
     .ramdata : ALIGN(4)
     {
         . = ALIGN(4);
@@ -191,8 +198,6 @@ SECTIONS
         /* performance critical sections of ChibiOS */
         /* ChibiOS won't boot unless these are excluded */
         EXCLUDE_FILE (*vectors.o *crt0_v7m.o *crt1.o) *libch.a:ch*.*(.rodata*)
-        /* performance critical sections of ChibiOS */
-        *libch.a:ch*.*(.rodata*)
         *libch.a:nvic.*(.rodata*)
         *libch.a:bouncebuffer.*(.rodata*)
         *libch.a:stm32_util.*(.rodata*)
@@ -207,18 +212,6 @@ SECTIONS
         lib/lib*.a:vector3.*(.rodata*)
         lib/lib*.a:matrix3.*(.rodata*)
         *libm.a:*(.rodata*)
-        lib/lib*.a:AC_AttitudeControl*.*(.rodata*)
-        lib/lib*.a:AC_PID*.*(.rodata*)
-        /* fill up remaining DTCM with other hot functions, esp EKF */
-        lib/lib*.a:ModeFilter.*(.text* .rodata*)
-        lib/lib*.a:DerivativeFilter.*(.text* .rodata*)
-        lib/lib*.a:SlewLimiter.*(.text* .rodata*)
-        lib/lib*.a:AP_NavEKF3_core.*(.text* .rodata*)
-        lib/lib*.a:AP_NavEKF3_Outputs.*(.text* .rodata*)
-        lib/lib*.a:AP_NavEKF3_Measurements.*(.text* .rodata*)
-        lib/lib*.a:EKF*.*(.text* .rodata*)
-         /* flash ops in RAM so that both banks can be erased */
-        lib/lib*.a:flash.*(.text* .rodata*)
         *(.ramdata*)
         . = ALIGN(4);
     } > dataram AT > default_flash
@@ -242,6 +235,7 @@ SECTIONS
         KEEP(*libch.a:crt0_v7m.o);
         KEEP(*libch.a:crt1.o);
         KEEP(*libch.a:board.o);
+        KEEP(*(.apsec_data));
         KEEP(*(.app_descriptor));
         *(.text)
         *(.text.*)
