@@ -3620,9 +3620,9 @@ float QuadPlane::forward_throttle_pct()
 
     // inhibit to minimum throttle unless fwd_thr_min is set
     int8_t fwd_throttle_min;
-    if (fwd_thr_min < 0){
+    if (fwd_thr_min < 0) {
         fwd_throttle_min = fwd_thr_min;
-    } else{
+    } else {
         fwd_throttle_min = plane.have_reverse_thrust() ? 0 : plane.aparm.throttle_min;
     }
     vel_forward.integrator = constrain_float(vel_forward.integrator, fwd_throttle_min, plane.aparm.throttle_cruise);
