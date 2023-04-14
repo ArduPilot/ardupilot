@@ -52,4 +52,14 @@ const struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .deserialize = Generic_deserialize_topic_fn_t(&sensor_msgs_msg_BatteryState_deserialize_topic),
         .size_of = Generic_size_of_topic_fn_t(&sensor_msgs_msg_BatteryState_size_of_topic),
     },
+    {
+        .topic_id = 0x05,
+        .pub_id = 0x05,
+        .dw_id = uxrObjectId{.id=0x05, .type=UXR_DATAWRITER_ID},
+        .topic_profile_label = "localpose__t",
+        .dw_profile_label = "localpose__dw",
+        .serialize = Generic_serialize_topic_fn_t(&geometry_msgs_msg_PoseStamped_serialize_topic),
+        .deserialize = Generic_deserialize_topic_fn_t(&geometry_msgs_msg_PoseStamped_deserialize_topic),
+        .size_of = Generic_size_of_topic_fn_t(&geometry_msgs_msg_PoseStamped_size_of_topic),
+    },
 };
