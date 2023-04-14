@@ -762,8 +762,25 @@ void Scheduler::expect_delay_ms(uint32_t ms)
 void Scheduler::watchdog_pat(void)
 {
     stm32_watchdog_pat();
+#if defined(HAL_GPIO_PIN_WDI_OUT)
+    external_watchdog_pat();
+#endif
     last_watchdog_pat_ms = AP_HAL::millis();
 }
+
+#if defined(HAL_GPIO_PIN_WDI_OUT)
+// pat the watchdog for external output
+void Scheduler::external_watchdog_pat(void)
+{
+    uint32_t now = AP_HAL::millis();
+    // outputs a signal at WDI_OUT_TIMER_INTERVAL_MS (ms) intervals
+    if ((now - _ext_watchdog_ms) >= (WDI_OUT_TIMER_INTERVAL_MS / 2)) {
+        // switch as pulse output
+        palToggleLine(HAL_GPIO_PIN_WDI_OUT);
+        _ext_watchdog_ms = now;
+    }
+}
+#endif
 
 #if CH_DBG_ENABLE_STACK_CHECK == TRUE
 /*

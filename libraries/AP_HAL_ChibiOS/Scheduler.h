@@ -171,6 +171,11 @@ private:
     binary_semaphore_t _io_semaphore;
 #endif
 
+#if defined(HAL_GPIO_PIN_WDI_OUT)
+    int _ext_watchdog_ms;
+    void external_watchdog_pat();
+#endif
+
     // calculates an integer to be used as the priority for a newly-created thread
     uint8_t calculate_thread_priority(priority_base base, int8_t priority) const;
 
