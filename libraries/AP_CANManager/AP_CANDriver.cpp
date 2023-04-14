@@ -21,7 +21,6 @@
 
 #include <AP_DroneCAN/AP_DroneCAN.h>
 #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
-#include "AP_CANTester.h"
 #include <AP_KDECAN/AP_KDECAN.h>
 
 
@@ -31,7 +30,7 @@ const AP_Param::GroupInfo AP_CANManager::CANDriver_Params::var_info[] = {
     // @Param: PROTOCOL
     // @DisplayName: Enable use of specific protocol over virtual driver
     // @Description: Enabling this option starts selected protocol that will use this virtual driver
-    // @Values: 0:Disabled,1:DroneCAN,4:PiccoloCAN,5:CANTester,6:EFI_NWPMU,7:USD1,8:KDECAN,10:Scripting,11:Benewake,12:Scripting2
+    // @Values: 0:Disabled,1:DroneCAN,4:PiccoloCAN,6:EFI_NWPMU,7:USD1,8:KDECAN,10:Scripting,11:Benewake,12:Scripting2
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("PROTOCOL", 1, AP_CANManager::CANDriver_Params, _driver_type, AP_CANManager::Driver_Type_DroneCAN),
@@ -43,12 +42,8 @@ const AP_Param::GroupInfo AP_CANManager::CANDriver_Params::var_info[] = {
 #endif
 
     // index 3 was KDECAN
-    
-#if HAL_NUM_CAN_IFACES > 1 && !HAL_MINIMIZE_FEATURES && HAL_ENABLE_CANTESTER
-    // @Group: TST_
-    // @Path: ../AP_CANManager/AP_CANTester.cpp
-    AP_SUBGROUPPTR(_testcan, "TST_", 4, AP_CANManager::CANDriver_Params, CANTester),
-#endif
+
+    // index 4 was CANTester
 
 #if HAL_PICCOLO_CAN_ENABLE
     // @Group: PC_
