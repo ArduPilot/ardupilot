@@ -7,7 +7,7 @@
 #define STM32_UNKNOWN 0
 
 mcu_des_t mcu_descriptions[] = {
-    { STM32_UNKNOWN,     "STM32G4??",    '?'},
+    { STM32_UNKNOWN,     "STM32G4??" },
 };
 
 const mcu_rev_t silicon_revs[] = {
