@@ -10,6 +10,7 @@
 #include "sensor_msgs/msg/NavSatFix.h"
 #include "tf2_msgs/msg/TFMessage.h"
 #include "sensor_msgs/msg/BatteryState.h"
+#include "geometry_msgs/msg/PoseStamped.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Scheduler.h>
@@ -46,6 +47,7 @@ private:
     sensor_msgs_msg_NavSatFix nav_sat_fix_topic;
     tf2_msgs_msg_TFMessage static_transforms_topic;
     sensor_msgs_msg_BatteryState battery_state_topic;
+    geometry_msgs_msg_PoseStamped local_pose_topic;
 
     HAL_Semaphore csem;
 
@@ -56,6 +58,7 @@ private:
     bool update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t instance) WARN_IF_UNUSED;
     static void populate_static_transforms(tf2_msgs_msg_TFMessage& msg);
     static void update_topic(sensor_msgs_msg_BatteryState& msg, const uint8_t instance);
+    static void update_topic(geometry_msgs_msg_PoseStamped& msg);
 
     // The last ms timestamp AP_DDS wrote a Time message
     uint64_t last_time_time_ms;
@@ -63,6 +66,8 @@ private:
     uint64_t last_nav_sat_fix_time_ms;
     // The last ms timestamp AP_DDS wrote a BatteryState message
     uint64_t last_battery_state_time_ms;
+    // The last ms timestamp AP_DDS wrote a Local Pose message
+    uint64_t last_local_pose_time_ms;
 
 
 public:
@@ -88,6 +93,8 @@ public:
     void write_static_transforms();
     //! @brief Serialize the current nav_sat_fix state and publish it to the IO stream(s)
     void write_battery_state_topic();
+    //! @brief Serialize the current local pose and publish to the IO stream(s)
+    void write_local_pose_topic();
     //! @brief Update the internally stored DDS messages with latest data
     void update();
 
