@@ -320,7 +320,7 @@ private:
     void handle_button(const CanardRxTransfer& transfer, const ardupilot_indication_Button& msg);
     void handle_traffic_report(const CanardRxTransfer& transfer, const ardupilot_equipment_trafficmonitor_TrafficReport& msg);
     void handle_actuator_status(const CanardRxTransfer& transfer, const uavcan_equipment_actuator_Status& msg);
-    void handle_actuator_status_Volz(const CanardRxTransfer& transfer, const uavcan_equipment_actuator_Status& msg);
+    void handle_actuator_status_Volz(const CanardRxTransfer& transfer, const com_volz_servo_ActuatorStatus& msg);
     void handle_ESC_status(const CanardRxTransfer& transfer, const uavcan_equipment_esc_Status& msg);
     static bool is_esc_data_index_valid(const uint8_t index);
     void handle_debug(const CanardRxTransfer& transfer, const uavcan_protocol_debug_LogMessage& msg);

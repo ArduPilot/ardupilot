@@ -762,6 +762,9 @@ def get_flash_pages_sizes():
         return [ 128 ] * (get_config('FLASH_SIZE_KB', type=int)//128)
     elif mcu_series.startswith('STM32F100') or mcu_series.startswith('STM32F103'):
         return [ 1 ] * get_config('FLASH_SIZE_KB', type=int)
+    elif mcu_series.startswith('STM32L4') and mcu_type.startswith('STM32L4R'):
+        # STM32L4PLUS
+        return [ 4 ] * (get_config('FLASH_SIZE_KB', type=int)//4)
     elif (mcu_series.startswith('STM32F105') or
           mcu_series.startswith('STM32F3') or
           mcu_series.startswith('STM32G4') or

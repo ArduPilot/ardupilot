@@ -446,6 +446,14 @@ bool Copter::has_ekf_failsafed() const
 
 #endif // AP_SCRIPTING_ENABLED
 
+bool Copter::current_mode_requires_mission() const
+{
+#if MODE_AUTO_ENABLED == ENABLED
+        return flightmode == &mode_auto;
+#else
+        return false;
+#endif
+}
 
 // rc_loops - reads user input from transmitter/receiver
 // called at 100hz

@@ -646,13 +646,10 @@ def start_antenna_tracker(opts):
     oldpwd = os.getcwd()
     os.chdir(vehicledir)
     tracker_uarta = "tcp:127.0.0.1:" + str(5760 + 10 * tracker_instance)
-    if cmd_opts.build_system == "waf":
-        binary_basedir = "build/sitl"
-        exe = os.path.join(root_dir,
-                           binary_basedir,
-                           "bin/antennatracker")
-    else:
-        exe = os.path.join(vehicledir, "AntennaTracker.elf")
+    binary_basedir = "build/sitl"
+    exe = os.path.join(root_dir,
+                       binary_basedir,
+                       "bin/antennatracker")
     run_in_terminal_window("AntennaTracker",
                            ["nice",
                             exe,
@@ -1048,11 +1045,6 @@ group_build.add_option("-b", "--build-target",
                        default=None,
                        type='string',
                        help="override SITL build target")
-group_build.add_option("-s", "--build-system",
-                       default="waf",
-                       type='choice',
-                       choices=["make", "waf"],
-                       help="build system to use")
 group_build.add_option("--enable-math-check-indexes",
                        default=False,
                        action="store_true",
@@ -1540,13 +1532,11 @@ if True:
 
     if cmd_opts.vehicle_binary is not None:
         vehicle_binary = cmd_opts.vehicle_binary
-    elif cmd_opts.build_system == "waf":
+    else:
         binary_basedir = "build/sitl"
         vehicle_binary = os.path.join(root_dir,
                                       binary_basedir,
                                       frame_infos["waf_target"])
-    else:
-        vehicle_binary = os.path.join(vehicle_dir, cmd_opts.vehicle + ".elf")
 
     if not os.path.exists(vehicle_binary):
         print("Vehicle binary (%s) does not exist" % (vehicle_binary,))

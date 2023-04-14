@@ -7309,6 +7309,19 @@ class AutoTest(ABC):
         # Check fence is not enabled
         self.assert_not_receiving_message('FENCE_STATUS', timeout=timeout)
 
+    def NoArmWithoutMissionItems(self):
+        '''ensure we can't arm in auto mode without mission items present'''
+        # load a trivial mission
+        items = []
+        items.append((mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 20000),)
+        items.append((mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0))
+        self.upload_simple_relhome_mission(items)
+
+        self.change_mode('AUTO')
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
+        self.assert_prearm_failure('Mode requires mission',
+                                   other_prearm_failures_fatal=False)
+
     def assert_prearm_failure(self,
                               expected_statustext,
                               timeout=5,

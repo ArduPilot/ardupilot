@@ -4571,6 +4571,7 @@ class AutoTestPlane(AutoTest):
             self.MissionJumpTags,
             self.GCSFailsafe,
             self.SDCardWPTest,
+            self.NoArmWithoutMissionItems,
         ])
         return ret
 

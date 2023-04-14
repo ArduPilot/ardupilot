@@ -53,6 +53,7 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
@@ -855,6 +856,15 @@ bool AP_Arming::mission_checks(bool report)
         check_failed(ARMING_CHECK_MISSION, report, "Failed to open %s", AP_MISSION_SDCARD_FILENAME);
     }
 #endif
+
+    // do not allow arming if there are no mission items and we are in
+    // (e.g.) AUTO mode
+    if (AP::vehicle()->current_mode_requires_mission() &&
+        (mission == nullptr || mission->num_commands() <= 1)) {
+        check_failed(ARMING_CHECK_MISSION, report, "Mode requires mission");
+        return false;
+    }
+
     return true;
 }
 

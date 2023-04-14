@@ -316,6 +316,9 @@ jump_to_app()
 #elif defined(STM32L4)
     rccDisableAPB1R1(~0);
     rccDisableAPB1R2(~0);
+#elif defined(STM32L4PLUS)
+    rccDisableAPB1R1(~0);
+    rccDisableAPB1R2(~0);
 #else
     rccDisableAPB1(~0);
 #endif

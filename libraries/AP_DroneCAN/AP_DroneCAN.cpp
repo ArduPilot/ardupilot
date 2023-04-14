@@ -71,10 +71,6 @@ extern const AP_HAL::HAL& hal;
 #define AP_DRONECAN_VOLZ_FEEDBACK_ENABLED 0
 #endif
 
-#if AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
-#include <com/volz/servo/ActuatorStatus.hpp>
-#endif
-
 #define debug_dronecan(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "DroneCAN", fmt, ##args); } while (0)
 
 // Translation of all messages from DroneCAN structures into AP structures is done
@@ -1054,7 +1050,7 @@ void AP_DroneCAN::handle_actuator_status(const CanardRxTransfer& transfer, const
 }
 
 #if AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
-void AP_DroneCAN::handle_actuator_status_Volz(AP_DroneCAN* ap_dronecan, uint8_t node_id, const ActuatorStatusVolzCb &cb)
+void AP_DroneCAN::handle_actuator_status_Volz(const CanardRxTransfer& transfer, const com_volz_servo_ActuatorStatus& msg)
 {
     AP::logger().WriteStreaming(
         "CVOL",
@@ -1063,12 +1059,12 @@ void AP_DroneCAN::handle_actuator_status_Volz(AP_DroneCAN* ap_dronecan, uint8_t 
         "F-00000",
         "QBfffBh",
         AP_HAL::native_micros64(),
-        cb.msg->actuator_id,
-        ToDeg(cb.msg->actual_position),
-        cb.msg->current * 0.025f,
-        cb.msg->voltage * 0.2f,
-        cb.msg->motor_pwm * (100.0/255.0),
-        int16_t(cb.msg->motor_temperature) - 50);
+        msg.actuator_id,
+        ToDeg(msg.actual_position),
+        msg.current * 0.025f,
+        msg.voltage * 0.2f,
+        msg.motor_pwm * (100.0/255.0),
+        int16_t(msg.motor_temperature) - 50);
 }
 #endif
 
