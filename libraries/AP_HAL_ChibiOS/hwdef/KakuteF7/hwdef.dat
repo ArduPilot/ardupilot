@@ -134,7 +134,6 @@ IMU Invensense SPI:mpu6000 ROTATION_YAW_180
 
 # one BARO
 BARO BMP280 I2C:0:0x76
-define HAL_PROBE_EXTERNAL_I2C_BAROS
 define HAL_BARO_ALLOW_INIT_NO_BARO
 
 define HAL_OS_FATFS_IO 1
@@ -164,6 +163,10 @@ undef HAL_WITH_MSP_DISPLAYPORT
 define HAL_WITH_MSP_DISPLAYPORT 1
 undef HAL_MSP_ENABLED
 define HAL_MSP_ENABLED 1
+
+# need to probe external baros even 'though we're minimised:
+undef AP_BARO_PROBE_EXTERNAL_I2C_BUSES
+define AP_BARO_PROBE_EXTERNAL_I2C_BUSES 1
 
 # reduce max size of embedded params for apj_tool.py
 define AP_PARAM_MAX_EMBEDDED_PARAM 1024

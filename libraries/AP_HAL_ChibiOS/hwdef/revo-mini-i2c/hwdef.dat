@@ -136,9 +136,6 @@ IMU Invensense SPI:mpu6000 ROTATION_YAW_180
 # one baro
 BARO MS56XX I2C:0:0x77
 
-# also allow for probing of external barometers
-define HAL_PROBE_EXTERNAL_I2C_BAROS
-
 # look for internal I2C compass
 COMPASS HMC5843 I2C:0:0x1E false ROTATION_YAW_270
 
