@@ -95,7 +95,6 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(can_slcan_cport, "CAN_SLCAN_CPORT", 1),
 #endif
 
-#if HAL_NUM_CAN_IFACES >= 2
     // @Param: CAN_PROTOCOL
     // @DisplayName: Enable use of specific protocol to be used on this port
     // @Description: Enabling this option starts selected protocol that will use this virtual driver. At least one CAN port must be UAVCAN or else CAN1 gets set to UAVCAN
@@ -103,7 +102,8 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     GARRAY(can_protocol,     0, "CAN_PROTOCOL", AP_CANManager::Driver_Type_DroneCAN),
-    
+
+#if HAL_NUM_CAN_IFACES >= 2
     // @Param: CAN2_BAUDRATE
     // @DisplayName: Bitrate of CAN2 interface
     // @Description: Bit rate can be set up to from 10000 to 1000000
