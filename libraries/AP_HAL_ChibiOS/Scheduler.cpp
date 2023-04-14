@@ -769,13 +769,13 @@ void Scheduler::watchdog_pat(void)
 }
 
 #if defined(HAL_GPIO_PIN_WDI_OUT)
-// pat the watchdog for external output
+// pat the external watchdog
 void Scheduler::external_watchdog_pat(void)
 {
     uint32_t now = AP_HAL::millis();
-    // outputs a signal at WDI_OUT_INTERVAL_TIME_MS (ms) intervals
+    // signal toggle interval time WDI_OUT_INTERVAL_TIME_MS defined in hwdef.dat
     if ((now - _ext_watchdog_ms) >= (WDI_OUT_INTERVAL_TIME_MS / 2)) {
-        // switch as pulse output
+        // output a pulse signal
         palToggleLine(HAL_GPIO_PIN_WDI_OUT);
         _ext_watchdog_ms = now;
     }
