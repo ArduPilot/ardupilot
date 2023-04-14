@@ -62,7 +62,7 @@ public:
         // 2 was KDECAN -- do not re-use
         // 3 was ToshibaCAN -- do not re-use
         Driver_Type_PiccoloCAN = 4,
-        Driver_Type_CANTester = 5,
+        // 5 was CANTester
         Driver_Type_EFI_NWPMU = 6,
         Driver_Type_USD1 = 7,
         Driver_Type_KDECAN = 8,

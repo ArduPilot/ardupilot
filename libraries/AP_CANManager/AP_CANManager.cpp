@@ -29,7 +29,6 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 #include <AP_EFI/AP_EFI_NWPMU.h>
-#include "AP_CANTester.h"
 #include <GCS_MAVLink/GCS.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/CANSocketIface.h>
@@ -225,17 +224,6 @@ void AP_CANManager::init()
             }
 
             AP_Param::load_object_from_eeprom((AP_PiccoloCAN*)_drivers[drv_num], AP_PiccoloCAN::var_info);
-        } else
-#endif
-#if HAL_NUM_CAN_IFACES > 1 && !HAL_MINIMIZE_FEATURES && HAL_ENABLE_CANTESTER
-        if (drv_type[drv_num] == Driver_Type_CANTester) {
-            _drivers[drv_num] = _drv_param[drv_num]._testcan = new CANTester;
-
-            if (_drivers[drv_num] == nullptr) {
-                AP_BoardConfig::allocation_error("CANTester %d", drv_num + 1);
-                continue;
-            }
-            AP_Param::load_object_from_eeprom((CANTester*)_drivers[drv_num], CANTester::var_info);
         } else
 #endif
         {
