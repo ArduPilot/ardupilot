@@ -317,7 +317,12 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
         canard_iface.process(1000);
     }
 
-    snprintf(_thread_name, sizeof(_thread_name), "dronecan_%u", driver_index);
+    int ret = snprintf(_thread_name, sizeof(_thread_name), "dronecan_%u", driver_index);
+    // Check return value of snprintf to avoid warning from -Wformat-truncation
+    if ((ret < 0) || (ret >= (int)sizeof(_thread_name))) {
+        debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: thread name longer than _thread_name\n\r");
+        return;
+    }
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_DroneCAN::loop, void), _thread_name, DRONECAN_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_CAN, 0)) {
         debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: couldn't create thread\n\r");
