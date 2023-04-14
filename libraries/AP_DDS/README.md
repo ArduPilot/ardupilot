@@ -38,9 +38,9 @@ While DDS support in Ardupilot is mostly through git submodules, another tool ne
   ```console
   sudo apt install default-jre
   ````
-- Follow instructions [here](https://micro-xrce-dds.docs.eprosima.com/en/latest/installation.html#installing-the-micro-xrce-dds-gen-tool) to install the latest version of the generator
+- Follow instructions [here](https://micro-xrce-dds.docs.eprosima.com/en/latest/installation.html#installing-the-micro-xrce-dds-gen-tool) to install the latest version of the generator using Ardupilot's mirror
   ```console
-  git clone --recurse-submodules https://github.com/eProsima/Micro-XRCE-DDS-Gen.git
+  git clone --recurse-submodules https://github.com/ardupilot/Micro-XRCE-DDS-Gen.git
   cd Micro-XRCE-DDS-Gen
   ./gradlew assemble
   ```
