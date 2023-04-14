@@ -18,7 +18,7 @@
 #if AP_PROXIMITY_TERARANGERTOWEREVO_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
-#include "AP_Proximity_TeraRangerTowerEvo.h"
+#include "AP_Proximity_TeraRangerHub.h"
 
 #include <AP_Math/crc.h>
 #include <ctype.h>
@@ -27,7 +27,7 @@
 extern const AP_HAL::HAL& hal;
 
 // update the state of the sensor
-void AP_Proximity_TeraRangerTowerEvo::update(void)
+void AP_Proximity_TeraRangerHub::update(void)
 {
     if (_uart == nullptr) {
         return;
@@ -53,16 +53,16 @@ void AP_Proximity_TeraRangerTowerEvo::update(void)
 }
 
 // get maximum and minimum distances (in meters) of primary sensor
-float AP_Proximity_TeraRangerTowerEvo::distance_max() const
+float AP_Proximity_TeraRangerHub::distance_max() const
 {
     return params.max_m;
 }
-float AP_Proximity_TeraRangerTowerEvo::distance_min() const
+float AP_Proximity_TeraRangerHub::distance_min() const
 {
     return params.min_m;
 }
 
-void AP_Proximity_TeraRangerTowerEvo::initialise_modes()
+void AP_Proximity_TeraRangerHub::initialise_modes()
 {
     if((AP_HAL::millis() - _last_request_sent_ms) < _mode_request_delay) {
         return;
@@ -81,14 +81,14 @@ void AP_Proximity_TeraRangerTowerEvo::initialise_modes()
     }
 }
 
-void AP_Proximity_TeraRangerTowerEvo::set_mode(const uint8_t *c, int length)
+void AP_Proximity_TeraRangerHub::set_mode(const uint8_t *c, int length)
 {
     _uart->write(c, length);
     _last_request_sent_ms = AP_HAL::millis();
 }
 
 // check for replies from sensor, returns true if at least one message was processed
-bool AP_Proximity_TeraRangerTowerEvo::read_sensor_data()
+bool AP_Proximity_TeraRangerHub::read_sensor_data()
 {
     if (_uart == nullptr) {
         return false;
@@ -151,7 +151,7 @@ bool AP_Proximity_TeraRangerTowerEvo::read_sensor_data()
 }
 
 // process reply
-void AP_Proximity_TeraRangerTowerEvo::update_sector_data(int16_t angle_deg, uint16_t distance_mm)
+void AP_Proximity_TeraRangerHub::update_sector_data(int16_t angle_deg, uint16_t distance_mm)
 {
     // Get location on 3-D boundary based on angle to the object
     const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(angle_deg);
