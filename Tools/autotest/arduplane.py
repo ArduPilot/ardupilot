@@ -318,78 +318,83 @@ class AutoTestPlane(AutoTest):
     def set_attitude_target(self, tolerance=10):
         """Test setting of attitude target in guided mode."""
         self.change_mode("GUIDED")
-#        self.set_parameter("STALL_PREVENTION", 0)
 
-        state_roll_over = "roll-over"
-        state_stabilize_roll = "stabilize-roll"
+        steps = [{"name": "roll-over",         "roll": 60, "pitch": 0,  "yaw": 0, "throttle": 0, "type_mask": 0b10000001},
+                 {"name": "roll-back",         "roll": 0,  "pitch": 0,  "yaw": 0, "throttle": 0, "type_mask": 0b10000001},
+                 {"name": "pitch-up+throttle", "roll": 0,  "pitch": 20, "yaw": 0, "throttle": 1, "type_mask": 0b11000010},
+                 {"name": "pitch-back",        "roll": 0,  "pitch": 0,  "yaw": 0, "throttle": 0, "type_mask": 0b10000010}]
+
+        state_wait = "wait"
         state_hold = "hold"
-        state_roll_back = "roll-back"
-        state_done = "done"
-
-        tstart = self.get_sim_time()
-
         try:
-            state = state_roll_over
-            while state != state_done:
+            for step in steps:
+                step_start = self.get_sim_time_cached()
+                state = state_wait
+                state_start = self.get_sim_time_cached()
+                while True:
+                    m = self.mav.recv_match(type='ATTITUDE',
+                                            blocking=True,
+                                            timeout=0.1)
+                    now = self.get_sim_time_cached()
+                    if now - step_start > 30:
+                        raise AutoTestTimeoutException("Manuevers not completed")
+                    if m is None:
+                        continue
 
-                m = self.mav.recv_match(type='ATTITUDE',
-                                        blocking=True,
-                                        timeout=0.1)
-                now = self.get_sim_time_cached()
-                if now - tstart > 20:
-                    raise AutoTestTimeoutException("Manuevers not completed")
-                if m is None:
-                    continue
+                    angle_error = 0
+                    if (step["type_mask"] & 0b00000001) or (step["type_mask"] == 0b10000000):
+                        angle_error += abs(math.degrees(m.roll) - step["roll"])
 
-                r = math.degrees(m.roll)
-                if state == state_roll_over:
-                    target_roll_degrees = 60
-                    if abs(r - target_roll_degrees) < tolerance:
-                        state = state_stabilize_roll
-                        stabilize_start = now
-                elif state == state_stabilize_roll:
-                    # just give it a little time to sort it self out
-                    if now - stabilize_start > 2:
-                        state = state_hold
-                        hold_start = now
-                elif state == state_hold:
-                    target_roll_degrees = 60
-                    if now - hold_start > tolerance:
-                        state = state_roll_back
-                    if abs(r - target_roll_degrees) > tolerance:
-                        raise NotAchievedException("Failed to hold attitude")
-                elif state == state_roll_back:
-                    target_roll_degrees = 0
-                    if abs(r - target_roll_degrees) < tolerance:
-                        state = state_done
-                else:
-                    raise ValueError("Unknown state %s" % str(state))
+                    if (step["type_mask"] & 0b00000010) or (step["type_mask"] == 0b10000000):
+                        angle_error += abs(math.degrees(m.pitch) - step["pitch"])
 
-                m_nav = self.mav.messages['NAV_CONTROLLER_OUTPUT']
-                self.progress("%s Roll: %f desired=%f set=%f" %
-                              (state, r, m_nav.nav_roll, target_roll_degrees))
+                    if (step["type_mask"] & 0b00000100) or (step["type_mask"] == 0b10000000):
+                        # Strictly we should angle wrap, by plane doesn't support yaw correctly anyway so its not tested here
+                        angle_error += abs(math.degrees(m.yaw) - step["yaw"])
 
-                time_boot_millis = 0 # FIXME
-                target_system = 1 # FIXME
-                target_component = 1 # FIXME
-                type_mask = 0b10000001 ^ 0xFF # FIXME
-                # attitude in radians:
-                q = quaternion.Quaternion([math.radians(target_roll_degrees),
-                                           0,
-                                           0])
-                roll_rate_radians = 0.5
-                pitch_rate_radians = 0
-                yaw_rate_radians = 0
-                thrust = 1.0
-                self.mav.mav.set_attitude_target_send(time_boot_millis,
-                                                      target_system,
-                                                      target_component,
-                                                      type_mask,
-                                                      q,
-                                                      roll_rate_radians,
-                                                      pitch_rate_radians,
-                                                      yaw_rate_radians,
-                                                      thrust)
+                    # Note were not checking throttle, however the SITL plane needs full throttle to meet the
+                    # target pitch attitude, Pitch test will fail without throttle override
+
+                    if state == state_wait:
+                        # Reduced tolerance for initial trigger
+                        if angle_error < (tolerance * 0.25):
+                            state = state_hold
+                            state_start = now
+
+                        # Allow 10 seconds to reach attitude
+                        if (now - state_start) > 10:
+                            raise NotAchievedException(step["name"] + ": Failed to get to set attitude")
+
+                    elif state == state_hold:
+                        # Give 2 seconds to stabilize
+                        if (now - state_start) > 2 and not (angle_error < tolerance):
+                            raise NotAchievedException(step["name"] + ": Failed to hold set attitude")
+
+                        # Hold for 10 seconds
+                        if (now - state_start) > 12:
+                            # move onto next step
+                            self.progress("%s Done" % (step["name"]))
+                            break
+
+                    self.progress("%s %s error: %f" % (step["name"], state, angle_error))
+
+                    time_boot_millis = 0 # FIXME
+                    target_system = 1 # FIXME
+                    target_component = 1 # FIXME
+                    type_mask = step["type_mask"] ^ 0xFF # FIXME
+                    # attitude in radians:
+                    q = quaternion.Quaternion([math.radians(step["roll"]),
+                                               math.radians(step["pitch"]),
+                                               math.radians(step["yaw"])])
+                    self.mav.mav.set_attitude_target_send(time_boot_millis,
+                                                          target_system,
+                                                          target_component,
+                                                          type_mask,
+                                                          q,
+                                                          0, # roll rate, not used in AP
+                                                          0, # pitch rate, not used in AP
+                                                          0, # yaw rate, not used in AP
+                                                          step["throttle"])
         except Exception as e:
             self.change_mode('FBWA')
             self.set_rc(3, 1700)
