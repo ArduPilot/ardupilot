@@ -209,6 +209,15 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @User: Advanced
     GSCALAR(serial_number, "BRD_SERIAL_NUM", 0),
 
+#ifdef HAL_GPIO_PIN_LED
+    // @Param: LOCATE
+    // @DisplayName: Locate
+    // @Description: Enable LED flashing to locate node
+    // @Bitmask: 0:Disabled, 1:Enable
+    // @User: Advanced
+    GSCALAR(locate, "LOCATE", 0),
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY
     // @Param: BUZZER_VOLUME
     // @DisplayName: Buzzer volume

@@ -391,13 +391,24 @@ void AP_Periph_FW::update()
 
     static uint32_t last_led_ms;
     uint32_t now = AP_HAL::millis();
+    
     if (now - last_led_ms > 1000) {
         last_led_ms = now;
+    }
+
 #ifdef HAL_GPIO_PIN_LED
+    static uint32_t last_led_ms;
+    if (now - last_led_ms > (g.locate != 0 ? 50 : 1000)) {
+        last_led_ms = now;
         if (!no_iface_finished_dna) {
             palToggleLine(HAL_GPIO_PIN_LED);
         }
+    }
 #endif
+
+    static uint32_t last_print_ms;
+    if (now - last_print_ms > 1000) {
+        last_print_ms = now;
 #if 0
 #ifdef HAL_PERIPH_ENABLE_GPS
         hal.serial(0)->printf("GPS status: %u\n", (unsigned)gps.status());

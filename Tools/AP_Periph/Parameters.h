@@ -89,6 +89,7 @@ public:
         k_param_can_terminate1,
         k_param_can_terminate2,
         k_param_serial_options,
+        k_param_locate,
     };
 
     AP_Int16 format_version;
@@ -208,6 +209,10 @@ public:
     AP_Int8 can_fdbaudrate[HAL_NUM_CAN_IFACES];
 #else
     static constexpr uint8_t can_fdmode = 0;
+#endif
+
+#ifdef HAL_GPIO_PIN_LED
+    AP_Int8 locate;
 #endif
 
     AP_Int8 can_terminate[HAL_NUM_CAN_IFACES];
