@@ -4344,55 +4344,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_run_prearm_checks(const mavlink_command_l
     return MAV_RESULT_ACCEPTED;
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_preflight_can(const mavlink_command_long_t &packet)
-{
-#if HAL_CANMANAGER_ENABLED
-    if (hal.util->get_soft_armed()) {
-        // *preflight*, remember?
-        return MAV_RESULT_TEMPORARILY_REJECTED;
-    }
-
-    bool result = true;
-    bool can_exists = false;
-
-    uint8_t num_drivers = AP::can().get_num_drivers();
-
-    for (uint8_t i = 0; i < num_drivers; i++) {
-        switch (AP::can().get_driver_type(i)) {
-            case AP_CANManager::Driver_Type_CANTester: {
-#if (APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)) && (HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES && HAL_ENABLE_CANTESTER)
-                CANTester *cantester = CANTester::get_cantester(i);
-
-                if (cantester != nullptr) {
-                    can_exists = true;
-                    result = cantester->run_kdecan_enumeration(start_stop) && result;
-                }
-#else
-                (void)can_exists;
-#endif
-                break;
-            }
-            case AP_CANManager::Driver_Type_PiccoloCAN:
-                // TODO - Run PiccoloCAN pre-flight checks here
-                break;
-            case AP_CANManager::Driver_Type_DroneCAN:
-            case AP_CANManager::Driver_Type_None:
-            default:
-                break;
-        }
-    }
-
-    MAV_RESULT ack = MAV_RESULT_DENIED;
-    if (can_exists) {
-        ack = result ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
-    }
-
-    return ack;
-#else
-    return MAV_RESULT_UNSUPPORTED;
-#endif
-}
-
 // changes the current waypoint; at time of writing GCS
 // implementations use the mavlink message MISSION_SET_CURRENT to set
 // the current waypoint, rather than this DO command.  It is hoped we
@@ -4747,10 +4698,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         }
         break;
 #endif
-
-    case MAV_CMD_PREFLIGHT_UAVCAN:
-        result = handle_command_preflight_can(packet);
-        break;
 
     case MAV_CMD_RUN_PREARM_CHECKS:
         result = handle_command_run_prearm_checks(packet);
