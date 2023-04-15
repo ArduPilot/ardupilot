@@ -9,6 +9,7 @@
 
 #include "sensor_msgs/msg/NavSatFix.h"
 #include "tf2_msgs/msg/TFMessage.h"
+#include "sensor_msgs/msg/BatteryState.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Scheduler.h>
@@ -44,6 +45,7 @@ private:
     builtin_interfaces_msg_Time time_topic;
     sensor_msgs_msg_NavSatFix nav_sat_fix_topic;
     tf2_msgs_msg_TFMessage static_transforms_topic;
+    sensor_msgs_msg_BatteryState battery_state_topic;
 
     HAL_Semaphore csem;
 
@@ -53,11 +55,14 @@ private:
     static void update_topic(builtin_interfaces_msg_Time& msg);
     static void update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t instance);
     static void populate_static_transforms(tf2_msgs_msg_TFMessage& msg);
+    static void update_topic(sensor_msgs_msg_BatteryState& msg, const uint8_t instance);
 
     // The last ms timestamp AP_DDS wrote a Time message
     uint64_t last_time_time_ms;
     // The last ms timestamp AP_DDS wrote a NavSatFix message
     uint64_t last_nav_sat_fix_time_ms;
+    // The last ms timestamp AP_DDS wrote a BatteryState message
+    uint64_t last_battery_state_time_ms;
 
 
 public:
@@ -81,6 +86,8 @@ public:
     void write_nav_sat_fix_topic();
     //! @brief Serialize the static transforms and publish to the IO stream(s)
     void write_static_transforms();
+    //! @brief Serialize the current nav_sat_fix state and publish it to the IO stream(s)
+    void write_battery_state_topic();
     //! @brief Update the internally stored DDS messages with latest data
     void update();
 
