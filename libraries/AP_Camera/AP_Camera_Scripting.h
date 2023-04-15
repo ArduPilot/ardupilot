@@ -50,12 +50,12 @@ public:
     bool set_auto_focus() override;
 
     // returns true on success and cam_state is filled in
-    bool get_state(camera_state_t& cam_state) override;
+    bool get_state(AP_Camera::camera_state_t& cam_state) override;
 
 private:
 
     // current state
-    camera_state_t _cam_state;
+    AP_Camera::camera_state_t _cam_state;
 };
 
 #endif // AP_CAMERA_SCRIPTING_ENABLED

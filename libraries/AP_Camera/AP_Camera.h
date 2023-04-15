@@ -13,18 +13,6 @@
 #include "AP_Camera_Params.h"
 #include "AP_Mount/AP_Mount_config.h"
 
-#if AP_CAMERA_SCRIPTING_ENABLED
-    // structure and accessors for use by scripting backends
-    typedef struct {
-        uint16_t take_pic_incr; // incremented each time camera is requested to take a picture
-        bool recording_video;   // true when recording video
-        uint8_t zoom_type;      // zoom AP_Camera::ZoomType enum (1:Rate or 2:Pct)
-        float zoom_value;       // percentage or zoom out = -1, hold = 0, zoom in = 1
-        int8_t focus_step;      // focus in = -1, focus hold = 0, focus out = 1
-        bool auto_focus;        // true when auto focusing
-    } camera_state_t;
-#endif
-
 #define AP_CAMERA_MAX_INSTANCES             2       // maximum number of camera backends
 
 // declare backend classes
@@ -146,6 +134,16 @@ public:
     void set_is_auto_mode(bool enable) { _is_in_auto_mode = enable; }
 
 #if AP_CAMERA_SCRIPTING_ENABLED
+    // structure and accessors for use by scripting backends
+    typedef struct {
+        uint16_t take_pic_incr; // incremented each time camera is requested to take a picture
+        bool recording_video;   // true when recording video
+        uint8_t zoom_type;      // see AP_Camera::ZoomType enum (1:Rate or 2:Pct)
+        float zoom_value;       // percentage or zoom out = -1, hold = 0, zoom in = 1
+        int8_t focus_step;      // focus in = -1, focus hold = 0, focus out = 1
+        bool auto_focus;        // true when auto focusing
+    } camera_state_t;
+
     // accessor to allow scripting backend to retrieve state
     // returns true on success and cam_state is filled in
     bool get_state(uint8_t instance, camera_state_t& cam_state);
