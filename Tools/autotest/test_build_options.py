@@ -316,10 +316,11 @@ class TestBuildOptions(object):
 
     def run_enable_in_turn(self):
         options = self.get_build_options_from_ardupilot_tree()
-        if self.match_glob is not None:
-            options = list(filter(lambda x : fnmatch.fnmatch(x.define, self.match_glob), options))
         count = 1
         for feature in options:
+            if self.match_glob is not None:
+                if not fnmatch.fnmatch(feature.define, self.match_glob):
+                    continue
             self.progress("Enabling feature %s(%s) (%u/%u)" %
                           (feature.label, feature.define, count, len(options)))
             self.test_enable_feature(feature, options)
