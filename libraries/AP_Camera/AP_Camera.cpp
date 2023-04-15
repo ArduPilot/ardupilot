@@ -511,7 +511,7 @@ void AP_Camera::convert_params()
         return;
     }
 
-    // below conversions added Feb 2023 ahead of 4.4 release
+    // PARAMETER_CONVERSION - Added: Feb-2023 ahead of 4.4 release
 
     // convert CAM_TRIGG_TYPE to CAM1_TYPE
     int8_t cam_trigg_type = 0;
