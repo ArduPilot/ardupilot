@@ -634,6 +634,7 @@ bool AP_Mount_Siyi::set_zoom(AP_Camera::ZoomType zoom_type, float zoom_value)
             zoom_step = 1;
         }
         if (zoom_value < 0) {
+            // Siyi API specifies -1 should be sent as 255
             zoom_step = UINT8_MAX;
         }
         return send_1byte_packet(SiyiCommandId::MANUAL_ZOOM_AND_AUTO_FOCUS, zoom_step);
