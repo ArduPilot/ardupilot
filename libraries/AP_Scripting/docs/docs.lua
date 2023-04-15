@@ -1095,39 +1095,39 @@ function camera:record_video(instance, start_recording) end
 function camera:take_picture(instance) end
 
 -- desc
----@class camera_state_t_ud
-local camera_state_t_ud = {}
+---@class AP_Camera__camera_state_t_ud
+local AP_Camera__camera_state_t_ud = {}
 
----@return camera_state_t_ud
-function camera_state_t() end
+---@return AP_Camera__camera_state_t_ud
+function AP_Camera__camera_state_t() end
 
 -- get field
 ---@return boolean
-function camera_state_t_ud:auto_focus() end
+function AP_Camera__camera_state_t_ud:auto_focus() end
 
 -- get field
 ---@return integer
-function camera_state_t_ud:focus_step() end
-
--- get field
----@return integer
-function camera_state_t_ud:zoom_type() end
+function AP_Camera__camera_state_t_ud:focus_step() end
 
 -- get field
 ---@return number
-function camera_state_t_ud:zoom_value() end
-
--- get field
----@return boolean
-function camera_state_t_ud:recording_video() end
+function AP_Camera__camera_state_t_ud:zoom_value() end
 
 -- get field
 ---@return integer
-function camera_state_t_ud:take_pic_incr() end
+function AP_Camera__camera_state_t_ud:zoom_type() end
+
+-- get field
+---@return boolean
+function AP_Camera__camera_state_t_ud:recording_video() end
+
+-- get field
+---@return integer
+function AP_Camera__camera_state_t_ud:take_pic_incr() end
 
 -- desc
 ---@param instance integer
----@return camera_state_t_ud|nil
+---@return AP_Camera__camera_state_t_ud|nil
 function camera:get_state(instance) end
 
 -- desc
