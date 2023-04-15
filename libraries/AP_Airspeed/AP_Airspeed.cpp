@@ -135,8 +135,8 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     AP_GROUPINFO("_WIND_MAX", 22, AP_Airspeed, _wind_max, 0),
 
     // @Param: _WIND_WARN
-    // @DisplayName: Airspeed and ground speed difference that gives a warning
-    // @Description: If the difference between airspeed and ground speed is greater than this value the sensor will issue a warning. If 0 ARSPD_WIND_MAX is used.
+    // @DisplayName: Airspeed and GPS speed difference that gives a warning
+    // @Description: If the difference between airspeed and GPS speed is greater than this value the sensor will issue a warning. If 0 ARSPD_WIND_MAX is used.
     // @Description{Copter, Blimp, Rover, Sub}: This parameter and function is not used by this vehicle. Always set to 0.
     // @Units: m/s
     // @User: Advanced

@@ -64,8 +64,9 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
         }
         data_is_inconsistent = state[i].failures.test_ratio > gate_size;
     }
-
-    const float speed_diff = fabsf(state[i].airspeed-gps.ground_speed());
+    
+    const auto gps_speed = gps.velocity().length();
+    const float speed_diff = fabsf(state[i].airspeed-gps_speed);
     const bool data_is_implausible = is_positive(_wind_max) && speed_diff > _wind_max;
     // update health_probability with LowPassFilter
     if (data_is_implausible || data_is_inconsistent) {
