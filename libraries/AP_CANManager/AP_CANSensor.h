@@ -40,11 +40,22 @@ public:
 
 #ifdef HAL_BUILD_AP_PERIPH
     static void set_periph(const uint8_t i, const AP_CANManager::Driver_Type protocol, AP_HAL::CANIface* iface) {
-        if (i < HAL_NUM_CAN_IFACES) {
+        if (i < ARRAY_SIZE(_periph)) {
             _periph[i].protocol = protocol;
             _periph[i].iface = iface;
         }
     }
+
+    // return driver type index i
+    static AP_CANManager::Driver_Type get_driver_type(const uint8_t i)
+    {
+        if (i < ARRAY_SIZE(_periph)) {
+            return _periph[i].protocol;
+        }
+        return AP_CANManager::Driver_Type_None;
+    }
+#else
+    static AP_CANManager::Driver_Type get_driver_type(const uint8_t i) { return AP::can().get_driver_type(i); }
 #endif
 
 protected:
