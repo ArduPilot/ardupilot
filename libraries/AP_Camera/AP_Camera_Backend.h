@@ -23,6 +23,8 @@
 
 #if AP_CAMERA_ENABLED
 #include "AP_Camera.h"
+#include <AP_Common/Location.h>
+#include <AP_Logger/LogStructure.h>
 
 class AP_Camera_Backend
 {

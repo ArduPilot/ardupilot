@@ -4,12 +4,8 @@
 
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <GCS_MAVLink/GCS.h>
 #include <SRV_Channel/SRV_Channel.h>
-#include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_Mount/AP_Mount.h>
 #include "AP_Camera_Backend.h"
 #include "AP_Camera_Servo.h"
 #include "AP_Camera_Relay.h"

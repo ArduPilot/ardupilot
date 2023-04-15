@@ -6,12 +6,9 @@
 
 #if AP_CAMERA_ENABLED
 
-#include <AP_Common/Location.h>
-#include <AP_Logger/LogStructure.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AP_Camera_Params.h"
-#include "AP_Mount/AP_Mount_config.h"
 
 #define AP_CAMERA_MAX_INSTANCES             2       // maximum number of camera backends
 
