@@ -2064,7 +2064,7 @@ void NavEKF3_core::setYawFromMag()
     Matrix3F Tbn_zeroYaw;
     if (order == rotationOrder::TAIT_BRYAN_321) {
         // rolled more than pitched so use 321 rotation order
-        stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+        stateStruct.quat.to_euler(eulerAngles);
         Tbn_zeroYaw.from_euler(eulerAngles.x, eulerAngles.y, 0.0f);
     } else if (order == rotationOrder::TAIT_BRYAN_312) {
         // pitched more than rolled so use 312 rotation order
