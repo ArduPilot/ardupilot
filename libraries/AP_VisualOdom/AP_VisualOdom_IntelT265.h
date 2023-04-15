@@ -1,8 +1,10 @@
 #pragma once
 
-#include "AP_VisualOdom_Backend.h"
+#include "AP_VisualOdom_config.h"
 
-#if HAL_VISUALODOM_ENABLED
+#if AP_VISUALODOM_INTELT265_ENABLED
+
+#include "AP_VisualOdom_Backend.h"
 
 class AP_VisualOdom_IntelT265 : public AP_VisualOdom_Backend
 {
@@ -88,4 +90,4 @@ protected:
     Vector3f _voxl_position_last;               // last recorded position (post scaling, offset and orientation corrections)
 };
 
-#endif
+#endif  // AP_VISUALODOM_INTELT265_ENABLED
