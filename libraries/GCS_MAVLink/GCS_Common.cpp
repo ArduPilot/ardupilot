@@ -5545,7 +5545,7 @@ void GCS_MAVLINK::send_received_message_deprecation_warning(const char * message
     last_deprecation_warning_send_time_ms = now_ms;
     last_deprecation_message = message;
 
-    send_text(MAV_SEVERITY_WARNING, "Received message (%s) is deprecated", message);
+    send_text(MAV_SEVERITY_INFO, "Received message (%s) is deprecated", message);
 }
 
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)

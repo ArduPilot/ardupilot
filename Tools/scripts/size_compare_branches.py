@@ -62,7 +62,7 @@ class SizeCompareBranches(object):
                  extra_hwdef_branch=[],
                  extra_hwdef_master=[]):
         if branch is None:
-            branch = self.find_current_git_branch()
+            branch = self.find_current_git_branch_or_sha1()
 
         self.master_branch = master_branch
         self.branch = branch
@@ -220,8 +220,16 @@ class SizeCompareBranches(object):
                 returncode, cmd_list)
         return output
 
-    def find_current_git_branch(self):
-        output = self.run_git(["symbolic-ref", "--short", "HEAD"])
+    def find_current_git_branch_or_sha1(self):
+        try:
+            output = self.run_git(["symbolic-ref", "--short", "HEAD"])
+            output = output.strip()
+            return output
+        except subprocess.CalledProcessError:
+            pass
+
+        # probably in a detached-head state.  Get a sha1 instead:
+        output = self.run_git(["rev-parse", "--short", "HEAD"])
         output = output.strip()
         return output
 
