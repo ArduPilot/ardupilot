@@ -188,23 +188,25 @@ void AP_Logger::Write_RCOUT(void)
     const uint32_t enabled_mask = ~SRV_Channels::get_output_channel_mask(SRV_Channel::k_GPIO);
 
     if ((enabled_mask & 0x3FFF) != 0) {
+        uint16_t channels[14] {};
+        hal.rcout->read(channels, ARRAY_SIZE(channels));
         const struct log_RCOUT pkt{
             LOG_PACKET_HEADER_INIT(LOG_RCOUT_MSG),
             time_us       : AP_HAL::micros64(),
-            chan1         : hal.rcout->read(0),
-            chan2         : hal.rcout->read(1),
-            chan3         : hal.rcout->read(2),
-            chan4         : hal.rcout->read(3),
-            chan5         : hal.rcout->read(4),
-            chan6         : hal.rcout->read(5),
-            chan7         : hal.rcout->read(6),
-            chan8         : hal.rcout->read(7),
-            chan9         : hal.rcout->read(8),
-            chan10        : hal.rcout->read(9),
-            chan11        : hal.rcout->read(10),
-            chan12        : hal.rcout->read(11),
-            chan13        : hal.rcout->read(12),
-            chan14        : hal.rcout->read(13)
+            chan1         : channels[0],
+            chan2         : channels[1],
+            chan3         : channels[2],
+            chan4         : channels[3],
+            chan5         : channels[4],
+            chan6         : channels[5],
+            chan7         : channels[6],
+            chan8         : channels[7],
+            chan9         : channels[8],
+            chan10        : channels[9],
+            chan11        : channels[10],
+            chan12        : channels[11],
+            chan13        : channels[12],
+            chan14        : channels[13]
         };
         WriteBlock(&pkt, sizeof(pkt));
     }
