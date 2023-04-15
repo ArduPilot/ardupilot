@@ -385,14 +385,11 @@ void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg){
 
     if (!att_quat.is_nan()) {
         // convert quaternion to euler angles
-        float roll_rad, pitch_rad, yaw_rad;
-        att_quat.to_euler(roll_rad, pitch_rad, yaw_rad);
+        Vector3f attitude;
+        att_quat.to_euler(attitude);  // attitude is in radians here
+        attitude *= RAD_TO_DEG;  // convert to degrees
 
-        // radian to deg conversion
-        const float roll_deg = degrees(roll_rad);
-        const float pitch_deg = degrees(pitch_rad);
-        const float yaw_deg = degrees(yaw_rad);
-        backend->set_angle_target(roll_deg, pitch_deg, yaw_deg, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        backend->set_angle_target(attitude.x, attitude.y, attitude.z, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return;
     }
 
