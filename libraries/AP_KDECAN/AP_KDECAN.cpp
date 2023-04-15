@@ -59,15 +59,8 @@ void AP_KDECAN::init()
         return;
     }
 
-    AP_CANManager::Driver_Type protocol = AP_CANManager::Driver_Type_None;
-
     for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
-#if HAL_CANMANAGER_ENABLED
-        protocol = AP::can().get_driver_type(i);
-#elif defined(HAL_BUILD_AP_PERIPH)
-        protocol = CANSensor::get_driver_type(i);
-#endif
-        if (protocol == AP_CANManager::Driver_Type_KDECAN) {
+        if (CANSensor::get_driver_type(i) == AP_CANManager::Driver_Type_KDECAN) {
             _driver = new AP_KDECAN_Driver();
             return;
         }
@@ -131,7 +124,7 @@ void AP_KDECAN_Driver::handle_frame(AP_HAL::CANFrame &frame)
                 const uint8_t num_poles = _telemetry.num_poles > 0 ? _telemetry.num_poles : DEFAULT_NUM_POLES;
                 update_rpm(idx, uint16_t(uint16_t(frame.data[4] << 8 | frame.data[5]) * 60UL * 2 / num_poles));
 
-                TelemetryData t {
+                const TelemetryData t {
                     .temperature_cdeg = int16_t(frame.data[6] * 100),
                     .voltage = float(uint16_t(frame.data[0] << 8 | frame.data[1])) * 0.01f,
                     .current = float(uint16_t(frame.data[2] << 8 | frame.data[3])) * 0.01f,
@@ -198,7 +191,7 @@ void AP_KDECAN_Driver::loop()
 #endif
 
     uint8_t broadcast_esc_info_boot_spam_count = 3;
-    uint32_t broadcast_esc_info_next_interval_ms = 100; // spam a few at boot at 5Hz
+    uint32_t broadcast_esc_info_next_interval_ms = 100; // spam a few at boot at this rate
 
     while (true) {
 #if AP_KDECAN_USE_EVENTS
@@ -277,11 +270,15 @@ bool AP_KDECAN_Driver::send_packet_uint16(const uint8_t address, const uint8_t d
 bool AP_KDECAN_Driver::send_packet(const uint8_t address, const uint8_t dest_id, const uint32_t timeout_ms, const uint8_t *data, const uint8_t data_len)
 {
     // broadcast telemetry request frame
-    frame_id_t id = { { .object_address = address,
-                        .destination_id = dest_id,
-                        .source_id = AUTOPILOT_NODE_ID,
-                        .priority = 0,
-                        .unused = 0 } };
+    const frame_id_t id {
+        {
+            .object_address = address,
+            .destination_id = dest_id,
+            .source_id = AUTOPILOT_NODE_ID,
+            .priority = 0,
+            .unused = 0
+        }
+    };
 
     AP_HAL::CANFrame frame = AP_HAL::CANFrame((id.value | AP_HAL::CANFrame::FlagEFF), data, data_len, false);
 
