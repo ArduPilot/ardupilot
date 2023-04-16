@@ -66,6 +66,8 @@ public:
     // zoom out = -1, hold = 0, zoom in = 1
     bool set_zoom_step(int8_t zoom_step) override;
 
+    bool set_zoom_absolute(float zoom_absolute) override;
+
     // set focus in, out or hold.  returns true on success
     // focus in = -1, focus hold = 0, focus out = 1
     bool set_manual_focus_step(int8_t focus_step) override;
@@ -168,6 +170,8 @@ private:
     // yaw_is_ef should be true if yaw_rad target is an earth frame angle, false if body_frame
     void send_target_angles(float pitch_rad, float yaw_rad, bool yaw_is_ef);
 
+    void absolute_zoom_control();
+
     // internal variables
     AP_HAL::UARTDriver *_uart;                      // uart connected to gimbal
     bool _initialised;                              // true once the driver has been initialised
@@ -200,6 +204,10 @@ private:
 
     // variables for camera state
     bool _last_record_video;                        // last record_video state sent to gimbal
+
+    float _zoom_absolute_target = 0.0f;
+    float _zoom_absolute;
+    uint32_t _last_zoom_sent_ms;
 };
 
 #endif // HAL_MOUNT_SIYISERIAL_ENABLED

@@ -66,6 +66,10 @@ void AP_Mount_Siyi::update()
         _last_req_current_angle_rad_ms = now_ms;
     }
 
+    if (!is_zero(_zoom_absolute_target)) {
+        absolute_zoom_control();
+    }
+
     // update based on mount mode
     switch (get_mode()) {
         // move mount to a "retracted" position.  To-Do: remove support and replace with a relaxed mode?
@@ -351,6 +355,7 @@ void AP_Mount_Siyi::process_packet()
         }
         const float zoom_mult = UINT16_VALUE(_msg_buff[_msg_buff_data_start+1], _msg_buff[_msg_buff_data_start]) * 0.1;
         debug("ZoomMult:%4.1f", (double)zoom_mult);
+        _zoom_absolute = zoom_mult;
         break;
     }
 
@@ -595,6 +600,26 @@ void AP_Mount_Siyi::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_
     rotate_gimbal(pitch_rate_scalar, yaw_rate_scalar, yaw_is_ef);
 }
 
+void AP_Mount_Siyi::absolute_zoom_control() 
+{
+    uint32_t now_ms = AP_HAL::millis();
+    // only send this at 10 Hz
+    if ((now_ms - _last_zoom_sent_ms) <= 100) {
+        return;
+    }
+    
+    if (_zoom_absolute_target > _zoom_absolute + 0.2f) {
+        set_zoom_step(1);
+    } else if (_zoom_absolute_target < _zoom_absolute - 0.2f) {
+        set_zoom_step(-1);
+    } else {
+        _zoom_absolute_target = 0.0f;
+        set_zoom_step(0);
+    }
+    
+    _last_zoom_sent_ms = now_ms;
+}
+
 // take a picture.  returns true on success
 bool AP_Mount_Siyi::take_picture()
 {
@@ -630,6 +655,12 @@ bool AP_Mount_Siyi::record_video(bool start_recording)
 bool AP_Mount_Siyi::set_zoom_step(int8_t zoom_step)
 {
     return send_1byte_packet(SiyiCommandId::MANUAL_ZOOM_AND_AUTO_FOCUS, (uint8_t)zoom_step);
+}
+
+bool AP_Mount_Siyi::set_zoom_absolute(float zoom_absolute)
+{
+    _zoom_absolute_target = zoom_absolute;
+    return true;
 }
 
 // set focus in, out or hold.  returns true on success
