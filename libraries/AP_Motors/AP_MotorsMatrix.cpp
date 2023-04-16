@@ -247,7 +247,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     throttle_avg_max = constrain_float(throttle_avg_max, throttle_thrust, throttle_thrust_max);
 
     // Ensure desired altitude output is not sacrificed for attitude output, but allow sacrifice of climb rate.
-    float desired_altitude_output = MIN(throttle_thrust, get_throttle_hover() * compensation_gain);
+    const float desired_altitude_output = MIN(throttle_thrust, get_throttle_hover() * compensation_gain);
 
     // throttle facilitating physically maximum roll, pitch or yaw output.
     constexpr float THROTTLE_FOR_MAX_RPY{0.5f};
