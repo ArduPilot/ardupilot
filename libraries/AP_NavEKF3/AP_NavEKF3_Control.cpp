@@ -231,6 +231,7 @@ void NavEKF3_core::setAidingMode()
     {
         PV_AidingMode = AID_NONE;
         yawAlignComplete = false;
+        yawAlignGpsValidCount = 0;
         finalInflightYawInit = false;
         ResetVelocity(resetDataSource::DEFAULT);
         ResetPosition(resetDataSource::DEFAULT);

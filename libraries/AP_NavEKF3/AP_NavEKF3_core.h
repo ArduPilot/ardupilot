@@ -115,6 +115,15 @@
 #define DOWNWARD_RANGEFINDER_MAX_INSTANCES 1
 #endif
 
+// number of continuous valid GPS velocity samples required to reset yaw
+#define GPS_VEL_YAW_ALIGN_COUNT_THRESHOLD 5
+
+// minimum GPS horizontal speed required to use GPS ground course for yaw alignment (m/s)
+#define GPS_VEL_YAW_ALIGN_MIN_SPD 5.0F
+
+// maximum GPs ground course uncertainty allowed for yaw alignment (deg)
+#define GPS_VEL_YAW_ALIGN_MAX_ANG_ERR 15.0F
+
 class NavEKF3_core : public NavEKF_core_common
 {
 public:
@@ -1116,6 +1125,7 @@ private:
     uint32_t lastYawReset_ms;       // System time at which the last yaw reset occurred. Returned by getLastYawResetAngle
     bool tiltAlignComplete;         // true when tilt alignment is complete
     bool yawAlignComplete;          // true when yaw alignment is complete
+    uint8_t yawAlignGpsValidCount;  // number of continuous good GPS velocity samples used for in flight yaw alignment
     bool magStateInitComplete;      // true when the magnetic field states have been initialised
     uint8_t stateIndexLim;          // Max state index used during matrix and array operations
     imu_elements imuDataDelayed;    // IMU data at the fusion time horizon
