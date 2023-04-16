@@ -303,6 +303,7 @@ void NavEKF3_core::readMagData()
         // force a new yaw alignment 1s after learning completes. The
         // delay is to ensure any buffered mag samples are discarded
         yawAlignComplete = false;
+        yawAlignGpsValidCount = 0;
         InitialiseVariablesMag();
     }
 
