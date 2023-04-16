@@ -53,6 +53,7 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_KDECAN/AP_KDECAN.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
@@ -61,11 +62,6 @@
   #include <AP_Vehicle/AP_Vehicle_Type.h>
 
   #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
-
-  // To be replaced with macro saying if KDECAN library is included
-  #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
-    #include <AP_KDECAN/AP_KDECAN.h>
-  #endif
   #include <AP_DroneCAN/AP_DroneCAN.h>
 #endif
 
@@ -1157,17 +1153,6 @@ bool AP_Arming::can_checks(bool report)
 
         for (uint8_t i = 0; i < num_drivers; i++) {
             switch (AP::can().get_driver_type(i)) {
-                case AP_CANManager::Driver_Type_KDECAN: {
-// To be replaced with macro saying if KDECAN library is included
-#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
-                    AP_KDECAN *ap_kdecan = AP_KDECAN::get_kdecan(i);
-                    if (ap_kdecan != nullptr && !ap_kdecan->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
-                        check_failed(ARMING_CHECK_SYSTEM, report, "KDECAN: %s", fail_msg);
-                        return false;
-                    }
-#endif
-                    break;
-                }
                 case AP_CANManager::Driver_Type_PiccoloCAN: {
 #if HAL_PICCOLO_CAN_ENABLE
                     AP_PiccoloCAN *ap_pcan = AP_PiccoloCAN::get_pcan(i);
@@ -1205,6 +1190,7 @@ bool AP_Arming::can_checks(bool report)
                 case AP_CANManager::Driver_Type_Scripting:
                 case AP_CANManager::Driver_Type_Scripting2:
                 case AP_CANManager::Driver_Type_Benewake:
+                case AP_CANManager::Driver_Type_KDECAN:
                     break;
             }
         }
