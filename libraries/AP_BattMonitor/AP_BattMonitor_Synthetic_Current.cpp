@@ -1,9 +1,11 @@
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_SYNTHETIC_CURRENT_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include "AP_BattMonitor_Synthetic_Current.h"
 #include <GCS_MAVLink/GCS.h>
 #include <SRV_Channel/SRV_Channel.h>
-
-#if AP_BATTMON_SYNTHETIC_CURRENT_ENABLED
 
 /*
   Analog Voltage and Current Monitor for systems with only a voltage sense pin
@@ -70,4 +72,4 @@ AP_BattMonitor_Synthetic_Current::read()
  
 }
 
-#endif
+#endif  // AP_BATTERY_SYNTHETIC_CURRENT_ENABLED

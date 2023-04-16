@@ -43,6 +43,19 @@ PC9  TIM8_CH4 TIM8 PWM(8) GPIO(57)
 PB11 VTX_PWR OUTPUT HIGH GPIO(81)
 define RELAY2_PIN_DEFAULT 81
 
+define HAL_BATT_MONITOR_DEFAULT 4
+
+# second battery sensor on second ESC connector
+PA1 BATT2_VOLTAGE_SENS ADC1 SCALE(1)
+PC4 BATT2_CURRENT_SENS ADC1 SCALE(1)
+
+# second battery setup (note external current sensor required)
+define HAL_BATT2_VOLT_PIN 17
+define HAL_BATT2_CURR_PIN 4
+define HAL_BATT2_VOLT_SCALE 11.0
+define HAL_BATT2_CURR_SCALE 59.5
+define HAL_BATT2_MONITOR_DEFAULT 4
+
 SPIDEV dataflash SPI1 DEVID1 SDCARD_CS      MODE3 104*MHZ 104*MHZ
 SPIDEV bmi270    SPI4 DEVID1 ICM20689_CS    MODE3  1*MHZ  10*MHZ # Clock is 100Mhz so highest clock <= 10Mhz is 100Mhz/16
 

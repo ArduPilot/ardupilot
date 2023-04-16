@@ -481,7 +481,7 @@ public:
     static bool find_channel(SRV_Channel::Aux_servo_function_t function, uint8_t &chan);
 
     // find first channel that a function is assigned to, returning SRV_Channel object
-    static SRV_Channel *get_channel_for(SRV_Channel::Aux_servo_function_t function, int8_t default_chan=-1);
+    static SRV_Channel *get_channel_for(SRV_Channel::Aux_servo_function_t function);
 
     // call set_angle() on matching channels
     static void set_angle(SRV_Channel::Aux_servo_function_t function, uint16_t angle);
@@ -571,6 +571,15 @@ public:
     // return true if a channel is set to type alarm inverted
     static bool is_alarm_inverted(uint8_t channel) {
         return channel_function(channel) == SRV_Channel::k_alarm_inverted;
+    }
+
+    // return true if 32 channels are enabled
+    static bool have_32_channels() {
+#if NUM_SERVO_CHANNELS >= 17
+        return _singleton->enable_32_channels.get() > 0;
+#else
+        return false;
+#endif
     }
 
 private:

@@ -41,7 +41,7 @@ void AP_Generator_RichenPower::init()
     // Tell frontend what measurements are available for this generator
     _frontend._has_current = true;
     _frontend._has_consumed_energy = false;
-    _frontend._has_fuel_remaining_pct = false;
+    _frontend._has_fuel_remaining = false;
 }
 
 // find a RichenPower message in the buffer, starting at

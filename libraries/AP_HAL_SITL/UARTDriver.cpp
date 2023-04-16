@@ -219,13 +219,12 @@ uint32_t UARTDriver::txspace(void)
     return _writebuffer.space();
 }
 
-int16_t UARTDriver::read(void)
+bool UARTDriver::read(uint8_t &c)
 {
-    uint8_t c;
     if (read(&c, 1) == 0) {
-        return -1;
+        return false;
     }
-    return c;
+    return true;
 }
 
 ssize_t UARTDriver::read(uint8_t *buffer, uint16_t count)

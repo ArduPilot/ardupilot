@@ -2,7 +2,7 @@
 
 #include "AP_Generator_IE_FuelCell.h"
 
-#if HAL_GENERATOR_ENABLED
+#if AP_GENERATOR_IE2400_ENABLED
 
 class AP_Generator_IE_2400 : public AP_Generator_IE_FuelCell
 {
@@ -53,4 +53,5 @@ private:
     uint16_t _spm_pwr; // Stack Power Module (SPM) power draw (Watts)
 
 };
-#endif
+#endif  // AP_GENERATOR_IE2400_ENABLED
+

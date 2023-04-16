@@ -80,7 +80,13 @@ public:
     void set_trigger_distance(float distance_m) { _params.trigg_dist.set(distance_m); }
 
     // send camera feedback message to GCS
-    void send_camera_feedback(mavlink_channel_t chan) const;
+    void send_camera_feedback(mavlink_channel_t chan);
+
+#if AP_CAMERA_SCRIPTING_ENABLED
+    // accessor to allow scripting backend to retrieve state
+    // returns true on success and cam_state is filled in
+    virtual bool get_state(camera_state_t& cam_state) { return false; }
+#endif
 
 protected:
 

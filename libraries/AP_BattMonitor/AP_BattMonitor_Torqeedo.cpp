@@ -14,10 +14,13 @@
  */
 
 
-#include <AP_HAL/AP_HAL.h>
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_TORQEEDO_ENABLED
+
 #include "AP_BattMonitor_Torqeedo.h"
 
-#if HAL_TORQEEDO_ENABLED
+#include <AP_HAL/AP_HAL.h>
 
 #define AP_BATTMON_TORQEEDO_TIMEOUT_US 5000000
 
@@ -73,4 +76,5 @@ bool AP_BattMonitor_Torqeedo::capacity_remaining_pct(uint8_t &percentage) const
     return have_info;
 }
 
-#endif // HAL_TORQEEDO_ENABLED
+#endif // AP_BATTERY_TORQEEDO_ENABLED
+

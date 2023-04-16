@@ -15,7 +15,7 @@ bool Empty::UARTDriver::tx_pending() { return false; }
 /* Empty implementations of Stream virtual methods */
 uint32_t Empty::UARTDriver::available() { return 0; }
 uint32_t Empty::UARTDriver::txspace() { return 1; }
-int16_t Empty::UARTDriver::read() { return -1; }
+bool Empty::UARTDriver::read(uint8_t &b) { return false; }
 bool Empty::UARTDriver::discard_input() { return false; }
 
 /* Empty implementations of Print virtual methods */

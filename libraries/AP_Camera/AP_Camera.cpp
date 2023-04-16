@@ -2,10 +2,7 @@
 
 #if AP_CAMERA_ENABLED
 
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_Relay/AP_Relay.h>
 #include <AP_Math/AP_Math.h>
-#include <RC_Channel/RC_Channel.h>
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
@@ -16,9 +13,11 @@
 #include "AP_Camera_Backend.h"
 #include "AP_Camera_Servo.h"
 #include "AP_Camera_Relay.h"
+#include "AP_Camera_SoloGimbal.h"
 #include "AP_Camera_Mount.h"
 #include "AP_Camera_MAVLink.h"
-#include "AP_Camera_SoloGimbal.h"
+#include "AP_Camera_MAVLinkCamV2.h"
+#include "AP_Camera_Scripting.h"
 
 const AP_Param::GroupInfo AP_Camera::var_info[] = {
 
@@ -59,21 +58,91 @@ AP_Camera::AP_Camera(uint32_t _log_camera_bit) :
     _singleton = this;
 }
 
-// returns camera type of the given instance
-AP_Camera::CameraType AP_Camera::get_type(uint8_t instance) const
+// set camera trigger distance in a mission
+void AP_Camera::set_trigger_distance(float distance_m)
 {
-    if (instance >= AP_CAMERA_MAX_INSTANCES) {
-        return CameraType::NONE;
-    }
+    WITH_SEMAPHORE(_rsem);
 
-    return (CameraType)_params[instance].type.get();
+    if (primary == nullptr) {
+        return;
+    }
+    primary->set_trigger_distance(distance_m);
+}
+
+// momentary switch to change camera between picture and video modes
+void AP_Camera::cam_mode_toggle()
+{
+    WITH_SEMAPHORE(_rsem);
+
+    if (primary == nullptr) {
+        return;
+    }
+    primary->cam_mode_toggle();
+}
+
+// take a picture
+void AP_Camera::take_picture()
+{
+    WITH_SEMAPHORE(_rsem);
+
+    if (primary == nullptr) {
+        return;
+    }
+    primary->take_picture();
+}
+
+// start/stop recording video
+// start_recording should be true to start recording, false to stop recording
+bool AP_Camera::record_video(bool start_recording)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    if (primary == nullptr) {
+        return false;
+    }
+    return primary->record_video(start_recording);
+}
+
+// zoom in, out or hold
+// zoom out = -1, hold = 0, zoom in = 1
+bool AP_Camera::set_zoom_step(int8_t zoom_step)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    if (primary == nullptr) {
+        return false;
+    }
+    return primary->set_zoom_step(zoom_step);
+}
+
+// focus in, out or hold
+// focus in = -1, focus hold = 0, focus out = 1
+bool AP_Camera::set_manual_focus_step(int8_t focus_step)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    if (primary == nullptr) {
+        return false;
+    }
+    return primary->set_manual_focus_step(focus_step);
+}
+
+// auto focus
+bool AP_Camera::set_auto_focus()
+{
+    WITH_SEMAPHORE(_rsem);
+
+    if (primary == nullptr) {
+        return false;
+    }
+    return primary->set_auto_focus();
 }
 
 // detect and initialise backends
 void AP_Camera::init()
 {
     // check init has not been called before
-    if (_num_instances != 0) {
+    if (primary != nullptr) {
         return;
     }
 
@@ -81,42 +150,55 @@ void AP_Camera::init()
     convert_params();
 
     // create each instance
-    bool primary_set = false;
     for (uint8_t instance = 0; instance < AP_CAMERA_MAX_INSTANCES; instance++) {
-        CameraType camera_type = get_type(instance);
-
-        // check for servo camera
-        if (camera_type == CameraType::SERVO) {
+        switch ((CameraType)_params[instance].type.get()) {
+#if AP_CAMERA_SERVO_ENABLED
+        case CameraType::SERVO:
             _backends[instance] = new AP_Camera_Servo(*this, _params[instance], instance);
-            _num_instances++;
-
-        // check for relay camera
-        } else if (camera_type == CameraType::RELAY) {
-            _backends[instance] = new AP_Camera_Relay(*this, _params[instance], instance);
-            _num_instances++;
-
-#if HAL_SOLO_GIMBAL_ENABLED
-        // check for GoPro in Solo camera
-        } else if (camera_type == CameraType::SOLOGIMBAL) {
-            _backends[instance] = new AP_Camera_SoloGimbal(*this, _params[instance], instance);
-            _num_instances++;
+            break;
 #endif
-
+#if AP_CAMERA_RELAY_ENABLED
+        case CameraType::RELAY:
+            _backends[instance] = new AP_Camera_Relay(*this, _params[instance], instance);
+            break;
+#endif
+#if AP_CAMERA_SOLOGIMBAL_ENABLED
+        // check for GoPro in Solo camera
+        case CameraType::SOLOGIMBAL:
+            _backends[instance] = new AP_Camera_SoloGimbal(*this, _params[instance], instance);
+            break;
+#endif
+#if AP_CAMERA_MOUNT_ENABLED
         // check for Mount camera
-        } else if (camera_type == CameraType::MOUNT) {
+        case CameraType::MOUNT:
             _backends[instance] = new AP_Camera_Mount(*this, _params[instance], instance);
-            _num_instances++;
-
+            break;
+#endif
+#if AP_CAMERA_MAVLINK_ENABLED
         // check for MAVLink enabled camera driver
-        } else if (camera_type == CameraType::MAVLINK) {
+        case CameraType::MAVLINK:
             _backends[instance] = new AP_Camera_MAVLink(*this, _params[instance], instance);
-            _num_instances++;
+            break;
+#endif
+#if AP_CAMERA_MAVLINKCAMV2_ENABLED
+        // check for MAVLink Camv2 driver
+        case CameraType::MAVLINK_CAMV2:
+            _backends[instance] = new AP_Camera_MAVLinkCamV2(*this, _params[instance], instance);
+            break;
+#endif
+#if AP_CAMERA_SCRIPTING_ENABLED
+        // check for Scripting driver
+        case CameraType::SCRIPTING:
+            _backends[instance] = new AP_Camera_Scripting(*this, _params[instance], instance);
+            break;
+#endif
+        case CameraType::NONE:
+            break;
         }
 
-        // set primary to first non-null index
-        if (!primary_set && (_backends[instance] != nullptr)) {
-            primary = instance;
-            primary_set = true;
+        // set primary to first non-null instance
+        if (primary == nullptr) {
+            primary = _backends[instance];
         }
     }
 
@@ -131,6 +213,8 @@ void AP_Camera::init()
 // handle incoming mavlink messages
 void AP_Camera::handle_message(mavlink_channel_t chan, const mavlink_message_t &msg)
 {
+    WITH_SEMAPHORE(_rsem);
+
     if (msg.msgid == MAVLINK_MSG_ID_DIGICAM_CONTROL) {
         // decode deprecated MavLink message that controls camera.
         __mavlink_digicam_control_t packet;
@@ -147,63 +231,158 @@ void AP_Camera::handle_message(mavlink_channel_t chan, const mavlink_message_t &
     }
 }
 
+// handle command_long mavlink messages
+MAV_RESULT AP_Camera::handle_command_long(const mavlink_command_long_t &packet)
+{
+    switch (packet.command) {
+    case MAV_CMD_DO_DIGICAM_CONFIGURE:
+        configure(packet.param1, packet.param2, packet.param3, packet.param4, packet.param5, packet.param6, packet.param7);
+        return MAV_RESULT_ACCEPTED;
+    case MAV_CMD_DO_DIGICAM_CONTROL:
+        control(packet.param1, packet.param2, packet.param3, packet.param4, packet.param5, packet.param6);
+        return MAV_RESULT_ACCEPTED;
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+        set_trigger_distance(packet.param1);
+        if (is_equal(packet.param3, 1.0f)) {
+            take_picture();
+        }
+        return MAV_RESULT_ACCEPTED;
+    case MAV_CMD_SET_CAMERA_ZOOM:
+        if (is_equal(packet.param1, (float)ZOOM_TYPE_CONTINUOUS)) {
+            set_zoom_step((int8_t)packet.param2);
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_UNSUPPORTED;
+    case MAV_CMD_SET_CAMERA_FOCUS:
+        // accept any of the auto focus types
+        if (is_equal(packet.param1, (float)FOCUS_TYPE_AUTO) ||
+            is_equal(packet.param1, (float)FOCUS_TYPE_AUTO_SINGLE) ||
+            is_equal(packet.param1, (float)FOCUS_TYPE_AUTO_CONTINUOUS)) {
+            set_auto_focus();
+            return MAV_RESULT_ACCEPTED;
+        }
+        // accept step or continuous manual focus
+        if (is_equal(packet.param1, (float)FOCUS_TYPE_CONTINUOUS)) {
+            set_manual_focus_step((int8_t)packet.param2);
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_UNSUPPORTED;
+    case MAV_CMD_IMAGE_START_CAPTURE:
+        if (!is_zero(packet.param2) || !is_equal(packet.param3, 1.0f) || !is_zero(packet.param4)) {
+            // time interval is not supported
+            // multiple image capture is not supported
+            // capture sequence number is not supported
+            return MAV_RESULT_UNSUPPORTED;
+        }
+        take_picture();
+        return MAV_RESULT_ACCEPTED;
+    case MAV_CMD_VIDEO_START_CAPTURE:
+    case MAV_CMD_VIDEO_STOP_CAPTURE:
+    {
+        bool success = false;
+        const bool start_recording = (packet.command == MAV_CMD_VIDEO_START_CAPTURE);
+        const uint8_t stream_id = packet.param1;  // Stream ID
+        if (stream_id == 0) {
+            // stream id of 0 interpreted as primary camera
+            success = record_video(start_recording);
+        } else {
+            // convert stream id to instance id
+            success = record_video(stream_id - 1, start_recording);
+        }
+        if (success) {
+            return MAV_RESULT_ACCEPTED;
+        } else {
+            return MAV_RESULT_FAILED;
+        }
+    }
+    default:
+        return MAV_RESULT_UNSUPPORTED;
+    }
+}
+
 // set camera trigger distance in a mission
 void AP_Camera::set_trigger_distance(uint8_t instance, float distance_m)
 {
-    if (!is_valid_instance(instance)) {
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
         return;
     }
 
     // call backend
-    _backends[instance]->set_trigger_distance(distance_m);
+    backend->set_trigger_distance(distance_m);
 }
 
 // momentary switch to change camera between picture and video modes
 void AP_Camera::cam_mode_toggle(uint8_t instance)
 {
-    if (!is_valid_instance(instance)) {
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
         return;
     }
 
     // call backend
-    _backends[instance]->cam_mode_toggle();
+    backend->cam_mode_toggle();
 }
 
+// configure camera
 void AP_Camera::configure(float shooting_mode, float shutter_speed, float aperture, float ISO, float exposure_type, float cmd_id, float engine_cutoff_time)
 {
-    configure(primary, shooting_mode, shutter_speed, aperture, ISO, exposure_type, cmd_id, engine_cutoff_time);
+    WITH_SEMAPHORE(_rsem);
+
+    if (primary == nullptr) {
+        return;
+    }
+    primary->configure(shooting_mode, shutter_speed, aperture, ISO, exposure_type, cmd_id, engine_cutoff_time);
 }
 
 void AP_Camera::configure(uint8_t instance, float shooting_mode, float shutter_speed, float aperture, float ISO, float exposure_type, float cmd_id, float engine_cutoff_time)
 {
-    if (!is_valid_instance(instance)) {
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
         return;
     }
 
     // call backend
-    _backends[instance]->configure(shooting_mode, shutter_speed, aperture, ISO, exposure_type, cmd_id, engine_cutoff_time);
+    backend->configure(shooting_mode, shutter_speed, aperture, ISO, exposure_type, cmd_id, engine_cutoff_time);
 }
 
+// handle camera control
 void AP_Camera::control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id)
 {
-    control(primary, session, zoom_pos, zoom_step, focus_lock, shooting_cmd, cmd_id);
+    WITH_SEMAPHORE(_rsem);
+
+    if (primary == nullptr) {
+        return;
+    }
+    primary->control(session, zoom_pos, zoom_step, focus_lock, shooting_cmd, cmd_id);
 }
 
 void AP_Camera::control(uint8_t instance, float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id)
 {
-    if (!is_valid_instance(instance)) {
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
         return;
     }
 
     // call backend
-    _backends[instance]->control(session, zoom_pos, zoom_step, focus_lock, shooting_cmd, cmd_id);
+    backend->control(session, zoom_pos, zoom_step, focus_lock, shooting_cmd, cmd_id);
 }
 
 /*
   Send camera feedback to the GCS
  */
-void AP_Camera::send_feedback(mavlink_channel_t chan) const
+void AP_Camera::send_feedback(mavlink_channel_t chan)
 {
+    WITH_SEMAPHORE(_rsem);
+
     // call each instance
     for (uint8_t instance = 0; instance < AP_CAMERA_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
@@ -217,6 +396,8 @@ void AP_Camera::send_feedback(mavlink_channel_t chan) const
 */
 void AP_Camera::update()
 {
+    WITH_SEMAPHORE(_rsem);
+
     // call each instance
     for (uint8_t instance = 0; instance < AP_CAMERA_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
@@ -228,65 +409,98 @@ void AP_Camera::update()
 // take_picture - take a picture
 void AP_Camera::take_picture(uint8_t instance)
 {
-    if (!is_valid_instance(instance)) {
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
         return;
     }
 
     // call backend
-    _backends[instance]->take_picture();
+    backend->take_picture();
 }
 
 // start/stop recording video.  returns true on success
 // start_recording should be true to start recording, false to stop recording
 bool AP_Camera::record_video(uint8_t instance, bool start_recording)
 {
-    if (!is_valid_instance(instance)) {
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
         return false;
     }
 
     // call backend
-    return _backends[instance]->record_video(start_recording);
+    return backend->record_video(start_recording);
 }
 
 // zoom in, out or hold.  returns true on success
 // zoom out = -1, hold = 0, zoom in = 1
 bool AP_Camera::set_zoom_step(uint8_t instance, int8_t zoom_step)
 {
-    if (!is_valid_instance(instance)) {
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
         return false;
     }
 
     // call each instance
-    return _backends[instance]->set_zoom_step(zoom_step);
+    return backend->set_zoom_step(zoom_step);
 }
 
 // focus in, out or hold.  returns true on success
 // focus in = -1, focus hold = 0, focus out = 1
 bool AP_Camera::set_manual_focus_step(uint8_t instance, int8_t focus_step)
 {
-    if (!is_valid_instance(instance)) {
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
         return false;
     }
 
     // call backend
-    return _backends[instance]->set_manual_focus_step(focus_step);
+    return backend->set_manual_focus_step(focus_step);
 }
 
 // auto focus.  returns true on success
 bool AP_Camera::set_auto_focus(uint8_t instance)
 {
-    if (!is_valid_instance(instance)) {
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
         return false;
     }
 
     // call backend
-    return _backends[instance]->set_auto_focus();
+    return backend->set_auto_focus();
 }
 
-// check instance number is valid
-bool AP_Camera::is_valid_instance(uint8_t instance) const
+#if AP_CAMERA_SCRIPTING_ENABLED
+// accessor to allow scripting backend to retrieve state
+// returns true on success and cam_state is filled in
+bool AP_Camera::get_state(uint8_t instance, camera_state_t& cam_state)
 {
-    return ((instance < AP_CAMERA_MAX_INSTANCES) && (_backends[instance] != nullptr));
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+    return backend->get_state(cam_state);
+}
+#endif // #if AP_CAMERA_SCRIPTING_ENABLED
+
+// return backend for instance number
+AP_Camera_Backend *AP_Camera::get_instance(uint8_t instance) const
+{
+    if (instance >= ARRAY_SIZE(_backends)) {
+        return nullptr;
+    }
+    return _backends[instance];
 }
 
 // perform any required parameter conversion

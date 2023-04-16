@@ -107,6 +107,14 @@ public:
     // check if lat and lng match. Ignore altitude and options
     bool same_latlon_as(const Location &loc2) const;
 
+    // check if altitude matches.
+    bool same_alt_as(const Location &loc2) const;
+
+    // check if lat, lng, and alt match.
+    bool same_loc_as(const Location &loc2) const {
+        return same_latlon_as(loc2) && same_alt_as(loc2);
+    }
+
     /*
      * convert invalid waypoint with useful data. return true if location changed
      */

@@ -177,10 +177,8 @@ void AP_Mount_Siyi::read_incoming_packets()
 
     // process bytes received
     for (int16_t i = 0; i < nbytes; i++) {
-        const int16_t b = _uart->read();
-
-        // sanity check byte
-        if ((b < 0) || (b > 0xFF)) {
+        uint8_t b;
+        if (!_uart->read(b)) {
             continue;
         }
 

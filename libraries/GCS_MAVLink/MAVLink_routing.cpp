@@ -88,18 +88,18 @@ detect a reset of the flight controller, which implies a reset of its
 routing table.
 
 */
-bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavlink_message_t &msg)
+bool MAVLink_routing::check_and_forward(GCS_MAVLINK &in_link, const mavlink_message_t &msg)
 {
     // handle the case of loopback of our own messages, due to
     // incorrect serial configuration.
     if (msg.sysid == mavlink_system.sysid &&
         msg.compid == mavlink_system.compid) {
-        return true;
+        return false;
     }
 
     // learn new routes including private channels
     // so that find_mav_type works for all channels
-    learn_route(in_channel, msg);
+    learn_route(in_link, msg);
 
     if (msg.msgid == MAVLINK_MSG_ID_RADIO ||
         msg.msgid == MAVLINK_MSG_ID_RADIO_STATUS) {
@@ -107,12 +107,12 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
         return true;
     }
 
-    const bool from_private_channel = GCS_MAVLINK::is_private(in_channel);
+    const bool from_private_channel = in_link.is_private();
 
     if (msg.msgid == MAVLINK_MSG_ID_HEARTBEAT) {
         // heartbeat needs special handling
         if (!from_private_channel) {
-            handle_heartbeat(in_channel, msg);
+            handle_heartbeat(in_link, msg);
         }
         return true;
     }
@@ -151,7 +151,12 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
     for (uint8_t i=0; i<num_routes; i++) {
 
         // Skip if channel is private and the target system or component IDs do not match
-        if ((GCS_MAVLINK::is_private(routes[i].channel)) &&
+        GCS_MAVLINK *out_link = gcs().chan(routes[i].channel);
+        if (out_link == nullptr) {
+            // this is bad
+            continue;
+        }
+        if (out_link->is_private() &&
             (target_system != routes[i].sysid ||
              target_component != routes[i].compid)) {
             continue;
@@ -162,14 +167,12 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
                                   target_component == routes[i].compid ||
                                   !match_system))) {
 
-            if (in_channel != routes[i].channel && !sent_to_chan[routes[i].channel]) {
-                
-                if (comm_get_txspace(routes[i].channel) >= ((uint16_t)msg.len) +
-                    GCS_MAVLINK::packet_overhead_chan(routes[i].channel)) {
+            if (&in_link != out_link && !sent_to_chan[routes[i].channel]) {
+                if (out_link->check_payload_size(msg.len)) {
 #if ROUTING_DEBUG
                     ::printf("fwd msg %u from chan %u on chan %u sysid=%d compid=%d\n",
                              msg.msgid,
-                             (unsigned)in_channel,
+                             (unsigned)in_link->get_chan(),
                              (unsigned)routes[i].channel,
                              (int)target_system,
                              (int)target_component);
@@ -285,7 +288,7 @@ bool MAVLink_routing::find_by_mavtype_and_compid(uint8_t mavtype, uint8_t compid
 /*
   see if the message is for a new route and learn it
 */
-void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_message_t &msg)
+void MAVLink_routing::learn_route(GCS_MAVLINK &in_link, const mavlink_message_t &msg)
 {
     uint8_t i;
     if (msg.sysid == 0) {
@@ -304,6 +307,7 @@ void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_me
         // should also process them locally.
         return;
     }
+    const mavlink_channel_t in_channel = in_link.get_chan();
     for (i=0; i<num_routes; i++) {
         if (routes[i].sysid == msg.sysid &&
             routes[i].compid == msg.compid &&
@@ -337,9 +341,11 @@ void MAVLink_routing::learn_route(mavlink_channel_t in_channel, const mavlink_me
   propagation heartbeat messages need to be forwarded on all channels
   except channels where the sysid/compid of the heartbeat could come from
 */
-void MAVLink_routing::handle_heartbeat(mavlink_channel_t in_channel, const mavlink_message_t &msg)
+void MAVLink_routing::handle_heartbeat(GCS_MAVLINK &link, const mavlink_message_t &msg)
 {
     uint16_t mask = GCS_MAVLINK::active_channel_mask() & ~GCS_MAVLINK::private_channel_mask();
+
+    const mavlink_channel_t in_channel = link.get_chan();
 
     // don't send on the incoming channel. This should only matter if
     // the routing table is full

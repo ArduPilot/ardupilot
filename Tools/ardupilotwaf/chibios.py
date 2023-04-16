@@ -348,7 +348,7 @@ class generate_apj(Task.Task):
 class build_abin(Task.Task):
     '''build an abin file for skyviper firmware upload via web UI'''
     color='CYAN'
-    run_str='${TOOLS_SCRIPTS}/make_abin.sh ${SRC}.bin ${SRC}.abin'
+    run_str='${TOOLS_SCRIPTS}/make_abin.sh ${SRC} ${TGT}'
     always_run = True
     def keyword(self):
         return "Generating"
@@ -400,7 +400,7 @@ def chibios_firmware(self):
 
     if self.env.BUILD_ABIN:
         abin_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.abin').name)
-        abin_task = self.create_task('build_abin', src=link_output, tgt=abin_target)
+        abin_task = self.create_task('build_abin', src=bin_target, tgt=abin_target)
         abin_task.set_run_after(generate_apj_task)
 
     cleanup_task = self.create_task('build_normalized_bins', src=bin_target)
@@ -442,17 +442,21 @@ def setup_canmgr_build(cfg):
     the build based on the presence of CAN pins in hwdef.dat except for AP_Periph builds'''
     env = cfg.env
     env.AP_LIBRARIES += [
-        'AP_UAVCAN',
-        'modules/uavcan/libuavcan/src/**/*.cpp',
+        'AP_DroneCAN',
+        'modules/DroneCAN/libcanard/*.c',
         ]
-
+    env.INCLUDES += [
+        cfg.srcnode.find_dir('modules/DroneCAN/libcanard').abspath(),
+        ]
     env.CFLAGS += ['-DHAL_CAN_IFACES=2']
 
-    env.DEFINES += [
-        'UAVCAN_CPP_VERSION=UAVCAN_CPP03',
-        'UAVCAN_NO_ASSERTIONS=1',
-        'UAVCAN_NULLPTR=nullptr'
-        ]
+    if not env.AP_PERIPH:
+        env.DEFINES += [
+            'DRONECAN_CXX_WRAPPERS=1',
+            'USE_USER_HELPERS=1',
+            'CANARD_ENABLE_DEADLINE=1',
+            'CANARD_MULTI_IFACE=1'
+            ]
 
     if cfg.env.HAL_CANFD_SUPPORTED:
         env.DEFINES += ['UAVCAN_SUPPORT_CANFD=1']
@@ -496,6 +500,8 @@ def load_env_vars(env):
         env.CHIBIOS_BUILD_FLAGS += ' ENABLE_STATS=yes'
     if env.ENABLE_DFU_BOOT and env.BOOTLOADER:
         env.CHIBIOS_BUILD_FLAGS += ' USE_ASXOPT=-DCRT0_ENTRY_HOOK=TRUE'
+    if env.AP_BOARD_START_TIME:
+        env.CHIBIOS_BUILD_FLAGS += ' AP_BOARD_START_TIME=0x%x' % env.AP_BOARD_START_TIME
 
 
 def setup_optimization(env):

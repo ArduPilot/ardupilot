@@ -303,7 +303,7 @@ void AP_DAL::WriteLogMessage(enum LogMessages msg_type, void *msg, const void *o
 */
 bool AP_DAL::ekf_low_time_remaining(EKFType etype, uint8_t core)
 {
-    static_assert(INS_MAX_INSTANCES <= 4, "max 4 IMUs");
+    static_assert(MAX_EKF_CORES <= 4, "max 4 EKF cores supported");
     const uint8_t mask = (1U<<(core+(uint8_t(etype)*4)));
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
     /*

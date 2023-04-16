@@ -8,6 +8,7 @@
 #include <AP_Camera/AP_Camera.h>
 #include <AP_Gripper/AP_Gripper_config.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 const AP_Param::GroupInfo AP_Mission::var_info[] = {
 
@@ -53,6 +54,31 @@ HAL_Semaphore AP_Mission::_rsem;
 /// init - initialises this library including checks the version in eeprom matches this library
 void AP_Mission::init()
 {
+#if AP_SDCARD_STORAGE_ENABLED
+    // check for extra storage on microsd
+    const auto *bc = AP::boardConfig();
+    if (bc != nullptr) {
+        const auto size_kb = bc->get_sdcard_mission_kb();
+        if (size_kb > 0) {
+            _failed_sdcard_storage = !_storage.attach_file(AP_MISSION_SDCARD_FILENAME, size_kb);
+            if (_failed_sdcard_storage) {
+                // wipe mission if storage not available, but don't save. This allows sdcard error to be fixed and reboot
+                _cmd_total.set(0);
+            }
+        }
+    }
+#endif
+
+    // work out maximum index for our storage size
+    if (_storage.size() >= AP_MISSION_EEPROM_COMMAND_SIZE+4) {
+        _commands_max = (_storage.size()-4U) / AP_MISSION_EEPROM_COMMAND_SIZE;
+    }
+    if (_cmd_total.get() > _commands_max) {
+        // wipe mission if storage not available, but don't save. This allows sdcard error to be fixed and reboot
+        _cmd_total.set(0);
+    }
+
+
     // check_eeprom_version - checks version of missions stored in eeprom matches this library
     // command list will be cleared if they do not match
     check_eeprom_version();
@@ -241,8 +267,8 @@ void AP_Mission::reset()
 ///     returns true if mission was running so it could not be cleared
 bool AP_Mission::clear()
 {
-    // do not allow clearing the mission while it is running
-    if (_flags.state == MISSION_RUNNING) {
+    // do not allow clearing the mission while it is running unless disarmed
+    if (hal.util->get_soft_armed() && _flags.state == MISSION_RUNNING) {
         return false;
     }
 
@@ -254,7 +280,7 @@ bool AP_Mission::clear()
     _do_cmd.index = AP_MISSION_CMD_INDEX_NONE;
     _flags.nav_cmd_loaded = false;
     _flags.do_cmd_loaded = false;
-
+    _flags.state = MISSION_STOPPED;
     // return success
     return true;
 }
@@ -350,6 +376,11 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
     case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
     case MAV_CMD_JUMP_TAG:
+    case MAV_CMD_IMAGE_START_CAPTURE:
+    case MAV_CMD_SET_CAMERA_ZOOM:
+    case MAV_CMD_SET_CAMERA_FOCUS:
+    case MAV_CMD_VIDEO_START_CAPTURE:
+    case MAV_CMD_VIDEO_STOP_CAPTURE:
         return true;
     default:
         return _cmd_verify_fn(cmd);
@@ -378,11 +409,15 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     case MAV_CMD_DO_REPEAT_SERVO:
     case MAV_CMD_DO_REPEAT_RELAY:
         return start_command_do_servorelayevents(cmd);
-    case MAV_CMD_DO_CONTROL_VIDEO:
+#if AP_CAMERA_ENABLED
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
     case MAV_CMD_DO_DIGICAM_CONTROL:
-#if AP_CAMERA_ENABLED
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+    case MAV_CMD_IMAGE_START_CAPTURE:
+    case MAV_CMD_SET_CAMERA_ZOOM:
+    case MAV_CMD_SET_CAMERA_FOCUS:
+    case MAV_CMD_VIDEO_START_CAPTURE:
+    case MAV_CMD_VIDEO_STOP_CAPTURE:
         return start_command_camera(cmd);
 #endif
     case MAV_CMD_DO_PARACHUTE:
@@ -601,7 +636,7 @@ bool AP_Mission::restart_current_nav_cmd()
 bool AP_Mission::set_item(uint16_t index, mavlink_mission_item_int_t& src_packet)
 {
     // this is the on-storage format
-    AP_Mission::Mission_Command cmd;
+    AP_Mission::Mission_Command cmd {};
 
     // can't handle request for anything bigger than the mission size+1...
     if (index > num_commands()) {
@@ -629,7 +664,7 @@ bool AP_Mission::get_item(uint16_t index, mavlink_mission_item_int_t& ret_packet
     //  means it contains invalid data after it leaves here.
 
     // this is the on-storage format
-    AP_Mission::Mission_Command cmd;
+    AP_Mission::Mission_Command cmd {};
 
     // can't handle request for anything bigger than the mission size...
     if (index >= num_commands()) {
@@ -719,8 +754,7 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
         cmd.content.location = AP::ahrs().get_home();
         return true;
     }
-
-    if (index >= (unsigned)_cmd_total) {
+    if (index >= (unsigned)_cmd_total || index >= _commands_max) {
         return false;
     }
 
@@ -1269,6 +1303,30 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.gimbal_manager_pitchyaw.gimbal_id = packet.z;
         break;
 
+    case MAV_CMD_IMAGE_START_CAPTURE:
+        cmd.content.image_start_capture.interval_s = packet.param2;
+        cmd.content.image_start_capture.total_num_images = packet.param3;
+        cmd.content.image_start_capture.start_seq_number = packet.param4;
+        break;
+
+    case MAV_CMD_SET_CAMERA_ZOOM:
+        cmd.content.set_camera_zoom.zoom_type = packet.param1;
+        cmd.content.set_camera_zoom.zoom_value = packet.param2;
+        break;
+
+    case MAV_CMD_SET_CAMERA_FOCUS:
+        cmd.content.set_camera_focus.focus_type = packet.param1;
+        cmd.content.set_camera_focus.focus_value = packet.param2;
+        break;
+
+    case MAV_CMD_VIDEO_START_CAPTURE:
+        cmd.content.video_start_capture.video_stream_id = packet.param1;
+        break;
+
+    case MAV_CMD_VIDEO_STOP_CAPTURE:
+        cmd.content.video_stop_capture.video_stream_id = packet.param1;
+        break;
+
     default:
         // unrecognised command
         return MAV_MISSION_UNSUPPORTED;
@@ -1758,6 +1816,30 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.z = cmd.content.gimbal_manager_pitchyaw.gimbal_id;
         break;
 
+    case MAV_CMD_IMAGE_START_CAPTURE:
+        packet.param2 = cmd.content.image_start_capture.interval_s;
+        packet.param3 = cmd.content.image_start_capture.total_num_images;
+        packet.param4 = cmd.content.image_start_capture.start_seq_number;
+        break;
+
+    case MAV_CMD_SET_CAMERA_ZOOM:
+        packet.param1 = cmd.content.set_camera_zoom.zoom_type;
+        packet.param2 = cmd.content.set_camera_zoom.zoom_value;
+        break;
+
+    case MAV_CMD_SET_CAMERA_FOCUS:
+        packet.param1 = cmd.content.set_camera_focus.focus_type;
+        packet.param2 = cmd.content.set_camera_focus.focus_value;
+        break;
+
+    case MAV_CMD_VIDEO_START_CAPTURE:
+        packet.param1 = cmd.content.video_start_capture.video_stream_id;
+        break;
+
+    case MAV_CMD_VIDEO_STOP_CAPTURE:
+        packet.param1 = cmd.content.video_stop_capture.video_stream_id;
+        break;
+
     default:
         // unrecognised command
         return false;
@@ -2080,6 +2162,9 @@ uint16_t AP_Mission::get_index_of_jump_tag(const uint16_t tag) const
 {
     const auto count = num_commands();
     for (uint16_t i = 1; i < count; i++) {
+        if (get_command_id(i) != uint16_t(MAV_CMD_JUMP_TAG)) {
+            continue;
+        }
         Mission_Command tmp;
         if (!read_cmd_from_storage(i, tmp)) {
             continue;
@@ -2182,15 +2267,6 @@ void AP_Mission::check_eeprom_version()
     }
 }
 
-/*
-  return total number of commands that can fit in storage space
- */
-uint16_t AP_Mission::num_commands_max(void) const
-{
-    // -4 to remove space for eeprom version number
-    return (_storage.size() - 4) / AP_MISSION_EEPROM_COMMAND_SIZE;
-}
-
 // find the nearest landing sequence starting point (DO_LAND_START) and
 // return its index.  Returns 0 if no appropriate DO_LAND_START point can
 // be found.
@@ -2207,7 +2283,11 @@ uint16_t AP_Mission::get_landing_sequence_start()
     float min_distance = -1;
 
     // Go through mission looking for nearest landing start command
-    for (uint16_t i = 1; i < num_commands(); i++) {
+    const auto count = num_commands();
+    for (uint16_t i = 1; i < count; i++) {
+        if (get_command_id(i) != uint16_t(MAV_CMD_DO_LAND_START)) {
+            continue;
+        }
         Mission_Command tmp;
         if (!read_cmd_from_storage(i, tmp)) {
             continue;
@@ -2270,7 +2350,11 @@ bool AP_Mission::jump_to_abort_landing_sequence(void)
     if (AP::ahrs().get_location(current_loc)) {
         float min_distance = FLT_MAX;
 
-        for (uint16_t i = 1; i < num_commands(); i++) {
+        const auto count = num_commands();
+        for (uint16_t i = 1; i < count; i++) {
+            if (get_command_id(i) != uint16_t(MAV_CMD_DO_GO_AROUND)) {
+                continue;
+            }
             Mission_Command tmp;
             if (!read_cmd_from_storage(i, tmp)) {
                 continue;
@@ -2481,8 +2565,6 @@ const char *AP_Mission::Mission_Command::type() const
         return "RepeatServo";
     case MAV_CMD_DO_REPEAT_RELAY:
         return "RepeatRelay";
-    case MAV_CMD_DO_CONTROL_VIDEO:
-        return "CtrlVideo";
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
         return "DigiCamCfg";
     case MAV_CMD_DO_DIGICAM_CONTROL:
@@ -2561,6 +2643,16 @@ const char *AP_Mission::Mission_Command::type() const
         return "PauseContinue";
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
         return "GimbalPitchYaw";
+    case MAV_CMD_IMAGE_START_CAPTURE:
+        return "ImageStartCapture";
+    case MAV_CMD_SET_CAMERA_ZOOM:
+        return "SetCameraZoom";
+    case MAV_CMD_SET_CAMERA_FOCUS:
+        return "SetCameraFocus";
+    case MAV_CMD_VIDEO_START_CAPTURE:
+        return "VideoStartCapture";
+    case MAV_CMD_VIDEO_STOP_CAPTURE:
+        return "VideoStopCapture";
     default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         AP_HAL::panic("Mission command with ID %u has no string", id);
@@ -2569,9 +2661,36 @@ const char *AP_Mission::Mission_Command::type() const
     }
 }
 
+/*
+  get the command ID of a mission index. Caller should have checked the index is in range
+ */
+uint16_t AP_Mission::get_command_id(uint16_t index) const
+{
+    const uint16_t pos_in_storage = 4 + (index * AP_MISSION_EEPROM_COMMAND_SIZE);
+    uint8_t b[3] {};
+    if (!_storage.read_block(b, pos_in_storage, sizeof(b))) {
+        return 0U;
+    }
+    uint16_t id = 0;
+    if (b[0] == 0 || b[0] == 1) {
+        memcpy((void*)&id, (void*)&b[1], 2);
+    } else {
+        id = b[0];
+    }
+    return id;
+}
+
+/*
+  see if the mission contains a particular item
+ */
 bool AP_Mission::contains_item(MAV_CMD command) const
 {
-    for (uint16_t i = 1; i < num_commands(); i++) {
+    const auto count = num_commands();
+    for (uint16_t i = 1; i < count; i++) {
+        if (get_command_id(i) != uint16_t(command)) {
+            continue;
+        }
+        // confirm with full read
         Mission_Command tmp;
         if (!read_cmd_from_storage(i, tmp)) {
             continue;
@@ -2606,7 +2725,11 @@ bool AP_Mission::contains_terrain_alt_items(void)
 
 bool AP_Mission::calculate_contains_terrain_alt_items(void) const
 {
-    for (uint16_t i = 1; i < num_commands(); i++) {
+    const auto count = num_commands();
+    for (uint16_t i = 1; i < count; i++) {
+        if (!stored_in_location(get_command_id(i))) {
+            continue;
+        }
         Mission_Command tmp;
         if (!read_cmd_from_storage(i, tmp)) {
             continue;

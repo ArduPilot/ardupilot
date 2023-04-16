@@ -139,16 +139,15 @@ ssize_t IRAM_ATTR UARTDriver::read(uint8_t *buffer, uint16_t count)
     return ret;
 }
 
-int16_t IRAM_ATTR UARTDriver::read()
+bool IRAM_ATTR UARTDriver::read(uint8_t &byte)
 {
     if (!_initialized) {
-        return -1;
+        return false;
     }
-    uint8_t byte;
     if (!_readbuf.read_byte(&byte)) {
-        return -1;
+        return false;
     }
-    return byte;
+    return true;
 }
 
 void IRAM_ATTR UARTDriver::_timer_tick(void)

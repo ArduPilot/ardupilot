@@ -1,5 +1,9 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.3.0-beta11/beta12 27-Mar-2023
+Changes from 4.3.0-beta10
+1) Bi-directional DShot fix for possible motor stop approx 72min after startup 
+------------------------------------------------------------------
 Rover 4.3.0-beta10 01-Mar-2023
 Changes from 4.3.0-beta9
 1) Bug fixes

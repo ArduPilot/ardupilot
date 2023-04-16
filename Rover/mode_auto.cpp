@@ -44,6 +44,12 @@ void ModeAuto::_exit()
 
 void ModeAuto::update()
 {
+    // check if mission exists (due to being cleared while disarmed in AUTO,
+    // if no mission, then stop...needs mode change out of AUTO, mission load,
+    // and change back to AUTO to run a mission at this point
+    if (!hal.util->get_soft_armed() && mission.num_commands() <= 1) {
+        start_stop();
+    }
     // start or update mission
     if (waiting_to_start) {
         // don't start the mission until we have an origin
@@ -590,7 +596,6 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
     case MAV_CMD_DO_SET_HOME:
-    case MAV_CMD_DO_CONTROL_VIDEO:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
     case MAV_CMD_DO_SET_ROI:
     case MAV_CMD_DO_SET_REVERSE:

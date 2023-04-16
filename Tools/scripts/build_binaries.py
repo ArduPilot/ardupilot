@@ -56,9 +56,6 @@ def get_required_compiler(vehicle, tag, board):
     if not is_chibios_build(board):
         # only override compiler for ChibiOS builds
         return None
-    if vehicle == 'Sub' and tag in ['stable', 'beta']:
-        # sub stable and beta is on the old compiler
-        return "g++-6.3.1"
     # use 10.2.1 compiler for all other builds
     return "g++-10.2.1"
 

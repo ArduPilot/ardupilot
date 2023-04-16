@@ -1,6 +1,6 @@
 #include "AP_Camera_MAVLink.h"
 
-#if AP_CAMERA_ENABLED
+#if AP_CAMERA_MAVLINK_ENABLED
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
@@ -61,4 +61,4 @@ void AP_Camera_MAVLink::control(float session, float zoom_pos, float zoom_step, 
     GCS_MAVLINK::send_to_components(MAVLINK_MSG_ID_COMMAND_LONG, (char*)&mav_cmd_long, sizeof(mav_cmd_long));
 }
 
-#endif // AP_CAMERA_ENABLED
+#endif // AP_CAMERA_MAVLINK_ENABLED

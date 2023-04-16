@@ -33,12 +33,6 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
         return false;
     }
 
-    // if we are using motor Estop switch, it must not be in Estop position
-    if (SRV_Channels::get_emergency_stop()){
-        check_failed(display_failure, "Motor Emergency Stopped");
-        return false;
-    }
-
     if (!disarm_switch_checks(display_failure)) {
         return false;
     }
@@ -755,8 +749,8 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
     copter.sprayer.test_pump(false);
 #endif
 
-    // enable output to motors
-    copter.enable_motor_output();
+    // output lowest possible value to motors
+    copter.motors->output_min();
 
     // finally actually arm the motors
     copter.motors->armed(true);

@@ -340,6 +340,16 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("HEAT_LOWMGN", 23, AP_BoardConfig, heater.imu_arming_temperature_margin_low, HAL_IMU_TEMP_MARGIN_LOW_DEFAULT),
 #endif
 
+#if AP_SDCARD_STORAGE_ENABLED
+    // @Param: SD_MISSION
+    // @DisplayName:  SDCard Mission size
+    // @Description: This sets the amount of storage in kilobytes reserved on the microsd card in mission.stg for waypoint storage. Each waypoint uses 15 bytes.
+    // @Range: 0 64
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("SD_MISSION", 24, AP_BoardConfig, sdcard_storage.mission_kb, 0),
+#endif
+    
     AP_GROUPEND
 };
 

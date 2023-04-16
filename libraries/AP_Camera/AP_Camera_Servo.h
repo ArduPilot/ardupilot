@@ -20,7 +20,7 @@
 
 #include "AP_Camera_Backend.h"
 
-#if AP_CAMERA_ENABLED
+#if AP_CAMERA_SERVO_ENABLED
 
 class AP_Camera_Servo : public AP_Camera_Backend
 {
@@ -47,4 +47,4 @@ private:
     uint16_t iso_counter;       // count of number of cycles iso output should be held open
 };
 
-#endif // AP_CAMERA_ENABLED
+#endif // AP_CAMERA_SERVO_ENABLED

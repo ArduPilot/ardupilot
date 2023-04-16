@@ -14,6 +14,10 @@
  */
 #pragma once
 
+#include "AP_EFI_config.h"
+
+#if AP_EFI_SERIAL_MS_ENABLED
+
 #include "AP_EFI.h"
 #include "AP_EFI_Backend.h"
 
@@ -108,3 +112,5 @@ private:
         RT_LAST_OFFSET = FUEL_PRESSURE_LSB
     };
 };
+
+#endif  // AP_EFI_SERIAL_MS_ENABLED

@@ -1494,9 +1494,11 @@ class AutoTest(ABC):
                  replay=False,
                  sup_binaries=[],
                  reset_after_every_test=False,
-                 sitl_32bit=False,
+                 force_32bit=False,
                  ubsan=False,
                  ubsan_abort=False,
+                 num_aux_imus=0,
+                 dronecan_tests=False,
                  build_opts={}):
 
         self.start_time = time.time()
@@ -1520,10 +1522,11 @@ class AutoTest(ABC):
             self.speedup = self.default_speedup()
         self.sup_binaries = sup_binaries
         self.reset_after_every_test = reset_after_every_test
-        self.sitl_32bit = sitl_32bit
+        self.force_32bit = force_32bit
         self.ubsan = ubsan
         self.ubsan_abort = ubsan_abort
         self.build_opts = build_opts
+        self.num_aux_imus = num_aux_imus
 
         self.mavproxy = None
         self._mavproxy = None  # for auto-cleanup on failed tests
@@ -1576,6 +1579,7 @@ class AutoTest(ABC):
             offline=self.terrain_in_offline_mode
         )
         self.terrain_data_messages_sent = 0  # count of messages back
+        self.dronecan_tests = dronecan_tests
 
     def __del__(self):
         if self.rc_thread is not None:
@@ -1982,7 +1986,8 @@ class AutoTest(ABC):
         self.progress("Rebooting SITL")
         self.reboot_sitl_mav(required_bootcount=required_bootcount, force=force)
         self.do_heartbeats(force=True)
-        self.assert_simstate_location_is_at_startup_location()
+        if self.frame != 'sailboat':  # sailboats drift with wind!
+            self.assert_simstate_location_is_at_startup_location()
 
     def reboot_sitl_mavproxy(self, required_bootcount=None):
         """Reboot SITL instance using MAVProxy and wait for it to reconnect."""
@@ -2149,6 +2154,20 @@ class AutoTest(ABC):
             "SIM_ACC3_SCAL_X",
             "SIM_ACC3_SCAL_Y",
             "SIM_ACC3_SCAL_Z",
+            "SIM_ACC4_RND",
+            "SIM_ACC4_SCAL_X",
+            "SIM_ACC4_SCAL_Y",
+            "SIM_ACC4_SCAL_Z",
+            "SIM_ACC4_BIAS_X",
+            "SIM_ACC4_BIAS_Y",
+            "SIM_ACC4_BIAS_Z",
+            "SIM_ACC5_RND",
+            "SIM_ACC5_SCAL_X",
+            "SIM_ACC5_SCAL_Y",
+            "SIM_ACC5_SCAL_Z",
+            "SIM_ACC5_BIAS_X",
+            "SIM_ACC5_BIAS_Y",
+            "SIM_ACC5_BIAS_Z",
             "SIM_ACC_FILE_RW",
             "SIM_ACC_TRIM_X",
             "SIM_ACC_TRIM_Y",
@@ -2210,7 +2229,6 @@ class AutoTest(ABC):
             "SIM_ENGINE_FAIL",
             "SIM_ENGINE_MUL",
             "SIM_ESC_ARM_RPM",
-            "SIM_FLOAT_EXCEPT",
             "SIM_FLOW_DELAY",
             "SIM_FLOW_ENABLE",
             "SIM_FLOW_POS_X",
@@ -2274,6 +2292,14 @@ class AutoTest(ABC):
             "SIM_GYR3_SCALE_X",
             "SIM_GYR3_SCALE_Y",
             "SIM_GYR3_SCALE_Z",
+            "SIM_GYR4_RND",
+            "SIM_GYR4_SCALE_X",
+            "SIM_GYR4_SCALE_Y",
+            "SIM_GYR4_SCALE_Z",
+            "SIM_GYR5_RND",
+            "SIM_GYR5_SCALE_X",
+            "SIM_GYR5_SCALE_Y",
+            "SIM_GYR5_SCALE_Z",
             "SIM_GYR_FAIL_MSK",
             "SIM_GYR_FILE_RW",
             "SIM_IE24_ENABLE",
@@ -2346,6 +2372,48 @@ class AutoTest(ABC):
             "SIM_IMUT3_GYR3_Z",
             "SIM_IMUT3_TMAX",
             "SIM_IMUT3_TMIN",
+            "SIM_IMUT4_ACC1_X",
+            "SIM_IMUT4_ACC1_Y",
+            "SIM_IMUT4_ACC1_Z",
+            "SIM_IMUT4_ACC2_X",
+            "SIM_IMUT4_ACC2_Y",
+            "SIM_IMUT4_ACC2_Z",
+            "SIM_IMUT4_ACC3_X",
+            "SIM_IMUT4_ACC3_Y",
+            "SIM_IMUT4_ACC3_Z",
+            "SIM_IMUT4_ENABLE",
+            "SIM_IMUT4_GYR1_X",
+            "SIM_IMUT4_GYR1_Y",
+            "SIM_IMUT4_GYR1_Z",
+            "SIM_IMUT4_GYR2_X",
+            "SIM_IMUT4_GYR2_Y",
+            "SIM_IMUT4_GYR2_Z",
+            "SIM_IMUT4_GYR3_X",
+            "SIM_IMUT4_GYR3_Y",
+            "SIM_IMUT4_GYR3_Z",
+            "SIM_IMUT4_TMAX",
+            "SIM_IMUT4_TMIN",
+            "SIM_IMUT5_ACC1_X",
+            "SIM_IMUT5_ACC1_Y",
+            "SIM_IMUT5_ACC1_Z",
+            "SIM_IMUT5_ACC2_X",
+            "SIM_IMUT5_ACC2_Y",
+            "SIM_IMUT5_ACC2_Z",
+            "SIM_IMUT5_ACC3_X",
+            "SIM_IMUT5_ACC3_Y",
+            "SIM_IMUT5_ACC3_Z",
+            "SIM_IMUT5_ENABLE",
+            "SIM_IMUT5_GYR1_X",
+            "SIM_IMUT5_GYR1_Y",
+            "SIM_IMUT5_GYR1_Z",
+            "SIM_IMUT5_GYR2_X",
+            "SIM_IMUT5_GYR2_Y",
+            "SIM_IMUT5_GYR2_Z",
+            "SIM_IMUT5_GYR3_X",
+            "SIM_IMUT5_GYR3_Y",
+            "SIM_IMUT5_GYR3_Z",
+            "SIM_IMUT5_TMAX",
+            "SIM_IMUT5_TMIN",
             "SIM_IMUT_END",
             "SIM_IMUT_FIXED",
             "SIM_IMUT_START",
@@ -2407,10 +2475,6 @@ class AutoTest(ABC):
             "SIM_MAG1_ORIENT",
             "SIM_MAG_RND",
             "SIM_ODOM_ENABLE",
-            "SIM_OPOS_ALT",
-            "SIM_OPOS_HDG",
-            "SIM_OPOS_LAT",
-            "SIM_OPOS_LNG",
             "SIM_PARA_ENABLE",
             "SIM_PARA_PIN",
             "SIM_PIN_MASK",
@@ -2719,7 +2783,7 @@ class AutoTest(ABC):
                         continue
                     if "#if FRAME_CONFIG == HELI_FRAME" in line:
                         continue
-                    if "#if PRECISION_LANDING == ENABLED" in line:
+                    if "#if AC_PRECLAND_ENABLED" in line:
                         continue
                     if "#end" in line:
                         continue
@@ -3011,6 +3075,8 @@ class AutoTest(ABC):
             if self.force_ahrs_type == 3:
                 ret["EK3_ENABLE"] = 1
             ret["AHRS_EKF_TYPE"] = self.force_ahrs_type
+        if self.num_aux_imus > 0:
+            ret["SIM_IMU_COUNT"] = self.num_aux_imus + 3
         if self.replay:
             ret["LOG_REPLAY"] = 1
         return ret
@@ -3903,14 +3969,14 @@ class AutoTest(ABC):
         self.assert_message_field_values(m, fieldvalues, verbose=verbose, epsilon=epsilon)
         return m
 
-    def wait_message_field_values(self, message, fieldvalues, timeout=10, epsilon=None):
+    def wait_message_field_values(self, message, fieldvalues, timeout=10, epsilon=None, instance=None):
         tstart = self.get_sim_time_cached()
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("Field never reached values")
-            m = self.assert_receive_message(message)
+            m = self.assert_receive_message(message, instance=instance)
             if self.message_has_field_values(m, fieldvalues, epsilon=epsilon):
-                break
+                return m
 
     def onboard_logging_not_log_disarmed(self):
         self.start_subtest("Test LOG_DISARMED-is-false behaviour")
@@ -4281,13 +4347,17 @@ class AutoTest(ABC):
                                very_verbose=False,
                                mav=None,
                                condition=None,
-                               delay_fn=None):
+                               delay_fn=None,
+                               instance=None):
         if mav is None:
             mav = self.mav
         m = None
         tstart = time.time()  # timeout in wallclock
         while True:
             m = mav.recv_match(type=type, blocking=True, timeout=0.05, condition=condition)
+            if instance is not None:
+                if getattr(m, m._instance_field) != instance:
+                    continue
             if m is not None:
                 break
             if time.time() - tstart > timeout:
@@ -5744,6 +5814,7 @@ class AutoTest(ABC):
             target_sysid=target_sysid,
             target_compid=target_compid,
             mav=mav,
+            quiet=quiet,
         )
         self.run_cmd_get_ack(command, want_result, timeout, quiet=quiet, mav=mav)
 
@@ -7238,6 +7309,19 @@ class AutoTest(ABC):
         # Check fence is not enabled
         self.assert_not_receiving_message('FENCE_STATUS', timeout=timeout)
 
+    def NoArmWithoutMissionItems(self):
+        '''ensure we can't arm in auto mode without mission items present'''
+        # load a trivial mission
+        items = []
+        items.append((mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 20000),)
+        items.append((mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0))
+        self.upload_simple_relhome_mission(items)
+
+        self.change_mode('AUTO')
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
+        self.assert_prearm_failure('Mode requires mission',
+                                   other_prearm_failures_fatal=False)
+
     def assert_prearm_failure(self,
                               expected_statustext,
                               timeout=5,
@@ -7788,6 +7872,9 @@ Also, ignores heartbeats not from our target system'''
             passed = False
             reset_needed = True
 
+        # if we haven't already reset ArduPilot because it's dead,
+        # then ensure the vehicle was disarmed at the end of the test.
+        # If it wasn't then the test is considered failed:
         if ardupilot_alive and self.armed() and not self.is_tracker():
             if ex is None:
                 ex = ArmedAtEndOfTestException("Still armed at end of test")
@@ -7804,6 +7891,9 @@ Also, ignores heartbeats not from our target system'''
                 self.progress("Force-rebooting SITL")
                 self.reboot_sitl() # that'll learn it
             passed = False
+        elif not passed:  # implicit reboot after a failed test:
+            self.progress("Test failed but ArduPilot process alive; rebooting")
+            self.reboot_sitl() # that'll learn it
 
         if self._mavproxy is not None:
             self.progress("Stopping auto-started mavproxy")
@@ -9502,6 +9592,8 @@ Also, ignores heartbeats not from our target system'''
                 self.set_rc(interlock_channel, 1000)
 
         self.start_subtest("Test all mode arming")
+        self.wait_ready_to_arm()
+
         if self.arming_test_mission() is not None:
             self.load_mission(self.arming_test_mission())
 
@@ -11595,10 +11687,12 @@ switch value'''
                 0,
                 want_result=mavutil.mavlink.MAV_RESULT_FAILED
             )
-            self.wait_statustext("PreArm: Motors Emergency Stopped", check_context=True)
+            self.assert_prearm_failure("Motors Emergency Stopped",
+                                       other_prearm_failures_fatal=False)
             self.reboot_sitl()
-            self.delay_sim_time(10)
-            self.assert_prearm_failure("Motors Emergency Stopped")
+            self.assert_prearm_failure(
+                "Motors Emergency Stopped",
+                other_prearm_failures_fatal=False)
             self.context_pop()
             self.reboot_sitl()
 

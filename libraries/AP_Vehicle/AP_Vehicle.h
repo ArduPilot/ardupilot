@@ -60,6 +60,8 @@
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
 #include <Filter/LowPassFilter.h>
 
+class AP_DDS_Client;
+
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
 public:
@@ -96,6 +98,8 @@ public:
     ModeReason get_control_mode_reason() const {
         return control_mode_reason;
     }
+
+    virtual bool current_mode_requires_mission() const { return false; }
 
     // perform any notifications required to indicate a mode change
     // failed due to a bad mode number being supplied.  This can
@@ -391,6 +395,12 @@ protected:
 
 #if AP_SIM_ENABLED
     SITL::SIM sitl;
+#endif
+
+#if AP_DDS_ENABLED
+    // Declare the dds client for communication with ROS2 and DDS(common for all vehicles)
+    AP_DDS_Client *dds_client;
+    bool init_dds_client() WARN_IF_UNUSED;
 #endif
 
 private:

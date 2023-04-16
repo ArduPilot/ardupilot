@@ -1015,6 +1015,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rtc(sbuf_t *dst)
     return MSP_RESULT_ACK;
 }
 
+#if AP_RC_CHANNEL_ENABLED
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
 {
     const RCMapper* rcmap = AP::rcmap();
@@ -1041,6 +1042,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
     sbuf_write_data(dst, &rc, sizeof(rc));
     return MSP_RESULT_ACK;
 }
+#endif  // AP_RC_CHANNEL_ENABLED
 
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_board_info(sbuf_t *dst)
 {

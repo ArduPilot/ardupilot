@@ -86,7 +86,9 @@ void SITL_State::_sitl_setup()
         sitl_model->set_precland(&_sitl->precland_sim);
         _sitl->i2c_sim.init();
         sitl_model->set_i2c(&_sitl->i2c_sim);
-
+#if AP_TEST_DRONECAN_DRIVERS
+        sitl_model->set_dronecan_device(&_sitl->dronecan_sim);
+#endif
         if (_use_fg_view) {
             fg_socket.connect(_fg_address, _fg_view_port);
         }

@@ -20,7 +20,7 @@
 
 #include "AP_Camera_Backend.h"
 
-#if AP_CAMERA_ENABLED
+#if AP_CAMERA_MOUNT_ENABLED
 
 class AP_Camera_Mount : public AP_Camera_Backend
 {
@@ -51,4 +51,4 @@ public:
     bool set_auto_focus() override;
 };
 
-#endif // AP_CAMERA_ENABLED
+#endif // AP_CAMERA_MOUNT_ENABLED

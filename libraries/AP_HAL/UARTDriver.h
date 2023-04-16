@@ -66,7 +66,7 @@ public:
     virtual size_t write_locked(const uint8_t *buffer, size_t size, uint32_t key) { return 0; }
 
     // read from a locked port. If port is locked and key is not correct then 0 is returned
-    virtual int16_t read_locked(uint32_t key) { return -1; }
+    virtual bool read_locked(uint32_t key, uint8_t &b) WARN_IF_UNUSED { return -1; }
     
     // control optional features
     virtual bool set_options(uint16_t options) { _last_options = options; return options==0; }

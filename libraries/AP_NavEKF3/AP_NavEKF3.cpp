@@ -791,7 +791,7 @@ bool NavEKF3::InitialiseFilter(void)
         num_cores = 0;
 
         // count IMUs from mask
-        for (uint8_t i=0; i<MAX_EKF_CORES; i++) {
+        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
             if (_imuMask & (1U<<i)) {
                 coreSetupRequired[num_cores] = true;
                 coreImuIndex[num_cores] = i;

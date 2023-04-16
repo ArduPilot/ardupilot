@@ -1,0 +1,9 @@
+# Firmware suitable for flashing into a CubeOrangePlus to experience Simulation-on-Hardware
+
+include ../CubeOrangePlus/hwdef.dat
+include ../include/SimOnHW.inc
+
+# short board name override (23 chars)
+define CHIBIOS_SHORT_BOARD_NAME "CubeOrange+SimOnHW"
+
+AUTOBUILD_TARGETS Copter

@@ -146,7 +146,7 @@ void AP_RCProtocol_SRXL2::_process_byte(uint32_t timestamp_us, uint8_t byte)
             }
             // Try to parse SRXL packet -- this internally calls srxlRun() after packet is parsed and resets timeout
             if (srxlParsePacket(0, _buffer, _frame_len_full)) {
-                add_input(MAX_CHANNELS, _channels, _in_failsafe, _new_rssi);
+                add_input(ARRAY_SIZE(_channels), _channels, _in_failsafe, _new_rssi);
             }
             _last_run_ms = AP_HAL::millis();
 
@@ -200,7 +200,7 @@ void AP_RCProtocol_SRXL2::_capture_scaled_input(const uint8_t *values_p, bool in
         _new_rssi = new_rssi * 255 / 100;
     }
 
-    for (uint8_t i = 0; i < MAX_CHANNELS; i++) {
+    for (uint8_t i = 0; i < ARRAY_SIZE(_channels); i++) {
         /*
          * Store the decoded channel into the R/C input buffer, taking into
          * account the different ideas about channel assignement that we have.

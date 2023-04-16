@@ -415,7 +415,7 @@ def run_specific_test(step, *args, **kwargs):
     global tester
     tester = tester_class(*args, **kwargs)
 
-    print("Got %s" % str(tester))
+    # print("Got %s" % str(tester))
     for a in tester.tests():
         if type(a) != Test:
             a = Test(a)
@@ -444,9 +444,11 @@ def run_step(step):
         "postype_single": opts.postype_single,
         "extra_configure_args": opts.waf_configure_args,
         "coverage": opts.coverage,
-        "sitl_32bit" : opts.sitl_32bit,
+        "force_32bit" : opts.force_32bit,
         "ubsan" : opts.ubsan,
         "ubsan_abort" : opts.ubsan_abort,
+        "num_aux_imus" : opts.num_aux_imus,
+        "dronecan_tests" : opts.dronecan_tests,
     }
 
     if opts.Werror:
@@ -529,6 +531,7 @@ def run_step(step):
         "frame": opts.frame,
         "_show_test_timings": opts.show_test_timings,
         "force_ahrs_type": opts.force_ahrs_type,
+        "num_aux_imus" : opts.num_aux_imus,
         "replay": opts.replay,
         "logs_dir": buildlogs_dirpath(),
         "sup_binaries": supplementary_binaries,
@@ -810,11 +813,9 @@ def list_subtests():
         subtests = tester.tests()
         sorted_list = []
         for subtest in subtests:
-            if type(subtest) is tuple:
-                (name, description, function) = subtest
-                sorted_list.append([name, description])
-            else:
-                sorted_list.append([subtest.name, subtest.description])
+            if str(type(subtest)) == "<class 'method'>":
+                subtest = Test(subtest)
+            sorted_list.append([subtest.name, subtest.description])
         sorted_list.sort()
 
         print("%s:" % vehicle)
@@ -958,10 +959,10 @@ if __name__ == "__main__":
                            action="store_true",
                            dest="ekf_single",
                            help="force single precision EKF")
-    group_build.add_option("--sitl-32bit",
+    group_build.add_option("--force-32bit",
                            default=False,
                            action='store_true',
-                           dest="sitl_32bit",
+                           dest="force_32bit",
                            help="compile sitl using 32-bit")
     group_build.add_option("", "--ubsan",
                            default=False,
@@ -973,6 +974,16 @@ if __name__ == "__main__":
                            action='store_true',
                            dest="ubsan_abort",
                            help="compile sitl with undefined behaviour sanitiser and abort on error")
+    group_build.add_option("--num-aux-imus",
+                           dest="num_aux_imus",
+                           default=0,
+                           type='int',
+                           help='number of auxiliary IMUs to simulate')
+    group_build.add_option("--enable-dronecan-tests",
+                           default=False,
+                           action='store_true',
+                           dest="dronecan_tests",
+                           help="enable dronecan tests")
     parser.add_option_group(group_build)
 
     group_sim = optparse.OptionGroup(parser, "Simulation options")

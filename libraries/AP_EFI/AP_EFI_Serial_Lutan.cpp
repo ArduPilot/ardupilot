@@ -12,17 +12,19 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
+#include "AP_EFI_config.h"
+
+#if AP_EFI_SERIAL_LUTAN_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
-#include "AP_EFI_Serial_Lutan.h"
 #include <AP_HAL/utility/sparse-endian.h>
-
-#if HAL_EFI_ENABLED
-
-#include <stdio.h>
-
 #include <AP_Math/AP_Math.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+
+#include "AP_EFI_Serial_Lutan.h"
+
+#include <stdio.h>
 
 // RPM Threshold for fuel consumption estimator
 #define RPM_THRESHOLD                100
@@ -107,4 +109,4 @@ void AP_EFI_Serial_Lutan::send_request(void)
     port->write((const uint8_t *)&crc2, sizeof(crc2));
 }
 
-#endif // HAL_EFI_ENABLED
+#endif  // AP_EFI_SERIAL_LUTAN_ENABLED

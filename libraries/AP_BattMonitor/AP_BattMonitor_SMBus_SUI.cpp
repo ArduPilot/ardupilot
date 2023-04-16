@@ -1,7 +1,12 @@
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_SMBUS_SUI_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_BattMonitor.h"
+
 #include "AP_BattMonitor_SMBus_SUI.h"
 
 extern const AP_HAL::HAL& hal;
@@ -131,3 +136,5 @@ void AP_BattMonitor_SMBus_SUI::update_health()
     _state.healthy = (now - last_volt_read_us < AP_BATTMONITOR_SMBUS_TIMEOUT_MICROS) &&
         (now - _state.last_time_micros < AP_BATTMONITOR_SMBUS_TIMEOUT_MICROS);
 }
+
+#endif  // AP_BATTERY_SMBUS_SUI_ENABLED

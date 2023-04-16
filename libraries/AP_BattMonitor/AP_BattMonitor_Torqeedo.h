@@ -14,9 +14,12 @@
  */
 #pragma once
 
+#include "AP_BattMonitor_config.h"
+
+#if AP_BATTERY_TORQEEDO_ENABLED
+
 #include <AP_Torqeedo/AP_Torqeedo.h>
 
-#if HAL_TORQEEDO_ENABLED
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include "AP_BattMonitor_Backend.h"

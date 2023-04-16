@@ -53,6 +53,7 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
@@ -65,7 +66,7 @@
   #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
     #include <AP_KDECAN/AP_KDECAN.h>
   #endif
-  #include <AP_UAVCAN/AP_UAVCAN.h>
+  #include <AP_DroneCAN/AP_DroneCAN.h>
 #endif
 
 #include <AP_Logger/AP_Logger.h>
@@ -115,7 +116,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 
     // @Param: RUDDER
     // @DisplayName: Arming with Rudder enable/disable
-    // @Description: Allow arm/disarm by rudder input. When enabled arming can be done with right rudder, disarming with left rudder. Rudder arming only works in manual throttle modes with throttle at zero +- deadzone (RCx_DZ)
+    // @Description: Allow arm/disarm by rudder input. When enabled arming can be done with right rudder, disarming with left rudder. Rudder arming only works with throttle at zero +- deadzone (RCx_DZ). Depending on vehicle type, arming in certain modes is prevented. See the wiki for each vehicle. Caution is recommended when arming if it is allowed in an auto-throttle mode!
     // @Values: 0:Disabled,1:ArmingOnly,2:ArmOrDisarm
     // @User: Advanced
     AP_GROUPINFO_FRAME("RUDDER",  6,     AP_Arming, _rudder_arming, ARMING_RUDDER_DEFAULT, AP_PARAM_FRAME_PLANE |
@@ -797,8 +798,8 @@ bool AP_Arming::manual_transmitter_checks(bool report)
 
 bool AP_Arming::mission_checks(bool report)
 {
+    AP_Mission *mission = AP::mission();
     if (check_enabled(ARMING_CHECK_MISSION) && _required_mission_items) {
-        AP_Mission *mission = AP::mission();
         if (mission == nullptr) {
             check_failed(ARMING_CHECK_MISSION, report, "No mission library present");
             return false;
@@ -846,6 +847,22 @@ bool AP_Arming::mission_checks(bool report)
             return false;
 #endif
         }
+    }
+
+#if AP_SDCARD_STORAGE_ENABLED
+    if (check_enabled(ARMING_CHECK_MISSION) &&
+        mission != nullptr &&
+        (mission->failed_sdcard_storage() || StorageManager::storage_failed())) {
+        check_failed(ARMING_CHECK_MISSION, report, "Failed to open %s", AP_MISSION_SDCARD_FILENAME);
+    }
+#endif
+
+    // do not allow arming if there are no mission items and we are in
+    // (e.g.) AUTO mode
+    if (AP::vehicle()->current_mode_requires_mission() &&
+        (mission == nullptr || mission->num_commands() <= 1)) {
+        check_failed(ARMING_CHECK_MISSION, report, "Mode requires mission");
+        return false;
     }
 
     return true;
@@ -1020,6 +1037,11 @@ bool AP_Arming::system_checks(bool report)
         return false;
     }
 
+    if (!hal.gpio->arming_checks(sizeof(buffer), buffer)) {
+        check_failed(report, "%s", buffer);
+        return false;
+    }
+
     if (check_enabled(ARMING_CHECK_PARAMETERS)) {
 #if AP_RPM_ENABLED
         auto *rpm = AP::rpm();
@@ -1161,12 +1183,12 @@ bool AP_Arming::can_checks(bool report)
 #endif
                     break;
                 }
-                case AP_CANManager::Driver_Type_UAVCAN:
+                case AP_CANManager::Driver_Type_DroneCAN:
                 {
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
-                    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
-                    if (ap_uavcan != nullptr && !ap_uavcan->prearm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
-                        check_failed(ARMING_CHECK_SYSTEM, report, "UAVCAN: %s", fail_msg);
+#if HAL_ENABLE_DRONECAN_DRIVERS
+                    AP_DroneCAN *ap_dronecan = AP_DroneCAN::get_dronecan(i);
+                    if (ap_dronecan != nullptr && !ap_dronecan->prearm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
+                        check_failed(ARMING_CHECK_SYSTEM, report, "DroneCAN: %s", fail_msg);
                         return false;
                     }
 #endif
@@ -1294,6 +1316,7 @@ bool AP_Arming::fettec_checks(bool display_failure) const
     return true;
 }
 
+#if AP_ARMING_AUX_AUTH_ENABLED
 // request an auxiliary authorisation id.  This id should be used in subsequent calls to set_aux_auth_passed/failed
 // returns true on success
 bool AP_Arming::get_aux_auth_id(uint8_t& auth_id)
@@ -1410,6 +1433,7 @@ bool AP_Arming::aux_auth_checks(bool display_failure)
     // if we got this far all auxiliary checks must have passed
     return true;
 }
+#endif  // AP_ARMING_AUX_AUTH_ENABLED
 
 bool AP_Arming::generator_checks(bool display_failure) const
 {
@@ -1452,6 +1476,26 @@ bool AP_Arming::serial_protocol_checks(bool display_failure)
     return true;
 }
 
+//Check for estop
+bool AP_Arming::estop_checks(bool display_failure)
+{
+    if (!SRV_Channels::get_emergency_stop()) {
+       // not emergency-stopped, so no prearm failure:
+       return true;
+    }
+    // vehicle is emergency-stopped; if this *appears* to have been done via switch then we do not fail prearms:
+    const RC_Channel *chan = rc().find_channel_for_option(RC_Channel::AUX_FUNC::ARM_EMERGENCY_STOP);
+    if (chan != nullptr) {
+        // an RC channel is configured for arm_emergency_stop option, so estop maybe activated via this switch
+        if (chan->get_aux_switch_pos() == RC_Channel::AuxSwitchPos::LOW) {
+            // switch is configured and is in estop position, so likely the reason we are estopped, so no prearm failure
+            return true;  // no prearm failure
+        }
+    }   
+    check_failed(display_failure,"Motors Emergency Stopped");
+    return false;
+}
+
 bool AP_Arming::pre_arm_checks(bool report)
 {
 #if !APM_BUILD_COPTER_OR_HELI
@@ -1487,11 +1531,14 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  mount_checks(report)
         &  fettec_checks(report)
         &  visodom_checks(report)
+#if AP_ARMING_AUX_AUTH_ENABLED
         &  aux_auth_checks(report)
+#endif
         &  disarm_switch_checks(report)
         &  fence_checks(report)
         &  opendroneid_checks(report)
-        &  serial_protocol_checks(report);
+        &  serial_protocol_checks(report)
+        &  estop_checks(report);
 }
 
 bool AP_Arming::arm_checks(AP_Arming::Method method)
@@ -1676,23 +1723,6 @@ bool AP_Arming::rc_checks_copter_sub(const bool display_failure, const RC_Channe
         if (channel->get_radio_max() < RC_Channel::RC_CALIB_MAX_LIMIT_PWM) {
             check_failed(ARMING_CHECK_RC, display_failure, "%s radio max too low", channel_name);
             ret = false;
-        }
-        bool fail = true;
-        if (i == 2) {
-            // skip checking trim for throttle as older code did not check it
-            fail = false;
-        }
-        if (channel->get_radio_trim() < channel->get_radio_min()) {
-            check_failed(ARMING_CHECK_RC, display_failure, "%s radio trim below min", channel_name);
-            if (fail) {
-                ret = false;
-            }
-        }
-        if (channel->get_radio_trim() > channel->get_radio_max()) {
-            check_failed(ARMING_CHECK_RC, display_failure, "%s radio trim above max", channel_name);
-            if (fail) {
-                ret = false;
-            }
         }
     }
     return ret;

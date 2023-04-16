@@ -38,6 +38,12 @@ using namespace ChibiOS;
 #define HAVE_USB_SERIAL
 #endif
 
+#if defined (STM32L4PLUS)
+#ifndef USART_CR1_RXNEIE
+#define USART_CR1_RXNEIE USART_CR1_RXNEIE_RXFNEIE
+#endif
+#endif
+
 #if HAL_WITH_IO_MCU
 extern ChibiOS::UARTDriver uart_io;
 #endif
@@ -383,7 +389,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
                                             (void *)this);
                     osalDbgAssert(rxdma, "stream alloc failed");
                     chSysUnlock();
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
                     dmaStreamSetPeripheral(rxdma, &((SerialDriver*)sdef.serial)->usart->RDR);
 #else
                     dmaStreamSetPeripheral(rxdma, &((SerialDriver*)sdef.serial)->usart->DR);
@@ -482,7 +488,7 @@ void UARTDriver::dma_tx_allocate(Shared_DMA *ctx)
                             (void *)this);
     osalDbgAssert(txdma, "stream alloc failed");
     chSysUnlock();
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
     dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->TDR);
 #else
     dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->DR);
@@ -531,7 +537,7 @@ void UARTDriver::rx_irq_cb(void* self)
 #if defined(STM32F7) || defined(STM32H7)
     //disable dma, triggering DMA transfer complete interrupt
     uart_drv->rxdma->stream->CR &= ~STM32_DMA_CR_EN;
-#elif defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#elif defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
     //disable dma, triggering DMA transfer complete interrupt
     dmaStreamDisable(uart_drv->rxdma);
     uart_drv->rxdma->channel->CCR &= ~STM32_DMA_CR_EN;
@@ -736,31 +742,32 @@ ssize_t UARTDriver::read(uint8_t *buffer, uint16_t count)
     return ret;
 }
 
-int16_t UARTDriver::read()
+bool UARTDriver::read(uint8_t &b)
 {
     if (_uart_owner_thd != chThdGetSelfX()) {
-        return -1;
+        return false;
     }
 
-    return UARTDriver::read_locked(0);
+    return UARTDriver::read_locked(0, b);
 }
 
-int16_t UARTDriver::read_locked(uint32_t key)
+bool UARTDriver::read_locked(uint32_t key, uint8_t &b)
 {
     if (lock_read_key != 0 && key != lock_read_key) {
-        return -1;
+        return false;
     }
     if (!_rx_initialised) {
-        return -1;
+        return false;
     }
     uint8_t byte;
     if (!_readbuf.read_byte(&byte)) {
-        return -1;
+        return false;
     }
     if (!_rts_is_active) {
         update_rts_line();
     }
-    return byte;
+    b = byte;
+    return true;
 }
 
 /* write one byte to the port */
@@ -1185,7 +1192,7 @@ void UARTDriver::_rx_timer_tick(void)
         //Check if DMA is enabled
         //if not, it might be because the DMA interrupt was silenced
         //let's handle that here so that we can continue receiving
-#if defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
         bool enabled = (rxdma->channel->CCR & STM32_DMA_CR_EN);
 #else
         bool enabled = (rxdma->stream->CR & STM32_DMA_CR_EN);
@@ -1607,7 +1614,7 @@ bool UARTDriver::set_options(uint16_t options)
     // Check flow control, might have to disable if RTS line is gone
     set_flow_control(_flow_control);
 
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
     // F7 has built-in support for inversion in all uarts
     ioline_t rx_line = (options & OPTION_SWAP)?atx_line:arx_line;
     ioline_t tx_line = (options & OPTION_SWAP)?arx_line:atx_line;

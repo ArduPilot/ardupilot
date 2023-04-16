@@ -68,7 +68,7 @@ def is_ap_periph(board):
     hwdef = os.path.join('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % board)
     try:
         r = open(hwdef, 'r').read()
-        if r.find('periph/hwdef.dat') != -1 or r.find('AP_PERIPH') != -1:
+        if r.find('periph/hwdef.dat') != -1 or r.find('periph/hwdef.inc') != -1 or r.find('AP_PERIPH') != -1:
             print("%s is AP_Periph" % board)
             return True
     except Exception as ex:

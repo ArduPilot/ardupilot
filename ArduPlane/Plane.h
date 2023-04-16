@@ -244,8 +244,14 @@ private:
     AP_OpticalFlow optflow;
 #endif
 
+#if HAL_RALLY_ENABLED
     // Rally Ponints
     AP_Rally rally;
+#endif
+
+    // returns a Location for a rally point or home; if
+    // HAL_RALLY_ENABLED is false, just home.
+    Location calc_best_rally_or_home_location(const Location &current_loc, float rtl_home_alt_amsl_cm) const;
 
 #if OSD_ENABLED || OSD_PARAM_ENABLED
     AP_OSD osd;
@@ -968,6 +974,10 @@ private:
     bool mode_allows_autotuning(void);
     uint8_t get_mode() const override { return (uint8_t)control_mode->mode_number(); }
     Mode *mode_from_mode_num(const enum Mode::Number num);
+    bool current_mode_requires_mission() const override {
+        return control_mode == &mode_auto;
+    }
+
     bool autotuning;
 
     // events.cpp
@@ -987,6 +997,7 @@ private:
 
     // ArduPlane.cpp
     void disarm_if_autoland_complete();
+    bool trigger_land_abort(const float climb_to_alt_m);
     void get_osd_roll_pitch_rad(float &roll, float &pitch) const override;
     float tecs_hgt_afe(void);
     void efi_update(void);

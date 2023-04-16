@@ -114,7 +114,7 @@ void GCS_Copter::update_vehicle_sensor_status_flags(void)
     }
 #endif
 
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
     if (copter.precland.enabled()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;

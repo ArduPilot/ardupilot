@@ -24,7 +24,7 @@ jobs:
           - os: ubuntu
             name: focal
           - os: ubuntu
-            name: hirsute
+            name: jammy
           - os: archlinux
             name: latest
           - os: debian

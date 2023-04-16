@@ -45,7 +45,9 @@ void AP_RCProtocol::init()
 #endif
     backend[AP_RCProtocol::DSM] = new AP_RCProtocol_DSM(*this);
     backend[AP_RCProtocol::SUMD] = new AP_RCProtocol_SUMD(*this);
+#if AP_RCPROTOCOL_SRXL_ENABLED
     backend[AP_RCProtocol::SRXL] = new AP_RCProtocol_SRXL(*this);
+#endif
 #ifndef IOMCU_FW
     backend[AP_RCProtocol::SBUS_NI] = new AP_RCProtocol_SBUS(*this, false, 100000);
     backend[AP_RCProtocol::SRXL2] = new AP_RCProtocol_SRXL2(*this);
@@ -72,7 +74,7 @@ AP_RCProtocol::~AP_RCProtocol()
 
 bool AP_RCProtocol::should_search(uint32_t now_ms) const
 {
-#if !defined(IOMCU_FW) && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+#if AP_RC_CHANNEL_ENABLED && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
     if (_detected_protocol != AP_RCProtocol::NONE && !rc().multiple_receiver_support()) {
         return false;
     }
@@ -90,7 +92,7 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
     uint32_t now = AP_HAL::millis();
     bool searching = should_search(now);
 
-#ifndef IOMCU_FW
+#if AP_RC_CHANNEL_ENABLED
     rc_protocols_mask = rc().enabled_protocols();
 #endif
 
@@ -174,7 +176,7 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
     uint32_t now = AP_HAL::millis();
     bool searching = should_search(now);
 
-#ifndef IOMCU_FW
+#if AP_RC_CHANNEL_ENABLED
     rc_protocols_mask = rc().enabled_protocols();
 #endif
 
@@ -295,7 +297,7 @@ void AP_RCProtocol::check_added_uart(void)
         added.last_config_change_ms = AP_HAL::millis();
         serial_configs[added.config_num].apply_to_uart(added.uart);
     }
-#ifndef IOMCU_FW
+#if AP_RC_CHANNEL_ENABLED
     rc_protocols_mask = rc().enabled_protocols();
 #endif
     const uint32_t current_baud = serial_configs[added.config_num].baud;
@@ -420,8 +422,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
         return "DSM";
     case SUMD:
         return "SUMD";
+#if AP_RCPROTOCOL_SRXL_ENABLED
     case SRXL:
         return "SRXL";
+#endif
     case SRXL2:
         return "SRXL2";
     case CRSF:

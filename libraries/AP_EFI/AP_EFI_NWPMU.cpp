@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_EFI_config.h"
+
+#if AP_EFI_NWPWU_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 
 #include <AP_Common/AP_Common.h>
@@ -21,8 +25,6 @@
 #include <GCS_MAVLink/GCS.h>
 
 #include "AP_EFI_NWPMU.h"
-
-#if HAL_EFI_NWPWU_ENABLED
 
 extern const AP_HAL::HAL& hal;
 
@@ -131,4 +133,4 @@ void AP_EFI_NWPMU::update()
     copy_to_frontend();
 }
 
-#endif // HAL_EFI_NWPWU_ENABLED
+#endif // AP_EFI_NWPWU_ENABLED

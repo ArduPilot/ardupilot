@@ -462,8 +462,11 @@ void CANIface::_updateDownStatusFromPollResult(const pollfd& pfd)
 bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
 {
     char iface_name[16];
+#if HAL_LINUX_USE_VIRTUAL_CAN
+    sprintf(iface_name, "vcan%u", _self_index);
+#else
     sprintf(iface_name, "can%u", _self_index);
-
+#endif
     if (_initialized) {
         return _initialized;
     }

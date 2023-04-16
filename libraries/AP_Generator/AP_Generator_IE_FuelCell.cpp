@@ -15,7 +15,7 @@
 
 #include "AP_Generator_IE_FuelCell.h"
 
-#if HAL_GENERATOR_ENABLED
+#if AP_GENERATOR_IE_ENABLED
 
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <GCS_MAVLink/GCS.h>
@@ -190,4 +190,4 @@ bool AP_Generator_IE_FuelCell::check_for_err_code_if_changed(char* msg_txt, uint
 
     return false;
 }
-#endif
+#endif  // AP_GENERATOR_IE_ENABLED

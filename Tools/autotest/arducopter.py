@@ -412,13 +412,13 @@ class AutoTestCopter(AutoTest):
         self.land_and_disarm()
 
     # enter RTL mode and wait for the vehicle to disarm
-    def do_RTL(self, distance_min=None, check_alt=True, distance_max=10, timeout=250):
+    def do_RTL(self, distance_min=None, check_alt=True, distance_max=10, timeout=250, quiet=False):
         """Enter RTL mode and wait for the vehicle to disarm at Home."""
         self.change_mode("RTL")
         self.hover()
-        self.wait_rtl_complete(check_alt=check_alt, distance_max=distance_max, timeout=timeout)
+        self.wait_rtl_complete(check_alt=check_alt, distance_max=distance_max, timeout=timeout, quiet=True)
 
-    def wait_rtl_complete(self, check_alt=True, distance_max=10, timeout=250):
+    def wait_rtl_complete(self, check_alt=True, distance_max=10, timeout=250, quiet=False):
         """Wait for RTL to reach home and disarm"""
         self.progress("Waiting RTL to reach Home and disarm")
         tstart = self.get_sim_time()
@@ -435,8 +435,9 @@ class AutoTestCopter(AutoTest):
             else:
                 if distance_valid:
                     home = "HOME"
-            self.progress("Alt: %.02f  HomeDist: %.02f %s" %
-                          (alt, home_distance, home))
+            if not quiet:
+                self.progress("Alt: %.02f  HomeDist: %.02f %s" %
+                              (alt, home_distance, home))
 
             # our post-condition is that we are disarmed:
             if not self.armed():
@@ -2325,6 +2326,45 @@ class AutoTestCopter(AutoTest):
         raise NotAchievedException("AUTOTUNE failed (%u seconds)" %
                                    (self.get_sim_time() - tstart))
 
+    def AutoTuneYawD(self):
+        """Test autotune mode"""
+
+        rlld = self.get_parameter("ATC_RAT_RLL_D")
+        rlli = self.get_parameter("ATC_RAT_RLL_I")
+        rllp = self.get_parameter("ATC_RAT_RLL_P")
+        self.set_parameter("ATC_RAT_RLL_SMAX", 1)
+        self.set_parameter("AUTOTUNE_AXES", 15)
+        self.takeoff(10)
+
+        # hold position in loiter
+        self.change_mode('AUTOTUNE')
+
+        tstart = self.get_sim_time()
+        sim_time_expected = 5000
+        deadline = tstart + sim_time_expected
+        while self.get_sim_time_cached() < deadline:
+            now = self.get_sim_time_cached()
+            m = self.mav.recv_match(type='STATUSTEXT',
+                                    blocking=True,
+                                    timeout=1)
+            if m is None:
+                continue
+            self.progress("STATUSTEXT (%u<%u): %s" % (now, deadline, m.text))
+            if "AutoTune: Success" in m.text:
+                self.progress("AUTOTUNE OK (%u seconds)" % (now - tstart))
+                # near enough for now:
+                self.change_mode('LAND')
+                self.wait_landed_and_disarmed()
+                # check the original gains have been re-instated
+                if (rlld != self.get_parameter("ATC_RAT_RLL_D") or
+                        rlli != self.get_parameter("ATC_RAT_RLL_I") or
+                        rllp != self.get_parameter("ATC_RAT_RLL_P")):
+                    raise NotAchievedException("AUTOTUNE gains still present")
+                return
+
+        raise NotAchievedException("AUTOTUNE failed (%u seconds)" %
+                                   (self.get_sim_time() - tstart))
+
     def AutoTuneSwitch(self):
         """Test autotune on a switch with gains being saved"""
 
@@ -2551,8 +2591,8 @@ class AutoTestCopter(AutoTest):
 
         self.reboot_sitl()
         # Test UAVCAN GPS ordering working
-        gps1_det_text = self.wait_text("GPS 1: specified as UAVCAN.*", regex=True, check_context=True)
-        gps2_det_text = self.wait_text("GPS 2: specified as UAVCAN.*", regex=True, check_context=True)
+        gps1_det_text = self.wait_text("GPS 1: specified as DroneCAN.*", regex=True, check_context=True)
+        gps2_det_text = self.wait_text("GPS 2: specified as DroneCAN.*", regex=True, check_context=True)
         gps1_nodeid = int(gps1_det_text.split('-')[1])
         gps2_nodeid = int(gps2_det_text.split('-')[1])
         if gps1_nodeid is None or gps2_nodeid is None:
@@ -2582,11 +2622,11 @@ class AutoTestCopter(AutoTest):
             gps1_det_text = None
             gps2_det_text = None
             try:
-                gps1_det_text = self.wait_text("GPS 1: specified as UAVCAN.*", regex=True, check_context=True)
+                gps1_det_text = self.wait_text("GPS 1: specified as DroneCAN.*", regex=True, check_context=True)
             except AutoTestTimeoutException:
                 pass
             try:
-                gps2_det_text = self.wait_text("GPS 2: specified as UAVCAN.*", regex=True, check_context=True)
+                gps2_det_text = self.wait_text("GPS 2: specified as DroneCAN.*", regex=True, check_context=True)
             except AutoTestTimeoutException:
                 pass
 
@@ -4826,6 +4866,19 @@ class AutoTestCopter(AutoTest):
             0, # pitch rate (rad/s)
             0, # yaw rate   (rad/s)
             0.5) # thrust, 0 to 1, translated to a climb/descent rate
+
+    def do_yaw_rate(self, yaw_rate):
+        '''yaw aircraft in guided/rate mode'''
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+            60,  # target angle
+            0,  # degrees/second
+            1,  # -1 is counter-clockwise, 1 clockwise
+            1,  # 1 for relative, 0 for absolute
+            0,  # p5
+            0,  # p6
+            0,  # p7
+            quiet=True)
 
     def setup_servo_mount(self, roll_servo=5, pitch_servo=6, yaw_servo=7):
         '''configure a rpy servo mount; caller responsible for required rebooting'''
@@ -7283,49 +7336,71 @@ class AutoTestCopter(AutoTest):
 
     def IE24(self):
         '''Test IntelligentEnergy 2.4kWh generator'''
-        self.context_push()
-        ex = None
-        try:
-            self.set_parameters({
-                "SERIAL5_PROTOCOL": 30,
-                "SERIAL5_BAUD": 115200,
-                "GEN_TYPE": 2,
-                "BATT2_MONITOR": 17,
-                "SIM_IE24_ENABLE": 1,
-                "LOG_DISARMED": 1,
-            })
+        elec_battery_instance = 2
+        fuel_battery_instance = 1
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 30,
+            "SERIAL5_BAUD": 115200,
+            "GEN_TYPE": 2,
+            "BATT%u_MONITOR" % (fuel_battery_instance + 1): 18,  # fuel-based generator
+            "BATT%u_MONITOR" % (elec_battery_instance + 1): 17,
+            "SIM_IE24_ENABLE": 1,
+            "LOG_DISARMED": 1,
+        })
 
-            self.customise_SITL_commandline(["--uartF=sim:ie24"])
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-            self.disarm_vehicle()
+        self.customise_SITL_commandline(["--uartF=sim:ie24"])
 
-            # Test for pre-arm check fail when state is not running
-            self.start_subtest("If you haven't taken off generator error should cause instant failsafe and disarm")
-            self.set_parameter("SIM_IE24_STATE", 8)
-            self.wait_statustext("Status not running", timeout=40)
-            self.try_arm(result=False,
-                         expect_msg="Status not running")
-            self.set_parameter("SIM_IE24_STATE", 2) # Explicitly set state to running
+        self.start_subtest("ensure that BATTERY_STATUS for electrical generator message looks right")
+        self.start_subsubtest("Checking original voltage (electrical)")
+        # ArduPilot spits out essentially uninitialised battery
+        # messages until we read things fromthe battery:
+        self.delay_sim_time(30)
+        original_elec_m = self.wait_message_field_values('BATTERY_STATUS', {
+            "charge_state": mavutil.mavlink.MAV_BATTERY_CHARGE_STATE_OK
+        }, instance=elec_battery_instance)
+        original_fuel_m = self.wait_message_field_values('BATTERY_STATUS', {
+            "charge_state": mavutil.mavlink.MAV_BATTERY_CHARGE_STATE_OK
+        }, instance=fuel_battery_instance)
 
-            # Test that error code does result in failsafe
-            self.start_subtest("If you haven't taken off generator error should cause instant failsafe and disarm")
-            self.change_mode("STABILIZE")
-            self.set_parameter("DISARM_DELAY", 0)
-            self.arm_vehicle()
-            self.set_parameter("SIM_IE24_ERROR", 30)
-            self.disarm_wait(timeout=1)
-            self.set_parameter("SIM_IE24_ERROR", 0)
-            self.set_parameter("DISARM_DELAY", 10)
+        if original_elec_m.battery_remaining < 90:
+            raise NotAchievedException("Bad original percentage")
+        self.start_subsubtest("Ensure percentage is counting down")
+        self.wait_message_field_values('BATTERY_STATUS', {
+            "battery_remaining": original_elec_m.battery_remaining - 1,
+        }, instance=elec_battery_instance)
 
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
+        self.start_subtest("ensure that BATTERY_STATUS for fuel generator message looks right")
+        self.start_subsubtest("Checking original voltage (fuel)")
+        # ArduPilot spits out essentially uninitialised battery
+        # messages until we read things fromthe battery:
+        if original_fuel_m.battery_remaining <= 90:
+            raise NotAchievedException("Bad original percentage (want=>%f got %f" % (90, original_fuel_m.battery_remaining))
+        self.start_subsubtest("Ensure percentage is counting down")
+        self.wait_message_field_values('BATTERY_STATUS', {
+            "battery_remaining": original_fuel_m.battery_remaining - 1,
+        }, instance=fuel_battery_instance)
 
-        self.context_pop()
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.disarm_vehicle()
 
-        if ex is not None:
-            raise ex
+        # Test for pre-arm check fail when state is not running
+        self.start_subtest("If you haven't taken off generator error should cause instant failsafe and disarm")
+        self.set_parameter("SIM_IE24_STATE", 8)
+        self.wait_statustext("Status not running", timeout=40)
+        self.try_arm(result=False,
+                     expect_msg="Status not running")
+        self.set_parameter("SIM_IE24_STATE", 2) # Explicitly set state to running
+
+        # Test that error code does result in failsafe
+        self.start_subtest("If you haven't taken off generator error should cause instant failsafe and disarm")
+        self.change_mode("STABILIZE")
+        self.set_parameter("DISARM_DELAY", 0)
+        self.arm_vehicle()
+        self.set_parameter("SIM_IE24_ERROR", 30)
+        self.disarm_wait(timeout=1)
+        self.set_parameter("SIM_IE24_ERROR", 0)
+        self.set_parameter("DISARM_DELAY", 10)
 
     def AuxSwitchOptions(self):
         '''Test random aux mode options'''
@@ -8852,6 +8927,14 @@ class AutoTestCopter(AutoTest):
         self.wait_groundspeed(speed_min=0, speed_max=1, minimum_duration=5)
         self.send_resume_command()
 
+        # sending a pause, or resume, to the aircraft twice, doesn't result in reporting a failure
+        self.wait_current_waypoint(wpnum=5, timeout=500)
+        self.send_pause_command()
+        self.send_pause_command()
+        self.wait_groundspeed(speed_min=0, speed_max=1, minimum_duration=5)
+        self.send_resume_command()
+        self.send_resume_command()
+
         self.wait_disarmed(timeout=500)
 
     def PAUSE_CONTINUE_GUIDED(self):
@@ -9523,6 +9606,7 @@ class AutoTestCopter(AutoTest):
              self.AuxSwitchOptions,
              self.AuxFunctionsInMission,
              self.AutoTune,
+             self.AutoTuneYawD,
              self.NoRCOnBootPreArmFailure,
         ])
         return ret
@@ -9658,7 +9742,7 @@ class AutoTestCopter(AutoTest):
         self.setup_servo_mount()
         self.reboot_sitl()
         self.set_rc(6, 1300)
-        self.install_example_script_context('mount-poi.lua')
+        self.install_applet_script_context('mount-poi.lua')
         self.reboot_sitl()
         self.wait_ready_to_arm()
         self.context_collect('STATUSTEXT')
@@ -9682,6 +9766,38 @@ class AutoTestCopter(AutoTest):
         self.land_and_disarm()
         self.context_pop()
         self.reboot_sitl()
+
+    def GuidedYawRate(self):
+        '''ensuer guided yaw rate is not affected by rate of sewt-attitude messages'''
+        self.takeoff(30, mode='GUIDED')
+        rates = {}
+        for rate in 1, 10:
+            # command huge yaw rate for a while
+            tstart = self.get_sim_time()
+            interval = 1/rate
+            yawspeed_rads_sum = 0
+            yawspeed_rads_count = 0
+            last_sent = 0
+            while True:
+                self.drain_mav()
+                tnow = self.get_sim_time_cached()
+                if tnow - last_sent > interval:
+                    self.do_yaw_rate(60)  # this is... unlikely
+                    last_sent = tnow
+                if tnow - tstart < 5:  # let it spin up to speed first
+                    continue
+                yawspeed_rads_sum += self.mav.messages['ATTITUDE'].yawspeed
+                yawspeed_rads_count += 1
+                if tnow - tstart > 15:  # 10 seconds of measurements
+                    break
+            yawspeed_degs = math.degrees(yawspeed_rads_sum / yawspeed_rads_count)
+            rates[rate] = yawspeed_degs
+            self.progress("Input rate %u hz: average yaw rate %f deg/s" % (rate, yawspeed_degs))
+
+        if rates[10] < rates[1] * 0.95:
+            raise NotAchievedException("Guided yaw rate slower for higher rate updates")
+
+        self.do_RTL()
 
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
@@ -9737,6 +9853,8 @@ class AutoTestCopter(AutoTest):
             self.FlyMissionTwice,
             self.IMUConsistency,
             self.AHRSTrimLand,
+            self.GuidedYawRate,
+            self.NoArmWithoutMissionItems,
         ])
         return ret
 

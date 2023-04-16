@@ -43,6 +43,9 @@ void AP_BoardConfig::set_imu_temp(float current)
 #if defined(HAL_HEATER_GPIO_PIN)
         hal.gpio->write(HAL_HEATER_GPIO_PIN, !HAL_HEATER_GPIO_ON);
 #endif
+#if defined(HAL_HEATER2_GPIO_PIN)
+        hal.gpio->write(HAL_HEATER2_GPIO_PIN, !HAL_HEATER_GPIO_ON);
+#endif
         return;
     }
 
@@ -62,6 +65,9 @@ void AP_BoardConfig::set_imu_temp(float current)
         // prevent a periodic change to magnetic field
         bool heater_on = (get_random16() < uint32_t(heater.output) * 0xFFFFU / 100U);
         hal.gpio->write(HAL_HEATER_GPIO_PIN, heater_on?HAL_HEATER_GPIO_ON : !HAL_HEATER_GPIO_ON);
+#if defined(HAL_HEATER2_GPIO_PIN)
+        hal.gpio->write(HAL_HEATER2_GPIO_PIN, heater_on?HAL_HEATER_GPIO_ON : !HAL_HEATER_GPIO_ON);
+#endif
 #endif
         return;
     }

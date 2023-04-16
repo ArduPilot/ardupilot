@@ -5,11 +5,7 @@
 #include "AP_BattMonitor_Backend.h"
 #include <utility>
 
-#ifndef HAL_BATTMON_INA239_ENABLED
-#define HAL_BATTMON_INA239_ENABLED defined(HAL_BATTMON_INA239_SPI_DEVICE)
-#endif
-
-#if HAL_BATTMON_INA239_ENABLED
+#if AP_BATTERY_INA239_ENABLED
 
 class AP_BattMonitor_INA239 : public AP_BattMonitor_Backend
 {
@@ -51,4 +47,4 @@ protected:
     float voltage_LSB;
 };
 
-#endif // HAL_BATTMON_INA239_ENABLED
+#endif // AP_BATTERY_INA239_ENABLED

@@ -1,0 +1,35 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from geometry_msgs/msg/TransformStamped.msg
+// generated code does not contain a copyright notice
+
+#include "geometry_msgs/msg/Transform.idl"
+#include "std_msgs/msg/Header.idl"
+
+module geometry_msgs {
+  module msg {
+    @verbatim (language="comment", text=
+      "This expresses a transform from coordinate frame header.frame_id" "\n"
+      "to the coordinate frame child_frame_id at the time of header.stamp" "\n"
+      "" "\n"
+      "This message is mostly used by the" "\n"
+      "<a href=\"https://index.ros.org/p/tf2/\">tf2</a> package." "\n"
+      "See its documentation for more information." "\n"
+      "" "\n"
+      "The child_frame_id is necessary in addition to the frame_id" "\n"
+      "in the Header to communicate the full reference for the transform" "\n"
+      "in a self contained message.")
+    struct TransformStamped {
+      @verbatim (language="comment", text=
+        "The frame id in the header is used as the reference frame of this transform.")
+      std_msgs::msg::Header header;
+
+      @verbatim (language="comment", text=
+        "The frame id of the child frame to which this transform points.")
+      string child_frame_id;
+
+      @verbatim (language="comment", text=
+        "Translation and rotation in 3-dimensions of child_frame_id from header.frame_id.")
+      geometry_msgs::msg::Transform transform;
+    };
+  };
+};

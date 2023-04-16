@@ -21,14 +21,12 @@
  
 #pragma once
 
+#include "AP_EFI_config.h"
+
+#if AP_EFI_CURRAWONG_ECU_ENABLED
+
 #include "AP_EFI.h"
 #include "AP_EFI_Backend.h"
-
-#ifndef HAL_EFI_CURRAWONG_ECU_ENABLED
-#define HAL_EFI_CURRAWONG_ECU_ENABLED HAL_MAX_CAN_PROTOCOL_DRIVERS && (BOARD_FLASH_SIZE > 1024)
-#endif
-
-#if HAL_EFI_CURRAWONG_ECU_ENABLED
 
 class AP_EFI_Currawong_ECU : public AP_EFI_Backend {
 public:
@@ -49,5 +47,5 @@ private:
     friend class AP_PiccoloCAN;
 };
 
-#endif // HAL_EFI_CURRAWONG_ECU_ENABLED
+#endif // AP_EFI_CURRAWONG_ECU_ENABLED
 

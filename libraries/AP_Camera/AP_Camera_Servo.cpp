@@ -1,6 +1,6 @@
 #include "AP_Camera_Servo.h"
 
-#if AP_CAMERA_ENABLED
+#if AP_CAMERA_SERVO_ENABLED
 
 #include <SRV_Channel/SRV_Channel.h>
 
@@ -68,4 +68,4 @@ void AP_Camera_Servo::configure(float shooting_mode, float shutter_speed, float 
     }
 }
 
-#endif // AP_CAMERA_ENABLED
+#endif // AP_CAMERA_SERVO_ENABLED

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
 #include <GCS_MAVLink/GCS_config.h>
 #if HAL_GCS_ENABLED
 #include <GCS_MAVLink/GCS_MAVLink.h>

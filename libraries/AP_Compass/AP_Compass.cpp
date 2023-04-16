@@ -24,8 +24,8 @@
 #include "AP_Compass_LIS3MDL.h"
 #include "AP_Compass_AK09916.h"
 #include "AP_Compass_QMC5883L.h"
-#if AP_COMPASS_UAVCAN_ENABLED
-#include "AP_Compass_UAVCAN.h"
+#if AP_COMPASS_DRONECAN_ENABLED
+#include "AP_Compass_DroneCAN.h"
 #endif
 #include "AP_Compass_MMC3416.h"
 #include "AP_Compass_MMC5xx3.h"
@@ -1286,7 +1286,7 @@ void Compass::_detect_backends(void)
     }
 #endif
 
-#if AP_COMPASS_SITL_ENABLED
+#if AP_COMPASS_SITL_ENABLED && !AP_TEST_DRONECAN_DRIVERS
     ADD_BACKEND(DRIVER_SITL, new AP_Compass_SITL());
 #endif
 
@@ -1449,10 +1449,10 @@ void Compass::_detect_backends(void)
 #endif
 
 
-#if AP_COMPASS_UAVCAN_ENABLED
+#if AP_COMPASS_DRONECAN_ENABLED
     if (_driver_enabled(DRIVER_UAVCAN)) {
         for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
-            AP_Compass_Backend* _uavcan_backend = AP_Compass_UAVCAN::probe(i);
+            AP_Compass_Backend* _uavcan_backend = AP_Compass_DroneCAN::probe(i);
             if (_uavcan_backend) {
                 _add_backend(_uavcan_backend);
             }
@@ -1474,7 +1474,7 @@ void Compass::_detect_backends(void)
             // There's a UAVCAN compass missing
             // Let's check if there's a replacement
             for (uint8_t j=0; j<COMPASS_MAX_INSTANCES; j++) {
-                uint32_t detected_devid = AP_Compass_UAVCAN::get_detected_devid(j);
+                uint32_t detected_devid = AP_Compass_DroneCAN::get_detected_devid(j);
                 // Check if this is a potential replacement mag
                 if (!is_replacement_mag(detected_devid)) {
                     continue;
@@ -1485,7 +1485,7 @@ void Compass::_detect_backends(void)
                 _priority_did_stored_list[i].set_and_save(0);
                 _priority_did_list[i] = 0;
 
-                AP_Compass_Backend* _uavcan_backend = AP_Compass_UAVCAN::probe(j);
+                AP_Compass_Backend* _uavcan_backend = AP_Compass_DroneCAN::probe(j);
                 if (_uavcan_backend) {
                     _add_backend(_uavcan_backend);
                     // we also need to remove the id from unreg list
@@ -1519,7 +1519,7 @@ void Compass::_detect_backends(void)
         }
 #endif  // #if COMPASS_MAX_UNREG_DEV > 0
     }
-#endif  // AP_COMPASS_UAVCAN_ENABLED
+#endif  // AP_COMPASS_DRONECAN_ENABLED
 
     if (_backend_count == 0 ||
         _compass_count == 0) {
@@ -1608,7 +1608,7 @@ void Compass::_reset_compass_id()
 void
 Compass::_detect_runtime(void)
 {
-#if AP_COMPASS_UAVCAN_ENABLED
+#if AP_COMPASS_DRONECAN_ENABLED
     if (!available()) {
         return;
     }
@@ -1625,14 +1625,14 @@ Compass::_detect_runtime(void)
     last_try = AP_HAL::millis();
     if (_driver_enabled(DRIVER_UAVCAN)) {
         for (uint8_t i=0; i<COMPASS_MAX_BACKEND; i++) {
-            AP_Compass_Backend* _uavcan_backend = AP_Compass_UAVCAN::probe(i);
+            AP_Compass_Backend* _uavcan_backend = AP_Compass_DroneCAN::probe(i);
             if (_uavcan_backend) {
                 _add_backend(_uavcan_backend);
             }
             CHECK_UNREG_LIMIT_RETURN;
         }
     }
-#endif  // AP_COMPASS_UAVCAN_ENABLED
+#endif  // AP_COMPASS_DRONECAN_ENABLED
 }
 
 bool

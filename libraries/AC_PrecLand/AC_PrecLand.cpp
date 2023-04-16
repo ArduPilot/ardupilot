@@ -1,7 +1,12 @@
+#include "AC_PrecLand_config.h"
+
+#if AC_PRECLAND_ENABLED
+
+#include "AC_PrecLand.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include "AC_PrecLand.h"
+
 #include "AC_PrecLand_Backend.h"
 #include "AC_PrecLand_Companion.h"
 #include "AC_PrecLand_IRLock.h"
@@ -236,17 +241,23 @@ void AC_PrecLand::init(uint16_t update_rate_hz)
         default:
             return;
         // companion computer
+#if AC_PRECLAND_COMPANION_ENABLED
         case Type::COMPANION:
             _backend = new AC_PrecLand_Companion(*this, _backend_state);
             break;
         // IR Lock
+#endif
+#if AC_PRECLAND_IRLOCK_ENABLED
         case Type::IRLOCK:
             _backend = new AC_PrecLand_IRLock(*this, _backend_state);
             break;
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#endif
+#if AC_PRECLAND_SITL_GAZEBO_ENABLED
         case Type::SITL_GAZEBO:
             _backend = new AC_PrecLand_SITL_Gazebo(*this, _backend_state);
             break;
+#endif
+#if AC_PRECLAND_SITL_ENABLED
         case Type::SITL:
             _backend = new AC_PrecLand_SITL(*this, _backend_state);
             break;
@@ -774,3 +785,5 @@ AC_PrecLand *ac_precland()
 }
 
 }
+
+#endif // AC_PRECLAND_ENABLED

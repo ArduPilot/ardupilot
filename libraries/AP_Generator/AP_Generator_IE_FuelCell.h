@@ -2,7 +2,7 @@
 
 #include "AP_Generator_Backend.h"
 
-#if HAL_GENERATOR_ENABLED
+#if AP_GENERATOR_IE_ENABLED
 
 class AP_Generator_IE_FuelCell : public AP_Generator_Backend
 {
@@ -100,4 +100,4 @@ protected:
     bool check_for_err_code_if_changed(char* msg_txt, uint8_t msg_len);
 
 };
-#endif
+#endif  // AP_GENERATOR_IE_ENABLED

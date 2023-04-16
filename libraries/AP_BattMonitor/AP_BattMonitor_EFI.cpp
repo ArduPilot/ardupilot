@@ -13,15 +13,15 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AP_BattMonitor_EFI.h"
+#include "AP_BattMonitor_config.h"
 
-#if HAL_EFI_ENABLED
+#if AP_BATTERY_EFI_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_EFI/AP_EFI.h>
 
-extern const AP_HAL::HAL& hal;
+#include "AP_BattMonitor_EFI.h"
 
 // update state
 void AP_BattMonitor_EFI::read()
@@ -51,5 +51,4 @@ void AP_BattMonitor_EFI::read()
     _state.last_time_micros = AP_HAL::micros();
 }
 
-#endif // HAL_EFI_ENABLED
-
+#endif // AP_BATTERY_EFI_ENABLED

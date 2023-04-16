@@ -6,11 +6,7 @@
 #include <AP_Param/AP_Param.h>
 #include <utility>
 
-#ifndef HAL_BATTMON_INA2XX_ENABLED
-#define HAL_BATTMON_INA2XX_ENABLED (BOARD_FLASH_SIZE > 1024)
-#endif
-
-#if HAL_BATTMON_INA2XX_ENABLED
+#if AP_BATTERY_INA2XX_ENABLED
 
 class AP_BattMonitor_INA2XX : public AP_BattMonitor_Backend
 {
@@ -56,4 +52,4 @@ private:
     float voltage_LSB;
 };
 
-#endif // HAL_BATTMON_INA2XX_ENABLED
+#endif // AP_BATTERY_INA2XX_ENABLED

@@ -9,16 +9,6 @@ def build(bld):
         flashiface_lib = ['AP_HAL', 'AP_FlashIface', 'AP_HAL_Empty']
     else:
         flashiface_lib = []
-    
-    # build external libcanard library
-    bld.stlib(source='../../modules/DroneCAN/libcanard/canard.c',
-              use='dronecan',
-              target='libcanard')
-
-    bld.ap_program(
-        use=['ap','libcanard','AP_Bootloader_libs', 'dronecan'],
-        program_groups='bootloader'
-    )
 
     bld.ap_stlib(
         name= 'AP_Bootloader_libs',
@@ -27,5 +17,17 @@ def build(bld):
         ap_vehicle='AP_Bootloader',
         ap_libraries= flashiface_lib + [
         'AP_Math',
-        'AP_CheckFirmware'
+        'AP_CheckFirmware',
+        'AP_HAL',
         ])
+
+    # build external libcanard library
+    bld.stlib(source='../../modules/DroneCAN/libcanard/canard.c',
+              name='libcanard',
+              use='dronecan',
+              target='libcanard')
+
+    bld.ap_program(
+        use=['AP_Bootloader_libs', 'libcanard', 'dronecan'],
+        program_groups='bootloader'
+    )

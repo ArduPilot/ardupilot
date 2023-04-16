@@ -17,6 +17,10 @@
  */
 #pragma once
 
+#include "AP_EFI_config.h"
+
+#if AP_EFI_SERIAL_LUTAN_ENABLED
+
 #include "AP_EFI.h"
 #include "AP_EFI_Backend.h"
 
@@ -81,3 +85,5 @@ private:
     uint32_t last_request_ms;
     uint32_t last_recv_ms;
 };
+
+#endif  // AP_EFI_SERIAL_LUTAN_ENABLED

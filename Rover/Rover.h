@@ -42,6 +42,7 @@
 #include <AP_Mission/AP_Mission_ChangeDetector.h>
 #include <AR_WPNav/AR_WPNav_OA.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
+#include <AC_PrecLand/AC_PrecLand_config.h>
 
 // Configuration
 #include "defines.h"
@@ -61,10 +62,10 @@
 #include "GCS_Mavlink.h"
 #include "GCS_Rover.h"
 #include "AP_Rally.h"
-#include "RC_Channel.h"                  // RC Channel Library
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
 #include <AC_PrecLand/AC_PrecLand.h>
 #endif
+#include "RC_Channel.h"                  // RC Channel Library
 
 #include "mode.h"
 
@@ -145,7 +146,7 @@ private:
 #if OSD_ENABLED || OSD_PARAM_ENABLED
     AP_OSD osd;
 #endif
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
     AC_PrecLand precland;
 #endif
     // GCS handling
@@ -361,6 +362,10 @@ private:
     bool set_mode(Mode &new_mode, ModeReason reason);
     bool set_mode(const uint8_t new_mode, ModeReason reason) override;
     uint8_t get_mode() const override { return (uint8_t)control_mode->mode_number(); }
+    bool current_mode_requires_mission() const override {
+        return control_mode == &mode_auto;
+    }
+
     void startup_INS_ground(void);
     void notify_mode(const Mode *new_mode);
     uint8_t check_digital_pin(uint8_t pin);

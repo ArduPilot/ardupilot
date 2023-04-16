@@ -11,6 +11,18 @@
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AP_Camera_Params.h"
+#include "AP_Mount/AP_Mount_config.h"
+
+#if AP_CAMERA_SCRIPTING_ENABLED
+    // structure and accessors for use by scripting backends
+    typedef struct {
+        uint16_t take_pic_incr; // incremented each time camera is requested to take a picture
+        bool recording_video;   // true when recording video
+        int8_t zoom_step;       // zoom out = -1, hold = 0, zoom in = 1
+        int8_t focus_step;      // focus in = -1, focus hold = 0, focus out = 1
+        bool auto_focus;        // true when auto focusing
+    } camera_state_t;
+#endif
 
 #define AP_CAMERA_MAX_INSTANCES             2       // maximum number of camera backends
 
@@ -20,6 +32,9 @@ class AP_Camera_Servo;
 class AP_Camera_Relay;
 class AP_Camera_SoloGimbal;
 class AP_Camera_Mount;
+class AP_Camera_MAVLink;
+class AP_Camera_MAVLinkCamV2;
+class AP_Camera_Scripting;
 
 /// @class	Camera
 /// @brief	Object managing a Photo or video camera
@@ -32,6 +47,8 @@ class AP_Camera {
     friend class AP_Camera_SoloGimbal;
     friend class AP_Camera_Mount;
     friend class AP_Camera_MAVLink;
+    friend class AP_Camera_MAVLinkCamV2;
+    friend class AP_Camera_Scripting;
 
 public:
 
@@ -47,15 +64,28 @@ public:
     // enums
     enum class CameraType {
         NONE = 0,           // None
+#if AP_CAMERA_SERVO_ENABLED
         SERVO = 1,          // Servo/PWM controlled camera
+#endif
+#if AP_CAMERA_RELAY_ENABLED
         RELAY = 2,          // Relay controlled camera
+#endif
+#if AP_CAMERA_SOLOGIMBAL_ENABLED
         SOLOGIMBAL = 3,     // GoPro in Solo gimbal
+#endif
+#if AP_CAMERA_MOUNT_ENABLED
         MOUNT = 4,          // Mount library implements camera
+#endif
+#if AP_CAMERA_MAVLINK_ENABLED
         MAVLINK = 5,        // MAVLink enabled camera
+#endif
+#if AP_CAMERA_MAVLINKCAMV2_ENABLED
+        MAVLINK_CAMV2 = 6,  // MAVLink camera v2
+#endif
+#if AP_CAMERA_SCRIPTING_ENABLED
+        SCRIPTING = 7,  // Scripting backend
+#endif
     };
-
-    // returns camera type of the given instance
-    CameraType get_type(uint8_t instance) const;
 
     // detect and initialise backends
     void init();
@@ -65,7 +95,8 @@ public:
 
     // MAVLink methods
     void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg);
-    void send_feedback(mavlink_channel_t chan) const;
+    MAV_RESULT handle_command_long(const mavlink_command_long_t &packet);
+    void send_feedback(mavlink_channel_t chan);
 
     // configure camera
     void configure(float shooting_mode, float shutter_speed, float aperture, float ISO, float exposure_type, float cmd_id, float engine_cutoff_time);
@@ -76,38 +107,47 @@ public:
     void control(uint8_t instance, float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id);
 
     // set camera trigger distance in a mission
-    void set_trigger_distance(float distance_m) { set_trigger_distance(primary, distance_m); }
+    void set_trigger_distance(float distance_m);
     void set_trigger_distance(uint8_t instance, float distance_m);
 
     // momentary switch to change camera between picture and video modes
-    void cam_mode_toggle() { cam_mode_toggle(primary); }
+    void cam_mode_toggle();
     void cam_mode_toggle(uint8_t instance);
 
     // take a picture
-    void take_picture() { take_picture(primary); }
+    void take_picture();
     void take_picture(uint8_t instance);
 
     // start/stop recording video
     // start_recording should be true to start recording, false to stop recording
-    bool record_video(bool start_recording) { return record_video(primary, start_recording); }
+    bool record_video(bool start_recording);
     bool record_video(uint8_t instance, bool start_recording);
 
     // zoom in, out or hold
     // zoom out = -1, hold = 0, zoom in = 1
-    bool set_zoom_step(int8_t zoom_step) { return set_zoom_step(primary, zoom_step); }
+    bool set_zoom_step(int8_t zoom_step);
     bool set_zoom_step(uint8_t instance, int8_t zoom_step);
 
     // focus in, out or hold
     // focus in = -1, focus hold = 0, focus out = 1
-    bool set_manual_focus_step(int8_t focus_step) { return set_manual_focus_step(primary, focus_step); }
+    bool set_manual_focus_step(int8_t focus_step);
     bool set_manual_focus_step(uint8_t instance, int8_t focus_step);
 
     // auto focus
-    bool set_auto_focus() { return set_auto_focus(primary); }
+    bool set_auto_focus();
     bool set_auto_focus(uint8_t instance);
 
     // set if vehicle is in AUTO mode
     void set_is_auto_mode(bool enable) { _is_in_auto_mode = enable; }
+
+#if AP_CAMERA_SCRIPTING_ENABLED
+    // accessor to allow scripting backend to retrieve state
+    // returns true on success and cam_state is filled in
+    bool get_state(uint8_t instance, camera_state_t& cam_state);
+#endif
+
+    // allow threads to lock against AHRS update
+    HAL_Semaphore &get_semaphore() { return _rsem; }
 
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
@@ -135,15 +175,15 @@ private:
     AP_Int16 _max_roll;         // Maximum acceptable roll angle when trigging camera
 
     // check instance number is valid
-    bool is_valid_instance(uint8_t instance) const;
+    AP_Camera_Backend *get_instance(uint8_t instance) const;
 
     // perform any required parameter conversion
     void convert_params();
 
-    uint8_t primary;                    // index of primary backend (normally the first one)
+    HAL_Semaphore _rsem;                // semaphore for multi-thread access
+    AP_Camera_Backend *primary;         // primary camera backed
     bool _is_in_auto_mode;              // true if in AUTO mode
     uint32_t log_camera_bit;            // logging bit (from LOG_BITMASK) to enable camera logging
-    uint8_t _num_instances;             // number of camera backends instantiated
     AP_Camera_Backend *_backends[AP_CAMERA_MAX_INSTANCES];  // pointers to instantiated backends
 };
 

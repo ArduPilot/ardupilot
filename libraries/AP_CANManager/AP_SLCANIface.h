@@ -17,9 +17,11 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
+#include "AP_CANManager_config.h"
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if AP_CAN_SLCAN_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
 #include "AP_HAL/utility/RingBuffer.h"
 #include <AP_Param/AP_Param.h>
 
@@ -139,4 +141,4 @@ protected:
 
 }
 
-#endif
+#endif  // AP_CAN_SLCAN_ENABLED

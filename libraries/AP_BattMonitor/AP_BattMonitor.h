@@ -23,7 +23,7 @@
 #define AP_BATT_MONITOR_RES_EST_TC_1        0.5f
 #define AP_BATT_MONITOR_RES_EST_TC_2        0.1f
 
-#if !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
+#if BOARD_FLASH_SIZE > 1024
 #define AP_BATT_MONITOR_CELLS_MAX           14
 #else
 #define AP_BATT_MONITOR_CELLS_MAX           12
@@ -37,7 +37,7 @@ class AP_BattMonitor_SMBus_Solo;
 class AP_BattMonitor_SMBus_Generic;
 class AP_BattMonitor_SMBus_Maxell;
 class AP_BattMonitor_SMBus_Rotoye;
-class AP_BattMonitor_UAVCAN;
+class AP_BattMonitor_DroneCAN;
 class AP_BattMonitor_Generator;
 class AP_BattMonitor_INA2XX;
 class AP_BattMonitor_INA239;
@@ -56,7 +56,7 @@ class AP_BattMonitor
     friend class AP_BattMonitor_SMBus_Generic;
     friend class AP_BattMonitor_SMBus_Maxell;
     friend class AP_BattMonitor_SMBus_Rotoye;
-    friend class AP_BattMonitor_UAVCAN;
+    friend class AP_BattMonitor_DroneCAN;
     friend class AP_BattMonitor_Sum;
     friend class AP_BattMonitor_FuelFlow;
     friend class AP_BattMonitor_FuelLevel_PWM;
@@ -149,6 +149,7 @@ public:
         bool        powerOffNotified;          // only send powering off notification once
         uint32_t    time_remaining;            // remaining battery time
         bool        has_time_remaining;        // time_remaining is only valid if this is true
+        uint8_t     instance;                  // instance number of this backend
         const struct AP_Param::GroupInfo *var_info;
     };
 
