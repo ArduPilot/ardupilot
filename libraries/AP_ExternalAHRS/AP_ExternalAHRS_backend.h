@@ -39,6 +39,9 @@ public:
     virtual void get_filter_status(nav_filter_status &status) const {}
     virtual void send_status_report(class GCS_MAVLINK &link) const {}
 
+    // inject data (for RTCMv3)
+    virtual void inject_data(const uint8_t *data, uint16_t len) {}
+
     // check for new data
     virtual void update() = 0;
     
