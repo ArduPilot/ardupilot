@@ -485,31 +485,38 @@ int AP_HAL__I2CDevice_write_registers(lua_State *L) {
         lua_pushnil(L);
         // stack = [i2c, addr, {table}, nil]
 
-        while (lua_next(L, 3) != 0) {
-            // stack = [i2c, addr, {table}, index, value]
-            int isnum_index;
-            const lua_Integer index_raw = lua_tointegerx(L, 4, &isnum_index);
-            if (!isnum_index || (index_raw < 0) || (index_raw > UINT16_MAX)) {
-                luaM_free(L, buffer);
-                return luaL_argerror(L, 3, "table's index out of range");
+        // Coincidentally Lua's table indexing starts from 1
+        for (uint8_t index = 1; index < write_size; index++) {
+            if (lua_next(L, 3) != 0) {
+                // stack = [i2c, addr, {table}, index, value]
+                int isnum_index;
+                const lua_Integer index_raw = lua_tointegerx(L, 4, &isnum_index);
+                if (!isnum_index || (index_raw < 0) || (index_raw > UINT16_MAX)) {
+                    luaM_free(L, buffer);
+                    return luaL_argerror(L, 3, "table's index out of range");
+                }
+                if (index != index_raw) { 
+                    free(buffer);
+                    luaL_argerror(L, 3, "table's index out of range");
+                    return;
+                }
+
+                int isnum_value;
+                const lua_Integer value_raw = lua_tointegerx(L, 5, &isnum_value);
+                if (!isnum_value || (value_raw < 0) || (value_raw > UINT8_MAX)) {
+                    luaM_free(L, buffer);
+                    return luaL_argerror(L, 3, "table's value out of range");
+                }
+                uint8_t value = static_cast<uint8_t>(value_raw);
+
+                buffer[index] = value;
+
+                lua_pop(L, 1);
+                // stack = [i2c, addr, {table}, index]
             }
-            uint16_t index = static_cast<uint16_t>(index_raw);
-
-            int isnum_value;
-            const lua_Integer value_raw = lua_tointegerx(L, 5, &isnum_value);
-            if (!isnum_value || (value_raw < 0) || (value_raw > UINT8_MAX)) {
-                luaM_free(L, buffer);
-                return luaL_argerror(L, 3, "table's value out of range");
-            }
-            uint8_t value = static_cast<uint8_t>(value_raw);
-
-            buffer[index] = value;
-
-            lua_pop(L, 1);
-            // stack = [i2c, addr, {table}, index]
         }
     }
-    // stack = [i2c, addr, {table?}]
+    // stack = [i2c, addr, {table?}, last_index?]
 
     ud->get_semaphore()->take_blocking();
     const bool result = static_cast<bool>(ud->transfer(buffer, write_size, nullptr, 0));
