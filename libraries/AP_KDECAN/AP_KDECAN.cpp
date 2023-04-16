@@ -80,7 +80,7 @@ AP_KDECAN_Driver::AP_KDECAN_Driver() : CANSensor("KDECAN")
     register_driver(AP_CANManager::Driver_Type_KDECAN);
 
     // start thread for receiving and sending CAN frames
-    hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_KDECAN_Driver::loop, void), "kdecan", 4096, AP_HAL::Scheduler::PRIORITY_CAN, 0);
+    hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_KDECAN_Driver::loop, void), "kdecan", 2048, AP_HAL::Scheduler::PRIORITY_CAN, 0);
 }
 
 // parse inbound frames
@@ -136,12 +136,6 @@ void AP_KDECAN_Driver::handle_frame(AP_HAL::CANFrame &frame)
             }
             break;
 #endif // HAL_WITH_ESC_TELEM
-
-        case UPDATE_NODE_ID_OBJ_ADDR:
-            // reply from setting new node ID
-            _init.detected_bitmask |= 1U << (id.source_id - ESC_NODE_ID_FIRST);
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "KDECAN: Found ESC id %u", id.source_id);
-            break;
     }
 }
 
@@ -158,13 +152,19 @@ void AP_KDECAN_Driver::update(const uint8_t num_poles)
     uint16_t pwm[KDECAN_MAX_NUM_ESCS] {};
 
     uint8_t index = 0;
-    for (uint16_t i = 0; i < ARRAY_SIZE(pwm); i++) {
-        if ((_init.detected_bitmask & (1UL<<index)) == 0) {
+    for (uint16_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
+        if ((_init.detected_bitmask & (1UL<<i)) == 0 || SRV_Channels::channel_function(i) <= SRV_Channel::Aux_servo_function_t::k_none) {
             continue;
         }
-        if (SRV_Channels::channel_function(i) > SRV_Channel::Aux_servo_function_t::k_none) {
-            pwm[index++] = SRV_Channels::srv_channel(i)->get_output_pwm();
+
+        const SRV_Channel *c = SRV_Channels::srv_channel(i);
+        if (c == nullptr) {
+            continue;
         }
+        if (index >= ARRAY_SIZE(pwm)) {
+            break;
+        }
+        pwm[index++] = c->get_output_pwm();
     }
 
     {
