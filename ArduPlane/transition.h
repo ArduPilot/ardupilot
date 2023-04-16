@@ -40,7 +40,7 @@ public:
 
     virtual bool show_vtol_view() const = 0;
 
-    virtual void set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& nav_roll_cd, bool& allow_stick_mixing) {};
+    virtual void set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& nav_roll_cd) {};
 
     virtual bool set_FW_roll_limit(int32_t& roll_limit_cd) { return false; }
 
@@ -55,6 +55,8 @@ public:
     virtual bool allow_weathervane() { return true; }
 
     virtual void set_last_fw_pitch(void) {}
+
+    virtual bool allow_stick_mixing() const { return true; }
 
 protected:
 
@@ -87,7 +89,7 @@ public:
 
     bool show_vtol_view() const override;
 
-    void set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& nav_roll_cd, bool& allow_stick_mixing) override;
+    void set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& nav_roll_cd) override;
 
     bool set_FW_roll_limit(int32_t& roll_limit_cd) override;
 
