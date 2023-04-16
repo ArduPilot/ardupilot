@@ -368,41 +368,43 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     // calculate how close the motors can come to the desired throttle
     rpy_high *= rpy_scale;
     rpy_low *= rpy_scale;
-    throttle_thrust_best_rpy = -rpy_low;
-    float thr_adj = throttle_thrust - throttle_thrust_best_rpy;
-    if (rpy_scale < 1.0f) {
-        // Full range is being used by roll, pitch, and yaw.
-        limit.roll = true;
-        limit.pitch = true;
-        limit.yaw = true;
-        if (thr_adj > 0.0f) {
+    const float final_throttle = [&]() {
+        if (rpy_scale < 1.0f) {
+            // Full range is being used by roll, pitch, and yaw.
+            limit.roll = true;
+            limit.pitch = true;
+            limit.yaw = true;
+            if (throttle_thrust + rpy_low > 0.0f) {
+                limit.throttle_upper = true;
+            }
+            return -rpy_low;
+        } else if (throttle_thrust + rpy_low < 0.0f) {
+            // Throttle can't be reduced to desired value
+            // todo: add lower limit flag and ensure it is handled correctly in altitude controller
+            return -rpy_low;
+        } else if (throttle_thrust + rpy_high > 1.0f) {
+            // Throttle can't be increased to desired value
             limit.throttle_upper = true;
+            return 1.0f - rpy_high;
+        } else {
+            return throttle_thrust;
         }
-        thr_adj = 0.0f;
-    } else if (thr_adj < 0.0f) {
-        // Throttle can't be reduced to desired value
-        // todo: add lower limit flag and ensure it is handled correctly in altitude controller
-        thr_adj = 0.0f;
-    } else if (thr_adj > 1.0f - (throttle_thrust_best_rpy + rpy_high)) {
-        // Throttle can't be increased to desired value
-        thr_adj = 1.0f - (throttle_thrust_best_rpy + rpy_high);
-        limit.throttle_upper = true;
-    }
+    }();
 
-    // add scaled roll, pitch, constrained yaw and throttle for each motor
-    const float throttle_thrust_best_plus_adj = throttle_thrust_best_rpy + thr_adj;
+    // at this point, _thrust_rpyt_out contains unscaled RPY contributions.
+    // Need to scale it to fit final throttle value, then add throttle adjustment.
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
-            _thrust_rpyt_out[i] = (throttle_thrust_best_plus_adj * _throttle_factor[i]) + (rpy_scale * _thrust_rpyt_out[i]);
+            _thrust_rpyt_out[i] = (final_throttle * _throttle_factor[i]) + (rpy_scale * _thrust_rpyt_out[i]);
         }
     }
 
     // determine throttle thrust for harmonic notch
     // compensation_gain can never be zero
-    _throttle_out = throttle_thrust_best_plus_adj / compensation_gain;
+    _throttle_out = final_throttle / compensation_gain;
 
     // check for failed motor
-    check_for_failed_motor(throttle_thrust_best_plus_adj);
+    check_for_failed_motor(final_throttle);
 }
 
 // check for failed motor
