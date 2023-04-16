@@ -4349,7 +4349,7 @@ MAV_VTOL_STATE SLT_Transition::get_mav_vtol_state() const
 }
 
 // Set FW roll and pitch limits and keep TECS informed
-void SLT_Transition::set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& nav_roll_cd, bool& allow_stick_mixing)
+void SLT_Transition::set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& nav_roll_cd)
 {
     if (quadplane.in_vtol_mode() || quadplane.in_vtol_airbrake()) {
         // not in FW flight
@@ -4526,6 +4526,17 @@ bool QuadPlane::abort_landing(void)
     }
     poscontrol.set_state(QuadPlane::QPOS_LAND_ABORT);
     return true;
+}
+
+// Should we allow stick mixing from the pilot
+bool QuadPlane::allow_stick_mixing() const
+{
+    if (!available()) {
+        // Quadplane not enabled
+        return true;
+    }
+    // Ask transition logic
+    return transition->allow_stick_mixing();
 }
 
 #endif  // HAL_QUADPLANE_ENABLED
