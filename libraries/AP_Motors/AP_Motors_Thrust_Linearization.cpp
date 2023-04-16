@@ -3,11 +3,17 @@
 #include "AP_Motors_Class.h"
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #define AP_MOTORS_BATT_VOLT_FILT_HZ 0.5 // battery voltage filtered at 0.5hz
 
-#ifndef AP_MOTORS_DENSITY_COMP
-#define AP_MOTORS_DENSITY_COMP 1
+#if APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+    // Example does not instantiate baro so cannot do density compensation
+    #define AP_MOTORS_DENSITY_COMP 0
+#else
+    #ifndef AP_MOTORS_DENSITY_COMP
+        #define AP_MOTORS_DENSITY_COMP 1
+    #endif
 #endif
 
 
