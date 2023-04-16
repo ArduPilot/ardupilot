@@ -16,6 +16,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_MotorsMatrix.h"
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -446,8 +447,15 @@ void AP_MotorsMatrix::check_for_failed_motor(float throttle_thrust_best_plus_adj
         thrust_balance = rpyt_high * number_motors / rpyt_sum;
     }
     // ensure thrust balance does not activate for multirotors with less than 6 motors
-    if (number_motors >= 6 && thrust_balance >= 1.5f && _thrust_balanced) {
-        _thrust_balanced = false;
+    if (thrust_balance >= 1.5f && _thrust_balanced) {
+        if (number_motors >= 6) {
+            _thrust_balanced = false;
+        }
+        static uint32_t lastUpdate;
+        if (AP_HAL::millis() - lastUpdate > 200) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Motor thrust balance failed %.2f>1.25", thrust_balance);
+            lastUpdate = AP_HAL::millis();
+        }
     }
     if (thrust_balance <= 1.25f && !_thrust_balanced) {
         _thrust_balanced = true;
