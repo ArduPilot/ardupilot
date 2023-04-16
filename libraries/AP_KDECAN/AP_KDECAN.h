@@ -51,9 +51,6 @@ public:
     // called from SRV_Channels
     void update(const uint8_t num_poles);
 
-    // check that arming can happen
-    bool pre_arm_check(char* reason, const uint8_t reason_len);
-
 private:
 
     // handler for incoming frames
@@ -65,7 +62,7 @@ private:
     void loop();
 
     struct {
-        uint16_t detected_bitmask;
+        uint32_t detected_bitmask;
         uint32_t detected_bitmask_ms;
     } _init;
 
@@ -73,11 +70,10 @@ private:
         HAL_Semaphore sem;
         bool is_new;
         uint32_t last_new_ms;
-        uint16_t pwm[KDECAN_MAX_NUM_ESCS];
+        uint16_t pwm[NUM_SERVO_CHANNELS];
 #if AP_KDECAN_USE_EVENTS
         thread_t *thread_ctx;
 #endif
-        uint16_t max_node_id;
     } _output;
 
 #if HAL_WITH_ESC_TELEM
@@ -116,10 +112,7 @@ private:
     static const uint8_t TELEMETRY_OBJ_ADDR = 11;
 
 
-    static const uint32_t PWM_MIN_INTERVAL_MS = 3;
-    static const uint32_t PWM_IS_NEW_TIMEOUT_MS = 1000;
     static const uint32_t TELEMETRY_INTERVAL_MS = 100;
-    static const uint16_t ENUMERATION_TIMEOUT_MS = 30000;
 
 };
 
@@ -136,9 +129,6 @@ public:
     void update();
 
     static AP_KDECAN *get_singleton() { return _singleton; }
-
-    // check that arming can happen
-    bool pre_arm_check(char* reason, const uint8_t reason_len) { return (_driver == nullptr) ? true : _driver->pre_arm_check(reason, reason_len); }
 
 private:
     static AP_KDECAN *_singleton;
