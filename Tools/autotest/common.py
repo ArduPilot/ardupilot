@@ -4978,17 +4978,23 @@ class AutoTest(ABC):
         else:
             return None
 
-    def set_safetyswitch_on(self):
-        self.set_safetyswitch(1)
+    def set_safetyswitch_on(self, **kwargs):
+        self.set_safetyswitch(1, **kwargs)
 
-    def set_safetyswitch_off(self):
-        self.set_safetyswitch(0)
+    def set_safetyswitch_off(self, **kwargs):
+        self.set_safetyswitch(0, **kwargs)
 
     def set_safetyswitch(self, value, target_system=1, target_component=1):
         self.mav.mav.set_mode_send(
             target_system,
             mavutil.mavlink.MAV_MODE_FLAG_DECODE_POSITION_SAFETY,
             value)
+        self.wait_sensor_state(
+            mavutil.mavlink.MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS,
+            True, not value, True,
+            verbose=True,
+            timeout=30
+        )
 
     def armed(self):
         """Return true if vehicle is armed and safetyoff"""
