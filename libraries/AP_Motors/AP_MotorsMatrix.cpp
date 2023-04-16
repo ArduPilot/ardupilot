@@ -392,7 +392,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     }();
 
     // at this point, _thrust_rpyt_out contains unscaled RPY contributions.
-    // Need to scale it to fit final throttle value, then add throttle adjustment.
+    // Need to scale it to fit final throttle value, then add final throttle.
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             _thrust_rpyt_out[i] = (final_throttle * _throttle_factor[i]) + (rpy_scale * _thrust_rpyt_out[i]);
