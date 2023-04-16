@@ -128,6 +128,8 @@ public:
     // zoom out = -1, hold = 0, zoom in = 1
     virtual bool set_zoom_step(int8_t zoom_step) { return false; }
 
+    virtual bool set_zoom_absolute(float zoom_absolute) { return false; }
+
     // set focus in, out or hold.  returns true on success
     // focus in = -1, focus hold = 0, focus out = 1
     virtual bool set_manual_focus_step(int8_t focus_step) { return false; }

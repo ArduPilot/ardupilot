@@ -632,6 +632,15 @@ bool AP_Mount::set_zoom_step(uint8_t instance, int8_t zoom_step)
     return backend->set_zoom_step(zoom_step);
 }
 
+bool AP_Mount::set_zoom_absolute(uint8_t instance, float zoom_absolute)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+    return backend->set_zoom_absolute(zoom_absolute);
+}
+
 // set focus in, out or hold.  returns true on success
 // focus in = -1, focus hold = 0, focus out = 1
 bool AP_Mount::set_manual_focus_step(uint8_t instance, int8_t focus_step)
