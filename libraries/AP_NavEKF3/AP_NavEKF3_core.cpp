@@ -281,6 +281,7 @@ void NavEKF3_core::InitialiseVariables()
     tiltErrorVariance = sq(M_2PI);
     tiltAlignComplete = false;
     yawAlignComplete = false;
+    yawAlignGpsValidCount = 0;
     have_table_earth_field = false;
     stateIndexLim = 23;
     last_gps_idx = 0;
