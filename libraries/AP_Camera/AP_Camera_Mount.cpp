@@ -38,6 +38,15 @@ bool AP_Camera_Mount::set_zoom_step(int8_t zoom_step)
     return false;
 }
 
+bool AP_Camera_Mount::set_zoom_absolute(float zoom_absolute)
+{
+    AP_Mount* mount = AP::mount();
+    if (mount != nullptr) {
+        return mount->set_zoom_absolute(0, zoom_absolute);
+    }
+    return false;
+}
+
 // focus in, out or hold.  returns true on success
 // focus in = -1, focus hold = 0, focus out = 1
 bool AP_Camera_Mount::set_manual_focus_step(int8_t focus_step)

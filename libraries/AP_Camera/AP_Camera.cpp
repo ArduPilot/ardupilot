@@ -115,6 +115,14 @@ bool AP_Camera::set_zoom_step(int8_t zoom_step)
     return primary->set_zoom_step(zoom_step);
 }
 
+bool AP_Camera::set_zoom_absolute(float zoom_absolute)
+{
+    if (primary == nullptr) {
+        return false;
+    }
+    return primary->set_zoom_absolute(zoom_absolute);
+}
+
 // focus in, out or hold
 // focus in = -1, focus hold = 0, focus out = 1
 bool AP_Camera::set_manual_focus_step(int8_t focus_step)
@@ -250,6 +258,10 @@ MAV_RESULT AP_Camera::handle_command_long(const mavlink_command_long_t &packet)
     case MAV_CMD_SET_CAMERA_ZOOM:
         if (is_equal(packet.param1, (float)ZOOM_TYPE_CONTINUOUS)) {
             set_zoom_step((int8_t)packet.param2);
+            return MAV_RESULT_ACCEPTED;
+        } else if (is_equal(packet.param1, (float)ZOOM_TYPE_RANGE)) {
+            // We need to check here if this is possible 100% of the times
+            set_zoom_absolute(packet.param2);
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_UNSUPPORTED;
@@ -448,6 +460,17 @@ bool AP_Camera::set_zoom_step(uint8_t instance, int8_t zoom_step)
 
     // call each instance
     return backend->set_zoom_step(zoom_step);
+}
+
+bool AP_Camera::set_zoom_absolute(uint8_t instance, float zoom_absolute)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+
+    // call each instance
+    return backend->set_zoom_absolute(zoom_absolute);
 }
 
 // focus in, out or hold.  returns true on success

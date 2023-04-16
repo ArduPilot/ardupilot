@@ -127,6 +127,9 @@ public:
     // zoom out = -1, hold = 0, zoom in = 1
     bool set_zoom_step(int8_t zoom_step);
     bool set_zoom_step(uint8_t instance, int8_t zoom_step);
+    
+    bool set_zoom_absolute(uint8_t instance, float zoom_absolute);
+    bool set_zoom_absolute(float zoom_absolute);
 
     // focus in, out or hold
     // focus in = -1, focus hold = 0, focus out = 1
