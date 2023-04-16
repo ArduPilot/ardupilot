@@ -66,6 +66,9 @@ void AP_Mount_Siyi::update()
         _last_req_current_angle_rad_ms = now_ms;
     }
 
+    // run zoom control
+    update_zoom_control();
+
     // update based on mount mode
     switch (get_mode()) {
         // move mount to a "retracted" position.  To-Do: remove support and replace with a relaxed mode?
@@ -304,6 +307,9 @@ void AP_Mount_Siyi::process_packet()
         }
         _got_firmware_version = true;
 
+        // set hardware version based on message length
+        _hardware_model = (_parsed_msg.data_bytes_received <= 8) ? HardwareModel::A8 : HardwareModel::ZR10;
+
         // display camera firmware version
         debug("Mount: SiyiCam fw:%u.%u.%u",
               (unsigned)_msg_buff[_msg_buff_data_start+2],      // firmware major version
@@ -349,8 +355,8 @@ void AP_Mount_Siyi::process_packet()
 #endif
             break;
         }
-        const float zoom_mult = UINT16_VALUE(_msg_buff[_msg_buff_data_start+1], _msg_buff[_msg_buff_data_start]) * 0.1;
-        debug("ZoomMult:%4.1f", (double)zoom_mult);
+        _zoom_mult = UINT16_VALUE(_msg_buff[_msg_buff_data_start+1], _msg_buff[_msg_buff_data_start]) * 0.1;
+        debug("ZoomMult:%4.1f", (double)_zoom_mult);
         break;
     }
 
@@ -625,23 +631,110 @@ bool AP_Mount_Siyi::record_video(bool start_recording)
     return ret;
 }
 
+// send zoom rate command to camera. zoom out = -1, hold = 0, zoom in = 1
+bool AP_Mount_Siyi::send_zoom_rate(float zoom_value)
+{
+    uint8_t zoom_step = 0;
+    if (zoom_value > 0) {
+        // zoom in
+        zoom_step = 1;
+    }
+    if (zoom_value < 0) {
+        // zoom out. Siyi API specifies -1 should be sent as 255
+        zoom_step = UINT8_MAX;
+    }
+    return send_1byte_packet(SiyiCommandId::MANUAL_ZOOM_AND_AUTO_FOCUS, zoom_step);
+}
+
+// send zoom multiple command to camera. e.g. 1x, 10x, 30x
+// only works on ZR10 and ZR30
+bool AP_Mount_Siyi::send_zoom_mult(float zoom_mult)
+{
+    // separate zoom_mult into integral and fractional parts
+    float intpart;
+    uint8_t fracpart = (uint8_t)constrain_int16(modf(zoom_mult, &intpart) * 10, 0, UINT8_MAX);
+
+    // create and send 2 byte array
+    const uint8_t zoom_mult_data[] {(uint8_t)(intpart), fracpart};
+    return send_packet(SiyiCommandId::ABSOLUTE_ZOOM, zoom_mult_data, ARRAY_SIZE(zoom_mult_data));
+}
+
+// get zoom multiple max
+float AP_Mount_Siyi::get_zoom_mult_max() const
+{
+    switch (_hardware_model) {
+    case HardwareModel::UNKNOWN:
+        return 0;
+    case HardwareModel::A8:
+        // a8 has 6x digital zoom
+        return 6;
+    case HardwareModel::ZR10:
+        // zr10 has 30x hybrid zoom (optical + digital)
+        return 30;
+    }
+    return 0;
+}
+
 // set zoom specified as a rate or percentage
 bool AP_Mount_Siyi::set_zoom(ZoomType zoom_type, float zoom_value)
 {
     if (zoom_type == ZoomType::RATE) {
-        uint8_t zoom_step = 0;
-        if (zoom_value > 0) {
-            zoom_step = 1;
+        // disable absolute zoom target
+        _zoom_mult_target = 0;
+        return send_zoom_rate(zoom_value);
+    }
+
+    // absolute zoom
+    if (zoom_type == ZoomType::PCT) {
+        float zoom_mult_max = get_zoom_mult_max();
+        if (is_positive(zoom_mult_max)) {
+            // convert zoom percentage (0~100) to target zoom multiple (e.g. 0~6x or 0~30x)
+            const float zoom_mult = linear_interpolate(1, zoom_mult_max, zoom_value, 0, 100);
+            switch (_hardware_model) {
+            case HardwareModel::UNKNOWN:
+                // unknown model
+                return false;
+            case HardwareModel::A8:
+                // set internal zoom control target
+                _zoom_mult_target = zoom_mult;
+                return true;
+            case HardwareModel::ZR10:
+                return send_zoom_mult(zoom_mult);
+            }
         }
-        if (zoom_value < 0) {
-            // Siyi API specifies -1 should be sent as 255
-            zoom_step = UINT8_MAX;
-        }
-        return send_1byte_packet(SiyiCommandId::MANUAL_ZOOM_AND_AUTO_FOCUS, zoom_step);
     }
 
     // unsupported zoom type
     return false;
+}
+
+// update absolute zoom controller
+// only used for A8 that does not support abs zoom control
+void AP_Mount_Siyi::update_zoom_control()
+{
+    // exit immediately if no target
+    if (!is_positive(_zoom_mult_target)) {
+        return;
+    }
+
+    // limit update rate to 20hz
+    const uint32_t now_ms = AP_HAL::millis();
+    if ((now_ms - _last_zoom_control_ms) <= 50) {
+        return;
+    }
+    _last_zoom_control_ms = now_ms;
+
+    // zoom towards target zoom multiple
+    if (_zoom_mult_target > _zoom_mult + 0.1f) {
+        send_zoom_rate(1);
+    } else if (_zoom_mult_target < _zoom_mult - 0.1f) {
+        send_zoom_rate(-1);
+    } else {
+        send_zoom_rate(0);
+        _zoom_mult_target = 0;
+    }
+
+    debug("Siyi zoom targ:%f act:%f", (double)_zoom_mult_target, (double)_zoom_mult);
 }
 
 // set focus specified as rate, percentage or auto
