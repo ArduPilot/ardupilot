@@ -486,19 +486,14 @@ int AP_HAL__I2CDevice_write_registers(lua_State *L) {
         // stack = [i2c, addr, {table}, nil]
 
         // Coincidentally Lua's table indexing starts from 1
-        for (uint8_t index = 1; index < write_size; index++) {
+        for (uint16_t index = 1; index < write_size; index++) {
             if (lua_next(L, 3) != 0) {
                 // stack = [i2c, addr, {table}, index, value]
                 int isnum_index;
                 const lua_Integer index_raw = lua_tointegerx(L, 4, &isnum_index);
-                if (!isnum_index || (index_raw < 0) || (index_raw > UINT16_MAX)) {
+                if (!isnum_index || (index_raw < 0) || (index_raw > UINT16_MAX) || (index_raw != index)) {
                     luaM_free(L, buffer);
                     return luaL_argerror(L, 3, "table's index out of range");
-                }
-                if (index != index_raw) { 
-                    free(buffer);
-                    luaL_argerror(L, 3, "table's index out of range");
-                    return;
                 }
 
                 int isnum_value;
