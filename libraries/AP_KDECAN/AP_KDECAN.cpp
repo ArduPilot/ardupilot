@@ -30,6 +30,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+#define AP_KDECAN_DEBUG 0
+
 // table of user settable CAN bus parameters
 const AP_Param::GroupInfo AP_KDECAN::var_info[] = {
 
@@ -79,7 +81,7 @@ AP_KDECAN_Driver::AP_KDECAN_Driver() : CANSensor("KDECAN")
 {
     register_driver(AP_CANManager::Driver_Type_KDECAN);
 
-    // start thread for receiving and sending CAN frames
+    // start thread for receiving and sending CAN frames. Tests show we use about 640 bytes of stack
     hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_KDECAN_Driver::loop, void), "kdecan", 2048, AP_HAL::Scheduler::PRIORITY_CAN, 0);
 }
 
@@ -92,33 +94,40 @@ void AP_KDECAN_Driver::handle_frame(AP_HAL::CANFrame &frame)
 
     const frame_id_t id { .value = frame.id & AP_HAL::CANFrame::MaskExtID };
 
-    // if (id.object_address != TELEMETRY_OBJ_ADDR) {
-    //     GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,"KDECAN: rx id:%d, src:%d, dest:%d, len:%d", (int)id.object_address, (int)id.source_id, (int)id.destination_id, (int)frame.dlc);
-    // }
+#if AP_KDECAN_DEBUG
+    if (id.object_address != TELEMETRY_OBJ_ADDR) {
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,"KDECAN: rx id:%d, src:%d, dest:%d, len:%d", (int)id.object_address, (int)id.source_id, (int)id.destination_id, (int)frame.dlc);
+    }
+#endif
+
+    if (id.destination_id != AUTOPILOT_NODE_ID || id.source_id < ESC_NODE_ID_FIRST) {
+        // not for us or invalid id (0 and 1 are invalid)
+        return;
+    }
 
     // check if frame is valid: directed at autopilot, doesn't come from broadcast and ESC was detected before
     switch (id.object_address) {
         case ESC_INFO_OBJ_ADDR:
             if (frame.dlc == 5 &&
-                id.destination_id == AUTOPILOT_NODE_ID &&
-                id.source_id >= ESC_NODE_ID_FIRST &&
-                id.source_id < (KDECAN_MAX_NUM_ESCS + ESC_NODE_ID_FIRST))
+                (id.source_id < (ARRAY_SIZE(_output.pwm) + ESC_NODE_ID_FIRST)))
             {
-                const uint16_t bitmask = (1U << (id.source_id - ESC_NODE_ID_FIRST));
+                if (__builtin_popcount(_init.detected_bitmask) >= KDECAN_MAX_NUM_ESCS) {
+                    // we already have the maximum number of ESCs
+                    return;
+                }
+                const uint16_t bitmask = (1UL << (id.source_id - ESC_NODE_ID_FIRST));
 
                 if ((bitmask & _init.detected_bitmask) != bitmask) {
                     _init.detected_bitmask |= bitmask;
-                    GCS_SEND_TEXT(MAV_SEVERITY_INFO,"KDECAN: Found ESC id %u", id.source_id);
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO,"KDECAN: Found ESC id %u mapped to SERVO%u", id.source_id, id.source_id-1);
                 }
             }
         break;
 
 #if HAL_WITH_ESC_TELEM
         case TELEMETRY_OBJ_ADDR:
-            if (id.destination_id == AUTOPILOT_NODE_ID &&
-                id.source_id != BROADCAST_NODE_ID &&
-                (1U << (id.source_id - ESC_NODE_ID_FIRST) & _init.detected_bitmask) &&
-                frame.dlc == 8)
+            if (frame.dlc == 8 &&
+                (1UL << (id.source_id - ESC_NODE_ID_FIRST) & _init.detected_bitmask))
             {
                 const uint8_t idx = id.source_id - ESC_NODE_ID_FIRST;
                 const uint8_t num_poles = _telemetry.num_poles > 0 ? _telemetry.num_poles : DEFAULT_NUM_POLES;
@@ -141,7 +150,8 @@ void AP_KDECAN_Driver::handle_frame(AP_HAL::CANFrame &frame)
 
 void AP_KDECAN_Driver::update(const uint8_t num_poles)
 {
-    if (!hal.util->get_soft_armed() || _init.detected_bitmask == 0) {
+    if (_init.detected_bitmask == 0) {
+        // nothing to do...
         return;
     }
 
@@ -149,30 +159,22 @@ void AP_KDECAN_Driver::update(const uint8_t num_poles)
     _telemetry.num_poles = num_poles;
 #endif
     
-    uint16_t pwm[KDECAN_MAX_NUM_ESCS] {};
-
-    uint8_t index = 0;
-    for (uint16_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
+    WITH_SEMAPHORE(_output.sem);
+    for (uint8_t i = 0; i < ARRAY_SIZE(_output.pwm); i++) {
         if ((_init.detected_bitmask & (1UL<<i)) == 0 || SRV_Channels::channel_function(i) <= SRV_Channel::Aux_servo_function_t::k_none) {
+            _output.pwm[i] = 0;
             continue;
         }
 
         const SRV_Channel *c = SRV_Channels::srv_channel(i);
         if (c == nullptr) {
+            _output.pwm[i] = 0;
             continue;
         }
-        if (index >= ARRAY_SIZE(pwm)) {
-            break;
-        }
-        pwm[index++] = c->get_output_pwm();
+        _output.pwm[i] = c->get_output_pwm();
     }
 
-    {
-        // queue the PWMs for loop()
-        WITH_SEMAPHORE(_output.sem);
-        memcpy(&_output.pwm, &pwm, sizeof(_output.pwm));
-        _output.is_new = true;
-    }
+    _output.is_new = true;
 
 #if AP_KDECAN_USE_EVENTS
     if (_output.thread_ctx != nullptr) {
@@ -180,11 +182,23 @@ void AP_KDECAN_Driver::update(const uint8_t num_poles)
         chEvtSignal(_output.thread_ctx, 1);
     }
 #endif
+
+#if AP_KDECAN_DEBUG
+    static uint32_t last_send_ms = 0;
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_send_ms > 1000) {
+        last_send_ms = now_ms;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"%u: %u, %u, %u, %u, %u, %u, %u, %u",
+        (unsigned)_init.detected_bitmask,
+        (unsigned)_output.pwm[0], (unsigned)_output.pwm[1], (unsigned)_output.pwm[2], (unsigned)_output.pwm[3],
+        (unsigned)_output.pwm[4], (unsigned)_output.pwm[5], (unsigned)_output.pwm[6], (unsigned)_output.pwm[7]);
+    }
+#endif
 }
 
 void AP_KDECAN_Driver::loop()
 {
-    uint16_t pwm[KDECAN_MAX_NUM_ESCS] {};
+    uint16_t pwm[ARRAY_SIZE(_output.pwm)] {};
 
 #if AP_KDECAN_USE_EVENTS
     _output.thread_ctx = chThdGetSelfX();
@@ -219,22 +233,11 @@ void AP_KDECAN_Driver::loop()
             }
         }
 
-        uint8_t index = 0;
-        uint8_t retry = 0;
-
-        while (index < KDECAN_MAX_NUM_ESCS) {
-            if ((_init.detected_bitmask & (1 << index)) == 0) {
-                // we're not sending this index so skip it
-                index++;
-            } else if (send_packet_uint16(SET_PWM_OBJ_ADDR, (index + ESC_NODE_ID_FIRST), 1, pwm[index]) || retry++ >= 10) {
-                // sent successfully or we've retried too many times, move on to the next
-                index++;
-                retry = 0;
-            } else {
-                // send failed, likely due to CAN TX buffer full. Delay a tiny bit and try again but only a few times
-                hal.scheduler->delay_microseconds(10);
+        for (uint8_t i=0; i<ARRAY_SIZE(_output.pwm); i++) {
+            if ((_init.detected_bitmask & (1UL<<i)) != 0) {
+                send_packet_uint16(SET_PWM_OBJ_ADDR, (i + ESC_NODE_ID_FIRST), 1, pwm[i]);
             }
-        } // while index
+        }
 
 #if HAL_WITH_ESC_TELEM
         // broadcast as request-telemetry msg to everyone
@@ -284,25 +287,6 @@ bool AP_KDECAN_Driver::send_packet(const uint8_t address, const uint8_t dest_id,
 
     const uint64_t timeout_us = uint64_t(timeout_ms) * 1000UL;
     return write_frame(frame, timeout_us);
-}
-
-bool AP_KDECAN_Driver::pre_arm_check(char* reason, const uint8_t reason_len)
-{
-    uint16_t configured_servo_motors_count = 0;
-    for (uint16_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
-        if (SRV_Channel::is_motor(SRV_Channels::channel_function(i))) {
-            configured_servo_motors_count++;
-        }
-    }
-
-    const uint8_t num_present_escs = __builtin_popcount(_init.detected_bitmask);
-
-    if (configured_servo_motors_count != num_present_escs) {
-        snprintf(reason, reason_len, "ESC count error: Srv:%u, Detected:%u", (unsigned)configured_servo_motors_count, (unsigned)num_present_escs);
-        return false;
-    }
-
-    return true;
 }
 
 // singleton instance
