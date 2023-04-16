@@ -180,6 +180,9 @@ public:
      */
     bool in_vtol_land_descent(void) const;
 
+    // Should we allow stick mixing from the pilot
+    bool allow_stick_mixing() const;
+
 private:
     AP_AHRS &ahrs;
 

@@ -219,6 +219,11 @@ void Plane::stabilize_stick_mixing_direct()
     if (!stick_mixing_enabled()) {
         return;
     }
+#if HAL_QUADPLANE_ENABLED
+    if (!quadplane.allow_stick_mixing()) {
+        return;
+    }
+#endif
     float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
     aileron = channel_roll->stick_mixing(aileron);
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron);
@@ -249,6 +254,7 @@ void Plane::stabilize_stick_mixing_fbw()
 #if QAUTOTUNE_ENABLED
         control_mode == &mode_qautotune ||
 #endif
+        !quadplane.allow_stick_mixing() ||
 #endif  // HAL_QUADPLANE_ENABLED
         control_mode == &mode_training) {
         return;
@@ -347,10 +353,9 @@ void Plane::stabilize()
     }
 
     uint32_t now = AP_HAL::millis();
-    bool allow_stick_mixing = true;
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.available()) {
-        quadplane.transition->set_FW_roll_pitch(nav_pitch_cd, nav_roll_cd, allow_stick_mixing);
+        quadplane.transition->set_FW_roll_pitch(nav_pitch_cd, nav_roll_cd);
     }
 #endif
 
@@ -392,9 +397,7 @@ void Plane::stabilize()
     } else if (control_mode == &mode_stabilize) {
         stabilize_roll();
         stabilize_pitch();
-        if (allow_stick_mixing) {
-            stabilize_stick_mixing_direct();
-        }
+        stabilize_stick_mixing_direct();
         stabilize_yaw();
 #if HAL_QUADPLANE_ENABLED
     } else if (control_mode->is_vtol_mode() && !quadplane.tailsitter.in_vtol_transition(now)) {
@@ -412,7 +415,7 @@ void Plane::stabilize()
     } else {
         // Direct stick mixing functionality has been removed, so as not to remove all stick mixing from the user completely
         // the old direct option is now used to enable fbw mixing, this is easier than doing a param conversion.
-        if (allow_stick_mixing && ((g.stick_mixing == StickMixing::FBW) || (g.stick_mixing == StickMixing::DIRECT_REMOVED))) {
+        if ((g.stick_mixing == StickMixing::FBW) || (g.stick_mixing == StickMixing::DIRECT_REMOVED)) {
             stabilize_stick_mixing_fbw();
         }
         stabilize_roll();
