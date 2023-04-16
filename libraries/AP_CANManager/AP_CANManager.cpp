@@ -215,14 +215,8 @@ void AP_CANManager::init()
             AP_Param::load_object_from_eeprom((AP_DroneCAN*)_drivers[drv_num], AP_DroneCAN::var_info);
         } else
 #endif
-        if (drv_type[drv_num] == Driver_Type_KDECAN) {
-#if AP_KDECAN_ENABLED
-            // cache the driver type so we can detect that it is in the params via get_driver_type().
-            // Normally it is cached after init but this driver's init is handled by CANSensor later on
-            _driver_type_cache[drv_num] = drv_type[drv_num];
-#endif
-        } else if (drv_type[drv_num] == Driver_Type_PiccoloCAN) {
 #if HAL_PICCOLO_CAN_ENABLE
+         if (drv_type[drv_num] == Driver_Type_PiccoloCAN) {
             _drivers[drv_num] = _drv_param[drv_num]._piccolocan = new AP_PiccoloCAN;
 
             if (_drivers[drv_num] == nullptr) {
@@ -231,9 +225,10 @@ void AP_CANManager::init()
             }
 
             AP_Param::load_object_from_eeprom((AP_PiccoloCAN*)_drivers[drv_num], AP_PiccoloCAN::var_info);
+        } else
 #endif
-        } else if (drv_type[drv_num] == Driver_Type_CANTester) {
 #if HAL_NUM_CAN_IFACES > 1 && !HAL_MINIMIZE_FEATURES && HAL_ENABLE_CANTESTER
+        if (drv_type[drv_num] == Driver_Type_CANTester) {
             _drivers[drv_num] = _drv_param[drv_num]._testcan = new CANTester;
 
             if (_drivers[drv_num] == nullptr) {
@@ -241,8 +236,9 @@ void AP_CANManager::init()
                 continue;
             }
             AP_Param::load_object_from_eeprom((CANTester*)_drivers[drv_num], CANTester::var_info);
+        } else
 #endif
-        } else {
+        {
             continue;
         }
 
@@ -256,6 +252,11 @@ void AP_CANManager::init()
 
     for (uint8_t drv_num = 0; drv_num < HAL_MAX_CAN_PROTOCOL_DRIVERS; drv_num++) {
         //initialise all the Drivers
+
+        // Cache the driver type, initialized or not, so we can detect that it is in the params at boot via get_driver_type().
+        // This allows drivers that are initialized by CANSensor instead of CANManager to know if they should init or not
+        _driver_type_cache[drv_num] = drv_type[drv_num];
+
         if (_drivers[drv_num] == nullptr) {
             continue;
         }
@@ -272,9 +273,6 @@ void AP_CANManager::init()
         }
 
         _drivers[drv_num]->init(drv_num, enable_filter);
-        // Finally initialise driver type, this will be used
-        // to find and reference protocol drivers
-        _driver_type_cache[drv_num] = drv_type[drv_num];
     }
 }
 #else
