@@ -9592,6 +9592,8 @@ Also, ignores heartbeats not from our target system'''
                 self.set_rc(interlock_channel, 1000)
 
         self.start_subtest("Test all mode arming")
+        self.wait_ready_to_arm()
+
         if self.arming_test_mission() is not None:
             self.load_mission(self.arming_test_mission())
 
