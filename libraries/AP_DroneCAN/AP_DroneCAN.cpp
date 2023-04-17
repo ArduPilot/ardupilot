@@ -312,15 +312,9 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
     node_status_msg.sub_mode = 0;
 
     // Spin node for device discovery
-    uint32_t start_loop_ms = AP_HAL::millis();
-    uint32_t last_send_ms = 0;
-    while (AP_HAL::millis() - start_loop_ms < 5000) {
-        uint32_t now = AP_HAL::millis();
-        if (now - last_send_ms >= 1000) {
-            send_node_status();
-            last_send_ms = now;
-        }
-        canard_iface.process(50);
+    for (uint8_t i = 0; i < 5; i++) {
+        send_node_status();
+        canard_iface.process(1000);
     }
 
     hal.util->snprintf(_thread_name, sizeof(_thread_name), "dronecan_%u", driver_index);
