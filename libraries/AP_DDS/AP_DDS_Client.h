@@ -53,7 +53,7 @@ private:
     bool connected = true;
 
     static void update_topic(builtin_interfaces_msg_Time& msg);
-    static void update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t instance);
+    bool update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t instance) WARN_IF_UNUSED;
     static void populate_static_transforms(tf2_msgs_msg_TFMessage& msg);
     static void update_topic(sensor_msgs_msg_BatteryState& msg, const uint8_t instance);
 
