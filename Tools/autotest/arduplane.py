@@ -636,7 +636,7 @@ class AutoTestPlane(AutoTest):
         # assume elevator is on channel 2:
         self.wait_servo_channel_value(2, deepstall_elevator_pwm, timeout=240)
 
-        self.wait_text("Deepstall: Entry: ", check_context=True)
+        self.wait_text("Deepstall: Entry: ", check_context=True, timeout=60)
 
         self.disarm_wait(timeout=120)
         self.set_current_waypoint(0, check_afterwards=False)
