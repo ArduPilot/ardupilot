@@ -523,6 +523,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(nmea, "NMEA_",   AP_NMEA_Output),
 #endif
 
+#if AP_KDECAN_ENABLED
+    // @Group: KDE_
+    // @Path: ../libraries/AP_KDECAN/AP_KDECAN.cpp
+    GOBJECT(kdecan, "KDE_",   AP_KDECAN),
+#endif
+
     AP_VAREND
 };
 
