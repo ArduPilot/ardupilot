@@ -29,6 +29,9 @@ public:
 
     virtual void update() = 0;
 
+    // called when the mode is entered
+    virtual void enter() {}
+
 protected:
     void update_scan();
     void update_auto();
@@ -65,6 +68,7 @@ public:
     const char* name() const override { return "Guided"; }
     bool requires_armed_servos() const override { return true; }
     void update() override;
+    void enter() override;
 
     void set_angle(const Quaternion &target_att,
                    bool use_yaw_rate, float yaw_rate_rads,
