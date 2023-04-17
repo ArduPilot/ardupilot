@@ -12907,6 +12907,27 @@ switch value'''
         if ex is not None:
             raise ex
 
+    def CompassPrearms(self):
+        '''test compass prearm checks'''
+        self.wait_ready_to_arm()
+        # XY are checked specially:
+        for axis in 'X', 'Y':  # ArduPilot only checks these two axes
+            self.context_push()
+            self.set_parameter(f"COMPASS_OFS2_{axis}", 1000)
+            self.assert_prearm_failure("Compasses inconsistent")
+            self.context_pop()
+            self.wait_ready_to_arm()
+
+        # now test the total anglular difference:
+        self.context_push()
+        self.set_parameters({
+            "COMPASS_OFS2_X": 1000,
+            "COMPASS_OFS2_Y": -1000,
+            "COMPASS_OFS2_Z": -10000,
+        })
+        self.assert_prearm_failure("Compasses inconsistent")
+        self.context_pop()
+
     def AHRS_ORIENTATION(self):
         '''test AHRS_ORIENTATION parameter works'''
         self.context_push()
