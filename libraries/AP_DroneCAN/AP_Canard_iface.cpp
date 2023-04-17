@@ -4,6 +4,8 @@
 #if HAL_ENABLE_DRONECAN_DRIVERS
 #include <canard/handler_list.h>
 #include <canard/transfer_object.h>
+#include <AP_Math/AP_Math.h>
+
 extern const AP_HAL::HAL& hal;
 #define LOG_TAG "DroneCANIface"
 
@@ -274,7 +276,7 @@ void CanardInterface::process(uint32_t duration_ms) {
         processTx();
         uint64_t now = AP_HAL::native_micros64();
         if (now < deadline) {
-            _event_handle.wait(deadline - now);
+            _event_handle.wait(MIN(UINT16_MAX - 2U, deadline - now));
         } else {
             break;
         }
