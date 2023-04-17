@@ -125,14 +125,15 @@ define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 
-# disable SMBUS monitors to save flash
-define AP_BATTERY_SMBUS_ENABLED 0
-
 # disable parachute and sprayer to save flash
 define HAL_PARACHUTE_ENABLED 0
 
 # save FLASH, but leave above when flash issue is fixed
 include ../include/minimize_features.inc
+
+# disable SMBUS monitors to save flash
+undef AP_BATTERY_SMBUS_ENABLED
+define AP_BATTERY_SMBUS_ENABLED 0
 
 # one baro
 BARO BMP280 SPI:bmp280
