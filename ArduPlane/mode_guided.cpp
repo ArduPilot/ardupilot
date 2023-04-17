@@ -1,8 +1,47 @@
 #include "mode.h"
 #include "Plane.h"
 
+Mode::Number ModeGuided::mode_number() const
+{
+#if AP_SCRIPTING_ENABLED
+    // Shamelessly lie about being in guided to maintain pre-existing behaviour
+    // In the future we should be able to report as a custom mode
+    if (submode == SubMode::NAV_Script_time) {
+        return plane.previous_mode->mode_number();
+    }
+#endif
+    return Mode::Number::GUIDED;
+}
+
+const char *ModeGuided::name() const 
+{
+#if AP_SCRIPTING_ENABLED
+    // Shamelessly lie about being in guided to maintain pre-existing behaviour
+    // In the future we should be able to report as a custom mode
+    if (submode == SubMode::NAV_Script_time) {
+        return plane.previous_mode->name();
+    }
+#endif
+    return "GUIDED";
+}
+
+const char *ModeGuided::name4() const
+{
+#if AP_SCRIPTING_ENABLED
+    // Shamelessly lie about being in guided to maintain pre-existing behaviour
+    // In the future we should be able to report as a custom mode
+    if (submode == SubMode::NAV_Script_time) {
+        return plane.previous_mode->name4();
+    }
+#endif
+    return "GUID";
+}
+
 bool ModeGuided::_enter()
 {
+    // Return to default submode
+    submode = SubMode::Guided;
+
     plane.guided_throttle_passthru = false;
     /*
       when entering guided mode we set the target as the current
@@ -29,24 +68,62 @@ bool ModeGuided::_enter()
 
 void ModeGuided::update()
 {
+    switch (submode) {
+        case SubMode::Guided: {
 #if HAL_QUADPLANE_ENABLED
-    if (plane.auto_state.vtol_loiter && plane.quadplane.available()) {
-        plane.quadplane.guided_update();
-        return;
-    }
+            if (plane.auto_state.vtol_loiter && plane.quadplane.available()) {
+                plane.quadplane.guided_update();
+                return;
+            }
 #endif
-    plane.calc_nav_roll();
-    plane.calc_nav_pitch();
-    plane.calc_throttle();
+            plane.calc_nav_roll();
+            plane.calc_nav_pitch();
+            plane.calc_throttle();
+            break;
+        }
+
+#if AP_SCRIPTING_ENABLED
+        case SubMode::NAV_Script_time: {
+            // Reset desired angles
+            plane.nav_roll_cd = plane.ahrs.roll_sensor;
+            plane.nav_pitch_cd = plane.ahrs.pitch_sensor;
+
+            // Check for timeout
+            plane.nav_scripting_check_timeout();
+
+            // Reset to previous mode if command done
+            if (!plane.nav_scripting_active()) {
+                plane.set_mode(*plane.previous_mode, ModeReason::NAV_SCRIPTING_COMPLETE);
+                // Should probably check for failure here, or add ability to force mode change
+            }
+            break;
+        }
+#endif
+    }
 }
 
 void ModeGuided::navigate()
 {
-    plane.update_loiter(active_radius_m);
+    switch (submode) {
+        case SubMode::Guided:
+            plane.update_loiter(active_radius_m);
+            break;
+
+#if AP_SCRIPTING_ENABLED
+        case SubMode::NAV_Script_time:
+            break;
+#endif
+    }
 }
 
 bool ModeGuided::handle_guided_request(Location target_loc)
 {
+#if AP_SCRIPTING_ENABLED
+    if (submode == SubMode::NAV_Script_time) {
+        return false;
+    }
+#endif
+
     // add home alt if needed
     if (target_loc.relative_alt) {
         target_loc.alt += plane.home.alt;
@@ -68,7 +145,12 @@ void ModeGuided::set_radius_and_direction(const float radius, const bool directi
 void ModeGuided::update_target_altitude()
 {
 #if OFFBOARD_GUIDED == ENABLED
-    if (((plane.guided_state.target_alt_time_ms != 0) || plane.guided_state.target_alt > -0.001 )) { // target_alt now defaults to -1, and _time_ms defaults to zero.
+#if AP_SCRIPTING_ENABLED
+    const bool in_script_time = submode == SubMode::NAV_Script_time;
+#else
+    const bool in_script_time = false;
+#endif
+    if (!in_script_time && ((plane.guided_state.target_alt_time_ms != 0) || plane.guided_state.target_alt > -0.001 )) { // target_alt now defaults to -1, and _time_ms defaults to zero.
         // offboard altitude demanded
         uint32_t now = AP_HAL::millis();
         float delta = 1e-3f * (now - plane.guided_state.target_alt_time_ms);
@@ -92,4 +174,9 @@ void ModeGuided::update_target_altitude()
         {
         Mode::update_target_altitude();
     }
+}
+
+void ModeGuided::set_submode(SubMode mode)
+{
+    submode = mode;
 }

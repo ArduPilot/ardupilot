@@ -781,7 +781,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
 
     // location is valid load and set
     if (((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) ||
-        (plane.control_mode == &plane.mode_guided)) {
+        (plane.control_mode->mode_number() == Mode::Number::GUIDED)) {
         plane.set_mode(plane.mode_guided, ModeReason::GCS_COMMAND);
 
         // add home alt if needed
