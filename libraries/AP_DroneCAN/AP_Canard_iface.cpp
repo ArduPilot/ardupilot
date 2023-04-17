@@ -413,6 +413,8 @@ void CanardInterface::process(uint32_t duration_ms) {
         } else {
             break;
         }
+        // ensure that this thread can't take all the CPU
+        hal.scheduler->delay_microseconds(50);
     }
 #endif
 }
