@@ -131,21 +131,27 @@ void AP_IQ_Motor::update(void)
 void AP_IQ_Motor::update_motor_outputs()
 {
     // const uint8_t bitmask = _motor_dir_bitmask.get();
-    uint16_t raw_control_values[_total_channels];
-    for (unsigned ii = 0; ii < _total_channels; ++ii) {
-        SRV_Channel *c = SRV_Channels::srv_channel(ii);
-        if (c == nullptr) {
-            continue;
+    if (hal.util->get_soft_armed())
+    {
+        uint16_t raw_control_values[_total_channels];
+        for (unsigned ii = 0; ii < _total_channels; ++ii) {
+            SRV_Channel *c = SRV_Channels::srv_channel(ii);
+            if (c == nullptr) {
+                continue;
+            }
+
+            uint16_t output = uint16_t(constrain_float((c->get_output_norm() + 1.0) * 0.5, 0, 1) * 65535);
+            raw_control_values[ii] = output;
         }
-        if (!hal.util->get_soft_armed()) {
-            c->set_output_pwm(c->get_trim());
-            
-        }
-        uint16_t output = uint16_t(constrain_float((c->get_output_norm() + 1.0) * 0.5, 0, 1) * 65535);
-        raw_control_values[ii] = output;
+        _motor_interface.BroadcastPackedControlMessage(_com, raw_control_values, _total_channels, _telem_request_id);
+        _telem_request_id = 255;
+    } else
+    {
+        uint8_t tx_msg[2]; // must fit outgoing message
+        tx_msg[0] = kSubCtrlCoast;
+        tx_msg[1] = (kBroadcastID<<2) | kSet; // high six | low two
+        _com.SendPacket(kTypePropellerMotorControl, tx_msg, 2);
     }
-    _motor_interface.BroadcastPackedControlMessage(_com, raw_control_values, _total_channels, _telem_request_id);
-    _telem_request_id = 255;
 }
 
 #if HAL_WITH_ESC_TELEM 

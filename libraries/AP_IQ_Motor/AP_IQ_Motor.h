@@ -88,24 +88,6 @@ private:
     uint8_t _ser_length;
     uint8_t _total_channels = 0;
     IFCI _motor_interface;
-    // ArdupilotClient _motors[16] = {
-    //     ArdupilotClient(0),
-    //     ArdupilotClient(1),
-    //     ArdupilotClient(2),
-    //     ArdupilotClient(3),
-    //     ArdupilotClient(4),
-    //     ArdupilotClient(5),
-    //     ArdupilotClient(6),
-    //     ArdupilotClient(7),
-    //     ArdupilotClient(8),
-    //     ArdupilotClient(9),
-    //     ArdupilotClient(0),
-    //     ArdupilotClient(11),
-    //     ArdupilotClient(12),
-    //     ArdupilotClient(13),
-    //     ArdupilotClient(14),
-    //     ArdupilotClient(15),
-    // }; // TODO change how this works
     ClientAbstract *_clients[_client_limit]; // how do I make a list of virtual classes?
     uint8_t _client_size = 0;
     uint8_t _telem_motor_id = 0;
@@ -114,4 +96,8 @@ private:
     static const uint32_t _telem_timeout = 50;
     uint8_t _first_telem_motor = 0;
     uint8_t _last_telem_motor = 0;
+
+    static const uint8_t kSubCtrlCoast                  =  2;
+    static const uint8_t kTypePropellerMotorControl     = 52;
+    static const uint8_t kBroadcastID                   = 63;
 };
