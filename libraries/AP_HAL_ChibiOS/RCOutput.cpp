@@ -255,7 +255,7 @@ void RCOutput::dshot_collect_dma_locks(uint64_t time_out_us)
             const uint32_t max_delay_us = _dshot_period_us;
             const uint32_t min_delay_us = 10; // matches our CH_CFG_ST_TIMEDELTA
             wait_us = constrain_uint32(wait_us, min_delay_us, max_delay_us);
-            mask = chEvtWaitOneTimeout(group.dshot_event_mask, chTimeUS2I(wait_us));
+            mask = chEvtWaitOneTimeout(group.dshot_event_mask, MIN(TIME_MAX_INTERVAL, chTimeUS2I(wait_us)));
 
             // no time left cancel and restart
             if (!mask) {
