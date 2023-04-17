@@ -2029,15 +2029,8 @@ void Compass::motor_compensation_type(const uint8_t comp_type)
 
 bool Compass::consistent() const
 {
-    const Vector3f &primary_mag_field = get_field();
-    const Vector2f primary_mag_field_xy = Vector2f(primary_mag_field.x,primary_mag_field.y);
-
-    if (primary_mag_field_xy.is_zero()) {
-        return false;
-    }
-
-    const Vector3f primary_mag_field_norm = primary_mag_field.normalized();
-    const Vector2f primary_mag_field_xy_norm = primary_mag_field_xy.normalized();
+    const Vector3f &primary_mag_field { get_field() };
+    const Vector2f &primary_mag_field_xy { primary_mag_field.xy() };
 
     for (uint8_t i=0; i<get_count(); i++) {
         if (!use_for_yaw(i)) {
@@ -2045,32 +2038,27 @@ bool Compass::consistent() const
             continue;
         }
 
-        Vector3f mag_field = get_field(i);
-        Vector2f mag_field_xy = Vector2f(mag_field.x,mag_field.y);
+        const Vector3f &mag_field = get_field(i);
+        const Vector2f &mag_field_xy = mag_field.xy();
 
         if (mag_field_xy.is_zero()) {
             return false;
         }
 
-        const float xy_len_diff  = (primary_mag_field_xy-mag_field_xy).length();
-
-        mag_field.normalize();
-        mag_field_xy.normalize();
-
-        const float xyz_ang_diff = acosf(constrain_float(mag_field*primary_mag_field_norm,-1.0f,1.0f));
-        const float xy_ang_diff  = acosf(constrain_float(mag_field_xy*primary_mag_field_xy_norm,-1.0f,1.0f));
-
         // check for gross misalignment on all axes
+        const float xyz_ang_diff  = mag_field.angle(primary_mag_field);
         if (xyz_ang_diff > AP_COMPASS_MAX_XYZ_ANG_DIFF) {
             return false;
         }
 
         // check for an unacceptable angle difference on the xy plane
+        const float xy_ang_diff  = mag_field_xy.angle(primary_mag_field_xy);
         if (xy_ang_diff > AP_COMPASS_MAX_XY_ANG_DIFF) {
             return false;
         }
 
         // check for an unacceptable length difference on the xy plane
+        const float xy_len_diff = (primary_mag_field_xy-mag_field_xy).length();
         if (xy_len_diff > AP_COMPASS_MAX_XY_LENGTH_DIFF) {
             return false;
         }
