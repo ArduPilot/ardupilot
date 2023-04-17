@@ -13,7 +13,6 @@
 #include "AP_DDS_Client.h"
 
 static constexpr uint16_t DELAY_TIME_TOPIC_MS = 10;
-static constexpr uint16_t DELAY_NAV_SAT_FIX_TOPIC_MS = 1000;
 static constexpr uint16_t DELAY_BATTERY_STATE_TOPIC_MS = 1000;
 static char WGS_84_FRAME_ID[] = "WGS-84";
 // https://www.ros.org/reps/rep-0105.html#base-link
@@ -41,7 +40,7 @@ void AP_DDS_Client::update_topic(builtin_interfaces_msg_Time& msg)
 
 }
 
-void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t instance)
+bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t instance)
 {
     // Add a lambda that takes in navsatfix msg and populates the cov
     // Make it constexpr if possible
@@ -50,13 +49,8 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
 
     // assert(instance >= GPS_MAX_RECEIVERS);
     if (instance >= GPS_MAX_RECEIVERS) {
-        return;
+        return false;
     }
-
-    update_topic(msg.header.stamp);
-    strcpy(msg.header.frame_id, WGS_84_FRAME_ID);
-    msg.status.service = 0; // SERVICE_GPS
-    msg.status.status = -1; // STATUS_NO_FIX
 
     auto &gps = AP::gps();
     WITH_SEMAPHORE(gps.get_semaphore());
@@ -65,8 +59,22 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
         msg.status.status = -1; // STATUS_NO_FIX
         msg.status.service = 0; // No services supported
         msg.position_covariance_type = 0; // COVARIANCE_TYPE_UNKNOWN
-        return;
+        return false;
     }
+
+    // No update is needed
+    const auto last_fix_time_ms = gps.last_fix_time_ms(instance);
+    if (last_nav_sat_fix_time_ms == last_fix_time_ms) {
+        return false;
+    } else {
+        last_nav_sat_fix_time_ms = last_fix_time_ms;
+    }
+
+
+    update_topic(msg.header.stamp);
+    strcpy(msg.header.frame_id, WGS_84_FRAME_ID);
+    msg.status.service = 0; // SERVICE_GPS
+    msg.status.status = -1; // STATUS_NO_FIX
 
 
     //! @todo What about glonass, compass, galileo?
@@ -79,7 +87,7 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
     case AP_GPS::NO_FIX:
         msg.status.status = -1; // STATUS_NO_FIX
         msg.position_covariance_type = 0; // COVARIANCE_TYPE_UNKNOWN
-        return;
+        return true;
     case AP_GPS::GPS_OK_FIX_2D:
     case AP_GPS::GPS_OK_FIX_3D:
         msg.status.status = 0; // STATUS_FIX
@@ -104,7 +112,7 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
         // With absolute frame, this condition is unlikely
         msg.status.status = -1; // STATUS_NO_FIX
         msg.position_covariance_type = 0; // COVARIANCE_TYPE_UNKNOWN
-        return;
+        return true;
     }
     msg.altitude = alt_cm / 100.0;
 
@@ -120,6 +128,8 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
     msg.position_covariance[6] = cov[2][0];
     msg.position_covariance[7] = cov[2][1];
     msg.position_covariance[8] = cov[2][2];
+
+    return true;
 }
 
 void AP_DDS_Client::populate_static_transforms(tf2_msgs_msg_TFMessage& msg)
@@ -438,16 +448,16 @@ void AP_DDS_Client::update()
         write_time_topic();
     }
 
-    if (cur_time_ms - last_nav_sat_fix_time_ms > DELAY_NAV_SAT_FIX_TOPIC_MS) {
-        constexpr uint8_t instance = 0;
-        update_topic(nav_sat_fix_topic, instance);
-        last_nav_sat_fix_time_ms = cur_time_ms;
+    constexpr uint8_t gps_instance = 0;
+    if (update_topic(nav_sat_fix_topic, gps_instance)) {
         write_nav_sat_fix_topic();
     }
 
+
+
     if (cur_time_ms - last_battery_state_time_ms > DELAY_BATTERY_STATE_TOPIC_MS) {
-        constexpr uint8_t instance = 0;
-        update_topic(battery_state_topic, instance);
+        constexpr uint8_t battery_instance = 0;
+        update_topic(battery_state_topic, battery_instance);
         last_battery_state_time_ms = cur_time_ms;
         write_battery_state_topic();
     }
