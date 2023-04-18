@@ -11,6 +11,7 @@
 #include "tf2_msgs/msg/TFMessage.h"
 #include "sensor_msgs/msg/BatteryState.h"
 #include "geometry_msgs/msg/PoseStamped.h"
+#include "geometry_msgs/msg/TwistStamped.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Scheduler.h>
@@ -48,6 +49,7 @@ private:
     tf2_msgs_msg_TFMessage static_transforms_topic;
     sensor_msgs_msg_BatteryState battery_state_topic;
     geometry_msgs_msg_PoseStamped local_pose_topic;
+    geometry_msgs_msg_TwistStamped local_velocity_topic;
 
     HAL_Semaphore csem;
 
@@ -59,6 +61,7 @@ private:
     static void populate_static_transforms(tf2_msgs_msg_TFMessage& msg);
     static void update_topic(sensor_msgs_msg_BatteryState& msg, const uint8_t instance);
     static void update_topic(geometry_msgs_msg_PoseStamped& msg);
+    static void update_topic(geometry_msgs_msg_TwistStamped& msg);
 
     // The last ms timestamp AP_DDS wrote a Time message
     uint64_t last_time_time_ms;
@@ -68,6 +71,8 @@ private:
     uint64_t last_battery_state_time_ms;
     // The last ms timestamp AP_DDS wrote a Local Pose message
     uint64_t last_local_pose_time_ms;
+    // The last ms timestamp AP_DDS wrote a Local Velocity message
+    uint64_t last_local_velocity_time_ms;
 
 
 public:
@@ -95,6 +100,8 @@ public:
     void write_battery_state_topic();
     //! @brief Serialize the current local pose and publish to the IO stream(s)
     void write_local_pose_topic();
+    //! @brief Serialize the current local velocity and publish to the IO stream(s)
+    void write_local_velocity_topic();
     //! @brief Update the internally stored DDS messages with latest data
     void update();
 
