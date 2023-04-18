@@ -76,6 +76,9 @@ mcu = {
     'CORTEX'    : 'cortex-m7',
     'CPU_FLAGS' : '-mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard',
 
+	# this MCU has a strange OTG setup
+	'STM32_OTG2_IS_OTG1' : 1,
+
     'DEFINES' : {
         'HAL_HAVE_HARDWARE_DOUBLE' : '1',
         'STM32H7' : '1',
