@@ -170,4 +170,32 @@
       </historyQos>
     </topic>
   </data_writer>
+  <topic profile_name="geopose__t">
+    <name>rt/ap/geopose/filtered</name>
+    <dataType>geographic_msgs::msg::dds_::GeoPoseStamped_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>5</depth>
+    </historyQos>
+  </topic>
+  <data_writer profile_name="geopose__dw">
+    <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+    <qos>
+      <reliability>
+        <kind>BEST_EFFORT</kind>
+      </reliability>
+      <durability>
+        <kind>VOLATILE</kind>
+      </durability>
+    </qos>
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/ap/geopose/filtered</name>
+      <dataType>geographic_msgs::msg::dds_::GeoPoseStamped_</dataType>
+      <historyQos>
+        <kind>KEEP_LAST</kind>
+        <depth>5</depth>
+      </historyQos>
+    </topic>
+  </data_writer>
 </profiles>
