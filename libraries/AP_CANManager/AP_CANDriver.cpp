@@ -33,7 +33,7 @@ const AP_Param::GroupInfo AP_CANManager::CANDriver_Params::var_info[] = {
     // @Values: 0:Disabled,1:DroneCAN,4:PiccoloCAN,6:EFI_NWPMU,7:USD1,8:KDECAN,10:Scripting,11:Benewake,12:Scripting2
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("PROTOCOL", 1, AP_CANManager::CANDriver_Params, _driver_type, AP_CANManager::Driver_Type_DroneCAN),
+    AP_GROUPINFO("PROTOCOL", 1, AP_CANManager::CANDriver_Params, _driver_type, float(AP_CAN::Protocol::DroneCAN)),
 
 #if HAL_ENABLE_DRONECAN_DRIVERS
     // @Group: UC_
