@@ -20,7 +20,8 @@
 #include "../AP_Bootloader/app_comms.h"
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
 #include "hwing_esc.h"
-#include <AP_CANManager/AP_CANManager.h>
+#include <AP_CANManager/AP_CAN.h>
+#include <AP_CANManager/AP_SLCANIface.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_HAL/CANIface.h>
 #include <AP_Stats/AP_Stats.h>
@@ -162,7 +163,7 @@ public:
     // This allows you to change the protocol and it continues to use the one at boot.
     // Without this, changing away from UAVCAN causes loss of comms and you can't
     // change the rest of your params or verify it succeeded.
-    AP_CANManager::Driver_Type can_protocol_cached[HAL_NUM_CAN_IFACES];
+    AP_CAN::Protocol can_protocol_cached[HAL_NUM_CAN_IFACES];
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MSP
