@@ -12,6 +12,7 @@
 #include "sensor_msgs/msg/BatteryState.h"
 #include "geometry_msgs/msg/PoseStamped.h"
 #include "geometry_msgs/msg/TwistStamped.h"
+#include "geographic_msgs/msg/GeoPoseStamped.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Scheduler.h>
@@ -58,6 +59,7 @@ private:
     sensor_msgs_msg_BatteryState battery_state_topic;
     geometry_msgs_msg_PoseStamped local_pose_topic;
     geometry_msgs_msg_TwistStamped local_velocity_topic;
+    geographic_msgs_msg_GeoPoseStamped geo_pose_topic;
 
     HAL_Semaphore csem;
 
@@ -70,6 +72,7 @@ private:
     static void update_topic(sensor_msgs_msg_BatteryState& msg, const uint8_t instance);
     static void update_topic(geometry_msgs_msg_PoseStamped& msg);
     static void update_topic(geometry_msgs_msg_TwistStamped& msg);
+    static void update_topic(geographic_msgs_msg_GeoPoseStamped& msg);
 
     // The last ms timestamp AP_DDS wrote a Time message
     uint64_t last_time_time_ms;
@@ -81,6 +84,8 @@ private:
     uint64_t last_local_pose_time_ms;
     // The last ms timestamp AP_DDS wrote a Local Velocity message
     uint64_t last_local_velocity_time_ms;
+    // The last ms timestamp AP_DDS wrote a GeoPose message
+    uint64_t last_geo_pose_time_ms;
 
     // functions for serial transport
     bool ddsSerialInit();
@@ -135,10 +140,12 @@ public:
     void write_static_transforms();
     //! @brief Serialize the current nav_sat_fix state and publish it to the IO stream(s)
     void write_battery_state_topic();
-    //! @brief Serialize the current local pose and publish to the IO stream(s)
+    //! @brief Serialize the current local_pose and publish to the IO stream(s)
     void write_local_pose_topic();
     //! @brief Serialize the current local velocity and publish to the IO stream(s)
     void write_local_velocity_topic();
+    //! @brief Serialize the current geo_pose and publish to the IO stream(s)
+    void write_geo_pose_topic();
     //! @brief Update the internally stored DDS messages with latest data
     void update();
 
