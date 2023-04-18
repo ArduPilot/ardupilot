@@ -267,7 +267,7 @@ protected:
     // board specific config
     AP_BoardConfig BoardConfig;
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if HAL_CANMANAGER_ENABLED
     // board specific config for CAN bus
     AP_CANManager can_mgr;
 #endif
