@@ -102,7 +102,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Values: 0:Disabled,1:UAVCAN,4:PiccoloCAN,6:EFI_NWPMU,7:USD1,8:KDECAN
     // @User: Advanced
     // @RebootRequired: True
-    GARRAY(can_protocol,     0, "CAN_PROTOCOL", AP_CANManager::Driver_Type_DroneCAN),
+    GARRAY(can_protocol,     0, "CAN_PROTOCOL", float(AP_CAN::Protocol::DroneCAN)),
     
     // @Param: CAN2_BAUDRATE
     // @CopyFieldsFrom: CAN_BAUDRATE
@@ -111,7 +111,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
     // @Param: CAN2_PROTOCOL
     // @CopyFieldsFrom: CAN_PROTOCOL
-    GARRAY(can_protocol,     1, "CAN2_PROTOCOL", AP_CANManager::Driver_Type_DroneCAN),
+    GARRAY(can_protocol,     1, "CAN2_PROTOCOL", float(AP_CAN::Protocol::DroneCAN)),
 #endif
 
 #if HAL_NUM_CAN_IFACES >= 3
@@ -122,7 +122,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
     // @Param: CAN3_PROTOCOL
     // @CopyFieldsFrom: CAN_PROTOCOL
-    GARRAY(can_protocol,    2, "CAN3_PROTOCOL", AP_CANManager::Driver_Type_DroneCAN),
+    GARRAY(can_protocol,    2, "CAN3_PROTOCOL", float(AP_CAN::Protocol::DroneCAN)),
 #endif
 
 #if HAL_CANFD_SUPPORTED
