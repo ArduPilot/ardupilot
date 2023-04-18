@@ -236,7 +236,10 @@ void __early_init(void) {
 #if !defined(STM32F1)
   stm32_gpio_init();
 #endif
+#if !defined(STM32_QSPI_NO_RESET) && !defined(STM32_OSPI1_NO_RESET) && !defined(STM32_OSPI2_NO_RESET)
+  // if running from external flash then the clocks must not be reset - instead rely on the bootloader to setup
   stm32_clock_init();
+#endif
 #if defined(HAL_DISABLE_DCACHE)
   SCB_DisableDCache();
 #endif

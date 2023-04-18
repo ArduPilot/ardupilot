@@ -921,10 +921,12 @@ def write_mcu_config(f):
         build_flags.append('USE_FATFS=no')
         env_vars['DISABLE_SCRIPTING'] = True
     if 'OTG1' in bytype:
-        if mcu_type.startswith('STM32H730'):
+        if get_mcu_config('STM32_OTG2_IS_OTG1', False) is not None:
             f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
+            f.write('#define STM32_OTG2_IS_OTG1                  TRUE\n')
         else:
             f.write('#define STM32_USB_USE_OTG1                  TRUE\n')
+            f.write('#define STM32_OTG2_IS_OTG1                  FALSE\n')
         f.write('#define HAL_USE_USB TRUE\n')
         f.write('#define HAL_USE_SERIAL_USB TRUE\n')
     if 'OTG2' in bytype:
@@ -1006,13 +1008,11 @@ def write_mcu_config(f):
     env_vars['INT_FLASH_PRIMARY'] = get_config('INT_FLASH_PRIMARY', default=False, type=bool)
     if env_vars['EXT_FLASH_SIZE_MB'] and not args.bootloader and not env_vars['INT_FLASH_PRIMARY']:
         f.write('#define CRT0_AREAS_NUMBER 4\n')
-        f.write('#define CRT1_RAMFUNC_ENABLE TRUE\n') # this will enable loading program sections to RAM
         f.write('#define __FASTRAMFUNC__ __attribute__ ((__section__(".fastramfunc")))\n')
         f.write('#define __RAMFUNC__ __attribute__ ((__section__(".ramfunc")))\n')
         f.write('#define PORT_IRQ_ATTRIBUTES __FASTRAMFUNC__\n')
     else:
         f.write('#define CRT0_AREAS_NUMBER 1\n')
-        f.write('#define CRT1_RAMFUNC_ENABLE FALSE\n')
 
     if env_vars['INT_FLASH_PRIMARY']:
          # this will put methods with low latency requirements into external flash
@@ -1534,7 +1534,7 @@ def write_WSPI_table(f):
 def write_WSPI_config(f):
     '''write SPI config defines'''
     global wspi_list
-    # only the bootloader must reset the QSPI clock otherwise it is not possible to 
+    # only the bootloader must run the hal lld (and QSPI clock) otherwise it is not possible to
     # bootstrap into external flash
     for t in list(bytype.keys()) + list(alttype.keys()):
         if t.startswith('QUADSPI') and not args.bootloader:
@@ -2446,11 +2446,6 @@ def write_peripheral_enable(f):
             f.write('#endif\n')
         if type.startswith('SPI'):
             f.write('#define STM32_SPI_USE_%s                  TRUE\n' % type)
-        if type.startswith('OTG'):
-            if mcu_type.startswith('STM32H730'):
-                f.write('#define STM32_USB_USE_OTG2                TRUE\n')
-            else:
-                f.write('#define STM32_USB_USE_%s                  TRUE\n' % type)
         if type.startswith('I2C'):
             f.write('#define STM32_I2C_USE_%s                  TRUE\n' % type)
         if type.startswith('QUADSPI'):
