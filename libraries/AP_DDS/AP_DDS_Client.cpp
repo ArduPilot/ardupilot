@@ -16,6 +16,7 @@
 static constexpr uint16_t DELAY_TIME_TOPIC_MS = 10;
 static constexpr uint16_t DELAY_BATTERY_STATE_TOPIC_MS = 1000;
 static constexpr uint16_t DELAY_LOCAL_POSE_TOPIC_MS = 33;
+static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = 33;
 static char WGS_84_FRAME_ID[] = "WGS-84";
 // https://www.ros.org/reps/rep-0105.html#base-link
 static char BASE_LINK_FRAME_ID[] = "base_link";
@@ -295,6 +296,49 @@ void AP_DDS_Client::update_topic(geometry_msgs_msg_PoseStamped& msg)
     }
 }
 
+void AP_DDS_Client::update_topic(geometry_msgs_msg_TwistStamped& msg)
+{
+    update_topic(msg.header.stamp);
+    strcpy(msg.header.frame_id, BASE_LINK_FRAME_ID);
+
+    auto &ahrs = AP::ahrs();
+    WITH_SEMAPHORE(ahrs.get_semaphore());
+
+    // ROS REP 103 uses the ENU convention:
+    // X - East
+    // Y - North
+    // Z - Up
+    // https://www.ros.org/reps/rep-0103.html#axis-orientation
+    // AP_AHRS uses the NED convention
+    // X - North
+    // Y - East
+    // Z - Down
+    // As a consequence, to follow ROS REP 103, it is necessary to switch X and Y,
+    // as well as invert Z
+    Vector3f velocity;
+    if (ahrs.get_velocity_NED(velocity))
+    {
+        msg.twist.linear.x = velocity[1];
+        msg.twist.linear.y = velocity[0];
+        msg.twist.linear.z = -velocity[2];
+    }
+
+    // In ROS REP 103, axis orientation uses the following convention:
+    // X - Forward
+    // Y - Left
+    // Z - Up
+    // https://www.ros.org/reps/rep-0103.html#axis-orientation
+    // The gyro data is received from AP_AHRS in body-frame
+    // X - Forward
+    // Y - Right
+    // Z - Down
+    // As a consequence, to follow ROS REP 103, it is necessary to invert Y and Z
+    Vector3f angular_velocity = ahrs.get_gyro();
+    msg.twist.angular.x = angular_velocity[0];
+    msg.twist.angular.y = -angular_velocity[1];
+    msg.twist.angular.z = -angular_velocity[2];
+}
+
 /*
   class constructor
  */
@@ -502,6 +546,21 @@ void AP_DDS_Client::write_local_pose_topic()
     }
 }
 
+void AP_DDS_Client::write_local_velocity_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub;
+        const uint32_t topic_size = geometry_msgs_msg_TwistStamped_size_of_topic(&local_velocity_topic, 0);
+        uxr_prepare_output_stream(&session,reliable_out,topics[5].dw_id,&ub,topic_size);
+        const bool success = geometry_msgs_msg_TwistStamped_serialize_topic(&ub, &local_velocity_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        }
+    }
+}
+
 void AP_DDS_Client::update()
 {
     WITH_SEMAPHORE(csem);
@@ -531,6 +590,12 @@ void AP_DDS_Client::update()
         update_topic(local_pose_topic);
         last_local_pose_time_ms = cur_time_ms;
         write_local_pose_topic();
+    }
+
+    if (cur_time_ms - last_local_velocity_time_ms > DELAY_LOCAL_VELOCITY_TOPIC_MS) {
+        update_topic(local_velocity_topic);
+        last_local_velocity_time_ms = cur_time_ms;
+        write_local_velocity_topic();
     }
 
     connected = uxr_run_session_time(&session, 1);
