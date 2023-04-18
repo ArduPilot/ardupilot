@@ -381,6 +381,17 @@ if [[ $SKIP_AP_GIT_CHECK -ne 1 ]]; then
   if [ -d ".git" ]; then
     heading "Update git submodules"
     cd $ARDUPILOT_ROOT
+    cd ~/ardupilot/modules
+    sudo rm -r ChibiOS gbenchmark gtest mavlink waf
+    git clone https://github.com/ArduPilot/ChibiOS.git
+    git clone https://github.com/google/benchmark.git gbenchmark
+    git clone https://github.com/ArduPilot/googletest.git gtest
+    git clone https://github.com/dronecan/libcanard.git libcanard
+    git clone https://github.com/ArduPilot/mavlink.git mavlink
+    git clone https://github.com/dronecan/libuavcan.git uavcan
+    git clone https://github.com/ArduPilot/waf.git waf
+    cd ~/ardupilot/modules/mavlink
+    git clone https://github.com/ArduPilot/pymavlink.git
     git submodule update --init --recursive
     echo "Done!"
   fi
