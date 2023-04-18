@@ -1154,7 +1154,7 @@ bool AP_Arming::can_checks(bool report)
 
         for (uint8_t i = 0; i < num_drivers; i++) {
             switch (AP::can().get_driver_type(i)) {
-                case AP_CANManager::Driver_Type_PiccoloCAN: {
+                case AP_CAN::Protocol::PiccoloCAN: {
 #if HAL_PICCOLO_CAN_ENABLE
                     AP_PiccoloCAN *ap_pcan = AP_PiccoloCAN::get_pcan(i);
 
@@ -1169,7 +1169,7 @@ bool AP_Arming::can_checks(bool report)
 #endif
                     break;
                 }
-                case AP_CANManager::Driver_Type_DroneCAN:
+                case AP_CAN::Protocol::DroneCAN:
                 {
 #if HAL_ENABLE_DRONECAN_DRIVERS
                     AP_DroneCAN *ap_dronecan = AP_DroneCAN::get_dronecan(i);
@@ -1180,13 +1180,13 @@ bool AP_Arming::can_checks(bool report)
 #endif
                     break;
                 }
-                case AP_CANManager::Driver_Type_EFI_NWPMU:
-                case AP_CANManager::Driver_Type_USD1:
-                case AP_CANManager::Driver_Type_None:
-                case AP_CANManager::Driver_Type_Scripting:
-                case AP_CANManager::Driver_Type_Scripting2:
-                case AP_CANManager::Driver_Type_Benewake:
-                case AP_CANManager::Driver_Type_KDECAN:
+                case AP_CAN::Protocol::EFI_NWPMU:
+                case AP_CAN::Protocol::USD1:
+                case AP_CAN::Protocol::None:
+                case AP_CAN::Protocol::Scripting:
+                case AP_CAN::Protocol::Scripting2:
+                case AP_CAN::Protocol::Benewake:
+                case AP_CAN::Protocol::KDECAN:
                     break;
             }
         }
