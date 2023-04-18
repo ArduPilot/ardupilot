@@ -1197,7 +1197,7 @@ static void processTx(void)
             }
     #endif
     #if HAL_NUM_CAN_IFACES >= 2
-            if (periph.can_protocol_cached[ins.index] != AP_CANManager::Driver_Type_DroneCAN) {
+            if (periph.can_protocol_cached[ins.index] != AP_CAN::Protocol::DroneCAN) {
                 continue;
             }
     #endif
@@ -1229,7 +1229,7 @@ static void processRx(void)
             continue;
         }
 #if HAL_NUM_CAN_IFACES >= 2
-        if (periph.can_protocol_cached[ins.index] != AP_CANManager::Driver_Type_DroneCAN) {
+        if (periph.can_protocol_cached[ins.index] != AP_CAN::Protocol::DroneCAN) {
             continue;
         }
 #endif
@@ -1485,12 +1485,12 @@ void AP_Periph_FW::can_start()
 #if AP_PERIPH_ENFORCE_AT_LEAST_ONE_PORT_IS_UAVCAN_1MHz && HAL_NUM_CAN_IFACES >= 2
     bool has_uavcan_at_1MHz = false;
     for (uint8_t i=0; i<HAL_NUM_CAN_IFACES; i++) {
-        if (g.can_protocol[i] == AP_CANManager::Driver_Type_DroneCAN && g.can_baudrate[i] == 1000000) {
+        if (g.can_protocol[i] == AP_CAN::Protocol::DroneCAN && g.can_baudrate[i] == 1000000) {
             has_uavcan_at_1MHz = true;
         }
     }
     if (!has_uavcan_at_1MHz) {
-        g.can_protocol[0].set_and_save(AP_CANManager::Driver_Type_DroneCAN);
+        g.can_protocol[0].set_and_save(uint8_t(AP_CAN::Protocol::DroneCAN));
         g.can_baudrate[0].set_and_save(1000000);
     }
 #endif // HAL_PERIPH_ENFORCE_AT_LEAST_ONE_PORT_IS_UAVCAN_1MHz
