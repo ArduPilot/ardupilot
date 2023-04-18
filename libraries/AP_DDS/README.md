@@ -170,7 +170,9 @@ After your setups are complete, do the following:
   ```
   In order to consume the transforms, it's highly recommended to [create and run a transform broadcaster in ROS 2](https://docs.ros.org/en/humble/Concepts/About-Tf2.html#tutorials). 
 
-## Adding DDS messages to Ardupilot
+
+## Contributing to AP_DDS library
+### Adding DDS messages to Ardupilot
 
 Unlike the use of ROS 2 `.msg` files, since Ardupilot supports native DDS, the message files follow [OMG IDL DDS v4.2](https://www.omg.org/spec/IDL/4.2/PDF).
 This package is intended to work with any `.idl` file complying with those extensions.
@@ -189,3 +191,23 @@ mkdir -p libraries/AP_DDS/Idl/builtin_interfaces/msg/
 cp /opt/ros/humble/share/builtin_interfaces/msg/Time.idl libraries/AP_DDS/Idl/builtin_interfaces/msg/
 # Build the code again with the `--enable-dds` flag as described above 
 ```
+
+### Development Requirements
+
+Astyle is used to format the C++ code in AP_DDS. This is required for CI to pass the build.
+See [Tools/CodeStyle/ardupilot-astyle.sh](../../Tools/CodeStyle/ardupilot-astyle.sh).
+
+```console
+./Tools/CodeStyle/ardupilot-astyle.sh libraries/AP_DDS/*.h libraries/AP_DDS/*.cpp
+```
+
+Pre-commit is used for other things like formatting python and XML code. 
+This will run the tools automatically when you commit. If there are changes, just add them back your staging index and commit again.
+
+1. Install [pre-commit](https://pre-commit.com/#installation) python package.
+1. Install ArduPilot's hooks in the root of the repo, then commit like normal
+  ```console
+  cd ardupilot
+  pre-commit install
+  git commit
+  ```
