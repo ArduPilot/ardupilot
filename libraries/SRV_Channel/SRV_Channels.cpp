@@ -541,7 +541,7 @@ void SRV_Channels::push()
     uint8_t can_num_drivers = AP::can().get_num_drivers();
     for (uint8_t i = 0; i < can_num_drivers; i++) {
         switch (AP::can().get_driver_type(i)) {
-            case AP_CANManager::Driver_Type_DroneCAN: {
+            case AP_CAN::Protocol::DroneCAN: {
                 AP_DroneCAN *ap_dronecan = AP_DroneCAN::get_dronecan(i);
                 if (ap_dronecan == nullptr) {
                     continue;
@@ -550,7 +550,7 @@ void SRV_Channels::push()
                 break;
             }
 #if HAL_PICCOLO_CAN_ENABLE
-            case AP_CANManager::Driver_Type_PiccoloCAN: {
+            case AP_CAN::Protocol::PiccoloCAN: {
                 AP_PiccoloCAN *ap_pcan = AP_PiccoloCAN::get_pcan(i);
                 if (ap_pcan == nullptr) {
                     continue;
@@ -559,7 +559,7 @@ void SRV_Channels::push()
                 break;
             }
 #endif
-            case AP_CANManager::Driver_Type_None:
+            case AP_CAN::Protocol::None:
             default:
                 break;
         }
