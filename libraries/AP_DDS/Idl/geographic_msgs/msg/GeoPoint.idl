@@ -1,0 +1,30 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from geographic_msgs/msg/GeoPoint.msg
+// generated code does not contain a copyright notice
+
+
+module geographic_msgs {
+  module msg {
+    @verbatim (language="comment", text=
+      "Geographic point, using the WGS 84 reference ellipsoid.")
+    struct GeoPoint {
+      @verbatim (language="comment", text=
+        "Latitude. Positive is north of equator; negative is south" "\n"
+        "(-90 <= latitude <= +90).")
+      @unit (value="degrees")
+      double latitude;
+
+      @verbatim (language="comment", text=
+        "Longitude. Positive is east of prime meridian; negative is" "\n"
+        "west (-180 <= longitude <= +180). At the poles, latitude is -90 or" "\n"
+        "+90, and longitude is irrelevant, but must be in range.")
+      @unit (value="degrees")
+      double longitude;
+
+      @verbatim (language="comment", text=
+        "Altitude. Positive is above the WGS 84 ellipsoid (NaN if unspecified).")
+      @unit (value="m")
+      double altitude;
+    };
+  };
+};
