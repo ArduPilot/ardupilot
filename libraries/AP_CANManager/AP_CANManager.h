@@ -19,9 +19,9 @@
 
 #include "AP_CANManager_config.h"
 
-#include <AP_HAL/AP_HAL.h>
+#if HAL_CANMANAGER_ENABLED
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#include <AP_HAL/AP_HAL.h>
 
 #include <AP_Param/AP_Param.h>
 #include "AP_SLCANIface.h"
@@ -198,4 +198,4 @@ namespace AP
 AP_CANManager& can();
 }
 
-#endif
+#endif  // HAL_CANMANAGER_ENABLED
