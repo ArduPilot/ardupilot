@@ -168,7 +168,7 @@ AP_DroneCAN::~AP_DroneCAN()
 AP_DroneCAN *AP_DroneCAN::get_dronecan(uint8_t driver_index)
 {
     if (driver_index >= AP::can().get_num_drivers() ||
-        AP::can().get_driver_type(driver_index) != AP_CANManager::Driver_Type_DroneCAN) {
+        AP::can().get_driver_type(driver_index) != AP_CAN::Protocol::DroneCAN) {
         return nullptr;
     }
     return static_cast<AP_DroneCAN*>(AP::can().get_driver(driver_index));
