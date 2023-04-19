@@ -1318,6 +1318,10 @@ public:
 
     bool use_pilot_yaw() const override;
 
+    bool set_speed_xy(float speed_xy_cms) override;
+    bool set_speed_up(float speed_up_cms) override;
+    bool set_speed_down(float speed_down_cms) override;
+
     // RTL states
     enum class SubMode : uint8_t {
         STARTING,
