@@ -267,9 +267,13 @@ class Board:
                 '-fcheck-new',
             ]
 
+        # always enable -g to give debug symbols in elf files on firmware server, making for easier debug
+        # of crash dumps.
+        env.CFLAGS += [
+            '-g',
+        ]
         if cfg.env.DEBUG:
             env.CFLAGS += [
-                '-g',
                 '-O0',
             ]
             env.DEFINES.update(
