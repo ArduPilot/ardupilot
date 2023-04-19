@@ -323,6 +323,12 @@ public:
     // mission item index to be sent on queued msg, delayed or not
     uint16_t mission_item_reached_index = AP_MISSION_CMD_INDEX_NONE;
 
+    // generate a MISSION_STATE enumeration value for where the
+    // mission is up to:
+    MISSION_STATE mission_state(const class AP_Mission &mission) const;
+    // send a mission_current message for the supplied waypoint
+    void send_mission_current(const class AP_Mission &mission, uint16_t seq);
+
     // common send functions
     void send_heartbeat(void) const;
     void send_meminfo(void);
