@@ -626,9 +626,9 @@ bool AP_Mount_Siyi::record_video(bool start_recording)
 }
 
 // set zoom specified as a rate or percentage
-bool AP_Mount_Siyi::set_zoom(AP_Camera::ZoomType zoom_type, float zoom_value)
+bool AP_Mount_Siyi::set_zoom(ZoomType zoom_type, float zoom_value)
 {
-    if (zoom_type == AP_Camera::ZoomType::RATE) {
+    if (zoom_type == ZoomType::RATE) {
         uint8_t zoom_step = 0;
         if (zoom_value > 0) {
             zoom_step = 1;
