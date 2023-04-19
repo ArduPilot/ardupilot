@@ -2949,7 +2949,7 @@ void QuadPlane::takeoff_controller(void)
     // don't takeoff up until rudder is re-centered after rudder arming
     if (plane.arming.last_arm_method() == AP_Arming::Method::RUDDER &&
         (takeoff_last_run_ms == 0 ||
-         now - takeoff_last_run_ms < 1000) &&
+         now - takeoff_last_run_ms > 1000) &&
         !plane.seen_neutral_rudder &&
         spool_state <= AP_Motors::DesiredSpoolState::GROUND_IDLE) {
         // start motor spinning if not spinning already so user sees it is armed
