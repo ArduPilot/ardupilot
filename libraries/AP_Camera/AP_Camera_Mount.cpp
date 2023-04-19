@@ -28,7 +28,7 @@ bool AP_Camera_Mount::record_video(bool start_recording)
 }
 
 // set zoom specified as a rate or percentage
-bool AP_Camera_Mount::set_zoom(AP_Camera::ZoomType zoom_type, float zoom_value)
+bool AP_Camera_Mount::set_zoom(ZoomType zoom_type, float zoom_value)
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
