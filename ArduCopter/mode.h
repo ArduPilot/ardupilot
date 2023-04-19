@@ -462,6 +462,7 @@ public:
     // pause continue in auto mode
     bool pause() override;
     bool resume() override;
+    bool paused() const;
 
     bool loiter_start();
     void rtl_start();
