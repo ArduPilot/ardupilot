@@ -233,11 +233,11 @@ MAV_RESULT AP_Camera::handle_command_long(const mavlink_command_long_t &packet)
         return MAV_RESULT_ACCEPTED;
     case MAV_CMD_SET_CAMERA_ZOOM:
         if (is_equal(packet.param1, (float)ZOOM_TYPE_CONTINUOUS) &&
-            set_zoom(AP_Camera::ZoomType::RATE, packet.param2)) {
+            set_zoom(ZoomType::RATE, packet.param2)) {
             return MAV_RESULT_ACCEPTED;
         }
         if (is_equal(packet.param1, (float)ZOOM_TYPE_RANGE) &&
-            set_zoom(AP_Camera::ZoomType::PCT, packet.param2)) {
+            set_zoom(ZoomType::PCT, packet.param2)) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_UNSUPPORTED;
