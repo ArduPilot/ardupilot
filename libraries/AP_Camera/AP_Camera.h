@@ -9,6 +9,7 @@
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AP_Camera_Params.h"
+#include "AP_Camera_shareddefs.h"
 
 #define AP_CAMERA_MAX_INSTANCES             2       // maximum number of camera backends
 
@@ -110,11 +111,6 @@ public:
     bool record_video(uint8_t instance, bool start_recording);
 
     // set zoom specified as a rate or percentage
-    // enumerators match MAVLink CAMERA_ZOOM_TYPE
-    enum class ZoomType : uint8_t {
-        RATE = 1,   // zoom in, out or hold (zoom out = -1, hold = 0, zoom in = 1). Same as ZOOM_TYPE_CONTINUOUS
-        PCT = 2     // zoom to a percentage (from 0 to 100) of the full range. Same as ZOOM_TYPE_RANGE
-    };
     bool set_zoom(ZoomType zoom_type, float zoom_value);
     bool set_zoom(uint8_t instance, ZoomType zoom_type, float zoom_value);
 
@@ -135,7 +131,7 @@ public:
     typedef struct {
         uint16_t take_pic_incr; // incremented each time camera is requested to take a picture
         bool recording_video;   // true when recording video
-        uint8_t zoom_type;      // see AP_Camera::ZoomType enum (1:Rate or 2:Pct)
+        uint8_t zoom_type;      // see ZoomType enum (1:Rate or 2:Pct)
         float zoom_value;       // percentage or zoom out = -1, hold = 0, zoom in = 1
         int8_t focus_step;      // focus in = -1, focus hold = 0, focus out = 1
         bool auto_focus;        // true when auto focusing
