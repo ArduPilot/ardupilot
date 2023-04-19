@@ -619,7 +619,7 @@ bool AP_Mount::record_video(uint8_t instance, bool start_recording)
 }
 
 // set zoom specified as a rate or percentage
-bool AP_Mount::set_zoom(uint8_t instance, AP_Camera::ZoomType zoom_type, float zoom_value)
+bool AP_Mount::set_zoom(uint8_t instance, ZoomType zoom_type, float zoom_value)
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
