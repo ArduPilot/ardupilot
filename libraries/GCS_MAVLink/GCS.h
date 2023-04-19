@@ -325,7 +325,7 @@ public:
 
     // generate a MISSION_STATE enumeration value for where the
     // mission is up to:
-    MISSION_STATE mission_state(const class AP_Mission &mission) const;
+    virtual MISSION_STATE mission_state(const class AP_Mission &mission) const;
     // send a mission_current message for the supplied waypoint
     void send_mission_current(const class AP_Mission &mission, uint16_t seq);
 
