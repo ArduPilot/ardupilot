@@ -579,6 +579,14 @@ const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
     MAV_STREAM_TERMINATOR // must have this at end of stream_entries
 };
 
+MISSION_STATE GCS_MAVLINK_Copter::mission_state(const class AP_Mission &mission) const
+{
+    if (copter.mode_auto.paused()) {
+        return MISSION_STATE_PAUSED;
+    }
+    return GCS_MAVLINK::mission_state(mission);
+}
+
 bool GCS_MAVLINK_Copter::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
 #if MODE_AUTO_ENABLED == ENABLED
