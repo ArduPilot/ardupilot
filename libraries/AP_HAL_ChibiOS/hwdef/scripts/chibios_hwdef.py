@@ -2381,21 +2381,23 @@ def bootloader_path():
                                    "Tools",
                                    "bootloaders",
                                    bootloader_filename)
-    if os.path.exists(bootloader_path):
-        return os.path.realpath(bootloader_path)
-
-    return None
+    return bootloader_path
 
 
-def add_bootloader():
+def embed_bootloader(f):
     '''added bootloader to ROMFS'''
-    bp = bootloader_path()
-    if bp is not None and int(get_config('BOOTLOADER_EMBED', required=False, default='1')):
-        romfs["bootloader.bin"] = bp
-        env_vars['BOOTLOADER_EMBED'] = 1
-    else:
-        env_vars['BOOTLOADER_EMBED'] = 0
+    if not intdefines.get('AP_BOOTLOADER_FLASHING_ENABLED', 1):
+        # or, you know, not...
+        return
 
+    bp = bootloader_path()
+    if not os.path.exists(bp):
+        return
+
+    bp = os.path.realpath(bp)
+
+    romfs["bootloader.bin"] = bp
+    f.write("#define AP_BOOTLOADER_FLASHING_ENABLED 1\n")
 
 
 def write_ROMFS(outdir):
@@ -2559,7 +2561,7 @@ def write_hwdef_header(outfilename):
     setup_apj_IDs()
     write_USB_config(f)
 
-    add_bootloader()
+    embed_bootloader(f)
 
     if len(romfs) > 0:
         f.write('#define HAL_HAVE_AP_ROMFS_EMBEDDED_H 1\n')
