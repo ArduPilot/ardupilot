@@ -125,7 +125,7 @@ public:
     virtual bool record_video(bool start_recording) { return false; }
 
     // set zoom specified as a rate or percentage
-    virtual bool set_zoom(AP_Camera::ZoomType zoom_type, float zoom_value) { return false; }
+    virtual bool set_zoom(ZoomType zoom_type, float zoom_value) { return false; }
 
     // set focus in, out or hold.  returns true on success
     // focus in = -1, focus hold = 0, focus out = 1

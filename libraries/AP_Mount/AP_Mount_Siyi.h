@@ -63,7 +63,7 @@ public:
     bool record_video(bool start_recording) override;
 
     // set zoom specified as a rate or percentage
-    bool set_zoom(AP_Camera::ZoomType zoom_type, float zoom_value) override;
+    bool set_zoom(ZoomType zoom_type, float zoom_value) override;
 
     // set focus in, out or hold.  returns true on success
     // focus in = -1, focus hold = 0, focus out = 1
