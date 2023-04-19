@@ -1818,7 +1818,7 @@ void AP_Arming::check_forced_logging(const AP_Arming::Method method)
         case Method::UNKNOWN:
             AP::logger().set_long_log_persist(false);
             return;
-    };
+    }
 }
 
 AP_Arming *AP_Arming::_singleton = nullptr;
