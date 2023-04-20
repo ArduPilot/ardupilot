@@ -22,9 +22,6 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(AP_Mount_Scripting);
 
-    // init - performs any required initialisation for this instance
-    void init() override {};
-
     // update mount position - should be called periodically
     void update() override;
 
