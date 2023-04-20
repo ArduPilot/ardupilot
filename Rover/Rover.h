@@ -83,6 +83,7 @@ public:
     friend class Mode;
     friend class ModeAcro;
     friend class ModeAuto;
+    friend class ModeCircle;
     friend class ModeGuided;
     friend class ModeHold;
     friend class ModeLoiter;
