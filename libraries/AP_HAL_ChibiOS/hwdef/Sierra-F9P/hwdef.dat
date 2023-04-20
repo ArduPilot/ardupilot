@@ -17,7 +17,6 @@ APJ_BOARD_ID 1034
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
-#env AP_PERIPH_HEAVY 1
 
 STM32_ST_USE_TIMER 5
 
