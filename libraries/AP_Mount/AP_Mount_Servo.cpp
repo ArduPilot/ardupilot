@@ -21,6 +21,7 @@ void AP_Mount_Servo::init()
         _pan_idx  = SRV_Channel::k_mount2_pan;
         _open_idx = SRV_Channel::k_mount2_open;
     }
+    AP_Mount_Backend::init();
 }
 
 // update mount position - should be called periodically

@@ -35,7 +35,7 @@ public:
     {}
 
     // init - performs any required initialisation for this instance
-    virtual void init() = 0;
+    virtual void init();
 
     // update mount position - should be called periodically
     virtual void update() = 0;

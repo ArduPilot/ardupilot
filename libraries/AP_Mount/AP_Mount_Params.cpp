@@ -152,6 +152,12 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_LEAD_PTCH", 13, AP_Mount_Params, pitch_stb_lead, 0.0f),
 
+    // @Param: _SYSID_DFLT
+    // @DisplayName: Mount Target sysID
+    // @Description: Default Target sysID for the mount to point to
+    // @RebootRequired: True
+    // @User: Standard
+    AP_GROUPINFO("_SYSID_DFLT", 14, AP_Mount_Params, sysid_default, 0),
     AP_GROUPEND
 };
 
