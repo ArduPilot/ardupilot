@@ -146,19 +146,22 @@ After your setups are complete, do the following:
 
   $ ros2 topic list  -v
   Published topics:
-   * /ROS2_NavSatFix0 [sensor_msgs/msg/NavSatFix] 1 publisher
-   * /ROS2_Time [builtin_interfaces/msg/Time] 1 publisher
-   * /parameter_events [rcl_interfaces/msg/ParameterEvent] 1 publisher
-   * /rosout [rcl_interfaces/msg/Log] 1 publisher
-   * /tf [tf2_msgs/msg/TFMessage] 1 publisher
+  * /ap/battery/battery0 [sensor_msgs/msg/BatteryState] 1 publisher
+  * /ap/clock [builtin_interfaces/msg/Time] 1 publisher
+  * /ap/navsat/navsat0 [sensor_msgs/msg/NavSatFix] 1 publisher
+  * /ap/pose/filtered [geometry_msgs/msg/PoseStamped] 1 publisher
+  * /ap/tf_static [tf2_msgs/msg/TFMessage] 1 publisher
+  * /parameter_events [rcl_interfaces/msg/ParameterEvent] 1 publisher
+  * /rosout [rcl_interfaces/msg/Log] 1 publisher
 
   Subscribed topics:
 
-  $ ros2 topic hz /ROS2_Time
+
+  $ ros2 topic hz /ap/clock
   average rate: 50.115
           min: 0.012s max: 0.024s std dev: 0.00328s window: 52
 
-  $ ros2 topic echo /ROS2_Time 
+  $ ros2 topic echo /ap/clock 
   sec: 1678668735
   nanosec: 729410000
   ---
@@ -166,7 +169,7 @@ After your setups are complete, do the following:
 
   The static transforms for enabled sensors are also published, and can be recieved like so:
   ```console
-  ros2 topic echo /tf --qos-depth 1 --qos-history keep_last --qos-reliability reliable --qos-durability transient_local --once
+  ros2 topic echo /ap/tf_static --qos-depth 1 --qos-history keep_last --qos-reliability reliable --qos-durability transient_local --once
   ```
   In order to consume the transforms, it's highly recommended to [create and run a transform broadcaster in ROS 2](https://docs.ros.org/en/humble/Concepts/About-Tf2.html#tutorials). 
 
