@@ -29,7 +29,7 @@ bool Buzzer::init()
         return false;
     }
     _pin = pNotify->get_buzz_pin();
-    if (_pin == 0u) {
+    if (_pin <= 0) {
         // no buzzer
         return false;
     }
