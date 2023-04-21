@@ -6,7 +6,7 @@
     </rtps>
   </participant>
   <topic profile_name="time__t">
-    <name>rt/ROS2_Time</name>
+    <name>rt/ap/clock</name>
     <dataType>builtin_interfaces::msg::dds_::Time_</dataType>
     <historyQos>
       <kind>KEEP_LAST</kind>
@@ -22,7 +22,7 @@
     </qos>
     <topic>
       <kind>NO_KEY</kind>
-      <name>rt/ROS2_Time</name>
+      <name>rt/ap/clock</name>
       <dataType>builtin_interfaces::msg::dds_::Time_</dataType>
       <historyQos>
         <kind>KEEP_LAST</kind>
@@ -31,7 +31,7 @@
     </topic>
   </data_writer>
   <topic profile_name="navsatfix0__t">
-    <name>rt/ROS2_NavSatFix0</name>
+    <name>rt/ap/navsat/navsat0</name>
     <dataType>sensor_msgs::msg::dds_::NavSatFix_</dataType>
     <historyQos>
       <kind>KEEP_LAST</kind>
@@ -50,7 +50,7 @@
     </qos>
     <topic>
       <kind>NO_KEY</kind>
-      <name>rt/ROS2_NavSatFix0</name>
+      <name>rt/ap/navsat/navsat0</name>
       <dataType>sensor_msgs::msg::dds_::NavSatFix_</dataType>
       <historyQos>
         <kind>KEEP_LAST</kind>
@@ -59,7 +59,7 @@
     </topic>
   </data_writer>
   <topic profile_name="statictransforms__t">
-    <name>rt/tf</name>
+    <name>rt/ap/tf_static</name>
     <dataType>tf2_msgs::msg::dds_::TFMessage_</dataType>
     <historyQos>
       <kind>KEEP_LAST</kind>
@@ -78,7 +78,7 @@
     </qos>
     <topic>
       <kind>NO_KEY</kind>
-      <name>rt/tf</name>
+      <name>rt/ap/tf_static</name>
       <dataType>tf2_msgs::msg::dds_::TFMessage_</dataType>
       <historyQos>
         <kind>KEEP_LAST</kind>
@@ -87,7 +87,7 @@
     </topic>
   </data_writer>
   <topic profile_name="batterystate0__t">
-    <name>rt/ROS2_BatteryState0</name>
+    <name>rt/ap/battery/battery0</name>
     <dataType>sensor_msgs::msg::dds_::BatteryState_</dataType>
     <historyQos>
       <kind>KEEP_LAST</kind>
@@ -106,7 +106,7 @@
     </qos>
     <topic>
       <kind>NO_KEY</kind>
-      <name>rt/ROS2_BatteryState0</name>
+      <name>rt/ap/battery/battery0</name>
       <dataType>sensor_msgs::msg::dds_::BatteryState_</dataType>
       <historyQos>
         <kind>KEEP_LAST</kind>
@@ -115,7 +115,7 @@
     </topic>
   </data_writer>
   <topic profile_name="localpose__t">
-    <name>rt/ROS2_LocalPose</name>
+    <name>rt/ap/pose/filtered</name>
     <dataType>geometry_msgs::msg::dds_::PoseStamped_</dataType>
     <historyQos>
       <kind>KEEP_LAST</kind>
@@ -134,7 +134,7 @@
     </qos>
     <topic>
       <kind>NO_KEY</kind>
-      <name>rt/ROS2_LocalPose</name>
+      <name>rt/ap/pose/filtered</name>
       <dataType>geometry_msgs::msg::dds_::PoseStamped_</dataType>
       <historyQos>
         <kind>KEEP_LAST</kind>
