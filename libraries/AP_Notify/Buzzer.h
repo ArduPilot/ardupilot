@@ -61,7 +61,7 @@ private:
     } _flags;
 
     uint32_t _pattern;           // current pattern
-    uint8_t _pin;
+    int8_t _pin;
     uint32_t _pattern_start_time;
 
     // enforce minumum 100ms interval between patterns:
