@@ -140,7 +140,6 @@ AP_Notify *AP_Notify::_singleton;
 
 #ifndef HAL_BUZZER_ON
 #define HAL_BUZZER_ON 1
-#define HAL_BUZZER_OFF 0
 #endif
 
 // table of user settable parameters
