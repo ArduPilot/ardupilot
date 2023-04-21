@@ -185,7 +185,11 @@ void AP_Periph_FW::init()
         }
     }
 #endif
-    
+
+#if AP_KDECAN_ENABLED
+    kdecan.init();
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     const bool pins_enabled = ChibiOS::I2CBus::check_select_pins(0x01);

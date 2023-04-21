@@ -6,23 +6,10 @@
 
 #if AP_CAMERA_ENABLED
 
-#include <AP_Common/Location.h>
-#include <AP_Logger/LogStructure.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AP_Camera_Params.h"
-#include "AP_Mount/AP_Mount_config.h"
-
-#if AP_CAMERA_SCRIPTING_ENABLED
-    // structure and accessors for use by scripting backends
-    typedef struct {
-        uint16_t take_pic_incr; // incremented each time camera is requested to take a picture
-        bool recording_video;   // true when recording video
-        int8_t zoom_step;       // zoom out = -1, hold = 0, zoom in = 1
-        int8_t focus_step;      // focus in = -1, focus hold = 0, focus out = 1
-        bool auto_focus;        // true when auto focusing
-    } camera_state_t;
-#endif
+#include "AP_Camera_shareddefs.h"
 
 #define AP_CAMERA_MAX_INSTANCES             2       // maximum number of camera backends
 
@@ -123,10 +110,9 @@ public:
     bool record_video(bool start_recording);
     bool record_video(uint8_t instance, bool start_recording);
 
-    // zoom in, out or hold
-    // zoom out = -1, hold = 0, zoom in = 1
-    bool set_zoom_step(int8_t zoom_step);
-    bool set_zoom_step(uint8_t instance, int8_t zoom_step);
+    // set zoom specified as a rate or percentage
+    bool set_zoom(ZoomType zoom_type, float zoom_value);
+    bool set_zoom(uint8_t instance, ZoomType zoom_type, float zoom_value);
 
     // focus in, out or hold
     // focus in = -1, focus hold = 0, focus out = 1
@@ -141,6 +127,16 @@ public:
     void set_is_auto_mode(bool enable) { _is_in_auto_mode = enable; }
 
 #if AP_CAMERA_SCRIPTING_ENABLED
+    // structure and accessors for use by scripting backends
+    typedef struct {
+        uint16_t take_pic_incr; // incremented each time camera is requested to take a picture
+        bool recording_video;   // true when recording video
+        uint8_t zoom_type;      // see ZoomType enum (1:Rate or 2:Pct)
+        float zoom_value;       // percentage or zoom out = -1, hold = 0, zoom in = 1
+        int8_t focus_step;      // focus in = -1, focus hold = 0, focus out = 1
+        bool auto_focus;        // true when auto focusing
+    } camera_state_t;
+
     // accessor to allow scripting backend to retrieve state
     // returns true on success and cam_state is filled in
     bool get_state(uint8_t instance, camera_state_t& cam_state);

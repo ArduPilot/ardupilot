@@ -1,8 +1,10 @@
 #pragma once
 
-#include "AP_VisualOdom_Backend.h"
+#include "AP_VisualOdom_config.h"
 
-#if HAL_VISUALODOM_ENABLED
+#if AP_VISUALODOM_MAV_ENABLED
+
+#include "AP_VisualOdom_Backend.h"
 
 class AP_VisualOdom_MAV : public AP_VisualOdom_Backend
 {
@@ -18,4 +20,4 @@ public:
     void handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter) override;
 };
 
-#endif
+#endif  // AP_VISUALODOM_MAV_ENABLED

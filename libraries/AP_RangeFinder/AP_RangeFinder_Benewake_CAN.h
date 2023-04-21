@@ -48,7 +48,7 @@ private:
 class Benewake_MultiCAN : public CANSensor {
 public:
     Benewake_MultiCAN() : CANSensor("Benewake") {
-        register_driver(AP_CANManager::Driver_Type_Benewake);
+        register_driver(AP_CAN::Protocol::Benewake);
     }
 
     // handler for incoming frames

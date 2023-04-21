@@ -945,7 +945,7 @@ bool RC_Channel::do_aux_function_camera_zoom(const AuxSwitchPos ch_flag)
         zoom_step = -1; // zoom out
         break;
     }
-    return camera->set_zoom_step(zoom_step);
+    return camera->set_zoom(ZoomType::RATE, zoom_step);
 }
 
 bool RC_Channel::do_aux_function_camera_manual_focus(const AuxSwitchPos ch_flag)

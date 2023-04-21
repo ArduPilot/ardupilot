@@ -7,7 +7,7 @@
 // Enabled 2 is enabled with dummy methods for all vehicles except Sub and SITL
 
 #ifndef AP_TEMPERATURE_SENSOR_ENABLED
-#if HAL_MINIMIZE_FEATURES || BOARD_FLASH_SIZE <= 1024
+#if BOARD_FLASH_SIZE <= 1024
     #define AP_TEMPERATURE_SENSOR_ENABLED 0
 #elif (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
     #define AP_TEMPERATURE_SENSOR_ENABLED 1

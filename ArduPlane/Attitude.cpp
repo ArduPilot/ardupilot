@@ -453,14 +453,6 @@ void Plane::calc_throttle()
     }
 
     float commanded_throttle = TECS_controller.get_throttle_demand();
-
-    // Received an external msg that guides throttle in the last 3 seconds?
-    if (control_mode->is_guided_mode() &&
-            plane.guided_state.last_forced_throttle_ms > 0 &&
-            millis() - plane.guided_state.last_forced_throttle_ms < 3000) {
-        commanded_throttle = plane.guided_state.forced_throttle;
-    }
-
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, commanded_throttle);
 }
 
@@ -587,17 +579,7 @@ void Plane::calc_nav_yaw_ground(void)
  */
 void Plane::calc_nav_pitch()
 {
-    // Calculate the Pitch of the plane
-    // --------------------------------
     int32_t commanded_pitch = TECS_controller.get_pitch_demand();
-
-    // Received an external msg that guides roll in the last 3 seconds?
-    if (control_mode->is_guided_mode() &&
-            plane.guided_state.last_forced_rpy_ms.y > 0 &&
-            millis() - plane.guided_state.last_forced_rpy_ms.y < 3000) {
-        commanded_pitch = plane.guided_state.forced_rpy_cd.y;
-    }
-
     nav_pitch_cd = constrain_int32(commanded_pitch, pitch_limit_min_cd, aparm.pitch_limit_max_cd.get());
 }
 
@@ -608,43 +590,6 @@ void Plane::calc_nav_pitch()
 void Plane::calc_nav_roll()
 {
     int32_t commanded_roll = nav_controller->nav_roll_cd();
-
-    // Received an external msg that guides roll in the last 3 seconds?
-    if (control_mode->is_guided_mode() &&
-            plane.guided_state.last_forced_rpy_ms.x > 0 &&
-            millis() - plane.guided_state.last_forced_rpy_ms.x < 3000) {
-        commanded_roll = plane.guided_state.forced_rpy_cd.x;
-#if OFFBOARD_GUIDED == ENABLED
-    // guided_state.target_heading is radians at this point between -pi and pi ( defaults to -4 )
-    } else if ((control_mode == &mode_guided) && (guided_state.target_heading_type != GUIDED_HEADING_NONE) ) {
-        uint32_t tnow = AP_HAL::millis();
-        float delta = (tnow - guided_state.target_heading_time_ms) * 1e-3f;
-        guided_state.target_heading_time_ms = tnow;
-
-        float error = 0.0f;
-        if (guided_state.target_heading_type == GUIDED_HEADING_HEADING) {
-            error = wrap_PI(guided_state.target_heading - AP::ahrs().yaw);
-        } else {
-            Vector2f groundspeed = AP::ahrs().groundspeed_vector();
-            error = wrap_PI(guided_state.target_heading - atan2f(-groundspeed.y, -groundspeed.x) + M_PI);
-        }
-
-        float bank_limit = degrees(atanf(guided_state.target_heading_accel_limit/GRAVITY_MSS)) * 1e2f;
-
-        g2.guidedHeading.update_error(error, delta); // push error into AC_PID , possible improvement is to use update_all instead.?
-
-        float i = g2.guidedHeading.get_i(); // get integrator TODO
-        if (((is_negative(error) && !guided_state.target_heading_limit_low) || (is_positive(error) && !guided_state.target_heading_limit_high))) {
-            i = g2.guidedHeading.get_i();
-        }
-
-        float desired = g2.guidedHeading.get_p() + i + g2.guidedHeading.get_d();
-        guided_state.target_heading_limit_low = (desired <= -bank_limit);
-        guided_state.target_heading_limit_high = (desired >= bank_limit);
-        commanded_roll = constrain_float(desired, -bank_limit, bank_limit);
-#endif // OFFBOARD_GUIDED == ENABLED
-    }
-
     nav_roll_cd = constrain_int32(commanded_roll, -roll_limit_cd, roll_limit_cd);
     update_load_factor();
 }

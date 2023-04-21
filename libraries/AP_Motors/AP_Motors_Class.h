@@ -188,9 +188,6 @@ public:
     // get_spool_state - get current spool state
     enum SpoolState  get_spool_state(void) const { return _spool_state; }
 
-    // set_density_ratio - sets air density as a proportion of sea level density
-    void                set_air_density_ratio(float ratio) { _air_density_ratio = ratio; }
-
     // set_dt / get_dt - dt is the time since the last time the motor mixers were updated
     //   _dt should be set based on the time of the last IMU read used by these controllers
     //   the motor mixers should run on each loop to ensure normal operation
@@ -323,9 +320,6 @@ protected:
     LowPassFilterFloat  _throttle_slew_filter;      // filter for the output of the throttle slew
     DesiredSpoolState   _spool_desired;             // desired spool state
     SpoolState          _spool_state;               // current spool mode
-
-    // air pressure compensation variables
-    float               _air_density_ratio;     // air density / sea level density - decreases in altitude
 
     // mask of what channels need fast output
     uint32_t            _motor_fast_mask;

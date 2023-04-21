@@ -610,13 +610,14 @@ singleton AP_Camera semaphore
 singleton AP_Camera method take_picture void uint8_t'skip_check
 singleton AP_Camera method record_video boolean uint8_t'skip_check boolean
 singleton AP_Camera method set_trigger_distance void uint8_t'skip_check float'skip_check
-userdata camera_state_t depends (AP_CAMERA_SCRIPTING_ENABLED == 1)
-userdata camera_state_t field take_pic_incr uint16_t'skip_check read
-userdata camera_state_t field recording_video boolean read
-userdata camera_state_t field zoom_step int8_t'skip_check read
-userdata camera_state_t field focus_step int8_t'skip_check read
-userdata camera_state_t field auto_focus boolean read
-singleton AP_Camera method get_state boolean uint8_t'skip_check camera_state_t'Null
+userdata AP_Camera::camera_state_t depends (AP_CAMERA_SCRIPTING_ENABLED == 1)
+userdata AP_Camera::camera_state_t field take_pic_incr uint16_t'skip_check read
+userdata AP_Camera::camera_state_t field recording_video boolean read
+userdata AP_Camera::camera_state_t field zoom_type uint8_t'skip_check read
+userdata AP_Camera::camera_state_t field zoom_value float'skip_check read
+userdata AP_Camera::camera_state_t field focus_step int8_t'skip_check read
+userdata AP_Camera::camera_state_t field auto_focus boolean read
+singleton AP_Camera method get_state boolean uint8_t'skip_check AP_Camera::camera_state_t'Null
 
 include AP_Winch/AP_Winch.h
 singleton AP_Winch depends AP_WINCH_ENABLED && APM_BUILD_COPTER_OR_HELI
@@ -633,34 +634,34 @@ include AP_EFI/AP_EFI_Scripting.h depends AP_EFI_SCRIPTING_ENABLED
 include AP_EFI/AP_EFI_config.h
 
 userdata Cylinder_Status depends (AP_EFI_SCRIPTING_ENABLED == 1)
-userdata Cylinder_Status field ignition_timing_deg float'skip_check write
-userdata Cylinder_Status field injection_time_ms float'skip_check write
-userdata Cylinder_Status field cylinder_head_temperature float'skip_check write
-userdata Cylinder_Status field exhaust_gas_temperature float'skip_check write
-userdata Cylinder_Status field lambda_coefficient float'skip_check write
+userdata Cylinder_Status field ignition_timing_deg float'skip_check read write
+userdata Cylinder_Status field injection_time_ms float'skip_check read write
+userdata Cylinder_Status field cylinder_head_temperature float'skip_check read write
+userdata Cylinder_Status field exhaust_gas_temperature float'skip_check read write
+userdata Cylinder_Status field lambda_coefficient float'skip_check read write
 
 userdata EFI_State depends (AP_EFI_SCRIPTING_ENABLED == 1)
-userdata EFI_State field last_updated_ms uint32_t'skip_check write
-userdata EFI_State field general_error boolean write
-userdata EFI_State field engine_load_percent uint8_t'skip_check write
-userdata EFI_State field engine_speed_rpm uint32_t'skip_check write
-userdata EFI_State field spark_dwell_time_ms float'skip_check write
-userdata EFI_State field atmospheric_pressure_kpa float'skip_check write
-userdata EFI_State field intake_manifold_pressure_kpa float'skip_check write
-userdata EFI_State field intake_manifold_temperature float'skip_check write
-userdata EFI_State field coolant_temperature float'skip_check write
-userdata EFI_State field oil_pressure float'skip_check write
-userdata EFI_State field oil_temperature float'skip_check write
-userdata EFI_State field fuel_pressure float'skip_check write
+userdata EFI_State field last_updated_ms uint32_t'skip_check read write
+userdata EFI_State field general_error boolean read write
+userdata EFI_State field engine_load_percent uint8_t'skip_check read write
+userdata EFI_State field engine_speed_rpm uint32_t'skip_check read write
+userdata EFI_State field spark_dwell_time_ms float'skip_check read write
+userdata EFI_State field atmospheric_pressure_kpa float'skip_check read write
+userdata EFI_State field intake_manifold_pressure_kpa float'skip_check read write
+userdata EFI_State field intake_manifold_temperature float'skip_check read write
+userdata EFI_State field coolant_temperature float'skip_check read write
+userdata EFI_State field oil_pressure float'skip_check read write
+userdata EFI_State field oil_temperature float'skip_check read write
+userdata EFI_State field fuel_pressure float'skip_check read write
 userdata EFI_State field fuel_pressure_status Fuel_Pressure_Status'enum write Fuel_Pressure_Status::NOT_SUPPORTED Fuel_Pressure_Status::ABOVE_NOMINAL
-userdata EFI_State field fuel_consumption_rate_cm3pm float'skip_check write
-userdata EFI_State field estimated_consumed_fuel_volume_cm3 float'skip_check write
-userdata EFI_State field throttle_position_percent uint8_t'skip_check write
-userdata EFI_State field ecu_index uint8_t'skip_check write
+userdata EFI_State field fuel_consumption_rate_cm3pm float'skip_check read write
+userdata EFI_State field estimated_consumed_fuel_volume_cm3 float'skip_check read write
+userdata EFI_State field throttle_position_percent uint8_t'skip_check read write
+userdata EFI_State field ecu_index uint8_t'skip_check read write
 userdata EFI_State field cylinder_status Cylinder_Status write
-userdata EFI_State field ignition_voltage float'skip_check write
-userdata EFI_State field throttle_out float'skip_check write
-userdata EFI_State field pt_compensation float'skip_check write
+userdata EFI_State field ignition_voltage float'skip_check read write
+userdata EFI_State field throttle_out float'skip_check read write
+userdata EFI_State field pt_compensation float'skip_check read write
 
 ap_object AP_EFI_Backend depends (AP_EFI_SCRIPTING_ENABLED == 1)
 ap_object AP_EFI_Backend method handle_scripting boolean EFI_State
@@ -668,6 +669,7 @@ ap_object AP_EFI_Backend method handle_scripting boolean EFI_State
 singleton AP_EFI depends (AP_EFI_SCRIPTING_ENABLED == 1)
 singleton AP_EFI rename efi
 singleton AP_EFI method get_backend AP_EFI_Backend uint8_t'skip_check
+singleton AP_EFI method get_state void EFI_State'Ref
 
 -- ----END EFI Library----
 

@@ -168,7 +168,7 @@ AP_DroneCAN::~AP_DroneCAN()
 AP_DroneCAN *AP_DroneCAN::get_dronecan(uint8_t driver_index)
 {
     if (driver_index >= AP::can().get_num_drivers() ||
-        AP::can().get_driver_type(driver_index) != AP_CANManager::Driver_Type_DroneCAN) {
+        AP::can().get_driver_type(driver_index) != AP_CAN::Protocol::DroneCAN) {
         return nullptr;
     }
     return static_cast<AP_DroneCAN*>(AP::can().get_driver(driver_index));
@@ -194,7 +194,7 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
         return;
     }
 
-    node_info_rsp.name.len = snprintf((char*)node_info_rsp.name.data, sizeof(node_info_rsp.name.data), "org.ardupilot:%u", driver_index);
+    node_info_rsp.name.len = hal.util->snprintf((char*)node_info_rsp.name.data, sizeof(node_info_rsp.name.data), "org.ardupilot:%u", driver_index);
 
     node_info_rsp.software_version.major = AP_DRONECAN_SW_VERS_MAJOR;
     node_info_rsp.software_version.minor = AP_DRONECAN_SW_VERS_MINOR;
@@ -317,7 +317,7 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
         canard_iface.process(1000);
     }
 
-    snprintf(_thread_name, sizeof(_thread_name), "dronecan_%u", driver_index);
+    hal.util->snprintf(_thread_name, sizeof(_thread_name), "dronecan_%u", driver_index);
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_DroneCAN::loop, void), _thread_name, DRONECAN_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_CAN, 0)) {
         debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: couldn't create thread\n\r");

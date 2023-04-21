@@ -385,14 +385,11 @@ void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg){
 
     if (!att_quat.is_nan()) {
         // convert quaternion to euler angles
-        float roll_rad, pitch_rad, yaw_rad;
-        att_quat.to_euler(roll_rad, pitch_rad, yaw_rad);
+        Vector3f attitude;
+        att_quat.to_euler(attitude);  // attitude is in radians here
+        attitude *= RAD_TO_DEG;  // convert to degrees
 
-        // radian to deg conversion
-        const float roll_deg = degrees(roll_rad);
-        const float pitch_deg = degrees(pitch_rad);
-        const float yaw_deg = degrees(yaw_rad);
-        backend->set_angle_target(roll_deg, pitch_deg, yaw_deg, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        backend->set_angle_target(attitude.x, attitude.y, attitude.z, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return;
     }
 
@@ -621,15 +618,14 @@ bool AP_Mount::record_video(uint8_t instance, bool start_recording)
     return backend->record_video(start_recording);
 }
 
-// set camera zoom step.  returns true on success
-// zoom out = -1, hold = 0, zoom in = 1
-bool AP_Mount::set_zoom_step(uint8_t instance, int8_t zoom_step)
+// set zoom specified as a rate or percentage
+bool AP_Mount::set_zoom(uint8_t instance, ZoomType zoom_type, float zoom_value)
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
         return false;
     }
-    return backend->set_zoom_step(zoom_step);
+    return backend->set_zoom(zoom_type, zoom_value);
 }
 
 // set focus in, out or hold.  returns true on success

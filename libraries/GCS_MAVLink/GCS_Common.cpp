@@ -56,6 +56,7 @@
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
+#include <AP_KDECAN/AP_KDECAN.h>
 
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"
@@ -74,13 +75,8 @@
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
-  #include <AP_CANManager/AP_CANTester.h>
   #include <AP_Common/AP_Common.h>
 
-  // To be replaced with macro saying if KDECAN library is included
-  #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
-    #include <AP_KDECAN/AP_KDECAN.h>
-  #endif
   #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
   #include <AP_DroneCAN/AP_DroneCAN.h>
 #endif
@@ -617,6 +613,46 @@ void GCS_MAVLINK::handle_mission_request(const mavlink_message_t &msg)
         prot->handle_mission_request(*this, packet, msg);
 }
 
+// returns a MISSION_STATE numeration value best describing out
+// current mission state.
+MISSION_STATE GCS_MAVLINK::mission_state(const AP_Mission &mission) const
+{
+    if (mission.num_commands() < 2) {  // 1 means just home is present
+        return MISSION_STATE_NO_MISSION;
+    }
+    switch (mission.state()) {
+    case AP_Mission::mission_state::MISSION_STOPPED:
+        return MISSION_STATE_NOT_STARTED;
+    case AP_Mission::mission_state::MISSION_RUNNING:
+        return MISSION_STATE_ACTIVE;
+    case AP_Mission::mission_state::MISSION_COMPLETE:
+        return MISSION_STATE_COMPLETE;
+    }
+
+    // compiler ensures we can't get here as no default case in above enumeration
+
+    return MISSION_STATE_UNKNOWN;
+}
+
+#if AP_MAVLINK_MISSION_SET_CURRENT_ENABLED
+void GCS_MAVLINK::send_mission_current(const class AP_Mission &mission, uint16_t seq)
+{
+    auto num_commands = mission.num_commands();
+    if (num_commands > 0) {
+        // exclude home location from the count; see message definition.
+        num_commands -= 1;
+    }
+
+    const uint8_t mission_mode = AP::vehicle()->current_mode_requires_mission() ? 1 : 0;
+
+    mavlink_msg_mission_current_send(
+        chan,
+        seq,
+        num_commands, // total
+        mission_state(mission), // mission_state
+        mission_mode);  // mission_mode
+}
+
 /*
   handle a MISSION_SET_CURRENT mavlink packet
 
@@ -628,6 +664,8 @@ void GCS_MAVLINK::handle_mission_request(const mavlink_message_t &msg)
  */
 void GCS_MAVLINK::handle_mission_set_current(AP_Mission &mission, const mavlink_message_t &msg)
 {
+    // send_received_message_deprecation_warning("MISSION_SET_CURRENT");
+
     // decode
     mavlink_mission_set_current_t packet;
     mavlink_msg_mission_set_current_decode(&msg, &packet);
@@ -643,13 +681,14 @@ void GCS_MAVLINK::handle_mission_set_current(AP_Mission &mission, const mavlink_
         // exactly that sequence number in it, even if ArduPilot never
         // actually holds that as a sequence number (e.g. packet.seq==0).
         if (HAVE_PAYLOAD_SPACE(chan, MISSION_CURRENT)) {
-            mavlink_msg_mission_current_send(chan, packet.seq);
+            send_mission_current(mission, packet.seq);
         } else {
             // schedule it for later:
             send_message(MSG_CURRENT_WAYPOINT);
         }
     }
 }
+#endif  // AP_MAVLINK_MISSION_SET_CURRENT_ENABLED
 
 /*
   handle a MISSION_COUNT mavlink packet
@@ -4063,6 +4102,7 @@ void GCS_MAVLINK::handle_common_mission_message(const mavlink_message_t &msg)
         handle_mission_request(msg);
         break;
 
+#if AP_MAVLINK_MISSION_SET_CURRENT_ENABLED
     case MAVLINK_MSG_ID_MISSION_SET_CURRENT:    // MAV ID: 41
     {
         AP_Mission *_mission = AP::mission();
@@ -4071,6 +4111,7 @@ void GCS_MAVLINK::handle_common_mission_message(const mavlink_message_t &msg)
         }
         break;
     }
+#endif
 
     // GCS request the full list of commands, we return just the number and leave the GCS to then request each command individually
     case MAVLINK_MSG_ID_MISSION_REQUEST_LIST:       // MAV ID: 43
@@ -4345,70 +4386,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_run_prearm_checks(const mavlink_command_l
     }
     (void)AP::arming().pre_arm_checks(true);
     return MAV_RESULT_ACCEPTED;
-}
-
-MAV_RESULT GCS_MAVLINK::handle_command_preflight_can(const mavlink_command_long_t &packet)
-{
-#if HAL_CANMANAGER_ENABLED
-    if (hal.util->get_soft_armed()) {
-        // *preflight*, remember?
-        return MAV_RESULT_TEMPORARILY_REJECTED;
-    }
-
-    bool start_stop = is_equal(packet.param1,1.0f);
-    bool result = true;
-    bool can_exists = false;
-    uint8_t num_drivers = AP::can().get_num_drivers();
-
-    for (uint8_t i = 0; i < num_drivers; i++) {
-        switch (AP::can().get_driver_type(i)) {
-            case AP_CANManager::Driver_Type_KDECAN: {
-// To be replaced with macro saying if KDECAN library is included
-#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
-                AP_KDECAN *ap_kdecan = AP_KDECAN::get_kdecan(i);
-
-                if (ap_kdecan != nullptr) {
-                    can_exists = true;
-                    result = ap_kdecan->run_enumeration(start_stop) && result;
-                }
-#else
-                UNUSED_RESULT(start_stop); // prevent unused variable error
-#endif
-                break;
-            }
-            case AP_CANManager::Driver_Type_CANTester: {
-// To be replaced with macro saying if KDECAN library is included
-#if (APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)) && (HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES && HAL_ENABLE_CANTESTER)
-                CANTester *cantester = CANTester::get_cantester(i);
-
-                if (cantester != nullptr) {
-                    can_exists = true;
-                    result = cantester->run_kdecan_enumeration(start_stop) && result;
-                }
-#else
-                UNUSED_RESULT(start_stop); // prevent unused variable error
-#endif
-                break;
-            }
-            case AP_CANManager::Driver_Type_PiccoloCAN:
-                // TODO - Run PiccoloCAN pre-flight checks here
-                break;
-            case AP_CANManager::Driver_Type_DroneCAN:
-            case AP_CANManager::Driver_Type_None:
-            default:
-                break;
-        }
-    }
-
-    MAV_RESULT ack = MAV_RESULT_DENIED;
-    if (can_exists) {
-        ack = result ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
-    }
-
-    return ack;
-#else
-    return MAV_RESULT_UNSUPPORTED;
-#endif
 }
 
 // changes the current waypoint; at time of writing GCS
@@ -4765,10 +4742,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         }
         break;
 #endif
-
-    case MAV_CMD_PREFLIGHT_UAVCAN:
-        result = handle_command_preflight_can(packet);
-        break;
 
     case MAV_CMD_RUN_PREARM_CHECKS:
         result = handle_command_run_prearm_checks(packet);
@@ -5182,7 +5155,7 @@ bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(MISSION_CURRENT);
         AP_Mission *mission = AP::mission();
         if (mission != nullptr) {
-            mavlink_msg_mission_current_send(chan, mission->get_current_nav_index());
+            send_mission_current(*mission, mission->get_current_nav_index());
         }
         break;
     }
@@ -5545,7 +5518,7 @@ void GCS_MAVLINK::send_received_message_deprecation_warning(const char * message
     last_deprecation_warning_send_time_ms = now_ms;
     last_deprecation_message = message;
 
-    send_text(MAV_SEVERITY_WARNING, "Received message (%s) is deprecated", message);
+    send_text(MAV_SEVERITY_INFO, "Received message (%s) is deprecated", message);
 }
 
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)

@@ -64,9 +64,8 @@ bool AP_Camera_MAVLinkCamV2::record_video(bool start_recording)
     return true;
 }
 
-// set camera zoom step.  returns true on success
-// zoom out = -1, hold = 0, zoom in = 1
-bool AP_Camera_MAVLinkCamV2::set_zoom_step(int8_t zoom_step)
+// set zoom specified as a rate or percentage
+bool AP_Camera_MAVLinkCamV2::set_zoom(ZoomType zoom_type, float zoom_value)
 {
     // exit immediately if have not found camera or does not support zoom
     if (_link == nullptr || !(_cap_flags & CAMERA_CAP_FLAGS_HAS_BASIC_ZOOM)) {
@@ -76,8 +75,15 @@ bool AP_Camera_MAVLinkCamV2::set_zoom_step(int8_t zoom_step)
     // prepare and send message
     mavlink_command_long_t pkt {};
     pkt.command = MAV_CMD_SET_CAMERA_ZOOM;
-    pkt.param1 = ZOOM_TYPE_CONTINUOUS;  // Zoom Type, 0:ZOOM_TYPE_STEP, 1:ZOOM_TYPE_CONTINUOUS, 2:ZOOM_TYPE_RANGE, 3:ZOOM_TYPE_FOCAL_LENGTH
-    pkt.param2 = zoom_step;             // Zoom Value
+    switch (zoom_type) {
+    case ZoomType::RATE:
+        pkt.param1 = ZOOM_TYPE_CONTINUOUS;
+        break;
+    case ZoomType::PCT:
+        pkt.param1 = ZOOM_TYPE_RANGE;
+        break;
+    }
+    pkt.param2 = zoom_value;            // Zoom Value
 
     _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt);
 

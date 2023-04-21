@@ -464,7 +464,7 @@ int lua_get_CAN_device(lua_State *L) {
     auto *scripting = AP::scripting();
 
     if (scripting->_CAN_dev == nullptr) {
-        scripting->_CAN_dev = new ScriptingCANSensor(AP_CANManager::Driver_Type::Driver_Type_Scripting);
+        scripting->_CAN_dev = new ScriptingCANSensor(AP_CAN::Protocol::Scripting);
         if (scripting->_CAN_dev == nullptr) {
             return luaL_argerror(L, 1, "CAN device nullptr");
         }
@@ -489,7 +489,7 @@ int lua_get_CAN_device2(lua_State *L) {
     auto *scripting = AP::scripting();
 
     if (scripting->_CAN_dev2 == nullptr) {
-        scripting->_CAN_dev2 = new ScriptingCANSensor(AP_CANManager::Driver_Type::Driver_Type_Scripting2);
+        scripting->_CAN_dev2 = new ScriptingCANSensor(AP_CAN::Protocol::Scripting2);
         if (scripting->_CAN_dev2 == nullptr) {
             return luaL_argerror(L, 1, "CAN device nullptr");
         }

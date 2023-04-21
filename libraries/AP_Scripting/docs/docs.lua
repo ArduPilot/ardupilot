@@ -78,13 +78,25 @@ local EFI_State_ud = {}
 ---@return EFI_State_ud
 function EFI_State() end
 
+-- get field
+---@return number
+function EFI_State_ud:pt_compensation() end
+
 -- set field
 ---@param value number
 function EFI_State_ud:pt_compensation(value) end
 
+-- get field
+---@return number
+function EFI_State_ud:throttle_out() end
+
 -- set field
 ---@param value number
 function EFI_State_ud:throttle_out(value) end
+
+-- get field
+---@return number
+function EFI_State_ud:ignition_voltage() end
 
 -- set field
 ---@param value number
@@ -94,21 +106,41 @@ function EFI_State_ud:ignition_voltage(value) end
 ---@param value Cylinder_Status_ud
 function EFI_State_ud:cylinder_status(value) end
 
+-- get field
+---@return integer
+function EFI_State_ud:ecu_index() end
+
 -- set field
 ---@param value integer
 function EFI_State_ud:ecu_index(value) end
+
+-- get field
+---@return integer
+function EFI_State_ud:throttle_position_percent() end
 
 -- set field
 ---@param value integer
 function EFI_State_ud:throttle_position_percent(value) end
 
+-- get field
+---@return number
+function EFI_State_ud:estimated_consumed_fuel_volume_cm3() end
+
 -- set field
 ---@param value number
 function EFI_State_ud:estimated_consumed_fuel_volume_cm3(value) end
 
+-- get field
+---@return number
+function EFI_State_ud:fuel_consumption_rate_cm3pm() end
+
 -- set field
 ---@param value number
 function EFI_State_ud:fuel_consumption_rate_cm3pm(value) end
+
+-- get field
+---@return number
+function EFI_State_ud:fuel_pressure() end
 
 -- set field
 ---@param value number
@@ -122,45 +154,89 @@ function EFI_State_ud:fuel_pressure(value) end
 ---| '3' # Above nominal
 function EFI_State_ud:fuel_pressure_status(status) end
 
+-- get field
+---@return number
+function EFI_State_ud:oil_temperature() end
+
 -- set field
 ---@param value number
 function EFI_State_ud:oil_temperature(value) end
+
+-- get field
+---@return number
+function EFI_State_ud:oil_pressure() end
 
 -- set field
 ---@param value number
 function EFI_State_ud:oil_pressure(value) end
 
+-- get field
+---@return number
+function EFI_State_ud:coolant_temperature() end
+
 -- set field
 ---@param value number
 function EFI_State_ud:coolant_temperature(value) end
+
+-- get field
+---@return number
+function EFI_State_ud:intake_manifold_temperature() end
 
 -- set field
 ---@param value number
 function EFI_State_ud:intake_manifold_temperature(value) end
 
+-- get field
+---@return number
+function EFI_State_ud:intake_manifold_pressure_kpa() end
+
 -- set field
 ---@param value number
 function EFI_State_ud:intake_manifold_pressure_kpa(value) end
+
+-- get field
+---@return number
+function EFI_State_ud:atmospheric_pressure_kpa() end
 
 -- set field
 ---@param value number
 function EFI_State_ud:atmospheric_pressure_kpa(value) end
 
+-- get field
+---@return number
+function EFI_State_ud:spark_dwell_time_ms() end
+
 -- set field
 ---@param value number
 function EFI_State_ud:spark_dwell_time_ms(value) end
+
+-- get field
+---@return uint32_t_ud
+function EFI_State_ud:engine_speed_rpm() end
 
 -- set field
 ---@param value uint32_t_ud
 function EFI_State_ud:engine_speed_rpm(value) end
 
+-- get field
+---@return integer
+function EFI_State_ud:engine_load_percent() end
+
 -- set field
 ---@param value integer
 function EFI_State_ud:engine_load_percent(value) end
 
+-- get field
+---@return boolean
+function EFI_State_ud:general_error() end
+
 -- set field
 ---@param value boolean
 function EFI_State_ud:general_error(value) end
+
+-- get field
+---@return uint32_t_ud
+function EFI_State_ud:last_updated_ms() end
 
 -- set field
 ---@param value uint32_t_ud
@@ -174,21 +250,41 @@ local Cylinder_Status_ud = {}
 ---@return Cylinder_Status_ud
 function Cylinder_Status() end
 
+-- get field
+---@return number
+function Cylinder_Status_ud:lambda_coefficient() end
+
 -- set field
 ---@param value number
 function Cylinder_Status_ud:lambda_coefficient(value) end
+
+-- get field
+---@return number
+function Cylinder_Status_ud:exhaust_gas_temperature() end
 
 -- set field
 ---@param value number
 function Cylinder_Status_ud:exhaust_gas_temperature(value) end
 
+-- get field
+---@return number
+function Cylinder_Status_ud:cylinder_head_temperature() end
+
 -- set field
 ---@param value number
 function Cylinder_Status_ud:cylinder_head_temperature(value) end
 
+-- get field
+---@return number
+function Cylinder_Status_ud:injection_time_ms() end
+
 -- set field
 ---@param value number
 function Cylinder_Status_ud:injection_time_ms(value) end
+
+-- get field
+---@return number
+function Cylinder_Status_ud:ignition_timing_deg() end
 
 -- set field
 ---@param value number
@@ -197,6 +293,10 @@ function Cylinder_Status_ud:ignition_timing_deg(value) end
 -- desc
 ---@class efi
 efi = {}
+
+-- desc
+---@return EFI_State_ud
+function efi:get_state() end
 
 -- desc
 ---@param instance integer
@@ -995,35 +1095,39 @@ function camera:record_video(instance, start_recording) end
 function camera:take_picture(instance) end
 
 -- desc
----@class camera_state_t_ud
-local camera_state_t_ud = {}
+---@class AP_Camera__camera_state_t_ud
+local AP_Camera__camera_state_t_ud = {}
 
----@return camera_state_t_ud
-function camera_state_t() end
-
--- get field
----@return boolean
-function camera_state_t_ud:auto_focus() end
-
--- get field
----@return integer
-function camera_state_t_ud:focus_step() end
-
--- get field
----@return integer
-function camera_state_t_ud:zoom_step() end
+---@return AP_Camera__camera_state_t_ud
+function AP_Camera__camera_state_t() end
 
 -- get field
 ---@return boolean
-function camera_state_t_ud:recording_video() end
+function AP_Camera__camera_state_t_ud:auto_focus() end
 
 -- get field
 ---@return integer
-function camera_state_t_ud:take_pic_incr() end
+function AP_Camera__camera_state_t_ud:focus_step() end
+
+-- get field
+---@return number
+function AP_Camera__camera_state_t_ud:zoom_value() end
+
+-- get field
+---@return integer
+function AP_Camera__camera_state_t_ud:zoom_type() end
+
+-- get field
+---@return boolean
+function AP_Camera__camera_state_t_ud:recording_video() end
+
+-- get field
+---@return integer
+function AP_Camera__camera_state_t_ud:take_pic_incr() end
 
 -- desc
 ---@param instance integer
----@return camera_state_t_ud|nil
+---@return AP_Camera__camera_state_t_ud|nil
 function camera:get_state(instance) end
 
 -- desc

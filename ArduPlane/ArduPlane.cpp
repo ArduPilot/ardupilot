@@ -63,7 +63,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(check_short_failsafe,   50,    100,   9),
     SCHED_TASK(update_speed_height,    50,    200,  12),
     SCHED_TASK(update_throttle_hover, 100,     90,  24),
-    SCHED_TASK(read_control_switch,     7,    100,  27),
+    SCHED_TASK_CLASS(RC_Channels,     (RC_Channels*)&plane.g2.rc_channels, read_mode_switch,           7,    100, 27),
     SCHED_TASK(update_GPS_50Hz,        50,    300,  30),
     SCHED_TASK(update_GPS_10Hz,        10,    400,  33),
     SCHED_TASK(navigate,               10,    150,  36),
@@ -510,12 +510,6 @@ void Plane::set_flight_stage(AP_FixedWing::FlightStage fs)
 void Plane::update_alt()
 {
     barometer.update();
-
-#if HAL_QUADPLANE_ENABLED
-    if (quadplane.available()) {
-        quadplane.motors->set_air_density_ratio(barometer.get_air_density_ratio());
-    }
-#endif
 
     // calculate the sink rate.
     float sink_rate;

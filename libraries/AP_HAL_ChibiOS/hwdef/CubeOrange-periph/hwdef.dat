@@ -24,7 +24,7 @@ define HAL_PERIPH_ENABLE_RC_OUT
 define HAL_PERIPH_ENABLE_NOTIFY
 
 define AP_INERTIALSENSOR_ENABLED 1
-
+define AP_KDECAN_ENABLED 1
 
 # single GPS and compass for peripherals
 define GPS_MAX_RECEIVERS 1

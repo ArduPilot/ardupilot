@@ -2251,4 +2251,9 @@ bool ModeAuto::resume()
     return true;
 }
 
+bool ModeAuto::paused() const
+{
+    return wp_nav->paused();
+}
+
 #endif

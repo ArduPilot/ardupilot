@@ -20,6 +20,15 @@
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_VideoTX/AP_VideoTX_config.h>
+
+// for video TX configuration:
+#if AP_VIDEOTX_ENABLED
+#include <AP_VideoTX/AP_VideoTX.h>
+#include "spm_srxl.h"
+#endif
+
+
 
 AP_RCProtocol_Backend::AP_RCProtocol_Backend(AP_RCProtocol &_frontend) :
     frontend(_frontend),
@@ -104,6 +113,61 @@ void AP_RCProtocol_Backend::decode_11bit_channels(const uint8_t* data, uint8_t n
         values += 8;
     }
 }
+
+#if AP_VIDEOTX_ENABLED
+// configure the video transmitter, the input values are Spektrum-oriented
+void AP_RCProtocol_Backend::configure_vtx(uint8_t band, uint8_t channel, uint8_t power, uint8_t pitmode)
+{
+    AP_VideoTX& vtx = AP::vtx();
+    // VTX Band (0 = Fatshark, 1 = Raceband, 2 = E, 3 = B, 4 = A)
+    // map to TBS band A, B, E, Race, Airwave, LoRace
+    switch (band) {
+    case VTX_BAND_FATSHARK:
+        vtx.set_configured_band(AP_VideoTX::VideoBand::FATSHARK);
+        break;
+    case VTX_BAND_RACEBAND:
+        vtx.set_configured_band(AP_VideoTX::VideoBand::RACEBAND);
+        break;
+    case VTX_BAND_E_BAND:
+        vtx.set_configured_band(AP_VideoTX::VideoBand::BAND_E);
+        break;
+    case VTX_BAND_B_BAND:
+        vtx.set_configured_band(AP_VideoTX::VideoBand::BAND_B);
+        break;
+    case VTX_BAND_A_BAND:
+        vtx.set_configured_band(AP_VideoTX::VideoBand::BAND_A);
+        break;
+    default:
+        break;
+    }
+    // VTX Channel (0-7)
+    vtx.set_configured_channel(channel);
+    if (pitmode) {
+        vtx.set_configured_options(vtx.get_options() | uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
+    } else {
+        vtx.set_configured_options(vtx.get_options() & ~uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
+    }
+
+    switch (power) {
+    case VTX_POWER_1MW_14MW:
+    case VTX_POWER_15MW_25MW:
+        vtx.set_configured_power_mw(25);
+        break;
+    case VTX_POWER_26MW_99MW:
+    case VTX_POWER_100MW_299MW:
+        vtx.set_configured_power_mw(100);
+        break;
+    case VTX_POWER_300MW_600MW:
+        vtx.set_configured_power_mw(400);
+        break;
+    case VTX_POWER_601_PLUS:
+        vtx.set_configured_power_mw(800);
+        break;
+    default:
+        break;
+    }
+}
+#endif  // AP_VIDEOTX_ENABLED
 
 /*
   optionally log RC input data

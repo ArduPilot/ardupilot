@@ -4981,17 +4981,23 @@ class AutoTest(ABC):
         else:
             return None
 
-    def set_safetyswitch_on(self):
-        self.set_safetyswitch(1)
+    def set_safetyswitch_on(self, **kwargs):
+        self.set_safetyswitch(1, **kwargs)
 
-    def set_safetyswitch_off(self):
-        self.set_safetyswitch(0)
+    def set_safetyswitch_off(self, **kwargs):
+        self.set_safetyswitch(0, **kwargs)
 
     def set_safetyswitch(self, value, target_system=1, target_component=1):
         self.mav.mav.set_mode_send(
             target_system,
             mavutil.mavlink.MAV_MODE_FLAG_DECODE_POSITION_SAFETY,
             value)
+        self.wait_sensor_state(
+            mavutil.mavlink.MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS,
+            True, not value, True,
+            verbose=True,
+            timeout=30
+        )
 
     def armed(self):
         """Return true if vehicle is armed and safetyoff"""
@@ -7206,6 +7212,10 @@ class AutoTest(ABC):
                     self.get_sim_time_cached() > tstart + timeout):
                 raise WaitModeTimeout("Did not change mode")
         self.progress("Got mode %s" % mode)
+
+    def assert_mode_is(self, mode):
+        if not self.mode_is(mode):
+            raise NotAchievedException("Expected mode %s" % str(mode))
 
     def wait_gps_sys_status_not_present_or_enabled_and_healthy(self, timeout=30):
         self.progress("Waiting for GPS health")
@@ -9592,6 +9602,8 @@ Also, ignores heartbeats not from our target system'''
                 self.set_rc(interlock_channel, 1000)
 
         self.start_subtest("Test all mode arming")
+        self.wait_ready_to_arm()
+
         if self.arming_test_mission() is not None:
             self.load_mission(self.arming_test_mission())
 
@@ -12894,6 +12906,27 @@ switch value'''
         self.reboot_sitl()
         if ex is not None:
             raise ex
+
+    def CompassPrearms(self):
+        '''test compass prearm checks'''
+        self.wait_ready_to_arm()
+        # XY are checked specially:
+        for axis in 'X', 'Y':  # ArduPilot only checks these two axes
+            self.context_push()
+            self.set_parameter(f"COMPASS_OFS2_{axis}", 1000)
+            self.assert_prearm_failure("Compasses inconsistent")
+            self.context_pop()
+            self.wait_ready_to_arm()
+
+        # now test the total anglular difference:
+        self.context_push()
+        self.set_parameters({
+            "COMPASS_OFS2_X": 1000,
+            "COMPASS_OFS2_Y": -1000,
+            "COMPASS_OFS2_Z": -10000,
+        })
+        self.assert_prearm_failure("Compasses inconsistent")
+        self.context_pop()
 
     def AHRS_ORIENTATION(self):
         '''test AHRS_ORIENTATION parameter works'''

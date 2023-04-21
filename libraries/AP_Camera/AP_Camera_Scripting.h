@@ -39,9 +39,8 @@ public:
     // set start_recording = true to start record, false to stop recording
     bool record_video(bool start_recording) override;
 
-    // set camera zoom step.  returns true on success
-    // zoom out = -1, hold = 0, zoom in = 1
-    bool set_zoom_step(int8_t zoom_step) override;
+    // set zoom specified as a rate or percentage
+    bool set_zoom(ZoomType zoom_type, float zoom_value) override;
 
     // set focus in, out or hold.  returns true on success
     // focus in = -1, focus hold = 0, focus out = 1
@@ -51,12 +50,12 @@ public:
     bool set_auto_focus() override;
 
     // returns true on success and cam_state is filled in
-    bool get_state(camera_state_t& cam_state) override;
+    bool get_state(AP_Camera::camera_state_t& cam_state) override;
 
 private:
 
     // current state
-    camera_state_t _cam_state;
+    AP_Camera::camera_state_t _cam_state;
 };
 
 #endif // AP_CAMERA_SCRIPTING_ENABLED

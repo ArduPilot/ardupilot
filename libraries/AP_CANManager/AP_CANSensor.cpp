@@ -36,7 +36,7 @@ CANSensor::CANSensor(const char *driver_name, uint16_t stack_size) :
 {}
 
 
-void CANSensor::register_driver(AP_CANManager::Driver_Type dtype)
+void CANSensor::register_driver(AP_CAN::Protocol dtype)
 {
 #if HAL_CANMANAGER_ENABLED
     if (!AP::can().register_driver(dtype, this)) {
@@ -53,7 +53,7 @@ void CANSensor::register_driver(AP_CANManager::Driver_Type dtype)
 #ifdef HAL_BUILD_AP_PERIPH
 CANSensor::CANSensor_Periph CANSensor::_periph[HAL_NUM_CAN_IFACES];
 
-void CANSensor::register_driver_periph(const AP_CANManager::Driver_Type dtype)
+void CANSensor::register_driver_periph(const AP_CAN::Protocol dtype)
 {
     for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
         if (_periph[i].protocol != dtype) {

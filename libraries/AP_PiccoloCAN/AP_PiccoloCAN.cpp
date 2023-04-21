@@ -118,7 +118,7 @@ AP_PiccoloCAN::AP_PiccoloCAN()
 AP_PiccoloCAN *AP_PiccoloCAN::get_pcan(uint8_t driver_index)
 {
     if (driver_index >= AP::can().get_num_drivers() ||
-        AP::can().get_driver_type(driver_index) != AP_CANManager::Driver_Type_PiccoloCAN) {
+        AP::can().get_driver_type(driver_index) != AP_CAN::Protocol::PiccoloCAN) {
         return nullptr;
     }
 

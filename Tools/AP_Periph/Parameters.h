@@ -70,6 +70,7 @@ public:
         k_param_proximity_port,
         k_param_proximity_max_rate,
         k_param_nmea,
+        k_param_kdecan,
     };
 
     AP_Int16 format_version;
@@ -77,7 +78,7 @@ public:
     
     AP_Int32 can_baudrate[HAL_NUM_CAN_IFACES];
 #if HAL_NUM_CAN_IFACES >= 2
-    AP_Enum<AP_CANManager::Driver_Type> can_protocol[HAL_NUM_CAN_IFACES];
+    AP_Enum<AP_CAN::Protocol> can_protocol[HAL_NUM_CAN_IFACES];
 #endif
 
 #if AP_CAN_SLCAN_ENABLED

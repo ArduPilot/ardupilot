@@ -1,0 +1,4 @@
+{
+    "cSpell.language": "en-GB",
+    "astyle.astylerc": "${workspaceFolder}/Tools/CodeStyle/astylerc"
+}

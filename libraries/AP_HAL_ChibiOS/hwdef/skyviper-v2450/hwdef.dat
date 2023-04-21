@@ -181,4 +181,28 @@ define AC_PRECLAND_COMPANION_ENABLED 1
 define AP_PROXIMITY_BACKEND_DEFAULT_ENABLED 0
 define AP_PROXIMITY_MAV_ENABLED 1
 
+# can't fit visual odometry cameras on!
+define AP_VISUALODOM_BACKEND_DEFAULT_ENABLED 0
+define AP_VISUALODOM_MAV_ENABLED 1
+
+// no OSD on SkyViper
+define OSD_ENABLED 0
+define OSD_PARAM_ENABLED 0
+
+// no MSP:
+define HAL_WITH_MSP_DISPLAYPORT 0
+define HAL_MSP_ENABLED 0
+
+// no UCP ADSB sensors:
+define HAL_ADSB_UCP_ENABLED 0
+
+// no auxiliary temperature sensors:
+define AP_TEMPERATURE_SENSOR_ENABLED 0
+
+// no LTM telemetry
+define AP_LTM_TELEM_ENABLED 0
+
+// no buttons on SkyViper:
+define HAL_BUTTON_ENABLED 0
+
 AUTOBUILD_TARGETS Copter

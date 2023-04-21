@@ -4,12 +4,8 @@
 
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
-#include <GCS_MAVLink/GCS.h>
 #include <SRV_Channel/SRV_Channel.h>
-#include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_Mount/AP_Mount.h>
 #include "AP_Camera_Backend.h"
 #include "AP_Camera_Servo.h"
 #include "AP_Camera_Relay.h"
@@ -101,18 +97,6 @@ bool AP_Camera::record_video(bool start_recording)
         return false;
     }
     return primary->record_video(start_recording);
-}
-
-// zoom in, out or hold
-// zoom out = -1, hold = 0, zoom in = 1
-bool AP_Camera::set_zoom_step(int8_t zoom_step)
-{
-    WITH_SEMAPHORE(_rsem);
-
-    if (primary == nullptr) {
-        return false;
-    }
-    return primary->set_zoom_step(zoom_step);
 }
 
 // focus in, out or hold
@@ -248,8 +232,12 @@ MAV_RESULT AP_Camera::handle_command_long(const mavlink_command_long_t &packet)
         }
         return MAV_RESULT_ACCEPTED;
     case MAV_CMD_SET_CAMERA_ZOOM:
-        if (is_equal(packet.param1, (float)ZOOM_TYPE_CONTINUOUS)) {
-            set_zoom_step((int8_t)packet.param2);
+        if (is_equal(packet.param1, (float)ZOOM_TYPE_CONTINUOUS) &&
+            set_zoom(ZoomType::RATE, packet.param2)) {
+            return MAV_RESULT_ACCEPTED;
+        }
+        if (is_equal(packet.param1, (float)ZOOM_TYPE_RANGE) &&
+            set_zoom(ZoomType::PCT, packet.param2)) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_UNSUPPORTED;
@@ -435,9 +423,19 @@ bool AP_Camera::record_video(uint8_t instance, bool start_recording)
     return backend->record_video(start_recording);
 }
 
-// zoom in, out or hold.  returns true on success
-// zoom out = -1, hold = 0, zoom in = 1
-bool AP_Camera::set_zoom_step(uint8_t instance, int8_t zoom_step)
+// zoom specified as a rate or percentage
+bool AP_Camera::set_zoom(ZoomType zoom_type, float zoom_value)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    if (primary == nullptr) {
+        return false;
+    }
+    return primary->set_zoom(zoom_type, zoom_value);
+}
+
+// zoom specified as a rate or percentage
+bool AP_Camera::set_zoom(uint8_t instance, ZoomType zoom_type, float zoom_value)
 {
     WITH_SEMAPHORE(_rsem);
 
@@ -447,7 +445,7 @@ bool AP_Camera::set_zoom_step(uint8_t instance, int8_t zoom_step)
     }
 
     // call each instance
-    return backend->set_zoom_step(zoom_step);
+    return backend->set_zoom(zoom_type, zoom_value);
 }
 
 // focus in, out or hold.  returns true on success
@@ -511,7 +509,7 @@ void AP_Camera::convert_params()
         return;
     }
 
-    // below conversions added Feb 2023 ahead of 4.4 release
+    // PARAMETER_CONVERSION - Added: Feb-2023 ahead of 4.4 release
 
     // convert CAM_TRIGG_TYPE to CAM1_TYPE
     int8_t cam_trigg_type = 0;

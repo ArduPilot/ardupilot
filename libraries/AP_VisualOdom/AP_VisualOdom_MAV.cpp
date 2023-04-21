@@ -13,15 +13,14 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AP_VisualOdom_MAV.h"
+#include "AP_VisualOdom_config.h"
 
-#if HAL_VISUALODOM_ENABLED
+#if AP_VISUALODOM_MAV_ENABLED
+
+#include "AP_VisualOdom_MAV.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_Logger/AP_Logger.h>
-
-extern const AP_HAL::HAL& hal;
 
 // consume vision position estimate data and send to EKF. distances in meters
 void AP_VisualOdom_MAV::handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, float posErr, float angErr, uint8_t reset_counter)
@@ -58,4 +57,4 @@ void AP_VisualOdom_MAV::handle_vision_speed_estimate(uint64_t remote_time_us, ui
     Write_VisualVelocity(remote_time_us, time_ms, vel, reset_counter, false);
 }
 
-#endif
+#endif  // AP_VISUALODOM_MAV_ENABLED

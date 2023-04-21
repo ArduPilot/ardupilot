@@ -25,7 +25,7 @@ class ScriptingCANBuffer;
 class ScriptingCANSensor : public CANSensor {
 public:
 
-    ScriptingCANSensor(AP_CANManager::Driver_Type dtype)
+    ScriptingCANSensor(AP_CAN::Protocol dtype)
         : CANSensor("Script") {
         register_driver(dtype);
     }
