@@ -195,7 +195,7 @@ public:
     uint32_t get_text_updated_millis() const {return _send_text_updated_millis; }
 
     static const struct AP_Param::GroupInfo var_info[];
-    uint8_t get_buzz_pin() const  { return _buzzer_pin; }
+    int8_t get_buzz_pin() const  { return _buzzer_pin; }
     uint8_t get_buzz_level() const  { return _buzzer_level; }
     uint8_t get_buzz_volume() const  { return _buzzer_volume; }
     uint8_t get_led_len() const { return _led_len; }
