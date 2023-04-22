@@ -151,7 +151,7 @@ def get_mcu_lib(mcu):
 
 def setup_mcu_type_defaults():
     '''setup defaults for given mcu type'''
-    global pincount, ports, portmap, vtypes, mcu_type
+    global pincount, ports, portmap, vtypes, mcu_type, dma_exclude_pattern
     lib = get_mcu_lib(mcu_type)
     if hasattr(lib, 'pincount'):
         pincount = lib.pincount
@@ -166,6 +166,9 @@ def setup_mcu_type_defaults():
         for pin in range(pincount[port]):
             portmap[port].append(generic_pin(port, pin, None, default_gpio[0], default_gpio[1:]))
 
+    if mcu_series.startswith("STM32H7") or mcu_series.startswith("STM32F7"):
+        # default DMA off on I2C for H7, we're much better off reducing DMA sharing
+        dma_exclude_pattern = ['I2C*']
 
 def get_alt_function(mcu, pin, function):
     '''return alternative function number for a pin'''
