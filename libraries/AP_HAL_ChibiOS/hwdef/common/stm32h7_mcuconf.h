@@ -635,3 +635,7 @@
 #define STM32_SPI_SPI6_TX_BDMA_STREAM 5
 #define STM32_ADC_ADC3_BDMA_STREAM 7
 
+// disable DMA on I2C by default on H7
+#ifndef STM32_I2C_USE_DMA
+#define STM32_I2C_USE_DMA FALSE
+#endif
