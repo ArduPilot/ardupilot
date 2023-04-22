@@ -34,7 +34,7 @@ define HAL_GPIO_B_LED_PIN 1
 # buzzer
 PC13 BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
-define HAL_BUZZER_ON 1
+
 
 
 # spi1 bus for IMU
