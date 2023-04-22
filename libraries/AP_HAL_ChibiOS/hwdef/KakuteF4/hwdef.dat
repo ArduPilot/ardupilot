@@ -29,7 +29,7 @@ PB5 LED_BLUE OUTPUT LOW GPIO(0)
 # buzzer
 PC9 BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
-define HAL_BUZZER_ON 1
+
 
 
 # spi1 bus for IMU
