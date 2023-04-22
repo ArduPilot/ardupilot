@@ -149,11 +149,6 @@ PH8 I2C3_SDA I2C3
 PF14 I2C4_SCL I2C4
 PF15 I2C4_SDA I2C4
 
-# this board is very tight on DMA channels. To allow for more UART DMA
-# we disable DMA on I2C
-NODMA I2C*
-define STM32_I2C_USE_DMA FALSE
-
 # order of I2C buses
 I2C_ORDER I2C4 I2C1 I2C2 I2C3
 define HAL_I2C_INTERNAL_MASK 1
