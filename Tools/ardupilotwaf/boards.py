@@ -1001,6 +1001,11 @@ class chibios(Board):
                 '-g3',
             ]
 
+        if cfg.env.COMPILER_CXX == "g++":
+            if not self.cc_version_gte(cfg, 10, 2):
+                # require at least 10.2 compiler
+                cfg.fatal("ChibiOS build requires g++ version 10.2.1 or later, found %s" % '.'.join(cfg.env.CC_VERSION))
+            
         if cfg.env.ENABLE_ASSERTS:
             cfg.msg("Enabling ChibiOS asserts", "yes")
             env.CFLAGS += [ '-DHAL_CHIBIOS_ENABLE_ASSERTS' ]
