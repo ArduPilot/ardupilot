@@ -39,7 +39,7 @@ The ROS 2 tutorials contain more details regarding [ROS 2 workspaces](https://do
 
 ```bash
 cd ~/ros2_ws/src
-wget https://raw.githubusercontent.com/srmainwaring/ardupilot/pr/pr-dds-launch-tests/Tools/ros2/ros2.repos
+wget https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/ros2/ros2.repos
 vcs import --recursive < ros2.repos
 ```
 
@@ -50,23 +50,29 @@ cd ~/ros_ws
 source /opt/ros/humble/setup.bash
 sudo apt update
 rosdep update
-rosdep install --rosdistro humble --from-paths src
+rosdep install --rosdistro ${ROS_DISTRO} --from-paths src
 ```
 
 #### 4. Build
 
+Check that the [ROS environment](https://docs.ros.org/en/humble/Tutorials/Beginner-CLI-Tools/Configuring-ROS2-Environment.html#check-environment-variables) is configured correctly:
+
+```bash
+ROS_VERSION=2
+ROS_PYTHON_VERSION=3
+ROS_DISTRO=humble
+```
+
 ```bash
 cd ~/ros_ws
-colcon build --packages-select micro_ros_agent
-colcon build --packages-select ardupilot_sitl
-colcon build --packages-select ardupilot_dds_tests
+colcon build --cmake-args -DBUILD_TESTING=ON
 ```
 
 #### 5. Test
 
 ```bash
 source ./install/setup.bash
-colcon test --pytest-args -s -v --event-handlers console_cohesion+ --packages-select ardupilot_dds_tests
+colcon test --packages-select ardupilot_dds_tests
 colcon test-result --all --verbose
 ```
 
@@ -81,13 +87,13 @@ must be built from source and additional compiler flags are needed.
 mkdir -p ~/ros_ws/src && cd ~/ros_ws/src
 ```
 
-#### 2. Get the `ros2.repos` file
+#### 2. Get the `ros2_macos.repos` file
 
 The `ros2_macos.repos` includes additional dependencies to build:
 
 ```bash
 cd ~/ros2_ws/src
-wget https://raw.githubusercontent.com/srmainwaring/ardupilot/pr/pr-dds-launch-tests/Tools/ros2/ros2_macos.repos
+wget https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/ros2/ros2_macos.repos
 vcs import --recursive < ros2_macos.repos
 ```
 
@@ -95,7 +101,7 @@ vcs import --recursive < ros2_macos.repos
 
 ```bash
 cd ~/ros_ws
-source /<path_to_your_ros_humble_workspace>/install/setup.zsh
+source /{path_to_your_ros_distro_workspace}/install/setup.zsh
 ```
 
 #### 4.1. Build microxrcedds_gen:
@@ -118,12 +124,7 @@ colcon build --symlink-install --cmake-args \
 -DUAGENT_USE_SYSTEM_LOGGER=OFF \
 -DUAGENT_USE_SYSTEM_FASTDDS=ON \
 -DUAGENT_USE_SYSTEM_FASTCDR=ON \
---event-handlers=desktop_notification- \
---packages-select \
-micro_ros_msgs \
-micro_ros_agent \
-ardupilot_sitl \
-ardupilot_dds_tests
+--event-handlers=desktop_notification-
 ```
 
 #### 5. Test
@@ -236,14 +237,3 @@ sim_address:=127.0.0.1 \
 master:=tcp:127.0.0.1:5760 \
 sitl:=127.0.0.1:5501
 ```
-
-## References
-
-### Configuring linters and formatters for ROS 2 projects
-
-- [ROS 2 Code style and language versions](https://docs.ros.org/en/humble/The-ROS2-Project/Contributing/Code-Style-Language-Versions.html).
-- [Configuring Flake8](https://flake8.pycqa.org/en/latest/user/configuration.html).
-- [ament_lint_auto](https://github.com/ament/ament_lint/blob/humble/ament_lint_auto/doc/index.rst).
-- [How to configure ament python linters in CMakeLists?](https://answers.ros.org/question/351012/how-to-configure-ament-python-linters-in-cmakelists/).
-- [Using black and flake8 in tandem](https://sbarnea.com/lint/black/).
-
