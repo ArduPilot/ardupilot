@@ -580,3 +580,10 @@
 
 // limit ISR count per byte
 #define STM32_I2C_ISR_LIMIT                 6
+
+#if defined(STM32F7xx_MCUCONF)
+// disable DMA on I2C by default on F7
+#ifndef STM32_I2C_USE_DMA
+#define STM32_I2C_USE_DMA FALSE
+#endif
+#endif
