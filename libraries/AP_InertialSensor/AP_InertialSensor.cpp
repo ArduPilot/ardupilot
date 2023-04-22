@@ -2018,6 +2018,19 @@ bool AP_InertialSensor::get_delta_angle(uint8_t i, Vector3f &delta_angle, float 
 }
 
 /*
+  get delta angles and rates
+ */
+bool AP_InertialSensor::get_delta_angle_and_rate(uint8_t i, Vector3f &delta_angle, Vector3f &delta_rate, float &delta_angle_dt) const
+{
+    const bool ret = get_delta_angle(i, delta_angle, delta_angle_dt);
+    if (_delta_angle_valid[i]) {
+        // fill in value if valid, else leave at zero
+        delta_rate = _delta_rate[i];
+    }
+    return ret;
+}
+
+/*
   get delta velocity if available
 */
 bool AP_InertialSensor::get_delta_velocity(uint8_t i, Vector3f &delta_velocity, float &delta_velocity_dt) const
