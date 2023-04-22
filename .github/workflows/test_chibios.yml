@@ -43,9 +43,6 @@ jobs:
         exclude:
           - gcc: 10
             toolchain: chibios-clang
-        include:
-          - config: stm32h7
-            toolchain: chibios-py2
 
     steps:
       # git checkout the PR
