@@ -138,8 +138,8 @@ AP_Notify *AP_Notify::_singleton;
 #define HAL_BUZZER_PIN -1
 #endif
 
-#ifndef HAL_BUZZER_ON
-#define HAL_BUZZER_ON 1
+#ifndef DEFAULT_BUZZ_ON_LVL
+#define DEFAULT_BUZZ_ON_LVL 1
 #endif
 
 // table of user settable parameters
@@ -203,7 +203,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Description: Specifies pin level that indicates buzzer should play
     // @Values: 0:LowIsOn,1:HighIsOn
     // @User: Advanced
-    AP_GROUPINFO("BUZZ_ON_LVL", 7, AP_Notify, _buzzer_level, HAL_BUZZER_ON),
+    AP_GROUPINFO("BUZZ_ON_LVL", 7, AP_Notify, _buzzer_level, DEFAULT_BUZZ_ON_LVL),
 
     // @Param: BUZZ_VOLUME
     // @DisplayName: Buzzer volume
