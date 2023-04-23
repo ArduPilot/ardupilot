@@ -641,6 +641,10 @@
 #define STM32_WSPI_QUADSPI1_PRESCALER_VALUE (STM32_QSPICLK / HAL_QSPI1_CLK)
 #endif
 
+#if HAL_XIP_ENABLED
+#define STM32_QSPI_NO_RESET TRUE
+#endif
+
 /*
   we use a fixed allocation of BDMA streams. We previously dynamically
   allocated these, but bugs in the chip make that unreliable. This is
