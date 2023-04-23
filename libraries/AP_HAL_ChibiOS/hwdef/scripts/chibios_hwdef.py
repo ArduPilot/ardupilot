@@ -1537,10 +1537,8 @@ def write_WSPI_config(f):
     # only the bootloader must run the hal lld (and QSPI clock) otherwise it is not possible to
     # bootstrap into external flash
     for t in list(bytype.keys()) + list(alttype.keys()):
-        if t.startswith('QUADSPI') and not args.bootloader:
-            f.write('#define STM32_QSPI_NO_RESET TRUE\n')
-        if t.startswith('OCTOSPI') and not args.bootloader:
-            f.write('#define STM32_OSPI1_NO_RESET TRUE\n')
+        if (t.startswith('QUADSPI') or t.startswith('OCTOSPI')) and not args.bootloader:
+            f.write('#define HAL_XIP_ENABLED TRUE\n')
 
     if len(wspidev) == 0:
         # nothing else to do

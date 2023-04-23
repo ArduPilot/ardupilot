@@ -43,6 +43,10 @@
 #define STM32_DMA_ERROR_HOOK(devp) do {} while(0)
 #endif
 
+#if !defined(HAL_XIP_ENABLED)
+#define HAL_XIP_ENABLED                     FALSE
+#endif
+
 #if defined(STM32F1)
 #include "stm32f1_mcuconf.h"
 #elif defined(STM32F3)
