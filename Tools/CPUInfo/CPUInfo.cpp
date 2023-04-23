@@ -45,7 +45,7 @@ AP_ESC_Telem telem;
 
 void setup() {
 #ifdef DISABLE_CACHES
-#if !defined(STM32H730xx) // can't disable DCache in memory-mapped mode
+#if !HAL_XIP_ENABLED // can't disable DCache in memory-mapped mode
     SCB_DisableDCache();
 #endif
     SCB_DisableICache();
