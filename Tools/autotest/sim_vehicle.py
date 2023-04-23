@@ -857,7 +857,7 @@ def start_mavproxy(opts, stuff):
 
     for i in instances:
         if not opts.no_extra_ports:
-            ports = [p + 10 * i for p in [14550, 14551]]
+            ports = [14550 + 10 * i]
             for port in ports:
                 if under_vagrant():
                     # We're running inside of a vagrant guest; forward our
