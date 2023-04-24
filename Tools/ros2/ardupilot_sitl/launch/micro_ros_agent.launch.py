@@ -42,9 +42,11 @@ def launch_micro_ros_agent(
     # Common arguments.
     transport = LaunchConfiguration("transport").perform(context)
     middleware = LaunchConfiguration("middleware").perform(context)
-    refs = LaunchConfiguration("refs").perform(context)
     verbose = LaunchConfiguration("verbose").perform(context)
-    # discovery = LaunchConfiguration("discovery").perform(context)
+    discovery = LaunchConfiguration("discovery").perform(context)
+
+    # IPvX arguments.
+    port = LaunchConfiguration("port").perform(context)
 
     # Serial arguments.
     device = LaunchConfiguration("device").perform(context)
@@ -54,12 +56,43 @@ def launch_micro_ros_agent(
     print(f"namespace:        {micro_ros_agent_ns}")
     print(f"transport:        {transport}")
     print(f"middleware:       {middleware}")
-    print(f"refs:             {refs}")
     print(f"verbose:          {verbose}")
-    # print(f"discovery:        {discovery}")
+    print(f"discovery:        {discovery}")
 
-    print(f"baudrate:         {baudrate}")
-    print(f"device:           {device}")
+    # Required arguments
+    args = [
+        transport,
+        "--middleware",
+        middleware,
+    ]
+
+    if transport in ["udp4", "udp6", "tcp4", "tcp6"]:
+        # IPvX arguments
+        port = LaunchConfiguration("port").perform(context)
+        args.append("--port")
+        args.append(port)
+        print(f"port:             {port}")
+    elif transport in ["serial", "multiserial", "pseudoterminal"]:
+        # Serial arguments
+        baudrate = LaunchConfiguration("baudrate").perform(context)
+        args.append("--baudrate")
+        args.append(baudrate)
+        print(f"baudrate:         {baudrate}")
+
+        device = LaunchConfiguration("device").perform(context)
+        args.append("--device")
+        args.append(device)
+        print(f"device:           {device}")
+    else:
+        # transport must be canfd
+        pass
+
+    # Optional arguments.
+    refs = LaunchConfiguration("refs").perform(context)
+    if refs:
+        args.append("--refs")
+        args.append(refs)
+        print(f"refs:             {refs}")
 
     # Create action.
     micro_ros_agent_node = Node(
@@ -68,17 +101,7 @@ def launch_micro_ros_agent(
         name="micro_ros_agent",
         namespace=f"{micro_ros_agent_ns}",
         output="both",
-        arguments=[
-            {transport},
-            "--middleware",
-            {middleware},
-            "--refs",
-            {refs},
-            "--dev",
-            {device},
-            "--baudrate",
-            {baudrate},
-        ],
+        arguments=args,
     )
     return [micro_ros_agent_node]
 
@@ -105,9 +128,18 @@ def generate_launch_arguments() -> List[DeclareLaunchArgument]:
         ),
         DeclareLaunchArgument(
             "transport",
-            default_value="serial",
+            default_value="udp4",
             description="Set the transport.",
-            choices=["serial"],
+            choices=[
+                "udp4",
+                "udp6",
+                "tcp4",
+                "tcp6",
+                "canfd",
+                "serial",
+                "multiserial",
+                "pseudoterminal",
+            ],
         ),
         DeclareLaunchArgument(
             "middleware",
@@ -122,12 +154,23 @@ def generate_launch_arguments() -> List[DeclareLaunchArgument]:
         ),
         DeclareLaunchArgument(
             "verbose",
-            default_value="",
+            default_value="4",
             description="Set the verbosity level.",
+            choices=["0", "1", "2", "3", "4", "5", "6"],
+        ),
+        DeclareLaunchArgument(
+            "discovery",
+            default_value="7400",
+            description="Set the dsicovery port.",
+        ),
+        DeclareLaunchArgument(
+            "port",
+            default_value="2019",
+            description="Set the port number.",
         ),
         DeclareLaunchArgument(
             "baudrate",
-            default_value="",
+            default_value="115200",
             description="Set the baudrate.",
         ),
         DeclareLaunchArgument(
