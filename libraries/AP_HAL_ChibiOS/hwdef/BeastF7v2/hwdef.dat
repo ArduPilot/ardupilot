@@ -69,3 +69,5 @@ define AP_BATTERY_SMBUS_ENABLED 0
 
 # only include ublox GPS driver
 include ../include/minimal_GPS.inc
+
+define DEFAULT_NTF_LED_TYPES 257
