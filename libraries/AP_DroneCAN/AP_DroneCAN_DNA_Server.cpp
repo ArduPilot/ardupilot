@@ -416,6 +416,16 @@ void AP_DroneCAN_DNA_Server::handleNodeStatus(const CanardRxTransfer& transfer, 
             server_state = HEALTHY;
         }
     }
+
+    //to calculate the delta b/w handlenode status pkt
+    uint32_t now = AP_HAL::native_millis();
+
+    if (_ap_dronecan.option_is_set(AP_DroneCAN::Options::LOG_NODE_STATUS)) {
+        log_NodeStatus(transfer.source_node_id, msg.uptime_sec, msg.health, msg.mode , now - last_can_init_delta_ms[transfer.source_node_id]);
+    }
+
+    last_can_init_delta_ms[transfer.source_node_id] = now;
+
     if (!isNodeIDVerified(transfer.source_node_id)) {
         //immediately begin verification of the node_id
         uavcan_protocol_GetNodeInfoRequest request;
@@ -607,6 +617,29 @@ bool AP_DroneCAN_DNA_Server::prearm_check(char* fail_msg, uint8_t fail_msg_len) 
     }
     // should never get; compiler should enforce all server_states are covered
     return false;
+}
+
+/*
+  optionally log NodeStatus packets
+ */
+void AP_DroneCAN_DNA_Server::log_NodeStatus(uint8_t node_id, uint32_t uptime_sec, uint8_t healthy, uint8_t mode, uint32_t delta)
+{
+    if (node_id > MAX_NODE_ID) {
+        return;
+    }
+
+    // @LoggerMessage: CANH
+    // @Description: CAN Health Status
+    // @Field: TimeUS: Time since system startup
+    // @Field: NodeId: Node ID
+    // @Field: Healthy: zero when node healthy
+    // @Field: UpTime: time since boot in seconds
+    AP::logger().WriteStreaming("CANH",
+                                "TimeUS," "NodeID," "Healthy," "UpTime," "delta", // labels
+                                "s"            "#"        "-"       "-"     "-", // units
+                                "F"            "-"        "-"       "-"     "-", // multipliers
+                                "Q"            "B"        "B"       "I"     "I", // types
+                                AP_HAL::micros64(), node_id, healthy, uptime_sec, delta);
 }
 
 #endif //HAL_NUM_CAN_IFACES
