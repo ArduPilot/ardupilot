@@ -48,6 +48,9 @@ public:
     // return true if healthy
     bool healthy() const override;
 
+    // return true if this mount accepts roll targets
+    bool has_roll_control() const override { return false; }
+
     // has_pan_control - returns true if this mount can control its pan (required for multicopters)
     bool has_pan_control() const override { return yaw_range_valid(); };
 

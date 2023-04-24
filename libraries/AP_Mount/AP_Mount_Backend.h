@@ -46,6 +46,10 @@ public:
     // return true if healthy
     virtual bool healthy() const { return true; }
 
+    // return true if this mount accepts roll or pitch targets
+    virtual bool has_roll_control() const;
+    virtual bool has_pitch_control() const;
+
     // returns true if this mount can control its pan (required for multicopters)
     virtual bool has_pan_control() const = 0;
 
@@ -91,6 +95,12 @@ public:
 
     // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
     void send_gimbal_device_attitude_status(mavlink_channel_t chan);
+
+    // return gimbal capabilities sent to GCS in the GIMBAL_MANAGER_INFORMATION
+    virtual uint32_t get_gimbal_manager_capability_flags() const;
+
+    // send a GIMBAL_MANAGER_INFORMATION message to GCS
+    void send_gimbal_manager_information(mavlink_channel_t chan);
 
     // handle a GIMBAL_REPORT message
     virtual void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg) {}
