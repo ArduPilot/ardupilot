@@ -126,9 +126,9 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
 #endif
 
 #if AP_DDS_ENABLED
-    // @Group: XRCE
+    // @Group: DDS
     // @Path: ../AP_DDS/AP_DDS_Client.cpp
-    AP_SUBGROUPPTR(dds_client, "XRCE_", 18, AP_Vehicle, AP_DDS_Client),
+    AP_SUBGROUPPTR(dds_client, "DDS", 18, AP_Vehicle, AP_DDS_Client),
 #endif
 
 #if AP_KDECAN_ENABLED
@@ -843,10 +843,11 @@ void AP_Vehicle::check_motor_noise()
 #if AP_DDS_ENABLED
 bool AP_Vehicle::init_dds_client()
 {
-    if (AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_DDS_XRCE, 0)) {
-        dds_client = new AP_DDS_Client();
+    dds_client = new AP_DDS_Client();
+    if (dds_client == nullptr) {
+        return false;
     }
-    return dds_client != nullptr;
+    return dds_client->start();
 }
 #endif // AP_DDS_ENABLED
 
