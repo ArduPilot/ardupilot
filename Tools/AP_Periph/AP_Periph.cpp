@@ -199,11 +199,11 @@ void AP_Periph_FW::init()
         palWriteLine(HAL_GPIO_PIN_LED_CAN_I2C, 1);
 #endif
     } else {
-        // Note: logging of ARSPD is not enabled currently. To enable, call airspeed.set_log_bit(); here
+        // Note: logging of ARSP is not enabled currently. To enable, call airspeed.set_log_bit(); here
         airspeed.init();
     }
 #else
-    // Note: logging of ARSPD is not enabled currently. To enable, call airspeed.set_log_bit(); here
+    // Note: logging of ARSP is not enabled currently. To enable, call airspeed.set_log_bit(); here
     airspeed.init();
 #endif
 
