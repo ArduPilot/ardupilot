@@ -79,6 +79,9 @@ public:
     // returns true if the vehicle can be armed in this mode
     bool pre_arm_checks(size_t buflen, char *buffer) const;
 
+    // Reset rate and steering controllers
+    void reset_controllers();
+
     //
     // methods that sub classes should override to affect movement of the vehicle in this mode
     //
@@ -355,6 +358,8 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+
+    void run() override;
 };
 
 
