@@ -989,6 +989,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #if HAL_MOUNT_ENABLED
         { MAVLINK_MSG_ID_GIMBAL_DEVICE_ATTITUDE_STATUS, MSG_GIMBAL_DEVICE_ATTITUDE_STATUS},
         { MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE, MSG_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE},
+        { MAVLINK_MSG_ID_GIMBAL_MANAGER_INFORMATION, MSG_GIMBAL_MANAGER_INFORMATION},
 #endif
 #if AP_OPTICALFLOW_ENABLED
         { MAVLINK_MSG_ID_OPTICAL_FLOW,          MSG_OPTICAL_FLOW},
@@ -5324,6 +5325,17 @@ void GCS_MAVLINK::send_gimbal_device_attitude_status() const
 }
 #endif
 
+#if HAL_MOUNT_ENABLED
+void GCS_MAVLINK::send_gimbal_manager_information() const
+{
+    AP_Mount *mount = AP::mount();
+    if (mount == nullptr) {
+        return;
+    }
+    mount->send_gimbal_manager_information(chan);
+}
+#endif
+
 void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uint8_t target_component, const Location& loc)
 {
 
@@ -5648,7 +5660,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_autopilot_state_for_gimbal_device();
 #endif
         break;
-
+    case MSG_GIMBAL_MANAGER_INFORMATION:
+#if HAL_MOUNT_ENABLED
+        CHECK_PAYLOAD_SIZE(GIMBAL_MANAGER_INFORMATION);
+        send_gimbal_manager_information();
+#endif
+        break;
     case MSG_OPTICAL_FLOW:
 #if AP_OPTICALFLOW_ENABLED
         CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
