@@ -21,8 +21,16 @@
 #include "fcntl.h"
 
 #include <AP_Param/AP_Param.h>
-#define STREAM_HISTORY 8
-#define BUFFER_SIZE_SERIAL UXR_CONFIG_SERIAL_TRANSPORT_MTU * STREAM_HISTORY
+
+#define DDS_STREAM_HISTORY 8
+#define DDS_BUFFER_SIZE 512
+
+// UDP only on SITL for now
+#define AP_DDS_UDP_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+
+#if AP_DDS_UDP_ENABLED
+#include <AP_HAL/utility/Socket.h>
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -31,16 +39,16 @@ class AP_DDS_Client
 
 private:
 
+    AP_Int8 enabled;
+
     // Serial Allocation
-    uxrSerialTransport serial_transport; // client uxr serial transport
     uxrSession session; //Session
+    bool is_using_serial; // true when using serial transport
 
-    // Input Stream
-    uint8_t input_reliable_stream[BUFFER_SIZE_SERIAL];
+    // input and output stream
+    uint8_t *input_reliable_stream;
+    uint8_t *output_reliable_stream;
     uxrStreamId reliable_in;
-
-    // Output Stream
-    uint8_t output_reliable_stream[BUFFER_SIZE_SERIAL];
     uxrStreamId reliable_out;
 
     // Topic
@@ -74,11 +82,40 @@ private:
     // The last ms timestamp AP_DDS wrote a Local Velocity message
     uint64_t last_local_velocity_time_ms;
 
+    // functions for serial transport
+    bool ddsSerialInit();
+    static bool serial_transport_open(uxrCustomTransport* args);
+    static bool serial_transport_close(uxrCustomTransport* transport);
+    static size_t serial_transport_write(uxrCustomTransport* transport, const uint8_t* buf, size_t len, uint8_t* error);
+    static size_t serial_transport_read(uxrCustomTransport* transport, uint8_t* buf, size_t len, int timeout, uint8_t* error);
+    struct {
+        AP_HAL::UARTDriver *port;
+        uxrCustomTransport transport;
+    } serial;
+
+#if AP_DDS_UDP_ENABLED
+    // functions for udp transport
+    bool ddsUdpInit();
+    static bool udp_transport_open(uxrCustomTransport* args);
+    static bool udp_transport_close(uxrCustomTransport* transport);
+    static size_t udp_transport_write(uxrCustomTransport* transport, const uint8_t* buf, size_t len, uint8_t* error);
+    static size_t udp_transport_read(uxrCustomTransport* transport, uint8_t* buf, size_t len, int timeout, uint8_t* error);
+
+    struct {
+        AP_Int32 port;
+        // UDP endpoint
+        const char* ip = "127.0.0.1";
+        // UDP Allocation
+        uxrCustomTransport transport;
+        SocketAPM *socket;
+    } udp;
+#endif
+
+    // client key we present
+    static constexpr uint32_t uniqueClientKey = 0xAAAABBBB;
 
 public:
-    // Constructor
-    AP_DDS_Client();
-
+    bool start(void);
     void main_loop(void);
 
     //! @brief Initialize the client's transport, uxr session, and IO stream(s)
