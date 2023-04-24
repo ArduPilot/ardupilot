@@ -142,7 +142,7 @@ void ModeFlip::run()
     case FlipState::Roll:
         // keep target aircraft from getting too far away from actual aircraft
         if (flip_angle_error > 1500 && flip_angle_error <= 4500) {
-            float knock_down = ((float)flip_angle_error - 1500.0f) / 3000.0f;
+            float knock_down = 1.0f - ((float)flip_angle_error - 1500.0f) / 3000.0f;
             flip_rate_cdps = (ahrs.get_gyro().x + knock_down * (flip_rate_cdps - ahrs.get_gyro().x * 5730)) * roll_dir;
         } else if (flip_angle_error > 4500) {
             flip_rate_cdps = ahrs.get_gyro().x * 5730 * roll_dir;
