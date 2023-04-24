@@ -145,7 +145,7 @@ void ModeFlip::run()
             float knock_down = 1.0f - ((float)flip_angle_error - 1500.0f) / 3000.0f;
             flip_rate_cdps = (ahrs.get_gyro().x + knock_down * (flip_rate_cdps - degrees(ahrs.get_gyro().x) * 100)) * roll_dir;
         } else if (flip_angle_error > 4500) {
-            flip_rate_cdps = ahrs.get_gyro().x * 5730 * roll_dir;
+            flip_rate_cdps = degrees(ahrs.get_gyro().x) * 100 * roll_dir;
         }
         // between 45deg ~ -90deg request user specified roll rate
         attitude_control->input_rate_bf_roll_pitch_yaw(flip_rate_cdps * roll_dir, 0.0, 0.0);
