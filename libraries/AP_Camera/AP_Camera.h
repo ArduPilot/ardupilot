@@ -114,14 +114,10 @@ public:
     bool set_zoom(ZoomType zoom_type, float zoom_value);
     bool set_zoom(uint8_t instance, ZoomType zoom_type, float zoom_value);
 
-    // focus in, out or hold
+    // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
-    bool set_manual_focus_step(int8_t focus_step);
-    bool set_manual_focus_step(uint8_t instance, int8_t focus_step);
-
-    // auto focus
-    bool set_auto_focus();
-    bool set_auto_focus(uint8_t instance);
+    bool set_focus(FocusType focus_type, float focus_value);
+    bool set_focus(uint8_t instance, FocusType focus_type, float focus_value);
 
     // set if vehicle is in AUTO mode
     void set_is_auto_mode(bool enable) { _is_in_auto_mode = enable; }
@@ -133,7 +129,8 @@ public:
         bool recording_video;   // true when recording video
         uint8_t zoom_type;      // see ZoomType enum (1:Rate or 2:Pct)
         float zoom_value;       // percentage or zoom out = -1, hold = 0, zoom in = 1
-        int8_t focus_step;      // focus in = -1, focus hold = 0, focus out = 1
+        uint8_t focus_type;     // see FocusType enum (1:Rate, 2:Pct, 4:Auto)
+        float focus_value;      // If Rate, focus in = -1, focus hold = 0, focus out = 1.  If PCT 0 to 100
         bool auto_focus;        // true when auto focusing
     } camera_state_t;
 
