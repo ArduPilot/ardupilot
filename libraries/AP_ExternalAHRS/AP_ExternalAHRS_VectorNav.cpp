@@ -18,6 +18,10 @@
 
 #define ALLOW_DOUBLE_MATH_FUNCTIONS
 
+#include "AP_ExternalAHRS_config.h"
+
+#if AP_EXTERNAL_AHRS_VECTORNAV_ENABLED
+
 #include "AP_ExternalAHRS_VectorNav.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/crc.h>
@@ -30,8 +34,6 @@
 #include <AP_Common/NMEA.h>
 #include <stdio.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
-
-#if HAL_EXTERNAL_AHRS_ENABLED
 
 extern const AP_HAL::HAL &hal;
 
@@ -819,5 +821,4 @@ void AP_ExternalAHRS_VectorNav::send_status_report(GCS_MAVLINK &link) const
                                        mag_var, 0, 0);
 }
 
-#endif  // HAL_EXTERNAL_AHRS_ENABLED
-
+#endif  // AP_EXTERNAL_AHRS_VECTORNAV_ENABLED
