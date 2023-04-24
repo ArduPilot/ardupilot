@@ -346,12 +346,12 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 {
     switch(id) {
 
-    case MSG_TERRAIN:
 #if AP_TERRAIN_AVAILABLE
+    case MSG_TERRAIN:
         CHECK_PAYLOAD_SIZE(TERRAIN_REQUEST);
         copter.terrain.send_request(chan);
-#endif
         break;
+#endif
 
     case MSG_WIND:
         CHECK_PAYLOAD_SIZE(WIND);
