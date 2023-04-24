@@ -103,7 +103,7 @@
 #define HAL_USE_ADC					0
 
 //LED
-#define BUILD_DEFAULT_LED_TYPE				Notify_LED_None
+#define DEFAULT_NTF_LED_TYPES				Notify_LED_None
 
 //RMT pin number
 #define HAL_ESP32_RMT_RX_PIN_NUMBER			4
