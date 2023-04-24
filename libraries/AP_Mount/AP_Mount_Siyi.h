@@ -68,12 +68,9 @@ public:
     // set zoom specified as a rate or percentage
     bool set_zoom(ZoomType zoom_type, float zoom_value) override;
 
-    // set focus in, out or hold.  returns true on success
+    // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
-    bool set_manual_focus_step(int8_t focus_step) override;
-
-    // auto focus.  returns true on success
-    bool set_auto_focus() override;
+    bool set_focus(FocusType focus_type, float focus_value) override;
 
 protected:
 
