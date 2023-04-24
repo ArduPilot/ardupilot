@@ -226,3 +226,5 @@ define HAL_BATT2_VOLT_SCALE 11.0
 # -------------------- Buzzer+NeoPixels --------------d------
 define HAL_PERIPH_ENABLE_RC_OUT
 define HAL_PERIPH_ENABLE_NOTIFY
+
+define DEFAULT_NTF_LED_TYPES 455

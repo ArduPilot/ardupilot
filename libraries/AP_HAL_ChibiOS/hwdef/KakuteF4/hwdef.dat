@@ -152,3 +152,5 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # minimal drivers to reduce flash usage
 include ../include/minimal.inc
+
+define DEFAULT_NTF_LED_TYPES 256
