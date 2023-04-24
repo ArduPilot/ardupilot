@@ -187,12 +187,9 @@ public:
     // set zoom specified as a rate or percentage
     bool set_zoom(uint8_t instance, ZoomType zoom_type, float zoom_value);
 
-    // set focus in, out or hold
+    // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
-    bool set_manual_focus_step(uint8_t instance, int8_t focus_step);
-
-    // auto focus
-    bool set_auto_focus(uint8_t instance);
+    bool set_focus(uint8_t instance, FocusType focus_type, float focus_value);
 
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];

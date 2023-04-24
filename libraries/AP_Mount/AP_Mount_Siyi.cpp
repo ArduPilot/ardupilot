@@ -644,17 +644,30 @@ bool AP_Mount_Siyi::set_zoom(ZoomType zoom_type, float zoom_value)
     return false;
 }
 
-// set focus in, out or hold.  returns true on success
+// set focus specified as rate, percentage or auto
 // focus in = -1, focus hold = 0, focus out = 1
-bool AP_Mount_Siyi::set_manual_focus_step(int8_t focus_step)
+bool AP_Mount_Siyi::set_focus(FocusType focus_type, float focus_value)
 {
-    return send_1byte_packet(SiyiCommandId::MANUAL_FOCUS, (uint8_t)focus_step);
-}
+    switch (focus_type) {
+    case FocusType::RATE: {
+        uint8_t focus_step = 0;
+        if (focus_value > 0) {
+            focus_step = 1;
+        } else if (focus_value < 0) {
+            // Siyi API specifies -1 should be sent as 255
+            focus_step = UINT8_MAX;
+        }
+        return send_1byte_packet(SiyiCommandId::MANUAL_FOCUS, (uint8_t)focus_step);
+    }
+    case FocusType::PCT:
+        // not supported
+        return false;
+    case FocusType::AUTO:
+        return send_1byte_packet(SiyiCommandId::AUTO_FOCUS, 1);
+    }
 
-// auto focus.  returns true on success
-bool AP_Mount_Siyi::set_auto_focus()
-{
-    return send_1byte_packet(SiyiCommandId::AUTO_FOCUS, 1);
+    // unsupported focus type
+    return false;
 }
 
 #endif // HAL_MOUNT_SIYI_ENABLED
