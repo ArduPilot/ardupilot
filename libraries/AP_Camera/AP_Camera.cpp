@@ -99,29 +99,6 @@ bool AP_Camera::record_video(bool start_recording)
     return primary->record_video(start_recording);
 }
 
-// focus in, out or hold
-// focus in = -1, focus hold = 0, focus out = 1
-bool AP_Camera::set_manual_focus_step(int8_t focus_step)
-{
-    WITH_SEMAPHORE(_rsem);
-
-    if (primary == nullptr) {
-        return false;
-    }
-    return primary->set_manual_focus_step(focus_step);
-}
-
-// auto focus
-bool AP_Camera::set_auto_focus()
-{
-    WITH_SEMAPHORE(_rsem);
-
-    if (primary == nullptr) {
-        return false;
-    }
-    return primary->set_auto_focus();
-}
-
 // detect and initialise backends
 void AP_Camera::init()
 {
@@ -243,15 +220,20 @@ MAV_RESULT AP_Camera::handle_command_long(const mavlink_command_long_t &packet)
         return MAV_RESULT_UNSUPPORTED;
     case MAV_CMD_SET_CAMERA_FOCUS:
         // accept any of the auto focus types
-        if (is_equal(packet.param1, (float)FOCUS_TYPE_AUTO) ||
-            is_equal(packet.param1, (float)FOCUS_TYPE_AUTO_SINGLE) ||
-            is_equal(packet.param1, (float)FOCUS_TYPE_AUTO_CONTINUOUS)) {
-            set_auto_focus();
+        if ((is_equal(packet.param1, (float)FOCUS_TYPE_AUTO) ||
+             is_equal(packet.param1, (float)FOCUS_TYPE_AUTO_SINGLE) ||
+             is_equal(packet.param1, (float)FOCUS_TYPE_AUTO_CONTINUOUS)) &&
+             set_focus(FocusType::AUTO, 0)) {
             return MAV_RESULT_ACCEPTED;
         }
-        // accept step or continuous manual focus
-        if (is_equal(packet.param1, (float)FOCUS_TYPE_CONTINUOUS)) {
-            set_manual_focus_step((int8_t)packet.param2);
+        // accept continuous manual focus
+        if (is_equal(packet.param1, (float)FOCUS_TYPE_CONTINUOUS) &&
+            set_focus(FocusType::RATE, packet.param2)) {
+            return MAV_RESULT_ACCEPTED;
+        }
+        // accept focus as percentage
+        if (is_equal(packet.param1, (float)FOCUS_TYPE_RANGE) &&
+            set_focus(FocusType::PCT, packet.param2)) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_UNSUPPORTED;
@@ -448,23 +430,22 @@ bool AP_Camera::set_zoom(uint8_t instance, ZoomType zoom_type, float zoom_value)
     return backend->set_zoom(zoom_type, zoom_value);
 }
 
-// focus in, out or hold.  returns true on success
+
+// set focus specified as rate, percentage or auto
 // focus in = -1, focus hold = 0, focus out = 1
-bool AP_Camera::set_manual_focus_step(uint8_t instance, int8_t focus_step)
+bool AP_Camera::set_focus(FocusType focus_type, float focus_value)
 {
     WITH_SEMAPHORE(_rsem);
 
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
+    if (primary == nullptr) {
         return false;
     }
-
-    // call backend
-    return backend->set_manual_focus_step(focus_step);
+    return primary->set_focus(focus_type, focus_value);
 }
 
-// auto focus.  returns true on success
-bool AP_Camera::set_auto_focus(uint8_t instance)
+// set focus specified as rate, percentage or auto
+// focus in = -1, focus hold = 0, focus out = 1
+bool AP_Camera::set_focus(uint8_t instance, FocusType focus_type, float focus_value)
 {
     WITH_SEMAPHORE(_rsem);
 
@@ -473,8 +454,8 @@ bool AP_Camera::set_auto_focus(uint8_t instance)
         return false;
     }
 
-    // call backend
-    return backend->set_auto_focus();
+    // call each instance
+    return backend->set_focus(focus_type, focus_value);
 }
 
 #if AP_CAMERA_SCRIPTING_ENABLED
