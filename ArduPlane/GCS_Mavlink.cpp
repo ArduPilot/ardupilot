@@ -393,24 +393,24 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         // unused
         break;
 
-    case MSG_TERRAIN:
 #if AP_TERRAIN_AVAILABLE
+    case MSG_TERRAIN:
         CHECK_PAYLOAD_SIZE(TERRAIN_REQUEST);
         plane.terrain.send_request(chan);
-#endif
         break;
+#endif
 
     case MSG_WIND:
         CHECK_PAYLOAD_SIZE(WIND);
         send_wind();
         break;
 
-    case MSG_ADSB_VEHICLE:
 #if HAL_ADSB_ENABLED
+    case MSG_ADSB_VEHICLE:
         CHECK_PAYLOAD_SIZE(ADSB_VEHICLE);
         plane.adsb.send_adsb_vehicle(chan);
-#endif
         break;
+#endif
 
     case MSG_AOA_SSA:
         CHECK_PAYLOAD_SIZE(AOA_SSA);
@@ -420,12 +420,12 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         plane.landing.send_landing_message(chan);
         break;
 
-    case MSG_HYGROMETER:
 #if AP_AIRSPEED_HYGROMETER_ENABLE
+    case MSG_HYGROMETER:
         CHECK_PAYLOAD_SIZE(HYGROMETER_SENSOR);
         send_hygrometer();
-#endif
         break;
+#endif
 
     default:
         return GCS_MAVLINK::try_send_message(id);
