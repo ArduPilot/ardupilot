@@ -736,6 +736,9 @@ public:
     void *mode_poshold_ptr;
 #endif
 
+#if MODE_FLIP_ENABLED
+    AP_Int16 flip_rate_dps;
+#endif
 };
 
 extern const AP_Param::Info        var_info[];
