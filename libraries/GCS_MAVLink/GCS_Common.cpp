@@ -5639,47 +5639,43 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(GPS_RTK);
         AP::gps().send_mavlink_gps_rtk(chan, 0);
         break;
-    case MSG_GPS2_RAW:
 #if GPS_MAX_RECEIVERS > 1
+    case MSG_GPS2_RAW:
         CHECK_PAYLOAD_SIZE(GPS2_RAW);
         AP::gps().send_mavlink_gps2_raw(chan);
-#endif
         break;
-    case MSG_GPS2_RTK:
+#endif
 #if GPS_MAX_RECEIVERS > 1
+    case MSG_GPS2_RTK:
         CHECK_PAYLOAD_SIZE(GPS2_RTK);
         AP::gps().send_mavlink_gps_rtk(chan, 1);
-#endif
         break;
+#endif
     case MSG_LOCAL_POSITION:
         CHECK_PAYLOAD_SIZE(LOCAL_POSITION_NED);
         send_local_position();
         break;
 
-    case MSG_GIMBAL_DEVICE_ATTITUDE_STATUS:
 #if HAL_MOUNT_ENABLED
+    case MSG_GIMBAL_DEVICE_ATTITUDE_STATUS:
         CHECK_PAYLOAD_SIZE(GIMBAL_DEVICE_ATTITUDE_STATUS);
         send_gimbal_device_attitude_status();
-#endif
         break;
     case MSG_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE:
-#if HAL_MOUNT_ENABLED
         CHECK_PAYLOAD_SIZE(AUTOPILOT_STATE_FOR_GIMBAL_DEVICE);
         send_autopilot_state_for_gimbal_device();
-#endif
         break;
     case MSG_GIMBAL_MANAGER_INFORMATION:
-#if HAL_MOUNT_ENABLED
         CHECK_PAYLOAD_SIZE(GIMBAL_MANAGER_INFORMATION);
         send_gimbal_manager_information();
-#endif
         break;
-    case MSG_OPTICAL_FLOW:
+#endif
 #if AP_OPTICALFLOW_ENABLED
+    case MSG_OPTICAL_FLOW:
         CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
         send_opticalflow();
-#endif
         break;
+#endif
 
     case MSG_ATTITUDE_TARGET:
         CHECK_PAYLOAD_SIZE(ATTITUDE_TARGET);
@@ -5701,12 +5697,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_power_status();
         break;
 
-    case MSG_MCU_STATUS:
 #if HAL_WITH_MCU_MONITORING
+    case MSG_MCU_STATUS:
         CHECK_PAYLOAD_SIZE(MCU_STATUS);
         send_mcu_status();
-#endif
         break;
+#endif
 
     case MSG_RC_CHANNELS:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS);
@@ -5758,19 +5754,19 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_servo_output_raw();
         break;
 
-    case MSG_SIMSTATE:
 #if AP_SIM_ENABLED
+    case MSG_SIMSTATE:
         CHECK_PAYLOAD_SIZE(SIMSTATE);
         send_simstate();
-#endif
         break;
+#endif
 
-    case MSG_SIM_STATE:
 #if AP_SIM_ENABLED
+    case MSG_SIM_STATE:
         CHECK_PAYLOAD_SIZE(SIM_STATE);
         send_sim_state();
-#endif
         break;
+#endif
 
     case MSG_SYS_STATUS:
         CHECK_PAYLOAD_SIZE(SYS_STATUS);
@@ -5812,71 +5808,70 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_vibration();
         break;
 
-    case MSG_GENERATOR_STATUS:
 #if HAL_GENERATOR_ENABLED
+    case MSG_GENERATOR_STATUS:
     	CHECK_PAYLOAD_SIZE(GENERATOR_STATUS);
     	send_generator_status();
-#endif
     	break;
+#endif
 
     case MSG_AUTOPILOT_VERSION:
         CHECK_PAYLOAD_SIZE(AUTOPILOT_VERSION);
         send_autopilot_version();
         break;
 
-    case MSG_ESC_TELEMETRY:
 #if HAL_WITH_ESC_TELEM
+    case MSG_ESC_TELEMETRY:
         AP::esc_telem().send_esc_telemetry_mavlink(uint8_t(chan));
-#endif
         break;
+#endif
 
-    case MSG_EFI_STATUS: {
 #if HAL_EFI_ENABLED
+    case MSG_EFI_STATUS: {
         CHECK_PAYLOAD_SIZE(EFI_STATUS);
         AP_EFI *efi = AP::EFI();
         if (efi) {
             efi->send_mavlink_status(chan);
         }
-#endif
         break;
     }
+#endif
 
     case MSG_WINCH_STATUS:
         CHECK_PAYLOAD_SIZE(WINCH_STATUS);
         send_winch_status();
         break;
 
-    case MSG_WATER_DEPTH:
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
+    case MSG_WATER_DEPTH:
         CHECK_PAYLOAD_SIZE(WATER_DEPTH);
         send_water_depth();
-#endif
         break;
+#endif
 
-    case MSG_HIGH_LATENCY2:
 #if HAL_HIGH_LATENCY2_ENABLED
+    case MSG_HIGH_LATENCY2:
         CHECK_PAYLOAD_SIZE(HIGH_LATENCY2);
         send_high_latency2();
-#endif // HAL_HIGH_LATENCY2_ENABLED
         break;
+#endif // HAL_HIGH_LATENCY2_ENABLED
 
-    case MSG_AIS_VESSEL: {
 #if AP_AIS_ENABLED
+    case MSG_AIS_VESSEL: {
         AP_AIS *ais = AP_AIS::get_singleton();
         if (ais) {
             ais->send(chan);
         }
-#endif
         break;
     }
+#endif
 
-
-    case MSG_UAVIONIX_ADSB_OUT_STATUS:
 #if HAL_ADSB_ENABLED
+    case MSG_UAVIONIX_ADSB_OUT_STATUS:
         CHECK_PAYLOAD_SIZE(UAVIONIX_ADSB_OUT_STATUS);
         send_uavionix_adsb_out_status();
-#endif
         break;
+#endif
 
     default:
         // try_send_message must always at some stage return true for
@@ -6124,11 +6119,13 @@ bool GCS_MAVLINK::get_default_interval_for_ap_message(const ap_message id, uint1
         return true;
     }
 
+#if HAL_HIGH_LATENCY2_ENABLED
     if (id == MSG_HIGH_LATENCY2) {
         // handle HL2 requests as a special case because HL2 is not "streamed"
         interval = 5000;
         return true;
     }
+#endif
 
 #if HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
     // a user can specify default rates in files, which are read close
