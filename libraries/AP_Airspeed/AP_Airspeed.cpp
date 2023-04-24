@@ -295,7 +295,7 @@ void AP_Airspeed::convert_per_instance()
             if (i == 0) {
                 hal.util->snprintf(param_name, sizeof(param_name), "ARSPD_%s",  elem.name);
             } else {
-                hal.util->snprintf(param_name, sizeof(param_name), "ARSPD%i_%s", i+1,  elem.name);
+                hal.util->snprintf(param_name, sizeof(param_name), "ARSP%i_%s", i+1,  elem.name);
             }
             AP_Param::convert_old_parameter(&info, 1.0, 0);
         }
