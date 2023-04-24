@@ -1185,6 +1185,17 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_GROUPINFO("SURFTRAK_GLSAM", 22, ParametersG2, surf_dist_parameters.glitch_num_samples, AP_SURFACEDISTANCE_GLITCH_NUM_SAMPLES_DEFAULT),
 #endif
 
+#if MODE_FLIP_ENABLED
+    // @Param: FLIP_RATE
+    // @DisplayName: Flip Mode Rotational Rate
+    // @Description: Rotational Rate for Flip Mode in Deg/s.  Be sure to set a rotational rate that the aircraft can achieve.
+    // @Units: deg/s
+    // @Range: 60 1000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("FLIP_RATE", 23, ParametersG2, flip_rate_dps, 400),
+#endif
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND
