@@ -7,8 +7,6 @@ BATT2_AMP_PERVLT 39.877
 BATT2_VOLT_MULT 12.02
 # setup ADSB
 ADSB_TYPE 1
-SERIAL5_BAUD 57
-SERIAL5_PROTOCOL 1
 
 # enforce OpenDroneID on DroneCAN. Note that we need to lock down key parameters
 # to ensure the integrity of the RemoteID system
@@ -22,3 +20,4 @@ GPS_TYPE2 0
 
 EK2_PRIMARY 1
 EK3_PRIMARY 1
+

@@ -35,3 +35,19 @@ define AP_BARO_SPL06_ENABLED 1
 
 # minimal drivers to reduce flash usage
 include ../include/minimal.inc
+
+# UART1 is RX input
+define HAL_SERIAL1_PROTOCOL 23
+
+#  UART2 is GPS
+define HAL_SERIAL2_PROTOCOL 5
+
+# UART3 is USER
+define HAL_SERIAL3_PROTOCOL -1
+
+# UART4 is USER
+define HAL_SERIAL4_PROTOCOL -1
+
+# UART6 is ESC Telem
+define HAL_SERIAL6_PROTOCOL 16
+

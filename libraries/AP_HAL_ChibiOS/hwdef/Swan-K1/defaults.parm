@@ -17,10 +17,6 @@ Q_OPTIONS 128
 #Second IMU seems to give better results on this board
 EK3_PRIMARY 1
 
-# RC input is SBUS on serial4 TX pin
-SERIAL4_PROTOCOL 23
-SERIAL4_OPTIONS 8
-
 RC1_MIN 1050
 RC1_MAX 1950
 RC2_MIN 1050
@@ -138,3 +134,4 @@ TRIM_THROTTLE 29
 
 # 2nd lane tends to be better
 EK3_PRIMARY 1
+
