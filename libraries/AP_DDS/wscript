@@ -10,7 +10,7 @@ def configure(cfg):
         'modules/Micro-XRCE-DDS-Client/src/c/core/session/*.c',
         'modules/Micro-XRCE-DDS-Client/src/c/core/serialization/*.c',
         'modules/Micro-XRCE-DDS-Client/src/c/util/*.c',
-        'modules/Micro-XRCE-DDS-Client/src/c/profile/transport/serial/serial_transport.c',
+        'modules/Micro-XRCE-DDS-Client/src/c/profile/transport/custom/custom_transport.c',
         'modules/Micro-XRCE-DDS-Client/src/c/profile/transport/stream_framing/stream_framing_protocol.c',
         'modules/Micro-CDR/src/c/types/*.c',
         'modules/Micro-CDR/src/c/common.c',
