@@ -587,8 +587,6 @@ int32_t AC_WPNav::get_wp_bearing_to_destination() const
 /// update_wpnav - run the wp controller - should be called at 100hz or higher
 bool AC_WPNav::update_wpnav()
 {
-    bool ret = true;
-
     // check for changes in speed parameter values
     if (_check_wp_speed_change) {
         if (!is_equal(_wp_speed_cms.get(), _last_wp_speed_cms)) {
@@ -606,6 +604,7 @@ bool AC_WPNav::update_wpnav()
     }
 
     // advance the target if necessary
+    bool ret = true;
     if (!advance_wp_target_along_track(_pos_control.get_dt())) {
         // To-Do: handle inability to advance along track (probably because of missing terrain data)
         ret = false;
