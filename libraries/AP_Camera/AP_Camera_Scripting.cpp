@@ -28,20 +28,12 @@ bool AP_Camera_Scripting::set_zoom(ZoomType zoom_type, float zoom_value)
     return true;
 }
 
-// set focus in, out or hold.  returns true on success
+// set focus specified as rate, percentage or auto
 // focus in = -1, focus hold = 0, focus out = 1
-bool AP_Camera_Scripting::set_manual_focus_step(int8_t focus_step)
+bool AP_Camera_Scripting::set_focus(FocusType focus_type, float focus_value)
 {
-    _cam_state.focus_step = focus_step;
-    _cam_state.auto_focus = false;
-    return true;
-}
-
-// auto focus.  returns true on success
-bool AP_Camera_Scripting::set_auto_focus()
-{
-    _cam_state.auto_focus = true;
-    _cam_state.focus_step = 0;
+    _cam_state.focus_type = (uint8_t)focus_type;
+    _cam_state.focus_value = focus_value;
     return true;
 }
 
