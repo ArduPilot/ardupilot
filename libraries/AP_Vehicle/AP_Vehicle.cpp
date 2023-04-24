@@ -80,9 +80,9 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
 #endif
 
 #if AP_AIRSPEED_ENABLED
-    // @Group: ARSPD
+    // @Group: ARSP
     // @Path: ../AP_Airspeed/AP_Airspeed.cpp
-    AP_SUBGROUPINFO(airspeed, "ARSPD", 10, AP_Vehicle, AP_Airspeed),
+    AP_SUBGROUPINFO(airspeed, "ARSP", 10, AP_Vehicle, AP_Airspeed),
 #endif
 
     // @Group: CUST_ROT
