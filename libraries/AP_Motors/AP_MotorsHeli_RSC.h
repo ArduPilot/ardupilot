@@ -188,7 +188,7 @@ private:
     // parameters
     AP_Int16        _power_slewrate;            // throttle slew rate (percentage per second)
     AP_Int16        _thrcrv[5];                 // throttle value sent to throttle servo at 0, 25, 50, 75 and 100 percent collective
-    AP_Int16        _governor_rpm;              // governor reference for speed calculations
+    AP_Int16        _targ_head_speed_rpm;       // nominal headspeed reference for speed calculations
     AP_Float        _governor_torque;           // governor torque rise setting
     AP_Float        _governor_compensator;      // governor torque compensator variable
     AP_Float        _governor_droop_response;   // governor response to droop under load
