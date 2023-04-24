@@ -1102,12 +1102,12 @@ local AP_Camera__camera_state_t_ud = {}
 function AP_Camera__camera_state_t() end
 
 -- get field
----@return boolean
-function AP_Camera__camera_state_t_ud:auto_focus() end
+---@return number
+function AP_Camera__camera_state_t_ud:focus_value() end
 
 -- get field
 ---@return integer
-function AP_Camera__camera_state_t_ud:focus_step() end
+function AP_Camera__camera_state_t_ud:focus_type() end
 
 -- get field
 ---@return number
