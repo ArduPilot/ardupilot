@@ -218,6 +218,14 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("AROT_IDLE", 27, AP_MotorsHeli_RSC, _arot_idle_output, AP_MOTORS_HELI_RSC_AROT_IDLE),
 
+    // @Param: RPM_IDX
+    // @DisplayName: RPM sensor index
+    // @Description: The RPM instance to get measured rotor speed. Set -1 to disable use of rpm measurement in RSC.
+    // @Range: -1 1
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("RPM_IDX", 28, AP_MotorsHeli_RSC, _rpm_idx, 0),
+
     AP_GROUPEND
 };
 
@@ -250,20 +258,7 @@ void AP_MotorsHeli_RSC::set_throttle_curve()
 void AP_MotorsHeli_RSC::output(RotorControlState state)
 {
     // _rotor_RPM available to the RSC output
-#if AP_RPM_ENABLED
-    const AP_RPM *rpm = AP_RPM::get_singleton();
-    if (rpm != nullptr) {
-        if (!rpm->get_rpm(0, _rotor_rpm)) {
-            // No valid RPM data
-            _rotor_rpm = -1;
-        }
-    } else {
-        // No RPM because pointer is null
-        _rotor_rpm = -1;
-    }
-#else
-    _rotor_rpm = -1;
-#endif
+    update_rotor_speed_measurement();
 
     float dt;
     uint64_t now = AP_HAL::micros64();
@@ -479,22 +474,55 @@ void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
     }
     // if rotor speed is less than critical speed, then run-up is not complete
     // this will prevent the case where the target rotor speed is less than critical speed
-    if (_runup_complete && (get_rotor_speed() < get_critical_speed())) {
+    if (_runup_complete && (get_norm_rotor_speed() < get_critical_speed())) {
         _runup_complete = false;
     }
     // if rotor estimated speed is zero, then spooldown has been completed
-    if (get_rotor_speed() <= 0.0f) {
+    if (get_norm_rotor_speed() <= 0.0f) {
         _spooldown_complete = true;
     } else {
         _spooldown_complete = false;
     }
 }
 
-// get_rotor_speed - gets rotor speed either as an estimate, or (ToDO) a measured value
-float AP_MotorsHeli_RSC::get_rotor_speed() const
+// get_norm_rotor_speed - gets the normalised rotor speed with 1.0 being the target head speed
+float AP_MotorsHeli_RSC::get_norm_rotor_speed() const
 {
-    // if no actual measured rotor speed is available, estimate speed based on rotor runup scalar.
-    return _rotor_runup_output;
+    if (_rotor_rpm < 0) {
+        // measured rotor speed is unavailable, estimate speed based on rotor runup scalar.
+        return _rotor_runup_output;
+    }
+
+    if (_targ_head_speed_rpm < 1) {
+        // we don't have a valid nominal/target head speed to normalise by
+        return _rotor_runup_output;
+    }
+
+    return _rotor_rpm / _targ_head_speed_rpm.get();
+}
+
+// update_rotor_speed_measurement - gets measured rpm from desired rpm instance if available
+void AP_MotorsHeli_RSC::update_rotor_speed_measurement()
+{
+    _rotor_rpm = -1;
+
+#if AP_RPM_ENABLED
+    int8_t idx = _rpm_idx.get();
+    if (idx < 0) {
+        // Then use of rpm measurement is disabled
+        return;
+    }
+
+    const AP_RPM *rpm = AP_RPM::get_singleton();
+    if (rpm == nullptr) {
+        return;
+    }
+
+    if (!rpm->get_rpm(idx, _rotor_rpm)) {
+        // RPM is unhealthy if got here
+        _rotor_rpm = -1;
+    }
+#endif
 }
 
 // write_rsc - outputs pwm onto output rsc channel

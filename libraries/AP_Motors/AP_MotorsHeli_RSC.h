@@ -81,8 +81,8 @@ public:
     // set_desired_speed - this requires input to be 0-1
     void        set_desired_speed(float desired_speed) { _desired_speed = desired_speed; }
 
-    // get_rotor_speed - estimated rotor speed when no governor or rpm sensor is used
-    float       get_rotor_speed() const;
+    // get_norm_rotor_speed - estimated rotor speed when no governor or rpm sensor is used
+    float       get_norm_rotor_speed() const;
 
     // functions for autothrottle, throttle curve, governor, idle speed, output to servo
     void        set_governor_output(float governor_output) {_governor_output = governor_output; }
@@ -185,6 +185,9 @@ private:
     // calculate_throttlecurve - uses throttle curve and collective input to determine throttle setting
     float           calculate_throttlecurve(float collective_in);
 
+    // update_rotor_speed_measurement - gets measured rpm from desired rpm instance if available
+    void            update_rotor_speed_measurement(void);
+
     // parameters
     AP_Int16        _power_slewrate;            // throttle slew rate (percentage per second)
     AP_Int16        _thrcrv[5];                 // throttle value sent to throttle servo at 0, 25, 50, 75 and 100 percent collective
@@ -195,6 +198,7 @@ private:
     AP_Float        _governor_ff;               // governor feedforward variable
     AP_Float        _governor_range;            // RPM range +/- governor rpm reference setting where governor is operational
     AP_Int16        _cooldown_time;             // cooldown time to provide a fast idle
+    AP_Int8         _rpm_idx;                   // index to get rotor rpm measurement from
 
     // parameter accessors to allow conversions
     float       get_critical_speed() const { return _critical_speed * 0.01; }
