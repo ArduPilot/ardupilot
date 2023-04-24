@@ -107,11 +107,14 @@ void ModeFlip::run()
     // get corrected angle based on direction and axis of rotation
     // we flip the sign of flip_angle to minimize the code repetition
     int32_t flip_angle;
+    int32_t flip_angle_error;
 
     if (roll_dir != 0) {
         flip_angle = ahrs.roll_sensor * roll_dir;
+        flip_angle_error = attitude_control->get_att_target_euler_cd().x - ahrs.roll_sensor;
     } else {
         flip_angle = ahrs.pitch_sensor * pitch_dir;
+        flip_angle_error = attitude_control->get_att_target_euler_cd().y - ahrs.pitch_sensor;
     }
 
     // state machine
@@ -137,6 +140,13 @@ void ModeFlip::run()
         break;
 
     case FlipState::Roll:
+        // keep target aircraft from getting too far away from actual aircraft
+        if (flip_angle_error > 1500 && flip_angle_error <= 4500) {
+            float knock_down = ((float)flip_angle_error - 1500.0f) / 3000.0f;
+            flip_rate_cdps = (ahrs.get_gyro().x + knock_down * (flip_rate_cdps - ahrs.get_gyro().x * 5730)) * roll_dir;
+        } else if (flip_angle_error > 4500) {
+            flip_rate_cdps = ahrs.get_gyro().x * 5730 * roll_dir;
+        }
         // between 45deg ~ -90deg request user specified roll rate
         attitude_control->input_rate_bf_roll_pitch_yaw(flip_rate_cdps * roll_dir, 0.0, 0.0);
         // decrease throttle
