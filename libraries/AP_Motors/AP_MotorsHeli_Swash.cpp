@@ -147,11 +147,11 @@ void AP_MotorsHeli_Swash::calculate_roll_pitch_collective_factors()
         // three-servo roll/pitch mixer for H3-120
         // HR3-120 uses reversed servo and collective direction in heli setup
         // not a pure mixing swashplate, phase angle is adjustable
-        _rollFactor[CH_1] = 0.866025f;
-        _rollFactor[CH_2] = -0.866025f;
+        _rollFactor[CH_1] = 0.707107f;
+        _rollFactor[CH_2] = -0.707107f;
         _rollFactor[CH_3] = 0;
-        _pitchFactor[CH_1] = 0.5f;
-        _pitchFactor[CH_2] = 0.5f;
+        _pitchFactor[CH_1] = 0.707107f;
+        _pitchFactor[CH_2] = 0.707107f;
         _pitchFactor[CH_3] = -1;
     } else if (_swash_type == SWASHPLATE_TYPE_H4_90) {
         // four-servo roll/pitch mixer for H4-90

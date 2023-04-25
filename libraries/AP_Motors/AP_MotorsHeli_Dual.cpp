@@ -402,9 +402,9 @@ float AP_MotorsHeli_Dual::get_swashplate (int8_t swash_num, int8_t swash_axis, f
         // roll tilt
         if (swash_axis == AP_MOTORS_HELI_DUAL_SWASH_AXIS_ROLL) {
             if (swash_num == 1) {
-                swash_tilt = 0.0f;
+                swash_tilt = roll_input;
             } else if (swash_num == 2) {
-                swash_tilt = 0.0f;
+                swash_tilt = roll_input;;
             }
         } else if (swash_axis == AP_MOTORS_HELI_DUAL_SWASH_AXIS_PITCH) {
         // pitch tilt
@@ -416,9 +416,9 @@ float AP_MotorsHeli_Dual::get_swashplate (int8_t swash_num, int8_t swash_axis, f
         } else if (swash_axis == AP_MOTORS_HELI_DUAL_SWASH_AXIS_COLL) {
         // collective
             if (swash_num == 1) {
-                swash_tilt = 0.45f * _dcp_scaler * (roll_input + constrain_float(_dcp_trim, -0.2f, 0.2f)) + coll_input;
+                swash_tilt = 0.45f * _dcp_scaler * constrain_float(_dcp_trim, -0.2f, 0.2f) + coll_input;
             } else if (swash_num == 2) {
-                swash_tilt = -0.45f * _dcp_scaler * (roll_input + constrain_float(_dcp_trim, -0.2f, 0.2f)) + coll_input;
+                swash_tilt = -0.45f * _dcp_scaler * constrain_float(_dcp_trim, -0.2f, 0.2f) + coll_input;
             }
         }
     } else if (_dual_mode == AP_MOTORS_HELI_DUAL_MODE_INTERMESHING) {
@@ -524,14 +524,14 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
     limit.throttle_lower = false;
     limit.throttle_upper = false;
 
-    if (_dual_mode == AP_MOTORS_HELI_DUAL_MODE_TRANSVERSE || _dual_mode == AP_MOTORS_HELI_DUAL_MODE_INTERMESHING) {
-        if (pitch_out < -_cyclic_max/4500.0f) {
-            pitch_out = -_cyclic_max/4500.0f;
-            limit.pitch = true;
-        }
+    float total_out = norm(pitch_out, roll_out);
 
-        if (pitch_out > _cyclic_max/4500.0f) {
-            pitch_out = _cyclic_max/4500.0f;
+    if (_dual_mode == AP_MOTORS_HELI_DUAL_MODE_TRANSVERSE || _dual_mode == AP_MOTORS_HELI_DUAL_MODE_INTERMESHING) {
+        if (total_out > (_cyclic_max / 4500.0f)){
+            float ratio = (float)(_cyclic_max / 4500.0f) / total_out;
+            roll_out *= ratio;
+            pitch_out *= ratio;
+            limit.roll = true;
             limit.pitch = true;
         }
     } else {
