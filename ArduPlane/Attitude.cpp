@@ -213,23 +213,24 @@ float Plane::stabilize_pitch_get_pitch_out()
 
 /*
   this gives the user control of the aircraft in stabilization modes, only used in Stabilize Mode
+  to be moved to mode_stabilize.cpp in future
  */
-void Plane::stabilize_stick_mixing_direct()
+void ModeStabilize::stabilize_stick_mixing_direct()
 {
-    if (!stick_mixing_enabled()) {
+    if (!plane.stick_mixing_enabled()) {
         return;
     }
 #if HAL_QUADPLANE_ENABLED
-    if (!quadplane.allow_stick_mixing()) {
+    if (!plane.quadplane.allow_stick_mixing()) {
         return;
     }
 #endif
     float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
-    aileron = channel_roll->stick_mixing(aileron);
+    aileron = plane.channel_roll->stick_mixing(aileron);
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron);
 
     float elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
-    elevator = channel_pitch->stick_mixing(elevator);
+    elevator = plane.channel_pitch->stick_mixing(elevator);
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elevator);
 }
 
@@ -392,13 +393,9 @@ void Plane::stabilize()
             steering_control.rudder = rudder;
         }
 #endif
-    } else if (control_mode == &mode_acro) {
+    } else if (control_mode == &mode_acro ||
+                control_mode == &mode_stabilize) {
         plane.control_mode->run();
-    } else if (control_mode == &mode_stabilize) {
-        stabilize_roll();
-        stabilize_pitch();
-        stabilize_stick_mixing_direct();
-        stabilize_yaw();
 #if HAL_QUADPLANE_ENABLED
     } else if (control_mode->is_vtol_mode() && !quadplane.tailsitter.in_vtol_transition(now)) {
         // run controlers specific to this mode
