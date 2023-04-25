@@ -39,7 +39,7 @@ def launch_description(sitl_dds):
 
 
 class NavSatFixListener(rclpy.node.Node):
-    """Subscribe to NavSatFix messages on /ROS2_NavSatFix0."""
+    """Subscribe to NavSatFix messages on /ap/navsat/navsat0."""
 
     def __init__(self):
         """Initialise the node."""
@@ -47,7 +47,7 @@ class NavSatFixListener(rclpy.node.Node):
         self.msg_event_object = threading.Event()
 
         # Declare and acquire `topic` parameter
-        self.declare_parameter("topic", "ROS2_NavSatFix0")
+        self.declare_parameter("topic", "ap/navsat/navsat0")
         self.topic = self.get_parameter("topic").get_parameter_value().string_value
 
     def start_subscriber(self):
@@ -88,7 +88,7 @@ def test_navsat_msgs_received(sitl_dds, launch_context):
         node = NavSatFixListener()
         node.start_subscriber()
         msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
-        assert msgs_received_flag, "Did not receive 'ROS2_NavSatFix0' msgs."
+        assert msgs_received_flag, "Did not receive 'ap/navsat/navsat0' msgs."
     finally:
         rclpy.shutdown()
 
