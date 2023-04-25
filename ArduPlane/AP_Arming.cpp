@@ -397,8 +397,7 @@ bool AP_Arming_Plane::mission_checks(bool report)
             if (plane.is_land_command(cmd.id) &&
                 prev_cmd.id == MAV_CMD_NAV_WAYPOINT) {
                 const float dist = cmd.content.location.get_distance(prev_cmd.content.location);
-                const float tecs_land_speed = plane.TECS_controller.get_land_airspeed();
-                const float landing_speed = is_positive(tecs_land_speed)?tecs_land_speed:plane.aparm.airspeed_cruise_cm*0.01;
+                const float landing_speed = plane.TECS_controller.get_land_airspeed();
                 const float min_dist = 0.75 * plane.quadplane.stopping_distance(sq(landing_speed));
                 if (dist < min_dist) {
                     ret = false;

@@ -116,13 +116,8 @@ float Plane::mode_auto_target_airspeed_cm()
     if (quadplane.landing_with_fixed_wing_spiral_approach() &&
         ((vtol_approach_s.approach_stage == Landing_ApproachStage::APPROACH_LINE) ||
          (vtol_approach_s.approach_stage == Landing_ApproachStage::VTOL_LANDING))) {
-        const float land_airspeed = TECS_controller.get_land_airspeed();
-        if (is_positive(land_airspeed)) {
-            return land_airspeed * 100;
+        return TECS_controller.get_land_airspeed() * 100;
         }
-        // fallover to normal airspeed
-        return aparm.airspeed_cruise_cm;
-    }
     if (quadplane.in_vtol_land_approach()) {
         return quadplane.get_land_airspeed() * 100;
     }
