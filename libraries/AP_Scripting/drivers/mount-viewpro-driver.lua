@@ -159,8 +159,8 @@ local cam_pic_count = 0                 -- last picture count.  used to detect t
 local cam_rec_video = false             -- last record video state.  used to detect record video
 local cam_zoom_type = 0                 -- last zoom type 1:Rate 2:Pct
 local cam_zoom_value = 0                -- last zoom value.  If rate, zoom out = -1, hold = 0, zoom in = 1.  If Pct then value from 0 to 100
-local cam_focus_step = 0                -- last focus step state.  focus in = -1, focus hold = 0, focus out = 1
-local cam_autofocus = false             -- last auto focus state
+local cam_focus_type = 0                -- last focus type 1:Rate, 2:Pct, 4:Auto
+local cam_focus_value = 0               -- last focus value.  If Rate then focus in = -1, focus hold = 0, focus out = 1
 
 -- parsing status reporting variables
 local last_print_ms = 0                 -- system time that debug output was last printed
@@ -613,30 +613,34 @@ function check_camera_state()
 
   -- check manual focus
   -- focus in = -1, focus hold = 0, focus out = 1
-  if cam_state:focus_step() and cam_state:focus_step() ~= cam_focus_step then
-    cam_focus_step = cam_state:focus_step()
-    if cam_focus_step < 0 then
-      send_camera_control(cam_choice, CAM_COMMAND_MANUAL_FOCUS)
-      send_camera_control(cam_choice, CAM_COMMAND_FOCUS_MINUS)
-    elseif cam_focus_step == 0 then
-      send_camera_control(cam_choice, CAM_COMMAND_STOP_FOCUS_AND_ZOOM)
-    elseif cam_focus_step > 0 then
-      send_camera_control(cam_choice, CAM_COMMAND_MANUAL_FOCUS)
-      send_camera_control(cam_choice, CAM_COMMAND_FOCUS_PLUS)
-    end
-    if VIEP_DEBUG:get() > 0 then
-      gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: focus:" .. tostring(cam_focus_step))
-    end
-  end
+  local focus_type_changed = cam_state:focus_type() and (cam_state:focus_type() ~= cam_focus_type)
+  local focus_value_changed = cam_state:focus_value() and (cam_state:focus_value() ~= cam_focus_value)
+  if (focus_type_changed or focus_value_changed) then
+    cam_focus_type = cam_state:focus_type()
+    cam_focus_value = cam_state:focus_value()
 
-  -- check auto focus
-  if cam_state:auto_focus() and cam_state:auto_focus() ~= cam_autofocus then
-    cam_autofocus = cam_state:auto_focus()
-    if cam_autofocus then
-      send_camera_control(cam_choice, CAM_COMMAND_AUTO_FOCUS)
+    -- focus rate
+    if cam_focus_type == 1 then
+      if cam_focus_value < 0 then
+        send_camera_control(cam_choice, CAM_COMMAND_MANUAL_FOCUS)
+        send_camera_control(cam_choice, CAM_COMMAND_FOCUS_MINUS)
+      elseif cam_focus_value == 0 then
+        send_camera_control(cam_choice, CAM_COMMAND_STOP_FOCUS_AND_ZOOM)
+      elseif cam_focus_value > 0 then
+        send_camera_control(cam_choice, CAM_COMMAND_MANUAL_FOCUS)
+        send_camera_control(cam_choice, CAM_COMMAND_FOCUS_PLUS)
+      end
+      if VIEP_DEBUG:get() > 0 then
+        gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: focus:" .. tostring(cam_focus_step))
+      end
     end
-    if VIEP_DEBUG:get() > 0 then
-      gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: auto focus:" .. tostring(cam_autofocus))
+
+    -- check auto focus
+    if cam_focus_type == 4 then
+      send_camera_control(cam_choice, CAM_COMMAND_AUTO_FOCUS)
+      if VIEP_DEBUG:get() > 0 then
+        gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: auto focus:" .. tostring(cam_autofocus))
+      end
     end
   end
 end
