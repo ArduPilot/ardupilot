@@ -862,7 +862,6 @@ private:
     float stabilize_roll_get_roll_out();
     void stabilize_pitch();
     float stabilize_pitch_get_pitch_out();
-    void stabilize_stick_mixing_direct();
     void stabilize_stick_mixing_fbw();
     void stabilize_yaw();
     void calc_nav_yaw_coordinated();
