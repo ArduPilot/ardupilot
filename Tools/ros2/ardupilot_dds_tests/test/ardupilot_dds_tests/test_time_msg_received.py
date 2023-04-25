@@ -37,7 +37,7 @@ def launch_description(sitl_dds):
 
 
 class TimeListener(rclpy.node.Node):
-    """Subscribe to Time messages on /ROS2_Time."""
+    """Subscribe to Time messages on /ap/clock."""
 
     def __init__(self):
         """Initialise the node."""
@@ -45,7 +45,7 @@ class TimeListener(rclpy.node.Node):
         self.msg_event_object = threading.Event()
 
         # Declare and acquire `topic` parameter.
-        self.declare_parameter("topic", "ROS2_Time")
+        self.declare_parameter("topic", "ap/clock")
         self.topic = self.get_parameter("topic").get_parameter_value().string_value
 
     def start_subscriber(self):

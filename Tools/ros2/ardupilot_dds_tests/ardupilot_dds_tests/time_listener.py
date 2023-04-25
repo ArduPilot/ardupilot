@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-"""Subscribe to Time messages on topic /ROS2_Time."""
+"""Subscribe to Time messages on topic /ap/clock."""
 import rclpy
 import time
 
@@ -22,14 +22,14 @@ from builtin_interfaces.msg import Time
 
 
 class TimeListener(Node):
-    """Subscribe to Time messages on topic /ROS2_Time."""
+    """Subscribe to Time messages on topic /ap/clock."""
 
     def __init__(self):
         """Initialise the node."""
         super().__init__("time_listener")
 
         # Declare and acquire `topic` parameter.
-        self.declare_parameter("topic", "ROS2_Time")
+        self.declare_parameter("topic", "ap/clock")
         self.topic = self.get_parameter("topic").get_parameter_value().string_value
 
         # Subscriptions.
