@@ -65,7 +65,7 @@ public:
     void exit();
 
     // run controllers specific to this mode
-    virtual void run() {};
+    virtual void run();
 
     // returns a unique number specific to this mode
     virtual Number mode_number() const = 0;
