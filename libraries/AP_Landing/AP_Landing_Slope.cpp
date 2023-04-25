@@ -349,9 +349,7 @@ int32_t AP_Landing::type_slope_get_target_airspeed_cm(void)
 
     switch (type_slope_stage) {
     case SlopeStage::APPROACH:
-        if (land_airspeed >= 0) {
-            target_airspeed_cm = land_airspeed * 100;
-        }
+        target_airspeed_cm = land_airspeed * 100;
         break;
 
     case SlopeStage::PREFLARE:
