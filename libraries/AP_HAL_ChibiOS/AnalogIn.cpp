@@ -80,9 +80,15 @@ const AnalogIn::pin_info AnalogIn::pin_config[] = { HAL_ANALOG_PINS };
 #if defined(HAL_ANALOG3_PINS) || HAL_WITH_MCU_MONITORING
 #if HAL_WITH_MCU_MONITORING
     // internal ADC channels (from H7 reference manual)
-    #define ADC3_VSENSE_CHAN 18
-    #define ADC3_VREFINT_CHAN 19
-    #define ADC3_VBAT4_CHAN 17
+    #ifndef ADC3_VSENSE_CHAN
+        #define ADC3_VSENSE_CHAN 18
+    #endif
+    #ifndef ADC3_VREFINT_CHAN
+        #define ADC3_VREFINT_CHAN 19
+    #endif
+    #ifndef ADC3_VBAT4_CHAN
+        #define ADC3_VBAT4_CHAN 17
+    #endif
     #define HAL_MCU_MONITORING_PINS {ADC3_VBAT4_CHAN, 252, 3.30/4096}, {ADC3_VSENSE_CHAN, 253, 3.30/4096}, {ADC3_VREFINT_CHAN, 254, 3.30/4096}
 #else
     #define HAL_MCU_MONITORING_PINS
