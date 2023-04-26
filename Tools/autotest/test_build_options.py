@@ -294,10 +294,11 @@ class TestBuildOptions(object):
 
     def run_disable_in_turn(self):
         options = self.get_build_options_from_ardupilot_tree()
-        if self.match_glob is not None:
-            options = list(filter(lambda x : fnmatch.fnmatch(x.define, self.match_glob), options))
         count = 1
         for feature in sorted(options, key=lambda x : x.define):
+            if self.match_glob is not None:
+                if not fnmatch.fnmatch(feature.define, self.match_glob):
+                    continue
             with open("/tmp/run-disable-in-turn-progress", "w") as f:
                 print(f.write(f"{count}/{len(options)} {feature.define}\n"))
                 #            if feature.define < "WINCH_ENABLED":
