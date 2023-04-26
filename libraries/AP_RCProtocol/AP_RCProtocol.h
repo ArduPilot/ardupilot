@@ -45,7 +45,9 @@ public:
 #if AP_RCPROTOCOL_SRXL2_ENABLED
         SRXL2      =  7,
 #endif
+#if AP_RCPROTOCOL_CRSF_ENABLED
         CRSF       =  8,
+#endif
         ST24       =  9,
 #if AP_RCPROTOCOL_FPORT_ENABLED
         FPORT      = 10,
@@ -97,7 +99,9 @@ public:
 #if AP_RCPROTOCOL_FPORT2_ENABLED
         case FPORT2:
 #endif
+#if AP_RCPROTOCOL_CRSF_ENABLED
         case CRSF:
+#endif
             return true;
         case IBUS:
         case SUMD:
