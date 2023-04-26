@@ -388,7 +388,7 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
         default:
             break;
     }
-#if HAL_CRSF_TELEM_ENABLED && !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+#if HAL_CRSF_TELEM_ENABLED
     if (AP_CRSF_Telem::process_frame(FrameType(_frame.type), (uint8_t*)&_frame.payload)) {
         process_telemetry();
     }
