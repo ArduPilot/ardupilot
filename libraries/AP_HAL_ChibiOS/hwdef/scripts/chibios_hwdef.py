@@ -3313,6 +3313,9 @@ def add_iomcu_firmware_defaults(f):
 // disable some protocols on iomcu:
 #define AP_RCPROTOCOL_FASTSBUS_ENABLED 0
 
+// no crossfire telemetry from iomcu!
+#define HAL_CRSF_TELEM_ENABLED 0
+
 // end IOMCU Firmware defaults
 ''')
 
