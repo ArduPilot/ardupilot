@@ -50,7 +50,7 @@ float Plane::calc_speed_scaler(void)
         speed_scaler = 1;
     }
     if (!plane.ahrs.airspeed_sensor_enabled()  && 
-        (plane.g2.flight_options & FlightOptions::SURPRESS_TKOFF_SCALING) &&
+        (plane.flight_option_enabled(FlightOptions::SURPRESS_TKOFF_SCALING)) &&
         (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF)) { //scaling is surpressed during climb phase of automatic takeoffs with no airspeed sensor being used due to problems with inaccurate airspeed estimates
         return MIN(speed_scaler, 1.0f) ;
     }
@@ -145,7 +145,7 @@ float Plane::stabilize_roll_get_roll_out()
         disable_integrator = true;
     }
     return rollController.get_servo_out(nav_roll_cd - ahrs.roll_sensor, speed_scaler, disable_integrator,
-                                        ground_mode && !(plane.g2.flight_options & FlightOptions::DISABLE_GROUND_PID_SUPPRESSION));
+                                        ground_mode && !(plane.flight_option_enabled(FlightOptions::DISABLE_GROUND_PID_SUPPRESSION)));
 }
 
 /*
@@ -208,7 +208,7 @@ float Plane::stabilize_pitch_get_pitch_out()
     }
 
     return pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, speed_scaler, disable_integrator,
-                                         ground_mode && !(plane.g2.flight_options & FlightOptions::DISABLE_GROUND_PID_SUPPRESSION));
+                                         ground_mode && !(plane.flight_option_enabled(FlightOptions::DISABLE_GROUND_PID_SUPPRESSION)));
 }
 
 /*
@@ -274,7 +274,7 @@ void Plane::stabilize_stick_mixing_fbw()
     nav_roll_cd += roll_input * roll_limit_cd;
     nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
 
-    if ((control_mode == &mode_loiter) && (plane.g2.flight_options & FlightOptions::ENABLE_LOITER_ALT_CONTROL)) {
+    if ((control_mode == &mode_loiter) && (plane.flight_option_enabled(FlightOptions::ENABLE_LOITER_ALT_CONTROL))) {
         // loiter is using altitude control based on the pitch stick, don't use it again here
         return;
     }
