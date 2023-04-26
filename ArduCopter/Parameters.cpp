@@ -1215,6 +1215,16 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("TKOFF_THR_MAX", 6, ParametersG2, takeoff_throttle_max, 0.9),
 
+#if MODE_FLIP_ENABLED == ENABLED
+    // @Param: FLIP_RATE
+    // @DisplayName: Flip Mode Rotational Rate
+    // @Description: Rotational Rate for Flip Mode in Deg/s.  Be sure to set a rotational rate that the aircraft can acheive.
+    // @Units: deg/s
+    // @Range: 60 1000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("FLIP_RATE", 7, ParametersG2, flip_rate_dps, 400),
+#endif
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND

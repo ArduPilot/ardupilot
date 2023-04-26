@@ -692,6 +692,10 @@ public:
     AP_Float pldp_range_finder_minimum_m;
     AP_Float pldp_delay_s;
     AP_Float pldp_descent_speed_ms;
+
+#if MODE_FLIP_ENABLED == ENABLED
+    AP_Int16 flip_rate_dps;
+#endif
 };
 
 extern const AP_Param::Info        var_info[];
