@@ -513,6 +513,16 @@ userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field throttle'array AP
 include AP_InertialSensor/AP_InertialSensor.h
 singleton AP_InertialSensor rename ins
 singleton AP_InertialSensor method get_temperature float uint8_t 0 INS_MAX_INSTANCES
+singleton AP_InertialSensor method healthy boolean
+singleton AP_InertialSensor method get_gyro_count uint8_t
+singleton AP_InertialSensor method get_gyro_health boolean uint8_t 0 INS_MAX_INSTANCES
+singleton AP_InertialSensor method get_gyro_health_all boolean
+singleton AP_InertialSensor method gyro_calibrated_ok boolean uint8_t 0 INS_MAX_INSTANCES
+singleton AP_InertialSensor method gyro_calibrated_ok_all boolean
+singleton AP_InertialSensor method get_accel_count uint8_t
+singleton AP_InertialSensor method get_accel_health boolean uint8_t 0 INS_MAX_INSTANCES
+singleton AP_InertialSensor method get_accel_health_all boolean
+singleton AP_InertialSensor method accel_calibrated_ok_all boolean
 
 singleton CAN manual get_device lua_get_CAN_device 1
 singleton CAN manual get_device2 lua_get_CAN_device2 1
