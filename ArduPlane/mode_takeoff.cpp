@@ -68,9 +68,10 @@ bool ModeTakeoff::_enter()
 
 void ModeTakeoff::update()
 {
-    if (!takeoff_started) {
-        // see if we will skip takeoff as already flying
-        if (plane.is_flying() && (millis() - plane.started_flying_ms > 10000U) && ahrs.groundspeed() > 3) {
+    const bool takeoff_always_climbs = plane.flight_option_enabled(FlightOptions::MODE_TAKEOFF_ALWAYS_CLIMBS);
+    if (!takeoff_started ) {
+        // see if we will skip takeoff as already flying and option to always climp is not set
+        if (plane.is_flying() && (millis() - plane.started_flying_ms > 10000U) && ahrs.groundspeed() > 3 && !takeoff_always_climbs) {
             gcs().send_text(MAV_SEVERITY_INFO, "Takeoff skipped - circling");
             plane.prev_WP_loc = plane.current_loc;
             plane.next_WP_loc = plane.current_loc;
@@ -99,8 +100,13 @@ void ModeTakeoff::update()
         plane.set_flight_stage(AP_FixedWing::FlightStage::TAKEOFF);
 
         if (!plane.throttle_suppressed) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Takeoff to %.0fm at %.1fm to %.1f deg",
+            if (plane.is_flying()) {
+                gcs().send_text(MAV_SEVERITY_INFO, "Climbing %.0fm for %.1fm heading %.1f deg",
                             alt, dist, direction);
+            } else {
+                gcs().send_text(MAV_SEVERITY_INFO, "Takeoff to %.0fm for %.1fm heading %.1f deg",
+                            alt, dist, direction);
+            }
             takeoff_started = true;
         }
     }
