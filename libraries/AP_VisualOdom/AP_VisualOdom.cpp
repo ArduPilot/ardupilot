@@ -190,7 +190,12 @@ void AP_VisualOdom::handle_vision_position_estimate(uint64_t remote_time_us, uin
     if (_driver != nullptr) {
         // convert attitude to quaternion and call backend
         Quaternion attitude;
-        attitude.from_euler(roll, pitch, yaw);
+        if (isnan(roll) || isnan(pitch) || isnan(yaw)) {
+            // use nan quaternion, not attitude available
+            attitude.q1 = attitude.q2 = attitude.q3 = attitude.q4 = nanf("");
+        } else {
+            attitude.from_euler(roll, pitch, yaw);
+        }
         _driver->handle_vision_position_estimate(remote_time_us, time_ms, x, y, z, attitude, posErr, angErr, reset_counter);
     }
 }
