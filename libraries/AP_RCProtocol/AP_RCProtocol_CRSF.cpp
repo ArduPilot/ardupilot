@@ -17,8 +17,11 @@
   Code by Andy Piper
  */
 
+#include "AP_RCProtocol_config.h"
+
+#if AP_RCPROTOCOL_CRSF_ENABLED
+
 #include "AP_RCProtocol.h"
-#include "AP_RCProtocol_SRXL.h"
 #include "AP_RCProtocol_CRSF.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
@@ -629,3 +632,5 @@ namespace AP {
         return AP_RCProtocol_CRSF::get_singleton();
     }
 };
+
+#endif  // AP_RCPROTOCOL_CRSF_ENABLED
