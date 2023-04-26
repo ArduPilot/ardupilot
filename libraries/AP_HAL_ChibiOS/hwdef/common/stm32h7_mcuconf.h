@@ -390,7 +390,7 @@
 #endif
 #define STM32_ADC_COMPACT_SAMPLES           FALSE
 #define STM32_ADC_USE_ADC12                 TRUE
-#if !defined(STM32H750xx) && !defined(STM32H730xx)
+#if !defined(STM32H750xx)
 #ifndef STM32_ADC_USE_ADC3
 #define STM32_ADC_USE_ADC3                  TRUE
 #endif

@@ -322,8 +322,12 @@
 /*
  * ADC driver system settings.
  */
+#ifndef STM32_ADC_DUAL_MODE
 #define STM32_ADC_DUAL_MODE                 FALSE
+#endif
+#ifndef STM32_ADC_SAMPLES_SIZE
 #define STM32_ADC_SAMPLES_SIZE              16
+#endif
 #define STM32_ADC_COMPACT_SAMPLES           FALSE
 #define STM32_ADC_USE_ADC12                 TRUE
 #define STM32_ADC_ADC12_DMA_PRIORITY        2
@@ -597,3 +601,8 @@
 #define STM32_SPI_SPI6_RX_BDMA_STREAM 4
 #define STM32_SPI_SPI6_TX_BDMA_STREAM 5
 #define STM32_ADC_ADC3_BDMA_STREAM 7
+
+// disable DMA on I2C by default on H7
+#ifndef STM32_I2C_USE_DMA
+#define STM32_I2C_USE_DMA FALSE
+#endif
