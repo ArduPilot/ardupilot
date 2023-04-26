@@ -48,7 +48,9 @@ void AP_RCProtocol::init()
 #endif
 #ifndef IOMCU_FW
     backend[AP_RCProtocol::SBUS_NI] = new AP_RCProtocol_SBUS(*this, false, 100000);
+#if AP_RCPROTOCOL_SRXL2_ENABLED
     backend[AP_RCProtocol::SRXL2] = new AP_RCProtocol_SRXL2(*this);
+#endif
     backend[AP_RCProtocol::CRSF] = new AP_RCProtocol_CRSF(*this);
 #if AP_RCPROTOCOL_FPORT2_ENABLED
     backend[AP_RCProtocol::FPORT2] = new AP_RCProtocol_FPort2(*this, true);
@@ -424,8 +426,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
     case SRXL:
         return "SRXL";
 #endif
+#if AP_RCPROTOCOL_SRXL2_ENABLED
     case SRXL2:
         return "SRXL2";
+#endif
     case CRSF:
         return "CRSF";
     case ST24:

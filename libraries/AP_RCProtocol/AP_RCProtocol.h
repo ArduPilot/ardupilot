@@ -42,7 +42,9 @@ public:
 #if AP_RCPROTOCOL_SRXL_ENABLED
         SRXL       =  6,
 #endif
+#if AP_RCPROTOCOL_SRXL2_ENABLED
         SRXL2      =  7,
+#endif
         CRSF       =  8,
         ST24       =  9,
 #if AP_RCPROTOCOL_FPORT_ENABLED
@@ -102,7 +104,9 @@ public:
 #if AP_RCPROTOCOL_SRXL_ENABLED
         case SRXL:
 #endif
+#if AP_RCPROTOCOL_SRXL2_ENABLED
         case SRXL2:
+#endif
         case ST24:
         case NONE:
             return false;
