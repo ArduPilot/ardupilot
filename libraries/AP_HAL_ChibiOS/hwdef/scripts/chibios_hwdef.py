@@ -2267,18 +2267,14 @@ def write_ADC_config(f):
     
     if len(adc_chans[1]) > 0:
         # ensure ADC1 and ADC2 are of same size
-        if len(adc_chans[0]) > len(adc_chans[1]):
-            # add dummy channel that's not already in adc_chans[1]
-            for chan in range(1,19):
-                if chan not in [c[0] for c in adc_chans[1]]:
-                    adc_chans[1].append((chan, 255, None, 'dummy', 'dummy'))
-                    break
-        elif len(adc_chans[0]) < len(adc_chans[1]):
-            # add dummy channel that's not already in adc_chans[0]
-            for chan in range(1,19):
-                if chan not in [c[0] for c in adc_chans[0]]:
-                    adc_chans[0].append((chan, 255, None, 'dummy', 'dummy'))
-                    break
+        # add dummy channels that are not already in adc_chans[1]
+        for chan in [c[0] for c in adc_chans[0]]:
+            if chan not in [c[0] for c in adc_chans[1]]:
+                adc_chans[1].append((chan, 255, None, 'dummy', 'dummy'))
+        # add dummy channels that are not already in adc_chans[0]
+        for chan in [c[0] for c in adc_chans[1]]:
+            if chan not in [c[0] for c in adc_chans[0]]:
+                adc_chans[0].append((chan, 255, None, 'dummy', 'dummy'))
         # check if ADC1 and ADC2 list if they have the same channel for same index
         # if not then jumble the channels around to have no matching channels
         for i in range(len(adc_chans[0])):
