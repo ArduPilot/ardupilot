@@ -62,23 +62,15 @@ ModeTakeoff::ModeTakeoff() :
 bool ModeTakeoff::_enter()
 {
     takeoff_started = false;
-
+    if (plane.is_flying() && (millis() - plane.started_flying_ms > 10000U) && ahrs.groundspeed() > 3) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"Cannot enter TAKEOFF mode while flying");
+        return false;
+    }
     return true;
 }
 
 void ModeTakeoff::update()
 {
-    if (!takeoff_started) {
-        // see if we will skip takeoff as already flying
-        if (plane.is_flying() && (millis() - plane.started_flying_ms > 10000U) && ahrs.groundspeed() > 3) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Takeoff skipped - circling");
-            plane.prev_WP_loc = plane.current_loc;
-            plane.next_WP_loc = plane.current_loc;
-            takeoff_started = true;
-            plane.set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
-        }
-    }
-
     if (!takeoff_started) {
         // setup target location 1.5 times loiter radius from the
         // takeoff point, at a height of TKOFF_ALT
@@ -99,7 +91,7 @@ void ModeTakeoff::update()
         plane.set_flight_stage(AP_FixedWing::FlightStage::TAKEOFF);
 
         if (!plane.throttle_suppressed) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Takeoff to %.0fm at %.1fm to %.1f deg",
+            gcs().send_text(MAV_SEVERITY_INFO, "Takeoff climb to %.0fm for %.1fm heading %.1f deg",
                             alt, dist, direction);
             takeoff_started = true;
         }
