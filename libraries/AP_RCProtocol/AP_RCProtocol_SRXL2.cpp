@@ -17,6 +17,10 @@
   Code by Andy Piper
  */
 
+#include "AP_RCProtocol_config.h"
+
+#if AP_RCPROTOCOL_SRXL2_ENABLED
+
 #include "AP_RCProtocol.h"
 #include "AP_RCProtocol_SRXL2.h"
 #include <AP_Math/AP_Math.h>
@@ -406,3 +410,5 @@ void srxlOnVtx(SrxlVtxData* pVtxData)
     AP_RCProtocol_Backend::configure_vtx(pVtxData->band, pVtxData->channel, pVtxData->power, pVtxData->pit);
 #endif
 }
+
+#endif  // AP_RCPROTOCOL_SRXL2_ENABLED
