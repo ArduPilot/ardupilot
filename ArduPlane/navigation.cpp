@@ -157,9 +157,9 @@ void Plane::calc_airspeed_errors()
 
     // FBW_B/cruise airspeed target
     if (!failsafe.rc_failsafe && (control_mode == &mode_fbwb || control_mode == &mode_cruise)) {
-        if (g2.flight_options & FlightOptions::CRUISE_TRIM_AIRSPEED) {
+        if (flight_option_enabled(FlightOptions::CRUISE_TRIM_AIRSPEED)) {
             target_airspeed_cm = aparm.airspeed_cruise_cm;
-        } else if (g2.flight_options & FlightOptions::CRUISE_TRIM_THROTTLE) {
+        } else if (flight_option_enabled(FlightOptions::CRUISE_TRIM_THROTTLE)) {
             float control_min = 0.0f;
             float control_mid = 0.0f;
             const float control_max = channel_throttle->get_range();

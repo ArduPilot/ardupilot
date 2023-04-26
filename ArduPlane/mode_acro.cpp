@@ -111,7 +111,7 @@ void ModeAcro::stabilize()
         const float rudd_expo = plane.rudder_in_expo(true);
         const float yaw_rate = (rudd_expo/SERVO_MAX) * plane.g.acro_yaw_rate;
         plane.steering_control.steering = plane.steering_control.rudder = plane.yawController.get_rate_out(yaw_rate,  speed_scaler, false);
-    } else if (plane.g2.flight_options & FlightOptions::ACRO_YAW_DAMPER) {
+    } else if (plane.flight_option_enabled(FlightOptions::ACRO_YAW_DAMPER)) {
         // use yaw controller
         plane.calc_nav_yaw_coordinated();
     } else {
