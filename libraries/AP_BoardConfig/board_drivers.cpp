@@ -301,12 +301,14 @@ void AP_BoardConfig::validate_board_type(void)
 void AP_BoardConfig::board_autodetect(void)
 {
 #if defined(HAL_VALIDATE_BOARD)
-    const char* errored_check = HAL_VALIDATE_BOARD;
-    if (errored_check == nullptr) {
-        return;
-    } else {
-        config_error("Board Validation %s Failed", errored_check);
-        return;
+    if((_options & SKIP_BOARD_VALIDATION) == 0) {
+        const char* errored_check = HAL_VALIDATE_BOARD;
+        if (errored_check == nullptr) {
+            return;
+        } else {
+            config_error("Board Validation %s Failed", errored_check);
+            return;
+        }
     }
 #endif
 
