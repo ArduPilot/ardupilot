@@ -143,7 +143,7 @@
     </topic>
   </data_writer>
   <topic profile_name="localvelocity__t">
-    <name>rt/ROS2_LocalVelocity</name>
+    <name>rt/ap/twist/filtered</name>
     <dataType>geometry_msgs::msg::dds_::TwistStamped_</dataType>
     <historyQos>
       <kind>KEEP_LAST</kind>
@@ -162,7 +162,7 @@
     </qos>
     <topic>
       <kind>NO_KEY</kind>
-      <name>rt/ROS2_LocalVelocity</name>
+      <name>rt/ap/twist/filtered</name>
       <dataType>geometry_msgs::msg::dds_::TwistStamped_</dataType>
       <historyQos>
         <kind>KEEP_LAST</kind>
