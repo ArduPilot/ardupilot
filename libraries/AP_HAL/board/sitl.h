@@ -77,5 +77,5 @@
 #endif
 
 #ifndef HAL_CAN_DRIVER_DEFAULT
-#define HAL_CAN_DRIVER_DEFAULT 1
+#define HAL_CAN_DRIVER_DEFAULT 0
 #endif
