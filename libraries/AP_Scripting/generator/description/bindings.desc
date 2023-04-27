@@ -334,6 +334,8 @@ singleton AP_Baro method get_pressure float
 singleton AP_Baro method get_temperature float
 singleton AP_Baro method get_external_temperature float
 singleton AP_Baro method get_altitude float
+singleton AP_Baro method all_healthy boolean
+singleton AP_Baro method healthy boolean uint8_t 0 BARO_MAX_INSTANCES
 
 include AP_OpticalFlow/AP_OpticalFlow.h
 singleton AP_OpticalFlow depends AP_OPTICALFLOW_ENABLED
