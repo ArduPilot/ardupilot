@@ -3,7 +3,7 @@
 include ../KakuteH7-bdshot/hwdef.dat
 
 undef sdcard
-undef icm20689
+undef mpu6000
 undef IMU
 undef HAL_OS_FATFS_IO
 undef HAL_BOARD_LOG_DIRECTORY
@@ -57,7 +57,7 @@ define HAL_BATT2_CURR_SCALE 59.5
 define HAL_BATT2_MONITOR_DEFAULT 4
 
 SPIDEV dataflash SPI1 DEVID1 SDCARD_CS      MODE3 104*MHZ 104*MHZ
-SPIDEV bmi270    SPI4 DEVID1 ICM20689_CS    MODE3  1*MHZ  10*MHZ # Clock is 100Mhz so highest clock <= 10Mhz is 100Mhz/16
+SPIDEV bmi270    SPI4 DEVID1 mpu6000_CS      MODE3  1*MHZ  10*MHZ # Clock is 100Mhz so highest clock <= 10Mhz is 100Mhz/16
 
 IMU BMI270 SPI:bmi270 ROTATION_ROLL_180
 
