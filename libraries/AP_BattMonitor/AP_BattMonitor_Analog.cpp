@@ -81,7 +81,7 @@ AP_BattMonitor_Analog::AP_BattMonitor_Analog(AP_BattMonitor &mon,
         _volt_multiplier.set_default(HAL_BATT2_VOLT_SCALE);
 #endif
 #ifdef HAL_BATT2_CURR_SCALE
-        _curr_amp_per_volt.set_default(HAL_BATT2_VOLT_SCALE);
+        _curr_amp_per_volt.set_default(HAL_BATT2_CURR_SCALE);
 #endif
     }
 #endif
