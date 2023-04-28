@@ -138,6 +138,13 @@ local CAM_COMMAND_STOP_RECORD = 0x15
 local CAM_COMMAND_AUTO_FOCUS = 0x19
 local CAM_COMMAND_MANUAL_FOCUS = 0x1A
 
+-- tracking commands
+local TRACK_COMMAND_STOP = 0x01
+local TRACK_COMMAND_START = 0x03
+local TRACK_COMMAND2_SET_POINT = 0x0A
+local TRACK_COMMAND2_SET_RECT_TOPLEFT = 0x0B
+local TRACK_COMMAND2_SET_RECT_BOTTOMRIGHT = 0x0C
+
 -- camera control2 commands
 local CAM_COMMAND2_SET_EO_ZOOM = 0x53
 
@@ -161,6 +168,12 @@ local cam_zoom_type = 0                 -- last zoom type 1:Rate 2:Pct
 local cam_zoom_value = 0                -- last zoom value.  If rate, zoom out = -1, hold = 0, zoom in = 1.  If Pct then value from 0 to 100
 local cam_focus_type = 0                -- last focus type 1:Rate, 2:Pct, 4:Auto
 local cam_focus_value = 0               -- last focus value.  If Rate then focus in = -1, focus hold = 0, focus out = 1
+local last_tracking_type = 0            -- last recorded tracking type (0:None, 1:Point, 2:Rectangle)
+local last_tracking_p1x = 0             -- last recorded tracking point1 (used for center or top-left)
+local last_tracking_p1y = 0             -- last recorded tracking point1 (used for center or top-left)
+local last_tracking_p2x = 0             -- last recorded tracking point2 (bottom-right)
+local last_tracking_p2y = 0             -- last recorded tracking point2 (bottom-right)
+local tracking_active = false           -- true when tracking is active (rate and angle controls are disabled)
 
 -- parsing status reporting variables
 local last_print_ms = 0                 -- system time that debug output was last printed
@@ -528,6 +541,68 @@ function send_camera_control2(cam_command, cam_value)
   write_byte(checksum, 0)                               -- checksum
 end
 
+-- send tracking commands using E1 message
+function send_tracking_control(camera_choice, tracking_command, param2)
+
+  -- prepare E1 message, FrameId 0x1E
+  -- byte0 : tracking source (0x01:EO 1, 0x02: IR, 0x03:EO 2)
+  -- byte1 : basic command
+  --         0x02: Search (Bring up the cross
+  --         0x03: Turn on tracking
+  --         0x04: Switch tracking point to cross position(take placed by enable tracking)
+  --         0X05: AI function ON/OFF
+  --         0X08: For AI. Auto track target once identified
+  --         0x09: For AI. Change target when click targets identified
+  --         0x0A: For AI. Not change target when click identified targets.
+  --         0X21: 32× 32 small template
+  --         0X22: 64× 64 medium template
+  --         0X23: 128× 128 big template
+  --         0X24: Self-adapt between small and medium template
+  --         0X25: Self-adapt between small and big template
+  --         0X26: Self-adapt between medium and big template
+  --         0X28: Self-adaption between small, medium and big template
+  --  byte2 : parameter 2, value related to above command
+
+  local length_and_frame_counter = calc_length_and_frame_byte(0x06)
+  write_byte(HEADER1, 0)
+  write_byte(HEADER2, 0)
+  write_byte(HEADER3, 0)
+  local checksum = write_byte(length_and_frame_counter, 0)  -- length and frame count
+  checksum = write_byte(0x1E, checksum)                 -- 0x1E: E1 FrameId
+  checksum = write_byte(camera_choice, checksum)        -- camera choice
+  checksum = write_byte(tracking_command & 0xFF, checksum)  -- tracking command
+  checksum = write_byte(param2 & 0xFF, checksum)        -- param2
+  write_byte(checksum, 0)                               -- checksum
+end
+
+-- send tracking commands using E2 message
+function send_tracking_control2(tracking_command2, param1, param2)
+
+  -- prepare E2 message, FrameId 0x2E
+  -- byte0 : tracking source (0x01:EO 1, 0x02: IR, 0x03:EO 2)
+  -- byte1 : basic command
+  --         0x0A: The tracking point moves to the commanded position
+  --         0x0B: Rectangular tracking area, top left corner point set
+  --         0x0C: Rectangular tracking area, lower right corner point set
+  --  byte2~3 : Tracking point yaw, 1bit=1pixel, -960~960, 0 is center, negative is left, positive is right
+  --  byte4~5 : Tracking point pitch, 1bit=1pixel, -540~540, 0 is center, negative is up, positive is down
+
+  param1 = math.floor(param1 + 0.5) & 0xFFFF
+  param2 = math.floor(param2 + 0.5) & 0xFFFF
+  local length_and_frame_counter = calc_length_and_frame_byte(0x08)
+  write_byte(HEADER1, 0)
+  write_byte(HEADER2, 0)
+  write_byte(HEADER3, 0)
+  local checksum = write_byte(length_and_frame_counter, 0)  -- length and frame count
+  checksum = write_byte(0x2E, checksum)             -- 0x1E: E1 FrameId
+  checksum = write_byte(tracking_command2 & 0xFF, checksum) -- tracking command2
+  checksum = write_byte(highbyte(param1), checksum) -- param1 msb
+  checksum = write_byte(lowbyte(param1), checksum)  -- param1 lsb
+  checksum = write_byte(highbyte(param2), checksum) -- param2 msb
+  checksum = write_byte(lowbyte(param2), checksum)  -- param2 lsb
+  write_byte(checksum, 0)                           -- checksum
+end
+
 -- return camera selection according to RC switch position and VIEW_CAM_SWxxx parameter
 -- used in C1 message's "video choose" to specify which cameras should be controlled
 function get_camera_choice()
@@ -645,6 +720,59 @@ function check_camera_state()
   end
 end
 
+-- check for changes in tracking state and send messages to gimbal if required
+function check_tracking_state()
+
+  -- get latest camera state from AP driver
+  local cam_state = camera:get_state(CAMERA_INSTANCE)
+  if not cam_state then
+    return
+  end
+
+  -- get current camera choice
+  local curr_cam_choice = get_camera_choice()
+
+  -- check for change in tracking state
+  local tracking_type_changed = cam_state:tracking_type() ~= last_tracking_type
+  local tracking_type_p1_changed = (cam_state:tracking_p1x() ~= last_tracking_p1x) or (cam_state:tracking_p1y() ~= last_tracking_p1y)
+  local tracking_type_p2_changed = (cam_state:tracking_p2x() ~= last_tracking_p2x) or (cam_state:tracking_p2y() ~= last_tracking_p2y)
+  last_tracking_type = cam_state:tracking_type()
+  last_tracking_p1x = cam_state:tracking_p1x()
+  last_tracking_p1y = cam_state:tracking_p1y()
+  last_tracking_p2x = cam_state:tracking_p2x()
+  last_tracking_p2y = cam_state:tracking_p2y()
+
+  if (last_tracking_type == 0) and tracking_type_changed then
+    -- turn off tracking
+    send_tracking_control(curr_cam_choice, TRACK_COMMAND_STOP, 0)
+    tracking_active = false
+    gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: tracking OFF")
+  end
+
+  if (last_tracking_type == 1) and (tracking_type_changed or tracking_type_p1_changed) then
+    -- turn tracking point on
+    local yaw_value = (last_tracking_p1x - 0.5) * 960
+    local pitch_value = (last_tracking_p1y - 0.5) * 540
+    send_tracking_control(curr_cam_choice, TRACK_COMMAND_START, 0)
+    send_tracking_control2(TRACK_COMMAND2_SET_POINT, yaw_value, pitch_value)
+    tracking_active = true
+    gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: tracking point ON")
+  end
+
+  if (last_tracking_type == 2) and (tracking_type_changed or tracking_type_p1_changed or tracking_type_p2_changed) then
+    -- turn tracking rectangle on
+    local yaw_value1 = (last_tracking_p1x - 0.5) * 960
+    local pitch_value1 = (last_tracking_p1y - 0.5) * 540
+    local yaw_value2 = (last_tracking_p2x - 0.5) * 960
+    local pitch_value2 = (last_tracking_p2y - 0.5) * 540
+    send_tracking_control(curr_cam_choice, TRACK_COMMAND_START, 0)
+    send_tracking_control2(TRACK_COMMAND2_SET_RECT_TOPLEFT, yaw_value1, pitch_value1)
+    send_tracking_control2(TRACK_COMMAND2_SET_RECT_BOTTOMRIGHT, yaw_value2, pitch_value2)
+    tracking_active = true
+    gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: tracking rectangle ON")
+  end
+end
+
 -- the main update function that performs a simplified version of RTL
 function update()
 
@@ -669,6 +797,9 @@ function update()
   -- check camera state and send control messages
   check_camera_state()
 
+  -- check tracking state and send tracking control messages
+  check_tracking_state()
+
   -- send heartbeat, gimbal should respond with T1+F1+B1+D1
   send_msg(HEARTBEAT_MSG)
 
@@ -678,21 +809,23 @@ function update()
     send_msg(HEARTBEAT_MSG)
   end
 
-  -- send target angle to gimbal
-  local roll_deg, pitch_deg, yaw_deg, yaw_is_ef = mount:get_angle_target(MOUNT_INSTANCE)
-  if roll_deg and pitch_deg and yaw_deg then
-    if yaw_is_ef then
-      yaw_deg = wrap_180(yaw_deg - math.deg(ahrs:get_yaw()))
+  if not tracking_active then
+    -- send target angle to gimbal
+    local roll_deg, pitch_deg, yaw_deg, yaw_is_ef = mount:get_angle_target(MOUNT_INSTANCE)
+    if roll_deg and pitch_deg and yaw_deg then
+      if yaw_is_ef then
+        yaw_deg = wrap_180(yaw_deg - math.deg(ahrs:get_yaw()))
+      end
+      send_target_angles(pitch_deg, yaw_deg)
+      return update, UPDATE_INTERVAL_MS
     end
-    send_target_angles(pitch_deg, yaw_deg)
-    return update, UPDATE_INTERVAL_MS
-  end
 
-  -- send target rate to gimbal
-  local roll_degs, pitch_degs, yaw_degs, _ = mount:get_rate_target(MOUNT_INSTANCE)
-  if roll_degs and pitch_degs and yaw_degs then
-    send_target_rates(pitch_degs, yaw_degs)
-    return update, UPDATE_INTERVAL_MS
+    -- send target rate to gimbal
+    local roll_degs, pitch_degs, yaw_degs, _ = mount:get_rate_target(MOUNT_INSTANCE)
+    if roll_degs and pitch_degs and yaw_degs then
+      send_target_rates(pitch_degs, yaw_degs)
+      return update, UPDATE_INTERVAL_MS
+    end
   end
 
   return update, UPDATE_INTERVAL_MS
