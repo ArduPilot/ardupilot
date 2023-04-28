@@ -30,7 +30,7 @@ void Copter::takeoff_check()
     // check ESCs are sending RPM at expected level
     uint32_t motor_mask = motors->get_motor_mask();
     const bool telem_active = AP::esc_telem().is_telemetry_active(motor_mask);
-    const bool rpm_adequate = AP::esc_telem().are_motors_running(motor_mask, g2.takeoff_rpm_min);
+    const bool rpm_adequate = AP::esc_telem().are_motors_running(motor_mask, g2.takeoff_rpm_min, g2.takeoff_rpm_max);
 
     // if RPM is at the expected level clear block
     if (telem_active && rpm_adequate) {
@@ -49,7 +49,7 @@ void Copter::takeoff_check()
         if (!telem_active) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "%s waiting for ESC RPM", prefix_str);
         } else if (!rpm_adequate) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "%s ESC RPM too low", prefix_str);
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "%s ESC RPM out of range", prefix_str);
         }
     }
 #endif
