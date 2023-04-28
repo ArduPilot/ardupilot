@@ -39,7 +39,7 @@ public:
     float get_average_motor_rpm() const { return get_average_motor_rpm(0xFFFFFFFF); }
 
     // determine whether all the motors in servo_channel_mask are running
-    bool are_motors_running(uint32_t servo_channel_mask, float min_rpm) const;
+    bool are_motors_running(uint32_t servo_channel_mask, float min_rpm, float max_rpm) const;
 
     // get an individual ESC's temperature in centi-degrees if available, returns true on success
     bool get_temperature(uint8_t esc_index, int16_t& temp) const;
@@ -136,4 +136,3 @@ namespace AP {
 };
 
 #endif // HAL_WITH_ESC_TELEM
-
