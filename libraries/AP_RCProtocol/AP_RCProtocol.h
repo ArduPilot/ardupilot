@@ -35,8 +35,12 @@ public:
     enum rcprotocol_t {
         PPM        =  0,
         IBUS       =  1,
+#if AP_RCPROTOCOL_SBUS_ENABLED
         SBUS       =  2,
+#endif
+#if AP_RCPROTOCOL_SBUS_NI_ENABLED
         SBUS_NI    =  3,
+#endif
         DSM        =  4,
         SUMD       =  5,
 #if AP_RCPROTOCOL_SRXL_ENABLED
@@ -90,8 +94,12 @@ public:
 #if AP_RCPROTOCOL_FASTSBUS_ENABLED
         case FASTSBUS:
 #endif
+#if AP_RCPROTOCOL_SBUS_ENABLED
         case SBUS:
+#endif
+#if AP_RCPROTOCOL_SBUS_NI_ENABLED
         case SBUS_NI:
+#endif
         case PPM:
 #if AP_RCPROTOCOL_FPORT_ENABLED
         case FPORT:
