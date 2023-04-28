@@ -1912,12 +1912,11 @@ void NavEKF3_core::ConstrainVariances()
         zeroRows(P,10,12);
     }
 
-    const ftype minStateVarTarget = 1E-11;
+    const ftype minSafeStateVar = 1E-9;
     if (!inhibitDelVelBiasStates) {
 
         // Find the maximum delta velocity bias state variance and request a covariance reset if any variance is below the safe minimum
-        const ftype minSafeStateVar = minStateVarTarget * 0.1f;
-        ftype maxStateVar = minSafeStateVar;
+        ftype maxStateVar = 0.0F;
         bool resetRequired = false;
         for (uint8_t stateIndex=13; stateIndex<=15; stateIndex++) {
             if (P[stateIndex][stateIndex] > maxStateVar) {
@@ -1929,7 +1928,7 @@ void NavEKF3_core::ConstrainVariances()
 
         // To ensure stability of the covariance matrix operations, the ratio of a max and min variance must
         // not exceed 100 and the minimum variance must not fall below the target minimum
-        ftype minAllowedStateVar = fmaxF(0.01f * maxStateVar, minStateVarTarget);
+        ftype minAllowedStateVar = fmaxF(0.01f * maxStateVar, minSafeStateVar);
         for (uint8_t stateIndex=13; stateIndex<=15; stateIndex++) {
             P[stateIndex][stateIndex] = constrain_ftype(P[stateIndex][stateIndex], minAllowedStateVar, sq(10.0f * dtEkfAvg));
         }
@@ -1944,18 +1943,19 @@ void NavEKF3_core::ConstrainVariances()
             // reset all delta velocity bias covariances
             zeroCols(P,13,15);
             zeroRows(P,13,15);
-            // restore all delta velocity bias variances
+            // restore all delta velocity bias variances to a margin above the minimum safe value
             for (uint8_t i=0; i<=2; i++) {
-                P[i+13][i+13] = delVelBiasVar[i];
+                P[i+13][i+13] = MAX(delVelBiasVar[i], minSafeStateVar * 10.0F);
             }
         }
 
     } else {
         zeroCols(P,13,15);
         zeroRows(P,13,15);
+        // set all delta velocity bias variances to a margin above the minimum safe value
         for (uint8_t i=0; i<=2; i++) {
             const uint8_t stateIndex = i + 13;
-            P[stateIndex][stateIndex] = fmaxF(P[stateIndex][stateIndex], minStateVarTarget);
+            P[stateIndex][stateIndex] = fmaxF(P[stateIndex][stateIndex], minSafeStateVar * 10.0F);
         }
     }
 
