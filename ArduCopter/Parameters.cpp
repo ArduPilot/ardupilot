@@ -1215,6 +1215,15 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("TKOFF_THR_MAX", 6, ParametersG2, takeoff_throttle_max, 0.9),
 
+#if HAL_WITH_ESC_TELEM && FRAME_CONFIG != HELI_FRAME
+    // @Param: TKOFF_RPM_MAX
+    // @DisplayName: Takeoff Check RPM maximum
+    // @Description: Takeoff is not permitted until motors report no more than this RPM.  Set to zero to disable check
+    // @Range: 0 10000
+    // @User: Standard
+    AP_GROUPINFO("TKOFF_RPM_MAX", 7, ParametersG2, takeoff_rpm_max, 0),
+#endif
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND
