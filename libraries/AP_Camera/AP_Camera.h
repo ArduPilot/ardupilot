@@ -80,9 +80,13 @@ public:
     // update - to be called periodically at 50Hz
     void update();
 
-    // MAVLink methods
+    // handle MAVLink messages from the camera
     void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg);
+
+    // handle MAVLink command from GCS to control the camera
     MAV_RESULT handle_command_long(const mavlink_command_long_t &packet);
+
+    // send camera feedback message to GCS
     void send_feedback(mavlink_channel_t chan);
 
     // configure camera

@@ -65,7 +65,7 @@ public:
     // focus in = -1, focus hold = 0, focus out = 1
     virtual bool set_focus(FocusType focus_type, float focus_value) { return false; }
 
-    // handle incoming mavlink message
+    // handle MAVLink messages from the camera
     virtual void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg) {}
 
     // configure camera
