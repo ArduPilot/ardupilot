@@ -681,6 +681,7 @@ public:
     AP_Float takeoff_throttle_max;
 #if HAL_WITH_ESC_TELEM && FRAME_CONFIG != HELI_FRAME
     AP_Int16 takeoff_rpm_min;
+    AP_Int16 takeoff_rpm_max;
 #endif
 
 #if WEATHERVANE_ENABLED == ENABLED
