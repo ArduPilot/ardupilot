@@ -139,6 +139,7 @@ void Plane::rudder_arm_disarm_check()
 				arming.arm(AP_Arming::Method::RUDDER);
                 rudder_arm_timer = 0;
                 seen_neutral_rudder = false;
+                takeoff_state.rudder_takeoff_warn_ms = now;
             }
 		} else {
 			// not at full right rudder
@@ -221,7 +222,7 @@ int16_t Plane::rudder_input(void)
         return 0;
     }
 
-    if ((g2.flight_options & FlightOptions::DIRECT_RUDDER_ONLY) &&
+    if ((flight_option_enabled(FlightOptions::DIRECT_RUDDER_ONLY)) &&
         !(control_mode == &mode_manual || control_mode == &mode_stabilize || control_mode == &mode_acro)) {
         // the user does not want any input except in these modes
         return 0;
@@ -435,8 +436,8 @@ bool Plane::throttle_at_zero(void) const
 /* true if throttle stick is at idle position...if throttle trim has been moved
    to center stick area in conjunction with sprung throttle, cannot use in_trim, must use rc_min
 */
-    if (((!(g2.flight_options & FlightOptions::CENTER_THROTTLE_TRIM) && channel_throttle->in_trim_dz()) ||
-        (g2.flight_options & FlightOptions::CENTER_THROTTLE_TRIM && channel_throttle->in_min_dz()))) {
+    if (((!(flight_option_enabled(FlightOptions::CENTER_THROTTLE_TRIM) && channel_throttle->in_trim_dz())) ||
+        (flight_option_enabled(FlightOptions::CENTER_THROTTLE_TRIM)&& channel_throttle->in_min_dz()))) {
         return true;
     }
     return false;

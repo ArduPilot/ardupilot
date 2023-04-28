@@ -23,6 +23,8 @@
 
 #if AP_CAMERA_ENABLED
 #include "AP_Camera.h"
+#include <AP_Common/Location.h>
+#include <AP_Logger/LogStructure.h>
 
 class AP_Camera_Backend
 {
@@ -56,16 +58,12 @@ public:
     // set start_recording = true to start record, false to stop recording
     virtual bool record_video(bool start_recording) { return false; }
 
-    // set camera zoom step.  returns true on success
-    // zoom out = -1, hold = 0, zoom in = 1
-    virtual bool set_zoom_step(int8_t zoom_step) { return false; }
+    // set zoom specified as a rate or percentage
+    virtual bool set_zoom(ZoomType zoom_type, float zoom_value) { return false; }
 
-    // set focus in, out or hold.  returns true on success
+    // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
-    virtual bool set_manual_focus_step(int8_t focus_step) { return false; }
-
-    // auto focus.  returns true on success
-    virtual bool set_auto_focus() { return false; }
+    virtual bool set_focus(FocusType focus_type, float focus_value) { return false; }
 
     // handle incoming mavlink message
     virtual void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg) {}
@@ -85,7 +83,7 @@ public:
 #if AP_CAMERA_SCRIPTING_ENABLED
     // accessor to allow scripting backend to retrieve state
     // returns true on success and cam_state is filled in
-    virtual bool get_state(camera_state_t& cam_state) { return false; }
+    virtual bool get_state(AP_Camera::camera_state_t& cam_state) { return false; }
 #endif
 
 protected:

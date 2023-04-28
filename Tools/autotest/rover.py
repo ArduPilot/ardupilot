@@ -5236,6 +5236,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             "SCR_HEAP_SIZE": 1024000,
             "SCR_VM_I_COUNT": 1000000,
         })
+        self.install_test_modules_context()
         for script in test_scripts:
             self.install_test_script_context(script)
         self.reboot_sitl()
@@ -6354,6 +6355,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.GCSFailsafe,
             self.InitialMode,
             self.DriveMaxRCIN,
+            self.NoArmWithoutMissionItems,
+            self.CompassPrearms,
         ])
         return ret
 

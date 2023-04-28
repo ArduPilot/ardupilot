@@ -385,14 +385,11 @@ void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg){
 
     if (!att_quat.is_nan()) {
         // convert quaternion to euler angles
-        float roll_rad, pitch_rad, yaw_rad;
-        att_quat.to_euler(roll_rad, pitch_rad, yaw_rad);
+        Vector3f attitude;
+        att_quat.to_euler(attitude);  // attitude is in radians here
+        attitude *= RAD_TO_DEG;  // convert to degrees
 
-        // radian to deg conversion
-        const float roll_deg = degrees(roll_rad);
-        const float pitch_deg = degrees(pitch_rad);
-        const float yaw_deg = degrees(yaw_rad);
-        backend->set_angle_target(roll_deg, pitch_deg, yaw_deg, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        backend->set_angle_target(attitude.x, attitude.y, attitude.z, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return;
     }
 
@@ -473,6 +470,17 @@ void AP_Mount::send_gimbal_device_attitude_status(mavlink_channel_t chan)
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
             _backends[instance]->send_gimbal_device_attitude_status(chan);
+        }
+    }
+}
+
+// send a GIMBAL_MANAGER_INFORMATION message to GCS
+void AP_Mount::send_gimbal_manager_information(mavlink_channel_t chan)
+{
+    // call send_gimbal_device_attitude_status for each instance
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        if (_backends[instance] != nullptr) {
+            _backends[instance]->send_gimbal_manager_information(chan);
         }
     }
 }
@@ -565,15 +573,6 @@ void AP_Mount::set_attitude_euler(uint8_t instance, float roll_deg, float pitch_
     backend->set_attitude_euler(roll_deg, pitch_deg, yaw_bf_deg);
 }
 
-bool AP_Mount::get_camera_state(uint8_t instance, uint16_t& pic_count, bool& record_video, int8_t& zoom_step, int8_t& focus_step, bool& auto_focus)
-{
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
-        return false;
-    }
-    return backend->get_camera_state(pic_count, record_video, zoom_step, focus_step, auto_focus);
-}
-
 // point at system ID sysid
 void AP_Mount::set_target_sysid(uint8_t instance, uint8_t sysid)
 {
@@ -630,38 +629,26 @@ bool AP_Mount::record_video(uint8_t instance, bool start_recording)
     return backend->record_video(start_recording);
 }
 
-// set camera zoom step.  returns true on success
-// zoom out = -1, hold = 0, zoom in = 1
-bool AP_Mount::set_zoom_step(uint8_t instance, int8_t zoom_step)
+// set zoom specified as a rate or percentage
+bool AP_Mount::set_zoom(uint8_t instance, ZoomType zoom_type, float zoom_value)
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
         return false;
     }
-    return backend->set_zoom_step(zoom_step);
+    return backend->set_zoom(zoom_type, zoom_value);
 }
 
-// set focus in, out or hold.  returns true on success
+// set focus specified as rate, percentage or auto
 // focus in = -1, focus hold = 0, focus out = 1
-bool AP_Mount::set_manual_focus_step(uint8_t instance, int8_t focus_step)
+bool AP_Mount::set_focus(uint8_t instance, FocusType focus_type, float focus_value)
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
         return false;
     }
-    return backend->set_manual_focus_step(focus_step);
+    return backend->set_focus(focus_type, focus_value);
 }
-
-// auto focus.  returns true on success
-bool AP_Mount::set_auto_focus(uint8_t instance)
-{
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
-        return false;
-    }
-    return backend->set_auto_focus();
-}
-
 
 AP_Mount_Backend *AP_Mount::get_primary() const
 {

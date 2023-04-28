@@ -190,6 +190,7 @@ private:
 
     // flight modes convenience array
     AP_Int8 *flight_modes = &g.flight_mode1;
+    const uint8_t num_flight_modes = 6;
 
     AP_FixedWing::Rangefinder_State rangefinder_state;
 
@@ -401,11 +402,13 @@ private:
     struct {
         uint32_t last_tkoff_arm_time;
         uint32_t last_check_ms;
+        uint32_t rudder_takeoff_warn_ms;
         uint32_t last_report_ms;
         bool launchTimerStarted;
         uint8_t accel_event_counter;
         uint32_t accel_event_ms;
         uint32_t start_time_ms;
+        bool waiting_for_rudder_neutral;
     } takeoff_state;
 
     // ground steering controller state
@@ -966,7 +969,6 @@ private:
     // control_modes.cpp
     void read_control_switch();
     uint8_t readSwitch(void) const;
-    void reset_control_switch();
     void autotune_start(void);
     void autotune_restore(void);
     void autotune_enable(bool enable);
@@ -974,6 +976,10 @@ private:
     bool mode_allows_autotuning(void);
     uint8_t get_mode() const override { return (uint8_t)control_mode->mode_number(); }
     Mode *mode_from_mode_num(const enum Mode::Number num);
+    bool current_mode_requires_mission() const override {
+        return control_mode == &mode_auto;
+    }
+
     bool autotuning;
 
     // events.cpp
@@ -1021,6 +1027,7 @@ private:
     void update_fly_forward(void);
     void update_flight_stage();
     void set_flight_stage(AP_FixedWing::FlightStage fs);
+    bool flight_option_enabled(FlightOptions flight_option) const;
 
     // navigation.cpp
     void loiter_angle_reset(void);
@@ -1099,6 +1106,7 @@ private:
     void channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, SRV_Channel::Aux_servo_function_t func2_in,
                                 SRV_Channel::Aux_servo_function_t func1_out, SRV_Channel::Aux_servo_function_t func2_out) const;
     void flaperon_update();
+    void indicate_waiting_for_rud_neutral_to_takeoff(void);
 
     // is_flying.cpp
     void update_is_flying_5Hz(void);

@@ -15,7 +15,9 @@ protected:
 
     uint32_t telem_delay() const override;
 
+#if AP_MAVLINK_MISSION_SET_CURRENT_ENABLED
     void handle_mission_set_current(AP_Mission &mission, const mavlink_message_t &msg) override;
+#endif
 
     uint8_t sysid_my_gcs() const override;
     bool sysid_enforce() const override;

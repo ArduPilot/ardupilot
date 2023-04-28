@@ -50,7 +50,7 @@ float Plane::calc_speed_scaler(void)
         speed_scaler = 1;
     }
     if (!plane.ahrs.airspeed_sensor_enabled()  && 
-        (plane.g2.flight_options & FlightOptions::SURPRESS_TKOFF_SCALING) &&
+        (plane.flight_option_enabled(FlightOptions::SURPRESS_TKOFF_SCALING)) &&
         (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF)) { //scaling is surpressed during climb phase of automatic takeoffs with no airspeed sensor being used due to problems with inaccurate airspeed estimates
         return MIN(speed_scaler, 1.0f) ;
     }
@@ -145,7 +145,7 @@ float Plane::stabilize_roll_get_roll_out()
         disable_integrator = true;
     }
     return rollController.get_servo_out(nav_roll_cd - ahrs.roll_sensor, speed_scaler, disable_integrator,
-                                        ground_mode && !(plane.g2.flight_options & FlightOptions::DISABLE_GROUND_PID_SUPPRESSION));
+                                        ground_mode && !(plane.flight_option_enabled(FlightOptions::DISABLE_GROUND_PID_SUPPRESSION)));
 }
 
 /*
@@ -208,7 +208,7 @@ float Plane::stabilize_pitch_get_pitch_out()
     }
 
     return pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, speed_scaler, disable_integrator,
-                                         ground_mode && !(plane.g2.flight_options & FlightOptions::DISABLE_GROUND_PID_SUPPRESSION));
+                                         ground_mode && !(plane.flight_option_enabled(FlightOptions::DISABLE_GROUND_PID_SUPPRESSION)));
 }
 
 /*
@@ -219,6 +219,11 @@ void Plane::stabilize_stick_mixing_direct()
     if (!stick_mixing_enabled()) {
         return;
     }
+#if HAL_QUADPLANE_ENABLED
+    if (!quadplane.allow_stick_mixing()) {
+        return;
+    }
+#endif
     float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
     aileron = channel_roll->stick_mixing(aileron);
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron);
@@ -249,6 +254,7 @@ void Plane::stabilize_stick_mixing_fbw()
 #if QAUTOTUNE_ENABLED
         control_mode == &mode_qautotune ||
 #endif
+        !quadplane.allow_stick_mixing() ||
 #endif  // HAL_QUADPLANE_ENABLED
         control_mode == &mode_training) {
         return;
@@ -268,7 +274,7 @@ void Plane::stabilize_stick_mixing_fbw()
     nav_roll_cd += roll_input * roll_limit_cd;
     nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
 
-    if ((control_mode == &mode_loiter) && (plane.g2.flight_options & FlightOptions::ENABLE_LOITER_ALT_CONTROL)) {
+    if ((control_mode == &mode_loiter) && (plane.flight_option_enabled(FlightOptions::ENABLE_LOITER_ALT_CONTROL))) {
         // loiter is using altitude control based on the pitch stick, don't use it again here
         return;
     }
@@ -347,10 +353,9 @@ void Plane::stabilize()
     }
 
     uint32_t now = AP_HAL::millis();
-    bool allow_stick_mixing = true;
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.available()) {
-        quadplane.transition->set_FW_roll_pitch(nav_pitch_cd, nav_roll_cd, allow_stick_mixing);
+        quadplane.transition->set_FW_roll_pitch(nav_pitch_cd, nav_roll_cd);
     }
 #endif
 
@@ -392,9 +397,7 @@ void Plane::stabilize()
     } else if (control_mode == &mode_stabilize) {
         stabilize_roll();
         stabilize_pitch();
-        if (allow_stick_mixing) {
-            stabilize_stick_mixing_direct();
-        }
+        stabilize_stick_mixing_direct();
         stabilize_yaw();
 #if HAL_QUADPLANE_ENABLED
     } else if (control_mode->is_vtol_mode() && !quadplane.tailsitter.in_vtol_transition(now)) {
@@ -412,7 +415,7 @@ void Plane::stabilize()
     } else {
         // Direct stick mixing functionality has been removed, so as not to remove all stick mixing from the user completely
         // the old direct option is now used to enable fbw mixing, this is easier than doing a param conversion.
-        if (allow_stick_mixing && ((g.stick_mixing == StickMixing::FBW) || (g.stick_mixing == StickMixing::DIRECT_REMOVED))) {
+        if ((g.stick_mixing == StickMixing::FBW) || (g.stick_mixing == StickMixing::DIRECT_REMOVED)) {
             stabilize_stick_mixing_fbw();
         }
         stabilize_roll();
@@ -453,14 +456,6 @@ void Plane::calc_throttle()
     }
 
     float commanded_throttle = TECS_controller.get_throttle_demand();
-
-    // Received an external msg that guides throttle in the last 3 seconds?
-    if (control_mode->is_guided_mode() &&
-            plane.guided_state.last_forced_throttle_ms > 0 &&
-            millis() - plane.guided_state.last_forced_throttle_ms < 3000) {
-        commanded_throttle = plane.guided_state.forced_throttle;
-    }
-
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, commanded_throttle);
 }
 
@@ -587,17 +582,7 @@ void Plane::calc_nav_yaw_ground(void)
  */
 void Plane::calc_nav_pitch()
 {
-    // Calculate the Pitch of the plane
-    // --------------------------------
     int32_t commanded_pitch = TECS_controller.get_pitch_demand();
-
-    // Received an external msg that guides roll in the last 3 seconds?
-    if (control_mode->is_guided_mode() &&
-            plane.guided_state.last_forced_rpy_ms.y > 0 &&
-            millis() - plane.guided_state.last_forced_rpy_ms.y < 3000) {
-        commanded_pitch = plane.guided_state.forced_rpy_cd.y;
-    }
-
     nav_pitch_cd = constrain_int32(commanded_pitch, pitch_limit_min_cd, aparm.pitch_limit_max_cd.get());
 }
 
@@ -608,43 +593,6 @@ void Plane::calc_nav_pitch()
 void Plane::calc_nav_roll()
 {
     int32_t commanded_roll = nav_controller->nav_roll_cd();
-
-    // Received an external msg that guides roll in the last 3 seconds?
-    if (control_mode->is_guided_mode() &&
-            plane.guided_state.last_forced_rpy_ms.x > 0 &&
-            millis() - plane.guided_state.last_forced_rpy_ms.x < 3000) {
-        commanded_roll = plane.guided_state.forced_rpy_cd.x;
-#if OFFBOARD_GUIDED == ENABLED
-    // guided_state.target_heading is radians at this point between -pi and pi ( defaults to -4 )
-    } else if ((control_mode == &mode_guided) && (guided_state.target_heading_type != GUIDED_HEADING_NONE) ) {
-        uint32_t tnow = AP_HAL::millis();
-        float delta = (tnow - guided_state.target_heading_time_ms) * 1e-3f;
-        guided_state.target_heading_time_ms = tnow;
-
-        float error = 0.0f;
-        if (guided_state.target_heading_type == GUIDED_HEADING_HEADING) {
-            error = wrap_PI(guided_state.target_heading - AP::ahrs().yaw);
-        } else {
-            Vector2f groundspeed = AP::ahrs().groundspeed_vector();
-            error = wrap_PI(guided_state.target_heading - atan2f(-groundspeed.y, -groundspeed.x) + M_PI);
-        }
-
-        float bank_limit = degrees(atanf(guided_state.target_heading_accel_limit/GRAVITY_MSS)) * 1e2f;
-
-        g2.guidedHeading.update_error(error, delta); // push error into AC_PID , possible improvement is to use update_all instead.?
-
-        float i = g2.guidedHeading.get_i(); // get integrator TODO
-        if (((is_negative(error) && !guided_state.target_heading_limit_low) || (is_positive(error) && !guided_state.target_heading_limit_high))) {
-            i = g2.guidedHeading.get_i();
-        }
-
-        float desired = g2.guidedHeading.get_p() + i + g2.guidedHeading.get_d();
-        guided_state.target_heading_limit_low = (desired <= -bank_limit);
-        guided_state.target_heading_limit_high = (desired >= bank_limit);
-        commanded_roll = constrain_float(desired, -bank_limit, bank_limit);
-#endif // OFFBOARD_GUIDED == ENABLED
-    }
-
     nav_roll_cd = constrain_int32(commanded_roll, -roll_limit_cd, roll_limit_cd);
     update_load_factor();
 }

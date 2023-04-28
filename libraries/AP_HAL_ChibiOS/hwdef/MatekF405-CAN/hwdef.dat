@@ -169,6 +169,7 @@ define HAL_BATT2_VOLT_SCALE 11.0
 include ../include/minimize_features.inc
 include ../include/minimal_GPS.inc
 
+undef AP_BATTERY_SMBUS_ENABLED
 define AP_BATTERY_SMBUS_ENABLED 0
 define HAL_PARACHUTE_ENABLED 0
 

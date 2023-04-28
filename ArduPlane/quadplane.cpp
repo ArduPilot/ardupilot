@@ -2366,7 +2366,7 @@ void QuadPlane::vtol_position_controller(void)
 
     case QPOS_APPROACH:
         if (in_vtol_mode()) {
-            // this means we're not running update_transition() and
+            // this means we're not running transition update code and
             // thus not doing qassist checking, force POSITION1 mode
             // now. We don't expect this to trigger, it is a failsafe
             // for a logic error
@@ -2949,15 +2949,15 @@ void QuadPlane::takeoff_controller(void)
     // don't takeoff up until rudder is re-centered after rudder arming
     if (plane.arming.last_arm_method() == AP_Arming::Method::RUDDER &&
         (takeoff_last_run_ms == 0 ||
-         now - takeoff_last_run_ms < 1000) &&
+         now - takeoff_last_run_ms > 1000) &&
         !plane.seen_neutral_rudder &&
         spool_state <= AP_Motors::DesiredSpoolState::GROUND_IDLE) {
         // start motor spinning if not spinning already so user sees it is armed
         set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         takeoff_start_time_ms = now;
-        if (now - rudder_takeoff_warn_ms > 3000) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "takeoff wait rudder release");
-            rudder_takeoff_warn_ms = now;
+        if (now - plane.takeoff_state.rudder_takeoff_warn_ms > TAKEOFF_RUDDER_WARNING_TIMEOUT) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Takeoff waiting for rudder release");
+            plane.takeoff_state.rudder_takeoff_warn_ms = now;
         }
         return;
     }
@@ -4349,7 +4349,7 @@ MAV_VTOL_STATE SLT_Transition::get_mav_vtol_state() const
 }
 
 // Set FW roll and pitch limits and keep TECS informed
-void SLT_Transition::set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& nav_roll_cd, bool& allow_stick_mixing)
+void SLT_Transition::set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& nav_roll_cd)
 {
     if (quadplane.in_vtol_mode() || quadplane.in_vtol_airbrake()) {
         // not in FW flight
@@ -4526,6 +4526,17 @@ bool QuadPlane::abort_landing(void)
     }
     poscontrol.set_state(QuadPlane::QPOS_LAND_ABORT);
     return true;
+}
+
+// Should we allow stick mixing from the pilot
+bool QuadPlane::allow_stick_mixing() const
+{
+    if (!available()) {
+        // Quadplane not enabled
+        return true;
+    }
+    // Ask transition logic
+    return transition->allow_stick_mixing();
 }
 
 #endif  // HAL_QUADPLANE_ENABLED

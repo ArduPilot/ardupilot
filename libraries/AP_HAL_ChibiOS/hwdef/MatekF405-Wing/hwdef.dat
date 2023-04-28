@@ -128,8 +128,8 @@ PC13 VBUS INPUT OPENDRAIN
 
 PC15 BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
-define HAL_BUZZER_ON 1
-define HAL_BUZZER_OFF 0
+
+
 
 #################################################
 ###                 DEVICES                   ###

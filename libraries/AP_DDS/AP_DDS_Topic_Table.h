@@ -1,7 +1,7 @@
-#include "generated/Time.h"
-#include "generated/NavSatFix.h"
-#include "generated/TransformStamped.h"
-
+#include "builtin_interfaces/msg/Time.h"
+#include "sensor_msgs/msg/NavSatFix.h"
+#include "tf2_msgs/msg/TFMessage.h"
+#include "sensor_msgs/msg/BatteryState.h"
 
 #include "AP_DDS_Generic_Fn_T.h"
 #include "uxr/client/client.h"
@@ -42,4 +42,34 @@ const struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .deserialize = Generic_deserialize_topic_fn_t(&tf2_msgs_msg_TFMessage_deserialize_topic),
         .size_of = Generic_size_of_topic_fn_t(&tf2_msgs_msg_TFMessage_size_of_topic),
     },
+    {
+        .topic_id = 0x04,
+        .pub_id = 0x04,
+        .dw_id = uxrObjectId{.id=0x04, .type=UXR_DATAWRITER_ID},
+        .topic_profile_label = "batterystate0__t",
+        .dw_profile_label = "batterystate0__dw",
+        .serialize = Generic_serialize_topic_fn_t(&sensor_msgs_msg_BatteryState_serialize_topic),
+        .deserialize = Generic_deserialize_topic_fn_t(&sensor_msgs_msg_BatteryState_deserialize_topic),
+        .size_of = Generic_size_of_topic_fn_t(&sensor_msgs_msg_BatteryState_size_of_topic),
+    },
+    {
+        .topic_id = 0x05,
+        .pub_id = 0x05,
+        .dw_id = uxrObjectId{.id=0x05, .type=UXR_DATAWRITER_ID},
+        .topic_profile_label = "localpose__t",
+        .dw_profile_label = "localpose__dw",
+        .serialize = Generic_serialize_topic_fn_t(&geometry_msgs_msg_PoseStamped_serialize_topic),
+        .deserialize = Generic_deserialize_topic_fn_t(&geometry_msgs_msg_PoseStamped_deserialize_topic),
+        .size_of = Generic_size_of_topic_fn_t(&geometry_msgs_msg_PoseStamped_size_of_topic),
+    },
+    {
+        .topic_id = 0x06,
+        .pub_id = 0x06,
+        .dw_id = uxrObjectId{.id=0x06, .type=UXR_DATAWRITER_ID},
+        .topic_profile_label = "localvelocity__t",
+        .dw_profile_label = "localvelocity__dw",
+        .serialize = Generic_serialize_topic_fn_t(&geometry_msgs_msg_TwistStamped_serialize_topic),
+        .deserialize = Generic_deserialize_topic_fn_t(&geometry_msgs_msg_TwistStamped_deserialize_topic),
+        .size_of = Generic_size_of_topic_fn_t(&geometry_msgs_msg_TwistStamped_size_of_topic),
+    }
 };

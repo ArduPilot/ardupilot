@@ -33,8 +33,7 @@ define HAL_GPIO_B_LED_PIN 1
 # buzzer
 PC13 BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
-define HAL_BUZZER_ON 1
-define HAL_BUZZER_OFF 0
+
 
 # spi1 bus for IMU
 PA5 SPI1_SCK SPI1
@@ -124,7 +123,6 @@ IMU Invensense SPI:mpu6000 ROTATION_YAW_270
 
 # probe for a BMP085, but also look for other baros
 BARO BMP085 I2C:0:0x77
-define HAL_PROBE_EXTERNAL_I2C_BAROS
 define HAL_BARO_ALLOW_INIT_NO_BARO
 
 # no built-in compass, but probe the i2c bus for all possible

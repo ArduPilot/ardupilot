@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 script to build the latest binaries for each vehicle type, ready to upload
@@ -93,7 +93,7 @@ class build_binaries(object):
             waf = "./waf"
         else:
             waf = os.path.join(".", "modules", "waf", "waf-light")
-        cmd_list = [waf]
+        cmd_list = ["python3", waf]
         cmd_list.extend(args)
         env = None
         if compiler is not None:
@@ -210,7 +210,7 @@ is bob we will attempt to checkout bob-AVR'''
         try:
             out = self.run_program(
                 'waf',
-                ['./waf', 'configure', '--board=BOARDTEST'],
+                ["python3", './waf', 'configure', '--board=BOARDTEST'],
                 show_output=False,
                 force_success=True
             )

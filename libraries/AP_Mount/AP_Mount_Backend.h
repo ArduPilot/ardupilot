@@ -35,7 +35,7 @@ public:
     {}
 
     // init - performs any required initialisation for this instance
-    virtual void init() = 0;
+    virtual void init();
 
     // update mount position - should be called periodically
     virtual void update() = 0;
@@ -45,6 +45,10 @@ public:
 
     // return true if healthy
     virtual bool healthy() const { return true; }
+
+    // return true if this mount accepts roll or pitch targets
+    virtual bool has_roll_control() const;
+    virtual bool has_pitch_control() const;
 
     // returns true if this mount can control its pan (required for multicopters)
     virtual bool has_pan_control() const = 0;
@@ -92,6 +96,12 @@ public:
     // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
     void send_gimbal_device_attitude_status(mavlink_channel_t chan);
 
+    // return gimbal capabilities sent to GCS in the GIMBAL_MANAGER_INFORMATION
+    virtual uint32_t get_gimbal_manager_capability_flags() const;
+
+    // send a GIMBAL_MANAGER_INFORMATION message to GCS
+    void send_gimbal_manager_information(mavlink_channel_t chan);
+
     // handle a GIMBAL_REPORT message
     virtual void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg) {}
 
@@ -112,7 +122,6 @@ public:
     virtual bool get_angle_target(float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame) { return false; }
     virtual bool get_location_target(Location &target_loc) { return false; }
     virtual void set_attitude_euler(float roll_deg, float pitch_deg, float yaw_bf_deg) {};
-    virtual bool get_camera_state(uint16_t& pic_count, bool& record_video, int8_t& zoom_step, int8_t& focus_step, bool& auto_focus) { return false; }
 
     //
     // camera controls for gimbals that include a camera
@@ -125,16 +134,12 @@ public:
     // set start_recording = true to start record, false to stop recording
     virtual bool record_video(bool start_recording) { return false; }
 
-    // set camera zoom step.  returns true on success
-    // zoom out = -1, hold = 0, zoom in = 1
-    virtual bool set_zoom_step(int8_t zoom_step) { return false; }
+    // set zoom specified as a rate or percentage
+    virtual bool set_zoom(ZoomType zoom_type, float zoom_value) { return false; }
 
-    // set focus in, out or hold.  returns true on success
+    // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
-    virtual bool set_manual_focus_step(int8_t focus_step) { return false; }
-
-    // auto focus.  returns true on success
-    virtual bool set_auto_focus() { return false; }
+    virtual bool set_focus(FocusType focus_type, float focus_value) { return false; }
 
 protected:
 

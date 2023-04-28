@@ -240,6 +240,9 @@
 #define HAL_SUPPORT_RCOUT_SERIAL 0
 #endif
 
+#ifndef HAL_FORWARD_OTG2_SERIAL
+#define HAL_FORWARD_OTG2_SERIAL 0
+#endif
 
 #ifndef HAL_HAVE_DUAL_USB_CDC
 #define HAL_HAVE_DUAL_USB_CDC 0
@@ -310,12 +313,23 @@
 #define HAL_CANFD_SUPPORTED 0
 #endif
 
+#ifndef HAL_USE_QUADSPI
+#define HAL_USE_QUADSPI 0
+#endif
+#ifndef HAL_USE_OCTOSPI
+#define HAL_USE_OCTOSPI 0
+#endif
+
 #ifndef __RAMFUNC__
 #define __RAMFUNC__
 #endif
 
 #ifndef __FASTRAMFUNC__
 #define __FASTRAMFUNC__
+#endif
+
+#ifndef __EXTFLASHFUNC__
+#define __EXTFLASHFUNC__
 #endif
 
 #ifndef HAL_ENABLE_DFU_BOOT

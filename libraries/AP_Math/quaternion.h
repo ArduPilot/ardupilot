@@ -131,7 +131,13 @@ public:
 
     // create eulers (in radians) from a quaternion
     void        to_euler(float &roll, float &pitch, float &yaw) const;
+    void        to_euler(Vector3f &rpy) const {
+        to_euler(rpy.x, rpy.y, rpy.z);
+    }
     void        to_euler(double &roll, double &pitch, double &yaw) const;
+    void        to_euler(Vector3d &rpy) const {
+        to_euler(rpy.x, rpy.y, rpy.z);
+    }
 
     // create eulers from a quaternion
     Vector3<T>    to_vector312(void) const;

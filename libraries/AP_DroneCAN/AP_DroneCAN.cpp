@@ -71,10 +71,6 @@ extern const AP_HAL::HAL& hal;
 #define AP_DRONECAN_VOLZ_FEEDBACK_ENABLED 0
 #endif
 
-#if AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
-#include <com/volz/servo/ActuatorStatus.hpp>
-#endif
-
 #define debug_dronecan(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "DroneCAN", fmt, ##args); } while (0)
 
 // Translation of all messages from DroneCAN structures into AP structures is done
@@ -172,7 +168,7 @@ AP_DroneCAN::~AP_DroneCAN()
 AP_DroneCAN *AP_DroneCAN::get_dronecan(uint8_t driver_index)
 {
     if (driver_index >= AP::can().get_num_drivers() ||
-        AP::can().get_driver_type(driver_index) != AP_CANManager::Driver_Type_DroneCAN) {
+        AP::can().get_driver_type(driver_index) != AP_CAN::Protocol::DroneCAN) {
         return nullptr;
     }
     return static_cast<AP_DroneCAN*>(AP::can().get_driver(driver_index));
@@ -198,7 +194,7 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
         return;
     }
 
-    node_info_rsp.name.len = snprintf((char*)node_info_rsp.name.data, sizeof(node_info_rsp.name.data), "org.ardupilot:%u", driver_index);
+    node_info_rsp.name.len = hal.util->snprintf((char*)node_info_rsp.name.data, sizeof(node_info_rsp.name.data), "org.ardupilot:%u", driver_index);
 
     node_info_rsp.software_version.major = AP_DRONECAN_SW_VERS_MAJOR;
     node_info_rsp.software_version.minor = AP_DRONECAN_SW_VERS_MINOR;
@@ -321,7 +317,7 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
         canard_iface.process(1000);
     }
 
-    snprintf(_thread_name, sizeof(_thread_name), "dronecan_%u", driver_index);
+    hal.util->snprintf(_thread_name, sizeof(_thread_name), "dronecan_%u", driver_index);
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_DroneCAN::loop, void), _thread_name, DRONECAN_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_CAN, 0)) {
         debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: couldn't create thread\n\r");
@@ -1054,7 +1050,7 @@ void AP_DroneCAN::handle_actuator_status(const CanardRxTransfer& transfer, const
 }
 
 #if AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
-void AP_DroneCAN::handle_actuator_status_Volz(AP_DroneCAN* ap_dronecan, uint8_t node_id, const ActuatorStatusVolzCb &cb)
+void AP_DroneCAN::handle_actuator_status_Volz(const CanardRxTransfer& transfer, const com_volz_servo_ActuatorStatus& msg)
 {
     AP::logger().WriteStreaming(
         "CVOL",
@@ -1063,12 +1059,12 @@ void AP_DroneCAN::handle_actuator_status_Volz(AP_DroneCAN* ap_dronecan, uint8_t 
         "F-00000",
         "QBfffBh",
         AP_HAL::native_micros64(),
-        cb.msg->actuator_id,
-        ToDeg(cb.msg->actual_position),
-        cb.msg->current * 0.025f,
-        cb.msg->voltage * 0.2f,
-        cb.msg->motor_pwm * (100.0/255.0),
-        int16_t(cb.msg->motor_temperature) - 50);
+        msg.actuator_id,
+        ToDeg(msg.actual_position),
+        msg.current * 0.025f,
+        msg.voltage * 0.2f,
+        msg.motor_pwm * (100.0/255.0),
+        int16_t(msg.motor_temperature) - 50);
 }
 #endif
 

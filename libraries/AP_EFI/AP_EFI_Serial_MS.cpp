@@ -47,7 +47,7 @@ void AP_EFI_Serial_MS::update()
         copy_to_frontend();
     }
 
-    if (port->available() == 0 || now - last_response_ms > 200) {
+    if (now - last_response_ms > 100) {
         port->discard_input();
         // Request an update from the realtime table (7).
         // The data we need start at offset 6 and ends at 129
