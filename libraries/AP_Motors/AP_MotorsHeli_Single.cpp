@@ -442,7 +442,7 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
         // rudder feed forward based on collective
         // the feed-forward is not required when the motor is stopped or at idle, and thus not creating torque
         // also not required if we are using external gyro
-        if ((_main_rotor.get_control_output() > _main_rotor.get_idle_output()) && _tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
+        if ((get_control_output() > _main_rotor.get_idle_output()) && _tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
             // sanity check collective_yaw_scale
             _collective_yaw_scale.set(constrain_float(_collective_yaw_scale, -AP_MOTORS_HELI_SINGLE_COLYAW_RANGE, AP_MOTORS_HELI_SINGLE_COLYAW_RANGE));
             // This feedforward compensation follows the hover performance theory that hover power required

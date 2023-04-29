@@ -306,12 +306,6 @@ void AP_MotorsHeli_Dual::_output_test_seq(uint8_t motor_seq, int16_t pwm)
     }
 }
 
-// set_desired_rotor_speed
-void AP_MotorsHeli_Dual::set_desired_rotor_speed(float desired_speed)
-{
-    _main_rotor.set_desired_speed(desired_speed);
-}
-
 // calculate_armed_scalars
 void AP_MotorsHeli_Dual::calculate_armed_scalars()
 {
