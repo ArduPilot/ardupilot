@@ -624,3 +624,9 @@ uint32_t AP_MotorsHeli::get_motor_mask()
 {
     return _main_rotor.get_output_mask();
 }
+
+// set_desired_rotor_speed
+void AP_MotorsHeli::set_desired_rotor_speed(float desired_speed)
+{
+    _main_rotor.set_desired_speed(desired_speed);
+}
