@@ -246,6 +246,21 @@ MAV_RESULT AP_Camera::handle_command_long(const mavlink_command_long_t &packet)
         }
         take_picture();
         return MAV_RESULT_ACCEPTED;
+    case MAV_CMD_CAMERA_TRACK_POINT:
+        if (set_tracking(TrackingType::POINT, Vector2f{packet.param1, packet.param2}, Vector2f{})) {
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_UNSUPPORTED;
+    case MAV_CMD_CAMERA_TRACK_RECTANGLE:
+        if (set_tracking(TrackingType::RECTANGLE, Vector2f{packet.param1, packet.param2}, Vector2f{packet.param3, packet.param4})) {
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_UNSUPPORTED;
+    case MAV_CMD_CAMERA_STOP_TRACKING:
+        if (set_tracking(TrackingType::NONE, Vector2f{}, Vector2f{})) {
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_UNSUPPORTED;
     case MAV_CMD_VIDEO_START_CAPTURE:
     case MAV_CMD_VIDEO_STOP_CAPTURE:
     {
@@ -456,6 +471,35 @@ bool AP_Camera::set_focus(uint8_t instance, FocusType focus_type, float focus_va
 
     // call each instance
     return backend->set_focus(focus_type, focus_value);
+}
+
+// set tracking to none, point or rectangle (see TrackingType enum)
+// if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
+// p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
+bool AP_Camera::set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    if (primary == nullptr) {
+        return false;
+    }
+    return primary->set_tracking(tracking_type, p1, p2);
+}
+
+// set tracking to none, point or rectangle (see TrackingType enum)
+// if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
+// p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
+bool AP_Camera::set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+
+    // call each instance
+    return backend->set_tracking(tracking_type, p1, p2);
 }
 
 #if AP_CAMERA_SCRIPTING_ENABLED
