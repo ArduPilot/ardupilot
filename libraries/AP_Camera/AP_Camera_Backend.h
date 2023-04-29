@@ -65,6 +65,11 @@ public:
     // focus in = -1, focus hold = 0, focus out = 1
     virtual bool set_focus(FocusType focus_type, float focus_value) { return false; }
 
+    // set tracking to none, point or rectangle (see TrackingType enum)
+    // if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
+    // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
+    virtual bool set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2) { return false; }
+
     // handle MAVLink messages from the camera
     virtual void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg) {}
 

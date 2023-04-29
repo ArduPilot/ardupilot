@@ -123,6 +123,12 @@ public:
     bool set_focus(FocusType focus_type, float focus_value);
     bool set_focus(uint8_t instance, FocusType focus_type, float focus_value);
 
+    // set tracking to none, point or rectangle (see TrackingType enum)
+    // if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
+    // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
+    bool set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2);
+    bool set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2);
+
     // set if vehicle is in AUTO mode
     void set_is_auto_mode(bool enable) { _is_in_auto_mode = enable; }
 
@@ -135,6 +141,12 @@ public:
         float zoom_value;       // percentage or zoom out = -1, hold = 0, zoom in = 1
         uint8_t focus_type;     // see FocusType enum (1:Rate, 2:Pct, 4:Auto)
         float focus_value;      // If Rate, focus in = -1, focus hold = 0, focus out = 1.  If PCT 0 to 100
+        uint8_t tracking_type;  // see TrackingType enum (0:NONE, 1:POINT, 2:RECTANGLE)
+        float tracking_p1x;     // center or top-left tracking point's x-axis value (0 is left, 1 is right)
+        float tracking_p1y;     // center or top-left tracking point's y-axis value (0 is top, 1 is bottom)
+        float tracking_p2x;     // bottom-right tracking point's x-axis value (0 is left, 1 is right)
+        float tracking_p2y;     // bottom-right tracking point's y-axis value (0 is top, 1 is bottom)
+        Vector2f tracking_p2;   // bottom-right tracking point (0 is left or top, 1 is right or bottom)
     } camera_state_t;
 
     // accessor to allow scripting backend to retrieve state
