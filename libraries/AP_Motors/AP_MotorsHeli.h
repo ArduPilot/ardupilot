@@ -102,9 +102,6 @@ public:
     // return true if the main rotor is up to speed
     bool rotor_runup_complete() const { return _heliflags.rotor_runup_complete; }
 
-    // rotor_speed_above_critical - return true if rotor speed is above that critical for flight
-    virtual bool rotor_speed_above_critical() const = 0;
-
     //get rotor governor output
     virtual float get_governor_output() const = 0;
 
