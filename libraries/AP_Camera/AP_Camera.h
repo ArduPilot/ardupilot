@@ -135,7 +135,6 @@ public:
         float zoom_value;       // percentage or zoom out = -1, hold = 0, zoom in = 1
         uint8_t focus_type;     // see FocusType enum (1:Rate, 2:Pct, 4:Auto)
         float focus_value;      // If Rate, focus in = -1, focus hold = 0, focus out = 1.  If PCT 0 to 100
-        bool auto_focus;        // true when auto focusing
     } camera_state_t;
 
     // accessor to allow scripting backend to retrieve state
