@@ -1115,6 +1115,26 @@ function AP_Camera__camera_state_t() end
 
 -- get field
 ---@return number
+function AP_Camera__camera_state_t_ud:tracking_p1x() end
+
+-- get field
+---@return number
+function AP_Camera__camera_state_t_ud:tracking_p1y() end
+
+-- get field
+---@return number
+function AP_Camera__camera_state_t_ud:tracking_p2x() end
+
+-- get field
+---@return number
+function AP_Camera__camera_state_t_ud:tracking_p2y() end
+
+-- get field
+---@return integer
+function AP_Camera__camera_state_t_ud:tracking_type() end
+
+-- get field
+---@return number
 function AP_Camera__camera_state_t_ud:focus_value() end
 
 -- get field
