@@ -617,6 +617,11 @@ userdata AP_Camera::camera_state_t field zoom_type uint8_t'skip_check read
 userdata AP_Camera::camera_state_t field zoom_value float'skip_check read
 userdata AP_Camera::camera_state_t field focus_type uint8_t'skip_check read
 userdata AP_Camera::camera_state_t field focus_value float'skip_check read
+userdata AP_Camera::camera_state_t field tracking_type uint8_t'skip_check read
+userdata AP_Camera::camera_state_t field tracking_p1x float'skip_check read
+userdata AP_Camera::camera_state_t field tracking_p1y float'skip_check read
+userdata AP_Camera::camera_state_t field tracking_p2x float'skip_check read
+userdata AP_Camera::camera_state_t field tracking_p2y float'skip_check read
 singleton AP_Camera method get_state boolean uint8_t'skip_check AP_Camera::camera_state_t'Null
 
 include AP_Winch/AP_Winch.h
