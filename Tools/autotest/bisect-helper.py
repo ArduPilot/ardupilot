@@ -184,6 +184,10 @@ class BisectBuild(Bisect):
         super(BisectBuild, self).__init__(opts)
 
     def run(self):
+        if self.opts.build_failure_string is None:
+            self.progress("--build-failure-string is required when using --build")
+            self.exit_abort()
+
         self.update_submodules()
         self.build()  # may exit with skip or fail
         self.exit_pass()
@@ -294,8 +298,7 @@ if __name__ == '__main__':
                       help="Help bisect a build failure")
     parser.add_option("--build-failure-string",
                       type='string',
-                      default=None,
-                      help="If supplied, must be present in"
+                      help="Must be present in"
                       "build output to count as a failure")
 
     group_autotest = optparse.OptionGroup(parser, "Run-AutoTest Options")
