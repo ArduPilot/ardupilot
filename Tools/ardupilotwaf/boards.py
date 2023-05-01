@@ -831,7 +831,7 @@ class esp32(Board):
         env.DEFINES.update(
             ENABLE_HEAP = 0,
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_ESP32_%s' %  tt.upper() ,
-            ALLOW_DOUBLE_MATH_FUNCTIONS = '1',
+            HAL_HAVE_HARDWARE_DOUBLE = '1',
         )
 
         env.AP_LIBRARIES += [
