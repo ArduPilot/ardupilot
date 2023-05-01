@@ -261,6 +261,7 @@ AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
 AP_HW_PIXRACER_PERIPH                1402
 AP_HW_SWBOOMBOARD_PERIPH             1403
+AP_HW_EchoPilotAI                    1404
 
 AP_HW_VIMDRONES_FLOW                 1404
 AP_HW_VIMDRONES_MOSAIC_X5            1405
@@ -281,3 +282,4 @@ AP_HW_AOCODA-RC-F405V3               5211
 # OpenDroneID enabled boards. Use 10000 + the base board ID
 AP_HW_CubeOrange_ODID               10140
 AP_HW_Pixhawk6_ODID                 10053
+AP_HW_EchoPilotAI_ODID              11404
