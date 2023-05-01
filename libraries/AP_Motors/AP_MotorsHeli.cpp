@@ -183,7 +183,7 @@ void AP_MotorsHeli::init(motor_frame_class frame_class, motor_frame_type frame_t
     calculate_scalars();
 
     // record successful initialisation if what we setup was the desired frame_class
-    set_initialised_ok(frame_class == MOTOR_FRAME_HELI);
+    set_initialised_ok(frame_class == MOTOR_FRAME_HELI || frame_class == MOTOR_FRAME_HELI_DUAL);
 
     // set flag to true so targets are initialized once aircraft is armed for first time
     _heliflags.init_targets_on_arming = true;
