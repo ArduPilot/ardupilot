@@ -135,7 +135,7 @@ void Scheduler::thread_create_trampoline(void *ctx)
 /*
   create a new thread
 */
-bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
+bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t requested_stack_size, priority_base base, int8_t priority)
 {
 #ifdef SCHEDDEBUG
     printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
@@ -174,9 +174,12 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
             break;
         }
     }
+    // chibios has a 'thread working area', we just another 1k.
+    #define EXTRA_THREAD_SPACE 1024
+    uint32_t actual_stack_size = requested_stack_size+EXTRA_THREAD_SPACE;
 
     void* xhandle;
-    BaseType_t xReturned = xTaskCreate(thread_create_trampoline, name, stack_size, tproc, thread_priority, &xhandle);
+    BaseType_t xReturned = xTaskCreate(thread_create_trampoline, name, actual_stack_size, tproc, thread_priority, &xhandle);
     if (xReturned != pdPASS) {
         free(tproc);
         return false;
