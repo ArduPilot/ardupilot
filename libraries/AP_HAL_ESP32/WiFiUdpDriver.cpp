@@ -58,7 +58,12 @@ void WiFiUdpDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             return;
         }
 
-        xTaskCreate(_wifi_thread, "APM_WIFI", Scheduler::WIFI_SS, this, Scheduler::WIFI_PRIO, &_wifi_task_handle);
+	if (xTaskCreatePinnedToCore(_wifi_thread2, "APM_WIFI2", Scheduler::WIFI_SS2, this, Scheduler::WIFI_PRIO2, &_wifi_task_handle,0) != pdPASS) {
+            hal.console->printf("FAILED to create task _wifi_thread2\n");
+        } else {
+	    hal.console->printf("OK created task _wifi_thread2\n");
+    	}
+		
         _readbuf.set_size(RX_BUF_SIZE);
         _writebuf.set_size(TX_BUF_SIZE);
         _state = INITIALIZED;
@@ -223,13 +228,13 @@ size_t WiFiUdpDriver::write(const uint8_t *buffer, size_t size)
     return ret;
 }
 
-void WiFiUdpDriver::_wifi_thread(void *arg)
+void WiFiUdpDriver::_wifi_thread2(void *arg)
 {
     WiFiUdpDriver *self = (WiFiUdpDriver *) arg;
     while (true) {
         struct timeval tv = {
             .tv_sec = 0,
-            .tv_usec = 1000,
+            .tv_usec = 100*1000, // 10 times a sec, we try to write-all even if we read nothing , at just 1000, it floggs the APM_WIFI2 task cpu usage unecessarily, slowing APM_WIFI1 response
         };
         fd_set rfds;
         FD_ZERO(&rfds);

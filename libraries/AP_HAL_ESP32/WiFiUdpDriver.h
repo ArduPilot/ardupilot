@@ -58,7 +58,7 @@ private:
     };
     const size_t TX_BUF_SIZE = 1024;
     const size_t RX_BUF_SIZE = 1024;
-    uint8_t _buffer[32];
+    uint8_t _buffer[255]; // 32 means slow param reads as its too small for most mavlink packets, 128 is still a bit small due to packet overheads
     ByteBuffer _readbuf{0};
     ByteBuffer _writebuf{0};
     Semaphore _write_mutex;
@@ -73,5 +73,5 @@ private:
     bool write_data();
     bool start_listen();
     bool try_accept();
-    static void _wifi_thread(void* arg);
+    static void _wifi_thread2(void* arg);
 };
