@@ -15,7 +15,7 @@
 
 #include <stdlib.h>
 #include <AP_HAL/AP_HAL.h>
-
+#include <AP_Logger/AP_Logger.h>
 #include "AP_MotorsHeli_Swash.h"
 
 extern const AP_HAL::HAL& hal;
@@ -192,12 +192,15 @@ void AP_MotorsHeli_Swash::calculate_roll_pitch_collective_factors()
 }
 
 // get_servo_out - calculates servo output
-float AP_MotorsHeli_Swash::get_servo_out(int8_t ch_num, float pitch, float roll, float collective) const
+float AP_MotorsHeli_Swash::get_servo_out(int8_t ch_num, float pitch, float roll, float collective)
 {
     // Collective control direction. Swash moves up for negative collective pitch, down for positive collective pitch
     if (_collective_direction == COLLECTIVE_DIRECTION_REVERSED){
         collective = 1 - collective;
     }
+
+    // store for logging
+    _collective = collective;
 
     float servo = ((_rollFactor[ch_num] * roll) + (_pitchFactor[ch_num] * pitch))*0.45f + _collectiveFactor[ch_num] * collective;
     if (_swash_type == SWASHPLATE_TYPE_H1 && (ch_num == CH_1 || ch_num == CH_2)) {
@@ -221,4 +224,24 @@ float AP_MotorsHeli_Swash::get_linear_servo_output(float input) const
 
     //servo output is calculated by normalizing input to 50 deg arm rotation as full input for a linear throw
     return safe_asin(0.766044f * input) * 1.145916;
+}
+
+void AP_MotorsHeli_Swash::log_write(uint8_t instance) const
+{
+    // @LoggerMessage: SWSH
+    // @Vehicles: Copter
+    // @Description: Helicopter swashplate
+    // @Field: TimeUS: Time since system startup
+    // @Field: I: Swashplate instance number
+    // @Field: Col: Collective Out
+
+    //Write to data flash log
+    AP::logger().WriteStreaming("SWSH",
+                        "TimeUS,I,Col",
+                        "s#-",
+                        "F--"
+                        "QBf",
+                        AP_HAL::micros64(),
+                        (double)instance,
+                        (double)_collective);
 }

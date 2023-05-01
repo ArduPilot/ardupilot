@@ -40,13 +40,16 @@ public:
     SwashPlateType get_swash_type() const { return _swash_type; }
 
     // get_servo_out - calculates servo output
-    float get_servo_out(int8_t servo_num, float pitch, float roll, float collective) const;
+    float get_servo_out(int8_t servo_num, float pitch, float roll, float collective);
 
     // linearize mechanical output of swashplate servo
     float get_linear_servo_output(float input) const;
 
     // get_phase_angle - returns the rotor phase angle
     int16_t get_phase_angle() const { return _phase_angle; }
+
+    // logging for each swashplate
+    void log_write(uint8_t instance) const;
 
     // var_info
     static const struct AP_Param::GroupInfo var_info[];
@@ -59,6 +62,7 @@ private:
     float                _pitchFactor[4];             // Pitch axis scaling of servo output based on servo position
     float                _collectiveFactor[4];        // Collective axis scaling of servo output based on servo position
     int8_t               _make_servo_linear;          // Sets servo output to be linearized
+    float                _collective;                 // collective value, stored for logging
 
     // parameters
     AP_Int8  _swashplate_type;                   // Swash Type Setting

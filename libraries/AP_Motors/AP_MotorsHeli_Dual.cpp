@@ -669,6 +669,11 @@ void AP_MotorsHeli_Dual::output_to_motors()
             update_motor_control(ROTOR_CONTROL_IDLE);
             break;
     }
+
+    // run swashplate logging
+    for (uint8_t s=0; s<AP_MOTORS_HELI_N_SWASH; s++) {
+        _swashplate[s].log_write(s);
+    }
 }
 
 // servo_test - move servos through full range of movement
