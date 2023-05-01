@@ -52,6 +52,9 @@ extern const AP_HAL::HAL& hal;
 #define HAL_BATTMON_INA2XX_ADDR 0
 #endif
 
+// list of addresses to probe if I2C_ADDR is zero
+const uint8_t AP_BattMonitor_INA2XX::i2c_probe_addresses[] { 0x41, 0x44, 0x45 };
+
 const AP_Param::GroupInfo AP_BattMonitor_INA2XX::var_info[] = {
 
     // @Param: I2C_BUS
@@ -64,7 +67,7 @@ const AP_Param::GroupInfo AP_BattMonitor_INA2XX::var_info[] = {
 
     // @Param: I2C_ADDR
     // @DisplayName: Battery monitor I2C address
-    // @Description: Battery monitor I2C address
+    // @Description: Battery monitor I2C address. If this is zero then probe list of supported addresses
     // @Range: 0 127
     // @User: Advanced
     // @RebootRequired: True
@@ -233,6 +236,11 @@ bool AP_BattMonitor_INA2XX::detect_device(void)
     int16_t id;
 
     WITH_SEMAPHORE(dev->get_semaphore());
+
+    if (i2c_address.get() == 0) {
+        dev->set_address(i2c_probe_addresses[i2c_probe_next]);
+        i2c_probe_next = (i2c_probe_next+1) % sizeof(i2c_probe_addresses);
+    }
 
     if (read_word16(REG_228_MANUFACT_ID, id) && id == 0x5449 &&
         read_word16(REG_228_DEVICE_ID, id) && (id&0xFFF0) == 0x2280) {
