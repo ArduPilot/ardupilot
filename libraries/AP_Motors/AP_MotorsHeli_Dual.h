@@ -17,7 +17,7 @@
 #define AP_MOTORS_HELI_DUAL_MODE_TRANSVERSE            1 // transverse mode (rotors side by side)
 #define AP_MOTORS_HELI_DUAL_MODE_INTERMESHING          2 // intermeshing mode (rotors side by side)
 
-// tandem modes
+// axis labels
 #define AP_MOTORS_HELI_DUAL_SWASH_AXIS_PITCH           0 // swashplate pitch tilt axis
 #define AP_MOTORS_HELI_DUAL_SWASH_AXIS_ROLL            1 // swashplate roll tilt axis
 #define AP_MOTORS_HELI_DUAL_SWASH_AXIS_COLL            2 // swashplate collective axis
@@ -44,7 +44,6 @@ public:
     {
         AP_Param::setup_object_defaults(this, var_info);
     };
-
 
     // set_update_rate - set update rate to motors
     void set_update_rate( uint16_t speed_hz ) override;

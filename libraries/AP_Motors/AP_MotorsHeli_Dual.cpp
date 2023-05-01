@@ -250,8 +250,8 @@ bool AP_MotorsHeli_Dual::init_outputs()
 }
 
 // output_test_seq - spin a motor at the pwm value specified
-//  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
-//  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
+// motor_seq is the motor's sequence number from 1 to the number of motors on the frame
+// pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
 void AP_MotorsHeli_Dual::_output_test_seq(uint8_t motor_seq, int16_t pwm)
 {
     // output to motors and servos
@@ -445,7 +445,7 @@ float AP_MotorsHeli_Dual::get_swashplate (int8_t swash_num, int8_t swash_axis, f
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
-//  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
+// this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
 uint32_t AP_MotorsHeli_Dual::get_motor_mask()
 {
     // dual heli uses channels 1,2,3,4,5,6 and 8
@@ -711,7 +711,6 @@ void AP_MotorsHeli_Dual::servo_test()
     }
 
     // over-ride servo commands to move servos through defined ranges
-
     _throttle_filter.reset(constrain_float(_collective_test, 0.0f, 1.0f));
     _roll_in = constrain_float(_roll_test, -1.0f, 1.0f);
     _pitch_in = constrain_float(_pitch_test, -1.0f, 1.0f);
