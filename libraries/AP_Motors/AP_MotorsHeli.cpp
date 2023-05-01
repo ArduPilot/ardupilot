@@ -160,6 +160,13 @@ void AP_MotorsHeli::init(motor_frame_class frame_class, motor_frame_type frame_t
     _frame_type = frame_type;
     _frame_class = frame_class;
 
+    // initialise servo/PWM ranges and endpoints
+    // we need to call this before set_update_rate() to ensure motor masks for swashplates will be correctly set
+    if (!init_outputs()) {
+        // don't set initialised_ok
+        return;
+    }
+
     // set update rate
     set_update_rate(_speed_hz);
 
@@ -171,12 +178,6 @@ void AP_MotorsHeli::init(motor_frame_class frame_class, motor_frame_type frame_t
 
     // initialise radio passthrough for collective to middle
     _throttle_radio_passthrough = 0.5f;
-
-    // initialise Servo/PWM ranges and endpoints
-    if (!init_outputs()) {
-        // don't set initialised_ok
-        return;
-    }
 
     // calculate all scalars
     calculate_scalars();
