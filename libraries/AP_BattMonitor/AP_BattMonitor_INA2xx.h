@@ -37,6 +37,9 @@ private:
         INA238,
     };
 
+    static const uint8_t i2c_probe_addresses[];
+    uint8_t i2c_probe_next;
+
     bool configure(DevType dtype);
     bool read_word16(const uint8_t reg, int16_t& data) const;
     bool read_word24(const uint8_t reg, int32_t& data) const;
