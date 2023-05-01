@@ -171,6 +171,7 @@ class SizeCompareBranches(object):
         return [
             'esp32buzz',
             'esp32empty',
+            'esp32tomte76',
             'esp32icarous',
             'esp32diy',
         ]
