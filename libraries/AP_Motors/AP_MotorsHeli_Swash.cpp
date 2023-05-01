@@ -92,7 +92,6 @@ const AP_Param::GroupInfo AP_MotorsHeli_Swash::var_info[] = {
 // configure - configure the swashplate settings for any updated parameters
 void AP_MotorsHeli_Swash::configure()
 {
-
     _swash_type = static_cast<SwashPlateType>(_swashplate_type.get());
     _collective_direction = static_cast<CollectiveDirection>(_swash_coll_dir.get());
     _make_servo_linear = _linear_swash_servo;
@@ -218,11 +217,8 @@ float AP_MotorsHeli_Swash::get_servo_out(int8_t ch_num, float pitch, float roll,
 // set_linear_servo_out - sets swashplate servo output to be linear
 float AP_MotorsHeli_Swash::get_linear_servo_output(float input) const
 {
-
     input = constrain_float(input, -1.0f, 1.0f);
 
     //servo output is calculated by normalizing input to 50 deg arm rotation as full input for a linear throw
     return safe_asin(0.766044f * input) * 1.145916;
-
 }
-
