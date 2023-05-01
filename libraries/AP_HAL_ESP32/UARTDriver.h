@@ -79,6 +79,19 @@ public:
     //bool lock_port(uint32_t write_key, uint32_t read_key) override;
 
     //size_t write_locked(const uint8_t *buffer, size_t size, uint32_t key) override;
+    //
+    /*
+      return timestamp estimate in microseconds for when the start of
+      a nbytes packet arrived on the uart. This should be treated as a
+      time constraint, not an exact time. It is guaranteed that the
+      packet did not start being received after this time, but it
+      could have been in a system buffer before the returned time.
+      This takes account of the baudrate of the link. For transports
+      that have no baudrate (such as USB) the time estimate may be
+      less accurate.
+      A return value of zero means the HAL does not support this API */
+     
+    uint64_t receive_time_constraint_us(uint16_t nbytes) override; 
 private:
     bool _initialized;
     const size_t TX_BUF_SIZE = 1024;
@@ -91,6 +104,13 @@ private:
     void write_data();
 
     uint8_t uart_num;
+
+    // timestamp for receiving data on the UART, avoiding a lock
+    uint64_t _receive_timestamp[2];
+    uint8_t _receive_timestamp_idx;
+    uint32_t _baudrate;
+
+    void _receive_timestamp_update(void);
 };
 
 }
