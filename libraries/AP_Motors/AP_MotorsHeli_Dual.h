@@ -22,11 +22,14 @@
 #define AP_MOTORS_HELI_DUAL_SWASH_AXIS_ROLL            1 // swashplate roll tilt axis
 #define AP_MOTORS_HELI_DUAL_SWASH_AXIS_COLL            2 // swashplate collective axis
 
+// number of swashplates
+#define AP_MOTORS_HELI_N_SWASH                         2
+
 // default differential-collective-pitch scaler
 #define AP_MOTORS_HELI_DUAL_DCP_SCALER             0.25f
 
 // maximum number of swashplate servos
-#define AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS    6
+#define AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS    8
 
 // default collective min, max and midpoints for the rear swashplate
 #define AP_MOTORS_HELI_DUAL_COLLECTIVE2_MIN 1250
@@ -79,6 +82,9 @@ public:
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     uint32_t get_motor_mask() override;
 
+    // get_swashplate_servo_mask - returns a bitmask of which outputs are being used for swashplate servos only
+    uint32_t get_swashplate_servo_mask();
+
     // has_flybar - returns true if we have a mechical flybar
     bool has_flybar() const  override { return AP_MOTORS_HELI_NOFLYBAR; }
 
@@ -110,9 +116,8 @@ protected:
 
     const char* _get_frame_string() const override { return "HELI_DUAL"; }
 
-    //  objects we depend upon
-    AP_MotorsHeli_Swash        _swashplate1;        // swashplate1
-    AP_MotorsHeli_Swash        _swashplate2;        // swashplate2
+    //  Setup both swashplates in an array
+    AP_MotorsHeli_Swash        _swashplate[AP_MOTORS_HELI_N_SWASH];
 
     // internal variables
     float _oscillate_angle = 0.0f;                  // cyclic oscillation angle, used by servo_test function

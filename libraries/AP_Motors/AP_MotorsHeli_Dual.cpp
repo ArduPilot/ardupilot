@@ -133,7 +133,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Units: deg
     // @User: Advanced
     // @Increment: 1
-    AP_SUBGROUPINFO(_swashplate1, "SW_", 20, AP_MotorsHeli_Dual, AP_MotorsHeli_Swash),
+    AP_SUBGROUPINFO(_swashplate[1], "SW_", 20, AP_MotorsHeli_Dual, AP_MotorsHeli_Swash),
 
     // @Param: SW2_TYPE
     // @DisplayName: Swash 2 Type
@@ -187,7 +187,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Units: deg
     // @User: Advanced
     // @Increment: 1
-    AP_SUBGROUPINFO(_swashplate2, "SW2_", 21, AP_MotorsHeli_Dual, AP_MotorsHeli_Swash),
+    AP_SUBGROUPINFO(_swashplate[2], "SW2_", 21, AP_MotorsHeli_Dual, AP_MotorsHeli_Swash),
 
     // @Param: DCP_TRIM
     // @DisplayName: Differential Collective Pitch Trim
@@ -215,52 +215,36 @@ void AP_MotorsHeli_Dual::set_update_rate( uint16_t speed_hz )
     _speed_hz = speed_hz;
 
     // setup fast channels
-    uint32_t mask = 0;
-    for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
-        mask |= 1U << (AP_MOTORS_MOT_1+i);
-    }
-    if (_swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        mask |= 1U << (AP_MOTORS_MOT_7);
-    }
-    if (_swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        mask |= 1U << (AP_MOTORS_MOT_8);
-    }
-
+    uint32_t mask = get_swashplate_servo_mask();
     rc_set_freq(mask, _speed_hz);
 }
 
 // init_outputs
 bool AP_MotorsHeli_Dual::init_outputs()
 {
+    // run swashplate configuration
     if (!initialised_ok()) {
-        // make sure 6 output channels are mapped
-        for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
-            add_motor_num(CH_1+i);
+        for (uint8_t s=0; s<AP_MOTORS_HELI_N_SWASH; s++) {
+            _swashplate[s].configure();
         }
-        if (_swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-            add_motor_num(CH_7);
-        }
-        if (_swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-            add_motor_num(CH_8);
-        }
-
-        // set rotor servo range
-        _main_rotor.init_servo();
-
     }
 
-    // reset swash servo range and endpoints
+    // init and setup all servos used in the swashplates
+    uint32_t mask = get_swashplate_servo_mask();
     for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
-        reset_swash_servo(SRV_Channels::get_motor_function(i));
-    }
-    if (_swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        reset_swash_servo(SRV_Channels::get_motor_function(6));
-    }
-    if (_swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        reset_swash_servo(SRV_Channels::get_motor_function(7));
+        if (mask & (1 << i)) {
+            if (!initialised_ok()) {
+                // map servo channels
+                add_motor_num(CH_1+i);
+            }
+
+            // reset swash servo range and endpoints
+            reset_swash_servo(SRV_Channels::get_motor_function(CH_1+i));
+        }
     }
 
-    set_initialised_ok(_frame_class == MOTOR_FRAME_HELI_DUAL);
+    // set rotor servo range
+    _main_rotor.init_servo();
 
     return true;
 }
@@ -373,13 +357,10 @@ void AP_MotorsHeli_Dual::calculate_scalars()
 
     _collective2_zero_thrst_pct = _collective_zero_thrust_pct;
 
-    // configure swashplate 1 and update scalars
-    _swashplate1.configure();
-    _swashplate1.calculate_roll_pitch_collective_factors();
-
-    // configure swashplate 2 and update scalars
-    _swashplate2.configure();
-    _swashplate2.calculate_roll_pitch_collective_factors();
+    // configure swashplate and update scalars
+    for (uint8_t s=0; s<AP_MOTORS_HELI_N_SWASH; s++) {
+        _swashplate[s].calculate_roll_pitch_collective_factors();
+    }
 
     // set mode of main rotor controller and trigger recalculation of scalars
     _main_rotor.set_control_mode(static_cast<RotorControlMode>(_main_rotor._rsc_mode.get()));
@@ -468,17 +449,28 @@ float AP_MotorsHeli_Dual::get_swashplate (int8_t swash_num, int8_t swash_axis, f
 uint32_t AP_MotorsHeli_Dual::get_motor_mask()
 {
     // dual heli uses channels 1,2,3,4,5,6 and 8
+    uint32_t mask = get_swashplate_servo_mask();
+
+    // add RSC to mask
+    mask |= 1U << AP_MOTORS_HELI_RSC;
+    return mask;
+}
+
+// get_swashplate_servo_mask - returns a bitmask of which outputs are being used for swashplate servos only
+uint32_t AP_MotorsHeli_Dual::get_swashplate_servo_mask() {
     uint32_t mask = 0;
-    for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
+    // We always use the first six motors on a dual heli
+    for (uint8_t i=0; i<6; i++) {
         mask |= 1U << (AP_MOTORS_MOT_1+i);
     }
-    if (_swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        mask |= 1U << AP_MOTORS_MOT_7;
+
+    // set up forth servo on swashplates if we need them
+    for (uint8_t s=0; s<AP_MOTORS_HELI_N_SWASH; s++) {
+        if (_swashplate[s].get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate[s].get_swash_type() == SWASHPLATE_TYPE_H4_45) {
+            uint8_t mot_shift = s==1 ? AP_MOTORS_MOT_7 : AP_MOTORS_MOT_8;
+            mask |= 1U << (mot_shift);
+        }
     }
-    if (_swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        mask |= 1U << AP_MOTORS_MOT_8;
-    }
-    mask |= 1U << AP_MOTORS_HELI_RSC;
     return mask;
 }
 
@@ -628,19 +620,19 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
     float swash2_coll = get_swashplate(2, AP_MOTORS_HELI_DUAL_SWASH_AXIS_COLL, pitch_out, roll_out, yaw_out, collective2_out_scaled);
  
     // get servo positions from swashplate library
-    _servo_out[CH_1] = _swashplate1.get_servo_out(CH_1,swash1_pitch,swash1_roll,swash1_coll);
-    _servo_out[CH_2] = _swashplate1.get_servo_out(CH_2,swash1_pitch,swash1_roll,swash1_coll);
-    _servo_out[CH_3] = _swashplate1.get_servo_out(CH_3,swash1_pitch,swash1_roll,swash1_coll);
-    if (_swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        _servo_out[CH_7] = _swashplate1.get_servo_out(CH_4,swash1_pitch,swash1_roll,swash1_coll);
+    _servo_out[CH_1] = _swashplate[0].get_servo_out(CH_1,swash1_pitch,swash1_roll,swash1_coll);
+    _servo_out[CH_2] = _swashplate[0].get_servo_out(CH_2,swash1_pitch,swash1_roll,swash1_coll);
+    _servo_out[CH_3] = _swashplate[0].get_servo_out(CH_3,swash1_pitch,swash1_roll,swash1_coll);
+    if (_swashplate[0].get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate[0].get_swash_type() == SWASHPLATE_TYPE_H4_45) {
+        _servo_out[CH_7] = _swashplate[0].get_servo_out(CH_4,swash1_pitch,swash1_roll,swash1_coll);
     }
 
     // get servo positions from swashplate library
-    _servo_out[CH_4] = _swashplate2.get_servo_out(CH_1,swash2_pitch,swash2_roll,swash2_coll);
-    _servo_out[CH_5] = _swashplate2.get_servo_out(CH_2,swash2_pitch,swash2_roll,swash2_coll);
-    _servo_out[CH_6] = _swashplate2.get_servo_out(CH_3,swash2_pitch,swash2_roll,swash2_coll);
-    if (_swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        _servo_out[CH_8] = _swashplate2.get_servo_out(CH_4,swash2_pitch,swash2_roll,swash2_coll);
+    _servo_out[CH_4] = _swashplate[1].get_servo_out(CH_1,swash2_pitch,swash2_roll,swash2_coll);
+    _servo_out[CH_5] = _swashplate[1].get_servo_out(CH_2,swash2_pitch,swash2_roll,swash2_coll);
+    _servo_out[CH_6] = _swashplate[1].get_servo_out(CH_3,swash2_pitch,swash2_roll,swash2_coll);
+    if (_swashplate[1].get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate[1].get_swash_type() == SWASHPLATE_TYPE_H4_45) {
+        _servo_out[CH_8] = _swashplate[1].get_servo_out(CH_4,swash2_pitch,swash2_roll,swash2_coll);
     }
 
 }
@@ -650,18 +642,12 @@ void AP_MotorsHeli_Dual::output_to_motors()
     if (!initialised_ok()) {
         return;
     }
-    // actually move the servos.  PWM is sent based on nominal 1500 center.  servo output shifts center based on trim value.
-    for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
-        rc_write_swash(i, _servo_out[CH_1+i]);
-    }
 
-    // write to servo for 4 servo of 4 servo swashplate
-    if (_swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        rc_write_swash(AP_MOTORS_MOT_7, _servo_out[CH_7]);
-    }
-    // write to servo for 4 servo of 4 servo swashplate
-    if (_swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        rc_write_swash(AP_MOTORS_MOT_8, _servo_out[CH_8]);
+    uint32_t mask = get_swashplate_servo_mask();
+    for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
+        if (mask & (1 << i)) {
+            rc_write_swash(i, _servo_out[CH_1+i]);
+        }
     }
 
     switch (_spool_state) {
@@ -734,20 +720,14 @@ void AP_MotorsHeli_Dual::servo_test()
 // parameter_check - check if helicopter specific parameters are sensible
 bool AP_MotorsHeli_Dual::parameter_check(bool display_msg) const
 {
-    // returns false if Phase Angle is outside of range for H3 swashplate 1
-    if (_swashplate1.get_swash_type() == SWASHPLATE_TYPE_H3 && (_swashplate1.get_phase_angle() > 30 || _swashplate1.get_phase_angle() < -30)){
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_SW1_H3_PHANG out of range");
+    // returns false if Phase Angle is outside of range for H3 swashplate
+    for (uint8_t s=0; s<AP_MOTORS_HELI_N_SWASH; s++) {
+        if (_swashplate[s].get_swash_type() == SWASHPLATE_TYPE_H3 && (_swashplate[s].get_phase_angle() > 30 || _swashplate[s].get_phase_angle() < -30)){
+            if (display_msg) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_SW%i_H3_PHANG out of range", s);
+            }
+            return false;
         }
-        return false;
-    }
-
-    // returns false if Phase Angle is outside of range for H3 swashplate 2
-    if (_swashplate2.get_swash_type() == SWASHPLATE_TYPE_H3 && (_swashplate2.get_phase_angle() > 30 || _swashplate2.get_phase_angle() < -30)){
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_SW2_H3_PHANG out of range");
-        }
-        return false;
     }
 
     // check parent class parameters
