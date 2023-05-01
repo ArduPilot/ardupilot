@@ -246,4 +246,22 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     jammy.vm.boot_timeout = 1200
   end
 
+  # 23.04 EOL Jan 2024
+  config.vm.define "lunar", autostart: false do |lunar|
+    lunar.vm.box = "ubuntu/lunar64"
+    lunar.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    lunar.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (lunar)"
+    end
+    lunar.vm.boot_timeout = 1200
+  end
+  config.vm.define "lunar-desktop", autostart: false do |lunar|
+    lunar.vm.box = "ubuntu/lunar64"
+    lunar.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
+    lunar.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (lunar-desktop)"
+      vb.gui = true
+    end
+    lunar.vm.boot_timeout = 1200
+  end
 end
