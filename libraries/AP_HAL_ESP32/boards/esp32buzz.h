@@ -65,6 +65,12 @@
 // BARO probing:
 //#define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(BMP280, 0, 0x77)
 
+// no airspeed sensor
+#define AP_AIRSPEED_MS4525_ENABLED 0
+#define AP_AIRSPEED_ENABLED 0
+#define AP_AIRSPEED_ANALOG_ENABLED 0
+#define AP_AIRSPEED_BACKEND_DEFAULT_ENABLED 0
+
 // allow boot without a baro
 #define HAL_BARO_ALLOW_INIT_NO_BARO 1
 
