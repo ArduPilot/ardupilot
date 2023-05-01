@@ -942,6 +942,23 @@ bool Compass::register_compass(int32_t dev_id, uint8_t& instance)
         }
     }
 
+#if COMPASS_MAX_UNREG_DEV
+    // Check if this compass is configured with a extra dev id before pushing in
+    // and replacing a compass that has not shown up yet
+    if (_unreg_compass_count >= COMPASS_MAX_UNREG_DEV) {
+        AP_HAL::panic("Too many compass instances");
+    }
+    for (uint8_t i=0; i<COMPASS_MAX_UNREG_DEV; i++) {
+        if (extra_dev_id[i] == dev_id) {
+            if (i >= _unreg_compass_count) {
+                _unreg_compass_count = i+1;
+            }
+            instance = i+COMPASS_MAX_INSTANCES;
+            return false;
+        }
+    }
+#endif // COMPASS_MAX_UNREG_DEV
+
     // This might be a replacement compass module, find any unregistered compass
     // instance and replace that
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
@@ -956,19 +973,9 @@ bool Compass::register_compass(int32_t dev_id, uint8_t& instance)
 #endif
 
 #if COMPASS_MAX_UNREG_DEV
-    // Set extra dev id
-    if (_unreg_compass_count >= COMPASS_MAX_UNREG_DEV) {
-        AP_HAL::panic("Too many compass instances");
-    }
-
+    // All slots full, set as extra dev id
     for (uint8_t i=0; i<COMPASS_MAX_UNREG_DEV; i++) {
-        if (extra_dev_id[i] == dev_id) {
-            if (i >= _unreg_compass_count) {
-                _unreg_compass_count = i+1;
-            }
-            instance = i+COMPASS_MAX_INSTANCES;
-            return false;
-        } else if (extra_dev_id[i] == 0) {
+        if (extra_dev_id[i] == 0) {
             extra_dev_id[_unreg_compass_count++].set(dev_id);
             instance = i+COMPASS_MAX_INSTANCES;
             return false;
