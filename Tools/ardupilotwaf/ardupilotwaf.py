@@ -136,6 +136,7 @@ IGNORED_AP_LIBRARIES = [
     'doc',
     'AP_Scripting', # this gets explicitly included when it is needed and should otherwise never be globbed in
     'AP_DDS',
+    'AP_AerobridgeTrustedFlight', # this gets explicitly included with --trusted-flight-issuer and --trusted-flight-root-certificate build options
 ]
 
 
