@@ -48,7 +48,6 @@ void AP_RCProtocol::init()
 #if AP_RCPROTOCOL_SRXL_ENABLED
     backend[AP_RCProtocol::SRXL] = new AP_RCProtocol_SRXL(*this);
 #endif
-#ifndef IOMCU_FW
 #if AP_RCPROTOCOL_SBUS_NI_ENABLED
     backend[AP_RCProtocol::SBUS_NI] = new AP_RCProtocol_SBUS(*this, false, 100000);
 #endif
@@ -60,7 +59,6 @@ void AP_RCProtocol::init()
 #endif
 #if AP_RCPROTOCOL_FPORT2_ENABLED
     backend[AP_RCProtocol::FPORT2] = new AP_RCProtocol_FPort2(*this, true);
-#endif
 #endif
     backend[AP_RCProtocol::ST24] = new AP_RCProtocol_ST24(*this);
 #if AP_RCPROTOCOL_FPORT_ENABLED
@@ -419,11 +417,12 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
         return "IBUS";
 #if AP_RCPROTOCOL_SBUS_ENABLED
     case SBUS:
+        return "SBUS";
 #endif
 #if AP_RCPROTOCOL_SBUS_NI_ENABLED
     case SBUS_NI:
-#endif
         return "SBUS";
+#endif
 #if AP_RCPROTOCOL_FASTSBUS_ENABLED
     case FASTSBUS:
         return "FastSBUS";
