@@ -82,6 +82,11 @@
 
 class AP_DDS_Client;
 
+#ifdef AP_AEROBRIDGE_TRUSTED_FLIGHT_ENABLED
+#include <AP_AerobridgeTrustedFlight/AP_AerobridgeTrustedFlight.h>
+#endif
+
+
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
 public:
@@ -381,6 +386,11 @@ protected:
 #if AP_AHRS_ENABLED
     // Inertial Navigation EKF
     AP_AHRS ahrs;
+#endif
+
+#ifdef AP_AEROBRIDGE_TRUSTED_FLIGHT_ENABLED
+    // Aerobridge Flight: jwt permission verification
+    AP_AerobridgeTrustedFlight aerobridge_trusted_flight;
 #endif
 
 #if HAL_HOTT_TELEM_ENABLED
