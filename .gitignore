@@ -155,6 +155,7 @@ dumpstack_*out
 build.tmp.binaries/
 tasklist.json
 modules/esp_idf
+**/trusted_flight/*
 
 # lua-language-server linter
 ScriptingDocs.md
