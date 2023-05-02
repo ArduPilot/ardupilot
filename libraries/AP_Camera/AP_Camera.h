@@ -146,7 +146,6 @@ public:
         float tracking_p1y;     // center or top-left tracking point's y-axis value (0 is top, 1 is bottom)
         float tracking_p2x;     // bottom-right tracking point's x-axis value (0 is left, 1 is right)
         float tracking_p2y;     // bottom-right tracking point's y-axis value (0 is top, 1 is bottom)
-        Vector2f tracking_p2;   // bottom-right tracking point (0 is left or top, 1 is right or bottom)
     } camera_state_t;
 
     // accessor to allow scripting backend to retrieve state
