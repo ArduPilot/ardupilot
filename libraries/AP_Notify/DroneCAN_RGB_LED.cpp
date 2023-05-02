@@ -29,17 +29,16 @@
 #define LED_MEDIUM ((LED_FULL_BRIGHT / 5) * 4)
 #define LED_DIM ((LED_FULL_BRIGHT / 5) * 2)
 
-DroneCAN_RGB_LED::DroneCAN_RGB_LED(uint8_t led_index)
-    : DroneCAN_RGB_LED(led_index, LED_OFF,
+DroneCAN_RGB_LED::DroneCAN_RGB_LED()
+    : DroneCAN_RGB_LED(LED_OFF,
                      LED_FULL_BRIGHT, LED_MEDIUM, LED_DIM)
 {
 }
 
-DroneCAN_RGB_LED::DroneCAN_RGB_LED(uint8_t led_index, uint8_t led_off,
+DroneCAN_RGB_LED::DroneCAN_RGB_LED(uint8_t led_off,
                                uint8_t led_full, uint8_t led_medium,
                                uint8_t led_dim)
     : RGBLed(led_off, led_full, led_medium, led_dim)
-    , _led_index(led_index)
 {
 }
 
@@ -60,14 +59,24 @@ bool DroneCAN_RGB_LED::init()
 bool DroneCAN_RGB_LED::hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue)
 {
     bool success = false;
-    uint8_t can_num_drivers = AP::can().get_num_drivers();
+    msg.commands.len = 1;
+    msg.commands.data[0].light_id =0;
+    msg.commands.data[0].color.red = red >> 3;
+    msg.commands.data[0].color.green = green >> 2;
+    msg.commands.data[0].color.blue = blue >> 3;
+    return success;
+}
 
+void DroneCAN_RGB_LED::update()
+{
+    // broadcast the message on all ifaces
+    uint8_t can_num_drivers = AP::can().get_num_drivers();
     for (uint8_t i = 0; i < can_num_drivers; i++) {
         AP_DroneCAN *uavcan = AP_DroneCAN::get_dronecan(i);
         if (uavcan != nullptr) {
-            success = uavcan->led_write(_led_index, red, green, blue) || success;
+            uavcan->rgb_led.broadcast(msg);
         }
     }
-    return success;
 }
+
 #endif

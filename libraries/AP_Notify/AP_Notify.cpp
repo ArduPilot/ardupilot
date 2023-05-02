@@ -355,7 +355,7 @@ void AP_Notify::add_backends(void)
                 break;
             case Notify_LED_DroneCAN:
 #if HAL_ENABLE_DRONECAN_DRIVERS
-                ADD_BACKEND(new DroneCAN_RGB_LED(0));
+                ADD_BACKEND(new DroneCAN_RGB_LED());
 #endif // HAL_ENABLE_DRONECAN_DRIVERS
                 break;
 
