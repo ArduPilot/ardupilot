@@ -3715,7 +3715,7 @@ void GCS_MAVLINK::handle_optical_flow(const mavlink_message_t &msg)
 /*
   handle MAV_CMD_FIXED_MAG_CAL_YAW
  */
-MAV_RESULT GCS_MAVLINK::handle_fixed_mag_cal_yaw(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_fixed_mag_cal_yaw(const mavlink_command_int_t &packet)
 {
 #if COMPASS_CAL_ENABLED
     Compass &compass = AP::compass();
@@ -4627,7 +4627,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_home(const mavlink_command_long_t 
     return MAV_RESULT_ACCEPTED;
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_command_int_t &packet)
 {
     if (is_equal(packet.param1,1.0f)) {
         if (AP::arming().is_armed()) {
@@ -4653,6 +4653,42 @@ MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_comman
     }
 
     return MAV_RESULT_UNSUPPORTED;
+}
+
+MAV_RESULT GCS_MAVLINK::try_command_long_as_command_int(const mavlink_command_long_t &packet)
+{
+    MAV_FRAME frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
+    if (command_long_stores_location((MAV_CMD)packet.command)) {
+        // we must be able to supply a frame for the location:
+        static const struct {
+            uint32_t command;
+            MAV_FRAME frame;
+        } frame_map[] {
+            { MAV_CMD_FIXED_MAG_CAL_YAW, MAV_FRAME_GLOBAL_RELATIVE_ALT },
+            { MAV_CMD_DO_SET_ROI, MAV_FRAME_GLOBAL_RELATIVE_ALT },
+            { MAV_CMD_DO_SET_ROI_LOCATION, MAV_FRAME_GLOBAL_RELATIVE_ALT },
+        };
+
+        // map from command to frame:
+        bool found = false;
+        for (const auto &map : frame_map) {
+            if (map.command != packet.command) {
+                continue;
+            }
+            frame = map.frame;
+            found = true;
+            break;
+        }
+        if (!found) {
+            return MAV_RESULT_UNSUPPORTED;
+        }
+    }
+
+    // convert and run the command
+    mavlink_command_int_t command_int;
+    convert_COMMAND_LONG_to_COMMAND_INT(packet, command_int, frame);
+
+    return handle_command_int_packet(command_int);
 }
 
 MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t &packet)
@@ -4741,11 +4777,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
     case MAV_CMD_DO_SET_ROI_SYSID:
         return handle_command_do_set_roi_sysid(packet);
 
-    case MAV_CMD_DO_SET_ROI_LOCATION:
-    case MAV_CMD_DO_SET_ROI:
-        result = handle_command_do_set_roi(packet);
-        break;
-
     case MAV_CMD_DO_JUMP_TAG:
     case MAV_CMD_DO_SET_MISSION_CURRENT:
         result = handle_command_do_set_mission_current(packet);
@@ -4828,14 +4859,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         result = handle_flight_termination(packet);
         break;
 
-    case MAV_CMD_COMPONENT_ARM_DISARM:
-        result = handle_command_component_arm_disarm(packet);
-        break;
-
-    case MAV_CMD_FIXED_MAG_CAL_YAW:
-        result = handle_fixed_mag_cal_yaw(packet);
-        break;
-
 #if AP_LANDINGGEAR_ENABLED
         case MAV_CMD_AIRFRAME_CONFIGURATION:
             result = handle_command_airframe_configuration(packet);
@@ -4843,7 +4866,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
 #endif
 
     default:
-        result = MAV_RESULT_UNSUPPORTED;
+        result = try_command_long_as_command_int(packet);
         break;
     }
 
@@ -5128,20 +5151,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_int_t &p
     return handle_command_do_set_roi(roi_loc);
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_long_t &packet)
-{
-    // be aware that this method is called for both MAV_CMD_DO_SET_ROI
-    // and MAV_CMD_DO_SET_ROI_LOCATION.  If you intend to support any
-    // of the extra fields in the former then you will need to split
-    // off support for MAV_CMD_DO_SET_ROI_LOCATION (which doesn't
-    // support the extra fields).
-    Location roi_loc;
-    if (!location_from_command_t(packet, MAV_FRAME_GLOBAL_RELATIVE_ALT, roi_loc)) {
-        return MAV_RESULT_DENIED;
-    }
-    return handle_command_do_set_roi(roi_loc);
-}
-
 #if AP_FILESYSTEM_FORMAT_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_storage_format(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
@@ -5177,6 +5186,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_EXTERNAL_POSITION_ESTIMATE:
         return handle_command_int_external_position_estimate(packet);
 #endif
+    case MAV_CMD_COMPONENT_ARM_DISARM:
+        return handle_command_component_arm_disarm(packet);
+    case MAV_CMD_FIXED_MAG_CAL_YAW:
+        return handle_command_fixed_mag_cal_yaw(packet);
 
 #if AP_SCRIPTING_ENABLED
     case MAV_CMD_SCRIPTING:
