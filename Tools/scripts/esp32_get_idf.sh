@@ -39,7 +39,7 @@ if [ `git rev-parse HEAD` == 'f370d5089f61ac39f183109b6b2908700cfe3b0a' ]; then
 elif [ `git rev-parse HEAD` == 'c40f2590bf759ff60ef122afa79b4ec04e7633d2' ]; then 
     echo "IDF version 'v4.2' found OK, great."; 
 else
-    echo "looks like an idf, but not v4.2 branch, trying to switch branch and reflect upstream";
+    echo "looks like an idf, but maybe not v4.2 branch, trying to switch branch and reflect upstream";
     ../../Tools/gittools/submodule-sync.sh >/dev/null
     git fetch ; git checkout -f release/v4.2
 
@@ -51,5 +51,11 @@ else
         echo "IDF version 'v4.2' found OK, great."; 
     fi
 fi
-cd ..
+cd ../..
 
+cd modules/esp_idf 
+git submodule update --init --recursive
+cd ../..
+echo "after changing IDF versions [ such as between 4.2 and 4.4 ] you should re-run these in your console:"
+echo "./modules/esp_idf/install.sh"
+echo "source ./modules/esp_idf/export.sh"
