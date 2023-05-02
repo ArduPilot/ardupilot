@@ -56,6 +56,10 @@
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 
+#ifdef AP_AEROBRIDGE_TRUSTED_FLIGHT_ENABLED
+#include <AP_AerobridgeTrustedFlight/AP_AerobridgeTrustedFlight.h>
+#endif
+
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
   #include <AP_Common/AP_Common.h>
@@ -1588,16 +1592,18 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
 
     running_arming_checks = true;  // so we show Arm: rather than Disarm: in messages
 
-    if ((!do_arming_checks && mandatory_checks(true)) || (pre_arm_checks(true) && arm_checks(method))) {
-        armed = true;
+    armed = (!do_arming_checks && mandatory_checks(true)) || (pre_arm_checks(true) && arm_checks(method));
 
         _last_arm_method = method;
+#ifdef AP_AEROBRIDGE_TRUSTED_FLIGHT_ENABLED
+    armed &= AP::aerobridge_trusted_flight().is_trusted();
+#endif
 
+    if (armed) {
         Log_Write_Arm(!do_arming_checks, method); // note Log_Write_Armed takes forced not do_arming_checks
 
     } else {
         AP::logger().arming_failure();
-        armed = false;
     }
 
     running_arming_checks = false;
