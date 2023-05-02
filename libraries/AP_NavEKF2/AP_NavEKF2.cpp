@@ -662,6 +662,7 @@ bool NavEKF2::InitialiseFilter(void)
         if (AP::dal().available_memory() < sizeof(NavEKF2_core)*num_cores + 4096) {
             initFailure = InitFailures::NO_MEM;
             core_malloc_failed = true;
+            num_cores = 0;
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "NavEKF2: not enough memory available");
             return false;
         }
@@ -671,6 +672,7 @@ bool NavEKF2::InitialiseFilter(void)
         if (core == nullptr) {
             initFailure = InitFailures::NO_MEM;
             core_malloc_failed = true;
+            num_cores = 0;
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "NavEKF2: memory allocation failed");
             return false;
         }
