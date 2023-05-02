@@ -33,6 +33,7 @@
 #include <StorageManager/StorageManager.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_InternalError/AP_InternalError.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 #include <stdio.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     #include <SITL/SITL.h>
@@ -2113,8 +2114,9 @@ bool AP_Param::parse_param_line(char *line, char **vname, float &value, bool &re
 // increments num_defaults for each default found in filename
 bool AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaults)
 {
-    FILE *f = fopen(filename, "r");
-    if (f == nullptr) {
+    // try opening the file both in the posix filesystem and using AP::FS
+    int file_apfs = AP::FS().open(filename, O_RDONLY, true);
+    if (file_apfs == -1) {
         return false;
     }
     char line[100];
@@ -2122,7 +2124,7 @@ bool AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaul
     /*
       work out how many parameter default structures to allocate
      */
-    while (fgets(line, sizeof(line)-1, f)) {
+    while (AP::FS().fgets(line, sizeof(line)-1, file_apfs)) {
         char *pname;
         float value;
         bool read_only;
@@ -2135,23 +2137,23 @@ bool AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaul
         }
         num_defaults++;
     }
-
-    fclose(f);
+    AP::FS().close(file_apfs);
 
     return true;
 }
 
 bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass)
 {
-    FILE *f = fopen(filename, "r");
-    if (f == nullptr) {
+    // try opening the file both in the posix filesystem and using AP::FS
+    int file_apfs = AP::FS().open(filename, O_RDONLY, true);
+    if (file_apfs == -1) {
         AP_HAL::panic("AP_Param: Failed to re-open defaults file");
         return false;
     }
 
     uint16_t idx = 0;
     char line[100];
-    while (fgets(line, sizeof(line)-1, f)) {
+    while (AP::FS().fgets(line, sizeof(line)-1, file_apfs)) {
         char *pname;
         float value;
         bool read_only;
@@ -2183,7 +2185,8 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass)
             vp->set_float(value, var_type);
         }
     }
-    fclose(f);
+    AP::FS().close(file_apfs);
+
     return true;
 }
 

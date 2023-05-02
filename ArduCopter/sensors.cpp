@@ -135,7 +135,7 @@ bool Copter::rangefinder_up_ok() const
   difference between the inertial height at that time and the current
   inertial height to give us interpolation of height from rangefinder
  */
-bool Copter::get_rangefinder_height_interpolated_cm(int32_t& ret)
+bool Copter::get_rangefinder_height_interpolated_cm(int32_t& ret) const
 {
     if (!rangefinder_alt_ok()) {
         return false;

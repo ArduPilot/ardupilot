@@ -489,8 +489,8 @@ void FlightAxis::update(const struct sitl_input &input)
        can't get that from m_airspeed_MPS, so instead we calculate it
        from wind vector and ground speed
      */
-    Vector3f m_wind_ef(-state.m_windY_MPS,-state.m_windX_MPS,-state.m_windZ_MPS);
-    Vector3f airspeed_3d_ef = m_wind_ef + velocity_ef;
+    wind_ef = Vector3f(state.m_windY_MPS,state.m_windX_MPS,state.m_windZ_MPS);
+    Vector3f airspeed_3d_ef = velocity_ef - wind_ef;
     Vector3f airspeed3d = dcm.mul_transpose(airspeed_3d_ef);
 
     if (last_imu_rotation != ROTATION_NONE) {

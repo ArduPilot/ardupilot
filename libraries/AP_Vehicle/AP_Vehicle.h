@@ -38,6 +38,7 @@
 #include <AP_SerialManager/AP_SerialManager.h>      // Serial manager library
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AP_Camera/AP_RunCam.h>
+#include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include <AP_Hott_Telem/AP_Hott_Telem.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <AP_GyroFFT/AP_GyroFFT.h>
@@ -50,6 +51,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
+#include <AP_CheckFirmware/AP_CheckFirmware.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -220,6 +222,9 @@ public:
     // set turn rate in deg/sec and speed in meters/sec (for use by scripting with Rover)
     virtual bool set_desired_turn_rate_and_speed(float turn_rate, float speed) { return false; }
 
+   // set auto mode speed in meters/sec (for use by scripting with Copter/Rover)
+    virtual bool set_desired_speed(float speed) { return false; }
+
     // support for NAV_SCRIPT_TIME mission command
     virtual bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2) { return false; }
     virtual void nav_script_time_done(uint16_t id) {}
@@ -352,6 +357,10 @@ protected:
 
 #if HAL_WITH_ESC_TELEM
     AP_ESC_Telem esc_telem;
+#endif
+
+#if AP_OPENDRONEID_ENABLED
+    AP_OpenDroneID opendroneid;
 #endif
 
 #if HAL_MSP_ENABLED

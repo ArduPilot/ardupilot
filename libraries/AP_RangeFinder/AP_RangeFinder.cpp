@@ -814,6 +814,32 @@ bool RangeFinder::prearm_healthy(char *failure_msg, const uint8_t failure_msg_le
             return false;
         }
 
+        // backend-specific checks.  This might end up drivers[i]->arming_checks(...).
+        switch (drivers[i]->allocated_type()) {
+        case Type::ANALOG:
+        case Type::PX4_PWM:
+        case Type::PWM: {
+            // ensure pin is configured
+            if (params[i].pin == -1) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "RNGFND%u_PIN not set", unsigned(i + 1));
+                return false;
+            }
+            // ensure that the pin we're configured to use is available
+            if (!hal.gpio->valid_pin(params[i].pin)) {
+                uint8_t servo_ch;
+                if (hal.gpio->pin_to_servo_channel(params[i].pin, servo_ch)) {
+                    hal.util->snprintf(failure_msg, failure_msg_len, "RNGFND%u_PIN=%d, set SERVO%u_FUNCTION=-1", unsigned(i + 1), int(params[i].pin.get()), unsigned(servo_ch+1));
+                } else {
+                    hal.util->snprintf(failure_msg, failure_msg_len, "RNGFND%u_PIN=%d invalid", unsigned(i + 1), int(params[i].pin.get()));
+                }
+                return false;
+            }
+            break;
+        }
+        default:
+            break;
+        }
+
         switch (drivers[i]->status()) {
         case Status::NoData:
             hal.util->snprintf(failure_msg, failure_msg_len, "Rangefinder %X: No Data", i + 1);

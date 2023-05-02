@@ -205,6 +205,8 @@ AP_GPS_NOVA::process_message(void)
         state.location.lat = (int32_t) (bestposu.lat * (double)1e7);
         state.location.lng = (int32_t) (bestposu.lng * (double)1e7);
         state.location.alt = (int32_t) (bestposu.hgt * 100);
+        state.have_undulation = true;
+        state.undulation = bestposu.undulation;
 
         state.num_sats = bestposu.svsused;
 

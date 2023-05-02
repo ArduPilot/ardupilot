@@ -238,6 +238,12 @@ void __early_init(void) {
   SCB_DisableDCache();
 #endif
 #if defined(STM32H7)
+
+  // ensure ITCM and DTCM are enabled. These could be disabled by the px4
+  // bootloader
+  SCB->ITCMCR |= 1; // ITCM enable
+  SCB->DTCMCR |= 1; // DTCM enable
+
   // disable cache on SRAM4 so we can use it for DMA
   mpuConfigureRegion(MPU_REGION_5,
                      0x38000000U,

@@ -88,7 +88,7 @@ void AP_EFI_Serial_Lutan::update()
             pkt_nbytes = 0;
         }
     }
-    if (n == 0 || now - last_request_ms > 200) {
+    if (now - last_request_ms > 200) {
         last_request_ms = now;
         port->discard_input();
         send_request();

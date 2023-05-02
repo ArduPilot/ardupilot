@@ -23,7 +23,7 @@
 
 #if defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
 
-int AP_Filesystem_ROMFS::open(const char *fname, int flags)
+int AP_Filesystem_ROMFS::open(const char *fname, int flags, bool allow_absolute_paths)
 {
     if ((flags & O_ACCMODE) != O_RDONLY) {
         errno = EROFS;

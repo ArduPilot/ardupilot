@@ -511,7 +511,7 @@ private:
 
     SubMode _mode = SubMode::TAKEOFF;   // controls which auto controller is run
 
-    Location terrain_adjusted_location(const AP_Mission::Mission_Command& cmd) const;
+    bool shift_alt_to_current_alt(Location& target_loc) const;
 
     void do_takeoff(const AP_Mission::Mission_Command& cmd);
     void do_nav_wp(const AP_Mission::Mission_Command& cmd);

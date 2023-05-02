@@ -25,7 +25,8 @@ def build(bld):
         name= 'AP_Bootloader_libs',
         ap_vehicle='AP_Bootloader',
         ap_libraries= flashiface_lib + [
-        'AP_Math'
+        'AP_Math',
+        'AP_CheckFirmware'
         ])
     
     bld(

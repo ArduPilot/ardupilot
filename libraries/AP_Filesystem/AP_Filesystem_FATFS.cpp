@@ -279,7 +279,7 @@ static bool remount_file_system(void)
     return true;
 }
 
-int AP_Filesystem_FATFS::open(const char *pathname, int flags)
+int AP_Filesystem_FATFS::open(const char *pathname, int flags, bool allow_absolute_path)
 {
     int fileno;
     int fatfs_modes;

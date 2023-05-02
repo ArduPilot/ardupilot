@@ -97,6 +97,8 @@ imu_types = {
     0x36 : "DEVTYPE_INS_ICM40605",
     0x37 : "DEVTYPE_INS_IIM42652",
     0x38 : "DEVTYPE_INS_BMI270",
+    0x39 : "DEVTYPE_INS_BMI085",
+    0x3A : "DEVTYPE_INS_ICM42670",
 }
 
 baro_types = {
@@ -113,6 +115,9 @@ baro_types = {
     0x0B : "DEVTYPE_BARO_MS5611",
     0x0C : "DEVTYPE_BARO_SPL06",
     0x0D : "DEVTYPE_BARO_UAVCAN",
+    0x0E : "DEVTYPE_BARO_MSP",
+    0x0F : "DEVTYPE_BARO_ICP101XX",
+    0x10 : "DEVTYPE_BARO_ICP201XX",
 }
 
 airspeed_types = {

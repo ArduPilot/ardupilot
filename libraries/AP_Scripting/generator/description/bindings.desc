@@ -232,6 +232,7 @@ singleton AP_Vehicle method nav_script_time boolean uint16_t'Null uint8_t'Null f
 singleton AP_Vehicle method nav_script_time_done void uint16_t'skip_check
 singleton AP_Vehicle method set_target_throttle_rate_rpy void float -100 100 float'skip_check float'skip_check float'skip_check
 singleton AP_Vehicle method set_desired_turn_rate_and_speed boolean float'skip_check float'skip_check
+singleton AP_Vehicle method set_desired_speed boolean float'skip_check
 singleton AP_Vehicle method nav_scripting_enable boolean uint8_t 0 UINT8_MAX
 singleton AP_Vehicle method set_velocity_match boolean Vector2f
 

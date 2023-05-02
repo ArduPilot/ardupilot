@@ -57,6 +57,7 @@
 #include <AP_ADSB/AP_ADSB.h>
 #include "AP_UAVCAN_DNA_Server.h"
 #include <AP_Logger/AP_Logger.h>
+#include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include "AP_UAVCAN_pool.h"
 
 #define LED_DELAY_US 50000
@@ -456,7 +457,9 @@ void AP_UAVCAN::loop(void)
         notify_state_send();
         send_parameter_request();
         send_parameter_save_request();
-        AP::uavcan_dna_server().verify_nodes(this);
+#if AP_OPENDRONEID_ENABLED
+        AP::opendroneid().dronecan_send(this);
+#endif
     }
 }
 

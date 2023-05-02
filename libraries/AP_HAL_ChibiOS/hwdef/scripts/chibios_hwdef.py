@@ -709,6 +709,9 @@ def get_ram_map():
         ram_map = get_mcu_config('RAM_MAP_EXTERNAL_FLASH', False)
         if ram_map is not None:
             return ram_map
+    elif int(env_vars.get('USE_ALT_RAM_MAP',0)) == 1:
+        print("Using ALT_RAM_MAP")
+        return get_mcu_config('ALT_RAM_MAP', True)
     return get_mcu_config('RAM_MAP', True)
 
 def get_flash_pages_sizes():
@@ -1378,6 +1381,14 @@ def write_QSPI_config(f):
     f.write('#define HAL_QSPI_BUS_LIST %s\n\n' % ','.join(devlist))
     write_QSPI_table(f)
 
+def write_check_firmware(f):
+    '''add AP_CHECK_FIRMWARE_ENABLED if needed'''
+    if env_vars.get('AP_PERIPH',0) != 0 or intdefines.get('AP_OPENDRONEID_ENABLED',0) == 1:
+        f.write('''
+#ifndef AP_CHECK_FIRMWARE_ENABLED
+#define AP_CHECK_FIRMWARE_ENABLED 1
+#endif
+''')
 
 def parse_spi_device(dev):
     '''parse a SPI:xxx device item'''
@@ -1405,8 +1416,10 @@ def parse_i2c_device(dev):
 
 def seen_str(dev):
     '''return string representation of device for checking for duplicates'''
-    return str(dev[:2])
-
+    ret = dev[:2]
+    if dev[-1].startswith("BOARD_MATCH("):
+        ret.append(dev[-1])
+    return str(ret)
 
 def write_IMU_config(f):
     '''write IMU config defines'''
@@ -1426,9 +1439,14 @@ def write_IMU_config(f):
                 (wrapper, dev[i]) = parse_i2c_device(dev[i])
         n = len(devlist)+1
         devlist.append('HAL_INS_PROBE%u' % n)
-        f.write(
-            '#define HAL_INS_PROBE%u %s ADD_BACKEND(AP_InertialSensor_%s::probe(*this,%s))\n'
-            % (n, wrapper, driver, ','.join(dev[1:])))
+        if dev[-1].startswith("BOARD_MATCH("):
+            f.write(
+                '#define HAL_INS_PROBE%u %s ADD_BACKEND_BOARD_MATCH(%s, AP_InertialSensor_%s::probe(*this,%s))\n'
+                % (n, wrapper, dev[-1], driver, ','.join(dev[1:-1])))
+        else:
+            f.write(
+                '#define HAL_INS_PROBE%u %s ADD_BACKEND(AP_InertialSensor_%s::probe(*this,%s))\n'
+                % (n, wrapper, driver, ','.join(dev[1:])))
     if len(devlist) > 0:
         if len(devlist) < 3:
             f.write('#define INS_MAX_INSTANCES %u\n' % len(devlist))
@@ -2250,6 +2268,7 @@ def write_hwdef_header(outfilename):
     write_AIRSPEED_config(f)
     write_board_validate_macro(f)
     add_apperiph_defaults(f)
+    write_check_firmware(f)
 
     write_peripheral_enable(f)
 
@@ -2682,10 +2701,6 @@ def add_apperiph_defaults(f):
     if env_vars.get('AP_PERIPH',0) == 0:
         # not AP_Periph
         return
-
-    if not args.bootloader:
-        # use the app descriptor needed by MissionPlanner for CAN upload
-        env_vars['APP_DESCRIPTOR'] = 'MissionPlanner'
 
     print("Setting up as AP_Periph")
     f.write('''

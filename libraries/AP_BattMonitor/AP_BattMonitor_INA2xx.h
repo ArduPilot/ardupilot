@@ -26,20 +26,25 @@ public:
     bool reset_remaining(float percentage) override { return false; }
     bool get_cycle_count(uint16_t &cycles) const override { return false; }
 
-    virtual void init(void) override;
-    virtual void read() override;
+    void init(void) override;
+    void read() override;
 
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
 
+    void configure(void);
     bool read_word(const uint8_t reg, int16_t& data) const;
     bool write_word(const uint8_t reg, const uint16_t data) const;
     void timer(void);
 
     AP_Int8 i2c_bus;
     AP_Int8 i2c_address;
+    bool configured;
+    bool callback_registered;
+    uint32_t failed_reads;
+    uint32_t last_configure_ms;
 
     struct {
         uint16_t count;

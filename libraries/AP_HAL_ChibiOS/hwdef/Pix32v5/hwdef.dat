@@ -17,5 +17,5 @@ define HAL_IMUHEAT_I_DEFAULT 0.07
 PG14 USART6_TX USART6 NODMA
 
 # offset the internal compass for EM impact of the IMU heater
-# this is in sensor frame mGauss
-define HAL_IST8310_I2C_HEATER_OFFSET Vector3f(-3,14,-6)
+# this is in body frame mGauss
+define HAL_HEATER_MAG_OFFSET {AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_I2C,0,0xe,0xa),Vector3f(18,0,8)}

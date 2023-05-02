@@ -1,5 +1,46 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.2.3-rc2 13-Aug-2022
+Changes from 4.2.3-rc1
+1) BlueRobotics Navigator autopilot filesystem fix
+------------------------------------------------------------------
+Rover 4.2.3-rc1 12-Aug-2022
+Changes from 4.2.2
+1) OpenDroneId support (aka RemoteID)
+2) New autopilot support
+    a) CubeOrange+
+    b) Foxeer Reaper F745
+    c) MFE PixSurveyA1
+    d) Pixhawk6C and Pixhawk6X
+3) Bug Fixes and minor enhancements
+    a) Battery monitor health check fixed to check all enabled monitors
+    b) ICE Lutan EFI update serial flood fixed
+    c) ICM42xxx IMU filter settings improved and allow for faster sample rates
+    d) INA2xx batteries may init after startup
+    e) KakuteH7 OSD parameter menu enabled
+    f) Lua script support to set desired speed in Auto mode
+    g) Notch filter ordering bug on loss of RPM source fixed
+    h) PreArm check of Rangefinder pin conflict and servo outputs
+    i) SCurve logs debug if internal error occurs
+    j) WSL2 upload fixed (developer issue only)
+------------------------------------------------------------------
+Rover 4.2.2 28-Jun-2022 / 4.2.2-rc1 21-Jun-2022
+Changes from 4.2.1
+1) MambaH743v4 and MambaF405 MK4 autopilot support
+2) Second full harmonic notches available (see INS_HNTC2_ parameters)
+3) UAVCAN memory usage reduced (see CAN_Dn_UC_POOL parameter to control DroneCAN pool size)
+5) Watchdog (caused by hardfault) saves crash dump logs to SD card
+6) Bug fixes
+    a) CRSF protection against watchdog on bad frames
+    b) CRSF reset in flight handled
+    c) FFT init watchdog fix when ARMING_REQUIRE=0
+    d) OSD flight modes menu includes newer flight modes
+    e) Param download (via MAVFTP) fixed for params with overlapping names
+    f) PWM rangefinder bug fix and added SCALING parameter support
+    g) Replay bug fix when EK3_SRCs changed
+    h) SERIALx_OPTION fix when "Don't forward mavlink to/from" selected (resolves MAVLink gimbal detection)
+    i) VL53L1X rangefinder preserves addresses
+------------------------------------------------------------------
 Rover 4.2.1 07-Jun-2022 / 4.2.1-rc1 28-May-2022
 Changes from 4.2.0
 1) CAN ESCs bus bandwidth efficiency improvements (see CAN_Dx_UC_ESC_OF parameter)

@@ -617,13 +617,11 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     uint8_t cmd_acceptance_distance = LOWBYTE(cmd.p1); // radius in meters to accept reaching the wp
 
     if (cmd_passby > 0) {
-        float dist = prev_WP_loc.get_distance(flex_next_WP_loc);
+        const float dist = prev_WP_loc.get_distance(flex_next_WP_loc);
+        const float bearing_deg = degrees(prev_WP_loc.get_bearing(flex_next_WP_loc));
 
-        if (!is_zero(dist)) {
-            float factor = (dist + cmd_passby) / dist;
-
-            flex_next_WP_loc.lat = flex_next_WP_loc.lat + (flex_next_WP_loc.lat - prev_WP_loc.lat) * (factor - 1.0f);
-            flex_next_WP_loc.lng = flex_next_WP_loc.lng + Location::diff_longitude(flex_next_WP_loc.lng,prev_WP_loc.lng) * (factor - 1.0f);
+        if (is_positive(dist)) {
+            flex_next_WP_loc.offset_bearing(bearing_deg, cmd_passby);
         }
     }
 
@@ -653,8 +651,8 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     } else if (cmd_passby == 0) {
         acceptance_distance_m = nav_controller->turn_distance(get_wp_radius(), auto_state.next_turn_angle);
     }
-
-    if (auto_state.wp_distance <= acceptance_distance_m) {
+    const float wp_dist = current_loc.get_distance(flex_next_WP_loc);
+    if (wp_dist <= acceptance_distance_m) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached waypoint #%i dist %um",
                           (unsigned)mission.get_current_nav_cmd().index,
                           (unsigned)current_loc.get_distance(flex_next_WP_loc));
@@ -986,6 +984,10 @@ void Plane::exit_mission_callback()
 #if HAL_QUADPLANE_ENABLED
 bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
 {
+    const float radius = is_zero(quadplane.fw_land_approach_radius)? aparm.loiter_radius : quadplane.fw_land_approach_radius;
+    const int8_t direction = is_negative(radius) ? -1 : 1;
+    const float abs_radius = fabsf(radius);
+
     switch (vtol_approach_s.approach_stage) {
         case RTL:
             {
@@ -1013,21 +1015,12 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
             }
         case ENSURE_RADIUS:
             {
-                float radius;
-                if (is_zero(quadplane.fw_land_approach_radius)) {
-                    radius = aparm.loiter_radius;
-                } else {
-                    radius = quadplane.fw_land_approach_radius;
-                }
-                const int8_t direction = is_negative(radius) ? -1 : 1;
-                radius = fabsf(radius);
-
                 // validate that the vehicle is at least the expected distance away from the loiter point
                 // require an angle total of at least 2 centidegrees, due to special casing of 1 centidegree
-                if (((fabsf(cmd.content.location.get_distance(current_loc) - radius) > 5.0f) &&
-                      (cmd.content.location.get_distance(current_loc) < radius)) ||
+                if (((fabsf(cmd.content.location.get_distance(current_loc) - abs_radius) > 5.0f) &&
+                      (cmd.content.location.get_distance(current_loc) < abs_radius)) ||
                     (loiter.sum_cd < 2)) {
-                    nav_controller->update_loiter(cmd.content.location, radius, direction);
+                    nav_controller->update_loiter(cmd.content.location, abs_radius, direction);
                     break;
                 }
                 vtol_approach_s.approach_stage = WAIT_FOR_BREAKOUT;
@@ -1035,12 +1028,6 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
             }
         case WAIT_FOR_BREAKOUT:
             {
-                float radius = quadplane.fw_land_approach_radius;
-                if (is_zero(radius)) {
-                    radius = aparm.loiter_radius;
-                }
-                const int8_t direction = is_negative(radius) ? -1 : 1;
-
                 nav_controller->update_loiter(cmd.content.location, radius, direction);
 
                 const float breakout_direction_rad = radians(wrap_180(vtol_approach_s.approach_direction_deg + (direction > 0 ? 270 : 90)));
@@ -1071,7 +1058,19 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                 // check if we should move on to the next waypoint
                 Location breakout_loc = cmd.content.location;
                 breakout_loc.offset_bearing(vtol_approach_s.approach_direction_deg + 180, quadplane.stopping_distance());
-                if(current_loc.past_interval_finish_line(start, breakout_loc)) {
+
+                const bool past_finish_line = current_loc.past_interval_finish_line(start, breakout_loc);
+                const bool half_radius = current_loc.get_distance(cmd.content.location) < 0.5 * abs_radius;
+                bool lined_up = true;
+                Vector3f vel_NED;
+                if (ahrs.get_velocity_NED(vel_NED)) {
+                    const float ground_course_deg = wrap_180(degrees(vel_NED.xy().angle()));
+                    const float approach_deg = wrap_180(vtol_approach_s.approach_direction_deg);
+                    const float angle_err = fabsf(wrap_180(ground_course_deg - approach_deg));
+                    lined_up = (angle_err < 30);
+                }
+
+                if (past_finish_line && (lined_up || half_radius)) {
                     vtol_approach_s.approach_stage = VTOL_LANDING;
                     quadplane.do_vtol_land(cmd);
                     // fallthrough

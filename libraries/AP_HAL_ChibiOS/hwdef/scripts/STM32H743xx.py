@@ -34,6 +34,16 @@ mcu = {
         (0x38000000,  64, 1), # SRAM4.
     ],
 
+    # alternative RAM_MAP needed for px4 bootloader compatibility
+    'ALT_RAM_MAP' : [
+        (0x24000000, 512, 4), # AXI SRAM. Use this for SDMMC IDMA ops
+        (0x30000000, 256, 0), # SRAM1, SRAM2
+        (0x20000000, 128, 2), # DTCM, tightly coupled, no DMA, fast
+        (0x00000400,  63, 2), # ITCM (first 1k removed, to keep address 0 unused)
+        (0x30040000,  32, 0), # SRAM3.
+        (0x38000000,  64, 1), # SRAM4.
+    ],
+
     # avoid a problem in the bootloader by making DTCM first. The DCache init
     # when using SRAM1 as primary memory gets a hard fault in bootloader
     # we can't use DTCM first for main firmware as some builds overflow the first segment

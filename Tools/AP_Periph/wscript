@@ -62,6 +62,7 @@ def build(bld):
                      'AC_PID',
                      'AP_BLHeli',
                      'AP_ESC_Telem',
+                     'AP_CheckFirmware',
                      ]
     bld.ap_stlib(
         name= 'AP_Periph_libs',

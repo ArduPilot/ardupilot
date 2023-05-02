@@ -68,6 +68,10 @@ public:
     // quality is not available
     virtual bool get_signal_quality_pct(uint8_t &quality_pct) const { return false; }
 
+    // return the actual type of the rangefinder, as opposed to the
+    // parameter value which may be changed at runtime.
+    RangeFinder::Type allocated_type() const { return _backend_type; }
+
 protected:
 
     // update status based on distance measurement

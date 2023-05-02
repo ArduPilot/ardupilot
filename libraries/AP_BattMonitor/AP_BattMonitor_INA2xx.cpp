@@ -61,14 +61,19 @@ void AP_BattMonitor_INA2XX::init(void)
     if (!dev) {
         return;
     }
+    // register now and configure in the timer callbacks
+    dev->register_periodic_callback(25000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_INA2XX::timer, void));
+}
+
+void AP_BattMonitor_INA2XX::configure(void)
+{
+    WITH_SEMAPHORE(dev->get_semaphore());
 
     int16_t config = 0;
-    WITH_SEMAPHORE(dev->get_semaphore());
     if (!write_word(REG_CONFIG, REG_CONFIG_RESET) ||
         !write_word(REG_CONFIG, REG_CONFIG_DEFAULT) ||
         !read_word(REG_CONFIG, config) ||
         config != REG_CONFIG_DEFAULT) {
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "INA2XX: Failed to find device 0x%04x", unsigned(config));
         return;
     }
 
@@ -81,16 +86,10 @@ void AP_BattMonitor_INA2XX::init(void)
     if (!write_word(REG_CONFIG, REG_CONFIG_RESET) || // reset
         !write_word(REG_CONFIG, conf) ||
         !write_word(REG_CALIBRATION, cal)) {
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "INA2XX: Failed to configure device");
         return;
     }
 
-
-    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "INA2XX: found monitor on I2C:%u:%02x", unsigned(i2c_bus), unsigned(i2c_address));
-
-    if (dev) {
-        dev->register_periodic_callback(25000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_INA2XX::timer, void));
-    }
+    configured = true;
 }
 
 /// read the battery_voltage and current, should be called at 10hz
@@ -146,11 +145,33 @@ bool AP_BattMonitor_INA2XX::write_word(const uint8_t reg, const uint16_t data) c
 
 void AP_BattMonitor_INA2XX::timer(void)
 {
+    // allow for power-on after boot
+    if (!configured) {
+        uint32_t now = AP_HAL::millis();
+        if (now - last_configure_ms > 200) {
+            // try contacting the device at 5Hz
+            last_configure_ms = now;
+            configure();
+        }
+        if (!configured) {
+            // waiting for the device to respond
+            return;
+        }
+    }
+
     int16_t bus_voltage, current;
+
     if (!read_word(REG_BUS_VOLTAGE, bus_voltage) ||
         !read_word(REG_CURRENT, current)) {
+        failed_reads++;
+        if (failed_reads > 10) {
+            // device has disconnected, we need to reconfigure it
+            configured = false;
+        }
         return;
     }
+    failed_reads = 0;
+
     WITH_SEMAPHORE(accumulate.sem);
     accumulate.volt_sum += bus_voltage * voltage_LSB;
     accumulate.current_sum += current * current_LSB;

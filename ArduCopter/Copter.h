@@ -256,10 +256,8 @@ private:
         uint32_t glitch_cleared_ms; // system time glitch cleared
     } rangefinder_state, rangefinder_up_state;
 
-    /*
-      return rangefinder height interpolated using inertial altitude
-     */
-    bool get_rangefinder_height_interpolated_cm(int32_t& ret);
+    // return rangefinder height interpolated using inertial altitude
+    bool get_rangefinder_height_interpolated_cm(int32_t& ret) const;
 
     class SurfaceTracking {
     public:
@@ -653,6 +651,7 @@ private:
     bool set_target_angle_and_climbrate(float roll_deg, float pitch_deg, float yaw_deg, float climb_rate_ms, bool use_yaw_rate, float yaw_rate_degs) override;
     bool get_circle_radius(float &radius_m) override;
     bool set_circle_rate(float rate_dps) override;
+    bool set_desired_speed(float speed) override;
     bool nav_scripting_enable(uint8_t mode) override;
     bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2) override;
     void nav_script_time_done(uint16_t id) override;

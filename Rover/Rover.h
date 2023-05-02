@@ -273,6 +273,7 @@ private:
     bool set_steering_and_throttle(float steering, float throttle) override;
     // set desired turn rate (degrees/sec) and speed (m/s). Used for scripting
     bool set_desired_turn_rate_and_speed(float turn_rate, float speed) override;
+    bool set_desired_speed(float speed) override;
     bool get_control_output(AP_Vehicle::ControlOutput control_output, float &control_value) override;
     bool nav_scripting_enable(uint8_t mode) override;
     bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2) override;

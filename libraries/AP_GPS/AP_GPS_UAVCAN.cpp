@@ -412,6 +412,8 @@ void AP_GPS_UAVCAN::handle_fix_msg(const FixCb &cb)
         loc.lat = cb.msg->latitude_deg_1e8 / 10;
         loc.lng = cb.msg->longitude_deg_1e8 / 10;
         loc.alt = cb.msg->height_msl_mm / 10;
+        interim_state.have_undulation = true;
+        interim_state.undulation = (cb.msg->height_msl_mm - cb.msg->height_ellipsoid_mm) * 0.001;
         interim_state.location = loc;
 
         if (!uavcan::isNaN(cb.msg->ned_velocity[0])) {
@@ -536,6 +538,8 @@ void AP_GPS_UAVCAN::handle_fix2_msg(const Fix2Cb &cb)
         loc.lat = cb.msg->latitude_deg_1e8 / 10;
         loc.lng = cb.msg->longitude_deg_1e8 / 10;
         loc.alt = cb.msg->height_msl_mm / 10;
+        interim_state.have_undulation = true;
+        interim_state.undulation = (cb.msg->height_msl_mm - cb.msg->height_ellipsoid_mm) * 0.001;
         interim_state.location = loc;
 
         if (!uavcan::isNaN(cb.msg->ned_velocity[0])) {
