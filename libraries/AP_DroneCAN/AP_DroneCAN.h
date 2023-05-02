@@ -131,6 +131,10 @@ public:
 
     CanardInterface& get_canard_iface() { return canard_iface; }
 
+    Canard::Publisher<uavcan_equipment_indication_LightsCommand> rgb_led{canard_iface};
+    Canard::Publisher<uavcan_equipment_indication_BeepCommand> buzzer{canard_iface};
+    Canard::Publisher<uavcan_equipment_gnss_RTCMStream> rtcm_stream{canard_iface};
+
 private:
     void loop(void);
 
@@ -139,20 +143,11 @@ private:
     void SRV_send_esc();
     void SRV_send_himark();
 
-    ///// LED /////
-    void led_out_send();
-
-    // buzzer
-    void buzzer_send();
-
     // SafetyState
     void safety_state_send();
 
     // send notify vehicle state
     void notify_state_send();
-
-    // send GNSS injection
-    void rtcm_stream_send();
 
     // send parameter get/set request
     void send_parameter_request();
@@ -212,30 +207,6 @@ private:
     // last log time
     uint32_t last_log_ms;
 
-    ///// LED /////
-    struct led_device {
-        uint8_t led_index;
-        uint8_t red;
-        uint8_t green;
-        uint8_t blue;
-    };
-
-    struct {
-        led_device devices[AP_DRONECAN_MAX_LED_DEVICES];
-        uint8_t devices_count;
-        uint64_t last_update;
-    } _led_conf;
-
-    HAL_Semaphore _led_out_sem;
-
-    // buzzer
-    struct {
-        HAL_Semaphore sem;
-        float frequency;
-        float duration;
-        uint8_t pending_mask; // mask of interfaces to send to
-    } _buzzer;
-
 #if AP_DRONECAN_SEND_GPS
     // send GNSS Fix and yaw, same thing AP_GPS_DroneCAN would receive
     void gnss_send_fix();
@@ -248,13 +219,6 @@ private:
         uint32_t last_lib_yaw_time_ms;
     } _gnss;
 #endif
-
-    // GNSS RTCM injection
-    struct {
-        HAL_Semaphore sem;
-        uint32_t last_send_ms;
-        ByteBuffer *buf;
-    } _rtcm_stream;
     
     static HAL_Semaphore _telem_sem;
 
@@ -269,14 +233,12 @@ private:
     uavcan_protocol_NodeStatus node_status_msg;
 
     CanardInterface canard_iface;
+
     Canard::Publisher<uavcan_protocol_NodeStatus> node_status{canard_iface};
     Canard::Publisher<uavcan_equipment_actuator_ArrayCommand> act_out_array{canard_iface};
     Canard::Publisher<uavcan_equipment_esc_RawCommand> esc_raw{canard_iface};
-    Canard::Publisher<uavcan_equipment_indication_LightsCommand> rgb_led{canard_iface};
-    Canard::Publisher<uavcan_equipment_indication_BeepCommand> buzzer{canard_iface};
     Canard::Publisher<ardupilot_indication_SafetyState> safety_state{canard_iface};
     Canard::Publisher<uavcan_equipment_safety_ArmingStatus> arming_status{canard_iface};
-    Canard::Publisher<uavcan_equipment_gnss_RTCMStream> rtcm_stream{canard_iface};
     Canard::Publisher<ardupilot_indication_NotifyState> notify_state{canard_iface};
     Canard::Publisher<com_himark_servo_ServoCmd> himark_out{canard_iface};
 
