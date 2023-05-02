@@ -2341,14 +2341,33 @@ void emit_sandbox(void) {
   fprintf(source, "    const lua_CFunction fun;\n");
   fprintf(source, "} new_userdata[] = {\n");
   while (data) {
-    start_dependency(source, data->dependency);
-    if (data->creation) {
-      // expose custom creation function to user (not used internally)
-      fprintf(source, "    {\"%s\", %s},\n", data->rename ? data->rename :  data->name, data->creation);
+    // Dont expose creation function for all read only items
+    int expose_creation = FALSE;
+    if (data->creation || data->methods) {
+      // Custom creation or methods
+      expose_creation = TRUE;
     } else {
-      fprintf(source, "    {\"%s\", new_%s},\n", data->rename ? data->rename :  data->name, data->sanatized_name);
+      // Feilds only
+      struct userdata_field * field = data->fields;
+      while(field) {
+        if (field->access_flags & ACCESS_FLAG_WRITE) {
+          expose_creation = TRUE;
+          break;
+        }
+        field = field->next;
+      }
     }
-    end_dependency(source, data->dependency);
+
+    if (expose_creation) {
+      start_dependency(source, data->dependency);
+      if (data->creation) {
+        // expose custom creation function to user (not used internally)
+        fprintf(source, "    {\"%s\", %s},\n", data->rename ? data->rename :  data->name, data->creation);
+      } else {
+        fprintf(source, "    {\"%s\", new_%s},\n", data->rename ? data->rename :  data->name, data->sanatized_name);
+      }
+      end_dependency(source, data->dependency);
+    }
     data = data->next;
   }
   if (parsed_globals) {
