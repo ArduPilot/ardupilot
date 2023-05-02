@@ -393,22 +393,6 @@ void Plane::stabilize()
             steering_control.rudder = rudder;
         }
 #endif
-    } else if (control_mode == &mode_acro ||
-                control_mode == &mode_stabilize) {
-        plane.control_mode->run();
-#if HAL_QUADPLANE_ENABLED
-    } else if (control_mode->is_vtol_mode() && !quadplane.tailsitter.in_vtol_transition(now)) {
-        // run controlers specific to this mode
-        plane.control_mode->run();
-
-        // we also stabilize using fixed wing surfaces
-        if (plane.control_mode->mode_number() == Mode::Number::QACRO) {
-            plane.mode_acro.run();
-        } else {
-            stabilize_roll();
-            stabilize_pitch();
-        }
-#endif
     } else {
         plane.control_mode->run();
     }
