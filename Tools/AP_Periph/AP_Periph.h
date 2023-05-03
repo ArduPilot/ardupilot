@@ -25,6 +25,7 @@
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_HAL/CANIface.h>
 #include <AP_Stats/AP_Stats.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 
 #include <AP_NMEA_Output/AP_NMEA_Output.h>
