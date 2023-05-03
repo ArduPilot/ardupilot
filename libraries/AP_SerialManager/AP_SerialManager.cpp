@@ -532,7 +532,7 @@ void AP_SerialManager::init()
                                          AP_SERIALMANAGER_SLCAN_BUFSIZE_TX);
                     break;
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_RCPROTOCOL_ENABLED
                 case SerialProtocol_RCIN:
                     if (!AP::RC().has_uart()) {
                         AP::RC().add_uart(uart);
