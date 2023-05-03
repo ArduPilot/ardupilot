@@ -27,17 +27,6 @@ from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 from sensor_msgs.msg import NavSatFix
 
 
-@launch_pytest.fixture
-def launch_description(sitl_dds):
-    """Fixture to create the launch description."""
-    return LaunchDescription(
-        [
-            sitl_dds,
-            launch_pytest.actions.ReadyToTest(),
-        ]
-    )
-
-
 class NavSatFixListener(rclpy.node.Node):
     """Subscribe to NavSatFix messages on /ap/navsat/navsat0."""
 
@@ -80,8 +69,30 @@ class NavSatFixListener(rclpy.node.Node):
             self.get_logger().info("From AP : False")
 
 
-@pytest.mark.launch(fixture=launch_description)
-def test_navsat_msgs_received(sitl_dds, launch_context):
+@launch_pytest.fixture
+def launch_sitl_copter_dds_serial(sitl_copter_dds_serial):
+    """Fixture to create the launch description."""
+    return LaunchDescription(
+        [
+            sitl_copter_dds_serial,
+            launch_pytest.actions.ReadyToTest(),
+        ]
+    )
+
+
+@launch_pytest.fixture
+def launch_sitl_copter_dds_udp(sitl_copter_dds_udp):
+    """Fixture to create the launch description."""
+    return LaunchDescription(
+        [
+            sitl_copter_dds_udp,
+            launch_pytest.actions.ReadyToTest(),
+        ]
+    )
+
+
+@pytest.mark.launch(fixture=launch_sitl_copter_dds_serial)
+def test_dds_serial_navsat_msg_recv(launch_context):
     """Test NavSatFix messages are published by AP_DDS."""
     rclpy.init()
     try:
@@ -92,7 +103,15 @@ def test_navsat_msgs_received(sitl_dds, launch_context):
     finally:
         rclpy.shutdown()
 
-    yield
 
-    # Anything below this line is executed after launch service shutdown.
-    pass
+@pytest.mark.launch(fixture=launch_sitl_copter_dds_udp)
+def test_dds_udp_navsat_msg_recv(launch_context):
+    """Test NavSatFix messages are published by AP_DDS."""
+    rclpy.init()
+    try:
+        node = NavSatFixListener()
+        node.start_subscriber()
+        msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
+        assert msgs_received_flag, "Did not receive 'ap/navsat/navsat0' msgs."
+    finally:
+        rclpy.shutdown()

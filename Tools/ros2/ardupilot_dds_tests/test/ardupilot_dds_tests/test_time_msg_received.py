@@ -25,17 +25,6 @@ from launch import LaunchDescription
 from builtin_interfaces.msg import Time
 
 
-@launch_pytest.fixture
-def launch_description(sitl_dds):
-    """Fixture to create the launch description."""
-    return LaunchDescription(
-        [
-            sitl_dds,
-            launch_pytest.actions.ReadyToTest(),
-        ]
-    )
-
-
 class TimeListener(rclpy.node.Node):
     """Subscribe to Time messages on /ap/clock."""
 
@@ -72,9 +61,44 @@ class TimeListener(rclpy.node.Node):
             self.get_logger().info("From AP : False")
 
 
-@pytest.mark.launch(fixture=launch_description)
-def test_time_msgs_received(sitl_dds, launch_context):
-    """Test Time messages are published by AP_DDS."""
+@launch_pytest.fixture
+def launch_sitl_copter_dds_serial(sitl_copter_dds_serial):
+    """Fixture to create the launch description."""
+    return LaunchDescription(
+        [
+            sitl_copter_dds_serial,
+            launch_pytest.actions.ReadyToTest(),
+        ]
+    )
+
+
+@launch_pytest.fixture
+def launch_sitl_copter_dds_udp(sitl_copter_dds_udp):
+    """Fixture to create the launch description."""
+    return LaunchDescription(
+        [
+            sitl_copter_dds_udp,
+            launch_pytest.actions.ReadyToTest(),
+        ]
+    )
+
+
+@pytest.mark.launch(fixture=launch_sitl_copter_dds_serial)
+def test_dds_serial_clock_msg_recv(launch_context):
+    """Test /ap/clock is published by AP_DDS."""
+    rclpy.init()
+    try:
+        node = TimeListener()
+        node.start_subscriber()
+        msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
+        assert msgs_received_flag, "Did not receive 'ROS_Time' msgs."
+    finally:
+        rclpy.shutdown()
+
+
+@pytest.mark.launch(fixture=launch_sitl_copter_dds_udp)
+def test_dds_udp_clock_msg_recv(launch_context):
+    """Test /ap/clock is published by AP_DDS."""
     rclpy.init()
     try:
         node = TimeListener()
