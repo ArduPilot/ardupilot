@@ -34,30 +34,19 @@ function get_time_sec()
    return millis():tofloat() * 0.001
 end
 
-local FRM_100 = uint32_t(0x80000100)
-local FRM_101 = uint32_t(0x80000101)
-local FRM_102 = uint32_t(0x80000102)
-local FRM_104 = uint32_t(0x80000104)
-local FRM_105 = uint32_t(0x80000105)
-local FRM_106 = uint32_t(0x80000106)
-local FRM_10A = uint32_t(0x8000010A)
-local FRM_10C = uint32_t(0x8000010C)
-local FRM_10D = uint32_t(0x8000010D)
-local FRM_10F = uint32_t(0x8000010F)
-local FRM_113 = uint32_t(0x80000113)
-local FRM_114 = uint32_t(0x80000114)
-local FRM_115 = uint32_t(0x80000115)
-
 function put_u8(msg, ofs, v)
+   v = math.floor(v)
    msg:data(ofs,v&0xFF)
 end
 
 function put_u16_LE(msg, ofs, v)
+   v = math.floor(v)
    msg:data(ofs,v&0xFF)
    msg:data(ofs+1,v>>8)
 end
 
 function put_u32_LE(msg, ofs, v)
+   v = math.floor(v)
    msg:data(ofs+0,v&0xFF)
    msg:data(ofs+1,(v>>8)&0xFF)
    msg:data(ofs+2,(v>>16)&0xFF)
@@ -65,11 +54,13 @@ function put_u32_LE(msg, ofs, v)
 end
 
 function put_u16_BE(msg, ofs, v)
+   v = math.floor(v)
    msg:data(ofs+1,v&0xFF)
    msg:data(ofs,v>>8)
 end
 
 function put_u32_BE(msg, ofs, v)
+   v = math.floor(v)
    msg:data(ofs+3,v&0xFF)
    msg:data(ofs+2,(v>>8)&0xFF)
    msg:data(ofs+1,(v>>16)&0xFF)
@@ -82,6 +73,19 @@ local rev_counter = 0
    send SkyPower data. Called at 100Hz
 --]]
 function send_SkyPower(driver)
+   local FRM_100 = uint32_t(0x80000100)
+   local FRM_101 = uint32_t(0x80000101)
+   local FRM_102 = uint32_t(0x80000102)
+   local FRM_104 = uint32_t(0x80000104)
+   local FRM_105 = uint32_t(0x80000105)
+   local FRM_106 = uint32_t(0x80000106)
+   local FRM_10A = uint32_t(0x8000010A)
+   local FRM_10C = uint32_t(0x8000010C)
+   local FRM_10D = uint32_t(0x8000010D)
+   local FRM_10F = uint32_t(0x8000010F)
+   local FRM_113 = uint32_t(0x80000113)
+   local FRM_114 = uint32_t(0x80000114)
+   local FRM_115 = uint32_t(0x80000115)
 
    --local msg = CANFrame()
    local t = get_time_sec()
@@ -236,11 +240,97 @@ function send_HFE(driver)
 
 end
 
+function EDGE_msg(id)
+   local msg = CANFrame()
+   msg:id(id)
+   msg:dlc(8)
+   return msg
+end
+
+--[[
+   send EDGE EFI data
+--]]
+function send_EDGE(driver)
+   local t = get_time_sec()
+
+   local rpm = 1200 + math.floor(1000*math.sin(t))
+   local baro_kPa = 1013.5
+   local map_kPa = 1025.0
+   local mat_C = 85
+   local coolent_C = 92
+   local tps = 57
+   local voltage = 5.9
+   local baro_corr = 17
+   local gen_temp = 72
+   local rem_fuel_g = 1721.3
+   local ignition_current = 1.2
+   local fuel_flow_gph = 700.0
+   local cht = 192
+   local injection_time_us = 1730
+
+   -- fast telem
+   local base_id = uint32_t(0x99000000)
+   local base_id2 = uint32_t(0x88800000)
+
+   local msg = EDGE_msg(base_id | 0x00000)
+   put_u16_BE(msg,2,rpm)
+   put_u16_BE(msg,6,baro_kPa*10)
+   driver:write_frame(msg, 10000)
+
+   msg = EDGE_msg(base_id | 0x00001)
+   put_u16_BE(msg,0,map_kPa*10)
+   put_u16_BE(msg,2,mat_C/0.05555)
+   put_u16_BE(msg,4,coolent_C/0.05555)
+   driver:write_frame(msg, 10000)
+
+   msg = EDGE_msg(base_id | 0x00002)
+   put_u16_BE(msg,0,tps*10)
+   put_u16_BE(msg,4,voltage*10)
+   driver:write_frame(msg, 10000)
+
+   msg = EDGE_msg(base_id | 0x00003)
+   put_u16_BE(msg,0,baro_corr)
+   driver:write_frame(msg, 10000)
+
+   msg = EDGE_msg(base_id | 0x00004)
+   put_u8(msg,4,tps)
+   driver:write_frame(msg, 10000)
+
+   msg = EDGE_msg(base_id | 0x00005)
+   put_u8(msg,4,gen_temp)
+   driver:write_frame(msg, 10000)
+
+   msg = EDGE_msg(base_id | 0x00006)
+   put_u16_BE(msg,0,rem_fuel_g)
+   driver:write_frame(msg, 10000)
+
+   msg = EDGE_msg(base_id | 0x00007)
+   put_u16_BE(msg,0,ignition_current*1000)
+   driver:write_frame(msg, 10000)
+
+   msg = EDGE_msg(base_id2 | 0x00000)
+   put_u16_BE(msg,0,rpm)
+   put_u16_BE(msg,2,fuel_flow_gph)
+   driver:write_frame(msg, 10000)
+
+   msg = EDGE_msg(base_id2 | 0x10000)
+   put_u8(msg,0,voltage*10)
+   put_u8(msg,1,tps)
+   put_u16_BE(msg,2,cht*10)
+   driver:write_frame(msg, 10000)
+
+   msg = EDGE_msg(base_id2 | 0x20000)
+   put_u16_BE(msg,0,injection_time_us)
+   driver:write_frame(msg, 10000)
+end
+
 function update()
    if EFISIM_TYPE:get() == 1 then
       send_SkyPower(driver2)
    elseif EFISIM_TYPE:get() == 2 then
       send_HFE(driver2)
+   elseif EFISIM_TYPE:get() == 3 then
+      send_EDGE(driver2)
    end
    return update, math.floor(1000/EFISIM_RATE_HZ:get())
 end
