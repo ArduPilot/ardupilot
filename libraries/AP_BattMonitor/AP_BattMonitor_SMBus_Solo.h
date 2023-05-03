@@ -18,6 +18,7 @@ private:
     void timer(void) override;
 
     uint8_t _button_press_count;
+    bool _use_extended;
 };
 
 #endif  // AP_BATTERY_SMBUS_SOLO_ENABLED
