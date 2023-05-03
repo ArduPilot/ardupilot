@@ -91,6 +91,7 @@ MAV_RESULT QuadPlane::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t m
     if (!motor_test.running) {
         // start test
         motor_test.running = true;
+        AP::logger().set_motor_test_active(true);
 
         // enable and arm motors
         set_armed(true);
@@ -126,6 +127,7 @@ void QuadPlane::motor_test_stop()
 
     // disarm motors
     set_armed(false);
+    AP::logger().set_motor_test_active(false);
 
     // reset timeout
     motor_test.start_ms = 0;

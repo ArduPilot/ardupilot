@@ -620,6 +620,10 @@ bool AP_Logger::should_log(const uint32_t mask) const
     if (!armed && !log_while_disarmed()) {
         return false;
     }
+    if (motor_test_is_active() && !_params.log_disarmed) {
+        // if motor test is active, and disarm logging is off dont log
+        return false;
+    }
     if (in_log_download()) {
         return false;
     }
@@ -687,6 +691,14 @@ void AP_Logger::set_vehicle_armed(const bool armed_state)
         // went from armed to disarmed
         FOR_EACH_BACKEND(vehicle_was_disarmed());
     }
+}
+
+void AP_Logger::set_motor_test_active(const bool motor_test_active)
+{
+    if (_motor_test_active && !motor_test_active) {
+        _last_motor_test_end_ms = AP_HAL::millis();
+    }
+    _motor_test_active = motor_test_active;
 }
 
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
@@ -1484,7 +1496,7 @@ bool AP_Logger::in_log_persistance(void) const
 
     // keep logging for HAL_LOGGER_ARM_PERSIST seconds after disarming
     const uint32_t arm_change_ms = hal.util->get_last_armed_change();
-    if (!hal.util->get_soft_armed() && arm_change_ms != 0 && now - arm_change_ms < persist_ms) {
+    if (!hal.util->get_soft_armed() && (arm_change_ms != 0) && (now - arm_change_ms < persist_ms) && (_last_motor_test_end_ms < arm_change_ms)) {
         return true;
     }
 

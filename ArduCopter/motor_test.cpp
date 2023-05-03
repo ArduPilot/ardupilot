@@ -149,6 +149,7 @@ MAV_RESULT Copter::mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, uint8_t
             // start test
             gcs().send_text(MAV_SEVERITY_INFO, "starting motor test");
             ap.motor_test = true;
+            AP::logger().set_motor_test_active(true);
 
             EXPECT_DELAY_MS(3000);
             // enable and arm motors
@@ -202,6 +203,7 @@ void Copter::motor_test_stop()
     // disarm motors
     motors->armed(false);
     hal.util->set_soft_armed(false);
+    AP::logger().set_motor_test_active(false);
 
     // reset timeout
     motor_test_start_ms = 0;

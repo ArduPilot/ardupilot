@@ -121,6 +121,7 @@ MAV_RESULT Rover::mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, AP_Motor
         } else {
             // start test
             motor_test = true;
+            AP::logger().set_motor_test_active(true);
 
             // arm motors
             if (!arming.is_armed()) {
@@ -162,6 +163,7 @@ void Rover::motor_test_stop()
 
     // disarm motors
     AP::arming().disarm(AP_Arming::Method::MOTORTEST);
+    AP::logger().set_motor_test_active(false);
 
     // reset timeout
     motor_test_start_ms = 0;
