@@ -300,7 +300,7 @@ class TestBuildOptions(object):
                 if not fnmatch.fnmatch(feature.define, self.match_glob):
                     continue
             with open("/tmp/run-disable-in-turn-progress", "w") as f:
-                print(f.write(f"{count}/{len(options)} {feature.define}\n"))
+                f.write(f"{count}/{len(options)} {feature.define}\n")
                 #            if feature.define < "WINCH_ENABLED":
                 #                count += 1
                 #                continue
@@ -324,6 +324,8 @@ class TestBuildOptions(object):
                     continue
             self.progress("Enabling feature %s(%s) (%u/%u)" %
                           (feature.label, feature.define, count, len(options)))
+            with open("/tmp/run-enable-in-turn-progress", "w") as f:
+                f.write(f"{count}/{len(options)} {feature.define}\n")
             self.test_enable_feature(feature, options)
             count += 1
 
