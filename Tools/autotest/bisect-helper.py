@@ -2,6 +2,10 @@
 
 '''A helper script for bisecting common problems when working with ArduPilot
 
+When running bisections, you should
+
+export SITL_PANIC_EXIT=1
+
 Bisect between a commit which builds and one which doesn't,
 finding the first commit which broke the build with a
  specific failure:
@@ -276,7 +280,7 @@ class BisectCITest(Bisect):
 
             if code == self.exit_fail_code():
                 with open("/tmp/fail-counts", "a") as f:
-                    print("Failed on run %u" % (i+1,), file=f)
+                    f.write("Failed on run %u\n" % (i+1,))
             if ignore:
                 self.progress("Ignoring this run")
                 continue
@@ -284,6 +288,8 @@ class BisectCITest(Bisect):
                 break
 
         self.git_reset()
+
+        self.progress("Exit code is %u" % code)
 
         sys.exit(code)
 
