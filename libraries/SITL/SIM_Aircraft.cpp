@@ -553,6 +553,9 @@ float Aircraft::rangefinder_range() const
     // Add some noise on reading
     altitude += sitl->sonar_noise * rand_float();
 
+    // this rangefinder is mounted on the simulated frame, 5cm off the ground:
+    altitude += 0.05;
+
     return altitude;
 }
 
