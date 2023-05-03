@@ -15,8 +15,12 @@
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 
-#include <AP_Vehicle/AP_Vehicle_Type.h>
+#include "AP_RCProtocol_config.h"
+
 #include "AP_RCProtocol.h"
+
+#if AP_RCPROTOCOL_ENABLED
+
 #include "AP_RCProtocol_PPMSum.h"
 #include "AP_RCProtocol_DSM.h"
 #include "AP_RCProtocol_IBUS.h"
@@ -30,6 +34,8 @@
 #include "AP_RCProtocol_FPort2.h"
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
+
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -405,6 +411,8 @@ void AP_RCProtocol::start_bind(void)
     }
 }
 
+#endif  // AP_RCPROTOCOL_ENABLED
+
 /*
   return protocol name
  */
@@ -459,6 +467,7 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
     return nullptr;
 }
 
+#if AP_RCPROTOCOL_ENABLED
 /*
   return protocol name
  */
@@ -493,3 +502,5 @@ namespace AP {
         return rcprot;
     }
 };
+
+#endif  // AP_RCPROTOCOL_ENABLED
