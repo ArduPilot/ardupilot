@@ -51,6 +51,14 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         }
         return adsb;
 #endif
+#if AP_SIM_RF_AINSTEIN_LR_D1_ENABLED
+    } else if (streq(name, "ainsteinlrd1")) {
+        if (ainsteinlrd1 != nullptr) {
+            AP_HAL::panic("Only one ainsteinlrd1 at a time");
+        }
+        ainsteinlrd1 = new SITL::RF_Ainstein_LR_D1();
+        return ainsteinlrd1;
+#endif
     } else if (streq(name, "benewake_tf03")) {
         if (benewake_tf03 != nullptr) {
             AP_HAL::panic("Only one benewake_tf03 at a time");
@@ -291,6 +299,11 @@ void SITL_State_Common::sim_update(void)
                       sitl_model->get_position_relhome(),
                       sitl_model->get_velocity_ef(),
                       attitude);
+    }
+#endif
+#if AP_SIM_RF_AINSTEIN_LR_D1_ENABLED
+    if (ainsteinlrd1 != nullptr) {
+        ainsteinlrd1->update(sitl_model->rangefinder_range());
     }
 #endif
     if (benewake_tf02 != nullptr) {
