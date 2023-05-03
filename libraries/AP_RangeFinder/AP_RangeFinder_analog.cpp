@@ -106,11 +106,13 @@ void AP_RangeFinder_analog::update(void)
         } else {
             dist_m = scaling / (v - offset);
         }
-        if (dist_m > _max_distance_cm * 0.01f) {
-            dist_m = _max_distance_cm * 0.01f;
-        }
         break;
     }
+    if (dist_m > _max_distance_cm * 0.01f) {
+        // return a distance that will set the out of range check in status_update()
+        dist_m = 1 + _max_distance_cm * 0.01f;        
+    }
+    
     if (dist_m < 0) {
         dist_m = 0;
     }
