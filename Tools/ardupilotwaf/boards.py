@@ -794,6 +794,7 @@ class sitl_periph_gps(sitl):
             HAL_RALLY_ENABLED = 0,
             AP_SCHEDULER_ENABLED = 0,
             CANARD_ENABLE_TAO_OPTION = 1,
+            AP_RCPROTOCOL_ENABLED = 0,
             CANARD_ENABLE_CANFD = 1,
             CANARD_MULTI_IFACE = 1,
             HAL_CANMANAGER_ENABLED = 0,
