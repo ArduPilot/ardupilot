@@ -7333,7 +7333,7 @@ class AutoTest(ABC):
         '''ensure we can't arm in auto mode without mission items present'''
         # load a trivial mission
         items = []
-        items.append((mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 20000),)
+        items.append((mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, 20000),)
         items.append((mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0))
         self.upload_simple_relhome_mission(items)
 
