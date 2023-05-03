@@ -28,9 +28,6 @@ class AP_RCProtocol_Backend;
 
 class AP_RCProtocol {
 public:
-    AP_RCProtocol() {}
-    ~AP_RCProtocol();
-    friend class AP_RCProtocol_Backend;
 
     enum rcprotocol_t {
         PPM        =  0,
@@ -64,6 +61,16 @@ public:
 #endif
         NONE    //last enum always is None
     };
+
+    // return protocol name as a string
+    static const char *protocol_name_from_protocol(rcprotocol_t protocol);
+
+#if AP_RCPROTOCOL_ENABLED
+
+    AP_RCProtocol() {}
+    ~AP_RCProtocol();
+    friend class AP_RCProtocol_Backend;
+
     void init();
     bool valid_serial_prot() const
     {
@@ -135,9 +142,6 @@ public:
     int16_t get_rx_link_quality(void) const;
 
     // return protocol name as a string
-    static const char *protocol_name_from_protocol(rcprotocol_t protocol);
-
-    // return protocol name as a string
     const char *protocol_name(void) const;
 
     // return detected protocol
@@ -196,10 +200,15 @@ private:
 
     // allowed RC protocols mask (first bit means "all")
     uint32_t rc_protocols_mask;
+
+#endif  // AP_RCPROTCOL_ENABLED
+
 };
 
+#if AP_RCPROTOCOL_ENABLED
 namespace AP {
     AP_RCProtocol &RC();
 };
 
 #include "AP_RCProtocol_Backend.h"
+#endif  // AP_RCProtocol_enabled

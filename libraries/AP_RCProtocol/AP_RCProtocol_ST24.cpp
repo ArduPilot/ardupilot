@@ -42,6 +42,10 @@
  *
  * @author Marco Bauer <marco@wtns.de>
  */
+#include "AP_RCProtocol_config.h"
+
+#if AP_RCPROTOCOL_ENABLED
+
 #include "AP_RCProtocol_ST24.h"
 
 // #define SUMD_DEBUG
@@ -233,3 +237,5 @@ void AP_RCProtocol_ST24::process_byte(uint8_t byte, uint32_t baudrate)
     }
     _process_byte(byte);
 }
+
+#endif  // AP_RCPROTOCOL_ENABLED
