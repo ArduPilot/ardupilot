@@ -2863,21 +2863,23 @@ function remove(filename) end
 mavlink = {}
 
 -- initializes mavlink
---@param num_rx_msgid number of mavlink message types to receive
---@param msg_queue_length length of mavlink message queue
+--@param num_rx_msgid number
+--@param msg_queue_length
 function mavlink:init(num_rx_msgid, msg_queue_length) end
 
 -- marks mavlink message for receive, message id can be get using mavlink_msgs.get_msgid("MSG_NAME")
---@param msg_id mavlink message id
+--@param msg_id number
 function mavlink:receive_msgid(msg_id) end
 
 -- receives mavlink message marked for receive using mavlink:receive_msgid
---@return mavlink message
-function mavlink:receive() end
+--@return mavlink_message bytes
+--@return mavlink_channel number
+--@return receive_timestamp number
+function mavlink:receive_chan() end
 
 -- sends mavlink message, to use this function the call should be like this:
 -- mavlink:send(chan, mavlink_msgs.encode("MSG_NAME", {param1 = value1, param2 = value2, ...}})
---@param chan mavlink channel
---@param msgid mavlink message id
---@param message encoded message packet
-function mavlink:send(chan, msgid, message) end
+--@param mavlink_channel integer
+--@param mavlink_message_id integer
+--@param encoded_message_packet bytes
+function mavlink:send_chan(chan, msgid, message) end

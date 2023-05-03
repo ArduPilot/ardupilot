@@ -65,7 +65,7 @@ int lua_mavlink_init(lua_State *L) {
     return 0;
 }
 
-int lua_mavlink_receive(lua_State *L) {
+int lua_mavlink_receive_chan(lua_State *L) {
     binding_argcheck(L, 0);
 
     struct AP_Scripting::mavlink_msg msg;
@@ -81,14 +81,15 @@ int lua_mavlink_receive(lua_State *L) {
         luaL_addlstring(&b, (char *)&msg.msg, sizeof(msg.msg));
         luaL_pushresult(&b);
         lua_pushinteger(L, msg.chan);
-        return 2;
+        lua_pushinteger(L, msg.timestamp_ms);
+        return 3;
     } else {
         // no MAVLink to handle, just return no results
         return 0;
     }
 }
 
-int lua_mavlink_receive_msgid(lua_State *L) {
+int lua_mavlink_register_rx_msgid(lua_State *L) {
     binding_argcheck(L, 1);
     
     const int msgid = luaL_checkinteger(L, -1);
@@ -124,7 +125,7 @@ int lua_mavlink_receive_msgid(lua_State *L) {
     return 1;
 }
 
-int lua_mavlink_send(lua_State *L) {
+int lua_mavlink_send_chan(lua_State *L) {
     binding_argcheck(L, 3);
     
     const mavlink_channel_t chan = (mavlink_channel_t)luaL_checkinteger(L, 1);
