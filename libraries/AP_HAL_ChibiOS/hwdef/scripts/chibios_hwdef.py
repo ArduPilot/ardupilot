@@ -3110,6 +3110,12 @@ INCLUDE common.ld
 #define AP_RC_CHANNEL_ENABLED 0
 #endif
 
+#ifndef AP_RCPROTOCOL_ENABLED
+#define AP_RCPROTOCOL_ENABLED 0
+#endif
+
+#define HAL_CRSF_TELEM_ENABLED 0
+
 /*
  * GPS Backends - we selectively turn backends on.
  *   Note also that f103-GPS explicitly disables some of these backends.
@@ -3223,6 +3229,18 @@ INCLUDE common.ld
 #define AP_WINCH_ENABLED 0
 #endif
 
+#ifndef AP_VIDEOTX_ENABLED
+#define AP_VIDEOTX_ENABLED 0
+#endif
+
+#ifndef AP_FRSKY_TELEM_ENABLED
+#define AP_FRSKY_TELEM_ENABLED 0
+#endif
+
+#ifndef HAL_SPEKTRUM_TELEM_ENABLED
+#define HAL_SPEKTRUM_TELEM_ENABLED 0
+#endif
+
 // end AP_Periph defaults
 ''')
 
@@ -3288,6 +3306,8 @@ INCLUDE common.ld
 // IOMCU Firmware defaults
 
 #define HAL_DSHOT_ALARM_ENABLED 0
+
+#define HAL_LOGGING_ENABLED 0
 
 // IOMCUs *definitely* don't use the FFT library:
 #ifndef HAL_GYROFFT_ENABLED
