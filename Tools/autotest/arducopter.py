@@ -29,7 +29,7 @@ from pymavlink.rotmat import Vector3
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
-SITL_START_LOCATION = mavutil.location(-35.362938, 149.165085, 584, 270)
+SITL_START_LOCATION = mavutil.location(-35.362938, 149.165085, 586.3, 270)
 
 # Flight mode switch positions are set-up in arducopter.param to be
 #   switch 1 = Circle
