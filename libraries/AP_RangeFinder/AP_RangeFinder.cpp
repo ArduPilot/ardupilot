@@ -53,6 +53,7 @@
 #include "AP_RangeFinder_Benewake_CAN.h"
 #include "AP_RangeFinder_Lua.h"
 #include "AP_RangeFinder_NoopLoop.h"
+#include "AP_RangeFinder_Ainstein_LR_D1.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
@@ -539,6 +540,12 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     case Type::NoopLoop_P:
 #if AP_RANGEFINDER_NOOPLOOP_ENABLED
         serial_create_fn = AP_RangeFinder_NoopLoop::create;
+#endif
+        break;
+
+    case Type::Ainstein_LR_D1:
+#if AP_RANGEFINDER_AINSTEIN_LR_D1_ENABLED
+        serial_create_fn = AP_RangeFinder_Ainstein_LR_D1::create;
 #endif
         break;
 
