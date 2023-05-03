@@ -19,8 +19,9 @@ function str_to_bytes(str)
     return bytes
 end
 function update()
-    local msg = mavlink.receive()
+    local msg,chan,timestamp_ms = mavlink.receive_chan()
     if msg then
+        gcs:send_text(6, string.format("Received message on channel %d at %d", chan, timestamp_ms))
         local parsed_msg = mavlink_msgs.decode(msg, msg_map)
         if parsed_msg.msgid == heartbeat_msgid then
             gcs:send_text(6, string.format("Received heartbeat from %d", parsed_msg.sysid))
@@ -30,7 +31,7 @@ function update()
     end
     test_named_value = test_named_value + 1.0
     -- send named value float
-    mavlink.send(0, mavlink_msgs.encode("NAMED_VALUE_FLOAT", {time_boot_ms = millis():toint(), name = str_to_bytes("test"), value = test_named_value}))
+    mavlink.send_chan(0, mavlink_msgs.encode("NAMED_VALUE_FLOAT", {time_boot_ms = millis():toint(), name = str_to_bytes("test"), value = test_named_value}))
     return update, 1000
 end
 

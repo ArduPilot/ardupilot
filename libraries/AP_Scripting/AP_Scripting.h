@@ -102,6 +102,7 @@ public:
     struct mavlink_msg {
         mavlink_message_t msg;
         mavlink_channel_t chan;
+        uint32_t timestamp_ms;
     };
 
     static const int mavlink_input_queue_size = 5;
