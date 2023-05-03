@@ -80,7 +80,7 @@ def launch_micro_ros_agent(
         print(f"baudrate:         {baudrate}")
 
         device = LaunchConfiguration("device").perform(context)
-        args.append("--device")
+        args.append("--dev")
         args.append(device)
         print(f"device:           {device}")
     else:
