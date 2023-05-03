@@ -294,7 +294,7 @@ Vector2F Location::get_distance_NE_ftype(const Location &loc2) const
 void Location::offset_latlng(int32_t &lat, int32_t &lng, ftype ofs_north, ftype ofs_east)
 {
     const int32_t dlat = ofs_north * LOCATION_SCALING_FACTOR_INV;
-    const int64_t dlng = (ofs_east * LOCATION_SCALING_FACTOR_INV) / longitude_scale(lat+dlat/2);
+    const int64_t dlng = (ofs_east * LOCATION_SCALING_FACTOR_INV) / longitude_scale((lat+dlat)/2);
     lat += dlat;
     lat = limit_lattitude(lat);
     lng = wrap_longitude(dlng+lng);
