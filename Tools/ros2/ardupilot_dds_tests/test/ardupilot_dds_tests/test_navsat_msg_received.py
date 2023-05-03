@@ -72,7 +72,7 @@ class NavSatFixListener(rclpy.node.Node):
 @launch_pytest.fixture
 def launch_sitl_copter_dds_serial(sitl_copter_dds_serial):
     """Fixture to create the launch description."""
-    return LaunchDescription(
+    yield LaunchDescription(
         [
             sitl_copter_dds_serial,
             launch_pytest.actions.ReadyToTest(),
@@ -83,7 +83,7 @@ def launch_sitl_copter_dds_serial(sitl_copter_dds_serial):
 @launch_pytest.fixture
 def launch_sitl_copter_dds_udp(sitl_copter_dds_udp):
     """Fixture to create the launch description."""
-    return LaunchDescription(
+    yield LaunchDescription(
         [
             sitl_copter_dds_udp,
             launch_pytest.actions.ReadyToTest(),
@@ -102,6 +102,7 @@ def test_dds_serial_navsat_msg_recv(launch_context):
         assert msgs_received_flag, "Did not receive 'ap/navsat/navsat0' msgs."
     finally:
         rclpy.shutdown()
+    yield
 
 
 @pytest.mark.launch(fixture=launch_sitl_copter_dds_udp)
@@ -115,3 +116,4 @@ def test_dds_udp_navsat_msg_recv(launch_context):
         assert msgs_received_flag, "Did not receive 'ap/navsat/navsat0' msgs."
     finally:
         rclpy.shutdown()
+    yield

@@ -38,7 +38,7 @@ def device_dir(tmp_path_factory):
     print(f"\ntmpdirname: {device_dir}\n")
     os.mkdir(Path(path, "dev"))
 
-    return path
+    yield path
 
 
 @pytest.fixture
@@ -47,7 +47,7 @@ def virtual_ports(device_dir):
     tty0 = Path(device_dir, "dev", "tty0").resolve()
     tty1 = Path(device_dir, "dev", "tty1").resolve()
 
-    return IncludeLaunchDescription(
+    yield IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             [
                 PathJoinSubstitution(
@@ -71,7 +71,7 @@ def micro_ros_agent_serial(device_dir):
     """Fixture to create a micro_ros_agent node."""
     tty0 = Path(device_dir, "dev", "tty0").resolve()
 
-    return IncludeLaunchDescription(
+    yield IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             [
                 PathJoinSubstitution(
@@ -101,7 +101,7 @@ def micro_ros_agent_serial(device_dir):
 @pytest.fixture
 def micro_ros_agent_udp():
     """Fixture to create a micro_ros_agent node."""
-    return IncludeLaunchDescription(
+    yield IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             [
                 PathJoinSubstitution(
@@ -129,7 +129,7 @@ def micro_ros_agent_udp():
 @pytest.fixture
 def mavproxy():
     """Fixture to bring up ArduPilot SITL DDS."""
-    return IncludeLaunchDescription(
+    yield IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             [
                 PathJoinSubstitution(
@@ -195,7 +195,7 @@ def sitl_copter_dds_serial(device_dir, virtual_ports, micro_ros_agent_serial, ma
         }.items(),
     )
 
-    return LaunchDescription(
+    yield LaunchDescription(
         [
             virtual_ports,
             micro_ros_agent_serial,
@@ -252,7 +252,7 @@ def sitl_copter_dds_udp(device_dir, micro_ros_agent_udp, mavproxy):
         }.items(),
     )
 
-    return LaunchDescription(
+    yield LaunchDescription(
         [
             micro_ros_agent_udp,
             sitl,

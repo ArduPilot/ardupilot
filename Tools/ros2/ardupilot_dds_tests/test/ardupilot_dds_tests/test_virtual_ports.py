@@ -41,7 +41,7 @@ from pathlib import Path
 @pytest.fixture()
 def dummy_proc():
     """Return a dummy process action to manage test lifetime."""
-    return ExecuteProcess(
+    yield ExecuteProcess(
         cmd=["echo", "ardupilot_dds_tests"],
         shell=True,
         cached_output=True,
@@ -77,7 +77,7 @@ def virtual_ports(device_dir):
             "tty1": str(tty1),
         }.items(),
     )
-    return virtual_ports
+    yield virtual_ports
 
 
 @launch_pytest.fixture()
@@ -104,7 +104,7 @@ def launch_description(dummy_proc, virtual_ports):
         )
     )
 
-    return LaunchDescription(
+    yield LaunchDescription(
         [
             dummy_proc,
             virtual_ports,
