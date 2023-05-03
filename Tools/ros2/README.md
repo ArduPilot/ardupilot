@@ -215,7 +215,7 @@ ros2 launch ardupilot_sitl mavproxy.launch.py master:=tcp:127.0.0.1:5760 sitl:=1
 Using combined launch file
 
 ```bash
-ros2 launch ardupilot_sitl sitl_dds.launch.py \
+ros2 launch ardupilot_sitl sitl_dds_serial.launch.py \
 \
 tty0:=./dev/ttyROS0 \
 tty1:=./dev/ttyROS1 \

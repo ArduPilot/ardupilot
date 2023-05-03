@@ -18,10 +18,8 @@ Launch ArduPilot SITL, MAVProxy and the microROS DDS agent.
 
 Run with default arguments:
 
-ros2 launch ardupilot_sitl sitl_dds.launch.py
+ros2 launch ardupilot_sitl sitl_dds_serial.launch.py
 """
-from typing import List
-
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
