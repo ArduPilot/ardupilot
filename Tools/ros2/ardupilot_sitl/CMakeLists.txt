@@ -20,13 +20,16 @@ cmake_path(SET ARDUPILOT_ROOT NORMALIZE ${PROJECT_SOURCE_DIR}/../../..)
 find_program(WAF_COMMAND waf HINTS ${ARDUPILOT_ROOT})
 message(STATUS "WAF_COMMAND: ${WAF_COMMAND}")
 
+# Set the build config.
+set(WAF_CONFIG $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:"--debug">)
+
 add_custom_target(ardupilot_configure ALL
-  ${WAF_COMMAND} configure --board sitl --enable-dds
+  ${WAF_COMMAND} configure --board sitl --enable-dds ${WAF_CONFIG}
   WORKING_DIRECTORY ${ARDUPILOT_ROOT}
 )
 
 add_custom_target(ardupilot_build ALL
-  ${WAF_COMMAND} build --enable-dds
+  ${WAF_COMMAND} build --enable-dds ${WAF_CONFIG}
   WORKING_DIRECTORY ${ARDUPILOT_ROOT}
 )
 add_dependencies(ardupilot_build ardupilot_configure)
