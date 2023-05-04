@@ -27,9 +27,6 @@ public:
     // configure - configure the swashplate settings for any updated parameters
     void configure();
 
-    // CCPM Mixers - calculate mixing scale factors by swashplate type
-    void calculate_roll_pitch_collective_factors();
-
     // get_swash_type - gets swashplate type
     SwashPlateType get_swash_type() const { return _swash_type; }
 
@@ -46,6 +43,9 @@ private:
 
     // linearize mechanical output of swashplate servo
     float get_linear_servo_output(float input) const;
+
+    // CCPM Mixers - calculate mixing scale factors by swashplate type
+    void calculate_roll_pitch_collective_factors();
 
     // Setup a servo
     void add_servo_angle(uint8_t num, float angle, float collective);
