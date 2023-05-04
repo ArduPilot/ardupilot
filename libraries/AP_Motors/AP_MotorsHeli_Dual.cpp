@@ -224,31 +224,8 @@ void AP_MotorsHeli_Dual::set_update_rate( uint16_t speed_hz )
 void AP_MotorsHeli_Dual::init_outputs()
 {
     if (!initialised_ok()) {
-        // make sure 6 output channels are mapped
-        for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
-            add_motor_num(CH_1+i);
-        }
-        if (_swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-            add_motor_num(CH_7);
-        }
-        if (_swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-            add_motor_num(CH_8);
-        }
-
         // set rotor servo range
         _main_rotor.init_servo();
-
-    }
-
-    // reset swash servo range and endpoints
-    for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
-        reset_swash_servo(SRV_Channels::get_motor_function(i));
-    }
-    if (_swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        reset_swash_servo(SRV_Channels::get_motor_function(6));
-    }
-    if (_swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        reset_swash_servo(SRV_Channels::get_motor_function(7));
     }
 
     set_initialised_ok(_frame_class == MOTOR_FRAME_HELI_DUAL);
