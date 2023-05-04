@@ -141,3 +141,5 @@ include ../include/save_some_flash.inc
 
 # only include ublox GPS driver
 include ../include/minimal_GPS.inc
+
+define DEFAULT_NTF_LED_TYPES 257

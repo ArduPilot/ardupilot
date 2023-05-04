@@ -80,17 +80,19 @@ sudo apt-get install socat
 ## Setup ardupilot for SITL with DDS
 
 Set up your [SITL](https://ardupilot.org/dev/docs/setting-up-sitl-on-linux.html).
-Run the simulator with the following command. Take note how two parameters need adjusting from default to use DDS.
+Run the simulator with the following command. Take note how three parameters need adjusting from default to use DDS.
 | Name | Description |
 | - | - |
+| DDS_ENABLE | Set to 1 to enable DDS |
 | SERIAL1_BAUD | The serial baud rate for DDS |
 | SERIAL1_PROTOCOL | Set this to 45 to use DDS on the serial port |
 ```bash
 # Wipe params till you see "AP: ArduPilot Ready"
 # Select your favorite vehicle type
-sim_vehicle.py -w -v ArduPlane
+sim_vehicle.py -w -v ArduPlane --enable-dds
 
 # Set params
+param set DDS_ENABLE 1
 param set SERIAL1_BAUD 115
 # See libraries/AP_SerialManager/AP_SerialManager.h AP_SerialManager SerialProtocol_DDS_XRCE
 param set SERIAL1_PROTOCOL 45
