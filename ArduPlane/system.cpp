@@ -350,21 +350,21 @@ void Plane::check_long_failsafe()
         }
         if (failsafe.rc_failsafe &&
             (tnow - radio_timeout_ms) > g.fs_timeout_long*1000) {
-            failsafe_long_on_event(failsafe_state::RC_LONG, ModeReason::RADIO_FAILSAFE);
+            failsafe_long_on_event(failsafe_state::RC_LONG);
         } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_AUTO && control_mode == &mode_auto &&
                    gcs_last_seen_ms != 0 &&
                    (tnow - gcs_last_seen_ms) > g.fs_timeout_long*1000) {
-            failsafe_long_on_event(failsafe_state::GCS, ModeReason::GCS_FAILSAFE);
+            failsafe_long_on_event(failsafe_state::GCS);
         } else if ((g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HEARTBEAT ||
                     g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_RSSI) &&
                    gcs_last_seen_ms != 0 &&
                    (tnow - gcs_last_seen_ms) > g.fs_timeout_long*1000) {
-            failsafe_long_on_event(failsafe_state::GCS, ModeReason::GCS_FAILSAFE);
+            failsafe_long_on_event(failsafe_state::GCS);
         } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_RSSI && 
                    gcs().chan(0) != nullptr &&
                    gcs().chan(0)->last_radio_status_remrssi_ms() != 0 &&
                    (tnow - gcs().chan(0)->last_radio_status_remrssi_ms()) > g.fs_timeout_long*1000) {
-            failsafe_long_on_event(failsafe_state::GCS, ModeReason::GCS_FAILSAFE);
+            failsafe_long_on_event(failsafe_state::GCS);
         }
     } else {
         uint32_t timeout_seconds = g.fs_timeout_long;

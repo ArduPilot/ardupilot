@@ -105,12 +105,14 @@ void Plane::failsafe_short_on_event(failsafe_state fstype, ModeReason reason)
     }
 }
 
-void Plane::failsafe_long_on_event(failsafe_state fstype, ModeReason reason)
+void Plane::failsafe_long_on_event(failsafe_state fstype)
 {
     // This is how to handle a long loss of control signal failsafe.
     //  If the GCS is locked up we allow control to revert to RC
     RC_Channels::clear_overrides();
     failsafe.state = fstype;
+
+    const ModeReason reason = (fstype == failsafe_state::GCS) ? ModeReason::GCS_FAILSAFE : ModeReason::RADIO_FAILSAFE;
     switch (control_mode->mode_number())
     {
     case Mode::Number::MANUAL:

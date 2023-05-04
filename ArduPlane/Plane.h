@@ -983,7 +983,7 @@ private:
 
     // events.cpp
     void failsafe_short_on_event(failsafe_state fstype, ModeReason reason);
-    void failsafe_long_on_event(failsafe_state fstype, ModeReason reason);
+    void failsafe_long_on_event(failsafe_state fstype);
     void failsafe_short_off_event(ModeReason reason);
     void failsafe_long_off_event(ModeReason reason);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
