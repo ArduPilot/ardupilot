@@ -11,6 +11,7 @@ import sys
 import emit_html
 import emit_rst
 import emit_xml
+import emit_md
 
 topdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
 topdir = os.path.realpath(topdir)
@@ -45,6 +46,7 @@ class LoggerDocco(object):
             emit_html.HTMLEmitter(),
             emit_rst.RSTEmitter(),
             emit_xml.XMLEmitter(),
+            emit_md.MDEmitter(),
         ]
 
     class Docco(object):
