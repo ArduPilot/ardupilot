@@ -146,10 +146,10 @@ PD3 USART2_CTS USART2 SPEED_HIGH
 SERIAL_ORDER UART7 UART8 USART3 USART6 UART4 USART2 
 
 # use 2 MBaud when talking to primary controller
-define HAL_SERIAL0_BAUD_DEFAULT 2000000
-define HAL_SERIAL2_PROTOCOL SerialProtocol_RCIN
-define HAL_SERIAL3_PROTOCOL SerialProtocol_Sbus1
-define HAL_SERIAL4_PROTOCOL SerialProtocol_RCIN
+define DEFAULT_SERIAL0_BAUD 2000000
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_RCIN
+define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_Sbus1
+define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_RCIN
 
 
 # only use pulse input for PPM, other protocols
