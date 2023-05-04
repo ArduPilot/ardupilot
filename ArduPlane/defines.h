@@ -45,6 +45,8 @@ enum class failsafe_action_long {
     GLIDE = 2,
     DEPLOY_PARACHUTE = 3,
     AUTO = 4,
+    QRTL = 5,
+    QLAND = 6,
 };
 
 // type of stick mixing enabled

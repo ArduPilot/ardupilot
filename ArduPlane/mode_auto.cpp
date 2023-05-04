@@ -159,3 +159,21 @@ bool ModeAuto::_pre_arm_checks(size_t buflen, char *buffer) const
     // Note that this bypasses the base class checks
     return true;
 }
+
+// Return the long failsafe action that should be taken in this mode
+failsafe_action_long ModeAuto::long_failsafe_action() const
+{
+    if (plane.failsafe_in_landing_sequence()) {
+        // don't failsafe in a landing sequence
+        return failsafe_action_long::CONTINUE;
+    }
+
+    if ((plane.g.fs_action_long == (int8_t)failsafe_action_long::DEPLOY_PARACHUTE) ||
+        (plane.g.fs_action_long == (int8_t)failsafe_action_long::GLIDE) ||
+        (plane.g.fs_action_long == (int8_t)failsafe_action_long::AUTO) ||
+        (plane.g.fs_action_long == (int8_t)failsafe_action_long::RTL)) {
+        return failsafe_action_long(plane.g.fs_action_long.get());
+    }
+
+    return failsafe_action_long::CONTINUE;
+}

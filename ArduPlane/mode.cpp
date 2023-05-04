@@ -212,3 +212,30 @@ void Mode::run()
     plane.stabilize_pitch();
     plane.stabilize_yaw();
 }
+
+// Return the long failsafe action that should be taken in this mode
+failsafe_action_long Mode::long_failsafe_action() const
+{
+#if HAL_QUADPLANE_ENABLED
+    if (is_vtol_mode()) {
+        // In VTOL flight
+        if (quadplane.option_is_set(QuadPlane::OPTION::FS_RTL)) {
+            return failsafe_action_long::RTL;
+        } else if (quadplane.option_is_set(QuadPlane::OPTION::FS_QRTL)) {
+            return failsafe_action_long::QRTL;
+        }
+        return failsafe_action_long::QLAND;
+    }
+#endif
+
+    // In forward flight
+    if (plane.emergency_landing) {
+        return failsafe_action_long::GLIDE;
+    }
+    if ((plane.g.fs_action_long == (int8_t)failsafe_action_long::DEPLOY_PARACHUTE) ||
+        (plane.g.fs_action_long == (int8_t)failsafe_action_long::GLIDE) ||
+        (plane.g.fs_action_long == (int8_t)failsafe_action_long::AUTO)) {
+        return failsafe_action_long(plane.g.fs_action_long.get());
+    }
+    return failsafe_action_long::RTL;
+}

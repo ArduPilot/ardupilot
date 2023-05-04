@@ -125,6 +125,9 @@ public:
     // handle a guided target request from GCS
     virtual bool handle_guided_request(Location target_loc) { return false; }
 
+    // Return the long failsafe action that should be taken in this mode
+    virtual failsafe_action_long long_failsafe_action() const;
+
 protected:
 
     // subclasses override this to perform checks before entering the mode
@@ -206,6 +209,9 @@ public:
     
     bool mode_allows_autotuning() const override { return true; }
 
+    // Return the long failsafe action that should be taken in this mode
+    failsafe_action_long long_failsafe_action() const override;
+
 protected:
 
     bool _enter() override;
@@ -259,6 +265,9 @@ public:
     void set_radius_and_direction(const float radius, const bool direction_is_ccw);
 
     void update_target_altitude() override;
+
+    // Return the long failsafe action that should be taken in this mode
+    failsafe_action_long long_failsafe_action() const override;
 
 protected:
 
@@ -334,6 +343,9 @@ public:
     // handle a guided target request from GCS
     bool handle_guided_request(Location target_loc) override;
 
+    // Do not change modes in failsafe
+    failsafe_action_long long_failsafe_action() const override { return failsafe_action_long::CONTINUE; }
+
 protected:
     bool _enter() override;
 
@@ -376,6 +388,9 @@ public:
     bool does_auto_navigation() const override { return true; }
 
     bool does_auto_throttle() const override { return true; }
+
+    // Return the long failsafe action that should be taken in this mode
+    failsafe_action_long long_failsafe_action() const override;
 
 protected:
 
@@ -437,6 +452,9 @@ public:
     bool allows_throttle_nudging() const override { return true; }
 
     bool does_auto_throttle() const override { return true; }
+
+    // Do not change modes in failsafe
+    failsafe_action_long long_failsafe_action() const override { return failsafe_action_long::CONTINUE; }
 
 protected:
     bool _pre_arm_checks(size_t buflen, char *buffer) const override { return false; }
@@ -534,6 +552,9 @@ public:
 
     bool does_auto_throttle() const override { return true; }
 
+    // Return the long failsafe action that should be taken in this mode
+    failsafe_action_long long_failsafe_action() const override;
+
 protected:
 
     bool _enter() override;
@@ -629,6 +650,9 @@ public:
 
     void run() override;
 
+    // Do not change modes in failsafe
+    failsafe_action_long long_failsafe_action() const override { return failsafe_action_long::CONTINUE; }
+
 protected:
 
     bool _enter() override;
@@ -658,6 +682,9 @@ public:
     bool allows_throttle_nudging() const override;
 
     float get_VTOL_return_radius() const;
+
+    // Do not change modes in failsafe
+    failsafe_action_long long_failsafe_action() const override { return failsafe_action_long::CONTINUE; }
 
 protected:
 
@@ -739,6 +766,9 @@ public:
     bool does_auto_navigation() const override { return true; }
 
     bool does_auto_throttle() const override { return true; }
+
+    // Do not change modes in failsafe
+    failsafe_action_long long_failsafe_action() const override { return failsafe_action_long::CONTINUE; }
 
     // var_info for holding parameter information
     static const struct AP_Param::GroupInfo var_info[];
