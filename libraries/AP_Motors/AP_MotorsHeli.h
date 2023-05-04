@@ -223,9 +223,6 @@ protected:
     // to be overloaded by child classes, different vehicle types would have different movement patterns
     virtual void servo_test() = 0;
 
-    // write to a swash servo. output value is pwm
-    void rc_write_swash(uint8_t chan, float swash_in);
-
     // save parameters as part of disarming
     void save_params_on_disarm() override;
 

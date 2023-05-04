@@ -15,6 +15,7 @@
 
 #include <stdlib.h>
 #include <AP_HAL/AP_HAL.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 #include "AP_MotorsHeli_Swash.h"
 
@@ -86,6 +87,16 @@ const AP_Param::GroupInfo AP_MotorsHeli_Swash::var_info[] = {
     AP_GROUPEND
 };
 
+AP_MotorsHeli_Swash::AP_MotorsHeli_Swash(uint8_t mot_0, uint8_t mot_1, uint8_t mot_2, uint8_t mot_3)
+{
+    _motor_num[0] = mot_0;
+    _motor_num[1] = mot_1;
+    _motor_num[2] = mot_2;
+    _motor_num[3] = mot_3;
+
+    AP_Param::setup_object_defaults(this, var_info);
+}
+
 // configure - configure the swashplate settings for any updated parameters
 void AP_MotorsHeli_Swash::configure()
 {
@@ -103,6 +114,7 @@ void AP_MotorsHeli_Swash::calculate_roll_pitch_collective_factors()
 {
     // Clear existing setup
     for (uint8_t i = 0; i < _max_num_servos; i++) {
+        _enabled[i] = false;
         _rollFactor[i] = 0.0;
         _pitchFactor[i] = 0.0;
         _collectiveFactor[i] = 0.0;
@@ -182,33 +194,40 @@ void AP_MotorsHeli_Swash::add_servo_raw(uint8_t num, float roll, float pitch, fl
         return;
     }
 
+    _enabled[num] = true;
     _rollFactor[num] = roll * 0.45;
     _pitchFactor[num] = pitch * 0.45;
     _collectiveFactor[num] = collective;
 
 }
 
-// get_servo_out - calculates servo output
-float AP_MotorsHeli_Swash::get_servo_out(int8_t ch_num, float pitch, float roll, float collective) const
+// calculates servo output
+void AP_MotorsHeli_Swash::calculate(float roll, float pitch, float collective)
 {
     // Collective control direction. Swash moves up for negative collective pitch, down for positive collective pitch
     if (_collective_direction == COLLECTIVE_DIRECTION_REVERSED){
         collective = 1 - collective;
     }
 
-    float servo = (_rollFactor[ch_num] * roll) + (_pitchFactor[ch_num] * pitch) + _collectiveFactor[ch_num] * collective;
-    if (_swash_type == SWASHPLATE_TYPE_H1 && (ch_num == CH_1 || ch_num == CH_2)) {
-        servo += 0.5f;
+    for (uint8_t i = 0; i < _max_num_servos; i++) {
+        if (!_enabled[i]) {
+            // This servo is not enabled
+            continue;
+        }
+
+        _output[i] = (_rollFactor[i] * roll) + (_pitchFactor[i] * pitch) + _collectiveFactor[i] * collective;
+        if (_swash_type == SWASHPLATE_TYPE_H1 && (i == CH_1 || i == CH_2)) {
+            _output[i] += 0.5f;
+        }
+
+        // rescale from -1..1, so we can use the pwm calc that includes trim
+        _output[i] = 2.0f * _output[i] - 1.0f;
+
+        if (_make_servo_linear) {
+            _output[i] = get_linear_servo_output(_output[i]);
+        }
+
     }
-
-    // rescale from -1..1, so we can use the pwm calc that includes trim
-    servo = 2.0f * servo - 1.0f;
-
-    if (_make_servo_linear) {
-        servo = get_linear_servo_output(servo);
-    }
-
-    return servo;
 }
 
 // set_linear_servo_out - sets swashplate servo output to be linear
@@ -222,3 +241,23 @@ float AP_MotorsHeli_Swash::get_linear_servo_output(float input) const
 
 }
 
+// Output calculated values to servos
+void AP_MotorsHeli_Swash::output()
+{
+    for (uint8_t i = 0; i < _max_num_servos; i++) {
+        if (_enabled[i]) {
+            rc_write(_motor_num[i], _output[i]);
+        }
+    }
+}
+
+// convert input in -1 to +1 range to pwm output for swashplate servo.
+// The value 0 corresponds to the trim value of the servo. Swashplate
+// servo travel range is fixed to 1000 pwm and therefore the input is
+// multiplied by 500 to get PWM output.
+void AP_MotorsHeli_Swash::rc_write(uint8_t chan, float swash_in)
+{
+    uint16_t pwm = (uint16_t)(1500 + 500 * swash_in);
+    SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(chan);
+    SRV_Channels::set_output_pwm_trimmed(function, pwm);
+}

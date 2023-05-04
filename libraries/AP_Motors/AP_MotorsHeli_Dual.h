@@ -87,8 +87,8 @@ protected:
     const char* _get_frame_string() const override { return "HELI_DUAL"; }
 
     //  objects we depend upon
-    AP_MotorsHeli_Swash        _swashplate1;        // swashplate1
-    AP_MotorsHeli_Swash        _swashplate2;        // swashplate2
+    AP_MotorsHeli_Swash _swashplate1 { CH_1, CH_2, CH_3, CH_7 }; // swashplate1
+    AP_MotorsHeli_Swash _swashplate2 { CH_4, CH_5, CH_6, CH_8 }; // swashplate2
 
     // internal variables
     float _oscillate_angle = 0.0f;                  // cyclic oscillation angle, used by servo_test function

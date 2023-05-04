@@ -535,17 +535,6 @@ void AP_MotorsHeli::reset_flight_controls()
     calculate_scalars();
 }
 
-// convert input in -1 to +1 range to pwm output for swashplate servo.
-// The value 0 corresponds to the trim value of the servo. Swashplate
-// servo travel range is fixed to 1000 pwm and therefore the input is
-// multiplied by 500 to get PWM output.
-void AP_MotorsHeli::rc_write_swash(uint8_t chan, float swash_in)
-{
-    uint16_t pwm = (uint16_t)(1500 + 500 * swash_in);
-    SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(chan);
-    SRV_Channels::set_output_pwm_trimmed(function, pwm);
-}
-
 // update the collective input filter.  should be called at 100hz
 void AP_MotorsHeli::update_throttle_hover(float dt)
 {
