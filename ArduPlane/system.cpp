@@ -342,7 +342,7 @@ void Plane::check_long_failsafe()
     const uint32_t tnow = millis();
     // only act on changes
     // -------------------
-    if (failsafe.state != failsafe_state::RC_LONG && failsafe.state != failsafe_state::GCS && flight_stage != AP_FixedWing::FlightStage::LAND) {
+    if (failsafe.state != failsafe_state::RC_LONG && failsafe.state != failsafe_state::GCS) {
         uint32_t radio_timeout_ms = failsafe.last_valid_rc_ms;
         if (failsafe.state == failsafe_state::RC_SHORT) {
             // time is relative to when short failsafe enabled

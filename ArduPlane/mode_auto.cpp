@@ -163,6 +163,11 @@ bool ModeAuto::_pre_arm_checks(size_t buflen, char *buffer) const
 // Return the long failsafe action that should be taken in this mode
 failsafe_action_long ModeAuto::long_failsafe_action() const
 {
+    if (plane.flight_stage != AP_FixedWing::FlightStage::LAND) {
+        // postpone action in a land flight stage
+        return failsafe_action_long::POSTPONED;
+    }
+
     if (plane.failsafe_in_landing_sequence()) {
         // don't failsafe in a landing sequence
         return failsafe_action_long::CONTINUE;
