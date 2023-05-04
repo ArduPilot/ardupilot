@@ -767,8 +767,8 @@ public:
 
     bool does_auto_throttle() const override { return true; }
 
-    // Do not change modes in failsafe
-    failsafe_action_long long_failsafe_action() const override { return failsafe_action_long::CONTINUE; }
+    // Return the long failsafe action that should be taken in this mode
+    failsafe_action_long long_failsafe_action() const override;
 
     // var_info for holding parameter information
     static const struct AP_Param::GroupInfo var_info[];

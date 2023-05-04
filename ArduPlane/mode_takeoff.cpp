@@ -129,6 +129,7 @@ void ModeTakeoff::update()
     }
 
     if (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF) {
+        plane.loiter_angle_reset();
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 100.0);
         plane.takeoff_calc_roll();
         plane.takeoff_calc_pitch();
@@ -145,3 +146,32 @@ void ModeTakeoff::navigate()
     plane.update_loiter(0);
 }
 
+// Return the long failsafe action that should be taken in this mode
+failsafe_action_long ModeTakeoff::long_failsafe_action() const
+{
+
+    const failsafe_action_long default_action = Mode::long_failsafe_action();
+    switch (default_action) {
+        case failsafe_action_long::CONTINUE:
+        case failsafe_action_long::GLIDE:
+        case failsafe_action_long::DEPLOY_PARACHUTE:
+        case failsafe_action_long::POSTPONED:
+            // take default action
+            return default_action;
+
+        default:
+            // Postpone default action until takeoff and climb is complete
+            const bool initial_climb_done = plane.flight_stage != AP_FixedWing::FlightStage::TAKEOFF;
+            const bool climb_done_or_stuck = plane.reached_loiter_target() && (plane.loiter.reached_target_alt || plane.loiter.unable_to_acheive_target_alt);
+
+            // Don't postpone if above RTL alt, action is assumed to be safe at that point
+            int32_t current_alt;
+            const bool above_rtl_alt = plane.current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, current_alt) && current_alt > plane.get_RTL_altitude_cm();
+
+            if (!(initial_climb_done && climb_done_or_stuck) && !above_rtl_alt) {
+                return failsafe_action_long::POSTPONED;
+            }
+
+            return default_action;
+    }
+}
