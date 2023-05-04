@@ -130,13 +130,13 @@ void Plane::failsafe_long_on_event(failsafe_state fstype)
             set_mode(mode_fbwa, reason); // emergency landing switch overrides normal action to allow out of range landing
             break;
         }
-        if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
+        if(g.fs_action_long == (int8_t)failsafe_action_long::DEPLOY_PARACHUTE) {
 #if PARACHUTE == ENABLED
             parachute_release();
 #endif
-        } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
+        } else if (g.fs_action_long == (int8_t)failsafe_action_long::GLIDE) {
             set_mode(mode_fbwa, reason);
-        } else if (g.fs_action_long == FS_ACTION_LONG_AUTO) {
+        } else if (g.fs_action_long == (int8_t)failsafe_action_long::AUTO) {
             set_mode(mode_auto, reason);
         } else {
             set_mode(mode_rtl, reason);
@@ -170,21 +170,21 @@ void Plane::failsafe_long_on_event(failsafe_state fstype)
 
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
-        if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
+        if(g.fs_action_long == (int8_t)failsafe_action_long::DEPLOY_PARACHUTE) {
 #if PARACHUTE == ENABLED
             parachute_release();
 #endif
-        } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
+        } else if (g.fs_action_long == (int8_t)failsafe_action_long::GLIDE) {
             set_mode(mode_fbwa, reason);
-        } else if (g.fs_action_long == FS_ACTION_LONG_AUTO) {
+        } else if (g.fs_action_long == (int8_t)failsafe_action_long::AUTO) {
             set_mode(mode_auto, reason);
-        } else if (g.fs_action_long == FS_ACTION_LONG_RTL) {
+        } else if (g.fs_action_long == (int8_t)failsafe_action_long::RTL) {
             set_mode(mode_rtl, reason);
         }
         break;
 
     case Mode::Number::RTL:
-        if (g.fs_action_long == FS_ACTION_LONG_AUTO) {
+        if (g.fs_action_long == (int8_t)failsafe_action_long::AUTO) {
             set_mode(mode_auto, reason);
         }
         break;
