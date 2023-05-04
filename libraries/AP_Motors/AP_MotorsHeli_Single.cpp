@@ -317,7 +317,6 @@ void AP_MotorsHeli_Single::calculate_scalars()
 
     // configure swashplate and update scalars
     _swashplate.configure();
-    _swashplate.calculate_roll_pitch_collective_factors();
 
     // send setpoints to main rotor controller and trigger recalculation of scalars
     _main_rotor.set_control_mode(static_cast<RotorControlMode>(_main_rotor._rsc_mode.get()));

@@ -326,11 +326,9 @@ void AP_MotorsHeli_Dual::calculate_scalars()
 
     // configure swashplate 1 and update scalars
     _swashplate1.configure();
-    _swashplate1.calculate_roll_pitch_collective_factors();
 
     // configure swashplate 2 and update scalars
     _swashplate2.configure();
-    _swashplate2.calculate_roll_pitch_collective_factors();
 
     // set mode of main rotor controller and trigger recalculation of scalars
     _main_rotor.set_control_mode(static_cast<RotorControlMode>(_main_rotor._rsc_mode.get()));
