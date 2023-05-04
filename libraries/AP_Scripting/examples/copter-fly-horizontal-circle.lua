@@ -1,16 +1,16 @@
--- command a Copter to takeoff to 5m and fly a vertical circle in the clockwise direction
+-- command a Copter to takeoff to 5m and fly a horizontal circle in the clockwise direction
 --
 -- CAUTION: This script only works for Copter
 -- this script waits for the vehicle to be armed and RC6 input > 1800 and then:
 --    a) switches to Guided mode
 --    b) takeoff to 5m
---    c) flies a vertical circle using the velocity controller
---    d) switches to RTL mode
+--    c) flies a horizontal circle using the velocity controller
+--    d) switches to Auto mode and carries out any loaded mission
 
 
 local takeoff_alt_above_home = 5
 local copter_guided_mode_num = 4
-local copter_rtl_mode_num = 6
+local copter_auto_mode_num = 3
 local stage = 0
 local circle_angle = 0
 local circle_angle_increment = 1    -- increment the target angle by 1 deg every 0.1 sec (i.e. 10deg/sec)
@@ -18,7 +18,7 @@ local circle_speed = 1              -- velocity is always 1m/s
 local yaw_cos = 0                   -- cosine of yaw at takeoff
 local yaw_sin = 0                   -- sine of yaw at takeoff
 
--- the main update function that uses the takeoff and velocity controllers to fly a rough square pattern
+-- the main update function that uses the takeoff and velocity controllers to fly a rough circle pattern
 function update()
   if not arming:is_armed() then -- reset state when disarmed
     stage = 0
@@ -45,10 +45,10 @@ function update()
           gcs:send_text(0, "alt above home: " .. tostring(math.floor(-vec_from_home:z())))
           if (math.abs(takeoff_alt_above_home + vec_from_home:z()) < 1) then
             stage = stage + 1
-            bottom_left_loc = curr_loc          -- record location when starting square
+            bottom_left_loc = curr_loc          -- record location when starting circle
           end
         end
-      elseif (stage == 3 ) then   -- Stage3: fly a vertical circle
+      elseif (stage == 3 ) then   -- Stage3: fly a horizontal circle
 
         -- calculate velocity vector
         circle_angle = circle_angle + circle_angle_increment
@@ -69,10 +69,11 @@ function update()
         if not (vehicle:set_target_velocity_NED(target_vel)) then
             gcs:send_text(0, "failed to execute velocity command")
         end
-      --elseif (stage == 4) then  -- Stage4: change to RTL mode
-      --  vehicle:set_mode(copter_rtl_mode_num)
-      --  stage = stage + 1
-      --  gcs:send_text(0, "finished square, switching to RTL")
+
+      elseif (stage == 4) then  -- Stage4: change to Auto mode and carry out the mission
+        gcs:send_text(0, "finished circle, switching to Auto")
+        stage = stage + 1
+        vehicle:set_mode(copter_auto_mode_num)
       end
     end
   end
