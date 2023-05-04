@@ -13,21 +13,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-"""
-Launch a non-interactive instance of MAVProxy.
+"""Utilities."""
+from functools import wraps
+from typing import List
 
-Run with default arguments:
-
-ros2 launch ardupilot_sitl mavproxy.launch.py
-
-Show launch arguments:
-
-ros2 launch ardupilot_sitl mavproxy.launch.py --show-args
-"""
-from launch import LaunchDescription
-from ardupilot_sitl.launch import MAVProxyLaunch
+from launch import LaunchContext
+from launch import LaunchDescriptionEntity
 
 
-def generate_launch_description() -> LaunchDescription:
-    """Generate a launch description for MAVProxy."""
-    return MAVProxyLaunch.generate_launch_description()
+# Adapted from a SO answer by David Wolever.
+# Is there a library function in Python to turn a generator-function
+# into a function returning a list?
+# https://stackoverflow.com/questions/12377013
+def listify(fn) -> List[LaunchDescriptionEntity]:
+    """Wrap a functions's return value in a list."""
+
+    @wraps(fn)
+    def listify_helper(
+        context: LaunchContext, *args, **kwargs
+    ) -> List[LaunchDescriptionEntity]:
+        return [fn(context, args, kwargs)]
+
+    return listify_helper
