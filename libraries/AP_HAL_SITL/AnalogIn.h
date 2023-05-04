@@ -3,6 +3,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_SITL_Namespace.h"
 
+#define SITL_ADC_RESOLUTION 16 // bits of resolution
+#define SITL_ADC_MAX_PIN_VALUE ((1<<SITL_ADC_RESOLUTION)-1)
+#define SITL_ADC_FULL_SCALE_VOLTAGE 5.0f
 #define SITL_INPUT_MAX_CHANNELS 12
 
 class HALSITL::ADCSource : public AP_HAL::AnalogSource {
