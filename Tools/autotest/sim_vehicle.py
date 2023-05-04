@@ -415,7 +415,8 @@ def do_build(opts, frame_options):
     for piece in pieces:
         cmd_configure.extend(piece)
 
-    run_cmd_blocking("Configure waf", cmd_configure, check=True)
+    if not cmd_opts.no_configure:
+        run_cmd_blocking("Configure waf", cmd_configure, check=True)
 
     if opts.clean:
         run_cmd_blocking("Building clean", [waf_light, "clean"])
@@ -1028,6 +1029,10 @@ group_build.add_option("-N", "--no-rebuild",
                        action='store_true',
                        default=False,
                        help="don't rebuild before starting ardupilot")
+group_build.add_option("--no-configure",
+                       action='store_true',
+                       default=False,
+                       help="don't run waf configure before building")
 group_build.add_option("-D", "--debug",
                        action='store_true',
                        default=False,
