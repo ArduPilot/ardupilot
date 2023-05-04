@@ -206,9 +206,6 @@ protected:
     // move_actuators - moves swash plate and tail rotor
     virtual void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out) = 0;
 
-    // reset_swash_servo - free up swash servo for maximum movement
-    void reset_swash_servo(SRV_Channel::Aux_servo_function_t function);
-
     // init_outputs - initialise Servo/PWM ranges and endpoints.  This
     // method also updates the initialised flag.
     virtual void init_outputs() = 0;

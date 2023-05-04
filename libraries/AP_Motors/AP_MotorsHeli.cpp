@@ -503,16 +503,6 @@ bool AP_MotorsHeli::parameter_check(bool display_msg) const
     return true;
 }
 
-// reset_swash_servo
-void AP_MotorsHeli::reset_swash_servo(SRV_Channel::Aux_servo_function_t function)
-{
-    // outputs are defined on a -500 to 500 range for swash servos
-    SRV_Channels::set_range(function, 1000);
-
-    // swash servos always use full endpoints as restricting them would lead to scaling errors
-    SRV_Channels::set_output_min_max(function, 1000, 2000);
-}
-
 // update the throttle input filter
 void AP_MotorsHeli::update_throttle_filter()
 {

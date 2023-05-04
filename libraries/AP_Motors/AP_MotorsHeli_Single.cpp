@@ -197,14 +197,6 @@ void AP_MotorsHeli_Single::set_update_rate( uint16_t speed_hz )
 void AP_MotorsHeli_Single::init_outputs()
 {
     if (!initialised_ok()) {
-        // map primary swash servos
-        for (uint8_t i=0; i<AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS; i++) {
-            add_motor_num(CH_1+i);
-        }
-        if (_swashplate.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-            add_motor_num(CH_5);
-        }
-
         // yaw servo
         add_motor_num(CH_4);
 
@@ -222,14 +214,6 @@ void AP_MotorsHeli_Single::init_outputs()
     if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
         // External Gyro uses PWM output thus servo endpoints are forced
         SRV_Channels::set_output_min_max(SRV_Channels::get_motor_function(AP_MOTORS_HELI_SINGLE_EXTGYRO), 1000, 2000);
-    }
-
-    // reset swash servo range and endpoints
-    for (uint8_t i=0; i<AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS; i++) {
-        reset_swash_servo(SRV_Channels::get_motor_function(i));
-    }
-    if (_swashplate.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        reset_swash_servo(SRV_Channels::get_motor_function(4));
     }
 
     if (_tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH && _tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPIT_EXT_GOV) {
