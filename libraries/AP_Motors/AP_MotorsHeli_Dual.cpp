@@ -557,21 +557,9 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
     float swash2_roll = get_swashplate(2, AP_MOTORS_HELI_DUAL_SWASH_AXIS_ROLL, pitch_out, roll_out, yaw_out, collective2_out_scaled);
     float swash2_coll = get_swashplate(2, AP_MOTORS_HELI_DUAL_SWASH_AXIS_COLL, pitch_out, roll_out, yaw_out, collective2_out_scaled);
  
-    // get servo positions from swashplate library
-    _servo_out[CH_1] = _swashplate1.get_servo_out(CH_1,swash1_pitch,swash1_roll,swash1_coll);
-    _servo_out[CH_2] = _swashplate1.get_servo_out(CH_2,swash1_pitch,swash1_roll,swash1_coll);
-    _servo_out[CH_3] = _swashplate1.get_servo_out(CH_3,swash1_pitch,swash1_roll,swash1_coll);
-    if (_swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        _servo_out[CH_7] = _swashplate1.get_servo_out(CH_4,swash1_pitch,swash1_roll,swash1_coll);
-    }
-
-    // get servo positions from swashplate library
-    _servo_out[CH_4] = _swashplate2.get_servo_out(CH_1,swash2_pitch,swash2_roll,swash2_coll);
-    _servo_out[CH_5] = _swashplate2.get_servo_out(CH_2,swash2_pitch,swash2_roll,swash2_coll);
-    _servo_out[CH_6] = _swashplate2.get_servo_out(CH_3,swash2_pitch,swash2_roll,swash2_coll);
-    if (_swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        _servo_out[CH_8] = _swashplate2.get_servo_out(CH_4,swash2_pitch,swash2_roll,swash2_coll);
-    }
+    // Calculate servo positions in swashplate library
+    _swashplate1.calculate(swash1_roll, swash1_pitch, swash1_coll);
+    _swashplate2.calculate(swash2_roll, swash2_pitch, swash2_coll);
 
 }
 
@@ -580,19 +568,10 @@ void AP_MotorsHeli_Dual::output_to_motors()
     if (!initialised_ok()) {
         return;
     }
-    // actually move the servos.  PWM is sent based on nominal 1500 center.  servo output shifts center based on trim value.
-    for (uint8_t i=0; i<AP_MOTORS_HELI_DUAL_NUM_SWASHPLATE_SERVOS; i++) {
-        rc_write_swash(i, _servo_out[CH_1+i]);
-    }
 
-    // write to servo for 4 servo of 4 servo swashplate
-    if (_swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate1.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        rc_write_swash(AP_MOTORS_MOT_7, _servo_out[CH_7]);
-    }
-    // write to servo for 4 servo of 4 servo swashplate
-    if (_swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate2.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        rc_write_swash(AP_MOTORS_MOT_8, _servo_out[CH_8]);
-    }
+    // Write swashplate outputs
+    _swashplate1.output();
+    _swashplate2.output();
 
     switch (_spool_state) {
         case SpoolState::SHUT_DOWN:
