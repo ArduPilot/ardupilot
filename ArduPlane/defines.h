@@ -12,11 +12,11 @@
 
 // failsafe
 // ----------------------
-enum failsafe_state {
-    FAILSAFE_NONE=0,
-    FAILSAFE_SHORT=1,
-    FAILSAFE_LONG=2,
-    FAILSAFE_GCS=3
+enum class failsafe_state {
+    NONE=0,
+    RC_SHORT=1,
+    RC_LONG=2,
+    GCS=3
 };
 
 

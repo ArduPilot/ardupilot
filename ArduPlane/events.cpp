@@ -18,7 +18,7 @@ bool Plane::failsafe_in_landing_sequence() const
     return false;
 }
 
-void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reason)
+void Plane::failsafe_short_on_event(failsafe_state fstype, ModeReason reason)
 {
     // This is how to handle a short loss of control signal failsafe.
     failsafe.state = fstype;
@@ -105,7 +105,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
     }
 }
 
-void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason)
+void Plane::failsafe_long_on_event(failsafe_state fstype, ModeReason reason)
 {
     // This is how to handle a long loss of control signal failsafe.
     //  If the GCS is locked up we allow control to revert to RC
@@ -202,7 +202,7 @@ void Plane::failsafe_short_off_event(ModeReason reason)
 {
     // We're back in radio contact
     gcs().send_text(MAV_SEVERITY_WARNING, "Short Failsafe Cleared");
-    failsafe.state = FAILSAFE_NONE;
+    failsafe.state = failsafe_state::NONE;
     // restore entry mode if desired but check that our current mode is still due to failsafe
     if (control_mode_reason == ModeReason::RADIO_FAILSAFE) { 
        set_mode_by_number(failsafe.saved_mode_number, ModeReason::RADIO_FAILSAFE_RECOVERY);
@@ -219,7 +219,7 @@ void Plane::failsafe_long_off_event(ModeReason reason)
     else {
         gcs().send_text(MAV_SEVERITY_WARNING, "RC Long Failsafe Cleared");
     }
-    failsafe.state = FAILSAFE_NONE;
+    failsafe.state = failsafe_state::NONE;
 }
 
 void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
