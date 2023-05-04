@@ -373,10 +373,10 @@ void Plane::check_long_failsafe()
             timeout_seconds = g.fs_timeout_short;
         }
         // We do not change state but allow for user to change mode
-        if (failsafe.state == failsafe_state::GCS && 
+        if (((failsafe.state == failsafe_state::GCS) || (failsafe.state == failsafe_state::GCS_POSTPONED)) && 
             (tnow - gcs_last_seen_ms) < timeout_seconds*1000) {
             failsafe_long_off_event(ModeReason::GCS_FAILSAFE);
-        } else if (failsafe.state == failsafe_state::RC_LONG && 
+        } else if (((failsafe.state == failsafe_state::RC_LONG) || (failsafe.state == failsafe_state::RC_LONG_POSTPONED)) && 
                    !failsafe.rc_failsafe) {
             failsafe_long_off_event(ModeReason::RADIO_FAILSAFE);
         }

@@ -16,7 +16,9 @@ enum class failsafe_state {
     NONE=0,
     RC_SHORT=1,
     RC_LONG=2,
-    GCS=3
+    GCS=3,
+    RC_LONG_POSTPONED=4,
+    GCS_POSTPONED=5,
 };
 
 
@@ -47,6 +49,7 @@ enum class failsafe_action_long {
     AUTO = 4,
     QRTL = 5,
     QLAND = 6,
+    POSTPONED = 7,
 };
 
 // type of stick mixing enabled

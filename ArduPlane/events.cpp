@@ -110,12 +110,17 @@ void Plane::failsafe_long_on_event(failsafe_state fstype)
     // This is how to handle a long loss of control signal failsafe.
     //  If the GCS is locked up we allow control to revert to RC
     RC_Channels::clear_overrides();
-    failsafe.state = fstype;
+
+    const bool in_postponed_action = (failsafe.state == failsafe_state::RC_LONG_POSTPONED) || (failsafe.state == failsafe_state::GCS_POSTPONED);
+
+    const failsafe_action_long action = control_mode->long_failsafe_action();
+    if (action != failsafe_action_long::POSTPONED) {
+        failsafe.state = fstype;
+    }
 
     const ModeReason reason = (fstype == failsafe_state::GCS) ? ModeReason::GCS_FAILSAFE : ModeReason::RADIO_FAILSAFE;
-
     char msg[40] {};
-    switch (control_mode->long_failsafe_action())
+    switch (action)
     {
         case failsafe_action_long::CONTINUE:
             hal.util->snprintf(msg, ARRAY_SIZE(msg), "continue in %s", control_mode->name());
@@ -149,6 +154,15 @@ void Plane::failsafe_long_on_event(failsafe_state fstype)
             set_mode(mode_qland, reason);
             break;
 #endif
+
+        case failsafe_action_long::POSTPONED:
+            if (in_postponed_action) {
+                // Postponement action has already been taken
+                return;
+            }
+            failsafe.state = (fstype == failsafe_state::GCS) ? failsafe_state::GCS_POSTPONED : failsafe_state::RC_LONG_POSTPONED;
+            hal.util->snprintf(msg, ARRAY_SIZE(msg), "action postponed");
+            break;
     }
 
     if (strlen(msg) == 0) {
@@ -156,7 +170,12 @@ void Plane::failsafe_long_on_event(failsafe_state fstype)
         hal.util->snprintf(msg, ARRAY_SIZE(msg), "switch to %s", control_mode->name());
     }
 
-    gcs().send_text(MAV_SEVERITY_WARNING, "%s Failsafe On: %s", (reason == ModeReason:: GCS_FAILSAFE) ? "GCS" : "RC Long", msg);
+    const char* type = (fstype == failsafe_state::GCS) ? "GCS" : "RC Long";
+    if (!in_postponed_action) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "%s Failsafe On: %s", type, msg);
+    } else {
+        gcs().send_text(MAV_SEVERITY_WARNING, "%s Failsafe postponed action: %s", type, msg);
+    }
 }
 
 void Plane::failsafe_short_off_event(ModeReason reason)
