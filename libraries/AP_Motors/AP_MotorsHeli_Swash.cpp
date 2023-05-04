@@ -94,6 +94,8 @@ void AP_MotorsHeli_Swash::configure()
     _collective_direction = static_cast<CollectiveDirection>(_swash_coll_dir.get());
     _make_servo_linear = _linear_swash_servo != 0;
     enable.set(_swash_type == SWASHPLATE_TYPE_H3);
+
+    calculate_roll_pitch_collective_factors();
 }
 
 // CCPM Mixers - calculate mixing scale factors by swashplate type
