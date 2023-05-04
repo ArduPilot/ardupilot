@@ -16,12 +16,6 @@ enum SwashPlateType {
     SWASHPLATE_TYPE_H4_45
 };
 
-// collective direction
-enum CollectiveDirection {
-    COLLECTIVE_DIRECTION_NORMAL = 0,
-    COLLECTIVE_DIRECTION_REVERSED
-};
-
 class AP_MotorsHeli_Swash {
 public:
 
@@ -42,9 +36,6 @@ public:
     // get_servo_out - calculates servo output
     float get_servo_out(int8_t servo_num, float pitch, float roll, float collective) const;
 
-    // linearize mechanical output of swashplate servo
-    float get_linear_servo_output(float input) const;
-
     // get_phase_angle - returns the rotor phase angle
     int16_t get_phase_angle() const { return _phase_angle; }
 
@@ -52,13 +43,30 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
-    // internal variables
+
+    // linearize mechanical output of swashplate servo
+    float get_linear_servo_output(float input) const;
+
+    // Setup a servo
+    void add_servo_angle(uint8_t num, float angle, float collective);
+    void add_servo_raw(uint8_t num, float roll, float pitch, float collective);
+
+    enum CollectiveDirection {
+        COLLECTIVE_DIRECTION_NORMAL = 0,
+        COLLECTIVE_DIRECTION_REVERSED
+    };
+
+    static const uint8_t _max_num_servos {4};
+
+    // Currently configured setup
     SwashPlateType       _swash_type;                 // Swashplate type
     CollectiveDirection  _collective_direction;       // Collective control direction, normal or reversed
-    float                _rollFactor[4];              // Roll axis scaling of servo output based on servo position
-    float                _pitchFactor[4];             // Pitch axis scaling of servo output based on servo position
-    float                _collectiveFactor[4];        // Collective axis scaling of servo output based on servo position
-    int8_t               _make_servo_linear;          // Sets servo output to be linearized
+    bool                 _make_servo_linear;          // Sets servo output to be linearized
+
+    // Internal variables
+    float                _rollFactor[_max_num_servos];              // Roll axis scaling of servo output based on servo position
+    float                _pitchFactor[_max_num_servos];             // Pitch axis scaling of servo output based on servo position
+    float                _collectiveFactor[_max_num_servos];        // Collective axis scaling of servo output based on servo position
 
     // parameters
     AP_Int8  _swashplate_type;                   // Swash Type Setting
