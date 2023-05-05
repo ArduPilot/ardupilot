@@ -131,7 +131,7 @@ bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
         msg.position_covariance_type = 0; // COVARIANCE_TYPE_UNKNOWN
         return true;
     }
-    msg.altitude = alt_cm / 100.0;
+    msg.altitude = alt_cm * 0.01;
 
     // ROS allows double precision, ArduPilot exposes float precision today
     Matrix3f cov;
@@ -212,13 +212,13 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_BatteryState& msg, const uint8_
     float current;
     msg.current = (battery.current_amps(current, instance)) ? -1 * current : NAN;
 
-    const float design_capacity = (float)battery.pack_capacity_mah(instance)/1000.0;
+    const float design_capacity = (float)battery.pack_capacity_mah(instance) * 0.001;
     msg.design_capacity = design_capacity;
 
     uint8_t percentage;
     if (battery.capacity_remaining_pct(percentage, instance)) {
-        msg.percentage = percentage/100.0;
-        msg.charge = (percentage * design_capacity)/100.0;
+        msg.percentage = percentage * 0.01;
+        msg.charge = (percentage * design_capacity) * 0.01;
     } else {
         msg.percentage = NAN;
         msg.charge = NAN;
@@ -288,7 +288,7 @@ void AP_DDS_Client::update_topic(geometry_msgs_msg_PoseStamped& msg)
     Quaternion orientation;
     if (ahrs.get_quaternion(orientation)) {
         Quaternion aux(orientation[0], orientation[2], orientation[1], -orientation[3]); //NED to ENU transformation
-        Quaternion transformation (sqrt(2)/2,0,0,sqrt(2)/2); // Z axis 90 degree rotation
+        Quaternion transformation (sqrtF(2) * 0.5,0,0,sqrtF(2) * 0.5); // Z axis 90 degree rotation
         orientation = aux * transformation;
         msg.pose.orientation.w = orientation[0];
         msg.pose.orientation.x = orientation[1];
@@ -351,7 +351,7 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
     if (ahrs.get_location(loc)) {
         msg.pose.position.latitude = loc.lat * 1E-7;
         msg.pose.position.longitude = loc.lng * 1E-7;
-        msg.pose.position.altitude = loc.alt / 100.0; // Transform from cm to m
+        msg.pose.position.altitude = loc.alt * 0.01; // Transform from cm to m
     }
 
     // In ROS REP 103, axis orientation uses the following convention:
@@ -365,7 +365,7 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
     Quaternion orientation;
     if (ahrs.get_quaternion(orientation)) {
         Quaternion aux(orientation[0], orientation[2], orientation[1], -orientation[3]); //NED to ENU transformation
-        Quaternion transformation(sqrt(2) / 2, 0, 0, sqrt(2) / 2); // Z axis 90 degree rotation
+        Quaternion transformation(sqrtF(2) * 0.5, 0, 0, sqrtF(2) * 0.5); // Z axis 90 degree rotation
         orientation = aux * transformation;
         msg.pose.orientation.w = orientation[0];
         msg.pose.orientation.x = orientation[1];
