@@ -719,6 +719,8 @@ void Sub::load_parameters()
     AP_Param::set_default_by_name("RC8_OPTION", 213);   // MOUNT1_PITCH
     // We should ignore this parameter since ROVs are neutral buoyancy
     AP_Param::set_by_name("MOT_THST_HOVER", 0.5);
+    AP_Param::set_default_by_name("MOT_PWM_MIN", 1100);
+    AP_Param::set_default_by_name("MOT_PWM_MAX", 1900);
 
 // PARAMETER_CONVERSION - Added: JAN-2022
 #if AP_AIRSPEED_ENABLED
