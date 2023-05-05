@@ -125,6 +125,9 @@ public:
     // output - update value to send to ESC/Servo
     void        output(RotorControlState state);
 
+    // Return mask of output channels which the RSC is outputting on
+    uint32_t    get_output_mask() const;
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 

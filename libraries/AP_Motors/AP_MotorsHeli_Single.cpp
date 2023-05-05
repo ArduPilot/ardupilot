@@ -350,23 +350,7 @@ void AP_MotorsHeli_Single::calculate_scalars()
 //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
 uint32_t AP_MotorsHeli_Single::get_motor_mask()
 {
-    // heli uses channels 1,2,3,4 and 8
-    // setup fast channels
-    uint32_t mask = 1U << 0 | 1U << 1 | 1U << 2 | 1U << 3 | 1U << AP_MOTORS_HELI_RSC;
-
-    if (_swashplate.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        mask |= 1U << 4;
-    }
-
-    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
-        mask |= 1U << AP_MOTORS_HELI_SINGLE_EXTGYRO;
-    }
-
-    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPIT_EXT_GOV) {
-        mask |= 1U << AP_MOTORS_HELI_SINGLE_TAILRSC;
-    }
-
-    return motor_mask_to_srv_channel_mask(mask);
+    return _main_rotor.get_output_mask() | _tail_rotor.get_output_mask();
 }
 
 // update_motor_controls - sends commands to motor controllers
