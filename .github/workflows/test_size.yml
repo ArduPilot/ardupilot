@@ -284,7 +284,7 @@ jobs:
              TO_CHECK="arduplane arducopter"
           fi
           for CHECK in $TO_CHECK; do
-             python3 -m elf_diff --bin_prefix="$BIN_PREFIX" --html_dir=elf_diff/AP_Periph $GITHUB_WORKSPACE/base_branch_bin/$CHECK $GITHUB_WORKSPACE/pr_bin/$CHECK
+             python3 -m elf_diff --bin_prefix="$BIN_PREFIX" --html_dir=elf_diff/$CHECK $GITHUB_WORKSPACE/base_branch_bin/$CHECK $GITHUB_WORKSPACE/pr_bin/$CHECK
           done
 
           zip -r elf_diff.zip elf_diff
