@@ -261,3 +261,15 @@ void AP_MotorsHeli_Swash::rc_write(uint8_t chan, float swash_in)
     SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(chan);
     SRV_Channels::set_output_pwm_trimmed(function, pwm);
 }
+
+// Get function output mask
+uint32_t AP_MotorsHeli_Swash::get_output_mask() const
+{
+    uint32_t mask = 0;
+    for (uint8_t i = 0; i < _max_num_servos; i++) {
+        if (_enabled[i]) {
+            mask |= 1U < _motor_num[i];
+        }
+    }
+    return mask;
+}
