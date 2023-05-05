@@ -314,7 +314,7 @@ class SizeCompareBranches(object):
             shutil.rmtree(dsdl_generated_path, ignore_errors=True)
             self.run_waf(bootloader_waf_configure_args)
             self.run_waf([v])
-        self.run_program("rsync", ["rsync", "-aP", "build/", outdir])
+        self.run_program("rsync", ["rsync", "-ap", "build/", outdir])
 
     def run_all(self):
         '''run tests for boards and vehicles passed in constructor'''
