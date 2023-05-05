@@ -173,18 +173,6 @@ void AP_MotorsHeli_Quad::calculate_roll_pitch_collective_factors()
     }
 }
 
-// get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
-//  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-uint32_t AP_MotorsHeli_Quad::get_motor_mask()
-{
-    uint32_t mask = 0;
-    for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
-        mask |= 1U << (AP_MOTORS_MOT_1+i);
-    }
-    mask |= 1U << AP_MOTORS_HELI_RSC;
-    return mask;
-}
-
 // update_motor_controls - sends commands to motor controllers
 void AP_MotorsHeli_Quad::update_motor_control(RotorControlState state)
 {
