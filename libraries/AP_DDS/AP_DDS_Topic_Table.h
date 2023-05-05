@@ -2,6 +2,7 @@
 #include "sensor_msgs/msg/NavSatFix.h"
 #include "tf2_msgs/msg/TFMessage.h"
 #include "sensor_msgs/msg/BatteryState.h"
+#include "geographic_msgs/msg/GeoPoseStamped.h"
 
 #include "AP_DDS_Generic_Fn_T.h"
 #include "uxr/client/client.h"
@@ -71,5 +72,15 @@ const struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .serialize = Generic_serialize_topic_fn_t(&geometry_msgs_msg_TwistStamped_serialize_topic),
         .deserialize = Generic_deserialize_topic_fn_t(&geometry_msgs_msg_TwistStamped_deserialize_topic),
         .size_of = Generic_size_of_topic_fn_t(&geometry_msgs_msg_TwistStamped_size_of_topic),
-    }
+    },
+    {
+        .topic_id = 0x07,
+        .pub_id = 0x07,
+        .dw_id = uxrObjectId{.id=0x07, .type=UXR_DATAWRITER_ID},
+        .topic_profile_label = "geopose__t",
+        .dw_profile_label = "geopose__dw",
+        .serialize = Generic_serialize_topic_fn_t(&geographic_msgs_msg_GeoPoseStamped_serialize_topic),
+        .deserialize = Generic_deserialize_topic_fn_t(&geographic_msgs_msg_GeoPoseStamped_deserialize_topic),
+        .size_of = Generic_size_of_topic_fn_t(&geographic_msgs_msg_GeoPoseStamped_size_of_topic),
+    },
 };

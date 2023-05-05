@@ -105,6 +105,11 @@ Follow the steps to use the microROS Agent
 
   - https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html
 
+- Install geographic_msgs
+  ```bash
+  sudo apt install ros-humble-geographic-msgs
+  ```
+
 - Install and run the microROS agent (as descibed here). Make sure to use the `humble` branch.
   - Follow [the instructions](https://micro.ros.org/docs/tutorials/core/first_application_linux/) for the following:
 
