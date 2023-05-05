@@ -112,6 +112,7 @@ public:
         DNA_IGNORE_UNHEALTHY_NODE = (1U<<3),
         USE_ACTUATOR_PWM          = (1U<<4),
         SEND_GNSS                 = (1U<<5),
+        LOG_NODE_STATUS           = (1U<<6),
     };
 
     // check if a option is set
