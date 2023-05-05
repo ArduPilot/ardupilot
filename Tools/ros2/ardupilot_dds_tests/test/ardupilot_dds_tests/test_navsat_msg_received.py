@@ -22,7 +22,9 @@ import threading
 
 from launch import LaunchDescription
 
-from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
+from rclpy.qos import QoSProfile
+from rclpy.qos import QoSReliabilityPolicy
+from rclpy.qos import QoSHistoryPolicy
 
 from sensor_msgs.msg import NavSatFix
 

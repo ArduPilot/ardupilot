@@ -20,13 +20,18 @@ import pytest
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
+from launch import LaunchDescriptionSource
 from launch.actions import IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution
 
 from launch_ros.substitutions import FindPackageShare
 
 from pathlib import Path
+
+from ardupilot_sitl.launch import VirtualPortsLaunch
+from ardupilot_sitl.launch import MicroRosAgentLaunch
+from ardupilot_sitl.launch import MAVProxyLaunch
+from ardupilot_sitl.launch import SITLLaunch
 
 
 @pytest.fixture(scope="module")
@@ -34,8 +39,7 @@ def device_dir(tmp_path_factory):
     """Fixture to create a temporary directory for devices."""
     path = tmp_path_factory.mktemp("devices")
 
-    # Create directory for virtual ports.
-    print(f"\ntmpdirname: {device_dir}\n")
+    # Create dev directory for virtual ports.
     os.mkdir(Path(path, "dev"))
 
     yield path
@@ -47,23 +51,16 @@ def virtual_ports(device_dir):
     tty0 = Path(device_dir, "dev", "tty0").resolve()
     tty1 = Path(device_dir, "dev", "tty1").resolve()
 
-    yield IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            [
-                PathJoinSubstitution(
-                    [
-                        FindPackageShare("ardupilot_sitl"),
-                        "launch",
-                        "virtual_ports.launch.py",
-                    ]
-                ),
-            ]
-        ),
+    vp_ld, _ = VirtualPortsLaunch.generate_launch_description_with_context()
+
+    ld = IncludeLaunchDescription(
+        LaunchDescriptionSource(vp_ld),
         launch_arguments={
             "tty0": str(tty0),
             "tty1": str(tty1),
         }.items(),
     )
+    yield ld
 
 
 @pytest.fixture
@@ -71,18 +68,10 @@ def micro_ros_agent_serial(device_dir):
     """Fixture to create a micro_ros_agent node."""
     tty0 = Path(device_dir, "dev", "tty0").resolve()
 
-    yield IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            [
-                PathJoinSubstitution(
-                    [
-                        FindPackageShare("ardupilot_sitl"),
-                        "launch",
-                        "micro_ros_agent.launch.py",
-                    ]
-                ),
-            ]
-        ),
+    mra_ld, _ = MicroRosAgentLaunch.generate_launch_description_with_context()
+
+    ld = IncludeLaunchDescription(
+        LaunchDescriptionSource(mra_ld),
         launch_arguments={
             "transport": "serial",
             "refs": PathJoinSubstitution(
@@ -96,23 +85,16 @@ def micro_ros_agent_serial(device_dir):
             "device": str(tty0),
         }.items(),
     )
+    yield ld
 
 
 @pytest.fixture
 def micro_ros_agent_udp():
     """Fixture to create a micro_ros_agent node."""
-    yield IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            [
-                PathJoinSubstitution(
-                    [
-                        FindPackageShare("ardupilot_sitl"),
-                        "launch",
-                        "micro_ros_agent.launch.py",
-                    ]
-                ),
-            ]
-        ),
+    mra_ld, _ = MicroRosAgentLaunch.generate_launch_description_with_context()
+
+    ld = IncludeLaunchDescription(
+        LaunchDescriptionSource(mra_ld),
         launch_arguments={
             "transport": "udp4",
             "refs": PathJoinSubstitution(
@@ -124,28 +106,22 @@ def micro_ros_agent_udp():
             ),
         }.items(),
     )
+    yield ld
 
 
 @pytest.fixture
 def mavproxy():
-    """Fixture to bring up ArduPilot SITL DDS."""
-    yield IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            [
-                PathJoinSubstitution(
-                    [
-                        FindPackageShare("ardupilot_sitl"),
-                        "launch",
-                        "mavproxy.launch.py",
-                    ]
-                ),
-            ]
-        ),
+    """Fixture to bring up MAVProxy."""
+    mp_ld, _ = MAVProxyLaunch.generate_launch_description_with_context()
+
+    ld = IncludeLaunchDescription(
+        LaunchDescriptionSource(mp_ld),
         launch_arguments={
             "master": "tcp:127.0.0.1:5760",
             "sitl": "127.0.0.1:5501",
         }.items(),
     )
+    yield ld
 
 
 @pytest.fixture
@@ -153,18 +129,10 @@ def sitl_copter_dds_serial(device_dir, virtual_ports, micro_ros_agent_serial, ma
     """Fixture to bring up ArduPilot SITL DDS."""
     tty1 = Path(device_dir, "dev", "tty1").resolve()
 
+    ld, _ = SITLLaunch.generate_launch_description_with_context()
+
     sitl = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            [
-                PathJoinSubstitution(
-                    [
-                        FindPackageShare("ardupilot_sitl"),
-                        "launch",
-                        "sitl.launch.py",
-                    ]
-                ),
-            ]
-        ),
+        LaunchDescriptionSource(ld),
         launch_arguments={
             "command": "arducopter",
             "synthetic_clock": "True",
@@ -206,22 +174,12 @@ def sitl_copter_dds_serial(device_dir, virtual_ports, micro_ros_agent_serial, ma
 
 
 @pytest.fixture
-def sitl_copter_dds_udp(device_dir, micro_ros_agent_udp, mavproxy):
+def sitl_copter_dds_udp(micro_ros_agent_udp, mavproxy):
     """Fixture to bring up ArduPilot SITL DDS."""
-    tty1 = Path(device_dir, "dev", "tty1").resolve()
+    sitl_ld, _ = SITLLaunch.generate_launch_description_with_context()
 
     sitl = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            [
-                PathJoinSubstitution(
-                    [
-                        FindPackageShare("ardupilot_sitl"),
-                        "launch",
-                        "sitl.launch.py",
-                    ]
-                ),
-            ]
-        ),
+        LaunchDescriptionSource(sitl_ld),
         launch_arguments={
             "command": "arducopter",
             "synthetic_clock": "True",
@@ -231,7 +189,6 @@ def sitl_copter_dds_udp(device_dir, micro_ros_agent_udp, mavproxy):
             "speedup": "10",
             "slave": "0",
             "instance": "0",
-            "uartC": f"uart:{str(tty1)}",
             "defaults": str(
                 Path(
                     get_package_share_directory("ardupilot_sitl"),
@@ -252,10 +209,11 @@ def sitl_copter_dds_udp(device_dir, micro_ros_agent_udp, mavproxy):
         }.items(),
     )
 
-    yield LaunchDescription(
+    ld = LaunchDescription(
         [
             micro_ros_agent_udp,
             sitl,
             mavproxy,
         ]
     )
+    yield ld
