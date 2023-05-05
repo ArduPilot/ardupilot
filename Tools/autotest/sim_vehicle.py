@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Framework to start a simulated vehicle and connect it to MAVProxy.
