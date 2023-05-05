@@ -36,6 +36,9 @@ public:
     // get_phase_angle - returns the rotor phase angle
     int16_t get_phase_angle() const { return _phase_angle; }
 
+    // Get function output mask
+    uint32_t get_output_mask() const;
+
     // var_info
     static const struct AP_Param::GroupInfo var_info[];
 

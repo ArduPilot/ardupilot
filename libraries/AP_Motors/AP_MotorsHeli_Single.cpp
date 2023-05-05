@@ -188,14 +188,8 @@ void AP_MotorsHeli_Single::set_update_rate( uint16_t speed_hz )
     _speed_hz = speed_hz;
 
     // setup fast channels
-    uint32_t mask = 
-        1U << AP_MOTORS_MOT_1 |
-        1U << AP_MOTORS_MOT_2 |
-        1U << AP_MOTORS_MOT_3 |
-        1U << AP_MOTORS_MOT_4;
-    if (_swashplate.get_swash_type() == SWASHPLATE_TYPE_H4_90 || _swashplate.get_swash_type() == SWASHPLATE_TYPE_H4_45) {
-        mask |= 1U << (AP_MOTORS_MOT_5);
-    }
+    uint32_t mask = (1U << AP_MOTORS_MOT_4) | _swashplate.get_output_mask();
+
     rc_set_freq(mask, _speed_hz);
 }
 
