@@ -73,6 +73,7 @@ public:
     void init() override;
     AP_HAL::AnalogSource* channel(int16_t pin) override;
     void _timer_tick(void);
+    void timer_tick_adc(uint8_t index);
     float board_voltage(void) override { return _board_voltage; }
     float servorail_voltage(void) override { return _servorail_voltage; }
     uint16_t power_status_flags(void) override { return _power_flags; }

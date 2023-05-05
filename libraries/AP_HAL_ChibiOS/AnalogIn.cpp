@@ -403,9 +403,13 @@ void AnalogIn::init()
 #else
     static_assert(sizeof(uint16_t) == sizeof(adcsample_t), "adcsample_t must be uint16_t");
 #endif
-    for (uint8_t i=0; i<HAL_NUM_ANALOG_INPUTS; i++) {
-        setup_adc(i);
-    }
+    setup_adc(0);
+#if defined(HAL_ANALOG2_PINS)
+    setup_adc(1);
+#endif
+#if defined(HAL_ANALOG3_PINS)
+    setup_adc(2);
+#endif
 }
 
 void AnalogIn::setup_adc(uint8_t index)
@@ -623,6 +627,52 @@ void AnalogIn::read_adc(uint8_t index, uint32_t *val)
 }
 
 /*
+  read the data from an ADC index
+ */
+void AnalogIn::timer_tick_adc(uint8_t index)
+{
+    const uint8_t num_grp_channels = get_num_grp_channels(index);
+    uint32_t buf_adc[num_grp_channels];
+
+    /* read all channels available on index ADC*/
+    read_adc(index, buf_adc);
+
+    // match the incoming channels to the currently active pins
+    for (uint8_t i=0; i < num_grp_channels; i++) {
+#ifdef ANALOG_VCC_5V_PIN
+        if (get_analog_pin(index, i) == ANALOG_VCC_5V_PIN) {
+            // record the Vcc value for later use in
+            // voltage_average_ratiometric()
+            _board_voltage = buf_adc[i] * get_pin_scaling(index, i) * ADC_BOARD_SCALING;
+        }
+#endif
+#ifdef FMU_SERVORAIL_ADC_PIN
+        if (get_analog_pin(index, i) == FMU_SERVORAIL_ADC_PIN) {
+            _servorail_voltage = buf_adc[i] * get_pin_scaling(index, i) * ADC_BOARD_SCALING;
+        }
+#endif
+    }
+
+    for (uint8_t i=0; i<num_grp_channels; i++) {
+        Debug("adc%u chan %u value=%f\n",
+              (unsigned)index+1,
+              (unsigned)get_pin_channel(index, i),
+              (float)buf_adc[i] * ADC_BOARD_SCALING * VOLTAGE_SCALING);
+        for (uint8_t j=0; j < ANALOG_MAX_CHANNELS; j++) {
+            ChibiOS::AnalogSource *c = _channels[j];
+            if (c != nullptr) {
+                if ((get_analog_pin(index, i) == c->_pin) && (c->_pin != ANALOG_INPUT_NONE)) {
+                    // add a value
+                    c->_add_value(buf_adc[i] * ADC_BOARD_SCALING, _board_voltage);
+                } else if (c->_pin == ANALOG_SERVO_VRSSI_PIN) {
+                    c->_add_value(_rssi_voltage / VOLTAGE_SCALING, 0);
+                }
+            }
+        }
+    }
+}
+
+/*
   called at 1kHz
  */
 void AnalogIn::_timer_tick(void)
@@ -643,47 +693,16 @@ void AnalogIn::_timer_tick(void)
     _rssi_voltage = iomcu.get_vrssi_adc_count() * (VOLTAGE_SCALING *  HAL_IOMCU_VRSSI_SCALAR);
 #endif
 
-    for (uint8_t index=0; index < HAL_NUM_ANALOG_INPUTS; index++) {
-        const uint8_t num_grp_channels = get_num_grp_channels(index);
-        uint32_t buf_adc[num_grp_channels];
-
-        /* read all channels available on index ADC*/
-        read_adc(index, buf_adc);
-
-        // match the incoming channels to the currently active pins
-        for (uint8_t i=0; i < num_grp_channels; i++) {
-    #ifdef ANALOG_VCC_5V_PIN
-            if (get_analog_pin(index, i) == ANALOG_VCC_5V_PIN) {
-                // record the Vcc value for later use in
-                // voltage_average_ratiometric()
-                _board_voltage = buf_adc[i] * get_pin_scaling(index, i) * ADC_BOARD_SCALING;
-            }
-    #endif
-    #ifdef FMU_SERVORAIL_ADC_PIN
-            if (get_analog_pin(index, i) == FMU_SERVORAIL_ADC_PIN) {
-                _servorail_voltage = buf_adc[i] * get_pin_scaling(index, i) * ADC_BOARD_SCALING;
-            }
-    #endif
-        }
-
-        for (uint8_t i=0; i<num_grp_channels; i++) {
-            Debug("adc%u chan %u value=%f\n",
-                (unsigned)index+1,
-                (unsigned)get_pin_channel(index, i),
-                (float)buf_adc[i] * ADC_BOARD_SCALING * VOLTAGE_SCALING);
-            for (uint8_t j=0; j < ANALOG_MAX_CHANNELS; j++) {
-                ChibiOS::AnalogSource *c = _channels[j];
-                if (c != nullptr) {
-                    if ((get_analog_pin(index, i) == c->_pin) && (c->_pin != ANALOG_INPUT_NONE)) {
-                        // add a value
-                        c->_add_value(buf_adc[i] * ADC_BOARD_SCALING, _board_voltage);
-                    } else if (c->_pin == ANALOG_SERVO_VRSSI_PIN) {
-                        c->_add_value(_rssi_voltage / VOLTAGE_SCALING, 0);
-                    }
-                }
-            }
-        }
-    }
+    /*
+      update each of our ADCs
+     */
+    timer_tick_adc(0);
+#if defined(HAL_ANALOG2_PINS)
+    timer_tick_adc(1);
+#endif
+#if defined(HAL_ANALOG3_PINS)
+    timer_tick_adc(2);
+#endif
 
 #if HAL_WITH_IO_MCU
     _servorail_voltage = iomcu.get_vservo_adc_count() * (VOLTAGE_SCALING * HAL_IOMCU_VSERVO_SCALAR);
