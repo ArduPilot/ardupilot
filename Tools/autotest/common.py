@@ -7486,6 +7486,7 @@ Also, ignores heartbeats not from our target system'''
         self.progress("Waiting for EKF value %u" % required_value)
         last_print_time = 0
         tstart = self.get_sim_time()
+        m = None
         while timeout is None or self.get_sim_time_cached() < tstart + timeout:
             m = self.mav.recv_match(type='EKF_STATUS_REPORT', blocking=True, timeout=timeout)
             if m is None:
@@ -7501,6 +7502,11 @@ Also, ignores heartbeats not from our target system'''
             if everything_ok:
                 self.progress("EKF Flags OK")
                 return True
+        m_str = str(m)
+        if m is not None:
+            m_str = self.dump_message_verbose(m)
+        self.progress("Last EKF_STATUS_REPORT message:")
+        self.progress(m_str)
         raise AutoTestTimeoutException("Failed to get EKF.flags=%u" %
                                        required_value)
 
