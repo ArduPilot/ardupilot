@@ -29,7 +29,7 @@ bool Buzzer::init()
         return false;
     }
     _pin = pNotify->get_buzz_pin();
-    if (_pin == 0u) {
+    if (_pin <= 0) {
         // no buzzer
         return false;
     }
@@ -64,6 +64,18 @@ void Buzzer::update_pattern_to_play()
     if (AP_HAL::millis() - _pattern_start_time < _pattern_start_interval_time_ms) {
         // do not interrupt playing patterns / enforce minumum separation
         return;
+    }
+
+    // initializing?
+    if (_flags.gyro_calibrated != AP_Notify::flags.gyro_calibrated) {
+        _flags.gyro_calibrated = AP_Notify::flags.gyro_calibrated;
+        play_pattern(INIT_GYRO);
+    }
+
+    // check if prearm check are good
+    if (AP_Notify::flags.pre_arm_check  && !_flags.pre_arm_check) {
+        _flags.pre_arm_check = true;
+        play_pattern(PRE_ARM_GOOD);
     }
 
     // check if armed status has changed

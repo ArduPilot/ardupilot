@@ -393,6 +393,20 @@ bool Location::same_latlon_as(const Location &loc2) const
     return (lat == loc2.lat) && (lng == loc2.lng);
 }
 
+bool Location::same_alt_as(const Location &loc2) const
+{
+    // fast path if the altitude frame is the same
+    if (this->get_alt_frame() == loc2.get_alt_frame()) {
+        return this->alt == loc2.alt;
+    }
+
+    ftype alt_diff;
+    bool have_diff = this->get_alt_distance(loc2, alt_diff);
+
+    const ftype tolerance = FLT_EPSILON;
+    return have_diff && (fabsF(alt_diff) < tolerance);
+}
+
 // return true when lat and lng are within range
 bool Location::check_latlng() const
 {

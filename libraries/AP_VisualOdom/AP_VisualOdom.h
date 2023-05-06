@@ -44,9 +44,13 @@ public:
     // external position backend types (used by _TYPE parameter)
     enum class VisualOdom_Type {
         None         = 0,
+#if AP_VISUALODOM_MAV_ENABLED
         MAV          = 1,
+#endif
+#if AP_VISUALODOM_INTELT265_ENABLED
         IntelT265    = 2,
         VOXL         = 3,
+#endif
     };
 
     // detect and initialise any sensors

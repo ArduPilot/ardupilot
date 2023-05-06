@@ -42,7 +42,7 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
     }
     //are arming checks disabled?
     if (checks_to_perform == 0) {
-        return true;
+        return mandatory_checks(display_failure);
     }
     if (hal.util->was_watchdog_armed()) {
         // on watchdog reset bypass arming checks to allow for
@@ -91,14 +91,11 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
         ret = false;
     }
 
+    ret &= rc_received_if_enabled_check(display_failure);
+
 #if HAL_QUADPLANE_ENABLED
     ret &= quadplane_checks(display_failure);
 #endif
-
-    if (plane.control_mode == &plane.mode_auto && plane.mission.num_commands() <= 1) {
-        check_failed(display_failure, "No mission loaded");
-        ret = false;
-    }
 
     // check adsb avoidance failsafe
     if (plane.failsafe.adsb) {
@@ -106,12 +103,7 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
         ret = false;
     }
 
-    if (SRV_Channels::get_emergency_stop()) {
-        check_failed(display_failure,"Motors Emergency Stopped");
-        ret = false;
-    }
-
-    if (plane.g2.flight_options & FlightOptions::CENTER_THROTTLE_TRIM){
+    if (plane.flight_option_enabled(FlightOptions::CENTER_THROTTLE_TRIM)){
        int16_t trim = plane.channel_throttle->get_radio_trim();
        if (trim < 1250 || trim > 1750) {
            check_failed(display_failure, "Throttle trim not near center stick(%u)",trim );
@@ -133,6 +125,19 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
 
     return ret;
 }
+
+bool AP_Arming_Plane::mandatory_checks(bool display_failure)
+{
+    bool ret = true;
+
+    ret &= rc_received_if_enabled_check(display_failure);
+
+    // Call parent class checks
+    ret &= AP_Arming::mandatory_checks(display_failure);
+
+    return ret;
+}
+
 
 #if HAL_QUADPLANE_ENABLED
 bool AP_Arming_Plane::quadplane_checks(bool display_failure)
@@ -420,4 +425,22 @@ bool AP_Arming_Plane::mission_checks(bool report)
     }
 #endif
     return ret;
+}
+
+// Checks rc has been received if it is configured to be used
+bool AP_Arming_Plane::rc_received_if_enabled_check(bool display_failure)
+{
+    if (rc().enabled_protocols() == 0) {
+        // No protocols enabled, will never get RC, don't block arming
+        return true;
+    }
+
+    // If RC failsafe is enabled we must receive RC before arming
+    if ((Plane::ThrFailsafe(plane.g.throttle_fs_enabled.get()) == Plane::ThrFailsafe::Enabled) && 
+        !(rc().has_had_rc_receiver() || rc().has_had_rc_override())) {
+        check_failed(display_failure, "Waiting for RC");
+        return false;
+    }
+
+    return true;
 }

@@ -38,9 +38,9 @@ While DDS support in Ardupilot is mostly through git submodules, another tool ne
   ```console
   sudo apt install default-jre
   ````
-- Follow instructions [here](https://micro-xrce-dds.docs.eprosima.com/en/latest/installation.html#installing-the-micro-xrce-dds-gen-tool) to install the generator, but use `develop` branch instead of `master` (for now).
+- Follow instructions [here](https://micro-xrce-dds.docs.eprosima.com/en/latest/installation.html#installing-the-micro-xrce-dds-gen-tool) to install the latest version of the generator using Ardupilot's mirror
   ```console
-  git clone -b develop --recurse-submodules https://github.com/eProsima/Micro-XRCE-DDS-Gen.git
+  git clone --recurse-submodules https://github.com/ardupilot/Micro-XRCE-DDS-Gen.git
   cd Micro-XRCE-DDS-Gen
   ./gradlew assemble
   ```
@@ -80,17 +80,19 @@ sudo apt-get install socat
 ## Setup ardupilot for SITL with DDS
 
 Set up your [SITL](https://ardupilot.org/dev/docs/setting-up-sitl-on-linux.html).
-Run the simulator with the following command. Take note how two parameters need adjusting from default to use DDS.
+Run the simulator with the following command. Take note how three parameters need adjusting from default to use DDS.
 | Name | Description |
 | - | - |
+| DDS_ENABLE | Set to 1 to enable DDS |
 | SERIAL1_BAUD | The serial baud rate for DDS |
 | SERIAL1_PROTOCOL | Set this to 45 to use DDS on the serial port |
 ```bash
 # Wipe params till you see "AP: ArduPilot Ready"
 # Select your favorite vehicle type
-sim_vehicle.py -w -v ArduPlane
+sim_vehicle.py -w -v ArduPlane --enable-dds
 
 # Set params
+param set DDS_ENABLE 1
 param set SERIAL1_BAUD 115
 # See libraries/AP_SerialManager/AP_SerialManager.h AP_SerialManager SerialProtocol_DDS_XRCE
 param set SERIAL1_PROTOCOL 45
@@ -102,6 +104,11 @@ Follow the steps to use the microROS Agent
 - Install ROS Humble (as described here)
 
   - https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html
+
+- Install geographic_msgs
+  ```bash
+  sudo apt install ros-humble-geographic-msgs
+  ```
 
 - Install and run the microROS agent (as descibed here). Make sure to use the `humble` branch.
   - Follow [the instructions](https://micro.ros.org/docs/tutorials/core/first_application_linux/) for the following:
@@ -146,30 +153,39 @@ After your setups are complete, do the following:
 
   $ ros2 topic list  -v
   Published topics:
-  * /ROS2_Time [builtin_interfaces/msg/Time] 1 publisher
+  * /ap/battery/battery0 [sensor_msgs/msg/BatteryState] 1 publisher
+  * /ap/clock [builtin_interfaces/msg/Time] 1 publisher
+  * /ap/navsat/navsat0 [sensor_msgs/msg/NavSatFix] 1 publisher
+  * /ap/pose/filtered [geometry_msgs/msg/PoseStamped] 1 publisher
+  * /ap/tf_static [tf2_msgs/msg/TFMessage] 1 publisher
   * /parameter_events [rcl_interfaces/msg/ParameterEvent] 1 publisher
   * /rosout [rcl_interfaces/msg/Log] 1 publisher
 
   Subscribed topics:
 
-  $ ros2 topic hz /ROS2_Time
+
+  $ ros2 topic hz /ap/clock
   average rate: 50.115
           min: 0.012s max: 0.024s std dev: 0.00328s window: 52
 
-  $ ros2 topic echo /ROS2_Time 
+  $ ros2 topic echo /ap/clock 
   sec: 1678668735
   nanosec: 729410000
   ---
   ```
 
-## Adding DDS messages to Ardupilot
+  The static transforms for enabled sensors are also published, and can be recieved like so:
+  ```console
+  ros2 topic echo /ap/tf_static --qos-depth 1 --qos-history keep_last --qos-reliability reliable --qos-durability transient_local --once
+  ```
+  In order to consume the transforms, it's highly recommended to [create and run a transform broadcaster in ROS 2](https://docs.ros.org/en/humble/Concepts/About-Tf2.html#tutorials). 
+
+
+## Contributing to AP_DDS library
+### Adding DDS messages to Ardupilot
 
 Unlike the use of ROS 2 `.msg` files, since Ardupilot supports native DDS, the message files follow [OMG IDL DDS v4.2](https://www.omg.org/spec/IDL/4.2/PDF).
-This package is intended to work with any `.idl` file complying with those extensions, with some limitations. 
-
-1. IDL files need to be in the same folder, and modified includes.
-1. Topic types can't use alias types.
-1. Arrays need manually edited type names. 
+This package is intended to work with any `.idl` file complying with those extensions.
 
 Over time, these restrictions will ideally go away. 
 
@@ -179,14 +195,29 @@ cd ardupilot
 source /opt/ros/humble/setup.bash
 # Find the IDL file
 find /opt/ros/$ROS_DISTRO -type f -wholename \*builtin_interfaces/msg/Time.idl
-# Create the directory in the source tree if it doesn't exist
-mkdir -p libraries/AP_DDS_Client/Idl/builtin_interfaces/msg/
+# Create the directory in the source tree if it doesn't exist similar to the one found in the ros directory
+mkdir -p libraries/AP_DDS/Idl/builtin_interfaces/msg/
 # Copy the IDL
-cp -r /opt/ros/humble/share/builtin_interfaces/msg/Time.idl libraries/AP_DDS_Client/Idl/builtin_interfaces/msg/
-# Now, apply the mods manually to be compliant with MicroXRCEDDSGen limitations
-# Create an output directory to test it
-mkdir -p /tmp/xrce_out
-# Run the generator
-microxrceddsgen -replace -d /tmp/xrce_out libraries/AP_DDS_Client/Idl/builtin_interfaces/msg/Time.idl
-# cat /tmp/xrce_out/
+cp /opt/ros/humble/share/builtin_interfaces/msg/Time.idl libraries/AP_DDS/Idl/builtin_interfaces/msg/
+# Build the code again with the `--enable-dds` flag as described above 
 ```
+
+### Development Requirements
+
+Astyle is used to format the C++ code in AP_DDS. This is required for CI to pass the build.
+See [Tools/CodeStyle/ardupilot-astyle.sh](../../Tools/CodeStyle/ardupilot-astyle.sh).
+
+```console
+./Tools/CodeStyle/ardupilot-astyle.sh libraries/AP_DDS/*.h libraries/AP_DDS/*.cpp
+```
+
+Pre-commit is used for other things like formatting python and XML code. 
+This will run the tools automatically when you commit. If there are changes, just add them back your staging index and commit again.
+
+1. Install [pre-commit](https://pre-commit.com/#installation) python package.
+1. Install ArduPilot's hooks in the root of the repo, then commit like normal
+  ```console
+  cd ardupilot
+  pre-commit install
+  git commit
+  ```

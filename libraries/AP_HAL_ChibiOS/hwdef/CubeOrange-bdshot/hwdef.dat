@@ -11,6 +11,4 @@ PE9  TIM1_CH1 TIM1 PWM(4) GPIO(53) # this will automatically be shared with TIM1
 PD13 TIM4_CH2 TIM4 PWM(5) GPIO(54) BIDIR
 PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55) BIDIR
 
-NODMA I2C*
-define STM32_I2C_USE_DMA FALSE
 env DEFAULT_PARAMETERS libraries/AP_HAL_ChibiOS/hwdef/CubeOrange/defaults.parm

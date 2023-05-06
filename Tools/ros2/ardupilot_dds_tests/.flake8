@@ -1,0 +1,10 @@
+[flake8]
+# Match black line length (default 88).
+max-line-length = 88
+# Match black configuration where there are conflicts.
+extend-ignore = 
+  # Q000: Double quotes found but single quotes preferred
+  Q000,
+  # W503: Line break before binary operator
+  W503
+

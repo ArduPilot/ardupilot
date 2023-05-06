@@ -127,10 +127,18 @@ private:
     // types of precision landing (used for PRECLAND_TYPE parameter)
     enum class Type : uint8_t {
         NONE = 0,
+#if AC_PRECLAND_COMPANION_ENABLED
         COMPANION = 1,
+#endif
+#if AC_PRECLAND_IRLOCK_ENABLED
         IRLOCK = 2,
+#endif
+#if AC_PRECLAND_SITL_GAZEBO_ENABLED
         SITL_GAZEBO = 3,
+#endif
+#if AC_PRECLAND_SITL_ENABLED
         SITL = 4,
+#endif
     };
 
     enum PLndOptions {

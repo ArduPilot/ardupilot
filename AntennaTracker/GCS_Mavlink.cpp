@@ -427,9 +427,6 @@ MAV_RESULT GCS_MAVLINK_Tracker::handle_command_component_arm_disarm(const mavlin
 
 MAV_RESULT GCS_MAVLINK_Tracker::handle_command_long_packet(const mavlink_command_long_t &packet)
 {
-    // do command
-    send_text(MAV_SEVERITY_INFO,"Command received: ");
-
     switch(packet.command) {
 
     case MAV_CMD_DO_SET_SERVO:

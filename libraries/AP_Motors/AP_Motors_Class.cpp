@@ -33,8 +33,7 @@ AP_Motors::AP_Motors(uint16_t speed_hz) :
     _throttle_slew(),
     _throttle_slew_filter(),
     _spool_desired(DesiredSpoolState::SHUT_DOWN),
-    _spool_state(SpoolState::SHUT_DOWN),
-    _air_density_ratio(1.0f)
+    _spool_state(SpoolState::SHUT_DOWN)
 {
     _singleton = this;
 

@@ -32,7 +32,7 @@
 #include "DiscreteRGBLed.h"
 #include "DiscoLED.h"
 #include "Led_Sysfs.h"
-#include "UAVCAN_RGB_LED.h"
+#include "DroneCAN_RGB_LED.h"
 #include "SITL_SFML_LED.h"
 #include <stdio.h>
 #include "AP_BoardLED2.h"
@@ -64,22 +64,22 @@ AP_Notify *AP_Notify::_singleton;
 #define I2C_LEDS (ALL_TOSHIBALED_I2C | ALL_NCP5623_I2C)
 
 
-#ifndef BUILD_DEFAULT_LED_TYPE
+#ifndef DEFAULT_NTF_LED_TYPES
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-  #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
+  #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS)
 
 // Linux boards
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
   #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS |\
+    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS |\
                                     Notify_LED_PCA9685LED_I2C_External)
 
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
+    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS)
 
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS |\
-                                    Notify_LED_UAVCAN)
+    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS |\
+                                    Notify_LED_DroneCAN)
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE || \
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET || \
@@ -88,22 +88,22 @@ AP_Notify *AP_Notify::_singleton;
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO || \
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board)
+    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board)
 
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_ToshibaLED_I2C_External)
+    #define DEFAULT_NTF_LED_TYPES (Notify_LED_ToshibaLED_I2C_External)
 
   #else // other linux
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
+    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS)
   #endif
 
 // All other builds
 #else
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
+    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS)
 
 #endif // board selection
 
-#endif // BUILD_DEFAULT_LED_TYPE
+#endif // DEFAULT_NTF_LED_TYPES
 
 #ifndef BUZZER_ENABLE_DEFAULT
 #if HAL_CANMANAGER_ENABLED
@@ -138,9 +138,8 @@ AP_Notify *AP_Notify::_singleton;
 #define HAL_BUZZER_PIN -1
 #endif
 
-#ifndef HAL_BUZZER_ON
-#define HAL_BUZZER_ON 1
-#define HAL_BUZZER_OFF 0
+#ifndef DEFAULT_BUZZ_ON_LVL
+#define DEFAULT_BUZZ_ON_LVL 1
 #endif
 
 // table of user settable parameters
@@ -197,14 +196,14 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Description: Controls what types of LEDs will be enabled
     // @Bitmask: 0:Built-in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:DroneCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel, 9:ProfiLED, 10:Scripting, 11:DShot, 12:ProfiLED_SPI
     // @User: Advanced
-    AP_GROUPINFO("LED_TYPES", 6, AP_Notify, _led_type, BUILD_DEFAULT_LED_TYPE),
+    AP_GROUPINFO("LED_TYPES", 6, AP_Notify, _led_type, DEFAULT_NTF_LED_TYPES),
 
     // @Param: BUZZ_ON_LVL
     // @DisplayName: Buzzer-on pin logic level
     // @Description: Specifies pin level that indicates buzzer should play
     // @Values: 0:LowIsOn,1:HighIsOn
     // @User: Advanced
-    AP_GROUPINFO("BUZZ_ON_LVL", 7, AP_Notify, _buzzer_level, HAL_BUZZER_ON),
+    AP_GROUPINFO("BUZZ_ON_LVL", 7, AP_Notify, _buzzer_level, DEFAULT_BUZZ_ON_LVL),
 
     // @Param: BUZZ_VOLUME
     // @DisplayName: Buzzer volume
@@ -347,10 +346,10 @@ void AP_Notify::add_backends(void)
                 }
 #endif
                 break;
-            case Notify_LED_UAVCAN:
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
-                ADD_BACKEND(new UAVCAN_RGB_LED(0));
-#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
+            case Notify_LED_DroneCAN:
+#if HAL_ENABLE_DRONECAN_DRIVERS
+                ADD_BACKEND(new DroneCAN_RGB_LED(0));
+#endif // HAL_ENABLE_DRONECAN_DRIVERS
                 break;
 
             case Notify_LED_Scripting:
@@ -375,7 +374,7 @@ void AP_Notify::add_backends(void)
 // ChibiOS noise makers
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     ADD_BACKEND(new Buzzer());
-#if HAL_PWM_COUNT > 0 || HAL_DSHOT_ALARM_ENABLED
+#if AP_NOTIFY_TONEALARM_ENABLED
     ADD_BACKEND(new AP_ToneAlarm());
 #endif
 

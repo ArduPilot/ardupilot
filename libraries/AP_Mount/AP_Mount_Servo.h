@@ -57,6 +57,6 @@ private:
     SRV_Channel::Aux_servo_function_t    _open_idx;  // SRV_Channel mount open function index
 
     MountTarget _angle_rad;         // angle target
-    Vector3f _angle_bf_output_deg;  // final body frame output angle in degrees
+    Vector3f _angle_bf_output_rad;  // final body frame output angle in radians
 };
 #endif // HAL_MOUNT_SERVO_ENABLED

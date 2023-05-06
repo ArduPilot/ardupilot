@@ -57,6 +57,9 @@ public:
     bool read_locked(uint32_t key, uint8_t &b) override WARN_IF_UNUSED;
     void _rx_timer_tick(void);
     void _tx_timer_tick(void);
+#if HAL_FORWARD_OTG2_SERIAL
+    void fwd_otg2_serial(void);
+#endif
 
     bool discard_input() override;
 

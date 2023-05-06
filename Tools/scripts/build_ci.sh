@@ -252,6 +252,14 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "CubeRedPrimary-bootloader" ]; then
+        echo "Building CubeRedPrimary bootloader"
+        $waf configure --board CubeRedPrimary --bootloader
+        $waf clean
+        $waf bootloader
+        continue
+    fi
+
     if [ "$t" == "fmuv3-bootloader" ]; then
         echo "Building fmuv3 bootloader"
         $waf configure --board fmuv3 --bootloader
@@ -285,6 +293,8 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board Durandal
         $waf clean
         $waf copter
+        echo "Building CPUInfo"
+        $waf --target=tool/CPUInfo
 
         # test external flash build
         echo "Building SPRacingH7"
@@ -398,6 +408,12 @@ for t in $CI_BUILD_TARGET; do
     if [ "$t" == "python-cleanliness" ]; then
         echo "Checking Python code cleanliness"
         ./Tools/scripts/run_flake8.py
+        continue
+    fi
+
+    if [ "$t" == "astyle-cleanliness" ]; then
+        echo "Checking AStyle code cleanliness"
+        ./Tools/scripts/run_astyle.py
         continue
     fi
 

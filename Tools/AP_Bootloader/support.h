@@ -55,7 +55,6 @@ void led_pulses(uint8_t npulses);
 typedef struct mcu_des_t {
     uint16_t mcuid;
     const char *desc;
-    char  rev;
 } mcu_des_t;
 
 typedef struct mcu_rev_t {

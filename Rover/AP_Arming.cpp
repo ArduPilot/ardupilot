@@ -78,11 +78,7 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
 
     //are arming checks disabled?
     if (checks_to_perform == 0) {
-        return true;
-    }
-    if (SRV_Channels::get_emergency_stop()) {
-        check_failed(report, "Motors Emergency Stopped");
-        return false;
+        return mandatory_checks(report);
     }
 
     if (rover.g2.sailboat.sail_enabled() && !rover.g2.windvane.enabled()) {
@@ -199,9 +195,6 @@ bool AP_Arming_Rover::mode_checks(bool report)
     //display failure if arming in this mode is not allowed
     if (!rover.control_mode->allows_arming()) {
         check_failed(report, "Mode not armable");
-        return false;
-    } else if (rover.control_mode == &rover.mode_auto && rover.mode_auto.mission.num_commands() <= 1) {
-        check_failed(report, "AUTO requires mission");
         return false;
     }
     return true;

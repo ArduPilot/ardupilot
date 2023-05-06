@@ -67,8 +67,8 @@ void SITL_State::wait_clock(uint64_t wait_time_usec) {
 
 // when Periph can use SITL simulated devices we should remove these
 // stubs:
-ssize_t SITL::SerialDevice::read_from_device(char*, unsigned int) const { return -1; }
+ssize_t SITL::SerialDevice::read_from_device(char*, size_t) const { return -1; }
 
-ssize_t SITL::SerialDevice::write_to_device(char const*, unsigned int) const { return -1; }
+ssize_t SITL::SerialDevice::write_to_device(char const*, size_t) const { return -1; }
 
 #endif //CONFIG_HAL_BOARD == HAL_BOARD_SITL && defined(HAL_BUILD_AP_PERIPH)

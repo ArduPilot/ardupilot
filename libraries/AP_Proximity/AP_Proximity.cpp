@@ -16,6 +16,7 @@
 #include "AP_Proximity.h"
 
 #if HAL_PROXIMITY_ENABLED
+#include "AP_Proximity_Backend.h"
 #include "AP_Proximity_RPLidarA2.h"
 #include "AP_Proximity_TeraRangerTower.h"
 #include "AP_Proximity_TeraRangerTowerEvo.h"
@@ -121,10 +122,12 @@ void AP_Proximity::init()
 
     // instantiate backends
     uint8_t serial_instance = 0;
+    (void)serial_instance;  // in case no serial backends are compiled in
     for (uint8_t instance=0; instance<PROXIMITY_MAX_INSTANCES; instance++) {
         switch (get_type(instance)) {
         case Type::None:
             break;
+#if AP_PROXIMITY_RPLIDARA2_ENABLED
         case Type::RPLidarA2:
             if (AP_Proximity_RPLidarA2::detect(serial_instance)) {
                 state[instance].instance = instance;
@@ -132,11 +135,14 @@ void AP_Proximity::init()
                 serial_instance++;
             }
             break;
+#endif
+#if AP_PROXIMITY_MAV_ENABLED
         case Type::MAV:
             state[instance].instance = instance;
             drivers[instance] = new AP_Proximity_MAV(*this, state[instance], params[instance]);
             break;
-
+#endif
+#if AP_PROXIMITY_TERARANGERTOWER_ENABLED
         case Type::TRTOWER:
             if (AP_Proximity_TeraRangerTower::detect(serial_instance)) {
                 state[instance].instance = instance;
@@ -144,6 +150,8 @@ void AP_Proximity::init()
                 serial_instance++;
             }
             break;
+#endif
+#if AP_PROXIMITY_TERARANGERTOWEREVO_ENABLED
         case Type::TRTOWEREVO:
             if (AP_Proximity_TeraRangerTowerEvo::detect(serial_instance)) {
                 state[instance].instance = instance;
@@ -151,12 +159,14 @@ void AP_Proximity::init()
                 serial_instance++;
             }
             break;
-
+#endif
+#if AP_PROXIMITY_RANGEFINDER_ENABLED
         case Type::RangeFinder:
             state[instance].instance = instance;
             drivers[instance] = new AP_Proximity_RangeFinder(*this, state[instance], params[instance]);
             break;
-
+#endif
+#if AP_PROXIMITY_LIGHTWARE_SF40C_ENABLED
         case Type::SF40C:
             if (AP_Proximity_LightWareSF40C::detect(serial_instance)) {
                 state[instance].instance = instance;
@@ -164,7 +174,8 @@ void AP_Proximity::init()
                 serial_instance++;
             }
             break;
-
+#endif
+#if AP_PROXIMITY_LIGHTWARE_SF45B_ENABLED
         case Type::SF45B:
             if (AP_Proximity_LightWareSF45B::detect(serial_instance)) {
                 state[instance].instance = instance;
@@ -172,9 +183,9 @@ void AP_Proximity::init()
                 serial_instance++;
             }
             break;
-
-        case Type::CYGBOT_D1:
+#endif
 #if AP_PROXIMITY_CYGBOT_ENABLED
+        case Type::CYGBOT_D1:
         if (AP_Proximity_Cygbot_D1::detect(serial_instance)) {
             state[instance].instance = instance;
             drivers[instance] = new AP_Proximity_Cygbot_D1(*this, state[instance], params[instance], serial_instance);
@@ -182,17 +193,18 @@ void AP_Proximity::init()
         }
             break;
 # endif
-
+#if AP_PROXIMITY_DRONECAN_ENABLED
         case  Type::DroneCAN:
             num_instances = instance+1;
         break;
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#endif
+#if AP_PROXIMITY_SITL_ENABLED
         case Type::SITL:
             state[instance].instance = instance;
             drivers[instance] = new AP_Proximity_SITL(*this, state[instance], params[instance]);
             break;
-
+#endif
+#if AP_PROXIMITY_AIRSIMSITL_ENABLED
         case Type::AirSimSITL:
             state[instance].instance = instance;
             drivers[instance] = new AP_Proximity_AirSimSITL(*this, state[instance], params[instance]);

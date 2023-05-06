@@ -1199,7 +1199,7 @@ void AP_Radio_cypress::irq_handler_thd(void *arg)
     }
 }
 
-void AP_Radio_cypress::trigger_timeout_event(void *arg)
+void AP_Radio_cypress::trigger_timeout_event(virtual_timer_t* vt, void *arg)
 {
     (void)arg;
     //we are called from ISR context

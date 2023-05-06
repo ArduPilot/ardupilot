@@ -169,13 +169,13 @@ After flashing the esp32 , u can connect with a terminal app of your preference 
 | GND         |      GND  |
 | 5v          |      Pwr  |
 
-### RC reciever connection:
+### RC receiver connection:
 
-|ESP32| RCRECIEVER |
-| --- |    ---     |
-| D4  |  CPPM-out  |
-| GND |       GND  |
-| 5v  |       Pwr  |
+|ESP32| RC Receiver |
+| --- |    ---      |
+| D4  |  CPPM-out   |
+| GND |       GND   |
+| 5v  |       Pwr   |
 
 
 ###  I2C connection ( for gps with leds/compass-es/etc onboard, or digital airspeed sensorrs, etc):

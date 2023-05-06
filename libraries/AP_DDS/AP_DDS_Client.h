@@ -4,9 +4,15 @@
 
 #include "uxr/client/client.h"
 #include "ucdr/microcdr.h"
-#include "generated/Time.h"
+#include "builtin_interfaces/msg/Time.h"
 #include "AP_DDS_Generic_Fn_T.h"
-#include "generated/NavSatFix.h"
+
+#include "sensor_msgs/msg/NavSatFix.h"
+#include "tf2_msgs/msg/TFMessage.h"
+#include "sensor_msgs/msg/BatteryState.h"
+#include "geometry_msgs/msg/PoseStamped.h"
+#include "geometry_msgs/msg/TwistStamped.h"
+#include "geographic_msgs/msg/GeoPoseStamped.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Scheduler.h>
@@ -16,8 +22,16 @@
 #include "fcntl.h"
 
 #include <AP_Param/AP_Param.h>
-#define STREAM_HISTORY 8
-#define BUFFER_SIZE_SERIAL UXR_CONFIG_SERIAL_TRANSPORT_MTU * STREAM_HISTORY
+
+#define DDS_STREAM_HISTORY 8
+#define DDS_BUFFER_SIZE 512
+
+// UDP only on SITL for now
+#define AP_DDS_UDP_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+
+#if AP_DDS_UDP_ENABLED
+#include <AP_HAL/utility/Socket.h>
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -26,21 +40,26 @@ class AP_DDS_Client
 
 private:
 
+    AP_Int8 enabled;
+
     // Serial Allocation
-    uxrSerialTransport serial_transport; // client uxr serial transport
     uxrSession session; //Session
+    bool is_using_serial; // true when using serial transport
 
-    // Input Stream
-    uint8_t input_reliable_stream[BUFFER_SIZE_SERIAL];
+    // input and output stream
+    uint8_t *input_reliable_stream;
+    uint8_t *output_reliable_stream;
     uxrStreamId reliable_in;
-
-    // Output Stream
-    uint8_t output_reliable_stream[BUFFER_SIZE_SERIAL];
     uxrStreamId reliable_out;
 
     // Topic
     builtin_interfaces_msg_Time time_topic;
     sensor_msgs_msg_NavSatFix nav_sat_fix_topic;
+    tf2_msgs_msg_TFMessage static_transforms_topic;
+    sensor_msgs_msg_BatteryState battery_state_topic;
+    geometry_msgs_msg_PoseStamped local_pose_topic;
+    geometry_msgs_msg_TwistStamped local_velocity_topic;
+    geographic_msgs_msg_GeoPoseStamped geo_pose_topic;
 
     HAL_Semaphore csem;
 
@@ -48,18 +67,60 @@ private:
     bool connected = true;
 
     static void update_topic(builtin_interfaces_msg_Time& msg);
-    static void update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t instance);
+    bool update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t instance) WARN_IF_UNUSED;
+    static void populate_static_transforms(tf2_msgs_msg_TFMessage& msg);
+    static void update_topic(sensor_msgs_msg_BatteryState& msg, const uint8_t instance);
+    static void update_topic(geometry_msgs_msg_PoseStamped& msg);
+    static void update_topic(geometry_msgs_msg_TwistStamped& msg);
+    static void update_topic(geographic_msgs_msg_GeoPoseStamped& msg);
 
     // The last ms timestamp AP_DDS wrote a Time message
     uint64_t last_time_time_ms;
     // The last ms timestamp AP_DDS wrote a NavSatFix message
     uint64_t last_nav_sat_fix_time_ms;
+    // The last ms timestamp AP_DDS wrote a BatteryState message
+    uint64_t last_battery_state_time_ms;
+    // The last ms timestamp AP_DDS wrote a Local Pose message
+    uint64_t last_local_pose_time_ms;
+    // The last ms timestamp AP_DDS wrote a Local Velocity message
+    uint64_t last_local_velocity_time_ms;
+    // The last ms timestamp AP_DDS wrote a GeoPose message
+    uint64_t last_geo_pose_time_ms;
 
+    // functions for serial transport
+    bool ddsSerialInit();
+    static bool serial_transport_open(uxrCustomTransport* args);
+    static bool serial_transport_close(uxrCustomTransport* transport);
+    static size_t serial_transport_write(uxrCustomTransport* transport, const uint8_t* buf, size_t len, uint8_t* error);
+    static size_t serial_transport_read(uxrCustomTransport* transport, uint8_t* buf, size_t len, int timeout, uint8_t* error);
+    struct {
+        AP_HAL::UARTDriver *port;
+        uxrCustomTransport transport;
+    } serial;
+
+#if AP_DDS_UDP_ENABLED
+    // functions for udp transport
+    bool ddsUdpInit();
+    static bool udp_transport_open(uxrCustomTransport* args);
+    static bool udp_transport_close(uxrCustomTransport* transport);
+    static size_t udp_transport_write(uxrCustomTransport* transport, const uint8_t* buf, size_t len, uint8_t* error);
+    static size_t udp_transport_read(uxrCustomTransport* transport, uint8_t* buf, size_t len, int timeout, uint8_t* error);
+
+    struct {
+        AP_Int32 port;
+        // UDP endpoint
+        const char* ip = "127.0.0.1";
+        // UDP Allocation
+        uxrCustomTransport transport;
+        SocketAPM *socket;
+    } udp;
+#endif
+
+    // client key we present
+    static constexpr uint32_t uniqueClientKey = 0xAAAABBBB;
 
 public:
-    // Constructor
-    AP_DDS_Client();
-
+    bool start(void);
     void main_loop(void);
 
     //! @brief Initialize the client's transport, uxr session, and IO stream(s)
@@ -71,10 +132,20 @@ public:
     //! @return True on successful creation, false on failure
     bool create() WARN_IF_UNUSED;
 
-    //! @brief Serialize the current time state and publish to to the IO stream(s)
+    //! @brief Serialize the current time state and publish to the IO stream(s)
     void write_time_topic();
-    //! @brief Serialize the current nav_sat_fix state and publish to to the IO stream(s)
+    //! @brief Serialize the current nav_sat_fix state and publish to the IO stream(s)
     void write_nav_sat_fix_topic();
+    //! @brief Serialize the static transforms and publish to the IO stream(s)
+    void write_static_transforms();
+    //! @brief Serialize the current nav_sat_fix state and publish it to the IO stream(s)
+    void write_battery_state_topic();
+    //! @brief Serialize the current local_pose and publish to the IO stream(s)
+    void write_local_pose_topic();
+    //! @brief Serialize the current local velocity and publish to the IO stream(s)
+    void write_local_velocity_topic();
+    //! @brief Serialize the current geo_pose and publish to the IO stream(s)
+    void write_geo_pose_topic();
     //! @brief Update the internally stored DDS messages with latest data
     void update();
 

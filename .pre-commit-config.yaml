@@ -41,7 +41,12 @@ repos:
       hooks:
         - id: format-xmllint
           files: libraries/AP_DDS/dds_xrce_profile.xml
-# Disable isort and mypy temporarily due to config conflicts
+  -   repo: https://github.com/psf/black
+      rev: 23.1.0
+      hooks:
+        - id: black
+          files: libraries\/AP_DDS\/(wscript|.*\.py)$
+
 # # Use to sort python imports by name and put system import first.
 #   -   repo: https://github.com/pycqa/isort
 #       rev: 5.12.0

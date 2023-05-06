@@ -293,7 +293,7 @@ public:
     /// set_vel_desired_z_cms - sets desired velocity in cm/s in z axis
     void set_vel_desired_z_cms(float vel_z_cms) {_vel_desired.z = vel_z_cms;}
 
-    /// get_vel_target_z_cms - returns current vertical speed in cm/s
+    /// get_vel_target_z_cms - returns target vertical speed in cm/s
     float get_vel_target_z_cms() const { return _vel_target.z; }
 
 

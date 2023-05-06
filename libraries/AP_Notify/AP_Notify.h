@@ -69,7 +69,7 @@ public:
         Notify_LED_PCA9685LED_I2C_External  = (1 << 3), // External PCA9685_I2C
 #endif
         Notify_LED_OreoLED                  = (1 << 4), // Oreo
-        Notify_LED_UAVCAN                   = (1 << 5), // UAVCAN RGB LED
+        Notify_LED_DroneCAN                   = (1 << 5), // UAVCAN RGB LED
 #if AP_NOTIFY_NCP5623_ENABLED
         Notify_LED_NCP5623_I2C_External     = (1 << 6), // External NCP5623
         Notify_LED_NCP5623_I2C_Internal     = (1 << 7), // Internal NCP5623
@@ -123,6 +123,7 @@ public:
         bool powering_off;        // true when the vehicle is powering off
         bool video_recording;     // true when the vehicle is recording video
         bool temp_cal_running;    // true if a temperature calibration is running
+        bool gyro_calibrated;     // true if calibrated gyro/acc
     };
 
     /// notify_events_type - bitmask of active events.
@@ -194,7 +195,7 @@ public:
     uint32_t get_text_updated_millis() const {return _send_text_updated_millis; }
 
     static const struct AP_Param::GroupInfo var_info[];
-    uint8_t get_buzz_pin() const  { return _buzzer_pin; }
+    int8_t get_buzz_pin() const  { return _buzzer_pin; }
     uint8_t get_buzz_level() const  { return _buzzer_level; }
     uint8_t get_buzz_volume() const  { return _buzzer_volume; }
     uint8_t get_led_len() const { return _led_len; }

@@ -307,9 +307,12 @@ void AP_Logger_Block::periodic_1Hz()
 {
     AP_Logger_Backend::periodic_1Hz();
 
-    if (rate_limiter == nullptr && (_front._params.blk_ratemax > 0 || _front._log_pause)) {
+    if (rate_limiter == nullptr &&
+        (_front._params.blk_ratemax > 0 ||
+         _front._params.disarm_ratemax > 0 ||
+         _front._log_pause)) {
         // setup rate limiting if log rate max > 0Hz or log pause of streaming entries is requested
-        rate_limiter = new AP_Logger_RateLimiter(_front, _front._params.blk_ratemax);
+        rate_limiter = new AP_Logger_RateLimiter(_front, _front._params.blk_ratemax, _front._params.disarm_ratemax);
     }
     
     if (!io_thread_alive()) {

@@ -1143,7 +1143,7 @@ class AutoTestCopter(AutoTest):
         else:
             self.set_rc(3, 1700)
         # we may never see ourselves as armed in a heartbeat
-        self.wait_statustext("Takeoff blocked: ESC RPM too low", check_context=True)
+        self.wait_statustext("Takeoff blocked: ESC RPM out of range", check_context=True)
         self.context_pop()
         self.zero_throttle()
         self.disarm_vehicle()
@@ -1159,6 +1159,21 @@ class AutoTestCopter(AutoTest):
             'TKOFF_RPM_MIN': 1000,
         })
 
+        self.test_takeoff_check_mode("STABILIZE")
+        self.test_takeoff_check_mode("ACRO")
+        self.test_takeoff_check_mode("LOITER")
+        self.test_takeoff_check_mode("ALT_HOLD")
+        # self.test_takeoff_check_mode("FLOWHOLD")
+        self.test_takeoff_check_mode("GUIDED", True)
+        self.test_takeoff_check_mode("POSHOLD")
+        # self.test_takeoff_check_mode("SPORT")
+
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 10,
+            'SIM_ESC_TELEM': 1,
+            'TKOFF_RPM_MIN': 1,
+            'TKOFF_RPM_MAX': 3,
+        })
         self.test_takeoff_check_mode("STABILIZE")
         self.test_takeoff_check_mode("ACRO")
         self.test_takeoff_check_mode("LOITER")
@@ -2591,8 +2606,8 @@ class AutoTestCopter(AutoTest):
 
         self.reboot_sitl()
         # Test UAVCAN GPS ordering working
-        gps1_det_text = self.wait_text("GPS 1: specified as UAVCAN.*", regex=True, check_context=True)
-        gps2_det_text = self.wait_text("GPS 2: specified as UAVCAN.*", regex=True, check_context=True)
+        gps1_det_text = self.wait_text("GPS 1: specified as DroneCAN.*", regex=True, check_context=True)
+        gps2_det_text = self.wait_text("GPS 2: specified as DroneCAN.*", regex=True, check_context=True)
         gps1_nodeid = int(gps1_det_text.split('-')[1])
         gps2_nodeid = int(gps2_det_text.split('-')[1])
         if gps1_nodeid is None or gps2_nodeid is None:
@@ -2622,11 +2637,11 @@ class AutoTestCopter(AutoTest):
             gps1_det_text = None
             gps2_det_text = None
             try:
-                gps1_det_text = self.wait_text("GPS 1: specified as UAVCAN.*", regex=True, check_context=True)
+                gps1_det_text = self.wait_text("GPS 1: specified as DroneCAN.*", regex=True, check_context=True)
             except AutoTestTimeoutException:
                 pass
             try:
-                gps2_det_text = self.wait_text("GPS 2: specified as UAVCAN.*", regex=True, check_context=True)
+                gps2_det_text = self.wait_text("GPS 2: specified as DroneCAN.*", regex=True, check_context=True)
             except AutoTestTimeoutException:
                 pass
 
@@ -9742,7 +9757,7 @@ class AutoTestCopter(AutoTest):
         self.setup_servo_mount()
         self.reboot_sitl()
         self.set_rc(6, 1300)
-        self.install_example_script_context('mount-poi.lua')
+        self.install_applet_script_context('mount-poi.lua')
         self.reboot_sitl()
         self.wait_ready_to_arm()
         self.context_collect('STATUSTEXT')
@@ -9854,6 +9869,7 @@ class AutoTestCopter(AutoTest):
             self.IMUConsistency,
             self.AHRSTrimLand,
             self.GuidedYawRate,
+            self.NoArmWithoutMissionItems,
         ])
         return ret
 

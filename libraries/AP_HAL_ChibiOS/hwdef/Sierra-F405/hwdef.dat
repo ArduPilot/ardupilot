@@ -128,3 +128,5 @@ PC7 M9SB INPUT
 
 # allow for reboot command for faster development
 define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
+
+define DEFAULT_NTF_LED_TYPES 455

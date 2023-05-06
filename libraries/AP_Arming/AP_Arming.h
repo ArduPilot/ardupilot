@@ -213,12 +213,16 @@ protected:
     bool opendroneid_checks(bool display_failure);
     
     bool serial_protocol_checks(bool display_failure);
+    
+    bool estop_checks(bool display_failure);
 
     virtual bool system_checks(bool report);
 
     bool can_checks(bool report);
 
     bool fettec_checks(bool display_failure) const;
+
+    bool kdecan_checks(bool display_failure) const;
 
     virtual bool proximity_checks(bool report) const;
 

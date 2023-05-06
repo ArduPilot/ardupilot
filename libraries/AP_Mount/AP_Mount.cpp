@@ -337,6 +337,70 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
     return MAV_RESULT_FAILED;
 }
 
+void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg){
+    mavlink_gimbal_manager_set_attitude_t packet;
+    mavlink_msg_gimbal_manager_set_attitude_decode(&msg,&packet);
+
+    AP_Mount_Backend *backend;
+
+    // check gimbal device id.  0 is primary, 1 is 1st gimbal, 2 is
+    // 2nd gimbal, etc
+    const uint8_t instance = packet.gimbal_device_id;
+    if (instance == 0) {
+        backend = get_primary();
+    } else {
+        backend = get_instance(instance - 1);
+    }
+
+    if (backend == nullptr) {
+        return;
+    }
+
+    // check flags for change to RETRACT
+    const uint32_t flags = packet.flags;
+    if ((flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
+        backend->set_mode(MAV_MOUNT_MODE_RETRACT);
+        return;
+    }
+
+    // check flags for change to NEUTRAL
+    if ((flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
+        backend->set_mode(MAV_MOUNT_MODE_NEUTRAL);
+        return;
+    }
+
+    const Quaternion att_quat{packet.q};
+    const Vector3f att_rate_degs {
+        packet.angular_velocity_x,
+        packet.angular_velocity_y,
+        packet.angular_velocity_y
+    };
+
+    // ensure that we are only demanded to a specific attitude or to
+    // achieve a specific rate.  Do not allow both to be specified at
+    // the same time:
+    if (!att_quat.is_nan() && !att_rate_degs.is_nan()) {
+        return;
+    }
+
+    if (!att_quat.is_nan()) {
+        // convert quaternion to euler angles
+        Vector3f attitude;
+        att_quat.to_euler(attitude);  // attitude is in radians here
+        attitude *= RAD_TO_DEG;  // convert to degrees
+
+        backend->set_angle_target(attitude.x, attitude.y, attitude.z, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        return;
+    }
+
+    {
+        const float roll_rate_degs = degrees(packet.angular_velocity_x);
+        const float pitch_rate_degs = degrees(packet.angular_velocity_y);
+        const float yaw_rate_degs = degrees(packet.angular_velocity_z);
+        backend->set_rate_target(roll_rate_degs, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        return;
+    }
+}
 
 MAV_RESULT AP_Mount::handle_command_long(const mavlink_command_long_t &packet)
 {
@@ -406,6 +470,17 @@ void AP_Mount::send_gimbal_device_attitude_status(mavlink_channel_t chan)
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
             _backends[instance]->send_gimbal_device_attitude_status(chan);
+        }
+    }
+}
+
+// send a GIMBAL_MANAGER_INFORMATION message to GCS
+void AP_Mount::send_gimbal_manager_information(mavlink_channel_t chan)
+{
+    // call send_gimbal_device_attitude_status for each instance
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        if (_backends[instance] != nullptr) {
+            _backends[instance]->send_gimbal_manager_information(chan);
         }
     }
 }
@@ -498,15 +573,6 @@ void AP_Mount::set_attitude_euler(uint8_t instance, float roll_deg, float pitch_
     backend->set_attitude_euler(roll_deg, pitch_deg, yaw_bf_deg);
 }
 
-bool AP_Mount::get_camera_state(uint8_t instance, uint16_t& pic_count, bool& record_video, int8_t& zoom_step, int8_t& focus_step, bool& auto_focus)
-{
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
-        return false;
-    }
-    return backend->get_camera_state(pic_count, record_video, zoom_step, focus_step, auto_focus);
-}
-
 // point at system ID sysid
 void AP_Mount::set_target_sysid(uint8_t instance, uint8_t sysid)
 {
@@ -526,6 +592,16 @@ void AP_Mount::set_roi_target(uint8_t instance, const Location &target_loc)
         return;
     }
     backend->set_roi_target(target_loc);
+}
+
+// clear_roi_target - clears target location that mount should attempt to point towards
+void AP_Mount::clear_roi_target(uint8_t instance)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
+    }
+    backend->clear_roi_target();
 }
 
 //
@@ -553,38 +629,26 @@ bool AP_Mount::record_video(uint8_t instance, bool start_recording)
     return backend->record_video(start_recording);
 }
 
-// set camera zoom step.  returns true on success
-// zoom out = -1, hold = 0, zoom in = 1
-bool AP_Mount::set_zoom_step(uint8_t instance, int8_t zoom_step)
+// set zoom specified as a rate or percentage
+bool AP_Mount::set_zoom(uint8_t instance, ZoomType zoom_type, float zoom_value)
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
         return false;
     }
-    return backend->set_zoom_step(zoom_step);
+    return backend->set_zoom(zoom_type, zoom_value);
 }
 
-// set focus in, out or hold.  returns true on success
+// set focus specified as rate, percentage or auto
 // focus in = -1, focus hold = 0, focus out = 1
-bool AP_Mount::set_manual_focus_step(uint8_t instance, int8_t focus_step)
+bool AP_Mount::set_focus(uint8_t instance, FocusType focus_type, float focus_value)
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
         return false;
     }
-    return backend->set_manual_focus_step(focus_step);
+    return backend->set_focus(focus_type, focus_value);
 }
-
-// auto focus.  returns true on success
-bool AP_Mount::set_auto_focus(uint8_t instance)
-{
-    auto *backend = get_instance(instance);
-    if (backend == nullptr) {
-        return false;
-    }
-    return backend->set_auto_focus();
-}
-
 
 AP_Mount_Backend *AP_Mount::get_primary() const
 {
@@ -623,6 +687,9 @@ void AP_Mount::handle_message(mavlink_channel_t chan, const mavlink_message_t &m
         break;
     case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
         handle_global_position_int(msg);
+        break;
+    case MAVLINK_MSG_ID_GIMBAL_MANAGER_SET_ATTITUDE:
+        handle_gimbal_manager_set_attitude(msg);
         break;
     case MAVLINK_MSG_ID_GIMBAL_DEVICE_INFORMATION:
         handle_gimbal_device_information(msg);

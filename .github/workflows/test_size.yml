@@ -23,6 +23,7 @@ jobs:
             MatekF405,
             Pixhawk1-1M,
             MatekF405-CAN,  # see special "build bootloader" code below
+            DrotekP3Pro,  # see special "build bootloader" code below
             Hitec-Airspeed,  # see special code for Periph below (3 places!)
             f103-GPS  # see special code for Periph below (3 places!)
         ]
@@ -65,7 +66,8 @@ jobs:
           if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
              [ "${{matrix.config}}" = "f103-GPS" ]; then
             AP_PERIPH=1
-          elif [ "${{matrix.config}}" = "MatekF405-CAN" ]; then
+          elif [ "${{matrix.config}}" = "MatekF405-CAN" ] ||
+               [ "${{matrix.config}}" = "DrotekP3Pro" ]; then
             BOOTLOADER=1
           fi
           if [ $BOOTLOADER -eq 1 ]; then
@@ -138,7 +140,8 @@ jobs:
           if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
              [ "${{matrix.config}}" = "f103-GPS" ]; then
             AP_PERIPH=1
-          elif [ "${{matrix.config}}" = "MatekF405-CAN" ]; then
+          elif [ "${{matrix.config}}" = "MatekF405-CAN" ] ||
+               [ "${{matrix.config}}" = "DrotekP3Pro" ]; then
             BOOTLOADER=1
           fi
           if [ $BOOTLOADER -eq 1 ]; then
@@ -230,7 +233,8 @@ jobs:
           if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
              [ "${{matrix.config}}" = "f103-GPS" ]; then
             AP_PERIPH=1
-          elif [ "${{matrix.config}}" = "MatekF405-CAN" ]; then
+          elif [ "${{matrix.config}}" = "MatekF405-CAN" ] ||
+               [ "${{matrix.config}}" = "DrotekP3Pro" ]; then
             BOOTLOADER=1
           fi
           if [ $AP_PERIPH -eq 1 ]; then
@@ -267,7 +271,8 @@ jobs:
           if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
              [ "${{matrix.config}}" = "f103-GPS" ]; then
             AP_PERIPH=1
-          elif [ "${{matrix.config}}" = "MatekF405-CAN" ]; then
+          elif [ "${{matrix.config}}" = "MatekF405-CAN" ] ||
+               [ "${{matrix.config}}" = "DrotekP3Pro" ]; then
             BOOTLOADER=1
           fi
 

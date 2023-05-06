@@ -20,6 +20,7 @@
 #include <AP_Common/Location.h>
 #include <AP_Param/AP_Param.h>
 #include "GPS_detect_state.h"
+#include <AP_Math/AP_Math.h>
 #include <AP_MSP/msp.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <SITL/SIM_GPS.h>
@@ -86,7 +87,7 @@ class AP_GPS
     friend class AP_GPS_SIRF;
     friend class AP_GPS_UBLOX;
     friend class AP_GPS_Backend;
-    friend class AP_GPS_UAVCAN;
+    friend class AP_GPS_DroneCAN;
 
 public:
     AP_GPS();
@@ -168,6 +169,14 @@ public:
         GPS_ROLE_MB_ROVER,
     };
 
+    // GPS Covariance Types matching ROS2 sensor_msgs/msg/NavSatFix
+    enum class CovarianceType : uint8_t {
+        UNKNOWN = 0,  ///< The GPS does not support any accuracy metrics
+        APPROXIMATED = 1,  ///< The accuracy is approximated through metrics such as HDOP/VDOP
+        DIAGONAL_KNOWN = 2, ///< The diagonal (east, north, up) components of covariance are reported by the GPS
+        KNOWN = 3, ///< The full covariance array is reported by the GPS
+    };
+
     /*
       The GPS_State structure is filled in by the backend driver as it
       parses each message from the GPS.
@@ -180,7 +189,7 @@ public:
         uint32_t time_week_ms;              ///< GPS time (milliseconds from start of GPS week)
         uint16_t time_week;                 ///< GPS week number
         Location location;                  ///< last fix location
-        float ground_speed;                 ///< ground speed in m/sec
+        float ground_speed;                 ///< ground speed in m/s
         float ground_course;                ///< ground course in degrees
         float gps_yaw;                      ///< GPS derived yaw information, if available (degrees)
         uint32_t gps_yaw_time_ms;           ///< timestamp of last GPS yaw reading
@@ -326,6 +335,8 @@ public:
     bool vertical_accuracy(float &vacc) const {
         return vertical_accuracy(primary_instance, vacc);
     }
+
+    CovarianceType position_covariance(const uint8_t instance, Matrix3f& cov) const WARN_IF_UNUSED;
 
     // 3D velocity in NED format
     const Vector3f &velocity(uint8_t instance) const {
@@ -593,7 +604,7 @@ protected:
     AP_Float _blend_tc;
     AP_Int16 _driver_options;
     AP_Int8 _primary;
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_ENABLE_DRONECAN_DRIVERS
     AP_Int32 _node_id[GPS_MAX_RECEIVERS];
     AP_Int32 _override_node_id[GPS_MAX_RECEIVERS];
 #endif

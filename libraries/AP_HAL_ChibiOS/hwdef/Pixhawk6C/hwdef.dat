@@ -152,8 +152,6 @@ define HAL_I2C_INTERNAL_MASK 1
 # this board is tight on DMA channels. To allow for more UART DMA we
 # disable DMA on I2C. This also prevents a problem with DMA on I2C
 # interfering with IMUs
-NODMA I2C*
-define STM32_I2C_USE_DMA FALSE
 
 # heater
 PB9 HEATER_EN OUTPUT LOW GPIO(80)

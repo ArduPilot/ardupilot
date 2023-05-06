@@ -3,9 +3,10 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Frsky_Telem/AP_Frsky_config.h>
 #include <AP_OSD/AP_OSD_config.h>
+#include <AP_RCProtocol/AP_RCProtocol_config.h>
 
 #ifndef HAL_CRSF_TELEM_ENABLED
-#define HAL_CRSF_TELEM_ENABLED AP_FRSKY_SPORT_PASSTHROUGH_ENABLED
+#define HAL_CRSF_TELEM_ENABLED AP_RCPROTOCOL_CRSF_ENABLED && AP_FRSKY_SPORT_PASSTHROUGH_ENABLED
 #endif
 
 #ifndef HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED

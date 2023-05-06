@@ -17,9 +17,6 @@ public:
     // Constructor
     using AP_Mount_Backend::AP_Mount_Backend;
 
-    // init - performs any required initialisation for this instance
-    void init() override {}
-
     // update mount position - should be called periodically
     void update() override;
 

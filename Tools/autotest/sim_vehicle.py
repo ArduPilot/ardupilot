@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Framework to start a simulated vehicle and connect it to MAVProxy.
@@ -415,7 +415,8 @@ def do_build(opts, frame_options):
     for piece in pieces:
         cmd_configure.extend(piece)
 
-    run_cmd_blocking("Configure waf", cmd_configure, check=True)
+    if not cmd_opts.no_configure:
+        run_cmd_blocking("Configure waf", cmd_configure, check=True)
 
     if opts.clean:
         run_cmd_blocking("Building clean", [waf_light, "clean"])
@@ -646,13 +647,10 @@ def start_antenna_tracker(opts):
     oldpwd = os.getcwd()
     os.chdir(vehicledir)
     tracker_uarta = "tcp:127.0.0.1:" + str(5760 + 10 * tracker_instance)
-    if cmd_opts.build_system == "waf":
-        binary_basedir = "build/sitl"
-        exe = os.path.join(root_dir,
-                           binary_basedir,
-                           "bin/antennatracker")
-    else:
-        exe = os.path.join(vehicledir, "AntennaTracker.elf")
+    binary_basedir = "build/sitl"
+    exe = os.path.join(root_dir,
+                       binary_basedir,
+                       "bin/antennatracker")
     run_in_terminal_window("AntennaTracker",
                            ["nice",
                             exe,
@@ -670,8 +668,28 @@ def start_CAN_GPS(opts):
     options = vinfo.options["sitl_periph_gps"]['frames']['gps']
     do_build(opts, options)
     exe = os.path.join(root_dir, 'build/sitl_periph_gps', 'bin/AP_Periph')
-    run_in_terminal_window("sitl_periph_gps",
-                           ["nice", exe])
+    cmd = ["nice"]
+    cmd_name = "sitl_periph_gps"
+    if opts.valgrind:
+        cmd_name += " (valgrind)"
+        cmd.append("valgrind")
+        # adding this option allows valgrind to cope with the overload
+        # of operator new
+        cmd.append("--soname-synonyms=somalloc=nouserintercepts")
+        cmd.append("--track-origins=yes")
+    if opts.gdb or opts.gdb_stopped:
+        cmd_name += " (gdb)"
+        cmd.append("gdb")
+        gdb_commands_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
+        atexit.register(os.unlink, gdb_commands_file.name)
+        gdb_commands_file.write("set pagination off\n")
+        if not opts.gdb_stopped:
+            gdb_commands_file.write("r\n")
+        gdb_commands_file.close()
+        cmd.extend(["-x", gdb_commands_file.name])
+        cmd.append("--args")
+    cmd.append(exe)
+    run_in_terminal_window(cmd_name, cmd)
 
 
 def start_vehicle(binary, opts, stuff, spawns=None):
@@ -840,7 +858,7 @@ def start_mavproxy(opts, stuff):
 
     for i in instances:
         if not opts.no_extra_ports:
-            ports = [p + 10 * i for p in [14550, 14551]]
+            ports = [14550 + 10 * i]
             for port in ports:
                 if under_vagrant():
                     # We're running inside of a vagrant guest; forward our
@@ -1011,6 +1029,10 @@ group_build.add_option("-N", "--no-rebuild",
                        action='store_true',
                        default=False,
                        help="don't rebuild before starting ardupilot")
+group_build.add_option("--no-configure",
+                       action='store_true',
+                       default=False,
+                       help="don't run waf configure before building")
 group_build.add_option("-D", "--debug",
                        action='store_true',
                        default=False,
@@ -1028,11 +1050,6 @@ group_build.add_option("-b", "--build-target",
                        default=None,
                        type='string',
                        help="override SITL build target")
-group_build.add_option("-s", "--build-system",
-                       default="waf",
-                       type='choice',
-                       choices=["make", "waf"],
-                       help="build system to use")
 group_build.add_option("--enable-math-check-indexes",
                        default=False,
                        action="store_true",
@@ -1520,13 +1537,11 @@ if True:
 
     if cmd_opts.vehicle_binary is not None:
         vehicle_binary = cmd_opts.vehicle_binary
-    elif cmd_opts.build_system == "waf":
+    else:
         binary_basedir = "build/sitl"
         vehicle_binary = os.path.join(root_dir,
                                       binary_basedir,
                                       frame_infos["waf_target"])
-    else:
-        vehicle_binary = os.path.join(vehicle_dir, cmd_opts.vehicle + ".elf")
 
     if not os.path.exists(vehicle_binary):
         print("Vehicle binary (%s) does not exist" % (vehicle_binary,))

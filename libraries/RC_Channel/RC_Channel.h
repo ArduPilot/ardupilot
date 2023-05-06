@@ -582,7 +582,7 @@ public:
     // get mask of enabled protocols
     uint32_t enabled_protocols() const;
 
-    // returns true if we have had a direct detach RC reciever, does not include overrides
+    // returns true if we have had a direct detach RC receiver, does not include overrides
     bool has_had_rc_receiver() const { return _has_had_rc_receiver; }
 
     // returns true if we have had an override on any channel
@@ -653,7 +653,7 @@ private:
 
     uint32_t last_update_ms;
     bool has_new_overrides;
-    bool _has_had_rc_receiver; // true if we have had a direct detach RC reciever, does not include overrides
+    bool _has_had_rc_receiver; // true if we have had a direct detach RC receiver, does not include overrides
     bool _has_had_override; // true if we have had an override on any channel
 
     AP_Float _override_timeout;

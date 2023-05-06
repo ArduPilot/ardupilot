@@ -100,8 +100,8 @@
 #include "AP_Rally.h"           // Rally point library
 #include "AP_Arming.h"
 
-// libraries which are dependent on #defines in defines.h and/or config.h
-#if BEACON_ENABLED == ENABLED
+#include <AP_Beacon/AP_Beacon_config.h>
+#if AP_BEACON_ENABLED
  #include <AP_Beacon/AP_Beacon.h>
 #endif
 
@@ -851,6 +851,7 @@ private:
     // called when an attempt to change into a mode is unsuccessful:
     void mode_change_failed(const Mode *mode, const char *reason);
     uint8_t get_mode() const override { return (uint8_t)flightmode->mode_number(); }
+    bool current_mode_requires_mission() const override;
     void update_flight_mode();
     void notify_flight_mode();
 

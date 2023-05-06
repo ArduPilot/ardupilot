@@ -466,6 +466,7 @@
 #define STM32_SDC_READ_TIMEOUT_MS           1000
 #define STM32_SDC_CLOCK_ACTIVATION_DELAY    10
 #define STM32_SDC_SDIO_UNALIGNED_SUPPORT    TRUE
+#define STM32_SDC_SDIO_PWRSAV               TRUE
 
 /*
  * SERIAL driver system settings.
@@ -579,3 +580,10 @@
 
 // limit ISR count per byte
 #define STM32_I2C_ISR_LIMIT                 6
+
+#if defined(STM32F7xx_MCUCONF)
+// disable DMA on I2C by default on F7
+#ifndef STM32_I2C_USE_DMA
+#define STM32_I2C_USE_DMA FALSE
+#endif
+#endif

@@ -23,6 +23,7 @@
 #define DISABLE_INTERRUPTS_FOR_SCRIPT_RUN 0
 
 extern const AP_HAL::HAL& hal;
+#define ENABLE_DEBUG_MODULE 0
 
 bool lua_scripts::overtime;
 jmp_buf lua_scripts::panic_jmp;
@@ -198,6 +199,12 @@ lua_scripts::script_info *lua_scripts::load_script(lua_State *L, char *filename)
 void lua_scripts::create_sandbox(lua_State *L) {
     lua_newtable(L);
     luaopen_base_sandbox(L);
+
+#if ENABLE_DEBUG_MODULE
+    lua_pushstring(L, "debug");
+    luaopen_debug(L);
+    lua_settable(L, -3);
+#endif
     lua_pushstring(L, "math");
     luaopen_math(L);
     lua_settable(L, -3);
@@ -213,8 +220,11 @@ void lua_scripts::create_sandbox(lua_State *L) {
     lua_pushstring(L, "utf8");
     luaopen_utf8(L);
     lua_settable(L, -3);
-    load_generated_sandbox(L);
+    lua_pushstring(L, "package");
+    luaopen_package(L);
+    lua_settable(L, -3);
 
+    load_generated_sandbox(L);
 }
 
 void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
@@ -294,6 +304,7 @@ void lua_scripts::run_next_script(lua_State *L) {
 
     // pop the function to the top of the stack
     lua_rawgeti(L, LUA_REGISTRYINDEX, script->lua_ref);
+    AP::scripting()->set_current_ref(script->lua_ref);
 
     if(lua_pcall(L, 0, LUA_MULTRET, 0)) {
         if (overtime) {

@@ -174,7 +174,7 @@ PD11  PINIO2 OUTPUT GPIO(82) LOW
 
 DMA_PRIORITY S*
 
-define HAL_STORAGE_SIZE 16384
+define HAL_STORAGE_SIZE 32768
 
 # use last 2 pages for flash storage
 # H743 has 16 pages of 128k each
