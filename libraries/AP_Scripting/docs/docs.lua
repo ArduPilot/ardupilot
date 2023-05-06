@@ -2016,6 +2016,11 @@ function vehicle:set_target_posvel_NED(target_pos, target_vel) end
 function vehicle:set_target_pos_NED(target_pos, use_yaw, yaw_deg, use_yaw_rate, yaw_rate_degs, yaw_relative, terrain_alt) end
 
 -- desc
+---@param thrust number
+---@return boolean
+function vehicle:set_thrust(thrust) end
+
+-- desc
 ---@param current_target Location_ud -- current target, from get_target_location()
 ---@param new_target Location_ud -- new target
 ---@return boolean
@@ -2745,6 +2750,10 @@ function ahrs:get_hagl() end
 -- desc
 ---@return Vector3f_ud
 function ahrs:get_accel() end
+
+-- desc
+---@return Vector3f_ud
+function ahrs:get_accel_ef() end
 
 -- desc
 ---@return Vector3f_ud
