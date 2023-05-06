@@ -22,21 +22,20 @@ from launch import LaunchContext
 from launch import LaunchDescription
 from launch.actions import ExecuteProcess
 from launch.actions import DeclareLaunchArgument
-from launch.actions import OpaqueFunction
 from launch.substitutions import LaunchConfiguration
 from launch.substitutions import PathJoinSubstitution
 
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
-from .utilities import listify
+from .actions import ExecuteFunction
 
 
 class VirtualPortsLaunch:
     """Launch functions for creating virtual ports using `socat`."""
 
     @staticmethod
-    def virtual_ports(context: LaunchContext, *args, **kwargs) -> ExecuteProcess:
+    def generate_action(context: LaunchContext, *args, **kwargs) -> ExecuteProcess:
         """Generate a launch action."""
         # Declare commands.
         command = "socat"
@@ -63,33 +62,34 @@ class VirtualPortsLaunch:
             shell=True,
             output="both",
             respawn=False,
+            cached_output=True,
         )
         return action
 
     @staticmethod
-    def generate_launch_description_with_context() -> (
+    def generate_launch_description_with_actions() -> (
         Tuple[List[DeclareLaunchArgument], Dict]
     ):
-        """Generate a launch description with context."""
+        """Generate a launch description with actions."""
         launch_arguments = VirtualPortsLaunch.generate_launch_arguments()
 
-        virtual_ports = VirtualPortsLaunch.virtual_ports
+        action = ExecuteFunction(function=VirtualPortsLaunch.generate_action)
 
         ld = LaunchDescription(
             launch_arguments
             + [
-                OpaqueFunction(function=listify(virtual_ports)),
+                action,
             ]
         )
-        context = {
-            "virtual_ports": virtual_ports,
+        actions = {
+            "virtual_ports": action,
         }
-        return ld, context
+        return ld, actions
 
     @staticmethod
     def generate_launch_description() -> LaunchDescription:
         """Generate a launch description."""
-        ld, _ = VirtualPortsLaunch.generate_launch_description_with_context()
+        ld, _ = VirtualPortsLaunch.generate_launch_description_with_actions()
         return ld
 
     @staticmethod
@@ -113,7 +113,7 @@ class MicroRosAgentLaunch:
     """Launch functions for the micro ROS agent node."""
 
     @staticmethod
-    def micro_ros_agent(context: LaunchContext, *args, **kwargs) -> ExecuteProcess:
+    def generate_action(context: LaunchContext, *args, **kwargs) -> ExecuteProcess:
         """Launch the micro_ros_agent node."""
         # ROS arguments.
         micro_ros_agent_ns = LaunchConfiguration("micro_ros_agent_ns").perform(context)
@@ -185,29 +185,29 @@ class MicroRosAgentLaunch:
         return node
 
     @staticmethod
-    def generate_launch_description_with_context() -> (
+    def generate_launch_description_with_actions() -> (
         Tuple[List[DeclareLaunchArgument], Dict]
     ):
-        """Generate a launch description with context."""
+        """Generate a launch description with actions."""
         launch_arguments = MicroRosAgentLaunch.generate_launch_arguments()
 
-        micro_ros_agent = MicroRosAgentLaunch.micro_ros_agent
+        action = ExecuteFunction(function=MicroRosAgentLaunch.generate_action)
 
         ld = LaunchDescription(
             launch_arguments
             + [
-                OpaqueFunction(function=listify(micro_ros_agent)),
+                action,
             ]
         )
-        context = {
-            "micro_ros_agent": micro_ros_agent,
+        actions = {
+            "micro_ros_agent": action,
         }
-        return ld, context
+        return ld, actions
 
     @staticmethod
     def generate_launch_description() -> LaunchDescription:
         """Generate a launch description."""
-        ld, _ = MicroRosAgentLaunch.generate_launch_description_with_context()
+        ld, _ = MicroRosAgentLaunch.generate_launch_description_with_actions()
         return ld
 
     @staticmethod
@@ -278,7 +278,7 @@ class MAVProxyLaunch:
     """Launch functions for MAVProxy."""
 
     @staticmethod
-    def mavproxy(context: LaunchContext, *args, **kwargs) -> ExecuteProcess:
+    def generate_action(context: LaunchContext, *args, **kwargs) -> ExecuteProcess:
         """Return a non-interactive MAVProxy process."""
         # Declare the command.
         command = "mavproxy.py"
@@ -314,29 +314,29 @@ class MAVProxyLaunch:
         return mavproxy_process
 
     @staticmethod
-    def generate_launch_description_with_context() -> (
+    def generate_launch_description_with_actions() -> (
         Tuple[List[DeclareLaunchArgument], Dict]
     ):
         """Generate a launch description for MAVProxy."""
         launch_arguments = MAVProxyLaunch.generate_launch_arguments()
 
-        mavproxy = MAVProxyLaunch.mavproxy
+        action = ExecuteFunction(function=MAVProxyLaunch.generate_action)
 
         ld = LaunchDescription(
             launch_arguments
             + [
-                OpaqueFunction(function=listify(mavproxy)),
+                action,
             ]
         )
-        context = {
-            "mavproxy": mavproxy,
+        actions = {
+            "mavproxy": action,
         }
-        return ld, context
+        return ld, actions
 
     @staticmethod
     def generate_launch_description() -> LaunchDescription:
         """Generate a launch description."""
-        ld, _ = MAVProxyLaunch.generate_launch_description_with_context()
+        ld, _ = MAVProxyLaunch.generate_launch_description_with_actions()
         return ld
 
     @staticmethod
@@ -369,7 +369,7 @@ class SITLLaunch:
     MAX_SERIAL_PORTS = 10
 
     @staticmethod
-    def sitl(context: LaunchContext, *args, **kwargs) -> ExecuteProcess:
+    def generate_action(context: LaunchContext, *args, **kwargs) -> ExecuteProcess:
         """Return a SITL process."""
         # Retrieve launch arguments.
         command = LaunchConfiguration("command").perform(context)
@@ -485,29 +485,29 @@ class SITLLaunch:
         return sitl_process
 
     @staticmethod
-    def generate_launch_description_with_context() -> (
+    def generate_launch_description_with_actions() -> (
         Tuple[List[DeclareLaunchArgument], Dict]
     ):
         """Generate a launch description for SITL."""
         launch_arguments = SITLLaunch.generate_launch_arguments()
 
-        sitl = SITLLaunch.sitl
+        action = ExecuteFunction(function=SITLLaunch.generate_action)
 
         ld = LaunchDescription(
             launch_arguments
             + [
-                OpaqueFunction(function=listify(sitl)),
+                action,
             ]
         )
-        context = {
-            "sitl": sitl,
+        actions = {
+            "sitl": action,
         }
-        return ld, context
+        return ld, actions
 
     @staticmethod
     def generate_launch_description() -> LaunchDescription:
         """Generate a launch description."""
-        ld, _ = SITLLaunch.generate_launch_description_with_context()
+        ld, _ = SITLLaunch.generate_launch_description_with_actions()
         return ld
 
     @staticmethod

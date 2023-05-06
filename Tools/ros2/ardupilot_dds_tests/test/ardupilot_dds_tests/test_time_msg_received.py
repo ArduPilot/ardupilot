@@ -22,6 +22,8 @@ import threading
 
 from launch import LaunchDescription
 
+from launch_pytest.tools import process as process_tools
+
 from builtin_interfaces.msg import Time
 
 
@@ -64,28 +66,48 @@ class TimeListener(rclpy.node.Node):
 @launch_pytest.fixture
 def launch_sitl_copter_dds_serial(sitl_copter_dds_serial):
     """Fixture to create the launch description."""
-    yield LaunchDescription(
+    sitl_ld, sitl_actions = sitl_copter_dds_serial
+
+    ld = LaunchDescription(
         [
-            sitl_copter_dds_serial,
+            sitl_ld,
             launch_pytest.actions.ReadyToTest(),
         ]
     )
+    actions = sitl_actions
+    yield ld, actions
 
 
 @launch_pytest.fixture
 def launch_sitl_copter_dds_udp(sitl_copter_dds_udp):
     """Fixture to create the launch description."""
-    yield LaunchDescription(
+    sitl_ld, sitl_actions = sitl_copter_dds_udp
+
+    ld = LaunchDescription(
         [
-            sitl_copter_dds_udp,
+            sitl_ld,
             launch_pytest.actions.ReadyToTest(),
         ]
     )
+    actions = sitl_actions
+    yield ld, actions
 
 
 @pytest.mark.launch(fixture=launch_sitl_copter_dds_serial)
-def test_dds_serial_clock_msg_recv(launch_context):
+def test_dds_serial_clock_msg_recv(launch_context, launch_sitl_copter_dds_serial):
     """Test /ap/clock is published by AP_DDS."""
+    _, actions = launch_sitl_copter_dds_serial
+    virtual_ports = actions["virtual_ports"].action
+    micro_ros_agent = actions["micro_ros_agent"].action
+    mavproxy = actions["mavproxy"].action
+    sitl = actions["sitl"].action
+
+    # Wait for process to start.
+    process_tools.wait_for_start_sync(launch_context, virtual_ports, timeout=2)
+    process_tools.wait_for_start_sync(launch_context, micro_ros_agent, timeout=2)
+    process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=2)
+    process_tools.wait_for_start_sync(launch_context, sitl, timeout=2)
+
     rclpy.init()
     try:
         node = TimeListener()
@@ -98,8 +120,18 @@ def test_dds_serial_clock_msg_recv(launch_context):
 
 
 @pytest.mark.launch(fixture=launch_sitl_copter_dds_udp)
-def test_dds_udp_clock_msg_recv(launch_context):
+def test_dds_udp_clock_msg_recv(launch_context, launch_sitl_copter_dds_udp):
     """Test /ap/clock is published by AP_DDS."""
+    _, actions = launch_sitl_copter_dds_udp
+    micro_ros_agent = actions["micro_ros_agent"].action
+    mavproxy = actions["mavproxy"].action
+    sitl = actions["sitl"].action
+
+    # Wait for process to start.
+    process_tools.wait_for_start_sync(launch_context, micro_ros_agent, timeout=2)
+    process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=2)
+    process_tools.wait_for_start_sync(launch_context, sitl, timeout=2)
+
     rclpy.init()
     try:
         node = TimeListener()

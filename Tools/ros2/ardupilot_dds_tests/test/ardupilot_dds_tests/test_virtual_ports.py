@@ -18,79 +18,39 @@ import launch_pytest
 import pytest
 
 from launch import LaunchDescription
-from launch.actions import EmitEvent
-from launch.actions import ExecuteProcess
-from launch.actions import LogInfo
-from launch.actions import RegisterEventHandler
-from launch.event_handlers import OnProcessStart
-from launch.event_handlers import OnProcessExit
-from launch.events import matches_action
-from launch.events.process import ShutdownProcess
 
 from launch_pytest.tools import process as process_tools
 
 
-@pytest.fixture()
-def dummy_proc():
-    """Return a dummy process action to manage test lifetime."""
-    yield ExecuteProcess(
-        cmd=["echo", "ardupilot_dds_tests"],
-        shell=True,
-        cached_output=True,
-    )
+@launch_pytest.fixture
+def launch_description(virtual_ports):
+    """Launch description fixture."""
+    vp_ld, vp_actions = virtual_ports
 
-
-@launch_pytest.fixture()
-def launch_description(dummy_proc, virtual_ports):
-    """Fixture to create the launch description."""
-    on_start = RegisterEventHandler(
-        event_handler=OnProcessStart(
-            target_action=dummy_proc,
-            on_start=[
-                LogInfo(msg="Test started."),
-            ],
-        )
-    )
-
-    on_process_exit = RegisterEventHandler(
-        event_handler=OnProcessExit(
-            target_action=dummy_proc,
-            on_exit=[
-                LogInfo(msg="Test stopping."),
-                EmitEvent(
-                    event=ShutdownProcess(process_matcher=matches_action(virtual_ports))
-                ),
-            ],
-        )
-    )
-
-    yield LaunchDescription(
+    ld = LaunchDescription(
         [
-            dummy_proc,
-            virtual_ports,
-            on_start,
-            on_process_exit,
+            vp_ld,
             launch_pytest.actions.ReadyToTest(),
         ]
     )
+    actions = vp_actions
+    yield ld, actions
 
 
 @pytest.mark.launch(fixture=launch_description)
-def test_virtual_ports(dummy_proc, virtual_ports, launch_context):
+def test_virtual_ports(launch_context, launch_description):
     """Test the virtual ports are present."""
-    # TODO: check virtual port process for regex:
-    #   "starting data transfer loop"
+    _, actions = launch_description
+    virtual_ports = actions["virtual_ports"].action
 
+    # Wait for process to start.
+    process_tools.wait_for_start_sync(launch_context, virtual_ports, timeout=2)
+
+    # Assert contents of output to stderr.
     def validate_output(output):
-        assert output.splitlines() == [
-            "ardupilot_dds_tests"
-        ], "Test process had no output."
+        assert "N starting data transfer loop" in output, "Test process had no output."
 
-    process_tools.assert_output_sync(
-        launch_context, dummy_proc, validate_output, timeout=5
+    process_tools.assert_stderr_sync(
+        launch_context, virtual_ports, validate_output, timeout=5
     )
-
     yield
-
-    # Anything below this line is executed after launch service shutdown.
-    assert dummy_proc.return_code == 0

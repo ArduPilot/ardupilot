@@ -51,7 +51,7 @@ def virtual_ports(device_dir):
     tty0 = Path(device_dir, "dev", "tty0").resolve()
     tty1 = Path(device_dir, "dev", "tty1").resolve()
 
-    vp_ld, _ = VirtualPortsLaunch.generate_launch_description_with_context()
+    vp_ld, vp_actions = VirtualPortsLaunch.generate_launch_description_with_actions()
 
     ld = IncludeLaunchDescription(
         LaunchDescriptionSource(vp_ld),
@@ -60,7 +60,7 @@ def virtual_ports(device_dir):
             "tty1": str(tty1),
         }.items(),
     )
-    yield ld
+    yield ld, vp_actions
 
 
 @pytest.fixture
@@ -68,7 +68,7 @@ def micro_ros_agent_serial(device_dir):
     """Fixture to create a micro_ros_agent node."""
     tty0 = Path(device_dir, "dev", "tty0").resolve()
 
-    mra_ld, _ = MicroRosAgentLaunch.generate_launch_description_with_context()
+    mra_ld, mra_actions = MicroRosAgentLaunch.generate_launch_description_with_actions()
 
     ld = IncludeLaunchDescription(
         LaunchDescriptionSource(mra_ld),
@@ -85,13 +85,13 @@ def micro_ros_agent_serial(device_dir):
             "device": str(tty0),
         }.items(),
     )
-    yield ld
+    yield ld, mra_actions
 
 
 @pytest.fixture
 def micro_ros_agent_udp():
     """Fixture to create a micro_ros_agent node."""
-    mra_ld, _ = MicroRosAgentLaunch.generate_launch_description_with_context()
+    mra_ld, mra_actions = MicroRosAgentLaunch.generate_launch_description_with_actions()
 
     ld = IncludeLaunchDescription(
         LaunchDescriptionSource(mra_ld),
@@ -106,13 +106,13 @@ def micro_ros_agent_udp():
             ),
         }.items(),
     )
-    yield ld
+    yield ld, mra_actions
 
 
 @pytest.fixture
 def mavproxy():
     """Fixture to bring up MAVProxy."""
-    mp_ld, _ = MAVProxyLaunch.generate_launch_description_with_context()
+    mp_ld, mp_actions = MAVProxyLaunch.generate_launch_description_with_actions()
 
     ld = IncludeLaunchDescription(
         LaunchDescriptionSource(mp_ld),
@@ -121,7 +121,7 @@ def mavproxy():
             "sitl": "127.0.0.1:5501",
         }.items(),
     )
-    yield ld
+    yield ld, mp_actions
 
 
 @pytest.fixture
@@ -129,10 +129,13 @@ def sitl_copter_dds_serial(device_dir, virtual_ports, micro_ros_agent_serial, ma
     """Fixture to bring up ArduPilot SITL DDS."""
     tty1 = Path(device_dir, "dev", "tty1").resolve()
 
-    ld, _ = SITLLaunch.generate_launch_description_with_context()
+    vp_ld, vp_actions = virtual_ports
+    mra_ld, mra_actions = micro_ros_agent_serial
+    mp_ld, mp_actions = mavproxy
+    sitl_ld, sitl_actions = SITLLaunch.generate_launch_description_with_actions()
 
-    sitl = IncludeLaunchDescription(
-        LaunchDescriptionSource(ld),
+    sitl_ld_args = IncludeLaunchDescription(
+        LaunchDescriptionSource(sitl_ld),
         launch_arguments={
             "command": "arducopter",
             "synthetic_clock": "True",
@@ -163,22 +166,30 @@ def sitl_copter_dds_serial(device_dir, virtual_ports, micro_ros_agent_serial, ma
         }.items(),
     )
 
-    yield LaunchDescription(
+    ld = LaunchDescription(
         [
-            virtual_ports,
-            micro_ros_agent_serial,
-            sitl,
-            mavproxy,
+            vp_ld,
+            mra_ld,
+            mp_ld,
+            sitl_ld_args,
         ]
     )
+    actions = {}
+    actions.update(vp_actions)
+    actions.update(mra_actions)
+    actions.update(mp_actions)
+    actions.update(sitl_actions)
+    yield ld, actions
 
 
 @pytest.fixture
 def sitl_copter_dds_udp(micro_ros_agent_udp, mavproxy):
     """Fixture to bring up ArduPilot SITL DDS."""
-    sitl_ld, _ = SITLLaunch.generate_launch_description_with_context()
+    mra_ld, mra_actions = micro_ros_agent_udp
+    mp_ld, mp_actions = mavproxy
+    sitl_ld, sitl_actions = SITLLaunch.generate_launch_description_with_actions()
 
-    sitl = IncludeLaunchDescription(
+    sitl_ld_args = IncludeLaunchDescription(
         LaunchDescriptionSource(sitl_ld),
         launch_arguments={
             "command": "arducopter",
@@ -211,9 +222,13 @@ def sitl_copter_dds_udp(micro_ros_agent_udp, mavproxy):
 
     ld = LaunchDescription(
         [
-            micro_ros_agent_udp,
-            sitl,
-            mavproxy,
+            mra_ld,
+            mp_ld,
+            sitl_ld_args,
         ]
     )
-    yield ld
+    actions = {}
+    actions.update(mra_actions)
+    actions.update(mp_actions)
+    actions.update(sitl_actions)
+    yield ld, actions
