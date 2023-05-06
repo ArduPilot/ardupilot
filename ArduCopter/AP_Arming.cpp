@@ -657,11 +657,11 @@ bool AP_Arming_Copter::mandatory_checks(bool display_failure)
     AP_Notify::flags.pre_arm_gps_check = result;
 
     // call mandatory alt check
-    if (!alt_checks(display_failure)) {
+    if (result && !alt_checks(display_failure)) {
         result = false;
     }
 
-    return result & AP_Arming::mandatory_checks(display_failure);
+    return result && AP_Arming::mandatory_checks(display_failure);
 }
 
 void AP_Arming_Copter::set_pre_arm_check(bool b)
