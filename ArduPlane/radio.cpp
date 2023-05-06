@@ -288,8 +288,7 @@ void Plane::control_failsafe()
     if (rc_failsafe_active()) {
         // we detect a failsafe from radio
         // throttle has dropped below the mark
-        failsafe.throttle_counter++;
-        if (failsafe.throttle_counter == 10) {
+        if (++failsafe.throttle_counter == 10) {
             gcs().send_text(MAV_SEVERITY_WARNING, "Throttle failsafe %s", "on");
             failsafe.rc_failsafe = true;
             AP_Notify::flags.failsafe_radio = true;
@@ -300,8 +299,7 @@ void Plane::control_failsafe()
     } else if(failsafe.throttle_counter > 0) {
         // we are no longer in failsafe condition
         // but we need to recover quickly
-        failsafe.throttle_counter--;
-        if (failsafe.throttle_counter > 3) {
+        if (--failsafe.throttle_counter > 3) {
             failsafe.throttle_counter = 3;
         }
         if (failsafe.throttle_counter == 1) {
