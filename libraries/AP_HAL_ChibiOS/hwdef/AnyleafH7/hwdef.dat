@@ -11,6 +11,7 @@ APJ_BOARD_ID 1120
 OSCILLATOR_HZ 16000000
 
 MCU_CLOCKRATE_MHZ 480
+# MCU_CLOCKRATE_MHZ 400
 
 FLASH_SIZE_KB 2048
 env OPTIMIZE -Os
@@ -21,8 +22,8 @@ FLASH_RESERVE_START_KB 384
 
 # use last 2 pages for flash storage
 # H743 has 16 pages of 128k each
-STORAGE_FLASH_PAGE 1
 define HAL_STORAGE_SIZE 32768
+STORAGE_FLASH_PAGE 14
 
 
 # ChibiOS system timer
@@ -108,28 +109,14 @@ PE13 TIM1_CH3 TIM1 PWM(7) GPIO(56)  BIDIR
 PE14 TIM1_CH4 TIM1 PWM(8) GPIO(57)
 
 # Beeper
-PE9 TIM1_CH1 TIM1 GPIO(58) ALARM
+# PE9 TIM1_CH1 TIM1 GPIO(58) ALARM
 
 DMA_PRIORITY S*
-
-define HAL_STORAGE_SIZE 16384
-
-# use last 2 pages for flash storage
-# H743 has 16 pages of 128k each
-STORAGE_FLASH_PAGE 14
 
 DMA_NOSHARE SPI1*
 
 # spi devices
 SPIDEV icm42688  SPI1 DEVID1 IMU1_CS      MODE3  2*MHZ 16*MHZ   # Clock is 100Mhz so highest clock <= 24Mhz is 100Mhz/8
-
-# no built-in compass, but probe the i2c bus for all possible
-# external compass types
-define ALLOW_ARM_NO_COMPASS
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
-define HAL_I2C_INTERNAL_MASK 0
-define HAL_COMPASS_AUTO_ROT_DEFAULT 2
-define HAL_DEFAULT_INS_FAST_SAMPLE 3
 
 # IMU
 IMU Invensensev3 SPI:icm42688 ROTATION_YAW_180 # todo?
@@ -138,14 +125,9 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 1
 # DPS310 integrated on I2C2 bus, multiple possible choices for external barometer
 BARO DPS310 I2C:0:0x77
 
-# todo?
-define HAL_OS_FATFS_IO 1
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
 # setup for OSD
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
-ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+#ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
-define STM32_PWM_USE_ADVANCED TRUE
+#define STM32_PWM_USE_ADVANCED TRUE
