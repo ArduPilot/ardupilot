@@ -16,6 +16,7 @@
 """Launch actions for ArduPilot."""
 from typing import List
 from typing import Dict
+from typing import Text
 from typing import Tuple
 
 from launch import LaunchContext
@@ -68,7 +69,7 @@ class VirtualPortsLaunch:
 
     @staticmethod
     def generate_launch_description_with_actions() -> (
-        Tuple[List[DeclareLaunchArgument], Dict]
+        Tuple[LaunchDescription, Dict[Text, ExecuteFunction]]
     ):
         """Generate a launch description with actions."""
         launch_arguments = VirtualPortsLaunch.generate_launch_arguments()
@@ -186,7 +187,7 @@ class MicroRosAgentLaunch:
 
     @staticmethod
     def generate_launch_description_with_actions() -> (
-        Tuple[List[DeclareLaunchArgument], Dict]
+        Tuple[LaunchDescription, Dict[Text, ExecuteFunction]]
     ):
         """Generate a launch description with actions."""
         launch_arguments = MicroRosAgentLaunch.generate_launch_arguments()
@@ -315,7 +316,7 @@ class MAVProxyLaunch:
 
     @staticmethod
     def generate_launch_description_with_actions() -> (
-        Tuple[List[DeclareLaunchArgument], Dict]
+        Tuple[LaunchDescription, Dict[Text, ExecuteFunction]]
     ):
         """Generate a launch description for MAVProxy."""
         launch_arguments = MAVProxyLaunch.generate_launch_arguments()
@@ -486,7 +487,7 @@ class SITLLaunch:
 
     @staticmethod
     def generate_launch_description_with_actions() -> (
-        Tuple[List[DeclareLaunchArgument], Dict]
+        Tuple[LaunchDescription, Dict[Text, ExecuteFunction]]
     ):
         """Generate a launch description for SITL."""
         launch_arguments = SITLLaunch.generate_launch_arguments()
