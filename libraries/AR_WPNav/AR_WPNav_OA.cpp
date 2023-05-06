@@ -21,6 +21,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+static constexpr float LOOKAHEAD_DISTANCE = 15.0;
+
 // update navigation
 void AR_WPNav_OA::update(float dt)
 {
@@ -42,7 +44,13 @@ void AR_WPNav_OA::update(float dt)
     if (!_oa_active) {
         _origin_oabak = _origin;
         _destination_oabak = _destination;
+        if (_destination.initialised()) {
+            _next_destination_oabak = _next_destination;
+         }
     }
+
+    // update destination and bearing
+    update_oa_distance_and_bearing_to_destination();
 
     AP_OAPathPlanner *oa = AP_OAPathPlanner::get_singleton();
     if (oa != nullptr) {
@@ -53,14 +61,23 @@ void AR_WPNav_OA::update(float dt)
 
         case AP_OAPathPlanner::OA_NOT_REQUIRED:
             if (_oa_active) {
+
+                Location intermediate_origin{};
+                if (oa->get_options() & AP_OAPathPlanner::OA_OPTION_WP_RESET) {
+                     // resume original route, using LOS law to get resume route
+                    if (!current_loc.get_lookahead_point(_origin_oabak, _destination_oabak, LOOKAHEAD_DISTANCE, intermediate_origin)) {
+                    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                    }
+                }
+               
                 // object avoidance has become inactive so reset target to original destination
-                if (!AR_WPNav::set_desired_location(_destination_oabak)) {
+                if (!AR_WPNav::set_desired_location(_destination_oabak, _next_destination_oabak, intermediate_origin)) {
                     // this should never happen because we should have an EKF origin and the destination must be valid
                     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
                     stop_vehicle = true;
                 }
+
                 _oa_active = false;
-                // ToDo: handle "if (oa->get_options() & AP_OAPathPlanner::OA_OPTION_WP_RESET)"
             }
             break;
 
@@ -100,27 +117,34 @@ void AR_WPNav_OA::update(float dt)
                 break;
 
             case AP_OAPathPlanner::OAPathPlannerUsed::BendyRulerHorizontal: {
-                // BendyRuler.  Action is only needed if path planner has just became active or the target destination's lat or lon has changed
-                if (!_oa_active || !oa_destination_new.same_latlon_as(_oa_destination)) {
-                    if (AR_WPNav::set_desired_location_expect_fast_update(oa_destination_new)) {
-                        // if new target set successfully, update oa state and destination
-                        _oa_active = true;
-                        _oa_origin = oa_origin_new;
-                        _oa_destination = oa_destination_new;
-                    } else {
-                        // this should never happen
+                    _oa_active = true;
+                    _oa_origin = oa_origin_new;
+                    _oa_destination = oa_destination_new;
+
+                    // calculate the destination as an offset from the EKF origin in NEU
+                    Vector2f pos_target_cm{};
+                    if (!_oa_destination.get_vector_xy_from_origin_NE(pos_target_cm)) {
+                        // this should never happen because we can only get here if we have an EKF origin
                         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-                        stop_vehicle = true;
+                        return;
                     }
-                }
+
+                    // initialise position controller if not called recently
+                    init_pos_control_if_necessary();
+
+                    // convert to meters and update target
+                    const Vector2p pos_target = pos_target_cm.todouble() * 0.01;
+                    _pos_control.input_pos_target(pos_target, dt);
+
+                    // calculate control commands
+                    update_steering_and_speed(current_loc, dt);
+                    return;
             }
             break;
 
             } // switch (path_planner_used) {
         } // switch (oa_retstate) {
     } // if (oa != nullptr) {
-
-    update_oa_distance_and_bearing_to_destination();
 
     // handle stopping vehicle if avoidance has failed
     if (stop_vehicle) {
@@ -137,9 +161,9 @@ void AR_WPNav_OA::update(float dt)
 
 // set desired location and (optionally) next_destination
 // next_destination should be provided if known to allow smooth cornering
-bool AR_WPNav_OA::set_desired_location(const Location& destination, Location next_destination)
+bool AR_WPNav_OA::set_desired_location(const Location& destination, Location next_destination, Location intermediate_origin)
 {
-    const bool ret = AR_WPNav::set_desired_location(destination, next_destination);
+    const bool ret = AR_WPNav::set_desired_location(destination, next_destination, intermediate_origin);
 
     if (ret) {
         // disable object avoidance, it will be re-enabled (if necessary) on next update
