@@ -492,7 +492,7 @@ bool AP_MotorsHeli::parameter_check(bool display_msg) const
     // returns false if _collective_min_deg is not default value which indicates users set parameter
     if (is_equal((float)_collective_min_deg, (float)AP_MOTORS_HELI_COLLECTIVE_MIN_DEG)) {
         if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Set H_COL_ANG_MIN to measured min blade pitch in deg");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Set H_COL_ANG_MIN to measured min pitch");
         }
         return false;
     }
@@ -500,7 +500,7 @@ bool AP_MotorsHeli::parameter_check(bool display_msg) const
     // returns false if _collective_max_deg is not default value which indicates users set parameter
     if (is_equal((float)_collective_max_deg, (float)AP_MOTORS_HELI_COLLECTIVE_MAX_DEG)) {
         if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Set H_COL_ANG_MAX to measured max blade pitch in deg");
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Set H_COL_ANG_MAX to measured max pitch");
         }
         return false;
     }
