@@ -510,6 +510,15 @@ void AP_MotorsHeli_RSC::write_rsc(float servo_out)
     }
 }
 
+// Return mask of output channels which the RSC is outputting on
+uint32_t AP_MotorsHeli_RSC::get_output_mask() const
+{
+    if (_control_mode == ROTOR_CONTROL_MODE_DISABLED) {
+        return 0;
+    }
+    return SRV_Channels::get_output_channel_mask(_aux_fn);
+}
+
 // calculate_throttlecurve - uses throttle curve and collective input to determine throttle setting
 float AP_MotorsHeli_RSC::calculate_throttlecurve(float collective_in)
 {
