@@ -24,6 +24,7 @@ import string
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import board_list
 
@@ -60,7 +61,10 @@ class SizeCompareBranches(object):
                  show_empty=True,
                  extra_hwdef=[],
                  extra_hwdef_branch=[],
-                 extra_hwdef_master=[]):
+                 extra_hwdef_master=[],
+                 parallel_copies=None,
+                 jobs=None):
+
         if branch is None:
             branch = self.find_current_git_branch_or_sha1()
 
@@ -78,6 +82,8 @@ class SizeCompareBranches(object):
         self.use_merge_base = use_merge_base
         self.waf_consistent_builds = waf_consistent_builds
         self.show_empty = show_empty
+        self.parallel_copies = parallel_copies
+        self.jobs = jobs
 
         if self.bin_dir is None:
             self.bin_dir = self.find_bin_dir()
@@ -185,15 +191,21 @@ class SizeCompareBranches(object):
 
     # vast amounts of stuff copied into here from build_binaries.py
 
-    def run_program(self, prefix, cmd_list, show_output=True, env=None):
-        if show_output:
-            self.progress("Running (%s)" % " ".join(cmd_list))
+    def run_program(self, prefix, cmd_list, show_output=True, env=None, show_output_on_error=True, show_command=None, cwd="."):
+        if show_command is None:
+            show_command = True
+        if show_command:
+            cmd = " ".join(cmd_list)
+            if cwd is None:
+                cwd = "."
+            self.progress(f"Running ({cmd}) in ({cwd})")
         p = subprocess.Popen(
             cmd_list,
             stdin=None,
             stdout=subprocess.PIPE,
             close_fds=True,
             stderr=subprocess.STDOUT,
+            cwd=cwd,
             env=env)
         output = ""
         while True:
@@ -211,10 +223,17 @@ class SizeCompareBranches(object):
                 x = "".join([chr(c) for c in x])
             output += x
             x = x.rstrip()
+            some_output = "%s: %s" % (prefix, x)
             if show_output:
-                print("%s: %s" % (prefix, x))
+                print(some_output)
+            else:
+                output += some_output
         (_, status) = returncode
         if status != 0:
+            if not show_output and show_output_on_error:
+                # we were told not to show output, but we just
+                # failed... so show output...
+                print(output)
             self.progress("Process failed (%s)" %
                           str(returncode))
             raise subprocess.CalledProcessError(
@@ -239,13 +258,13 @@ class SizeCompareBranches(object):
         output = output.strip()
         return output
 
-    def run_git(self, args):
+    def run_git(self, args, show_output=True, source_dir=None):
         '''run git with args git_args; returns git's output'''
         cmd_list = ["git"]
         cmd_list.extend(args)
-        return self.run_program("SCB-GIT", cmd_list)
+        return self.run_program("SCB-GIT", cmd_list, show_output=show_output, cwd=source_dir)
 
-    def run_waf(self, args, compiler=None):
+    def run_waf(self, args, compiler=None, show_output=True, source_dir=None):
         # try to modify the environment so we can consistent builds:
         consistent_build_envs = {
             "CHIBIOS_GIT_VERSION": "12345678",
@@ -274,16 +293,19 @@ class SizeCompareBranches(object):
                 env["CXX"] = "ccache arm-none-eabi-g++"
             else:
                 raise Exception("BB-WAF: Missing compiler %s" % gcc_path)
-        self.run_program("SCB-WAF", cmd_list, env=env)
+        self.run_program("SCB-WAF", cmd_list, env=env, show_output=show_output, cwd=source_dir)
 
     def progress(self, string):
         '''pretty-print progress'''
         print("SCB: %s" % string)
 
-    def build_branch_into_dir(self, board, branch, vehicle, outdir, extra_hwdef=None):
-        self.run_git(["checkout", branch])
-        self.run_git(["submodule", "update", "--recursive"])
-        shutil.rmtree("build", ignore_errors=True)
+    def build_branch_into_dir(self, board, branch, vehicle, outdir, source_dir=None, extra_hwdef=None, jobs=None):
+        self.run_git(["checkout", branch], show_output=False, source_dir=source_dir)
+        self.run_git(["submodule", "update", "--recursive"], show_output=False, source_dir=source_dir)
+        build_dir = "build"
+        if source_dir is not None:
+            build_dir = os.path.join(source_dir, "build")
+        shutil.rmtree(build_dir, ignore_errors=True)
         waf_configure_args = ["configure", "--board", board]
         if self.waf_consistent_builds:
             waf_configure_args.append("--consistent-builds")
@@ -291,14 +313,19 @@ class SizeCompareBranches(object):
         if extra_hwdef is not None:
             waf_configure_args.extend(["--extra-hwdef", extra_hwdef])
 
-        self.run_waf(waf_configure_args)
+        if jobs is None:
+            jobs = self.jobs
+        if jobs is not None:
+            waf_configure_args.extend(["-j", str(jobs)])
+
+        self.run_waf(waf_configure_args, show_output=False, source_dir=source_dir)
         # we can't run `./waf copter blimp plane` without error, so do
         # them one-at-a-time:
         for v in vehicle:
             if v == 'bootloader':
                 # need special configuration directive
                 continue
-            self.run_waf([v])
+            self.run_waf([v], show_output=False, source_dir=source_dir)
         for v in vehicle:
             if v != 'bootloader':
                 continue
@@ -311,20 +338,184 @@ class SizeCompareBranches(object):
             # after building other vehicles without a clean:
             dsdl_generated_path = os.path.join('build', board, "modules", "DroneCAN", "libcanard", "dsdlc_generated")
             self.progress("HACK: Removing (%s)" % dsdl_generated_path)
+            if source_dir is not None:
+                dsdl_generated_path = os.path.join(source_dir, dsdl_generated_path)
             shutil.rmtree(dsdl_generated_path, ignore_errors=True)
-            self.run_waf(bootloader_waf_configure_args)
-            self.run_waf([v])
-        self.run_program("rsync", ["rsync", "-ap", "build/", outdir])
+            self.run_waf(bootloader_waf_configure_args, show_output=False, source_dir=source_dir)
+            self.run_waf([v], show_output=False, source_dir=source_dir)
+        self.run_program("rsync", ["rsync", "-ap", "build/", outdir], cwd=source_dir)
+
+    def vehicles_to_build_for_board_info(self, board_info):
+        vehicles_to_build = []
+        for vehicle in self.vehicle:
+            if vehicle == 'AP_Periph':
+                if not board_info.is_ap_periph:
+                    continue
+            else:
+                if board_info.is_ap_periph:
+                    continue
+                # the bootloader target isn't an autobuild target, so
+                # it gets special treatment here:
+                if vehicle != 'bootloader' and vehicle.lower() not in [x.lower() for x in board_info.autobuild_targets]:
+                    continue
+            vehicles_to_build.append(vehicle)
+
+        return vehicles_to_build
+
+    def parallel_thread_main(self, thread_number):
+        # initialisation; make a copy of the source directory
+        my_source_dir = os.path.join(self.tmpdir, f"thread-{thread_number}-source")
+        self.run_program("rsync", [
+            "rsync",
+            "--exclude=build/",
+            "-ap",
+            "./",
+            my_source_dir
+        ])
+
+        while True:
+            try:
+                task = self.parallel_tasks.pop(0)
+            except IndexError:
+                break
+            jobs = None
+            if self.jobs is not None:
+                jobs = int(self.jobs / self.num_threads_remaining)
+                if jobs <= 0:
+                    jobs = 1
+            self.run_build_task(task, source_dir=my_source_dir, jobs=jobs)
+
+    def run_build_tasks_in_parallel(self, tasks):
+        n_threads = self.parallel_copies
+        if len(tasks) < n_threads:
+            n_threads = len(tasks)
+        self.num_threads_remaining = n_threads
+
+        # shared list for the threads:
+        self.parallel_tasks = copy.copy(tasks)  # make this an argument instead?!
+        threads = []
+        for i in range(0, n_threads):
+            t = threading.Thread(
+                target=self.parallel_thread_main,
+                name=f'task-builder-{i}',
+                args=[i],
+            )
+            t.start()
+            threads.append(t)
+        tstart = time.time()
+        while len(threads):
+            new_threads = []
+            for thread in threads:
+                thread.join(0)
+                if thread.is_alive():
+                    new_threads.append(thread)
+            threads = new_threads
+            self.num_threads_remaining = len(threads)
+            self.progress(f"remaining-tasks={len(self.parallel_tasks)} remaining-threads={len(threads)} elapsed={int(time.time() - tstart)}s")  # noqa
+
+            # write out a progress CSV:
+            task_results = []
+            for task in tasks:
+                task_results.append(self.gather_results_for_task(task))
+            # progress CSV:
+            with open("/tmp/some.csv", "w") as f:
+                f.write(self.csv_for_results(self.compare_task_results(task_results, no_elf_diff=True)))
+
+            time.sleep(1)
+        self.progress("All threads returned")
 
     def run_all(self):
         '''run tests for boards and vehicles passed in constructor'''
 
-        results = {}
+        tmpdir = tempfile.mkdtemp()
+        self.tmpdir = tmpdir
+
+        self.master_commit = self.master_branch
+        if self.use_merge_base:
+            self.master_commit = self.find_git_branch_merge_base(self.branch, self.master_branch)
+            self.progress("Using merge base (%s)" % self.master_commit)
+
+        # create an array of tasks to run:
+        tasks = []
         for board in self.board:
-            vehicle_results = self.run_board(board)
-            results[board] = vehicle_results
-            with open("/tmp/some.csv", "w") as f:
-                f.write(self.csv_for_results(results))
+            board_info = self.boards_by_name[board]
+
+            vehicles_to_build = self.vehicles_to_build_for_board_info(board_info)
+
+            outdir_1 = os.path.join(tmpdir, "out-master-%s" % (board,))
+            tasks.append((board, self.master_commit, outdir_1, vehicles_to_build, self.extra_hwdef_master))
+            outdir_2 = os.path.join(tmpdir, "out-branch-%s" % (board,))
+            tasks.append((board, self.branch, outdir_2, vehicles_to_build, self.extra_hwdef_branch))
+
+        if self.parallel_copies is not None:
+            self.run_build_tasks_in_parallel(tasks)
+            task_results = []
+            for task in tasks:
+                task_results.append(self.gather_results_for_task(task))
+        else:
+            # traditional build everything in sequence:
+            task_results = []
+            for task in tasks:
+                self.run_build_task(task)
+                task_results.append(self.gather_results_for_task(task))
+
+                # progress CSV:
+                with open("/tmp/some.csv", "w") as f:
+                    f.write(self.csv_for_results(self.compare_task_results(task_results, no_elf_diff=True)))
+
+        return self.compare_task_results(task_results)
+
+    def elf_diff_results(self, result_master, result_branch):
+        master_branch = result_master["branch"]
+        branch = result_master["branch"]
+        for vehicle in result_master["vehicle"].keys():
+            elf_filename = result_master["vehicle"][vehicle]["elf_filename"]
+            master_elf_dir = result_master["vehicle"][vehicle]["elf_dir"]
+            new_elf_dir = result_branch["vehicle"][vehicle]["elf_dir"]
+            board = result_master["board"]
+            self.progress("Starting compare (~10 minutes!)")
+            elf_diff_commandline = [
+                "time",
+                "python3",
+                "-m", "elf_diff",
+                "--bin_dir", self.bin_dir,
+                '--bin_prefix=arm-none-eabi-',
+                "--old_alias", "%s %s" % (master_branch, elf_filename),
+                "--new_alias", "%s %s" % (branch, elf_filename),
+                "--html_dir", "../ELF_DIFF_%s_%s" % (board, vehicle),
+                os.path.join(master_elf_dir, elf_filename),
+                os.path.join(new_elf_dir, elf_filename)
+            ]
+
+            self.run_program("SCB", elf_diff_commandline)
+
+    def compare_task_results(self, task_results, no_elf_diff=False):
+        # pair off results, master and branch:
+        pairs = {}
+        for res in task_results:
+            board = res["board"]
+            if board not in pairs:
+                pairs[board] = {}
+            if res["branch"] == self.master_commit:
+                pairs[board]["master"] = res
+            elif res["branch"] == self.branch:
+                pairs[board]["branch"] = res
+            else:
+                raise ValueError(res["branch"])
+
+        results = {}
+        for pair in pairs.values():
+            if "master" not in pair or "branch" not in pair:
+                # probably incomplete:
+                continue
+            master = pair["master"]
+            board = master["board"]
+            try:
+                results[board] = self.compare_results(master, pair["branch"])
+                if not no_elf_diff:
+                    self.elf_diff_results(master, pair["branch"])
+            except FileNotFoundError:
+                pass
 
         return results
 
@@ -390,96 +581,65 @@ class SizeCompareBranches(object):
 
         return f.name
 
-    def run_board(self, board):
-        ret = {}
-        board_info = self.boards_by_name[board]
+    def run_build_task(self, task, source_dir=None, jobs=None):
+        (board, commitish, outdir, vehicles_to_build, extra_hwdef_file) = task
 
-        vehicles_to_build = []
-        for vehicle in self.vehicle:
-            if vehicle == 'AP_Periph':
-                if not board_info.is_ap_periph:
-                    continue
-            else:
-                if board_info.is_ap_periph:
-                    continue
-                # the bootloader target isn't an autobuild target, so
-                # it gets special treatment here:
-                if vehicle != 'bootloader' and vehicle.lower() not in [x.lower() for x in board_info.autobuild_targets]:
-                    continue
-            vehicles_to_build.append(vehicle)
-        if len(vehicles_to_build) == 0:
-            return ret
-
-        tmpdir = tempfile.mkdtemp()
-        outdir_1 = os.path.join(tmpdir, "out-master-%s" % (board,))
-        outdir_2 = os.path.join(tmpdir, "out-branch-%s" % (board,))
-
-        self.progress("Building branch 1 (%s)" % self.master_branch)
-        master_commit = self.master_branch
-        if self.use_merge_base:
-            master_commit = self.find_git_branch_merge_base(self.branch, self.master_branch)
-            self.progress("Using merge base (%s)" % master_commit)
-        shutil.rmtree(outdir_1, ignore_errors=True)
-
+        self.progress(f"Building {task}")
+        shutil.rmtree(outdir, ignore_errors=True)
         self.build_branch_into_dir(
             board,
-            master_commit,
+            commitish,
             vehicles_to_build,
-            outdir_1,
-            extra_hwdef=self.extra_hwdef_file(self.extra_hwdef_master)
+            outdir,
+            source_dir=source_dir,
+            extra_hwdef=self.extra_hwdef_file(extra_hwdef_file),
+            jobs=jobs,
         )
 
-        self.progress("Building branch 2 (%s)" % self.branch)
-        shutil.rmtree(outdir_2, ignore_errors=True)
-        self.build_branch_into_dir(
-            board,
-            self.branch,
-            vehicles_to_build,
-            outdir_2,
-            self.extra_hwdef_file(self.extra_hwdef_branch)
-        )
+    def gather_results_for_task(self, task):
+        (board, commitish, outdir, vehicles_to_build, extra_hwdef_file) = task
+
+        result = {
+            "board": board,
+            "branch": commitish,
+            "vehicle": {},
+        }
 
         for vehicle in vehicles_to_build:
             if vehicle == 'bootloader' and board in self.bootloader_blacklist:
                 continue
 
-            elf_filename = self.vehicle_map[vehicle]
-            bin_filename = self.vehicle_map[vehicle] + '.bin'
+            result["vehicle"][vehicle] = {}
+            v = result["vehicle"][vehicle]
+            v["bin_filename"] = self.vehicle_map[vehicle] + '.bin'
+            v["bin_dir"] = os.path.join(outdir, board, "bin")
 
-            if self.run_elf_diff:
-                master_elf_dirname = "bin"
-                new_elf_dirname = "bin"
-                if vehicle == 'bootloader':
-                    # elfs for bootloaders are in the bootloader directory...
-                    master_elf_dirname = "bootloader"
-                    new_elf_dirname = "bootloader"
-                master_elf_dir = os.path.join(outdir_1, board, master_elf_dirname)
-                new_elf_dir = os.path.join(outdir_2, board, new_elf_dirname)
-                self.progress("Starting compare (~10 minutes!)")
-                elf_diff_commandline = [
-                    "time",
-                    "python3",
-                    "-m", "elf_diff",
-                    "--bin_dir", self.bin_dir,
-                    '--bin_prefix=arm-none-eabi-',
-                    "--old_alias", "%s %s" % (self.master_branch, elf_filename),
-                    "--new_alias", "%s %s" % (self.branch, elf_filename),
-                    "--html_dir", "../ELF_DIFF_%s_%s" % (board, vehicle),
-                    os.path.join(master_elf_dir, elf_filename),
-                    os.path.join(new_elf_dir, elf_filename)
-                ]
+            elf_dirname = "bin"
+            if vehicle == 'bootloader':
+                # elfs for bootloaders are in the bootloader directory...
+                elf_dirname = "bootloader"
+            elf_dir = os.path.join(outdir, board, elf_dirname)
+            v["elf_dir"] = elf_dir
+            v["elf_filename"] = self.vehicle_map[vehicle]
 
-                self.run_program("SCB", elf_diff_commandline)
+        return result
 
-            master_bin_dir = os.path.join(outdir_1, board, "bin")
-            new_bin_dir = os.path.join(outdir_2, board, "bin")
+    def compare_results(self, result_master, result_branch):
+        ret = {}
+        for vehicle in result_master["vehicle"].keys():
+            # check for the difference in size (and identicality)
+            # of the two binaries:
+            master_bin_dir = result_master["vehicle"][vehicle]["bin_dir"]
+            new_bin_dir = result_branch["vehicle"][vehicle]["bin_dir"]
 
             try:
+                bin_filename = result_master["vehicle"][vehicle]["bin_filename"]
                 master_path = os.path.join(master_bin_dir, bin_filename)
                 new_path = os.path.join(new_bin_dir, bin_filename)
                 master_size = os.path.getsize(master_path)
                 new_size = os.path.getsize(new_path)
             except FileNotFoundError:
+                elf_filename = result_master["vehicle"][vehicle]["elf_filename"]
                 master_path = os.path.join(master_bin_dir, elf_filename)
                 new_path = os.path.join(new_bin_dir, elf_filename)
                 master_size = os.path.getsize(master_path)
@@ -487,6 +647,7 @@ class SizeCompareBranches(object):
 
             identical = self.files_are_identical(master_path, new_path)
 
+            board = result_master["board"]
             ret[vehicle] = SizeCompareBranchesResult(board, vehicle, new_size - master_size, identical)
 
         return ret
@@ -559,6 +720,16 @@ if __name__ == '__main__':
                       action='store_true',
                       default=False,
                       help="Build all vehicles")
+    parser.add_option("",
+                      "--parallel-copies",
+                      type=int,
+                      default=None,
+                      help="Copy source dir this many times, build from those copies in parallel")
+    parser.add_option("-j",
+                      "--jobs",
+                      type=int,
+                      default=None,
+                      help="Passed to waf configure -j; number of build jobs.  If running with --parallel-copies, this is divided by the number of remaining threads before being passed.")  # noqa
     cmd_opts, cmd_args = parser.parse_args()
 
     vehicle = []
@@ -587,5 +758,7 @@ if __name__ == '__main__':
         use_merge_base=not cmd_opts.no_merge_base,
         waf_consistent_builds=not cmd_opts.no_waf_consistent_builds,
         show_empty=cmd_opts.show_empty,
+        parallel_copies=cmd_opts.parallel_copies,
+        jobs=cmd_opts.jobs,
     )
     x.run()
