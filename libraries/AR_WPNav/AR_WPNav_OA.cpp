@@ -133,7 +133,7 @@ void AR_WPNav_OA::update(float dt)
                     init_pos_control_if_necessary();
 
                     // convert to meters and update target
-                    const Vector2p pos_target = pos_target_cm.todouble() * 0.01;
+                    const Vector2p pos_target = pos_target_cm.topostype()* 0.01;
                     _pos_control.input_pos_target(pos_target, dt);
 
                     // calculate control commands
