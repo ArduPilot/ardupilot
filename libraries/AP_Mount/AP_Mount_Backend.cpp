@@ -171,6 +171,25 @@ void AP_Mount_Backend::send_gimbal_manager_information(mavlink_channel_t chan)
                                                 radians(_params.yaw_angle_max));        // yaw_max in radians
 }
 
+// send a GIMBAL_MANAGER_STATUS message to GCS
+void AP_Mount_Backend::send_gimbal_manager_status(mavlink_channel_t chan)
+{
+    uint32_t flags = GIMBAL_MANAGER_FLAGS_ROLL_LOCK | GIMBAL_MANAGER_FLAGS_PITCH_LOCK;
+
+    if (_yaw_lock) {
+        flags |= GIMBAL_MANAGER_FLAGS_PITCH_LOCK;
+    }
+
+    mavlink_msg_gimbal_manager_status_send(chan,
+                                           AP_HAL::millis(),    // autopilot system time
+                                           flags,               // bitmap of gimbal manager flags
+                                           _instance + 1,       // gimbal device id
+                                           mavlink_control_id.sysid,    // primary control system id
+                                           mavlink_control_id.compid,   // primary control component id
+                                           0,                           // secondary control system id
+                                           0);                          // secondary control component id
+}
+
 // process MOUNT_CONTROL messages received from GCS. deprecated.
 void AP_Mount_Backend::handle_mount_control(const mavlink_mount_control_t &packet)
 {
@@ -265,6 +284,42 @@ MAV_RESULT AP_Mount_Backend::handle_command_do_mount_control(const mavlink_comma
         // invalid mode
         return MAV_RESULT_FAILED;
     }
+}
+
+// handle do_gimbal_manager_configure.  Returns MAV_RESULT_ACCEPTED on success
+// requires original message in order to extract caller's sysid and compid
+MAV_RESULT AP_Mount_Backend::handle_command_do_gimbal_manager_configure(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+{
+    // sanity check param1 and param2 values
+    if ((packet.param1 < -3) || (packet.param1 > UINT8_MAX) || (packet.param2 < -3) || (packet.param2 > UINT8_MAX)) {
+        return MAV_RESULT_FAILED;
+    }
+
+    // convert negative packet1 and packet2 values
+    int16_t new_sysid = packet.param1;
+    switch (new_sysid) {
+        case -1:
+            // leave unchanged
+            break;
+        case -2:
+            // set itself in control
+            mavlink_control_id.sysid = msg.sysid;
+            mavlink_control_id.compid = msg.compid;
+            break;
+        case -3:
+            // remove control if currently in control
+            if ((mavlink_control_id.sysid == msg.sysid) && (mavlink_control_id.compid == msg.compid)) {
+                mavlink_control_id.sysid = 0;
+                mavlink_control_id.compid = 0;
+            }
+            break;
+        default:
+            mavlink_control_id.sysid = packet.param1;
+            mavlink_control_id.compid = packet.param2;
+            break;
+    }
+
+    return MAV_RESULT_ACCEPTED;
 }
 
 // handle a GLOBAL_POSITION_INT message

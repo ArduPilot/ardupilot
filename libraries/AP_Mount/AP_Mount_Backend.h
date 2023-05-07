@@ -86,6 +86,10 @@ public:
 
     // handle do_mount_control command.  Returns MAV_RESULT_ACCEPTED on success
     MAV_RESULT handle_command_do_mount_control(const mavlink_command_long_t &packet);
+
+    // handle do_gimbal_manager_configure.  Returns MAV_RESULT_ACCEPTED on success
+    // requires original message in order to extract caller's sysid and compid
+    MAV_RESULT handle_command_do_gimbal_manager_configure(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
     
     // process MOUNT_CONFIGURE messages received from GCS. deprecated.
     void handle_mount_configure(const mavlink_mount_configure_t &msg);
@@ -101,6 +105,9 @@ public:
 
     // send a GIMBAL_MANAGER_INFORMATION message to GCS
     void send_gimbal_manager_information(mavlink_channel_t chan);
+
+    // send a GIMBAL_MANAGER_STATUS message to GCS
+    void send_gimbal_manager_status(mavlink_channel_t chan);
 
     // handle a GIMBAL_REPORT message
     virtual void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg) {}
@@ -229,6 +236,13 @@ protected:
     bool _target_sysid_location_set;// true if _target_sysid has been set
 
     uint32_t _last_warning_ms;      // system time of last warning sent to GCS
+
+    // structure holding mavlink sysid and compid of controller of this gimbal
+    // see MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE and GIMBAL_MANAGER_STATUS
+    struct {
+        uint8_t sysid;
+        uint8_t compid;
+    } mavlink_control_id;
 };
 
 #endif // HAL_MOUNT_ENABLED
