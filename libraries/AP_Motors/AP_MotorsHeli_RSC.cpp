@@ -175,14 +175,14 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("GOV_FF", 22, AP_MotorsHeli_RSC, _governor_ff, 50),
 
-    // @Param: GOV_RPM
+    // @Param: NOM_RPM
     // @DisplayName: Rotor RPM Setting
-    // @Description: Main rotor RPM that governor maintains when engaged
+    // @Description: Main rotor nominal headspeed in RPM. If the governer is used this is the target speed that the governor will try to maintain when engaged
     // @Range: 800 3500
     // @Units: RPM
     // @Increment: 10
     // @User: Standard
-    AP_GROUPINFO("GOV_RPM", 23, AP_MotorsHeli_RSC, _governor_rpm, 1500),
+    AP_GROUPINFO("NOM_RPM", 23, AP_MotorsHeli_RSC, _targ_head_speed_rpm, 1500),
 
     // @Param: GOV_TORQUE
     // @DisplayName: Governor Torque Limiter
@@ -218,6 +218,14 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("AROT_IDLE", 27, AP_MotorsHeli_RSC, _arot_idle_output, AP_MOTORS_HELI_RSC_AROT_IDLE),
 
+    // @Param: RPM_IDX
+    // @DisplayName: RPM sensor index
+    // @Description: The RPM instance to get measured rotor speed. Set -1 to disable use of rpm measurement in RSC.
+    // @Range: -1 1
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("RPM_IDX", 28, AP_MotorsHeli_RSC, _rpm_idx, 0),
+
     AP_GROUPEND
 };
 
@@ -250,20 +258,7 @@ void AP_MotorsHeli_RSC::set_throttle_curve()
 void AP_MotorsHeli_RSC::output(RotorControlState state)
 {
     // _rotor_RPM available to the RSC output
-#if AP_RPM_ENABLED
-    const AP_RPM *rpm = AP_RPM::get_singleton();
-    if (rpm != nullptr) {
-        if (!rpm->get_rpm(0, _rotor_rpm)) {
-            // No valid RPM data
-            _rotor_rpm = -1;
-        }
-    } else {
-        // No RPM because pointer is null
-        _rotor_rpm = -1;
-    }
-#else
-    _rotor_rpm = -1;
-#endif
+    update_rotor_speed_measurement();
 
     float dt;
     uint64_t now = AP_HAL::micros64();
@@ -479,22 +474,55 @@ void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
     }
     // if rotor speed is less than critical speed, then run-up is not complete
     // this will prevent the case where the target rotor speed is less than critical speed
-    if (_runup_complete && (get_rotor_speed() < get_critical_speed())) {
+    if (_runup_complete && (get_norm_rotor_speed() < get_critical_speed())) {
         _runup_complete = false;
     }
     // if rotor estimated speed is zero, then spooldown has been completed
-    if (get_rotor_speed() <= 0.0f) {
+    if (get_norm_rotor_speed() <= 0.0f) {
         _spooldown_complete = true;
     } else {
         _spooldown_complete = false;
     }
 }
 
-// get_rotor_speed - gets rotor speed either as an estimate, or (ToDO) a measured value
-float AP_MotorsHeli_RSC::get_rotor_speed() const
+// get_norm_rotor_speed - gets the normalised rotor speed with 1.0 being the target head speed
+float AP_MotorsHeli_RSC::get_norm_rotor_speed() const
 {
-    // if no actual measured rotor speed is available, estimate speed based on rotor runup scalar.
-    return _rotor_runup_output;
+    if (_rotor_rpm < 0) {
+        // measured rotor speed is unavailable, estimate speed based on rotor runup scalar.
+        return _rotor_runup_output;
+    }
+
+    if (_targ_head_speed_rpm < 1) {
+        // we don't have a valid nominal/target head speed to normalise by
+        return _rotor_runup_output;
+    }
+
+    return _rotor_rpm / _targ_head_speed_rpm.get();
+}
+
+// update_rotor_speed_measurement - gets measured rpm from desired rpm instance if available
+void AP_MotorsHeli_RSC::update_rotor_speed_measurement()
+{
+    _rotor_rpm = -1;
+
+#if AP_RPM_ENABLED
+    int8_t idx = _rpm_idx.get();
+    if (idx < 0) {
+        // Then use of rpm measurement is disabled
+        return;
+    }
+
+    const AP_RPM *rpm = AP_RPM::get_singleton();
+    if (rpm == nullptr) {
+        return;
+    }
+
+    if (!rpm->get_rpm(idx, _rotor_rpm)) {
+        // RPM is unhealthy if got here
+        _rotor_rpm = -1;
+    }
+#endif
 }
 
 // write_rsc - outputs pwm onto output rsc channel
@@ -540,7 +568,7 @@ void AP_MotorsHeli_RSC::autothrottle_run()
     float const torque_ref_error_rpm = 2.0f;
 
     // if the desired governor RPM is zero, use the throttle curve only and exit
-    if (_governor_rpm == 0) {
+    if (_targ_head_speed_rpm == 0) {
         _control_output = _idle_throttle + (_rotor_ramp_output * (throttlecurve - _idle_throttle));
         return;
     }
@@ -548,11 +576,11 @@ void AP_MotorsHeli_RSC::autothrottle_run()
     // autothrottle main power loop with governor
     if (_governor_engage && !_governor_fault) {
         // calculate droop - difference between actual and desired speed
-        float governor_droop = ((float)_governor_rpm - _rotor_rpm) * _governor_droop_response * 0.0001f;
+        float governor_droop = ((float)_targ_head_speed_rpm - _rotor_rpm) * _governor_droop_response * 0.0001f;
         _governor_output = governor_droop + ((throttlecurve - _governor_torque_reference) * _governor_ff * 0.01);
-        if (_rotor_rpm < ((float)_governor_rpm - torque_ref_error_rpm)) {
+        if (_rotor_rpm < ((float)_targ_head_speed_rpm - torque_ref_error_rpm)) {
             _governor_torque_reference += get_governor_compensator();   // torque compensator
-        } else if (_rotor_rpm > ((float)_governor_rpm + torque_ref_error_rpm)) {
+        } else if (_rotor_rpm > ((float)_targ_head_speed_rpm + torque_ref_error_rpm)) {
             _governor_torque_reference -= get_governor_compensator();
         }
         // throttle output uses droop + torque compensation to maintain proper rotor speed
@@ -560,12 +588,12 @@ void AP_MotorsHeli_RSC::autothrottle_run()
         // governor and speed sensor fault detection - must maintain RPM within governor range
         // speed fault detector will allow a fault to persist for 200 contiguous governor updates
         // this is failsafe for bad speed sensor or severely mis-adjusted governor
-        if ((_rotor_rpm <= (_governor_rpm - _governor_range)) || (_rotor_rpm >= (_governor_rpm + _governor_range))) {
+        if ((_rotor_rpm <= (_targ_head_speed_rpm - _governor_range)) || (_rotor_rpm >= (_targ_head_speed_rpm + _governor_range))) {
             _governor_fault_count++;
             if (_governor_fault_count > 200) {
                 governor_reset();
                 _governor_fault = true;
-                if (_rotor_rpm >= (_governor_rpm + _governor_range)) {
+                if (_rotor_rpm >= (_targ_head_speed_rpm + _governor_range)) {
                     gcs().send_text(MAV_SEVERITY_WARNING, "Governor Fault: Rotor Overspeed");
                 } else {
                     gcs().send_text(MAV_SEVERITY_WARNING, "Governor Fault: Rotor Underspeed");
@@ -577,7 +605,7 @@ void AP_MotorsHeli_RSC::autothrottle_run()
     } else if (!_governor_engage && !_governor_fault) {
         // if governor is not engaged and rotor is overspeeding by more than governor range due to 
         // misconfigured throttle curve or stuck throttle, set a fault and governor will not operate
-        if (_rotor_rpm > (_governor_rpm + _governor_range) && !_gov_bailing_out) {
+        if (_rotor_rpm > (_targ_head_speed_rpm + _governor_range) && !_gov_bailing_out) {
             _governor_fault = true;
             governor_reset();
             gcs().send_text(MAV_SEVERITY_WARNING, "Governor Fault: Rotor Overspeed");
@@ -585,15 +613,15 @@ void AP_MotorsHeli_RSC::autothrottle_run()
 
         // when performing power recovery from autorotation, this waits for user to load rotor in order to 
         // engage the governor
-        } else if (_rotor_rpm > _governor_rpm && _gov_bailing_out) {
+        } else if (_rotor_rpm > _targ_head_speed_rpm && _gov_bailing_out) {
             _governor_output = 0.0f;
 
             // torque rise limiter accelerates rotor to the reference speed
             // this limits the max torque rise the governor could call for from the main power loop
-        } else if (_rotor_rpm >= (_governor_rpm * 0.5f)) {
+        } else if (_rotor_rpm >= (_targ_head_speed_rpm * 0.5f)) {
             float torque_limit = (get_governor_torque() * get_governor_torque());
-            _governor_output = (_rotor_rpm / (float)_governor_rpm) * torque_limit;
-            if (_rotor_rpm >= ((float)_governor_rpm - torque_ref_error_rpm)) {
+            _governor_output = (_rotor_rpm / (float)_targ_head_speed_rpm) * torque_limit;
+            if (_rotor_rpm >= ((float)_targ_head_speed_rpm - torque_ref_error_rpm)) {
                 _governor_engage = true;
                 _autothrottle = true;
                 _gov_bailing_out = false;
