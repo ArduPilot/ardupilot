@@ -171,6 +171,19 @@ void AP_Mount_Backend::send_gimbal_manager_information(mavlink_channel_t chan)
                                                 radians(_params.yaw_angle_max));        // yaw_max in radians
 }
 
+// send a GIMBAL_MANAGER_STATUS message to GCS
+void AP_Mount_Backend::send_gimbal_manager_status(mavlink_channel_t chan)
+{
+    mavlink_msg_gimbal_manager_status_send(chan,
+                                           AP_HAL::millis(),                       // autopilot system time
+                                           get_gimbal_manager_capability_flags(),  // bitmap of gimbal manager capability flags
+                                           _instance,                              // gimbal device id
+                                           _gimbal_manager_primary_control_sysid,  // gimbal manager primary control sysid
+                                           _gimbal_manager_primary_control_compid, // gimbal manager primary control compid
+                                           0,                                      // gimbal manager secondary control sysid ( unsupported for the moment )
+                                           0);                                     // gimbal manager secondary control compid ( unsupported for the moment )
+}
+
 // process MOUNT_CONTROL messages received from GCS. deprecated.
 void AP_Mount_Backend::handle_mount_control(const mavlink_mount_control_t &packet)
 {

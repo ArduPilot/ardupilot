@@ -102,6 +102,9 @@ public:
     // send a GIMBAL_MANAGER_INFORMATION message to GCS
     void send_gimbal_manager_information(mavlink_channel_t chan);
 
+    // send a GIMBAL_MANAGER_STATUS message to GCS
+    void send_gimbal_manager_status(mavlink_channel_t chan);
+
     // handle a GIMBAL_REPORT message
     virtual void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg) {}
 
@@ -229,6 +232,10 @@ protected:
     bool _target_sysid_location_set;// true if _target_sysid has been set
 
     uint32_t _last_warning_ms;      // system time of last warning sent to GCS
+
+    // Gimbal manager status fields
+    uint8_t _gimbal_manager_primary_control_sysid = 0;
+    uint8_t _gimbal_manager_primary_control_compid = 0;
 };
 
 #endif // HAL_MOUNT_ENABLED

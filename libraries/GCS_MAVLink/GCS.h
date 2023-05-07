@@ -372,6 +372,7 @@ public:
     void send_vibration() const;
     void send_gimbal_device_attitude_status() const;
     void send_gimbal_manager_information() const;
+    void send_gimbal_manager_status() const;
     void send_named_float(const char *name, float value) const;
     void send_home_position() const;
     void send_gps_global_origin() const;
