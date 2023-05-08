@@ -142,10 +142,8 @@ public:
         uint8_t focus_type;     // see FocusType enum (1:Rate, 2:Pct, 4:Auto)
         float focus_value;      // If Rate, focus in = -1, focus hold = 0, focus out = 1.  If PCT 0 to 100
         uint8_t tracking_type;  // see TrackingType enum (0:NONE, 1:POINT, 2:RECTANGLE)
-        float tracking_p1x;     // center or top-left tracking point's x-axis value (0 is left, 1 is right)
-        float tracking_p1y;     // center or top-left tracking point's y-axis value (0 is top, 1 is bottom)
-        float tracking_p2x;     // bottom-right tracking point's x-axis value (0 is left, 1 is right)
-        float tracking_p2y;     // bottom-right tracking point's y-axis value (0 is top, 1 is bottom)
+        Vector2f tracking_p1;   // center or top-left tracking point. x left-right, y is top-bottom. range is 0 to 1
+        Vector2f tracking_p2;   // bottom-right tracking point. x left-right, y is top-bottom. range is 0 to 1
     } camera_state_t;
 
     // accessor to allow scripting backend to retrieve state

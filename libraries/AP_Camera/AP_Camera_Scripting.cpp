@@ -43,10 +43,8 @@ bool AP_Camera_Scripting::set_focus(FocusType focus_type, float focus_value)
 bool AP_Camera_Scripting::set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2)
 {
     _cam_state.tracking_type = (uint8_t)tracking_type;
-    _cam_state.tracking_p1x = p1.x;
-    _cam_state.tracking_p1y = p1.y;
-    _cam_state.tracking_p2x = p2.x;
-    _cam_state.tracking_p2y = p2.y;
+    _cam_state.tracking_p1 = p1;
+    _cam_state.tracking_p2 = p2;
     return true;
 }
 
