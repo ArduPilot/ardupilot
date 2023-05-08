@@ -1114,20 +1114,12 @@ local AP_Camera__camera_state_t_ud = {}
 function AP_Camera__camera_state_t() end
 
 -- get field
----@return number
-function AP_Camera__camera_state_t_ud:tracking_p1x() end
+---@return Vector2f_ud
+function AP_Camera__camera_state_t_ud:tracking_p1() end
 
 -- get field
----@return number
-function AP_Camera__camera_state_t_ud:tracking_p1y() end
-
--- get field
----@return number
-function AP_Camera__camera_state_t_ud:tracking_p2x() end
-
--- get field
----@return number
-function AP_Camera__camera_state_t_ud:tracking_p2y() end
+---@return Vector2f_ud
+function AP_Camera__camera_state_t_ud:tracking_p2() end
 
 -- get field
 ---@return integer
