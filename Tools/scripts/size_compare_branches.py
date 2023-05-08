@@ -180,6 +180,7 @@ class SizeCompareBranches(object):
             'esp32buzz',
             'esp32empty',
             'esp32tomte76',
+            'esp32nick',
             'esp32icarous',
             'esp32diy',
         ]
