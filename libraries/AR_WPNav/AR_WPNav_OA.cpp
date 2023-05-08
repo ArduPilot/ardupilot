@@ -63,7 +63,7 @@ void AR_WPNav_OA::update(float dt)
             if (_oa_active) {
 
                 Location intermediate_origin{};
-                if (oa->get_options() & AP_OAPathPlanner::OA_OPTION_WP_RESET) {
+                if (!(oa->get_options() & AP_OAPathPlanner::OA_OPTION_WP_RESET)) {
                      // resume original route, using LOS law to get resume route
                     if (!current_loc.get_lookahead_point(_origin_oabak, _destination_oabak, LOOKAHEAD_DISTANCE, intermediate_origin)) {
                     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
