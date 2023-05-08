@@ -4496,7 +4496,7 @@ class AutoTestPlane(AutoTest):
         self.start_subtest('0 airspeed sensors')
         self.set_parameter('ARSPD_TYPE', 0)
         self.reboot_sitl()
-        self.wait_statustext('No airspeed sensor present or enabled', check_context=True)
+        self.wait_statustext('No airspeed sensor', check_context=True)
         self.trigger_airspeed_cal()
         self.delay_sim_time(5)
         if self.statustext_in_collections('Airspeed 1 calibrated'):
