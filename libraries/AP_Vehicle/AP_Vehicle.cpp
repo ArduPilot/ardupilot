@@ -230,7 +230,7 @@ void AP_Vehicle::setup()
     } 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     else {
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"No airspeed sensor present or enabled");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "No airspeed sensor");
     }
 #endif
 #endif  // AP_AIRSPEED_ENABLED
