@@ -734,13 +734,13 @@ function check_tracking_state()
 
   -- check for change in tracking state
   local tracking_type_changed = cam_state:tracking_type() ~= last_tracking_type
-  local tracking_type_p1_changed = (cam_state:tracking_p1x() ~= last_tracking_p1x) or (cam_state:tracking_p1y() ~= last_tracking_p1y)
-  local tracking_type_p2_changed = (cam_state:tracking_p2x() ~= last_tracking_p2x) or (cam_state:tracking_p2y() ~= last_tracking_p2y)
+  local tracking_type_p1_changed = (cam_state:tracking_p1():x() ~= last_tracking_p1x) or (cam_state:tracking_p1():y() ~= last_tracking_p1y)
+  local tracking_type_p2_changed = (cam_state:tracking_p2():x() ~= last_tracking_p2x) or (cam_state:tracking_p2():y() ~= last_tracking_p2y)
   last_tracking_type = cam_state:tracking_type()
-  last_tracking_p1x = cam_state:tracking_p1x()
-  last_tracking_p1y = cam_state:tracking_p1y()
-  last_tracking_p2x = cam_state:tracking_p2x()
-  last_tracking_p2y = cam_state:tracking_p2y()
+  last_tracking_p1x = cam_state:tracking_p1():x()
+  last_tracking_p1y = cam_state:tracking_p1():y()
+  last_tracking_p2x = cam_state:tracking_p2():x()
+  last_tracking_p2y = cam_state:tracking_p2():y()
 
   if (last_tracking_type == 0) and tracking_type_changed then
     -- turn off tracking
