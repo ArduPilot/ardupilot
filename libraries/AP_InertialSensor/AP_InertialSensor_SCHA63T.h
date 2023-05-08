@@ -59,13 +59,6 @@ public:
         SEL_BANK    = 0x1F,
     };
 
-#define G_FILT     0x2424    // Ry/Ry2 filter 300Hz 3rd order filter
-#define HW_RES     0x0001    // HardReset
-#define RES_EOI    0x0002    // End Of Initialization
-#define MODE_NORM  0x0000    // Mode
-#define A_FILT     0x0444    // Ax/Ay/Az filter 300Hz 3rd order filter
-#define SEL_BANK   0x0000    // SelBnk
-
 private:
     AP_InertialSensor_SCHA63T(AP_InertialSensor &imu,
                               AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
@@ -83,10 +76,9 @@ private:
     void read_accel();
     void read_gyro();
 
-    bool RegisterRead(int tp, reg_scha63t reg, uint8_t* val);
-    bool RegisterWrite(int tp, reg_scha63t reg, uint16_t val);
+    bool read_register(uint8_t tp, reg_scha63t reg, uint8_t* val);
+    bool write_register(uint8_t tp, reg_scha63t reg, uint16_t val);
     void set_temperature(uint8_t instance, uint16_t temper);
-    uint8_t CalcTblCrc(uint8_t* ptr, short nLen);
     bool check_startup();
 
     AP_HAL::OwnPtr<AP_HAL::Device> dev_uno;
