@@ -337,6 +337,26 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
     return MAV_RESULT_FAILED;
 }
 
+MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_configure(const mavlink_command_long_t &packet)
+{
+    AP_Mount_Backend *backend;
+
+    // check gimbal device id.  0 is primary, 1 is 1st gimbal, 2 is
+    // 2nd gimbal, etc
+    const uint8_t instance = packet.param7;
+    if (instance == 0) {
+        backend = get_primary();
+    } else {
+        backend = get_instance(instance - 1);
+    }
+
+    if (backend == nullptr) {
+        return MAV_RESULT_FAILED;
+    }
+
+    return backend->handle_command_do_gimbal_manager_configure(packet);    
+}
+
 void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg){
     mavlink_gimbal_manager_set_attitude_t packet;
     mavlink_msg_gimbal_manager_set_attitude_decode(&msg,&packet);
@@ -411,6 +431,8 @@ MAV_RESULT AP_Mount::handle_command_long(const mavlink_command_long_t &packet)
         return handle_command_do_mount_control(packet);
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
         return handle_command_do_gimbal_manager_pitchyaw(packet);
+    case MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE:
+        return handle_command_do_gimbal_manager_configure(packet);
     default:
         return MAV_RESULT_UNSUPPORTED;
     }

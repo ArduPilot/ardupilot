@@ -184,6 +184,78 @@ void AP_Mount_Backend::send_gimbal_manager_status(mavlink_channel_t chan)
                                            0);                                     // gimbal manager secondary control compid ( unsupported for the moment )
 }
 
+// handle gimbal_manager_configure command.  Returns MAV_RESULT_ACCEPTED on success
+MAV_RESULT AP_Mount_Backend::handle_command_do_gimbal_manager_configure(const mavlink_command_long_t &packet)
+{
+    // For the moment we only take into account primary control, ignoring secondary control.
+    // If a particular sysid and compid is specified, grant control to it
+    if (packet.param1 > 0 && packet.param2 > 0) {
+        _gimbal_manager_primary_control_sysid = packet.param1;
+        _gimbal_manager_primary_control_compid = packet.param2;
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    // if 0 or less, we have magic numbers to manipulate control as follows:
+    //      0: no one in control
+    //      -1: leave unchanged, 
+    //      -2: set itself in control (for missions where the own sysid is still unknown), 
+    //      -3: remove control if currently in control
+
+    // At this point, both param1 and param2 should be equal, it doesn't make sense otherwise
+    if (!is_equal(packet.param1,packet.param2)) {
+        return MAV_RESULT_FAILED;
+    }
+
+    int8_t control_action = packet.param1;
+
+    switch(control_action) {
+        case 0:
+            _gimbal_manager_primary_control_sysid = 0;
+            _gimbal_manager_primary_control_compid = 0;
+            return MAV_RESULT_ACCEPTED;
+        case -1:
+            return MAV_RESULT_ACCEPTED;
+        case -2:
+            // Unsuported, we should get the sysid and compid from the packet and set it to control, but we can not retrieve it on the current architecture
+        case -3:
+            // Unsuported, we should get the sysid and compid from the packet and check if it is in control, but we can not retrieve it on the current architecture
+        default:        
+            return MAV_RESULT_FAILED;            
+    }
+}
+
+bool AP_Mount_Backend::gimbal_manager_have_control() const
+{
+    return _gimbal_manager_primary_control_sysid == mavlink_system.sysid &&
+           _gimbal_manager_primary_control_compid == mavlink_system.compid; 
+}
+
+void AP_Mount_Backend::gimbal_manager_set_control(uint8_t sysid, uint8_t compid)
+{
+    // If no sysid and compid is specified we set control to this autopilot
+    if (!sysid && !compid) {
+        _gimbal_manager_primary_control_sysid = mavlink_system.sysid;
+        _gimbal_manager_primary_control_compid = mavlink_system.compid;
+    
+    // Otherwise we set the sysid and compid specified
+    } else {
+        _gimbal_manager_primary_control_sysid = sysid;
+        _gimbal_manager_primary_control_compid = compid;
+    }
+
+    // send gimbal_manager_status so the rest of the system knows who is in control
+    const mavlink_gimbal_manager_status_t packet{
+        AP_HAL::millis(),
+        get_gimbal_manager_capability_flags(),
+        _instance,
+        _gimbal_manager_primary_control_sysid,
+        _gimbal_manager_primary_control_compid,
+        0,
+        0
+    };
+    gcs().send_to_active_channels(MAVLINK_MSG_ID_GIMBAL_MANAGER_STATUS, (const char *)&packet);
+}
+
 // process MOUNT_CONTROL messages received from GCS. deprecated.
 void AP_Mount_Backend::handle_mount_control(const mavlink_mount_control_t &packet)
 {

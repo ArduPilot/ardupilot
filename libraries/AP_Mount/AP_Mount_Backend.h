@@ -105,6 +105,15 @@ public:
     // send a GIMBAL_MANAGER_STATUS message to GCS
     void send_gimbal_manager_status(mavlink_channel_t chan);
 
+    // handle GIMBAL_MANAGER_CONFIGURE command
+    MAV_RESULT handle_command_do_gimbal_manager_configure(const mavlink_command_long_t &packet);
+
+    // true if this autopilot is in control of gimbal manager
+    bool gimbal_manager_have_control() const;
+
+    // take control of gimbal manager by this autopilot
+    void gimbal_manager_set_control(uint8_t sysid = -1, uint8_t compid = -1);
+    
     // handle a GIMBAL_REPORT message
     virtual void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg) {}
 
