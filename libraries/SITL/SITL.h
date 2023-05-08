@@ -347,6 +347,9 @@ public:
 
     // what servos are motors
     AP_Int32 vibe_motor_mask;
+
+    // VTOL motor expo, used if non-zero
+    AP_Float vtol_motor_expo;
     
     // minimum throttle for addition of ins noise
     AP_Float ins_noise_throttle_min;
