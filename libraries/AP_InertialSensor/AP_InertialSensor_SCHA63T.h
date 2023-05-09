@@ -87,5 +87,4 @@ private:
     uint8_t accel_instance;
     uint8_t gyro_instance;
     enum Rotation rotation;
-    bool ret_scha63t;    // this flag is not used yet
 };

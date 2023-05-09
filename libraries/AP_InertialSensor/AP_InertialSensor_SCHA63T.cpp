@@ -118,67 +118,69 @@ bool AP_InertialSensor_SCHA63T::init()
     WITH_SEMAPHORE(dev_uno->get_semaphore());
     WITH_SEMAPHORE(dev_due->get_semaphore());
 
-    // error initialise is OK
-    ret_scha63t = true;
-
     // wait 25ms for non-volatile memory (NVM) read
     hal.scheduler->delay(25);
 
     // set DUE operation mode on (must be less than 1ms)
-    ret_scha63t &= write_register(SCHA63T_DUE, MODE, MODE_NORM);
-    ret_scha63t &= write_register(SCHA63T_DUE, MODE, MODE_NORM);
+    write_register(SCHA63T_DUE, MODE, MODE_NORM);
+    write_register(SCHA63T_DUE, MODE, MODE_NORM);
+
     // set UNO operation mode on
-    ret_scha63t &= write_register(SCHA63T_UNO, MODE, MODE_NORM);
+    write_register(SCHA63T_UNO, MODE, MODE_NORM);
+
     // wait 70ms initial startup
     hal.scheduler->delay(70);
 
     // set UNO configuration (data filter, flag filter)
-    ret_scha63t &= write_register(SCHA63T_UNO, G_FILT_DYN, G_FILT);
-    ret_scha63t &= write_register(SCHA63T_UNO, A_FILT_DYN, A_FILT);
+    write_register(SCHA63T_UNO, G_FILT_DYN, G_FILT);
+    write_register(SCHA63T_UNO, A_FILT_DYN, A_FILT);
 
     // reset DUE write (0001h) to register 18h
-    ret_scha63t &= write_register(SCHA63T_DUE, RESCTRL, HW_RES);
+    write_register(SCHA63T_DUE, RESCTRL, HW_RES);
+
     // wait 25ms for non-volatile memory (NVM) read
     hal.scheduler->delay(25);
 
     // set DUE operation mode on (must be less than 1ms)
-    ret_scha63t &= write_register(SCHA63T_DUE, MODE, MODE_NORM);
-    ret_scha63t &= write_register(SCHA63T_DUE, MODE, MODE_NORM);
+    write_register(SCHA63T_DUE, MODE, MODE_NORM);
+    write_register(SCHA63T_DUE, MODE, MODE_NORM);
+
     // wait 1ms (50ms has already passed)
     hal.scheduler->delay(1);
 
     // set DUE configuration (data filter, flag filter)
-    ret_scha63t &= write_register(SCHA63T_DUE, G_FILT_DYN, G_FILT);
+    write_register(SCHA63T_DUE, G_FILT_DYN, G_FILT);
 
     // startup clear (startup_attempt = 0)
     if (!check_startup()) {
-        // system in FAILURE mode (startup_attempt not equl 0 startup_attempt = 1)
+        // system in FAILURE mode (startup_attempt not equal 0 startup_attempt = 1)
         // reset UNO write (0001h) to register 18h
-        ret_scha63t &= write_register(SCHA63T_UNO, RESCTRL, HW_RES);
+        write_register(SCHA63T_UNO, RESCTRL, HW_RES);
         // reset DUE write (0001h) to register 18h
-        ret_scha63t &= write_register(SCHA63T_DUE, RESCTRL, HW_RES);
+        write_register(SCHA63T_DUE, RESCTRL, HW_RES);
         // wait 25ms for non-volatile memory (NVM) read
         hal.scheduler->delay(25);
 
         // set DUE operation mode on (must be less than 1ms)
-        ret_scha63t &= write_register(SCHA63T_DUE, MODE, MODE_NORM);
-        ret_scha63t &= write_register(SCHA63T_DUE, MODE, MODE_NORM);
+        write_register(SCHA63T_DUE, MODE, MODE_NORM);
+        write_register(SCHA63T_DUE, MODE, MODE_NORM);
         // set UNO operation mode on
-        ret_scha63t &= write_register(SCHA63T_UNO, MODE, MODE_NORM);
+        write_register(SCHA63T_UNO, MODE, MODE_NORM);
         // wait 70ms initial startup
         hal.scheduler->delay(50);
 
         // set UNO configuration (data filter, flag filter)
-        ret_scha63t &= write_register(SCHA63T_UNO, G_FILT_DYN, G_FILT);
-        ret_scha63t &= write_register(SCHA63T_UNO, A_FILT_DYN, A_FILT);
+        write_register(SCHA63T_UNO, G_FILT_DYN, G_FILT);
+        write_register(SCHA63T_UNO, A_FILT_DYN, A_FILT);
         // set DUE configuration (data filter, flag filter)
-        ret_scha63t &= write_register(SCHA63T_DUE, G_FILT_DYN, G_FILT);
+        write_register(SCHA63T_DUE, G_FILT_DYN, G_FILT);
 
         // wait 45ms (adjust restart duration to 500ms)
         hal.scheduler->delay(45);
 
         if (!check_startup()) {
-            return false;    // check FAILED
+            // check FAILED
+            return false;
         }
     }
 
@@ -188,57 +190,60 @@ bool AP_InertialSensor_SCHA63T::init()
 
 bool AP_InertialSensor_SCHA63T::check_startup()
 {
-    uint8_t val[4];
-    bool read_summary_error = false;
+    uint8_t val[4] {};
 
     // wait 405ms (300Hz filter)
     hal.scheduler->delay(405);
 
     // start EOI = 1
-    ret_scha63t &= write_register(SCHA63T_UNO, RESCTRL, RES_EOI);
-    ret_scha63t &= write_register(SCHA63T_DUE, RESCTRL, RES_EOI);
-
-    // first read summary status
-    ret_scha63t &= read_register(SCHA63T_UNO, S_SUM, val);
-    ret_scha63t &= read_register(SCHA63T_DUE, S_SUM, val);
-    // 2.5ms or more
-    hal.scheduler->delay(3);
-
-    // second read summary status
-    ret_scha63t &= read_register(SCHA63T_UNO, S_SUM, val);
-    ret_scha63t &= read_register(SCHA63T_DUE, S_SUM, val);
-    // 2.5ms or more
-    hal.scheduler->delay(3);
-
-    // read summary status
-    ret_scha63t &= read_register(SCHA63T_UNO, S_SUM, val);
-    // check UNO summary status
-    if (!((val[1] & 0x9e) && (val[2] & 0xda))) {
-        read_summary_error = true;
+    if (!write_register(SCHA63T_UNO, RESCTRL, RES_EOI)) {
+        return false;
     }
-    ret_scha63t &= read_register(SCHA63T_DUE, S_SUM, val);
-    // check DUE summary status
-    if (!((val[1] & 0xf8) && (val[2] & 0x03))) {
-        read_summary_error = true;
-    }
-
-    // check error
-    if (read_summary_error) {
+    if (!write_register(SCHA63T_DUE, RESCTRL, RES_EOI)) {
         return false;
     }
 
+    // ready summary status twice
+    for (uint8_t i=0; i<2; i++) {        
+        if (!read_register(SCHA63T_UNO, S_SUM, val)) {
+            return false;
+        }
+        if (!read_register(SCHA63T_DUE, S_SUM, val)) {
+            return false;
+        }
+        // wait at least 2.5ms
+        hal.scheduler->delay(3);
+    }
+
+    // read summary status
+    if (!read_register(SCHA63T_UNO, S_SUM, val)) {
+        return false;
+    }
+    // check UNO summary status
+    if (!((val[1] & 0x9e) && (val[2] & 0xda))) {
+        return false;
+    }
+    if (!read_register(SCHA63T_DUE, S_SUM, val)) {
+        return false;
+    }
+    // check DUE summary status
+    if (!((val[1] & 0xf8) && (val[2] & 0x03))) {
+        return false;
+    }
+
+    // success if we got this far
     return true;
 }
 
 /*
   read accel fifo
  */
-void AP_InertialSensor_SCHA63T::read_accel(void)
+void AP_InertialSensor_SCHA63T::read_accel()
 {
-    uint8_t rsp_accl_x[4];
-    uint8_t rsp_accl_y[4];
-    uint8_t rsp_accl_z[4];
-    uint8_t rsp_temper[4];
+    uint8_t rsp_accl_x[4] {};
+    uint8_t rsp_accl_y[4] {};
+    uint8_t rsp_accl_z[4] {};
+    uint8_t rsp_temper[4] {};
 
     int16_t accel_x = 0;
     int16_t accel_y = 0;
@@ -246,37 +251,46 @@ void AP_InertialSensor_SCHA63T::read_accel(void)
     int16_t uno_temp = 0;
 
     // ACCL_X Cmd Send (first response is undefined data)
-    ret_scha63t &= read_register(SCHA63T_UNO, ACC_X, rsp_accl_x);
+    if (!read_register(SCHA63T_UNO, ACC_X, rsp_accl_x)) {
+        return;
+    }
     // ACCL_Y Cmd Send + ACCL_X Response Receive
-    ret_scha63t &= read_register(SCHA63T_UNO, ACC_Y, rsp_accl_x);
+    if (!read_register(SCHA63T_UNO, ACC_Y, rsp_accl_x)) {
+        return;
+    }
     // ACCL_Z Cmd Send + ACCL_Y Response Receive
-    ret_scha63t &= read_register(SCHA63T_UNO, ACC_Z, rsp_accl_y);
+    if (!read_register(SCHA63T_UNO, ACC_Z, rsp_accl_y)) {
+        return;
+    }
     // TEMPER Cmd Send + RATE_X Response Receive
-    ret_scha63t &= read_register(SCHA63T_UNO, TEMP, rsp_accl_z);
+    if (!read_register(SCHA63T_UNO, TEMP, rsp_accl_z)) {
+        return;
+    }
     // TEMPER Cmd Send + TEMPRE Response Receive
-    ret_scha63t &= read_register(SCHA63T_UNO, TEMP, rsp_temper);
+    if (!read_register(SCHA63T_UNO, TEMP, rsp_temper)) {
+        return;
+    }
 
     // response data address check
-    if (((rsp_accl_x[0] & 0x7C) >> 2) == ACC_X) {
-        accel_x = combine(rsp_accl_x[1], rsp_accl_x[2]);
-    } else {
-        ret_scha63t &= false;
+    if (((rsp_accl_x[0] & 0x7C) >> 2) != ACC_X) {
+        return;
     }
-    if (((rsp_accl_y[0] & 0x7C) >> 2) == ACC_Y) {
-        accel_y = combine(rsp_accl_y[1], rsp_accl_y[2]);
-    } else {
-        ret_scha63t &= false;
+    accel_x = combine(rsp_accl_x[1], rsp_accl_x[2]);
+
+    if (((rsp_accl_y[0] & 0x7C) >> 2) != ACC_Y) {
+        return;
     }
-    if (((rsp_accl_z[0] & 0x7C) >> 2) == ACC_Z) {
-        accel_z = combine(rsp_accl_z[1], rsp_accl_z[2]);
-    } else {
-        ret_scha63t &= false;
+    accel_y = combine(rsp_accl_y[1], rsp_accl_y[2]);
+
+    if (((rsp_accl_z[0] & 0x7C) >> 2) != ACC_Z) {
+        return;
     }
-    if (((rsp_temper[0] & 0x7C) >> 2) == TEMP) {
-        uno_temp = combine(rsp_temper[1], rsp_temper[2]);
-    } else {
-        ret_scha63t &= false;
+    accel_z = combine(rsp_accl_z[1], rsp_accl_z[2]);
+
+    if (((rsp_temper[0] & 0x7C) >> 2) != TEMP) {
+        return;
     }
+    uno_temp = combine(rsp_temper[1], rsp_temper[2]);
     set_temperature(accel_instance, uno_temp);
 
     // change coordinate system from left hand too right hand
@@ -298,7 +312,7 @@ void AP_InertialSensor_SCHA63T::read_accel(void)
 /*
   read gyro fifo
  */
-void AP_InertialSensor_SCHA63T::read_gyro(void)
+void AP_InertialSensor_SCHA63T::read_gyro()
 {
     uint8_t rsp_rate_x[4];
     uint8_t rsp_rate_y[4];
@@ -313,47 +327,61 @@ void AP_InertialSensor_SCHA63T::read_gyro(void)
     int16_t due_temp = 0;
 
     // RATE_Y Cmd Send (first response is undefined data)
-    ret_scha63t &= read_register(SCHA63T_DUE, RATE_Y, rsp_rate_y);
+    if (!read_register(SCHA63T_DUE, RATE_Y, rsp_rate_y)) {
+        return;
+    }
+
     // RATE_Z Cmd Send + RATE_Y Response Receive
-    ret_scha63t &= read_register(SCHA63T_DUE, RATE_XZ, rsp_rate_y);
+    if (!read_register(SCHA63T_DUE, RATE_XZ, rsp_rate_y)) {
+        return;
+    }
     // TEMPER Cmd Send + RATE_Z Response Receive
-    ret_scha63t &= read_register(SCHA63T_DUE, TEMP, rsp_rate_z);
+    if (!read_register(SCHA63T_DUE, TEMP, rsp_rate_z)) {
+        return;
+    }
     // TEMPER Cmd Send + TEMPRE Response Receive
-    ret_scha63t &= read_register(SCHA63T_DUE, TEMP, rsp_due_temper);
+    if (!read_register(SCHA63T_DUE, TEMP, rsp_due_temper)) {
+        return;
+    }
     // RATE_X Cmd Send + ACCL_Z Response Receive
-    ret_scha63t &= read_register(SCHA63T_UNO, RATE_XZ, rsp_rate_x);
+    if (!read_register(SCHA63T_UNO, RATE_XZ, rsp_rate_x)) {
+        return;
+    }
     // TEMPER Cmd Send + TEMPRE Response Receive
-    ret_scha63t &= read_register(SCHA63T_UNO, TEMP, rsp_rate_x);
+    if (!read_register(SCHA63T_UNO, TEMP, rsp_rate_x)) {
+        return;
+    }
     // TEMPER Cmd Send + TEMPRE Response Receive
-    ret_scha63t &= read_register(SCHA63T_UNO, TEMP, rsp_uno_temper);
+    if (!read_register(SCHA63T_UNO, TEMP, rsp_uno_temper)) {
+        return;
+    }
 
     // response data address check
-    if (((rsp_rate_x[0] & 0x7C) >> 2) == RATE_XZ) {
-        gyro_x = combine(rsp_rate_x[1], rsp_rate_x[2]);
-    } else {
-        ret_scha63t &= false;
+    if (((rsp_rate_x[0] & 0x7C) >> 2) != RATE_XZ) {
+        return;
     }
-    if (((rsp_rate_y[0] & 0x7C) >> 2) == RATE_Y) {
-        gyro_y = combine(rsp_rate_y[1], rsp_rate_y[2]);
-    } else {
-        ret_scha63t &= false;
+    gyro_x = combine(rsp_rate_x[1], rsp_rate_x[2]);
+
+    if (((rsp_rate_y[0] & 0x7C) >> 2) != RATE_Y) {
+        return;
     }
-    if (((rsp_rate_z[0] & 0x7C) >> 2) == RATE_XZ) {
-        gyro_z = combine(rsp_rate_z[1], rsp_rate_z[2]);
-    } else {
-        ret_scha63t &= false;
+    gyro_y = combine(rsp_rate_y[1], rsp_rate_y[2]);
+
+    if (((rsp_rate_z[0] & 0x7C) >> 2) != RATE_XZ) {
+        return;
     }
-    if (((rsp_uno_temper[0] & 0x7C) >> 2) == TEMP) {
-        uno_temp = combine(rsp_uno_temper[1], rsp_uno_temper[2]);
-    } else {
-        ret_scha63t &= false;
+    gyro_z = combine(rsp_rate_z[1], rsp_rate_z[2]);
+
+    if (((rsp_uno_temper[0] & 0x7C) >> 2) != TEMP) {
+        return;
     }
-    if (((rsp_due_temper[0] & 0x7C) >> 2) == TEMP) {
-        due_temp = combine(rsp_due_temper[1], rsp_due_temper[2]);
-    } else {
-        ret_scha63t &= false;
+    uno_temp = combine(rsp_uno_temper[1], rsp_uno_temper[2]);
+
+    if (((rsp_due_temper[0] & 0x7C) >> 2) != TEMP) {
+        return;
     }
-    set_temperature(gyro_instance, (uno_temp + due_temp) / 2);
+    due_temp = combine(rsp_due_temper[1], rsp_due_temper[2]);
+    set_temperature(gyro_instance, (uno_temp + due_temp) * 0.5);
 
     // change coordinate system from left hand too right hand
     gyro_z = (gyro_z == INT16_MIN) ? INT16_MAX : -gyro_z;
