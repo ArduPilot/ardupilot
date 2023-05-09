@@ -64,6 +64,12 @@ extern AP_Periph_FW periph;
 
 #define DEBUG_PKTS 0
 
+#if HAL_PERIPH_CAN_MIRROR
+  #ifndef HAL_PERIPH_CAN_MIRROR_QUEUE_SIZE
+    #define HAL_PERIPH_CAN_MIRROR_QUEUE_SIZE 64
+  #endif
+#endif //HAL_PERIPH_CAN_MIRROR
+
 #ifndef HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF
     // When enabled, can_printf() strings longer than the droneCAN max text length (90 chars)
     // are split into multiple packets instead of truncating the string. This is
@@ -81,6 +87,14 @@ static struct instance_t {
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
     HALSITL::CANIface* iface;
 #endif
+
+#if HAL_PERIPH_CAN_MIRROR
+  #if HAL_NUM_CAN_IFACES < 2
+    #error "Can't use HAL_PERIPH_CAN_MIRROR if there are not at least 2 HAL_NUM_CAN_IFACES"
+  #endif
+    ObjectBuffer<AP_HAL::CANFrame> *mirror_queue;
+    uint8_t mirror_fail_count;
+#endif // HAL_PERIPH_CAN_MIRROR
 } instances[HAL_NUM_CAN_IFACES];
 
 
@@ -1223,6 +1237,17 @@ void AP_Periph_FW::processRx(void)
             if (ins.iface->receive(rxmsg, timestamp, flags) <= 0) {
                 break;
             }
+#if HAL_PERIPH_CAN_MIRROR
+            for (auto &other_instance : instances) {
+                if (other_instance.mirror_queue == nullptr) { // we aren't mirroring here, or failed on memory
+                    continue;
+                }
+                if (other_instance.index == ins.index) { // don't self add
+                    continue;
+                }
+                other_instance.mirror_queue->push(rxmsg);
+            }
+#endif // HAL_PERIPH_CAN_MIRROR
             rx_frame.data_len = AP_HAL::CANFrame::dlcToDataLength(rxmsg.dlc);
             memcpy(rx_frame.data, rxmsg.data, rx_frame.data_len);
 #if HAL_CANFD_SUPPORTED
@@ -1256,6 +1281,40 @@ void AP_Periph_FW::processRx(void)
         }
     }
 }
+
+#if HAL_PERIPH_CAN_MIRROR
+void AP_Periph_FW::processMirror(void)
+{
+    const uint64_t deadline = AP_HAL::micros64() + 1000000;
+
+    for (auto &ins : instances) {
+        if (ins.iface == nullptr || ins.mirror_queue == nullptr) { // can't send on a null interface
+            continue;
+        }
+
+        const uint32_t pending = ins.mirror_queue->available();
+        for (uint32_t i = 0; i < pending; i++) { // limit how long we can loop
+            AP_HAL::CANFrame txmsg {};
+
+            if (!ins.mirror_queue->peek(txmsg)) {
+                break;
+            }
+
+            if (ins.iface->send(txmsg, deadline, 0) <= 0) {
+                if (ins.mirror_fail_count < 8) {
+                    ins.mirror_fail_count++;
+                } else {
+                    ins.mirror_queue->pop();
+                }
+                break;
+            } else {
+                ins.mirror_fail_count = 0;
+                ins.mirror_queue->pop();
+            }
+        }
+    }
+}
+#endif // HAL_PERIPH_CAN_MIRROR
 
 uint16_t AP_Periph_FW::pool_peak_percent()
 {
@@ -1524,6 +1583,11 @@ void AP_Periph_FW::can_start()
 #endif
         instances[i].iface = can_iface_periph[i];
         instances[i].index = i;
+#if HAL_PERIPH_CAN_MIRROR
+        if ((g.can_mirror_ports & (1U << i)) != 0) {
+            instances[i].mirror_queue = new ObjectBuffer<AP_HAL::CANFrame> (HAL_PERIPH_CAN_MIRROR_QUEUE_SIZE);
+        }
+#endif //HAL_PERIPH_CAN_MIRROR
 #if HAL_NUM_CAN_IFACES >= 2
         can_protocol_cached[i] = g.can_protocol[i];
         CANSensor::set_periph(i, can_protocol_cached[i], can_iface_periph[i]);
@@ -1749,6 +1813,9 @@ void AP_Periph_FW::can_update()
 
         processTx();
         processRx();
+#if HAL_PERIPH_CAN_MIRROR
+        processMirror();
+#endif // HAL_PERIPH_CAN_MIRROR
     }
 }
 
