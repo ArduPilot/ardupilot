@@ -68,66 +68,78 @@ bool ModeTakeoff::_enter()
 
 void ModeTakeoff::update()
 {
-    if (!takeoff_started) {
-        // see if we will skip takeoff as already flying
-        if (plane.is_flying() && (millis() - plane.started_flying_ms > 10000U) && ahrs.groundspeed() > 3) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Takeoff skipped - circling");
-            plane.prev_WP_loc = plane.current_loc;
-            plane.next_WP_loc = plane.current_loc;
-            takeoff_started = true;
-            plane.set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
-        }
-    }
-
-    if (!takeoff_started) {
-        // setup target location 1.5 times loiter radius from the
-        // takeoff point, at a height of TKOFF_ALT
-        const float dist = target_dist;
-        const float alt = target_alt;
-        const float direction = degrees(ahrs.yaw);
-
-        start_loc = plane.current_loc;
+    // don't setup waypoints if we dont have a valid position and home!
+    if (plane.current_loc.initialised() && AP::ahrs().home_is_set()) {
         plane.prev_WP_loc = plane.current_loc;
-        plane.next_WP_loc = plane.current_loc;
-        plane.next_WP_loc.alt += alt*100.0;
-        plane.next_WP_loc.offset_bearing(direction, dist);
+        const float dist = target_dist;
+        const float alt = target_alt;  
+        if (!takeoff_started) {
+            const uint16_t altitude = plane.relative_ground_altitude(false,true);
+            const float direction = degrees(ahrs.yaw);
+            // if already flying skip takeoff climb if above TKOFF_ALT above ground, otherwise climb then loiter
+            // if not flying setup target location TKOFF_DIST from
+            // takeoff point, at a height of TKOFF_ALT
+            if (plane.is_flying() && (millis() - plane.started_flying_ms > 10000U) && ahrs.groundspeed() > 3) {
+                if (altitude >= alt) {
+                   gcs().send_text(MAV_SEVERITY_INFO, "Above TKOFF alt - loitering");
+                   plane.next_WP_loc = plane.current_loc;
+                   takeoff_started = true;
+                   plane.set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
+                } else {
+                   gcs().send_text(MAV_SEVERITY_INFO, "Climbing to TKOFF alt then loitering");
+                   plane.next_WP_loc = plane.current_loc;
+                   plane.next_WP_loc.alt += ((alt - altitude) *100);
+                   plane.next_WP_loc.offset_bearing(direction, dist);
+                   takeoff_started = true;
+                   plane.set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
+                }
+            // not flying so do a full takeoff sequence      
+            } else {
+                // setup target waypoint and alt for loiter at dist and alt from start
 
-        plane.crash_state.is_crashed = false;
+                start_loc = plane.current_loc;
+                plane.prev_WP_loc = plane.current_loc;
+                plane.next_WP_loc = plane.current_loc;
+                plane.next_WP_loc.alt += alt*100.0;
+                plane.next_WP_loc.offset_bearing(direction, dist);
 
-        plane.auto_state.takeoff_pitch_cd = level_pitch * 100;
+                plane.crash_state.is_crashed = false;
 
-        plane.set_flight_stage(AP_FixedWing::FlightStage::TAKEOFF);
+                plane.auto_state.takeoff_pitch_cd = level_pitch * 100;
 
-        if (!plane.throttle_suppressed) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Takeoff to %.0fm at %.1fm to %.1f deg",
-                            alt, dist, direction);
-            takeoff_started = true;
+                plane.set_flight_stage(AP_FixedWing::FlightStage::TAKEOFF);
+
+                if (!plane.throttle_suppressed) {
+                    gcs().send_text(MAV_SEVERITY_INFO, "Takeoff to %.0fm for %.1fm heading %.1f deg",
+                        alt, dist, direction);
+                    takeoff_started = true;
+                }
+            }
+        }
+
+        // we finish the initial level takeoff if we climb past
+        // TKOFF_LVL_ALT or we pass the target location. The check for
+        // target location prevents us flying forever if we can't climb
+        // reset the loiter waypoint target to be correct bearing and dist 
+        // from starting location in case original yaw used to set it was off due to EKF 
+        // reset or compass interference from max throttle
+        if (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF &&
+            (plane.current_loc.alt - start_loc.alt >= level_alt*100 ||
+             start_loc.get_distance(plane.current_loc) >= dist)) {
+            // reset the target loiter waypoint using current yaw which should be close to correct starting heading
+            const float direction = degrees(ahrs.yaw);
+            const float distance = dist- start_loc.get_distance(plane.current_loc);
+            plane.next_WP_loc = start_loc;
+            plane.next_WP_loc.offset_bearing(direction, distance);
+            plane.next_WP_loc.alt += alt*100.0;
+       
+        plane.set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
+            
+#if AP_FENCE_ENABLED
+            plane.fence.auto_enable_fence_after_takeoff();
+#endif
         }
     }
-
-    // we finish the initial level takeoff if we climb past
-    // TKOFF_LVL_ALT or we pass the target location. The check for
-    // target location prevents us flying forever if we can't climb
-    if (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF &&
-        (plane.current_loc.alt - start_loc.alt >= level_alt*100 ||
-         start_loc.get_distance(plane.current_loc) >= target_dist)) {
-        // reached level alt, re-calculate bearing to cope with systems with no compass
-        // or with poor initial compass
-        float direction = start_loc.get_bearing_to(plane.current_loc) * 0.01;
-        float dist_done = start_loc.get_distance(plane.current_loc);
-        const float dist = target_dist;
-
-        plane.next_WP_loc = plane.current_loc;
-        plane.next_WP_loc.offset_bearing(direction, MAX(dist-dist_done, 0));
-        plane.next_WP_loc.alt = start_loc.alt + target_alt*100.0;
-
-        plane.set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
-        
-#if AP_FENCE_ENABLED
-        plane.fence.auto_enable_fence_after_takeoff();
-#endif
-    }
-
     if (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF) {
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 100.0);
         plane.takeoff_calc_roll();
