@@ -72,6 +72,10 @@
 #define AP_PERIPH_SAFETY_SWITCH_ENABLED defined(HAL_PERIPH_ENABLE_RC_OUT)
 #endif
 
+#ifndef HAL_PERIPH_CAN_MIRROR
+#define HAL_PERIPH_CAN_MIRROR 0
+#endif
+
 #include "Parameters.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -103,7 +107,6 @@ struct CanardRxTransfer;
     #define HAL_CAN_POOL_SIZE 4000
 #endif
 #endif
-
 
 class AP_Periph_FW {
 public:
@@ -439,6 +442,9 @@ public:
     void process1HzTasks(uint64_t timestamp_usec);
     void processTx(void);
     void processRx(void);
+#if HAL_PERIPH_CAN_MIRROR
+    void processMirror(void);
+#endif // HAL_PERIPH_CAN_MIRROR
     void cleanup_stale_transactions(uint64_t &timestamp_usec);
     void update_rx_protocol_stats(int16_t res);
     void node_status_send(void);

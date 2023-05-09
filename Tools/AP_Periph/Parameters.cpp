@@ -599,6 +599,15 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 #endif
 #endif // AP_SIM_ENABLED
 
+#if HAL_PERIPH_CAN_MIRROR
+    // @Param: CAN_MIRROR_PORTS
+    // @DisplayName: CAN ports to mirror traffic between
+    // @Description: Any set ports will participate in blindly mirroring traffic from one port to the other. It is the users responsibility to ensure that no loops exist that cause traffic to be infinitly repeated, and both ports must be running the same baud rates.
+    // @Bitmask: 0:CAN1, 1:CAN2
+    // @User: Advanced
+    GSCALAR(can_mirror_ports, "CAN_MIRROR_PORTS", 0),
+#endif // HAL_PERIPH_CAN_MIRROR
+
     AP_VAREND
 };
 
