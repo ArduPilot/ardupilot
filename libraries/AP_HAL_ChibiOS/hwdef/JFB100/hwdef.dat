@@ -1,6 +1,5 @@
 # hw definition file for processing by chibios_hwdef.py
-# for JAE JFB-100 hardware.(modifid based fmuv5)
-define AP_CUSTOM_FIRMWARE_STRING "(JFB100 V1.0.0)"
+# for JAE JFB-100 hardware.(modified based fmuv5)
 
 # MCU class and specific type. It is a F765, which is the same as F767
 # but without the TFT interface
