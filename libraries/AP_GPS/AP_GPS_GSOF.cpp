@@ -46,7 +46,7 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
                          AP_HAL::UARTDriver *_port) :
     AP_GPS_Backend(_gps, _state, _port)
 {
-    gsof_msg.gsof_state = gsof_msg_parser_t::STARTTX;
+    gsof_msg.gsof_state = gsof_msg_parser_t::gsof_states::STARTTX;
 
     // baud request for port 0
     requestBaud(0);
@@ -91,49 +91,49 @@ AP_GPS_GSOF::parse(const uint8_t temp)
     switch (gsof_msg.gsof_state)
     {
     default:
-    case gsof_msg_parser_t::STARTTX:
+    case gsof_msg_parser_t::gsof_states::STARTTX:
         if (temp == GSOF_STX)
         {
-            gsof_msg.gsof_state = gsof_msg_parser_t::STATUS;
+            gsof_msg.gsof_state = gsof_msg_parser_t::gsof_states::STATUS;
             gsof_msg.read = 0;
             gsof_msg.checksumcalc = 0;
         }
         break;
-    case gsof_msg_parser_t::STATUS:
+    case gsof_msg_parser_t::gsof_states::STATUS:
         gsof_msg.status = temp;
-        gsof_msg.gsof_state = gsof_msg_parser_t::PACKETTYPE;
+        gsof_msg.gsof_state = gsof_msg_parser_t::gsof_states::PACKETTYPE;
         gsof_msg.checksumcalc += temp;
         break;
-    case gsof_msg_parser_t::PACKETTYPE:
+    case gsof_msg_parser_t::gsof_states::PACKETTYPE:
         gsof_msg.packettype = temp;
-        gsof_msg.gsof_state = gsof_msg_parser_t::LENGTH;
+        gsof_msg.gsof_state = gsof_msg_parser_t::gsof_states::LENGTH;
         gsof_msg.checksumcalc += temp;
         break;
-    case gsof_msg_parser_t::LENGTH:
+    case gsof_msg_parser_t::gsof_states::LENGTH:
         gsof_msg.length = temp;
-        gsof_msg.gsof_state = gsof_msg_parser_t::DATA;
+        gsof_msg.gsof_state = gsof_msg_parser_t::gsof_states::DATA;
         gsof_msg.checksumcalc += temp;
         break;
-    case gsof_msg_parser_t::DATA:
+    case gsof_msg_parser_t::gsof_states::DATA:
         gsof_msg.data[gsof_msg.read] = temp;
         gsof_msg.read++;
         gsof_msg.checksumcalc += temp;
         if (gsof_msg.read >= gsof_msg.length)
         {
-            gsof_msg.gsof_state = gsof_msg_parser_t::CHECKSUM;
+            gsof_msg.gsof_state = gsof_msg_parser_t::gsof_states::CHECKSUM;
         }
         break;
-    case gsof_msg_parser_t::CHECKSUM:
+    case gsof_msg_parser_t::gsof_states::CHECKSUM:
         gsof_msg.checksum = temp;
-        gsof_msg.gsof_state = gsof_msg_parser_t::ENDTX;
+        gsof_msg.gsof_state = gsof_msg_parser_t::gsof_states::ENDTX;
         if (gsof_msg.checksum == gsof_msg.checksumcalc)
         {
             return process_message();
         }
         break;
-    case gsof_msg_parser_t::ENDTX:
+    case gsof_msg_parser_t::gsof_states::ENDTX:
         gsof_msg.endtx = temp;
-        gsof_msg.gsof_state = gsof_msg_parser_t::STARTTX;
+        gsof_msg.gsof_state = gsof_msg_parser_t::gsof_states::STARTTX;
         break;
     }
 

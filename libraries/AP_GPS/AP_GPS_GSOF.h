@@ -48,10 +48,10 @@ private:
     uint32_t SwapUint32(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
     uint16_t SwapUint16(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
 
-
     struct gsof_msg_parser_t
     {
-        enum
+
+        enum class gsof_states
         {
             STARTTX = 0,
             STATUS,
@@ -60,7 +60,9 @@ private:
             DATA,
             CHECKSUM,
             ENDTX
-        } gsof_state;
+        };
+
+        gsof_states gsof_state;
 
         uint8_t status;
         uint8_t packettype;
