@@ -178,6 +178,7 @@ public:
         Ainstein_LR_D1 = 42,
 #endif
 #if AP_RANGEFINDER_SIM_ENABLED
+        RDS02UF = 43,
         SIM = 100,
 #endif
     };
