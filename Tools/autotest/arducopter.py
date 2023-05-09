@@ -8396,6 +8396,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             ("teraranger_serial", 35),
             ("nooploop_tofsense", 37),
             ("ainsteinlrd1", 42),
+            ("rds02uf", 43),
         ]
         while len(drivers):
             do_drivers = drivers[0:3]
