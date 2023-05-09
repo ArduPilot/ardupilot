@@ -83,6 +83,7 @@ public:
         k_param_ahrs,
         k_param_battery_balance,
         k_param_battery_hide_mask,
+        k_param_can_mirror_ports,
     };
 
     AP_Int16 format_version;
@@ -192,6 +193,10 @@ public:
     AP_Int32 efi_baudrate;
     AP_Int8 efi_port;
 #endif
+
+#if HAL_PERIPH_CAN_MIRROR
+    AP_Int8 can_mirror_ports;
+#endif // HAL_PERIPH_CAN_MIRROR
     
 #if HAL_CANFD_SUPPORTED
     AP_Int8 can_fdmode;
