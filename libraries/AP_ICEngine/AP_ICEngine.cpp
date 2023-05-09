@@ -217,6 +217,12 @@ void AP_ICEngine::update(void)
         start_chan_last_value = cvalue;
     }
 
+    if (state == ICE_START_HEIGHT_DELAY && start_chan_last_value >= RC_Channel::AUX_PWM_TRIGGER_HIGH) {
+        // user is overriding the height start delay and asking for
+        // immediate start. Put into ICE_OFF so that the logic below
+        // can start the engine now
+        state = ICE_OFF;
+    }
 
     if (state == ICE_OFF && start_chan_last_value >= RC_Channel::AUX_PWM_TRIGGER_HIGH) {
         should_run = true;
@@ -433,6 +439,10 @@ bool AP_ICEngine::engine_control(float start_control, float cold_start, float he
     if (start_control <= 0) {
         state = ICE_OFF;
         return true;
+    }
+    if (state == ICE_RUNNING || state == ICE_START_DELAY || state == ICE_STARTING) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Engine: already running");
+        return false;
     }
     RC_Channel *c = rc().channel(start_chan-1);
     if (c != nullptr && rc().has_valid_input()) {
