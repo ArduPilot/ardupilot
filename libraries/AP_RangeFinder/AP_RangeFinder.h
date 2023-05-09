@@ -175,6 +175,7 @@ public:
         JRE_Serial = 41,
 #endif
 #if AP_RANGEFINDER_SIM_ENABLED
+        RDS02UF = 42,
         SIM = 100,
 #endif
     };
