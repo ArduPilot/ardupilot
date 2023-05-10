@@ -262,7 +262,7 @@ bool AP_Landing::verify_land(const Location &prev_WP_loc, Location &next_WP_loc,
 }
 
 bool AP_Landing::verify_abort_landing(const Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc,
-    const int32_t auto_state_takeoff_altitude_rel_cm, bool &throttle_suppressed)
+    const int32_t auto_state_abort_target_alt_rel_cm, bool &throttle_suppressed)
 {
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
@@ -276,9 +276,14 @@ bool AP_Landing::verify_abort_landing(const Location &prev_WP_loc, Location &nex
     default:
         break;
     }
+    
+    
+    float relative_altitude_cm;
+    ahrs.get_relative_position_D_home(relative_altitude_cm);
+    relative_altitude_cm *= -100.0f;
 
     // see if we have reached abort altitude
-     if (adjusted_relative_altitude_cm_fn() > auto_state_takeoff_altitude_rel_cm) {
+     if (relative_altitude_cm > auto_state_abort_target_alt_rel_cm) {
          next_WP_loc = current_loc;
          mission.stop();
          if (restart_landing_sequence()) {
