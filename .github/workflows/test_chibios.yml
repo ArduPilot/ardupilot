@@ -30,35 +30,19 @@ jobs:
             revo-mini,
             MatekF405-Wing,
             CubeOrange-ODID,
+            CubeRedPrimary-bootloader,
             configure-all,
             build-options-defaults-test,
             signing
         ]
         toolchain: [
-            chibios,  # GCC-6
+            chibios,
             #chibios-clang,
         ]
-        gcc: [6, 10]
+        gcc: [10]
         exclude:
           - gcc: 10
             toolchain: chibios-clang
-          - gcc: 6
-            config: fmuv2-plane
-          - gcc: 6
-            config: revo-mini
-          - gcc: 6
-            config: MatekF405-Wing
-          - gcc: 6
-            config: periph-build
-          - gcc: 6
-            config: CubeOrange-ODID
-          - gcc: 6
-            config: signing
-          - gcc: 6
-            config: fmuv3-bootloader
-        include:
-          - config: stm32h7
-            toolchain: chibios-py2
 
     steps:
       # git checkout the PR

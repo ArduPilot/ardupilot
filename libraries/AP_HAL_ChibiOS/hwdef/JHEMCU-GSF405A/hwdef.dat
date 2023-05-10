@@ -85,8 +85,8 @@ DMA_NOSHARE USART1_RX TIM5_CH4 TIM5_UP
 # Buzzer
 PC13 BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
-define HAL_BUZZER_ON 1
-define HAL_BUZZER_OFF 0
+
+
 
 # I2C1
 PB8 I2C1_SCL I2C1
@@ -115,9 +115,8 @@ SPIDEV osd        SPI3 DEVID3 OSD_CS MODE0 10*MHZ 10*MHZ
 # One IMU rotated in yaw
 IMU Invensense SPI:mpu6000 ROTATION_YAW_90
 
-# Probe for I2C BMP280, but allow external baro
+# Probe for I2C BMP280
 BARO BMP280 I2C:0:0x76
-define HAL_PROBE_EXTERNAL_I2C_BAROS
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types

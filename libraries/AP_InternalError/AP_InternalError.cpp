@@ -22,6 +22,9 @@ void AP_InternalError::error(const AP_InternalError::error_t e, uint16_t line) {
         AP_HAL::panic("AP_InternalError::error_t::%s", buffer);
     }
 #endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+if (e == AP_InternalError::error_t::imu_reset) return;// don't worry about this for esp32
+#endif
     internal_errors |= uint32_t(e);
     total_error_count++;
     last_line = line;

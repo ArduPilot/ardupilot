@@ -38,7 +38,6 @@ class CheckAutoTestSpeedup(object):
         '''run cmd_list, spewing and setting output in self'''
         self.progress("Running (%s)" % " ".join(cmd_list))
         p = subprocess.Popen(cmd_list,
-                             bufsize=1,
                              stdin=None,
                              close_fds=True,
                              stdout=subprocess.PIPE,

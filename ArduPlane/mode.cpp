@@ -32,6 +32,9 @@ bool Mode::enter()
 
     // cancel inverted flight
     plane.auto_state.inverted_flight = false;
+    
+    // cancel waiting for rudder neutral
+    plane.takeoff_state.waiting_for_rudder_neutral = false;
 
     // don't cross-track when starting a mission
     plane.auto_state.next_wp_crosstrack = false;
@@ -196,4 +199,16 @@ bool Mode::_pre_arm_checks(size_t buflen, char *buffer) const
     }
 #endif
     return true;
+}
+
+void Mode::run()
+{
+    // Direct stick mixing functionality has been removed, so as not to remove all stick mixing from the user completely
+    // the old direct option is now used to enable fbw mixing, this is easier than doing a param conversion.
+    if ((plane.g.stick_mixing == StickMixing::FBW) || (plane.g.stick_mixing == StickMixing::DIRECT_REMOVED)) {
+        plane.stabilize_stick_mixing_fbw();
+    }
+    plane.stabilize_roll();
+    plane.stabilize_pitch();
+    plane.stabilize_yaw();
 }

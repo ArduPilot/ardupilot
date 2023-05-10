@@ -424,8 +424,8 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: FS_LONG_ACTN
     // @DisplayName: Long failsafe action
-    // @Description: The action to take on a long (FS_LONG_TIMEOUT seconds) failsafe event. If the aircraft was in a stabilization or manual mode when failsafe started and a long failsafe occurs then it will change to RTL mode if FS_LONG_ACTN is 0 or 1, and will change to FBWA if FS_LONG_ACTN is set to 2. If the aircraft was in an auto mode (such as AUTO or GUIDED) when the failsafe started then it will continue in the auto mode if FS_LONG_ACTN is set to 0, will change to RTL mode if FS_LONG_ACTN is set to 1 and will change to FBWA mode if FS_LONG_ACTN is set to 2. If FS_LONG_ACTION is set to 3, the parachute will be deployed (make sure the chute is configured and enabled). 
-    // @Values: 0:Continue,1:ReturnToLaunch,2:Glide,3:Deploy Parachute
+    // @Description: The action to take on a long (FS_LONG_TIMEOUT seconds) failsafe event. If the aircraft was in a stabilization or manual mode when failsafe started and a long failsafe occurs then it will change to RTL mode if FS_LONG_ACTN is 0 or 1, and will change to FBWA if FS_LONG_ACTN is set to 2. If the aircraft was in an auto mode (such as AUTO or GUIDED) when the failsafe started then it will continue in the auto mode if FS_LONG_ACTN is set to 0, will change to RTL mode if FS_LONG_ACTN is set to 1 and will change to FBWA mode if FS_LONG_ACTN is set to 2. If FS_LONG_ACTN is set to 3, the parachute will be deployed (make sure the chute is configured and enabled). If FS_LONG_ACTN is set to 4 the aircraft will switch to mode AUTO with the current waypoint if it is not already in mode AUTO, unless it is in the middle of a landing sequence.
+    // @Values: 0:Continue,1:ReturnToLaunch,2:Glide,3:Deploy Parachute,4:Auto
     // @User: Standard
     GSCALAR(fs_action_long,         "FS_LONG_ACTN",   FS_ACTION_LONG_CONTINUE),
 
@@ -1092,6 +1092,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Bitmask: 10: Adjust mid-throttle to be TRIM_THROTTLE in non-auto throttle modes except MANUAL
     // @Bitmask: 11: Disable suppression of fixed wing rate gains in ground mode
     // @Bitmask: 12: Enable FBWB style loiter altitude control
+    // @Bitmask: 13: Indicate takeoff waiting for neutral rudder with flight control surfaces
     // @User: Advanced
     AP_GROUPINFO("FLIGHT_OPTIONS", 13, ParametersG2, flight_options, 0),
 

@@ -59,6 +59,7 @@
 #include <AC_Fence/AC_Fence.h>
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
 #include <Filter/LowPassFilter.h>
+#include <AP_KDECAN/AP_KDECAN.h>
 
 class AP_DDS_Client;
 
@@ -266,7 +267,7 @@ protected:
     // board specific config
     AP_BoardConfig BoardConfig;
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if HAL_CANMANAGER_ENABLED
     // board specific config for CAN bus
     AP_CANManager can_mgr;
 #endif
@@ -363,6 +364,10 @@ protected:
 
 #if HAL_NMEA_OUTPUT_ENABLED
     AP_NMEA_Output nmea;
+#endif
+
+#if AP_KDECAN_ENABLED
+    AP_KDECAN kdecan;
 #endif
 
 #if AP_FENCE_ENABLED

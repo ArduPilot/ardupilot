@@ -17,7 +17,7 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
     // @Param: _DEFLT_MODE
     // @DisplayName: Mount default operating mode
     // @Description: Mount default operating mode on startup and after control is returned from autopilot
-    // @Values: 0:Retracted,1:Neutral,2:MavLink Targeting,3:RC Targeting,4:GPS Point,6:Home Location
+    // @Values: 0:Retracted,1:Neutral,2:MavLink Targeting,3:RC Targeting,4:GPS Point,5:SysID Target,6:Home Location
     // @User: Standard
     AP_GROUPINFO("_DEFLT_MODE", 2, AP_Mount_Params, default_mode, MAV_MOUNT_MODE_RC_TARGETING),
 
@@ -152,6 +152,12 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_LEAD_PTCH", 13, AP_Mount_Params, pitch_stb_lead, 0.0f),
 
+    // @Param: _SYSID_DFLT
+    // @DisplayName: Mount Target sysID
+    // @Description: Default Target sysID for the mount to point to
+    // @RebootRequired: True
+    // @User: Standard
+    AP_GROUPINFO("_SYSID_DFLT", 14, AP_Mount_Params, sysid_default, 0),
     AP_GROUPEND
 };
 

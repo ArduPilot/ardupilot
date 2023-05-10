@@ -135,8 +135,8 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     AP_GROUPINFO("_WIND_MAX", 22, AP_Airspeed, _wind_max, 0),
 
     // @Param: _WIND_WARN
-    // @DisplayName: Airspeed and ground speed difference that gives a warning
-    // @Description: If the difference between airspeed and ground speed is greater than this value the sensor will issue a warning. If 0 ARSPD_WIND_MAX is used.
+    // @DisplayName: Airspeed and GPS speed difference that gives a warning
+    // @Description: If the difference between airspeed and GPS speed is greater than this value the sensor will issue a warning. If 0 ARSPD_WIND_MAX is used.
     // @Description{Copter, Blimp, Rover, Sub}: This parameter and function is not used by this vehicle. Always set to 0.
     // @Units: m/s
     // @User: Advanced
@@ -144,7 +144,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
     // @Param: _WIND_GATE
     // @DisplayName: Re-enable Consistency Check Gate Size
-    // @Description: Number of standard deviations applied to the re-enable EKF consistency check that is used when ARSPD_OPTIONS bit position 3 is set. Larger values will make the re-enabling of the airspeed sensor faster, but increase the likelihood of re-enabling a degraded sensor. The value can be tuned by using the ARSP.TR log message by setting ARSP_WIND_GATE to a value that is higher than the value for ARSP.TR observed with a healthy airspeed sensor. Occasional transients in ARSP.TR above the value set by ARSP_WIND_GATE can be tolerated provided they are less than 5 seconds in duration and less than 10% duty cycle.
+    // @Description: Number of standard deviations applied to the re-enable EKF consistency check that is used when ARSPD_OPTIONS bit position 3 is set. Larger values will make the re-enabling of the airspeed sensor faster, but increase the likelihood of re-enabling a degraded sensor. The value can be tuned by using the ARSP.TR log message by setting ARSPD_WIND_GATE to a value that is higher than the value for ARSP.TR observed with a healthy airspeed sensor. Occasional transients in ARSP.TR above the value set by ARSPD_WIND_GATE can be tolerated provided they are less than 5 seconds in duration and less than 10% duty cycle.
     // @Description{Copter, Blimp, Rover, Sub}: This parameter and function is not used by this vehicle.
     // @Range: 0.0 10.0
     // @User: Advanced

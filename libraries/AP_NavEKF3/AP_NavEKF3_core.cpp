@@ -137,7 +137,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     }
     // Note: range beacon data is read one beacon at a time and can arrive at a high rate
 #if EK3_FEATURE_BEACON_FUSION
-    if(dal.beacon() && !storedRangeBeacon.init(imu_buffer_length+1)) {
+    if(dal.beacon() && !rngBcn.storedRange.init(imu_buffer_length+1)) {
         return false;
     }
 #endif
@@ -281,6 +281,7 @@ void NavEKF3_core::InitialiseVariables()
     tiltErrorVariance = sq(M_2PI);
     tiltAlignComplete = false;
     yawAlignComplete = false;
+    yawAlignGpsValidCount = 0;
     have_table_earth_field = false;
     stateIndexLim = 23;
     last_gps_idx = 0;
@@ -344,44 +345,44 @@ void NavEKF3_core::InitialiseVariables()
 
     // range beacon fusion variables
 #if EK3_FEATURE_BEACON_FUSION
-    memset((void *)&rngBcnDataDelayed, 0, sizeof(rngBcnDataDelayed));
-    lastRngBcnPassTime_ms = 0;
-    rngBcnTestRatio = 0.0f;
-    rngBcnHealth = false;
-    varInnovRngBcn = 0.0f;
-    innovRngBcn = 0.0f;
-    memset(&lastTimeRngBcn_ms, 0, sizeof(lastTimeRngBcn_ms));
-    rngBcnDataToFuse = false;
-    beaconVehiclePosNED.zero();
-    beaconVehiclePosErr = 1.0f;
-    rngBcnLast3DmeasTime_ms = 0;
-    rngBcnGoodToAlign = false;
-    lastRngBcnChecked = 0;
-    receiverPos.zero();
-    memset(&receiverPosCov, 0, sizeof(receiverPosCov));
-    rngBcnAlignmentStarted =  false;
-    rngBcnAlignmentCompleted = false;
-    lastBeaconIndex = 0;
-    rngBcnPosSum.zero();
-    numBcnMeas = 0;
-    rngSum = 0.0f;
-    N_beacons = 0;
-    maxBcnPosD = 0.0f;
-    minBcnPosD = 0.0f;
-    bcnPosDownOffsetMax = 0.0f;
-    bcnPosOffsetMaxVar = 0.0f;
-    maxOffsetStateChangeFilt = 0.0f;
-    bcnPosDownOffsetMin = 0.0f;
-    bcnPosOffsetMinVar = 0.0f;
-    minOffsetStateChangeFilt = 0.0f;
-    rngBcnFuseDataReportIndex = 0;
+    memset((void *)&rngBcn.dataDelayed, 0, sizeof(rngBcn.dataDelayed));
+    rngBcn.lastPassTime_ms = 0;
+    rngBcn.testRatio = 0.0f;
+    rngBcn.health = false;
+    rngBcn.varInnov = 0.0f;
+    rngBcn.innov = 0.0f;
+    memset(&rngBcn.lastTime_ms, 0, sizeof(rngBcn.lastTime_ms));
+    rngBcn.dataToFuse = false;
+    rngBcn.vehiclePosNED.zero();
+    rngBcn.vehiclePosErr = 1.0f;
+    rngBcn.last3DmeasTime_ms = 0;
+    rngBcn.goodToAlign = false;
+    rngBcn.lastChecked = 0;
+    rngBcn.receiverPos.zero();
+    memset(&rngBcn.receiverPosCov, 0, sizeof(rngBcn.receiverPosCov));
+    rngBcn.alignmentStarted =  false;
+    rngBcn.alignmentCompleted = false;
+    rngBcn.lastIndex = 0;
+    rngBcn.posSum.zero();
+    rngBcn.numMeas = 0;
+    rngBcn.sum = 0.0f;
+    rngBcn.N = 0;
+    rngBcn.maxPosD = 0.0f;
+    rngBcn.minPosD = 0.0f;
+    rngBcn.posDownOffsetMax = 0.0f;
+    rngBcn.posOffsetMaxVar = 0.0f;
+    rngBcn.maxOffsetStateChangeFilt = 0.0f;
+    rngBcn.posDownOffsetMin = 0.0f;
+    rngBcn.posOffsetMinVar = 0.0f;
+    rngBcn.minOffsetStateChangeFilt = 0.0f;
+    rngBcn.fuseDataReportIndex = 0;
     if (dal.beacon()) {
-        if (rngBcnFusionReport == nullptr) {
-            rngBcnFusionReport = new rngBcnFusionReport_t[dal.beacon()->count()];
+        if (rngBcn.fusionReport == nullptr) {
+            rngBcn.fusionReport = new BeaconFusion::FusionReport[dal.beacon()->count()];
         }
     }
-    bcnPosOffsetNED.zero();
-    bcnOriginEstInit = false;
+    rngBcn.posOffsetNED.zero();
+    rngBcn.originEstInit = false;
 #endif  // EK3_FEATURE_BEACON_FUSION
 
 #if EK3_FEATURE_BODY_ODOM
@@ -424,7 +425,7 @@ void NavEKF3_core::InitialiseVariables()
     storedRange.reset();
     storedOutput.reset();
 #if EK3_FEATURE_BEACON_FUSION
-    storedRangeBeacon.reset();
+    rngBcn.storedRange.reset();
 #endif
 #if EK3_FEATURE_BODY_ODOM
     storedBodyOdm.reset();
@@ -449,7 +450,6 @@ void NavEKF3_core::InitialiseVariables()
 
     effectiveMagCal = effective_magCal();
 }
-
 
 // Use a function call rather than a constructor to initialise variables because it enables the filter to be re-started in flight if necessary.
 void NavEKF3_core::InitialiseVariablesMag()
@@ -821,7 +821,7 @@ void NavEKF3_core::UpdateStrapdownEquationsNED()
 #if EK3_FEATURE_BEACON_FUSION
     // If main filter velocity states are valid, update the range beacon receiver position states
     if (filterStatus.flags.horiz_vel) {
-        receiverPos += (stateStruct.velocity + lastVelocity) * (imuDataDelayed.delVelDT*0.5f);
+        rngBcn.receiverPos += (stateStruct.velocity + lastVelocity) * (imuDataDelayed.delVelDT*0.5f);
     }
 #endif
 }
@@ -2064,7 +2064,7 @@ void NavEKF3_core::setYawFromMag()
     Matrix3F Tbn_zeroYaw;
     if (order == rotationOrder::TAIT_BRYAN_321) {
         // rolled more than pitched so use 321 rotation order
-        stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+        stateStruct.quat.to_euler(eulerAngles);
         Tbn_zeroYaw.from_euler(eulerAngles.x, eulerAngles.y, 0.0f);
     } else if (order == rotationOrder::TAIT_BRYAN_312) {
         // pitched more than rolled so use 312 rotation order

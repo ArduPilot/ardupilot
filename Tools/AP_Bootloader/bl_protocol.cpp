@@ -323,8 +323,10 @@ jump_to_app()
     rccDisableAPB1(~0);
 #endif
     rccDisableAPB2(~0);
-#if HAL_USE_SERIAL_USB == TRUE    
+#if HAL_USE_SERIAL_USB == TRUE
+#if !defined(STM32_OTG2_IS_OTG1)
     rccResetOTG_FS();
+#endif
 #if defined(rccResetOTG_HS)
     rccResetOTG_HS();
 #endif

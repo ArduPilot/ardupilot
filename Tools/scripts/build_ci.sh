@@ -252,6 +252,14 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "CubeRedPrimary-bootloader" ]; then
+        echo "Building CubeRedPrimary bootloader"
+        $waf configure --board CubeRedPrimary --bootloader
+        $waf clean
+        $waf bootloader
+        continue
+    fi
+
     if [ "$t" == "fmuv3-bootloader" ]; then
         echo "Building fmuv3 bootloader"
         $waf configure --board fmuv3 --bootloader

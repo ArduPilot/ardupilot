@@ -912,11 +912,11 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
     }
 
     // assume 3DR power brick
-    voltage_pin_value = float_to_uint16(((voltage / 10.1f) / 5.0f) * 1024);
-    current_pin_value = float_to_uint16(((_current / 17.0f) / 5.0f) * 1024);
+    voltage_pin_voltage = (voltage / 10.1f);
+    current_pin_voltage = _current/17.0f;
     // fake battery2 as just a 25% gain on the first one
-    voltage2_pin_value = float_to_uint16(((voltage * 0.25f / 10.1f) / 5.0f) * 1024);
-    current2_pin_value = float_to_uint16(((_current * 0.25f / 17.0f) / 5.0f) * 1024);
+    voltage2_pin_voltage = voltage_pin_voltage * .25f;
+    current2_pin_voltage = current_pin_voltage * .25f;
 }
 
 void SITL_State::init(int argc, char * const argv[])

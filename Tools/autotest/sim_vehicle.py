@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Framework to start a simulated vehicle and connect it to MAVProxy.
@@ -415,7 +415,8 @@ def do_build(opts, frame_options):
     for piece in pieces:
         cmd_configure.extend(piece)
 
-    run_cmd_blocking("Configure waf", cmd_configure, check=True)
+    if not cmd_opts.no_configure:
+        run_cmd_blocking("Configure waf", cmd_configure, check=True)
 
     if opts.clean:
         run_cmd_blocking("Building clean", [waf_light, "clean"])
@@ -857,7 +858,7 @@ def start_mavproxy(opts, stuff):
 
     for i in instances:
         if not opts.no_extra_ports:
-            ports = [p + 10 * i for p in [14550, 14551]]
+            ports = [14550 + 10 * i]
             for port in ports:
                 if under_vagrant():
                     # We're running inside of a vagrant guest; forward our
@@ -1028,6 +1029,10 @@ group_build.add_option("-N", "--no-rebuild",
                        action='store_true',
                        default=False,
                        help="don't rebuild before starting ardupilot")
+group_build.add_option("--no-configure",
+                       action='store_true',
+                       default=False,
+                       help="don't run waf configure before building")
 group_build.add_option("-D", "--debug",
                        action='store_true',
                        default=False,

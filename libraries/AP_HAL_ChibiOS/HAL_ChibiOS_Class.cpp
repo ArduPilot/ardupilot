@@ -38,6 +38,10 @@
 
 #include <hwdef.h>
 
+#ifndef HAL_SERIAL0_BAUD_DEFAULT
+#define HAL_SERIAL0_BAUD_DEFAULT 115200
+#endif
+
 #ifndef HAL_NO_UARTDRIVER
 static HAL_UARTA_DRIVER;
 static HAL_UARTB_DRIVER;
@@ -118,8 +122,8 @@ static Empty::Flash flashDriver;
 static ChibiOS::CANIface* canDrivers[HAL_NUM_CAN_IFACES];
 #endif
 
-#if HAL_USE_WSPI == TRUE && defined(HAL_QSPI_DEVICE_LIST)
-static ChibiOS::QSPIDeviceManager qspiDeviceManager;
+#if HAL_USE_WSPI == TRUE && defined(HAL_WSPI_DEVICE_LIST)
+static ChibiOS::WSPIDeviceManager wspiDeviceManager;
 #endif
 
 #if HAL_WITH_IO_MCU
@@ -142,8 +146,8 @@ HAL_ChibiOS::HAL_ChibiOS() :
         &uartJDriver,
         &i2cDeviceManager,
         &spiDeviceManager,
-#if HAL_USE_WSPI == TRUE && defined(HAL_QSPI_DEVICE_LIST)
-        &qspiDeviceManager,
+#if HAL_USE_WSPI == TRUE && defined(HAL_WSPI_DEVICE_LIST)
+        &wspiDeviceManager,
 #else
         nullptr,
 #endif
@@ -219,7 +223,7 @@ static void main_loop()
 
     peripheral_power_enable();
 
-    hal.serial(0)->begin(115200);
+    hal.serial(0)->begin(HAL_SERIAL0_BAUD_DEFAULT);
 
 #ifdef HAL_SPI_CHECK_CLOCK_FREQ
     // optional test of SPI clock frequencies

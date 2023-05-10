@@ -32,6 +32,7 @@ class AStyleChecker(object):
         # for path in self.files_to_check:
         #     self.progress("Checking (%s)" % path)
         astyle_command = ["astyle", "--dry-run"]
+        astyle_command.append("--options=Tools/CodeStyle/astylerc")
         astyle_command.extend(self.files_to_check)
         ret = subprocess.run(
             astyle_command,

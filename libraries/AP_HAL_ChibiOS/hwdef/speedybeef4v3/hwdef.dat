@@ -29,8 +29,8 @@ define HAL_GPIO_A_LED_PIN 0
 # buzzer
 PC5 BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
-define HAL_BUZZER_ON 1
-define HAL_BUZZER_OFF 0
+
+
 
 # spi1 bus for IMU
 PA5 SPI1_SCK SPI1
@@ -156,3 +156,5 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 # minimal drivers to reduce flash usage
 include ../include/minimal.inc
 define AP_BATTERY_SYNTHETIC_CURRENT_ENABLED 0
+
+define DEFAULT_NTF_LED_TYPES 257

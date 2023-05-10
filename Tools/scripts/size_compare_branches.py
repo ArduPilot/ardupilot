@@ -62,7 +62,7 @@ class SizeCompareBranches(object):
                  extra_hwdef_branch=[],
                  extra_hwdef_master=[]):
         if branch is None:
-            branch = self.find_current_git_branch()
+            branch = self.find_current_git_branch_or_sha1()
 
         self.master_branch = master_branch
         self.branch = branch
@@ -171,6 +171,7 @@ class SizeCompareBranches(object):
         return [
             'esp32buzz',
             'esp32empty',
+            'esp32tomte76',
             'esp32icarous',
             'esp32diy',
         ]
@@ -220,8 +221,16 @@ class SizeCompareBranches(object):
                 returncode, cmd_list)
         return output
 
-    def find_current_git_branch(self):
-        output = self.run_git(["symbolic-ref", "--short", "HEAD"])
+    def find_current_git_branch_or_sha1(self):
+        try:
+            output = self.run_git(["symbolic-ref", "--short", "HEAD"])
+            output = output.strip()
+            return output
+        except subprocess.CalledProcessError:
+            pass
+
+        # probably in a detached-head state.  Get a sha1 instead:
+        output = self.run_git(["rev-parse", "--short", "HEAD"])
         output = output.strip()
         return output
 
@@ -305,7 +314,7 @@ class SizeCompareBranches(object):
             shutil.rmtree(dsdl_generated_path, ignore_errors=True)
             self.run_waf(bootloader_waf_configure_args)
             self.run_waf([v])
-        self.run_program("rsync", ["rsync", "-aP", "build/", outdir])
+        self.run_program("rsync", ["rsync", "-ap", "build/", outdir])
 
     def run_all(self):
         '''run tests for boards and vehicles passed in constructor'''

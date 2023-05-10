@@ -27,6 +27,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Camera/AP_Camera_shareddefs.h>
 #include "AP_Mount_Params.h"
 
 // maximum number of mounts
@@ -155,6 +156,9 @@ public:
     // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
     void send_gimbal_device_attitude_status(mavlink_channel_t chan);
 
+    // send a GIMBAL_MANAGER_INFORMATION message to GCS
+    void send_gimbal_manager_information(mavlink_channel_t chan);
+
     // get mount's current attitude in euler angles in degrees.  yaw angle is in body-frame
     // returns true on success
     bool get_attitude_euler(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_bf_deg);
@@ -180,16 +184,12 @@ public:
     // set start_recording = true to start record, false to stop recording
     bool record_video(uint8_t instance, bool start_recording);
 
-    // set camera zoom step
-    // zoom out = -1, hold = 0, zoom in = 1
-    bool set_zoom_step(uint8_t instance, int8_t zoom_step);
+    // set zoom specified as a rate or percentage
+    bool set_zoom(uint8_t instance, ZoomType zoom_type, float zoom_value);
 
-    // set focus in, out or hold
+    // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
-    bool set_manual_focus_step(uint8_t instance, int8_t focus_step);
-
-    // auto focus
-    bool set_auto_focus(uint8_t instance);
+    bool set_focus(uint8_t instance, FocusType focus_type, float focus_value);
 
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];

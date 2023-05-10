@@ -433,8 +433,13 @@ function HLSatcom()
                                        ahrs:groundspeed_vector():length() * 5))
 
         hl2.temperature_air = math.floor(baro:get_external_temperature())
-        hl2.battery = battery:capacity_remaining_pct(0)
 
+        if battery:num_instances() > 0 then
+            hl2.battery = battery:capacity_remaining_pct(0)
+        else
+            hl2.battery = 0
+        end
+        
         -- just sending armed state here for simplicity. Flight mode is in the custom_mode field
         if arming:is_armed() then
             hl2.custom0 = 129 -- MAV_MODE_FLAG_SAFETY_ARMED + MAV_MODE_FLAG_CUSTOM_MODE_ENABLED

@@ -49,6 +49,7 @@ header_text = {
     'size_bss': 'BSS (B)',
     'size_total': 'Total Flash Used (B)',
     'size_free_flash': 'Free Flash (B)',
+    'ext_flash_used': 'External Flash Used (B)',
 }
 
 def text(label, text=''):
@@ -170,14 +171,19 @@ def _build_summary(bld):
 def _parse_size_output(s, s_all, totals=False):
 
     # Get the size of .crash_log to remove it from .bss reporting
+    # also get external flash size if applicable
     crash_log_size = None
+    ext_flash_used = 0
     if s_all is not None:
         lines = s_all.splitlines()[1:]
         for line in lines:
             if ".crash_log" in line:
                 row = line.strip().split()
                 crash_log_size = int(row[1])
-                break
+            if ".extflash" in line:
+                row = line.strip().split()
+                if int(row[1]) > 0:
+                    ext_flash_used = int(row[1])
 
     import re
     pattern = re.compile("^.*TOTALS.*$")
@@ -203,8 +209,9 @@ def _parse_size_output(s, s_all, totals=False):
             size_data=int(row[1]),
             size_bss=size_bss,
             # Total Flash Cost = Data + Text
-            size_total=int(row[0]) + int(row[1]),
+            size_total=int(row[0]) + int(row[1]) - ext_flash_used,
             size_free_flash=size_free_flash,
+            ext_flash_used= ext_flash_used if ext_flash_used else None,
         ))
     return l
 
@@ -285,4 +292,5 @@ def configure(cfg):
             'size_bss',
             'size_total',
             'size_free_flash',
+            'ext_flash_used',
         ]

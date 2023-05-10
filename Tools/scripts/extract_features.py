@@ -64,6 +64,7 @@ class ExtractFeatures(object):
             ('HAL_NAVEKF3_AVAILABLE', 'NavEKF3::NavEKF3',),
             ('HAL_NAVEKF2_AVAILABLE', 'NavEKF2::NavEKF2',),
             ('HAL_EXTERNAL_AHRS_ENABLED', r'AP_ExternalAHRS::init\b',),
+            ('AP_EXTERNAL_AHRS_{type}_ENABLED', r'AP_ExternalAHRS_{type}::healthy\b',),
             ('HAL_INS_TEMPERATURE_CAL_ENABLE', 'AP_InertialSensor::TCal::Learn::save_calibration',),
             ('HAL_VISUALODOM_ENABLED', 'AP_VisualOdom::init',),
 
@@ -159,6 +160,7 @@ class ExtractFeatures(object):
             ('AP_DRONECAN_VOLZ_FEEDBACK_ENABLED', r'AP_DroneCAN::handle_actuator_status_Volz\b',),
             ('AP_ROBOTISSERVO_ENABLED', r'AP_RobotisServo::init\b',),
             ('AP_FETTEC_ONEWIRE_ENABLED', r'AP_FETtecOneWire::init\b',),
+            ('AP_KDECAN_ENABLED', r'AP_KDECAN::update\b',),
 
             ('AP_RPM_ENABLED', 'AP_RPM::AP_RPM',),
             ('AP_RPM_{type}_ENABLED', r'AP_RPM_(?P<type>.*)::update',),
@@ -178,6 +180,7 @@ class ExtractFeatures(object):
 
             ('AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED', r'RC_Channel::lookuptable',),
 
+            ('AP_NOTIFY_TONEALARM_ENABLED', r'AP_ToneAlarm::init'),
             ('AP_NOTIFY_MAVLINK_PLAY_TUNE_SUPPORT_ENABLED', r'AP_Notify::handle_play_tune'),
             ('AP_NOTIFY_MAVLINK_LED_CONTROL_SUPPORT_ENABLED', r'AP_Notify::handle_led_control'),
             ('AP_NOTIFY_NCP5623_ENABLED', r'NCP5623::write'),

@@ -14,6 +14,7 @@ void AP_Mount_Alexmos::init()
         read_params(0); //we request parameters for profile 0 and therfore get global and profile parameters
         set_mode((enum MAV_MOUNT_MODE)_params.default_mode.get());
     }
+    AP_Mount_Backend::init();
 }
 
 // update mount position - should be called periodically

@@ -5,24 +5,41 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_RTC/AP_RTC.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 #include "AP_DDS_Client.h"
 
-
 static constexpr uint16_t DELAY_TIME_TOPIC_MS = 10;
-static constexpr uint16_t DELAY_NAV_SAT_FIX_TOPIC_MS = 1000;
+static constexpr uint16_t DELAY_BATTERY_STATE_TOPIC_MS = 1000;
+static constexpr uint16_t DELAY_LOCAL_POSE_TOPIC_MS = 33;
+static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = 33;
+static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = 33;
 static char WGS_84_FRAME_ID[] = "WGS-84";
 // https://www.ros.org/reps/rep-0105.html#base-link
 static char BASE_LINK_FRAME_ID[] = "base_link";
 
-AP_HAL::UARTDriver *dds_port;
+const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
 
+    // @Param: _ENABLE
+    // @DisplayName: DDS enable
+    // @Description: Enable DDS subsystem
+    // @Values: 0:Disabled,1:Enabled
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS("_ENABLE", 1, AP_DDS_Client, enabled, 0, AP_PARAM_FLAG_ENABLE),
 
-const AP_Param::GroupInfo AP_DDS_Client::var_info[]= {
-    //! @todo Params go here
+#if AP_DDS_UDP_ENABLED
+    // @Param: _UDP_PORT
+    // @DisplayName: DDS UDP port
+    // @Description: UDP port number for DDS
+    // @Range: 1 65535
+    // @RebootRequired: True
+    // @User: Standard
+    AP_GROUPINFO("_PORT", 2, AP_DDS_Client, udp.port, 2019),
+#endif
 
     AP_GROUPEND
 };
@@ -40,7 +57,7 @@ void AP_DDS_Client::update_topic(builtin_interfaces_msg_Time& msg)
 
 }
 
-void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t instance)
+bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t instance)
 {
     // Add a lambda that takes in navsatfix msg and populates the cov
     // Make it constexpr if possible
@@ -49,13 +66,8 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
 
     // assert(instance >= GPS_MAX_RECEIVERS);
     if (instance >= GPS_MAX_RECEIVERS) {
-        return;
+        return false;
     }
-
-    update_topic(msg.header.stamp);
-    strcpy(msg.header.frame_id, WGS_84_FRAME_ID);
-    msg.status.service = 0; // SERVICE_GPS
-    msg.status.status = -1; // STATUS_NO_FIX
 
     auto &gps = AP::gps();
     WITH_SEMAPHORE(gps.get_semaphore());
@@ -64,8 +76,22 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
         msg.status.status = -1; // STATUS_NO_FIX
         msg.status.service = 0; // No services supported
         msg.position_covariance_type = 0; // COVARIANCE_TYPE_UNKNOWN
-        return;
+        return false;
     }
+
+    // No update is needed
+    const auto last_fix_time_ms = gps.last_fix_time_ms(instance);
+    if (last_nav_sat_fix_time_ms == last_fix_time_ms) {
+        return false;
+    } else {
+        last_nav_sat_fix_time_ms = last_fix_time_ms;
+    }
+
+
+    update_topic(msg.header.stamp);
+    strcpy(msg.header.frame_id, WGS_84_FRAME_ID);
+    msg.status.service = 0; // SERVICE_GPS
+    msg.status.status = -1; // STATUS_NO_FIX
 
 
     //! @todo What about glonass, compass, galileo?
@@ -78,7 +104,7 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
     case AP_GPS::NO_FIX:
         msg.status.status = -1; // STATUS_NO_FIX
         msg.position_covariance_type = 0; // COVARIANCE_TYPE_UNKNOWN
-        return;
+        return true;
     case AP_GPS::GPS_OK_FIX_2D:
     case AP_GPS::GPS_OK_FIX_3D:
         msg.status.status = 0; // STATUS_FIX
@@ -103,9 +129,9 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
         // With absolute frame, this condition is unlikely
         msg.status.status = -1; // STATUS_NO_FIX
         msg.position_covariance_type = 0; // COVARIANCE_TYPE_UNKNOWN
-        return;
+        return true;
     }
-    msg.altitude = alt_cm / 100.0;
+    msg.altitude = alt_cm * 0.01;
 
     // ROS allows double precision, ArduPilot exposes float precision today
     Matrix3f cov;
@@ -119,6 +145,8 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
     msg.position_covariance[6] = cov[2][0];
     msg.position_covariance[7] = cov[2][1];
     msg.position_covariance[8] = cov[2][2];
+
+    return true;
 }
 
 void AP_DDS_Client::populate_static_transforms(tf2_msgs_msg_TFMessage& msg)
@@ -160,17 +188,211 @@ void AP_DDS_Client::populate_static_transforms(tf2_msgs_msg_TFMessage& msg)
 
 }
 
+void AP_DDS_Client::update_topic(sensor_msgs_msg_BatteryState& msg, const uint8_t instance)
+{
+    if (instance >= AP_BATT_MONITOR_MAX_INSTANCES) {
+        return;
+    }
+
+    update_topic(msg.header.stamp);
+    auto &battery = AP::battery();
+
+    if (!battery.healthy(instance)) {
+        msg.power_supply_status = 3; //POWER_SUPPLY_HEALTH_DEAD
+        msg.present = false;
+        return;
+    }
+    msg.present = true;
+
+    msg.voltage = battery.voltage(instance);
+
+    float temperature;
+    msg.temperature = (battery.get_temperature(temperature, instance)) ? temperature : NAN;
+
+    float current;
+    msg.current = (battery.current_amps(current, instance)) ? -1 * current : NAN;
+
+    const float design_capacity = (float)battery.pack_capacity_mah(instance) * 0.001;
+    msg.design_capacity = design_capacity;
+
+    uint8_t percentage;
+    if (battery.capacity_remaining_pct(percentage, instance)) {
+        msg.percentage = percentage * 0.01;
+        msg.charge = (percentage * design_capacity) * 0.01;
+    } else {
+        msg.percentage = NAN;
+        msg.charge = NAN;
+    }
+
+    msg.capacity = NAN;
+
+    if (battery.current_amps(current, instance)) {
+        if (percentage == 100) {
+            msg.power_supply_status = 4;   //POWER_SUPPLY_STATUS_FULL
+        } else if (current < 0.0) {
+            msg.power_supply_status = 1;   //POWER_SUPPLY_STATUS_CHARGING
+        } else if (current > 0.0) {
+            msg.power_supply_status = 2;   //POWER_SUPPLY_STATUS_DISCHARGING
+        } else {
+            msg.power_supply_status = 3;   //POWER_SUPPLY_STATUS_NOT_CHARGING
+        }
+    } else {
+        msg.power_supply_status = 0; //POWER_SUPPLY_STATUS_UNKNOWN
+    }
+
+    msg.power_supply_health = (battery.overpower_detected(instance)) ? 4 : 1; //POWER_SUPPLY_HEALTH_OVERVOLTAGE or POWER_SUPPLY_HEALTH_GOOD
+
+    msg.power_supply_technology = 0; //POWER_SUPPLY_TECHNOLOGY_UNKNOWN
+
+    if (battery.has_cell_voltages(instance)) {
+        const uint16_t* cellVoltages = battery.get_cell_voltages(instance).cells;
+        std::copy(cellVoltages, cellVoltages + AP_BATT_MONITOR_CELLS_MAX, msg.cell_voltage);
+    }
+}
+
+void AP_DDS_Client::update_topic(geometry_msgs_msg_PoseStamped& msg)
+{
+    update_topic(msg.header.stamp);
+    strcpy(msg.header.frame_id, BASE_LINK_FRAME_ID);
+
+    auto &ahrs = AP::ahrs();
+    WITH_SEMAPHORE(ahrs.get_semaphore());
+
+    // ROS REP 103 uses the ENU convention:
+    // X - East
+    // Y - North
+    // Z - Up
+    // https://www.ros.org/reps/rep-0103.html#axis-orientation
+    // AP_AHRS uses the NED convention
+    // X - North
+    // Y - East
+    // Z - Down
+    // As a consequence, to follow ROS REP 103, it is necessary to switch X and Y,
+    // as well as invert Z
+
+    Vector3f position;
+    if (ahrs.get_relative_position_NED_home(position)) {
+        msg.pose.position.x = position[1];
+        msg.pose.position.y = position[0];
+        msg.pose.position.z = -position[2];
+    }
+
+    // In ROS REP 103, axis orientation uses the following convention:
+    // X - Forward
+    // Y - Left
+    // Z - Up
+    // https://www.ros.org/reps/rep-0103.html#axis-orientation
+    // As a consequence, to follow ROS REP 103, it is necessary to switch X and Y,
+    // as well as invert Z (NED to ENU convertion) as well as a 90 degree rotation in the Z axis
+    // for x to point forward
+    Quaternion orientation;
+    if (ahrs.get_quaternion(orientation)) {
+        Quaternion aux(orientation[0], orientation[2], orientation[1], -orientation[3]); //NED to ENU transformation
+        Quaternion transformation (sqrtF(2) * 0.5,0,0,sqrtF(2) * 0.5); // Z axis 90 degree rotation
+        orientation = aux * transformation;
+        msg.pose.orientation.w = orientation[0];
+        msg.pose.orientation.x = orientation[1];
+        msg.pose.orientation.y = orientation[2];
+        msg.pose.orientation.z = orientation[3];
+    }
+}
+
+void AP_DDS_Client::update_topic(geometry_msgs_msg_TwistStamped& msg)
+{
+    update_topic(msg.header.stamp);
+    strcpy(msg.header.frame_id, BASE_LINK_FRAME_ID);
+
+    auto &ahrs = AP::ahrs();
+    WITH_SEMAPHORE(ahrs.get_semaphore());
+
+    // ROS REP 103 uses the ENU convention:
+    // X - East
+    // Y - North
+    // Z - Up
+    // https://www.ros.org/reps/rep-0103.html#axis-orientation
+    // AP_AHRS uses the NED convention
+    // X - North
+    // Y - East
+    // Z - Down
+    // As a consequence, to follow ROS REP 103, it is necessary to switch X and Y,
+    // as well as invert Z
+    Vector3f velocity;
+    if (ahrs.get_velocity_NED(velocity)) {
+        msg.twist.linear.x = velocity[1];
+        msg.twist.linear.y = velocity[0];
+        msg.twist.linear.z = -velocity[2];
+    }
+
+    // In ROS REP 103, axis orientation uses the following convention:
+    // X - Forward
+    // Y - Left
+    // Z - Up
+    // https://www.ros.org/reps/rep-0103.html#axis-orientation
+    // The gyro data is received from AP_AHRS in body-frame
+    // X - Forward
+    // Y - Right
+    // Z - Down
+    // As a consequence, to follow ROS REP 103, it is necessary to invert Y and Z
+    Vector3f angular_velocity = ahrs.get_gyro();
+    msg.twist.angular.x = angular_velocity[0];
+    msg.twist.angular.y = -angular_velocity[1];
+    msg.twist.angular.z = -angular_velocity[2];
+}
+
+void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
+{
+    update_topic(msg.header.stamp);
+    strcpy(msg.header.frame_id, BASE_LINK_FRAME_ID);
+
+    auto &ahrs = AP::ahrs();
+    WITH_SEMAPHORE(ahrs.get_semaphore());
+
+    Location loc;
+    if (ahrs.get_location(loc)) {
+        msg.pose.position.latitude = loc.lat * 1E-7;
+        msg.pose.position.longitude = loc.lng * 1E-7;
+        msg.pose.position.altitude = loc.alt * 0.01; // Transform from cm to m
+    }
+
+    // In ROS REP 103, axis orientation uses the following convention:
+    // X - Forward
+    // Y - Left
+    // Z - Up
+    // https://www.ros.org/reps/rep-0103.html#axis-orientation
+    // As a consequence, to follow ROS REP 103, it is necessary to switch X and Y,
+    // as well as invert Z (NED to ENU convertion) as well as a 90 degree rotation in the Z axis
+    // for x to point forward
+    Quaternion orientation;
+    if (ahrs.get_quaternion(orientation)) {
+        Quaternion aux(orientation[0], orientation[2], orientation[1], -orientation[3]); //NED to ENU transformation
+        Quaternion transformation(sqrtF(2) * 0.5, 0, 0, sqrtF(2) * 0.5); // Z axis 90 degree rotation
+        orientation = aux * transformation;
+        msg.pose.orientation.w = orientation[0];
+        msg.pose.orientation.x = orientation[1];
+        msg.pose.orientation.y = orientation[2];
+        msg.pose.orientation.z = orientation[3];
+    }
+}
 
 /*
-  class constructor
+  start the DDS thread
  */
-AP_DDS_Client::AP_DDS_Client(void)
+bool AP_DDS_Client::start(void)
 {
+    AP_Param::setup_object_defaults(this, var_info);
+    AP_Param::load_object_from_eeprom(this, var_info);
+
+    if (enabled == 0) {
+        return true;
+    }
+
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_DDS_Client::main_loop, void),
                                       "DDS",
                                       8192, AP_HAL::Scheduler::PRIORITY_IO, 1)) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"DDS Client: thread create failed");
+        return false;
     }
+    return true;
 }
 
 /*
@@ -193,35 +415,42 @@ void AP_DDS_Client::main_loop(void)
     }
 }
 
-
 bool AP_DDS_Client::init()
 {
-    AP_SerialManager *serial_manager = AP_SerialManager::get_singleton();
-    dds_port = serial_manager->find_serial(AP_SerialManager::SerialProtocol_DDS_XRCE, 0);
-    if (dds_port == nullptr) {
+    // serial init will fail if the SERIALn_PROTOCOL is not setup
+    bool initTransportStatus = ddsSerialInit();
+    is_using_serial = initTransportStatus;
+
+#if AP_DDS_UDP_ENABLED
+    // fallback to UDP if available
+    if (!initTransportStatus) {
+        initTransportStatus = ddsUdpInit();
+    }
+#endif
+
+    if (!initTransportStatus) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"DDS Client: Transport Initialization failed");
         return false;
     }
-
-    // ensure we own the UART
-    dds_port->begin(0);
-
-    constexpr uint8_t fd = 0;
-    constexpr uint8_t relativeSerialAgentAddr = 0;
-    constexpr uint8_t relativeSerialClientAddr = 1;
-    if (!uxr_init_serial_transport(&serial_transport,fd,relativeSerialAgentAddr,relativeSerialClientAddr)) {
-        return false;
-    }
-
-    constexpr uint32_t uniqueClientKey = 0xAAAABBBB;
-    //TODO does this need to be inside the loop to handle reconnect?
-    uxr_init_session(&session, &serial_transport.comm, uniqueClientKey);
     while (!uxr_create_session(&session)) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO,"DDS Client: Initialization waiting...");
         hal.scheduler->delay(1000);
     }
 
-    reliable_in = uxr_create_input_reliable_stream(&session,input_reliable_stream,BUFFER_SIZE_SERIAL,STREAM_HISTORY);
-    reliable_out = uxr_create_output_reliable_stream(&session,output_reliable_stream,BUFFER_SIZE_SERIAL,STREAM_HISTORY);
+    // setup reliable stream buffers
+    input_reliable_stream = new uint8_t[DDS_STREAM_HISTORY*DDS_BUFFER_SIZE];
+    if (input_reliable_stream == nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"DDS Client: allocation failed");
+        return false;
+    }
+    output_reliable_stream = new uint8_t[DDS_STREAM_HISTORY*DDS_BUFFER_SIZE];
+    if (output_reliable_stream == nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"DDS Client: allocation failed");
+        return false;
+    }
+
+    reliable_in = uxr_create_input_reliable_stream(&session, input_reliable_stream, DDS_BUFFER_SIZE, DDS_STREAM_HISTORY);
+    reliable_out = uxr_create_output_reliable_stream(&session, output_reliable_stream, DDS_BUFFER_SIZE, DDS_STREAM_HISTORY);
 
     GCS_SEND_TEXT(MAV_SEVERITY_INFO,"DDS Client: Init Complete");
 
@@ -339,10 +568,68 @@ void AP_DDS_Client::write_static_transforms()
     }
 }
 
+void AP_DDS_Client::write_battery_state_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub;
+        const uint32_t topic_size = sensor_msgs_msg_BatteryState_size_of_topic(&battery_state_topic, 0);
+        uxr_prepare_output_stream(&session,reliable_out,topics[3].dw_id,&ub,topic_size);
+        const bool success = sensor_msgs_msg_BatteryState_serialize_topic(&ub, &battery_state_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        }
+    }
+}
+void AP_DDS_Client::write_local_pose_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub;
+        const uint32_t topic_size = geometry_msgs_msg_PoseStamped_size_of_topic(&local_pose_topic, 0);
+        uxr_prepare_output_stream(&session,reliable_out,topics[4].dw_id,&ub,topic_size);
+        const bool success = geometry_msgs_msg_PoseStamped_serialize_topic(&ub, &local_pose_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        }
+    }
+}
+
+void AP_DDS_Client::write_local_velocity_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub;
+        const uint32_t topic_size = geometry_msgs_msg_TwistStamped_size_of_topic(&local_velocity_topic, 0);
+        uxr_prepare_output_stream(&session,reliable_out,topics[5].dw_id,&ub,topic_size);
+        const bool success = geometry_msgs_msg_TwistStamped_serialize_topic(&ub, &local_velocity_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        }
+    }
+}
+
+void AP_DDS_Client::write_geo_pose_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub;
+        const uint32_t topic_size = geographic_msgs_msg_GeoPoseStamped_size_of_topic(&geo_pose_topic, 0);
+        uxr_prepare_output_stream(&session,reliable_out,topics[6].dw_id,&ub,topic_size);
+        const bool success = geographic_msgs_msg_GeoPoseStamped_serialize_topic(&ub, &geo_pose_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        }
+    }
+}
+
 void AP_DDS_Client::update()
 {
     WITH_SEMAPHORE(csem);
-
     const auto cur_time_ms = AP_HAL::millis64();
 
     if (cur_time_ms - last_time_time_ms > DELAY_TIME_TOPIC_MS) {
@@ -351,69 +638,37 @@ void AP_DDS_Client::update()
         write_time_topic();
     }
 
-    if (cur_time_ms - last_nav_sat_fix_time_ms > DELAY_NAV_SAT_FIX_TOPIC_MS) {
-        constexpr uint8_t instance = 0;
-        update_topic(nav_sat_fix_topic, instance);
-        last_nav_sat_fix_time_ms = cur_time_ms;
+    constexpr uint8_t gps_instance = 0;
+    if (update_topic(nav_sat_fix_topic, gps_instance)) {
         write_nav_sat_fix_topic();
     }
 
+    if (cur_time_ms - last_battery_state_time_ms > DELAY_BATTERY_STATE_TOPIC_MS) {
+        constexpr uint8_t battery_instance = 0;
+        update_topic(battery_state_topic, battery_instance);
+        last_battery_state_time_ms = cur_time_ms;
+        write_battery_state_topic();
+    }
+
+    if (cur_time_ms - last_local_pose_time_ms > DELAY_LOCAL_POSE_TOPIC_MS) {
+        update_topic(local_pose_topic);
+        last_local_pose_time_ms = cur_time_ms;
+        write_local_pose_topic();
+    }
+
+    if (cur_time_ms - last_local_velocity_time_ms > DELAY_LOCAL_VELOCITY_TOPIC_MS) {
+        update_topic(local_velocity_topic);
+        last_local_velocity_time_ms = cur_time_ms;
+        write_local_velocity_topic();
+    }
+
+    if (cur_time_ms - last_geo_pose_time_ms > DELAY_GEO_POSE_TOPIC_MS) {
+        update_topic(geo_pose_topic);
+        last_geo_pose_time_ms = cur_time_ms;
+        write_geo_pose_topic();
+    }
+
     connected = uxr_run_session_time(&session, 1);
-}
-
-/*
-  implement C functions for serial transport
- */
-extern "C" {
-#include <uxr/client/profile/transport/serial/serial_transport_platform.h>
-}
-
-bool uxr_init_serial_platform(void* args, int fd, uint8_t remote_addr, uint8_t local_addr)
-{
-    //! @todo Add error reporting
-    return true;
-}
-
-bool uxr_close_serial_platform(void* args)
-{
-    //! @todo Add error reporting
-    return true;
-}
-
-size_t uxr_write_serial_data_platform(void* args, const uint8_t* buf, size_t len, uint8_t* errcode)
-{
-    if (dds_port == nullptr) {
-        *errcode = 1;
-        return 0;
-    }
-    ssize_t bytes_written = dds_port->write(buf, len);
-    if (bytes_written <= 0) {
-        *errcode = 1;
-        return 0;
-    }
-    //! @todo Add populate the error code correctly
-    *errcode = 0;
-    return bytes_written;
-}
-
-size_t uxr_read_serial_data_platform(void* args, uint8_t* buf, size_t len, int timeout, uint8_t* errcode)
-{
-    if (dds_port == nullptr) {
-        *errcode = 1;
-        return 0;
-    }
-    while (timeout > 0 && dds_port->available() < len) {
-        hal.scheduler->delay(1); // TODO select or poll this is limiting speed (1mS)
-        timeout--;
-    }
-    ssize_t bytes_read = dds_port->read(buf, len);
-    if (bytes_read <= 0) {
-        *errcode = 1;
-        return 0;
-    }
-    //! @todo Add error reporting
-    *errcode = 0;
-    return bytes_read;
 }
 
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL

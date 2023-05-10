@@ -30,6 +30,10 @@ class ExpandingString;
 #define HAL_ENABLE_SAVE_PERSISTENT_PARAMS (defined(STM32F7) || defined(STM32H7))
 #endif
 
+#ifndef AP_BOOTLOADER_FLASHING_ENABLED
+#define AP_BOOTLOADER_FLASHING_ENABLED 0
+#endif
+
 class ChibiOS::Util : public AP_HAL::Util {
 public:
     static Util *from(AP_HAL::Util *util) {
@@ -126,7 +130,7 @@ private:
       get system clock in UTC microseconds
      */
     uint64_t get_hw_rtc() const override;
-#if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
+#if AP_BOOTLOADER_FLASHING_ENABLED
     FlashBootloader flash_bootloader() override;
 #endif
 

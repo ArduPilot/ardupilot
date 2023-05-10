@@ -19,9 +19,9 @@
 
 #include "AP_CANManager_config.h"
 
-#include <AP_HAL/AP_HAL.h>
+#if HAL_CANMANAGER_ENABLED
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#include <AP_HAL/AP_HAL.h>
 
 #include <AP_Param/AP_Param.h>
 #include "AP_SLCANIface.h"
@@ -31,6 +31,8 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #endif
+
+#include "AP_CAN.h"
 
 class AP_CANManager
 {
@@ -56,26 +58,10 @@ public:
         LOG_DEBUG,
     };
 
-    enum Driver_Type : uint8_t {
-        Driver_Type_None = 0,
-        Driver_Type_DroneCAN = 1,
-        // 2 was KDECAN -- do not re-use
-        // 3 was ToshibaCAN -- do not re-use
-        Driver_Type_PiccoloCAN = 4,
-        Driver_Type_CANTester = 5,
-        Driver_Type_EFI_NWPMU = 6,
-        Driver_Type_USD1 = 7,
-        Driver_Type_KDECAN = 8,
-        // 9 was Driver_Type_MPPT_PacketDigital
-        Driver_Type_Scripting = 10,
-        Driver_Type_Benewake = 11,
-        Driver_Type_Scripting2 = 12,
-    };
-
     void init(void);
 
     // register a new driver
-    bool register_driver(Driver_Type dtype, AP_CANDriver *driver);
+    bool register_driver(AP_CAN::Protocol dtype, AP_CANDriver *driver);
 
     // returns number of active CAN Drivers
     uint8_t get_num_drivers(void) const
@@ -104,12 +90,12 @@ public:
     void log_retrieve(ExpandingString &str) const;
 
     // return driver type index i
-    Driver_Type get_driver_type(uint8_t i) const
+    AP_CAN::Protocol get_driver_type(uint8_t i) const
     {
         if (i < HAL_NUM_CAN_IFACES) {
             return _driver_type_cache[i];
         }
-        return Driver_Type_None;
+        return AP_CAN::Protocol::None;
     }
 
     static const struct AP_Param::GroupInfo var_info[];
@@ -157,14 +143,13 @@ private:
         AP_Int8 _driver_type;
         AP_CANDriver* _testcan;
         AP_CANDriver* _uavcan;
-        AP_CANDriver* _kdecan;
         AP_CANDriver* _piccolocan;
     };
 
     CANIface_Params _interfaces[HAL_NUM_CAN_IFACES];
     AP_CANDriver* _drivers[HAL_MAX_CAN_PROTOCOL_DRIVERS];
     CANDriver_Params _drv_param[HAL_MAX_CAN_PROTOCOL_DRIVERS];
-    Driver_Type _driver_type_cache[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+    AP_CAN::Protocol _driver_type_cache[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 
     AP_Int8 _loglevel;
     uint8_t _num_drivers;
@@ -213,4 +198,4 @@ namespace AP
 AP_CANManager& can();
 }
 
-#endif
+#endif  // HAL_CANMANAGER_ENABLED

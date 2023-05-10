@@ -98,61 +98,23 @@ Mode *Plane::mode_from_mode_num(const enum Mode::Number num)
     return ret;
 }
 
-void Plane::read_control_switch()
+void RC_Channels_Plane::read_mode_switch()
 {
-    static bool switch_debouncer;
-    uint8_t switchPosition = readSwitch();
-
-    // If switchPosition = 255 this indicates that the mode control channel input was out of range
-    // If we get this value we do not want to change modes.
-    if(switchPosition == 255) return;
-
-    if (!rc().has_valid_input()) {
-        // ignore the mode switch channel if there is no valid RC input
-        return;
-    }
-
-    if (millis() - failsafe.last_valid_rc_ms > 100) {
+    if (millis() - plane.failsafe.last_valid_rc_ms > 100) {
         // only use signals that are less than 0.1s old.
         return;
     }
+    RC_Channels::read_mode_switch();
+}
 
-    if (oldSwitchPosition != switchPosition) {
-
-        if (switch_debouncer == false) {
-            // this ensures that mode switches only happen if the
-            // switch changes for 2 reads. This prevents momentary
-            // spikes in the mode control channel from causing a mode
-            // switch
-            switch_debouncer = true;
-            return;
-        }
-
-        set_mode_by_number((enum Mode::Number)flight_modes[switchPosition].get(), ModeReason::RC_COMMAND);
-
-        oldSwitchPosition = switchPosition;
+void RC_Channel_Plane::mode_switch_changed(modeswitch_pos_t new_pos)
+{
+    if (new_pos < 0 || (uint8_t)new_pos > plane.num_flight_modes) {
+        // should not have been called
+        return;
     }
 
-    switch_debouncer = false;
-
-}
-
-uint8_t Plane::readSwitch(void) const
-{
-    uint16_t pulsewidth = RC_Channels::get_radio_in(g.flight_mode_channel - 1);
-    if (pulsewidth <= 900 || pulsewidth >= 2200) return 255;            // This is an error condition
-    if (pulsewidth <= 1230) return 0;
-    if (pulsewidth <= 1360) return 1;
-    if (pulsewidth <= 1490) return 2;
-    if (pulsewidth <= 1620) return 3;
-    if (pulsewidth <= 1749) return 4;              // Software Manual
-    return 5;                                                           // Hardware Manual
-}
-
-void Plane::reset_control_switch()
-{
-    oldSwitchPosition = 254;
-    read_control_switch();
+    plane.set_mode_by_number((Mode::Number)plane.flight_modes[new_pos].get(), ModeReason::RC_COMMAND);
 }
 
 /*

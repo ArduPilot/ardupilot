@@ -57,16 +57,24 @@
 /*
  * General settings.
  */
+#ifndef STM32_NO_INIT
 #define STM32_NO_INIT                       FALSE
+#endif
 #define STM32_TARGET_CORE                   1
 
 /*
  * Memory attributes settings.
  */
+//  Disable ChibiOS memory protection which is fixed to SRAM1-3
 #define STM32_NOCACHE_ENABLE                FALSE
 //#define STM32_NOCACHE_MPU_REGION            MPU_REGION_6
 //#define STM32_NOCACHE_RBAR                  0x24000000U
 //#define STM32_NOCACHE_RASR                  MPU_RASR_SIZE_16K
+
+// enable memory protection on SRAM4, used for bdshot
+#define STM32_NOCACHE_MPU_REGION_1          MPU_REGION_5
+#define STM32_NOCACHE_MPU_REGION_1_BASE     0x38000000U
+#define STM32_NOCACHE_MPU_REGION_1_SIZE     MPU_RASR_SIZE_64K
 
 /*
  * PWR system settings.
@@ -74,7 +82,6 @@
  * very critical.
  * Register constants are taken from the ST header.
  */
-#define STM32_VOS                           STM32_VOS_SCALE1
 #define STM32_PWR_CR1                       (PWR_CR1_SVOS_1 | PWR_CR1_SVOS_0)
 #define STM32_PWR_CR2                       (PWR_CR2_BREN)
 #ifdef SMPS_PWR
@@ -94,6 +101,10 @@
 #define STM32_LSE_ENABLED                   FALSE
 #define STM32_HSIDIV                        STM32_HSIDIV_DIV1
 
+/*
+ * Clock setup for all other H7 variants including H743, H753, H750 and H757
+ */
+#define STM32_VOS                           STM32_VOS_SCALE1
 /*
   setup PLLs based on HSE clock
  */
@@ -288,13 +299,16 @@
 #define STM32_SDMMCSEL                      STM32_SDMMCSEL_PLL1_Q_CK
 #define STM32_QSPISEL                       STM32_QSPISEL_PLL2_R_CK
 #define STM32_FMCSEL                        STM32_QSPISEL_HCLK
+
 #define STM32_SWPSEL                        STM32_SWPSEL_PCLK1
 #define STM32_FDCANSEL                      STM32_FDCANSEL_PLL1_Q_CK
 #define STM32_DFSDM1SEL                     STM32_DFSDM1SEL_PCLK2
 #define STM32_SPDIFSEL                      STM32_SPDIFSEL_PLL1_Q_CK
 #define STM32_SPI45SEL                      STM32_SPI45SEL_PLL2_Q_CK
 #define STM32_SPI123SEL                     STM32_SPI123SEL_PLL1_Q_CK
+#ifdef STM32_SAI23SEL_PLL1_Q_CK
 #define STM32_SAI23SEL                      STM32_SAI23SEL_PLL1_Q_CK
+#endif
 #define STM32_SAI1SEL                       STM32_SAI1SEL_PLL1_Q_CK
 #define STM32_LPTIM1SEL                     STM32_LPTIM1SEL_PCLK1
 #define STM32_CECSEL                        STM32_CECSEL_DISABLE
@@ -333,6 +347,7 @@
 
 #define STM32_IRQ_MDMA_PRIORITY             9
 #define STM32_IRQ_QUADSPI1_PRIORITY         10
+#define STM32_IRQ_QUADSPI2_PRIORITY         10
 
 #define STM32_IRQ_SDMMC1_PRIORITY           9
 #define STM32_IRQ_SDMMC2_PRIORITY           9
@@ -361,16 +376,24 @@
 #define STM32_IRQ_USART6_PRIORITY           12
 #define STM32_IRQ_UART7_PRIORITY            12
 #define STM32_IRQ_UART8_PRIORITY            12
+#define STM32_IRQ_UART9_PRIORITY            12
+#define STM32_IRQ_USART10_PRIORITY          12
 
 /*
  * ADC driver system settings.
  */
+#ifndef STM32_ADC_DUAL_MODE
 #define STM32_ADC_DUAL_MODE                 FALSE
+#endif
+#ifndef STM32_ADC_SAMPLES_SIZE
 #define STM32_ADC_SAMPLES_SIZE              16
+#endif
 #define STM32_ADC_COMPACT_SAMPLES           FALSE
 #define STM32_ADC_USE_ADC12                 TRUE
-#ifndef STM32H750xx
+#if !defined(STM32H750xx)
+#ifndef STM32_ADC_USE_ADC3
 #define STM32_ADC_USE_ADC3                  TRUE
+#endif
 #endif
 #define STM32_ADC_ADC12_DMA_PRIORITY        2
 #define STM32_ADC_ADC3_DMA_PRIORITY         2
@@ -380,8 +403,11 @@
 #define STM32_ADC_ADC3_CLOCK_MODE           ADC_CCR_CKMODE_ADCCK
 
 // we call it ADC1 in hwdef.dat, but driver uses ADC12 for DMA stream
+#ifdef STM32_ADC_ADC1_DMA_STREAM
 #define STM32_ADC_ADC12_DMA_STREAM STM32_ADC_ADC1_DMA_STREAM
-
+#elif defined(STM32_ADC_ADC2_DMA_STREAM)
+#define STM32_ADC_ADC12_DMA_STREAM STM32_ADC_ADC2_DMA_STREAM
+#endif
 
 /*
  * CAN driver system settings.
@@ -615,6 +641,10 @@
 #define STM32_WSPI_QUADSPI1_PRESCALER_VALUE (STM32_QSPICLK / HAL_QSPI1_CLK)
 #endif
 
+#if HAL_XIP_ENABLED
+#define STM32_QSPI_NO_RESET TRUE
+#endif
+
 /*
   we use a fixed allocation of BDMA streams. We previously dynamically
   allocated these, but bugs in the chip make that unreliable. This is
@@ -635,3 +665,7 @@
 #define STM32_SPI_SPI6_TX_BDMA_STREAM 5
 #define STM32_ADC_ADC3_BDMA_STREAM 7
 
+// disable DMA on I2C by default on H7
+#ifndef STM32_I2C_USE_DMA
+#define STM32_I2C_USE_DMA FALSE
+#endif

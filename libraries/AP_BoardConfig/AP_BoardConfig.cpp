@@ -76,7 +76,11 @@
 
 #ifndef HAL_BRD_OPTIONS_DEFAULT
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+#ifdef HAL_DEBUG_BUILD
+#define HAL_BRD_OPTIONS_DEFAULT BOARD_OPTION_WATCHDOG | BOARD_OPTION_DEBUG_ENABLE
+#else
 #define HAL_BRD_OPTIONS_DEFAULT BOARD_OPTION_WATCHDOG
+#endif
 #else
 #define HAL_BRD_OPTIONS_DEFAULT 0
 #endif
@@ -194,7 +198,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #if HAL_HAVE_IMU_HEATER
     // @Param: HEAT_TARG
     // @DisplayName: Board heater temperature target
-    // @Description: Board heater target temperature for boards with controllable heating units. DO NOT SET to -1 on the Cube. Set to -1 to disable the heater, please reboot after setting to -1.
+    // @Description: Board heater target temperature for boards with controllable heating units. Set to -1 to disable the heater, please reboot after setting to -1.
     // @Range: -1 80
     // @Units: degC
     // @User: Advanced

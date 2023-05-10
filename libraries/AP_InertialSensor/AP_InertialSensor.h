@@ -82,8 +82,6 @@ public:
     // a function called by the main thread at the main loop rate:
     void periodic();
 
-    bool calibrate_trim(Vector3f &trim_rad);
-
     /// calibrating - returns true if the gyros or accels are currently being calibrated
     bool calibrating() const;
 
@@ -280,9 +278,16 @@ public:
     void acal_update();
 #endif
 
-    // simple accel calibration
 #if HAL_GCS_ENABLED
+    bool calibrate_gyros();
+
+    MAV_RESULT calibrate_trim();
+
+    // simple accel calibration
     MAV_RESULT simple_accel_cal();
+private:
+    uint32_t last_accel_cal_ms;
+public:
 #endif
 
     bool accel_cal_requires_reboot() const { return _accel_cal_requires_reboot; }
@@ -653,6 +658,7 @@ private:
     // are gyros or accels currently being calibrated
     bool _calibrating_accel;
     bool _calibrating_gyro;
+    bool _trimming_accel;
 
     // the delta time in seconds for the last sample
     float _delta_time;

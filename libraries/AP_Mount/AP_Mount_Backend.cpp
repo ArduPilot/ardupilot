@@ -7,6 +7,25 @@ extern const AP_HAL::HAL& hal;
 
 #define AP_MOUNT_UPDATE_DT 0.02     // update rate in seconds.  update() should be called at this rate
 
+// Default init function for every mount
+void AP_Mount_Backend::init()
+{
+    // setting default target sysid from parameters
+    _target_sysid = _params.sysid_default.get();
+}
+
+// return true if this mount accepts roll targets
+bool AP_Mount_Backend::has_roll_control() const
+{
+    return (_params.roll_angle_min < _params.roll_angle_max);
+}
+
+// return true if this mount accepts pitch targets
+bool AP_Mount_Backend::has_pitch_control() const
+{
+    return (_params.pitch_angle_min < _params.pitch_angle_max);
+}
+
 // set angle target in degrees
 // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
 void AP_Mount_Backend::set_angle_target(float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame)
@@ -102,6 +121,54 @@ void AP_Mount_Backend::send_gimbal_device_attitude_status(mavlink_channel_t chan
                                                    std::numeric_limits<double>::quiet_NaN(),    // pitch axis angular velocity (NaN for unknown)
                                                    std::numeric_limits<double>::quiet_NaN(),    // yaw axis angular velocity (NaN for unknown)
                                                    0);  // failure flags (not supported)
+}
+
+// return gimbal manager capability flags used by GIMBAL_MANAGER_INFORMATION message
+uint32_t AP_Mount_Backend::get_gimbal_manager_capability_flags() const
+{
+    uint32_t cap_flags = GIMBAL_MANAGER_CAP_FLAGS_HAS_RETRACT |
+                         GIMBAL_MANAGER_CAP_FLAGS_HAS_NEUTRAL |
+                         GIMBAL_MANAGER_CAP_FLAGS_HAS_RC_INPUTS |
+                         GIMBAL_MANAGER_CAP_FLAGS_CAN_POINT_LOCATION_LOCAL |
+                         GIMBAL_MANAGER_CAP_FLAGS_CAN_POINT_LOCATION_GLOBAL;
+
+    // roll control
+    if (has_roll_control()) {
+        cap_flags |= GIMBAL_MANAGER_CAP_FLAGS_HAS_ROLL_AXIS |
+                     GIMBAL_MANAGER_CAP_FLAGS_HAS_ROLL_FOLLOW |
+                     GIMBAL_MANAGER_CAP_FLAGS_HAS_ROLL_LOCK;
+    }
+
+    // pitch control
+    if (has_pitch_control()) {
+        cap_flags |= GIMBAL_MANAGER_CAP_FLAGS_HAS_PITCH_AXIS |
+                     GIMBAL_MANAGER_CAP_FLAGS_HAS_PITCH_FOLLOW |
+                     GIMBAL_MANAGER_CAP_FLAGS_HAS_PITCH_LOCK;
+    }
+
+    // yaw control
+    if (has_pan_control()) {
+        cap_flags |= GIMBAL_MANAGER_CAP_FLAGS_HAS_YAW_AXIS |
+                     GIMBAL_MANAGER_CAP_FLAGS_HAS_YAW_FOLLOW |
+                     GIMBAL_MANAGER_CAP_FLAGS_HAS_YAW_LOCK;
+    }
+
+    return cap_flags;
+}
+
+// send a GIMBAL_MANAGER_INFORMATION message to GCS
+void AP_Mount_Backend::send_gimbal_manager_information(mavlink_channel_t chan)
+{
+    mavlink_msg_gimbal_manager_information_send(chan,
+                                                AP_HAL::millis(),                       // autopilot system time
+                                                get_gimbal_manager_capability_flags(),  // bitmap of gimbal manager capability flags
+                                                _instance,                              // gimbal device id
+                                                radians(_params.roll_angle_min),        // roll_min in radians
+                                                radians(_params.roll_angle_max),        // roll_max in radians
+                                                radians(_params.pitch_angle_min),       // pitch_min in radians
+                                                radians(_params.pitch_angle_max),       // pitch_max in radians
+                                                radians(_params.yaw_angle_min),         // yaw_min in radians
+                                                radians(_params.yaw_angle_max));        // yaw_max in radians
 }
 
 // process MOUNT_CONTROL messages received from GCS. deprecated.

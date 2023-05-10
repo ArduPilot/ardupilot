@@ -68,5 +68,4 @@ protected:
     uint32_t _reset_timestamp_ms;   // time reset counter was received
 };
 
-#endif
-
+#endif  // HAL_VISUALODOM_ENABLED

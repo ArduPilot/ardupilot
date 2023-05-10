@@ -85,12 +85,6 @@ void AP_MotorsHeli_Quad::_output_test_seq(uint8_t motor_seq, int16_t pwm)
     }
 }
 
-// set_desired_rotor_speed
-void AP_MotorsHeli_Quad::set_desired_rotor_speed(float desired_speed)
-{
-    _main_rotor.set_desired_speed(desired_speed);
-}
-
 // calculate_armed_scalars
 void AP_MotorsHeli_Quad::calculate_armed_scalars()
 {
@@ -171,18 +165,6 @@ void AP_MotorsHeli_Quad::calculate_roll_pitch_collective_factors()
         _yawFactor[CH_1+i]        = clockwise?-0.25:0.25;
         _collectiveFactor[CH_1+i] = 1;
     }
-}
-
-// get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
-//  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-uint32_t AP_MotorsHeli_Quad::get_motor_mask()
-{
-    uint32_t mask = 0;
-    for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
-        mask |= 1U << (AP_MOTORS_MOT_1+i);
-    }
-    mask |= 1U << AP_MOTORS_HELI_RSC;
-    return mask;
 }
 
 // update_motor_controls - sends commands to motor controllers

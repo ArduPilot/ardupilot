@@ -776,7 +776,7 @@ void AP_GPS_NMEA::parse_versiona_field(uint16_t term_number, const char *term)
     // ::printf("VERSIONA[%u]='%s'\n", term_number, term);
     auto &v = _versiona;
 #pragma GCC diagnostic push
-#if defined(__GNUC__) &&  __GNUC__ >= 10
+#if defined(__GNUC__) &&  __GNUC__ >= 9
 #pragma GCC diagnostic ignored "-Wstringop-truncation"
 #endif
     switch (term_number) {

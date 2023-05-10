@@ -188,9 +188,6 @@ public:
     // get_spool_state - get current spool state
     enum SpoolState  get_spool_state(void) const { return _spool_state; }
 
-    // set_density_ratio - sets air density as a proportion of sea level density
-    void                set_air_density_ratio(float ratio) { _air_density_ratio = ratio; }
-
     // set_dt / get_dt - dt is the time since the last time the motor mixers were updated
     //   _dt should be set based on the time of the last IMU read used by these controllers
     //   the motor mixers should run on each loop to ensure normal operation
@@ -280,6 +277,11 @@ public:
     // write log, to be called at 10hz
     virtual void Log_Write() {};
 
+    enum MotorOptions : uint8_t {
+        BATT_RAW_VOLTAGE = (1 << 0U)
+    };
+    bool has_option(MotorOptions option) { return _options.get() & uint8_t(option); }
+
 protected:
     // output functions that should be overloaded by child classes
     virtual void        output_armed_stabilizing() = 0;
@@ -324,9 +326,6 @@ protected:
     DesiredSpoolState   _spool_desired;             // desired spool state
     SpoolState          _spool_state;               // current spool mode
 
-    // air pressure compensation variables
-    float               _air_density_ratio;     // air density / sea level density - decreases in altitude
-
     // mask of what channels need fast output
     uint32_t            _motor_fast_mask;
 
@@ -345,6 +344,9 @@ protected:
     bool                _thrust_boost;          // true if thrust boost is enabled to handle motor failure
     bool                _thrust_balanced;       // true when output thrust is well balanced
     float               _thrust_boost_ratio;    // choice between highest and second highest motor output for output mixing (0 ~ 1). Zero is normal operation
+
+    // motor options
+    AP_Int16            _options;
 
     MAV_TYPE _mav_type; // MAV_TYPE_GENERIC = 0;
 

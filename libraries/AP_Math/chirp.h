@@ -16,6 +16,9 @@ public:
     // accessor for the current waveform frequency
     float get_frequency_rads() {return waveform_freq_rads; }
 
+    // Return true if chirp is completed
+    bool completed() const { return complete; }
+
 private:
     // Total chirp length in seconds
     float record;
@@ -49,5 +52,8 @@ private:
 
     // output of chirp signal at the requested time
     float output;
+
+    // True if chirp is complete, reset to false on init
+    bool complete;
 
 };

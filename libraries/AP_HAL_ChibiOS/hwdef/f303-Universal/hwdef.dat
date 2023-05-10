@@ -5,7 +5,6 @@ define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_universal"
 
 # and support all external compass and baro types
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
-define HAL_PROBE_EXTERNAL_I2C_BAROS
 
 # enable all features
 define HAL_PERIPH_ENABLE_GPS

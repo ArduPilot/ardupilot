@@ -34,8 +34,8 @@ define HAL_GPIO_B_LED_PIN 1
 # buzzer
 PC13 BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
-define HAL_BUZZER_ON 1
-define HAL_BUZZER_OFF 0
+
+
 
 # spi1 bus for IMU
 PA5 SPI1_SCK SPI1
@@ -132,7 +132,6 @@ IMU Invensense SPI:mpu6000 ROTATION_YAW_180
 
 # probe for I2C BMP280, but allow init on board variants without onboard baro too
 BARO BMP280 I2C:0:0x76
-define HAL_PROBE_EXTERNAL_I2C_BAROS
 define HAL_BARO_ALLOW_INIT_NO_BARO
 define AP_BARO_BACKEND_DEFAULT_ENABLED 0
 define AP_BARO_BMP280_ENABLED 1

@@ -33,9 +33,9 @@ namespace AP_HAL {
     class OpticalFlow;
     class DSP;
 
-    class QSPIDevice;
-    class QSPIDeviceDriver;
-    class QSPIDeviceManager;
+    class WSPIDevice;
+    class WSPIDeviceDriver;
+    class WSPIDeviceManager;
 
     class CANIface;
     class CANFrame;

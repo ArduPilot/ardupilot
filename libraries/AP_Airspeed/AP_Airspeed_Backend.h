@@ -22,6 +22,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/Semaphores.h>
 #include "AP_Airspeed.h"
+#include <AP_MSP/msp_sensors.h>
 
 class AP_Airspeed_Backend {
 public:

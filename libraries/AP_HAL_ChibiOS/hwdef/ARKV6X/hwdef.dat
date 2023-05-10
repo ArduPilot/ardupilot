@@ -195,12 +195,6 @@ PF15 I2C4_SDA I2C4
 I2C_ORDER I2C4 I2C1 I2C2 I2C3
 define HAL_I2C_INTERNAL_MASK 1
 
-# this board is very tight on DMA channels. To allow for more UART DMA
-# we disable DMA on I2C. This also prevents a problem with DMA on I2C
-# interfering with IMUs
-NODMA I2C*
-define STM32_I2C_USE_DMA FALSE
-
 # heater - No heater on Rev 1
 # PB10 HEATER_EN OUTPUT LOW GPIO(80)
 # define HAL_HEATER_GPIO_PIN 80
@@ -309,7 +303,7 @@ define HAL_WITH_RAMTRON 1
 
 # INA226 battery monitor
 define HAL_BATTMON_INA2XX_BUS 1
-define HAL_BATTMON_INA2XX_ADDR 0x41
+define HAL_BATTMON_INA2XX_ADDR 0
 define HAL_BATT_MONITOR_DEFAULT 21
 
 # allow to have have a dedicated safety switch pin

@@ -99,44 +99,30 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Param: CAN_PROTOCOL
     // @DisplayName: Enable use of specific protocol to be used on this port
     // @Description: Enabling this option starts selected protocol that will use this virtual driver. At least one CAN port must be UAVCAN or else CAN1 gets set to UAVCAN
-    // @Values: 0:Disabled,1:UAVCAN,4:PiccoloCAN,5:CANTester,6:EFI_NWPMU,7:USD1,8:KDECAN
+    // @Values: 0:Disabled,1:UAVCAN,4:PiccoloCAN,6:EFI_NWPMU,7:USD1,8:KDECAN
     // @User: Advanced
     // @RebootRequired: True
-    GARRAY(can_protocol,     0, "CAN_PROTOCOL", AP_CANManager::Driver_Type_DroneCAN),
+    GARRAY(can_protocol,     0, "CAN_PROTOCOL", float(AP_CAN::Protocol::DroneCAN)),
     
     // @Param: CAN2_BAUDRATE
+    // @CopyFieldsFrom: CAN_BAUDRATE
     // @DisplayName: Bitrate of CAN2 interface
-    // @Description: Bit rate can be set up to from 10000 to 1000000
-    // @Range: 10000 1000000
-    // @User: Advanced
-    // @RebootRequired: True
     GARRAY(can_baudrate,     1, "CAN2_BAUDRATE", 1000000),
 
     // @Param: CAN2_PROTOCOL
-    // @DisplayName: Enable use of specific protocol to be used on this port
-    // @Description: Enabling this option starts selected protocol that will use this virtual driver. At least one CAN port must be UAVCAN or else CAN1 gets set to UAVCAN
-    // @Values: 0:Disabled,1:UAVCAN,4:PiccoloCAN,5:CANTester,6:EFI_NWPMU,7:USD1,8:KDECAN
-    // @User: Advanced
-    // @RebootRequired: True
-    GARRAY(can_protocol,     1, "CAN2_PROTOCOL", AP_CANManager::Driver_Type_DroneCAN),
+    // @CopyFieldsFrom: CAN_PROTOCOL
+    GARRAY(can_protocol,     1, "CAN2_PROTOCOL", float(AP_CAN::Protocol::DroneCAN)),
 #endif
 
 #if HAL_NUM_CAN_IFACES >= 3
     // @Param: CAN3_BAUDRATE
     // @DisplayName: Bitrate of CAN3 interface
-    // @Description: Bit rate can be set up to from 10000 to 1000000
-    // @Range: 10000 1000000
-    // @User: Advanced
-    // @RebootRequired: True
+    // @CopyFieldsFrom: CAN_BAUDRATE
     GARRAY(can_baudrate,    2, "CAN3_BAUDRATE", 1000000),
 
     // @Param: CAN3_PROTOCOL
-    // @DisplayName: Enable use of specific protocol to be used on this port
-    // @Description: Enabling this option starts selected protocol that will use this virtual driver. At least one CAN port must be UAVCAN or else CAN1 gets set to UAVCAN
-    // @Values: 0:Disabled,1:UAVCAN,4:PiccoloCAN,5:CANTester,6:EFI_NWPMU,7:USD1,8:KDECAN
-    // @User: Advanced
-    // @RebootRequired: True
-    GARRAY(can_protocol,    2, "CAN3_PROTOCOL", AP_CANManager::Driver_Type_DroneCAN),
+    // @CopyFieldsFrom: CAN_PROTOCOL
+    GARRAY(can_protocol,    2, "CAN3_PROTOCOL", float(AP_CAN::Protocol::DroneCAN)),
 #endif
 
 #if HAL_CANFD_SUPPORTED
@@ -158,11 +144,9 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
 #if HAL_NUM_CAN_IFACES >= 2
     // @Param: CAN2_FDBAUDRATE
+    // @CopyFieldsFrom: CAN_FDBAUDRATE
     // @DisplayName: Set up bitrate for data section on CAN2
     // @Description: This sets the bitrate for the data section of CAN2.
-    // @Values: 1:1M, 2:2M, 4:4M, 5:5M, 8:8M
-    // @User: Advanced
-    // @RebootRequired: True
     GARRAY(can_fdbaudrate,    1, "CAN2_FDBAUDRATE", HAL_CANFD_SUPPORTED),
 #endif
 #endif
@@ -521,6 +505,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Group: NMEA_
     // @Path: ../libraries/AP_NMEA_Output/AP_NMEA_Output.cpp
     GOBJECT(nmea, "NMEA_",   AP_NMEA_Output),
+#endif
+
+#if AP_KDECAN_ENABLED
+    // @Group: KDE_
+    // @Path: ../libraries/AP_KDECAN/AP_KDECAN.cpp
+    GOBJECT(kdecan, "KDE_",   AP_KDECAN),
 #endif
 
     AP_VAREND
