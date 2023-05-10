@@ -247,17 +247,17 @@ MAV_RESULT AP_Camera::handle_command_long(const mavlink_command_long_t &packet)
         take_picture();
         return MAV_RESULT_ACCEPTED;
     case MAV_CMD_CAMERA_TRACK_POINT:
-        if (set_tracking(TrackingType::POINT, Vector2f{packet.param1, packet.param2}, Vector2f{})) {
+        if (set_tracking(TrackingType::TRK_POINT, Vector2f{packet.param1, packet.param2}, Vector2f{})) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_UNSUPPORTED;
     case MAV_CMD_CAMERA_TRACK_RECTANGLE:
-        if (set_tracking(TrackingType::RECTANGLE, Vector2f{packet.param1, packet.param2}, Vector2f{packet.param3, packet.param4})) {
+        if (set_tracking(TrackingType::TRK_RECTANGLE, Vector2f{packet.param1, packet.param2}, Vector2f{packet.param3, packet.param4})) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_UNSUPPORTED;
     case MAV_CMD_CAMERA_STOP_TRACKING:
-        if (set_tracking(TrackingType::NONE, Vector2f{}, Vector2f{})) {
+        if (set_tracking(TrackingType::TRK_NONE, Vector2f{}, Vector2f{})) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_UNSUPPORTED;
