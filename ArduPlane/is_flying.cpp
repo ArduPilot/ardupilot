@@ -4,9 +4,9 @@
   is_flying and crash detection logic
  */
 
-#define CRASH_DETECTION_DELAY_MS            500
-#define IS_FLYING_IMPACT_TIMER_MS           3000
-#define GPS_IS_FLYING_SPEED_CMS             150
+static constexpr uint32_t CRASH_DETECTION_DELAY_MS = 500;
+static constexpr uint32_t IS_FLYING_IMPACT_TIMER_MS = 3000;
+static constexpr float GPS_IS_FLYING_SPEED_M_P_S = 0.15f;
 
 /*
   Do we think we are flying?
@@ -18,9 +18,9 @@ void Plane::update_is_flying_5Hz(void)
     bool is_flying_bool = false;
     uint32_t now_ms = AP_HAL::millis();
 
-    uint32_t ground_speed_thresh_cm = (aparm.min_gndspeed_cm > 0) ? ((uint32_t)(aparm.min_gndspeed_cm*0.9f)) : GPS_IS_FLYING_SPEED_CMS;
+    const float ground_speed_thresh = (aparm.min_gndspeed_cm > 0) ? ((float)aparm.min_gndspeed_cm * 0.9f * 0.01f) : GPS_IS_FLYING_SPEED_M_P_S;
     bool gps_confirmed_movement = (gps.status() >= AP_GPS::GPS_OK_FIX_3D) &&
-                                    (gps.ground_speed_cm() >= ground_speed_thresh_cm);
+                                    (gps.ground_speed() >= ground_speed_thresh);
 
     // airspeed at least 75% of stall speed?
     const float airspeed_threshold = MAX(aparm.airspeed_min,2)*0.75f;
