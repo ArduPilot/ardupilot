@@ -13,6 +13,7 @@
 #include "geometry_msgs/msg/PoseStamped.h"
 #include "geometry_msgs/msg/TwistStamped.h"
 #include "geographic_msgs/msg/GeoPoseStamped.h"
+#include "rosgraph_msgs/msg/Clock.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Scheduler.h>
@@ -60,6 +61,7 @@ private:
     geometry_msgs_msg_PoseStamped local_pose_topic;
     geometry_msgs_msg_TwistStamped local_velocity_topic;
     geographic_msgs_msg_GeoPoseStamped geo_pose_topic;
+    rosgraph_msgs_msg_Clock clock_topic;
 
     HAL_Semaphore csem;
 
@@ -73,6 +75,7 @@ private:
     static void update_topic(geometry_msgs_msg_PoseStamped& msg);
     static void update_topic(geometry_msgs_msg_TwistStamped& msg);
     static void update_topic(geographic_msgs_msg_GeoPoseStamped& msg);
+    static void update_topic(rosgraph_msgs_msg_Clock& msg);
 
     // The last ms timestamp AP_DDS wrote a Time message
     uint64_t last_time_time_ms;
@@ -86,6 +89,8 @@ private:
     uint64_t last_local_velocity_time_ms;
     // The last ms timestamp AP_DDS wrote a GeoPose message
     uint64_t last_geo_pose_time_ms;
+    // The last ms timestamp AP_DDS wrote a Clock message
+    uint64_t last_clock_time_ms;
 
     // functions for serial transport
     bool ddsSerialInit();
@@ -146,6 +151,8 @@ public:
     void write_local_velocity_topic();
     //! @brief Serialize the current geo_pose and publish to the IO stream(s)
     void write_geo_pose_topic();
+    //! @brief Serialize the current clock and publish to the IO stream(s)
+    void write_clock_topic();
     //! @brief Update the internally stored DDS messages with latest data
     void update();
 
