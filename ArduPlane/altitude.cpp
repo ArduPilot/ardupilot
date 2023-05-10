@@ -576,6 +576,19 @@ float Plane::lookahead_adjustment(void)
 #endif
 }
 
+bool Plane::have_rangefinder_correction(void) {
+    if (millis() - rangefinder_state.last_correction_time_ms > 5000) {
+        // we haven't had any rangefinder data for 5s - don't use it
+        return false;
+    }
+
+    // for now we only support the rangefinder for landing 
+    bool using_rangefinder = (g.rangefinder_landing && flight_stage == AP_FixedWing::FlightStage::LAND);
+    if (!using_rangefinder) {
+        return false;
+    }
+    return true;
+}
 
 /*
   correct target altitude using rangefinder data. Returns offset in
@@ -584,14 +597,7 @@ float Plane::lookahead_adjustment(void)
  */
 float Plane::rangefinder_correction(void)
 {
-    if (millis() - rangefinder_state.last_correction_time_ms > 5000) {
-        // we haven't had any rangefinder data for 5s - don't use it
-        return 0;
-    }
-
-    // for now we only support the rangefinder for landing 
-    bool using_rangefinder = (g.rangefinder_landing && flight_stage == AP_FixedWing::FlightStage::LAND);
-    if (!using_rangefinder) {
+    if (!have_rangefinder_correction()) {
         return 0;
     }
 
