@@ -198,4 +198,29 @@
       </historyQos>
     </topic>
   </data_writer>
+  <topic profile_name="clock__t">
+    <name>rt/ap/clock</name>
+    <dataType>rosgraph_msgs::msg::dds_::Clock_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>20</depth>
+    </historyQos>
+  </topic>
+  <data_writer profile_name="clock__dw">
+    <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+    <qos>
+      <reliability>
+        <kind>RELIABLE</kind>
+      </reliability>
+    </qos>
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/ap/clock</name>
+      <dataType>rosgraph_msgs::msg::dds_::Clock_</dataType>
+      <historyQos>
+        <kind>KEEP_LAST</kind>
+        <depth>20</depth>
+      </historyQos>
+    </topic>
+  </data_writer>
 </profiles>
