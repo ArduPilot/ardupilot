@@ -275,7 +275,7 @@ class Board:
             env.DEFINES.update(
                 HAL_DEBUG_BUILD = 1,
             )
-        elif cfg.options.g:
+        elif cfg.options.debug_symbols:
             env.CFLAGS += [
                 '-g',
             ]
