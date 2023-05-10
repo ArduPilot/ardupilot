@@ -248,7 +248,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
         }
 #endif
         if (flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
-            return landing.verify_abort_landing(prev_WP_loc, next_WP_loc, current_loc, auto_state.takeoff_altitude_rel_cm, throttle_suppressed);
+            return landing.verify_abort_landing(prev_WP_loc, next_WP_loc, current_loc, auto_state.abort_target_alt_rel_cm, throttle_suppressed);
 
         } else {
             // use rangefinder to correct if possible
@@ -408,11 +408,12 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
     set_next_WP(cmd.content.location);
 
     // configure abort altitude and pitch
-    // if NAV_LAND has an abort altitude then use it, else use last takeoff, else use 50m
+    // if NAV_LAND has an abort altitude then use it, else use last takeoff, else use 30m
+    auto_state.abort_alt_configured_agl_cm = auto_state.takeoff_altitude_rel_cm;
     if (cmd.p1 > 0) {
-        auto_state.takeoff_altitude_rel_cm = (int16_t)cmd.p1 * 100;
-    } else if (auto_state.takeoff_altitude_rel_cm <= 0) {
-        auto_state.takeoff_altitude_rel_cm = 3000;
+        auto_state.abort_alt_configured_agl_cm = (int16_t)cmd.p1 * 100;
+    } else if (auto_state.abort_alt_configured_agl_cm <= 0) {
+        auto_state.abort_alt_configured_agl_cm = 3000;
     }
 
     if (auto_state.takeoff_pitch_cd <= 0) {

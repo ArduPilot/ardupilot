@@ -499,8 +499,34 @@ void Plane::set_flight_stage(AP_FixedWing::FlightStage fs)
     landing.handle_flight_stage_change(fs == AP_FixedWing::FlightStage::LAND);
 
     if (fs == AP_FixedWing::FlightStage::ABORT_LANDING) {
-        gcs().send_text(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm",
-                        int(auto_state.takeoff_altitude_rel_cm/100));
+        const float relative_altitude_cm = relative_altitude*100.0f;
+        int32_t climb_delta_cm;
+        if (have_rangefinder_correction()) {
+            // if the rangefinder is tracking the ground, we use it to convert auto_state.abort_alt_configured_agl_cm
+            // to an altitude delta from our current altitude
+            int32_t height_above_ground_cm = rangefinder_state.height_estimate*100;
+            
+            climb_delta_cm = auto_state.abort_alt_configured_agl_cm - height_above_ground_cm;
+        } else {
+            // if the rangefinder is not tracking the ground, we assume that the LAND waypoint is on the ground
+            // to convert auto_state.abort_alt_configured_agl_cm to an altitude delta from our current altitude
+            int32_t land_wp_alt_rel_cm;
+            if (next_WP_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, land_wp_alt_rel_cm)) {
+                int32_t climb_target_rel_cm = land_wp_alt_rel_cm + auto_state.abort_alt_configured_agl_cm;
+                
+                climb_delta_cm = climb_target_rel_cm - relative_altitude_cm;
+            } else {
+                climb_delta_cm = 1000;
+            }
+        }
+        
+        // climb a minimum of 2 meters
+        climb_delta_cm = MAX(200, climb_delta_cm);
+        
+        auto_state.abort_target_alt_rel_cm = relative_altitude_cm + climb_delta_cm;
+
+        gcs().send_text(MAV_SEVERITY_NOTICE, "Landing aborted, climbing from %dm to %dm",
+                        int(relative_altitude), int(auto_state.abort_target_alt_rel_cm/100));
     }
 
     flight_stage = fs;

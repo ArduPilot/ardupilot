@@ -506,6 +506,12 @@ private:
 
         // how much correction have we added for terrain data
         float terrain_correction;
+        
+        // abort altitude target
+        int32_t abort_target_alt_rel_cm;
+        
+        // configured abort altitude target above the land point
+        int32_t abort_alt_configured_agl_cm;
     } auto_state;
 
 #if AP_SCRIPTING_ENABLED
@@ -848,6 +854,7 @@ private:
     float mission_alt_offset(void);
     float height_above_target(void);
     float lookahead_adjustment(void);
+    bool have_rangefinder_correction(void);
     float rangefinder_correction(void);
     void rangefinder_height_update(void);
     void rangefinder_terrain_correction(float &height);
