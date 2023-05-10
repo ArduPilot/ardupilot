@@ -22,7 +22,7 @@ enum class FocusType : uint8_t {
 
 // tracking types when tracking an object in the video stream
 enum class TrackingType : uint8_t {
-    NONE = 0,       // tracking is inactive
-    POINT = 1,      // tracking a point
-    RECTANGLE = 2   // tracking a rectangle
+    TRK_NONE = 0,       // tracking is inactive
+    TRK_POINT = 1,      // tracking a point
+    TRK_RECTANGLE = 2   // tracking a rectangle
 };
