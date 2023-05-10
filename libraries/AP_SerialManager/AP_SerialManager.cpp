@@ -25,6 +25,7 @@
 #include <AP_RCProtocol/AP_RCProtocol.h>
 #include <AP_MSP/AP_MSP.h>
 #include "AP_SerialManager.h"
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
