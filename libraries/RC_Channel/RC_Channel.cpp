@@ -993,7 +993,7 @@ bool RC_Channel::do_aux_function_camera_image_tracking(const AuxSwitchPos ch_fla
     }
     // High position enables tracking a POINT in middle of image
     // Low or Mediums disables tracking.  (0.5,0.5) is still passed in but ignored
-    return camera->set_tracking(ch_flag == AuxSwitchPos::HIGH ? TrackingType::POINT : TrackingType::NONE, Vector2f{0.5, 0.5}, Vector2f{});
+    return camera->set_tracking(ch_flag == AuxSwitchPos::HIGH ? TrackingType::TRK_POINT : TrackingType::TRK_NONE, Vector2f{0.5, 0.5}, Vector2f{});
 }
 #endif
 
