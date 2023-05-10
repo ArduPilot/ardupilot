@@ -28,7 +28,7 @@ from builtin_interfaces.msg import Time
 
 
 class TimeListener(rclpy.node.Node):
-    """Subscribe to Time messages on /ap/clock."""
+    """Subscribe to Time messages on /ap/time."""
 
     def __init__(self):
         """Initialise the node."""
@@ -36,7 +36,7 @@ class TimeListener(rclpy.node.Node):
         self.msg_event_object = threading.Event()
 
         # Declare and acquire `topic` parameter.
-        self.declare_parameter("topic", "ap/clock")
+        self.declare_parameter("topic", "ap/time")
         self.topic = self.get_parameter("topic").get_parameter_value().string_value
 
     def start_subscriber(self):
@@ -94,8 +94,8 @@ def launch_sitl_copter_dds_udp(sitl_copter_dds_udp):
 
 
 @pytest.mark.launch(fixture=launch_sitl_copter_dds_serial)
-def test_dds_serial_clock_msg_recv(launch_context, launch_sitl_copter_dds_serial):
-    """Test /ap/clock is published by AP_DDS."""
+def test_dds_serial_time_msg_recv(launch_context, launch_sitl_copter_dds_serial):
+    """Test /ap/time is published by AP_DDS."""
     _, actions = launch_sitl_copter_dds_serial
     virtual_ports = actions["virtual_ports"].action
     micro_ros_agent = actions["micro_ros_agent"].action
@@ -120,8 +120,8 @@ def test_dds_serial_clock_msg_recv(launch_context, launch_sitl_copter_dds_serial
 
 
 @pytest.mark.launch(fixture=launch_sitl_copter_dds_udp)
-def test_dds_udp_clock_msg_recv(launch_context, launch_sitl_copter_dds_udp):
-    """Test /ap/clock is published by AP_DDS."""
+def test_dds_udp_time_msg_recv(launch_context, launch_sitl_copter_dds_udp):
+    """Test /ap/time is published by AP_DDS."""
     _, actions = launch_sitl_copter_dds_udp
     micro_ros_agent = actions["micro_ros_agent"].action
     mavproxy = actions["mavproxy"].action
