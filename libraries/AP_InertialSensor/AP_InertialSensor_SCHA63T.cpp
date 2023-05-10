@@ -297,7 +297,7 @@ void AP_InertialSensor_SCHA63T::read_accel()
     accel_z = (accel_z == INT16_MIN) ? INT16_MAX : -accel_z;
 
     Vector3f accel(accel_x, accel_y, accel_z);
-    accel *= (GRAVITY_MSS / 4905.f); // 4905 LSB/g, 0.204mg/LSB
+    accel *= (GRAVITY_MSS / 4905.f); // 4905 LSB/g, 0.20387 mg/LSB
 
     _rotate_and_correct_accel(accel_instance, accel);
     _notify_new_accel_raw_sample(accel_instance, accel);
