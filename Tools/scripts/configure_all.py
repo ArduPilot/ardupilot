@@ -12,6 +12,10 @@ import shutil
 
 import argparse
 
+# modify our search path:
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_ChibiOS/hwdef/scripts'))
+import chibios_hwdef
+
 parser = argparse.ArgumentParser(description='configure all ChibiOS boards')
 parser.add_argument('--build', action='store_true', default=False, help='build as well as configure')
 parser.add_argument('--build-target', default='copter', help='build target')
@@ -66,14 +70,9 @@ if args.start is not None:
 
 def is_ap_periph(board):
     hwdef = os.path.join('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % board)
-    try:
-        r = open(hwdef, 'r').read()
-        if r.find('periph/hwdef.dat') != -1 or r.find('periph/hwdef.inc') != -1 or r.find('AP_PERIPH') != -1:
-            print("%s is AP_Periph" % board)
-            return True
-    except Exception as ex:
-        pass
-    return False
+    ch = chibios_hwdef.ChibiOSHWDef()
+    ch.process_file(hwdef)
+    return ch.is_periph_fw()
 
 if args.copy_hwdef_incs_to_directory is not None:
     os.makedirs(args.copy_hwdef_incs_to_directory)
