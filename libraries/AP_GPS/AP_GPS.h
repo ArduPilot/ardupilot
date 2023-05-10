@@ -300,7 +300,7 @@ public:
     }
 
     // Query the highest status this GPS supports (always reports GPS_OK_FIX_3D for the blended GPS)
-    GPS_Status highest_supported_status(uint8_t instance) const;
+    GPS_Status highest_supported_status(uint8_t instance) const WARN_IF_UNUSED;
 
     // location of last fix
     const Location &location(uint8_t instance) const {
