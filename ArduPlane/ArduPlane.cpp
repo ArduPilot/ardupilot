@@ -512,7 +512,7 @@ void Plane::set_flight_stage(AP_FixedWing::FlightStage fs)
             // to convert auto_state.abort_alt_configured_agl_cm to an altitude delta from our current altitude
             int32_t land_wp_alt_rel_cm;
             if (next_WP_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, land_wp_alt_rel_cm)) {
-                int32_t climb_target_rel_cm = land_wp_alt_rel_cm + auto_state.abort_alt_configured_agl_cm;
+                int32_t climb_target_rel_cm = land_wp_alt_rel_cm + auto_state.abort_alt_configured_agl_cm + mission_alt_offset()*100;
                 
                 climb_delta_cm = climb_target_rel_cm - relative_altitude_cm;
             } else {
