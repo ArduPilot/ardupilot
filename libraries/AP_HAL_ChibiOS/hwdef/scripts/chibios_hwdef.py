@@ -674,7 +674,7 @@ class ChibiOSHWDef(object):
     def get_ram_reserve_start(self):
         '''get amount of memory to reserve for bootloader comms'''
         ram_reserve_start = self.get_config('RAM_RESERVE_START', default=0, type=int)
-        if ram_reserve_start == 0 and int(self.env_vars.get('AP_PERIPH',0)) == 1:
+        if ram_reserve_start == 0 and self.is_periph_fw():
             ram_reserve_start = 256
         return ram_reserve_start
 
@@ -1562,7 +1562,7 @@ INCLUDE common.ld
 
     def write_check_firmware(self, f):
         '''add AP_CHECK_FIRMWARE_ENABLED if needed'''
-        if self.env_vars.get('AP_PERIPH',0) != 0 or self.intdefines.get('AP_OPENDRONEID_ENABLED',0) == 1:
+        if self.is_periph_fw() or self.intdefines.get('AP_OPENDRONEID_ENABLED',0) == 1:
             f.write('''
 #ifndef AP_CHECK_FIRMWARE_ENABLED
 #define AP_CHECK_FIRMWARE_ENABLED 1
@@ -1907,7 +1907,7 @@ INCLUDE common.ld
         if OTG2_index is not None:
             f.write('#define HAL_OTG2_UART_INDEX %d\n' % OTG2_index)
             f.write('#define HAL_HAVE_DUAL_USB_CDC 1\n')
-            if self.env_vars.get('AP_PERIPH', 0) == 0:
+            if not self.is_periph_fw():
                 f.write('''
 #if defined(HAL_NUM_CAN_IFACES) && HAL_NUM_CAN_IFACES
 #ifndef HAL_OTG2_PROTOCOL
@@ -2480,7 +2480,7 @@ INCLUDE common.ld
         f = open(hwdat, 'w')
         f.write('\n'.join(self.all_lines))
         f.close()
-        if not 'AP_PERIPH' in self.env_vars:
+        if not self.is_periph_fw():
             self.romfs["hwdef.dat"] = hwdat
 
     def write_hwdef_header(self, outfilename):
@@ -2979,7 +2979,7 @@ INCLUDE common.ld
 
     def add_apperiph_defaults(self, f):
         '''add default defines for peripherals'''
-        if self.env_vars.get('AP_PERIPH',0) == 0:
+        if not self.is_periph_fw():
             # not AP_Periph
             return
 
@@ -3356,12 +3356,15 @@ INCLUDE common.ld
 // end IOMCU Firmware defaults
 ''')
 
+    def is_periph_fw(self):
+        return self.env_vars.get('AP_PERIPH', 0) != 0
+
     def add_normal_firmware_defaults(self, f):
         '''add default defines to builds with are not bootloader, periph or IOMCU'''
         if self.env_vars.get('IOMCU_FW', 0) != 0:
             # IOMCU firmware
             return
-        if self.env_vars.get('AP_PERIPH', 0) != 0:
+        if self.is_periph_fw():
             # Periph firmware
             return
         if args.bootloader:
