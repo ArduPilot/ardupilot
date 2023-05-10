@@ -350,6 +350,9 @@ public:
 
     // VTOL motor expo, used if non-zero
     AP_Float vtol_motor_expo;
+
+    // VTOL motor response time constant
+    AP_Float vtol_motor_tc;
     
     // minimum throttle for addition of ins noise
     AP_Float ins_noise_throttle_min;

@@ -385,6 +385,14 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Range: -1 1
     // @User: Advanced
     AP_GROUPINFO("VTOL_EXPO", 52, SIM,  vtol_motor_expo, 0.0),
+
+    // @Param: VTOL_TC
+    // @DisplayName: VTOL motor time constant
+    // @Description: If non-zero then this gives a time constant for modelling motor response time
+    // @Range: 0 2
+    // @Units: s
+    // @User: Advanced
+    AP_GROUPINFO("VTOL_TC", 53, SIM,  vtol_motor_tc, 0.0),
     
 
 #ifdef SFML_JOYSTICK

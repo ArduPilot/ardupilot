@@ -18,6 +18,7 @@
 
 #include "SIM_Motor.h"
 #include <AP_Motors/AP_Motors.h>
+#include <AP_Math/AP_Math.h>
 #include "SITL.h"
 
 using namespace SITL;
@@ -213,16 +214,25 @@ float Motor::pwm_to_command(float pwm) const
 /*
   calculate thrust given a command value
 */
-float Motor::calc_thrust(float command, float air_density, float velocity_in, float voltage_scale) const
+float Motor::calc_thrust(float command, float air_density, float velocity_in, float voltage_scale)
 {
     /*
       allow override of the expo
      */
     float expo = mot_expo;
+
+#if AP_SIM_ENABLED
     const auto *sitl = AP::sitl();
     if (sitl && !is_zero(sitl->vtol_motor_expo.get())) {
         expo = sitl->vtol_motor_expo.get();
     }
+
+    if (sitl && is_positive(sitl->vtol_motor_tc.get())) {
+        const float alpha = calc_lowpass_alpha_dt(1.0 / sitl->loop_rate_hz, 1.0 / sitl->vtol_motor_tc.get());
+        filtered_command += (command - filtered_command) * alpha;
+        command = filtered_command;
+    }
+#endif // AP_SIM_ENABLED
 
     float velocity_out = voltage_scale * max_outflow_velocity * sqrtf((1-expo)*command + expo*sq(command));
     float ret = 0.5 * air_density * effective_prop_area * (sq(velocity_out) - sq(velocity_in));

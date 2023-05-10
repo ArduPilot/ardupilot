@@ -120,7 +120,7 @@ public:
     }
 
     // calculate thrust of motor
-    float calc_thrust(float command, float air_density, float velocity_in, float voltage_scale) const;
+    float calc_thrust(float command, float air_density, float velocity_in, float voltage_scale);
 
 private:
     float mot_pwm_min;
@@ -137,6 +137,7 @@ private:
     float true_prop_area;
     float momentum_drag_coefficient;
     float diagonal_size;
+    float filtered_command;
 
     float last_command;
     uint64_t last_calc_us;
