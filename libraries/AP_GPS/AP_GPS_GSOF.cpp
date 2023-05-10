@@ -53,7 +53,7 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
     // baud request for port 3
     requestBaud(3);
 
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
     gsofmsg_time = now + 110;
 }
 
@@ -62,7 +62,7 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 bool
 AP_GPS_GSOF::read(void)
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::millis();
 
     if (gsofmsgreq_index < (sizeof(gsofmsgreq))) {
         if (now > gsofmsg_time) {
@@ -75,7 +75,7 @@ AP_GPS_GSOF::read(void)
 
     bool ret = false;
     while (port->available() > 0) {
-        uint8_t temp = port->read();
+        const uint8_t temp = port->read();
 #if AP_GPS_DEBUG_LOGGING_ENABLED
         log_data(&temp, 1);
 #endif
@@ -86,7 +86,7 @@ AP_GPS_GSOF::read(void)
 }
 
 bool
-AP_GPS_GSOF::parse(uint8_t temp)
+AP_GPS_GSOF::parse(const uint8_t temp)
 {
     switch (gsof_msg.gsof_state)
     {
@@ -142,7 +142,7 @@ AP_GPS_GSOF::parse(uint8_t temp)
 }
 
 void
-AP_GPS_GSOF::requestBaud(uint8_t portindex)
+AP_GPS_GSOF::requestBaud(const uint8_t portindex)
 {
     uint8_t buffer[19] = {0x02,0x00,0x64,0x0d,0x00,0x00,0x00, // application file record
                           0x03, 0x00, 0x01, 0x00, // file control information block
@@ -163,7 +163,7 @@ AP_GPS_GSOF::requestBaud(uint8_t portindex)
 }
 
 void
-AP_GPS_GSOF::requestGSOF(uint8_t messagetype, uint8_t portindex)
+AP_GPS_GSOF::requestGSOF(const uint8_t messagetype, const uint8_t portindex)
 {
     uint8_t buffer[21] = {0x02,0x00,0x64,0x0f,0x00,0x00,0x00, // application file record
                           0x03,0x00,0x01,0x00, // file control information block
@@ -185,7 +185,7 @@ AP_GPS_GSOF::requestGSOF(uint8_t messagetype, uint8_t portindex)
 }
 
 double
-AP_GPS_GSOF::SwapDouble(uint8_t* src, uint32_t pos)
+AP_GPS_GSOF::SwapDouble(uint8_t* src, const uint32_t pos) const
 {
     union {
         double d;
@@ -204,7 +204,7 @@ AP_GPS_GSOF::SwapDouble(uint8_t* src, uint32_t pos)
 }
 
 float
-AP_GPS_GSOF::SwapFloat(uint8_t* src, uint32_t pos)
+AP_GPS_GSOF::SwapFloat(uint8_t* src, const uint32_t pos) const
 {
     union {
         float f;
@@ -219,7 +219,7 @@ AP_GPS_GSOF::SwapFloat(uint8_t* src, uint32_t pos)
 }
 
 uint32_t
-AP_GPS_GSOF::SwapUint32(uint8_t* src, uint32_t pos)
+AP_GPS_GSOF::SwapUint32(uint8_t* src, const uint32_t pos) const
 {
     union {
         uint32_t u;
@@ -234,7 +234,7 @@ AP_GPS_GSOF::SwapUint32(uint8_t* src, uint32_t pos)
 }
 
 uint16_t
-AP_GPS_GSOF::SwapUint16(uint8_t* src, uint32_t pos)
+AP_GPS_GSOF::SwapUint16(uint8_t* src, const uint32_t pos) const
 {
     union {
         uint16_t u;
@@ -253,9 +253,9 @@ AP_GPS_GSOF::process_message(void)
 
     if (gsof_msg.packettype == 0x40) { // GSOF
 #if gsof_DEBUGGING
-        uint8_t trans_number = gsof_msg.data[0];
-        uint8_t pageidx = gsof_msg.data[1];
-        uint8_t maxpageidx = gsof_msg.data[2];
+        const uint8_t trans_number = gsof_msg.data[0];
+        const uint8_t pageidx = gsof_msg.data[1];
+        const uint8_t maxpageidx = gsof_msg.data[2];
 
         Debug("GSOF page: %u of %u (trans_number=%u)",
               pageidx, maxpageidx, trans_number);
@@ -266,9 +266,9 @@ AP_GPS_GSOF::process_message(void)
         // want 1 2 8 9 12
         for (uint32_t a = 3; a < gsof_msg.length; a++)
         {
-            uint8_t output_type = gsof_msg.data[a];
+            const uint8_t output_type = gsof_msg.data[a];
             a++;
-            uint8_t output_length = gsof_msg.data[a];
+            const uint8_t output_length = gsof_msg.data[a];
             a++;
             //Debug("GSOF type: " + output_type + " len: " + output_length);
 
@@ -277,8 +277,8 @@ AP_GPS_GSOF::process_message(void)
                 state.time_week_ms = SwapUint32(gsof_msg.data, a);
                 state.time_week = SwapUint16(gsof_msg.data, a + 4);
                 state.num_sats = gsof_msg.data[a + 6];
-                uint8_t posf1 = gsof_msg.data[a + 7];
-                uint8_t posf2 = gsof_msg.data[a + 8];
+                const uint8_t posf1 = gsof_msg.data[a + 7];
+                const uint8_t posf2 = gsof_msg.data[a + 8];
 
                 //Debug("POSTIME: " + posf1 + " " + posf2);
                 
@@ -311,7 +311,7 @@ AP_GPS_GSOF::process_message(void)
             }
             else if (output_type == 8) // velocity
             {
-                uint8_t vflag = gsof_msg.data[a];
+                const uint8_t vflag = gsof_msg.data[a];
                 if ((vflag & 1) == 1)
                 {
                     state.ground_speed = SwapFloat(gsof_msg.data, a + 1);
