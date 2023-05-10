@@ -762,7 +762,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
 }
 
 #if HAL_MOUNT_ENABLED
-MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
     case MAV_CMD_DO_MOUNT_CONTROL:
@@ -775,7 +775,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_long_t
     default:
         break;
     }
-    return GCS_MAVLINK::handle_command_mount(packet);
+    return GCS_MAVLINK::handle_command_mount(packet, msg);
 }
 #endif
 
