@@ -6,7 +6,7 @@
     </rtps>
   </participant>
   <topic profile_name="time__t">
-    <name>rt/ap/clock</name>
+    <name>rt/ap/time</name>
     <dataType>builtin_interfaces::msg::dds_::Time_</dataType>
     <historyQos>
       <kind>KEEP_LAST</kind>
@@ -22,7 +22,7 @@
     </qos>
     <topic>
       <kind>NO_KEY</kind>
-      <name>rt/ap/clock</name>
+      <name>rt/ap/time</name>
       <dataType>builtin_interfaces::msg::dds_::Time_</dataType>
       <historyQos>
         <kind>KEEP_LAST</kind>
