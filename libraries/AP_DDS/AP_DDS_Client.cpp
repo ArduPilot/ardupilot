@@ -17,6 +17,7 @@ static constexpr uint16_t DELAY_BATTERY_STATE_TOPIC_MS = 1000;
 static constexpr uint16_t DELAY_LOCAL_POSE_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = 33;
+static constexpr uint16_t DELAY_CLOCK_TOPIC_MS = 10;
 static char WGS_84_FRAME_ID[] = "WGS-84";
 // https://www.ros.org/reps/rep-0105.html#base-link
 static char BASE_LINK_FRAME_ID[] = "base_link";
@@ -374,6 +375,11 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
     }
 }
 
+void AP_DDS_Client::update_topic(rosgraph_msgs_msg_Clock& msg)
+{
+    update_topic(msg.clock);
+}
+
 /*
   start the DDS thread
  */
@@ -627,6 +633,21 @@ void AP_DDS_Client::write_geo_pose_topic()
     }
 }
 
+void AP_DDS_Client::write_clock_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub;
+        const uint32_t topic_size = rosgraph_msgs_msg_Clock_size_of_topic(&clock_topic, 0);
+        uxr_prepare_output_stream(&session,reliable_out,topics[7].dw_id,&ub,topic_size);
+        const bool success = rosgraph_msgs_msg_Clock_serialize_topic(&ub, &clock_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        }
+    }
+}
+
 void AP_DDS_Client::update()
 {
     WITH_SEMAPHORE(csem);
@@ -666,6 +687,12 @@ void AP_DDS_Client::update()
         update_topic(geo_pose_topic);
         last_geo_pose_time_ms = cur_time_ms;
         write_geo_pose_topic();
+    }
+
+    if (cur_time_ms - last_clock_time_ms > DELAY_CLOCK_TOPIC_MS) {
+        update_topic(clock_topic);
+        last_clock_time_ms = cur_time_ms;
+        write_clock_topic();
     }
 
     connected = uxr_run_session_time(&session, 1);
