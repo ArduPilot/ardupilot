@@ -94,8 +94,8 @@ PA1 UART4_RX UART4 NODMA
 # RC input defaults to UART to allow for bi-dir dshot
 PC6 USART6_TX USART6
 PC7 USART6_RX USART6
-define HAL_SERIAL6_PROTOCOL SerialProtocol_RCIN
-define HAL_SERIAL6_BAUD 115
+define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_RCIN
+define DEFAULT_SERIAL6_BAUD 115
 
 # UART7, RX only for ESC Telemetry
 # No DMA because SPI2 requires the DMA slot

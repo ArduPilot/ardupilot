@@ -174,8 +174,8 @@ define HAL_SPEKTRUM_PWR_ENABLED 1
 
 # setup for RCIN on USUART6, will auto-baud for 100000 and 115200 and
 # auto-switch inversion as needed
-define HAL_SERIAL6_PROTOCOL 23
-define HAL_SERIAL6_BAUD 115200
+define DEFAULT_SERIAL6_PROTOCOL 23
+define DEFAULT_SERIAL6_BAUD 115200
 
 # UART7 Telem 1, TELEM_UART_4W
 PE7 UART7_RX UART7
