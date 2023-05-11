@@ -126,34 +126,6 @@ extern const AP_HAL::HAL& hal;
 #define DEFAULT_SERIAL9_OPTIONS 0
 #endif
 
-#ifdef HAL_BUILD_AP_PERIPH
-/*
-  AP_Periph doesn't include the SERIAL parameter tree, instead each
-  supported serial device type has it's own parameter within AP_Periph
-  for which port is used.
- */
-#undef DEFAULT_SERIAL0_PROTOCOL
-#undef DEFAULT_SERIAL1_PROTOCOL
-#undef DEFAULT_SERIAL2_PROTOCOL
-#undef DEFAULT_SERIAL3_PROTOCOL
-#undef DEFAULT_SERIAL4_PROTOCOL
-#undef DEFAULT_SERIAL5_PROTOCOL
-#undef DEFAULT_SERIAL6_PROTOCOL
-#undef DEFAULT_SERIAL7_PROTOCOL
-#undef DEFAULT_SERIAL8_PROTOCOL
-#undef DEFAULT_SERIAL9_PROTOCOL
-#define DEFAULT_SERIAL0_PROTOCOL SerialProtocol_None
-#define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_None
-#define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_None
-#define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_None
-#define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_None
-#define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_None
-#define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_None
-#define DEFAULT_SERIAL7_PROTOCOL SerialProtocol_None
-#define DEFAULT_SERIAL8_PROTOCOL SerialProtocol_None
-#define DEFAULT_SERIAL9_PROTOCOL SerialProtocol_None
-#endif // HAL_BUILD_AP_PERIPH
-
 const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
 #if SERIALMANAGER_NUM_PORTS > 0
     // @Param: 0_BAUD
