@@ -415,6 +415,24 @@ var MAG_Data
 var MAG_Data
 var MAG_params_original
 var trim
+
+function extractLatLon() {
+  var Lat, Lng
+  if (log.messages["ORGN[0]"] !== undefined) {
+    Lat = log.messages["ORGN[0]"].Lat[log.messages["ORGN[0]"].Lat.length-1] * 10**-7
+    Lng = log.messages["ORGN[0]"].Lng[log.messages["ORGN[0]"].Lng.length-1] * 10**-7
+    return [Lat, Lng]
+  }
+  console.warn("no ORGN message found")
+  if (log.messages["POS"] !== undefined) {
+    console.log(log.messages["POS"])
+    Lat = log.messages["POS"].Lat[log.messages["POS"].Lat.length-1] * 10**-7
+    Lng = log.messages["POS"].Lng[log.messages["POS"].Lng.length-1] * 10**-7
+    return [Lat, Lng]
+  }
+  return [Lat, Lng]
+}
+
 function load(log_file) {
 
     // Clear and reset state
@@ -485,12 +503,9 @@ function load(log_file) {
 
     // Use last EKF origin for earth field
     log.parseAtOffset("ORGN")
-    if (log.messages["ORGN[0]"] == null) {
-        console.log("Could not get EFK origin")
-        return
-    }
-    var Lat = log.messages["ORGN[0]"].Lat[log.messages["ORGN[0]"].Lat.length-1] * 10**-7
-    var Lng = log.messages["ORGN[0]"].Lng[log.messages["ORGN[0]"].Lng.length-1] * 10**-7
+    log.parseAtOffset("POS")
+    var [Lat, Lng] = extractLatLon(log)
+    console.log("Lat: " + Lat + " Lng: " + Lng)
     var earth_field = expected_earth_field_lat_lon(Lat, Lng)
     if (earth_field == null) {
         console.log("Could not get earth field")
