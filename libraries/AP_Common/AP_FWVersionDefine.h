@@ -70,7 +70,15 @@ const AP_FWVersion AP_FWVersion::fwver{
 #else
     .fw_hash = GIT_VERSION_INT,
 #endif
+#ifndef AP_CUSTOM_FIRMWARE_STRING
     .fw_string_original = ORIGINAL_FWSTR,
+#else
+#ifndef GIT_VERSION
+    .fw_string_original = ORIGINAL_FWSTR,
+#else
+    .fw_string_original = ORIGINAL_FWSTR " (" GIT_VERSION ")",
+#endif
+#endif
     .fw_short_string = ACTIVE_FWSTR,
     .middleware_name = nullptr,
     .middleware_hash_str = nullptr,
