@@ -2999,11 +2999,21 @@ INCLUDE common.ld
 #define HAL_GCS_ENABLED 0
 #endif
 
-// default to no protocols, AP_Periph enables with params
-#define DEFAULT_SERIAL1_PROTOCOL -1
-#define DEFAULT_SERIAL2_PROTOCOL -1
-#define DEFAULT_SERIAL3_PROTOCOL -1
-#define DEFAULT_SERIAL4_PROTOCOL -1
+/*
+  AP_Periph doesn't include the SERIAL parameter tree, instead each
+  supported serial device type has it's own parameter within AP_Periph
+  for which port is used.
+ */
+#define DEFAULT_SERIAL0_PROTOCOL SerialProtocol_None
+#define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_None
+#define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_None
+#define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_None
+#define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_None
+#define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_None
+#define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_None
+#define DEFAULT_SERIAL7_PROTOCOL SerialProtocol_None
+#define DEFAULT_SERIAL8_PROTOCOL SerialProtocol_None
+#define DEFAULT_SERIAL9_PROTOCOL SerialProtocol_None
 
 #ifndef HAL_LOGGING_MAVLINK_ENABLED
 #define HAL_LOGGING_MAVLINK_ENABLED 0
