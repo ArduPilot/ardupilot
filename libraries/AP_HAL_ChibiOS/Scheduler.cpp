@@ -765,7 +765,22 @@ void Scheduler::watchdog_pat(void)
 {
     stm32_watchdog_pat();
     last_watchdog_pat_ms = AP_HAL::millis();
+#if defined(HAL_GPIO_PIN_EXT_WDOG)
+    ext_watchdog_pat(last_watchdog_pat_ms);
+#endif
 }
+
+#if defined(HAL_GPIO_PIN_EXT_WDOG)
+// toggle the external watchdog gpio pin
+void Scheduler::ext_watchdog_pat(uint32_t now_ms)
+{
+    // toggle watchdog GPIO every WDI_OUT_INTERVAL_TIME_MS
+    if ((now_ms - last_ext_watchdog_ms) >= EXT_WDOG_INTERVAL_MS) {
+        palToggleLine(HAL_GPIO_PIN_EXT_WDOG);
+        last_ext_watchdog_ms = now_ms;
+    }
+}
+#endif
 
 #if CH_DBG_ENABLE_STACK_CHECK == TRUE
 /*
