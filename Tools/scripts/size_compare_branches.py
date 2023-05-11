@@ -59,6 +59,7 @@ class SizeCompareBranches(object):
                  use_merge_base=True,
                  waf_consistent_builds=True,
                  show_empty=True,
+                 show_unchanged=True,
                  extra_hwdef=[],
                  extra_hwdef_branch=[],
                  extra_hwdef_master=[],
@@ -82,6 +83,7 @@ class SizeCompareBranches(object):
         self.use_merge_base = use_merge_base
         self.waf_consistent_builds = waf_consistent_builds
         self.show_empty = show_empty
+        self.show_unchanged = show_unchanged
         self.parallel_copies = parallel_copies
         self.jobs = jobs
 
@@ -548,6 +550,11 @@ class SizeCompareBranches(object):
             if not self.show_empty:
                 if len(list(filter(lambda x : x != "", line[1:]))) == 0:
                     continue
+            # do not add to ret value if all output binaries are identical:
+            if not self.show_unchanged:
+                starcount = len(list(filter(lambda x : x == "*", line[1:])))
+                if len(line[1:]) == starcount:
+                    continue
             ret += ",".join(line) + "\n"
         return ret
 
@@ -691,6 +698,11 @@ if __name__ == '__main__':
                       default=False,
                       help="Show result lines even if no builds were done for the board")
     parser.add_option("",
+                      "--hide-unchanged",
+                      action='store_true',
+                      default=False,
+                      help="Hide binary-size-change results for any board where output binary is unchanged")
+    parser.add_option("",
                       "--board",
                       action='append',
                       default=[],
@@ -758,6 +770,7 @@ if __name__ == '__main__':
         use_merge_base=not cmd_opts.no_merge_base,
         waf_consistent_builds=not cmd_opts.no_waf_consistent_builds,
         show_empty=cmd_opts.show_empty,
+        show_unchanged=not cmd_opts.hide_unchanged,
         parallel_copies=cmd_opts.parallel_copies,
         jobs=cmd_opts.jobs,
     )
