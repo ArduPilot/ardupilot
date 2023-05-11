@@ -514,21 +514,33 @@ function load(log_file) {
     console.log("EF: " + earth_field.x + ", " + earth_field.y + ", " + earth_field.z + " at Lat: " + Lat + " Lng: " + Lng)
 
     // Get vehicle attitude
-    var att_msg = "ATT"
+    // try all of them, one should work
+    var att_msg_canditates = ["ATT"]
 
     // Note that this is not clever enough to deal with primary changing in flight
     if (EKF_TYPE == 2) {
         log.parseAtOffset("NKF1")
-        att_msg = "NKF1[0]"
+        att_msg_canditates.push("NKF1[0]")
     } else if (EKF_TYPE == 3) {
         log.parseAtOffset("XKF1")
         var primary = 0
         if (EKF3_PRIMARY != null) {
             primary = EKF3_PRIMARY
         }
-        att_msg = "XKF1[" + primary + "]"
+        att_msg_canditates.push("XKF1")
+        att_msg_canditates.push("XKF1[" + primary + "]")
     }
 
+    // latest has highest priority
+    att_msg_canditates.reverse()
+    var att_msg = null
+    for (let msg of att_msg_canditates) {
+        if (log.messages[msg] !== undefined) {
+            att_msg = msg
+            break
+        }
+    }
+    console.log("Using attitude from: " + att_msg)
     if (log.messages[att_msg] == null) {
         console.log("Could not get attitude from: " + att_msg)
         return
