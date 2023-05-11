@@ -191,8 +191,12 @@ function reset() {
     fft_plot.data = []
     for (let i=0;i<Gyro_batch.length;i++) {
         // For each gyro
-        const sensor_num = Gyro_batch[i].sensor_num + 1
-        const pre_post = Gyro_batch[i].post_filter ? " Post-filter" : " Pre-filter"
+        var sensor_num = "?"
+        var pre_post = ""
+        if (Gyro_batch[i] != null) {
+            sensor_num = Gyro_batch[i].sensor_num + 1
+            pre_post = Gyro_batch[i].post_filter ? " Post-filter" : " Pre-filter"
+        }
         for (let j=0;j<3;j++) {
             // For each axis
             const name = sensor_num + axis[j] + pre_post
