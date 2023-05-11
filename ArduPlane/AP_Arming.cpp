@@ -14,6 +14,17 @@ const AP_Param::GroupInfo AP_Arming_Plane::var_info[] = {
 
     // index 3 was RUDDER and should not be used
 
+#if AP_PLANE_BLACKBOX_LOGGING
+    // @Param: BBOX_SPD
+    // @DisplayName: Blackbox speed
+    // @Description: This is a 3D GPS speed threshold above which we will force arm the vehicle to start logging. WARNING: This should only be used on a vehicle with no propellers attached to the flight controller and when the flight controller is not in control of the vehicle.
+    // @Units: m/s
+    // @Increment: 1
+    // @Range: 1 20
+    // @User: Advanced
+    AP_GROUPINFO("BBOX_SPD", 4, AP_Arming_Plane, blackbox_speed, 5),
+#endif // AP_PLANE_BLACKBOX_LOGGING
+    
     AP_GROUPEND
 };
 
@@ -387,6 +398,27 @@ void AP_Arming_Plane::update_soft_armed()
 
         delay_arming = false;
     }
+
+#if AP_PLANE_BLACKBOX_LOGGING
+    if (blackbox_speed > 0) {
+        const float speed3d = plane.gps.status() >= AP_GPS::GPS_OK_FIX_3D?plane.gps.velocity().length():0;
+        const uint32_t now = AP_HAL::millis();
+        if (speed3d > blackbox_speed) {
+            last_over_3dspeed_ms = now;
+        }
+        if (!_armed && speed3d > blackbox_speed) {
+            // force safety on so we don't run motors
+            hal.rcout->force_safety_on();
+            AP_Param::set_by_name("RC_PROTOCOLS", 0);
+            arm(Method::BLACKBOX, false);
+            gcs().send_text(MAV_SEVERITY_WARNING, "BlackBox: arming at %.1f m/s", speed3d);
+        }
+        if (_armed && now - last_over_3dspeed_ms > 20000U) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "BlackBox: disarming at %.1f m/s", speed3d);
+            disarm(Method::BLACKBOX, false);
+        }
+    }
+#endif
 }
 
 /*
