@@ -184,7 +184,7 @@ AP_GPS_GSOF::requestGSOF(const uint8_t messagetype, const uint8_t portindex)
 }
 
 double
-AP_GPS_GSOF::SwapDouble(uint8_t* src, const uint32_t pos) const
+AP_GPS_GSOF::SwapDouble(const uint8_t* src, const uint32_t pos) const
 {
     union {
         double d;
@@ -203,7 +203,7 @@ AP_GPS_GSOF::SwapDouble(uint8_t* src, const uint32_t pos) const
 }
 
 float
-AP_GPS_GSOF::SwapFloat(uint8_t* src, const uint32_t pos) const
+AP_GPS_GSOF::SwapFloat(const uint8_t* src, const uint32_t pos) const
 {
     union {
         float f;
@@ -218,7 +218,7 @@ AP_GPS_GSOF::SwapFloat(uint8_t* src, const uint32_t pos) const
 }
 
 uint32_t
-AP_GPS_GSOF::SwapUint32(uint8_t* src, const uint32_t pos) const
+AP_GPS_GSOF::SwapUint32(const uint8_t* src, const uint32_t pos) const
 {
     union {
         uint32_t u;
@@ -233,7 +233,7 @@ AP_GPS_GSOF::SwapUint32(uint8_t* src, const uint32_t pos) const
 }
 
 uint16_t
-AP_GPS_GSOF::SwapUint16(uint8_t* src, const uint32_t pos) const
+AP_GPS_GSOF::SwapUint16(const uint8_t* src, const uint32_t pos) const
 {
     union {
         uint16_t u;
