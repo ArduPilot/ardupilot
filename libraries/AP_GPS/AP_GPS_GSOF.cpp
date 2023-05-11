@@ -23,6 +23,7 @@
 #include "AP_GPS.h"
 #include "AP_GPS_GSOF.h"
 #include <AP_Logger/AP_Logger.h>
+#include <AP_HAL/utility/sparse-endian.h>
 
 #if AP_GPS_GSOF_ENABLED
 
@@ -224,29 +225,17 @@ AP_GPS_GSOF::SwapFloat(const uint8_t* src, const uint32_t pos) const
 uint32_t
 AP_GPS_GSOF::SwapUint32(const uint8_t* src, const uint32_t pos) const
 {
-    union {
-        uint32_t u;
-        char bytes[sizeof(uint32_t)];
-    } uint32u;
-    uint32u.bytes[0] = src[pos + 3];
-    uint32u.bytes[1] = src[pos + 2];
-    uint32u.bytes[2] = src[pos + 1];
-    uint32u.bytes[3] = src[pos + 0];
-
-    return uint32u.u;
+    uint32_t u;
+    memcpy(&u, &src[pos], sizeof(u));
+    return be32toh(u);
 }
 
 uint16_t
 AP_GPS_GSOF::SwapUint16(const uint8_t* src, const uint32_t pos) const
 {
-    union {
-        uint16_t u;
-        char bytes[sizeof(uint16_t)];
-    } uint16u;
-    uint16u.bytes[0] = src[pos + 1];
-    uint16u.bytes[1] = src[pos + 0];
-
-    return uint16u.u;
+    uint16_t u;
+    memcpy(&u, &src[pos], sizeof(u));
+    return be16toh(u);
 }
 
 bool
