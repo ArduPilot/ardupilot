@@ -1,7 +1,7 @@
 --[[
    estimation of MOT_THST_EXPO for VTOL thrust linearisation
 
-   should be used in copter GUIDED mode
+   should be used in copter or quadplane GUIDED mode
 --]]
 
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
@@ -121,8 +121,27 @@ function get_time()
    return millis():tofloat() * 0.001
 end
 
-local MOT_THST_EXPO = Parameter('MOT_THST_EXPO')
-local GUID_TIMEOUT = Parameter('GUID_TIMEOUT')
+local is_quadplane = false
+
+-- we must be in GUIDED mode
+local MODE_COPTER_GUIDED = 4
+local MODE_PLANE_GUIDED = 15
+
+local MOT_THST_EXPO
+local GUID_TIMEOUT
+local expected_mode = MODE_COPTER_GUIDED
+
+if param:get("Q_M_THST_EXPO") then
+   is_quadplane = true
+   expected_mode = MODE_PLANE_GUIDED
+   MOT_THST_EXPO = Parameter('Q_M_THST_EXPO')
+else
+   MOT_THST_EXPO = Parameter('MOT_THST_EXPO')
+end
+
+if not is_quadplane then
+   GUID_TIMEOUT = Parameter('GUID_TIMEOUT')
+end
 local saved_expo = nil
 
 local PHASE = { NONE=0, PULSE=1, WAIT=2 }
@@ -142,9 +161,6 @@ local filtered_throttle = 0
 local filtered_accel = 0
 
 local UNCHANGED_LIMIT = 5
-
--- we must be in GUIDED mode
-local MODE_GUIDED = 4
 
 -- this controls how quickly we converge
 local SCALING_RATIO = 0.3
@@ -263,6 +279,15 @@ function update()
    if EXPO_ENABLE:get() == 0 then
       return
    end
+
+   if is_quadplane then
+      --[[ force Q_GUIDED_MODE==2 when using the EXPO script to ensure
+         users are not surprised by a fixed wing transition when
+         entering guided mode from QLOITER or another Q mode
+      --]]
+      param:set("Q_GUIDED_MODE", 2)
+   end
+
    local sw_pos = rc:get_aux_cached(EXPO_RC_FUNC:get())
    if not sw_pos then
       return
@@ -278,7 +303,7 @@ function update()
       revert()
       return
    end
-   if sw_pos == SWITCH.RUN and vehicle:get_mode() ~= MODE_GUIDED then
+   if sw_pos == SWITCH.RUN and vehicle:get_mode() ~= expected_mode then
       if now - last_warning > 3 then
          gcs:send_text(MAV_SEVERITY.ERROR, string.format("Expo: Must be in GUIDED mode to tune"))
          last_warning = get_time()
@@ -343,10 +368,14 @@ function update()
                 motors:get_throttle(), filtered_throttle,
                 MOT_THST_EXPO:get())
 
-   if test_phase == PHASE.NONE then
+   local quiescent = (vel_err < 0.2 and pos_err < 0.2 and math.abs(filtered_accel) < 0.1)
+
+   if test_phase == PHASE.NONE and quiescent then
       phase_start_time = now
       phase_start_throttle = filtered_throttle
-      GUID_TIMEOUT:set(0.1)
+      if not is_quadplane then
+         GUID_TIMEOUT:set(0.1)
+      end
       set_thrust(phase_start_throttle)
       test_phase = PHASE.PULSE
    end
@@ -371,12 +400,16 @@ function update()
       test_phase = PHASE.WAIT
       pulse_count = pulse_count + 1
       adjust_expo(get_thrust_delta(phase_start_throttle)/phase_start_throttle)
-      vehicle:set_target_pos_NED(saved_pos, true, saved_yaw_deg, false, 0, false, false)
+      if not is_quadplane then
+         vehicle:set_target_pos_NED(saved_pos, true, saved_yaw_deg, false, 0, false, false)
+      end
    end
 
    if test_phase == PHASE.WAIT then
-      vehicle:set_target_pos_NED(saved_pos, true, saved_yaw_deg, false, 0, false, false)
-      if (vel_err < 0.2 and pos_err < 0.2 and math.abs(filtered_accel) < 0.1) then
+      if not is_quadplane then
+         vehicle:set_target_pos_NED(saved_pos, true, saved_yaw_deg, false, 0, false, false)
+      end
+      if quiescent then
          test_phase = PHASE.NONE
       end
    end

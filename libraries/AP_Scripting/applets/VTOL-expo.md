@@ -1,9 +1,9 @@
 # VTOL Expo Tune
 
 This script implements a system for estimating the VTOL thrust expo
-(MOT_THST_EXPO on copter).
+(MOT_THST_EXPO on copter, Q_M_THST_EXPO on quadplanes).
 
-The script is designed to be used in GUIDED mode for copters.
+The script is designed to be used in GUIDED mode.
 
 # Parameters
 
@@ -50,16 +50,17 @@ This sets the maximum expo value that the script will use.
 
 # Operation
 
-You need to be in GUIDED mode with the copter at least 15 meters off
-the ground. Have the VTOL-expo.lua script loaded and have a 3
-position switch setup with RCn_OPTION for that switch set to
-EXPO_RC_FUNC (default to 300).
+You need to be in GUIDED mode with the vehicle at least 10 meters off
+the ground. Have the VTOL-expo.lua script loaded and have a 3 position
+switch setup with RCn_OPTION for that switch set to EXPO_RC_FUNC
+(default to 300).
 
 When you are ready to tune move the switch to the middle position. The
 vehicle will pulse down the throttle for half of EXPO_PULSE_TIME
 seconds followed up a pulse up of the throttle for the same time. The
-copter will then settle for a few seconds before repeating. After each
-pulse the expo will be adjusted based on the measured acceleration.
+vehicle will then settle for a few seconds before repeating. After
+each pulse the expo will be adjusted based on the measured
+acceleration.
 
 When the tune is finished it will stop pulsing. You can then save the
 tune by moving the switch to the top position.
@@ -73,3 +74,18 @@ change.
 When the acceleration error has been less than EXPO_CONV_THR for 5
 pulse pairs the tune is finished and the final value will be reported
 and the tuning will stop.
+
+You should tune in low wind conditions, and ensure the vehicle is not
+oscillating at all before running the tune. If the vehicle oscillates
+in roll, pitch or yaw while running the expo tune then the resulting
+expo may be incorrect (it will get a value that is too high). You
+should re-tune to prevent oscillation before re-running the expo tune.
+
+# Note on using in quadplanes
+
+In quadplanes the parameter Q_GUIDED_MODE will be overridden to a
+value of 2 while running this script with EXPO_ENABLE=1. This ensures
+that if you enter GUIDED mode from a VTOL mode it will not transition
+to forward flight. A value of 2 for Q_GUIDED_MODE is new for the 4.5.x
+plane release.
+
