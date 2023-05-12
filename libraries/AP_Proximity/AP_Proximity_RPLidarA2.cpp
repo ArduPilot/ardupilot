@@ -357,7 +357,7 @@ void AP_Proximity_RPLidarA2::parse_response_data()
     const float distance_m = (_payload.sensor_scan.distance_q2/4000.0f);
 #if RP_DEBUG_LEVEL >= 2
     const float quality = _payload.sensor_scan.quality;
-    Debug(2, "                                       D%02.2f A%03.1f Q%02d", distance_m, angle_deg, quality);
+    Debug(2, "   D%02.2f A%03.1f Q%0.2f", distance_m, angle_deg, quality);
 #endif
     _last_distance_received_ms = AP_HAL::millis();
     if (!ignore_reading(angle_deg, distance_m)) {
