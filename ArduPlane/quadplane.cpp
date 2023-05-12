@@ -1005,6 +1005,20 @@ void QuadPlane::run_z_controller(void)
         last_pidz_init_ms = now;
     }
     last_pidz_active_ms = now;
+
+#if AP_SCRIPTING_ENABLED
+    if (thrust_override.start_ms != 0) {
+        // require updates every 50ms at least for thrust control
+        if (now - thrust_override.start_ms > 50) {
+            thrust_override.start_ms = 0;
+            pos_control->init_z_controller();
+        } else {
+            attitude_control->set_throttle_out(thrust_override.thrust, true, 0);
+            return;
+        }
+    }
+#endif // AP_SCRIPTING_ENABLED
+    
     pos_control->update_z_controller();
 }
 

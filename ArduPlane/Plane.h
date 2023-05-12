@@ -954,6 +954,9 @@ private:
     // nav scripting support
     void do_nav_script_time(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_script_time(const AP_Mission::Mission_Command& cmd);
+
+    // override thrust from scripting
+    bool set_thrust(float thrust) override;
 #endif
 
     // commands.cpp
