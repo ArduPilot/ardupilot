@@ -199,8 +199,8 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: GUIDED_MODE
     // @DisplayName: Enable VTOL in GUIDED mode
-    // @Description: This enables use of VTOL in guided mode. When enabled the aircraft will switch to VTOL flight when the guided destination is reached and hover at the destination.
-    // @Values: 0:Disabled,1:Enabled
+    // @Description: This enables use of VTOL in guided mode. When enabled the aircraft will switch to VTOL flight when the guided destination is reached and hhold position while hovering at the destination. If set to 2 then the vehicle will continue hovering if GUIDED mode is entered from a VTOL mode and is hovering. For QRTL and AUTO mode landings it will continue hovering if in the VTOL control part of the landing sequence.
+    // @Values: 0:Disabled,1:Enabled,2:VTOLIfInVTOL
     // @User: Standard
     AP_GROUPINFO("GUIDED_MODE", 40, QuadPlane, guided_mode, 0),
 
@@ -3735,7 +3735,11 @@ bool QuadPlane::guided_mode_enabled(void)
         // loiter turns is a fixed wing only operation
         return false;
     }
-    return guided_mode != 0;
+    if (guided_mode == GUIDED_MODE::G_IF_Q_MODE) {
+        // if previously in a Q mode then do VTOL guided
+        return plane.previous_in_vtol;
+    }
+    return guided_mode != GUIDED_MODE::G_OFF;
 }
 
 /*

@@ -363,8 +363,14 @@ private:
         QRTL_ALWAYS,
     };
 
+    enum class GUIDED_MODE : uint8_t {
+        G_OFF = 0,
+        G_ON  = 1,
+        G_IF_Q_MODE = 2
+    };
+
     // control if a VTOL GUIDED will be used
-    AP_Int8 guided_mode;
+    AP_Enum<GUIDED_MODE> guided_mode;
 
     // control ESC throttle calibration
     AP_Int8 esc_calibration;

@@ -278,6 +278,13 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
     Mode &old_previous_mode = *previous_mode;
     Mode &old_mode = *control_mode;
 
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.available()) {
+        // remember if we were in a VTOL mode for GUIDED
+        previous_in_vtol = quadplane.in_vtol_mode() || quadplane.in_vtol_takeoff();
+    }
+#endif
+
     // update control_mode assuming success
     // TODO: move these to be after enter() once start_command_callback() no longer checks control_mode
     previous_mode = control_mode;

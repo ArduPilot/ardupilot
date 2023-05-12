@@ -297,6 +297,9 @@ private:
     Mode *control_mode = &mode_initializing;
     Mode *previous_mode = &mode_initializing;
 
+    // were we in VTOL control when we left the previous mode?
+    bool previous_in_vtol;
+
     // time of last mode change
     uint32_t last_mode_change_ms;
 
