@@ -124,7 +124,6 @@ void AP_Proximity_RPLidarA2::reset_rplidar()
     Debug(1, "LIDAR reset");
     // To-Do: ensure delay of 8m after sending reset request
     _last_reset_ms =  AP_HAL::millis();
-    _state = State::RESET;
     reset();
 }
 
