@@ -151,6 +151,7 @@ private:
         UNKNOWN,
         A1,
         A2,
+        S1,
     } model = Model::UNKNOWN;
 
     bool make_first_byte_in_payload(uint8_t desired_byte);
