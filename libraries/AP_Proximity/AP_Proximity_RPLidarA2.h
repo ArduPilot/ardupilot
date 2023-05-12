@@ -143,7 +143,7 @@ private:
         _descriptor descriptor;
         _rpi_information information;
         _device_info device_info;
-        uint8_t forced_buffer_size[128]; // just so we read(...) efficiently
+        uint8_t forced_buffer_size[256]; // just so we read(...) efficiently
     } _payload;
     static_assert(sizeof(_payload) >= 63, "Needed for parsing out reboot data");
 
