@@ -4,7 +4,7 @@
 function hanning(len) {
     w = []
     for (let i=0;i<len;i++) {
-        w[i] = 0.5 - 0.5 * Math.cos( (2*Math.PI*i) / (len - 1) )
+        w[i] = 0.5 - 0.5 * math.cos( (2*math.PI*i) / (len - 1) )
     }
     return w
 }
@@ -13,15 +13,10 @@ function hanning(len) {
 // linear: 1 / mean(w)
 // energy: 1 / sqrt(mean(w.^2))
 function window_correction_factors(w) {
-    let window_sum = 0
-    let window_sum_squared = 0
-    for (let i=0;i<w.length;i++) {
-        window_sum += w[i]
-        window_sum_squared += w[i] * w[i]
+    return { 
+        linear: 1/math.mean(w),
+        energy: 1/math.sqrt(math.mean(math.dotMultiply(w,w)))
     }
-    const mean = window_sum / w.length
-    const rms = Math.sqrt(window_sum_squared / w.length)
-    return { linear: 1/mean, energy: 1/rms }
 }
 
 // Frequency bins for given fft length and sample period
@@ -46,7 +41,7 @@ function run_fft(data, window_size, window_spacing, windowing_function, positive
 
     var center_sample = []
 
-    const num_windows = Math.floor((num_points-window_size)/window_spacing) + 1
+    const num_windows = math.floor((num_points-window_size)/window_spacing) + 1
     for (var i=0;i<num_windows;i++) {
         // Calculate the start of each window
         const window_start = i * window_spacing
@@ -90,14 +85,9 @@ function run_fft(data, window_size, window_spacing, windowing_function, positive
         }
 
         // Scale all points by the window size
-        fft_x[i] = [];
-        fft_y[i] = [];
-        fft_z[i] = [];
-        for (var j=0;j<positive_index;j++) {
-            fft_x[i][j] = p1_x[j] / window_size
-            fft_y[i][j] = p1_y[j] / window_size
-            fft_z[i][j] = p1_z[j] / window_size
-        }
+        fft_x[i] = math.dotMultiply(p1_x, 1 / window_size)
+        fft_y[i] = math.dotMultiply(p1_y, 1 / window_size)
+        fft_z[i] = math.dotMultiply(p1_z, 1 / window_size)
 
     }
 
@@ -129,7 +119,7 @@ function run_batch_fft(data_set) {
     // Calculate window size for given number of windows and overlap
     const window_size = math.floor(num_points / (1 + (window_per_batch - 1)*(1-window_overlap)))
 
-    const window_spacing = Math.round(window_size * (1 - window_overlap))
+    const window_spacing = math.round(window_size * (1 - window_overlap))
     const windowing_function = hanning(window_size)
 
     // Get windowing correction factors for use later when plotting
@@ -139,7 +129,7 @@ function run_batch_fft(data_set) {
     var bins = fft_freq(window_size, sample_time)
 
     // discard negative spectrum
-    const positive_index = Math.floor(window_size/2)
+    const positive_index = math.floor(window_size/2)
     bins = bins.slice(0, positive_index)
 
     var x = []
@@ -151,10 +141,7 @@ function run_batch_fft(data_set) {
     for (let i=0;i<num_batch;i++) {
         var ret = run_fft(data_set[i], window_size, window_spacing, windowing_function, positive_index)
 
-        for (let j=0;j<ret.center.length;j++) {
-            time.push(data_set[i].sample_time + sample_time * ret.center[j])
-        }
-
+        time.push(...math.add(data_set[i].sample_time, math.dotMultiply(sample_time, ret.center)))
         x.push(...ret.x)
         y.push(...ret.y)
         z.push(...ret.z)
@@ -297,17 +284,17 @@ function get_amplitude_scale() {
     var ret = {}
     if (use_DB) {
         if (use_PSD) {
-            ret.fun = function (x) { return 10.0 * Math.log10(x*x) }
+            ret.fun = function (x) { return math.dotMultiply(math.log10(math.dotMultiply(x,x)), 10.0) } // 10 * log10(x.^2)
             ret.label = "PSD (db)"
         } else {
-            ret.fun = function (x) { return 10.0 * Math.log10(x) }
+            ret.fun = function (x) { return math.dotMultiply(math.log10(x), 10.0) } // 10 * log10(x)
             ret.label = "Linear amplitude (db)"
         }
         ret.hover = function (axis) { return "%{" + axis + ":.2f} db" }
 
     } else {
         if (use_PSD) {
-            ret.fun = function (x) { return x*x }
+            ret.fun = function (x) { return math.dotMultiply(x,x) }
             ret.label = "PSD"
         } else {
             ret.fun = function (x) { return x }
@@ -329,7 +316,7 @@ function get_frequency_scale() {
 
     var ret = {}
     if (use_RPM) {
-        ret.fun = function (x) { return 60.0 * x }
+        ret.fun = function (x) { return math.dotMultiply(x, 60.0) }
         ret.label = "RPM"
         ret.hover = function (axis) { return "%{" + axis + ":.2f} RPM" }
 
@@ -342,15 +329,6 @@ function get_frequency_scale() {
     ret.type = document.getElementById("freq_ScaleLog").checked ? "log" : "linear"
 
     return ret
-}
-
-// Helper to apply scale function to array
-function apply_scale_fun(data, scale_fun) {
-    var x = []
-    for (let i = 0; i < data.length; i++) {
-        x[i] = scale_fun(data[i])
-    }
-    return x
 }
 
 // Look through time array and return first index before start time
@@ -410,36 +388,23 @@ function redraw() {
         const window_correction = amplitude_scale.use_PSD ? (Gyro_batch[i].FFT.correction.energy * math.sqrt(1/2)) : Gyro_batch[i].FFT.correction.linear
 
         // Take mean from start to end
-        var fft_mean_x = []
-        var fft_mean_y = []
-        var fft_mean_z = []
+        var fft_mean_x = 0
+        var fft_mean_y = 0
+        var fft_mean_z = 0
         for (let j=start_index;j<end_index;j++) {
             // Add to mean sum
-            for (let k=0;k<Gyro_batch[i].FFT.x[j].length;k++) {
-                if (j == start_index) {
-                    fft_mean_x[k] = amplitude_scale.fun(Gyro_batch[i].FFT.x[j][k] * window_correction)
-                    fft_mean_y[k] = amplitude_scale.fun(Gyro_batch[i].FFT.y[j][k] * window_correction)
-                    fft_mean_z[k] = amplitude_scale.fun(Gyro_batch[i].FFT.z[j][k] * window_correction)
-                } else {
-                    fft_mean_x[k] += amplitude_scale.fun(Gyro_batch[i].FFT.x[j][k] * window_correction)
-                    fft_mean_y[k] += amplitude_scale.fun(Gyro_batch[i].FFT.y[j][k] * window_correction)
-                    fft_mean_z[k] += amplitude_scale.fun(Gyro_batch[i].FFT.z[j][k] * window_correction)
-                }
-                if (j == (end_index - 1)) {
-                    fft_mean_x[k] /= plot_length
-                    fft_mean_y[k] /= plot_length
-                    fft_mean_z[k] /= plot_length
-                }
-            }
+            fft_mean_x = math.add(fft_mean_x, amplitude_scale.fun(math.dotMultiply(Gyro_batch[i].FFT.x[j], window_correction)))
+            fft_mean_y = math.add(fft_mean_y, amplitude_scale.fun(math.dotMultiply(Gyro_batch[i].FFT.y[j], window_correction)))
+            fft_mean_z = math.add(fft_mean_z, amplitude_scale.fun(math.dotMultiply(Gyro_batch[i].FFT.z[j], window_correction)))
         }
 
         // Set scaled y data
-        fft_plot.data[i*3 + 0].y = fft_mean_x
-        fft_plot.data[i*3 + 1].y = fft_mean_y
-        fft_plot.data[i*3 + 2].y = fft_mean_z
+        fft_plot.data[i*3 + 0].y = math.dotMultiply(fft_mean_x, 1 / plot_length)
+        fft_plot.data[i*3 + 1].y = math.dotMultiply(fft_mean_y, 1 / plot_length)
+        fft_plot.data[i*3 + 2].y = math.dotMultiply(fft_mean_z, 1 / plot_length)
 
         // Set scaled x data
-        const scaled_bins = apply_scale_fun(Gyro_batch[i].FFT.bins, frequency_scale.fun)
+        const scaled_bins = frequency_scale.fun(Gyro_batch[i].FFT.bins)
         fft_plot.data[i*3 + 0].x = scaled_bins
         fft_plot.data[i*3 + 1].x = scaled_bins
         fft_plot.data[i*3 + 2].x = scaled_bins
@@ -516,7 +481,7 @@ function redraw_Spectrogram() {
     const plot_length = end_index - start_index
 
     // Setup xy data
-    Spectrogram.data[0].x = apply_scale_fun(Gyro_batch[batch_instance].FFT.bins, frequency_scale.fun)
+    Spectrogram.data[0].x = frequency_scale.fun(Gyro_batch[batch_instance].FFT.bins)
     Spectrogram.data[0].y = Gyro_batch[batch_instance].FFT.time.slice(start_index, end_index)
 
     // Windowing amplitude correction depends on spectrum of interest
@@ -525,11 +490,8 @@ function redraw_Spectrogram() {
     // Setup z data
     Spectrogram.data[0].z = []
     for (j = 0; j<plot_length; j++) {
-        Spectrogram.data[0].z[j] = []
         const index = start_index + j
-        for (k = 0; k<Gyro_batch[batch_instance].FFT[axis][index].length; k++) {
-            Spectrogram.data[0].z[j][k] = amplitude_scale.fun(Gyro_batch[batch_instance].FFT[axis][index][k] * window_correction)
-        }
+        Spectrogram.data[0].z[j] = amplitude_scale.fun(math.dotMultiply(Gyro_batch[batch_instance].FFT[axis][index], window_correction))
     }
 
     Plotly.redraw("Spectrogram")
@@ -664,11 +626,9 @@ function load(log_file) {
 
         // Remove logging scale factor
         const mul = 1/log.messages.ISBH.mul[i]
-        for (let j = 0; j < num_samples; j++) {
-            x[j] *= mul
-            y[j] *= mul
-            z[j] *= mul
-        }
+        x = math.dotMultiply(x, mul)
+        y = math.dotMultiply(y, mul)
+        z = math.dotMultiply(z, mul)
 
         // Add to batches for this instance
         Gyro_batch[instance].push({ sample_time: log.messages.ISBH.SampleUS[i] / 1000000,
