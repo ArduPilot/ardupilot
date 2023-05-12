@@ -16,9 +16,11 @@
   simulate ship takeoff/landing
 */
 
-#include "SIM_Ship.h"
+#include "SIM_config.h"
 
 #if AP_SIM_SHIP_ENABLED
+
+#include "SIM_Ship.h"
 
 #include "SITL.h"
 

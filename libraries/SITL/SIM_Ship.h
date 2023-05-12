@@ -18,11 +18,7 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
-
-#ifndef AP_SIM_SHIP_ENABLED
-#define AP_SIM_SHIP_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
-#endif
+#include "SIM_config.h"
 
 #if AP_SIM_SHIP_ENABLED
 
