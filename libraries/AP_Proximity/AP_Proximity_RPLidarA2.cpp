@@ -41,8 +41,8 @@
 
 #define RP_DEBUG_LEVEL 0
 
+#include <GCS_MAVLink/GCS.h>
 #if RP_DEBUG_LEVEL
-  #include <GCS_MAVLink/GCS.h>
   #define Debug(level, fmt, args ...)  do { if (level <= RP_DEBUG_LEVEL) { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } } while (0)
 #else
   #define Debug(level, fmt, args ...)
@@ -313,18 +313,20 @@ void AP_Proximity_RPLidarA2::get_readings()
 void AP_Proximity_RPLidarA2::parse_response_device_info()
 {
     Debug(1, "Received DEVICE_INFO");
+    const char *device_type = "UNKNOWN";
     switch (_payload.device_info.model) {
     case 0x18:
         model = Model::A1;
+        device_type = "A1";
         break;
     case 0x28:
         model = Model::A2;
+        device_type = "A2";
         break;
     default:
         Debug(1, "Unknown device (%u)", _payload.device_info.model);
     }
-    Debug(1, "firmware (%u.%u)", _payload.device_info.firmware_minor, _payload.device_info.firmware_major);
-    Debug(1, "Hardware (%u)", _payload.device_info.hardware);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RPLidar %s hw=%u fw=%u.%u", device_type, _payload.device_info.hardware, _payload.device_info.firmware_minor, _payload.device_info.firmware_major);
     send_scan_mode_request();
     _state = State::AWAITING_RESPONSE;
 }
