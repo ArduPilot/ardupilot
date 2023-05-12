@@ -94,7 +94,6 @@ AP_GPS_GSOF::parse(const uint8_t temp)
     case gsof_msg_parser_t::STARTTX:
         if (temp == GSOF_STX)
         {
-            gsof_msg.starttx = temp;
             gsof_msg.gsof_state = gsof_msg_parser_t::STATUS;
             gsof_msg.read = 0;
             gsof_msg.checksumcalc = 0;

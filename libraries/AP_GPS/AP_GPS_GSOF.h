@@ -62,7 +62,6 @@ private:
             ENDTX
         } gsof_state;
 
-        uint8_t starttx;
         uint8_t status;
         uint8_t packettype;
         uint8_t length;
