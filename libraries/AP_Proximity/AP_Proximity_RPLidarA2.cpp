@@ -154,6 +154,11 @@ void AP_Proximity_RPLidarA2::send_request_for_device_info()
 
 void AP_Proximity_RPLidarA2::consume_bytes(uint16_t count)
 {
+    if (count > _byte_count) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        _byte_count = 0;
+        return;
+    }
     _byte_count -= count;
     if (_byte_count) {
         memmove((void*)&_payload[0], (void*)&_payload[count], _byte_count);
@@ -174,7 +179,7 @@ bool AP_Proximity_RPLidarA2::make_first_byte_in_payload(uint8_t desired_byte)
     if (_payload[0] == desired_byte) {
         return true;
     }
-    for (uint8_t i=1; i<sizeof(_payload); i++) {
+    for (uint8_t i=1; i<_byte_count; i++) {
         if (_payload[i] == desired_byte) {
             consume_bytes(i);
             return true;
