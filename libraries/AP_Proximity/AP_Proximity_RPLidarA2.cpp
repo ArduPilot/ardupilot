@@ -179,7 +179,7 @@ bool AP_Proximity_RPLidarA2::make_first_byte_in_payload(uint8_t desired_byte)
     if (_payload[0] == desired_byte) {
         return true;
     }
-    for (uint8_t i=1; i<_byte_count; i++) {
+    for (auto i=1; i<_byte_count; i++) {
         if (_payload[i] == desired_byte) {
             consume_bytes(i);
             return true;
