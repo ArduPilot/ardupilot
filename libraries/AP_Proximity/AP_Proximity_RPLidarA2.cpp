@@ -32,17 +32,6 @@
 
 #include "AP_Proximity_RPLidarA2.h"
 
-/*
-
-  DEVICE=/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0
-  ./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=uart:$DEVICE:115200 --speedup=1
-
-param set SERIAL5_PROTOCOL 11
-param set PRX_TYPE 5
-reboot
-
- */
-
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity_RPLidarA2.h"
 #include <AP_InternalError/AP_InternalError.h>

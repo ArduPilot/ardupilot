@@ -26,6 +26,19 @@
  *
  */
 
+/*
+
+# to connect device to SITL:
+./Tools/autotest/sim_vehicle.py -v Rover --gdb --debug -A --serial5=uart:/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0:115200
+param set SERIAL5_PROTOCOL 11
+param set SERIAL5_BAUD 115200
+param set PRX1_TYPE 5
+reboot
+
+# short outer-two wires on JST plug to get it to spin
+
+*/
+
 
 #pragma once
 
