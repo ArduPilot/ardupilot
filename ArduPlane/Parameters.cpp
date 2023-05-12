@@ -1260,9 +1260,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
 ParametersG2::ParametersG2(void) :
     unused_integer{1}
-#if AP_ICENGINE_ENABLED
-    ,ice_control(plane.rpm_sensor)
-#endif
 #if HAL_SOARING_ENABLED
     ,soaring_controller(plane.TECS_controller, plane.aparm)
 #endif
