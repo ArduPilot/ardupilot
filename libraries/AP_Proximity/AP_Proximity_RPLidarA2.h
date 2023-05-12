@@ -88,7 +88,7 @@ private:
     // remove bytes from read buffer:
     void consume_bytes(uint16_t count);
 
-    uint8_t _sync_error ;
+    uint8_t _sync_error;
     uint16_t _byte_count;
 
     // request related variables
