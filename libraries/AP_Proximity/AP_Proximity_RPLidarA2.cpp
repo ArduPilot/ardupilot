@@ -75,6 +75,15 @@ void AP_Proximity_RPLidarA2::update(void)
         return;
     }
 
+    // request device info 3sec after reset
+    // required for S1 support that sends only 9 bytes after a reset (A1,A2 send 63)
+    uint32_t now_ms = AP_HAL::millis();
+    if ((_state == State::RESET) && (now_ms - _last_reset_ms > 3000)) {
+        send_request_for_device_info();
+        _state = State::AWAITING_RESPONSE;
+        _byte_count = 0;
+    }
+
     get_readings();
 
     // check for timeout and set health status
@@ -99,6 +108,8 @@ float AP_Proximity_RPLidarA2::distance_max() const
         return 8.0f;
     case Model::A2:
         return 16.0f;
+    case Model::S1:
+        return 40.0f;
     }
     return 0.0f;
 }
@@ -112,6 +123,7 @@ float AP_Proximity_RPLidarA2::distance_min() const
     case Model::A1:
         return 0.2f;
     case Model::A2:
+    case Model::S1:
         return 0.2f;
     }
     return 0.0f;
@@ -321,6 +333,10 @@ void AP_Proximity_RPLidarA2::parse_response_device_info()
     case 0x28:
         model = Model::A2;
         device_type = "A2";
+        break;
+    case 0x61:
+        model = Model::S1;
+        device_type = "S1";
         break;
     default:
         Debug(1, "Unknown device (%u)", _payload.device_info.model);
