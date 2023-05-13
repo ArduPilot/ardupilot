@@ -213,6 +213,22 @@ void spiStopHook(SPIDriver *spip)
 {
 }
 
+__RAMFUNC__ void spiAcquireBusHook(SPIDriver *spip)
+{
+    if (sdcard_running) {
+        ChibiOS::SPIDevice *devptr = static_cast<ChibiOS::SPIDevice*>(device.get());
+        devptr->acquire_bus(true, true);
+    }
+}
+
+__RAMFUNC__ void spiReleaseBusHook(SPIDriver *spip)
+{
+    if (sdcard_running) {
+        ChibiOS::SPIDevice *devptr = static_cast<ChibiOS::SPIDevice*>(device.get());
+        devptr->acquire_bus(false, true);
+    }
+}
+
 __RAMFUNC__ void spiSelectHook(SPIDriver *spip)
 {
     if (sdcard_running) {
