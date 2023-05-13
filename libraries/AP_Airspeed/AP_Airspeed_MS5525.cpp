@@ -28,7 +28,6 @@
 #include <AP_HAL/I2CDevice.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_Math/crc.h>
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL &hal;
