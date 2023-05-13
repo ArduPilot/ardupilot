@@ -17,7 +17,6 @@
 #include <StorageManager/StorageManager.h>
 #include <AP_Notify/AP_Notify.h>
 #include <GCS_MAVLink/GCS.h>
-#include <AP_Math/crc.h>
 #include <AP_Param/AP_Param.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS

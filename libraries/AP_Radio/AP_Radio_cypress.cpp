@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <StorageManager/StorageManager.h>
 #include <AP_HAL/utility/dsm.h>
-#include <AP_Math/crc.h>
 #include "telem_structure.h"
 #include <AP_Notify/AP_Notify.h>
 #include <GCS_MAVLink/GCS.h>
