@@ -20,7 +20,6 @@
 #include <stdio.h>
 
 #include <AP_Math/AP_Math.h>
-#include <AP_Math/crc.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 extern const AP_HAL::HAL &hal;
