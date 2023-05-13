@@ -1,21 +1,18 @@
 // A js tool for plotting ArduPilot batch log data
 
-// return hanning window array of given length
+// return hanning window array of given length (in tensorflow format)
 function hanning(len) {
-    w = []
-    for (let i=0;i<len;i++) {
-        w[i] = 0.5 - 0.5 * math.cos( (2*math.PI*i) / (len - 1) )
-    }
-    return w
+    const half = tf.scalar(0.5)
+    return tf.sub(half, tf.mul(half, tf.cos(tf.linspace(0, 2*math.PI, len))))
 }
 
-// Calculate correction factors for linear and energy spectrum
+// Calculate correction factors for linear and energy spectrum (window in tensorflow format)
 // linear: 1 / mean(w)
 // energy: 1 / sqrt(mean(w.^2))
 function window_correction_factors(w) {
     return { 
-        linear: 1/math.mean(w),
-        energy: 1/math.sqrt(math.mean(math.dotMultiply(w,w)))
+        linear: 1/tf.mean(w).arraySync(),
+        energy: 1/tf.sqrt(tf.mean(tf.square(w))).arraySync()
     }
 }
 
@@ -41,53 +38,43 @@ function run_fft(data, window_size, window_spacing, windowing_function, positive
 
     var center_sample = []
 
+    // Convert to tensorflow format for faster fft
+    const tf_data = tf.tensor2d([data.x, data.y, data.z])
+
+    // Pre-allocate scale array.
+    // double positive spectrum to account for discarded energy in the negative spectrum
+    // Note that we don't scale the DC or Nyquist limit
+    // normalize all points by the window size
+    var scale = []
+    scale[0] = 1 / window_size
+    for (var j=1;j<positive_index-1;j++) {
+        scale[j] = 2 / window_size
+    }
+    scale[positive_index] = 1 / window_size
+
     const num_windows = math.floor((num_points-window_size)/window_spacing) + 1
     for (var i=0;i<num_windows;i++) {
         // Calculate the start of each window
         const window_start = i * window_spacing
 
-        // Get data and apply windowing function
-        // Also take average time
-        let x = []
-        let y = []
-        let z = []
-        for (var j=0;j<window_size;j++) {
-            x[j] = data.x[window_start + j] * windowing_function[j]
-            y[j] = data.y[window_start + j] * windowing_function[j]
-            z[j] = data.z[window_start + j] * windowing_function[j]
-        }
-
-        // So caller can assign a time
+        // Take average time for window
         center_sample[i] = window_start + window_size * 0.5
 
-        // Run fft
-        const p2_x = math.fft(x)
-        const p2_y = math.fft(y)
-        const p2_z = math.fft(z)
+        // Get data and apply windowing function
+        const windowed_data = tf.mul(tf_data.slice([0, window_start], [-1, window_size]), windowing_function)
 
-        // Discard negative spectrum
-        // Assumes a symmetrical spectrum due to running on real numbers
-        let p1_x = p2_x.slice(0, positive_index)
-        let p1_y = p2_y.slice(0, positive_index)
-        let p1_z = p2_z.slice(0, positive_index)
+        // Run fft
+        const p2 = windowed_data.rfft()
 
         // Take magnitude to give real number
-        p1_x = math.abs(p1_x)
-        p1_y = math.abs(p1_y)
-        p1_z = math.abs(p1_z)
+        const p1 = p2.abs()
 
-        // double positive spectrum to account for discarded energy in the negative spectrum
-        // Note that we don't scale the DC or Nyquist limit
-        for (var j=1;j<positive_index-1;j++) {
-            p1_x[j] *= 2
-            p1_y[j] *= 2
-            p1_z[j] *= 2
-        }
+        // Apply scale and convert back to js array
+        const result = tf.mul(p1, scale).arraySync()
 
-        // Scale all points by the window size
-        fft_x[i] = math.dotMultiply(p1_x, 1 / window_size)
-        fft_y[i] = math.dotMultiply(p1_y, 1 / window_size)
-        fft_z[i] = math.dotMultiply(p1_z, 1 / window_size)
+        fft_x[i] = result[0]
+        fft_y[i] = result[1]
+        fft_z[i] = result[2]
 
     }
 
