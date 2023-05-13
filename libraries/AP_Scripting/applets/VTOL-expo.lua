@@ -128,6 +128,8 @@ local MODE_COPTER_GUIDED = 4
 local MODE_PLANE_GUIDED = 15
 
 local MOT_THST_EXPO
+local SPIN_MIN
+local SPIN_MAX
 local GUID_TIMEOUT
 local expected_mode = MODE_COPTER_GUIDED
 
@@ -135,14 +137,24 @@ if param:get("Q_M_THST_EXPO") then
    is_quadplane = true
    expected_mode = MODE_PLANE_GUIDED
    MOT_THST_EXPO = Parameter('Q_M_THST_EXPO')
+   SPIN_MIN = Parameter('Q_M_SPIN_MIN')
+   SPIN_MAX = Parameter('Q_M_SPIN_MAX')
 else
    MOT_THST_EXPO = Parameter('MOT_THST_EXPO')
+   SPIN_MIN = Parameter('MOT_SPIN_MIN')
+   SPIN_MAX = Parameter('MOT_SPIN_MAX')
 end
+
+INS_HNTCH_ENABLE = Parameter('INS_HNTCH_ENABLE')
+INS_HNTCH_MODE = Parameter('INS_HNTCH_MODE')
+INS_HNTCH_REF = Parameter('INS_HNTCH_REF')
+INS_HNTC2_ENABLE = Parameter('INS_HNTC2_ENABLE')
+INS_HNTC2_MODE = Parameter('INS_HNTC2_MODE')
+INS_HNTC2_REF = Parameter('INS_HNTC2_REF')
 
 if not is_quadplane then
    GUID_TIMEOUT = Parameter('GUID_TIMEOUT')
 end
-local saved_expo = nil
 
 local PHASE = { NONE=0, PULSE=1, WAIT=2 }
 local SWITCH = { STOP=0, RUN=1, SAVE=2 }
@@ -159,6 +171,7 @@ local unchanged_count = 0
 local pulse_count = 0
 local filtered_throttle = 0
 local filtered_accel = 0
+local saved_params = {}
 
 local UNCHANGED_LIMIT = 5
 
@@ -178,6 +191,35 @@ end
 -- constrain a value between limits
 local function constrain(v, vmin, vmax)
    return math.max(math.min(v, vmax), vmin)
+end
+
+--[[
+   change a parameter, remembering the old value for reversion
+--]]
+local function change_param(param, value)
+   if saved_params[param] == nil then
+      -- save old value
+      saved_params[param] = param:get()
+   end
+   param:set(value)
+end
+
+-- save parameter changed
+function save_params()
+   for p, _ in pairs(saved_params) do
+      p:set_and_save(p:get())
+   end
+   if saved_params[MOT_THST_EXPO] ~= nil then
+      gcs:send_text(MAV_SEVERITY.NOTICE, string.format("Expo: saved at %.2f", MOT_THST_EXPO:get()))
+   end
+   if saved_params[INS_HNTCH_REF] ~= nil then
+      gcs:send_text(MAV_SEVERITY.NOTICE, string.format("Expo: saved INS_HNTCH_REF at %.2f", INS_HNTCH_REF:get()))
+   end
+   if saved_params[INS_HNTC2_REF] ~= nil then
+      gcs:send_text(MAV_SEVERITY.NOTICE, string.format("Expo: saved INS_HNTC2_REF at %.2f", INS_HNTC2_REF:get()))
+   end
+   -- clear saved parameters
+   saved_params = {}
 end
 
 -- get the thrust delta we will apply in a pulse
@@ -224,6 +266,73 @@ local function get_thrust_curve(t)
 end
 
 --[[
+   forward thrust curve
+--]]
+local function apply_thrust_curve(thrust, expo)
+   expo = constrain(expo, -1.0, 1.0)
+   if math.abs(expo) < 0.01 then
+      -- zero expo means linear, avoid floating point exception for small values
+      return thrust
+   end
+   local throttle_ratio = ((expo - 1.0) + math.sqrt((1.0 - expo) * (1.0 - expo) + 4.0 * expo * thrust)) / (2.0 * expo)
+   return constrain(throttle_ratio, 0.0, 1.0)
+end
+
+--[[
+  inverse thrust curve
+--]]
+local function remove_thrust_curve(throttle, expo)
+   -- apply thrust curve - domain -1.0 to 1.0, range -1.0 to 1.0
+   expo = constrain(expo, -1.0, 1.0)
+   if math.abs(expo) < 0.01 then
+      -- zero expo means linear, avoid floating point exception for small values
+      return throttle
+   end
+   local thrust = (throttle * (2.0 * expo)) - (expo - 1.0)
+   thrust = (thrust * thrust) - ((1.0 - expo) * (1.0 - expo))
+   thrust = thrust / (4.0 * expo)
+   return constrain(thrust, 0.0, 1.0)
+end
+
+--[[
+ converts desired thrust to linearized actuator output in a range of 0~1
+--]]
+local function thrust_to_actuator(thrust_in, expo)
+   thrust_in = constrain(thrust_in, 0.0, 1.0)
+   return SPIN_MIN:get() + (SPIN_MAX:get() - SPIN_MIN:get()) * apply_thrust_curve(thrust_in, expo)
+end
+
+--[[
+   converts actuator to thrust
+--]]
+local function actuator_to_thrust(actuator, expo)
+   actuator = (actuator - SPIN_MIN:get()) /  (SPIN_MAX:get() - SPIN_MIN:get())
+   return constrain(remove_thrust_curve(actuator, expo), 0.0, 1.0)
+end
+
+--[[
+   adjust refernce for expo in throttle notch
+--]]
+local function adjust_reference(ref, old_expo, new_expo)
+   local actuator = thrust_to_actuator(ref, old_expo)
+   return actuator_to_thrust(actuator, new_expo)
+end
+
+--[[
+   adjust throttle based notch filter references
+--]]
+function adjust_notch_filters(old_expo, new_expo)
+   if INS_HNTCH_ENABLE:get() == 1 and INS_HNTCH_MODE:get() == 1 then
+      local old_ref = INS_HNTCH_REF:get()
+      change_param(INS_HNTCH_REF, adjust_reference(old_ref, old_expo, new_expo))
+   end
+   if INS_HNTC2_ENABLE:get() == 1 and INS_HNTC2_MODE:get() == 1 then
+      local old_ref = INS_HNTC2_REF:get()
+      change_param(INS_HNTC2_REF, adjust_reference(old_ref, old_expo, new_expo))
+   end
+end
+
+--[[
    adjust the expo for the given thrust change and accel_min, accel_max
 --]]
 function adjust_expo(thrust_change)
@@ -248,7 +357,11 @@ function adjust_expo(thrust_change)
    end
    local new_expo = constrain(old_expo * scale, EXPO_LIMIT_MIN:get(), EXPO_LIMIT_MAX:get())
    gcs:send_text(MAV_SEVERITY.INFO, string.format("Expo: %.2f accel=(%.2f,%.2f) err=%.3f", new_expo, accel_min, accel_max, accel_err))
-   MOT_THST_EXPO:set(new_expo)
+   change_param(MOT_THST_EXPO, new_expo)
+
+   -- possibly adjust notch filters
+   adjust_notch_filters(old_expo, new_expo)
+
    accel_min = nil
    accel_max = nil
    if math.abs(accel_err) <= EXPO_CONV_THR:get() then
@@ -263,11 +376,15 @@ end
 
 -- revert any expo change
 function revert()
-   if saved_expo then
-      MOT_THST_EXPO:set(saved_expo)
-      gcs:send_text(MAV_SEVERITY.ERROR, string.format("Expo: reverted to %.2f", saved_expo))
-      saved_expo = nil
+   for p, value in pairs(saved_params) do
+      p:set(value)
    end
+   if saved_params[MOT_THST_EXPO] ~= nil then
+      gcs:send_text(MAV_SEVERITY.ERROR, string.format("Expo: reverted to %.2f", MOT_THST_EXPO:get()))
+   end
+   saved_params = {}
+   saved_pos = nil
+   saved_yaw_deg = nil
    accel_min = nil
    accel_max = nil
    unchanged_count = 0
@@ -329,10 +446,8 @@ function update()
 
    if sw_pos == SWITCH.SAVE then
       -- save all params
-      if saved_expo then
-         MOT_THST_EXPO:set_and_save(MOT_THST_EXPO:get())
-         gcs:send_text(MAV_SEVERITY.NOTICE, string.format("Expo: saved at %.2f", MOT_THST_EXPO:get()))
-         saved_expo = nil
+      if saved_params[MOT_THST_EXPO] ~= nil then
+         save_params()
          revert()
       end
    end
@@ -345,10 +460,9 @@ function update()
       return
    end
 
-   if not saved_expo then
+   if saved_pos == nil then
       -- we are just starting tuning, get current values
-      saved_expo = MOT_THST_EXPO:get()
-      gcs:send_text(MAV_SEVERITY.NOTICE, string.format("Expo: starting tune with expo=%.2f", saved_expo))
+      gcs:send_text(MAV_SEVERITY.NOTICE, string.format("Expo: starting tune with expo=%.2f", MOT_THST_EXPO:get()))
       saved_pos = ahrs:get_relative_position_NED_origin()
       saved_yaw_deg = math.deg(ahrs:get_yaw())
       phase_start_time = now
