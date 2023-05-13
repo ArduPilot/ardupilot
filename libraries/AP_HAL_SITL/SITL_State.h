@@ -37,6 +37,7 @@
 #include <SITL/SIM_RF_Lanbao.h>
 #include <SITL/SIM_RF_BLping.h>
 #include <SITL/SIM_RF_LeddarOne.h>
+#include <SITL/SIM_RF_RDS02UF.h>
 #include <SITL/SIM_RF_USD1_v0.h>
 #include <SITL/SIM_RF_USD1_v1.h>
 #include <SITL/SIM_RF_MaxsonarSerialLV.h>
@@ -226,6 +227,8 @@ private:
     SITL::RF_BLping *blping;
     // simulated LeddarOne rangefinder:
     SITL::RF_LeddarOne *leddarone;
+    // simulated RDS02UF rangefinder:
+    SITL::RF_RDS02UF *rds02uf;
     // simulated USD1 v0 rangefinder:
     SITL::RF_USD1_v0 *USD1_v0;
     // simulated USD1 v1 rangefinder:
