@@ -144,6 +144,42 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
     lastPosPassTime_ms = imuSampleTime_ms;
 }
 
+#if EK3_FEATURE_POSITION_RESET
+// Sets the EKF's NE horizontal position states and their corresponding variances from a supplied WGS-84 location and uncertainty
+// The altitude element of the location is not used.
+// Returns true if the set was successful
+bool NavEKF3_core::setLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms)
+{
+    if ((imuSampleTime_ms - lastPosPassTime_ms) < frontend->deadReckonDeclare_ms ||
+        (PV_AidingMode == AID_NONE)
+        || !validOrigin) {
+        return false;
+    }
+
+    // Store the position before the reset so that we can record the reset delta
+    posResetNE.x = stateStruct.position.x;
+    posResetNE.y = stateStruct.position.y;
+
+    // reset the corresponding covariances
+    zeroRows(P,7,8);
+    zeroCols(P,7,8);
+
+    // set the variances using the position measurement noise parameter
+    P[7][7] = P[8][8] = sq(MAX(posAccuracy,frontend->_gpsHorizPosNoise));
+
+    // Correct the position for time delay relative to fusion time horizon assuming a constant velocity
+    // Limit time stamp to a range between current time and 5 seconds ago
+    const uint32_t timeStampConstrained_ms = MAX(MIN(timestamp_ms, imuSampleTime_ms), imuSampleTime_ms - 5000);
+    const int32_t delta_ms = int32_t(imuDataDelayed.time_ms - timeStampConstrained_ms);
+    const ftype delaySec = 1E-3F * ftype(delta_ms);
+    const Vector2F newPosNE = EKF_origin.get_distance_NE_ftype(loc) - stateStruct.velocity.xy() * delaySec;
+    ResetPositionNE(newPosNE.x,newPosNE.y);
+
+    return true;
+}
+#endif // EK3_FEATURE_POSITION_RESET
+
+
 // reset the stateStruct's NE position to the specified position
 //    posResetNE is updated to hold the change in position
 //    storedOutput, outputDataNew and outputDataDelayed are updated with the change in position

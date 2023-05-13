@@ -152,6 +152,11 @@ public:
     // Returns false if the filter has rejected the attempt to set the origin
     bool setOriginLLH(const Location &loc);
 
+    // Set the EKF's NE horizontal position states and their corresponding variances from a supplied WGS-84 location and uncertainty
+    // The altitude element of the location is not used.
+    // Returns true if the set was successful
+    bool setLatLng(const Location &loc, float posErr, uint32_t timestamp_ms);
+
     // return estimated height above ground level
     // return false if ground height is not being estimated.
     bool getHAGL(float &HAGL) const;
