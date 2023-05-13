@@ -10,7 +10,6 @@
 #if HAL_WITH_IO_MCU
 
 #include <AP_Math/AP_Math.h>
-#include <AP_Math/crc.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_ROMFS/AP_ROMFS.h>
 #include <SRV_Channel/SRV_Channel.h>
