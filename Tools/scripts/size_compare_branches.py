@@ -512,7 +512,7 @@ class SizeCompareBranches(object):
             board = master["board"]
             try:
                 results[board] = self.compare_results(master, pair["branch"])
-                if not no_elf_diff:
+                if self.run_elf_diff and not no_elf_diff:
                     self.elf_diff_results(master, pair["branch"])
             except FileNotFoundError:
                 pass
