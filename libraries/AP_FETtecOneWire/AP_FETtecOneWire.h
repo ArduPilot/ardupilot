@@ -58,7 +58,6 @@
 #include <AP_Param/AP_Param.h>
 
 #include <AP_Math/AP_Math.h>
-#include <AP_Math/crc.h>
 
 class AP_FETtecOneWire : public AP_ESC_Telem_Backend
 {
