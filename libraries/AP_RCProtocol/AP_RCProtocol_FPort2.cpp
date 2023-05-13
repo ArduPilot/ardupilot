@@ -25,7 +25,6 @@
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_Math/crc.h>
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;

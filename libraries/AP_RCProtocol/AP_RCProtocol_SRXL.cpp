@@ -25,7 +25,6 @@
 #if AP_RCPROTOCOL_SRXL_ENABLED
 
 #include "AP_RCProtocol_SRXL.h"
-#include <AP_Math/crc.h>
 #include <AP_Math/AP_Math.h>
 
 // #define SUMD_DEBUG
