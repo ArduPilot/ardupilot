@@ -5,7 +5,6 @@
  */
 
 #include "AP_RAMTRON.h"
-#include <AP_Math/crc.h>
 #include <AP_Math/AP_Math.h>
 
 extern const AP_HAL::HAL &hal;
