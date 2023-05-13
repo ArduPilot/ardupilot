@@ -41,7 +41,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_Math/crc.h>
 #include "ch.h"
 #include "hal.h"
 #include "hwdef.h"

@@ -19,7 +19,6 @@
 #include <hal.h>
 #if HAL_USE_CAN == TRUE || HAL_NUM_CAN_IFACES
 #include <AP_Math/AP_Math.h>
-#include <AP_Math/crc.h>
 #include <canard.h>
 #include "support.h"
 #include <dronecan_msgs.h>
