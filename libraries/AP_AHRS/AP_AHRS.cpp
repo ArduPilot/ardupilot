@@ -1295,6 +1295,16 @@ bool AP_AHRS::set_origin(const Location &loc)
     return false;
 }
 
+#if AP_AHRS_POSITION_RESET_ENABLED
+bool AP_AHRS::handle_external_position_estimate(const Location &loc, float pos_accuracy, uint32_t timestamp_ms)
+{
+#if HAL_NAVEKF3_AVAILABLE
+    return EKF3.setLatLng(loc, pos_accuracy, timestamp_ms);
+#endif
+    return false;
+}
+#endif
+
 // return true if inertial navigation is active
 bool AP_AHRS::have_inertial_nav(void) const
 {

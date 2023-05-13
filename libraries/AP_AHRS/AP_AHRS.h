@@ -193,6 +193,17 @@ public:
     // from which to decide the origin on its own
     bool set_origin(const Location &loc) WARN_IF_UNUSED;
 
+#if AP_AHRS_POSITION_RESET_ENABLED
+    // Set the EKF's NE horizontal position states and their corresponding variances from the supplied WGS-84 location
+    // and 1-sigma horizontal position uncertainty. This can be used when the EKF is dead reckoning to periodically
+    // correct the position. If the EKF is is still using data from a postion sensor such as GPS, the position set
+    // will not be performed.
+    // pos_accuracy is the standard deviation of the horizontal position uncertainty in metres.
+    // The altitude element of the location is not used.
+    // Returns true if the set was successful.
+    bool handle_external_position_estimate(const Location &loc, float pos_accuracy, uint32_t timestamp_);
+#endif
+
     // returns the inertial navigation origin in lat/lon/alt
     bool get_origin(Location &ret) const WARN_IF_UNUSED;
 
