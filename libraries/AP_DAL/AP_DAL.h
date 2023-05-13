@@ -82,6 +82,8 @@ public:
 
     void log_event3(Event event);
     void log_SetOriginLLH3(const Location &loc);
+    void log_SetLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms);
+
     void log_writeDefaultAirSpeed3(const float aspeed, const float uncertainty);
     void log_writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t timeStamp_ms, uint8_t type);
 
@@ -317,6 +319,7 @@ public:
     void handle_message(const log_REVH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
     void handle_message(const log_RWOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
     void handle_message(const log_RBOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
+    void handle_message(const log_RSLL &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
 
     // map core number for replay
     uint8_t logging_core(uint8_t c) const;
@@ -340,6 +343,7 @@ private:
     struct log_REVH _REVH;
     struct log_RWOH _RWOH;
     struct log_RBOH _RBOH;
+    struct log_RSLL _RSLL;
 
     // cached variables for speed:
     uint32_t _micros;
