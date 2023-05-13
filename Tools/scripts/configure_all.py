@@ -77,9 +77,11 @@ def is_ap_periph(board):
 if args.copy_hwdef_incs_to_directory is not None:
     os.makedirs(args.copy_hwdef_incs_to_directory)
 
-def handle_hwdef_copy(directory, board):
+def handle_hwdef_copy(directory, board, bootloader=False):
     source = os.path.join("build", board, "hwdef.h")
-    if board == "iomcu":
+    if bootloader:
+        filename = "hwdef-%s-bl.h" % board
+    elif board == "iomcu":
         filename = "hwdef-%s-iomcu.h" % board
     elif is_ap_periph(board):
         filename = "hwdef-%s-periph.h" % board
@@ -116,9 +118,8 @@ for board in board_list:
     if os.path.exists(hwdef_bl):
         print("Configuring bootloader for %s" % board)
         run_program([args.python, "waf", "configure", "--board", board, "--bootloader"], "configure: " + board + "-bl")
-        if args.only_bl:
-            if args.copy_hwdef_incs_to_directory is not None:
-                handle_hwdef_copy(args.copy_hwdef_incs_to_directory, board)
+        if args.copy_hwdef_incs_to_directory is not None:
+            handle_hwdef_copy(args.copy_hwdef_incs_to_directory, board, bootloader=True)
         if args.build:
             run_program([args.python, "waf", "bootloader"], "build: " + board + "-bl")
 
