@@ -65,6 +65,7 @@
 #define HAL_BOARD_SUBTYPE_ESP32_BUZZ            6003
 #define HAL_BOARD_SUBTYPE_ESP32_EMPTY           6004
 #define HAL_BOARD_SUBTYPE_ESP32_TOMTE76         6005
+#define HAL_BOARD_SUBTYPE_ESP32_NICK            6006
 
 /* InertialSensor driver types */
 #define HAL_INS_NONE         0
