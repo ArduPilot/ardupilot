@@ -150,6 +150,12 @@ function reset() {
             document.getElementById("Gyro" + i + "Pre" + axis[j]).disabled = true
             document.getElementById("Gyro" + i + "Post" + axis[j]).disabled = true
         }
+        document.getElementById("SpecGyroInst" + i).disabled = true
+    }
+    document.getElementById("SpecGyroPre").disabled = true
+    document.getElementById("SpecGyroPost").disabled = true
+    for (let j = 0; j < 3; j++) {
+        document.getElementById("SpecGyroAxis" +  axis[j]).disabled = true
     }
 
     // Clear extra text
