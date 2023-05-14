@@ -231,6 +231,9 @@ function re_calc() {
 
 // Force full re-calc on next run, on window size change
 function clear_calculation() {
+    if (Gyro_batch == null) {
+        return
+    }
     for (let i = 0; i < Gyro_batch.length; i++) {
         if (Gyro_batch[i] == null) {
             continue
