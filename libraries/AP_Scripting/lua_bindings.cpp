@@ -144,6 +144,8 @@ int lua_mavlink_send_chan(lua_State *L) {
     if (entry == nullptr) {
         return luaL_error(L, "Unknown MAVLink message ID (%d)", msgid);
     }
+
+    WITH_SEMAPHORE(comm_chan_lock(chan));
     if (comm_get_txspace(chan) >= (GCS_MAVLINK::packet_overhead_chan(chan) + entry->max_msg_len)) {
         _mav_finalize_message_chan_send(chan,
                                         entry->msgid,
