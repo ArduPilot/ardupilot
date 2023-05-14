@@ -343,10 +343,9 @@ void AP_Scripting::handle_message(const mavlink_message_t &msg, const mavlink_ch
         return;
     }
 
-    struct mavlink_msg data {msg, chan};
+    struct mavlink_msg data {msg, chan, AP_HAL::millis()};
 
     WITH_SEMAPHORE(mavlink_data.sem);
-
     for (uint16_t i = 0; i < mavlink_data.accept_msg_ids_size; i++) {
         if (mavlink_data.accept_msg_ids[i] == -1) {
             return;
