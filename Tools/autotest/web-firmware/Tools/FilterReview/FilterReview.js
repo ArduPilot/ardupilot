@@ -436,7 +436,7 @@ function redraw_Spectrogram() {
 
     const batch_instance = find_instance(gyro_instance, post_filter)
     if (batch_instance == null) {
-        console.log("Could not find matching dataset for checkbox: " + checkbox.id)
+        console.log("Could not find matching dataset")
         return
     }
 
@@ -630,20 +630,37 @@ function load(log_file) {
         return
     }
 
-    // Work out if logging is pre/post from param value
+    // setup/reset plot and options
+    reset()
+
     log.parseAtOffset('PARM')
+
+    // Try and decode device IDs
+    var num_gyro = 0
+    for (let i = 0; i < 3; i++) {
+        const ID_param = i == 0 ? "INS_GYR_ID" : "INS_GYR" + (i + 1) + "_ID"
+        const ID = get_param_value(log.messages.PARM, ID_param)
+        if (ID != null) {
+            const decoded = decode_devid(ID, DEVICE_TYPE_IMU)
+            if (decoded != null) {
+                document.getElementById("Gyro" + i + "_info").innerHTML = decoded.name + " via " + decoded.bus_type
+            }
+            num_gyro++
+        }
+    }
+
+    // Work out if logging is pre/post from param value
     const INS_LOG_BAT_OPT = get_param_value(log.messages.PARM, "INS_LOG_BAT_OPT")
     const _doing_sensor_rate_logging = (INS_LOG_BAT_OPT & (1 << 0)) != 0
     const _doing_post_filter_logging = (INS_LOG_BAT_OPT & (1 << 1)) != 0
     const _doing_pre_post_filter_logging = (INS_LOG_BAT_OPT & (1 << 2)) != 0
     const use_instance_offset = _doing_pre_post_filter_logging || (_doing_post_filter_logging && _doing_sensor_rate_logging)
-    const instance_offset = Gyro_batch.length/2
     for (let i = 0; i < Gyro_batch.length; i++) {
         if (Gyro_batch[i] == null) {
             continue
         }
-        if (use_instance_offset && (i >= instance_offset)) {
-            Gyro_batch[i].sensor_num = i - instance_offset
+        if (use_instance_offset && (i >= num_gyro)) {
+            Gyro_batch[i].sensor_num = i - num_gyro
             Gyro_batch[i].post_filter = true
         } else {
             Gyro_batch[i].sensor_num = i
@@ -761,18 +778,6 @@ function load(log_file) {
         }
     }
 
-    // Try and decode device IDs
-    for (let i = 0; i < 3; i++) {
-        const ID_param = i == 0 ? "INS_GYR_ID" : "INS_GYR" + (i + 1) + "_ID"
-        const ID = get_param_value(log.messages.PARM, ID_param)
-        if (ID != null) {
-            const decoded = decode_devid(ID, DEVICE_TYPE_IMU)
-            if (decoded != null) {
-                document.getElementById("Gyro" + i + "_info").innerHTML = decoded.name + " via " + decoded.bus_type
-            }
-        }
-
-    }
 
     const end = performance.now();
     console.log(`Load took: ${end - start} ms`);
