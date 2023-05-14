@@ -201,41 +201,24 @@ function reset() {
     FFTPlot.on('plotly_legendclick', function(data) { return false })
 
     // Spectrogram setup
-    // Define type
+    // Add surface
     Spectrogram.data = [{
-        type:"surface",
+        type:"heatmap",
         colorbar: {title: {side: "right", text: ""}},
-        contours: {
-            x: {highlight: false},
-            y: {highlight: false},
-            z: {highlight: false},
-        },
+        transpose: true,
+        zsmooth: "best",
         hovertemplate: ""
-    }];
+    }]
 
     // Define Layout
     Spectrogram.layout = {
-        margin: {
-            l: 10,
-            r: 10,
-            b: 10,
-            t: 10,
-            pad: 0
-        },
-        scene: {
-            camera: {
-                projection: { type: "orthographic"},
-                eye: { x:0, y:0, z:1 },
-            },
-            aspectratio: { x:1.4, y:4.4, z:1.4 },
-            xaxis: {showspikes: false, title: {text: ""}},
-            yaxis: {showspikes: false, title: {text: "Time (s)"}, autorange: 'reversed'},
-            zaxis: {showspikes: false, title: {text: ""}}
-        },
+        xaxis: {title: {text: "Time (s)"}},
+        yaxis: {title: {text: ""}, type: "linear"},
     }
 
-    Plotly.purge("Spectrogram")
-    Plotly.newPlot("Spectrogram", Spectrogram.data, Spectrogram.layout, {modeBarButtonsToRemove: ['resetCameraDefault3d', 'orbitRotation'], displaylogo: false});
+    var SpectrogramPlot = document.getElementById("Spectrogram")
+    Plotly.purge(SpectrogramPlot)
+    Plotly.newPlot(SpectrogramPlot, Spectrogram.data, Spectrogram.layout, {displaylogo: false});
 }
 
 // Calculate if needed and re-draw, called from calculate button
@@ -460,10 +443,10 @@ function redraw_Spectrogram() {
     const frequency_scale = get_frequency_scale()
 
     // Setup axes
-    Spectrogram.layout.scene.xaxis.type = frequency_scale.type
-    Spectrogram.layout.scene.xaxis.title.text = frequency_scale.label
+    Spectrogram.layout.yaxis.type = frequency_scale.type
+    Spectrogram.layout.yaxis.title.text = frequency_scale.label
 
-    Spectrogram.data[0].hovertemplate = "<extra></extra>" + "%{y:.2f} s<br>" + frequency_scale.hover("x") + "<br>" + amplitude_scale.hover("z")
+    Spectrogram.data[0].hovertemplate = "<extra></extra>" + "%{x:.2f} s<br>" + frequency_scale.hover("y") + "<br>" + amplitude_scale.hover("z")
     Spectrogram.data[0].colorbar.title.text = amplitude_scale.label
 
     // Find the start and end index
@@ -473,9 +456,9 @@ function redraw_Spectrogram() {
     // Number of windows to plot
     const plot_length = end_index - start_index
 
-    // Setup xy data
-    Spectrogram.data[0].x = frequency_scale.fun(Gyro_batch[batch_instance].FFT.bins)
-    Spectrogram.data[0].y = Gyro_batch[batch_instance].FFT.time.slice(start_index, end_index)
+    // Setup xy data (x and y swapped because transpose flag is set)
+    Spectrogram.data[0].x = Gyro_batch[batch_instance].FFT.time.slice(start_index, end_index)
+    Spectrogram.data[0].y = frequency_scale.fun(Gyro_batch[batch_instance].FFT.bins)
 
     // Windowing amplitude correction depends on spectrum of interest
     const window_correction = amplitude_scale.use_PSD ? (Gyro_batch[batch_instance].FFT.correction.energy * math.sqrt(1/2)) : Gyro_batch[batch_instance].FFT.correction.linear
