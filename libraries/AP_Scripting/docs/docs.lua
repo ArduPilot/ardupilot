@@ -2869,9 +2869,9 @@ function mavlink:init(num_rx_msgid, msg_queue_length) end
 
 -- marks mavlink message for receive, message id can be get using mavlink_msgs.get_msgid("MSG_NAME")
 --@param msg_id number
-function mavlink:receive_msgid(msg_id) end
+function mavlink:register_rx_msgid(msg_id) end
 
--- receives mavlink message marked for receive using mavlink:receive_msgid
+-- receives mavlink message marked for receive using mavlink:register_rx_msgid
 --@return mavlink_message bytes
 --@return mavlink_channel number
 --@return receive_timestamp number
