@@ -16,21 +16,24 @@ function window_correction_factors(w) {
     }
 }
 
-// Frequency bins for given fft length and sample period
-function fft_freq(len, d) {
+// Length of real half of fft of len points
+function real_length(len) {
+    return math.floor(len / 2) + 1
+}
+
+// Frequency bins for given fft length and sample period (real only)
+function rfft_freq(len, d) {
+    const real_len = real_length(len)
     freq = []
-    for (var i=0;i<len;i++) {
-        freq[i] = i
-        if (i >= len/2) {
-            freq[i] -= len
-        }
-        freq[i] /= len * d
+    for (var i=0;i<real_len;i++) {
+        freq[i] = i / (len * d)
     }
     return freq
 }
 
-function run_fft(data, window_size, window_spacing, windowing_function, positive_index) {
+function run_fft(data, window_size, window_spacing, windowing_function) {
     const num_points = data.x.length
+    const real_len = real_length(window_size)
 
     var fft_x = []
     var fft_y = []
@@ -47,10 +50,11 @@ function run_fft(data, window_size, window_spacing, windowing_function, positive
     // normalize all points by the window size
     var scale = []
     scale[0] = 1 / window_size
-    for (var j=1;j<positive_index-1;j++) {
+    for (var j=1;j<real_len-1;j++) {
         scale[j] = 2 / window_size
     }
-    scale[positive_index] = 1 / window_size
+    scale[real_len-1] = 1 / window_size
+    const tf_scale = tf.tensor1d(scale)
 
     const num_windows = math.floor((num_points-window_size)/window_spacing) + 1
     for (var i=0;i<num_windows;i++) {
@@ -70,7 +74,7 @@ function run_fft(data, window_size, window_spacing, windowing_function, positive
         const p1 = p2.abs()
 
         // Apply scale and convert back to js array
-        const result = tf.mul(p1, scale).arraySync()
+        const result = tf.mul(p1, tf_scale).arraySync()
 
         fft_x[i] = result[0]
         fft_y[i] = result[1]
@@ -113,11 +117,7 @@ function run_batch_fft(data_set) {
     const window_correction = window_correction_factors(windowing_function)
 
     // Get bins
-    var bins = fft_freq(window_size, sample_time)
-
-    // discard negative spectrum
-    const positive_index = math.floor(window_size/2)
-    bins = bins.slice(0, positive_index)
+    var bins = rfft_freq(window_size, sample_time)
 
     var x = []
     var y = []
@@ -126,7 +126,7 @@ function run_batch_fft(data_set) {
     var time = []
 
     for (let i=0;i<num_batch;i++) {
-        var ret = run_fft(data_set[i], window_size, window_spacing, windowing_function, positive_index)
+        var ret = run_fft(data_set[i], window_size, window_spacing, windowing_function)
 
         time.push(...math.add(data_set[i].sample_time, math.dotMultiply(sample_time, ret.center)))
         x.push(...ret.x)
