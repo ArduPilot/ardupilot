@@ -225,6 +225,10 @@ submodules at specific revisions.
                  default=False,
                  help="Disable onboard scripting engine")
 
+    g.add_option('--enable-scripting', action='store_true',
+                 default=False,
+                 help="Enable onboard scripting engine")
+
     g.add_option('--no-gcs', action='store_true',
                  default=False,
                  help="Disable GCS code")

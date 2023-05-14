@@ -52,11 +52,12 @@ class Board:
         )
 
         # Setup scripting, had to defer this to allow checking board size
-        if ((not cfg.options.disable_scripting) and
+        if (cfg.options.enable_scripting or
+            ((not cfg.options.disable_scripting) and
             (not cfg.env.DISABLE_SCRIPTING) and
             ((cfg.env.BOARD_FLASH_SIZE is None) or
              (cfg.env.BOARD_FLASH_SIZE == []) or
-             (cfg.env.BOARD_FLASH_SIZE > 1024))):
+             (cfg.env.BOARD_FLASH_SIZE > 1024)))):
 
             env.DEFINES.update(
                 AP_SCRIPTING_ENABLED = 1,
