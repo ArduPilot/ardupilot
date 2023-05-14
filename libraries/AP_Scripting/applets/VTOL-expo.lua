@@ -240,29 +240,30 @@ end
    The curve is designed to give us maximum acceleration at zero
    vertical velocity, which means minimum drag. It is a double slew
    limited square wave
+   returns thrust and a boolean to indicate if the pulse is complete
 --]]
 local function get_thrust_curve(t)
    local pulse_time = EXPO_PULSE_TIME:get()
    local pulse_slew = EXPO_PULSE_SLEW:get()
-   if pulse_slew*4 > pulse_time then
-      pulse_slew = pulse_time * 0.25
+   if pulse_slew*5 > pulse_time then
+      pulse_slew = pulse_time * 0.2
    end
    local pulse_hold = (pulse_time - 4*pulse_slew) * 0.5
    if t < pulse_slew then
-      return (t / pulse_slew)
+      return (t / pulse_slew), false
    end
    if t < pulse_slew + pulse_hold then
-      return 1.0
+      return 1.0, false
    end
    if t < 3*pulse_slew + pulse_hold then
       local t1 = t - (pulse_slew + pulse_hold)
-      return 1.0 - 2*t1/(pulse_slew*2)
+      return 1.0 - 2*t1/(pulse_slew*2), false
    end
-   if t < 3*pulse_slew + 2*pulse_hold then
-      return -1.0
+   if t < 4*pulse_slew + 2.5*pulse_hold then
+      return -1.0, false
    end
-   local t2 = t - (pulse_slew*3 + pulse_hold*2)
-   return -1.0 + t2 / pulse_slew
+   local t2 = t - (pulse_slew*4 + pulse_hold*2.5)
+   return -1.0 + t2 / pulse_slew, t2 >= pulse_slew
 end
 
 --[[
@@ -321,7 +322,7 @@ end
 --[[
    adjust throttle based notch filter references
 --]]
-function adjust_notch_filters(old_expo, new_expo)
+local function adjust_notch_filters(old_expo, new_expo)
    if INS_HNTCH_ENABLE:get() == 1 and INS_HNTCH_MODE:get() == 1 then
       local old_ref = INS_HNTCH_REF:get()
       change_param(INS_HNTCH_REF, adjust_reference(old_ref, old_expo, new_expo))
@@ -335,9 +336,13 @@ end
 --[[
    adjust the expo for the given thrust change and accel_min, accel_max
 --]]
-function adjust_expo(thrust_change)
+local function adjust_expo(thrust_change)
    if pulse_count % 2 == 1 then
       -- only adjust on even pulses
+      return
+   end
+   if accel_max == nil or accel_min == nil then
+      gcs:send_text(MAV_SEVERITY.INFO, string.format("Expo: did not reach vel target"))
       return
    end
    local expected_accel = thrust_change * GRAVITY_MSS
@@ -457,6 +462,9 @@ function update()
 
    if unchanged_count >= UNCHANGED_LIMIT then
       -- we've finished the tune
+      if not is_quadplane and saved_pos ~= nil then
+         vehicle:set_target_pos_NED(saved_pos, true, saved_yaw_deg, false, 0, false, false)
+      end
       return
    end
 
@@ -484,6 +492,12 @@ function update()
 
    local quiescent = (vel_err < 0.2 and pos_err < 0.2 and math.abs(filtered_accel) < 0.1)
 
+   if test_phase == PHASE.NONE and not quiescent then
+      if not is_quadplane then
+         vehicle:set_target_pos_NED(saved_pos, true, saved_yaw_deg, false, 0, false, false)
+      end
+   end
+   
    if test_phase == PHASE.NONE and quiescent then
       phase_start_time = now
       phase_start_throttle = filtered_throttle
@@ -495,27 +509,28 @@ function update()
    end
 
    if test_phase == PHASE.PULSE then
-      if accel_max == nil or accel > accel_max then
-         accel_max = accel
-      end
-      if accel_min == nil or accel < accel_min then
-         accel_min = accel
-      end
       local thrust_delta = get_thrust_delta(phase_start_throttle)
       local t = now - phase_start_time
       local direction = (pulse_count % 2) * 2 - 1
-      local thrust_curve = get_thrust_curve(t)
+      local thrust_curve, finished = get_thrust_curve(t)
+      if finished then
+         set_thrust(phase_start_throttle)
+         test_phase = PHASE.WAIT
+         phase_start_time = now
+         pulse_count = pulse_count + 1
+         adjust_expo(get_thrust_delta(phase_start_throttle)/phase_start_throttle)
+         return
+      end
       set_thrust(phase_start_throttle + thrust_delta * direction * thrust_curve)
-   end
-   
-   if test_phase == PHASE.PULSE and now - phase_start_time >= EXPO_PULSE_TIME:get() then
-      phase_start_time = now
-      set_thrust(phase_start_throttle)
-      test_phase = PHASE.WAIT
-      pulse_count = pulse_count + 1
-      adjust_expo(get_thrust_delta(phase_start_throttle)/phase_start_throttle)
-      if not is_quadplane then
-         vehicle:set_target_pos_NED(saved_pos, true, saved_yaw_deg, false, 0, false, false)
+
+      if now - phase_start_time >= EXPO_PULSE_TIME:get()*0.5 then
+         local velD = ahrs:get_velocity_NED():z()
+         if accel_min == nil and direction == -1 and velD < 0 then
+            accel_min = accel
+         end
+         if accel_max == nil and direction == 1 and velD > 0 then
+            accel_max = accel
+         end
       end
    end
 
