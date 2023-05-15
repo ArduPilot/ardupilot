@@ -15,6 +15,19 @@
 
 <body>
 
+<style>
+    div.plotly-notifier {
+        visibility: hidden;
+    }
+
+    label.parameter_input_label {
+        display: inline-block;
+        width: 160px;
+        text-align: right;
+        margin:5px 0px;
+    }
+</style>
+
 <table>
 <tr>
 <td style="width: 30px;"></td>
@@ -210,7 +223,7 @@
     <tr>
         <td style="width: 60px;"></td>
         <td>
-            <fieldset style="width:300px">
+            <fieldset style="width:300px;height:350px">
                 <legend>Spectrogram Options</legend>
                 <p>
                     <fieldset style="width:300px">
@@ -248,9 +261,74 @@
                         <label for="SpecGyroAxisZ">Z</label>
                     </fieldset>
                 </p>
-             </fieldset>
+            </fieldset>
         </td>
-
+        <td>
+            <fieldset style="width:300px;height:350px">
+                <legend>First Notch Filter</legend>
+                    <p>
+                        <label class="parameter_input_label" for="INS_HNTCH_ENABLE">INS_HNTCH_ENABLE</label>
+                        <input id="INS_HNTCH_ENABLE" name="INS_HNTCH_ENABLE" type="number" step="1" value="0" onchange="HNotch_param_read(); redraw_Spectrogram();" style="width: 100px" disabled/>
+                    </p>
+                    <p>
+                        <label class="parameter_input_label" for="INS_HNTCH_MODE">INS_HNTCH_MODE</label>
+                        <input id="INS_HNTCH_MODE" name="INS_HNTCH_MODE" type="number" step="1" value="0" onchange="HNotch_param_read(); redraw_Spectrogram();" style="width: 100px" disabled/>
+                    </p>
+                    <p>
+                        <label class="parameter_input_label" for="INS_HNTCH_FREQ">INS_HNTCH_FREQ</label>
+                        <input id="INS_HNTCH_FREQ" name="INS_HNTCH_FREQ" type="number" step="0.1" value="0" onchange="HNotch_param_read(); redraw_Spectrogram();" style="width: 100px" disabled/>
+                    </p>
+                    <p>
+                        <label class="parameter_input_label" for="INS_HNTCH_REF">INS_HNTCH_REF</label>
+                        <input id="INS_HNTCH_REF" name="INS_HNTCH_REF" type="number" step="0.01" value="0" onchange="HNotch_param_read(); redraw_Spectrogram();" style="width: 100px" disabled/>
+                   </p>
+                    <p>
+                        <label class="parameter_input_label" for="INS_HNTCH_FM_RAT">INS_HNTCH_FM_RAT</label>
+                        <input id="INS_HNTCH_FM_RAT" name="INS_HNTCH_FM_RAT" type="number" step="0.01" value="1.0" onchange="HNotch_param_read(); redraw_Spectrogram();" style="width: 100px" disabled/>
+                   </p>
+                    <p>
+                        <label class="parameter_input_label" for="INS_HNTCH_HMNCS">INS_HNTCH_HMNCS</label>
+                        <input id="INS_HNTCH_HMNCS" name="INS_HNTCH_HMNCS" type="number" step="1" value="1" onchange="HNotch_param_read(); redraw_Spectrogram();" style="width: 100px" disabled/>
+                    </p>
+                    <p>
+                        <label class="parameter_input_label" for="INS_HNTCH_OPTS">INS_HNTCH_OPTS</label>
+                        <input id="INS_HNTCH_OPTS" name="INS_HNTCH_OPTS" type="number" step="1" value="0" onchange="HNotch_param_read(); redraw_Spectrogram();" style="width: 100px" disabled/>
+                    </p>
+            </fieldset>
+        </td>
+        <td>
+            <fieldset style="width:300px;height:350px">
+                <legend>Second Notch Filter</legend>
+                    <p>
+                        <label class="parameter_input_label" for="INS_HNTC2_ENABLE">INS_HNTC2_ENABLE</label>
+                        <input id="INS_HNTC2_ENABLE" name="INS_HNTC2_ENABLE" type="number" step="1" value="0" onchange="HNotch_param_read(); redraw_Spectrogram();" style="width: 100px" disabled/>
+                    </p>
+                    <p>
+                        <label class="parameter_input_label" for="INS_HNTC2_MODE">INS_HNTC2_MODE</label>
+                        <input id="INS_HNTC2_MODE" name="INS_HNTC2_MODE" type="number" step="1" value="0" onchange="HNotch_param_read(); redraw_Spectrogram();" style="width: 100px" disabled/>
+                    </p>
+                    <p>
+                        <label class="parameter_input_label" for="INS_HNTC2_FREQ">INS_HNTC2_FREQ</label>
+                        <input id="INS_HNTC2_FREQ" name="INS_HNTC2_FREQ" type="number" step="0.1" value="0" onchange="HNotch_param_read(); redraw_Spectrogram();" style="width: 100px" disabled/>
+                    </p>
+                    <p>
+                        <label class="parameter_input_label" for="INS_HNTC2_REF">INS_HNTC2_REF</label>
+                        <input id="INS_HNTC2_REF" name="INS_HNTC2_REF" type="number" step="0.01" value="0" onchange="HNotch_param_read(); redraw_Spectrogram();" style="width: 100px" disabled/>
+                   </p>
+                    <p>
+                        <label class="parameter_input_label" for="INS_HNTC2_FM_RAT">INS_HNTC2_FM_RAT</label>
+                        <input id="INS_HNTC2_FM_RAT" name="INS_HNTC2_FM_RAT" type="number" step="0.01" value="1.0" onchange="HNotch_param_read(); redraw_Spectrogram();" style="width: 100px" disabled/>
+                   </p>
+                    <p>
+                        <label class="parameter_input_label" for="INS_HNTC2_HMNCS">INS_HNTC2_HMNCS</label>
+                        <input id="INS_HNTC2_HMNCS" name="INS_HNTC2_HMNCS" type="number" step="1" value="1" onchange="HNotch_param_read(); redraw_Spectrogram();" style="width: 100px" disabled/>
+                    </p>
+                    <p>
+                        <label class="parameter_input_label" for="INS_HNTC2_OPTS">INS_HNTC2_OPTS</label>
+                        <input id="INS_HNTC2_OPTS" name="INS_HNTC2_OPTS" type="number" step="1" value="0" onchange="HNotch_param_read(); redraw_Spectrogram();" style="width: 100px" disabled/>
+                    </p>
+            </fieldset>
+        </td>
     </tr>
 </table>
 
