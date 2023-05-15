@@ -32,10 +32,6 @@
 #define HAL_HIGH_LATENCY2_ENABLED 1
 #endif
 
-#ifndef HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
-#define HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED (HAVE_FILESYSTEM_SUPPORT && BOARD_FLASH_SIZE > 1024)
-#endif
-
 // macros used to determine if a message will fit in the space available.
 
 void gcs_out_of_space_to_send(mavlink_channel_t chan);
