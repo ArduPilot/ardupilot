@@ -587,8 +587,12 @@ protected:
 
     virtual MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet);
 
+#if AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED
     void handle_send_autopilot_version(const mavlink_message_t &msg);
+#endif
+#if AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED
     MAV_RESULT handle_command_request_autopilot_capabilities(const mavlink_command_long_t &packet);
+#endif
 
     virtual void send_banner();
 

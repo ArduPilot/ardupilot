@@ -113,7 +113,7 @@ class build_binaries(object):
     def run_program(self, prefix, cmd_list, show_output=True, env=None, force_success=False):
         if show_output:
             self.progress("Running (%s)" % " ".join(cmd_list))
-        p = subprocess.Popen(cmd_list, bufsize=1, stdin=None,
+        p = subprocess.Popen(cmd_list, stdin=None,
                              stdout=subprocess.PIPE, close_fds=True,
                              stderr=subprocess.STDOUT, env=env)
         output = ""

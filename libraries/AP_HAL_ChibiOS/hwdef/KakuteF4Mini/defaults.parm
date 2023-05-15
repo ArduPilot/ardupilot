@@ -1,6 +1,5 @@
 # setup for LEDs on chan5
 SERVO5_FUNCTION 120
-NTF_LED_TYPES 257
 SERIAL3_BAUD 115
 # default Serial1 to FrSky telemetry
 SERIAL1_PROTOCOL 10
@@ -8,3 +7,4 @@ SERIAL1_OPTIONS 7
 # batt monitor defaults
 BATT_VOLT_SCALE 10.9
 BATT_CURR_SCALE 28.5
+

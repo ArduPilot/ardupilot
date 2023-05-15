@@ -1642,8 +1642,10 @@ void emit_field(const struct userdata_field *field, const char* object_name, con
       case TYPE_INT32_T:
       case TYPE_UINT8_T:
       case TYPE_UINT16_T:
-      case TYPE_ENUM:
         fprintf(source, "%slua_pushinteger(L, %s%s%s%s);\n", indent, object_name, object_access, field->name, index_string);
+        break;
+      case TYPE_ENUM:
+        fprintf(source, "%slua_pushinteger(L, static_cast<int32_t>(%s%s%s%s));\n", indent, object_name, object_access, field->name, index_string);
         break;
       case TYPE_UINT32_T:
         fprintf(source, "%snew_uint32_t(L);\n", indent);
@@ -1659,7 +1661,9 @@ void emit_field(const struct userdata_field *field, const char* object_name, con
         fprintf(source, "%slua_pushstring(L, %s%s%s%s);\n", indent, object_name, object_access, field->name, index_string);
         break;
       case TYPE_USERDATA:
-        error(ERROR_USERDATA, "Userdata does not currently support access to userdata field's");
+          // userdatas must allocate a new container to return
+          fprintf(source, "%snew_%s(L);\n", indent, field->type.data.ud.sanatized_name);
+          fprintf(source, "%s*check_%s(L, -1) = %s%s%s%s;\n", indent, field->type.data.ud.sanatized_name, object_name, object_access, field->name, index_string);
         break;
       case TYPE_AP_OBJECT: // FIXME: collapse the identical cases here, and use the type string function
         error(ERROR_USERDATA, "AP_Object does not currently support access to userdata field's");
@@ -2337,14 +2341,33 @@ void emit_sandbox(void) {
   fprintf(source, "    const lua_CFunction fun;\n");
   fprintf(source, "} new_userdata[] = {\n");
   while (data) {
-    start_dependency(source, data->dependency);
-    if (data->creation) {
-      // expose custom creation function to user (not used internally)
-      fprintf(source, "    {\"%s\", %s},\n", data->rename ? data->rename :  data->name, data->creation);
+    // Dont expose creation function for all read only items
+    int expose_creation = FALSE;
+    if (data->creation || data->methods) {
+      // Custom creation or methods
+      expose_creation = TRUE;
     } else {
-      fprintf(source, "    {\"%s\", new_%s},\n", data->rename ? data->rename :  data->name, data->sanatized_name);
+      // Feilds only
+      struct userdata_field * field = data->fields;
+      while(field) {
+        if (field->access_flags & ACCESS_FLAG_WRITE) {
+          expose_creation = TRUE;
+          break;
+        }
+        field = field->next;
+      }
     }
-    end_dependency(source, data->dependency);
+
+    if (expose_creation) {
+      start_dependency(source, data->dependency);
+      if (data->creation) {
+        // expose custom creation function to user (not used internally)
+        fprintf(source, "    {\"%s\", %s},\n", data->rename ? data->rename :  data->name, data->creation);
+      } else {
+        fprintf(source, "    {\"%s\", new_%s},\n", data->rename ? data->rename :  data->name, data->sanatized_name);
+      }
+      end_dependency(source, data->dependency);
+    }
     data = data->next;
   }
   if (parsed_globals) {

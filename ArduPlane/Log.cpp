@@ -422,11 +422,11 @@ const struct LogStructure Plane::log_structure[] = {
 // @LoggerMessage: AETR
 // @Description: Normalised pre-mixer control surface outputs
 // @Field: TimeUS: Time since system startup
-// @Field: Ail: Pre-mixer value for aileron output (between -4500 to 4500)
-// @Field: Elev: Pre-mixer value for elevator output (between -4500 to 4500)
-// @Field: Thr: Pre-mixer value for throttle output (between -4500 to 4500)
-// @Field: Rudd: Pre-mixer value for rudder output (between -4500 to 4500)
-// @Field: Flap: Pre-mixer value for flaps output (between -4500 to 4500)
+// @Field: Ail: Pre-mixer value for aileron output (between -4500 and 4500)
+// @Field: Elev: Pre-mixer value for elevator output (between -4500 and 4500)
+// @Field: Thr: Pre-mixer value for throttle output (between -100 and 100)
+// @Field: Rudd: Pre-mixer value for rudder output (between -4500 and 4500)
+// @Field: Flap: Pre-mixer value for flaps output (between 0 and 100)
 // @Field: SS: Surface movement / airspeed scaling value
     { LOG_AETR_MSG, sizeof(log_AETR),
       "AETR", "Qffffff",  "TimeUS,Ail,Elev,Thr,Rudd,Flap,SS", "s------", "F------" , true },

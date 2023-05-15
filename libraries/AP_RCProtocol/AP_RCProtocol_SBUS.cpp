@@ -53,6 +53,10 @@
 
 #include "AP_RCProtocol_SBUS.h"
 
+#include "AP_RCProtocol_config.h"
+
+#if AP_RCPROTOCOL_SBUS_ENABLED
+
 #define SBUS_FRAME_SIZE		25
 #define SBUS_INPUT_CHANNELS	16
 #define SBUS_FLAGS_BYTE		23
@@ -219,3 +223,5 @@ void AP_RCProtocol_SBUS::process_byte(uint8_t b, uint32_t baudrate)
     }
     _process_byte(AP_HAL::micros(), b);
 }
+
+#endif  // AP_RCPROTOCOL_SBUS_ENABLED

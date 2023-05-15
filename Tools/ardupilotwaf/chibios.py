@@ -64,11 +64,13 @@ class upload_fw(Task.Task):
             if not self.wsl2_prereq_checks():
                 return
             print("If this takes takes too long here, try power-cycling your hardware\n")
-            cmd = "{} '{}/uploader.py' '{}'".format('python.exe', upload_tools, src.abspath())
+            cmd = "{} -u '{}/uploader.py' '{}'".format('python.exe', upload_tools, src.abspath())
         else:
             cmd = "{} '{}/uploader.py' '{}'".format(self.env.get_flat('PYTHON'), upload_tools, src.abspath())
         if upload_port is not None:
             cmd += " '--port' '%s'" % upload_port
+        if self.generator.bld.options.upload_force:
+            cmd += " '--force'"
         return self.exec_command(cmd)
 
     def wsl2_prereq_checks(self):

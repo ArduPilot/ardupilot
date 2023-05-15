@@ -803,6 +803,7 @@ bool NavEKF3::InitialiseFilter(void)
         if (AP::dal().available_memory() < sizeof(NavEKF3_core)*num_cores + 4096) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF3 not enough memory");
             _enable.set(0);
+            num_cores = 0;
             return false;
         }
 
@@ -810,6 +811,7 @@ bool NavEKF3::InitialiseFilter(void)
         core = (NavEKF3_core*)AP::dal().malloc_type(sizeof(NavEKF3_core)*num_cores, AP::dal().MEM_FAST);
         if (core == nullptr) {
             _enable.set(0);
+            num_cores = 0;
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF3 allocation failed");
             return false;
         }

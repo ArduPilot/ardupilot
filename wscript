@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # encoding: utf-8
 
 from __future__ import print_function
@@ -126,6 +126,11 @@ def options(opt):
         default=False,
         help='Configure as debug variant.')
 
+    g.add_option('-g',
+        action='store_true',
+        default=False,
+        help='Add debug symbolds to build.')
+    
     g.add_option('--disable-watchdog',
         action='store_true',
         default=False,
@@ -469,6 +474,10 @@ def configure(cfg):
         cfg.define('AP_BOARD_START_TIME', cfg.options.board_start_time)
         # also in env for hrt.c
         cfg.env.AP_BOARD_START_TIME = cfg.options.board_start_time
+
+    # require python 3.8.x or later
+    cfg.load('python')
+    cfg.check_python_version(minver=(3,6,9))
 
     cfg.load('ap_library')
 

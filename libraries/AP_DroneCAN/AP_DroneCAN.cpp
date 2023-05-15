@@ -113,7 +113,7 @@ const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     // @Param: OPTION
     // @DisplayName: DroneCAN options
     // @Description: Option flags
-    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM,5:SendGNSS
+    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM,5:SendGNSS,6:UseHimarkServo
     // @User: Advanced
     AP_GROUPINFO("OPTION", 5, AP_DroneCAN, _options, 0),
     
@@ -261,6 +261,9 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
     esc_raw.set_timeout_ms(2);
     esc_raw.set_priority(CANARD_TRANSFER_PRIORITY_HIGH);
 
+    himark_out.set_timeout_ms(2);
+    himark_out.set_priority(CANARD_TRANSFER_PRIORITY_HIGH);
+
     rgb_led.set_timeout_ms(20);
     rgb_led.set_priority(CANARD_TRANSFER_PRIORITY_LOW);
 
@@ -347,7 +350,11 @@ void AP_DroneCAN::loop(void)
                 const uint32_t servo_period_us = 1000000UL / unsigned(_servo_rate_hz.get());
                 if (now - _SRV_last_send_us >= servo_period_us) {
                     _SRV_last_send_us = now;
-                    SRV_send_actuator();
+                    if (option_is_set(Options::USE_HIMARK_SERVO)) {
+                        SRV_send_himark();
+                    } else {
+                        SRV_send_actuator();
+                    }
                     sent_servos = true;
                     for (uint8_t i = 0; i < DRONECAN_SRV_NUMBER; i++) {
                         _SRV_conf[i].servo_pending = false;
@@ -467,6 +474,38 @@ void AP_DroneCAN::SRV_send_actuator(void)
             }
         }
     } while (repeat_send);
+}
+
+/*
+  Himark servo output. This uses com.himark.servo.ServoCmd packets
+ */
+void AP_DroneCAN::SRV_send_himark(void)
+{
+    WITH_SEMAPHORE(SRV_sem);
+
+    // ServoCmd can hold maximum of 17 commands. First find the highest pending servo < 17
+    int8_t highest_to_send = -1;
+    for (int8_t i = 16; i >= 0; i--) {
+        if (_SRV_conf[i].servo_pending && ((1U<<i) & _servo_bm) != 0) {
+            highest_to_send = i;
+            break;
+        }
+    }
+    if (highest_to_send == -1) {
+        // nothing to send
+        return;
+    }
+    com_himark_servo_ServoCmd msg {};
+
+    for (uint8_t i = 0; i <= highest_to_send; i++) {
+        if ((1U<<i) & _servo_bm) {
+            const uint16_t pulse = constrain_int16(_SRV_conf[i].pulse - 1000, 0, 1000);
+            msg.cmd.data[i] = pulse;
+        }
+    }
+    msg.cmd.len = highest_to_send+1;
+
+    himark_out.broadcast(msg);
 }
 
 void AP_DroneCAN::SRV_send_esc(void)
@@ -1046,7 +1085,28 @@ void AP_DroneCAN::handle_actuator_status(const CanardRxTransfer& transfer, const
                                    msg.position,
                                    msg.force,
                                    msg.speed,
-                                   msg.power_rating_pct);
+                                   msg.power_rating_pct,
+                                   0, 0, 0, 0, 0, 0);
+}
+
+/*
+  handle himark ServoInfo message
+ */
+void AP_DroneCAN::handle_himark_servoinfo(const CanardRxTransfer& transfer, const com_himark_servo_ServoInfo &msg)
+{
+    // log as CSRV message
+    AP::logger().Write_ServoStatus(AP_HAL::native_micros64(),
+                                   msg.servo_id,
+                                   msg.pos_sensor*0.01,
+                                   0,
+                                   0,
+                                   0,
+                                   msg.pos_cmd*0.01,
+                                   msg.voltage*0.01,
+                                   msg.current*0.01,
+                                   msg.motor_temp*0.2-40,
+                                   msg.pcb_temp*0.2-40,
+                                   msg.error_status);
 }
 
 #if AP_DRONECAN_VOLZ_FEEDBACK_ENABLED

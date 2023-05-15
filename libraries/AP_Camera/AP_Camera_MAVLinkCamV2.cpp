@@ -90,9 +90,9 @@ bool AP_Camera_MAVLinkCamV2::set_zoom(ZoomType zoom_type, float zoom_value)
     return true;
 }
 
-// set focus in, out or hold.  returns true on success
+// set focus specified as rate, percentage or auto
 // focus in = -1, focus hold = 0, focus out = 1
-bool AP_Camera_MAVLinkCamV2::set_manual_focus_step(int8_t focus_step)
+bool AP_Camera_MAVLinkCamV2::set_focus(FocusType focus_type, float focus_value)
 {
     // exit immediately if have not found camera or does not support focus
     if (_link == nullptr || !(_cap_flags & CAMERA_CAP_FLAGS_HAS_BASIC_FOCUS)) {
@@ -102,27 +102,21 @@ bool AP_Camera_MAVLinkCamV2::set_manual_focus_step(int8_t focus_step)
     // prepare and send message
     mavlink_command_long_t pkt {};
     pkt.command = MAV_CMD_SET_CAMERA_FOCUS;
-    pkt.param1 = FOCUS_TYPE_CONTINUOUS; // Focus Type, 0:FOCUS_TYPE_STEP, 1:FOCUS_TYPE_CONTINUOUS, 2:FOCUS_TYPE_RANGE, 3:FOCUS_TYPE_METERS, 4:FOCUS_TYPE_AUTO, 5:FOCUS_TYPE_AUTO_SINGLE, 5:FOCUS_TYPE_AUTO_CONTINUOUS
-    pkt.param2 = focus_step;            // Focus Value
-
-    _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt);
-
-    return true;
-}
-
-// auto focus.  returns true on success
-bool AP_Camera_MAVLinkCamV2::set_auto_focus()
-{
-    // exit immediately if have not found camera or does not support focus
-    if (_link == nullptr || !(_cap_flags & CAMERA_CAP_FLAGS_HAS_BASIC_FOCUS)) {
-        return false;
+    switch (focus_type) {
+    case FocusType::RATE:
+        // focus in, out or hold (focus in = -1, hold = 0, focus out = 1). Same as FOCUS_TYPE_CONTINUOUS
+        pkt.param1 = FOCUS_TYPE_CONTINUOUS;
+        break;
+    case FocusType::PCT:
+        // focus to a percentage (from 0 to 100) of the full range. Same as FOCUS_TYPE_RANGE
+        pkt.param1 = FOCUS_TYPE_RANGE;
+        break;
+    case FocusType::AUTO:
+        // focus automatically. Same as FOCUS_TYPE_AUTO
+        pkt.param1 = FOCUS_TYPE_AUTO;
+        break;
     }
-
-    // prepare and send message
-    mavlink_command_long_t pkt {};
-    pkt.command = MAV_CMD_SET_CAMERA_FOCUS;
-    pkt.param1 = FOCUS_TYPE_AUTO;   // Focus Type, 0:FOCUS_TYPE_STEP, 1:FOCUS_TYPE_CONTINUOUS, 2:FOCUS_TYPE_RANGE, 3:FOCUS_TYPE_METERS, 4:FOCUS_TYPE_AUTO, 5:FOCUS_TYPE_AUTO_SINGLE, 5:FOCUS_TYPE_AUTO_CONTINUOUS
-    pkt.param2 = 0;                 // Focus Value
+    pkt.param2 = focus_value;
 
     _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt);
 

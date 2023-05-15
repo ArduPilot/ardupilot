@@ -28,6 +28,7 @@
 #include "RCOutputRGBLed.h"
 #include "ToneAlarm.h"
 #include "ToshibaLED_I2C.h"
+#include "LP5562.h"
 #include "VRBoard_LED.h"
 #include "DiscreteRGBLed.h"
 #include "DiscoLED.h"
@@ -60,25 +61,31 @@ AP_Notify *AP_Notify::_singleton;
 #define ALL_NCP5623_I2C 0
 #endif
 
+#if AP_NOTIFY_LP5562_ENABLED
+#define ALL_LP5562_I2C (Notify_LED_LP5562_I2C_Internal | Notify_LED_LP5562_I2C_External)
+#else
+#define ALL_LP5562_I2C 0
+#endif
+
 // all I2C_LEDS
-#define I2C_LEDS (ALL_TOSHIBALED_I2C | ALL_NCP5623_I2C)
+#define I2C_LEDS (ALL_TOSHIBALED_I2C | ALL_NCP5623_I2C | ALL_LP5562_I2C)
 
 
-#ifndef BUILD_DEFAULT_LED_TYPE
+#ifndef DEFAULT_NTF_LED_TYPES
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-  #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
+  #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS)
 
 // Linux boards
 #elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
   #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS |\
+    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS |\
                                     Notify_LED_PCA9685LED_I2C_External)
 
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
+    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS)
 
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS |\
+    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS |\
                                     Notify_LED_DroneCAN)
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE || \
@@ -88,22 +95,22 @@ AP_Notify *AP_Notify::_singleton;
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO || \
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board)
+    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board)
 
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_ToshibaLED_I2C_External)
+    #define DEFAULT_NTF_LED_TYPES (Notify_LED_ToshibaLED_I2C_External)
 
   #else // other linux
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
+    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS)
   #endif
 
 // All other builds
 #else
-    #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS)
+    #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS)
 
 #endif // board selection
 
-#endif // BUILD_DEFAULT_LED_TYPE
+#endif // DEFAULT_NTF_LED_TYPES
 
 #ifndef BUZZER_ENABLE_DEFAULT
 #if HAL_CANMANAGER_ENABLED
@@ -194,9 +201,9 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Param: LED_TYPES
     // @DisplayName: LED Driver Types
     // @Description: Controls what types of LEDs will be enabled
-    // @Bitmask: 0:Built-in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:DroneCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel, 9:ProfiLED, 10:Scripting, 11:DShot, 12:ProfiLED_SPI
+    // @Bitmask: 0:Built-in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:DroneCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel, 9:ProfiLED, 10:Scripting, 11:DShot, 12:ProfiLED_SPI, 13:LP5562 External, 14: LP5562 Internal
     // @User: Advanced
-    AP_GROUPINFO("LED_TYPES", 6, AP_Notify, _led_type, BUILD_DEFAULT_LED_TYPE),
+    AP_GROUPINFO("LED_TYPES", 6, AP_Notify, _led_type, DEFAULT_NTF_LED_TYPES),
 
     // @Param: BUZZ_ON_LVL
     // @DisplayName: Buzzer-on pin logic level
@@ -363,6 +370,18 @@ void AP_Notify::add_backends(void)
                 ADD_BACKEND(new DShotLED());
 #endif
                 break;
+#if AP_NOTIFY_LP5562_ENABLED
+            case Notify_LED_LP5562_I2C_External:
+                FOREACH_I2C_EXTERNAL(b) {
+                    ADD_BACKEND(new LP5562(b, 0x30));
+                }
+                break;
+            case Notify_LED_LP5562_I2C_Internal:
+                FOREACH_I2C_INTERNAL(b) {
+                    ADD_BACKEND(new LP5562(b, 0x30));
+                }
+                break;
+#endif
         }
     }
 

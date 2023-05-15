@@ -65,7 +65,7 @@ public:
     void exit();
 
     // run controllers specific to this mode
-    virtual void run() {};
+    virtual void run();
 
     // returns a unique number specific to this mode
     virtual Number mode_number() const = 0;
@@ -398,6 +398,12 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+
+    void run() override;
+
+private:
+    void stabilize_stick_mixing_direct();
+
 };
 
 class ModeTraining : public Mode

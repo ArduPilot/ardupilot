@@ -25,6 +25,8 @@ jobs:
             name: focal
           - os: ubuntu
             name: jammy
+          - os: ubuntu
+            name: lunar
           - os: archlinux
             name: latest
           - os: debian

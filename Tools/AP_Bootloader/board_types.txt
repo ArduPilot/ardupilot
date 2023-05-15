@@ -177,8 +177,8 @@ AP_HW_QioTekAdeptF407                1065
 AP_HW_QioTekAdeptF427                1066
 AP_HW_FlyingMoonF407                 1067
 AP_HW_FlyingMoonF427                 1068
-AP_HW_CUBERED                        1069
-AP_HW_CUBERED_IO                     1070
+AP_HW_CUBERED_PRIMARY                1069
+AP_HW_CUBERED_SECONDARY              1070
 AP_HW_GreenSight_UltraBlue           1071
 AP_HW_GreenSight_microBlue           1072
 AP_HW_MAMBAH743_V4                   1073
@@ -217,9 +217,8 @@ AP_HW_rGNSS                          1103
 AP_HW_AEROFOX_AIRSPEED_DLVR          1104
 AP_HW_KakuteH7-Wing                  1105
 AP_HW_SpeedyBeeF405WING              1106
-
-
 AP_HW_PixSurveyA-IND                 1107
+AP_HW_SPRACINGH7RF                   1108
 
 AP_HW_JFB110                         1110
 

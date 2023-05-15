@@ -37,7 +37,9 @@ void AP_RCProtocol::init()
 {
     backend[AP_RCProtocol::PPM] = new AP_RCProtocol_PPMSum(*this);
     backend[AP_RCProtocol::IBUS] = new AP_RCProtocol_IBUS(*this);
+#if AP_RCPROTOCOL_SBUS_ENABLED
     backend[AP_RCProtocol::SBUS] = new AP_RCProtocol_SBUS(*this, true, 100000);
+#endif
 #if AP_RCPROTOCOL_FASTSBUS_ENABLED
     backend[AP_RCProtocol::FASTSBUS] = new AP_RCProtocol_SBUS(*this, true, 200000);
 #endif
@@ -46,13 +48,17 @@ void AP_RCProtocol::init()
 #if AP_RCPROTOCOL_SRXL_ENABLED
     backend[AP_RCProtocol::SRXL] = new AP_RCProtocol_SRXL(*this);
 #endif
-#ifndef IOMCU_FW
+#if AP_RCPROTOCOL_SBUS_NI_ENABLED
     backend[AP_RCProtocol::SBUS_NI] = new AP_RCProtocol_SBUS(*this, false, 100000);
+#endif
+#if AP_RCPROTOCOL_SRXL2_ENABLED
     backend[AP_RCProtocol::SRXL2] = new AP_RCProtocol_SRXL2(*this);
+#endif
+#if AP_RCPROTOCOL_CRSF_ENABLED
     backend[AP_RCProtocol::CRSF] = new AP_RCProtocol_CRSF(*this);
+#endif
 #if AP_RCPROTOCOL_FPORT2_ENABLED
     backend[AP_RCProtocol::FPORT2] = new AP_RCProtocol_FPort2(*this, true);
-#endif
 #endif
     backend[AP_RCProtocol::ST24] = new AP_RCProtocol_ST24(*this);
 #if AP_RCPROTOCOL_FPORT_ENABLED
@@ -409,9 +415,14 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
         return "PPM";
     case IBUS:
         return "IBUS";
+#if AP_RCPROTOCOL_SBUS_ENABLED
     case SBUS:
+        return "SBUS";
+#endif
+#if AP_RCPROTOCOL_SBUS_NI_ENABLED
     case SBUS_NI:
         return "SBUS";
+#endif
 #if AP_RCPROTOCOL_FASTSBUS_ENABLED
     case FASTSBUS:
         return "FastSBUS";
@@ -424,10 +435,14 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
     case SRXL:
         return "SRXL";
 #endif
+#if AP_RCPROTOCOL_SRXL2_ENABLED
     case SRXL2:
         return "SRXL2";
+#endif
+#if AP_RCPROTOCOL_CRSF_ENABLED
     case CRSF:
         return "CRSF";
+#endif
     case ST24:
         return "ST24";
 #if AP_RCPROTOCOL_FPORT_ENABLED

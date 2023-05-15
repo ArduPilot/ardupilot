@@ -33,6 +33,7 @@ Interface(iface_index) {
     if (iface_index == 0) {
         test_iface.init(test_node_mem_area, sizeof(test_node_mem_area), 125);
     }
+    canardInitTxTransfer(&tx_transfer);
 #endif
 }
 
@@ -53,22 +54,24 @@ bool CanardInterface::broadcast(const Canard::Transfer &bcast_transfer) {
     }
 #endif
 
-    // do canard broadcast
-    bool success = canardBroadcast(&canard,
-                            bcast_transfer.data_type_signature,
-                            bcast_transfer.data_type_id,
-                            bcast_transfer.inout_transfer_id,
-                            bcast_transfer.priority,
-                            bcast_transfer.payload,
-                            bcast_transfer.payload_len,
-                            AP_HAL::native_micros64() + (bcast_transfer.timeout_ms * 1000)
+    tx_transfer = {
+        .transfer_type = bcast_transfer.transfer_type,
+        .data_type_signature = bcast_transfer.data_type_signature,
+        .data_type_id = bcast_transfer.data_type_id,
+        .inout_transfer_id = bcast_transfer.inout_transfer_id,
+        .priority = bcast_transfer.priority,
+        .payload = (const uint8_t*)bcast_transfer.payload,
+        .payload_len = bcast_transfer.payload_len,
+#if CANARD_ENABLE_CANFD
+        .canfd = bcast_transfer.canfd,
+#endif
+        .deadline_usec = AP_HAL::native_micros64() + (bcast_transfer.timeout_ms * 1000),
 #if CANARD_MULTI_IFACE
-                            , ((1<<num_ifaces) - 1) // send over all ifaces
+        .iface_mask = uint8_t((1<<num_ifaces) - 1),
 #endif
-#if HAL_CANFD_SUPPORTED
-                            , bcast_transfer.canfd
-#endif
-            ) > 0;
+    };
+    // do canard broadcast
+    bool success = canardBroadcastObj(&canard, &tx_transfer) > 0;
 #if AP_TEST_DRONECAN_DRIVERS
     if (this == &test_iface) {
         test_iface_sem.give();
@@ -82,24 +85,25 @@ bool CanardInterface::request(uint8_t destination_node_id, const Canard::Transfe
         return false;
     }
     WITH_SEMAPHORE(_sem);
-    // do canard request
-    return canardRequestOrRespond(&canard,
-                                    destination_node_id,
-                                    req_transfer.data_type_signature,
-                                    req_transfer.data_type_id,
-                                    req_transfer.inout_transfer_id,
-                                    req_transfer.priority,
-                                    CanardRequest,
-                                    req_transfer.payload,
-                                    req_transfer.payload_len,
-                                    AP_HAL::native_micros64() + (req_transfer.timeout_ms * 1000)
+
+    tx_transfer = {
+        .transfer_type = req_transfer.transfer_type,
+        .data_type_signature = req_transfer.data_type_signature,
+        .data_type_id = req_transfer.data_type_id,
+        .inout_transfer_id = req_transfer.inout_transfer_id,
+        .priority = req_transfer.priority,
+        .payload = (const uint8_t*)req_transfer.payload,
+        .payload_len = req_transfer.payload_len,
+#if CANARD_ENABLE_CANFD
+        .canfd = req_transfer.canfd,
+#endif
+        .deadline_usec = AP_HAL::native_micros64() + (req_transfer.timeout_ms * 1000),
 #if CANARD_MULTI_IFACE
-                    , ((1<<num_ifaces) - 1) // send over all ifaces
+        .iface_mask = uint8_t((1<<num_ifaces) - 1),
 #endif
-#if HAL_CANFD_SUPPORTED
-                    , false
-#endif
-            ) > 0;
+    };
+    // do canard request
+    return canardRequestOrRespondObj(&canard, destination_node_id, &tx_transfer) > 0;
 }
 
 bool CanardInterface::respond(uint8_t destination_node_id, const Canard::Transfer &res_transfer) {
@@ -107,24 +111,25 @@ bool CanardInterface::respond(uint8_t destination_node_id, const Canard::Transfe
         return false;
     }
     WITH_SEMAPHORE(_sem);
-    // do canard respond
-    return canardRequestOrRespond(&canard,
-                                    destination_node_id,
-                                    res_transfer.data_type_signature,
-                                    res_transfer.data_type_id,
-                                    res_transfer.inout_transfer_id,
-                                    res_transfer.priority,
-                                    CanardResponse,
-                                    res_transfer.payload,
-                                    res_transfer.payload_len,
-                                    AP_HAL::native_micros64() + (res_transfer.timeout_ms * 1000)
+
+    tx_transfer = {
+        .transfer_type = res_transfer.transfer_type,
+        .data_type_signature = res_transfer.data_type_signature,
+        .data_type_id = res_transfer.data_type_id,
+        .inout_transfer_id = res_transfer.inout_transfer_id,
+        .priority = res_transfer.priority,
+        .payload = (const uint8_t*)res_transfer.payload,
+        .payload_len = res_transfer.payload_len,
+#if CANARD_ENABLE_CANFD
+        .canfd = res_transfer.canfd,
+#endif
+        .deadline_usec = AP_HAL::native_micros64() + (res_transfer.timeout_ms * 1000),
 #if CANARD_MULTI_IFACE
-                    , ((1<<num_ifaces) - 1) // send over all ifaces
+        .iface_mask = uint8_t((1<<num_ifaces) - 1),
 #endif
-#if HAL_CANFD_SUPPORTED
-                    , false
-#endif
-            ) > 0;
+    };
+    // do canard respond
+    return canardRequestOrRespondObj(&canard, destination_node_id, &tx_transfer) > 0;
 }
 
 void CanardInterface::onTransferReception(CanardInstance* ins, CanardRxTransfer* transfer) {

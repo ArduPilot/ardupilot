@@ -23,10 +23,10 @@ namespace ChibiOS {
     class SPIDevice;
     class SPIDeviceDriver;
     class SPIDeviceManager;
-    class QSPIBus;
-    class QSPIDesc;
-    class QSPIDevice;
-    class QSPIDeviceManager;
+    class WSPIBus;
+    class WSPIDesc;
+    class WSPIDevice;
+    class WSPIDeviceManager;
     class Storage;
     class UARTDriver;
     class Util;
