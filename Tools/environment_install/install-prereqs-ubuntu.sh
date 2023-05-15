@@ -151,7 +151,7 @@ if [ ${RELEASE_CODENAME} == 'bionic' ]; then
     # use fixed version for package that drop python2 support
     PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8==3.7.9 requests==2.27.1 monotonic==1.6 geocoder empy configparser==4.0.2 click==7.1.2 decorator==4.4.2 dronecan"
 else
-    PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8 geocoder empy dronecan"
+    PYTHON_PKGS="wheel future lxml pymavlink MAVProxy pexpect flake8 geocoder empy dronecan"
 fi
 
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
