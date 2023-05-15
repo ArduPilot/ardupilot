@@ -31,8 +31,8 @@ private:
     bool read_specification_info();
 
     bool _specification_info_confirmed = false; // specification info successfully read
-    uint16_t _v_multiplier;    // voltage multiplier = 10^VScale
-    uint16_t _i_multiplier;   // current multiplier = 10^IPScale
+    uint16_t _v_multiplier = 1;    // voltage multiplier = 10^VScale
+    uint16_t _i_multiplier = 1;   // current multiplier = 10^IPScale
     uint32_t _last_cell_update_us[BATTMONITOR_SMBUS_NUM_CELLS_MAX]; // system time of last successful read of cell voltage
     uint32_t _cell_count_check_start_us;  // system time we started attempting to count the number of cells
     uint8_t _cell_count;    // number of cells returning voltages
