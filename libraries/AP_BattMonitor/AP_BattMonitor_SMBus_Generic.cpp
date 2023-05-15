@@ -163,16 +163,10 @@ bool AP_BattMonitor_SMBus_Generic::read_specification_info()
     uint8_t version = (data & 0xF0) >> 4;
 
     // version less than 0011b (i.e. 3) do not support PEC
-    if (version < 3) {
-        _pec_supported = false;
-    }
-    else {
-         _pec_supported = true;
-    }
-    
+    _pec_supported = version >= 3;
+
     // extract and update voltage multiplier
-    switch ((data & 0xF00) >> 8)
-    {
+    switch ((data & 0xF00) >> 8) {
     case 1:
         _v_multiplier = 10;
         break;
@@ -188,8 +182,7 @@ bool AP_BattMonitor_SMBus_Generic::read_specification_info()
     }
 
     // extract and update current multiplier
-    switch ((data & 0xF000) >> 12)
-    {
+    switch ((data & 0xF000) >> 12) {
     case 1:
         _i_multiplier = 10;
         break;
@@ -207,6 +200,5 @@ bool AP_BattMonitor_SMBus_Generic::read_specification_info()
 	_specification_info_confirmed = true;
 	return true;
 }
-
 
 #endif  // AP_BATTERY_SMBUS_GENERIC_ENABLED
