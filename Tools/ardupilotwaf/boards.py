@@ -551,7 +551,11 @@ def add_dynamic_boards_esp32():
             continue
         hwdef = os.path.join(dirname, d, 'hwdef.dat')
         if os.path.exists(hwdef):
-            newclass = type(d, (esp32,), {'name': d})
+            mcu_esp32s3 = True if (d[0:7] == "esp32s3") else False
+            if mcu_esp32s3:
+                newclass = type(d, (esp32s3,), {'name': d})
+            else:
+                newclass = type(d, (esp32,), {'name': d})
 
 def get_boards_names():
     add_dynamic_boards_chibios()
@@ -894,6 +898,9 @@ class esp32(Board):
     def get_name(self):
         return self.__class__.__name__
 
+class esp32s3(esp32):
+    abstract = True
+    toolchain = 'xtensa-esp32s3-elf'
 
 class chibios(Board):
     abstract = True
