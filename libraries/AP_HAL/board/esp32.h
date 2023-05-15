@@ -13,6 +13,8 @@
 #include "esp32tomte76.h" //tomte76 on discord
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_NICK
 #include "esp32nick.h" //Nick K. on discord
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3DEVKIT
+#include "esp32s3devkit.h" //Nick K. on discord
 #endif
 
 #define HAL_BOARD_NAME "ESP32"
