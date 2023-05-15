@@ -3251,6 +3251,10 @@ INCLUDE common.ld
 #define HAL_SPEKTRUM_TELEM_ENABLED 0
 #endif
 
+#ifndef AP_FILESYSTEM_ROMFS_ENABLED
+#define AP_FILESYSTEM_ROMFS_ENABLED 0
+#endif
+
 // end AP_Periph defaults
 ''')
 
