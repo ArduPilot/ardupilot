@@ -43,9 +43,9 @@ int lua_mavlink_init(lua_State *L) {
     binding_argcheck(L, 2);
     WITH_SEMAPHORE(AP::scripting()->mavlink_data.sem);
     // get the depth of receive queue
-    const int queue_size = luaL_checkinteger(L, -1);
+    const uint32_t queue_size = get_uint32(L, -1, 0, 25);
     // get number of msgs to accept
-    const int num_msgs = luaL_checkinteger(L, -2);
+    const uint32_t num_msgs = get_uint32(L, -2, 0, 25);
 
     struct AP_Scripting::mavlink &data = AP::scripting()->mavlink_data;
     if (data.rx_buffer == nullptr) {
@@ -55,12 +55,12 @@ int lua_mavlink_init(lua_State *L) {
         }
     }
     if (data.accept_msg_ids == nullptr) {
-        data.accept_msg_ids = new int[num_msgs];
+        data.accept_msg_ids = new uint32_t[num_msgs];
         if (data.accept_msg_ids == nullptr) {
             return luaL_error(L, "Failed to allocate mavlink rx registry");
         }
         data.accept_msg_ids_size = num_msgs;
-        memset(data.accept_msg_ids, -1, sizeof(int) * num_msgs);
+        memset(data.accept_msg_ids, UINT32_MAX, sizeof(int) * num_msgs);
     }
     return 0;
 }
@@ -92,8 +92,7 @@ int lua_mavlink_receive_chan(lua_State *L) {
 int lua_mavlink_register_rx_msgid(lua_State *L) {
     binding_argcheck(L, 1);
     
-    const int msgid = luaL_checkinteger(L, -1);
-    luaL_argcheck(L, ((msgid >= 0) && (msgid < (1 << 24))), 1, "msgid out of range");
+    const uint32_t msgid = get_uint32(L, -1, 0, (1 << 24) - 1);
 
     struct AP_Scripting::mavlink &data = AP::scripting()->mavlink_data;
 
@@ -107,7 +106,7 @@ int lua_mavlink_register_rx_msgid(lua_State *L) {
 
     int i = 0;
     for (i = 0; i < data.accept_msg_ids_size; i++) {
-        if (data.accept_msg_ids[i] == -1) {
+        if (data.accept_msg_ids[i] == UINT32_MAX) {
             break;
         }
     }
@@ -128,11 +127,9 @@ int lua_mavlink_register_rx_msgid(lua_State *L) {
 int lua_mavlink_send_chan(lua_State *L) {
     binding_argcheck(L, 3);
     
-    const mavlink_channel_t chan = (mavlink_channel_t)luaL_checkinteger(L, 1);
-    luaL_argcheck(L, (chan < MAVLINK_COMM_NUM_BUFFERS), 1, "channel out of range");
+    const mavlink_channel_t chan = (mavlink_channel_t)get_uint32(L, 1, 0, MAVLINK_COMM_NUM_BUFFERS - 1);
 
-    const int msgid = luaL_checkinteger(L, 2);
-    luaL_argcheck(L, ((msgid >= 0) && (msgid < (1 << 24))), 2, "msgid out of range");
+    const uint32_t msgid = get_uint32(L, 2, 0, (1 << 24) - 1);
 
     const char *packet = luaL_checkstring(L, 3);
 
