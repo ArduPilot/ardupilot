@@ -51,6 +51,10 @@
 
 #define AP_DRONECAN_MAX_LED_DEVICES 4
 
+#ifndef AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+#define AP_DRONECAN_HOBBYWING_ESC_SUPPORT (BOARD_FLASH_SIZE>1024)
+#endif
+
 // fwd-declare callback classes
 class AP_DroneCAN_DNA_Server;
 
@@ -113,6 +117,7 @@ public:
         USE_ACTUATOR_PWM          = (1U<<4),
         SEND_GNSS                 = (1U<<5),
         USE_HIMARK_SERVO          = (1U<<6),
+        USE_HOBBYWING_ESC         = (1U<<7),
     };
 
     // check if a option is set
@@ -251,8 +256,6 @@ private:
         ByteBuffer *buf;
     } _rtcm_stream;
     
-     // ESC
-
     static HAL_Semaphore _telem_sem;
 
     // node status send
@@ -319,6 +322,34 @@ private:
     Canard::Server<uavcan_protocol_GetNodeInfoRequest> node_info_server{canard_iface, node_info_req_cb};
     uavcan_protocol_GetNodeInfoResponse node_info_rsp;
 
+#if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+    /*
+      Hobbywing ESC support. Note that we need additional meta-data as
+      the status messages do not have an ESC ID in them, so we need a
+      mapping from node ID
+    */
+    #define HOBBYWING_MAX_ESC 8
+    struct {
+        uint32_t last_GetId_send_ms;
+        uint8_t thr_chan[HOBBYWING_MAX_ESC];
+    } hobbywing;
+    void hobbywing_ESC_update();
+
+    void SRV_send_esc_hobbywing();
+    Canard::Publisher<com_hobbywing_esc_RawCommand> esc_hobbywing_raw{canard_iface};
+    Canard::Publisher<com_hobbywing_esc_GetEscID> esc_hobbywing_GetEscID{canard_iface};
+    Canard::ObjCallback<AP_DroneCAN, com_hobbywing_esc_GetEscID> esc_hobbywing_GetEscID_cb{this, &AP_DroneCAN::handle_hobbywing_GetEscID};
+    Canard::Subscriber<com_hobbywing_esc_GetEscID> esc_hobbywing_GetEscID_listener{esc_hobbywing_GetEscID_cb, _driver_index};
+    Canard::ObjCallback<AP_DroneCAN, com_hobbywing_esc_StatusMsg1> esc_hobbywing_StatusMSG1_cb{this, &AP_DroneCAN::handle_hobbywing_StatusMsg1};
+    Canard::Subscriber<com_hobbywing_esc_StatusMsg1> esc_hobbywing_StatusMSG1_listener{esc_hobbywing_StatusMSG1_cb, _driver_index};
+    Canard::ObjCallback<AP_DroneCAN, com_hobbywing_esc_StatusMsg2> esc_hobbywing_StatusMSG2_cb{this, &AP_DroneCAN::handle_hobbywing_StatusMsg2};
+    Canard::Subscriber<com_hobbywing_esc_StatusMsg2> esc_hobbywing_StatusMSG2_listener{esc_hobbywing_StatusMSG2_cb, _driver_index};
+    bool hobbywing_find_esc_index(uint8_t node_id, uint8_t &esc_index) const;
+    void handle_hobbywing_GetEscID(const CanardRxTransfer& transfer, const com_hobbywing_esc_GetEscID& msg);
+    void handle_hobbywing_StatusMsg1(const CanardRxTransfer& transfer, const com_hobbywing_esc_StatusMsg1& msg);
+    void handle_hobbywing_StatusMsg2(const CanardRxTransfer& transfer, const com_hobbywing_esc_StatusMsg2& msg);
+#endif // AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+    
     // incoming button handling
     void handle_button(const CanardRxTransfer& transfer, const ardupilot_indication_Button& msg);
     void handle_traffic_report(const CanardRxTransfer& transfer, const ardupilot_equipment_trafficmonitor_TrafficReport& msg);
