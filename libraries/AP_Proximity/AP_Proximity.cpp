@@ -28,6 +28,7 @@
 #include "AP_Proximity_AirSimSITL.h"
 #include "AP_Proximity_Cygbot_D1.h"
 #include "AP_Proximity_DroneCAN.h"
+#include "AP_Proximity_Dynamical_SITL.h"
 
 #include <AP_Logger/AP_Logger.h>
 
@@ -208,6 +209,12 @@ void AP_Proximity::init()
         case Type::AirSimSITL:
             state[instance].instance = instance;
             drivers[instance] = new AP_Proximity_AirSimSITL(*this, state[instance], params[instance]);
+            break;
+#endif
+#if AP_PROXIMITY_DYNSIMSITL_ENABLED
+        case Type::DynSimSITL:
+            state[instance].instance = instance;
+            drivers[instance] = new AP_Proximity_Dynamical_SITL(*this, state[instance], params[instance]);
             break;
 #endif
         }
