@@ -4,7 +4,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_OS_POSIX_IO
+#if AP_FILESYSTEM_POSIX_ENABLED
 #include <stdio.h>
 #endif
 
@@ -61,7 +61,7 @@ void loop(void)
 
     // also do a raw printf() on some platforms, which prints to the
     // debug console
-#if HAL_OS_POSIX_IO
+#if AP_FILESYSTEM_POSIX_ENABLED
     ::printf("Hello on debug console at %.3f seconds\n", (double)(AP_HAL::millis() * 0.001f));
 #endif
 
