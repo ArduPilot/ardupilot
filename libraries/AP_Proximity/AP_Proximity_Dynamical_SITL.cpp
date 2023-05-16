@@ -27,7 +27,6 @@
 extern const AP_HAL::HAL& hal;
 
 static constexpr float PROXIMITY_MAX_RANGE = 200.0f;
-static constexpr float PROXIMITY_ACCURACY = 0.1f;
 static constexpr float PROXIMITY_OBJECT_MAX_RANGE = 35.0f;
 static constexpr float PROXIMITY_OBJECT_MAX_VEL = 2.0f;
 static constexpr float PROXIMITY_OBJECT_RADIUS  = 3.0f;
@@ -138,13 +137,6 @@ void AP_Proximity_Dynamical_SITL::update(void)
         frontend.boundary.reset();
         set_status(AP_Proximity::Status::Good);
         for (size_t i = 0; i< PROXIMITY_OBJECT_NUM; i++) {
-
-            // get absolute postion,velocity and heading
-            // const float angle_deg   = wrap_360(degrees(_objects_loc[i].angle()));
-            // const float distance_m  = _objects_loc[i].length();
-            // const float vel_mag     = _objects_vel[i].length();
-            // const float vel_ang     =  wrap_360(degrees(_objects_vel[i].angle()));
-
             // get relative distance and heading
             const float distance_to_vehicle = (_objects_loc[i] - current_loc).length();
             const float direction_to_obstacle = degrees((_objects_loc[i] - current_loc).angle());
