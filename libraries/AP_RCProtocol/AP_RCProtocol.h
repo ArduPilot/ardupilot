@@ -33,7 +33,9 @@ public:
 #if AP_RCPROTOCOL_PPMSUM_ENABLED
         PPMSUM     =  0,
 #endif
+#if AP_RCPROTOCOL_IBUS_ENABLED
         IBUS       =  1,
+#endif
 #if AP_RCPROTOCOL_SBUS_ENABLED
         SBUS       =  2,
 #endif
@@ -124,7 +126,9 @@ public:
         case CRSF:
 #endif
             return true;
+#if AP_RCPROTOCOL_IBUS_ENABLED
         case IBUS:
+#endif
         case SUMD:
 #if AP_RCPROTOCOL_SRXL_ENABLED
         case SRXL:
