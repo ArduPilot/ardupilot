@@ -689,6 +689,9 @@ private:
 
         // The amount of time we should stay in a loiter for the Loiter Time command.  Milliseconds.
         uint32_t time_max_ms;
+
+        // current value of loiter radius in metres used by the controller
+        float radius;
     } loiter;
 
     // Conditional command
