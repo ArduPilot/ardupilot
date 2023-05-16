@@ -288,7 +288,7 @@ void RCOutput::dshot_collect_dma_locks(uint64_t time_out_us, bool led_thread)
     for (int8_t i = NUM_GROUPS - 1; i >= 0; i--) {
         pwm_group &group = pwm_group_list[i];
 
-        if ((led_thread && !is_led_protocol(group.current_mode)) || is_led_protocol(group.current_mode)) {
+        if (led_thread != is_led_protocol(group.current_mode)) {
             continue;
         }
 
@@ -1313,7 +1313,7 @@ void RCOutput::led_timer_tick(uint64_t time_out_us)
     }
 
     // if we have enough time left send out LED data
-    if (serial_led_pending && (time_out_us > (AP_HAL::micros64() + (LED_OUTPUT_PERIOD_US >> 1)))) {
+    if (serial_led_pending) {
         serial_led_pending = false;
         for (auto &group : pwm_group_list) {
             serial_led_pending |= !serial_led_send(group);
@@ -1608,10 +1608,13 @@ bool RCOutput::serial_led_send(pwm_group &group)
     }
 
 #ifndef DISABLE_DSHOT
-    if (irq.waiter || !group.dma_handle->lock_nonblock()) {
-        // doing serial output, don't send Serial LED pulses
+    if (irq.waiter || (group.dshot_state != DshotState::IDLE && group.dshot_state != DshotState::RECV_COMPLETE)) {
+        // doing serial output or DMAR input, don't send DShot pulses
         return false;
     }
+
+    // first make sure we have the DMA channel before anything else
+    group.dma_handle->lock();
 
     {
         WITH_SEMAPHORE(group.serial_led_mutex);
