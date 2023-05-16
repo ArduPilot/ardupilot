@@ -30,7 +30,9 @@ class AP_RCProtocol {
 public:
 
     enum rcprotocol_t {
-        PPM        =  0,
+#if AP_RCPROTOCOL_PPMSUM_ENABLED
+        PPMSUM     =  0,
+#endif
         IBUS       =  1,
 #if AP_RCPROTOCOL_SBUS_ENABLED
         SBUS       =  2,
@@ -109,7 +111,9 @@ public:
 #if AP_RCPROTOCOL_SBUS_NI_ENABLED
         case SBUS_NI:
 #endif
-        case PPM:
+#if AP_RCPROTOCOL_PPMSUM_ENABLED
+        case PPMSUM:
+#endif
 #if AP_RCPROTOCOL_FPORT_ENABLED
         case FPORT:
 #endif
