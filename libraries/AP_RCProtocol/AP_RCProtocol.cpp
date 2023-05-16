@@ -41,7 +41,9 @@ extern const AP_HAL::HAL& hal;
 
 void AP_RCProtocol::init()
 {
-    backend[AP_RCProtocol::PPM] = new AP_RCProtocol_PPMSum(*this);
+#if AP_RCPROTOCOL_PPMSUM_ENABLED
+    backend[AP_RCProtocol::PPMSUM] = new AP_RCProtocol_PPMSum(*this);
+#endif
     backend[AP_RCProtocol::IBUS] = new AP_RCProtocol_IBUS(*this);
 #if AP_RCPROTOCOL_SBUS_ENABLED
     backend[AP_RCProtocol::SBUS] = new AP_RCProtocol_SBUS(*this, true, 100000);
@@ -421,8 +423,10 @@ void AP_RCProtocol::start_bind(void)
 const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
 {
     switch (protocol) {
-    case PPM:
+#if AP_RCPROTOCOL_PPMSUM_ENABLED
+    case PPMSUM:
         return "PPM";
+#endif
     case IBUS:
         return "IBUS";
 #if AP_RCPROTOCOL_SBUS_ENABLED
