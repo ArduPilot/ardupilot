@@ -43,7 +43,9 @@ public:
         SBUS_NI    =  3,
 #endif
         DSM        =  4,
+#if AP_RCPROTOCOL_SUMD_ENABLED
         SUMD       =  5,
+#endif
 #if AP_RCPROTOCOL_SRXL_ENABLED
         SRXL       =  6,
 #endif
@@ -129,7 +131,9 @@ public:
 #if AP_RCPROTOCOL_IBUS_ENABLED
         case IBUS:
 #endif
+#if AP_RCPROTOCOL_SUMD_ENABLED
         case SUMD:
+#endif
 #if AP_RCPROTOCOL_SRXL_ENABLED
         case SRXL:
 #endif

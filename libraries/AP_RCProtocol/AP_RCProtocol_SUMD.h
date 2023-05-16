@@ -19,7 +19,7 @@
 
 #include "AP_RCProtocol_config.h"
 
-#if AP_RCPROTOCOL_ENABLED
+#if AP_RCPROTOCOL_SUMD_ENABLED
 
 #include "AP_RCProtocol_Backend.h"
 #include "SoftSerial.h"
@@ -73,4 +73,4 @@ private:
     SoftSerial ss{115200, SoftSerial::SERIAL_CONFIG_8N1};
 };
 
-#endif  // AP_RCPROTOCOL_ENABLED
+#endif  // AP_RCPROTOCOL_SUMD_ENABLED
