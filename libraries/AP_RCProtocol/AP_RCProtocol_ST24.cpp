@@ -44,7 +44,7 @@
  */
 #include "AP_RCProtocol_config.h"
 
-#if AP_RCPROTOCOL_ENABLED
+#if AP_RCPROTOCOL_ST24_ENABLED
 
 #include "AP_RCProtocol_ST24.h"
 
@@ -238,4 +238,4 @@ void AP_RCProtocol_ST24::process_byte(uint8_t byte, uint32_t baudrate)
     _process_byte(byte);
 }
 
-#endif  // AP_RCPROTOCOL_ENABLED
+#endif  // AP_RCPROTOCOL_ST24_ENABLED

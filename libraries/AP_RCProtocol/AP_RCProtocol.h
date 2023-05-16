@@ -49,7 +49,9 @@ public:
 #if AP_RCPROTOCOL_CRSF_ENABLED
         CRSF       =  8,
 #endif
+#if AP_RCPROTOCOL_ST24_ENABLED
         ST24       =  9,
+#endif
 #if AP_RCPROTOCOL_FPORT_ENABLED
         FPORT      = 10,
 #endif
@@ -126,7 +128,9 @@ public:
 #if AP_RCPROTOCOL_SRXL2_ENABLED
         case SRXL2:
 #endif
+#if AP_RCPROTOCOL_ST24_ENABLED
         case ST24:
+#endif
         case NONE:
             return false;
         }
