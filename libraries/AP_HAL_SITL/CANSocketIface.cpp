@@ -259,7 +259,7 @@ void CANIface::_poll(bool read, bool write)
 }
 
 bool CANIface::configureFilters(const CanFilterConfig* const filter_configs,
-                              const std::uint16_t num_configs)
+                              const uint16_t num_configs)
 {
 #if 0
     if (filter_configs == nullptr || mode_ != FilteredMode) {
