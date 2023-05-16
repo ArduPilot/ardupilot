@@ -55,7 +55,9 @@ void AP_RCProtocol::init()
 #if AP_RCPROTOCOL_FASTSBUS_ENABLED
     backend[AP_RCProtocol::FASTSBUS] = new AP_RCProtocol_SBUS(*this, true, 200000);
 #endif
+#if AP_RCPROTOCOL_DSM_ENABLED
     backend[AP_RCProtocol::DSM] = new AP_RCProtocol_DSM(*this);
+#endif
 #if AP_RCPROTOCOL_SUMD_ENABLED
     backend[AP_RCProtocol::SUMD] = new AP_RCProtocol_SUMD(*this);
 #endif
@@ -475,8 +477,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
     case FASTSBUS:
         return "FastSBUS";
 #endif
+#if AP_RCPROTOCOL_DSM_ENABLED
     case DSM:
         return "DSM";
+#endif
 #if AP_RCPROTOCOL_SUMD_ENABLED
     case SUMD:
         return "SUMD";
