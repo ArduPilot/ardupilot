@@ -42,8 +42,7 @@ bool ModeLoiter::isHeadingLinedUp(const Location loiterCenterLoc, const Location
     // Return true if current heading is aligned to vector to targetLoc.
     // Tolerance is initially 10 degrees and grows at 10 degrees for each loiter circle completed.
 
-    const uint16_t loiterRadius = abs(plane.aparm.loiter_radius);
-    if (loiterCenterLoc.get_distance(targetLoc) < loiterRadius + loiterRadius*0.05) {
+    if (loiterCenterLoc.get_distance(targetLoc) < 1.05f * fabsf(plane.loiter.radius)) {
         /* Whenever next waypoint is within the loiter radius plus 5%,
            maintaining loiter would prevent us from ever pointing toward the next waypoint.
            Hence break out of loiter immediately
