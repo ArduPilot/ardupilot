@@ -80,3 +80,31 @@ void AP_RangeFinder_Backend::set_status(RangeFinder::Status _status)
     }
 }
 
+void AP_RangeFinder_Backend::update_filter()
+{
+    const uint32_t now = AP_HAL::millis();
+    float h0 = 0.001f * (now - _filter_state.last_filter_ms);
+    float v0 = state.distance_m;
+
+    // Do not enable filted!
+    if(is_zero(params.filt_r0.get())){
+        _filter_state.vp = v0;
+        return;
+    }
+
+    // reset h0 for timeout 1000ms
+    if(_filter_state.last_filter_ms == 0 || (now - _filter_state.last_filter_ms) >= 1000){
+        memset(&_filter_state,0,sizeof(_filter_state));
+        _filter_state.v1 = v0;
+        h0 = 0.02f;
+    }
+    _filter_state.last_filter_ms = now;
+
+    float h1 = params.filt_n1 * h0;
+    float h2 = params.filt_n2 * h0;
+
+    float fh = fhan(_filter_state.v1 - v0,_filter_state.v2,params.filt_r0,h1);
+    _filter_state.v1 += h0 * _filter_state.v2;
+    _filter_state.v2 += h0 * fh;
+    _filter_state.vp = _filter_state.v1 + h2 * _filter_state.v2;
+}

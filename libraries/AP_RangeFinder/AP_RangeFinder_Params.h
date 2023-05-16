@@ -26,4 +26,7 @@ public:
     AP_Int8  ground_clearance_cm;
     AP_Int8  address;
     AP_Int8  orientation;
+    AP_Float filt_r0;
+    AP_Float filt_n1;
+    AP_Float filt_n2;
 };
