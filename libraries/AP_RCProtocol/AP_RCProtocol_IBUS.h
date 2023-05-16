@@ -18,7 +18,7 @@
 
 #include "AP_RCProtocol_config.h"
 
-#if AP_RCPROTOCOL_ENABLED
+#if AP_RCPROTOCOL_IBUS_ENABLED
 
 #define IBUS_FRAME_SIZE		32
 #define IBUS_INPUT_CHANNELS	14
@@ -46,4 +46,4 @@ private:
     } byte_input;
 };
 
-#endif  // AP_RCPROTOCOL_ENABLED
+#endif  // AP_RCPROTOCOL_IBUS_ENABLED

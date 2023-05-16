@@ -44,7 +44,9 @@ void AP_RCProtocol::init()
 #if AP_RCPROTOCOL_PPMSUM_ENABLED
     backend[AP_RCProtocol::PPMSUM] = new AP_RCProtocol_PPMSum(*this);
 #endif
+#if AP_RCPROTOCOL_IBUS_ENABLED
     backend[AP_RCProtocol::IBUS] = new AP_RCProtocol_IBUS(*this);
+#endif
 #if AP_RCPROTOCOL_SBUS_ENABLED
     backend[AP_RCProtocol::SBUS] = new AP_RCProtocol_SBUS(*this, true, 100000);
 #endif
@@ -427,8 +429,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
     case PPMSUM:
         return "PPM";
 #endif
+#if AP_RCPROTOCOL_IBUS_ENABLED
     case IBUS:
         return "IBUS";
+#endif
 #if AP_RCPROTOCOL_SBUS_ENABLED
     case SBUS:
         return "SBUS";
