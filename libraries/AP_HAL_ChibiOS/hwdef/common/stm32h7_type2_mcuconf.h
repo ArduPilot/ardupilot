@@ -328,6 +328,9 @@
 #ifndef STM32_ADC_SAMPLES_SIZE
 #define STM32_ADC_SAMPLES_SIZE              16
 #endif
+#ifndef STM32_ADC_USE_ADC3
+#define STM32_ADC_USE_ADC3                  TRUE
+#endif
 #define STM32_ADC_COMPACT_SAMPLES           FALSE
 #define STM32_ADC_USE_ADC12                 TRUE
 #define STM32_ADC_ADC12_DMA_PRIORITY        2

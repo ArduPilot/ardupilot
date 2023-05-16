@@ -77,9 +77,6 @@ mcu = {
     'DEFINES' : {
         'HAL_HAVE_HARDWARE_DOUBLE' : '1',
         'HAL_WITH_MCU_MONITORING' : '1',
-        'ADC3_VSENSE_CHAN' : 17,
-        'ADC3_VREFINT_CHAN' : 18,
-        'ADC3_VBAT4_CHAN' : 16,
         'STM32H7' : '1',
     },
 
