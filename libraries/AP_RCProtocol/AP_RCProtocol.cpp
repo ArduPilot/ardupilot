@@ -66,7 +66,9 @@ void AP_RCProtocol::init()
 #if AP_RCPROTOCOL_FPORT2_ENABLED
     backend[AP_RCProtocol::FPORT2] = new AP_RCProtocol_FPort2(*this, true);
 #endif
+#if AP_RCPROTOCOL_ST24_ENABLED
     backend[AP_RCProtocol::ST24] = new AP_RCProtocol_ST24(*this);
+#endif
 #if AP_RCPROTOCOL_FPORT_ENABLED
     backend[AP_RCProtocol::FPORT] = new AP_RCProtocol_FPort(*this, true);
 #endif
@@ -451,8 +453,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
     case CRSF:
         return "CRSF";
 #endif
+#if AP_RCPROTOCOL_ST24_ENABLED
     case ST24:
         return "ST24";
+#endif
 #if AP_RCPROTOCOL_FPORT_ENABLED
     case FPORT:
         return "FPORT";
