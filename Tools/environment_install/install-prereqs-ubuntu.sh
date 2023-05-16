@@ -149,9 +149,9 @@ fi
 BASE_PKGS="build-essential ccache g++ gawk git make wget"
 if [ ${RELEASE_CODENAME} == 'bionic' ]; then
     # use fixed version for package that drop python2 support
-    PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8==3.7.9 requests==2.27.1 monotonic==1.6 geocoder empy configparser==4.0.2 click==7.1.2 decorator==4.4.2 dronecan"
+    PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8==3.7.9 requests==2.27.1 monotonic==1.6 geocoder empy ptyprocess configparser==4.0.2 click==7.1.2 decorator==4.4.2 dronecan"
 else
-    PYTHON_PKGS="wheel future lxml pymavlink MAVProxy pexpect flake8 geocoder empy dronecan"
+    PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8 geocoder empy ptyprocess dronecan"
 fi
 
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
@@ -167,7 +167,7 @@ ARM_LINUX_PKGS="g++-arm-linux-gnueabihf $INSTALL_PKG_CONFIG"
 
 if [ ${RELEASE_CODENAME} == 'lunar' ]; then
     # on Lunar (and presumably later releases), we install in venv, below
-    PYTHON_PKGS+=" setuptools numpy pyparsing psutil"
+    PYTHON_PKGS+=" numpy pyparsing psutil"
     SITL_PKGS="python3-dev"
 else
 SITL_PKGS="libtool libxml2-dev libxslt1-dev ${PYTHON_V}-dev ${PYTHON_V}-pip ${PYTHON_V}-setuptools ${PYTHON_V}-numpy ${PYTHON_V}-pyparsing ${PYTHON_V}-psutil"
@@ -358,6 +358,9 @@ if [ ${RELEASE_CODENAME} == 'bionic' ]; then
     # use fixed version for package that drop python2 support
     $PIP install --user -U pip==20.3 setuptools==44.0.0
 fi
+
+# try update setuptools and wheel before installing pip package that may need compilation
+$PIP install $PIP_USER_ARGUMENT -U setuptools wheel
 
 if [ ${RELEASE_CODENAME} == 'lunar' ]; then
     # must do this ahead of wxPython pip3 run :-/
