@@ -526,3 +526,41 @@ int32_t double_to_int32(const double v)
 {
     return int32_t(constrain_double(v, INT32_MIN, UINT32_MAX));
 }
+
+float sign(float val)
+{
+    if(val > 0.0f) {
+	    return 1.0f;
+    } else if (val < 0.0f) {
+		return -1.0f;
+    } else {
+        return 0;
+    }
+}
+
+float fhan(float v1, float v2, float r0, float h0)
+{
+    double d = h0 * h0 * r0;
+    double a0 = h0 * v2;
+    double y = v1 + a0;
+    double a1 = safe_sqrt(d * (d + 8.0f * fabsf(y)));
+    double a2 = a0 + sign(y) * (a1-d) * 0.5f;
+    double sy = (sign(y + d) - sign(y - d)) * 0.5f;
+    double a = (a0 + y - a2) * sy + a2;
+    double sa = (sign(a + d) - sign(a - d)) * 0.5f;
+
+    return -r0 * (a/d - sign(a)) * sa - r0 * sign(a);
+}
+
+float fal(float e, float alpha, float delta)
+{
+    if(is_zero(delta)){
+        return e;
+    }
+
+    if(fabsf(e) < delta){
+        return e / (powf(delta, 1.0f-alpha));
+    } else {
+        return powf(fabsf(e), alpha) * sign(e);
+    }
+}
