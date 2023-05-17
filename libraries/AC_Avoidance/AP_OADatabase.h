@@ -25,6 +25,7 @@ public:
 
     struct OA_DbItem {
         Vector3f pos;           // position of the object as an offset in meters from the EKF origin
+        Vector3f vel;           // velocity of object in meters from from EKF origin
         uint32_t timestamp_ms;  // system time that object was last updated
         float radius;           // objects radius in meters
         uint8_t send_to_gcs;    // bitmask of mavlink comports to which details of this object should be sent
@@ -35,7 +36,8 @@ public:
     void update();
 
     // push an object into the database.  Pos is the offset in meters from the EKF origin, angle is in degrees, distance in meters
-    void queue_push(const Vector3f &pos, uint32_t timestamp_ms, float distance);
+    void queue_push(const Vector3f &pos, uint32_t timestamp_ms, float distance, float radius=0.0f);
+    void queue_push(const Vector3f &pos, const Vector3f &vel,uint32_t timestamp_ms, float distance, float radius=0.0f);
 
     // returns true if database is healthy
     bool healthy() const { return (_queue.items != nullptr) && (_database.items != nullptr); }
@@ -90,6 +92,7 @@ private:
     AP_Float        _radius_min;                            // objects minimum radius (in meters)
     AP_Float        _dist_max;                              // objects maximum distance (in meters)
     AP_Float        _min_alt;                               // OADatabase minimum vehicle height check (in meters)
+    AP_Float        _dynamical_object_life_time;            // dynamical object life time (in seconds)
 
     struct {
         ObjectBuffer<OA_DbItem> *items;                     // thread safe incoming queue of points from proximity sensor to be put into database
