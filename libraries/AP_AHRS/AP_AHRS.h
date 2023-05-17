@@ -27,18 +27,15 @@
 
 #include "AP_AHRS_Backend.h"
 #include <AP_NavEKF2/AP_NavEKF2.h>
-#include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_NavEKF/AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
 
 #include "AP_AHRS_DCM.h"
+#include "AP_AHRS_NavEKF3.h"
 #include "AP_AHRS_SIM.h"
 #include "AP_AHRS_External.h"
 
 // forward declare view class
 class AP_AHRS_View;
-
-#define AP_AHRS_NAVEKF_SETTLE_TIME_MS 20000     // time in milliseconds the ekf needs to settle after being started
-
 
 // fwd declare GSF estimator
 class EKFGSF_yaw;
@@ -456,11 +453,11 @@ public:
     }
     
     // these are only out here so vehicles can reference them for parameters
+#if AP_AHRS_NAVEKF3_ENABLED
+    AP_AHRS_NavEKF3 EKF3;
+#endif
 #if HAL_NAVEKF2_AVAILABLE
     NavEKF2 EKF2;
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-    NavEKF3 EKF3;
 #endif
 
     // for holding parameters
@@ -757,7 +754,6 @@ private:
     bool _ekf2_started;
 #endif
 #if HAL_NAVEKF3_AVAILABLE
-    bool _ekf3_started;
     void update_EKF3(void);
 #endif
 
@@ -1003,7 +999,9 @@ private:
 #endif
     struct AP_AHRS_Backend::Estimates sim_estimates;
 #endif
-
+#if AP_AHRS_NAVEKF3_ENABLED
+    struct AP_AHRS_Backend::Estimates ekf3_estimates;
+#endif
 #if AP_AHRS_EXTERNAL_ENABLED
     AP_AHRS_External external;
     struct AP_AHRS_Backend::Estimates external_estimates;

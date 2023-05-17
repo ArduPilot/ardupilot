@@ -3,6 +3,7 @@
 #if AP_AHRS_SIM_ENABLED
 
 #include "AP_AHRS.h"
+#include <GCS_MAVLink/GCS.h>
 
 bool AP_AHRS_SIM::get_location(Location &loc) const
 {
@@ -141,13 +142,14 @@ bool AP_AHRS_SIM::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector
     return true;
 }
 
-bool AP_AHRS_SIM::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
+bool AP_AHRS_SIM::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
 {
     velVar = 0;
     posVar = 0;
     hgtVar = 0;
     magVar.zero();
     tasVar = 0;
+    offset.zero();
 
     return true;
 }
@@ -210,11 +212,7 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     results.wind = _sitl->state.wind_ef;
     results.wind_valid = true;
 
-    // estimator limits on control:
-    results.ekfGndSpdLimit = 400.0;
-    results.controlScaleXY = 1;
-
-#if HAL_NAVEKF3_AVAILABLE
+#if AP_AHRS_NAVEKF3_ENABLED
     if (_sitl->odom_enable) {
         // use SITL states to write body frame odometry data at 20Hz
         uint32_t timeStamp_ms = AP_HAL::millis();
