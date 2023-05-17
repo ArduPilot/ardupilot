@@ -131,7 +131,7 @@ void AP_Proximity_DroneCAN::update(void)
                 // update boundary used for avoidance
                 frontend.boundary.set_face_attributes(face, object_item.pitch_deg, object_item.yaw_deg, object_item.distance_m, state.instance);
                 // update OA database
-                database_push(object_item.pitch_deg, object_item.yaw_deg, object_item.distance_m);
+                database_push(object_item.pitch_deg, object_item.yaw_deg, object_item.distance_m, 0.0f);
             }
         }
     }
