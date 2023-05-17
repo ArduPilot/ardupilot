@@ -15,6 +15,10 @@
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 
+#include "AP_RCProtocol_config.h"
+
+#if AP_RCPROTOCOL_ENABLED
+
 #include "AP_RCProtocol.h"
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
@@ -207,3 +211,5 @@ void AP_RCProtocol_Backend::log_data(AP_RCProtocol::rcprotocol_t prot, uint32_t 
     }
 #endif  // HAL_LOGGING_ENABLED
 }
+
+#endif  // AP_RCPROTOCOL_ENABLED

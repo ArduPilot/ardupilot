@@ -52,11 +52,12 @@ class Board:
         )
 
         # Setup scripting, had to defer this to allow checking board size
-        if ((not cfg.options.disable_scripting) and
+        if (cfg.options.enable_scripting or
+            ((not cfg.options.disable_scripting) and
             (not cfg.env.DISABLE_SCRIPTING) and
             ((cfg.env.BOARD_FLASH_SIZE is None) or
              (cfg.env.BOARD_FLASH_SIZE == []) or
-             (cfg.env.BOARD_FLASH_SIZE > 1024))):
+             (cfg.env.BOARD_FLASH_SIZE > 1024)))):
 
             env.DEFINES.update(
                 AP_SCRIPTING_ENABLED = 1,
@@ -275,7 +276,7 @@ class Board:
             env.DEFINES.update(
                 HAL_DEBUG_BUILD = 1,
             )
-        elif cfg.options.g:
+        elif cfg.options.debug_symbols:
             env.CFLAGS += [
                 '-g',
             ]
@@ -642,6 +643,9 @@ class sitl(Board):
         cfg.define('AP_OPENDRONEID_ENABLED', 1)
         cfg.define('AP_SIGNED_FIRMWARE', 0)
 
+        cfg.define('AP_NOTIFY_LP5562_BUS', 2)
+        cfg.define('AP_NOTIFY_LP5562_ADDR', 0x30)
+
         if self.with_can:
             cfg.define('HAL_NUM_CAN_IFACES', 2)
             env.DEFINES.update(CANARD_MULTI_IFACE=1,
@@ -791,6 +795,7 @@ class sitl_periph_gps(sitl):
             HAL_RALLY_ENABLED = 0,
             AP_SCHEDULER_ENABLED = 0,
             CANARD_ENABLE_TAO_OPTION = 1,
+            AP_RCPROTOCOL_ENABLED = 0,
             CANARD_ENABLE_CANFD = 1,
             CANARD_MULTI_IFACE = 1,
             HAL_CANMANAGER_ENABLED = 0,

@@ -154,21 +154,24 @@ After your setups are complete, do the following:
   $ ros2 topic list  -v
   Published topics:
   * /ap/battery/battery0 [sensor_msgs/msg/BatteryState] 1 publisher
-  * /ap/clock [builtin_interfaces/msg/Time] 1 publisher
+  * /ap/clock [rosgraph_msgs/msg/Clock] 1 publisher
+  * /ap/geopose/filtered [geographic_msgs/msg/GeoPoseStamped] 1 publisher
   * /ap/navsat/navsat0 [sensor_msgs/msg/NavSatFix] 1 publisher
   * /ap/pose/filtered [geometry_msgs/msg/PoseStamped] 1 publisher
   * /ap/tf_static [tf2_msgs/msg/TFMessage] 1 publisher
+  * /ap/time [builtin_interfaces/msg/Time] 1 publisher
+  * /ap/twist/filtered [geometry_msgs/msg/TwistStamped] 1 publisher
   * /parameter_events [rcl_interfaces/msg/ParameterEvent] 1 publisher
   * /rosout [rcl_interfaces/msg/Log] 1 publisher
 
   Subscribed topics:
 
 
-  $ ros2 topic hz /ap/clock
+  $ ros2 topic hz /ap/time
   average rate: 50.115
           min: 0.012s max: 0.024s std dev: 0.00328s window: 52
 
-  $ ros2 topic echo /ap/clock 
+  $ ros2 topic echo /ap/time 
   sec: 1678668735
   nanosec: 729410000
   ---

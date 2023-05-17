@@ -13,10 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  Simulator for the RPLidarA2 proximity sensor
+  Simulator for the RPLidar proximity sensors
 */
 
-#include "SIM_PS_RPLidarA2.h"
+#include "SIM_PS_RPLidar.h"
 
 #if HAL_SIM_PS_RPLIDARA2_ENABLED
 
@@ -26,14 +26,14 @@
 
 using namespace SITL;
 
-uint32_t PS_RPLidarA2::packet_for_location(const Location &location,
+uint32_t PS_RPLidar::packet_for_location(const Location &location,
                                            uint8_t *data,
                                            uint8_t buflen)
 {
     return 0;
 }
 
-void PS_RPLidarA2::move_preamble_in_buffer()
+void PS_RPLidar::move_preamble_in_buffer()
 {
     uint8_t i;
     for (i=0; i<_buflen; i++) {
@@ -48,7 +48,7 @@ void PS_RPLidarA2::move_preamble_in_buffer()
     _buflen = _buflen - i;
 }
 
-void PS_RPLidarA2::update_input()
+void PS_RPLidar::update_input()
 {
     const ssize_t n = read_from_autopilot(&_buffer[_buflen], ARRAY_SIZE(_buffer) - _buflen - 1);
     if (n < 0) {
@@ -105,6 +105,30 @@ void PS_RPLidarA2::update_input()
             set_inputstate(InputState::WAITING_FOR_PREAMBLE);
             return;
         }
+        case Command::GET_DEVICE_INFO: {
+            // consume the command:
+            memmove(_buffer, &_buffer[1], _buflen-1);
+            _buflen--;
+            send_response_descriptor(0x14, SendMode::SRSR, DataType::Unknown04);
+            // now send the device info:
+            struct PACKED _device_info {
+                uint8_t model;
+                uint8_t firmware_minor;
+                uint8_t firmware_major;
+                uint8_t hardware;
+                uint8_t serial[16];
+            } device_info;
+            device_info.model = device_info_model();
+            device_info.firmware_minor = 17;
+            device_info.firmware_major = 42;
+            device_info.hardware = 6;
+            const ssize_t ret = write_to_autopilot((const char*)&device_info, sizeof(device_info));
+            if (ret != sizeof(device_info)) {
+                abort();
+            }
+            set_inputstate(InputState::WAITING_FOR_PREAMBLE);
+            return;
+        }
         case Command::FORCE_SCAN:
             abort();
         case Command::RESET:
@@ -135,7 +159,7 @@ void PS_RPLidarA2::update_input()
     }
 }
 
-void PS_RPLidarA2::update_output_scan(const Location &location)
+void PS_RPLidar::update_output_scan(const Location &location)
 {
     const uint32_t now = AP_HAL::millis();
     if (last_scan_output_time_ms == 0) {
@@ -162,10 +186,9 @@ void PS_RPLidarA2::update_output_scan(const Location &location)
         last_degrees_bf = current_degrees_bf;
 
 
-        const float MAX_RANGE = 16.0f;
         float distance = measure_distance_at_angle_bf(location, current_degrees_bf);
         // ::fprintf(stderr, "SIM: %f=%fm\n", current_degrees_bf, distance);
-        if (distance > MAX_RANGE) {
+        if (distance > max_range()) {
             // sensor returns zero for out-of-range
             distance = 0.0f;
         }
@@ -195,7 +218,7 @@ void PS_RPLidarA2::update_output_scan(const Location &location)
     }
 }
 
-void PS_RPLidarA2::update_output(const Location &location)
+void PS_RPLidar::update_output(const Location &location)
 {
     switch (_state) {
     case State::IDLE:
@@ -206,14 +229,14 @@ void PS_RPLidarA2::update_output(const Location &location)
     }
 }
 
-void PS_RPLidarA2::update(const Location &location)
+void PS_RPLidar::update(const Location &location)
 {
     update_input();
     update_output(location);
 }
 
 
-void PS_RPLidarA2::send_response_descriptor(uint32_t data_response_length, SendMode sendmode, DataType datatype)
+void PS_RPLidar::send_response_descriptor(uint32_t data_response_length, SendMode sendmode, DataType datatype)
 {
     const uint8_t send_buffer[] = {
         0xA5,

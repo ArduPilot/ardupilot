@@ -461,7 +461,7 @@ void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
     }
     // if in autorotation, don't let rotor_runup_output go less than critical speed to keep
     // runup complete flag from being set to false
-    if (_autorotating && _rotor_runup_output < get_critical_speed()) {
+    if (_autorotating && !rotor_speed_above_critical()) {
         _rotor_runup_output = get_critical_speed();
     }
 
@@ -479,7 +479,7 @@ void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
     }
     // if rotor speed is less than critical speed, then run-up is not complete
     // this will prevent the case where the target rotor speed is less than critical speed
-    if (_runup_complete && (get_rotor_speed() < get_critical_speed())) {
+    if (_runup_complete && !rotor_speed_above_critical()) {
         _runup_complete = false;
     }
     // if rotor estimated speed is zero, then spooldown has been completed
@@ -508,6 +508,15 @@ void AP_MotorsHeli_RSC::write_rsc(float servo_out)
     } else {
         SRV_Channels::set_output_scaled(_aux_fn, servo_out * 1000);
     }
+}
+
+// Return mask of output channels which the RSC is outputting on
+uint32_t AP_MotorsHeli_RSC::get_output_mask() const
+{
+    if (_control_mode == ROTOR_CONTROL_MODE_DISABLED) {
+        return 0;
+    }
+    return SRV_Channels::get_output_channel_mask(_aux_fn);
 }
 
 // calculate_throttlecurve - uses throttle curve and collective input to determine throttle setting

@@ -37,6 +37,7 @@
 #include <SITL/SIM_RF_Lanbao.h>
 #include <SITL/SIM_RF_BLping.h>
 #include <SITL/SIM_RF_LeddarOne.h>
+#include <SITL/SIM_RF_RDS02UF.h>
 #include <SITL/SIM_RF_USD1_v0.h>
 #include <SITL/SIM_RF_USD1_v1.h>
 #include <SITL/SIM_RF_MaxsonarSerialLV.h>
@@ -54,6 +55,7 @@
 // #include <SITL/SIM_Frsky_SPort.h>
 // #include <SITL/SIM_Frsky_SPortPassthrough.h>
 #include <SITL/SIM_PS_RPLidarA2.h>
+#include <SITL/SIM_PS_RPLidarA1.h>
 #include <SITL/SIM_PS_TeraRangerTower.h>
 #include <SITL/SIM_PS_LightWare_SF45B.h>
 
@@ -96,12 +98,12 @@ public:
     }
     
     // simulated airspeed, sonar and battery monitor
-    uint16_t sonar_pin_value;    // pin 0
-    uint16_t airspeed_pin_value[AIRSPEED_MAX_SENSORS]; // pin 1
-    uint16_t voltage_pin_value;  // pin 13
-    uint16_t current_pin_value;  // pin 12
-    uint16_t voltage2_pin_value;  // pin 15
-    uint16_t current2_pin_value;  // pin 14
+    float sonar_pin_voltage;    // pin 0
+    float airspeed_pin_voltage[AIRSPEED_MAX_SENSORS]; // pin 1
+    float voltage_pin_voltage;  // pin 13
+    float current_pin_voltage;  // pin 12
+    float voltage2_pin_voltage;  // pin 15
+    float current2_pin_voltage;  // pin 14
 
     // paths for UART devices
     const char *_uart_path[9] {
@@ -226,6 +228,8 @@ private:
     SITL::RF_BLping *blping;
     // simulated LeddarOne rangefinder:
     SITL::RF_LeddarOne *leddarone;
+    // simulated RDS02UF rangefinder:
+    SITL::RF_RDS02UF *rds02uf;
     // simulated USD1 v0 rangefinder:
     SITL::RF_USD1_v0 *USD1_v0;
     // simulated USD1 v1 rangefinder:
@@ -253,6 +257,9 @@ private:
 
     // simulated FETtec OneWire ESCs:
     SITL::FETtecOneWireESC *fetteconewireesc;
+
+    // simulated RPLidarA1:
+    SITL::PS_RPLidarA1 *rplidara1;
 
 #if HAL_SIM_PS_LIGHTWARE_SF45B_ENABLED
     // simulated SF45B proximity sensor:

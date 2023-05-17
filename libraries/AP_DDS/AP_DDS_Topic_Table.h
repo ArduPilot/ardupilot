@@ -83,4 +83,14 @@ const struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .deserialize = Generic_deserialize_topic_fn_t(&geographic_msgs_msg_GeoPoseStamped_deserialize_topic),
         .size_of = Generic_size_of_topic_fn_t(&geographic_msgs_msg_GeoPoseStamped_size_of_topic),
     },
+    {
+        .topic_id = 0x08,
+        .pub_id = 0x08,
+        .dw_id = uxrObjectId{.id=0x08, .type=UXR_DATAWRITER_ID},
+        .topic_profile_label = "clock__t",
+        .dw_profile_label = "clock__dw",
+        .serialize = Generic_serialize_topic_fn_t(&rosgraph_msgs_msg_Clock_serialize_topic),
+        .deserialize = Generic_deserialize_topic_fn_t(&rosgraph_msgs_msg_Clock_deserialize_topic),
+        .size_of = Generic_size_of_topic_fn_t(&rosgraph_msgs_msg_Clock_size_of_topic),
+    },
 };

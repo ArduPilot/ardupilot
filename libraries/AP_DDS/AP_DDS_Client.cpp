@@ -17,6 +17,7 @@ static constexpr uint16_t DELAY_BATTERY_STATE_TOPIC_MS = 1000;
 static constexpr uint16_t DELAY_LOCAL_POSE_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = 33;
+static constexpr uint16_t DELAY_CLOCK_TOPIC_MS = 10;
 static char WGS_84_FRAME_ID[] = "WGS-84";
 // https://www.ros.org/reps/rep-0105.html#base-link
 static char BASE_LINK_FRAME_ID[] = "base_link";
@@ -131,7 +132,7 @@ bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
         msg.position_covariance_type = 0; // COVARIANCE_TYPE_UNKNOWN
         return true;
     }
-    msg.altitude = alt_cm / 100.0;
+    msg.altitude = alt_cm * 0.01;
 
     // ROS allows double precision, ArduPilot exposes float precision today
     Matrix3f cov;
@@ -212,13 +213,13 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_BatteryState& msg, const uint8_
     float current;
     msg.current = (battery.current_amps(current, instance)) ? -1 * current : NAN;
 
-    const float design_capacity = (float)battery.pack_capacity_mah(instance)/1000.0;
+    const float design_capacity = (float)battery.pack_capacity_mah(instance) * 0.001;
     msg.design_capacity = design_capacity;
 
     uint8_t percentage;
     if (battery.capacity_remaining_pct(percentage, instance)) {
-        msg.percentage = percentage/100.0;
-        msg.charge = (percentage * design_capacity)/100.0;
+        msg.percentage = percentage * 0.01;
+        msg.charge = (percentage * design_capacity) * 0.01;
     } else {
         msg.percentage = NAN;
         msg.charge = NAN;
@@ -288,7 +289,7 @@ void AP_DDS_Client::update_topic(geometry_msgs_msg_PoseStamped& msg)
     Quaternion orientation;
     if (ahrs.get_quaternion(orientation)) {
         Quaternion aux(orientation[0], orientation[2], orientation[1], -orientation[3]); //NED to ENU transformation
-        Quaternion transformation (sqrt(2)/2,0,0,sqrt(2)/2); // Z axis 90 degree rotation
+        Quaternion transformation (sqrtF(2) * 0.5,0,0,sqrtF(2) * 0.5); // Z axis 90 degree rotation
         orientation = aux * transformation;
         msg.pose.orientation.w = orientation[0];
         msg.pose.orientation.x = orientation[1];
@@ -351,7 +352,7 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
     if (ahrs.get_location(loc)) {
         msg.pose.position.latitude = loc.lat * 1E-7;
         msg.pose.position.longitude = loc.lng * 1E-7;
-        msg.pose.position.altitude = loc.alt / 100.0; // Transform from cm to m
+        msg.pose.position.altitude = loc.alt * 0.01; // Transform from cm to m
     }
 
     // In ROS REP 103, axis orientation uses the following convention:
@@ -365,13 +366,18 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
     Quaternion orientation;
     if (ahrs.get_quaternion(orientation)) {
         Quaternion aux(orientation[0], orientation[2], orientation[1], -orientation[3]); //NED to ENU transformation
-        Quaternion transformation(sqrt(2) / 2, 0, 0, sqrt(2) / 2); // Z axis 90 degree rotation
+        Quaternion transformation(sqrtF(2) * 0.5, 0, 0, sqrtF(2) * 0.5); // Z axis 90 degree rotation
         orientation = aux * transformation;
         msg.pose.orientation.w = orientation[0];
         msg.pose.orientation.x = orientation[1];
         msg.pose.orientation.y = orientation[2];
         msg.pose.orientation.z = orientation[3];
     }
+}
+
+void AP_DDS_Client::update_topic(rosgraph_msgs_msg_Clock& msg)
+{
+    update_topic(msg.clock);
 }
 
 /*
@@ -627,6 +633,21 @@ void AP_DDS_Client::write_geo_pose_topic()
     }
 }
 
+void AP_DDS_Client::write_clock_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub;
+        const uint32_t topic_size = rosgraph_msgs_msg_Clock_size_of_topic(&clock_topic, 0);
+        uxr_prepare_output_stream(&session,reliable_out,topics[7].dw_id,&ub,topic_size);
+        const bool success = rosgraph_msgs_msg_Clock_serialize_topic(&ub, &clock_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        }
+    }
+}
+
 void AP_DDS_Client::update()
 {
     WITH_SEMAPHORE(csem);
@@ -666,6 +687,12 @@ void AP_DDS_Client::update()
         update_topic(geo_pose_topic);
         last_geo_pose_time_ms = cur_time_ms;
         write_geo_pose_topic();
+    }
+
+    if (cur_time_ms - last_clock_time_ms > DELAY_CLOCK_TOPIC_MS) {
+        update_topic(clock_topic);
+        last_clock_time_ms = cur_time_ms;
+        write_clock_topic();
     }
 
     connected = uxr_run_session_time(&session, 1);

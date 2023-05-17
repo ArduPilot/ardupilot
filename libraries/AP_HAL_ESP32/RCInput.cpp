@@ -25,7 +25,7 @@ void RCInput::init()
     if (_init) {
         return;
     }
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_RCPROTOCOL_ENABLED
     AP::RC().init();
 #endif
 
