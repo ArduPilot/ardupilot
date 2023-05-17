@@ -3255,6 +3255,10 @@ INCLUDE common.ld
 #define AP_FILESYSTEM_ROMFS_ENABLED 0
 #endif
 
+#ifndef NOTIFY_LED_OVERRIDE_DEFAULT
+#define NOTIFY_LED_OVERRIDE_DEFAULT 1       // rgb_source_t::mavlink
+#endif
+
 // end AP_Periph defaults
 ''')
 
