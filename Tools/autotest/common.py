@@ -2441,7 +2441,6 @@ class AutoTest(ABC):
             "SIM_INS_THR_MIN",
             "SIM_LED_LAYOUT",
             "SIM_LOOP_DELAY",
-            "SIM_MAG1_DEVID",
             "SIM_MAG1_SCALING",
             "SIM_MAG2_DEVID",
             "SIM_MAG2_DIA_X",
