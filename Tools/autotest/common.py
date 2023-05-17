@@ -8173,6 +8173,7 @@ Also, ignores heartbeats not from our target system'''
                     start_sitl_args["customisations"] = [sup_binary[1], args]
                 start_sitl_args["supplementary"] = True
                 sup_prog_link = util.start_SITL(sup_binary[0], **start_sitl_args)
+                time.sleep(3)
                 self.sup_prog.append(sup_prog_link) # add to list
                 self.expect_list_add(sup_prog_link) # add to expect list
         else:
@@ -8182,6 +8183,7 @@ Also, ignores heartbeats not from our target system'''
                 start_sitl_args["customisations"] = [self.sup_binaries[instance][1], args]
             start_sitl_args["supplementary"] = True
             sup_prog_link = util.start_SITL(self.sup_binaries[instance][0], **start_sitl_args)
+            time.sleep(3)
             self.sup_prog[instance] = sup_prog_link # add to list
             self.expect_list_add(sup_prog_link) # add to expect list
 
