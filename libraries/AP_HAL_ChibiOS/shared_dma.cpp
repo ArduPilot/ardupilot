@@ -87,6 +87,7 @@ bool Shared_DMA::lock_stream(uint8_t stream_id)
         const thread_t* curr_owner = locks[stream_id].mutex.owner;
         chMtxLock(&locks[stream_id].mutex);
         cont = curr_owner != nullptr && curr_owner != locks[stream_id].mutex.owner;
+        osalDbgAssert(curr_owner != locks[stream_id].mutex.owner, "Recursive DMA lock");
     }
     return cont;
 }
