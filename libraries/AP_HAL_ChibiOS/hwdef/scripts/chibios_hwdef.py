@@ -3355,6 +3355,9 @@ INCLUDE common.ld
 // no crossfire telemetry from iomcu!
 #define HAL_CRSF_TELEM_ENABLED 0
 
+// allow the IOMCU to have its allowed protocols to be set:
+#define AP_RCPROTOCOL_ENABLE_SET_RC_PROTOCOLS 1
+
 // end IOMCU Firmware defaults
 ''')
 
