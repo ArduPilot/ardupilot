@@ -344,6 +344,9 @@ void Plane::update_loiter(uint16_t radius)
         }
     }
 
+    // the radius actually being used by the controller is required by other functions
+    loiter.radius = (float)radius;
+
     update_loiter_update_nav(radius);
 
     if (loiter.start_time_ms == 0) {

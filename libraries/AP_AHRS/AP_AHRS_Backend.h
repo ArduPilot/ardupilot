@@ -284,7 +284,7 @@ public:
         return false;
     }
 
-    virtual bool get_filter_status(nav_filter_status &status) const {
+    virtual bool get_filter_status(union nav_filter_status &status) const {
         return false;
     }
 

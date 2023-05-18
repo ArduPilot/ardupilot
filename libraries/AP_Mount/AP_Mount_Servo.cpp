@@ -138,7 +138,7 @@ void AP_Mount_Servo::update_angle_outputs(const MountTarget& angle_rad)
     const AP_AHRS &ahrs = AP::ahrs();
 
     // get target yaw in body-frame with limits applied
-    const float yaw_bf_rad = constrain_float(get_bf_yaw_angle(angle_rad), radians(_params.yaw_angle_min), radians(_params.yaw_angle_max));
+    const float yaw_bf_rad = constrain_float(angle_rad.get_bf_yaw(), radians(_params.yaw_angle_min), radians(_params.yaw_angle_max));
 
     // default output to target earth-frame roll and pitch angles, body-frame yaw
     _angle_bf_output_deg.x = degrees(angle_rad.roll);

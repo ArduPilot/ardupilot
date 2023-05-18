@@ -346,7 +346,7 @@ void AC_AutoTune_Multi::load_test_gains()
         attitude_control->get_rate_yaw_pid().kI(tune_yaw_rp*0.01f);
         attitude_control->get_rate_yaw_pid().ff(0.0f);
         if (axis == YAW_D) {
-            attitude_control->get_rate_pitch_pid().kD(tune_yaw_rd);
+            attitude_control->get_rate_yaw_pid().kD(tune_yaw_rd);
         } else {
             attitude_control->get_rate_yaw_pid().filt_E_hz(tune_yaw_rLPF);
         }

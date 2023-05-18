@@ -1,9 +1,120 @@
 name: test ccache
 
-on: [push, pull_request, workflow_dispatch]
-# paths:
-# - "*"
-# - "!README.md" <-- don't rebuild on doc change
+on:
+  push:
+    paths-ignore:
+      # remove other vehicles
+      - 'AntennaTracker/**'
+      - 'ArduPlane/**'
+      - 'ArduSub/**'
+      - 'Blimp/**'
+      - 'Rover/**'
+      # remove non chibios HAL
+      - 'libraries/AP_HAL_Linux/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_SITL/**'
+      # remove non stm directories
+      - 'Tools/CHDK-Script/**'
+      - 'Tools/CodeStyle/**'
+      - 'Tools/completion/**'
+      - 'Tools/debug/**'
+      - 'Tools/environment_install/**'
+      - 'Tools/FilterTestTool/**'
+      - 'Tools/Frame_params/**'
+      - 'Tools/geotag/**'
+      - 'Tools/GIT_Test/**'
+      - 'Tools/gittools/**'
+      - 'Tools/Hello/**'
+      - 'Tools/LogAnalyzer/**'
+      - 'Tools/mavproxy_modules/**'
+      - 'Tools/Pozyx/**'
+      - 'Tools/PrintVersion.py'
+      - 'Tools/Replay/**'
+      - 'Tools/simulink/**'
+      - 'Tools/UDP_Proxy/**'
+      - 'Tools/vagrant/**'
+      - 'Tools/Vicon/**'
+      # Remove autotests stuff
+      - 'Tools/autotest/**'
+      # Remove markdown files as irrelevant
+      - '**.md'
+      # Remove dotfile at root directory
+      - './.dir-locals.el'
+      - './.dockerignore'
+      - './.editorconfig'
+      - './.flake8'
+      - './.gitattributes'
+      - './.github'
+      - './.gitignore'
+      - './.pre-commit-config.yaml'
+      - './.pydevproject'
+      - './.valgrind-suppressions'
+      - './.valgrindrc'
+      - 'Dockerfile'
+      - 'Vagrantfile'
+      - 'Makefile'
+      # Remove some directories check
+      - '.vscode/**'
+      - '.github/ISSUE_TEMPLATE/**'
+
+  pull_request:
+    paths-ignore:
+      # remove other vehicles
+      - 'AntennaTracker/**'
+      - 'ArduPlane/**'
+      - 'ArduSub/**'
+      - 'Blimp/**'
+      - 'Rover/**'
+      # remove non chibios HAL
+      - 'libraries/AP_HAL_Linux/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_SITL/**'
+      # remove non stm directories
+      - 'Tools/CHDK-Script/**'
+      - 'Tools/CodeStyle/**'
+      - 'Tools/completion/**'
+      - 'Tools/debug/**'
+      - 'Tools/environment_install/**'
+      - 'Tools/FilterTestTool/**'
+      - 'Tools/Frame_params/**'
+      - 'Tools/geotag/**'
+      - 'Tools/GIT_Test/**'
+      - 'Tools/gittools/**'
+      - 'Tools/Hello/**'
+      - 'Tools/LogAnalyzer/**'
+      - 'Tools/mavproxy_modules/**'
+      - 'Tools/Pozyx/**'
+      - 'Tools/PrintVersion.py'
+      - 'Tools/Replay/**'
+      - 'Tools/simulink/**'
+      - 'Tools/UDP_Proxy/**'
+      - 'Tools/vagrant/**'
+      - 'Tools/Vicon/**'
+      # Remove autotests stuff
+      - 'Tools/autotest/**'
+      # Remove markdown files as irrelevant
+      - '**.md'
+      # Remove dotfile at root directory
+      - './.dir-locals.el'
+      - './.dockerignore'
+      - './.editorconfig'
+      - './.flake8'
+      - './.gitattributes'
+      - './.github'
+      - './.gitignore'
+      - './.pre-commit-config.yaml'
+      - './.pydevproject'
+      - './.valgrind-suppressions'
+      - './.valgrindrc'
+      - 'Dockerfile'
+      - 'Vagrantfile'
+      - 'Makefile'
+      # Remove some directories check
+      - '.vscode/**'
+      - '.github/ISSUE_TEMPLATE/**'
+
+  workflow_dispatch:
+
 concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true
@@ -11,7 +122,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-20.04
-    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:latest
+    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.0.29
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:

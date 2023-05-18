@@ -105,7 +105,7 @@ bool AP_Mount_SoloGimbal::get_attitude_quaternion(Quaternion& att_quat)
     if (!_gimbal.aligned()) {
         return false;
     }
-    att_quat.from_euler(_angle_rad.roll, _angle_rad.pitch, get_bf_yaw_angle(_angle_rad));
+    att_quat.from_euler(_angle_rad.roll, _angle_rad.pitch, _angle_rad.get_bf_yaw());
     return true;
 }
 
@@ -114,7 +114,7 @@ bool AP_Mount_SoloGimbal::get_attitude_quaternion(Quaternion& att_quat)
  */
 void AP_Mount_SoloGimbal::handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg)
 {
-    _gimbal.update_target(Vector3f{_angle_rad.roll, _angle_rad.pitch, get_bf_yaw_angle(_angle_rad)});
+    _gimbal.update_target(Vector3f{_angle_rad.roll, _angle_rad.pitch, _angle_rad.get_bf_yaw()});
     _gimbal.receive_feedback(chan,msg);
 
     AP_Logger *logger = AP_Logger::get_singleton();

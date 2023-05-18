@@ -142,6 +142,7 @@ public:
         UNLOCK_FLASH = (1<<4),
         WRITE_PROTECT_FLASH = (1<<5),
         WRITE_PROTECT_BOOTLOADER = (1<<6),
+        SKIP_BOARD_VALIDATION = (1<<7)
     };
 
     // return true if ftp is disabled

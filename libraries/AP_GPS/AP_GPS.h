@@ -705,6 +705,11 @@ private:
         uint8_t buffer[MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN*4];
     } *rtcm_buffer;
 
+    struct {
+        uint16_t fragments_used;
+        uint16_t fragments_discarded;
+    } rtcm_stats;
+
     // re-assemble GPS_RTCM_DATA message
     void handle_gps_rtcm_data(const mavlink_message_t &msg);
     void handle_gps_inject(const mavlink_message_t &msg);

@@ -412,13 +412,13 @@ class AutoTestCopter(AutoTest):
         self.land_and_disarm()
 
     # enter RTL mode and wait for the vehicle to disarm
-    def do_RTL(self, distance_min=None, check_alt=True, distance_max=10, timeout=250):
+    def do_RTL(self, distance_min=None, check_alt=True, distance_max=10, timeout=250, quiet=False):
         """Enter RTL mode and wait for the vehicle to disarm at Home."""
         self.change_mode("RTL")
         self.hover()
-        self.wait_rtl_complete(check_alt=check_alt, distance_max=distance_max, timeout=timeout)
+        self.wait_rtl_complete(check_alt=check_alt, distance_max=distance_max, timeout=timeout, quiet=True)
 
-    def wait_rtl_complete(self, check_alt=True, distance_max=10, timeout=250):
+    def wait_rtl_complete(self, check_alt=True, distance_max=10, timeout=250, quiet=False):
         """Wait for RTL to reach home and disarm"""
         self.progress("Waiting RTL to reach Home and disarm")
         tstart = self.get_sim_time()
@@ -435,8 +435,9 @@ class AutoTestCopter(AutoTest):
             else:
                 if distance_valid:
                     home = "HOME"
-            self.progress("Alt: %.02f  HomeDist: %.02f %s" %
-                          (alt, home_distance, home))
+            if not quiet:
+                self.progress("Alt: %.02f  HomeDist: %.02f %s" %
+                              (alt, home_distance, home))
 
             # our post-condition is that we are disarmed:
             if not self.armed():
@@ -1142,7 +1143,7 @@ class AutoTestCopter(AutoTest):
         else:
             self.set_rc(3, 1700)
         # we may never see ourselves as armed in a heartbeat
-        self.wait_statustext("Takeoff blocked: ESC RPM too low", check_context=True)
+        self.wait_statustext("Takeoff blocked: ESC RPM out of range", check_context=True)
         self.context_pop()
         self.zero_throttle()
         self.disarm_vehicle()
@@ -1158,6 +1159,21 @@ class AutoTestCopter(AutoTest):
             'TKOFF_RPM_MIN': 1000,
         })
 
+        self.test_takeoff_check_mode("STABILIZE")
+        self.test_takeoff_check_mode("ACRO")
+        self.test_takeoff_check_mode("LOITER")
+        self.test_takeoff_check_mode("ALT_HOLD")
+        # self.test_takeoff_check_mode("FLOWHOLD")
+        self.test_takeoff_check_mode("GUIDED", True)
+        self.test_takeoff_check_mode("POSHOLD")
+        # self.test_takeoff_check_mode("SPORT")
+
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 10,
+            'SIM_ESC_TELEM': 1,
+            'TKOFF_RPM_MIN': 1,
+            'TKOFF_RPM_MAX': 3,
+        })
         self.test_takeoff_check_mode("STABILIZE")
         self.test_takeoff_check_mode("ACRO")
         self.test_takeoff_check_mode("LOITER")
@@ -2590,8 +2606,8 @@ class AutoTestCopter(AutoTest):
 
         self.reboot_sitl()
         # Test UAVCAN GPS ordering working
-        gps1_det_text = self.wait_text("GPS 1: specified as UAVCAN.*", regex=True, check_context=True)
-        gps2_det_text = self.wait_text("GPS 2: specified as UAVCAN.*", regex=True, check_context=True)
+        gps1_det_text = self.wait_text("GPS 1: specified as DroneCAN.*", regex=True, check_context=True)
+        gps2_det_text = self.wait_text("GPS 2: specified as DroneCAN.*", regex=True, check_context=True)
         gps1_nodeid = int(gps1_det_text.split('-')[1])
         gps2_nodeid = int(gps2_det_text.split('-')[1])
         if gps1_nodeid is None or gps2_nodeid is None:
@@ -2621,11 +2637,11 @@ class AutoTestCopter(AutoTest):
             gps1_det_text = None
             gps2_det_text = None
             try:
-                gps1_det_text = self.wait_text("GPS 1: specified as UAVCAN.*", regex=True, check_context=True)
+                gps1_det_text = self.wait_text("GPS 1: specified as DroneCAN.*", regex=True, check_context=True)
             except AutoTestTimeoutException:
                 pass
             try:
-                gps2_det_text = self.wait_text("GPS 2: specified as UAVCAN.*", regex=True, check_context=True)
+                gps2_det_text = self.wait_text("GPS 2: specified as DroneCAN.*", regex=True, check_context=True)
             except AutoTestTimeoutException:
                 pass
 
@@ -4865,6 +4881,19 @@ class AutoTestCopter(AutoTest):
             0, # pitch rate (rad/s)
             0, # yaw rate   (rad/s)
             0.5) # thrust, 0 to 1, translated to a climb/descent rate
+
+    def do_yaw_rate(self, yaw_rate):
+        '''yaw aircraft in guided/rate mode'''
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+            60,  # target angle
+            0,  # degrees/second
+            1,  # -1 is counter-clockwise, 1 clockwise
+            1,  # 1 for relative, 0 for absolute
+            0,  # p5
+            0,  # p6
+            0,  # p7
+            quiet=True)
 
     def setup_servo_mount(self, roll_servo=5, pitch_servo=6, yaw_servo=7):
         '''configure a rpy servo mount; caller responsible for required rebooting'''
@@ -9728,7 +9757,7 @@ class AutoTestCopter(AutoTest):
         self.setup_servo_mount()
         self.reboot_sitl()
         self.set_rc(6, 1300)
-        self.install_example_script_context('mount-poi.lua')
+        self.install_applet_script_context('mount-poi.lua')
         self.reboot_sitl()
         self.wait_ready_to_arm()
         self.context_collect('STATUSTEXT')
@@ -9752,6 +9781,112 @@ class AutoTestCopter(AutoTest):
         self.land_and_disarm()
         self.context_pop()
         self.reboot_sitl()
+
+    def GuidedYawRate(self):
+        '''ensuer guided yaw rate is not affected by rate of sewt-attitude messages'''
+        self.takeoff(30, mode='GUIDED')
+        rates = {}
+        for rate in 1, 10:
+            # command huge yaw rate for a while
+            tstart = self.get_sim_time()
+            interval = 1/rate
+            yawspeed_rads_sum = 0
+            yawspeed_rads_count = 0
+            last_sent = 0
+            while True:
+                self.drain_mav()
+                tnow = self.get_sim_time_cached()
+                if tnow - last_sent > interval:
+                    self.do_yaw_rate(60)  # this is... unlikely
+                    last_sent = tnow
+                if tnow - tstart < 5:  # let it spin up to speed first
+                    continue
+                yawspeed_rads_sum += self.mav.messages['ATTITUDE'].yawspeed
+                yawspeed_rads_count += 1
+                if tnow - tstart > 15:  # 10 seconds of measurements
+                    break
+            yawspeed_degs = math.degrees(yawspeed_rads_sum / yawspeed_rads_count)
+            rates[rate] = yawspeed_degs
+            self.progress("Input rate %u hz: average yaw rate %f deg/s" % (rate, yawspeed_degs))
+
+        if rates[10] < rates[1] * 0.95:
+            raise NotAchievedException("Guided yaw rate slower for higher rate updates")
+
+        self.do_RTL()
+
+    def test_rplidar(self, sim_device_name, expected_distances):
+        '''plonks a Copter with a RPLidarA2 in the middle of a simulated field
+        of posts and checks that the measurements are what we expect.'''
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 11,
+            "PRX1_TYPE": 5,
+        })
+        self.customise_SITL_commandline([
+            "--uartF=sim:%s:" % sim_device_name,
+            "--home", "51.8752066,14.6487840,0,0",  # SITL has "posts" here
+        ])
+
+        self.wait_ready_to_arm()
+
+        wanting_distances = copy.copy(expected_distances)
+        tstart = self.get_sim_time()
+        timeout = 60
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > timeout:
+                raise NotAchievedException("Did not get all distances")
+            m = self.mav.recv_match(type="DISTANCE_SENSOR",
+                                    blocking=True,
+                                    timeout=1)
+            if m is None:
+                continue
+            self.progress("Got (%s)" % str(m))
+            if m.orientation not in wanting_distances:
+                continue
+            if abs(m.current_distance - wanting_distances[m.orientation]) > 5:
+                self.progress("Wrong distance orient=%u want=%u got=%u" %
+                              (m.orientation,
+                               wanting_distances[m.orientation],
+                               m.current_distance))
+                continue
+            self.progress("Correct distance for orient %u (want=%u got=%u)" %
+                          (m.orientation,
+                           wanting_distances[m.orientation],
+                           m.current_distance))
+            del wanting_distances[m.orientation]
+            if len(wanting_distances.items()) == 0:
+                break
+
+    def RPLidarA2(self):
+        '''test Raspberry Pi Lidar A2'''
+        expected_distances = {
+            mavutil.mavlink.MAV_SENSOR_ROTATION_NONE: 276,
+            mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_45: 256,
+            mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_90: 1130,
+            mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_135: 1286,
+            mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_180: 626,
+            mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_225: 971,
+            mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_270: 762,
+            mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_315: 792,
+        }
+
+        self.test_rplidar("rplidara2", expected_distances)
+
+    def RPLidarA1(self):
+        '''test Raspberry Pi Lidar A1'''
+        return  # we don't send distances when too long?
+        expected_distances = {
+            mavutil.mavlink.MAV_SENSOR_ROTATION_NONE: 276,
+            mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_45: 256,
+            mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_90: 800,
+            mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_135: 800,
+            mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_180: 626,
+            mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_225: 800,
+            mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_270: 762,
+            mavutil.mavlink.MAV_SENSOR_ROTATION_YAW_315: 792,
+        }
+
+        self.test_rplidar("rplidara1", expected_distances)
 
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
@@ -9807,6 +9942,10 @@ class AutoTestCopter(AutoTest):
             self.FlyMissionTwice,
             self.IMUConsistency,
             self.AHRSTrimLand,
+            self.GuidedYawRate,
+            self.NoArmWithoutMissionItems,
+            self.RPLidarA1,
+            self.RPLidarA2,
         ])
         return ret
 

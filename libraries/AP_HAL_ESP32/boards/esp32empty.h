@@ -117,8 +117,6 @@
 //#define HAL_ESP32_SDMMC
 //#define HAL_ESP32_SDSPI				{.host=VSPI_HOST, .dma_ch=2, .mosi=GPIO_NUM_2, .miso=GPIO_NUM_15, .sclk=GPIO_NUM_26, .cs=GPIO_NUM_21}
 
-#define HAL_OS_POSIX_IO					1
-
 #define HAL_LOGGING_FILESYSTEM_ENABLED			0
 #define HAL_LOGGING_DATAFLASH_ENABLED			0
 #define HAL_LOGGING_MAVLINK_ENABLED			0
