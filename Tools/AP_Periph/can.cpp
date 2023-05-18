@@ -2771,7 +2771,6 @@ void AP_Periph_FW::can_efi_update(void)
 }
 #endif // HAL_PERIPH_ENABLE_EFI
 
-
 // printf to CAN LogMessage for debugging
 void can_printf(const char *fmt, ...)
 {

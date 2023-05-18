@@ -163,6 +163,10 @@ void AP_Periph_FW::init()
     battery.lib.init();
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_RCIN
+    rcin_init();
+#endif
+
 #if defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_RC_OUT)
     hal.rcout->init();
 #endif
@@ -455,6 +459,10 @@ void AP_Periph_FW::update()
         battery.last_read_ms = now;
         battery.lib.read();
     }
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_RCIN
+    rcin_update();
 #endif
 
     static uint32_t fiftyhz_last_update_ms;
