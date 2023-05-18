@@ -51,10 +51,15 @@ public:
 
     // structure to retrieve results from backends:
     struct Estimates {
+        // if attitude_valid is true then all of the
+        // eulers/quaternion/matrix must be valid:
+        bool attitude_valid;
         float roll_rad;
         float pitch_rad;
         float yaw_rad;
         Matrix3f dcm_matrix;
+        Quaternion quaternion;
+
         Vector3f gyro_estimate;
         Vector3f gyro_drift;
         Vector3f accel_ef;
@@ -208,9 +213,6 @@ public:
 
     // return true if we will use compass for yaw
     virtual bool use_compass(void) = 0;
-
-    // return the quaternion defining the rotation from NED to XYZ (body) axes
-    virtual bool get_quaternion(Quaternion &quat) const WARN_IF_UNUSED = 0;
 
     // is the AHRS subsystem healthy?
     virtual bool healthy(void) const = 0;
