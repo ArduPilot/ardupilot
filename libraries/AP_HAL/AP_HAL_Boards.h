@@ -291,8 +291,9 @@
 // The difference in CPU load between 1Khz backend and 2Khz backend is about 10%
 // So at 1Khz almost all notch combinations can be supported on F7 and certainly H7
 #if defined(STM32H7) || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+// Enough for a double-notch per motor on an octa using three IMUs and one harmonics
+// plus one static notch with one double-notch harmonics
 // Enough for a single-notch per motor with two harmonics on an octa using two IMUs 
-// at 4k loop rate
 #define HAL_HNF_MAX_FILTERS 56
 #elif defined(STM32F7)
 // Enough for a notch per motor on an octa using three IMUs and one harmonics
