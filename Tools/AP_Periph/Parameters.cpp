@@ -16,6 +16,10 @@ extern const AP_HAL::HAL &hal;
 #define AP_PERIPH_RANGEFINDER_PORT_DEFAULT 3
 #endif
 
+#ifndef AP_PERIPH_RC1_PORT_DEFAULT
+#define AP_PERIPH_RC1_PORT_DEFAULT -1
+#endif
+
 #ifndef HAL_PERIPH_GPS_PORT_DEFAULT
 #define HAL_PERIPH_GPS_PORT_DEFAULT 3
 #endif
@@ -562,6 +566,35 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Path: ../libraries/AP_RPM/AP_RPM.cpp
     GOBJECT(rpm_sensor, "RPM", AP_RPM),
 #endif
+
+#ifdef HAL_PERIPH_ENABLE_RCIN
+    // RC_PROTOCOLS copied from RC_Channel/RC_Channels_Varinfo.h
+    // @Param: RC_PROTOCOLS
+    // @DisplayName: RC protocols enabled
+    // @Description: Bitmask of enabled RC protocols. Allows narrowing the protocol detection to only specific types of RC receivers which can avoid issues with incorrect detection. Set to 1 to enable all protocols.
+    // @User: Advanced
+    // @Bitmask: 0:All,1:PPM,2:IBUS,3:SBUS,4:SBUS_NI,5:DSM,6:SUMD,7:SRXL,8:SRXL2,9:CRSF,10:ST24,11:FPORT,12:FPORT2,13:FastSBUS
+    GSCALAR(rcin_protocols, "RC_PROTOCOLS", 1),
+
+    // RC_PROTOCOLS copied from RC_Channel/RC_Channels_Varinfo.h
+    // @Param: RC_MSGRATE
+    // @DisplayName: DroneCAN RC Message rate
+    // @Description: Rate at which RC input is sent via DroneCAN
+    // @User: Advanced
+    // @Increment: 1
+    // @Range: 0 255
+    // @Units: Hz
+    GSCALAR(rcin_rate_hz, "RC_MSGRATE", 50),
+
+    // @Param: RC1_PORT
+    // @DisplayName: RC input port
+    // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to RC input.
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    GSCALAR(rcin1_port, "RC1_PORT", AP_PERIPH_RC1_PORT_DEFAULT),
+#endif  // HAL_PERIPH_ENABLE_RCIN
 
     AP_VAREND
 };
