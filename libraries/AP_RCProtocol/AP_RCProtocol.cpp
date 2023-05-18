@@ -381,15 +381,18 @@ uint8_t AP_RCProtocol::num_channels()
 
 uint16_t AP_RCProtocol::read(uint8_t chan)
 {
-    return _pwm_values[chan];
+    if (_detected_protocol != AP_RCProtocol::NONE) {
+        return _pwm_values[chan];
+    }
+    return 0;
 }
 
 void AP_RCProtocol::read(uint16_t *pwm, uint8_t n)
 {
-    if (n >= MAX_RCIN_CHANNELS) {
-        n = MAX_RCIN_CHANNELS;
+    if (_detected_protocol != AP_RCProtocol::NONE) {
+        n = MIN(n, MAX_RCIN_CHANNELS);
+        memcpy(pwm, _pwm_values, n*sizeof(pwm[0]));
     }
-    memcpy(pwm, _pwm_values, n*sizeof(pwm[0]));
 }
 
 /*

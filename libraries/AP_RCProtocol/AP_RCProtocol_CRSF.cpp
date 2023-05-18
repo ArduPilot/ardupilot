@@ -83,7 +83,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-//#define CRSF_DEBUG
+#define CRSF_DEBUG
 //#define CRSF_DEBUG_CHARS
 #ifdef CRSF_DEBUG
 # define debug(fmt, args...)	hal.console->printf("CRSF: " fmt "\n", ##args)

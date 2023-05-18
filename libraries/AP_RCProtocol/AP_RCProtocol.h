@@ -197,7 +197,7 @@ private:
     // return true if a specific protocol is enabled
     bool protocol_enabled(enum rcprotocol_t protocol) const;
 
-    void add_input(enum rcprotocol_t protocol, uint8_t num_channels, uint16_t *values, int16_t rssi=-1, int16_t rx_link_quality=-1);
+    void add_input(enum rcprotocol_t protocol, uint8_t num_channels, uint16_t *values, int16_t rssi, int16_t rx_link_quality);
 
     enum rcprotocol_t _detected_protocol = NONE;
     uint16_t _disabled_for_pulses;
