@@ -216,12 +216,15 @@ AP_HW_rFCU                           1102
 AP_HW_rGNSS                          1103
 AP_HW_AEROFOX_AIRSPEED_DLVR          1104
 AP_HW_KakuteH7-Wing                  1105
+<<<<<<< Updated upstream
 AP_HW_SpeedyBeeF405WING              1106
 
 
 AP_HW_PixSurveyA-IND                 1107
 
 AP_HW_JFB110                         1110
+=======
+>>>>>>> Stashed changes
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206

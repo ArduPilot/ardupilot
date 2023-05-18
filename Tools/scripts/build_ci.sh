@@ -130,7 +130,7 @@ for t in $CI_BUILD_TARGET; do
     fi
     if [ "$t" == "sitltest-can" ]; then
         echo "Building SITL Periph GPS"
-        $waf configure --board sitl --force-32bit
+        $waf configure --board sitl
         $waf copter
         run_autotest "Copter" "build.SITLPeriphGPS" "test.CAN"
         continue
@@ -285,8 +285,6 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board Durandal
         $waf clean
         $waf copter
-        echo "Building CPUInfo"
-        $waf --target=tool/CPUInfo
 
         # test external flash build
         echo "Building SPRacingH7"
@@ -307,24 +305,6 @@ for t in $CI_BUILD_TARGET; do
     if [ "$t" == "CubeOrange-ODID" ]; then
         echo "Building CubeOrange-ODID"
         $waf configure --board CubeOrange-ODID
-        $waf clean
-        $waf copter
-        $waf plane
-        continue
-    fi
-
-    if [ "$t" == "dds-stm32h7" ]; then
-        echo "Building with DDS support on a STM32H7"
-        $waf configure --board Durandal --enable-dds
-        $waf clean
-        $waf copter
-        $waf plane
-        continue
-    fi
-
-    if [ "$t" == "dds-sitl" ]; then
-        echo "Building with DDS support on SITL"
-        $waf configure --board sitl --enable-dds
         $waf clean
         $waf copter
         $waf plane
@@ -400,12 +380,6 @@ for t in $CI_BUILD_TARGET; do
     if [ "$t" == "python-cleanliness" ]; then
         echo "Checking Python code cleanliness"
         ./Tools/scripts/run_flake8.py
-        continue
-    fi
-
-    if [ "$t" == "astyle-cleanliness" ]; then
-        echo "Checking AStyle code cleanliness"
-        ./Tools/scripts/run_astyle.py
         continue
     fi
 

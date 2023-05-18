@@ -1,11 +1,7 @@
 #pragma once
 
-#include "AC_PrecLand_config.h"
-
-#if AC_PRECLAND_COMPANION_ENABLED
-
-#include "AC_PrecLand_Backend.h"
 #include <AP_Math/AP_Math.h>
+#include "AC_PrecLand_Backend.h"
 
 /*
  * AC_PrecLand_Companion - implements precision landing using target vectors provided
@@ -50,6 +46,3 @@ private:
     uint32_t            _los_meas_time_ms;      // system time in milliseconds when los was measured
     bool                _wrong_frame_msg_sent;
 };
-
-
-#endif // AC_PRECLAND_COMPANION_ENABLED

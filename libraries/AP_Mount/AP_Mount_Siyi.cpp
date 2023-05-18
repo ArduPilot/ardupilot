@@ -33,7 +33,7 @@ void AP_Mount_Siyi::init()
         _initialised = true;
         set_mode((enum MAV_MOUNT_MODE)_params.default_mode.get());
     }
-    AP_Mount_Backend::init();
+
 }
 
 // update mount position - should be called periodically
@@ -177,8 +177,10 @@ void AP_Mount_Siyi::read_incoming_packets()
 
     // process bytes received
     for (int16_t i = 0; i < nbytes; i++) {
-        uint8_t b;
-        if (!_uart->read(b)) {
+        const int16_t b = _uart->read();
+
+        // sanity check byte
+        if ((b < 0) || (b > 0xFF)) {
             continue;
         }
 
@@ -625,6 +627,7 @@ bool AP_Mount_Siyi::record_video(bool start_recording)
     return ret;
 }
 
+<<<<<<< Updated upstream
 // set zoom specified as a rate or percentage
 bool AP_Mount_Siyi::set_zoom(ZoomType zoom_type, float zoom_value)
 {
@@ -642,11 +645,19 @@ bool AP_Mount_Siyi::set_zoom(ZoomType zoom_type, float zoom_value)
 
     // unsupported zoom type
     return false;
+=======
+// set camera zoom step.  returns true on success
+// zoom out = -1, hold = 0, zoom in = 1
+bool AP_Mount_Siyi::set_zoom_step(int8_t zoom_step)
+{
+    return send_1byte_packet(SiyiCommandId::MANUAL_ZOOM_AND_AUTO_FOCUS, (uint8_t)zoom_step);
+>>>>>>> Stashed changes
 }
 
 // set focus in, out or hold.  returns true on success
 // focus in = -1, focus hold = 0, focus out = 1
 bool AP_Mount_Siyi::set_manual_focus_step(int8_t focus_step)
+<<<<<<< Updated upstream
 {
     return send_1byte_packet(SiyiCommandId::MANUAL_FOCUS, (uint8_t)focus_step);
 }
@@ -654,6 +665,15 @@ bool AP_Mount_Siyi::set_manual_focus_step(int8_t focus_step)
 // auto focus.  returns true on success
 bool AP_Mount_Siyi::set_auto_focus()
 {
+=======
+{
+    return send_1byte_packet(SiyiCommandId::MANUAL_FOCUS, (uint8_t)focus_step);
+}
+
+// auto focus.  returns true on success
+bool AP_Mount_Siyi::set_auto_focus()
+{
+>>>>>>> Stashed changes
     return send_1byte_packet(SiyiCommandId::AUTO_FOCUS, 1);
 }
 

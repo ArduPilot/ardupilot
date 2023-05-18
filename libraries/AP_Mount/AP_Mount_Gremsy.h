@@ -18,6 +18,9 @@ public:
     // Constructor
     using AP_Mount_Backend::AP_Mount_Backend;
 
+    // init
+    void init() override {}
+
     // update mount position
     void update() override;
 

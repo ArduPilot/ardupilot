@@ -44,9 +44,7 @@
 #define OPTIMIZE(level) __attribute__((optimize(level)))
 
 // sometimes we need to prevent inlining to prevent large stack usage
-#ifndef NOINLINE
 #define NOINLINE __attribute__((noinline))
-#endif
 
 // used to ignore results for functions marked as warn unused
 #define IGNORE_RETURN(x) do {if (x) {}} while(0)
@@ -160,7 +158,7 @@ bool hex_to_uint8(uint8_t a, uint8_t &res);  // return the uint8 value of an asc
 /*
   strncpy without the warning for not leaving room for nul termination
  */
-size_t strncpy_noterm(char *dest, const char *src, size_t n);
+void strncpy_noterm(char *dest, const char *src, size_t n);
 
 // return the numeric value of an ascii hex character
 int16_t char_to_hex(char a);

@@ -579,14 +579,6 @@ const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
     MAV_STREAM_TERMINATOR // must have this at end of stream_entries
 };
 
-MISSION_STATE GCS_MAVLINK_Copter::mission_state(const class AP_Mission &mission) const
-{
-    if (copter.mode_auto.paused()) {
-        return MISSION_STATE_PAUSED;
-    }
-    return GCS_MAVLINK::mission_state(mission);
-}
-
 bool GCS_MAVLINK_Copter::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
 #if MODE_AUTO_ENABLED == ENABLED
@@ -648,7 +640,7 @@ void GCS_MAVLINK_Copter::handle_command_ack(const mavlink_message_t &msg)
 */
 void GCS_MAVLINK_Copter::handle_landing_target(const mavlink_landing_target_t &packet, uint32_t timestamp_ms)
 {
-#if AC_PRECLAND_ENABLED
+#if PRECISION_LANDING == ENABLED
     copter.precland.handle_msg(packet, timestamp_ms);
 #endif
 }

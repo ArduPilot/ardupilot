@@ -14,12 +14,6 @@ public:
 
     void update() override;
 
-    // adjust for simulated board temperature
-    static void temperature_adjustment(float &p, float &T);
-
-    // adjust for wind effects
-    static float wind_pressure_correction(uint8_t instance);
-
 protected:
 
     void update_healthy_flag(uint8_t instance) override { _frontend.sensors[instance].healthy = healthy(instance); };
@@ -37,6 +31,12 @@ private:
     uint32_t _last_store_time;
     static const uint8_t _buffer_length = 50;
     VectorN<readings_baro, _buffer_length> _buffer;
+
+    // adjust for simulated board temperature
+    void temperature_adjustment(float &p, float &T);
+
+    // adjust for wind effects
+    float wind_pressure_correction(void);
 
     // is the barometer usable for flight 
     bool healthy(uint8_t instance);

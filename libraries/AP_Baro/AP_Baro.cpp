@@ -43,7 +43,7 @@
 #include "AP_Baro_DPS280.h"
 #include "AP_Baro_BMP388.h"
 #include "AP_Baro_Dummy.h"
-#include "AP_Baro_DroneCAN.h"
+#include "AP_Baro_UAVCAN.h"
 #include "AP_Baro_MSP.h"
 #include "AP_Baro_ExternalAHRS.h"
 #include "AP_Baro_ICP101XX.h"
@@ -60,6 +60,10 @@
 
 #ifndef HAL_BARO_FILTER_DEFAULT
  #define HAL_BARO_FILTER_DEFAULT 0 // turned off by default
+#endif
+
+#if !defined(HAL_PROBE_EXTERNAL_I2C_BAROS) && !HAL_MINIMIZE_FEATURES
+#define HAL_PROBE_EXTERNAL_I2C_BAROS
 #endif
 
 #ifndef HAL_BARO_PROBE_EXT_DEFAULT
@@ -169,7 +173,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Increment: 1
     AP_GROUPINFO("_FLTR_RNG", 13, AP_Baro, _filter_range, HAL_BARO_FILTER_DEFAULT),
 
-#if AP_BARO_PROBE_EXTERNAL_I2C_BUSES || AP_BARO_MSP_ENABLED
+#if defined(HAL_PROBE_EXTERNAL_I2C_BAROS) || defined(AP_BARO_MSP_ENABLED)
     // @Param: _PROBE_EXT
     // @DisplayName: External barometers to probe
     // @Description: This sets which types of external i2c barometer to look for. It is a bitmask of barometer types. The I2C buses to probe is based on BARO_EXT_BUS. If BARO_EXT_BUS is -1 then it will probe all external buses, otherwise it will probe just the bus number given in BARO_EXT_BUS.
@@ -601,18 +605,15 @@ void AP_Baro::init(void)
     if (sitl == nullptr) {
         AP_HAL::panic("No SITL pointer");
     }
-#if !AP_TEST_DRONECAN_DRIVERS
-    // use dronecan instances instead of SITL instances
     for(uint8_t i = 0; i < sitl->baro_count; i++) {
         ADD_BACKEND(new AP_Baro_SITL(*this));
     }
 #endif
-#endif
 
-#if AP_BARO_DRONECAN_ENABLED
+#if AP_BARO_UAVCAN_ENABLED
     // Detect UAVCAN Modules, try as many times as there are driver slots
     for (uint8_t i = 0; i < BARO_MAX_DRIVERS; i++) {
-        ADD_BACKEND(AP_Baro_DroneCAN::probe(*this));
+        ADD_BACKEND(AP_Baro_UAVCAN::probe(*this));
     }
 #endif
 
@@ -762,7 +763,7 @@ void AP_Baro::init(void)
 #endif
     }
 
-#if AP_BARO_PROBE_EXTERNAL_I2C_BUSES
+#ifdef HAL_PROBE_EXTERNAL_I2C_BAROS
     _probe_i2c_barometers();
 #endif
 

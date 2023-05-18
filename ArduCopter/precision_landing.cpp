@@ -4,7 +4,7 @@
 
 #include "Copter.h"
 
-#if AC_PRECLAND_ENABLED
+#if PRECISION_LANDING == ENABLED
 
 void Copter::init_precland()
 {

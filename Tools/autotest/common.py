@@ -1494,11 +1494,10 @@ class AutoTest(ABC):
                  replay=False,
                  sup_binaries=[],
                  reset_after_every_test=False,
-                 force_32bit=False,
+                 sitl_32bit=False,
                  ubsan=False,
                  ubsan_abort=False,
                  num_aux_imus=0,
-                 dronecan_tests=False,
                  build_opts={}):
 
         self.start_time = time.time()
@@ -1522,7 +1521,7 @@ class AutoTest(ABC):
             self.speedup = self.default_speedup()
         self.sup_binaries = sup_binaries
         self.reset_after_every_test = reset_after_every_test
-        self.force_32bit = force_32bit
+        self.sitl_32bit = sitl_32bit
         self.ubsan = ubsan
         self.ubsan_abort = ubsan_abort
         self.build_opts = build_opts
@@ -1579,7 +1578,6 @@ class AutoTest(ABC):
             offline=self.terrain_in_offline_mode
         )
         self.terrain_data_messages_sent = 0  # count of messages back
-        self.dronecan_tests = dronecan_tests
 
     def __del__(self):
         if self.rc_thread is not None:
@@ -1986,8 +1984,7 @@ class AutoTest(ABC):
         self.progress("Rebooting SITL")
         self.reboot_sitl_mav(required_bootcount=required_bootcount, force=force)
         self.do_heartbeats(force=True)
-        if self.frame != 'sailboat':  # sailboats drift with wind!
-            self.assert_simstate_location_is_at_startup_location()
+        self.assert_simstate_location_is_at_startup_location()
 
     def reboot_sitl_mavproxy(self, required_bootcount=None):
         """Reboot SITL instance using MAVProxy and wait for it to reconnect."""
@@ -2783,7 +2780,7 @@ class AutoTest(ABC):
                         continue
                     if "#if FRAME_CONFIG == HELI_FRAME" in line:
                         continue
-                    if "#if AC_PRECLAND_ENABLED" in line:
+                    if "#if PRECISION_LANDING == ENABLED" in line:
                         continue
                     if "#end" in line:
                         continue
@@ -4981,23 +4978,17 @@ class AutoTest(ABC):
         else:
             return None
 
-    def set_safetyswitch_on(self, **kwargs):
-        self.set_safetyswitch(1, **kwargs)
+    def set_safetyswitch_on(self):
+        self.set_safetyswitch(1)
 
-    def set_safetyswitch_off(self, **kwargs):
-        self.set_safetyswitch(0, **kwargs)
+    def set_safetyswitch_off(self):
+        self.set_safetyswitch(0)
 
     def set_safetyswitch(self, value, target_system=1, target_component=1):
         self.mav.mav.set_mode_send(
             target_system,
             mavutil.mavlink.MAV_MODE_FLAG_DECODE_POSITION_SAFETY,
             value)
-        self.wait_sensor_state(
-            mavutil.mavlink.MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS,
-            True, not value, True,
-            verbose=True,
-            timeout=30
-        )
 
     def armed(self):
         """Return true if vehicle is armed and safetyoff"""
@@ -5820,7 +5811,6 @@ class AutoTest(ABC):
             target_sysid=target_sysid,
             target_compid=target_compid,
             mav=mav,
-            quiet=quiet,
         )
         self.run_cmd_get_ack(command, want_result, timeout, quiet=quiet, mav=mav)
 
@@ -7213,10 +7203,6 @@ class AutoTest(ABC):
                 raise WaitModeTimeout("Did not change mode")
         self.progress("Got mode %s" % mode)
 
-    def assert_mode_is(self, mode):
-        if not self.mode_is(mode):
-            raise NotAchievedException("Expected mode %s" % str(mode))
-
     def wait_gps_sys_status_not_present_or_enabled_and_healthy(self, timeout=30):
         self.progress("Waiting for GPS health")
         tstart = self.get_sim_time_cached()
@@ -7319,6 +7305,7 @@ class AutoTest(ABC):
         # Check fence is not enabled
         self.assert_not_receiving_message('FENCE_STATUS', timeout=timeout)
 
+<<<<<<< Updated upstream
     def NoArmWithoutMissionItems(self):
         '''ensure we can't arm in auto mode without mission items present'''
         # load a trivial mission
@@ -7332,6 +7319,8 @@ class AutoTest(ABC):
         self.assert_prearm_failure('Mode requires mission',
                                    other_prearm_failures_fatal=False)
 
+=======
+>>>>>>> Stashed changes
     def assert_prearm_failure(self,
                               expected_statustext,
                               timeout=5,
@@ -7882,9 +7871,12 @@ Also, ignores heartbeats not from our target system'''
             passed = False
             reset_needed = True
 
+<<<<<<< Updated upstream
         # if we haven't already reset ArduPilot because it's dead,
         # then ensure the vehicle was disarmed at the end of the test.
         # If it wasn't then the test is considered failed:
+=======
+>>>>>>> Stashed changes
         if ardupilot_alive and self.armed() and not self.is_tracker():
             if ex is None:
                 ex = ArmedAtEndOfTestException("Still armed at end of test")
@@ -7901,9 +7893,12 @@ Also, ignores heartbeats not from our target system'''
                 self.progress("Force-rebooting SITL")
                 self.reboot_sitl() # that'll learn it
             passed = False
+<<<<<<< Updated upstream
         elif not passed:  # implicit reboot after a failed test:
             self.progress("Test failed but ArduPilot process alive; rebooting")
             self.reboot_sitl() # that'll learn it
+=======
+>>>>>>> Stashed changes
 
         if self._mavproxy is not None:
             self.progress("Stopping auto-started mavproxy")
@@ -9602,8 +9597,6 @@ Also, ignores heartbeats not from our target system'''
                 self.set_rc(interlock_channel, 1000)
 
         self.start_subtest("Test all mode arming")
-        self.wait_ready_to_arm()
-
         if self.arming_test_mission() is not None:
             self.load_mission(self.arming_test_mission())
 
@@ -11697,12 +11690,10 @@ switch value'''
                 0,
                 want_result=mavutil.mavlink.MAV_RESULT_FAILED
             )
-            self.assert_prearm_failure("Motors Emergency Stopped",
-                                       other_prearm_failures_fatal=False)
+            self.wait_statustext("PreArm: Motors Emergency Stopped", check_context=True)
             self.reboot_sitl()
-            self.assert_prearm_failure(
-                "Motors Emergency Stopped",
-                other_prearm_failures_fatal=False)
+            self.delay_sim_time(10)
+            self.assert_prearm_failure("Motors Emergency Stopped")
             self.context_pop()
             self.reboot_sitl()
 
@@ -12906,27 +12897,6 @@ switch value'''
         self.reboot_sitl()
         if ex is not None:
             raise ex
-
-    def CompassPrearms(self):
-        '''test compass prearm checks'''
-        self.wait_ready_to_arm()
-        # XY are checked specially:
-        for axis in 'X', 'Y':  # ArduPilot only checks these two axes
-            self.context_push()
-            self.set_parameter(f"COMPASS_OFS2_{axis}", 1000)
-            self.assert_prearm_failure("Compasses inconsistent")
-            self.context_pop()
-            self.wait_ready_to_arm()
-
-        # now test the total anglular difference:
-        self.context_push()
-        self.set_parameters({
-            "COMPASS_OFS2_X": 1000,
-            "COMPASS_OFS2_Y": -1000,
-            "COMPASS_OFS2_Z": -10000,
-        })
-        self.assert_prearm_failure("Compasses inconsistent")
-        self.context_pop()
 
     def AHRS_ORIENTATION(self):
         '''test AHRS_ORIENTATION parameter works'''

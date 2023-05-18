@@ -24,7 +24,11 @@ jobs:
           - os: ubuntu
             name: focal
           - os: ubuntu
+<<<<<<< Updated upstream
             name: jammy
+=======
+            name: hirsute
+>>>>>>> Stashed changes
           - os: archlinux
             name: latest
           - os: debian

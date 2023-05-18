@@ -42,6 +42,10 @@ public:
     static void send_on_uart(uint8_t* pBuffer, uint8_t length);
     static void change_baud_rate(uint32_t baudrate);
     // configure the VTX from Spektrum data
+<<<<<<< Updated upstream
+=======
+    static void configure_vtx(uint8_t band, uint8_t channel, uint8_t power, uint8_t pitmode);
+>>>>>>> Stashed changes
 
 private:
 

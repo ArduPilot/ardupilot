@@ -13,11 +13,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AP_Proximity_config.h"
-
-#if AP_PROXIMITY_MAV_ENABLED
-
 #include "AP_Proximity_MAV.h"
+
+#if HAL_PROXIMITY_ENABLED
 #include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -274,4 +272,4 @@ void AP_Proximity_MAV::handle_obstacle_distance_3d_msg(const mavlink_message_t &
     return;
 }
 
-#endif // AP_PROXIMITY_MAV_ENABLED
+#endif // HAL_PROXIMITY_ENABLED

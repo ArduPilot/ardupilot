@@ -32,7 +32,7 @@
 #include "DiscreteRGBLed.h"
 #include "DiscoLED.h"
 #include "Led_Sysfs.h"
-#include "DroneCAN_RGB_LED.h"
+#include "UAVCAN_RGB_LED.h"
 #include "SITL_SFML_LED.h"
 #include <stdio.h>
 #include "AP_BoardLED2.h"
@@ -79,7 +79,11 @@ AP_Notify *AP_Notify::_singleton;
 
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
     #define BUILD_DEFAULT_LED_TYPE (Notify_LED_Board | I2C_LEDS |\
+<<<<<<< Updated upstream
                                     Notify_LED_DroneCAN)
+=======
+                                    Notify_LED_UAVCAN)
+>>>>>>> Stashed changes
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE || \
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET || \
@@ -138,8 +142,9 @@ AP_Notify *AP_Notify::_singleton;
 #define HAL_BUZZER_PIN -1
 #endif
 
-#ifndef DEFAULT_BUZZ_ON_LVL
-#define DEFAULT_BUZZ_ON_LVL 1
+#ifndef HAL_BUZZER_ON
+#define HAL_BUZZER_ON 1
+#define HAL_BUZZER_OFF 0
 #endif
 
 // table of user settable parameters
@@ -203,7 +208,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Description: Specifies pin level that indicates buzzer should play
     // @Values: 0:LowIsOn,1:HighIsOn
     // @User: Advanced
-    AP_GROUPINFO("BUZZ_ON_LVL", 7, AP_Notify, _buzzer_level, DEFAULT_BUZZ_ON_LVL),
+    AP_GROUPINFO("BUZZ_ON_LVL", 7, AP_Notify, _buzzer_level, HAL_BUZZER_ON),
 
     // @Param: BUZZ_VOLUME
     // @DisplayName: Buzzer volume
@@ -346,10 +351,10 @@ void AP_Notify::add_backends(void)
                 }
 #endif
                 break;
-            case Notify_LED_DroneCAN:
-#if HAL_ENABLE_DRONECAN_DRIVERS
-                ADD_BACKEND(new DroneCAN_RGB_LED(0));
-#endif // HAL_ENABLE_DRONECAN_DRIVERS
+            case Notify_LED_UAVCAN:
+#if HAL_CANMANAGER_ENABLED
+                ADD_BACKEND(new UAVCAN_RGB_LED(0));
+#endif // HAL_CANMANAGER_ENABLED
                 break;
 
             case Notify_LED_Scripting:
@@ -374,7 +379,7 @@ void AP_Notify::add_backends(void)
 // ChibiOS noise makers
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     ADD_BACKEND(new Buzzer());
-#if AP_NOTIFY_TONEALARM_ENABLED
+#if HAL_PWM_COUNT > 0 || HAL_DSHOT_ALARM_ENABLED
     ADD_BACKEND(new AP_ToneAlarm());
 #endif
 

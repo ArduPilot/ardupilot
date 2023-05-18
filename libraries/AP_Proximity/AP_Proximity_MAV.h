@@ -1,10 +1,8 @@
 #pragma once
 
-#include "AP_Proximity_config.h"
-
-#if AP_PROXIMITY_MAV_ENABLED
-
 #include "AP_Proximity_Backend.h"
+
+#if HAL_PROXIMITY_ENABLED
 
 class AP_Proximity_MAV : public AP_Proximity_Backend
 {
@@ -48,4 +46,4 @@ private:
     float _distance_upward;             // upward distance in meters
 };
 
-#endif // AP_PROXIMITY_MAV_ENABLED
+#endif // HAL_PROXIMITY_ENABLED

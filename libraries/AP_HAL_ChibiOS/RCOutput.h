@@ -105,11 +105,6 @@ public:
     void timer_tick(uint64_t last_run_us);
 
     /*
-      LED push
-     */
-    void led_timer_tick(uint64_t last_run_us);
-
-    /*
       setup for serial output to a set of ESCs, using the given
       baudrate. Assumes 1 start bit, 1 stop bit, LSB first and 8
       databits. This is used for ESC configuration and firmware
@@ -419,17 +414,6 @@ private:
     thread_t *rcout_thread_ctx;
 
     /*
-      timer thread for use by led events
-     */
-    thread_t *led_thread_ctx;
-
-    /*
-      mutex to control LED thread creation
-     */
-    HAL_Semaphore led_thread_sem;
-    bool led_thread_created;
-
-    /*
       structure for IRQ handler for soft-serial input
      */
     static struct irq_state {
@@ -598,10 +582,6 @@ private:
     // update safety switch and LED
     void safety_update(void);
 
-    // LED thread
-    void led_thread();
-    bool start_led_thread();
-
     uint32_t telem_request_mask;
 
     /*
@@ -622,12 +602,12 @@ private:
     void dshot_send_groups(uint64_t time_out_us);
     void dshot_send(pwm_group &group, uint64_t time_out_us);
     bool dshot_send_command(pwm_group &group, uint8_t command, uint8_t chan);
-    static void dshot_update_tick(virtual_timer_t*, void* p);
+    static void dshot_update_tick(void* p);
     static void dshot_send_next_group(void* p);
     // release locks on the groups that are pending in reverse order
-    void dshot_collect_dma_locks(uint64_t last_run_us, bool led_thread = false);
+    void dshot_collect_dma_locks(uint64_t last_run_us);
     static void dma_up_irq_callback(void *p, uint32_t flags);
-    static void dma_unlock(virtual_timer_t*, void *p);
+    static void dma_unlock(void *p);
     void dma_cancel(pwm_group& group);
     bool mode_requires_dma(enum output_mode mode) const;
     bool setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high,
@@ -647,7 +627,7 @@ private:
     bool bdshot_decode_dshot_telemetry(pwm_group& group, uint8_t chan);
     static uint8_t bdshot_find_next_ic_channel(const pwm_group& group);
     static void bdshot_dma_ic_irq_callback(void *p, uint32_t flags);
-    static void bdshot_finish_dshot_gcr_transaction(virtual_timer_t* vt, void *p);
+    static void bdshot_finish_dshot_gcr_transaction(void *p);
     bool bdshot_setup_group_ic_DMA(pwm_group &group);
     static void bdshot_receive_pulses_DMAR(pwm_group* group);
     static void bdshot_config_icu_dshot(stm32_tim_t* TIMx, uint8_t chan, uint8_t ccr_ch);
@@ -670,7 +650,7 @@ private:
     bool serial_read_byte(uint8_t &b);
     void fill_DMA_buffer_byte(uint32_t *buffer, uint8_t stride, uint8_t b , uint32_t bitval);
     static void serial_bit_irq(void);
-    static void serial_byte_timeout(virtual_timer_t* vt, void *ctx);
+    static void serial_byte_timeout(void *ctx);
 
 };
 

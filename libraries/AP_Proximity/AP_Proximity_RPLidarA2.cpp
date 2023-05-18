@@ -26,12 +26,9 @@
  *
  */
 
-#include "AP_Proximity_config.h"
-
-#if AP_PROXIMITY_RPLIDARA2_ENABLED
-
 #include "AP_Proximity_RPLidarA2.h"
 
+#if HAL_PROXIMITY_ENABLED
 #include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -364,4 +361,4 @@ void AP_Proximity_RPLidarA2::parse_response_data()
     }
 }
 
-#endif // AP_PROXIMITY_RPLIDARA2_ENABLED
+#endif // HAL_PROXIMITY_ENABLED

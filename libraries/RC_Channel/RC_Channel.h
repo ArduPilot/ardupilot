@@ -2,14 +2,14 @@
 /// @brief	RC_Channel manager, with EEPROM-backed storage of constants.
 #pragma once
 
-#include "RC_Channel_config.h"
-
-#if AP_RC_CHANNEL_ENABLED
-
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/Bitmask.h>
+
+#ifndef AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
+#define AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED 1
+#endif
 
 #define NUM_RC_CHANNELS 16
 
@@ -582,7 +582,7 @@ public:
     // get mask of enabled protocols
     uint32_t enabled_protocols() const;
 
-    // returns true if we have had a direct detach RC receiver, does not include overrides
+    // returns true if we have had a direct detach RC reciever, does not include overrides
     bool has_had_rc_receiver() const { return _has_had_rc_receiver; }
 
     // returns true if we have had an override on any channel
@@ -653,7 +653,7 @@ private:
 
     uint32_t last_update_ms;
     bool has_new_overrides;
-    bool _has_had_rc_receiver; // true if we have had a direct detach RC receiver, does not include overrides
+    bool _has_had_rc_receiver; // true if we have had a direct detach RC reciever, does not include overrides
     bool _has_had_override; // true if we have had an override on any channel
 
     AP_Float _override_timeout;
@@ -680,5 +680,3 @@ private:
 };
 
 RC_Channels &rc();
-
-#endif  // AP_RC_CHANNEL_ENABLED

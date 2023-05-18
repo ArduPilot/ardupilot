@@ -131,10 +131,8 @@ bool AP_Mission::start_command_camera(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_SET_CAMERA_ZOOM:
         if (cmd.content.set_camera_zoom.zoom_type == ZOOM_TYPE_CONTINUOUS) {
-            return camera->set_zoom(ZoomType::RATE, cmd.content.set_camera_zoom.zoom_value);
-        }
-        if (cmd.content.set_camera_zoom.zoom_type == ZOOM_TYPE_RANGE) {
-            return camera->set_zoom(ZoomType::PCT, cmd.content.set_camera_zoom.zoom_value);
+            camera->set_zoom_step(cmd.content.set_camera_zoom.zoom_value);
+            return true;
         }
         return false;
 

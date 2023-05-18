@@ -65,7 +65,7 @@ case ${RELEASE_CODENAME} in
     vanessa)
         RELEASE_CODENAME='jammy'
         ;;
-    una | uma | ulyssa | ulyana | jolnir)
+    una | uma | ulyssa | ulyana)
         RELEASE_CODENAME='focal'
         ;;
     tricia | tina | tessa | tara)

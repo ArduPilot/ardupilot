@@ -116,6 +116,10 @@ public:
     {
 
     public:
+
+        // yaw(): main product of AutoYaw; the heading:
+        float yaw();
+
         // mode(): current method of determining desired yaw:
         autopilot_yaw_mode mode() const
         {
@@ -125,6 +129,8 @@ public:
         void set_mode(autopilot_yaw_mode new_mode);
         autopilot_yaw_mode default_mode(bool rtl) const;
 
+        // rate_cds(): desired yaw rate in centidegrees/second:
+        float rate_cds() const;
         void set_rate(float new_rate_cds);
 
         // set_roi(...): set a "look at" location:
@@ -136,12 +142,6 @@ public:
                            bool relative_angle);
 
     private:
-
-        // yaw_cd(): main product of AutoYaw; the heading:
-        float yaw_cd();
-
-        // rate_cds(): desired yaw rate in centidegrees/second:
-        float rate_cds();
 
         float look_ahead_yaw();
         float roi_yaw();
@@ -163,6 +163,9 @@ public:
 
         // heading when in yaw_look_ahead_yaw
         float _look_ahead_yaw;
+
+        // turn rate (in cds) when auto_yaw_mode is set to AUTO_YAW_RATE
+        float _rate_cds;
 
         // used to reduce update rate to 100hz:
         uint8_t roi_yaw_counter;

@@ -34,7 +34,6 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_HAL',
     'AP_HAL_Empty',
     'AP_InertialSensor',
-    'AP_KDECAN',
     'AP_Math',
     'AP_Mission',
     'AP_DAL',
@@ -135,7 +134,6 @@ def get_legacy_defines(sketch_name, bld):
 IGNORED_AP_LIBRARIES = [
     'doc',
     'AP_Scripting', # this gets explicitly included when it is needed and should otherwise never be globbed in
-    'AP_DDS',
 ]
 
 
@@ -325,9 +323,6 @@ def ap_stlib(bld, **kw):
     kw['ap_libraries'] = unique_list(kw['ap_libraries'] + bld.env.AP_LIBRARIES)
     for l in kw['ap_libraries']:
         bld.ap_library(l, kw['ap_vehicle'])
-
-    if 'dynamic_source' not in kw:
-        kw['dynamic_source'] = 'modules/DroneCAN/libcanard/dsdlc_generated/src/**.c'
 
     kw['features'] = kw.get('features', []) + ['cxx', 'cxxstlib']
     kw['target'] = kw['name']

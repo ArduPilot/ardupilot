@@ -49,14 +49,6 @@ extern AP_IOMCU iomcu;
 #endif
 
 #define RCOU_SERIAL_TIMING_DEBUG 0
-#define LED_THD_WA_SIZE 256
-#ifndef HAL_NO_LED_THREAD
-#if defined(HAL_NO_RCOUT_THREAD)
-#define HAL_NO_LED_THREAD 1
-#else
-#define HAL_NO_LED_THREAD 0
-#endif
-#endif
 
 #define TELEM_IC_SAMPLE 16
 
@@ -153,52 +145,6 @@ void RCOutput::init()
     _initialised = true;
 }
 
-// start the led thread
-bool RCOutput::start_led_thread(void)
-{
-#if HAL_NO_LED_THREAD
-    return false;
-#else
-    WITH_SEMAPHORE(led_thread_sem);
-
-    if (led_thread_created) {
-        return true;
-    }
-
-    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&RCOutput::led_thread, void), "led", LED_THD_WA_SIZE, AP_HAL::Scheduler::PRIORITY_LED, 0)) {
-        return false;
-    }
-
-    led_thread_created = true;
-    return true;
-#endif
-}
-
-/*
-  thread for handling LED RCOutpu
- */
-void RCOutput::led_thread()
-{
-    {
-        WITH_SEMAPHORE(led_thread_sem);
-        led_thread_ctx = chThdGetSelfX();
-    }
-
-    // don't start outputting until fully configured
-    while (!hal.scheduler->is_system_initialized()) {
-        hal.scheduler->delay_microseconds(1000);
-    }
-
-    while (true) {
-        chEvtWaitOne(EVT_LED_SEND);
-        // if DMA sharing is in effect there can be quite a delay between the request to begin the cycle and
-        // actually sending out data - thus we need to work out how much time we have left to collect the locks
-
-        // process any pending LED output requests
-        led_timer_tick(LED_OUTPUT_PERIOD_US + AP_HAL::micros64());
-    }
-}
-
 /*
   thread for handling RCOutput send
  */
@@ -217,7 +163,7 @@ void RCOutput::rcout_thread()
     // dshot is quite sensitive to timing, it's important to output pulses as
     // regularly as possible at the correct bitrate
     while (true) {
-        const auto mask = chEvtWaitOne(EVT_PWM_SEND | EVT_PWM_SYNTHETIC_SEND);
+        const auto mask = chEvtWaitOne(EVT_PWM_SEND | EVT_PWM_SYNTHETIC_SEND | EVT_LED_SEND);
         const bool have_pwm_event = (mask & (EVT_PWM_SEND | EVT_PWM_SYNTHETIC_SEND)) != 0;
         // start the clock
         last_thread_run_us = AP_HAL::micros64();
@@ -266,7 +212,7 @@ void RCOutput::rcout_thread()
     }
 }
 
-__RAMFUNC__ void RCOutput::dshot_update_tick(virtual_timer_t* vt, void* p)
+__RAMFUNC__ void RCOutput::dshot_update_tick(void* p)
 {
     chSysLockFromISR();
     RCOutput* rcout = (RCOutput*)p;
@@ -280,18 +226,13 @@ __RAMFUNC__ void RCOutput::dshot_update_tick(virtual_timer_t* vt, void* p)
 
 #if AP_HAL_SHARED_DMA_ENABLED
 // release locks on the groups that are pending in reverse order
-void RCOutput::dshot_collect_dma_locks(uint64_t time_out_us, bool led_thread)
+void RCOutput::dshot_collect_dma_locks(uint64_t time_out_us)
 {
     if (NUM_GROUPS == 0) {
         return;
     }
     for (int8_t i = NUM_GROUPS - 1; i >= 0; i--) {
         pwm_group &group = pwm_group_list[i];
-
-        if ((led_thread && !is_led_protocol(group.current_mode)) || is_led_protocol(group.current_mode)) {
-            continue;
-        }
-
         if (group.dma_handle != nullptr && group.dma_handle->is_locked()) {
             // calculate how long we have left
             uint64_t now = AP_HAL::micros64();
@@ -311,10 +252,10 @@ void RCOutput::dshot_collect_dma_locks(uint64_t time_out_us, bool led_thread)
             // timer wrap with ChibiOS timers. Use CH_CFG_ST_TIMEDELTA
             // as minimum. Don't allow for a very long delay (over _dshot_period_us)
             // to prevent bugs in handling timer wrap
-            const uint32_t max_delay_us = led_thread ? LED_OUTPUT_PERIOD_US : _dshot_period_us;
+            const uint32_t max_delay_us = _dshot_period_us;
             const uint32_t min_delay_us = 10; // matches our CH_CFG_ST_TIMEDELTA
             wait_us = constrain_uint32(wait_us, min_delay_us, max_delay_us);
-            mask = chEvtWaitOneTimeout(group.dshot_event_mask, MIN(TIME_MAX_INTERVAL, chTimeUS2I(wait_us)));
+            mask = chEvtWaitOneTimeout(group.dshot_event_mask, chTimeUS2I(wait_us));
 
             // no time left cancel and restart
             if (!mask) {
@@ -745,7 +686,7 @@ void RCOutput::push_local(void)
                     pwmEnableChannel(group.pwm_drv, j, width);
                 }
 #ifndef DISABLE_DSHOT
-                else if (is_dshot_protocol(group.current_mode) || is_led_protocol(group.current_mode)) {
+                else if (is_dshot_protocol(group.current_mode) || group.current_mode == MODE_NEOPIXEL || group.current_mode == MODE_PROFILED) {
                     // set period_us to time for pulse output, to enable very fast rates
                     period_us = group.dshot_pulse_time_us;
                 }
@@ -846,7 +787,7 @@ bool RCOutput::mode_requires_dma(enum output_mode mode) const
 #ifdef DISABLE_DSHOT
     return false;
 #else
-    return is_dshot_protocol(mode) || is_led_protocol(mode);
+    return is_dshot_protocol(mode) || (mode == MODE_NEOPIXEL) || (mode == MODE_PROFILED);
 #endif //#ifdef DISABLE_DSHOT
 }
 
@@ -1003,11 +944,6 @@ void RCOutput::set_group_mode(pwm_group &group)
     {
         uint8_t bits_per_pixel = 24;
         bool active_high = true;
-
-        if (!start_led_thread()) {
-            group.current_mode = MODE_PWM_NONE;
-            break;
-        }
 
         if (group.current_mode == MODE_PROFILED) {
             bits_per_pixel = 25;
@@ -1290,6 +1226,17 @@ void RCOutput::timer_tick(uint64_t time_out_us)
         return;
     }
 
+    // if we have enough time left send out LED data
+    if (serial_led_pending && (time_out_us > (AP_HAL::micros64() + (_dshot_period_us >> 1)))) {
+        serial_led_pending = false;
+        for (auto &group : pwm_group_list) {
+            serial_led_pending |= !serial_led_send(group);
+        }
+
+        // release locks on the groups that are pending in reverse order
+        dshot_collect_dma_locks(time_out_us);
+    }
+
     if (min_pulse_trigger_us == 0) {
         return;
     }
@@ -1300,27 +1247,6 @@ void RCOutput::timer_tick(uint64_t time_out_us)
         now - min_pulse_trigger_us > 4000) {
         // trigger at a minimum of 250Hz
         trigger_groups();
-    }
-}
-
-/*
-  periodic timer called from led thread. This is used for LED output
- */
-void RCOutput::led_timer_tick(uint64_t time_out_us)
-{
-    if (serial_group) {
-        return;
-    }
-
-    // if we have enough time left send out LED data
-    if (serial_led_pending && (time_out_us > (AP_HAL::micros64() + (LED_OUTPUT_PERIOD_US >> 1)))) {
-        serial_led_pending = false;
-        for (auto &group : pwm_group_list) {
-            serial_led_pending |= !serial_led_send(group);
-        }
-
-        // release locks on the groups that are pending in reverse order
-        dshot_collect_dma_locks(time_out_us, true);
     }
 }
 
@@ -1599,11 +1525,11 @@ void RCOutput::dshot_send(pwm_group &group, uint64_t time_out_us)
 /*
   send a set of Serial LED packets for a channel group
   return true if send was successful
-  called from led thread
  */
 bool RCOutput::serial_led_send(pwm_group &group)
 {
-    if (!group.serial_led_pending || !is_led_protocol(group.current_mode)) {
+    if (!group.serial_led_pending
+        || (group.current_mode != MODE_NEOPIXEL && group.current_mode != MODE_PROFILED)) {
         return true;
     }
 
@@ -1623,7 +1549,7 @@ bool RCOutput::serial_led_send(pwm_group &group)
         fill_DMA_buffer_serial_led(group);
     }
 
-    group.dshot_waiter = led_thread_ctx;
+    group.dshot_waiter = rcout_thread_ctx;
 
     chEvtGetAndClearEvents(group.dshot_event_mask);
 
@@ -1688,7 +1614,7 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
 /*
   unlock DMA channel after a dshot send completes and no return value is expected
  */
-__RAMFUNC__ void RCOutput::dma_unlock(virtual_timer_t* vt, void *p)
+__RAMFUNC__ void RCOutput::dma_unlock(void *p)
 {
     chSysLockFromISR();
     pwm_group *group = (pwm_group *)p;
@@ -1961,7 +1887,7 @@ void RCOutput::serial_bit_irq(void)
 /*
   timeout a byte read
  */
-void RCOutput::serial_byte_timeout(virtual_timer_t* vt, void *ctx)
+void RCOutput::serial_byte_timeout(void *ctx)
 {
     chSysLockFromISR();
     irq.timed_out = true;
@@ -2250,7 +2176,7 @@ bool RCOutput::set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, ou
     }
 
     // we cant add more or change the type after the first setup
-    if (is_led_protocol(grp->current_mode)) {
+    if (grp->current_mode == MODE_NEOPIXEL || grp->current_mode == MODE_PROFILED) {
         return false;
     }
 
@@ -2423,7 +2349,7 @@ void RCOutput::set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t 
         return;
     }
 
-    if ((grp->current_mode != grp->led_mode) && is_led_protocol(grp->led_mode)) {
+    if ((grp->current_mode != grp->led_mode) && ((grp->led_mode == MODE_NEOPIXEL) || (grp->led_mode == MODE_PROFILED))) {
         // Arrays have not yet been setup, do it now
         for (uint8_t j = 0; j < 4; j++) {
             delete[] grp->serial_led_data[j];
@@ -2451,7 +2377,7 @@ void RCOutput::set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t 
             return;
         }
 
-    } else if (!is_led_protocol(grp->current_mode)) {
+    } else if ((grp->current_mode != MODE_NEOPIXEL) && (grp->current_mode != MODE_PROFILED)) {
         return;
     }
 
@@ -2500,10 +2426,6 @@ void RCOutput::serial_led_send(const uint16_t chan)
         return;
     }
 
-    if (led_thread_ctx == nullptr) {
-        return;
-    }
-
     uint8_t i;
     pwm_group *grp = find_chan(chan, i);
     if (!grp) {
@@ -2512,12 +2434,12 @@ void RCOutput::serial_led_send(const uint16_t chan)
 
     WITH_SEMAPHORE(grp->serial_led_mutex);
 
-    if (grp->serial_nleds == 0 || !is_led_protocol(grp->current_mode)) {
+    if (grp->serial_nleds == 0 || (grp->current_mode != MODE_NEOPIXEL && grp->current_mode != MODE_PROFILED)) {
         return;
     }
 
     if (grp->prepared_send) {
-        chEvtSignal(led_thread_ctx, EVT_LED_SEND);
+        chEvtSignal(rcout_thread_ctx, EVT_LED_SEND);
         grp->serial_led_pending = true;
         serial_led_pending = true;
     }

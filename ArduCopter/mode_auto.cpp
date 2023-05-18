@@ -53,7 +53,7 @@ bool ModeAuto::init(bool ignore_checks)
         // reset flag indicating if pilot has applied roll or pitch inputs during landing
         copter.ap.land_repo_active = false;
 
-#if AC_PRECLAND_ENABLED
+#if PRECISION_LANDING == ENABLED
         // initialise precland state machine
         copter.precland_statemachine.init();
 #endif
@@ -2249,11 +2249,6 @@ bool ModeAuto::resume()
 {
     wp_nav->set_resume();
     return true;
-}
-
-bool ModeAuto::paused() const
-{
-    return wp_nav->paused();
 }
 
 #endif

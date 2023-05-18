@@ -1,11 +1,7 @@
 #pragma once
 
-#include "AC_PrecLand_config.h"
-
-#if AC_PRECLAND_ENABLED
-
-#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <stdint.h>
 #include "PosVelEKF.h"
 #include <AP_HAL/utility/RingBuffer.h>
@@ -127,18 +123,10 @@ private:
     // types of precision landing (used for PRECLAND_TYPE parameter)
     enum class Type : uint8_t {
         NONE = 0,
-#if AC_PRECLAND_COMPANION_ENABLED
         COMPANION = 1,
-#endif
-#if AC_PRECLAND_IRLOCK_ENABLED
         IRLOCK = 2,
-#endif
-#if AC_PRECLAND_SITL_GAZEBO_ENABLED
         SITL_GAZEBO = 3,
-#endif
-#if AC_PRECLAND_SITL_ENABLED
         SITL = 4,
-#endif
     };
 
     enum PLndOptions {
@@ -243,5 +231,3 @@ private:
 namespace AP {
     AC_PrecLand *ac_precland();
 };
-
-#endif // AC_PRECLAND_ENABLED

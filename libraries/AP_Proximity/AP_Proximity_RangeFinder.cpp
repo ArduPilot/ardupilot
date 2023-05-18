@@ -13,12 +13,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AP_Proximity_config.h"
-
-#if AP_PROXIMITY_RANGEFINDER_ENABLED
-
 #include "AP_Proximity_RangeFinder.h"
 
+#if HAL_PROXIMITY_ENABLED
 #include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -97,4 +94,4 @@ bool AP_Proximity_RangeFinder::get_upward_distance(float &distance) const
     return false;
 }
 
-#endif // AP_PROXIMITY_RANGEFINDER_ENABLED
+#endif // HAL_PROXIMITY_ENABLED

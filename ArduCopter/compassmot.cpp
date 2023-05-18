@@ -123,7 +123,7 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     EXPECT_DELAY_MS(5000);
 
     // enable motors and pass through throttle
-    motors->output_min();  // output lowest possible value to motors
+    enable_motor_output();
     motors->armed(true);
     hal.util->set_soft_armed(true);
 

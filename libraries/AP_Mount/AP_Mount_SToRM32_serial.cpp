@@ -16,7 +16,6 @@ void AP_Mount_SToRM32_serial::init()
         _initialised = true;
         set_mode((enum MAV_MOUNT_MODE)_params.default_mode.get());
     }
-    AP_Mount_Backend::init();
 
 }
 

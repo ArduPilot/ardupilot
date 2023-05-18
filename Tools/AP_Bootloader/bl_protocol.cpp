@@ -163,7 +163,7 @@ extern AP_FlashIface_JEDEC ext_flash;
 /*
   1ms timer tick callback
  */
-static void sys_tick_handler(virtual_timer_t* vt, void *ctx)
+static void sys_tick_handler(void *ctx)
 {
     chSysLockFromISR();
     chVTSetI(&systick_vt, chTimeMS2I(1), sys_tick_handler, nullptr);
@@ -314,9 +314,6 @@ jump_to_app()
     rccDisableAPB1R1(~0);
     rccDisableAPB1R2(~0);
 #elif defined(STM32L4)
-    rccDisableAPB1R1(~0);
-    rccDisableAPB1R2(~0);
-#elif defined(STM32L4PLUS)
     rccDisableAPB1R1(~0);
     rccDisableAPB1R2(~0);
 #else

@@ -132,7 +132,7 @@ void Copter::init_ardupilot()
     camera.init();
 #endif
 
-#if AC_PRECLAND_ENABLED
+#if PRECISION_LANDING == ENABLED
     // initialise precision landing
     init_precland();
 #endif
@@ -159,7 +159,7 @@ void Copter::init_ardupilot()
     g2.proximity.init();
 #endif
 
-#if AP_BEACON_ENABLED
+#if BEACON_ENABLED == ENABLED
     // init beacons used for non-gps position estimation
     g2.beacon.init();
 #endif
@@ -206,7 +206,10 @@ void Copter::init_ardupilot()
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
-    motors->output_min();  // output lowest possible value to motors
+    // enable output to motors
+    if (arming.rc_calibration_checks(true)) {
+        enable_motor_output();
+    }
 
     // attempt to set the intial_mode, else set to STABILIZE
     if (!set_mode((enum Mode::Number)g.initial_mode.get(), ModeReason::INITIALISED)) {

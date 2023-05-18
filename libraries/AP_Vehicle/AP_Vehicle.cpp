@@ -17,7 +17,6 @@
 #include <AP_HAL_ChibiOS/sdcard.h>
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
 #endif
-#include <AP_DDS/AP_DDS_Client.h>
 
 #define SCHED_TASK(func, rate_hz, max_time_micros, prio) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros, prio)
 
@@ -125,6 +124,7 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(nmea, "NMEA_", 17, AP_Vehicle, AP_NMEA_Output),
 #endif
 
+<<<<<<< Updated upstream
 #if AP_DDS_ENABLED
     // @Group: XRCE
     // @Path: ../AP_DDS/AP_DDS_Client.cpp
@@ -137,6 +137,8 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(kdecan, "KDE_",  19, AP_Vehicle, AP_KDECAN),
 #endif
 
+=======
+>>>>>>> Stashed changes
     AP_GROUPEND
 };
 
@@ -289,10 +291,6 @@ void AP_Vehicle::setup()
     temperature_sensor.init();
 #endif
 
-#if AP_KDECAN_ENABLED
-    kdecan.init();
-#endif
-
 #if AP_AIS_ENABLED
     ais.init();
 #endif
@@ -318,12 +316,6 @@ void AP_Vehicle::setup()
     AP_Param::invalidate_count();
 
     gcs().send_text(MAV_SEVERITY_INFO, "ArduPilot Ready");
-
-#if AP_DDS_ENABLED
-    if (!init_dds_client()) {
-        gcs().send_text(MAV_SEVERITY_ERROR, "DDS Client: Failed to Initialize");
-    }
-#endif
 }
 
 void AP_Vehicle::loop()
@@ -840,6 +832,7 @@ void AP_Vehicle::check_motor_noise()
 #endif
 }
 
+<<<<<<< Updated upstream
 #if AP_DDS_ENABLED
 bool AP_Vehicle::init_dds_client()
 {
@@ -850,6 +843,8 @@ bool AP_Vehicle::init_dds_client()
 }
 #endif // AP_DDS_ENABLED
 
+=======
+>>>>>>> Stashed changes
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;
 
 AP_Vehicle *AP_Vehicle::get_singleton()

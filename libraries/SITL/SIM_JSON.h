@@ -44,18 +44,11 @@ public:
 
 private:
 
-    struct servo_packet_16 {
+    struct servo_packet {
         uint16_t magic = 18458; // constant magic value
         uint16_t frame_rate;
         uint32_t frame_count;
         uint16_t pwm[16];
-    };
-
-    struct servo_packet_32 {
-        uint16_t magic = 29569; // constant magic value
-        uint16_t frame_rate;
-        uint32_t frame_count;
-        uint16_t pwm[32];
     };
 
     // default connection_info_.ip_address

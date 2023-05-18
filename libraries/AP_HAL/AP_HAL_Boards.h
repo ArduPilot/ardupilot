@@ -218,12 +218,8 @@
 #define HAL_CANMANAGER_ENABLED (HAL_MAX_CAN_PROTOCOL_DRIVERS > 0)
 #endif
 
-#ifndef HAL_ENABLE_DRONECAN_DRIVERS
-#define HAL_ENABLE_DRONECAN_DRIVERS HAL_CANMANAGER_ENABLED
-#endif
-
-#ifndef AP_TEST_DRONECAN_DRIVERS
-#define AP_TEST_DRONECAN_DRIVERS 0
+#ifndef HAL_ENABLE_LIBUAVCAN_DRIVERS
+#define HAL_ENABLE_LIBUAVCAN_DRIVERS HAL_CANMANAGER_ENABLED
 #endif
 
 #ifndef AP_AIRSPEED_BACKEND_DEFAULT_ENABLED
@@ -245,12 +241,10 @@
 #define HAL_HAVE_DUAL_USB_CDC 0
 #endif
 
-#ifndef AP_CAN_SLCAN_ENABLED
 #if HAL_NUM_CAN_IFACES && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-#define AP_CAN_SLCAN_ENABLED 1
+#define AP_UAVCAN_SLCAN_ENABLED 1
 #else
-#define AP_CAN_SLCAN_ENABLED 0
-#endif
+#define AP_UAVCAN_SLCAN_ENABLED 0
 #endif
 
 #ifndef USE_LIBC_REALLOC
@@ -290,9 +284,9 @@
 // The difference in CPU load between 1Khz backend and 2Khz backend is about 10%
 // So at 1Khz almost all notch combinations can be supported on F7 and certainly H7
 #if defined(STM32H7) || CONFIG_HAL_BOARD == HAL_BOARD_SITL
-// Enough for a single-notch per motor with two harmonics on an octa using two IMUs 
-// at 4k loop rate
-#define HAL_HNF_MAX_FILTERS 56
+// Enough for a double-notch per motor on an octa using three IMUs and one harmonics
+// plus one static notch with one double-notch harmonics
+#define HAL_HNF_MAX_FILTERS 54
 #elif defined(STM32F7)
 // Enough for a notch per motor on an octa using three IMUs and one harmonics
 // plus one static notch with one harmonics

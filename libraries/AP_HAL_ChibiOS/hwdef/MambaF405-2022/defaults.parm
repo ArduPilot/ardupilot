@@ -2,6 +2,7 @@
 SERVO7_FUNCTION 120
 NTF_LED_TYPES 257
 # Default VTX power to on
+<<<<<<< Updated upstream
 RELAY_DEFAULT 1
 # UART1 is RX input
 SERIAL1_PROTOCOL 23
@@ -15,3 +16,6 @@ OSD_TYPE 1
 SERIAL4_PROTOCOL -1
 # UART6 is ESC Telem
 SERIAL6_PROTOCOL 16
+=======
+RELAY_DEFAULT 1
+>>>>>>> Stashed changes

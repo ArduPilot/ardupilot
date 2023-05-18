@@ -109,7 +109,6 @@ public:
         PRIORITY_CAN,
         PRIORITY_TIMER,
         PRIORITY_RCOUT,
-        PRIORITY_LED,
         PRIORITY_RCIN,
         PRIORITY_IO,
         PRIORITY_UART,

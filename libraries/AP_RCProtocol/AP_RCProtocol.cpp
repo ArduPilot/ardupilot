@@ -23,7 +23,9 @@
 #include "AP_RCProtocol_SBUS.h"
 #include "AP_RCProtocol_SUMD.h"
 #include "AP_RCProtocol_SRXL.h"
+#ifndef IOMCU_FW
 #include "AP_RCProtocol_SRXL2.h"
+#endif
 #include "AP_RCProtocol_CRSF.h"
 #include "AP_RCProtocol_ST24.h"
 #include "AP_RCProtocol_FPort.h"
@@ -72,7 +74,7 @@ AP_RCProtocol::~AP_RCProtocol()
 
 bool AP_RCProtocol::should_search(uint32_t now_ms) const
 {
-#if AP_RC_CHANNEL_ENABLED && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+#if !defined(IOMCU_FW) && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
     if (_detected_protocol != AP_RCProtocol::NONE && !rc().multiple_receiver_support()) {
         return false;
     }
@@ -90,7 +92,7 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
     uint32_t now = AP_HAL::millis();
     bool searching = should_search(now);
 
-#if AP_RC_CHANNEL_ENABLED
+#ifndef IOMCU_FW
     rc_protocols_mask = rc().enabled_protocols();
 #endif
 
@@ -174,7 +176,7 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
     uint32_t now = AP_HAL::millis();
     bool searching = should_search(now);
 
-#if AP_RC_CHANNEL_ENABLED
+#ifndef IOMCU_FW
     rc_protocols_mask = rc().enabled_protocols();
 #endif
 
@@ -295,7 +297,7 @@ void AP_RCProtocol::check_added_uart(void)
         added.last_config_change_ms = AP_HAL::millis();
         serial_configs[added.config_num].apply_to_uart(added.uart);
     }
-#if AP_RC_CHANNEL_ENABLED
+#ifndef IOMCU_FW
     rc_protocols_mask = rc().enabled_protocols();
 #endif
     const uint32_t current_baud = serial_configs[added.config_num].baud;

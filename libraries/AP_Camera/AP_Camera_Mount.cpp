@@ -27,12 +27,13 @@ bool AP_Camera_Mount::record_video(bool start_recording)
     return false;
 }
 
-// set zoom specified as a rate or percentage
-bool AP_Camera_Mount::set_zoom(ZoomType zoom_type, float zoom_value)
+// zoom in, out or hold.  returns true on success
+// zoom out = -1, hold = 0, zoom in = 1
+bool AP_Camera_Mount::set_zoom_step(int8_t zoom_step)
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        return mount->set_zoom(0, zoom_type, zoom_value);
+        return mount->set_zoom_step(0, zoom_step);
     }
     return false;
 }

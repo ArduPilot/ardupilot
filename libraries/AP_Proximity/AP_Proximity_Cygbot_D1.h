@@ -1,9 +1,12 @@
 #pragma once
 
-#include "AP_Proximity_config.h"
+#include "AP_Proximity.h"
 
-#if AP_PROXIMITY_CYGBOT_ENABLED
+#ifndef AP_PROXIMITY_CYGBOT_ENABLED
+#define AP_PROXIMITY_CYGBOT_ENABLED HAL_PROXIMITY_ENABLED
+#endif
 
+#if (HAL_PROXIMITY_ENABLED && AP_PROXIMITY_CYGBOT_ENABLED)
 #include "AP_Proximity_Backend_Serial.h"
 
 #define CYGBOT_MAX_MSG_SIZE            350
@@ -81,4 +84,4 @@ private:
 
 };
 
-#endif // AP_PROXIMITY_CYGBOT_ENABLED
+#endif // HAL_PROXIMITY_ENABLED

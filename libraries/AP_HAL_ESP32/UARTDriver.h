@@ -61,7 +61,7 @@ public:
     uint32_t txspace() override;
 
     ssize_t read(uint8_t *buffer, uint16_t count) override;
-    bool read(uint8_t &b) override WARN_IF_UNUSED;
+    int16_t read() override;
     //ssize_t read(uint8_t *buffer, uint16_t count) override;
     //int16_t read_locked(uint32_t key) override;
 

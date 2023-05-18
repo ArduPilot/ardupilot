@@ -1,10 +1,6 @@
-#include "AC_PrecLand_config.h"
-
-#if AC_PRECLAND_COMPANION_ENABLED
-
-#include "AC_PrecLand_Companion.h"
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
+#include "AC_PrecLand_Companion.h"
 
 // perform any required initialisation of backend
 void AC_PrecLand_Companion::init()
@@ -77,5 +73,3 @@ void AC_PrecLand_Companion::handle_msg(const mavlink_landing_target_t &packet, u
     _los_meas_time_ms = timestamp_ms;
     _have_los_meas = true;
 }
-
-#endif // AC_PRECLAND_COMPANION_ENABLED

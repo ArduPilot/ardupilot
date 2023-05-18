@@ -14,8 +14,6 @@
  */
 #pragma once
 
-#include "AP_RangeFinder_config.h"
-
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/Semaphores.h>
@@ -23,6 +21,14 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_MSP/msp.h>
 #include "AP_RangeFinder_Params.h"
+
+#ifndef AP_RANGEFINDER_ENABLED
+#define AP_RANGEFINDER_ENABLED 1
+#endif
+
+#ifndef AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
+#define AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED AP_RANGEFINDER_ENABLED
+#endif
 
 // Maximum number of range finder instances available on this platform
 #ifndef RANGEFINDER_MAX_INSTANCES 
@@ -51,7 +57,7 @@ class RangeFinder
 {
     friend class AP_RangeFinder_Backend;
     //UAVCAN drivers are initialised in the Backend, hence list of drivers is needed there.
-    friend class AP_RangeFinder_DroneCAN;
+    friend class AP_RangeFinder_UAVCAN;
 public:
     RangeFinder();
 

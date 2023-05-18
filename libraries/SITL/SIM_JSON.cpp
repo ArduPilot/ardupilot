@@ -27,7 +27,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_HAL/utility/replace.h>
-#include <SRV_Channel/SRV_Channel.h>
 
 #define UDP_TIMEOUT_MS 100
 
@@ -101,34 +100,20 @@ void JSON::set_interface_ports(const char* address, const int port_in, const int
 */
 void JSON::output_servos(const struct sitl_input &input)
 {
-    size_t pkt_size = 0;
-    ssize_t send_ret = -1;
-    if (SRV_Channels::have_32_channels()) {
-      servo_packet_32 pkt;
-      pkt.frame_rate = rate_hz;
-      pkt.frame_count = frame_counter;
-      for (uint8_t i=0; i<32; i++) {
-          pkt.pwm[i] = input.servos[i];
-      }
-      pkt_size = sizeof(pkt);
-      send_ret = sock.sendto(&pkt, pkt_size, target_ip, control_port);
-    } else {
-      servo_packet_16 pkt;
-      pkt.frame_rate = rate_hz;
-      pkt.frame_count = frame_counter;
-      for (uint8_t i=0; i<16; i++) {
-          pkt.pwm[i] = input.servos[i];
-      }
-      pkt_size = sizeof(pkt);
-      send_ret = sock.sendto(&pkt, pkt_size, target_ip, control_port);
+    servo_packet pkt;
+    pkt.frame_rate = rate_hz;
+    pkt.frame_count = frame_counter;
+    for (uint8_t i=0; i<16; i++) {
+        pkt.pwm[i] = input.servos[i];
     }
 
-    if ((size_t)send_ret != pkt_size) {
+    size_t send_ret = sock.sendto(&pkt, sizeof(pkt), target_ip, control_port);
+    if (send_ret != sizeof(pkt)) {
         if (send_ret <= 0) {
             printf("Unable to send servo output to %s:%u - Error: %s, Return value: %ld\n",
                    target_ip, control_port, strerror(errno), (long)send_ret);
         } else {
-            printf("Sent %ld bytes instead of %lu bytes\n", (long)send_ret, (unsigned long)pkt_size);
+            printf("Sent %ld bytes instead of %lu bytes\n", (long)send_ret, (unsigned long)sizeof(pkt));
         }
     }
 }

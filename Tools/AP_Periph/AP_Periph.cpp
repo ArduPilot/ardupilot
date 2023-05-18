@@ -185,11 +185,7 @@ void AP_Periph_FW::init()
         }
     }
 #endif
-
-#if AP_KDECAN_ENABLED
-    kdecan.init();
-#endif
-
+    
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     const bool pins_enabled = ChibiOS::I2CBus::check_select_pins(0x01);
@@ -507,8 +503,8 @@ void AP_Periph_FW::check_for_serial_reboot_cmd(const int8_t serial_index)
             const char reboot_string_len = sizeof(reboot_string)-1; // -1 is to remove the null termination
             static uint16_t index[hal.num_serial];
 
-            uint8_t data;
-            if (!uart->read(data)) {
+            const int16_t data = uart->read();
+            if (data < 0 || data > 0xff) {
                 // read error
                 continue;
             }

@@ -72,7 +72,10 @@
 #ifndef HAL_WITH_EKF_DOUBLE
 #define HAL_WITH_EKF_DOUBLE HAL_HAVE_HARDWARE_DOUBLE
 #endif
+<<<<<<< Updated upstream
 
 #ifndef HAL_CAN_DRIVER_DEFAULT
 #define HAL_CAN_DRIVER_DEFAULT 1
 #endif
+=======
+>>>>>>> Stashed changes

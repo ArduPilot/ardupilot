@@ -3,7 +3,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#if AC_PRECLAND_SITL_GAZEBO_ENABLED
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 // Constructor
 AC_PrecLand_SITL_Gazebo::AC_PrecLand_SITL_Gazebo(const AC_PrecLand& frontend, AC_PrecLand::precland_state& state)
@@ -55,4 +55,4 @@ bool AC_PrecLand_SITL_Gazebo::have_los_meas() {
     return _have_los_meas;
 }
 
-#endif  // AC_PRECLAND_SITL_GAZEBO_ENABLED
+#endif

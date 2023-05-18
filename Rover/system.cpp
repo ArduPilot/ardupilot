@@ -75,10 +75,8 @@ void Rover::init_ardupilot()
     g2.proximity.init();
 #endif
 
-#if AP_BEACON_ENABLED
     // init beacons used for non-gps position estimation
     g2.beacon.init();
-#endif
 
     // and baro for EKF
     barometer.set_log_baro_bit(MASK_LOG_IMU);
@@ -119,7 +117,7 @@ void Rover::init_ardupilot()
     camera.init();
 #endif
 
-#if AC_PRECLAND_ENABLED
+#if PRECISION_LANDING == ENABLED
     // initialise precision landing
     init_precland();
 #endif

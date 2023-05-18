@@ -17,8 +17,10 @@
 
 #if HAL_VISUALODOM_ENABLED
 
-#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
+
+extern const AP_HAL::HAL &hal;
 
 /*
   base class constructor. 

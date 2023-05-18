@@ -241,31 +241,34 @@ uint32_t get_mcu_desc(uint32_t max, uint8_t *revstr)
     int32_t mcuid = idcode & DEVID_MASK;
     uint16_t revid = ((idcode & REVID_MASK) >> 16);
 
-    uint8_t *endp = &revstr[max - 1];
-    uint8_t *strp = revstr;
+    mcu_des_t des = mcu_descriptions[STM32_UNKNOWN];
 
     for (const auto &desc : mcu_descriptions) {
         if (mcuid == desc.mcuid) {
-            // copy the string in:
-            const char *tmp = desc.desc;
-            while (strp < endp && *tmp) {
-                *strp++ = *tmp++;
-            }
+            des = desc;
             break;
         }
     }
 
-    // comma-separated:
+    for (const auto &rev : silicon_revs) {
+        if (rev.revid == revid) {
+            des.rev = rev.rev;
+        }
+    }
+
+    uint8_t *endp = &revstr[max - 1];
+    uint8_t *strp = revstr;
+
+    while (strp < endp && *des.desc) {
+        *strp++ = *des.desc++;
+    }
+
     if (strp < endp) {
         *strp++ = ',';
     }
 
-    for (const auto &rev : silicon_revs) {
-        if (rev.revid == revid) {
-            if (strp < endp) {
-                *strp++ = rev.rev;
-            }
-        }
+    if (strp < endp) {
+        *strp++ = des.rev;
     }
 
     return  strp - revstr;

@@ -14,13 +14,13 @@ void NavEKF3_core::SelectRngBcnFusion()
     readRngBcnData();
 
     // Determine if we need to fuse range beacon data on this time step
-    if (rngBcn.dataToFuse) {
+    if (rngBcnDataToFuse) {
         if (PV_AidingMode == AID_ABSOLUTE) {
-            if ((frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::BEACON) && rngBcn.alignmentCompleted) {
-                if (!rngBcn.originEstInit) {
-                    rngBcn.originEstInit = true;
-                    rngBcn.posOffsetNED.x = rngBcn.receiverPos.x - stateStruct.position.x;
-                    rngBcn.posOffsetNED.y = rngBcn.receiverPos.y - stateStruct.position.y;
+            if ((frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::BEACON) && rngBcnAlignmentCompleted) {
+                if (!bcnOriginEstInit) {
+                    bcnOriginEstInit = true;
+                    bcnPosOffsetNED.x = receiverPos.x - stateStruct.position.x;
+                    bcnPosOffsetNED.y = receiverPos.y - stateStruct.position.y;
                 }
                 // beacons are used as the primary means of position reference
                 FuseRngBcn();
@@ -30,13 +30,13 @@ void NavEKF3_core::SelectRngBcnFusion()
                 // start using beacon data as the primary reference.
                 FuseRngBcnStatic();
                 // record that the beacon origin needs to be initialised
-                rngBcn.originEstInit = false;
+                bcnOriginEstInit = false;
             }
         } else {
             // If we aren't able to use the data in the main filter, use a simple 3-state filter to estimate position only
             FuseRngBcnStatic();
             // record that the beacon origin needs to be initialised
-            rngBcn.originEstInit = false;
+            bcnOriginEstInit = false;
         }
     }
 }
@@ -50,33 +50,33 @@ void NavEKF3_core::FuseRngBcn()
     ftype bcn_pn;
     ftype bcn_pe;
     ftype bcn_pd;
-    const ftype R_BCN = sq(MAX(rngBcn.dataDelayed.rngErr , 0.1f));
+    const ftype R_BCN = sq(MAX(rngBcnDataDelayed.rngErr , 0.1f));
     ftype rngPred;
 
     // health is set bad until test passed
-    rngBcn.health = false;
+    rngBcnHealth = false;
 
     if (activeHgtSource != AP_NavEKF_Source::SourceZ::BEACON) {
         // calculate the vertical offset from EKF datum to beacon datum
         CalcRangeBeaconPosDownOffset(R_BCN, stateStruct.position, false);
     } else {
-        rngBcn.posOffsetNED.z = 0.0f;
+        bcnPosOffsetNED.z = 0.0f;
     }
 
     // copy required states to local variable names
     pn = stateStruct.position.x;
     pe = stateStruct.position.y;
     pd = stateStruct.position.z;
-    bcn_pn = rngBcn.dataDelayed.beacon_posNED.x;
-    bcn_pe = rngBcn.dataDelayed.beacon_posNED.y;
-    bcn_pd = rngBcn.dataDelayed.beacon_posNED.z + rngBcn.posOffsetNED.z;
+    bcn_pn = rngBcnDataDelayed.beacon_posNED.x;
+    bcn_pe = rngBcnDataDelayed.beacon_posNED.y;
+    bcn_pd = rngBcnDataDelayed.beacon_posNED.z + bcnPosOffsetNED.z;
 
     // predicted range
-    Vector3F deltaPosNED = stateStruct.position - rngBcn.dataDelayed.beacon_posNED;
+    Vector3F deltaPosNED = stateStruct.position - rngBcnDataDelayed.beacon_posNED;
     rngPred = deltaPosNED.length();
 
     // calculate measurement innovation
-    rngBcn.innov = rngPred - rngBcn.dataDelayed.rng;
+    innovRngBcn = rngPred - rngBcnDataDelayed.rng;
 
     // perform fusion of range measurement
     if (rngPred > 0.1f)
@@ -119,10 +119,10 @@ void NavEKF3_core::FuseRngBcn()
         ftype t22 = P[7][7]*t4*t9;
         ftype t23 = t20+t21+t22;
         ftype t24 = t4*t9*t23;
-        rngBcn.varInnov = R_BCN+t14+t19+t24;
+        varInnovRngBcn = R_BCN+t14+t19+t24;
         ftype t26;
-        if (rngBcn.varInnov >= R_BCN) {
-            t26 = 1.0f/rngBcn.varInnov;
+        if (varInnovRngBcn >= R_BCN) {
+            t26 = 1.0f/varInnovRngBcn;
             faultStatus.bad_rngbcn = false;
         } else {
             // the calculation is badly conditioned, so we cannot perform fusion on this step
@@ -194,20 +194,20 @@ void NavEKF3_core::FuseRngBcn()
         }
 
         // Calculate innovation using the selected offset value
-        Vector3F delta = stateStruct.position - rngBcn.dataDelayed.beacon_posNED;
-        rngBcn.innov = delta.length() - rngBcn.dataDelayed.rng;
+        Vector3F delta = stateStruct.position - rngBcnDataDelayed.beacon_posNED;
+        innovRngBcn = delta.length() - rngBcnDataDelayed.rng;
 
         // calculate the innovation consistency test ratio
-        rngBcn.testRatio = sq(rngBcn.innov) / (sq(MAX(0.01f * (ftype)frontend->_rngBcnInnovGate, 1.0f)) * rngBcn.varInnov);
+        rngBcnTestRatio = sq(innovRngBcn) / (sq(MAX(0.01f * (ftype)frontend->_rngBcnInnovGate, 1.0f)) * varInnovRngBcn);
 
         // fail if the ratio is > 1, but don't fail if bad IMU data
-        rngBcn.health = ((rngBcn.testRatio < 1.0f) || badIMUdata);
+        rngBcnHealth = ((rngBcnTestRatio < 1.0f) || badIMUdata);
 
         // test the ratio before fusing data
-        if (rngBcn.health) {
+        if (rngBcnHealth) {
 
             // restart the counter
-            rngBcn.lastPassTime_ms = imuSampleTime_ms;
+            lastRngBcnPassTime_ms = imuSampleTime_ms;
 
             // correct the covariance P = (I - K*H)*P
             // take advantage of the empty columns in KH to reduce the
@@ -253,7 +253,7 @@ void NavEKF3_core::FuseRngBcn()
 
                 // correct the state vector
                 for (uint8_t j= 0; j<=stateIndexLim; j++) {
-                    statesArray[j] = statesArray[j] - Kfusion[j] * rngBcn.innov;
+                    statesArray[j] = statesArray[j] - Kfusion[j] * innovRngBcn;
                 }
 
                 // record healthy fusion
@@ -267,12 +267,12 @@ void NavEKF3_core::FuseRngBcn()
         }
 
         // Update the fusion report
-        if (rngBcn.fusionReport && rngBcn.dataDelayed.beacon_ID < dal.beacon()->count()) {
-            rngBcn.fusionReport[rngBcn.dataDelayed.beacon_ID].beaconPosNED = rngBcn.dataDelayed.beacon_posNED;
-            rngBcn.fusionReport[rngBcn.dataDelayed.beacon_ID].innov = rngBcn.innov;
-            rngBcn.fusionReport[rngBcn.dataDelayed.beacon_ID].innovVar = rngBcn.varInnov;
-            rngBcn.fusionReport[rngBcn.dataDelayed.beacon_ID].rng = rngBcn.dataDelayed.rng;
-            rngBcn.fusionReport[rngBcn.dataDelayed.beacon_ID].testRatio = rngBcn.testRatio;
+        if (rngBcnFusionReport && rngBcnDataDelayed.beacon_ID < dal.beacon()->count()) {
+            rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].beaconPosNED = rngBcnDataDelayed.beacon_posNED;
+            rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].innov = innovRngBcn;
+            rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].innovVar = varInnovRngBcn;
+            rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].rng = rngBcnDataDelayed.rng;
+            rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].testRatio = rngBcnTestRatio;
         }
     }
 }
@@ -285,7 +285,7 @@ https://github.com/priseborough/InertialNav/blob/master/derivations/range_beacon
 void NavEKF3_core::FuseRngBcnStatic()
 {
     // get the estimated range measurement variance
-    const ftype R_RNG = sq(MAX(rngBcn.dataDelayed.rngErr , 0.1f));
+    const ftype R_RNG = sq(MAX(rngBcnDataDelayed.rngErr , 0.1f));
 
     /*
     The first thing to do is to check if we have started the alignment and if not, initialise the
@@ -293,60 +293,60 @@ void NavEKF3_core::FuseRngBcnStatic()
     initialise the initial position to the mean beacon position. The initial position uncertainty
     is set to the mean range measurement.
     */
-    if (!rngBcn.alignmentStarted) {
-        if (rngBcn.dataDelayed.beacon_ID != rngBcn.lastIndex) {
-            rngBcn.posSum += rngBcn.dataDelayed.beacon_posNED;
-            rngBcn.lastIndex = rngBcn.dataDelayed.beacon_ID;
-            rngBcn.sum += rngBcn.dataDelayed.rng;
-            rngBcn.numMeas++;
+    if (!rngBcnAlignmentStarted) {
+        if (rngBcnDataDelayed.beacon_ID != lastBeaconIndex) {
+            rngBcnPosSum += rngBcnDataDelayed.beacon_posNED;
+            lastBeaconIndex = rngBcnDataDelayed.beacon_ID;
+            rngSum += rngBcnDataDelayed.rng;
+            numBcnMeas++;
 
             // capture the beacon vertical spread
-            if (rngBcn.dataDelayed.beacon_posNED.z > rngBcn.maxPosD) {
-                rngBcn.maxPosD = rngBcn.dataDelayed.beacon_posNED.z;
-            } else if(rngBcn.dataDelayed.beacon_posNED.z < rngBcn.minPosD) {
-                rngBcn.minPosD = rngBcn.dataDelayed.beacon_posNED.z;
+            if (rngBcnDataDelayed.beacon_posNED.z > maxBcnPosD) {
+                maxBcnPosD = rngBcnDataDelayed.beacon_posNED.z;
+            } else if(rngBcnDataDelayed.beacon_posNED.z < minBcnPosD) {
+                minBcnPosD = rngBcnDataDelayed.beacon_posNED.z;
             }
         }
-        if (rngBcn.numMeas >= 100) {
-            rngBcn.alignmentStarted = true;
-            ftype tempVar = 1.0f / (ftype)rngBcn.numMeas;
+        if (numBcnMeas >= 100) {
+            rngBcnAlignmentStarted = true;
+            ftype tempVar = 1.0f / (ftype)numBcnMeas;
             // initialise the receiver position to the centre of the beacons and at zero height
-            rngBcn.receiverPos.x = rngBcn.posSum.x * tempVar;
-            rngBcn.receiverPos.y = rngBcn.posSum.y * tempVar;
-            rngBcn.receiverPos.z = 0.0f;
-            rngBcn.receiverPosCov[2][2] = rngBcn.receiverPosCov[1][1] = rngBcn.receiverPosCov[0][0] = rngBcn.sum * tempVar;
-            rngBcn.lastIndex  = 0;
-            rngBcn.numMeas = 0;
-            rngBcn.posSum.zero();
-            rngBcn.sum = 0.0f;
+            receiverPos.x = rngBcnPosSum.x * tempVar;
+            receiverPos.y = rngBcnPosSum.y * tempVar;
+            receiverPos.z = 0.0f;
+            receiverPosCov[2][2] = receiverPosCov[1][1] = receiverPosCov[0][0] = rngSum * tempVar;
+            lastBeaconIndex  = 0;
+            numBcnMeas = 0;
+            rngBcnPosSum.zero();
+            rngSum = 0.0f;
         }
     }
 
-    if (rngBcn.alignmentStarted) {
-        rngBcn.numMeas++;
+    if (rngBcnAlignmentStarted) {
+        numBcnMeas++;
 
-        if (rngBcn.numMeas >= 100) {
+        if (numBcnMeas >= 100) {
             // 100 observations is enough for a stable estimate under most conditions
             // TODO monitor stability of the position estimate
-            rngBcn.alignmentCompleted = true;
+            rngBcnAlignmentCompleted = true;
 
         }
 
-        if (rngBcn.alignmentCompleted) {
+        if (rngBcnAlignmentCompleted) {
             if (activeHgtSource != AP_NavEKF_Source::SourceZ::BEACON) {
                 // We are using a different height reference for the main EKF so need to estimate a vertical
                 // position offset to be applied to the beacon system that minimises the range innovations
                 // The position estimate should be stable after 100 iterations so we use a simple dual
                 // hypothesis 1-state EKF to estimate the offset
                 Vector3F refPosNED;
-                refPosNED.x = rngBcn.receiverPos.x;
-                refPosNED.y = rngBcn.receiverPos.y;
+                refPosNED.x = receiverPos.x;
+                refPosNED.y = receiverPos.y;
                 refPosNED.z = stateStruct.position.z;
                 CalcRangeBeaconPosDownOffset(R_RNG, refPosNED, true);
 
             } else {
                 // we are using the beacons as the primary height source, so don't modify their vertical position
-                rngBcn.posOffsetNED.z = 0.0f;
+                bcnPosOffsetNED.z = 0.0f;
 
             }
         } else {
@@ -357,39 +357,39 @@ void NavEKF3_core::FuseRngBcnStatic()
                 // and the main EKF vertical position
 
                 // Calculate the mid vertical position of all beacons
-                ftype bcnMidPosD = 0.5f * (rngBcn.minPosD + rngBcn.maxPosD);
+                ftype bcnMidPosD = 0.5f * (minBcnPosD + maxBcnPosD);
 
                 // calculate the delta to the estimated receiver position
-                ftype delta = rngBcn.receiverPos.z - bcnMidPosD;
+                ftype delta = receiverPos.z - bcnMidPosD;
 
                 // calculate the two hypothesis for our vertical position
                 ftype receiverPosDownMax;
                 ftype receiverPosDownMin;
                 if (delta >= 0.0f) {
-                    receiverPosDownMax = rngBcn.receiverPos.z;
-                    receiverPosDownMin = rngBcn.receiverPos.z - 2.0f * delta;
+                    receiverPosDownMax = receiverPos.z;
+                    receiverPosDownMin = receiverPos.z - 2.0f * delta;
                 } else {
-                    receiverPosDownMax = rngBcn.receiverPos.z - 2.0f * delta;
-                    receiverPosDownMin = rngBcn.receiverPos.z;
+                    receiverPosDownMax = receiverPos.z - 2.0f * delta;
+                    receiverPosDownMin = receiverPos.z;
                 }
 
-                rngBcn.posDownOffsetMax = stateStruct.position.z - receiverPosDownMin;
-                rngBcn.posDownOffsetMin = stateStruct.position.z - receiverPosDownMax;
+                bcnPosDownOffsetMax = stateStruct.position.z - receiverPosDownMin;
+                bcnPosDownOffsetMin = stateStruct.position.z - receiverPosDownMax;
             } else {
                 // We are using the beacons as the primary height reference, so don't modify their vertical position
-                rngBcn.posOffsetNED.z = 0.0f;
+                bcnPosOffsetNED.z = 0.0f;
             }
         }
 
         // Add some process noise to the states at each time step
         for (uint8_t i= 0; i<=2; i++) {
-            rngBcn.receiverPosCov[i][i] += 0.1f;
+            receiverPosCov[i][i] += 0.1f;
         }
 
         // calculate the observation jacobian
-        ftype t2 = rngBcn.dataDelayed.beacon_posNED.z - rngBcn.receiverPos.z + rngBcn.posOffsetNED.z;
-        ftype t3 = rngBcn.dataDelayed.beacon_posNED.y - rngBcn.receiverPos.y;
-        ftype t4 = rngBcn.dataDelayed.beacon_posNED.x - rngBcn.receiverPos.x;
+        ftype t2 = rngBcnDataDelayed.beacon_posNED.z - receiverPos.z + bcnPosOffsetNED.z;
+        ftype t3 = rngBcnDataDelayed.beacon_posNED.y - receiverPos.y;
+        ftype t4 = rngBcnDataDelayed.beacon_posNED.x - receiverPos.x;
         ftype t5 = t2*t2;
         ftype t6 = t3*t3;
         ftype t7 = t4*t4;
@@ -399,14 +399,14 @@ void NavEKF3_core::FuseRngBcnStatic()
             return;
         }
         ftype t9 = 1.0f/sqrtF(t8);
-        ftype t10 = rngBcn.dataDelayed.beacon_posNED.x*2.0f;
-        ftype t15 = rngBcn.receiverPos.x*2.0f;
+        ftype t10 = rngBcnDataDelayed.beacon_posNED.x*2.0f;
+        ftype t15 = receiverPos.x*2.0f;
         ftype t11 = t10-t15;
-        ftype t12 = rngBcn.dataDelayed.beacon_posNED.y*2.0f;
-        ftype t14 = rngBcn.receiverPos.y*2.0f;
+        ftype t12 = rngBcnDataDelayed.beacon_posNED.y*2.0f;
+        ftype t14 = receiverPos.y*2.0f;
         ftype t13 = t12-t14;
-        ftype t16 = rngBcn.dataDelayed.beacon_posNED.z*2.0f;
-        ftype t18 = rngBcn.receiverPos.z*2.0f;
+        ftype t16 = rngBcnDataDelayed.beacon_posNED.z*2.0f;
+        ftype t18 = receiverPos.z*2.0f;
         ftype t17 = t16-t18;
         ftype H_RNG[3];
         H_RNG[0] = -t9*t11*0.5f;
@@ -414,46 +414,46 @@ void NavEKF3_core::FuseRngBcnStatic()
         H_RNG[2] = -t9*t17*0.5f;
 
         // calculate the Kalman gains
-        ftype t19 = rngBcn.receiverPosCov[0][0]*t9*t11*0.5f;
-        ftype t20 = rngBcn.receiverPosCov[1][1]*t9*t13*0.5f;
-        ftype t21 = rngBcn.receiverPosCov[0][1]*t9*t11*0.5f;
-        ftype t22 = rngBcn.receiverPosCov[2][1]*t9*t17*0.5f;
+        ftype t19 = receiverPosCov[0][0]*t9*t11*0.5f;
+        ftype t20 = receiverPosCov[1][1]*t9*t13*0.5f;
+        ftype t21 = receiverPosCov[0][1]*t9*t11*0.5f;
+        ftype t22 = receiverPosCov[2][1]*t9*t17*0.5f;
         ftype t23 = t20+t21+t22;
         ftype t24 = t9*t13*t23*0.5f;
-        ftype t25 = rngBcn.receiverPosCov[1][2]*t9*t13*0.5f;
-        ftype t26 = rngBcn.receiverPosCov[0][2]*t9*t11*0.5f;
-        ftype t27 = rngBcn.receiverPosCov[2][2]*t9*t17*0.5f;
+        ftype t25 = receiverPosCov[1][2]*t9*t13*0.5f;
+        ftype t26 = receiverPosCov[0][2]*t9*t11*0.5f;
+        ftype t27 = receiverPosCov[2][2]*t9*t17*0.5f;
         ftype t28 = t25+t26+t27;
         ftype t29 = t9*t17*t28*0.5f;
-        ftype t30 = rngBcn.receiverPosCov[1][0]*t9*t13*0.5f;
-        ftype t31 = rngBcn.receiverPosCov[2][0]*t9*t17*0.5f;
+        ftype t30 = receiverPosCov[1][0]*t9*t13*0.5f;
+        ftype t31 = receiverPosCov[2][0]*t9*t17*0.5f;
         ftype t32 = t19+t30+t31;
         ftype t33 = t9*t11*t32*0.5f;
-        rngBcn.varInnov = R_RNG+t24+t29+t33;
-        ftype t35 = 1.0f/rngBcn.varInnov;
+        varInnovRngBcn = R_RNG+t24+t29+t33;
+        ftype t35 = 1.0f/varInnovRngBcn;
         ftype K_RNG[3];
-        K_RNG[0] = -t35*(t19+rngBcn.receiverPosCov[0][1]*t9*t13*0.5f+rngBcn.receiverPosCov[0][2]*t9*t17*0.5f);
-        K_RNG[1] = -t35*(t20+rngBcn.receiverPosCov[1][0]*t9*t11*0.5f+rngBcn.receiverPosCov[1][2]*t9*t17*0.5f);
-        K_RNG[2] = -t35*(t27+rngBcn.receiverPosCov[2][0]*t9*t11*0.5f+rngBcn.receiverPosCov[2][1]*t9*t13*0.5f);
+        K_RNG[0] = -t35*(t19+receiverPosCov[0][1]*t9*t13*0.5f+receiverPosCov[0][2]*t9*t17*0.5f);
+        K_RNG[1] = -t35*(t20+receiverPosCov[1][0]*t9*t11*0.5f+receiverPosCov[1][2]*t9*t17*0.5f);
+        K_RNG[2] = -t35*(t27+receiverPosCov[2][0]*t9*t11*0.5f+receiverPosCov[2][1]*t9*t13*0.5f);
 
         // calculate range measurement innovation
-        Vector3F deltaPosNED = rngBcn.receiverPos - rngBcn.dataDelayed.beacon_posNED;
-        deltaPosNED.z -= rngBcn.posOffsetNED.z;
-        rngBcn.innov = deltaPosNED.length() - rngBcn.dataDelayed.rng;
+        Vector3F deltaPosNED = receiverPos - rngBcnDataDelayed.beacon_posNED;
+        deltaPosNED.z -= bcnPosOffsetNED.z;
+        innovRngBcn = deltaPosNED.length() - rngBcnDataDelayed.rng;
 
         // calculate the innovation consistency test ratio
-        rngBcn.testRatio = sq(rngBcn.innov) / (sq(MAX(0.01f * (ftype)frontend->_rngBcnInnovGate, 1.0f)) * rngBcn.varInnov);
+        rngBcnTestRatio = sq(innovRngBcn) / (sq(MAX(0.01f * (ftype)frontend->_rngBcnInnovGate, 1.0f)) * varInnovRngBcn);
 
         // fail if the ratio is > 1, but don't fail if bad IMU data
-        rngBcn.health = ((rngBcn.testRatio < 1.0f) || badIMUdata || !rngBcn.alignmentCompleted);
+        rngBcnHealth = ((rngBcnTestRatio < 1.0f) || badIMUdata || !rngBcnAlignmentCompleted);
 
         // test the ratio before fusing data
-        if (rngBcn.health) {
+        if (rngBcnHealth) {
 
             // update the state
-            rngBcn.receiverPos.x -= K_RNG[0] * rngBcn.innov;
-            rngBcn.receiverPos.y -= K_RNG[1] * rngBcn.innov;
-            rngBcn.receiverPos.z -= K_RNG[2] * rngBcn.innov;
+            receiverPos.x -= K_RNG[0] * innovRngBcn;
+            receiverPos.y -= K_RNG[1] * innovRngBcn;
+            receiverPos.z -= K_RNG[2] * innovRngBcn;
 
             // calculate the covariance correction
             for (unsigned i = 0; i<=2; i++) {
@@ -464,53 +464,53 @@ void NavEKF3_core::FuseRngBcnStatic()
             for (unsigned j = 0; j<=2; j++) {
                 for (unsigned i = 0; i<=2; i++) {
                     ftype res = 0;
-                    res += KH[i][0] * rngBcn.receiverPosCov[0][j];
-                    res += KH[i][1] * rngBcn.receiverPosCov[1][j];
-                    res += KH[i][2] * rngBcn.receiverPosCov[2][j];
+                    res += KH[i][0] * receiverPosCov[0][j];
+                    res += KH[i][1] * receiverPosCov[1][j];
+                    res += KH[i][2] * receiverPosCov[2][j];
                     KHP[i][j] = res;
                 }
             }
 
             // prevent negative variances
             for (uint8_t i= 0; i<=2; i++) {
-                if (rngBcn.receiverPosCov[i][i] < 0.0f) {
-                    rngBcn.receiverPosCov[i][i] = 0.0f;
+                if (receiverPosCov[i][i] < 0.0f) {
+                    receiverPosCov[i][i] = 0.0f;
                     KHP[i][i] = 0.0f;
-                } else if (KHP[i][i] > rngBcn.receiverPosCov[i][i]) {
-                    KHP[i][i] = rngBcn.receiverPosCov[i][i];
+                } else if (KHP[i][i] > receiverPosCov[i][i]) {
+                    KHP[i][i] = receiverPosCov[i][i];
                 }
             }
 
             // apply the covariance correction
             for (uint8_t i= 0; i<=2; i++) {
                 for (uint8_t j= 0; j<=2; j++) {
-                    rngBcn.receiverPosCov[i][j] -= KHP[i][j];
+                    receiverPosCov[i][j] -= KHP[i][j];
                 }
             }
 
             // ensure the covariance matrix is symmetric
             for (uint8_t i=1; i<=2; i++) {
                 for (uint8_t j=0; j<=i-1; j++) {
-                    ftype temp = 0.5f*(rngBcn.receiverPosCov[i][j] + rngBcn.receiverPosCov[j][i]);
-                    rngBcn.receiverPosCov[i][j] = temp;
-                    rngBcn.receiverPosCov[j][i] = temp;
+                    ftype temp = 0.5f*(receiverPosCov[i][j] + receiverPosCov[j][i]);
+                    receiverPosCov[i][j] = temp;
+                    receiverPosCov[j][i] = temp;
                 }
             }
 
         }
 
-        if (rngBcn.numMeas >= 100) {
+        if (numBcnMeas >= 100) {
             // 100 observations is enough for a stable estimate under most conditions
             // TODO monitor stability of the position estimate
-            rngBcn.alignmentCompleted = true;
+            rngBcnAlignmentCompleted = true;
         }
         // Update the fusion report
-        if (rngBcn.fusionReport && rngBcn.dataDelayed.beacon_ID < dal.beacon()->count()) {
-            rngBcn.fusionReport[rngBcn.dataDelayed.beacon_ID].beaconPosNED = rngBcn.dataDelayed.beacon_posNED;
-            rngBcn.fusionReport[rngBcn.dataDelayed.beacon_ID].innov = rngBcn.innov;
-            rngBcn.fusionReport[rngBcn.dataDelayed.beacon_ID].innovVar = rngBcn.varInnov;
-            rngBcn.fusionReport[rngBcn.dataDelayed.beacon_ID].rng = rngBcn.dataDelayed.rng;
-            rngBcn.fusionReport[rngBcn.dataDelayed.beacon_ID].testRatio = rngBcn.testRatio;
+        if (rngBcnFusionReport && rngBcnDataDelayed.beacon_ID < dal.beacon()->count()) {
+            rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].beaconPosNED = rngBcnDataDelayed.beacon_posNED;
+            rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].innov = innovRngBcn;
+            rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].innovVar = varInnovRngBcn;
+            rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].rng = rngBcnDataDelayed.rng;
+            rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].testRatio = rngBcnTestRatio;
         }
     }
 }
@@ -539,9 +539,9 @@ void NavEKF3_core::CalcRangeBeaconPosDownOffset(ftype obsVar, Vector3F &vehicleP
     // estimate upper value for offset
 
     // calculate observation derivative
-    ftype t2 = rngBcn.dataDelayed.beacon_posNED.z - vehiclePosNED.z + rngBcn.posDownOffsetMax;
-    ftype t3 = rngBcn.dataDelayed.beacon_posNED.y - vehiclePosNED.y;
-    ftype t4 = rngBcn.dataDelayed.beacon_posNED.x - vehiclePosNED.x;
+    ftype t2 = rngBcnDataDelayed.beacon_posNED.z - vehiclePosNED.z + bcnPosDownOffsetMax;
+    ftype t3 = rngBcnDataDelayed.beacon_posNED.y - vehiclePosNED.y;
+    ftype t4 = rngBcnDataDelayed.beacon_posNED.x - vehiclePosNED.x;
     ftype t5 = t2*t2;
     ftype t6 = t3*t3;
     ftype t7 = t4*t4;
@@ -552,38 +552,38 @@ void NavEKF3_core::CalcRangeBeaconPosDownOffset(ftype obsVar, Vector3F &vehicleP
         obsDeriv = t2*t9;
 
         // Calculate innovation
-        innov = sqrtF(t8) - rngBcn.dataDelayed.rng;
+        innov = sqrtF(t8) - rngBcnDataDelayed.rng;
 
         // covariance prediction
-        rngBcn.posOffsetMaxVar += stateNoiseVar;
+        bcnPosOffsetMaxVar += stateNoiseVar;
 
         // calculate the innovation variance
-        innovVar = obsDeriv * rngBcn.posOffsetMaxVar * obsDeriv + obsVar;
+        innovVar = obsDeriv * bcnPosOffsetMaxVar * obsDeriv + obsVar;
         innovVar = MAX(innovVar, obsVar);
 
         // calculate the Kalman gain
-        gain = (rngBcn.posOffsetMaxVar * obsDeriv) / innovVar;
+        gain = (bcnPosOffsetMaxVar * obsDeriv) / innovVar;
 
         // calculate a filtered state change magnitude to be used to select between the high or low offset
         ftype stateChange = innov * gain;
-        rngBcn.maxOffsetStateChangeFilt = (1.0f - filtAlpha) * rngBcn.maxOffsetStateChangeFilt + fminF(fabsF(filtAlpha * stateChange) , 1.0f);
+        maxOffsetStateChangeFilt = (1.0f - filtAlpha) * maxOffsetStateChangeFilt + fminF(fabsF(filtAlpha * stateChange) , 1.0f);
 
         // Reject range innovation spikes using a 5-sigma threshold unless aligning
         if ((sq(innov) < sq(innovGateWidth) * innovVar) || aligning) {
 
             // state update
-            rngBcn.posDownOffsetMax -= stateChange;
+            bcnPosDownOffsetMax -= stateChange;
 
             // covariance update
-            rngBcn.posOffsetMaxVar -= gain * obsDeriv * rngBcn.posOffsetMaxVar;
-            rngBcn.posOffsetMaxVar = MAX(rngBcn.posOffsetMaxVar, 0.0f);
+            bcnPosOffsetMaxVar -= gain * obsDeriv * bcnPosOffsetMaxVar;
+            bcnPosOffsetMaxVar = MAX(bcnPosOffsetMaxVar, 0.0f);
         }
     }
 
     // estimate lower value for offset
 
     // calculate observation derivative
-    t2 = rngBcn.dataDelayed.beacon_posNED.z - vehiclePosNED.z + rngBcn.posDownOffsetMin;
+    t2 = rngBcnDataDelayed.beacon_posNED.z - vehiclePosNED.z + bcnPosDownOffsetMin;
     t5 = t2*t2;
     t8 = t5+t6+t7;
     if (t8 > 0.1f) {
@@ -591,56 +591,56 @@ void NavEKF3_core::CalcRangeBeaconPosDownOffset(ftype obsVar, Vector3F &vehicleP
         obsDeriv = t2*t9;
 
         // Calculate innovation
-        innov = sqrtF(t8) - rngBcn.dataDelayed.rng;
+        innov = sqrtF(t8) - rngBcnDataDelayed.rng;
 
         // covariance prediction
-        rngBcn.posOffsetMinVar += stateNoiseVar;
+        bcnPosOffsetMinVar += stateNoiseVar;
 
         // calculate the innovation variance
-        innovVar = obsDeriv * rngBcn.posOffsetMinVar * obsDeriv + obsVar;
+        innovVar = obsDeriv * bcnPosOffsetMinVar * obsDeriv + obsVar;
         innovVar = MAX(innovVar, obsVar);
 
         // calculate the Kalman gain
-        gain = (rngBcn.posOffsetMinVar * obsDeriv) / innovVar;
+        gain = (bcnPosOffsetMinVar * obsDeriv) / innovVar;
 
         // calculate a filtered state change magnitude to be used to select between the high or low offset
         ftype stateChange = innov * gain;
-        rngBcn.minOffsetStateChangeFilt = (1.0f - filtAlpha) * rngBcn.minOffsetStateChangeFilt + fminF(fabsF(filtAlpha * stateChange) , 1.0f);
+        minOffsetStateChangeFilt = (1.0f - filtAlpha) * minOffsetStateChangeFilt + fminF(fabsF(filtAlpha * stateChange) , 1.0f);
 
         // Reject range innovation spikes using a 5-sigma threshold unless aligning
         if ((sq(innov) < sq(innovGateWidth) * innovVar) || aligning) {
 
             // state update
-            rngBcn.posDownOffsetMin -= stateChange;
+            bcnPosDownOffsetMin -= stateChange;
 
             // covariance update
-            rngBcn.posOffsetMinVar -= gain * obsDeriv * rngBcn.posOffsetMinVar;
-            rngBcn.posOffsetMinVar = MAX(rngBcn.posOffsetMinVar, 0.0f);
+            bcnPosOffsetMinVar -= gain * obsDeriv * bcnPosOffsetMinVar;
+            bcnPosOffsetMinVar = MAX(bcnPosOffsetMinVar, 0.0f);
         }
     }
 
     // calculate the mid vertical position of all beacons
-    ftype bcnMidPosD = 0.5f * (rngBcn.minPosD + rngBcn.maxPosD);
+    ftype bcnMidPosD = 0.5f * (minBcnPosD + maxBcnPosD);
 
     // ensure the two beacon vertical offset hypothesis place the mid point of the beacons below and above the flight vehicle
-    rngBcn.posDownOffsetMax = MAX(rngBcn.posDownOffsetMax, vehiclePosNED.z - bcnMidPosD + 0.5f);
-    rngBcn.posDownOffsetMin  = MIN(rngBcn.posDownOffsetMin,  vehiclePosNED.z - bcnMidPosD - 0.5f);
+    bcnPosDownOffsetMax = MAX(bcnPosDownOffsetMax, vehiclePosNED.z - bcnMidPosD + 0.5f);
+    bcnPosDownOffsetMin  = MIN(bcnPosDownOffsetMin,  vehiclePosNED.z - bcnMidPosD - 0.5f);
 
     // calculate the innovation for the main filter using the offset that is most stable
     // apply hysteresis to prevent rapid switching
-    if (!rngBcn.usingMinHypothesis && (rngBcn.minOffsetStateChangeFilt < (0.8f * rngBcn.maxOffsetStateChangeFilt))) {
-        rngBcn.usingMinHypothesis = true;
-    } else if (rngBcn.usingMinHypothesis && (rngBcn.maxOffsetStateChangeFilt < (0.8f * rngBcn.minOffsetStateChangeFilt))) {
-        rngBcn.usingMinHypothesis = false;
+    if (!usingMinHypothesis && (minOffsetStateChangeFilt < (0.8f * maxOffsetStateChangeFilt))) {
+        usingMinHypothesis = true;
+    } else if (usingMinHypothesis && (maxOffsetStateChangeFilt < (0.8f * minOffsetStateChangeFilt))) {
+        usingMinHypothesis = false;
     }
-    if (rngBcn.usingMinHypothesis) {
-        rngBcn.posOffsetNED.z = rngBcn.posDownOffsetMin;
+    if (usingMinHypothesis) {
+        bcnPosOffsetNED.z = bcnPosDownOffsetMin;
     } else {
-        rngBcn.posOffsetNED.z = rngBcn.posDownOffsetMax;
+        bcnPosOffsetNED.z = bcnPosDownOffsetMax;
     }
 
     // apply the vertical offset to the beacon positions
-    rngBcn.dataDelayed.beacon_posNED.z += rngBcn.posOffsetNED.z;
+    rngBcnDataDelayed.beacon_posNED.z += bcnPosOffsetNED.z;
 }
 
 #endif  // EK3_FEATURE_BEACON_FUSION

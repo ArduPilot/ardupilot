@@ -165,7 +165,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if HAL_PROXIMITY_ENABLED
     SCHED_TASK_CLASS(AP_Proximity,         &copter.g2.proximity,        update,         200,  50,  36),
 #endif
-#if AP_BEACON_ENABLED
+#if BEACON_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Beacon,            &copter.g2.beacon,           update,         400,  50,  39),
 #endif
     SCHED_TASK(update_altitude,       10,    100,  42),
@@ -180,7 +180,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(three_hz_loop,          3,     75, 57),
     SCHED_TASK_CLASS(AP_ServoRelayEvents,  &copter.ServoRelayEvents,      update_events, 50,  75,  60),
     SCHED_TASK_CLASS(AP_Baro,              &copter.barometer,             accumulate,    50,  90,  63),
-#if AC_PRECLAND_ENABLED
+#if PRECISION_LANDING == ENABLED
     SCHED_TASK(update_precland,      400,     50,  69),
 #endif
 #if FRAME_CONFIG == HELI_FRAME
@@ -446,14 +446,6 @@ bool Copter::has_ekf_failsafed() const
 
 #endif // AP_SCRIPTING_ENABLED
 
-bool Copter::current_mode_requires_mission() const
-{
-#if MODE_AUTO_ENABLED == ENABLED
-        return flightmode == &mode_auto;
-#else
-        return false;
-#endif
-}
 
 // rc_loops - reads user input from transmitter/receiver
 // called at 100hz
@@ -558,7 +550,7 @@ void Copter::ten_hz_logging_loop()
 #if HAL_PROXIMITY_ENABLED
         g2.proximity.log();  // Write proximity sensor distances
 #endif
-#if AP_BEACON_ENABLED
+#if BEACON_ENABLED == ENABLED
         g2.beacon.log();
 #endif
     }

@@ -2,7 +2,6 @@
 #include <AP_FlashIface/AP_FlashIface.h>
 #include <stdio.h>
 #include <support.h>
-#include <hal.h>
 
 AP_FlashIface_JEDEC jedec_dev;
 
@@ -17,7 +16,7 @@ static UNUSED_FUNCTION void test_page_program()
         uprintf("Failed to allocate data for read");
     }
 
-    // fill program data with its own address
+    // fill program data with its own adress
     for (uint32_t i = 0; i < jedec_dev.get_page_size(); i++) {
         data[i] = i;
     }

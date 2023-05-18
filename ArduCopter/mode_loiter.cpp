@@ -34,14 +34,14 @@ bool ModeLoiter::init(bool ignore_checks)
     pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
     pos_control->set_correction_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
-#if AC_PRECLAND_ENABLED
+#if PRECISION_LANDING == ENABLED
     _precision_loiter_active = false;
 #endif
 
     return true;
 }
 
-#if AC_PRECLAND_ENABLED
+#if PRECISION_LANDING == ENABLED
 bool ModeLoiter::do_precision_loiter()
 {
     if (!_precision_loiter_enabled) {
@@ -165,7 +165,7 @@ void ModeLoiter::run()
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-#if AC_PRECLAND_ENABLED
+#if PRECISION_LANDING == ENABLED
         bool precision_loiter_old_state = _precision_loiter_active;
         if (do_precision_loiter()) {
             precision_loiter_xy();

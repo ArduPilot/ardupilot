@@ -24,11 +24,15 @@
 
 #include "SRV_Channel.h"
 #include <AP_Logger/AP_Logger.h>
-#include <AP_KDECAN/AP_KDECAN.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
-  #include <AP_DroneCAN/AP_DroneCAN.h>
+  #include <AP_UAVCAN/AP_UAVCAN.h>
+
+  // To be replaced with macro saying if KDECAN library is included
+  #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    #include <AP_KDECAN/AP_KDECAN.h>
+  #endif
   #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 #endif
 
@@ -530,27 +534,32 @@ void SRV_Channels::push()
     fetteconwire_ptr->update();
 #endif
 
-#if AP_KDECAN_ENABLED
-    if (AP::kdecan() != nullptr) {
-        AP::kdecan()->update();
-    }
-#endif
-
-#if HAL_ENABLE_DRONECAN_DRIVERS
+#if HAL_CANMANAGER_ENABLED
     // push outputs to CAN
     uint8_t can_num_drivers = AP::can().get_num_drivers();
     for (uint8_t i = 0; i < can_num_drivers; i++) {
         switch (AP::can().get_driver_type(i)) {
-            case AP_CAN::Protocol::DroneCAN: {
-                AP_DroneCAN *ap_dronecan = AP_DroneCAN::get_dronecan(i);
-                if (ap_dronecan == nullptr) {
+            case AP_CANManager::Driver_Type_UAVCAN: {
+                AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
+                if (ap_uavcan == nullptr) {
                     continue;
                 }
-                ap_dronecan->SRV_push_servos();
+                ap_uavcan->SRV_push_servos();
+                break;
+            }
+            case AP_CANManager::Driver_Type_KDECAN: {
+// To be replaced with macro saying if KDECAN library is included
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+                AP_KDECAN *ap_kdecan = AP_KDECAN::get_kdecan(i);
+                if (ap_kdecan == nullptr) {
+                    continue;
+                }
+                ap_kdecan->update();
+#endif
                 break;
             }
 #if HAL_PICCOLO_CAN_ENABLE
-            case AP_CAN::Protocol::PiccoloCAN: {
+            case AP_CANManager::Driver_Type_PiccoloCAN: {
                 AP_PiccoloCAN *ap_pcan = AP_PiccoloCAN::get_pcan(i);
                 if (ap_pcan == nullptr) {
                     continue;
@@ -559,7 +568,8 @@ void SRV_Channels::push()
                 break;
             }
 #endif
-            case AP_CAN::Protocol::None:
+            case AP_CANManager::Driver_Type_CANTester:
+            case AP_CANManager::Driver_Type_None:
             default:
                 break;
         }

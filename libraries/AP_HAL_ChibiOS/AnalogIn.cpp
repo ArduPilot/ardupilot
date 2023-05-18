@@ -265,8 +265,13 @@ void AnalogIn::init()
         } else {
             adcgrpcfg.sqr[2] |= chan << (6*(i-9));
         }
+<<<<<<< Updated upstream
 #elif defined(STM32F3) || defined(STM32G4) || defined(STM32L4)  || defined(STM32L4PLUS)
 #if defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
+=======
+#elif defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32G4) || defined(STM32L4)
+>>>>>>> Stashed changes
         adcgrpcfg.smpr[chan/10] |= ADC_SMPR_SMP_640P5 << (3*(chan%10));
 #else
         adcgrpcfg.smpr[chan/10] |= ADC_SMPR_SMP_601P5 << (3*(chan%10));

@@ -45,7 +45,7 @@
 #include "AP_Airspeed_analog.h"
 #include "AP_Airspeed_ASP5033.h"
 #include "AP_Airspeed_Backend.h"
-#include "AP_Airspeed_DroneCAN.h"
+#include "AP_Airspeed_UAVCAN.h"
 #include "AP_Airspeed_NMEA.h"
 #include "AP_Airspeed_MSP.h"
 #include "AP_Airspeed_SITL.h"
@@ -144,7 +144,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
     // @Param: _WIND_GATE
     // @DisplayName: Re-enable Consistency Check Gate Size
-    // @Description: Number of standard deviations applied to the re-enable EKF consistency check that is used when ARSPD_OPTIONS bit position 3 is set. Larger values will make the re-enabling of the airspeed sensor faster, but increase the likelihood of re-enabling a degraded sensor. The value can be tuned by using the ARSP.TR log message by setting ARSPD_WIND_GATE to a value that is higher than the value for ARSP.TR observed with a healthy airspeed sensor. Occasional transients in ARSP.TR above the value set by ARSPD_WIND_GATE can be tolerated provided they are less than 5 seconds in duration and less than 10% duty cycle.
+    // @Description: Number of standard deviations applied to the re-enable EKF consistency check that is used when ARSPD_OPTIONS bit position 3 is set. Larger values will make the re-enabling of the airspeed sensor faster, but increase the likelihood of re-enabling a degraded sensor. The value can be tuned by using the ARSP.TR log message by setting ARSP_WIND_GATE to a value that is higher than the value for ARSP.TR observed with a healthy airspeed sensor. Occasional transients in ARSP.TR above the value set by ARSP_WIND_GATE can be tolerated provided they are less than 5 seconds in duration and less than 10% duty cycle.
     // @Description{Copter, Blimp, Rover, Sub}: This parameter and function is not used by this vehicle.
     // @Range: 0.0 10.0
     // @User: Advanced
@@ -188,8 +188,8 @@ AP_Airspeed::AP_Airspeed()
 
     // Setup defaults that only apply to first sensor
     param[0].type.set_default(ARSPD_DEFAULT_TYPE);
-#ifndef HAL_BUILD_AP_PERIPH
     param[0].bus.set_default(HAL_AIRSPEED_BUS_DEFAULT);
+#ifndef HAL_BUILD_AP_PERIPH
     param[0].pin.set_default(ARSPD_DEFAULT_PIN);
 #endif
 
@@ -415,8 +415,8 @@ void AP_Airspeed::allocate()
 #endif
             break;
         case TYPE_UAVCAN:
-#if AP_AIRSPEED_DRONECAN_ENABLED
-            sensor[i] = AP_Airspeed_DroneCAN::probe(*this, i, uint32_t(param[i].bus_id.get()));
+#if AP_AIRSPEED_UAVCAN_ENABLED
+            sensor[i] = AP_Airspeed_UAVCAN::probe(*this, i, uint32_t(param[i].bus_id.get()));
 #endif
             break;
         case TYPE_NMEA_WATER:
@@ -442,18 +442,18 @@ void AP_Airspeed::allocate()
         }
     }
 
-#if AP_AIRSPEED_DRONECAN_ENABLED
+#if AP_AIRSPEED_UAVCAN_ENABLED
     // we need a 2nd pass for DroneCAN sensors so we can match order by DEVID
     // the 2nd pass accepts any devid
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
         if (sensor[i] == nullptr && (enum airspeed_type)param[i].type.get() == TYPE_UAVCAN) {
-            sensor[i] = AP_Airspeed_DroneCAN::probe(*this, i, 0);
+            sensor[i] = AP_Airspeed_UAVCAN::probe(*this, i, 0);
             if (sensor[i] != nullptr) {
                 num_sensors = i+1;
             }
         }
     }
-#endif // AP_AIRSPEED_DRONECAN_ENABLED
+#endif // AP_AIRSPEED_UAVCAN_ENABLED
 #endif // HAL_AIRSPEED_PROBE_LIST
 
     // set DEVID to zero for any sensors not found. This allows backends to order

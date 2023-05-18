@@ -246,11 +246,6 @@ public:
         _board_orientation = orientation;
     }
 
-    // get overall board orientation
-    enum Rotation get_board_orientation(void) const {
-        return _board_orientation;
-    }
-
     /// Set the motor compensation type
     ///
     /// @param  comp_type           0 = disabled, 1 = enabled use throttle, 2 = enabled use current
@@ -453,7 +448,7 @@ private:
 #if AP_COMPASS_MMC3416_ENABLED
         DRIVER_MMC3416  =9,
 #endif
-#if AP_COMPASS_DRONECAN_ENABLED
+#if AP_COMPASS_UAVCAN_ENABLED
         DRIVER_UAVCAN   =11,
 #endif
 #if AP_COMPASS_QMC5883L_ENABLED

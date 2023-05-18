@@ -52,9 +52,9 @@ public:
     uint32_t available_locked(uint32_t key) override;
 
     uint32_t txspace() override;
-    bool read(uint8_t &data) override WARN_IF_UNUSED;
+    int16_t read() override;
     ssize_t read(uint8_t *buffer, uint16_t count) override;
-    bool read_locked(uint32_t key, uint8_t &b) override WARN_IF_UNUSED;
+    int16_t read_locked(uint32_t key) override;
     void _rx_timer_tick(void);
     void _tx_timer_tick(void);
 

@@ -6,7 +6,7 @@
     Set SERIALx_PROTOCOL = 28 (Scripting) where "x" corresponds to the serial port connected to the gimbal
     Set SCR_ENABLE = 1 to enable scripting and reboot the autopilot
     Set MNT1_TYPE = 9 (Scripting) to enable the mount/gimbal scripting driver
-    Set CAM1_TYPE = 7 (Scripting) to enable the camera scripting driver
+    Set CAM_TRIGG_TYPE = 3 (Mount) to enable the camera driver
     Set RCx_OPTION = 300 (Scripting1) to allow real-time selection of the video feed and camera control
     Copy this script to the autopilot's SD card in the APM/scripts directory and reboot the autopilot
     Set VIEP_CAM_SWLOW, VIEP_CAM_SWMID, VIEP_CAM_SWHIGH to which cameras are controlled by the auxiliary switch
@@ -19,8 +19,7 @@
         6: IR1 13mm
         7: IR2 52mm
     Set VIEP_ZOOM_SPEED to control speed of zoom (value between 0 and 7)
-    Set VIEP_ZOOM_MAX to the maximum zoom.  E.g. for a camera with 20x zoom, set to 20
-    Optionally set VIEP_DEBUG = 1 or 2 to increase level of debug output to the GCS
+    Set VIEP_DEBUG = 1 or 2 to increase level of debug output to the GCS
  
   Packet format
      byte      description     notes
@@ -33,71 +32,20 @@
 
 -- parameters
 local PARAM_TABLE_KEY = 39
-assert(param:add_table(PARAM_TABLE_KEY, "VIEP_", 6), "could not add param table")
+assert(param:add_table(PARAM_TABLE_KEY, "VIEP_", 5), "could not add param table")
 assert(param:add_param(PARAM_TABLE_KEY, 1, "DEBUG", 0), "could not add VIEP_DEBUG param")
 assert(param:add_param(PARAM_TABLE_KEY, 2, "CAM_SWLOW", 1), "could not add VIEP_CAM_SWLOW param")
 assert(param:add_param(PARAM_TABLE_KEY, 3, "CAM_SWMID", 2), "could not add VIEP_CAM_SWMID param")
 assert(param:add_param(PARAM_TABLE_KEY, 4, "CAM_SWHIGH", 6), "could not add VIEP_CAM_CAM_SWHIGH param")
 assert(param:add_param(PARAM_TABLE_KEY, 5, "ZOOM_SPEED", 7), "could not add VIEP_ZOOM_SPEED param")
-assert(param:add_param(PARAM_TABLE_KEY, 6, "ZOOM_MAX", 20), "could not add VIEP_ZOOM_MAX param")
 
 -- bind parameters to variables
 local MNT1_TYPE = Parameter("MNT1_TYPE")    -- should be 9:Scripting
-local CAM1_TYPE = Parameter("CAM1_TYPE")    -- should be 7:Scripting
-
---[[
-  // @Param: VIEP_DEBUG
-  // @DisplayName: ViewPro debug
-  // @Description: ViewPro debug
-  // @Values: 0:Disabled, 1:Enabled, 2:Enabled including attitude reporting
-  // @User: Advanced
---]]
 local VIEP_DEBUG = Parameter("VIEP_DEBUG")  -- debug level. 0:disabled 1:enabled 2:enabled with attitude reporting
-
---[[
-  // @Param: VIEP_CAM_SWLOW
-  // @DisplayName: ViewPro Camera For Switch Low
-  // @Description: Camera selection when switch is in low position
-  // @Values: 0:No change in camera selection, 1:EO1, 2:IR thermal, 3:EO1 + IR Picture-in-picture, 4:IR + EO1 Picture-in-picture, 5:Fusion, 6:IR1 13mm, 7:IR2 52mm
-  // @User: Standard
---]]
 local VIEP_CAM_SWLOW = Parameter("VIEP_CAM_SWLOW")      -- RC swith low position's camera selection
-
---[[
-  // @Param: VIEP_CAM_SWMID
-  // @DisplayName: ViewPro Camera For Switch Mid
-  // @Description: Camera selection when switch is in middle position
-  // @Values: 0:No change in camera selection, 1:EO1, 2:IR thermal, 3:EO1 + IR Picture-in-picture, 4:IR + EO1 Picture-in-picture, 5:Fusion, 6:IR1 13mm, 7:IR2 52mm
-  // @User: Standard
---]]
 local VIEP_CAM_SWMID = Parameter("VIEP_CAM_SWMID")      -- RC swith middle position's camera selection
-
---[[
-  // @Param: VIEP_CAM_SWHIGH
-  // @DisplayName: ViewPro Camera For Switch High
-  // @Description: Camera selection when switch is in high position
-  // @Values: 0:No change in camera selection, 1:EO1, 2:IR thermal, 3:EO1 + IR Picture-in-picture, 4:IR + EO1 Picture-in-picture, 5:Fusion, 6:IR1 13mm, 7:IR2 52mm
-  // @User: Standard
---]]
 local VIEP_CAM_SWHIGH = Parameter("VIEP_CAM_SWHIGH")    -- RC swith high position's camera selection
-
---[[
-  // @Param: VIEP_ZOOM_SPEED
-  // @DisplayName: ViewPro Zoom Speed
-  // @Description: ViewPro Zoom Speed.  Higher numbers result in faster zooming
-  // @Range: 0 7
-  // @User: Standard
---]]
 local VIEP_ZOOM_SPEED = Parameter("VIEP_ZOOM_SPEED")    -- zoom speed from 0 (slow) to 7 (fast)
-
---[[
-  // @Param: VIEP_ZOOM_MAX
-  // @DisplayName: ViewPro Zoom Times Max
-  // @Description: ViewPro Zoom Times Max
-  // @Range: 0 30
-  // @User: Standard
---]]
-local VIEP_ZOOM_MAX = Parameter("VIEP_ZOOM_MAX")        -- zoom times max
 
 -- global definitions
 local CAM_SELECT_RC_OPTION = 300        -- rc channel option used to control which camera/video is used. RCx_OPTION = 300 (scripting1)
@@ -105,7 +53,6 @@ local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTI
 local INIT_INTERVAL_MS = 3000           -- attempt to initialise the gimbal at this interval
 local UPDATE_INTERVAL_MS = 100          -- update at 10hz
 local MOUNT_INSTANCE = 0                -- always control the first mount/gimbal
-local CAMERA_INSTANCE = 0               -- always use the first camera
 
 -- packet parsing definitions
 local HEADER1 = 0x55                    -- 1st header byte
@@ -138,9 +85,12 @@ local CAM_COMMAND_STOP_RECORD = 0x15
 local CAM_COMMAND_AUTO_FOCUS = 0x19
 local CAM_COMMAND_MANUAL_FOCUS = 0x1A
 
+<<<<<<< Updated upstream
 -- camera control2 commands
 local CAM_COMMAND2_SET_EO_ZOOM = 0x53
 
+=======
+>>>>>>> Stashed changes
 -- hardcoded outgoing messages
 local HEARTBEAT_MSG = {0x55,0xAA,0xDC,0x44,0x00,0x00,0x44}
 
@@ -157,8 +107,12 @@ local last_frame_counter = 0            -- last frame counter sent to gimbal.  a
 local cam_choice = 0                    -- last camera choice (see VIEP_CAM_SWLOW/MID/HIGH parameters)
 local cam_pic_count = 0                 -- last picture count.  used to detect trigger pic
 local cam_rec_video = false             -- last record video state.  used to detect record video
+<<<<<<< Updated upstream
 local cam_zoom_type = 0                 -- last zoom type 1:Rate 2:Pct
 local cam_zoom_value = 0                -- last zoom value.  If rate, zoom out = -1, hold = 0, zoom in = 1.  If Pct then value from 0 to 100
+=======
+local cam_zoom_step = 0                 -- last zoom step state.  zoom out = -1, hold = 0, zoom in = 1
+>>>>>>> Stashed changes
 local cam_focus_step = 0                -- last focus step state.  focus in = -1, focus hold = 0, focus out = 1
 local cam_autofocus = false             -- last auto focus state
 
@@ -227,12 +181,6 @@ function init()
   -- check mount parameter
   if MNT1_TYPE:get() ~= 9 then
     gcs:send_text(MAV_SEVERITY.CRITICAL, "ViewPro: set MNT1_TYPE=9")
-    do return end
-  end
-
-  -- check cam type parametr
-  if CAM1_TYPE:get() ~= 7 then
-    gcs:send_text(MAV_SEVERITY.CRITICAL, "ViewPro: set CAM1_TYPE=7")
     do return end
   end
 
@@ -504,6 +452,7 @@ function send_camera_control(camera_choice, cam_command)
   write_byte(checksum, 0)                               -- checksum
 end
 
+<<<<<<< Updated upstream
 -- send camera commands using C2 message
 function send_camera_control2(cam_command, cam_value)
 
@@ -528,6 +477,8 @@ function send_camera_control2(cam_command, cam_value)
   write_byte(checksum, 0)                               -- checksum
 end
 
+=======
+>>>>>>> Stashed changes
 -- return camera selection according to RC switch position and VIEW_CAM_SWxxx parameter
 -- used in C1 message's "video choose" to specify which cameras should be controlled
 function get_camera_choice()
@@ -551,15 +502,12 @@ function check_camera_state()
     send_camera_control(cam_choice, CAM_COMMAND_NO_ACTION)
   end
 
-  -- get latest camera state from AP driver
-  local cam_state = camera:get_state(CAMERA_INSTANCE)
-  if not cam_state then
-    return
-  end
+  -- get latest state from AP driver
+  local pic_count, rec_video, zoom_step, focus_step, auto_focus = mount:get_camera_state(MOUNT_INSTANCE)
 
   -- check for take picture
-  if cam_state:take_pic_incr() and cam_state:take_pic_incr() ~= cam_pic_count then
-    cam_pic_count = cam_state:take_pic_incr()
+  if pic_count and pic_count ~= cam_pic_count then
+    cam_pic_count = pic_count
     send_camera_control(cam_choice, CAM_COMMAND_TAKE_PICTURE)
     if VIEP_DEBUG:get() > 0 then
       gcs:send_text(MAV_SEVERITY.INFO, string.format("ViewPro: took pic %u", pic_count))
@@ -567,54 +515,43 @@ function check_camera_state()
   end
 
   -- check for start/stop recording video
-  if cam_state:recording_video() ~= cam_rec_video then
-    cam_rec_video = cam_state:recording_video()
-    if cam_rec_video > 0 then
+  if rec_video ~= cam_rec_video then
+    cam_rec_video = rec_video
+    if cam_rec_video == true then
       send_camera_control(cam_choice, CAM_COMMAND_START_RECORD)
-      gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: start recording")
-    else
+    elseif cam_rec_video == false then
       send_camera_control(cam_choice, CAM_COMMAND_STOP_RECORD)
-      gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: stop recording")
     end
     if VIEP_DEBUG:get() > 0 then
       gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: rec video:" .. tostring(cam_rec_video))
     end
   end
-
-  -- check zoom
+    
+  -- check manual zoom
   -- zoom out = -1, hold = 0, zoom in = 1
-  local zoom_type_changed = cam_state:zoom_type() and (cam_state:zoom_type() ~= cam_zoom_type)
-  local zoom_value_changed = cam_state:zoom_value() and (cam_state:zoom_value() ~= cam_zoom_value)
-  if (zoom_type_changed or zoom_value_changed) then
-    cam_zoom_type = cam_state:zoom_type()
-    cam_zoom_value = cam_state:zoom_value()
-
-    -- zoom rate
-    if cam_zoom_type == 1 then
-      if cam_zoom_value < 0 then
-        send_camera_control(cam_choice, CAM_COMMAND_ZOOM_OUT)
-      elseif cam_zoom_value > 0 then
-        send_camera_control(cam_choice, CAM_COMMAND_ZOOM_IN)
-      else
-        send_camera_control(cam_choice, CAM_COMMAND_STOP_FOCUS_AND_ZOOM)
-      end
+  if zoom_step ~= cam_zoom_step then
+    cam_zoom_step = zoom_step
+    if cam_zoom_step < 0 then
+      send_camera_control(cam_choice, CAM_COMMAND_ZOOM_OUT)
+    elseif cam_zoom_step == 0 then
+      send_camera_control(cam_choice, CAM_COMMAND_STOP_FOCUS_AND_ZOOM)
+    elseif cam_zoom_step > 0 then
+      send_camera_control(cam_choice, CAM_COMMAND_ZOOM_IN)
     end
-
-    -- zoom percent
-    if cam_zoom_type == 2 then
-      -- convert zoom percentage (in the range 0 to 100) to value in the range of 0 to VIEW_ZOOM_MAX * 10
-      send_camera_control2(CAM_COMMAND2_SET_EO_ZOOM, VIEP_ZOOM_MAX:get() * cam_zoom_value * 0.1)
-    end
-
     if VIEP_DEBUG:get() > 0 then
-      gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: zoom type:" .. tostring(cam_zoom_type) .. " value:" .. tostring(cam_zoom_value))
+      gcs:send_text(MAV_SEVERITY.INFO, "ViewPro: zoom:" .. tostring(cam_zoom_step))
     end
   end
 
   -- check manual focus
   -- focus in = -1, focus hold = 0, focus out = 1
+<<<<<<< Updated upstream
   if cam_state:focus_step() and cam_state:focus_step() ~= cam_focus_step then
     cam_focus_step = cam_state:focus_step()
+=======
+  if focus_step ~= cam_focus_step then
+    cam_focus_step = focus_step
+>>>>>>> Stashed changes
     if cam_focus_step < 0 then
       send_camera_control(cam_choice, CAM_COMMAND_MANUAL_FOCUS)
       send_camera_control(cam_choice, CAM_COMMAND_FOCUS_MINUS)
@@ -630,8 +567,13 @@ function check_camera_state()
   end
 
   -- check auto focus
+<<<<<<< Updated upstream
   if cam_state:auto_focus() and cam_state:auto_focus() ~= cam_autofocus then
     cam_autofocus = cam_state:auto_focus()
+=======
+  if auto_focus ~= cam_autofocus then
+    cam_autofocus = auto_focus
+>>>>>>> Stashed changes
     if cam_autofocus then
       send_camera_control(cam_choice, CAM_COMMAND_AUTO_FOCUS)
     end

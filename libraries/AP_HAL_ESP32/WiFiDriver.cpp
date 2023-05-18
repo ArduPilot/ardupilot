@@ -103,15 +103,16 @@ uint32_t WiFiDriver::txspace()
     return MAX(result, 0);
 }
 
-bool WiFiDriver::read(uint8_t &byte)
+int16_t WiFiDriver::read()
 {
     if (_state != CONNECTED) {
-        return false;
+        return -1;
     }
+    uint8_t byte;
     if (!_readbuf.read_byte(&byte)) {
-        return false;
+        return -1;
     }
-    return true;
+    return byte;
 }
 
 bool WiFiDriver::start_listen()

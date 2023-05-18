@@ -78,7 +78,11 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
 
     //are arming checks disabled?
     if (checks_to_perform == 0) {
-        return mandatory_checks(report);
+        return true;
+    }
+    if (SRV_Channels::get_emergency_stop()) {
+        check_failed(report, "Motors Emergency Stopped");
+        return false;
     }
 
     if (rover.g2.sailboat.sail_enabled() && !rover.g2.windvane.enabled()) {

@@ -82,6 +82,8 @@ public:
     // a function called by the main thread at the main loop rate:
     void periodic();
 
+    bool calibrate_trim(Vector3f &trim_rad);
+
     /// calibrating - returns true if the gyros or accels are currently being calibrated
     bool calibrating() const;
 
@@ -150,7 +152,7 @@ public:
     uint16_t get_accel_rate_hz(uint8_t instance) const { return uint16_t(_accel_raw_sample_rates[instance] * _accel_over_sampling[instance]); }
 
     // FFT support access
-#if HAL_GYROFFT_ENABLED
+#if HAL_WITH_DSP
     const Vector3f& get_gyro_for_fft(void) const { return _gyro_for_fft[_primary_gyro]; }
     FloatBuffer&  get_raw_gyro_window(uint8_t instance, uint8_t axis) { return _gyro_window[instance][axis]; }
     FloatBuffer&  get_raw_gyro_window(uint8_t axis) { return get_raw_gyro_window(_primary_gyro, axis); }
@@ -278,16 +280,9 @@ public:
     void acal_update();
 #endif
 
-#if HAL_GCS_ENABLED
-    bool calibrate_gyros();
-
-    MAV_RESULT calibrate_trim();
-
     // simple accel calibration
+#if HAL_GCS_ENABLED
     MAV_RESULT simple_accel_cal();
-private:
-    uint32_t last_accel_cal_ms;
-public:
 #endif
 
     bool accel_cal_requires_reboot() const { return _accel_cal_requires_reboot; }
@@ -507,7 +502,7 @@ private:
     LowPassFilter2pVector3f _gyro_filter[INS_MAX_INSTANCES];
     Vector3f _accel_filtered[INS_MAX_INSTANCES];
     Vector3f _gyro_filtered[INS_MAX_INSTANCES];
-#if HAL_GYROFFT_ENABLED
+#if HAL_WITH_DSP
     // Thread-safe public version of _last_raw_gyro
     Vector3f _gyro_for_fft[INS_MAX_INSTANCES];
     Vector3f _last_gyro_for_fft[INS_MAX_INSTANCES];
@@ -658,7 +653,6 @@ private:
     // are gyros or accels currently being calibrated
     bool _calibrating_accel;
     bool _calibrating_gyro;
-    bool _trimming_accel;
 
     // the delta time in seconds for the last sample
     float _delta_time;

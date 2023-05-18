@@ -1,9 +1,5 @@
 #pragma once
 
-#include "RC_Channel_config.h"
-
-#if AP_RC_CHANNEL_ENABLED
-
 #include "RC_Channel.h"
 
 
@@ -113,5 +109,3 @@ const AP_Param::GroupInfo RC_Channels::var_info[] = {
 
     AP_GROUPEND
 };
-
-#endif  // AP_RC_CHANNEL_ENABLED

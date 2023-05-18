@@ -28,6 +28,7 @@
 
 extern const AP_HAL::HAL& hal;
 
+<<<<<<< Updated upstream
 #ifdef HAL_SERIAL1_PROTOCOL
 #define SERIAL1_PROTOCOL HAL_SERIAL1_PROTOCOL
 #else
@@ -84,6 +85,58 @@ extern const AP_HAL::HAL& hal;
 #define SERIAL8_BAUD HAL_SERIAL8_BAUD
 #endif
 
+=======
+#ifdef HAL_SERIAL2_PROTOCOL
+#define SERIAL2_PROTOCOL HAL_SERIAL2_PROTOCOL
+#else
+#define SERIAL2_PROTOCOL SerialProtocol_MAVLink2
+#endif
+
+#ifndef HAL_SERIAL3_PROTOCOL
+#define SERIAL3_PROTOCOL SerialProtocol_GPS
+#else
+#define SERIAL3_PROTOCOL HAL_SERIAL3_PROTOCOL
+#endif
+
+#ifndef HAL_SERIAL4_PROTOCOL
+#define SERIAL4_PROTOCOL SerialProtocol_GPS
+#else
+#define SERIAL4_PROTOCOL HAL_SERIAL4_PROTOCOL
+#endif
+
+#ifdef HAL_SERIAL5_PROTOCOL
+#define SERIAL5_PROTOCOL HAL_SERIAL5_PROTOCOL
+#define SERIAL5_BAUD HAL_SERIAL5_BAUD
+#else
+#define SERIAL5_PROTOCOL SerialProtocol_None
+#define SERIAL5_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
+#endif
+
+#ifndef HAL_SERIAL6_PROTOCOL
+#define SERIAL6_PROTOCOL SerialProtocol_None
+#define SERIAL6_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
+#else
+#define SERIAL6_PROTOCOL HAL_SERIAL6_PROTOCOL
+#define SERIAL6_BAUD HAL_SERIAL6_BAUD
+#endif
+
+#ifndef HAL_SERIAL7_PROTOCOL
+#define SERIAL7_PROTOCOL SerialProtocol_None
+#define SERIAL7_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
+#else
+#define SERIAL7_PROTOCOL HAL_SERIAL7_PROTOCOL
+#define SERIAL7_BAUD HAL_SERIAL7_BAUD
+#endif
+
+#ifndef HAL_SERIAL8_PROTOCOL
+#define SERIAL8_PROTOCOL SerialProtocol_None
+#define SERIAL8_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
+#else
+#define SERIAL8_PROTOCOL HAL_SERIAL8_PROTOCOL
+#define SERIAL8_BAUD HAL_SERIAL8_BAUD
+#endif
+
+>>>>>>> Stashed changes
 #ifndef HAL_SERIAL9_PROTOCOL
 #define SERIAL9_PROTOCOL SerialProtocol_None
 #define SERIAL9_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
@@ -145,7 +198,11 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Values: -1:None, 1:MAVLink1, 2:MAVLink2, 3:Frsky D, 4:Frsky SPort, 5:GPS, 7:Alexmos Gimbal Serial, 8:SToRM32 Gimbal Serial, 9:Rangefinder, 10:FrSky SPort Passthrough (OpenTX), 11:Lidar360, 13:Beacon, 14:Volz servo out, 15:SBus servo out, 16:ESC Telemetry, 17:Devo Telemetry, 18:OpticalFlow, 19:RobotisServo, 20:NMEA Output, 21:WindVane, 22:SLCAN, 23:RCIN, 24:EFI Serial, 25:LTM, 26:RunCam, 27:HottTelem, 28:Scripting, 29:Crossfire VTX, 30:Generator, 31:Winch, 32:MSP, 33:DJI FPV, 34:AirSpeed, 35:ADSB, 36:AHRS, 37:SmartAudio, 38:FETtecOneWire, 39:Torqeedo, 40:AIS, 41:CoDevESC, 42:DisplayPort, 43:MAVLink High Latency, 44:IRC Tramp
     // @User: Standard
     // @RebootRequired: True
+<<<<<<< Updated upstream
     AP_GROUPINFO("1_PROTOCOL",  1, AP_SerialManager, state[1].protocol, SERIAL1_PROTOCOL),
+=======
+    AP_GROUPINFO("1_PROTOCOL",  1, AP_SerialManager, state[1].protocol, SerialProtocol_MAVLink2),
+>>>>>>> Stashed changes
 
     // @Param: 1_BAUD
     // @DisplayName: Telem1 Baud Rate

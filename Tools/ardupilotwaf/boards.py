@@ -75,20 +75,6 @@ class Board:
         if cfg.options.no_gcs:
             env.CXXFLAGS += ['-DHAL_GCS_ENABLED=0']
 
-        # configurations for XRCE-DDS
-        if cfg.options.enable_dds:
-            cfg.recurse('libraries/AP_DDS')
-            env.ENABLE_DDS = True
-            env.AP_LIBRARIES += [
-                'AP_DDS'
-            ]
-            env.DEFINES.update(AP_DDS_ENABLED = 1)
-            # check for microxrceddsgen
-            cfg.find_program('microxrceddsgen',mandatory=True)
-        else:
-            env.ENABLE_DDS = False
-            env.DEFINES.update(AP_DDS_ENABLED = 0)
-
         # setup for supporting onvif cam control
         if cfg.options.enable_onvif:
             cfg.recurse('libraries/AP_ONVIF')
@@ -430,18 +416,14 @@ class Board:
 
         if self.with_can and not cfg.env.AP_PERIPH:
             env.AP_LIBRARIES += [
-                'AP_DroneCAN',
-                'modules/DroneCAN/libcanard/*.c',
+                'AP_UAVCAN',
+                'modules/uavcan/libuavcan/src/**/*.cpp'
                 ]
-            if cfg.options.enable_dronecan_tests:
-                env.DEFINES.update(
-                    AP_TEST_DRONECAN_DRIVERS = 1
-                )
 
             env.DEFINES.update(
-                DRONECAN_CXX_WRAPPERS = 1,
-                USE_USER_HELPERS = 1,
-                CANARD_ENABLE_DEADLINE = 1,
+                UAVCAN_CPP_VERSION = 'UAVCAN_CPP03',
+                UAVCAN_NO_ASSERTIONS = 1,
+                UAVCAN_NULLPTR = 'nullptr'
             )
 
 
@@ -628,7 +610,7 @@ class sitl(Board):
             CONFIG_HAL_BOARD = 'HAL_BOARD_SITL',
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
             AP_SCRIPTING_CHECKS = 1, # SITL should always do runtime scripting checks
-            AP_BARO_PROBE_EXTERNAL_I2C_BUSES = 1,
+            HAL_PROBE_EXTERNAL_I2C_BAROS = 1,
         )
 
         cfg.define('AP_SIM_ENABLED', 1)
@@ -640,9 +622,8 @@ class sitl(Board):
 
         if self.with_can:
             cfg.define('HAL_NUM_CAN_IFACES', 2)
-            env.DEFINES.update(CANARD_MULTI_IFACE=1,
-                               CANARD_IFACE_ALL = 0x3,
-                                CANARD_ENABLE_CANFD = 1)
+            cfg.define('UAVCAN_EXCEPTIONS', 0)
+            cfg.define('UAVCAN_SUPPORT_CANFD', 1)
 
         env.CXXFLAGS += [
             '-Werror=float-equal'
@@ -750,7 +731,7 @@ class sitl(Board):
                 '-fno-slp-vectorize' # compiler bug when trying to use SLP
             ]
 
-        if cfg.options.force_32bit:
+        if cfg.options.sitl_32bit:
             # 32bit platform flags
             env.CXXFLAGS += [
                 '-m32',
@@ -786,7 +767,6 @@ class sitl_periph_gps(sitl):
             AP_MISSION_ENABLED = 0,
             HAL_RALLY_ENABLED = 0,
             AP_SCHEDULER_ENABLED = 0,
-            CANARD_ENABLE_TAO_OPTION = 1,
             CANARD_ENABLE_CANFD = 1,
             CANARD_MULTI_IFACE = 1,
             HAL_CANMANAGER_ENABLED = 0,
@@ -800,6 +780,17 @@ class sitl_periph_gps(sitl):
             HAL_SUPPORT_RCOUT_SERIAL = 0,
             AP_CAN_SLCAN_ENABLED = 0,
         )
+        # libcanard is written for 32bit platforms
+        env.CXXFLAGS += [
+            '-m32',
+        ]
+        env.CFLAGS += [
+            '-m32',
+        ]
+        env.LDFLAGS += [
+            '-m32',
+        ]
+
 
 
 class esp32(Board):
@@ -1001,11 +992,6 @@ class chibios(Board):
                 '-g3',
             ]
 
-        if cfg.env.COMPILER_CXX == "g++":
-            if not self.cc_version_gte(cfg, 10, 2):
-                # require at least 10.2 compiler
-                cfg.fatal("ChibiOS build requires g++ version 10.2.1 or later, found %s" % '.'.join(cfg.env.CC_VERSION))
-            
         if cfg.env.ENABLE_ASSERTS:
             cfg.msg("Enabling ChibiOS asserts", "yes")
             env.CFLAGS += [ '-DHAL_CHIBIOS_ENABLE_ASSERTS' ]
@@ -1017,7 +1003,7 @@ class chibios(Board):
         if cfg.env.SAVE_TEMPS:
             env.CXXFLAGS += [ '-S', '-save-temps=obj' ]
 
-        if cfg.options.disable_watchdog or cfg.env.DEBUG:
+        if cfg.options.disable_watchdog:
             cfg.msg("Disabling Watchdog", "yes")
             env.CFLAGS += [ '-DDISABLE_WATCHDOG' ]
             env.CXXFLAGS += [ '-DDISABLE_WATCHDOG' ]
@@ -1069,13 +1055,16 @@ class chibios(Board):
             ('10','2','1'),
         ]
 
-        if cfg.env.HAL_CANFD_SUPPORTED:
-            env.DEFINES.update(CANARD_ENABLE_CANFD=1)
-        else:
-            env.DEFINES.update(CANARD_ENABLE_TAO_OPTION=1)
-        if not cfg.options.bootloader and cfg.env.HAL_NUM_CAN_IFACES:
-            if int(cfg.env.HAL_NUM_CAN_IFACES) >= 1:
-                env.DEFINES.update(CANARD_IFACE_ALL=(1<<int(cfg.env.HAL_NUM_CAN_IFACES))-1)
+        if cfg.env.AP_PERIPH:
+            if cfg.env.HAL_CANFD_SUPPORTED:
+                env.DEFINES.update(CANARD_ENABLE_CANFD=1)
+            else:
+                env.DEFINES.update(CANARD_ENABLE_TAO_OPTION=1)
+            if not cfg.options.bootloader:
+                if int(cfg.env.HAL_NUM_CAN_IFACES) > 1:
+                    env.DEFINES.update(CANARD_MULTI_IFACE=1)
+                else:
+                    env.DEFINES.update(CANARD_MULTI_IFACE=0)
         if cfg.options.Werror or cfg.env.CC_VERSION in gcc_whitelist:
             cfg.msg("Enabling -Werror", "yes")
             if '-Werror' not in env.CXXFLAGS:
@@ -1120,15 +1109,7 @@ class chibios(Board):
         return self.name
 
 class linux(Board):
-    def __init__(self):
-        if self.toolchain == 'native':
-            self.with_can = True
-        else:
-            self.with_can = False
-
     def configure_env(self, cfg, env):
-        if cfg.options.board == 'linux':
-            self.with_can = True
         super(linux, self).configure_env(cfg, env)
 
         env.DEFINES.update(
@@ -1156,33 +1137,8 @@ class linux(Board):
             'AP_HAL_Linux',
         ]
 
-        if cfg.options.force_32bit:
-            env.DEFINES.update(
-                HAL_FORCE_32BIT = 1,
-            )
-            # 32bit platform flags
-            cfg.env.CXXFLAGS += [
-                '-m32',
-            ]
-            cfg.env.CFLAGS += [
-                '-m32',
-            ]
-            cfg.env.LDFLAGS += [
-                '-m32',
-            ]
-        else:
-            env.DEFINES.update(
-                HAL_FORCE_32BIT = 0,
-            )
-        if self.with_can and cfg.options.board == 'linux':
-            cfg.env.HAL_NUM_CAN_IFACES = 2
-            cfg.define('HAL_NUM_CAN_IFACES', 2)
-            cfg.define('HAL_CANFD_SUPPORTED', 1)
-            cfg.define('CANARD_ENABLE_CANFD', 1)
-        
         if self.with_can:
-            env.DEFINES.update(CANARD_MULTI_IFACE=1,
-                               CANARD_IFACE_ALL = 0x3)
+            cfg.define('UAVCAN_EXCEPTIONS', 0)
 
         if cfg.options.apstatedir:
             cfg.define('AP_STATEDIR', cfg.options.apstatedir)
@@ -1289,7 +1245,7 @@ class bbbmini(linux):
 
     def configure_env(self, cfg, env):
         super(bbbmini, self).configure_env(cfg, env)
-        cfg.env.HAL_NUM_CAN_IFACES = 1
+
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BBBMINI',
         )
@@ -1302,7 +1258,6 @@ class blue(linux):
 
     def configure_env(self, cfg, env):
         super(blue, self).configure_env(cfg, env)
-        cfg.env.HAL_NUM_CAN_IFACES = 1
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_BLUE',
@@ -1316,7 +1271,6 @@ class pocket(linux):
 
     def configure_env(self, cfg, env):
         super(pocket, self).configure_env(cfg, env)
-        cfg.env.HAL_NUM_CAN_IFACES = 1
 
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_POCKET',

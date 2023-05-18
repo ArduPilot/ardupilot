@@ -63,7 +63,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK(check_short_failsafe,   50,    100,   9),
     SCHED_TASK(update_speed_height,    50,    200,  12),
     SCHED_TASK(update_throttle_hover, 100,     90,  24),
-    SCHED_TASK_CLASS(RC_Channels,     (RC_Channels*)&plane.g2.rc_channels, read_mode_switch,           7,    100, 27),
+    SCHED_TASK(read_control_switch,     7,    100,  27),
     SCHED_TASK(update_GPS_50Hz,        50,    300,  30),
     SCHED_TASK(update_GPS_10Hz,        10,    400,  33),
     SCHED_TASK(navigate,               10,    150,  36),
@@ -511,6 +511,12 @@ void Plane::update_alt()
 {
     barometer.update();
 
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.available()) {
+        quadplane.motors->set_air_density_ratio(barometer.get_air_density_ratio());
+    }
+#endif
+
     // calculate the sink rate.
     float sink_rate;
     Vector3f vel;
@@ -815,7 +821,12 @@ bool Plane::get_target_location(Location& target_loc)
  */
 bool Plane::update_target_location(const Location &old_loc, const Location &new_loc)
 {
-    if (!old_loc.same_loc_as(next_WP_loc)) {
+    if (!old_loc.same_latlon_as(next_WP_loc)) {
+        return false;
+    }
+    ftype alt_diff;
+    if (!old_loc.get_alt_distance(next_WP_loc, alt_diff) ||
+        !is_zero(alt_diff)) {
         return false;
     }
     next_WP_loc = new_loc;

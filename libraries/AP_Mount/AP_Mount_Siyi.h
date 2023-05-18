@@ -48,9 +48,6 @@ public:
     // return true if healthy
     bool healthy() const override;
 
-    // return true if this mount accepts roll targets
-    bool has_roll_control() const override { return false; }
-
     // has_pan_control - returns true if this mount can control its pan (required for multicopters)
     bool has_pan_control() const override { return yaw_range_valid(); };
 
@@ -65,8 +62,9 @@ public:
     // set start_recording = true to start record, false to stop recording
     bool record_video(bool start_recording) override;
 
-    // set zoom specified as a rate or percentage
-    bool set_zoom(ZoomType zoom_type, float zoom_value) override;
+    // set camera zoom step.  returns true on success
+    // zoom out = -1, hold = 0, zoom in = 1
+    bool set_zoom_step(int8_t zoom_step) override;
 
     // set focus in, out or hold.  returns true on success
     // focus in = -1, focus hold = 0, focus out = 1

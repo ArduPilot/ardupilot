@@ -18,11 +18,7 @@
  
 #pragma once
 
-#include "AP_CAN.h"
-#include "AP_CANDriver.h"
-#ifndef HAL_BUILD_AP_PERIPH
 #include "AP_CANManager.h"
-#endif
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
 
@@ -43,27 +39,16 @@ public:
     bool write_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_us);
 
 #ifdef HAL_BUILD_AP_PERIPH
-    static void set_periph(const uint8_t i, const AP_CAN::Protocol protocol, AP_HAL::CANIface* iface) {
-        if (i < ARRAY_SIZE(_periph)) {
+    static void set_periph(const uint8_t i, const AP_CANManager::Driver_Type protocol, AP_HAL::CANIface* iface) {
+        if (i < HAL_NUM_CAN_IFACES) {
             _periph[i].protocol = protocol;
             _periph[i].iface = iface;
         }
     }
-
-    // return driver type index i
-    static AP_CAN::Protocol get_driver_type(const uint8_t i)
-    {
-        if (i < ARRAY_SIZE(_periph)) {
-            return _periph[i].protocol;
-        }
-        return AP_CAN::Protocol::None;
-    }
-#else
-    static AP_CAN::Protocol get_driver_type(const uint8_t i) { return AP::can().get_driver_type(i); }
 #endif
 
 protected:
-    void register_driver(AP_CAN::Protocol dtype);
+    void register_driver(AP_CANManager::Driver_Type dtype);
 
 private:
     void loop();
@@ -77,11 +62,11 @@ private:
     AP_HAL::CANIface* _can_iface;
 
 #ifdef HAL_BUILD_AP_PERIPH
-    void register_driver_periph(const AP_CAN::Protocol dtype);
+    void register_driver_periph(const AP_CANManager::Driver_Type dtype);
     
     struct CANSensor_Periph {
         AP_HAL::CANIface* iface;
-        AP_CAN::Protocol protocol;
+        AP_CANManager::Driver_Type protocol;
     } static _periph[HAL_NUM_CAN_IFACES];
 #endif
 };

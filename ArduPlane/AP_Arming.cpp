@@ -95,12 +95,25 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
     ret &= quadplane_checks(display_failure);
 #endif
 
+    if (plane.control_mode == &plane.mode_auto && plane.mission.num_commands() <= 1) {
+        check_failed(display_failure, "No mission loaded");
+        ret = false;
+    }
+
     // check adsb avoidance failsafe
     if (plane.failsafe.adsb) {
         check_failed(display_failure, "ADSB threat detected");
         ret = false;
     }
 
+<<<<<<< Updated upstream
+=======
+    if (SRV_Channels::get_emergency_stop()) {
+        check_failed(display_failure,"Motors Emergency Stopped");
+        ret = false;
+    }
+
+>>>>>>> Stashed changes
     if (plane.g2.flight_options & FlightOptions::CENTER_THROTTLE_TRIM){
        int16_t trim = plane.channel_throttle->get_radio_trim();
        if (trim < 1250 || trim > 1750) {

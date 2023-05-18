@@ -13,15 +13,14 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AP_VisualOdom_config.h"
-
-#if AP_VISUALODOM_INTELT265_ENABLED
-
 #include "AP_VisualOdom_IntelT265.h"
+
+#if HAL_VISUALODOM_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Logger/AP_Logger.h>
 
 #define VISUALODOM_RESET_IGNORE_DURATION_MS 1000    // sensor data is ignored for 1sec after a position reset
 
@@ -345,4 +344,4 @@ void AP_VisualOdom_IntelT265::handle_voxl_camera_reset_jump(const Vector3f &sens
     _voxl_reset_counter_last = reset_counter;
 }
 
-#endif  // AP_VISUALODOM_INTELT265_ENABLED
+#endif
