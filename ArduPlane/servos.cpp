@@ -1017,7 +1017,7 @@ void Plane::servos_output(void)
     landing_neutral_control_surface_servos();
     
     // set rudder arm waiting for neutral control throws (rudder neutral, aileron/rt vtail/rt elevon to full right)
-    if (g2.flight_options & FlightOptions::INDICATE_WAITING_FOR_RUDDER_NEUTRAL) {
+    if (flight_option_enabled(FlightOptions::INDICATE_WAITING_FOR_RUDDER_NEUTRAL)) {
         indicate_waiting_for_rud_neutral_to_takeoff();
     }
 

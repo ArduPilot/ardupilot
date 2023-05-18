@@ -18,6 +18,9 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
+
+// Reference: https://linux.die.net/man/3/be16toh
+
 #pragma once
 
 #include <byteswap.h>

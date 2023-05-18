@@ -11,7 +11,7 @@ void AP_Mount_SToRM32_serial::init()
 {
     const AP_SerialManager& serial_manager = AP::serialmanager();
 
-    _port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_SToRM32, 0);
+    _port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Gimbal, 0);
     if (_port) {
         _initialised = true;
         set_mode((enum MAV_MOUNT_MODE)_params.default_mode.get());
@@ -171,7 +171,7 @@ void AP_Mount_SToRM32_serial::send_target_angles(const MountTarget& angle_target
     // send CMD_SETANGLE (Note: reversed pitch and yaw)
     cmd_set_angles_data.pitch = -degrees(angle_target_rad.pitch);
     cmd_set_angles_data.roll = degrees(angle_target_rad.roll);
-    cmd_set_angles_data.yaw = -degrees(get_bf_yaw_angle(angle_target_rad));
+    cmd_set_angles_data.yaw = -degrees(angle_target_rad.get_bf_yaw());
 
     uint8_t* buf = (uint8_t*)&cmd_set_angles_data;
 

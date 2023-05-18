@@ -120,7 +120,7 @@ bool AP_ToneAlarm::init()
     _cont_tone_playing = -1;
     hal.scheduler->register_timer_process(FUNCTOR_BIND(this, &AP_ToneAlarm::_timer_task, void));
 
-#if HAVE_FILESYSTEM_SUPPORT && CONFIG_HAL_BOARD != HAL_BOARD_LINUX
+#if (AP_FILESYSTEM_POSIX_ENABLED || AP_FILESYSTEM_FATFS_ENABLED) && CONFIG_HAL_BOARD != HAL_BOARD_LINUX
     // if we don't have a SDcard then play a failure tone instead of
     // normal startup tone. This gives the user a chance to fix it
     // before they try to arm. We don't do this on Linux as Linux

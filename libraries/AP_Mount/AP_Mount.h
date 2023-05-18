@@ -149,7 +149,7 @@ public:
     void set_target_sysid(uint8_t instance, uint8_t sysid);
 
     // mavlink message handling:
-    MAV_RESULT handle_command_long(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_long(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
     void handle_param_value(const mavlink_message_t &msg);
     void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg);
 
@@ -158,6 +158,9 @@ public:
 
     // send a GIMBAL_MANAGER_INFORMATION message to GCS
     void send_gimbal_manager_information(mavlink_channel_t chan);
+
+    // send a GIMBAL_MANAGER_STATUS message to GCS
+    void send_gimbal_manager_status(mavlink_channel_t chan);
 
     // get mount's current attitude in euler angles in degrees.  yaw angle is in body-frame
     // returns true on success
@@ -187,12 +190,9 @@ public:
     // set zoom specified as a rate or percentage
     bool set_zoom(uint8_t instance, ZoomType zoom_type, float zoom_value);
 
-    // set focus in, out or hold
+    // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
-    bool set_manual_focus_step(uint8_t instance, int8_t focus_step);
-
-    // auto focus
-    bool set_auto_focus(uint8_t instance);
+    bool set_focus(uint8_t instance, FocusType focus_type, float focus_value);
 
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];
@@ -221,6 +221,7 @@ private:
     MAV_RESULT handle_command_do_mount_configure(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_mount_control(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_gimbal_manager_pitchyaw(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_do_gimbal_manager_configure(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
     void handle_gimbal_manager_set_attitude(const mavlink_message_t &msg);
     void handle_global_position_int(const mavlink_message_t &msg);
     void handle_gimbal_device_information(const mavlink_message_t &msg);

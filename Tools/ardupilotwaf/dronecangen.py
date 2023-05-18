@@ -66,9 +66,6 @@ def configure(cfg):
     """
     setup environment for uavcan header generator
     """
-    cfg.load('python')
-    cfg.check_python_version(minver=(2,7,0))
-
     env = cfg.env
     env.DC_DSDL_COMPILER_DIR = cfg.srcnode.make_node('modules/DroneCAN/dronecan_dsdlc/').abspath()
     env.DC_DSDL_COMPILER = env.DC_DSDL_COMPILER_DIR + '/dronecan_dsdlc.py'

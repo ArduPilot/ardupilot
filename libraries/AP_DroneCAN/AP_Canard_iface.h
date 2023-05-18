@@ -64,5 +64,6 @@ private:
     HAL_EventHandle _event_handle;
     bool initialized;
     HAL_Semaphore _sem;
+    CanardTxTransfer tx_transfer;
 };
 #endif // HAL_ENABLE_DRONECAN_DRIVERS

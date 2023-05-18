@@ -52,11 +52,12 @@ class Board:
         )
 
         # Setup scripting, had to defer this to allow checking board size
-        if ((not cfg.options.disable_scripting) and
+        if (cfg.options.enable_scripting or
+            ((not cfg.options.disable_scripting) and
             (not cfg.env.DISABLE_SCRIPTING) and
             ((cfg.env.BOARD_FLASH_SIZE is None) or
              (cfg.env.BOARD_FLASH_SIZE == []) or
-             (cfg.env.BOARD_FLASH_SIZE > 1024))):
+             (cfg.env.BOARD_FLASH_SIZE > 1024)))):
 
             env.DEFINES.update(
                 AP_SCRIPTING_ENABLED = 1,
@@ -275,6 +276,10 @@ class Board:
             env.DEFINES.update(
                 HAL_DEBUG_BUILD = 1,
             )
+        elif cfg.options.debug_symbols:
+            env.CFLAGS += [
+                '-g',
+            ]
         if cfg.env.COVERAGE:
             env.CFLAGS += [
                 '-fprofile-arcs',
@@ -638,6 +643,9 @@ class sitl(Board):
         cfg.define('AP_OPENDRONEID_ENABLED', 1)
         cfg.define('AP_SIGNED_FIRMWARE', 0)
 
+        cfg.define('AP_NOTIFY_LP5562_BUS', 2)
+        cfg.define('AP_NOTIFY_LP5562_ADDR', 0x30)
+
         if self.with_can:
             cfg.define('HAL_NUM_CAN_IFACES', 2)
             env.DEFINES.update(CANARD_MULTI_IFACE=1,
@@ -787,6 +795,7 @@ class sitl_periph_gps(sitl):
             HAL_RALLY_ENABLED = 0,
             AP_SCHEDULER_ENABLED = 0,
             CANARD_ENABLE_TAO_OPTION = 1,
+            AP_RCPROTOCOL_ENABLED = 0,
             CANARD_ENABLE_CANFD = 1,
             CANARD_MULTI_IFACE = 1,
             HAL_CANMANAGER_ENABLED = 0,
@@ -827,7 +836,7 @@ class esp32(Board):
         env.DEFINES.update(
             ENABLE_HEAP = 0,
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_ESP32_%s' %  tt.upper() ,
-            ALLOW_DOUBLE_MATH_FUNCTIONS = '1',
+            HAL_HAVE_HARDWARE_DOUBLE = '1',
         )
 
         env.AP_LIBRARIES += [
@@ -837,6 +846,7 @@ class esp32(Board):
         env.CFLAGS += [
             '-fno-inline-functions',
             '-mlongcalls',
+            '-fsingle-precision-constant',
         ]
         env.CFLAGS.remove('-Werror=undef')
 
@@ -852,6 +862,8 @@ class esp32(Board):
                          '-Wno-sign-compare',
                          '-fno-inline-functions',
                          '-mlongcalls',
+                         '-fsingle-precision-constant', # force const vals to be float , not double. so 100.0 means 100.0f 
+                         '-fno-threadsafe-statics',
                          '-DCYGWIN_BUILD']
         env.CXXFLAGS.remove('-Werror=undef')
         env.CXXFLAGS.remove('-Werror=shadow')
@@ -967,6 +979,7 @@ class chibios(Board):
 
         bldnode = cfg.bldnode.make_node(self.name)
         env.BUILDROOT = bldnode.make_node('').abspath()
+
         env.LINKFLAGS = cfg.env.CPU_FLAGS + [
             '-fomit-frame-pointer',
             '-falign-functions=16',
@@ -988,7 +1001,7 @@ class chibios(Board):
             '-L%s' % env.BUILDROOT,
             '-L%s' % cfg.srcnode.make_node('modules/ChibiOS/os/common/startup/ARMCMx/compilers/GCC/ld/').abspath(),
             '-L%s' % cfg.srcnode.make_node('libraries/AP_HAL_ChibiOS/hwdef/common/').abspath(),
-            '-Wl,-Map,Linker.map,--cref,--gc-sections,--no-warn-mismatch,--library-path=/ld,--script=ldscript.ld,--defsym=__process_stack_size__=%s,--defsym=__main_stack_size__=%s' % (cfg.env.PROCESS_STACK, cfg.env.MAIN_STACK)
+            '-Wl,-Map,Linker.map,%s--cref,--gc-sections,--no-warn-mismatch,--library-path=/ld,--script=ldscript.ld,--defsym=__process_stack_size__=%s,--defsym=__main_stack_size__=%s' % ("--print-memory-usage," if cfg.env.EXT_FLASH_SIZE_MB > 0 and cfg.env.INT_FLASH_PRIMARY == 0 else "", cfg.env.PROCESS_STACK, cfg.env.MAIN_STACK)
         ]
 
         if cfg.env.DEBUG:

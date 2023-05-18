@@ -16,15 +16,12 @@
 
 #pragma once
 
+#include "AP_ExternalAHRS_config.h"
+
+#if AP_EXTERNAL_AHRS_LORD_ENABLED
+
 #include "AP_ExternalAHRS_backend.h"
-
-#ifndef HAL_EXTERNAL_AHRS_LORD_ENABLED
-#define HAL_EXTERNAL_AHRS_LORD_ENABLED HAL_EXTERNAL_AHRS_ENABLED
-#endif
-
-#if HAL_EXTERNAL_AHRS_LORD_ENABLED
-
-#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_GPS/AP_GPS.h>
 
 class AP_ExternalAHRS_LORD: public AP_ExternalAHRS_backend
 {
@@ -153,5 +150,4 @@ private:
 
 };
 
-#endif // HAL_EXTERNAL_AHRS_ENABLED
-
+#endif // AP_EXTERNAL_AHRS_LORD_ENABLED

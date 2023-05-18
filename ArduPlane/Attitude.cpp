@@ -50,7 +50,7 @@ float Plane::calc_speed_scaler(void)
         speed_scaler = 1;
     }
     if (!plane.ahrs.airspeed_sensor_enabled()  && 
-        (plane.g2.flight_options & FlightOptions::SURPRESS_TKOFF_SCALING) &&
+        (plane.flight_option_enabled(FlightOptions::SURPRESS_TKOFF_SCALING)) &&
         (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF)) { //scaling is surpressed during climb phase of automatic takeoffs with no airspeed sensor being used due to problems with inaccurate airspeed estimates
         return MIN(speed_scaler, 1.0f) ;
     }
@@ -145,7 +145,7 @@ float Plane::stabilize_roll_get_roll_out()
         disable_integrator = true;
     }
     return rollController.get_servo_out(nav_roll_cd - ahrs.roll_sensor, speed_scaler, disable_integrator,
-                                        ground_mode && !(plane.g2.flight_options & FlightOptions::DISABLE_GROUND_PID_SUPPRESSION));
+                                        ground_mode && !(plane.flight_option_enabled(FlightOptions::DISABLE_GROUND_PID_SUPPRESSION)));
 }
 
 /*
@@ -208,28 +208,29 @@ float Plane::stabilize_pitch_get_pitch_out()
     }
 
     return pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, speed_scaler, disable_integrator,
-                                         ground_mode && !(plane.g2.flight_options & FlightOptions::DISABLE_GROUND_PID_SUPPRESSION));
+                                         ground_mode && !(plane.flight_option_enabled(FlightOptions::DISABLE_GROUND_PID_SUPPRESSION)));
 }
 
 /*
   this gives the user control of the aircraft in stabilization modes, only used in Stabilize Mode
+  to be moved to mode_stabilize.cpp in future
  */
-void Plane::stabilize_stick_mixing_direct()
+void ModeStabilize::stabilize_stick_mixing_direct()
 {
-    if (!stick_mixing_enabled()) {
+    if (!plane.stick_mixing_enabled()) {
         return;
     }
 #if HAL_QUADPLANE_ENABLED
-    if (!quadplane.allow_stick_mixing()) {
+    if (!plane.quadplane.allow_stick_mixing()) {
         return;
     }
 #endif
     float aileron = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
-    aileron = channel_roll->stick_mixing(aileron);
+    aileron = plane.channel_roll->stick_mixing(aileron);
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron);
 
     float elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
-    elevator = channel_pitch->stick_mixing(elevator);
+    elevator = plane.channel_pitch->stick_mixing(elevator);
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elevator);
 }
 
@@ -274,7 +275,7 @@ void Plane::stabilize_stick_mixing_fbw()
     nav_roll_cd += roll_input * roll_limit_cd;
     nav_roll_cd = constrain_int32(nav_roll_cd, -roll_limit_cd, roll_limit_cd);
 
-    if ((control_mode == &mode_loiter) && (plane.g2.flight_options & FlightOptions::ENABLE_LOITER_ALT_CONTROL)) {
+    if ((control_mode == &mode_loiter) && (plane.flight_option_enabled(FlightOptions::ENABLE_LOITER_ALT_CONTROL))) {
         // loiter is using altitude control based on the pitch stick, don't use it again here
         return;
     }
@@ -392,13 +393,9 @@ void Plane::stabilize()
             steering_control.rudder = rudder;
         }
 #endif
-    } else if (control_mode == &mode_acro) {
+    } else if (control_mode == &mode_acro ||
+                control_mode == &mode_stabilize) {
         plane.control_mode->run();
-    } else if (control_mode == &mode_stabilize) {
-        stabilize_roll();
-        stabilize_pitch();
-        stabilize_stick_mixing_direct();
-        stabilize_yaw();
 #if HAL_QUADPLANE_ENABLED
     } else if (control_mode->is_vtol_mode() && !quadplane.tailsitter.in_vtol_transition(now)) {
         // run controlers specific to this mode
@@ -413,14 +410,7 @@ void Plane::stabilize()
         }
 #endif
     } else {
-        // Direct stick mixing functionality has been removed, so as not to remove all stick mixing from the user completely
-        // the old direct option is now used to enable fbw mixing, this is easier than doing a param conversion.
-        if ((g.stick_mixing == StickMixing::FBW) || (g.stick_mixing == StickMixing::DIRECT_REMOVED)) {
-            stabilize_stick_mixing_fbw();
-        }
-        stabilize_roll();
-        stabilize_pitch();
-        stabilize_yaw();
+        plane.control_mode->run();
     }
 
     /*

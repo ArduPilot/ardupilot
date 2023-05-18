@@ -31,35 +31,35 @@
 //default protocols:		ardupilot/libraries/AP_SerialManager/AP_SerialManager.cpp
 //ESP32 serials:		AP_HAL_ESP32/HAL_ESP32_Class.cpp
 
-//#define HAL_SERIAL0_PROTOCOL				SerialProtocol_MAVLink2			//A	UART0: Always: Console, MAVLink2
-//#define HAL_SERIAL0_BAUD				AP_SERIALMANAGER_CONSOLE_BAUD/1000	//115200
+//#define DEFAULT_SERIAL0_PROTOCOL				SerialProtocol_MAVLink2			//A	UART0: Always: Console, MAVLink2
+//#define DEFAULT_SERIAL0_BAUD				AP_SERIALMANAGER_CONSOLE_BAUD/1000	//115200
 
-//#define HAL_SERIAL1_PROTOCOL				SerialProtocol_MAVLink2			//C	WiFi:  TCP, UDP, or disable (depends on HAL_ESP32_WIFI)
-//#define HAL_SERIAL1_BAUD				AP_SERIALMANAGER_MAVLINK_BAUD/1000	//57600
+//#define DEFAULT_SERIAL1_PROTOCOL				SerialProtocol_MAVLink2			//C	WiFi:  TCP, UDP, or disable (depends on HAL_ESP32_WIFI)
+//#define DEFAULT_SERIAL1_BAUD				AP_SERIALMANAGER_MAVLINK_BAUD/1000	//57600
 
-#define HAL_SERIAL2_PROTOCOL				SerialProtocol_MAVLink2			//D	UART2: Always: MAVLink2 on ESP32
-//#define HAL_SERIAL2_BAUD				AP_SERIALMANAGER_MAVLINK_BAUD/1000	//57600
+#define DEFAULT_SERIAL2_PROTOCOL				SerialProtocol_MAVLink2			//D	UART2: Always: MAVLink2 on ESP32
+//#define DEFAULT_SERIAL2_BAUD				AP_SERIALMANAGER_MAVLINK_BAUD/1000	//57600
 
-#define HAL_SERIAL3_PROTOCOL				SerialProtocol_GPS			//B	UART1: GPS1
-//#define HAL_SERIAL4_BAUD				AP_SERIALMANAGER_GPS_BAUD/1000		//38400, Can not define default baudrate here (by config only)
+#define DEFAULT_SERIAL3_PROTOCOL				SerialProtocol_GPS			//B	UART1: GPS1
+//#define DEFAULT_SERIAL4_BAUD				AP_SERIALMANAGER_GPS_BAUD/1000		//38400, Can not define default baudrate here (by config only)
 
-#define HAL_SERIAL4_PROTOCOL				SerialProtocol_None			//E
-//#define HAL_SERIAL4_BAUD				AP_SERIALMANAGER_GPS_BAUD/1000		//38400, Can not define default baudrate here (by config only)
+#define DEFAULT_SERIAL4_PROTOCOL				SerialProtocol_None			//E
+//#define DEFAULT_SERIAL4_BAUD				AP_SERIALMANAGER_GPS_BAUD/1000		//38400, Can not define default baudrate here (by config only)
 
-#define HAL_SERIAL5_PROTOCOL				SerialProtocol_None			//F
-#define HAL_SERIAL5_BAUD				(115200/1000)
+#define DEFAULT_SERIAL5_PROTOCOL				SerialProtocol_None			//F
+#define DEFAULT_SERIAL5_BAUD				(115200/1000)
 
-#define HAL_SERIAL6_PROTOCOL				SerialProtocol_None			//G
-#define HAL_SERIAL6_BAUD				(115200/1000)
+#define DEFAULT_SERIAL6_PROTOCOL				SerialProtocol_None			//G
+#define DEFAULT_SERIAL6_BAUD				(115200/1000)
 
-#define HAL_SERIAL7_PROTOCOL				SerialProtocol_None			//H
-#define HAL_SERIAL7_BAUD				(115200/1000)
+#define DEFAULT_SERIAL7_PROTOCOL				SerialProtocol_None			//H
+#define DEFAULT_SERIAL7_BAUD				(115200/1000)
 
-#define HAL_SERIAL8_PROTOCOL				SerialProtocol_None			//I
-#define HAL_SERIAL8_BAUD				(115200/1000)
+#define DEFAULT_SERIAL8_PROTOCOL				SerialProtocol_None			//I
+#define DEFAULT_SERIAL8_BAUD				(115200/1000)
 
-#define HAL_SERIAL9_PROTOCOL				SerialProtocol_None			//J
-#define HAL_SERIAL9_BAUD				(115200/1000)
+#define DEFAULT_SERIAL9_PROTOCOL				SerialProtocol_None			//J
+#define DEFAULT_SERIAL9_BAUD				(115200/1000)
 
 //Inertial sensors
 //#define HAL_INS_DEFAULT				HAL_INS_MPU9250_I2C
@@ -103,7 +103,7 @@
 #define HAL_USE_ADC					0
 
 //LED
-#define BUILD_DEFAULT_LED_TYPE				Notify_LED_None
+#define DEFAULT_NTF_LED_TYPES				Notify_LED_None
 
 //RMT pin number
 #define HAL_ESP32_RMT_RX_PIN_NUMBER			4
@@ -116,8 +116,6 @@
 //#define HAL_ESP32_SDCARD //after enabled, uncomment one of below
 //#define HAL_ESP32_SDMMC
 //#define HAL_ESP32_SDSPI				{.host=VSPI_HOST, .dma_ch=2, .mosi=GPIO_NUM_2, .miso=GPIO_NUM_15, .sclk=GPIO_NUM_26, .cs=GPIO_NUM_21}
-
-#define HAL_OS_POSIX_IO					1
 
 #define HAL_LOGGING_FILESYSTEM_ENABLED			0
 #define HAL_LOGGING_DATAFLASH_ENABLED			0

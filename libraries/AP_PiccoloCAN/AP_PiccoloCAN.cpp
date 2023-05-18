@@ -382,14 +382,24 @@ void AP_PiccoloCAN::update()
             CBSServo_Info_t &servo = _servo_info[ii];
 
             if (servo.newTelemetry) {
-
+                union {
+                    Servo_ErrorBits_t ebits;
+                    uint8_t errors;
+                } err;
+                err.ebits = servo.statusA.errors;
                 logger->Write_ServoStatus(
                     timestamp,
                     ii,
                     (float) servo.statusA.position,         // Servo position (represented in microsecond units)
                     (float) servo.statusB.current * 0.01f, // Servo force (actually servo current, 0.01A per bit)
                     (float) servo.statusB.speed,            // Servo speed (degrees per second)
-                    (uint8_t) abs(servo.statusB.dutyCycle)  // Servo duty cycle (absolute value as it can be +/- 100%)
+                    (uint8_t) abs(servo.statusB.dutyCycle),  // Servo duty cycle (absolute value as it can be +/- 100%)
+                    servo.statusA.command,
+                    servo.statusB.voltage*0.01,
+                    servo.statusB.current*0.01,
+                    servo.statusB.temperature,
+                    servo.statusB.temperature,
+                    err.errors
                 );
 
                 servo.newTelemetry = false;

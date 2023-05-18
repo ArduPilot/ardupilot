@@ -42,12 +42,14 @@ public:
     // set zoom specified as a rate or percentage
     bool set_zoom(ZoomType zoom_type, float zoom_value) override;
 
-    // set focus in, out or hold.  returns true on success
+    // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
-    bool set_manual_focus_step(int8_t focus_step) override;
+    bool set_focus(FocusType focus_type, float focus_value) override;
 
-    // auto focus.  returns true on success
-    bool set_auto_focus() override;
+    // set tracking to none, point or rectangle (see TrackingType enum)
+    // if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
+    // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
+    bool set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2) override;
 
     // returns true on success and cam_state is filled in
     bool get_state(AP_Camera::camera_state_t& cam_state) override;

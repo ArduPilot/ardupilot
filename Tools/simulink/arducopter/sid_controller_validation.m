@@ -14,7 +14,7 @@ curPath = pwd;
 
 %% Define log file index and controller type to be validated
 % Log file index used for validation
-log_idx = 2;
+log_idx = 5;
 
 % Check validity of log_idx
 if log_idx > numel(sidLogs)
@@ -25,35 +25,35 @@ end
 % validate
 figure % Attitude controller signals
 subplot(311)
-plot(sidLogs(log_idx).data.RATE.TimeS, sidLogs(log_idx).data.RATE.RDes, 'LineWidth', 1.4);
+plot(sidLogs(log_idx).data.ATT.TimeS, sidLogs(log_idx).data.ATT.DesRoll, 'LineWidth', 1.4);
 hold on
-plot(sidLogs(log_idx).data.RATE.TimeS, sidLogs(log_idx).data.RATE.R, 'LineWidth', 1.4);
+plot(sidLogs(log_idx).data.ATT.TimeS, sidLogs(log_idx).data.ATT.Roll, 'LineWidth', 1.4);
 hold off
 grid on
 legend('Desired', 'Actual');
 xlabel('Time (s)');
 ylabel('Roll angle (deg)');
-xlim([0 max(sidLogs(log_idx).data.RATE.TimeS)]);
+xlim([0 max(sidLogs(log_idx).data.ATT.TimeS)]);
 subplot(312)
-plot(sidLogs(log_idx).data.RATE.TimeS, sidLogs(log_idx).data.RATE.PDes, 'LineWidth', 1.4);
+plot(sidLogs(log_idx).data.ATT.TimeS, sidLogs(log_idx).data.ATT.DesPitch, 'LineWidth', 1.4);
 hold on
-plot(sidLogs(log_idx).data.RATE.TimeS, sidLogs(log_idx).data.RATE.P, 'LineWidth', 1.4);
+plot(sidLogs(log_idx).data.ATT.TimeS, sidLogs(log_idx).data.ATT.Pitch, 'LineWidth', 1.4);
 hold off
 grid on
 legend('Desired', 'Actual');
 xlabel('Time (s)');
 ylabel('Pitch angle (deg)');
-xlim([0 max(sidLogs(log_idx).data.RATE.TimeS)]);
+xlim([0 max(sidLogs(log_idx).data.ATT.TimeS)]);
 subplot(313)
-plot(sidLogs(log_idx).data.RATE.TimeS, sidLogs(log_idx).data.RATE.YDes, 'LineWidth', 1.4);
+plot(sidLogs(log_idx).data.ATT.TimeS, sidLogs(log_idx).data.ATT.DesYaw, 'LineWidth', 1.4);
 hold on
-plot(sidLogs(log_idx).data.RATE.TimeS, sidLogs(log_idx).data.RATE.Y, 'LineWidth', 1.4);
+plot(sidLogs(log_idx).data.ATT.TimeS, sidLogs(log_idx).data.ATT.Yaw, 'LineWidth', 1.4);
 hold off
 grid on
 legend('Desired', 'Actual');
 xlabel('Time (s)');
 ylabel('Yaw angle (deg)');
-xlim([0 max(sidLogs(log_idx).data.RATE.TimeS)]);
+xlim([0 max(sidLogs(log_idx).data.ATT.TimeS)]);
 
 % Plot z Controller signals if Althold flight mode was active
 if sidLogs(log_idx).data.MODE.Mode == 2
@@ -80,6 +80,10 @@ switch sidLogs(log_idx).data.MODE.Mode
         fprintf(' (Stabilize)\n');
     case 2
         fprintf(' (Althold)\n');
+    otherwise
+        fprintf(['\n No available flight mode for the validation could be found. ' ...
+            'Please use the Stabilize or Althold flight mode!\n']);
+        return;
 end
 fprintf('Available controllers that can be validated: \n');
 fprintf('1 = Rate controller\n');

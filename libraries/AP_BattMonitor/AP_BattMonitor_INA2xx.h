@@ -30,17 +30,30 @@ public:
 private:
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
 
-    void configure(void);
-    bool read_word(const uint8_t reg, int16_t& data) const;
+    enum class DevType : uint8_t {
+        UNKNOWN = 0,
+        INA226,
+        INA228,
+        INA238,
+    };
+
+    static const uint8_t i2c_probe_addresses[];
+    uint8_t i2c_probe_next;
+
+    bool configure(DevType dtype);
+    bool read_word16(const uint8_t reg, int16_t& data) const;
+    bool read_word24(const uint8_t reg, int32_t& data) const;
     bool write_word(const uint8_t reg, const uint16_t data) const;
     void timer(void);
+    bool detect_device(void);
+
+    DevType dev_type;
+    uint32_t last_detect_ms;
 
     AP_Int8 i2c_bus;
     AP_Int8 i2c_address;
-    bool configured;
     bool callback_registered;
     uint32_t failed_reads;
-    uint32_t last_configure_ms;
 
     struct {
         uint16_t count;

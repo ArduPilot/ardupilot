@@ -170,8 +170,8 @@ define AP_WINCH_ENABLED 0
 define AP_CAMERA_BACKEND_DEFAULT_ENABLED 0
 define AP_CAMERA_MAVLINK_ENABLED 1
 
-// remove RC Protocol support:
-define AP_RCPROTOCOL_BACKEND_DEFAULT_ENABLED 0
+# SkyViper uses AP_Radio, which does its own RC protocol decoding:
+define AP_RCPROTOCOL_ENABLED 0
 
 // few prelcnad backends are applicable
 define AC_PRECLAND_BACKEND_DEFAULT_ENABLED 0

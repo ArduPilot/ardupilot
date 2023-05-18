@@ -777,7 +777,12 @@ function HLSatcom()
                                        ahrs:groundspeed_vector():length() * 5))
 
         hl2.temperature_air = math.floor(baro:get_external_temperature())
-        hl2.battery = battery:capacity_remaining_pct(0)
+        
+        if battery:num_instances() > 0 then
+            hl2.battery = battery:capacity_remaining_pct(0)
+        else
+            hl2.battery = 0
+        end
 
         -- just sending armed state here for simplicity. Flight mode is in the custom_mode field
         if arming:is_armed() then
@@ -802,7 +807,7 @@ end
 function protected_wrapper()
     local success, err = pcall(HLSatcom)
     if not success then
-        gcs:send_text(MAV_SEVERITY_ERROR, "Internal Error: " .. err)
+        gcs:send_text(3, "Internal Error: " .. err)
         -- when we fault we run the HLSatcom function again after 1s, slowing it
         -- down a bit so we don't flood the console with errors
         return protected_wrapper, 1000

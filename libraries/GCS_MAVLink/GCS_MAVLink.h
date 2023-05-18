@@ -14,14 +14,8 @@
 #define MAVLINK_START_UART_SEND(chan, size) comm_send_lock(chan, size)
 #define MAVLINK_END_UART_SEND(chan, size) comm_send_unlock(chan)
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-// allow extra mavlink channels in SITL for:
-//    Vicon, ship
-#define MAVLINK_COMM_NUM_BUFFERS 7
-#else
 // allow five telemetry ports
 #define MAVLINK_COMM_NUM_BUFFERS 5
-#endif
 
 /*
   The MAVLink protocol code generator does its own alignment, so

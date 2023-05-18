@@ -35,7 +35,7 @@
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-#if HAVE_FILESYSTEM_SUPPORT
+#if AP_FILESYSTEM_FATFS_ENABLED
 #include "AP_Filesystem_FATFS.h"
 #endif
 

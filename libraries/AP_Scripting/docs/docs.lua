@@ -102,6 +102,10 @@ function EFI_State_ud:ignition_voltage() end
 ---@param value number
 function EFI_State_ud:ignition_voltage(value) end
 
+-- get field
+---@return Cylinder_Status_ud
+function EFI_State_ud:cylinder_status() end
+
 -- set field
 ---@param value Cylinder_Status_ud
 function EFI_State_ud:cylinder_status(value) end
@@ -145,6 +149,14 @@ function EFI_State_ud:fuel_pressure() end
 -- set field
 ---@param value number
 function EFI_State_ud:fuel_pressure(value) end
+
+-- get field
+---@return integer
+---| '0' # Not supported
+---| '1' # Ok
+---| '2' # Below nominal
+---| '3' # Above nominal
+function EFI_State_ud:fuel_pressure_status() end
 
 -- set field
 ---@param status integer
@@ -1102,12 +1114,24 @@ local AP_Camera__camera_state_t_ud = {}
 function AP_Camera__camera_state_t() end
 
 -- get field
----@return boolean
-function AP_Camera__camera_state_t_ud:auto_focus() end
+---@return Vector2f_ud
+function AP_Camera__camera_state_t_ud:tracking_p1() end
+
+-- get field
+---@return Vector2f_ud
+function AP_Camera__camera_state_t_ud:tracking_p2() end
 
 -- get field
 ---@return integer
-function AP_Camera__camera_state_t_ud:focus_step() end
+function AP_Camera__camera_state_t_ud:tracking_type() end
+
+-- get field
+---@return number
+function AP_Camera__camera_state_t_ud:focus_value() end
+
+-- get field
+---@return integer
+function AP_Camera__camera_state_t_ud:focus_type() end
 
 -- get field
 ---@return number

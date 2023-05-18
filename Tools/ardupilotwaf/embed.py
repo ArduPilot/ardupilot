@@ -34,7 +34,7 @@ def embed_file(out, f, idx, embedded_name, uncompressed):
             print("Padded %u bytes for %s to %u" % (pad, embedded_name, len(contents)))
 
     crc = crc32(bytearray(contents))
-    write_encode(out, 'static const uint8_t ap_romfs_%u[] = {' % idx)
+    write_encode(out, '__EXTFLASHFUNC__ static const uint8_t ap_romfs_%u[] = {' % idx)
 
     compressed = tempfile.NamedTemporaryFile()
     if uncompressed:

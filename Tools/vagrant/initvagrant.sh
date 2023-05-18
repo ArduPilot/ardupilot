@@ -42,10 +42,12 @@ sudo -u $VAGRANT_USER ln -fs /vagrant/Tools/vagrant/screenrc /home/$VAGRANT_USER
 perl -pe 's/kernel.yama.ptrace_scope = ./kernel.yama.ptrace_scope = 0/' -i /etc/sysctl.d/10-ptrace.conf
 echo 0 > /proc/sys/kernel/yama/ptrace_scope
 
-# build JSB sim
-apt-get install -y libtool automake autoconf libexpat1-dev cmake
-#  libtool-bin
-sudo --login -u $VAGRANT_USER /vagrant/Tools/scripts/build-jsbsim.sh
+if [ ${RELEASE_CODENAME} != 'bionic' ]; then
+    # build JSB sim
+    apt-get install -y libtool automake autoconf libexpat1-dev cmake
+    #  libtool-bin
+    sudo --login -u $VAGRANT_USER /vagrant/Tools/scripts/build-jsbsim.sh
+fi
 
 # adjust environment for every login shell:
 DOT_PROFILE=/home/$VAGRANT_USER/.profile

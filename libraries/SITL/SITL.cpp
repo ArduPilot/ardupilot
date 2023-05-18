@@ -490,6 +490,10 @@ const AP_Param::GroupInfo SIM::var_mag[] = {
     AP_GROUPINFO("MAG1_ODI",        8, SIM,  mag_offdiag[0], 0),
     AP_GROUPINFO("MAG1_ORIENT",     9, SIM,  mag_orient[0], 0),
     AP_GROUPINFO("MAG1_SCALING",  10, SIM,  mag_scaling[0], 1),
+    // @Param: MAG1_DEVID
+    // @DisplayName: MAG1 Device ID
+    // @Description: Device ID of simulated compass 1
+    // @User: Advanced
     AP_GROUPINFO("MAG1_DEVID",    11, SIM,  mag_devid[0], 97539),
     AP_GROUPINFO("MAG2_DEVID",    12, SIM,  mag_devid[1], 131874),
 #if MAX_CONNECTED_MAGS > 2

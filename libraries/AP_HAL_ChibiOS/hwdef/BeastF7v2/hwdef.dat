@@ -4,7 +4,7 @@
 
 include ../BeastF7/hwdef.dat
 undef APJ_BOARD_ID
-undef HAL_SERIAL3_PROTOCOL
+undef DEFAULT_SERIAL3_PROTOCOL
 undef IMU
 undef BARO
 undef PD15
@@ -36,7 +36,7 @@ PA9  USART1_TX USART1 NODMA
 # USART2 (DJI RCIN)
 PA3 USART2_RX USART2
 PA2 USART2_TX USART2 NODMA
-define HAL_SERIAL2_PROTOCOL SerialProtocol_RCIN
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_RCIN
 
 # USART3 (RCIN)
 PB11 USART3_RX USART3
@@ -69,3 +69,5 @@ define AP_BATTERY_SMBUS_ENABLED 0
 
 # only include ublox GPS driver
 include ../include/minimal_GPS.inc
+
+define DEFAULT_NTF_LED_TYPES 257

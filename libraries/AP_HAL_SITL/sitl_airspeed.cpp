@@ -20,6 +20,10 @@ extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
 
+// scaling value taken from AP_Airspeed_analog.cpp
+#define VOLTS_TO_PASCAL 819
+#define PASCAL_TO_VOLTS(_p) (_p/VOLTS_TO_PASCAL)
+
 // return current scale factor that converts from equivalent to true airspeed
 // valid for altitudes up to 10km AMSL
 // assumes standard atmosphere lapse rate
@@ -78,8 +82,8 @@ void SITL_State::_update_airspeed(float true_airspeed)
         airspeed_raw = airspeed_pressure + arspd.offset;
 
         _sitl->state.airspeed_raw_pressure[i] = airspeed_pressure;
-
-        airspeed_pin_value[i] = MIN(0xFFFF, airspeed_raw / 4);
+        
+        airspeed_pin_voltage[i] = PASCAL_TO_VOLTS(airspeed_raw);
     }
 }
 
