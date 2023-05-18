@@ -43,7 +43,7 @@ SoftSerial::SoftSerial(uint32_t _baudrate, serial_config _config) :
   process a pulse made up of a width of values at high voltage
   followed by a width at low voltage
  */
-bool SoftSerial::process_pulse(const uint32_t &width_high, const uint32_t &width_low, const uint8_t &pulse_id, uint8_t &byte)
+bool SoftSerial::process_pulse(const uint32_t width_high, const uint32_t width_low, const uint8_t pulse_id, uint8_t& byte)
 {
     if (pulse_id == state.last_pulse_id) {
         // we have already processed this pulse, return last results

@@ -31,7 +31,7 @@ class AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_Backend(AP_RCProtocol &_frontend, const AP_RCProtocol::rcprotocol_t _protocol_type);
     virtual ~AP_RCProtocol_Backend();
-    virtual void process_pulse(const uint32_t &width_s0, const uint32_t &width_s1, const uint8_t &pulse_id) {}
+    virtual void process_pulse(const uint32_t width_s0, const uint32_t width_s1, const uint8_t pulse_id) {}
     virtual void process_byte(uint8_t byte, uint32_t baudrate) {}
     virtual void process_handshake(uint32_t baudrate) {}
     bool new_input();

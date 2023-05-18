@@ -79,7 +79,7 @@ uint8_t AP_RCProtocol_ST24::st24_crc8(uint8_t *ptr, uint8_t len)
 }
 
 
-void AP_RCProtocol_ST24::process_pulse(const uint32_t &width_s0, const uint32_t &width_s1, const uint8_t &pulse_id)
+void AP_RCProtocol_ST24::process_pulse(const uint32_t width_s0, const uint32_t width_s1, const uint8_t pulse_id)
 {
     uint8_t b;
     if (ss_default.process_pulse(width_s0, width_s1, pulse_id, b)) {

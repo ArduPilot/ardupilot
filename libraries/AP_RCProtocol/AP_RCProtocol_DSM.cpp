@@ -51,7 +51,7 @@ extern const AP_HAL::HAL& hal;
 #define SPEKTRUM_VTX_PIT_MODE_SHIFT     4
 #define SPEKTRUM_VTX_POWER_SHIFT        0
 
-void AP_RCProtocol_DSM::process_pulse(const uint32_t &width_s0, const uint32_t &width_s1, const uint8_t &pulse_id)
+void AP_RCProtocol_DSM::process_pulse(const uint32_t width_s0, const uint32_t width_s1, const uint8_t pulse_id)
 {
     uint8_t b;
     if (ss_default.process_pulse(width_s0, width_s1, pulse_id, b)) {

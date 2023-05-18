@@ -188,7 +188,7 @@ void AP_RCProtocol_FPort2::decode_downlink(const FPort2_Frame &frame)
 /*
   process a FPort2 input pulse of the given width
  */
-void AP_RCProtocol_FPort2::process_pulse(const uint32_t &width_s0, const uint32_t &width_s1, const uint8_t &pulse_id)
+void AP_RCProtocol_FPort2::process_pulse(const uint32_t width_s0, const uint32_t width_s1, const uint8_t pulse_id)
 {
     if (have_UART()) {
         // if we can use a UART we would much prefer to, as it allows

@@ -60,7 +60,7 @@ bool AP_RCProtocol_IBUS::ibus_decode(const uint8_t frame[IBUS_FRAME_SIZE], uint1
 /*
   process an IBUS input pulse of the given width
  */
-void AP_RCProtocol_IBUS::process_pulse(const uint32_t &w0, const uint32_t &w1, const uint8_t &pulse_id)
+void AP_RCProtocol_IBUS::process_pulse(const uint32_t w0, const uint32_t w1, const uint8_t pulse_id)
 {
     uint8_t b;
     if (ss_default.process_pulse(w0, w1, pulse_id, b)) {

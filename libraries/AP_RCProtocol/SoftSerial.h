@@ -25,7 +25,7 @@ public:
     };
 
     SoftSerial(uint32_t baudrate, enum serial_config config);
-    bool process_pulse(const uint32_t &width_s0, const uint32_t &width_s1, const uint8_t &pulse_id, uint8_t &b);
+    bool process_pulse(const uint32_t width_s0, const uint32_t width_s1, const uint8_t pulse_id, uint8_t& b);
 
     // get timestamp of the last byte
     uint32_t get_byte_timestamp_us(void) const {
