@@ -17,10 +17,6 @@
   Code by Andy Piper
  */
 
-#include "AP_RCProtocol_config.h"
-
-#if AP_RCPROTOCOL_SRXL2_ENABLED
-
 #include "AP_RCProtocol.h"
 #include "AP_RCProtocol_SRXL2.h"
 #include <AP_Math/AP_Math.h>
@@ -185,8 +181,17 @@ void AP_RCProtocol_SRXL2::update(void)
     }
 }
 
-// capture SRXL2 encoded values
 void AP_RCProtocol_SRXL2::capture_scaled_input(const uint8_t *values_p, bool in_failsafe, int16_t new_rssi)
+{
+    AP_RCProtocol_SRXL2* srxl2 = AP_RCProtocol_SRXL2::get_singleton();
+
+    if (srxl2 != nullptr) {
+        srxl2->_capture_scaled_input(values_p, in_failsafe, new_rssi);
+    }
+}
+
+// capture SRXL2 encoded values
+void AP_RCProtocol_SRXL2::_capture_scaled_input(const uint8_t *values_p, bool in_failsafe, int16_t new_rssi)
 {
     _in_failsafe = in_failsafe;
     // AP rssi: -1 for unknown, 0 for no link, 255 for maximum link
@@ -264,7 +269,7 @@ void AP_RCProtocol_SRXL2::process_handshake(uint32_t baudrate)
         _handshake_start_ms = now;
         // it seems the handshake protocol only sets the baudrate after receiving data
         // since we are sending data unprompted make sure that the uart is set up correctly
-        change_baud_rate(baudrate);
+        _change_baud_rate(baudrate);
     }
 
     // we have not bootstrapped and attempts to listen first have failed
@@ -286,6 +291,16 @@ void AP_RCProtocol_SRXL2::process_handshake(uint32_t baudrate)
 
 // send data to the uart
 void AP_RCProtocol_SRXL2::send_on_uart(uint8_t* pBuffer, uint8_t length)
+{
+    AP_RCProtocol_SRXL2* srxl2 = AP_RCProtocol_SRXL2::get_singleton();
+
+    if (srxl2 != nullptr) {
+        srxl2->_send_on_uart(pBuffer, length);
+    }
+}
+
+// send data to the uart
+void AP_RCProtocol_SRXL2::_send_on_uart(uint8_t* pBuffer, uint8_t length)
 {
     AP_HAL::UARTDriver* uart = get_available_UART();
 
@@ -313,6 +328,16 @@ void AP_RCProtocol_SRXL2::send_on_uart(uint8_t* pBuffer, uint8_t length)
 // change the uart baud rate
 void AP_RCProtocol_SRXL2::change_baud_rate(uint32_t baudrate)
 {
+    AP_RCProtocol_SRXL2* srxl2 = AP_RCProtocol_SRXL2::get_singleton();
+
+    if (srxl2 != nullptr) {
+        srxl2->_change_baud_rate(baudrate);
+    }
+}
+
+// change the uart baud rate
+void AP_RCProtocol_SRXL2::_change_baud_rate(uint32_t baudrate)
+{
     AP_HAL::UARTDriver* uart = get_available_UART();
     if (uart != nullptr) {
         uart->begin(baudrate);
@@ -329,11 +354,8 @@ void AP_RCProtocol_SRXL2::change_baud_rate(uint32_t baudrate)
 // baudRate - the actual baud rate (currently either 115200 or 400000)
 void srxlChangeBaudRate(uint8_t uart, uint32_t baudRate)
 {
-    AP_RCProtocol_SRXL2* srxl2 = AP_RCProtocol_SRXL2::get_singleton();
+    AP_RCProtocol_SRXL2::change_baud_rate(baudRate);
 
-    if (srxl2 != nullptr) {
-        srxl2->change_baud_rate(baudRate);
-    }
 }
 
 // User-provided routine to actually transmit a packet on the given UART:
@@ -342,11 +364,7 @@ void srxlChangeBaudRate(uint8_t uart, uint32_t baudRate)
 // length - the number of bytes contained in pBuffer that should be sent
 void srxlSendOnUart(uint8_t uart, uint8_t* pBuffer, uint8_t length)
 {
-    AP_RCProtocol_SRXL2* srxl2 = AP_RCProtocol_SRXL2::get_singleton();
-
-    if (srxl2 != nullptr) {
-        srxl2->send_on_uart(pBuffer, length);
-    }
+    AP_RCProtocol_SRXL2::send_on_uart(pBuffer, length);
 }
 
 // User-provided callback routine to fill in the telemetry data to send to the master when requested:
@@ -367,16 +385,10 @@ void srxlFillTelemetry(SrxlTelemetryData* pTelemetryData)
 // so be very careful to only do local operations
 void srxlReceivedChannelData(SrxlChannelData* pChannelData, bool isFailsafe)
 {
-    AP_RCProtocol_SRXL2* srxl2 = AP_RCProtocol_SRXL2::get_singleton();
-
-    if (srxl2 == nullptr) {
-        return;
-    }
-
     if (isFailsafe) {
-        srxl2->capture_scaled_input((const uint8_t *)pChannelData->values, true, pChannelData->rssi);
+        AP_RCProtocol_SRXL2::capture_scaled_input((const uint8_t *)pChannelData->values, true, pChannelData->rssi);
     } else {
-        srxl2->capture_scaled_input((const uint8_t *)srxlChData.values, false, srxlChData.rssi);
+        AP_RCProtocol_SRXL2::capture_scaled_input((const uint8_t *)srxlChData.values, false, srxlChData.rssi);
     }
 }
 
@@ -394,5 +406,3 @@ void srxlOnVtx(SrxlVtxData* pVtxData)
     AP_RCProtocol_Backend::configure_vtx(pVtxData->band, pVtxData->channel, pVtxData->power, pVtxData->pit);
 #endif
 }
-
-#endif  // AP_RCPROTOCOL_SRXL2_ENABLED

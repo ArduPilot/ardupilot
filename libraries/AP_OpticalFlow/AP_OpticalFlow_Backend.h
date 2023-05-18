@@ -20,8 +20,6 @@
 
 #include "AP_OpticalFlow.h"
 
-#include <AP_HAL/Semaphores.h>
-
 class OpticalFlow_backend
 {
     friend class AP_OpticalFlow;

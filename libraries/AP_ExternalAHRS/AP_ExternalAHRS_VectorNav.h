@@ -18,11 +18,9 @@
 
 #pragma once
 
-#include "AP_ExternalAHRS_config.h"
-
-#if AP_EXTERNAL_AHRS_VECTORNAV_ENABLED
-
 #include "AP_ExternalAHRS_backend.h"
+
+#if HAL_EXTERNAL_AHRS_ENABLED
 
 class AP_ExternalAHRS_VectorNav : public AP_ExternalAHRS_backend {
 
@@ -94,4 +92,5 @@ private:
 
 };
 
-#endif  // AP_EXTERNAL_AHRS_VECTORNAV_ENABLED
+#endif  // HAL_EXTERNAL_AHRS_ENABLED
+

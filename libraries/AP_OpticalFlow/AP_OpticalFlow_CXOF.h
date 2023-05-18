@@ -1,10 +1,14 @@
 #pragma once
 
-#include "AP_OpticalFlow_config.h"
+#include "AP_OpticalFlow.h"
+
+#ifndef AP_OPTICALFLOW_CXOF_ENABLED
+#define AP_OPTICALFLOW_CXOF_ENABLED AP_OPTICALFLOW_ENABLED
+#endif
 
 #if AP_OPTICALFLOW_CXOF_ENABLED
 
-#include "AP_OpticalFlow_Backend.h"
+#include <AP_HAL/utility/OwnPtr.h>
 
 class AP_OpticalFlow_CXOF : public OpticalFlow_backend
 {

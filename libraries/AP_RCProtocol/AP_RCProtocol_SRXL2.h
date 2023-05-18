@@ -15,11 +15,9 @@
 
 #pragma once
 
-#include "AP_RCProtocol_config.h"
-
-#if AP_RCPROTOCOL_SRXL2_ENABLED
-
 #include "AP_RCProtocol.h"
+#include <AP_Math/AP_Math.h>
+#include "AP_RCProtocol_SRXL.h"
 #include "SoftSerial.h"
 
 #define SRXL2_MAX_CHANNELS 32U           /* Maximum number of channels from srxl2 datastream  */
@@ -39,15 +37,20 @@ public:
         return _singleton;
     }
 
-    void capture_scaled_input(const uint8_t *values_p, bool in_failsafe, int16_t rssi);
-    void send_on_uart(uint8_t* pBuffer, uint8_t length);
-    void change_baud_rate(uint32_t baudrate);
+    // static functions for SRXL2 callbacks
+    static void capture_scaled_input(const uint8_t *values_p, bool in_failsafe, int16_t rssi);
+    static void send_on_uart(uint8_t* pBuffer, uint8_t length);
+    static void change_baud_rate(uint32_t baudrate);
+    // configure the VTX from Spektrum data
 
 private:
 
     static AP_RCProtocol_SRXL2* _singleton;
 
     void _process_byte(uint32_t timestamp_us, uint8_t byte);
+    void _send_on_uart(uint8_t* pBuffer, uint8_t length);
+    void _change_baud_rate(uint32_t baudrate);
+    void _capture_scaled_input(const uint8_t *values_p, bool in_failsafe, int16_t rssi);
     void _bootstrap(uint8_t device_id);
     bool is_bootstrapped() const { return _device_id != 0; }
 
@@ -71,5 +74,3 @@ private:
     uint32_t _last_handshake_ms;
     uint32_t _handshake_start_ms;
 };
-
-#endif  // AP_RCPROTOCOL_SRXL2_ENABLED

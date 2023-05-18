@@ -16,11 +16,8 @@
 
 #define ALLOW_DOUBLE_MATH_FUNCTIONS
 
-#include "AP_ExternalAHRS_config.h"
-
-#if AP_EXTERNAL_AHRS_LORD_ENABLED
-
 #include "AP_ExternalAHRS_LORD.h"
+#if HAL_EXTERNAL_AHRS_LORD_ENABLED
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_GPS/AP_GPS.h>
@@ -585,4 +582,5 @@ double AP_ExternalAHRS_LORD::extract_double(const uint8_t *data, uint8_t offset)
     return *reinterpret_cast<double*>(&tmp);
 }
 
-#endif // AP_EXTERNAL_AHRS_LORD_ENABLE
+#endif // HAL_EXTERNAL_AHRS_ENABLED
+

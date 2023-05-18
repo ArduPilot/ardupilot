@@ -80,19 +80,17 @@ sudo apt-get install socat
 ## Setup ardupilot for SITL with DDS
 
 Set up your [SITL](https://ardupilot.org/dev/docs/setting-up-sitl-on-linux.html).
-Run the simulator with the following command. Take note how three parameters need adjusting from default to use DDS.
+Run the simulator with the following command. Take note how two parameters need adjusting from default to use DDS.
 | Name | Description |
 | - | - |
-| DDS_ENABLE | Set to 1 to enable DDS |
 | SERIAL1_BAUD | The serial baud rate for DDS |
 | SERIAL1_PROTOCOL | Set this to 45 to use DDS on the serial port |
 ```bash
 # Wipe params till you see "AP: ArduPilot Ready"
 # Select your favorite vehicle type
-sim_vehicle.py -w -v ArduPlane --enable-dds
+sim_vehicle.py -w -v ArduPlane
 
 # Set params
-param set DDS_ENABLE 1
 param set SERIAL1_BAUD 115
 # See libraries/AP_SerialManager/AP_SerialManager.h AP_SerialManager SerialProtocol_DDS_XRCE
 param set SERIAL1_PROTOCOL 45
@@ -104,11 +102,6 @@ Follow the steps to use the microROS Agent
 - Install ROS Humble (as described here)
 
   - https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html
-
-- Install geographic_msgs
-  ```bash
-  sudo apt install ros-humble-geographic-msgs
-  ```
 
 - Install and run the microROS agent (as descibed here). Make sure to use the `humble` branch.
   - Follow [the instructions](https://micro.ros.org/docs/tutorials/core/first_application_linux/) for the following:
@@ -153,25 +146,19 @@ After your setups are complete, do the following:
 
   $ ros2 topic list  -v
   Published topics:
-  * /ap/battery/battery0 [sensor_msgs/msg/BatteryState] 1 publisher
-  * /ap/clock [rosgraph_msgs/msg/Clock] 1 publisher
-  * /ap/geopose/filtered [geographic_msgs/msg/GeoPoseStamped] 1 publisher
-  * /ap/navsat/navsat0 [sensor_msgs/msg/NavSatFix] 1 publisher
-  * /ap/pose/filtered [geometry_msgs/msg/PoseStamped] 1 publisher
-  * /ap/tf_static [tf2_msgs/msg/TFMessage] 1 publisher
-  * /ap/time [builtin_interfaces/msg/Time] 1 publisher
-  * /ap/twist/filtered [geometry_msgs/msg/TwistStamped] 1 publisher
-  * /parameter_events [rcl_interfaces/msg/ParameterEvent] 1 publisher
-  * /rosout [rcl_interfaces/msg/Log] 1 publisher
+   * /ROS2_NavSatFix0 [sensor_msgs/msg/NavSatFix] 1 publisher
+   * /ROS2_Time [builtin_interfaces/msg/Time] 1 publisher
+   * /parameter_events [rcl_interfaces/msg/ParameterEvent] 1 publisher
+   * /rosout [rcl_interfaces/msg/Log] 1 publisher
+   * /tf [tf2_msgs/msg/TFMessage] 1 publisher
 
   Subscribed topics:
 
-
-  $ ros2 topic hz /ap/time
+  $ ros2 topic hz /ROS2_Time
   average rate: 50.115
           min: 0.012s max: 0.024s std dev: 0.00328s window: 52
 
-  $ ros2 topic echo /ap/time 
+  $ ros2 topic echo /ROS2_Time 
   sec: 1678668735
   nanosec: 729410000
   ---
@@ -179,7 +166,7 @@ After your setups are complete, do the following:
 
   The static transforms for enabled sensors are also published, and can be recieved like so:
   ```console
-  ros2 topic echo /ap/tf_static --qos-depth 1 --qos-history keep_last --qos-reliability reliable --qos-durability transient_local --once
+  ros2 topic echo /tf --qos-depth 1 --qos-history keep_last --qos-reliability reliable --qos-durability transient_local --once
   ```
   In order to consume the transforms, it's highly recommended to [create and run a transform broadcaster in ROS 2](https://docs.ros.org/en/humble/Concepts/About-Tf2.html#tutorials). 
 

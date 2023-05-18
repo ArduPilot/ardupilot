@@ -23,7 +23,7 @@ public:
     // momentary switch to change camera between picture and video modes
     void cam_mode_toggle() override;
 
-    // handle MAVLink messages from the camera
+    // handle incoming mavlink message
     void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg) override;
 
 private:

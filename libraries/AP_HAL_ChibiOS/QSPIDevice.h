@@ -21,10 +21,10 @@
 
 #include <inttypes.h>
 #include <AP_HAL/HAL.h>
-#include <AP_HAL/WSPIDevice.h>
+#include <AP_HAL/QSPIDevice.h>
 #include "AP_HAL_ChibiOS.h"
 
-#if HAL_USE_WSPI == TRUE && defined(HAL_WSPI_DEVICE_LIST)
+#if HAL_USE_WSPI == TRUE && defined(HAL_QSPI_DEVICE_LIST)
 
 #if !defined(HAL_BOOTLOADER_BUILD)
 #include "Semaphores.h"
@@ -37,8 +37,8 @@
 namespace ChibiOS
 {
 
-struct WSPIDesc {
-    WSPIDesc(const char *_name, uint8_t _bus,
+struct QSPIDesc {
+    QSPIDesc(const char *_name, uint8_t _bus,
              uint32_t _mode, uint32_t _speed,
              uint8_t _size_pow2, uint8_t _ncs_clk_shift)
         : name(_name), bus(_bus), mode(_mode), speed(_speed),
@@ -47,7 +47,7 @@ struct WSPIDesc {
     }
 
     const char *name; // name of the device
-    uint8_t bus; // WSPI bus being used
+    uint8_t bus; // qspi bus being used
     uint8_t device; // device id
     uint32_t mode; // clock mode
     uint32_t speed; // clock speed
@@ -56,27 +56,27 @@ struct WSPIDesc {
 
 };
 
-class WSPIBus : public DeviceBus
+class QSPIBus : public DeviceBus
 {
 public:
-    WSPIBus(uint8_t _bus) :
+    QSPIBus(uint8_t _bus) :
         DeviceBus(APM_SPI_PRIORITY, true),
         bus(_bus) {}
 
     uint8_t bus;
     WSPIConfig wspicfg;
-    bool wspi_started;
+    bool qspi_started;
 };
 
-class WSPIDevice : public AP_HAL::WSPIDevice
+class QSPIDevice : public AP_HAL::QSPIDevice
 {
 public:
-    static WSPIDevice *from(AP_HAL::WSPIDevice *dev)
+    static QSPIDevice *from(AP_HAL::QSPIDevice *dev)
     {
-        return static_cast<WSPIDevice*>(dev);
+        return static_cast<QSPIDevice*>(dev);
     }
 
-    WSPIDevice(WSPIBus &_bus, WSPIDesc &_device_desc) :
+    QSPIDevice(QSPIBus &_bus, QSPIDesc &_device_desc) :
         bus(_bus),
         device_desc(_device_desc)
     {}
@@ -111,7 +111,6 @@ public:
 #endif
     }
 
-    bool is_busy() override;
     bool acquire_bus(bool acquire);
 
     // Enters Memory mapped or eXecution In Place or 0-4-4 mode
@@ -119,27 +118,27 @@ public:
     bool exit_xip_mode() override;
 
 private:
-    WSPIBus &bus;
-    WSPIDesc &device_desc;
+    QSPIBus &bus;
+    QSPIDesc &device_desc;
     wspi_command_t mode;
 };
 
-class WSPIDeviceManager : public AP_HAL::WSPIDeviceManager
+class QSPIDeviceManager : public AP_HAL::QSPIDeviceManager
 {
 public:
-    friend class WSPIDevice;
+    friend class QSPIDevice;
 
-    static WSPIDeviceManager *from(AP_HAL::WSPIDeviceManager *wspi_mgr)
+    static QSPIDeviceManager *from(AP_HAL::QSPIDeviceManager *qspi_mgr)
     {
-        return static_cast<WSPIDeviceManager*>(wspi_mgr);
+        return static_cast<QSPIDeviceManager*>(qspi_mgr);
     }
 
-    AP_HAL::OwnPtr<AP_HAL::WSPIDevice> get_device(const char *name) override;
+    AP_HAL::OwnPtr<AP_HAL::QSPIDevice> get_device(const char *name) override;
 private:
-    static WSPIDesc device_table[];
-    WSPIBus *buses;
+    static QSPIDesc device_table[];
+    QSPIBus *buses;
 };
 
 }
 
-#endif // #if HAL_USE_WSPI == TRUE && defined(HAL_WSPI_DEVICE_LIST)
+#endif // #if HAL_USE_WSPI == TRUE && defined(HAL_QSPI_DEVICE_LIST)

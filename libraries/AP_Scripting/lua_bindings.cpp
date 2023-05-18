@@ -572,9 +572,3 @@ int lua_get_PWMSource(lua_State *L) {
 
     return 1;
 }
-
-int lua_get_current_ref()
-{
-    auto *scripting = AP::scripting();
-    return scripting->get_current_ref();
-}

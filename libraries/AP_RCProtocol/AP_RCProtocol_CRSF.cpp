@@ -17,11 +17,8 @@
   Code by Andy Piper
  */
 
-#include "AP_RCProtocol_config.h"
-
-#if AP_RCPROTOCOL_CRSF_ENABLED
-
 #include "AP_RCProtocol.h"
+#include "AP_RCProtocol_SRXL.h"
 #include "AP_RCProtocol_CRSF.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
@@ -391,7 +388,7 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
         default:
             break;
     }
-#if HAL_CRSF_TELEM_ENABLED
+#if HAL_CRSF_TELEM_ENABLED && !APM_BUILD_TYPE(APM_BUILD_iofirmware)
     if (AP_CRSF_Telem::process_frame(FrameType(_frame.type), (uint8_t*)&_frame.payload)) {
         process_telemetry();
     }
@@ -632,5 +629,3 @@ namespace AP {
         return AP_RCProtocol_CRSF::get_singleton();
     }
 };
-
-#endif  // AP_RCPROTOCOL_CRSF_ENABLED

@@ -2,10 +2,6 @@
 
 '''A helper script for bisecting common problems when working with ArduPilot
 
-When running bisections, you should
-
-export SITL_PANIC_EXIT=1
-
 Bisect between a commit which builds and one which doesn't,
 finding the first commit which broke the build with a
  specific failure:
@@ -119,6 +115,7 @@ class Bisect(object):
         '''run cmd_list, spewing and setting output in self'''
         self.progress("Running (%s)" % " ".join(cmd_list))
         p = subprocess.Popen(cmd_list,
+                             bufsize=1,
                              stdin=None,
                              close_fds=True,
                              stdout=subprocess.PIPE,
@@ -187,10 +184,6 @@ class BisectBuild(Bisect):
         super(BisectBuild, self).__init__(opts)
 
     def run(self):
-        if self.opts.build_failure_string is None:
-            self.progress("--build-failure-string is required when using --build")
-            self.exit_abort()
-
         self.update_submodules()
         self.build()  # may exit with skip or fail
         self.exit_pass()
@@ -280,7 +273,7 @@ class BisectCITest(Bisect):
 
             if code == self.exit_fail_code():
                 with open("/tmp/fail-counts", "a") as f:
-                    f.write("Failed on run %u\n" % (i+1,))
+                    print("Failed on run %u" % (i+1,), file=f)
             if ignore:
                 self.progress("Ignoring this run")
                 continue
@@ -288,8 +281,6 @@ class BisectCITest(Bisect):
                 break
 
         self.git_reset()
-
-        self.progress("Exit code is %u" % code)
 
         sys.exit(code)
 
@@ -303,7 +294,8 @@ if __name__ == '__main__':
                       help="Help bisect a build failure")
     parser.add_option("--build-failure-string",
                       type='string',
-                      help="Must be present in"
+                      default=None,
+                      help="If supplied, must be present in"
                       "build output to count as a failure")
 
     group_autotest = optparse.OptionGroup(parser, "Run-AutoTest Options")

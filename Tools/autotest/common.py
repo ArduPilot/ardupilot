@@ -196,13 +196,11 @@ class Context(object):
         self.heartbeat_interval_ms = 1000
         self.original_heartbeat_interval_ms = None
         self.installed_scripts = []
-        self.installed_modules = []
 
 
 # https://stackoverflow.com/questions/616645/how-do-i-duplicate-sys-stdout-to-a-log-file-in-python
 class TeeBoth(object):
-    def __init__(self, name, mode, mavproxy_logfile, suppress_stdout=False):
-        self.suppress_stdout = suppress_stdout
+    def __init__(self, name, mode, mavproxy_logfile):
         self.file = open(name, mode)
         self.stdout = sys.stdout
         self.stderr = sys.stderr
@@ -221,8 +219,7 @@ class TeeBoth(object):
 
     def write(self, data):
         self.file.write(data)
-        if not self.suppress_stdout:
-            self.stdout.write(data)
+        self.stdout.write(data)
 
     def flush(self):
         self.file.flush()
@@ -4218,12 +4215,6 @@ class AutoTest(ABC):
         self.install_test_script(scriptname)
         self.context_get().installed_scripts.append(scriptname)
 
-    def install_test_modules_context(self):
-        '''installs test modules which will be removed when the context goes
-        away'''
-        self.install_test_modules()
-        self.context_get().installed_modules.append("test")
-
     def install_applet_script_context(self, scriptname):
         '''installs an applet script which will be removed when the context goes
         away'''
@@ -5654,7 +5645,7 @@ class AutoTest(ABC):
         del context.collections[msg_type]
         return ret
 
-    def context_pop(self, process_interaction_allowed=True):
+    def context_pop(self):
         """Set parameters to origin values in reverse order."""
         dead = self.contexts.pop()
         # remove hooks first; these hooks can raise exceptions which
@@ -5663,17 +5654,13 @@ class AutoTest(ABC):
             self.remove_message_hook(hook)
         for script in dead.installed_scripts:
             self.remove_installed_script(script)
-        for module in dead.installed_modules:
-            print("Removing module (%s)" % module)
-            self.remove_installed_modules(module)
         if dead.sitl_commandline_customised and len(self.contexts):
             self.contexts[-1].sitl_commandline_customised = True
 
         dead_parameters_dict = {}
         for p in dead.parameters:
             dead_parameters_dict[p[0]] = p[1]
-        if process_interaction_allowed:
-            self.set_parameters(dead_parameters_dict, add_to_context=False)
+        self.set_parameters(dead_parameters_dict, add_to_context=False)
 
         if getattr(self, "old_binary", None) is not None:
             self.stop_SITL()
@@ -7336,7 +7323,7 @@ class AutoTest(ABC):
         '''ensure we can't arm in auto mode without mission items present'''
         # load a trivial mission
         items = []
-        items.append((mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, 20000),)
+        items.append((mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 20000),)
         items.append((mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0))
         self.upload_simple_relhome_mission(items)
 
@@ -7489,7 +7476,6 @@ Also, ignores heartbeats not from our target system'''
         self.progress("Waiting for EKF value %u" % required_value)
         last_print_time = 0
         tstart = self.get_sim_time()
-        m = None
         while timeout is None or self.get_sim_time_cached() < tstart + timeout:
             m = self.mav.recv_match(type='EKF_STATUS_REPORT', blocking=True, timeout=timeout)
             if m is None:
@@ -7505,11 +7491,6 @@ Also, ignores heartbeats not from our target system'''
             if everything_ok:
                 self.progress("EKF Flags OK")
                 return True
-        m_str = str(m)
-        if m is not None:
-            m_str = self.dump_message_verbose(m)
-        self.progress("Last EKF_STATUS_REPORT message:")
-        self.progress(m_str)
         raise AutoTestTimeoutException("Failed to get EKF.flags=%u" %
                                        required_value)
 
@@ -7648,12 +7629,6 @@ Also, ignores heartbeats not from our target system'''
         self.progress("Copying (%s) to (%s)" % (source, dest))
         shutil.copy(source, dest)
 
-    def install_test_modules(self):
-        source = os.path.join(self.rootdir(), "libraries", "AP_Scripting", "tests", "modules", "test")
-        dest = os.path.join("scripts", "modules", "test")
-        self.progress("Copying (%s) to (%s)" % (source, dest))
-        shutil.copytree(source, dest)
-
     def install_example_script(self, scriptname):
         source = self.script_example_source_path(scriptname)
         self.install_script(source, scriptname)
@@ -7670,15 +7645,6 @@ Also, ignores heartbeats not from our target system'''
         dest = self.installed_script_path(os.path.basename(scriptname))
         try:
             os.unlink(dest)
-        except IOError:
-            pass
-        except OSError:
-            pass
-
-    def remove_installed_modules(self, modulename):
-        dest = os.path.join("scripts", "modules", modulename)
-        try:
-            shutil.rmtree(dest)
         except IOError:
             pass
         except OSError:
@@ -7794,14 +7760,14 @@ Also, ignores heartbeats not from our target system'''
             util.run_cmd('/bin/cp build/sitl/bin/* %s' % to_dir,
                          directory=util.reltopdir('.'))
 
-    def run_one_test(self, test, interact=False, suppress_stdout=False):
+    def run_one_test(self, test, interact=False):
         '''new-style run-one-test used by run_tests'''
         for i in range(0, test.attempts-1):
-            result = self.run_one_test_attempt(test, interact=interact, attempt=i+2, suppress_stdout=suppress_stdout)
+            result = self.run_one_test_attempt(test, interact=interact, attempt=i+2)
             if result.passed:
                 return result
             self.progress("Run attempt failed.  Retrying")
-        return self.run_one_test_attempt(test, interact=interact, attempt=1, suppress_stdout=suppress_stdout)
+        return self.run_one_test_attempt(test, interact=interact, attempt=1)
 
     def print_exception_caught(self, e, send_statustext=True):
         self.progress("Exception caught: %s" %
@@ -7818,31 +7784,7 @@ Also, ignores heartbeats not from our target system'''
             for line in f:
                 self.progress(line.rstrip())
 
-    def dump_process_status(self, result):
-        '''used to show where the SITL process is upto.  Often caused when
-        we've lost contact'''
-
-        if self.sitl.isalive():
-            self.progress("pexpect says it is alive")
-            for tool in "dumpstack.sh", "dumpcore.sh":
-                tool_filepath = os.path.join(self.rootdir(), 'Tools', 'scripts', tool)
-                if util.run_cmd([tool_filepath, str(self.sitl.pid)]) != 0:
-                    reason = "Failed %s" % (tool,)
-                    self.progress(reason)
-                    result.reason = reason
-                    result.passed = False
-        else:
-            self.progress("pexpect says it is dead")
-
-        # try dumping the process status file for more information:
-        status_filepath = "/proc/%u/status" % self.sitl.pid
-        self.progress("Checking for status filepath (%s)" % status_filepath)
-        if os.path.exists(status_filepath):
-            self.progress_file_content(status_filepath)
-        else:
-            self.progress("... does not exist")
-
-    def run_one_test_attempt(self, test, interact=False, attempt=1, suppress_stdout=False):
+    def run_one_test_attempt(self, test, interact=False, attempt=1):
         '''called by run_one_test to actually run the test in a retry loop'''
         name = test.name
         desc = test.description
@@ -7855,7 +7797,7 @@ Also, ignores heartbeats not from our target system'''
             test_output_filename = self.buildlogs_path("%s-%s.txt" %
                                                        (self.log_name(), name))
 
-        tee = TeeBoth(test_output_filename, 'w', self.mavproxy_logfile, suppress_stdout=suppress_stdout)
+        tee = TeeBoth(test_output_filename, 'w', self.mavproxy_logfile)
 
         start_message_hooks = self.mav.message_hooks
 
@@ -7902,6 +7844,12 @@ Also, ignores heartbeats not from our target system'''
         if ex is not None:
             passed = False
 
+        try:
+            self.context_pop()
+        except Exception as e:
+            self.print_exception_caught(e, send_statustext=False)
+            passed = False
+
         result = Result(test)
 
         ardupilot_alive = False
@@ -7911,16 +7859,28 @@ Also, ignores heartbeats not from our target system'''
         except Exception:
             # process is dead
             self.progress("No heartbeat after test", send_statustext=False)
-            self.dump_process_status(result)
+            if self.sitl.isalive():
+                self.progress("pexpect says it is alive")
+                for tool in "dumpstack.sh", "dumpcore.sh":
+                    tool_filepath = os.path.join(self.rootdir(), 'Tools', 'scripts', tool)
+                    if util.run_cmd([tool_filepath, str(self.sitl.pid)]) != 0:
+                        self.progress("Failed %s" % (tool,))
+                        result.description
+                        result.passed = False
+                        return result
+            else:
+                self.progress("pexpect says it is dead")
+
+            # try dumping the process status file for more information:
+            status_filepath = "/proc/%u/status" % self.sitl.pid
+            self.progress("Checking for status filepath (%s)" % status_filepath)
+            if os.path.exists(status_filepath):
+                self.progress_file_content(status_filepath)
+            else:
+                self.progress("... does not exist")
 
             passed = False
             reset_needed = True
-
-        try:
-            self.context_pop(process_interaction_allowed=ardupilot_alive)
-        except Exception as e:
-            self.print_exception_caught(e, send_statustext=False)
-            passed = False
 
         # if we haven't already reset ArduPilot because it's dead,
         # then ensure the vehicle was disarmed at the end of the test.
@@ -7941,7 +7901,7 @@ Also, ignores heartbeats not from our target system'''
                 self.progress("Force-rebooting SITL")
                 self.reboot_sitl() # that'll learn it
             passed = False
-        elif ardupilot_alive and not passed:  # implicit reboot after a failed test:
+        elif not passed:  # implicit reboot after a failed test:
             self.progress("Test failed but ArduPilot process alive; rebooting")
             self.reboot_sitl() # that'll learn it
 
@@ -7969,7 +7929,7 @@ Also, ignores heartbeats not from our target system'''
             # pop off old contexts to clean up message hooks etc
             while len(self.contexts) > old_contexts_length:
                 try:
-                    self.context_pop(process_interaction_allowed=ardupilot_alive)
+                    self.context_pop()
                 except Exception as e:
                     self.print_exception_caught(e, send_statustext=False)
             self.progress("Done popping extra contexts")

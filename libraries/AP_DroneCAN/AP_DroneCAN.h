@@ -112,7 +112,6 @@ public:
         DNA_IGNORE_UNHEALTHY_NODE = (1U<<3),
         USE_ACTUATOR_PWM          = (1U<<4),
         SEND_GNSS                 = (1U<<5),
-        USE_HIMARK_SERVO          = (1U<<6),
     };
 
     // check if a option is set
@@ -132,7 +131,6 @@ private:
     ///// SRV output /////
     void SRV_send_actuator();
     void SRV_send_esc();
-    void SRV_send_himark();
 
     ///// LED /////
     void led_out_send();
@@ -275,7 +273,6 @@ private:
     Canard::Publisher<uavcan_equipment_safety_ArmingStatus> arming_status{canard_iface};
     Canard::Publisher<uavcan_equipment_gnss_RTCMStream> rtcm_stream{canard_iface};
     Canard::Publisher<ardupilot_indication_NotifyState> notify_state{canard_iface};
-    Canard::Publisher<com_himark_servo_ServoCmd> himark_out{canard_iface};
 
 #if AP_DRONECAN_SEND_GPS
     Canard::Publisher<uavcan_equipment_gnss_Fix2> gnss_fix2{canard_iface};
@@ -325,7 +322,6 @@ private:
     void handle_actuator_status(const CanardRxTransfer& transfer, const uavcan_equipment_actuator_Status& msg);
     void handle_actuator_status_Volz(const CanardRxTransfer& transfer, const com_volz_servo_ActuatorStatus& msg);
     void handle_ESC_status(const CanardRxTransfer& transfer, const uavcan_equipment_esc_Status& msg);
-    void handle_himark_servoinfo(const CanardRxTransfer& transfer, const com_himark_servo_ServoInfo &msg);
     static bool is_esc_data_index_valid(const uint8_t index);
     void handle_debug(const CanardRxTransfer& transfer, const uavcan_protocol_debug_LogMessage& msg);
     void handle_param_get_set_response(const CanardRxTransfer& transfer, const uavcan_protocol_param_GetSetResponse& rsp);

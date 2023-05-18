@@ -22,13 +22,22 @@ import threading
 
 from launch import LaunchDescription
 
-from launch_pytest.tools import process as process_tools
-
 from builtin_interfaces.msg import Time
 
 
+@launch_pytest.fixture
+def launch_description(sitl_dds):
+    """Fixture to create the launch description."""
+    return LaunchDescription(
+        [
+            sitl_dds,
+            launch_pytest.actions.ReadyToTest(),
+        ]
+    )
+
+
 class TimeListener(rclpy.node.Node):
-    """Subscribe to Time messages on /ap/time."""
+    """Subscribe to Time messages on /ROS2_Time."""
 
     def __init__(self):
         """Initialise the node."""
@@ -36,7 +45,7 @@ class TimeListener(rclpy.node.Node):
         self.msg_event_object = threading.Event()
 
         # Declare and acquire `topic` parameter.
-        self.declare_parameter("topic", "ap/time")
+        self.declare_parameter("topic", "ROS2_Time")
         self.topic = self.get_parameter("topic").get_parameter_value().string_value
 
     def start_subscriber(self):
@@ -63,51 +72,9 @@ class TimeListener(rclpy.node.Node):
             self.get_logger().info("From AP : False")
 
 
-@launch_pytest.fixture
-def launch_sitl_copter_dds_serial(sitl_copter_dds_serial):
-    """Fixture to create the launch description."""
-    sitl_ld, sitl_actions = sitl_copter_dds_serial
-
-    ld = LaunchDescription(
-        [
-            sitl_ld,
-            launch_pytest.actions.ReadyToTest(),
-        ]
-    )
-    actions = sitl_actions
-    yield ld, actions
-
-
-@launch_pytest.fixture
-def launch_sitl_copter_dds_udp(sitl_copter_dds_udp):
-    """Fixture to create the launch description."""
-    sitl_ld, sitl_actions = sitl_copter_dds_udp
-
-    ld = LaunchDescription(
-        [
-            sitl_ld,
-            launch_pytest.actions.ReadyToTest(),
-        ]
-    )
-    actions = sitl_actions
-    yield ld, actions
-
-
-@pytest.mark.launch(fixture=launch_sitl_copter_dds_serial)
-def test_dds_serial_time_msg_recv(launch_context, launch_sitl_copter_dds_serial):
-    """Test /ap/time is published by AP_DDS."""
-    _, actions = launch_sitl_copter_dds_serial
-    virtual_ports = actions["virtual_ports"].action
-    micro_ros_agent = actions["micro_ros_agent"].action
-    mavproxy = actions["mavproxy"].action
-    sitl = actions["sitl"].action
-
-    # Wait for process to start.
-    process_tools.wait_for_start_sync(launch_context, virtual_ports, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, micro_ros_agent, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, sitl, timeout=2)
-
+@pytest.mark.launch(fixture=launch_description)
+def test_time_msgs_received(sitl_dds, launch_context):
+    """Test Time messages are published by AP_DDS."""
     rclpy.init()
     try:
         node = TimeListener()
@@ -116,28 +83,8 @@ def test_dds_serial_time_msg_recv(launch_context, launch_sitl_copter_dds_serial)
         assert msgs_received_flag, "Did not receive 'ROS_Time' msgs."
     finally:
         rclpy.shutdown()
+
     yield
 
-
-@pytest.mark.launch(fixture=launch_sitl_copter_dds_udp)
-def test_dds_udp_time_msg_recv(launch_context, launch_sitl_copter_dds_udp):
-    """Test /ap/time is published by AP_DDS."""
-    _, actions = launch_sitl_copter_dds_udp
-    micro_ros_agent = actions["micro_ros_agent"].action
-    mavproxy = actions["mavproxy"].action
-    sitl = actions["sitl"].action
-
-    # Wait for process to start.
-    process_tools.wait_for_start_sync(launch_context, micro_ros_agent, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, sitl, timeout=2)
-
-    rclpy.init()
-    try:
-        node = TimeListener()
-        node.start_subscriber()
-        msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
-        assert msgs_received_flag, "Did not receive 'ROS_Time' msgs."
-    finally:
-        rclpy.shutdown()
-    yield
+    # Anything below this line is executed after launch service shutdown.
+    pass

@@ -126,9 +126,9 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
 #endif
 
 #if AP_DDS_ENABLED
-    // @Group: DDS
+    // @Group: XRCE
     // @Path: ../AP_DDS/AP_DDS_Client.cpp
-    AP_SUBGROUPPTR(dds_client, "DDS", 18, AP_Vehicle, AP_DDS_Client),
+    AP_SUBGROUPPTR(dds_client, "XRCE_", 18, AP_Vehicle, AP_DDS_Client),
 #endif
 
 #if AP_KDECAN_ENABLED
@@ -230,7 +230,7 @@ void AP_Vehicle::setup()
     } 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     else {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "No airspeed sensor");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"No airspeed sensor present or enabled");
     }
 #endif
 #endif  // AP_AIRSPEED_ENABLED
@@ -843,11 +843,10 @@ void AP_Vehicle::check_motor_noise()
 #if AP_DDS_ENABLED
 bool AP_Vehicle::init_dds_client()
 {
-    dds_client = new AP_DDS_Client();
-    if (dds_client == nullptr) {
-        return false;
+    if (AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_DDS_XRCE, 0)) {
+        dds_client = new AP_DDS_Client();
     }
-    return dds_client->start();
+    return dds_client != nullptr;
 }
 #endif // AP_DDS_ENABLED
 

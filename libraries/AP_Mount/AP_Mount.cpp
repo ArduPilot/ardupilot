@@ -639,16 +639,27 @@ bool AP_Mount::set_zoom(uint8_t instance, ZoomType zoom_type, float zoom_value)
     return backend->set_zoom(zoom_type, zoom_value);
 }
 
-// set focus specified as rate, percentage or auto
+// set focus in, out or hold.  returns true on success
 // focus in = -1, focus hold = 0, focus out = 1
-bool AP_Mount::set_focus(uint8_t instance, FocusType focus_type, float focus_value)
+bool AP_Mount::set_manual_focus_step(uint8_t instance, int8_t focus_step)
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
         return false;
     }
-    return backend->set_focus(focus_type, focus_value);
+    return backend->set_manual_focus_step(focus_step);
 }
+
+// auto focus.  returns true on success
+bool AP_Mount::set_auto_focus(uint8_t instance)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+    return backend->set_auto_focus();
+}
+
 
 AP_Mount_Backend *AP_Mount::get_primary() const
 {

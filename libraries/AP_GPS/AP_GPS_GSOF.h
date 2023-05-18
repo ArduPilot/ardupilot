@@ -28,25 +28,25 @@ class AP_GPS_GSOF : public AP_GPS_Backend
 public:
     AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
-    AP_GPS::GPS_Status highest_supported_status(void) override WARN_IF_UNUSED {
+    AP_GPS::GPS_Status highest_supported_status(void) override {
         return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
     }
 
     // Methods
-    bool read() override WARN_IF_UNUSED;
+    bool read() override;
 
     const char *name() const override { return "GSOF"; }
 
 private:
 
-    bool parse(const uint8_t temp) WARN_IF_UNUSED;
-    bool process_message() WARN_IF_UNUSED;
-    void requestBaud(const uint8_t portindex);
-    void requestGSOF(const uint8_t messagetype, const uint8_t portindex);
-    double SwapDouble(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
-    float SwapFloat(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
-    uint32_t SwapUint32(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
-    uint16_t SwapUint16(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
+    bool parse(uint8_t temp);
+    bool process_message();
+    void requestBaud(uint8_t portindex);
+    void requestGSOF(uint8_t messagetype, uint8_t portindex);
+    double SwapDouble(uint8_t* src, uint32_t pos);
+    float SwapFloat(uint8_t* src, uint32_t pos);
+    uint32_t SwapUint32(uint8_t* src, uint32_t pos);
+    uint16_t SwapUint16(uint8_t* src, uint32_t pos);
 
 
     struct gsof_msg_parser_t
@@ -62,6 +62,7 @@ private:
             ENDTX
         } gsof_state;
 
+        uint8_t starttx;
         uint8_t status;
         uint8_t packettype;
         uint8_t length;

@@ -253,20 +253,15 @@ uint64_t Util::get_hw_rtc() const
     return stm32_get_utc_usec();
 }
 
+#if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
+
 #include <GCS_MAVLink/GCS.h>
-
-#if AP_BOOTLOADER_FLASHING_ENABLED
-
 #if HAL_GCS_ENABLED
 #define Debug(fmt, args ...)  do { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } while (0)
 #endif // HAL_GCS_ENABLED
 
 #ifndef Debug
 #define Debug(fmt, args ...)  do { hal.console->printf(fmt, ## args); } while (0)
-#endif
-
-#ifdef HAL_NO_FLASH_SUPPORT
-#error "Bootloader-flashing enabled but no flashing support"
 #endif
 
 Util::FlashBootloader Util::flash_bootloader()
@@ -376,7 +371,7 @@ Util::FlashBootloader Util::flash_bootloader()
     AP_ROMFS::free(fw);
     return FlashBootloader::FAIL;
 }
-#endif // AP_BOOTLOADER_FLASHING_ENABLED
+#endif // !HAL_NO_FLASH_SUPPORT && !HAL_NO_ROMFS_SUPPORT
 
 /*
   display system identifer - board type and serial number

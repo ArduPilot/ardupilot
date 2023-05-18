@@ -3869,11 +3869,9 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         handle_set_mode(msg);
         break;
 
-#if AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED
     case MAVLINK_MSG_ID_AUTOPILOT_VERSION_REQUEST:
         handle_send_autopilot_version(msg);
         break;
-#endif
 
     case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST:
     case MAVLINK_MSG_ID_MISSION_REQUEST_LIST:
@@ -4143,12 +4141,10 @@ void GCS_MAVLINK::handle_common_mission_message(const mavlink_message_t &msg)
     }
 }
 
-#if AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED
 void GCS_MAVLINK::handle_send_autopilot_version(const mavlink_message_t &msg)
 {
     send_message(MSG_AUTOPILOT_VERSION);
 }
-#endif
 
 void GCS_MAVLINK::send_banner()
 {
@@ -4410,7 +4406,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_mag_cal(const mavlink_command_long_t &pac
 #endif
 }
 
-#if AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_request_autopilot_capabilities(const mavlink_command_long_t &packet)
 {
     if (!is_equal(packet.param1,1.0f)) {
@@ -4421,7 +4416,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_request_autopilot_capabilities(const mavl
 
     return MAV_RESULT_ACCEPTED;
 }
-#endif
 
 
 MAV_RESULT GCS_MAVLINK::handle_command_do_send_banner(const mavlink_command_long_t &packet)
@@ -4659,9 +4653,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
     case MAV_CMD_SET_CAMERA_ZOOM:
     case MAV_CMD_SET_CAMERA_FOCUS:
     case MAV_CMD_IMAGE_START_CAPTURE:
-    case MAV_CMD_CAMERA_TRACK_POINT:
-    case MAV_CMD_CAMERA_TRACK_RECTANGLE:
-    case MAV_CMD_CAMERA_STOP_TRACKING:
     case MAV_CMD_VIDEO_START_CAPTURE:
     case MAV_CMD_VIDEO_STOP_CAPTURE:
         result = handle_command_camera(packet);
@@ -4684,12 +4675,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         result = handle_command_mount(packet);
         break;
 
-#if AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED
     case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES: {
         result = handle_command_request_autopilot_capabilities(packet);
         break;
     }
-#endif
 
     case MAV_CMD_DO_SET_ROI_NONE:
         return handle_command_do_set_roi_none();

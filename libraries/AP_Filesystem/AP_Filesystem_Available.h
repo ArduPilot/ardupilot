@@ -12,32 +12,15 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/*
-  Simulator for the RDS02UF rangefinder
 
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:rds02uf --speedup=1
-
-param set SERIAL5_PROTOCOL 9
-param set RNGFND1_TYPE 36
-graph RANGEFINDER.distance
-graph GLOBAL_POSITION_INT.relative_alt/1000-RANGEFINDER.distance
-reboot
-
-arm throttle
-rc 3 1600
-*/
+// minimal header for checking if AP_FS is available
 
 #pragma once
 
-#include "SIM_SerialRangeFinder.h"
+#include <AP_HAL/AP_HAL_Boards.h>
 
-namespace SITL {
-
-class RF_RDS02UF : public SerialRangeFinder {
-public:
-
-    uint32_t packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen) override;
-
-};
-
-}
+#if HAL_OS_POSIX_IO || HAL_OS_FATFS_IO
+#define HAVE_FILESYSTEM_SUPPORT 1
+#else
+#define HAVE_FILESYSTEM_SUPPORT 0
+#endif

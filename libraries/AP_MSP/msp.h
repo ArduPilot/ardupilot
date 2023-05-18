@@ -1,8 +1,20 @@
 #pragma once
 
-#include "AP_MSP_config.h"
+#include <AP_HAL/AP_HAL.h>
 
-#if HAL_MSP_ENABLED
+#ifndef HAL_MSP_ENABLED
+#define HAL_MSP_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+// define for enabling MSP sensor drivers
+#ifndef HAL_MSP_SENSORS_ENABLED
+#define HAL_MSP_SENSORS_ENABLED HAL_MSP_ENABLED && !HAL_MINIMIZE_FEATURES && !defined(HAL_BUILD_AP_PERIPH)
+#endif
+
+// define for enabling MSP DisplayPort
+#ifndef HAL_WITH_MSP_DISPLAYPORT
+#define HAL_WITH_MSP_DISPLAYPORT  HAL_MSP_ENABLED && !HAL_MINIMIZE_FEATURES && !defined(HAL_BUILD_AP_PERIPH)
+#endif
 
 #include <AP_HAL/UARTDriver.h>
 
@@ -11,6 +23,8 @@
 #include "msp_sbuf.h"
 #include "msp_version.h"
 #include "msp_sensors.h"
+
+#if HAL_MSP_ENABLED
 
 // betaflight/src/main/common/utils.h
 #define MSP_ARRAYEND(x) (&(x)[ARRAY_SIZE(x)])

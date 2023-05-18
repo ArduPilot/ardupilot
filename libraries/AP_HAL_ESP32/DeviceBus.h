@@ -22,9 +22,6 @@
 #include "Scheduler.h"
 
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-
 namespace ESP32
 {
 
@@ -48,7 +45,7 @@ private:
         uint64_t next_usec;
     } *callbacks;
     uint8_t thread_priority;
-    tskTaskControlBlock* bus_thread_handle;
+    void* bus_thread_handle;
     bool thread_started;
     AP_HAL::Device *hal_device;
 };

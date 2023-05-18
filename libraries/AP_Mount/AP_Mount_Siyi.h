@@ -68,9 +68,12 @@ public:
     // set zoom specified as a rate or percentage
     bool set_zoom(ZoomType zoom_type, float zoom_value) override;
 
-    // set focus specified as rate, percentage or auto
+    // set focus in, out or hold.  returns true on success
     // focus in = -1, focus hold = 0, focus out = 1
-    bool set_focus(FocusType focus_type, float focus_value) override;
+    bool set_manual_focus_step(int8_t focus_step) override;
+
+    // auto focus.  returns true on success
+    bool set_auto_focus() override;
 
 protected:
 
@@ -91,8 +94,7 @@ private:
         ACQUIRE_GIMBAL_CONFIG_INFO = 0x0A,
         FUNCTION_FEEDBACK_INFO = 0x0B,
         PHOTO = 0x0C,
-        ACQUIRE_GIMBAL_ATTITUDE = 0x0D,
-        ABSOLUTE_ZOOM = 0x0F
+        ACQUIRE_GIMBAL_ATTITUDE = 0x0D
     };
 
     // Function Feedback Info packet info_type values
@@ -128,13 +130,6 @@ private:
         WAITING_FOR_CRC_LOW,
         WAITING_FOR_CRC_HIGH,
     };
-
-    // hardware model enum
-    enum class HardwareModel : uint8_t {
-        UNKNOWN,
-        A8,
-        ZR10
-    } _hardware_model;
 
     // reading incoming packets from gimbal and confirm they are of the correct format
     // results are held in the _parsed_msg structure
@@ -175,20 +170,6 @@ private:
     // yaw_is_ef should be true if yaw_rad target is an earth frame angle, false if body_frame
     void send_target_angles(float pitch_rad, float yaw_rad, bool yaw_is_ef);
 
-    // send zoom rate command to camera. zoom out = -1, hold = 0, zoom in = 1
-    bool send_zoom_rate(float zoom_value);
-
-    // send zoom multiple command to camera. e.g. 1x, 10x, 30x
-    // only supported by ZR10 and ZR30
-    bool send_zoom_mult(float zoom_mult);
-
-    // get zoom multiple max
-    float get_zoom_mult_max() const;
-
-    // update absolute zoom controller
-    // only used for A8 that does not support abs zoom control
-    void update_zoom_control();
-
     // internal variables
     AP_HAL::UARTDriver *_uart;                      // uart connected to gimbal
     bool _initialised;                              // true once the driver has been initialised
@@ -221,11 +202,6 @@ private:
 
     // variables for camera state
     bool _last_record_video;                        // last record_video state sent to gimbal
-
-    // absolute zoom control.  only used for A8 that does not support abs zoom control
-    float _zoom_mult_target;                        // current zoom multiple target.  0 if no target
-    float _zoom_mult;                               // most recent actual zoom multiple received from camera
-    uint32_t _last_zoom_control_ms;                 // system time that zoom control was last run
 };
 
 #endif // HAL_MOUNT_SIYISERIAL_ENABLED

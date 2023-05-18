@@ -1,10 +1,13 @@
 #pragma once
 
-#include "AP_OpticalFlow_config.h"
+#include "AP_OpticalFlow.h"
+
+#ifndef AP_OPTICALFLOW_HEREFLOW_ENABLED
+#define AP_OPTICALFLOW_HEREFLOW_ENABLED (AP_OPTICALFLOW_ENABLED && HAL_ENABLE_DRONECAN_DRIVERS)
+#endif
 
 #if AP_OPTICALFLOW_HEREFLOW_ENABLED
 
-#include "AP_OpticalFlow_Backend.h"
 #include <AP_DroneCAN/AP_DroneCAN.h>
 
 class AP_OpticalFlow_HereFlow : public OpticalFlow_backend {

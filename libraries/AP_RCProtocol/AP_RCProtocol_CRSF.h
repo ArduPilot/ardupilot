@@ -18,10 +18,6 @@
  */
 #pragma once
 
-#include "AP_RCProtocol_config.h"
-
-#if AP_RCPROTOCOL_CRSF_ENABLED
-
 #include "AP_RCProtocol.h"
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
@@ -336,5 +332,3 @@ private:
 namespace AP {
     AP_RCProtocol_CRSF* crsf();
 };
-
-#endif  // AP_RCPROTOCOL_CRSF_ENABLED
