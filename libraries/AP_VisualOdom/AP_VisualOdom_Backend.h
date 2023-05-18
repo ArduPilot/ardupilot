@@ -52,6 +52,10 @@ public:
     // handle request to align position with AHRS
     virtual void align_position_to_ahrs(bool align_xy, bool align_z) {}
 
+    // align position to the given position expressed in meters offset from EKF origin
+    // and the given yaw expressed in radians from North
+    virtual void align_position_and_yaw(const Vector3f& pos_ned, float yaw_rad) {};
+
     // arming check - by default no checks performed
     virtual bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const { return true; }
 
@@ -60,6 +64,9 @@ protected:
     // returns the system time of the last reset if reset_counter has not changed
     // updates the reset timestamp to the current system time if the reset_counter has changed
     uint32_t get_reset_timestamp_ms(uint8_t reset_counter);
+
+    // force an update of the reset timestamp (used when external caller updates position or yaw)
+    void force_update_reset_timestamp_ms();
 
     AP_VisualOdom::VisualOdom_Type get_type(void) const {
         return _frontend.get_type();
