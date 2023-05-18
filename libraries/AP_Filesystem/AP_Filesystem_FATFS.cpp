@@ -1,15 +1,13 @@
 /*
   ArduPilot filesystem interface for systems using the FATFS filesystem
  */
-#include "AP_Filesystem_config.h"
-
-#if AP_FILESYSTEM_FATFS_ENABLED
-
 #include "AP_Filesystem.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <stdio.h>
 #include <AP_RTC/AP_RTC.h>
+
+#if HAVE_FILESYSTEM_SUPPORT && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 
 #include <ff.h>
 #include <AP_HAL_ChibiOS/sdcard.h>
@@ -977,4 +975,4 @@ char *strerror(int errnum)
     return NULL;
 }
 
-#endif  // AP_FILESYSTEM_FATFS_ENABLED
+#endif // CONFIG_HAL_BOARD

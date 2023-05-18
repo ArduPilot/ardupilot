@@ -29,7 +29,6 @@
 #include <AP_HAL/utility/Socket.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/Location.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
 
 namespace SITL {
 

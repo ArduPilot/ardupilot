@@ -21,8 +21,6 @@
 #include "hwdef/common/ppm.h"
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 
-#include <AP_RCProtocol/AP_RCProtocol_config.h>
-
 #if HAL_WITH_IO_MCU
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_IOMCU/AP_IOMCU.h>
@@ -40,7 +38,7 @@ using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
 void RCInput::init()
 {
-#if AP_RCPROTOCOL_ENABLED
+#ifndef HAL_BUILD_AP_PERIPH
     AP::RC().init();
 #endif
 
@@ -155,7 +153,7 @@ void RCInput::_timer_tick(void)
     RCSource source = last_source;
 #endif
 
-#if AP_RCPROTOCOL_ENABLED
+#ifndef HAL_BUILD_AP_PERIPH
     AP_RCProtocol &rcprot = AP::RC();
 
 #if HAL_USE_ICU == TRUE
@@ -178,19 +176,16 @@ void RCInput::_timer_tick(void)
     }
 #endif
 
-#endif  // AP_RCPROTOCOL_ENABLED
-
 #if HAL_WITH_IO_MCU
     uint32_t now = AP_HAL::millis();
     const bool have_iocmu_rc = (_rcin_last_iomcu_ms != 0 && now - _rcin_last_iomcu_ms < 400);
     if (!have_iocmu_rc) {
         _rcin_last_iomcu_ms = 0;
     }
-#elif AP_RCPROTOCOL_ENABLED || HAL_RCINPUT_WITH_AP_RADIO
+#else
     const bool have_iocmu_rc = false;
 #endif
 
-#if AP_RCPROTOCOL_ENABLED
     if (rcprot.new_input() && !have_iocmu_rc) {
         WITH_SEMAPHORE(rcin_mutex);
         _rcin_timestamp_last_signal = AP_HAL::micros();
@@ -204,7 +199,7 @@ void RCInput::_timer_tick(void)
         source = rcprot.using_uart() ? RCSource::RCPROT_BYTES : RCSource::RCPROT_PULSES;
 #endif
     }
-#endif // AP_RCPROTOCOL_ENABLED
+#endif // HAL_BUILD_AP_PERIPH
 
 #if HAL_RCINPUT_WITH_AP_RADIO
     if (radio && radio->last_recv_us() != last_radio_us && !have_iocmu_rc) {
@@ -264,7 +259,7 @@ bool RCInput::rc_bind(int dsmMode)
     }
 #endif
 
-#if AP_RCPROTOCOL_ENABLED
+#ifndef HAL_BUILD_AP_PERIPH
     // ask AP_RCProtocol to start a bind
     AP::RC().start_bind();
 #endif

@@ -12,10 +12,6 @@ import shutil
 
 import argparse
 
-# modify our search path:
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_ChibiOS/hwdef/scripts'))
-import chibios_hwdef
-
 parser = argparse.ArgumentParser(description='configure all ChibiOS boards')
 parser.add_argument('--build', action='store_true', default=False, help='build as well as configure')
 parser.add_argument('--build-target', default='copter', help='build target')
@@ -70,25 +66,17 @@ if args.start is not None:
 
 def is_ap_periph(board):
     hwdef = os.path.join('libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % board)
-    ch = chibios_hwdef.ChibiOSHWDef()
-    ch.process_file(hwdef)
-    return ch.is_periph_fw()
+    try:
+        r = open(hwdef, 'r').read()
+        if r.find('periph/hwdef.dat') != -1 or r.find('AP_PERIPH') != -1:
+            print("%s is AP_Periph" % board)
+            return True
+    except Exception as ex:
+        pass
+    return False
 
 if args.copy_hwdef_incs_to_directory is not None:
     os.makedirs(args.copy_hwdef_incs_to_directory)
-
-def handle_hwdef_copy(directory, board, bootloader=False):
-    source = os.path.join("build", board, "hwdef.h")
-    if bootloader:
-        filename = "hwdef-%s-bl.h" % board
-    elif board == "iomcu":
-        filename = "hwdef-%s-iomcu.h" % board
-    elif is_ap_periph(board):
-        filename = "hwdef-%s-periph.h" % board
-    else:
-        filename = "hwdef-%s.h" % board
-    target = os.path.join(directory, filename)
-    shutil.copy(source, target)
 
 for board in board_list:
     done.append(board)
@@ -98,8 +86,16 @@ for board in board_list:
         config_opts += ["--Werror"]
     if not args.only_bl:
         run_program([args.python, "waf", "configure"] + config_opts, "configure: " + board)
-        if args.copy_hwdef_incs_to_directory is not None:
-            handle_hwdef_copy(args.copy_hwdef_incs_to_directory, board)
+    if args.copy_hwdef_incs_to_directory is not None:
+        source = os.path.join("build", board, "hwdef.h")
+        if board == "iomcu":
+            filename = "hwdef-%s-iomcu.h" % board
+        elif is_ap_periph(board):
+            filename = "hwdef-%s-periph.h" % board
+        else:
+            filename = "hwdef-%s.h" % board
+        target = os.path.join(args.copy_hwdef_incs_to_directory, filename)
+        shutil.copy(source, target)
     if args.build:
         if board == "iomcu":
             target = "iofirmware"
@@ -118,8 +114,6 @@ for board in board_list:
     if os.path.exists(hwdef_bl):
         print("Configuring bootloader for %s" % board)
         run_program([args.python, "waf", "configure", "--board", board, "--bootloader"], "configure: " + board + "-bl")
-        if args.copy_hwdef_incs_to_directory is not None:
-            handle_hwdef_copy(args.copy_hwdef_incs_to_directory, board, bootloader=True)
         if args.build:
             run_program([args.python, "waf", "bootloader"], "build: " + board + "-bl")
 

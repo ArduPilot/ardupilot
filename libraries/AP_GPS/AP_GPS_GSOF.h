@@ -48,10 +48,10 @@ private:
     uint32_t SwapUint32(uint8_t* src, uint32_t pos);
     uint16_t SwapUint16(uint8_t* src, uint32_t pos);
 
-    struct Msg_Parser
-    {
 
-        enum class State
+    struct gsof_msg_parser_t
+    {
+        enum
         {
             STARTTX = 0,
             STATUS,
@@ -60,9 +60,7 @@ private:
             DATA,
             CHECKSUM,
             ENDTX
-        };
-
-        State state;
+        } gsof_state;
 
         uint8_t starttx;
         uint8_t status;
@@ -74,10 +72,10 @@ private:
 
         uint16_t read;
         uint8_t checksumcalc;
-    } msg;
+    } gsof_msg;
 
-    static const uint8_t STX = 0x02;
-    static const uint8_t ETX = 0x03;
+    static const uint8_t GSOF_STX = 0x02;
+    static const uint8_t GSOF_ETX = 0x03;
 
     uint8_t packetcount = 0;
 

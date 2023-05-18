@@ -17,11 +17,7 @@
 /*
   with thanks to PX4 dsm.c for DSM decoding approach
  */
-
-#include "AP_RCProtocol_config.h"
-
-#if AP_RCPROTOCOL_ENABLED
-
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include "AP_RCProtocol_DSM.h"
 #if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
 #include "AP_RCProtocol_SRXL2.h"
@@ -542,5 +538,3 @@ void AP_RCProtocol_DSM::process_byte(uint8_t b, uint32_t baudrate)
     }
     _process_byte(AP_HAL::millis(), b);
 }
-
-#endif  // AP_RCPROTOCOL_ENABLED

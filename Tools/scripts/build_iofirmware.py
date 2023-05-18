@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 """
 script to build iofirmware and copy to Tools/IO_Firmware

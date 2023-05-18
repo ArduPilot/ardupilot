@@ -17,8 +17,6 @@
 
 #include "AP_RCProtocol_PPMSum.h"
 
-#if AP_RCPROTOCOL_PPMSUM_ENABLED
-
 /*
   process a PPM-sum pulse of the given width
  */
@@ -65,5 +63,3 @@ void AP_RCProtocol_PPMSum::process_pulse(uint32_t width_s0, uint32_t width_s1)
         ppm_state._channel_counter = -1;
     }
 }
-
-#endif  // AP_RCPROTOCOL_PPMSUM_ENABLED

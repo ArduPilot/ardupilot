@@ -179,7 +179,7 @@ bool sdcard_retry(void)
 #ifdef USE_POSIX
     if (!sdcard_running) {
         if (sdcard_init()) {
-#if AP_FILESYSTEM_FILE_WRITING_ENABLED
+#if HAVE_FILESYSTEM_SUPPORT
             // create APM directory
             AP::FS().mkdir("/APM");
 #endif

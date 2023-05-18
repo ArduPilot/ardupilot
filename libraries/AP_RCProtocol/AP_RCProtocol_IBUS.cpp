@@ -14,10 +14,6 @@
  *
  */
 
-#include "AP_RCProtocol_config.h"
-
-#if AP_RCPROTOCOL_IBUS_ENABLED
-
 #include "AP_RCProtocol_IBUS.h"
 
 // constructor
@@ -109,5 +105,3 @@ void AP_RCProtocol_IBUS::process_byte(uint8_t b, uint32_t baudrate)
     }
     _process_byte(AP_HAL::micros(), b);
 }
-
-#endif  // AP_RCPROTOCOL_IBUS_ENABLED

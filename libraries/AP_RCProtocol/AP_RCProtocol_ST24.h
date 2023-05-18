@@ -17,11 +17,7 @@
 
 #pragma once
 
-#include "AP_RCProtocol_config.h"
-
-#if AP_RCPROTOCOL_ST24_ENABLED
-
-#include "AP_RCProtocol_Backend.h"
+#include "AP_RCProtocol.h"
 #include "SoftSerial.h"
 
 #define ST24_DATA_LEN_MAX	64
@@ -153,5 +149,3 @@ private:
 
     SoftSerial ss{115200, SoftSerial::SERIAL_CONFIG_8N1};
 };
-
-#endif  // AP_RCPROTOCOL_ST24_ENABLED

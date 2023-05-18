@@ -42,10 +42,6 @@
  *
  * @author Marco Bauer <marco@wtns.de>
  */
-#include "AP_RCProtocol_config.h"
-
-#if AP_RCPROTOCOL_ST24_ENABLED
-
 #include "AP_RCProtocol_ST24.h"
 
 // #define SUMD_DEBUG
@@ -177,7 +173,6 @@ void AP_RCProtocol_ST24::_process_byte(uint8_t byte)
                     values[chan_index] = (uint16_t)(values[chan_index] * ST24_SCALE_FACTOR + .5f) + ST24_SCALE_OFFSET;
                     chan_index++;
                 }
-                add_input(num_values, values, false);//AP_RCProtocol: Fix the issue of ST24 receiver not working
             }
             break;
 
@@ -208,7 +203,6 @@ void AP_RCProtocol_ST24::_process_byte(uint8_t byte)
                     values[chan_index] = (uint16_t)(values[chan_index] * ST24_SCALE_FACTOR + .5f) + ST24_SCALE_OFFSET;
                     chan_index++;
                 }
-                add_input(num_values, values, false);//AP_RCProtocol: Fix the issue of ST24 receiver not working
             }
             break;
 
@@ -239,5 +233,3 @@ void AP_RCProtocol_ST24::process_byte(uint8_t byte, uint32_t baudrate)
     }
     _process_byte(byte);
 }
-
-#endif  // AP_RCPROTOCOL_ST24_ENABLED

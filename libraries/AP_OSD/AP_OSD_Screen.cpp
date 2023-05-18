@@ -19,13 +19,10 @@
 /*
   parameter settings for one screen
  */
-#include "AP_OSD_config.h"
-
-#if OSD_ENABLED
-
 #include "AP_OSD.h"
 #include "AP_OSD_Backend.h"
 
+#if OSD_ENABLED
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Util.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -870,7 +867,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     AP_SUBGROUPINFO(pluscode, "PLUSCODE", 52, AP_OSD_Screen, AP_OSD_Setting),
 #endif
 
-#if AP_OSD_CALLSIGN_FROM_SD_ENABLED
+#if HAVE_FILESYSTEM_SUPPORT
     // @Param: CALLSIGN_EN
     // @DisplayName: CALLSIGN_EN
     // @Description: Displays callsign from callsign.txt on microSD card
@@ -2120,7 +2117,7 @@ void AP_OSD_Screen::draw_pluscode(uint8_t x, uint8_t y)
  */
 void AP_OSD_Screen::draw_callsign(uint8_t x, uint8_t y)
 {
-#if AP_OSD_CALLSIGN_FROM_SD_ENABLED
+#if HAVE_FILESYSTEM_SUPPORT
     if (!callsign_data.load_attempted) {
         callsign_data.load_attempted = true;
         FileData *fd = AP::FS().load_file("callsign.txt");

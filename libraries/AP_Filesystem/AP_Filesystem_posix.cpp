@@ -15,14 +15,11 @@
 /*
   ArduPilot filesystem interface for posix systems
  */
-
-#include "AP_Filesystem_config.h"
-
-#if AP_FILESYSTEM_POSIX_ENABLED
-
 #include "AP_Filesystem.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 #if defined(__APPLE__)
 #include <sys/mount.h>
@@ -185,4 +182,5 @@ bool AP_Filesystem_Posix::set_mtime(const char *filename, const uint32_t mtime_s
     return utime(filename, &times) == 0;
 }
 
-#endif  // AP_FILESYSTEM_POSIX_ENABLED
+#endif // CONFIG_HAL_BOARD
+

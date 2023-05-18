@@ -17,7 +17,8 @@
 #include "AP_Filesystem.h"
 #include <AP_HAL/AP_HAL.h>
 
-#if AP_FILESYSTEM_ESP32_ENABLED
+#if HAVE_FILESYSTEM_SUPPORT
+#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
 
 #define FSDEBUG 0
 
@@ -198,4 +199,5 @@ bool AP_Filesystem_ESP32::set_mtime(const char *filename, const uint32_t mtime_s
     return utime(filename, &times) == 0;
 }
 
-#endif  // AP_FILESYSTEM_ESP32_ENABLED
+#endif // CONFIG_HAL_BOARD
+#endif
