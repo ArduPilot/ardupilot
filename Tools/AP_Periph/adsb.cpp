@@ -52,6 +52,15 @@ void AP_Periph_FW::adsb_init(void)
     }
 }
 
+static mavlink_message_t chan_buffer;
+mavlink_message_t* mavlink_get_channel_buffer(uint8_t chan) {
+    return &chan_buffer;
+}
+
+static mavlink_status_t chan_status;
+mavlink_status_t* mavlink_get_channel_status(uint8_t chan) {
+    return &chan_status;
+}
 
 /*
   update ADSB subsystem
