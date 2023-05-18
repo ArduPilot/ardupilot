@@ -51,10 +51,14 @@ public:
 
     // structure to retrieve results from backends:
     struct Estimates {
+        // if attitude_valid is true then all of the
+        // eulers/quaternion/matrix must be valid:
+        bool attitude_valid;
         float roll_rad;
         float pitch_rad;
         float yaw_rad;
         Matrix3f dcm_matrix;
+
         Vector3f gyro_estimate;
         Vector3f gyro_drift;
         Vector3f accel_ef;

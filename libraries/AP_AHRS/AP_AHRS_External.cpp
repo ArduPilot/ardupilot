@@ -25,7 +25,8 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     Quaternion quat;
     auto &extahrs = AP::externalAHRS();
     const AP_InertialSensor &_ins = AP::ins();
-    if (!extahrs.get_quaternion(quat)) {
+    results.attitude_valid = get_quaternion(quat);
+    if (!results.attitude_valid) {
         return;
     }
     quat.rotation_matrix(results.dcm_matrix);

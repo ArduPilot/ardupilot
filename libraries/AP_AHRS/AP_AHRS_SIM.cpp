@@ -241,6 +241,7 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     fdm.quaternion.rotation_matrix(results.dcm_matrix);
 
     results.dcm_matrix.to_euler(&results.roll_rad, &results.pitch_rad, &results.yaw_rad);
+    results.attitude_valid = true;
 
     results.gyro_estimate = _ins.get_gyro();
     results.gyro_drift.zero();

@@ -1271,7 +1271,7 @@ bool AP_AHRS::_get_secondary_attitude(Vector3f &eulers) const
         eulers[0] = dcm_estimates.roll_rad;
         eulers[1] = dcm_estimates.pitch_rad;
         eulers[2] = dcm_estimates.yaw_rad;
-        return true;
+        return dcm_estimates.attitude_valid;
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -1291,7 +1291,10 @@ bool AP_AHRS::_get_secondary_attitude(Vector3f &eulers) const
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
         // SITL is secondary (should never happen)
-        return false;
+        eulers[0] = sim_estimates.roll_rad;
+        eulers[1] = sim_estimates.pitch_rad;
+        eulers[2] = sim_estimates.yaw_rad;
+        return sim_estimates.attitude_valid;
 #endif
 
 #if AP_AHRS_EXTERNAL_ENABLED
@@ -1300,7 +1303,7 @@ bool AP_AHRS::_get_secondary_attitude(Vector3f &eulers) const
         eulers[0] = external_estimates.roll_rad;
         eulers[1] = external_estimates.pitch_rad;
         eulers[2] = external_estimates.yaw_rad;
-        return true;
+        return external_estimates.attitude_valid;
     }
 #endif
     }
