@@ -45,7 +45,11 @@ extern const AP_HAL::HAL& hal;
 
 AP_Notify *AP_Notify::_singleton;
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#define CONFIG_NOTIFY_DEVICES_MAX 12
+#else
 #define CONFIG_NOTIFY_DEVICES_MAX 6
+#endif
 
 #if AP_NOTIFY_TOSHIBALED_ENABLED
 #define TOSHIBA_LED_I2C_BUS_INTERNAL    0
