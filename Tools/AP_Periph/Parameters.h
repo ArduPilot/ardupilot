@@ -78,6 +78,9 @@ public:
         k_param_esc_serial_port1,
         k_param_networking,
         k_param_rpm_sensor,
+        k_param_rcin_protocols,
+        k_param_rcin_rate_hz,
+        k_param_rcin1_port,
     };
 
     AP_Int16 format_version;
@@ -109,6 +112,12 @@ public:
     AP_Int32 rangefinder_baud;
     AP_Int8 rangefinder_port;
     AP_Int16 rangefinder_max_rate;
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_RCIN
+    AP_Int32 rcin_protocols;
+    AP_Int8 rcin_rate_hz;
+    AP_Int8 rcin1_port;
 #endif
 
 #if HAL_PROXIMITY_ENABLED
