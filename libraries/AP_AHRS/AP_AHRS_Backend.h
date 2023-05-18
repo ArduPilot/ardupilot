@@ -54,6 +54,8 @@ public:
         float pitch_rad;
         float yaw_rad;
         Matrix3f dcm_matrix;
+        bool attitude_valid;
+
         Vector3f gyro_estimate;
         Vector3f gyro_drift;
         Vector3f accel_ef;

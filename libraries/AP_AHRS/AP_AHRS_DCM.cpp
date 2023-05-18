@@ -126,6 +126,8 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     results.yaw_rad = yaw;
 
     results.dcm_matrix = _body_dcm_matrix;
+    results.attitude_valid = true;
+
     results.gyro_estimate = _omega;
     results.gyro_drift = _omega_I;
     results.accel_ef = _accel_ef;
