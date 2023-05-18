@@ -67,6 +67,9 @@ public:
 #if AP_RCPROTOCOL_FASTSBUS_ENABLED
         FASTSBUS   = 12,
 #endif
+#if AP_RCPROTOCOL_DRONECAN_ENABLED
+        DRONECAN   = 13,
+#endif
         NONE    //last enum always is None
     };
 
@@ -142,6 +145,9 @@ public:
 #endif
 #if AP_RCPROTOCOL_ST24_ENABLED
         case ST24:
+#endif
+#if AP_RCPROTOCOL_DRONECAN_ENABLED
+        case DRONECAN:
 #endif
         case NONE:
             return false;
