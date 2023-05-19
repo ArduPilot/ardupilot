@@ -48,8 +48,6 @@
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include <string.h>
 
-#define LED_DELAY_US 50000
-
 extern const AP_HAL::HAL& hal;
 
 // setup default pool size
