@@ -214,6 +214,12 @@ public:
     // returns true on success and control_value is set to a value in the range -1 to +1
     virtual bool get_control_output(AP_Vehicle::ControlOutput control_output, float &control_value) { return false; }
 
+    // returns true if vehicle is in the process of landing
+    virtual bool is_landing() const { return false; }
+
+    // returns true if vehicle is in the process of taking off
+    virtual bool is_taking_off() const { return false; }
+
 #endif // AP_SCRIPTING_ENABLED
 
     // zeroing the RC outputs can prevent unwanted motor movement:
