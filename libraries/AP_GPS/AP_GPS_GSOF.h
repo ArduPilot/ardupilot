@@ -82,6 +82,6 @@ private:
 
     uint32_t gsofmsg_time = 0;
     uint8_t gsofmsgreq_index = 0;
-    uint8_t gsofmsgreq[5] = {1,2,8,9,12};
+    const uint8_t gsofmsgreq[5] = {1,2,8,9,12};
 };
 #endif
