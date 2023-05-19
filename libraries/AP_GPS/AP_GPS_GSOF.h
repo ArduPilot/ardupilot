@@ -79,10 +79,9 @@ private:
     static const uint8_t STX = 0x02;
     static const uint8_t ETX = 0x03;
 
-    uint8_t packetcount = 0;
-
-    uint32_t gsofmsg_time = 0;
-    uint8_t gsofmsgreq_index = 0;
+    uint8_t packetcount;
+    uint32_t gsofmsg_time;
+    uint8_t gsofmsgreq_index;
     const uint8_t gsofmsgreq[5] = {1,2,8,9,12};
 };
 #endif
