@@ -187,6 +187,9 @@ void Copter::failsafe_gcs_on_event(void)
         case FS_GCS_ENABLED_AUTO_RTL_OR_RTL:
             desired_action = FailsafeAction::AUTO_DO_LAND_START;
             break;
+        case FS_GCS_ENABLED_BRAKE_OR_LAND:
+            desired_action = FailsafeAction::BRAKE_LAND;
+            break;
         default: // if an invalid parameter value is set, the fallback is RTL
             desired_action = FailsafeAction::RTL;
     }
