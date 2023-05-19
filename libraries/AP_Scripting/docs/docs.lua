@@ -1989,6 +1989,18 @@ function vehicle:nav_script_time_done(param1) end
 function vehicle:nav_script_time() end
 
 -- desc
+---@param hold_in_bootloader boolean
+function vehicle:reboot(hold_in_bootloader) end
+
+-- desc
+---@return boolean
+function vehicle:is_taking_off() end
+
+-- desc
+---@return boolean
+function vehicle:is_landing() end
+
+-- desc
 ---@class onvif
 onvif = {}
 
