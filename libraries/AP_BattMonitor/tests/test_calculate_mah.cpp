@@ -2,12 +2,12 @@
 
 #include <AP_BattMonitor/AP_BattMonitor_Backend.h>
 
-float calculate_mah_with_double_cast(float amps, float dt)
+static float calculate_mah_with_double_cast(float amps, float dt)
 {
     return (float) ((double) amps * (double) dt * (double) 0.0000002778f);
 }
 
-float calculate_mah(float amps, float dt)
+static float calculate_mah(float amps, float dt)
 {
     return AP_BattMonitor_Backend::calculate_mah(amps, dt);
 }
