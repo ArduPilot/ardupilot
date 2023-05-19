@@ -16,7 +16,8 @@
 //
 //  Trimble GPS driver for ArduPilot.
 //	Code by Michael Oborne
-//
+//  https://receiverhelp.trimble.com/oem-gnss/index.html#Welcome.html?TocPath=_____1
+
 #pragma once
 
 #include "AP_GPS.h"

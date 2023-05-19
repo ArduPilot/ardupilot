@@ -88,6 +88,7 @@ AP_GPS_GSOF::read(void)
 bool
 AP_GPS_GSOF::parse(const uint8_t temp)
 {
+    // https://receiverhelp.trimble.com/oem-gnss/index.html#API_DataCollectorFormatPacketStructure.html
     switch (msg.state)
     {
     default:
@@ -248,9 +249,8 @@ AP_GPS_GSOF::SwapUint16(const uint8_t* src, const uint32_t pos) const
 bool
 AP_GPS_GSOF::process_message(void)
 {
-    //http://www.trimble.com/OEM_ReceiverHelp/V4.81/en/default.html#welcome.html
-
     if (msg.packettype == 0x40) { // GSOF
+        // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_TIME.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257C_____25
 #if gsof_DEBUGGING
         const uint8_t trans_number = msg.data[0];
         const uint8_t pageidx = msg.data[1];
@@ -273,6 +273,7 @@ AP_GPS_GSOF::process_message(void)
 
             if (output_type == 1) // pos time
             {
+                // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_TIME.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257C_____25
                 state.time_week_ms = SwapUint32(msg.data, a);
                 state.time_week = SwapUint16(msg.data, a + 4);
                 state.num_sats = msg.data[a + 6];
@@ -300,6 +301,7 @@ AP_GPS_GSOF::process_message(void)
             }
             else if (output_type == 2) // position
             {
+                // This packet is not documented in Trimble's receiver help as of May 18, 2023
                 state.location.lat = (int32_t)(RAD_TO_DEG_DOUBLE * (SwapDouble(msg.data, a)) * (double)1e7);
                 state.location.lng = (int32_t)(RAD_TO_DEG_DOUBLE * (SwapDouble(msg.data, a + 8)) * (double)1e7);
                 state.location.alt = (int32_t)(SwapDouble(msg.data, a + 16) * 100);
@@ -310,6 +312,7 @@ AP_GPS_GSOF::process_message(void)
             }
             else if (output_type == 8) // velocity
             {
+                // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_Velocity.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257C_____32
                 const uint8_t vflag = msg.data[a];
                 if ((vflag & 1) == 1)
                 {
@@ -323,11 +326,13 @@ AP_GPS_GSOF::process_message(void)
             }
             else if (output_type == 9) //dop
             {
+                // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_PDOP.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257C_____12
                 state.hdop = (uint16_t)(SwapFloat(msg.data, a + 4) * 100);
                 valid++;
             }
             else if (output_type == 12) // position sigma
             {
+                // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_SIGMA.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257C_____24
                 state.horizontal_accuracy = (SwapFloat(msg.data, a + 4) + SwapFloat(msg.data, a + 8)) / 2;
                 state.vertical_accuracy = SwapFloat(msg.data, a + 16);
                 state.have_horizontal_accuracy = true;
