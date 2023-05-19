@@ -87,12 +87,12 @@ void AP_ADSB_uAvionix_UCP::update()
         }
     } // while nbytes
 
-   if (now_ms - run_state.last_packet_Transponder_Control_ms >= 1000) {
+   if (now_ms - always_realtime_interval_ms(run_state.last_packet_Transponder_Control_ms) >= 1000) {
         run_state.last_packet_Transponder_Control_ms = now_ms;
         send_Transponder_Control();
     }
 
-    if ((now_ms - run_state.last_packet_GPS_ms >= 200) && (_frontend._options & uint32_t(AP_ADSB::AdsbOption::Ping200X_Send_GPS)) != 0) {
+    if ((now_ms - always_realtime_interval_ms(run_state.last_packet_GPS_ms) >= 200) && (_frontend._options & uint32_t(AP_ADSB::AdsbOption::Ping200X_Send_GPS)) != 0) {
         run_state.last_packet_GPS_ms = now_ms;
         send_GPS_Data();
     }

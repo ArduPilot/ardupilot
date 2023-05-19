@@ -165,6 +165,8 @@ size_t strncpy_noterm(char *dest, const char *src, size_t n);
 // return the numeric value of an ascii hex character
 int16_t char_to_hex(char a);
 
+uint32_t always_realtime_interval_ms(const uint32_t interval_ms);
+
 /*
   Bit manipulation
  */
