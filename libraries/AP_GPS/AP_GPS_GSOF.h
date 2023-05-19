@@ -82,6 +82,22 @@ private:
     uint8_t packetcount;
     uint32_t gsofmsg_time;
     uint8_t gsofmsgreq_index;
-    const uint8_t gsofmsgreq[5] = {1,2,8,9,12};
+
+    enum class OutputType
+    {
+        POS_TIME = 1,
+        POSITION = 2,
+        VELOCITY = 8,
+        DOP = 9,
+        POSITION_SIGMA = 12
+    };
+
+    const uint8_t gsofmsgreq[5] = {
+        uint8_t(OutputType::POS_TIME),
+        uint8_t(OutputType::POSITION),
+        uint8_t(OutputType::VELOCITY),
+        uint8_t(OutputType::DOP),
+        uint8_t(OutputType::POSITION_SIGMA)
+        };
 };
 #endif
