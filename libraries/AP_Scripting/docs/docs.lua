@@ -2145,6 +2145,14 @@ function vehicle:nav_script_time() end
 function vehicle:reboot(hold_in_bootloader) end
 
 -- desc
+---@return boolean
+function vehicle:is_taking_off() end
+
+-- desc
+---@return boolean
+function vehicle:is_landing() end
+
+-- desc
 ---@class onvif
 onvif = {}
 
