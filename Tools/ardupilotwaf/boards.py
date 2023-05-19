@@ -653,7 +653,8 @@ class sitl(Board):
                                 CANARD_ENABLE_CANFD = 1)
 
         env.CXXFLAGS += [
-            '-Werror=float-equal'
+            '-Werror=float-equal',
+            '-Werror=missing-declarations',
         ]
 
         if cfg.options.ubsan or cfg.options.ubsan_abort:
