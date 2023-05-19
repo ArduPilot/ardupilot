@@ -11,7 +11,6 @@ import os
 import shutil
 import time
 import numpy
-import operator
 
 from pymavlink import quaternion
 from pymavlink import mavutil
@@ -9560,7 +9559,12 @@ class AutoTestCopter(AutoTest):
         self.set_rc(1, 1700) # start driving forward
 
         # this is somewhat empirical...
-        self.wait_servo_channel_value(pump_ch, 1458, timeout=60)
+        self.wait_servo_channel_value(
+            pump_ch,
+            1458,
+            timeout=60,
+            comparator=lambda x, y : abs(x-y) < 5
+        )
 
         self.progress("Turning it off again")
         self.set_rc(rc_ch, 1000)
@@ -9579,7 +9583,13 @@ class AutoTestCopter(AutoTest):
                      0)  # p7
 
         self.progress("Testing speed-ramping")
-        self.wait_servo_channel_value(pump_ch, 1458, timeout=60, comparator=operator.gt)
+        self.wait_servo_channel_value(
+            pump_ch,
+            1458,
+            timeout=60,
+            comparator=lambda x, y : abs(x-y) < 5
+        )
+
         self.start_subtest("Stopping Sprayer")
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SPRAYER,
                      0,  # p1
