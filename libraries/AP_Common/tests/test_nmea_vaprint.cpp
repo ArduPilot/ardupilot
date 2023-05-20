@@ -31,6 +31,7 @@ public:
     bool discard_input() override { return false; }
 };
 
+void print_vprintf(AP_HAL::BetterStream *s, const char *fmt, va_list ap);
 void print_vprintf(AP_HAL::BetterStream *s, const char *fmt, va_list ap) {
     BufferPrinter* p = static_cast<BufferPrinter*>(s);
     count++;
