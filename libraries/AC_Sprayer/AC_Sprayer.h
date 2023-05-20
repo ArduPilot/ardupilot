@@ -82,10 +82,11 @@ private:
     } _flags;
 
     // internal variables
-    uint32_t        _speed_over_min_time;   ///< time at which we reached speed minimum
-    uint32_t        _speed_under_min_time;  ///< time at which we fell below speed minimum
+    uint32_t        _inconsistent_state_start_time;    ////< time since when the sprayer has been in inconsistent state
 
     void stop_spraying();
+    void update_servos(const float ground_speed);
+    void update_sprayer_state(const float ground_speed);
 };
 
 namespace AP {
