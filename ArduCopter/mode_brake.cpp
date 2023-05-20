@@ -61,6 +61,7 @@ void ModeBrake::run()
     pos_control->set_pos_target_z_from_climb_rate_cm(0.0f);
     pos_control->update_z_controller();
 
+    // MAV_CMD_SOLO_BTN_PAUSE_CLICK (Solo only) is used to set the timeout.
     if (_timeout_ms != 0 && millis()-_timeout_start >= _timeout_ms) {
         if (!copter.set_mode(Mode::Number::LOITER, ModeReason::BRAKE_TIMEOUT)) {
             copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::BRAKE_TIMEOUT);
@@ -68,6 +69,16 @@ void ModeBrake::run()
     }
 }
 
+/**
+ * Set a timeout for the brake mode
+ * 
+ * @param timeout_ms [in] timeout in milliseconds
+ * 
+ * @note MAV_CMD_SOLO_BTN_PAUSE_CLICK (Solo only) is used to set the timeout.
+ * If the timeout is reached, the mode will switch to loiter or alt hold depending on the current mode.
+ * If timeout_ms is 0, the timeout is disabled.
+ * 
+*/
 void ModeBrake::timeout_to_loiter_ms(uint32_t timeout_ms)
 {
     _timeout_start = millis();
