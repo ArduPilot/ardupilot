@@ -324,7 +324,7 @@ private:
 
         // A tracking variable for type of failsafe active
         // Used for failsafe based on loss of RC signal or GCS signal
-        int16_t state;
+        failsafe_state state;
 
         // number of low throttle values
         uint8_t throttle_counter;
@@ -357,7 +357,7 @@ private:
 #endif
 
     bool any_failsafe_triggered() {
-        return failsafe.state != FAILSAFE_NONE || battery.has_failsafed() || failsafe.adsb;
+        return failsafe.state != failsafe_state::NONE || battery.has_failsafed() || failsafe.adsb;
     }
 
     // A counter used to count down valid gps fixes to allow the gps estimate to settle
@@ -985,8 +985,8 @@ private:
     bool autotuning;
 
     // events.cpp
-    void failsafe_short_on_event(enum failsafe_state fstype, ModeReason reason);
-    void failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason);
+    void failsafe_short_on_event(failsafe_state fstype, ModeReason reason);
+    void failsafe_long_on_event(failsafe_state fstype);
     void failsafe_short_off_event(ModeReason reason);
     void failsafe_long_off_event(ModeReason reason);
     void handle_battery_failsafe(const char* type_str, const int8_t action);

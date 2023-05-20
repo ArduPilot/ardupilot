@@ -12,11 +12,13 @@
 
 // failsafe
 // ----------------------
-enum failsafe_state {
-    FAILSAFE_NONE=0,
-    FAILSAFE_SHORT=1,
-    FAILSAFE_LONG=2,
-    FAILSAFE_GCS=3
+enum class failsafe_state {
+    NONE=0,
+    RC_SHORT=1,
+    RC_LONG=2,
+    GCS=3,
+    RC_LONG_POSTPONED=4,
+    GCS_POSTPONED=5,
 };
 
 
@@ -39,12 +41,15 @@ enum failsafe_action_short {
     FS_ACTION_SHORT_FBWB = 4,
 };
 
-enum failsafe_action_long {
-    FS_ACTION_LONG_CONTINUE = 0,
-    FS_ACTION_LONG_RTL = 1,
-    FS_ACTION_LONG_GLIDE = 2,
-    FS_ACTION_LONG_PARACHUTE = 3,
-    FS_ACTION_LONG_AUTO = 4,
+enum class failsafe_action_long {
+    CONTINUE = 0,
+    RTL = 1,
+    GLIDE = 2,
+    DEPLOY_PARACHUTE = 3,
+    AUTO = 4,
+    QRTL = 5,
+    QLAND = 6,
+    POSTPONED = 7,
 };
 
 // type of stick mixing enabled

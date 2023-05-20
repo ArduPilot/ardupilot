@@ -154,3 +154,12 @@ bool ModeRTL::switch_QRTL()
 }
 
 #endif  // HAL_QUADPLANE_ENABLED
+
+// Return the long failsafe action that should be taken in this mode
+failsafe_action_long ModeRTL::long_failsafe_action() const
+{
+    if (plane.g.fs_action_long == (int8_t)failsafe_action_long::AUTO) {
+        return failsafe_action_long::AUTO;
+    }
+    return failsafe_action_long::CONTINUE;
+}
