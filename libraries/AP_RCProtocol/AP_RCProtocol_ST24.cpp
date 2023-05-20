@@ -78,15 +78,6 @@ uint8_t AP_RCProtocol_ST24::st24_crc8(uint8_t *ptr, uint8_t len)
     return (crc);
 }
 
-
-void AP_RCProtocol_ST24::process_pulse(const uint32_t width_s0, const uint32_t width_s1, const uint8_t pulse_id)
-{
-    uint8_t b;
-    if (ss_default.process_pulse(width_s0, width_s1, pulse_id, b)) {
-        _process_byte(b);
-    }
-}
-
 void AP_RCProtocol_ST24::_process_byte(uint8_t byte)
 {
     switch (_decode_state) {
@@ -232,7 +223,7 @@ void AP_RCProtocol_ST24::_process_byte(uint8_t byte)
     }
 }
 
-void AP_RCProtocol_ST24::process_byte(uint8_t byte, uint32_t baudrate)
+void AP_RCProtocol_ST24::process_byte(uint32_t timestamp_us, uint8_t byte, uint32_t baudrate)
 {
     if (baudrate != 115200) {
         return;

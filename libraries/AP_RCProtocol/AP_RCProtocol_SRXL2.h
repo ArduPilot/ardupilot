@@ -21,8 +21,6 @@
 
 #include "AP_RCProtocol.h"
 #include "SoftSerial.h"
-#include <AP_Math/AP_Math.h>
-#include "AP_RCProtocol_SRXL.h"
 
 #define SRXL2_MAX_CHANNELS 32U           /* Maximum number of channels from srxl2 datastream  */
 #define SRXL2_FRAMELEN_MAX   80U      /* maximum possible framelengh  */
@@ -32,7 +30,7 @@ class AP_RCProtocol_SRXL2 : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_SRXL2(AP_RCProtocol &_frontend);
     virtual ~AP_RCProtocol_SRXL2();
-    void process_byte(uint8_t byte, uint32_t baudrate) override;
+    void process_byte(uint32_t timestamp_us, uint8_t byte, uint32_t baudrate) override;
     void process_handshake(uint32_t baudrate) override;
     void start_bind(void) override;
     void update(void) override;

@@ -31,15 +31,6 @@
 // #define SUMD_DEBUG
 extern const AP_HAL::HAL& hal;
 
-void AP_RCProtocol_SRXL::process_pulse(const uint32_t width_s0, const uint32_t width_s1, const uint8_t pulse_id)
-{
-    uint8_t b;
-    if (ss_default.process_pulse(width_s0, width_s1, pulse_id, b)) {
-        _process_byte(ss_default.get_byte_timestamp_us(), b);
-    }
-}
-
-
 /**
  * Get RC channel information as microsecond pulsewidth representation from srxl version 1 and 2
  *
@@ -278,12 +269,12 @@ void AP_RCProtocol_SRXL::_process_byte(uint32_t timestamp_us, uint8_t byte)
 /*
   process a byte provided by a uart
  */
-void AP_RCProtocol_SRXL::process_byte(uint8_t byte, uint32_t baudrate)
+void AP_RCProtocol_SRXL::process_byte(uint32_t timestamp_us, uint8_t byte, uint32_t baudrate)
 {
     if (baudrate != 115200) {
         return;
     }
-    _process_byte(AP_HAL::micros(), byte);
+    _process_byte(timestamp_us, byte);
 }
 
 #endif  // AP_RCPROTOCOL_SRXL_ENABLED

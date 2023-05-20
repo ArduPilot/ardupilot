@@ -78,9 +78,8 @@ struct PACKED FPort_Frame {
 static_assert(sizeof(FPort_Frame) == FPORT_CONTROL_FRAME_SIZE, "FPort_Frame incorrect size");
 
 // constructor
-AP_RCProtocol_FPort::AP_RCProtocol_FPort(AP_RCProtocol &_frontend, bool _inverted) :
-    AP_RCProtocol_Backend(_frontend, AP_RCProtocol::FPORT),
-    inverted(_inverted)
+AP_RCProtocol_FPort::AP_RCProtocol_FPort(AP_RCProtocol &_frontend) :
+    AP_RCProtocol_Backend(_frontend, AP_RCProtocol::FPORT)
 {}
 
 // decode a full FPort control frame
@@ -205,33 +204,6 @@ void AP_RCProtocol_FPort::decode_downlink(const FPort_Frame &frame)
 #endif
 }
 
-/*
-  process a FPort input pulse of the given width
- */
-void AP_RCProtocol_FPort::process_pulse(const uint32_t width_s0, const uint32_t width_s1, const uint8_t pulse_id)
-{
-    if (have_UART()) {
-        // if we can use a UART we would much prefer to, as it allows
-        // us to send SPORT data out
-        return;
-    }
-    uint32_t w0 = width_s0;
-    uint32_t w1 = width_s1;
-    uint8_t b;
-    if (inverted) {
-        w0 = saved_width;
-        w1 = width_s0;
-        saved_width = width_s1;
-        if (ss_inv_default.process_pulse(w0, w1, pulse_id, b)) {
-            _process_byte(ss_inv_default.get_byte_timestamp_us(), b);
-        }
-    } else {
-        if (ss_default.process_pulse(w0, w1, pulse_id, b)) {
-            _process_byte(ss_default.get_byte_timestamp_us(), b);
-        }
-    }
-}
-
 // support byte input
 void AP_RCProtocol_FPort::_process_byte(uint32_t timestamp_us, uint8_t b)
 {
@@ -315,12 +287,12 @@ bool AP_RCProtocol_FPort::check_checksum(void)
 }
 
 // support byte input
-void AP_RCProtocol_FPort::process_byte(uint8_t b, uint32_t baudrate)
+void AP_RCProtocol_FPort::process_byte(uint32_t timestamp_us, uint8_t b, uint32_t baudrate)
 {
     if (baudrate != 115200) {
         return;
     }
-    _process_byte(AP_HAL::micros(), b);
+    _process_byte(timestamp_us, b);
 }
 
 #endif  // AP_RCPROTOCOL_FPORT_ENABLED

@@ -19,19 +19,25 @@
 #include "SoftSerial.h"
 #include <stdio.h>
 
-SoftSerial::SoftSerial(uint32_t _baudrate, serial_config _config) :
-    baudrate(_baudrate),
-    config(_config),
-    half_bit((1000000U / baudrate)/2)
+SoftSerial::SoftSerial(uint32_t _baudrate, SerialProtocolConfig _config, bool _inverted)
 {
+    configure(_baudrate, _config, _inverted);
+}
+
+void SoftSerial::configure(uint32_t _baudrate, SerialProtocolConfig _config, bool _inverted)
+{
+    baudrate = _baudrate;
+    config = _config;
+    inverted = _inverted;
+    half_bit = ((1000000U / baudrate)/2);
+
     switch (config) {
     case SERIAL_CONFIG_8N1:
-    case SERIAL_CONFIG_8N1I:
         data_width = 8;
         byte_width = 10;
         stop_mask = 0x200;
         break;
-    case SERIAL_CONFIG_8E2I:
+    case SERIAL_CONFIG_8E2:
         data_width = 9;
         byte_width = 12;
         stop_mask = 0xC00;
@@ -43,20 +49,19 @@ SoftSerial::SoftSerial(uint32_t _baudrate, serial_config _config) :
   process a pulse made up of a width of values at high voltage
   followed by a width at low voltage
  */
-bool SoftSerial::process_pulse(const uint32_t width_high, const uint32_t width_low, const uint8_t pulse_id, uint8_t& byte)
+bool SoftSerial::process_pulse(uint32_t width_high, uint32_t width_low, uint8_t &byte)
 {
-    if (pulse_id == state.last_pulse_id) {
-        // we have already processed this pulse, return last results
-        if (state.last_ret) {
-            byte = state.last_byte;
-        }
-        return state.last_ret;
+    if (inverted) {
+        uint32_t tmp = width_high;
+        width_high = saved_width;
+        saved_width = width_low;
+        width_low = tmp;
     }
+
     // convert to bit widths, allowing for a half bit error
     uint16_t bits_high = ((width_high+half_bit)*baudrate) / 1000000;
     uint16_t bits_low = ((width_low+half_bit)*baudrate) / 1000000;
 
-    state.last_pulse_id = pulse_id;
     byte_timestamp_us = timestamp_us;
     timestamp_us += (width_high + width_low);
 
@@ -91,7 +96,7 @@ bool SoftSerial::process_pulse(const uint32_t width_high, const uint32_t width_l
         if ((state.byte & stop_mask) != stop_mask) {
             goto reset;
         }
-        if (config == SERIAL_CONFIG_8E2I) {
+        if (config == SERIAL_CONFIG_8E2) {
             // check parity
             if (__builtin_parity((state.byte>>1)&0xFF) != (state.byte&0x200)>>9) {
                 goto reset;
@@ -110,24 +115,13 @@ bool SoftSerial::process_pulse(const uint32_t width_high, const uint32_t width_l
             state.bit_ofs--;
             state.byte >>= 1;
         }
-        state.last_ret = true;
-        state.last_byte = byte;
         return true;
     }
-    state.last_ret = false;
     return false;
 
 reset:
     state.byte = 0;
     state.bit_ofs = 0;
-    state.last_ret = false;
+
     return false;
-}
-
-
-void SoftSerial::reset()
-{
-    state.byte = 0;
-    state.bit_ofs = 0;
-    state.last_ret = false;   
 }

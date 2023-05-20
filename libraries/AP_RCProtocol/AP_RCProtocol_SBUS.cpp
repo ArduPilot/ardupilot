@@ -80,10 +80,8 @@
 #endif
 
 // constructor
-AP_RCProtocol_SBUS::AP_RCProtocol_SBUS(AP_RCProtocol &_frontend, bool _inverted, uint32_t configured_baud) :
-    AP_RCProtocol_Backend(_frontend, AP_RCProtocol::SBUS),
-    inverted(_inverted),
-    ss{configured_baud, SoftSerial::SERIAL_CONFIG_8E2I}
+AP_RCProtocol_SBUS::AP_RCProtocol_SBUS(AP_RCProtocol &_frontend, const AP_RCProtocol::rcprotocol_t _protocol_type) :
+    AP_RCProtocol_Backend(_frontend, _protocol_type)
 {}
 
 // decode a full SBUS frame
@@ -157,25 +155,6 @@ bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, 
     return true;
 }
 
-
-/*
-  process a SBUS input pulse of the given width
- */
-void AP_RCProtocol_SBUS::process_pulse(const uint32_t width_s0, const uint32_t width_s1, const uint8_t pulse_id)
-{
-    uint32_t w0 = width_s0;
-    uint32_t w1 = width_s1;
-    if (inverted) {
-        w0 = saved_width;
-        w1 = width_s0;
-        saved_width = width_s1;
-    }
-    uint8_t b;
-    if (ss.process_pulse(w0, w1, pulse_id, b)) {
-        _process_byte(ss.get_byte_timestamp_us(), b);
-    }
-}
-
 // support byte input
 void AP_RCProtocol_SBUS::_process_byte(uint32_t timestamp_us, uint8_t b)
 {
@@ -214,14 +193,9 @@ void AP_RCProtocol_SBUS::_process_byte(uint32_t timestamp_us, uint8_t b)
 }
 
 // support byte input
-void AP_RCProtocol_SBUS::process_byte(uint8_t b, uint32_t baudrate)
+void AP_RCProtocol_SBUS::process_byte(uint32_t timestamp_us, uint8_t b, uint32_t baudrate)
 {
-    // note that if we're here we're not actually using SoftSerial,
-    // but it does record our configured baud rate:
-    if (baudrate != ss.baud()) {
-        return;
-    }
-    _process_byte(AP_HAL::micros(), b);
+    _process_byte(timestamp_us, b);
 }
 
 #endif  // AP_RCPROTOCOL_SBUS_ENABLED

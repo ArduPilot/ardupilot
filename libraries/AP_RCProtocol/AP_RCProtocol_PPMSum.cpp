@@ -22,12 +22,12 @@
 /*
   process a PPM-sum pulse of the given width
  */
-void AP_RCProtocol_PPMSum::process_pulse(const uint32_t width_s0, const uint32_t width_s1, const uint8_t pulse_id)
+bool AP_RCProtocol_PPMSum::process_pulse(const uint32_t width_s0, const uint32_t width_s1)
 {
     if (width_s0 == 0 || width_s1 == 0) {
         //invalid data: reset frame
         ppm_state._channel_counter = -1;
-        return;
+        return true;
     }
     uint32_t width_usec = width_s0 + width_s1;
     if (width_usec >= 2700) {
@@ -37,11 +37,11 @@ void AP_RCProtocol_PPMSum::process_pulse(const uint32_t width_s0, const uint32_t
             add_input(ppm_state._channel_counter, ppm_state._pulse_capt, false);
         }
         ppm_state._channel_counter = 0;
-        return;
+        return true;
     }
     if (ppm_state._channel_counter == -1) {
         // we are not synchronised
-        return;
+        return true;
     }
 
     /*
@@ -64,6 +64,8 @@ void AP_RCProtocol_PPMSum::process_pulse(const uint32_t width_s0, const uint32_t
         add_input(ppm_state._channel_counter, ppm_state._pulse_capt, false);
         ppm_state._channel_counter = -1;
     }
+
+    return true;
 }
 
 #endif  // AP_RCPROTOCOL_PPMSUM_ENABLED

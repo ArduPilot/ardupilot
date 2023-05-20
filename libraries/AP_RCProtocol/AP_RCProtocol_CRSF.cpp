@@ -83,7 +83,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define CRSF_DEBUG
+//#define CRSF_DEBUG
 //#define CRSF_DEBUG_CHARS
 #ifdef CRSF_DEBUG
 # define debug(fmt, args...)	hal.console->printf("CRSF: " fmt "\n", ##args)
@@ -291,7 +291,7 @@ void AP_RCProtocol_CRSF::update(void)
         for (uint8_t i = 0; i < n; i++) {
             int16_t b = _uart->read();
             if (b >= 0) {
-                process_byte(AP_HAL::micros(), uint8_t(b));
+                _process_byte(AP_HAL::micros(), uint8_t(b));
             }
         }
     }
@@ -563,13 +563,13 @@ void AP_RCProtocol_CRSF::process_link_stats_tx_frame(const void* data)
 }
 
 // process a byte provided by a uart
-void AP_RCProtocol_CRSF::process_byte(uint8_t byte, uint32_t baudrate)
+void AP_RCProtocol_CRSF::process_byte(uint32_t timestamp_us, uint8_t byte, uint32_t baudrate)
 {
     // reject RC data if we have been configured for standalone mode
     if (baudrate != CRSF_BAUDRATE || _uart) {
         return;
     }
-    _process_byte(AP_HAL::micros(), byte);
+    _process_byte(timestamp_us, byte);
 }
 
 // start the uart if we have one

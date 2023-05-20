@@ -51,14 +51,6 @@ extern const AP_HAL::HAL& hal;
 #define SPEKTRUM_VTX_PIT_MODE_SHIFT     4
 #define SPEKTRUM_VTX_POWER_SHIFT        0
 
-void AP_RCProtocol_DSM::process_pulse(const uint32_t width_s0, const uint32_t width_s1, const uint8_t pulse_id)
-{
-    uint8_t b;
-    if (ss_default.process_pulse(width_s0, width_s1, pulse_id, b)) {
-        _process_byte(ss_default.get_byte_timestamp_us()/1000U, b);
-    }
-}
-
 /**
  * Attempt to decode a single channel raw channel datum
  *
@@ -531,12 +523,12 @@ void AP_RCProtocol_DSM::_process_byte(uint32_t timestamp_ms, uint8_t b)
 }
 
 // support byte input
-void AP_RCProtocol_DSM::process_byte(uint8_t b, uint32_t baudrate)
+void AP_RCProtocol_DSM::process_byte(uint32_t timestamp_us, uint8_t b, uint32_t baudrate)
 {
     if (baudrate != 115200) {
         return;
     }
-    _process_byte(AP_HAL::millis(), b);
+    _process_byte(timestamp_us / 1000, b);
 }
 
 #endif  // AP_RCPROTOCOL_ENABLED

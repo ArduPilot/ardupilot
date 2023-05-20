@@ -240,13 +240,13 @@ void AP_RCProtocol_SRXL2::start_bind(void)
 }
 
 // process a byte provided by a uart
-void AP_RCProtocol_SRXL2::process_byte(uint8_t byte, uint32_t baudrate)
+void AP_RCProtocol_SRXL2::process_byte(uint32_t timestamp_us, uint8_t byte, uint32_t baudrate)
 {
     if (baudrate != 115200) {
         return;
     }
 
-    _process_byte(AP_HAL::micros(), byte);
+    _process_byte(timestamp_us, byte);
 }
 
 // handshake

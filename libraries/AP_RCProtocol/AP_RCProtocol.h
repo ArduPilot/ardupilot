@@ -20,6 +20,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
+#include "SoftSerial.h"
 
 #define MAX_RCIN_CHANNELS 18
 #define MIN_RCIN_CHANNELS  5
@@ -84,7 +85,7 @@ public:
     {
         return _valid_serial_prot;
     }
-    bool should_search(uint32_t now_ms) const;
+    bool should_search(uint32_t now_us) const;
     void process_pulse(uint32_t width_s0, uint32_t width_s1);
     void process_pulse_list(const uint32_t *widths, uint16_t n, bool need_swap);
     bool process_byte(uint8_t byte, uint32_t baudrate);
@@ -179,10 +180,10 @@ public:
     class SerialConfig {
     public:
         void apply_to_uart(AP_HAL::UARTDriver *uart) const;
+        void apply_to_softserial(SoftSerial& ss) const;
 
         uint32_t baud;
-        uint8_t parity;
-        uint8_t stop_bits;
+        SerialProtocolConfig protocol;
         bool invert_rx;
     };
 
@@ -204,7 +205,7 @@ private:
     bool _detected_with_bytes;
     AP_RCProtocol_Backend *backend[NONE];
     bool _new_input;
-    uint32_t _last_input_ms;
+    uint32_t _last_input_us;
     bool _failsafe_active;
     bool _valid_serial_prot;
 
@@ -212,9 +213,12 @@ private:
     struct {
         AP_HAL::UARTDriver *uart;
         bool opened;
-        uint32_t last_config_change_ms;
+        uint32_t last_config_change_us;
         uint8_t config_num;
     } added;
+
+    // Soft serial implementation to read pulses and convert them into bytes
+    SoftSerial pulse_reader;
 
     // allowed RC protocols mask (first bit means "all")
     uint32_t rc_protocols_mask;
@@ -222,7 +226,6 @@ private:
     uint8_t  _num_channels;
     int16_t rssi = -1;
     int16_t rx_link_quality = -1;
-    uint8_t pulse_id;
 #endif  // AP_RCPROTCOL_ENABLED
 };
 

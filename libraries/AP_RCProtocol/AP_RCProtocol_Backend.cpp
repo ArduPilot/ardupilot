@@ -32,23 +32,12 @@
 #include "spm_srxl.h"
 #endif
 
-
-
-SoftSerial AP_RCProtocol_Backend::ss_default{115200, SoftSerial::SERIAL_CONFIG_8N1};
-SoftSerial AP_RCProtocol_Backend::ss_inv_default{115200, SoftSerial::SERIAL_CONFIG_8N1};
-
 AP_RCProtocol_Backend::AP_RCProtocol_Backend(AP_RCProtocol &_frontend, const AP_RCProtocol::rcprotocol_t _protocol_type) :
     frontend(_frontend),
     rc_input_count(0),
     last_rc_input_count(0),
     protocol_type(_protocol_type)
 {}
-
-AP_RCProtocol_Backend::~AP_RCProtocol_Backend()
-{
-    ss_default.reset();
-    ss_inv_default.reset();
-}
 
 bool AP_RCProtocol_Backend::new_input()
 {

@@ -31,9 +31,8 @@ struct FPort2_Frame;
 
 class AP_RCProtocol_FPort2 : public AP_RCProtocol_Backend {
 public:
-    AP_RCProtocol_FPort2(AP_RCProtocol &_frontend, bool inverted);
-    void process_pulse(const uint32_t width_s0, const uint32_t width_s1, const uint8_t pulse_id) override;
-    void process_byte(uint8_t byte, uint32_t baudrate) override;
+    AP_RCProtocol_FPort2(AP_RCProtocol &_frontend);
+    void process_byte(uint32_t timestamp_us, uint8_t byte, uint32_t baudrate) override;
 
 private:
     void decode_control(const FPort2_Frame &frame);
@@ -41,7 +40,6 @@ private:
     bool check_checksum(void);
 
     void _process_byte(uint32_t timestamp_us, uint8_t byte);
-    uint32_t saved_width;
 
     struct {
         uint8_t buf[FPORT2_CONTROL_FRAME_SIZE];
@@ -52,8 +50,6 @@ private:
     } byte_input;
 
     uint8_t chan_count;
-
-    const bool inverted;
 
     struct {
         bool available;
