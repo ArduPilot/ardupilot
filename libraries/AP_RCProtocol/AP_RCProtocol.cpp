@@ -219,7 +219,7 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
                 }
                 // stop decoding pulses to save CPU
                 hal.rcin->pulse_input_enable(false);
-                break;
+                return true;
             }
         }
     }
