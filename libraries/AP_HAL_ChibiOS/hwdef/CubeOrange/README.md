@@ -1,19 +1,20 @@
-# CubeBlack Flight Controller
+# CubeOrange Flight Controller
 
-The CubePilot CubeBlack flight controller is sold by a range of resellers
+The Hex CubeOrange flight controller is sold by a range of resellers
 listed on the
 [CubePilot website](http://cubepilot.org)
 
 ## Features
 
- - STM32F427 microcontroller
- - Two MPU9250 and one LSM303D/L3GD20 IMUs
+ - STM32H743 microcontroller
+ - Three IMUs, ICM20602, ICM20948 and ICM20649
  - internal heater for IMU temperature control
  - internal vibration isolation for first two IMUs
- - MS5611 SPI barometer
- - builtin SPI LSM303D magnetometer
+ - two MS5611 SPI barometers
+ - builtin SPI AK09916 magnetometer in the ICM20948 IMU
  - microSD card slot
  - 5 UARTs plus USB
+ - ADSB receiver connected to SERIAL5
  - 14 PWM outputs
  - I2C and CAN ports
  - Spektrum satellite connector
@@ -26,7 +27,7 @@ listed on the
 
 ## Pinout
 
-![CubeBlack Board](CubeBlack-pinout.jpg "CubeBlack")
+![CubeOrange Board](CubeOrange-pinout.jpg "CubeOrange")
 
 On each connector the red dot indicates pin 1.
 
@@ -47,7 +48,7 @@ general purpose UART (debug output is now on USB).
 
 ## Connectors
 
-Unless noted otherwise all connectors are JST GH
+Unless noted otherwise all connectors are JST GH 1.25mm pitch
 
 ### TELEM1, TELEM2 ports
 
@@ -533,12 +534,12 @@ Spektrum satellite receivers.
 
 ## PWM Output
 
-The CubeBlack supports up to 14 PWM outputs. First first 8 outputs (labelled
+The CubeOrange supports up to 14 PWM outputs. First first 8 outputs (labelled
 "MAIN") are controlled by a dedicated STM32F100 IO controller. These 8
 outputs support all PWM output formats, but not DShot.
 
 The remaining 6 outputs (labelled AUX1 to AUX6) are the "auxiliary"
-outputs. These are directly attached to the STM32F427 and support all
+outputs. These are directly attached to the STM32H743 and support all
 PWM protocols as well as DShot.
 
 All 14 PWM outputs have GND on the top row, 5V on the middle row and
@@ -567,10 +568,8 @@ the type of power brick which is connected.
 
 ## Compass
 
-The CubeBlack has two builtin compasses. One is a HMC5843 and the other
-is a part of the MPU9250 IMU. Due to potential interference the board
-is usually used with an external I2C compass as part of a GPS/Compass
-combination.
+The CubeOrangePlus has an AK09916 builtin compass that is part of the
+ICM20948 IMU.
 
 ## GPIOs
 
@@ -591,19 +590,19 @@ The numbering of the GPIOs for PIN variables in ArduPilot is:
 
 ## Analog inputs
 
-The CubeBlack has 7 analog inputs
+The CubeOrange has 7 analog inputs
 
- - ADC Pin2 -> Battery Voltage
- - ADC Pin3 -> Battery Current Sensor
+ - ADC Pin14 -> Battery Voltage
+ - ADC Pin15 -> Battery Current Sensor
  - ADC Pin13 -> Battery2 Voltage
- - ADC Pin14 -> Battery2 Current Sensor
- - ADC Pin4 -> Vdd 5V supply sense
- - ADC Pin15 -> ADC 6.6V port
+ - ADC Pin4 -> Battery2 Current Sensor
+ - ADC Pin18 -> Vdd 5V supply sense
+ - ADC Pin8 -> ADC port input
  - ADC Pin103 -> RSSI voltage monitoring
 
 ## IMU Heater
 
-The IMU heater in the CubeBlack can be controlled with the
+The IMU heater in the CubeOrange can be controlled with the
 BRD_HEAT_TARG parameter, which is in degrees C.
 
 ## Loading Firmware
@@ -614,4 +613,5 @@ compatible ground station.
 
 ## Acknowledgements
 
-Thanks to [CubePilot](http://cubepilot.org) for images
+Thanks to [ProfiCNC](http://cubepilot.org) for images and information
+
