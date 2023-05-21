@@ -101,3 +101,39 @@ int16_t char_to_hex(char a)
     else
         return a - '0';
 }
+
+int32_t to_int32(const float value)
+{
+    int32_t out;
+    static_assert(sizeof(value) == sizeof(out));
+
+    // Use memcpy because it's the most portable.
+    // It might not be the fastest way on all hardware.
+    // At least it's defined behavior in both c and c++.
+    memcpy(&out, &value, sizeof(out));
+    return out;
+}
+
+float to_float(const uint32_t value)
+{
+    float out;
+    static_assert(sizeof(value) == sizeof(out));
+
+    // Use memcpy because it's the most portable.
+    // It might not be the fastest way on all hardware.
+    // At least it's defined behavior in both c and c++.
+    memcpy(&out, &value, sizeof(out));
+    return out;
+}
+
+double to_double(const uint64_t value)
+{
+    double out;
+    static_assert(sizeof(value) == sizeof(out));
+
+    // Use memcpy because it's the most portable.
+    // It might not be the fastest way on all hardware.
+    // At least it's defined behavior in both c and c++.
+    memcpy(&out, &value, sizeof(out));
+    return out;
+}
