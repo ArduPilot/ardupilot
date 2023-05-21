@@ -575,14 +575,14 @@ float AP_ExternalAHRS_LORD::extract_float(const uint8_t *data, uint8_t offset) c
 {
     uint32_t tmp = be32toh_ptr(&data[offset]);
 
-    return *reinterpret_cast<float*>(&tmp);
+    return to_float(tmp);
 }
 
 double AP_ExternalAHRS_LORD::extract_double(const uint8_t *data, uint8_t offset) const
 {
     uint64_t tmp = be64toh_ptr(&data[offset]);
 
-    return *reinterpret_cast<double*>(&tmp);
+    return to_double(tmp);
 }
 
 #endif // AP_EXTERNAL_AHRS_LORD_ENABLE
