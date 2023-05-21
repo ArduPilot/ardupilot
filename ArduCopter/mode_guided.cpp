@@ -829,7 +829,7 @@ void ModeGuided::pause_control_run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // set the horizontal velocity and acceleration targets to zero
-    Vector2f vel_xy, accel_xy;
+    Vector2f vel_xy, accel_xy;  // defined but not used in this scope
     pos_control->input_vel_accel_xy(vel_xy, accel_xy, false);
 
     // set the vertical velocity and acceleration targets to zero

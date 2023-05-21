@@ -187,8 +187,7 @@ void Mode::auto_takeoff_run()
         }
         pos_control->relax_velocity_controller_xy();
     } else {
-        Vector2f vel;
-        Vector2f accel;
+        Vector2f vel, accel;  // defined but not used in this scope
         pos_control->input_vel_accel_xy(vel, accel);
     }
     pos_control->update_xy_controller();

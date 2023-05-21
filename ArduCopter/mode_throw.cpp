@@ -185,8 +185,7 @@ void ModeThrow::run()
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
         // use position controller to stop
-        Vector2f vel;
-        Vector2f accel;
+        Vector2f vel, accel;  // defined but not used in this scope
         pos_control->input_vel_accel_xy(vel, accel);
         pos_control->update_xy_controller();
 

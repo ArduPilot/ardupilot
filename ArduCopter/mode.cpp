@@ -700,7 +700,7 @@ void Mode::land_run_horizontal_control()
 #endif
 
     if (!copter.ap.prec_land_active) {
-        Vector2f accel;
+        Vector2f accel;  // defined but not used in this scope
         pos_control->input_vel_accel_xy(vel_correction, accel);
     }
 

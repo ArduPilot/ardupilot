@@ -302,7 +302,7 @@ void ModeRTL::descent_run()
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-    Vector2f accel;
+    Vector2f accel;  // defined but not used in this scope
     pos_control->input_vel_accel_xy(vel_correction, accel);
     pos_control->update_xy_controller();
 
