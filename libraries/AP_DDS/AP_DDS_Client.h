@@ -10,6 +10,7 @@
 #include "sensor_msgs/msg/NavSatFix.h"
 #include "tf2_msgs/msg/TFMessage.h"
 #include "sensor_msgs/msg/BatteryState.h"
+#include "sensor_msgs/msg/Joy.h"
 #include "geometry_msgs/msg/PoseStamped.h"
 #include "geometry_msgs/msg/TwistStamped.h"
 #include "geographic_msgs/msg/GeoPoseStamped.h"
@@ -58,6 +59,7 @@ private:
     sensor_msgs_msg_NavSatFix nav_sat_fix_topic;
     tf2_msgs_msg_TFMessage static_transforms_topic;
     sensor_msgs_msg_BatteryState battery_state_topic;
+    sensor_msgs_msg_Joy joy_topic;
     geometry_msgs_msg_PoseStamped local_pose_topic;
     geometry_msgs_msg_TwistStamped local_velocity_topic;
     geographic_msgs_msg_GeoPoseStamped geo_pose_topic;
@@ -76,6 +78,20 @@ private:
     static void update_topic(geometry_msgs_msg_TwistStamped& msg);
     static void update_topic(geographic_msgs_msg_GeoPoseStamped& msg);
     static void update_topic(rosgraph_msgs_msg_Clock& msg);
+
+    // subscription callback function
+    static void on_topic(uxrSession* session, uxrObjectId object_id, uint16_t request_id, uxrStreamId stream_id, struct ucdrBuffer* ub, uint16_t length, void* args);
+
+    // count of subscribed samples
+    uint32_t count;
+
+    // delivery control parameters
+    uxrDeliveryControl delivery_control {
+        .max_samples = UXR_MAX_SAMPLES_UNLIMITED,
+        .max_elapsed_time = 0,
+        .max_bytes_per_second = 0,
+        .min_pace_period = 0
+    };
 
     // The last ms timestamp AP_DDS wrote a Time message
     uint64_t last_time_time_ms;
@@ -163,9 +179,12 @@ public:
     struct Topic_table {
         const uint8_t topic_id;
         const uint8_t pub_id;
+        const uint8_t sub_id;    // added sub_id fields to avoid confusion
         const uxrObjectId dw_id;
+        const uxrObjectId dr_id; // added dr_id fields to avoid confusion
         const char* topic_profile_label;
         const char* dw_profile_label;
+        const char* dr_profile_label;
         Generic_serialize_topic_fn_t serialize;
         Generic_deserialize_topic_fn_t deserialize;
         Generic_size_of_topic_fn_t size_of;
