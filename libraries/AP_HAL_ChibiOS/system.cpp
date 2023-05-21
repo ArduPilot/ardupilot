@@ -257,6 +257,7 @@ void save_fault_watchdog(uint16_t line, FaultType fault_type, uint32_t fault_add
             pd.fault_line = line;
             pd.fault_type = fault_type;
             pd.fault_addr = fault_addr;
+#if CH_CFG_USE_REGISTRY == TRUE
             thread_t *tp = chThdGetSelfX();
             if (tp) {
                 pd.fault_thd_prio = tp->hdr.pqueue.prio;
@@ -265,6 +266,7 @@ void save_fault_watchdog(uint16_t line, FaultType fault_type, uint32_t fault_add
                     strncpy_noterm(pd.thread_name4, tp->name, 4);
                 }
             }
+#endif
             pd.fault_icsr = SCB->ICSR;
             pd.fault_lr = lr;
         }

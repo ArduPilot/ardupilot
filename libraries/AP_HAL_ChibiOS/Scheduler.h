@@ -131,12 +131,12 @@ public:
       restore interrupt state from disable_interrupts_save()
      */
     void restore_interrupts(void *) override;
-
+#if CH_CFG_USE_DYNAMIC == TRUE
     /*
       create a new thread
      */
     bool thread_create(AP_HAL::MemberProc, const char *name, uint32_t stack_size, priority_base base, int8_t priority) override;
-
+#endif
     // pat the watchdog
     void watchdog_pat(void);
 
@@ -167,10 +167,8 @@ private:
     thread_t* _storage_thread_ctx;
     thread_t* _monitor_thread_ctx;
 
-#if CH_CFG_USE_SEMAPHORES == TRUE
-    binary_semaphore_t _timer_semaphore;
-    binary_semaphore_t _io_semaphore;
-#endif
+    mutex_t _timer_semaphore;
+    mutex_t _io_semaphore;
 
     // calculates an integer to be used as the priority for a newly-created thread
     uint8_t calculate_thread_priority(priority_base base, int8_t priority) const;
