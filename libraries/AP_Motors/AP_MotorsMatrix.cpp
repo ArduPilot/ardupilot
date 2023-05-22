@@ -16,6 +16,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_MotorsMatrix.h"
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -516,7 +517,7 @@ void AP_MotorsMatrix::_output_test_seq(uint8_t motor_seq, int16_t pwm)
 /*
   override AP_MotorsMatrix tail servo output in output_motor_mask
  */
-void AP_MotorsMatrix::output_motor_mask(float thrust, uint8_t mask, float rudder_dt)
+void AP_MotorsMatrix::output_motor_mask(float thrust, uint16_t mask, float rudder_dt)
 {
     // normal multicopter output
     AP_MotorsMulticopter::output_motor_mask(thrust, mask, rudder_dt);

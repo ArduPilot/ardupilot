@@ -38,7 +38,7 @@ public:
     // mask. This is used to control tiltrotor motors in forward
     // flight. Thrust is in the range 0 to 1
     // rudder_dt applys diffential thrust for yaw in the range 0 to 1
-    void                output_motor_mask(float thrust, uint8_t mask, float rudder_dt) override;
+    void                output_motor_mask(float thrust, uint16_t mask, float rudder_dt) override;
     
     // init
     virtual void        init(motor_frame_class frame_class, motor_frame_type frame_type) override;
