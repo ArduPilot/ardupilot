@@ -19,6 +19,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_RCProtocol/AP_RCProtocol.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <RC_Channel/RC_Channel.h>
 #include <AP_VideoTX/AP_VideoTX.h>
 #include <stdio.h>
 
@@ -30,6 +31,31 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 static AP_VideoTX vtx; // for set_vtx functions
 
 static AP_RCProtocol *rcprot;
+
+class RC_Channel_Example : public RC_Channel {};
+
+class RC_Channels_Example : public RC_Channels
+{
+public:
+    RC_Channel_Example obj_channels[NUM_RC_CHANNELS];
+
+    RC_Channel_Example *channel(const uint8_t chan) override {
+        if (chan >= NUM_RC_CHANNELS) {
+            return nullptr;
+        }
+        return &obj_channels[chan];
+    }
+
+protected:
+    int8_t flight_mode_channel_number() const override { return 5; }
+};
+
+#define RC_CHANNELS_SUBCLASS RC_Channels_Example
+#define RC_CHANNEL_SUBCLASS RC_Channel_Example
+
+#include <RC_Channel/RC_Channels_VarInfo.h>
+
+static RC_Channels_Example rchannels;
 
 // setup routine
 void setup()
