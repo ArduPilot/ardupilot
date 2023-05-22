@@ -43,13 +43,12 @@ rc 2 1450
 
 #pragma once
 
-#include "SIM_PS_RPLidar.h"
-
-#ifndef HAL_SIM_PS_RPLIDARA1_ENABLED
-#define HAL_SIM_PS_RPLIDARA1_ENABLED HAL_SIM_SERIALPROXIMITYSENSOR_ENABLED
-#endif
+#include "SIM_config.h"
 
 #if HAL_SIM_PS_RPLIDARA1_ENABLED
+
+#include "SIM_PS_RPLidar.h"
+
 namespace SITL {
 
 class PS_RPLidarA1 : public PS_RPLidar {
