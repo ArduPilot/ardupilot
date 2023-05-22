@@ -5,10 +5,15 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
 #include <RC_Channel/RC_Channel.h>     // RC Channel Library
+#include <SRV_Channel/SRV_Channel.h>
 #include "AP_MotorsMulticopter.h"
 
 #define AP_MOTORS_MATRIX_YAW_FACTOR_CW   -1
 #define AP_MOTORS_MATRIX_YAW_FACTOR_CCW   1
+
+#define AP_MOTORS_CH_TRI_YAW    CH_7
+#define AP_MOTORS_TRI_SERVO_RANGE_DEG_MIN   5   // minimum angle movement of tail servo in degrees
+#define AP_MOTORS_TRI_SERVO_RANGE_DEG_MAX   80  // maximum angle movement of tail servo in degrees
 
 /// @class      AP_MotorsMatrix
 class AP_MotorsMatrix : public AP_MotorsMulticopter {
@@ -29,6 +34,12 @@ public:
         return _singleton;
     }
 
+    // output a thrust to all motors that match a given motor
+    // mask. This is used to control tiltrotor motors in forward
+    // flight. Thrust is in the range 0 to 1
+    // rudder_dt applys diffential thrust for yaw in the range 0 to 1
+    void                output_motor_mask(float thrust, uint8_t mask, float rudder_dt) override;
+    
     // init
     virtual void        init(motor_frame_class frame_class, motor_frame_type frame_type) override;
 
@@ -170,4 +181,6 @@ private:
     bool setup_octaquad_matrix(motor_frame_type frame_type);
 
     static AP_MotorsMatrix *_singleton;
+
+    float           _pivot_angle;                       // Angle of yaw pivot
 };

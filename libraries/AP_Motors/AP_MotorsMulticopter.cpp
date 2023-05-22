@@ -161,7 +161,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO_FRAME("YAW_SV_ANGLE", 35, AP_MotorsMulticopter, _yaw_servo_angle_max_deg, 30, AP_PARAM_FRAME_TRICOPTER),
-
+    AP_GROUPINFO_FRAME("YAW_SV_ANGLE", 35, AP_MotorsMulticopter, _yaw_servo_angle_max_deg, 30, AP_PARAM_FRAME_PLANE),
     // @Param: SPOOL_TIME
     // @DisplayName: Spool up time
     // @Description: Time in seconds to spool up the motors from zero to min throttle. 
