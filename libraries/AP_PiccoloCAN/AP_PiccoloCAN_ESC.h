@@ -25,6 +25,8 @@
 #include "AP_PiccoloCAN_Device.h"
 #include "piccolo_protocol/ESCPackets.h"
 
+#if HAL_PICCOLO_CAN_ENABLE
+
 #define PICCOLO_CAN_MAX_NUM_ESC 16
 #define PICCOLO_CAN_MAX_GROUP_ESC (PICCOLO_CAN_MAX_NUM_ESC / 4)
 
@@ -70,3 +72,5 @@ public:
         ESC_EEPROMSettings_t eeprom;
     } settings;
 };
+
+#endif // HAL_PICCOLO_CAN_ENABLE
