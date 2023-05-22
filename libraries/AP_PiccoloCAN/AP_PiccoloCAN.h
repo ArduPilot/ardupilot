@@ -23,19 +23,12 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 
-#include "piccolo_protocol/ESCPackets.h"
-#include "piccolo_protocol/LegacyESCPackets.h"
-
-#include "piccolo_protocol/ServoPackets.h"
-
+#include "AP_PiccoloCAN_Device.h"
+#include "AP_PiccoloCAN_ESC.h"
+#include "AP_PiccoloCAN_ECU.h"
+#include "AP_PiccoloCAN_Servo.h"
 #include <AP_EFI/AP_EFI_Currawong_ECU.h>
 
-// maximum number of ESC allowed on CAN bus simultaneously
-#define PICCOLO_CAN_MAX_NUM_ESC 16
-#define PICCOLO_CAN_MAX_GROUP_ESC (PICCOLO_CAN_MAX_NUM_ESC / 4)
-
-#define PICCOLO_CAN_MAX_NUM_SERVO 16
-#define PICCOLO_CAN_MAX_GROUP_SERVO (PICCOLO_CAN_MAX_NUM_SERVO / 4)
 
 #ifndef HAL_PICCOLO_CAN_ENABLE
 #define HAL_PICCOLO_CAN_ENABLE HAL_NUM_CAN_IFACES
@@ -47,30 +40,11 @@
 #define PICCOLO_MSG_RATE_HZ_MAX 500
 #define PICCOLO_MSG_RATE_HZ_DEFAULT 50
 
-#define PICCOLO_CAN_ECU_ID_DEFAULT 0
-
 class AP_PiccoloCAN : public AP_CANDriver, public AP_ESC_Telem_Backend
 {
 public:
     AP_PiccoloCAN();
     ~AP_PiccoloCAN();
-
-    // Piccolo message groups form part of the CAN ID of each frame
-    enum class MessageGroup : uint8_t {
-        SIMULATOR = 0x00,       // Simulator messages
-        SENSOR = 0x04,          // External sensors
-        ACTUATOR = 0x07,        // Actuators (e.g. ESC / servo)
-        ECU_OUT = 0x08,         // Messages *from* an ECU
-        ECU_IN = 0x09,          // Message *to* an ECU
-
-        SYSTEM = 0x19,          // System messages (e.g. bootloader)
-    };
-
-    // Piccolo actuator types differentiate between actuator frames
-    enum class ActuatorType : uint8_t {
-        SERVO = 0x00,
-        ESC = 0x20,
-    };
 
     /* Do not allow copies */
     CLASS_NO_COPY(AP_PiccoloCAN);
@@ -147,29 +121,8 @@ private:
     AP_HAL::CANIface* _can_iface;
     HAL_EventHandle _event_handle;
 
-    // Data structure for representing the state of a CBS servo
-    struct CBSServo_Info_t {
-
-        /* Telemetry data provided across multiple packets */
-        Servo_StatusA_t statusA;
-        Servo_StatusB_t statusB;
-
-        /* Servo configuration information */
-        Servo_Firmware_t firmware;
-        Servo_Address_t address;
-        Servo_SettingsInfo_t settings;
-        Servo_SystemInfo_t systemInfo;
-        Servo_TelemetryConfig_t telemetry;
-
-        /* Internal state information */
-
-        int16_t command;    //! Raw command to send to each servo
-        bool newCommand;    //! Is the command "new"?
-        bool newTelemetry;  //! Is there new telemetry data available?
-
-        uint64_t last_rx_msg_timestamp = 0; //! Time of most recently received message
-
-    } _servo_info[PICCOLO_CAN_MAX_NUM_SERVO];
+    AP_PiccoloCAN_Servo _servos[PICCOLO_CAN_MAX_NUM_SERVO];
+    AP_PiccoloCAN_ESC _escs[PICCOLO_CAN_MAX_NUM_ESC];
 
     // Data structure for representing the state of a Velocity ESC
     struct VelocityESC_Info_t {
@@ -192,23 +145,9 @@ private:
         uint16_t pwmFrequency;   //!< Current motor PWM frequency (10 Hz per bit)
         uint16_t timingAdvance;  //!< Current timing advance (0.1 degree per bit)
         
-        /* ESC status information provided in the PKT_ESC_WARNINGS_ERRORS packet */
-        ESC_WarningBits_t warnings;     //! ESC warning information
-        ESC_ErrorBits_t errors;         //! ESC error information
-
-        ESC_Firmware_t firmware;        //! Firmware / checksum information
-        ESC_Address_t address;          //! Serial number
-        ESC_EEPROMSettings_t eeprom;    //! Non-volatile settings info
-
-        // Output information
-
-        int16_t command;    //! Raw command to send to each ESC
-        bool newCommand;    //! Is the command "new"?
-        bool newTelemetry;  //! Is there new telemetry data available?
-
         uint64_t last_rx_msg_timestamp = 0;    //! Time of most recently received message
 
-    } _esc_info[PICCOLO_CAN_MAX_NUM_ESC];
+    } _esc_ixnfo[PICCOLO_CAN_MAX_NUM_ESC];
 
     struct CurrawongECU_Info_t {
         float command;
