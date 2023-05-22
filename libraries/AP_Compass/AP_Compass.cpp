@@ -2066,6 +2066,11 @@ bool Compass::consistent() const
     return true;
 }
 
+bool Compass::healthy(uint8_t i) const
+{
+    return (i < COMPASS_MAX_INSTANCES) ? _get_state(Priority(i)).healthy : false;
+}
+
 /*
   return true if we have a valid scale factor
  */
