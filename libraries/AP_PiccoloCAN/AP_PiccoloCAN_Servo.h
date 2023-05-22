@@ -22,6 +22,8 @@
 #include "AP_PiccoloCAN_Device.h"
 #include "piccolo_protocol/ServoPackets.h"
 
+#if HAL_PICCOLO_CAN_ENABLE
+
 #define PICCOLO_CAN_MAX_NUM_SERVO 16
 #define PICCOLO_CAN_MAX_GROUP_SERVO (PICCOLO_CAN_MAX_NUM_SERVO / 4)
 
@@ -63,3 +65,5 @@ public:
         Servo_SettingsInfo_t settings;
     } settings;
 };
+
+#endif // HAL_PICCOLO_CAN_ENABLE

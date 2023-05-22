@@ -17,6 +17,8 @@
 
 #include "AP_PiccoloCAN_ECU.h"
 
+#if HAL_PICCOLO_CAN_ENABLE
+
 // Protocol files for the ECU
 #include <AP_PiccoloCAN/piccolo_protocol/ECUProtocol.h>
 #include <AP_PiccoloCAN/piccolo_protocol/ECUPackets.h>
@@ -88,3 +90,5 @@ uint32_t getECUPacketID(const void* pkt)
     // Extract the message ID field from the 29-bit ID
     return (uint32_t) ((frame->id >> 16) & 0xFF);
 }
+
+#endif // HAL_PICCOLO_CAN_ENABLE

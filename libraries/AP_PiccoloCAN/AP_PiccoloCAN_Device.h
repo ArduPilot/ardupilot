@@ -21,6 +21,12 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_CANManager/AP_CANManager.h>
 
+#ifndef HAL_PICCOLO_CAN_ENABLE
+#define HAL_PICCOLO_CAN_ENABLE (HAL_NUM_CAN_IFACES && !HAL_MINIMIZE_FEATURES)
+#endif
+
+#if HAL_PICCOLO_CAN_ENABLE
+
 // Piccolo message groups form part of the CAN ID of each frame
 enum class PiccoloCAN_MessageGroup : uint8_t {
     SIMULATOR = 0x00,       // Simulator messages
@@ -66,3 +72,5 @@ public:
     //! Timestamp of most recently received CAN message
     uint64_t last_msg_timestamp = 0;
 };
+
+#endif // HAL_PICCOLO_CAN_ENABLE
