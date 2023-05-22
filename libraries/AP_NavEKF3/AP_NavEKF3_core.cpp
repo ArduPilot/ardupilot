@@ -1935,18 +1935,14 @@ void NavEKF3_core::ConstrainVariances()
 
         // If any one axis has fallen below the safe minimum, all delta velocity covariance terms must be reset to zero
         if (resetRequired) {
-            ftype delVelBiasVar[3];
-            // store all delta velocity bias variances
-            for (uint8_t i=0; i<=2; i++) {
-                delVelBiasVar[i] = P[i+13][i+13];
-            }
             // reset all delta velocity bias covariances
             zeroCols(P,13,15);
             zeroRows(P,13,15);
-            // restore all delta velocity bias variances to a margin above the minimum safe value
-            for (uint8_t i=0; i<=2; i++) {
-                P[i+13][i+13] = MAX(delVelBiasVar[i], minSafeStateVar * 10.0F);
-            }
+            // set all delta velocity bias variances to initial values and zero bias states
+            P[13][13] = sq(ACCEL_BIAS_LIM_SCALER * frontend->_accBiasLim * dtEkfAvg);
+            P[14][14] = P[13][13];
+            P[15][15] = P[13][13];
+            stateStruct.accel_bias.zero();
         }
 
     } else {
