@@ -124,31 +124,6 @@ private:
     AP_PiccoloCAN_Servo _servos[PICCOLO_CAN_MAX_NUM_SERVO];
     AP_PiccoloCAN_ESC _escs[PICCOLO_CAN_MAX_NUM_ESC];
 
-    // Data structure for representing the state of a Velocity ESC
-    struct VelocityESC_Info_t {
-
-        /* Telemetry data provided in the PKT_ESC_STATUS_A packet */
-        uint8_t mode;                   //! ESC operational mode
-        ESC_StatusBits_t status;        //! ESC status information
-        uint16_t setpoint;              //!< ESC operational command - value depends on 'mode' available in this packet. If the ESC is disabled, data reads 0x0000. If the ESC is in open-loop PWM mode, this value is the PWM command in units of 1us, in the range 1000us to 2000us. If the ESC is in closed-loop RPM mode, this value is the RPM command in units of 1RPM
-        uint16_t rpm;                   //!< Motor speed
-
-        /* Telemetry data provided in the PKT_ESC_STATUS_B packet */
-        uint16_t voltage;          //!< ESC Rail Voltage
-        int16_t  current;          //!< ESC Current. Current IN to the ESC is positive. Current OUT of the ESC is negative
-        uint16_t dutyCycle;        //!< ESC Motor Duty Cycle
-        int8_t   escTemperature;   //!< ESC Logic Board Temperature
-        uint8_t  motorTemperature; //!< ESC Motor Temperature
-
-        /* Telemetry data provided in the PKT_ESC_STATUS_C packet */
-        float    fetTemperature; //!< ESC Phase Board Temperature
-        uint16_t pwmFrequency;   //!< Current motor PWM frequency (10 Hz per bit)
-        uint16_t timingAdvance;  //!< Current timing advance (0.1 degree per bit)
-        
-        uint64_t last_rx_msg_timestamp = 0;    //! Time of most recently received message
-
-    } _esc_ixnfo[PICCOLO_CAN_MAX_NUM_ESC];
-
     struct CurrawongECU_Info_t {
         float command;
         bool newCommand;
