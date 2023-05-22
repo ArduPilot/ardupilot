@@ -335,6 +335,7 @@ singleton AP_Baro method get_pressure float
 singleton AP_Baro method get_temperature float
 singleton AP_Baro method get_external_temperature float
 singleton AP_Baro method get_altitude float
+singleton AP_Baro method healthy boolean uint8_t'skip_check
 
 include AP_OpticalFlow/AP_OpticalFlow.h
 singleton AP_OpticalFlow depends AP_OPTICALFLOW_ENABLED
@@ -514,6 +515,8 @@ userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field throttle'array AP
 include AP_InertialSensor/AP_InertialSensor.h
 singleton AP_InertialSensor rename ins
 singleton AP_InertialSensor method get_temperature float uint8_t 0 INS_MAX_INSTANCES
+singleton AP_InertialSensor method get_gyro_health boolean uint8_t'skip_check
+singleton AP_InertialSensor method get_accel_health boolean uint8_t'skip_check
 
 singleton CAN manual get_device lua_get_CAN_device 1
 singleton CAN manual get_device2 lua_get_CAN_device2 1
@@ -631,6 +634,15 @@ singleton AP_Winch method relax void
 singleton AP_Winch method release_length void float'skip_check
 singleton AP_Winch method set_desired_rate void float'skip_check
 singleton AP_Winch method get_rate_max float
+
+include AP_IOMCU/AP_IOMCU.h
+singleton AP_IOMCU depends HAL_WITH_IO_MCU
+singleton AP_IOMCU rename iomcu
+singleton AP_IOMCU method healthy boolean
+
+include AP_Compass/AP_Compass.h
+singleton Compass rename compass
+singleton Compass method healthy boolean uint8_t'skip_check
 
 -- ----EFI Library----
 include AP_EFI/AP_EFI.h depends HAL_EFI_ENABLED
