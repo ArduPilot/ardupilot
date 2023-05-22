@@ -422,6 +422,60 @@ void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg){
     }
 }
 
+void AP_Mount::handle_command_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg)
+{
+    mavlink_gimbal_manager_set_pitchyaw_t packet;
+    mavlink_msg_gimbal_manager_set_pitchyaw_decode(&msg,&packet);
+
+    AP_Mount_Backend *backend;
+
+    // check gimbal device id.  0 is primary, 1 is 1st gimbal, 2 is
+    // 2nd gimbal, etc
+    const uint8_t instance = packet.gimbal_device_id;
+    if (instance == 0) {
+        backend = get_primary();
+    } else {
+        backend = get_instance(instance - 1);
+    }
+
+    if (backend == nullptr) {
+        return;
+    }
+
+    // check flags for change to RETRACT
+    uint32_t flags = (uint32_t)packet.flags;
+    if ((flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
+        backend->set_mode(MAV_MOUNT_MODE_RETRACT);
+        return;
+    }
+    // check flags for change to NEUTRAL
+    if ((flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
+        backend->set_mode(MAV_MOUNT_MODE_NEUTRAL);
+        return;
+    }
+
+    // Do not allow both angle and rate to be specified at the same time
+    if (!isnan(packet.pitch) && !isnan(packet.yaw) && !isnan(packet.pitch_rate) && !isnan(packet.yaw_rate)) {
+        return;
+    }
+
+    // pitch and yaw from packet are in radians
+    if (!isnan(packet.pitch) && !isnan(packet.yaw)) {
+        const float pitch_angle_deg = degrees(packet.pitch);
+        const float yaw_angle_deg = degrees(packet.yaw);
+        set_angle_target(instance, 0, pitch_angle_deg, yaw_angle_deg, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        return;
+    }
+
+    // pitch_rate and yaw_rate from packet are in rad/s
+    if (!isnan(packet.pitch_rate) && !isnan(packet.yaw_rate)) {
+        const float pitch_rate_degs = degrees(packet.pitch_rate);
+        const float yaw_rate_degs = degrees(packet.yaw_rate);
+        set_rate_target(instance, 0, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        return;
+    }
+}
+
 MAV_RESULT AP_Mount::handle_command_long(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
@@ -723,6 +777,9 @@ void AP_Mount::handle_message(mavlink_channel_t chan, const mavlink_message_t &m
         break;
     case MAVLINK_MSG_ID_GIMBAL_MANAGER_SET_ATTITUDE:
         handle_gimbal_manager_set_attitude(msg);
+        break;
+    case MAVLINK_MSG_ID_GIMBAL_MANAGER_SET_PITCHYAW:
+        handle_command_gimbal_manager_set_pitchyaw(msg);
         break;
     case MAVLINK_MSG_ID_GIMBAL_DEVICE_INFORMATION:
         handle_gimbal_device_information(msg);
