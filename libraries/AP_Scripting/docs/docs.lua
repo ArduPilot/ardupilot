@@ -1076,6 +1076,24 @@ function winch:relax() end
 function winch:healthy() end
 
 -- desc
+---@class iomcu
+iomcu = {}
+
+-- Check if the IO is healthy
+---@return boolean
+function iomcu:healthy() end
+
+-- desc
+---@class compass
+compass = {}
+
+-- Check if the compass is healthy
+---@param instance integer -- the 0-based index of the compass instance to return.
+---@return boolean
+function compass:healthy(instance) end
+
+
+-- desc
 ---@class camera
 camera = {}
 
@@ -1333,6 +1351,15 @@ ins = {}
 ---@return number
 function ins:get_temperature(instance) end
 
+-- Check if a specific gyrometer sensor is healthy
+---@param instance integer -- the 0-based index of the gyrometer instance to return.
+---@return boolean
+function ins:get_gyro_health(instance) end
+
+-- Check if a specific accelerometer sensor is healthy
+---@param instance integer -- the 0-based index of the accelerometer instance to return.
+---@return boolean
+function ins:get_accel_health(instance) end
 
 -- desc
 ---@class Motors_dynamic
@@ -1737,6 +1764,11 @@ function baro:get_pressure() end
 -- of the last calibrate() call, typically at boot
 ---@return number
 function baro:get_altitude() end
+
+-- Check if a baro sensor is healthy
+---@param instance integer -- the 0-based index of the BARO instance to return.
+---@return boolean
+function baro:healthy(instance) end
 
 
 -- desc
