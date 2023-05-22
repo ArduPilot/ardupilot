@@ -130,6 +130,13 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     AP_GROUPINFO("_ALT_TYPE", 10, AP_Follow, _alt_type, AP_FOLLOW_ALT_TYPE_DEFAULT),
 #endif
 
+    // @Param: _OPTIONS
+    // @DisplayName: Follow options
+    // @Description: Follow options bitmask
+    // @Values: 0:None,1: Mount Follows lead vehicle on mode enter
+    // @User: Standard
+    AP_GROUPINFO("_OPTIONS", 11, AP_Follow, _options, 0),
+
     AP_GROUPEND
 };
 
