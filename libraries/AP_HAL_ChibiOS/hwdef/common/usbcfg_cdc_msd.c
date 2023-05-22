@@ -456,6 +456,21 @@ static bool hybridRequestHook(USBDriver *usbp)
         }
     }
 
+    if ((usbp->setup[0] & USB_RTYPE_TYPE_MASK) == USB_RTYPE_TYPE_CLASS && usbp->setup[4] == 0x01 && usbp->setup[5] == 0x00) {
+        switch (usbp->setup[1]) {
+        case CDC_GET_LINE_CODING:
+            usbSetupTransfer(usbp, (uint8_t *)&linecoding, sizeof(linecoding), NULL);
+            return true;
+        case CDC_SET_LINE_CODING:
+            usbSetupTransfer(usbp, (uint8_t *)&linecoding, sizeof(linecoding), NULL);
+            return true;
+        case CDC_SET_CONTROL_LINE_STATE:
+            /* Nothing to do, there are no control lines.*/
+            usbSetupTransfer(usbp, NULL, 0, NULL);
+            return true;
+        }
+    }
+
     return sduRequestsHook(usbp);
 }
 
