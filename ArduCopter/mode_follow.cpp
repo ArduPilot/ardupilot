@@ -20,6 +20,15 @@ bool ModeFollow::init(const bool ignore_checks)
         gcs().send_text(MAV_SEVERITY_WARNING, "Set FOLL_ENABLE = 1");
         return false;
     }
+
+#if HAL_MOUNT_ENABLED
+    AP_Mount *mount = AP_Mount::get_singleton();
+    // follow the lead vehicle using sysid
+    if (g2.follow.option_is_enabled(AP_Follow::Option::MOUNT_FOLLOW_ON_ENTER) && mount != nullptr) {
+        mount->set_target_sysid(g2.follow.get_target_sysid());
+    }
+#endif
+
     // re-use guided mode
     return ModeGuided::init(ignore_checks);
 }
