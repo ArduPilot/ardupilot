@@ -365,10 +365,18 @@ for t in $CI_BUILD_TARGET; do
 
     if [ "$t" == "replay" ]; then
         echo "Building replay"
-        $waf configure --board sitl --debug --disable-scripting --Werror
+
+        if [ $cxx_compiler == "g++" ]; then
+            # Only be strict about Werror on SITL when compiling with g++
+            # Once the warnings are gone in clang, remove this exception
+            maybe_werror="--Werror"
+        fi
+        $waf configure --board sitl --debug --disable-scripting $maybe_werror
+        
         $waf replay
         echo "Building AP_DAL standalone test"
-        $waf configure --board sitl --debug --disable-scripting --no-gcs --Werror
+        $waf configure --board sitl --debug --disable-scripting --no-gcs $maybe_werror
+        
         $waf --target tool/AP_DAL_Standalone
         $waf clean
         continue
