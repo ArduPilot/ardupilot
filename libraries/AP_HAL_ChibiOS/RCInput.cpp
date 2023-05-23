@@ -242,7 +242,8 @@ void RCInput::_timer_tick(void)
     if (rc_protocol && (rc_protocol != last_protocol || source != last_source)) {
         last_protocol = rc_protocol;
         last_source = source;
-        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "RCInput: decoding %s(%u)", last_protocol, unsigned(source));
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "RCInput: decoding %s(%s)", last_protocol,
+            source == RCSource::IOMCU ? "IOMCU" : source == RCSource::RCPROT_BYTES ? "UART" : "RCININT");
     }
 #endif
 
