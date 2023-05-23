@@ -107,9 +107,10 @@ void AP_IOMCU_FW::rcin_serial_update(void)
     uint8_t b[16];
     uint32_t n;
     uint32_t now = AP_HAL::millis();
+    uint32_t now_us = AP_HAL::micros();
     auto &rc = AP::RC();
 
-    if (rc.should_search(now)) {
+    if (rc.should_search(now_us)) {
         rc_state = RC_SEARCHING;
     }
 
@@ -123,7 +124,7 @@ void AP_IOMCU_FW::rcin_serial_update(void)
             for (uint8_t i=0; i<n; i++) {
                 if (rc.process_byte(b[i], 115200)) {
                     rc_stats.last_good_ms = now;
-                    if (!rc.should_search(now)) {
+                    if (!rc.should_search(now_us)) {
                         rc_state = RC_DSM_PORT;
                     }
                 }
@@ -145,7 +146,7 @@ void AP_IOMCU_FW::rcin_serial_update(void)
             for (uint8_t i=0; i<n; i++) {
                 if (rc.process_byte(b[i], sd3_config==0?100000:115200)) {
                     rc_stats.last_good_ms = now;
-                    if (!rc.should_search(now)) {
+                    if (!rc.should_search(now_us)) {
                         rc_state = RC_SBUS_PORT;
                     }
                 }
