@@ -7,16 +7,16 @@
 #ifdef M_PI
 # undef M_PI
 #endif
-#define M_PI      (3.141592653589793)
+static constexpr float M_PI = 3.141592653589793f;
 
 #ifdef M_PI_2
 # undef M_PI_2
 #endif
-#define M_PI_2    (M_PI / 2)
+static constexpr float M_PI_2 = M_PI / 2;
 
 #define M_GOLDEN  1.6180339f
 
-#define M_2PI         (M_PI * 2)
+static constexpr float M_2PI  = M_PI * 2;
 
 // MATH_CHECK_INDEXES modifies some objects (e.g. SoloGimbalEKF) to
 // include more debug information.  It is also used by some functions
@@ -27,8 +27,8 @@
   #define MATH_CHECK_INDEXES 0
 #endif
 
-#define DEG_TO_RAD      (M_PI / 180.0f)
-#define RAD_TO_DEG      (180.0f / M_PI)
+static constexpr float DEG_TO_RAD = M_PI / 180.0f;
+static constexpr float RAD_TO_DEG = 180.0f / M_PI;
 
 // Centi-degrees to radians
 #define DEGX100 5729.57795f
@@ -37,8 +37,8 @@
 // The precision here does matter when using the wsg* functions for converting
 // between LLH and ECEF coordinates.
 #ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
-static const double DEG_TO_RAD_DOUBLE = asin(1) / 90;
-static const double RAD_TO_DEG_DOUBLE = 1 / DEG_TO_RAD_DOUBLE;
+static constexpr double DEG_TO_RAD_DOUBLE = asin(1) / 90;
+static constexpr double RAD_TO_DEG_DOUBLE = 1 / DEG_TO_RAD_DOUBLE;
 #endif
 
 #define RadiansToCentiDegrees(x) (static_cast<float>(x) * RAD_TO_DEG * static_cast<float>(100))

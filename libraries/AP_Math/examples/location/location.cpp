@@ -242,14 +242,12 @@ static void test_wrap_cd(void)
 static void test_wgs_conversion_functions(void)
 {
 
-    #define D2R DEG_TO_RAD_DOUBLE
-
     /* Maximum allowable error in quantities with units of length (in meters). */
     static const double MAX_DIST_ERROR_M = 1e-6;
     /* Maximum allowable error in quantities with units of angle (in sec of arc).
      * 1 second of arc on the equator is ~31 meters. */
     static const double MAX_ANGLE_ERROR_SEC = 1e-7;
-    static const double MAX_ANGLE_ERROR_RAD = (MAX_ANGLE_ERROR_SEC * (D2R / (double)3600.0));
+    static const double MAX_ANGLE_ERROR_RAD = (MAX_ANGLE_ERROR_SEC * (DEG_TO_RAD / (double)3600.0));
 
     /* Semi-major axis. */
     static const double EARTH_A = 6378137.0;
@@ -259,16 +257,16 @@ static void test_wgs_conversion_functions(void)
 
     #define NUM_COORDS 10
     Vector3d llhs[NUM_COORDS];
-    llhs[0] = Vector3d(0, 0, 0);        /* On the Equator and Prime Meridian. */
-    llhs[1] = Vector3d(0, 180*D2R, 0);  /* On the Equator. */
-    llhs[2] = Vector3d(0, 90*D2R, 0);   /* On the Equator. */
-    llhs[3] = Vector3d(0, -90*D2R, 0);  /* On the Equator. */
-    llhs[4] = Vector3d(90*D2R, 0, 0);   /* North pole. */
-    llhs[5] = Vector3d(-90*D2R, 0, 0);  /* South pole. */
-    llhs[6] = Vector3d(90*D2R, 0, 22);  /* 22m above the north pole. */
-    llhs[7] = Vector3d(-90*D2R, 0, 22); /* 22m above the south pole. */
-    llhs[8] = Vector3d(0, 0, 22);       /* 22m above the Equator and Prime Meridian. */
-    llhs[9] = Vector3d(0, 180*D2R, 22); /* 22m above the Equator. */
+    llhs[0] = Vector3d(0, 0, 0);           /* On the Equator and Prime Meridian. */
+    llhs[1] = Vector3d(0, M_PI_2, 0);     /* On the Equator. */
+    llhs[2] = Vector3d(0, M_PI_2/2, 0);   /* On the Equator. */
+    llhs[3] = Vector3d(0, -M_PI_2/2, 0);  /* On the Equator. */
+    llhs[4] = Vector3d(M_PI_2/2, 0, 0);   /* North pole. */
+    llhs[5] = Vector3d(-M_PI_2/2, 0, 0);  /* South pole. */
+    llhs[6] = Vector3d(M_PI_2/2, 0, 22);  /* 22m above the north pole. */
+    llhs[7] = Vector3d(-M_PI_2/2, 0, 22); /* 22m above the south pole. */
+    llhs[8] = Vector3d(0, 0, 22);         /* 22m above the Equator and Prime Meridian. */
+    llhs[9] = Vector3d(0, M_PI_2, 22);    /* 22m above the Equator. */
 
     Vector3d ecefs[NUM_COORDS];
     ecefs[0] = Vector3d(EARTH_A, 0, 0);

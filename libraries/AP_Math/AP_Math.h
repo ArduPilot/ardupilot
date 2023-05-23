@@ -221,6 +221,20 @@ static inline constexpr float degrees(float rad)
     return rad * RAD_TO_DEG;
 }
 
+#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+// degrees -> radians
+static inline constexpr double deg_to_rad_double(double deg)
+{
+    return deg * DEG_TO_RAD_DOUBLE;
+}
+
+// radians -> degrees
+static inline constexpr double rad_to_deg_double(double rad)
+{
+    return rad * RAD_TO_DEG_DOUBLE;
+}
+#endif
+
 template<typename T>
 ftype sq(const T val)
 {
