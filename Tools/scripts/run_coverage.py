@@ -228,6 +228,7 @@ class CoverageRunner(object):
                                     root_dir + "/modules/gtest/*",
                                     root_dir + "/modules/DroneCAN/libcanard/*",
                                     root_dir + "/build/linux/libraries/*",
+                                    root_dir + "/build/linux/modules/*",
                                     root_dir + "/build/sitl/libraries/*",
                                     root_dir + "/build/sitl/modules/*",
                                     root_dir + "/build/sitl_periph_gps/libraries/*",
