@@ -434,6 +434,11 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     // @User: Advanced
     AP_GROUPINFO("GPS_DISABLE",    1, SIM,  gps_disable[0], 0),
     AP_GROUPINFO("GPS_LAG_MS",     2, SIM,  gps_delay_ms[0], 100),
+    // @Param: GPS_TYPE
+    // @DisplayName: GPS 1 type
+    // @Description: Sets the type of simulation used for GPS 1
+    // @Values: 0:None, 1:UBlox, 5:NMEA, 6:SBP, 7:File, 8:Nova, 9:SBP, 10:GSOF
+    // @User: Advanced
     AP_GROUPINFO("GPS_TYPE",       3, SIM,  gps_type[0],  GPS::Type::UBLOX),
     AP_GROUPINFO("GPS_BYTELOSS",   4, SIM,  gps_byteloss[0],  0),
     AP_GROUPINFO("GPS_NUMSATS",    5, SIM,  gps_numsats[0],   10),
@@ -454,6 +459,10 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     // @User: Advanced
     AP_GROUPINFO("GPS2_DISABLE",  30, SIM,  gps_disable[1], 1),
     AP_GROUPINFO("GPS2_LAG_MS",   31, SIM,  gps_delay_ms[1], 100),
+    // @Param: GPS2_TYPE
+    // @CopyFieldsFrom: SIM_GPS_TYPE
+    // @DisplayName: GPS 2 type
+    // @Description: Sets the type of simulation used for GPS 2
     AP_GROUPINFO("GPS2_TYPE",     32, SIM,  gps_type[1],  GPS::Type::UBLOX),
     AP_GROUPINFO("GPS2_BYTELOS",  33, SIM,  gps_byteloss[1],  0),
     AP_GROUPINFO("GPS2_NUMSATS",  34, SIM,  gps_numsats[1],   10),
