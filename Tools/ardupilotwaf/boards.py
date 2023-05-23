@@ -1082,13 +1082,14 @@ class chibios(Board):
         ]
 
         # whitelist of compilers which we should build with -Werror
-        gcc_whitelist = [
+        gcc_whitelist = frozenset([
             ('4','9','3'),
             ('6','3','1'),
             ('9','2','1'),
             ('9','3','1'),
             ('10','2','1'),
-        ]
+            ('11','3','0'),
+        ])
 
         if cfg.env.HAL_CANFD_SUPPORTED:
             env.DEFINES.update(CANARD_ENABLE_CANFD=1)
