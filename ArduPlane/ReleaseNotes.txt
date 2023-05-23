@@ -1,3 +1,49 @@
+Release 4.3.7-beta1 23rd May 2023
+---------------------------------
+
+This beta release is for the 4.3.x stable series and is being done
+because of a serious bug that has been found with RC input on boards
+that use an IOMCU for RC input (boards with a separate set of 8 "main"
+outputs from "aux" outputs).
+
+The bug was that when RC input is lost and the receiver is one that
+uses "no pulses" for loss of RC input then there is a chance that when
+the RC link is regained that ArduPilot will not regain RC control and
+will continue in RC failsafe.
+
+The bug is an old one, first introduced in the 4.0.6 release in
+September 2020. The bug does not occur often which is why it has been
+such a long time before it was noticed. We would like to thank CUAV
+for noticing and reporting the bug!
+
+This release also has some other changes, some of which are to sync
+with the Copter 4.3.6 release (which will go to 4.3.7 with this RC
+input bug fix) and some are other bugs found since the 4.3.5 plane
+release.
+
+This release skips the 4.3.6 number to sync with copter.
+
+The full list of changes is:
+
+ - fixed a fault in the INS batch sampler code if you change the INS_LOG_BAT_CNT parameter without rebooting
+ - fixed the RC input on IOMCU bug explained above
+ - fixed a bug in ICE engine control if you do a "delay engine start" mission command while flying
+ - added MCU voltage monitoring for the H757 microcontroller (eg. CubeOrangePlus)
+ - servo gimbal mount yaw handling fix (only affects 3-axis servo gimbals)
+ - PiccoloCAN fix for ESC voltage and current scaling
+ - Gremsy gimbal fix when attached to autopilot's serial3 (or higher)
+ - added CubeOrangePlus-bdshot build
+ - fixed a bug in handling bad UART data in the megasquirt serial EFI driver
+ - added -g option for configuring with debug symbols without full debug (helped with RCIN bug diagnosis)
+ - fixed airmode switch for QACRO and QSTABILIZE modes
+ - fixed a rare memory corruption bug in the STM32H757
+ - fixed an EKF3 bug in accel bias calculations
+ - adjust EKF3 accel bias process noise for greater robustness
+ - cope with compassmot impacting GSF yaw numerical stability
+
+
+Please test and report any issues!
+
 Release 4.3.5 26th March  2023
 ------------------------------
 
