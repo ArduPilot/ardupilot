@@ -20,7 +20,9 @@
 
 #include "AP_GPS.h"
 #include "AP_GPS_SBF.h"
+#include "AP_Math/AP_Math.h"
 #include <GCS_MAVLink/GCS.h>
+
 #include <AP_InternalError/AP_InternalError.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -413,8 +415,8 @@ AP_GPS_SBF::process_message(void)
 
         // Update position state (don't use -2·10^10)
         if (temp.Latitude > -200000) {
-            state.location.lat = (int32_t)(temp.Latitude * RAD_TO_DEG_DOUBLE * (double)1e7);
-            state.location.lng = (int32_t)(temp.Longitude * RAD_TO_DEG_DOUBLE * (double)1e7);
+            state.location.lat = (int32_t)(rad_to_deg_double(temp.Latitude) * (double)1e7);
+            state.location.lng = (int32_t)(rad_to_deg_double(temp.Longitude) * (double)1e7);
             state.location.alt = (int32_t)(((float)temp.Height - temp.Undulation) * 1e2f);
             state.have_undulation = true;
             state.undulation = temp.Undulation;

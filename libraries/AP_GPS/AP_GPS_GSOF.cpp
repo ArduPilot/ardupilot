@@ -305,8 +305,8 @@ AP_GPS_GSOF::process_message(void)
             else if (output_type == 2) // position
             {
                 // This packet is not documented in Trimble's receiver help as of May 18, 2023
-                state.location.lat = (int32_t)(RAD_TO_DEG_DOUBLE * (SwapDouble(msg.data, a)) * (double)1e7);
-                state.location.lng = (int32_t)(RAD_TO_DEG_DOUBLE * (SwapDouble(msg.data, a + 8)) * (double)1e7);
+                state.location.lat = (int32_t)(rad_to_deg_double(SwapDouble(msg.data, a)) * (double)1e7);
+                state.location.lng = (int32_t)(rad_to_deg_double(SwapDouble(msg.data, a + 8)) * (double)1e7);
                 state.location.alt = (int32_t)(SwapDouble(msg.data, a + 16) * 100);
 
                 state.last_gps_time_ms = AP_HAL::millis();
