@@ -59,8 +59,8 @@ jobs:
       - name: Configure CAN
         if: ${{ matrix.config == 'sitltest-can'}}
         run: |
-          sudo apt update
-          sudo apt -y linux-modules-extra-$(uname -r)
+          sudo apt-get update
+          sudo apt-get -y install can-utils iproute2 linux-modules-extra-$(uname -r)
           sudo modprobe vcan
           sudo ip link add dev vcan0 type vcan
           sudo ip link set up vcan0
