@@ -24,6 +24,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_HAL/utility/sparse-endian.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
@@ -216,7 +217,7 @@ void AP_ExternalAHRS_LORD::handle_imu(const LORD_Packet& packet)
         switch ((INSPacketField) packet.payload[i+1]) {
         // Scaled Ambient Pressure
         case INSPacketField::PRESSURE: {
-            imu_data.pressure = extract_float(packet.payload, i+2) * 100; // Convert millibar to pascals
+            imu_data.pressure = be32tofloat_ptr(packet.payload, i+2) * 100; // Convert millibar to pascals
             break;
         }
         // Scaled Magnetometer Vector
@@ -296,7 +297,7 @@ void AP_ExternalAHRS_LORD::handle_gnss(const LORD_Packet &packet)
         switch ((GNSSPacketField) packet.payload[i+1]) {
         // GPS Time
         case GNSSPacketField::GPS_TIME: {
-            gnss_data.tow_ms = double_to_uint32(extract_double(packet.payload, i+2) * 1000); // Convert seconds to ms
+            gnss_data.tow_ms = double_to_uint32(be64todouble_ptr(packet.payload, i+2) * 1000); // Convert seconds to ms
             gnss_data.week = be16toh_ptr(&packet.payload[i+10]);
             break;
         }
@@ -328,25 +329,25 @@ void AP_ExternalAHRS_LORD::handle_gnss(const LORD_Packet &packet)
         }
         // LLH Position
         case GNSSPacketField::LLH_POSITION: {
-            gnss_data.lat = extract_double(packet.payload, i+2) * 1.0e7; // Decimal degrees to degrees
-            gnss_data.lon = extract_double(packet.payload, i+10) * 1.0e7;
-            gnss_data.msl_altitude = extract_double(packet.payload, i+26) * 1.0e2; // Meters to cm
-            gnss_data.horizontal_position_accuracy = extract_float(packet.payload, i+34);
-            gnss_data.vertical_position_accuracy = extract_float(packet.payload, i+38);
+            gnss_data.lat = be64todouble_ptr(packet.payload, i+2) * 1.0e7; // Decimal degrees to degrees
+            gnss_data.lon = be64todouble_ptr(packet.payload, i+10) * 1.0e7;
+            gnss_data.msl_altitude = be64todouble_ptr(packet.payload, i+26) * 1.0e2; // Meters to cm
+            gnss_data.horizontal_position_accuracy = be32tofloat_ptr(packet.payload, i+34);
+            gnss_data.vertical_position_accuracy = be32tofloat_ptr(packet.payload, i+38);
             break;
         }
         // DOP Data
         case GNSSPacketField::DOP_DATA: {
-            gnss_data.hdop = extract_float(packet.payload, i+10);
-            gnss_data.vdop = extract_float(packet.payload, i+14);
+            gnss_data.hdop = be32tofloat_ptr(packet.payload, i+10);
+            gnss_data.vdop = be32tofloat_ptr(packet.payload, i+14);
             break;
         }
         // NED Velocity
         case GNSSPacketField::NED_VELOCITY: {
-            gnss_data.ned_velocity_north = extract_float(packet.payload, i+2);
-            gnss_data.ned_velocity_east = extract_float(packet.payload, i+6);
-            gnss_data.ned_velocity_down = extract_float(packet.payload, i+10);
-            gnss_data.speed_accuracy = extract_float(packet.payload, i+26);
+            gnss_data.ned_velocity_north = be32tofloat_ptr(packet.payload, i+2);
+            gnss_data.ned_velocity_east = be32tofloat_ptr(packet.payload, i+6);
+            gnss_data.ned_velocity_down = be32tofloat_ptr(packet.payload, i+10);
+            gnss_data.speed_accuracy = be32tofloat_ptr(packet.payload, i+26);
             break;
         }
         }
@@ -362,22 +363,22 @@ void AP_ExternalAHRS_LORD::handle_filter(const LORD_Packet &packet)
         switch ((FilterPacketField) packet.payload[i+1]) {
         // GPS Timestamp
         case FilterPacketField::GPS_TIME: {
-            filter_data.tow_ms = extract_double(packet.payload, i+2) * 1000; // Convert seconds to ms
+            filter_data.tow_ms = be64todouble_ptr(packet.payload, i+2) * 1000; // Convert seconds to ms
             filter_data.week = be16toh_ptr(&packet.payload[i+10]);
             break;
         }
         // LLH Position
         case FilterPacketField::LLH_POSITION: {
-            filter_data.lat = extract_double(packet.payload, i+2) * 1.0e7; // Decimal degrees to degrees
-            filter_data.lon = extract_double(packet.payload, i+10) * 1.0e7;
-            filter_data.hae_altitude = extract_double(packet.payload, i+26) * 1.0e2; // Meters to cm
+            filter_data.lat = be64todouble_ptr(packet.payload, i+2) * 1.0e7; // Decimal degrees to degrees
+            filter_data.lon = be64todouble_ptr(packet.payload, i+10) * 1.0e7;
+            filter_data.hae_altitude = be64todouble_ptr(packet.payload, i+26) * 1.0e2; // Meters to cm
             break;
         }
         // NED Velocity
         case FilterPacketField::NED_VELOCITY: {
-            filter_data.ned_velocity_north = extract_float(packet.payload, i+2);
-            filter_data.ned_velocity_east = extract_float(packet.payload, i+6);
-            filter_data.ned_velocity_down = extract_float(packet.payload, i+10);
+            filter_data.ned_velocity_north = be32tofloat_ptr(packet.payload, i+2);
+            filter_data.ned_velocity_east = be32tofloat_ptr(packet.payload, i+6);
+            filter_data.ned_velocity_down = be32tofloat_ptr(packet.payload, i+10);
             break;
         }
         // Filter Status
@@ -555,34 +556,20 @@ void AP_ExternalAHRS_LORD::send_status_report(GCS_MAVLINK &link) const
 Vector3f AP_ExternalAHRS_LORD::populate_vector3f(const uint8_t *data, uint8_t offset) const
 {
     return Vector3f {
-        extract_float(data, offset),
-        extract_float(data, offset+4),
-        extract_float(data, offset+8)
+        be32tofloat_ptr(data, offset),
+        be32tofloat_ptr(data, offset+4),
+        be32tofloat_ptr(data, offset+8)
     };
 }
 
 Quaternion AP_ExternalAHRS_LORD::populate_quaternion(const uint8_t *data, uint8_t offset) const
 {
     return Quaternion {
-        extract_float(data, offset),
-        extract_float(data, offset+4),
-        extract_float(data, offset+8),
-        extract_float(data, offset+12)
+        be32tofloat_ptr(data, offset),
+        be32tofloat_ptr(data, offset+4),
+        be32tofloat_ptr(data, offset+8),
+        be32tofloat_ptr(data, offset+12)
     };
-}
-
-float AP_ExternalAHRS_LORD::extract_float(const uint8_t *data, uint8_t offset) const
-{
-    uint32_t tmp = be32toh_ptr(&data[offset]);
-
-    return to_float(tmp);
-}
-
-double AP_ExternalAHRS_LORD::extract_double(const uint8_t *data, uint8_t offset) const
-{
-    uint64_t tmp = be64toh_ptr(&data[offset]);
-
-    return to_double(tmp);
 }
 
 #endif // AP_EXTERNAL_AHRS_LORD_ENABLE
