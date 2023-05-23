@@ -80,6 +80,22 @@ public:
     ~AP_RCProtocol();
     friend class AP_RCProtocol_Backend;
 
+    class SerialConfig {
+    public:
+        void apply_to_uart(AP_HAL::UARTDriver *uart) const;
+        void apply_to_softserial(SoftSerial& ss) const;
+        bool operator==(const SerialConfig cfg) const {
+            return cfg.baud == baud && cfg.protocol == protocol && cfg.invert_rx == invert_rx;
+        }
+        bool operator!=(const SerialConfig cfg) const {
+            return !(cfg == *this);
+        }
+
+        uint32_t baud;
+        SerialProtocolConfig protocol;
+        bool invert_rx;
+    };
+
     void init();
     bool valid_serial_prot() const
     {
@@ -88,7 +104,7 @@ public:
     bool should_search(uint32_t now_us) const;
     void process_pulse(uint32_t width_s0, uint32_t width_s1);
     void process_pulse_list(const uint32_t *widths, uint16_t n, bool need_swap);
-    bool process_byte(uint8_t byte, uint32_t baudrate);
+    bool process_byte(uint8_t byte, const SerialConfig& config);
     void process_handshake(uint32_t baudrate);
     void update(void);
 
@@ -177,15 +193,16 @@ public:
     }
 #endif
 
-    class SerialConfig {
-    public:
-        void apply_to_uart(AP_HAL::UARTDriver *uart) const;
-        void apply_to_softserial(SoftSerial& ss) const;
+    static const SerialConfig serial_configs[];
 
-        uint32_t baud;
-        SerialProtocolConfig protocol;
-        bool invert_rx;
-    };
+    // serial config used by the majority of protocols: 115k, no parity, one stop bit
+    const static SerialConfig DEFAULT_SR_CONFIG;
+    // SBUS serial config: 100k, even parity, 2 stop bits, inverted:
+    const static SerialConfig SBUS_SR_CONFIG;
+    const static SerialConfig SBUS_NI_SR_CONFIG;
+    const static SerialConfig FASTSBUS_SR_CONFIG;
+    // FPORT/FPORT2 serial config: 115k, no parity, one stop bit, inverted
+    const static SerialConfig FPORT_SR_CONFIG;
 
     // return true if we are decoding a byte stream, instead of pulses
     bool using_uart(void) const {

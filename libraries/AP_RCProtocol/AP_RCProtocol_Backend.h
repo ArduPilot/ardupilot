@@ -32,7 +32,7 @@ public:
     virtual ~AP_RCProtocol_Backend() {}
     // process a pulse and return true if processed otherwise SoftSerial will be used
     virtual bool process_pulse(const uint32_t width_s0, const uint32_t width_s1) { return false; }
-    virtual void process_byte(uint32_t timestamp_us, uint8_t byte, uint32_t baudrate) {}
+    virtual void process_byte(uint32_t timestamp_us, uint8_t byte, const AP_RCProtocol::SerialConfig& config) {}
     virtual void process_handshake(uint32_t baudrate) {}
     bool new_input();
 
@@ -115,12 +115,14 @@ protected:
     // decode channels from the standard 11bit format (used by CRSF and SBUS)
     void decode_11bit_channels(const uint8_t* data, uint8_t nchannels, uint16_t *values, uint16_t mult, uint16_t div, uint16_t offset);
 
+protected:
+    const AP_RCProtocol::rcprotocol_t protocol_type;
+
 private:
     uint32_t rc_input_count;
     uint32_t last_rc_input_count;
     uint32_t rc_frame_count;
 
-    const AP_RCProtocol::rcprotocol_t protocol_type;
 };
 
 #endif  // AP_RCPROTOCOL_ENABLED

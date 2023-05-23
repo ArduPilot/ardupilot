@@ -39,7 +39,7 @@ class AP_RCProtocol_CRSF : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_CRSF(AP_RCProtocol &_frontend);
     virtual ~AP_RCProtocol_CRSF();
-    void process_byte(uint32_t timestamp_us, uint8_t byte, uint32_t baudrate) override;
+    void process_byte(uint32_t timestamp_us, uint8_t byte, const AP_RCProtocol::SerialConfig& config) override;
     void process_handshake(uint32_t baudrate) override;
     void update(void) override;
     // support for CRSF v3

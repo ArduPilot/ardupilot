@@ -193,8 +193,31 @@ void AP_RCProtocol_SBUS::_process_byte(uint32_t timestamp_us, uint8_t b)
 }
 
 // support byte input
-void AP_RCProtocol_SBUS::process_byte(uint32_t timestamp_us, uint8_t b, uint32_t baudrate)
+void AP_RCProtocol_SBUS::process_byte(uint32_t timestamp_us, uint8_t b, const AP_RCProtocol::SerialConfig& config)
 {
+    switch (protocol_type) {
+#if AP_RCPROTOCOL_FASTSBUS_ENABLED
+        case AP_RCProtocol::FASTSBUS:
+            if (config != AP_RCProtocol::FASTSBUS_SR_CONFIG) {
+                return;
+            }
+            break;
+#endif
+#if AP_RCPROTOCOL_SBUS_NI_ENABLED
+        case AP_RCProtocol::SBUS_NI:
+            if (config != AP_RCProtocol::SBUS_NI_SR_CONFIG) {
+                return;
+            }
+            break;
+#endif
+        case AP_RCProtocol::SBUS:
+        default:
+            if (config != AP_RCProtocol::SBUS_SR_CONFIG) {
+                return;
+            }
+            break;
+            return;
+    }
     _process_byte(timestamp_us, b);
 }
 

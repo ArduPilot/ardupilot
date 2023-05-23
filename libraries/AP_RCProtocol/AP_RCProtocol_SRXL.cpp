@@ -269,9 +269,9 @@ void AP_RCProtocol_SRXL::_process_byte(uint32_t timestamp_us, uint8_t byte)
 /*
   process a byte provided by a uart
  */
-void AP_RCProtocol_SRXL::process_byte(uint32_t timestamp_us, uint8_t byte, uint32_t baudrate)
+void AP_RCProtocol_SRXL::process_byte(uint32_t timestamp_us, uint8_t byte, const AP_RCProtocol::SerialConfig& config)
 {
-    if (baudrate != 115200) {
+    if (config.baud != 115200) {
         return;
     }
     _process_byte(timestamp_us, byte);

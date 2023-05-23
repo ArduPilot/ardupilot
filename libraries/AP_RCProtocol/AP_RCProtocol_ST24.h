@@ -43,7 +43,7 @@
 class AP_RCProtocol_ST24 : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_ST24(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend, AP_RCProtocol::ST24) {}
-    void process_byte(uint32_t timestamp_us, uint8_t byte, uint32_t baudrate) override;
+    void process_byte(uint32_t timestamp_us, uint8_t byte, const AP_RCProtocol::SerialConfig& config) override;
 private:
     void _process_byte(uint8_t byte);
     static uint8_t st24_crc8(uint8_t *ptr, uint8_t len);

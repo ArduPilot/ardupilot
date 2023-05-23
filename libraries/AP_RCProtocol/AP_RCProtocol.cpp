@@ -128,11 +128,12 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
     // this makes the code simpler but is a little redundant while searching for PPM
     uint8_t b;
     const bool valid_byte = pulse_reader.process_pulse(width_s0, width_s1, b);
+    const SerialConfig& current_config = serial_configs[added.config_num];
 
     // first try current protocol
     if (_detected_protocol != AP_RCProtocol::NONE && !searching) {
         if (!backend[_detected_protocol]->process_pulse(width_s0, width_s1) && valid_byte) {
-            backend[_detected_protocol]->process_byte(pulse_reader.get_byte_timestamp_us(), b, pulse_reader.baud());
+            backend[_detected_protocol]->process_byte(pulse_reader.get_byte_timestamp_us(), b, current_config);
         }
 
         if (backend[_detected_protocol]->new_input()) {
@@ -156,7 +157,7 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
             const uint32_t input_count = backend[i]->get_rc_input_count();
 
             if (!backend[i]->process_pulse(width_s0, width_s1) && valid_byte) {
-                backend[i]->process_byte(pulse_reader.get_byte_timestamp_us(), b, pulse_reader.baud());
+                backend[i]->process_byte(pulse_reader.get_byte_timestamp_us(), b, current_config);
             }
 
             const uint32_t frame_count2 = backend[i]->get_rc_frame_count();
@@ -202,7 +203,7 @@ void AP_RCProtocol::process_pulse_list(const uint32_t *widths, uint16_t n, bool 
     }
 }
 
-bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
+bool AP_RCProtocol::process_byte(uint8_t byte, const SerialConfig& config)
 {
     uint32_t now = AP_HAL::micros();
     bool searching = should_search(now);
@@ -223,7 +224,7 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
 
     // first try current protocol
     if (_detected_protocol != AP_RCProtocol::NONE && !searching) {
-        backend[_detected_protocol]->process_byte(now, byte, baudrate);
+        backend[_detected_protocol]->process_byte(now, byte, config);
         if (backend[_detected_protocol]->new_input()) {
             _new_input = true;
             _last_input_us = now;
@@ -239,7 +240,7 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
             }
             const uint32_t frame_count = backend[i]->get_rc_frame_count();
             const uint32_t input_count = backend[i]->get_rc_input_count();
-            backend[i]->process_byte(now, byte, baudrate);
+            backend[i]->process_byte(now, byte, config);
             const uint32_t frame_count2 = backend[i]->get_rc_frame_count();
             if (frame_count2 > frame_count) {
                 if (requires_3_frames((rcprotocol_t)i) && frame_count2 < 3) {
@@ -317,25 +318,38 @@ void AP_RCProtocol::SerialConfig::apply_to_softserial(SoftSerial& ss) const
     ss.configure(baud, protocol, invert_rx);
 }
 
-static const AP_RCProtocol::SerialConfig serial_configs[] {
+// serial config used by the majority of protocols: 115k, no parity, one stop bit
+const AP_RCProtocol::SerialConfig AP_RCProtocol::DEFAULT_SR_CONFIG = { 115200,  SERIAL_CONFIG_8N1, false };
+// SBUS serial config: 100k, even parity, 2 stop bits, inverted:
+const AP_RCProtocol::SerialConfig AP_RCProtocol::SBUS_SR_CONFIG = { 100000,  SERIAL_CONFIG_8E2, true };
+const AP_RCProtocol::SerialConfig AP_RCProtocol::SBUS_NI_SR_CONFIG = { 100000,  SERIAL_CONFIG_8E2, false };
+const AP_RCProtocol::SerialConfig AP_RCProtocol::FASTSBUS_SR_CONFIG = { 200000,  SERIAL_CONFIG_8E2, true };
+// FPORT/FPORT2 serial config: 115k, no parity, one stop bit, inverted
+const AP_RCProtocol::SerialConfig AP_RCProtocol::FPORT_SR_CONFIG = { 115200,  SERIAL_CONFIG_8N1, true };
+
+
+const AP_RCProtocol::SerialConfig AP_RCProtocol::serial_configs[] = {
     // BAUD Protocol INVERT-RX
-    // inverted and uninverted 115200 8N1:
-    { 115200,  SERIAL_CONFIG_8N1, false  },
-    { 115200,  SERIAL_CONFIG_8N1, true },
-    // SBUS settings, even parity, 2 stop bits:
-    { 100000,  SERIAL_CONFIG_8E2, true },
+    AP_RCProtocol::DEFAULT_SR_CONFIG,
+#if AP_RCPROTOCOL_FPORT_ENABLED || AP_RCPROTOCOL_FPORT2_ENABLED
+    AP_RCProtocol::FPORT_SR_CONFIG,
+#endif
+#if AP_RCPROTOCOL_SBUS_ENABLED
+    AP_RCProtocol::SBUS_SR_CONFIG,
+#endif
 #if AP_RCPROTOCOL_SBUS_NI_ENABLED
-    { 100000,  SERIAL_CONFIG_8E2, false },
+    AP_RCProtocol::SBUS_NI_SR_CONFIG,
 #endif
 #if AP_RCPROTOCOL_FASTSBUS_ENABLED
-    // FastSBUS:
-    { 200000,  SERIAL_CONFIG_8E2, true },
+    AP_RCProtocol::FASTSBUS_SR_CONFIG,
 #endif
+#if AP_RCPROTOCOL_CRSF_ENABLED
     // CrossFire:
     { 416666,  SERIAL_CONFIG_8N1, false },
+#endif
 };
 
-static_assert(ARRAY_SIZE(serial_configs) > 1, "must have at least one serial config");
+static_assert(ARRAY_SIZE(AP_RCProtocol::serial_configs) > 1, "must have at least one serial config");
 
 void AP_RCProtocol::check_added_uart(void)
 {
@@ -346,19 +360,16 @@ void AP_RCProtocol::check_added_uart(void)
         return;
     }
     if (!added.opened) {
-
         added.opened = true;
         added.last_config_change_us = now;
         serial_configs[added.config_num].apply_to_uart(added.uart);
         serial_configs[added.config_num].apply_to_softserial(pulse_reader);
-        //hal.console->printf("Checking: %lu %d %d\n", serial_configs[added.config_num].baud,
-        //    serial_configs[added.config_num].protocol, serial_configs[added.config_num].invert_rx);
     }
 #if AP_RC_CHANNEL_ENABLED
     rc_protocols_mask = rc().enabled_protocols();
 #endif
-    const uint32_t current_baud = serial_configs[added.config_num].baud;
-    process_handshake(current_baud);
+    const SerialConfig& current_config = serial_configs[added.config_num];
+    process_handshake(current_config.baud);
 
     if (added.uart) {
         uint32_t n = added.uart->available();
@@ -366,7 +377,7 @@ void AP_RCProtocol::check_added_uart(void)
         for (uint8_t i=0; i<n; i++) {
             int16_t b = added.uart->read();
             if (b >= 0) {
-                process_byte(uint8_t(b), current_baud);
+                process_byte(uint8_t(b), current_config);
             }
         }
     } // pulse input processing is triggered from the hal
@@ -499,7 +510,7 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
 #endif
 #if AP_RCPROTOCOL_SBUS_NI_ENABLED
     case SBUS_NI:
-        return "SBUS";
+        return "n.i.SBUS";
 #endif
 #if AP_RCPROTOCOL_FASTSBUS_ENABLED
     case FASTSBUS:

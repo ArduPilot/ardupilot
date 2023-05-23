@@ -136,7 +136,7 @@ void loop()
     ssize_t ret = read(fd, buf, sizeof(buf));
 
     for (uint8_t i=0; i<ret; i++) {
-        rcprot->process_byte(buf[i], 115200);
+        rcprot->process_byte(buf[i], AP_RCProtocol::DEFAULT_SR_CONFIG);
         if (rcprot->new_input()) {
             nchan = MIN(rcprot->num_channels(), 16);
             rcprot->read(chan, nchan);

@@ -563,10 +563,10 @@ void AP_RCProtocol_CRSF::process_link_stats_tx_frame(const void* data)
 }
 
 // process a byte provided by a uart
-void AP_RCProtocol_CRSF::process_byte(uint32_t timestamp_us, uint8_t byte, uint32_t baudrate)
+void AP_RCProtocol_CRSF::process_byte(uint32_t timestamp_us, uint8_t byte, const AP_RCProtocol::SerialConfig& config)
 {
     // reject RC data if we have been configured for standalone mode
-    if (baudrate != CRSF_BAUDRATE || _uart) {
+    if (config.baud != CRSF_BAUDRATE || _uart) {
         return;
     }
     _process_byte(timestamp_us, byte);

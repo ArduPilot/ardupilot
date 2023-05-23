@@ -43,7 +43,7 @@
 class AP_RCProtocol_SRXL : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_SRXL(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend, AP_RCProtocol::SRXL) {}
-    void process_byte(uint32_t timestamp_us, uint8_t byte, uint32_t baudrate) override;
+    void process_byte(uint32_t timestamp_us, uint8_t byte, const AP_RCProtocol::SerialConfig& config) override;
 private:
     void _process_byte(uint32_t timestamp_us, uint8_t byte);
     int srxl_channels_get_v1v2(uint16_t max_values, uint8_t *num_values, uint16_t *values, bool *failsafe_state);

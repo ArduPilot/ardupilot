@@ -32,7 +32,7 @@ struct FPort_Frame;
 class AP_RCProtocol_FPort : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_FPort(AP_RCProtocol &_frontend);
-    void process_byte(uint32_t timestamp_us, uint8_t byte, uint32_t baudrate) override;
+    void process_byte(uint32_t timestamp_us, uint8_t byte, const AP_RCProtocol::SerialConfig& config) override;
 
 private:
     void decode_control(const FPort_Frame &frame);

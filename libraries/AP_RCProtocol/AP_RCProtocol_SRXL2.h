@@ -30,7 +30,7 @@ class AP_RCProtocol_SRXL2 : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_SRXL2(AP_RCProtocol &_frontend);
     virtual ~AP_RCProtocol_SRXL2();
-    void process_byte(uint32_t timestamp_us, uint8_t byte, uint32_t baudrate) override;
+    void process_byte(uint32_t timestamp_us, uint8_t byte, const AP_RCProtocol::SerialConfig& config) override;
     void process_handshake(uint32_t baudrate) override;
     void start_bind(void) override;
     void update(void) override;

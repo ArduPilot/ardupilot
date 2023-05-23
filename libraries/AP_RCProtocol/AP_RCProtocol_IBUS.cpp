@@ -90,9 +90,9 @@ void AP_RCProtocol_IBUS::_process_byte(uint32_t timestamp_us, uint8_t b)
 }
 
 // support byte input
-void AP_RCProtocol_IBUS::process_byte(uint32_t timestamp_us, uint8_t b, uint32_t baudrate)
+void AP_RCProtocol_IBUS::process_byte(uint32_t timestamp_us, uint8_t b, const AP_RCProtocol::SerialConfig& config)
 {
-    if (baudrate != 115200) {
+    if (config.baud != 115200) {
         return;
     }
     _process_byte(timestamp_us, b);
