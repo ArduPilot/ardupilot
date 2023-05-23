@@ -565,6 +565,11 @@ arducopter and upload it to my board".
         help='''Specify the port to be used with the --upload option. For example a port of /dev/ttyS10 indicates that serial port 10 shuld be used.
 ''')
 
+    g.add_option('--upload-force',
+        action='store_true',
+        help='''Override board type check and continue loading. Same as using uploader.py --force.
+''')
+
     g = opt.ap_groups['check']
 
     g.add_option('--check-verbose',

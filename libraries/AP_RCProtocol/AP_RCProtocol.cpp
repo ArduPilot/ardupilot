@@ -15,8 +15,12 @@
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
 
-#include <AP_Vehicle/AP_Vehicle_Type.h>
+#include "AP_RCProtocol_config.h"
+
 #include "AP_RCProtocol.h"
+
+#if AP_RCPROTOCOL_ENABLED
+
 #include "AP_RCProtocol_PPMSum.h"
 #include "AP_RCProtocol_DSM.h"
 #include "AP_RCProtocol_IBUS.h"
@@ -31,12 +35,18 @@
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
 extern const AP_HAL::HAL& hal;
 
 void AP_RCProtocol::init()
 {
-    backend[AP_RCProtocol::PPM] = new AP_RCProtocol_PPMSum(*this);
+#if AP_RCPROTOCOL_PPMSUM_ENABLED
+    backend[AP_RCProtocol::PPMSUM] = new AP_RCProtocol_PPMSum(*this);
+#endif
+#if AP_RCPROTOCOL_IBUS_ENABLED
     backend[AP_RCProtocol::IBUS] = new AP_RCProtocol_IBUS(*this);
+#endif
 #if AP_RCPROTOCOL_SBUS_ENABLED
     backend[AP_RCProtocol::SBUS] = new AP_RCProtocol_SBUS(*this, true, 100000);
 #endif
@@ -44,7 +54,9 @@ void AP_RCProtocol::init()
     backend[AP_RCProtocol::FASTSBUS] = new AP_RCProtocol_SBUS(*this, true, 200000);
 #endif
     backend[AP_RCProtocol::DSM] = new AP_RCProtocol_DSM(*this);
+#if AP_RCPROTOCOL_SUMD_ENABLED
     backend[AP_RCProtocol::SUMD] = new AP_RCProtocol_SUMD(*this);
+#endif
 #if AP_RCPROTOCOL_SRXL_ENABLED
     backend[AP_RCProtocol::SRXL] = new AP_RCProtocol_SRXL(*this);
 #endif
@@ -60,7 +72,9 @@ void AP_RCProtocol::init()
 #if AP_RCPROTOCOL_FPORT2_ENABLED
     backend[AP_RCProtocol::FPORT2] = new AP_RCProtocol_FPort2(*this, true);
 #endif
+#if AP_RCPROTOCOL_ST24_ENABLED
     backend[AP_RCProtocol::ST24] = new AP_RCProtocol_ST24(*this);
+#endif
 #if AP_RCPROTOCOL_FPORT_ENABLED
     backend[AP_RCProtocol::FPORT] = new AP_RCProtocol_FPort(*this, true);
 #endif
@@ -405,16 +419,22 @@ void AP_RCProtocol::start_bind(void)
     }
 }
 
+#endif  // AP_RCPROTOCOL_ENABLED
+
 /*
   return protocol name
  */
 const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
 {
     switch (protocol) {
-    case PPM:
+#if AP_RCPROTOCOL_PPMSUM_ENABLED
+    case PPMSUM:
         return "PPM";
+#endif
+#if AP_RCPROTOCOL_IBUS_ENABLED
     case IBUS:
         return "IBUS";
+#endif
 #if AP_RCPROTOCOL_SBUS_ENABLED
     case SBUS:
         return "SBUS";
@@ -429,8 +449,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
 #endif
     case DSM:
         return "DSM";
+#if AP_RCPROTOCOL_SUMD_ENABLED
     case SUMD:
         return "SUMD";
+#endif
 #if AP_RCPROTOCOL_SRXL_ENABLED
     case SRXL:
         return "SRXL";
@@ -443,8 +465,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
     case CRSF:
         return "CRSF";
 #endif
+#if AP_RCPROTOCOL_ST24_ENABLED
     case ST24:
         return "ST24";
+#endif
 #if AP_RCPROTOCOL_FPORT_ENABLED
     case FPORT:
         return "FPORT";
@@ -459,6 +483,7 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
     return nullptr;
 }
 
+#if AP_RCPROTOCOL_ENABLED
 /*
   return protocol name
  */
@@ -493,3 +518,5 @@ namespace AP {
         return rcprot;
     }
 };
+
+#endif  // AP_RCPROTOCOL_ENABLED

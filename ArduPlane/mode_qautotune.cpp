@@ -21,9 +21,20 @@ void ModeQAutotune::update()
 
 void ModeQAutotune::run()
 {
+    const uint32_t now = AP_HAL::millis();
+    if (quadplane.tailsitter.in_vtol_transition(now)) {
+        // Tailsitters in FW pull up phase of VTOL transition run FW controllers
+        Mode::run();
+        return;
+    }
+
 #if QAUTOTUNE_ENABLED
     quadplane.qautotune.run();
 #endif
+
+    // Stabilize with fixed wing surfaces
+    plane.stabilize_roll();
+    plane.stabilize_pitch();
 }
 
 void ModeQAutotune::_exit()

@@ -674,7 +674,7 @@ class ChibiOSHWDef(object):
     def get_ram_reserve_start(self):
         '''get amount of memory to reserve for bootloader comms'''
         ram_reserve_start = self.get_config('RAM_RESERVE_START', default=0, type=int)
-        if ram_reserve_start == 0 and int(self.env_vars.get('AP_PERIPH',0)) == 1:
+        if ram_reserve_start == 0 and self.is_periph_fw():
             ram_reserve_start = 256
         return ram_reserve_start
 
@@ -1172,7 +1172,6 @@ class ChibiOSHWDef(object):
 #define HAL_USE_EMPTY_STORAGE 1
 #ifndef HAL_STORAGE_SIZE
 #define HAL_STORAGE_SIZE 16384
-#define DISABLE_WATCHDOG 1
 #endif
 ''')
             else:
@@ -1220,7 +1219,6 @@ class ChibiOSHWDef(object):
 #ifndef CH_CFG_USE_DYNAMIC
 #define CH_CFG_USE_DYNAMIC FALSE
 #endif
-#define DISABLE_WATCHDOG 1
 ''')
             if not self.env_vars['EXT_FLASH_SIZE_MB'] and not args.signed_fw:
                 f.write('''
@@ -1562,7 +1560,7 @@ INCLUDE common.ld
 
     def write_check_firmware(self, f):
         '''add AP_CHECK_FIRMWARE_ENABLED if needed'''
-        if self.env_vars.get('AP_PERIPH',0) != 0 or self.intdefines.get('AP_OPENDRONEID_ENABLED',0) == 1:
+        if self.is_periph_fw() or self.intdefines.get('AP_OPENDRONEID_ENABLED',0) == 1:
             f.write('''
 #ifndef AP_CHECK_FIRMWARE_ENABLED
 #define AP_CHECK_FIRMWARE_ENABLED 1
@@ -1907,7 +1905,7 @@ INCLUDE common.ld
         if OTG2_index is not None:
             f.write('#define HAL_OTG2_UART_INDEX %d\n' % OTG2_index)
             f.write('#define HAL_HAVE_DUAL_USB_CDC 1\n')
-            if self.env_vars.get('AP_PERIPH', 0) == 0:
+            if not self.is_periph_fw():
                 f.write('''
 #if defined(HAL_NUM_CAN_IFACES) && HAL_NUM_CAN_IFACES
 #ifndef HAL_OTG2_PROTOCOL
@@ -2480,7 +2478,7 @@ INCLUDE common.ld
         f = open(hwdat, 'w')
         f.write('\n'.join(self.all_lines))
         f.close()
-        if not 'AP_PERIPH' in self.env_vars:
+        if not self.is_periph_fw():
             self.romfs["hwdef.dat"] = hwdat
 
     def write_hwdef_header(self, outfilename):
@@ -2979,7 +2977,7 @@ INCLUDE common.ld
 
     def add_apperiph_defaults(self, f):
         '''add default defines for peripherals'''
-        if self.env_vars.get('AP_PERIPH',0) == 0:
+        if not self.is_periph_fw():
             # not AP_Periph
             return
 
@@ -2999,11 +2997,21 @@ INCLUDE common.ld
 #define HAL_GCS_ENABLED 0
 #endif
 
-// default to no protocols, AP_Periph enables with params
-#define DEFAULT_SERIAL1_PROTOCOL -1
-#define DEFAULT_SERIAL2_PROTOCOL -1
-#define DEFAULT_SERIAL3_PROTOCOL -1
-#define DEFAULT_SERIAL4_PROTOCOL -1
+/*
+  AP_Periph doesn't include the SERIAL parameter tree, instead each
+  supported serial device type has it's own parameter within AP_Periph
+  for which port is used.
+ */
+#define DEFAULT_SERIAL0_PROTOCOL SerialProtocol_None
+#define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_None
+#define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_None
+#define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_None
+#define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_None
+#define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_None
+#define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_None
+#define DEFAULT_SERIAL7_PROTOCOL SerialProtocol_None
+#define DEFAULT_SERIAL8_PROTOCOL SerialProtocol_None
+#define DEFAULT_SERIAL9_PROTOCOL SerialProtocol_None
 
 #ifndef HAL_LOGGING_MAVLINK_ENABLED
 #define HAL_LOGGING_MAVLINK_ENABLED 0
@@ -3109,6 +3117,12 @@ INCLUDE common.ld
 #ifndef AP_RC_CHANNEL_ENABLED
 #define AP_RC_CHANNEL_ENABLED 0
 #endif
+
+#ifndef AP_RCPROTOCOL_ENABLED
+#define AP_RCPROTOCOL_ENABLED 0
+#endif
+
+#define HAL_CRSF_TELEM_ENABLED 0
 
 /*
  * GPS Backends - we selectively turn backends on.
@@ -3223,6 +3237,26 @@ INCLUDE common.ld
 #define AP_WINCH_ENABLED 0
 #endif
 
+#ifndef AP_VIDEOTX_ENABLED
+#define AP_VIDEOTX_ENABLED 0
+#endif
+
+#ifndef AP_FRSKY_TELEM_ENABLED
+#define AP_FRSKY_TELEM_ENABLED 0
+#endif
+
+#ifndef HAL_SPEKTRUM_TELEM_ENABLED
+#define HAL_SPEKTRUM_TELEM_ENABLED 0
+#endif
+
+#ifndef AP_FILESYSTEM_ROMFS_ENABLED
+#define AP_FILESYSTEM_ROMFS_ENABLED 0
+#endif
+
+#ifndef NOTIFY_LED_OVERRIDE_DEFAULT
+#define NOTIFY_LED_OVERRIDE_DEFAULT 1       // rgb_source_t::mavlink
+#endif
+
 // end AP_Periph defaults
 ''')
 
@@ -3289,6 +3323,8 @@ INCLUDE common.ld
 
 #define HAL_DSHOT_ALARM_ENABLED 0
 
+#define HAL_LOGGING_ENABLED 0
+
 // IOMCUs *definitely* don't use the FFT library:
 #ifndef HAL_GYROFFT_ENABLED
 #define HAL_GYROFFT_ENABLED 0
@@ -3322,12 +3358,15 @@ INCLUDE common.ld
 // end IOMCU Firmware defaults
 ''')
 
+    def is_periph_fw(self):
+        return self.env_vars.get('AP_PERIPH', 0) != 0
+
     def add_normal_firmware_defaults(self, f):
         '''add default defines to builds with are not bootloader, periph or IOMCU'''
         if self.env_vars.get('IOMCU_FW', 0) != 0:
             # IOMCU firmware
             return
-        if self.env_vars.get('AP_PERIPH', 0) != 0:
+        if self.is_periph_fw():
             # Periph firmware
             return
         if args.bootloader:

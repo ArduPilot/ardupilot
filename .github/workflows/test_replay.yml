@@ -1,26 +1,141 @@
 name: test replay
 
-on: 
+on:
   push:
-    paths-ignore: # ignore vehicle only changes
+    paths-ignore:
+      # remove other vehicles
       - 'AntennaTracker/**'
+      - 'ArduCopter/**'
       - 'ArduPlane/**'
       - 'ArduSub/**'
-      - 'Rover/**'
       - 'Blimp/**'
-      - 'ArduCopter/**'
+      - 'Rover/**'
+      # remove non SITL HAL
+      - 'libraries/AP_HAL_ChibiOS/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      # remove non SITL directories
+      - 'Tools/AP_Bootloader/**'
+      - 'Tools/AP_Periph/**'
+      - 'Tools/bootloaders/**'
+      - 'Tools/CHDK-Script/**'
+      - 'Tools/CodeStyle/**'
+      - 'Tools/completion/**'
+      - 'Tools/CPUInfo/**'
+      - 'Tools/debug/**'
+      - 'Tools/environment_install/**'
+      - 'Tools/FilterTestTool/**'
+      - 'Tools/Frame_params/**'
+      - 'Tools/geotag/**'
+      - 'Tools/GIT_Test/**'
+      - 'Tools/gittools/**'
+      - 'Tools/Hello/**'
+      - 'Tools/IO_Firmware/**'
+      - 'Tools/Linux_HAL_Essentials/**'
+      - 'Tools/LogAnalyzer/**'
+      - 'Tools/mavproxy_modules/**'
+      - 'Tools/Pozyx/**'
+      - 'Tools/PrintVersion.py'
+      - 'Tools/simulink/**'
+      - 'Tools/UDP_Proxy/**'
+      - 'Tools/vagrant/**'
+      - 'Tools/Vicon/**'
+      # Discard python file from Tools/scripts as not used
+      - 'Tools/scripts/**.py'
+      - 'Tools/scripts/build_sizes/**'
+      - 'Tools/scripts/build_tests/**'
+      - 'Tools/scripts/CAN/**'
+      - 'Tools/scripts/signing/**'
+      # Remove autotests stuff
+      - 'Tools/autotest/**'
+      # Remove markdown files as irrelevant
+      - '**.md'
+      # Remove dotfile at root directory
+      - './.dir-locals.el'
+      - './.dockerignore'
+      - './.editorconfig'
+      - './.flake8'
+      - './.gitattributes'
+      - './.github'
+      - './.gitignore'
+      - './.pre-commit-config.yaml'
+      - './.pydevproject'
+      - './.valgrind-suppressions'
+      - './.valgrindrc'
+      - 'Dockerfile'
+      - 'Vagrantfile'
+      - 'Makefile'
+      # Remove some directories check
+      - '.vscode/**'
+      - '.github/ISSUE_TEMPLATE/**'
 
   pull_request:
-    paths-ignore: # ignore vehicle only changes
+    paths-ignore:
+      # remove other vehicles
       - 'AntennaTracker/**'
+      - 'ArduCopter/**'
       - 'ArduPlane/**'
       - 'ArduSub/**'
-      - 'Rover/**'
       - 'Blimp/**'
-      - 'ArduCopter/**'
+      - 'Rover/**'
+      # remove non SITL HAL
+      - 'libraries/AP_HAL_ChibiOS/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      # remove non SITL directories
+      - 'Tools/AP_Bootloader/**'
+      - 'Tools/AP_Periph/**'
+      - 'Tools/bootloaders/**'
+      - 'Tools/CHDK-Script/**'
+      - 'Tools/CodeStyle/**'
+      - 'Tools/completion/**'
+      - 'Tools/CPUInfo/**'
+      - 'Tools/debug/**'
+      - 'Tools/environment_install/**'
+      - 'Tools/FilterTestTool/**'
+      - 'Tools/Frame_params/**'
+      - 'Tools/geotag/**'
+      - 'Tools/GIT_Test/**'
+      - 'Tools/gittools/**'
+      - 'Tools/Hello/**'
+      - 'Tools/IO_Firmware/**'
+      - 'Tools/Linux_HAL_Essentials/**'
+      - 'Tools/LogAnalyzer/**'
+      - 'Tools/mavproxy_modules/**'
+      - 'Tools/Pozyx/**'
+      - 'Tools/PrintVersion.py'
+      - 'Tools/simulink/**'
+      - 'Tools/UDP_Proxy/**'
+      - 'Tools/vagrant/**'
+      - 'Tools/Vicon/**'
+      # Discard python file from Tools/scripts as not used
+      - 'Tools/scripts/**.py'
+      - 'Tools/scripts/build_sizes/**'
+      - 'Tools/scripts/build_tests/**'
+      - 'Tools/scripts/CAN/**'
+      - 'Tools/scripts/signing/**'
+      # Remove autotests stuff
+      - 'Tools/autotest/**'
+      # Remove markdown files as irrelevant
+      - '**.md'
+      # Remove dotfile at root directory
+      - './.dir-locals.el'
+      - './.dockerignore'
+      - './.editorconfig'
+      - './.flake8'
+      - './.gitattributes'
+      - './.github'
+      - './.gitignore'
+      - './.pre-commit-config.yaml'
+      - './.pydevproject'
+      - './.valgrind-suppressions'
+      - './.valgrindrc'
+      - 'Dockerfile'
+      - 'Vagrantfile'
+      - 'Makefile'
+      # Remove some directories check
+      - '.vscode/**'
+      - '.github/ISSUE_TEMPLATE/**'
 
   workflow_dispatch:
-
 
 concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
@@ -29,7 +144,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-20.04
-    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:latest
+    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.0.29
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:

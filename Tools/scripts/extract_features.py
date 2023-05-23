@@ -153,6 +153,7 @@ class ExtractFeatures(object):
             ('AP_LANDINGGEAR_ENABLED', r'AP_LandingGear::init\b',),
             ('AP_WINCH_ENABLED', 'AP_Winch::AP_Winch',),
 
+            ('AP_RCPROTOCOL_ENABLED', r'AP_RCProtocol::init\b',),
             ('AP_RCPROTOCOL_{type}_ENABLED', r'AP_RCProtocol_(?P<type>.*)::_process_byte\b',),
             ('AP_RCPROTOCOL_{type}_ENABLED', r'AP_RCProtocol_(?P<type>.*)::_process_pulse\b',),
 
@@ -199,6 +200,7 @@ class ExtractFeatures(object):
         # a list of problematic defines we don't have fixes for ATM:
         whitelist = frozenset([
             'HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF',  # this define changes single method body, hard to detect?
+            'AP_PLANE_BLACKBOX_LOGGING', # no visible signature
         ])
         for option in build_options.BUILD_OPTIONS:
             if option.define in whitelist:

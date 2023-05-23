@@ -28,13 +28,14 @@ class AP_RCProtocol_Backend;
 
 class AP_RCProtocol {
 public:
-    AP_RCProtocol() {}
-    ~AP_RCProtocol();
-    friend class AP_RCProtocol_Backend;
 
     enum rcprotocol_t {
-        PPM        =  0,
+#if AP_RCPROTOCOL_PPMSUM_ENABLED
+        PPMSUM     =  0,
+#endif
+#if AP_RCPROTOCOL_IBUS_ENABLED
         IBUS       =  1,
+#endif
 #if AP_RCPROTOCOL_SBUS_ENABLED
         SBUS       =  2,
 #endif
@@ -42,7 +43,9 @@ public:
         SBUS_NI    =  3,
 #endif
         DSM        =  4,
+#if AP_RCPROTOCOL_SUMD_ENABLED
         SUMD       =  5,
+#endif
 #if AP_RCPROTOCOL_SRXL_ENABLED
         SRXL       =  6,
 #endif
@@ -52,7 +55,9 @@ public:
 #if AP_RCPROTOCOL_CRSF_ENABLED
         CRSF       =  8,
 #endif
+#if AP_RCPROTOCOL_ST24_ENABLED
         ST24       =  9,
+#endif
 #if AP_RCPROTOCOL_FPORT_ENABLED
         FPORT      = 10,
 #endif
@@ -64,6 +69,16 @@ public:
 #endif
         NONE    //last enum always is None
     };
+
+    // return protocol name as a string
+    static const char *protocol_name_from_protocol(rcprotocol_t protocol);
+
+#if AP_RCPROTOCOL_ENABLED
+
+    AP_RCProtocol() {}
+    ~AP_RCProtocol();
+    friend class AP_RCProtocol_Backend;
+
     void init();
     bool valid_serial_prot() const
     {
@@ -100,7 +115,9 @@ public:
 #if AP_RCPROTOCOL_SBUS_NI_ENABLED
         case SBUS_NI:
 #endif
-        case PPM:
+#if AP_RCPROTOCOL_PPMSUM_ENABLED
+        case PPMSUM:
+#endif
 #if AP_RCPROTOCOL_FPORT_ENABLED
         case FPORT:
 #endif
@@ -111,15 +128,21 @@ public:
         case CRSF:
 #endif
             return true;
+#if AP_RCPROTOCOL_IBUS_ENABLED
         case IBUS:
+#endif
+#if AP_RCPROTOCOL_SUMD_ENABLED
         case SUMD:
+#endif
 #if AP_RCPROTOCOL_SRXL_ENABLED
         case SRXL:
 #endif
 #if AP_RCPROTOCOL_SRXL2_ENABLED
         case SRXL2:
 #endif
+#if AP_RCPROTOCOL_ST24_ENABLED
         case ST24:
+#endif
         case NONE:
             return false;
         }
@@ -133,9 +156,6 @@ public:
     void start_bind(void);
     int16_t get_RSSI(void) const;
     int16_t get_rx_link_quality(void) const;
-
-    // return protocol name as a string
-    static const char *protocol_name_from_protocol(rcprotocol_t protocol);
 
     // return protocol name as a string
     const char *protocol_name(void) const;
@@ -196,10 +216,15 @@ private:
 
     // allowed RC protocols mask (first bit means "all")
     uint32_t rc_protocols_mask;
+
+#endif  // AP_RCPROTCOL_ENABLED
+
 };
 
+#if AP_RCPROTOCOL_ENABLED
 namespace AP {
     AP_RCProtocol &RC();
 };
 
 #include "AP_RCProtocol_Backend.h"
+#endif  // AP_RCProtocol_enabled

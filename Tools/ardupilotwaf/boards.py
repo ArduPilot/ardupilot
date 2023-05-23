@@ -52,11 +52,12 @@ class Board:
         )
 
         # Setup scripting, had to defer this to allow checking board size
-        if ((not cfg.options.disable_scripting) and
+        if (cfg.options.enable_scripting or
+            ((not cfg.options.disable_scripting) and
             (not cfg.env.DISABLE_SCRIPTING) and
             ((cfg.env.BOARD_FLASH_SIZE is None) or
              (cfg.env.BOARD_FLASH_SIZE == []) or
-             (cfg.env.BOARD_FLASH_SIZE > 1024))):
+             (cfg.env.BOARD_FLASH_SIZE > 1024)))):
 
             env.DEFINES.update(
                 AP_SCRIPTING_ENABLED = 1,
@@ -275,7 +276,7 @@ class Board:
             env.DEFINES.update(
                 HAL_DEBUG_BUILD = 1,
             )
-        elif cfg.options.g:
+        elif cfg.options.debug_symbols:
             env.CFLAGS += [
                 '-g',
             ]
@@ -652,7 +653,8 @@ class sitl(Board):
                                 CANARD_ENABLE_CANFD = 1)
 
         env.CXXFLAGS += [
-            '-Werror=float-equal'
+            '-Werror=float-equal',
+            '-Werror=missing-declarations',
         ]
 
         if cfg.options.ubsan or cfg.options.ubsan_abort:
@@ -794,6 +796,7 @@ class sitl_periph_gps(sitl):
             HAL_RALLY_ENABLED = 0,
             AP_SCHEDULER_ENABLED = 0,
             CANARD_ENABLE_TAO_OPTION = 1,
+            AP_RCPROTOCOL_ENABLED = 0,
             CANARD_ENABLE_CANFD = 1,
             CANARD_MULTI_IFACE = 1,
             HAL_CANMANAGER_ENABLED = 0,

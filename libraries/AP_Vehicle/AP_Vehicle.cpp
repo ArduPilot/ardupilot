@@ -392,6 +392,7 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if COMPASS_CAL_ENABLED
     SCHED_TASK_CLASS(Compass,      &vehicle.compass,        cal_update,     100, 200, 75),
 #endif
+    SCHED_TASK_CLASS(AP_Notify,    &vehicle.notify,         update,                   50, 300, 78),
 #if HAL_NMEA_OUTPUT_ENABLED
     SCHED_TASK_CLASS(AP_NMEA_Output, &vehicle.nmea,         update,                   50, 50, 180),
 #endif

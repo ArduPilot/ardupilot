@@ -85,9 +85,9 @@
 #define AP_SERIALMANAGER_ALEXMOS_BUFSIZE_RX     128
 #define AP_SERIALMANAGER_ALEXMOS_BUFSIZE_TX     128
 
-#define AP_SERIALMANAGER_SToRM32_BAUD           115200
-#define AP_SERIALMANAGER_SToRM32_BUFSIZE_RX     128
-#define AP_SERIALMANAGER_SToRM32_BUFSIZE_TX     128
+#define AP_SERIALMANAGER_GIMBAL_BAUD            115200
+#define AP_SERIALMANAGER_GIMBAL_BUFSIZE_RX      128
+#define AP_SERIALMANAGER_GIMBAL_BUFSIZE_TX      128
 
 #define AP_SERIALMANAGER_VOLZ_BAUD           115
 #define AP_SERIALMANAGER_VOLZ_BUFSIZE_RX     128
@@ -132,7 +132,7 @@ public:
         SerialProtocol_GPS = 5,
         SerialProtocol_GPS2 = 6,                     // do not use - use GPS and provide instance of 1
         SerialProtocol_AlexMos = 7,
-        SerialProtocol_SToRM32 = 8,
+        SerialProtocol_Gimbal = 8,                   // SToRM32, Siyi custom serial protocols
         SerialProtocol_Rangefinder = 9,
         SerialProtocol_FrSky_SPort_Passthrough = 10, // FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
         SerialProtocol_Lidar360 = 11,                // Lightware SF40C, TeraRanger Tower or RPLidarA2

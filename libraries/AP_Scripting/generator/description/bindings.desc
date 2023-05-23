@@ -280,6 +280,7 @@ singleton AP_Vehicle method reboot void boolean
 
 include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED rename serialLED
+singleton AP_SerialLED depends AP_SERIALLED_ENABLED
 singleton AP_SerialLED method set_num_neopixel boolean uint8_t 1 16 uint8_t 0 AP_SERIALLED_MAX_LEDS
 singleton AP_SerialLED method set_num_profiled boolean uint8_t 1 16 uint8_t 0 AP_SERIALLED_MAX_LEDS
 singleton AP_SerialLED method set_RGB void uint8_t 1 16 int8_t -1 INT8_MAX uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check
@@ -604,7 +605,7 @@ singleton AP_Mount method get_location_target boolean uint8_t'skip_check Locatio
 singleton AP_Mount method set_attitude_euler void uint8_t'skip_check float'skip_check float'skip_check float'skip_check
 
 include AP_Camera/AP_Camera.h
-singleton AP_Camera depends AP_CAMERA_ENABLED == 1
+singleton AP_Camera depends AP_CAMERA_SCRIPTING_ENABLED == 1
 singleton AP_Camera rename camera
 singleton AP_Camera semaphore
 singleton AP_Camera method take_picture void uint8_t'skip_check

@@ -300,7 +300,7 @@ public:
     }
 
     // Query the highest status this GPS supports (always reports GPS_OK_FIX_3D for the blended GPS)
-    GPS_Status highest_supported_status(uint8_t instance) const;
+    GPS_Status highest_supported_status(uint8_t instance) const WARN_IF_UNUSED;
 
     // location of last fix
     const Location &location(uint8_t instance) const {
@@ -716,6 +716,11 @@ private:
         uint16_t total_length;
         uint8_t buffer[MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN*4];
     } *rtcm_buffer;
+
+    struct {
+        uint16_t fragments_used;
+        uint16_t fragments_discarded;
+    } rtcm_stats;
 
     // re-assemble GPS_RTCM_DATA message
     void handle_gps_rtcm_data(const mavlink_message_t &msg);
