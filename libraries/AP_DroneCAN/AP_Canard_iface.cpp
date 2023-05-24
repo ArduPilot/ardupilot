@@ -5,11 +5,13 @@
 #include <canard/handler_list.h>
 #include <canard/transfer_object.h>
 #include <AP_Math/AP_Math.h>
-
+#include <dronecan_msgs.h>
 extern const AP_HAL::HAL& hal;
 #define LOG_TAG "DroneCANIface"
 
 #define DEBUG_PKTS 0
+
+#define CANARD_MSG_TYPE_FROM_ID(x)                         ((uint16_t)(((x) >> 8U)  & 0xFFFFU))
 
 DEFINE_HANDLER_LIST_HEADS();
 DEFINE_HANDLER_LIST_SEMAPHORES();
@@ -161,7 +163,7 @@ void CanardInterface::processTestRx() {
 }
 #endif
 
-void CanardInterface::processTx() {
+void CanardInterface::processTx(bool raw_commands_only = false) {
     WITH_SEMAPHORE(_sem);
 
     for (uint8_t iface = 0; iface < num_ifaces; iface++) {
@@ -176,6 +178,16 @@ void CanardInterface::processTx() {
         // scan through list of pending transfers
         while (true) {
             auto txf = &txq->frame;
+            if (raw_commands_only &&
+                CANARD_MSG_TYPE_FROM_ID(txf->id) != UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_ID &&
+                CANARD_MSG_TYPE_FROM_ID(txf->id) != COM_HOBBYWING_ESC_RAWCOMMAND_ID) {
+                // look at next transfer
+                txq = txq->next;
+                if (txq == nullptr) {
+                    break;
+                }
+                continue;
+            }
             txmsg.dlc = AP_HAL::CANFrame::dataLengthToDlc(txf->data_len);
             memcpy(txmsg.data, txf->data, txf->data_len);
             txmsg.id = (txf->id | AP_HAL::CANFrame::FlagEFF);
