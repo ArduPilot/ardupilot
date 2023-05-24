@@ -141,7 +141,7 @@ void RCInput_RCProtocol::_timer_tick(void)
         ssize_t n = ::read(fd_inverted, &b[0], sizeof(b));
         if (n > 0) {
             for (uint8_t i=0; i<n; i++) {
-                AP::RC().process_byte(b[i], inverted_is_115200?115200:100000);
+                AP::RC().process_byte(b[i], inverted_is_115200?AP_RCProtocol::FPORT_SR_CONFIG:AP_RCProtocol::SBUS_SR_CONFIG);
             }
         }
     }
@@ -149,7 +149,7 @@ void RCInput_RCProtocol::_timer_tick(void)
         ssize_t n = ::read(fd_115200, &b[0], sizeof(b));
         if (n > 0 && !inverted_is_115200) {
             for (uint8_t i=0; i<n; i++) {
-                AP::RC().process_byte(b[i], 115200);
+                AP::RC().process_byte(b[i], AP_RCProtocol::DEFAULT_SR_CONFIG);
             }
         }
     }
