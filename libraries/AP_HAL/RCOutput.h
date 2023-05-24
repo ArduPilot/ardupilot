@@ -312,6 +312,12 @@ public:
     virtual void set_dshot_rate(uint8_t dshot_rate, uint16_t loop_rate_hz) {}
 
     /*
+      Set the dshot period in us, only for use by the IOMCU
+     */
+    virtual void set_dshot_period(uint32_t period_us, uint8_t dshot_rate) {}
+    virtual uint32_t get_dshot_period_us() const { return 0; }
+
+    /*
       Set the dshot ESC type
      */
     virtual void set_dshot_esc_type(DshotEscType esc_type) {}
@@ -372,7 +378,7 @@ public:
      * Options are (ticks, percentage):
      * 20/7/14, 35/70
      * 11/4/8, 36/72
-     * 8/3/6, 37/75
+     * 8/3/6, 37/75 <-- this is the preferred duty cycle and has some support on the interwebs
      */
     // bitwidths: 8/3/6 == 37%/75%
     static constexpr uint32_t DSHOT_BIT_WIDTH_TICKS_DEFAULT = 8;
