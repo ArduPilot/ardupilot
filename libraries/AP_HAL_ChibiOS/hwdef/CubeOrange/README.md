@@ -1,8 +1,11 @@
 # CubeOrange Flight Controller
 
-The Hex CubeOrange flight controller is sold by a range of resellers
+The CubePilot CubeOrange flight controller is sold by a range of resellers
 listed on the
 [CubePilot website](http://cubepilot.org)
+
+For Detailed information on the CubeOrange see the
+[Cube Module Overview](https://docs.cubepilot.org/user-guides/autopilot/the-cube-module-overview)
 
 ## Features
 
