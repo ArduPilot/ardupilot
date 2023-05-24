@@ -1,5 +1,15 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.3.7-beta1 24-May-2023
+Changes from 4.3.6
+1) Bug fixes
+    a) EKF3 accel bias calculations bug fix
+    b) EKF3 accel bias process noise adjusted for greater robustness
+    c) GSF yaw numerical stability fix caused by compassmot
+    d) INS batch sampler fix to avoid watchdog if INS_LOG_BAT_CNT changed without rebooting
+    e) Memory corruption bug in the STM32H757 (very rare)
+    f) RC input on IOMCU bug fix (RC might not be regained if lost)
+------------------------------------------------------------------
 Copter 4.3.6 05-Apr-2023 / 4.3.6-beta1, 4.3.6--beta2 27-Mar-2023
 Changes from 4.3.5
 1) Bi-directional DShot fix for possible motor stop approx 72min after startup 
