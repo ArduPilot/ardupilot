@@ -75,7 +75,7 @@ void AP_Beacon_Nooploop::update(void)
                 }
             } else if (type == MsgType::SETTING_FRAME0) {
                 parse_setting_frame0();
-            } 
+            }
         }
     }
 }
@@ -246,7 +246,7 @@ void AP_Beacon_Nooploop::parse_setting_frame0()
 
         // position scaled to meters and changed to NED
         const Vector3f pos_m {pos_y * 0.001f, pos_x * 0.001f, -pos_z * 0.001f};
-        
+
         set_beacon_position(i, pos_m);
     }
     _anchor_pos_avail = true;

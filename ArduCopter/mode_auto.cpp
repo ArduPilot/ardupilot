@@ -706,7 +706,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         // point the camera to a specified angle
         do_mount_control(cmd);
         break;
-    
+
     case MAV_CMD_DO_FENCE_ENABLE:
 #if AP_FENCE_ENABLED
         if (cmd.p1 == 0) { //disable
@@ -2085,7 +2085,7 @@ bool ModeAuto::verify_loiter_to_alt() const
 // returns true with RTL has completed successfully
 bool ModeAuto::verify_RTL()
 {
-    return (copter.mode_rtl.state_complete() && 
+    return (copter.mode_rtl.state_complete() &&
             (copter.mode_rtl.state() == ModeRTL::SubMode::FINAL_DESCENT || copter.mode_rtl.state() == ModeRTL::SubMode::LAND) &&
             (motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE));
 }

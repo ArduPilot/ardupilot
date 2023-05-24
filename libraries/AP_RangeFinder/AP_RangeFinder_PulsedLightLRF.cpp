@@ -81,7 +81,7 @@ void AP_RangeFinder_PulsedLightLRF::timer(void)
         if (!_dev->check_next_register()) {
             // re-send the acquire. this handles the case of power
             // cycling while running in continuous mode
-            _dev->write_register(LL40LS_MEASURE_REG, LL40LS_MSRREG_ACQUIRE);            
+            _dev->write_register(LL40LS_MEASURE_REG, LL40LS_MSRREG_ACQUIRE);
         }
     }
 
@@ -95,7 +95,7 @@ void AP_RangeFinder_PulsedLightLRF::timer(void)
             if (abs(_distance_cm - last_distance_cm) < 100) {
                 state.distance_m = _distance_cm * 0.01f;
                 state.last_reading_ms = AP_HAL::millis();
-                update_status();                
+                update_status();
             }
             last_distance_cm = _distance_cm;
         } else {
@@ -106,7 +106,7 @@ void AP_RangeFinder_PulsedLightLRF::timer(void)
             phase = PHASE_MEASURE;
         }
         if (!v3hp_hardware) {
-            // for v3hp hw we start PHASE_MEASURE immediately after PHASE_COLLECT 
+            // for v3hp hw we start PHASE_MEASURE immediately after PHASE_COLLECT
             break;
         }
     }
@@ -181,7 +181,7 @@ bool AP_RangeFinder_PulsedLightLRF::init(void)
         }
         v2_hardware = (hw_version >= 0x15);
     }
-    
+
     const struct settings_table *table;
     uint8_t num_settings;
 
@@ -196,7 +196,7 @@ bool AP_RangeFinder_PulsedLightLRF::init(void)
     } else {
         table = settings_v1;
         num_settings = sizeof(settings_v1) / sizeof(settings_table);
-        phase = PHASE_MEASURE;    
+        phase = PHASE_MEASURE;
     }
 
     _dev->setup_checked_registers(num_settings);
@@ -208,7 +208,7 @@ bool AP_RangeFinder_PulsedLightLRF::init(void)
     }
 
     printf("Found LidarLite device=0x%x v2=%d v3hp=%d\n", _dev->get_bus_id(), (int)v2_hardware, (int)v3hp_hardware);
-    
+
     _dev->get_semaphore()->give();
 
     _dev->register_periodic_callback(20000,

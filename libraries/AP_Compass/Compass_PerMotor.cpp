@@ -87,7 +87,7 @@ const AP_Param::GroupInfo Compass_PerMotor::var_info[] = {
     // @Description: Compensation for Z axis of motor4
     // @User: Advanced
     AP_GROUPINFO("4",  6, Compass_PerMotor, compensation[3], 0),
-    
+
     AP_GROUPEND
 };
 
@@ -112,8 +112,8 @@ float Compass_PerMotor::scaled_output(uint8_t motor)
     if (!have_motor_map) {
         return 0;
     }
-    
-    // this currently assumes first 4 channels. 
+
+    // this currently assumes first 4 channels.
     uint16_t pwm = hal.rcout->read_last_sent(motor_map[motor]);
 
     // get 0 to 1 motor demand
@@ -122,7 +122,7 @@ float Compass_PerMotor::scaled_output(uint8_t motor)
     if (output <= 0) {
         return 0;
     }
-    
+
     // scale for voltage
     output *= voltage;
 
@@ -148,7 +148,7 @@ void Compass_PerMotor::calibration_start(void)
         compass.read();
         hal.scheduler->delay(50);
     }
-    
+
     base_field = compass.get_field(0);
     running = true;
 }
@@ -157,7 +157,7 @@ void Compass_PerMotor::calibration_start(void)
 void Compass_PerMotor::calibration_update(void)
 {
     uint32_t now = AP_HAL::millis();
-    
+
     // accumulate per-motor sums
     for (uint8_t i=0; i<4; i++) {
         float output = scaled_output(i);
@@ -198,14 +198,14 @@ void Compass_PerMotor::calibration_end(void)
         if (output <= 0) {
             continue;
         }
-        
+
         Vector3f c = field_change / output;
         compensation[i].set_and_save(c);
     }
 
     // enable per-motor compensation
     enable.set_and_save(1);
-    
+
     running = false;
 }
 

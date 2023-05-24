@@ -294,7 +294,7 @@ bool AP_PiccoloCAN::write_frame(AP_HAL::CANFrame &out_frame, uint64_t timeout)
 
     bool read_select = false;
     bool write_select = true;
-    
+
     bool ret =  _can_iface->select(read_select, write_select, &out_frame, timeout);
 
     if (!ret || !write_select) {
@@ -353,7 +353,7 @@ void AP_PiccoloCAN::update()
         if (is_esc_channel_active(ii)) {
 
             uint16_t output = 0;
-            
+
             SRV_Channel::Aux_servo_function_t motor_function = SRV_Channels::get_motor_function(ii);
 
             if (SRV_Channels::get_output_pwm(motor_function, output)) {
@@ -503,7 +503,7 @@ void AP_PiccoloCAN::send_servo_messages(void)
         send_cmd = false;
 
         for (uint8_t jj = 0; jj < 4; jj++) {
-            
+
             idx = (ii * 4) + jj;
 
             // Set default command value if an output field is unused
@@ -750,7 +750,7 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
 
         // There are no common error bits between the Gen-1 and Gen-2 ICD
     } else if (decodeESC_StatusBPacket(&frame, &esc.voltage, &esc.current, &esc.dutyCycle, &esc.escTemperature, &esc.motorTemperature)) {
-        
+
         AP_ESC_Telem_Backend::TelemetryData telem {};
 
         telem.voltage = float(esc.voltage) * 0.1f;
@@ -771,7 +771,7 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
         AP_ESC_Telem_Backend::TelemetryData telem {};
 
         telem.temperature_cdeg = int16_t(escTemp * 100);
-        
+
         update_telem_data(addr, telem, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
 
         esc.newTelemetry = true;

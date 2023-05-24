@@ -607,7 +607,7 @@ bool AP_Landing_Deepstall::verify_breakout(const Location &current_loc, const Lo
     if (heading_error <= 10.0  && fabsf(height_error) < DEEPSTALL_LOITER_ALT_TOLERANCE) {
             // Want to head in a straight line from _here_ to the next waypoint instead of center of loiter wp
             return true;
-    }   
+    }
     return false;
 }
 

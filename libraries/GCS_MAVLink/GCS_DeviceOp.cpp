@@ -54,7 +54,7 @@ void GCS_MAVLINK::handle_device_op_read(const mavlink_message_t &msg)
     }
     if (!dev->get_semaphore()->take(10)) {
         retcode = 3;
-        goto fail;        
+        goto fail;
     }
     if (regstart == 0xff) {
         // assume raw transfer, non-register interface
@@ -99,7 +99,7 @@ void GCS_MAVLINK::handle_device_op_write(const mavlink_message_t &msg)
     mavlink_msg_device_op_write_decode(&msg, &packet);
     AP_HAL::OwnPtr<AP_HAL::Device> dev = nullptr;
     uint8_t retcode = 0;
-    
+
     if (packet.bustype == DEVICE_OP_BUSTYPE_I2C) {
         dev = hal.i2c_mgr->get_device(packet.bus, packet.address);
     } else if (packet.bustype == DEVICE_OP_BUSTYPE_SPI) {
@@ -114,7 +114,7 @@ void GCS_MAVLINK::handle_device_op_write(const mavlink_message_t &msg)
     }
     if (!dev->get_semaphore()->take(10)) {
         retcode = 3;
-        goto fail;        
+        goto fail;
     }
     if (packet.regstart == 0xff) {
         // assume raw transfer, non-register interface

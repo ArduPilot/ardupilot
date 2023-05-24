@@ -160,7 +160,7 @@ uint16_t millis16()
 {
     return millis64() & 0xFFFF;
 }
-    
+
 uint64_t micros64()
 {
     const HALSITL::Scheduler* scheduler = HALSITL::Scheduler::from(hal.scheduler);
@@ -223,7 +223,7 @@ uint16_t native_millis16()
     return native_millis64() & 0xFFFF;
 #endif
 }
-    
+
 
 uint64_t native_micros64()
 {

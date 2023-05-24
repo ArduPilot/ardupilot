@@ -77,8 +77,8 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
     // don't update terrain offset if ground is being used as the zero height datum in the main filter
     bool cantFuseFlowData = ((frontend->_flowUse != FLOW_USE_TERRAIN)
     || !gpsIsInUse
-    || PV_AidingMode == AID_RELATIVE 
-    || velHorizSq < 25.0f 
+    || PV_AidingMode == AID_RELATIVE
+    || velHorizSq < 25.0f
     || (MAX(ofDataDelayed.flowRadXY[0],ofDataDelayed.flowRadXY[1]) > frontend->_maxFlowRate));
 
     if ((!rangeDataToFuse && cantFuseFlowData) || (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)) {
@@ -182,7 +182,7 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
             // calculate innovations
             auxFlowObsInnov = losPred - ofDataDelayed.flowRadXYcomp;
 
-            // calculate observation jacobians 
+            // calculate observation jacobians
             ftype t2 = q0*q0;
             ftype t3 = q1*q1;
             ftype t4 = q2*q2;
@@ -303,7 +303,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
         Vector3F posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
         range -= posOffsetEarth.z / prevTnb.c.z;
     }
-    
+
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
     // override with user specified height (if given, for rover)
     if (ofDataDelayed.heightOverride > 0) {

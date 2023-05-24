@@ -21,7 +21,7 @@
 #include <AC_Avoidance/AP_OADatabase.h>
 
 /*
-  base class constructor. 
+  base class constructor.
   This incorporates initialisation as well.
 */
 AP_Proximity_Backend::AP_Proximity_Backend(AP_Proximity& _frontend, AP_Proximity::Proximity_State& _state, AP_Proximity_Params& _params) :
@@ -131,7 +131,7 @@ void AP_Proximity_Backend::database_push(float angle, float pitch, float distanc
         // sanity check on pitch
         return;
     }
-    //Assume object is angle and pitch bearing and distance meters away from the vehicle 
+    //Assume object is angle and pitch bearing and distance meters away from the vehicle
     Vector3f object_3D;
     object_3D.offset_bearing(wrap_180(angle), (pitch * -1.0f), distance);
     const Vector3f rotated_object_3D = body_to_ned * object_3D;

@@ -49,7 +49,7 @@ void Plane::init_ardupilot()
     notify_mode(*control_mode);
 
     init_rc_out_main();
-    
+
     // keep a record of how many resets have happened. This can be
     // used to detect in-flight resets
     g.num_resets.set_and_save(g.num_resets+1);
@@ -127,7 +127,7 @@ void Plane::init_ardupilot()
 #endif
 
     AP_Param::reload_defaults_file(true);
-    
+
     startup_ground();
 
     // don't initialise aux rc output until after quadplane is setup as
@@ -360,7 +360,7 @@ void Plane::check_long_failsafe()
                    gcs_last_seen_ms != 0 &&
                    (tnow - gcs_last_seen_ms) > g.fs_timeout_long*1000) {
             failsafe_long_on_event(FAILSAFE_GCS, ModeReason::GCS_FAILSAFE);
-        } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_RSSI && 
+        } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_RSSI &&
                    gcs().chan(0) != nullptr &&
                    gcs().chan(0)->last_radio_status_remrssi_ms() != 0 &&
                    (tnow - gcs().chan(0)->last_radio_status_remrssi_ms()) > g.fs_timeout_long*1000) {
@@ -373,10 +373,10 @@ void Plane::check_long_failsafe()
             timeout_seconds = g.fs_timeout_short;
         }
         // We do not change state but allow for user to change mode
-        if (failsafe.state == FAILSAFE_GCS && 
+        if (failsafe.state == FAILSAFE_GCS &&
             (tnow - gcs_last_seen_ms) < timeout_seconds*1000) {
             failsafe_long_off_event(ModeReason::GCS_FAILSAFE);
-        } else if (failsafe.state == FAILSAFE_LONG && 
+        } else if (failsafe.state == FAILSAFE_LONG &&
                    !failsafe.rc_failsafe) {
             failsafe_long_off_event(ModeReason::RADIO_FAILSAFE);
         }

@@ -28,7 +28,7 @@ class AP_Airspeed_Backend {
 public:
     AP_Airspeed_Backend(AP_Airspeed &frontend, uint8_t instance);
     virtual ~AP_Airspeed_Backend();
-    
+
     // probe and initialise the sensor
     virtual bool init(void) = 0;
 
@@ -121,7 +121,7 @@ protected:
         NMEA     = 0x09,
         ASP5033  = 0x0A,
     };
-    
+
 private:
     AP_Airspeed &frontend;
     uint8_t instance;

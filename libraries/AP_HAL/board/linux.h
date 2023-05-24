@@ -288,15 +288,15 @@
     #define HAL_OPTFLOW_PX4FLOW_I2C_BUS 0
 
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
-    
+
     //#define HAL_BARO_ALLOW_INIT_NO_BARO
-    
+
     // Activate SUB Model Configuratopm
     #define HAL_BOARD_SUBTYPE_LINUX_OBAL_V1_MPU_9250_SPI
-    
+
     // Define Notify
     #define OBAL_NOTIFY_LED
-    
+
 
     // GY-91 SPI Connection
     #ifdef HAL_BOARD_SUBTYPE_LINUX_OBAL_V1_MPU_9250_SPI
@@ -307,13 +307,13 @@
 
         #define HAL_INS_PROBE_LIST PROBE_IMU_SPI(Invensense, "mpu9250", ROTATION_NONE)
         #define HAL_MAG_PROBE_LIST PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_NONE)
-        #define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(BMP085, 1, 0x77) 
+        #define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(BMP085, 1, 0x77)
         //#define HAL_MAG_PROBE_LIST PROBE_MAG_I2C(QMC5883L, 1, 0x0d,true ,  ROTATION_NONE)
 
         #define HAL_PROBE_EXTERNAL_I2C_COMPASSES
     #endif
 
-    
+
     #ifdef OBAL_NOTIFY_LED
         #define HAL_GPIO_A_LED_PIN        27 // You can choose between 27,22,4,12
         #define HAL_GPIO_C_LED_PIN        22 // You can choose between 27,22,4,12

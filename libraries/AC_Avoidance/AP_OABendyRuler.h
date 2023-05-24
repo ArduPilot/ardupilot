@@ -42,8 +42,8 @@ private:
     // calculate minimum distance between a path and any obstacle
     float calc_avoidance_margin(const Location &start, const Location &end, bool proximity_only) const;
 
-    // determine if BendyRuler should accept the new bearing or try and resist it. Returns true if bearing is not changed  
-    bool resist_bearing_change(const Location &destination, const Location &current_loc, bool active, float bearing_test, float lookahead_step1_dist, float margin, Location &prev_dest, float &prev_bearing, float &final_bearing, float &final_margin, bool proximity_only) const;    
+    // determine if BendyRuler should accept the new bearing or try and resist it. Returns true if bearing is not changed
+    bool resist_bearing_change(const Location &destination, const Location &current_loc, bool active, float bearing_test, float lookahead_step1_dist, float margin, Location &prev_dest, float &prev_bearing, float &final_bearing, float &final_margin, bool proximity_only) const;
 
     // calculate minimum distance between a path and the circular fence (centered on home)
     // on success returns true and updates margin
@@ -70,15 +70,15 @@ private:
 
     // OA common parameters
     float _margin_max;              // object avoidance will ignore objects more than this many meters from vehicle
-    
+
     // BendyRuler parameters
     AP_Float _lookahead;            // object avoidance will look this many meters ahead of vehicle
     AP_Float _bendy_ratio;          // object avoidance will avoid major directional change if change in margin ratio is less than this param
     AP_Int16 _bendy_angle;          // object avoidance will try avoding change in direction over this much angle
     AP_Int8  _bendy_type;           // Type of BendyRuler to run
-    
+
     // internal variables used by background thread
     float _current_lookahead;       // distance (in meters) ahead of the vehicle we are looking for obstacles
-    float _bearing_prev;            // stored bearing in degrees 
+    float _bearing_prev;            // stored bearing in degrees
     Location _destination_prev;     // previous destination, to check if there has been a change in destination
 };

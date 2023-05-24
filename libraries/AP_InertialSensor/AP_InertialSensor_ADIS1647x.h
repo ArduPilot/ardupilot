@@ -57,7 +57,7 @@ private:
 
     // write a 16 bit register
     bool write_reg16(uint8_t regnum, uint16_t value, bool confirm=false) const;
-    
+
     AP_HAL::OwnPtr<AP_HAL::Device> dev;
 
     enum class OpMode : uint8_t {

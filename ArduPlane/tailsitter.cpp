@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  control code for tailsitters. Enabled by setting Q_FRAME_CLASS=10 
+  control code for tailsitters. Enabled by setting Q_FRAME_CLASS=10
   or by setting Q_TAILSIT_MOTMX nonzero and Q_FRAME_CLASS and Q_FRAME_TYPE
   to a configuration supported by AP_MotorsMatrix
  */
@@ -189,7 +189,7 @@ static const struct AP_Param::defaults_table_struct defaults_table_tailsitter[] 
     { "Q_P_VELXY_P",        1.0},
     { "Q_P_VELXY_I",        0.5},
     { "Q_P_VELXY_D",        0.25},
-    
+
 };
 
 Tailsitter::Tailsitter(QuadPlane& _quadplane, AP_MotorsMulticopter*& _motors):quadplane(_quadplane),motors(_motors)
@@ -300,7 +300,7 @@ void Tailsitter::output(void)
             /*
               during transitions to vtol mode set the throttle to hover thrust, center the rudder
             */
-            if (!is_negative(transition_throttle_vtol)) { 
+            if (!is_negative(transition_throttle_vtol)) {
                 // Q_TAILSIT_THR_VT is positive use it until transition is complete
                 throttle = motors->thr_lin.actuator_to_thrust(MIN(transition_throttle_vtol*0.01,1.0));
             } else {

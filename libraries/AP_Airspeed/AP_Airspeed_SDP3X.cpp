@@ -142,7 +142,7 @@ bool AP_Airspeed_SDP3X::init()
     set_use_zero_offset();
     set_skip_cal();
     set_offset(0);
-    
+
     _dev->set_device_type(uint8_t(DevType::SDP3X));
     set_bus_id(_dev->get_bus_id());
 
@@ -196,7 +196,7 @@ void AP_Airspeed_SDP3X::_timer()
 float AP_Airspeed_SDP3X::_correct_pressure(float press)
 {
     float sign = 1.0f;
-    
+
     // fix for tube order
     AP_Airspeed::pitot_tube_order tube_order = get_tube_order();
     switch (tube_order) {
@@ -243,7 +243,7 @@ float AP_Airspeed_SDP3X::_correct_pressure(float press)
 
     /*
       the constants in the code below come from a calibrated test of
-      the drotek pitot tube by Sensiron. They are specific to the droktek pitot tube 
+      the drotek pitot tube by Sensiron. They are specific to the droktek pitot tube
 
       At 25m/s, the rough proportions of each pressure correction are:
 
@@ -254,7 +254,7 @@ float AP_Airspeed_SDP3X::_correct_pressure(float press)
        dp_tube has been removed from the Sensiron model as it is
        insignificant (less than 0.02% over the supported speed ranges)
      */
-    
+
     // flow through sensor
     float flow_SDP3X = (300.805f - 300.878f / (0.00344205f * (float)powf(press, 0.68698f) + 1.0f)) * 1.29f / rho_air;
     if (flow_SDP3X < 0.0f) {

@@ -100,7 +100,7 @@ void Plane::set_guided_WP(const Location &loc)
 
     // start in non-VTOL mode
     auto_state.vtol_loiter = false;
-    
+
     loiter_angle_reset();
 
 #if HAL_QUADPLANE_ENABLED

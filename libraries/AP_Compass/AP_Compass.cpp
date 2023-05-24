@@ -1276,7 +1276,7 @@ void Compass::_detect_backends(void)
         ADD_BACKEND(DRIVER_EXTERNALAHRS, new AP_Compass_ExternalAHRS(serial_port));
     }
 #endif
-    
+
 #if AP_FEATURE_BOARD_DETECT
     if (AP_BoardConfig::get_board_type() == AP_BoardConfig::PX4_BOARD_PIXHAWK2) {
         // default to disabling LIS3MDL on pixhawk2 due to hardware issue
@@ -1480,7 +1480,7 @@ void Compass::_detect_backends(void)
                     continue;
                 }
                 // We have found a replacement mag, let's replace the existing one
-                // with this by setting the priority to zero and calling uavcan probe 
+                // with this by setting the priority to zero and calling uavcan probe
                 gcs().send_text(MAV_SEVERITY_ALERT, "Mag: Compass #%d with DEVID %lu replaced", uint8_t(i), (unsigned long)_priority_did_list[i]);
                 _priority_did_stored_list[i].set_and_save(0);
                 _priority_did_list[i] = 0;
@@ -1945,7 +1945,7 @@ bool Compass::configured(uint8_t i)
 
     StateIndex id = _get_state_id(Priority(i));
     // exit immediately if dev_id hasn't been detected
-    if (_state[id].detected_dev_id == 0 || 
+    if (_state[id].detected_dev_id == 0 ||
         id == COMPASS_MAX_INSTANCES) {
         return false;
     }

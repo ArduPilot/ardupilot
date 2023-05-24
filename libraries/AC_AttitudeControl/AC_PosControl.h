@@ -350,7 +350,7 @@ public:
       This is reset to zero on init_xy_controller()
     */
     void set_lean_angle_max_cd(float angle_max_cd) { _angle_max_override_cd = angle_max_cd; }
-    
+
 
     /// Other
 

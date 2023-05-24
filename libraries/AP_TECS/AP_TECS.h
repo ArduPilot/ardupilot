@@ -85,7 +85,7 @@ public:
     float get_max_sinkrate(void) const {
         return _maxSinkRate;
     }
-    
+
     // added to let SoaringContoller reset pitch integrator to zero
     void reset_pitch_I(void) {
         _integSEBdot = 0.0f;
@@ -209,7 +209,7 @@ private:
 
     // temporary _pitch_max_limit. Cleared on each loop. Clear when >= 90
     int8_t _pitch_max_limit = 90;
-    
+
     // current height estimate (above field elevation)
     float _height;
 
@@ -423,7 +423,7 @@ private:
     float _SKE_weighting;
 
     AP_Int8 _use_synthetic_airspeed;
-    
+
     // use synthetic airspeed for next loop
     bool _use_synthetic_airspeed_once;
 

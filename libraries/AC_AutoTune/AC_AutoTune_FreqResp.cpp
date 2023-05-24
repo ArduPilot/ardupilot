@@ -106,7 +106,7 @@ void AC_AutoTune_FreqResp::update(float command, float tgt_resp, float meas_resp
             } else if (meas_cnt < tgt_cnt) {
                 pull_from_meas_buffer(meas_cnt, meas_ampl, meas_time);
                 push_to_meas_buffer(0, 0.0f, 0);
-            }                
+            }
 
         }
         if (gcnt > 0) {
@@ -201,7 +201,7 @@ void AC_AutoTune_FreqResp::update(float command, float tgt_resp, float meas_resp
                 curr_test_phase = curr_test_freq * (float)(sweep_meas.max_time_m1 - sweep_tgt.max_time_m1) * 0.001f * 360.0f / M_2PI;
                 cycle_complete = true;
             }
-        } 
+        }
     } else if (((response == ANGLE && !is_positive(prev_meas) && is_positive(measured_rate))
                 || (response == RATE && is_positive(prev_meas) && !is_positive(measured_rate)))
                 && new_meas && now > new_meas_time_ms && max_meas_cnt > 0) {

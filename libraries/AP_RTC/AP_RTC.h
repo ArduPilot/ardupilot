@@ -39,7 +39,7 @@ public:
       get time in UTC hours, minutes, seconds and milliseconds
      */
     bool get_system_clock_utc(uint8_t &hour, uint8_t &min, uint8_t &sec, uint16_t &ms) const;
-    
+
     bool get_local_time(uint8_t &hour, uint8_t &min, uint8_t &sec, uint16_t &ms) const;
 
     uint32_t get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms);
@@ -56,7 +56,7 @@ public:
     HAL_Semaphore &get_semaphore(void) {
         return rsem;
     }
-    
+
 private:
 
     static AP_RTC *_singleton;

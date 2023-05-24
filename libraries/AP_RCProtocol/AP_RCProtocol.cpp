@@ -118,7 +118,7 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
         !protocol_enabled(_detected_protocol)) {
         _detected_protocol = AP_RCProtocol::NONE;
     }
-    
+
     if (_detected_protocol != AP_RCProtocol::NONE && _detected_with_bytes && !searching) {
         // we're using byte inputs, discard pulses
         return;

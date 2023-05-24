@@ -158,7 +158,7 @@ bool AP_Compass_HMC5843::init()
 
     // high retries for init
     _bus->set_retries(10);
-    
+
     if (!_bus->configure()) {
         DEV_PRINTF("HMC5843: Could not configure the bus\n");
         goto errout;
@@ -186,7 +186,7 @@ bool AP_Compass_HMC5843::init()
 
     // lower retries for run
     _bus->set_retries(3);
-    
+
     bus_sem->give();
 
     // perform an initial read
@@ -200,7 +200,7 @@ bool AP_Compass_HMC5843::init()
     set_dev_id(_compass_instance, _bus->get_bus_id());
 
     set_rotation(_compass_instance, _rotation);
-    
+
     if (_force_external) {
         set_external(_compass_instance, true);
     }
@@ -210,7 +210,7 @@ bool AP_Compass_HMC5843::init()
                                      FUNCTOR_BIND_MEMBER(&AP_Compass_HMC5843::_timer, void));
 
     DEV_PRINTF("HMC5843 found on bus 0x%x\n", (unsigned)_bus->get_bus_id());
-    
+
     return true;
 
 errout:
@@ -229,7 +229,7 @@ void AP_Compass_HMC5843::_timer()
 
     // always ask for a new sample
     _take_sample();
-    
+
     if (!result) {
         return;
     }
@@ -330,7 +330,7 @@ bool AP_Compass_HMC5843::_check_whoami()
     uint8_t id[3];
     if (!_bus->block_read(HMC5843_REG_ID_A, id, 3)) {
         // can't talk on bus
-        return false;        
+        return false;
     }
     if (id[0] != 'H' ||
         id[1] != '4' ||
@@ -357,7 +357,7 @@ bool AP_Compass_HMC5843::_calibrate()
 
     uint8_t base_config = HMC5843_OSR_15HZ;
     uint8_t num_samples = 0;
-    
+
     while (success == 0 && numAttempts < 25 && good_count < 5) {
         numAttempts++;
 
@@ -426,7 +426,7 @@ bool AP_Compass_HMC5843::_calibrate()
     }
 
     _bus->register_write(HMC5843_REG_CONFIG_A, base_config);
-    
+
     if (good_count >= 5) {
         _scaling[0] = _scaling[0] / good_count;
         _scaling[1] = _scaling[1] / good_count;
@@ -448,7 +448,7 @@ bool AP_Compass_HMC5843::_calibrate()
     printf("scaling: %.2f %.2f %.2f\n",
            _scaling[0], _scaling[1], _scaling[2]);
 #endif
-    
+
     return success;
 }
 

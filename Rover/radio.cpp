@@ -32,7 +32,7 @@ void Rover::set_control_channels(void)
     if (channel_walking_height != nullptr) {
         channel_walking_height->set_angle(SERVO_MAX);
         channel_walking_height->set_default_dead_zone(30);
-    }    
+    }
 
     // sailboat rc input init
     g2.sailboat.init_rc_in();

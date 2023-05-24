@@ -170,7 +170,7 @@ void AC_PI_2D::calc_filt_alpha()
         _filt_alpha = 1.0f;
         return;
     }
-  
+
     // calculate alpha
     const float rc = 1/(M_2PI*_filt_hz);
     _filt_alpha = _dt / (_dt + rc);

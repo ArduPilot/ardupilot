@@ -95,7 +95,7 @@ private:
     uint32_t _config_last_ack_time;
 
     const char* _port_enable = "\nSSSSSSSSSS\n";
-   
+
     uint32_t crc_error_counter = 0;
     uint32_t RxState;
     uint32_t RxError;

@@ -9,7 +9,7 @@
 void ModeVelocity::run()
 {
     const float dt = blimp.scheduler.get_last_loop_time_s();
-    
+
     Vector3f target_vel;
     target_vel.x = channel_front->get_control_in() / float(RC_SCALE) * g.max_vel_xy;
     target_vel.y = channel_right->get_control_in() / float(RC_SCALE) * g.max_vel_xy;

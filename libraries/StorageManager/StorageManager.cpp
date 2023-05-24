@@ -76,7 +76,7 @@ const StorageManager::StorageArea StorageManager::layout[STORAGE_NUM_AREAS] = {
     { StorageRally,   5376,   300},
     { StorageFence,   5676,   256},
     { StorageMission, 5932,  2132},
-    { StorageKeys,    8064,    64}, 
+    { StorageKeys,    8064,    64},
     { StorageBindInfo,8128,    56},
 #endif
 #if STORAGE_NUM_AREAS == 11
@@ -116,8 +116,8 @@ void StorageManager::erase(void)
 /*
   constructor for StorageAccess
  */
-StorageAccess::StorageAccess(StorageManager::StorageType _type) : 
-    type(_type) 
+StorageAccess::StorageAccess(StorageManager::StorageType _type) :
+    type(_type)
 {
     // calculate available bytes
     total_size = 0;

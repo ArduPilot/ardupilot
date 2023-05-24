@@ -43,7 +43,7 @@ bool AP_RangeFinder_USD1_Serial::detect_version(void)
 
     while (nbytes-- > 0) {
         uint8_t c = uart->read();
-        
+
         if (((c == USD1_HDR_V0) || (c == USD1_HDR)) && !hdr_found) {
             byte1 = c;
             hdr_found = true;
@@ -76,7 +76,7 @@ bool AP_RangeFinder_USD1_Serial::detect_version(void)
                     /* Though unlikely, it is possible we could find USD1_HDR
                      * in a data byte from the old 3-byte format. In this case,
                      * either the next byte is another data byte (which by default
-                     * is of the form 0x1xxxxxxx), or the next byte is the old 
+                     * is of the form 0x1xxxxxxx), or the next byte is the old
                      * header byte (USD1_HDR_V0). In this case, start the search
                      * again for a header byte.
                      */
@@ -110,7 +110,7 @@ bool AP_RangeFinder_USD1_Serial::get_reading(float &reading_m)
         return false;
     }
 
-    
+
     if (!detect_version()) {
         // return false if USD1_Serial version check failed
         return false;
@@ -125,7 +125,7 @@ bool AP_RangeFinder_USD1_Serial::get_reading(float &reading_m)
 
     while (nbytes-- > 0) {
         uint8_t c = uart->read();
-        
+
         if ((c == _header) && !hdr_found) {
             // located header byte
             _linebuf_len = 0;

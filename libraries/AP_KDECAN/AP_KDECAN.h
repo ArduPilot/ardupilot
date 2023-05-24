@@ -17,7 +17,7 @@
  *
  *      Author: Francisco Ferreira and Tom Pittenger
  */
- 
+
 #pragma once
 
 #include <AP_KDECAN/AP_KDECAN_config.h>
@@ -45,7 +45,7 @@ class AP_KDECAN_Driver : public CANSensor
 #endif
 {
 public:
-    
+
     AP_KDECAN_Driver();
 
     // called from SRV_Channels
@@ -55,7 +55,7 @@ private:
 
     // handler for incoming frames
     void handle_frame(AP_HAL::CANFrame &frame) override;
-    
+
     bool send_packet_uint16(const uint8_t address, const uint8_t dest_id, const uint32_t timeout_ms, const uint16_t data);
     bool send_packet(const uint8_t address, const uint8_t dest_id, const uint32_t timeout_ms, const uint8_t *data = nullptr, const uint8_t data_len = 0);
 
@@ -93,7 +93,7 @@ private:
         };
         uint32_t value;
     };
-    
+
     static const uint8_t AUTOPILOT_NODE_ID = 0;
     static const uint8_t BROADCAST_NODE_ID = 1;
     static const uint8_t ESC_NODE_ID_FIRST = 2;

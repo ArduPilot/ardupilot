@@ -21,7 +21,7 @@
 extern const AP_HAL::HAL& hal;
 
 /*
-  base class constructor. 
+  base class constructor.
   This incorporates initialisation as well.
 */
 AP_RangeFinder_Backend::AP_RangeFinder_Backend(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :

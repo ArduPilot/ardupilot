@@ -17,9 +17,9 @@ public:
     AP_InertialSensor_L3G4200D(AP_InertialSensor &imu,
                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev_gyro,
                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev_accel);
-    
-    
-    
+
+
+
     virtual ~AP_InertialSensor_L3G4200D();
 
     // probe the sensor on I2C bus
@@ -27,31 +27,31 @@ public:
                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev_gyro,
                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev_accel);
 
-   
-   
+
+
     /* update accel and gyro state */
     bool update() override;
 
     void start(void) override;
 
-    
+
 private:
     bool _accel_init();
     bool _gyro_init();
     bool _init_sensor();
     void _accumulate_gyro();
     void _accumulate_accel();
-    
+
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev_gyro;
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev_accel;
 
     void _set_filter_frequency(uint8_t filter_hz);
 
-    // Low Pass filters for gyro and accel 
+    // Low Pass filters for gyro and accel
     LowPassFilter2pVector3f _accel_filter;
     LowPassFilter2pVector3f _gyro_filter;
 
-    enum Rotation _rotation; 
+    enum Rotation _rotation;
 
     // gyro and accel instances
     uint8_t _gyro_instance;

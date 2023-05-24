@@ -71,7 +71,7 @@ public:
             climb_rate_cms = MIN(climb_rate_cms, backup_speed);
         }
     }
-    
+
 
     // adjust roll-pitch to push vehicle away from objects
     // roll and pitch value are in centi-degrees
@@ -90,11 +90,11 @@ public:
     // uses velocity adjustment idea from Randy's second email on this thread:
     //   https://groups.google.com/forum/#!searchin/drones-discuss/obstacle/drones-discuss/QwUXz__WuqY/qo3G8iTLSJAJ
     void limit_velocity_2D(float kP, float accel_cmss, Vector2f &desired_vel_cms, const Vector2f& limit_direction, float limit_distance_cm, float dt);
-    
-    // Note: This method is used to limit velocity horizontally and vertically given a 3D desired velocity vector 
+
+    // Note: This method is used to limit velocity horizontally and vertically given a 3D desired velocity vector
     // Limits the component of desired_vel_cms in the direction of the obstacle_vector based on the passed value of "margin"
     void limit_velocity_3D(float kP, float accel_cmss, Vector3f &desired_vel_cms, const Vector3f& limit_direction, float limit_distance_cm, float kP_z, float accel_cmss_z ,float dt);
-    
+
      // compute the speed such that the stopping distance of the vehicle will
      // be exactly the input distance.
      // kP should be non-zero for Copter which has a non-linear response
@@ -170,7 +170,7 @@ private:
     * OUTPUT: The method then outputs four velocities (quad1/2/3/4_back_vel_cms), which correspond to the final desired backup velocity in each quadrant
     */
     void calc_backup_velocity_2D(float kP, float accel_cmss, Vector2f &quad1_back_vel_cms, Vector2f &qua2_back_vel_cms, Vector2f &quad3_back_vel_cms, Vector2f &quad4_back_vel_cms, float back_distance_cm, Vector2f limit_direction, float dt);
-    
+
     /*
     * Compute the back away velocity required to avoid breaching margin, including vertical component
     * min_z_vel is <= 0, and stores the greatest velocity in the downwards direction
@@ -178,9 +178,9 @@ private:
     * eventually max_z_vel + min_z_vel will give the final desired Z backaway velocity
     */
     void calc_backup_velocity_3D(float kP, float accel_cmss, Vector2f &quad1_back_vel_cms, Vector2f &quad2_back_vel_cms, Vector2f &quad3_back_vel_cms, Vector2f &quad4_back_vel_cms, float back_distance_cms, Vector3f limit_direction, float kp_z, float accel_cmss_z, float back_distance_z, float& min_z_vel, float& max_z_vel, float dt);
-   
+
    /*
-    * Calculate maximum velocity vector that can be formed in each quadrant 
+    * Calculate maximum velocity vector that can be formed in each quadrant
     * This method takes the desired backup velocity, and four other velocities corresponding to each quadrant
     * The desired velocity is then fit into one of the 4 quadrant velocities as per the sign of its components
     * This ensures that we have multiple backup velocities, we can get the maximum of all of those velocities in each quadrant

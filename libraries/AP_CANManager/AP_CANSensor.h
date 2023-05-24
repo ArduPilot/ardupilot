@@ -15,7 +15,7 @@
 /*
   CANSensor class, for easy creation of CAN sensors using custom CAN protocols
  */
- 
+
 #pragma once
 
 #include "AP_CAN.h"
@@ -78,7 +78,7 @@ private:
 
 #ifdef HAL_BUILD_AP_PERIPH
     void register_driver_periph(const AP_CAN::Protocol dtype);
-    
+
     struct CANSensor_Periph {
         AP_HAL::CANIface* iface;
         AP_CAN::Protocol protocol;

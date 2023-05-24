@@ -51,7 +51,7 @@ private:
     bool init(void);
     void timer(void);
     bool lidar_transfer(const uint8_t *send, unsigned send_len, uint8_t *recv, unsigned recv_len);
-    
+
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 
     uint8_t sw_version;
@@ -61,7 +61,7 @@ private:
     bool v3hp_hardware;
     uint16_t last_distance_cm;
     RangeFinder::Type rftype;
-    
+
     enum { PHASE_MEASURE, PHASE_COLLECT } phase;
 };
 

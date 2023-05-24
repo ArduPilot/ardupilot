@@ -18,7 +18,7 @@
  *
  *      Author: Reilly Callaway / Currawong Engineering Pty Ltd
  */
- 
+
 #pragma once
 
 #include "AP_EFI_config.h"
@@ -31,7 +31,7 @@
 class AP_EFI_Currawong_ECU : public AP_EFI_Backend {
 public:
     AP_EFI_Currawong_ECU(AP_EFI &_frontend);
-    
+
     void update() override;
 
     static AP_EFI_Currawong_ECU* get_instance(void)

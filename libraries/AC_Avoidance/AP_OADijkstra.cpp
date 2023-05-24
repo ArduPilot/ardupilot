@@ -275,7 +275,7 @@ bool AP_OADijkstra::create_inclusion_polygon_with_margin(float margin_cm, AP_OAD
         return false;
     }
 
-    // skip unnecessary retry to build inclusion polygon if previous fence points have not changed 
+    // skip unnecessary retry to build inclusion polygon if previous fence points have not changed
     if (_inclusion_polygon_update_ms == fence->polyfence().get_inclusion_polygon_update_ms()) {
         return false;
     }
@@ -375,7 +375,7 @@ bool AP_OADijkstra::create_exclusion_polygon_with_margin(float margin_cm, AP_OAD
         return false;
     }
 
-    // skip unnecessary retry to build exclusion polygon if previous fence points have not changed 
+    // skip unnecessary retry to build exclusion polygon if previous fence points have not changed
     if (_exclusion_polygon_update_ms == fence->polyfence().get_exclusion_polygon_update_ms()) {
         return false;
     }
@@ -393,7 +393,7 @@ bool AP_OADijkstra::create_exclusion_polygon_with_margin(float margin_cm, AP_OAD
     for (uint8_t i = 0; i < num_exclusion_polygons; i++) {
         uint16_t num_points;
         const Vector2f* boundary = fence->polyfence().get_exclusion_polygon(i, num_points);
-   
+
         // for each point in exclusion polygon
         // Note: boundary is "unclosed" meaning the last point is *not* the same as the first
         uint16_t new_points = 0;

@@ -142,7 +142,7 @@ void SIM_Precland::update(const Location &loc, const Vector3d &position)
     Vector3d axis{1, 0, 0};
     axis.rotate((Rotation)_orient.get());   // unit vector in direction of axis of cone or cylinder
     Vector3d position_wrt_device = position - center;  // position of vehicle with respect to preland device center
-    
+
     // longitudinal distance of vehicle from the precland device
     // this is the distance of vehicle from the plane which is passing through precland device center and perpendicular to axis of cone/cylinder
     // this plane is the ground plane when the axis has PITCH_90 rotation

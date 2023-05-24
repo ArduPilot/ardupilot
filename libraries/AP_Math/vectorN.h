@@ -45,7 +45,7 @@ public:
     inline VectorN<T,N>(const T *v) {
         memcpy(_v, v, sizeof(T)*N);
     }
-    
+
     inline T & operator[](uint8_t i) {
 #if MATH_CHECK_INDEXES
         assert(i >= 0 && i < N);
@@ -159,7 +159,7 @@ public:
         }
         return ret;
     }
-    
+
     // multiplication of a matrix by a vector, in-place
     // C = A * B
     void mult(const MatrixN<T,N> &A, const VectorN<T,N> &B) {

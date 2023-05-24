@@ -87,7 +87,7 @@ public:
 
     /// calibrating - returns true if a temperature calibration is running
     bool temperature_cal_running() const;
-    
+
     /// Perform cold-start initialisation for just the gyros.
     ///
     /// @note This should not be called unless ::init has previously
@@ -330,7 +330,7 @@ public:
 
         // class level parameters
         static const struct AP_Param::GroupInfo var_info[];
-    
+
 
         // Parameters
         AP_Int16 _required_count;
@@ -476,7 +476,7 @@ private:
 
     // Logging function
     void Write_IMU_instance(const uint64_t time_us, const uint8_t imu_instance) const;
-    
+
     // backend objects
     AP_InertialSensor_Backend *_backends[INS_MAX_BACKENDS];
 
@@ -605,7 +605,7 @@ private:
     uint32_t _sample_accel_start_us[INS_MAX_INSTANCES];
     uint16_t _sample_gyro_count[INS_MAX_INSTANCES];
     uint32_t _sample_gyro_start_us[INS_MAX_INSTANCES];
-    
+
     // temperatures for an instance if available
     float _temperature[INS_MAX_INSTANCES];
 
@@ -626,7 +626,7 @@ private:
 
     // control enable of detected sensors
     AP_Int8     _enable_mask;
-    
+
     // board orientation from AHRS
     enum Rotation _board_orientation;
 

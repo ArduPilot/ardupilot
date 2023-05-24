@@ -943,13 +943,13 @@ private:
       return true if in a specific AUTO mission command
     */
     bool in_auto_mission_id(uint16_t command) const;
-    
+
     // Delay the next navigation command
     struct {
         uint32_t time_max_ms;
         uint32_t time_start_ms;
     } nav_delay;
-    
+
 #if AP_SCRIPTING_ENABLED
     // nav scripting support
     void do_nav_script_time(const AP_Mission::Mission_Command& cmd);
@@ -1157,7 +1157,7 @@ private:
     void set_rudder_offset(float rudder_pct, bool run_yaw_rate_controller) override;
     bool nav_scripting_enable(uint8_t mode) override;
 #endif
- 
+
     enum Failsafe_Action {
         Failsafe_Action_None      = 0,
         Failsafe_Action_RTL       = 1,
@@ -1213,7 +1213,7 @@ private:
         ENABLED_NO_PITCH_TARGET,
         ENABLED_PITCH_TARGET
     };
-    
+
     enum class AutoTuneAxis {
         ROLL  = 1U <<0,
         PITCH = 1U <<1,

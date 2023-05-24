@@ -305,7 +305,7 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: E2T: equivalent to true airspeed ratio
 // @Field: GU: groundspeed undershoot when flying with minimum groundspeed
 
-    { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
+    { LOG_CTUN_MSG, sizeof(log_Control_Tuning),
       "CTUN", "Qccccffffffi",    "TimeUS,NavRoll,Roll,NavPitch,Pitch,ThO,RdrOut,ThD,As,SAs,E2T,GU", "sdddd---nn-n", "FBBBB---00-B" , true },
 
 // @LoggerMessage: NTUN
@@ -323,7 +323,7 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: TAW: target altitude WP
 // @Field: TAT: target altitude TECS
 // @Field: TAsp: target airspeed
-    { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
+    { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),
       "NTUN", "QfcccfffLLeee",  "TimeUS,Dist,TBrg,NavBrg,AltE,XT,XTi,AsE,TLat,TLng,TAW,TAT,TAsp", "smddmmmnDUmmn", "F0BBB0B0GG000" , true },
 
 // @LoggerMessage: ATRP
@@ -432,7 +432,7 @@ const struct LogStructure Plane::log_structure[] = {
       "AETR", "Qffffff",  "TimeUS,Ail,Elev,Thr,Rudd,Flap,SS", "s------", "F------" , true },
 
 // @LoggerMessage: OFG
-// @Description: OFfboard-Guided - an advanced version of GUIDED for companion computers that includes rate/s.  
+// @Description: OFfboard-Guided - an advanced version of GUIDED for companion computers that includes rate/s.
 // @Field: TimeUS: Time since system startup
 // @Field: Arsp:  target airspeed cm
 // @Field: ArspA:  target airspeed accel
@@ -441,8 +441,8 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: AltF: target alt frame
 // @Field: Hdg:  target heading
 // @Field: HdgA: target heading lim
-    { LOG_OFG_MSG, sizeof(log_OFG_Guided),     
-      "OFG", "QffffBff",    "TimeUS,Arsp,ArspA,Alt,AltA,AltF,Hdg,HdgA", "s-------", "F-------" , true }, 
+    { LOG_OFG_MSG, sizeof(log_OFG_Guided),
+      "OFG", "QffffBff",    "TimeUS,Arsp,ArspA,Alt,AltA,AltF,Hdg,HdgA", "s-------", "F-------" , true },
 };
 
 void Plane::Log_Write_Vehicle_Startup_Messages()

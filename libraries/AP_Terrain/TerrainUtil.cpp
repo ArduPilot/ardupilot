@@ -31,7 +31,7 @@ extern const AP_HAL::HAL& hal;
   bit representing a 4x4 mavlink transmitted block
 */
 uint8_t AP_Terrain::grid_bitnum(uint8_t idx_x, uint8_t idx_y)
-{    
+{
     ASSERT_RANGE(idx_x,0,27);
     ASSERT_RANGE(idx_y,0,31);
     uint8_t subgrid_x = idx_x / TERRAIN_GRID_MAVLINK_SIZE;
@@ -154,14 +154,14 @@ int16_t AP_Terrain::find_io_idx(enum GridCacheState state)
             cache[i].state == state) {
             return i;
         }
-    }    
+    }
     // then any state
     for (uint16_t i=0; i<cache_size; i++) {
         if (TERRAIN_LATLON_EQUAL(disk_block.block.lat,cache[i].grid.lat) &&
             TERRAIN_LATLON_EQUAL(disk_block.block.lon,cache[i].grid.lon)) {
             return i;
         }
-    }    
+    }
     return -1;
 }
 

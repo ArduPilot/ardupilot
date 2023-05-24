@@ -790,7 +790,7 @@ void SRV_Channels::set_angle(SRV_Channel::Aux_servo_function_t function, uint16_
         if (channels[i].function == function) {
             channels[i].set_angle(angle);
         }
-    }    
+    }
 }
 
 // call set_range() on matching channels

@@ -42,7 +42,7 @@ AP_InertialSensor_Backend *AP_InertialSensor_NONE::detect(AP_InertialSensor &_im
 
 bool AP_InertialSensor_NONE::init_sensor(void)
 {
-  
+
     return true;
 }
 
@@ -69,7 +69,7 @@ void AP_InertialSensor_NONE::generate_accel()
     for (uint8_t j = 0; j < nsamples; j++) {
 
         // add accel bias and noise
-        //Vector3f accel_bias = Vector3f{0.01,0.01,0.01}; 
+        //Vector3f accel_bias = Vector3f{0.01,0.01,0.01};
         float xAccel = 0.01;
         float yAccel = 0.01;
         float zAccel = 0.01;
@@ -85,7 +85,7 @@ void AP_InertialSensor_NONE::generate_accel()
         yAccel += accel_noise * rand_float();
         zAccel += accel_noise * rand_float();
 
-        bool motors_on = 1; 
+        bool motors_on = 1;
 
         // on a real 180mm copter gyro noise varies between 0.8-4 m/s/s for throttle 0.2-0.8
         // giving a accel noise variation of 5.33 m/s/s over the full throttle range
@@ -292,7 +292,7 @@ void AP_InertialSensor_NONE::timer_update(void)
 
 float AP_InertialSensor_NONE::gyro_drift(void)
 {
- 
+
     double period  = 0.01 * 2;
     double minutes = fmod(AP_HAL::micros64() / 60.0e6, period);
     if (minutes < period/2) {
@@ -302,7 +302,7 @@ float AP_InertialSensor_NONE::gyro_drift(void)
 }
 
 
-bool AP_InertialSensor_NONE::update(void) 
+bool AP_InertialSensor_NONE::update(void)
 {
     update_accel(accel_instance);
     update_gyro(gyro_instance);

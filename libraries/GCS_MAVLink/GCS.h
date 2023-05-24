@@ -402,7 +402,7 @@ public:
     }
 
     // return a bitmap of active channels. Used by libraries to loop
-    // over active channels to send to all active channels    
+    // over active channels to send to all active channels
     static uint8_t active_channel_mask(void) { return mavlink_active; }
 
     // return a bitmap of streaming channels
@@ -419,7 +419,7 @@ public:
     static bool is_private(mavlink_channel_t _chan) {
         return (mavlink_private & (1U<<(unsigned)_chan)) != 0;
     }
-    
+
     // return true if channel is private
     bool is_private(void) const { return is_private(chan); }
 
@@ -438,7 +438,7 @@ public:
       allow forwarding of packets / heartbeats to be blocked as required by some components to reduce traffic
     */
     static void disable_channel_routing(mavlink_channel_t chan) { routing.no_route_mask |= (1U<<(chan-MAVLINK_COMM_0)); }
-    
+
     /*
       search for a component in the routing table with given mav_type and retrieve it's sysid, compid and channel
       returns if a matching component is found
@@ -700,7 +700,7 @@ protected:
     MAV_RESULT handle_control_high_latency(const mavlink_command_long_t &packet);
 
 #endif // HAL_HIGH_LATENCY2_ENABLED
-    
+
     static constexpr const float magic_force_arm_value = 2989.0f;
     static constexpr const float magic_force_disarm_value = 21196.0f;
 
@@ -868,7 +868,7 @@ private:
 
     // time when we missed sending a parameter for GCS
     static uint32_t reserve_param_space_start_ms;
-    
+
     // bitmask of what mavlink channels are active
     static uint8_t mavlink_active;
 
@@ -888,7 +888,7 @@ private:
     };
 
     struct pending_param_reply {
-        mavlink_channel_t chan;        
+        mavlink_channel_t chan;
         float value;
         enum ap_var_type p_type;
         int16_t param_index;
@@ -945,7 +945,7 @@ private:
 
     struct pending_ftp {
         uint32_t offset;
-        mavlink_channel_t chan;        
+        mavlink_channel_t chan;
         uint16_t seq_number;
         FTP_OP opcode;
         FTP_OP req_opcode;
@@ -1038,7 +1038,7 @@ private:
     } alternative;
 
     JitterCorrection lag_correction;
-    
+
     // we cache the current location and send it even if the AHRS has
     // no idea where we are:
     Location global_position_current_loc;

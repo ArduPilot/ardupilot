@@ -8,7 +8,7 @@ void AP_OABendyRuler::Write_OABendyRuler(const uint8_t type, const bool active, 
     int32_t oa_dest_alt, final_alt;
     const bool got_oa_dest = oa_dest.get_alt_cm(Location::AltFrame::ABOVE_ORIGIN, oa_dest_alt);
     const bool got_final_dest = final_dest.get_alt_cm(Location::AltFrame::ABOVE_ORIGIN, final_alt);
-    
+
     const struct log_OABendyRuler pkt{
         LOG_PACKET_HEADER_INIT(LOG_OA_BENDYRULER_MSG),
         time_us     : AP_HAL::micros64(),

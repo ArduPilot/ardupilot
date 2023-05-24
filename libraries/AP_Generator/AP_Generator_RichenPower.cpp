@@ -497,9 +497,9 @@ void AP_Generator_RichenPower::send_generator_status(const GCS_MAVLINK &channel)
 }
 
 // methods to control the generator state:
-bool AP_Generator_RichenPower::stop() 
+bool AP_Generator_RichenPower::stop()
 {
-    set_pilot_desired_runstate(RunState::STOP); 
+    set_pilot_desired_runstate(RunState::STOP);
     return true;
 }
 

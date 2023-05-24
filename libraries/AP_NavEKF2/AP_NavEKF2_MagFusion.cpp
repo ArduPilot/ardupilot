@@ -435,7 +435,7 @@ void NavEKF2_core::FuseMagnetometer()
     if (!magHealth) {
         return;
     }
-    
+
     // perform sequential fusion of magnetometer measurements.
     // this assumes that the errors in the different components are
     // uncorrelated which is not true, however in the absence of covariance
@@ -1232,7 +1232,7 @@ void NavEKF2_core::resetQuatStateYawOnly(ftype yaw, ftype yawVariance, bool isDe
 
     // Update the rotation matrix
     stateStruct.quat.inverse().rotation_matrix(prevTnb);
-    
+
     ftype deltaYaw = wrap_PI(yaw - eulerAngles.z);
 
     // calculate the change in the quaternion state and apply it to the output history buffer
@@ -1266,5 +1266,5 @@ void NavEKF2_core::resetQuatStateYawOnly(ftype yaw, ftype yawVariance, bool isDe
     // clear all pending yaw reset requests
     gpsYawResetRequest = false;
     magYawResetRequest = false;
-    
+
 }

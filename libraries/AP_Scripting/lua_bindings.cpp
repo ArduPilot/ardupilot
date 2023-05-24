@@ -91,7 +91,7 @@ int lua_mavlink_receive_chan(lua_State *L) {
 
 int lua_mavlink_register_rx_msgid(lua_State *L) {
     binding_argcheck(L, 1);
-    
+
     const uint32_t msgid = get_uint32(L, -1, 0, (1 << 24) - 1);
 
     struct AP_Scripting::mavlink &data = AP::scripting()->mavlink_data;
@@ -126,7 +126,7 @@ int lua_mavlink_register_rx_msgid(lua_State *L) {
 
 int lua_mavlink_send_chan(lua_State *L) {
     binding_argcheck(L, 3);
-    
+
     const mavlink_channel_t chan = (mavlink_channel_t)get_uint32(L, 1, 0, MAVLINK_COMM_NUM_BUFFERS - 1);
 
     const uint32_t msgid = get_uint32(L, 2, 0, (1 << 24) - 1);
@@ -633,7 +633,7 @@ int lua_dirlist(lua_State *L) {
     struct dirent *entry;
     int i;
     const char *path = luaL_checkstring(L, 1);
-    
+
     /* open directory */
     auto dir = AP::FS().opendir(path);
     if (dir == nullptr) {  /* error opening the directory? */
@@ -641,7 +641,7 @@ int lua_dirlist(lua_State *L) {
         lua_pushstring(L, strerror(errno));  /* error message */
         return 2;  /* number of results */
     }
-    
+
     /* create result table */
     lua_newtable(L);
     i = 1;
@@ -650,7 +650,7 @@ int lua_dirlist(lua_State *L) {
         lua_pushstring(L, entry->d_name);  /* push value */
         lua_settable(L, -3);
     }
-    
+
     AP::FS().closedir(dir);
     return 1;  /* table is already on top */
 }

@@ -80,14 +80,14 @@ void RC_Channel_Plane::do_aux_function_crow_mode(AuxSwitchPos ch_flag)
             gcs().send_text(MAV_SEVERITY_INFO, "Crow Flaps Disabled");
             break;
         case AuxSwitchPos::MIDDLE:
-            gcs().send_text(MAV_SEVERITY_INFO, "Progressive Crow Flaps"); 
-            plane.crow_mode = Plane::CrowMode::PROGRESSIVE;   
+            gcs().send_text(MAV_SEVERITY_INFO, "Progressive Crow Flaps");
+            plane.crow_mode = Plane::CrowMode::PROGRESSIVE;
             break;
         case AuxSwitchPos::LOW:
             plane.crow_mode = Plane::CrowMode::NORMAL;
             gcs().send_text(MAV_SEVERITY_INFO, "Normal Crow Flaps");
             break;
-        }    
+        }
 }
 
 void RC_Channel_Plane::do_aux_function_soaring_3pos(AuxSwitchPos ch_flag)
@@ -132,7 +132,7 @@ void RC_Channel_Plane::do_aux_function_flare(AuxSwitchPos ch_flag)
 #endif
             plane.flare_mode = Plane::FlareMode::FLARE_DISABLED;
             break;
-        }    
+        }
 }
 
 
@@ -233,10 +233,10 @@ bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
     case AUX_FUNC::TRAINING:
         do_aux_function_change_mode(Mode::Number::TRAINING, ch_flag);
         break;
-        
+
     case AUX_FUNC::LOITER:
         do_aux_function_change_mode(Mode::Number::LOITER, ch_flag);
-        break;        
+        break;
 
     case AUX_FUNC::GUIDED:
         do_aux_function_change_mode(Mode::Number::GUIDED, ch_flag);
@@ -424,7 +424,7 @@ bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
         } else if (ch_flag == AuxSwitchPos::HIGH) {
            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Autotuning not allowed in this mode!");
         } else {
-           plane.autotune_enable(false); 
+           plane.autotune_enable(false);
         }
         break;
 

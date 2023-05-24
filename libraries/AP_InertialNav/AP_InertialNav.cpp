@@ -56,7 +56,7 @@ nav_filter_status AP_InertialNav::get_filter_status() const
  *
  * @return
  */
-const Vector3f &AP_InertialNav::get_position_neu_cm(void) const 
+const Vector3f &AP_InertialNav::get_position_neu_cm(void) const
 {
     return _relpos_cm;
 }

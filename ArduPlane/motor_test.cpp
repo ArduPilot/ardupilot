@@ -37,7 +37,7 @@ void QuadPlane::motor_test_output()
         motor_test_stop();
         return;
     }
-            
+
     int16_t pwm = 0;   // pwm that will be output to the motors
 
     // calculate pwm based on throttle type
@@ -94,7 +94,7 @@ MAV_RESULT QuadPlane::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t m
 
         // enable and arm motors
         set_armed(true);
-        
+
         // turn on notify leds
         AP_Notify::flags.esc_calibration = true;
     }

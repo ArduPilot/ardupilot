@@ -149,11 +149,11 @@ void DroneCANDevice::_setup_eliptical_correcion(uint8_t i)
     }
     const Vector3f &diagonals = diag;
     const Vector3f &offdiagonals = AP::sitl()->mag_offdiag[i];
-    
+
     if (diagonals == _last_dia && offdiagonals == _last_odi) {
         return;
     }
-    
+
     _eliptical_corr = Matrix3f(diagonals.x,    offdiagonals.x, offdiagonals.y,
                                offdiagonals.x, diagonals.y,    offdiagonals.z,
                                offdiagonals.y, offdiagonals.z, diagonals.z);

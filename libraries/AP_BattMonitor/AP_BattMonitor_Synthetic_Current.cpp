@@ -23,7 +23,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Synthetic_Current::var_info[] = {
     // @User: Advanced
 
     AP_GROUPINFO("MAX_VOLT", 50, AP_BattMonitor_Synthetic_Current, _max_voltage, 12.6),
-    
+
     // also inherit analog backend parameters
     AP_SUBGROUPEXTENSION("", 51, AP_BattMonitor_Synthetic_Current, AP_BattMonitor_Analog::var_info),
 
@@ -40,7 +40,7 @@ AP_BattMonitor_Synthetic_Current::AP_BattMonitor_Synthetic_Current(AP_BattMonito
 {
     AP_Param::setup_object_defaults(this, var_info);
     _state.var_info = var_info;
-    
+
     _volt_pin_analog_source = hal.analogin->channel(_volt_pin);
 }
 
@@ -69,7 +69,7 @@ AP_BattMonitor_Synthetic_Current::read()
 
     // record time
     _state.last_time_micros = tnow;
- 
+
 }
 
 #endif  // AP_BATTERY_SYNTHETIC_CURRENT_ENABLED

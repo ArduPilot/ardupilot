@@ -39,7 +39,7 @@ AP_RangeFinder_DroneCAN* AP_RangeFinder_DroneCAN::get_dronecan_backend(AP_DroneC
         }
         //Double check if the driver was initialised as UAVCAN Type
         if (driver != nullptr && (driver->_backend_type == RangeFinder::Type::UAVCAN)) {
-            if (driver->_ap_dronecan == ap_dronecan && 
+            if (driver->_ap_dronecan == ap_dronecan &&
                 driver->_node_id == node_id) {
                 return driver;
             } else {
@@ -49,7 +49,7 @@ AP_RangeFinder_DroneCAN* AP_RangeFinder_DroneCAN::get_dronecan_backend(AP_DroneC
             }
         }
     }
-    
+
     if (create_new) {
         for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
             if ((RangeFinder::Type)frontend.params[i].type.get() == RangeFinder::Type::UAVCAN &&
@@ -136,7 +136,7 @@ void AP_RangeFinder_DroneCAN::handle_measurement(AP_DroneCAN *ap_dronecan, const
             break;
         }
     }
-    //copy over the sensor type of Rangefinder 
+    //copy over the sensor type of Rangefinder
     switch (msg.sensor_type) {
         case UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_SENSOR_TYPE_SONAR:
         {

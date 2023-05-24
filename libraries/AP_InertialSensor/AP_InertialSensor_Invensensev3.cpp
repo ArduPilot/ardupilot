@@ -418,7 +418,7 @@ void AP_InertialSensor_Invensensev3::read_fifo()
     if (need_reset) {
         fifo_reset();
     }
-    
+
 check_registers:
     // check next register value for correctness
     dev->set_speed(AP_HAL::Device::SPEED_LOW);
@@ -711,7 +711,7 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm456xy(void)
     // setup accel for 1.6-6.4kHz, 32g range
     register_write(INV3REG_456_ACCEL_CONFIG0, (0x0 << 4) | odr_config); // ACCEL_UI_FS_SEL b4-6, ACCEL_ODR b0-3
 
-    // enable timestamps on FIFO data 
+    // enable timestamps on FIFO data
     // SMC_CONTROL_0
     uint8_t reg = register_read_bank_icm456xy(INV3BANK_456_IPREG_TOP1_ADDR, 0x58);
 #ifdef ICM45686_CLKIN
@@ -875,7 +875,7 @@ bool AP_InertialSensor_Invensensev3::hardware_init(void)
 
         // FIFO stop-on-full, disable bypass
         register_write(INV3REG_70_FIFO_CONFIG1, 0x2, true);
-        
+
         // little-endian, fifo count in records
         register_write(INV3REG_70_INTF_CONFIG0, 0x40, true);
     } else if (inv3_type == Invensensev3_Type::ICM45686) {

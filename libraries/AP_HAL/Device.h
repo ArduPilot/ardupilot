@@ -99,7 +99,7 @@ public:
      * does not include the bit for read/write. Only works on I2C
      */
     virtual void set_address(uint8_t address) {};
-    
+
     /*
      * Set the speed of future transfers. Depending on the bus the speed may
      * be shared for all devices on the same bus.
@@ -150,7 +150,7 @@ public:
      * Return: true on a successful transfer, false on failure.
      */
     bool write_register(uint8_t reg, uint8_t val, bool checked=false);
-    
+
     /*
      * Sets a callback to be called when a register is read or written.
      */
@@ -213,14 +213,14 @@ public:
         uint8_t regnum;
         uint8_t value;
     };
-    
+
     /**
      * check next register value for correctness, with return of
      * failure value. Return false if value is incorrect or register
      * checking has not been setup
      */
     bool check_next_register(struct checkreg &fail);
-    
+
     /**
      * Wrapper function over #transfer() to read a sequence of bytes from
      * device. No value is written, differently from the #read_registers()
@@ -292,7 +292,7 @@ public:
     */
     virtual void register_completion_callback(AP_HAL::MemberProc proc) {}
     virtual void register_completion_callback(AP_HAL::Proc proc) {}
-    
+
     /*
      * support for direct control of SPI chip select. Needed for
      * devices with unusual SPI transfer patterns that include

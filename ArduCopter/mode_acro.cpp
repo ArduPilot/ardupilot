@@ -117,7 +117,7 @@ void ModeAcro::get_pilot_desired_angle_rates(float roll_in, float pitch_in, floa
     }
 
     // calculate roll, pitch rate requests
-    
+
     // roll expo
     rate_bf_request_cd.x = g2.command_model_acro_rp.get_rate() * 100.0 * input_expo(roll_in, g2.command_model_acro_rp.get_expo());
 

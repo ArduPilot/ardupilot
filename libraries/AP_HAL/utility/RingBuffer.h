@@ -184,7 +184,7 @@ public:
         }
         return buffer->write((uint8_t*)object, n*sizeof(T)) == n*sizeof(T);
     }
-    
+
     /*
       throw away an object from the front of the queue
      */
@@ -228,7 +228,7 @@ public:
         }
         return push(object, n);
     }
-    
+
     /*
       peek copies an object out from the front of the queue without advancing the read pointer
      */
@@ -260,7 +260,7 @@ public:
     bool advance(uint32_t n) {
         return buffer->advance(n * sizeof(T));
     }
-    
+
     /* update the object at the front of the queue (the one that would
        be fetched by pop()) */
     // !!! Note ObjectBuffer_TS is a duplicate of this, update in both places !!!

@@ -41,14 +41,14 @@ EN:
 
 RUS:
     на первый взгляд, магнитометр MAG3110 состоит из одних лишь недостатков:
-    * шумный, с кривой характеристикой, 
+    * шумный, с кривой характеристикой,
     * никак не калибруется, приходится просто верить тому что он намерял
     * нет никаких регулировок и настроек, он просто выдает данные с некой неизвестной чувствительностью. Или не выдает :)
     * полтора настроечных регистра, в которых задается только частота работы и количество усреднений
-    
+
     Такой вот девайс, по пояс деревянный. Но из всех этих недостатков проистекает его единственное и основное достоинство:
     * он никогда не глючит и не умничает.
-    
+
     А так как нам от магнитометра особо много и не требуется, а калибровать Ардупилот и сам умеет, то девайс
     предстает в совсем новом свете - как надежный указатель "север там". Что нам собственно и надо.
 
@@ -116,7 +116,7 @@ bool AP_Compass_MAG3110::init(enum Rotation rotation)
 
     // perform an initial read
     read();
-    
+
     /* register the compass instance in the frontend */
     _dev->set_device_type(DEVTYPE_MAG3110);
     if (!register_compass(_dev->get_bus_id(), _compass_instance)) {
@@ -129,7 +129,7 @@ bool AP_Compass_MAG3110::init(enum Rotation rotation)
     set_external(_compass_instance, true);
 
     // read at 75Hz
-    _dev->register_periodic_callback(13333, FUNCTOR_BIND_MEMBER(&AP_Compass_MAG3110::_update, void)); 
+    _dev->register_periodic_callback(13333, FUNCTOR_BIND_MEMBER(&AP_Compass_MAG3110::_update, void));
 
     return true;
 }
@@ -144,25 +144,25 @@ bool AP_Compass_MAG3110::_hardware_init()
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
 
     bool ret=false;
-    
+
     _dev->set_retries(5);
-    
+
     uint8_t sig = 0;
-    bool ack = _dev->read_registers(MAG3110_MAG_REG_WHO_AM_I, &sig, 1);    
+    bool ack = _dev->read_registers(MAG3110_MAG_REG_WHO_AM_I, &sig, 1);
     if (!ack || sig != 0xC4) goto exit;
 
     ack = _dev->write_register(MAG3110_MAG_REG_CTRL_REG1, 0x01); //  active mode 80 Hz ODR with OSR = 1
     if (!ack) goto exit;
 
     hal.scheduler->delay(20);
-    
+
     ack = _dev->write_register(MAG3110_MAG_REG_CTRL_REG2, 0xA0); // AUTO_MRST_EN + RAW
     if (!ack) goto exit;
 
     ret = true;
 
     _dev->set_retries(3);
-    
+
     printf("MAG3110 found on bus 0x%x\n", (uint16_t)_dev->get_bus_id());
 
 exit:
@@ -178,7 +178,7 @@ bool AP_Compass_MAG3110::_read_sample()
     {
         uint8_t status;
         bool ack = _dev->read_registers(MAG3110_MAG_REG_STATUS, &status, 1);
-    
+
         if (!ack || (status & BIT_STATUS_REG_DATA_READY) == 0) {
             return false;
         }

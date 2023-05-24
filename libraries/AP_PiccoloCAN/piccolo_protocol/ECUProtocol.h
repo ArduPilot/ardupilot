@@ -16,7 +16,7 @@
  *
  * Author: Oliver Walters / Currawong Engineering Pty Ltd
  */
- 
+
 
 #ifndef _ECUPROTOCOL_H
 #define _ECUPROTOCOL_H
@@ -29,13 +29,13 @@ extern "C" {
 /*!
  * \file
  * \mainpage ECU protocol stack
- * 
+ *
  * ECU ICD
- * 
+ *
  * The protocol API enumeration is incremented anytime the protocol is changed
  * in a way that affects compatibility with earlier versions of the protocol.
  * The protocol enumeration for this version is: 11
- * 
+ *
  * The protocol version is 7.0
  */
 
@@ -68,9 +68,9 @@ typedef enum
 typedef enum
 {
     ECU_DEBUG_RESET_STACK_OVERFLOW = 0x01,
-    ECU_DEBUG_RESET_STACK_UNDERFLOW,     
-    ECU_DEBUG_RESET_DIVIDE_BY_ZERO,      
-    ECU_DEBUG_RESET_INFINITE_LOOP        
+    ECU_DEBUG_RESET_STACK_UNDERFLOW,
+    ECU_DEBUG_RESET_DIVIDE_BY_ZERO,
+    ECU_DEBUG_RESET_INFINITE_LOOP
 } ECUDebugResetTests;
 
 /*!
@@ -150,8 +150,8 @@ const char* ECUPackets_EnumLabel(int value);
 typedef enum
 {
     ECU_CE_CAL_TITLE_1 = 0xA0,
-    ECU_CE_CAL_TITLE_2,      
-    ECU_CE_CAL_TITLE_3       
+    ECU_CE_CAL_TITLE_2,
+    ECU_CE_CAL_TITLE_3
 } ECUSpecialPackets;
 
 /*!
@@ -173,7 +173,7 @@ typedef enum
     CMD_ECU_SET_FUEL_USED_DIVISOR,       //!< Configure the FuelUsed divisor. This is an unsigned 16-bit value. The fuel used value is divided by this divisor before being transmitted by the auxiliary processor. Set this value to 1 to leave the fuel used data unaffected. If you use values greater than 100 the divisor is automatically interpreted as being in units of 0.01 (i.e. 100 times the resolution).
     CMD_ECU_FUEL_USED_RESET_ON_STARTUP,  //!< Set or clear the Fuel Used reset flag. If this flag is set, the FuelUsed data will reset (to zero) when the ECU is power cycled. 1 = Reset Fuel Used data on powerup 0 = Do not reset Fuel Used data on power up
     CMD_ECU_SET_GOVERNOR_MODE = 0x20,    //!< Manually set the RPM governor mode Byte1 = MODE 0 = Governor Off (Open loop throttle control) 1 = Governor based on throttle command 2 = Governor based on RPM command
-    CMD_ECU_SET_SERVO_CAN_MODE = 0x28,   
+    CMD_ECU_SET_SERVO_CAN_MODE = 0x28,
     CMD_ECU_RESET_INTO_BOOTLOADER = 0x30,//!< Reset the ECU into bootloader mode
     CMD_ECU_RESET_DEFAULT_SETTINGS,      //!< Set ECU settings to their default values
     CMD_ECU_SET_SERIAL_MODE = 0x40,      //!< Set the serial relay mode used for Autronic relay

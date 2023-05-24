@@ -78,7 +78,7 @@ void Motor::calculate_forces(const struct sitl_input &input,
     float roll = 0, pitch = 0;
 
     uint64_t now = AP_HAL::micros64();
-    
+
     // possibly roll and/or pitch the motor
     if (roll_servo >= 0) {
         uint16_t servoval = update_servo(input.servos[roll_servo+motor_offset], now, last_roll_value);
@@ -165,7 +165,7 @@ float Motor::get_current(void) const
 // setup PWM ranges for this motor
 void Motor::setup_params(uint16_t _pwm_min, uint16_t _pwm_max, float _spin_min, float _spin_max, float _expo, float _slew_max,
                          float _diagonal_size, float _power_factor, float _voltage_max, float _effective_prop_area,
-                         float _velocity_max, Vector3f _position, Vector3f _thrust_vector, float _yaw_factor, 
+                         float _velocity_max, Vector3f _position, Vector3f _thrust_vector, float _yaw_factor,
                          float _true_prop_area, float _momentum_drag_coefficient)
 {
     mot_pwm_min = _pwm_min;

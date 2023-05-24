@@ -90,7 +90,7 @@ void AP_BattMonitor_SMBus_SUI::read_cell_voltages()
         return;
     }
     float pack_voltage_mv = 0.0f;
-        
+
     for (uint8_t i = 0; i < MIN(SUI_MAX_CELL_READ, cell_count); i++) {
         const uint16_t cell = voltbuff[i];
         _state.cell_voltages.cells[i] = cell;

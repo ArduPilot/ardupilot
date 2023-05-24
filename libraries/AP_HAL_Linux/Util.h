@@ -77,7 +77,7 @@ public:
     virtual void *allocate_heap_memory(size_t size) override;
     virtual void *heap_realloc(void *h, void *ptr, size_t old_size, size_t new_size) override;
 #endif // ENABLE_HEAP
-    
+
     /*
      * Write a string as specified by @fmt to the file in @path. Note this
      * should not be used on hot path since it will open, write and close the

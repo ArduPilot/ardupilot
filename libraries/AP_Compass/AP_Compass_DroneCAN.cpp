@@ -125,7 +125,7 @@ AP_Compass_DroneCAN* AP_Compass_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_d
     bool already_detected = false;
     // Check if there's an empty spot for possible registeration
     for (uint8_t i = 0; i < COMPASS_MAX_BACKEND; i++) {
-        if (_detected_modules[i].ap_dronecan == ap_dronecan && 
+        if (_detected_modules[i].ap_dronecan == ap_dronecan &&
             _detected_modules[i].node_id == node_id &&
             _detected_modules[i].sensor_id == sensor_id) {
             // Already Detected

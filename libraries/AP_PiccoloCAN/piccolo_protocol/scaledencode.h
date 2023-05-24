@@ -61,7 +61,7 @@ extern "C" {
  * and copy the resulting three bytes to bytestream[index] as an unsigned 24
  * bit number in little endian order. This would result in an altitude
  * resolution of 0.003 meters.
- * 
+ *
  * scaledencode does not include routines that increase the resolution of the
  * inmemory value. For example the function floatScaledTo5UnsignedBeBytes() does
  * not exist, because expanding a float to 5 bytes does not make any resolution

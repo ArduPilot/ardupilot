@@ -80,7 +80,7 @@ AP_AIS::AP_AIS()
 
 // return true if AIS is enabled
 bool AP_AIS::enabled() const
-{ 
+{
     return AISType(_type.get()) != AISType::NONE;
 }
 

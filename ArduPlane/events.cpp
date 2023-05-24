@@ -33,7 +33,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
     case Mode::Number::AUTOTUNE:
     case Mode::Number::FLY_BY_WIRE_B:
     case Mode::Number::CRUISE:
-    case Mode::Number::TRAINING:  
+    case Mode::Number::TRAINING:
         if(plane.emergency_landing) {
             set_mode(mode_fbwa, reason); // emergency landing switch overrides normal action to allow out of range landing
             break;
@@ -43,7 +43,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
         } else if (g.fs_action_short == FS_ACTION_SHORT_FBWB) {
             set_mode(mode_fbwb, reason);
         } else {
-            set_mode(mode_circle, reason); // circle if action = 0 or 1 
+            set_mode(mode_circle, reason); // circle if action = 0 or 1
         }
         break;
 
@@ -204,7 +204,7 @@ void Plane::failsafe_short_off_event(ModeReason reason)
     gcs().send_text(MAV_SEVERITY_WARNING, "Short Failsafe Cleared");
     failsafe.state = FAILSAFE_NONE;
     // restore entry mode if desired but check that our current mode is still due to failsafe
-    if (control_mode_reason == ModeReason::RADIO_FAILSAFE) { 
+    if (control_mode_reason == ModeReason::RADIO_FAILSAFE) {
        set_mode_by_number(failsafe.saved_mode_number, ModeReason::RADIO_FAILSAFE_RECOVERY);
        gcs().send_text(MAV_SEVERITY_INFO,"Flight mode %s restored",control_mode->name());
     }

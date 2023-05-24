@@ -74,12 +74,12 @@ public:
 
 	// use_leaky_i - controls whether we use leaky i term for body-frame to motor output stage
 	void use_leaky_i(bool leaky_i) override {  _flags_heli.leaky_i = leaky_i; }
-    
+
     // use_flybar_passthrough - controls whether we pass-through
     // control inputs to swash-plate and tail
-    void use_flybar_passthrough(bool passthrough, bool tail_passthrough) override {  
-        _flags_heli.flybar_passthrough = passthrough; 
-        _flags_heli.tail_passthrough = tail_passthrough; 
+    void use_flybar_passthrough(bool passthrough, bool tail_passthrough) override {
+        _flags_heli.flybar_passthrough = passthrough;
+        _flags_heli.tail_passthrough = tail_passthrough;
     }
 
     // do_piro_comp - controls whether piro-comp is active or not
@@ -99,12 +99,12 @@ public:
 
     // Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
     void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw) override;
-    
+
     // enable/disable inverted flight
     void set_inverted_flight(bool inverted) override {
         _inverted_flight = inverted;
     }
-    
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -132,7 +132,7 @@ private:
     //
     // throttle methods
     //
-    
+
     // pass through for roll and pitch
     float _passthrough_roll;
     float _passthrough_pitch;
@@ -158,5 +158,5 @@ private:
     AC_HELI_PID     _pid_rate_roll;
     AC_HELI_PID     _pid_rate_pitch;
     AC_HELI_PID     _pid_rate_yaw;
-    
+
 };

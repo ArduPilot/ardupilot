@@ -177,7 +177,7 @@ void AP_WheelEncoder::init(void)
             drivers[i] = new AP_WheelEncoder_SITL_Quadrature(*this, i, state[i]);
 #endif
             break;
-            
+
         case WheelEncoder_TYPE_NONE:
             break;
         }

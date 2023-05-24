@@ -262,7 +262,7 @@ AP_GPS_DroneCAN* AP_GPS_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_dronecan,
 
     for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
         if (_detected_modules[i].driver != nullptr &&
-            _detected_modules[i].ap_dronecan == ap_dronecan && 
+            _detected_modules[i].ap_dronecan == ap_dronecan &&
             _detected_modules[i].node_id == node_id) {
             return _detected_modules[i].driver;
         }
@@ -450,7 +450,7 @@ void AP_GPS_DroneCAN::handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uin
     };
 
     static uint64_t next_toggle, last_toggle;
-    
+
     next_toggle = (msg.timestamp.usec) + (1000000ULL - ((msg.timestamp.usec) % 1000000ULL));
 
     next_toggle += jitter_correction.get_link_offset_usec();
@@ -662,7 +662,7 @@ bool AP_GPS_DroneCAN::do_config()
         return false;
     }
     uint8_t node_id = _detected_modules[_detected_module].node_id;
-    
+
     switch(cfg_step) {
         case STEP_SET_TYPE:
             ap_dronecan->get_parameter_on_node(node_id, "GPS_TYPE", &param_int_cb);

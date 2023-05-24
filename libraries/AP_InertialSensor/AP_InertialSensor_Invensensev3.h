@@ -83,7 +83,7 @@ private:
     // temp scaling for FIFO temperature
     float temp_sensitivity;
     const float temp_zero = 25; // degC
-    
+
     const enum Rotation rotation;
 
     /*

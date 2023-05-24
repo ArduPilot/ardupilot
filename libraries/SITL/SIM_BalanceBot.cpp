@@ -95,7 +95,7 @@ void BalanceBot::update(const struct sitl_input &input)
     float theta = p; //radians
 
     float ang_vel = gyro.y; //radians/s
-    
+
     // t1,t2,t3 are terms in the equation to find vehicle frame x acceleration
     const float t1 = ((2.0f*gear_ratio*k_t*v/(R*r_w)) - (2.0f*gear_ratio*k_t*k_e*velocity_vf_x/(R*r_w*r_w)) - (m_p*l*ang_vel*ang_vel*sin(theta))) * (i_p + m_p*l*l);
     const float t2 = -m_p*l*cos(theta)*((2.0f*gear_ratio*k_t*k_e*velocity_vf_x/(R*r_w)) - (2.0f*gear_ratio*k_t*v/(R)) + (m_p*GRAVITY_MSS*l*sin(theta)));
@@ -142,7 +142,7 @@ void BalanceBot::update(const struct sitl_input &input)
         gyro.zero();
         velocity_vf_x =0;
     }
-    
+
     // work out acceleration as seen by the accelerometers. It sees the kinematic
     // acceleration (ie. real movement), plus gravity
     accel_body += dcm.transposed() * (Vector3f(0, 0, -GRAVITY_MSS));

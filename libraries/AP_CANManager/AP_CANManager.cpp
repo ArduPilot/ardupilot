@@ -533,7 +533,7 @@ void AP_CANManager::handle_can_filter_modify(const mavlink_message_t &msg)
     // sort the list, so we can bisection search and the array
     // operations below are efficient
     insertion_sort_uint16(p.ids, p.num_ids);
-    
+
     switch (p.operation) {
     case CAN_FILTER_REPLACE: {
         if (p.num_ids == 0) {

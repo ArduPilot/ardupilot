@@ -246,7 +246,7 @@ public:
 
     // create matrix from rotation enum
     void from_rotation(enum Rotation rotation);
-    
+
     /*
       calculate Euler angles (312 convention) for the matrix.
       See http://www.atacolorado.com/eulersequences.doc
@@ -267,7 +267,7 @@ public:
     // See: https://en.wikipedia.org/wiki/Rotation_matrix#General_rotations
     // "Rotation matrix from axis and angle"
     void        from_axis_angle(const Vector3<T> &v, T theta);
-    
+
     // normalize a rotation matrix
     void        normalize(void);
 

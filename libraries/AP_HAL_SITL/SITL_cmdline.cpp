@@ -711,5 +711,5 @@ bool SITL_State::lookup_location(const char *home_str, Location &loc, float &yaw
     ::printf("Failed to find location '%s'\n", home_str);
     return false;
 }
-    
+
 #endif

@@ -25,7 +25,7 @@
 #define RPM_THRESHOLD                100
 
 class AP_EFI_Serial_MS: public AP_EFI_Backend {
-    
+
 public:
     // Constructor with initialization
     AP_EFI_Serial_MS(AP_EFI &_frontend);
@@ -78,7 +78,7 @@ private:
         ERR_TXMODE_RANGE,
         ERR_UNKNOWN
     };
-    
+
     // Realtime Data Table Locations
     enum realtime_data {
         PW1_MSB = 2,
@@ -106,7 +106,7 @@ private:
         DWELL_LSB,
         LOAD = 66,
         FUEL_PRESSURE_MSB = 128,
-        FUEL_PRESSURE_LSB, 
+        FUEL_PRESSURE_LSB,
         // Helpers used when sending request
         RT_FIRST_OFFSET = PW1_MSB,
         RT_LAST_OFFSET = FUEL_PRESSURE_LSB

@@ -28,17 +28,17 @@ extern "C" {
 /*!
  * \file
  * \mainpage ESCVelocity protocol stack
- * 
+ *
  * This is the ICD for the Gen-2 Currawong Engineering Electronic Speed
  * Controller (ESCVelocity). This document details the ESCVelocity command and
  * packet structure for communication with and configuration of the ESC. Note
  * that there may be some differences between this ICD and the ICD for the
  * Gen-1 ESCVelocity. Please refer to the old ICD for the Gen-1 device.
- * 
+ *
  * The protocol API enumeration is incremented anytime the protocol is changed
  * in a way that affects compatibility with earlier versions of the protocol.
  * The protocol enumeration for this version is: 62
- * 
+ *
  * The protocol version is 3.41
  */
 
@@ -237,7 +237,7 @@ typedef enum
     ESC_STANDBY_CAUSE_FAILED_START = 0x0040,     //!< ESC was put into *STANDBY* mode due to failed starting routine
     ESC_STANDBY_CAUSE_MIN_CMD = 0x0080,          //!< ESC was put into *STANDBY* mode due to the received command below minimum threshold
     ESC_STANDBY_CAUSE_FAILED_RESYNC = 0x0100,    //!< ESC was put into *STANDBY* mode due to failed resync routine
-    ESC_STANDBY_CAUSE_RESET = 0x8000             
+    ESC_STANDBY_CAUSE_RESET = 0x8000
 } ESCStandbyCause;
 
 //! \return the label of a 'ESCStandbyCause' enum entry, based on its value
@@ -277,7 +277,7 @@ typedef enum
     ESC_MOTOR_OFF_THROTTLE_MIN = 0x0020, //!< Throttle below minimum value
     ESC_MOTOR_OFF_NOT_RUNNING = 0x0040,  //!< Motor does not have valid commutation
     ESC_MOTOR_OFF_FAILED_START = 0x0080, //!< Starting routine failed
-    ESC_MOTOR_OFF_INVALID = 0x8000       
+    ESC_MOTOR_OFF_INVALID = 0x8000
 } ESCMotorOffCause;
 
 //! \return the label of a 'ESCMotorOffCause' enum entry, based on its value
@@ -294,7 +294,7 @@ typedef enum
     ESC_FAILED_START_CAUSE_OVERCURRENT = 0x0004, //!< Starting current exceeded
     ESC_FAILED_START_CAUSE_SPIN_REVERSED = 0x0010,//!< Motor is already spinning, in reverse direction
     ESC_FAILED_START_CAUSE_SPIN_TOO_FAST = 0x0020,//!< Motor is already spinning, above maximum catch speed
-    ESC_FAILED_START_CAUSE_INVALID = 0x8000      
+    ESC_FAILED_START_CAUSE_INVALID = 0x8000
 } ESCFailedStartCause;
 
 //! \return the label of a 'ESCFailedStartCause' enum entry, based on its value

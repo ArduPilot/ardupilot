@@ -145,7 +145,7 @@ void Storage::_save_backup(void)
     // So we keep trying this for a second
     uint32_t start_millis = AP_HAL::millis();
     while(!AP::FS().retry_mount() && (AP_HAL::millis() - start_millis) < 1000) {
-        hal.scheduler->delay(1);        
+        hal.scheduler->delay(1);
     }
 
     ret = AP::FS().mkdir(_storage_bak_directory);

@@ -48,7 +48,7 @@ public:
     // get completion mask for mavlink reporting (a bitmask of faces/directions for which we have compass samples)
     typedef uint8_t completion_mask_t[10];
 
-    // Structure accessed for cal status update via mavlink 
+    // Structure accessed for cal status update via mavlink
     struct State {
         Status status;
         uint8_t attempt;
@@ -89,7 +89,7 @@ public:
 
     // Get calibration result
     const Report get_report();
-    
+
     // Get current Calibration state
     const State get_state();
 

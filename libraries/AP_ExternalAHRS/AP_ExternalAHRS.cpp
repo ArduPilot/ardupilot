@@ -77,7 +77,7 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @Bitmask: 0:GPS,1:IMU,2:Baro,3:Compass
     // @User: Advanced
     AP_GROUPINFO("_SENSORS", 4, AP_ExternalAHRS, sensors, 0xF),
-    
+
     AP_GROUPEND
 };
 

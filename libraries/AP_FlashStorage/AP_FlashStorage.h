@@ -97,14 +97,14 @@ public:
 
     // caller provided function to read from a flash sector. Only called on init()
     FUNCTOR_TYPEDEF(FlashRead, bool, uint8_t , uint32_t , uint8_t *, uint16_t );
-    
+
     // caller provided function to erase a flash sector. Only called from init()
     FUNCTOR_TYPEDEF(FlashErase, bool, uint8_t );
 
     // caller provided function to indicate if erasing is allowed
     FUNCTOR_TYPEDEF(FlashEraseOK, bool);
-    
-    // constructor. 
+
+    // constructor.
     AP_FlashStorage(uint8_t *mem_buffer,        // buffer of storage_size bytes
                     uint32_t flash_sector_size, // size of each flash sector in bytes
                     FlashWrite flash_write,     // function to write to flash
@@ -119,10 +119,10 @@ public:
     bool erase(void) WARN_IF_UNUSED {
         return erase_all();
     }
-    
+
     // re-initialise storage, using current mem_buffer
     bool re_initialise(void) WARN_IF_UNUSED;
-    
+
     // switch full sector - should only be called when safe to have CPU
     // offline for considerable periods as an erase will be needed
     bool switch_full_sector(void) WARN_IF_UNUSED;
@@ -132,7 +132,7 @@ public:
 
     // fixed storage size
     static const uint16_t storage_size = HAL_STORAGE_SIZE;
-    
+
 private:
     uint8_t *mem_buffer;
     const uint32_t flash_sector_size;
@@ -206,7 +206,7 @@ private:
         BLOCK_STATE_WRITING   = 0x1,
         BLOCK_STATE_VALID     = 0x0
     };
-    
+
     // header of each block of data
     struct block_header {
         uint16_t state:2;
@@ -216,7 +216,7 @@ private:
 
     // amount of space needed to write full storage
     static const uint32_t reserve_size = (storage_size / max_write) * (sizeof(block_header) + max_write) + max_write;
-        
+
     // load data from a sector
     bool load_sector(uint8_t sector) WARN_IF_UNUSED;
 

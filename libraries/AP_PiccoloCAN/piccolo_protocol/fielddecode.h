@@ -28,28 +28,28 @@ extern "C" {
 /*!
  * \file
  * fielddecode provides routines to pull numbers from a byte stream.
- * 
+ *
  * fielddecode provides routines to pull numbers in local memory layout from a
  * big or little endian byte stream. It is the opposite operation from the
  * routines contained in fieldencode.h
- * 
+ *
  * When compressing unsigned numbers (for example 32-bits to 16-bits) the most
  * signficant bytes are discarded and the only requirement is that the value of
  * the number fits in the smaller width. When going the other direction the
  * most significant bytes are simply set to 0x00. However signed two's
  * complement numbers are more complicated.
- * 
+ *
  * If the signed value is a positive number that fits in the range then the
  * most significant byte will be zero, and we can discard it. If the signed
  * value is negative (in two's complement) then the most significant bytes are
  * 0xFF and again we can throw them away. See the example below
- * 
+ *
  * 32-bit +100 | 16-bit +100 | 8-bit +100 0x00000064 | 0x0064 | 0x64 <-- notice
  * most significant bit clear
- * 
+ *
  * 32-bit -100 | 16-bit -100 | 8-bit -100 0xFFFFFF9C | 0xFF9C | 0x9C <-- notice
  * most significant bit set
- * 
+ *
  * The signed complication comes when going the other way. If the number is
  * positive setting the most significant bytes to zero is correct. However if
  * the number is negative the most significant bytes must be set to 0xFF. This

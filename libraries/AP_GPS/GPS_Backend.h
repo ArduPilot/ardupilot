@@ -47,7 +47,7 @@ public:
     // valid packet from the GPS.
     virtual bool read() = 0;
 
-    // Highest status supported by this GPS. 
+    // Highest status supported by this GPS.
     // Allows external system to identify type of receiver connected.
     virtual AP_GPS::GPS_Status highest_supported_status(void) { return AP_GPS::GPS_OK_FIX_3D; }
 
@@ -68,7 +68,7 @@ public:
 #if HAL_EXTERNAL_AHRS_ENABLED
     virtual void handle_external(const AP_ExternalAHRS::gps_data_message_t &pkt) { return; }
 #endif
-    
+
     // driver specific lag, returns true if the driver is confident in the provided lag
     virtual bool get_lag(float &lag) const { lag = 0.2f; return true; }
 

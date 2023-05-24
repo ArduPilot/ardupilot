@@ -108,6 +108,6 @@ uint16_t nmea_printf_buffer(char* buf, const uint16_t buf_max_len, const char *f
         strncpy(buf, s, buf_max_len);
     }
     free(s);
-    
+
     return len;
 }

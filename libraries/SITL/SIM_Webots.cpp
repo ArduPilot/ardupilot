@@ -85,7 +85,7 @@ static const struct {
 Webots::Webots(const char *frame_str) :
     Aircraft(frame_str)
 {
-    use_time_sync = false;   
+    use_time_sync = false;
     use_smoothing = false;
     last_state.timestamp = 0.0l;
     char *saveptr = nullptr;
@@ -104,7 +104,7 @@ Webots::Webots(const char *frame_str) :
     if (args2) {
         webots_sensors_port = atoi(args2);
     }
-    
+
 
     if (strstr(frame_option, "-rover")) {
         output_type = OUTPUT_ROVER;
@@ -141,18 +141,18 @@ Webots::Webots(const char *frame_str) :
   This parser does not do any syntax checking, and is not at all
   general purpose
 
-{"timestamp": 1563474924.817575, 
-    "vehicle.imu": {"timestamp": 1563474924.8009083, 
-        "angular_velocity": [2.319516170246061e-06, -3.5830129263558774e-07, 7.009341995711793e-09], 
-        "linear_acceleration": [0.005075275432318449, 0.22471635043621063, 9.80748176574707], 
-        "magnetic_field": [23088.65625, 3875.89453125, -53204.51171875]}, 
-        "vehicle.gps": {"timestamp": 1563474924.8009083, "x": 5.386466364143416e-05, "y": -0.0010969983413815498, "z": 0.03717954829335213}, 
-    "vehicle.velocity": {"timestamp": 1563474924.8009083, 
-        "linear_velocity": [4.818238585890811e-10, 2.1333558919423012e-08, 9.310780910709582e-07], 
-        "angular_velocity": [2.319516170246061e-06, -3.5830129263558774e-07, 7.009341995711793e-09], 
-        "world_linear_velocity": [5.551115123125783e-17, 0.0, 9.313225746154785e-07]}, 
-        "vehicle.pose": {"timestamp": 1563474924.8009083, 
-            "x": 5.386466364143416e-05, "y": -0.0010969983413815498, "z": 0.03717954829335213, 
+{"timestamp": 1563474924.817575,
+    "vehicle.imu": {"timestamp": 1563474924.8009083,
+        "angular_velocity": [2.319516170246061e-06, -3.5830129263558774e-07, 7.009341995711793e-09],
+        "linear_acceleration": [0.005075275432318449, 0.22471635043621063, 9.80748176574707],
+        "magnetic_field": [23088.65625, 3875.89453125, -53204.51171875]},
+        "vehicle.gps": {"timestamp": 1563474924.8009083, "x": 5.386466364143416e-05, "y": -0.0010969983413815498, "z": 0.03717954829335213},
+    "vehicle.velocity": {"timestamp": 1563474924.8009083,
+        "linear_velocity": [4.818238585890811e-10, 2.1333558919423012e-08, 9.310780910709582e-07],
+        "angular_velocity": [2.319516170246061e-06, -3.5830129263558774e-07, 7.009341995711793e-09],
+        "world_linear_velocity": [5.551115123125783e-17, 0.0, 9.313225746154785e-07]},
+        "vehicle.pose": {"timestamp": 1563474924.8009083,
+            "x": 5.386466364143416e-05, "y": -0.0010969983413815498, "z": 0.03717954829335213,
             "yaw": 7.137723878258839e-05, "pitch": -0.0005173543468117714, "roll": 0.022908739745616913}}
 
 */
@@ -163,7 +163,7 @@ bool Webots::parse_sensors(const char *json)
    for (uint16_t i=0; i<ARRAY_SIZE(keytable); i++) {
         struct keytable &key = keytable[i];
         //printf("search   %s/%s\n", key.section, key.key);
-        // look for section header 
+        // look for section header
         const char *p = strstr(json, key.section);
         if (!p) {
             // we don't have this sensor
@@ -201,7 +201,7 @@ bool Webots::parse_sensors(const char *json)
             {
                 //printf("GOT  %s/%s [%f, %f, %f]\n", key.section, key.key, v->x, v->y, v->z);
             }
-            
+
             break;
         }
 
@@ -282,7 +282,7 @@ bool Webots::parse_sensors(const char *json)
 
     socket_frame_counter++;
     return true;
-    
+
 }
 
 /*
@@ -311,7 +311,7 @@ bool Webots::connect_sockets(void)
         sim_sock->reuseaddress();
         printf("Sensors connected\n");
     }
-    return true; 
+    return true;
 }
 
 /*
@@ -355,14 +355,14 @@ void Webots::output_rover(const struct sitl_input &input)
 
     const float motor1 = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
     const float motor2 = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
-    
+
     // construct a JSON packet for v and w
     char buf[200];
-    
+
     const int len = snprintf(buf, sizeof(buf)-1, "{\"rover\": [%f, %f], \"wnd\": [%f, %f, %f, %f]}\n",
              motor1, motor2,
              input.wind.speed, wind_ef.x, wind_ef.y, wind_ef.z);
-    
+
     buf[len] = 0;
 
     sim_sock->send(buf, len);
@@ -376,14 +376,14 @@ void Webots::output_tricopter(const struct sitl_input &input)
     const float max_thrust = 1.0;
     float motors[3];
     const float servo = ((input.servos[6]-1000)/1000.0f - 0.5f);
-    motors[0] = constrain_float(((input.servos[0]-1000)/1000.0f) * max_thrust, 0, max_thrust); 
-    motors[1] = constrain_float(((input.servos[1]-1000)/1000.0f) * max_thrust, 0, max_thrust); 
-    motors[2] = constrain_float(((input.servos[3]-1000)/1000.0f) * max_thrust, 0, max_thrust); 
+    motors[0] = constrain_float(((input.servos[0]-1000)/1000.0f) * max_thrust, 0, max_thrust);
+    motors[1] = constrain_float(((input.servos[1]-1000)/1000.0f) * max_thrust, 0, max_thrust);
+    motors[2] = constrain_float(((input.servos[3]-1000)/1000.0f) * max_thrust, 0, max_thrust);
 
-    const float &m_right = motors[0]; 
-    const float &m_left  = motors[1]; 
-    const float &m_servo = servo ; 
-    const float &m_back  = motors[2]; 
+    const float &m_right = motors[0];
+    const float &m_left  = motors[1];
+    const float &m_servo = servo ;
+    const float &m_back  = motors[2];
 
     // construct a JSON packet for motors
     char buf[200];
@@ -439,7 +439,7 @@ void Webots::output (const struct sitl_input &input)
   update the Webots simulation by one time step
  */
 void Webots::update(const struct sitl_input &input)
-{   
+{
     static bool first = true;
     if (!connect_sockets()) {
         return;
@@ -451,10 +451,10 @@ void Webots::update(const struct sitl_input &input)
         return ;
     }
 
-    
+
     //time frame from simulator
     frame_time_us = ((state.timestamp - last_state.timestamp) * 1.0e6f); //HERE
-    if ((!first) && (frame_time_us ==0)) 
+    if ((!first) && (frame_time_us ==0))
     {
         first = false;
         printf("frame_time_us Zero \n");
@@ -463,7 +463,7 @@ void Webots::update(const struct sitl_input &input)
     }
 
     time_now_us += frame_time_us;
-    
+
 
     if (valid)
     {
@@ -473,8 +473,8 @@ void Webots::update(const struct sitl_input &input)
 
         gyro = Vector3f(state.imu.angular_velocity[0] ,
                         state.imu.angular_velocity[1] ,
-                        -state.imu.angular_velocity[2] ); 
-        
+                        -state.imu.angular_velocity[2] );
+
         accel_body = Vector3f(+state.imu.linear_acceleration[0],
                             +state.imu.linear_acceleration[1],
                             -state.imu.linear_acceleration[2]);
@@ -482,7 +482,7 @@ void Webots::update(const struct sitl_input &input)
         velocity_ef = Vector3f(+state.velocity.world_linear_velocity[0],
                             +state.velocity.world_linear_velocity[1],
                             -state.velocity.world_linear_velocity[2]);
-        
+
         position = Vector3d(state.gps.x, state.gps.y, -state.gps.z);
         position.xy() += origin.get_distance_NE_double(home);
 
@@ -497,15 +497,15 @@ void Webots::update(const struct sitl_input &input)
         scanner.ranges = state.scanner.ranges;
 
         update_position();
-        
+
         // update magnetic field
         update_mag_field_bf();
-        
+
         time_advance();
-        
+
         update_wind (input);
-        
-        
+
+
 
         //report_FPS();
     }

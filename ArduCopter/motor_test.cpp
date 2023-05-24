@@ -180,7 +180,7 @@ MAV_RESULT Copter::mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, uint8_t
 
     if (motor_test_throttle_type == MOTOR_TEST_COMPASS_CAL) {
         compass.per_motor_calibration_start();
-    }            
+    }
 
     // return success
     return MAV_RESULT_ACCEPTED;
@@ -194,7 +194,7 @@ void Copter::motor_test_stop()
         return;
     }
 
-    gcs().send_text(MAV_SEVERITY_INFO, "finished motor test");    
+    gcs().send_text(MAV_SEVERITY_INFO, "finished motor test");
 
     // flag test is complete
     ap.motor_test = false;

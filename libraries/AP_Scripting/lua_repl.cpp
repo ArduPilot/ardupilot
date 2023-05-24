@@ -127,7 +127,7 @@ int lua_scripts::pushline(lua_State *L, int firstline) {
         // wait for any input
         hal.scheduler->delay(100);
     }
-  
+
     lua_pop(L, 1);  /* remove prompt */
     lua_pushlstring(L, buffer, l);
     return 1;

@@ -136,7 +136,7 @@ void AP_NMEA_Output::update()
     // format longitude
     char lng_string[14];
     deg = fabs(loc.lng * 1.0e-7f);
-    min_dec = ((fabs(loc.lng) - (unsigned)deg * 1.0e7)) * 60 * 1.e-7f; 
+    min_dec = ((fabs(loc.lng) - (unsigned)deg * 1.0e7)) * 60 * 1.e-7f;
     snprintf(lng_string,
             sizeof(lng_string),
             "%03u%08.5f,%c",

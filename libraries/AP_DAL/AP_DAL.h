@@ -97,7 +97,7 @@ public:
 
     // check if we are low on CPU for this core
     bool ekf_low_time_remaining(EKFType etype, uint8_t core);
-    
+
     // returns armed state for the current frame
     bool get_armed() const { return _RFRN.armed; }
 

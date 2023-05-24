@@ -107,7 +107,7 @@ void Plane::init_rc_out_aux()
     SRV_Channels::enable_aux_servos();
 
     servos_output();
-    
+
     // setup PWM values to send if the FMU firmware dies
     // allows any VTOL motors to shut off
     SRV_Channels::setup_failsafe_trim_all_non_motors();
@@ -233,7 +233,7 @@ int16_t Plane::rudder_input(void)
     }
 
     return 0;
-    
+
 }
 
 void Plane::control_failsafe()
@@ -353,7 +353,7 @@ void Plane::trim_radio()
     // trim vtail
     SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_vtail_left);
     SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_vtail_right);
-    
+
     if (is_zero(SRV_Channels::get_output_scaled(SRV_Channel::k_rudder))) {
         // trim differential spoilers if no rudder input
         SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_dspoilerLeft1);

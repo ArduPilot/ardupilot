@@ -18,7 +18,7 @@ public:
     bool enabled(void) const {
         return enable.get() != 0;
     }
-    
+
     void set_voltage(float _voltage) {
         // simple low-pass on voltage
         voltage = 0.9f * voltage + 0.1f * _voltage;
@@ -28,7 +28,7 @@ public:
     void calibration_update(void);
     void calibration_end(void);
     void compensate(Vector3f &offset);
-    
+
 private:
     Compass &compass;
     AP_Int8 enable;
@@ -37,19 +37,19 @@ private:
 
     // base field on test start
     Vector3f base_field;
-        
+
     // sum of calibration field samples
     Vector3f field_sum[4];
 
     // sum of output (voltage*scaledpwm) in calibration
     float output_sum[4];
-        
+
     // count of calibration accumulation
     uint16_t count[4];
 
     // time a motor started in milliseconds
     uint32_t start_ms[4];
-        
+
     // battery voltage
     float voltage;
 

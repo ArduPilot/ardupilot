@@ -13,7 +13,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*
-  collection of CRCs. 
+  collection of CRCs.
  */
 
 #include <stdint.h>
@@ -21,9 +21,9 @@
 
 /**
  * crc4 method from datasheet for 16 bytes (8 short values)
- * 
+ *
  * @param [in] data
- * @return crc4 
+ * @return crc4
  */
 uint16_t crc_crc4(uint16_t *data)
 {
@@ -382,7 +382,7 @@ uint16_t crc16_ccitt_GDL90(const uint8_t *buf, uint32_t len, uint16_t crc)
 
 /**
  * Calculate Modbus CRC16 for array of bytes
- * 
+ *
  * @param [in] buf input buffer
  * @param [in] len size of buffer
  * @return CRC value
@@ -443,7 +443,7 @@ uint8_t crc_sum8(const uint8_t *p, uint8_t len)
     for (uint8_t i=0; i<len; i++) {
         sum += p[i];
         sum += sum >> 8;
-        sum &= 0xFF;              
+        sum &= 0xFF;
     }
     sum = 0xff - ((sum & 0xff) + (sum >> 8));
     return sum;

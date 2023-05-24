@@ -133,7 +133,7 @@ private:
 
     bool _initialized = false;
     int _version =0;
-    
+
     void init_dma_cb(dma_cb_t** cbp, uint32_t mode, uint32_t source, uint32_t dest, uint32_t length, uint32_t stride, uint32_t next_cb);
     void* map_peripheral(uint32_t base, uint32_t len);
     void init_registers();

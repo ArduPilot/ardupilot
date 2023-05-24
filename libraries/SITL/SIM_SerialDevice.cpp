@@ -98,7 +98,7 @@ ssize_t SerialDevice::write_to_device(const char *buffer, const size_t size) con
 
 /**
  * baudrates match
- * 
+ *
  * @retval true matched baudreate
  * @retval false  unmatched baudreate
  */

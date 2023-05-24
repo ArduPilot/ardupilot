@@ -46,7 +46,7 @@ template <typename Arithmetic1, typename Arithmetic2>
 typename std::enable_if<std::is_floating_point<typename std::common_type<Arithmetic1, Arithmetic2>::type>::value, bool>::type
 is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2);
 
-/* 
+/*
  * @brief: Check whether a float is zero
  */
 template <typename T>
@@ -56,7 +56,7 @@ inline bool is_zero(const T fVal1) {
     return is_zero(static_cast<float>(fVal1));
 }
 
-/* 
+/*
  * @brief: Check whether a float is greater than zero
  */
 template <typename T>
@@ -67,7 +67,7 @@ inline bool is_positive(const T fVal1) {
 }
 
 
-/* 
+/*
  * @brief: Check whether a float is less than zero
  */
 template <typename T>
@@ -306,7 +306,7 @@ float linear_interpolate(float low_output, float high_output,
                          float var_value,
                          float var_low, float var_high);
 
-/* cubic "expo" curve generator 
+/* cubic "expo" curve generator
  * alpha range: [0,1] min to max expo
  * input range: [-1,1]
  */

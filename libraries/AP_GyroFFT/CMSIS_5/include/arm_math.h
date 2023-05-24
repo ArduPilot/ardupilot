@@ -119,12 +119,12 @@
    * - ARM_MATH_NEON:
    *
    * Define macro ARM_MATH_NEON to enable Neon versions of the DSP functions.
-   * It is not enabled by default when Neon is available because performances are 
+   * It is not enabled by default when Neon is available because performances are
    * dependent on the compiler and target architecture.
    *
    * - ARM_MATH_NEON_EXPERIMENTAL:
    *
-   * Define macro ARM_MATH_NEON_EXPERIMENTAL to enable experimental Neon versions of 
+   * Define macro ARM_MATH_NEON_EXPERIMENTAL to enable experimental Neon versions of
    * of some DSP functions. Experimental Neon versions currently do not have better
    * performances than the scalar versions.
    *
@@ -314,7 +314,7 @@
 #define __ALIGNED(x) __declspec(align(x))
 #define LOW_OPTIMIZATION_ENTER
 #define LOW_OPTIMIZATION_EXIT
-#define IAR_ONLY_LOW_OPTIMIZATION_ENTER 
+#define IAR_ONLY_LOW_OPTIMIZATION_ENTER
 #define IAR_ONLY_LOW_OPTIMIZATION_EXIT
 #endif
 
@@ -3824,7 +3824,7 @@ cmsis_arm_status arm_fir_decimate_init_f32(
         uint32_t blockSize);
 
 
-#if defined(ARM_MATH_NEON) 
+#if defined(ARM_MATH_NEON)
 void arm_biquad_cascade_df2T_compute_coefs_f32(
   arm_biquad_cascade_df2T_instance_f32 * S,
   uint8_t numStages,

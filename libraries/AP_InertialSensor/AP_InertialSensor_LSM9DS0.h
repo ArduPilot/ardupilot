@@ -105,7 +105,7 @@ private:
 
     // gyro whoami
     uint8_t whoami_g;
-    
+
     /*
       for boards that have a separate LSM303D and L3GD20 there can be
       different rotations for each

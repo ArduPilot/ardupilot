@@ -554,12 +554,12 @@ void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
         sub.failsafe.last_pilot_input_ms = AP_HAL::millis();
         // a RC override message is considered to be a 'heartbeat'
         // from the ground station for failsafe purposes
-        
+
         handle_rc_channels_override(msg);
         break;
     }
 
-    
+
     case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET: { // MAV ID: 82
         // decode packet
         mavlink_set_attitude_target_t packet;
@@ -798,7 +798,7 @@ int16_t GCS_MAVLINK_Sub::high_latency_target_altitude() const
         return 0.01 * (global_position_current.alt + sub.pos_control.get_pos_error_z_cm());
     }
     return 0;
-    
+
 }
 
 uint8_t GCS_MAVLINK_Sub::high_latency_tgt_heading() const
@@ -808,9 +808,9 @@ uint8_t GCS_MAVLINK_Sub::high_latency_tgt_heading() const
         // need to convert -18000->18000 to 0->360/2
         return wrap_360_cd(sub.wp_nav.get_wp_bearing_to_destination()) / 200;
     }
-    return 0;      
+    return 0;
 }
-    
+
 uint16_t GCS_MAVLINK_Sub::high_latency_tgt_dist() const
 {
     // return units are dm

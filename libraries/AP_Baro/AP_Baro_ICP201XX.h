@@ -78,4 +78,4 @@ private:
 	} _forced_meas_trigger{FORCED_MEAS_TRIGGER::FORCE_MEAS_STANDBY};
 };
 
-#endif  // AP_BARO_ICP201XX_ENABLED 
+#endif  // AP_BARO_ICP201XX_ENABLED

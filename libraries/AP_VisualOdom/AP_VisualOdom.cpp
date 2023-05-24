@@ -91,7 +91,7 @@ const AP_Param::GroupInfo AP_VisualOdom::var_info[] = {
     AP_GROUPINFO("_VEL_M_NSE", 5, AP_VisualOdom, _vel_noise, 0.1),
 
     // @Param: _POS_M_NSE
-    // @DisplayName: Visual odometry position measurement noise 
+    // @DisplayName: Visual odometry position measurement noise
     // @Description: Visual odometry position measurement noise minimum (meters). This value will be used if the sensor provides a lower noise value (or no noise value)
     // @Units: m
     // @Range: 0.1 10.0

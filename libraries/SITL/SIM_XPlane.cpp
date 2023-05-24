@@ -227,7 +227,7 @@ bool XPlane::load_dref_map(const char *map_json)
         delete joyinputs;
         joyinputs = j;
     }
-    
+
     uint32_t count = 0;
     // obtain a const reference to the map, and print the contents
     const picojson::value::object& o = obj->get<picojson::object>();
@@ -349,7 +349,7 @@ bool XPlane::receive_data(void)
         wait_time_ms = 10;
     }
     ssize_t len = socket_in.recv(pkt, sizeof(pkt), wait_time_ms);
-    
+
     if (len < 5) {
         // bad packet
         goto failed;
@@ -372,7 +372,7 @@ bool XPlane::receive_data(void)
         goto failed;
     }
 
-    
+
     if (!connected) {
         // we now know the IP X-Plane is using
         uint16_t port;
@@ -381,7 +381,7 @@ bool XPlane::receive_data(void)
         connected = true;
         printf("Connected to %s:%u\n", xplane_ip, (unsigned)xplane_port);
     }
-    
+
     while (len >= pkt_len) {
         const float *data = (const float *)p;
         uint8_t code = p[0];
@@ -410,7 +410,7 @@ bool XPlane::receive_data(void)
             time_now_us = tnew;
             break;
         }
-            
+
         case LatLonAlt: {
             loc.lat = data[1] * 1e7;
             loc.lng = data[2] * 1e7;
@@ -485,7 +485,7 @@ bool XPlane::receive_data(void)
             rpm[1] = data[1];
             motor_mask |= 2;
             break;
-            
+
         case JoystickRaw: {
             for (auto *j = joyinputs; j; j=j->next) {
                 switch (j->type) {
@@ -529,7 +529,7 @@ bool XPlane::receive_data(void)
 
     accel_earth = dcm * accel_body;
     accel_earth.z += GRAVITY_MSS;
-    
+
     // the position may slowly deviate due to float accuracy and longitude scaling
     if (loc.get_distance(location) > 4 || abs(loc.alt - location.alt)*0.01f > 2.0f) {
         printf("X-Plane home reset dist=%f alt=%.1f/%.1f\n",
@@ -558,9 +558,9 @@ bool XPlane::receive_data(void)
         report.data_count++;
         report.frame_count++;
     }
-    
+
     return ret;
-        
+
 failed:
     if (AP_HAL::millis() - last_data_time_ms > 200) {
         // don't extrapolate beyond 0.2s
@@ -574,7 +574,7 @@ failed:
     time_now_us += frame_time_us;
 
     extrapolate_sensors(delta_time);
-    
+
     update_position();
     time_advance();
     update_mag_field_bf();

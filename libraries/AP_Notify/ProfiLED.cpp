@@ -131,7 +131,7 @@ void ProfiLED_SPI::update_led_strip() {
         ProfiLED_SPI::RGB  struct_val;
         uint8_t bytes_val[3];
     } curr_led_color;
-    
+
     curr_led_color.struct_val = rgb[curr_led_idx];
     for (uint32_t i=0; i<output_stream_byte_length; i++) {
         uint8_t byte = 0;

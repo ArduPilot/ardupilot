@@ -8,7 +8,7 @@
 *  Peter Braswell, Samuel Tabor, Andrey Kolobov, and Iain Guilliard
 */
 void Plane::update_soaring() {
-    
+
     // Check if soaring is active. Also sets throttle suppressed
     // status on active state changes.
     bool override_disable = mission.get_in_landing_sequence_flag();
@@ -18,7 +18,7 @@ void Plane::update_soaring() {
     if (!g2.soaring_controller.is_active()) {
         return;
     }
-    
+
     g2.soaring_controller.update_vario();
 
     if (control_mode == &mode_thermal) {

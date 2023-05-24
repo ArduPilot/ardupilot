@@ -87,7 +87,7 @@ public:
     // get pressure correction in Pascal. Divide by 100 for millibars or hectopascals
     float get_pressure_correction(void) const { return get_pressure_correction(_primary); }
     float get_pressure_correction(uint8_t instance) const { return sensors[instance].p_correction; }
-    
+
     // accumulate a reading on sensors. Some backends without their
     // own thread or a timer may need this.
     void accumulate(void);
@@ -212,7 +212,7 @@ public:
 private:
     // singleton
     static AP_Baro *_singleton;
-    
+
     // how many drivers do we have?
     uint8_t _num_drivers;
     AP_Baro_Backend *drivers[BARO_MAX_DRIVERS];
@@ -245,7 +245,7 @@ private:
         PROBE_SPL06 =(1<<11),
         PROBE_MSP   =(1<<12),
     };
-    
+
 #if HAL_BARO_WIND_COMP_ENABLED
     class WindCoeff {
     public:

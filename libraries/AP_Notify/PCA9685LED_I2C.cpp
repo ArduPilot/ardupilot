@@ -34,7 +34,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-PCA9685LED_I2C::PCA9685LED_I2C() : 
+PCA9685LED_I2C::PCA9685LED_I2C() :
     RGBLed(NAVIO_LED_OFF, NAVIO_LED_BRIGHT, NAVIO_LED_MEDIUM, NAVIO_LED_DIM)
 {
 }
@@ -91,7 +91,7 @@ void PCA9685LED_I2C::_timer(void)
         return;
     }
     _need_update = false;
-    
+
     uint16_t red_adjusted = rgb.r * 0x10;
     uint16_t green_adjusted = rgb.g * 0x10;
     uint16_t blue_adjusted = rgb.b * 0x10;

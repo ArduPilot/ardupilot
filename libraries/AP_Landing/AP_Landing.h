@@ -97,7 +97,7 @@ public:
 
     // accessor functions for the params and states
     static const struct AP_Param::GroupInfo var_info[];
-    
+
     int16_t get_pitch_cd(void) const { return pitch_cd; }
     float get_flare_sec(void) const { return flare_sec; }
     int8_t get_disarm_delay(void) const { return disarm_delay; }
@@ -138,7 +138,7 @@ private:
     AP_AHRS &ahrs;
     AP_TECS *tecs_Controller;
     AP_Navigation *nav_controller;
-    
+
     AP_FixedWing &aparm;
 
     set_target_altitude_proportion_fn_t set_target_altitude_proportion_fn;

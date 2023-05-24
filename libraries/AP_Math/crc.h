@@ -13,7 +13,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*
-  interfaces to ArduPilot collection of CRCs. 
+  interfaces to ArduPilot collection of CRCs.
  */
 #pragma once
 

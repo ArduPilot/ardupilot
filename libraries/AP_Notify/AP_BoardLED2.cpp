@@ -34,7 +34,7 @@ bool AP_BoardLED2::init(void)
     // turn all lights off
     hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
     hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_OFF);
-    
+
     _sat_cnt=0;
     save_trim_counter = 0;
     arm_counter = 0;
@@ -113,8 +113,8 @@ void AP_BoardLED2::update(void)
             save_trim_counter = -1;
             break;
         }
-        return; 
-        
+        return;
+
     }
 
     if(AP_Notify::events.autotune_complete){
@@ -150,7 +150,7 @@ void AP_BoardLED2::update(void)
             break;
         case 2:
         case 3:
-            hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON); 
+            hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
             break;
         case 4:
         case 5:
@@ -185,7 +185,7 @@ void AP_BoardLED2::update(void)
             if ((counter2 & 0x2) == 0) {
                 arm_counter++;
             }
-        
+
             if (AP_Notify::flags.pre_arm_check) {
                 // passed pre-arm checks so slower single flash
                 switch(arm_counter) {
@@ -213,23 +213,23 @@ void AP_BoardLED2::update(void)
                     case 1:
                         hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
                         break;
-    
+
                     case 2:
                         hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
                         break;
-                    
-                    
+
+
                     case 3:
                     case 4:
                         hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_ON);
                         break;
-    
+
                     case 5:
                     case 6:
                     case 7: // add one tick to do period be a multiple of the second
                         hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
                         break;
-    
+
                     default:
                         arm_counter = -1;
                         break;
@@ -247,20 +247,20 @@ void AP_BoardLED2::update(void)
 
         case 2: // 2d lock
         case 3://  3d lock
-        default: // show number of sats 
+        default: // show number of sats
             if ((counter2 & 0x2) == 0) {
                 _sat_cnt++;
             }
             uint16_t sats = AP_Notify::flags.gps_num_sats;
-    
+
             if(_sat_cnt<8) { // pause between pulses
                 hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_OFF);
             } else if(_sat_cnt< (8 + (sats-6)*2) ) {
                 hal.gpio->toggle(HAL_GPIO_B_LED_PIN); // 2Hz
             } else {
                 _sat_cnt=-1;
-            }            
-            break;        
+            }
+            break;
     }
 }
 #else

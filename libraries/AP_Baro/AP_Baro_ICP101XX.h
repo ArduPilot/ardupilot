@@ -14,7 +14,7 @@ public:
     void update() override;
 
     static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
-    
+
 private:
     AP_Baro_ICP101XX(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
 
@@ -32,7 +32,7 @@ private:
                                         float &A, float &B, float &C);
     float get_pressure(uint32_t p_LSB, uint32_t T_LSB);
     void timer(void);
-    
+
     // calibration data
     int16_t sensor_constants[4];
 

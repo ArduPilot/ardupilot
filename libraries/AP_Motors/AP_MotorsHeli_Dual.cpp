@@ -83,7 +83,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
 
     // @Param: SW_TYPE
     // @DisplayName: Swash 1 Type
-    // @Description: H3 is generic, three-servo only. H3_120/H3_140 plates have Motor1 left side, Motor2 right side, Motor3 elevator in rear. HR3_120/HR3_140 have Motor1 right side, Motor2 left side, Motor3 elevator in front - use H3_120/H3_140 and reverse servo and collective directions as necessary. For all H3_90 swashplates use H4_90 and don't use servo output for the missing servo. For H4-90 Motors1&2 are left/right respectively, Motors3&4 are rear/front respectively. For H4-45 Motors1&2 are LF/RF, Motors3&4 are LR/RR 
+    // @Description: H3 is generic, three-servo only. H3_120/H3_140 plates have Motor1 left side, Motor2 right side, Motor3 elevator in rear. HR3_120/HR3_140 have Motor1 right side, Motor2 left side, Motor3 elevator in front - use H3_120/H3_140 and reverse servo and collective directions as necessary. For all H3_90 swashplates use H4_90 and don't use servo output for the missing servo. For H4-90 Motors1&2 are left/right respectively, Motors3&4 are rear/front respectively. For H4-45 Motors1&2 are LF/RF, Motors3&4 are LR/RR
     // @Values: 0:H3 Generic,1:H1 non-CPPM,2:H3_140,3:H3_120,4:H4_90,5:H4_45
     // @User: Standard
 
@@ -137,7 +137,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
 
     // @Param: SW2_TYPE
     // @DisplayName: Swash 2 Type
-    // @Description: H3 is generic, three-servo only. H3_120/H3_140 plates have Motor1 left side, Motor2 right side, Motor3 elevator in rear. HR3_120/HR3_140 have Motor1 right side, Motor2 left side, Motor3 elevator in front - use H3_120/H3_140 and reverse servo and collective directions as necessary. For all H3_90 swashplates use H4_90 and don't use servo output for the missing servo. For H4-90 Motors1&2 are left/right respectively, Motors3&4 are rear/front respectively. For H4-45 Motors1&2 are LF/RF, Motors3&4 are LR/RR 
+    // @Description: H3 is generic, three-servo only. H3_120/H3_140 plates have Motor1 left side, Motor2 right side, Motor3 elevator in rear. HR3_120/HR3_140 have Motor1 right side, Motor2 left side, Motor3 elevator in front - use H3_120/H3_140 and reverse servo and collective directions as necessary. For all H3_90 swashplates use H4_90 and don't use servo output for the missing servo. For H4-90 Motors1&2 are left/right respectively, Motors3&4 are rear/front respectively. For H4-45 Motors1&2 are LF/RF, Motors3&4 are LR/RR
     // @Values: 0:H3 Generic,1:H1 non-CPPM,2:H3_140,3:H3_120,4:H4_90,5:H4_45
     // @User: Standard
 
@@ -199,7 +199,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
 
     // @Param: YAW_REV_EXPO
     // @DisplayName: Yaw reverser expo
-    // @Description: For intermeshing mode only. Yaw revereser smoothing exponent, smoothen transition near zero collective region. Increase this parameter to shink smoothing range. Set to -1 to disable reverser. 
+    // @Description: For intermeshing mode only. Yaw revereser smoothing exponent, smoothen transition near zero collective region. Increase this parameter to shink smoothing range. Set to -1 to disable reverser.
     // @Range: -1 1000
     // @Increment: 1.0
     // @User: Standard
@@ -329,7 +329,7 @@ void AP_MotorsHeli_Dual::calculate_armed_scalars()
         _main_rotor.set_autorotation_flag(_heliflags.in_autorotation);
         // set bailout ramp time
         _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
-    }else { 
+    }else {
         _main_rotor.set_autorotation_flag(false);
     }
 }
@@ -601,7 +601,7 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
     float swash2_pitch = get_swashplate(2, AP_MOTORS_HELI_DUAL_SWASH_AXIS_PITCH, pitch_out, roll_out, yaw_out, collective2_out_scaled);
     float swash2_roll = get_swashplate(2, AP_MOTORS_HELI_DUAL_SWASH_AXIS_ROLL, pitch_out, roll_out, yaw_out, collective2_out_scaled);
     float swash2_coll = get_swashplate(2, AP_MOTORS_HELI_DUAL_SWASH_AXIS_COLL, pitch_out, roll_out, yaw_out, collective2_out_scaled);
- 
+
     // get servo positions from swashplate library
     _servo_out[CH_1] = _swashplate1.get_servo_out(CH_1,swash1_pitch,swash1_roll,swash1_coll);
     _servo_out[CH_2] = _swashplate1.get_servo_out(CH_2,swash1_pitch,swash1_roll,swash1_coll);

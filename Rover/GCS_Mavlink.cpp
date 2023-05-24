@@ -1089,7 +1089,7 @@ uint8_t GCS_MAVLINK_Rover::high_latency_tgt_heading() const
     }
     return 0;
 }
-    
+
 uint16_t GCS_MAVLINK_Rover::high_latency_tgt_dist() const
 {
     const Mode *control_mode = rover.control_mode;

@@ -26,7 +26,7 @@ public:
     // add samples for learning
     void update_accel_learning(const Vector3f &gyro, float temperature);
     void update_gyro_learning(const Vector3f &accel, float temperature);
-    
+
     // class for online learning of calibration
     class Learn {
     public:

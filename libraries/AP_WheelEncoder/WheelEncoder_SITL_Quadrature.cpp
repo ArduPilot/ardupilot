@@ -58,7 +58,7 @@ void AP_WheelEncoder_SITL_Quadrature::update(void)
         gcs().send_text(MAV_SEVERITY_WARNING, "WheelEncoder: wheel offset not set!");
     }
 
-    if (_state.instance == 0) { 
+    if (_state.instance == 0) {
         speed = speed - turn_rate * half_wheelbase; // for left wheel
     } else if (_state.instance == 1) {
         speed = speed + turn_rate * half_wheelbase; // for right wheel
@@ -70,7 +70,7 @@ void AP_WheelEncoder_SITL_Quadrature::update(void)
     const double radius = _frontend.get_wheel_radius(_state.instance);
     if (is_zero(radius)) { // avoid divide by zero
         gcs().send_text(MAV_SEVERITY_WARNING, "WheelEncoder: wheel radius not set!");
-        return; 
+        return;
     }
 
     // calculate angle turned and corresponding encoder ticks from wheel angular rate

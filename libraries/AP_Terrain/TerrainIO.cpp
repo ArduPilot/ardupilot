@@ -39,7 +39,7 @@ void AP_Terrain::check_disk_read(void)
             disk_io_state = DiskIoWaitRead;
             return;
         }
-    }    
+    }
 }
 
 /*
@@ -53,11 +53,11 @@ void AP_Terrain::check_disk_write(void)
             disk_io_state = DiskIoWaitWrite;
             return;
         }
-    }    
+    }
 }
 
 /*
-  Check if we need to do disk IO for grids. 
+  Check if we need to do disk IO for grids.
  */
 void AP_Terrain::schedule_disk_io(void)
 {
@@ -76,10 +76,10 @@ void AP_Terrain::schedule_disk_io(void)
         check_disk_read();
         if (disk_io_state == DiskIoIdle) {
             // still idle, check for writes
-            check_disk_write();            
+            check_disk_write();
         }
         break;
-        
+
     case DiskIoDoneRead: {
         // a read has completed
         int16_t cache_idx = find_io_idx(GRID_CACHE_DISKWAIT);
@@ -107,7 +107,7 @@ void AP_Terrain::schedule_disk_io(void)
         disk_io_state = DiskIoIdle;
         break;
     }
-        
+
     case DiskIoWaitWrite:
     case DiskIoWaitRead:
         // waiting for io_timer()
@@ -136,7 +136,7 @@ All file operations are done by the IO thread.
 void AP_Terrain::open_file(void)
 {
     struct grid_block &block = disk_block.block;
-    if (fd != -1 && 
+    if (fd != -1 &&
         block.lat_degrees == file_lat_degrees &&
         block.lon_degrees == file_lon_degrees) {
         // already open on right file
@@ -160,7 +160,7 @@ void AP_Terrain::open_file(void)
     char *p = &file_path[strlen(file_path)-12];
     if (*p != '/') {
         io_failure = true;
-        return;        
+        return;
     }
     // our fancy templatified MIN macro get gcc 9.3.0 all confused; it
     // thinks there are more digits than there can be so says there's
@@ -297,7 +297,7 @@ void AP_Terrain::read_block(void)
     int32_t lon = disk_block.block.lon;
 
     ssize_t ret = AP::FS().read(fd, &disk_block, sizeof(disk_block));
-    if (ret != sizeof(disk_block) || 
+    if (ret != sizeof(disk_block) ||
         !TERRAIN_LATLON_EQUAL(disk_block.block.lat,lat) ||
         !TERRAIN_LATLON_EQUAL(disk_block.block.lon,lon) ||
         disk_block.block.bitmap == 0 ||
@@ -357,7 +357,7 @@ void AP_Terrain::io_timer(void)
     case DiskIoDoneWrite:
         // nothing to do
         break;
-        
+
     case DiskIoWaitWrite:
         // need to write out the block
         open_file();

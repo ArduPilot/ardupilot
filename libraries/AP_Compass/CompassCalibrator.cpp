@@ -80,7 +80,7 @@ CompassCalibrator::CompassCalibrator()
     set_status(Status::NOT_STARTED);
 }
 
-// Request to cancel calibration 
+// Request to cancel calibration
 void CompassCalibrator::stop()
 {
     WITH_SEMAPHORE(state_sem);
@@ -135,13 +135,13 @@ void CompassCalibrator::new_sample(const Vector3f& sample)
 bool CompassCalibrator::failed() {
     WITH_SEMAPHORE(state_sem);
     return (cal_state.status == Status::FAILED ||
-            cal_state.status == Status::BAD_ORIENTATION || 
+            cal_state.status == Status::BAD_ORIENTATION ||
             cal_state.status == Status::BAD_RADIUS);
 }
 
 
 bool CompassCalibrator::running() {
-    WITH_SEMAPHORE(state_sem); 
+    WITH_SEMAPHORE(state_sem);
     return (cal_state.status == Status::RUNNING_STEP_ONE || cal_state.status == Status::RUNNING_STEP_TWO);
 }
 
@@ -863,10 +863,10 @@ Matrix3f CompassCalibrator::AttitudeSample::get_rotmat(void) const
 /*
   calculate the implied earth field for a compass sample and compass
   rotation. This is used to check for consistency between
-  samples. 
+  samples.
 
   If the orientation is correct then when rotated the same (or
-  similar) earth field should be given for all samples. 
+  similar) earth field should be given for all samples.
 
   Note that this earth field uses an arbitrary north reference, so it
   may not match the true earth field.
@@ -917,7 +917,7 @@ bool CompassCalibrator::calculate_orientation(void)
     float variance[ROTATION_MAX-4] {};
 
     _orientation_solution = _orientation;
-    
+
     for (uint8_t n=0; n < ARRAY_SIZE(variance); n++) {
         Rotation r = auto_rotation_index(n);
 

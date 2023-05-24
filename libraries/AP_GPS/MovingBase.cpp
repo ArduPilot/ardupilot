@@ -16,15 +16,15 @@ const AP_Param::GroupInfo MovingBase::var_info[] = {
     // @Range: -5 5
     // @Increment: 0.01
     // @User: Advanced
-    
+
     // @Param: OFS_Y
-    // @DisplayName: Base antenna Y position offset    
+    // @DisplayName: Base antenna Y position offset
     // @Description: Y position of the base (primary) GPS antenna in body frame from the position of the 2nd antenna. Positive Y is to the right of the 2nd antenna. Use antenna phase centroid location if provided by the manufacturer.
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
     // @User: Advanced
-    
+
     // @Param: OFS_Z
     // @DisplayName: Base antenna Z position offset
     // @Description: Z position of the base (primary) GPS antenna in body frame from the position of the 2nd antenna. Positive Z is down from the 2nd antenna. Use antenna phase centroid location if provided by the manufacturer.

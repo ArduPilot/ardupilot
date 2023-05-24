@@ -273,7 +273,7 @@ void NavEKF2_core::setAidingMode()
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF2 IMU%u has stopped aiding",(unsigned)imu_index);
             // When not aiding, estimate orientation & height fusing synthetic constant position and zero velocity measurement to constrain tilt errors
             posTimeout = true;
-            velTimeout = true;            
+            velTimeout = true;
             // Reset the normalised innovation to avoid false failing bad fusion tests
             velTestRatio = 0.0f;
             posTestRatio = 0.0f;

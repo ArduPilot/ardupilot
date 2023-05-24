@@ -96,7 +96,7 @@ public:
     bool use_rtscts(void) const {
         return _use_rtscts;
     }
-    
+
     // simulated airspeed, sonar and battery monitor
     float sonar_pin_voltage;    // pin 0
     float airspeed_pin_voltage[AIRSPEED_MAX_SENSORS]; // pin 1
@@ -128,7 +128,7 @@ public:
     static bool lookup_location(const char *home_str,
                                 Location &loc,
                                 float &yaw_degrees);
-    
+
     uint8_t get_instance() const { return _instance; }
 
 private:
@@ -174,7 +174,7 @@ private:
 
     bool _use_rtscts;
     bool _use_fg_view;
-    
+
     const char *_fg_address;
 
     // delay buffer variables
@@ -296,7 +296,7 @@ private:
 
     // output socket for flightgear viewing
     SocketAPM fg_socket{true};
-    
+
     const char *defaults_path = HAL_PARAM_DEFAULTS_PATH;
 
     char *_gps_fifo[2];

@@ -144,7 +144,7 @@ I2CDevice::I2CDevice(I2CBus &bus, uint8_t address)
     set_device_bus(bus.bus);
     set_device_address(address);
 }
-    
+
 I2CDevice::~I2CDevice()
 {
     // Unregister itself from the I2CDeviceManager
@@ -436,5 +436,5 @@ uint32_t I2CDeviceManager::get_bus_mask_external(void) const
 {
     return HAL_LINUX_I2C_EXTERNAL_BUS_MASK;
 }
-    
+
 }

@@ -46,7 +46,7 @@ void Variometer::update(const float thermal_bank)
     // Now we need to high-pass this signal to remove bias.
     _vdotbias_filter.set_cutoff_frequency(1/(20*tau));
     float dsp_bias = _vdotbias_filter.apply(temp, dt);
-    
+
     float dsp_cor = dsp - dsp_bias;
 
 
@@ -57,7 +57,7 @@ void Variometer::update(const float thermal_bank)
         // if possible use the EKF vertical velocity
         raw_climb_rate = -velned.z;
     }
-    
+
     _climb_filter.set_cutoff_frequency(1/(3*tau));
     float smoothed_climb_rate = _climb_filter.apply(raw_climb_rate, dt);
 
@@ -66,7 +66,7 @@ void Variometer::update(const float thermal_bank)
     float sinkrate = calculate_aircraft_sinkrate(roll);
 
     reading = raw_climb_rate + dsp_cor*_aspd_filt_constrained/GRAVITY_MSS + sinkrate;
-    
+
     // Update filters.
 
     float filtered_reading = _trigger_filter.apply(reading, dt);
@@ -122,7 +122,7 @@ float Variometer::calculate_aircraft_sinkrate(float phi) const
     C2 = _polarParams.B * CL0;    // constant describing expected angle to overcome lift induced drag at zero bank
 
     float cosphi = (1 - phi * phi / 2); // first two terms of mclaurin series for cos(phi)
-    
+
     return _aspd_filt_constrained * (C1 + C2 / (cosphi * cosphi));
 }
 

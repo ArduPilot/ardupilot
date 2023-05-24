@@ -22,7 +22,7 @@ public:
     #pragma GCC diagnostic ignored "-Wunused-result"
     virtual void take_blocking() { take(HAL_SEMAPHORE_BLOCK_FOREVER); };
     #pragma GCC diagnostic pop
-    
+
     virtual bool give() = 0;
     virtual ~Semaphore(void) {}
 };

@@ -39,7 +39,7 @@ const AP_Param::Info Plane::var_info[] = {
     ASCALAR(autotune_level, "AUTOTUNE_LEVEL",  6),
 
     // @Param: TELEM_DELAY
-    // @DisplayName: Telemetry startup delay 
+    // @DisplayName: Telemetry startup delay
     // @Description: The amount of time (in seconds) to delay radio telemetry to prevent an Xbee bricking on power up
     // @User: Standard
     // @Units: s
@@ -71,7 +71,7 @@ const AP_Param::Info Plane::var_info[] = {
     GSCALAR(kff_throttle_to_pitch,  "KFF_THR2PTCH",   0),
 
     // @Param: STAB_PITCH_DOWN
-    // @DisplayName: Low throttle pitch down trim 
+    // @DisplayName: Low throttle pitch down trim
     // @Description: Degrees of down pitch added when throttle is below TRIM_THROTTLE in FBWA and AUTOTUNE modes. Scales linearly so full value is added when THR_MIN is reached. Helps to keep airspeed higher in glides or landing approaches and prevents accidental stalls. 2 degrees recommended for most planes.
     // @Range: 0 15
     // @Increment: 0.1
@@ -139,7 +139,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Increment: 0.5
     // @User: Standard
     ASCALAR(takeoff_throttle_max_t,     "TKOFF_THR_MAX_T",  4),
-    
+
     // @Param: TKOFF_TDRAG_ELEV
     // @DisplayName: Takeoff tail dragger elevator
     // @Description: This parameter sets the amount of elevator to apply during the initial stage of a takeoff. It is used to hold the tail wheel of a taildragger on the ground during the initial takeoff stage to give maximum steering. This option should be combined with the TKOFF_TDRAG_SPD1 option and the GROUND_STEER_ALT option along with tuning of the ground steering controller. A value of zero means to bypass the initial "tail hold" stage of takeoff. Set to zero for hand and catapult launch. For tail-draggers you should normally set this to 100, meaning full up elevator during the initial stage of takeoff. For most tricycle undercarriage aircraft a value of zero will work well, but for some tricycle aircraft a small negative value (say around -20 to -30) will apply down elevator which will hold the nose wheel firmly on the ground during initial acceleration. Only use a negative value if you find that the nosewheel doesn't grip well during takeoff. Too much down elevator on a tricycle undercarriage may cause instability in steering as the plane pivots around the nosewheel. Add down elevator 10 percent at a time.
@@ -255,7 +255,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Increment: 1
     // @User: Standard
     GSCALAR(rtl_radius,             "RTL_RADIUS",  0),
-    
+
     // @Param: STALL_PREVENTION
     // @DisplayName: Enable stall prevention
     // @Description: Enables roll limits at low airspeed in roll limiting flight modes. Roll limits based on aerodynamic load factor in turns and scale on ARSPD_FBW_MIN that must be set correctly. Without airspeed sensor, uses synthetic airspeed from wind speed estimate that may both be inaccurate.
@@ -549,7 +549,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Increment: 1
     // @User: Standard
     GSCALAR(acro_yaw_rate,            "ACRO_YAW_RATE",    0),
-    
+
     // @Param: ACRO_LOCKING
     // @DisplayName: ACRO mode attitude locking
     // @Description: Enable attitude locking when sticks are released. If set to 2 then quaternion based locking is used if the yaw rate controller is enabled. Quaternion based locking will hold any attitude
@@ -975,10 +975,10 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_Notify/AP_Notify.cpp
     GOBJECT(notify, "NTF_",  AP_Notify),
 
-    // @Group: 
+    // @Group:
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
-    
+
     // @Group: LAND_
     // @Path: ../libraries/AP_Landing/AP_Landing.cpp
     GOBJECT(landing, "LAND_", AP_Landing),
@@ -1018,7 +1018,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 #endif
 
     // 3 was used by prototype for servo_channels
-    
+
     // @Param: SYSID_ENFORCE
     // @DisplayName: GCS sysid enforcement
     // @Description: This controls whether packets from other than the expected GCS system ID will be accepted
@@ -1038,13 +1038,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Group: RC
     // @Path: ../libraries/RC_Channel/RC_Channels_VarInfo.h
     AP_SUBGROUPINFO(rc_channels, "RC", 7, ParametersG2, RC_Channels_Plane),
-    
+
 #if HAL_SOARING_ENABLED
     // @Group: SOAR_
     // @Path: ../libraries/AP_Soaring/AP_Soaring.cpp
     AP_SUBGROUPINFO(soaring_controller, "SOAR_", 8, ParametersG2, SoaringController),
 #endif
-  
+
     // @Param: RUDD_DT_GAIN
     // @DisplayName: rudder differential thrust gain
     // @Description: gain control from rudder to differential thrust
@@ -1060,7 +1060,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Bitmask: 0:Chan1,1:Chan2,2:Chan3,3:Chan4,4:Chan5,5:Chan6,6:Chan7,7:Chan8,8:Chan9,9:Chan10,10:Chan11,11:Chan12,12:Chan13,13:Chan14,14:Chan15,15:Chan16
     // @User: Advanced
     AP_GROUPINFO("MANUAL_RCMASK", 10, ParametersG2, manual_rc_mask, 0),
-    
+
     // @Param: HOME_RESET_ALT
     // @DisplayName: Home reset altitude threshold
     // @Description: When the aircraft is within this altitude of the home waypoint, while disarmed it will automatically update the home position. Set to 0 to continously reset it.
@@ -1254,7 +1254,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("AUTOTUNE_AXES", 34, ParametersG2, axis_bitmask, 7),
 
 
-    
+
     AP_GROUPEND
 };
 
@@ -1279,10 +1279,10 @@ ParametersG2::ParametersG2(void) :
   parameters and will copy them across to the new parameters if the
   new parameter does not yet have a saved value. It then saves the new
   value.
-  
+
   Note that this works even if the old parameter has been removed. It
   relies on the old k_param index not being removed
-  
+
   The second column below is the index in the var_info[] table for the
   old object. This should be zero for top level parameters.
  */
@@ -1380,7 +1380,7 @@ void Plane::load_parameters(void)
     g2.servo_channels.set_default_function(CH_2, SRV_Channel::k_elevator);
     g2.servo_channels.set_default_function(CH_3, SRV_Channel::k_throttle);
     g2.servo_channels.set_default_function(CH_4, SRV_Channel::k_rudder);
-        
+
     SRV_Channels::upgrade_parameters();
 
 #if HAL_QUADPLANE_ENABLED
@@ -1470,7 +1470,7 @@ void Plane::load_parameters(void)
                     break;
             }
             fence_action_new->set_and_save((int8_t)fence_action_new_val);
-            
+
             // Now upgrade the new fence enable at the same time
             enum ap_var_type ptype_fence_enable;
             AP_Int8 *fence_enable = (AP_Int8*)AP_Param::find("FENCE_ENABLE", &ptype_fence_enable);
@@ -1481,7 +1481,7 @@ void Plane::load_parameters(void)
                 // If the fence library is present, attempt to read the fence count
                 fences_exist = ap_fence->polyfence().total_fence_count() > 0;
             }
-            
+
             bool fences_used = fence_action_old.get() != 0;
             if (fence_enable && !fence_enable->configured()) {
                 // The fence enable parameter exists, so now set it accordingly
@@ -1537,7 +1537,7 @@ void Plane::load_parameters(void)
         AP_Param::set_default_by_name("INS_HNTC2_HMNCS", 1);
     }
 #endif // HAL_INS_NUM_HARMONIC_NOTCH_FILTERS
-    
+
     // PARAMETER_CONVERSION - Added: Mar-2022
 #if AP_FENCE_ENABLED
     AP_Param::convert_class(g.k_param_fence, &fence, fence.var_info, 0, 0, true);

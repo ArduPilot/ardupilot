@@ -118,7 +118,7 @@ void NavEKF2_core::FuseAirspeed()
         } else {
             lastTasFailTime_ms = 0;
         }
-        
+
         // test the ratio before fusing data, forcing fusion if airspeed and position are timed out as we have no choice but to try and use airspeed to constrain error growth
         if (tasHealth || (tasTimeout && posTimeout)) {
 

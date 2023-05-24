@@ -259,7 +259,7 @@ void AP_ToneAlarm::update()
         }
     }
     flags.temp_cal_running = AP_Notify::flags.temp_cal_running;
-    
+
     // don't play other tones if cal is running
     if (AP_Notify::flags.compass_cal_running ||
         AP_Notify::flags.temp_cal_running) {

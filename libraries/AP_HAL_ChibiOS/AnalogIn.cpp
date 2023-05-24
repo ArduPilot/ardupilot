@@ -343,7 +343,7 @@ void AnalogIn::adccallback(ADCDriver *adcp)
                 // also sum the second ADC for dual mode
                 sample_sum[1][j] += *buffer;
                 buffer++;
-            } 
+            }
 #endif
         }
     }
@@ -457,11 +457,11 @@ void AnalogIn::setup_adc(uint8_t index)
             // panic if we can't allocate memory
             goto failed_alloc;
         }
-        sample_sum[1] = (uint32_t *)malloc(sizeof(uint32_t)*num_grp_channels);  
+        sample_sum[1] = (uint32_t *)malloc(sizeof(uint32_t)*num_grp_channels);
         if (sample_sum[1] == nullptr) {
             // panic if we can't allocate memory
             goto failed_alloc;
-        }      
+        }
     } else {
         samples[index] = (adcsample_t *)hal.util->malloc_type(sizeof(uint16_t)*ADC_DMA_BUF_DEPTH*num_grp_channels, AP_HAL::Util::MEM_DMA_SAFE);
         if (samples[index] == nullptr) {

@@ -44,7 +44,7 @@ public:
 
     // get bus parameter
     int8_t get_bus(void) const { return _frontend._bus.get(); }
-    
+
 protected:
     const AC_PrecLand&  _frontend;          // reference to precision landing front end
     AC_PrecLand::precland_state &_state;    // reference to this instances state

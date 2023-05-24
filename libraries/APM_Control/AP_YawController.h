@@ -13,7 +13,7 @@ public:
     CLASS_NO_COPY(AP_YawController);
 
     // return true if rate control or damping is enabled
-    bool enabled() const { return rate_control_enabled() || (_K_D > 0.0); } 
+    bool enabled() const { return rate_control_enabled() || (_K_D > 0.0); }
 
     // return true if rate control is enabled
     bool rate_control_enabled(void) const { return _rate_enable != 0; }
@@ -46,7 +46,7 @@ public:
     // start/stop auto tuner
     void autotune_start(void);
     void autotune_restore(void);
-    
+
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -71,6 +71,6 @@ private:
     AP_AutoTune::ATGains gains;
     AP_AutoTune *autotune;
     bool failed_autotune_alloc;
-    
+
     AP_PIDInfo _pid_info;
 };

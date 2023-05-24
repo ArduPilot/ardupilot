@@ -47,7 +47,7 @@ public:
 
     // disable TX/RX pins for unusued uart
     void disable_rxtx(void) const override;
-    
+
     uint32_t available() override;
     uint32_t available_locked(uint32_t key) override;
 
@@ -173,7 +173,7 @@ private:
 
     // table to find UARTDrivers from serial number, used for event handling
     static UARTDriver *uart_drivers[UART_MAX_DRIVERS];
-    
+
     // thread used for writing and reading
     thread_t* volatile uart_thread_ctx;
     char uart_thread_name[6];

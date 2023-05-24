@@ -112,7 +112,7 @@ void AP_EFI_DroneCAN::handle_status(const uavcan_equipment_ice_reciprocating_Sta
     } else {
         istate.misfire_status = Misfire_Status::NOT_OBSERVED;
     }
-    
+
     if (!(pkt.flags & UAVCAN_EQUIPMENT_ICE_RECIPROCATING_STATUS_FLAG_DEBRIS_SUPPORTED)) {
         istate.debris_status = Debris_Status::NOT_SUPPORTED;
     } else if (pkt.flags & UAVCAN_EQUIPMENT_ICE_RECIPROCATING_STATUS_FLAG_DEBRIS_DETECTED) {
@@ -120,7 +120,7 @@ void AP_EFI_DroneCAN::handle_status(const uavcan_equipment_ice_reciprocating_Sta
     } else {
         istate.debris_status = Debris_Status::NOT_DETECTED;
     }
-    
+
     istate.engine_load_percent = pkt.engine_load_percent;
     istate.engine_speed_rpm = pkt.engine_speed_rpm;
     istate.spark_dwell_time_ms = pkt.spark_dwell_time_ms;

@@ -38,7 +38,7 @@ private:
         InitState_StreamStart,
         InitState_Finished
     };
-    
+
     // reply related variables
     uint8_t buffer[21]; // buffer where to store data from serial
     uint8_t buffer_count;

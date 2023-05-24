@@ -112,7 +112,7 @@ void AP_RPM::init(void)
     }
 }
 
-/* 
+/*
 PARAMETER_CONVERSION - Added: Aug-2021
 */
 void AP_RPM::convert_params(void)

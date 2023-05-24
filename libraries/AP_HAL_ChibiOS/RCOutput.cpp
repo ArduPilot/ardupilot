@@ -2185,7 +2185,7 @@ void RCOutput::safety_update(void)
     // to pass the BRD_SAFETY_MASK to the IOMCU
     iomcu.set_safety_mask(safety_mask);
 #endif
-    
+
 #ifdef HAL_GPIO_PIN_LED_SAFETY
     led_counter = (led_counter+1) % 16;
     const uint16_t led_pattern = safety_state==AP_HAL::Util::SAFETY_DISARMED?0x5500:0xFFFF;

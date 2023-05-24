@@ -450,7 +450,7 @@ public:
                                  const char *name, float value);
 
     // load default values for all scalars in the main sketch. This
-    // does not recurse into the sub-objects    
+    // does not recurse into the sub-objects
     static void         setup_sketch_defaults(void);
 
     // find an old parameter and return it.
@@ -465,7 +465,7 @@ public:
       true if the parameter was converted from an old parameter value
     */
     bool convert_parameter_width(ap_var_type old_ptype);
-    
+
     // convert a single parameter with scaling
     enum {
         CONVERT_FLAG_REVERSE=1, // handle _REV -> _REVERSED conversion
@@ -485,7 +485,7 @@ public:
       removed from an object.
     */
     static bool get_param_by_index(void *obj_ptr, uint8_t idx, ap_var_type old_ptype, void *pvalue);
-    
+
     /// Erase all variables in EEPROM.
     ///
     static void         erase_all(void);
@@ -523,7 +523,7 @@ public:
 
     // return the persistent top level key for the ParamToken key
     static uint16_t get_persistent_key(uint16_t key) { return var_info(key).key; }
-    
+
     // count of parameters in tree
     static uint16_t count_parameters(void);
 
@@ -546,15 +546,15 @@ public:
     static void         show_all(AP_HAL::BetterStream *port, bool showKeyValues=false);
 
     /// print the value of one variable
-    static void         show(const AP_Param *param, 
+    static void         show(const AP_Param *param,
                              const char *name,
-                             enum ap_var_type ptype, 
+                             enum ap_var_type ptype,
                              AP_HAL::BetterStream *port);
 
     /// print the value of one variable
-    static void         show(const AP_Param *param, 
+    static void         show(const AP_Param *param,
                              const ParamToken &token,
-                             enum ap_var_type ptype, 
+                             enum ap_var_type ptype,
                              AP_HAL::BetterStream *port);
 #endif // AP_PARAM_KEY_DUMP
 
@@ -637,7 +637,7 @@ private:
 #endif
 
 
-    static void                 check_group_info(const struct GroupInfo *group_info, uint16_t *total_size, 
+    static void                 check_group_info(const struct GroupInfo *group_info, uint16_t *total_size,
                                                  uint8_t max_bits, uint8_t prefix_length);
     static bool                 duplicate_key(uint16_t vindex, uint16_t key);
 
@@ -837,7 +837,7 @@ public:
 
     // set a parameter that is an ENABLE param
     void set_enable(const T &v);
-    
+
     /// Sets if the parameter is unconfigured
     ///
     void set_default(const T &v);

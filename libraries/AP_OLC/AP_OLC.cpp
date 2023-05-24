@@ -202,4 +202,4 @@ int AP_OLC::olc_encode(int32_t lat, int32_t lon, size_t length, char *buf, size_
     return pos;
 }
 
-#endif 
+#endif

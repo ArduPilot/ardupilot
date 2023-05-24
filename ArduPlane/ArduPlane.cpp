@@ -1,6 +1,6 @@
 /*
    Lead developer: Andrew Tridgell
- 
+
    Authors:    Doug Weibel, Jose Julio, Jordi Munoz, Jason Short, Randy Mackay, Pat Hickey, John Arne Birkeland, Olivier Adler, Amilcar Lucas, Gregory Fletcher, Paul Riseborough, Brandon Jones, Jon Challinger, Tom Pittenger
    Thanks to:  Chris Anderson, Michael Oborne, Paul Mather, Bill Premerlani, James Cohen, JB from rotorFX, Automatik, Fefenin, Peter Meister, Remzibi, Yury Smirnov, Sandro Benigno, Max Levine, Roberto Navoni, Lorenz Meier, Yury MonZon
 
@@ -237,7 +237,7 @@ void Plane::update_logging10(void)
         ahrs.Write_AOA_SSA();
     } else if (log_faster) {
         ahrs.Write_AOA_SSA();
-    } 
+    }
 }
 
 /*
@@ -331,7 +331,7 @@ void Plane::one_second_loop()
         gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
             last_home_update_ms = gps.last_message_time_ms();
             update_home();
-            
+
             // reset the landing altitude correction
             landing.alt_offset = 0;
     }
@@ -373,9 +373,9 @@ void Plane::airspeed_ratio_update(void)
         gps.status() < AP_GPS::GPS_OK_FIX_3D ||
         gps.ground_speed() < 4) {
         // don't calibrate when not moving
-        return;        
+        return;
     }
-    if (airspeed.get_airspeed() < aparm.airspeed_min && 
+    if (airspeed.get_airspeed() < aparm.airspeed_min &&
         gps.ground_speed() < (uint32_t)aparm.airspeed_min) {
         // don't calibrate when flying below the minimum airspeed. We
         // check both airspeed and ground speed to catch cases where
@@ -518,7 +518,7 @@ void Plane::update_alt()
     } else if (gps.status() >= AP_GPS::GPS_OK_FIX_3D && gps.have_vertical_velocity()) {
         sink_rate = gps.velocity().z;
     } else {
-        sink_rate = -barometer.get_climb_rate();        
+        sink_rate = -barometer.get_climb_rate();
     }
 
     // low pass the sink rate to take some of the noise out

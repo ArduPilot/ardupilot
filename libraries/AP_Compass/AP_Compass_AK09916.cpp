@@ -132,7 +132,7 @@ AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(AP_HAL::OwnPtr<AP_HAL::I2
             goto fail;
         }
         hal.scheduler->delay(10);
-        
+
         // see if ICM20948 is sleeping
         if (!dev_icm->read_registers(REG_ICM_PWR_MGMT_1, &rval, 1)) {
             goto fail;
@@ -141,7 +141,7 @@ AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(AP_HAL::OwnPtr<AP_HAL::I2
             break;
         }
     } while (retries--);
-    
+
     if (rval & 0x40) {
         // it didn't come out of sleep
         goto fail;
@@ -175,7 +175,7 @@ fail:
 // un-named, assume SPI for compat
 AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(uint8_t inv2_instance,
                                                      enum Rotation rotation)
-{  
+{
     return probe_ICM20948_SPI(inv2_instance,rotation);
 }
 
@@ -273,7 +273,7 @@ bool AP_Compass_AK09916::init()
     }
 
     set_rotation(_compass_instance, _rotation);
-    
+
     bus_sem->give();
 
     _bus->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_AK09916::_update, void));

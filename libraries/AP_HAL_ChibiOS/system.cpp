@@ -292,7 +292,7 @@ void __entry_hook()
         pd.boot_to_dfu = false;
         stm32_watchdog_save((uint32_t *)&pd, (sizeof(pd)+3)/4);
 #if defined(STM32H7)
-        const uint32_t *app_base = (const uint32_t *)(0x1FF09800); 
+        const uint32_t *app_base = (const uint32_t *)(0x1FF09800);
 #else
         const uint32_t *app_base = (const uint32_t *)(0x1FFF0000);
 #endif
@@ -359,7 +359,7 @@ uint16_t micros16()
     return hrt_micros32() & 0xFFFF;
 #endif
 }
-    
+
 __FASTRAMFUNC__ uint32_t millis()
 {
     return hrt_millis32();

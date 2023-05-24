@@ -46,7 +46,7 @@ public:
 #if AP_SIM_ENABLED
     // find a frame by name
     static Frame *find_frame(const char *name);
-    
+
     // initialise frame
     void init(const char *frame_str, Battery *_battery);
 
@@ -73,7 +73,7 @@ public:
     void set_mass(float new_mass) {
         mass = new_mass;
     }
-    
+
 private:
     /*
       parameters that define the multicopter model. Can be loaded from

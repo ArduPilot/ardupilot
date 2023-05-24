@@ -3,10 +3,10 @@
 
 /*
  * The AP_Rally library:
- * 
+ *
  * Initial implementation: Michael Day, September 2013
  * Moved to AP_Rally lib:  Andrew Chapman April 2014
- * 
+ *
  * - responsible for managing a list of rally points
  * - reads and writes the rally points to storage
  * - provides access to the rally points, including logic to find the nearest one

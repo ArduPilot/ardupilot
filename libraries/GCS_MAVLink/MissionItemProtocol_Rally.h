@@ -20,7 +20,7 @@ public:
       static function to get rally item as mavlink_mission_item_int_t
     */
     static bool get_item_as_mission_item(uint16_t seq, mavlink_mission_item_int_t &ret_packet);
-    
+
 protected:
 
     ap_message next_item_ap_message_id() const override {

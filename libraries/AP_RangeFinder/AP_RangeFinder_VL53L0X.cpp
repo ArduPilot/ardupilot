@@ -237,7 +237,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_VL53L0X::detect(RangeFinder::RangeFinder_
     }
 
     sensor->dev->get_semaphore()->take_blocking();
-    
+
     if (!sensor->check_id() || !sensor->init()) {
         sensor->dev->get_semaphore()->give();
         delete sensor;
@@ -245,7 +245,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_VL53L0X::detect(RangeFinder::RangeFinder_
     }
 
     sensor->dev->get_semaphore()->give();
-    
+
     return sensor;
 }
 

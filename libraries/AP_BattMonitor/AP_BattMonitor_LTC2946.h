@@ -21,7 +21,7 @@ public:
 
     virtual void init(void) override;
     virtual void read() override;
-    
+
 private:
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
 

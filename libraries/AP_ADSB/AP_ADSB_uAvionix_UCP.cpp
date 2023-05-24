@@ -97,7 +97,7 @@ void AP_ADSB_uAvionix_UCP::update()
         send_GPS_Data();
     }
 
-    // if the transponder has stopped giving us the data needed to 
+    // if the transponder has stopped giving us the data needed to
     // fill the transponder status mavlink message, reset that data.
     if ((now_ms - run_state.last_packet_Transponder_Status_ms >= 10000 && run_state.last_packet_Transponder_Status_ms != 0)
         && (now_ms - run_state.last_packet_Transponder_Heartbeat_ms >= 10000 && run_state.last_packet_Transponder_Heartbeat_ms != 0)
@@ -163,7 +163,7 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
             char primaryFwPartNumber[str_len+1];
             memcpy(&primaryFwPartNumber, rx.decoded.identification.primaryFwPartNumber, str_len);
             primaryFwPartNumber[str_len] = 0;
-            
+
             GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,"ADSB:Detected %s v%u.%u.%u SN:%u %s",
                 get_hardware_name(rx.decoded.identification.primary.hwId),
                 (unsigned)rx.decoded.identification.primary.fwMajorVersion,
@@ -209,7 +209,7 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
         } else {
             _frontend.out_state.tx_status.state &= ~UAVIONIX_ADSB_OUT_STATUS_STATE_IDENT_ACTIVE;
         }
-        
+
         if (rx.decoded.transponder_status.modeAEnabled) {
             _frontend.out_state.tx_status.state |= UAVIONIX_ADSB_OUT_STATUS_STATE_MODE_A_ENABLED;
         } else {
@@ -342,7 +342,7 @@ void AP_ADSB_uAvionix_UCP::send_GPS_Data()
     GDL90_GPS_DATA_V2 msg {};
     msg.messageId = GDL90_ID_GPS_DATA;
     msg.version = 2;
-    
+
     const AP_GPS &gps = AP::gps();
     const GPS_FIX fix = (GPS_FIX)gps.status();
     const bool fix_is_good = (fix >= GPS_FIX_3D);
@@ -416,14 +416,14 @@ uint16_t AP_ADSB_uAvionix_UCP::gdl90Transmit(GDL90_TX_MESSAGE &message, const ui
     // Set flag byte in frame buffer
     gdl90FrameBuffer[0] = GDL90_FLAG_BYTE;
     uint16_t frameIndex = 1;
-    
+
     // Copy and stuff all payload bytes into frame buffer
     for (uint16_t i = 0; i < length+2; i++) {
         // Check for overflow of frame buffer
         if (frameIndex >= GDL90_TX_MAX_FRAME_LENGTH) {
             return 0;
         }
-        
+
         uint8_t data;
         // Append CRC to payload
         if (i == length) {
@@ -431,7 +431,7 @@ uint16_t AP_ADSB_uAvionix_UCP::gdl90Transmit(GDL90_TX_MESSAGE &message, const ui
         } else if (i == length+1) {
             data = HIGHBYTE(frameCrc);
         } else {
-            data = message.raw[i];    
+            data = message.raw[i];
         }
 
         if (data == GDL90_FLAG_BYTE || data == GDL90_CONTROL_ESCAPE_BYTE) {
@@ -439,7 +439,7 @@ uint16_t AP_ADSB_uAvionix_UCP::gdl90Transmit(GDL90_TX_MESSAGE &message, const ui
             if (frameIndex + 2 > GDL90_TX_MAX_FRAME_LENGTH) {
               return 0;
             }
-            
+
             // Set control break and stuff this byte
             gdl90FrameBuffer[frameIndex++] = GDL90_CONTROL_ESCAPE_BYTE;
             gdl90FrameBuffer[frameIndex++] = data ^ GDL90_STUFF_BYTE;
@@ -447,7 +447,7 @@ uint16_t AP_ADSB_uAvionix_UCP::gdl90Transmit(GDL90_TX_MESSAGE &message, const ui
             gdl90FrameBuffer[frameIndex++] = data;
         }
     }
-    
+
     // Add end of frame indication
     gdl90FrameBuffer[frameIndex++] = GDL90_FLAG_BYTE;
 
@@ -455,7 +455,7 @@ uint16_t AP_ADSB_uAvionix_UCP::gdl90Transmit(GDL90_TX_MESSAGE &message, const ui
     if (hostTransmit(gdl90FrameBuffer, frameIndex)) {
         return frameIndex;
     }
-    
+
     return 0;
 }
 

@@ -46,7 +46,7 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     end_frame();
 
     _RFRF.frame_types = uint8_t(frametype);
-    
+
     _RFRH.time_flying_ms = AP::vehicle()->get_time_flying_ms();
     _RFRH.time_us = AP_HAL::micros64();
     WRITE_REPLAY_BLOCK(RFRH, _RFRH);

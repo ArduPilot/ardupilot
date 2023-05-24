@@ -282,7 +282,7 @@ void SIMState::_simulator_servos(struct sitl_input &input)
         wind_speed =     _sitl->wind_speed_active     = (0.95f*_sitl->wind_speed_active)     + (0.05f*_sitl->wind_speed);
         wind_direction = _sitl->wind_direction_active = (0.95f*_sitl->wind_direction_active) + (0.05f*_sitl->wind_direction);
         wind_dir_z =     _sitl->wind_dir_z_active     = (0.95f*_sitl->wind_dir_z_active)     + (0.05f*_sitl->wind_dir_z);
-        
+
         // pass wind into simulators using different wind types via param SIM_WIND_T*.
         switch (_sitl->wind_type) {
         case SITL::SIM::WIND_TYPE_SQRT:
@@ -336,7 +336,7 @@ void SIMState::_simulator_servos(struct sitl_input &input)
 
     float voltage = 0;
     _current = 0;
-    
+
     if (_sitl != nullptr) {
         if (_sitl->state.battery_voltage <= 0) {
         } else {

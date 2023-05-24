@@ -16,7 +16,7 @@
  *
  * Author: Oliver Walters / Currawong Engineering Pty Ltd
  */
- 
+
 
 #ifndef _ECUSETTINGS_H
 #define _ECUSETTINGS_H
@@ -76,16 +76,16 @@ typedef struct
     uint8_t                       delay;            //!< Throttle delay, constant value
     uint8_t                       minDelay;         //!< Throttle delay, minimum value
     uint8_t                       maxDelay;         //!< Throttle delay, minimum value
-    ECU_ThrottleDelayConfigBits_t delayConfig;     
+    ECU_ThrottleDelayConfigBits_t delayConfig;
     uint8_t                       softLimit;        //!< Throttle dashpot soft limit value
     uint8_t                       hardLimit;        //!< Throttle dashpot hard limit value
     uint8_t                       falloffRate;      //!< Throttle dashpot falloff rate
     uint8_t                       curve[11];        //!< Throttle curve lookup table elements
     ECU_ThrottleCurveConfigBits_t curveConfig;      //!< Throttle curve config bits
-    ECU_ThrottleConfigBits_t      config;          
-    uint8_t                       analogSpan1;     
-    uint16_t                      analogSpan2;     
-    uint8_t                       throttleTarget;  
+    ECU_ThrottleConfigBits_t      config;
+    uint8_t                       analogSpan1;
+    uint16_t                      analogSpan2;
+    uint8_t                       throttleTarget;
 }ECU_ThrottleSettings_t;
 
 //! Create the ECU_ThrottleSettings packet
@@ -109,8 +109,8 @@ int decodeECU_ThrottleSettingsPacketStructure(const void* pkt, ECU_ThrottleSetti
 typedef struct
 {
     uint8_t  resetOnStartup;
-    uint16_t divisor;       
-    uint16_t offset;        
+    uint16_t divisor;
+    uint16_t offset;
 }ECU_FuelUsedSettings_t;
 
 //! Create the ECU_FuelUsedSettings packet
@@ -133,13 +133,13 @@ int decodeECU_FuelUsedSettingsPacketStructure(const void* pkt, ECU_FuelUsedSetti
  */
 typedef struct
 {
-    float   pGain;     
-    float   iGain;     
-    float   dGain;     
+    float   pGain;
+    float   iGain;
+    float   dGain;
     float   scalePower;
-    float   maxRPM;    
-    float   minRPM;    
-    uint8_t mode;      
+    float   maxRPM;
+    float   minRPM;
+    uint8_t mode;
 }ECU_GovernorSettings_t;
 
 //! Create the ECU_GovernorSettings packet
@@ -168,8 +168,8 @@ typedef struct
     float                pressureLowerLimit; //!< Pump lower pressure limit (PSI)
     float                pressureUpperLimit; //!< Pump upper pressure limit (PSI)
     float                pressureSetpoint;   //!< Fuel pressure setpoint
-    uint8_t              minimumPWM;        
-    uint8_t              maximumPWM;        
+    uint8_t              minimumPWM;
+    uint8_t              maximumPWM;
     uint8_t              rampRate;           //!< Pump duty cycle ramp rate
     ECU_PumpOptionBits_t options;            //!< Pump control system options
     uint8_t              reservedA;          //!< Reserved for future use
@@ -196,11 +196,11 @@ int decodeECU_PumpSettingsPacketStructure(const void* pkt, ECU_PumpSettings_t* u
  */
 typedef struct
 {
-    uint16_t powerCycles;      
-    uint32_t engineTime;       
-    uint32_t engineTimeTotal;  
+    uint16_t powerCycles;
+    uint32_t engineTime;
+    uint32_t engineTimeTotal;
     uint16_t fuelUsedOverflows;
-    uint8_t  userValues[8];    
+    uint8_t  userValues[8];
 }ECU_ECUData_t;
 
 //! Create the ECU_ECUData packet

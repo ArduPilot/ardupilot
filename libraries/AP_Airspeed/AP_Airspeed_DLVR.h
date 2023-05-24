@@ -40,7 +40,7 @@ public:
     static AP_Airspeed_Backend *probe(AP_Airspeed &frontend, uint8_t _instance, AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev, const float _range_inH2O);
 
     ~AP_Airspeed_DLVR(void) {}
-    
+
     // probe and initialise the sensor
     bool init() override;
 
@@ -59,13 +59,13 @@ private:
     float pressure_sum;
     uint32_t temp_count;
     uint32_t press_count;
-    
+
     uint32_t last_sample_time_ms;
     const float range_inH2O;
 
     // initialise the sensor
     void setup();
-    
+
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
 };
 

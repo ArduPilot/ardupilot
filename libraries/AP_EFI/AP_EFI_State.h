@@ -129,11 +129,11 @@ struct EFI_State {
 
     // Current overall engine state
     Engine_State engine_state;
- 
+
     // If there is an error that does not fit other error types
     bool general_error;
 
-    // Error/status fields 
+    // Error/status fields
     Crankshaft_Sensor_Status crankshaft_sensor_status;
     Temperature_Status temperature_status;
     Fuel_Pressure_Status fuel_pressure_status;
@@ -144,7 +144,7 @@ struct EFI_State {
 
     // Engine load (percent)
     uint8_t engine_load_percent;
-    
+
     // Engine speed (revolutions per minute)
     uint32_t engine_speed_rpm;
 
@@ -162,7 +162,7 @@ struct EFI_State {
 
     // Engine coolant temperature (kelvin)
     float coolant_temperature;
-    
+
     // Oil pressure (kilopascal)
     float oil_pressure;
 
@@ -172,7 +172,7 @@ struct EFI_State {
     // Fuel pressure (kilopascal)
     float fuel_pressure;
 
-    // Instant fuel consumption estimate, which 
+    // Instant fuel consumption estimate, which
     // should be low-pass filtered in order to prevent aliasing effects.
     // (centimeter^3)/minute.
     float fuel_consumption_rate_cm3pm;
@@ -189,9 +189,9 @@ struct EFI_State {
 
     // Spark plug activity report.
     // Can be used during pre-flight tests of the spark subsystem.
-    // Use case is that usually on double spark plug engines, the 
+    // Use case is that usually on double spark plug engines, the
     // engine switch has the positions OFF-LEFT-RIGHT-BOTH-START.
-    // Gives pilots the possibility to test both spark plugs on 
+    // Gives pilots the possibility to test both spark plugs on
     // ground before takeoff.
     Spark_Plug_Usage spark_plug_usage;
 

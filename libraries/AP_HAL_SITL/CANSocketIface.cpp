@@ -595,7 +595,7 @@ bool CANIface::CANSocketEventSource::wait(uint16_t duration_us, AP_HAL::EventHan
     pollfd pollfds[HAL_NUM_CAN_IFACES] {};
     uint8_t pollfd_iface_map[HAL_NUM_CAN_IFACES] {};
     unsigned long int num_pollfds = 0;
-    
+
     // Poll FD set setup
     for (unsigned i = 0; i < HAL_NUM_CAN_IFACES; i++) {
         if (_ifaces[i] == nullptr) {

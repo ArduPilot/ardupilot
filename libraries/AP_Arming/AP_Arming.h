@@ -133,7 +133,7 @@ public:
     // method that was last used for arm; invalid unless the
     // vehicle has been disarmed at least once.
     Method last_arm_method() const { return _last_arm_method; }
-    
+
     // enum for ARMING_OPTIONS parameter
     enum class Option : int32_t {
         DISABLE_PREARM_DISPLAY   = (1U << 0),
@@ -212,9 +212,9 @@ protected:
     bool generator_checks(bool report) const;
 
     bool opendroneid_checks(bool display_failure);
-    
+
     bool serial_protocol_checks(bool display_failure);
-    
+
     bool estop_checks(bool display_failure);
 
     virtual bool system_checks(bool report);

@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  implementation of RunCam camera protocols 
+  implementation of RunCam camera protocols
 
   With thanks to betaflight for a great reference
   implementation. Several of the functions below are based on
@@ -620,7 +620,7 @@ void AP_RunCam::exit_2_key_osd_menu()
 }
 
 // run the 5-key OSD simulation process
-void AP_RunCam::handle_5_key_simulation_process(Event ev) 
+void AP_RunCam::handle_5_key_simulation_process(Event ev)
 {
     debug("%s,M:%d,B:%d,O:%d\n", event_names[int(ev)], _in_menu, int(_button_pressed), int(_osd_option));
 

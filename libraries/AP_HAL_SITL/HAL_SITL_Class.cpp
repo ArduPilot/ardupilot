@@ -233,7 +233,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
         }
         new_argv[new_argv_offset++] = argv[i];
     }
-    
+
     fill_stack_nan();
 
     callbacks->setup();

@@ -461,7 +461,7 @@ void UARTDriver::_timer_tick(void)
         // update receive timestamp
         _receive_timestamp[_receive_timestamp_idx^1] = AP_HAL::micros64();
         _receive_timestamp_idx ^= 1;
-        
+
         /* stop reading as we read less than we asked for */
         if ((unsigned)ret < vec[i].len) {
             break;
@@ -481,11 +481,11 @@ void UARTDriver::configure_parity(uint8_t v) {
   time constraint, not an exact time. It is guaranteed that the
   packet did not start being received after this time, but it
   could have been in a system buffer before the returned time.
-  
+
   This takes account of the baudrate of the link. For transports
   that have no baudrate (such as USB) the time estimate may be
   less accurate.
-  
+
   A return value of zero means the HAL does not support this API
 */
 uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes)

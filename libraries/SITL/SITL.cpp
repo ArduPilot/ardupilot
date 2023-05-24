@@ -55,7 +55,7 @@ SIM *SIM::_singleton = nullptr;
 
 // table of user settable parameters
 const AP_Param::GroupInfo SIM::var_info[] = {
-    
+
     AP_GROUPINFO("DRIFT_SPEED",    5, SIM,  drift_speed, 0.05f),
     AP_GROUPINFO("DRIFT_TIME",     6, SIM,  drift_time,  5),
     AP_GROUPINFO("ENGINE_MUL",     8, SIM,  engine_mul,  1),
@@ -108,7 +108,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @DisplayName: Sim Speedup
     // @Description: Runs the simulation at multiples of normal speed. Do not use if realtime physics, like RealFlight, is being used
     // @Range: 1 10
-    // @User: Advanced    
+    // @User: Advanced
     AP_GROUPINFO("SPEEDUP",       52, SIM,  speedup, -1),
     AP_GROUPINFO("IMU_POS",       53, SIM,  imu_pos_offset, 0),
     AP_SUBGROUPEXTENSION("",      54, SIM,  var_ins),
@@ -127,7 +127,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     AP_GROUPEND
 };
 
-// second table of user settable parameters for SITL. 
+// second table of user settable parameters for SITL.
 const AP_Param::GroupInfo SIM::var_info2[] = {
     AP_GROUPINFO("TEMP_START",   1, SIM,  temp_start,  25),
     AP_GROUPINFO("TEMP_BRD_OFF", 2, SIM,  temp_board_offset, 20),
@@ -139,7 +139,7 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // @DisplayName: Wind Profile Type
     // @Description: Selects how wind varies from surface to WIND_T_ALT
     // @Values: 0:square law,1: none, 2:linear-see WIND_T_COEF
-    // @User: Advanced    
+    // @User: Advanced
     AP_GROUPINFO("WIND_T"      ,15, SIM,  wind_type, SIM::WIND_TYPE_SQRT),
     // @Param: WIND_T_ALT
     // @DisplayName: Full Wind Altitude
@@ -187,7 +187,7 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     AP_GROUPINFO("SHOVE_Y",     31, SIM,  shove.y, 0),
     AP_GROUPINFO("SHOVE_Z",     32, SIM,  shove.z, 0),
     AP_GROUPINFO("SHOVE_TIME",  33, SIM,  shove.t, 0),
-    
+
     // optical flow sensor measurement noise in rad/sec
     AP_GROUPINFO("FLOW_RND",   34, SIM,  flow_noise,  0.05f),
 
@@ -247,7 +247,7 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
 
     // motor mask, allowing external simulators to mark motors
     AP_GROUPINFO("VIB_MOT_MASK", 5, SIM,  vibe_motor_mask, 0),
-    
+
     // max motor vibration frequency
     AP_GROUPINFO("VIB_MOT_MAX", 61, SIM,  vibe_motor, 0.0f),
     // minimum throttle for simulated ins noise
@@ -260,7 +260,7 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
 
 };
 
-// third table of user settable parameters for SITL. 
+// third table of user settable parameters for SITL.
 const AP_Param::GroupInfo SIM::var_info3[] = {
     AP_GROUPINFO("ODOM_ENABLE",   1, SIM,  odom_enable, 0),
 

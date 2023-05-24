@@ -51,7 +51,7 @@ AP_AHRS_View::AP_AHRS_View(AP_AHRS &_ahrs, enum Rotation _rotation, float pitch_
 
 // apply pitch trim
 void AP_AHRS_View::set_pitch_trim(float trim_deg) {
-    _pitch_trim_deg = trim_deg; 
+    _pitch_trim_deg = trim_deg;
     rot_view.from_euler(0, radians(wrap_360(y_angle + _pitch_trim_deg)), 0);
     rot_view_T = rot_view;
     rot_view_T.transpose();

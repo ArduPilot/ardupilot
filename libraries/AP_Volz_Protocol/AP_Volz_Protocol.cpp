@@ -46,7 +46,7 @@ void AP_Volz_Protocol::update()
         initialised = true;
         init();
     }
-    
+
     if (port == nullptr) {
         return;
     }
@@ -75,7 +75,7 @@ void AP_Volz_Protocol::update()
             if (c == nullptr) {
                 continue;
             }
-            
+
             // check if current channel PWM is within range
             if (c->get_output_pwm() < VOLZ_PWM_POSITION_MIN) {
                 value = 0;

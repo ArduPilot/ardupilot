@@ -34,7 +34,7 @@ public:
     bool use_rtscts(void) const {
         return _use_rtscts;
     }
-    
+
     uint16_t base_port(void) const {
         return _base_port;
     }

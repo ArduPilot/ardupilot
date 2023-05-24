@@ -29,7 +29,7 @@ bool Plane::auto_takeoff_check(void)
     }
 
     takeoff_state.last_check_ms = now;
-    
+
     //check if waiting for rudder neutral after rudder arm
     if (plane.arming.last_arm_method() == AP_Arming::Method::RUDDER &&
         !seen_neutral_rudder) {
@@ -46,7 +46,7 @@ bool Plane::auto_takeoff_check(void)
        // we did not arm by rudder or rudder has returned to neutral
        // make sure we dont indicate we are in the waiting state with servo position indicator
        takeoff_state.waiting_for_rudder_neutral = false;
-    }  
+    }
 
     // Check for bad GPS
     if (gps.status() < AP_GPS::GPS_OK_FIX_3D) {
@@ -173,7 +173,7 @@ void Plane::takeoff_calc_roll(void)
     nav_roll_cd = constrain_int32(nav_roll_cd, -takeoff_roll_limit_cd, takeoff_roll_limit_cd);
 }
 
-        
+
 /*
   calculate desired pitch angle during takeoff, setting nav_pitch_cd
  */
@@ -195,7 +195,7 @@ void Plane::takeoff_calc_pitch(void)
         if (g.takeoff_rotate_speed > 0) {
             // Rise off ground takeoff so delay rotation until ground speed indicates adequate airspeed
             nav_pitch_cd = ((gps.ground_speed()*100) / (float)aparm.airspeed_cruise_cm) * auto_state.takeoff_pitch_cd;
-            nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, auto_state.takeoff_pitch_cd); 
+            nav_pitch_cd = constrain_int32(nav_pitch_cd, 500, auto_state.takeoff_pitch_cd);
         } else {
             // Doing hand or catapult launch so need at least 5 deg pitch to prevent initial height loss
             nav_pitch_cd = MAX(auto_state.takeoff_pitch_cd, 500);

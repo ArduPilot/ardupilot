@@ -352,7 +352,7 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
 
         case AUX_FUNC::MOTOR_INTERLOCK:
 #if FRAME_CONFIG == HELI_FRAME
-            // The interlock logic for ROTOR_CONTROL_MODE_PASSTHROUGH is handled 
+            // The interlock logic for ROTOR_CONTROL_MODE_PASSTHROUGH is handled
             // in heli_update_rotor_speed_targets.  Otherwise turn on when above low.
             if (copter.motors->get_rsc_mode() != ROTOR_CONTROL_MODE_PASSTHROUGH) {
                 copter.ap.motor_interlock_switch = (ch_flag == AuxSwitchPos::HIGH || ch_flag == AuxSwitchPos::MIDDLE);
@@ -361,9 +361,9 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             copter.ap.motor_interlock_switch = (ch_flag == AuxSwitchPos::HIGH || ch_flag == AuxSwitchPos::MIDDLE);
 #endif
             break;
-			
+
         case AUX_FUNC::TURBINE_START:
-#if FRAME_CONFIG == HELI_FRAME     
+#if FRAME_CONFIG == HELI_FRAME
            switch (ch_flag) {
                 case AuxSwitchPos::HIGH:
                     copter.motors->set_turb_start(true);
@@ -377,7 +377,7 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
            }
 #endif
            break;
-		 
+
         case AUX_FUNC::BRAKE:
 #if MODE_BRAKE_ENABLED == ENABLED
             do_aux_function_change_mode(Mode::Number::BRAKE, ch_flag);

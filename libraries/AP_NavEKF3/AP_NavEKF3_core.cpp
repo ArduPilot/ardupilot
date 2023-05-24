@@ -163,7 +163,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         return false;
     }
 #endif
- 
+
     if ((yawEstimator == nullptr) && (frontend->_gsfRunMask & (1U<<core_index))) {
         // check if there is enough memory to create the EKF-GSF object
         if (dal.available_memory() < sizeof(EKFGSF_yaw) + 1024) {
@@ -181,7 +181,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
 
     return true;
 }
-    
+
 
 /********************************************************
 *                   INIT FUNCTIONS                      *
@@ -481,7 +481,7 @@ void NavEKF3_core::InitialiseVariablesMag()
 }
 
 /*
-Initialise the states from accelerometer data. This assumes measured acceleration 
+Initialise the states from accelerometer data. This assumes measured acceleration
 is dominated by gravity. If this assumption is not true then the EKF will require
 timee to reduce the resulting tilt error. Yaw alignment is not performed by this
 function, but is perfomred later and initiated the SelectMagFusion() function
@@ -888,7 +888,7 @@ void NavEKF3_core::calcOutputStates()
     ftype integ2_input = delVelNav.z + (vertCompFiltState.acc + pos_err * omega2 * 3.0f) * imuDataNew.delVelDT;
     vertCompFiltState.vel += integ2_input;
     ftype integ3_input = (vertCompFiltState.vel + pos_err * CompFiltOmega * 3.0f) * imuDataNew.delVelDT;
-    vertCompFiltState.pos += integ3_input; 
+    vertCompFiltState.pos += integ3_input;
 
     // apply a trapezoidal integration to velocities to calculate position
     outputDataNew.position += (outputDataNew.velocity + lastVelocity) * (imuDataNew.delVelDT*0.5f);

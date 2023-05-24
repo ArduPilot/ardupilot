@@ -85,7 +85,7 @@ bool AP_Compass_LIS3MDL::init()
 
     // high retries for init
     dev->set_retries(10);
-    
+
     uint8_t whoami;
     if (!dev->read_registers(ADDR_WHO_AM_I, &whoami, 1) ||
         whoami != ID_WHO_AM_I) {
@@ -103,7 +103,7 @@ bool AP_Compass_LIS3MDL::init()
 
     // lower retries for run
     dev->set_retries(3);
-    
+
     dev->get_semaphore()->give();
 
     /* register the compass instance in the frontend */
@@ -114,13 +114,13 @@ bool AP_Compass_LIS3MDL::init()
     set_dev_id(compass_instance, dev->get_bus_id());
 
     printf("Found a LIS3MDL on 0x%x as compass %u\n", dev->get_bus_id(), compass_instance);
-    
+
     set_rotation(compass_instance, rotation);
 
     if (force_external) {
         set_external(compass_instance, true);
     }
-    
+
     // call timer() at 80Hz
     dev->register_periodic_callback(1000000U/80U,
                                     FUNCTOR_BIND_MEMBER(&AP_Compass_LIS3MDL::timer, void));

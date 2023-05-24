@@ -20,7 +20,7 @@ public:
     void update() override;
 
     static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev, AP_HAL::OwnPtr<AP_HAL::Device> dev_imu);
-    
+
 private:
     AP_Baro_ICM20789(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev, AP_HAL::OwnPtr<AP_HAL::Device> dev_imu);
 
@@ -37,9 +37,9 @@ private:
 
     bool imu_spi_init(void);
     bool imu_i2c_init(void);
-    
+
     void timer(void);
-    
+
     // calibration data
     int16_t sensor_constants[4];
 

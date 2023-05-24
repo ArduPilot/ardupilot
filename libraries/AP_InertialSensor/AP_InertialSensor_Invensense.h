@@ -114,14 +114,14 @@ private:
     bool _check_raw_temp(int16_t t2) __RAMFUNC__;
 
     int16_t _raw_temp;
-    
+
     // instance numbers of accel and gyro data
     uint8_t _gyro_instance;
     uint8_t _accel_instance;
 
     float temp_sensitivity = 1.0f/340; // degC/LSB
     float temp_zero = 36.53f; // degC
-    
+
     float _temp_filtered;
     float _accel_scale;
     float _gyro_scale;
@@ -172,7 +172,7 @@ private:
     uint16_t _accel_backend_rate_hz;
 
     // Last status from register user control
-    uint8_t _last_stat_user_ctrl;    
+    uint8_t _last_stat_user_ctrl;
 
     // buffer for fifo read
     uint8_t *_fifo_buffer;

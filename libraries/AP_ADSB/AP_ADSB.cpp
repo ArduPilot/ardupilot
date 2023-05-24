@@ -794,7 +794,7 @@ void AP_ADSB::handle_message(const mavlink_channel_t chan, const mavlink_message
             break;
 
         case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CONTROL: {
-            mavlink_uavionix_adsb_out_control_t packet {};            
+            mavlink_uavionix_adsb_out_control_t packet {};
             mavlink_msg_uavionix_adsb_out_control_decode(&msg, &packet);
             handle_out_control(packet);
             break;

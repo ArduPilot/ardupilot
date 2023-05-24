@@ -71,7 +71,7 @@ void Plane::failsafe_check(void)
         if (!arming.is_armed_and_safety_off()) {
             throttle = 0;
         }
-        
+
         // setup secondary output channels that don't have
         // corresponding input channels
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, roll);
@@ -80,7 +80,7 @@ void Plane::failsafe_check(void)
         SRV_Channels::set_output_scaled(SRV_Channel::k_steering, rudder);
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
 
-        // this is to allow the failsafe module to deliberately crash 
+        // this is to allow the failsafe module to deliberately crash
         // the plane. Only used in extreme circumstances to meet the
         // OBC rules
 #if AP_ADVANCEDFAILSAFE_ENABLED

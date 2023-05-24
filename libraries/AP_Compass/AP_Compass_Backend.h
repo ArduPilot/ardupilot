@@ -82,7 +82,7 @@ public:
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
     virtual void handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt) {}
 #endif
-    
+
 protected:
 
     /*
@@ -128,7 +128,7 @@ protected:
 
     // get board orientation (for SITL)
     enum Rotation get_board_orientation(void) const;
-    
+
     // access to frontend
     Compass &_compass;
 
@@ -137,11 +137,11 @@ protected:
 
     // Check that the compass field is valid by using a mean filter on the vector length
     bool field_ok(const Vector3f &field);
-    
+
     uint32_t get_error_count() const { return _error_count; }
 private:
     void apply_corrections(Vector3f &mag, uint8_t i);
-    
+
     // mean field length for range filter
     float _mean_field_length;
     // number of dropped samples. Not used for now, but can be usable to choose more reliable sensor

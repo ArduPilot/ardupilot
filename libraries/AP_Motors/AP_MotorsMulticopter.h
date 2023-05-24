@@ -69,7 +69,7 @@ public:
     // get minimum or maximum pwm value that can be output to motors
     int16_t             get_pwm_output_min() const { return _pwm_min; }
     int16_t             get_pwm_output_max() const { return _pwm_max; }
-    
+
     // parameter check for MOT_PWM_MIN/MAX, returns true if parameters are valid
     bool check_mot_pwm_params() const;
 
@@ -78,7 +78,7 @@ public:
     void                set_thrust_compensation_callback(thrust_compensation_fn_t callback) {
         _thrust_compensation_callback = callback;
     }
-    
+
     // disable the use of motor torque to control yaw. Used when an external mechanism such
     // as vectoring is used for yaw control
     virtual void        disable_yaw_torque(void) {}

@@ -14,7 +14,7 @@ void Copter::fence_check()
     const uint8_t new_breaches = fence.check();
 
     // we still don't do anything when disarmed, but we do check for fence breaches.
-    // fence pre-arm check actually checks if any fence has been breached 
+    // fence pre-arm check actually checks if any fence has been breached
     // that's not ever going to be true if we don't call check on AP_Fence while disarmed.
     if (!motors->armed()) {
         return;

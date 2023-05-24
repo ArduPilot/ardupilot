@@ -251,7 +251,7 @@ void SRV_Channel::set_output_norm(float value)
 void SRV_Channel::set_angle(int16_t angle)
 {
     type_angle = true;
-    high_out = angle;    
+    high_out = angle;
     type_setup = true;
 }
 
@@ -312,7 +312,7 @@ bool SRV_Channel::is_motor(SRV_Channel::Aux_servo_function_t function)
 bool SRV_Channel::should_e_stop(SRV_Channel::Aux_servo_function_t function)
 {
     switch (function) {
-    case Aux_servo_function_t::k_heli_rsc:  
+    case Aux_servo_function_t::k_heli_rsc:
     case Aux_servo_function_t::k_heli_tail_rsc:
     case Aux_servo_function_t::k_motor1:
     case Aux_servo_function_t::k_motor2:
@@ -344,7 +344,7 @@ bool SRV_Channel::is_control_surface(SRV_Channel::Aux_servo_function_t function)
 {
     switch (function)
     {
-    case SRV_Channel::Aux_servo_function_t::k_flap:  
+    case SRV_Channel::Aux_servo_function_t::k_flap:
     case SRV_Channel::Aux_servo_function_t::k_flap_auto:
     case SRV_Channel::Aux_servo_function_t::k_aileron:
     case SRV_Channel::Aux_servo_function_t::k_dspoilerLeft1:

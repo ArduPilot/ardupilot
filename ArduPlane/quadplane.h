@@ -59,7 +59,7 @@ public:
     friend class ModeQAutotune;
     friend class ModeQAcro;
     friend class ModeLoiterAltQLand;
-    
+
     QuadPlane(AP_AHRS &_ahrs);
 
     static QuadPlane *get_singleton() {
@@ -80,7 +80,7 @@ public:
     void update_land_positioning(void);
 
     void update_throttle_mix(void);
-    
+
     // update transition handling
     void update(void);
 
@@ -136,12 +136,12 @@ public:
 
     // return true if the user has set ENABLE
     bool enabled(void) const { return enable != 0; }
-    
+
     // is throttle controlled landing descent active?
     bool thr_ctrl_land;
 
     uint16_t get_pilot_velocity_z_max_dn() const;
-    
+
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
         uint64_t time_us;
@@ -202,7 +202,7 @@ private:
     AC_PosControl *pos_control;
     AC_WPNav *wp_nav;
     AC_Loiter *loiter_nav;
-    
+
     // maximum vertical velocity the pilot may request
     AP_Int16 pilot_velocity_z_max_up;
     AP_Int16 pilot_velocity_z_max_dn;
@@ -228,7 +228,7 @@ private:
 
     // check for an EKF yaw reset
     void check_yaw_reset(void);
-    
+
     // hold hover (for transition)
     void hold_hover(float target_climb_rate_cms);
 
@@ -243,7 +243,7 @@ private:
 
     // get overall desired yaw rate in cd/s
     float get_desired_yaw_rate_cds(bool weathervane=true);
-    
+
     // get desired climb rate in cm/s
     float get_pilot_desired_climb_rate_cms(void) const;
 
@@ -277,7 +277,7 @@ private:
     void Log_Write_QControl_Tuning();
     void log_QPOS(void);
     float landing_descent_rate_cms(float height_above_ground);
-    
+
     // setup correct aux channels for frame class
     void setup_default_channels(uint8_t num_motors);
 
@@ -346,11 +346,11 @@ private:
     // QRTL start altitude, meters
     AP_Int16 qrtl_alt;
     AP_Int16 qrtl_alt_min;
-    
+
     // alt to switch to QLAND_FINAL
     AP_Float land_final_alt;
     AP_Float vel_forward_alt_cutoff;
-    
+
     AP_Int8 enable;
     AP_Int8 transition_pitch_max;
 

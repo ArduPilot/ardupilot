@@ -20,7 +20,7 @@
 // base class constructor.
 AP_WheelEncoder_Backend::AP_WheelEncoder_Backend(AP_WheelEncoder &frontend, uint8_t instance, AP_WheelEncoder::WheelEncoder_State &state) :
         _frontend(frontend),
-        _state(state) 
+        _state(state)
 {
     state.instance = instance;
 }

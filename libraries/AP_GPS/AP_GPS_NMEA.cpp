@@ -82,7 +82,7 @@ bool AP_GPS_NMEA::read(void)
 bool AP_GPS_NMEA::_decode(char c)
 {
     _sentence_length++;
-        
+
     switch (c) {
     case ';':
         // header separator for unicore
@@ -227,7 +227,7 @@ bool AP_GPS_NMEA::_have_new_message()
         now - _last_GGA_ms > 150) {
         return false;
     }
-    if (_last_VTG_ms != 0 && 
+    if (_last_VTG_ms != 0 &&
         now - _last_VTG_ms > 150) {
         return false;
     }

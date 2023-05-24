@@ -163,7 +163,7 @@ static int srxl_channels_get_v5(uint16_t max_values, uint8_t *num_values, uint16
         int32_t v = b & 0x7FF;
         if (b & 0x8000) {
             continue;
-        } 
+        }
         if (c == 12) {
             // special handling for channel 12
             // see http://www.deviationtx.com/forum/protocol-development/2088-18-channels-for-dsm2-dsmx?start=40
@@ -193,7 +193,7 @@ static int srxl_channels_get_v5(uint16_t max_values, uint8_t *num_values, uint16
                 max_channels = c+1;
             }
         }
-        
+
         //printf("%u:%u ", (unsigned)c, (unsigned)v);
     }
     //printf("\n");
@@ -207,7 +207,7 @@ static int srxl_channels_get_v5(uint16_t max_values, uint8_t *num_values, uint16
     // check failsafe bit, this goes low when connection to the
     // transmitter is lost
     *failsafe_state = ((buffer[1] & 2) == 0);
-    
+
     // success
     return 0;
     }
@@ -381,7 +381,7 @@ int main(int argc, const char *argv[])
         exit(1);
     }
     tcflush(fd, TCIOFLUSH);
-    
+
     while (true) {
         uint8_t b;
         uint8_t num_values = 0;
@@ -389,7 +389,7 @@ int main(int argc, const char *argv[])
         bool failsafe_state;
         fd_set fds;
         struct timeval tv;
-    
+
         FD_ZERO(&fds);
         FD_SET(fd, &fds);
 
@@ -400,7 +400,7 @@ int main(int argc, const char *argv[])
         if (select(fd+1, &fds, NULL, NULL, &tv) != 1) {
             break;
         }
-        
+
         if (read(fd, &b, 1) != 1) {
             break;
         }

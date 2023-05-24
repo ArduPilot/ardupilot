@@ -88,7 +88,7 @@ QuadPlane::QuadPlane(const char *frame_str) :
         frame->motors[1].servo_type = Motor::SERVO_RETRACT;
         frame->motors[1].servo_rate = 7*60.0/90; // 7 seconds to change
     }
-    
+
     // leave first 4 servos free for plane
     frame->motor_offset = motor_offset;
 
@@ -141,7 +141,7 @@ void QuadPlane::update(const struct sitl_input &input)
     // assume 20A at full fwd throttle
     throttle = fabsf(throttle);
     battery_current += 20 * throttle;
-    
+
     rot_accel += quad_rot_accel;
     accel_body += quad_accel_body;
 

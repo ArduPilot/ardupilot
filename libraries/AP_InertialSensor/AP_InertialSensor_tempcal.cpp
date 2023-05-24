@@ -90,7 +90,7 @@ const AP_Param::GroupInfo AP_InertialSensor_TCal::var_info[] = {
     // @Description: This is the 1st order temperature coefficient from a temperature calibration
     // @User: Advanced
     // @Calibration: 1
-    
+
     AP_GROUPINFO("ACC1", 4, AP_InertialSensor_TCal, accel_coeff[0], 0),
 
     // @Param: ACC2_X
@@ -150,7 +150,7 @@ const AP_Param::GroupInfo AP_InertialSensor_TCal::var_info[] = {
     // @Description: This is the 1st order temperature coefficient from a temperature calibration
     // @User: Advanced
     // @Calibration: 1
-    
+
     AP_GROUPINFO("GYR1", 7, AP_InertialSensor_TCal, gyro_coeff[0], 0),
 
     // @Param: GYR2_X
@@ -317,8 +317,8 @@ void AP_InertialSensor_TCal::Learn::add_sample(const Vector3f &sample, float tem
                        st.sum.x, st.sum.y, st.sum.z,
                        st.sum_count);
 #endif
-    
-    
+
+
     st.pfit.update(tdiff, st.sum);
 
     st.sum.zero();

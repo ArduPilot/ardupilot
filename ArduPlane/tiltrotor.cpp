@@ -294,7 +294,7 @@ void Tiltrotor::continuous_update(void)
         } else {
             // manual control of forward throttle up to max VTOL angle
             float settilt = .01f * quadplane.forward_throttle_pct();
-            slew(MIN(settilt * max_angle_deg * (1/90.0), get_forward_flight_tilt())); 
+            slew(MIN(settilt * max_angle_deg * (1/90.0), get_forward_flight_tilt()));
         }
         return;
     }
@@ -310,7 +310,7 @@ void Tiltrotor::continuous_update(void)
         // Q_TILT_MAX. Below 50% throttle we decrease linearly. This
         // relies heavily on Q_VFWD_GAIN being set appropriately.
        float settilt = constrain_float((SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)-MAX(plane.aparm.throttle_min.get(),0)) * 0.02, 0, 1);
-       slew(MIN(settilt * max_angle_deg * (1/90.0), get_forward_flight_tilt())); 
+       slew(MIN(settilt * max_angle_deg * (1/90.0), get_forward_flight_tilt()));
     }
 }
 
@@ -402,7 +402,7 @@ void Tiltrotor::tilt_compensate_angle(float *thrust, uint8_t num_motors, float n
 {
     float tilt_total = 0;
     uint8_t tilt_count = 0;
-    
+
     // apply tilt_factors first
     for (uint8_t i=0; i<num_motors; i++) {
         if (!is_motor_tilting(i)) {

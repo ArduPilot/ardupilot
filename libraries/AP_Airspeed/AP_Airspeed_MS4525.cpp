@@ -50,7 +50,7 @@ bool AP_Airspeed_MS4525::probe(uint8_t bus, uint8_t address)
 
     // lots of retries during probe
     _dev->set_retries(10);
-    
+
     _measure();
     hal.scheduler->delay(10);
     _collect();
@@ -99,7 +99,7 @@ found_sensor:
 
     // drop to 2 retries for runtime
     _dev->set_retries(2);
-    
+
     _dev->register_periodic_callback(20000,
                                      FUNCTOR_BIND_MEMBER(&AP_Airspeed_MS4525::_timer, void));
     return true;
@@ -118,7 +118,7 @@ void AP_Airspeed_MS4525::_measure()
 /*
   this equation is an inversion of the equation in the
   pressure transfer function figure on page 4 of the datasheet
-  
+
   We negate the result so that positive differential pressures
   are generated when the bottom port is used as the static
   port on the pitot and top port is used as the dynamic port
@@ -194,7 +194,7 @@ void AP_Airspeed_MS4525::_collect()
     float press2 = _get_pressure(dp_raw2);
     float temp  = _get_temperature(dT_raw);
     float temp2 = _get_temperature(dT_raw2);
-    
+
     if (!disable_voltage_correction()) {
         _voltage_correction(press, temp);
         _voltage_correction(press2, temp2);

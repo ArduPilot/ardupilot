@@ -616,7 +616,7 @@ bool AP_BLHeli::BL_SendBuf(const uint8_t *buf, uint16_t len)
     if (serial_start_ms == 0 || now - serial_start_ms < 1000) {
         /*
           we've just started the interface. We want it idle for at
-          least 1 second before we start sending serial data. 
+          least 1 second before we start sending serial data.
          */
         hal.scheduler->delay(1100);
     }
@@ -752,7 +752,7 @@ bool AP_BLHeli::BL_ConnectEx(void)
 
     // reply must start with 471
     if (strncmp((const char *)BootInfo, "471", 3) != 0) {
-        blheli.ack = ACK_D_GENERAL_ERROR;        
+        blheli.ack = ACK_D_GENERAL_ERROR;
         return false;
     }
 
@@ -962,7 +962,7 @@ void AP_BLHeli::blheli_process_command(void)
         if (blheli.buf[0] >= num_motors) {
             debug("bad reset channel %u", blheli.buf[0]);
             blheli.ack = ACK_I_INVALID_CHANNEL;
-            blheli_send_reply(&blheli.buf[0], 1);            
+            blheli_send_reply(&blheli.buf[0], 1);
             break;
         }
         blheli.chan = blheli.buf[0];
@@ -1063,7 +1063,7 @@ void AP_BLHeli::blheli_process_command(void)
         }
         }
         uint8_t b=0;
-        blheli_send_reply(&b, 1);        
+        blheli_send_reply(&b, 1);
         break;
     }
 
@@ -1073,7 +1073,7 @@ void AP_BLHeli::blheli_process_command(void)
         switch (blheli.interface_mode[blheli.chan]) {
         case imARM_BLB: {
             uint8_t buf[nbytes];
-            memcpy(buf, blheli.buf, nbytes);            
+            memcpy(buf, blheli.buf, nbytes);
             BL_VerifyFlash(buf, nbytes);
             break;
         }
@@ -1082,7 +1082,7 @@ void AP_BLHeli::blheli_process_command(void)
             break;
         }
         uint8_t b=0;
-        blheli_send_reply(&b, 1);        
+        blheli_send_reply(&b, 1);
         break;
     }
 
@@ -1268,7 +1268,7 @@ void AP_BLHeli::update(void)
 
     uint32_t now = AP_HAL::millis();
     if (initialised && uart_locked &&
-        ((timeout_sec && now - last_valid_ms > uint32_t(timeout_sec.get())*1000U) || 
+        ((timeout_sec && now - last_valid_ms > uint32_t(timeout_sec.get())*1000U) ||
         (motor_control_active && now - last_valid_ms > MOTOR_ACTIVE_TIMEOUT))) {
         // we're not processing requests any more, shutdown serial
         // output
@@ -1434,7 +1434,7 @@ void AP_BLHeli::read_telemetry_packet(void)
 
     // calculate crc
     uint8_t crc = 0;
-    for (uint8_t i=0; i<telem_packet_size-1; i++) {    
+    for (uint8_t i=0; i<telem_packet_size-1; i++) {
         crc = crc8_dvb(buf[i], crc, 0x07);
     }
 

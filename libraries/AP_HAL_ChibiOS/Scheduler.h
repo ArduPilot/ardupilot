@@ -119,7 +119,7 @@ public:
       used to suppress error messages
      */
     bool in_expected_delay(void) const override;
-    
+
     /*
       disable interrupts and return a context that can be used to
       restore the interrupt state. This can be used to protect

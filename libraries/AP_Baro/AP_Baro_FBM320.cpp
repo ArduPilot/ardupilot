@@ -130,7 +130,7 @@ bool AP_Baro_FBM320::init()
 
     dev->set_device_type(DEVTYPE_BARO_FBM320);
     set_bus_id(instance, dev->get_bus_id());
-    
+
     dev->get_semaphore()->give();
 
     // request 50Hz update

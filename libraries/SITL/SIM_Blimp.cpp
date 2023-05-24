@@ -51,14 +51,14 @@ void Blimp::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
   for (uint8_t i=0; i<4; i++) {
     fin[i].last_angle = fin[i].angle;
     fin[i].angle = filtered_servo_angle(input, i)*radians(75.0f); //for servo range of -75 deg to +75 deg
-    
+
     if (fin[i].angle < fin[i].last_angle) fin[i].dir = 0; //thus 0 = "angle is reducing"
     else fin[i].dir = 1;
-    
+
     fin[i].vel = (fin[i].angle - fin[i].last_angle)/delta_time; //rad/s
     fin[i].vel = constrain_float(fin[i].vel, radians(-450), radians(450));
     fin[i].T = pow(fin[i].vel,2) * k_tan;
-    
+
     fin[i].Fx = 0;
     fin[i].Fy = 0;
     fin[i].Fz = 0;
@@ -81,7 +81,7 @@ void Blimp::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
   fin[3].Fy =  fin[3].T*cos(fin[3].angle); //causes right movement
   fin[3].Fx = -fin[3].T*sin(fin[3].angle); //causes yaw
 
-  Vector3f force_bf{0,0,0}; 
+  Vector3f force_bf{0,0,0};
   for (uint8_t i=0; i<4; i++) {
     force_bf.x = force_bf.x + fin[i].Fx;
     force_bf.y = force_bf.y + fin[i].Fy;
@@ -144,7 +144,7 @@ void Blimp::update(const struct sitl_input &input)
     // add lifting force exactly equal to gravity, for neutral buoyancy
     accel_body += dcm.transposed() * Vector3f(0,0,-GRAVITY_MSS);
   }
-  
+
   Vector3f accel_earth = dcm * accel_body;
   accel_earth += Vector3f(0.0f, 0.0f, GRAVITY_MSS); //add gravity
   velocity_ef += accel_earth * delta_time;

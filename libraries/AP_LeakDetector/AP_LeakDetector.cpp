@@ -25,7 +25,7 @@ const AP_Param::GroupInfo AP_LeakDetector::var_info[] = {
     // @Values: -1:Disabled,0:Analog,1:Digital
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("1_TYPE", 7, AP_LeakDetector, _type[0], DISABLED), 
+    AP_GROUPINFO("1_TYPE", 7, AP_LeakDetector, _type[0], DISABLED),
 
 #if LEAKDETECTOR_MAX_INSTANCES > 1
     // @Param: 2_PIN

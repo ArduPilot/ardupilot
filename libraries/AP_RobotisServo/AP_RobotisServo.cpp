@@ -122,7 +122,7 @@ const AP_Param::GroupInfo AP_RobotisServo::var_info[] = {
     // @Range: 0 4095
     // @User: Standard
     AP_GROUPINFO("POSMAX",  2, AP_RobotisServo, pos_max, 4095),
-    
+
     AP_GROUPEND
 };
 
@@ -151,7 +151,7 @@ void AP_RobotisServo::add_stuffing(uint8_t *packet)
 {
     int packet_length_in = DXL_MAKEWORD(packet[PKT_LENGTH_L], packet[PKT_LENGTH_H]);
     int packet_length_out = packet_length_in;
-  
+
     if (packet_length_in < 8) {
         // INSTRUCTION, ADDR_L, ADDR_H, CRC16_L, CRC16_H + FF FF FD
         return;
@@ -165,12 +165,12 @@ void AP_RobotisServo::add_stuffing(uint8_t *packet)
             packet_length_out++;
         }
     }
-  
+
     if (packet_length_in == packet_length_out) {
         // no stuffing required
         return;
     }
-  
+
     uint16_t out_index  = packet_length_out + 6 - 2;  // last index before crc
     uint16_t in_index   = packet_length_in + 6 - 2;   // last index before crc
 
@@ -357,7 +357,7 @@ void AP_RobotisServo::update()
         last_send_us = AP_HAL::micros();
         return;
     }
-    
+
     if (port == nullptr) {
         return;
     }

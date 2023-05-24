@@ -378,7 +378,7 @@ bool AC_PolyFence_loader::read_polygon_from_storage(const Location &origin, uint
         if (!scale_latlon_from_origin(origin, *next_storage_point_lla, *next_storage_point)) {
             return false;
         }
-        
+
         next_storage_point_lla++;
         next_storage_point++;
     }
@@ -948,7 +948,7 @@ bool AC_PolyFence_loader::check_inclusion_circle_margin(float margin) const
         if (circle.radius < margin) {
             // circle radius should never be less than margin
             return false;
-        } 
+        }
     }
     return true;
 }

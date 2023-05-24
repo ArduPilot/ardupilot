@@ -54,7 +54,7 @@ public:
 
     // check settings are valid
     bool arming_checks(size_t buflen, char *buffer) const;
-    
+
 private:
 
     static AP_Button *_singleton;
@@ -117,7 +117,7 @@ private:
 
     // has the timer been installed?
     bool initialised:1;
-    
+
     // called by timer thread
     void timer_update(void);
 

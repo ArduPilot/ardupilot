@@ -16,7 +16,7 @@ public:
     AP_LandingGear() {
         // setup parameter defaults
         AP_Param::setup_object_defaults(this, var_info);
-        
+
         if (_singleton != nullptr) {
             AP_HAL::panic("AP_LandingGear must be singleton");
         }
@@ -25,7 +25,7 @@ public:
 
     /* Do not allow copies */
     CLASS_NO_COPY(AP_LandingGear);
-    
+
     // get singleton instance
     static AP_LandingGear *get_singleton(void) {
         return _singleton;
@@ -49,7 +49,7 @@ public:
 
     /// returns true if the landing gear is deployed
     bool deployed();
-    
+
     enum LG_LandingGear_State {
         LG_UNKNOWN = -1,
         LG_RETRACTED = 0,
@@ -59,7 +59,7 @@ public:
         };
     /// returns detailed state of gear
     LG_LandingGear_State get_state();
-    
+
     enum LG_WOW_State {
         LG_WOW_UNKNOWN = -1,
         LG_NO_WOW = 0,
@@ -70,14 +70,14 @@ public:
 
     /// set landing gear position to retract, deploy or deploy-and-keep-deployed
     void set_position(LandingGearCommand cmd);
-    
+
     uint32_t get_gear_state_duration_ms() const;
     uint32_t get_wow_state_duration_ms() const;
 
     static const struct AP_Param::GroupInfo        var_info[];
-    
+
     void update(float height_above_ground_m);
-    
+
     bool check_before_land(void);
 
     // retract after takeoff or deploy for landing depending on the OPTIONS parameter
@@ -88,7 +88,7 @@ private:
     // Parameters
     AP_Int8     _enable;
     AP_Int8     _startup_behaviour;     // start-up behaviour (see LandingGearStartupBehaviour)
-    
+
     AP_Int8     _pin_deployed;
     AP_Int8     _pin_deployed_polarity;
     AP_Int8     _pin_weight_on_wheels;
@@ -108,17 +108,17 @@ private:
     bool        _have_changed;          // have we changed the servo state?
 
     int16_t     _last_height_above_ground;
-    
+
     // debounce
     LG_WOW_State wow_state_current = LG_WOW_UNKNOWN;
     uint32_t last_wow_event_ms;
-    
+
     LG_LandingGear_State gear_state_current = LG_UNKNOWN;
     uint32_t last_gear_event_ms;
 
     /// retract - retract landing gear
     void retract();
-    
+
     /// deploy - deploy the landing gear
     void deploy();
 

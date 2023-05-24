@@ -22,7 +22,7 @@
 #define EPM_RETURN_TO_NEUTRAL_MS    500         // EPM PWM returns to neutral position this many milliseconds after grab or release
 
 /// @class  AP_Gripper_EPM
-/// @brief  Class to manage the EPM_CargoGripper 
+/// @brief  Class to manage the EPM_CargoGripper
 class AP_Gripper_EPM : public AP_Gripper_Backend {
 public:
     AP_Gripper_EPM(struct AP_Gripper::Backend_Config &_config);

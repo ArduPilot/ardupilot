@@ -65,7 +65,7 @@ protected:
 
     // get ADDR parameter value
     uint8_t get_address(void) const { return frontend._address; }
-    
+
     // semaphore for access to shared frontend data
     HAL_Semaphore _sem;
 };

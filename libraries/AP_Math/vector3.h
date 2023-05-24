@@ -156,7 +156,7 @@ public:
     T dot(const Vector3<T> &v) const {
         return *this * v;
     }
-    
+
     // multiply a row vector by a matrix, to give a row vector
     Vector3<T> row_times_mat(const Matrix3<T> &m) const;
 
@@ -175,7 +175,7 @@ public:
     Vector3<T> scale(const T v) const {
         return *this * v;
     }
-    
+
     // computes the angle between this vector and another vector
     T angle(const Vector3<T> &v2) const;
 
@@ -322,7 +322,7 @@ template<> inline bool Vector3<double>::is_zero(void) const {
     return ::is_zero(x) && ::is_zero(y) && ::is_zero(z);
 }
 
-// The creation of temporary vector objects as return types creates a significant overhead in certain hot 
+// The creation of temporary vector objects as return types creates a significant overhead in certain hot
 // code paths. This allows callers to select the inline versions where profiling shows a significant benefit
 #if defined(AP_INLINE_VECTOR_OPS) && !defined(HAL_DEBUG_BUILD)
 

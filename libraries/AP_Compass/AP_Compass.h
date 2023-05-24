@@ -157,7 +157,7 @@ public:
 
     // return the number of enabled sensors
     uint8_t get_num_enabled(void) const;
-    
+
     /// Return the current field as a Vector3f in milligauss
     const Vector3f &get_field(uint8_t i) const { return _get_state(Priority(i)).field; }
     const Vector3f &get_field(void) const { return get_field(_first_usable); }
@@ -300,7 +300,7 @@ public:
         _per_motor.set_voltage(voltage);
     }
 #endif
-    
+
     /// Returns True if the compasses have been configured (i.e. offsets saved)
     ///
     /// @returns                    True if compass has been configured
@@ -337,7 +337,7 @@ public:
             _learn.set((int8_t)type);
         }
     }
-    
+
     // return maximum allowed compass offsets
     uint16_t get_offsets_max(void) const {
         return (uint16_t)_offset_max.get();
@@ -409,7 +409,7 @@ private:
       off-diagonals removed
     */
     bool get_uncorrected_field(uint8_t instance, Vector3f &field) const;
-    
+
 #if COMPASS_CAL_ENABLED
     //keep track of which calibrators have been saved
     RestrictIDTypeArray<bool, COMPASS_MAX_INSTANCES, Priority> _cal_saved;
@@ -483,7 +483,7 @@ private:
     };
 
     bool _driver_enabled(enum DriverType driver_type);
-    
+
     // backend objects
     AP_Compass_Backend *_backends[COMPASS_MAX_BACKEND];
     uint8_t     _backend_count;
@@ -586,8 +586,8 @@ private:
     // Update Priority List for Mags, by default, we just
     // load them as they come up the first time
     Priority _update_priority_list(int32_t dev_id);
-    
-    // method to check if the mag with the devid 
+
+    // method to check if the mag with the devid
     // is a replacement mag
     bool is_replacement_mag(uint32_t dev_id);
 
@@ -618,7 +618,7 @@ private:
     // per-motor compass compensation
     Compass_PerMotor _per_motor{*this};
 #endif
-    
+
     AP_Float _calibration_threshold;
 
     // mask of driver types to not load. Bit positions match DEVTYPE_ in backend

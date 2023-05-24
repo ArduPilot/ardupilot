@@ -195,7 +195,7 @@ public:
 
         // 97: RSSI
         k_param_rssi = 97,
-                
+
         //
         // 100: Inertial Nav
         //
@@ -537,7 +537,7 @@ public:
 
     // whether to enforce acceptance of packets only from sysid_my_gcs
     AP_Int8 sysid_enforce;
-    
+
 #if ADVANCED_FAILSAFE == ENABLED
     // advanced failsafe library
     AP_AdvancedFailsafe_Copter afs;
@@ -555,7 +555,7 @@ public:
 
     // RC input channels
     RC_Channels_Copter rc_channels;
-    
+
     // control over servo output ranges
     SRV_Channels servo_channels;
 

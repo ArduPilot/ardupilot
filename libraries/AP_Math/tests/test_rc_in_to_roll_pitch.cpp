@@ -33,7 +33,7 @@ TEST(RC2RPTest, Axes) {
     float pitch_in[] = {-1,  1,  0,  0,  0.0,  0.5, 0};
     float roll_val_deg[] = {0,
                             0,
-                            0, 
+                            0,
                             -angle_max_deg,
                             angle_max_deg/2,
                             0,

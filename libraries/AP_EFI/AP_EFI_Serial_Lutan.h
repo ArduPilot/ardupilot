@@ -25,7 +25,7 @@
 #include "AP_EFI_Backend.h"
 
 class AP_EFI_Serial_Lutan: public AP_EFI_Backend {
-    
+
 public:
     // Constructor with initialization
     AP_EFI_Serial_Lutan(AP_EFI &_frontend);

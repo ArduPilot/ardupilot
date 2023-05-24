@@ -30,13 +30,13 @@ public:
 
     // clear previous packet
     void clear_packet(void);
-    
+
     // return length of found packet
     uint16_t get_len(const uint8_t *&bytes) const;
 
     // return ID of found packet
     uint16_t get_id(void) const;
-    
+
 private:
     const uint8_t RTCMv3_PREAMBLE = 0xD3;
 
@@ -51,7 +51,7 @@ private:
 
     // length of found packet
     uint16_t found_len;
-    
+
     bool parse(void);
     void resync(void);
 };

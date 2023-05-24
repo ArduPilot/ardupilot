@@ -196,7 +196,7 @@ public:
 
     // allow for landing descent rate to be overridden by a script, may be -ve to climb
     virtual bool set_land_descent_rate(float descent_rate) { return false; }
-    
+
     // control outputs enumeration
     enum class ControlOutput {
         Roll = 1,

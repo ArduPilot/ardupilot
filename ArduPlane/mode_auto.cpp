@@ -14,7 +14,7 @@ bool ModeAuto::_enter()
             return false;
         }
     }
-    
+
     if (plane.quadplane.available() && plane.quadplane.enable == 2) {
         plane.auto_state.vtol_mode = true;
     } else {

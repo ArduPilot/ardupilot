@@ -344,7 +344,7 @@ void Copter::parachute_release()
 }
 
 // parachute_manual_release - trigger the release of the parachute, after performing some checks for pilot error
-//   checks if the vehicle is landed 
+//   checks if the vehicle is landed
 void Copter::parachute_manual_release()
 {
     // exit immediately if parachute is not enabled

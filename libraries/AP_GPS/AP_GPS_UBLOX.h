@@ -28,7 +28,7 @@
 #include <AP_HAL/AP_HAL.h>
 
 /*
- *  try to put a UBlox into binary mode. This is in two parts. 
+ *  try to put a UBlox into binary mode. This is in two parts.
  *
  * First we send a ubx binary message that enables the NAV_SOL message
  * at rate 1. Then we send a NMEA message to set the baud rate to our
@@ -162,7 +162,7 @@ public:
 
     // ublox specific healthy checks
     bool is_healthy(void) const override;
-    
+
 private:
     // u-blox UBX protocol essentials
     struct PACKED ubx_header {
@@ -387,24 +387,24 @@ private:
         uint32_t res2;
     };
     struct PACKED ubx_nav_pvt {
-        uint32_t itow; 
-        uint16_t year; 
-        uint8_t month, day, hour, min, sec; 
-        uint8_t valid; 
-        uint32_t t_acc; 
-        int32_t nano; 
-        uint8_t fix_type; 
-        uint8_t flags; 
-        uint8_t flags2; 
-        uint8_t num_sv; 
-        int32_t lon, lat; 
+        uint32_t itow;
+        uint16_t year;
+        uint8_t month, day, hour, min, sec;
+        uint8_t valid;
+        uint32_t t_acc;
+        int32_t nano;
+        uint8_t fix_type;
+        uint8_t flags;
+        uint8_t flags2;
+        uint8_t num_sv;
+        int32_t lon, lat;
         int32_t h_ellipsoid, h_msl;
-        uint32_t h_acc, v_acc; 
-        int32_t velN, velE, velD, gspeed; 
-        int32_t head_mot; 
-        uint32_t s_acc; 
-        uint32_t head_acc; 
-        uint16_t p_dop; 
+        uint32_t h_acc, v_acc;
+        int32_t velN, velE, velD, gspeed;
+        int32_t head_mot;
+        uint32_t s_acc;
+        uint32_t head_acc;
+        uint16_t p_dop;
         uint8_t flags3;
         uint8_t reserved1[5];
         int32_t headVeh;
@@ -782,7 +782,7 @@ private:
     bool _cfg_needs_save;
 
     bool noReceivedHdop;
-    
+
     bool havePvtMsg;
 
     bool        _configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);

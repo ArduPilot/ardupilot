@@ -261,7 +261,7 @@ void AP_AHRS::update_AOA_SSA(void)
         return;
     }
     _last_AOA_update_ms = now;
-    
+
     Vector3f aoa_velocity, aoa_wind;
 
     // get velocity and wind

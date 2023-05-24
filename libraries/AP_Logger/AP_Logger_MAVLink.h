@@ -1,4 +1,4 @@
-/* 
+/*
    AP_Logger logging - MAVLink variant
 
    - transfers blocks of the open log file to a client using MAVLink
@@ -94,7 +94,7 @@ private:
     bool send_log_blocks_from_queue(dm_block_queue_t &queue);
     uint8_t stack_size(struct dm_block *stack);
     uint8_t queue_size(dm_block_queue_t queue);
-    
+
     struct dm_block *_blocks_free;
     dm_block_queue_t _blocks_sent;
     dm_block_queue_t _blocks_pending;
@@ -136,7 +136,7 @@ private:
     // of the logs, but low enough that we don't spend way too much
     // time packing messages in any one loop
     const uint8_t _max_blocks_per_send_blocks;
-    
+
     uint32_t _next_seq_num;
     uint16_t _latest_block_len;
     uint32_t _last_response_time;
@@ -157,7 +157,7 @@ private:
 
     void periodic_10Hz(uint32_t now) override;
     void periodic_1Hz() override;
-    
+
     void stats_init();
     void stats_reset();
     void stats_collect();

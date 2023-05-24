@@ -62,7 +62,7 @@ bool RCOutput::dshot_send_command(pwm_group& group, uint8_t command, uint8_t cha
         pwmStart(group.pwm_drv, &group.pwm_cfg);
         group.pwm_started = true;
     }
-#endif    
+#endif
 
     memset((uint8_t *)group.dma_buffer, 0, DSHOT_BUFFER_LENGTH);
 

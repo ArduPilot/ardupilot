@@ -373,7 +373,7 @@ void AP_InertialSensor_Invensense::start()
         // this avoids a sensor bug, see description above
         _register_write(MPUREG_ICM_UNDOC1, MPUREG_ICM_UNDOC1_VALUE, true);
     }
-    
+
     // configure interrupt to fire when new data arrives
     _register_write(MPUREG_INT_ENABLE, BIT_RAW_RDY_EN);
     hal.scheduler->delay(1);
@@ -382,7 +382,7 @@ void AP_InertialSensor_Invensense::start()
     // until we clear the interrupt. We don't do this for the 20789 as
     // that sensor has already setup the appropriate config inside the
     // baro driver.
-    if (_mpu_type != Invensense_ICM20789) {    
+    if (_mpu_type != Invensense_ICM20789) {
         uint8_t v = _register_read(MPUREG_INT_PIN_CFG) | BIT_INT_RD_CLEAR | BIT_LATCH_INT_EN;
         v &= BIT_BYPASS_EN;
         _register_write(MPUREG_INT_PIN_CFG, v);
@@ -427,7 +427,7 @@ void AP_InertialSensor_Invensense::start()
     // setup scale factors for fifo data after downsampling
     _fifo_accel_scale = _accel_scale / _accel_fifo_downsample_rate;
     _fifo_gyro_scale = _gyro_scale / _gyro_fifo_downsample_rate;
-    
+
     // allocate fifo buffer
     _fifo_buffer = (uint8_t *)hal.util->malloc_type(MPU_FIFO_BUFFER_LEN * MPU_SAMPLE_SIZE, AP_HAL::Util::MEM_DMA_SAFE);
     if (_fifo_buffer == nullptr) {
@@ -584,7 +584,7 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
 #if INVENSENSE_EXT_SYNC_ENABLE
         fsync_set = (int16_val(data, 2) & 1U) != 0;
 #endif
-        
+
         accel = Vector3f(int16_val(data, 1),
                          int16_val(data, 0),
                          -int16_val(data, 2));
@@ -604,7 +604,7 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
             }
         }
         float temp = t2 * temp_sensitivity + temp_zero;
-        
+
         gyro = Vector3f(int16_val(data, 5),
                         int16_val(data, 4),
                         -int16_val(data, 6));
@@ -635,7 +635,7 @@ bool AP_InertialSensor_Invensense::_accumulate_sensor_rate_sampling(uint8_t *sam
     const int32_t unscaled_clip_limit = _clip_limit / _accel_scale;
     bool clipped = false;
     bool ret = true;
-    
+
     for (uint8_t i = 0; i < n_samples; i++) {
         const uint8_t *data = samples + MPU_SAMPLE_SIZE * i;
 
@@ -711,7 +711,7 @@ bool AP_InertialSensor_Invensense::_accumulate_sensor_rate_sampling(uint8_t *sam
         float temp = (static_cast<float>(tsum)/n_samples)*temp_sensitivity + temp_zero;
         _temp_filtered = _temp_filter.apply(temp);
     }
-    
+
     return ret;
 }
 
@@ -755,7 +755,7 @@ void AP_InertialSensor_Invensense::_read_fifo()
             n_samples = 24;
         }
     }
-    
+
     while (n_samples > 0) {
         uint8_t n = MIN(n_samples, MPU_FIFO_BUFFER_LEN);
         if (!_dev->set_chip_select(true)) {
@@ -799,7 +799,7 @@ void AP_InertialSensor_Invensense::_read_fifo()
         //debug("fifo reset n_samples %u", bytes_read/MPU_SAMPLE_SIZE);
         _fifo_reset(false);
     }
-    
+
 check_registers:
     // check next register value for correctness
 
@@ -884,7 +884,7 @@ void AP_InertialSensor_Invensense::_set_filter_register(void)
     _gyro_fifo_downsample_rate = _accel_fifo_downsample_rate = 1;
     _gyro_to_accel_sample_ratio = 2;
     _gyro_backend_rate_hz = _accel_backend_rate_hz =  1000;
-    
+
     if (enable_fast_sampling(_accel_instance)) {
         _fast_sampling = _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
         if (_fast_sampling) {
@@ -930,7 +930,7 @@ void AP_InertialSensor_Invensense::_set_filter_register(void)
             _register_write(MPUREG_I2C_SLV4_CTRL, 0x1F);
         }
     }
-    
+
     if (_fast_sampling) {
         // this gives us 8kHz sampling on gyros and 4kHz on accels
         config |= BITS_DLPF_CFG_256HZ_NOLPF2;
@@ -970,7 +970,7 @@ bool AP_InertialSensor_Invensense::_check_whoami(void)
     case MPU_WHOAMI_MPU9255:
         _mpu_type = Invensense_MPU9250;
         return true;
-    case MPU_WHOAMI_20608D:    
+    case MPU_WHOAMI_20608D:
     case MPU_WHOAMI_20608G:
         _mpu_type = Invensense_ICM20608;
         return true;
@@ -1000,7 +1000,7 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
     // setup for register checking. We check much less often on I2C
     // where the cost of the checks is higher
     _dev->setup_checked_registers(13, _dev->bus_type() == AP_HAL::Device::BUS_TYPE_I2C?200:20);
-    
+
     // initially run the bus at low speed
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
 
@@ -1210,7 +1210,7 @@ void AP_Invensense_AuxiliaryBus::_configure_slaves()
         // on 20789 we can't enable slaves if we want to be able to use the baro
         return;
     }
-    
+
     WITH_SEMAPHORE(backend._dev->get_semaphore());
 
     /* Enable the I2C master to slaves on the auxiliary I2C bus*/

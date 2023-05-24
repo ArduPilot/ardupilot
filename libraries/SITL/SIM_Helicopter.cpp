@@ -469,7 +469,7 @@ void Helicopter::pull_from_buffer(uint16_t servos_delayed[6])
         return;
     }
     servos_delayed[0] = sample.servo1;
-    servos_delayed[1] = sample.servo2; 
+    servos_delayed[1] = sample.servo2;
     servos_delayed[2] = sample.servo3;
     servos_delayed[3] = sample.servo4;
     servos_delayed[4] = sample.servo5;

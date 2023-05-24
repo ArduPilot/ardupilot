@@ -41,7 +41,7 @@ float ICEngine::update(const struct sitl_input &input)
     uint64_t now = AP_HAL::micros64();
     float dt = (now - last_update_us) * 1.0e-6f;
     float max_change = slew_rate * 0.01f * dt;
-    
+
     if (!have_starter) {
         // always on
         last_output = throttle_demand;
@@ -54,7 +54,7 @@ float ICEngine::update(const struct sitl_input &input)
                (unsigned)state.starter,
                (unsigned)state.ignition);
     }
-    
+
     if (have_ignition && !state.ignition) {
         // engine is off
         if (!state.starter) {
@@ -88,7 +88,7 @@ float ICEngine::update(const struct sitl_input &input)
         uint32_t starter_time_us = (now - start_time_us);
         if (starter_time_us > 3000*1000UL && !overheat) {
             overheat = true;
-            printf("Starter overheat\n");            
+            printf("Starter overheat\n");
         }
     } else {
         overheat = false;
@@ -102,7 +102,7 @@ output:
 
     last_output = constrain_float(throttle_demand, last_output-max_change, last_output+max_change);
     last_output = constrain_float(last_output, 0, 1);
-    
+
     last_update_us = now;
     last_state = state;
     return last_output;

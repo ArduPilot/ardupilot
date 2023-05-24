@@ -99,7 +99,7 @@ public:
     bool    get_mode(uint8_t pin, uint32_t &mode) override;
     void    set_mode(uint8_t pin, uint32_t mode) override;
 #endif
-    
+
 private:
     bool _usb_connected;
     bool _ext_started;

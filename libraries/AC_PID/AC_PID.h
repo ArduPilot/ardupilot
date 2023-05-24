@@ -123,7 +123,7 @@ public:
     // single user of AC_PID by adding the parameter in the param
     // table of the parent class. It is made public for this reason
     AP_Float _slew_rate_tau;
-    
+
 protected:
 
     // parameters

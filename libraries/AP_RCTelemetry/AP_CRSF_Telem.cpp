@@ -943,10 +943,10 @@ void AP_CRSF_Telem::calc_flight_mode()
     if (notify) {
         // Note: snprintf() always terminates the string
         hal.util->snprintf(
-            _telem.bcast.flightmode.flight_mode, 
-            sizeof(AP_CRSF_Telem::FlightModeFrame), 
-            "%s%s", 
-            notify->get_flight_mode_str(), 
+            _telem.bcast.flightmode.flight_mode,
+            sizeof(AP_CRSF_Telem::FlightModeFrame),
+            "%s%s",
+            notify->get_flight_mode_str(),
             rc().crsf_fm_disarm_star() && !hal.util->get_soft_armed() ? "*" : ""
         );
         // Note: strlen(_telem.bcast.flightmode.flight_mode) is safe because called on a guaranteed null terminated string

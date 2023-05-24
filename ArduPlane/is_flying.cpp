@@ -229,7 +229,7 @@ void Plane::crash_detection_update(void)
             if (!crash_state.checkedHardLanding && // only check once
                 been_auto_flying &&
                 (labs(ahrs.roll_sensor) > 6000 || labs(ahrs.pitch_sensor) > 6000)) {
-                
+
                 crashed = true;
 
                 // did we "crash" within 75m of the landing location? Probably just a hard landing

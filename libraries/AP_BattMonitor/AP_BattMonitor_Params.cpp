@@ -17,7 +17,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("MONITOR", 1, AP_BattMonitor_Params, _type, int8_t(AP_BattMonitor::Type::NONE), AP_PARAM_FLAG_ENABLE),
-    
+
     // 2 was VOLT_PIN
 
     // 3 was CURR_PIN

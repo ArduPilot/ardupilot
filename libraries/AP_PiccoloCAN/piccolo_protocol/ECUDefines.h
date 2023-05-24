@@ -16,7 +16,7 @@
  *
  * Author: Oliver Walters / Currawong Engineering Pty Ltd
  */
- 
+
 
 #ifndef _ECUDEFINES_H
 #define _ECUDEFINES_H
@@ -169,9 +169,9 @@ int decodeECU_ThrottleCurveConfigBits_t(const uint8_t* data, int* bytecount, ECU
 
 typedef struct
 {
-    uint16_t powerCycles;          
+    uint16_t powerCycles;
     uint16_t customerID_deprecated; //!< Deprecated - DO NOT USE
-    uint8_t  versionHardware;      
+    uint8_t  versionHardware;
     uint8_t  reservedA;             //!< reserved for future use
     uint8_t  reservedB;             //!< reserved for future use
 }ECU_ECUSettings_t;

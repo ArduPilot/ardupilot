@@ -36,7 +36,7 @@ void stm32_timer_set_channel_input(stm32_tim_t *tim, uint8_t channel, uint8_t in
 void show_stack_usage(void);
 #endif
 
-// allocation functions in malloc.c    
+// allocation functions in malloc.c
 size_t mem_available(void);
 void *malloc_dma(size_t size);
 void *malloc_axi_sram(size_t size);
@@ -54,12 +54,12 @@ uint8_t malloc_get_heaps(memory_heap_t **_heaps, const struct memory_region **re
 
 // flush all dcache
 void memory_flush_all(void);
-    
-// UTC system clock handling    
+
+// UTC system clock handling
 void stm32_set_utc_usec(uint64_t time_utc_usec);
 uint64_t stm32_get_utc_usec(void);
 
-// hook for FAT timestamps    
+// hook for FAT timestamps
 uint32_t get_fattime(void);
 
 /*
@@ -86,7 +86,7 @@ enum rtc_boot_magic {
     RTC_BOOT_CANBL = 0xb0080000, // ORd with 8 bit local node ID
     RTC_BOOT_FWOK = 0xb0093a26 // indicates FW ran for 30s
 };
-    
+
 // see if RTC registers is setup for a fast reboot
 enum rtc_boot_magic check_fast_reboot(void);
 

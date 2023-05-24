@@ -64,7 +64,7 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("DELAY_MS", 5, AP_Parachute, _delay_ms, AP_PARACHUTE_RELEASE_DELAY_MS),
-    
+
     // @Param: CRT_SINK
     // @DisplayName: Critical sink speed rate in m/s to trigger emergency parachute
     // @Description: Release parachute when critical sink rate is reached

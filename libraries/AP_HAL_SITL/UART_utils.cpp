@@ -51,7 +51,7 @@ bool HALSITL::UARTDriver::set_speed(int speed) const
     if (ioctl(_fd, TCGETS2, &tc) == -1) {
         return false;
     }
-    
+
     /* speed is configured by c_[io]speed */
     tc.c_cflag &= ~CBAUD;
     tc.c_cflag |= BOTHER;

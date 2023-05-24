@@ -65,7 +65,7 @@ private:
     bool is_xplane12(void) const {
         return xplane_version / 10000 >= 12;
     }
-    
+
     const char *xplane_ip = "127.0.0.1";
     uint16_t xplane_port = 49000;
     uint16_t bind_port = 49001;

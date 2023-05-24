@@ -342,7 +342,7 @@ void AP_DroneCAN_DNA_Server::addToSeenNodeMask(uint8_t node_id)
 }
 
 /* Run through the list of seen node ids for verification no more
-than once per 5 second. We continually verify the nodes in our 
+than once per 5 second. We continually verify the nodes in our
 seen list, So that we can raise issue if there are duplicates
 on the bus. */
 void AP_DroneCAN_DNA_Server::verify_nodes()
@@ -357,7 +357,7 @@ void AP_DroneCAN_DNA_Server::verify_nodes()
         last_logging_count = log_count;
         logged.clearall();
     }
-    
+
     //Check if we got acknowledgement from previous request
     //except for requests using our own node_id
     if (curr_verifying_node == self_node_id) {
@@ -566,7 +566,7 @@ void AP_DroneCAN_DNA_Server::handleAllocation(const CanardRxTransfer& transfer, 
         } else {
             rsp.node_id = resp_node_id;
         }
-        //reset states as well        
+        //reset states as well
         rcvd_unique_id_offset = 0;
         memset(rcvd_unique_id, 0, sizeof(rcvd_unique_id));
     }

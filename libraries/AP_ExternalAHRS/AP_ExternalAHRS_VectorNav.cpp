@@ -670,7 +670,7 @@ void AP_ExternalAHRS_VectorNav::process_packet_VN_100(const uint8_t *b)
                        AP_HAL::micros64(),
                        pkt.temp, pkt.pressure*1e3,
                        use_uncomp ? pkt.uncompMag[0] : pkt.mag[0],
-                       use_uncomp ? pkt.uncompMag[1] : pkt.mag[1], 
+                       use_uncomp ? pkt.uncompMag[1] : pkt.mag[1],
                        use_uncomp ? pkt.uncompMag[2] : pkt.mag[2],
                        state.accel[0], state.accel[1], state.accel[2],
                        state.gyro[0], state.gyro[1], state.gyro[2],

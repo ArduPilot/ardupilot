@@ -493,4 +493,4 @@ void AP_Baro_ICP201XX::update()
     }
 }
 
-#endif  // AP_BARO_ICP201XX_ENABLED 
+#endif  // AP_BARO_ICP201XX_ENABLED

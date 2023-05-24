@@ -163,7 +163,7 @@ public:
     void check_next_register(void) override {
         _dev->check_next_register();
     }
-    
+
 private:
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 };
@@ -180,7 +180,7 @@ public:
     bool register_write(uint8_t reg, uint8_t val, bool checked) override;
 
     AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb) override;
-    
+
     AP_HAL::Semaphore  *get_semaphore() override;
 
     bool configure() override;
@@ -191,7 +191,7 @@ public:
 
     // return 24 bit bus identifier
     uint32_t get_bus_id(void) const override;
-    
+
 private:
     AuxiliaryBus *_bus;
     AuxiliaryBusSlave *_slave;

@@ -132,7 +132,7 @@ FlightAxis::FlightAxis(const char *frame_str) :
         printf("Failed to create socket_creator thread\n");
     }
 }
-    
+
 /*
   extremely primitive SOAP parser that assumes the format used by FlightAxis
 */
@@ -430,7 +430,7 @@ void FlightAxis::update(const struct sitl_input &input)
     }
 
     extrapolated_s = 0;
-    
+
     if (initial_time_s <= 0) {
         dt_seconds = 0.001f;
         initial_time_s = state.m_currentPhysicsTime_SEC - dt_seconds;

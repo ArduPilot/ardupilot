@@ -25,7 +25,7 @@ const AP_Param::GroupInfo AC_CustomControl_PID::var_info[] = {
     // @Description: Yaw axis angle controller P gain.  Converts the error between the desired yaw angle and actual angle to a desired yaw rate
     // @Range: 3.000 12.000
     // @Range{Sub}: 0.0 6.000
-    // @User: Standard    
+    // @User: Standard
     AP_SUBGROUPINFO(_p_angle_yaw2, "ANG_YAW_", 3, AC_CustomControl_PID, AC_P),
 
 
@@ -297,7 +297,7 @@ Vector3f AC_CustomControl_PID::update()
 }
 
 // This example uses exact same controller architecture as ArduCopter attitude controller without all the safe guard against saturation.
-// The gains are scaled 0.9 times to better detect switch over response. 
+// The gains are scaled 0.9 times to better detect switch over response.
 // Note that integrator are not reset correctly as it is done in reset_main_att_controller inside AC_CustomControl.cpp
 // This is done intentionally to demonstrate switch over performance of two exact controller with different reset handling.
 void AC_CustomControl_PID::reset(void)

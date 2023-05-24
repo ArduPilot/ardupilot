@@ -97,7 +97,7 @@ uint16_t native_millis16()
 {
     return native_millis64() & 0xFFFF;
 }
-    
+
 
 uint64_t native_micros64()
 {

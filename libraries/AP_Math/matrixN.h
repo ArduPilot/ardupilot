@@ -14,13 +14,13 @@ class VectorN;
 
 template <typename T, uint8_t N>
 class MatrixN {
-  
+
     friend class VectorN<T,N>;
 
 public:
     // constructor from zeros
     MatrixN(void) {
-        memset(v, 0, sizeof(v));        
+        memset(v, 0, sizeof(v));
     }
 
     // constructor from 4 diagonals
@@ -39,7 +39,7 @@ public:
 
     // add B to the matrix
     MatrixN<T,N> &operator +=(const MatrixN<T,N> &B);
-    
+
     // Matrix symmetry routine
     void force_symmetry(void);
 

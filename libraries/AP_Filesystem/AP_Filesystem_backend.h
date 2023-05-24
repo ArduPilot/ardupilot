@@ -32,7 +32,7 @@ public:
 
     FileData(void *_backend) :
         backend(_backend) {}
-    
+
     // destructor to free data
     ~FileData();
 private:

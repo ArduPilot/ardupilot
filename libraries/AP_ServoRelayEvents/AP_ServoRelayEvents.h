@@ -36,7 +36,7 @@ private:
     static AP_ServoRelayEvents *_singleton;
 
     // event control state
-    enum event_type { 
+    enum event_type {
         EVENT_TYPE_RELAY=0,
         EVENT_TYPE_SERVO=1
     };

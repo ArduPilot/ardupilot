@@ -297,7 +297,7 @@ bool AP_Filesystem_Param::token_seek(const struct rfile &r, const uint32_t data_
         c.trailer_len -= n;
         c.token_ofs += n;
     }
-    
+
     while (data_ofs != c.token_ofs) {
         uint32_t available = data_ofs - c.token_ofs;
         uint8_t tbuf[max_pack_len];

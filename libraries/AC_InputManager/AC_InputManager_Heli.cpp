@@ -10,7 +10,7 @@ const AP_Param::GroupInfo AC_InputManager_Heli::var_info[] = {
     // parameters from parent vehicle
     AP_NESTEDGROUPINFO(AC_InputManager, 0),
 
-    // Indicies 1-4 (STAB_COL_1 thru STAB_COL_4) have been replaced. 
+    // Indicies 1-4 (STAB_COL_1 thru STAB_COL_4) have been replaced.
 
     // @Param: ACRO_COL_EXP
     // @DisplayName: Acro Mode Collective Expo
@@ -81,7 +81,7 @@ float AC_InputManager_Heli::get_pilot_desired_collective(int16_t control_in)
         slope_high = _heli_stab_col_max * 0.01f;
         slope_range = 0.4f;
         slope_run = (control_in - 600) * 0.001f;  // control_in ranges from 0 to 1000
-    }    
+    }
 
     scalar = (slope_high - slope_low)/slope_range;
     stab_col_out = slope_low + slope_run * scalar;

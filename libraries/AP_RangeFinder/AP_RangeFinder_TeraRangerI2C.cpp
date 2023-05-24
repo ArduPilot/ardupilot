@@ -186,7 +186,7 @@ void AP_RangeFinder_TeraRangerI2C::update(void)
         state.last_reading_ms = AP_HAL::millis();
         accum.sum = 0;
         accum.count = 0;
-        update_status();        
+        update_status();
     } else if (AP_HAL::millis() - state.last_reading_ms > 200) {
         set_status(RangeFinder::Status::NoData);
     }

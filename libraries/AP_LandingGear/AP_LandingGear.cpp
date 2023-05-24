@@ -109,7 +109,7 @@ void AP_LandingGear::init()
     }
 #endif
 
-    if (!_enable.configured() && (SRV_Channels::function_assigned(SRV_Channel::k_landing_gear_control) || 
+    if (!_enable.configured() && (SRV_Channels::function_assigned(SRV_Channel::k_landing_gear_control) ||
             (_pin_deployed > 0) || (_pin_weight_on_wheels > 0))) {
         // if not configured set enable param if output servo or sense pins are defined
         _enable.set_and_save(1);
@@ -262,7 +262,7 @@ void AP_LandingGear::update(float height_above_ground_m)
         }
     } else {
         LG_LandingGear_State gear_state_new;
-        
+
         if (_deployed) {
             gear_state_new = (deployed() == true ? LG_DEPLOYED : LG_DEPLOYING);
         } else {
@@ -272,7 +272,7 @@ void AP_LandingGear::update(float height_above_ground_m)
         if (gear_state_new != gear_state_current) {
             // we changed states, lets note the time.
             last_gear_event_ms = AP_HAL::millis();
-            
+
             log_wow_state(wow_state_current);
         }
 

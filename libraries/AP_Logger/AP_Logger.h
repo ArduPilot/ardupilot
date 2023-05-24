@@ -529,7 +529,7 @@ private:
     void prepare_at_arming_sys_file_logging();
 
 #endif
-    
+
     /* support for retrieving logs via mavlink: */
 
     enum class TransferActivity {

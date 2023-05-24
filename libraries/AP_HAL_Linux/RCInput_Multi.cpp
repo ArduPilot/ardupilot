@@ -60,7 +60,7 @@ void RCInput_Multi::_timer_tick(void)
             inputs[i]->read(_pwm_values, inputs[i]->num_channels());
             _num_channels = inputs[i]->num_channels();
             rc_input_count++;
-        }        
+        }
     }
 }
 

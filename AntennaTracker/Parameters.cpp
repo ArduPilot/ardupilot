@@ -307,7 +307,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Group: SERVO
     // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
     GOBJECT(servo_channels,     "SERVO", SRV_Channels),
-    
+
     // @Group: SERIAL
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
     GOBJECT(serial_manager,    "SERIAL",   AP_SerialManager),

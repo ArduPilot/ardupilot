@@ -61,7 +61,7 @@ bool Compass::_start_calibration(uint8_t i, bool retry, float delay)
         return false;
     }
 #endif
-    
+
     if (_calibrator[prio] == nullptr) {
         _calibrator[prio] = new CompassCalibrator();
         if (_calibrator[prio] == nullptr) {
@@ -246,7 +246,7 @@ bool Compass::send_mag_cal_progress(const GCS_MAVLINK& link)
 
     for (uint8_t i = 0; i < COMPASS_MAX_INSTANCES; i++) {
         const Priority compass_id = (next_cal_progress_idx[chan] + 1) % COMPASS_MAX_INSTANCES;
-        
+
         auto& calibrator = _calibrator[compass_id];
         if (calibrator == nullptr) {
             next_cal_progress_idx[chan] = compass_id;
@@ -433,19 +433,19 @@ MAV_RESULT Compass::handle_mag_cal_command(const mavlink_command_long_t &packet)
             result = MAV_RESULT_FAILED;
             break;
         }
-        
+
         uint8_t mag_mask = packet.param1;
-        
+
         if (mag_mask == 0) { // 0 means all
             cancel_calibration_all();
             break;
         }
-        
+
         _cancel_calibration_mask(mag_mask);
         break;
     }
     }
-    
+
     return result;
 }
 

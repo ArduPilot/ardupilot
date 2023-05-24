@@ -182,7 +182,7 @@ void AP_Terrain::get_statistics(uint16_t &pending, uint16_t &loaded) const
             continue;
         }
         if (cache[i].state == GRID_CACHE_DIRTY) {
-            // count dirty grids as a pending, so we know where there 
+            // count dirty grids as a pending, so we know where there
             // are disk writes pending
             pending++;
         }
@@ -193,7 +193,7 @@ void AP_Terrain::get_statistics(uint16_t &pending, uint16_t &loaded) const
 }
 
 
-/* 
+/*
    handle terrain messages from GCS
  */
 void AP_Terrain::handle_data(mavlink_channel_t chan, const mavlink_message_t &msg)
@@ -206,7 +206,7 @@ void AP_Terrain::handle_data(mavlink_channel_t chan, const mavlink_message_t &ms
 }
 
 
-/* 
+/*
    send a TERRAIN_REPORT for a location
  */
 void AP_Terrain::send_terrain_report(mavlink_channel_t chan, const Location &loc, bool extrapolate)
@@ -243,13 +243,13 @@ void AP_Terrain::send_terrain_report(mavlink_channel_t chan, const Location &loc
     current_height += home_terrain_height - terrain_height;
 
     if (HAVE_PAYLOAD_SPACE(chan, TERRAIN_REPORT)) {
-        mavlink_msg_terrain_report_send(chan, loc.lat, loc.lng, spacing, 
+        mavlink_msg_terrain_report_send(chan, loc.lat, loc.lng, spacing,
                                         terrain_height, current_height,
                                         pending, loaded);
     }
 }
 
-/* 
+/*
    handle TERRAIN_CHECK messages from GCS
  */
 void AP_Terrain::handle_terrain_check(mavlink_channel_t chan, const mavlink_message_t &msg)
@@ -262,7 +262,7 @@ void AP_Terrain::handle_terrain_check(mavlink_channel_t chan, const mavlink_mess
     send_terrain_report(chan, loc, false);
 }
 
-/* 
+/*
    handle TERRAIN_DATA messages from GCS
  */
 void AP_Terrain::handle_terrain_data(const mavlink_message_t &msg)
@@ -296,12 +296,12 @@ void AP_Terrain::handle_terrain_data(const mavlink_message_t &msg)
         }
     }
     gcache.grid.bitmap |= ((uint64_t)1) << packet.gridbit;
-    
+
     // mark dirty for disk IO
     gcache.state = GRID_CACHE_DIRTY;
-    
+
 #if TERRAIN_DEBUG
-    hal.console->printf("Filled bit %u idx_x=%u idx_y=%u\n", 
+    hal.console->printf("Filled bit %u idx_x=%u idx_y=%u\n",
                         (unsigned)packet.gridbit, (unsigned)idx_x, (unsigned)idx_y);
     if (gcache.grid.bitmap == bitmap_mask) {
         hal.console->printf("--lat=%12.7f --lon=%12.7f %u\n",
@@ -315,10 +315,10 @@ void AP_Terrain::handle_terrain_data(const mavlink_message_t &msg)
         hal.console->printf("--lat=%12.7f --lon=%12.7f %u\n",
                             loc2.lat*1.0e-7f,
                             loc2.lng*1.0e-7f,
-                            grid.height[27][31]);            
+                            grid.height[27][31]);
     }
 #endif
-    
+
     // see if we need to schedule some disk IO
     update();
 }

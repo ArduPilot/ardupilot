@@ -60,7 +60,7 @@ const AP_Param::GroupInfo AP_OpenDroneID::var_info[] = {
     // @Description: DroneCAN driver index, 0 to disable DroneCAN
     // @Values: 0:Disabled,1:Driver1,2:Driver2
     AP_GROUPINFO("CANDRIVER", 3, AP_OpenDroneID, _can_driver, 0),
-    
+
     // @Param: OPTIONS
     // @DisplayName: OpenDroneID options
     // @Description: Options for OpenDroneID subsystem
@@ -132,12 +132,12 @@ bool AP_OpenDroneID::pre_arm_check(char* failmsg, uint8_t failmsg_len)
         strncpy(failmsg, "SYSTEM not available", failmsg_len);
         return false;
     }
-    
+
     if (arm_status.status != MAV_ODID_ARM_STATUS_GOOD_TO_ARM) {
         strncpy(failmsg, arm_status.error, failmsg_len);
         return false;
     }
-    
+
     return true;
 }
 
@@ -200,7 +200,7 @@ void AP_OpenDroneID::send_static_out()
         last_lost_operator_msg_ms = now_ms;
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ODID: lost operator location");
     }
-    
+
     const uint32_t msg_spacing_ms = _mavlink_static_period_ms / 4;
     if (now_ms - last_msg_send_ms >= msg_spacing_ms) {
         // allow update of channel during setup, this makes it easy to debug with a GCS

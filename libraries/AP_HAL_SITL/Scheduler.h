@@ -93,7 +93,7 @@ private:
 
     static void *thread_create_trampoline(void *ctx);
     static void check_thread_stacks(void);
-    
+
     bool _initialized;
     uint64_t _stopped_clock_usec;
     uint64_t _last_io_run;

@@ -1,7 +1,7 @@
 #include "Plane.h"
 
 
-/* 
+/*
    call parachute library update
 */
 void Plane::parachute_check()
@@ -63,6 +63,6 @@ bool Plane::parachute_manual_release()
     // deploy landing gear
     g2.landing_gear.set_position(AP_LandingGear::LandingGear_Deploy);
 #endif
-    return true;    
+    return true;
 }
 #endif

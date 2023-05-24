@@ -629,7 +629,7 @@ void AC_PosControl::update_xy_controller()
 
     const Vector2f &curr_vel = _inav.get_velocity_xy_cms();
     Vector2f accel_target = _pid_vel_xy.update_all(_vel_target.xy(), curr_vel, _dt, _limit_vector.xy());
-    
+
     // acceleration to correct for velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
     accel_target *= ahrsControlScaleXY;
 
@@ -644,7 +644,7 @@ void AC_PosControl::update_xy_controller()
     // limit acceleration using maximum lean angles
     float angle_max = MIN(_attitude_control.get_althold_lean_angle_max_cd(), get_lean_angle_max_cd());
     float accel_max = angle_to_accel(angle_max * 0.01) * 100;
-    // Define the limit vector before we constrain _accel_target 
+    // Define the limit vector before we constrain _accel_target
     _limit_vector.xy() = _accel_target.xy();
     if (!limit_accel_xy(_vel_desired.xy(), _accel_target.xy(), accel_max)) {
         // _accel_target was not limited so we can zero the xy limit vector

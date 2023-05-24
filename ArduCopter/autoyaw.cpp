@@ -269,7 +269,7 @@ float Mode::AutoYaw::yaw_cd()
         _yaw_angle_cd = copter.pos_control->get_yaw_cd();
     break;
     }
-    
+
     return _yaw_angle_cd;
 }
 

@@ -96,7 +96,7 @@ class ekf_imu_buffer
 {
 public:
     ekf_imu_buffer(uint8_t elsize);
-    
+
     // initialise buffer, returns false when allocation has failed
     bool init(uint32_t size);
 
@@ -110,7 +110,7 @@ public:
     bool is_filled(void) const {
         return _filled;
     }
-    
+
     // retrieve the oldest data from the ring buffer tail
     void get_oldest_element(void *element);
 
@@ -169,7 +169,7 @@ public:
     bool is_filled(void) const {
         return ekf_imu_buffer::is_filled();
     }
-    
+
     // retrieve the oldest data from the ring buffer tail
     element_type get_oldest_element() {
         element_type ret;

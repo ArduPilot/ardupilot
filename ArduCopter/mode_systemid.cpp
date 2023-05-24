@@ -146,7 +146,7 @@ void ModeSystemId::run()
 
     case AP_Motors::SpoolState::GROUND_IDLE:
         // Landed
-        // Tradheli initializes targets when going from disarmed to armed state. 
+        // Tradheli initializes targets when going from disarmed to armed state.
         // init_targets_on_arming is always set true for multicopter.
         if (motors->init_targets_on_arming()) {
             attitude_control->reset_yaw_target_and_rate();

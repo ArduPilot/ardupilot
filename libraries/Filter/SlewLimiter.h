@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include "LowPassFilter.h"
 
-#define N_EVENTS 2 // number of positive and negative consecutive slew rate exceedance events recorded where a value of 2 corresponds to a complete cycle 
+#define N_EVENTS 2 // number of positive and negative consecutive slew rate exceedance events recorded where a value of 2 corresponds to a complete cycle
 #define WINDOW_MS 300 // time in msec required for a half cycle of the slowest oscillation frequency expected
 #define MODIFIER_GAIN 1.5f // ratio of modifier reduction to slew rate exceedance ratio
 #define DERIVATIVE_CUTOFF_FREQ 25.0f

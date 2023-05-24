@@ -89,7 +89,7 @@ Plane::Plane(const char *frame_str) :
         AP_Param::load_defaults_file("@ROMFS/models/plane.parm", false);
         AP_Param::load_defaults_file("@ROMFS/models/plane-3d.parm", false);
     }
-    
+
     if (strstr(frame_str, "-ice")) {
         ice_engine = true;
     }
@@ -135,7 +135,7 @@ float Plane::dragCoeff(float alpha) const
     const float c_lift_0 = coefficient.c_lift_0;
     const float c_lift_a0 = coefficient.c_lift_a;
     const float oswald = coefficient.oswald;
-    
+
 	double AR = pow(b,2)/s;
 	double c_drag_a = c_drag_p + pow(c_lift_0+c_lift_a0*alpha,2)/(M_PI*oswald*AR);
 
@@ -159,7 +159,7 @@ Vector3f Plane::getTorque(float inputAileron, float inputElevator, float inputRu
         // reduce effective angle of attack as thrust increases
         alpha *= constrain_float(1 - inputThrust, 0, 1);
     }
-    
+
     const float s = coefficient.s;
     const float c = coefficient.c;
     const float b = coefficient.b;
@@ -180,7 +180,7 @@ Vector3f Plane::getTorque(float inputAileron, float inputElevator, float inputRu
     const float c_n_deltaa = coefficient.c_n_deltaa;
     const float c_n_deltar = coefficient.c_n_deltar;
     const Vector3f &CGOffset = coefficient.CGOffset;
-    
+
     float rho = air_density;
 
 	//read angular rates
@@ -230,7 +230,7 @@ Vector3f Plane::getForce(float inputAileron, float inputElevator, float inputRud
     const float c_y_r = coefficient.c_y_r;
     const float c_y_deltaa = coefficient.c_y_deltaa;
     const float c_y_deltar = coefficient.c_y_deltar;
-    
+
     float rho = air_density;
 
 	//request lift and drag alpha-coefficients from the corresponding functions
@@ -315,7 +315,7 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     } else {
         throttle = filtered_servo_range(input, 2);
     }
-    
+
     float thrust     = throttle;
 
     battery_voltage = sitl->batt_voltage - 0.7*throttle;
@@ -337,7 +337,7 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
         elevator *= 4;
         rudder *= 4;
     }
-    
+
     Vector3f force = getForce(aileron, elevator, rudder);
     rot_accel = getTorque(aileron, elevator, rudder, thrust, force);
 
@@ -359,11 +359,11 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
             launch_start_ms = 0;
         }
     }
-    
+
     // simulate engine RPM
     motor_mask |= (1U<<2);
     rpm[2] = thrust * 7000;
-    
+
     // scale thrust to newtons
     thrust *= thrust_scale;
 
@@ -381,7 +381,7 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
         accel_body.x -= vel_body.x * 0.3f;
     }
 }
-    
+
 /*
   update the plane simulation by one time step
  */
@@ -390,9 +390,9 @@ void Plane::update(const struct sitl_input &input)
     Vector3f rot_accel;
 
     update_wind(input);
-    
+
     calculate_forces(input, rot_accel);
-    
+
     update_dynamics(rot_accel);
     update_external_payload(input);
 

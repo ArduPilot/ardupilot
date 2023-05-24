@@ -21,7 +21,7 @@ void NavEKF2_core::ResetVelocity(void)
     // reset the corresponding covariances
     zeroRows(P,3,4);
     zeroCols(P,3,4);
-    
+
     if (PV_AidingMode != AID_ABSOLUTE) {
         stateStruct.velocity.zero();
         // set the variances using the measurement noise parameter
@@ -79,7 +79,7 @@ void NavEKF2_core::ResetPosition(void)
     // reset the corresponding covariances
     zeroRows(P,6,7);
     zeroCols(P,6,7);
-    
+
     if (PV_AidingMode != AID_ABSOLUTE) {
         // reset all position state history to the last known position
         stateStruct.position.x = lastKnownPositionNE.x;

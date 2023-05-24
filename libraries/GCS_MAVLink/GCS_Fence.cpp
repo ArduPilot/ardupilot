@@ -21,7 +21,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_fence_enable(const mavlink_command_lon
         {
             return MAV_RESULT_FAILED;
         }
-    
+
         fence->enable(true);
         return MAV_RESULT_ACCEPTED;
     case 2: // disable fence floor only

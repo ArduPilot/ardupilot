@@ -243,7 +243,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("PIRO_COMP",    5, AC_AttitudeControl_Heli, _piro_comp_enabled, 0),
-    
+
     AP_GROUPEND
 };
 
@@ -341,7 +341,7 @@ void AC_AttitudeControl_Heli::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cd
 // rate_controller_run - run lowest level rate controller and send outputs to the motors
 // should be called at 100hz or more
 void AC_AttitudeControl_Heli::rate_controller_run()
-{	
+{
     _ang_vel_body += _sysid_ang_vel_body;
 
     Vector3f gyro_latest = _ahrs.get_gyro_latest();
@@ -424,7 +424,7 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(const Vector3f &rate_r
     // Piro-Comp, or Pirouette Compensation is a pre-compensation calculation, which basically rotates the Roll and Pitch Rate I-terms as the
     // helicopter rotates in yaw.  Much of the built-up I-term is needed to tip the disk into the incoming wind.  Fast yawing can create an instability
     // as the built-up I-term in one axis must be reduced, while the other increases.  This helps solve that by rotating the I-terms before the error occurs.
-    // It does assume that the rotor aerodynamics and mechanics are essentially symmetrical about the main shaft, which is a generally valid assumption. 
+    // It does assume that the rotor aerodynamics and mechanics are essentially symmetrical about the main shaft, which is a generally valid assumption.
     if (_piro_comp_enabled) {
 
         // used to hold current I-terms while doing piro comp:

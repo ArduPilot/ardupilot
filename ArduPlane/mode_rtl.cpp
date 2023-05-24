@@ -98,7 +98,7 @@ void ModeRTL::navigate()
     if (!plane.auto_state.checked_for_autoland) {
         if ((plane.g.rtl_autoland == RtlAutoland::RTL_IMMEDIATE_DO_LAND_START) ||
             (plane.g.rtl_autoland == RtlAutoland::RTL_THEN_DO_LAND_START &&
-            plane.reached_loiter_target() && 
+            plane.reached_loiter_target() &&
             labs(plane.altitude_error_cm) < 1000))
             {
                 // we've reached the RTL point, see if we have a landing sequence

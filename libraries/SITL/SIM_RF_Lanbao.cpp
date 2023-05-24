@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  Simulator for the Lanbao rangefinder 
+  Simulator for the Lanbao rangefinder
 */
 
 #include "SIM_RF_Lanbao.h"

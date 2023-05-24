@@ -107,7 +107,7 @@ Menu::_run_command(bool prompt_on_enter)
         _argv[argc].f = strtof(_argv[argc].str, NULL);
         argc++;
     }
-    
+
     if (_argv[0].str == nullptr) {
         // we got a blank line, re-display the prompt
         if (prompt_on_enter) {
@@ -115,7 +115,7 @@ Menu::_run_command(bool prompt_on_enter)
         }
         return false;
     }
-    
+
     // populate arguments that have not been specified with "" and 0
     // this is safer than NULL in the case where commands may look
     // without testing argc
@@ -126,7 +126,7 @@ Menu::_run_command(bool prompt_on_enter)
         _argv[i].f = 0;
         i++;
     }
-    
+
     bool cmd_found = false;
     // look for a command matching the first word (note that it may be empty)
     for (i = 0; i < _entries; i++) {
@@ -138,7 +138,7 @@ Menu::_run_command(bool prompt_on_enter)
             break;
         }
     }
-    
+
     // implicit commands
     if (i == _entries) {
         if (!strcmp(_argv[0].str, "?") || (!strcasecmp(_argv[0].str, "help"))) {
@@ -196,7 +196,7 @@ Menu::run(void)
         if (_run_command(false)) break;
 
         _display_prompt();
-    }    
+    }
 }
 
 // check for new user input
@@ -212,7 +212,7 @@ Menu::check_input(void)
 
     if (_check_for_input()) {
         return _run_command(true);
-    }    
+    }
 
     return false;
 }

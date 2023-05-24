@@ -55,7 +55,7 @@ void SITL_State::_update_airspeed(float true_airspeed)
         float airspeed = true_airspeed / get_EAS2TAS(_sitl->state.altitude);
         const float diff_pressure = sq(airspeed) / arspd.ratio;
         float airspeed_raw;
-    
+
         // apply noise to the differential pressure. This emulates the way
         // airspeed noise reduces with speed
         airspeed = sqrtf(fabsf(arspd.ratio*(diff_pressure + arspd.noise * rand_float())));
@@ -82,7 +82,7 @@ void SITL_State::_update_airspeed(float true_airspeed)
         airspeed_raw = airspeed_pressure + arspd.offset;
 
         _sitl->state.airspeed_raw_pressure[i] = airspeed_pressure;
-        
+
         airspeed_pin_voltage[i] = PASCAL_TO_VOLTS(airspeed_raw);
     }
 }

@@ -17,7 +17,7 @@
  *
  *      Author: Michael Du Breuil
  */
- 
+
 #pragma once
 
 #include "AP_EFI_config.h"
@@ -30,7 +30,7 @@
 class AP_EFI_NWPMU : public CANSensor, public AP_EFI_Backend {
 public:
     AP_EFI_NWPMU(AP_EFI &_frontend);
-    
+
     void update() override;
 
 private:

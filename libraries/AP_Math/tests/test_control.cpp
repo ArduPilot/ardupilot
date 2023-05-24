@@ -80,7 +80,7 @@ TEST(Control, test_control)
     update_pos_vel_accel(pos, vel, accel, dt, -1.0, 0.0, 0.0);
     EXPECT_FLOAT_EQ(vel, vel_start + accel * dt);
     EXPECT_FLOAT_EQ(pos, pos_start + vel_start * dt + 0.5 * accel * sq(dt));
-    
+
     // error sign opposite to limit sign should result in normal behaviour
     // 9
     vel = vel_start;
@@ -113,7 +113,7 @@ TEST(Control, test_control)
     update_pos_vel_accel(pos, vel, accel, dt, -1.0, 1.0, 1.0);
     EXPECT_FLOAT_EQ(vel, vel_start + accel * dt);
     EXPECT_FLOAT_EQ(pos, pos_start + vel_start * dt + 0.5 * accel * sq(dt));
-    
+
     // error sign same as limit sign should result various limited behaviours
     // 13
     vel = vel_start;
@@ -191,7 +191,7 @@ TEST(Control, test_control)
 
     // test for update_pos_vel_accel includes update_vel_accel.
     // test unlimited behaviour
-    
+
     // 1
     pos_start = 17;
     vel_start = 20;
@@ -301,7 +301,7 @@ TEST(Control, test_control)
     EXPECT_FLOAT_EQ(velxy.y, 0.0);
     EXPECT_FLOAT_EQ(posxy.x, pos_start + vel_start * dt + 0.5 * accelxy.x * sq(dt));
     EXPECT_FLOAT_EQ(velxy.y, 0.0);
-    
+
     // error sign opposite to limit sign should result in normal behaviour
     // 9
     posxy = Vector2p(pos_start, 0.0);
@@ -354,7 +354,7 @@ TEST(Control, test_control)
     EXPECT_FLOAT_EQ(velxy.y, 0.0);
     EXPECT_FLOAT_EQ(posxy.x, pos_start + vel_start * dt + 0.5 * accelxy.x * sq(dt));
     EXPECT_FLOAT_EQ(velxy.y, 0.0);
-    
+
     // error sign same as limit sign should result various limited behaviours
     // 13
     posxy = Vector2p(pos_start, 0.0);

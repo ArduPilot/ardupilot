@@ -458,7 +458,7 @@ bool AP_Logger_Backend::ShouldLog(bool is_critical)
         // logs show the wrong flight mode if you disarm then arm again
         return true;
     }
-    
+
     if (!_front.vehicle_is_armed() && !_front.log_while_disarmed()) {
         return false;
     }
@@ -466,7 +466,7 @@ bool AP_Logger_Backend::ShouldLog(bool is_critical)
     if (_front.vehicle_is_armed()) {
         have_logged_armed = true;
     }
-    
+
     return true;
 }
 

@@ -106,7 +106,7 @@
 
 #define HAL_INS_MPU9250_NAME "mpu9250"
 
-// uncommenting one or more of these will give more console debug in certain areas.. ... 
+// uncommenting one or more of these will give more console debug in certain areas.. ...
 // ...however all teh extra printf's use a lot of stack, so best to limit yourself to only uncommenting one at a time
 //#define STORAGEDEBUG 1
 //#define SCHEDDEBUG 1

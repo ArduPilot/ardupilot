@@ -314,7 +314,7 @@ public:
 
     // get the enable parameter
     bool get_enable(void) const { return bool(_enable.get()); }
-    
+
     /*
       check if switching lanes will reduce the normalised
       innovations. This is called when the vehicle code is about to
@@ -343,7 +343,7 @@ public:
 
     // check if configured to use GPS for horizontal position estimation
     bool configuredToUseGPSForPosXY(void) const;
-    
+
     // Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
     void writeDefaultAirSpeed(float airspeed, float uncertainty);
 
@@ -367,7 +367,7 @@ private:
 
     uint32_t _frameTimeUsec;        // time per IMU frame
     uint8_t  _framesPerPrediction;  // expected number of IMU frames per prediction
-  
+
     // values for EK3_LOG_LEVEL
     enum class LogLevel {
         ALL = 0,
@@ -516,7 +516,7 @@ private:
 #define MAX_EKF_CORES     3 // maximum allowed EKF Cores to be instantiated
 #define CORE_ERR_LIM      1 // -LIM to LIM relative error range for a core
 #define BETTER_THRESH   0.5 // a lane should have this much relative error difference to be considered for overriding a healthy primary core
-    
+
     bool runCoreSelection;                          // true when the primary core has stabilised and the core selection logic can be started
     bool coreSetupRequired[MAX_EKF_CORES];          // true when this core index needs to be setup
     uint8_t coreImuIndex[MAX_EKF_CORES];            // IMU index used by this core
@@ -527,7 +527,7 @@ private:
     // origin set by one of the cores
     Location common_EKF_origin;
     bool common_origin_valid;
-    
+
     // update the yaw reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary
     // old_primary - index of the ekf instance that we are currently using as the primary
@@ -543,7 +543,7 @@ private:
     // old_primary - index of the ekf instance that we are currently using as the primary
     void updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_primary);
 
-    // Update instance error scores for all available cores 
+    // Update instance error scores for all available cores
     float updateCoreErrorScores(void);
 
     // Update relative error scores for all alternate available cores

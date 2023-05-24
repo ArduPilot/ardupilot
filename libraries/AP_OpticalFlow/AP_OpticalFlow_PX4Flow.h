@@ -28,7 +28,7 @@ private:
     AP_HAL::OwnPtr<AP_HAL::Device> dev;
 
     static const uint8_t REG_INTEGRAL_FRAME = 0x16;
-    
+
     // I2C data on register REG_INTEGRAL_FRAME
     struct PACKED i2c_integral_frame {
         uint16_t frame_count_since_last_readout;
@@ -43,7 +43,7 @@ private:
         int16_t gyro_temperature;
         uint8_t qual;
     };
-    
+
     // scan I2C bus addresses and buses
     bool scan_buses(void);
 

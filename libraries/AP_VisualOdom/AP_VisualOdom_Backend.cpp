@@ -21,7 +21,7 @@
 #include <GCS_MAVLink/GCS.h>
 
 /*
-  base class constructor. 
+  base class constructor.
   This incorporates initialisation as well.
 */
 AP_VisualOdom_Backend::AP_VisualOdom_Backend(AP_VisualOdom &frontend) :

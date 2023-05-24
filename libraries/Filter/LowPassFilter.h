@@ -59,7 +59,7 @@ public:
     CLASS_NO_COPY(DigitalLPF);
 
     void compute_alpha(float sample_freq, float cutoff_freq);
-    
+
     // get latest filtered value from filter (equal to the value returned by latest call to apply method)
     const T &get() const;
     void reset(T value);
@@ -105,13 +105,13 @@ private:
 // Uncomment this, if you decide to remove the instantiations in the implementation file
 /*
 template <class T>
-LowPassFilter<T>::LowPassFilter() : _cutoff_freq(0.0f) { 
-  
+LowPassFilter<T>::LowPassFilter() : _cutoff_freq(0.0f) {
+
 }
 // constructor
 template <class T>
-LowPassFilter<T>::LowPassFilter(float cutoff_freq) : _cutoff_freq(cutoff_freq) { 
-  
+LowPassFilter<T>::LowPassFilter(float cutoff_freq) : _cutoff_freq(cutoff_freq) {
+
 }
 */
 

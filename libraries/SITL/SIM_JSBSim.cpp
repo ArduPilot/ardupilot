@@ -444,10 +444,10 @@ void JSBSim::recv_fdm(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
-    
+
     rpm[0] = fdm.rpm[0];
     rpm[1] = fdm.rpm[1];
-    
+
     time_now_us = fdm.cur_time;
 }
 

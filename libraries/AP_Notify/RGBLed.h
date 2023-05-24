@@ -1,5 +1,5 @@
 /*
- *  AP_Notify Library. 
+ *  AP_Notify Library.
  * based upon a prototype library by David "Buzz" Bussenschutt.
  */
 
@@ -49,7 +49,7 @@ protected:
     virtual void _set_rgb(uint8_t red, uint8_t green, uint8_t blue);
 
     void update_override();
-    
+
     // meta-data common to all hw devices
     uint8_t _red_curr, _green_curr, _blue_curr;  // current colours displayed by the led
     uint8_t _led_off;
@@ -62,7 +62,7 @@ protected:
         uint8_t rate_hz;
         uint32_t start_ms;
     } _led_override;
-    
+
 private:
     void update_colours();
     uint32_t get_colour_sequence() const;

@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  Simulator for the serial LightWare rangefinder 
+  Simulator for the serial LightWare rangefinder
 */
 
 #include "SIM_RF_LightWareSerial.h"

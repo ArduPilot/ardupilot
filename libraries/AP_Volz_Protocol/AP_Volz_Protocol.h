@@ -64,12 +64,12 @@ public:
     CLASS_NO_COPY(AP_Volz_Protocol);
 
     static const struct AP_Param::GroupInfo var_info[];
-    
+
     void update();
 
 private:
     AP_HAL::UARTDriver *port;
-    
+
     void init(void);
     void send_command(uint8_t data[VOLZ_DATA_FRAME_SIZE]);
     void update_volz_bitmask(uint32_t new_bitmask);

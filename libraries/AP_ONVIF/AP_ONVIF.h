@@ -35,11 +35,11 @@ public:
 
     /* Do not allow copies */
     CLASS_NO_COPY(AP_ONVIF);
-    
+
     // Start ONVIF client with username, password and service host url
     bool start(const char *user, const char *pass, const char *httphostname);
 
-    // Turn ONVIF camera to mentioned pan, tilt and zoom, normalised 
+    // Turn ONVIF camera to mentioned pan, tilt and zoom, normalised
     // between limits
     bool set_absolutemove(float pan, float tilt, float zoom);
 
@@ -79,15 +79,15 @@ private:
     MediaBindingProxy  *proxy_media;
     PTZBindingProxy    *proxy_ptz;
     static AP_ONVIF *_singleton;
-    
+
     char* username;
     size_t username_len;
-    
+
     char* password;
     size_t password_len;
-    
+
     size_t hostname_len;
-    
+
     char* device_endpoint;
     char* media_endpoint;
     char* ptz_endpoint;

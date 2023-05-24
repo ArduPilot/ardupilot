@@ -577,7 +577,7 @@ __RAMFUNC__ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
     // handle much higher receiver baudrates
     dmaStreamDisable(uart_drv->rxdma);
     uart_drv->dma_rx_enable();
-    
+
     if (len > 0) {
         /*
           we have data to copy out

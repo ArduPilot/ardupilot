@@ -287,7 +287,7 @@ void AP_BoardConfig::validate_board_type(void)
         // configured for PIXHAWK1
 #if !defined(HAL_CHIBIOS_ARCH_FMUV3)
         // force user to load the right firmware
-        config_error("Pixhawk2 requires FMUv3 firmware");        
+        config_error("Pixhawk2 requires FMUv3 firmware");
 #endif
         state.board_type.set(PX4_BOARD_PIXHAWK2);
         DEV_PRINTF("Forced PIXHAWK2\n");
@@ -360,7 +360,7 @@ void AP_BoardConfig::board_autodetect(void)
 #elif defined(HAL_CHIBIOS_ARCH_FMUV4PRO)
     // only one choice
     state.board_type.set_and_notify(PX4_BOARD_PIXHAWK_PRO);
-    DEV_PRINTF("Detected Pixhawk Pro\n");	
+    DEV_PRINTF("Detected Pixhawk Pro\n");
 #elif defined(HAL_CHIBIOS_ARCH_FMUV5)
     state.board_type.set_and_notify(PX4_BOARD_FMUV5);
     DEV_PRINTF("Detected FMUv5\n");

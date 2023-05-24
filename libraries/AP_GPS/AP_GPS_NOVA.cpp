@@ -93,7 +93,7 @@ AP_GPS_NOVA::read(void)
 #endif
         ret |= parse(temp);
     }
-    
+
     return ret;
 }
 
@@ -194,7 +194,7 @@ AP_GPS_NOVA::process_message(void)
     Debug("NOVA process_message messid=%u\n",messageid);
 
     check_new_itow(nova_msg.header.nova_headeru.tow, nova_msg.header.nova_headeru.messagelength + nova_msg.header.nova_headeru.headerlength);
-    
+
     if (messageid == 42) // bestpos
     {
         const bestpos &bestposu = nova_msg.data.bestposu;
@@ -251,7 +251,7 @@ AP_GPS_NOVA::process_message(void)
         } else {
             state.status = AP_GPS::NO_FIX;
         }
-        
+
         _new_position = true;
     }
 
@@ -264,7 +264,7 @@ AP_GPS_NOVA::process_message(void)
         fill_3d_velocity();
         state.velocity.z = -(float) bestvelu.vertspd;
         state.have_vertical_velocity = true;
-        
+
         _last_vel_time = (uint32_t) nova_msg.header.nova_headeru.tow;
         _new_speed = true;
     }
@@ -281,10 +281,10 @@ AP_GPS_NOVA::process_message(void)
     // ensure out position and velocity stay insync
     if (_new_position && _new_speed && _last_vel_time == state.time_week_ms) {
         _new_speed = _new_position = false;
-        
+
         return true;
     }
-    
+
     return false;
 }
 

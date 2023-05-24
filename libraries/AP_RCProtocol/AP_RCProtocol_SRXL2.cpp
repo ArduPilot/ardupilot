@@ -291,7 +291,7 @@ void AP_RCProtocol_SRXL2::send_on_uart(uint8_t* pBuffer, uint8_t length)
 
     if (uart != nullptr && uart->is_initialized()) {
         // check that we haven't been too slow in responding to the new UART data. If we respond too late then we will
-        // corrupt the next incoming control frame. incoming packets at max 800bits @91Hz @115k baud gives total budget of 11ms 
+        // corrupt the next incoming control frame. incoming packets at max 800bits @91Hz @115k baud gives total budget of 11ms
         // per packet of which we need 7ms to receive a packet. outgoing packets are 220 bits which require 2ms to send
         // leaving at most 2ms of delay that can be tolerated
         uint64_t tend = uart->receive_time_constraint_us(1);

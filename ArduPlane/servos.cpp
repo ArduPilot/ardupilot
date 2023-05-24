@@ -96,7 +96,7 @@ bool Plane::suppress_throttle(void)
     }
 
     bool gps_movement = (gps.status() >= AP_GPS::GPS_OK_FIX_2D && gps.ground_speed() >= 5);
-    
+
     if ((control_mode == &mode_auto &&
          auto_state.takeoff_complete == false) ||
         control_mode == &mode_takeoff) {
@@ -114,7 +114,7 @@ bool Plane::suppress_throttle(void)
             return false;
         }
         if (auto_takeoff_check()) {
-            // we're in auto takeoff 
+            // we're in auto takeoff
             throttle_suppressed = false;
             auto_state.baro_takeoff_alt = barometer.get_altitude();
             return false;
@@ -122,7 +122,7 @@ bool Plane::suppress_throttle(void)
         // keep throttle suppressed
         return true;
     }
-    
+
     if (fabsf(relative_altitude) >= 10.0f) {
         // we're more than 10m from the home altitude
         throttle_suppressed = false;
@@ -137,7 +137,7 @@ bool Plane::suppress_throttle(void)
         if ((!ahrs.airspeed_sensor_enabled()) || airspeed.get_airspeed() >= 5) {
             // we're moving at more than 5 m/s
             throttle_suppressed = false;
-            return false;        
+            return false;
         }
 #else
         // no airspeed sensor, so we trust that the GPS's movement is truthful
@@ -179,7 +179,7 @@ void Plane::channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, S
     } else if (g.mixing_offset > 0) {
         in1 *= (100 + g.mixing_offset) * 0.01;
     }
-    
+
     float out1 = constrain_float((in2 - in1) * g.mixing_gain, -4500, 4500);
     float out2 = constrain_float((in2 + in1) * g.mixing_gain, -4500, 4500);
     SRV_Channels::set_output_scaled(func1_out, out1);
@@ -217,8 +217,8 @@ void Plane::dspoiler_update(void)
     const int8_t bitmask = g2.crow_flap_options.get();
     const bool flying_wing       = (bitmask & CrowFlapOptions::FLYINGWING) != 0;
     const bool full_span_aileron = (bitmask & CrowFlapOptions::FULLSPAN) != 0;
-    //progressive crow when option is set or RC switch is set to progressive 
-    const bool progressive_crow   = (bitmask & CrowFlapOptions::PROGRESSIVE_CROW) != 0  || crow_mode == CrowMode::PROGRESSIVE; 
+    //progressive crow when option is set or RC switch is set to progressive
+    const bool progressive_crow   = (bitmask & CrowFlapOptions::PROGRESSIVE_CROW) != 0  || crow_mode == CrowMode::PROGRESSIVE;
 
     // if flying wing use elevons else use ailerons
     float elevon_left;
@@ -359,11 +359,11 @@ void Plane::set_servos_idle(void)
     } else if (auto_state.idle_wiggle_stage < 50) {
         servo_value = auto_state.idle_wiggle_stage * (4500 / 50);
     } else if (auto_state.idle_wiggle_stage < 100) {
-        servo_value = (100 - auto_state.idle_wiggle_stage) * (4500 / 50);        
+        servo_value = (100 - auto_state.idle_wiggle_stage) * (4500 / 50);
     } else if (auto_state.idle_wiggle_stage < 150) {
-        servo_value = (100 - auto_state.idle_wiggle_stage) * (4500 / 50);        
+        servo_value = (100 - auto_state.idle_wiggle_stage) * (4500 / 50);
     } else if (auto_state.idle_wiggle_stage < 200) {
-        servo_value = (auto_state.idle_wiggle_stage-200) * (4500 / 50);        
+        servo_value = (auto_state.idle_wiggle_stage-200) * (4500 / 50);
     } else {
         auto_state.idle_wiggle_stage = 0;
         servo_value = 0;
@@ -448,14 +448,14 @@ void Plane::throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle)
     if (battery.overpower_detected()) {
         // overpower detected, cut back on the throttle if we're maxing it out by calculating a limiter value
         // throttle limit will attack by 10% per second
-        
+
         if (is_positive(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)) && // demanding too much positive thrust
             throttle_watt_limit_max < max_throttle - 25 &&
             now - throttle_watt_limit_timer_ms >= 1) {
             // always allow for 25% throttle available regardless of battery status
             throttle_watt_limit_timer_ms = now;
             throttle_watt_limit_max++;
-            
+
         } else if (is_negative(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)) &&
                    min_throttle < 0 && // reverse thrust is available
                    throttle_watt_limit_min < -(min_throttle) - 25 &&
@@ -464,7 +464,7 @@ void Plane::throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle)
             throttle_watt_limit_timer_ms = now;
             throttle_watt_limit_min++;
         }
-        
+
     } else if (now - throttle_watt_limit_timer_ms >= 1000) {
         // it has been 1 second since last over-current, check if we can resume higher throttle.
         // this throttle release is needed to allow raising the max_throttle as the battery voltage drains down
@@ -473,20 +473,20 @@ void Plane::throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle)
             throttle_watt_limit_max > 0) { // and we're currently limiting it
             throttle_watt_limit_timer_ms = now;
             throttle_watt_limit_max--;
-            
+
         } else if (SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) < throttle_watt_limit_min && // demanding max negative thrust
                    throttle_watt_limit_min > 0) { // and we're limiting it
             throttle_watt_limit_timer_ms = now;
             throttle_watt_limit_min--;
         }
     }
-    
+
     max_throttle = constrain_int16(max_throttle, 0, max_throttle - throttle_watt_limit_max);
     if (min_throttle < 0) {
         min_throttle = constrain_int16(min_throttle, min_throttle + throttle_watt_limit_min, 0);
     }
 }
-    
+
 /*
   setup output channels all non-manual modes
  */
@@ -512,7 +512,7 @@ void Plane::set_servos_controlled(void)
     }
 
     bool flight_stage_determines_max_throttle = false;
-    if (flight_stage == AP_FixedWing::FlightStage::TAKEOFF || 
+    if (flight_stage == AP_FixedWing::FlightStage::TAKEOFF ||
         flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING
         ) {
         flight_stage_determines_max_throttle = true;
@@ -540,7 +540,7 @@ void Plane::set_servos_controlled(void)
 
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,
                                     constrain_float(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), min_throttle, max_throttle));
-    
+
     if (!arming.is_armed_and_safety_off()) {
         if (arming.arming_required() == AP_Arming::Required::YES_ZERO_PWM) {
             SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::ZERO_PWM);
@@ -780,7 +780,7 @@ void Plane::force_flare(void)
        -at zero thrust: in throttle trim dz except for sprung throttle option where trim is at hover stick
     */
     if (!control_mode->does_auto_throttle() && flare_mode != FlareMode::FLARE_DISABLED && throttle_at_zero()) {
-        int32_t tilt = -SERVO_MAX;  //this is tilts up for a normal tiltrotor if at zero thrust throttle stick      
+        int32_t tilt = -SERVO_MAX;  //this is tilts up for a normal tiltrotor if at zero thrust throttle stick
         if (quadplane.tiltrotor.enabled() && (quadplane.tiltrotor.type == Tiltrotor::TILT_TYPE_BICOPTER)) {
             tilt = 0; // this is tilts up for a Bicopter
         }
@@ -820,8 +820,8 @@ void Plane::set_servos(void)
     // servos_output(), which is run from all code paths in this
     // function
     SRV_Channels::cork();
-    
-    // this is to allow the failsafe module to deliberately crash 
+
+    // this is to allow the failsafe module to deliberately crash
     // the plane. Only used in extreme circumstances to meet the
     // OBC rules
 #if AP_ADVANCEDFAILSAFE_ENABLED
@@ -866,7 +866,7 @@ void Plane::set_servos(void)
     if (control_mode == &mode_training) {
         steering_control.rudder = rudder_in_expo(false);
     }
-    
+
     SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, steering_control.rudder);
     SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering_control.steering);
 
@@ -901,7 +901,7 @@ void Plane::set_servos(void)
     if (!arming.is_armed()) {
         //Some ESCs get noisy (beep error msgs) if PWM == 0.
         //This little segment aims to avoid this.
-        switch (arming.arming_required()) { 
+        switch (arming.arming_required()) {
         case AP_Arming::Required::NO:
             //keep existing behavior: do nothing to radio_out
             //(don't disarm throttle channel even if AP_Arming class is)
@@ -965,7 +965,7 @@ void Plane::landing_neutral_control_surface_servos(void)
                 SRV_Channels::set_output_limit(chan->get_function(), SRV_Channel::Limit::ZERO_PWM);
             }
     }
- 
+
 }
 
 /*
@@ -979,7 +979,7 @@ void Plane::indicate_waiting_for_rud_neutral_to_takeoff(void)
         if (!SRV_Channels::function_assigned(SRV_Channel::k_rudder) && !SRV_Channels::function_assigned(SRV_Channel::k_vtail_left)) {
             // if no rudder indication possible, neutral elevons during wait becuase on takeoff stance they are usually both full up
             SRV_Channels::set_output_scaled(SRV_Channel::k_elevon_right, 0);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_elevon_left, 0);        
+            SRV_Channels::set_output_scaled(SRV_Channel::k_elevon_left, 0);
         }
     }
 }
@@ -1015,7 +1015,7 @@ void Plane::servos_output(void)
 
     //  set control surface servos to neutral
     landing_neutral_control_surface_servos();
-    
+
     // set rudder arm waiting for neutral control throws (rudder neutral, aileron/rt vtail/rt elevon to full right)
     if (flight_option_enabled(FlightOptions::INDICATE_WAITING_FOR_RUDDER_NEUTRAL)) {
         indicate_waiting_for_rud_neutral_to_takeoff();
@@ -1127,5 +1127,5 @@ void Plane::servos_auto_trim(void)
         auto_trim.last_trim_save = now;
         g2.servo_channels.save_trim();
     }
-    
+
 }

@@ -26,7 +26,7 @@
 
 #ifndef AP_GPS_MAV_ENABLED
   #define AP_GPS_MAV_ENABLED AP_GPS_BACKEND_DEFAULT_ENABLED
-#endif 
+#endif
 
 #if AP_GPS_MAV_ENABLED
 class AP_GPS_MAV : public AP_GPS_Backend {

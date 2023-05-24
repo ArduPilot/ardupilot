@@ -169,7 +169,7 @@ bool AP_Compass_IST8310::init()
     if (_force_external) {
         set_external(_instance, true);
     }
-    
+
     _periodic_handle = _dev->register_periodic_callback(SAMPLING_PERIOD_USEC,
         FUNCTOR_BIND_MEMBER(&AP_Compass_IST8310::timer, void));
 

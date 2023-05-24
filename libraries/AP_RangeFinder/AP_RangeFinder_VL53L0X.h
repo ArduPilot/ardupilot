@@ -63,9 +63,9 @@ private:
     };
 
     static const RegData tuning_data[];
-    
+
     enum vcselPeriodType { VcselPeriodPreRange, VcselPeriodFinalRange };
-    
+
     bool get_SPAD_info(uint8_t * count, bool *type_is_aperture);
     void getSequenceStepEnables(SequenceStepEnables * enables);
     uint32_t getMeasurementTimingBudget(void);
@@ -78,7 +78,7 @@ private:
     uint16_t encodeTimeout(uint16_t timeout_mclks);
     bool performSingleRefCalibration(uint8_t vhv_init_byte);
     void start_continuous(void);
-    
+
     uint8_t stop_variable;
     uint32_t measurement_timing_budget_us;
     uint32_t start_ms;

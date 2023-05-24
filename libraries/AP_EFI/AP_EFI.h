@@ -28,12 +28,12 @@
 
 
 /*
- * This library aims to read data from Electronic Fuel Injection 
+ * This library aims to read data from Electronic Fuel Injection
  * or Engine Control units. It is focused around the generic
- * internal combustion engine state message provided by the 
+ * internal combustion engine state message provided by the
  * UAVCAN protocol due to its comprehensiveness, but is extensible
- * to use other forms of data transfer besides UAVCAN. 
- * 
+ * to use other forms of data transfer besides UAVCAN.
+ *
  *
  *
  * Authors: Sriram Sami and David Ingraham
@@ -54,7 +54,7 @@ public:
 
     // Requests backend to update the frontend. Should be called at 10Hz.
     void update();
-    
+
     // Returns the RPM
     uint32_t get_rpm() const { return state.engine_speed_rpm; }
 

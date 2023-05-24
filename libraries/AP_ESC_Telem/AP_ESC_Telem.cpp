@@ -39,7 +39,7 @@ const AP_Param::GroupInfo AP_ESC_Telem::var_info[] = {
     // @Range: 0 31
     // @User: Standard
     AP_GROUPINFO("_MAV_OFS", 1, AP_ESC_Telem, mavlink_offset, 0),
-    
+
     AP_GROUPEND
 };
 

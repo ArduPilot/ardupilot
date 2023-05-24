@@ -115,7 +115,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Range: 0 5000.0
     // @User: Advanced
     AP_GROUPINFO("ALT_CUTOFF", 14, SoaringController, alt_cutoff, 250.0),
-    
+
     // 15 was SOAR_ENABLE_CH, now RCX_OPTION
 
     // @Param: MAX_DRIFT
@@ -325,7 +325,7 @@ void SoaringController::update_thermalling()
     // update the filter
     _ekf.update(_vario.reading, current_position.x, current_position.y, wind_drift.x, wind_drift.y);
 
-    
+
     _thermalability = (_ekf.X[0]*expf(-powf(get_thermalling_radius()/_ekf.X[1], 2))) - _vario.get_exp_thermalling_sink();
 
     _prev_update_time = AP_HAL::micros64();

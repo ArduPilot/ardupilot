@@ -122,7 +122,7 @@ public:
     /// center is offsets in cm from EKF origin in NE frame, radius is in meters
     bool get_inclusion_circle(uint8_t index, Vector2f &center_pos_cm, float &radius) const;
 
-    // false if margin < fence radius 
+    // false if margin < fence radius
     bool check_inclusion_circle_margin(float margin) const;
 
     ///
@@ -314,7 +314,7 @@ private:
         float radius;
     };
     ExclusionCircle *_loaded_circle_exclusion_boundary;
-    
+
     uint8_t _num_loaded_circle_exclusion_boundaries;
 
     class InclusionCircle {
@@ -342,7 +342,7 @@ private:
     bool scale_latlon_from_origin(const Location &origin,
                                   const Vector2l &point,
                                   Vector2f &pos_cm) WARN_IF_UNUSED;
-   
+
     // read_polygon_from_storage - reads vertex_count
     // latitude/longitude points from offset in permanent storage,
     // transforms them into an offset-from-origin and deposits the

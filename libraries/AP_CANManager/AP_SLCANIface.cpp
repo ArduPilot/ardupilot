@@ -326,7 +326,7 @@ int16_t SLCAN::CANIface::reportFrame(const AP_HAL::CANFrame& frame, uint64_t tim
     else if (frame.canfd) {
         *p++ = frame.isExtended() ? 'D' : 'd';
     }
-#endif 
+#endif
     else {
         *p++ = frame.isExtended() ? 'T' : 't';
     }
@@ -411,7 +411,7 @@ const char* SLCAN::CANIface::processCommand(char* cmd)
         // See long commands below
         return handle_FrameRTRStd(cmd) ? "z\r" : "\a";
     }
-#if HAL_CANFD_SUPPORTED 
+#if HAL_CANFD_SUPPORTED
     else if (cmd[0] == 'D') {
         return handle_FDFrameDataExt(cmd) ? "Z\r" : "\a";
     }

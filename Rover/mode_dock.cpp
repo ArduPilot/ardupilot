@@ -101,7 +101,7 @@ void ModeDock::update()
 {
     // if docking is complete, rovers stop and boats loiter
     if (_docking_complete) {
-        // rovers stop, boats loiter 
+        // rovers stop, boats loiter
         // note that loiter update must be called after successfull initialisation on mode loiter
         if (_loitering) {
             // mode loiter must be initialised before calling update method
@@ -225,7 +225,7 @@ float ModeDock::apply_slowdown(float desired_speed)
     // once the vehicle reaches dock_slow_dist_min the slowdown weight becomes 1
     float slowdown_weight = 1 - (target_vec_body.x * 0.01f - dock_slow_dist_min_m) / (dock_slow_dist_max_m - dock_slow_dist_min_m);
     slowdown_weight = constrain_float(slowdown_weight, 0.0f, 1.0f);
-    
+
     desired_speed = MAX(dock_speed_slowdown_lmt, fabsf(desired_speed) * (1 - error_ratio * slowdown_weight));
 
     // restrict speed to avoid going beyond stopping distance
@@ -249,7 +249,7 @@ bool ModeDock::calc_dock_pos_rel_vehicle_NE(Vector2f &dock_pos_rel_vehicle) cons
     if (!AP::ahrs().get_relative_position_NE_origin(current_pos_m)) {
         return false;
     }
- 
+
     dock_pos_rel_vehicle = _dock_pos_rel_origin_cm - current_pos_m * 100.0f;
     return true;
 }

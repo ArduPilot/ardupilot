@@ -90,9 +90,9 @@ void Mode::_TakeOff::do_pilot_takeoff(float& pilot_climb_rate_cm)
         copter.attitude_control->set_throttle_out(throttle, true, 0.0);
         // tell position controller to reset alt target and reset I terms
         copter.pos_control->init_z_controller();
-        if (throttle >= MIN(copter.g2.takeoff_throttle_max, 0.9) || 
+        if (throttle >= MIN(copter.g2.takeoff_throttle_max, 0.9) ||
             (copter.pos_control->get_z_accel_cmss() >= 0.5 * copter.pos_control->get_max_accel_z_cmss()) ||
-            (copter.pos_control->get_vel_desired_cms().z >= constrain_float(pilot_climb_rate_cm, copter.pos_control->get_max_speed_up_cms() * 0.1, copter.pos_control->get_max_speed_up_cms() * 0.5)) || 
+            (copter.pos_control->get_vel_desired_cms().z >= constrain_float(pilot_climb_rate_cm, copter.pos_control->get_max_speed_up_cms() * 0.1, copter.pos_control->get_max_speed_up_cms() * 0.5)) ||
             (is_positive(take_off_complete_alt - take_off_start_alt) && copter.pos_control->get_pos_target_z_cm() - take_off_start_alt > 0.5 * (take_off_complete_alt - take_off_start_alt))) {
             // throttle > 90%
             // acceleration > 50% maximum acceleration
@@ -154,7 +154,7 @@ void Mode::auto_takeoff_run()
         auto_takeoff_no_nav_alt_cm = inertial_nav.get_position_z_up_cm() + g2.wp_navalt_min * 100;
         return;
     }
-    
+
     // aircraft stays in landed state until vertical movement is detected or 90% throttle is reached
     if (copter.ap.land_complete) {
         // send throttle to attitude controller with angle boost
@@ -166,9 +166,9 @@ void Mode::auto_takeoff_run()
         pos_control->update_xy_controller();
         attitude_control->reset_rate_controller_I_terms();
         attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), 0.0);
-        if (throttle >= MIN(copter.g2.takeoff_throttle_max, 0.9) || 
+        if (throttle >= MIN(copter.g2.takeoff_throttle_max, 0.9) ||
             (copter.pos_control->get_z_accel_cmss() >= 0.5 * copter.pos_control->get_max_accel_z_cmss()) ||
-            (copter.pos_control->get_vel_desired_cms().z >= 0.1 * copter.pos_control->get_max_speed_up_cms()) || 
+            (copter.pos_control->get_vel_desired_cms().z >= 0.1 * copter.pos_control->get_max_speed_up_cms()) ||
             ( auto_takeoff_no_nav_active && (inertial_nav.get_position_z_up_cm() >= auto_takeoff_no_nav_alt_cm))) {
             // throttle > 90%
             // acceleration > 50% maximum acceleration
@@ -197,7 +197,7 @@ void Mode::auto_takeoff_run()
     float pos_z = auto_takeoff_complete_alt_cm + terr_offset;
     float vel_z = 0.0;
     copter.pos_control->input_pos_vel_accel_z(pos_z, vel_z, 0.0);
-    
+
     // run the vertical position controller and set output throttle
     pos_control->update_z_controller();
 

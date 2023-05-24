@@ -16,7 +16,7 @@
  *
  * Author: Oliver Walters / Currawong Engineering Pty Ltd
  */
- 
+
 
 #ifndef _ECUPACKETS_H
 #define _ECUPACKETS_H
@@ -344,7 +344,7 @@ int decodeECU_ErrorsPacketStructure(const void* pkt, ECU_Errors_t* user);
 typedef struct
 {
     uint16_t powerCycles; //!< Number of power cycles
-    uint8_t  reserved;   
+    uint8_t  reserved;
     uint8_t  resetCode;   //!< Auxiliary processor reset code
     uint32_t systemTime;  //!< Milliseconds since system reset
 }ECU_PowerCycles_t;

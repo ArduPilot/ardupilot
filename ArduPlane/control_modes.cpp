@@ -127,20 +127,20 @@ void Plane::autotune_start(void)
     const bool tune_yaw = g2.axis_bitmask.get() & int8_t(AutoTuneAxis::YAW);
     if (tune_roll || tune_pitch || tune_yaw) {
         gcs().send_text(MAV_SEVERITY_INFO, "Started autotune");
-        if (tune_roll) { 
+        if (tune_roll) {
             rollController.autotune_start();
         }
-        if (tune_pitch) { 
+        if (tune_pitch) {
             pitchController.autotune_start();
         }
-        if (tune_yaw) { 
+        if (tune_yaw) {
             yawController.autotune_start();
         }
         autotuning = true;
         gcs().send_text(MAV_SEVERITY_INFO, "Autotuning %s%s%s", tune_roll?"roll ":"", tune_pitch?"pitch ":"", tune_yaw?"yaw":"");
     } else {
         gcs().send_text(MAV_SEVERITY_INFO, "No axis selected for tuning!");
-    }        
+    }
 }
 
 /*

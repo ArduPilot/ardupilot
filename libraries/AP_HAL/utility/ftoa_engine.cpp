@@ -85,7 +85,7 @@ static const uint32_t factorTable[32] = {
     1038459372UL
 };
 
-int16_t ftoa_engine(float val, char *buf, uint8_t precision, uint8_t maxDecimals) 
+int16_t ftoa_engine(float val, char *buf, uint8_t precision, uint8_t maxDecimals)
 {
     uint8_t flags;
 

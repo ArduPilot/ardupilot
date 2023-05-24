@@ -63,7 +63,7 @@ void AP_Airspeed_MSP::handle_msp(const MSP::msp_airspeed_data_message_t &pkt)
         sum_temp /= 2;
         temp_count /= 2;
     }
-    
+
 }
 
 #endif // AP_AIRSPEED_MSP_ENABLED

@@ -485,7 +485,7 @@ struct PACKED log_TERRAIN {
 
 struct PACKED log_CSRV {
     LOG_PACKET_HEADER;
-    uint64_t time_us;     
+    uint64_t time_us;
     uint8_t id;
     float position;
     float force;

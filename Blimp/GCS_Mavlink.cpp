@@ -106,7 +106,7 @@ void GCS_MAVLINK_Blimp::send_pid_tuning()
         //No PIDs are used in Manual or Land mode.
         return;
     }
-    
+
     static const int8_t axes[] = {
         PID_SEND::VELX,
         PID_SEND::VELY,

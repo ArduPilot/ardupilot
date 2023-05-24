@@ -43,14 +43,14 @@ public:
         TC_ENABLE_USE = 1,
         TC_ENABLE_LEARN = 2,
     };
-    
+
 private:
 
     AP_Int8 enabled;
     AP_Int8 temp_min;
     AP_Int8 temp_max;
     AP_Float baro_exponent;
-    
+
     Vector3f last_accels;
 
     float learn_temp_start;
@@ -66,16 +66,16 @@ private:
     const float exp_limit_max = 2;
     const float exp_limit_min = 0;
     float learn_delta = 0.01f;
-    
+
     // require observation of at least 5 degrees of temp range to
     // start learning
     const float min_learn_temp_range = 7;
-    
+
     void setup_learning(void);
     void learn_calibration(void);
     void apply_calibration(void);
     void calculate_calibration();
     float calculate_correction(float temp, float exponent) const;
     float calculate_p_range(float baro_factor) const;
-    
+
 };

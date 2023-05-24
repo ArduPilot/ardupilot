@@ -369,7 +369,7 @@ float AP_InertialSensor_SITL::gyro_drift(void) const
 }
 
 
-bool AP_InertialSensor_SITL::update(void) 
+bool AP_InertialSensor_SITL::update(void)
 {
     update_accel(accel_instance);
     update_gyro(gyro_instance);

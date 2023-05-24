@@ -193,7 +193,7 @@ bool AP_Baro_DPS280::init()
 
     dev->set_device_type(DEVTYPE_BARO_DPS280);
     set_bus_id(instance, dev->get_bus_id());
-    
+
     dev->get_semaphore()->give();
 
     // request 64Hz update. New data will be available at 32Hz
@@ -286,7 +286,7 @@ void AP_Baro_DPS280::timer(void)
     if (fabsf(last_temperature) <= TEMPERATURE_LIMIT_C) {
         err_count = 0;
     }
-    
+
     WITH_SEMAPHORE(_sem);
 
     pressure_sum += pressure;

@@ -65,7 +65,7 @@ float PID::get_pid(float error, float scaler)
 		if (isnan(_last_derivative)) {
 			// we've just done a reset, suppress the first derivative
 			// term as we don't want a sudden change in input to cause
-			// a large D output change			
+			// a large D output change
 			derivative = 0;
 			_last_derivative = 0;
 		} else {
@@ -113,7 +113,7 @@ void
 PID::reset_I()
 {
     _integrator = 0;
-	// we use NAN (Not A Number) to indicate that the last 
+	// we use NAN (Not A Number) to indicate that the last
 	// derivative value is not valid
     _last_derivative = NAN;
     _pid_info.I = 0;

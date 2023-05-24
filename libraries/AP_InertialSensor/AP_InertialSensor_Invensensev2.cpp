@@ -37,7 +37,7 @@ extern const AP_HAL::HAL& hal;
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 // hal.console can be accessed from bus threads on ChibiOS
 #define debug(fmt, args ...)  do {hal.console->printf("INV2: " fmt "\n", ## args); } while(0)
-#elif CONFIG_HAL_BOARD == HAL_BOARD_ESP32 
+#elif CONFIG_HAL_BOARD == HAL_BOARD_ESP32
 // esp32 commonly has timing issues
 #define debug(fmt, args ...)  do {timing_printf("INV2: " fmt "\n", ## args); } while(0)
 #else
@@ -224,7 +224,7 @@ void AP_InertialSensor_Invensensev2::start()
     // set sample rate to 1.125KHz
     _register_write(INV2REG_GYRO_SMPLRT_DIV, 0, true);
     hal.scheduler->delay(1);
-    
+
     // configure interrupt to fire when new data arrives
     _register_write(INV2REG_INT_ENABLE_1, 0x01);
     hal.scheduler->delay(1);
@@ -239,7 +239,7 @@ void AP_InertialSensor_Invensensev2::start()
     // setup scale factors for fifo data after downsampling
     _fifo_accel_scale = _accel_scale / _accel_fifo_downsample_rate;
     _fifo_gyro_scale = GYRO_SCALE / _gyro_fifo_downsample_rate;
-    
+
     // allocate fifo buffer
     _fifo_buffer = (uint8_t *)hal.util->malloc_type(INV2_FIFO_BUFFER_LEN * INV2_SAMPLE_SIZE, AP_HAL::Util::MEM_DMA_SAFE);
     if (_fifo_buffer == nullptr) {
@@ -327,7 +327,7 @@ bool AP_InertialSensor_Invensensev2::_accumulate(uint8_t *samples, uint8_t n_sam
 #if INVENSENSE_EXT_SYNC_ENABLE
         fsync_set = (int16_val(data, 2) & 1U) != 0;
 #endif
-        
+
         accel = Vector3f(int16_val(data, 1),
                          int16_val(data, 0),
                          -int16_val(data, 2));
@@ -342,7 +342,7 @@ bool AP_InertialSensor_Invensensev2::_accumulate(uint8_t *samples, uint8_t n_sam
             return false;
         }
         float temp = t2 * temp_sensitivity + temp_zero;
-        
+
         gyro = Vector3f(int16_val(data, 4),
                         int16_val(data, 3),
                         -int16_val(data, 5));
@@ -443,7 +443,7 @@ bool AP_InertialSensor_Invensensev2::_accumulate_sensor_rate_sampling(uint8_t *s
         float temp = (static_cast<float>(tsum)/n_samples)*temp_sensitivity + temp_zero;
         _temp_filtered = _temp_filter.apply(temp);
     }
-    
+
     return ret;
 }
 
@@ -530,7 +530,7 @@ void AP_InertialSensor_Invensensev2::_read_fifo()
         //debug("fifo reset n_samples %u", bytes_read/INV2_SAMPLE_SIZE);
         _fifo_reset();
     }
-    
+
 check_registers:
     // check next register value for correctness
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
@@ -549,7 +549,7 @@ check_registers:
 bool AP_InertialSensor_Invensensev2::_check_raw_temp(int16_t t2)
 {
     // we have increased this threshold from 400 to 800 to cope with
-    // few instances observed where the temperature was varying more than 
+    // few instances observed where the temperature was varying more than
     // 400 units on ICM20649
     if (abs(t2 - _raw_temp) < 800) {
         // cached copy OK
@@ -602,7 +602,7 @@ void AP_InertialSensor_Invensensev2::_set_filter_and_scaling(void)
     // assume 1.125kHz sampling to start
     _gyro_fifo_downsample_rate = _accel_fifo_downsample_rate = 1;
     _gyro_backend_rate_hz = _accel_backend_rate_hz =  1125;
-    
+
     if (enable_fast_sampling(_accel_instance)) {
         _fast_sampling = _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
         if (_fast_sampling) {
@@ -639,7 +639,7 @@ void AP_InertialSensor_Invensensev2::_set_filter_and_scaling(void)
             _register_write(INV2REG_I2C_SLV4_CTRL, 0x1F);
         }
     }
-    
+
     if (_fast_sampling) {
         // this gives us 9kHz sampling on gyros
         gyro_config |= BIT_GYRO_NODLPF_9KHZ;

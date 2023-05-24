@@ -101,7 +101,7 @@ private:
 
     bool _use_rtscts;
     bool _use_fg_view;
-    
+
     const char *_fg_address;
 
     // internal SITL model

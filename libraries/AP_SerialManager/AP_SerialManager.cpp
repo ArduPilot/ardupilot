@@ -137,7 +137,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
 
     // @Param: 0_PROTOCOL
     // @DisplayName: Console protocol selection
-    // @Description: Control what protocol to use on the console. 
+    // @Description: Control what protocol to use on the console.
     // @Values: 1:MAVlink1, 2:MAVLink2
     // @User: Standard
     // @RebootRequired: True
@@ -218,7 +218,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
 #endif
 
     // index 11 used by 0_PROTOCOL
-        
+
 #if SERIALMANAGER_NUM_PORTS > 6
     // @Param: 6_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
@@ -513,7 +513,7 @@ void AP_SerialManager::init()
 
                     break;
 #endif
-                    
+
                 case SerialProtocol_EFI:
                     state[i].baud.set_default(AP_SERIALMANAGER_EFI_MS_BAUD);
                     uart->begin(state[i].baudrate(),
@@ -524,7 +524,7 @@ void AP_SerialManager::init()
 
                 case SerialProtocol_Generator:
                     break;
-#if HAL_MSP_ENABLED                    
+#if HAL_MSP_ENABLED
                 case SerialProtocol_MSP:
                 case SerialProtocol_DJI_FPV:
                 case SerialProtocol_MSP_DisplayPort:

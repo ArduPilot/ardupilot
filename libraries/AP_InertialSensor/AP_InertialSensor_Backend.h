@@ -157,7 +157,7 @@ protected:
 
     // alternative interface using delta-angles. Rotation and correction is handled inside this function
     void _notify_new_delta_angle(uint8_t instance, const Vector3f &dangle);
-    
+
     // rotate accel vector, scale, offset and publish
     void _publish_accel(uint8_t instance, const Vector3f &accel) __RAMFUNC__; /* front end */
 
@@ -171,7 +171,7 @@ protected:
 
     // alternative interface using delta-velocities. Rotation and correction is handled inside this function
     void _notify_new_delta_velocity(uint8_t instance, const Vector3f &dvelocity);
-    
+
     // set the amount of oversamping a accel is doing
     void _set_accel_oversampling(uint8_t instance, uint8_t n);
 
@@ -223,7 +223,7 @@ protected:
     void _set_accel_raw_sample_rate(uint8_t instance, uint16_t rate_hz) {
         _imu._accel_raw_sample_rates[instance] = rate_hz;
     }
-    
+
     // get gyroscope raw sample rate
     float _gyro_raw_sample_rate(uint8_t instance) const {
         return _imu._gyro_raw_sample_rates[instance];
@@ -234,7 +234,7 @@ protected:
     void _set_gyro_raw_sample_rate(uint8_t instance, uint16_t rate_hz) {
         _imu._gyro_raw_sample_rates[instance] = rate_hz;
     }
-    
+
     // publish a temperature value
     void _publish_temperature(uint8_t instance, float temperature); /* front end */
 
@@ -243,7 +243,7 @@ protected:
 
     // increment gyro error_count
     void _inc_gyro_error_count(uint8_t instance) __RAMFUNC__;
-    
+
     // backend unique identifier or -1 if backend doesn't identify itself
     int16_t _id = -1;
 
@@ -303,7 +303,7 @@ protected:
     */
     void notify_accel_fifo_reset(uint8_t instance) __RAMFUNC__;
     void notify_gyro_fifo_reset(uint8_t instance) __RAMFUNC__;
-    
+
     // log an unexpected change in a register for an IMU
     void log_register_change(uint32_t bus_id, const AP_HAL::Device::checkreg &reg) __RAMFUNC__;
 

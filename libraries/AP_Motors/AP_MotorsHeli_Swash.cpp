@@ -24,7 +24,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Swash::var_info[] = {
 
     // @Param: TYPE
     // @DisplayName: Swashplate Type
-    // @Description: H3 is generic, three-servo only. H3_120/H3_140 plates have Motor1 left side, Motor2 right side, Motor3 elevator in rear. HR3_120/HR3_140 have Motor1 right side, Motor2 left side, Motor3 elevator in front - use H3_120/H3_140 and reverse servo and collective directions as necessary. For all H3_90 swashplates use H4_90 and don't use servo output for the missing servo. For H4-90 Motors1&2 are left/right respectively, Motors3&4 are rear/front respectively. For H4-45 Motors1&2 are LF/RF, Motors3&4 are LR/RR 
+    // @Description: H3 is generic, three-servo only. H3_120/H3_140 plates have Motor1 left side, Motor2 right side, Motor3 elevator in rear. HR3_120/HR3_140 have Motor1 right side, Motor2 left side, Motor3 elevator in front - use H3_120/H3_140 and reverse servo and collective directions as necessary. For all H3_90 swashplates use H4_90 and don't use servo output for the missing servo. For H4-90 Motors1&2 are left/right respectively, Motors3&4 are rear/front respectively. For H4-45 Motors1&2 are LF/RF, Motors3&4 are LR/RR
     // @Values: 0:H3 Generic,1:H1 non-CPPM,2:H3_140,3:H3_120,4:H4_90,5:H4_45
     // @User: Standard
     AP_GROUPINFO("TYPE", 1, AP_MotorsHeli_Swash, _swashplate_type, SWASHPLATE_TYPE_H3_120),
@@ -73,7 +73,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Swash::var_info[] = {
     // @Units: deg
     // @User: Advanced
     AP_GROUPINFO("H3_SV3_POS", 7, AP_MotorsHeli_Swash, _servo3_pos, 180),
-    
+
     // @Param: H3_PHANG
     // @DisplayName: Swashplate Phase Angle Compensation
     // @Description: Only for H3 swashplate.  If pitching the swash forward induces a roll, this can be correct the problem
@@ -82,7 +82,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Swash::var_info[] = {
     // @User: Advanced
     // @Increment: 1
     AP_GROUPINFO("H3_PHANG", 8, AP_MotorsHeli_Swash, _phase_angle, 0),
-   
+
     AP_GROUPEND
 };
 
@@ -130,7 +130,7 @@ void AP_MotorsHeli_Swash::calculate_roll_pitch_collective_factors()
         _pitchFactor[CH_1] = cosf(radians(_servo1_pos - _phase_angle));
         _pitchFactor[CH_2] = cosf(radians(_servo2_pos - _phase_angle));
         _pitchFactor[CH_3] = cosf(radians(_servo3_pos - _phase_angle));
-        
+
         // defined swashplates, servo1 is always left, servo2 is right,
         // servo3 is elevator
     } else if (_swash_type == SWASHPLATE_TYPE_H3_140) {    //
@@ -158,7 +158,7 @@ void AP_MotorsHeli_Swash::calculate_roll_pitch_collective_factors()
         // 1:1 pure input style, phase angle not adjustable
         // servos 3 & 7 are elevator
         // can also be used for all versions of 90 deg three-servo swashplates
-        _rollFactor[CH_1] = 1; 
+        _rollFactor[CH_1] = 1;
         _rollFactor[CH_2] = -1;
         _rollFactor[CH_3] = 0;
         _rollFactor[CH_4] = 0;
@@ -170,7 +170,7 @@ void AP_MotorsHeli_Swash::calculate_roll_pitch_collective_factors()
         // four-servo roll/pitch mixer for H4-45
         // 1:1 pure input style, phase angle not adjustable
         // for 45 deg plates servos 1&2 are LF&RF, 3&7 are LR&RR.
-        _rollFactor[CH_1] = 0.707107f; 
+        _rollFactor[CH_1] = 0.707107f;
         _rollFactor[CH_2] = -0.707107f;
         _rollFactor[CH_3] = 0.707107f;
         _rollFactor[CH_4] = -0.707107f;

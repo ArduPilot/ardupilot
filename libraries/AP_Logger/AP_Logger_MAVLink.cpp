@@ -1,4 +1,4 @@
-/* 
+/*
    AP_Logger Remote(via MAVLink) logging
 */
 
@@ -106,7 +106,7 @@ bool AP_Logger_MAVLink::free_seqno_from_queue(uint32_t seqno, dm_block_queue_t &
     }
     return false;
 }
-    
+
 
 bool AP_Logger_MAVLink::WritesOK() const
 {
@@ -438,7 +438,7 @@ void AP_Logger_MAVLink::stats_collect()
     if (sfree > stats.state_free_max) {
         stats.state_free_max = sfree;
     }
-    
+
     stats.collection_count++;
 }
 
@@ -573,7 +573,7 @@ bool AP_Logger_MAVLink::send_log_block(struct dm_block &block)
         return false;
     }
 #endif
-    
+
 #if DF_MAVLINK_DISABLE_INTERRUPTS
     void *istate = hal.scheduler->disable_interrupts_save();
 #endif

@@ -252,7 +252,7 @@ bool AP_InertialSensor_BMI088::gyro_init()
     hal.scheduler->delay(30);
 
     dev_gyro->setup_checked_registers(5, 20);
-    
+
     // setup 2000dps range
     if (!dev_gyro->write_register(REGG_RANGE, 0x00, true)) {
         return false;
@@ -278,7 +278,7 @@ bool AP_InertialSensor_BMI088::gyro_init()
         return false;
     }
 
-    DEV_PRINTF("BMI088: found gyro\n");    
+    DEV_PRINTF("BMI088: found gyro\n");
 
     return true;
 }
@@ -317,7 +317,7 @@ void AP_InertialSensor_BMI088::read_fifo_accel(void)
     if (fifo_length == 0) {
         return;
     }
-    
+
     // adjust the periodic callback to be synchronous with the incoming data
     // this means that we rarely run read_fifo_accel() without updating the sensor data
     dev_accel->adjust_periodic_callback(accel_periodic_handle, ACCEL_BACKEND_PERIOD_US);
@@ -410,7 +410,7 @@ void AP_InertialSensor_BMI088::read_fifo_gyro(void)
     }
 
     num_frames &= 0x7F;
-    
+
     // don't read more than 8 frames at a time
     num_frames = MIN(num_frames, max_frames);
     if (num_frames == 0) {

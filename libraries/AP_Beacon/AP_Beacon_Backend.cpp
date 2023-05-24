@@ -22,7 +22,7 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 
 /*
-  base class constructor. 
+  base class constructor.
   This incorporates initialisation as well.
 */
 AP_Beacon_Backend::AP_Beacon_Backend(AP_Beacon &frontend) :

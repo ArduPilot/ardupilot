@@ -28,15 +28,15 @@ extern "C" {
 /*!
  * \file
  * \mainpage Servo protocol stack
- * 
+ *
  * This is the ICD for the Currawong Engineering CAN Servo. This document
  * details the Servo command and packet structure for communication with and
  * configuration of the Servo
- * 
+ *
  * The protocol API enumeration is incremented anytime the protocol is changed
  * in a way that affects compatibility with earlier versions of the protocol.
  * The protocol enumeration for this version is: 21
- * 
+ *
  * The protocol version is 2.11
  */
 
@@ -60,7 +60,7 @@ typedef enum
     SERVO_MODE_NORMAL,   //!< The servo is in normal operational mode
     SERVO_MODE_CALIBRATING,//!< The servo is in calibration mode (factory setting only)
     SERVO_MODE_TEST,     //!< The servo is in test mode (factory setting only)
-    SERVO_MODE_NUM_MODES 
+    SERVO_MODE_NUM_MODES
 } ServoModes;
 
 //! \return the label of a 'ServoModes' enum entry, based on its value
@@ -71,7 +71,7 @@ typedef enum
     SERVO_TIMEOUT_ACTION_HOLD,   //!< The servo will hold the current position
     SERVO_TIMEOUT_ACTION_DISABLE,//!< The servo will be disabled
     SERVO_TIMEOUT_ACTION_NEUTRAL,//!< The servo will move to its programmed neutral position
-    SERVO_NUM_TIMEOUT_MODES      
+    SERVO_NUM_TIMEOUT_MODES
 } ServoTimeoutModes;
 
 /*!
@@ -127,7 +127,7 @@ typedef enum
     PKT_SERVO_LIMITS = 0x80,             //!< Servo limits (current, strength, temperature)
     PKT_SERVO_CURRENT_LIMITS,            //!< Current limit control system settings
     PKT_SERVO_POTENTIOMETER,             //!< Potentiometer configuration
-    PKT_SERVO_BACKLASH,                  
+    PKT_SERVO_BACKLASH,
     PKT_SERVO_BIN_DATA,                  //!< Servo telltale binning data
     PKT_SERVO_WEAR_LEVEL_A,              //!< Wear estimate information packet 1 of 2
     PKT_SERVO_WEAR_LEVEL_B,              //!< Wear estimate information packet 2 of 2
@@ -178,14 +178,14 @@ typedef enum
     CMD_SERVO_SET_USER_ID_A,                 //!< Set User ID A
     CMD_SERVO_SET_USER_ID_B,                 //!< Set User ID B
     CMD_SERVO_CALIBRATE_POT = 0x60,          //!< Initiate servo potentiometer calibration procedure
-    CMD_SERVO_START_TEST_MODE,               
-    CMD_SERVO_STOP_TEST_MODE,                
-    CMD_SERVO_START_BACKLASH_TEST,           
-    CMD_SERVO_RESET_HALL_COUNTS,             
-    CMD_SERVO_SET_MIDDLE_POS = 0x70,         
+    CMD_SERVO_START_TEST_MODE,
+    CMD_SERVO_STOP_TEST_MODE,
+    CMD_SERVO_START_BACKLASH_TEST,
+    CMD_SERVO_RESET_HALL_COUNTS,
+    CMD_SERVO_SET_MIDDLE_POS = 0x70,
     CMD_SERVO_RESET_TELLTALES = 0x80,        //!< Reset servo telltale data
-    CMD_SERVO_CLEAR_BIN_DATA,                
-    CMD_SERVO_ERASE_EEPROM = 0x90,           
+    CMD_SERVO_CLEAR_BIN_DATA,
+    CMD_SERVO_ERASE_EEPROM = 0x90,
     CMD_SERVO_SET_COMMISSIONING_FLAG = 0x95, //!< Set servo commissioning flag
     CMD_SERVO_RESET_DEFAULT_SETTINGS = 0xA0, //!< Reset servo configuration settings to default values
     CMD_SERVO_SET_PROFILE_TASK = 0xF0,       //!< Set the task to profile

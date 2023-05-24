@@ -25,7 +25,7 @@
 #include "AP_RangeFinder_Params.h"
 
 // Maximum number of range finder instances available on this platform
-#ifndef RANGEFINDER_MAX_INSTANCES 
+#ifndef RANGEFINDER_MAX_INSTANCES
   #if AP_RANGEFINDER_ENABLED
   #define RANGEFINDER_MAX_INSTANCES 10
   #else
@@ -176,7 +176,7 @@ public:
     uint8_t get_address(uint8_t id) const {
         return id >= RANGEFINDER_MAX_INSTANCES? 0 : uint8_t(params[id].address.get());
     }
-    
+
     // methods to return a distance on a particular orientation from
     // any sensor which can current supply it
     float distance_orient(enum Rotation orientation) const;

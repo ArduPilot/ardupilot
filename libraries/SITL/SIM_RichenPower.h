@@ -135,7 +135,7 @@ private:
     };
     RichenUnion u;
 
-    // time we were asked to stop; 
+    // time we were asked to stop;
     uint32_t stop_start_ms;
 };
 

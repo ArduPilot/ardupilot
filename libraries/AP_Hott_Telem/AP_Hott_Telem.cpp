@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* 
+/*
    Graupner Hott Telemetry library
    Hott telemetry runs at 19200 8N1 on a non-inverted half-duplex UART
 
@@ -345,7 +345,7 @@ void AP_Hott_Telem::send_Vario(void)
     msg.climbrate = 30000.5 + vel.z * -100;
     msg.climbrate3s = 30000.5 + vel.z * -100*3;
     msg.climbrate10s = 30000.5 + vel.z * -100*10;
-    
+
     AP_Notify *notify = AP_Notify::get_singleton();
     char fltmode[5] {};
     if (notify) {

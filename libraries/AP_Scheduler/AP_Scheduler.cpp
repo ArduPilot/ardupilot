@@ -340,7 +340,7 @@ void AP_Scheduler::loop()
     hal.util->persistent_data.scheduler_task = -1;
 
     const uint32_t sample_time_us = AP_HAL::micros();
-    
+
     if (_loop_timer_start_us == 0) {
         _loop_timer_start_us = sample_time_us;
         _last_loop_time_s = get_loop_period_s();
@@ -406,7 +406,7 @@ void AP_Scheduler::loop()
 
     // check loop time
     perf_info.check_loop_time(sample_time_us - _loop_timer_start_us);
-        
+
     _loop_timer_start_us = sample_time_us;
 
 #if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL

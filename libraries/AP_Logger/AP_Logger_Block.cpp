@@ -24,7 +24,7 @@ AP_Logger_Block::AP_Logger_Block(AP_Logger &front, LoggerMessageWriter_DFLogStar
     df_stats_clear();
 }
 
-// Init() is called after driver Init(), it is the responsibility of the driver to make sure the 
+// Init() is called after driver Init(), it is the responsibility of the driver to make sure the
 // device is ready to accept commands before Init() is called
 void AP_Logger_Block::Init(void)
 {
@@ -314,7 +314,7 @@ void AP_Logger_Block::periodic_1Hz()
         // setup rate limiting if log rate max > 0Hz or log pause of streaming entries is requested
         rate_limiter = new AP_Logger_RateLimiter(_front, _front._params.blk_ratemax, _front._params.disarm_ratemax);
     }
-    
+
     if (!io_thread_alive()) {
         if (warning_decimation_counter == 0 && _initialised) {
             // we don't print this error unless we did initialise. When _initialised is set to true
@@ -502,7 +502,7 @@ uint16_t AP_Logger_Block::get_num_logs(void)
     }
 
     uint32_t first = StartRead(1);
-    
+
     if (first == 0xFFFF) {
         return 0;
     }

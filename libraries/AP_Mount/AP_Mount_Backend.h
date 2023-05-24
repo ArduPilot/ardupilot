@@ -90,7 +90,7 @@ public:
     // handle do_gimbal_manager_configure.  Returns MAV_RESULT_ACCEPTED on success
     // requires original message in order to extract caller's sysid and compid
     MAV_RESULT handle_command_do_gimbal_manager_configure(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
-    
+
     // process MOUNT_CONFIGURE messages received from GCS. deprecated.
     void handle_mount_configure(const mavlink_mount_configure_t &msg);
 

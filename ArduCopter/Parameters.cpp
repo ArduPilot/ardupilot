@@ -204,7 +204,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Increment: 10
     // @User: Standard
     GSCALAR(land_speed_high,        "LAND_SPEED_HIGH",   0),
-    
+
     // @Param: PILOT_SPEED_UP
     // @DisplayName: Pilot maximum vertical speed ascending
     // @Description: The maximum vertical ascending velocity the pilot may request in cm/s
@@ -308,7 +308,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
-    // @Description: Bitmap of what on-board log types to enable. This value is made up of the sum of each of the log types you want to be saved. It is usually best just to enable all basiclog types by setting this to 65535. 
+    // @Description: Bitmap of what on-board log types to enable. This value is made up of the sum of each of the log types you want to be saved. It is usually best just to enable all basiclog types by setting this to 65535.
     // @Bitmask: 0:Fast Attitude,1:Medium Attitude,2:GPS,3:System Performance,4:Control Tuning,5:Navigation Tuning,6:RC input,7:IMU,8:Mission Commands,9:Battery Monitor,10:RC output,11:Optical Flow,12:PID,13:Compass,15:Camera,17:Motors,18:Fast IMU,19:Raw IMU,20:Video Stabilization,21:Fast harmonic notch logging
     // @User: Standard
     GSCALAR(log_bitmask,    "LOG_BITMASK",          DEFAULT_LOG_BITMASK),
@@ -346,7 +346,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Range: 0 127
     // @User: Advanced
     GSCALAR(disarm_delay, "DISARM_DELAY",           AUTO_DISARMING_DELAY),
-    
+
     // @Param: ANGLE_MAX
     // @DisplayName: Angle Max
     // @Description: Maximum lean angle in all flight modes
@@ -645,7 +645,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Group: RSSI_
     // @Path: ../libraries/AP_RSSI/AP_RSSI.cpp
     GOBJECT(rssi, "RSSI_",  AP_RSSI),
-    
+
 #if RANGEFINDER_ENABLED == ENABLED
     // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder.cpp
@@ -1651,7 +1651,7 @@ void Copter::convert_tradheli_parameters(void) const
 
         // convert to known swash type for setups that match
         // PARAMETER_CONVERSION - Added: Sep-2019
-        AP_Int16 swash_pos_1, swash_pos_2, swash_pos_3, swash_phang; 
+        AP_Int16 swash_pos_1, swash_pos_2, swash_pos_3, swash_phang;
         AP_Int8  swash_type;
         bool swash_pos1_exist = AP_Param::find_old_parameter(&singleheli_conversion_info[0], &swash_pos_1);
         bool swash_pos2_exist = AP_Param::find_old_parameter(&singleheli_conversion_info[1], &swash_pos_2);
@@ -1676,7 +1676,7 @@ void Copter::convert_tradheli_parameters(void) const
                     // see if we can load it from EEPROM
                     if (!ap2->configured()) {
                         // the new parameter is not in storage so set generic swash
-                        AP_Param::set_and_save_by_name("H_SW_TYPE", SwashPlateType::SWASHPLATE_TYPE_H3);            
+                        AP_Param::set_and_save_by_name("H_SW_TYPE", SwashPlateType::SWASHPLATE_TYPE_H3);
                     }
                 }
             }
@@ -1711,7 +1711,7 @@ void Copter::convert_tradheli_parameters(void) const
         // PARAMETER_CONVERSION - Added: Sep-2019
 
         // convert to known swash type for setups that match
-        AP_Int16 swash1_pos_1, swash1_pos_2, swash1_pos_3, swash1_phang, swash2_pos_1, swash2_pos_2, swash2_pos_3, swash2_phang; 
+        AP_Int16 swash1_pos_1, swash1_pos_2, swash1_pos_3, swash1_phang, swash2_pos_1, swash2_pos_2, swash2_pos_3, swash2_phang;
         bool swash1_pos1_exist = AP_Param::find_old_parameter(&dualheli_conversion_info[0], &swash1_pos_1);
         bool swash1_pos2_exist = AP_Param::find_old_parameter(&dualheli_conversion_info[1], &swash1_pos_2);
         bool swash1_pos3_exist = AP_Param::find_old_parameter(&dualheli_conversion_info[2], &swash1_pos_3);
@@ -1734,7 +1734,7 @@ void Copter::convert_tradheli_parameters(void) const
                 // see if we can load it from EEPROM
                 if (!ap2->configured()) {
                     // the new parameter is not in storage so set generic swash
-                    AP_Param::set_and_save_by_name("H_SW_TYPE", SwashPlateType::SWASHPLATE_TYPE_H3);            
+                    AP_Param::set_and_save_by_name("H_SW_TYPE", SwashPlateType::SWASHPLATE_TYPE_H3);
                 }
             }
         }
@@ -1751,7 +1751,7 @@ void Copter::convert_tradheli_parameters(void) const
                 // see if we can load it from EEPROM
                 if (!ap2->configured()) {
                     // the new parameter is not in storage so set generic swash
-                    AP_Param::set_and_save_by_name("H_SW2_TYPE", SwashPlateType::SWASHPLATE_TYPE_H3);            
+                    AP_Param::set_and_save_by_name("H_SW2_TYPE", SwashPlateType::SWASHPLATE_TYPE_H3);
                 }
             }
         }

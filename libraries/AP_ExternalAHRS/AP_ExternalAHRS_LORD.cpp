@@ -280,7 +280,7 @@ void AP_ExternalAHRS_LORD::post_imu() const
             pressure_pa: imu_data.pressure,
             // setting temp to 25 effectively disables barometer temperature calibrations - these are already performed by lord
             temperature: 25,
-        };        
+        };
         AP::baro().handle_external(baro);
     }
 #endif

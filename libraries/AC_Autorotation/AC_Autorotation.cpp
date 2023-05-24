@@ -91,7 +91,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     AP_GROUPINFO("BAIL_TIME", 8, AC_Autorotation, _param_bail_time, AROT_BAIL_OUT_TIME),
 
     // @Param: HS_SENSOR
-    // @DisplayName: Main Rotor RPM Sensor 
+    // @DisplayName: Main Rotor RPM Sensor
     // @Description: Allocate the RPM sensor instance to use for measuring head speed.  RPM1 = 0.  RPM2 = 1.
     // @Units: s
     // @Range: 0.5 3
@@ -163,7 +163,7 @@ bool AC_Autorotation::update_hs_glide_controller(float dt)
         // Set collective trim low pass filter cut off frequency
         col_trim_lpf.set_cutoff_frequency(_col_cutoff_freq);
 
-        // Calculate the head speed error.  Current rpm is normalised by the set point head speed.  
+        // Calculate the head speed error.  Current rpm is normalised by the set point head speed.
         // Target head speed is defined as a percentage of the set point.
         _head_speed_error = head_speed_norm - _target_head_speed;
 
@@ -296,7 +296,7 @@ void AC_Autorotation::init_fwd_spd_controller(void)
 {
     // Reset I term and acceleration target
     _accel_target = 0.0f;
-    
+
     // Ensure parameter acceleration doesn't exceed hard-coded limit
     _accel_max = MIN(_param_accel_max, 60.0f);
 
@@ -355,7 +355,7 @@ void AC_Autorotation::update_forward_speed_controller(void)
         _accel_target = _accel_out_last - _accel_max;
     }
 
-    //Limiting acceleration based on velocity gained during the previous time step 
+    //Limiting acceleration based on velocity gained during the previous time step
     if (fabsf(_delta_speed_fwd) > _accel_max * _dt) {
         _flag_limit_accel = true;
     } else {

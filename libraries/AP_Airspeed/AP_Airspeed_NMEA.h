@@ -33,7 +33,7 @@ public:
 
 private:
     // pointer to serial uart
-    AP_HAL::UARTDriver *_uart = nullptr; 
+    AP_HAL::UARTDriver *_uart = nullptr;
 
     // add a single character to the buffer and attempt to decode
     // returns true if a complete sentence was successfully decoded

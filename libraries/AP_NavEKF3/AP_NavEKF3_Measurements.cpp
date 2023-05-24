@@ -283,7 +283,7 @@ void NavEKF3_core::readMagData()
 
     if (!compass.available()) {
         allMagSensorsFailed = true;
-        return;        
+        return;
     }
 
     // If we are a vehicle with a sideslip constraint to aid yaw estimation and we have timed out on our last avialable
@@ -426,7 +426,7 @@ void NavEKF3_core::readIMUData()
     readDeltaVelocity(accel_index_active, imuDataNew.delVel, imuDataNew.delVelDT);
     accelPosOffset = ins.get_imu_pos_offset(accel_index_active).toftype();
     imuDataNew.accel_index = accel_index_active;
-    
+
     // Get delta angle data from primary gyro or primary if not available
     readDeltaAngle(gyro_index_active, imuDataNew.delAng, imuDataNew.delAngDT);
     imuDataNew.delAngDT = MAX(imuDataNew.delAngDT, 1.0e-4f);
@@ -508,7 +508,7 @@ void NavEKF3_core::readIMUData()
         imuDataDelayed.delVelDT = MAX(imuDataDelayed.delVelDT,minDT);
 
         updateTimingStatistics();
-        
+
         // correct the extracted IMU data for sensor errors
         delAngCorrected = imuDataDelayed.delAng;
         delVelCorrected = imuDataDelayed.delVel;
@@ -650,7 +650,7 @@ void NavEKF3_core::readGpsData()
 
     // Set the EKF origin and magnetic field declination if not previously set and GPS checks have passed
     if (gpsGoodToAlign && !validOrigin) {
-        Location gpsloc_fieldelevation = gpsloc; 
+        Location gpsloc_fieldelevation = gpsloc;
         // if flying, correct for height change from takeoff so that the origin is at field elevation
         if (inFlight) {
             gpsloc_fieldelevation.alt += (int32_t)(100.0f * stateStruct.position.z);

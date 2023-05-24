@@ -93,7 +93,7 @@ const AP_Param::GroupInfo AC_WeatherVane::var_info[] = {
     // @Bitmask: 0:Use pitch when nose or tail-in for faster weathervaning
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 9, AC_WeatherVane, _options, 0),
-    
+
     AP_GROUPEND
 };
 

@@ -14,7 +14,7 @@ bool ModeAcro_Heli::init(bool ignore_checks)
     attitude_control->use_flybar_passthrough(motors->has_flybar(), motors->supports_yaw_passthrough());
 
     motors->set_acro_tail(true);
-    
+
     // set stab collective false to use full collective pitch range
     copter.input_manager.set_use_stab_col(false);
 
@@ -101,7 +101,7 @@ void ModeAcro_Heli::run()
         float roll_in = channel_roll->get_control_in_zero_dz();
         float pitch_in = channel_pitch->get_control_in_zero_dz();
         float yaw_in;
-        
+
         if (motors->supports_yaw_passthrough()) {
             // if the tail on a flybar heli has an external gyro then
             // also use no deadzone for the yaw control and

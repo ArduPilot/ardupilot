@@ -75,7 +75,7 @@
 #else
 #define DOWNWARD_RANGEFINDER_MAX_INSTANCES 1
 #endif
-    
+
 class AP_AHRS;
 
 class NavEKF2_core : public NavEKF_core_common
@@ -86,7 +86,7 @@ public:
 
     // setup this core backend
     bool setup_core(uint8_t _imu_index, uint8_t _core_index);
-    
+
     // Initialise the states from accelerometer and magnetometer data (if present)
     // This method can only be used when the vehicle is static
     bool InitialiseFilterBootstrap(void);
@@ -336,7 +336,7 @@ public:
 
     // get a yaw estimator instance
     const EKFGSF_yaw *get_yawEstimator(void) const { return yawEstimator; }
-    
+
 private:
     EKFGSF_yaw *yawEstimator;
     AP_DAL &dal;
@@ -719,7 +719,7 @@ private:
 
     // return magnetic declination in radians
     ftype MagDeclination(void) const;
-    
+
     // Propagate PVA solution forward from the fusion time horizon to the current time horizon
     // using a simple observer
     void calcOutputStates();
@@ -1179,7 +1179,7 @@ private:
 
     // when was attitude filter status last non-zero?
     uint32_t last_filter_ok_ms;
-    
+
     // should we assume zero sideslip?
     bool assume_zero_sideslip(void) const;
 

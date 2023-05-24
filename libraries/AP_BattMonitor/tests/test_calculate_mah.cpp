@@ -31,7 +31,7 @@ TEST(AP_BATTMONITOR_ACCURACY, test_float_accuracy)
     /* Test for loss of accuracy */
     EXPECT_FLOAT_EQ(calculate_mah(100, 1), calculate_mah_with_double_cast(100, 1));
     EXPECT_FLOAT_EQ(calculate_mah(-1, 1), calculate_mah_with_double_cast(-1, 1));
-    EXPECT_FLOAT_EQ(calculate_mah(0.0000000001f, 1), calculate_mah_with_double_cast(0.0000000001f, 1)); 
+    EXPECT_FLOAT_EQ(calculate_mah(0.0000000001f, 1), calculate_mah_with_double_cast(0.0000000001f, 1));
     EXPECT_FLOAT_EQ(calculate_mah(1234.123456789, 1), calculate_mah_with_double_cast(1234.123456789, 1));
     EXPECT_FLOAT_EQ(calculate_mah(-1234.123456789, 1), calculate_mah_with_double_cast(-1234.123456789, 1));
 }

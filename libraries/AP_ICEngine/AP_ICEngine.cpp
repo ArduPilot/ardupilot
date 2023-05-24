@@ -395,7 +395,7 @@ bool AP_ICEngine::throttle_override(float &percentage, const float base_throttle
         percentage = 0;
         return true;
     }
-    
+
     if (redline.flag && !option_set(Options::DISABLE_REDLINE_GOVERNOR)) {
         // limit the throttle from increasing above what the current output is
         if (redline.throttle_percentage < 1.0f) {
@@ -525,7 +525,7 @@ void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
     // Calculate the change per loop to achieve the desired slew rate of 1 percent per second
     static const float idle_setpoint_step = idle_slew * AP::scheduler().get_loop_period_s();
 
-    // Update Integrator 
+    // Update Integrator
     if (underspeed) {
         idle_governor_integrator += idle_setpoint_step;
     } else {

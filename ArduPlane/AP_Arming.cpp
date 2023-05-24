@@ -24,7 +24,7 @@ const AP_Param::GroupInfo AP_Arming_Plane::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BBOX_SPD", 4, AP_Arming_Plane, blackbox_speed, 5),
 #endif // AP_PLANE_BLACKBOX_LOGGING
-    
+
     AP_GROUPEND
 };
 
@@ -94,9 +94,9 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
         ret = false;
     }
 
-    if (plane.channel_throttle->get_reverse() && 
+    if (plane.channel_throttle->get_reverse() &&
         Plane::ThrFailsafe(plane.g.throttle_fs_enabled.get()) != Plane::ThrFailsafe::Disabled &&
-        plane.g.throttle_fs_value < 
+        plane.g.throttle_fs_value <
         plane.channel_throttle->get_radio_max()) {
         check_failed(display_failure, "Invalid THR_FS_VALUE for rev throttle");
         ret = false;
@@ -332,7 +332,7 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_chec
             return false;
         }
     }
-    
+
     if (do_disarm_checks && method == AP_Arming::Method::RUDDER) {
         // option must be enabled:
         if (get_rudder_arming_type() != AP_Arming::RudderArming::ARMDISARM) {
@@ -374,7 +374,7 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_chec
     // re-initialize speed variable used in AUTO and GUIDED for
     // DO_CHANGE_SPEED commands
     plane.new_airspeed_cm = -1;
-    
+
     gcs().send_text(MAV_SEVERITY_INFO, "Throttle disarmed");
 
     return true;
@@ -468,7 +468,7 @@ bool AP_Arming_Plane::rc_received_if_enabled_check(bool display_failure)
     }
 
     // If RC failsafe is enabled we must receive RC before arming
-    if ((Plane::ThrFailsafe(plane.g.throttle_fs_enabled.get()) == Plane::ThrFailsafe::Enabled) && 
+    if ((Plane::ThrFailsafe(plane.g.throttle_fs_enabled.get()) == Plane::ThrFailsafe::Enabled) &&
         !(rc().has_had_rc_receiver() || rc().has_had_rc_override())) {
         check_failed(display_failure, "Waiting for RC");
         return false;

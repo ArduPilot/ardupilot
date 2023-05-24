@@ -57,7 +57,7 @@ public:
     // lock a port for exclusive use. Use a key of 0 to unlock
     virtual bool lock_port(uint32_t write_key, uint32_t read_key) { return false; }
 
-    // check data available on a locked port. If port is locked and key is not correct then 
+    // check data available on a locked port. If port is locked and key is not correct then
     // 0 is returned
     virtual uint32_t available_locked(uint32_t key) { return 0; }
 
@@ -67,7 +67,7 @@ public:
 
     // read from a locked port. If port is locked and key is not correct then 0 is returned
     virtual bool read_locked(uint32_t key, uint8_t &b) WARN_IF_UNUSED { return -1; }
-    
+
     // control optional features
     virtual bool set_options(uint16_t options) { _last_options = options; return options==0; }
     virtual uint16_t get_options(void) const { return _last_options; }

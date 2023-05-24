@@ -13,7 +13,7 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// this include file *defines* the structure holding the version information for the ArduPilot binary.  It must only be 
+// this include file *defines* the structure holding the version information for the ArduPilot binary.  It must only be
 // included in a single place, thus the following protection:
 
 #ifndef FORCE_VERSION_H_INCLUDE

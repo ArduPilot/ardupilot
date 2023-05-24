@@ -52,7 +52,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     AP_GROUPINFO("SPEED_DN",    3, AC_WPNav, _wp_speed_down_cms, WPNAV_WP_SPEED_DOWN),
 
     // @Param: ACCEL
-    // @DisplayName: Waypoint Acceleration 
+    // @DisplayName: Waypoint Acceleration
     // @Description: Defines the horizontal acceleration in cm/s/s used during missions
     // @Units: cm/s/s
     // @Range: 50 500
@@ -154,7 +154,7 @@ AC_WPNav::TerrainSource AC_WPNav::get_terrain_source() const
 ///     stopping_point should be the vehicle's stopping point (equal to the starting point of the next segment) if know or left as zero
 ///     should be called once before the waypoint controller is used but does not need to be called before subsequent updates to destination
 void AC_WPNav::wp_and_spline_init(float speed_cms, Vector3f stopping_point)
-{    
+{
     // check _wp_radius_cm is reasonable
     _wp_radius_cm.set_and_save_ifchanged(MAX(_wp_radius_cm, WPNAV_WP_RADIUS_MIN));
 

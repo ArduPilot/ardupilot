@@ -204,13 +204,13 @@ private:
 
     // scheduler options
     AP_Int8 _options;
-    
+
     // calculated loop period in usec
     uint16_t _loop_period_us;
 
     // calculated loop period in seconds
     float _loop_period_s;
-    
+
     // list of tasks to run
     const struct Task *_vehicle_tasks;
     uint8_t _num_vehicle_tasks;
@@ -247,7 +247,7 @@ private:
 
     // time of last loop in seconds
     float _last_loop_time_s;
-    
+
     // bitmask bit which indicates if we should log PERF message
     uint32_t _log_performance_bit;
 
@@ -259,7 +259,7 @@ private:
     // cope with low CPU conditions
     uint32_t task_not_achieved;
     uint32_t task_all_achieved;
-    
+
     // extra time available for each loop - used to dynamically adjust
     // the loop rate in case we are well over budget
     uint32_t extra_loop_us;

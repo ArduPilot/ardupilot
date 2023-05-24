@@ -6,8 +6,8 @@
 extern const AP_HAL::HAL& hal;
 
 // constructor
-AP_Baro_Backend::AP_Baro_Backend(AP_Baro &baro) : 
-    _frontend(baro) 
+AP_Baro_Backend::AP_Baro_Backend(AP_Baro &baro) :
+    _frontend(baro)
 {
 }
 
@@ -68,11 +68,11 @@ static constexpr float FILTER_KOEF = 0.1f;
 
 /* Check that the baro value is valid by using a mean filter. If the
  * value is further than filtrer_range from mean value, it is
- * rejected. 
+ * rejected.
 */
 bool AP_Baro_Backend::pressure_ok(float press)
 {
-    
+
     if (isinf(press) || isnan(press)) {
         return false;
     }

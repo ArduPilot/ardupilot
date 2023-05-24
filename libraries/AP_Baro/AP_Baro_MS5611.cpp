@@ -89,7 +89,7 @@ bool AP_Baro_MS56XX::_init()
 
     // high retries for init
     _dev->set_retries(10);
-    
+
     uint16_t prom[8];
     bool prom_read_ok = false;
 
@@ -102,7 +102,7 @@ bool AP_Baro_MS56XX::_init()
     if (_ms56xx_type == BARO_MS5611 && _frontend.option_enabled(AP_Baro::Options::TreatMS5611AsMS5607)) {
         _ms56xx_type = BARO_MS5607;
     }
-    
+
     const char *name = "MS5611";
     switch (_ms56xx_type) {
     case BARO_MS5607:
@@ -169,7 +169,7 @@ bool AP_Baro_MS56XX::_init()
 
     // lower retries for run
     _dev->set_retries(3);
-    
+
     _dev->get_semaphore()->give();
 
     /* Request 100Hz update */
@@ -314,7 +314,7 @@ void AP_Baro_MS56XX::_timer(void)
         _update_and_wrap_accumulator(&_accum.s_D1, adc_val,
                                      &_accum.d1_count, 128);
     }
-    
+
     _state = next_state;
 }
 
@@ -472,7 +472,7 @@ void AP_Baro_MS56XX::_calculate_5637()
             OFF2 += 17 * sq(TEMP+1500);
             SENS2 += 9 * sq(TEMP+1500);
         }
-        
+
         TEMP = TEMP - T2;
         OFF = OFF - OFF2;
         SENS = SENS - SENS2;

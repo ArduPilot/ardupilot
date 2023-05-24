@@ -158,7 +158,7 @@ void AP_KDECAN_Driver::update(const uint8_t num_poles)
 #if HAL_WITH_ESC_TELEM
     _telemetry.num_poles = num_poles;
 #endif
-    
+
     WITH_SEMAPHORE(_output.sem);
     for (uint8_t i = 0; i < ARRAY_SIZE(_output.pwm); i++) {
         if ((_init.detected_bitmask & (1UL<<i)) == 0 || SRV_Channels::channel_function(i) <= SRV_Channel::Aux_servo_function_t::k_none) {

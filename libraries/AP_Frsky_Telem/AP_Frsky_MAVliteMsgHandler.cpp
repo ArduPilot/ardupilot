@@ -244,7 +244,7 @@ void AP_Frsky_MAVliteMsgHandler::handle_param_set(const AP_Frsky_MAVlite_Message
 }
 
 /*
-  Handle a MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN command 
+  Handle a MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN command
   for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
   Optionally disable PX4IO overrides. This is done for quadplanes to
   prevent the mixer running while rebooting which can start the VTOL

@@ -4,7 +4,7 @@
 #include <AP_Math/vector3.h>
 #include <AP_Math/AP_Math.h>
 
-// check if two vector3f are equal 
+// check if two vector3f are equal
 #define EXPECT_VECTOR3F_EQ(v1, v2)              \
     do {                                        \
         EXPECT_FLOAT_EQ(v1[0], v2[0]);          \

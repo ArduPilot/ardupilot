@@ -685,7 +685,7 @@ void GCS_MAVLINK::ftp_list_dir(struct pending_ftp &request, struct pending_ftp &
         AP::FS().closedir(dir);
         return;
     }
-    
+
     // strip any bad temp data from our response as it can confuse a GCS, and defeats 0 trimming
     if (index < sizeof(response.data)) {
         memset(response.data + index, 0, MAX(0, (int)(sizeof(response.data)) - index));

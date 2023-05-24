@@ -15,7 +15,7 @@ public:
      * declination and inclination are returned in degrees
      * intensity is returned in Gauss
      * Boolean returns false if latitude and longitude are outside the valid input range of +-60 latitude and +-180 longitude
-    */    
+    */
     static bool get_mag_field_ef(float latitude_deg, float longitude_deg, float &intensity_gauss, float &declination_deg, float &inclination_deg);
 
     /*
@@ -27,7 +27,7 @@ public:
       get declination in degrees for a given latitude_deg and longitude_deg
      */
     static float get_declination(float latitude_deg, float longitude_deg);
-    
+
 private:
     static const float SAMPLING_RES;
     static const float SAMPLING_MIN_LAT;

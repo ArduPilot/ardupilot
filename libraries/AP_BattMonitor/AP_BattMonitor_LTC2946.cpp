@@ -71,7 +71,7 @@ void AP_BattMonitor_LTC2946::read(void)
 
     const uint32_t tnow = AP_HAL::micros();
     const uint32_t dt_us = tnow - _state.last_time_micros;
-    
+
     // update total current drawn since startup
     update_consumed(_state, dt_us);
 

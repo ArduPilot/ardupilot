@@ -94,8 +94,8 @@ public:
         AP_HAL::SPIDevice::setup_bankselect_callback(bank_select);
     }
 
-    /* 
-       Ensure to deregister bankselect callback in destructor of user 
+    /*
+       Ensure to deregister bankselect callback in destructor of user
        that could potentially be deleted. otherewise the orphaned functor
        can be called causing memory corruption.
     */

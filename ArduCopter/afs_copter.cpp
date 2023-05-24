@@ -20,7 +20,7 @@ void AP_AdvancedFailsafe_Copter::terminate_vehicle(void)
 
         // disarm as well
         copter.arming.disarm(AP_Arming::Method::AFS);
-    
+
         // and set all aux channels
         SRV_Channels::set_output_limit(SRV_Channel::k_heli_rsc, SRV_Channel::Limit::TRIM);
         SRV_Channels::set_output_limit(SRV_Channel::k_heli_tail_rsc, SRV_Channel::Limit::TRIM);

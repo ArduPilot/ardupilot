@@ -109,7 +109,7 @@ bool AP_FlashStorage::init(void)
     // clear any write error
     write_error = false;
     reserved_space = 0;
-    
+
     // if the first sector is full then write out all data so we can erase it
     if (states[first_sector] == SECTOR_STATE_FULL) {
         current_sector = first_sector ^ 1;
@@ -128,7 +128,7 @@ bool AP_FlashStorage::init(void)
     }
 
     reserved_space = 0;
-    
+
     // ready to use
     return true;
 }
@@ -161,7 +161,7 @@ bool AP_FlashStorage::protected_switch_full_sector(void)
     // clear any write error
     write_error = false;
     reserved_space = 0;
-    
+
     if (!write_all()) {
         return false;
     }
@@ -180,7 +180,7 @@ bool AP_FlashStorage::write(uint16_t offset, uint16_t length)
         return false;
     }
     //debug("write at %u for %u write_offset=%u\n", offset, length, write_offset);
-    
+
     while (length > 0) {
         uint8_t n = max_write;
 #if AP_FLASHSTORAGE_TYPE != AP_FLASHSTORAGE_TYPE_H7 && AP_FLASHSTORAGE_TYPE != AP_FLASHSTORAGE_TYPE_G4
@@ -197,7 +197,7 @@ bool AP_FlashStorage::write(uint16_t offset, uint16_t length)
                     return false;
                 }
                 if (!switch_full_sector()) {
-                    return false;                    
+                    return false;
                 }
             }
         }
@@ -291,7 +291,7 @@ bool AP_FlashStorage::load_sector(uint8_t sector)
             ofs += block_nbytes + sizeof(header);
             break;
         }
-            
+
         case BLOCK_STATE_VALID: {
             uint16_t block_nbytes = (header.num_blocks_minus_one+1)*block_size;
             uint16_t block_ofs = header.block_num*block_size;
@@ -347,18 +347,18 @@ bool AP_FlashStorage::erase_all(void)
 
     current_sector = 0;
     write_offset = sizeof(struct sector_header);
-    
+
     if (!erase_sector(0, current_sector!=0)) {
         return false;
     }
     if (!erase_sector(1, current_sector!=1)) {
         return false;
     }
-    
+
     // mark current sector as in-use
     struct sector_header header;
     header.set_state(SECTOR_STATE_IN_USE);
-    return flash_write(current_sector, 0, (const uint8_t *)&header, sizeof(header));    
+    return flash_write(current_sector, 0, (const uint8_t *)&header, sizeof(header));
 }
 
 /*
@@ -405,7 +405,7 @@ bool AP_FlashStorage::switch_sectors(void)
 
     uint8_t new_sector = current_sector ^ 1;
     debug("switching to sector %u\n", new_sector);
-    
+
     // check sector is available
     if (!flash_read(new_sector, 0, (uint8_t *)&header, sizeof(header))) {
         return false;
@@ -437,13 +437,13 @@ bool AP_FlashStorage::switch_sectors(void)
 
     // switch sectors
     current_sector = new_sector;
-        
+
     // we need to reserve some space in next sector to ensure we can successfully do a
     // full write out on init()
     reserved_space = reserve_size;
-    
+
     write_offset = sizeof(header);
-    return true;    
+    return true;
 }
 
 /*
@@ -455,7 +455,7 @@ bool AP_FlashStorage::re_initialise(void)
         return false;
     }
     if (!erase_all()) {
-        return false;        
+        return false;
     }
     return write_all();
 }

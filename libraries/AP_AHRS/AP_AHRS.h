@@ -324,7 +324,7 @@ public:
     // return the index of the airspeed we should use for airspeed measurements
     // with multiple airspeed sensors and airspeed affinity in EKF3, it is possible to have switched
     // over to a lane not using the primary airspeed sensor, so AHRS should know which airspeed sensor
-    // to use, i.e, the one being used by the primary lane. A lane switch could have happened due to an 
+    // to use, i.e, the one being used by the primary lane. A lane switch could have happened due to an
     // airspeed sensor fault, which makes this even more necessary
     uint8_t get_active_airspeed_index() const;
 
@@ -413,7 +413,7 @@ public:
         ekf_origin = 0,
         ahrs_home = 1
     };
-    void Write_Origin(LogOriginType origin_type, const Location &loc) const; 
+    void Write_Origin(LogOriginType origin_type, const Location &loc) const;
     void write_video_stabilisation() const;
 
     // return a smoothed and corrected gyro vector in radians/second
@@ -541,7 +541,7 @@ public:
     const Vector3f &get_accel_bias(void) const {
         return _accel_bias;
     }
-    
+
     /*
      * AHRS is used as a transport for vehicle-takeoff-expected and
      * vehicle-landing-expected:
@@ -745,7 +745,7 @@ private:
 
 #if HAL_EXTERNAL_AHRS_ENABLED
     void update_external(void);
-#endif    
+#endif
 
     /*
      * trim-related state and private methods:

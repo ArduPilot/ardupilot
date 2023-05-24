@@ -36,7 +36,7 @@ const AP_Param::GroupInfo HarmonicNotchFilterParams::var_info[] = {
 
     // @Param: FREQ
     // @DisplayName: Harmonic Notch Filter base frequency
-    // @Description: Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz). 
+    // @Description: Harmonic Notch Filter base center frequency in Hz. This is the center frequency for static notches, the center frequency for Throttle based notches at the reference thrust value, and the minimum limit of center frequency variation for all other notch types. This should always be set lower than half the backend gyro rate (which is typically 1Khz).
     // @Range: 10 495
     // @Units: Hz
     // @User: Advanced
@@ -96,7 +96,7 @@ const AP_Param::GroupInfo HarmonicNotchFilterParams::var_info[] = {
     // @Range: 0.1 1.0
     // @User: Advanced
     AP_GROUPINFO("FM_RAT", 9, HarmonicNotchFilterParams, _freq_min_ratio, 1.0),
-    
+
     AP_GROUPEND
 };
 
@@ -341,7 +341,7 @@ void HarmonicNotchFilterParams::save_params()
     _freq_min_ratio.save();
 }
 
-/* 
+/*
   instantiate template classes
  */
 template class HarmonicNotchFilter<Vector3f>;

@@ -109,7 +109,7 @@ void AP_InertialSensor_BMI055::start()
     // setup sensor rotations from probe()
     set_gyro_orientation(gyro_instance, rotation);
     set_accel_orientation(accel_instance, rotation);
-    
+
     // setup callbacks
     dev_accel->register_periodic_callback(1000000UL / ACCEL_BACKEND_SAMPLE_RATE,
                                           FUNCTOR_BIND_MEMBER(&AP_InertialSensor_BMI055::read_fifo_accel, void));
@@ -133,9 +133,9 @@ bool AP_InertialSensor_BMI055::accel_init()
         goto failed;
     }
     hal.scheduler->delay(10);
-    
+
     dev_accel->setup_checked_registers(5, 20);
-    
+
     // setup 16g range
     if (!dev_accel->write_register(REGA_PMU_RANGE, 0x0C, true)) {
         goto failed;
@@ -165,7 +165,7 @@ bool AP_InertialSensor_BMI055::accel_init()
 
     dev_accel->get_semaphore()->give();
     return true;
-    
+
 failed:
     dev_accel->get_semaphore()->give();
     return false;
@@ -189,7 +189,7 @@ bool AP_InertialSensor_BMI055::gyro_init()
     hal.scheduler->delay(10);
 
     dev_gyro->setup_checked_registers(5, 20);
-    
+
     // setup 2000dps range
     if (!dev_gyro->write_register(REGG_RANGE, 0x00, true)) {
         goto failed;
@@ -215,11 +215,11 @@ bool AP_InertialSensor_BMI055::gyro_init()
         goto failed;
     }
 
-    DEV_PRINTF("BMI055: found gyro\n");    
+    DEV_PRINTF("BMI055: found gyro\n");
 
     dev_gyro->get_semaphore()->give();
     return true;
-    
+
 failed:
     dev_gyro->get_semaphore()->give();
     return false;
@@ -244,7 +244,7 @@ void AP_InertialSensor_BMI055::read_fifo_accel(void)
         return;
     }
     num_frames &= 0x7F;
-    
+
     // don't read more than 8 frames at a time
     if (num_frames > 8) {
         num_frames = 8;
@@ -253,7 +253,7 @@ void AP_InertialSensor_BMI055::read_fifo_accel(void)
     if (num_frames == 0) {
         return;
     }
-    
+
     uint8_t data[6*num_frames];
     if (!dev_accel->read_registers(REGA_FIFO_DATA, data, num_frames*6)) {
         _inc_accel_error_count(accel_instance);
@@ -304,7 +304,7 @@ void AP_InertialSensor_BMI055::read_fifo_gyro(void)
         return;
     }
     num_frames &= 0x7F;
-    
+
     // don't read more than 8 frames at a time
     if (num_frames > 8) {
         num_frames = 8;

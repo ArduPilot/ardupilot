@@ -97,7 +97,7 @@ bool AP_RAMTRON::init(void)
              }
         } else if (ramtron_ids[i].rdid_type == RDID_type::Petabytes) {
             const petabytes_rdid *petabytes = (const petabytes_rdid *)rdid;
-            if (petabytes->manufacturer[0] == 0x62 && 
+            if (petabytes->manufacturer[0] == 0x62 &&
                 petabytes->manufacturer[1] == 0x8C &&
                 ramtron_ids[i].id1 == petabytes->id1 &&
                 ramtron_ids[i].id2 == petabytes->id2) {

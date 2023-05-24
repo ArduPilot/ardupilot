@@ -67,7 +67,7 @@ public:
         uint8_t                instance;        // the instance number of this RPM
         float                  rate_rpm;        // measured rate in revs per minute
         uint32_t               last_reading_ms; // time of last reading
-        float                  signal_quality;  // synthetic quality metric 
+        float                  signal_quality;  // synthetic quality metric
     };
 
     // parameters for each instance

@@ -21,11 +21,11 @@
 class AP_EFI; //forward declaration
 
 class AP_EFI_Backend {
-public:    
+public:
     // Constructor with initialization
     AP_EFI_Backend(AP_EFI &_frontend);
 
-    // Virtual destructor that efi backends can override 
+    // Virtual destructor that efi backends can override
     virtual ~AP_EFI_Backend(void) {}
 
     // Update the state structure

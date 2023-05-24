@@ -19,7 +19,7 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
     // check if motor interlock and either Emergency Stop aux switches are used
     // at the same time.  This cannot be allowed.
     if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_INTERLOCK) &&
-        (rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_ESTOP) || 
+        (rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_ESTOP) ||
         rc().find_channel_for_option(RC_Channel::AUX_FUNC::ARM_EMERGENCY_STOP))){
         check_failed(display_failure, "Interlock/E-Stop Conflict");
         return false;
@@ -622,7 +622,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
         #else
         const char *rc_item = "Throttle";
         #endif
-        // check throttle is not too high - skips checks if arming from GCS/scripting in Guided,Guided_NoGPS or Auto 
+        // check throttle is not too high - skips checks if arming from GCS/scripting in Guided,Guided_NoGPS or Auto
         if (!((method == AP_Arming::Method::MAVLINK || method == AP_Arming::Method::SCRIPTING) && (copter.flightmode->mode_number() == Mode::Number::GUIDED || copter.flightmode->mode_number() == Mode::Number::GUIDED_NOGPS || copter.flightmode->mode_number() == Mode::Number::AUTO))) {
             // above top of deadband is too always high
             if (copter.get_pilot_desired_climb_rate(copter.channel_throttle->get_control_in()) > 0.0f) {

@@ -643,7 +643,7 @@ protected:
     bool _loitering;        // true if loitering at end of SRTL
 };
 
-   
+
 
 class ModeSteering : public Mode
 {

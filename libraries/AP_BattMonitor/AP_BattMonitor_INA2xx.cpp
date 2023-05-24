@@ -82,7 +82,7 @@ const AP_Param::GroupInfo AP_BattMonitor_INA2XX::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("MAX_AMPS", 27, AP_BattMonitor_INA2XX, max_amps, DEFAULT_BATTMON_INA2XX_MAX_AMPS),
-    
+
     AP_GROUPEND
 };
 
@@ -156,7 +156,7 @@ bool AP_BattMonitor_INA2XX::configure(DevType dtype)
         }
         break;
     }
-        
+
     }
     return false;
 }
@@ -178,7 +178,7 @@ void AP_BattMonitor_INA2XX::read(void)
 
     const uint32_t tnow = AP_HAL::micros();
     const uint32_t dt_us = tnow - _state.last_time_micros;
-    
+
     // update total current drawn since startup
     update_consumed(_state, dt_us);
 

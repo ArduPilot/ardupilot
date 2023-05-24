@@ -234,7 +234,7 @@ void shape_vel_accel_xy(const Vector2f& vel_input, const Vector2f& accel_input,
         float accel_dir = vel_input_unit * accel_target;
         Vector2f accel_cross =  accel_target - (vel_input_unit * accel_dir);
 
-        // ensure 1/sqrt(2) of maximum acceleration is available to correct cross component 
+        // ensure 1/sqrt(2) of maximum acceleration is available to correct cross component
         // relative to vel_input
         if (sq(accel_dir) <= accel_cross.length_squared()) {
             // accel_target can be simply limited in magnitude
@@ -350,7 +350,7 @@ void shape_pos_vel_accel_xy(const Vector2p& pos_input, const Vector2f& vel_input
 
     // velocity correction with input velocity
     vel_target = vel_target + vel_input;
-    
+
     // limit velocity to vel_max
     if (limit_total) {
         vel_target.limit_length(vel_max);

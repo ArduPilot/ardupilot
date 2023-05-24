@@ -1639,7 +1639,7 @@ void NavEKF3_core::resetQuatStateYawOnly(ftype yaw, ftype yawVariance, rotationO
 
     // Update the rotation matrix
     stateStruct.quat.inverse().rotation_matrix(prevTnb);
-    
+
     ftype deltaYaw = wrap_PI(yaw - eulerAngles.z);
 
     // calculate the change in the quaternion state and apply it to the output history buffer
@@ -1660,5 +1660,5 @@ void NavEKF3_core::resetQuatStateYawOnly(ftype yaw, ftype yawVariance, rotationO
     // clear all pending yaw reset requests
     gpsYawResetRequest = false;
     magYawResetRequest = false;
-    
+
 }

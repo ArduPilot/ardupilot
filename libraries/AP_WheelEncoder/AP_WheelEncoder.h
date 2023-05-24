@@ -23,8 +23,8 @@
 #define WHEELENCODER_CPR_DEFAULT        3200    // default encoder counts per full revolution of the wheel
 #define WHEELENCODER_RADIUS_DEFAULT     0.05f   // default wheel radius of 5cm (0.05m)
 
-class AP_WheelEncoder_Backend; 
- 
+class AP_WheelEncoder_Backend;
+
 class AP_WheelEncoder
 {
 public:

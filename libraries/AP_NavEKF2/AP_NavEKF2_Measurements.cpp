@@ -228,7 +228,7 @@ void NavEKF2_core::readMagData()
 
     if (!compass.available()) {
         allMagSensorsFailed = true;
-        return;        
+        return;
     }
 
     // If we are a vehicle with a sideslip constraint to aid yaw estimation and we have timed out on our last avialable
@@ -452,7 +452,7 @@ void NavEKF2_core::readIMUData()
         imuDataDelayed.delVelDT = MAX(imuDataDelayed.delVelDT,minDT);
 
         updateTimingStatistics();
-            
+
         // correct the extracted IMU data for sensor errors
         delAngCorrected = imuDataDelayed.delAng;
         delVelCorrected = imuDataDelayed.delVel;
@@ -636,7 +636,7 @@ void NavEKF2_core::readGpsData()
                     }
                 }
             }
-            
+
             // convert GPS measurements to local NED and save to buffer to be fused later if we have a valid origin
             if (validOrigin) {
                 gpsDataNew.pos = EKF_origin.get_distance_NE_ftype(gpsloc);

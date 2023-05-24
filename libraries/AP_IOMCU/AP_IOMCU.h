@@ -75,7 +75,7 @@ public:
     int16_t get_RSSI(void) const {
         return rc_input.rssi;
     }
-    
+
     /*
       get servo rail voltage adc counts
      */

@@ -1,4 +1,4 @@
-/* 
+/*
    AP_Logger logging - file oriented variant
 
    This uses posix file IO to create log files called logs/NN.bin in the
@@ -143,7 +143,7 @@ void AP_Logger_File::periodic_1Hz()
         // setup to open the log in the backend thread
         start_new_log_pending = true;
     }
-    
+
     if (_initialised &&
         !start_new_log_pending &&
         _write_fd == -1 && _read_fd == -1 &&
@@ -363,7 +363,7 @@ void AP_Logger_File::Prep_MinSpace()
 }
 
 /*
-  construct a log file name given a log number. 
+  construct a log file name given a log number.
   The number in the log filename will *not* be zero-padded.
   Note: Caller must free.
  */
@@ -649,7 +649,7 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
             DEV_PRINTF("Log read open fail for %s - %s\n",
                                 fname, strerror(saved_errno));
             free(fname);
-            return -1;            
+            return -1;
         }
         free(fname);
         _read_offset = 0;
@@ -826,7 +826,7 @@ void AP_Logger_File::start_new_log(void)
     }
     if (_write_filename) {
         free(_write_filename);
-        _write_filename = nullptr;        
+        _write_filename = nullptr;
     }
     _write_filename = _log_file_name(log_num);
     if (_write_filename == nullptr) {
@@ -954,7 +954,7 @@ void AP_Logger_File::io_timer(void)
     if (nbytes == 0) {
         return;
     }
-    if (nbytes < _writebuf_chunk && 
+    if (nbytes < _writebuf_chunk &&
         tnow - _last_write_time < 2000UL) {
         // write in _writebuf_chunk-sized chunks, but always write at
         // least once per 2 seconds if data is available
@@ -1108,7 +1108,7 @@ void AP_Logger_File::erase_next(void)
     if (erase.log_num <= MAX_LOG_FILES) {
         return;
     }
-    
+
     fname = _lastlog_file_name();
     if (fname != nullptr) {
         AP::FS().unlink(fname);

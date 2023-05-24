@@ -56,7 +56,7 @@ private:
         STATE_RESET_WAIT,
         STATE_MEASURE,
     } state;
-    
+
     /**
      * Device periodic callback to read data from the sensor.
      */
@@ -71,9 +71,9 @@ private:
     bool have_initial_offset;
     uint32_t refill_start_ms;
     uint32_t last_sample_ms;
-    
+
     uint8_t data0[6];
-    
+
     enum Rotation rotation;
 };
 

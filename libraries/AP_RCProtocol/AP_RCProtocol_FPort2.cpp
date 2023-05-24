@@ -180,7 +180,7 @@ void AP_RCProtocol_FPort2::decode_downlink(const FPort2_Frame &frame)
         telem_data.available = false;
     }
     buf[9] = crc_sum8(&buf[1], 8);
-    
+
     uart->write(buf, sizeof(buf));
 #endif
 }

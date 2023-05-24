@@ -107,7 +107,7 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
       calculate motor-power based compensation
       note that _motor_offset[] is kept even if compensation is not
       being applied so it can be logged correctly
-    */    
+    */
     state.motor_offset.zero();
     if (_compass._per_motor.enabled() && i == 0) {
         // per-motor correction is only valid for first compass
@@ -205,7 +205,7 @@ void AP_Compass_Backend::set_last_update_usec(uint32_t last_update, uint8_t inst
   should be used in publish_field()
  */
 bool AP_Compass_Backend::register_compass(int32_t dev_id, uint8_t& instance) const
-{ 
+{
     return _compass.register_compass(dev_id, instance);
 }
 
@@ -252,12 +252,12 @@ static constexpr float FILTER_KOEF = 0.1f;
 
 /* Check that the compass value is valid by using a mean filter. If
  * the value is further than filtrer_range from mean value, it is
- * rejected. 
+ * rejected.
 */
 bool AP_Compass_Backend::field_ok(const Vector3f &field)
 {
 
-    
+
     if (field.is_inf() || field.is_nan()) {
         return false;
     }

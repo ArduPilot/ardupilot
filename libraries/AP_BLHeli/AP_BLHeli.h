@@ -41,7 +41,7 @@ class AP_BLHeli : public AP_ESC_Telem_Backend {
 
 public:
     AP_BLHeli();
-    
+
     void update(void);
     void init(uint32_t motor_mask, AP_HAL::RCOutput::output_mode mode);
     void update_telemetry(void);
@@ -58,10 +58,10 @@ public:
     static AP_BLHeli *get_singleton(void) {
         return _singleton;
     }
-    
+
 private:
     static AP_BLHeli *_singleton;
-    
+
     // mask of channels to use for BLHeli protocol
     AP_Int32 channel_mask;
     AP_Int32 channel_reversible_mask;
@@ -76,7 +76,7 @@ private:
     AP_Int8 motor_poles;
     // mask of channels with bi-directional dshot enabled
     AP_Int32 channel_bidir_dshot_mask;
-    
+
     enum mspState {
         MSP_IDLE=0,
         MSP_HEADER_START,
@@ -191,7 +191,7 @@ private:
     } blheli;
 
     const uint16_t esc_status_addr = 0xEB00;
-    
+
     // protocol reported by ESC in esc_status
     enum esc_protocol {
         ESC_PROTOCOL_NONE=0,
@@ -208,8 +208,8 @@ private:
         uint32_t bad_frames;
         uint32_t unknown2;
     };
-    
-    
+
+
     AP_HAL::UARTDriver *uart;
     AP_HAL::UARTDriver *debug_uart;
     AP_HAL::UARTDriver *telem_uart;

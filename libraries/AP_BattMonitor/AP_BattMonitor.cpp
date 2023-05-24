@@ -489,7 +489,7 @@ void AP_BattMonitor::read()
     }
 
     check_failsafes();
-    
+
     checkPoweringOff();
 }
 
@@ -695,8 +695,8 @@ bool AP_BattMonitor::get_temperature(float &temperature, const uint8_t instance)
 {
     if (instance >= _num_instances || drivers[instance] == nullptr) {
         return false;
-    } 
-    
+    }
+
 #if AP_TEMPERATURE_SENSOR_ENABLED
     if (state[instance].temperature_external_use) {
         temperature = state[instance].temperature_external;
@@ -817,7 +817,7 @@ bool AP_BattMonitor::reset_remaining_mask(uint16_t battery_mask, float percentag
 // Returns the mavlink charge state. The following mavlink charge states are not used
 // MAV_BATTERY_CHARGE_STATE_EMERGENCY , MAV_BATTERY_CHARGE_STATE_FAILED
 // MAV_BATTERY_CHARGE_STATE_UNHEALTHY, MAV_BATTERY_CHARGE_STATE_CHARGING
-MAV_BATTERY_CHARGE_STATE AP_BattMonitor::get_mavlink_charge_state(const uint8_t instance) const 
+MAV_BATTERY_CHARGE_STATE AP_BattMonitor::get_mavlink_charge_state(const uint8_t instance) const
 {
     if (instance >= _num_instances) {
         return MAV_BATTERY_CHARGE_STATE_UNDEFINED;

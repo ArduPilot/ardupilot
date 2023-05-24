@@ -32,12 +32,12 @@ uint8_t GPIO::read(uint8_t pin)
     if (!valid_pin(pin)) {
         return 0;
     }
-    
+
     // weight on wheels pin support
     if (pin == _sitlState->_sitl->wow_pin.get()) {
         return _sitlState->_sitl->state.altitude < SITL_WOW_ALTITUDE ? 1 : 0;
     }
-    
+
     uint16_t mask = static_cast<uint16_t>(_sitlState->_sitl->pin_mask.get());
     return static_cast<uint16_t>((mask & (1U << pin)) ? 1 : 0);
 }

@@ -80,7 +80,7 @@ bool AP_Airspeed_MS5525::init()
         dev->set_retries(5);
 
         found = read_prom();
-        
+
         if (found) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "MS5525[%u]: Found on bus %u addr 0x%02x", get_instance(), get_bus(), addresses[i]);
             break;
@@ -200,7 +200,7 @@ void AP_Airspeed_MS5525::calculate(void)
         counter=0;
     }
 #endif
-    
+
     WITH_SEMAPHORE(sem);
 
     pressure_sum += P_Pa;
@@ -218,7 +218,7 @@ void AP_Airspeed_MS5525::timer()
         // sending the command
         return;
     }
-    
+
     uint32_t adc_val = read_adc();
 
     if (adc_val == 0) {
@@ -235,7 +235,7 @@ void AP_Airspeed_MS5525::timer()
         ignore_next = true;
         return;
     }
-    
+
     /*
      * If read fails, re-initiate a read command for current state or we are
      * stuck
@@ -250,7 +250,7 @@ void AP_Airspeed_MS5525::timer()
     }
 
     ignore_next = false;
-    
+
     cmd_sent = (state == 0) ? REG_CONVERT_TEMPERATURE : REG_CONVERT_PRESSURE;
     if (!dev->transfer(&cmd_sent, 1, nullptr, 0)) {
         // we don't know for sure what state the sensor is in when we

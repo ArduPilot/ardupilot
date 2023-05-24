@@ -178,7 +178,7 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Precision Landing Extra Options
     // @Description: Precision Landing Extra Options
-    // @Bitmask: 0: Moving Landing Target, 1: Allow Precision Landing after manual reposition 
+    // @Bitmask: 0: Moving Landing Target, 1: Allow Precision Landing after manual reposition
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 17, AC_PrecLand, _options, 0),
 
@@ -629,7 +629,7 @@ bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit_body)
             // if it is some other orientation, we first bring the vector to forward
             // and then we rotate it to desired orientation
             // because the rotations are measured with respect to a vector pointing towards front in body frame
-            // for eg, if orientation is back, i.e., ROTATION_YAW_180, 
+            // for eg, if orientation is back, i.e., ROTATION_YAW_180,
             // the vector is first brought to front and then rotation by YAW 180 to take it to the back of vehicle
             target_vec_unit_body.rotate(ROTATION_PITCH_90); // bring vector to front
             target_vec_unit_body.rotate(_orient);           // rotate it to desired orientation

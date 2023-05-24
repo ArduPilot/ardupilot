@@ -28,17 +28,17 @@ extern "C" {
 /*!
  * \file
  * fieldencode provides routines to place numbers into a byte stream.
- * 
+ *
  * fieldencode provides routines to place numbers in local memory layout into a
  * big or little endian byte stream. The byte stream is simply a sequence of
  * bytes, as might come from the data payload of a packet.
- * 
+ *
  * Support is included for non-standard types such as unsigned 24. When working
  * with nonstandard types the data in memory are given using the next larger
  * standard type. For example an unsigned 24 is actually a uint32_t in which
  * the most significant byte is clear, and only the least significant three
  * bytes are placed into a byte stream
- * 
+ *
  * Big or Little Endian refers to the order that a computer architecture will
  * place the bytes of a multi-byte word into successive memory locations. For
  * example the 32-bit number 0x01020304 can be placed in successive memory
@@ -48,7 +48,7 @@ extern "C" {
  * opened. The choice of name is made to emphasize the degree to which the
  * choice of memory layout is un-interesting, as long as one stays within the
  * local memory.
- * 
+ *
  * When transmitting data from one computer to another that assumption no
  * longer holds. In computer-to-computer transmission there are three endians
  * to consider: the endianness of the sender, the receiver, and the protocol

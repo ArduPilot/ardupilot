@@ -256,7 +256,7 @@ bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend, uint8_t instance
 }
 
 /*
-  detect if an instance of a rangefinder is connected. 
+  detect if an instance of a rangefinder is connected.
  */
 void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
 {
@@ -810,7 +810,7 @@ bool RangeFinder::prearm_healthy(char *failure_msg, const uint8_t failure_msg_le
             return false;
         case Status::OutOfRangeLow:
         case Status::OutOfRangeHigh:
-        case Status::Good:  
+        case Status::Good:
             break;
         }
     }

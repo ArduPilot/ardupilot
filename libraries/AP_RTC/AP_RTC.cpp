@@ -35,7 +35,7 @@ const AP_Param::GroupInfo AP_RTC::var_info[] = {
     // @Range: -720 +840
     // @User: Advanced
     AP_GROUPINFO("_TZ_MIN",  2, AP_RTC, tz_min, 0),
-    
+
     AP_GROUPEND
 };
 

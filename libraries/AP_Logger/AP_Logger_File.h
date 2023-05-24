@@ -1,4 +1,4 @@
-/* 
+/*
    AP_Logger logging - file oriented variant
 
    This uses posix file IO to create log files called logNN.dat in the
@@ -75,7 +75,7 @@ private:
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     bool _need_rtc_update;
 #endif
-    
+
     int _read_fd = -1;
     uint16_t _read_fd_log_num;
     uint32_t _read_offset;

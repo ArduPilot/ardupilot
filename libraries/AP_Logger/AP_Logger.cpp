@@ -41,11 +41,11 @@ extern const AP_HAL::HAL& hal;
 
 #ifndef HAL_LOGGING_MAV_BUFSIZE
 #define HAL_LOGGING_MAV_BUFSIZE  8
-#endif 
+#endif
 
 #ifndef HAL_LOGGING_FILE_TIMEOUT
 #define HAL_LOGGING_FILE_TIMEOUT 5
-#endif 
+#endif
 
 // by default log for 15 seconds after disarming
 #ifndef HAL_LOGGER_ARM_PERSIST
@@ -172,7 +172,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("_DARM_RATEMAX",  11, AP_Logger, _params.disarm_ratemax, 0),
-    
+
     AP_GROUPEND
 };
 
@@ -720,12 +720,12 @@ void AP_Logger::WriteBlock(const void *pBuffer, uint16_t size) {
 }
 
 // only the first backend write need succeed for us to be successful
-bool AP_Logger::WriteBlock_first_succeed(const void *pBuffer, uint16_t size) 
+bool AP_Logger::WriteBlock_first_succeed(const void *pBuffer, uint16_t size)
 {
     if (_next_backend == 0) {
         return false;
     }
-    
+
     for (uint8_t i=1; i<_next_backend; i++) {
         backends[i]->WriteBlock(pBuffer, size);
     }

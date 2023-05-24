@@ -366,7 +366,7 @@ void Morse::output_rover_regular(const struct sitl_input &input)
     // linear acceleration in m/s/s - very crude model
     float accel = max_accel * (target_speed - speed) / max_speed;
 
-    //force directly proportion to acceleration 
+    //force directly proportion to acceleration
     float force = accel;
 
     float steer = ground_steer * max_steer;
@@ -497,7 +497,7 @@ void Morse::update(const struct sitl_input &input)
     }
 
     extrapolated_s = 0;
-    
+
     if (initial_time_s <= 0) {
         dt_s = 0.001f;
         initial_time_s = state.timestamp - dt_s;

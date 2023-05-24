@@ -161,12 +161,12 @@ public:
     // Initialise CAN Peripheral
     bool init(const uint32_t bitrate, const OperatingMode mode) override;
 
-    // Put frame into Tx FIFO returns negative on error, 0 on buffer full, 
+    // Put frame into Tx FIFO returns negative on error, 0 on buffer full,
     // 1 on successfully pushing a frame into FIFO
     int16_t send(const AP_HAL::CANFrame& frame, uint64_t tx_deadline,
                  CanIOFlags flags) override;
 
-    // Receive frame from Rx Buffer, returns negative on error, 0 on nothing available, 
+    // Receive frame from Rx Buffer, returns negative on error, 0 on nothing available,
     // 1 on successfully poping a frame
     int16_t receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_us,
                     CanIOFlags& out_flags) override;
@@ -209,14 +209,14 @@ public:
     bool select(bool &read, bool &write,
                 const AP_HAL::CANFrame* const pending_tx,
                 uint64_t blocking_deadline) override;
-    
+
 #if CH_CFG_USE_EVENTS == TRUE
     // setup event handle for waiting on events
     bool set_event_handle(AP_HAL::EventHandle* handle) override;
 #endif
 #if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD)
     // fetch stats text and return the size of the same,
-    // results available via @SYS/can0_stats.txt or @SYS/can1_stats.txt 
+    // results available via @SYS/can0_stats.txt or @SYS/can1_stats.txt
     void get_stats(ExpandingString &str) override;
 
     /*
@@ -231,7 +231,7 @@ public:
      ************************************/
     void handleTxInterrupt(uint64_t timestamp_us);
     void handleRxInterrupt(uint8_t fifo_index, uint64_t timestamp_us);
-    
+
     // handle if any error occured, and do the needful such as,
     // droping the frame, and counting errors
     void pollErrorFlagsFromISR(void);

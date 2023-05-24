@@ -1320,7 +1320,7 @@ char AP_OSD_Screen::get_arrow_font_index(int32_t angle_cd)
     // if using BF font table must translate arrows
     if (check_option(AP_OSD::OPTION_BF_ARROWS)) {
         angle_cd = angle_cd > 18000? 54000 - angle_cd : 18000- angle_cd;
-    } 
+    }
     return SYMBOL(SYM_ARROW_START) + ((angle_cd + interval / 2) / interval) % SYMBOL(SYM_ARROW_COUNT);
 }
 
@@ -1351,16 +1351,16 @@ void AP_OSD_Screen::draw_bat_volt(uint8_t instance, VoltageType type, uint8_t x,
         blinkvolt = osd->warn_restvolt;
         break;
     }
-    case VoltageType::RESTING_CELL: { 
+    case VoltageType::RESTING_CELL: {
         blinkvolt = osd->warn_avgcellrestvolt;
         v = battery.voltage_resting_estimate(instance);
          FALLTHROUGH;
     }
-    case VoltageType::AVG_CELL: {         
+    case VoltageType::AVG_CELL: {
        if (type == VoltageType::AVG_CELL) { //for fallthrough of RESTING_CELL
             blinkvolt = osd->warn_avgcellvolt;
        }
-       // calculate cell count - WARNING this can be inaccurate if the LIPO/LIION  battery is far from 
+       // calculate cell count - WARNING this can be inaccurate if the LIPO/LIION  battery is far from
        // fully charged when attached and is used in this panel
        osd->max_battery_voltage.set(MAX(osd->max_battery_voltage,v));
        if (osd->cell_count > 0) {
@@ -1373,7 +1373,7 @@ void AP_OSD_Screen::draw_bat_volt(uint8_t instance, VoltageType type, uint8_t x,
        }
        break;
     }
-    }    
+    }
     if (!show_remaining_pct) {
         // Do not show battery percentage
         backend->write(x,y, v < blinkvolt, "%2.1f%c", (double)v, SYMBOL(SYM_VOLT));
@@ -1805,7 +1805,7 @@ void AP_OSD_Screen::draw_wind(uint8_t x, uint8_t y)
             angle = M_PI;
         }
         angle = angle + atan2f(v.y, v.x) - ahrs.yaw;
-    } 
+    }
     draw_speed(x + 1, y, angle, length);
 
 #else

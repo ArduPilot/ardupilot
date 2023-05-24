@@ -116,7 +116,7 @@ const AP_Param::GroupInfo AP_Avoidance::var_info[] = {
     // @Units: m
     // @User: Advanced
     AP_GROUPINFO("F_DIST_Z",    11, AP_Avoidance, _fail_distance_z, AP_AVOIDANCE_FAIL_DISTANCE_Z_DEFAULT),
-    
+
     // @Param: F_ALT_MIN
     // @DisplayName: ADS-B avoidance minimum altitude
     // @Description: Minimum AMSL (above mean sea level) altitude for ADS-B avoidance. If the vehicle is below this altitude, no avoidance action will take place. Useful to prevent ADS-B avoidance from activating while below the tree line or around structures. Default of 0 is no minimum.
@@ -218,7 +218,7 @@ void AP_Avoidance::add_obstacle(const uint32_t obstacle_timestamp_ms,
         }
     }
     WITH_SEMAPHORE(_rsem);
-    
+
     if (index == -1) {
         // existing obstacle not found.  See if we can store it anyway:
         if (i <_obstacles_allocated) {

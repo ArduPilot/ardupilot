@@ -14,7 +14,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-  
+
   Author: GDL90/UCP protocol by uAvionix, 2021.
   Implemented by: Tom Pittenger
  */

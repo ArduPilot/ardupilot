@@ -76,9 +76,9 @@ void NavEKF2_core::EstimateTerrainOffset()
     // don't fuse flow data if it exceeds validity limits
     // don't update terrain offset if ground is being used as the zero height datum in the main filter
     bool cantFuseFlowData = ((frontend->_flowUse != FLOW_USE_TERRAIN)
-    || gpsNotAvailable 
-    || PV_AidingMode == AID_RELATIVE 
-    || velHorizSq < 25.0f 
+    || gpsNotAvailable
+    || PV_AidingMode == AID_RELATIVE
+    || velHorizSq < 25.0f
     || (MAX(ofDataDelayed.flowRadXY[0],ofDataDelayed.flowRadXY[1]) > frontend->_maxFlowRate));
 
     if ((!rangeDataToFuse && cantFuseFlowData) || (activeHgtSource == HGT_SOURCE_RNG)) {
@@ -178,7 +178,7 @@ void NavEKF2_core::EstimateTerrainOffset()
             // calculate innovations
             auxFlowObsInnov = losPred - ofDataDelayed.flowRadXYcomp;
 
-            // calculate observation jacobians 
+            // calculate observation jacobians
             ftype t2 = q0*q0;
             ftype t3 = q1*q1;
             ftype t4 = q2*q2;

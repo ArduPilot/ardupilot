@@ -72,7 +72,7 @@ public:
      * The mask uses servo channel numbering
      */
     virtual void     set_reversible_mask(uint32_t chanmask) {}
-    
+
     /*
      * mark the channels in chanmask as reversed.
      * The chanmask passed is added (ORed) into any existing mask.
@@ -145,7 +145,7 @@ public:
       return ESC scaling value from set_esc_scaling()
      */
     virtual bool     get_esc_scaling(uint16_t &min_pwm, uint16_t &max_pwm) { return false; }
-    
+
     /*
       returns the pwm value scaled to [-1;1] regrading to set_esc_scaling ranges range without constraints.
      */
@@ -192,16 +192,16 @@ public:
       return the number of bytes read. This is a blocking call
      */
     virtual uint16_t serial_read_bytes(uint8_t *buf, uint16_t len) { return 0; }
-    
+
     /*
       stop serial output. This restores the previous output mode for
       the channel and any other channels that were stopped by
       serial_setup_output()
      */
     virtual void serial_end(void) {}
-    
+
     /*
-      output modes. Allows for support of PWM, oneshot and dshot 
+      output modes. Allows for support of PWM, oneshot and dshot
     */
     // this enum is used by BLH_OTYPE and ESC_PWM_TYPE on AP_Periph
     // double check params are still correct when changing
@@ -337,7 +337,7 @@ public:
       and led number. A led number of -1 means all LEDs. LED 0 is the first LED
      */
     virtual void set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue) {}
-    
+
     /*
       trigger send of serial led
      */

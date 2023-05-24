@@ -94,7 +94,7 @@ public:
         k_param_mode_takeoff, // was skip_gyro_cal
         k_param_auto_fbw_steer, // unused
         k_param_waypoint_max_radius,
-        k_param_ground_steer_alt,        
+        k_param_ground_steer_alt,
         k_param_ground_steer_dps,
         k_param_rally_limit_km_old, //unused anymore -- just holding this index
         k_param_hil_err_limit_unused,  // unused
@@ -444,7 +444,7 @@ public:
     AP_Int8 flap_1_speed;
     AP_Int8 flap_2_percent;
     AP_Int8 flap_2_speed;
-    AP_Int8 takeoff_flap_percent;  
+    AP_Int8 takeoff_flap_percent;
     AP_Enum<StickMixing> stick_mixing;
     AP_Float takeoff_throttle_min_speed;
     AP_Float takeoff_throttle_min_accel;
@@ -496,7 +496,7 @@ public:
 
     // RC input channels
     RC_Channels_Plane rc_channels;
-    
+
     // control over servo output ranges
     SRV_Channels servo_channels;
 
@@ -565,7 +565,7 @@ public:
     AP_Int8         man_expo_rudder;
 
     AP_Int32        oneshot_mask;
-    
+
     AP_Int8         axis_bitmask; // axes to be autotuned
 
     // just to make compilation easier when all things are compiled out...

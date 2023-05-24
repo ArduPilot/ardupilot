@@ -54,7 +54,7 @@ public:
 
     // unload data from load_file()
     void unload_file(FileData *fd) override;
-    
+
 private:
     // only allow up to 4 files at a time
     static constexpr uint8_t max_open_file = 4;

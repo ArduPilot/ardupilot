@@ -62,7 +62,7 @@ void WiFiUdpDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         } else {
 	    hal.console->printf("OK created task _wifi_thread2\n");
     	}
-		
+
         _readbuf.set_size(RX_BUF_SIZE);
         _writebuf.set_size(TX_BUF_SIZE);
         _state = INITIALIZED;

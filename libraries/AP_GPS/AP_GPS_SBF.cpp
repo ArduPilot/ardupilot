@@ -454,13 +454,13 @@ AP_GPS_SBF::process_message(void)
                 state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
                 break;
         }
-        
+
         if ((temp.Mode & 64) > 0) { // gps is in base mode
             state.status = AP_GPS::NO_FIX;
         } else if ((temp.Mode & 128) > 0) { // gps only has 2d fix
             state.status = AP_GPS::GPS_OK_FIX_2D;
         }
-                    
+
         return true;
     }
     case DOP:

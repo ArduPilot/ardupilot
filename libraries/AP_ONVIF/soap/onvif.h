@@ -26220,20 +26220,20 @@ class tt__OSDReference
 // This service supports SOAP 1.2 namespaces:
 #import "soap12.h"
 
-//gsoap tds  service name:	DeviceBinding 
-//gsoap tds  service type:	Device 
-//gsoap tds  service namespace:	http://www.onvif.org/ver10/device/wsdl 
-//gsoap tds  service transport:	http://schemas.xmlsoap.org/soap/http 
+//gsoap tds  service name:	DeviceBinding
+//gsoap tds  service type:	Device
+//gsoap tds  service namespace:	http://www.onvif.org/ver10/device/wsdl
+//gsoap tds  service transport:	http://schemas.xmlsoap.org/soap/http
 
-//gsoap tptz service name:	PTZBinding 
-//gsoap tptz service type:	PTZ 
-//gsoap tptz service namespace:	http://www.onvif.org/ver20/ptz/wsdl 
-//gsoap tptz service transport:	http://schemas.xmlsoap.org/soap/http 
+//gsoap tptz service name:	PTZBinding
+//gsoap tptz service type:	PTZ
+//gsoap tptz service namespace:	http://www.onvif.org/ver20/ptz/wsdl
+//gsoap tptz service transport:	http://schemas.xmlsoap.org/soap/http
 
-//gsoap trt  service name:	MediaBinding 
-//gsoap trt  service type:	Media 
-//gsoap trt  service namespace:	http://www.onvif.org/ver10/media/wsdl 
-//gsoap trt  service transport:	http://schemas.xmlsoap.org/soap/http 
+//gsoap trt  service name:	MediaBinding
+//gsoap trt  service type:	Media
+//gsoap trt  service namespace:	http://www.onvif.org/ver10/media/wsdl
+//gsoap trt  service transport:	http://schemas.xmlsoap.org/soap/http
 
 /** @mainpage WSDL Definitions
 
@@ -26920,10 +26920,10 @@ shall include UTCDateTime in the request.<br/>
 				A TimeZone token which is not formed according to
 the rules of IEEE 1003.1 section 8.3 is considered as invalid timezone.<br/>
 				The DayLightSavings flag should be set to true to
-activate any DST settings of the TimeZone string. 
+activate any DST settings of the TimeZone string.
 				Clear the DayLightSavings flag if the DST portion
 of the TimeZone settings should be ignored.
-			
+
 
   - SOAP document/literal style messaging
 
@@ -27572,11 +27572,11 @@ Section 7. The Scope parameters are of
 					<li>Configurable</li>
 				</ul>
 				Fixed scope parameters are permanent device characteristics
-and cannot be removed through the device management interface. 
+and cannot be removed through the device management interface.
 				The scope type is indicated in the scope list returned
-in the get scope parameters response. A device shall support 
+in the get scope parameters response. A device shall support
 				retrieval of discovery scope parameters through
-the GetScopes command. As some scope parameters are mandatory, 
+the GetScopes command. As some scope parameters are mandatory,
 				the device shall return a non-empty scope list in
 the response.
 
@@ -28533,7 +28533,7 @@ int __tds__GetUsers(
 
 /** Operation "__tds__CreateUsers" of service binding "DeviceBinding".
 This operation creates new device users and corresponding credentials on a device
-for authentication purposes. 
+for authentication purposes.
 				The device shall support creation of device users
 and their credentials through the CreateUsers
 				command. Either all users are created successfully
@@ -28613,7 +28613,7 @@ int __tds__CreateUsers(
 
 /** Operation "__tds__DeleteUsers" of service binding "DeviceBinding".
 This operation deletes users on a device. The device shall support deletion of device
-users and their credentials 
+users and their credentials
 				through the DeleteUsers command. A device may have
 one or more fixed users
 				that cannot be deleted to ensure access to the unit.
@@ -28690,7 +28690,7 @@ int __tds__DeleteUsers(
 This operation updates the settings for one or several users on a device for authentication
 purposes.
 				The device shall support update of device users
-and their credentials through the SetUser command. 
+and their credentials through the SetUser command.
 				Either all change requests are processed successfully
 or a fault message shall be returned and no change requests be processed.
 
@@ -29053,10 +29053,10 @@ This operation sets the hostname on a device. It shall be possible to set the de
 hostname
 				configurations through the SetHostname command.<br/>
 				A device shall accept string formated according
-to RFC 1123 section 2.1 or alternatively to RFC 952, 
+to RFC 1123 section 2.1 or alternatively to RFC 952,
 				other string shall be considered as invalid strings.
 
-			
+
 
   - SOAP document/literal style messaging
 
@@ -29408,12 +29408,12 @@ shall be
 				possible to set the NTP server settings through
 the SetNTP command.<br/>
 				A device shall accept string formated according
-to RFC 1123 section 2.1 or alternatively to RFC 952, 
+to RFC 1123 section 2.1 or alternatively to RFC 952,
 				other string shall be considered as invalid strings.
 <br/>
 				Changes to the NTP server list will not affect the
 clock mode DateTimeType. Use SetSystemDateAndTime to activate NTP operation.
-			
+
 
   - SOAP document/literal style messaging
 
@@ -31462,13 +31462,13 @@ int __tds__SetRelayOutputState(
 
 /** Operation "__tds__SendAuxiliaryCommand" of service binding "DeviceBinding".
 Manage auxiliary commands supported by a device, such as controlling an Infrared
-(IR) lamp, 
+(IR) lamp,
 				a heater or a wiper or a thermometer that is connected
 to the device.<br/>
 				The supported commands can be retrieved via the
 AuxiliaryCommands capability.<br/>
 				Although the name of the auxiliary commands can
-be freely defined, commands starting with the prefix tt: are 
+be freely defined, commands starting with the prefix tt: are
 				reserved to define frequently used commands and
 these reserved commands shall all share the "tt:command|parameter" syntax.
 				<ul>
@@ -32652,8 +32652,8 @@ int __tds__StartSystemRestore(
 /** Operation "__tds__GetStorageConfigurations" of service binding "DeviceBinding".
 
 			This operation lists all existing storage configurations
-for the device. 
-			
+for the device.
+
 
   - SOAP document/literal style messaging
 
@@ -32722,10 +32722,10 @@ int __tds__GetStorageConfigurations(
 
 /** Operation "__tds__CreateStorageConfiguration" of service binding "DeviceBinding".
 
-			This operation creates a new storage configuration. 
+			This operation creates a new storage configuration.
 			The configuration data shall be created in the device and
 shall be persistent (remain after reboot).
-			
+
 
   - SOAP document/literal style messaging
 
@@ -32796,7 +32796,7 @@ int __tds__CreateStorageConfiguration(
 
 			This operation retrieves the Storage configuration associated
 with the given storage configuration token.
-			
+
 
   - SOAP document/literal style messaging
 
@@ -32866,7 +32866,7 @@ int __tds__GetStorageConfiguration(
 /** Operation "__tds__SetStorageConfiguration" of service binding "DeviceBinding".
 
 			This operation modifies an existing Storage configuration.
-			
+
 
   - SOAP document/literal style messaging
 
@@ -32937,7 +32937,7 @@ int __tds__SetStorageConfiguration(
 
 			This operation deletes the given storage configuration and
 configuration change shall always be persistent.
-			
+
 
   - SOAP document/literal style messaging
 
@@ -33007,8 +33007,8 @@ int __tds__DeleteStorageConfiguration(
 /** Operation "__tds__GetGeoLocation" of service binding "DeviceBinding".
 
 				This operation lists all existing geo location configurations
-for the device. 
-			
+for the device.
+
 
   - SOAP document/literal style messaging
 
@@ -33079,7 +33079,7 @@ int __tds__GetGeoLocation(
 
 				This operation allows to modify one or more geo
 configuration entries.
-			
+
 
   - SOAP document/literal style messaging
 
@@ -33149,7 +33149,7 @@ int __tds__SetGeoLocation(
 /** Operation "__tds__DeleteGeoLocation" of service binding "DeviceBinding".
 
 				This operation deletes the given geo location entries.
-			
+
 
   - SOAP document/literal style messaging
 
@@ -33329,7 +33329,7 @@ would leave the specified limits, the PTZ
 				unit has to move along the specified limits. The
 Zoom Limits have to be interpreted
 				accordingly.
-			
+
 
   - SOAP document/literal style messaging
 
@@ -33484,7 +33484,7 @@ the SetPreset operation.
 				The device MAY internally save additional states
 such as imaging properties in the PTZ
 				Preset which then should be recalled in the GotoPreset
-operation.      
+operation.
 
   - SOAP document/literal style messaging
 
@@ -33558,7 +33558,7 @@ int __tptz__SetPreset(
         PresetPosition
         capability exists for teh Node in the
         selected profile.
-      
+
 
   - SOAP document/literal style messaging
 
@@ -33795,7 +33795,7 @@ would leave the specified limits, the PTZ
 				unit has to move along the specified limits. The
 Zoom Limits have to be interpreted
 				accordingly.
-			
+
 
   - SOAP document/literal style messaging
 
@@ -33872,8 +33872,8 @@ digital PTZ drivers. PTZ Nodes are the
 				lowest level entities in the PTZ control API and
 reflect the supported PTZ capabilities. The
 				PTZ Node is referenced either by its name or by
-its reference token. 
-      		
+its reference token.
+
 
   - SOAP document/literal style messaging
 
@@ -33943,7 +33943,7 @@ int __tptz__GetNodes(
 /** Operation "__tptz__GetNode" of service binding "PTZBinding".
 Get a specific PTZ Node identified by a reference
         token or a name.
-	  
+
 
   - SOAP document/literal style messaging
 
@@ -34012,7 +34012,7 @@ int __tptz__GetNode(
 
 /** Operation "__tptz__SetConfiguration" of service binding "PTZBinding".
         Set/update a existing PTZConfiguration on the device.
-      
+
 
   - SOAP document/literal style messaging
 
@@ -34090,8 +34090,8 @@ may additionally contain coordinate
 described by the Video Source
 				Configuration. If the PTZ Node supports continuous
 movements, it shall return a Timeout Range within
-				which Timeouts are accepted by the PTZ Node.				
-			
+				which Timeouts are accepted by the PTZ Node.
+
 
   - SOAP document/literal style messaging
 
@@ -34373,14 +34373,14 @@ int __tptz__ContinuousMove(
 
 /** Operation "__tptz__RelativeMove" of service binding "PTZBinding".
 Operation for Relative Pan/Tilt and Zoom Move. The operation is supported if the
-PTZNode supports at least one relative Pan/Tilt or Zoom space.<br/> 
+PTZNode supports at least one relative Pan/Tilt or Zoom space.<br/>
 				The speed argument is optional. If an x/y speed
-value is given it is up to the device to either use 
+value is given it is up to the device to either use
 				the x value as absolute resoluting speed vector
-or to map x and y to the component speed. 
+or to map x and y to the component speed.
 				If the speed argument is omitted, the default speed
 set by the PTZConfiguration will be used.
-			
+
 
   - SOAP document/literal style messaging
 
@@ -34452,7 +34452,7 @@ int __tptz__RelativeMove(
         mapped by the PTZNode in the selected profile. The
         operation is supported
         if the AuxiliarySupported element of the PTZNode is true
-      
+
 
   - SOAP document/literal style messaging
 
@@ -34522,12 +34522,12 @@ int __tptz__SendAuxiliaryCommand(
 /** Operation "__tptz__AbsoluteMove" of service binding "PTZBinding".
 Operation to move pan,tilt or zoom to a absolute destination. <br/>
 				The speed argument is optional. If an x/y speed
-value is given it is up to the device to either use 
+value is given it is up to the device to either use
 				the x value as absolute resoluting speed vector
-or to map x and y to the component speed. 
+or to map x and y to the component speed.
 				If the speed argument is omitted, the default speed
 set by the PTZConfiguration will be used.
-			
+
 
   - SOAP document/literal style messaging
 
@@ -34598,16 +34598,16 @@ int __tptz__AbsoluteMove(
 Operation to move pan,tilt or zoom to point to a destination based on the geolocation
 of the target. <br/>
 				The speed argument is optional. If an x/y speed
-value is given it is up to the device to either use 
+value is given it is up to the device to either use
 				the x value as absolute resoluting speed vector
-or to map x and y to the component speed. 
+or to map x and y to the component speed.
 				If the speed argument is omitted, the default speed
 set by the PTZConfiguration will be used.
 				The area height and area dwidth parameters are optional,
 they can be used independently and may be used
 				by the device to automatically determine the best
 zoom level to show the target.
-			
+
 
   - SOAP document/literal style messaging
 
@@ -35230,7 +35230,7 @@ or more than one VideoSourceConfiguration or which has any other resource
 and other resources listable in a media profile should implement this operation.
 				PTZConfiguration entities returned by this operation
 shall not fail on adding them to the referenced media profile.
-			
+
 
   - SOAP document/literal style messaging
 
@@ -35301,7 +35301,7 @@ int __tptz__GetCompatibleConfigurations(
 Operation to send an an atomic command to the device: move the camera to a wanted
 position and then delegate the PTZ control to the tracking algorithm. <br/>
                     An existing Speed argument overrides DefaultSpeed of the corresponding
-PTZ configuration during movement to the requested position. 
+PTZ configuration during movement to the requested position.
                     If spaces are referenced within the Speed argument, they shall
 be speed spaces supported by the PTZ node. <br/>
                     If the detection and the tracking are done in the same device,
@@ -35309,7 +35309,7 @@ an ObjectID reference can be passed as an argument, in order to specify which ob
 should be tracked. <br/>
                     The operation shall fail if the requested absolute position
 is not reachable.
-            
+
 
   - SOAP document/literal style messaging
 
@@ -35887,7 +35887,7 @@ be persistent. A device shall
 support adding a compatible VideoEncoderConfiguration to a Profile containing a
 VideoSourceConfiguration and shall
 support streaming video data of such a profile.
-			
+
 
   - SOAP document/literal style messaging
 
@@ -36027,13 +36027,13 @@ int __trt__AddVideoSourceConfiguration(
 
 /** Operation "__trt__AddAudioEncoderConfiguration" of service binding "MediaBinding".
 This operation adds an AudioEncoderConfiguration to an existing media profile. If
-a 
+a
 configuration exists in the media profile, it will be replaced. The change shall
 be persistent. A device shall
 support adding a compatible AudioEncoderConfiguration to a profile containing an
 AudioSourceConfiguration and shall
 support streaming audio data of such a profile.
-			
+
 
   - SOAP document/literal style messaging
 
@@ -38797,7 +38797,7 @@ int __trt__GetCompatibleMetadataConfigurations(
 /** Operation "__trt__GetCompatibleAudioOutputConfigurations" of service binding "MediaBinding".
 This command lists all audio output configurations of a device that are compatible
 with a certain media profile. Each returned configuration shall be a valid input
-for the 
+for the
 AddAudioOutputConfiguration command.
 
   - SOAP document/literal style messaging
@@ -39608,20 +39608,20 @@ int __trt__GetVideoSourceConfigurationOptions(
 
 /** Operation "__trt__GetVideoEncoderConfigurationOptions" of service binding "MediaBinding".
 This operation returns the available options (supported values and ranges for video
-encoder 
+encoder
 				configuration parameters) when the video encoder
 parameters are reconfigured. <br/>
 				For JPEG, MPEG4 and H264 extension elements have
-been defined that provide additional information. A device must provide the 
+been defined that provide additional information. A device must provide the
 				XxxOption information for all encodings supported
 and should additionally provide the corresponding XxxOption2 information.<br/>
 				This response contains the available video encoder
-configuration options. If a video encoder configuration is specified, 
+configuration options. If a video encoder configuration is specified,
 				the options shall concern that particular configuration.
-If a media profile is specified, the options shall be 
+If a media profile is specified, the options shall be
 				compatible with that media profile. If no tokens
 are specified, the options shall be considered generic for the device.
-			
+
 
   - SOAP document/literal style messaging
 

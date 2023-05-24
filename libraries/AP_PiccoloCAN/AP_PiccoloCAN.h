@@ -191,7 +191,7 @@ private:
         float    fetTemperature; //!< ESC Phase Board Temperature
         uint16_t pwmFrequency;   //!< Current motor PWM frequency (10 Hz per bit)
         uint16_t timingAdvance;  //!< Current timing advance (0.1 degree per bit)
-        
+
         /* ESC status information provided in the PKT_ESC_WARNINGS_ERRORS packet */
         ESC_WarningBits_t warnings;     //! ESC warning information
         ESC_ErrorBits_t errors;         //! ESC error information

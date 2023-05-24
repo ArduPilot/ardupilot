@@ -534,7 +534,7 @@ void QuaternionT<T>::from_axis_angle_fast(const Vector3<T> &axis, T theta)
     q4 = axis.z * st2;
 }
 
-// create a quaternion by integrating an angular velocity over some time_delta, which is 
+// create a quaternion by integrating an angular velocity over some time_delta, which is
 // assumed to be small
 template <typename T>
 void QuaternionT<T>::from_angular_velocity(const Vector3<T>& angular_velocity, float time_delta)
@@ -734,7 +734,7 @@ Vector3<T> QuaternionT<T>::operator*(const Vector3<T> &v) const
     //
     //    v2 = v1 + 2 q1 * qv x v1 + 2 qv x qv x v1
     //
-    // where "x" is the cross product (explicitly inlined for performance below), 
+    // where "x" is the cross product (explicitly inlined for performance below),
     // "q1" is the scalar part and "qv" is the vector part of this quaternion
 
     Vector3<T> ret = v;

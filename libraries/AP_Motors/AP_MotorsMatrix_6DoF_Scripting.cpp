@@ -45,7 +45,7 @@ void AP_MotorsMatrix_6DoF_Scripting::output_to_motors()
                 if (motor_enabled[i]) {
                     if (_reversible[i]) {
                         // revesible motor can provide both positive and negative thrust, +- spin max, spin min does not apply
-                        if (is_positive(_thrust_rpyt_out[i])) { 
+                        if (is_positive(_thrust_rpyt_out[i])) {
                             _actuator[i] = thr_lin.apply_thrust_curve_and_volt_scaling(_thrust_rpyt_out[i]) * thr_lin.get_spin_max();
 
                         } else if (is_negative(_thrust_rpyt_out[i])) {
@@ -179,7 +179,7 @@ void AP_MotorsMatrix_6DoF_Scripting::output_armed_stabilizing()
     thrust_vec.z = 0.0f;
     thrust_vec = rot * thrust_vec;
 
-    float horz_ratio = 1.0f; 
+    float horz_ratio = 1.0f;
     for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
             thrust[i] =  thrust_vec.x * _forward_factor[i];

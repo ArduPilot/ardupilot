@@ -20,7 +20,7 @@
 const AP_Param::GroupInfo ToyMode::var_info[] = {
 
     // @Param: _ENABLE
-    // @DisplayName: tmode enable 
+    // @DisplayName: tmode enable
     // @Description: tmode (or "toy" mode) gives a simplified user interface designed for mass market drones. Version1 is for the SkyViper V2450GPS. Version2 is for the F412 based boards
     // @Values: 0:Disabled,1:EnableVersion1,2:EnableVersion2
     // @User: Advanced
@@ -132,7 +132,7 @@ const AP_Param::GroupInfo ToyMode::var_info[] = {
     // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("_VMAX", 16, ToyMode, filter.volt_max, 3.8),
-    
+
     // @Param: _TMIN
     // @DisplayName: Min thrust multiplier
     // @Description: This sets the thrust multiplier when voltage is high
@@ -157,14 +157,14 @@ const AP_Param::GroupInfo ToyMode::var_info[] = {
     // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("_LOAD_MUL", 19, ToyMode, load_test.load_mul, 1.0),
-    
+
     // @Param: _LOAD_FILT
     // @DisplayName: Load test filter
     // @Description: This filters the load test output. A value of 1 means no filter. 2 means values are repeated once. 3 means values are repeated 3 times, etc
     // @Range: 0 100
     // @User: Advanced
     AP_GROUPINFO("_LOAD_FILT", 20, ToyMode, load_test.load_filter, 1),
-    
+
     // @Param: _LOAD_TYPE
     // @DisplayName: Load test type
     // @Description: This sets the type of load test
@@ -172,7 +172,7 @@ const AP_Param::GroupInfo ToyMode::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_LOAD_TYPE", 21, ToyMode, load_test.load_type, LOAD_TYPE_LOG1),
 #endif
-   
+
     AP_GROUPEND
 };
 
@@ -199,10 +199,10 @@ void ToyMode::update()
 
     // keep filtered battery voltage for thrust limiting
     filtered_voltage = 0.99 * filtered_voltage + 0.01 * copter.battery.voltage();
-    
+
     // update LEDs
     blink_update();
-    
+
     if (!done_first_update) {
         done_first_update = true;
         copter.set_mode(Mode::Number(primary_mode[0].get()), ModeReason::TOY_MODE);
@@ -213,19 +213,19 @@ void ToyMode::update()
     if (trim_auto > 0) {
         trim_update();
     }
-            
+
     // set ALT_HOLD as indoors for the EKF (disables GPS vertical velocity fusion)
 #if 0
     copter.ahrs.set_indoor_mode(copter.flightmode->mode_number() == ALT_HOLD || copter.flightmode->mode_number() == FLOWHOLD);
 #endif
-    
+
     bool left_button = false;
     bool right_button = false;
     bool left_action_button = false;
     bool right_action_button = false;
     bool power_button = false;
     bool left_change = false;
-    
+
     uint16_t ch5_in = RC_Channels::get_radio_in(CH_5);
     uint16_t ch6_in = RC_Channels::get_radio_in(CH_6);
     uint16_t ch7_in = RC_Channels::get_radio_in(CH_7);
@@ -240,15 +240,15 @@ void ToyMode::update()
     }
 
     uint32_t now = AP_HAL::millis();
-    
+
     if (is_v2450_buttons()) {
         // V2450 button mapping from cypress radio. It maps the
         // buttons onto channels 5, 6 and 7 in a complex way, with the
         // left button latching
         left_change = ((ch5_in > 1700 && last_ch5 <= 1700) || (ch5_in <= 1700 && last_ch5 > 1700));
-        
+
         last_ch5 = ch5_in;
-                        
+
         // get buttons from channels
         left_button = (ch5_in > 2050 || (ch5_in > 1050 && ch5_in < 1150));
         right_button = (ch6_in > 1500);
@@ -269,9 +269,9 @@ void ToyMode::update()
         left_change = (left_button != last_left_button);
         last_left_button = left_button;
     }
-    
+
     // decode action buttons into an action
-    uint8_t action_input = 0;    
+    uint8_t action_input = 0;
     if (left_action_button) {
         action_input = 1;
     } else if (right_action_button) {
@@ -279,7 +279,7 @@ void ToyMode::update()
     } else if (power_button) {
         action_input = 3;
     }
-    
+
     if (action_input != 0 && left_button) {
         // combined button actions
         action_input += 3;
@@ -318,7 +318,7 @@ void ToyMode::update()
       work out commanded action, if any
      */
     enum toy_action action = action_input?toy_action(actions[action_input-1].get()):ACTION_NONE;
-   
+
     // check for long left button press
     if (action == ACTION_NONE && left_press_counter > TOY_LONG_PRESS_COUNT) {
         left_press_counter = -TOY_COMMAND_DELAY;
@@ -375,7 +375,7 @@ void ToyMode::update()
             action = ACTION_NONE;
         }
         break;
-        
+
     case ACTION_TAKE_PHOTO:
         // allow photo continuous shooting
         if (now - last_action_ms < TOY_ACTION_DELAY_MS) {
@@ -388,7 +388,7 @@ void ToyMode::update()
         last_action = action;
         break;
     }
-    
+
     if (action != ACTION_NONE) {
         gcs().send_text(MAV_SEVERITY_INFO, "Tmode: action %u", action);
         last_action_ms = now;
@@ -401,7 +401,7 @@ void ToyMode::update()
     // throttle threshold for throttle arming
     bool throttle_near_max =
         copter.channel_throttle->get_control_in() > 700;
-    
+
     /*
       disarm if throttle is low for 1 second when landed
      */
@@ -462,15 +462,15 @@ void ToyMode::update()
 #if AP_FENCE_ENABLED
             copter.fence.enable(true);
 #endif
-            gcs().send_text(MAV_SEVERITY_INFO, "Tmode: LOITER update");            
+            gcs().send_text(MAV_SEVERITY_INFO, "Tmode: LOITER update");
         }
     }
 
     if (copter.flightmode->mode_number() == Mode::Number::RTL && (flags & FLAG_RTL_CANCEL) && throttle_near_max) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Tmode: RTL cancel");        
+        gcs().send_text(MAV_SEVERITY_INFO, "Tmode: RTL cancel");
         set_and_remember_mode(Mode::Number::LOITER, ModeReason::TOY_MODE);
     }
-    
+
     enum Mode::Number old_mode = copter.flightmode->mode_number();
     enum Mode::Number new_mode = old_mode;
 
@@ -565,7 +565,7 @@ void ToyMode::update()
             new_mode = Mode::Number::ALT_HOLD;
         }
         break;
-        
+
     case ACTION_DISARM:
         if (copter.motors->armed()) {
             gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: Force disarm");
@@ -585,7 +585,7 @@ void ToyMode::update()
     case ACTION_TOGGLE_SSIMPLE:
         copter.set_simple_mode(bool(copter.simple_mode)?Copter::SimpleMode::NONE:Copter::SimpleMode::SUPERSIMPLE);
         break;
-        
+
     case ACTION_ARM_LAND_RTL:
         if (!copter.motors->armed()) {
             action_arm();
@@ -640,7 +640,7 @@ void ToyMode::update()
         // revert back to last primary flight mode if disarmed after landing
         new_mode = Mode::Number(primary_mode[last_mode_choice].get());
     }
-    
+
     if (new_mode != copter.flightmode->mode_number()) {
         load_test.running = false;
 #if AP_FENCE_ENABLED
@@ -713,7 +713,7 @@ void ToyMode::trim_update(void)
                                              throttle_mid);
         }
     }
-    
+
     uint16_t chan[4];
     if (rc().get_radio_in(chan, 4) != 4) {
         trim.start_ms = 0;
@@ -730,7 +730,7 @@ void ToyMode::trim_update(void)
     }
 
     uint32_t now = AP_HAL::millis();
-    
+
     if (trim.start_ms == 0) {
         // start timer
         memcpy(trim.chan, chan, 4*sizeof(uint16_t));
@@ -738,7 +738,7 @@ void ToyMode::trim_update(void)
         return;
     }
 
-    
+
     for (uint8_t i=0; i<4; i++) {
         if (abs(trim.chan[i] - chan[i]) > noise_limit) {
             // detected stick movement
@@ -755,7 +755,7 @@ void ToyMode::trim_update(void)
 
     // reset timer so we don't trigger too often
     trim.start_ms = 0;
-    
+
     uint8_t need_trim = 0;
     for (uint8_t i=0; i<4; i++) {
         RC_Channel *c = RC_Channels::rc_channel(i);
@@ -797,7 +797,7 @@ void ToyMode::action_arm(void)
     }
 
     arm_check_compass();
-    
+
     if (needs_gps && copter.arming.gps_checks(false)) {
 #if AP_FENCE_ENABLED
         // we want GPS and checks are passing, arm and enable fence
@@ -894,11 +894,11 @@ void ToyMode::blink_update(void)
     } else {
         AP_Notify::flags.video_recording = 0;
     }
-    
+
     if (red_blink_count > 0 && green_blink_count > 0) {
         return;
     }
-    
+
     // setup normal patterns based on flight mode and arming
     uint16_t pattern = 0;
 
@@ -912,11 +912,11 @@ void ToyMode::blink_update(void)
     } else {
         pattern = BLINK_FULL;
     }
-    
+
     if (copter.motors->armed()) {
         blink_disarm = 4;
     }
-    
+
     if (red_blink_count == 0) {
         red_blink_pattern = pattern;
     }
@@ -1008,7 +1008,7 @@ void ToyMode::thrust_limiting(float *thrust, uint8_t num_motors)
                                                (double)thrust_mul,
                                                pwm[0], pwm[1], pwm[2], pwm[3]);
     }
-                                           
+
 }
 
 #if ENABLE_LOAD_TEST
@@ -1029,7 +1029,7 @@ void ToyMode::load_test_run(void)
             load_test.row = (load_test.row + 1) % ARRAY_SIZE(load_data1);
         }
         break;
-        
+
     case LOAD_TYPE_LOG2:
         // like log1, but all the same
         for (uint8_t i=0; i<4; i++) {
@@ -1060,7 +1060,7 @@ void ToyMode::load_test_run(void)
         gcs().send_text(MAV_SEVERITY_INFO, "Tmode: load_test off (battery)");
         copter.init_disarm_motors();
         load_test.running = false;
-    }    
+    }
 }
 #endif // ENABLE_LOAD_TEST
 
@@ -1073,7 +1073,7 @@ void ToyMode::arm_check_compass(void)
     // check for unreasonable compass offsets
     Vector3f offsets = copter.compass.get_offsets();
     float field = copter.compass.get_field().length();
-    
+
     char unused_compass_configured_error_message[20];
     if (offsets.length() > copter.compass.get_offsets_max() ||
         field < 200 || field > 800 ||

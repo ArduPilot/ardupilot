@@ -69,7 +69,7 @@ void Rover::log_write_cruise_learn() const
 // @Field: TimeUS: Time since system startup
 // @Field: State: True if Cruise Learn has started
 // @Field: Speed: Determined target Cruise speed in auto missions
-// @Field: Throttle: Determined base throttle percentage to be used in auto missions 
+// @Field: Throttle: Determined base throttle percentage to be used in auto missions
 
     AP::logger().WriteStreaming("CRSE", "TimeUS,State,Speed,Throttle", "Qbff",
                        AP_HAL::micros64(),

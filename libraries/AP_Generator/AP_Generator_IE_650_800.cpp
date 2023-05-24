@@ -79,7 +79,7 @@ void AP_Generator_IE_650_800::decode_latest_term()
         case 3:
             _parsed.state = strtoul(_term, nullptr, 10);
             break;
-        
+
         case 4:
             _parsed.err_code = strtoul(_term, nullptr, 16);
             // Sentence only declared valid when we have the expected number of terms

@@ -134,9 +134,9 @@ void ModeGuided::update_target_altitude()
         // determine delta accurately as a float
         float delta_amt_f = delta * plane.guided_state.target_alt_accel;
         // then scale x100 to match last_target_alt and convert to a signed int32_t as it may be negative
-        int32_t delta_amt_i = (int32_t)(100.0 * delta_amt_f); 
+        int32_t delta_amt_i = (int32_t)(100.0 * delta_amt_f);
         Location temp {};
-        temp.alt = plane.guided_state.last_target_alt + delta_amt_i; // ...to avoid floats here, 
+        temp.alt = plane.guided_state.last_target_alt + delta_amt_i; // ...to avoid floats here,
         if (is_positive(plane.guided_state.target_alt_accel)) {
             temp.alt = MIN(plane.guided_state.target_alt, temp.alt);
         } else {
@@ -145,7 +145,7 @@ void ModeGuided::update_target_altitude()
         plane.guided_state.last_target_alt = temp.alt;
         plane.set_target_altitude_location(temp);
         plane.altitude_error_cm = plane.calc_altitude_error_cm();
-    } else 
+    } else
 #endif // OFFBOARD_GUIDED == ENABLED
         {
         Mode::update_target_altitude();

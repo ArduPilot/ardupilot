@@ -35,7 +35,7 @@ class AC_WeatherVane {
         enum class Options {
             PITCH_ENABLE = (1<<0),
         };
-    
+
         // Paramaters
         AP_Int8 _direction;
         AP_Float _gain;

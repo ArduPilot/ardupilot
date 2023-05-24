@@ -143,7 +143,7 @@ public:
 
     /* Support for an imu heating system */
     virtual void set_imu_target_temp(int8_t *target) {}
-    
+
     // allocate and free DMA-capable memory if possible. Otherwise return normal memory
     enum Memory_Type {
         MEM_DMA_SAFE,

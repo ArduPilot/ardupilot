@@ -116,7 +116,7 @@ public:
         PRIORITY_STORAGE,
         PRIORITY_SCRIPTING,
     };
-    
+
     /*
       create a new thread
      */

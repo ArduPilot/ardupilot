@@ -45,7 +45,7 @@ protected:
         CONT_NONE            = 0,
         CONT_EMPTY           = 1,
         CONT_PID             = 2,
-    };            // controller that should be used     
+    };            // controller that should be used
 
     enum class  CustomControlOption {
         ROLL = 1 << 0,

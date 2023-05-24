@@ -42,6 +42,6 @@ private:
 
     uint16_t pending[MAX_PWMS];
     bool corked;
-    uint32_t pending_mask;    
+    uint32_t pending_mask;
 };
 }

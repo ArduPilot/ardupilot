@@ -88,8 +88,8 @@ size_t strncpy_noterm(char *dest, const char *src, size_t n)
 
 /**
  * return the numeric value of an ascii hex character
- * 
- * @param[in] a Hexadecimal character 
+ *
+ * @param[in] a Hexadecimal character
  * @return  Returns a binary value
  */
 int16_t char_to_hex(char a)

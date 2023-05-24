@@ -410,7 +410,7 @@ void ModeFlowHold::update_height_estimate(void)
         last_flow_rate_rps = flow_rate_rps;
         last_ins_height = ins_height;
         height_offset = 0;
-        return;        
+        return;
     }
 
     /*
@@ -479,7 +479,7 @@ void ModeFlowHold::update_height_estimate(void)
     height_estimate = ins_height + height_offset;
 
 // @LoggerMessage: FHXY
-// @Description: Height estimation using optical flow sensor 
+// @Description: Height estimation using optical flow sensor
 // @Field: TimeUS: Time since system startup
 // @Field: DFx: Delta flow rate, X-Axis
 // @Field: DFy: Delta flow rate, Y-Axis
@@ -489,7 +489,7 @@ void ModeFlowHold::update_height_estimate(void)
 // @Field: DH: Delta Height
 // @Field: Hofs: Height offset
 // @Field: InsH: Height estimate from inertial navigation library
-// @Field: LastInsH: Last used INS height in optical flow sensor height estimation calculations 
+// @Field: LastInsH: Last used INS height in optical flow sensor height estimation calculations
 // @Field: DTms: Time between optical flow sensor updates. This should be less than 500ms for performing the height estimation calculations
 
     AP::logger().WriteStreaming("FHXY", "TimeUS,DFx,DFy,DVx,DVy,Hest,DH,Hofs,InsH,LastInsH,DTms", "QfffffffffI",

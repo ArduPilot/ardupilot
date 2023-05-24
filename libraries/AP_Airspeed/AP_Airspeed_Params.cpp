@@ -71,7 +71,7 @@ const AP_Param::GroupInfo AP_Airspeed_Params::var_info[] = {
 
     // @Param: PIN
     // @DisplayName: Airspeed pin
-    // @Description: The pin number that the airspeed sensor is connected to for analog sensors. Set to 15 on the Pixhawk for the analog airspeed port. 
+    // @Description: The pin number that the airspeed sensor is connected to for analog sensors. Set to 15 on the Pixhawk for the analog airspeed port.
     // @User: Advanced
     AP_GROUPINFO("PIN", 5, AP_Airspeed_Params, pin, 0),
 #endif // HAL_BUILD_AP_PERIPH

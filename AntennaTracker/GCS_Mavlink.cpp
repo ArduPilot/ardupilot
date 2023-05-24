@@ -350,7 +350,7 @@ void GCS_MAVLINK_Tracker::packetReceived(const mavlink_status_t &status,
         tracker.tracking_update_position(packet);
         break;
     }
-    
+
     case MAVLINK_MSG_ID_SCALED_PRESSURE:
     {
         // decode
@@ -438,7 +438,7 @@ MAV_RESULT GCS_MAVLINK_Tracker::handle_command_long_packet(const mavlink_command
         }
         return MAV_RESULT_ACCEPTED;
 
-        // mavproxy/mavutil sends this when auto command is entered 
+        // mavproxy/mavutil sends this when auto command is entered
     case MAV_CMD_MISSION_START:
         tracker.set_mode(tracker.mode_auto, ModeReason::GCS_COMMAND);
         return MAV_RESULT_ACCEPTED;
@@ -463,7 +463,7 @@ void GCS_MAVLINK_Tracker::handleMessage(const mavlink_message_t &msg)
         handle_set_attitude_target(msg);
         break;
 
-    // When mavproxy 'wp sethome' 
+    // When mavproxy 'wp sethome'
     case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST:
     {
         // decode
@@ -582,7 +582,7 @@ mission_failed:
         break;
     }
 
-    case MAVLINK_MSG_ID_GLOBAL_POSITION_INT: 
+    case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
     {
         // decode
         mavlink_global_position_int_t packet;
@@ -591,7 +591,7 @@ mission_failed:
         break;
     }
 
-    case MAVLINK_MSG_ID_SCALED_PRESSURE: 
+    case MAVLINK_MSG_ID_SCALED_PRESSURE:
     {
         // decode
         mavlink_scaled_pressure_t packet;

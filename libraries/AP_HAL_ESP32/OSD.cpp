@@ -253,22 +253,22 @@ void config_i2s(i2s_dev_t *I2S) {
     }
 
     I2S->conf2.val = 0;
-    
+
     I2S->pdm_conf.val = 0;
-    
+
     I2S->conf_chan.tx_chan_mod = 0;
-    
-    I2S->fifo_conf.tx_fifo_mod = 0;   
+
+    I2S->fifo_conf.tx_fifo_mod = 0;
     I2S->fifo_conf.dscr_en = 0; //no dma
     I2S->fifo_conf.tx_fifo_mod_force_en = 1;
 
-    I2S->conf.val = 0;   
-        
+    I2S->conf.val = 0;
+
     I2S->clkm_conf.clka_en = 0;
     I2S->clkm_conf.clkm_div_a = 63;
     I2S->clkm_conf.clkm_div_b = 0;
     I2S->clkm_conf.clkm_div_num = 2;
-    
+
     I2S->sample_rate_conf.tx_bck_div_num = 12;
     I2S->sample_rate_conf.tx_bits_mod = 16;
 }

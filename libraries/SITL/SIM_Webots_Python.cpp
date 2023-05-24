@@ -31,7 +31,7 @@ WebotsPython::WebotsPython(const char *frame_str) :
         socket_sitl{true}{
 
     // disable time sync and sensor smoothing to allow for faster than realtime simulation
-    use_time_sync = false;   
+    use_time_sync = false;
     use_smoothing = false;
 
     printf("Starting SITL Webots\n");

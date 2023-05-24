@@ -15,7 +15,7 @@
 void ModeLoiter::run()
 {
     const float dt = blimp.scheduler.get_last_loop_time_s();
-    
+
     Vector3f pilot;
     pilot.x = channel_front->get_control_in() / float(RC_SCALE) * g.max_pos_xy * dt;
     pilot.y = channel_right->get_control_in() / float(RC_SCALE) * g.max_pos_xy * dt;

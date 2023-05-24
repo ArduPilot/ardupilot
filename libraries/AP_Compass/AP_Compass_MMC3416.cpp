@@ -73,7 +73,7 @@ bool AP_Compass_MMC3416::init()
     dev->get_semaphore()->take_blocking();
 
     dev->set_retries(10);
-    
+
     uint8_t whoami;
     if (!dev->read_registers(REG_PRODUCT_ID, &whoami, 1) ||
         whoami != 0x06) {
@@ -85,10 +85,10 @@ bool AP_Compass_MMC3416::init()
     // reset sensor
     dev->write_register(REG_CONTROL1, 0x80);
     hal.scheduler->delay(10);
-    
+
     dev->write_register(REG_CONTROL0, 0x00); // single shot
     dev->write_register(REG_CONTROL1, 0x00); // 16 bit, 7.92ms
-    
+
     dev->get_semaphore()->give();
 
     /* register the compass instance in the frontend */
@@ -96,26 +96,26 @@ bool AP_Compass_MMC3416::init()
     if (!register_compass(dev->get_bus_id(), compass_instance)) {
         return false;
     }
-    
+
     set_dev_id(compass_instance, dev->get_bus_id());
 
     printf("Found a MMC3416 on 0x%x as compass %u\n", dev->get_bus_id(), compass_instance);
-    
+
     set_rotation(compass_instance, rotation);
 
     if (force_external) {
         set_external(compass_instance, true);
     }
-    
+
     dev->set_retries(1);
-    
+
     // call timer() at 100Hz
     dev->register_periodic_callback(10000,
                                     FUNCTOR_BIND_MEMBER(&AP_Compass_MMC3416::timer, void));
 
     // wait 250ms for the compass to make it's initial readings
     hal.scheduler->delay(250);
-    
+
     return true;
 }
 
@@ -132,7 +132,7 @@ void AP_Compass_MMC3416::timer()
         state = STATE_REFILL1;
         last_sample_ms = now;
     }
-    
+
     /*
       we use the SET/RESET method to remove bridge offset every
       measure_count_limit measurements. This involves a fairly complex
@@ -161,7 +161,7 @@ void AP_Compass_MMC3416::timer()
         }
         break;
     }
-        
+
     case STATE_MEASURE_WAIT1: {
         uint8_t status;
         if (dev->read_registers(REG_STATUS, &status, 1) && (status & 1)) {

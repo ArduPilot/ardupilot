@@ -51,7 +51,7 @@ private:
                        enum Rotation rotation);
 
     AP_HAL::OwnPtr<AP_HAL::Device> dev;
-    
+
     /**
      * Device periodic callback to read data from the sensor.
      */

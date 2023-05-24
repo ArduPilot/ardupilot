@@ -8,7 +8,7 @@
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1 
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
 
 #include <errno.h>
 #include <stdarg.h>
@@ -46,9 +46,9 @@ int UtilRPI::_check_rpi_version_by_rev()
     else {
         if (fread(revision, 1, sizeof(revision), fd) == 4) {
             cpu = (revision[2] >> 4) & 0xf;
-            
+
             _rpi_version = cpu;
-            
+
             if (_rpi_version==0) {
                 _rpi_version=1; //RPI-Zero
             }

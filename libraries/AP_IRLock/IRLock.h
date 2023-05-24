@@ -45,7 +45,7 @@ public:
     // retrieve body frame unit vector in direction of target
     // returns true if data is available
     bool get_unit_vector_body(Vector3f& ret) const;
-    
+
 
 protected:
     struct AP_IRLock_Flags {

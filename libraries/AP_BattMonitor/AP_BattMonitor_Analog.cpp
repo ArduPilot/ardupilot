@@ -54,7 +54,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Analog::var_info[] = {
     // @Units: V
     // @User: Advanced
     AP_GROUPINFO("VLT_OFFSET", 6, AP_BattMonitor_Analog, _volt_offset, 0),
-    
+
     // Param indexes must be less than 10 to avoid conflict with other battery monitor param tables loaded by pointer
 
     AP_GROUPEND
@@ -86,7 +86,7 @@ AP_BattMonitor_Analog::AP_BattMonitor_Analog(AP_BattMonitor &mon,
     }
 #endif
     _state.var_info = var_info;
-    
+
     _volt_pin_analog_source = hal.analogin->channel(_volt_pin);
     _curr_pin_analog_source = hal.analogin->channel(_curr_pin);
 

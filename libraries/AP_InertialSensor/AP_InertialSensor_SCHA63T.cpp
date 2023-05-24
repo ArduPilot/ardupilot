@@ -204,7 +204,7 @@ bool AP_InertialSensor_SCHA63T::check_startup()
     }
 
     // ready summary status twice
-    for (uint8_t i=0; i<2; i++) {        
+    for (uint8_t i=0; i<2; i++) {
         if (!read_register(SCHA63T_UNO, S_SUM, val)) {
             return false;
         }

@@ -63,7 +63,7 @@ bool NavEKF2_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     }
     if(!storedBaro.init(OBS_BUFFER_LENGTH)) {
         return false;
-    } 
+    }
     if(!storedTAS.init(OBS_BUFFER_LENGTH)) {
         return false;
     }
@@ -105,10 +105,10 @@ bool NavEKF2_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
             return false;
         }
     }
-    
+
     return true;
 }
-    
+
 
 /********************************************************
 *                   INIT FUNCTIONS                      *
@@ -629,7 +629,7 @@ void NavEKF2_core::UpdateFilter(bool predict)
         statesInitialised = false;
         InitialiseFilterBootstrap();
     }
-    
+
 }
 
 void NavEKF2_core::correctDeltaAngle(Vector3F &delAng, ftype delAngDT, uint8_t gyro_index)
@@ -770,7 +770,7 @@ void NavEKF2_core::calcOutputStates()
     ftype integ2_input = delVelNav.z + (vertCompFiltState.acc + pos_err * omega2 * 3.0f) * imuDataNew.delVelDT;
     vertCompFiltState.vel += integ2_input;
     ftype integ3_input = (vertCompFiltState.vel + pos_err * CompFiltOmega * 3.0f) * imuDataNew.delVelDT;
-    vertCompFiltState.pos += integ3_input; 
+    vertCompFiltState.pos += integ3_input;
 
     // apply a trapezoidal integration to velocities to calculate position
     outputDataNew.position += (outputDataNew.velocity + lastVelocity) * (imuDataNew.delVelDT*0.5f);

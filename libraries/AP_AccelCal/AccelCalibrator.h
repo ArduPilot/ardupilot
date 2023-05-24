@@ -38,7 +38,7 @@ public:
     //Select options, initialise variables and initiate accel calibration
     void start(enum accel_cal_fit_type_t fit_type = ACCEL_CAL_AXIS_ALIGNED_ELLIPSOID, uint8_t num_samples = 6, float sample_time = 0.5f);
     void start(enum accel_cal_fit_type_t fit_type, uint8_t num_samples, float sample_time, Vector3f offset, Vector3f diag, Vector3f offdiag);
-    
+
     // set Accel calibrator status to make itself ready for future accel cals
     void clear();
 

@@ -44,7 +44,7 @@ public:
 
     AP_Airspeed_MS5525(AP_Airspeed &frontend, uint8_t _instance, MS5525_ADDR address);
     ~AP_Airspeed_MS5525(void) {}
-    
+
     // probe and initialise the sensor
     bool init() override;
 
@@ -69,7 +69,7 @@ private:
     float pressure_sum;
     uint32_t temp_count;
     uint32_t press_count;
-    
+
     uint32_t last_sample_time_ms;
 
     uint16_t prom[8];
@@ -80,7 +80,7 @@ private:
     bool ignore_next;
     uint8_t cmd_sent;
     MS5525_ADDR _address;
-    
+
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
 };
 

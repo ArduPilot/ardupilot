@@ -268,7 +268,7 @@ uint32_t AP_Filesystem_Mission::get_num_items(enum MAV_MISSION_TYPE mtype) const
         }
         return mission->num_commands();
     }
-        
+
     case MAV_MISSION_TYPE_FENCE: {
 #if AP_FENCE_ENABLED
         auto *fence = AP::fence();

@@ -152,7 +152,7 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
             r.str->set_buffer((char*)ptr, size, size);
         }
     }
-    
+
     if (r.str->get_length() == 0) {
         errno = r.str->has_failed_allocation()?ENOMEM:ENOENT;
         delete r.str;

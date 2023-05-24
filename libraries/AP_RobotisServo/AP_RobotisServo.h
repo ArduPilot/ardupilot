@@ -37,7 +37,7 @@ public:
     CLASS_NO_COPY(AP_RobotisServo);
 
     static const struct AP_Param::GroupInfo var_info[];
-    
+
     void update();
 
 private:

@@ -113,14 +113,14 @@ const AP_Param::GroupInfo AP_OSD_ParamSetting::var_info[] = {
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_COPTER_OR_HELI
 
 static const char* SERIAL_PROTOCOL_VALUES[] = {
-    "", "MAV", "MAV2", "FSKY_D", "FSKY_S", "GPS", "", "ALEX", "STORM", "RNG", 
+    "", "MAV", "MAV2", "FSKY_D", "FSKY_S", "GPS", "", "ALEX", "STORM", "RNG",
     "FSKY_TX", "LID360", "", "BEACN", "VOLZ", "SBUS", "ESC_TLM", "DEV_TLM", "OPTFLW", "RBTSRV",
     "NMEA", "WNDVNE", "SLCAN", "RCIN", "MGSQRT", "LTM", "RUNCAM", "HOT_TLM", "SCRIPT", "CRSF",
     "GEN", "WNCH", "MSP", "DJI"
 };
 
 static const char* SERVO_FUNCTIONS[] = {
-    "NONE", "RCPASS", "FLAP", "FLAP_AUTO", "AIL", "", "MNT_PAN", "MNT_TLT", "MNT_RLL", "MNT_OPEN", 
+    "NONE", "RCPASS", "FLAP", "FLAP_AUTO", "AIL", "", "MNT_PAN", "MNT_TLT", "MNT_RLL", "MNT_OPEN",
     "CAM_TRG", "", "MNT2_PAN", "MNT2_TLT", "MNT2_RLL", "MNT2_OPEN", "DIF_SPL_L1", "DIF_SPL_R1", "", "ELE",
     "", "RUD", "SPR_PMP", "SPR_SPIN", "FLPRON_L", "FLPRON_R", "GRND_STEER", "PARACHT", "GRIP", "GEAR",
     "ENG_RUN_EN", "HELI_RSC", "HELI_TAIL_RSC", "MOT_1", "MOT_2", "MOT_3", "MOT_4", "MOT_5", "MOT_6", "MOT_7",
@@ -149,7 +149,7 @@ static const char* AUX_OPTIONS[] = {
     "", "MANUAL", "", "", "", "GUIDE", "LOIT", "", "CLR_WP", "",
     "", "", "COMP_LRN", "", "REV_THR", "GPS_DIS", "RLY5", "RLY6", "", "",
     "", "", "CIRCLE", "", "", "", "", "TAKEOFF", "RCAM_CTL", "RCAM_OSD",
-    "", "DSARM", "QASS3POS", "", "AIR", "GEN", "TER_AUTO", "CROW_SEL", "SOAR", "", 
+    "", "DSARM", "QASS3POS", "", "AIR", "GEN", "TER_AUTO", "CROW_SEL", "SOAR", "",
     "", "", "", "", "", "", "", "", "", "",
     "KILLIMU1", "KILLIMU2", "CAM_TOG", "", "", "GPSYAW_DIS"
 };

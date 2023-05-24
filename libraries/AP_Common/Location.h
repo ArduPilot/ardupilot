@@ -82,7 +82,7 @@ public:
 
     // extrapolate latitude/longitude given bearing and distance
     void offset_bearing(ftype bearing_deg, ftype distance);
-    
+
     // extrapolate latitude/longitude given bearing, pitch and distance
     void offset_bearing_and_pitch(ftype bearing_deg, ftype pitch_deg, ftype distance);
 
@@ -150,7 +150,7 @@ public:
 
     // limit lattitude to -90e7 to 90e7
     static int32_t limit_lattitude(int32_t lat);
-    
+
     // get lon1-lon2, wrapping at -180e7 to 180e7
     static int32_t diff_longitude(int32_t lon1, int32_t lon2);
 

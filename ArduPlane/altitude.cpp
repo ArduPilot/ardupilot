@@ -142,7 +142,7 @@ float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
 
 
 /*
-  set the target altitude to the current altitude. This is used when 
+  set the target altitude to the current altitude. This is used when
   setting up for altitude hold, such as when releasing elevator in
   CRUISE mode.
  */
@@ -165,7 +165,7 @@ void Plane::set_target_altitude_current(void)
         // if terrain following is disabled, or we don't know our
         // terrain altitude when we set the altitude then don't
         // terrain follow
-        target_altitude.terrain_following = false;        
+        target_altitude.terrain_following = false;
     }
 #endif
 }
@@ -218,7 +218,7 @@ int32_t Plane::relative_target_altitude_cm(void)
 {
 #if AP_TERRAIN_AVAILABLE
     float relative_home_height;
-    if (target_altitude.terrain_following && 
+    if (target_altitude.terrain_following &&
         terrain.height_relative_home_equivalent(target_altitude.terrain_alt_cm*0.01f,
                                                 relative_home_height, true)) {
         // add lookahead adjustment the target altitude
@@ -255,7 +255,7 @@ void Plane::change_target_altitude(int32_t change_cm)
 /*
   change target altitude by a proportion of the target altitude offset
   (difference in height to next WP from previous WP). proportion
-  should be between 0 and 1. 
+  should be between 0 and 1.
 
   When proportion is zero we have reached the destination. When
   proportion is 1 we are at the starting waypoint.
@@ -301,7 +301,7 @@ int32_t Plane::calc_altitude_error_cm(void)
 {
 #if AP_TERRAIN_AVAILABLE
     float terrain_height;
-    if (target_altitude.terrain_following && 
+    if (target_altitude.terrain_following &&
         terrain.height_above_terrain(terrain_height, true)) {
         return target_altitude.lookahead*100 + target_altitude.terrain_alt_cm - (terrain_height*100);
     }
@@ -390,7 +390,7 @@ void Plane::set_offset_altitude_location(const Location &start_loc, const Locati
       terrain altitude
      */
     float height;
-    if (destination_loc.terrain_alt && 
+    if (destination_loc.terrain_alt &&
         target_altitude.terrain_following &&
         terrain.height_above_terrain(height, true)) {
         target_altitude.offset_cm = target_altitude.terrain_alt_cm - (height * 100);
@@ -427,7 +427,7 @@ bool Plane::above_location_current(const Location &loc)
 {
 #if AP_TERRAIN_AVAILABLE
     float terrain_alt;
-    if (loc.terrain_alt && 
+    if (loc.terrain_alt &&
         terrain.height_above_terrain(terrain_alt, true)) {
         float loc_alt = loc.alt*0.01f;
         if (!loc.relative_alt) {
@@ -509,7 +509,7 @@ float Plane::height_above_target(void)
 #if AP_TERRAIN_AVAILABLE
     // also record the terrain altitude if possible
     float terrain_altitude;
-    if (next_WP_loc.terrain_alt && 
+    if (next_WP_loc.terrain_alt &&
         terrain.height_above_terrain(terrain_altitude, true)) {
         return terrain_altitude - target_alt;
     }
@@ -544,7 +544,7 @@ float Plane::lookahead_adjustment(void)
         return 0;
     }
 
-    
+
     float groundspeed = ahrs.groundspeed();
     if (groundspeed < 1) {
         // we're not moving
@@ -559,10 +559,10 @@ float Plane::lookahead_adjustment(void)
         // lookahead makes no sense for negative climb rates
         return 0;
     }
-    
+
     // ask the terrain code for the lookahead altitude change
     float lookahead = terrain.lookahead(bearing_cd*0.01f, distance, climb_ratio);
-    
+
     if (target_altitude.offset_cm < 0) {
         // we are heading down to the waypoint, so we don't need to
         // climb as much
@@ -589,7 +589,7 @@ float Plane::rangefinder_correction(void)
         return 0;
     }
 
-    // for now we only support the rangefinder for landing 
+    // for now we only support the rangefinder for landing
     bool using_rangefinder = (g.rangefinder_landing && flight_stage == AP_FixedWing::FlightStage::LAND);
     if (!using_rangefinder) {
         return 0;
@@ -627,7 +627,7 @@ void Plane::rangefinder_terrain_correction(float &height)
 void Plane::rangefinder_height_update(void)
 {
     float distance = rangefinder.distance_orient(ROTATION_PITCH_270);
-    
+
     if ((rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::Good) && ahrs.home_is_set()) {
         if (!rangefinder_state.have_initial_reading) {
             rangefinder_state.have_initial_reading = true;
@@ -687,11 +687,11 @@ void Plane::rangefinder_height_update(void)
 #if AP_TERRAIN_AVAILABLE
         // if we are terrain following then correction is based on terrain data
         float terrain_altitude;
-        if ((target_altitude.terrain_following || terrain_enabled_in_current_mode()) && 
+        if ((target_altitude.terrain_following || terrain_enabled_in_current_mode()) &&
             terrain.height_above_terrain(terrain_altitude, true)) {
             correction = terrain_altitude - rangefinder_state.height_estimate;
         }
-#endif    
+#endif
 
         // remember the last correction. Use a low pass filter unless
         // the old data is more than 5 seconds old
@@ -714,7 +714,7 @@ void Plane::rangefinder_height_update(void)
                 memset(&rangefinder_state, 0, sizeof(rangefinder_state));
             }
         }
-        
+
     }
 }
 

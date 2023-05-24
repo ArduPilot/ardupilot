@@ -142,12 +142,12 @@ private:
     // check for next input character
     bool                    _check_for_input(void);
 
-    // run one full entered command. 
+    // run one full entered command.
     // return true if the menu loop should exit
     bool                    _run_command(bool prompt_on_enter);
 
     void                    _display_prompt();
-    
+
 	// port to run on
 	static AP_HAL::BetterStream  *_port;
 };

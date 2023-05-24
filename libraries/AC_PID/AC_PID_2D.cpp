@@ -164,7 +164,7 @@ Vector2f AC_PID_2D::get_ff()
 
 void AC_PID_2D::reset_I()
 {
-    _integrator.zero(); 
+    _integrator.zero();
 }
 
 // save_gains - save gains to eeprom

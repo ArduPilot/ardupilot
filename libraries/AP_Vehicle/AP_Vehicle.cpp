@@ -227,7 +227,7 @@ void AP_Vehicle::setup()
     airspeed.init();
     if (airspeed.enabled()) {
         airspeed.calibrate(true);
-    } 
+    }
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     else {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "No airspeed sensor");

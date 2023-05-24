@@ -1,7 +1,7 @@
 #include "AC_CommandModel.h"
 #include <AP_HAL/AP_HAL.h>
 
-// The Commmand Model class holds parameters that shape the pilot desired angular rate input.  This class can 
+// The Commmand Model class holds parameters that shape the pilot desired angular rate input.  This class can
 // be expanded to hold the methods that shape the pilot desired input.
 
 extern const AP_HAL::HAL& hal;
@@ -11,7 +11,7 @@ const AP_Param::GroupInfo AC_CommandModel::var_info[] = {
 
     // @Param: RATE
     // @DisplayName: Maximum Controlled Rate
-    // @Description: Sets the maximum rate commanded. 
+    // @Description: Sets the maximum rate commanded.
     // @Units: deg/s
     // @Range: 1 360
     // @User: Standard

@@ -74,7 +74,7 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
     }
 
     if (!plane.training_manual_pitch || !plane.training_manual_roll) {
-        _base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;        
+        _base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;
     }
 
     if (plane.control_mode != &plane.mode_manual && plane.control_mode != &plane.mode_initializing) {
@@ -443,7 +443,7 @@ void GCS_MAVLINK_Plane::send_hygrometer()
     const auto *airspeed = AP::airspeed();
     if (airspeed == nullptr) {
         return;
-    } 
+    }
     const uint32_t now = AP_HAL::millis();
 
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
@@ -806,7 +806,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavlink_command_int_t &packet)
 {
   switch(packet.command) {
-    
+
 #if OFFBOARD_GUIDED == ENABLED
     case MAV_CMD_GUIDED_CHANGE_SPEED: {
         // command is only valid in guided mode
@@ -827,7 +827,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavl
          // no need to process any new packet/s with the
          //  same airspeed any further, if we are already doing it.
         float new_target_airspeed_cm = packet.param2 * 100;
-        if ( is_equal(new_target_airspeed_cm,plane.guided_state.target_airspeed_cm)) { 
+        if ( is_equal(new_target_airspeed_cm,plane.guided_state.target_airspeed_cm)) {
             return MAV_RESULT_ACCEPTED;
         }
         plane.guided_state.target_airspeed_cm = new_target_airspeed_cm;
@@ -972,7 +972,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
         }
 #endif
         return MAV_RESULT_FAILED;
-        
+
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet);
     }
@@ -1111,7 +1111,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         }
         return MAV_RESULT_FAILED;
 #endif
-        
+
     default:
         return GCS_MAVLINK::handle_command_long_packet(packet);
     }
@@ -1154,7 +1154,7 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
         // computer control is more safe (even more so when using
         // FENCE_ACTION = 4 for geofence failures).
         if (plane.control_mode != &plane.mode_guided) { // don't screw up failsafes
-            break; 
+            break;
         }
 
         mavlink_set_attitude_target_t att_target;
@@ -1236,7 +1236,7 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
         plane.next_WP_loc.alt += -packet.z*100.0;
         gcs().send_text(MAV_SEVERITY_INFO, "Change alt to %.1f",
                         (double)((plane.next_WP_loc.alt - plane.home.alt)*0.01));
-        
+
         break;
     }
 
@@ -1259,16 +1259,16 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
         // be IGNORNED rather than INCLUDED.  See mavlink documentation of the
         // SET_POSITION_TARGET_GLOBAL_INT message, type_mask field.
         const uint16_t alt_mask = 0b1111111111111011; // (z mask at bit 3)
-            
+
         bool msg_valid = true;
         AP_Mission::Mission_Command cmd = {0};
-        
+
         if (pos_target.type_mask & alt_mask)
         {
             cmd.content.location.alt = pos_target.alt * 100;
             cmd.content.location.relative_alt = false;
             cmd.content.location.terrain_alt = false;
-            switch (pos_target.coordinate_frame) 
+            switch (pos_target.coordinate_frame)
             {
                 case MAV_FRAME_GLOBAL:
                 case MAV_FRAME_GLOBAL_INT:
@@ -1284,12 +1284,12 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
                     gcs().send_text(MAV_SEVERITY_WARNING, "Invalid coord frame in SET_POSTION_TARGET_GLOBAL_INT");
                     msg_valid = false;
                     break;
-            }    
+            }
 
             if (msg_valid) {
                 handle_change_alt_request(cmd);
             }
-        } // end if alt_mask       
+        } // end if alt_mask
 
         break;
     }

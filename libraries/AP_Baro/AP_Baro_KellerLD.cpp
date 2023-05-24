@@ -207,7 +207,7 @@ bool AP_Baro_KellerLD::_init()
 
     _dev->set_device_type(DEVTYPE_BARO_KELLERLD);
     set_bus_id(_instance, _dev->get_bus_id());
-    
+
     _frontend.set_type(_instance, AP_Baro::BARO_TYPE_WATER);
 
     // lower retries for run
@@ -253,11 +253,11 @@ bool AP_Baro_KellerLD::_read()
     if (!pressure_ok(pressure_raw)) {
         return false;
     }
-    
+
     WITH_SEMAPHORE(_sem);
-    
+
     _update_and_wrap_accumulator(pressure_raw, temperature_raw, 128);
-    
+
     return true;
 }
 
@@ -292,7 +292,7 @@ void AP_Baro_KellerLD::update()
     float sum_pressure, sum_temperature;
     float num_samples;
 
-    // update _p_mode_offset if vented guage 
+    // update _p_mode_offset if vented guage
     if (_p_mode == SensorMode::PR_MODE) {
         // we need to get the pressure from on-board barometer
         _p_mode_offset = _frontend.get_pressure(0);

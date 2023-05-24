@@ -82,9 +82,9 @@ int GetOptLong::getoption(void)
             place = "";
             return -1;
         }
-        
+
         place++;
-        
+
         if (place[0] && place[0] == '-' && place[1] == '\0')
         { /* found "--" */
             ++optind;
@@ -97,9 +97,9 @@ int GetOptLong::getoption(void)
             /* long option */
             size_t namelen;
             int    i;
-            
+
             place++;
-            
+
             namelen = strcspn(place, "=");
             for (i = 0; longopts[i].name != nullptr; i++)
             {
@@ -136,13 +136,13 @@ int GetOptLong::getoption(void)
                             /* XXX error? */
                         }
                     }
-                    
+
                     optind++;
-                    
+
                     longindex = i;
-                    
+
                     place = "";
-                    
+
                     if (longopts[i].flag == nullptr)
                         return longopts[i].val;
                     else
@@ -152,7 +152,7 @@ int GetOptLong::getoption(void)
                     }
                 }
             }
-            
+
             if (opterr && optstring[0] != ':') {
                 GETOPT_ERROR("%s: illegal option -- %s\n", argv[0], place);
             }
@@ -175,7 +175,7 @@ int GetOptLong::getoption(void)
         }
         return BADCH;
     }
-    
+
     if (oli[1] != ':')
     { /* don't need argument */
         optarg = nullptr;

@@ -122,7 +122,7 @@ const AP_Param::GroupInfo AP_Button::var_info[] = {
     // @DisplayName: Button Pin 4 RC Channel function
     AP_GROUPINFO("FUNC4",  13, AP_Button, pin_func[3], (uint16_t)RC_Channel::AUX_FUNC::DO_NOTHING),
 
-    AP_GROUPEND    
+    AP_GROUPEND
 };
 
 
@@ -157,7 +157,7 @@ void AP_Button::update(void)
         debounce_mask = last_mask;
 
         // register 1kHz timer callback
-        hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Button::timer_update, void));        
+        hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_Button::timer_update, void));
     }
 
     // act on any changes in state

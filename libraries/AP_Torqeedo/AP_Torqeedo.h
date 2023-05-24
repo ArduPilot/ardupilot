@@ -12,7 +12,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 /*
    This driver supports communicating with Torqeedo motors that implement the "TQ Bus" protocol
    which includes the Ultralight, Cruise 2.0 R, Cruise 4.0 R, Travel 503, Travel 1003 and Cruise 10kW

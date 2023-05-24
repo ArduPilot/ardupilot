@@ -106,7 +106,7 @@ bool AP_Baro_ICP101XX::init()
 
     dev->set_device_type(DEVTYPE_BARO_ICP101XX);
     set_bus_id(instance, dev->get_bus_id());
-    
+
     dev->get_semaphore()->give();
 
     dev->register_periodic_callback(measure_interval/2, FUNCTOR_BIND_MEMBER(&AP_Baro_ICP101XX::timer, void));
@@ -275,7 +275,7 @@ void AP_Baro_ICP101XX::convert_data(uint32_t Praw, uint32_t Traw)
     }
 
     WITH_SEMAPHORE(_sem);
-      
+
     accum.psum += P;
     accum.tsum += T;
     accum.count++;
@@ -304,7 +304,7 @@ void AP_Baro_ICP101XX::timer(void)
 void AP_Baro_ICP101XX::update()
 {
     WITH_SEMAPHORE(_sem);
-    
+
     if (accum.count > 0) {
         _copy_to_frontend(instance, accum.psum/accum.count, accum.tsum/accum.count);
         accum.psum = accum.tsum = 0;

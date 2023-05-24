@@ -39,7 +39,7 @@ struct PACKED log_AHRS {
 // @LoggerMessage: AOA
 // @Description: Angle of attack and Side Slip Angle values
 // @Field: TimeUS: Time since system startup
-// @Field: AOA: Angle of Attack calculated from airspeed, wind vector,velocity vector 
+// @Field: AOA: Angle of Attack calculated from airspeed, wind vector,velocity vector
 // @Field: SSA: Side Slip Angle calculated from airspeed, wind vector,velocity vector
 struct PACKED log_AOA_SSA {
     LOG_PACKET_HEADER;

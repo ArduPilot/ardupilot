@@ -90,8 +90,8 @@ public:
       that have no baudrate (such as USB) the time estimate may be
       less accurate.
       A return value of zero means the HAL does not support this API */
-     
-    uint64_t receive_time_constraint_us(uint16_t nbytes) override; 
+
+    uint64_t receive_time_constraint_us(uint16_t nbytes) override;
 private:
     bool _initialized;
     const size_t TX_BUF_SIZE = 1024;

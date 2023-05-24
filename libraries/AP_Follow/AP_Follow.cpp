@@ -31,7 +31,7 @@ extern const AP_HAL::HAL& hal;
 #define AP_FOLLOW_OFFSET_TYPE_NED       0   // offsets are in north-east-down frame
 #define AP_FOLLOW_OFFSET_TYPE_RELATIVE  1   // offsets are relative to lead vehicle's heading
 
-#define AP_FOLLOW_ALTITUDE_TYPE_RELATIVE  1 // relative altitude is used by default   
+#define AP_FOLLOW_ALTITUDE_TYPE_RELATIVE  1 // relative altitude is used by default
 
 #define AP_FOLLOW_POS_P_DEFAULT 0.1f    // position error gain default
 
@@ -121,7 +121,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @User: Standard
     AP_SUBGROUPINFO(_p_pos, "_POS_", 9, AP_Follow, AC_P),
 
-#if !(APM_BUILD_TYPE(APM_BUILD_Rover)) 
+#if !(APM_BUILD_TYPE(APM_BUILD_Rover))
     // @Param: _ALT_TYPE
     // @DisplayName: Follow altitude type
     // @Description: Follow altitude type
@@ -133,7 +133,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     AP_GROUPEND
 };
 
-/* 
+/*
    The constructor also initialises the proximity sensor. Note that this
    constructor is not called until detect() returns true, so we
    already know that we should setup the proximity sensor
@@ -302,7 +302,7 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
         _target_location.lat = packet.lat;
         _target_location.lng = packet.lon;
 
-        // select altitude source based on FOLL_ALT_TYPE param 
+        // select altitude source based on FOLL_ALT_TYPE param
         if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
             // above home alt
             _target_location.set_alt_cm(packet.relative_alt / 10, Location::AltFrame::ABOVE_HOME);
@@ -384,7 +384,7 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
         break;
     }
     }
-    
+
     if (updated) {
         // get estimated location and velocity
         Location loc_estimate{};

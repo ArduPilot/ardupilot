@@ -44,7 +44,7 @@ bool ModeAutorotate::init(bool ignore_checks)
     // Retrieve rpm and start rpm sensor health checks
     _initial_rpm = g2.arot.get_rpm(true);
 
-    // Display message 
+    // Display message
     gcs().send_text(MAV_SEVERITY_INFO, "Autorotation initiated");
 
      // Set all inial flags to on
@@ -184,11 +184,11 @@ void ModeAutorotate::run()
             g2.arot.set_dt(G_Dt);
             g2.arot.update_forward_speed_controller();
 
-            // Retrieve pitch target 
+            // Retrieve pitch target
             _pitch_target = g2.arot.get_pitch();
 
             // Update head speed/ collective controller
-            _flags.bad_rpm = g2.arot.update_hs_glide_controller(G_Dt); 
+            _flags.bad_rpm = g2.arot.update_hs_glide_controller(G_Dt);
             // Attitude controller is updated in navigation switch-case statements
 
             break;
@@ -209,7 +209,7 @@ void ModeAutorotate::run()
                     gcs().send_text(MAV_SEVERITY_INFO, "Bailing Out of Autorotation");
                 #endif
 
-                // Set bail out timer remaining equal to the parameter value, bailout time 
+                // Set bail out timer remaining equal to the parameter value, bailout time
                 // cannot be less than the motor spool-up time: BAILOUT_MOTOR_RAMP_TIME.
                 _bail_time = MAX(g2.arot.get_bail_time(),BAILOUT_MOTOR_RAMP_TIME+0.1f);
 
@@ -276,7 +276,7 @@ void ModeAutorotate::run()
 
         case Navigation_Decision::USER_CONTROL_STABILISED:
         {
-            // Operator is in control of roll and yaw.  Controls act as if in stabilise flight mode.  Pitch 
+            // Operator is in control of roll and yaw.  Controls act as if in stabilise flight mode.  Pitch
             // is controlled by speed-height controller.
             float pilot_roll, pilot_pitch;
             get_pilot_desired_lean_angles(pilot_roll, pilot_pitch, copter.aparm.angle_max, copter.aparm.angle_max);

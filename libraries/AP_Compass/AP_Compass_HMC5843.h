@@ -63,7 +63,7 @@ private:
     uint8_t _compass_instance;
 
     enum Rotation _rotation;
-    
+
     bool _initialised:1;
     bool _force_external:1;
 };
@@ -119,7 +119,7 @@ public:
     void set_retries(uint8_t retries) override {
         return _dev->set_retries(retries);
     }
-    
+
 private:
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
 };
@@ -147,7 +147,7 @@ public:
 
     // return 24 bit bus identifier
     uint32_t get_bus_id(void) const override;
-    
+
 private:
     AuxiliaryBus *_bus;
     AuxiliaryBusSlave *_slave;

@@ -253,19 +253,19 @@ bool AP_ONVIF::probe_onvif_server()
             report_error();
             goto err;
         }
-        
+
         if (GetProfilesResponse.__sizeProfiles > 0) {
             DEBUG_PRINT("Profiles Received %lu", (unsigned long)GetProfilesResponse.__sizeProfiles);
         } else {
             ERROR_PRINT("Error: No Profiles Received");
             goto err;
         }
-        
+
         // for each profile get snapshot
         for (uint32_t i = 0; i < (uint32_t)GetProfilesResponse.__sizeProfiles; i++) {
             DEBUG_PRINT("Profile name: %s", GetProfilesResponse.Profiles[i]->Name);
         }
-        
+
         // Just use first one for now
         if (profile_token_size < (strlen(GetProfilesResponse.Profiles[0]->token) + 1)) {
             if (profile_token != nullptr) {
@@ -296,14 +296,14 @@ bool AP_ONVIF::probe_onvif_server()
             report_error();
             goto err;
         }
-        
+
         if (GetConfigurationsResponse.__sizePTZConfiguration > 0) {
             DEBUG_PRINT("PTZ Tokens Received");
         } else {
             ERROR_PRINT("Error: No Profiles Received");
             goto err;
         }
-        
+
         for (uint32_t i = 0; i < (uint32_t)GetConfigurationsResponse.__sizePTZConfiguration; i++) {
             DEBUG_PRINT("PTZ: %s", GetConfigurationsResponse.PTZConfiguration[i]->Name);
         }
@@ -389,7 +389,7 @@ bool AP_ONVIF::set_credentials()
     sha1_ctx ctx;
     uint16_t HABase64len;
     char *HABase64enc = nullptr;
-    uint16_t noncelen; 
+    uint16_t noncelen;
 
     /* generate a nonce */
     if (!rand_nonce(nonce, 16)) {
@@ -453,7 +453,7 @@ bool AP_ONVIF::set_credentials()
     return true;
 }
 
-// Turn ONVIF camera to mentioned pan, tilt and zoom, normalised 
+// Turn ONVIF camera to mentioned pan, tilt and zoom, normalised
 // between limits
 bool AP_ONVIF::set_absolutemove(float x, float y, float z)
 {
@@ -499,5 +499,5 @@ err:
     soap_destroy(soap);
     soap_end(soap);
     return false;
-} 
+}
 #endif //#if ENABLE_ONVIF

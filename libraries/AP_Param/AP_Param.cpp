@@ -580,7 +580,7 @@ const struct AP_Param::Info *AP_Param::find_var_info(uint32_t *                 
                                                      uint8_t *                  idx) const
 {
     group_ret = nullptr;
-    
+
     for (uint16_t i=0; i<_num_vars; i++) {
         const auto &info = var_info(i);
         uint8_t type = info.type;
@@ -631,7 +631,7 @@ const struct AP_Param::Info *AP_Param::find_var_info_token(const ParamToken &tok
         return nullptr;
     }
     group_ret = nullptr;
-    
+
     if (type == AP_PARAM_GROUP) {
         const struct GroupInfo *group_info = get_group_info(info);
         if (group_info == nullptr) {
@@ -934,7 +934,7 @@ AP_Param::find_by_index(uint16_t idx, enum ap_var_type *ptype, ParamToken *token
          ap=AP_Param::next_scalar(token, ptype)) {
         count++;
     }
-    return ap;    
+    return ap;
 }
 
 // by-name equivalent of find_by_index()
@@ -1151,7 +1151,7 @@ void AP_Param::save_sync(bool force_save, bool send_to_gcs)
         // clear cached parameter count
         invalidate_count();
     }
-    
+
     char name[AP_MAX_NAME_SIZE+1];
     copy_name_info(info, ginfo, group_nesting, idx, name, sizeof(name), true);
 
@@ -1316,7 +1316,7 @@ bool AP_Param::load(void)
             set_value((enum ap_var_type)phdr.type, (void*)(base + ginfo->offset + group_offset),
                       get_default_value(this, *ginfo));
         } else {
-            set_value((enum ap_var_type)phdr.type, (void*)base, 
+            set_value((enum ap_var_type)phdr.type, (void*)base,
                       get_default_value(this, *info));
         }
         return false;
@@ -1510,7 +1510,7 @@ bool AP_Param::load_all()
         registered_save_handler = true;
         hal.scheduler->register_io_process(FUNCTOR_BIND((&save_dummy), &AP_Param::save_io_handler, void));
     }
-    
+
     while (ofs < _storage.size()) {
         _storage.read_block(&phdr, ofs, sizeof(phdr));
         if (is_sentinal(phdr)) {
@@ -1569,7 +1569,7 @@ void AP_Param::reload_defaults_file(bool last_pass)
 }
 
 
-/* 
+/*
    Load all variables from EEPROM for a particular object. This is
    required for dynamically loaded objects
  */
@@ -1582,7 +1582,7 @@ void AP_Param::load_object_from_eeprom(const void *object_pointer, const struct 
         DEV_PRINTF("ERROR: Unable to find param pointer\n");
         return;
     }
-    
+
     for (uint8_t i=0; group_info[i].type != AP_PARAM_NONE; i++) {
         if (group_info[i].type == AP_PARAM_GROUP) {
             ptrdiff_t new_offset = 0;
@@ -1607,7 +1607,7 @@ void AP_Param::load_object_from_eeprom(const void *object_pointer, const struct 
             if (get_key(phdr) == key) {
                 const struct AP_Param::Info *info;
                 void *ptr;
-                
+
                 info = find_by_header(phdr, &ptr);
                 if (info != nullptr) {
                     if ((ptrdiff_t)ptr == ((ptrdiff_t)object_pointer)+group_info[i].offset) {
@@ -1970,7 +1970,7 @@ void AP_Param::convert_class(uint16_t param_key, void *object_pointer,
 
         uint8_t old_value[type_size(info.type)];
         AP_Param *ap = (AP_Param *)&old_value[0];
-        
+
         if (!AP_Param::find_old_parameter(&info, ap)) {
             // the parameter wasn't set in the old eeprom
             continue;
@@ -2019,7 +2019,7 @@ bool AP_Param::convert_parameter_width(ap_var_type old_ptype)
     } else {
         new_ptype = (ap_var_type)info->type;
     }
-    
+
     // create the header we will use to scan for the variable
     struct Param_header phdr;
     phdr.type = old_ptype;
@@ -2036,7 +2036,7 @@ bool AP_Param::convert_parameter_width(ap_var_type old_ptype)
     // load the old value from EEPROM
     uint8_t old_value[type_size(old_ptype)];
     _storage.read_block(old_value, pofs+sizeof(phdr), sizeof(old_value));
-    
+
     AP_Param *old_ap = (AP_Param *)&old_value[0];
 
     // going via float is safe as the only time we would be converting
@@ -2064,7 +2064,7 @@ void AP_Param::set_float(float value, enum ap_var_type var_type)
     // from float to integer to avoid truncating to the
     // next lower integer value.
     float rounding_addition = 0.01f;
-        
+
     // handle variables with standard type IDs
     if (var_type == AP_PARAM_FLOAT) {
         ((AP_Float *)this)->set(value);
@@ -2288,7 +2288,7 @@ bool AP_Param::count_embedded_param_defaults(uint16_t &count)
     const volatile char *ptr = param_defaults_data.data;
     int32_t length = param_defaults_data.length;
     count = 0;
-    
+
     while (length>0) {
         char line[100];
         char *pname;
@@ -2308,7 +2308,7 @@ bool AP_Param::count_embedded_param_defaults(uint16_t &count)
 
         length -= i+1;
         ptr += i+1;
-        
+
         if (line[0] == '#' || line[0] == 0) {
             continue;
         }
@@ -2353,7 +2353,7 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
     const volatile char *ptr = param_defaults_data.data;
     int32_t length = param_defaults_data.length;
     uint16_t idx = 0;
-    
+
     while (idx < num_defaults && length > 0) {
         char line[100];
         char *pname;
@@ -2377,7 +2377,7 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
         if (line[0] == '#' || line[0] == 0) {
             continue;
         }
-        
+
         if (!parse_param_line(line, &pname, value, read_only)) {
             continue;
         }
@@ -2410,7 +2410,7 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
 }
 #endif // AP_PARAM_MAX_EMBEDDED_PARAM > 0
 
-/* 
+/*
    find a default value given a pointer to a default value in flash
  */
 float AP_Param::get_default_value(const AP_Param *vp, const struct GroupInfo &info)
@@ -2465,7 +2465,7 @@ void AP_Param::send_parameter(const char *name, enum ap_var_type var_type, uint8
     strncpy(name2, name, AP_MAX_NAME_SIZE);
     name2[AP_MAX_NAME_SIZE] = 0;
     char &name_axis = name2[strlen(name)-1];
-    
+
     name_axis = 'X';
     GCS_SEND_PARAM(name2, AP_PARAM_FLOAT, v.x);
     name_axis = 'Y';
@@ -2946,7 +2946,7 @@ bool AP_Param::add_table(uint8_t _key, const char *prefix, uint8_t num_params)
     if (_dynamic_table_sizes[i] == 0) {
         _dynamic_table_sizes[i] = num_params;
     }
-    
+
     // make the group active
     info.key = key;
     info.type = AP_PARAM_GROUP;

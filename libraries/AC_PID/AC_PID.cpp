@@ -218,7 +218,7 @@ float AC_PID::update_error(float error, float dt, bool limit)
 
     P_out *= _pid_info.Dmod;
     D_out *= _pid_info.Dmod;
-    
+
     _pid_info.target = 0.0f;
     _pid_info.actual = 0.0f;
     _pid_info.error = _error;

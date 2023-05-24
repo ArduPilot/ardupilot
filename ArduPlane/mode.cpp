@@ -32,7 +32,7 @@ bool Mode::enter()
 
     // cancel inverted flight
     plane.auto_state.inverted_flight = false;
-    
+
     // cancel waiting for rudder neutral
     plane.takeoff_state.waiting_for_rudder_neutral = false;
 
@@ -160,7 +160,7 @@ void Mode::update_target_altitude()
         // once we reach a loiter target then lock to the final
         // altitude target
         plane.set_target_altitude_location(plane.next_WP_loc);
-    } else if (plane.target_altitude.offset_cm != 0 && 
+    } else if (plane.target_altitude.offset_cm != 0 &&
                !plane.current_loc.past_interval_finish_line(plane.prev_WP_loc, plane.next_WP_loc)) {
         // control climb/descent rate
         plane.set_target_altitude_proportion(plane.next_WP_loc, 1.0f-plane.auto_state.wp_proportion);

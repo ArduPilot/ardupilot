@@ -124,7 +124,7 @@ struct PACKED log_Data_UInt16t {
 };
 
 // Write an uint16_t data packet
-UNUSED_FUNCTION 
+UNUSED_FUNCTION
 void Copter::Log_Write_Data(LogDataID id, uint16_t value)
 {
     if (should_log(MASK_LOG_ANY)) {
@@ -410,7 +410,7 @@ void Copter::Log_Write_Guided_Attitude_Target(ModeGuided::SubMode target_type, f
 // units and "Format characters" for field type information
 const struct LogStructure Copter::log_structure[] = {
     LOG_COMMON_STRUCTURES,
-    
+
 // @LoggerMessage: PTUN
 // @Description: Parameter Tuning information
 // @URL: https://ardupilot.org/copter/docs/tuning.html#in-flight-tuning
@@ -471,19 +471,19 @@ const struct LogStructure Copter::log_structure[] = {
 
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
       "CTUN", "Qffffffefffhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s----mmmmmmnn", "F----00B000BB" , true },
-    { LOG_DATA_INT16_MSG, sizeof(log_Data_Int16t),         
+    { LOG_DATA_INT16_MSG, sizeof(log_Data_Int16t),
       "D16",   "QBh",         "TimeUS,Id,Value", "s--", "F--" },
-    { LOG_DATA_UINT16_MSG, sizeof(log_Data_UInt16t),         
+    { LOG_DATA_UINT16_MSG, sizeof(log_Data_UInt16t),
       "DU16",  "QBH",         "TimeUS,Id,Value", "s--", "F--" },
-    { LOG_DATA_INT32_MSG, sizeof(log_Data_Int32t),         
+    { LOG_DATA_INT32_MSG, sizeof(log_Data_Int32t),
       "D32",   "QBi",         "TimeUS,Id,Value", "s--", "F--" },
-    { LOG_DATA_UINT32_MSG, sizeof(log_Data_UInt32t),         
+    { LOG_DATA_UINT32_MSG, sizeof(log_Data_UInt32t),
       "DU32",  "QBI",         "TimeUS,Id,Value", "s--", "F--" },
-    { LOG_DATA_FLOAT_MSG, sizeof(log_Data_Float),         
+    { LOG_DATA_FLOAT_MSG, sizeof(log_Data_Float),
       "DFLT",  "QBf",         "TimeUS,Id,Value", "s--", "F--" },
-    
+
 // @LoggerMessage: HELI
-// @Description: Helicopter related messages 
+// @Description: Helicopter related messages
 // @Field: TimeUS: Time since system startup
 // @Field: DRRPM: Desired rotor speed
 // @Field: ERRPM: Estimated rotor speed
@@ -553,7 +553,7 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: RollRt: Roll rate
 // @Field: PitchRt: Pitch rate
 // @Field: YawRt: Yaw rate
-// @Field: Thrust: Thrust 
+// @Field: Thrust: Thrust
 // @Field: ClimbRt: Climb rate
 
     { LOG_GUIDED_ATTITUDE_TARGET_MSG, sizeof(log_Guided_Attitude_Target),

@@ -113,7 +113,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
                                   (double)gps.ground_speed(),
                                   (double)current_loc.get_distance(next_WP_loc));
             }
-            
+
             type_slope_stage = SlopeStage::FINAL;
 
 #if AP_LANDINGGEAR_ENABLED
@@ -373,9 +373,9 @@ int32_t AP_Landing::type_slope_get_target_airspeed_cm(void)
     const int32_t head_wind_compensation_cm = head_wind() * head_wind_comp * 100;
 
     const uint32_t max_airspeed_cm = AP_Landing::allow_max_airspeed_on_land() ? aparm.airspeed_max*100 : aparm.airspeed_cruise_cm;
-    
+
     return constrain_int32(target_airspeed_cm + head_wind_compensation_cm, target_airspeed_cm, max_airspeed_cm);
-    
+
 }
 
 int32_t AP_Landing::type_slope_constrain_roll(const int32_t desired_roll_cd, const int32_t level_roll_limit_cd)

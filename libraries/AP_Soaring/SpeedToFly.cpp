@@ -11,7 +11,7 @@ void SpeedToFly::update(float Wx, float Wz, float Wexp, float CLmin, float CLmax
     // method with some additional checks will converge to an acceptable level within 3-4 iterations.
     // However, to keep the computation constant per function call we just do a single iteration using
     // the previous approximation as a starting point.
-    // This gives good accuracy as the inputs don't change rapidly. It would also be possible to store 
+    // This gives good accuracy as the inputs don't change rapidly. It would also be possible to store
     // the inputs and converge the solution over 3-4 function calls, but this real-time iteration
     // approach gives better accuracy in tests as well as simpler code.
 
@@ -38,9 +38,9 @@ void SpeedToFly::update(float Wx, float Wz, float Wexp, float CLmin, float CLmax
     float t0 = powf(CL,1.5f);
     float t1 = CD0 + B*CL*CL + t0*WZ;
     float t2 = 1.5f*sqrtf(CL)*WZ + 2.0f*B*CL;
-    
+
     float Jd  = (1.5f*sqrtf(CL)*Wxp + 1.0f)/t1 - (t2*(CL + t0*Wxp))/(t1*t1);
-    
+
     float Jdd = 2.0f*t2*t2*(CL + t0*Wxp)/powf(t1,3) - (2.0f*t2*(1.5f*sqrtf(CL)*Wxp + 1.0f))/(t1*t1) - ((2.0f*B + 0.75f*WZ/sqrtf(CL))*(CL + t0*Wxp))/(t1*t1) + 0.75f*Wxp/(sqrtf(CL)*t1);
 
     // Check we're heading to a maximum, not a minimum!!

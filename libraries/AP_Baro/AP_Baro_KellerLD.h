@@ -71,7 +71,7 @@ private:
         PR_MODE = 0,    // Vented gauge
         PA_MODE = 1,    // Sealed gauge
         PAA_MODE = 2,   // Absolute
-        UNDEFINED = 3,  
+        UNDEFINED = 3,
     };
 
     // to store sensor mode

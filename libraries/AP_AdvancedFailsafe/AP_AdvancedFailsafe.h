@@ -135,7 +135,7 @@ protected:
 
     // saved waypoint for resuming mission
     uint8_t _saved_wp;
-    
+
     // number of times we've lost GPS
     uint8_t _gps_loss_count;
 

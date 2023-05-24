@@ -14,7 +14,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-  
+
   Author: GDL90/UCP protocol by uAvionix, 2021.
   Implemented by: Tom Pittenger
  */
@@ -295,15 +295,15 @@ typedef enum __attribute__((__packed__))
   ADSB_EMITTER_UAV               = 14,
   ADSB_EMITTER_SPACE             = 15,
   // 16 Unassigned
-  
+
   // Surface types
   ADSB_EMITTER_EMERGENCY_SURFACE = 17,
   ADSB_EMITTER_SERVICE_SURFACE   = 18,
-  
+
   // Obstacle types
   ADSB_EMITTER_POINT_OBSTACLE    = 19,
   ADSB_EMITTER_CLUSTER_OBSTACLE  = 20,
-  ADSB_EMITTER_LINE_OBSTACLE     = 21,  
+  ADSB_EMITTER_LINE_OBSTACLE     = 21,
   // 22 - 39 Reserved
 } ADSB_EMITTER; // ADSB Emitter Category
 

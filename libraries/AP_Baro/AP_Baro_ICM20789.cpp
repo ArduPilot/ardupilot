@@ -142,7 +142,7 @@ bool AP_Baro_ICM20789::imu_i2c_init(void)
     // changing its address to match the IMU address
     uint8_t old_address = dev->get_bus_address();
     dev->set_address(dev_imu->get_bus_address());
-    
+
     dev->set_retries(4);
 
     uint8_t whoami=0;
@@ -151,7 +151,7 @@ bool AP_Baro_ICM20789::imu_i2c_init(void)
 
     dev->write_register(MPUREG_FIFO_EN, 0x00);
     dev->write_register(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_XGYRO);
-    
+
     // wait for sensor to settle
     hal.scheduler->delay(10);
 
@@ -208,7 +208,7 @@ bool AP_Baro_ICM20789::init()
 
     dev->set_device_type(DEVTYPE_BARO_ICM20789);
     set_bus_id(instance, dev->get_bus_id());
-    
+
     dev->get_semaphore()->give();
 
     debug("ICM20789: startup OK\n");
@@ -305,14 +305,14 @@ void AP_Baro_ICM20789::convert_data(uint32_t Praw, uint32_t Traw)
     }
 
     WITH_SEMAPHORE(_sem);
-    
+
 #if BARO_ICM20789_DEBUG
     dd.Praw = Praw;
     dd.Traw = Traw;
     dd.P = P;
     dd.T = T;
 #endif
-        
+
     accum.psum += P;
     accum.tsum += T;
     accum.count++;
@@ -355,7 +355,7 @@ void AP_Baro_ICM20789::update()
 #endif
 
     WITH_SEMAPHORE(_sem);
-    
+
     if (accum.count > 0) {
         _copy_to_frontend(instance, accum.psum/accum.count, accum.tsum/accum.count);
         accum.psum = accum.tsum = 0;

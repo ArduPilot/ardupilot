@@ -57,7 +57,7 @@ void AP_Gripper_Servo::release()
         gcs().send_text(MAV_SEVERITY_INFO, "Gripper load released");
         return;
     }
-    
+
     // flag we are releasing cargo
     config.state = AP_Gripper::STATE_RELEASING;
 

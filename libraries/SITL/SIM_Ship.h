@@ -43,14 +43,14 @@ class Ship {
 
 private:
     void update(float delta_t);
-    
+
     Vector2f position;
     float heading_deg;
     float yaw_rate;
     float speed;
     ShipSim *sim;
 };
-        
+
 class ShipSim {
 public:
     friend class Ship;

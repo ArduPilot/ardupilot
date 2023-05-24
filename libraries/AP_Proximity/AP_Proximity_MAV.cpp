@@ -51,7 +51,7 @@ bool AP_Proximity_MAV::get_upward_distance(float &distance) const
 
 // handle mavlink messages
 void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
-{   
+{
     switch (msg.msgid) {
         case (MAVLINK_MSG_ID_DISTANCE_SENSOR):
             handle_distance_sensor_msg(msg);
@@ -63,7 +63,7 @@ void AP_Proximity_MAV::handle_msg(const mavlink_message_t &msg)
 
         case (MAVLINK_MSG_ID_OBSTACLE_DISTANCE_3D):
             handle_obstacle_distance_3d_msg(msg);
-            break;    
+            break;
     }
 }
 
@@ -257,7 +257,7 @@ void AP_Proximity_MAV::handle_obstacle_distance_3d_msg(const mavlink_message_t &
 
     // extract yaw and pitch from Obstacle Vector
     const float yaw = wrap_360(degrees(atan2f(obstacle.y, obstacle.x)));
-    const float pitch = wrap_180(degrees(M_PI_2 - atan2f(obstacle.xy().length(), obstacle.z))); 
+    const float pitch = wrap_180(degrees(M_PI_2 - atan2f(obstacle.xy().length(), obstacle.z)));
 
     if (ignore_reading(pitch, yaw, obstacle_distance, false)) {
         // obstacle is probably near ground or out of range

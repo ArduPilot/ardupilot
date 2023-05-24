@@ -75,7 +75,7 @@ public:
     void set_split_transfers(bool set) override {
         _split_transfers = set;
     }
-    
+
 protected:
     I2CBus &_bus;
     uint8_t _address;
@@ -124,7 +124,7 @@ public:
       get mask of bus numbers for all configured internal I2C buses
      */
     uint32_t get_bus_mask_internal(void) const override;
-    
+
 protected:
     void _unregister(I2CBus &b);
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _create_device(I2CBus &b, uint8_t address) const;

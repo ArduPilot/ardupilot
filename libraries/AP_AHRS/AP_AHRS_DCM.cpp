@@ -489,7 +489,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
         // don't do any yaw correction while calibrating
         return;
     }
-    
+
     if (AP_AHRS_DCM::use_compass()) {
         /*
           we are using compass for yaw
@@ -769,7 +769,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
         // waiting for more data
         return;
     }
-    
+
     bool using_gps_corrections = false;
     float ra_scale = 1.0f/(_ra_deltat*GRAVITY_MSS);
 

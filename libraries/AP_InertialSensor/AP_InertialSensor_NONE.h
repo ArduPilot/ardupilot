@@ -1,8 +1,8 @@
 #pragma once
 
 /*
- This is a 'mock' implementation of an INS that does nothing and gives a level HUD, but does it successfully.   
- Its useful for boards that don't have any form of IMU accel/gyro etc connected just yet, but where u want to boot-up "successfully" anyway, 
+ This is a 'mock' implementation of an INS that does nothing and gives a level HUD, but does it successfully.
+ Its useful for boards that don't have any form of IMU accel/gyro etc connected just yet, but where u want to boot-up "successfully" anyway,
  such as the ESP32, to allow wifi connectivity to startup, and alow mavlink to start streaming anyway.
  Its a rip-off of _SITL with all the sitl stuff removed or replaced with constants.
 */

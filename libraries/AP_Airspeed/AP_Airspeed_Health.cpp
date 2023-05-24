@@ -41,7 +41,7 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
         // GPS speed can't be trusted, re-enable airspeed as a fallback
         if ((param[i].use == 0) && (state[i].failures.param_use_backup == 1)) {
             GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Airspeed sensor %d, Re-enabled as GPS fall-back", i+1);
-            param[i].use.set_and_notify(state[i].failures.param_use_backup); 
+            param[i].use.set_and_notify(state[i].failures.param_use_backup);
             state[i].failures.param_use_backup = -1;
         }
         return;
@@ -64,7 +64,7 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
         }
         data_is_inconsistent = state[i].failures.test_ratio > gate_size;
     }
-    
+
     const auto gps_speed = gps.velocity().length();
     const float speed_diff = fabsf(state[i].airspeed-gps_speed);
     const bool data_is_implausible = is_positive(_wind_max) && speed_diff > _wind_max;
@@ -111,7 +111,7 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
 
     // if Re-Enable options is allowed, and sensor is disabled but was previously enabled, and is probably healthy
     } else if (((AP_Airspeed::OptionsMask::ON_FAILURE_AHRS_WIND_MAX_RECOVERY_DO_REENABLE & _options) != 0) &&
-                (state[i].failures.param_use_backup > 0) && 
+                (state[i].failures.param_use_backup > 0) &&
                 (state[i].failures.health_probability > RE_ENABLE_PROB_THRESH_OK)) {
 
         GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Airspeed sensor %d now OK. Re-enabled", i+1);

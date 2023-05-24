@@ -171,7 +171,7 @@ void AP_Mount_Alexmos::control_axis(const MountTarget& angle_target_rad)
 */
 void AP_Mount_Alexmos::read_params(uint8_t profile_id)
 {
-    uint8_t data[1] = {(uint8_t) profile_id}; 
+    uint8_t data[1] = {(uint8_t) profile_id};
     send_command(CMD_READ_PARAMS, data, 1);
 }
 

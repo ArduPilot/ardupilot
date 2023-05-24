@@ -353,7 +353,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SD_MISSION", 24, AP_BoardConfig, sdcard_storage.mission_kb, 0),
 #endif
-    
+
     AP_GROUPEND
 };
 
@@ -375,7 +375,7 @@ void AP_BoardConfig::init()
         }
         hal.scheduler->delay(delay_ms);
     }
-    
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && defined(USE_POSIX)
     uint8_t slowdown = constrain_int16(_sdcard_slowdown.get(), 0, 32);
     const uint8_t max_slowdown = 8;
@@ -407,7 +407,7 @@ void AP_BoardConfig::init_safety()
 }
 
 /*
-  notify user of a fatal startup error related to available sensors. 
+  notify user of a fatal startup error related to available sensors.
 */
 bool AP_BoardConfig::_in_error_loop;
 

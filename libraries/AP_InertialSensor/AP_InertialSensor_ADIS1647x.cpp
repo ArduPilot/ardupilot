@@ -165,7 +165,7 @@ bool AP_InertialSensor_ADIS1647x::check_product_id(uint16_t &prod_id)
         }
         return true;
     }
-        
+
     case PROD_ID_16507: {
         opmode = OpMode::Delta32;
         expected_sample_rate_hz = 1200;
@@ -240,7 +240,7 @@ bool AP_InertialSensor_ADIS1647x::init()
     if (!write_reg16(REG_FILT_CTRL, 0, true)) {
         return false;
     }
-    
+
     // choose burst type and compensation
     uint16_t msc_ctrl = REG_MSC_CTRL_GCOMP | REG_MSC_CTRL_PCOMP | REG_MSC_CTRL_DRPOL;
     if (opmode == OpMode::Delta32) {
@@ -457,7 +457,7 @@ void AP_InertialSensor_ADIS1647x::read_sensor32(void)
     }
     done_first_read = true;
     last_counter = counter;
-    
+
     Vector3f accel{float(accel_scale*int32_t(be16toh(data.ax_low) | (be16toh(data.ax_high)<<16))),
                   -float(accel_scale*int32_t(be16toh(data.ay_low) | (be16toh(data.ay_high)<<16))),
                   -float(accel_scale*int32_t(be16toh(data.az_low) | (be16toh(data.az_high)<<16)))};
@@ -549,7 +549,7 @@ void AP_InertialSensor_ADIS1647x::read_sensor32_delta(void)
     }
     done_first_read = true;
     last_counter = counter;
-    
+
     Vector3f dvel{float(dvel_scale*int32_t(be16toh(data.dvx_low) | (be16toh(data.dvx_high)<<16))),
                   -float(dvel_scale*int32_t(be16toh(data.dvy_low) | (be16toh(data.dvy_high)<<16))),
                   -float(dvel_scale*int32_t(be16toh(data.dvz_low) | (be16toh(data.dvz_high)<<16)))};

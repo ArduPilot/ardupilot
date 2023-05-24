@@ -90,7 +90,7 @@ bool AP_Baro_BMP388::init()
 
     // normal mode, temp and pressure
     dev->write_register(BMP388_REG_PWR_CTRL, 0x33, true);
-    
+
     uint8_t whoami;
     if (!read_registers(BMP388_REG_ID, &whoami, 1)) {
         return false;

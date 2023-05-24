@@ -62,7 +62,7 @@ enum class RtlAutoland {
     RTL_IMMEDIATE_DO_LAND_START = 2,
     NO_RTL_GO_AROUND = 3,
 };
-    
+
 
 enum ChannelMixing {
     MIXING_DISABLED = 0,
@@ -171,7 +171,7 @@ enum CrowFlapOptions {
     FLYINGWING       = (1 << 0),
     FULLSPAN         = (1 << 1),
     PROGRESSIVE_CROW = (1 << 2),
-}; 
+};
 
 
 enum guided_heading_type_t {

@@ -8,7 +8,7 @@ extern const AP_HAL::HAL& hal;
 // ==========================================================================
 // based on tables.cpp from http://www.pdas.com/atmosdownload.html
 
-/* 
+/*
    Compute the temperature, density, and pressure in the standard atmosphere
    Correct to 20 km.  Only approximate thereafter.
 */

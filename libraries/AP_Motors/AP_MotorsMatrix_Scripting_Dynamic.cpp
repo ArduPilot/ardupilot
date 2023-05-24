@@ -112,7 +112,7 @@ bool AP_MotorsMatrix_Scripting_Dynamic::init(uint8_t expected_num_motors)
     return true;
 }
 
-// output - sends commands to the motors, 
+// output - sends commands to the motors,
 // Need to take the semaphore to enasure the motor factors are not changed during the mixer calculation
 void AP_MotorsMatrix_Scripting_Dynamic::output_to_motors()
 {

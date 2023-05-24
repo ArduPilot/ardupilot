@@ -55,7 +55,7 @@ void AP_EFI_Serial_MS::update()
     }
 }
 
-bool AP_EFI_Serial_MS::read_incoming_realtime_data() 
+bool AP_EFI_Serial_MS::read_incoming_realtime_data()
 {
     // Data is parsed directly from the buffer, otherwise we would need to allocate
     // several hundred bytes for the entire realtime data table or request every
@@ -64,9 +64,9 @@ bool AP_EFI_Serial_MS::read_incoming_realtime_data()
 
     // reset checksum before reading new data
     checksum = 0;
-    
+
     // Message length field begins the message (16 bits, excluded from CRC calculation)
-    // Message length value excludes the message length and CRC bytes 
+    // Message length value excludes the message length and CRC bytes
     message_length = port->read() << 8;
     message_length += port->read();
 
@@ -82,8 +82,8 @@ bool AP_EFI_Serial_MS::read_incoming_realtime_data()
         // abort read if we did not receive the correct response code;
         return false;
     }
-    
-    // Iterate over the payload bytes 
+
+    // Iterate over the payload bytes
     for (uint16_t offset=RT_FIRST_OFFSET; offset < (RT_FIRST_OFFSET + message_length - 1); offset++) {
         uint8_t data = read_byte_CRC32();
         float temp_float;
@@ -144,24 +144,24 @@ bool AP_EFI_Serial_MS::read_incoming_realtime_data()
                 temp_float = (float)((data << 8) + read_byte_CRC32());
                 internal_state.fuel_pressure = temp_float;
                 offset++;
-                break;   
-                
+                break;
+
         }
     }
-    
+
     // Read the four CRC bytes
     uint32_t received_CRC;
     received_CRC = port->read() << 24;
     received_CRC += port->read() << 16;
     received_CRC += port->read() << 8;
     received_CRC += port->read();
-                        
+
     if (received_CRC != checksum) {
         // hal.console->printf("EFI CRC: 0x%08x 0x%08x\n", received_CRC, checksum);
         return false;
     }
 
-    // Calculate Fuel Consumption 
+    // Calculate Fuel Consumption
     // Duty Cycle (Percent, because that's how HFE gives us the calibration coefficients)
     float duty_cycle = (internal_state.cylinder_status.injection_time_ms * internal_state.engine_speed_rpm)/600.0f;
     uint32_t current_time = AP_HAL::millis();
@@ -174,9 +174,9 @@ bool AP_EFI_Serial_MS::read_incoming_realtime_data()
         internal_state.fuel_consumption_rate_cm3pm = 0;
     }
     internal_state.last_updated_ms = current_time;
-    
+
     return true;
-         
+
 }
 
 void AP_EFI_Serial_MS::send_request(uint8_t table, uint16_t first_offset, uint16_t last_offset)
@@ -194,11 +194,11 @@ void AP_EFI_Serial_MS::send_request(uint8_t table, uint16_t first_offset, uint16
         (uint8_t)(first_offset >> 8),
         (uint8_t)(first_offset),
         (uint8_t)(length >> 8),
-        (uint8_t)(length)   
+        (uint8_t)(length)
     };
-    
+
     uint32_t crc = 0;
-    
+
     // Write the request and calc CRC
     for (uint8_t i = 0;  i != sizeof(data) ; i++) {
         // Message size is excluded from CRC
@@ -207,7 +207,7 @@ void AP_EFI_Serial_MS::send_request(uint8_t table, uint16_t first_offset, uint16
         }
         port->write(data[i]);
     }
-    
+
     // Write the CRC32
     port->write((uint8_t)(crc >> 24));
     port->write((uint8_t)(crc >> 16));
@@ -217,8 +217,8 @@ void AP_EFI_Serial_MS::send_request(uint8_t table, uint16_t first_offset, uint16
 }
 
 uint8_t AP_EFI_Serial_MS::read_byte_CRC32()
-{   
-    // Read a byte and update the CRC 
+{
+    // Read a byte and update the CRC
     uint8_t data = port->read();
     checksum = CRC32_compute_byte(checksum, data);
     return data;

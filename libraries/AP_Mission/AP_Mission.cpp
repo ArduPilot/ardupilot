@@ -222,7 +222,7 @@ bool AP_Mission::starts_with_takeoff_cmd()
 /*
     return true if MIS_OPTIONS is set to allow continue of mission
     logic after a land and the next waypoint is a takeoff. If this
-    is false then after a landing is complete the vehicle should 
+    is false then after a landing is complete the vehicle should
     disarm and mission logic should stop
 */
 bool AP_Mission::continue_after_land_check_for_takeoff()
@@ -2306,7 +2306,7 @@ uint16_t AP_Mission::get_landing_sequence_start()
                 // 2D distance - no altitude
                 tmp_distance = tmp.content.location.get_distance(current_loc);
             }
-            
+
             if (min_distance < 0 || tmp_distance < min_distance) {
                 min_distance = tmp_distance;
                 landing_start_index = i;

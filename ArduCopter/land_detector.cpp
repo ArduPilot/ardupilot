@@ -152,7 +152,7 @@ void Copter::set_land_complete(bool b)
 
     // tell AHRS flying state
     set_likely_flying(!b);
-    
+
     // trigger disarm-on-land if configured
     bool disarm_on_land_configured = (g.throttle_behavior & THR_BEHAVE_DISARM_ON_LAND_DETECT) != 0;
     const bool mode_disarms_on_land = flightmode->allows_arming(AP_Arming::Method::LANDING) && !flightmode->has_manual_throttle();

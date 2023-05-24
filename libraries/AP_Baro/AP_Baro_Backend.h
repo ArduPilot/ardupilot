@@ -59,7 +59,7 @@ public:
         DEVTYPE_BARO_MS5637   = 0x13,
         DEVTYPE_BARO_BMP390   = 0x14,
     };
-    
+
 protected:
     // reference to frontend object
     AP_Baro &_frontend;
@@ -72,7 +72,7 @@ protected:
     virtual void update_healthy_flag(uint8_t instance);
 
     // mean pressure for range filter
-    float _mean_pressure; 
+    float _mean_pressure;
     // number of dropped samples. Not used for now, but can be usable to choose more reliable sensor
     uint32_t _error_count;
 

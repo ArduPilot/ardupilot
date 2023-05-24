@@ -31,7 +31,7 @@ public:
 
     // temperature not available via analog backend
     bool get_temperature(float &temperature) override;
-    
+
 private:
     const uint8_t msp_instance;
     float sum_pressure;

@@ -151,7 +151,7 @@ bool AP_Compass_BMM150::init()
 
     // use checked registers to cope with bus errors
     _dev->setup_checked_registers(4);
-    
+
     int8_t boot_tries = 4;
     while (boot_tries--) {
         /* Do a soft reset */
@@ -227,12 +227,12 @@ bool AP_Compass_BMM150::init()
 
     // 2 retries for run
     _dev->set_retries(2);
-    
+
     _dev->register_periodic_callback(MEASURE_TIME_USEC,
             FUNCTOR_BIND_MEMBER(&AP_Compass_BMM150::_update, void));
 
     _last_read_ms = AP_HAL::millis();
-    
+
     return true;
 
 bus_error:

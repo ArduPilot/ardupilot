@@ -43,7 +43,7 @@ void Rover::Log_Write_Depth()
 
     for (uint8_t i=0; i<rangefinder.num_sensors(); i++) {
         const AP_RangeFinder_Backend *s = rangefinder.get_backend(i);
-        
+
         if (s == nullptr || s->orientation() != ROTATION_PITCH_270 || !s->has_data()) {
             continue;
         }
@@ -64,8 +64,8 @@ void Rover::Log_Write_Depth()
         // @Description: Depth messages on boats with downwards facing range finder
         // @Field: TimeUS: Time since system startup
         // @Field: Inst: Instance
-        // @Field: Lat: Latitude 
-        // @Field: Lng: Longitude   
+        // @Field: Lat: Latitude
+        // @Field: Lng: Longitude
         // @Field: Depth: Depth as detected by the sensor
         // @Field: Temp: Temperature
 
@@ -257,8 +257,8 @@ const LogStructure Rover::log_structure[] = {
 // @Description: Throttle related messages
 // @Field: TimeUS: Time since system startup
 // @Field: ThrIn: Throttle Input
-// @Field: ThrOut: Throttle Output 
-// @Field: DesSpeed: Desired speed 
+// @Field: ThrOut: Throttle Output
+// @Field: DesSpeed: Desired speed
 // @Field: Speed: Actual speed
 // @Field: AccX: Acceleration
 
@@ -277,17 +277,17 @@ const LogStructure Rover::log_structure[] = {
 
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),
       "NTUN", "QfffHf", "TimeUS,WpDist,WpBrg,DesYaw,Yaw,XTrack", "smhhhm", "F000B0" },
-    
+
 // @LoggerMessage: STER
 // @Description: Steering related messages
 // @Field: TimeUS: Time since system startup
 // @Field: SteerIn: Steering input
-// @Field: SteerOut: Normalized steering output 
+// @Field: SteerOut: Normalized steering output
 // @Field: DesLatAcc: Desired lateral acceleration
 // @Field: LatAcc: Actual lateral acceleration
 // @Field: DesTurnRate: Desired turn rate
 // @Field: TurnRate: Actual turn rate
-    
+
     { LOG_STEERING_MSG, sizeof(log_Steering),
       "STER", "Qhfffff",   "TimeUS,SteerIn,SteerOut,DesLatAcc,LatAcc,DesTurnRate,TurnRate", "s--ookk", "F--0000" },
 
@@ -301,7 +301,7 @@ const LogStructure Rover::log_structure[] = {
 // @Field: vX: Target velocity, X-Axis
 // @Field: vY: Target velocity, Y-Axis
 // @Field: vZ: Target velocity, Z-Axis
-    
+
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
       "GUIP",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
 };

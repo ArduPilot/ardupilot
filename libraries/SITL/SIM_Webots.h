@@ -50,14 +50,14 @@ public:
         return new Webots(frame_str);
     }
 
-    
+
 
 private:
 
     const char *webots_ip = "127.0.0.1";
 
     // assume sensors are streamed on port 5599
-    uint16_t webots_sensors_port = 5599; 
+    uint16_t webots_sensors_port = 5599;
 
     enum {
         OUTPUT_ROVER=1,
@@ -86,7 +86,7 @@ private:
     uint64_t socket_frame_counter;
     uint64_t last_socket_frame_counter;
     uint64_t frame_counter;
-    
+
     double last_frame_count_s;
 
     enum data_type {

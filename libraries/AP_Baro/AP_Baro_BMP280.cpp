@@ -108,7 +108,7 @@ bool AP_Baro_BMP280::_init()
     }
 
     _dev->setup_checked_registers(2, 20);
-    
+
     _dev->write_register((BMP280_REG_CTRL_MEAS & mask), (BMP280_OVERSAMPLING_T << 5) |
                          (BMP280_OVERSAMPLING_P << 2) | BMP280_MODE, true);
 
@@ -118,7 +118,7 @@ bool AP_Baro_BMP280::_init()
 
     _dev->set_device_type(DEVTYPE_BARO_BMP280);
     set_bus_id(_instance, _dev->get_bus_id());
-    
+
     // request 50Hz update
     _dev->register_periodic_callback(20 * AP_USEC_PER_MSEC, FUNCTOR_BIND_MEMBER(&AP_Baro_BMP280::_timer, void));
 
@@ -168,7 +168,7 @@ void AP_Baro_BMP280::_update_temperature(int32_t temp_raw)
     const float temp = ((float)t) * 0.01f;
 
     WITH_SEMAPHORE(_sem);
-    
+
     _temperature = temp;
 }
 
@@ -200,9 +200,9 @@ void AP_Baro_BMP280::_update_pressure(int32_t press_raw)
     if (!pressure_ok(press)) {
         return;
     }
-    
+
     WITH_SEMAPHORE(_sem);
-    
+
     _pressure_sum += press;
     _pressure_count++;
 }

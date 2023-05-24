@@ -38,9 +38,9 @@ private:
     static const uint8_t _buffer_length = 50;
     VectorN<readings_baro, _buffer_length> _buffer;
 
-    // is the barometer usable for flight 
+    // is the barometer usable for flight
     bool healthy(uint8_t instance);
-    
+
     void _timer();
     bool _has_sample;
     uint32_t _last_sample_time;

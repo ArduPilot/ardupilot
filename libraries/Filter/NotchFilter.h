@@ -36,7 +36,7 @@ public:
     void reset();
 
     // calculate attenuation and quality from provided center frequency and bandwidth
-    static void calculate_A_and_Q(float center_freq_hz, float bandwidth_hz, float attenuation_dB, float& A, float& Q); 
+    static void calculate_A_and_Q(float center_freq_hz, float bandwidth_hz, float attenuation_dB, float& A, float& Q);
 
 protected:
 
@@ -56,7 +56,7 @@ public:
     float attenuation_dB(void) const { return _attenuation_dB; }
     uint8_t enabled(void) const { return _enable; }
     void enable() { _enable.set(true); }
-    
+
 protected:
     AP_Int8 _enable;
     AP_Float _center_freq_hz;

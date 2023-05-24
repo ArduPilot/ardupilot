@@ -398,8 +398,8 @@ dsm_parse(uint64_t now, uint8_t *frame, unsigned len, uint16_t *values,
                                 }
                                 printf("\n");
 #endif
-	
-                                
+
+
 				/* we consumed the partial frame, reset */
 				dsm_partial_frame_count = 0;
 
@@ -498,7 +498,7 @@ int main(int argc, const char *argv[])
         uint16_t num_values = 0;
         fd_set fds;
         struct timeval tv;
-    
+
         FD_ZERO(&fds);
         FD_SET(fd, &fds);
 
@@ -517,7 +517,7 @@ int main(int argc, const char *argv[])
 
         bool dsm_11_bit;
         unsigned frame_drops;
-        
+
         if (dsm_parse(micros64(), b, nread, values, &num_values, &dsm_11_bit, &frame_drops, 18)) {
 #if 1
             printf("%u: ", num_values);
@@ -550,14 +550,14 @@ int main(int argc, const char *argv[])
     }
     uint16_t values[18];
     memset(values, 0, sizeof(values));
-    
+
     while (true) {
         uint16_t num_values = 0;
         bool dsm_11_bit;
         unsigned frame_drops;
 
         t += 11000;
-        
+
         if (dsm_parse(t, b, sizeof(b), values, &num_values, &dsm_11_bit, &frame_drops, 18)) {
 #if 1
             printf("%u: ", num_values);

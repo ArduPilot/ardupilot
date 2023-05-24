@@ -72,11 +72,11 @@ const T &DigitalLPF<T>::get() const {
 }
 
 template <class T>
-void DigitalLPF<T>::reset(T value) { 
+void DigitalLPF<T>::reset(T value) {
     _output = value;
     initialised = true;
 }
-    
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 // LowPassFilter
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -134,7 +134,7 @@ void LowPassFilter<T>::reset(T value) {
     _filter.reset(value);
 }
 
-/* 
+/*
  * Make an instances
  * Otherwise we have to move the constructor implementations to the header file :P
  */

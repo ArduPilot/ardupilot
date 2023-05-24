@@ -77,7 +77,7 @@ bool AP_Rally::get_rally_point_with_index(uint8_t i, RallyLocation &ret) const
         return false; // sanity check
     }
 
-    return true; 
+    return true;
 }
 
 void AP_Rally::truncate(uint8_t num)

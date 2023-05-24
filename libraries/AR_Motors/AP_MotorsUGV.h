@@ -215,7 +215,7 @@ private:
     float   _lateral;  // requested lateral input as a value from -100 to +100
     float   _roll;      // requested roll as a value from -1 to +1
     float   _pitch;     // requested pitch as a value from -1 to +1
-    float   _walking_height; // requested height as a value from -1 to +1   
+    float   _walking_height; // requested height as a value from -1 to +1
     float   _mainsail;  // requested mainsail input as a value from 0 to 100
     float   _wingsail;  // requested wing sail input as a value in the range +- 100
     float   _mast_rotation;  // requested mast rotation input as a value in the range +- 100

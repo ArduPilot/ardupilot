@@ -34,7 +34,7 @@ float ADCSource::voltage_latest() {
 
     case 1:
         return _sitlState->airspeed_pin_voltage[0];
-    
+
     case 2:
         return _sitlState->airspeed_pin_voltage[1];
 

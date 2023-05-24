@@ -31,7 +31,7 @@ public:
 
 private:
     // pointer to serial uart
-    AP_HAL::UARTDriver *uart = nullptr; 
+    AP_HAL::UARTDriver *uart = nullptr;
 
     // See if we can read in some data
     void update();

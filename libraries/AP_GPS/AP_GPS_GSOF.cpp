@@ -48,7 +48,7 @@ AP_GPS_GSOF::AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
 {
     // https://receiverhelp.trimble.com/oem-gnss/index.html#GSOFmessages_Overview.html?TocPath=Output%2520Messages%257CGSOF%2520Messages%257COverview%257C_____0
     static_assert(ARRAY_SIZE(gsofmsgreq) <= 10, "The maximum number of outputs allowed with GSOF is 10.");
-    
+
     msg.state = Msg_Parser::State::STARTTX;
 
     // baud request for port 0
@@ -284,10 +284,10 @@ AP_GPS_GSOF::process_message(void)
                 const uint8_t posf2 = msg.data[a + 8];
 
                 //Debug("POSTIME: " + posf1 + " " + posf2);
-                
+
                 if ((posf1 & 1)) { // New position
                     state.status = AP_GPS::GPS_OK_FIX_3D;
-                    if ((posf2 & 1)) { // Differential position 
+                    if ((posf2 & 1)) { // Differential position
                         state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
                         if (posf2 & 2) { // Differential position method
                             if (posf2 & 4) {// Differential position method

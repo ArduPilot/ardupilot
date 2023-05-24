@@ -43,7 +43,7 @@ JitterCorrection::JitterCorrection(uint16_t _max_lag_ms, uint16_t _convergence_l
 
 /*
   correct an offboard timestamp in microseconds into a local
-  timestamp, removing timing jitter caused by the transport. 
+  timestamp, removing timing jitter caused by the transport.
 
   Return a value in microseconds since boot in the local time domain
  */
@@ -84,13 +84,13 @@ uint64_t JitterCorrection::correct_offboard_timestamp_usec(uint64_t offboard_use
         link_offset_usec = min_sample_us;
         min_sample_counter = 0;
     }
-    
+
     return uint64_t(estimate_us);
 }
 
 /*
   correct an offboard timestamp in microseconds into a local
-  timestamp, removing timing jitter caused by the transport. 
+  timestamp, removing timing jitter caused by the transport.
 
   Return a value in milliseconds since boot in the local time domain
  */

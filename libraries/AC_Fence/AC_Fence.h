@@ -128,7 +128,7 @@ public:
 
     /// get_return_rally - returns whether returning to fence return point or rally point
     uint8_t get_return_rally() const { return _ret_rally; }
-    
+
     /// get_return_rally - returns whether returning to fence return point or rally point
     float get_return_altitude() const { return _ret_altitude; }
 

@@ -123,7 +123,7 @@ private:
     float rpm_scale_factor[ESC_TELEM_MAX_ESCS];
     uint32_t rpm_scale_mask;
 #endif
-    
+
     bool _have_data;
 
     AP_Int8 mavlink_offset;

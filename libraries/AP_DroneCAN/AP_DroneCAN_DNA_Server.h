@@ -117,8 +117,8 @@ public:
     void reset();
 
     /* Checks if the node id has been verified against the record
-    Specific CAN drivers are expected to check use this method to 
-    verify if the node is healthy and has static node_id against 
+    Specific CAN drivers are expected to check use this method to
+    verify if the node is healthy and has static node_id against
     hwid in the records */
     bool isNodeIDVerified(uint8_t node_id) const;
 

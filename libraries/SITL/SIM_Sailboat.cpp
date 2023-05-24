@@ -126,10 +126,10 @@ void Sailboat::update_wave(float delta_time)
     // apply rate propositional to error between boat angle and water angle
     // this gives a 'stability' effect
     float r, p, y;
-    dcm.to_euler(&r, &p, &y); 
+    dcm.to_euler(&r, &p, &y);
 
     // if not armed don't do waves, to allow gyro init
-    if (sitl->wave.enable == 0 || !hal.util->get_soft_armed() || is_zero(wave_amp) ) { 
+    if (sitl->wave.enable == 0 || !hal.util->get_soft_armed() || is_zero(wave_amp) ) {
         wave_gyro = Vector3f(-r,-p,0.0f) * WAVE_ANGLE_GAIN;
         wave_heave = -velocity_ef.z * WAVE_HEAVE_GAIN;
         wave_phase = 0.0f;

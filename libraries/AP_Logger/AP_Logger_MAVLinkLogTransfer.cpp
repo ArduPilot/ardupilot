@@ -79,7 +79,7 @@ void AP_Logger::handle_log_request_list(GCS_MAVLINK &link, const mavlink_message
 
     if (_log_num_logs == 0) {
         _log_next_list_entry = 0;
-        _log_last_list_entry = 0;        
+        _log_last_list_entry = 0;
     } else {
         _log_next_list_entry = packet.start;
         _log_last_list_entry = packet.end;

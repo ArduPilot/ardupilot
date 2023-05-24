@@ -117,7 +117,7 @@ void AP_IRLock_I2C::read_frames(void)
         return;
     }
     struct frame irframe;
-    
+
     if (!read_block(irframe)) {
         return;
     }
@@ -146,7 +146,7 @@ void AP_IRLock_I2C::read_frames(void)
     static uint32_t lastt;
     if (_target_info.timestamp - lastt > 2000) {
         lastt = _target_info.timestamp;
-        printf("pos_x:%.5f pos_y:%.5f size_x:%.6f size_y:%.5f\n", 
+        printf("pos_x:%.5f pos_y:%.5f size_x:%.6f size_y:%.5f\n",
                _target_info.pos_x, _target_info.pos_y,
                (corner2_pos_x-corner1_pos_x), (corner2_pos_y-corner1_pos_y));
     }

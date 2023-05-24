@@ -222,7 +222,7 @@ struct gimbal_param *Gimbal::param_find(const char *name)
     }
     return nullptr;
 }
-    
+
 /*
   send a parameter to flight board
  */
@@ -251,7 +251,7 @@ void Gimbal::param_send(const struct gimbal_param *p)
     }
 }
 
-    
+
 /*
   send a report to the vehicle control code over MAVLink
 */

@@ -84,7 +84,7 @@
 #define STM32_PLLN_VALUE                    30
 #endif
 #define STM32_PLLPDIV_VALUE                 0
-#define STM32_PLLP_VALUE                    7 
+#define STM32_PLLP_VALUE                    7
 #define STM32_PLLQ_VALUE                    2
 #define STM32_PLLR_VALUE                    2
 #define STM32_HPRE                          STM32_HPRE_DIV1
@@ -370,5 +370,5 @@
 #define STM32_I2C_ISR_LIMIT                 6
 
 #endif /* MCUCONF_H */
-                                                                                                                                                                                                                                                       
+
 

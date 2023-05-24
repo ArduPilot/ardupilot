@@ -15,7 +15,7 @@
 /*
   Scripting CANSensor class, for easy scripting CAN support
  */
- 
+
 #pragma once
 
 #include <AP_CANManager/AP_CANSensor.h>

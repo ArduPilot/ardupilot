@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  implementation of RunCam camera protocols 
+  implementation of RunCam camera protocols
 
   With thanks to betaflight for a great reference
   implementation. Several of the functions below are based on

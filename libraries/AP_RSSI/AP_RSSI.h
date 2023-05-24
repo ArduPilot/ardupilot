@@ -52,7 +52,7 @@ public:
     float read_receiver_link_quality();
     // Read the receiver RSSI value as an 8-bit integer
     // 0 represents weakest signal, 255 represents maximum signal.
-    uint8_t read_receiver_rssi_uint8();   
+    uint8_t read_receiver_rssi_uint8();
 
     // parameter block
     static const struct AP_Param::GroupInfo var_info[];
@@ -71,7 +71,7 @@ private:
     AP_Int16        rssi_channel_high_pwm_value;            // PWM value for strongest rssi signal
 
     // Analog Inputs
-    // a pin for reading the receiver RSSI voltage. 
+    // a pin for reading the receiver RSSI voltage.
     AP_HAL::AnalogSource *rssi_analog_source;
 
     // PWM input

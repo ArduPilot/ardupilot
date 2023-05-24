@@ -18,10 +18,10 @@
 #define PROXIMITY_BOUNDARY_3D_TIMEOUT_MS 750 // we should check the 3D boundary faces after this many ms
 
 /*
-  Constructor. 
+  Constructor.
   This incorporates initialisation as well.
 */
-AP_Proximity_Boundary_3D::AP_Proximity_Boundary_3D() 
+AP_Proximity_Boundary_3D::AP_Proximity_Boundary_3D()
 {
     // initialise sector edge vector used for building the boundary fence
     init();
@@ -246,7 +246,7 @@ bool AP_Proximity_Boundary_3D::get_distance(const Face &face, float &distance) c
     return false;
 }
 
-// get the total number of obstacles 
+// get the total number of obstacles
 uint8_t AP_Proximity_Boundary_3D::get_obstacle_count() const
 {
     return PROXIMITY_NUM_LAYERS * PROXIMITY_NUM_SECTORS;
@@ -281,9 +281,9 @@ bool AP_Proximity_Boundary_3D::convert_obstacle_num_to_face(uint8_t obstacle_num
 
 // Appropriate layer and sector are found from the passed obstacle_num
 // This function then draws a line between this sector, and sector + 1 at the given layer
-// Then returns the closest point on this line from vehicle, in body-frame. 
-// Used by GPS based Simple Avoidance  
-// False is returned if the obstacle_num provided does not produce a valid obstacle 
+// Then returns the closest point on this line from vehicle, in body-frame.
+// Used by GPS based Simple Avoidance
+// False is returned if the obstacle_num provided does not produce a valid obstacle
 bool AP_Proximity_Boundary_3D::get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_obstacle) const
 {
     Face face;
@@ -293,7 +293,7 @@ bool AP_Proximity_Boundary_3D::get_obstacle(uint8_t obstacle_num, Vector3f& vec_
     }
     const uint8_t sector_end = face.sector;
     const uint8_t sector_start = get_next_sector(face.sector);
-    
+
     const Vector3f start = _boundary_points[face.layer][sector_start];
     const Vector3f end = _boundary_points[face.layer][sector_end];
     vec_to_obstacle = Vector3f::point_on_line_closest_to_other_point(start, end, Vector3f{});

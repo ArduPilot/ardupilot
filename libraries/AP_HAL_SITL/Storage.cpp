@@ -228,7 +228,7 @@ void Storage::_flash_load(void)
 }
 
 /*
-  write one storage line. This also updates _dirty_mask. 
+  write one storage line. This also updates _dirty_mask.
 */
 void Storage::_flash_write(uint16_t line)
 {

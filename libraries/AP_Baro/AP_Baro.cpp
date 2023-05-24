@@ -248,7 +248,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_OPTIONS", 24, AP_Baro, _options, 0),
 #endif
-    
+
     AP_GROUPEND
 };
 
@@ -299,7 +299,7 @@ void AP_Baro::calibrate(bool save)
             return;
     }
     #endif
-    
+
     BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Calibrating barometer");
 
     // reset the altitude offset when we calibrate. The altitude
@@ -510,7 +510,7 @@ float AP_Baro::get_external_temperature(const uint8_t instance) const
     if (_last_external_temperature_ms != 0 && AP_HAL::millis() - _last_external_temperature_ms < 10000) {
         return _external_temperature;
     }
-    
+
 #ifndef HAL_BUILD_AP_PERIPH
 #if AP_AIRSPEED_ENABLED
     // if we don't have an external temperature then try to use temperature
@@ -524,7 +524,7 @@ float AP_Baro::get_external_temperature(const uint8_t instance) const
     }
 #endif
 #endif
-    
+
     // if we don't have an external temperature and airspeed temperature
     // then use the minimum of the barometer temperature and 35 degrees C.
     // The reason for not just using the baro temperature is it tends to read high,

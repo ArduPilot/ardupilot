@@ -35,7 +35,7 @@ public:
     uint8_t     get(uint8_t instance) const {
         return instance < AP_RELAY_NUM_RELAYS ? _pin_states & (1U<<instance) : 0;
     }
-    
+
     // see if the relay is enabled
     bool        enabled(uint8_t instance) { return instance < AP_RELAY_NUM_RELAYS && _pin[instance] != -1; }
 
@@ -44,7 +44,7 @@ public:
 
     // check settings are valid
     bool arming_checks(size_t buflen, char *buffer) const;
-    
+
     static AP_Relay *get_singleton(void) {return singleton; }
 
     static const struct AP_Param::GroupInfo        var_info[];

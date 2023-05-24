@@ -65,7 +65,7 @@ public:
     // returns the index of the IMU of the primary core
     // return -1 if no primary core selected
     int8_t getPrimaryCoreIMUIndex(void) const;
-    
+
     // Write the last calculated NE position relative to the reference point (m)
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
@@ -246,7 +246,7 @@ public:
 
     // get the enable parameter
     bool get_enable(void) const { return bool(_enable.get()); }
-    
+
     /*
      * Write position and quaternion data from an external navigation system
      *
@@ -300,7 +300,7 @@ public:
 
     // get a yaw estimator instance
     const EKFGSF_yaw *get_yawEstimator(void) const;
-    
+
 private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
@@ -407,7 +407,7 @@ private:
 
     // last time of Log_Write
     uint64_t lastLogWrite_us;
-    
+
     struct {
         uint32_t last_function_call;  // last time getLastYawResetAngle was called
         bool core_changed;            // true when a core change happened and hasn't been consumed, false otherwise
@@ -436,10 +436,10 @@ private:
 
     enum class InitFailures {
         UNKNOWN,
-        NO_ENABLE, 
-        NO_IMUS, 
-        NO_MASK, 
-        NO_MEM, 
+        NO_ENABLE,
+        NO_IMUS,
+        NO_MASK,
+        NO_MEM,
         NO_SETUP,
         NUM_INIT_FAILURES
     };

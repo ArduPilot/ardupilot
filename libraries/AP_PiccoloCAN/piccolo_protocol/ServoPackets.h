@@ -476,8 +476,8 @@ typedef struct
     unsigned eeVersion : 7;  //!< Version of non-volatile settings configuration
     uint16_t eeSize;         //!< Size of non-volatile settings data
     uint16_t eeChecksum;     //!< NV settings checksum
-    uint8_t  mramVersion;   
-    uint16_t mramSize;      
+    uint8_t  mramVersion;
+    uint16_t mramSize;
 }Servo_SettingsInfo_t;
 
 //! Create the Servo_SettingsInfo packet

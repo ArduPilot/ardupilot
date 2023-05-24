@@ -67,12 +67,12 @@ const AP_Param::GroupInfo AP_TempCalibration::var_info[] = {
     // @Volatile: True
     // @User: Advanced
     AP_GROUPINFO("_BARO_EXP", 5, AP_TempCalibration, baro_exponent, 0),
-    
+
     AP_GROUPEND
 };
 
 /*
-  calculate the correction given an exponent and a temperature 
+  calculate the correction given an exponent and a temperature
 
   This one parameter correction is deliberately chosen to be very
   robust for extrapolation. It fits the characteristics of the
@@ -187,7 +187,7 @@ void AP_TempCalibration::learn_calibration(void)
         learn_values[idx] = 0.9 * learn_values[idx] + 0.1 * P;
     }
     learn_i = MAX(learn_i, idx);
-    
+
     uint32_t now = AP_HAL::millis();
     if (now - last_learn_ms > 100 &&
         idx*learn_temp_step > min_learn_temp_range &&

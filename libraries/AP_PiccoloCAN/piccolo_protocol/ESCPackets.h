@@ -44,7 +44,7 @@ typedef struct
     uint8_t commandInputPriority; //!< Command input source priority, refer to enumeration ESCCommandPriorities
     uint8_t motorTempSensor;      //!< External motor temperature sensor configuration
     uint8_t keepalive;            //!< ESC keepalive timeout - If this is non-zero, the ESC will automatically revert to *STANDBY* mode if it does not receive a valid command for the alloted period
-    uint8_t motorBeepMode;       
+    uint8_t motorBeepMode;
     uint8_t motorBeepVolume;      //!< Motor beep volume
 }ESC_Config_t;
 
@@ -339,7 +339,7 @@ int decodeESC_AccelerometerPacket(const void* pkt, int16_t* xAcc, int16_t* yAcc,
 typedef struct
 {
     ESC_WarningBits_t warnings;
-    ESC_ErrorBits_t   errors;  
+    ESC_ErrorBits_t   errors;
 }ESC_WarningErrorStatus_t;
 
 //! Create the ESC_WarningErrorStatus packet

@@ -223,7 +223,7 @@ void GCS_MAVLINK::handle_param_request_read(const mavlink_message_t &msg)
         // we can't process this right now, drop it
         return;
     }
-    
+
     mavlink_param_request_read_t packet;
     mavlink_msg_param_request_read_decode(&msg, &packet);
 
@@ -309,7 +309,7 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
     if (force_save && (parameter_flags & AP_PARAM_FLAG_ENABLE)) {
         AP_Param::invalidate_count();
     }
-    
+
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger != nullptr) {
         logger->Write_Parameter(key, vp->cast_to_float(var_type));
@@ -369,7 +369,7 @@ void GCS_MAVLINK::param_io_timer(void)
         // no room
         return;
     }
-    
+
     if (!param_requests.pop(req)) {
         // nothing to do
         return;

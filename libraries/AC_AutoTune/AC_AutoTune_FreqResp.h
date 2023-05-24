@@ -17,17 +17,17 @@ public:
 
     // Enumeration of input type
     enum InputType {
-        DWELL = 0,                 
-        SWEEP = 1, 
+        DWELL = 0,
+        SWEEP = 1,
     };
 
     // Enumeration of type
     enum ResponseType {
-        RATE = 0,                 
-        ANGLE = 1, 
+        RATE = 0,
+        ANGLE = 1,
     };
 
-    // Initialize the Frequency Response Object. 
+    // Initialize the Frequency Response Object.
     // Must be called before running dwell or frequency sweep tests
     void init(InputType input_type, ResponseType response_type);
 
@@ -138,7 +138,7 @@ private:
     bool cycle_complete = false;
 
     // current test frequency, gain, and phase
-    float curr_test_freq; 
+    float curr_test_freq;
     float curr_test_gain;
     float curr_test_phase;
 
@@ -174,7 +174,7 @@ private:
     struct peak_info {
         uint16_t curr_count;
         float amplitude;
-        uint32_t time_ms; 
+        uint32_t time_ms;
 
     };
 

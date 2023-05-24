@@ -154,7 +154,7 @@ void CanardInterface::processTestRx() {
     WITH_SEMAPHORE(test_iface_sem);
     for (const CanardCANFrame* txf = canardPeekTxQueue(&test_iface.canard); txf != NULL; txf = canardPeekTxQueue(&test_iface.canard)) {
         if (canard_ifaces[0]) {
-            canardHandleRxFrame(&canard_ifaces[0]->canard, txf, AP_HAL::native_micros64());   
+            canardHandleRxFrame(&canard_ifaces[0]->canard, txf, AP_HAL::native_micros64());
         }
         canardPopTxQueue(&test_iface.canard);
     }
@@ -246,7 +246,7 @@ void CanardInterface::processRx() {
                 WITH_SEMAPHORE(_sem);
 
 #if DEBUG_PKTS
-                const int16_t res = 
+                const int16_t res =
 #endif
                 canardHandleRxFrame(&canard, &rx_frame, timestamp);
 #if DEBUG_PKTS

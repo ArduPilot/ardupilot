@@ -40,7 +40,7 @@ class ADSB_Vehicle {
 
 private:
     void update(float delta_t);
-    
+
     Vector3f position; // NED from origin
     Vector3f velocity_ef; // NED
     char callsign[9];
@@ -49,7 +49,7 @@ private:
     ADSB_EMITTER_TYPE type;
     uint64_t stationary_object_created_ms; // allows expiring of slow/stationary objects
 };
-        
+
     class ADSB : public SerialDevice {
 public:
     ADSB() {};
@@ -59,13 +59,13 @@ private:
     uint8_t num_vehicles;
     static const uint8_t num_vehicles_MAX = 200;
     ADSB_Vehicle vehicles[num_vehicles_MAX];
-    
+
     // reporting period in ms
     const float reporting_period_ms = 1000;
     uint32_t last_report_us;
     uint32_t last_update_us;
     uint32_t last_tx_report_ms;
-    
+
     uint32_t last_heartbeat_ms;
     bool seen_heartbeat = false;
     uint8_t vehicle_system_id;

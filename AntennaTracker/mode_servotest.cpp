@@ -32,7 +32,7 @@ bool ModeServoTest::set_servo(uint8_t servo_num, uint16_t pwm)
 
     SRV_Channels::calc_pwm();
     SRV_Channels::output_ch_all();
-    
+
     // return success
     return true;
 }

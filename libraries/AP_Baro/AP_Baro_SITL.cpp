@@ -137,7 +137,7 @@ void AP_Baro_SITL::_timer()
 }
 
 // unhealthy if baro is turned off or beyond supported instances
-bool AP_Baro_SITL::healthy(uint8_t instance) 
+bool AP_Baro_SITL::healthy(uint8_t instance)
 {
     return !_sitl->baro[instance].disable;
 }

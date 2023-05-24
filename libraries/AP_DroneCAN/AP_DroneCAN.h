@@ -156,13 +156,13 @@ private:
 
     // send parameter get/set request
     void send_parameter_request();
-    
+
     // send parameter save request
     void send_parameter_save_request();
 
     // periodic logging
     void logging();
-    
+
     // set parameter on a node
     ParamGetSetIntCb *param_int_cb;
     ParamGetSetFloatCb *param_float_cb;
@@ -240,7 +240,7 @@ private:
     // send GNSS Fix and yaw, same thing AP_GPS_DroneCAN would receive
     void gnss_send_fix();
     void gnss_send_yaw();
-    
+
     // GNSS Fix and Status
     struct {
         uint32_t last_gps_lib_fix_ms;
@@ -255,7 +255,7 @@ private:
         uint32_t last_send_ms;
         ByteBuffer *buf;
     } _rtcm_stream;
-    
+
     static HAL_Semaphore _telem_sem;
 
     // node status send
@@ -349,7 +349,7 @@ private:
     void handle_hobbywing_StatusMsg1(const CanardRxTransfer& transfer, const com_hobbywing_esc_StatusMsg1& msg);
     void handle_hobbywing_StatusMsg2(const CanardRxTransfer& transfer, const com_hobbywing_esc_StatusMsg2& msg);
 #endif // AP_DRONECAN_HOBBYWING_ESC_SUPPORT
-    
+
     // incoming button handling
     void handle_button(const CanardRxTransfer& transfer, const ardupilot_indication_Button& msg);
     void handle_traffic_report(const CanardRxTransfer& transfer, const ardupilot_equipment_trafficmonitor_TrafficReport& msg);

@@ -122,7 +122,7 @@ protected:
     // add two vectors together
     virtual void vector_add_float(const float* vin1, const float* vin2, float* vout, uint16_t len) const = 0;
     // algorithm for finding peaks in noisy data as per https://terpconnect.umd.edu/~toh/spectrum/PeakFindingandMeasurement.htm
-    uint16_t find_peaks(const float* input, uint16_t length, float* output, uint16_t* peaks, uint16_t peaklen, 
+    uint16_t find_peaks(const float* input, uint16_t length, float* output, uint16_t* peaks, uint16_t peaklen,
         float slopeThreshold, float ampThreshold, uint16_t smoothwidth, uint16_t peakgroup) const;
     uint16_t val2index(const float* vector, uint16_t n, float val) const;
     void derivative(const float* input, float* output, uint16_t n) const;

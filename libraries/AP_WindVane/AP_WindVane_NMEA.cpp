@@ -161,7 +161,7 @@ bool AP_WindVane_NMEA::decode_latest_term()
             break;
 
         case 2:
-            // we are expecting R for relative wind 
+            // we are expecting R for relative wind
             // (could be T for true wind, maybe add in the future...)
             if (_term[0] != 'R') {
                 _sentence_valid = false;

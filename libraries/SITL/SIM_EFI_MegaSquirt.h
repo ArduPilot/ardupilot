@@ -55,7 +55,7 @@ private:
     } r_command;
     uint8_t *buf = (uint8_t *)&r_command;
     uint8_t ofs;
-    
+
     struct PACKED {
         uint16_t uptime_s;
         uint16_t pulseWidth1_us;

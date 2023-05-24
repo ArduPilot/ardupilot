@@ -196,7 +196,7 @@ public:
     // must be called on child class
     virtual int16_t send(const CANFrame& frame, uint64_t tx_deadline, CanIOFlags flags);
 
-    // Non blocking receive frame that pops the frames received inside the buffer, return negative if error occured, 
+    // Non blocking receive frame that pops the frames received inside the buffer, return negative if error occured,
     // 0 if no frame available, 1 if successful
     // must be called on child class
     virtual int16_t receive(CANFrame& out_frame, uint64_t& out_ts_monotonic, CanIOFlags& out_flags);
@@ -207,7 +207,7 @@ public:
         return 0;
     }
 
-    
+
     //Number of available hardware filters.
     virtual uint16_t getNumFilters() const
     {

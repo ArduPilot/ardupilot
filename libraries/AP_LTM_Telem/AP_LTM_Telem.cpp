@@ -1,8 +1,8 @@
 /* #################################################################################################################
  * LightTelemetry protocol (LTM)
  *
- * Ghettostation one way telemetry protocol for really low bitrates (2400 bauds). 
- *			   
+ * Ghettostation one way telemetry protocol for really low bitrates (2400 bauds).
+ *
  * Protocol details: 3 different frames, little endian.
  *   G Frame (GPS position) (2 Hz): 18BYTES
  *    0x24 0x54 0x47 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF  0xFF   0xC0
@@ -32,7 +32,7 @@ extern const AP_HAL::HAL& hal;
 void AP_LTM_Telem::init()
 {
     const AP_SerialManager &serial_manager = AP::serialmanager();
-    
+
     // check for LTM_Port
     if ((_port = serial_manager.find_serial(
             AP_SerialManager::SerialProtocol_LTM_Telem, 0))) {
@@ -148,7 +148,7 @@ void AP_LTM_Telem::send_Sframe(void)
     lt_buff[0] = 0x24; //$
     lt_buff[1] = 0x54; //T
     // FRAMEID
-    lt_buff[2] = 0x53; //S 
+    lt_buff[2] = 0x53; //S
     // PAYLOAD
     lt_buff[3] = (volt >> 8 * 0) & 0xFF; // VBAT converted to mV
     lt_buff[4] = (volt >> 8 * 1) & 0xFF;
@@ -182,7 +182,7 @@ void AP_LTM_Telem::send_Aframe(void)
     lt_buff[0] = 0x24; //$
     lt_buff[1] = 0x54; //T
     // FRAMEID
-    lt_buff[2] = 0x41; //A 
+    lt_buff[2] = 0x41; //A
     // PAYLOAD
     lt_buff[3] = (pitch >> 8 * 0) & 0xFF;
     lt_buff[4] = (pitch >> 8 * 1) & 0xFF;

@@ -147,7 +147,7 @@ AP_BattMonitor::Failsafe AP_Generator::update_failsafes()
 // Pass through to backend
 bool AP_Generator::stop()
 {
-    // Still allow 
+    // Still allow
     if (_driver_ptr == nullptr) {
         return false;
     }

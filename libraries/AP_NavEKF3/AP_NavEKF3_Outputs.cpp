@@ -42,7 +42,7 @@ float NavEKF3_core::errorScore() const
         score = MAX(score, 0.5f * (velTestRatio + posTestRatio));
         // Check altimeter fusion performance
         score = MAX(score, hgtTestRatio);
-        // Check airspeed fusion performance - only when we are using at least 2 airspeed sensors so we can switch lanes with 
+        // Check airspeed fusion performance - only when we are using at least 2 airspeed sensors so we can switch lanes with
         // a better one. This only comes into effect for a forward flight vehicle. A sensitivity factor of 0.3 is added to keep the
         // EKF less sensitive to innovations arising due events like strong gusts of wind, thus, prevent reporting high error scores
         if (assume_zero_sideslip()) {

@@ -29,8 +29,8 @@ extern const AP_HAL::HAL& hal;
 #define PROXIMITY_MAX_RANGE 200.0f
 #define PROXIMITY_ACCURACY 0.1f
 
-/* 
-   The constructor also initialises the proximity sensor. 
+/*
+   The constructor also initialises the proximity sensor.
 */
 AP_Proximity_SITL::AP_Proximity_SITL(AP_Proximity &_frontend,
                                      AP_Proximity::Proximity_State &_state,

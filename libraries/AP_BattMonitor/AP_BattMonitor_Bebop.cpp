@@ -77,7 +77,7 @@ static const struct {
 #endif
 };
 #define BATTERY_PERCENT_LUT_SIZE ARRAY_SIZE(bat_lut)
-      
+
 void AP_BattMonitor_Bebop::init(void)
 {
     _battery_voltage_max = bat_lut[BATTERY_PERCENT_LUT_SIZE - 1].voltage;

@@ -65,7 +65,7 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
     if (baud != 0) {
         _uart_baudrate = baud;
     }
-    
+
     if (strcmp(path, "GPS1") == 0) {
         /* gps */
         _connected = true;
@@ -75,7 +75,7 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         _connected = true;
         _sim_serial_device = _sitlState->create_serial_sim("gps:2", "");
     } else {
-        /* parse type:args:flags string for path. 
+        /* parse type:args:flags string for path.
            For example:
              tcp:5760:wait    // tcp listen on port 5760
              tcp:0:wait       // tcp listen on use base_port + 0
@@ -129,7 +129,7 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             if (_fd >= 0) {
                 _connected = true;
             } else {
-                ::printf("Failed Reading FIFO file @ %s\n", args1);       
+                ::printf("Failed Reading FIFO file @ %s\n", args1);
             }
         } else if (strcmp(devtype, "sim") == 0) {
             if (!_connected) {
@@ -314,7 +314,7 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
     return size;
 }
 
-    
+
 /*
   start a TCP connection for the serial port. If wait_for_connection
   is true then block until a client connects
@@ -414,7 +414,7 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
 
 
 /*
-  start a TCP client connection for the serial port. 
+  start a TCP client connection for the serial port.
  */
 void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
 {
@@ -427,7 +427,7 @@ void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
     }
 
     _use_send_recv = true;
-    
+
     if (_fd != -1) {
         close(_fd);
     }
@@ -483,7 +483,7 @@ void UARTDriver::_udp_start_client(const char *address, uint16_t port)
     }
 
     _use_send_recv = true;
-    
+
     if (_fd != -1) {
         close(_fd);
     }
@@ -881,7 +881,7 @@ void UARTDriver::_timer_tick(void)
         return;
     }
     space = MIN(space, max_bytes);
-    
+
     char buf[space];
     ssize_t nread = 0;
     if (_mc_fd >= 0) {
@@ -954,18 +954,18 @@ void UARTDriver::_timer_tick(void)
   time constraint, not an exact time. It is guaranteed that the
   packet did not start being received after this time, but it
   could have been in a system buffer before the returned time.
-  
+
   This takes account of the baudrate of the link. For transports
   that have no baudrate (such as USB) the time estimate may be
   less accurate.
-  
+
   A return value of zero means the HAL does not support this API
 */
 uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes)
 {
     uint64_t last_receive_us = _receive_timestamp;
     if (_uart_baudrate > 0) {
-        // assume 10 bits per byte. 
+        // assume 10 bits per byte.
         uint32_t transport_time_us = (1000000UL * 10UL / _uart_baudrate) * (nbytes+available());
         last_receive_us -= transport_time_us;
     }

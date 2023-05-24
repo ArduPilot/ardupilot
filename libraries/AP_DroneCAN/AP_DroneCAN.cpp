@@ -116,7 +116,7 @@ const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM,5:SendGNSS,6:UseHimarkServo
     // @User: Advanced
     AP_GROUPINFO("OPTION", 5, AP_DroneCAN, _options, 0),
-    
+
     // @Param: NTF_RT
     // @DisplayName: Notify State rate
     // @Description: Maximum transmit rate for Notify State Message
@@ -138,7 +138,7 @@ const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     // @Range: 1024 16384
     // @User: Advanced
     AP_GROUPINFO("POOL", 8, AP_DroneCAN, _pool_size, DRONECAN_NODE_POOL_SIZE),
-    
+
     AP_GROUPEND
 };
 
@@ -178,7 +178,7 @@ bool AP_DroneCAN::add_interface(AP_HAL::CANIface* can_iface)
 {
     if (!canard_iface.add_interface(can_iface)) {
         debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: can't add DroneCAN interface\n\r");
-        return false;   
+        return false;
     }
     return true;
 }
@@ -265,7 +265,7 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
     esc_hobbywing_raw.set_timeout_ms(2);
     esc_hobbywing_raw.set_priority(CANARD_TRANSFER_PRIORITY_HIGH);
 #endif
-    
+
     himark_out.set_timeout_ms(2);
     himark_out.set_priority(CANARD_TRANSFER_PRIORITY_HIGH);
 

@@ -93,7 +93,7 @@ void AP_BattMonitor_FuelFlow::read()
         // flow idling. After that we will start reading zero current
         return;
     }
-    
+
     // get the IRQ state with interrupts disabled
     struct IrqState state;
     void *irqstate = hal.scheduler->disable_interrupts_save();

@@ -66,7 +66,7 @@ private:
     float vfr_hud_airspeed() const override;
     int16_t vfr_hud_throttle() const override;
     float vfr_hud_climbrate() const override;
-    
+
 #if HAL_HIGH_LATENCY2_ENABLED
     int16_t high_latency_target_altitude() const override;
     uint8_t high_latency_tgt_heading() const override;

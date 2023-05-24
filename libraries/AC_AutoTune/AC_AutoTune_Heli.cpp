@@ -1596,7 +1596,7 @@ void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *ga
             // adjust tuning gain so max response gain is not exceeded
             if (sp_prev_gain < max_resp_gain && gain[freq_cnt] > max_resp_gain) {
                 float adj_factor = (max_resp_gain - gain[freq_cnt]) / (gain[freq_cnt] - sp_prev_gain);
-                tune_p = tune_p + gain_incr * adj_factor; 
+                tune_p = tune_p + gain_incr * adj_factor;
             }
             counter = AUTOTUNE_SUCCESS_COUNT;
         }

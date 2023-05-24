@@ -310,7 +310,7 @@ void *Scheduler::thread_create_trampoline(void *ctx)
     struct thread_attr *a = (struct thread_attr *)ctx;
     a->thread = pthread_self();
     a->f[0]();
-    
+
     WITH_SEMAPHORE(_thread_sem);
     if (threads == a) {
         threads = a->next;
@@ -342,7 +342,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
     // even an empty thread takes 2500 bytes on Linux, so always add 2300, giving us 200 bytes
     // safety margin
     stack_size += 2300;
-    
+
     pthread_t thread {};
     const uint32_t alloc_stack = MAX(size_t(PTHREAD_STACK_MIN),stack_size);
 

@@ -20,7 +20,7 @@ void AP_AdvancedFailsafe_Plane::terminate_vehicle(void)
 #endif
 
     plane.g2.servo_channels.disable_passthrough(true);
-    
+
     if (_terminate_action == TERMINATE_ACTION_LAND) {
         plane.landing.terminate();
     } else {

@@ -38,7 +38,7 @@ bool ExpandingString::expand(uint32_t min_extra_space_needed)
     if (newsize - used < min_extra_space_needed) {
         newsize = used + min_extra_space_needed;
     }
-    
+
     // add one to ensure we are always null terminated
     void *newbuf = hal.util->std_realloc(buf, newsize+1);
 
@@ -81,7 +81,7 @@ void ExpandingString::printf(const char *format, ...)
         if (uint32_t(n) < buflen - used) {
             break;
         }
-        if (!expand(n+1)) {            
+        if (!expand(n+1)) {
             return;
         }
     }

@@ -293,7 +293,7 @@ void AP_AHRS::reset_gyro_drift(void)
 {
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
-    
+
     // update DCM
     dcm.reset_gyro_drift();
 
@@ -347,7 +347,7 @@ void AP_AHRS::update(bool skip_ins_update)
 #if HAL_EXTERNAL_AHRS_ENABLED
     update_external();
 #endif
-    
+
     if (_ekf_type == 2) {
         // if EK2 is primary then run EKF2 first to give it CPU
         // priority
@@ -2508,7 +2508,7 @@ bool AP_AHRS::resetHeightDatum(void)
 {
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
-    
+
     switch (ekf_type()) {
 
     case EKFType::NONE:
@@ -2955,7 +2955,7 @@ void AP_AHRS::check_lane_switch(void)
     case EKFType::EXTERNAL:
         break;
 #endif
-        
+
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
         EKF2.checkLaneSwitch();
@@ -2986,7 +2986,7 @@ void AP_AHRS::request_yaw_reset(void)
     case EKFType::EXTERNAL:
         break;
 #endif
-        
+
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
         EKF2.requestYawReset();
@@ -3016,7 +3016,7 @@ uint8_t AP_AHRS::get_posvelyaw_source_set() const
     return EKF3.get_active_source_set();
 #else
     return 0;
-#endif   
+#endif
 }
 
 void AP_AHRS::Log_Write()
@@ -3055,7 +3055,7 @@ bool AP_AHRS::using_noncompass_for_yaw(void) const
 #if HAL_EXTERNAL_AHRS_ENABLED
     case EKFType::EXTERNAL:
 #endif
-        return false; 
+        return false;
     }
     // since there is no default case above, this is unreachable
     return false;

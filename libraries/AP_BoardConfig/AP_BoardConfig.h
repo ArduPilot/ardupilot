@@ -23,13 +23,13 @@ public:
     static AP_BoardConfig *get_singleton(void) {
         return _singleton;
     }
-    
+
     void init(void);
     void init_safety(void);
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    // notify user of a fatal startup error related to available sensors. 
+    // notify user of a fatal startup error related to available sensors.
     static void config_error(const char *reason, ...) FMT_PRINTF(1, 2) NORETURN;
 
     // notify user of a non-fatal startup error related to allocation failures.
@@ -174,7 +174,7 @@ public:
     static bool allow_set_internal_parameters(void) {
         return _singleton?(_singleton->_options & ALLOW_SET_INTERNAL_PARM)!=0:false;
     }
-    
+
     // handle press of safety button. Return true if safety state
     // should be toggled
     bool safety_button_handle_pressed(uint8_t press_count);
@@ -201,7 +201,7 @@ public:
 
 private:
     static AP_BoardConfig *_singleton;
-    
+
     AP_Int32 vehicleSerialNumber;
 
     struct {
@@ -265,7 +265,7 @@ private:
     // direct attached radio
     AP_Radio _radio;
 #endif
-    
+
     // real-time-clock; private because access is via the singleton
     AP_RTC rtc;
 

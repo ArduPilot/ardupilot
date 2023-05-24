@@ -35,7 +35,7 @@ void ExtendedKalmanFilter::update(float z, float Px, float Py, float driftX, flo
     VectorN<float,N> H;
     VectorN<float,N> P12;
     VectorN<float,N> K;
-    
+
     // LINE 28
     // Estimate new state from old.
     X[2] += driftX;
@@ -56,8 +56,8 @@ void ExtendedKalmanFilter::update(float z, float Px, float Py, float driftX, flo
 
     // LINE 40
     // P12 = P * H';
-    P12.mult(P, H); //cross covariance 
-    
+    P12.mult(P, H); //cross covariance
+
     // LINE 41
     // Calculate the KALMAN GAIN
     // K = P12 * inv(H*P12 + ekf.R);                     %Kalman filter gain
@@ -77,6 +77,6 @@ void ExtendedKalmanFilter::update(float z, float Px, float Py, float driftX, flo
     // P = P_predict - K * P12';
     tempM.mult(K, P12);
     P -= tempM;
-    
+
     P.force_symmetry();
 }

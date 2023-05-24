@@ -41,7 +41,7 @@ public:
 
     // check for new data
     virtual void update() = 0;
-    
+
 protected:
     AP_ExternalAHRS::state_t &state;
     uint16_t get_rate(void) const;

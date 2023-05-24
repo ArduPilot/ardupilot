@@ -132,7 +132,7 @@ struct Vector2
 #endif
         return _v[i];
     }
-    
+
     // zero the vector
     void zero()
     {
@@ -178,7 +178,7 @@ struct Vector2
     Vector2<double> todouble() const {
         return Vector2<double>{x,y};
     }
-    
+
     // given a position p1 and a velocity v1 produce a vector
     // perpendicular to v1 maximising distance from p1
     static Vector2<T> perpendicular(const Vector2<T> &pos_delta, const Vector2<T> &v1);

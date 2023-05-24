@@ -11,13 +11,13 @@ private:
 
     // table of tuning parameter names for reporting
     static const tuning_name tuning_names[];
-    
+
 public:
     // constructor
     AP_Tuning_Plane(void) : AP_Tuning(tuning_sets, tuning_names) {}
 
     static const struct AP_Param::GroupInfo  var_info[];
-    
+
 private:
 
     // individual tuning parameters

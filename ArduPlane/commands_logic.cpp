@@ -21,7 +21,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 
         // start non-idle
         auto_state.idle_mode = false;
-        
+
         nav_controller->set_data_is_stale();
 
         // reset loiter start time. New command is a new loiter
@@ -58,7 +58,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 #if HAL_QUADPLANE_ENABLED
         if (quadplane.is_vtol_land(cmd.id)) {
             crash_state.is_crashed = false;
-            return quadplane.do_vtol_land(cmd);            
+            return quadplane.do_vtol_land(cmd);
         }
 #endif
         do_land(cmd);
@@ -208,7 +208,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_DELAY:
         do_nav_delay(cmd);
         break;
-        
+
     default:
         // unable to use the command, allow the vehicle to try the next command
         return false;
@@ -522,7 +522,7 @@ void Plane::do_altitude_wait(const AP_Mission::Mission_Command& cmd)
 
 void Plane::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
 {
-    //set target alt  
+    //set target alt
     Location loc = cmd.content.location;
     loc.sanitize(current_loc);
     set_next_WP(loc);
@@ -554,8 +554,8 @@ bool Plane::verify_takeoff()
 {
     if (ahrs.dcm_yaw_initialised() && steer_state.hold_course_cd == -1) {
         const float min_gps_speed = 5;
-        if (auto_state.takeoff_speed_time_ms == 0 && 
-            gps.status() >= AP_GPS::GPS_OK_FIX_3D && 
+        if (auto_state.takeoff_speed_time_ms == 0 &&
+            gps.status() >= AP_GPS::GPS_OK_FIX_3D &&
             gps.ground_speed() > min_gps_speed &&
             hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
             auto_state.takeoff_speed_time_ms = millis();
@@ -582,7 +582,7 @@ bool Plane::verify_takeoff()
         // call navigation controller for heading hold
         nav_controller->update_heading_hold(steer_state.hold_course_cd);
     } else {
-        nav_controller->update_level_flight();        
+        nav_controller->update_level_flight();
     }
 
     // check for optional takeoff timeout
@@ -805,7 +805,7 @@ bool Plane::verify_RTL()
         loiter.direction = 1;
     }
     update_loiter(abs(g.rtl_radius));
-	if (auto_state.wp_distance <= (uint32_t)MAX(get_wp_radius(),0) || 
+	if (auto_state.wp_distance <= (uint32_t)MAX(get_wp_radius(),0) ||
         reached_loiter_target()) {
 			gcs().send_text(MAV_SEVERITY_INFO,"Reached RTL location");
 			return true;
@@ -842,7 +842,7 @@ bool Plane::verify_continue_and_change_alt()
     else if (condition_value == 2 &&
              adjusted_altitude_cm() <= next_WP_loc.alt) {
         return true;
-    }    
+    }
     //don't care if we're climbing or descending
     else if (labs(adjusted_altitude_cm() - next_WP_loc.alt) <= 500) {
         return true;
@@ -862,7 +862,7 @@ bool Plane::verify_altitude_wait(const AP_Mission::Mission_Command &cmd)
     }
     if (auto_state.sink_rate > cmd.content.altitude_wait.descent_rate) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached descent rate %.1f m/s", (double)auto_state.sink_rate);
-        return true;        
+        return true;
     }
 
     // if requested, wiggle servos

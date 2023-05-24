@@ -40,7 +40,7 @@ const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
     AP_GROUPINFO_FLAGS("TYPE", 1,  AP_OAPathPlanner, _type, OA_PATHPLAN_DISABLED, AP_PARAM_FLAG_ENABLE),
 
     // Note: Do not use Index "2" for any new parameter
-    //       It was being used by _LOOKAHEAD which was later moved to AP_OABendyRuler 
+    //       It was being used by _LOOKAHEAD which was later moved to AP_OABendyRuler
 
     // @Param: MARGIN_MAX
     // @DisplayName: Object Avoidance wide margin distance
@@ -57,7 +57,7 @@ const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Options while recovering from Object Avoidance
-    // @Description: Bitmask which will govern vehicles behaviour while recovering from Obstacle Avoidance (i.e Avoidance is turned off after the path ahead is clear).   
+    // @Description: Bitmask which will govern vehicles behaviour while recovering from Obstacle Avoidance (i.e Avoidance is turned off after the path ahead is clear).
     // @Bitmask{Rover}: 0: Reset the origin of the waypoint to the present location, 1: log Dijkstra points
     // @Bitmask{Copter}: 1: log Dijkstra points
     // @User: Standard
@@ -243,7 +243,7 @@ void AP_OAPathPlanner::avoidance_thread()
         Location ekf_origin {};
         {
             WITH_SEMAPHORE(AP::ahrs().get_semaphore());
-            origin_set = AP::ahrs().get_origin(ekf_origin);    
+            origin_set = AP::ahrs().get_origin(ekf_origin);
         }
     }
 
@@ -327,7 +327,7 @@ void AP_OAPathPlanner::avoidance_thread()
         case OA_PATHPLAN_DJIKSTRA_BENDYRULER: {
             if ((_oabendyruler == nullptr) || _oadijkstra == nullptr) {
                 continue;
-            } 
+            }
             _oabendyruler->set_config(_margin_max);
             AP_OABendyRuler::OABendyType bendy_type;
             if (_oabendyruler->update(avoidance_request2.current_loc, avoidance_request2.destination, avoidance_request2.ground_speed_vec, origin_new, destination_new, bendy_type, proximity_only)) {
@@ -337,7 +337,7 @@ void AP_OAPathPlanner::avoidance_thread()
                 path_planner_used = map_bendytype_to_pathplannerused(bendy_type);
                 break;
             } else {
-                // cleared all obstacles, trigger Dijkstra's to calculate path based on current deviated position  
+                // cleared all obstacles, trigger Dijkstra's to calculate path based on current deviated position
 #if AP_FENCE_ENABLED
                 if (proximity_only == false) {
                     _oadijkstra->recalculate_path();

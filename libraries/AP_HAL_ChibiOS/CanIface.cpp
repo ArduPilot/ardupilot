@@ -1075,7 +1075,7 @@ extern "C"
         CH_IRQ_EPILOGUE();
     }
 #endif
-    
+
 } // extern "C"
 
 #endif //!defined(STM32H7XX)
