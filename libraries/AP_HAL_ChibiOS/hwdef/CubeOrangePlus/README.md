@@ -1,8 +1,11 @@
 # CubeOrangePlus Flight Controller
 
-The Hex CubeOrangePlus flight controller is sold by a range of resellers
+The CubePilot CubeOrangePlus flight controller is sold by a range of resellers
 listed on the
 [CubePilot website](http://cubepilot.org)
+
+For Detailed information on the CubeOrangePlus see the
+[Cube Module Overview](https://docs.cubepilot.org/user-guides/autopilot/the-cube-module-overview)
 
 ## Features
 
@@ -613,5 +616,5 @@ compatible ground station.
 
 ## Acknowledgements
 
-Thanks to [ProfiCNC](http://cubepilot.org) for images and information
+Thanks to [CubePilot](http://cubepilot.org) for images and information
 
