@@ -169,12 +169,10 @@ public:
     void add_uart(AP_HAL::UARTDriver* uart);
     bool has_uart() const { return added.uart != nullptr; }
 
-#ifdef IOMCU_FW
     // set allowed RC protocols
     void set_rc_protocols(uint32_t mask) {
         rc_protocols_mask = mask;
     }
-#endif
 
     class SerialConfig {
     public:
