@@ -74,17 +74,17 @@ public:
     }
 
     // Enums
-    enum MountType {
-        Mount_Type_None = 0,            /// no mount
-        Mount_Type_Servo = 1,           /// servo controlled mount
-        Mount_Type_SoloGimbal = 2,      /// Solo's gimbal
-        Mount_Type_Alexmos = 3,         /// Alexmos mount
-        Mount_Type_SToRM32 = 4,         /// SToRM32 mount using MAVLink protocol
-        Mount_Type_SToRM32_serial = 5,  /// SToRM32 mount using custom serial protocol
-        Mount_Type_Gremsy = 6,          /// Gremsy gimbal using MAVLink v2 Gimbal protocol
-        Mount_Type_BrushlessPWM = 7,    /// Brushless (stabilized) gimbal using PWM protocol
-        Mount_Type_Siyi = 8,            /// Siyi gimbal using custom serial protocol
-        Mount_Type_Scripting = 9,       /// Scripting gimbal driver
+    enum class Type {
+        None = 0,            /// no mount
+        Servo = 1,           /// servo controlled mount
+        SoloGimbal = 2,      /// Solo's gimbal
+        Alexmos = 3,         /// Alexmos mount
+        SToRM32 = 4,         /// SToRM32 mount using MAVLink protocol
+        SToRM32_serial = 5,  /// SToRM32 mount using custom serial protocol
+        Gremsy = 6,          /// Gremsy gimbal using MAVLink v2 Gimbal protocol
+        BrushlessPWM = 7,    /// Brushless (stabilized) gimbal using PWM protocol
+        Siyi = 8,            /// Siyi gimbal using custom serial protocol
+        Scripting = 9,       /// Scripting gimbal driver
     };
 
     // init - detect and initialise all mounts
@@ -100,8 +100,8 @@ public:
     uint8_t get_primary_instance() const { return _primary; }
 
     // get_mount_type - returns the type of mount
-    AP_Mount::MountType get_mount_type() const { return get_mount_type(_primary); }
-    AP_Mount::MountType get_mount_type(uint8_t instance) const;
+    Type get_mount_type() const { return get_mount_type(_primary); }
+    Type get_mount_type(uint8_t instance) const;
 
     // has_pan_control - returns true if the mount has yaw control (required for copters)
     bool has_pan_control() const { return has_pan_control(_primary); }
