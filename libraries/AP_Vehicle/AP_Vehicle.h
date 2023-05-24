@@ -61,6 +61,7 @@
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
 #include <Filter/LowPassFilter.h>
 #include <AP_KDECAN/AP_KDECAN.h>
+#include <AP_LocationDB/AP_LocationDB.h>
 
 class AP_DDS_Client;
 
@@ -384,6 +385,10 @@ protected:
 
 #if AP_KDECAN_ENABLED
     AP_KDECAN kdecan;
+#endif
+
+#if AP_LOCATIONDB_ENABLED
+    AP_LocationDB locationdb;
 #endif
 
 #if AP_FENCE_ENABLED
