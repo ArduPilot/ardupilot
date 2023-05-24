@@ -33,7 +33,7 @@ public:
     /// @return true if response was added to the queue
     bool respond(uint8_t destination_node_id, const Canard::Transfer &res_transfer) override;
 
-    void processTx();
+    void processTx(bool raw_commands_only);
     void processRx();
 
     void process(uint32_t duration);
