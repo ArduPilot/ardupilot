@@ -64,8 +64,7 @@ void ModeStabilize_Heli::run()
         }
         break;
     case AP_Motors::SpoolState::THROTTLE_UNLIMITED:
-        //if (copter.ap.land_complete && !motors->using_leaky_integrator()) {
-        if (copter.ap.land_complete) {
+        if (copter.ap.land_complete && !motors->using_leaky_integrator()) {
             attitude_control->reset_rate_controller_I_terms_smoothly();
         }
         break;
