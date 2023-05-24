@@ -3,7 +3,6 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_CustomRotations/AP_CustomRotations.h>
 
-
 AP_CustomRotations cust_rot;
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
@@ -170,7 +169,7 @@ static void breakSingleton()
     AP_CustomRotations cust_rot1;
 }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-TEST(RotationsTest, TestFailedGetLinux)
+TEST(RotationsTest, TestFailedGetSITL)
 {
     EXPECT_EXIT(AP::custom_rotations().set(ROTATION_CUSTOM_OLD, 0, 0, 0), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::bad_rotation");
     EXPECT_EXIT(AP::custom_rotations().set(ROTATION_CUSTOM_END, 0, 0, 0), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::bad_rotation");

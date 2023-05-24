@@ -17,7 +17,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 
-#define NUM_CUST_ROT ROTATION_CUSTOM_END - ROTATION_CUSTOM_1
+#define NUM_CUST_ROT (ROTATION_CUSTOM_END - ROTATION_CUSTOM_1)
 
 struct AP_CustomRotation_params {
 public:
@@ -69,7 +69,7 @@ private:
 
     AP_CustomRotation* get_rotation(Rotation r);
 
-    AP_CustomRotation* rotations[NUM_CUST_ROT];
+    AP_CustomRotation* rotations[NUM_CUST_ROT] { nullptr };
 
     AP_CustomRotation_params params[NUM_CUST_ROT];
 
