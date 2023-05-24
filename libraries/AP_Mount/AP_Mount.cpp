@@ -61,10 +61,10 @@ void AP_Mount::init()
 
     // create each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
-        MountType mount_type = get_mount_type(instance);
+        Type mount_type = get_mount_type(instance);
 
         // check for servo mounts
-        if (mount_type == Mount_Type_Servo) {
+        if (mount_type == Type::Servo) {
 #if HAL_MOUNT_SERVO_ENABLED
             _backends[instance] = new AP_Mount_Servo(*this, _params[instance], true, instance);
             _num_instances++;
@@ -72,56 +72,56 @@ void AP_Mount::init()
 
 #if HAL_SOLO_GIMBAL_ENABLED
         // check for Solo mounts
-        } else if (mount_type == Mount_Type_SoloGimbal) {
+        } else if (mount_type == Type::SoloGimbal) {
             _backends[instance] = new AP_Mount_SoloGimbal(*this, _params[instance], instance);
             _num_instances++;
 #endif // HAL_SOLO_GIMBAL_ENABLED
 
 #if HAL_MOUNT_ALEXMOS_ENABLED
         // check for Alexmos mounts
-        } else if (mount_type == Mount_Type_Alexmos) {
+        } else if (mount_type == Type::Alexmos) {
             _backends[instance] = new AP_Mount_Alexmos(*this, _params[instance], instance);
             _num_instances++;
 #endif
 
 #if HAL_MOUNT_STORM32MAVLINK_ENABLED
         // check for SToRM32 mounts using MAVLink protocol
-        } else if (mount_type == Mount_Type_SToRM32) {
+        } else if (mount_type == Type::SToRM32) {
             _backends[instance] = new AP_Mount_SToRM32(*this, _params[instance], instance);
             _num_instances++;
 #endif
 
 #if HAL_MOUNT_STORM32SERIAL_ENABLED
         // check for SToRM32 mounts using serial protocol
-        } else if (mount_type == Mount_Type_SToRM32_serial) {
+        } else if (mount_type == Type::SToRM32_serial) {
             _backends[instance] = new AP_Mount_SToRM32_serial(*this, _params[instance], instance);
             _num_instances++;
 #endif
 
 #if HAL_MOUNT_GREMSY_ENABLED
         // check for Gremsy mounts
-        } else if (mount_type == Mount_Type_Gremsy) {
+        } else if (mount_type == Type::Gremsy) {
             _backends[instance] = new AP_Mount_Gremsy(*this, _params[instance], instance);
             _num_instances++;
 #endif // HAL_MOUNT_GREMSY_ENABLED
 
 #if HAL_MOUNT_SERVO_ENABLED
         // check for BrushlessPWM mounts (uses Servo backend)
-        } else if (mount_type == Mount_Type_BrushlessPWM) {
+        } else if (mount_type == Type::BrushlessPWM) {
             _backends[instance] = new AP_Mount_Servo(*this, _params[instance], false, instance);
             _num_instances++;
 #endif
 
 #if HAL_MOUNT_SIYI_ENABLED
         // check for Siyi gimbal
-        } else if (mount_type == Mount_Type_Siyi) {
+        } else if (mount_type == Type::Siyi) {
             _backends[instance] = new AP_Mount_Siyi(*this, _params[instance], instance);
             _num_instances++;
 #endif // HAL_MOUNT_SIYI_ENABLED
 
 #if HAL_MOUNT_SCRIPTING_ENABLED
         // check for Scripting gimbal
-        } else if (mount_type == Mount_Type_Scripting) {
+        } else if (mount_type == Type::Scripting) {
             _backends[instance] = new AP_Mount_Scripting(*this, _params[instance], instance);
             _num_instances++;
 #endif // HAL_MOUNT_SCRIPTING_ENABLED
@@ -169,13 +169,13 @@ void AP_Mount::update_fast()
 }
 
 // get_mount_type - returns the type of mount
-AP_Mount::MountType AP_Mount::get_mount_type(uint8_t instance) const
+AP_Mount::Type AP_Mount::get_mount_type(uint8_t instance) const
 {
     if (instance >= AP_MOUNT_MAX_INSTANCES) {
-        return Mount_Type_None;
+        return Type::None;
     }
 
-    return (MountType)_params[instance].type.get();
+    return (Type)_params[instance].type.get();
 }
 
 // has_pan_control - returns true if the mount has yaw control (required for copters)
@@ -601,7 +601,7 @@ bool AP_Mount::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
 {
     // check type parameters
     for (uint8_t i=0; i<AP_MOUNT_MAX_INSTANCES; i++) {
-        if ((_params[i].type != Mount_Type_None) && (_backends[i] == nullptr)) {
+        if ((get_mount_type(i) != Type::None) && (_backends[i] == nullptr)) {
             strncpy(failure_msg, "check TYPE", failure_msg_len);
             return false;
         }
@@ -846,7 +846,7 @@ void AP_Mount::convert_params()
         IGNORE_RETURN(AP_Param::get_param_by_index(this, 5, AP_PARAM_INT8, &stab_pitch));
         if (mnt_type == 1 && stab_roll == 0 && stab_pitch == 0)  {
             // Servo type without stabilization is changed to BrushlessPWM
-            mnt_type = (int8_t)Mount_Type_BrushlessPWM;
+            mnt_type = (int8_t)Type::BrushlessPWM;
         }
     }
     _params[0].type.set_and_save(mnt_type);
