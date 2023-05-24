@@ -92,7 +92,7 @@ void Mode::_TakeOff::do_pilot_takeoff(float& pilot_climb_rate_cm)
         copter.pos_control->init_z_controller();
         if (throttle >= 0.5 || 
             //(copter.pos_control->get_z_accel_cmss() >= 0.5 * copter.pos_control->get_max_accel_z_cmss()) ||
-            (copter.pos_control->get_vel_desired_cms().z >= constrain_float(pilot_climb_rate_cm, copter.pos_control->get_max_speed_up_cms() * 0.45, copter.pos_control->get_max_speed_up_cms() * 0.5)) || 
+            //(copter.pos_control->get_vel_desired_cms().z >= constrain_float(pilot_climb_rate_cm, copter.pos_control->get_max_speed_up_cms() * 0.45, copter.pos_control->get_max_speed_up_cms() * 0.5)) || 
             (is_positive(take_off_complete_alt - take_off_start_alt) && copter.pos_control->get_pos_target_z_cm() - take_off_start_alt > 0.5 * (take_off_complete_alt - take_off_start_alt))) {
             // throttle > 90%
             // acceleration > 50% maximum acceleration
