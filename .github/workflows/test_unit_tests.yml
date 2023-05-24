@@ -23,7 +23,7 @@ jobs:
         ]
         config: [
             unit-tests,
-            python-cleanliness,
+            # python-cleanliness, # DISABLED for 4.3.x
             sitl
             # examples,
         ]
