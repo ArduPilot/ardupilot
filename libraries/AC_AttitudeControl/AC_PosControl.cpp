@@ -757,7 +757,7 @@ void AC_PosControl::init_z_controller()
     _pid_vel_z.reset_filter();
     _pid_vel_z.set_integrator(0.0f);
 
-    _accel_desired.z = constrain_float(get_z_accel_cmss(), -_accel_max_z_cmss, _accel_max_z_cmss);
+    _accel_desired.z = constrain_float(get_z_accel_cmss(), -_accel_max_z_cmss * 3.0f, _accel_max_z_cmss * 3.0f);
     // with zero position error _accel_target = _accel_desired
     _accel_target.z = _accel_desired.z;
     _pid_accel_z.reset_filter();

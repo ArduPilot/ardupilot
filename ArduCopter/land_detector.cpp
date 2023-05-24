@@ -75,6 +75,7 @@ void Copter::update_land_detector()
         bool motor_at_lower_limit = (flightmode->has_manual_throttle() && (motors->get_below_land_min_coll() || heli_flags.coll_stk_low) && fabsf(ahrs.get_roll()) < M_PI/2.0f)
                                     || ((!force_flying || landing) && motors->limit.throttle_lower && pos_control->get_vel_desired_cms().z < 0.0f);
         bool throttle_mix_at_min = true;
+
 #else
         // check that the average throttle output is near minimum (less than 12.5% hover throttle)
         bool motor_at_lower_limit = motors->limit.throttle_lower;
@@ -97,7 +98,7 @@ void Copter::update_land_detector()
 
         // check that the airframe is not accelerating (not falling or braking after fast forward flight)
         bool accel_stationary = (land_accel_ef_filter.get().length() <= LAND_DETECTOR_ACCEL_MAX * land_detector_scalar);
-
+        
         // check that vertical speed is within 1m/s of zero
         bool descent_rate_low = fabsf(inertial_nav.get_velocity_z_up_cms()) < 100 * land_detector_scalar;
 
@@ -110,18 +111,50 @@ void Copter::update_land_detector()
 #else
         const bool WoW_check = true;
 #endif
-
-        if (motor_at_lower_limit && throttle_mix_at_min && accel_stationary && descent_rate_low && rangefinder_check && WoW_check) {
-            // landed criteria met - increment the counter and check if we've triggered
-            if( land_detector_count < land_trigger_sec*scheduler.get_loop_rate_hz()) {
-                land_detector_count++;
-            } else {
-                set_land_complete(true);
+        if(flightmode->has_manual_throttle())
+        {   
+            if (motor_at_lower_limit && throttle_mix_at_min && accel_stationary && descent_rate_low && rangefinder_check && WoW_check) 
+            {
+                // landed criteria met - increment the counter and check if we've triggered
+                if( land_detector_count < land_trigger_sec*scheduler.get_loop_rate_hz()) 
+                {
+                    land_detector_count++;
+                } 
+                else 
+                {
+                    set_land_complete(true);
+                }
+            }   
+            else 
+            {
+                // we've sensed movement up or down so reset land_detector
+                land_detector_count = 0;
             }
-        } else {
-            // we've sensed movement up or down so reset land_detector
-            land_detector_count = 0;
         }
+        else
+        {
+            bool accel_stationary_loiter_TA = (land_accel_ef_filter.get().length() <= 7.0f * land_detector_scalar);
+            bool descent_rate_low_loiter_TA = fabsf(inertial_nav.get_velocity_z_up_cms()) < 400 * land_detector_scalar;
+            bool speed_xy_check_TA = (!position_ok() || (inertial_nav.get_speed_xy_cms() <= 250.0f));
+
+            if (motor_at_lower_limit && throttle_mix_at_min && accel_stationary_loiter_TA && descent_rate_low_loiter_TA && rangefinder_check && WoW_check && speed_xy_check_TA && (motors->get_throttle_out() <= 0.2f))
+            {
+                // landed criteria met - increment the counter and check if we've triggered
+                if( land_detector_count < land_trigger_sec*scheduler.get_loop_rate_hz()) 
+                {
+                    land_detector_count++;
+                } 
+                else 
+                {
+                    set_land_complete(true);
+                }
+            } 
+            else 
+            {
+                // we've sensed movement up or down so reset land_detector
+                land_detector_count = 0;
+            }
+        }    
     }
 
     set_land_complete_maybe(ap.land_complete || (land_detector_count >= LAND_DETECTOR_MAYBE_TRIGGER_SEC*scheduler.get_loop_rate_hz()));
