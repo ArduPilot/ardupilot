@@ -138,7 +138,14 @@ const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     // @Range: 1024 16384
     // @User: Advanced
     AP_GROUPINFO("POOL", 8, AP_DroneCAN, _pool_size, DRONECAN_NODE_POOL_SIZE),
-    
+
+    // @Param: ESC_3D
+    // @DisplayName: ESC channels which support reverse (3D)
+    // @Description: Bitmask with one set for each channel that allows reverse rotation
+    // @Bitmask: 0: ESC 1, 1: ESC 2, 2: ESC 3, 3: ESC 4, 4: ESC 5, 5: ESC 6, 6: ESC 7, 7: ESC 8, 8: ESC 9, 9: ESC 10, 10: ESC 11, 11: ESC 12, 12: ESC 13, 13: ESC 14, 14: ESC 15, 15: ESC 16, 16: ESC 17, 17: ESC 18, 18: ESC 19, 19: ESC 20, 20: ESC 21, 21: ESC 22, 22: ESC 23, 23: ESC 24, 24: ESC 25, 25: ESC 26, 26: ESC 27, 27: ESC 28, 28: ESC 29, 29: ESC 30, 30: ESC 31, 31: ESC 32
+    // @User: Advanced
+    AP_GROUPINFO("ESC_3D", 9, AP_DroneCAN, _esc_3d_bm, 0),
+
     AP_GROUPEND
 };
 
@@ -600,6 +607,7 @@ void AP_DroneCAN::SRV_send_himark(void)
 void AP_DroneCAN::SRV_send_esc(void)
 {
     static const int cmd_max = ((1<<13)-1);
+    static const int cmd_min = -(1<<13);
     uavcan_equipment_esc_RawCommand esc_msg;
 
     uint8_t active_esc_num = 0, max_esc_num = 0;
@@ -626,10 +634,17 @@ void AP_DroneCAN::SRV_send_esc(void)
 
         for (uint8_t i = esc_offset; i < max_esc_num && k < 20; i++) {
             if ((((uint32_t) 1) << i) & _esc_bm) {
-                // TODO: ESC negative scaling for reverse thrust and reverse rotation
-                float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse) + 1.0) / 2.0;
-
-                scaled = constrain_float(scaled, 0, cmd_max);
+                float scaled;
+                if ((((uint32_t) 1) << i) & _esc_3d_bm) {
+                    // min throttle is cmd_min (-8192), full speed reverse
+                    // mid throttle is 0, stopped
+                    scaled = cmd_max * hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse);
+                    scaled = constrain_float(scaled, cmd_min, cmd_max);
+                } else {
+                    // min throttle is 0, stopped
+                    scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse) + 1.0) / 2.0;
+                    scaled = constrain_float(scaled, 0, cmd_max);
+                }
 
                 esc_msg.cmd.data[k] = static_cast<int>(scaled);
             } else {
@@ -655,6 +670,7 @@ void AP_DroneCAN::SRV_send_esc(void)
 void AP_DroneCAN::SRV_send_esc_hobbywing(void)
 {
     static const int cmd_max = ((1<<13)-1);
+    static const int cmd_min = -(1<<13);
     com_hobbywing_esc_RawCommand esc_msg;
 
     uint8_t active_esc_num = 0, max_esc_num = 0;
@@ -681,10 +697,17 @@ void AP_DroneCAN::SRV_send_esc_hobbywing(void)
 
         for (uint8_t i = esc_offset; i < max_esc_num && k < 20; i++) {
             if ((((uint32_t) 1) << i) & _esc_bm) {
-                // TODO: ESC negative scaling for reverse thrust and reverse rotation
-                float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse) + 1.0) / 2.0;
-
-                scaled = constrain_float(scaled, 0, cmd_max);
+                float scaled;
+                if ((((uint32_t) 1) << i) & _esc_3d_bm) {
+                    // min throttle is cmd_min (-8192), full speed reverse
+                    // mid throttle is 0, stopped
+                    scaled = cmd_max * hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse);
+                    scaled = constrain_float(scaled, cmd_min, cmd_max);
+                } else {
+                    // min throttle is 0, stopped
+                    scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse) + 1.0) / 2.0;
+                    scaled = constrain_float(scaled, 0, cmd_max);
+                }
 
                 esc_msg.command.data[k] = static_cast<int>(scaled);
             } else {
