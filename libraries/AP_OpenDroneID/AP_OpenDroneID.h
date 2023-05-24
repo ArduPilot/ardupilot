@@ -185,6 +185,7 @@ private:
 
     // mask of what UAVCAN drivers need to send each packet
     const uint8_t dronecan_send_all = (1U<<HAL_MAX_CAN_PROTOCOL_DRIVERS)-1;
+    uint8_t driver_mask;
     uint8_t need_send_location;
     uint8_t need_send_basic_id;
     uint8_t need_send_system;
