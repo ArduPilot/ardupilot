@@ -211,12 +211,6 @@ void AP_Proximity::init()
             drivers[instance] = new AP_Proximity_AirSimSITL(*this, state[instance], params[instance]);
             break;
 #endif
-#if AP_PROXIMITY_DYNSIMSITL_ENABLED
-        case Type::DynSimSITL:
-            state[instance].instance = instance;
-            drivers[instance] = new AP_Proximity_Dynamical_SITL(*this, state[instance], params[instance]);
-            break;
-#endif
 
 #if AP_PROXIMITY_ARS408_CAN_ENABLED
             case Type::ARS408:
