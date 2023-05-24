@@ -71,7 +71,6 @@ public:
     void     push() override;
     uint16_t read(uint8_t ch) override;
     void     read(uint16_t* period_us, uint8_t len) override;
-    void     set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm) override;
     int      read_obs_data(BebopBLDC_ObsData &data);
     void     play_note(uint8_t pwm, uint16_t period_us, uint16_t duration_ms);
 

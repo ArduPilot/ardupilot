@@ -427,12 +427,6 @@ void RCOutput_Bebop::read(uint16_t* period_us, uint8_t len)
     }
 }
 
-void RCOutput_Bebop::set_esc_scaling(uint16_t min_pwm, uint16_t max_pwm)
-{
-    _min_pwm = min_pwm;
-    _max_pwm = max_pwm;
-}
-
 /* Separate thread to handle the Bebop motors controller */
 void* RCOutput_Bebop::_control_thread(void *arg) {
     RCOutput_Bebop* rcout = (RCOutput_Bebop *) arg;
