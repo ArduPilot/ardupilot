@@ -27,7 +27,7 @@ listed on the
 
 ## Pinout
 
-![CubeOrange Board](CubeOrange-pinout.jpg "CubeOrange")
+![CubeOrange Board](CubeOrange-pinout.svg "CubeOrange")
 
 On each connector the red dot indicates pin 1.
 
