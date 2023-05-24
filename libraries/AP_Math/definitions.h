@@ -37,7 +37,10 @@ static constexpr float RAD_TO_DEG = 180.0f / M_PI;
 // The precision here does matter when using the wsg* functions for converting
 // between LLH and ECEF coordinates.
 #ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
-static constexpr double DEG_TO_RAD_DOUBLE = asin(1) / 90;
+// Constants taken from <numbers> available in C++20
+// https://en.cppreference.com/w/cpp/numeric/constants
+static constexpr double M_PI_DOUBLE = 3.141592653589793238462643383279502884L; 
+static constexpr double DEG_TO_RAD_DOUBLE = M_PI_DOUBLE / 90;
 static constexpr double RAD_TO_DEG_DOUBLE = 1 / DEG_TO_RAD_DOUBLE;
 #endif
 
