@@ -1097,6 +1097,20 @@ void GCS_MAVLINK_Copter::handle_manual_control_axes(const mavlink_manual_control
     manual_override(copter.channel_yaw, packet.r, 1000, 2000, tnow);
 }
 
+// sanity check velocity or acceleration vector components are numbers
+// (e.g. not NaN) and below 1000. vec argument units are in meters/second or
+// metres/second/second
+bool GCS_MAVLINK_Copter::sane_vel_or_acc_vector(const Vector3f &vec) const
+{
+    for (uint8_t i=0; i<3; i++) {
+        // consider velocity invalid if any component nan or >1000(m/s or m/s/s)
+        if (isnan(vec[i]) || fabsf(vec[i]) > 1000) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
 {
 #if MODE_GUIDED_ENABLED == ENABLED
@@ -1257,8 +1271,13 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         // prepare velocity
         Vector3f vel_vector;
         if (!vel_ignore) {
-            // convert to cm
-            vel_vector = Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f);
+            vel_vector = Vector3f{packet.vx, packet.vy, -packet.vz};
+            if (!sane_vel_or_acc_vector(vel_vector)) {
+                // input is not valid so stop
+                copter.mode_guided.init(true);
+                return;
+            }
+            vel_vector *= 100;  // m/s -> cm/s
             // rotate to body-frame if necessary
             if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
                 copter.rotate_body_frame_to_NE(vel_vector.x, vel_vector.y);
@@ -1353,8 +1372,13 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         // prepare velocity
         Vector3f vel_vector;
         if (!vel_ignore) {
-            // convert to cm
-            vel_vector = Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f);
+            vel_vector = Vector3f{packet.vx, packet.vy, -packet.vz};
+            if (!sane_vel_or_acc_vector(vel_vector)) {
+                // input is not valid so stop
+                copter.mode_guided.init(true);
+                return;
+            }
+            vel_vector *= 100;  // m/s -> cm/s
         }
 
         // prepare acceleration

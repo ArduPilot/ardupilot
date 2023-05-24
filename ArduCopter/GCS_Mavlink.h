@@ -55,6 +55,11 @@ protected:
 
 private:
 
+    // sanity check velocity or acceleration vector components are numbers
+    // (e.g. not NaN) and below 1000. vec argument units are in meters/second or
+    // metres/second/second
+    bool sane_vel_or_acc_vector(const Vector3f &vec) const;
+
     MISSION_STATE mission_state(const class AP_Mission &mission) const override;
 
     void handleMessage(const mavlink_message_t &msg) override;
