@@ -10,7 +10,6 @@
 
 #include <ctype.h>
 #include <algorithm>
-#include <string>
 #include <limits>
 #include <memory>
 #include <utility>
