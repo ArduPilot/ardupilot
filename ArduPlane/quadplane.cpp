@@ -1327,7 +1327,9 @@ void QuadPlane::set_armed(bool armed)
 
     // re-init throttle wait on arm and disarm, to prevent rudder
     // arming on 2nd flight causing yaw
-    init_throttle_wait();
+    if (!air_mode_active()) {
+        init_throttle_wait();
+    }
 }
 
 
