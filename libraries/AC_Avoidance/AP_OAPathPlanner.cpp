@@ -27,8 +27,8 @@ extern const AP_HAL::HAL &hal;
 const float OA_MARGIN_MAX_DEFAULT = 5;
 const int16_t OA_OPTIONS_DEFAULT = 1;
 
-const int16_t OA_UPDATE_MS = 1000;      // path planning updates run at 1hz
-const int16_t OA_TIMEOUT_MS = 3000;     // results over 3 seconds old are ignored
+const int16_t OA_UPDATE_MS = 100;      // path planning updates run at 10hz
+const int16_t OA_TIMEOUT_MS = 300;     // results over 0.3 seconds old are ignored
 
 const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
 
@@ -67,6 +67,10 @@ const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
     // @Path: AP_OABendyRuler.cpp
     AP_SUBGROUPPTR(_oabendyruler, "BR_", 6, AP_OAPathPlanner, AP_OABendyRuler),
 
+    // @Group: SO_
+    // @Path: AP_ShallowAvoid.cpp
+    AP_SUBGROUPINFO(_oashallow, "SO_", 7, AP_OAPathPlanner, AP_ShallowAvoid),
+   
     AP_GROUPEND
 };
 
@@ -366,6 +370,16 @@ void AP_OAPathPlanner::avoidance_thread()
         }
 
         } // switch
+
+
+        // planning is triggered by prediction data, but we can still use an estimated
+        // cycle time for stitching
+         const float planning_cycle_time = 0.001f * OA_UPDATE_MS;
+
+        _oashallow.update(avoidance_request2.current_loc,
+                          avoidance_request2.origin, avoidance_request2.destination,
+                          avoidance_request2.ground_speed_vec,
+                          planning_cycle_time);
 
         {
             // give the main thread the avoidance result
