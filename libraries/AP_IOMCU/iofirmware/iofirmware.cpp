@@ -56,7 +56,7 @@ enum ioevents {
 
 static void dma_rx_end_cb(UARTDriver *uart)
 {
-    osalSysLockFromISR();
+    chSysLockFromISR();
     uart->usart->CR3 &= ~(USART_CR3_DMAT | USART_CR3_DMAR);
 
     (void)uart->usart->SR;
@@ -80,7 +80,7 @@ static void dma_rx_end_cb(UARTDriver *uart)
                      STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
     dmaStreamEnable(uart->dmatx);
     uart->usart->CR3 |= USART_CR3_DMAT;
-    osalSysUnlockFromISR();
+    chSysUnlockFromISR();
 }
 
 static void idle_rx_handler(UARTDriver *uart)
@@ -92,7 +92,7 @@ static void idle_rx_handler(UARTDriver *uart)
               USART_SR_FE |
               USART_SR_PE)) {		/* framing error - start/stop bit lost or line break */
         /* send a line break - this will abort transmission/reception on the other end */
-        osalSysLockFromISR();
+        chSysLockFromISR();
         uart->usart->SR = ~USART_SR_LBD;
         uart->usart->CR1 |= USART_CR1_SBK;
         iomcu.reg_status.num_errors++;
@@ -110,7 +110,7 @@ static void idle_rx_handler(UARTDriver *uart)
                          STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
         dmaStreamEnable(uart->dmarx);
         uart->usart->CR3 |= USART_CR3_DMAR;
-        osalSysUnlockFromISR();
+        chSysUnlockFromISR();
         return;
     }
 
@@ -140,11 +140,6 @@ void setup(void)
 {
     hal.rcin->init();
     hal.rcout->init();
-
-    for (uint8_t i = 0; i< 14; i++) {
-        hal.rcout->enable_ch(i);
-    }
-
     iomcu.init();
 
     iomcu.calculate_fw_crc();
@@ -194,11 +189,45 @@ void AP_IOMCU_FW::init()
 }
 
 
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+static void stackCheck(uint16_t& mstack, uint16_t& pstack) {
+    extern uint32_t __main_stack_base__[];
+    extern uint32_t __main_stack_end__[];
+    uint32_t stklimit = (uint32_t)__main_stack_end__;
+    uint32_t stkbase  = (uint32_t)__main_stack_base__;
+    uint32_t *crawl   = (uint32_t *)stkbase;
+
+    while (*crawl == 0x55555555 && crawl < (uint32_t *)stklimit) {
+        crawl++;
+    }
+    uint32_t free = (uint32_t)crawl - stkbase;
+    chDbgAssert(free > 0, "mstack exhausted");
+    mstack = (uint16_t)free;
+
+    extern uint32_t __main_thread_stack_base__[];
+    extern uint32_t __main_thread_stack_end__[];
+    stklimit = (uint32_t)__main_thread_stack_end__;
+    stkbase  = (uint32_t)__main_thread_stack_base__;
+    crawl   = (uint32_t *)stkbase;
+
+    while (*crawl == 0x55555555 && crawl < (uint32_t *)stklimit) {
+        crawl++;
+    }
+    free = (uint32_t)crawl - stkbase;
+    chDbgAssert(free > 0, "pstack exhausted");
+    pstack = (uint16_t)free;
+}
+#endif /* CH_DBG_ENABLE_STACK_CHECK == TRUE */
+
 void AP_IOMCU_FW::update()
 {
+#if CH_CFG_ST_FREQUENCY == 1000000
+    eventmask_t mask = chEvtWaitAnyTimeout(~0, TIME_US2I(1000));
+#else
     // we are not running any other threads, so we can use an
     // immediate timeout here for lowest latency
     eventmask_t mask = chEvtWaitAnyTimeout(~0, TIME_IMMEDIATE);
+#endif
 
     // we get the timestamp once here, and avoid fetching it
     // within the DMA callbacks
@@ -256,13 +285,16 @@ void AP_IOMCU_FW::update()
         heater_update();
         rcin_update();
         safety_update();
-        rcout_mode_update();
+        rcout_config_update();
         rcin_serial_update();
         hal.rcout->timer_tick();
         if (dsm_bind_state) {
             dsm_bind_step();
         }
         GPIO_write();
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+        stackCheck(reg_status.freemstack, reg_status.freepstack);
+#endif
     }
 }
 
@@ -513,6 +545,14 @@ bool AP_IOMCU_FW::handle_code_write()
             reg_setup.pwm_defaultrate = rx_io_packet.regs[0];
             update_default_rate = true;
             break;
+        case PAGE_REG_SETUP_DSHOT_PERIOD:
+            reg_setup.dshot_period_us = rx_io_packet.regs[0];
+            reg_setup.dshot_rate = rx_io_packet.regs[1];
+            hal.rcout->set_dshot_period(reg_setup.dshot_period_us, reg_setup.dshot_rate);
+            break;
+        case PAGE_REG_SETUP_CHANNEL_MASK:
+            reg_setup.channel_mask = rx_io_packet.regs[0];
+            break;
         case PAGE_REG_SETUP_SBUS_RATE:
             reg_setup.sbus_rate = rx_io_packet.regs[0];
             sbus_interval_ms = MAX(1000U / reg_setup.sbus_rate,3);
@@ -637,18 +677,23 @@ bool AP_IOMCU_FW::handle_code_write()
             return false;
         }
         memcpy(&GPIO, &rx_io_packet.regs[0] + rx_io_packet.offset, sizeof(GPIO));
-        if (GPIO.channel_mask != last_GPIO_channel_mask) {
-            for (uint8_t i=0; i<8; i++) {
-                if ((GPIO.channel_mask & (1U << i)) != 0) {
-                    hal.rcout->disable_ch(i);
-                    hal.gpio->pinMode(101+i, HAL_GPIO_OUTPUT);
-                } else {
-                    hal.rcout->enable_ch(i);
-                }
-            }
-            last_GPIO_channel_mask = GPIO.channel_mask;
-        }
         break;
+
+    case PAGE_DSHOT: {
+        uint16_t offset = rx_io_packet.offset, num_values = rx_io_packet.count;
+        if (offset + num_values > sizeof(dshot)/2) {
+            return false;
+        }
+        memcpy(((uint16_t *)&dshot)+offset, &rx_io_packet.regs[0], num_values*2);
+        if(dshot.telem_mask) {
+            hal.rcout->set_telem_request_mask(dshot.telem_mask);
+        }
+        if (dshot.command) {
+            hal.rcout->send_dshot_command(dshot.command, dshot.chan, dshot.command_timeout_ms, dshot.repeat_count, dshot.priority);
+        }
+
+        break;
+    }
 
     default:
         break;
@@ -763,17 +808,48 @@ void AP_IOMCU_FW::safety_update(void)
 /*
   update hal.rcout mode if needed
  */
-void AP_IOMCU_FW::rcout_mode_update(void)
+void AP_IOMCU_FW::rcout_config_update(void)
 {
-    bool use_dshot = mode_out.mode >= AP_HAL::RCOutput::MODE_PWM_DSHOT150 && mode_out.mode <= AP_HAL::RCOutput::MODE_PWM_DSHOT600;
+    // channels cannot be changed from within a lock zone
+    // so needs to be done here
+    if (GPIO.channel_mask != last_GPIO_channel_mask) {
+        for (uint8_t i=0; i<8; i++) {
+            if ((GPIO.channel_mask & (1U << i)) != 0) {
+                hal.rcout->disable_ch(i);
+                hal.gpio->pinMode(101+i, HAL_GPIO_OUTPUT);
+            } else {
+                hal.rcout->enable_ch(i);
+            }
+        }
+        last_GPIO_channel_mask = GPIO.channel_mask;
+    }
+
+    if (last_channel_mask != reg_setup.channel_mask) {
+        for (uint8_t i=0; i<IOMCU_MAX_CHANNELS; i++) {
+            if (reg_setup.channel_mask & 1U << i) {
+                hal.rcout->enable_ch(i);
+            } else {
+                hal.rcout->disable_ch(i);
+            }
+        }
+        last_channel_mask = reg_setup.channel_mask;
+    }
+
+    bool use_dshot = mode_out.mode >= AP_HAL::RCOutput::MODE_PWM_DSHOT150 
+        && mode_out.mode <= AP_HAL::RCOutput::MODE_PWM_DSHOT300;
     if (use_dshot && !dshot_enabled) {
         dshot_enabled = true;
         hal.rcout->set_output_mode(mode_out.mask, (AP_HAL::RCOutput::output_mode)mode_out.mode);
+        // enabling dshot changes the memory allocation
+        reg_status.freemem = hal.util->available_memory();
     }
-    bool use_oneshot = mode_out.mode == AP_HAL::RCOutput::MODE_PWM_ONESHOT;
+    bool use_oneshot = (mode_out.mode == AP_HAL::RCOutput::MODE_PWM_ONESHOT
+        || mode_out.mode == AP_HAL::RCOutput::MODE_PWM_ONESHOT125);
     if (use_oneshot && !oneshot_enabled) {
         oneshot_enabled = true;
-        hal.rcout->set_output_mode(mode_out.mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
+        // setup to use a 1Hz frequency, so we only get output when we trigger
+        hal.rcout->set_freq(mode_out.mask, 1);
+        hal.rcout->set_output_mode(mode_out.mask, (AP_HAL::RCOutput::output_mode)mode_out.mode);
     }
     bool use_brushed = mode_out.mode == AP_HAL::RCOutput::MODE_PWM_BRUSHED;
     if (use_brushed && !brushed_enabled) {
@@ -784,8 +860,6 @@ void AP_IOMCU_FW::rcout_mode_update(void)
         hal.rcout->set_output_mode(mode_out.mask, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
         hal.rcout->set_freq(mode_out.mask, reg_setup.pwm_altrate);
     }
-    mode_out.mask = 0;
-    mode_out.mode = 0;
 }
 
 /*

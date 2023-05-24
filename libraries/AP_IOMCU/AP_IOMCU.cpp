@@ -38,7 +38,10 @@ enum ioevents {
     IOEVENT_SET_SAFETY_MASK,
     IOEVENT_MIXING,
     IOEVENT_GPIO,
-    IOEVENT_SET_OUTPUT_MODE
+    IOEVENT_SET_OUTPUT_MODE,
+    IOEVENT_SET_DSHOT_PERIOD,
+    IOEVENT_SET_CHANNEL_MASK,
+    IOEVENT_DSHOT,
 };
 
 // max number of consecutve protocol failures we accept before raising
@@ -215,6 +218,14 @@ void AP_IOMCU::thread_main(void)
         }
         mask &= ~EVENT_MASK(IOEVENT_SET_DEFAULT_RATE);
 
+        if (mask & EVENT_MASK(IOEVENT_SET_DSHOT_PERIOD)) {
+            if (!write_registers(PAGE_SETUP, PAGE_REG_SETUP_DSHOT_PERIOD, sizeof(dshot_rate)/2, (const uint16_t *)&dshot_rate)) {
+                event_failed(mask);
+                continue;
+            }
+        }
+        mask &= ~EVENT_MASK(IOEVENT_SET_DSHOT_PERIOD);
+
         if (mask & EVENT_MASK(IOEVENT_SET_ONESHOT_ON)) {
             if (!modify_register(PAGE_SETUP, PAGE_REG_SETUP_FEATURES, 0, P_SETUP_FEATURES_ONESHOT)) {
                 event_failed(mask);
@@ -237,6 +248,15 @@ void AP_IOMCU::thread_main(void)
                 continue;
             }
         }
+        mask &= ~EVENT_MASK(IOEVENT_SET_OUTPUT_MODE);
+
+        if (mask & EVENT_MASK(IOEVENT_SET_CHANNEL_MASK)) {
+            if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_CHANNEL_MASK, pwm_out.channel_mask)) {
+                event_failed(mask);
+                continue;
+            }
+        }
+        mask &= ~EVENT_MASK(IOEVENT_SET_CHANNEL_MASK);
 
         if (mask & EVENT_MASK(IOEVENT_SET_SAFETY_MASK)) {
             if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_IGNORE_SAFETY, pwm_out.safety_mask)) {
@@ -255,6 +275,15 @@ void AP_IOMCU::thread_main(void)
             }
             mask &= ~EVENT_MASK(IOEVENT_GPIO);
         }
+
+        if (mask & EVENT_MASK(IOEVENT_DSHOT)) {
+            if (!write_registers(PAGE_DSHOT, 0, sizeof(dshot)/sizeof(uint16_t), (const uint16_t*)&dshot)) {
+                memset(&dshot, 0, sizeof(dshot));
+                event_failed(mask);
+                continue;
+            }
+        }
+        mask &= ~EVENT_MASK(IOEVENT_DSHOT);
 
         // check for regular timed events
         uint32_t now = AP_HAL::millis();
@@ -314,8 +343,8 @@ void AP_IOMCU::send_servo_out()
             n = MIN(n, IOMCU_MAX_CHANNELS);
         }
         uint32_t now = AP_HAL::micros();
-        if (now - last_servo_out_us >= 2000) {
-            // don't send data at more than 500Hz
+        if (now - last_servo_out_us >= 2000 || AP_BoardConfig::io_dshot()) {
+            // don't send data at more than 500Hz except when using dshot which is more timing sensitive
             if (write_registers(PAGE_DIRECT_PWM, 0, n, pwm_out.pwm)) {
                 last_servo_out_us = now;
             }
@@ -413,10 +442,12 @@ void AP_IOMCU::write_log()
         static uint32_t last_io_print;
         if (now - last_io_print >= 5000) {
             last_io_print = now;
-            debug("t=%lu num=%lu mem=%u terr=%lu nerr=%lu crc=%u opcode=%u rd=%u wr=%u ur=%u ndel=%lu\n",
+            debug("t=%lu num=%lu mem=%u mstack=%u pstack=%u terr=%lu nerr=%lu crc=%u opcode=%u rd=%u wr=%u ur=%u ndel=%lu\n",
                   now,
                   reg_status.total_pkts,
                   reg_status.freemem,
+                  reg_status.freemstack,
+                  reg_status.freepstack,
                   total_errors,
                   reg_status.num_errors,
                   reg_status.err_crc,
@@ -797,12 +828,56 @@ void AP_IOMCU::set_brushed_mode(void)
     rate.brushed_enabled = true;
 }
 
+#if HAL_DSHOT_ENABLED
+// set output mode
+void AP_IOMCU::set_dshot_period(uint16_t period_us, uint8_t drate)
+{
+    dshot_rate.period_us = period_us;
+    dshot_rate.rate = drate;
+    trigger_event(IOEVENT_SET_DSHOT_PERIOD);
+}
+
+// set output mode
+void AP_IOMCU::set_telem_request_mask(uint32_t mask)
+{
+    dshot.telem_mask = mask;
+    trigger_event(IOEVENT_DSHOT);
+}
+
+void AP_IOMCU::send_dshot_command(uint8_t command, uint8_t chan, uint32_t command_timeout_ms, uint16_t repeat_count, bool priority)
+{
+    dshot.command = command;
+    dshot.chan = chan;
+    dshot.command_timeout_ms = command_timeout_ms;
+    dshot.repeat_count = repeat_count;
+    dshot.priority = priority;
+    trigger_event(IOEVENT_DSHOT);
+}
+#endif
+
 // set output mode
 void AP_IOMCU::set_output_mode(uint16_t mask, uint16_t mode)
 {
     mode_out.mask = mask;
     mode_out.mode = mode;
     trigger_event(IOEVENT_SET_OUTPUT_MODE);
+}
+
+// setup channels
+void  AP_IOMCU::enable_ch(uint8_t ch)
+{
+    if (!(pwm_out.channel_mask & 1U << ch)) {
+        pwm_out.channel_mask |= 1U << ch;
+        trigger_event(IOEVENT_SET_CHANNEL_MASK);
+    }
+}
+
+void  AP_IOMCU::disable_ch(uint8_t ch)
+{
+    if (pwm_out.channel_mask & 1U << ch) {
+        pwm_out.channel_mask &= ~(1U << ch);
+        trigger_event(IOEVENT_SET_CHANNEL_MASK);
+    }
 }
 
 // handling of BRD_SAFETYOPTION parameter
@@ -951,6 +1026,16 @@ void AP_IOMCU::shutdown(void)
         hal.scheduler->delay(1);
     }
 }
+
+/*
+  reboot IOMCU
+ */
+void AP_IOMCU::soft_reboot(void)
+{
+    const uint16_t magic = REBOOT_BL_MAGIC;
+    write_registers(PAGE_SETUP, PAGE_REG_SETUP_REBOOT_BL, 1, &magic);
+}
+
 
 /*
   request bind on a DSM radio
@@ -1103,6 +1188,9 @@ void AP_IOMCU::check_iomcu_reset(void)
     }
     trigger_event(IOEVENT_SET_RATES);
     trigger_event(IOEVENT_SET_DEFAULT_RATE);
+    trigger_event(IOEVENT_SET_DSHOT_PERIOD);
+    trigger_event(IOEVENT_SET_OUTPUT_MODE);
+    trigger_event(IOEVENT_SET_CHANNEL_MASK);
     if (rate.oneshot_enabled) {
         trigger_event(IOEVENT_SET_ONESHOT_ON);
     }

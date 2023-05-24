@@ -56,6 +56,7 @@ enum iopage {
     PAGE_FAILSAFE_PWM = 55,
     PAGE_MIXING = 200,
     PAGE_GPIO = 201,
+    PAGE_DSHOT = 202,
 };
 
 // setup page registers
@@ -86,6 +87,8 @@ enum iopage {
 #define PAGE_REG_SETUP_HEATER_DUTY_CYCLE 21
 #define PAGE_REG_SETUP_DSM_BIND     22
 #define PAGE_REG_SETUP_RC_PROTOCOLS 23 // uses 2 slots, 23 and 24
+#define PAGE_REG_SETUP_DSHOT_PERIOD 25
+#define PAGE_REG_SETUP_CHANNEL_MASK 27
 
 // config page registers
 #define PAGE_CONFIG_PROTOCOL_VERSION  0
@@ -107,6 +110,8 @@ struct page_config {
 
 struct page_reg_status {
     uint16_t freemem;
+    uint16_t freemstack;
+    uint16_t freepstack;
     uint32_t timestamp_ms;
     uint16_t vservo;
     uint16_t vrssi;
@@ -169,4 +174,13 @@ static_assert(sizeof(struct page_mixing) % 2 == 0, "page_mixing must be even siz
 struct __attribute__((packed, aligned(2))) page_GPIO {
     uint8_t channel_mask;
     uint8_t output_mask;
+};
+
+struct __attribute__((packed, aligned(2))) page_dshot {
+    uint16_t telem_mask;
+    uint8_t command;
+    uint8_t chan;
+    uint32_t command_timeout_ms;
+    uint8_t repeat_count;
+    uint8_t priority;
 };
