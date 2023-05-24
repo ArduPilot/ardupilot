@@ -113,7 +113,7 @@ const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     // @Param: OPTION
     // @DisplayName: DroneCAN options
     // @Description: Option flags
-    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM,5:SendGNSS,6:UseHimarkServo
+    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM,5:SendGNSS,6:UseHimarkServo,7:UseHobbyWingESC,8:NoESCOutputWhenDisarmed
     // @User: Advanced
     AP_GROUPINFO("OPTION", 5, AP_DroneCAN, _options, 0),
     
@@ -353,7 +353,7 @@ void AP_DroneCAN::loop(void)
 
         canard_iface.process(1);
 
-        if (_SRV_armed) {
+        if (_SRV_safety_off) {
             bool sent_servos = false;
 
             if (_servo_bm > 0) {
@@ -374,8 +374,8 @@ void AP_DroneCAN::loop(void)
                 }
             }
 
-            // if we have any ESC's in bitmask
-            if (_esc_bm > 0 && !sent_servos) {
+            // if we have any ESCs in bitmask and we're armed
+            if (_esc_bm > 0 && !sent_servos && (_SRV_armed || !option_is_set(Options::DISABLE_ESC_WHEN_DISARMED))) {
 #if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
                 if (option_is_set(Options::USE_HOBBYWING_ESC)) {
                     SRV_send_esc_hobbywing();
@@ -740,7 +740,8 @@ void AP_DroneCAN::SRV_push_servos()
         }
     }
 
-    _SRV_armed = hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED;
+    _SRV_safety_off = hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED;
+    _SRV_armed = hal.util->get_soft_armed();
 }
 
 

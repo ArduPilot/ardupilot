@@ -118,6 +118,7 @@ public:
         SEND_GNSS                 = (1U<<5),
         USE_HIMARK_SERVO          = (1U<<6),
         USE_HOBBYWING_ESC         = (1U<<7),
+        DISABLE_ESC_WHEN_DISARMED = (1U<<8),
     };
 
     // check if a option is set
@@ -206,7 +207,8 @@ private:
     uint32_t _srv_send_count;
     uint32_t _fail_send_count;
 
-    uint8_t _SRV_armed;
+    bool _SRV_safety_off;
+    bool _SRV_armed;
     uint32_t _SRV_last_send_us;
     HAL_Semaphore SRV_sem;
 
