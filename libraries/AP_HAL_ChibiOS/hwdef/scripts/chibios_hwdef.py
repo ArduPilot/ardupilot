@@ -1029,14 +1029,9 @@ class ChibiOSHWDef(object):
                 if 'HAL_USE_CAN' in d:
                     using_chibios_can = True
                 f.write('#define %s\n' % d[7:])
-                # extract numerical defines for processing by other parts of the script
-                result = re.match(r'define\s*([A-Z_]+)\s*([0-9]+)', d)
-                if result:
-                    define = result.group(1)
-                    value = int(result.group(2))
-                    self.intdefines[define] = value
-                    if define == 'AP_NETWORKING_ENABLED' and value == 1:
-                        self.enable_networking(f)
+
+        if self.intdefines.get('AP_NETWORKING_ENABLED', 0) == 1:
+            self.enable_networking(f)
 
         if self.intdefines.get('HAL_USE_USB_MSD', 0) == 1:
             self.build_flags.append('USE_USB_MSD=yes')
@@ -3045,6 +3040,12 @@ Please run: Tools/scripts/build_bootloaders.py %s
             if name == 'APP_RAM_START':
                 value = int(value, 0)
             self.env_vars[name] = value
+        elif a[0] == 'define':
+            # extract numerical defines for processing by other parts of the script
+            result = re.match(r'define\s*([A-Z_]+)\s*([0-9]+)', line)
+            if result:
+                self.intdefines[result.group(1)] = int(result.group(2))
+
 
     def progress(self, message):
         if self.quiet:
