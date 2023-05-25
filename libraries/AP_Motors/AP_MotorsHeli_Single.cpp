@@ -137,6 +137,50 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("COL2YAW", 21,  AP_MotorsHeli_Single, _collective_yaw_scale, 0),
 
+    // @Param: DDFP_THST_EXPO
+    // @DisplayName: DDFP Tail Rotor Thrust Curve Expo
+    // @Description: Tail rotor DDFP motor thrust curve exponent (0.0 for linear to 1.0 for second order curve)
+    // @Range: -1 1
+    // @User: Standard
+    AP_GROUPINFO("DDFP_THST_EXPO", 22, AP_MotorsHeli_Single,  thr_lin.curve_expo, 0.55),
+
+    // @Param: DDFP_SPIN_MIN
+    // @DisplayName: DDFP Tail Rotor Motor Spin minimum
+    // @Description: Point at which the thrust starts expressed as a number from 0 to 1 in the entire output range.  Should be higher than MOT_SPIN_ARM.
+    // @Values: 0.0:Low, 0.15:Default, 0.3:High
+    // @User: Standard
+    AP_GROUPINFO("DDFP_SPIN_MIN", 23, AP_MotorsHeli_Single,  thr_lin.spin_min, 0.15),
+
+    // @Param: DDFP_SPIN_MAX
+    // @DisplayName: DDFP Tail Rotor Motor Spin maximum
+    // @Description: Point at which the thrust saturates expressed as a number from 0 to 1 in the entire output range
+    // @Values: 0.9:Low, 0.95:Default, 1.0:High
+    // @User: Standard
+    AP_GROUPINFO("DDFP_SPIN_MAX", 24, AP_MotorsHeli_Single,  thr_lin.spin_max, 0.95),
+
+    // @Param: DDFP_BAT_IDX
+    // @DisplayName: DDFP Tail Rotor Battery compensation index
+    // @Description: Which battery monitor should be used for doing compensation
+    // @Values: 0:First battery, 1:Second battery
+    // @User: Standard
+    AP_GROUPINFO("DDFP_BAT_IDX", 25, AP_MotorsHeli_Single, thr_lin.batt_idx, 0),
+
+    // @Param: DDFP_BAT_V_MAX
+    // @DisplayName: Battery voltage compensation maximum voltage
+    // @Description: Battery voltage compensation maximum voltage (voltage above this will have no additional scaling effect on thrust).  Recommend 4.2 * cell count, 0 = Disabled
+    // @Range: 6 53
+    // @Units: V
+    // @User: Standard
+    AP_GROUPINFO("DDFP_BAT_V_MAX", 26, AP_MotorsHeli_Single, thr_lin.batt_voltage_max, AP_MOTORS_HELI_SINGLE_BAT_VOLT_MAX_DEFAULT),
+
+    // @Param: DDFP_BAT_V_MIN
+    // @DisplayName: Battery voltage compensation minimum voltage
+    // @Description: Battery voltage compensation minimum voltage (voltage below this will have no additional scaling effect on thrust).  Recommend 3.3 * cell count, 0 = Disabled
+    // @Range: 6 42
+    // @Units: V
+    // @User: Standard
+    AP_GROUPINFO("DDFP_BAT_V_MIN", 27, AP_MotorsHeli_Single, thr_lin.batt_voltage_min, AP_MOTORS_HELI_SINGLE_BAT_VOLT_MIN_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -199,8 +243,17 @@ bool AP_MotorsHeli_Single::init_outputs()
         reset_swash_servo(SRV_Channels::get_motor_function(4));
     }
 
-    // yaw servo is an angle from -4500 to 4500
-    SRV_Channels::set_angle(SRV_Channel::k_motor4, YAW_SERVO_MAX_ANGLE);
+    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW){
+        SRV_Channel *c = SRV_Channels::srv_channel(AP_MOTORS_MOT_4);
+        if (c != nullptr) {
+            _ddfp_pwm_min = c->get_output_min();
+            _ddfp_pwm_max = c->get_output_max();
+            _ddfp_pwm_trim = c->get_trim();
+        }
+    } else {
+        // yaw servo is an angle from -4500 to 4500
+        SRV_Channels::set_angle(SRV_Channel::k_motor4, YAW_SERVO_MAX_ANGLE);
+    }
 
     set_initialised_ok(_frame_class == MOTOR_FRAME_HELI);
 
@@ -520,19 +573,24 @@ void AP_MotorsHeli_Single::output_to_motors()
         _servo4_out = -_servo4_out;
     }
 
+    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW){
+        // calc filtered battery voltage and lift_max
+        thr_lin.update_lift_max_from_batt_voltage();
+    }
+
     switch (_spool_state) {
         case SpoolState::SHUT_DOWN:
             // sends minimum values out to the motors
             update_motor_control(ROTOR_CONTROL_STOP);
             if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW){
-                rc_write_angle(AP_MOTORS_MOT_4, -YAW_SERVO_MAX_ANGLE);
+                rc_write(AP_MOTORS_MOT_4, calculate_ddfp_output(0.0f));
             }
             break;
         case SpoolState::GROUND_IDLE:
             // sends idle output to motors when armed. rotor could be static or turning (autorotation)
             update_motor_control(ROTOR_CONTROL_IDLE);
             if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW){
-                rc_write_angle(AP_MOTORS_MOT_4, -YAW_SERVO_MAX_ANGLE);
+                rc_write(AP_MOTORS_MOT_4, calculate_ddfp_output(0.0f));
             }
             break;
         case SpoolState::SPOOLING_UP:
@@ -540,21 +598,33 @@ void AP_MotorsHeli_Single::output_to_motors()
             // set motor output based on thrust requests
             update_motor_control(ROTOR_CONTROL_ACTIVE);
             if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW){
-                // constrain output so that motor never fully stops
-                 _servo4_out = constrain_float(_servo4_out, -0.9f, 1.0f);
+                float servo4_trim = (_ddfp_pwm_trim - 1000) / (_ddfp_pwm_max - _ddfp_pwm_min);
+                float servo_out = 0.0f;
+                if (is_positive(_servo4_out)) {
+                    servo_out = (1.0f - servo4_trim) * _servo4_out + servo4_trim;
+                } else {
+                    servo_out = servo4_trim * _servo4_out + servo4_trim;
+                }
                 // output yaw servo to tail rsc
-                rc_write_angle(AP_MOTORS_MOT_4, _servo4_out * YAW_SERVO_MAX_ANGLE);
+                rc_write(AP_MOTORS_MOT_4, calculate_ddfp_output(thr_lin.thrust_to_actuator(servo_out)));
             }
             break;
         case SpoolState::SPOOLING_DOWN:
             // sends idle output to motors and wait for rotor to stop
             update_motor_control(ROTOR_CONTROL_IDLE);
             if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW){
-                rc_write_angle(AP_MOTORS_MOT_4, -YAW_SERVO_MAX_ANGLE);
+                rc_write(AP_MOTORS_MOT_4, calculate_ddfp_output(0.0f));
             }
             break;
 
     }
+}
+
+// calculate the motor output for DDFP tails from yaw_out
+uint16_t AP_MotorsHeli_Single::calculate_ddfp_output(float yaw_out)
+{
+    uint16_t ret = _ddfp_pwm_min + (_ddfp_pwm_max - _ddfp_pwm_min) * yaw_out;
+    return ret;
 }
 
 // servo_test - move servos through full range of movement

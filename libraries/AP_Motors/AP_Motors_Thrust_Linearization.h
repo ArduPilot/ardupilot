@@ -7,6 +7,7 @@ class AP_Motors;
 class Thrust_Linearization {
 friend class AP_MotorsMulticopter;
 friend class AP_MotorsMulticopter_test;
+friend class AP_MotorsHeli_Single;
 public:
     Thrust_Linearization(AP_Motors& _motors);
 
