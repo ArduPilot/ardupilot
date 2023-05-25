@@ -293,7 +293,7 @@ def forbidden_list(p, peripheral_list):
 
 
 def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
-                     dma_priority='', dma_noshare=[]):
+                     dma_priority='', dma_noshare=[], quiet=False):
     '''write out a DMA resolver header file'''
     global dma_map, have_DMAMUX, has_bdshot
     timer_ch_periph = []
@@ -331,7 +331,8 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
 
         dma_map = generate_DMAMUX_map(peripheral_list, noshare_list, dma_exclude, stream_ofs)
 
-    print("Writing DMA map")
+    if not quiet:
+        print("Writing DMA map")
     unassigned = []
     curr_dict = {}
 

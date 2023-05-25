@@ -25,12 +25,13 @@ class ChibiOSHWDef(object):
     f1_vtypes = ['CRL', 'CRH', 'ODR']
     af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN', 'QUADSPI', 'OCTOSPI', 'ETH', 'MCO']
 
-    def __init__(self, bootloader=False, signed_fw=False, outdir=None, hwdef=[], default_params_filepath=None):
+    def __init__(self, quiet=False, bootloader=False, signed_fw=False, outdir=None, hwdef=[], default_params_filepath=None):
         self.outdir = outdir
         self.hwdef = hwdef
         self.bootloader = bootloader
         self.signed_fw = signed_fw
         self.default_params_filepath = default_params_filepath
+        self.quiet = quiet
 
         self.default_gpio = ['INPUT', 'FLOATING']
 
@@ -771,7 +772,7 @@ class ChibiOSHWDef(object):
             if ram_map is not None:
                 return ram_map
         elif int(self.env_vars.get('USE_ALT_RAM_MAP', 0)) == 1:
-            print("Using ALT_RAM_MAP")
+            self.progress("Using ALT_RAM_MAP")
             return self.get_mcu_config('ALT_RAM_MAP', True)
         return self.get_mcu_config('RAM_MAP', True)
 
@@ -1037,7 +1038,6 @@ class ChibiOSHWDef(object):
                     if define == 'AP_NETWORKING_ENABLED' and value == 1:
                         self.enable_networking(f)
 
-
         if self.intdefines.get('HAL_USE_USB_MSD', 0) == 1:
             self.build_flags.append('USE_USB_MSD=yes')
 
@@ -1163,7 +1163,7 @@ class ChibiOSHWDef(object):
             cortex = self.get_mcu_config('CORTEX')
             self.env_vars['CPU_FLAGS'] = self.get_mcu_config('CPU_FLAGS').split()
             build_info['MCU'] = cortex
-            print("MCU Flags: %s %s" % (cortex, self.env_vars['CPU_FLAGS']))
+            self.progress("MCU Flags: %s %s" % (cortex, self.env_vars['CPU_FLAGS']))
         elif self.mcu_series.startswith("STM32F1"):
             cortex = "cortex-m3"
             self.env_vars['CPU_FLAGS'] = ["-mcpu=%s" % cortex]
@@ -1381,7 +1381,7 @@ class ChibiOSHWDef(object):
 
         self.env_vars['FLASH_TOTAL'] = flash_length * 1024
 
-        print("Generating ldscript.ld")
+        self.progress("Generating ldscript.ld")
         f = open(fname, 'w')
         ram0_start = ram_map[0][0]
         ram0_len = ram_map[0][1] * 1024
@@ -1555,7 +1555,7 @@ INCLUDE common.ld
         devlist = []
         for dev in self.wspidev:
             if len(dev) != 6:
-                print("Badly formed WSPIDEV line %s" % dev)
+                self.progress("Badly formed WSPIDEV line %s" % dev)
             name = '"' + dev[0] + '"'
             bus = dev[1]
             mode = dev[2]
@@ -1596,7 +1596,7 @@ INCLUDE common.ld
             return
 
         for t in list(self.bytype.keys()) + list(self.alttype.keys()):
-            print(t)
+            self.progress(t)
             if t.startswith('QUADSPI') or t.startswith('OCTOSPI'):
                 self.wspi_list.append(t)
 
@@ -1999,7 +1999,7 @@ INCLUDE common.ld
     def write_I2C_config(self, f):
         '''write I2C config defines'''
         if not self.have_type_prefix('I2C'):
-            print("No I2C peripherals")
+            self.progress("No I2C peripherals")
             f.write('''
 #ifndef HAL_USE_I2C
 #define HAL_USE_I2C FALSE
@@ -2076,7 +2076,7 @@ INCLUDE common.ld
 
         f.write('#define HAL_PWM_COUNT %u\n' % len(pwm_out))
         if not pwm_out and not alarm:
-            print("No PWM output defined")
+            self.progress("No PWM output defined")
             f.write('''
 #ifndef HAL_USE_PWM
 #define HAL_USE_PWM FALSE
@@ -2527,7 +2527,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
     def write_hwdef_header(self, outfilename):
         '''write hwdef header file'''
-        print("Writing hwdef setup in %s" % outfilename)
+        self.progress("Writing hwdef setup in %s" % outfilename)
         tmpfile = outfilename + ".tmp"
         f = open(tmpfile, 'w')
 
@@ -2600,7 +2600,8 @@ Please run: Tools/scripts/build_bootloaders.py %s
                 self.mcu_type,
                 dma_exclude=self.get_dma_exclude(self.periph_list),
                 dma_priority=self.get_config('DMA_PRIORITY', default='TIM* SPI*', spaces=True),
-                dma_noshare=self.dma_noshare
+                dma_noshare=self.dma_noshare,
+                quiet=self.quiet,
             )
 
         if not self.is_bootloader_fw():
@@ -2720,7 +2721,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
         # see if we ended up with the same file, on an unnecessary reconfigure
         try:
             if filecmp.cmp(outfilename, tmpfile):
-                print("No change in hwdef.h")
+                self.progress("No change in hwdef.h")
                 os.unlink(tmpfile)
                 return
         except Exception:
@@ -2824,13 +2825,13 @@ Please run: Tools/scripts/build_bootloaders.py %s
         defaults_abspath = None
         if os.path.exists(defaults_path):
             defaults_abspath = os.path.abspath(self.default_params_filepath)
-            print("Default parameters path from command line: %s" % self.default_params_filepath)
+            self.progress("Default parameters path from command line: %s" % self.default_params_filepath)
         elif os.path.exists(defaults_filename):
             defaults_abspath = os.path.abspath(defaults_filename)
-            print("Default parameters path from hwdef: %s" % defaults_filename)
+            self.progress("Default parameters path from hwdef: %s" % defaults_filename)
 
         if defaults_abspath is None:
-            print("No default parameter file found")
+            self.progress("No default parameter file found")
             return
 
         content = self.get_processed_defaults_file(defaults_abspath)
@@ -3002,7 +3003,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
             self.romfs_wildcard(a[1])
         elif a[0] == 'undef':
             for u in a[1:]:
-                print("Removing %s" % u)
+                self.progress("Removing %s" % u)
                 self.config.pop(u, '')
                 self.bytype.pop(u, '')
                 self.bylabel.pop(u, '')
@@ -3034,7 +3035,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
                 if u == 'AIRSPEED':
                     self.airspeed_list = []
         elif a[0] == 'env':
-            print("Adding environment %s" % ' '.join(a[1:]))
+            self.progress("Adding environment %s" % ' '.join(a[1:]))
             if len(a[1:]) < 2:
                 self.error("Bad env line for %s" % a[0])
             name = a[1]
@@ -3044,6 +3045,11 @@ Please run: Tools/scripts/build_bootloaders.py %s
             if name == 'APP_RAM_START':
                 value = int(value, 0)
             self.env_vars[name] = value
+
+    def progress(self, message):
+        if self.quiet:
+            return
+        print(message)
 
     def process_file(self, filename):
         '''process a hwdef.dat file'''
@@ -3063,7 +3069,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
                     dir = os.path.dirname(filename)
                     include_file = os.path.normpath(
                         os.path.join(dir, include_file))
-                print("Including %s" % include_file)
+                self.progress("Including %s" % include_file)
                 self.process_file(include_file)
             else:
                 self.process_line(line)
@@ -3087,7 +3093,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
         self.add_firmware_defaults_from_file(f, "defaults_bootloader.h", "bootloader")
 
     def add_firmware_defaults_from_file(self, f, filename, description):
-        print("Setting up as %s" % description)
+        self.progress("Setting up as %s" % description)
 
         dirpath = os.path.dirname(os.path.realpath(__file__))
         filepath = os.path.join(dirpath, filename)
@@ -3144,7 +3150,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
             self.error("Missing MCU type in config")
 
         self.mcu_type = self.get_config('MCU', 1)
-        print("Setup for MCU %s" % self.mcu_type)
+        self.progress("Setup for MCU %s" % self.mcu_type)
 
         # build a list for peripherals for DMA resolver
         self.periph_list = self.build_peripheral_list()
@@ -3186,6 +3192,8 @@ if __name__ == '__main__':
         'hwdef', type=str, nargs='+', default=None, help='hardware definition file')
     parser.add_argument(
         '--params', type=str, default=None, help='user default params path')
+    parser.add_argument(
+        '--quiet', action='store_true', default=False, help='quiet running')
 
     args = parser.parse_args()
 
@@ -3194,6 +3202,7 @@ if __name__ == '__main__':
         bootloader=args.bootloader,
         signed_fw=args.signed_fw,
         hwdef=args.hwdef,
-        default_params_filepath=args.params
+        default_params_filepath=args.params,
+        quiet=args.quiet,
     )
     c.run()
