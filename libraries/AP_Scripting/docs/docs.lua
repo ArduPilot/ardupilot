@@ -2263,6 +2263,12 @@ function gcs:get_high_latency_status() end
 ---@param text string
 function gcs:send_text(severity, text) end
 
+-- get sensor status flags represented by MAV_SYS_STATUS_SENSOR
+---@return uint32_t_ud -- onboard_control_sensors_present
+---@return uint32_t_ud -- onboard_control_sensors_enabled
+---@return uint32_t_ud -- onboard_control_sensors_health
+function gcs:get_sensor_status_flags() end
+
 -- desc
 ---@class relay
 relay = {}
