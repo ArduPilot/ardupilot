@@ -34,6 +34,7 @@
 #endif
 #if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
 #include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_OpenDroneID/AP_OpenDroneID.h>
 #endif
 #ifndef HAL_BOOTLOADER_BUILD
 #include <AP_Logger/AP_Logger.h>
@@ -48,6 +49,7 @@ extern AP_IOMCU iomcu;
 #if AP_SIGNED_FIRMWARE && !defined(HAL_BOOTLOADER_BUILD)
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
 #endif
+
 
 extern const AP_HAL::HAL& hal;
 
@@ -521,6 +523,12 @@ bool Util::get_persistent_params(ExpandingString &str) const
     const auto *ins = AP_InertialSensor::get_singleton();
     if (ins) {
         ins->get_persistent_params(str);
+    }
+#endif
+#if AP_OPENDRONEID_ENABLED
+    const auto *odid = AP_OpenDroneID::get_singleton();
+    if (odid) {
+        odid->get_persistent_params(str);
     }
 #endif
     if (str.has_failed_allocation() || str.get_length() <= strlen(persistent_header)) {
