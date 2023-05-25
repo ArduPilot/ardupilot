@@ -1876,13 +1876,13 @@ INCLUDE common.ld
 
             if dev.startswith('OTG2'):
                 f.write(
-                    '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU2, 2, true, false, 0, 0, false, 0, 0, 2}\n'
+                    '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU2, 2, true, false, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}\n'
                     % dev)
                 OTG2_index = uart_list.index(dev)
                 self.dual_USB_enabled = True
             elif dev.startswith('OTG'):
                 f.write(
-                    '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU1, 1, true, false, 0, 0, false, 0, 0, 0}\n'
+                    '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU1, 1, true, false, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}\n'
                     % dev)
             else:
                 need_uart_driver = True
