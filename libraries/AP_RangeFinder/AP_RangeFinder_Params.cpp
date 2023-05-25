@@ -138,6 +138,24 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ORIENT", 53, AP_RangeFinder_Params, orientation, AP_RANGEFINDER_DEFAULT_ORIENTATION),
 
+    // @Param: FLT_R0
+    // @DisplayName: Rangefinder filter track factor
+    // @Description: Rangefinder filter track factor
+    // @User: Advanced
+    AP_GROUPINFO("FLT_R0", 54, AP_RangeFinder_Params, filt_r0, 1.0),
+
+    // @Param: FLT_N1
+    // @DisplayName: Rangefinder filter smoother factor
+    // @Description: Rangefinder filter smoother factor
+    // @User: Advanced
+    AP_GROUPINFO("FLT_N1", 55, AP_RangeFinder_Params, filt_n1, 50),
+
+    // @Param: FLT_N2
+    // @DisplayName: Rangefinder filter prediction factor
+    // @Description: Rangefinder filter prediction factor
+    // @User: Advanced
+    AP_GROUPINFO("FLT_N2", 56, AP_RangeFinder_Params, filt_n2, 50),
+
     AP_GROUPEND
 };
 
