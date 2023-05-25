@@ -8,6 +8,7 @@
 #include "AP_MotorsHeli.h"
 #include "AP_MotorsHeli_RSC.h"
 #include "AP_MotorsHeli_Swash.h"
+#include "AP_Motors_Thrust_Linearization.h"
 
 // rsc and extgyro function output channels.
 #define AP_MOTORS_HELI_SINGLE_EXTGYRO                          CH_7
@@ -33,6 +34,9 @@
 
 // maximum number of swashplate servos
 #define AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS            3
+
+#define AP_MOTORS_HELI_SINGLE_BAT_VOLT_MAX_DEFAULT             0.0f    // voltage limiting max default
+#define AP_MOTORS_HELI_SINGLE_BAT_VOLT_MIN_DEFAULT             0.0f    // voltage limiting min default (voltage dropping below this level will have no effect)
 
 /// @class      AP_MotorsHeli_Single
 class AP_MotorsHeli_Single : public AP_MotorsHeli {
@@ -79,6 +83,9 @@ public:
     // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
     bool parameter_check(bool display_msg) const override;
 
+    // Thrust Linearization handling
+    Thrust_Linearization thr_lin {*this};
+
     // var_info
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -95,6 +102,9 @@ protected:
 
     // move_yaw - moves the yaw servo
     void move_yaw(float yaw_out);
+
+    // calculate the motor output for DDFP tails from yaw_out
+    uint16_t calculate_ddfp_output(float yaw_out);
 
     // servo_test - move servos through full range of movement
     void servo_test() override;
@@ -120,6 +130,9 @@ protected:
     float _servo3_out = 0.0f;                   // output value sent to motor
     float _servo4_out = 0.0f;                   // output value sent to motor
     float _servo5_out = 0.0f;                   // output value sent to motor
+    uint16_t _ddfp_pwm_min = 0;                 // minimum ddfp servo min
+    uint16_t _ddfp_pwm_max = 0;                 // minimum ddfp servo max
+    uint16_t _ddfp_pwm_trim = 0;                // minimum ddfp servo trim
 
     // parameters
     AP_Int16        _tail_type;                 // Tail type used: Servo, Servo with external gyro, direct drive variable pitch or direct drive fixed pitch
