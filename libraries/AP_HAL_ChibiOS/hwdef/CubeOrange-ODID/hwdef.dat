@@ -4,7 +4,28 @@ include ../CubeOrange/hwdef.dat
 # the firmware without OpenDroneID enabled
 APJ_BOARD_ID 10140
 
+# Set the four character UA MFR Code based on the ICAO assigned ID
+# rest of the id will be inferred from the unique chip id
+define OPENDRONEID_UA_MFR_CODE "MFR1"
+
+# Set the UA Type, possible values:
+# 0: reserved
+# 1: Aeroplane
+# 2: Helicopter or Multirotor
+# 3: Gyroplane
+# 4: Hybrid Lift
+# 5: Ornithopter
+# 6: Glider
+# 7: Kite
+# 8: Free Balloon
+# 9: Captive Balloon
+# 10: Airship
+# 11: Free Fall/Parachute
+# 12: Rocket
+# 13: Tethered Powered Aircraft
+# 14: Ground Obstacle
+# 15: Other
+define OPENDRONEID_UA_TYPE 1
+
 # enable and enforce OpenDroneID
 define AP_OPENDRONEID_ENABLED 1
-
-
