@@ -152,7 +152,7 @@ bool AP_ShallowAvoid::update(const Location &current_loc, const Location& origin
     
     // Push back sensor data into dequeue
     const bool sensor_healthy = (rangefinder->status_orient(ROTATION_PITCH_270) == RangeFinder::Status::Good);
-    const float water_depth_m = rangefinder->distance_orient(ROTATION_PITCH_270,true);
+    const float water_depth_m = rangefinder->distance_orient(ROTATION_PITCH_270);
     const float speed = AP::ahrs().groundspeed();
     const float sample_dist = (water_depth_m < _min_water_depth) ? OA_SHALLOW_SAMP_DIST_MIN : _sample_distance;
     std::size_t nw = MAX(sample_dist / (speed * dt), _sample_num_min);
