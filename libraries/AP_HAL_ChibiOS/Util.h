@@ -89,6 +89,7 @@ public:
 #if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
     // save/load key persistent parameters in bootloader sector
     bool load_persistent_params(ExpandingString &str) const override;
+    bool get_persistent_param_by_name(const char *name, char* value, size_t& len) const override;
 #endif
 #if HAL_UART_STATS_ENABLED
     // request information on uart I/O
