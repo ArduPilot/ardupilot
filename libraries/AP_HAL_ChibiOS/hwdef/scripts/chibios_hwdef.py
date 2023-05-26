@@ -929,11 +929,14 @@ class ChibiOSHWDef(object):
                 f.write('#define STM32_OTG2_IS_OTG1                  FALSE\n')
             f.write('#define HAL_USE_USB TRUE\n')
             f.write('#define HAL_USE_SERIAL_USB TRUE\n')
+            f.write('#define STM32_USB_HS                       FALSE\n')
         if 'OTG2' in self.bytype:
             f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
+            f.write('#define STM32_USB_HS                       FALSE\n')
         if 'OTG_HS' in self.bytype:
             f.write('#define STM32_OTG2_IS_OTG1                  FALSE\n')
             f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
+            f.write('#define STM32_USB_HS                        TRUE\n')
             f.write('#define HAL_USE_USB TRUE\n')
             f.write('#define HAL_USE_SERIAL_USB TRUE\n')
             f.write('#define BOARD_OTG2_USES_ULPI\n')
