@@ -63,6 +63,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+AR_AttitudeControl *AR_AttitudeControl::_singleton;
+
 const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
     // @Param: _STR_RAT_P
@@ -471,7 +473,8 @@ AR_AttitudeControl::AR_AttitudeControl() :
     _throttle_speed_pid(AR_ATTCONTROL_THR_SPEED_P, AR_ATTCONTROL_THR_SPEED_I, AR_ATTCONTROL_THR_SPEED_D, 0.0f, AR_ATTCONTROL_THR_SPEED_IMAX, 0.0f, AR_ATTCONTROL_THR_SPEED_FILT, 0.0f),
     _pitch_to_throttle_pid(AR_ATTCONTROL_PITCH_THR_P, AR_ATTCONTROL_PITCH_THR_I, AR_ATTCONTROL_PITCH_THR_D, 0.0f, AR_ATTCONTROL_PITCH_THR_IMAX, 0.0f, AR_ATTCONTROL_PITCH_THR_FILT, 0.0f),
     _sailboat_heel_pid(AR_ATTCONTROL_HEEL_SAIL_P, AR_ATTCONTROL_HEEL_SAIL_I, AR_ATTCONTROL_HEEL_SAIL_D, 0.0f, AR_ATTCONTROL_HEEL_SAIL_IMAX, 0.0f, AR_ATTCONTROL_HEEL_SAIL_FILT, 0.0f)
-    {
+{
+    _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -860,6 +863,13 @@ float AR_AttitudeControl::get_sail_out_from_heel(float desired_heel, float dt)
 
     // constrain and return final output
     return (ff + p + i + d) * -1.0f;
+}
+
+// get the slew rate value for speed and steering for oscillation detection in lua scripts
+void AR_AttitudeControl::get_srate(float &steering_srate, float &speed_srate)
+{
+    steering_srate = get_steering_rate_pid().get_pid_info().slew_rate;
+    speed_srate = _throttle_speed_pid_info.slew_rate;
 }
 
 // get forward speed in m/s (earth-frame horizontal velocity but only along vehicle x-axis).  returns true on success
