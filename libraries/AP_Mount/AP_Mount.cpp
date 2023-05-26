@@ -61,71 +61,76 @@ void AP_Mount::init()
 
     // create each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
-        Type mount_type = get_mount_type(instance);
-
-        // check for servo mounts
-        if (mount_type == Type::Servo) {
+        switch (get_mount_type(instance)) {
+        case Type::None:
+            break;
 #if HAL_MOUNT_SERVO_ENABLED
+        case Type::Servo:
             _backends[instance] = new AP_Mount_Servo(*this, _params[instance], true, instance);
             _num_instances++;
+            break;
 #endif
-
 #if HAL_SOLO_GIMBAL_ENABLED
-        // check for Solo mounts
-        } else if (mount_type == Type::SoloGimbal) {
+        case Type::SoloGimbal:
             _backends[instance] = new AP_Mount_SoloGimbal(*this, _params[instance], instance);
             _num_instances++;
+            break;
 #endif // HAL_SOLO_GIMBAL_ENABLED
 
 #if HAL_MOUNT_ALEXMOS_ENABLED
-        // check for Alexmos mounts
-        } else if (mount_type == Type::Alexmos) {
+        case Type::Alexmos:
             _backends[instance] = new AP_Mount_Alexmos(*this, _params[instance], instance);
             _num_instances++;
+            break;
 #endif
 
 #if HAL_MOUNT_STORM32MAVLINK_ENABLED
         // check for SToRM32 mounts using MAVLink protocol
-        } else if (mount_type == Type::SToRM32) {
+        case Type::SToRM32:
             _backends[instance] = new AP_Mount_SToRM32(*this, _params[instance], instance);
             _num_instances++;
+            break;
 #endif
 
 #if HAL_MOUNT_STORM32SERIAL_ENABLED
         // check for SToRM32 mounts using serial protocol
-        } else if (mount_type == Type::SToRM32_serial) {
+        case Type::SToRM32_serial:
             _backends[instance] = new AP_Mount_SToRM32_serial(*this, _params[instance], instance);
             _num_instances++;
+            break;
 #endif
 
 #if HAL_MOUNT_GREMSY_ENABLED
         // check for Gremsy mounts
-        } else if (mount_type == Type::Gremsy) {
+        case Type::Gremsy:
             _backends[instance] = new AP_Mount_Gremsy(*this, _params[instance], instance);
             _num_instances++;
+            break;
 #endif // HAL_MOUNT_GREMSY_ENABLED
 
 #if HAL_MOUNT_SERVO_ENABLED
         // check for BrushlessPWM mounts (uses Servo backend)
-        } else if (mount_type == Type::BrushlessPWM) {
+        case Type::BrushlessPWM:
             _backends[instance] = new AP_Mount_Servo(*this, _params[instance], false, instance);
             _num_instances++;
+            break;
 #endif
 
 #if HAL_MOUNT_SIYI_ENABLED
         // check for Siyi gimbal
-        } else if (mount_type == Type::Siyi) {
+        case Type::Siyi:
             _backends[instance] = new AP_Mount_Siyi(*this, _params[instance], instance);
             _num_instances++;
+            break;
 #endif // HAL_MOUNT_SIYI_ENABLED
 
 #if HAL_MOUNT_SCRIPTING_ENABLED
         // check for Scripting gimbal
-        } else if (mount_type == Type::Scripting) {
+        case Type::Scripting:
             _backends[instance] = new AP_Mount_Scripting(*this, _params[instance], instance);
             _num_instances++;
+            break;
 #endif // HAL_MOUNT_SCRIPTING_ENABLED
-
         }
 
         // init new instance

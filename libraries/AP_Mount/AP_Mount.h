@@ -76,15 +76,33 @@ public:
     // Enums
     enum class Type {
         None = 0,            /// no mount
+#if HAL_MOUNT_SERVO_ENABLED
         Servo = 1,           /// servo controlled mount
+#endif
+#if HAL_SOLO_GIMBAL_ENABLED
         SoloGimbal = 2,      /// Solo's gimbal
+#endif
+#if HAL_MOUNT_ALEXMOS_ENABLED
         Alexmos = 3,         /// Alexmos mount
+#endif
+#if HAL_MOUNT_STORM32MAVLINK_ENABLED
         SToRM32 = 4,         /// SToRM32 mount using MAVLink protocol
+#endif
+#if HAL_MOUNT_STORM32SERIAL_ENABLED
         SToRM32_serial = 5,  /// SToRM32 mount using custom serial protocol
+#endif
+#if HAL_MOUNT_GREMSY_ENABLED
         Gremsy = 6,          /// Gremsy gimbal using MAVLink v2 Gimbal protocol
+#endif
+#if HAL_MOUNT_SERVO_ENABLED
         BrushlessPWM = 7,    /// Brushless (stabilized) gimbal using PWM protocol
+#endif
+#if HAL_MOUNT_SIYI_ENABLED
         Siyi = 8,            /// Siyi gimbal using custom serial protocol
+#endif
+#if HAL_MOUNT_SCRIPTING_ENABLED
         Scripting = 9,       /// Scripting gimbal driver
+#endif
     };
 
     // init - detect and initialise all mounts
