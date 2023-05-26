@@ -43,6 +43,81 @@ TERRAIN_SPACING = Parameter("TERRAIN_SPACING")
 
 -- local variables and definitions
 local last_rc_switch_pos = 0            -- last known rc switch position.  Used to detect change in RC switch position
+local success_count = 0                 -- count of the number of POI calculations (sent to GCS in CAMERA_FEEDBACK message)
+
+-- mavlink message definition
+-- initialise mavlink rx with number of messages, and buffer depth
+mavlink.init(1, 10)
+local messages = {}
+messages[180] = { -- CAMERA_FEEDBACK
+             { "time_usec", "<I8" },
+             { "lat", "<i4" },
+             { "lng", "<i4" },
+             { "alt_msl", "<f" },
+             { "alt_rel", "<f" },
+             { "roll", "<f" },
+             { "pitch", "<f" },
+             { "yaw", "<f" },
+             { "foc_len", "<f" },
+             { "img_idx", "<I2" },
+             { "target_system", "<B" },
+             { "cam_idx", "<B" },
+             { "flags", "<B" },
+             { "completed_captures", "<I2" },
+             }
+
+function encode(msgid, message, messages_array)
+  local message_map = messages_array[msgid]
+  if not message_map then
+    -- we don't know how to encode this message, bail on it
+    error("Unknown MAVLink message " .. msgid)
+  end
+
+  local packString = "<"
+  local packedTable = {}                  
+  local packedIndex = 1
+  for i,v in ipairs(message_map) do
+    if v[3] then
+      packString = (packString .. string.rep(string.sub(v[2], 2), v[3]))
+      for j = 1, v[3] do
+        packedTable[packedIndex] = message[message_map[i][1]][j]
+        packedIndex = packedIndex + 1
+      end
+    else
+      packString = (packString .. string.sub(v[2], 2))
+      packedTable[packedIndex] = message[message_map[i][1]]
+      packedIndex = packedIndex + 1
+    end
+  end
+
+  return string.pack(packString, table.unpack(packedTable))
+end
+
+-- send CAMERA_FEEDBACK message to GCS
+function send_camera_feedback(lat_degE7, lon_degE7, alt_msl_m, alt_rel_m, roll_deg, pitch_deg, yaw_deg, foc_len_mm, feedback_flags, captures_count)
+  -- prepare camera feedback msg
+  local camera_feedback_msg = {
+      time_usec = micros():toint(),
+      target_system = 0,
+      cam_idx = 0,
+      img_idx = 1,
+      lat = lat_degE7,
+      lng = lon_degE7,
+      alt_msl = alt_msl_m,
+      alt_rel = alt_rel_m,
+      roll = roll_deg,
+      pitch = pitch_deg,
+      yaw = yaw_deg,
+      foc_len = foc_len_mm,
+      flags = feedback_flags,
+      completed_captures = captures_count
+  }
+
+  -- send camera feedback msg
+  local encoded_msg = encode(180, camera_feedback_msg, messages)
+  mavlink.send_chan(0, 180, encoded_msg)
+  mavlink.send_chan(1, 180, encoded_msg)
+end
 
 -- helper functions
 function wrap_360(angle_deg)
@@ -180,6 +255,10 @@ function update()
     local poi_loc = prev_test_loc:copy()
     poi_loc:offset_bearing_and_pitch(mount_yaw_ef_deg, mount_pitch_deg, dist_interp_m)
     gcs:send_text(MAV_SEVERITY.INFO, string.format("POI %.7f, %.7f, %.2f (asml)", poi_loc:lat()/10000000.0, poi_loc:lng()/10000000.0, poi_loc:alt() * 0.01))
+
+    -- send feedback to GCS so it can display icon on map
+    success_count = success_count + 1
+    send_camera_feedback(poi_loc:lat(), poi_loc:lng(), poi_loc:alt(), poi_loc:alt(), 0, 0, 0, 0, 0, success_count)
   end
 
   return update, UPDATE_INTERVAL_MS
