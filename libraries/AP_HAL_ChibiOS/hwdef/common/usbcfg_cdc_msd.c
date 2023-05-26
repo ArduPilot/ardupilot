@@ -27,7 +27,11 @@
 /*
  * must be 64 for full speed and 512 for high speed
  */
+#if STM32_USB_HS
 #define USB_MSD_EP_SIZE               512U
+#else
+#define USB_MSD_EP_SIZE               64U
+#endif
 #define USB_DATA_REQUEST_EP           2
 #define USB_DATA_AVAILABLE_EP         2
 #define USB_INTERRUPT_REQUEST_EP      3
