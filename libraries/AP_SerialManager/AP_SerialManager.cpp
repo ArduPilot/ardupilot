@@ -27,6 +27,10 @@
 #include "AP_SerialManager.h"
 #include <GCS_MAVLink/GCS.h>
 
+#include <stdio.h>
+#include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Networking/AP_Networking_Serial.h>
+
 extern const AP_HAL::HAL& hal;
 
 #ifndef DEFAULT_SERIAL0_PROTOCOL
@@ -126,8 +130,43 @@ extern const AP_HAL::HAL& hal;
 #define DEFAULT_SERIAL9_OPTIONS 0
 #endif
 
+#ifndef SERIALMANAGER_NUM_EXT_PORTS
+#define SERIALMANAGER_NUM_EXT_PORTS 6
+#endif
+
+#define HAL_SERIALA_PHY_TYPE -1
+#define HAL_SERIALB_PHY_TYPE -1
+#define HAL_SERIALC_PHY_TYPE -1
+#define HAL_SERIALD_PHY_TYPE -1
+#define HAL_SERIALE_PHY_TYPE -1
+#define HAL_SERIALF_PHY_TYPE -1
+
+#ifndef HAL_SERIAL_EXT_EN
+#define HAL_SERIAL_EXT_EN 0
+#endif
+#ifndef HAL_SERIALA_PHY_TYPE
+#define HAL_SERIALA_PHY_TYPE -1
+#endif
+#ifndef HAL_SERIALB_PHY_TYPE
+#define HAL_SERIALB_PHY_TYPE -1
+#endif
+#ifndef HAL_SERIALC_PHY_TYPE
+#define HAL_SERIALC_PHY_TYPE -1
+#endif
+#ifndef HAL_SERIALD_PHY_TYPE
+#define HAL_SERIALD_PHY_TYPE -1
+#endif
+#ifndef HAL_SERIALE_PHY_TYPE
+#define HAL_SERIALE_PHY_TYPE -1
+#endif
+#ifndef HAL_SERIALF_PHY_TYPE
+#define HAL_SERIALF_PHY_TYPE -1
+#endif
+
+
+
 const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
-#if SERIALMANAGER_NUM_PORTS > 0
+#if SERIALMANAGER_NUM_UART_PORTS > 0
     // @Param: 0_BAUD
     // @DisplayName: Serial0 baud rate
     // @Description: The baud rate used on the USB console. Most stm32-based boards can support rates of up to 1500. If you setup a rate you cannot support and then can't connect to your board you should load a firmware from a different vehicle type. That will reset all your parameters to defaults.
@@ -144,11 +183,11 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPINFO("0_PROTOCOL",  11, AP_SerialManager, state[0].protocol, SerialProtocol_MAVLink2),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 1
+#if SERIALMANAGER_NUM_UART_PORTS > 1
     // @Param: 1_PROTOCOL
     // @DisplayName: Telem1 protocol selection
     // @Description: Control what protocol to use on the Telem1 port. Note that the Frsky options require external converter hardware. See the wiki for details.
-    // @Values: -1:None, 1:MAVLink1, 2:MAVLink2, 3:Frsky D, 4:Frsky SPort, 5:GPS, 7:Alexmos Gimbal Serial, 8:Gimbal, 9:Rangefinder, 10:FrSky SPort Passthrough (OpenTX), 11:Lidar360, 13:Beacon, 14:Volz servo out, 15:SBus servo out, 16:ESC Telemetry, 17:Devo Telemetry, 18:OpticalFlow, 19:RobotisServo, 20:NMEA Output, 21:WindVane, 22:SLCAN, 23:RCIN, 24:EFI Serial, 25:LTM, 26:RunCam, 27:HottTelem, 28:Scripting, 29:Crossfire VTX, 30:Generator, 31:Winch, 32:MSP, 33:DJI FPV, 34:AirSpeed, 35:ADSB, 36:AHRS, 37:SmartAudio, 38:FETtecOneWire, 39:Torqeedo, 40:AIS, 41:CoDevESC, 42:DisplayPort, 43:MAVLink High Latency, 44:IRC Tramp
+    // @Values: -1:None, 1:MAVLink1, 2:MAVLink2, 3:Frsky D, 4:Frsky SPort, 5:GPS, 7:Alexmos Gimbal Serial, 8:SToRM32 Gimbal Serial, 9:Rangefinder, 10:FrSky SPort Passthrough (OpenTX), 11:Lidar360, 13:Beacon, 14:Volz servo out, 15:SBus servo out, 16:ESC Telemetry, 17:Devo Telemetry, 18:OpticalFlow, 19:RobotisServo, 20:NMEA Output, 21:WindVane, 22:SLCAN, 23:RCIN, 24:EFI Serial, 25:LTM, 26:RunCam, 27:HottTelem, 28:Scripting, 29:Crossfire VTX, 30:Generator, 31:Winch, 32:MSP, 33:DJI FPV, 34:AirSpeed, 35:ADSB, 36:AHRS, 37:SmartAudio, 38:FETtecOneWire, 39:Torqeedo, 40:AIS, 41:CoDevESC, 42:DisplayPort, 43:MAVLink High Latency, 44:IRC Tramp
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("1_PROTOCOL",  1, AP_SerialManager, state[1].protocol, DEFAULT_SERIAL1_PROTOCOL),
@@ -161,7 +200,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPINFO("1_BAUD", 2, AP_SerialManager, state[1].baud, DEFAULT_SERIAL1_BAUD),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 2
+#if SERIALMANAGER_NUM_UART_PORTS > 2
     // @Param: 2_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     // @DisplayName: Telemetry 2 protocol selection
@@ -175,7 +214,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPINFO("2_BAUD", 4, AP_SerialManager, state[2].baud, DEFAULT_SERIAL2_BAUD),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 3
+#if SERIALMANAGER_NUM_UART_PORTS > 3
     // @Param: 3_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     // @DisplayName: Serial 3 (GPS) protocol selection
@@ -189,7 +228,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPINFO("3_BAUD", 6, AP_SerialManager, state[3].baud, DEFAULT_SERIAL3_BAUD),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 4
+#if SERIALMANAGER_NUM_UART_PORTS > 4
     // @Param: 4_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     // @DisplayName: Serial4 protocol selection
@@ -203,7 +242,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPINFO("4_BAUD", 8, AP_SerialManager, state[4].baud, DEFAULT_SERIAL4_BAUD),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 5
+#if SERIALMANAGER_NUM_UART_PORTS > 5
     // @Param: 5_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     // @DisplayName: Serial5 protocol selection
@@ -219,7 +258,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
 
     // index 11 used by 0_PROTOCOL
         
-#if SERIALMANAGER_NUM_PORTS > 6
+#if SERIALMANAGER_NUM_UART_PORTS > 6
     // @Param: 6_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     // @DisplayName: Serial6 protocol selection
@@ -233,7 +272,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPINFO("6_BAUD", 13, AP_SerialManager, state[6].baud, DEFAULT_SERIAL6_BAUD),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 1
+#if SERIALMANAGER_NUM_UART_PORTS > 1
     // @Param: 1_OPTIONS
     // @DisplayName: Telem1 options
     // @Description: Control over UART options. The InvertRX option controls invert of the receive pin. The InvertTX option controls invert of the transmit pin. The HalfDuplex option controls half-duplex (onewire) mode, where both transmit and receive is done on the transmit wire. The Swap option allows the RX and TX pins to be swapped on STM32F7 based boards.
@@ -243,35 +282,35 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPINFO("1_OPTIONS",  14, AP_SerialManager, state[1].options, DEFAULT_SERIAL1_OPTIONS),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 2
+#if SERIALMANAGER_NUM_UART_PORTS > 2
     // @Param: 2_OPTIONS
     // @CopyFieldsFrom: SERIAL1_OPTIONS
     // @DisplayName: Telem2 options
     AP_GROUPINFO("2_OPTIONS",  15, AP_SerialManager, state[2].options, DEFAULT_SERIAL2_OPTIONS),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 3
+#if SERIALMANAGER_NUM_UART_PORTS > 3
     // @Param: 3_OPTIONS
     // @CopyFieldsFrom: SERIAL1_OPTIONS
     // @DisplayName: Serial3 options
     AP_GROUPINFO("3_OPTIONS",  16, AP_SerialManager, state[3].options, DEFAULT_SERIAL3_OPTIONS),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 4
+#if SERIALMANAGER_NUM_UART_PORTS > 4
     // @Param: 4_OPTIONS
     // @CopyFieldsFrom: SERIAL1_OPTIONS
     // @DisplayName: Serial4 options
     AP_GROUPINFO("4_OPTIONS",  17, AP_SerialManager, state[4].options, DEFAULT_SERIAL4_OPTIONS),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 5
+#if SERIALMANAGER_NUM_UART_PORTS > 5
     // @Param: 5_OPTIONS
     // @CopyFieldsFrom: SERIAL1_OPTIONS
     // @DisplayName: Serial5 options
     AP_GROUPINFO("5_OPTIONS",  18, AP_SerialManager, state[5].options, DEFAULT_SERIAL5_OPTIONS),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 6
+#if SERIALMANAGER_NUM_UART_PORTS > 6
     // @Param: 6_OPTIONS
     // @CopyFieldsFrom: SERIAL1_OPTIONS
     // @DisplayName: Serial6 options
@@ -300,7 +339,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_PASSTIMO",  22, AP_SerialManager, passthru_timeout, 15),
 
-#if SERIALMANAGER_NUM_PORTS > 7
+#if SERIALMANAGER_NUM_UART_PORTS > 7
     // @Param: 7_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     // @DisplayName: Serial7 protocol selection
@@ -319,7 +358,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPINFO("7_OPTIONS",  25, AP_SerialManager, state[7].options, 0),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 8
+#if SERIALMANAGER_NUM_UART_PORTS > 8
     // @Param: 8_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     // @DisplayName: Serial8 protocol selection
@@ -338,7 +377,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPINFO("8_OPTIONS",  28, AP_SerialManager, state[8].options, 0),
 #endif
 
-#if SERIALMANAGER_NUM_PORTS > 9
+#if SERIALMANAGER_NUM_UART_PORTS > 9
     // @Param: 9_PROTOCOL
     // @CopyFieldsFrom: SERIAL1_PROTOCOL
     // @DisplayName: Serial9 protocol selection
@@ -357,8 +396,97 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     AP_GROUPINFO("9_OPTIONS",  31, AP_SerialManager, state[9].options, DEFAULT_SERIAL9_OPTIONS),
 #endif
 
+#if AP_SERIAL_EXTENSION_ENABLED
+    // @Param: _EXT_EN
+    // @DisplayName: Enable extended serials A to F
+    // @Description: This allows for addition for 6 more serial ports, A to F
+    // @User: Advanced
+    // @Values: 0:Disabled,1:Enabled
+    AP_GROUPINFO_FLAGS("_EXT_EN", 32, AP_SerialManager, enable_ext_serial, HAL_SERIAL_EXT_EN, AP_PARAM_FLAG_ENABLE),
+
+    // @Param: A_PHY_TYPE
+    // @DisplayName: SerialA physical type
+    // @Description: This allows for selection of physical type for serial port A
+    // @User: Advanced
+    // @Values: -1:Disable, 0:IP
+    AP_GROUPINFO("A_PHY_TYPE", 33, AP_SerialManager, ext_state[0].phy_type, HAL_SERIALA_PHY_TYPE),    
+
+    // @Group: A_
+    // @Path: AP_SerialManager_IP_Params.cpp
+    AP_SUBGROUPVARPTR(ext_state[0].params, "A_", 34, AP_SerialManager, ext_state_var_info[0]),
+
+#if SERIALMANAGER_NUM_EXT_PORTS > 1
+    // @Param: B_PHY_TYPE
+    // @DisplayName: SerialB physical type
+    // @Description: This allows for selection of physical type for serial port B
+    // @User: Advanced
+    // @Values: -1:Disable, 0:IP
+    AP_GROUPINFO("B_PHY_TYPE", 35, AP_SerialManager, ext_state[1].phy_type, HAL_SERIALB_PHY_TYPE),
+
+    // @Group: B_
+    // @Path: AP_SerialManager_IP_Params.cpp
+    AP_SUBGROUPVARPTR(ext_state[1].params, "B_", 36, AP_SerialManager, ext_state_var_info[1]),
+#endif
+
+#if SERIALMANAGER_NUM_EXT_PORTS > 2
+    // @Param: C_PHY_TYPE
+    // @DisplayName: SerialC physical type
+    // @Description: This allows for selection of physical type for serial port C
+    // @User: Advanced
+    // @Values: -1:Disable, 0:IP
+    AP_GROUPINFO("C_PHY_TYPE", 37, AP_SerialManager, ext_state[2].phy_type, HAL_SERIALC_PHY_TYPE),
+
+    // @Group: C_
+    // @Path: AP_SerialManager_IP_Params.cpp
+    AP_SUBGROUPVARPTR(ext_state[2].params, "C_", 38, AP_SerialManager, ext_state_var_info[2]),
+#endif
+
+#if SERIALMANAGER_NUM_EXT_PORTS > 3
+    // @Param: D_PHY_TYPE
+    // @DisplayName: SerialD physical type
+    // @Description: This allows for selection of physical type for serial port D
+    // @User: Advanced
+    // @Values: -1:Disable, 0:IP
+    AP_GROUPINFO("D_PHY_TYPE", 39, AP_SerialManager, ext_state[3].phy_type, HAL_SERIALD_PHY_TYPE),
+
+    // @Group: D_
+    // @Path: AP_SerialManager_IP_Params.cpp
+    AP_SUBGROUPVARPTR(ext_state[3].params, "D_", 40, AP_SerialManager, ext_state_var_info[3]),
+#endif
+
+#if SERIALMANAGER_NUM_EXT_PORTS > 4
+    // @Param: E_PHY_TYPE
+    // @DisplayName: SerialE physical type
+    // @Description: This allows for selection of physical type for serial port E
+    // @User: Advanced
+    // @Values: -1:Disable, 0:IP
+    AP_GROUPINFO("E_PHY_TYPE", 41, AP_SerialManager, ext_state[4].phy_type, HAL_SERIALE_PHY_TYPE),
+
+    // @Group: E_
+    // @Path: AP_SerialManager_IP_Params.cpp
+    AP_SUBGROUPVARPTR(ext_state[4].params, "E_", 42, AP_SerialManager, ext_state_var_info[4]),
+#endif
+
+#if SERIALMANAGER_NUM_EXT_PORTS > 5
+    // @Param: F_PHY_TYPE
+    // @DisplayName: SerialF physical type
+    // @Description: This allows for selection of physical type for serial port F
+    // @User: Advanced
+    // @Values: -1:Disable, 0:IP
+    AP_GROUPINFO("F_PHY_TYPE", 43, AP_SerialManager, ext_state[5].phy_type, HAL_SERIALF_PHY_TYPE),
+
+    // @Group: F_
+    // @Path: AP_SerialManager_IP_Params.cpp
+    AP_SUBGROUPVARPTR(ext_state[5].params, "F_", 44, AP_SerialManager, ext_state_var_info[5]),
+#endif
+
+#endif // AP_SERIAL_EXTENSION_ENABLED
     AP_GROUPEND
 };
+
+#if AP_SERIAL_EXTENSION_ENABLED
+const struct AP_Param::GroupInfo *AP_SerialManager::ext_state_var_info[SERIALMANAGER_MAX_EXT_PORTS] = {};
+#endif
 
 // singleton instance
 AP_SerialManager *AP_SerialManager::_singleton;
@@ -375,7 +503,7 @@ AP_SerialManager::AP_SerialManager()
 void AP_SerialManager::init_console()
 {
     // initialise console immediately at default size and baud
-#if SERIALMANAGER_NUM_PORTS > 0
+#if SERIALMANAGER_NUM_UART_PORTS > 0
     if (!init_console_done) {
         init_console_done = true;
         hal.serial(0)->begin(DEFAULT_SERIAL0_BAUD,
@@ -388,6 +516,26 @@ void AP_SerialManager::init_console()
 // init - // init - initialise serial ports
 void AP_SerialManager::init()
 {
+#if AP_SERIAL_EXTENSION_ENABLED
+    if (enable_ext_serial) {
+        for (uint8_t i=0; i<SERIALMANAGER_MAX_EXT_PORTS; i++) {
+#if AP_NETWORKING_ENABLED
+            if (ext_state[i].phy_type == (int8_t)SerialPhysical_IP) {
+                ext_state[i].params = new AP_SerialManager::SerialExtState::IP_Params();
+                if (ext_state[i].params == nullptr) {
+                    AP_BoardConfig::allocation_error("AP_SerialManager::init()failed to allocate ext_state[%u].params", i);
+                }
+                AP_SerialManager::ext_state_var_info[i] = ext_state[i].params->get_var_info();
+                AP_Param::load_object_from_eeprom(ext_state[i].params, AP_SerialManager::ext_state_var_info[i]);
+                // set default port ids
+                ext_state[i].ip_params().port.set_default(14550+i);
+            }
+#endif
+        }
+        // param count could have changed
+        AP_Param::invalidate_count();
+    }
+#endif
     // always reset passthru port2 on boot
     passthru_port2.set_and_save_ifchanged(-1);
 
@@ -405,13 +553,28 @@ void AP_SerialManager::init()
 
     init_console();
 
-    // initialise serial ports
-    for (uint8_t i=1; i<SERIALMANAGER_NUM_PORTS; i++) {
+#if AP_SERIAL_EXTENSION_ENABLED && AP_NETWORKING_ENABLED
+    // initialise ext serial ports
+    for (uint8_t i = 0; i < SERIALMANAGER_MAX_EXT_PORTS; i++) {
+        if (!ext_state[i].initialised()) {
+            continue;
+        }
+        if (ext_state[i].phy_type == (int8_t)SerialPhysical_IP) {
+            ext_uart[i] = new AP_Networking_Serial(ext_state[i].ip_params());
+            if (ext_uart[i] == nullptr) {
+                AP_BoardConfig::allocation_error("AP_SerialManager::init() failed to allocate ext_uart[%u]", i);
+            }
+        }
+    }
+#endif
+
+    // initialise serial ports protocols
+    for (uint8_t i=1; i<SERIALMANAGER_MAX_PORTS; i++) {
         auto *uart = hal.serial(i);
 
         if (uart != nullptr) {
             set_options(i);
-            switch (state[i].protocol) {
+            switch (serial_state(i).get_protocol()) {
                 case SerialProtocol_None:
 #if HAL_GCS_ENABLED
                     // disable RX and TX pins in case they are shared
@@ -426,30 +589,30 @@ void AP_SerialManager::init()
                 case SerialProtocol_MAVLink:
                 case SerialProtocol_MAVLink2:
                 case SerialProtocol_MAVLinkHL:
-                    uart->begin(state[i].baudrate(),
+                    uart->begin(serial_state(i).baudrate(),
                                          AP_SERIALMANAGER_MAVLINK_BUFSIZE_RX,
                                          AP_SERIALMANAGER_MAVLINK_BUFSIZE_TX);
                     break;
                 case SerialProtocol_FrSky_D:
                     // Note baudrate is hardcoded to 9600
-                    state[i].baud.set_and_default(AP_SERIALMANAGER_FRSKY_D_BAUD/1000); // update baud param in case user looks at it
+                    serial_state(i).set_and_default_baud(AP_SERIALMANAGER_FRSKY_D_BAUD/1000); // update baud param in case user looks at it
                     // begin is handled by AP_Frsky_telem library
                     break;
                 case SerialProtocol_FrSky_SPort:
                 case SerialProtocol_FrSky_SPort_Passthrough:
                     // Note baudrate is hardcoded to 57600
-                    state[i].baud.set_and_default(AP_SERIALMANAGER_FRSKY_SPORT_BAUD/1000); // update baud param in case user looks at it
+                    serial_state(i).set_and_default_baud(AP_SERIALMANAGER_FRSKY_SPORT_BAUD/1000); // update baud param in case user looks at it
                     // begin is handled by AP_Frsky_telem library
                     break;
                 case SerialProtocol_GPS:
                 case SerialProtocol_GPS2:
-                    uart->begin(state[i].baudrate(),
+                    uart->begin(serial_state(i).baudrate(),
                                          AP_SERIALMANAGER_GPS_BUFSIZE_RX,
                                          AP_SERIALMANAGER_GPS_BUFSIZE_TX);
                     break;
                 case SerialProtocol_AlexMos:
                     // Note baudrate is hardcoded to 115200
-                    state[i].baud.set_and_default(AP_SERIALMANAGER_ALEXMOS_BAUD / 1000);   // update baud param in case user looks at it
+                    serial_state(i).set_and_default_baud(AP_SERIALMANAGER_ALEXMOS_BAUD / 1000);   // update baud param in case user looks at it
                     uart->begin(AP_SERIALMANAGER_ALEXMOS_BAUD,
                                          AP_SERIALMANAGER_ALEXMOS_BUFSIZE_RX,
                                          AP_SERIALMANAGER_ALEXMOS_BUFSIZE_TX);
@@ -462,20 +625,20 @@ void AP_SerialManager::init()
                                          AP_SERIALMANAGER_GIMBAL_BUFSIZE_TX);
                     break;
                 case SerialProtocol_Aerotenna_USD1:
-                    state[i].protocol.set_and_save(SerialProtocol_Rangefinder);
+                    serial_state(i).set_and_save_protocol(SerialProtocol_Rangefinder);
                     break;
                 case SerialProtocol_Volz:
                                     // Note baudrate is hardcoded to 115200
-                                    state[i].baud.set_and_default(AP_SERIALMANAGER_VOLZ_BAUD);   // update baud param in case user looks at it
-                                    uart->begin(state[i].baudrate(),
+                                    serial_state(i).set_and_default_baud(AP_SERIALMANAGER_VOLZ_BAUD);   // update baud param in case user looks at it
+                                    uart->begin(serial_state(i).baudrate(),
                                     		AP_SERIALMANAGER_VOLZ_BUFSIZE_RX,
 											AP_SERIALMANAGER_VOLZ_BUFSIZE_TX);
                                     uart->set_unbuffered_writes(true);
                                     uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                                     break;
                 case SerialProtocol_Sbus1:
-                    state[i].baud.set_and_default(AP_SERIALMANAGER_SBUS1_BAUD / 1000);   // update baud param in case user looks at it
-                    uart->begin(state[i].baudrate(),
+                    serial_state(i).set_and_default_baud(AP_SERIALMANAGER_SBUS1_BAUD / 1000);   // update baud param in case user looks at it
+                    uart->begin(serial_state(i).baudrate(),
                                          AP_SERIALMANAGER_SBUS1_BUFSIZE_RX,
                                          AP_SERIALMANAGER_SBUS1_BUFSIZE_TX);
                     uart->configure_parity(2);    // enable even parity
@@ -486,13 +649,13 @@ void AP_SerialManager::init()
 
                 case SerialProtocol_ESCTelemetry:
                     // ESC telemetry protocol from BLHeli32 ESCs. Note that baudrate is hardcoded to 115200
-                    state[i].baud.set_and_default(115200 / 1000);
-                    uart->begin(state[i].baudrate(), 30, 30);
+                    serial_state(i).set_and_default_baud(115200 / 1000);
+                    uart->begin(serial_state(i).baudrate(), 30, 30);
                     uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                     break;
 
                 case SerialProtocol_Robotis:
-                    uart->begin(state[i].baudrate(),
+                    uart->begin(serial_state(i).baudrate(),
                                          AP_SERIALMANAGER_ROBOTIS_BUFSIZE_RX,
                                          AP_SERIALMANAGER_ROBOTIS_BUFSIZE_TX);
                     uart->set_unbuffered_writes(true);
@@ -500,7 +663,7 @@ void AP_SerialManager::init()
                     break;
 
                 case SerialProtocol_SLCAN:
-                    uart->begin(state[i].baudrate(),
+                    uart->begin(serial_state(i).baudrate(),
                                          AP_SERIALMANAGER_SLCAN_BUFSIZE_RX,
                                          AP_SERIALMANAGER_SLCAN_BUFSIZE_TX);
                     break;
@@ -515,8 +678,8 @@ void AP_SerialManager::init()
 #endif
                     
                 case SerialProtocol_EFI:
-                    state[i].baud.set_default(AP_SERIALMANAGER_EFI_MS_BAUD);
-                    uart->begin(state[i].baudrate(),
+                    serial_state(i).set_and_default_baud(AP_SERIALMANAGER_EFI_MS_BAUD);
+                    uart->begin(serial_state(i).baudrate(),
                                          AP_SERIALMANAGER_EFI_MS_BUFSIZE_RX,
                                          AP_SERIALMANAGER_EFI_MS_BUFSIZE_TX);
                     uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
@@ -529,8 +692,8 @@ void AP_SerialManager::init()
                 case SerialProtocol_DJI_FPV:
                 case SerialProtocol_MSP_DisplayPort:
                     // baudrate defaults to 115200
-                    state[i].baud.set_default(AP_SERIALMANAGER_MSP_BAUD/1000);
-                    uart->begin(state[i].baudrate(),
+                    serial_state(i).set_and_default_baud(AP_SERIALMANAGER_MSP_BAUD/1000);
+                    uart->begin(serial_state(i).baudrate(),
                                          AP_SERIALMANAGER_MSP_BUFSIZE_RX,
                                          AP_SERIALMANAGER_MSP_BUFSIZE_TX);
                     uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
@@ -538,29 +701,66 @@ void AP_SerialManager::init()
                     break;
 #endif
                 default:
-                    uart->begin(state[i].baudrate());
+                    uart->begin(serial_state(i).baudrate());
             }
         }
     }
 }
 
+AP_SerialManager::SerialState& AP_SerialManager::serial_state(uint8_t i)
+{
+    if (i < SERIALMANAGER_NUM_UART_PORTS) {
+        return state[i];
+    }
+#if AP_SERIAL_EXTENSION_ENABLED
+    if (i >= AP_HAL::HAL::num_serial && i < (AP_HAL::HAL::num_serial + SERIALMANAGER_MAX_EXT_PORTS)) {
+        if (!ext_state[i - AP_HAL::HAL::num_serial].initialised()) {
+            return unknown_state;
+        }
+        return ext_state[i - AP_HAL::HAL::num_serial];
+    }
+#endif
+    return unknown_state;
+}
 
-const AP_SerialManager::UARTState *AP_SerialManager::find_protocol_instance(enum SerialProtocol protocol, uint8_t instance) const
+const AP_SerialManager::SerialState& AP_SerialManager::serial_state(uint8_t i) const
+{
+    return const_cast<AP_SerialManager*>(this)->serial_state(i);
+}
+
+const AP_SerialManager::SerialState *AP_SerialManager::find_protocol_instance(enum SerialProtocol protocol, uint8_t instance) const
 {
     uint8_t found_instance = 0;
 
     // search for matching protocol
-    for(uint8_t i=0; i<SERIALMANAGER_NUM_PORTS; i++) {
-        if (protocol_match(protocol, (enum SerialProtocol)state[i].protocol.get())) {
+    for(uint8_t i=0; i<SERIALMANAGER_MAX_PORTS; i++) {
+        if (protocol_match(protocol, (enum SerialProtocol)(serial_state(i).get_protocol()))) {
             if (found_instance == instance) {
-                return &state[i];
+                return &serial_state(i);
             }
             found_instance++;
         }
     }
-
     // if we got this far we did not find the uart
     return nullptr;
+}
+
+int8_t AP_SerialManager::find_serial_state_index(const struct SerialState *_state) const
+{
+#if AP_SERIAL_EXTENSION_ENABLED
+    // check if state is in ext_state
+    if (_state >= &state[0] && _state < &state[SERIALMANAGER_NUM_UART_PORTS]) {
+        return uint8_t((UARTState*)_state - &state[0]);
+    }
+    else if (_state >= &ext_state[0] && _state < &ext_state[SERIALMANAGER_MAX_EXT_PORTS]) {
+        return uint8_t((SerialExtState*)_state - &ext_state[0]) + AP_HAL::HAL::num_serial;
+    } else {
+        // Bad stuff happened
+        return -1;
+    }
+#else
+    return (UARTState*)_state - &state[0];
+#endif
 }
 
 // find_serial - searches available serial ports for the first instance that allows the given protocol
@@ -568,16 +768,18 @@ const AP_SerialManager::UARTState *AP_SerialManager::find_protocol_instance(enum
 //  returns uart on success, nullptr if a serial port cannot be found
 AP_HAL::UARTDriver *AP_SerialManager::find_serial(enum SerialProtocol protocol, uint8_t instance) const
 {
-    const struct UARTState *_state = find_protocol_instance(protocol, instance);
+    const struct SerialState *_state = find_protocol_instance(protocol, instance);
     if (_state == nullptr) {
         return nullptr;
     }
-    const uint8_t serial_idx = _state - &state[0];
-
+    int8_t index = find_serial_state_index(_state);
+    if (index < 0) {
+        return nullptr;
+    }
     // set options before any user does begin()
-    AP_HAL::UARTDriver *port = hal.serial(serial_idx);
+    AP_HAL::UARTDriver *port = hal.serial(index);
     if (port) {
-        port->set_options(_state->options);
+        port->set_options(_state->get_options());
     }
     return port;
 }
@@ -593,7 +795,7 @@ bool AP_SerialManager::have_serial(enum SerialProtocol protocol, uint8_t instanc
 //  returns baudrate on success, 0 if a serial port cannot be found
 uint32_t AP_SerialManager::find_baudrate(enum SerialProtocol protocol, uint8_t instance) const
 {
-    const struct UARTState *_state = find_protocol_instance(protocol, instance);
+    const struct SerialState *_state = find_protocol_instance(protocol, instance);
     if (_state == nullptr) {
         return 0;
     }
@@ -603,17 +805,17 @@ uint32_t AP_SerialManager::find_baudrate(enum SerialProtocol protocol, uint8_t i
 // find_portnum - find port number (SERIALn index) for a protocol and instance, -1 for not found
 int8_t AP_SerialManager::find_portnum(enum SerialProtocol protocol, uint8_t instance) const
 {
-    const struct UARTState *_state = find_protocol_instance(protocol, instance);
+    const struct SerialState *_state = find_protocol_instance(protocol, instance);
     if (_state == nullptr) {
         return -1;
     }
-    return int8_t(_state - &state[0]);
+    return find_serial_state_index(_state);
 }
 
 // get_serial_by_id - gets serial by serial id
 AP_HAL::UARTDriver *AP_SerialManager::get_serial_by_id(uint8_t id)
 {
-    if (id < SERIALMANAGER_NUM_PORTS) {
+    if (id < SERIALMANAGER_MAX_PORTS) {
         return hal.serial(id);
     }
     return nullptr;
@@ -623,7 +825,7 @@ AP_HAL::UARTDriver *AP_SerialManager::get_serial_by_id(uint8_t id)
 void AP_SerialManager::set_blocking_writes_all(bool blocking)
 {
     // set block_writes for all initialised serial ports
-    for (uint8_t i=0; i<SERIALMANAGER_NUM_PORTS; i++) {
+    for (uint8_t i=0; i<SERIALMANAGER_MAX_PORTS; i++) {
         auto *uart = hal.serial(i);
         if (uart != nullptr) {
             uart->set_blocking_writes(blocking);
@@ -697,9 +899,9 @@ bool AP_SerialManager::protocol_match(enum SerialProtocol protocol1, enum Serial
 // setup any special options
 void AP_SerialManager::set_options(uint16_t i)
 {
-    struct UARTState &opt = state[i];
+    SerialState &opt = serial_state(i);
     // pass through to HAL
-    if (!hal.serial(i)->set_options(opt.options)) {
+    if (!hal.serial(i)->set_options(opt.get_options())) {
         DEV_PRINTF("Unable to setup options for Serial%u\n", i);
     }
 }
@@ -709,9 +911,9 @@ bool AP_SerialManager::get_passthru(AP_HAL::UARTDriver *&port1, AP_HAL::UARTDriv
                                     uint32_t &baud1, uint32_t &baud2) const
 {
     if (passthru_port2 < 0 ||
-        passthru_port2 >= SERIALMANAGER_NUM_PORTS ||
+        passthru_port2 >= SERIALMANAGER_MAX_PORTS ||
         passthru_port1 < 0 ||
-        passthru_port1 >= SERIALMANAGER_NUM_PORTS) {
+        passthru_port1 >= SERIALMANAGER_MAX_PORTS) {
         return false;
     }
     port1 = hal.serial(passthru_port1);
@@ -731,12 +933,86 @@ void AP_SerialManager::disable_passthru(void)
 // accessor for AP_Periph to set baudrate and type
 void AP_SerialManager::set_protocol_and_baud(uint8_t sernum, enum SerialProtocol protocol, uint32_t baudrate)
 {
-    if (sernum < SERIALMANAGER_NUM_PORTS) {
-        state[sernum].protocol.set(protocol);
-        state[sernum].baud.set(baudrate);
+    if (sernum < SERIALMANAGER_MAX_PORTS) {
+        serial_state(sernum).set_protocol(protocol);
+        serial_state(sernum).set_baud(baudrate);
     }
 }
 
+#if AP_SERIAL_EXTENSION_ENABLED
+uint8_t AP_SerialManager::get_num_phy_serials(SerialPhysical phy) const
+{
+    uint8_t num_ext_serials = 0;
+    for (uint8_t i=0; i<SERIALMANAGER_MAX_EXT_PORTS; i++) {
+        if (ext_state[i].phy_type == phy) {
+            num_ext_serials++;
+        }
+    }
+    return num_ext_serials;
+}
+
+AP_HAL::UARTDriver* AP_SerialManager::find_serial_by_phy(SerialPhysical phy, uint8_t index)
+{
+    uint8_t num_ext_serials = 0;
+    for (uint8_t i=0; i<SERIALMANAGER_MAX_EXT_PORTS; i++) {
+        if (ext_state[i].phy_type == phy) {
+            if (num_ext_serials == index) {
+                return hal.serial(i + AP_HAL::HAL::num_serial);
+            }
+            num_ext_serials++;
+        }
+    }
+    return nullptr;
+}
+
+bool AP_SerialManager::SerialExtState::option_enabled(uint16_t option) const {
+    return false;
+}
+
+// returns a baudrate such as 9600.  May map from a special
+// parameter value like "57" to "57600":
+uint32_t AP_SerialManager::SerialExtState::baudrate() const {
+    return 0;
+}
+
+AP_SerialManager::SerialProtocol AP_SerialManager::SerialExtState::get_protocol() const {
+    if (params == nullptr) {
+        return AP_SerialManager::SerialProtocol_None;
+    }
+
+    return AP_SerialManager::SerialProtocol_None;
+}
+
+uint16_t AP_SerialManager::SerialExtState::get_options() const {
+    return 0;    
+}
+
+void AP_SerialManager::SerialExtState::set_baud(uint32_t baud) {
+    return;
+}
+
+void AP_SerialManager::SerialExtState::set_protocol(enum SerialProtocol protocol) {
+    if (params == nullptr) {
+        return;
+    }
+#if AP_NETWORKING_ENABLED
+    if (phy_type == (int8_t)SerialPhysical_IP) {
+        ip_params().protocol.set(protocol);
+    }
+#endif
+}
+
+void AP_SerialManager::SerialExtState::set_and_save_protocol(enum SerialProtocol protocol) {
+    if (params == nullptr) {
+        return;
+    }
+#if AP_NETWORKING_ENABLED
+    if (phy_type == (int8_t)SerialPhysical_IP) {
+        ip_params().protocol.set_and_save(protocol);
+    }
+#endif
+}
+#endif // #if AP_SERIAL_EXTENSION_ENABLED
 
 namespace AP {
 

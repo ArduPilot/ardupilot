@@ -23,32 +23,40 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
+#include <AP_Networking/AP_Networking_Config.h>
+
+#ifndef AP_SERIAL_EXTENSION_ENABLED
+#define AP_SERIAL_EXTENSION_ENABLED AP_NETWORKING_ENABLED
+#endif
 
 #ifdef HAL_UART_NUM_SERIAL_PORTS
 #if HAL_UART_NUM_SERIAL_PORTS >= 4
-#define SERIALMANAGER_NUM_PORTS HAL_UART_NUM_SERIAL_PORTS
+#define SERIALMANAGER_NUM_UART_PORTS HAL_UART_NUM_SERIAL_PORTS
 #else
 // we need a minimum of 4 to allow for a GPS due to the odd ordering
 // of hal.uartB as SERIAL3
-#define SERIALMANAGER_NUM_PORTS 4
+#define SERIALMANAGER_NUM_UART_PORTS 4
 #endif
 #else
 // assume max 8 ports
-#define SERIALMANAGER_NUM_PORTS 8
+#define SERIALMANAGER_NUM_UART_PORTS 8
 #endif
+
+#define SERIALMANAGER_MAX_EXT_PORTS 6
 
 /*
   array size for state[]. This needs to be at least
-  SERIALMANAGER_NUM_PORTS, but we want it to be the same length on
+  SERIALMANAGER_NUM_UART_PORTS, but we want it to be the same length on
   similar boards to get the ccache efficiency up. This wastes a small
   amount of memory, but makes a huge difference to the build times
  */
-#if SERIALMANAGER_NUM_PORTS > 10 || SERIALMANAGER_NUM_PORTS < 5
-#define SERIALMANAGER_MAX_PORTS SERIALMANAGER_NUM_PORTS
+#if SERIALMANAGER_NUM_UART_PORTS > 10 || SERIALMANAGER_NUM_UART_PORTS < 5
+#define SERIALMANAGER_MAX_PORTS (AP_SERIAL_EXTENSION_ENABLED?(AP_HAL::HAL::num_serial + SERIALMANAGER_MAX_EXT_PORTS):SERIALMANAGER_NUM_UART_PORTS)
+#define SERIALMANAGER_MAX_UART_PORTS SERIALMANAGER_NUM_UART_PORTS
 #else
-#define SERIALMANAGER_MAX_PORTS 10
+#define SERIALMANAGER_MAX_PORTS (AP_SERIAL_EXTENSION_ENABLED?(AP_HAL::HAL::num_serial + SERIALMANAGER_MAX_EXT_PORTS):10)
+#define SERIALMANAGER_MAX_UART_PORTS 10
 #endif
-
 
  // console default baud rates and buffer sizes
 #ifdef DEFAULT_SERIAL0_BAUD
@@ -121,6 +129,13 @@ public:
 
     /* Do not allow copies */
     CLASS_NO_COPY(AP_SerialManager);
+
+    enum SerialPhysical {
+        SerialPhysical_Disable = -1,
+        SerialPhysical_USART = 0,
+        SerialPhysical_IP = 1,
+        SerialPhysical_DroneCAN = 2,
+    };
 
     enum SerialProtocol {
         SerialProtocol_None = -1,
@@ -222,19 +237,58 @@ public:
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
-    class UARTState {
+#if AP_SERIAL_EXTENSION_ENABLED
+    class SerialState {
+        public:
+            virtual bool option_enabled(uint16_t option) const { return false; }
+            virtual uint32_t baudrate() const { return 0; }
+            virtual AP_SerialManager::SerialProtocol get_protocol() const { return SerialProtocol_None; }
+            virtual uint16_t get_options() const { return 0; }
+            virtual SerialPhysical get_physical() const { return SerialPhysical_Disable; }
+            virtual void set_and_default_baud(uint32_t baud) { }
+            virtual void set_and_save_protocol(enum SerialProtocol protocol) { }
+            virtual void set_protocol(enum SerialProtocol protocol) { }
+            virtual void set_baud(uint32_t baud) {}
+    };
+
+    #define SERIALSTATE_OVERRIDE override
+    class UARTState : public SerialState {
+#else
+    #define SERIALSTATE_OVERRIDE
+    class SerialState;
+    typedef SerialState UARTState;
+    class SerialState {
+#endif
         friend class AP_SerialManager;
     public:
-        bool option_enabled(uint16_t option) const {
+        bool option_enabled(uint16_t option) const SERIALSTATE_OVERRIDE {
             return (options & option) == option;
         }
         // returns a baudrate such as 9600.  May map from a special
         // parameter value like "57" to "57600":
-        uint32_t baudrate() const {
+        uint32_t baudrate() const SERIALSTATE_OVERRIDE {
             return AP_SerialManager::map_baudrate(baud);
         }
-        AP_SerialManager::SerialProtocol get_protocol() const {
+        AP_SerialManager::SerialProtocol get_protocol() const SERIALSTATE_OVERRIDE {
             return AP_SerialManager::SerialProtocol(protocol.get());
+        }
+        uint16_t get_options() const SERIALSTATE_OVERRIDE {
+            return options;
+        }
+        SerialPhysical get_physical() const SERIALSTATE_OVERRIDE {
+            return SerialPhysical_USART;
+        }
+        void set_and_default_baud(uint32_t _baud) SERIALSTATE_OVERRIDE {
+            baud.set_and_default(_baud);
+        }
+        void set_and_save_protocol(enum SerialProtocol _protocol) SERIALSTATE_OVERRIDE {
+            protocol.set_and_save(_protocol);
+        }
+        void set_protocol(enum SerialProtocol _protocol) SERIALSTATE_OVERRIDE {
+            protocol.set(_protocol);
+        }
+        void set_baud(uint32_t _baud) SERIALSTATE_OVERRIDE {
+            baud.set(_baud);
         }
     private:
         AP_Int32 baud;
@@ -242,21 +296,90 @@ public:
         AP_Int8 protocol;
     };
 
+#if AP_SERIAL_EXTENSION_ENABLED
+    // Extended Serial State for Serial Ports that are can be non UARTs
+    class SerialExtState : public SerialState {
+        friend class AP_SerialManager;
+    public:
+        bool option_enabled(uint16_t option) const override;
+
+        // returns a baudrate such as 9600.  May map from a special
+        // parameter value like "57" to "57600":
+        uint32_t baudrate() const override;
+
+        AP_SerialManager::SerialProtocol get_protocol() const override;
+
+        uint16_t get_options() const override;
+
+        void set_baud(uint32_t baud) override;
+        void set_protocol(enum SerialProtocol protocol) override;
+        void set_and_save_protocol(enum SerialProtocol protocol) override;
+    public:
+        struct Params {
+            AP_Int8 protocol;
+            virtual const struct AP_Param::GroupInfo *get_var_info() const = 0;
+        };
+
+#if AP_NETWORKING_ENABLED
+        struct IP_Params : Params {
+            AP_Int16 port;
+            AP_Int8 ip[4];
+            AP_Int8 passthru;
+            static const struct AP_Param::GroupInfo var_info[];
+            IP_Params() {
+                AP_Param::setup_object_defaults(this, var_info);
+            }
+            const struct AP_Param::GroupInfo *get_var_info() const override {
+                return var_info;
+            }
+        };
+#endif
+
+        Params *params;
+#if AP_NETWORKING_ENABLED
+        IP_Params &ip_params() const {
+            return *(IP_Params *)params;
+        }
+#endif
+        bool initialised() const {
+            return params != nullptr;
+        }
+        AP_Int8 phy_type;
+    };
+    static const struct AP_Param::GroupInfo *ext_state_var_info[SERIALMANAGER_MAX_EXT_PORTS];
+
+    uint8_t get_num_phy_serials(SerialPhysical phy) const;
+    AP_HAL::UARTDriver* find_serial_by_phy(SerialPhysical phy, uint8_t index);
+    AP_HAL::UARTDriver* get_ext_uart(uint8_t index) {
+        if (index < SERIALMANAGER_MAX_EXT_PORTS) {
+            return ext_uart[index];
+        }
+        return nullptr;
+    }
+#endif
+
     // search through managed serial connections looking for the
-    // instance-nth UART which is running protocol protocol.
+    // instance-nth Serial which is running protocol protocol.
     // protocol_match is used to determine equivalence of one protocol
     // to another, e.g. MAVLink2 is considered MAVLink1 for finding
     // mavlink1 protocol instances.
-    const UARTState *find_protocol_instance(enum SerialProtocol protocol,
+    const SerialState *find_protocol_instance(enum SerialProtocol protocol,
                                             uint8_t instance) const;
 
+    SerialState& serial_state(uint8_t i);
+    const SerialState& serial_state(uint8_t i) const;
 private:
     static AP_SerialManager *_singleton;
 
     // array of uart info. See comment above about
-    // SERIALMANAGER_MAX_PORTS
-    UARTState state[SERIALMANAGER_MAX_PORTS];
-
+    // SERIALMANAGER_MAX_UART_PORTS
+    UARTState state[SERIALMANAGER_MAX_UART_PORTS];
+    // placeholder state for unconfigured or undefined ports
+    SerialState unknown_state;
+#if AP_SERIAL_EXTENSION_ENABLED
+    SerialExtState ext_state[SERIALMANAGER_MAX_EXT_PORTS];
+    AP_HAL::UARTDriver *ext_uart[SERIALMANAGER_MAX_EXT_PORTS];
+#endif
     // pass-through serial support
     AP_Int8 passthru_port1;
     AP_Int8 passthru_port2;
@@ -265,10 +388,15 @@ private:
     // protocol_match - returns true if the protocols match
     bool protocol_match(enum SerialProtocol protocol1, enum SerialProtocol protocol2) const;
 
+    // find serial idx by state ptr
+    int8_t find_serial_state_index(const struct SerialState *state) const;
+
     // setup any special options
     void set_options(uint16_t i);
 
     bool init_console_done;
+
+    AP_Int8 enable_ext_serial;
 };
 
 namespace AP {
