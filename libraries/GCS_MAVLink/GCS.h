@@ -21,7 +21,7 @@
 #include <AP_Filesystem/AP_Filesystem_config.h>
 #include <AP_Frsky_Telem/AP_Frsky_config.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_Mount/AP_Mount.h>
+#include <AP_Mount/AP_Mount_config.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
 #include "ap_message.h"
