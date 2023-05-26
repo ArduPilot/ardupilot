@@ -10,6 +10,11 @@ public:
     // constructor
     AR_AttitudeControl();
 
+    // do not allow copying
+    CLASS_NO_COPY(AR_AttitudeControl);
+
+    static AR_AttitudeControl *get_singleton() { return _singleton; }
+
     //
     // steering controller
     //
@@ -95,6 +100,9 @@ public:
     AC_PID& get_sailboat_heel_pid() { return _sailboat_heel_pid; }
     const AP_PIDInfo& get_throttle_speed_pid_info() const { return _throttle_speed_pid_info; }
 
+    // get the slew rate value for speed and steering for oscillation detection in lua scripts
+    void get_srate(float &steering_srate, float &speed_srate);
+
     // get forward speed in m/s (earth-frame horizontal velocity but only along vehicle x-axis).  returns true on success
     bool get_forward_speed(float &speed) const;
 
@@ -126,6 +134,8 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+
+    static AR_AttitudeControl *_singleton;
 
     // parameters
     AC_P     _steer_angle_p;        // steering angle controller
