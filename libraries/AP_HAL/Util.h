@@ -184,6 +184,10 @@ public:
     // load persistent parameters from bootloader sector
     virtual bool load_persistent_params(ExpandingString &str) const { return false; }
 
+    virtual bool get_persistent_param_by_name(const char *name, char* value, size_t& len) const {
+        return false;
+    }
+
 #if HAL_UART_STATS_ENABLED
     // request information on uart I/O
     virtual void uart_info(ExpandingString &str) {}
