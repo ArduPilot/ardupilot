@@ -304,15 +304,6 @@ bool sdc_lld_is_card_inserted(SDCDriver *sdcp) {
     (void)sdcp;
     return true;
 }
-
-/**
- * @brief   SDC card write protection detection.
- */
-bool sdc_lld_is_write_protected(SDCDriver *sdcp) {
-
-  (void)sdcp;
-  return false;
-}
 #endif /* HAL_USE_SDC */
 
 #if HAL_USE_MMC_SPI || defined(__DOXYGEN__)
