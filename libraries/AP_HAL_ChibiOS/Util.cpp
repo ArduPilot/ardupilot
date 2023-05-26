@@ -560,6 +560,38 @@ bool Util::load_persistent_params(ExpandingString &str) const
 }
 
 /*
+  get a persistent variable by name,
+  len is the length of the value buffer, and is updated with the length of the value
+ */
+bool Util::get_persistent_param_by_name(const char *name, char* value, size_t& len) const
+{
+    ExpandingString persistent_params {};
+    if (!load_persistent_params(persistent_params)) {
+        return false;
+    }
+    char *s = persistent_params.get_writeable_string();
+    if (s == nullptr) {
+        return false;
+    }
+    char *saveptr;
+    s += strlen(persistent_header);
+    for (char *p = strtok_r(s, "\n", &saveptr);
+         p; p = strtok_r(nullptr, "\n", &saveptr)) {
+        char *eq = strchr(p, int('='));
+        if (eq) {
+            *eq = 0;
+            if (strcmp(p, name) == 0) {
+                // also get the length of the value
+                strncpy(value, eq+1, len);
+                len = strlen(value);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/*
   apply persistent parameters from the bootloader sector to AP_Param
  */
 void Util::apply_persistent_params(void) const
