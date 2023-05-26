@@ -1995,6 +1995,11 @@ function vehicle:get_wp_distance_m() end
 function vehicle:set_steering_and_throttle(steering, throttle) end
 
 -- desc
+---@return number|nil
+---@return number|nil
+function vehicle:get_steering_and_throttle() end
+
+-- desc
 ---@param rate_dps number
 ---@return boolean
 function vehicle:set_circle_rate(rate_dps) end
@@ -2833,6 +2838,15 @@ AC_AttitudeControl = {}
 ---@return number -- pitch slew rate
 ---@return number -- yaw slew rate
 function AC_AttitudeControl:get_rpy_srate() end
+
+-- desc
+---@class AR_AttitudeControl
+AR_AttitudeControl = {}
+
+-- return attitude controller slew rates for rovers
+---@return number -- steering slew rate
+---@return number -- spees slew rate
+function AR_AttitudeControl:get_srate() end
 
 -- desc
 ---@class follow
