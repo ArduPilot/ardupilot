@@ -1809,7 +1809,11 @@ AP_GPS_UBLOX::_configure_valget(ConfigKey key)
 }
 
 /*
- *  configure F9 based key/value pair for a complete config list
+ *  configure F9 based key/value pair for a complete configuration set
+ *
+ *  this method requests each configuration variable from the GPS.
+ *  When we handle the reply in _parse_gps we may then choose to set a
+ *  MSG_CFG_VALSET back to the GPS if we don't like its response.
  */
 bool
 AP_GPS_UBLOX::_configure_config_set(const config_list *list, uint8_t count, uint32_t unconfig_bit, uint8_t layers)
