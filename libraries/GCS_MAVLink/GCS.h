@@ -512,6 +512,7 @@ protected:
 
     MAV_RESULT handle_command_int_do_set_home(const mavlink_command_int_t &packet);
     virtual MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_int_external_position_estimate(const mavlink_command_int_t &packet);
 
     virtual bool set_home_to_current_location(bool lock) = 0;
     virtual bool set_home(const Location& loc, bool lock) = 0;
