@@ -212,6 +212,8 @@ protected:
 
     bool opendroneid_checks(bool display_failure);
     
+    bool trusted_flight_checks(bool display_failure);
+
     bool serial_protocol_checks(bool display_failure);
     
     bool estop_checks(bool display_failure);

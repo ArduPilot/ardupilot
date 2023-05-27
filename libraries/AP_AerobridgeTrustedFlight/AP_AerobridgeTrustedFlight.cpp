@@ -15,9 +15,11 @@
  * Author: @rhythmize
  */
 #include <AP_Filesystem/AP_Filesystem.h>
+#include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 #include <mbedtls/pem.h>
 #include "AP_AerobridgeTrustedFlight.h"
+#include "LogStructure.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -31,50 +33,78 @@ AP_AerobridgeTrustedFlight::AP_AerobridgeTrustedFlight()
     _singleton = this;
 }
 
-bool AP_AerobridgeTrustedFlight::is_trusted()
+void AP_AerobridgeTrustedFlight::init()
 {
+    if (init_done)
+        return;
+
+    // Trusted Flight validation happens pre-arm, it's good to enable log_disarmed if the feature is enabled.
+    // NOTE: only override .log_disarmed if defaults at unset
+    if (AP::logger()._params.log_disarmed == AP_Logger::LogDisarmed::NONE)
+        AP::logger()._params.log_disarmed.set(AP_Logger::LogDisarmed::LOG_WHILE_DISARMED); //AP_Logger::LogDisarmed::LOG_WHILE_DISARMED_NOT_USB
+    
+    mbedtls_x509_crt_init(&trusted_certificate);
+    if (!read_certificate_from_file(trusted_certificate_path, &trusted_certificate)) {
+        log_message("Cannot read root trusted certificate from ROMFS");
+        init_done = false;
+        return;
+    }
+
+    init_done = true;
+}
+
+bool AP_AerobridgeTrustedFlight::is_trusted(char *buffer, size_t buflen)
+{
+    if (!init_done) {
+        hal.util->snprintf(buffer, buflen, "Initialization is not done yet");
+        log_message("Initialization is not done yet");
+        return false;
+    }
+
     l8w8jwt_decoding_params_init(&params);
     params.alg = L8W8JWT_ALG_RS256;
     params.validate_exp = 1;
     params.exp_tolerance_seconds = 60;
+    
+    if (!read_from_file(token_issuer_path, &(params.validate_iss), &(params.validate_iss_length))) {
+        log_message("Cannot read trusted token issuer from ROMFS");
+        return false;
+    }
 
-    mbedtls_x509_crt trusted_certificate;
     mbedtls_x509_crt certificate;
-
-    mbedtls_x509_crt_init(&trusted_certificate);
     mbedtls_x509_crt_init(&certificate);
 
-    if (!read_from_file(token_issuer_path, &(params.validate_iss), &(params.validate_iss_length))) {
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s: Cannot read trusted token issuer", tag);
+    if (!validate_certificate_chain(&certificate, params.validate_iss)) {
+        hal.util->snprintf(buffer, buflen, "Invalid certificate chain");
         return false;
     }
 
-    if (!read_certificate_from_file(trusted_certificate_path, &trusted_certificate)) {
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s: Cannot read trusted certificate", tag);
+    if (!validate_token(&certificate)) {
+        hal.util->snprintf(buffer, buflen, "Token verification failed");
         return false;
     }
 
-    return validate_certificate_chain(&trusted_certificate, &certificate, params.validate_iss) && validate_token(&certificate);
+    return true;
 }
 
-bool AP_AerobridgeTrustedFlight::validate_certificate_chain(mbedtls_x509_crt* trusted_certificate,
-        mbedtls_x509_crt* certificate_chain, const char *cn)
+bool AP_AerobridgeTrustedFlight::validate_certificate_chain(mbedtls_x509_crt* certificate_chain, const char *cn)
 {
     if (!read_certificate_from_file(certificate_chain_path, certificate_chain) != 0) {
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s: Cannot read untrusted certificate chain", tag);
+        log_message("Cannot read untrusted certificate chain");
         return false;
     }
 
     uint32_t flags;
-    if (mbedtls_x509_crt_verify(certificate_chain, trusted_certificate, NULL, cn, &flags, NULL, NULL) != 0) {
-        char verify_info[512];
-        mbedtls_x509_crt_verify_info(verify_info, sizeof(verify_info), "", flags );
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s: Invalid certificate chain", tag);
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s: Verification error: %s", tag, verify_info);
+    if (mbedtls_x509_crt_verify(certificate_chain, &trusted_certificate, NULL, cn, &flags, NULL, NULL) != 0) {
+        char msg[50];
+        hal.util->snprintf(msg, sizeof(msg), "Verification error. flags: %lu", (unsigned long int)flags);
+        log_message(msg);
+
+        log_message("Invalid certificate chain");
         return false;
     }
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s: Certificate chain is valid", tag);
+    log_message("Certificate chain is valid");
     return true;
 }
 
@@ -82,7 +112,7 @@ bool AP_AerobridgeTrustedFlight::validate_token(mbedtls_x509_crt* certificate)
 {
     if (!read_from_file(token_file_path, &(params.jwt), &(params.jwt_length)) ||
         !write_pem_certificate(certificate, &(params.verification_key), &(params.verification_key_length))) {
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s: Token verification failed", tag);
+        log_message("Token verification failed");
         return false;
     }
 
@@ -94,28 +124,31 @@ bool AP_AerobridgeTrustedFlight::validate_token(mbedtls_x509_crt* certificate)
     free(params.verification_key);
 
     if (decode_result == L8W8JWT_DECODE_FAILED_INVALID_TOKEN_FORMAT) {
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s: Invalid token format, verification failed", tag);
+        log_message("Invalid token format, verification failed");
         return false;
     }
     if (decode_result == L8W8JWT_KEY_PARSE_FAILURE) {
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s: Invalid public key format, verification failed", tag);
+        log_message("Invalid public key format, verification failed");
         return false;
     }
     if (validation_result == L8W8JWT_ISS_FAILURE) {
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s: Invalid issuer, verification failed", tag);
+        log_message("Invalid issuer, verification failed");
         return false;
     }
     if (validation_result == L8W8JWT_EXP_FAILURE) {
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s: Token expired, verification failed", tag);
+        log_message("Token expired, verification failed");
         return false;
     }
     if (decode_result != L8W8JWT_SUCCESS || validation_result != L8W8JWT_VALID) {
-        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "%s: decode_result: %d, validation_result: %d", tag, decode_result, validation_result);
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s: Token verification failed", tag);
+        char msg[50];
+        hal.util->snprintf(msg, sizeof(msg), "Token decode_result: %d, validation_result: %d", decode_result, validation_result);
+        log_message(msg);
+        
+        log_message("Token verification failed");
         return false;
     }
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s: Token verification successful", tag);
+    log_message("Token verification successful");
     return true;
 }
 
@@ -126,13 +159,13 @@ bool AP_AerobridgeTrustedFlight::write_pem_certificate(mbedtls_x509_crt* certifi
 
     *outbuf = (unsigned char *)malloc(size);
     if (*outbuf == nullptr) {
-        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "%s: Cannot allocate buffer for verification key", tag);
+        log_message("Cannot allocate buffer for verification key");
         return false;
     }
 
     if (mbedtls_pem_write_buffer(public_key_header, public_key_footer, certificate->pk_raw.p, certificate->pk_raw.len,
                                  *outbuf, size, outsize) != 0) {
-        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "%s: Cannot write public key pem to verification key", tag);
+        log_message("Cannot write public key pem to verification key");
         return false;
     }
 
@@ -145,7 +178,6 @@ bool AP_AerobridgeTrustedFlight::read_certificate_from_file(const char *filepath
     size_t certificate_size;
 
     if (!read_from_file(filepath, &certificate_data, &certificate_size)) {
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s: Cannot read file %s", tag, filepath);
         return false;
     }
 
@@ -154,7 +186,7 @@ bool AP_AerobridgeTrustedFlight::read_certificate_from_file(const char *filepath
 
     free(certificate_data);
     if (parse_res != 0) {
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s: Certificate parsing failed", tag);
+        log_message("Certificate parsing failed");
         return false;
     }
     return true;
@@ -164,13 +196,15 @@ bool AP_AerobridgeTrustedFlight::read_from_file(const char *filepath, char **out
 {
     FileData *filedata = AP::FS().load_file(filepath);
     if (filedata->data == nullptr || filedata->length <= 0) {
-        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "%s: Cannot read file %s", tag, filepath);
+        char msg[50];
+        hal.util->snprintf(msg, sizeof(msg), "Cannot read file: %s", filepath);
+        log_message(msg);
         return false;
     }
 
     *outbuf = (char *)malloc(filedata->length + 1);
     if (*outbuf == nullptr) {
-        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "%s: Cannot allocate buffer for token", tag);
+        log_message("Cannot allocate buffer for token");
         return false;
     }
 
@@ -180,6 +214,18 @@ bool AP_AerobridgeTrustedFlight::read_from_file(const char *filepath, char **out
 
     delete filedata;
     return true;
+}
+
+void AP_AerobridgeTrustedFlight::log_message(const char *message)
+{
+    struct log_Message pkt{
+        LOG_PACKET_HEADER_INIT(LOG_TRUSTED_FLIGHT_MSG),
+        time_us : AP_HAL::micros64(),
+        msg  : {}
+    };
+
+    strncpy_noterm(pkt.msg, message, sizeof(pkt.msg));
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
 AP_AerobridgeTrustedFlight *AP_AerobridgeTrustedFlight::_singleton;

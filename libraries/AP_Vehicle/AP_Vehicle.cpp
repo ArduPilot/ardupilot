@@ -280,6 +280,10 @@ void AP_Vehicle::setup()
     opendroneid.init();
 #endif
 
+#ifdef AP_AEROBRIDGE_TRUSTED_FLIGHT_ENABLED
+    aerobridge_trusted_flight.init();
+#endif
+
 // init EFI monitoring
 #if HAL_EFI_ENABLED
     efi.init();
