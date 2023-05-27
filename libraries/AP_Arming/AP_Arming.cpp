@@ -1525,6 +1525,19 @@ bool AP_Arming::opendroneid_checks(bool display_failure)
 }
 #endif  // AP_OPENDRONEID_ENABLED
 
+#ifdef AP_AEROBRIDGE_TRUSTED_FLIGHT_ENABLED
+// Aerobridge Trusted Flight Checks
+bool AP_Arming::trusted_flight_checks(bool display_failure)
+{
+    char fail_msg[50] {};
+    if (!AP::aerobridge_trusted_flight().is_trusted(fail_msg, sizeof(fail_msg))) {
+        check_failed(display_failure, "AerobridgeTrustedFlight: %s", fail_msg);
+        return false;
+    }
+    return true;
+}
+#endif  // AP_AEROBRIDGE_TRUSTED_FLIGHT_ENABLED
+
 //Check for multiple RC in serial protocols
 bool AP_Arming::serial_protocol_checks(bool display_failure)
 {
@@ -1753,7 +1766,7 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
 
     _last_arm_method = method;
 #ifdef AP_AEROBRIDGE_TRUSTED_FLIGHT_ENABLED
-    armed &= AP::aerobridge_trusted_flight().is_trusted();
+    armed &= trusted_flight_checks(true);
 #endif
 
     if (armed) {
