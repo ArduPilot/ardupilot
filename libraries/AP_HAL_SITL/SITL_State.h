@@ -107,7 +107,7 @@ public:
     float current2_pin_voltage;  // pin 14
 
     // paths for UART devices
-    const char *_uart_path[9] {
+    const char *_uart_path[16] {
         "tcp:0:wait",
         "GPS1",
         "tcp:2",
@@ -117,6 +117,13 @@ public:
         "tcp:6",
         "tcp:7",
         "tcp:8",
+        "tcp:9",
+        "tcp:10",
+        "tcp:11",
+        "tcp:12",
+        "tcp:13",
+        "tcp:14",
+        "tcp:15",
     };
     std::vector<struct AP_Param::defaults_table_struct> cmdline_param;
 
