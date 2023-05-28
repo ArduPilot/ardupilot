@@ -5114,6 +5114,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_do_set_roi(packet);
     case MAV_CMD_DO_SET_ROI_SYSID:
         return handle_command_do_set_roi_sysid(packet);
+    case MAV_CMD_DO_SET_ROI_NONE:
+        return handle_command_do_set_roi_none();
     case MAV_CMD_DO_SET_HOME:
         return handle_command_int_do_set_home(packet);
 #if AP_AHRS_POSITION_RESET_ENABLED
