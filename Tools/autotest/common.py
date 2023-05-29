@@ -9295,11 +9295,23 @@ Also, ignores heartbeats not from our target system'''
                          0, # param2
                          0, # param3
                          0, # param4
-
                          0, # param5
                          0, # param6
                          0 # param7
                          )
+            self.verify_parameter_values(wanted)
+
+            # run same command but as command_int:
+            self.zero_mag_offset_parameters()
+            self.run_cmd_int(mavutil.mavlink.MAV_CMD_FIXED_MAG_CAL_YAW,
+                             math.degrees(ss.yaw), # param1
+                             0, # param2
+                             0, # param3
+                             0, # param4
+                             0, # param5
+                             0, # param6
+                             0 # param7
+                             )
             self.verify_parameter_values(wanted)
 
             self.progress("Rebooting and making sure we could arm with these values")
