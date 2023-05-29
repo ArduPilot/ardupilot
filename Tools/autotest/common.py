@@ -9598,6 +9598,28 @@ Also, ignores heartbeats not from our target system'''
         self.progress("default disarm_vehicle() call")
         self.disarm_vehicle()
 
+        self.start_subtest("Arm/disarm vehicle with COMMAND_INT")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+            1,  # ARM
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+        )
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+            0,  # DISARM
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+        )
+
         self.progress("arm with mavproxy")
         mavproxy = self.start_mavproxy()
         if not self.mavproxy_arm_vehicle(mavproxy):
