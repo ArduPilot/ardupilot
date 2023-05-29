@@ -771,11 +771,11 @@ bool AP_AHRS::airspeed_sensor_enabled(void) const
     if (fly_forward &&
         hal.util->get_soft_armed() &&
         get_filter_status(filter_status) &&
-        filter_status.flags.rejecting_airspeed) {
+        (filter_status.flags.rejecting_airspeed && !filter_status.flags.dead_reckoning)) {
         // special case for when backend is rejecting airspeed data in
-        // an armed fly_forward state. Then the airspeed data is
-        // highly suspect and will be rejected. We will use the
-        // synthentic airspeed instead
+        // an armed fly_forward state and not dead reckoning. Then the
+        // airspeed data is highly suspect and will be rejected. We
+        // will use the synthentic airspeed instead
         return false;
     }
     return true;
