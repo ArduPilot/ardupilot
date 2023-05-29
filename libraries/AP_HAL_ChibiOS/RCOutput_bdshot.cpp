@@ -595,17 +595,84 @@ uint32_t RCOutput::bdshot_decode_telemetry_packet(uint32_t* buffer, uint32_t cou
     }
     decodedValue >>= 4;
 
-    if (decodedValue == 0x0fff) {
-        return 0;
-    }
-    decodedValue = (decodedValue & 0x000001ff) << ((decodedValue & 0xfffffe00) >> 9);
-    if (!decodedValue) {
-        return 0xffff;
-    }
-    uint32_t ret = (1000000 * 60 / 100 + decodedValue / 2) / decodedValue;
-    return ret;
+    return decodedValue;
 }
 #pragma GCC pop_options
 
+// update ESC telemetry information. Returns true if valid eRPM data was decoded.
+bool RCOutput::bdshot_decode_telemetry_from_erpm(uint16_t encodederpm, uint8_t chan)
+{
+    if (encodederpm == 0xFFFF) {
+        return false;
+    }
+
+    // eRPM = m << e (see https://github.com/bird-sanctuary/extended-dshot-telemetry)
+    uint8_t expo = ((encodederpm & 0xfffffe00) >> 9) & 0xFF;
+    uint16_t value = (encodederpm & 0x000001ff);
+
+    if (!(value & 0x100) && (_dshot_esc_type == DSHOT_ESC_BLHELI_EDT || _dshot_esc_type == DSHOT_ESC_BLHELI_EDT_S)) {
+        switch (expo) {
+        case 0b001: { // Temperature C
+    #if HAL_WITH_ESC_TELEM
+            TelemetryData t {
+                .temperature_cdeg = int16_t(value * 100)
+            };
+            update_telem_data(chan, t, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
+    #endif
+            return false;
+            }
+            break;
+        case 0b010: { // Voltage 0.25v
+    #if HAL_WITH_ESC_TELEM
+            TelemetryData t {
+                .voltage = 0.25f * value
+            };
+            update_telem_data(chan, t, AP_ESC_Telem_Backend::TelemetryType::VOLTAGE);
+    #endif
+            return false;
+            }
+            break;
+        case 0b011: { // Current A
+    #if HAL_WITH_ESC_TELEM
+            TelemetryData t {
+                .current = float(value)
+            };
+            update_telem_data(chan, t, AP_ESC_Telem_Backend::TelemetryType::CURRENT);
+    #endif
+            return false;
+            }
+            break;
+        case 0b100:  // Debug 1
+        case 0b101:  // Debug 2
+        case 0b110:  // Stress level
+        case 0b111:  // Status
+            return false;
+            break;
+        default:     // eRPM
+            break;
+        }
+    }
+
+    uint16_t erpm = value << expo;
+
+    if (!erpm) {    // decoded as 0 is an error
+        return false;
+    }
+
+    erpm = (1000000 * 60 / 100 + erpm / 2) / erpm;
+
+    if (encodederpm == 0x0fff) { // the special 0 encoding
+        erpm = 0;
+    }
+
+    // update the ESC telemetry data
+    if (erpm < 0xFFFF) {
+        _bdshot.erpm[chan] = erpm;
+#if HAL_WITH_ESC_TELEM
+        update_rpm(chan, erpm * 200 / _bdshot.motor_poles, get_erpm_error_rate(chan));
+#endif
+    }
+    return erpm < 0xFFFF;
+}
 
 #endif // HAL_WITH_BIDIR_DSHOT
