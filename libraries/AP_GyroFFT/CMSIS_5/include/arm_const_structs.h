@@ -27,8 +27,7 @@
  * limitations under the License.
  */
 
-#ifndef _ARM_CONST_STRUCTS_H
-#define _ARM_CONST_STRUCTS_H
+#pragma once
 
 #include "arm_math.h"
 #include "arm_common_tables.h"
@@ -62,5 +61,3 @@
    extern const arm_cfft_instance_q15 arm_cfft_sR_q15_len1024;
    extern const arm_cfft_instance_q15 arm_cfft_sR_q15_len2048;
    extern const arm_cfft_instance_q15 arm_cfft_sR_q15_len4096;
-
-#endif

@@ -16,9 +16,7 @@
 /*
   header modelled on Nucleo L496ZG header from ChibiOS
  */
-
-#ifndef MCUCONF_H
-#define MCUCONF_H
+#pragma once
 
 #define STM32L431_MCUCONF
 #define STM32L4xx_MCUCONF
@@ -317,5 +315,3 @@
 
 // limit ISR count per byte
 #define STM32_I2C_ISR_LIMIT                 6
-
-#endif /* MCUCONF_H */

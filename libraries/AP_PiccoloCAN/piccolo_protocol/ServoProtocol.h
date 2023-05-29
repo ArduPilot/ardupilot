@@ -17,8 +17,7 @@
  * Author: Oliver Walters / Currawong Engineering Pty Ltd
  */
 
-#ifndef _SERVOPROTOCOL_H
-#define _SERVOPROTOCOL_H
+#pragma once
 
 // Language target is C, C++ compilers: don't mangle us
 #ifdef __cplusplus
@@ -221,4 +220,3 @@ uint32_t getServoPacketID(const void* pkt);
 #ifdef __cplusplus
 }
 #endif
-#endif // _SERVOPROTOCOL_H

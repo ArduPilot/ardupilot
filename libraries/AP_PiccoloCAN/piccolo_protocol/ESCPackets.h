@@ -17,8 +17,7 @@
  * Author: Oliver Walters
  */
 
-#ifndef _ESCPACKETS_H
-#define _ESCPACKETS_H
+#pragma once
 
 // Language target is C, C++ compilers: don't mangle us
 #ifdef __cplusplus
@@ -675,4 +674,3 @@ int decodeESC_PWMInputCalibrationPacket(const void* pkt, uint8_t* protocol, int8
 #ifdef __cplusplus
 }
 #endif
-#endif // _ESCPACKETS_H

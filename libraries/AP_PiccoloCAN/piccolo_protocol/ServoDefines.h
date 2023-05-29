@@ -17,8 +17,7 @@
  * Author: Oliver Walters / Currawong Engineering Pty Ltd
  */
 
-#ifndef _SERVODEFINES_H
-#define _SERVODEFINES_H
+#pragma once
 
 // Language target is C, C++ compilers: don't mangle us
 #ifdef __cplusplus
@@ -188,4 +187,3 @@ int decodeServo_ConfigBits_t(const uint8_t* data, int* bytecount, Servo_ConfigBi
 #ifdef __cplusplus
 }
 #endif
-#endif // _SERVODEFINES_H

@@ -17,8 +17,7 @@
  * Author: Oliver Walters
  */
 
-#ifndef _LEGACYESCPACKETS_H
-#define _LEGACYESCPACKETS_H
+#pragma once
 
 // Language target is C, C++ compilers: don't mangle us
 #ifdef __cplusplus
@@ -64,4 +63,3 @@ int decodeESC_LegacyStatusAPacket(const void* pkt, uint8_t* mode, ESC_LegacyStat
 #ifdef __cplusplus
 }
 #endif
-#endif // _LEGACYESCPACKETS_H

@@ -17,8 +17,7 @@
  * Author: Oliver Walters
  */
 
-#ifndef _ESCDEFINES_H
-#define _ESCDEFINES_H
+#pragma once
 
 // Language target is C, C++ compilers: don't mangle us
 #ifdef __cplusplus
@@ -189,4 +188,3 @@ int decodeESC_DebugPackets_t(const uint8_t* data, int* bytecount, ESC_DebugPacke
 #ifdef __cplusplus
 }
 #endif
-#endif // _ESCDEFINES_H

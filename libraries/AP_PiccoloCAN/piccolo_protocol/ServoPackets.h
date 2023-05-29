@@ -17,8 +17,7 @@
  * Author: Oliver Walters / Currawong Engineering Pty Ltd
  */
 
-#ifndef _SERVOPACKETS_H
-#define _SERVOPACKETS_H
+#pragma once
 
 // Language target is C, C++ compilers: don't mangle us
 #ifdef __cplusplus
@@ -528,4 +527,3 @@ int decodeServo_TelltaleAPacket(const void* pkt, int8_t* minTemperature, int8_t*
 #ifdef __cplusplus
 }
 #endif
-#endif // _SERVOPACKETS_H
