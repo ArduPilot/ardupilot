@@ -764,7 +764,7 @@ function check_auto_mission()
    end
 end
   
-local last_trick_action_state = 0
+local last_trick_action_state = rc:get_aux_cached(TRIK_ACT_FN:get())
 local trick_sel_chan = nil
 local last_trick_selection = 0
 
@@ -877,6 +877,10 @@ function do_trick(cmd,arg1,arg2)
 end
 
 function update()
+   if ahrs:get_velocity_NED() == nil  or ahrs:get_EAS2TAS() == nil or ahrs:get_relative_position_NED_origin() == nil then
+      -- don't start till we have valid ahrs estimates
+      return update, 10
+   end
    if vehicle:get_mode() == MODE_AUTO then
       check_auto_mission() --run a trick mission item
    elseif tricks_exist() then
