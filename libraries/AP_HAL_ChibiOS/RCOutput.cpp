@@ -539,6 +539,7 @@ void RCOutput::set_dshot_esc_type(DshotEscType dshot_esc_type)
     _dshot_esc_type = dshot_esc_type;
     switch (_dshot_esc_type) {
         case DSHOT_ESC_BLHELI_S:
+        case DSHOT_ESC_BLHELI_EDT_S:
             DSHOT_BIT_WIDTH_TICKS = DSHOT_BIT_WIDTH_TICKS_S;
             DSHOT_BIT_0_TICKS = DSHOT_BIT_0_TICKS_S;
             DSHOT_BIT_1_TICKS = DSHOT_BIT_1_TICKS_S;
@@ -1531,15 +1532,9 @@ void RCOutput::dshot_send(pwm_group &group, uint64_t time_out_us)
         uint8_t chan = group.chan[i];
         if (group.is_chan_enabled(i)) {
 #ifdef HAL_WITH_BIDIR_DSHOT
-            // retrieve the last erpm values
-            const uint16_t erpm = group.bdshot.erpm[i];
-#if HAL_WITH_ESC_TELEM
-            // update the ESC telemetry data
-            if (erpm < 0xFFFF && group.bdshot.enabled) {
-                update_rpm(chan, erpm * 200 / _bdshot.motor_poles, get_erpm_error_rate(chan));
+            if (group.bdshot.enabled) {
+                bdshot_decode_telemetry_from_erpm(group.bdshot.erpm[i], chan);
             }
-#endif
-            _bdshot.erpm[chan] = erpm;
 #endif
             if (safety_on && !(safety_mask & (1U<<(chan+chan_offset)))) {
                 // safety is on, don't output anything
