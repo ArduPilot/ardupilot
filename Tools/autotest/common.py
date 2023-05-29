@@ -7734,6 +7734,10 @@ Also, ignores heartbeats not from our target system'''
         self.mav.mav.set_send_callback(self.send_message_hook, self)
         self.mav.idle_hooks.append(self.idle_hook)
 
+        # we need to wait for a heartbeat here.  If we don't then
+        # self.mav.target_system will be zero because it hasn't
+        # "locked on" to a target system yet.
+        self.wait_heartbeat()
         self.set_streamrate(self.sitl_streamrate())
 
     def show_test_timings_key_sorter(self, t):
