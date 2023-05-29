@@ -137,6 +137,20 @@ private:
 
 #pragma pack(pop)
 
+
+public:
+    void sendstatetoRC(uint8_t *msg,uint8_t lenth);
+    void UpdateSendtoFCinfo();
+    void start_bind(void) override;
+    
+private:
+
+    AP_HAL::UARTDriver *_uart;
+    TelemetryData _TelemetryData;
+    uint8_t _sendMsg[41];
+    
+
+
     enum ST24_DECODE_STATE {
         ST24_DECODE_STATE_UNSYNCED = 0,
         ST24_DECODE_STATE_GOT_STX1,
