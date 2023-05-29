@@ -8124,6 +8124,11 @@ Also, ignores heartbeats not from our target system'''
             self.sup_prog.append(sup_prog_link)
             self.expect_list_add(sup_prog_link)
 
+        # mavlink will have disconnected here.  Explicitly reconnect,
+        # or the first packet we send will be lost:
+        if self.mav is not None:
+            self.mav.reconnect()
+
     def get_suplementary_programs(self):
         return self.sup_prog
 
