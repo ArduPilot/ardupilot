@@ -3381,17 +3381,19 @@ class AutoTest(ABC):
                 self.progress("Received: %s" % str(m))
             if m is None:
                 continue
-            if m.tc1 == 0:
-                self.progress("this is a timesync request, which we don't answer")
-                continue
             if m.ts1 % 1000 != self.mav.source_system:
                 self.progress("this isn't a response to our timesync (%s)" % (m.ts1 % 1000))
+                continue
+            if m.tc1 == 0:
+                # this should also not happen:
+                self.progress("this is a timesync request, which we don't answer")
                 continue
             if int(m.ts1 / 1000) != self.timesync_number:
                 self.progress("this isn't the one we just sent")
                 continue
             if m.get_srcSystem() != self.mav.target_system:
-                self.progress("response from system other than our target")
+                self.progress("response from system other than our target (want=%u got=%u" %
+                              (self.mav.target_system, m.get_srcSystem()))
                 continue
             # no component check ATM because we send broadcast...
 #            if m.get_srcComponent() != self.mav.target_component:
