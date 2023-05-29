@@ -28,10 +28,6 @@ COMPASS QMC5883L I2C:0:0xd false ROTATION_PITCH_180_YAW_90
 undef PB6
 undef PB7
 
-# disable USART2
-undef PA2
-undef PA3
-
 # enable GPS port with DMA
 undef PB10
 undef PB11
@@ -48,8 +44,13 @@ define HAL_NO_RCOUT_THREAD
 define HAL_NO_TIMER_THREAD
 
 # maintain GPS port number compatibility with MatekL431-Periph
-SERIAL_ORDER EMPTY EMPTY USART3
+SERIAL_ORDER EMPTY USART2 USART3
 
 # larger CAN pool for RTCM data
 undef HAL_CAN_POOL_SIZE
 define HAL_CAN_POOL_SIZE 12000
+
+# -------------------- MSP --------------------------------
+define HAL_PERIPH_ENABLE_MSP
+define HAL_MSP_ENABLED 1
+define AP_PERIPH_MSP_PORT_DEFAULT 1
