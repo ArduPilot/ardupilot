@@ -148,15 +148,15 @@ void ModeAcro::get_pilot_desired_angle_rates(float roll_in, float pitch_in, floa
         // Calculate angle limiting earth frame rate commands
         if (g.acro_trainer == (uint8_t)Trainer::LIMITED) {
             const float angle_max = copter.aparm.angle_max;
-            if (roll_angle > angle_max){
+            if (roll_angle > angle_max) {
                 rate_ef_level_cd.x += sqrt_controller(angle_max - roll_angle, g2.command_model_acro_rp.get_rate() * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_roll_max_cdss(), G_Dt);
             }else if (roll_angle < -angle_max) {
                 rate_ef_level_cd.x += sqrt_controller(-angle_max - roll_angle, g2.command_model_acro_rp.get_rate() * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_roll_max_cdss(), G_Dt);
             }
 
-            if (pitch_angle > angle_max){
+            if (pitch_angle > angle_max) {
                 rate_ef_level_cd.y += sqrt_controller(angle_max - pitch_angle, g2.command_model_acro_rp.get_rate() * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_pitch_max_cdss(), G_Dt);
-            }else if (pitch_angle < -angle_max) {
+            } else if (pitch_angle < -angle_max) {
                 rate_ef_level_cd.y += sqrt_controller(-angle_max - pitch_angle, g2.command_model_acro_rp.get_rate() * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_pitch_max_cdss(), G_Dt);
             }
         }
@@ -169,24 +169,24 @@ void ModeAcro::get_pilot_desired_angle_rates(float roll_in, float pitch_in, floa
             rate_bf_request_cd.x += rate_bf_level_cd.x;
             rate_bf_request_cd.y += rate_bf_level_cd.y;
             rate_bf_request_cd.z += rate_bf_level_cd.z;
-        }else{
-            float acro_level_mix = constrain_float(1-float(MAX(MAX(abs(roll_in), abs(pitch_in)), abs(yaw_in))/4500.0), 0, 1)*ahrs.cos_pitch();
+        } else {
+            float acro_level_mix = constrain_float(1 - float(MAX(MAX(abs(roll_in), abs(pitch_in)), abs(yaw_in)) / 4500.0), 0, 1) * ahrs.cos_pitch();
 
             // Scale levelling rates by stick input
             rate_bf_level_cd = rate_bf_level_cd * acro_level_mix;
 
             // Calculate rate limit to prevent change of rate through inverted
-            rate_limit = fabsf(fabsf(rate_bf_request_cd.x)-fabsf(rate_bf_level_cd.x));
+            rate_limit = fabsf(fabsf(rate_bf_request_cd.x) - fabsf(rate_bf_level_cd.x));
             rate_bf_request_cd.x += rate_bf_level_cd.x;
             rate_bf_request_cd.x = constrain_float(rate_bf_request_cd.x, -rate_limit, rate_limit);
 
             // Calculate rate limit to prevent change of rate through inverted
-            rate_limit = fabsf(fabsf(rate_bf_request_cd.y)-fabsf(rate_bf_level_cd.y));
+            rate_limit = fabsf(fabsf(rate_bf_request_cd.y) - fabsf(rate_bf_level_cd.y));
             rate_bf_request_cd.y += rate_bf_level_cd.y;
             rate_bf_request_cd.y = constrain_float(rate_bf_request_cd.y, -rate_limit, rate_limit);
 
             // Calculate rate limit to prevent change of rate through inverted
-            rate_limit = fabsf(fabsf(rate_bf_request_cd.z)-fabsf(rate_bf_level_cd.z));
+            rate_limit = fabsf(fabsf(rate_bf_request_cd.z) - fabsf(rate_bf_level_cd.z));
             rate_bf_request_cd.z += rate_bf_level_cd.z;
             rate_bf_request_cd.z = constrain_float(rate_bf_request_cd.z, -rate_limit, rate_limit);
         }

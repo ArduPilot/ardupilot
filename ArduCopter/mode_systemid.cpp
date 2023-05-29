@@ -19,7 +19,7 @@ const AP_Param::GroupInfo ModeSystemId::var_info[] = {
     // @DisplayName: System identification Chirp Magnitude
     // @Description: Magnitude of sweep in deg, deg/s and 0-1 for mixer outputs.
     // @User: Standard
-    AP_GROUPINFO("_MAGNITUDE", 2, ModeSystemId, waveform_magnitude, 15),
+    AP_GROUPINFO("_MAGNITUDE", 2, ModeSystemId, _waveform_magnitude, 15),
 
     // @Param: _F_START_HZ
     // @DisplayName: System identification Start Frequency
@@ -99,7 +99,7 @@ bool ModeSystemId::init(bool ignore_checks)
 
     gcs().send_text(MAV_SEVERITY_INFO, "SystemID Starting: axis=%d", (unsigned)axis);
 
-    copter.Log_Write_SysID_Setup(axis, waveform_magnitude, frequency_start, frequency_stop, time_fade_in, time_const_freq, time_record, time_fade_out);
+    copter.Log_Write_SysID_Setup(axis, _waveform_magnitude, frequency_start, frequency_stop, time_fade_in, time_const_freq, time_record, time_fade_out);
 
     return true;
 }
@@ -181,7 +181,7 @@ void ModeSystemId::run()
     }
 
     waveform_time += G_Dt;
-    waveform_sample = chirp_input.update(waveform_time - SYSTEM_ID_DELAY, waveform_magnitude);
+    waveform_sample = chirp_input.update(waveform_time - SYSTEM_ID_DELAY, _waveform_magnitude);
     waveform_freq_rads = chirp_input.get_frequency_rads();
 
     switch (systemid_state) {
@@ -195,7 +195,7 @@ void ModeSystemId::run()
                 gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: Landed");
                 break;
             }
-            if (attitude_control->lean_angle_deg()*100 > attitude_control->lean_angle_max_cd()) {
+            if (attitude_control->lean_angle_deg() * 100 > attitude_control->lean_angle_max_cd()) {
                 systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
                 gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: lean=%f max=%f", (double)attitude_control->lean_angle_deg(), (double)attitude_control->lean_angle_max_cd());
                 break;
@@ -212,24 +212,24 @@ void ModeSystemId::run()
                     gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: axis = 0");
                     break;
                 case AxisType::INPUT_ROLL:
-                    target_roll += waveform_sample*100.0f;
+                    target_roll += waveform_sample * 100.0f;
                     break;
                 case AxisType::INPUT_PITCH:
-                    target_pitch += waveform_sample*100.0f;
+                    target_pitch += waveform_sample * 100.0f;
                     break;
                 case AxisType::INPUT_YAW:
-                    target_yaw_rate += waveform_sample*100.0f;
+                    target_yaw_rate += waveform_sample * 100.0f;
                     break;
                 case AxisType::RECOVER_ROLL:
-                    target_roll += waveform_sample*100.0f;
+                    target_roll += waveform_sample * 100.0f;
                     attitude_control->bf_feedforward(false);
                     break;
                 case AxisType::RECOVER_PITCH:
-                    target_pitch += waveform_sample*100.0f;
+                    target_pitch += waveform_sample * 100.0f;
                     attitude_control->bf_feedforward(false);
                     break;
                 case AxisType::RECOVER_YAW:
-                    target_yaw_rate += waveform_sample*100.0f;
+                    target_yaw_rate += waveform_sample * 100.0f;
                     attitude_control->bf_feedforward(false);
                     break;
                 case AxisType::RATE_ROLL:

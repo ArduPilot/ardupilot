@@ -134,7 +134,7 @@ void ModePosHold::run()
     case AltHold_Takeoff:
         // initiate take-off
         if (!takeoff.running()) {
-            takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
+            takeoff.start(constrain_float(g.pilot_takeoff_alt, 0.0f, 1000.0f));
         }
 
         // get avoidance adjusted climb rate
@@ -169,8 +169,8 @@ void ModePosHold::run()
     // poshold specific behaviour to calculate desired roll, pitch angles
     // convert inertial nav earth-frame velocities to body-frame
     // To-Do: move this to AP_Math (or perhaps we already have a function to do this)
-    float vel_fw = vel.x*ahrs.cos_yaw() + vel.y*ahrs.sin_yaw();
-    float vel_right = -vel.x*ahrs.sin_yaw() + vel.y*ahrs.cos_yaw();
+    float vel_fw = vel.x * ahrs.cos_yaw() + vel.y * ahrs.sin_yaw();
+    float vel_right = -vel.x * ahrs.sin_yaw() + vel.y * ahrs.cos_yaw();
 
     // If not in LOITER, retrieve latest wind compensation lean angles related to current yaw
     if (roll_mode != RPMode::LOITER || pitch_mode != RPMode::LOITER) {
@@ -215,14 +215,14 @@ void ModePosHold::run()
                     brake.angle_max_roll = fabsf(brake.roll);
                 } else {
                     // braking angle has started decreasing so re-estimate braking time
-                    brake.timeout_roll = 1+(uint16_t)(LOOP_RATE_FACTOR*15L*(int32_t)(fabsf(brake.roll))/(10L*(int32_t)g.poshold_brake_rate));  // the 1.2 (12/10) factor has to be tuned in flight, here it means 120% of the "normal" time.
+                    brake.timeout_roll = 1 + (uint16_t)(LOOP_RATE_FACTOR * 15L * (int32_t)(fabsf(brake.roll)) / (10L * (int32_t)g.poshold_brake_rate));  // the 1.2 (12/10) factor has to be tuned in flight, here it means 120% of the "normal" time.
                     brake.time_updated_roll = true;
                 }
             }
 
             // if velocity is very low reduce braking time to 0.5seconds
-            if ((fabsf(vel_right) <= POSHOLD_SPEED_0) && (brake.timeout_roll > 50*LOOP_RATE_FACTOR)) {
-                brake.timeout_roll = 50*LOOP_RATE_FACTOR;
+            if ((fabsf(vel_right) <= POSHOLD_SPEED_0) && (brake.timeout_roll > 50 * LOOP_RATE_FACTOR)) {
+                brake.timeout_roll = 50 * LOOP_RATE_FACTOR;
             }
 
             // reduce braking timer
@@ -309,14 +309,14 @@ void ModePosHold::run()
                     brake.angle_max_pitch = fabsf(brake.pitch);
                 } else {
                     // braking angle has started decreasing so re-estimate braking time
-                    brake.timeout_pitch = 1+(uint16_t)(LOOP_RATE_FACTOR*15L*(int32_t)(fabsf(brake.pitch))/(10L*(int32_t)g.poshold_brake_rate));  // the 1.2 (12/10) factor has to be tuned in flight, here it means 120% of the "normal" time.
+                    brake.timeout_pitch = 1 + (uint16_t)(LOOP_RATE_FACTOR * 15L * (int32_t)(fabsf(brake.pitch)) / (10L * (int32_t)g.poshold_brake_rate));  // the 1.2 (12/10) factor has to be tuned in flight, here it means 120% of the "normal" time.
                     brake.time_updated_pitch = true;
                 }
             }
 
             // if velocity is very low reduce braking time to 0.5seconds
-            if ((fabsf(vel_fw) <= POSHOLD_SPEED_0) && (brake.timeout_pitch > 50*LOOP_RATE_FACTOR)) {
-                brake.timeout_pitch = 50*LOOP_RATE_FACTOR;
+            if ((fabsf(vel_fw) <= POSHOLD_SPEED_0) && (brake.timeout_pitch > 50 * LOOP_RATE_FACTOR)) {
+                brake.timeout_pitch = 50 * LOOP_RATE_FACTOR;
             }
 
             // reduce braking timer
@@ -500,12 +500,12 @@ void ModePosHold::update_pilot_lean_angle(float &lean_angle_filtered, float &lea
         // lean_angle_raw must be pulling lean_angle_filtered towards zero, smooth the decrease
         if (lean_angle_filtered > 0) {
             // reduce the filtered lean angle at 5% or the brake rate (whichever is faster).
-            lean_angle_filtered -= MAX(lean_angle_filtered * POSHOLD_SMOOTH_RATE_FACTOR, MAX(1.0f, g.poshold_brake_rate/(float)LOOP_RATE_FACTOR));
+            lean_angle_filtered -= MAX(lean_angle_filtered * POSHOLD_SMOOTH_RATE_FACTOR, MAX(1.0f, g.poshold_brake_rate / (float)LOOP_RATE_FACTOR));
             // do not let the filtered angle fall below the pilot's input lean angle.
             // the above line pulls the filtered angle down and the below line acts as a catch
             lean_angle_filtered = MAX(lean_angle_filtered, lean_angle_raw);
         }else{
-            lean_angle_filtered += MAX(-lean_angle_filtered * POSHOLD_SMOOTH_RATE_FACTOR, MAX(1.0f, g.poshold_brake_rate/(float)LOOP_RATE_FACTOR));
+            lean_angle_filtered += MAX(-lean_angle_filtered * POSHOLD_SMOOTH_RATE_FACTOR, MAX(1.0f, g.poshold_brake_rate / (float)LOOP_RATE_FACTOR));
             lean_angle_filtered = MIN(lean_angle_filtered, lean_angle_raw);
         }
     }
@@ -579,14 +579,14 @@ void ModePosHold::update_wind_comp_estimate()
         wind_comp_ef.x = accel_target.x;
     } else {
         // low pass filter the position controller's lean angle output
-        wind_comp_ef.x = (1.0f-TC_WIND_COMP)*wind_comp_ef.x + TC_WIND_COMP*accel_target.x;
+        wind_comp_ef.x = (1.0f - TC_WIND_COMP)*wind_comp_ef.x + TC_WIND_COMP * accel_target.x;
     }
     if (is_zero(wind_comp_ef.y)) {
         // if wind compensation has not been initialised set it immediately to the pos controller's desired accel in north direction
         wind_comp_ef.y = accel_target.y;
     } else {
         // low pass filter the position controller's lean angle output
-        wind_comp_ef.y = (1.0f-TC_WIND_COMP)*wind_comp_ef.y + TC_WIND_COMP*accel_target.y;
+        wind_comp_ef.y = (1.0f - TC_WIND_COMP) * wind_comp_ef.y + TC_WIND_COMP * accel_target.y;
     }
 
     // limit acceleration
@@ -609,8 +609,8 @@ void ModePosHold::get_wind_comp_lean_angles(float &roll_angle, float &pitch_angl
     wind_comp_timer = 0;
 
     // convert earth frame desired accelerations to body frame roll and pitch lean angles
-    roll_angle = atanf((-wind_comp_ef.x*ahrs.sin_yaw() + wind_comp_ef.y*ahrs.cos_yaw())/(GRAVITY_MSS*100))*(18000.0f/M_PI);
-    pitch_angle = atanf(-(wind_comp_ef.x*ahrs.cos_yaw() + wind_comp_ef.y*ahrs.sin_yaw())/(GRAVITY_MSS*100))*(18000.0f/M_PI);
+    roll_angle = atanf((-wind_comp_ef.x * ahrs.sin_yaw() + wind_comp_ef.y * ahrs.cos_yaw()) / (GRAVITY_MSS * 100)) * (18000.0f / M_PI);
+    pitch_angle = atanf(-(wind_comp_ef.x * ahrs.cos_yaw() + wind_comp_ef.y*ahrs.sin_yaw()) / (GRAVITY_MSS * 100)) * (18000.0f / M_PI);
 }
 
 // roll_controller_to_pilot_override - initialises transition from a controller submode (brake or loiter) to a pilot override on roll axis

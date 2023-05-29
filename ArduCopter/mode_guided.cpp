@@ -144,7 +144,7 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
         }
     }
 
-    guided_mode = SubMode::TakeOff;
+   _guided_mode = SubMode::TakeOff;
 
     // initialise yaw
     auto_yaw.set_mode(AutoYaw::Mode::HOLD);
@@ -165,7 +165,7 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
 void ModeGuided::wp_control_start()
 {
     // set to position control mode
-    guided_mode = SubMode::WP;
+   _guided_mode = SubMode::WP;
 
     // initialise waypoint and spline controller
     wp_nav->wp_and_spline_init();
@@ -231,7 +231,7 @@ void ModeGuided::pva_control_start()
 void ModeGuided::pos_control_start()
 {
     // set to position control mode
-    guided_mode = SubMode::Pos;
+   _guided_mode = SubMode::Pos;
 
     // initialise position controller
     pva_control_start();
@@ -241,7 +241,7 @@ void ModeGuided::pos_control_start()
 void ModeGuided::accel_control_start()
 {
     // set guided_mode to velocity controller
-    guided_mode = SubMode::Accel;
+   _guided_mode = SubMode::Accel;
 
     // initialise position controller
     pva_control_start();
@@ -251,7 +251,7 @@ void ModeGuided::accel_control_start()
 void ModeGuided::velaccel_control_start()
 {
     // set guided_mode to velocity controller
-    guided_mode = SubMode::VelAccel;
+   _guided_mode = SubMode::VelAccel;
 
     // initialise position controller
     pva_control_start();
@@ -261,7 +261,7 @@ void ModeGuided::velaccel_control_start()
 void ModeGuided::posvelaccel_control_start()
 {
     // set guided_mode to velocity controller
-    guided_mode = SubMode::PosVelAccel;
+   _guided_mode = SubMode::PosVelAccel;
 
     // initialise position controller
     pva_control_start();
@@ -269,7 +269,7 @@ void ModeGuided::posvelaccel_control_start()
 
 bool ModeGuided::is_taking_off() const
 {
-    return guided_mode == SubMode::TakeOff && !takeoff_complete;
+    return_guided_mode == SubMode::TakeOff && !takeoff_complete;
 }
 
 bool ModeGuided::set_speed_xy(float speed_xy_cms)
@@ -300,7 +300,7 @@ bool ModeGuided::set_speed_down(float speed_down_cms)
 void ModeGuided::angle_control_start()
 {
     // set guided_mode to velocity controller
-    guided_mode = SubMode::Angle;
+   _guided_mode = SubMode::Angle;
 
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());

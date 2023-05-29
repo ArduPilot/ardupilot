@@ -604,7 +604,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         copter.logger.Write_Mission_Cmd(mission, cmd);
     }
 
-    switch(cmd.id) {
+    switch (cmd.id) {
 
     ///
     /// navigation commands
@@ -1237,7 +1237,7 @@ void ModeAuto::payload_place_run()
     case PayloadPlaceStateType_Descent_Start:
         nav_payload_place.descent_established_time_ms = now_ms;
         nav_payload_place.descent_start_altitude_cm = inertial_nav.get_position_z_up_cm();
-        // limiting the decent rate to the limit set in wp_nav is not necessary but done for safety
+        // limiting the descent rate to the limit set in wp_nav is not necessary but done for safety
         nav_payload_place.descent_speed_cms = MIN((is_positive(g2.pldp_descent_speed_ms)) ? g2.pldp_descent_speed_ms * 100.0 : abs(g.land_speed), wp_nav->get_default_speed_down());
         nav_payload_place.descent_thrust_level = 1.0;
         nav_payload_place.state = PayloadPlaceStateType_Descent;
@@ -1487,9 +1487,9 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     }
 
     // this will be used to remember the time in millis after we reach or pass the WP.
-    loiter_time = 0;
+    loiter_time_ms = 0;
     // this is the delay, stored in seconds
-    loiter_time_max = cmd.p1;
+    loiter_time_max_s = cmd.p1;
 
     // set next destination if necessary
     if (!set_next_wp(cmd, target_loc)) {
@@ -1513,7 +1513,7 @@ bool ModeAuto::set_next_wp(const AP_Mission::Mission_Command& current_cmd, const
 
     // do not add next wp if there are no more navigation commands
     AP_Mission::Mission_Command next_cmd;
-    if (!mission.get_next_nav_cmd(current_cmd.index+1, next_cmd)) {
+    if (!mission.get_next_nav_cmd(current_cmd.index + 1, next_cmd)) {
         return true;
     }
 
@@ -1651,8 +1651,8 @@ void ModeAuto::do_loiter_time(const AP_Mission::Mission_Command& cmd)
     do_loiter_unlimited(cmd);
 
     // setup loiter timer
-    loiter_time     = 0;
-    loiter_time_max = cmd.p1;     // units are (seconds)
+    loiter_time_ms     = 0;
+    loiter_time_max_s = cmd.p1;     // units are (seconds)
 }
 
 // do_loiter_alt - initiate loitering at a point until a given altitude is reached
@@ -1712,9 +1712,9 @@ void ModeAuto::do_spline_wp(const AP_Mission::Mission_Command& cmd)
     }
 
     // this will be used to remember the time in millis after we reach or pass the WP.
-    loiter_time = 0;
+    loiter_time_ms = 0;
     // this is the delay, stored in seconds
-    loiter_time_max = cmd.p1;
+    loiter_time_max_s = cmd.p1;
 
     // set next destination if necessary
     if (!set_next_wp(cmd, dest_loc)) {
@@ -1742,7 +1742,7 @@ void ModeAuto::get_spline_from_cmd(const AP_Mission::Mission_Command& cmd, const
 
     // if there is no delay at the end of this segment get next nav command
     AP_Mission::Mission_Command temp_cmd;
-    if (cmd.p1 == 0 && mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
+    if (cmd.p1 == 0 && mission.get_next_nav_cmd(cmd.index + 1, temp_cmd)) {
         next_dest_loc = loc_from_cmd(temp_cmd, dest_loc);
         next_dest_loc_is_spline = temp_cmd.id == MAV_CMD_NAV_SPLINE_WAYPOINT;
     } else {
@@ -1855,9 +1855,9 @@ void ModeAuto::do_yaw(const AP_Mission::Mission_Command& cmd)
 void ModeAuto::do_change_speed(const AP_Mission::Mission_Command& cmd)
 {
     if (cmd.content.speed.target_ms > 0) {
-        if (cmd.content.speed.speed_type == 2)  {
+        if (cmd.content.speed.speed_type == 2) {
             copter.wp_nav->set_speed_up(cmd.content.speed.target_ms * 100.0f);
-        } else if (cmd.content.speed.speed_type == 3)  {
+        } else if (cmd.content.speed.speed_type == 3) {
             copter.wp_nav->set_speed_down(cmd.content.speed.target_ms * 100.0f);
         } else {
             copter.wp_nav->set_speed_xy(cmd.content.speed.target_ms * 100.0f);
@@ -2056,12 +2056,12 @@ bool ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
     }
 
     // start our loiter timer
-    if ( loiter_time == 0 ) {
-        loiter_time = millis();
+    if ( loiter_time_ms == 0 ) {
+        loiter_time_ms = millis();
     }
 
     // check if loiter timer has run out
-    if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
+    if (((millis() - loiter_time_ms) / 1000) >= loiter_time_max_s) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }
@@ -2096,7 +2096,7 @@ bool ModeAuto::verify_RTL()
 
 bool ModeAuto::verify_wait_delay()
 {
-    if (millis() - condition_start > (uint32_t)MAX(condition_value,0)) {
+    if (millis() - condition_start > (uint32_t)MAX(condition_value, 0)) {
         condition_value = 0;
         return true;
     }
@@ -2105,7 +2105,7 @@ bool ModeAuto::verify_wait_delay()
 
 bool ModeAuto::verify_within_distance()
 {
-    if (wp_distance() < (uint32_t)MAX(condition_value,0)) {
+    if (wp_distance() < (uint32_t)MAX(condition_value, 0)) {
         condition_value = 0;
         return true;
     }
@@ -2126,22 +2126,22 @@ bool ModeAuto::verify_yaw()
 bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
     // check if we have reached the waypoint
-    if ( !copter.wp_nav->reached_wp_destination() ) {
+    if (!copter.wp_nav->reached_wp_destination()) {
         return false;
     }
 
     // start timer if necessary
-    if (loiter_time == 0) {
-        loiter_time = millis();
-        if (loiter_time_max > 0) {
+    if (loiter_time_ms == 0) {
+        loiter_time_ms = millis();
+        if (loiter_time_max_s > 0) {
             // play a tone
             AP_Notify::events.waypoint_complete = 1;
         }
     }
 
     // check if timer has run out
-    if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
-        if (loiter_time_max == 0) {
+    if (((millis() - loiter_time_ms) / 1000) >= loiter_time_max_s) {
+        if (loiter_time_max_s == 0) {
             // play a tone
             AP_Notify::events.waypoint_complete = 1;
         }
@@ -2164,24 +2164,24 @@ bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
     }
 
     // check if we have completed circling
-    return fabsf(copter.circle_nav->get_angle_total()/float(M_2PI)) >= LOWBYTE(cmd.p1);
+    return fabsf(copter.circle_nav->get_angle_total() / float(M_2PI)) >= LOWBYTE(cmd.p1);
 }
 
 // verify_spline_wp - check if we have reached the next way point using spline
 bool ModeAuto::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
 {
     // check if we have reached the waypoint
-    if ( !copter.wp_nav->reached_wp_destination() ) {
+    if (!copter.wp_nav->reached_wp_destination()) {
         return false;
     }
 
     // start timer if necessary
-    if (loiter_time == 0) {
-        loiter_time = millis();
+    if (loiter_time_ms == 0) {
+        loiter_time_ms = millis();
     }
 
     // check if timer has run out
-    if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
+    if (((millis() - loiter_time_ms) / 1000) >= loiter_time_max_s) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }

@@ -47,14 +47,14 @@ const AP_Param::GroupInfo ModeZigZag::var_info[] = {
     // @Description: The direction to move sideways in ZigZag mode
     // @Values: 0:forward, 1:right, 2:backward, 3:left
     // @User: Advanced
-    AP_GROUPINFO("DIRECTION", 5, ModeZigZag, _direction, 0),
+    AP_GROUPINFO("DIRECTION", 5, ModeZigZag, direction, 0),
 
     // @Param: LINE_NUM
     // @DisplayName: Total number of lines
     // @Description: Total number of lines for ZigZag auto if 1 or more. -1: Infinity, 0: Just moving to sideways
     // @Range: -1 32767
     // @User: Advanced
-    AP_GROUPINFO("LINE_NUM", 6, ModeZigZag, _line_num, 0),
+    AP_GROUPINFO("LINE_NUM", 6, ModeZigZag, targeted_line_num, 0),
 
     AP_GROUPEND
 };
@@ -93,7 +93,7 @@ bool ModeZigZag::init(bool ignore_checks)
     }
 
     // initialise waypoint state
-    stage = STORING_POINTS;
+   _stage = STORING_POINTS;
     dest_A.zero();
     dest_B.zero();
 
@@ -119,7 +119,7 @@ void ModeZigZag::run()
 
     // set the direction and the total number of lines
     zigzag_direction = (Direction)constrain_int16(_direction, 0, 3);
-    line_num = constrain_int16(_line_num, ZIGZAG_LINE_INFINITY, 32767);
+    _line_num = constrain_int16(_line_num, ZIGZAG_LINE_INFINITY, 32767);
 
     // auto control
     if (stage == AUTO) {
@@ -129,8 +129,8 @@ void ModeZigZag::run()
         } else if (reached_destination()) {
             // if vehicle has reached destination switch to manual control or moving to A or B
             AP_Notify::events.waypoint_complete = 1;
-            if (is_auto) {
-                if (line_num == ZIGZAG_LINE_INFINITY || line_count < line_num) {
+            if (_is_auto) {
+                if (line_num == ZIGZAG_LINE_INFINITY || line_count <_target_line_num) {
                     if (auto_stage == AutoState::SIDEWAYS) {
                         save_or_move_to_destination((ab_dest_stored == Destination::A) ? Destination::B : Destination::A);
                     } else {
@@ -151,7 +151,7 @@ void ModeZigZag::run()
     }
 
     // manual control
-    if (stage == STORING_POINTS || stage == MANUAL_REGAIN) {
+    if (stage == STORING_POINTS ||_stage == MANUAL_REGAIN) {
         // receive pilot's inputs, do position and attitude control
         manual_control();
     }
@@ -180,7 +180,7 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
             }
             // if both A and B have been stored advance state
             if (!dest_A.is_zero() && !dest_B.is_zero() && !is_zero((dest_B - dest_A).length_squared())) {
-                stage = MANUAL_REGAIN;
+               _stage = MANUAL_REGAIN;
                 spray(false);
             } else if (!dest_A.is_zero() || !dest_B.is_zero()) {
                 // if only A or B have been stored, spray on
@@ -193,20 +193,20 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
             // A and B have been defined, move vehicle to destination A or B
             Vector3f next_dest;
             bool terr_alt;
-            if (calculate_next_dest(ab_dest, stage == AUTO, next_dest, terr_alt)) {
+            if (calculate_next_dest(ab_dest,_stage == AUTO, next_dest, terr_alt)) {
                 wp_nav->wp_and_spline_init();
                 if (wp_nav->set_wp_destination(next_dest, terr_alt)) {
-                    stage = AUTO;
+                   _stage = AUTO;
                     auto_stage = AutoState::AB_MOVING;
                     ab_dest_stored = ab_dest;
                     // spray on while moving to A or B
                     spray(true);
                     reach_wp_time_ms = 0;
-                    if (is_auto == false || line_num == ZIGZAG_LINE_INFINITY) {
+                    if (_is_auto== false ||_target_line_num == ZIGZAG_LINE_INFINITY) {
                         gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to %s", (ab_dest == Destination::A) ? "A" : "B");
                     } else {
                         line_count++;
-                        gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to %s (line %d/%d)", (ab_dest == Destination::A) ? "A" : "B", line_count, line_num);
+                        gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to %s (line %d/%d)", (ab_dest == Destination::A) ? "A" : "B", line_count,_target_line_num);
                     }
                 }
             }
@@ -222,7 +222,7 @@ void ModeZigZag::move_to_side()
         if (calculate_side_dest(next_dest, terr_alt)) {
             wp_nav->wp_and_spline_init();
             if (wp_nav->set_wp_destination(next_dest, terr_alt)) {
-                stage = AUTO;
+               _stage = AUTO;
                 auto_stage = AutoState::SIDEWAYS;
                 current_dest = next_dest;
                 current_terr_alt = terr_alt;
@@ -238,7 +238,7 @@ void ModeZigZag::move_to_side()
 void ModeZigZag::return_to_manual_control(bool maintain_target)
 {
     if (stage == AUTO) {
-        stage = MANUAL_REGAIN;
+       _stage = MANUAL_REGAIN;
         spray(false);
         loiter_nav->clear_pilot_desired_acceleration();
         if (maintain_target) {
@@ -250,7 +250,7 @@ void ModeZigZag::return_to_manual_control(bool maintain_target)
         } else {
             loiter_nav->init_target();
         }
-        is_auto = false;
+        _is_auto= false;
         gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: manual control");
     }
 }
@@ -337,7 +337,7 @@ void ModeZigZag::manual_control()
     case AltHold_Takeoff:
         // initiate take-off
         if (!takeoff.running()) {
-            takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
+            takeoff.start(constrain_float(g.pilot_takeoff_alt, 0.0f, 1000.0f));
         }
 
         // get avoidance adjusted climb rate
@@ -529,17 +529,17 @@ void ModeZigZag::run_auto()
         return;
     }
 
-    is_auto = true;
+    _is_auto= true;
     // resume if zigzag auto is suspended
-    if (is_suspended && line_count <= line_num) {
-        // resume the stage when it was suspended
+    if (is_suspended && line_count <=_target_line_num) {
+        // resume the_stage when it was suspended
         if (auto_stage == AutoState::AB_MOVING) {
             line_count--;
             save_or_move_to_destination(ab_dest_stored);
         } else if (auto_stage == AutoState::SIDEWAYS) {
             wp_nav->wp_and_spline_init();
             if (wp_nav->set_wp_destination(current_dest, current_terr_alt)) {
-                stage = AUTO;
+               _stage = AUTO;
                 reach_wp_time_ms = 0;
                 char const *dir[] = {"forward", "right", "backward", "left"};
                 gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to %s", dir[(uint8_t)zigzag_direction]);
@@ -567,7 +567,7 @@ void ModeZigZag::suspend_auto()
 // initialize zigzag auto
 void ModeZigZag::init_auto()
 {
-    is_auto = false;
+    _is_auto= false;
     auto_stage = AutoState::MANUAL;
     line_count = 0;
     is_suspended = false;
@@ -585,7 +585,7 @@ void ModeZigZag::spray(bool b)
 
 uint32_t ModeZigZag::wp_distance() const
 {
-    if (is_auto) {
+    if (_is_auto) {
         return wp_nav->get_wp_distance_to_destination();
     } else {
         return 0;
@@ -593,7 +593,7 @@ uint32_t ModeZigZag::wp_distance() const
 }
 int32_t ModeZigZag::wp_bearing() const
 {
-    if (is_auto) {
+    if (_is_auto) {
         return wp_nav->get_wp_bearing_to_destination();
     } else {
         return 0;
@@ -601,7 +601,7 @@ int32_t ModeZigZag::wp_bearing() const
 }
 float ModeZigZag::crosstrack_error() const
 {
-    if (is_auto) {
+    if (_is_auto) {
         return wp_nav->crosstrack_error();
     } else {
         return 0;

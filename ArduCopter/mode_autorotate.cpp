@@ -65,7 +65,7 @@ bool ModeAutorotate::init(bool ignore_checks)
     _entry_time_start_ms = millis();
 
     // The decay rate to reduce the head speed from the current to the target
-    _hs_decay = ((_initial_rpm/g2.arot.get_hs_set_point()) - HEAD_SPEED_TARGET_RATIO) / AUTOROTATE_ENTRY_TIME;
+    _hs_decay = ((_initial_rpm / g2.arot.get_hs_set_point()) - HEAD_SPEED_TARGET_RATIO) / AUTOROTATE_ENTRY_TIME;
 
     return true;
 }
@@ -96,9 +96,9 @@ void ModeAutorotate::run()
      nav_pos_switch = Navigation_Decision::USER_CONTROL_STABILISED;
 
     // Timer from entry phase to progress to glide phase
-    if (phase_switch == Autorotation_Phase::ENTRY){
+    if (phase_switch == Autorotation_Phase::ENTRY) {
 
-        if ((now - _entry_time_start_ms)/1000.0f > AUTOROTATE_ENTRY_TIME) {
+        if ((now - _entry_time_start_ms) / 1000.0f > AUTOROTATE_ENTRY_TIME) {
             // Flight phase can be progressed to steady state glide
             phase_switch = Autorotation_Phase::SS_GLIDE;
         }
@@ -124,7 +124,7 @@ void ModeAutorotate::run()
                 g2.arot.set_col_cutoff_freq(g2.arot.get_col_entry_freq());
 
                 // Target head speed is set to rpm at initiation to prevent unwanted changes in attitude
-                _target_head_speed = _initial_rpm/g2.arot.get_hs_set_point();
+                _target_head_speed = _initial_rpm / g2.arot.get_hs_set_point();
 
                 // Set desired forward speed target
                 g2.arot.set_desired_fwd_speed();
@@ -232,7 +232,7 @@ void ModeAutorotate::run()
                 pilot_des_v_z = constrain_float(pilot_des_v_z, pilot_spd_dn, pilot_spd_up);
 
                 // Calculate target climb rate adjustment to transition from bail out descent speed to requested climb rate on stick.
-                _target_climb_rate_adjust = (curr_vel_z - pilot_des_v_z)/(_bail_time - BAILOUT_MOTOR_RAMP_TIME); //accounting for 0.5s motor spool time
+                _target_climb_rate_adjust = (curr_vel_z - pilot_des_v_z) / (_bail_time - BAILOUT_MOTOR_RAMP_TIME); //accounting for 0.5s motor spool time
 
                 // Calculate pitch target adjustment rate to return to level
                 _target_pitch_adjust = _pitch_target/_bail_time;
@@ -246,7 +246,7 @@ void ModeAutorotate::run()
                 _flags.bail_out_initial = 0;
             }
 
-        if ((now - _bail_time_start_ms)/1000.0f >= BAILOUT_MOTOR_RAMP_TIME) {
+        if ((now - _bail_time_start_ms) / 1000.0f >= BAILOUT_MOTOR_RAMP_TIME) {
             // Update desired vertical speed and pitch target after the bailout motor ramp timer has completed
             _desired_v_z -= _target_climb_rate_adjust*G_Dt;
             _pitch_target -= _target_pitch_adjust*G_Dt;
@@ -257,7 +257,7 @@ void ModeAutorotate::run()
         // Update controllers
         pos_control->update_z_controller();
 
-        if ((now - _bail_time_start_ms)/1000.0f >= _bail_time) {
+        if ((now - _bail_time_start_ms) / 1000.0f >= _bail_time) {
             // Bail out timer complete.  Change flight mode. Do not revert back to auto. Prevent aircraft
             // from continuing mission and potentially flying further away after a power failure.
             if (copter.prev_control_mode == Mode::Number::AUTO) {

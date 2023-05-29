@@ -1247,7 +1247,7 @@ ParametersG2::ParametersG2(void)
     ,user_parameters()
 #endif
 #if AUTOTUNE_ENABLED == ENABLED
-    ,autotune_ptr(&copter.mode_autotune.autotune)
+    ,autotune_ptr(&copter.mode_autotune._autotune)
 #endif
 #if MODE_SYSTEMID_ENABLED == ENABLED
     ,mode_systemid_ptr(&copter.mode_systemid)

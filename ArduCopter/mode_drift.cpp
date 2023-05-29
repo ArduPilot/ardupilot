@@ -70,7 +70,6 @@ void ModeDrift::run()
 
     // If we let go of sticks, bring us to a stop
     if (is_zero(target_pitch)) {
-        // .14/ (.03 * 100) = 4.6 seconds till full braking
         braker += .03f;
         braker = MIN(braker, DRIFT_SPEEDGAIN);
         target_pitch = pitch_vel * braker;

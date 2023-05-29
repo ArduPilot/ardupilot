@@ -21,7 +21,7 @@ bool ModeRTL::init(bool ignore_checks)
     wp_nav->wp_and_spline_init(g.rtl_speed_cms);
     _state = SubMode::STARTING;
     _state_complete = true; // see run() method below
-    terrain_following_allowed = !copter.failsafe.terrain;
+    _terrain_following_allowed = !copter.failsafe.terrain;
     // reset flag indicating if pilot has applied roll or pitch inputs during landing
     copter.ap.land_repo_active = false;
 
@@ -40,7 +40,7 @@ bool ModeRTL::init(bool ignore_checks)
 void ModeRTL::restart_without_terrain()
 {
     AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::RESTARTED_RTL);
-    terrain_following_allowed = false;
+    _terrain_following_allowed = false;
     _state = SubMode::STARTING;
     _state_complete = true;
     gcs().send_text(MAV_SEVERITY_CRITICAL,"Restarting RTL - Terrain data missing");
@@ -420,7 +420,7 @@ void ModeRTL::compute_return_target()
 
     // determine altitude type of return journey (alt-above-home, alt-above-terrain using range finder or alt-above-terrain using terrain database)
     ReturnTargetAltType alt_type = ReturnTargetAltType::RELATIVE;
-    if (terrain_following_allowed && (get_alt_type() == RTLAltType::RTL_ALTTYPE_TERRAIN)) {
+    if (_terrain_following_allowed && (get_alt_type() == RTLAltType::RTL_ALTTYPE_TERRAIN)) {
         // convert RTL_ALT_TYPE and WPNAV_RFNG_USE parameters to ReturnTargetAltType
         switch (wp_nav->get_terrain_source()) {
         case AC_WPNav::TerrainSource::TERRAIN_UNAVAILABLE:

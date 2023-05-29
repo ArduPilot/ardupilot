@@ -589,7 +589,7 @@ void Mode::land_run_vertical_control(bool pause_descent)
         max_land_descent_velocity = MIN(max_land_descent_velocity, -abs(g.land_speed));
 
         // Compute a vertical velocity demand such that the vehicle approaches g2.land_alt_low. Without the below constraint, this would cause the vehicle to hover at g2.land_alt_low.
-        cmb_rate = sqrt_controller(MAX(g2.land_alt_low,100)-get_alt_above_ground_cm(), pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z_cmss(), G_Dt);
+        cmb_rate = sqrt_controller(MAX(g2.land_alt_low,100) - get_alt_above_ground_cm(), pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z_cmss(), G_Dt);
 
         // Constrain the demanded vertical velocity so that it is between the configured maximum descent speed and the configured minimum descent speed.
         cmb_rate = constrain_float(cmb_rate, max_land_descent_velocity, -abs(g.land_speed));
@@ -620,8 +620,8 @@ void Mode::land_run_vertical_control(bool pause_descent)
                 // compute desired descent velocity
                 const float precland_acceptable_error_cm = 15.0f;
                 const float precland_min_descent_speed_cms = 10.0f;
-                const float max_descent_speed_cms = abs(g.land_speed)*0.5f;
-                const float land_slowdown = MAX(0.0f, target_error_cm*(max_descent_speed_cms/precland_acceptable_error_cm));
+                const float max_descent_speed_cms = abs(g.land_speed) * 0.5f;
+                const float land_slowdown = MAX(0.0f, target_error_cm * (max_descent_speed_cms/precland_acceptable_error_cm));
                 cmb_rate = MIN(-precland_min_descent_speed_cms, -max_descent_speed_cms+land_slowdown);
             }
         }
@@ -877,7 +877,7 @@ float Mode::get_pilot_desired_throttle() const
         throttle_in = 0.5f + ((float)(throttle_control-mid_stick)) * 0.5f / (float)(1000-mid_stick);
     }
 
-    const float expo = constrain_float(-(thr_mid-0.5f)/0.375f, -0.5f, 1.0f);
+    const float expo = constrain_float(-(thr_mid-0.5f) / 0.375f, -0.5f, 1.0f);
     // calculate the output throttle using the given expo function
     float throttle_out = throttle_in*(1.0f-expo) + expo*throttle_in*throttle_in*throttle_in;
     return throttle_out;
@@ -977,7 +977,8 @@ float Mode::get_non_takeoff_throttle()
     return copter.get_non_takeoff_throttle();
 }
 
-void Mode::update_simple_mode(void) {
+void Mode::update_simple_mode(void) 
+{
     copter.update_simple_mode();
 }
 

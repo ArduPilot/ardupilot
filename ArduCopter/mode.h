@@ -207,8 +207,8 @@ protected:
     private:
         bool _running;
         float take_off_start_alt;
-        float take_off_complete_alt;
-    };
+        float _take_off_complete_alt;
+    };  
 
     static _TakeOff takeoff;
 
@@ -293,7 +293,7 @@ public:
         Mode _last_mode;
 
         // Yaw will point at this location if mode is set to Mode::ROI
-        Vector3f roi;
+        Vector3f _roi;
 
         // yaw used for YAW_FIXED yaw_mode
         float _fixed_yaw_offset_cd;
@@ -385,7 +385,7 @@ public:
 
     bool init(bool ignore_checks) override;
     void run() override;
-    void virtual_flybar( float &roll_out, float &pitch_out, float &yaw_out, float pitch_leak, float roll_leak);
+    void virtual_flybar(float &roll_out, float &pitch_out, float &yaw_out, float pitch_leak, float roll_leak);
 
 protected:
 private:
@@ -500,10 +500,11 @@ public:
     bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4);
     void nav_script_time_done(uint16_t id);
 
-    AP_Mission mission{
+    AP_Mission mission {
         FUNCTOR_BIND_MEMBER(&ModeAuto::start_command, bool, const AP_Mission::Mission_Command &),
         FUNCTOR_BIND_MEMBER(&ModeAuto::verify_command, bool, const AP_Mission::Mission_Command &),
-        FUNCTOR_BIND_MEMBER(&ModeAuto::exit_mission, void)};
+        FUNCTOR_BIND_MEMBER(&ModeAuto::exit_mission, void)
+    };
 
     // Mission change detector
     AP_Mission_ChangeDetector mis_change_detector;
@@ -520,7 +521,7 @@ protected:
 
     uint32_t wp_distance() const override;
     int32_t wp_bearing() const override;
-    float crosstrack_error() const override { return wp_nav->crosstrack_error();}
+    float crosstrack_error() const override { return wp_nav->crosstrack_error(); }
     bool get_wp(Location &loc) const override;
 
 private:
@@ -618,13 +619,13 @@ private:
     bool verify_nav_attitude_time(const AP_Mission::Mission_Command& cmd);
 
     // Loiter control
-    uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
-    uint32_t loiter_time;                    // How long have we been loitering - The start time in millis
+    uint16_t loiter_time_max_s;              // How long we should stay in Loiter Mode for mission scripting (time in seconds)
+    uint32_t loiter_time_ms;                 // How long have we been loitering - The start time in millis
 
     struct {
-        bool reached_destination_xy : 1;
-        bool loiter_start_done : 1;
-        bool reached_alt : 1;
+        bool reached_destination_xy;
+        bool loiter_start_done;
+        bool reached_alt;
         float alt_error_cm;
         int32_t alt;
     } loiter_to_alt;
@@ -735,7 +736,7 @@ protected:
 
 private:
 
-    AutoTune autotune;
+    AutoTune _autotune;
 
 };
 #endif
@@ -765,7 +766,7 @@ protected:
 
 private:
 
-    uint32_t _timeout_start;
+    uint32_t _timeout_start_ms;
     uint32_t _timeout_ms;
 
 };
@@ -797,7 +798,7 @@ protected:
 private:
 
     // Circle
-    bool speed_changing = false;     // true when the roll stick is being held to facilitate stopping at 0 rate
+    bool _speed_changing = false;     // true when the roll stick is being held to facilitate stopping at 0 rate
 };
 
 
@@ -851,7 +852,7 @@ protected:
 private:
 
     // Flip
-    Vector3f orig_attitude;         // original vehicle attitude before flip
+    Vector3f _orig_attitude;         // original vehicle attitude before flip
 
     enum class FlipState : uint8_t {
         Start,
@@ -862,10 +863,10 @@ private:
         Abandon
     };
     FlipState _state;               // current state of flip
-    Mode::Number   orig_control_mode;   // flight mode when flip was initated
-    uint32_t  start_time_ms;          // time since flip began
-    int8_t    roll_dir;            // roll direction (-1 = roll left, 1 = roll right)
-    int8_t    pitch_dir;           // pitch direction (-1 = pitch forward, 1 = pitch back)
+    Mode::Number   _orig_control_mode;   // flight mode when flip was initated
+    uint32_t  _start_time_ms;          // time since flip began
+    int8_t    _roll_dir;            // roll direction (-1 = roll left, 1 = roll right)
+    int8_t    _pitch_dir;           // pitch direction (-1 = pitch forward, 1 = pitch back)
 };
 
 
@@ -912,7 +913,7 @@ private:
     // calculate attitude from flow data
     void flow_to_angle(Vector2f &bf_angle);
 
-    LowPassFilterVector2f flow_filter;
+    LowPassFilterVector2f _flow_filter;
 
     bool flowhold_init(bool ignore_checks);
     void flowhold_run();
@@ -920,40 +921,40 @@ private:
     void update_height_estimate(void);
 
     // minimum assumed height
-    const float height_min = 0.1f;
+    const float _height_min = 0.1f;
 
     // maximum scaling height
-    const float height_max = 3.0f;
+    const float _height_max = 3.0f;
 
-    AP_Float flow_max;
-    AC_PI_2D flow_pi_xy{0.2f, 0.3f, 3000, 5, 0.0025f};
-    AP_Float flow_filter_hz;
-    AP_Int8  flow_min_quality;
-    AP_Int8  brake_rate_dps;
+    AP_Float _flow_max;
+    AC_PI_2D _flow_pi_xy{0.2f, 0.3f, 3000, 5, 0.0025f};
+    AP_Float _flow_filter_hz;
+    AP_Int8  _flow_min_quality;
+    AP_Int8  _brake_rate_dps;
 
-    float quality_filtered;
+    float _quality_filtered;
 
-    uint8_t log_counter;
-    bool limited;
-    Vector2f xy_I;
+    uint8_t _log_counter;
+    bool _limited;
+    Vector2f _xy_I;
 
     // accumulated INS delta velocity in north-east form since last flow update
-    Vector2f delta_velocity_ne;
+    Vector2f _delta_velocity_ne;
 
     // last flow rate in radians/sec in north-east axis
-    Vector2f last_flow_rate_rps;
+    Vector2f _last_flow_rate_rps;
 
     // timestamp of last flow data
-    uint32_t last_flow_ms;
+    uint32_t _last_flow_ms;
 
-    float last_ins_height;
-    float height_offset;
+    float _last_ins_height_cm;
+    float _height_offset_cm;
 
     // are we braking after pilot input?
-    bool braking;
+    bool _are_braking;
 
     // last time there was significant stick input
-    uint32_t last_stick_input_ms;
+    uint32_t _last_stick_input_ms;
 };
 #endif // MODE_FLOWHOLD_ENABLED
 
@@ -1031,7 +1032,7 @@ public:
         Angle,
     };
 
-    SubMode submode() const { return guided_mode; }
+    SubMode submode() const { return _guided_mode; }
 
     void angle_control_start();
     void angle_control_run();
@@ -1091,9 +1092,9 @@ private:
     void set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
 
     // controls which controller is run (pos or vel):
-    SubMode guided_mode = SubMode::TakeOff;
-    bool send_notification;     // used to send one time notification to ground station
-    bool takeoff_complete;      // true once takeoff has completed (used to trigger retracting of landing gear)
+    SubMode _guided_mode = SubMode::TakeOff;
+    bool _send_notification;     // used to send one time notification to ground station
+    bool _takeoff_complete;      // true once takeoff has completed (used to trigger retracting of landing gear)
 
     // guided mode is paused or not
     bool _paused;
@@ -1144,9 +1145,9 @@ public:
     void do_not_use_GPS();
 
     // returns true if LAND mode is trying to control X/Y position
-    bool controlling_position() const { return control_position; }
+    bool controlling_position() const { return _control_position; }
 
-    void set_land_pause(bool new_value) { land_pause = new_value; }
+    void set_land_pause(bool new_value) { _land_pause = new_value; }
 
 protected:
 
@@ -1158,10 +1159,10 @@ private:
     void gps_run();
     void nogps_run();
 
-    bool control_position; // true if we are using an external reference to control position
+    bool _control_position; // true if we are using an external reference to control position
 
-    uint32_t land_start_time;
-    bool land_pause;
+    uint32_t _land_start_time;
+    bool _land_pause;
 };
 
 
@@ -1239,7 +1240,7 @@ private:
     void update_brake_angle_from_velocity(float &brake_angle, float velocity);
     void init_wind_comp_estimate();
     void update_wind_comp_estimate();
-    void get_wind_comp_lean_angles(float &roll_angle, float &pitch_angle);
+    void get_wind_comp_lean_angles_rads(float &roll_angle, float &pitch_angle);
     void roll_controller_to_pilot_override();
     void pitch_controller_to_pilot_override();
 
@@ -1252,17 +1253,17 @@ private:
         CONTROLLER_TO_PILOT_OVERRIDE // pilot has input controls on this axis and this axis is transitioning to pilot override (other axis will transition to brake if no pilot input)
     };
 
-    RPMode roll_mode;
-    RPMode pitch_mode;
+    RPMode _roll_mode;
+    RPMode _pitch_mode;
 
     // pilot input related variables
-    float pilot_roll;                         // pilot requested roll angle (filtered to slow returns to zero)
-    float pilot_pitch;                        // pilot requested roll angle (filtered to slow returns to zero)
+    float _pilot_roll;                         // pilot requested roll angle (filtered to slow returns to zero)
+    float _pilot_pitch;                        // pilot requested roll angle (filtered to slow returns to zero)
 
     // braking related variables
     struct {
-        uint8_t time_updated_roll   : 1;    // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
-        uint8_t time_updated_pitch  : 1;    // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
+        uint8_t time_updated_roll;          // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
+        uint8_t time_updated_pitch;         // true once we have re-estimated the braking time.  This is done once as the vehicle begins to flatten out after braking
 
         float gain;                         // gain used during conversion of vehicle's velocity to lean angle during braking (calculated from rate)
         float roll;                         // target roll angle during braking periods
@@ -1275,21 +1276,21 @@ private:
     } brake;
 
     // loiter related variables
-    int16_t controller_to_pilot_timer_roll;     // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
-    int16_t controller_to_pilot_timer_pitch;    // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
-    float controller_final_roll;                // final roll angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
-    float controller_final_pitch;               // final pitch angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
+    int16_t _controller_to_pilot_timer_roll;     // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
+    int16_t _controller_to_pilot_timer_pitch;    // cycles to mix controller and pilot controls in POSHOLD_CONTROLLER_TO_PILOT
+    float _controller_final_roll;                // final roll angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
+    float _controller_final_pitch;               // final pitch angle from controller as we exit brake or loiter mode (used for mixing with pilot input)
 
     // wind compensation related variables
-    Vector2f wind_comp_ef;                      // wind compensation in earth frame, filtered lean angles from position controller
-    float wind_comp_roll;                       // roll angle to compensate for wind
-    float wind_comp_pitch;                      // pitch angle to compensate for wind
-    uint16_t wind_comp_start_timer;             // counter to delay start of wind compensation for a short time after loiter is engaged
-    int8_t  wind_comp_timer;                    // counter to reduce wind comp roll/pitch lean angle calcs to 10hz
+    Vector2f _wind_comp_ef;                      // wind compensation in earth frame, filtered lean angles from position controller
+    float _wind_comp_roll;                       // roll angle to compensate for wind
+    float _wind_comp_pitch;                      // pitch angle to compensate for wind
+    uint16_t _wind_comp_start_timer;             // counter to delay start of wind compensation for a short time after loiter is engaged
+    int8_t _wind_comp_timer;                     // counter to reduce wind comp roll/pitch lean angle calcs to 10hz
 
     // final output
-    float roll;   // final roll angle sent to attitude controller
-    float pitch;  // final pitch angle sent to attitude controller
+    float _roll;   // final roll angle sent to attitude controller
+    float _pitch;  // final pitch angle sent to attitude controller
 
 };
 
@@ -1395,9 +1396,9 @@ private:
     };
 
     // Loiter timer - Records how long we have been in loiter
-    uint32_t _loiter_start_time;
+    uint32_t _loiter_start_time_ms;
 
-    bool terrain_following_allowed;
+    bool _terrain_following_allowed;
 
     // enum for RTL_OPTIONS parameter
     enum class Options : int32_t {
@@ -1455,12 +1456,12 @@ private:
     void path_follow_run();
     void pre_land_position_run();
     void land();
-    SubMode smart_rtl_state = SubMode::PATH_FOLLOW;
+    SubMode _smart_rtl_state = SubMode::PATH_FOLLOW;
 
     // keep track of how long we have failed to get another return
     // point while following our path home.  If we take too long we
     // may choose to land the vehicle.
-    uint32_t path_follow_last_pop_fail_ms;
+    uint32_t _path_follow_last_pop_fail_ms;
 };
 
 
@@ -1551,7 +1552,7 @@ public:
     bool is_autopilot() const override { return false; }
     bool logs_attitude() const override { return true; }
 
-    void set_magnitude(float input) { waveform_magnitude.set(input); }
+    void set_magnitude(float input) { _waveform_magnitude.set(input); }
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -1583,20 +1584,20 @@ private:
         MIX_THROTTLE = 13,  // mixer throttle axis is being excited
     };
 
-    AP_Int8 axis;               // Controls which axis are being excited. Set to non-zero to display other parameters
-    AP_Float waveform_magnitude;// Magnitude of chirp waveform
-    AP_Float frequency_start;   // Frequency at the start of the chirp
-    AP_Float frequency_stop;    // Frequency at the end of the chirp
-    AP_Float time_fade_in;      // Time to reach maximum amplitude of chirp
-    AP_Float time_record;       // Time taken to complete the chirp waveform
-    AP_Float time_fade_out;     // Time to reach zero amplitude after chirp finishes
+    AP_Int8 _axis;               // Controls which axis are being excited. Set to non-zero to display other parameters
+    AP_Float _waveform_magnitude;// Magnitude of chirp waveform
+    AP_Float _frequency_start;   // Frequency at the start of the chirp
+    AP_Float _frequency_stop;    // Frequency at the end of the chirp
+    AP_Float _time_fade_in;      // Time to reach maximum amplitude of chirp
+    AP_Float _time_record;       // Time taken to complete the chirp waveform
+    AP_Float _time_fade_out;     // Time to reach zero amplitude after chirp finishes
 
-    bool att_bf_feedforward;    // Setting of attitude_control->get_bf_feedforward
-    float waveform_time;        // Time reference for waveform
-    float waveform_sample;      // Current waveform sample
-    float waveform_freq_rads;   // Instantaneous waveform frequency
-    float time_const_freq;      // Time at constant frequency before chirp starts
-    int8_t log_subsample;       // Subsample multiple for logging.
+    bool _att_bf_feedforward;    // Setting of attitude_control->get_bf_feedforward
+    float _waveform_time;        // Time reference for waveform
+    float _waveform_sample;      // Current waveform sample
+    float _waveform_freq_rads;   // Instantaneous waveform frequency
+    float _time_const_freq;      // Time at constant frequency before chirp starts
+    int8_t _log_subsample;       // Subsample multiple for logging.
 
     // System ID states
     enum class SystemIDModeState {
@@ -1653,12 +1654,12 @@ private:
         Throw_PosHold
     };
 
-    ThrowModeStage stage = Throw_Disarmed;
+    ThrowModeStage _stage = Throw_Disarmed;
     ThrowModeStage prev_stage = Throw_Disarmed;
-    uint32_t last_log_ms;
-    bool nextmode_attempted;
-    uint32_t free_fall_start_ms;    // system time free fall was detected
-    float free_fall_start_velz;     // vertical velocity when free fall was detected
+    uint32_t _last_log_ms;
+    bool _nextmode_attempted;
+    uint32_t _free_fall_start_ms;    // system time free fall was detected
+    float _free_fall_start_velz;     // vertical velocity when free fall was detected
 };
 
 #if MODE_TURTLE_ENABLED == ENABLED
@@ -1688,8 +1689,8 @@ private:
     void arm_motors();
     void disarm_motors();
 
-    float motors_output;
-    Vector2f motors_input;
+    float _motors_output;
+    Vector2f _motors_input;
     uint32_t last_throttle_warning_output_ms;
 };
 #endif
@@ -1813,10 +1814,10 @@ private:
     bool calculate_side_dest(Vector3f& next_dest, bool& terrain_alt) const;
     void move_to_side();
 
-    Vector2f dest_A;    // in NEU frame in cm relative to ekf origin
-    Vector2f dest_B;    // in NEU frame in cm relative to ekf origin
-    Vector3f current_dest; // current target destination (use for resume after suspending)
-    bool current_terr_alt;
+    Vector2f _dest_A;    // in NEU frame in cm relative to ekf origin
+    Vector2f _dest_B;    // in NEU frame in cm relative to ekf origin
+    Vector3f _current_dest; // current target destination (use for resume after suspending)
+    bool _current_terr_alt;
 
     // parameters
     AP_Int8  _auto_enabled;    // top level enable/disable control
@@ -1840,12 +1841,12 @@ private:
         SIDEWAYS,       // moving to sideways
     } auto_stage;
 
-    uint32_t reach_wp_time_ms = 0;  // time since vehicle reached destination (or zero if not yet reached)
-    Destination ab_dest_stored;     // store the current destination
-    bool is_auto;                   // enable zigzag auto feature which is automate both AB and sideways
-    uint16_t line_count = 0;        // current line number
-    int16_t line_num = 0;           // target line number
-    bool is_suspended;              // true if zigzag auto is suspended
+    uint32_t _reach_wp_time_ms = 0;  // time since vehicle reached destination (or zero if not yet reached)
+    Destination _ab_dest_stored;     // store the current destination
+    bool _is_auto;                   // enable zigzag auto feature which is automate both AB and sideways
+    uint16_t _line_count = 0;        // current line number
+    int16_t _target_line_num = 0;    // target line number
+    bool _is_suspended;              // true if zigzag auto is suspended
 };
 
 #if MODE_AUTOROTATE_ENABLED == ENABLED
@@ -1901,19 +1902,19 @@ private:
 
     // --- Internal flags ---
     struct controller_flags {
-            bool entry_initial             : 1;
-            bool ss_glide_initial          : 1;
-            bool flare_initial             : 1;
-            bool touch_down_initial        : 1;
-            bool straight_ahead_initial    : 1;
-            bool level_initial             : 1;
-            bool break_initial             : 1;
-            bool bail_out_initial          : 1;
-            bool bad_rpm                   : 1;
+            bool entry_initial;
+            bool ss_glide_initial;
+            bool flare_initial;
+            bool touch_down_initial;
+            bool straight_ahead_initial;
+            bool level_initial;
+            bool break_initial;
+            bool bail_out_initial;
+            bool bad_rpm;
     } _flags;
 
     struct message_flags {
-            bool bad_rpm                   : 1;
+            bool bad_rpm;
     } _msg_flags;
 
     //--- Internal functions ---

@@ -61,7 +61,7 @@ void ModeBrake::run()
     pos_control->set_pos_target_z_from_climb_rate_cm(0.0f);
     pos_control->update_z_controller();
 
-    if (_timeout_ms != 0 && millis()-_timeout_start >= _timeout_ms) {
+    if (_timeout_ms != 0 && millis() - _timeout_start_ms >= _timeout_ms) {
         if (!copter.set_mode(Mode::Number::LOITER, ModeReason::BRAKE_TIMEOUT)) {
             copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::BRAKE_TIMEOUT);
         }
@@ -70,7 +70,7 @@ void ModeBrake::run()
 
 void ModeBrake::timeout_to_loiter_ms(uint32_t timeout_ms)
 {
-    _timeout_start = millis();
+    _timeout_start_ms = millis();
     _timeout_ms = timeout_ms;
 }
 

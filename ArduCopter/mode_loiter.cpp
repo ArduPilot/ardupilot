@@ -26,13 +26,13 @@ bool ModeLoiter::init(bool ignore_checks)
     loiter_nav->init_target();
 
     // initialise the vertical position controller
-    if (!pos_control->is_active_z()) {
-        pos_control->init_z_controller();
+    if (!_pos_control->is_active_z()) {
+        _pos_control->init_z_controller();
     }
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    pos_control->set_correction_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    _pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    _pos_control->set_correction_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
 #if AC_PRECLAND_ENABLED
     _precision_loiter_active = false;
@@ -65,7 +65,7 @@ void ModeLoiter::precision_loiter_xy()
     loiter_nav->clear_pilot_desired_acceleration();
     Vector2f target_pos, target_vel;
     if (!copter.precland.get_target_position_cm(target_pos)) {
-        target_pos = inertial_nav.get_position_xy_cm();
+        _target_pos = inertial_nav.get_position_xy_cm();
     }
     // get the velocity of the target
     copter.precland.get_target_velocity_cms(inertial_nav.get_velocity_xy_cms(), target_vel);
@@ -145,7 +145,7 @@ void ModeLoiter::run()
     case AltHold_Takeoff:
         // initiate take-off
         if (!takeoff.running()) {
-            takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
+            takeoff.start(constrain_float(g.pilot_takeoff_alt, 0.0f, 1000.0f));
         }
 
         // get avoidance adjusted climb rate
@@ -166,14 +166,14 @@ void ModeLoiter::run()
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
 #if AC_PRECLAND_ENABLED
-        bool precision_loiter_old_state = _precision_loiter_active;
+        bool _precision_loiter_old_state = _precision_loiter_active;
         if (do_precision_loiter()) {
             precision_loiter_xy();
             _precision_loiter_active = true;
         } else {
             _precision_loiter_active = false;
         }
-        if (precision_loiter_old_state && !_precision_loiter_active) {
+        if (_precision_loiter_old_state && !_precision_loiter_active) {
             // prec loiter was active, not any more, let's init again as user takes control
             loiter_nav->init_target();
         }

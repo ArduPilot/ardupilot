@@ -58,8 +58,8 @@ void Mode::_TakeOff::start(float alt_cm)
 {
     // initialise takeoff state
     _running = true;
-    take_off_start_alt = copter.pos_control->get_pos_target_z_cm();
-    take_off_complete_alt  = take_off_start_alt + alt_cm;
+    _take_off_start_alt = copter.pos_control->get_pos_target_z_cm();
+    _take_off_complete_alt  = _take_off_start_alt + alt_cm;
 }
 
 // stop takeoff
@@ -93,7 +93,7 @@ void Mode::_TakeOff::do_pilot_takeoff(float& pilot_climb_rate_cm)
         if (throttle >= MIN(copter.g2.takeoff_throttle_max, 0.9) || 
             (copter.pos_control->get_z_accel_cmss() >= 0.5 * copter.pos_control->get_max_accel_z_cmss()) ||
             (copter.pos_control->get_vel_desired_cms().z >= constrain_float(pilot_climb_rate_cm, copter.pos_control->get_max_speed_up_cms() * 0.1, copter.pos_control->get_max_speed_up_cms() * 0.5)) || 
-            (is_positive(take_off_complete_alt - take_off_start_alt) && copter.pos_control->get_pos_target_z_cm() - take_off_start_alt > 0.5 * (take_off_complete_alt - take_off_start_alt))) {
+            (is_positive(_take_off_complete_alt - _take_off_start_alt) && copter.pos_control->get_pos_target_z_cm() - _take_off_start_alt > 0.5 * (_take_off_complete_alt - _take_off_start_alt))) {
             // throttle > 90%
             // acceleration > 50% maximum acceleration
             // velocity > 10% maximum velocity && commanded climb rate
@@ -102,7 +102,7 @@ void Mode::_TakeOff::do_pilot_takeoff(float& pilot_climb_rate_cm)
             copter.set_land_complete(false);
         }
     } else {
-        float pos_z = take_off_complete_alt;
+        float pos_z = _take_off_complete_alt;
         float vel_z = pilot_climb_rate_cm;
 
         // command the aircraft to the take off altitude and current pilot climb rate
@@ -110,7 +110,7 @@ void Mode::_TakeOff::do_pilot_takeoff(float& pilot_climb_rate_cm)
 
         // stop take off early and return if negative climb rate is commanded or we are within 0.1% of our take off altitude
         if (is_negative(pilot_climb_rate_cm) ||
-            (take_off_complete_alt  - take_off_start_alt) * 0.999f < copter.pos_control->get_pos_target_z_cm() - take_off_start_alt) {
+            (_take_off_complete_alt  - _take_off_start_alt) * 0.999f < copter.pos_control->get_pos_target_z_cm() - _take_off_start_alt) {
             stop();
         }
     }

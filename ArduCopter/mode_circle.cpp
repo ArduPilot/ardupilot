@@ -9,7 +9,7 @@
 // circle_init - initialise circle controller flight mode
 bool ModeCircle::init(bool ignore_checks)
 {
-    speed_changing = false;
+    _speed_changing = false;
 
     // set speed and acceleration limits
     pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());

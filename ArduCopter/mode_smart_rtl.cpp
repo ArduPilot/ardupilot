@@ -25,7 +25,7 @@ bool ModeSmartRTL::init(bool ignore_checks)
         auto_yaw.set_mode_to_default(true);
 
         // wait for cleanup of return path
-        smart_rtl_state = SubMode::WAIT_FOR_PATH_CLEANUP;
+        _smart_rtl_state = SubMode::WAIT_FOR_PATH_CLEANUP;
         return true;
     }
 
@@ -40,7 +40,7 @@ void ModeSmartRTL::exit()
 
 void ModeSmartRTL::run()
 {
-    switch (smart_rtl_state) {
+    switch (_smart_rtl_state) {
         case SubMode::WAIT_FOR_PATH_CLEANUP:
             wait_cleanup_run();
             break;
@@ -61,7 +61,7 @@ void ModeSmartRTL::run()
 
 bool ModeSmartRTL::is_landing() const
 {
-    return smart_rtl_state == SubMode::LAND;
+    return _smart_rtl_state == SubMode::LAND;
 }
 
 void ModeSmartRTL::wait_cleanup_run()
@@ -74,8 +74,8 @@ void ModeSmartRTL::wait_cleanup_run()
 
     // check if return path is computed and if yes, begin journey home
     if (g2.smart_rtl.request_thorough_cleanup()) {
-        path_follow_last_pop_fail_ms = 0;
-        smart_rtl_state = SubMode::PATH_FOLLOW;
+        _path_follow_last_pop_fail_ms = 0;
+        _smart_rtl_state = SubMode::PATH_FOLLOW;
     }
 }
 
@@ -87,11 +87,11 @@ void ModeSmartRTL::path_follow_run()
         // this pop_point can fail if the IO task currently has the
         // path semaphore.
         if (g2.smart_rtl.pop_point(dest_NED)) {
-            path_follow_last_pop_fail_ms = 0;
+            _path_follow_last_pop_fail_ms = 0;
             if (g2.smart_rtl.get_num_points() == 0) {
                 // this is the very last point, add 2m to the target alt and move to pre-land state
                 dest_NED.z -= 2.0f;
-                smart_rtl_state = SubMode::PRELAND_POSITION;
+                _smart_rtl_state = SubMode::PRELAND_POSITION;
                 wp_nav->set_wp_destination_NED(dest_NED);
             } else {
                 // peek at the next point.  this can fail if the IO task currently has the path semaphore
@@ -114,15 +114,15 @@ void ModeSmartRTL::path_follow_run()
             // We should never get here; should always have at least
             // two points and the "zero points left" is handled above.
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-            smart_rtl_state = SubMode::PRELAND_POSITION;
-        } else if (path_follow_last_pop_fail_ms == 0) {
+            _smart_rtl_state = SubMode::PRELAND_POSITION;
+        } else if (_path_follow_last_pop_fail_ms == 0) {
             // first time we've failed to pop off (ever, or after a success)
-            path_follow_last_pop_fail_ms = AP_HAL::millis();
-        } else if (AP_HAL::millis() - path_follow_last_pop_fail_ms > 10000) {
+            _path_follow_last_pop_fail_ms = AP_HAL::millis();
+        } else if (AP_HAL::millis() - _path_follow_last_pop_fail_ms > 10000) {
             // we failed to pop a point off for 10 seconds.  This is
             // almost certainly a bug.
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-            smart_rtl_state = SubMode::PRELAND_POSITION;
+            _smart_rtl_state = SubMode::PRELAND_POSITION;
         }
     }
 
@@ -142,11 +142,11 @@ void ModeSmartRTL::pre_land_position_run()
         // choose descend and hold, or land based on user parameter rtl_alt_final
         if (g.rtl_alt_final <= 0 || copter.failsafe.radio) {
             land_start();
-            smart_rtl_state = SubMode::LAND;
+            _smart_rtl_state = SubMode::LAND;
         } else {
             set_descent_target_alt(copter.g.rtl_alt_final);
             descent_start();
-            smart_rtl_state = SubMode::DESCEND;
+            _smart_rtl_state = SubMode::DESCEND;
         }
     }
 
@@ -168,7 +168,7 @@ void ModeSmartRTL::save_position()
 bool ModeSmartRTL::get_wp(Location& destination) const
 {
     // provide target in states which use wp_nav
-    switch (smart_rtl_state) {
+    switch (_smart_rtl_state) {
     case SubMode::WAIT_FOR_PATH_CLEANUP:
     case SubMode::PATH_FOLLOW:
     case SubMode::PRELAND_POSITION:
@@ -194,8 +194,8 @@ int32_t ModeSmartRTL::wp_bearing() const
 
 bool ModeSmartRTL::use_pilot_yaw() const
 {
-    const bool land_repositioning = g.land_repositioning && (smart_rtl_state == SubMode::DESCEND);
-    const bool final_landing = smart_rtl_state == SubMode::LAND;
+    const bool land_repositioning = g.land_repositioning && (_smart_rtl_state == SubMode::DESCEND);
+    const bool final_landing = _smart_rtl_state == SubMode::LAND;
     return g2.smart_rtl.use_pilot_yaw() || land_repositioning || final_landing;
 }
 

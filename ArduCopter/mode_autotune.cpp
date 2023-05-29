@@ -118,27 +118,27 @@ bool AutoTune::position_ok()
 */
 bool ModeAutoTune::init(bool ignore_checks)
 {
-    return autotune.init();
+    return _autotune.init();
 }
 
 void ModeAutoTune::run()
 {
-    autotune.run();
+    _autotune.run();
 }
 
 void ModeAutoTune::save_tuning_gains()
 {
-    autotune.save_tuning_gains();
+    _autotune.save_tuning_gains();
 }
 
 void ModeAutoTune::exit()
 {
-    autotune.stop();
+    _autotune.stop();
 }
 
 void ModeAutoTune::reset()
 {
-    autotune.reset();
+    _autotune.reset();
 }
 
 #endif  // AUTOTUNE_ENABLED == ENABLED

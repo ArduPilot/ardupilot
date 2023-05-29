@@ -16,8 +16,8 @@ bool ModeThrow::init(bool ignore_checks)
     }
 
     // init state
-    stage = Throw_Disarmed;
-    nextmode_attempted = false;
+    _stage = Throw_Disarmed;
+    _nextmode_attempted = false;
 
     // initialise pos controller speed and acceleration
     pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), BRAKE_MODE_DECEL_RATE);
@@ -44,16 +44,16 @@ void ModeThrow::run()
 
     if (!motors->armed()) {
         // state machine entry is always from a disarmed state
-        stage = Throw_Disarmed;
+       _stage = Throw_Disarmed;
 
     } else if (stage == Throw_Disarmed && motors->armed()) {
         gcs().send_text(MAV_SEVERITY_INFO,"waiting for throw");
-        stage = Throw_Detecting;
+       _stage = Throw_Detecting;
 
-    } else if (stage == Throw_Detecting && throw_detected()){
-        gcs().send_text(MAV_SEVERITY_INFO,"throw detected - spooling motors");
+    } else if (stage == Throw_Detecting && throw_detected()) {
+        gcs().send_text(MAV_SEVERITY_INFO, "throw detected - spooling motors");
         copter.set_land_complete(false);
-        stage = Throw_Wait_Throttle_Unlimited;
+       _stage = Throw_Wait_Throttle_Unlimited;
 
         // Cancel the waiting for throw tone sequence
         AP_Notify::flags.waiting_for_throw = false;
@@ -61,10 +61,10 @@ void ModeThrow::run()
     } else if (stage == Throw_Wait_Throttle_Unlimited &&
                motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
         gcs().send_text(MAV_SEVERITY_INFO,"throttle is unlimited - uprighting");
-        stage = Throw_Uprighting;
+       _stage = Throw_Uprighting;
     } else if (stage == Throw_Uprighting && throw_attitude_good()) {
         gcs().send_text(MAV_SEVERITY_INFO,"uprighted - controlling height");
-        stage = Throw_HgtStabilise;
+       _stage = Throw_HgtStabilise;
 
         // initialise the z controller
         pos_control->init_z_controller_no_descent();
@@ -82,7 +82,7 @@ void ModeThrow::run()
 
     } else if (stage == Throw_HgtStabilise && throw_height_good()) {
         gcs().send_text(MAV_SEVERITY_INFO,"height achieved - controlling position");
-        stage = Throw_PosHold;
+       _stage = Throw_PosHold;
 
         // initialise position controller
         pos_control->init_xy_controller();
@@ -90,7 +90,7 @@ void ModeThrow::run()
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
         copter.set_auto_armed(true);
     } else if (stage == Throw_PosHold && throw_position_good()) {
-        if (!nextmode_attempted) {
+        if (!_nextmode_attempted) {
             switch ((Mode::Number)g2.throw_nextmode.get()) {
                 case Mode::Number::AUTO:
                 case Mode::Number::GUIDED:
@@ -104,7 +104,7 @@ void ModeThrow::run()
                     // do nothing
                     break;
             }
-            nextmode_attempted = true;
+            _nextmode_attempted = true;
         }
     }
 
@@ -123,7 +123,7 @@ void ModeThrow::run()
         // demand zero throttle (motors will be stopped anyway) and continually reset the attitude controller
         attitude_control->reset_yaw_target_and_rate();
         attitude_control->reset_rate_controller_I_terms();
-        attitude_control->set_throttle_out(0,true,g.throttle_filt);
+        attitude_control->set_throttle_out(0, true, g.throttle_filt);
         break;
 
     case Throw_Detecting:
@@ -138,7 +138,7 @@ void ModeThrow::run()
         // Hold throttle at zero during the throw and continually reset the attitude controller
         attitude_control->reset_yaw_target_and_rate();
         attitude_control->reset_rate_controller_I_terms();
-        attitude_control->set_throttle_out(0,true,g.throttle_filt);
+        attitude_control->set_throttle_out(0, true, g.throttle_filt);
 
         // Play the waiting for throw tone sequence to alert the user
         AP_Notify::flags.waiting_for_throw = true;
@@ -203,7 +203,7 @@ void ModeThrow::run()
     // log at 10hz or if stage changes
     uint32_t now = AP_HAL::millis();
     if ((stage != prev_stage) || (now - last_log_ms) > 100) {
-        prev_stage = stage;
+        prev_stage =_stage;
         last_log_ms = now;
         const float velocity = inertial_nav.get_velocity_neu_cms().length();
         const float velocity_z = inertial_nav.get_velocity_z_up_cms();
