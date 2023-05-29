@@ -5154,6 +5154,32 @@ class AutoTestCopter(AutoTest):
                          roi_alt,
                          )
             self.test_mount_pitch(-52, 5, mavutil.mavlink.MAV_MOUNT_MODE_GPS_POINT)
+            self.progress("Using MAV_CMD_DO_SET_ROI_LOCATION")
+            # start by pointing the gimbal elsewhere with a
+            # known-working command:
+            self.run_cmd(
+                mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION,
+                0,
+                0,
+                0,
+                0,
+                roi_lat + 1,
+                roi_lon + 1,
+                roi_alt,
+            )
+            # now point it with command_int:
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION,
+                0,
+                0,
+                0,
+                0,
+                int(roi_lat * 1e7),
+                int(roi_lon * 1e7),
+                roi_alt,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            )
+            self.test_mount_pitch(-52, 5, mavutil.mavlink.MAV_MOUNT_MODE_GPS_POINT)
 
             self.progress("Using MAV_CMD_DO_SET_ROI_NONE")
             self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_ROI_NONE,
