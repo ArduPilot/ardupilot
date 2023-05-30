@@ -438,6 +438,8 @@ public:
 
     // FS GCS timeout trigger time
     AP_Float fs_gcs_timeout;
+
+    class ModeCircle mode_circle;
 };
 
 extern const AP_Param::Info var_info[];
