@@ -775,6 +775,18 @@ class sitl(Board):
                 '-m32',
             ]
 
+        # whitelist of compilers which we should build with -Werror
+        gcc_whitelist = frozenset([
+            ('11','3','0'),
+        ])
+
+        if cfg.options.Werror or cfg.env.CC_VERSION in gcc_whitelist:
+            cfg.msg("Enabling -Werror", "yes")
+            if '-Werror' not in env.CXXFLAGS:
+                env.CXXFLAGS += [ '-Werror' ]
+        else:
+            cfg.msg("Enabling -Werror", "no")
+
     def get_name(self):
         return self.__class__.__name__
 
