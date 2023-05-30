@@ -471,7 +471,7 @@ class SizeCompareBranches(object):
 
     def elf_diff_results(self, result_master, result_branch):
         master_branch = result_master["branch"]
-        branch = result_master["branch"]
+        branch = result_branch["branch"]
         for vehicle in result_master["vehicle"].keys():
             elf_filename = result_master["vehicle"][vehicle]["elf_filename"]
             master_elf_dir = result_master["vehicle"][vehicle]["elf_dir"]
