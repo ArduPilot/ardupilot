@@ -175,8 +175,9 @@ public:
     virtual bool get_circle_radius(float &radius_m) { return false; }
     virtual bool set_circle_rate(float rate_dps) { return false; }
 
-    // set steering and throttle (-1 to +1) (for use by scripting with Rover)
+    // get or set steering and throttle (-1 to +1) (for use by scripting with Rover)
     virtual bool set_steering_and_throttle(float steering, float throttle) { return false; }
+    virtual bool get_steering_and_throttle(float& steering, float& throttle) { return false; }
 
     // set turn rate in deg/sec and speed in meters/sec (for use by scripting with Rover)
     virtual bool set_desired_turn_rate_and_speed(float turn_rate, float speed) { return false; }
