@@ -59,6 +59,10 @@ void memory_flush_all(void);
 void stm32_set_utc_usec(uint64_t time_utc_usec);
 uint64_t stm32_get_utc_usec(void);
 
+void sntp_set_system_time_us(uint32_t sec, uint32_t us);
+void sntp_get_system_time_us(uint32_t* sec_, uint32_t* usec_);
+
+
 // hook for FAT timestamps    
 uint32_t get_fattime(void);
 
@@ -176,6 +180,9 @@ void save_fault_watchdog(uint16_t line, FaultType fault_type, uint32_t fault_add
 bool stm32_rand_generate_blocking(unsigned char* output, unsigned int sz, uint32_t timeout_us);
 unsigned int stm32_rand_generate_nonblocking(unsigned char* output, unsigned int sz);
 #endif
+
+// To be defined in HAL code
+extern uint32_t chibios_rand_generate(void);
 
 void stm32_flash_protect_flash(bool bootloader, bool protect);
 void stm32_flash_unprotect_flash(void);

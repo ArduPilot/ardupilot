@@ -33,7 +33,6 @@ mcu = {
         (0x20000000, 128, 2), # DTCM, tightly coupled, no DMA, fast
         (0x24000000, 512, 4), # AXI SRAM. Use this for SDMMC IDMA ops
         (0x00000400,  63, 2), # ITCM (first 1k removed, to keep address 0 unused)
-        (0x30040000,  32, 0), # SRAM3.
         (0x38000000,  64, 1), # SRAM4.
     ],
 
@@ -42,7 +41,6 @@ mcu = {
         (0x30000000, 256, 0), # SRAM1, SRAM2
         (0x20000000,  64, 2), # DTCM, tightly coupled, no DMA, fast
         (0x24000000, 128, 4), # AXI SRAM. Use this for SDMMC IDMA ops
-        (0x30040000,  32, 0), # SRAM3.
         (0x38000000,  64, 1), # SRAM4.
     ],
     'INSTRUCTION_RAM' : (0x00000400,  63), # ITCM (first 1k removed, to keep address 0 unused)
@@ -57,10 +55,10 @@ mcu = {
         (0x30000000, 256, 0), # SRAM1, SRAM2
         (0x24000000, 512, 4), # AXI SRAM. Use this for SDMMC IDMA ops
         (0x00000400,  63, 2), # ITCM (first 1k removed, to keep address 0 unused)
-        (0x30040000,  32, 0), # SRAM3.
         (0x38000000,  64, 1), # SRAM4.
     ],
 
+    'ETHERNET_RAM' : (0x30040000,  32, 0), # SRAM3
     'EXPECTED_CLOCK' : 400000000,
 
     # this MCU has M7 instructions and hardware double precision
