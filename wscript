@@ -143,8 +143,13 @@ def options(opt):
 
     g.add_option('--Werror',
         action='store_true',
-        default=False,
+        default=True,
         help='build with -Werror.')
+
+    g.add_option('--disable-Werror',
+        action='store_true',
+        default=False,
+        help='Disable -Werror.')
     
     g.add_option('--toolchain',
         action='store',
@@ -583,6 +588,12 @@ def configure(cfg):
 
     # Always use system extensions
     cfg.define('_GNU_SOURCE', 1)
+
+    if cfg.options.Werror:
+        if cfg.options.disable_Werror:
+            raise ValueError("Cannot enable and disable Werror at the same time")
+        else:
+            cfg.options.Werror = not cfg.options.disable_Werror
 
     cfg.write_config_header(os.path.join(cfg.variant, 'ap_config.h'), guard='_AP_CONFIG_H_')
 
