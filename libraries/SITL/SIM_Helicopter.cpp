@@ -501,12 +501,6 @@ float Helicopter::update_rpm(float curr_rpm, float throttle, float &engine_torqu
     return curr_rpm;
 
 }
-/*
-float Helicopter::torque_required(float curr_rpm, float collective)
-{
-
-}
-*/
 
 // push servo input to buffer
 void Helicopter::push_to_buffer(const uint16_t servos_input[16])
