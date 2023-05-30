@@ -780,13 +780,18 @@ class sitl(Board):
             ('11','3','0'),
         ])
 
-        if cfg.options.Werror or cfg.env.CC_VERSION in gcc_whitelist:
-            cfg.msg("Enabling -Werror", "yes")
-            if '-Werror' not in env.CXXFLAGS:
-                env.CXXFLAGS += [ '-Werror' ]
+        if cfg.env.CC_VERSION in gcc_whitelist or cfg.options.Werror:
+            if not cfg.options.disable_Werror:
+                cfg.msg("Enabling -Werror", "yes")
+                if '-Werror' not in env.CXXFLAGS:
+                    env.CXXFLAGS += [ '-Werror' ]
+            else:
+                cfg.msg("Enabling -Werror", "no")
+                if '-Werror' in env.CXXFLAGS:
+                    env.CXXFLAGS.remove('-Werror')
         else:
-            cfg.msg("Enabling -Werror", "no")
-
+            cfg.msg("Enabling -Werror", "yes")
+        
     def get_name(self):
         return self.__class__.__name__
 
