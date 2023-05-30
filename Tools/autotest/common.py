@@ -13209,9 +13209,11 @@ switch value'''
         if abs(new_gpi_alt2 - m.alt) > 100:
             raise NotAchievedException("Failover not detected")
 
-    def fetch_file_via_ftp(self, path):
+    def fetch_file_via_ftp(self, path, timeout=20):
         '''returns the content of the FTP'able file at path'''
+        self.progress("Retrieving (%s) using MAVProxy" % path)
         mavproxy = self.start_mavproxy()
+        mavproxy.expect("Saved .* parameters to")
         ex = None
         tmpfile = tempfile.NamedTemporaryFile(mode='r', delete=False)
         try:
@@ -13220,9 +13222,18 @@ switch value'''
             mavproxy.send("ftp set debug 1\n")  # so we get the "Terminated session" message
             mavproxy.send("ftp get %s %s\n" % (path, tmpfile.name))
             mavproxy.expect("Getting")
-            self.delay_sim_time(2)
-            mavproxy.send("ftp status\n")
-            mavproxy.expect("No transfer in progress")
+            tstart = self.get_sim_time()
+            while True:
+                now = self.get_sim_time()
+                if now - tstart > timeout:
+                    raise NotAchievedException("expected complete transfer")
+                self.progress("Polling status")
+                mavproxy.send("ftp status\n")
+                try:
+                    mavproxy.expect("No transfer in progress", timeout=1)
+                    break
+                except Exception:
+                    continue
             # terminate the connection, or it may still be in progress the next time an FTP is attempted:
             mavproxy.send("ftp cancel\n")
             mavproxy.expect("Terminated session")
