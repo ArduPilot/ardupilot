@@ -314,6 +314,13 @@ void AP_Networking::init()
                                         _activeSettings.gw,
                                         addrMode };
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    if (!macInit()) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: macInit failed");
+        _param.enabled.set(0);
+    }
+#endif
+
     lwipInit(&netOptions);
 #endif
 
