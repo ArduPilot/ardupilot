@@ -179,18 +179,3 @@ template <typename T> void BIT_CLEAR (T& value, uint8_t bitnumber) noexcept {
      ((value) &= ~((T)(1U) << (bitnumber)));
  }
 
-
-/*
-  Convert from float to int32_t without breaking Wstrict-aliasing due to type punning
-*/
-int32_t to_int32(const float value) WARN_IF_UNUSED;
-
-/*
-  Convert from uint32_t to float without breaking Wstrict-aliasing due to type punning
-*/
-float to_float(const uint32_t value) WARN_IF_UNUSED;
-
-/*
-  Convert from uint64_t to double without breaking Wstrict-aliasing due to type punning
-*/
-double to_double(const uint64_t value) WARN_IF_UNUSED;
