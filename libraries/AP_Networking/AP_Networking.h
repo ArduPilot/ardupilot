@@ -30,12 +30,7 @@
 
 #define IP4_ADDR_VALUE_FROM_ARRAY(array) IP4_ADDR_VALUE(array[0],array[1],array[2],array[3])
 #define IP4_ADDR_FROM_ARRAY(dest_ip, array) IP4_ADDR(dest_ip, array[0],array[1],array[2],array[3])
-
-#if LWIP_IPV6
-#define IP_ADDR_FROM_ARRAY(dest_ip, array) IP4_ADDR_FROM_ARRAY(dest_ip.u_addr.ip4, array)
-#else
 #define IP_ADDR_FROM_ARRAY(dest_ip, array) IP4_ADDR_FROM_ARRAY(dest_ip, array)
-#endif
 
 // declare backend class
 class AP_Networking_Backend;
@@ -84,7 +79,7 @@ public:
     static AP_Networking *get_singleton(void) { return _singleton; }
 
 
-    bool is_healthy() const { return _init.done; }    // TODO: is_healthy()
+    bool is_healthy() const { return _param.enabled && _init.done; }
     bool get_dhcp_enabled() const { return _param.dhcp; }
     void set_dhcp_enable(const bool enable) { _param.dhcp.set(enable); }
 
@@ -131,19 +126,17 @@ public:
 
 
     static int32_t send_udp(struct udp_pcb *pcb, const ip4_addr_t &ip4_addr, const uint16_t port, const uint8_t* data, uint16_t data_len);
-#if LWIP_IPV6
-    static int32_t send_udp(struct udp_pcb *pcb, const ip_addr_t &ip_addr, const uint16_t port, const uint8_t* data, uint16_t data_len) {
-        return send_udp(pcb, ip_addr.u_addr.ip4, port, data, data_len);
-    }
-#endif
 
     static const struct AP_Param::GroupInfo var_info[];
 
+#if AP_NETWORKING_TFTP_ENABLED
     // tftp wrappers for AP::Filesystem
     static void* tftp_open(const char* fname, const char* mode, u8_t write);
     static void tftp_close(void* handle);
     static int tftp_read(void* handle, void* buf, int bytes);
     static int tftp_write(void* handle, struct pbuf* p);
+#endif
+
 protected:
     // parameters
     AP_Networking_Params _params[AP_NETWORKING_MAX_INSTANCES];
