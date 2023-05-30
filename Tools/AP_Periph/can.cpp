@@ -1526,7 +1526,7 @@ void AP_Periph_FW::can_start()
 
         // ensure there's a serial port mapped to SLCAN
         if (!periph.serial_manager.have_serial(AP_SerialManager::SerialProtocol_SLCAN, 0)) {
-            periph.serial_manager.set_protocol_and_baud(SERIALMANAGER_NUM_PORTS-1, AP_SerialManager::SerialProtocol_SLCAN, 1500000);
+            periph.serial_manager.set_protocol_and_baud(SERIALMANAGER_MAX_PORTS-1, AP_SerialManager::SerialProtocol_SLCAN, 1500000);
         }
     }
 #endif

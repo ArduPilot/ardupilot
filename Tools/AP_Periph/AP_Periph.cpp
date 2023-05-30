@@ -100,6 +100,10 @@ void AP_Periph_FW::init()
 
     can_start();
 
+#if AP_NETWORKING_ENABLED
+    networking.init();
+#endif
+
 #if HAL_GCS_ENABLED
     stm32_watchdog_pat();
     gcs().init();
@@ -245,7 +249,7 @@ void AP_Periph_FW::init()
 #ifdef HAL_PERIPH_ENABLE_ESC_APD
     for (uint8_t i = 0; i < ESC_NUMBERS; i++) {
         const uint8_t port = g.esc_serial_port[i];
-        if (port < SERIALMANAGER_NUM_PORTS) { // skip bad ports
+        if (port < SERIALMANAGER_MAX_PORTS) { // skip bad ports
             apd_esc_telem[i] = new ESC_APD_Telem (hal.serial(port), g.pole_count[i]);
         }
     }
@@ -475,6 +479,10 @@ void AP_Periph_FW::update()
 #endif
 
     can_update();
+
+#if AP_NETWORKING_ENABLED
+    networking.update();
+#endif
 
 #if (defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) && HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY == 8) || defined(HAL_PERIPH_ENABLE_NOTIFY)
     update_rainbow();
