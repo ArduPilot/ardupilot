@@ -8117,13 +8117,16 @@ Also, ignores heartbeats not from our target system'''
         self.sitl = util.start_SITL(binary, **start_sitl_args)
         self.expect_list_add(self.sitl)
         self.sup_prog = []
+        count = 0
         for sup_binary in self.sup_binaries:
             self.progress("Starting Supplementary Program ", sup_binary)
             start_sitl_args["customisations"] = [sup_binary[1]]
             start_sitl_args["supplementary"] = True
+            start_sitl_args["stdout_prefix"] = "%s-%u" % (os.path.basename(sup_binary[0]), count)
             sup_prog_link = util.start_SITL(sup_binary[0], **start_sitl_args)
             self.sup_prog.append(sup_prog_link)
             self.expect_list_add(sup_prog_link)
+            count += 1
 
         # mavlink will have disconnected here.  Explicitly reconnect,
         # or the first packet we send will be lost:
