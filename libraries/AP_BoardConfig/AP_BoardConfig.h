@@ -114,6 +114,10 @@ public:
         return uint32_t(state.ignore_safety_channels.get());
     }
 
+    int32_t get_serial_number() const {
+        return vehicleSerialNumber.get();
+    }
+
 #if HAL_HAVE_BOARD_VOLTAGE
     // get minimum board voltage
     static float get_minimum_board_voltage(void) {
