@@ -24,6 +24,7 @@
 #pragma once
 
 #include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>
 #include <byteswap.h>
 #include <endian.h>
 #include <stdint.h>
@@ -98,10 +99,10 @@ static inline uint32_t be24toh_ptr(const uint8_t *p) { return p[2] | (p[1]<<8U) 
 static inline uint32_t be32toh_ptr(const uint8_t *p) { return p[3] | (p[2]<<8U) | (p[1]<<16U) | (p[0]<<24U); }
 static inline uint64_t be64toh_ptr(const uint8_t *p) { return (uint64_t) p[7] | ((uint64_t) p[6]<<8ULL) | ((uint64_t) p[5]<<16U) | ((uint64_t) p[4]<<24U) | ((uint64_t) p[3]<<32U) | ((uint64_t) p[2]<<40U) | ((uint64_t) p[1]<<48U) | ((uint64_t) p[0]<<56U); }
 
-static inline float be32tofloat_ptr(const uint8_t *p) { return to_float(be32toh_ptr(p)); }
+static inline float be32tofloat_ptr(const uint8_t *p) { return int32_to_float_le(be32toh_ptr(p)); }
 static inline float be32tofloat_ptr(const uint8_t *p, const uint8_t offset) { return be32tofloat_ptr(&p[offset]); }
 #ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
-static inline float be64todouble_ptr(const uint8_t *p) { return to_double(be64toh_ptr(p)); }
+static inline float be64todouble_ptr(const uint8_t *p) { return uint64_to_double_le(be64toh_ptr(p)); }
 static inline float be64todouble_ptr(const uint8_t *p, const uint8_t offset) { return be64todouble_ptr(&p[offset]); }
 #endif
 
