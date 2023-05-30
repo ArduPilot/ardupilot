@@ -326,6 +326,7 @@ bool AP_Arming::logging_checks(bool report)
     return true;
 }
 
+#if AP_INERTIALSENSOR_ENABLED
 bool AP_Arming::ins_accels_consistent(const AP_InertialSensor &ins)
 {
     const uint8_t accel_count = ins.get_accel_count();
@@ -416,9 +417,11 @@ bool AP_Arming::ins_gyros_consistent(const AP_InertialSensor &ins)
 
     return true;
 }
+#endif // AP_INERTIALSENSOR_ENABLED
 
 bool AP_Arming::ins_checks(bool report)
 {
+#if AP_INERTIALSENSOR_ENABLED
     if (check_enabled(ARMING_CHECK_INS)) {
         const AP_InertialSensor &ins = AP::ins();
         if (!ins.get_gyro_health_all()) {
@@ -485,6 +488,7 @@ bool AP_Arming::ins_checks(bool report)
         }
     }
 #endif
+#endif // AP_INERTIALSENSOR_ENABLED
 
     return true;
 }
