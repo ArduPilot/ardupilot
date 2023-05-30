@@ -135,6 +135,11 @@
 #define STM32_PWM_TIM5_IRQ_PRIORITY         7
 #define STM32_PWM_TIM8_IRQ_PRIORITY         7
 
+#define STM32_TIM15_NUMBER                  24
+#define STM32_TIM15_HANDLER                 VectorA0
+#define STM32_TIM17_NUMBER                  26
+#define STM32_TIM17_HANDLER                 VectorA8
+
 /*
  * RTC driver system settings.
  */
