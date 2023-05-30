@@ -22,6 +22,7 @@ public:
         SOURCE_GPS = 0,
         SOURCE_MAVLINK_SYSTEM_TIME = 1,
         SOURCE_HW = 2,
+        SOURCE_NTP = 3,
         SOURCE_NONE,
     };
 
