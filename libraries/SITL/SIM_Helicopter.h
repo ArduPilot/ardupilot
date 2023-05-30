@@ -41,7 +41,6 @@ protected:
 
     void update_rotor_dynamics(Vector3f gyros, Vector2f ctrl_pos, Vector2f &tpp_angle, float dt);
     float update_rpm(float curr_rpm, float throttle, float &engine_torque, float collective, float dt);
-//    float torque_required(float curr_rpm, float collective);
 
     // buffers to provide time delay
     struct servos_stored {
