@@ -149,6 +149,11 @@ class VehicleInfo(object):
                 "waf_target": "bin/arducopter-heli",
                 "default_params_filename": "default_params/copter-heli.parm",
             },
+            "heli-gas": {
+                "waf_target": "bin/arducopter-heli",
+                "default_params_filename": ["default_params/copter-heli.parm",
+                                            "default_params/copter-heli-gas.parm"],
+            },
             "heli-dual": {
                 "waf_target": "bin/arducopter-heli",
                 "default_params_filename": ["default_params/copter-heli.parm",
@@ -191,6 +196,11 @@ class VehicleInfo(object):
             "heli": {
                 "waf_target": "bin/arducopter-heli",
                 "default_params_filename": "default_params/copter-heli.parm",
+            },
+            "heli-gas": {
+                "waf_target": "bin/arducopter-heli",
+                "default_params_filename": ["default_params/copter-heli.parm",
+                                            "default_params/copter-heli-gas.parm"],
             },
             "heli-dual": {
                 "waf_target": "bin/arducopter-heli",
