@@ -86,11 +86,6 @@ def _set_build_context_variant(board):
             continue
         c.variant = board
 
-# run Tools/gittools/submodule-sync.sh to sync submodules as well at distclean
-@conf
-def distclean(ctx):
-    subprocess.call(['Tools/gittools/submodule-sync.sh'])
-
 def init(ctx):
     # Generate Task List, so that VS Code extension can keep track
     # of changes to possible build targets
