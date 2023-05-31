@@ -108,13 +108,15 @@ void RCOutput::send_dshot_command(uint8_t command, uint8_t chan, uint32_t comman
         return;
     }
     // not an FMU channel
-    if (chan < chan_offset) {
+    if (chan < chan_offset || chan == ALL_CHANNELS) {
 #if HAL_WITH_IO_MCU
         if (AP_BoardConfig::io_dshot()) {
             iomcu.send_dshot_command(command, chan, command_timeout_ms, repeat_count, priority);
         }
 #endif
-        return;
+        if (chan != ALL_CHANNELS) {
+            return;
+        }
     }
 
     DshotCommandPacket pkt;
