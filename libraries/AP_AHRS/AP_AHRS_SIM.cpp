@@ -80,7 +80,7 @@ Vector2f AP_AHRS_SIM::groundspeed_vector(void)
     return Vector2f(fdm.speedN, fdm.speedE);
 }
 
-bool AP_AHRS_SIM::get_vert_pos_rate(float &velocity) const
+bool AP_AHRS_SIM::get_vert_pos_rate_D(float &velocity) const
 {
     if (_sitl == nullptr) {
         return false;
