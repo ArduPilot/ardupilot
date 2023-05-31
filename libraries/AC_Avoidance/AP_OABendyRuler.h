@@ -68,6 +68,9 @@ private:
     // Logging function
     void Write_OABendyRuler(const uint8_t type, const bool active, const float target_yaw, const float target_pitch, const bool resist_chg, const float margin, const Location &final_dest, const Location &oa_dest) const;
 
+    // compute the real planning startpoint
+    void compute_planning_start_point(Location& current_loc, const Vector2f &ground_speed_vec, const float plannning_period_sec);
+
     // OA common parameters
     float _margin_max;              // object avoidance will ignore objects more than this many meters from vehicle
     
