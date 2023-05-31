@@ -100,7 +100,7 @@ bool AP_AHRS_External::get_velocity_NED(Vector3f &vec) const
     return AP::externalAHRS().get_velocity_NED(vec);
 }
 
-bool AP_AHRS_External::get_vert_pos_rate(float &velocity) const
+bool AP_AHRS_External::get_vert_pos_rate_D(float &velocity) const
 {
     return AP::externalAHRS().get_speed_down(velocity);
 }
