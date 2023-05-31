@@ -1400,11 +1400,11 @@ bool AP_AHRS::get_mag_field_correction(Vector3f &vec) const
 
 // Get a derivative of the vertical position which is kinematically consistent with the vertical position is required by some control loops.
 // This is different to the vertical velocity from the EKF which is not always consistent with the verical position due to the various errors that are being corrected for.
-bool AP_AHRS::get_vert_pos_rate(float &velocity) const
+bool AP_AHRS::get_vert_pos_rate_D(float &velocity) const
 {
     switch (active_EKF_type()) {
     case EKFType::NONE:
-        return dcm.get_vert_pos_rate(velocity);
+        return dcm.get_vert_pos_rate_D(velocity);
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
@@ -1420,11 +1420,11 @@ bool AP_AHRS::get_vert_pos_rate(float &velocity) const
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        return sim.get_vert_pos_rate(velocity);
+        return sim.get_vert_pos_rate_D(velocity);
 #endif
 #if HAL_EXTERNAL_AHRS_ENABLED
     case EKFType::EXTERNAL:
-        return external.get_vert_pos_rate(velocity);
+        return external.get_vert_pos_rate_D(velocity);
 #endif
     }
     // since there is no default case above, this is unreachable
