@@ -335,7 +335,7 @@ void AP_ADSB_Sagetech_MXS::auto_config_operating()
     mxs_state.op.identOn = false;
 
     float vertRate;
-    if (AP::ahrs().get_vert_pos_rate(vertRate)) {
+    if (AP::ahrs().get_vert_pos_rate_D(vertRate)) {
         mxs_state.op.climbRate = vertRate * SAGETECH_SCALE_M_PER_SEC_TO_FT_PER_MIN;
         mxs_state.op.climbValid = true;
     } else {
@@ -592,7 +592,7 @@ void AP_ADSB_Sagetech_MXS::send_operating_msg()
     }
 
     float vertRate;
-    if (AP::ahrs().get_vert_pos_rate(vertRate)) {
+    if (AP::ahrs().get_vert_pos_rate_D(vertRate)) {
         mxs_state.op.climbRate = vertRate * SAGETECH_SCALE_M_PER_SEC_TO_FT_PER_MIN;
         mxs_state.op.climbValid = true;
     } else {
