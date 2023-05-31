@@ -385,7 +385,6 @@ private:
         struct {
             uint16_t erpm[4];
             volatile bool enabled;
-#ifdef HAL_WITH_BIDIR_DSHOT
             const stm32_dma_stream_t *ic_dma[4];
             uint16_t dma_tx_size; // save tx value from last read
             Shared_DMA *ic_dma_handle[4];
@@ -399,10 +398,8 @@ private:
             uint16_t telem_err_rate[4];
             uint64_t last_print;  // debug
 #endif
-#endif
         } bdshot;
-#endif
-#ifdef HAL_WITH_BIDIR_DSHOT
+
         // do we have an input capture dma channel
         bool has_ic_dma() const {
           return bdshot.ic_dma_handle[bdshot.curr_telem_chan] != nullptr;
@@ -425,7 +422,7 @@ private:
         bool ic_enabled() const {
           return bdshot.enabled && has_ic();
         }
-#endif
+#endif // HAL_WITH_BIDIR_DSHOT
         // are we safe to send another pulse?
         bool can_send_dshot_pulse() const {
           return is_dshot_protocol(current_mode) && AP_HAL::micros() - last_dmar_send_us > (dshot_pulse_time_us + 50);
@@ -492,7 +489,7 @@ private:
     struct pwm_group *serial_group;
     thread_t *serial_thread;
     tprio_t serial_priority;
-#endif
+#endif // HAL_SERIAL_ESC_COMM_ENABLED
 
     static bool soft_serial_waiting() {
 #if HAL_SERIAL_ESC_COMM_ENABLED
@@ -579,7 +576,7 @@ private:
       return (_dshot_current_command.chan == RCOutput::ALL_CHANNELS || (group.ch_mask & (1UL << _dshot_current_command.chan)))
                 && _dshot_current_command.cycle > 0;
     }
-#endif
+#endif // HAL_DSHOT_ENABLED
     bool corked;
     // mask of channels that are running in high speed
     uint32_t fast_channel_mask;
