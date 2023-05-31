@@ -102,9 +102,9 @@ PA12 OTG_FS_DP OTG1
 
 # PWM out pins. Note that channel order follows the ArduPilot motor
 # order conventions
-PB6  TIM4_CH1 TIM4 PWM(1) GPIO(50) BIDIR
+PB6  TIM4_CH1 TIM4 PWM(1) GPIO(50)
 PB7  TIM4_CH2 TIM4 PWM(2) GPIO(51)
-PB8  TIM4_CH3 TIM4 PWM(3) GPIO(52) BIDIR    # DMA channel shared with I2C2_TX, beware - no alternatives
+PB8  TIM4_CH3 TIM4 PWM(3) GPIO(52)
 PB9  TIM4_CH4 TIM4 PWM(4) GPIO(53)
 PB0  TIM3_CH3 TIM3 PWM(5) GPIO(54)
 PB1  TIM3_CH4 TIM3 PWM(6) GPIO(55)
