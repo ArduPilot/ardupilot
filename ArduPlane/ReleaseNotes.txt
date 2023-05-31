@@ -1,7 +1,7 @@
-Release 4.3.7-beta1 23rd May 2023
----------------------------------
+Release 4.3.7 31st May 2023
+---------------------------
 
-This beta release is for the 4.3.x stable series and is being done
+This stable release is for the 4.3.x stable series and is being done
 because of a serious bug that has been found with RC input on boards
 that use an IOMCU for RC input (boards with a separate set of 8 "main"
 outputs from "aux" outputs).
