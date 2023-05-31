@@ -322,6 +322,8 @@ void HAL_ChibiOS::run(int argc, char * const argv[], Callbacks* callbacks) const
      *   RTOS is active.
      */
 
+    sdcard_retry();
+
 #if HAL_USE_SERIAL_USB == TRUE
     usb_initialise();
 #endif

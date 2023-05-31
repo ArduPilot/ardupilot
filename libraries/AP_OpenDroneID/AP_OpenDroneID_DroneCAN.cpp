@@ -36,7 +36,7 @@ static void handle_arm_status(AP_DroneCAN* ap_dronecan, const CanardRxTransfer &
 void AP_OpenDroneID::dronecan_init(AP_DroneCAN *uavcan)
 {
     const uint8_t driver_index = uavcan->get_driver_index();
-    const uint8_t driver_mask = 1U<<driver_index;
+    driver_mask = 1U<<driver_index;
     if (dronecan_done_init & driver_mask) {
         // already initialised
         return;
@@ -95,14 +95,6 @@ alloc_failed:
  */
 void AP_OpenDroneID::dronecan_send(AP_DroneCAN *uavcan)
 {
-    const uint8_t driver_index = uavcan->get_driver_index();
-    const uint8_t driver_mask = 1U<<driver_index;
-
-    if (driver_index+1 != _can_driver) {
-        // not enabled for this CAN driver
-        return;
-    }
-
     dronecan_init(uavcan);
 
     if (dronecan_init_failed & driver_mask) {

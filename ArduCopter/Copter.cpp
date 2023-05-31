@@ -443,6 +443,18 @@ bool Copter::has_ekf_failsafed() const
     return failsafe.ekf;
 }
 
+// returns true if vehicle is landing. Only used by Lua scripts
+bool Copter::is_landing() const
+{
+    return flightmode->is_landing();
+}
+
+// returns true if vehicle is taking off. Only used by Lua scripts
+bool Copter::is_taking_off() const
+{
+    return flightmode->is_taking_off();
+}
+
 #endif // AP_SCRIPTING_ENABLED
 
 bool Copter::current_mode_requires_mission() const

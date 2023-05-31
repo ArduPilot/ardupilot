@@ -124,6 +124,7 @@ void AP_TemperatureSensor::init()
 
     // create each instance
     for (uint8_t instance = 0; instance < AP_TEMPERATURE_SENSOR_MAX_INSTANCES; instance++) {
+        _state[instance].instance = instance;
 
         switch (get_type(instance)) {
 #if AP_TEMPERATURE_SENSOR_TSYS01_ENABLED
@@ -148,7 +149,6 @@ void AP_TemperatureSensor::init()
 
         // call init function for each backend
         if (drivers[instance] != nullptr) {
-            _state[instance].instance = instance;
             drivers[instance]->init();
             // _num_instances is actually the index for looping over instances
             // the user may have TEMP_TYPE=0 and TEMP2_TYPE=7, in which case

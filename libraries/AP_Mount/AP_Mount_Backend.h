@@ -19,16 +19,22 @@
  */
 #pragma once
 
-#include "AP_Mount.h"
+#include "AP_Mount_config.h"
+
 #if HAL_MOUNT_ENABLED
+
+#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Common/AP_Common.h>
+#include <AP_Common/Location.h>
 #include <RC_Channel/RC_Channel.h>
+#include <AP_Camera/AP_Camera_shareddefs.h>
+#include "AP_Mount_Params.h"
 
 class AP_Mount_Backend
 {
 public:
     // Constructor
-    AP_Mount_Backend(AP_Mount &frontend, AP_Mount_Params &params, uint8_t instance) :
+    AP_Mount_Backend(class AP_Mount &frontend, class AP_Mount_Params &params, uint8_t instance) :
         _frontend(frontend),
         _params(params),
         _instance(instance)

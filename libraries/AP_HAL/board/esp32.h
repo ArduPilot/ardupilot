@@ -13,6 +13,8 @@
 #include "esp32tomte76.h" //tomte76 on discord
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_NICK
 #include "esp32nick.h" //Nick K. on discord
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3DEVKIT
+#include "esp32s3devkit.h" //Nick K. on discord
 #endif
 
 #define HAL_BOARD_NAME "ESP32"
@@ -48,7 +50,7 @@
 // whenver u get ... error: "xxxxxxx" is not defined, evaluates to 0 [-Werror=undef]  just define it below as 0
 #define CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY 0
 #define XCHAL_ERRATUM_453 0
-#define CONFIG_FREERTOS_CORETIMER_0 0
+//#define CONFIG_FREERTOS_CORETIMER_0 0
 #define CONFIG_FREERTOS_CHECK_STACKOVERFLOW_NONE 0
 #define CONFIG_FREERTOS_CHECK_STACKOVERFLOW_PTRVAL 0
 #define CONFIG_FREERTOS_ENABLE_STATIC_TASK_CLEAN_UP 0
@@ -61,16 +63,16 @@
 #define CONFIG_LWIP_STATS 0
 #define CONFIG_LWIP_PPP_SUPPORT 0
 #define CONFIG_LWIP_STATS 0
-#define CONFIG_ESP32_WIFI_CSI_ENABLED 0
-#define CONFIG_ESP32_WIFI_NVS_ENABLED 0
+//#define CONFIG_ESP32_WIFI_CSI_ENABLED 0
+//#define CONFIG_ESP32_WIFI_NVS_ENABLED 0
 #define CONFIG_NEWLIB_NANO_FORMAT 0
 #define CONFIG_LWIP_IP4_REASSEMBLY 0
 #define CONFIG_LWIP_IP6_REASSEMBLY 0
 #define CONFIG_LWIP_STATS 0
 #define LWIP_COMPAT_SOCKET_INET 0
 #define LWIP_COMPAT_SOCKET_ADDR 0
-#define CONFIG_ESP32_WIFI_TX_BA_WIN 0
-#define CONFIG_ESP32_WIFI_RX_BA_WIN 0
+//#define CONFIG_ESP32_WIFI_TX_BA_WIN 0
+//#define CONFIG_ESP32_WIFI_RX_BA_WIN 0
 
 
 // turn off all the compasses by default.. 

@@ -929,8 +929,22 @@ class ChibiOSHWDef(object):
                 f.write('#define STM32_OTG2_IS_OTG1                  FALSE\n')
             f.write('#define HAL_USE_USB TRUE\n')
             f.write('#define HAL_USE_SERIAL_USB TRUE\n')
+            f.write('#define STM32_USB_HS                       FALSE\n')
         if 'OTG2' in self.bytype:
             f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
+            f.write('#define STM32_USB_HS                       FALSE\n')
+        if 'OTG_HS' in self.bytype:
+            f.write('#define STM32_OTG2_IS_OTG1                  FALSE\n')
+            f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
+            f.write('#define STM32_USB_HS                        TRUE\n')
+            f.write('#define HAL_USE_USB TRUE\n')
+            f.write('#define HAL_USE_SERIAL_USB TRUE\n')
+            f.write('#define BOARD_OTG2_USES_ULPI\n')
+        
+        if self.get_config('HAL_USE_USB_MSD', required=False):
+            f.write('#define HAL_USE_USB_MSD TRUE\n')
+            f.write('#define HAL_HAVE_USB_CDC_MSD 1\n')
+            self.build_flags.append('USE_USB_MSD=yes')
 
         defines = self.get_mcu_config('DEFINES', False)
         if defines is not None:
@@ -982,9 +996,6 @@ class ChibiOSHWDef(object):
                 result = re.match(r'define\s*([A-Z_]+)\s*([0-9]+)', d)
                 if result:
                     self.intdefines[result.group(1)] = int(result.group(2))
-
-        if self.intdefines.get('HAL_USE_USB_MSD',0) == 1:
-            self.build_flags.append('USE_USB_MSD=yes')
 
         if self.have_type_prefix('CAN') and not using_chibios_can:
             self.enable_can(f)
@@ -1876,13 +1887,13 @@ INCLUDE common.ld
 
             if dev.startswith('OTG2'):
                 f.write(
-                    '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU2, 2, true, false, 0, 0, false, 0, 0, 2}\n'
+                    '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU2, 2, true, false, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2}\n'
                     % dev)
                 OTG2_index = uart_list.index(dev)
                 self.dual_USB_enabled = True
             elif dev.startswith('OTG'):
                 f.write(
-                    '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU1, 1, true, false, 0, 0, false, 0, 0, 0}\n'
+                    '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU1, 1, true, false, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}\n'
                     % dev)
             else:
                 need_uart_driver = True
@@ -2790,7 +2801,7 @@ INCLUDE common.ld
     def valid_type(self, ptype, label):
         '''check type of a pin line is valid'''
         patterns = [ 'INPUT', 'OUTPUT', 'TIM\d+', 'USART\d+', 'UART\d+', 'ADC\d+',
-                    'SPI\d+', 'OTG\d+', 'SWD', 'CAN\d?', 'I2C\d+', 'CS',
+                    'SPI\d+', 'OTG\d+', 'OTG_HS', 'SWD', 'CAN\d?', 'I2C\d+', 'CS',
                     'SDMMC\d+', 'SDIO', 'QUADSPI\d', 'OCTOSPI\d'  ]
         matches = False
         for p in patterns:
@@ -3354,6 +3365,9 @@ INCLUDE common.ld
 
 // no crossfire telemetry from iomcu!
 #define HAL_CRSF_TELEM_ENABLED 0
+
+// allow the IOMCU to have its allowed protocols to be set:
+#define AP_RCPROTOCOL_ENABLE_SET_RC_PROTOCOLS 1
 
 // end IOMCU Firmware defaults
 ''')

@@ -177,11 +177,15 @@ class CoverageRunner(object):
         test_list = ["Plane", "QuadPlane", "Sub", "Copter", "Helicopter", "Rover", "Tracker", "BalanceBot", "Sailboat"]
         for test in test_list:
             self.progress("Running test.%s" % test)
-            subprocess.run([self.autotest,
-                            "--timeout=" + str(TIMEOUT),
-                            "--debug",
-                            "--no-clean",
-                            "test.%s" % test], check=self.check_tests)
+            try:
+                subprocess.run([self.autotest,
+                                "--timeout=" + str(TIMEOUT),
+                                "--debug",
+                                "--no-clean",
+                                "test.%s" % test], check=self.check_tests)
+            except subprocess.CalledProcessError:
+                # pass in case of failing tests
+                pass
         # TODO add any other execution path/s we can to maximise the actually
         # used code, can we run other tests or things?  Replay, perhaps?
         self.update_stats()

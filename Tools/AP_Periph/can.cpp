@@ -1600,7 +1600,7 @@ void AP_Periph_FW::hwesc_telem_update()
     const HWESC_Telem::HWESC &t = hwesc_telem.get_telem();
 
     uavcan_equipment_esc_Status pkt {};
-    pkt.esc_index = g.esc_number;
+    pkt.esc_index = g.esc_number[0]; // only supports a single ESC
     pkt.voltage = t.voltage;
     pkt.current = t.current;
     pkt.temperature = C_TO_KELVIN(MAX(t.mos_temperature, t.cap_temperature));
@@ -1671,8 +1671,42 @@ void AP_Periph_FW::esc_telem_update()
     }
 }
 #endif // HAL_WITH_ESC_TELEM
-#endif // HAL_PERIPH_ENABLE_RC_OUT
 
+#ifdef HAL_PERIPH_ENABLE_ESC_APD
+void AP_Periph_FW::apd_esc_telem_update()
+{
+    for(uint8_t i = 0; i < ARRAY_SIZE(apd_esc_telem); i++) {
+        if (apd_esc_telem[i] == nullptr) {
+            continue;
+        }
+        ESC_APD_Telem &esc = *apd_esc_telem[i];
+
+        if (esc.update()) {
+            const ESC_APD_Telem::telem &t = esc.get_telem();
+
+            uavcan_equipment_esc_Status pkt {};
+            static_assert(APD_ESC_INSTANCES <= ARRAY_SIZE(g.esc_number), "There must be an ESC instance number for each APD ESC");
+            pkt.esc_index = g.esc_number[i];
+            pkt.voltage = t.voltage;
+            pkt.current = t.current;
+            pkt.temperature = t.temperature;
+            pkt.rpm = t.rpm;
+            pkt.power_rating_pct = t.power_rating_pct;
+            pkt.error_count = t.error_count;
+
+            uint8_t buffer[UAVCAN_EQUIPMENT_ESC_STATUS_MAX_SIZE] {};
+            uint16_t total_size = uavcan_equipment_esc_Status_encode(&pkt, buffer, !periph.canfdout());
+            canard_broadcast(UAVCAN_EQUIPMENT_ESC_STATUS_SIGNATURE,
+                            UAVCAN_EQUIPMENT_ESC_STATUS_ID,
+                            CANARD_TRANSFER_PRIORITY_LOW,
+                            &buffer[0],
+                            total_size);
+                }
+    }
+
+}
+#endif // HAL_PERIPH_ENABLE_ESC_APD
+#endif // HAL_PERIPH_ENABLE_RC_OUT
 
 void AP_Periph_FW::can_update()
 {
@@ -1733,6 +1767,9 @@ void AP_Periph_FW::can_update()
     #ifdef HAL_PERIPH_ENABLE_HWESC
         hwesc_telem_update();
     #endif
+#ifdef HAL_PERIPH_ENABLE_ESC_APD
+        apd_esc_telem_update();
+#endif
     #ifdef HAL_PERIPH_ENABLE_MSP
         msp_sensor_update();
     #endif
@@ -2473,7 +2510,7 @@ void AP_Periph_FW::can_send_ADSB(struct __mavlink_adsb_vehicle_t &msg)
 
     canard_broadcast(ARDUPILOT_EQUIPMENT_TRAFFICMONITOR_TRAFFICREPORT_SIGNATURE,
                     ARDUPILOT_EQUIPMENT_TRAFFICMONITOR_TRAFFICREPORT_ID,
-                    CANARD_TRANSFER_PRIORITY_LOW,
+                    CANARD_TRANSFER_PRIORITY_LOWEST,
                     &buffer[0],
                     total_size);
 }
