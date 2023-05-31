@@ -190,15 +190,21 @@ void AP_RCProtocol_ST24::_process_byte(uint8_t byte)
                     values[chan_index] = (uint16_t)(values[chan_index] * ST24_SCALE_FACTOR + .5f) + ST24_SCALE_OFFSET;
                     chan_index++;
                 }
-                if(d->packet_count > 5){
+                if(d->packet_count > ST24_MAX_DROPCOUNT){
                     bfailsafe = true;
                 }
                 add_input(num_values, values, bfailsafe, d->rssi);//AP_RCProtocol: Fix the issue of ST24 receiver not working
                 
 #if !APM_BUILD_TYPE(APM_BUILD_iofirmware) && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
                 //_TelemetryData
-                UpdateSendtoFCinfo();
-                sendstatetoRC(_sendMsg,41);
+                if(_count < 3){//Reduce CPU usage.
+                    _count++;
+                }
+                else{
+                    UpdateSendtoFCinfo();
+                    sendstatetoRC(_sendMsg,41);
+                    _count = 0;
+                }
 #endif
             }
             break;
@@ -230,15 +236,21 @@ void AP_RCProtocol_ST24::_process_byte(uint8_t byte)
                     values[chan_index] = (uint16_t)(values[chan_index] * ST24_SCALE_FACTOR + .5f) + ST24_SCALE_OFFSET;
                     chan_index++;
                 }
-                if(d->packet_count > 5){
+                if(d->packet_count > ST24_MAX_DROPCOUNT){
                     bfailsafe = true;
                 }
                 add_input(num_values, values, bfailsafe, d->rssi);//AP_RCProtocol: Fix the issue of ST24 receiver not working
 
 #if !APM_BUILD_TYPE(APM_BUILD_iofirmware) && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
                 //_TelemetryData
-                UpdateSendtoFCinfo();
-                sendstatetoRC(_sendMsg,41);
+                if(_count < 3){//Reduce CPU usage.
+                    _count++;
+                }
+                else{
+                    UpdateSendtoFCinfo();
+                    sendstatetoRC(_sendMsg,41);
+                    _count = 0;
+                }
 #endif
             }
             break;
@@ -289,46 +301,37 @@ return;
 void AP_RCProtocol_ST24::UpdateSendtoFCinfo()
 { 
 #if !APM_BUILD_TYPE(APM_BUILD_iofirmware) && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
-    const Location &loc = AP::gps().location();
+    const Location &loc = AP::gps().location();  
+    uint16_t voltage = (roundf(AP::battery().voltage(0) * 10.0f));
 
+    if(voltage > 305){//RC only supports 0-30V 
+       voltage = 305;
+    } 
     
-    AP_AHRS &_ahrs = AP::ahrs();
-    WITH_SEMAPHORE(_ahrs.get_semaphore());
-    int16_t tPitch,tYaw; 
-    float tAlt = 0;
-    tPitch = -constrain_int16(roundf(ToDeg(wrap_PI(_ahrs.pitch))*100.00f),-9000,9000);//The remote control is reversed
-    tYaw = -constrain_int16(roundf(ToDeg(wrap_PI(_ahrs.yaw))*100.00f),-18000,18000); //The remote control is reversed
-    _ahrs.get_relative_position_D_home(tAlt);
-    
-    uint8_t voltage = (roundf(AP::battery().voltage(0) * 10.0f));
     if(voltage< 50) {
        voltage = 0;
     }
     else {
-       voltage = voltage  - 50;//voltage = 5 + X ,Remote control increases from 5V
+       voltage = voltage  - 50;//voltage = 5 + X ,Remote control increases from 5V~30
     }
    
  
-    TelemetryData FCinfotemp;
-    memset((uint8_t*)&FCinfotemp,0,32);
+    memset((uint8_t*)&_TelemetryData,0,32);
+    Update_ahrs_info();
     
-    FCinfotemp.lat = htole32(loc.lat);
-    FCinfotemp.lon = htole32(loc.lng);
-    FCinfotemp.alt = htole32(-constrain_int32(roundf(tAlt*100.00f),-20000,20000));//The remote control has a bug, exceeding the value may cause the remote control to crash
+    _TelemetryData.lat = htole32(loc.lat);
+    _TelemetryData.lon = htole32(loc.lng);
     
     //FCinfotemp.vx = 0;//No use
     //FCinfotemp.vy = 0;//No use
     //FCinfotemp.vz = 0;//No use
-    FCinfotemp.nsat = AP::gps().num_sats();
-    FCinfotemp.voltage = voltage;
+    _TelemetryData.nsat = AP::gps().num_sats();
+    _TelemetryData.voltage = (uint8_t)voltage;
     //FCinfotemp.current = (roundf(current * 10.0f));
-    FCinfotemp.roll = htole16(constrain_int16(roundf(ToDeg(wrap_PI(_ahrs.roll))*100.00f),-18000,18000));
-    FCinfotemp.pitch = htole16(tPitch);
-    FCinfotemp.yaw = htole16(tYaw + 9000);//The remote control will decrease by 90 degrees, which needs to be added here
-    
-    FCinfotemp.motorStatus = 0xff;
-    FCinfotemp.imuStatus = 0xff;
-    FCinfotemp.pressCompassStatus = 0x11;
+      
+    _TelemetryData.motorStatus = 0xff;
+    _TelemetryData.imuStatus = 0xff;
+    _TelemetryData.pressCompassStatus = 0x11;
 
     memset(_sendMsg,0,41);
     _sendMsg[0] = 0x55;
@@ -337,7 +340,7 @@ void AP_RCProtocol_ST24::UpdateSendtoFCinfo()
     _sendMsg[3] = 0x02;
     //_sendMsg[4] = 0x00;//No use
     //_sendMsg[5] = 0x00;//No use
-    memcpy(&_sendMsg[4], (uint8_t*)&FCinfotemp, 32);
+    memcpy(&_sendMsg[4], (uint8_t*)&_TelemetryData, 32);
     //_sendMsg[36] = 0x00;//Todo I don't know the purpose of this field, it may be status or alarm
     //_sendMsg[37] = 0x00;//Todo 
     //_sendMsg[38] = 0x00;//Todo
@@ -362,6 +365,25 @@ void AP_RCProtocol_ST24::start_bind(void)
     tuart->flush();
 #endif
     return;
+}
+
+void AP_RCProtocol_ST24::Update_ahrs_info()
+{
+#if !APM_BUILD_TYPE(APM_BUILD_iofirmware) && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+
+    AP_AHRS &_ahrs = AP::ahrs();    
+    WITH_SEMAPHORE(_ahrs.get_semaphore());
+    float tAlt = 0;
+    _ahrs.get_relative_position_D_home(tAlt);
+    //The remote control has a bug, exceeding the value may cause the remote control to crash
+    _TelemetryData.alt = htole32(-constrain_int32(roundf(tAlt*100.00f),-20000,20000));
+     _TelemetryData.roll = htole16(constrain_int16(roundf(ToDeg(wrap_PI(_ahrs.roll))*100.00f),-18000,18000));
+    _TelemetryData.pitch = htole16(-constrain_int16(roundf(ToDeg(wrap_PI(_ahrs.pitch))*100.00f),-18000,18000));
+     //The remote control will decrease by 90 degrees, which needs to be added here
+    _TelemetryData.yaw = htole16(-constrain_int16(roundf(ToDeg(wrap_PI(_ahrs.yaw))*100.00f),-18000,18000) + 9000);
+
+#endif
+     return;
 }
 
 #endif  // AP_RCPROTOCOL_ST24_ENABLED

@@ -36,6 +36,9 @@
 #define ST24_TARGET_MIN 1000.0f
 #define ST24_TARGET_MAX 2000.0f
 
+#define ST24_MAX_DROPCOUNT 25
+
+
 /* pre-calculate the floating point stuff as far as possible at compile time */
 #define ST24_SCALE_FACTOR ((ST24_TARGET_MAX - ST24_TARGET_MIN) / (ST24_RANGE_MAX - ST24_RANGE_MIN))
 #define ST24_SCALE_OFFSET (int)(ST24_TARGET_MIN - (ST24_SCALE_FACTOR * ST24_RANGE_MIN + 0.5f))
@@ -148,7 +151,8 @@ private:
     AP_HAL::UARTDriver *_uart;
     TelemetryData _TelemetryData;
     uint8_t _sendMsg[41];
-    
+    uint8_t _count;
+    void Update_ahrs_info();
 
 
     enum ST24_DECODE_STATE {
