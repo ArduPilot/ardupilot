@@ -4,6 +4,8 @@
 # MCU class and specific type
 MCU STM32H7xx STM32H757xx
 
+define WATCHDOG_DISABLED
+
 define CORE_CM7
 define SMPS_PWR
 

@@ -20,6 +20,8 @@ FLASH_RESERVE_START_KB 0
 # the H757 has 128k sectors, assign 2 sectors for BL
 FLASH_BOOTLOADER_LOAD_KB 256
 
+define WATCHDOG_DISABLED
+
 # crystal frequency
 OSCILLATOR_HZ 24000000
 
