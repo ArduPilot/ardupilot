@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 4.3.7-beta1 24-May-2023
+Copter 4.3.7 31-May-2023 / 4.3.7-beta1 24-May-2023
 Changes from 4.3.6
 1) Bug fixes
     a) EKF3 accel bias calculations bug fix
