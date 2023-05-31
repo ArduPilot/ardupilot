@@ -32,7 +32,7 @@ void AP_InertialNav::update(bool high_vibes)
         // during high vibration events use vertical position change
         if (high_vibes) {
             float rate_z;
-            if (_ahrs_ekf.get_vert_pos_rate(rate_z)) {
+            if (_ahrs_ekf.get_vert_pos_rate_D(rate_z)) {
                 velNED.z = rate_z;
             }
         }
