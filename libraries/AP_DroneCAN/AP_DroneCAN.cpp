@@ -48,8 +48,6 @@
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include <string.h>
 
-#define LED_DELAY_US 50000
-
 extern const AP_HAL::HAL& hal;
 
 // setup default pool size
@@ -255,11 +253,12 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
     AP_Proximity_DroneCAN::subscribe_msgs(this);
 #endif
 
-    act_out_array.set_timeout_ms(2);
+    act_out_array.set_timeout_ms(5);
     act_out_array.set_priority(CANARD_TRANSFER_PRIORITY_HIGH);
 
     esc_raw.set_timeout_ms(2);
-    esc_raw.set_priority(CANARD_TRANSFER_PRIORITY_HIGH);
+    // esc_raw is one higher than high priority to ensure that it is given higher priority over act_out_array
+    esc_raw.set_priority(CANARD_TRANSFER_PRIORITY_HIGH - 1);
 
 #if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
     esc_hobbywing_raw.set_timeout_ms(2);
@@ -312,8 +311,6 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
 
     node_info_server.set_timeout_ms(20);
 
-    _led_conf.devices_count = 0;
-
     // setup node status
     node_status_msg.health = UAVCAN_PROTOCOL_NODESTATUS_HEALTH_OK;
     node_status_msg.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OPERATIONAL;
@@ -346,9 +343,25 @@ void AP_DroneCAN::loop(void)
 
         canard_iface.process(1);
 
-        if (_SRV_armed) {
-            bool sent_servos = false;
+        safety_state_send();
+        notify_state_send();
+        send_parameter_request();
+        send_parameter_save_request();
+        send_node_status();
+        _dna_server.verify_nodes();
 
+#if AP_DRONECAN_SEND_GPS
+        if (option_is_set(AP_DroneCAN::Options::SEND_GNSS) && !AP_GPS_DroneCAN::instance_exists(this)) {
+            // send if enabled and this interface/driver is not used by the AP_GPS driver
+            gnss_send_fix();
+            gnss_send_yaw();
+        }
+#endif
+        logging();
+#if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+        hobbywing_ESC_update();
+#endif
+        if (_SRV_armed) {
             if (_servo_bm > 0) {
                 // if we have any Servos in bitmask
                 uint32_t now = AP_HAL::native_micros();
@@ -360,55 +373,12 @@ void AP_DroneCAN::loop(void)
                     } else {
                         SRV_send_actuator();
                     }
-                    sent_servos = true;
                     for (uint8_t i = 0; i < DRONECAN_SRV_NUMBER; i++) {
                         _SRV_conf[i].servo_pending = false;
                     }
                 }
             }
-
-            // if we have any ESC's in bitmask
-            if (_esc_bm > 0 && !sent_servos) {
-#if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
-                if (option_is_set(Options::USE_HOBBYWING_ESC)) {
-                    SRV_send_esc_hobbywing();
-                } else
-#endif
-                {
-                    SRV_send_esc();
-                }
-            }
-
-            for (uint8_t i = 0; i < DRONECAN_SRV_NUMBER; i++) {
-                _SRV_conf[i].esc_pending = false;
-            }
         }
-
-        led_out_send();
-        buzzer_send();
-        rtcm_stream_send();
-        safety_state_send();
-        notify_state_send();
-        send_parameter_request();
-        send_parameter_save_request();
-        send_node_status();
-        _dna_server.verify_nodes();
-#if AP_OPENDRONEID_ENABLED
-        AP::opendroneid().dronecan_send(this);
-#endif
-
-#if AP_DRONECAN_SEND_GPS
-        if (option_is_set(AP_DroneCAN::Options::SEND_GNSS) && !AP_GPS_DroneCAN::instance_exists(this)) {
-            // send if enabled and this interface/driver is not used by the AP_GPS driver
-            gnss_send_fix();
-            gnss_send_yaw();
-        }
-#endif
-
-        logging();
-#if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
-        hobbywing_ESC_update();
-#endif
     }
 }
 
@@ -605,8 +575,6 @@ void AP_DroneCAN::SRV_send_esc(void)
     uint8_t active_esc_num = 0, max_esc_num = 0;
     uint8_t k = 0;
 
-    WITH_SEMAPHORE(SRV_sem);
-
     // esc offset allows for efficient packing of higher ESC numbers in RawCommand
     const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
 
@@ -645,6 +613,12 @@ void AP_DroneCAN::SRV_send_esc(void)
         } else {
             _fail_send_count++;
         }
+        // immediately push data to CAN bus
+        canard_iface.processTx(true);
+    }
+
+    for (uint8_t i = 0; i < DRONECAN_SRV_NUMBER; i++) {
+        _SRV_conf[i].esc_pending = false;
     }
 }
 
@@ -659,8 +633,6 @@ void AP_DroneCAN::SRV_send_esc_hobbywing(void)
 
     uint8_t active_esc_num = 0, max_esc_num = 0;
     uint8_t k = 0;
-
-    WITH_SEMAPHORE(SRV_sem);
 
     // esc offset allows for efficient packing of higher ESC numbers in RawCommand
     const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, DRONECAN_SRV_NUMBER);
@@ -700,6 +672,8 @@ void AP_DroneCAN::SRV_send_esc_hobbywing(void)
         } else {
             _fail_send_count++;
         }
+        // immediately push data to CAN bus
+        canard_iface.processTx(true);
     }
 }
 #endif // AP_DRONECAN_HOBBYWING_ESC_SUPPORT
@@ -718,95 +692,20 @@ void AP_DroneCAN::SRV_push_servos()
     }
 
     _SRV_armed = hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED;
-}
 
-
-///// LED /////
-
-void AP_DroneCAN::led_out_send()
-{
-    uint64_t now = AP_HAL::native_micros64();
-
-    if ((now - _led_conf.last_update) < LED_DELAY_US) {
-        return;
-    }
-
-    uavcan_equipment_indication_LightsCommand msg;
-    {
-        WITH_SEMAPHORE(_led_out_sem);
-
-        if (_led_conf.devices_count == 0) {
-            return;
-        }
-
-        msg.commands.len = _led_conf.devices_count;
-        for (uint8_t i = 0; i < _led_conf.devices_count; i++) {
-            msg.commands.data[i].light_id =_led_conf.devices[i].led_index;
-            msg.commands.data[i].color.red = _led_conf.devices[i].red >> 3;
-            msg.commands.data[i].color.green = _led_conf.devices[i].green >> 2;
-            msg.commands.data[i].color.blue = _led_conf.devices[i].blue >> 3;
+    if (_SRV_armed) {
+        if (_esc_bm > 0) {
+            // push ESCs as fast as we can
+#if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
+            if (option_is_set(Options::USE_HOBBYWING_ESC)) {
+                SRV_send_esc_hobbywing();
+            } else
+#endif
+            {
+                SRV_send_esc();
+            }
         }
     }
-
-    rgb_led.broadcast(msg);
-    _led_conf.last_update = now;
-}
-
-bool AP_DroneCAN::led_write(uint8_t led_index, uint8_t red, uint8_t green, uint8_t blue)
-{
-    if (_led_conf.devices_count >= AP_DRONECAN_MAX_LED_DEVICES) {
-        return false;
-    }
-
-    WITH_SEMAPHORE(_led_out_sem);
-
-    // check if a device instance exists. if so, break so the instance index is remembered
-    uint8_t instance = 0;
-    for (; instance < _led_conf.devices_count; instance++) {
-        if (_led_conf.devices[instance].led_index == led_index) {
-            break;
-        }
-    }
-
-    // load into the correct instance.
-    // if an existing instance was found in above for loop search,
-    // then instance value is < _led_conf.devices_count.
-    // otherwise a new one was just found so we increment the count.
-    // Either way, the correct instance is the current value of instance
-    _led_conf.devices[instance].led_index = led_index;
-    _led_conf.devices[instance].red = red;
-    _led_conf.devices[instance].green = green;
-    _led_conf.devices[instance].blue = blue;
-
-    if (instance == _led_conf.devices_count) {
-        _led_conf.devices_count++;
-    }
-
-    return true;
-}
-
-// buzzer send
-void AP_DroneCAN::buzzer_send()
-{
-    uavcan_equipment_indication_BeepCommand msg;
-    WITH_SEMAPHORE(_buzzer.sem);
-    uint8_t mask = (1U << _driver_index);
-    if ((_buzzer.pending_mask & mask) == 0) {
-        return;
-    }
-    _buzzer.pending_mask &= ~mask;
-    msg.frequency = _buzzer.frequency;
-    msg.duration = _buzzer.duration;
-    buzzer.broadcast(msg);
-}
-
-// buzzer support
-void AP_DroneCAN::set_buzzer_tone(float frequency, float duration_s)
-{
-    WITH_SEMAPHORE(_buzzer.sem);
-    _buzzer.frequency = frequency;
-    _buzzer.duration = duration_s;
-    _buzzer.pending_mask = 0xFF;
 }
 
 // notify state send
@@ -1047,38 +946,6 @@ void AP_DroneCAN::gnss_send_yaw()
 }
 #endif // AP_DRONECAN_SEND_GPS
 
-
-void AP_DroneCAN::rtcm_stream_send()
-{
-    WITH_SEMAPHORE(_rtcm_stream.sem);
-    if (_rtcm_stream.buf == nullptr ||
-        _rtcm_stream.buf->available() == 0) {
-        // nothing to send
-        return;
-    }
-    uint32_t now = AP_HAL::native_millis();
-    if (now - _rtcm_stream.last_send_ms < 20) {
-        // don't send more than 50 per second
-        return;
-    }
-    _rtcm_stream.last_send_ms = now;
-    uavcan_equipment_gnss_RTCMStream msg;
-    uint32_t len = _rtcm_stream.buf->available();
-    if (len > 128) {
-        len = 128;
-    }
-    msg.protocol_id = UAVCAN_EQUIPMENT_GNSS_RTCMSTREAM_PROTOCOL_ID_RTCM3;
-    for (uint8_t i=0; i<len; i++) {
-        uint8_t b;
-        if (!_rtcm_stream.buf->read_byte(&b)) {
-            return;
-        }
-        msg.data.data[i] = b;
-    }
-    msg.data.len = len;
-    rtcm_stream.broadcast(msg);
-}
-
 // SafetyState send
 void AP_DroneCAN::safety_state_send()
 {
@@ -1112,23 +979,6 @@ void AP_DroneCAN::safety_state_send()
                                                       UAVCAN_EQUIPMENT_SAFETY_ARMINGSTATUS_STATUS_DISARMED;
         arming_status.broadcast(arming_msg);
     }
-}
-
-/*
- send RTCMStream packet on all active DroneCAN drivers
-*/
-void AP_DroneCAN::send_RTCMStream(const uint8_t *data, uint32_t len)
-{
-    WITH_SEMAPHORE(_rtcm_stream.sem);
-    if (_rtcm_stream.buf == nullptr) {
-        // give enough space for a full round from a NTRIP server with all
-        // constellations
-        _rtcm_stream.buf = new ByteBuffer(2400);
-    }
-    if (_rtcm_stream.buf == nullptr) {
-        return;
-    }
-    _rtcm_stream.buf->write(data, len);
 }
 
 /*

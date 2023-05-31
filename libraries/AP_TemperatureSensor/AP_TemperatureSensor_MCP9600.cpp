@@ -105,8 +105,8 @@ void AP_TemperatureSensor_MCP9600::init()
     // lower retries for run
     _dev->set_retries(3);
 
-    /* Request 10Hz update */
-    _dev->register_periodic_callback(100 * AP_USEC_PER_MSEC,
+    /* Request 5Hz update */
+    _dev->register_periodic_callback(200 * AP_USEC_PER_MSEC,
                                      FUNCTOR_BIND_MEMBER(&AP_TemperatureSensor_MCP9600::_timer, void));
 }
 

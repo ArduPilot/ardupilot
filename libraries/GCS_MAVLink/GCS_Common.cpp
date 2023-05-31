@@ -4410,14 +4410,12 @@ MAV_RESULT GCS_MAVLINK::handle_command_battery_reset(const mavlink_command_long_
     return MAV_RESULT_FAILED;
 }
 
+#if COMPASS_CAL_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_mag_cal(const mavlink_command_long_t &packet)
 {
-#if COMPASS_CAL_ENABLED
     return AP::compass().handle_mag_cal_command(packet);
-#else
-    return MAV_RESULT_UNSUPPORTED;
-#endif
 }
+#endif
 
 #if AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_request_autopilot_capabilities(const mavlink_command_long_t &packet)
@@ -4650,12 +4648,14 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         break;
 #endif // HAL_HIGH_LATENCY2_ENABLED
 
+#if COMPASS_CAL_ENABLED
     case MAV_CMD_DO_START_MAG_CAL:
     case MAV_CMD_DO_ACCEPT_MAG_CAL:
     case MAV_CMD_DO_CANCEL_MAG_CAL: {
         result = handle_command_mag_cal(packet);
         break;
     }
+#endif
 
     case MAV_CMD_START_RX_PAIR:
         result = handle_rc_bind(packet);
