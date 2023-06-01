@@ -58,7 +58,7 @@ AP_IOMCU::AP_IOMCU(AP_HAL::UARTDriver &_uart) :
     singleton = this;
 }
 
-#define IOMCU_DEBUG_ENABLE 0
+#define IOMCU_DEBUG_ENABLE 1
 
 #if IOMCU_DEBUG_ENABLE
 #include <stdio.h>
@@ -1153,7 +1153,7 @@ void AP_IOMCU::check_iomcu_reset(void)
 #endif
     // when we are in an expected delay allow for a larger time
     // delta. This copes with flash erase, such as bootloader update
-    const uint32_t max_delay = hal.scheduler->in_expected_delay()?5000:500;
+    const uint32_t max_delay = hal.scheduler->in_expected_delay()?8000:500;
     last_iocmu_timestamp_ms = reg_status.timestamp_ms;
 
     if (dt_ms < max_delay) {
