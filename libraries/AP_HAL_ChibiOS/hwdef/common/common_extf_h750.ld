@@ -266,12 +266,14 @@ SECTIONS
     .ARM.extab :
     {
         *(.ARM.extab* .gnu.linkonce.armextab.*)
+    /* needs to be close to libgcc in memory */
     } > instram AT > default_flash
 
     .ARM.exidx : {
         __exidx_start = .;
         *(.ARM.exidx* .gnu.linkonce.armexidx.*)
         __exidx_end = .;
+     /* needs to be close to libgcc in memory */
      } > instram AT > default_flash
 
     .eh_frame_hdr :
