@@ -5,9 +5,13 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_RCProtocol/AP_RCProtocol.h>
 
-
+#include "hal.h"
 #include "ch.h"
 #include "ioprotocol.h"
+
+#if AP_HAL_SHARED_DMA_ENABLED
+#include <AP_HAL_ChibiOS/shared_dma.h>
+#endif
 
 #define PWM_IGNORE_THIS_CHANNEL UINT16_MAX
 #define SERVO_COUNT 8
@@ -124,6 +128,14 @@ public:
     // DSHOT runtime
     struct page_dshot dshot;
 
+#if AP_HAL_SHARED_DMA_ENABLED
+    void tx_dma_allocate(ChibiOS::Shared_DMA *ctx);
+    void tx_dma_deallocate(ChibiOS::Shared_DMA *ctx);
+    void dma_setup_transaction(hal_uart_driver *uart, eventmask_t mask);
+
+    ChibiOS::Shared_DMA* tx_dma_handle;
+#endif
+
     // true when override channel active
     bool override_active;
 
@@ -132,6 +144,11 @@ public:
     uint32_t sbus_interval_ms;
 
     uint32_t fmu_data_received_time;
+
+    // events that will be signaled on transaction completion;
+    eventmask_t fmu_events;
+
+    bool pwm_update_pending;
     uint32_t last_heater_ms;
     uint32_t reboot_time;
     bool do_reboot;
@@ -143,7 +160,8 @@ public:
     uint32_t safety_update_ms;
     uint32_t safety_button_counter;
     uint8_t led_counter;
-    uint32_t last_loop_ms;
+    uint32_t last_slow_loop_ms;
+    uint32_t last_fast_loop_us;
     bool dshot_enabled;
     bool oneshot_enabled;
     bool brushed_enabled;
