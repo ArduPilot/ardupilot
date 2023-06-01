@@ -81,7 +81,7 @@ SECTIONS
         __vectors_base__ = .;
         KEEP(*(.vectors))
         __vectors_end__ = .;
-    } > flashram AT > default_flash
+    } > dataram AT > default_flash
 
     constructors : ALIGN(4) SUBALIGN(4)
     {
