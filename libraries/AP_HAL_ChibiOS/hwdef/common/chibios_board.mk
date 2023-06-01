@@ -264,6 +264,10 @@ endif
 # Define ASM defines here
 UADEFS =
 
+ifeq ($(COPY_VECTORS_TO_RAM),yes)
+ UADEFS += -DCRT0_INIT_VECTORS=1
+endif
+
 # List all user directories here
 UINCDIR =
 
