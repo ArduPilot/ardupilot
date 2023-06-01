@@ -24,7 +24,7 @@
 
 #include "GPIO.h"
 #include "RCInput_RPI.h"
-#include "Util_RPI.h"
+
 
 #ifdef DEBUG
 #define debug(fmt, args ...) do { fprintf(stderr,"[RCInput_RPI]: %s:%d: " fmt, __FUNCTION__, __LINE__, ## args); } while (0)
@@ -152,12 +152,12 @@ Memory_table::Memory_table()
 }
 
 // Init Memory table
-Memory_table::Memory_table(uint32_t page_count, int version)
+Memory_table::Memory_table(const uint32_t page_count, const LINUX_BOARD_TYPE version)
 {
     uint32_t i;
     int fdMem, file;
     // Cache coherent adresses depends on RPI's version
-    uint32_t bus = version == 0 ? 0x40000000 : 0xC0000000;
+    uint32_t bus = version == LINUX_BOARD_TYPE::RPI_ZERO_1 ? 0x40000000 : 0xC0000000;
     uint64_t pageInfo;
     void *offset;
 
@@ -199,7 +199,7 @@ Memory_table::Memory_table(uint32_t page_count, int version)
         munmap(_virt_pages[i], PAGE_SIZE);
 
         void * prev_virt = _virt_pages[i];
-        _virt_pages[i] = mmap(_virt_pages[i], PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED | MAP_NORESERVE | MAP_LOCKED, fdMem, ((uintptr_t)_phys_pages[i] & (version == 0 ? 0xFFFFFFFFFFFFFFFF : ~bus)));
+        _virt_pages[i] = mmap(_virt_pages[i], PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED | MAP_NORESERVE | MAP_LOCKED, fdMem, ((uintptr_t)_phys_pages[i] & (version == LINUX_BOARD_TYPE::RPI_ZERO_1 ? 0xFFFFFFFFFFFFFFFF : ~bus)));
         if (_virt_pages[i] == MAP_FAILED) {
             fprintf(stderr, "Failed phys2virt prev_virt=%p phys_page=%p %m\n", prev_virt, _phys_pages[i]);
             printf("Make sure that CONFIG_STRICT_DEVMEM is disabled\n");
@@ -274,22 +274,22 @@ uint32_t Memory_table::get_page_count() const
 // Physical addresses of peripheral depends on Raspberry Pi's version
 void RCInput_RPI::set_physical_addresses()
 {
-    if (_version == 0) {
+    if (_version == LINUX_BOARD_TYPE::RPI_ZERO_1) {
         // 1 & zero are the same
         dma_base = RCIN_RPI_RPI1_DMA_BASE;
         clk_base = RCIN_RPI_RPI1_CLK_BASE;
         pcm_base = RCIN_RPI_RPI1_PCM_BASE;
-    } else if (_version == 1 || _version == 2) {
+    } else if (_version == LINUX_BOARD_TYPE::RPI_2_3_ZERO2) {
         // 2 & 3 are the same
         dma_base = RCIN_RPI_RPI2_DMA_BASE;
         clk_base = RCIN_RPI_RPI2_CLK_BASE;
         pcm_base = RCIN_RPI_RPI2_PCM_BASE;
-    } else if (_version == 3) {
+    } else if (_version == LINUX_BOARD_TYPE::RPI_4) {
         dma_base = RCIN_RPI_RPI4_DMA_BASE;
         clk_base = RCIN_RPI_RPI4_CLK_BASE;
         pcm_base = RCIN_RPI_RPI4_PCM_BASE;
     } else {
-        fprintf(stderr,"unknown RPI _version=%i\n", _version);
+        fprintf(stderr,"Unknown Linux Board version!\n");
         exit(-1);
     }
 }
@@ -424,10 +424,11 @@ void RCInput_RPI::init_PCM()
     hal.scheduler->delay_microseconds(100);
     clk_reg[RCIN_RPI_PCMCLK_CNTL] = 0x5A000006;                              // Source=PLLD (500MHz)
     hal.scheduler->delay_microseconds(100);
-    if (_version != 3) {
+    if (_version != LINUX_BOARD_TYPE::RPI_4) {
         clk_reg[RCIN_RPI_PCMCLK_DIV] = 0x5A000000 | ((RCIN_RPI_PLL_CLK/RCIN_RPI_SAMPLE_FREQ)<<12);   // Set pcm div for BCM2835 500MHZ clock. If we need to configure DMA frequency.
     }
     else {
+        // RPI-4
         clk_reg[RCIN_RPI_PCMCLK_DIV] = 0x5A000000 | ((RCIN_RPI4_PLL_CLK/RCIN_RPI_SAMPLE_FREQ)<< 12); // Set pcm div for BCM2711 700MHz clock. If we need to configure DMA frequency.
     }
     hal.scheduler->delay_microseconds(100);
@@ -524,9 +525,9 @@ void RCInput_RPI::init()
     uint64_t signal_states(0);
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2
-    _version = 1;
+    _version = LINUX_BOARD_TYPE::RPI_2_3_ZERO2;
 #else
-    _version = UtilRPI::from(hal.util)->get_rpi_version();
+    _version = UtilRPI::from(hal.util)->detect_linux_board_type();
 #endif
 
     set_physical_addresses();
