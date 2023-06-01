@@ -236,7 +236,7 @@ void __early_init(void) {
 #if !defined(STM32F1)
   stm32_gpio_init();
 #endif
-#if !HAL_XIP_ENABLED || defined(STM32_FORCE_CLOCK_INIT)
+#if !HAL_XIP_ENABLED || defined(HAL_FORCE_CLOCK_INIT)
   // if running from external flash then the clocks must not be reset - instead rely on the bootloader to setup
   stm32_clock_init();
 #endif
