@@ -37,6 +37,7 @@
 #include "AP_InertialSensor_ADIS1647x.h"
 #include "AP_InertialSensor_ExternalAHRS.h"
 #include "AP_InertialSensor_Invensensev3.h"
+#include "AP_InertialSensor_IIM4623x.h"
 #include "AP_InertialSensor_NONE.h"
 #include "AP_InertialSensor_SCHA63T.h"
 
