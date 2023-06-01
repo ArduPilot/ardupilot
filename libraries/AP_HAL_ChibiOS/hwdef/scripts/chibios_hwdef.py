@@ -1363,6 +1363,7 @@ INCLUDE common_mixf.ld
 ''' % (flash_base, flash_length, ext_flash_base, ext_flash_length, ram0_start, ram0_len))
         else:
             self.env_vars['HAS_EXTERNAL_FLASH_SECTIONS'] = 1
+            self.build_flags.append('COPY_VECTORS_TO_RAM=yes')
             f.write('''/* generated ldscript.ld */
 MEMORY
 {
