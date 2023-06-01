@@ -146,6 +146,9 @@ class EnumDocco(object):
                         skip_enumeration = False
                     continue
                 if state == "inside":
+                    if re.match("\s*/[*].*[*]/\s*$", line):
+                        # C-style block comment taking up entire line
+                        continue
                     if re.match("\s*$", line):
                         continue
                     if re.match("#if", line):
