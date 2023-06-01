@@ -25,9 +25,9 @@ public:
 
     bool vehicle_initialised() const override;
 
-protected:
-
     uint8_t sysid_this_mav() const override;
+
+protected:
 
     // minimum amount of time (in microseconds) that must remain in
     // the main scheduler loop before we are allowed to send any
