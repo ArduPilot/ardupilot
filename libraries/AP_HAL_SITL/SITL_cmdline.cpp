@@ -130,7 +130,9 @@ static const struct {
     Aircraft *(*constructor)(const char *frame_str);
 } model_constructors[] = {
     { "quadplane",          QuadPlane::create },
+#if HAL_SIM_XPLANE_ENABLED
     { "xplane",             XPlane::create },
+#endif
     { "firefly",            QuadPlane::create },
     { "+",                  MultiCopter::create },
     { "quad",               MultiCopter::create },
