@@ -21,6 +21,12 @@
  */
 
 #include <hal.h>
+
+#if defined(IOMCU_FW) && HAL_DSHOT_ENABLED
+// need to give the little guy as much help as possible
+#pragma GCC optimize("O2")
+#endif
+
 #include "RCOutput.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -1431,7 +1437,9 @@ void RCOutput::rcout_thread() {
         // main thread requested a new dshot send or we timed out - if we are not running
         // as a multiple of loop rate then ignore EVT_PWM_SEND events to preserve periodicity
         dshot_send_groups(0);
-
+#if AP_HAL_SHARED_DMA_ENABLED
+        dshot_collect_dma_locks(0);
+#endif
         if (_dshot_rate > 0) {
             _dshot_cycle = (_dshot_cycle + 1) % _dshot_rate;
         }
@@ -1490,6 +1498,11 @@ void RCOutput::dma_allocate(Shared_DMA *ctx)
         if (group.dma_handle == ctx && group.dma == nullptr) {
             chSysLock();
             group.dma = dmaStreamAllocI(group.dma_up_stream_id, 10, dma_up_irq_callback, &group);
+#if defined(IOMCU_FW)
+            if (group.pwm_started) {
+                pwmStart(group.pwm_drv, &group.pwm_cfg);
+            }
+#endif
             chSysUnlock();
 #if STM32_DMA_SUPPORTS_DMAMUX
             if (group.dma) {
@@ -1508,6 +1521,13 @@ void RCOutput::dma_deallocate(Shared_DMA *ctx)
     for (auto &group : pwm_group_list) {
         if (group.dma_handle == ctx && group.dma != nullptr) {
             chSysLock();
+#if defined(IOMCU_FW)
+            // leaving the peripheral running on IOMCU plays havoc with the UART that is
+            // also sharing this channel
+            if (group.pwm_started) {
+                pwmStop(group.pwm_drv);
+            }
+#endif
             dmaStreamFreeI(group.dma);
             group.dma = nullptr;
             chSysUnlock();
@@ -1591,7 +1611,7 @@ void RCOutput::dshot_send(pwm_group &group, uint64_t time_out_us)
     // if we are sharing UP channels then it might have taken a long time to get here,
     // if there's not enough time to actually send a pulse then cancel
 #if AP_HAL_SHARED_DMA_ENABLED
-    if (AP_HAL::micros64() + group.dshot_pulse_time_us > time_out_us) {
+    if (time_out_us > 0 && AP_HAL::micros64() + group.dshot_pulse_time_us > time_out_us) {
         group.dma_handle->unlock();
         return;
     }
@@ -1783,7 +1803,9 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
       datasheet. Many thanks to the betaflight developers for coming
       up with this great method.
      */
+#ifdef HAL_GPIO_LINE_GPIO54
     TOGGLE_PIN_DEBUG(54);
+#endif
 #if STM32_DMA_SUPPORTS_DMAMUX
     dmaSetRequestSource(group.dma, group.dma_up_channel);
 #endif
@@ -1810,8 +1832,9 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
     // burst address (BA) of the CCR register, burst length (BL) of 4 (0b11)
     group.pwm_drv->tim->DCR = STM32_TIM_DCR_DBA(ccr_ofs) | STM32_TIM_DCR_DBL(3);
     group.dshot_state = DshotState::SEND_START;
-
+#ifdef HAL_GPIO_LINE_GPIO54
     TOGGLE_PIN_DEBUG(54);
+#endif
 
     dmaStreamEnable(group.dma);
     // record when the transaction was started
