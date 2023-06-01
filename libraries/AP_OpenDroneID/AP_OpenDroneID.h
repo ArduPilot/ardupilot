@@ -122,7 +122,6 @@ private:
         EnforceArming     = (1U << 0U),
         AllowNonGPSPosition = (1U << 1U),
         LockUASIDOnFirstBasicIDRx = (1U << 2U),
-        UseChipIDAsBasicID  = (1U << 3U),
     };
 
     // check if an option is set
