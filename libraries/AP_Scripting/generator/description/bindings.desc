@@ -667,8 +667,10 @@ singleton AP_EFI method get_backend AP_EFI_Backend uint8_t'skip_check
 
 -- ----END EFI Library----
 
+include AP_Logger/AP_Logger.h
 singleton AP_Logger rename logger
 singleton AP_Logger manual write AP_Logger_Write 7
+singleton AP_Logger method log_file_content void string
 
 singleton i2c manual get_device lua_get_i2c_device 4
 
