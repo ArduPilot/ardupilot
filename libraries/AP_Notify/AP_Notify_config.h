@@ -8,6 +8,10 @@
 #endif
 #include <AP_SerialLED/AP_SerialLED_config.h>
 
+#ifndef HAL_DISPLAY_ENABLED
+#define HAL_DISPLAY_ENABLED 1
+#endif
+
 #ifndef AP_NOTIFY_LP5562_ENABLED
 #define AP_NOTIFY_LP5562_ENABLED 1
 #endif
