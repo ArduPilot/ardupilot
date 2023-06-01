@@ -68,7 +68,7 @@ const AP_Param::GroupInfo AP_OpenDroneID::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: OpenDroneID options
     // @Description: Options for OpenDroneID subsystem
-    // @Bitmask: 0:EnforceArming, 1:AllowNonGPSPosition, 2:LockUASIDOnFirstBasicIDRx, 3:UseChipIDAsBasicID
+    // @Bitmask: 0:EnforceArming, 1:AllowNonGPSPosition, 2:LockUASIDOnFirstBasicIDRx
     AP_GROUPINFO("OPTIONS", 4, AP_OpenDroneID, _options, 0),
 
     // @Param: BARO_ACC
@@ -136,29 +136,6 @@ void AP_OpenDroneID::set_basic_id() {
     if (id_len == 0) {
         load_UAS_ID_from_persistent_memory();
     }
-#if defined(OPENDRONEID_UA_MFR_CODE)
-    if ((_options & UseChipIDAsBasicID) && (id_len == 0)) {
-        float val;
-        // prepare basic id pkt
-        AP_Param::get("SYSID_THISMAV", val);
-        pkt_basic_id.target_system = val;
-        pkt_basic_id.target_component = MAV_COMP_ID_ODID_TXRX_1;
-        pkt_basic_id.id_type = MAV_ODID_ID_TYPE_SERIAL_NUMBER;
-        pkt_basic_id.ua_type = OPENDRONEID_UA_TYPE;
-
-        uint8_t sys_id[12];
-        uint8_t len = 12;
-        hal.util->get_system_id_unformatted(sys_id, len);
-        char buffer[21];
-        // create a unique id based on the system id, using 
-        snprintf(buffer, sizeof(buffer), "%sE%x%x%x%x%x%x%x",
-                        OPENDRONEID_UA_MFR_CODE,
-                        sys_id[0], sys_id[1], sys_id[2],
-                        sys_id[4],
-                        sys_id[5], sys_id[6], sys_id[7]);
-        memcpy(pkt_basic_id.uas_id, buffer, sizeof(pkt_basic_id.uas_id));
-} else 
-#endif
     if (id_len > 0) {
         // prepare basic id pkt
         uint8_t val = gcs().sysid_this_mav();
@@ -771,11 +748,7 @@ void AP_OpenDroneID::handle_msg(mavlink_channel_t chan, const mavlink_message_t 
         mavlink_msg_open_drone_id_self_id_decode(&msg, &pkt_self_id);
         break;
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_BASIC_ID:
-        if (id_len == 0
-#if defined(OPENDRONEID_UA_MFR_CODE)
-            && !(_options & UseChipIDAsBasicID)
-#endif
-        ) {
+        if (id_len == 0) {
             mavlink_msg_open_drone_id_basic_id_decode(&msg, &pkt_basic_id);
         }
         break;
