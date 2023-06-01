@@ -1,5 +1,5 @@
 // this is the "JSMN" ("Jasmine") JSON parser.
-// it was directly copied from the github page here: https://raw.githubusercontent.com/zserge/jsmn/master/jsmn.h
+// it was directly copied from the github page here: https://raw.githubusercontent.com/zserge/jsmn/master/jsmn.h (git hash 25647e692c7906b96ffd2b05ca54c097948e879c)
 // thanks @Serge
 
 /*

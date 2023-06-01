@@ -1,0 +1,7 @@
+#pragma once
+
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef AP_JSONPARSER_ENABLED
+#define AP_JSONPARSER_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX)
+#endif
