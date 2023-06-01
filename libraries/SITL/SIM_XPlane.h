@@ -28,9 +28,9 @@
 
 #include <AP_HAL/utility/Socket_native.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#include <AP_JSONParser/AP_JSONParser.h>
 
 #include "SIM_Aircraft.h"
-#include "picojson.h"
 
 namespace SITL {
 
@@ -126,9 +126,10 @@ private:
     struct stat map_st;
 
     bool load_dref_map(const char *map_json);
-    void add_dref(const char *name, DRefType type, const picojson::value &dref);
-    void add_joyinput(const char *name, JoyType type, const picojson::value &d);
-    void handle_setting(const picojson::value &d);
+    bool handle_axis(const char *name, class AP_JSONParser &json_parser);
+    bool handle_button(const char *name, class AP_JSONParser &json_parser);
+    bool handle_settings(class AP_JSONParser &json_parser);
+    bool handle_dref(const char *name, class ::AP_JSONParser &json_parser);
 
     void check_reload_dref(void);
 

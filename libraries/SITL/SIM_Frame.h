@@ -20,10 +20,7 @@
 
 #include "SIM_Aircraft.h"
 #include "SIM_Motor.h"
-
-#if USE_PICOJSON
-#include "picojson.h"
-#endif
+#include <AP_JSONParser/AP_JSONParser.h>
 
 namespace SITL {
 
@@ -146,7 +143,7 @@ private:
     } default_model;
 
 protected:
-#if USE_PICOJSON
+#if AP_JSONPARSER_ENABLED
     // load frame parameters from a json model file
     void load_frame_params(const char *model_json);
 #endif
@@ -163,12 +160,6 @@ private:
     float last_param_voltage;
 #if AP_SIM_ENABLED
     Battery *battery;
-#endif
-
-    // json parsing helpers
-#if USE_PICOJSON
-    void parse_float(picojson::value val, const char* label, float &param);
-    void parse_vector3(picojson::value val, const char* label, Vector3f &param);
 #endif
 };
 }

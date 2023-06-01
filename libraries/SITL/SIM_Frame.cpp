@@ -25,6 +25,8 @@
 #include <stdio.h>
 #include <sys/stat.h>
 
+#include <AP_JSONParser/AP_JSONParser.h>
+
 using namespace SITL;
 
 static Motor quad_plus_motors[] =
@@ -322,10 +324,15 @@ float Frame::get_air_density(float alt_amsl) const
     return air_pressure / (ISA_GAS_CONSTANT * (C_TO_KELVIN(model.refTempC)));
 }
 
-#if USE_PICOJSON
+#if AP_JSONPARSER_ENABLED
 /*
   load frame specific parameters from a json file if available
  */
+
+#ifndef streq
+#define streq(a,b) !strcmp(a, b)
+#endif
+
 void Frame::load_frame_params(const char *model_json)
 {
     char *fname = nullptr;
@@ -341,12 +348,20 @@ void Frame::load_frame_params(const char *model_json)
     if (fname == nullptr) {
         AP_HAL::panic("%s failed to load\n", model_json);
     }
-    picojson::value *obj = (picojson::value *)load_json(model_json);
-    if (obj == nullptr) {
-        AP_HAL::panic("%s failed to load\n", model_json);
+
+    AP_JSONParser json_parser;
+    if (!json_parser.init(50)) {
+        ::printf("failed to init json\n");
+        return;
+    }
+    if (!json_parser.parse_filepath(model_json)) {
+        free(fname);
+        ::printf("failed to parse json %s\n", model_json);
+        return;
     }
 
     enum class VarType {
+        UNKNOWN,
         FLOAT,
         VECTOR3F,
     };
@@ -384,63 +399,98 @@ void Frame::load_frame_params(const char *model_json)
         FRAME_VAR(num_motors),
     };
 
-    for (uint8_t i=0; i<ARRAY_SIZE(vars); i++) {
-        auto v = obj->get(vars[i].label);
-        if (v.is<picojson::null>()) {
-            // use default value
-            continue;
-        }
-        if (vars[i].t == VarType::FLOAT) {
-            parse_float(v, vars[i].label, *((float *)vars[i].ptr));
-
-        } else if (vars[i].t == VarType::VECTOR3F) {
-            parse_vector3(v, vars[i].label, *(Vector3f *)vars[i].ptr);
-
-        }
+    // note we consume the "name" token here but the body of the for
+    // loop consumes either a primitive (1 element) or an array (n+1
+    // elements)
+    uint16_t count;
+    if (!json_parser.shift_token_object(count)) {
+        ::printf("No base object in %s\n", model_json);
+        return;
     }
+    bool failed = false;
+    while (count--) {
+        char param_name[20] {};
+        if (!json_parser.shift_token_string(param_name, ARRAY_SIZE(param_name))) {
+            failed = true;
+            break;
+        }
 
-    json_search per_motor_vars[] = {
-        {"position", &model.motor_pos, VarType::VECTOR3F},
-        {"vector", &model.motor_thrust_vec, VarType::VECTOR3F},
-        {"yaw", &model.yaw_factor, VarType::FLOAT},
-    };
-    char label_name[20];
-    for (uint8_t i=0; i<ARRAY_SIZE(per_motor_vars); i++) {
-        for (uint8_t j=0; j<12; j++) {
-            snprintf(label_name, 20, "motor%i_%s", j+1, per_motor_vars[i].label);
-            auto v = obj->get(label_name);
-            if (v.is<picojson::null>()) {
-                // use default value
+        VarType vartype = VarType::UNKNOWN;
+        void *param_ptr = nullptr;
+
+        // check static list of known parameter names first:
+        for (const auto &var : vars) {
+            if (!streq(param_name, var.label)) {
                 continue;
             }
-            if (per_motor_vars[i].t == VarType::FLOAT) {
-                parse_float(v, label_name, *(((float *)per_motor_vars[i].ptr) + j));
+            vartype = var.t;
+            param_ptr = var.ptr;
+            break;
+        }
 
-            } else if (per_motor_vars[i].t == VarType::VECTOR3F) {
-                parse_vector3(v, label_name, *(((Vector3f *)per_motor_vars[i].ptr) + j));
+        if (vartype == VarType::UNKNOWN) {
+            // not in static list of names; check for dynamically-named variables:
+            json_search per_motor_vars[] = {
+                {"position", &model.motor_pos, VarType::VECTOR3F},
+                {"vector", &model.motor_thrust_vec, VarType::VECTOR3F},
+                {"yaw", &model.yaw_factor, VarType::FLOAT},
+            };
+            char label_name[20];
+            for (uint8_t i=0; i<ARRAY_SIZE(per_motor_vars) && vartype == VarType::UNKNOWN; i++) {
+                for (uint8_t j=0; j<12; j++) {
+                    snprintf(label_name, sizeof(label_name), "motor%i_%s", j+1, per_motor_vars[i].label);
+                    if (!streq(label_name, param_name)) {
+                        continue;
+                    }
+                    vartype = per_motor_vars[i].t;
+                    param_ptr = per_motor_vars[i].ptr;
+                    break;
+                }
             }
+        }
+
+
+        switch (vartype) {
+        case VarType::UNKNOWN:
+            // unknown parameter; stop attempting to parse file:
+            ::printf("No parameter (%s)", param_name);
+            return;
+
+        case VarType::FLOAT: {
+            if (param_ptr == nullptr) {
+                // should not happen
+                failed = true;
+                break;
+            }
+            float &param = *((float*)param_ptr);
+            if (!json_parser.shift_token_float(param)) {
+                failed = true;
+                break;
+            }
+            printf("%s=%f\n", param_name, param);
+            break;
+        }
+        case VarType::VECTOR3F: {
+            if (param_ptr == nullptr) {
+                // should not happen
+                return;
+            }
+            Vector3f &param = *((Vector3f*)param_ptr);
+            if (!json_parser.shift_token_vector3f(param)) {
+                failed = true;
+                break;
+            }
+            printf("%s=[%f,%f,%f]\n", param_name, param[0], param[1], param[2]);
+        }
         }
     }
 
-    delete obj;
+    if (failed) {
+        ::printf("Failed to load model params from %s\n", model_json);
+        return;
+    }
 
     ::printf("Loaded model params from %s\n", model_json);
-}
-
-void Frame::parse_float(picojson::value val, const char* label, float &param) {
-    if (!val.is<double>()) {
-        AP_HAL::panic("Bad json type for %s: %s", label, val.to_str().c_str());
-    }
-    param = val.get<double>();
-}
-
-void Frame::parse_vector3(picojson::value val, const char* label, Vector3f &param) {
-    if (!val.is<picojson::array>() || !val.contains(2) || val.contains(3)) {
-        AP_HAL::panic("Bad json type for %s: %s", label, val.to_str().c_str());
-    }
-    for (uint8_t j=0; j<3; j++) {
-        parse_float(val.get(j), label, param[j]);
-    }
 }
 
 #endif
@@ -455,7 +505,7 @@ void Frame::init(const char *frame_str, Battery *_battery)
     model = default_model;
     battery = _battery;
 
-#if USE_PICOJSON
+#if AP_JSONPARSER_ENABLED
     const char *colon = strchr(frame_str, ':');
     size_t slen = strlen(frame_str);
     if (colon != nullptr && slen > 5 && strcmp(&frame_str[slen-5], ".json") == 0) {

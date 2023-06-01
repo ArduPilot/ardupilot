@@ -35,10 +35,7 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#if USE_PICOJSON
-#include "picojson.h"
-#include <AP_Filesystem/AP_Filesystem.h>
-#endif
+#include <AP_JSONParser/AP_JSONParser.h>
 
 using namespace SITL;
 
