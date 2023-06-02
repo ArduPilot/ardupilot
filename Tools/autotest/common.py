@@ -13401,7 +13401,11 @@ SERIAL5_BAUD 128
             disabled = {}
         skip_list = []
         tests = []
+        seen_test_name = set()
         for test in all_tests:
+            if test.name in seen_test_name:
+                raise ValueError("Duplicate test name %s" % test.name)
+            seen_test_name.add(test.name)
             if test.name in disabled:
                 self.progress("##### %s is skipped: %s" % (test, disabled[test.name]))
                 skip_list.append((test, disabled[test.name]))
