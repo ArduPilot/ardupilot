@@ -244,9 +244,10 @@ void Plane::calc_airspeed_errors()
     // but only when this is faster than the target airspeed commanded
     // above.
     if (control_mode->does_auto_throttle() &&
-    	aparm.min_gndspeed_cm > 0 &&
-    	control_mode != &mode_circle) {
-        int32_t min_gnd_target_airspeed = airspeed_measured*100 + groundspeed_undershoot;
+        groundspeed_undershoot_is_valid &&
+        control_mode != &mode_circle) {
+        float EAS_undershoot = (int32_t)((float)groundspeed_undershoot / ahrs.get_EAS2TAS());
+        int32_t min_gnd_target_airspeed = airspeed_measured*100 + EAS_undershoot;
         if (min_gnd_target_airspeed > target_airspeed_cm) {
             target_airspeed_cm = min_gnd_target_airspeed;
         }
@@ -276,16 +277,18 @@ void Plane::calc_gndspeed_undershoot()
 {
     // Use the component of ground speed in the forward direction
     // This prevents flyaway if wind takes plane backwards
-    if (gps.status() >= AP_GPS::GPS_OK_FIX_2D) {
-	      Vector2f gndVel = ahrs.groundspeed_vector();
+    Vector3f velNED;
+    if (ahrs.have_inertial_nav() && ahrs.get_velocity_NED(velNED)) {
         const Matrix3f &rotMat = ahrs.get_rotation_body_to_ned();
         Vector2f yawVect = Vector2f(rotMat.a.x,rotMat.b.x);
         if (!yawVect.is_zero()) {
             yawVect.normalize();
-            float gndSpdFwd = yawVect * gndVel;
-            groundspeed_undershoot = (aparm.min_gndspeed_cm > 0) ? (aparm.min_gndspeed_cm - gndSpdFwd*100) : 0;
+            float gndSpdFwd = yawVect * velNED.xy();
+            groundspeed_undershoot_is_valid = aparm.min_gndspeed_cm > 0;
+            groundspeed_undershoot = groundspeed_undershoot_is_valid ? (aparm.min_gndspeed_cm - gndSpdFwd*100) : 0;
         }
     } else {
+        groundspeed_undershoot_is_valid = false;
         groundspeed_undershoot = 0;
     }
 }
