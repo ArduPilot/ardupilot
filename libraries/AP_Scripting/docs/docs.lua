@@ -2849,6 +2849,14 @@ AR_AttitudeControl = {}
 function AR_AttitudeControl:get_srate() end
 
 -- desc
+---@class AR_PosControl
+AR_PosControl = {}
+
+-- return position controller slew rates for rovers
+---@return number -- velocity slew rate
+function AR_PosControl:get_srate() end
+
+-- desc
 ---@class follow
 follow = {}
 
