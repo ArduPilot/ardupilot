@@ -78,7 +78,7 @@ void Copter::SurfaceTracking::set_target_alt_cm(float _target_alt_cm)
 
 bool Copter::SurfaceTracking::get_target_dist_for_logging(float &target_dist) const
 {
-    if (!valid_for_logging || (surface == Surface::NONE)) {
+    if (!(valid_for_logging || copter.wp_nav->get_rangefinder_position_control_enabled()) || (surface == Surface::NONE)) {
         return false;
     }
 

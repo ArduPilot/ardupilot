@@ -363,6 +363,7 @@ bool Copter::set_mode(const uint8_t new_mode, const ModeReason reason)
 void Copter::update_flight_mode()
 {
     surface_tracking.invalidate_for_logging();  // invalidate surface tracking alt, flight mode will set to true if used
+    wp_nav->disable_logging_if_no_rangefinder_control();  // disable logging if rangefinder is not used for position control, flight mode will enable it if used
 
     flightmode->run();
 }
