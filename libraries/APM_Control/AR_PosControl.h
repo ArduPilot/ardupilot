@@ -11,6 +11,11 @@ public:
     // constructor
     AR_PosControl(AR_AttitudeControl& atc);
 
+    // do not allow copying
+    CLASS_NO_COPY(AR_PosControl);
+
+    static AR_PosControl *get_singleton() { return _singleton; }
+
     // update navigation
     void update(float dt);
 
@@ -73,6 +78,9 @@ public:
     AC_P_2D& get_pos_p() { return _p_pos; }
     AC_PID_2D& get_vel_pid() { return _pid_vel; }
 
+    // get the slew rate value for velocity.  used for oscillation detection in lua scripts
+    void get_srate(float &velocity_srate);
+
     // write PSC logs
     void write_log();
 
@@ -80,6 +88,8 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+
+    static AR_PosControl *_singleton;
 
     // initialise and check for ekf position resets
     void init_ekf_xy_reset();
