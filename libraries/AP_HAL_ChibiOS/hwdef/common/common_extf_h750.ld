@@ -228,7 +228,14 @@ SECTIONS
         lib/lib*.a:vector3.*(.rodata*)
         lib/lib*.a:matrix3.*(.rodata*)
         *libm.a:*(.rodata*)
+        /* scheduler task table */
+        AntennaTracker/Tracker.*(.rodata*)
+        AP_Vehicle/AP_Vehicle.*(.rodata*)
         ArduCopter/Copter.*(.rodata*)
+        ArduPlane/ArduPlane.*(.rodata*)
+        ArduSub/ArduSub.*(.rodata*)
+        Blimp/Blimp.*(.rodata*)
+        Rover/Rover.*(.rodata*)
         *(.ramdata*)
         . = ALIGN(4);
     } > dataram AT > default_flash
