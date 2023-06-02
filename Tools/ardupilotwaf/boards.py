@@ -777,10 +777,12 @@ class sitl(Board):
 
         # whitelist of compilers which we should build with -Werror
         gcc_whitelist = frozenset([
-            ('11','3','0'),
-        ])
+                ('11','3','0'),
+            ])
 
-        if cfg.env.CC_VERSION in gcc_whitelist or cfg.options.Werror:
+        werr_enabled_default = bool('g++' == cfg.env.COMPILER_CXX and cfg.env.CC_VERSION in gcc_whitelist)
+
+        if werr_enabled_default or cfg.options.Werror:
             if not cfg.options.disable_Werror:
                 cfg.msg("Enabling -Werror", "yes")
                 if '-Werror' not in env.CXXFLAGS:
