@@ -415,7 +415,10 @@ class PSpawnStdPrettyPrinter(object):
 
     def write(self, data):
         self.buffer += data
-        for line in self.buffer.split("\n"):
+        lines = self.buffer.split("\n")
+        self.buffer = lines[-1]
+        lines.pop()
+        for line in lines:
             self.print_prefixed_line(line)
 
     def print_prefixed_line(self, line):
