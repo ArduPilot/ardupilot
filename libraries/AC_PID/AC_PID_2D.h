@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <cmath>
 #include <AC_PID/AP_PIDInfo.h>
+#include <Filter/SlewCalculator2D.h>
 
 /// @class	AC_PID_2D
 /// @brief	Copter PID control class
@@ -72,6 +73,9 @@ public:
     void set_integrator(const Vector3f& i) { set_integrator(Vector2f{i.x, i.y}); }
     void set_integrator(const Vector2f& i);
 
+    // return current slew rate of slew limiter. Will return 0 if SMAX is zero
+    float get_slew_rate(void) const { return _slew_calc.get_slew_rate(); }
+
     const AP_PIDInfo& get_pid_info_x(void) const { return _pid_info_x; }
     const AP_PIDInfo& get_pid_info_y(void) const { return _pid_info_y; }
 
@@ -98,6 +102,8 @@ protected:
 
     AP_PIDInfo _pid_info_x;
     AP_PIDInfo _pid_info_y;
+
+    SlewCalculator2D _slew_calc;    // 2D slew rate calculator
 
 private:
     const float default_kp;
