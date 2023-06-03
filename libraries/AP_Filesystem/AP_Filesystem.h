@@ -127,14 +127,7 @@ public:
       load a full file. Use delete to free the data
      */
     FileData *load_file(const char *filename);
-
-
-    // block filesystem access
-    void block_access(void);
-
-    // free filesystem access
-    void free_access(void);
-
+    
 private:
     struct Backend {
         const char *prefix;

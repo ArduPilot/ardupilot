@@ -133,7 +133,6 @@ CSRC += $(HWDEF)/common/stubs.c \
 	   $(HWDEF)/common/usbcfg.c \
 	   $(HWDEF)/common/usbcfg_dualcdc.c \
 	   $(HWDEF)/common/usbcfg_common.c \
-	   $(HWDEF)/common/usbcfg_cdc_msd.c \
 	   $(HWDEF)/common/flash.c \
 	   $(HWDEF)/common/malloc.c \
 	   $(HWDEF)/common/hrt.c \
@@ -184,7 +183,6 @@ ASMSRC = $(ALLASMSRC)
 ASMXSRC = $(ALLXASMSRC)
 
 INCDIR = $(CHIBIOS)/os/license \
-         $(CHIBIOS)/os/various \
          $(ALLINC) $(HWDEF)/common
 
 ifneq ($(CRASHCATCHER),)

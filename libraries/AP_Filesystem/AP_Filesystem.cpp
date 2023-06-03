@@ -306,24 +306,6 @@ AP_Filesystem_Backend::FormatStatus AP_Filesystem::get_format_status(void) const
 #endif
 }
 
-
-// block filesystem access
-void AP_Filesystem::block_access(void)
-{
-    for (uint8_t i=0; i<ARRAY_SIZE(backends); i++) {
-        backends[i].fs.block_access();
-    }
-}
-
-// free filesystem access
-void AP_Filesystem::free_access(void)
-{
-    for (uint8_t i=0; i<ARRAY_SIZE(backends); i++) {
-        backends[i].fs.free_access();
-    }
-}
-
-
 namespace AP
 {
 AP_Filesystem &FS()

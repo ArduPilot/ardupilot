@@ -209,16 +209,16 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board f303-Universal
         $waf clean
         $waf AP_Periph
-        echo "Building HereProAP peripheral fw"
-        $waf configure --board HereProAP
+        echo "Building HerePro peripheral fw"
+        $waf configure --board HerePro
         $waf clean
         $waf AP_Periph
         echo "Building CubeOrange-periph peripheral fw"
         $waf configure --board CubeOrange-periph
         $waf clean
         $waf AP_Periph
-        echo "Building HereProAP bootloader"
-        $waf configure --board HereProAP --bootloader
+        echo "Building HerePro bootloader"
+        $waf configure --board HerePro --bootloader
         $waf clean
         $waf bootloader
         echo "Building G4-ESC peripheral fw"
