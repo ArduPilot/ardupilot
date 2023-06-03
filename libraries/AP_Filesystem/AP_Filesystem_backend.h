@@ -94,13 +94,6 @@ public:
     // unload data from load_file()
     virtual void unload_file(FileData *fd);
 
-
-    // block filesystem access
-    virtual void block_access(void) {}
-
-    // free filesystem access
-    virtual void free_access(void) {}
-
 protected:
     // return true if file operations are allowed
     bool file_op_allowed(void) const;
