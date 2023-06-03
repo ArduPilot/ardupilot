@@ -142,28 +142,24 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Description: Tail rotor DDFP motor thrust curve exponent (0.0 for linear to 1.0 for second order curve)
     // @Range: -1 1
     // @User: Standard
-    AP_GROUPINFO("DDFP_THST_EXPO", 22, AP_MotorsHeli_Single,  thr_lin.curve_expo, 0.55),
 
     // @Param: DDFP_SPIN_MIN
     // @DisplayName: DDFP Tail Rotor Motor Spin minimum
     // @Description: Point at which the thrust starts expressed as a number from 0 to 1 in the entire output range.  Should be higher than MOT_SPIN_ARM.
     // @Values: 0.0:Low, 0.15:Default, 0.3:High
     // @User: Standard
-    AP_GROUPINFO("DDFP_SPIN_MIN", 23, AP_MotorsHeli_Single,  thr_lin.spin_min, 0.15),
 
     // @Param: DDFP_SPIN_MAX
     // @DisplayName: DDFP Tail Rotor Motor Spin maximum
     // @Description: Point at which the thrust saturates expressed as a number from 0 to 1 in the entire output range
     // @Values: 0.9:Low, 0.95:Default, 1.0:High
     // @User: Standard
-    AP_GROUPINFO("DDFP_SPIN_MAX", 24, AP_MotorsHeli_Single,  thr_lin.spin_max, 0.95),
 
     // @Param: DDFP_BAT_IDX
     // @DisplayName: DDFP Tail Rotor Battery compensation index
     // @Description: Which battery monitor should be used for doing compensation
     // @Values: 0:First battery, 1:Second battery
     // @User: Standard
-    AP_GROUPINFO("DDFP_BAT_IDX", 25, AP_MotorsHeli_Single, thr_lin.batt_idx, 0),
 
     // @Param: DDFP_BAT_V_MAX
     // @DisplayName: Battery voltage compensation maximum voltage
@@ -171,7 +167,6 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Range: 6 53
     // @Units: V
     // @User: Standard
-    AP_GROUPINFO("DDFP_BAT_V_MAX", 26, AP_MotorsHeli_Single, thr_lin.batt_voltage_max, AP_MOTORS_HELI_SINGLE_BAT_VOLT_MAX_DEFAULT),
 
     // @Param: DDFP_BAT_V_MIN
     // @DisplayName: Battery voltage compensation minimum voltage
@@ -179,7 +174,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Range: 6 42
     // @Units: V
     // @User: Standard
-    AP_GROUPINFO("DDFP_BAT_V_MIN", 27, AP_MotorsHeli_Single, thr_lin.batt_voltage_min, AP_MOTORS_HELI_SINGLE_BAT_VOLT_MIN_DEFAULT),
+    AP_SUBGROUPINFO(thr_lin, "DDFP_", 22, AP_MotorsHeli_Single, Thrust_Linearization),
 
     AP_GROUPEND
 };
@@ -608,6 +603,8 @@ void AP_MotorsHeli_Single::output_to_motors()
                 } else {
                     // if servo pwm min and max are bad, convert servo4_out from -1 to 1 to 0 to 1
                     servo_out = 0.5f * (_servo4_out + 1.0f);
+                    // this should never happen
+                    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
                 }
                 // output yaw servo to tail rsc
                 rc_write(AP_MOTORS_MOT_4, calculate_ddfp_output(thr_lin.thrust_to_actuator(constrain_float(servo_out, 0.0f, 1.0f))));

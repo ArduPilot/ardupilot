@@ -35,9 +35,6 @@
 // maximum number of swashplate servos
 #define AP_MOTORS_HELI_SINGLE_NUM_SWASHPLATE_SERVOS            3
 
-#define AP_MOTORS_HELI_SINGLE_BAT_VOLT_MAX_DEFAULT             0.0f    // voltage limiting max default
-#define AP_MOTORS_HELI_SINGLE_BAT_VOLT_MIN_DEFAULT             0.0f    // voltage limiting min default (voltage dropping below this level will have no effect)
-
 /// @class      AP_MotorsHeli_Single
 class AP_MotorsHeli_Single : public AP_MotorsHeli {
 public:
