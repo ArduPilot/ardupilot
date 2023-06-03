@@ -32,7 +32,6 @@ Changes from 4.4.0-beta1
     - ICE engine fix for starting after reaching a specified altitude
     - LED thread locking fix to avoid watchdog
     - Logging rotation on disarm disabled if Replay logging active (avoids gaps in logs)
-    - OSD labels fixed to include recently added serial protocols
     - RC input on IOMCU bug fix (RC might not be regained if lost)
     - Serial passthrough fixed
 5) Custom build server fix to which features are included/excluded
