@@ -3,6 +3,12 @@
 #include <AP_Param/AP_Param.h>
 #include <Filter/LowPassFilter.h>
 
+#define THRST_LIN_THST_EXPO_DEFAULT     0.55f   // set to 0 for linear and 1 for second order approximation
+#define THRST_LIN_SPIN_MIN_DEFAULT      0.15f   // throttle out ratio which produces the minimum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
+#define THRST_LIN_SPIN_MAX_DEFAULT      0.95f   // throttle out ratio which produces the maximum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
+#define THRST_LIN_BAT_VOLT_MAX_DEFAULT  0.0f    // voltage limiting max default
+#define THRST_LIN_BAT_VOLT_MIN_DEFAULT  0.0f    // voltage limiting min default (voltage dropping below this level will have no effect)
+
 class AP_Motors;
 class Thrust_Linearization {
 friend class AP_MotorsMulticopter;
@@ -43,6 +49,9 @@ public:
 
     // Get lift max
     float get_lift_max() const { return lift_max; }
+
+    // var_info for holding Parameter information
+    static const struct AP_Param::GroupInfo var_info[];
 
 protected:
     AP_Float curve_expo;       // curve used to linearize pwm to thrust conversion.  set to 0 for linear and 1 for second order approximation
