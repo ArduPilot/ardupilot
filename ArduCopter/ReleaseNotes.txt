@@ -1,5 +1,42 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.4.0-beta2 05-Jun-2023
+Changes from 4.4.0-beta1
+1) Autopilots specific changes
+    - FlywooF745 update to motor pin output mapping and baro
+    - FoxeerH743 support
+    - JFB100 support
+    - Mamba-F405v2 supports ICM42688
+    - Matek-F405-TE/VTOL support
+    - Matek-H743 IMU SPI slowed to 1Mhz to avoid init issues
+    - SpeedyBee-405-Wing support
+2) Copter specfic fixes and enhancements
+    - RTL speed fix so changes to WPNAV_SPEED have no effect if RTL_SPEED is non-zero
+    - RTL mode accepts do-change-speed commands from GCS
+3) AHRS/EKF related fixes and Enhancements
+    - EKF allocation failure handled to avoid watchdog
+    - EKF3 accel bias calculation fix and tuning for greater robustness
+    - Airspeed sensor remains enabled during dead-reckoning (few copters have airspeed sensors)
+    - Wind speed estimates updates reduced while dead-reckoning
+4) Other Enhancements
+    - Attitude control slew limits always calculated (helps tuning reporting and analysis)
+    - INA228 and INA238 I2C battery monitor support
+    - LOG_DISARMED=3 logs while disarmed but discards log if never eventually armed
+    - LOG_DARM_RATEMAX reduces logging while disarmed
+    - Serial LEDs threading enhancement to support longer lengths without dshot interference
+4) Bug fixes
+    - Analog battery monitor2 current parameter default fixed
+    - AutoTune fix for loading Yaw Rate D gains
+    - BRD_SAFETYOPTION parameter documentation fix (ActiveForSafetyEnable and Disable were reversed)
+    - Compassmot fix to protect against bad gyro biases from GSF yaw
+    - ICE engine fix for starting after reaching a specified altitude
+    - LED thread locking fix to avoid watchdog
+    - Logging rotation on disarm disabled if Replay logging active (avoids gaps in logs)
+    - OSD labels fixed to include recently added serial protocols
+    - RC input on IOMCU bug fix (RC might not be regained if lost)
+    - Serial passthrough fixed
+5) Custom build server fix to which features are included/excluded
+------------------------------------------------------------------
 Copter 4.4.0-beta1 19-Apr-2023
 Changes from 4.3.6
 1) New autopilots supported
