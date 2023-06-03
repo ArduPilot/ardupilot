@@ -188,6 +188,7 @@ class ExtractFeatures(object):
             ('AP_NOTIFY_PROFILED_ENABLED', r'ProfiLED::init_ports'),
             ('AP_NOTIFY_PROFILED_SPI_ENABLED', r'ProfiLED_SPI::rgb_set_id'),
             ('AP_NOTIFY_NEOPIXEL_ENABLED', r'NeoPixel::init_ports'),
+            ('AP_FILESYSTEM_FORMAT_ENABLED', r'f_mkfs'),
         ]
 
     def progress(self, msg):
