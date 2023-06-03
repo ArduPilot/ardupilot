@@ -391,7 +391,8 @@ void AP_Mount_Siyi::process_packet()
         break;
 
     case SiyiCommandId::ACQUIRE_GIMBAL_CONFIG_INFO: {
-        if (_parsed_msg.data_bytes_received != 5 &&     // ZR10 firmware version reply is 5 bytes
+        if (_parsed_msg.data_bytes_received != 5 &&     // ZR10 firmware version reply is 5 bytes - maybe can be removed in future
+            _parsed_msg.data_bytes_received != 6 &&     // ZR10 firmware version reply is 6 bytes after update to firmware v.0.2.8 and zoom 0.2.1
             _parsed_msg.data_bytes_received != 7) {     // A8 firmware version reply is 7 bytes
 #if AP_MOUNT_SIYI_DEBUG
             unexpected_len = true;
