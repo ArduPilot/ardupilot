@@ -528,11 +528,7 @@ const USBConfig usbcfg = {
  * Serial over USB driver configuration 1.
  */
 const SerialUSBConfig serusbcfg1 = {
-#if STM32_USB_USE_OTG1
   &USBD1,
-#else
-  &USBD2,
-#endif
   USB_DATA_REQUEST_EP_A,
   USB_DATA_AVAILABLE_EP_A,
   USB_INTERRUPT_REQUEST_EP_A
@@ -542,11 +538,7 @@ const SerialUSBConfig serusbcfg1 = {
  * Serial over USB driver configuration 2.
  */
 const SerialUSBConfig serusbcfg2 = {
-#if STM32_USB_USE_OTG1
   &USBD1,
-#else
-  &USBD2,
-#endif
   USB_DATA_REQUEST_EP_B,
   USB_DATA_AVAILABLE_EP_B,
   USB_INTERRUPT_REQUEST_EP_B
