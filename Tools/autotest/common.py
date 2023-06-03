@@ -13206,6 +13206,7 @@ switch value'''
                                            (msg, m.alt, gpi_alt))
         introduced_error = 10  # in metres
         self.set_parameter("SIM_GPS2_ALT_OFS", introduced_error)
+        self.do_timesync_roundtrip()
         m = self.assert_receive_message("GPS2_RAW")
         if abs((m.alt-introduced_error*1000) - gpi_alt) > 100:
             raise NotAchievedException("skewed Alt (%s) discrepancy; %d+%d vs %d" %
