@@ -73,3 +73,8 @@
 #include <AP_Mission/AP_Mission_config.h>
 #define AP_FILESYSTEM_MISSION_ENABLED AP_MISSION_ENABLED
 #endif
+
+#ifndef AP_FILESYSTEM_LOCATIONDB_ENABLED
+#include <AP_LocationDB/AP_LocationDB_config.h>
+#define AP_FILESYSTEM_LOCATIONDB_ENABLED AP_LOCATIONDB_ENABLED
+#endif
