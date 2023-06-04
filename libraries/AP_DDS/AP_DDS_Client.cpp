@@ -410,21 +410,27 @@ void AP_DDS_Client::on_topic (uxrSession* uxr_session, uxrObjectId object_id, ui
     1) Store the read contents into the ucdr buffer
     2) Deserialize the said contents into the topic instance
     */
-    sensor_msgs_msg_Joy* topic = nullptr;
-    const bool success = sensor_msgs_msg_Joy_deserialize_topic(ub, topic);
 
-    if (success == false || topic == nullptr) {
-        return;
+    switch (object_id.id) {
+    case topics[to_underlying(TopicIndex::JOY_SUB)].dr_id.id:
+        sensor_msgs_msg_Joy topic;
+        const bool success = sensor_msgs_msg_Joy_deserialize_topic(ub, &topic);
+
+        if (success == false) {
+            break;
+        }
+
+        uint32_t* count_ptr = (uint32_t*) args;
+        (*count_ptr)++;
+        if (topic.axes_size >= 4) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Received sensor_msgs/Joy: %f, %f, %f, %f",
+                          topic.axes[0], topic.axes[1], topic.axes[2], topic.axes[3]);
+        } else {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Received sensor_msgs/Joy: Insufficient axes size ");
+        }
+        break;
     }
 
-    uint32_t* count_ptr = (uint32_t*) args;
-    (*count_ptr)++;
-    if (topic->axes_size >= 4) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Receivied sensor_msgs/Joy: %f, %f, %f, %f",
-                      topic->axes[0], topic->axes[1], topic->axes[2], topic->axes[3]);
-    } else {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Receivied sensor_msgs/Joy: Insufficient axes size ");
-    }
 }
 
 /*
