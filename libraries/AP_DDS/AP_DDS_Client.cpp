@@ -599,7 +599,7 @@ void AP_DDS_Client::write_time_topic()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
-        ucdrBuffer ub;
+        ucdrBuffer ub {};
         const uint32_t topic_size = builtin_interfaces_msg_Time_size_of_topic(&time_topic, 0);
         uxr_prepare_output_stream(&session,reliable_out,topics[0].dw_id,&ub,topic_size);
         const bool success = builtin_interfaces_msg_Time_serialize_topic(&ub, &time_topic);
@@ -614,7 +614,7 @@ void AP_DDS_Client::write_nav_sat_fix_topic()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
-        ucdrBuffer ub;
+        ucdrBuffer ub {};
         const uint32_t topic_size = sensor_msgs_msg_NavSatFix_size_of_topic(&nav_sat_fix_topic, 0);
         uxr_prepare_output_stream(&session,reliable_out,topics[1].dw_id,&ub,topic_size);
         const bool success = sensor_msgs_msg_NavSatFix_serialize_topic(&ub, &nav_sat_fix_topic);
@@ -629,7 +629,7 @@ void AP_DDS_Client::write_static_transforms()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
-        ucdrBuffer ub;
+        ucdrBuffer ub {};
         const uint32_t topic_size = tf2_msgs_msg_TFMessage_size_of_topic(&static_transforms_topic, 0);
         uxr_prepare_output_stream(&session,reliable_out,topics[2].dw_id,&ub,topic_size);
         const bool success = tf2_msgs_msg_TFMessage_serialize_topic(&ub, &static_transforms_topic);
@@ -644,7 +644,7 @@ void AP_DDS_Client::write_battery_state_topic()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
-        ucdrBuffer ub;
+        ucdrBuffer ub {};
         const uint32_t topic_size = sensor_msgs_msg_BatteryState_size_of_topic(&battery_state_topic, 0);
         uxr_prepare_output_stream(&session,reliable_out,topics[3].dw_id,&ub,topic_size);
         const bool success = sensor_msgs_msg_BatteryState_serialize_topic(&ub, &battery_state_topic);
@@ -658,7 +658,7 @@ void AP_DDS_Client::write_local_pose_topic()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
-        ucdrBuffer ub;
+        ucdrBuffer ub {};
         const uint32_t topic_size = geometry_msgs_msg_PoseStamped_size_of_topic(&local_pose_topic, 0);
         uxr_prepare_output_stream(&session,reliable_out,topics[4].dw_id,&ub,topic_size);
         const bool success = geometry_msgs_msg_PoseStamped_serialize_topic(&ub, &local_pose_topic);
@@ -673,7 +673,7 @@ void AP_DDS_Client::write_local_velocity_topic()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
-        ucdrBuffer ub;
+        ucdrBuffer ub {};
         const uint32_t topic_size = geometry_msgs_msg_TwistStamped_size_of_topic(&local_velocity_topic, 0);
         uxr_prepare_output_stream(&session,reliable_out,topics[5].dw_id,&ub,topic_size);
         const bool success = geometry_msgs_msg_TwistStamped_serialize_topic(&ub, &local_velocity_topic);
@@ -688,7 +688,7 @@ void AP_DDS_Client::write_geo_pose_topic()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
-        ucdrBuffer ub;
+        ucdrBuffer ub {};
         const uint32_t topic_size = geographic_msgs_msg_GeoPoseStamped_size_of_topic(&geo_pose_topic, 0);
         uxr_prepare_output_stream(&session,reliable_out,topics[6].dw_id,&ub,topic_size);
         const bool success = geographic_msgs_msg_GeoPoseStamped_serialize_topic(&ub, &geo_pose_topic);
@@ -703,7 +703,7 @@ void AP_DDS_Client::write_clock_topic()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
-        ucdrBuffer ub;
+        ucdrBuffer ub {};
         const uint32_t topic_size = rosgraph_msgs_msg_Clock_size_of_topic(&clock_topic, 0);
         uxr_prepare_output_stream(&session,reliable_out,topics[7].dw_id,&ub,topic_size);
         const bool success = rosgraph_msgs_msg_Clock_serialize_topic(&ub, &clock_topic);
