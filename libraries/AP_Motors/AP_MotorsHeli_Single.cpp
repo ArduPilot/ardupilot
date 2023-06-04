@@ -243,14 +243,7 @@ bool AP_MotorsHeli_Single::init_outputs()
         reset_swash_servo(SRV_Channels::get_motor_function(4));
     }
 
-    if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW){
-        SRV_Channel *c = SRV_Channels::srv_channel(AP_MOTORS_MOT_4);
-        if (c != nullptr) {
-            _ddfp_pwm_min = c->get_output_min();
-            _ddfp_pwm_max = c->get_output_max();
-            _ddfp_pwm_trim = c->get_trim();
-        }
-    } else {
+    if (_tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPITCH && _tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPIT_EXT_GOV) {
         // yaw servo is an angle from -4500 to 4500
         SRV_Channels::set_angle(SRV_Channel::k_motor4, YAW_SERVO_MAX_ANGLE);
     }
@@ -598,15 +591,26 @@ void AP_MotorsHeli_Single::output_to_motors()
             // set motor output based on thrust requests
             update_motor_control(ROTOR_CONTROL_ACTIVE);
             if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CW || _tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_FIXEDPITCH_CCW){
-                float servo4_trim = (_ddfp_pwm_trim - 1000) / (_ddfp_pwm_max - _ddfp_pwm_min);
+                SRV_Channel *c = SRV_Channels::srv_channel(AP_MOTORS_MOT_4);
+                if (c != nullptr) {
+                    _ddfp_pwm_min = c->get_output_min();
+                    _ddfp_pwm_max = c->get_output_max();
+                    _ddfp_pwm_trim = c->get_trim();
+                }
                 float servo_out = 0.0f;
-                if (is_positive(_servo4_out)) {
-                    servo_out = (1.0f - servo4_trim) * _servo4_out + servo4_trim;
+                if (is_positive((float) (_ddfp_pwm_max - _ddfp_pwm_min))) {
+                    float servo4_trim = constrain_float((_ddfp_pwm_trim - 1000) / (_ddfp_pwm_max - _ddfp_pwm_min), 0.0f, 1.0f);
+                    if (is_positive(_servo4_out)) {
+                        servo_out = (1.0f - servo4_trim) * _servo4_out + servo4_trim;
+                    } else {
+                        servo_out = servo4_trim * _servo4_out + servo4_trim;
+                    }
                 } else {
-                    servo_out = servo4_trim * _servo4_out + servo4_trim;
+                    // if servo pwm min and max are bad, convert servo4_out from -1 to 1 to 0 to 1
+                    servo_out = 0.5f * (_servo4_out + 1.0f);
                 }
                 // output yaw servo to tail rsc
-                rc_write(AP_MOTORS_MOT_4, calculate_ddfp_output(thr_lin.thrust_to_actuator(servo_out)));
+                rc_write(AP_MOTORS_MOT_4, calculate_ddfp_output(thr_lin.thrust_to_actuator(constrain_float(servo_out, 0.0f, 1.0f))));
             }
             break;
         case SpoolState::SPOOLING_DOWN:
