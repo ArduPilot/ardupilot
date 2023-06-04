@@ -3,6 +3,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #include <AP_Mission/AP_Mission_config.h>
+#include <AP_LocationDB/AP_LocationDB_config.h>
 
 // backends:
 
@@ -32,6 +33,10 @@
 
 #ifndef AP_FILESYSTEM_SYS_ENABLED
 #define AP_FILESYSTEM_SYS_ENABLED 1
+#endif
+
+#ifndef AP_FILESYSTEM_LOCATIONDB_ENABLED
+#define AP_FILESYSTEM_LOCATIONDB_ENABLED AP_LOCATIONDB_ENABLED
 #endif
 
 // AP_FILESYSTEM_FILE_READING_ENABLED is true if you could expect to
