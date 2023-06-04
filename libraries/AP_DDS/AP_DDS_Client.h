@@ -5,7 +5,6 @@
 #include "uxr/client/client.h"
 #include "ucdr/microcdr.h"
 #include "builtin_interfaces/msg/Time.h"
-#include "AP_DDS_Generic_Fn_T.h"
 
 #include "sensor_msgs/msg/NavSatFix.h"
 #include "tf2_msgs/msg/TFMessage.h"
@@ -185,9 +184,6 @@ public:
         const char* topic_profile_label;
         const char* dw_profile_label;
         const char* dr_profile_label;
-        Generic_serialize_topic_fn_t serialize;
-        Generic_deserialize_topic_fn_t deserialize;
-        Generic_size_of_topic_fn_t size_of;
     };
     static const struct Topic_table topics[];
 
