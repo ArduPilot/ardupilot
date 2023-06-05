@@ -63,7 +63,7 @@ class AP_Mount
     friend class AP_Mount_Scripting;
 
 public:
-    AP_Mount();
+    AP_Mount(uint32_t _log_mount_bit);
 
     /* Do not allow copies */
     CLASS_NO_COPY(AP_Mount);
@@ -164,6 +164,7 @@ public:
 
     // get mount's current attitude in euler angles in degrees.  yaw angle is in body-frame
     // returns true on success
+    bool get_attitude_euler(float& roll_deg, float& pitch_deg, float& yaw_bf_deg) { return get_attitude_euler(_primary, roll_deg, pitch_deg, yaw_bf_deg); }
     bool get_attitude_euler(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_bf_deg);
 
     // run pre-arm check.  returns false on failure and fills in failure_msg
@@ -209,6 +210,9 @@ protected:
     uint8_t             _primary;           // primary mount
     AP_Mount_Backend    *_backends[AP_MOUNT_MAX_INSTANCES];         // pointers to instantiated mounts
 
+    // return log bit
+    uint32_t get_log_mount_bit() const { return log_mount_bit; }
+
 private:
     // Check if instance backend is ok
     AP_Mount_Backend *get_primary() const;
@@ -226,6 +230,8 @@ private:
     void handle_global_position_int(const mavlink_message_t &msg);
     void handle_gimbal_device_information(const mavlink_message_t &msg);
     void handle_gimbal_device_attitude_status(const mavlink_message_t &msg);
+
+    uint32_t log_mount_bit;            // logging bit (from LOG_BITMASK) to enable camera logging
 
     // perform any required parameter conversion
     void convert_params();

@@ -23,6 +23,7 @@
 #if HAL_MOUNT_ENABLED
 #include <AP_Common/AP_Common.h>
 #include <RC_Channel/RC_Channel.h>
+#include <AP_Logger/LogStructure.h>
 
 class AP_Mount_Backend
 {
@@ -213,6 +214,13 @@ protected:
 
     // sent warning to GCS
     void send_warning_to_GCS(const char* warning_str);
+
+    // void Write_Mount(uint64_t timestamp_us=0);
+    void Write_Mount();
+    void Write_MountInfo(enum LogMessages msg, uint64_t timestamp_us=0);
+
+    // Do logging of mount's current data
+    void log_mount_data();
 
     AP_Mount    &_frontend; // reference to the front end which holds parameters
     AP_Mount_Params &_params; // parameters for this backend

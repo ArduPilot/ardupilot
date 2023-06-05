@@ -566,4 +566,10 @@ void AP_Mount_Backend::send_warning_to_GCS(const char* warning_str)
     _last_warning_ms = now_ms;
 }
 
+// log mount's information
+void AP_Mount_Backend::log_mount_data()
+{
+    Write_Mount();
+}
+
 #endif // HAL_MOUNT_ENABLED

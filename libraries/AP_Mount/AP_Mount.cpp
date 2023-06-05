@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <AP_Math/location.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_Logger/AP_Logger.h>
 
 const AP_Param::GroupInfo AP_Mount::var_info[] = {
 
@@ -32,7 +33,8 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     AP_GROUPEND
 };
 
-AP_Mount::AP_Mount()
+AP_Mount::AP_Mount(uint32_t _log_mount_bit) :
+    log_mount_bit(_log_mount_bit)
 {
     if (_singleton != nullptr) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
