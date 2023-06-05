@@ -337,7 +337,7 @@ void AP_ADSB_Sagetech_MXS::auto_config_operating()
     float vertRateD;
     if (AP::ahrs().get_vert_pos_rate_D(vertRateD)) {
         // convert from down to up, and scale appropriately:
-        mxs_state.op.climbRate = -vertRateD * SAGETECH_SCALE_M_PER_SEC_TO_FT_PER_MIN;
+        mxs_state.op.climbRate = -1 * vertRateD * SAGETECH_SCALE_M_PER_SEC_TO_FT_PER_MIN;
         mxs_state.op.climbValid = true;
     } else {
         mxs_state.op.climbValid = false;
@@ -592,9 +592,9 @@ void AP_ADSB_Sagetech_MXS::send_operating_msg()
         mxs_state.op.altitude = 0;
     }
 
-    float vertRate;
-    if (AP::ahrs().get_vert_pos_rate_D(vertRate)) {
-        mxs_state.op.climbRate = vertRate * SAGETECH_SCALE_M_PER_SEC_TO_FT_PER_MIN;
+    float vertRateD;
+    if (AP::ahrs().get_vert_pos_rate_D(vertRateD)) {
+        mxs_state.op.climbRate = -1 * vertRateD * SAGETECH_SCALE_M_PER_SEC_TO_FT_PER_MIN;
         mxs_state.op.climbValid = true;
     } else {
         mxs_state.op.climbValid = false;
