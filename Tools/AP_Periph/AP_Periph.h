@@ -209,7 +209,7 @@ public:
     uint32_t last_sample_ms;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_PRX
+#if HAL_PROXIMITY_ENABLED
     AP_Proximity proximity;
 #endif
 
