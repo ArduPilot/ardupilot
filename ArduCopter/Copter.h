@@ -497,7 +497,7 @@ private:
 
     // Camera/Antenna mount tracking and stabilisation stuff
 #if HAL_MOUNT_ENABLED
-    AP_Mount camera_mount;
+    AP_Mount camera_mount{MASK_LOG_MOUNT};
 #endif
 
 #if AC_AVOID_ENABLED == ENABLED
