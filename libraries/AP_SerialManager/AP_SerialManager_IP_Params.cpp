@@ -15,7 +15,7 @@
 
 #include "AP_SerialManager.h"
 
-#if HAL_NUM_CAN_IFACES && AP_SERIAL_EXTENSION_ENABLED
+#if AP_SERIAL_EXTENSION_ENABLED && AP_NETWORKING_ENABLED
 const AP_Param::GroupInfo AP_SerialManager::SerialExtState::IP_Params::var_info[] = {
     // @Param: PROTOCOL
     // @DisplayName: IP Channel protocol selection
@@ -30,37 +30,37 @@ const AP_Param::GroupInfo AP_SerialManager::SerialExtState::IP_Params::var_info[
     // @Description: Port number to use for the IP channel
     // @Range: 1 65535
     // @User: Standard
-    AP_GROUPINFO("PORT", 1, AP_SerialManager::SerialExtState::IP_Params, port, 14560),
+    AP_GROUPINFO("PORT", 2, AP_SerialManager::SerialExtState::IP_Params, port, 14560),
 
     // @Param: DST_IP0
     // @DisplayName: Destination IP address 0
     // @Description: First byte of the destination IP address
     // @Range: 0 255
-    AP_GROUPINFO("DST_IP0", 2,  AP_SerialManager::SerialExtState::IP_Params,  ip[0],   255),
+    AP_GROUPINFO("DST_IP0", 3,  AP_SerialManager::SerialExtState::IP_Params,  ip[0],   255),
   
     // @Param: DST_IP1
     // @DisplayName: Destination IP address 1
     // @Description: Second byte of the destination IP address
     // @Range: 0 255
-    AP_GROUPINFO("DST_IP1", 3,  AP_SerialManager::SerialExtState::IP_Params,  ip[1],   255),
+    AP_GROUPINFO("DST_IP1", 4,  AP_SerialManager::SerialExtState::IP_Params,  ip[1],   255),
   
     // @Param: DST_IP2
     // @DisplayName: Destination IP address 2
     // @Description: Third byte of the destination IP address
     // @Range: 0 255
-    AP_GROUPINFO("DST_IP2", 4,  AP_SerialManager::SerialExtState::IP_Params,  ip[2],   255),
+    AP_GROUPINFO("DST_IP2", 5,  AP_SerialManager::SerialExtState::IP_Params,  ip[2],   255),
   
     // @Param: DST_IP3
     // @DisplayName: Destination IP address 3
     // @Description: Fourth byte of the destination IP address
     // @Range: 0 255
-    AP_GROUPINFO("DST_IP3", 5,  AP_SerialManager::SerialExtState::IP_Params,  ip[3],   255),
+    AP_GROUPINFO("DST_IP3", 6,  AP_SerialManager::SerialExtState::IP_Params,  ip[3],   255),
 
     // @Param: PASSTHR
     // @DisplayName: Serial port to pass through
     // @Description: Serial port to pass through
     // @Range: 0 255
-    AP_GROUPINFO("PASSTHR", 6, AP_SerialManager::SerialExtState::IP_Params, passthru, 0),
+    AP_GROUPINFO("PASSTHR", 7, AP_SerialManager::SerialExtState::IP_Params, passthru, 0),
 
     AP_GROUPEND
 };

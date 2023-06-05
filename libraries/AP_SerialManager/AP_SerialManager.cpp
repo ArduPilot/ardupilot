@@ -553,18 +553,20 @@ void AP_SerialManager::init()
 
     init_console();
 
-#if AP_SERIAL_EXTENSION_ENABLED && AP_NETWORKING_ENABLED
+#if AP_SERIAL_EXTENSION_ENABLED
     // initialise ext serial ports
     for (uint8_t i = 0; i < SERIALMANAGER_MAX_EXT_PORTS; i++) {
         if (!ext_state[i].initialised()) {
             continue;
         }
+#if AP_NETWORKING_ENABLED
         if (ext_state[i].phy_type == (int8_t)SerialPhysical_IP) {
             ext_uart[i] = new AP_Networking_Serial(ext_state[i].ip_params());
             if (ext_uart[i] == nullptr) {
                 AP_BoardConfig::allocation_error("AP_SerialManager::init() failed to allocate ext_uart[%u]", i);
             }
         }
+#endif
     }
 #endif
 
