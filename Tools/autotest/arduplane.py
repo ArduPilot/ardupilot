@@ -576,6 +576,95 @@ class AutoTestPlane(AutoTest):
 
         self.fly_home_land_and_disarm()
 
+    def ExternalPositionEstimate(self):
+        '''Test mavlink EXTERNAL_POSITION_ESTIMATE command'''
+        if not hasattr(mavutil.mavlink, 'MAV_CMD_EXTERNAL_POSITION_ESTIMATE'):
+            return
+        self.change_mode("TAKEOFF")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_altitude(48, 52, relative=True)
+
+        loc = self.mav.location()
+        self.location_offset_ne(loc, 2000, 2000)
+
+        # setting external position fail while we have GPS lock
+        self.progress("set new position with GPS")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_EXTERNAL_POSITION_ESTIMATE,
+            self.get_sim_time()-1, # transmit time
+            0.5, # processing delay
+            50, # accuracy
+            0,
+            int(loc.lat * 1e7),
+            int(loc.lng * 1e7),
+            float("NaN"),    # alt
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+
+        self.progress("disable the GPS")
+        self.run_auxfunc(
+            65,
+            2,
+            want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED
+        )
+
+        # fly for a bit to get into non-aiding state
+        self.progress("waiting 20 seconds")
+        tstart = self.get_sim_time()
+        while self.get_sim_time() < tstart + 20:
+            self.wait_heartbeat()
+
+        self.progress("getting base position")
+        gpi = self.mav.recv_match(
+            type='GLOBAL_POSITION_INT',
+            blocking=True,
+            timeout=5
+        )
+        loc = mavutil.location(gpi.lat*1e-7, gpi.lon*1e-7, 0, 0)
+
+        self.progress("set new position with no GPS")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_EXTERNAL_POSITION_ESTIMATE,
+            self.get_sim_time()-1, # transmit time
+            0.5, # processing delay
+            50, # accuracy
+            0,
+            gpi.lat+1,
+            gpi.lon+1,
+            float("NaN"),    # alt
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
+            want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED
+        )
+
+        self.progress("waiting 3 seconds")
+        tstart = self.get_sim_time()
+        while self.get_sim_time() < tstart + 3:
+            self.wait_heartbeat()
+
+        gpi2 = self.mav.recv_match(
+            type='GLOBAL_POSITION_INT',
+            blocking=True,
+            timeout=5
+        )
+        loc2 = mavutil.location(gpi2.lat*1e-7, gpi2.lon*1e-7, 0, 0)
+        dist = self.get_distance(loc, loc2)
+
+        self.progress("dist is %.1f" % dist)
+        if dist > 200:
+            raise NotAchievedException("Position error dist=%.1f" % dist)
+
+        self.progress("re-enable the GPS")
+        self.run_auxfunc(
+            65,
+            0,
+            want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED
+        )
+
+        self.progress("flying home")
+        self.fly_home_land_and_disarm()
+
     def DeepStall(self):
         '''Test DeepStall Landing'''
         # self.fly_deepstall_absolute()
@@ -4577,6 +4666,7 @@ class AutoTestPlane(AutoTest):
             self.MissionJumpTags,
             Test(self.GCSFailsafe, speedup=8),
             self.SDCardWPTest,
+            self.ExternalPositionEstimate,
         ])
         return ret
 
