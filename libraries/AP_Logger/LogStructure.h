@@ -141,6 +141,7 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_HAL_ChibiOS/LogStructure.h>
 #include <AP_RPM/LogStructure.h>
 #include <AC_Fence/LogStructure.h>
+#include <AP_Mount/LogStructure.h>
 
 // structure used to define logging format
 // It is packed on ChibiOS to save flash space; however, this causes problems
@@ -1260,6 +1261,7 @@ LOG_STRUCTURE_FROM_PRECLAND \
     { LOG_RADIO_MSG, sizeof(log_Radio), \
       "RAD", "QBBBBBHH", "TimeUS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed", "s-------", "F-------", true }, \
 LOG_STRUCTURE_FROM_CAMERA \
+LOG_STRUCTURE_FROM_MOUNT \
     { LOG_ARSP_MSG, sizeof(log_ARSP), "ARSP",  "QBffcffBBffB", "TimeUS,I,Airspeed,DiffPress,Temp,RawPress,Offset,U,H,Hp,TR,Pri", "s#nPOPP-----", "F-00B00-----", true }, \
     LOG_STRUCTURE_FROM_BATTMONITOR \
     { LOG_MAG_MSG, sizeof(log_MAG), \
@@ -1370,6 +1372,7 @@ enum LogMessages : uint8_t {
     LOG_RADIO_MSG,
     LOG_ATRP_MSG,
     LOG_IDS_FROM_CAMERA,
+    LOG_MOUNT_MSG,
     LOG_TERRAIN_MSG,
     LOG_CSRV_MSG,
     LOG_IDS_FROM_ESC_TELEM,
