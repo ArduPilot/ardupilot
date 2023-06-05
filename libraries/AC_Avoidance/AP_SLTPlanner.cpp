@@ -628,7 +628,7 @@ void AP_SLTPlanner::update_proximity_obstacles()
         const Vector2f vel = item.vel.xy();
         struct object obj;
         obj.pos = item.pos.xy();
-        obj.vel = item.vel.xy();
+        obj.vel = 0;
         obj.radius = item.radius;
 
         if (vel.length_squared() <= sq(0.2f)) {
