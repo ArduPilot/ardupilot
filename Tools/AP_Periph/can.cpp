@@ -2392,7 +2392,7 @@ void AP_Periph_FW::can_rangefinder_update(void)
 
 void AP_Periph_FW::can_proximity_update()
 {
-#ifdef HAL_PERIPH_ENABLE_PRX
+#if HAL_PROXIMITY_ENABLED
     if (proximity.get_type(0) == AP_Proximity::Type::None) {
         return;
     }
