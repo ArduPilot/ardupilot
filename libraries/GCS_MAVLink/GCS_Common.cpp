@@ -4999,11 +4999,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_external_position_estimate(const mavl
         return MAV_RESULT_DENIED;
     }
     uint32_t timestamp_ms = correct_offboard_timestamp_usec_to_ms(uint64_t(p2.param1*1e6), PAYLOAD_SIZE(chan, COMMAND_INT));
-    const uint32_t processing_ms = p2.param2*1e3;
+    const uint32_t processing_delay_ms = (uint32_t)MAX(p2.param2*1e3f, 0.0f);
+    timestamp_ms -= processing_delay_ms;
     const float pos_accuracy = p2.param3;
-    if (timestamp_ms > processing_ms) {
-        timestamp_ms -= processing_ms;
-    }
     if (!AP::ahrs().handle_external_position_estimate(loc, pos_accuracy, timestamp_ms)) {
         return MAV_RESULT_FAILED;
     }
