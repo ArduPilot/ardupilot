@@ -89,9 +89,6 @@ public:
     // buzzer
     void set_buzzer_tone(float frequency, float duration_s);
 
-    // send RTCMStream packets
-    void send_RTCMStream(const uint8_t *data, uint32_t len);
-
     // Send Reboot command
     // Note: Do not call this from outside UAVCAN thread context,
     // you can call this from dronecan callbacks and handlers.
