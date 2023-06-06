@@ -5,7 +5,7 @@
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 
 #ifndef HAL_BARO_WIND_COMP_ENABLED
-#define HAL_BARO_WIND_COMP_ENABLED !HAL_MINIMIZE_FEATURES
+#define HAL_BARO_WIND_COMP_ENABLED 1
 #endif
 
 // backend support:

@@ -74,10 +74,14 @@ SECTIONS
     . = 0;
     _text = .;
 
-    startup : ALIGN(16) SUBALIGN(16)
+    /* Vector table: copied to RAM by startup script */
+    vectors : ALIGN(1024) SUBALIGN(16)
     {
+        __textvectors_base__ = LOADADDR(vectors);
+        __vectors_base__ = .;
         KEEP(*(.vectors))
-    } > default_flash
+        __vectors_end__ = .;
+    } > dataram AT > default_flash
 
     constructors : ALIGN(4) SUBALIGN(4)
     {
@@ -121,6 +125,8 @@ SECTIONS
         /**libg_nano.a:*memset*(.text*)
         *libg_nano.a:*memcpy*(.text*)*/
         *libm.a:*(.text*)
+        *libc_nano.a:*memcpy*(.text*)
+        *libgcc.a:*(.text*)
         /* For some reason boards won't boot if libc is in RAM, but will with debug on */
         /**libc_nano.a:*(.text* .rodata*)
         *libstdc++_nano.a:(.text* .rodata*)*/
@@ -150,6 +156,7 @@ SECTIONS
         lib/lib*.a:*Filter2p.*(.text* .rodata*)
         lib/lib*.a:SPIDevice.*(.text* .rodata*)
         lib/lib*.a:I2CDevice.*(.text* .rodata*)
+        lib/lib*.a:UARTDriver.*(.text* .rodata*)
         lib/lib*.a:Util.*(.text* .rodata*)
         lib/lib*.a:Device.*(.text* .rodata*)
         lib/lib*.a:Scheduler.*(.text* .rodata*)
@@ -160,13 +167,20 @@ SECTIONS
         lib/lib*.a:matrix_alg.*(.text* .rodata*)
         lib/lib*.a:AP_NavEKF3*.*(.text* .rodata*)
         lib/lib*.a:AP_NavEKF_*.*(.text* .rodata*)
+        lib/lib*.a:AP_AHRS*.*(.text* .rodata*)
         lib/lib*.a:EKF*.*(.text* .rodata*)
+        lib/lib*.a:AP_Scheduler.*(.text* .rodata*)
+        lib/lib*.a:AP_InertialSensor*(.text* .rodata*)
         lib/lib*.a:AP_Compass_Backend.*(.text* .rodata*)
         lib/lib*.a:AP_RCProtocol_Backend.*(.text* .rodata*)
         lib/lib*.a:AP_RCProtocol.*(.text* .rodata*)
         lib/lib*.a:AP_RCProtocol_CRSF.*(.text* .rodata*)
         lib/lib*.a:AP_RCTelemetry.*(.text* .rodata*)
         lib/lib*.a:AP_CRSF_Telem.*(.text* .rodata*)
+        lib/lib*.a:AP_MotorsMatrix.*(.text* .rodata*)
+        lib/lib*.a:RC_Channel.*(.text* .rodata*)
+        lib/lib*.a:RCInput.*(.text* .rodata*)
+        lib/lib*.a:RCOutput.*(.text* .rodata*)
         lib/lib*.a:vector2.*(.text* .rodata*)
         lib/lib*.a:quaternion.*(.text* .rodata*)
         lib/lib*.a:polygon.*(.text* .rodata*)
@@ -174,6 +188,8 @@ SECTIONS
         /* uncomment these to test CPUInfo in FLASH_RAM */
         /*Tools/CPUInfo/CPUInfo.*(.text* .rodata*)
         Tools/CPUInfo/EKF_Maths.*(.text* .rodata*)*/
+        lib/lib*.a:AC_AttitudeControl*.*(.text* .rodata*)
+        lib/lib*.a:AC_PID*.*(.text* .rodata*)
         *(.ramfunc*)
         . = ALIGN(4);
     } > flashram AT > default_flash
@@ -212,6 +228,14 @@ SECTIONS
         lib/lib*.a:vector3.*(.rodata*)
         lib/lib*.a:matrix3.*(.rodata*)
         *libm.a:*(.rodata*)
+        /* scheduler task table */
+        AntennaTracker/Tracker.*(.rodata*)
+        AP_Vehicle/AP_Vehicle.*(.rodata*)
+        ArduCopter/Copter.*(.rodata*)
+        ArduPlane/ArduPlane.*(.rodata*)
+        ArduSub/ArduSub.*(.rodata*)
+        Blimp/Blimp.*(.rodata*)
+        Rover/Rover.*(.rodata*)
         *(.ramdata*)
         . = ALIGN(4);
     } > dataram AT > default_flash
@@ -249,13 +273,15 @@ SECTIONS
     .ARM.extab :
     {
         *(.ARM.extab* .gnu.linkonce.armextab.*)
-    } > default_flash
+    /* needs to be close to libgcc in memory */
+    } > instram AT > default_flash
 
     .ARM.exidx : {
         __exidx_start = .;
         *(.ARM.exidx* .gnu.linkonce.armexidx.*)
         __exidx_end = .;
-     } > default_flash
+     /* needs to be close to libgcc in memory */
+     } > instram AT > default_flash
 
     .eh_frame_hdr :
     {

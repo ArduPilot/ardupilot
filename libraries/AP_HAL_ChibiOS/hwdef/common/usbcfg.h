@@ -33,10 +33,6 @@
 #define HAL_HAVE_DUAL_USB_CDC 0
 #endif
 
-#ifndef HAL_HAVE_USB_CDC_MSD
-#define HAL_HAVE_USB_CDC_MSD 0
-#endif
-
 #if defined(__cplusplus)
 extern "C" {
 #endif

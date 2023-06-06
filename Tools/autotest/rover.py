@@ -1195,7 +1195,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.do_set_mode_via_command_long("HOLD")
         self.do_set_mode_via_command_long("MANUAL")
 
-    def InitialMode(self):
+    def RoverInitialMode(self):
         '''test INITIAL_MODE parameter works'''
         # from mavproxy_rc.py
         self.wait_ready_to_arm()
@@ -6314,7 +6314,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.DriveRTL,
             self.SmartRTL,
             self.DriveSquare,
-            self.DriveMaxRCIN,
             self.DriveMission,
             # self.DriveBrake,  # disabled due to frequent failures
             self.GetBanner,
@@ -6372,7 +6371,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.AutoDock,
             self.PrivateChannel,
             self.GCSFailsafe,
-            self.InitialMode,
+            self.RoverInitialMode,
             self.DriveMaxRCIN,
             self.NoArmWithoutMissionItems,
             self.CompassPrearms,

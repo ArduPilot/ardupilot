@@ -2059,6 +2059,7 @@ class AutoTest(ABC):
 
     def set_streamrate(self, streamrate, timeout=20, stream=mavutil.mavlink.MAV_DATA_STREAM_ALL):
         '''set MAV_DATA_STREAM_ALL; timeout is wallclock time'''
+        self.do_timesync_roundtrip(timeout_in_wallclock=True)
         tstart = time.time()
         while True:
             if time.time() - tstart > timeout:
@@ -2976,7 +2977,7 @@ class AutoTest(ABC):
         REPLAY_MSGS = ['RFRH', 'RFRF', 'REV2', 'RSO2', 'RWA2', 'REV3', 'RSO3', 'RWA3', 'RMGI',
                        'REY3', 'RFRN', 'RISH', 'RISI', 'RISJ', 'RBRH', 'RBRI', 'RRNH', 'RRNI',
                        'RGPH', 'RGPI', 'RGPJ', 'RASH', 'RASI', 'RBCH', 'RBCI', 'RVOH', 'RMGH',
-                       'ROFH', 'REPH', 'REVH', 'RWOH', 'RBOH']
+                       'ROFH', 'REPH', 'REVH', 'RWOH', 'RBOH', 'RSLL']
 
         docco_ids = {}
         for thing in tree.logformat:
@@ -3381,17 +3382,19 @@ class AutoTest(ABC):
                 self.progress("Received: %s" % str(m))
             if m is None:
                 continue
-            if m.tc1 == 0:
-                self.progress("this is a timesync request, which we don't answer")
-                continue
             if m.ts1 % 1000 != self.mav.source_system:
                 self.progress("this isn't a response to our timesync (%s)" % (m.ts1 % 1000))
+                continue
+            if m.tc1 == 0:
+                # this should also not happen:
+                self.progress("this is a timesync request, which we don't answer")
                 continue
             if int(m.ts1 / 1000) != self.timesync_number:
                 self.progress("this isn't the one we just sent")
                 continue
             if m.get_srcSystem() != self.mav.target_system:
-                self.progress("response from system other than our target")
+                self.progress("response from system other than our target (want=%u got=%u" %
+                              (self.mav.target_system, m.get_srcSystem()))
                 continue
             # no component check ATM because we send broadcast...
 #            if m.get_srcComponent() != self.mav.target_component:
@@ -7732,6 +7735,10 @@ Also, ignores heartbeats not from our target system'''
         self.mav.mav.set_send_callback(self.send_message_hook, self)
         self.mav.idle_hooks.append(self.idle_hook)
 
+        # we need to wait for a heartbeat here.  If we don't then
+        # self.mav.target_system will be zero because it hasn't
+        # "locked on" to a target system yet.
+        self.wait_heartbeat()
         self.set_streamrate(self.sitl_streamrate())
 
     def show_test_timings_key_sorter(self, t):
@@ -8110,13 +8117,21 @@ Also, ignores heartbeats not from our target system'''
         self.sitl = util.start_SITL(binary, **start_sitl_args)
         self.expect_list_add(self.sitl)
         self.sup_prog = []
+        count = 0
         for sup_binary in self.sup_binaries:
             self.progress("Starting Supplementary Program ", sup_binary)
             start_sitl_args["customisations"] = [sup_binary[1]]
             start_sitl_args["supplementary"] = True
+            start_sitl_args["stdout_prefix"] = "%s-%u" % (os.path.basename(sup_binary[0]), count)
             sup_prog_link = util.start_SITL(sup_binary[0], **start_sitl_args)
             self.sup_prog.append(sup_prog_link)
             self.expect_list_add(sup_prog_link)
+            count += 1
+
+        # mavlink will have disconnected here.  Explicitly reconnect,
+        # or the first packet we send will be lost:
+        if self.mav is not None:
+            self.mav.reconnect()
 
     def get_suplementary_programs(self):
         return self.sup_prog
@@ -8158,6 +8173,7 @@ Also, ignores heartbeats not from our target system'''
                     start_sitl_args["customisations"] = [sup_binary[1], args]
                 start_sitl_args["supplementary"] = True
                 sup_prog_link = util.start_SITL(sup_binary[0], **start_sitl_args)
+                time.sleep(3)
                 self.sup_prog.append(sup_prog_link) # add to list
                 self.expect_list_add(sup_prog_link) # add to expect list
         else:
@@ -8167,6 +8183,7 @@ Also, ignores heartbeats not from our target system'''
                 start_sitl_args["customisations"] = [self.sup_binaries[instance][1], args]
             start_sitl_args["supplementary"] = True
             sup_prog_link = util.start_SITL(self.sup_binaries[instance][0], **start_sitl_args)
+            time.sleep(3)
             self.sup_prog[instance] = sup_prog_link # add to list
             self.expect_list_add(sup_prog_link) # add to expect list
 
@@ -13191,6 +13208,7 @@ switch value'''
                                            (msg, m.alt, gpi_alt))
         introduced_error = 10  # in metres
         self.set_parameter("SIM_GPS2_ALT_OFS", introduced_error)
+        self.do_timesync_roundtrip()
         m = self.assert_receive_message("GPS2_RAW")
         if abs((m.alt-introduced_error*1000) - gpi_alt) > 100:
             raise NotAchievedException("skewed Alt (%s) discrepancy; %d+%d vs %d" %
@@ -13209,9 +13227,11 @@ switch value'''
         if abs(new_gpi_alt2 - m.alt) > 100:
             raise NotAchievedException("Failover not detected")
 
-    def fetch_file_via_ftp(self, path):
+    def fetch_file_via_ftp(self, path, timeout=20):
         '''returns the content of the FTP'able file at path'''
+        self.progress("Retrieving (%s) using MAVProxy" % path)
         mavproxy = self.start_mavproxy()
+        mavproxy.expect("Saved .* parameters to")
         ex = None
         tmpfile = tempfile.NamedTemporaryFile(mode='r', delete=False)
         try:
@@ -13220,9 +13240,18 @@ switch value'''
             mavproxy.send("ftp set debug 1\n")  # so we get the "Terminated session" message
             mavproxy.send("ftp get %s %s\n" % (path, tmpfile.name))
             mavproxy.expect("Getting")
-            self.delay_sim_time(2)
-            mavproxy.send("ftp status\n")
-            mavproxy.expect("No transfer in progress")
+            tstart = self.get_sim_time()
+            while True:
+                now = self.get_sim_time()
+                if now - tstart > timeout:
+                    raise NotAchievedException("expected complete transfer")
+                self.progress("Polling status")
+                mavproxy.send("ftp status\n")
+                try:
+                    mavproxy.expect("No transfer in progress", timeout=1)
+                    break
+                except Exception:
+                    continue
             # terminate the connection, or it may still be in progress the next time an FTP is attempted:
             mavproxy.send("ftp cancel\n")
             mavproxy.expect("Terminated session")
@@ -13375,7 +13404,11 @@ SERIAL5_BAUD 128
             disabled = {}
         skip_list = []
         tests = []
+        seen_test_name = set()
         for test in all_tests:
+            if test.name in seen_test_name:
+                raise ValueError("Duplicate test name %s" % test.name)
+            seen_test_name.add(test.name)
             if test.name in disabled:
                 self.progress("##### %s is skipped: %s" % (test, disabled[test.name]))
                 skip_list.append((test, disabled[test.name]))

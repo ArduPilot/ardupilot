@@ -297,7 +297,9 @@
 #define STM32_CKPERSEL                      STM32_CKPERSEL_HSE_CK
 #endif
 #define STM32_SDMMCSEL                      STM32_SDMMCSEL_PLL1_Q_CK
+#ifndef STM32_QSPISEL
 #define STM32_QSPISEL                       STM32_QSPISEL_PLL2_R_CK
+#endif
 #define STM32_FMCSEL                        STM32_QSPISEL_HCLK
 
 #define STM32_SWPSEL                        STM32_SWPSEL_PCLK1
@@ -607,16 +609,12 @@
 /*
  * USB driver system settings.
  */
-#ifndef STM32_USB_USE_OTG1
 #define STM32_USB_USE_OTG1                  TRUE
-#endif
-#ifndef STM32_USB_USE_OTG2
 #define STM32_USB_USE_OTG2                  TRUE
-#endif
 #define STM32_USB_OTG1_IRQ_PRIORITY         14
 #define STM32_USB_OTG2_IRQ_PRIORITY         14
-#define STM32_USB_OTG1_RX_FIFO_SIZE         2048
-#define STM32_USB_OTG2_RX_FIFO_SIZE         2048
+#define STM32_USB_OTG1_RX_FIFO_SIZE         512
+#define STM32_USB_OTG2_RX_FIFO_SIZE         1024
 #define STM32_USB_HOST_WAKEUP_DURATION      2
 
 /*

@@ -400,6 +400,34 @@ class FakeMacOSXSpawn(object):
         return True
 
 
+class PSpawnStdPrettyPrinter(object):
+    '''a fake filehandle-like object which prefixes a string to all lines
+    before printing to stdout/stderr.  To be used to pass to
+    pexpect.spawn's logfile argument
+    '''
+    def __init__(self, output=sys.stdout, prefix="stdout"):
+        self.output = output
+        self.prefix = prefix
+        self.buffer = ""
+
+    def close(self):
+        self.print_prefixed_line(self.buffer)
+
+    def write(self, data):
+        self.buffer += data
+        lines = self.buffer.split("\n")
+        self.buffer = lines[-1]
+        lines.pop()
+        for line in lines:
+            self.print_prefixed_line(line)
+
+    def print_prefixed_line(self, line):
+        print("%s: %s" % (self.prefix, line), file=self.output)
+
+    def flush(self):
+        pass
+
+
 def start_SITL(binary,
                valgrind=False,
                callgrind=False,
@@ -418,7 +446,8 @@ def start_SITL(binary,
                customisations=[],
                lldb=False,
                enable_fgview_output=False,
-               supplementary=False):
+               supplementary=False,
+               stdout_prefix=None):
 
     if model is None and not supplementary:
         raise ValueError("model must not be None")
@@ -520,6 +549,11 @@ def start_SITL(binary,
 
     cmd.extend(customisations)
 
+    pexpect_logfile_prefix = stdout_prefix
+    if pexpect_logfile_prefix is None:
+        pexpect_logfile_prefix = os.path.basename(binary)
+    pexpect_logfile = PSpawnStdPrettyPrinter(prefix=pexpect_logfile_prefix)
+
     if (gdb or lldb) and sys.platform == "darwin" and os.getenv('DISPLAY'):
         global windowID
         # on MacOS record the window IDs so we can close them later
@@ -557,7 +591,7 @@ def start_SITL(binary,
         # AP gets a redirect-stdout-to-filehandle option.  So, in the
         # meantime, return a dummy:
         return pexpect.spawn("true", ["true"],
-                             logfile=sys.stdout,
+                             logfile=pexpect_logfile,
                              encoding=ENCODING,
                              timeout=5)
     else:
@@ -565,10 +599,8 @@ def start_SITL(binary,
 
         first = cmd[0]
         rest = cmd[1:]
-        child = pexpect.spawn(first, rest, logfile=sys.stdout, encoding=ENCODING, timeout=5)
+        child = pexpect.spawn(first, rest, logfile=pexpect_logfile, encoding=ENCODING, timeout=5)
         pexpect_autoclose(child)
-    # give time for parameters to properly setup
-    time.sleep(3)
     if gdb or lldb:
         # if we run GDB we do so in an xterm.  "Waiting for
         # connection" is never going to appear on xterm's output.

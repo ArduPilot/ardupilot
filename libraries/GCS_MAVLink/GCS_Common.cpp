@@ -4816,7 +4816,7 @@ bool GCS_MAVLINK::location_from_command_t(const mavlink_command_int_t &in, Locat
     }
 
     // integer storage imposes limits on the altitudes we can accept:
-    if (fabsf(in.z) > LOCATION_ALT_MAX_M) {
+    if (isnan(in.z) || fabsf(in.z) > LOCATION_ALT_MAX_M) {
         return false;
     }
 
@@ -4842,6 +4842,7 @@ bool GCS_MAVLINK::command_long_stores_location(const MAV_CMD command)
     case MAV_CMD_DO_SET_ROI_LOCATION:
     case MAV_CMD_NAV_TAKEOFF:
     case MAV_CMD_DO_REPOSITION:
+    case MAV_CMD_EXTERNAL_POSITION_ESTIMATE:
         return true;
     default:
         return false;
@@ -4980,6 +4981,36 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_do_set_home(const mavlink_command_int
     return MAV_RESULT_ACCEPTED;
 }
 
+#if AP_AHRS_POSITION_RESET_ENABLED
+MAV_RESULT GCS_MAVLINK::handle_command_int_external_position_estimate(const mavlink_command_int_t &packet)
+{
+    if (packet.frame != MAV_FRAME_GLOBAL ||
+        !isnan(packet.z)) {
+        // we only support global frame without altitude
+        return MAV_RESULT_DENIED;
+    }
+
+    // cope with the NaN when convering to Location
+    Location loc;
+    mavlink_command_int_t p2 = packet;
+    p2.z = 0;
+
+    if (!location_from_command_t(p2, loc)) {
+        return MAV_RESULT_DENIED;
+    }
+    uint32_t timestamp_ms = correct_offboard_timestamp_usec_to_ms(uint64_t(p2.param1*1e6), PAYLOAD_SIZE(chan, COMMAND_INT));
+    const uint32_t processing_ms = p2.param2*1e3;
+    const float pos_accuracy = p2.param3;
+    if (timestamp_ms > processing_ms) {
+        timestamp_ms -= processing_ms;
+    }
+    if (!AP::ahrs().handle_external_position_estimate(loc, pos_accuracy, timestamp_ms)) {
+        return MAV_RESULT_FAILED;
+    }
+    return MAV_RESULT_ACCEPTED;
+}
+#endif // AP_AHRS_POSITION_RESET_ENABLED
+
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_none()
 {
 #if HAL_MOUNT_ENABLED
@@ -5081,6 +5112,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_do_set_roi_sysid(packet);
     case MAV_CMD_DO_SET_HOME:
         return handle_command_int_do_set_home(packet);
+#if AP_AHRS_POSITION_RESET_ENABLED
+    case MAV_CMD_EXTERNAL_POSITION_ESTIMATE:
+        return handle_command_int_external_position_estimate(packet);
+#endif
 
 #if AP_SCRIPTING_ENABLED
     case MAV_CMD_SCRIPTING:
