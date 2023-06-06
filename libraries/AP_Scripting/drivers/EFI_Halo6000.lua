@@ -174,8 +174,8 @@ local function engine_control()
           last_rpm_t = get_time_sec()
           throttle_pos = get_uint16(frame, 2)*0.1
           fuel_pct = get_uint8(frame, 4)*0.5
-          cyl_temp = get_uint8(frame, 5)
-          cool_temp = get_uint8(frame, 6)
+          cyl_temp = get_uint8(frame, 5) - 40
+          cool_temp = get_uint8(frame, 6) - 40
        elseif id == 0x1c2 then
           -- 20Hz telem2
           out_volt = get_uint16(frame, 0)*0.2
