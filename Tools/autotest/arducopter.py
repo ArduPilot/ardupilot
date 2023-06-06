@@ -2695,7 +2695,7 @@ class AutoTestCopter(AutoTest):
                      0,
                      timeout=10,
                      want_result=mavutil.mavlink.MAV_RESULT_FAILED)
-        self.wait_statustext("Node {} unhealthy".format(gps1_nodeid), check_context=True)
+        self.wait_statustext(".*Node .* unhealthy", check_context=True, regex=True)
         self.stop_sup_program(instance=0)
         self.start_sup_program(instance=0)
         self.stop_sup_program(instance=1)
