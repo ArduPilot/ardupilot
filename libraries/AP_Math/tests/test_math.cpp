@@ -680,6 +680,18 @@ TEST(MathTest, FIXEDWINGTURNRATE)
     EXPECT_NEAR(56.187965393066406f, fixedwing_turn_rate(45, 10.0f), accuracy);
 }
 
+TEST(CRCTest, parity)
+{
+    EXPECT_EQ(parity(0b1), 1);
+    EXPECT_EQ(parity(0b10), 1);
+    EXPECT_EQ(parity(0b100), 1);
+
+    EXPECT_EQ(parity(0b11), 0);
+    EXPECT_EQ(parity(0b110), 0);
+    EXPECT_EQ(parity(0b111), 1);
+    EXPECT_EQ(parity(0b11111111), 0);
+}
+
 AP_GTEST_PANIC()
 AP_GTEST_MAIN()
 

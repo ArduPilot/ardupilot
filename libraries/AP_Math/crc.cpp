@@ -19,6 +19,8 @@
 #include <stdint.h>
 #include "crc.h"
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
 /**
  * crc4 method from datasheet for 16 bytes (8 short values)
  * 
@@ -540,7 +542,29 @@ uint64_t crc_crc64(const uint32_t *data, uint16_t num_words)
     return crc;
 }
 
+// return the parity of byte - "1" if there is an odd number of bits
+// set, "0" if there is an even number of bits set note that
+// __builtin_parity causes hardfaults on Pixracer-periph - and is
+// slower on 1 byte than this:
 uint8_t parity(uint8_t byte)
 {
-    return __builtin_parity(byte);
+    uint8_t p = 0;
+
+    p ^= byte & 0x1;
+    byte >>= 1;
+    p ^= byte & 0x1;
+    byte >>= 1;
+    p ^= byte & 0x1;
+    byte >>= 1;
+    p ^= byte & 0x1;
+    byte >>= 1;
+    p ^= byte & 0x1;
+    byte >>= 1;
+    p ^= byte & 0x1;
+    byte >>= 1;
+    p ^= byte & 0x1;
+    byte >>= 1;
+    p ^= byte & 0x1;
+
+    return p;
 }
