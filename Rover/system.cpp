@@ -107,7 +107,9 @@ void Rover::init_ardupilot()
     optflow.init(MASK_LOG_OPTFLOW);
 #endif      // AP_OPTICALFLOW_ENABLED
 
+#if AP_RELAY_ENABLED
     relay.init();
+#endif
 
 #if HAL_MOUNT_ENABLED
     // initialise camera mount
