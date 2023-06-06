@@ -408,7 +408,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @DisplayName: SerialA physical type
     // @Description: This allows for selection of physical type for serial port A
     // @User: Advanced
-    // @Values: -1:Disable, 0:IP
+    // @Values: -1:Disable, 0:UART, 1:IP, 2:DroneCAN
     AP_GROUPINFO("A_PHY_TYPE", 33, AP_SerialManager, ext_state[0].phy_type, HAL_SERIALA_PHY_TYPE),    
 
     // @Group: A_
@@ -420,7 +420,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @DisplayName: SerialB physical type
     // @Description: This allows for selection of physical type for serial port B
     // @User: Advanced
-    // @Values: -1:Disable, 0:IP
+    // @Values: -1:Disable, 0:UART, 1:IP, 2:DroneCAN
     AP_GROUPINFO("B_PHY_TYPE", 35, AP_SerialManager, ext_state[1].phy_type, HAL_SERIALB_PHY_TYPE),
 
     // @Group: B_
@@ -433,7 +433,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @DisplayName: SerialC physical type
     // @Description: This allows for selection of physical type for serial port C
     // @User: Advanced
-    // @Values: -1:Disable, 0:IP
+    // @Values: -1:Disable, 0:UART, 1:IP, 2:DroneCAN
     AP_GROUPINFO("C_PHY_TYPE", 37, AP_SerialManager, ext_state[2].phy_type, HAL_SERIALC_PHY_TYPE),
 
     // @Group: C_
@@ -446,7 +446,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @DisplayName: SerialD physical type
     // @Description: This allows for selection of physical type for serial port D
     // @User: Advanced
-    // @Values: -1:Disable, 0:IP
+    // @Values: -1:Disable, 0:UART, 1:IP, 2:DroneCAN
     AP_GROUPINFO("D_PHY_TYPE", 39, AP_SerialManager, ext_state[3].phy_type, HAL_SERIALD_PHY_TYPE),
 
     // @Group: D_
@@ -459,7 +459,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @DisplayName: SerialE physical type
     // @Description: This allows for selection of physical type for serial port E
     // @User: Advanced
-    // @Values: -1:Disable, 0:IP
+    // @Values: -1:Disable, 0:UART, 1:IP, 2:DroneCAN
     AP_GROUPINFO("E_PHY_TYPE", 41, AP_SerialManager, ext_state[4].phy_type, HAL_SERIALE_PHY_TYPE),
 
     // @Group: E_
@@ -472,7 +472,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @DisplayName: SerialF physical type
     // @Description: This allows for selection of physical type for serial port F
     // @User: Advanced
-    // @Values: -1:Disable, 0:IP
+    // @Values: -1:Disable, 0:UART, 1:IP, 2:DroneCAN
     AP_GROUPINFO("F_PHY_TYPE", 43, AP_SerialManager, ext_state[5].phy_type, HAL_SERIALF_PHY_TYPE),
 
     // @Group: F_
@@ -564,6 +564,9 @@ void AP_SerialManager::init()
             ext_uart[i] = new AP_Networking_Serial(ext_state[i].ip_params());
             if (ext_uart[i] == nullptr) {
                 AP_BoardConfig::allocation_error("AP_SerialManager::init() failed to allocate ext_uart[%u]", i);
+            } else if (ext_state[i].get_protocol() == SerialProtocol_Console) {
+                // if protocol == 0 then treat it as a passthrough and init it here with larger buffers instead of the MAVLink ones down below
+                ext_uart[i]->begin(0);
             }
         }
 #endif
@@ -982,7 +985,7 @@ AP_SerialManager::SerialProtocol AP_SerialManager::SerialExtState::get_protocol(
         return AP_SerialManager::SerialProtocol_None;
     }
 
-    return AP_SerialManager::SerialProtocol_None;
+    return (AP_SerialManager::SerialProtocol)params->protocol.get();
 }
 
 uint16_t AP_SerialManager::SerialExtState::get_options() const {
