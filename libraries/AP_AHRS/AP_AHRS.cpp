@@ -178,6 +178,13 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
 
     // index 17
 
+    // @Param: OPTIONS
+    // @DisplayName: Optional AHRS behaviour
+    // @Description: This conrols optional AHRS behaviour. Setting DisableDCMFallback will change the AHRS behaviour for fixed wing aircraft to not fall back to DCM when the EKF stops fusing GPS measurements while there is 3D GPS lock
+    // @Bitmask: 0:DisableDCMFallback
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS",  18, AP_AHRS, _options, 0),
+    
     AP_GROUPEND
 };
 
@@ -1797,17 +1804,24 @@ AP_AHRS::EKFType AP_AHRS::active_EKF_type(void) const
             should_use_gps = true;
         }
 #endif
-        if (hal.util->get_soft_armed() &&
-            (!filt_state.flags.using_gps ||
-             !filt_state.flags.horiz_pos_abs) &&
-             !filt_state.flags.horiz_pos_rel &&
-            should_use_gps &&
-            AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
-            // if the EKF is not fusing GPS or doesn't have a 2D fix
-            // and is not doing ground or wind relative dead reckoning
-            // and we have a 3D lock, then plane and rover would
-            // prefer to use the GPS position from DCM.
-            // Note: This is a last resort fallback and makes the navigation highly vulnerable to GPS noise.
+        const bool have_3D_fix = AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D;
+        const bool is_armed = hal.util->get_soft_armed();
+        if (is_armed && should_use_gps && have_3D_fix &&
+            !option_set(Options::DISABLE_DCM_FALLBACK) &&
+            (!filt_state.flags.using_gps || !filt_state.flags.horiz_pos_abs)) {
+            /*
+              if the EKF is not fusing GPS and we have a 3D fix, and we have not disabled
+              DCM fallback then use DCM
+            */
+            return EKFType::NONE;
+        }
+        if (is_armed && should_use_gps &&
+            (!filt_state.flags.horiz_pos_abs || !filt_state.flags.horiz_pos_rel)) {
+            /*
+              if the EKF is reporting that it cannot do relative
+              aiding or provide an absolute position then fallback to
+              DCM dead-reckoning
+             */
             return EKFType::NONE;
         }
         if (hal.util->get_soft_armed() && filt_state.flags.const_pos_mode) {

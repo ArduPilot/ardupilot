@@ -839,6 +839,15 @@ private:
     void Write_AHRS2(void) const;
     // write POS (canonical vehicle position) message out:
     void Write_POS(void) const;
+
+    enum class Options : uint16_t {
+        DISABLE_DCM_FALLBACK=(1U<<0),
+    };
+    AP_Int16 _options;
+    
+    bool option_set(Options option) const {
+        return (_options & uint16_t(option)) != 0;
+    }
 };
 
 namespace AP {
