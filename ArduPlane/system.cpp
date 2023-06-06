@@ -42,7 +42,9 @@ void Plane::init_ardupilot()
 #endif
     rc().init();
 
+#if AP_RELAY_ENABLED
     relay.init();
+#endif
 
     // initialise notify system
     notify.init();
