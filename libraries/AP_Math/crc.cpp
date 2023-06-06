@@ -539,3 +539,8 @@ uint64_t crc_crc64(const uint32_t *data, uint16_t num_words)
 
     return crc;
 }
+
+uint8_t parity(uint8_t byte)
+{
+    return __builtin_parity(byte);
+}
