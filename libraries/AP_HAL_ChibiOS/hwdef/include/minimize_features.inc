@@ -108,3 +108,6 @@ define HAL_NMEA_OUTPUT_ENABLED 0
 
 # no Notify Display support:
 define HAL_DISPLAY_ENABLED 0
+
+# remove support for killing IMUs at runtime - a developer feature:
+define AP_INERTIALSENSOR_KILL_IMU_ENABLED 0
