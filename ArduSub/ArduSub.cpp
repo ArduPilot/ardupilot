@@ -252,7 +252,9 @@ void Sub::three_hz_loop()
     fence_check();
 #endif // AP_FENCE_ENABLED
 
+#if AP_SERVORELAYEVENTS_ENABLED
     ServoRelayEvents.update_events();
+#endif
 }
 
 // one_hz_loop - runs at 1Hz
