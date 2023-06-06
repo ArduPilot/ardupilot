@@ -59,6 +59,7 @@ bool AP_Mission::start_command_do_gripper(const AP_Mission::Mission_Command& cmd
 }
 #endif  // AP_GRIPPER_ENABLED
 
+#if AP_SERVORELAYEVENTS_ENABLED
 bool AP_Mission::start_command_do_servorelayevents(const AP_Mission::Mission_Command& cmd)
 {
     AP_ServoRelayEvents *sre = AP::servorelayevents();
@@ -70,8 +71,10 @@ bool AP_Mission::start_command_do_servorelayevents(const AP_Mission::Mission_Com
     case MAV_CMD_DO_SET_SERVO:
         return sre->do_set_servo(cmd.content.servo.channel, cmd.content.servo.pwm);
 
+#if AP_RELAY_ENABLED
     case MAV_CMD_DO_SET_RELAY:
         return sre->do_set_relay(cmd.content.relay.num, cmd.content.relay.state);
+#endif
 
     case MAV_CMD_DO_REPEAT_SERVO:
         return sre->do_repeat_servo(cmd.content.repeat_servo.channel,
@@ -79,10 +82,13 @@ bool AP_Mission::start_command_do_servorelayevents(const AP_Mission::Mission_Com
                                     cmd.content.repeat_servo.repeat_count,
                                     cmd.content.repeat_servo.cycle_time * 1000.0f);
 
+#if AP_RELAY_ENABLED
     case MAV_CMD_DO_REPEAT_RELAY:
         return sre->do_repeat_relay(cmd.content.repeat_relay.num,
                                     cmd.content.repeat_relay.repeat_count,
                                     cmd.content.repeat_relay.cycle_time * 1000.0f);
+#endif
+
     default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         AP_HAL::panic("Unhandled servo/relay case");
@@ -90,6 +96,7 @@ bool AP_Mission::start_command_do_servorelayevents(const AP_Mission::Mission_Com
         return false;
     }
 }
+#endif  // AP_SERVORELAYEVENTS_ENABLED
 
 #if AP_CAMERA_ENABLED
 bool AP_Mission::start_command_camera(const AP_Mission::Mission_Command& cmd)
