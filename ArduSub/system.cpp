@@ -70,7 +70,9 @@ void Sub::init_ardupilot()
     init_rc_out();              // sets up motors and output to escs
     init_joystick();            // joystick initialization
 
+#if AP_RELAY_ENABLED
     relay.init();
+#endif
 
     /*
      *  setup the 'main loop is dead' check. Note that this relies on
