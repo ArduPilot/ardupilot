@@ -397,7 +397,10 @@ int16_t CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadline,
         pending_tx_[index].pushed         = false;
     }
 
-    return AP_HAL::CANIface::send(frame, tx_deadline, flags);
+    // also send on MAVCAN, but don't consider it an error if we can't get the MAVCAN out
+    AP_HAL::CANIface::send(frame, tx_deadline, flags);
+
+    return 1;
 }
 
 int16_t CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_us, CanIOFlags& out_flags)
