@@ -2810,7 +2810,11 @@ int main(int argc, char **argv) {
   }
 
   fprintf(source, "// auto generated bindings, don't manually edit.  See README.md for details.\n");
-  
+
+  fprintf(source, "#include <AP_Scripting/AP_Scripting_config.h>\n\n");
+
+  fprintf(source, "#if AP_SCRIPTING_ENABLED\n\n");
+
   trace(TRACE_GENERAL, "Sanity checking parsed input");
 
   sanity_check_userdata();
@@ -2864,6 +2868,8 @@ int main(int argc, char **argv) {
 
   emit_sandbox();
 
+  fprintf(source, "#endif  // AP_SCRIPTING_ENABLED\n");
+
   fclose(source);
   source = NULL;
 
@@ -2875,6 +2881,8 @@ int main(int argc, char **argv) {
   free(file_name);
   fprintf(header, "#pragma once\n");
   fprintf(header, "// auto generated bindings, don't manually edit.  See README.md for details.\n");
+  fprintf(header, "#include <AP_Scripting/AP_Scripting_config.h>\n\n");
+  fprintf(header, "#if AP_SCRIPTING_ENABLED\n\n");
   fprintf(header, "#include <AP_Vehicle/AP_Vehicle_Type.h> // needed for APM_BUILD_TYPE #if\n");
   emit_headers(header);
   fprintf(header, "#include <AP_Scripting/lua/src/lua.hpp>\n");
@@ -2904,6 +2912,8 @@ int main(int argc, char **argv) {
     }
     node = node->next;
   }
+
+  fprintf(header, "#endif  // AP_SCRIPTING_ENABLED\n");
 
   fclose(header);
   header = NULL;
