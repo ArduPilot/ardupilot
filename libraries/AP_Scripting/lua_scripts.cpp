@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Scripting_config.h"
+
+#if AP_SCRIPTING_ENABLED
+
 #include "lua_scripts.h"
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Scripting.h"
@@ -599,3 +603,5 @@ void lua_scripts::run(void) {
     }
     error_msg_buf_sem.give();
 }
+
+#endif  // AP_SCRIPTING_ENABLED
