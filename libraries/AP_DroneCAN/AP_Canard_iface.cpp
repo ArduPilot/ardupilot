@@ -8,6 +8,7 @@
 #include <dronecan_msgs.h>
 extern const AP_HAL::HAL& hal;
 #define LOG_TAG "DroneCANIface"
+#include <canard.h>
 
 #define DEBUG_PKTS 0
 
@@ -25,6 +26,27 @@ CanardInterface CanardInterface::test_iface{2};
 uint8_t test_node_mem_area[1024];
 HAL_Semaphore test_iface_sem;
 #endif
+
+void canard_allocate_sem_take(CanardPoolAllocator *allocator) {
+    if (allocator->semaphore == nullptr) {
+        allocator->semaphore = new HAL_Semaphore;
+        if (allocator->semaphore == nullptr) {
+            // out of memory
+            CANARD_ASSERT(0);
+            return;
+        }
+    }
+    ((HAL_Semaphore*)allocator->semaphore)->take_blocking();
+}
+
+void canard_allocate_sem_give(CanardPoolAllocator *allocator) {
+    if (allocator->semaphore == nullptr) {
+        // it should have been allocated by canard_allocate_sem_take
+        CANARD_ASSERT(0);
+        return;
+    }
+    ((HAL_Semaphore*)allocator->semaphore)->give();
+}
 
 CanardInterface::CanardInterface(uint8_t iface_index) :
 Interface(iface_index) {
