@@ -2876,6 +2876,10 @@ INCLUDE common.ld
             self.error("ALT() invalid for %s" % a[0])
 
         if a[0] == 'DEFAULTGPIO':
+            if "MCU" in self.config:
+                # should be self.error(...)
+                print("DEPRECATED: the DEFAULTGPIO has NO EFFECT if used after MCU declaration!")
+
             self.default_gpio = a[1:]
             return
 
