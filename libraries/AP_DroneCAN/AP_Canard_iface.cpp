@@ -197,7 +197,12 @@ void CanardInterface::processTx(bool raw_commands_only = false) {
             bool write = true;
             bool read = false;
             ifaces[iface]->select(read, write, &txmsg, 0);
-            if ((AP_HAL::native_micros64() < txf->deadline_usec) && (txf->iface_mask & (1U<<iface)) && write) {
+            if (!write) {
+                // if there is no space then we need to start from the
+                // top of the queue, so wait for the next loop
+                break;
+            }
+            if ((txf->iface_mask & (1U<<iface)) && (AP_HAL::native_micros64() < txf->deadline_usec)) {
                 // try sending to interfaces, clearing the mask if we succeed
                 if (ifaces[iface]->send(txmsg, txf->deadline_usec, 0) > 0) {
                     txf->iface_mask &= ~(1U<<iface);
