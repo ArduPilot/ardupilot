@@ -63,7 +63,7 @@ bool CanardInterface::broadcast(const Canard::Transfer &bcast_transfer) {
         .inout_transfer_id = bcast_transfer.inout_transfer_id,
         .priority = bcast_transfer.priority,
         .payload = (const uint8_t*)bcast_transfer.payload,
-        .payload_len = bcast_transfer.payload_len,
+        .payload_len = uint16_t(bcast_transfer.payload_len),
 #if CANARD_ENABLE_CANFD
         .canfd = bcast_transfer.canfd,
 #endif
@@ -95,7 +95,7 @@ bool CanardInterface::request(uint8_t destination_node_id, const Canard::Transfe
         .inout_transfer_id = req_transfer.inout_transfer_id,
         .priority = req_transfer.priority,
         .payload = (const uint8_t*)req_transfer.payload,
-        .payload_len = req_transfer.payload_len,
+        .payload_len = uint16_t(req_transfer.payload_len),
 #if CANARD_ENABLE_CANFD
         .canfd = req_transfer.canfd,
 #endif
@@ -121,7 +121,7 @@ bool CanardInterface::respond(uint8_t destination_node_id, const Canard::Transfe
         .inout_transfer_id = res_transfer.inout_transfer_id,
         .priority = res_transfer.priority,
         .payload = (const uint8_t*)res_transfer.payload,
-        .payload_len = res_transfer.payload_len,
+        .payload_len = uint16_t(res_transfer.payload_len),
 #if CANARD_ENABLE_CANFD
         .canfd = res_transfer.canfd,
 #endif
