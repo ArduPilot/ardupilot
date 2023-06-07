@@ -149,3 +149,5 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 3
 define HAL_FRAME_TYPE_DEFAULT 12
 
 define DEFAULT_NTF_LED_TYPES 257
+
+include ../include/save_some_flash.inc
