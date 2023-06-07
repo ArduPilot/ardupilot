@@ -47,30 +47,24 @@ class Board:
         env.SRCROOT = srcpath('')
         self.configure_env(cfg, env)
 
+        # Setup scripting:
         env.DEFINES.update(
-            AP_SCRIPTING_ENABLED = 0,
+            LUA_32BITS = 1,
         )
 
-        # Setup scripting, had to defer this to allow checking board size
-        if (cfg.options.enable_scripting or
-            ((not cfg.options.disable_scripting) and
-            (not cfg.env.DISABLE_SCRIPTING) and
-            ((cfg.env.BOARD_FLASH_SIZE is None) or
-             (cfg.env.BOARD_FLASH_SIZE == []) or
-             (cfg.env.BOARD_FLASH_SIZE > 1024)))):
+        env.AP_LIBRARIES += [
+            'AP_Scripting',
+            'AP_Scripting/lua/src',
+        ]
 
+        if cfg.options.enable_scripting:
             env.DEFINES.update(
                 AP_SCRIPTING_ENABLED = 1,
-                LUA_32BITS = 1,
-                )
-
-            env.AP_LIBRARIES += [
-                'AP_Scripting',
-                'AP_Scripting/lua/src',
-                ]
-
-        else:
-            cfg.options.disable_scripting = True
+            )
+        elif cfg.options.disable_scripting:
+            env.DEFINES.update(
+                AP_SCRIPTING_ENABLED = 0,
+            )
 
         # allow GCS disable for AP_DAL example
         if cfg.options.no_gcs:
@@ -802,7 +796,6 @@ class sitl(Board):
 class sitl_periph_gps(sitl):
     def configure_env(self, cfg, env):
         cfg.env.AP_PERIPH = 1
-        cfg.env.DISABLE_SCRIPTING = 1
         super(sitl_periph_gps, self).configure_env(cfg, env)
         env.DEFINES.update(
             HAL_BUILD_AP_PERIPH = 1,
@@ -834,6 +827,7 @@ class sitl_periph_gps(sitl):
             HAL_SUPPORT_RCOUT_SERIAL = 0,
             AP_CAN_SLCAN_ENABLED = 0,
             HAL_PROXIMITY_ENABLED = 0,
+            AP_SCRIPTING_ENABLED = 0,
         )
 
 
