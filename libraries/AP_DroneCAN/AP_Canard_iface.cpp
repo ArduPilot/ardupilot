@@ -49,7 +49,8 @@ bool CanardInterface::broadcast(const Canard::Transfer &bcast_transfer) {
     if (!initialized) {
         return false;
     }
-    WITH_SEMAPHORE(_sem);
+    WITH_SEMAPHORE(_sem_tx);
+
 #if AP_TEST_DRONECAN_DRIVERS
     if (this == &test_iface) {
         test_iface_sem.take_blocking();
@@ -86,7 +87,7 @@ bool CanardInterface::request(uint8_t destination_node_id, const Canard::Transfe
     if (!initialized) {
         return false;
     }
-    WITH_SEMAPHORE(_sem);
+    WITH_SEMAPHORE(_sem_tx);
 
     tx_transfer = {
         .transfer_type = req_transfer.transfer_type,
@@ -112,7 +113,7 @@ bool CanardInterface::respond(uint8_t destination_node_id, const Canard::Transfe
     if (!initialized) {
         return false;
     }
-    WITH_SEMAPHORE(_sem);
+    WITH_SEMAPHORE(_sem_tx);
 
     tx_transfer = {
         .transfer_type = res_transfer.transfer_type,
@@ -164,7 +165,7 @@ void CanardInterface::processTestRx() {
 #endif
 
 void CanardInterface::processTx(bool raw_commands_only = false) {
-    WITH_SEMAPHORE(_sem);
+    WITH_SEMAPHORE(_sem_tx);
 
     for (uint8_t iface = 0; iface < num_ifaces; iface++) {
         if (ifaces[iface] == NULL) {
@@ -252,7 +253,7 @@ void CanardInterface::processRx() {
             rx_frame.iface_id = i;
 #endif
             {
-                WITH_SEMAPHORE(_sem);
+                WITH_SEMAPHORE(_sem_rx);
 
 #if DEBUG_PKTS
                 const int16_t res = 
@@ -289,7 +290,8 @@ void CanardInterface::process(uint32_t duration_ms) {
         processRx();
         processTx();
         {
-            WITH_SEMAPHORE(_sem);
+            WITH_SEMAPHORE(_sem_rx);
+            WITH_SEMAPHORE(_sem_tx);
             canardCleanupStaleTransfers(&canard, AP_HAL::native_micros64());
         }
         uint64_t now = AP_HAL::native_micros64();
