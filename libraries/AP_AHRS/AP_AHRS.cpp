@@ -609,13 +609,54 @@ void AP_AHRS::update_EKF3(void)
             // use the same IMU as the primary EKF and correct for gyro drift
             _gyro_estimate = _ins.get_gyro(primary_gyro) + _gyro_drift;
 
-            // get 3-axis accel bias festimates for active EKF (this is usually for the primary IMU)
+            // get 3-axis accel bias estimates for active EKF (this is usually for the primary IMU)
             Vector3f &abias = _accel_bias;
             EKF3.getAccelBias(-1,abias);
 
             // use the primary IMU for accel earth frame
             Vector3f accel = _ins.get_accel(primary_accel);
             accel -= abias;
+
+            // Estimate accel offset due to position and rotation
+            const Vector3f PosOffset = _ins.get_imu_pos_offset(primary_accel);
+            if (!PosOffset.is_zero()) {
+
+                // Use delta angle measurement for reduced noise over raw value
+                Vector3f delta_angle, delta_rate;
+                float delta_angle_dt;
+                _ins.get_delta_angle_and_rate(primary_gyro, delta_angle, delta_rate, delta_angle_dt);
+                Vector3f delta_angle_gyro = delta_angle / delta_angle_dt;
+
+                // Remove drift
+                delta_angle_gyro += _gyro_drift;
+
+                // calculate sensed acceleration due to lever arm effect
+                // Note: the % operator has been overloaded to provide a cross product
+                const Vector3f angAccel = delta_rate / delta_angle_dt;
+                const Vector3f lever_arm_accel = angAccel % PosOffset;
+
+                // calculate sensed acceleration due to centripetal acceleration
+                const Vector3f centripetal_accel = delta_angle_gyro % (delta_angle_gyro % PosOffset);
+
+                // apply corrections
+                Vector3f accel_offset = lever_arm_accel + centripetal_accel;
+
+                // TMP Log for testing accel offsets
+                AP::logger().Write("ACMP","TimeUS,Ax,Ay,Az,Gx,Gy,Gz,dGx,dGy,dGz","Qfffffffff",
+                                    AP_HAL::micros64(),
+                                    accel.x, accel.y, accel.z,
+                                    delta_angle_gyro.x, delta_angle_gyro.y, delta_angle_gyro.z,
+                                    angAccel.x, angAccel.y, angAccel.z);
+
+                accel -= accel_offset;
+                AP::logger().Write("ACM2","TimeUS,Cx,Cy,Cz,Lx,Ly,Lz,CmpX,CmpY,CmpZ","Qfffffffff",
+                                    AP_HAL::micros64(),
+                                    centripetal_accel.x, centripetal_accel.y, centripetal_accel.z,
+                                    lever_arm_accel.x, lever_arm_accel.y, lever_arm_accel.z,
+                                    accel.x, accel.y, accel.z);
+            }
+
+            // Rotate into earth frame
             _accel_ef = _dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * accel;
 
             nav_filter_status filt_state;

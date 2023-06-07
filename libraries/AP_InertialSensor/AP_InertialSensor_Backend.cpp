@@ -170,6 +170,11 @@ void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &
     _imu._gyro_healthy[instance] = true;
 
     // publish delta angle
+    if ((_imu._delta_angle_acc_dt[instance] > 0) && (_imu._delta_angle_dt[instance] > 0)) {
+        _imu._delta_rate[instance] = (_imu._delta_angle_acc[instance] / _imu._delta_angle_acc_dt[instance]) - (_imu._delta_angle[instance] / _imu._delta_angle_dt[instance]);
+    } else {
+        _imu._delta_rate[instance].zero();
+    }
     _imu._delta_angle[instance] = _imu._delta_angle_acc[instance];
     _imu._delta_angle_dt[instance] = _imu._delta_angle_acc_dt[instance];
     _imu._delta_angle_valid[instance] = true;

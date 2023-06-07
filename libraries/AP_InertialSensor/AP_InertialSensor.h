@@ -115,6 +115,9 @@ public:
         return get_delta_angle(_primary_gyro, delta_angle, delta_angle_dt);
     }
 
+    // get delta angle and rate if available
+    bool get_delta_angle_and_rate(uint8_t i, Vector3f &delta_angle, Vector3f &delta_rate, float &delta_angle_dt) const;
+
     //get delta velocity if available
     bool get_delta_velocity(uint8_t i, Vector3f &delta_velocity, float &delta_velocity_dt) const;
     bool get_delta_velocity(Vector3f &delta_velocity, float &delta_velocity_dt) const {
@@ -524,6 +527,7 @@ private:
     // Most recent gyro reading
     Vector3f _gyro[INS_MAX_INSTANCES];
     Vector3f _delta_angle[INS_MAX_INSTANCES];
+    Vector3f _delta_rate[INS_MAX_INSTANCES];
     float _delta_angle_dt[INS_MAX_INSTANCES];
     bool _delta_angle_valid[INS_MAX_INSTANCES];
     // time accumulator for delta angle accumulator
