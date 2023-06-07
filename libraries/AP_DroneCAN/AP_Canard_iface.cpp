@@ -214,14 +214,6 @@ void CanardInterface::processTx(bool raw_commands_only = false) {
         }
     }
 
-    // purge expired transfers
-    for (const CanardCANFrame* txf = canardPeekTxQueue(&canard); txf != NULL; txf = canardPeekTxQueue(&canard)) {
-        if ((AP_HAL::native_micros64() >= txf->deadline_usec) || (txf->iface_mask == 0)) {
-            canardPopTxQueue(&canard);
-        } else {
-            break;
-        }
-    }
 }
 
 void CanardInterface::processRx() {
@@ -291,6 +283,10 @@ void CanardInterface::process(uint32_t duration_ms) {
     while (true) {
         processRx();
         processTx();
+        {
+            WITH_SEMAPHORE(_sem);
+            canardCleanupStaleTransfers(&canard, AP_HAL::native_micros64());
+        }
         uint64_t now = AP_HAL::native_micros64();
         if (now < deadline) {
             _event_handle.wait(MIN(UINT16_MAX - 2U, deadline - now));
