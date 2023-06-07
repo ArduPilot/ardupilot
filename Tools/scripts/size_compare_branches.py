@@ -17,6 +17,7 @@ Output is placed into ../ELF_DIFF_[VEHICLE_NAME]
 '''
 
 import copy
+import fnmatch
 import optparse
 import os
 import pathlib
@@ -56,6 +57,7 @@ class SizeCompareBranches(object):
                  bin_dir=None,
                  run_elf_diff=True,
                  all_vehicles=False,
+                 exclude_board_glob=[],
                  all_boards=False,
                  use_merge_base=True,
                  waf_consistent_builds=True,
@@ -124,6 +126,15 @@ class SizeCompareBranches(object):
             for v in self.vehicle:
                 if v not in self.vehicle_map.keys():
                     raise ValueError("Bad vehicle (%s); choose from %s" % (v, ",".join(self.vehicle_map.keys())))
+
+        # remove boards based on --exclude-board-glob
+        new_self_board = []
+        for exclude_glob in exclude_board_glob:
+            for board_name in self.board:
+                if fnmatch.fnmatch(board_name, exclude_glob):
+                    continue
+                new_self_board.append(board_name)
+        self.board = new_self_board
 
         # some boards we don't have a -bl.dat for, so skip them.
         # TODO: find a way to get this information from board_list:
@@ -760,6 +771,11 @@ if __name__ == '__main__':
                       default=False,
                       help="Build all boards")
     parser.add_option("",
+                      "--exclude-board-glob",
+                      default=[],
+                      action="append",
+                      help="exclude any board which matches this pattern")
+    parser.add_option("",
                       "--all-vehicles",
                       action='store_true',
                       default=False,
@@ -799,6 +815,7 @@ if __name__ == '__main__':
         run_elf_diff=(cmd_opts.elf_diff),
         all_vehicles=cmd_opts.all_vehicles,
         all_boards=cmd_opts.all_boards,
+        exclude_board_glob=cmd_opts.exclude_board_glob,
         use_merge_base=not cmd_opts.no_merge_base,
         waf_consistent_builds=not cmd_opts.no_waf_consistent_builds,
         show_empty=cmd_opts.show_empty,
