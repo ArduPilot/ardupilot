@@ -1359,6 +1359,7 @@ void GCS_MAVLINK_InProgress::check_tasks()
             }
             break;
         case Type::SD_FORMAT:
+#if AP_FILESYSTEM_FORMAT_ENABLED
             switch (AP::FS().get_format_status()) {
             case AP_Filesystem_Backend::FormatStatus::NOT_STARTED:
                 // we shouldn't get here
@@ -1375,6 +1376,7 @@ void GCS_MAVLINK_InProgress::check_tasks()
                 task.conclude(MAV_RESULT_FAILED);
                 break;
             }
+#endif
             break;
         }
     }
@@ -5085,6 +5087,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_long_t &
     return handle_command_do_set_roi(roi_loc);
 }
 
+#if AP_FILESYSTEM_FORMAT_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_storage_format(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     if (!is_equal(packet.param1, 1.0f) ||
@@ -5101,6 +5104,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_storage_format(const mavlink_command_int_
     }
     return MAV_RESULT_IN_PROGRESS;
 }
+#endif
 
 MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &packet)
 {
@@ -5145,9 +5149,11 @@ void GCS_MAVLINK::handle_command_int(const mavlink_message_t &msg)
 
     // special handling of messages that need the mavlink_message_t
     switch (packet.command) {
+#if AP_FILESYSTEM_FORMAT_ENABLED
     case MAV_CMD_STORAGE_FORMAT:
         result = handle_command_storage_format(packet, msg);
         break;
+#endif
     default:
         result = handle_command_int_packet(packet);
         break;
