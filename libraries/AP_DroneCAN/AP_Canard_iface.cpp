@@ -174,7 +174,6 @@ void CanardInterface::processTx(bool raw_commands_only = false) {
         if (txq == nullptr) {
             return;
         }
-        AP_HAL::CANFrame txmsg {};
         // scan through list of pending transfers
         while (true) {
             auto txf = &txq->frame;
@@ -188,6 +187,7 @@ void CanardInterface::processTx(bool raw_commands_only = false) {
                 }
                 continue;
             }
+            AP_HAL::CANFrame txmsg {};
             txmsg.dlc = AP_HAL::CANFrame::dataLengthToDlc(txf->data_len);
             memcpy(txmsg.data, txf->data, txf->data_len);
             txmsg.id = (txf->id | AP_HAL::CANFrame::FlagEFF);
