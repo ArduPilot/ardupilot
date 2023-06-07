@@ -19,6 +19,11 @@
 #endif
 #include <AP_Scripting/lua_common_defs.h>
 
+// use 32 bit number and integer types if we don't have hardware double supportx
+#if !HAL_HAVE_HARDWARE_DOUBLE
+#define LUA_32BITS 1
+#endif
+
 /*
 ** ===================================================================
 ** Search for "@@" to find all configurable definitions.
