@@ -134,8 +134,16 @@ void NavEKF3_core::FuseAirspeed()
         // calculate the innovation consistency test ratio
         tasTestRatio = sq(innovVtas) / (sq(MAX(0.01f * (ftype)frontend->_tasInnovGate, 1.0f)) * varInnovVtas);
 
-        // fail if the ratio is > 1, but don't fail if bad IMU data
-        const bool isConsistent = (tasTestRatio < 1.0f) || badIMUdata;
+        // when dead reckoning using airspeed measurements we cannot allow measurements to be rejected because
+        // this will cause the EKF to stop navigating so instead clip the measurement and accept it
+        const bool doingAirDataDeadReckoning = posTimeout || (PV_AidingMode != AID_ABSOLUTE);
+        ftype innovScaleFactor = 1.0f;
+        if (doingAirDataDeadReckoning && tasTestRatio > 1.0f) {
+            innovScaleFactor = sqrtF(1.0f / tasTestRatio);
+        }
+
+        // fail if the ratio is > 1, but don't fail if bad IMU data or doing air data dead reckoning
+        const bool isConsistent = (tasTestRatio < 1.0f) || badIMUdata || doingAirDataDeadReckoning;
         tasTimeout = (imuSampleTime_ms - lastTasPassTime_ms) > frontend->tasRetryTime_ms;
         if (!isConsistent) {
             lastTasFailTime_ms = imuSampleTime_ms;
@@ -151,7 +159,7 @@ void NavEKF3_core::FuseAirspeed()
 
             // correct the state vector
             for (uint8_t j= 0; j<=stateIndexLim; j++) {
-                statesArray[j] = statesArray[j] - Kfusion[j] * innovVtas;
+                statesArray[j] = statesArray[j] - Kfusion[j] * innovVtas * innovScaleFactor;
             }
             stateStruct.quat.normalize();
 
