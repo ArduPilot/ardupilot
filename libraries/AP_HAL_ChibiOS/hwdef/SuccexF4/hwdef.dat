@@ -133,3 +133,4 @@ define AP_PARAM_MAX_EMBEDDED_PARAM 1024
 
 # minimal drivers to reduce flash usage
 include ../include/minimal.inc
+include ../include/save_some_flash.inc
