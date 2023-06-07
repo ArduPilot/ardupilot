@@ -63,7 +63,8 @@ private:
     uint8_t num_ifaces;
     HAL_EventHandle _event_handle;
     bool initialized;
-    HAL_Semaphore _sem;
+    HAL_Semaphore _sem_tx;
+    HAL_Semaphore _sem_rx;
     CanardTxTransfer tx_transfer;
 };
 #endif // HAL_ENABLE_DRONECAN_DRIVERS
