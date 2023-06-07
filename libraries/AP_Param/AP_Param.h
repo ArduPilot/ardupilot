@@ -27,6 +27,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include <StorageManager/StorageManager.h>
+#include <AP_Scripting/AP_Scripting_config.h>
 
 #include "float.h"
 
