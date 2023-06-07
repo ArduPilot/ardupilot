@@ -295,6 +295,7 @@ void CanardInterface::process(uint32_t duration_ms) {
         uint64_t now = AP_HAL::native_micros64();
         if (now < deadline) {
             _event_handle.wait(MIN(UINT16_MAX - 2U, deadline - now));
+            hal.scheduler->delay_microseconds(50);
         } else {
             break;
         }
