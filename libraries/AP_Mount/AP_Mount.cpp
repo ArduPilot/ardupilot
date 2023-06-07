@@ -851,7 +851,8 @@ void AP_Mount::convert_params()
         IGNORE_RETURN(AP_Param::get_param_by_index(this, 5, AP_PARAM_INT8, &stab_pitch));
         if (mnt_type == 1 && stab_roll == 0 && stab_pitch == 0)  {
             // Servo type without stabilization is changed to BrushlessPWM
-            mnt_type = (int8_t)Type::BrushlessPWM;
+            // conversion is still done even if HAL_MOUNT_SERVO_ENABLED is false
+            mnt_type = 7;  // (int8_t)Type::BrushlessPWM;
         }
     }
     _params[0].type.set_and_save(mnt_type);
