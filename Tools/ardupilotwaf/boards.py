@@ -447,6 +447,7 @@ class Board:
                 DRONECAN_CXX_WRAPPERS = 1,
                 USE_USER_HELPERS = 1,
                 CANARD_ENABLE_DEADLINE = 1,
+                CANARD_ALLOCATE_SEM=1
             )
 
 
