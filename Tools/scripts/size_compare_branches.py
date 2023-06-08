@@ -151,6 +151,7 @@ class SizeCompareBranches(object):
             'skyviper-f412-rev1',
             'skyviper-journey',
             'Pixhawk1-1M-bdshot',
+            'Pixhawk1-bdshot',
             'SITL_arm_linux_gnueabihf',
         ])
 
