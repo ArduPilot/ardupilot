@@ -17,6 +17,7 @@
 */
 
 
+#include "SIM_config.h"
 #include <GCS_MAVLink/GCS.h>
 #include <SITL/SITL.h>
 
@@ -29,6 +30,7 @@
 #include "SIM_Temperature_TSYS01.h"
 #include "SIM_Temperature_MCP9600.h"
 #include "SIM_ICM40609.h"
+#include "SIM_IS31FL3195.h"
 #include "SIM_LP5562.h"
 #include "SIM_LM2755.h"
 #include "SIM_MS5525.h"
@@ -71,6 +73,10 @@ static LP5562 lp5562;
 #if AP_SIM_LM2755_ENABLED
 static LM2755 lm2755;
 #endif
+#if AP_SIM_IS31FL3195_ENABLED
+static IS31FL3195 is31fl3195;
+#define SIM_IS31FL3195_ADDR 0x54
+#endif
 
 struct i2c_device_at_address {
     uint8_t bus;
@@ -99,6 +105,9 @@ struct i2c_device_at_address {
 #if AP_SIM_LM2755_ENABLED
     { 2, 0x67, lm2755 },        // LM2755 RGB LED driver
 #endif
+#if AP_SIM_IS31FL3195_ENABLED
+    { 2, SIM_IS31FL3195_ADDR, is31fl3195 },    // IS31FL3195 RGB LED driver; see page 9
+#endif
     { 2, 0x77, ms5611 },        // MS5611: BARO_PROBE_EXT = 2
 };
 
@@ -107,6 +116,9 @@ void I2C::init()
     for (auto &i : i2c_devices) {
         i.device.init();
     }
+
+    // IS31FL3195 needs to know its own address:
+    is31fl3195.set_product_id(SIM_IS31FL3195_ADDR);
 
     // sanity check the i2c_devices structure to ensure we don't have
     // two devices at the same address on the same bus:
