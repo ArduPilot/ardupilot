@@ -285,26 +285,20 @@ bool AP_Filesystem::fgets(char *buf, uint8_t buflen, int fd)
     return true;
 }
 
+#if AP_FILESYSTEM_FORMAT_ENABLED
 // format filesystem
 bool AP_Filesystem::format(void)
 {
-#if AP_FILESYSTEM_FORMAT_ENABLED
     if (hal.util->get_soft_armed()) {
         return false;
     }
     return LOCAL_BACKEND.fs.format();
-#else
-    return false;
-#endif
 }
 AP_Filesystem_Backend::FormatStatus AP_Filesystem::get_format_status(void) const
 {
-#if AP_FILESYSTEM_FORMAT_ENABLED
     return LOCAL_BACKEND.fs.get_format_status();
-#else
-    return AP_Filesystem_Backend::FormatStatus::NOT_STARTED;
-#endif
 }
+#endif
 
 namespace AP
 {
