@@ -18,6 +18,10 @@
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
 #endif
 #include <AP_DDS/AP_DDS_Client.h>
+#if HAL_WITH_IO_MCU
+#include <AP_IOMCU/AP_IOMCU.h>
+extern AP_IOMCU iomcu;
+#endif
 
 #define SCHED_TASK(func, rate_hz, max_time_micros, prio) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros, prio)
 
@@ -784,6 +788,10 @@ void AP_Vehicle::reboot(bool hold_in_bootloader)
     // delay to give the ACK a chance to get out, the LEDs to flash,
     // the IO board safety to be forced on, the parameters to flush, ...
     hal.scheduler->delay(200);
+
+#if HAL_WITH_IO_MCU
+    iomcu.soft_reboot();
+#endif
 
     hal.scheduler->reboot(hold_in_bootloader);
 }
