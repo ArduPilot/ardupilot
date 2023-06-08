@@ -6,7 +6,7 @@ fixes since beta1.
 
 The full list of changes is:
 
- - added SpeedyBeeF405WING
+ - added SpeedyBeeF405WING, JSB100 and FoxeerH743
  - added LOG_DISARMED=3 support and LOG_DARM_RATEMAX
  - fixed error handling for being out of memory in EKF initialisation
  - fixed a bug in RC input handling on the IOMCU
@@ -24,7 +24,6 @@ The full list of changes is:
  - fixed parameter documentation for BRD_SAFETYOPTION
  - don't reject airspeed using EKF innovation if dead-reckoning
  - fixed USB pass-thru on 2nd USB endpoint
- - added missing labels on OSD params screens
 
 
 Release 4.4.0 beta1
