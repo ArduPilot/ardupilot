@@ -268,7 +268,7 @@ void Blimp::allocate_motors(void)
     AP_Param::load_object_from_eeprom(motors, Fins::var_info);
 
     // reload lines from the defaults file that may now be accessible
-    AP_Param::reload_defaults_file(true);
+    AP_Param::reload_defaults_file();
 
     // param count could have changed
     AP_Param::invalidate_count();
