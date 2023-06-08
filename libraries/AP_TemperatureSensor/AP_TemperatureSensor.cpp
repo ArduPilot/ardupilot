@@ -27,6 +27,7 @@
 #include "AP_TemperatureSensor_TSYS01.h"
 #include "AP_TemperatureSensor_MCP9600.h"
 #include "AP_TemperatureSensor_MAX31865.h"
+#include "AP_TemperatureSensor_HASAN.h"
 
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -116,47 +117,54 @@ void AP_TemperatureSensor::init()
         return;
     }
 
- // For Sub set the Default: Type to TSYS01 and I2C_ADDR of 0x77
-#if APM_BUILD_TYPE(APM_BUILD_ArduSub) && AP_TEMPERATURE_SENSOR_TSYS01_ENABLED
-    AP_Param::set_default_by_name("TEMP1_TYPE", (float)AP_TemperatureSensor_Params::Type::TSYS01);
-    AP_Param::set_default_by_name("TEMP1_ADDR", TSYS01_ADDR_CSB0);
-#endif
+    // For Sub set the Default: Type to TSYS01 and I2C_ADDR of 0x77
+    #if APM_BUILD_TYPE(APM_BUILD_ArduSub) //&& AP_TEMPERATURE_SENSOR_TSYS01_ENABLED
+        AP_Param::set_default_by_name("TEMP1_TYPE", (float)AP_TemperatureSensor_Params::Type::HASAN);
+        AP_Param::set_default_by_name("TEMP1_ADDR", HASAN_ADDR);
+    #endif
 
     // create each instance
     for (uint8_t instance = 0; instance < AP_TEMPERATURE_SENSOR_MAX_INSTANCES; instance++) {
         _state[instance].instance = instance;
 
         switch (get_type(instance)) {
-#if AP_TEMPERATURE_SENSOR_TSYS01_ENABLED
+    #if AP_TEMPERATURE_SENSOR_TSYS01_ENABLED
             case AP_TemperatureSensor_Params::Type::TSYS01:
                 drivers[instance] = new AP_TemperatureSensor_TSYS01(*this, _state[instance], _params[instance]);
                 break;
-#endif
-#if AP_TEMPERATURE_SENSOR_MCP9600_ENABLED
+    #endif
+    #if AP_TEMPERATURE_SENSOR_MCP9600_ENABLED
             case AP_TemperatureSensor_Params::Type::MCP9600:
                 drivers[instance] = new AP_TemperatureSensor_MCP9600(*this, _state[instance], _params[instance]);
                 break;
-#endif
-#if AP_TEMPERATURE_SENSOR_MAX31865_ENABLED
-            case AP_TemperatureSensor_Params::Type::MAX31865:
-                drivers[instance] = new AP_TemperatureSensor_MAX31865(*this, _state[instance], _params[instance]);
+    #endif
+    // #if AP_TEMPERATURE_SENSOR_MAX31865_ENABLED
+    //         case AP_TemperatureSensor_Params::Type::MAX31865:
+    //             drivers[instance] = new AP_TemperatureSensor_MAX31865(*this, _state[instance], _params[instance]);
+    //             break;
+    // #endif
+    #if AP_TEMPERATURE_SENSOR_HASAN_ENABLED
+            case AP_TemperatureSensor_Params::Type::HASAN:
+                drivers[instance] = new AP_TemperatureSensor_HASAN(*this, _state[instance], _params[instance]);
                 break;
-#endif
+    #endif
             case AP_TemperatureSensor_Params::Type::NONE:
             default:
                 break;
         }
 
-        // call init function for each backend
-        if (drivers[instance] != nullptr) {
-            drivers[instance]->init();
-            // _num_instances is actually the index for looping over instances
-            // the user may have TEMP_TYPE=0 and TEMP2_TYPE=7, in which case
-            // there will be a gap, but as we always check for drivers[instances] being nullptr
-            // this is safe
-            _num_instances = instance + 1;
-        }
+
+
+    // call init function for each backend
+    if (drivers[instance] != nullptr) {
+        drivers[instance]->init();
+        // _num_instances is actually the index for looping over instances
+        // the user may have TEMP_TYPE=0 and TEMP2_TYPE=7, in which case
+        // there will be a gap, but as we always check for drivers[instances] being nullptr
+        // this is safe
+        _num_instances = instance + 1;
     }
+}
     
     if (_num_instances > 0) {
         // param count could have changed
