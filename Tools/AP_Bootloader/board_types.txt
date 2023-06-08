@@ -216,6 +216,18 @@ AP_HW_rFCU                           1102
 AP_HW_rGNSS                          1103
 AP_HW_AEROFOX_AIRSPEED_DLVR          1104
 AP_HW_KakuteH7-Wing                  1105
+AP_HW_SpeedyBeeF405WING              1106
+AP_HW_PixSurveyA-IND                 1107
+AP_HW_SPRACINGH7RF                   1108
+AP_HW_AEROFOX_GNSS_F9P               1109
+AP_HW_JFB110                         1110
+AP_HW_SDMODELH7V1                    1111
+AP_HW_FlyingMoonH743                 1112
+AP_HW_YJUAV_A6                       1113
+AP_HW_YJUAV_A6Nano                   1114
+AP_HW_ACNS_CM4PILOT                  1115
+AP_HW_ACNS_F405AIO                   1116
+AP_HW_BLITZF7                        1117
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
