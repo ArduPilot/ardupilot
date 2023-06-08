@@ -598,8 +598,18 @@ void AP_Mount_Siyi::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_
     const float pitch_err_rad = (pitch_rad - current_angle_transformed.y);
     const float pitch_rate_scalar = constrain_float(100.0 * pitch_err_rad * AP_MOUNT_SIYI_PITCH_P / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
 
-    // convert yaw angle to body-frame the use simple P controller to convert yaw angle error to a target rate scalar (-100 to +100)
-    const float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().yaw) : yaw_rad;
+    // convert yaw angle to body-frame
+    float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().yaw) : yaw_rad;
+
+    // enforce body-frame yaw angle limits.  If beyond limits always use body-frame control
+    const float yaw_bf_min = radians(_params.yaw_angle_min);
+    const float yaw_bf_max = radians(_params.yaw_angle_max);
+    if (yaw_bf_rad < yaw_bf_min || yaw_bf_rad > yaw_bf_max) {
+        yaw_bf_rad = constrain_float(yaw_bf_rad, yaw_bf_min, yaw_bf_max);
+        yaw_is_ef = false;
+    }
+
+    // use simple P controller to convert yaw angle error to a target rate scalar (-100 to +100)
     const float yaw_err_rad = (yaw_bf_rad - current_angle_transformed.z);
     const float yaw_rate_scalar = constrain_float(100.0 * yaw_err_rad * AP_MOUNT_SIYI_YAW_P / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
 
