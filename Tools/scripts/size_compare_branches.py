@@ -129,10 +129,13 @@ class SizeCompareBranches(object):
 
         # remove boards based on --exclude-board-glob
         new_self_board = []
-        for exclude_glob in exclude_board_glob:
-            for board_name in self.board:
+        for board_name in self.board:
+            exclude = False
+            for exclude_glob in exclude_board_glob:
                 if fnmatch.fnmatch(board_name, exclude_glob):
-                    continue
+                    exclude = True
+                    break
+            if not exclude:
                 new_self_board.append(board_name)
         self.board = new_self_board
 
