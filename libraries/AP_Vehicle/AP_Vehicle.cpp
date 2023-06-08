@@ -313,6 +313,12 @@ void AP_Vehicle::setup()
     }
 #endif
 
+    // reload lines from the defaults file that may now be accessible
+    // (for example, the generator backend does a
+    // setup_object_defaults, which allows defaults-file-loading to
+    // match its results against allocated object pointers)
+    AP_Param::reload_defaults_file(true);
+
     // invalidate count in case an enable parameter changed during
     // initialisation
     AP_Param::invalidate_count();
