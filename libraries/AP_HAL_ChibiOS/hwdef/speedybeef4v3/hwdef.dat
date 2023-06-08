@@ -155,6 +155,7 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # minimal drivers to reduce flash usage
 include ../include/minimal.inc
+include ../include/save_some_flash.inc
 define AP_BATTERY_SYNTHETIC_CURRENT_ENABLED 0
 
 define DEFAULT_NTF_LED_TYPES 257
