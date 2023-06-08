@@ -29,11 +29,6 @@
 #include "AP_PiccoloCAN_Servo.h"
 #include <AP_EFI/AP_EFI_Currawong_ECU.h>
 
-
-#ifndef HAL_PICCOLO_CAN_ENABLE
-#define HAL_PICCOLO_CAN_ENABLE HAL_NUM_CAN_IFACES
-#endif
-
 #if HAL_PICCOLO_CAN_ENABLE
 
 #define PICCOLO_MSG_RATE_HZ_MIN 1
