@@ -167,7 +167,6 @@ Next, follow the associated section for your chosen transport, and finally you c
   ```
 - Run SITL (remember to kill any terminals running ardupilot SITL beforehand)
   ```bash
-  # assuming we are using /dev/pts/1 for Ardupilot SITL
   sim_vehicle.py -v ArduPlane -DG --console --enable-dds
   ```
 
