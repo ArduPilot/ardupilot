@@ -1,3 +1,30 @@
+Release 4.4.0 beta2
+-------------------
+
+This is the second beta of plane 4.4.0. This includes some important
+fixes since beta1.
+
+The full list of changes is:
+
+ - added SpeedyBeeF405WING, JSB100 and FoxeerH743
+ - added LOG_DISARMED=3 support and LOG_DARM_RATEMAX
+ - fixed error handling for being out of memory in EKF initialisation
+ - fixed a bug in RC input handling on the IOMCU
+ - fixed a bug handling ICE engine start after altitude reached
+ - adjust EKF3 accel bias process noise for greater robustness
+ - fixed an EKF3 bug in accel bias calculations
+ - cope with compassmot impacting GSF yaw numerical stability
+ - fixed an AUTOTUNE/QAUTOTUNE bug in yaw tuning
+ - support INA228 and INA238 I2C battery monitors
+ - always log rate PID slew limiters even when slew limit is zero
+ - added MambaF4050v2 for new IMU, bdshot and DMA on UART1
+ - update for FoxeerH743v1 GA release
+ - reduced IMU init speed on MatekH743
+ - move LED serial processing to its own thread
+ - fixed parameter documentation for BRD_SAFETYOPTION
+ - don't reject airspeed using EKF innovation if dead-reckoning
+ - fixed USB pass-thru on 2nd USB endpoint
+
 Release 4.3.7 31st May 2023
 ---------------------------
 
