@@ -136,6 +136,13 @@ private:
         ZR10
     } _hardware_model;
 
+    // gimbal mounting method/direction
+    enum class GimbalMountingDirection : uint8_t {
+        UNDEFINED = 0,
+        NORMAL = 1,
+        UPSIDE_DOWN = 2,
+    } _gimbal_mounting_dir;
+
     // reading incoming packets from gimbal and confirm they are of the correct format
     // results are held in the _parsed_msg structure
     void read_incoming_packets();

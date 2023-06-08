@@ -391,22 +391,21 @@ void AP_Mount_Siyi::process_packet()
         break;
 
     case SiyiCommandId::ACQUIRE_GIMBAL_CONFIG_INFO: {
-        if (_parsed_msg.data_bytes_received != 5 &&     // ZR10 firmware version reply is 5 bytes
-            _parsed_msg.data_bytes_received != 7) {     // A8 firmware version reply is 7 bytes
-#if AP_MOUNT_SIYI_DEBUG
-            unexpected_len = true;
-#endif
-            break;
+        // update gimbal's mounting direction
+        if (_parsed_msg.data_bytes_received > 5) {
+            _gimbal_mounting_dir = (_msg_buff[_msg_buff_data_start+5] == 2) ? GimbalMountingDirection::UPSIDE_DOWN : GimbalMountingDirection::NORMAL;
         }
+
         // update recording state and warn user of mismatch
         const bool recording = _msg_buff[_msg_buff_data_start+3] > 0;
         if (recording != _last_record_video) {
             gcs().send_text(MAV_SEVERITY_INFO, "Siyi: recording %s", recording ? "ON" : "OFF");
         }
         _last_record_video = recording;
-        debug("GimConf hdr:%u rec:%u foll:%u", (unsigned)_msg_buff[_msg_buff_data_start+1],
-                                               (unsigned)_msg_buff[_msg_buff_data_start+3],
-                                               (unsigned)_msg_buff[_msg_buff_data_start+4]);
+        debug("GimConf hdr:%u rec:%u foll:%u mntdir:%u", (unsigned)_msg_buff[_msg_buff_data_start+1],
+                                                         (unsigned)_msg_buff[_msg_buff_data_start+3],
+                                                         (unsigned)_msg_buff[_msg_buff_data_start+4],
+                                                         (unsigned)_msg_buff[_msg_buff_data_start+5]);
         break;
     }
 
@@ -588,13 +587,20 @@ void AP_Mount_Siyi::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_
         return;
     }
 
+    // if gimbal mounting direction is 2 i.e. upside down, then transform the angles
+    Vector3f current_angle_transformed = _current_angle_rad;
+    if (_gimbal_mounting_dir == GimbalMountingDirection::UPSIDE_DOWN) {
+        current_angle_transformed.y = -wrap_PI(_current_angle_rad.y + M_PI);
+        current_angle_transformed.z = -_current_angle_rad.z;
+    }
+
     // use simple P controller to convert pitch angle error (in radians) to a target rate scalar (-100 to +100)
-    const float pitch_err_rad = (pitch_rad - _current_angle_rad.y);
+    const float pitch_err_rad = (pitch_rad - current_angle_transformed.y);
     const float pitch_rate_scalar = constrain_float(100.0 * pitch_err_rad * AP_MOUNT_SIYI_PITCH_P / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
 
     // convert yaw angle to body-frame the use simple P controller to convert yaw angle error to a target rate scalar (-100 to +100)
     const float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().yaw) : yaw_rad;
-    const float yaw_err_rad = (yaw_bf_rad - _current_angle_rad.z);
+    const float yaw_err_rad = (yaw_bf_rad - current_angle_transformed.z);
     const float yaw_rate_scalar = constrain_float(100.0 * yaw_err_rad * AP_MOUNT_SIYI_YAW_P / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
 
     // rotate gimbal.  pitch_rate and yaw_rate are scalars in the range -100 ~ +100
