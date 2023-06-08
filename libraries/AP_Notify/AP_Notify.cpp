@@ -20,6 +20,7 @@
 #include "Buzzer.h"
 #include "Display.h"
 #include "ExternalLED.h"
+#include "IS31FL3195.h"
 #include "PCA9685LED_I2C.h"
 #include "NavigatorLED.h"
 #include "NeoPixel.h"
@@ -382,6 +383,18 @@ void AP_Notify::add_backends(void)
             case Notify_LED_LP5562_I2C_Internal:
                 FOREACH_I2C_INTERNAL(b) {
                     ADD_BACKEND(new LP5562(b, 0x30));
+                }
+                break;
+#endif
+#if AP_NOTIFY_IS31FL3195_ENABLED
+            case Notify_LED_IS31FL3195_I2C_External:
+                FOREACH_I2C_EXTERNAL(b) {
+                    ADD_BACKEND(new IS31FL3195(b, 0x54));
+                }
+                break;
+            case Notify_LED_IS31FL3195_I2C_Internal:
+                FOREACH_I2C_INTERNAL(b) {
+                    ADD_BACKEND(new IS31FL3195(b, 0x54));
                 }
                 break;
 #endif
