@@ -126,7 +126,7 @@ void Plane::init_ardupilot()
     quadplane.setup();
 #endif
 
-    AP_Param::reload_defaults_file(true);
+    AP_Param::reload_defaults_file();
     
     startup_ground();
 
