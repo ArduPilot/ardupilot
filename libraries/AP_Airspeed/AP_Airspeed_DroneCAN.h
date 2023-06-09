@@ -1,10 +1,6 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
-
-#ifndef AP_AIRSPEED_DRONECAN_ENABLED
-#define AP_AIRSPEED_DRONECAN_ENABLED HAL_ENABLE_DRONECAN_DRIVERS
-#endif
+#include "AP_Airspeed_config.h"
 
 #if AP_AIRSPEED_DRONECAN_ENABLED
 
