@@ -128,6 +128,13 @@ static void removeentry (Node *n) {
     setdeadvalue(wgkey(n));  /* unused and unmarked key; remove it */
 }
 
+/*
+  the GC code assumed pointer alignment is at least as large as
+  lua_Number. The memory allocator does align to at least 8 bytes, but
+  the compiler doesn't know this so need to suppress cast-align warnings
+ */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-align"
 
 /*
 ** tells whether a key or value can be cleared from a weak
@@ -526,6 +533,7 @@ static lu_mem traverseLclosure (global_State *g, LClosure *cl) {
   return sizeLclosure(cl->nupvalues);
 }
 
+#pragma GCC diagnostic pop
 
 static lu_mem traversethread (global_State *g, lua_State *th) {
   StkId o = th->stack;
