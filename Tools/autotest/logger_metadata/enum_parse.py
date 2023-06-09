@@ -74,6 +74,11 @@ class EnumDocco(object):
                      line)
         if m is not None:
             return (None, None, None)
+        # Match:  "            FRED  = FOO(17),  // optional comment"
+        m = re.match("\s*([A-Z0-9_a-z]+) *= *(\w+) *\\( *(\w+) *\\) *,?(?: *// *(.*) *)?$",
+                     line)
+        if m is not None:
+            return (None, None, None)
 
 
          # Match:  "            FRED  = 1U<<0,  // optional comment"
