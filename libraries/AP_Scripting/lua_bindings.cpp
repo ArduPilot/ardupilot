@@ -43,6 +43,13 @@ int lua_micros(lua_State *L) {
     return 1;
 }
 
+// seconds_since_boot
+int lua_seconds_since_boot(lua_State *L) {
+    binding_argcheck(L, 0);
+    lua_pushnumber(L, AP_HAL::micros64()*1.0e-6);
+    return 1;
+}
+
 int lua_mavlink_init(lua_State *L) {
     binding_argcheck(L, 2);
     WITH_SEMAPHORE(AP::scripting()->mavlink_data.sem);
