@@ -47,11 +47,6 @@ class Board:
         env.SRCROOT = srcpath('')
         self.configure_env(cfg, env)
 
-        # Setup scripting:
-        env.DEFINES.update(
-            LUA_32BITS = 1,
-        )
-
         env.AP_LIBRARIES += [
             'AP_Scripting',
             'AP_Scripting/lua/src',
