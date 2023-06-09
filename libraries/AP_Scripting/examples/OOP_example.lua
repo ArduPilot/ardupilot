@@ -34,7 +34,7 @@ local function PIFF(kFF,kP,kI,iMax)
 
    -- update the controller.
    function self.update(target, current)
-      local now = millis():tofloat() * 0.001
+      local now = seconds_since_boot()
       if not _last_t then
          _last_t = now
       end
@@ -90,7 +90,7 @@ function PIFF2.new(kFF,kP,kI,iMax)
 end
 
 function PIFF2.update(self, target, current)
-   local now = millis():tofloat() * 0.001
+   local now = seconds_since_boot()
    if not self.last_t then
       self.last_t = now
    end

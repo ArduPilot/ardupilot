@@ -186,7 +186,7 @@ end
 
 -- get time in seconds since boot
 function get_time()
-   return millis():tofloat() * 0.001
+   return seconds_since_boot()
 end
 
 local axis_names = { "RLL", "PIT", "YAW" }

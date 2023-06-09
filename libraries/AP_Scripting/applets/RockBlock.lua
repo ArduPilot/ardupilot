@@ -386,7 +386,7 @@ local function RockblockModem()
     local self = {
         is_transmitting = false,
         first_sucessful_mailbox_check = false,
-        time_last_tx = millis():tofloat() * 0.001,
+        time_last_tx = seconds_since_boot(),
         last_modem_status_check = 0,
         modem_detected = false,
         in_read_cycle = false,
@@ -601,9 +601,9 @@ local function RockblockModem()
     
     function self.checkmodem()
         --- send detect command to modem every 10 sec if not detected
-        if (millis():tofloat() * 0.001) - self.last_modem_status_check > 10 then
+       if seconds_since_boot() - self.last_modem_status_check > 10 then
             table.insert(_modem_to_send, _AT_query)
-            self.last_modem_status_check = millis():tofloat() * 0.001
+            self.last_modem_status_check = seconds_since_boot()
         end
     end
     
@@ -630,7 +630,7 @@ local function RockblockModem()
         table.insert(_modem_to_send, pkt)
         table.insert(_modem_to_send, highByte .. lowByte .. "\r")
 
-        self.time_last_tx = millis():tofloat() * 0.001
+        self.time_last_tx = seconds_since_boot()
         if RCK_ENABLE:get()  == 1 then
             table.insert(_modem_to_send, _AT_mailbox_check)
             self.is_transmitting = true
@@ -714,7 +714,7 @@ function HLSatcom()
     
     -- send HL2 packet every 30 sec, if not aleady in a mailbox check
     if rockblock.modem_detected and gcs:get_high_latency_status() and
-        (millis():tofloat() * 0.001) - rockblock.time_last_tx > RCK_PERIOD:get() and not rockblock.is_transmitting then
+       seconds_since_boot() - rockblock.time_last_tx > RCK_PERIOD:get() and not rockblock.is_transmitting then
 
         -- update HL2 packet
         hl2.timestamp = millis():tofloat()

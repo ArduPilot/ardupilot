@@ -27,7 +27,7 @@ end
 port:begin(19200)
 port:set_flow_control(0)
 
-local time_last_tx = millis():tofloat() * 0.001
+local time_last_tx = seconds_since_boot()
 
 -- enable high latency mode from here, instead of having to enable from GCS
 gcs:enable_high_latency_connections(true)
@@ -369,7 +369,7 @@ function HLSatcom()
     end
 
     -- send HL2 packet every 5 sec
-    if gcs:get_high_latency_status() and (millis():tofloat() * 0.001) -
+    if gcs:get_high_latency_status() and seconds_since_boot() -
         time_last_tx > 5 then
 
         -- update HL2 packet
@@ -454,7 +454,7 @@ function HLSatcom()
 
         for idx = 1, #newpkt do port:write(newpkt:byte(idx)) end
 
-        time_last_tx = millis():tofloat() * 0.001
+        time_last_tx = seconds_since_boot()
 
     end
 

@@ -280,7 +280,7 @@ local function PI_controller(kP,kI,iMax,min,max)
 
    -- update the controller.
    function self.update(target, current)
-      local now = millis():tofloat() * 0.001
+      local now = seconds_since_boot()
       if not _last_t then
          _last_t = now
       end
@@ -1386,7 +1386,7 @@ function rudder_over(_direction, _min_speed)
       local ahrs_quat = ahrs:get_quaternion()
       local ahrs_pos = ahrs:get_relative_position_NED_origin()
       local ahrs_gyro = ahrs:get_gyro()
-      local now = millis():tofloat() * 0.001
+      local now = seconds_since_boot()
       local pitch_threshold = 60.0
 
       if target_q == nil then
@@ -1815,7 +1815,7 @@ end
 path_var.count = 0
 
 function do_path()
-   local now = millis():tofloat() * 0.001
+   local now = seconds_since_boot()
    local ahrs_pos_NED = ahrs:get_relative_position_NED_origin()
    local ahrs_pos = ahrs:get_position()
    local ahrs_gyro = ahrs:get_gyro()

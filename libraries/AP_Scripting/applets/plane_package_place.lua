@@ -57,7 +57,7 @@ SRV_Channels:set_output_scaled(PKG_RELEASE_FUNC:get(), 0)
 
 -- get time in seconds
 function get_time()
-   return millis():tofloat() * 0.001
+   return seconds_since_boot()
 end
 
 -- reset state

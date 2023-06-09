@@ -29,7 +29,7 @@ function update()
    local chan = STEST_CHAN:get()
    local freq = STEST_FREQ:get()
    if chan > 0 and freq > 0 then
-      local t = 0.001 * millis():tofloat()
+      local t = seconds_since_boot()
       local pi = 3.1415
       local output = math.sin(pi * t * freq * 2.0) * STEST_PCT:get() * 0.01
       local pwm_min = STEST_PWM_MIN:get()

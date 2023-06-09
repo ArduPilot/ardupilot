@@ -11,7 +11,7 @@ pwm = { 1500, 1500, 2000,
 local angle = 0.0
 
 function update()
-   local t = 0.001 * millis():tofloat()
+   local t = seconds_since_boot()
    local angle = math.sin(t) * 0.5
    pwm[6] = math.floor(1500.0 + angle*500.0)
    for i = 1, 12 do
