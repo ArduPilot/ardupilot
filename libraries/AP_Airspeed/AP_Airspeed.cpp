@@ -16,6 +16,10 @@
  *   AP_Airspeed.cpp - airspeed (pitot) driver
  */
 
+#include "AP_Airspeed_config.h"
+
+#if AP_AIRSPEED_ENABLED
+
 #include "AP_Airspeed.h"
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -921,3 +925,5 @@ AP_Airspeed *airspeed()
 }
 
 };
+
+#endif  // AP_AIRSPEED_ENABLED
