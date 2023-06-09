@@ -112,15 +112,7 @@ static void dma_rx_end_cb(hal_uart_driver *uart)
     setup_rx_dma(uart);
 
 #if AP_HAL_SHARED_DMA_ENABLED
-#if IOMCU_SEND_TX_FROM_RX
-    // if we have the tx lock then setup the response
-    if (iomcu.tx_dma_handle->is_locked()) {
-        setup_tx_dma(uart);
-        chSysUnlockFromISR();
-        return;
-    }
-#endif
-    // otherwise indicate that a response needs to be sent
+    // indicate that a response needs to be sent
     uint32_t mask = chEvtGetAndClearEventsI(IOEVENT_TX_BEGIN);
     if (mask) {
         iomcu.reg_status.err_lock++;
@@ -217,20 +209,6 @@ static void uart_lld_serve_tx_end_irq(hal_uart_driver *uart, uint32_t flags) {
     _uart_tx1_isr_code(uart);
 }
 
-void AP_IOMCU_FW::dma_setup_transaction(hal_uart_driver *uart, eventmask_t mask)
-{
-    chSysLock();
-
-    mask = chEvtGetAndClearEventsI(IOEVENT_TX_BEGIN) | mask;
-
-    if (mask & IOEVENT_TX_BEGIN) {
-        reg_status.deferred_locks++;
-        setup_tx_dma(uart);
-    }
-
-    chSysUnlock();
-}
-
 void AP_IOMCU_FW::tx_dma_allocate(Shared_DMA *ctx)
 {
     hal_uart_driver *uart = &UARTD2;
@@ -290,7 +268,9 @@ void setup(void)
 
     uartStart(&UARTD2, &uart_cfg);
     uartStartReceive(&UARTD2, sizeof(iomcu.rx_io_packet), &iomcu.rx_io_packet);
-
+#if AP_HAL_SHARED_DMA_ENABLED
+    iomcu.tx_dma_handle->unlock();
+#endif
     // disable the pieces from the UART which will get enabled later
     chSysLock();
     UARTD2.usart->CR3 &= ~USART_CR3_DMAT;
@@ -378,12 +358,54 @@ static void stackCheck(uint16_t& mstack, uint16_t& pstack) {
 }
 #endif /* CH_DBG_ENABLE_STACK_CHECK == TRUE */
 
+/*
+ Update loop design.
+
+ Considerations - the F100 is quite slow and so processing time needs to be used effectively.
+ The CPU time slices required by dshot are generally faster than those required for other processing.
+ Dshot requires even updates at at least 1Khz and generally faster if SERVO_DSHOT_RATE is used.
+ The two most time sensitive regular functions are (1) PWM updates which run at loop rate triggered from the FMU
+ (and thus require efficient code page write) and (2) rcin updates which run at a fixed 1Khz cycle (a speed
+ which is assumed by the rcin protocol handlers) and require efficient code read. The FMU sends code page
+ requests which require a response within 10ms in order to prevent the IOMCU being considered to have failed,
+ however code page requests are always initiated by the FMU and so the IOMCU only ever needs to be ready
+ to read requests - writing responses are always in response to a request. Finally, PWM channels 3-4 share a DMA
+ channel with UART TX and so access needs to be mediated.
+
+ Design -
+ 1. requests are read using circular DMA. In other words the RX side of the UART is always ready. Once
+ a request has been processed DMA is immediately set up for a new request.
+ 2. responses are only ever sent in response to a request. As soon as a request is received the ISR only
+ ever requests that a response be sent - it never actually sends a response.
+ 3. The update loop waits for four different events:
+    3a - a request has been received and should be processed. This does not require the TX DMA lock.
+    3b - a response needs to be sent. This requires the TX DMA lock.
+    3c - a response has been sent. This allows the TX DMA lock to be released.
+    3d - an out of band PWM request, usually triggered by a failsafe needs to be processed.
+ Since requests are processed continuously it is possible for 3b and 3c to occur simultaneously. Since the
+ TX lock is already held to send the previous response, there is no need to do anything with the lock in order
+ to process the next response.
+
+ Profiling shows that sending a response takes very little time - 10s of microseconds - and so a response is sent
+ if required at the beginning of the update. This means that by the end of the update there is a very high chance
+ that the response will have already been sent and this is therefore checked. If the response has been sent the
+ lock is released. If for some reason the response has not gone out, as soon as it does an event will be posted
+ and the update loop will run again.
+
+ This design means that on average the update loop is idle with the TX DMA channel unlocked. This maximises the
+ time that dshot can run uninterrupted leading to very efficient and even output.
+
+ Finally the update loop has a timeout which forces updates to progress even in the absence of requests from the
+ FMU. Since responses will always be triggered in a timely fashion, regardlesss of the timeout, this can be
+ set relatively long.
+
+ If compiled without sharing, DMA - and thus dshot - is not used on channels 3-4, there are no locks and responses
+ are always setup in the request ISR handler.
+*/
 void AP_IOMCU_FW::update()
 {
 #if CH_CFG_ST_FREQUENCY == 1000000
-    // run the main loop at 2Khz, the allows dshot timing to be much more precise due to increased lock availability
-    // however the increased CPU load needs to be achievable
-    eventmask_t mask = chEvtWaitAnyTimeout(IOEVENT_PWM | IOEVENT_TX_END | IOEVENT_TX_BEGIN, TIME_US2I(500));
+    eventmask_t mask = chEvtWaitAnyTimeout(IOEVENT_PWM | IOEVENT_TX_END | IOEVENT_TX_BEGIN, TIME_US2I(1000));
 #else
     // we are not running any other threads, so we can use an
     // immediate timeout here for lowest latency
@@ -398,16 +420,20 @@ void AP_IOMCU_FW::update()
     }
 
 #if AP_HAL_SHARED_DMA_ENABLED
-    // make sure we are not about to clobber a tx already in progress
-    chSysLock();
-    if (UARTD2.usart->CR3 & USART_CR3_DMAT) {
-        chEvtSignal(thread_ctx, mask & ~IOEVENT_TX_END);
-        chSysUnlock();
-        return;
-    }
-    chSysUnlock();
+    // See discussion above
+    if ((mask & IOEVENT_TX_BEGIN) && !(mask & IOEVENT_TX_END)) {        // 3b - lock required to send response
+        tx_dma_handle->lock();
+    } else if (!(mask & IOEVENT_TX_BEGIN) && (mask & IOEVENT_TX_END)) { // 3c - response sent, lock can be released
+        tx_dma_handle->unlock();
+    }   // else 3b and 3c   - current lock required for new response
 
-    tx_dma_handle->unlock();
+    // send a response if required
+    if (mask & IOEVENT_TX_BEGIN) {
+        chSysLock();
+        reg_status.deferred_locks++;
+        setup_tx_dma(&UARTD2);
+        chSysUnlock();
+    }
 #endif
 
     // we get the timestamp once here, and avoid fetching it
@@ -482,15 +508,13 @@ void AP_IOMCU_FW::update()
         stackCheck(reg_status.freemstack, reg_status.freepstack);
 #endif
     }
-    // the main firmware sends a packet always expecting a reply. As soon as the reply comes it
-    // it will send another. Since most of the time the IOMCU has what it needs as soon as it 
-    // has received a request we can delay the response until the end of the tick to prevent 
-    // data being sent while we are not ready to receive it. The processing can be done without the
-    // tx lock being held, giving dshot a chance to run on shared channels
 #if AP_HAL_SHARED_DMA_ENABLED
-    tx_dma_handle->lock();
+    // check whether a response has now been sent
+    mask = chEvtGetAndClearEvents(IOEVENT_TX_END);
 
-    dma_setup_transaction(&UARTD2, mask);
+    if (mask) {
+        tx_dma_handle->unlock();
+    }
 #endif
     TOGGLE_PIN_DEBUG(107);
 }
