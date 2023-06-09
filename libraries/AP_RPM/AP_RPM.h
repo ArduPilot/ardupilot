@@ -118,7 +118,7 @@ private:
 
     void detect_instance(uint8_t instance);
 
-    void Log_RPM();
+    void Log_RPM() const;
 };
 
 namespace AP {
