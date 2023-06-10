@@ -156,6 +156,8 @@ class SizeCompareBranches(object):
             'Pixhawk1-1M-bdshot',
             'Pixhawk1-bdshot',
             'SITL_arm_linux_gnueabihf',
+            'SPRacingH7',  # see https://github.com/ArduPilot/ardupilot/pull/23947
+            'SPRacingH7RF',
         ])
 
         # blacklist all linux boards for bootloader build:
