@@ -48,4 +48,22 @@ bool AP_Camera_Mount::set_focus(FocusType focus_type, float focus_value)
     return false;
 }
 
+// send camera information message to GCS
+void AP_Camera_Mount::send_camera_information(mavlink_channel_t chan) const
+{
+    AP_Mount* mount = AP::mount();
+    if (mount != nullptr) {
+        return mount->send_camera_information(chan);
+    }
+}
+
+// send camera settings message to GCS
+void AP_Camera_Mount::send_camera_settings(mavlink_channel_t chan) const
+{
+    AP_Mount* mount = AP::mount();
+    if (mount != nullptr) {
+        return mount->send_camera_settings(chan);
+    }
+}
+
 #endif // AP_CAMERA_MOUNT_ENABLED

@@ -376,6 +376,32 @@ void AP_Camera::send_feedback(mavlink_channel_t chan)
     }
 }
 
+// send camera information message to GCS
+void AP_Camera::send_camera_information(mavlink_channel_t chan)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    // call each instance
+    for (uint8_t instance = 0; instance < AP_CAMERA_MAX_INSTANCES; instance++) {
+        if (_backends[instance] != nullptr) {
+            _backends[instance]->send_camera_information(chan);
+        }
+    }
+}
+
+// send camera settings message to GCS
+void AP_Camera::send_camera_settings(mavlink_channel_t chan)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    // call each instance
+    for (uint8_t instance = 0; instance < AP_CAMERA_MAX_INSTANCES; instance++) {
+        if (_backends[instance] != nullptr) {
+            _backends[instance]->send_camera_settings(chan);
+        }
+    }
+}
+
 /*
   update; triggers by distance moved and camera trigger
 */
