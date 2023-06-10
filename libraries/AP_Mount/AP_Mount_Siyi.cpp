@@ -311,9 +311,11 @@ void AP_Mount_Siyi::process_packet()
         _hardware_model = (_parsed_msg.data_bytes_received <= 8) ? HardwareModel::A8 : HardwareModel::ZR10;
 
         // consume and display camera firmware version
-        _cam_firmware_version = {_msg_buff[_msg_buff_data_start+2],     // firmware major version
-                                 _msg_buff[_msg_buff_data_start+1],     // firmware minor version
-                                 _msg_buff[_msg_buff_data_start+0]};    // firmware revision (aka patch)
+        _cam_firmware_version = {
+            _msg_buff[_msg_buff_data_start+2],      // firmware major version
+            _msg_buff[_msg_buff_data_start+1],      // firmware minor version
+            _msg_buff[_msg_buff_data_start+0]       // firmware revision (aka patch)
+        };
 
         debug("Mount: SiyiCam fw:%u.%u.%u",
               (unsigned)_cam_firmware_version.major,            // firmware major version
@@ -791,9 +793,9 @@ void AP_Mount_Siyi::send_camera_information(mavlink_channel_t chan) const
         return;
     }
 
-    const uint8_t vendor_name[32] = "Siyi";
-    uint8_t model_name[32] = "Unknown";
-    uint32_t fw_version = _cam_firmware_version.major | (_cam_firmware_version.minor << 8) | (_cam_firmware_version.patch << 16);
+    static const uint8_t vendor_name[32] = "Siyi";
+    static uint8_t model_name[32] = "Unknown";
+    const uint32_t fw_version = _cam_firmware_version.major | (_cam_firmware_version.minor << 8) | (_cam_firmware_version.patch << 16);
     const char cam_definition_uri[140] {};
 
     // focal length

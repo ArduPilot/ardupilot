@@ -85,6 +85,12 @@ public:
     // send camera feedback message to GCS
     void send_camera_feedback(mavlink_channel_t chan);
 
+    // send camera information message to GCS
+    virtual void send_camera_information(mavlink_channel_t chan) const;
+
+    // send camera settings message to GCS
+    virtual void send_camera_settings(mavlink_channel_t chan) const;
+
 #if AP_CAMERA_SCRIPTING_ENABLED
     // accessor to allow scripting backend to retrieve state
     // returns true on success and cam_state is filled in

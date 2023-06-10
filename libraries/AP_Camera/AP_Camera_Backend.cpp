@@ -141,6 +141,48 @@ void AP_Camera_Backend::send_camera_feedback(mavlink_channel_t chan)
         camera_feedback.feedback_trigger_logged_count); // completed image captures
 }
 
+// send camera information message to GCS
+void AP_Camera_Backend::send_camera_information(mavlink_channel_t chan) const
+{
+    // prepare vendor, model and cam definition strings
+    const uint8_t vendor_name[32] {};
+    const uint8_t model_name[32] {};
+    const char cam_definition_uri[140] {};
+    const uint32_t cap_flags = CAMERA_CAP_FLAGS_CAPTURE_IMAGE;
+    const float NaN = nanf("0x4152");
+
+    // send CAMERA_INFORMATION message
+    mavlink_msg_camera_information_send(
+        chan,
+        AP_HAL::millis(),       // time_boot_ms
+        vendor_name,            // vendor_name uint8_t[32]
+        model_name,             // model_name uint8_t[32]
+        0,                      // firmware version uint32_t
+        NaN,                    // focal_length float (mm)
+        NaN,                    // sensor_size_h float (mm)
+        NaN,                    // sensor_size_v float (mm)
+        0,                      // resolution_h uint16_t (pix)
+        0,                      // resolution_v uint16_t (pix)
+        0,                      // lens_id, uint8_t
+        cap_flags,              // flags uint32_t (CAMERA_CAP_FLAGS)
+        0,                      // cam_definition_version uint16_t
+        cam_definition_uri);    // cam_definition_uri char[140]
+}
+
+// send camera settings message to GCS
+void AP_Camera_Backend::send_camera_settings(mavlink_channel_t chan) const
+{
+    const float NaN = nanf("0x4152");
+
+    // send CAMERA_SETTINGS message
+    mavlink_msg_camera_settings_send(
+        chan,
+        AP_HAL::millis(),   // time_boot_ms
+        CAMERA_MODE_IMAGE,  // camera mode (0:image, 1:video, 2:image survey)
+        NaN,                // zoomLevel float, percentage from 0 to 100, NaN if unknown
+        NaN);               // focusLevel float, percentage from 0 to 100, NaN if unknown
+}
+
 // setup a callback for a feedback pin. When on PX4 with the right FMU
 // mode we can use the microsecond timer.
 void AP_Camera_Backend::setup_feedback_callback()
