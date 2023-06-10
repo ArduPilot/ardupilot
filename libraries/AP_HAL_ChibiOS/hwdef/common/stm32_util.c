@@ -76,7 +76,7 @@ void stm32_timer_set_channel_input(stm32_tim_t *tim, uint8_t channel, uint8_t in
     }
 }
 
-#if CH_DBG_ENABLE_STACK_CHECK == TRUE && !defined(HAL_BOOTLOADER_BUILD)
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE && CH_CFG_USE_REGISTRY == TRUE && !defined(HAL_BOOTLOADER_BUILD)
 void show_stack_usage(void)
 {
   thread_t *tp;

@@ -39,8 +39,6 @@
 #include <AP_HAL_ChibiOS/CANIface.h>
 #include <AP_InternalError/AP_InternalError.h>
 
-#if CH_CFG_USE_DYNAMIC == TRUE
-
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -84,8 +82,8 @@ Scheduler::Scheduler()
 
 void Scheduler::init()
 {
-    chBSemObjectInit(&_timer_semaphore, false);
-    chBSemObjectInit(&_io_semaphore, false);
+    chMtxObjectInit(&_timer_semaphore);
+    chMtxObjectInit(&_io_semaphore);
 
 #ifndef HAL_NO_MONITOR_THREAD
     // setup the monitor thread - this is used to detect software lockups
@@ -224,10 +222,10 @@ void Scheduler::delay(uint16_t ms)
 
 void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
 {
-    chBSemWait(&_timer_semaphore);
+    chMtxLock(&_timer_semaphore);
     for (uint8_t i = 0; i < _num_timer_procs; i++) {
         if (_timer_proc[i] == proc) {
-            chBSemSignal(&_timer_semaphore);
+            chMtxUnlock(&_timer_semaphore);
             return;
         }
     }
@@ -238,15 +236,15 @@ void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
     } else {
         DEV_PRINTF("Out of timer processes\n");
     }
-    chBSemSignal(&_timer_semaphore);
+    chMtxUnlock(&_timer_semaphore);
 }
 
 void Scheduler::register_io_process(AP_HAL::MemberProc proc)
 {
-    chBSemWait(&_io_semaphore);
+    chMtxLock(&_io_semaphore);
     for (uint8_t i = 0; i < _num_io_procs; i++) {
         if (_io_proc[i] == proc) {
-            chBSemSignal(&_io_semaphore);
+            chMtxUnlock(&_io_semaphore);
             return;
         }
     }
@@ -257,7 +255,7 @@ void Scheduler::register_io_process(AP_HAL::MemberProc proc)
     } else {
         DEV_PRINTF("Out of IO processes\n");
     }
-    chBSemSignal(&_io_semaphore);
+    chMtxUnlock(&_io_semaphore);
 }
 
 void Scheduler::register_timer_failsafe(AP_HAL::Proc failsafe, uint32_t period_us)
@@ -306,9 +304,9 @@ void Scheduler::_run_timers()
     _in_timer_proc = true;
 
     int num_procs = 0;
-    chBSemWait(&_timer_semaphore);
+    chMtxLock(&_timer_semaphore);
     num_procs = _num_timer_procs;
-    chBSemSignal(&_timer_semaphore);
+    chMtxUnlock(&_timer_semaphore);
     // now call the timer based drivers
     for (int i = 0; i < num_procs; i++) {
         if (_timer_proc[i]) {
@@ -329,6 +327,7 @@ void Scheduler::_run_timers()
     _in_timer_proc = false;
 }
 
+#ifndef HAL_NO_TIMER_THREAD
 void Scheduler::_timer_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
@@ -348,10 +347,11 @@ void Scheduler::_timer_thread(void *arg)
         }
     }
 }
+#endif
 
+#ifndef HAL_NO_RCOUT_THREAD
 void Scheduler::_rcout_thread(void *arg)
 {
-#ifndef HAL_NO_RCOUT_THREAD
     Scheduler *sched = (Scheduler *)arg;
     chRegSetThreadName("rcout");
 
@@ -362,8 +362,8 @@ void Scheduler::_rcout_thread(void *arg)
     // trampoline into the rcout thread
     ((RCOutput*)hal.rcout)->rcout_thread();
 #endif
-#endif
 }
+#endif
 
 /*
   return true if we are in a period of expected delay. This can be
@@ -479,6 +479,7 @@ void Scheduler::_monitor_thread(void *arg)
 }
 #endif // HAL_NO_MONITOR_THREAD
 
+#ifndef HAL_NO_RCIN_THREAD
 void Scheduler::_rcin_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
@@ -491,6 +492,7 @@ void Scheduler::_rcin_thread(void *arg)
         ((RCInput *)hal.rcin)->_timer_tick();
     }
 }
+#endif
 
 void Scheduler::_run_io(void)
 {
@@ -500,9 +502,9 @@ void Scheduler::_run_io(void)
     _in_io_proc = true;
 
     int num_procs = 0;
-    chBSemWait(&_io_semaphore);
+    chMtxLock(&_io_semaphore);
     num_procs = _num_io_procs;
-    chBSemSignal(&_io_semaphore);
+    chMtxUnlock(&_io_semaphore);
     // now call the IO based drivers
     for (int i = 0; i < num_procs; i++) {
         if (_io_proc[i]) {
@@ -679,6 +681,7 @@ uint8_t Scheduler::calculate_thread_priority(priority_base base, int8_t priority
     return thread_priority;
 }
 
+#if CH_CFG_USE_DYNAMIC == TRUE
 /*
   create a new thread
 */
@@ -704,6 +707,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
     }
     return true;
 }
+#endif
 
 /*
   inform the scheduler that we are calling an operation from the
@@ -767,7 +771,7 @@ void Scheduler::watchdog_pat(void)
     last_watchdog_pat_ms = AP_HAL::millis();
 }
 
-#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE && CH_CFG_USE_REGISTRY == TRUE
 /*
   check we have enough stack free on all threads and the ISR stack
  */
@@ -798,7 +802,5 @@ void Scheduler::check_stack_free(void)
     }
 }
 #endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
-
-#endif // CH_CFG_USE_DYNAMIC
 
 #endif  // HAL_SCHEDULER_ENABLED

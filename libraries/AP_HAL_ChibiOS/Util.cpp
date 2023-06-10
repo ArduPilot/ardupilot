@@ -415,12 +415,12 @@ bool Util::was_watchdog_reset() const
     return stm32_was_watchdog_reset();
 }
 
-#if CH_DBG_ENABLE_STACK_CHECK == TRUE && !defined(HAL_BOOTLOADER_BUILD)
 /*
   display stack usage as text buffer for @SYS/threads.txt
  */
 __RAMFUNC__ void Util::thread_info(ExpandingString &str)
 {
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE && CH_CFG_USE_REGISTRY == TRUE && !defined(HAL_BOOTLOADER_BUILD)
 #if HAL_ENABLE_THREAD_STATISTICS
     uint64_t cumulative_cycles = currcore->kernel_stats.m_crit_isr.cumulative;
     for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
@@ -481,8 +481,8 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
                     unsigned(stack_free(tp->wabase)), unsigned(total_stack));
 #endif
     }
-}
 #endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
+}
 
 #if CH_CFG_USE_SEMAPHORES
 // request information on dma contention
