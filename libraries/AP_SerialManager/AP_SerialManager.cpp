@@ -26,6 +26,30 @@
 #include <AP_MSP/AP_MSP.h>
 #include "AP_SerialManager.h"
 #include <GCS_MAVLink/GCS.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_RangeFinder/AP_RangeFinder_config.h>
+#include <AP_Volz_Protocol/AP_Volz_Protocol.h>
+#include <AP_RobotisServo/AP_RobotisServo.h>
+#include <AP_Proximity/AP_Proximity.h>
+#include <AP_Beacon/AP_Beacon.h>
+#include <AP_OpticalFlow/AP_OpticalFlow.h>
+#include <AP_NMEA_Output/AP_NMEA_Output.h>
+#include <AP_Camera/AP_RunCam.h>
+#include <AP_Hott_Telem/AP_Hott_Telem.h>
+#include <AP_RCProtocol/AP_RCProtocol_CRSF.h>
+#include <AP_Generator/AP_Generator.h>
+#include <AP_Winch/AP_Winch.h>
+#include <AP_Airspeed/AP_Airspeed.h>
+#include <AP_ADSB/AP_ADSB.h>
+#include <AP_VideoTX/AP_SmartAudio.h>
+#include <AP_VideoTX/AP_Tramp.h>
+#include <AP_FETtecOneWire/AP_FETtecOneWire.h>
+#include <AP_Torqeedo/AP_Torqeedo.h>
+#include <AP_AIS/AP_AIS.h>
+#include <AP_DDS/AP_DDS_Client.h>
+#include <AP_Devo_Telem/AP_Devo_Telem.h>
+#include <AP_Mount/AP_Mount.h>
+#include <AP_LTM_Telem/AP_LTM_Telem.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -430,23 +454,28 @@ void AP_SerialManager::init()
                                          AP_SERIALMANAGER_MAVLINK_BUFSIZE_RX,
                                          AP_SERIALMANAGER_MAVLINK_BUFSIZE_TX);
                     break;
+#if AP_FRSKY_D_TELEM_ENABLED                    
                 case SerialProtocol_FrSky_D:
                     // Note baudrate is hardcoded to 9600
                     state[i].baud.set_and_default(AP_SERIALMANAGER_FRSKY_D_BAUD/1000); // update baud param in case user looks at it
                     // begin is handled by AP_Frsky_telem library
                     break;
+#endif
+#if AP_FRSKY_TELEM_ENABLED
                 case SerialProtocol_FrSky_SPort:
                 case SerialProtocol_FrSky_SPort_Passthrough:
                     // Note baudrate is hardcoded to 57600
                     state[i].baud.set_and_default(AP_SERIALMANAGER_FRSKY_SPORT_BAUD/1000); // update baud param in case user looks at it
                     // begin is handled by AP_Frsky_telem library
                     break;
+#endif
                 case SerialProtocol_GPS:
                 case SerialProtocol_GPS2:
                     uart->begin(state[i].baudrate(),
                                          AP_SERIALMANAGER_GPS_BUFSIZE_RX,
                                          AP_SERIALMANAGER_GPS_BUFSIZE_TX);
                     break;
+#if HAL_MOUNT_ALEXMOS_ENABLED
                 case SerialProtocol_AlexMos:
                     // Note baudrate is hardcoded to 115200
                     state[i].baud.set_and_default(AP_SERIALMANAGER_ALEXMOS_BAUD / 1000);   // update baud param in case user looks at it
@@ -454,6 +483,8 @@ void AP_SerialManager::init()
                                          AP_SERIALMANAGER_ALEXMOS_BUFSIZE_RX,
                                          AP_SERIALMANAGER_ALEXMOS_BUFSIZE_TX);
                     break;
+#endif
+#if AP_MOUNT_BACKEND_DEFAULT_ENABLED
                 case SerialProtocol_Gimbal:
                     // Note baudrate is hardcoded to 115200
                     state[i].baud.set_and_default(AP_SERIALMANAGER_GIMBAL_BAUD / 1000);     // update baud param in case user looks at it
@@ -461,18 +492,24 @@ void AP_SerialManager::init()
                                          AP_SERIALMANAGER_GIMBAL_BUFSIZE_RX,
                                          AP_SERIALMANAGER_GIMBAL_BUFSIZE_TX);
                     break;
+#endif
+#if AP_RANGEFINDER_ENABLED
                 case SerialProtocol_Aerotenna_USD1:
                     state[i].protocol.set_and_save(SerialProtocol_Rangefinder);
                     break;
+#endif
+#if AP_VOLZ_ENABLED
                 case SerialProtocol_Volz:
-                                    // Note baudrate is hardcoded to 115200
-                                    state[i].baud.set_and_default(AP_SERIALMANAGER_VOLZ_BAUD);   // update baud param in case user looks at it
-                                    uart->begin(state[i].baudrate(),
-                                    		AP_SERIALMANAGER_VOLZ_BUFSIZE_RX,
-											AP_SERIALMANAGER_VOLZ_BUFSIZE_TX);
-                                    uart->set_unbuffered_writes(true);
-                                    uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-                                    break;
+                    // Note baudrate is hardcoded to 115200
+                    state[i].baud.set_and_default(AP_SERIALMANAGER_VOLZ_BAUD);   // update baud param in case user looks at it
+                    uart->begin(state[i].baudrate(),
+                            AP_SERIALMANAGER_VOLZ_BUFSIZE_RX,
+                            AP_SERIALMANAGER_VOLZ_BUFSIZE_TX);
+                    uart->set_unbuffered_writes(true);
+                    uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+                    break;
+#endif
+#if AP_RCPROTOCOL_SBUS_ENABLED
                 case SerialProtocol_Sbus1:
                     state[i].baud.set_and_default(AP_SERIALMANAGER_SBUS1_BAUD / 1000);   // update baud param in case user looks at it
                     uart->begin(state[i].baudrate(),
@@ -483,14 +520,17 @@ void AP_SerialManager::init()
                     uart->set_unbuffered_writes(true);
                     uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                     break;
-
+#endif
+#if HAL_WITH_ESC_TELEM
                 case SerialProtocol_ESCTelemetry:
                     // ESC telemetry protocol from BLHeli32 ESCs. Note that baudrate is hardcoded to 115200
+                    check_no_duplicates_error(SerialProtocol_ESCTelemetry, i);
                     state[i].baud.set_and_default(115200 / 1000);
                     uart->begin(state[i].baudrate(), 30, 30);
                     uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                     break;
-
+#endif
+#if AP_ROBOTISSERVO_ENABLED
                 case SerialProtocol_Robotis:
                     uart->begin(state[i].baudrate(),
                                          AP_SERIALMANAGER_ROBOTIS_BUFSIZE_RX,
@@ -498,22 +538,22 @@ void AP_SerialManager::init()
                     uart->set_unbuffered_writes(true);
                     uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                     break;
-
+#endif
+#if AP_CAN_SLCAN_ENABLED
                 case SerialProtocol_SLCAN:
                     uart->begin(state[i].baudrate(),
                                          AP_SERIALMANAGER_SLCAN_BUFSIZE_RX,
                                          AP_SERIALMANAGER_SLCAN_BUFSIZE_TX);
                     break;
-
+#endif
 #if AP_RCPROTOCOL_ENABLED
                 case SerialProtocol_RCIN:
                     if (!AP::RC().has_uart()) {
                         AP::RC().add_uart(uart);
                     }
-
                     break;
 #endif
-                    
+#if HAL_EFI_ENABLED
                 case SerialProtocol_EFI:
                     state[i].baud.set_default(AP_SERIALMANAGER_EFI_MS_BAUD);
                     uart->begin(state[i].baudrate(),
@@ -521,10 +561,8 @@ void AP_SerialManager::init()
                                          AP_SERIALMANAGER_EFI_MS_BUFSIZE_TX);
                     uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                     break;
-
-                case SerialProtocol_Generator:
-                    break;
-#if HAL_MSP_ENABLED                    
+#endif
+#if HAL_MSP_ENABLED
                 case SerialProtocol_MSP:
                 case SerialProtocol_DJI_FPV:
                 case SerialProtocol_MSP_DisplayPort:
@@ -535,7 +573,7 @@ void AP_SerialManager::init()
                                          AP_SERIALMANAGER_MSP_BUFSIZE_TX);
                     uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                     // Note init is handled by AP_MSP
-                    break;
+                   break;
 #endif
                 default:
                     uart->begin(state[i].baudrate());
@@ -544,6 +582,223 @@ void AP_SerialManager::init()
     }
 }
 
+// inform the user about errors in their setup
+void AP_SerialManager::check_configuration() const
+{
+    for (uint8_t i=1; i<SERIALMANAGER_NUM_PORTS; i++) {
+        auto *uart = hal.serial(i);
+
+        if (uart != nullptr) {
+            switch (state[i].protocol) {
+#if !AP_FRSKY_D_TELEM_ENABLED
+                case SerialProtocol_FrSky_D:
+                    protocol_not_compiled_in_error("FrSky_D", i);
+                    break;
+#endif
+#if !AP_FRSKY_TELEM_ENABLED
+                case SerialProtocol_FrSky_SPort:
+                case SerialProtocol_FrSky_SPort_Passthrough:
+                    protocol_not_compiled_in_error("FrSky_SPort", i);
+                    break;
+#endif
+#if !HAL_MOUNT_ALEXMOS_ENABLED
+                case SerialProtocol_AlexMos:
+                    protocol_not_compiled_in_error("AlexMos", i);
+                    break;
+#endif
+#if !AP_MOUNT_BACKEND_DEFAULT_ENABLED
+                case SerialProtocol_Gimbal:
+                    protocol_not_compiled_in_error("Gimbal", i);
+                   break;
+#endif
+#if !AP_RANGEFINDER_ENABLED
+                case SerialProtocol_Aerotenna_USD1:
+                    protocol_not_compiled_in_error("Rangefinder", i);
+                   break;
+#endif
+#if !AP_VOLZ_ENABLED
+                case SerialProtocol_Volz:
+                    protocol_not_compiled_in_error("Volz", i);
+                    break;
+#endif
+#if !AP_RCPROTOCOL_SBUS_ENABLED
+                case SerialProtocol_Sbus1:
+                    protocol_not_compiled_in_error("Sbus1", i);
+                    break;
+#endif
+#if !HAL_WITH_ESC_TELEM
+                case SerialProtocol_ESCTelemetry:
+                    protocol_not_compiled_in_error("ESCTelemetry", i);
+                    break;
+#endif
+#if !AP_ROBOTISSERVO_ENABLED
+                case SerialProtocol_Robotis:
+                    protocol_not_compiled_in_error("Robotis", i);
+                    break;
+#endif
+#if !AP_CAN_SLCAN_ENABLED
+                case SerialProtocol_SLCAN:
+                    protocol_not_compiled_in_error("SLCAN", i);
+                    break;
+#endif
+                case SerialProtocol_RCIN:
+#if AP_RCPROTOCOL_ENABLED
+                    check_no_duplicates_error(SerialProtocol_RCIN, i);
+#else
+                    protocol_not_compiled_in_error("RCIN", i);
+#endif
+                    break;
+
+#if !HAL_EFI_ENABLED
+                case SerialProtocol_EFI:
+                    protocol_not_compiled_in_error("EFI", i);
+                    break;
+#endif
+#if !HAL_MSP_ENABLED
+                case SerialProtocol_MSP:
+                case SerialProtocol_DJI_FPV:
+                case SerialProtocol_MSP_DisplayPort:
+                    protocol_not_compiled_in_error("MSP", i);
+                   break;
+#endif
+#if !AP_RANGEFINDER_ENABLED
+                case SerialProtocol_Rangefinder:
+                    protocol_not_compiled_in_error("Rangefinder", i);
+                    break;
+#endif
+#if !HAL_PROXIMITY_ENABLED
+                case SerialProtocol_Lidar360:
+                    protocol_not_compiled_in_error("Lidar360", i);
+                    break;
+#endif
+#if !AP_BEACON_ENABLED
+                case SerialProtocol_Beacon:
+                    protocol_not_compiled_in_error("Beacon", i);
+                    break;
+#endif
+#if !AP_DEVO_TELEM_ENABLED
+                case SerialProtocol_Devo_Telem:
+                    protocol_not_compiled_in_error("Devo_Telem", i);
+                    break;
+#endif
+#if !AP_OPTICALFLOW_ENABLED
+                case SerialProtocol_OpticalFlow:
+                    protocol_not_compiled_in_error("OpticalFlow", i);
+                    break;
+#endif
+#if !HAL_NMEA_OUTPUT_ENABLED
+                case SerialProtocol_NMEAOutput:
+                    protocol_not_compiled_in_error("NMEAOutput", i);
+                    break;
+#endif
+#if !AP_LTM_TELEM_ENABLED
+                case SerialProtocol_LTM_Telem:
+                    protocol_not_compiled_in_error("LTM_Telem", i);
+                    break;
+#endif
+                case SerialProtocol_RunCam:
+#if HAL_RUNCAM_ENABLED
+                    check_no_duplicates_error(SerialProtocol_RunCam, i);
+#else
+                    protocol_not_compiled_in_error("RunCam", i);
+#endif
+                    break;
+#if !HAL_HOTT_TELEM_ENABLED
+                case SerialProtocol_Hott:
+                    protocol_not_compiled_in_error("Hott", i);
+                    break;
+#endif
+#if !AP_SCRIPTING_ENABLED
+                case SerialProtocol_Scripting:
+                    protocol_not_compiled_in_error("Scripting", i);
+                    break;
+#endif
+                case SerialProtocol_CRSF:
+#if AP_RCPROTOCOL_CRSF_ENABLED
+                    check_no_duplicates_error(SerialProtocol_CRSF, i);
+#else
+                    protocol_not_compiled_in_error("CRSF", i);
+#endif
+                    break;
+#if !HAL_GENERATOR_ENABLED
+                case SerialProtocol_Generator:
+                    protocol_not_compiled_in_error("Generator", i);
+                    break;
+#endif
+#if !AP_WINCH_ENABLED
+                case SerialProtocol_Winch:
+                    protocol_not_compiled_in_error("Winch", i);
+                    break;
+#endif
+#if !AP_AIRSPEED_ENABLED
+                case SerialProtocol_AirSpeed:
+                    protocol_not_compiled_in_error("AirSpeed", i);
+                    break;
+#endif
+#if !HAL_ADSB_ENABLED
+                case SerialProtocol_ADSB:
+                    protocol_not_compiled_in_error("ADSB", i);
+                    break;
+#endif
+                case SerialProtocol_SmartAudio:
+#if AP_SMARTAUDIO_ENABLED
+                    check_no_duplicates_error(SerialProtocol_SmartAudio, i);
+#else
+                    protocol_not_compiled_in_error("SmartAudio", i);
+#endif
+                    break;
+#if !AP_FETTEC_ONEWIRE_ENABLED
+                case SerialProtocol_FETtecOneWire:
+                    protocol_not_compiled_in_error("FETtecOneWire", i);
+                    break;
+#endif
+#if !HAL_TORQEEDO_ENABLED
+                case SerialProtocol_Torqeedo:
+                    protocol_not_compiled_in_error("Torqeedo", i);
+                    break;
+#endif
+#if !AP_AIS_ENABLED
+                case SerialProtocol_AIS:
+                    protocol_not_compiled_in_error("AIS", i);
+                    break;
+#endif
+                case SerialProtocol_CoDevESC:
+                    protocol_not_compiled_in_error("CoDevESC", i);
+                    break;
+                case SerialProtocol_Tramp:
+#if AP_TRAMP_ENABLED
+                    check_no_duplicates_error(SerialProtocol_Tramp, i);
+#else
+                    protocol_not_compiled_in_error("Tramp", i);
+#endif
+                    break;
+#if !AP_DDS_ENABLED
+                case SerialProtocol_DDS_XRCE:
+                    protocol_not_compiled_in_error("DDS_XRCE", i);
+                    break;
+#endif
+                default:
+                    break;
+            }
+        }
+    }
+}
+
+void AP_SerialManager::protocol_not_compiled_in_error(const char* tag, uint8_t serial) const
+{
+    GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "SerialProtocol_%s required on SERIAL%u not compiled into firmware", tag, serial);
+}
+
+void AP_SerialManager::check_no_duplicates_error(uint8_t protocol, uint8_t serial) const
+{
+    for (uint8_t i = serial+1; i < SERIALMANAGER_NUM_PORTS; i++) {
+        auto *uart = hal.serial(i);
+
+        if (uart != nullptr && protocol == state[i].protocol) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Duplicate protocol on SERIAL%u and SERIAL%u", i, serial);
+        }
+    }
+}
 
 const AP_SerialManager::UARTState *AP_SerialManager::find_protocol_instance(enum SerialProtocol protocol, uint8_t instance) const
 {

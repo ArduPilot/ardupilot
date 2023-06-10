@@ -184,6 +184,9 @@ public:
     // init - initialise serial ports
     void init();
 
+    // inform the user about errors in their setup
+    void check_configuration() const;
+
     // find_serial - searches available serial ports that allows the given protocol
     //  instance should be zero if searching for the first instance, 1 for the second, etc
     //  returns uart on success, nullptr if a serial port cannot be found
@@ -264,6 +267,8 @@ private:
 
     // protocol_match - returns true if the protocols match
     bool protocol_match(enum SerialProtocol protocol1, enum SerialProtocol protocol2) const;
+    void protocol_not_compiled_in_error(const char* tag, uint8_t serial) const;
+    void check_no_duplicates_error(uint8_t protocol, uint8_t serial) const;
 
     // setup any special options
     void set_options(uint16_t i);
