@@ -82,7 +82,7 @@ void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool
     // failsafed is sorted out in AP_IOMCU.cpp
     in_failsafe = false;
 #else
-    if (rc().ignore_rc_failsafe()) {
+    if (rc().option_is_enabled(RC_Channels::Option::IGNORE_FAILSAFE)) {
         in_failsafe = false;
     }
 #endif
@@ -179,7 +179,7 @@ void AP_RCProtocol_Backend::configure_vtx(uint8_t band, uint8_t channel, uint8_t
 void AP_RCProtocol_Backend::log_data(AP_RCProtocol::rcprotocol_t prot, uint32_t timestamp, const uint8_t *data, uint8_t len) const
 {
 #if HAL_LOGGING_ENABLED
-    if (rc().log_raw_data()) {
+    if (rc().option_is_enabled(RC_Channels::Option::LOG_RAW_DATA)) {
         uint32_t u32[10] {};
         if (len > sizeof(u32)) {
             len = sizeof(u32);
