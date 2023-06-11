@@ -93,7 +93,7 @@ AP_RCProtocol::~AP_RCProtocol()
 bool AP_RCProtocol::should_search(uint32_t now_ms) const
 {
 #if AP_RC_CHANNEL_ENABLED && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
-    if (_detected_protocol != AP_RCProtocol::NONE && !rc().multiple_receiver_support()) {
+    if (_detected_protocol != AP_RCProtocol::NONE && !rc().option_is_enabled(RC_Channels::Option::MULTI_RECEIVER_SUPPORT)) {
         return false;
     }
 #else
