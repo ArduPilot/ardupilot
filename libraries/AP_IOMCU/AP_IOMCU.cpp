@@ -326,7 +326,7 @@ void AP_IOMCU::read_rc_input()
     if (!read_registers(PAGE_RAW_RCIN, 0, sizeof(rc_input)/2, r)) {
         return;
     }
-    if (rc_input.flags_failsafe && rc().ignore_rc_failsafe()) {
+    if (rc_input.flags_failsafe && rc().option_is_enabled(RC_Channels::Option::IGNORE_FAILSAFE)) {
         rc_input.flags_failsafe = false;
     }
     if (rc_input.flags_rc_ok && !rc_input.flags_failsafe) {
