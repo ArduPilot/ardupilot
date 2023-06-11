@@ -700,7 +700,7 @@ bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
     }
     const RCMapper * rcmap = AP::rcmap();
     if (rcmap != nullptr) {
-        if (!rc().arming_skip_checks_rpy()) {
+        if (!rc().option_is_enabled(RC_Channels::Option::ARMING_SKIP_CHECK_RPY)) {
             const char *names[3] = {"Roll", "Pitch", "Yaw"};
             const uint8_t channels[3] = {rcmap->roll(), rcmap->pitch(), rcmap->yaw()};
             for (uint8_t i = 0; i < ARRAY_SIZE(channels); i++) {
