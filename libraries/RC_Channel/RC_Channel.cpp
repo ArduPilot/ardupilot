@@ -285,9 +285,9 @@ bool RC_Channel::get_reverse(void) const
 // read input from hal.rcin or overrides
 bool RC_Channel::update(void)
 {
-    if (has_override() && !rc().ignore_overrides()) {
+    if (has_override() && !rc().option_is_enabled(RC_Channels::Option::IGNORE_OVERRIDES)) {
         radio_in = override_value;
-    } else if (rc().has_had_rc_receiver() && !rc().ignore_receiver()) {
+    } else if (rc().has_had_rc_receiver() && !rc().option_is_enabled(RC_Channels::Option::IGNORE_RECEIVER)) {
         radio_in = hal.rcin->read(ch_in);
     } else {
         return false;
@@ -1656,7 +1656,7 @@ bool RC_Channel::read_3pos_switch(RC_Channel::AuxSwitchPos &ret) const
     }
 
     // switch is reversed if 'reversed' option set on channel and switches reverse is allowed by RC_OPTIONS
-    bool switch_reversed = reversed && rc().switch_reverse_allowed();
+    bool switch_reversed = reversed && rc().option_is_enabled(RC_Channels::Option::ALLOW_SWITCH_REV);
 
     if (in < AUX_SWITCH_PWM_TRIGGER_LOW) {
         ret = switch_reversed ? AuxSwitchPos::HIGH : AuxSwitchPos::LOW;
