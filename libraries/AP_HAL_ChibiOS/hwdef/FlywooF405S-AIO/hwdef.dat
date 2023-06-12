@@ -149,3 +149,6 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 3
 define HAL_FRAME_TYPE_DEFAULT 12
 
 define DEFAULT_NTF_LED_TYPES 257
+
+# save some flash space
+include ../include/no_bootloader_DFU.inc
