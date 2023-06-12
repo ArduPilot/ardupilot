@@ -96,6 +96,9 @@ public:
     // unload data from load_file()
     virtual void unload_file(FileData *fd);
 
+    // if non-zero size at which syncs should be peformed, only used by flash fs
+    virtual uint32_t get_sync_size() const { return 0; }
+
 protected:
     // return true if file operations are allowed
     bool file_op_allowed(void) const;
