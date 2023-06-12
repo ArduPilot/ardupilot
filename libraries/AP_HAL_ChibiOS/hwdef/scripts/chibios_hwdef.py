@@ -762,6 +762,13 @@ class ChibiOSHWDef(object):
             f.write('#define HAL_CANFD_SUPPORTED %d\n' % canfd_supported)
             self.env_vars['HAL_CANFD_SUPPORTED'] = canfd_supported
 
+    def has_dataflash_spi(self):
+        '''check for dataflash connected to spi bus'''
+        for dev in self.spidev:
+            if(dev[0] == 'dataflash'):
+                return True
+        return False
+
     def has_sdcard_spi(self):
         '''check for sdcard connected to spi bus'''
         for dev in self.spidev:
@@ -943,13 +950,15 @@ class ChibiOSHWDef(object):
             f.write('#define HAL_STDOUT_BAUDRATE %u\n\n' % self.get_config('STDOUT_BAUDRATE', type=int))
         if self.have_type_prefix('SDIO'):
             f.write('// SDIO available, enable POSIX filesystem support\n')
-            f.write('#define USE_POSIX\n\n')
+            f.write('#define USE_POSIX\n')
+            f.write('#define USE_POSIX_FATFS\n\n')
             f.write('#define HAL_USE_SDC TRUE\n')
             self.build_flags.append('USE_FATFS=yes')
             self.env_vars['WITH_FATFS'] = "1"
         elif self.have_type_prefix('SDMMC2'):
             f.write('// SDMMC2 available, enable POSIX filesystem support\n')
-            f.write('#define USE_POSIX\n\n')
+            f.write('#define USE_POSIX\n')
+            f.write('#define USE_POSIX_FATFS\n\n')
             f.write('#define HAL_USE_SDC TRUE\n')
             f.write('#define STM32_SDC_USE_SDMMC2 TRUE\n')
             f.write('#define HAL_USE_SDMMC 1\n')
@@ -957,7 +966,8 @@ class ChibiOSHWDef(object):
             self.env_vars['WITH_FATFS'] = "1"
         elif self.have_type_prefix('SDMMC'):
             f.write('// SDMMC available, enable POSIX filesystem support\n')
-            f.write('#define USE_POSIX\n\n')
+            f.write('#define USE_POSIX\n')
+            f.write('#define USE_POSIX_FATFS\n\n')
             f.write('#define HAL_USE_SDC TRUE\n')
             f.write('#define STM32_SDC_USE_SDMMC1 TRUE\n')
             f.write('#define HAL_USE_SDMMC 1\n')
@@ -965,12 +975,21 @@ class ChibiOSHWDef(object):
             self.env_vars['WITH_FATFS'] = "1"
         elif self.has_sdcard_spi():
             f.write('// MMC via SPI available, enable POSIX filesystem support\n')
-            f.write('#define USE_POSIX\n\n')
+            f.write('#define USE_POSIX\n')
+            f.write('#define USE_POSIX_FATFS\n\n')
             f.write('#define HAL_USE_MMC_SPI TRUE\n')
             f.write('#define HAL_USE_SDC FALSE\n')
             f.write('#define HAL_SDCARD_SPI_HOOK TRUE\n')
             self.build_flags.append('USE_FATFS=yes')
             self.env_vars['WITH_FATFS'] = "1"
+        elif self.has_dataflash_spi():
+            f.write('// Dataflash memory via SPI available, enable POSIX filesystem support\n')
+            f.write('#define USE_POSIX\n')
+            f.write('#define USE_POSIX_LITTLEFS\n\n')
+            f.write('#define HAL_USE_SDC FALSE\n')
+            self.build_flags.append('USE_FATFS=no')
+            self.env_vars['WITH_LITTLEFS'] = "1"
+            self.env_vars['DISABLE_SCRIPTING'] = True
         else:
             f.write('#define HAL_USE_SDC FALSE\n')
             self.build_flags.append('USE_FATFS=no')
