@@ -27,6 +27,7 @@
 #define PROBE_IMU_SPI(driver, devname, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,hal.spi->get_device(devname),##args))
 #define PROBE_MAG_IMU(driver, imudev, imu_instance, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe_ ## imudev(imu_instance,##args))
 #define PROBE_BARO_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_Baro_ ## driver::probe(*this,std::move(GET_I2C_DEVICE(bus, addr)),##args))
+#define PROBE_MAG_I2C(driver, bus, addr, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe(GET_I2C_DEVICE(bus, addr),##args))
 
 //Protocols
 //list of protocols/enum:	ardupilot/libraries/AP_SerialManager/AP_SerialManager.h
@@ -64,9 +65,13 @@
 #define HAL_SERIAL9_BAUD				(115200/1000)*/
 
 //Inertial sensors
+#define AP_COMPASS_AK8963_ENABLED			true
+#define AP_COMPASS_IST8310_ENABLED			true
 #define HAL_INS_DEFAULT                              	HAL_INS_MPU9250_SPI
 #define HAL_INS_PROBE_LIST 			     	PROBE_IMU_SPI(Invensense, HAL_INS_MPU9250_NAME, ROTATION_NONE)
-#define HAL_MAG_PROBE_LIST 			     	PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_NONE)
+#define HAL_MAG_PROBE1					PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_NONE)
+#define HAL_MAG_PROBE2					PROBE_MAG_I2C(IST8310, 0, 0x0e, true, ROTATION_NONE)
+#define HAL_MAG_PROBE_LIST				HAL_MAG_PROBE1; HAL_MAG_PROBE2;
 #define HAL_INS_MPU9250_NAME 				"mpu9250"
 
 //Baro
@@ -84,7 +89,7 @@
 #define HAL_ESP32_SPI_DEVICES				{.name="mpu9250", .bus=0, .device=0, .cs=GPIO_NUM_5, .mode = 0, .lspeed=2*MHZ, .hspeed=2*MHZ}
 
 //RCIN
-#define HAL_ESP32_RCIN					GPIO_NUM_36
+#define HAL_ESP32_RCIN					GPIO_NUM_4
 
 //RCOUT
 #define HAL_ESP32_RCOUT					{ GPIO_NUM_25, GPIO_NUM_27, GPIO_NUM_33, GPIO_NUM_32 }
