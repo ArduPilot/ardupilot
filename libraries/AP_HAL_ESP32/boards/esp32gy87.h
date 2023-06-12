@@ -14,7 +14,7 @@
  */
 
 /*
- * This board is tomte76's version of esp32empty.h to work with an aliexpress WROOM32 devkit clone, mpu9255 spi, bmp280 i2c, micro sd on spi2 and NEO M8 clone on UART.
+ * This board is tomte76's minial setup of a WROOM32 Devkit and a low cost GY87 10DOF i2c IMU.
  */
 #pragma once
 
@@ -24,10 +24,20 @@
 #define TRUE						1
 #define FALSE						0
 
+// make sensor selection clearer
+#define PROBE_IMU_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,GET_I2C_DEVICE(bus, addr),##args))
 #define PROBE_IMU_SPI(driver, devname, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,hal.spi->get_device(devname),##args))
-#define PROBE_MAG_IMU(driver, imudev, imu_instance, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe_ ## imudev(imu_instance,##args))
+#define PROBE_IMU_SPI2(driver, devname1, devname2, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,hal.spi->get_device(devname1),hal.spi->get_device(devname2),##args))
+
 #define PROBE_BARO_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_Baro_ ## driver::probe(*this,std::move(GET_I2C_DEVICE(bus, addr)),##args))
+#define PROBE_BARO_SPI(driver, devname, args ...) ADD_BACKEND(AP_Baro_ ## driver::probe(*this,std::move(hal.spi->get_device(devname)),##args))
+
 #define PROBE_MAG_I2C(driver, bus, addr, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe(GET_I2C_DEVICE(bus, addr),##args))
+#define PROBE_MAG_SPI(driver, devname, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe(hal.spi->get_device(devname),##args))
+#define PROBE_MAG_IMU(driver, imudev, imu_instance, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe_ ## imudev(imu_instance,##args))
+#define PROBE_MAG_IMU_I2C(driver, imudev, bus, addr, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe_ ## imudev(GET_I2C_DEVICE(bus,addr),##args))
+//------------------------------------
+
 
 //Protocols
 //list of protocols/enum:	ardupilot/libraries/AP_SerialManager/AP_SerialManager.h
@@ -64,15 +74,20 @@
 #define HAL_SERIAL9_PROTOCOL				SerialProtocol_None			//J
 #define HAL_SERIAL9_BAUD				(115200/1000)*/
 
-//Inertial sensors
-#define AP_COMPASS_AK8963_ENABLED			true
+// Inertial sensors
+// Maybe needed for external compass in Beitian BE-252i
+
 #define AP_COMPASS_IST8310_ENABLED			true
-#define HAL_INS_DEFAULT                              	HAL_INS_MPU9250_SPI
-#define HAL_INS_PROBE_LIST 			     	PROBE_IMU_SPI(Invensense, HAL_INS_MPU9250_NAME, ROTATION_NONE)
-#define HAL_MAG_PROBE1					PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_NONE)
+
+// compass on GY87
+#define AP_COMPASS_HMC5843_ENABLED			true
+
+#define HAL_INS_DEFAULT                              	HAL_INS_MPU6050_I2C
+#define HAL_INS_PROBE_LIST 			     	PROBE_IMU_I2C(Invensense, 0, 0x68, ROTATION_NONE)
+#define HAL_MAG_PROBE1					PROBE_MAG_I2C(HMC5843, 0, 0x1E, true, ROTATION_NONE)
 #define HAL_MAG_PROBE2					PROBE_MAG_I2C(IST8310, 0, 0x0e, true, ROTATION_NONE)
 #define HAL_MAG_PROBE_LIST				HAL_MAG_PROBE1; HAL_MAG_PROBE2;
-#define HAL_INS_MPU9250_NAME 				"mpu9250"
+#define HAL_INS_MPU6050_NAME 				"mpu6050"
 
 //Baro
 #define HAL_BARO_DEFAULT 				HAL_BARO_BMP280_I2C
@@ -86,7 +101,7 @@
 #define HAL_ESP32_SPI_BUSES				{.host=VSPI_HOST, .dma_ch=2, .mosi=GPIO_NUM_23, .miso=GPIO_NUM_19, .sclk=GPIO_NUM_18}
 
 //SPI Devices
-#define HAL_ESP32_SPI_DEVICES				{.name="mpu9250", .bus=0, .device=0, .cs=GPIO_NUM_5, .mode = 0, .lspeed=2*MHZ, .hspeed=2*MHZ}
+#define HAL_ESP32_SPI_DEVICES				{}
 
 //RCIN
 #define HAL_ESP32_RCIN					GPIO_NUM_4
