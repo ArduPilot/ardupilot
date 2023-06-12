@@ -16,6 +16,21 @@
     #endif
 #endif
 
+#if APM_BUILD_TYPE(APM_BUILD_Heli)
+    #define THRST_LIN_THST_EXPO_DEFAULT     0.55f   // set to 0 for linear and 1 for second order approximation
+    #define THRST_LIN_SPIN_MIN_DEFAULT      0.15f   // throttle out ratio which produces the minimum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
+    #define THRST_LIN_SPIN_MAX_DEFAULT      0.95f   // throttle out ratio which produces the maximum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
+    #define THRST_LIN_BAT_VOLT_MAX_DEFAULT  0.0f    // voltage limiting max default
+    #define THRST_LIN_BAT_VOLT_MIN_DEFAULT  0.0f    // voltage limiting min default (voltage dropping below this level will have no effect)
+#else
+    #define THRST_LIN_THST_EXPO_DEFAULT     0.65f   // set to 0 for linear and 1 for second order approximation
+    #define THRST_LIN_SPIN_MIN_DEFAULT      0.15f   // throttle out ratio which produces the minimum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
+    #define THRST_LIN_SPIN_MAX_DEFAULT      0.95f   // throttle out ratio which produces the maximum thrust.  (i.e. 0 ~ 1 ) of the full throttle range
+    #define THRST_LIN_BAT_VOLT_MAX_DEFAULT  0.0f    // voltage limiting max default
+    #define THRST_LIN_BAT_VOLT_MIN_DEFAULT  0.0f    // voltage limiting min default (voltage dropping below this level will have no effect)
+#endif
+
+
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo Thrust_Linearization::var_info[] = {
@@ -75,7 +90,9 @@ Thrust_Linearization::Thrust_Linearization(AP_Motors& _motors) :
     batt_voltage_filt.set_cutoff_frequency(AP_MOTORS_BATT_VOLT_FILT_HZ);
     batt_voltage_filt.reset(1.0);
 
+#if APM_BUILD_TYPE(APM_BUILD_Heli)
     AP_Param::setup_object_defaults(this, var_info);
+#endif
 }
 
 // converts desired thrust to linearized actuator output in a range of 0~1
