@@ -317,10 +317,10 @@ void AP_Mount_Siyi::process_packet()
             _msg_buff[_msg_buff_data_start+0]       // firmware revision (aka patch)
         };
 
-        debug("Mount: SiyiCam fw:%u.%u.%u",
-              (unsigned)_cam_firmware_version.major,            // firmware major version
-              (unsigned)_cam_firmware_version.minor,            // firmware minor version
-              (unsigned)_cam_firmware_version.patch);           // firmware revision
+        gcs().send_text(MAV_SEVERITY_INFO, "Mount: SiyiCam fw:%u.%u.%u",
+                (unsigned)_cam_firmware_version.major,          // firmware major version
+                (unsigned)_cam_firmware_version.minor,          // firmware minor version
+                (unsigned)_cam_firmware_version.patch);         // firmware revision
 
         // display gimbal info to user
         gcs().send_text(MAV_SEVERITY_INFO, "Mount: Siyi fw:%u.%u.%u",
