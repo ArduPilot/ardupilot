@@ -128,6 +128,9 @@ public:
     // format filesystem.  This is async, monitor get_format_status for progress
     bool format(void);
 
+    // if non-zero size at which syncs should be peformed, only used by flash fs
+    uint32_t get_sync_size() const;
+
     // retrieve status of format process:
     AP_Filesystem_Backend::FormatStatus get_format_status() const;
 
