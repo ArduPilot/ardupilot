@@ -21,6 +21,7 @@ struct {
     float thrust;           // thrust from -1 to 1.  Used if use_thrust is true
     bool use_yaw_rate;
     bool use_thrust;
+    bool use_body_roll_pitch_angle_yaw_rate;
 } static guided_angle_state;
 
 struct Guided_Limit {
@@ -318,6 +319,7 @@ void ModeGuided::angle_control_start()
     guided_angle_state.climb_rate_cms = 0.0f;
     guided_angle_state.yaw_rate_cds = 0.0f;
     guided_angle_state.use_yaw_rate = false;
+    guided_angle_state.use_body_roll_pitch_angle_yaw_rate = false;
 
     // pilot always controls yaw
     auto_yaw.set_mode(AutoYaw::Mode::HOLD);
@@ -623,7 +625,7 @@ bool ModeGuided::use_wpnav_for_position_control() const
 // climb_rate_cms_or_thrust: represents either the climb_rate (cm/s) or thrust scaled from [0, 1], unitless
 // use_thrust: IF true: climb_rate_cms_or_thrust represents thrust
 //             IF false: climb_rate_cms_or_thrust represents climb_rate (cm/s)
-void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_vel, float climb_rate_cms_or_thrust, bool use_thrust)
+void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_vel, float climb_rate_cms_or_thrust, bool use_thrust, bool use_body_roll_pitch_angle_yaw_rate)
 {
     // check we are in velocity control mode
     if (guided_mode != SubMode::Angle) {
@@ -632,6 +634,7 @@ void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_
 
     guided_angle_state.attitude_quat = attitude_quat;
     guided_angle_state.ang_vel = ang_vel;
+    guided_angle_state.use_body_roll_pitch_angle_yaw_rate = use_body_roll_pitch_angle_yaw_rate;
 
     guided_angle_state.use_thrust = use_thrust;
     if (use_thrust) {
@@ -964,7 +967,19 @@ void ModeGuided::angle_control_run()
     if (guided_angle_state.attitude_quat.is_zero()) {
         attitude_control->input_rate_bf_roll_pitch_yaw(ToDeg(guided_angle_state.ang_vel.x) * 100.0f, ToDeg(guided_angle_state.ang_vel.y) * 100.0f, ToDeg(guided_angle_state.ang_vel.z) * 100.0f);
     } else {
-        attitude_control->input_quaternion(guided_angle_state.attitude_quat, guided_angle_state.ang_vel);
+        if (!guided_angle_state.use_body_roll_pitch_angle_yaw_rate)
+        {
+            attitude_control->input_quaternion(guided_angle_state.attitude_quat, guided_angle_state.ang_vel);
+        }
+        else
+        {
+            float roll_rad, pitch_rad, yaw_rad;
+            guided_angle_state.attitude_quat.to_euler(roll_rad, pitch_rad, yaw_rad);
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(
+                    ToDeg(roll_rad) * 100.0f,
+                    ToDeg(pitch_rad) * 100.0f,
+                    ToDeg(guided_angle_state.ang_vel.z) * 100.0f);
+        }
     }
 
     // call position controller
