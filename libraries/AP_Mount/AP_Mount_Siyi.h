@@ -72,6 +72,12 @@ public:
     // focus in = -1, focus hold = 0, focus out = 1
     bool set_focus(FocusType focus_type, float focus_value) override;
 
+    // send camera information message to GCS
+    void send_camera_information(mavlink_channel_t chan) const override;
+
+    // send camera settings message to GCS
+    void send_camera_settings(mavlink_channel_t chan) const override;
+
 protected:
 
     // get attitude as a quaternion.  returns true on success
@@ -200,6 +206,11 @@ private:
     AP_HAL::UARTDriver *_uart;                      // uart connected to gimbal
     bool _initialised;                              // true once the driver has been initialised
     bool _got_firmware_version;                     // true once gimbal firmware version has been received
+    struct {
+        uint8_t major;
+        uint8_t minor;
+        uint8_t patch;
+    } _cam_firmware_version;                        // camera firmware version (for reporting for GCS)
 
     // buffer holding bytes from latest packet.  This is only used to calculate the crc
     uint8_t _msg_buff[AP_MOUNT_SIYI_PACKETLEN_MAX];
