@@ -565,6 +565,10 @@ private:
         uint8_t clsID;
         uint8_t msgID;
     };
+    struct PACKED ubx_ack_nack {
+        uint8_t clsID;
+        uint8_t msgID;
+    };
 
 
     struct PACKED ubx_cfg_cfg {
@@ -618,6 +622,7 @@ private:
         ubx_rxm_rawx rxm_rawx;
 #endif
         ubx_ack_ack ack;
+        ubx_ack_nack nack;
         ubx_tim_tm2 tim_tm2;
     } _buffer;
 
@@ -849,6 +854,7 @@ private:
         uint32_t done_mask;
         uint32_t unconfig_bit;
         uint8_t layers;
+        int8_t fetch_index;
     } active_config;
 
 #if GPS_MOVING_BASELINE
