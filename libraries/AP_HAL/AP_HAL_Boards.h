@@ -210,6 +210,10 @@
 #define HAL_OS_FATFS_IO 0
 #endif
 
+#ifndef HAL_OS_LITTLEFS_IO
+#define HAL_OS_LITTLEFS_IO 0
+#endif
+
 #ifndef HAL_BARO_DEFAULT
 #define HAL_BARO_DEFAULT HAL_BARO_NONE
 #endif
