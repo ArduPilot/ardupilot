@@ -1217,7 +1217,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         }
 
         copter.mode_guided.set_angle(attitude_quat, ang_vel,
-                climb_rate_or_thrust, use_thrust);
+                climb_rate_or_thrust, use_thrust, use_body_roll_pitch_angle_yaw_rate);
 
         break;
     }
