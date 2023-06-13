@@ -9,6 +9,10 @@ extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
 
+#if AP_DEADLOCK_DETECTOR_ENABLED
+static thread_local AP_HAL::Semaphore *sem_list;
+#endif
+
 // construct a semaphore
 Semaphore::Semaphore()
 {
@@ -22,6 +26,9 @@ Semaphore::Semaphore()
 bool Semaphore::give()
 {
     take_count--;
+#if AP_DEADLOCK_DETECTOR_ENABLED
+    pop_list();
+#endif
     if (pthread_mutex_unlock(&_lock) != 0) {
         AP_HAL::panic("Bad semaphore usage");
     }
@@ -45,6 +52,9 @@ bool Semaphore::take(uint32_t timeout_ms)
         if (pthread_mutex_lock(&_lock) == 0) {
             owner = pthread_self();
             take_count++;
+#if AP_DEADLOCK_DETECTOR_ENABLED
+            push_list();
+#endif
             return true;
         }
         return false;
@@ -71,9 +81,23 @@ bool Semaphore::take_nonblocking()
     if (pthread_mutex_trylock(&_lock) == 0) {
         owner = pthread_self();
         take_count++;
+#if AP_DEADLOCK_DETECTOR_ENABLED
+        push_list();
+#endif
         return true;
     }
     return false;
 }
+
+#if AP_DEADLOCK_DETECTOR_ENABLED
+AP_HAL::Semaphore *Semaphore::get_sem_list()
+{
+    return sem_list;
+}
+void Semaphore::set_sem_list(AP_HAL::Semaphore *sem)
+{
+    sem_list = sem;
+}
+#endif
 
 #endif  // CONFIG_HAL_BOARD
