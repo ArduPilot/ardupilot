@@ -37,6 +37,9 @@ Semaphore::Semaphore()
 bool Semaphore::give()
 {
     mutex_t *mtx = (mutex_t *)_lock;
+#if AP_DEADLOCK_DETECTOR_ENABLED
+    pop_list();
+#endif
     chMtxUnlock(mtx);
     return true;
 }
@@ -46,6 +49,9 @@ bool Semaphore::take(uint32_t timeout_ms)
     mutex_t *mtx = (mutex_t *)_lock;
     if (timeout_ms == HAL_SEMAPHORE_BLOCK_FOREVER) {
         chMtxLock(mtx);
+#if AP_DEADLOCK_DETECTOR_ENABLED
+        push_list();
+#endif
         return true;
     }
     if (take_nonblocking()) {
@@ -64,7 +70,13 @@ bool Semaphore::take(uint32_t timeout_ms)
 bool Semaphore::take_nonblocking()
 {
     mutex_t *mtx = (mutex_t *)_lock;
-    return chMtxTryLock(mtx);
+    if (chMtxTryLock(mtx)) {
+#if AP_DEADLOCK_DETECTOR_ENABLED
+        push_list();
+#endif
+        return true;
+    }
+    return false;
 }
 
 bool Semaphore::check_owner(void)
@@ -77,5 +89,17 @@ void Semaphore::assert_owner(void)
 {
     osalDbgAssert(check_owner(), "owner");
 }
+
+#if AP_DEADLOCK_DETECTOR_ENABLED
+AP_HAL::Semaphore *Semaphore::get_sem_list()
+{
+    return (AP_HAL::Semaphore*)chThdGetSelfX()->sem_list;
+}
+
+void Semaphore::set_sem_list(AP_HAL::Semaphore *sem)
+{
+    chThdGetSelfX()->sem_list = (void*)sem;
+}
+#endif // AP_DEADLOCK_DETECTOR_ENABLED
 
 #endif // CH_CFG_USE_MUTEXES

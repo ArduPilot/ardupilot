@@ -36,4 +36,9 @@ protected:
     // to avoid polluting the global namespace with the 'ch' variable,
     // we declare the lock as a uint32_t array, and cast inside the cpp file
     uint32_t _lock[5];
+
+#if AP_DEADLOCK_DETECTOR_ENABLED
+    AP_HAL::Semaphore *get_sem_list() override;
+    void set_sem_list(AP_HAL::Semaphore *sem) override;
+#endif
 };

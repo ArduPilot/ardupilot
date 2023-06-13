@@ -138,6 +138,10 @@ ifeq ($(ENABLE_ASSERTS),yes)
   ASXFLAGS += -DHAL_CHIBIOS_ENABLE_ASSERTS
 endif
 
+ifeq ($(ENABLE_DEADLOCK_DETECTOR),yes)
+ ASXFLAGS += -DAP_DEADLOCK_DETECTOR_ENABLED=1
+endif
+
 # Thumb interwork enabled only if needed because it kills performance.
 ifneq ($(strip $(TSRC)),)
   CFLAGS   += -DTHUMB_PRESENT

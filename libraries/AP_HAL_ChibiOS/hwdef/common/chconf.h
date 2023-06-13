@@ -70,6 +70,10 @@ extern "C" {
 
 #endif // HAL_CHIBIOS_ENABLE_ASSERTS
 
+#ifndef AP_DEADLOCK_DETECTOR_ENABLED
+# define AP_DEADLOCK_DETECTOR_ENABLED 0
+#endif
+
 #if HAL_ENABLE_THREAD_STATISTICS
 #define CH_DBG_STATISTICS TRUE
 #else
@@ -708,8 +712,13 @@ extern "C" {
  * @brief   Threads descriptor structure extension.
  * @details User fields added to the end of the @p thread_t structure.
  */
+#if AP_DEADLOCK_DETECTOR_ENABLED
 #define CH_CFG_THREAD_EXTRA_FIELDS                                          \
-  /* Add threads custom fields here.*/
+    void* sem_list;
+#else
+#define CH_CFG_THREAD_EXTRA_FIELDS
+#endif
+
 
 /**
  * @brief   Threads initialization hook.
@@ -718,9 +727,11 @@ extern "C" {
  * @note    It is invoked from within @p _thread_init() and implicitly from all
  *          the threads creation APIs.
  */
-#define CH_CFG_THREAD_INIT_HOOK(tp) {                                       \
-  /* Add threads initialization code here.*/                                \
-}
+#if AP_DEADLOCK_DETECTOR_ENABLED
+#define CH_CFG_THREAD_INIT_HOOK(tp) { tp->sem_list = NULL; }
+#else
+#define CH_CFG_THREAD_INIT_HOOK(tp) {}
+#endif
 
 /**
  * @brief   Threads finalization hook.
