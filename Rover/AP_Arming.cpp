@@ -59,7 +59,7 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
         return false;
     }
 
-    // ensure position esetimate is ok
+    // ensure position estimate is ok
     if (!rover.ekf_position_ok()) {
         // vehicle level position estimate checks
         check_failed(display_failure, "Need Position Estimate");
