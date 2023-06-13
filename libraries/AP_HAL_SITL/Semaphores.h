@@ -23,4 +23,7 @@ protected:
     // keep track the recursion level to ensure we only disown the
     // semaphore once we're done with it
     uint8_t take_count;
+
+    AP_HAL::Semaphore *get_sem_list() override;
+    void set_sem_list(AP_HAL::Semaphore *sem) override;
 };
