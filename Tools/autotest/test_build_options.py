@@ -74,7 +74,14 @@ class TestBuildOptions(object):
                 'AP_COMPASS_AK8963_ENABLED',
                 'AP_COMPASS_AK09916_ENABLED',
                 'AP_COMPASS_ICM20948_ENABLED',
-            ])
+            ]),
+            "CubeBlack": frozenset([
+                'AP_BARO_MS56XX_ENABLED',
+                'AP_COMPASS_LSM303D_ENABLED',
+                'AP_COMPASS_AK8963_ENABLED',
+                'AP_COMPASS_AK09916_ENABLED',
+                'AP_COMPASS_ICM20948_ENABLED',
+            ]),
         }
         return must_have_defines.get(board, frozenset([]))
 
