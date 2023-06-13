@@ -297,6 +297,9 @@ private:
     Mode *control_mode = &mode_initializing;
     Mode *previous_mode = &mode_initializing;
 
+    // were we in VTOL control when we left the previous mode?
+    bool previous_in_vtol;
+
     // time of last mode change
     uint32_t last_mode_change_ms;
 
@@ -954,6 +957,9 @@ private:
     // nav scripting support
     void do_nav_script_time(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_script_time(const AP_Mission::Mission_Command& cmd);
+
+    // override thrust from scripting
+    bool set_thrust(float thrust) override;
 #endif
 
     // commands.cpp

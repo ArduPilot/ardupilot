@@ -849,6 +849,19 @@ bool Plane::set_land_descent_rate(float descent_rate)
     return false;
 }
 
+// VTOL thrust override from scripting in GUIDED mode
+bool Plane::set_thrust(float thrust)
+{
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.available() && control_mode == &plane.mode_guided) {
+        quadplane.thrust_override.start_ms = AP_HAL::millis();
+        quadplane.thrust_override.thrust = thrust;
+        return true;
+    }
+#endif
+    return false;
+}
+
 #endif // AP_SCRIPTING_ENABLED
 
 // correct AHRS pitch for TRIM_PITCH_CD in non-VTOL modes, and return VTOL view in VTOL
