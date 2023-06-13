@@ -193,6 +193,16 @@ public:
     // handle a adsb_vehicle_t from an external source
     void handle_adsb_vehicle(const adsb_vehicle_t &vehicle);
 
+    // update vehicle list
+    // if the vehicle is seen first time, it's added to the list
+    // if its already there in the list, it's updated
+    void update_vehicle_list(const adsb_vehicle_t &vehicle);
+
+#if AP_LOCATIONDB_ENABLED
+    // add vehicle to location database
+    void add_to_locationdb(const adsb_vehicle_t &vehicle);
+#endif
+
     // mavlink message handler
     void handle_message(const mavlink_channel_t chan, const mavlink_message_t &msg);
 
