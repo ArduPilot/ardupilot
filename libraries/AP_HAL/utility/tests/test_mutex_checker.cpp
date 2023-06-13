@@ -15,19 +15,32 @@
  * Code by Siddharth Bharat Purohit, CubePilot Pty Ltd
  */
 #include <AP_gtest.h>
+#include <AP_HAL/HAL.h>
 #include <AP_HAL/utility/MutexChecker.h>
-#include <AP_HAL/AP_HAL.h>
+
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 TEST(MutexCheckerTest, FindOrAdd)
 {
     // we don't care about semaphore lock or unlock, pass empty functions
     static uint16_t lock_cnt = 0;
     static uint16_t unlock_cnt = 0;
-    MutexChecker mc(nullptr, [](void *){lock_cnt++;}, [](void *){unlock_cnt++;});
-    void *mtx = (void *)0x1234;
-    MutexNode *node = mc.find_or_add(mtx);
-    EXPECT_EQ(node->mtx, mtx);
-    EXPECT_EQ(node->rank, 0);
-    EXPECT_FALSE(node->visited);
+    MutexChecker *mc = new MutexChecker(nullptr, [](void *){lock_cnt++;}, [](void *){unlock_cnt++;});
+    uint32_t *mtx = (uint32_t *)0x1234;
+    for (uint8_t i=0; i<20; i++) {
+        MutexNode *node = mc->find_or_add(&mtx[i]);
+        EXPECT_EQ(node->mtx, &mtx[i]);
+        EXPECT_EQ(node->rank, i);
+        EXPECT_FALSE(node->visited);
+    }
+    for (uint8_t i=0; i<20; i++) {
+        MutexNode *node = mc->find_or_add(&mtx[i]);
+        EXPECT_EQ(node->mtx, &mtx[i]);
+        EXPECT_EQ(node->rank, i);
+        EXPECT_FALSE(node->visited);
+    }
+    EXPECT_EQ(lock_cnt, 0);
+    EXPECT_EQ(unlock_cnt, 0);
 }
 
+AP_GTEST_MAIN()

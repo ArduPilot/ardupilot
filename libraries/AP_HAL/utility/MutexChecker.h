@@ -44,6 +44,11 @@ struct MutexNode {
         in[in_cnt++] = node;
         return true;
     }
+
+    MutexNode() {
+        out.expand_to_hold(available_out_cnt);
+        in.expand_to_hold(available_in_cnt);
+    }
 };
 
 // Sorted Topological graph of mutexes
@@ -68,7 +73,13 @@ public:
     MutexChecker(void* mtx, lock_fn lock, unlock_fn unlock) : 
     _self_mtx(mtx),
     _lock(lock),
-    _unlock(unlock) {}
+    _unlock(unlock) {
+        graph.expand_to_hold(graph_space);
+        fw_list.expand_to_hold(fw_list_space);
+        bw_list.expand_to_hold(bw_list_space);
+        stack.expand_to_hold(stack_space);
+        updated_rank.expand_to_hold(updated_rank_space); 
+    }
 
     // Insert an edge to the graph, returns true if the graph is acyclic
     // or false if the graph has a cycle or out of memory
@@ -88,9 +99,10 @@ private:
     void* _self_mtx;
     lock_fn _lock;
     unlock_fn _unlock;
-    uint16_t graph_cnt;
-    uint16_t available_graph_cnt = 8;
-    AP_ExpandingArray<MutexNode> _graph{8};
+
+    AP_ExpandingArray<MutexNode> graph{8};
+    uint16_t graph_length;
+    uint16_t graph_space = 8;
 
 
     AP_ExpandingArray<MutexNode*> fw_list{8};

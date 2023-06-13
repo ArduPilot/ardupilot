@@ -19,27 +19,30 @@
 #include <AP_HAL/AP_HAL.h>
 
 #define MC_ASSERT(x) if (!(x)) { AP_HAL::panic("MC_ASSERT: %d", __LINE__); }
-
+#define CHECK_AND_EXPAND(x, ret) do { \
+                                        if (x ## _space <= x ## _length) { \
+                                            if (!x.expand_to_hold(x ## _space * 2)) return ret; \
+                                            x ## _space *= 2; \
+                                        } \
+                                    } while(0)
 MutexNode* MutexChecker::find_or_add(void* mtx)
 {
     // find mtx in the graph
     uint16_t index;
-    for (index = 0; index < graph_cnt; index++) {
-        if (_graph[index].mtx == mtx) {
+    for (index = 0; index < graph_length; index++) {
+        if (graph[index].mtx == mtx) {
             break;
         }
     }
-    if (index == graph_cnt) {
+    if (index == graph_length) {
         // mtx is not in the graph, add it
-        if (graph_cnt == available_graph_cnt) {
-            if (!_graph.expand_to_hold(graph_cnt * 2)) return nullptr; // double the size
-        }
-        _graph[index].mtx = mtx;
-        _graph[index].rank = index;
-        _graph[index].visited = false;
-        graph_cnt++;
+        CHECK_AND_EXPAND(graph, nullptr);
+        graph[index].mtx = mtx;
+        graph[index].rank = index;
+        graph[index].visited = false;
+        graph_length++;
     }
-    return &_graph[index];
+    return &graph[index];
 }
 
 // mtx_x is the child
@@ -80,8 +83,8 @@ bool MutexChecker::insert(void* mtx_x, void* mtx_y)
     }
 
     // reset visited states
-    for (uint16_t i = 0; i < graph_cnt; i++) {
-        _graph[i].visited = false;
+    for (uint16_t i = 0; i < graph_length; i++) {
+        graph[i].visited = false;
     }
 
     // we need to reorganize the graph
@@ -96,8 +99,8 @@ bool MutexChecker::insert(void* mtx_x, void* mtx_y)
     }
 
     // reset visited states
-    for (uint16_t i = 0; i < graph_cnt; i++) {
-        _graph[i].visited = false;
+    for (uint16_t i = 0; i < graph_length; i++) {
+        graph[i].visited = false;
     }
     if (!backward_dfs(x, y->rank)) {
         MC_ASSERT(false);
@@ -120,12 +123,8 @@ bool MutexChecker::forward_dfs(MutexNode* start_node, uint16_t upper_bound)
             continue;
         }
         node->visited = true;
-        if (fw_list_length == fw_list_space) {
-            if (!fw_list.expand_to_hold(fw_list_space * 2)) {
-                return false;
-            }
-            fw_list_space *= 2;
-        }
+
+        CHECK_AND_EXPAND(fw_list, false);
         fw_list[fw_list_length++] = node;
         if (node->rank == upper_bound) {
             return false;
@@ -135,12 +134,7 @@ bool MutexChecker::forward_dfs(MutexNode* start_node, uint16_t upper_bound)
             if (child->visited) {
                 continue;
             }
-            if (stack_length == stack_space) {
-                if (!stack.expand_to_hold(stack_space * 2)) {
-                    return false;
-                }
-                stack_space *= 2;
-            }
+            CHECK_AND_EXPAND(stack, false);
             if (child->rank < upper_bound) {
                 stack[stack_length++] = child;
             }
@@ -159,12 +153,8 @@ bool MutexChecker::backward_dfs(MutexNode* start_node, uint16_t lower_bound)
             continue;
         }
         node->visited = true;
-        if (bw_list_length == bw_list_space) {
-            if (!bw_list.expand_to_hold(bw_list_space * 2)) {
-                return false;
-            }
-            bw_list_space *= 2;
-        }
+
+        CHECK_AND_EXPAND(bw_list, false);
         bw_list[bw_list_length++] = node;
         if (node->rank == lower_bound) {
             return false;
@@ -174,12 +164,8 @@ bool MutexChecker::backward_dfs(MutexNode* start_node, uint16_t lower_bound)
             if (parent->visited) {
                 continue;
             }
-            if (stack_length == stack_space) {
-                if (!stack.expand_to_hold(stack_space * 2)) {
-                    return false;
-                }
-                stack_space *= 2;
-            }
+
+            CHECK_AND_EXPAND(stack, false);
             if (parent->rank > lower_bound) {
                 stack[stack_length++] = parent;
             }
@@ -207,24 +193,14 @@ bool MutexChecker::reorder_and_merge()
     // get the ranks of bw_list node into updated_rank
     for (uint16_t i=0; i<bw_list_length; i++) {
         MutexNode* node = bw_list[i];
-        if (updated_rank_length == updated_rank_space) {
-            if (!updated_rank.expand_to_hold(updated_rank_space * 2)) {
-                return false;
-            }
-            updated_rank_space *= 2;
-        }
+        CHECK_AND_EXPAND(updated_rank, false);
         updated_rank[updated_rank_length++] = node->rank;
     }
 
     // get the ranks of fw_list node into updated_rank
     for (uint16_t i=0; i<fw_list_length; i++) {
         MutexNode* node = fw_list[i];
-        if (updated_rank_length == updated_rank_space) {
-            if (!updated_rank.expand_to_hold(updated_rank_space * 2)) {
-                return false;
-            }
-            updated_rank_space *= 2;
-        }
+        CHECK_AND_EXPAND(updated_rank, false);
         updated_rank[updated_rank_length++] = node->rank;
     }
 
