@@ -5,6 +5,7 @@
 #include <AP_Common/AP_Common.h>
 
 #define HAL_SEMAPHORE_BLOCK_FOREVER 0
+#define HAL_SEMAPHORE_MAX_CALLERS 50
 
 class AP_HAL::Semaphore {
 public:
@@ -25,6 +26,17 @@ public:
     
     virtual bool give() = 0;
     virtual ~Semaphore(void) {}
+
+protected:
+    virtual AP_HAL::Semaphore *get_sem_list() { return nullptr; }
+    virtual void set_sem_list(AP_HAL::Semaphore *sem) {};
+    Semaphore *next;
+    void push_list(void);
+    void pop_list(void);
+    uint32_t depth;
+
+    Semaphore *parent[HAL_SEMAPHORE_MAX_CALLERS];
+    Semaphore *child[HAL_SEMAPHORE_MAX_CALLERS];
 };
 
 /*
