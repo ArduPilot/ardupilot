@@ -488,6 +488,8 @@ protected:
     void set_ekf_origin(const Location& loc);
 
     virtual MAV_MODE base_mode() const = 0;
+
+    static MAV_STATE operator_minimum_system_status;
     MAV_STATE system_status() const;
     virtual MAV_STATE vehicle_system_status() const = 0;
 
@@ -514,6 +516,7 @@ protected:
     void handle_set_mode(const mavlink_message_t &msg);
     void handle_command_int(const mavlink_message_t &msg);
 
+    MAV_RESULT handle_command_do_set_minimum_mav_state(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_set_home(const mavlink_command_int_t &packet);
     virtual MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     MAV_RESULT handle_command_int_external_position_estimate(const mavlink_command_int_t &packet);
