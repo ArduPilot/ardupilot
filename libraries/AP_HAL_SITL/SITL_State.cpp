@@ -770,6 +770,10 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
     uint32_t now = AP_HAL::micros();
     last_update_usec = now;
 
+    if (&AP::baro() == nullptr) {
+        // allow for running example firmware with no baro
+        return;
+    }
     float altitude = AP::baro().get_altitude();
     float wind_speed = 0;
     float wind_direction = 0;
