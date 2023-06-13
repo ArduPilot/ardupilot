@@ -220,6 +220,10 @@ void AP_Vehicle::setup()
     externalAHRS.init();
 #endif
 
+#if HAL_GENERATOR_ENABLED
+    generator.init();
+#endif
+
     // init_ardupilot is where the vehicle does most of its initialisation.
     init_ardupilot();
 
@@ -271,10 +275,6 @@ void AP_Vehicle::setup()
 #endif
 
     send_watchdog_reset_statustext();
-
-#if HAL_GENERATOR_ENABLED
-    generator.init();
-#endif
 
 #if AP_OPENDRONEID_ENABLED
     opendroneid.init();
