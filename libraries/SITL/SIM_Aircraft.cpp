@@ -1084,6 +1084,13 @@ float Aircraft::get_local_updraft(const Vector3d &currentPos)
             thermals_x[0] = -180.0;
             thermals_y[0] = -260.0;
             break;
+        case 4:
+            n_thermals = 1;
+            thermals_w[0] =  5.0;
+            thermals_r[0] =  30.0;
+            thermals_x[0] =  0;
+            thermals_y[0] =  0;
+            break;
         default:
             AP_BoardConfig::config_error("Bad thermal scenario");
     }
