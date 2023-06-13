@@ -192,6 +192,8 @@ class ExtractFeatures(object):
             ('AP_NOTIFY_NEOPIXEL_ENABLED', r'NeoPixel::init_ports'),
             ('AP_FILESYSTEM_FORMAT_ENABLED', r'AP_Filesystem::format'),
 
+            ('AP_FILESYSTEM_{type}_ENABLED', r'AP_Filesystem_(?P<type>.*)::open'),
+
             ('AP_INERTIALSENSOR_KILL_IMU_ENABLED', r'AP_InertialSensor::kill_imu'),
             ('AP_CRASHDUMP_ENABLED', 'CrashCatcher_DumpMemory'),
         ]
