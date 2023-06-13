@@ -81,6 +81,9 @@ public:
 #if AP_PROXIMITY_DRONECAN_ENABLED
         DroneCAN = 14,
 #endif
+#if AP_PROXIMITY_DYNSIMSITL_ENABLED
+        DynSimSITL = 15,
+#endif
     };
 
     enum class Status {
