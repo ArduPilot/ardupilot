@@ -1,0 +1,515 @@
+# YYY hw definition file for processing by chibios_hwdef.py
+
+# YYY MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# HEX Cube Orange define setup
+# REMOVE 9
+#define HAL_CHIBIOS_ARCH_CUBE 1
+# HEX Cube Orange define setup
+# REMOVE 11
+#define HAL_CHIBIOS_ARCH_FMUV3 1
+# 12 line1
+#define BOARD_TYPE_DEFAULT 3
+# HEX Cube Orange USB setup
+# REMOVE 9
+#USB_VENDOR 0x2DAE # ONLY FOR USE BY HEX! NOBODY ELSE
+#USB_PRODUCT 0x1016
+#USB_STRING_MANUFACTURER "Hex/ProfiCNC"
+# HEX Cube Orange board ID for firmware load
+# REMOVE 9
+APJ_BOARD_ID 777
+
+# YYY crystal frequency
+OSCILLATOR_HZ 8000000
+
+# YYY MCU flash size
+FLASH_SIZE_KB 2048
+
+# YYY MCU flash size
+FLASH_RESERVE_START_KB 128
+
+# YYY MCU supports upto 8MBits/s
+CANFD_SUPPORTED 8
+
+# YYY MCU with 2M flash we can afford to optimize for speed
+# ??
+#env OPTIMIZE -O2
+env OPTIMIZE -Os
+
+# ChibiOS system timer
+# ADD 12
+STM32_ST_USE_TIMER 5
+#STM32_ST_USE_TIMER 12
+#define CH_CFG_ST_RESOLUTION 16
+
+# YYY MCU flash size
+#define HAL_STORAGE_SIZE 32768
+# look up the MatekH7
+# use last 2 pages for flash storage
+# H743 has 16 pages of 128k each
+define HAL_STORAGE_SIZE 16384
+STORAGE_FLASH_PAGE 14
+
+#  Now we define the pins that USB is connected on.
+# YYY USB device
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+#  These are the pins for SWD debugging with a STlinkv2 or black-magic probe.
+# YYY SWD device
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# HEX Cube Orange order of I2C buses, you can change it.
+I2C_ORDER I2C2 I2C1
+
+# HEX Cube Orange order of UARTs (and USB)
+#             0     1      2     3     4     5     
+SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 UART7 OTG2
+
+#  If the board has an IOMCU connected via a UART then this defines the
+#  UART to talk to that MCU. Leave it out for boards with no IOMCU.
+# YYY UART for IOMCU
+#IOMCU_UART USART6
+#  USART6 to IO
+# YYY UART6 is talk to IOMCU
+#PC6 USART6_TX USART6
+#PC7 USART6_RX USART6
+
+#  Now setup the pins for the microSD card, if available.
+# YYY SDIO
+PC8 SDMMC1_D0 SDMMC1
+PC9 SDMMC1_D1 SDMMC1
+PC10 SDMMC1_D2 SDMMC1
+PC11 SDMMC1_D3 SDMMC1
+PC12 SDMMC1_CK SDMMC1
+PD2 SDMMC1_CMD SDMMC1
+
+# YYY SPI1 for IMU and BARO
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+# YYY SPI2 for FRAM
+PB13 SPI2_SCK SPI2
+PB14 SPI2_MISO SPI2
+PB15 SPI2_MOSI SPI2
+
+#  Now setup SPI bus4.
+# YYY SPI4 for external IMU and BARO
+PE2 SPI4_SCK  SPI4
+PE5 SPI4_MISO SPI4
+PE6 SPI4_MOSI SPI4
+
+#  Now the first I2C bus. The pin speeds are automatically setup
+#  correctly, but can be overridden here if needed.
+# YYY I2C1 is I2C2
+PB8 I2C1_SCL I2C1
+PB9 I2C1_SDA I2C1
+
+# YYY I2C2 is I2C1
+PB10 I2C2_SCL I2C2
+PB11 I2C2_SDA I2C2
+
+# YYY CAN bus1
+PD0 CAN1_RX CAN1
+PD1 CAN1_TX CAN1
+
+#  This defines the pins for the 2nd CAN interface, if available.
+# YYY CAN bus2
+PB6 CAN2_TX CAN2
+PB12 CAN2_RX CAN2
+
+#  The telem2 USART, also with RTS/CTS available.
+# YYY UART3 is serial2
+PD8 USART3_TX USART3
+PD9 USART3_RX USART3
+# NNN need to change from HEX Cube Orange 
+# REMOVE 10
+#PD11 USART3_CTS USART3
+#PD12 USART3_RTS USART3
+
+# YYY UART4 is serial3 GPS
+PA0 UART4_TX UART4
+PA1 UART4_RX UART4 NODMA
+
+#  UART7 maps to uartF in the HAL (serial5 in SERIALn_ parameters).
+# YYY UART7 is serial5
+PE7 UART7_RX UART7
+PE8 UART7_TX UART7
+
+#  the 2nd GPS UART
+# YYY UART8 is serial4
+PE0 UART8_RX UART8
+PE1 UART8_TX UART8 NODMA
+
+#  Another USART, this one for telem1. This one has RTS and CTS lines.
+# YYY UART2 is serial1
+# PD3 USART2_CTS USART2
+# PD4 USART2_RTS USART2
+#  telem1 RTS and CTS as GPIO in alt config 1
+# HEX Cube Orange alt config
+PD5 USART2_TX USART2
+PD6 USART2_RX USART2
+# PD3 EXTERN_GPIO4 OUTPUT GPIO(4) ALT(1)
+# PD4 EXTERN_GPIO5 OUTPUT GPIO(5) ALT(1)
+
+# look up the MatekH7
+# USART6 (RC input), SERIAL7
+#PC7 TIM3_CH2 TIM3 RCININT PULLDOWN LOW
+#PC6 USART6_TX USART6 NODMA
+# as an alternative config setup the RX6 pin as a uart. This allows
+# for bi-directional UART based receiver protocols such as FPort
+# without any extra hardware
+#PC7 USART6_RX USART6 NODMA ALT(1)
+
+#  This defines the CS pin for the magnetometer and first IMU. Note
+#  that CS pins are software controlled, and are not tied to a particular
+#  SPI bus.
+# HEX Cube Orange CS pin
+# PC1 MAG_CS CS
+PC2 MPU_CS CS
+#  More CS pins for more sensors. The labels for all CS pins need to
+#  match the SPI device table later in this file.
+# HEX Cube Orange CS pin
+# PC13 GYRO_EXT_CS CS
+# PC14 BARO_EXT_CS CS
+# PC15 ACCEL_EXT_CS CS
+PD7 BARO_CS CS
+# PE4 MPU_EXT_CS CS
+#  The CS pin for FRAM (ramtron). This one is marked as using
+#  SPEED_VERYLOW, which matches the HAL_PX4 setup.
+# HEX Cube Orange CS pin
+PD10 FRAM_CS CS SPEED_VERYLOW
+
+#  Now we start defining some PWM pins. We also map these pins to GPIO
+#  values, so users can set SERVOx_FUNCTION=-1 to determine which
+#  PWM outputs on the primary MCU are set up as GPIOs.
+#  To match HAL_PX4 we number the GPIOs for the PWM outputs
+#  starting at 50.
+# YYY PWM and Bi-Dshot pin
+PE14 TIM1_CH4 TIM1 PWM(1) GPIO(50)
+PE13 TIM1_CH3 TIM1 PWM(2) GPIO(51)
+PE11 TIM1_CH2 TIM1 PWM(3) GPIO(52)
+PE9  TIM1_CH1 TIM1 PWM(4) GPIO(53)
+PD13 TIM4_CH2 TIM4 PWM(5) GPIO(54)
+PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55)
+
+#  Pin for PWM Voltage Selection
+# HEX Cube Orange set peripherals power
+# REMOVE 10
+#PB4 PWM_VOLT_SEL OUTPUT HIGH GPIO(3)
+
+# HEX Cube Orange PWM output for buzzer
+# REMOVE 10
+#PA15 TIM2_CH1 TIM2 GPIO(77) ALARM
+# look up the MatekH7
+#PA15 TIM2_CH1 TIM2 GPIO(32) ALARM
+
+# LED
+# green LED1 marked as B/E
+# blue LED0 marked as ACT
+#PE3 LED0 OUTPUT LOW GPIO(90) # blue
+#PE4 LED1 OUTPUT LOW GPIO(91) # green
+#define HAL_GPIO_A_LED_PIN 91
+#define HAL_GPIO_B_LED_PIN 90
+#define HAL_GPIO_LED_OFF 1
+#  Define a LED, mapping it to GPIO(0). LOW will illuminate the LED
+# HEX Cube Orange alarm LED
+#PE12 FMU_LED_AMBER OUTPUT HIGH OPENDRAIN GPIO(0)
+PE12 LED0 OUTPUT LOW
+
+#  This defines a couple of general purpose outputs, mapped to GPIO
+#  numbers 1 and 2 for users.
+# HEX Cube Orange is empty
+# REMOVE 10
+#PB0 EXTERN_GPIO1 OUTPUT GPIO(1)
+#PB1 EXTERN_GPIO2 OUTPUT GPIO(2)
+
+#  This defines an output pin which will default to output HIGH. It is
+#  a pin that enables peripheral power on this board. It starts in the
+#  off state, then is pulled low to enable peripherals in
+#  peripheral_power_enable()
+# HEX Cube Orange set peripherals power
+# REMOVE 10
+#PA8 nVDD_5V_PERIPH_EN OUTPUT HIGH
+
+#  This is the pin to enable the sensors rail. It can be used to power
+#  cycle sensors to recover them in case there are problems with power on
+#  timing affecting sensor stability. We pull it LOW on startup, which
+#  means sensors off, then it is pulled HIGH in peripheral_power_enable()
+# HEX Cube Orange set peripherals power
+#PE3 VDD_3V3_SENSORS_EN OUTPUT HIGH
+
+#  This is the pin that senses USB being connected. It is an input pin
+#  setup as OPENDRAIN.
+# HEX Cube Orange detective the USB power
+# 12***
+#PA9 VBUS INPUT OPENDRAIN
+
+#  This defines some input pins, currently unused.
+# HEX Cube Orange is empty
+#PB2 BOOT1 INPUT
+#PB3 FMU_SW0 INPUT
+
+#  This is the invensense data-ready pin. We don't use it in the
+#  default driver.
+# HEX Cube Orange is not use
+#PD15 MPU_DRDY INPUT
+PD15  DRDY1_ICM20689 INPUT
+
+#  This input pin is used to detect that power is valid on USB.
+# HEX Cube Orange detective the invalid power
+# REMOVE 10
+#PC0 VBUS_nVALID INPUT PULLUP
+#  Now the VDD sense pin. This is used to sense primary board voltage.
+# HEX Cube Orange detective 5V power
+#PA4 VDD_5V_SENS ADC1 SCALE(2)
+#  Power flag pins: these tell the MCU the status of the various power
+#  supplies that are available. The pin names need to exactly match the
+#  names used in AnalogIn.cpp. 
+# HEX Cube Orange detective the invalid power
+# REMOVE 10
+#PB5 VDD_BRICK_nVALID INPUT PULLUP
+# HEX Cube Orange detective the invalid power
+# NNN need to change
+# REMOVE 10
+#PB7 VDD_BRICK2_nVALID INPUT PULLUP
+# HEX Cube Orange detective the invalid power
+# REMOVE 10
+#PE10 VDD_5V_HIPOWER_nOC INPUT PULLUP
+# HEX Cube Orange detective the invalid power
+# REMOVE 10
+#PE15 VDD_5V_PERIPH_nOC INPUT PULLUP
+
+# Now setup the default battery pins driver analog pins and default
+# scaling for the power brick.
+define HAL_BATT_VOLT_PIN 14
+define HAL_BATT_CURR_PIN 15
+define HAL_BATT_VOLT_SCALE 10.1
+define HAL_BATT_CURR_SCALE 17.0
+define HAL_GPIO_PWM_VOLT_PIN 3
+define HAL_GPIO_PWM_VOLT_3v3 1
+# setup correct defaults for battery monitoring for cube power brick
+define BATT2_CURR_PIN 4
+define BATT2_VOLT_PIN 13
+define BATT_AMP_PERVLT 39.877
+define BATT_VOLT_MULT 12.02
+define BATT2_AMP_PERVLT 39.877
+define BATT2_VOLT_MULT 12.02
+# look up the MatekH7
+#define HAL_BATT_MONITOR_DEFAULT 4
+#define HAL_BATT_VOLT_PIN 10
+#define HAL_BATT_CURR_PIN 11
+#define HAL_BATT2_VOLT_PIN 18
+#define HAL_BATT2_CURR_PIN 7
+#define HAL_BATT_VOLT_SCALE 11.0
+#define HAL_BATT_CURR_SCALE 40.0
+#define HAL_BATT2_VOLT_SCALE 11.0
+
+# YYY main power manager
+PA2 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PA3 BATT_CURRENT_SENS ADC1 SCALE(1)
+#  This defines more ADC inputs.
+# YYY aux power manager
+PC3 AUX_POWER ADC1 SCALE(1)
+PC4 AUX_ADC2 ADC1 SCALE(1)
+#  And the analog input for airspeed (rarely used these days).
+# HEX Cube Orange aux pressure manager
+PC5 PRESSURE_SENS ADC1 SCALE(2)
+# look up the MatekH7
+#PC4 PRESSURE_SENS ADC1 SCALE(2)
+#define HAL_DEFAULT_AIRSPEED_PIN 4
+#PC5 RSSI_ADC ADC1
+#define BOARD_RSSI_ANA_PIN 8
+
+
+#  Now the SPI device table. This table creates all accessible SPI
+#  devices, giving the name of the device (which is used by device
+#  drivers to open the device), plus which SPI bus it it on, what
+#  device ID will be used (which controls the IDs used in parameters
+#  such as COMPASS_DEV_ID, so we can detect when the list of devices
+#  changes between reboots for calibration purposes), the SPI mode to
+#  use, and the low and high speed settings for the device.
+#  You can define more SPI devices than you actually have, to allow for
+#  flexibility in board setup, and the driver code can probe to see
+#  which are responding.
+#  The DEVID values and device names are chosen to match the PX4 port
+#  of ArduPilot so users don't need to re-do their accel and compass
+#  calibrations when moving to ChibiOS.
+# YYY
+SPIDEV ramtron        SPI2 DEVID10 FRAM_CS      MODE3  8*MHZ  8*MHZ
+# YYY
+SPIDEV ms5611         SPI1 DEVID3  BARO_CS      MODE3 20*MHZ 20*MHZ
+# ADD 8
+SPIDEV icm20689       SPI1 DEVID1  MPU_CS     MODE3  2*MHZ  8*MHZ
+#SPIDEV icm20689_board SPI1 DEVID2  MPU_CS     MODE3  2*MHZ  8*MHZ
+#SPIDEV icm20608       SPI1 DEVID4  MPU_CS     MODE3  4*MHZ  8*MHZ
+#SPIDEV icm20602       SPI1 DEVID5  MPU_CS     MODE3  4*MHZ  8*MHZ
+#SPIDEV icm20948       SPI1 DEVID6  MPU_CS     MODE3  4*MHZ  8*MHZ
+
+#SPIDEV external0m0    SPI1 DEVID5  MPU_CS   MODE0  2*MHZ  2*MHZ
+#SPIDEV external0m1    SPI1 DEVID5  MPU_CS   MODE1  2*MHZ  2*MHZ
+#SPIDEV external0m2    SPI1 DEVID5  MPU_CS   MODE2  2*MHZ  2*MHZ
+#SPIDEV external0m3    SPI1 DEVID5  MPU_CS   MODE3  2*MHZ  2*MHZ
+#SPIDEV pixartPC15     SPI1 DEVID13 MPU_CS MODE3  2*MHZ  2*MHZ
+# ADD 8
+IMU Invensense   SPI:icm20689 ROTATION_NONE
+#IMU Invensense   SPI:icm20689_board ROTATION_NONE
+#IMU Invensense   SPI:icm20608 ROTATION_NONE
+#IMU Invensense   SPI:icm20602 ROTATION_NONE
+#IMU Invensensev2 SPI:icm20948 ROTATION_NONE
+
+#  The IMU only one FAST SAMPLE
+define HAL_DEFAULT_INS_FAST_SAMPLE 1
+# look up the MatekH7
+#define HAL_DEFAULT_INS_FAST_SAMPLE 1
+
+# Enable all IMUs to be used and therefore three active EKF Lanes
+# ???
+# REMOVE 11
+#define HAL_EKF_IMU_MASK_DEFAULT 7
+
+#  two baros
+# CHANGED 3
+#BARO MS56XX SPI:ms5611_ext
+BARO MS56XX SPI:ms5611
+
+#  two compasses. First is in the LSM303D
+# CHANGED 3
+#COMPASS LSM303D SPI:lsm9ds0_ext_am ROTATION_YAW_270
+#  2nd compass is part of the 2nd invensense IMU
+# CHANGED 3
+#COMPASS AK8963:probe_mpu9250 1 ROTATION_YAW_270
+# compass as part of ICM20948 on newer cubes
+# CHANGED 3
+#COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180_YAW_90
+# offset the internal compass for EM impact of the IMU heater
+# this is in sensor frame mGauss
+# CHANGED 4
+#define HAL_AK09916_HEATER_OFFSET Vector3f(30,10,235)
+
+#  three IMUs, but allow for different variants. First two IMUs are
+#  isolated, 3rd isn't
+#  the 3 rotations for the LSM9DS0 driver are for the accel, the gyro
+#  and the H variant of the gyro
+# TMEP CHANGED 3
+#SPIDEV ms5611_ext     SPI4 DEVID2  BARO_EXT_CS  MODE3 20*MHZ 20*MHZ
+# TDK1 CHANGED 2
+#SPIDEV icm20608-am    SPI1 DEVID2  ACCEL_EXT_CS MODE3  4*MHZ  8*MHZ
+# TDK2 CHANGED 2
+#SPIDEV icm20948       SPI1 DEVID4  MPU_CS       MODE3  4*MHZ  8*MHZ
+#SPIDEV icm20948_ext   SPI4 DEVID1  MPU_EXT_CS   MODE3  4*MHZ  8*MHZ
+# NNN CHANGED 2
+#SPIDEV hmc5843        SPI1 DEVID5  MAG_CS       MODE3 11*MHZ 11*MHZ
+# NNN CHANGED 2
+#SPIDEV lsm9ds0_g      SPI1 DEVID1  GYRO_EXT_CS  MODE3 11*MHZ 11*MHZ
+#SPIDEV lsm9ds0_am     SPI1 DEVID2  ACCEL_EXT_CS MODE3 11*MHZ 11*MHZ
+#SPIDEV lsm9ds0_ext_g  SPI4 DEVID4  GYRO_EXT_CS  MODE3 11*MHZ 11*MHZ
+#SPIDEV lsm9ds0_ext_am SPI4 DEVID3  ACCEL_EXT_CS MODE3 11*MHZ 11*MHZ
+# TDK1 CHANGED 2
+#SPIDEV icm20602_ext   SPI4 DEVID4  GYRO_EXT_CS  MODE3  4*MHZ  8*MHZ
+# Reserve
+#SPIDEV external0m0    SPI4 DEVID5  MPU_EXT_CS   MODE0  2*MHZ  2*MHZ
+#SPIDEV external0m1    SPI4 DEVID5  MPU_EXT_CS   MODE1  2*MHZ  2*MHZ
+#SPIDEV external0m2    SPI4 DEVID5  MPU_EXT_CS   MODE2  2*MHZ  2*MHZ
+#SPIDEV external0m3    SPI4 DEVID5  MPU_EXT_CS   MODE3  2*MHZ  2*MHZ
+#SPIDEV pixartPC15     SPI4 DEVID13 ACCEL_EXT_CS MODE3  2*MHZ  2*MHZ
+# CHANGED 2
+#IMU LSM9DS0 SPI:lsm9ds0_ext_g SPI:lsm9ds0_ext_am ROTATION_ROLL_180_YAW_270 ROTATION_ROLL_180_YAW_90 ROTATION_ROLL_180_YAW_90
+#  3rd non-isolated IMU
+# CHANGED 2
+#IMU Invensense SPI:mpu9250 ROTATION_YAW_270
+#  alternative IMU set for newer cubes
+# CHANGED 3
+#IMU Invensense SPI:icm20602_ext ROTATION_ROLL_180_YAW_270
+# CHANGED 3
+#IMU Invensensev2 SPI:icm20948_ext ROTATION_PITCH_180
+# CHANGED 3
+#IMU Invensensev2 SPI:icm20948 ROTATION_YAW_270
+
+#  Sensor Check alias for validating board type
+# CHANGED 7
+#CHECK_ICM20649          spi_check_register_inv2("icm20948", INV2REG_WHOAMI, INV2_WHOAMI_ICM20649)
+#CHECK_ICM20602_EXT      spi_check_register("icm20602_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)
+#CHECK_ICM20948_EXT      spi_check_register_inv2("icm20948_ext", INV2REG_WHOAMI, INV2_WHOAMI_ICM20948)
+#CHECK_MS5611            check_ms5611("ms5611")
+#CHECK_MS5611_EXT        check_ms5611("ms5611_ext")
+#  Sensor Check Macros to be used for validating board type
+# CHANGED 7
+#CHECK_IMU0_PRESENT   $CHECK_ICM20602_EXT
+#CHECK_IMU1_PRESENT   $CHECK_ICM20948_EXT
+#CHECK_IMU2_PRESENT   $CHECK_ICM20649
+#CHECK_BARO0_PRESENT  $CHECK_MS5611
+#CHECK_BARO1_PRESENT  $CHECK_MS5611_EXT
+# CHANGED 7
+#BOARD_VALIDATE $CHECK_IMU0_PRESENT $CHECK_IMU1_PRESENT $CHECK_IMU2_PRESENT $CHECK_BARO0_PRESENT $CHECK_BARO1_PRESENT
+
+# also probe for external compasses
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+# look up the MatekH7
+define ALLOW_ARM_NO_COMPASS
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
+
+# Enable FAT filesystem support (needs a microSD defined via SDMMC).
+define HAL_OS_FATFS_IO 1
+# Nnow some defines for logging and terrain data files.
+define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
+define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
+
+# Enable RAMTROM parameter storage.
+define HAL_WITH_RAMTRON 1
+
+# Setup the IMU heater
+# CHANGED 4
+#define HAL_HAVE_IMU_HEATER 1
+#define HAL_IMU_TEMP_DEFAULT 45
+#define HAL_IMUHEAT_P_DEFAULT 50
+#define HAL_IMUHEAT_I_DEFAULT 0.07
+#define HAL_IMU_TEMP_MARGIN_LOW_DEFAULT 5
+
+# allow to have have a dedicated safety switch pin
+# CHANGED 5
+#define HAL_HAVE_SAFETY_SWITCH 1
+
+# setup ADSB
+# CHANGED 1
+#define ADSB_TYPE 1
+#define SERIAL5_BAUD 57
+#define SERIAL5_PROTOCOL 1
+# Enable Sagetech MXS ADSB transponder
+# CHANGED 1
+#define HAL_ADSB_SAGETECH_MXS_ENABLED HAL_ADSB_ENABLED
+# for users who have replaced their CubeSolo with a CubeOrange:
+# REMOVE 6
+#define HAL_OREO_LED_ENABLED 1
+# CHANGED 6
+#define HAL_SOLO_GIMBAL_ENABLED HAL_MOUNT_ENABLED
+
+# List of files to put in ROMFS. For fmuv3 we need an IO firmware so
+# we can automatically update the IOMCU firmware on boot. The format
+# is "ROMFS ROMFS-filename source-filename". Paths are relative to the
+# ardupilot root.
+# 13***
+#ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_highpolh.bin
+
+# look up the MatekH7
+#DMA_PRIORITY S*
+DMA_NOSHARE SPI1* SPI4* USART6*
+
+
+## How I changed
+# 1 DISABLE the ADSB parameters
+# 2 DISABLE the old IMUs and MAGs
+# 3 DISABLE the external IMUs and MAGs
+# 4 DISABLE the IMU heater
+# 5 DISABLE the safety switch
+# 6 DISABLE the GIMBAL and MOUNT
+# 7 DISABLE the BOARD_VALIDATE
+# 8 ADD the IMU on the board
+# 9 REMOVE HEX
+# 10 REMOVE INVALID PINs
+# 11 REMOVE ???
+# 12 EAZY TEST
