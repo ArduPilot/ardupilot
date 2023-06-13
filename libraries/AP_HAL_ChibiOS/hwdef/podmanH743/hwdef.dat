@@ -492,10 +492,9 @@ define HAL_WITH_RAMTRON 1
 # we can automatically update the IOMCU firmware on boot. The format
 # is "ROMFS ROMFS-filename source-filename". Paths are relative to the
 # ardupilot root.
-# 13***
 #ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_highpolh.bin
 
-# look up the MatekH7
+# look up the Matek
 #DMA_PRIORITY S*
 DMA_NOSHARE SPI1* SPI4* USART6*
 
@@ -511,5 +510,4 @@ DMA_NOSHARE SPI1* SPI4* USART6*
 # 8 ADD the IMU on the board
 # 9 REMOVE HEX
 # 10 REMOVE INVALID PINs
-# 11 REMOVE ???
-# 12 EAZY TEST
+# 11 EAZY TEST
