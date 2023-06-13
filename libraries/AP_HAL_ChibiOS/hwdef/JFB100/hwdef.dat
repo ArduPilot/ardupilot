@@ -341,9 +341,9 @@ PG15 WA8 INPUT PULLUP
 # now we define the pins that USB is connected on
 PA9 VBAS INPUT PULLDOWN
 
-# External watchdog timer clear
-PH11 WDI_OUT OUTPUT SPEED_VERYLOW
-define WDI_OUT_INTERVAL_TIME_MS 100
+# External watchdog gpio
+PH11 EXT_WDOG OUTPUT SPEED_VERYLOW
+define EXT_WDOG_INTERVAL_MS 100
 
 # safety switch
 PE10 SAFETY_IN INPUT PULLUP
