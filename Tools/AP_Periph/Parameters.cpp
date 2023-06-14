@@ -57,6 +57,14 @@ extern const AP_HAL::HAL &hal;
 #define MAV_SYSTEM_ID HAL_DEFAULT_MAV_SYSTEM_ID
 #endif
 
+#ifndef APD_ESC_SERIAL_0
+  #define APD_ESC_SERIAL_0 -1
+#endif
+
+#ifndef APD_ESC_SERIAL_1
+  #define APD_ESC_SERIAL_1 -1
+#endif
+
 /*
  *  AP_Periph parameter definitions
  *
@@ -99,44 +107,30 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Param: CAN_PROTOCOL
     // @DisplayName: Enable use of specific protocol to be used on this port
     // @Description: Enabling this option starts selected protocol that will use this virtual driver. At least one CAN port must be UAVCAN or else CAN1 gets set to UAVCAN
-    // @Values: 0:Disabled,1:UAVCAN,4:PiccoloCAN,5:CANTester,6:EFI_NWPMU,7:USD1,8:KDECAN
+    // @Values: 0:Disabled,1:UAVCAN,4:PiccoloCAN,6:EFI_NWPMU,7:USD1,8:KDECAN
     // @User: Advanced
     // @RebootRequired: True
-    GARRAY(can_protocol,     0, "CAN_PROTOCOL", AP_CANManager::Driver_Type_UAVCAN),
+    GARRAY(can_protocol,     0, "CAN_PROTOCOL", float(AP_CAN::Protocol::DroneCAN)),
     
     // @Param: CAN2_BAUDRATE
+    // @CopyFieldsFrom: CAN_BAUDRATE
     // @DisplayName: Bitrate of CAN2 interface
-    // @Description: Bit rate can be set up to from 10000 to 1000000
-    // @Range: 10000 1000000
-    // @User: Advanced
-    // @RebootRequired: True
     GARRAY(can_baudrate,     1, "CAN2_BAUDRATE", 1000000),
 
     // @Param: CAN2_PROTOCOL
-    // @DisplayName: Enable use of specific protocol to be used on this port
-    // @Description: Enabling this option starts selected protocol that will use this virtual driver. At least one CAN port must be UAVCAN or else CAN1 gets set to UAVCAN
-    // @Values: 0:Disabled,1:UAVCAN,4:PiccoloCAN,5:CANTester,6:EFI_NWPMU,7:USD1,8:KDECAN
-    // @User: Advanced
-    // @RebootRequired: True
-    GARRAY(can_protocol,     1, "CAN2_PROTOCOL", AP_CANManager::Driver_Type_UAVCAN),
+    // @CopyFieldsFrom: CAN_PROTOCOL
+    GARRAY(can_protocol,     1, "CAN2_PROTOCOL", float(AP_CAN::Protocol::DroneCAN)),
 #endif
 
 #if HAL_NUM_CAN_IFACES >= 3
     // @Param: CAN3_BAUDRATE
     // @DisplayName: Bitrate of CAN3 interface
-    // @Description: Bit rate can be set up to from 10000 to 1000000
-    // @Range: 10000 1000000
-    // @User: Advanced
-    // @RebootRequired: True
+    // @CopyFieldsFrom: CAN_BAUDRATE
     GARRAY(can_baudrate,    2, "CAN3_BAUDRATE", 1000000),
 
     // @Param: CAN3_PROTOCOL
-    // @DisplayName: Enable use of specific protocol to be used on this port
-    // @Description: Enabling this option starts selected protocol that will use this virtual driver. At least one CAN port must be UAVCAN or else CAN1 gets set to UAVCAN
-    // @Values: 0:Disabled,1:UAVCAN,4:PiccoloCAN,5:CANTester,6:EFI_NWPMU,7:USD1,8:KDECAN
-    // @User: Advanced
-    // @RebootRequired: True
-    GARRAY(can_protocol,    2, "CAN3_PROTOCOL", AP_CANManager::Driver_Type_UAVCAN),
+    // @CopyFieldsFrom: CAN_PROTOCOL
+    GARRAY(can_protocol,    2, "CAN3_PROTOCOL", float(AP_CAN::Protocol::DroneCAN)),
 #endif
 
 #if HAL_CANFD_SUPPORTED
@@ -158,11 +152,9 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 
 #if HAL_NUM_CAN_IFACES >= 2
     // @Param: CAN2_FDBAUDRATE
+    // @CopyFieldsFrom: CAN_FDBAUDRATE
     // @DisplayName: Set up bitrate for data section on CAN2
     // @Description: This sets the bitrate for the data section of CAN2.
-    // @Values: 1:1M, 2:2M, 4:4M, 5:5M, 8:8M
-    // @User: Advanced
-    // @RebootRequired: True
     GARRAY(can_fdbaudrate,    1, "CAN2_FDBAUDRATE", HAL_CANFD_SUPPORTED),
 #endif
 #endif
@@ -343,13 +335,13 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(hardpoint_rate, "HARDPOINT_RATE", 100),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_HWESC
+#if defined(HAL_PERIPH_ENABLE_HWESC) || defined(HAL_PERIPH_ENABLE_ESC_APD)
     // @Param: ESC_NUMBER
     // @DisplayName: ESC number
     // @Description: This is the ESC number to report as in UAVCAN ESC telemetry feedback packets.
     // @Increment: 1
     // @User: Advanced
-    GSCALAR(esc_number, "ESC_NUMBER", 0),
+    GARRAY(esc_number, 0, "ESC_NUMBER", 0),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
@@ -483,7 +475,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(efi, "EFI", AP_EFI),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_PRX
+#if HAL_PROXIMITY_ENABLED
     // @Param: PRX_BAUDRATE
     // @DisplayName: Proximity Sensor serial baudrate
     // @Description: Proximity Sensor serial baudrate.
@@ -515,12 +507,48 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Group: PRX
     // @Path: ../libraries/AP_Proximity/AP_Proximity.cpp
     GOBJECT(proximity, "PRX", AP_Proximity),
-#endif
+#endif  // HAL_PROXIMITY_ENABLED
 
 #if HAL_NMEA_OUTPUT_ENABLED
     // @Group: NMEA_
     // @Path: ../libraries/AP_NMEA_Output/AP_NMEA_Output.cpp
     GOBJECT(nmea, "NMEA_",   AP_NMEA_Output),
+#endif
+
+#if AP_KDECAN_ENABLED
+    // @Group: KDE_
+    // @Path: ../libraries/AP_KDECAN/AP_KDECAN.cpp
+    GOBJECT(kdecan, "KDE_",   AP_KDECAN),
+#endif
+
+#if defined(HAL_PERIPH_ENABLE_ESC_APD)
+    GARRAY(pole_count, 0, "ESC_NUM_POLES", 22),
+#endif
+
+#if defined(HAL_PERIPH_ENABLE_ESC_APD)
+    // @Param: ESC_APD_SERIAL_1
+    // @DisplayName: ESC APD Serial 1
+    // @Description: Which serial port to use for APD ESC data
+    // @Range: 0 6
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    GARRAY(esc_serial_port, 0, "ESC_APD_SERIAL_1", APD_ESC_SERIAL_0),
+
+  #if APD_ESC_INSTANCES > 1
+    GARRAY(esc_number, 1, "ESC_NUMBER2", 1),
+
+    GARRAY(pole_count, 1, "ESC_NUM_POLES2", 22),
+
+    // @Param: ESC_APD_SERIAL_2
+    // @DisplayName: ESC APD Serial 2
+    // @Description: Which serial port to use for APD ESC data
+    // @Range: 0 6
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    GARRAY(esc_serial_port, 1, "ESC_APD_SERIAL_2", APD_ESC_SERIAL_1),
+  #endif
 #endif
 
     AP_VAREND

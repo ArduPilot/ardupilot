@@ -59,12 +59,14 @@
 #define HAL_WITH_EKF_DOUBLE HAL_HAVE_HARDWARE_DOUBLE
 #endif
 
+#ifdef __cplusplus
 // allow for static semaphores
 #include <AP_HAL_ChibiOS/Semaphores.h>
 #define HAL_Semaphore ChibiOS::Semaphore
 
 #include <AP_HAL/EventHandle.h>
 #define HAL_EventHandle AP_HAL::EventHandle
+#endif
 
 /* string names for well known SPI devices */
 #define HAL_BARO_MS5611_NAME "ms5611"
@@ -120,3 +122,26 @@
 #ifndef HAL_BOARD_STORAGE_DIRECTORY
 #define HAL_BOARD_STORAGE_DIRECTORY "/APM"
 #endif
+
+#if defined(STM32_WSPI_USE_QUADSPI1) && STM32_WSPI_USE_QUADSPI1
+#define HAL_USE_QUADSPI1 TRUE
+#else
+#define HAL_USE_QUADSPI1 FALSE
+#endif
+#if defined(STM32_WSPI_USE_QUADSPI2) && STM32_WSPI_USE_QUADSPI2
+#define HAL_USE_QUADSPI2 TRUE
+#else
+#define HAL_USE_QUADSPI2 FALSE
+#endif
+#if defined(STM32_WSPI_USE_OCTOSPI1) && STM32_WSPI_USE_OCTOSPI1
+#define HAL_USE_OCTOSPI1 TRUE
+#else
+#define HAL_USE_OCTOSPI1 FALSE
+#endif
+#if defined(STM32_WSPI_USE_OCTOSPI2) && STM32_WSPI_USE_OCTOSPI2
+#define HAL_USE_OCTOSPI2 TRUE
+#else
+#define HAL_USE_OCTOSPI2 FALSE
+#endif
+#define HAL_USE_QUADSPI (HAL_USE_QUADSPI1 || HAL_USE_QUADSPI2)
+#define HAL_USE_OCTOSPI (HAL_USE_OCTOSPI1 || HAL_USE_OCTOSPI2)

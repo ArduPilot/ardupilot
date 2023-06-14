@@ -19,10 +19,13 @@
 /*
   parameter settings for one screen
  */
+#include "AP_OSD_config.h"
+
+#if OSD_ENABLED
+
 #include "AP_OSD.h"
 #include "AP_OSD_Backend.h"
 
-#if OSD_ENABLED
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Util.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -40,6 +43,7 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_RPM/AP_RPM.h>
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
 #include <AP_WindVane/AP_WindVane.h>
 #endif
@@ -867,7 +871,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     AP_SUBGROUPINFO(pluscode, "PLUSCODE", 52, AP_OSD_Screen, AP_OSD_Setting),
 #endif
 
-#if HAVE_FILESYSTEM_SUPPORT
+#if AP_OSD_CALLSIGN_FROM_SD_ENABLED
     // @Param: CALLSIGN_EN
     // @DisplayName: CALLSIGN_EN
     // @Description: Displays callsign from callsign.txt on microSD card
@@ -1016,6 +1020,24 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(avgcellrestvolt, "ACRVOLT", 61, AP_OSD_Screen, AP_OSD_Setting),
+
+#if AP_RPM_ENABLED
+	// @Param: RPM_EN
+	// @DisplayName: RPM_EN
+	// @Description: Displays main rotor revs/min
+	// @Values: 0:Disabled,1:Enabled
+
+	// @Param: RPM_X
+	// @DisplayName: RPM_X
+	// @Description: Horizontal position on screen
+	// @Range: 0 29
+
+	// @Param: RPM_Y
+	// @DisplayName: RPM_Y
+	// @Description: Vertical position on screen
+	// @Range: 0 15
+	AP_SUBGROUPINFO(rrpm, "RPM", 62, AP_OSD_Screen, AP_OSD_Setting),
+#endif
 
     AP_GROUPEND
 };
@@ -1291,6 +1313,17 @@ float AP_OSD_AbstractScreen::u_scale(enum unit_type unit, float value)
     return value * scale[units][unit] + (offsets[units]?offsets[units][unit]:0);
 }
 
+char AP_OSD_Screen::get_arrow_font_index(int32_t angle_cd)
+{
+    uint32_t interval = 36000 / SYMBOL(SYM_ARROW_COUNT);
+    angle_cd = wrap_360_cd(angle_cd);
+    // if using BF font table must translate arrows
+    if (check_option(AP_OSD::OPTION_BF_ARROWS)) {
+        angle_cd = angle_cd > 18000? 54000 - angle_cd : 18000- angle_cd;
+    } 
+    return SYMBOL(SYM_ARROW_START) + ((angle_cd + interval / 2) / interval) % SYMBOL(SYM_ARROW_COUNT);
+}
+
 void AP_OSD_Screen::draw_altitude(uint8_t x, uint8_t y)
 {
     float alt;
@@ -1510,8 +1543,8 @@ void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
 // draw a arrow at the given angle, and print the given magnitude
 void AP_OSD_Screen::draw_speed(uint8_t x, uint8_t y, float angle_rad, float magnitude)
 {
-    static const int32_t interval = 36000 / SYMBOL(SYM_ARROW_COUNT);
-    char arrow = SYMBOL(SYM_ARROW_START) + ((int32_t(angle_rad*DEGX100) + interval / 2) / interval) % SYMBOL(SYM_ARROW_COUNT);
+    int32_t angle_cd = angle_rad * DEGX100;
+    char arrow = get_arrow_font_index(angle_cd);
     if (u_scale(SPEED, magnitude) < 9.95) {
         backend->write(x, y, false, "%c %1.1f%c", arrow, u_scale(SPEED, magnitude), u_icon(SPEED));
     } else {
@@ -1525,13 +1558,11 @@ void AP_OSD_Screen::draw_gspeed(uint8_t x, uint8_t y)
     WITH_SEMAPHORE(ahrs.get_semaphore());
     Vector2f v = ahrs.groundspeed_vector();
     backend->write(x, y, false, "%c", SYMBOL(SYM_GSPD));
-
     float angle = 0;
     const float length = v.length();
     if (length > 1.0f) {
-        angle = wrap_2PI(atan2f(v.y, v.x) - ahrs.yaw);
+        angle = atan2f(v.y, v.x) - ahrs.yaw;
     }
-
     draw_speed(x + 1, y, angle, length);
 }
 
@@ -1617,13 +1648,12 @@ void AP_OSD_Screen::draw_home(uint8_t x, uint8_t y)
     if (ahrs.get_location(loc) && ahrs.home_is_set()) {
         const Location &home_loc = ahrs.get_home();
         float distance = home_loc.get_distance(loc);
-        int32_t angle = wrap_360_cd(loc.get_bearing_to(home_loc) - ahrs.yaw_sensor);
-        int32_t interval = 36000 / SYMBOL(SYM_ARROW_COUNT);
+        int32_t angle_cd = loc.get_bearing_to(home_loc) - ahrs.yaw_sensor;
         if (distance < 2.0f) {
             //avoid fast rotating arrow at small distances
-            angle = 0;
+            angle_cd = 0;
         }
-        char arrow = SYMBOL(SYM_ARROW_START) + ((angle + interval / 2) / interval) % SYMBOL(SYM_ARROW_COUNT);
+        char arrow = get_arrow_font_index(angle_cd);
         backend->write(x, y, false, "%c%c", SYMBOL(SYM_HOME), arrow);
         draw_distance(x+2, y, distance);
     } else {
@@ -1637,6 +1667,25 @@ void AP_OSD_Screen::draw_heading(uint8_t x, uint8_t y)
     uint16_t yaw = ahrs.yaw_sensor / 100;
     backend->write(x, y, false, "%3d%c", yaw, SYMBOL(SYM_DEGR));
 }
+
+#if AP_RPM_ENABLED
+void AP_OSD_Screen::draw_rrpm(uint8_t x, uint8_t y)
+{
+    float _rrpm;
+    const AP_RPM *rpm = AP_RPM::get_singleton();
+    if (rpm != nullptr) {
+            if (!rpm->get_rpm(0, _rrpm)) {
+                // No valid RPM data
+                _rrpm = -1;
+            }
+        } else {
+            // No RPM because pointer is null
+            _rrpm = -1;
+        }
+    int r_rpm = static_cast<int>(_rrpm);
+    backend->write(x, y, false, "%4d%c", (int)r_rpm, SYMBOL(SYM_RPM));
+}
+#endif
 
 void AP_OSD_Screen::draw_throttle(uint8_t x, uint8_t y)
 {
@@ -1755,14 +1804,14 @@ void AP_OSD_Screen::draw_wind(uint8_t x, uint8_t y)
         if (check_option(AP_OSD::OPTION_INVERTED_WIND)) {
             angle = M_PI;
         }
-        angle = wrap_2PI(angle + atan2f(v.y, v.x) - ahrs.yaw);
-    }
+        angle = angle + atan2f(v.y, v.x) - ahrs.yaw;
+    } 
     draw_speed(x + 1, y, angle, length);
 
 #else
     const AP_WindVane* windvane = AP_WindVane::get_singleton();
     if (windvane != nullptr) {
-        draw_speed(x + 1, y, wrap_2PI(windvane->get_apparent_wind_direction_rad() + M_PI), windvane->get_apparent_wind_speed());
+        draw_speed(x + 1, y, windvane->get_apparent_wind_direction_rad() + M_PI, windvane->get_apparent_wind_speed());
     }
 #endif
 
@@ -1924,13 +1973,12 @@ void AP_OSD_Screen::draw_hdop(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_waypoint(uint8_t x, uint8_t y)
 {
     AP_AHRS &ahrs = AP::ahrs();
-    int32_t angle = wrap_360_cd(osd->nav_info.wp_bearing - ahrs.yaw_sensor);
-    int32_t interval = 36000 / SYMBOL(SYM_ARROW_COUNT);
+    int32_t angle_cd = osd->nav_info.wp_bearing - ahrs.yaw_sensor;
     if (osd->nav_info.wp_distance < 2.0f) {
         //avoid fast rotating arrow at small distances
-        angle = 0;
+        angle_cd = 0;
     }
-    char arrow = SYMBOL(SYM_ARROW_START) + ((angle + interval / 2) / interval) % SYMBOL(SYM_ARROW_COUNT);
+    char arrow = get_arrow_font_index(angle_cd);
     backend->write(x,y, false, "%c%2u%c",SYMBOL(SYM_WPNO), osd->nav_info.wp_number, arrow);
     draw_distance(x+4, y, osd->nav_info.wp_distance);
 }
@@ -2117,7 +2165,7 @@ void AP_OSD_Screen::draw_pluscode(uint8_t x, uint8_t y)
  */
 void AP_OSD_Screen::draw_callsign(uint8_t x, uint8_t y)
 {
-#if HAVE_FILESYSTEM_SUPPORT
+#if AP_OSD_CALLSIGN_FROM_SD_ENABLED
     if (!callsign_data.load_attempted) {
         callsign_data.load_attempted = true;
         FileData *fd = AP::FS().load_file("callsign.txt");
@@ -2194,12 +2242,11 @@ void AP_OSD_Screen::draw_rngf(uint8_t x, uint8_t y)
     if (rangefinder == nullptr) {
        return;
     }
-    if (rangefinder->status_orient(ROTATION_PITCH_270) <= RangeFinder::Status::NoData) {
-        backend->write(x, y, false, "%c----%c", SYMBOL(SYM_RNGFD), u_icon(DISTANCE));
+    if (rangefinder->status_orient(ROTATION_PITCH_270) < RangeFinder::Status::Good) {
+        backend->write(x, y, false, "%c---%c", SYMBOL(SYM_RNGFD), u_icon(DISTANCE));
     } else {
         const float distance = rangefinder->distance_orient(ROTATION_PITCH_270);
-        const char *format = distance < 9.995 ? "%c %1.2f%c" : "%c%2.2f%c";
-        backend->write(x, y, false, format, SYMBOL(SYM_RNGFD), u_scale(DISTANCE, distance), u_icon(DISTANCE));
+        backend->write(x, y, false, "%c%4.1f%c", SYMBOL(SYM_RNGFD), u_scale(DISTANCE, distance), u_icon(DISTANCE));
     }
 }
 
@@ -2251,6 +2298,9 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(heading);
     DRAW_SETTING(wind);
     DRAW_SETTING(home);
+#if AP_RPM_ENABLED
+    DRAW_SETTING(rrpm);
+#endif
 #if AP_FENCE_ENABLED
     DRAW_SETTING(fence);
 #endif

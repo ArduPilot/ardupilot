@@ -4,6 +4,8 @@
 #include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
 
+#include "AP_Arming_config.h"
+
 class AP_Arming {
 public:
 
@@ -73,6 +75,7 @@ public:
         TOYMODELANDFORCE = 31, // only disarm uses this...
         LANDING = 32, // only disarm uses this...
         DEADRECKON_FAILSAFE = 33, // only disarm uses this...
+        BLACKBOX = 34,
         UNKNOWN = 100,
     };
 
@@ -114,10 +117,12 @@ public:
 
     RudderArming get_rudder_arming_type() const { return (RudderArming)_rudder_arming.get(); }
 
+#if AP_ARMING_AUX_AUTH_ENABLED
     // auxiliary authorisation methods
     bool get_aux_auth_id(uint8_t& auth_id);
     void set_aux_auth_passed(uint8_t auth_id);
     void set_aux_auth_failed(uint8_t auth_id, const char* fail_msg);
+#endif
 
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -200,19 +205,25 @@ protected:
 
     bool mount_checks(bool display_failure) const;
 
+#if AP_ARMING_AUX_AUTH_ENABLED
     bool aux_auth_checks(bool display_failure);
+#endif
 
     bool generator_checks(bool report) const;
 
     bool opendroneid_checks(bool display_failure);
     
     bool serial_protocol_checks(bool display_failure);
+    
+    bool estop_checks(bool display_failure);
 
     virtual bool system_checks(bool report);
 
     bool can_checks(bool report);
 
     bool fettec_checks(bool display_failure) const;
+
+    bool kdecan_checks(bool display_failure) const;
 
     virtual bool proximity_checks(bool report) const;
 
@@ -255,6 +266,7 @@ private:
         MIS_ITEM_CHECK_MAX
     };
 
+#if AP_ARMING_AUX_AUTH_ENABLED
     // auxiliary authorisation
     static const uint8_t aux_auth_count_max = 3;    // maximum number of auxiliary authorisers
     static const uint8_t aux_auth_str_len = 42;     // maximum length of failure message (50-8 for "PreArm: ")
@@ -268,6 +280,7 @@ private:
     char* aux_auth_fail_msg;    // buffer for holding failure messages
     bool aux_auth_error;        // true if too many auxiliary authorisers
     HAL_Semaphore aux_auth_sem; // semaphore for accessing the aux_auth_state and aux_auth_fail_msg
+#endif
 
     // method that was last used for arm/disarm; invalid unless the
     // vehicle has been disarmed at least once.

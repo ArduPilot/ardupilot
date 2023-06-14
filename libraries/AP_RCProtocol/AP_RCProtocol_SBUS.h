@@ -17,6 +17,10 @@
 
 #pragma once
 
+#include "AP_RCProtocol_config.h"
+
+#if AP_RCPROTOCOL_SBUS_ENABLED
+
 #include "AP_RCProtocol.h"
 #include "SoftSerial.h"
 
@@ -41,3 +45,5 @@ private:
         uint32_t last_byte_us;
     } byte_input;
 };
+
+#endif  // AP_RCPROTOCOL_SBUS_ENABLED

@@ -134,6 +134,8 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
 #endif
         } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
             set_mode(mode_fbwa, reason);
+        } else if (g.fs_action_long == FS_ACTION_LONG_AUTO) {
+            set_mode(mode_auto, reason);
         } else {
             set_mode(mode_rtl, reason);
         }
@@ -172,12 +174,18 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
 #endif
         } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
             set_mode(mode_fbwa, reason);
+        } else if (g.fs_action_long == FS_ACTION_LONG_AUTO) {
+            set_mode(mode_auto, reason);
         } else if (g.fs_action_long == FS_ACTION_LONG_RTL) {
             set_mode(mode_rtl, reason);
         }
         break;
 
     case Mode::Number::RTL:
+        if (g.fs_action_long == FS_ACTION_LONG_AUTO) {
+            set_mode(mode_auto, reason);
+        }
+        break;
 #if HAL_QUADPLANE_ENABLED
     case Mode::Number::QLAND:
     case Mode::Number::QRTL:

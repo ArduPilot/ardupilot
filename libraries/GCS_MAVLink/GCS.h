@@ -21,7 +21,7 @@
 #include <AP_Filesystem/AP_Filesystem_config.h>
 #include <AP_Frsky_Telem/AP_Frsky_config.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_Mount/AP_Mount.h>
+#include <AP_Mount/AP_Mount_config.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
 #include "ap_message.h"
@@ -30,10 +30,6 @@
 
 #ifndef HAL_HIGH_LATENCY2_ENABLED
 #define HAL_HIGH_LATENCY2_ENABLED 1
-#endif
-
-#ifndef HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
-#define HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED (HAVE_FILESYSTEM_SUPPORT && BOARD_FLASH_SIZE > 1024)
 #endif
 
 // macros used to determine if a message will fit in the space available.
@@ -323,6 +319,12 @@ public:
     // mission item index to be sent on queued msg, delayed or not
     uint16_t mission_item_reached_index = AP_MISSION_CMD_INDEX_NONE;
 
+    // generate a MISSION_STATE enumeration value for where the
+    // mission is up to:
+    virtual MISSION_STATE mission_state(const class AP_Mission &mission) const;
+    // send a mission_current message for the supplied waypoint
+    void send_mission_current(const class AP_Mission &mission, uint16_t seq);
+
     // common send functions
     void send_heartbeat(void) const;
     void send_meminfo(void);
@@ -365,6 +367,8 @@ public:
     void send_vfr_hud();
     void send_vibration() const;
     void send_gimbal_device_attitude_status() const;
+    void send_gimbal_manager_information() const;
+    void send_gimbal_manager_status() const;
     void send_named_float(const char *name, float value) const;
     void send_home_position() const;
     void send_gps_global_origin() const;
@@ -512,6 +516,7 @@ protected:
 
     MAV_RESULT handle_command_int_do_set_home(const mavlink_command_int_t &packet);
     virtual MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_int_external_position_estimate(const mavlink_command_int_t &packet);
 
     virtual bool set_home_to_current_location(bool lock) = 0;
     virtual bool set_home(const Location& loc, bool lock) = 0;
@@ -525,12 +530,15 @@ protected:
     void handle_mission_request_int(const mavlink_message_t &msg);
     void handle_mission_clear_all(const mavlink_message_t &msg);
 
+#if AP_MAVLINK_MISSION_SET_CURRENT_ENABLED
     // Note that there exists a relatively new mavlink DO command,
     // MAV_CMD_DO_SET_MISSION_CURRENT which provides an acknowledgement
     // that the command has been received, rather than the GCS having to
     // rely on getting back an identical sequence number as some currently
     // do.
     virtual void handle_mission_set_current(AP_Mission &mission, const mavlink_message_t &msg);
+#endif
+
     void handle_mission_count(const mavlink_message_t &msg);
     void handle_mission_write_partial_list(const mavlink_message_t &msg);
     void handle_mission_item(const mavlink_message_t &msg);
@@ -577,8 +585,12 @@ protected:
 
     virtual MAV_RESULT handle_flight_termination(const mavlink_command_long_t &packet);
 
+#if AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED
     void handle_send_autopilot_version(const mavlink_message_t &msg);
+#endif
+#if AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED
     MAV_RESULT handle_command_request_autopilot_capabilities(const mavlink_command_long_t &packet);
+#endif
 
     virtual void send_banner();
 
@@ -618,8 +630,6 @@ protected:
     virtual MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
     virtual MAV_RESULT _handle_command_preflight_calibration_baro(const mavlink_message_t &msg);
 
-    MAV_RESULT handle_command_preflight_can(const mavlink_command_long_t &packet);
-
     virtual MAV_RESULT handle_command_do_set_mission_current(const mavlink_command_long_t &packet);
 
     MAV_RESULT handle_command_battery_reset(const mavlink_command_long_t &packet);
@@ -630,7 +640,7 @@ protected:
     MAV_RESULT handle_command_do_set_roi_sysid(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_set_roi_none();
 
-    virtual MAV_RESULT handle_command_mount(const mavlink_command_long_t &packet);
+    virtual MAV_RESULT handle_command_mount(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
     MAV_RESULT handle_command_mag_cal(const mavlink_command_long_t &packet);
     virtual MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_camera(const mavlink_command_long_t &packet);
@@ -733,8 +743,6 @@ private:
         LOCKED = (1<<4),
     };
     void log_mavlink_stats();
-
-    uint32_t last_accel_cal_ms; // used to rate limit accel cals for bad links
 
     MAV_RESULT _set_mode_common(const MAV_MODE base_mode, const uint32_t custom_mode);
 

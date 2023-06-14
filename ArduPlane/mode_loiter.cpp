@@ -9,7 +9,7 @@ bool ModeLoiter::_enter()
     // make sure the local target altitude is the same as the nav target used for loiter nav
     // this allows us to do FBWB style stick control
     /*IGNORE_RETURN(plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, plane.target_altitude.amsl_cm));*/
-    if (plane.stick_mixing_enabled() && (plane.g2.flight_options & FlightOptions::ENABLE_LOITER_ALT_CONTROL)) {
+    if (plane.stick_mixing_enabled() && (plane.flight_option_enabled(FlightOptions::ENABLE_LOITER_ALT_CONTROL))) {
         plane.set_target_altitude_current();
     }
 
@@ -21,7 +21,7 @@ bool ModeLoiter::_enter()
 void ModeLoiter::update()
 {
     plane.calc_nav_roll();
-    if (plane.stick_mixing_enabled() && (plane.g2.flight_options & FlightOptions::ENABLE_LOITER_ALT_CONTROL)) {
+    if (plane.stick_mixing_enabled() && plane.flight_option_enabled(FlightOptions::ENABLE_LOITER_ALT_CONTROL)) {
         plane.update_fbwb_speed_height();
     } else {
         plane.calc_nav_pitch();
@@ -42,8 +42,7 @@ bool ModeLoiter::isHeadingLinedUp(const Location loiterCenterLoc, const Location
     // Return true if current heading is aligned to vector to targetLoc.
     // Tolerance is initially 10 degrees and grows at 10 degrees for each loiter circle completed.
 
-    const uint16_t loiterRadius = abs(plane.aparm.loiter_radius);
-    if (loiterCenterLoc.get_distance(targetLoc) < loiterRadius + loiterRadius*0.05) {
+    if (loiterCenterLoc.get_distance(targetLoc) < 1.05f * fabsf(plane.loiter.radius)) {
         /* Whenever next waypoint is within the loiter radius plus 5%,
            maintaining loiter would prevent us from ever pointing toward the next waypoint.
            Hence break out of loiter immediately
@@ -94,7 +93,7 @@ bool ModeLoiter::isHeadingLinedUp_cd(const int32_t bearing_cd)
 
 void ModeLoiter::navigate()
 {
-    if (plane.g2.flight_options & FlightOptions::ENABLE_LOITER_ALT_CONTROL) {
+    if (plane.flight_option_enabled(FlightOptions::ENABLE_LOITER_ALT_CONTROL)) {
         // update the WP alt from the global target adjusted by update_fbwb_speed_height
         plane.next_WP_loc.set_alt_cm(plane.target_altitude.amsl_cm, Location::AltFrame::ABSOLUTE);
     }
@@ -112,7 +111,7 @@ void ModeLoiter::navigate()
 
 void ModeLoiter::update_target_altitude()
 {
-    if (plane.stick_mixing_enabled() && (plane.g2.flight_options & FlightOptions::ENABLE_LOITER_ALT_CONTROL)) {
+    if (plane.stick_mixing_enabled() && (plane.flight_option_enabled(FlightOptions::ENABLE_LOITER_ALT_CONTROL))) {
         return;
     }
     Mode::update_target_altitude();

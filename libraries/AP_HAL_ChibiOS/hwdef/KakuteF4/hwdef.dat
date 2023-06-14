@@ -29,8 +29,8 @@ PB5 LED_BLUE OUTPUT LOW GPIO(0)
 # buzzer
 PC9 BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
-define HAL_BUZZER_ON 1
-define HAL_BUZZER_OFF 0
+
+
 
 # spi1 bus for IMU
 PA5 SPI1_SCK SPI1
@@ -83,7 +83,7 @@ PA9 USART1_TX USART1
 PA10 USART1_RX USART1
 
 # default Serial2 to FrSky telemetry
-define HAL_SERIAL2_PROTOCOL 10
+define DEFAULT_SERIAL2_PROTOCOL 10
 
 # USART6, telem1, SERIAL1
 PC6 USART6_TX USART6
@@ -152,3 +152,5 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # minimal drivers to reduce flash usage
 include ../include/minimal.inc
+
+define DEFAULT_NTF_LED_TYPES 256

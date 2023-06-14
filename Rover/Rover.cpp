@@ -80,7 +80,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(set_servos,            400,    200,  15),
     SCHED_TASK_CLASS(AP_GPS,              &rover.gps,              update,         50,  300,  18),
     SCHED_TASK_CLASS(AP_Baro,             &rover.barometer,        update,         10,  200,  21),
+#if AP_BEACON_ENABLED
     SCHED_TASK_CLASS(AP_Beacon,           &rover.g2.beacon,        update,         50,  200,  24),
+#endif
 #if HAL_PROXIMITY_ENABLED
     SCHED_TASK_CLASS(AP_Proximity,        &rover.g2.proximity,     update,         50,  200,  27),
 #endif
@@ -98,7 +100,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if AP_GRIPPER_ENABLED
     SCHED_TASK_CLASS(AP_Gripper,          &rover.g2.gripper,       update,         10,   75,  69),
 #endif
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
     SCHED_TASK(update_precland,      400,     50,  70),
 #endif
 #if AP_RPM_ENABLED
@@ -114,7 +116,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(fence_check,            10,    200,  84),
     SCHED_TASK(ekf_check,              10,    100,  87),
     SCHED_TASK_CLASS(ModeSmartRTL,        &rover.mode_smartrtl,    save_position,   3,  200,  90),
-    SCHED_TASK_CLASS(AP_Notify,           &rover.notify,           update,         50,  300,  93),
     SCHED_TASK(one_second_loop,         1,   1500,  96),
 #if HAL_SPRAYER_ENABLED
     SCHED_TASK_CLASS(AC_Sprayer,          &rover.g2.sprayer,       update,          3,  90,  99),
@@ -377,7 +378,9 @@ void Rover::update_logging1(void)
 
     if (should_log(MASK_LOG_THR)) {
         Log_Write_Throttle();
+#if AP_BEACON_ENABLED
         g2.beacon.log();
+#endif
     }
 
     if (should_log(MASK_LOG_NTUN)) {

@@ -9,7 +9,6 @@
 #if AP_AIRSPEED_ANALOG_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Param/AP_Param.h>
 
 #include "AP_Airspeed_Backend.h"
 

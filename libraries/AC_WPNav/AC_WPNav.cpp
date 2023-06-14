@@ -165,7 +165,8 @@ void AC_WPNav::wp_and_spline_init(float speed_cms, Vector3f stopping_point)
     _pos_control.init_z_controller_stopping_point();
     _pos_control.init_xy_controller_stopping_point();
 
-    // initialize the desired wp speed if not already done
+    // initialize the desired wp speed
+    _check_wp_speed_change = !is_positive(speed_cms);
     _wp_desired_speed_xy_cms = is_positive(speed_cms) ? speed_cms : _wp_speed_cms;
     _wp_desired_speed_xy_cms = MAX(_wp_desired_speed_xy_cms, WPNAV_WP_SPEED_MIN);
 
@@ -586,11 +587,12 @@ int32_t AC_WPNav::get_wp_bearing_to_destination() const
 /// update_wpnav - run the wp controller - should be called at 100hz or higher
 bool AC_WPNav::update_wpnav()
 {
-    bool ret = true;
-
-    if (!is_equal(_wp_speed_cms.get(), _last_wp_speed_cms)) {
-        set_speed_xy(_wp_speed_cms);
-        _last_wp_speed_cms = _wp_speed_cms;
+    // check for changes in speed parameter values
+    if (_check_wp_speed_change) {
+        if (!is_equal(_wp_speed_cms.get(), _last_wp_speed_cms)) {
+            set_speed_xy(_wp_speed_cms);
+            _last_wp_speed_cms = _wp_speed_cms;
+        }
     }
     if (!is_equal(_wp_speed_up_cms.get(), _last_wp_speed_up_cms)) {
         set_speed_up(_wp_speed_up_cms);
@@ -602,6 +604,7 @@ bool AC_WPNav::update_wpnav()
     }
 
     // advance the target if necessary
+    bool ret = true;
     if (!advance_wp_target_along_track(_pos_control.get_dt())) {
         // To-Do: handle inability to advance along track (probably because of missing terrain data)
         ret = false;

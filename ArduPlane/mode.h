@@ -65,7 +65,7 @@ public:
     void exit();
 
     // run controllers specific to this mode
-    virtual void run() {};
+    virtual void run();
 
     // returns a unique number specific to this mode
     virtual Number mode_number() const = 0;
@@ -78,6 +78,9 @@ public:
 
     // returns true if the vehicle can be armed in this mode
     bool pre_arm_checks(size_t buflen, char *buffer) const;
+
+    // Reset rate and steering controllers
+    void reset_controllers();
 
     //
     // methods that sub classes should override to affect movement of the vehicle in this mode
@@ -355,6 +358,8 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+
+    void run() override;
 };
 
 
@@ -398,6 +403,12 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+
+    void run() override;
+
+private:
+    void stabilize_stick_mixing_direct();
+
 };
 
 class ModeTraining : public Mode

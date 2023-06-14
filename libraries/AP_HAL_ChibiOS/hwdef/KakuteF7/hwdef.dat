@@ -27,8 +27,7 @@ SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 UART7 USART6
 PD15 TIM4_CH4 TIM4 GPIO(77) ALARM
 #PD15 BUZZER OUTPUT GPIO(80) LOW
 #define HAL_BUZZER_PIN 80
-#define HAL_BUZZER_ON 1
-#define HAL_BUZZER_OFF 0
+#
 
 # PA10 IO-debug-console
 PA11 OTG_FS_DM OTG1
@@ -135,7 +134,6 @@ IMU Invensense SPI:mpu6000 ROTATION_YAW_180
 
 # one BARO
 BARO BMP280 I2C:0:0x76
-define HAL_PROBE_EXTERNAL_I2C_BAROS
 define HAL_BARO_ALLOW_INIT_NO_BARO
 
 define HAL_OS_FATFS_IO 1
@@ -144,14 +142,15 @@ define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 define STM32_PWM_USE_ADVANCED TRUE
 
-# disable SMBUS battery monitors to save flash
-define AP_BATTERY_SMBUS_ENABLED 0
-
 # disable parachute to save flash
 define HAL_PARACHUTE_ENABLED 0
 
 # save FLASH, but leave above when flash issue is fixed
 include ../include/minimize_features.inc
+
+# disable SMBUS battery monitors to save flash
+undef AP_BATTERY_SMBUS_ENABLED
+define AP_BATTERY_SMBUS_ENABLED 0
 
 # setup for OSD
 undef OSD_ENABLED  # minimize_features.inc removes this
@@ -164,6 +163,10 @@ undef HAL_WITH_MSP_DISPLAYPORT
 define HAL_WITH_MSP_DISPLAYPORT 1
 undef HAL_MSP_ENABLED
 define HAL_MSP_ENABLED 1
+
+# need to probe external baros even 'though we're minimised:
+undef AP_BARO_PROBE_EXTERNAL_I2C_BUSES
+define AP_BARO_PROBE_EXTERNAL_I2C_BUSES 1
 
 # reduce max size of embedded params for apj_tool.py
 define AP_PARAM_MAX_EMBEDDED_PARAM 1024

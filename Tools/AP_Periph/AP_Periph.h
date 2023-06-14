@@ -13,17 +13,23 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_EFI/AP_EFI.h>
+#include <AP_KDECAN/AP_KDECAN.h>
 #include <AP_MSP/AP_MSP.h>
 #include <AP_MSP/msp.h>
 #include <AP_TemperatureSensor/AP_TemperatureSensor.h>
 #include "../AP_Bootloader/app_comms.h"
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
 #include "hwing_esc.h"
-#include <AP_CANManager/AP_CANManager.h>
+#include <AP_CANManager/AP_CAN.h>
+#include <AP_CANManager/AP_SLCANIface.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_HAL/CANIface.h>
 #include <AP_Stats/AP_Stats.h>
-
+#include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_ESC_Telem/AP_ESC_Telem_config.h>
+#if HAL_WITH_ESC_TELEM
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
+#endif
 
 #include <AP_NMEA_Output/AP_NMEA_Output.h>
 #if HAL_NMEA_OUTPUT_ENABLED && !(HAL_GCS_ENABLED && defined(HAL_PERIPH_ENABLE_GPS))
@@ -34,6 +40,8 @@
 #if HAL_GCS_ENABLED
 #include "GCS_MAVLink.h"
 #endif
+
+#include "esc_apd_telem.h"
 
 #if defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NCP5623_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NCP5623_BGR_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_TOSHIBA_LED_WITHOUT_NOTIFY)
 #define AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
@@ -161,7 +169,7 @@ public:
     // This allows you to change the protocol and it continues to use the one at boot.
     // Without this, changing away from UAVCAN causes loss of comms and you can't
     // change the rest of your params or verify it succeeded.
-    AP_CANManager::Driver_Type can_protocol_cached[HAL_NUM_CAN_IFACES];
+    AP_CAN::Protocol can_protocol_cached[HAL_NUM_CAN_IFACES];
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MSP
@@ -201,7 +209,7 @@ public:
     uint32_t last_sample_ms;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_PRX
+#if HAL_PROXIMITY_ENABLED
     AP_Proximity proximity;
 #endif
 
@@ -227,7 +235,16 @@ public:
     AP_EFI efi;
     uint32_t efi_update_ms;
 #endif
+
+#if AP_KDECAN_ENABLED
+    AP_KDECAN kdecan;
+#endif
     
+#ifdef HAL_PERIPH_ENABLE_ESC_APD
+    ESC_APD_Telem *apd_esc_telem[APD_ESC_INSTANCES];
+    void apd_esc_telem_update();
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
 #if HAL_WITH_ESC_TELEM
     AP_ESC_Telem esc_telem;
@@ -319,5 +336,3 @@ namespace AP
 }
 
 extern AP_Periph_FW periph;
-
-

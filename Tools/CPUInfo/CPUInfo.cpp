@@ -25,7 +25,8 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 #if CONFIG_HAL_BOARD != HAL_BOARD_LINUX
 
 // On H750 we want to measure external flash to ram performance
-#if defined(EXT_FLASH_SIZE_MB) && defined(STM32H7)
+#if defined(EXT_FLASH_SIZE_MB) && EXT_FLASH_SIZE_MB>0 && defined(STM32H7)
+#include "ch.h"
 #define DISABLE_CACHES
 #endif
 
@@ -44,7 +45,9 @@ AP_ESC_Telem telem;
 
 void setup() {
 #ifdef DISABLE_CACHES
+#if !HAL_XIP_ENABLED // can't disable DCache in memory-mapped mode
     SCB_DisableDCache();
+#endif
     SCB_DisableICache();
 #endif
     ekf.init();
@@ -97,6 +100,7 @@ volatile uint8_t mbuf1[128], mbuf2[128];
 volatile uint64_t v_64 = 1;
 volatile uint64_t v_out_64 = 1;
 
+#pragma GCC diagnostic error "-Wframe-larger-than=2000"
 static void show_timings(void)
 {
 

@@ -23,7 +23,6 @@
 #include "freertos/event_groups.h"
 #include "esp_system.h"
 #include "esp_wifi.h"
-#include "esp_event_loop.h"
 #include "nvs_flash.h"
 #include "esp_event.h"
 #include "esp_log.h"
@@ -58,7 +57,12 @@ void WiFiUdpDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
             return;
         }
 
-        xTaskCreate(_wifi_thread, "APM_WIFI", Scheduler::WIFI_SS, this, Scheduler::WIFI_PRIO, &_wifi_task_handle);
+	if (xTaskCreatePinnedToCore(_wifi_thread2, "APM_WIFI2", Scheduler::WIFI_SS2, this, Scheduler::WIFI_PRIO2, &_wifi_task_handle,0) != pdPASS) {
+            hal.console->printf("FAILED to create task _wifi_thread2\n");
+        } else {
+	    hal.console->printf("OK created task _wifi_thread2\n");
+    	}
+		
         _readbuf.set_size(RX_BUF_SIZE);
         _writebuf.set_size(TX_BUF_SIZE);
         _state = INITIALIZED;
@@ -101,19 +105,18 @@ uint32_t WiFiUdpDriver::txspace()
     return MAX(result, 0);
 }
 
-int16_t WiFiUdpDriver::read()
+bool WiFiUdpDriver::read(uint8_t &c)
 {
     if (!_read_mutex.take_nonblocking()) {
-        return 0;
+        return false;
     }
 
-    uint8_t byte;
-    if (!_readbuf.read_byte(&byte)) {
-        return -1;
+    if (!_readbuf.read_byte(&c)) {
+        return false;
     }
 
     _read_mutex.give();
-    return byte;
+    return true;
 }
 
 bool WiFiUdpDriver::start_listen()
@@ -224,13 +227,13 @@ size_t WiFiUdpDriver::write(const uint8_t *buffer, size_t size)
     return ret;
 }
 
-void WiFiUdpDriver::_wifi_thread(void *arg)
+void WiFiUdpDriver::_wifi_thread2(void *arg)
 {
     WiFiUdpDriver *self = (WiFiUdpDriver *) arg;
     while (true) {
         struct timeval tv = {
             .tv_sec = 0,
-            .tv_usec = 1000,
+            .tv_usec = 100*1000, // 10 times a sec, we try to write-all even if we read nothing , at just 1000, it floggs the APM_WIFI2 task cpu usage unecessarily, slowing APM_WIFI1 response
         };
         fd_set rfds;
         FD_ZERO(&rfds);

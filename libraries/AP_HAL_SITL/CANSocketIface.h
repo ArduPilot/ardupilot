@@ -132,7 +132,7 @@ public:
     public:
         // we just poll fd, no signaling is done
         void signal(uint32_t evt_mask) override { return; }
-        bool wait(uint64_t duration, AP_HAL::EventHandle* evt_handle) override;
+        bool wait(uint16_t duration_us, AP_HAL::EventHandle* evt_handle) override;
     };
 
 private:
@@ -143,8 +143,6 @@ private:
     int _write(const AP_HAL::CANFrame& frame) const;
 
     int _read(AP_HAL::CANFrame& frame, uint64_t& ts_usec, bool& loopback) const;
-
-    int _readfd(AP_HAL::CANFrame& frame, uint64_t& ts_usec, bool& loopback) const;
 
     void _incrementNumFramesInSocketTxQueue();
 

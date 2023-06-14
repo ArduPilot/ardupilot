@@ -27,6 +27,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Camera/AP_Camera_shareddefs.h>
 #include "AP_Mount_Params.h"
 
 // maximum number of mounts
@@ -73,17 +74,35 @@ public:
     }
 
     // Enums
-    enum MountType {
-        Mount_Type_None = 0,            /// no mount
-        Mount_Type_Servo = 1,           /// servo controlled mount
-        Mount_Type_SoloGimbal = 2,      /// Solo's gimbal
-        Mount_Type_Alexmos = 3,         /// Alexmos mount
-        Mount_Type_SToRM32 = 4,         /// SToRM32 mount using MAVLink protocol
-        Mount_Type_SToRM32_serial = 5,  /// SToRM32 mount using custom serial protocol
-        Mount_Type_Gremsy = 6,          /// Gremsy gimbal using MAVLink v2 Gimbal protocol
-        Mount_Type_BrushlessPWM = 7,    /// Brushless (stabilized) gimbal using PWM protocol
-        Mount_Type_Siyi = 8,            /// Siyi gimbal using custom serial protocol
-        Mount_Type_Scripting = 9,       /// Scripting gimbal driver
+    enum class Type {
+        None = 0,            /// no mount
+#if HAL_MOUNT_SERVO_ENABLED
+        Servo = 1,           /// servo controlled mount
+#endif
+#if HAL_SOLO_GIMBAL_ENABLED
+        SoloGimbal = 2,      /// Solo's gimbal
+#endif
+#if HAL_MOUNT_ALEXMOS_ENABLED
+        Alexmos = 3,         /// Alexmos mount
+#endif
+#if HAL_MOUNT_STORM32MAVLINK_ENABLED
+        SToRM32 = 4,         /// SToRM32 mount using MAVLink protocol
+#endif
+#if HAL_MOUNT_STORM32SERIAL_ENABLED
+        SToRM32_serial = 5,  /// SToRM32 mount using custom serial protocol
+#endif
+#if HAL_MOUNT_GREMSY_ENABLED
+        Gremsy = 6,          /// Gremsy gimbal using MAVLink v2 Gimbal protocol
+#endif
+#if HAL_MOUNT_SERVO_ENABLED
+        BrushlessPWM = 7,    /// Brushless (stabilized) gimbal using PWM protocol
+#endif
+#if HAL_MOUNT_SIYI_ENABLED
+        Siyi = 8,            /// Siyi gimbal using custom serial protocol
+#endif
+#if HAL_MOUNT_SCRIPTING_ENABLED
+        Scripting = 9,       /// Scripting gimbal driver
+#endif
     };
 
     // init - detect and initialise all mounts
@@ -99,8 +118,8 @@ public:
     uint8_t get_primary_instance() const { return _primary; }
 
     // get_mount_type - returns the type of mount
-    AP_Mount::MountType get_mount_type() const { return get_mount_type(_primary); }
-    AP_Mount::MountType get_mount_type(uint8_t instance) const;
+    Type get_mount_type() const { return get_mount_type(_primary); }
+    Type get_mount_type(uint8_t instance) const;
 
     // has_pan_control - returns true if the mount has yaw control (required for copters)
     bool has_pan_control() const { return has_pan_control(_primary); }
@@ -139,17 +158,27 @@ public:
     void set_roi_target(const Location &target_loc) { set_roi_target(_primary,target_loc); }
     void set_roi_target(uint8_t instance, const Location &target_loc);
 
+    // clear_roi_target - clears target location that mount should attempt to point towards
+    void clear_roi_target() { clear_roi_target(_primary); }
+    void clear_roi_target(uint8_t instance);
+
     // point at system ID sysid
     void set_target_sysid(uint8_t sysid) { set_target_sysid(_primary, sysid); }
     void set_target_sysid(uint8_t instance, uint8_t sysid);
 
     // mavlink message handling:
-    MAV_RESULT handle_command_long(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_long(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
     void handle_param_value(const mavlink_message_t &msg);
     void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg);
 
     // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
     void send_gimbal_device_attitude_status(mavlink_channel_t chan);
+
+    // send a GIMBAL_MANAGER_INFORMATION message to GCS
+    void send_gimbal_manager_information(mavlink_channel_t chan);
+
+    // send a GIMBAL_MANAGER_STATUS message to GCS
+    void send_gimbal_manager_status(mavlink_channel_t chan);
 
     // get mount's current attitude in euler angles in degrees.  yaw angle is in body-frame
     // returns true on success
@@ -164,7 +193,6 @@ public:
     bool get_angle_target(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame);
     bool get_location_target(uint8_t instance, Location& target_loc);
     void set_attitude_euler(uint8_t instance, float roll_deg, float pitch_deg, float yaw_bf_deg);
-    bool get_camera_state(uint8_t instance, uint16_t& pic_count, bool& record_video, int8_t& zoom_step, int8_t& focus_step, bool& auto_focus);
 
     //
     // camera controls for gimbals that include a camera
@@ -177,16 +205,12 @@ public:
     // set start_recording = true to start record, false to stop recording
     bool record_video(uint8_t instance, bool start_recording);
 
-    // set camera zoom step
-    // zoom out = -1, hold = 0, zoom in = 1
-    bool set_zoom_step(uint8_t instance, int8_t zoom_step);
+    // set zoom specified as a rate or percentage
+    bool set_zoom(uint8_t instance, ZoomType zoom_type, float zoom_value);
 
-    // set focus in, out or hold
+    // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
-    bool set_manual_focus_step(uint8_t instance, int8_t focus_step);
-
-    // auto focus
-    bool set_auto_focus(uint8_t instance);
+    bool set_focus(uint8_t instance, FocusType focus_type, float focus_value);
 
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];
@@ -215,6 +239,9 @@ private:
     MAV_RESULT handle_command_do_mount_configure(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_mount_control(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_gimbal_manager_pitchyaw(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_do_gimbal_manager_configure(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
+    void handle_gimbal_manager_set_attitude(const mavlink_message_t &msg);
+    void handle_command_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg);
     void handle_global_position_int(const mavlink_message_t &msg);
     void handle_gimbal_device_information(const mavlink_message_t &msg);
     void handle_gimbal_device_attitude_status(const mavlink_message_t &msg);

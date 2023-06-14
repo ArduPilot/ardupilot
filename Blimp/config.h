@@ -138,12 +138,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Precision Landing with companion computer or IRLock sensor
-#ifndef PRECISION_LANDING
-# define PRECISION_LANDING ENABLED
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // Parachute release
 #ifndef PARACHUTE
 # define PARACHUTE HAL_PARACHUTE_ENABLED

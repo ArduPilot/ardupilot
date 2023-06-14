@@ -40,13 +40,13 @@ mcu = {
     'RAM_MAP_EXTERNAL_FLASH' : [
 		# SSBL checks that stack is in this region so needs to come first
         (0x30000000, 256, 0), # SRAM1, SRAM2
-        (0x24000000, 256, 4), # AXI SRAM. Use this for SDMMC IDMA ops
+        (0x24000000, 128, 4), # AXI SRAM. Use this for SDMMC IDMA ops
         (0x20000000,  64, 2), # DTCM, tightly coupled, no DMA, fast
         (0x30040000,  32, 0), # SRAM3.
         (0x38000000,  64, 1), # SRAM4.
     ],
     'INSTRUCTION_RAM' : (0x00000400,  63), # ITCM (first 1k removed, to keep address 0 unused)
-    'FLASH_RAM' : 		(0x24040000, 256), # AXI SRAM used for process stack and ram functions
+    'FLASH_RAM' : 		(0x24020000, 384), # AXI SRAM used for process stack and ram functions
     'DATA_RAM' :        (0x20010000,  64), # DTCM, tightly coupled, no DMA, fast
 
     # avoid a problem in the bootloader by making DTCM first. The DCache init
@@ -63,6 +63,13 @@ mcu = {
 
     'EXPECTED_CLOCK' : 400000000,
 
+	'EXPECTED_CLOCKS' : [
+		('STM32_SYS_CK',	400000000),
+		('STM32_QSPICLK', 	200000000),
+		('STM32_SDMMC1CLK',  80000000),
+		('STM32_SPI45CLK',  100000000),
+	],
+
     # this MCU has M7 instructions and hardware double precision
     'CORTEX'    : 'cortex-m7',
     'CPU_FLAGS' : '-mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard',
@@ -70,7 +77,9 @@ mcu = {
     'DEFINES' : {
         'HAL_HAVE_HARDWARE_DOUBLE' : '1',
         'STM32H7' : '1',
-    }
+    },
+
+    'LINKER_CONFIG' : 'common_extf_h750.ld'
 }
 
 pincount = {
@@ -206,7 +215,7 @@ AltFunction_map = {
 	"PA10:TIM1_CH3"     	:	1,
 	"PA10:USART1_RX"    	:	7,
 	"PA10:USB_OTG_FS_ID"	:	10,
-	"PA11:FDCAN1_RX"    	:	9,
+	"PA11:CAN1_RX"    	:	9,
 	"PA11:HRTIM_CHD1"   	:	2,
 	"PA11:I2S2_WS"      	:	5,
 	"PA11:LPUART1_CTS"  	:	3,
@@ -217,7 +226,7 @@ AltFunction_map = {
 	"PA11:USART1_CTS"   	:	7,
 	"PA11:USART1_NSS"   	:	7,
 	"PA11:OTG_FS_DM"		:	10,
-	"PA12:FDCAN1_TX"    	:	9,
+	"PA12:CAN1_TX"    	:	9,
 	"PA12:HRTIM_CHD2"   	:	2,
 	"PA12:I2S2_CK"      	:	5,
 	"PA12:LPUART1_DE"   	:	3,
@@ -297,7 +306,7 @@ AltFunction_map = {
 	"PB4:UART7_TX"      	:	11,
 	"PB5:DCMI_D10"      	:	13,
 	"PB5:ETH_PPS_OUT"   	:	11,
-	"PB5:FDCAN2_RX"     	:	9,
+	"PB5:CAN2_RX"     	:	9,
 	"PB5:FMC_SDCKE1"    	:	12,
 	"PB5:HRTIM_EEV7"    	:	3,
 	"PB5:I2C1_SMBA"     	:	4,
@@ -314,7 +323,7 @@ AltFunction_map = {
 	"PB6:CEC"           	:	5,
 	"PB6:DCMI_D5"       	:	13,
 	"PB6:DFSDM1_DATIN5" 	:	11,
-	"PB6:FDCAN2_TX"     	:	9,
+	"PB6:CAN2_TX"     	:	9,
 	"PB6:FMC_SDNE1"     	:	12,
 	"PB6:HRTIM_EEV8"    	:	3,
 	"PB6:I2C1_SCL"      	:	4,
@@ -338,7 +347,7 @@ AltFunction_map = {
 	"PB8:DCMI_D6"       	:	13,
 	"PB8:DFSDM1_CKIN7"  	:	3,
 	"PB8:ETH_TXD3"      	:	11,
-	"PB8:FDCAN1_RX"     	:	9,
+	"PB8:CAN1_RX"     	:	9,
 	"PB8:I2C1_SCL"      	:	4,
 	"PB8:I2C4_SCL"      	:	6,
 	"PB8:LTDC_B6"       	:	14,
@@ -350,7 +359,7 @@ AltFunction_map = {
 	"PB8:UART4_RX"      	:	8,
 	"PB9:DCMI_D7"       	:	13,
 	"PB9:DFSDM1_DATIN7" 	:	3,
-	"PB9:FDCAN1_TX"     	:	9,
+	"PB9:CAN1_TX"     	:	9,
 	"PB9:I2C1_SDA"      	:	4,
 	"PB9:I2C4_SDA"      	:	6,
 	"PB9:I2C4_SMBA"     	:	11,
@@ -386,7 +395,7 @@ AltFunction_map = {
 	"PB11:USB_OTG_HS_ULPI_D4"	:	10,
 	"PB12:DFSDM1_DATIN1"	:	6,
 	"PB12:ETH_TXD0"     	:	11,
-	"PB12:FDCAN2_RX"    	:	9,
+	"PB12:CAN2_RX"    	:	9,
 	"PB12:I2C2_SMBA"    	:	4,
 	"PB12:I2S2_WS"      	:	5,
 	"PB12:SPI2_NSS"     	:	5,
@@ -399,7 +408,7 @@ AltFunction_map = {
 	"PB12:USB_OTG_HS_ULPI_D5"	:	10,
 	"PB13:DFSDM1_CKIN1" 	:	6,
 	"PB13:ETH_TXD1"     	:	11,
-	"PB13:FDCAN2_TX"    	:	9,
+	"PB13:CAN2_TX"    	:	9,
 	"PB13:I2S2_CK"      	:	5,
 	"PB13:LPTIM2_OUT"   	:	3,
 	"PB13:SPI2_SCK"     	:	5,
@@ -553,13 +562,13 @@ AltFunction_map = {
 	"PC12:UART5_TX"     	:	8,
 	"PC12:USART3_CK"    	:	7,
 	"PD0:DFSDM1_CKIN6"  	:	3,
-	"PD0:FDCAN1_RX"     	:	9,
+	"PD0:CAN1_RX"     	:	9,
 	"PD0:FMC_D2"        	:	12,
 	"PD0:FMC_DA2"       	:	12,
 	"PD0:SAI3_SCK_A"    	:	6,
 	"PD0:UART4_RX"      	:	8,
 	"PD1:DFSDM1_DATIN6" 	:	3,
-	"PD1:FDCAN1_TX"     	:	9,
+	"PD1:CAN1_TX"     	:	9,
 	"PD1:FMC_D3"        	:	12,
 	"PD1:FMC_DA3"       	:	12,
 	"PD1:SAI3_SD_A"     	:	6,
@@ -984,13 +993,13 @@ AltFunction_map = {
 	"PH12:I2C4_SDA"     	:	4,
 	"PH12:LTDC_R6"      	:	14,
 	"PH12:TIM5_CH3"     	:	2,
-	"PH13:FDCAN1_TX"    	:	9,
+	"PH13:CAN1_TX"    	:	9,
 	"PH13:FMC_D21"      	:	12,
 	"PH13:LTDC_G2"      	:	14,
 	"PH13:TIM8_CH1N"    	:	3,
 	"PH13:UART4_TX"     	:	8,
 	"PH14:DCMI_D4"      	:	13,
-	"PH14:FDCAN1_RX"    	:	9,
+	"PH14:CAN1_RX"    	:	9,
 	"PH14:FMC_D22"      	:	12,
 	"PH14:LTDC_G3"      	:	14,
 	"PH14:TIM8_CH2N"    	:	3,
@@ -1046,7 +1055,7 @@ AltFunction_map = {
 	"PI7:LTDC_B7"       	:	14,
 	"PI7:SAI2_FS_A"     	:	10,
 	"PI7:TIM8_CH3"      	:	3,
-	"PI9:FDCAN1_RX"     	:	9,
+	"PI9:CAN1_RX"     	:	9,
 	"PI9:FMC_D30"       	:	12,
 	"PI9:LTDC_VSYNC"    	:	14,
 	"PI9:UART4_RX"      	:	8,
@@ -1138,4 +1147,40 @@ ADC1_map = {
     "PA1"	:	17,
     "PA4"	:	18,
     "PA5"	:	19,
+}
+
+ADC2_map = {
+    "PF13"	:	2,
+    "PA6"	:	3,
+    "PC4"	:	4,
+    "PB1"	:	5,
+    "PF14"	:	6,
+    "PA7"	:	7,
+    "PC5"	:	8,
+    "PB0"	:	9,
+    "PC0"	:	10,
+    "PC1"	:	11,
+    "PC2"	:	12,
+    "PC3"	:	13,
+    "PA2"	:	14,
+    "PA3"	:	15,
+    "N/A"	:	16,
+    "N/A"	:	17,
+    "PA4"	:	18,
+    "PA5"	:	19,
+}
+
+ADC3_map = {
+    "PF9"	:	2,
+    "PF7"	:	3,
+    "PF5"	:	4,
+    "PF3"	:	5,
+    "PF10"	:	6,
+    "PF8"	:	7,
+    "PF6"	:	8,
+    "PF4"	:	9,
+    "PH2"	:	13,
+    "PH3"	:	14,
+    "PH4"	:	15,
+    "PH5"	:	16,
 }

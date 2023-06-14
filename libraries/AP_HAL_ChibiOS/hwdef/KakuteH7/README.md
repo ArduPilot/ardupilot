@@ -1,11 +1,11 @@
 # KakuteH7 Flight Controller
 
-The KakuteH7 is a flight controller produced by [Holybro](http://www.holybro.com/).
+The KakuteH7 is a flight controller produced by [Holybro](http://www.holybro.com/). This is the V1 version. Also called -BT for some time.
 
 ## Features
 
  - STM32H743 microcontroller
- - ICM20689 IMU
+ - MPU6000 IMU
  - BMP280 barometer
  - microSD card slot
  - AT7456E OSD

@@ -16,6 +16,8 @@
  */
 #include <AP_HAL/AP_HAL.h>
 
+#define HAL_FORWARD_OTG2_SERIAL_LOCK_KEY 0x23565283UL
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !defined(HAL_NO_UARTDRIVER)
 
 #include <hal.h>
@@ -28,6 +30,8 @@
 #include <AP_Common/ExpandingString.h>
 #include "Scheduler.h"
 #include "hwdef/common/stm32_util.h"
+// MAVLink is included to use the MAV_POWER flags for the USB power
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -36,6 +40,12 @@ using namespace ChibiOS;
 #ifdef HAL_USB_VENDOR_ID
 // USB has been configured in hwdef.dat
 #define HAVE_USB_SERIAL
+#endif
+
+#if defined (STM32L4PLUS)
+#ifndef USART_CR1_RXNEIE
+#define USART_CR1_RXNEIE USART_CR1_RXNEIE_RXFNEIE
+#endif
 #endif
 
 #if HAL_WITH_IO_MCU
@@ -383,7 +393,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
                                             (void *)this);
                     osalDbgAssert(rxdma, "stream alloc failed");
                     chSysUnlock();
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
                     dmaStreamSetPeripheral(rxdma, &((SerialDriver*)sdef.serial)->usart->RDR);
 #else
                     dmaStreamSetPeripheral(rxdma, &((SerialDriver*)sdef.serial)->usart->DR);
@@ -482,7 +492,7 @@ void UARTDriver::dma_tx_allocate(Shared_DMA *ctx)
                             (void *)this);
     osalDbgAssert(txdma, "stream alloc failed");
     chSysUnlock();
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
     dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->TDR);
 #else
     dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->DR);
@@ -531,7 +541,7 @@ void UARTDriver::rx_irq_cb(void* self)
 #if defined(STM32F7) || defined(STM32H7)
     //disable dma, triggering DMA transfer complete interrupt
     uart_drv->rxdma->stream->CR &= ~STM32_DMA_CR_EN;
-#elif defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#elif defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
     //disable dma, triggering DMA transfer complete interrupt
     dmaStreamDisable(uart_drv->rxdma);
     uart_drv->rxdma->channel->CCR &= ~STM32_DMA_CR_EN;
@@ -736,31 +746,32 @@ ssize_t UARTDriver::read(uint8_t *buffer, uint16_t count)
     return ret;
 }
 
-int16_t UARTDriver::read()
+bool UARTDriver::read(uint8_t &b)
 {
     if (_uart_owner_thd != chThdGetSelfX()) {
-        return -1;
+        return false;
     }
 
-    return UARTDriver::read_locked(0);
+    return UARTDriver::read_locked(0, b);
 }
 
-int16_t UARTDriver::read_locked(uint32_t key)
+bool UARTDriver::read_locked(uint32_t key, uint8_t &b)
 {
     if (lock_read_key != 0 && key != lock_read_key) {
-        return -1;
+        return false;
     }
     if (!_rx_initialised) {
-        return -1;
+        return false;
     }
     uint8_t byte;
     if (!_readbuf.read_byte(&byte)) {
-        return -1;
+        return false;
     }
     if (!_rts_is_active) {
         update_rts_line();
     }
-    return byte;
+    b = byte;
+    return true;
 }
 
 /* write one byte to the port */
@@ -1185,7 +1196,7 @@ void UARTDriver::_rx_timer_tick(void)
         //Check if DMA is enabled
         //if not, it might be because the DMA interrupt was silenced
         //let's handle that here so that we can continue receiving
-#if defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
         bool enabled = (rxdma->channel->CCR & STM32_DMA_CR_EN);
 #else
         bool enabled = (rxdma->stream->CR & STM32_DMA_CR_EN);
@@ -1233,8 +1244,77 @@ void UARTDriver::_rx_timer_tick(void)
     if (_wait.thread_ctx && _readbuf.available() >= _wait.n) {
         chEvtSignal(_wait.thread_ctx, EVT_DATA);
     }
+#if HAL_FORWARD_OTG2_SERIAL
+    if (sdef.get_index() == HAL_FORWARD_OTG2_SERIAL) {
+        fwd_otg2_serial();
+    }
+#endif
     _in_rx_timer = false;
 }
+
+// forward data from a serial port to the USB
+// Used for connecting to Secondary Autopilot to communicate over
+// USB, for firmware updates, configuration etc
+#if HAL_FORWARD_OTG2_SERIAL
+void UARTDriver::fwd_otg2_serial()
+{
+    if (lock_read_key == HAL_FORWARD_OTG2_SERIAL_LOCK_KEY &&
+        lock_write_key == HAL_FORWARD_OTG2_SERIAL_LOCK_KEY &&
+        SDU2.config->usbp->state == USB_ACTIVE &&
+        hal.analogin->power_status_flags() & MAV_POWER_STATUS_USB_CONNECTED) {
+        // forward read data to USB
+        if (_readbuf.available() > 0) {
+            ByteBuffer::IoVec vec[2];
+            const auto n_vec = _readbuf.peekiovec(vec, _readbuf.available());
+            for (int i = 0; i < n_vec; i++) {
+                int ret = 0;
+                ret = chnWriteTimeout(&SDU2, vec[i].data, vec[i].len, TIME_IMMEDIATE);
+                if (ret < 0) {
+                    break;
+                }
+                _readbuf.advance(ret);
+                /* We wrote less than we asked for, stop */
+                if ((unsigned)ret != vec[i].len) {
+                    break;
+                }
+            }
+        }
+        {
+            // Do the same for write data
+            WITH_SEMAPHORE(_write_mutex);
+            ByteBuffer::IoVec vec[2];
+            const auto n_vec = _writebuf.reserve(vec, _writebuf.space());
+            for (int i = 0; i < n_vec; i++) {
+                int ret = 0;
+                ret = chnReadTimeout(&SDU2, vec[i].data, vec[i].len, TIME_IMMEDIATE);
+                if (ret < 0) {
+                    break;
+                }
+                _writebuf.commit(ret);
+                /* We read less than we asked for, stop */
+                if ((unsigned)ret != vec[i].len) {
+                    break;
+                }
+            }
+            if (_writebuf.available() > 0) {
+                // we have data to write, so trigger the write thread
+                chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
+            }
+        }
+    } else if (hal.analogin->power_status_flags() & MAV_POWER_STATUS_USB_CONNECTED) {
+        // lock the read and write keys
+        lock_port(HAL_FORWARD_OTG2_SERIAL_LOCK_KEY, HAL_FORWARD_OTG2_SERIAL_LOCK_KEY);
+        // flush the write and read buffer
+        _readbuf.clear();
+        _writebuf.clear();
+    } else if (lock_read_key == HAL_FORWARD_OTG2_SERIAL_LOCK_KEY &&
+            lock_write_key == HAL_FORWARD_OTG2_SERIAL_LOCK_KEY) {
+        _readbuf.clear();
+        _writebuf.clear();
+        lock_port(0,0); // unlock the port
+    }
+}
+#endif
 
 // regular serial read
 void UARTDriver::read_bytes_NODMA()
@@ -1607,7 +1687,7 @@ bool UARTDriver::set_options(uint16_t options)
     // Check flow control, might have to disable if RTS line is gone
     set_flow_control(_flow_control);
 
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
     // F7 has built-in support for inversion in all uarts
     ioline_t rx_line = (options & OPTION_SWAP)?atx_line:arx_line;
     ioline_t tx_line = (options & OPTION_SWAP)?arx_line:atx_line;

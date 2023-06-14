@@ -27,7 +27,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: INITIAL_MODE
     // @DisplayName: Initial driving mode
     // @Description: This selects the mode to start in on boot. This is useful for when you want to start in AUTO mode on boot without a receiver. Usually used in combination with when AUTO_TRIGGER_PIN or AUTO_KICKSTART.
-    // @Values: 0:Manual,1:Acro,3:Steering,4:Hold,5:Loiter,6:Follow,7:Simple,10:Auto,11:RTL,12:SmartRTL,15:Guided
+    // @CopyValuesFrom: MODE1
     // @User: Advanced
     GSCALAR(initial_mode,        "INITIAL_MODE",     Mode::Number::MANUAL),
 
@@ -171,7 +171,7 @@ const AP_Param::Info Rover::var_info[] = {
 
     // @Param: MODE1
     // @DisplayName: Mode1
-    // @Values: 0:Manual,1:Acro,3:Steering,4:Hold,5:Loiter,6:Follow,7:Simple,10:Auto,11:RTL,12:SmartRTL,15:Guided
+    // @Values: 0:Manual,1:Acro,3:Steering,4:Hold,5:Loiter,6:Follow,7:Simple,8:Dock,9:Circle,10:Auto,11:RTL,12:SmartRTL,15:Guided
     // @User: Standard
     // @Description: Driving mode for switch position 1 (910 to 1230 and above 2049)
     GSCALAR(mode1,           "MODE1",         Mode::Number::MANUAL),
@@ -297,7 +297,7 @@ const AP_Param::Info Rover::var_info[] = {
     GOBJECT(camera, "CAM", AP_Camera),
 #endif
 
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
     // @Group: PLND_
     // @Path: ../libraries/AC_PrecLand/AC_PrecLand.cpp
     GOBJECT(precland,                "PLND_", AC_PrecLand),
@@ -425,9 +425,11 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(afs, "AFS_", 5, ParametersG2, AP_AdvancedFailsafe),
 #endif
 
+#if AP_BEACON_ENABLED
     // @Group: BCN
     // @Path: ../libraries/AP_Beacon/AP_Beacon.cpp
     AP_SUBGROUPINFO(beacon, "BCN", 6, ParametersG2, AP_Beacon),
+#endif
 
     // 7 was used by AP_VisualOdometry
 
@@ -692,6 +694,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("FS_GCS_TIMEOUT", 56, ParametersG2, fs_gcs_timeout, 5),
 
+    // @Group: CIRC
+    // @Path: mode_circle.cpp
+    AP_SUBGROUPINFO(mode_circle, "CIRC", 57, ParametersG2, ModeCircle),
+
     AP_GROUPEND
 };
 
@@ -730,7 +736,9 @@ ParametersG2::ParametersG2(void)
 #if ADVANCED_FAILSAFE == ENABLED
     afs(),
 #endif
+#if AP_BEACON_ENABLED
     beacon(),
+#endif
     motors(rover.ServoRelayEvents, wheel_rate_control),
     wheel_rate_control(wheel_encoder),
     attitude_control(),

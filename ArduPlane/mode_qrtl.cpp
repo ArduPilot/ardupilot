@@ -17,8 +17,7 @@ bool ModeQRTL::_enter()
     int32_t RTL_alt_abs_cm = plane.home.alt + quadplane.qrtl_alt*100UL;
     if (quadplane.motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) {
         // VTOL motors are active, either in VTOL flight or assisted flight
-        Location destination = plane.rally.calc_best_rally_or_home_location(plane.current_loc, RTL_alt_abs_cm);
-
+        Location destination = plane.calc_best_rally_or_home_location(plane.current_loc, RTL_alt_abs_cm);
         const float dist = plane.current_loc.get_distance(destination);
         const float radius = get_VTOL_return_radius();
 
@@ -87,6 +86,13 @@ void ModeQRTL::update()
  */
 void ModeQRTL::run()
 {
+    const uint32_t now = AP_HAL::millis();
+    if (quadplane.tailsitter.in_vtol_transition(now)) {
+        // Tailsitters in FW pull up phase of VTOL transition run FW controllers
+        Mode::run();
+        return;
+    }
+
     switch (submode) {
         case SubMode::climb: {
             // request zero velocity
@@ -122,7 +128,7 @@ void ModeQRTL::run()
                 plane.prev_WP_loc = plane.current_loc;
 
                 int32_t RTL_alt_abs_cm = plane.home.alt + quadplane.qrtl_alt*100UL;
-                Location destination = plane.rally.calc_best_rally_or_home_location(plane.current_loc, RTL_alt_abs_cm);
+                Location destination = plane.calc_best_rally_or_home_location(plane.current_loc, RTL_alt_abs_cm);
                 const float dist = plane.current_loc.get_distance(destination);
                 const float radius = get_VTOL_return_radius();
                 if (dist < radius) {
@@ -166,6 +172,10 @@ void ModeQRTL::run()
             break;
         }
     }
+
+    // Stabilize with fixed wing surfaces
+    plane.stabilize_roll();
+    plane.stabilize_pitch();
 }
 
 /*

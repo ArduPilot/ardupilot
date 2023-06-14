@@ -1,8 +1,11 @@
 #pragma once
 
+#include "AP_Proximity_config.h"
+
+#if AP_PROXIMITY_TERARANGERTOWEREVO_ENABLED
+
 #include "AP_Proximity.h"
 
-#if HAL_PROXIMITY_ENABLED
 #include "AP_Proximity_Backend_Serial.h"
 
 #define PROXIMITY_TRTOWER_TIMEOUT_MS            300                               // requests timeout after 0.3 seconds
@@ -59,4 +62,4 @@ private:
 //    const uint8_t REFRESH_600_HZ[5] = { (uint8_t)0x00, (uint8_t)0x52, (uint8_t)0x03, (uint8_t)0x06, (uint8_t)0xDF};
 };
 
-#endif // HAL_PROXIMITY_ENABLED
+#endif // AP_PROXIMITY_TERARANGERTOWEREVO_ENABLED

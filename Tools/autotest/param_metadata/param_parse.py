@@ -12,7 +12,6 @@ import copy
 import os
 import re
 import sys
-import glob
 from argparse import ArgumentParser
 
 from param import (Library, Parameter, Vehicle, known_group_fields,
@@ -91,16 +90,19 @@ def debug(str_to_print):
 def lua_applets():
     '''return list of Library objects for lua applets and drivers'''
     lua_lib = Library("", reference="Lua Script", not_rst=True, check_duplicates=True)
-    patterns = ["libraries/AP_Scripting/applets/*.lua", "libraries/AP_Scripting/drivers/*.lua"]
+    dirs = ["libraries/AP_Scripting/applets", "libraries/AP_Scripting/drivers"]
     paths = []
-    for p in patterns:
-        debug("Adding lua paths %s" % p)
-        luafiles = glob.glob(os.path.join(apm_path, p))
-        for f in luafiles:
-            # the library is expected to have the path as a relative path from within
-            # a vehicle directory
-            f = f.replace(apm_path, "../")
-            paths.append(f)
+    for d in dirs:
+        for root, dirs, files in os.walk(os.path.join(apm_path, d)):
+            for file in files:
+                if not file.endswith(".lua"):
+                    continue
+                f = os.path.join(root, file)
+                debug("Adding lua path %s" % f)
+                # the library is expected to have the path as a relative path from within
+                # a vehicle directory
+                f = f.replace(apm_path, "../")
+                paths.append(f)
     setattr(lua_lib, "Path", ','.join(paths))
     return lua_lib
 

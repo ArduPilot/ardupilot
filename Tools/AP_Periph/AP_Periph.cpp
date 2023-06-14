@@ -185,7 +185,11 @@ void AP_Periph_FW::init()
         }
     }
 #endif
-    
+
+#if AP_KDECAN_ENABLED
+    kdecan.init();
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     const bool pins_enabled = ChibiOS::I2CBus::check_select_pins(0x01);
@@ -219,7 +223,7 @@ void AP_Periph_FW::init()
     }
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_PRX
+#if HAL_PROXIMITY_ENABLED
     if (proximity.get_type(0) != AP_Proximity::Type::None && g.proximity_port >= 0) {
         auto *uart = hal.serial(g.proximity_port);
         if (uart != nullptr) {
@@ -236,6 +240,15 @@ void AP_Periph_FW::init()
 
 #ifdef HAL_PERIPH_ENABLE_HWESC
     hwesc_telem.init(hal.serial(HAL_PERIPH_HWESC_SERIAL_PORT));
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_ESC_APD
+    for (uint8_t i = 0; i < ESC_NUMBERS; i++) {
+        const uint8_t port = g.esc_serial_port[i];
+        if (port < SERIALMANAGER_NUM_PORTS) { // skip bad ports
+            apd_esc_telem[i] = new ESC_APD_Telem (hal.serial(port), g.pole_count[i]);
+        }
+    }
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MSP
@@ -503,8 +516,8 @@ void AP_Periph_FW::check_for_serial_reboot_cmd(const int8_t serial_index)
             const char reboot_string_len = sizeof(reboot_string)-1; // -1 is to remove the null termination
             static uint16_t index[hal.num_serial];
 
-            const int16_t data = uart->read();
-            if (data < 0 || data > 0xff) {
+            uint8_t data;
+            if (!uart->read(data)) {
                 // read error
                 continue;
             }

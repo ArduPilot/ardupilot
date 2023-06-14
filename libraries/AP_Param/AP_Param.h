@@ -27,6 +27,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include <StorageManager/StorageManager.h>
+#include <AP_Scripting/AP_Scripting_config.h>
 
 #include "float.h"
 
@@ -1018,6 +1019,9 @@ public:
     operator const eclass () const {
         return (eclass)_value;
     }
+    void set(eclass v) {
+        AP_Int8::set(int8_t(v));
+    }
 };
 
 template<typename eclass>
@@ -1026,5 +1030,8 @@ class AP_Enum16 : public AP_Int16
 public:
     operator const eclass () const {
         return (eclass)_value;
+    }
+    void set(eclass v) {
+        AP_Int16::set(int16_t(v));
     }
 };

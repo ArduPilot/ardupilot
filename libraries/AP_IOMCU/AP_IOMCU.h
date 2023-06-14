@@ -4,6 +4,7 @@
   For bootstrapping this will initially implement the px4io protocol,
   but will later move to an ArduPilot specific protocol
  */
+#pragma once
 
 #include <AP_HAL/AP_HAL.h>
 

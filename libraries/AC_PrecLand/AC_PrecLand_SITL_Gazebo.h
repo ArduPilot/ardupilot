@@ -1,8 +1,11 @@
 #pragma once
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <AP_Math/AP_Math.h>
+#include "AC_PrecLand_config.h"
+
+#if AC_PRECLAND_SITL_GAZEBO_ENABLED
+
 #include <AC_PrecLand/AC_PrecLand_Backend.h>
+#include <AP_Math/AP_Math.h>
 #include <AP_IRLock/AP_IRLock_SITL_Gazebo.h>
 
 /*
@@ -41,4 +44,4 @@ private:
     uint32_t            _los_meas_time_ms;      // system time in milliseconds when los was measured
 };
 
-#endif
+#endif  // AC_PRECLAND_SITL_GAZEBO_ENABLED

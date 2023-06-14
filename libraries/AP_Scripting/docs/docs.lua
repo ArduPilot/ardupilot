@@ -78,41 +78,85 @@ local EFI_State_ud = {}
 ---@return EFI_State_ud
 function EFI_State() end
 
+-- get field
+---@return number
+function EFI_State_ud:pt_compensation() end
+
 -- set field
 ---@param value number
 function EFI_State_ud:pt_compensation(value) end
+
+-- get field
+---@return number
+function EFI_State_ud:throttle_out() end
 
 -- set field
 ---@param value number
 function EFI_State_ud:throttle_out(value) end
 
+-- get field
+---@return number
+function EFI_State_ud:ignition_voltage() end
+
 -- set field
 ---@param value number
 function EFI_State_ud:ignition_voltage(value) end
+
+-- get field
+---@return Cylinder_Status_ud
+function EFI_State_ud:cylinder_status() end
 
 -- set field
 ---@param value Cylinder_Status_ud
 function EFI_State_ud:cylinder_status(value) end
 
+-- get field
+---@return integer
+function EFI_State_ud:ecu_index() end
+
 -- set field
 ---@param value integer
 function EFI_State_ud:ecu_index(value) end
+
+-- get field
+---@return integer
+function EFI_State_ud:throttle_position_percent() end
 
 -- set field
 ---@param value integer
 function EFI_State_ud:throttle_position_percent(value) end
 
+-- get field
+---@return number
+function EFI_State_ud:estimated_consumed_fuel_volume_cm3() end
+
 -- set field
 ---@param value number
 function EFI_State_ud:estimated_consumed_fuel_volume_cm3(value) end
+
+-- get field
+---@return number
+function EFI_State_ud:fuel_consumption_rate_cm3pm() end
 
 -- set field
 ---@param value number
 function EFI_State_ud:fuel_consumption_rate_cm3pm(value) end
 
+-- get field
+---@return number
+function EFI_State_ud:fuel_pressure() end
+
 -- set field
 ---@param value number
 function EFI_State_ud:fuel_pressure(value) end
+
+-- get field
+---@return integer
+---| '0' # Not supported
+---| '1' # Ok
+---| '2' # Below nominal
+---| '3' # Above nominal
+function EFI_State_ud:fuel_pressure_status() end
 
 -- set field
 ---@param status integer
@@ -122,45 +166,89 @@ function EFI_State_ud:fuel_pressure(value) end
 ---| '3' # Above nominal
 function EFI_State_ud:fuel_pressure_status(status) end
 
+-- get field
+---@return number
+function EFI_State_ud:oil_temperature() end
+
 -- set field
 ---@param value number
 function EFI_State_ud:oil_temperature(value) end
+
+-- get field
+---@return number
+function EFI_State_ud:oil_pressure() end
 
 -- set field
 ---@param value number
 function EFI_State_ud:oil_pressure(value) end
 
+-- get field
+---@return number
+function EFI_State_ud:coolant_temperature() end
+
 -- set field
 ---@param value number
 function EFI_State_ud:coolant_temperature(value) end
+
+-- get field
+---@return number
+function EFI_State_ud:intake_manifold_temperature() end
 
 -- set field
 ---@param value number
 function EFI_State_ud:intake_manifold_temperature(value) end
 
+-- get field
+---@return number
+function EFI_State_ud:intake_manifold_pressure_kpa() end
+
 -- set field
 ---@param value number
 function EFI_State_ud:intake_manifold_pressure_kpa(value) end
+
+-- get field
+---@return number
+function EFI_State_ud:atmospheric_pressure_kpa() end
 
 -- set field
 ---@param value number
 function EFI_State_ud:atmospheric_pressure_kpa(value) end
 
+-- get field
+---@return number
+function EFI_State_ud:spark_dwell_time_ms() end
+
 -- set field
 ---@param value number
 function EFI_State_ud:spark_dwell_time_ms(value) end
+
+-- get field
+---@return uint32_t_ud
+function EFI_State_ud:engine_speed_rpm() end
 
 -- set field
 ---@param value uint32_t_ud
 function EFI_State_ud:engine_speed_rpm(value) end
 
+-- get field
+---@return integer
+function EFI_State_ud:engine_load_percent() end
+
 -- set field
 ---@param value integer
 function EFI_State_ud:engine_load_percent(value) end
 
+-- get field
+---@return boolean
+function EFI_State_ud:general_error() end
+
 -- set field
 ---@param value boolean
 function EFI_State_ud:general_error(value) end
+
+-- get field
+---@return uint32_t_ud
+function EFI_State_ud:last_updated_ms() end
 
 -- set field
 ---@param value uint32_t_ud
@@ -174,21 +262,41 @@ local Cylinder_Status_ud = {}
 ---@return Cylinder_Status_ud
 function Cylinder_Status() end
 
+-- get field
+---@return number
+function Cylinder_Status_ud:lambda_coefficient() end
+
 -- set field
 ---@param value number
 function Cylinder_Status_ud:lambda_coefficient(value) end
+
+-- get field
+---@return number
+function Cylinder_Status_ud:exhaust_gas_temperature() end
 
 -- set field
 ---@param value number
 function Cylinder_Status_ud:exhaust_gas_temperature(value) end
 
+-- get field
+---@return number
+function Cylinder_Status_ud:cylinder_head_temperature() end
+
 -- set field
 ---@param value number
 function Cylinder_Status_ud:cylinder_head_temperature(value) end
 
+-- get field
+---@return number
+function Cylinder_Status_ud:injection_time_ms() end
+
 -- set field
 ---@param value number
 function Cylinder_Status_ud:injection_time_ms(value) end
+
+-- get field
+---@return number
+function Cylinder_Status_ud:ignition_timing_deg() end
 
 -- set field
 ---@param value number
@@ -197,6 +305,10 @@ function Cylinder_Status_ud:ignition_timing_deg(value) end
 -- desc
 ---@class efi
 efi = {}
+
+-- desc
+---@return EFI_State_ud
+function efi:get_state() end
 
 -- desc
 ---@param instance integer
@@ -976,17 +1088,93 @@ function winch:relax() end
 function winch:healthy() end
 
 -- desc
----@class mount
-mount = {}
+---@class iomcu
+iomcu = {}
+
+-- Check if the IO is healthy
+---@return boolean
+function iomcu:healthy() end
 
 -- desc
----@param param1 integer
----@return integer|nil  -- pic_count
----@return boolean|nil  -- record_video
----@return integer|nil  -- zoom_step
----@return integer|nil  -- focus_step
----@return boolean|nil  -- auto_focus
-function mount:get_camera_state(param1) end
+---@class compass
+compass = {}
+
+-- Check if the compass is healthy
+---@param instance integer -- the 0-based index of the compass instance to return.
+---@return boolean
+function compass:healthy(instance) end
+
+
+-- desc
+---@class camera
+camera = {}
+
+-- desc
+---@param instance integer
+---@param distance_m number
+function camera:set_trigger_distance(instance, distance_m) end
+
+-- desc
+---@param instance integer
+---@param start_recording boolean
+---@return boolean
+function camera:record_video(instance, start_recording) end
+
+-- desc
+---@param instance integer
+function camera:take_picture(instance) end
+
+-- desc
+---@class AP_Camera__camera_state_t_ud
+local AP_Camera__camera_state_t_ud = {}
+
+---@return AP_Camera__camera_state_t_ud
+function AP_Camera__camera_state_t() end
+
+-- get field
+---@return Vector2f_ud
+function AP_Camera__camera_state_t_ud:tracking_p1() end
+
+-- get field
+---@return Vector2f_ud
+function AP_Camera__camera_state_t_ud:tracking_p2() end
+
+-- get field
+---@return integer
+function AP_Camera__camera_state_t_ud:tracking_type() end
+
+-- get field
+---@return number
+function AP_Camera__camera_state_t_ud:focus_value() end
+
+-- get field
+---@return integer
+function AP_Camera__camera_state_t_ud:focus_type() end
+
+-- get field
+---@return number
+function AP_Camera__camera_state_t_ud:zoom_value() end
+
+-- get field
+---@return integer
+function AP_Camera__camera_state_t_ud:zoom_type() end
+
+-- get field
+---@return boolean
+function AP_Camera__camera_state_t_ud:recording_video() end
+
+-- get field
+---@return integer
+function AP_Camera__camera_state_t_ud:take_pic_incr() end
+
+-- desc
+---@param instance integer
+---@return AP_Camera__camera_state_t_ud|nil
+function camera:get_state(instance) end
+
+-- desc
+---@class mount
+mount = {}
 
 -- desc
 ---@param instance integer
@@ -1187,6 +1375,15 @@ ins = {}
 ---@return number
 function ins:get_temperature(instance) end
 
+-- Check if a specific gyrometer sensor is healthy
+---@param instance integer -- the 0-based index of the gyrometer instance to return.
+---@return boolean
+function ins:get_gyro_health(instance) end
+
+-- Check if a specific accelerometer sensor is healthy
+---@param instance integer -- the 0-based index of the accelerometer instance to return.
+---@return boolean
+function ins:get_accel_health(instance) end
 
 -- desc
 ---@class Motors_dynamic
@@ -1592,6 +1789,11 @@ function baro:get_pressure() end
 ---@return number
 function baro:get_altitude() end
 
+-- Check if a baro sensor is healthy
+---@param instance integer -- the 0-based index of the BARO instance to return.
+---@return boolean
+function baro:healthy(instance) end
+
 
 -- desc
 ---@class serial
@@ -1937,6 +2139,18 @@ function vehicle:nav_script_time_done(param1) end
 ---@return number|nil
 ---@return number|nil
 function vehicle:nav_script_time() end
+
+-- desc
+---@param hold_in_bootloader boolean
+function vehicle:reboot(hold_in_bootloader) end
+
+-- desc
+---@return boolean
+function vehicle:is_taking_off() end
+
+-- desc
+---@return boolean
+function vehicle:is_landing() end
 
 -- desc
 ---@class onvif
@@ -2651,3 +2865,29 @@ function dirlist(directoryname) end
 --desc
 --@param filename
 function remove(filename) end
+
+-- desc
+---@class mavlink
+mavlink = {}
+
+-- initializes mavlink
+--@param num_rx_msgid number
+--@param msg_queue_length
+function mavlink:init(num_rx_msgid, msg_queue_length) end
+
+-- marks mavlink message for receive, message id can be get using mavlink_msgs.get_msgid("MSG_NAME")
+--@param msg_id number
+function mavlink:register_rx_msgid(msg_id) end
+
+-- receives mavlink message marked for receive using mavlink:register_rx_msgid
+--@return mavlink_message bytes
+--@return mavlink_channel number
+--@return receive_timestamp number
+function mavlink:receive_chan() end
+
+-- sends mavlink message, to use this function the call should be like this:
+-- mavlink:send(chan, mavlink_msgs.encode("MSG_NAME", {param1 = value1, param2 = value2, ...}})
+--@param mavlink_channel integer
+--@param mavlink_message_id integer
+--@param encoded_message_packet bytes
+function mavlink:send_chan(chan, msgid, message) end

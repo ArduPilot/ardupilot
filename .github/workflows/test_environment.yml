@@ -3,6 +3,15 @@ on:
   schedule:
     - cron: '0 0 * * 6'  # every saturday at midnight
   workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/test_environment.yml'
+      - 'Tools/scripts/environment_install/**'
+
+  pull_request:
+    paths:
+      - '.github/workflows/test_environment.yml'
+      - 'Tools/scripts/environment_install/**'
 
 
 concurrency:
@@ -24,7 +33,9 @@ jobs:
           - os: ubuntu
             name: focal
           - os: ubuntu
-            name: hirsute
+            name: jammy
+          - os: ubuntu
+            name: lunar
           - os: archlinux
             name: latest
           - os: debian

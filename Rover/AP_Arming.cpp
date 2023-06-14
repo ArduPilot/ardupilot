@@ -59,7 +59,7 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
         return false;
     }
 
-    // ensure position esetimate is ok
+    // ensure position estimate is ok
     if (!rover.ekf_position_ok()) {
         // vehicle level position estimate checks
         check_failed(display_failure, "Need Position Estimate");
@@ -78,11 +78,7 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
 
     //are arming checks disabled?
     if (checks_to_perform == 0) {
-        return true;
-    }
-    if (SRV_Channels::get_emergency_stop()) {
-        check_failed(report, "Motors Emergency Stopped");
-        return false;
+        return mandatory_checks(report);
     }
 
     if (rover.g2.sailboat.sail_enabled() && !rover.g2.windvane.enabled()) {

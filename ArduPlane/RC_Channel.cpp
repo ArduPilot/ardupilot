@@ -45,8 +45,7 @@ void RC_Channel_Plane::do_aux_function_change_mode(const Mode::Number number,
         // return to flight mode switch's flight mode if we are currently
         // in this mode
         if (plane.control_mode->mode_number() == number) {
-// TODO:           rc().reset_mode_switch();
-            plane.reset_control_switch();
+            rc().reset_mode_switch();
         }
     }
 }
@@ -154,6 +153,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     case AUX_FUNC::RTL:
     case AUX_FUNC::TAKEOFF:
     case AUX_FUNC::FBWA:
+    case AUX_FUNC::AIRBRAKE:
 #if HAL_QUADPLANE_ENABLED
     case AUX_FUNC::QRTL:
     case AUX_FUNC::QSTABILIZE:
@@ -354,7 +354,7 @@ bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
         break;
 
     case AUX_FUNC::MODE_SWITCH_RESET:
-        plane.reset_control_switch();
+        rc().reset_mode_switch();
         break;
 
     case AUX_FUNC::CRUISE:

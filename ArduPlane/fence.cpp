@@ -75,7 +75,7 @@ void Plane::fence_check()
 
             Location loc;
             if (fence.get_return_rally() != 0 || fence_act == AC_FENCE_ACTION_RTL_AND_LAND) {
-                loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude_cm());
+                loc = calc_best_rally_or_home_location(current_loc, get_RTL_altitude_cm());
             } else {
                 //return to fence return point, not a rally point
                 if (fence.get_return_altitude() > 0) {

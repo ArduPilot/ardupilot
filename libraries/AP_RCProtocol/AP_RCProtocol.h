@@ -28,23 +28,36 @@ class AP_RCProtocol_Backend;
 
 class AP_RCProtocol {
 public:
-    AP_RCProtocol() {}
-    ~AP_RCProtocol();
-    friend class AP_RCProtocol_Backend;
 
     enum rcprotocol_t {
-        PPM        =  0,
+#if AP_RCPROTOCOL_PPMSUM_ENABLED
+        PPMSUM     =  0,
+#endif
+#if AP_RCPROTOCOL_IBUS_ENABLED
         IBUS       =  1,
+#endif
+#if AP_RCPROTOCOL_SBUS_ENABLED
         SBUS       =  2,
+#endif
+#if AP_RCPROTOCOL_SBUS_NI_ENABLED
         SBUS_NI    =  3,
+#endif
         DSM        =  4,
+#if AP_RCPROTOCOL_SUMD_ENABLED
         SUMD       =  5,
+#endif
 #if AP_RCPROTOCOL_SRXL_ENABLED
         SRXL       =  6,
 #endif
+#if AP_RCPROTOCOL_SRXL2_ENABLED
         SRXL2      =  7,
+#endif
+#if AP_RCPROTOCOL_CRSF_ENABLED
         CRSF       =  8,
+#endif
+#if AP_RCPROTOCOL_ST24_ENABLED
         ST24       =  9,
+#endif
 #if AP_RCPROTOCOL_FPORT_ENABLED
         FPORT      = 10,
 #endif
@@ -56,6 +69,16 @@ public:
 #endif
         NONE    //last enum always is None
     };
+
+    // return protocol name as a string
+    static const char *protocol_name_from_protocol(rcprotocol_t protocol);
+
+#if AP_RCPROTOCOL_ENABLED
+
+    AP_RCProtocol() {}
+    ~AP_RCProtocol();
+    friend class AP_RCProtocol_Backend;
+
     void init();
     bool valid_serial_prot() const
     {
@@ -86,24 +109,40 @@ public:
 #if AP_RCPROTOCOL_FASTSBUS_ENABLED
         case FASTSBUS:
 #endif
+#if AP_RCPROTOCOL_SBUS_ENABLED
         case SBUS:
+#endif
+#if AP_RCPROTOCOL_SBUS_NI_ENABLED
         case SBUS_NI:
-        case PPM:
+#endif
+#if AP_RCPROTOCOL_PPMSUM_ENABLED
+        case PPMSUM:
+#endif
 #if AP_RCPROTOCOL_FPORT_ENABLED
         case FPORT:
 #endif
 #if AP_RCPROTOCOL_FPORT2_ENABLED
         case FPORT2:
 #endif
+#if AP_RCPROTOCOL_CRSF_ENABLED
         case CRSF:
+#endif
             return true;
+#if AP_RCPROTOCOL_IBUS_ENABLED
         case IBUS:
+#endif
+#if AP_RCPROTOCOL_SUMD_ENABLED
         case SUMD:
+#endif
 #if AP_RCPROTOCOL_SRXL_ENABLED
         case SRXL:
 #endif
+#if AP_RCPROTOCOL_SRXL2_ENABLED
         case SRXL2:
+#endif
+#if AP_RCPROTOCOL_ST24_ENABLED
         case ST24:
+#endif
         case NONE:
             return false;
         }
@@ -119,9 +158,6 @@ public:
     int16_t get_rx_link_quality(void) const;
 
     // return protocol name as a string
-    static const char *protocol_name_from_protocol(rcprotocol_t protocol);
-
-    // return protocol name as a string
     const char *protocol_name(void) const;
 
     // return detected protocol
@@ -133,12 +169,10 @@ public:
     void add_uart(AP_HAL::UARTDriver* uart);
     bool has_uart() const { return added.uart != nullptr; }
 
-#ifdef IOMCU_FW
     // set allowed RC protocols
     void set_rc_protocols(uint32_t mask) {
         rc_protocols_mask = mask;
     }
-#endif
 
     class SerialConfig {
     public:
@@ -180,10 +214,15 @@ private:
 
     // allowed RC protocols mask (first bit means "all")
     uint32_t rc_protocols_mask;
+
+#endif  // AP_RCPROTCOL_ENABLED
+
 };
 
+#if AP_RCPROTOCOL_ENABLED
 namespace AP {
     AP_RCProtocol &RC();
 };
 
 #include "AP_RCProtocol_Backend.h"
+#endif  // AP_RCProtocol_enabled

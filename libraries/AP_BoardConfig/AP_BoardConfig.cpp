@@ -76,7 +76,11 @@
 
 #ifndef HAL_BRD_OPTIONS_DEFAULT
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+#ifdef HAL_DEBUG_BUILD
+#define HAL_BRD_OPTIONS_DEFAULT BOARD_OPTION_WATCHDOG | BOARD_OPTION_DEBUG_ENABLE
+#else
 #define HAL_BRD_OPTIONS_DEFAULT BOARD_OPTION_WATCHDOG
+#endif
 #else
 #define HAL_BRD_OPTIONS_DEFAULT 0
 #endif
@@ -194,7 +198,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #if HAL_HAVE_IMU_HEATER
     // @Param: HEAT_TARG
     // @DisplayName: Board heater temperature target
-    // @Description: Board heater target temperature for boards with controllable heating units. DO NOT SET to -1 on the Cube. Set to -1 to disable the heater, please reboot after setting to -1.
+    // @Description: Board heater target temperature for boards with controllable heating units. Set to -1 to disable the heater, please reboot after setting to -1.
     // @Range: -1 80
     // @Units: degC
     // @User: Advanced
@@ -230,7 +234,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Param: SAFETYOPTION
     // @DisplayName: Options for safety button behavior
     // @Description: This controls the activation of the safety button. It allows you to control if the safety button can be used for safety enable and/or disable, and whether the button is only active when disarmed
-    // @Bitmask: 0:ActiveForSafetyEnable,1:ActiveForSafetyDisable,2:ActiveWhenArmed,3:Force safety on when the aircraft disarms
+    // @Bitmask: 0:ActiveForSafetyDisable,1:ActiveForSafetyEnable,2:ActiveWhenArmed,3:Force safety on when the aircraft disarms
     // @User: Standard
     AP_GROUPINFO("SAFETYOPTION",   13, AP_BoardConfig, state.safety_option, BOARD_SAFETY_OPTION_DEFAULT),
 
@@ -283,7 +287,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Board options
     // @Description: Board specific option flags
-    // @Bitmask: 0:Enable hardware watchdog, 1:Disable MAVftp, 2:Enable set of internal parameters, 3:Enable Debug Pins, 4:Unlock flash on reboot, 5:Write protect firmware flash on reboot, 6:Write protect bootloader flash on reboot
+    // @Bitmask: 0:Enable hardware watchdog, 1:Disable MAVftp, 2:Enable set of internal parameters, 3:Enable Debug Pins, 4:Unlock flash on reboot, 5:Write protect firmware flash on reboot, 6:Write protect bootloader flash on reboot, 7:Skip board validation
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 19, AP_BoardConfig, _options, HAL_BRD_OPTIONS_DEFAULT),
 

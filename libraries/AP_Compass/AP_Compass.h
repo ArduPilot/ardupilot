@@ -205,7 +205,7 @@ public:
     bool consistent() const;
 
     /// Return the health of a compass
-    bool healthy(uint8_t i) const { return _get_state(Priority(i)).healthy; }
+    bool healthy(uint8_t i) const;
     bool healthy(void) const { return healthy(_first_usable); }
     uint8_t get_healthy_mask() const;
 
@@ -244,6 +244,11 @@ public:
     // set overall board orientation
     void set_board_orientation(enum Rotation orientation) {
         _board_orientation = orientation;
+    }
+
+    // get overall board orientation
+    enum Rotation get_board_orientation(void) const {
+        return _board_orientation;
     }
 
     /// Set the motor compensation type
@@ -448,7 +453,7 @@ private:
 #if AP_COMPASS_MMC3416_ENABLED
         DRIVER_MMC3416  =9,
 #endif
-#if AP_COMPASS_UAVCAN_ENABLED
+#if AP_COMPASS_DRONECAN_ENABLED
         DRIVER_UAVCAN   =11,
 #endif
 #if AP_COMPASS_QMC5883L_ENABLED

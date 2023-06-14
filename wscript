@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # encoding: utf-8
 
 from __future__ import print_function
@@ -13,6 +13,7 @@ sys.path.insert(0, 'Tools/ardupilotwaf/')
 
 import ardupilotwaf
 import boards
+import shutil
 
 from waflib import Build, ConfigSet, Configure, Context, Utils
 from waflib.Configure import conf
@@ -125,6 +126,11 @@ def options(opt):
         default=False,
         help='Configure as debug variant.')
 
+    g.add_option('--debug-symbols', '-g',
+        action='store_true',
+        default=False,
+        help='Add debug symbolds to build.')
+    
     g.add_option('--disable-watchdog',
         action='store_true',
         default=False,
@@ -139,6 +145,11 @@ def options(opt):
         action='store_true',
         default=False,
         help='build with -Werror.')
+
+    g.add_option('--disable-Werror',
+        action='store_true',
+        default=True,
+        help='Disable -Werror.')
     
     g.add_option('--toolchain',
         action='store',
@@ -219,6 +230,10 @@ submodules at specific revisions.
                  default=False,
                  help="Disable onboard scripting engine")
 
+    g.add_option('--enable-scripting', action='store_true',
+                 default=False,
+                 help="Enable onboard scripting engine")
+
     g.add_option('--no-gcs', action='store_true',
                  default=False,
                  help="Disable GCS code")
@@ -255,6 +270,9 @@ submodules at specific revisions.
                  help="Enable the dds client to connect with ROS2/DDS"
     )
 
+    g.add_option('--enable-dronecan-tests', action='store_true',
+                 default=False,
+                 help="Enables DroneCAN tests in sitl")
     g = opt.ap_groups['linux']
 
     linux_options = ('--prefix', '--destdir', '--bindir', '--libdir')
@@ -324,9 +342,9 @@ configuration in order to save typing.
                  default=False,
                  help="Enable SITL RGBLed")
 
-    g.add_option('--sitl-32bit', action='store_true',
+    g.add_option('--force-32bit', action='store_true',
                  default=False,
-                 help="Enable SITL 32bit")
+                 help="Force 32bit build")
 
     g.add_option('--build-dates', action='store_true',
                  default=False,
@@ -386,6 +404,11 @@ configuration in order to save typing.
                  default=0,
                  help='number of auxiliary IMUs')
 
+    g.add_option('--board-start-time',
+                 type='int',
+                 default=0,
+                 help='zero time on boot in microseconds')
+    
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
         paths = []
@@ -418,6 +441,7 @@ def configure(cfg):
         
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
+    cfg.env.DEBUG_SYMBOLS = cfg.options.debug_symbols
     cfg.env.COVERAGE = cfg.options.coverage
     cfg.env.AUTOCONFIG = cfg.options.autoconfig
 
@@ -430,8 +454,9 @@ def configure(cfg):
 
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
+    cfg.env.DEBUG_SYMBOLS = cfg.options.debug_symbols
     cfg.env.COVERAGE = cfg.options.coverage
-    cfg.env.SITL32BIT = cfg.options.sitl_32bit
+    cfg.env.FORCE32BIT = cfg.options.force_32bit
     cfg.env.ENABLE_ASSERTS = cfg.options.enable_asserts
     cfg.env.BOOTLOADER = cfg.options.bootloader
     cfg.env.ENABLE_MALLOC_GUARD = cfg.options.enable_malloc_guard
@@ -456,6 +481,15 @@ def configure(cfg):
     if cfg.options.num_aux_imus > 0:
         cfg.define('INS_AUX_INSTANCES', cfg.options.num_aux_imus)
 
+    if cfg.options.board_start_time != 0:
+        cfg.define('AP_BOARD_START_TIME', cfg.options.board_start_time)
+        # also in env for hrt.c
+        cfg.env.AP_BOARD_START_TIME = cfg.options.board_start_time
+
+    # require python 3.8.x or later
+    cfg.load('python')
+    cfg.check_python_version(minver=(3,6,9))
+
     cfg.load('ap_library')
 
     cfg.msg('Setting board to', cfg.options.board)
@@ -464,10 +498,7 @@ def configure(cfg):
     cfg.load('clang_compilation_database')
     cfg.load('waf_unit_test')
     cfg.load('mavgen')
-    if cfg.options.board in cfg.ap_periph_boards():
-        cfg.load('dronecangen')
-    else:
-        cfg.load('uavcangen')
+    cfg.load('dronecangen')
 
     cfg.env.SUBMODULE_UPDATE = cfg.options.submodule_update
 
@@ -502,9 +533,11 @@ def configure(cfg):
     cfg.start_msg('Scripting')
     if cfg.options.disable_scripting:
         cfg.end_msg('disabled', color='YELLOW')
-    else:
+    elif cfg.options.enable_scripting:
         cfg.end_msg('enabled')
-        cfg.recurse('libraries/AP_Scripting')
+    else:
+        cfg.end_msg('maybe')
+    cfg.recurse('libraries/AP_Scripting')
 
     cfg.recurse('libraries/AP_GPS')
 
@@ -526,8 +559,8 @@ def configure(cfg):
     else:
         cfg.end_msg('disabled', color='YELLOW')
 
-    cfg.start_msg('SITL 32-bit build')
-    if cfg.env.SITL32BIT:
+    cfg.start_msg('Force 32-bit build')
+    if cfg.env.FORCE32BIT:
         cfg.end_msg('enabled')
     else:
         cfg.end_msg('disabled', color='YELLOW')
@@ -557,6 +590,11 @@ def configure(cfg):
 
     # Always use system extensions
     cfg.define('_GNU_SOURCE', 1)
+
+    if cfg.options.Werror:
+        # print(cfg.options.Werror)
+        if cfg.options.disable_Werror:
+            cfg.options.Werror = False
 
     cfg.write_config_header(os.path.join(cfg.variant, 'ap_config.h'), guard='_AP_CONFIG_H_')
 
@@ -655,19 +693,20 @@ def _build_dynamic_sources(bld):
 
     if (bld.get_board().with_can or bld.env.HAL_NUM_CAN_IFACES) and not bld.env.AP_PERIPH:
         bld(
-            features='uavcangen',
-            source=bld.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_UAVCAN/dsdl/*', dir=True, src=False),
-            output_dir='modules/uavcan/libuavcan/include/dsdlc_generated',
-            name='uavcan',
+            features='dronecangen',
+            source=bld.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_DroneCAN/dsdl/*', dir=True, src=False),
+            output_dir='modules/DroneCAN/libcanard/dsdlc_generated/',
+            name='dronecan',
             export_includes=[
-                bld.bldnode.make_node('modules/uavcan/libuavcan/include/dsdlc_generated').abspath(),
-                bld.srcnode.find_dir('modules/uavcan/libuavcan/include').abspath()
-            ]
-        )
+                bld.bldnode.make_node('modules/DroneCAN/libcanard/dsdlc_generated/include').abspath(),
+                bld.srcnode.find_dir('modules/DroneCAN/libcanard/').abspath(),
+                bld.srcnode.find_dir('libraries/AP_DroneCAN/canard/').abspath(),
+                ]
+            )
     elif bld.env.AP_PERIPH:
         bld(
             features='dronecangen',
-            source=bld.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_UAVCAN/dsdl/*', dir=True, src=False),
+            source=bld.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_DroneCAN/dsdl/*', dir=True, src=False),
             output_dir='modules/DroneCAN/libcanard/dsdlc_generated/',
             name='dronecan',
             export_includes=[
@@ -802,8 +841,6 @@ def build(bld):
     _load_pre_build(bld)
 
     if bld.get_board().with_can:
-        bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['uavcan']
-    if bld.env.AP_PERIPH:
         bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['dronecan']
 
     _build_cmd_tweaks(bld)

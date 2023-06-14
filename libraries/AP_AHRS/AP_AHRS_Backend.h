@@ -111,7 +111,7 @@ public:
 
     // get our current position estimate. Return true if a position is available,
     // otherwise false. This call fills in lat, lng and alt
-    virtual bool get_location(Location &loc) const WARN_IF_UNUSED = 0;
+    virtual bool get_location(class Location &loc) const WARN_IF_UNUSED = 0;
 
     // get latest altitude estimate above ground level in meters and validity flag
     virtual bool get_hagl(float &height) const WARN_IF_UNUSED { return false; }
@@ -177,7 +177,7 @@ public:
 
     // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
     // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
-    virtual bool get_vert_pos_rate(float &velocity) const = 0;
+    virtual bool get_vert_pos_rate_D(float &velocity) const = 0;
 
     // returns the estimated magnetic field offsets in body frame
     virtual bool get_mag_field_correction(Vector3f &ret) const WARN_IF_UNUSED {
@@ -284,7 +284,7 @@ public:
         return false;
     }
 
-    virtual bool get_filter_status(nav_filter_status &status) const {
+    virtual bool get_filter_status(union nav_filter_status &status) const {
         return false;
     }
 

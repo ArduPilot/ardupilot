@@ -28,6 +28,7 @@
 #include <AP_OLC/AP_OLC.h>
 #include <AP_MSP/msp.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_RPM/AP_RPM_config.h>
 #if HAL_GCS_ENABLED
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #endif
@@ -185,6 +186,9 @@ private:
     AP_OSD_Setting aspd1;
     AP_OSD_Setting aspd2;
     AP_OSD_Setting vspeed{true, 24, 9};
+#if AP_RPM_ENABLED
+    AP_OSD_Setting rrpm{false, 2, 2};
+#endif
 #if HAL_WITH_ESC_TELEM
     AP_OSD_Setting esc_temp {false, 24, 13};
     AP_OSD_Setting esc_rpm{false, 22, 12};
@@ -256,6 +260,9 @@ private:
     void draw_home(uint8_t x, uint8_t y);
     void draw_throttle(uint8_t x, uint8_t y);
     void draw_heading(uint8_t x, uint8_t y);
+#if AP_RPM_ENABLED
+    void draw_rrpm(uint8_t x, uint8_t y);
+#endif
 #ifdef HAL_OSD_SIDEBAR_ENABLE
     void draw_sidebars(uint8_t x, uint8_t y);
 #endif
@@ -271,6 +278,7 @@ private:
     //helper functions
     void draw_speed(uint8_t x, uint8_t y, float angle_rad, float magnitude);
     void draw_distance(uint8_t x, uint8_t y, float distance);
+    char get_arrow_font_index (int32_t angle_cd);
 #if HAL_WITH_ESC_TELEM
     void draw_esc_temp(uint8_t x, uint8_t y);
     void draw_esc_rpm(uint8_t x, uint8_t y);
@@ -444,8 +452,10 @@ private:
     void modify_parameter(uint8_t number, Event ev);
     void modify_configured_parameter(uint8_t number, Event ev);
 
+#if AP_RC_CHANNEL_ENABLED
     Event map_rc_input_to_event() const;
     RC_Channel::AuxSwitchPos get_channel_pos(uint8_t rcmapchan) const;
+#endif
 
     uint8_t _selected_param = 1;
     MenuState _menu_state = MenuState::PARAM_SELECT;
@@ -535,6 +545,7 @@ public:
         OPTION_INVERTED_AH_ROLL = 1U<<2,
         OPTION_IMPERIAL_MILES = 1U<<3,
         OPTION_DISABLE_CROSSHAIR = 1U<<4,
+        OPTION_BF_ARROWS = 1U<<5,
     };
 
     enum {

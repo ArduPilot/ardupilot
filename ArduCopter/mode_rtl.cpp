@@ -28,7 +28,7 @@ bool ModeRTL::init(bool ignore_checks)
     // this will be set true if prec land is later active
     copter.ap.prec_land_active = false;
 
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
     // initialise precland state machine
     copter.precland_statemachine.init();
 #endif
@@ -552,6 +552,24 @@ bool ModeRTL::use_pilot_yaw(void) const
     const bool land_repositioning = g.land_repositioning && (_state == SubMode::FINAL_DESCENT);
     const bool final_landing = _state == SubMode::LAND;
     return allow_yaw_option || land_repositioning || final_landing;
+}
+
+bool ModeRTL::set_speed_xy(float speed_xy_cms)
+{
+    copter.wp_nav->set_speed_xy(speed_xy_cms);
+    return true;
+}
+
+bool ModeRTL::set_speed_up(float speed_up_cms)
+{
+    copter.wp_nav->set_speed_up(speed_up_cms);
+    return true;
+}
+
+bool ModeRTL::set_speed_down(float speed_down_cms)
+{
+    copter.wp_nav->set_speed_down(speed_down_cms);
+    return true;
 }
 
 #endif

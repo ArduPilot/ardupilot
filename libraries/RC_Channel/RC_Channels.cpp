@@ -18,6 +18,10 @@
  *
  */
 
+#include "RC_Channel_config.h"
+
+#if AP_RC_CHANNEL_ENABLED
+
 #include <stdlib.h>
 #include <cmath>
 
@@ -307,3 +311,5 @@ RC_Channels &rc()
 {
     return *RC_Channels::get_singleton();
 }
+
+#endif  // AP_RC_CHANNEL_ENABLED

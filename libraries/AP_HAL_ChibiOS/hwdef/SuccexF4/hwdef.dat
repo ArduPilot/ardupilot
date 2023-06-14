@@ -97,7 +97,6 @@ IMU Invensense SPI:icm20689_2 ROTATION_NONE
 
 # one baro
 BARO BMP280 I2C:0:0x76
-define HAL_PROBE_EXTERNAL_I2C_BAROS
 define HAL_BARO_ALLOW_INIT_NO_BARO
 
 # no built-in compass, but probe the i2c bus for all possible
@@ -134,3 +133,4 @@ define AP_PARAM_MAX_EMBEDDED_PARAM 1024
 
 # minimal drivers to reduce flash usage
 include ../include/minimal.inc
+include ../include/no_bootloader_DFU.inc

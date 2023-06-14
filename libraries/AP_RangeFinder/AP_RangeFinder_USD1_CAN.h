@@ -45,7 +45,7 @@ private:
 class USD1_MultiCAN : public CANSensor {
 public:
     USD1_MultiCAN() : CANSensor("USD1") {
-        register_driver(AP_CANManager::Driver_Type_USD1);
+        register_driver(AP_CAN::Protocol::USD1);
     }
 
     // handler for incoming frames

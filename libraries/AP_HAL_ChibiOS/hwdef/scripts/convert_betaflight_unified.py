@@ -239,8 +239,6 @@ define STORAGE_FLASH_PAGE 1
     f.write('''\n# Beeper
 %s BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
-define HAL_BUZZER_ON 1
-define HAL_BUZZER_OFF 0
 ''' % beeper[1])
 
     f.write("\n# SERIAL ports\n")

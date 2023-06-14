@@ -221,7 +221,7 @@ void CANIface::_poll(bool read, bool write)
 }
 
 bool CANIface::configureFilters(const CanFilterConfig* const filter_configs,
-                              const std::uint16_t num_configs)
+                              const uint16_t num_configs)
 {
     if (filter_configs == nullptr || mode_ != FilteredMode) {
         return false;
@@ -462,8 +462,11 @@ void CANIface::_updateDownStatusFromPollResult(const pollfd& pfd)
 bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
 {
     char iface_name[16];
+#if HAL_LINUX_USE_VIRTUAL_CAN
+    sprintf(iface_name, "vcan%u", _self_index);
+#else
     sprintf(iface_name, "can%u", _self_index);
-
+#endif
     if (_initialized) {
         return _initialized;
     }
@@ -532,7 +535,7 @@ bool CANIface::set_event_handle(AP_HAL::EventHandle* handle) {
 }
 
 
-bool CANIface::CANSocketEventSource::wait(uint64_t duration, AP_HAL::EventHandle* evt_handle)
+bool CANIface::CANSocketEventSource::wait(uint16_t duration_us, AP_HAL::EventHandle* evt_handle)
 {
     if (evt_handle == nullptr) {
         return false;
@@ -561,8 +564,8 @@ bool CANIface::CANSocketEventSource::wait(uint64_t duration, AP_HAL::EventHandle
 
     // Timeout conversion
     auto ts = timespec();
-    ts.tv_sec = duration / 1000000LL;
-    ts.tv_nsec = (duration % 1000000LL) * 1000;
+    ts.tv_sec = 0;
+    ts.tv_nsec = duration_us * 1000UL;
 
     // Blocking here
     const int res = ppoll(pollfds, num_pollfds, &ts, nullptr);

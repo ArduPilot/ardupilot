@@ -81,9 +81,9 @@ press [tab] then enter on the [exit]  box to exit the app
 done.    the 'sdkconfig' file in this folder should have been updated
 cd ../../../..
 
-OR locate the 'libraries/AP_HAL_ESP32/targets/esp-idf/sdkconfig' and delete it, as it should call back to the 'sdkconfig.defaults' file if its not there.
+OR locate the 'libraries/AP_HAL_ESP32/targets/esp32/esp-idf/sdkconfig' and delete it, as it should call back to the 'sdkconfig.defaults' file if its not there.
 
-'cd libraries/AP_HAL_ESP32/targets/esp-idf ; idf.py defconfig' is the command that updates it, but that shouldn't be needed manually, we don't think.
+'cd libraries/AP_HAL_ESP32/targets/esp32/esp-idf ; idf.py defconfig' is the command that updates it, but that shouldn't be needed manually, we don't think.
 
 ... try ./waf plane"
 
@@ -112,7 +112,7 @@ ESPTOOL_BAUD=921600
 
 You can find more info here : [ESPTOOL](https://github.com/espressif/esptool)
 
-You can also find the cmake esp-idf project at `libraries/AP_HAL_ESP32/targets/esp-idf` for idf.py command. But see next section to understand how ardupilot is compiled on ESP32.
+You can also find the cmake esp-idf project at `libraries/AP_HAL_ESP32/targets/esp32/esp-idf` for idf.py command. But see next section to understand how ardupilot is compiled on ESP32.
 
 
 For flashing from another machine you need the following files:
@@ -169,13 +169,13 @@ After flashing the esp32 , u can connect with a terminal app of your preference 
 | GND         |      GND  |
 | 5v          |      Pwr  |
 
-### RC reciever connection:
+### RC receiver connection:
 
-|ESP32| RCRECIEVER |
-| --- |    ---     |
-| D4  |  CPPM-out  |
-| GND |       GND  |
-| 5v  |       Pwr  |
+|ESP32| RC Receiver |
+| --- |    ---      |
+| D4  |  CPPM-out   |
+| GND |       GND   |
+| 5v  |       Pwr   |
 
 
 ###  I2C connection ( for gps with leds/compass-es/etc onboard, or digital airspeed sensorrs, etc):

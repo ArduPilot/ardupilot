@@ -40,9 +40,19 @@ extern const AP_HAL::HAL& hal;
 #endif
 #endif
 
+#ifdef INS_TIMING_DEBUG
+#include <stdio.h>
+#define timing_printf(fmt, args...)      do { printf("[timing] " fmt, ##args); } while(0)
+#else
+#define timing_printf(fmt, args...)
+#endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 // hal.console can be accessed from bus threads on ChibiOS
 #define debug(fmt, args ...)  do {hal.console->printf("MPU: " fmt "\n", ## args); } while(0)
+#elif CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+// esp32 commonly has timing issues
+#define debug(fmt, args ...)  do {timing_printf("MPU: " fmt "\n", ## args); } while(0)
 #else
 #define debug(fmt, args ...)  do {printf("MPU: " fmt "\n", ## args); } while(0)
 #endif
@@ -894,7 +904,7 @@ void AP_InertialSensor_Invensense::_set_filter_register(void)
             _gyro_backend_rate_hz *= fast_sampling_rate;
 
             // calculate rate we will be giving accel samples to the backend
-            if (_mpu_type >= Invensense_MPU9250) {
+            if (_mpu_type >= Invensense_MPU6500) {
                 _accel_fifo_downsample_rate = MAX(4 / fast_sampling_rate, 1);
                 _accel_backend_rate_hz *= MIN(fast_sampling_rate, 4);
             } else {

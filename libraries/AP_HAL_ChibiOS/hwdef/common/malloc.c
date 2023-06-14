@@ -536,3 +536,35 @@ void* get_addr_mem_region_end_addr(void *addr)
     }
     return 0;
 }
+
+#ifdef USE_POSIX
+/*
+  allocation functions for FATFS
+ */
+void *ff_memalloc(unsigned msize)
+{
+    if (msize > 4096) {
+        // refuse large sizes. FATFS tries for 32k blocks for creating
+        // directories which ends up trying to allocate 64k with the
+        // DMA bouncebuffer, and this can cause filesystem operation
+        // failures. We want FATFS to limit itself to 4k blocks, which
+        // it does when the allocation of the larger size fails
+        return NULL;
+    }
+    // try to get DMA capable memory which results in less copying so
+    // faster access
+    void *ret = malloc_axi_sram(msize);
+    if (ret != NULL) {
+        return ret;
+    }
+    // fallback to any memory, which means we will use the
+    // preallocated bouncebuffer on systems where general purpose
+    // memory cannot be used for microSD access
+    return malloc(msize);
+}
+
+void ff_memfree(void* mblock)
+{
+    free(mblock);
+}
+#endif // USE_POSIX

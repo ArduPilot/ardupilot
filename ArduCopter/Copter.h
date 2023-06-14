@@ -69,6 +69,7 @@
 #include <AC_Sprayer/AC_Sprayer.h>          // Crop sprayer library
 #include <AP_ADSB/AP_ADSB.h>                // ADS-B RF based collision avoidance module library
 #include <AP_Proximity/AP_Proximity.h>      // ArduPilot proximity sensor library
+#include <AC_PrecLand/AC_PrecLand_config.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Winch/AP_Winch_config.h>
 
@@ -99,8 +100,8 @@
 #include "AP_Rally.h"           // Rally point library
 #include "AP_Arming.h"
 
-// libraries which are dependent on #defines in defines.h and/or config.h
-#if BEACON_ENABLED == ENABLED
+#include <AP_Beacon/AP_Beacon_config.h>
+#if AP_BEACON_ENABLED
  #include <AP_Beacon/AP_Beacon.h>
 #endif
 
@@ -115,7 +116,7 @@
 #if AP_GRIPPER_ENABLED
  # include <AP_Gripper/AP_Gripper.h>
 #endif
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
  # include <AC_PrecLand/AC_PrecLand.h>
  # include <AC_PrecLand/AC_PrecLand_StateMachine.h>
 #endif
@@ -529,7 +530,7 @@ private:
 #endif
 
     // Precision Landing
-#if PRECISION_LANDING == ENABLED
+#if AC_PRECLAND_ENABLED
     AC_PrecLand precland;
     AC_PrecLand_StateMachine precland_statemachine;
 #endif
@@ -678,6 +679,8 @@ private:
     // lua scripts use this to retrieve EKF failsafe state
     // returns true if the EKF failsafe has triggered
     bool has_ekf_failsafed() const override;
+    bool is_landing() const override;
+    bool is_taking_off() const override;
 #endif // AP_SCRIPTING_ENABLED
     void rc_loop();
     void throttle_loop();
@@ -850,6 +853,7 @@ private:
     // called when an attempt to change into a mode is unsuccessful:
     void mode_change_failed(const Mode *mode, const char *reason);
     uint8_t get_mode() const override { return (uint8_t)flightmode->mode_number(); }
+    bool current_mode_requires_mission() const override;
     void update_flight_mode();
     void notify_flight_mode();
 
@@ -891,7 +895,6 @@ private:
     void default_dead_zones();
     void init_rc_in();
     void init_rc_out();
-    void enable_motor_output();
     void read_radio();
     void set_throttle_and_failsafe(uint16_t throttle_pwm);
     void set_throttle_zero_flag(int16_t throttle_control);

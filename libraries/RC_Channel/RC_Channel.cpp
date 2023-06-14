@@ -17,6 +17,10 @@
  *       RC_Channel.cpp - class for one RC channel input
  */
 
+#include "RC_Channel_config.h"
+
+#if AP_RC_CHANNEL_ENABLED
+
 #include <stdlib.h>
 #include <cmath>
 
@@ -42,6 +46,7 @@ extern const AP_HAL::HAL& hal;
 #include <AP_LandingGear/AP_LandingGear.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
+#include <SRV_Channel/SRV_Channel.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Avoidance/AP_Avoidance.h>
 #include <AP_GPS/AP_GPS.h>
@@ -144,7 +149,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane}: 41:ArmDisarm (4.1 and lower)
     // @Values{Copter, Rover}: 42:SmartRTL
     // @Values{Copter, Plane}: 43:InvertedFlight
-    // @Values{Copter}: 44:Winch Enable
+    // @Values{Copter}: 44:Winch Enable, 45:Winch Control
     // @Values{Copter, Rover, Plane, Blimp}: 46:RC Override Enable
     // @Values{Copter}: 47:User Function 1, 48:User Function 2, 49:User Function 3
     // @Values{Rover}: 50:LearnCruise
@@ -232,6 +237,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane, Blimp}: 171:Calibrate Compasses
     // @Values{Copter, Rover, Plane, Blimp}: 172:Battery MPPT Enable
     // @Values{Plane}: 173:Plane AUTO Mode Landing Abort
+    // @Values{Copter, Rover, Plane, Blimp}: 174:Camera Image Tracking
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
     // @Values{Rover}: 207:MainSail
@@ -673,9 +679,11 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
 #if AP_GRIPPER_ENABLED
     case AUX_FUNC::GRIPPER:
 #endif
+#if AP_INERTIALSENSOR_KILL_IMU_ENABLED
     case AUX_FUNC::KILL_IMU1:
     case AUX_FUNC::KILL_IMU2:
     case AUX_FUNC::KILL_IMU3:
+#endif
     case AUX_FUNC::MISSION_RESET:
     case AUX_FUNC::MOTOR_ESTOP:
     case AUX_FUNC::RC_OVERRIDE_ENABLE:
@@ -760,6 +768,7 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::CAMERA_ZOOM, "Camera Zoom"},
     { AUX_FUNC::CAMERA_MANUAL_FOCUS, "Camera Manual Focus"},
     { AUX_FUNC::CAMERA_AUTO_FOCUS, "Camera Auto Focus"},
+    { AUX_FUNC::CAMERA_IMAGE_TRACKING, "Camera Image Tracking"},
 };
 
 /* lookup the announcement for switch change */
@@ -940,7 +949,7 @@ bool RC_Channel::do_aux_function_camera_zoom(const AuxSwitchPos ch_flag)
         zoom_step = -1; // zoom out
         break;
     }
-    return camera->set_zoom_step(zoom_step);
+    return camera->set_zoom(ZoomType::RATE, zoom_step);
 }
 
 bool RC_Channel::do_aux_function_camera_manual_focus(const AuxSwitchPos ch_flag)
@@ -963,7 +972,7 @@ bool RC_Channel::do_aux_function_camera_manual_focus(const AuxSwitchPos ch_flag)
         focus_step = -1;
         break;
     }
-    return camera->set_manual_focus_step(focus_step);
+    return camera->set_focus(FocusType::RATE, focus_step);
 }
 
 bool RC_Channel::do_aux_function_camera_auto_focus(const AuxSwitchPos ch_flag)
@@ -973,9 +982,20 @@ bool RC_Channel::do_aux_function_camera_auto_focus(const AuxSwitchPos ch_flag)
         if (camera == nullptr) {
             return false;
         }
-        return camera->set_auto_focus();
+        return camera->set_focus(FocusType::AUTO, 0);
     }
     return false;
+}
+
+bool RC_Channel::do_aux_function_camera_image_tracking(const AuxSwitchPos ch_flag)
+{
+    AP_Camera *camera = AP::camera();
+    if (camera == nullptr) {
+        return false;
+    }
+    // High position enables tracking a POINT in middle of image
+    // Low or Mediums disables tracking.  (0.5,0.5) is still passed in but ignored
+    return camera->set_tracking(ch_flag == AuxSwitchPos::HIGH ? TrackingType::TRK_POINT : TrackingType::TRK_NONE, Vector2f{0.5, 0.5}, Vector2f{});
 }
 #endif
 
@@ -1422,7 +1442,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
     }
 #endif
 
-#if !HAL_MINIMIZE_FEATURES
+#if AP_INERTIALSENSOR_KILL_IMU_ENABLED
     case AUX_FUNC::KILL_IMU1:
         AP::ins().kill_imu(0, ch_flag == AuxSwitchPos::HIGH);
         break;
@@ -1434,7 +1454,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
     case AUX_FUNC::KILL_IMU3:
         AP::ins().kill_imu(2, ch_flag == AuxSwitchPos::HIGH);
         break;
-#endif // HAL_MINIMIZE_FEATURES
+#endif  // AP_INERTIALSENSOR_KILL_IMU_ENABLED
 
 #if AP_CAMERA_ENABLED
     case AUX_FUNC::CAMERA_TRIGGER:
@@ -1472,6 +1492,8 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
     case AUX_FUNC::CAMERA_AUTO_FOCUS:
         return do_aux_function_camera_auto_focus(ch_flag);
 
+    case AUX_FUNC::CAMERA_IMAGE_TRACKING:
+        return do_aux_function_camera_image_tracking(ch_flag);
 #endif
 
 #if HAL_MOUNT_ENABLED
@@ -1721,3 +1743,5 @@ void RC_Channels::convert_options(const RC_Channel::aux_func_t old_option, const
         }
     }
 }
+
+#endif  // AP_RC_CHANNEL_ENABLED

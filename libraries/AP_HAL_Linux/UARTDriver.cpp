@@ -281,18 +281,17 @@ uint32_t UARTDriver::txspace()
     return _writebuf.space();
 }
 
-int16_t UARTDriver::read()
+bool UARTDriver::read(uint8_t &byte)
 {
     if (!_initialised) {
-        return -1;
+        return false;
     }
 
-    uint8_t byte;
     if (!_readbuf.read_byte(&byte)) {
-        return -1;
+        return false;
     }
 
-    return byte;
+    return true;
 }
 
 bool UARTDriver::discard_input()

@@ -255,7 +255,8 @@ public:
     void Write_Radio(const mavlink_radio_t &packet);
     void Write_Message(const char *message);
     void Write_MessageF(const char *fmt, ...);
-    void Write_ServoStatus(uint64_t time_us, uint8_t id, float position, float force, float speed, uint8_t power_pct);
+    void Write_ServoStatus(uint64_t time_us, uint8_t id, float position, float force, float speed, uint8_t power_pct,
+                           float pos_cmd, float voltage, float current, float mot_temp, float pcb_temp, uint8_t error);
     void Write_Compass();
     void Write_Mode(uint8_t mode, const ModeReason reason);
 
@@ -311,9 +312,17 @@ public:
     void set_force_log_disarmed(bool force_logging) { _force_log_disarmed = force_logging; }
     void set_long_log_persist(bool b) { _force_long_log_persist = b; }
     bool log_while_disarmed(void) const;
+    bool in_log_persistance(void) const;
     uint8_t log_replay(void) const { return _params.log_replay; }
 
     vehicle_startup_message_Writer _vehicle_messages;
+
+    enum class LogDisarmed : uint8_t {
+        NONE = 0,
+        LOG_WHILE_DISARMED = 1,
+        LOG_WHILE_DISARMED_NOT_USB = 2,
+        LOG_WHILE_DISARMED_DISCARD = 3,
+    };
 
     // parameter support
     static const struct AP_Param::GroupInfo        var_info[];
@@ -321,7 +330,7 @@ public:
         AP_Int8 backend_types;
         AP_Int16 file_bufsize; // in kilobytes
         AP_Int8 file_disarm_rot;
-        AP_Int8 log_disarmed;
+        AP_Enum<LogDisarmed> log_disarmed;
         AP_Int8 log_replay;
         AP_Int8 mav_bufsize; // in kilobytes
         AP_Int16 file_timeout; // in seconds
@@ -329,6 +338,7 @@ public:
         AP_Float file_ratemax;
         AP_Float mav_ratemax;
         AP_Float blk_ratemax;
+        AP_Float disarm_ratemax;
     } _params;
 
     const struct LogStructure *structure(uint16_t num) const;

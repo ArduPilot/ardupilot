@@ -130,7 +130,7 @@ for t in $CI_BUILD_TARGET; do
     fi
     if [ "$t" == "sitltest-can" ]; then
         echo "Building SITL Periph GPS"
-        $waf configure --board sitl
+        $waf configure --board sitl --force-32bit
         $waf copter
         run_autotest "Copter" "build.SITLPeriphGPS" "test.CAN"
         continue
@@ -252,6 +252,14 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "CubeRedPrimary-bootloader" ]; then
+        echo "Building CubeRedPrimary bootloader"
+        $waf configure --board CubeRedPrimary --bootloader
+        $waf clean
+        $waf bootloader
+        continue
+    fi
+
     if [ "$t" == "fmuv3-bootloader" ]; then
         echo "Building fmuv3 bootloader"
         $waf configure --board fmuv3 --bootloader
@@ -285,6 +293,8 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board Durandal
         $waf clean
         $waf copter
+        echo "Building CPUInfo"
+        $waf --target=tool/CPUInfo
 
         # test external flash build
         echo "Building SPRacingH7"
@@ -356,9 +366,11 @@ for t in $CI_BUILD_TARGET; do
     if [ "$t" == "replay" ]; then
         echo "Building replay"
         $waf configure --board sitl --debug --disable-scripting
+        
         $waf replay
         echo "Building AP_DAL standalone test"
         $waf configure --board sitl --debug --disable-scripting --no-gcs
+        
         $waf --target tool/AP_DAL_Standalone
         $waf clean
         continue
@@ -398,6 +410,12 @@ for t in $CI_BUILD_TARGET; do
     if [ "$t" == "python-cleanliness" ]; then
         echo "Checking Python code cleanliness"
         ./Tools/scripts/run_flake8.py
+        continue
+    fi
+
+    if [ "$t" == "astyle-cleanliness" ]; then
+        echo "Checking AStyle code cleanliness"
+        ./Tools/scripts/run_astyle.py
         continue
     fi
 

@@ -1,3 +1,7 @@
+#include "AP_Scripting_config.h"
+
+#if AP_SCRIPTING_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/HAL.h>
 #include <AP_Logger/AP_Logger.h>
@@ -10,6 +14,8 @@
 
 #include <AP_Scripting/AP_Scripting.h>
 #include <string.h>
+
+extern const AP_HAL::HAL& hal;
 
 extern "C" {
 #include "lua/src/lmem.h"
@@ -33,6 +39,126 @@ int lua_micros(lua_State *L) {
 
     new_uint32_t(L);
     *check_uint32_t(L, -1) = AP_HAL::micros();
+
+    return 1;
+}
+
+int lua_mavlink_init(lua_State *L) {
+    binding_argcheck(L, 2);
+    WITH_SEMAPHORE(AP::scripting()->mavlink_data.sem);
+    // get the depth of receive queue
+    const uint32_t queue_size = get_uint32(L, -1, 0, 25);
+    // get number of msgs to accept
+    const uint32_t num_msgs = get_uint32(L, -2, 0, 25);
+
+    struct AP_Scripting::mavlink &data = AP::scripting()->mavlink_data;
+    if (data.rx_buffer == nullptr) {
+        data.rx_buffer = new ObjectBuffer<struct AP_Scripting::mavlink_msg>(queue_size);
+        if (data.rx_buffer == nullptr) {
+            return luaL_error(L, "Failed to allocate mavlink rx buffer");
+        }
+    }
+    if (data.accept_msg_ids == nullptr) {
+        data.accept_msg_ids = new uint32_t[num_msgs];
+        if (data.accept_msg_ids == nullptr) {
+            return luaL_error(L, "Failed to allocate mavlink rx registry");
+        }
+        data.accept_msg_ids_size = num_msgs;
+        memset(data.accept_msg_ids, UINT32_MAX, sizeof(int) * num_msgs);
+    }
+    return 0;
+}
+
+int lua_mavlink_receive_chan(lua_State *L) {
+    binding_argcheck(L, 0);
+
+    struct AP_Scripting::mavlink_msg msg;
+    ObjectBuffer<struct AP_Scripting::mavlink_msg> *rx_buffer = AP::scripting()->mavlink_data.rx_buffer;
+
+    if (rx_buffer == nullptr) {
+        return luaL_error(L, "Never subscribed to a message");
+    }
+
+    if (rx_buffer->pop(msg)) {
+        luaL_Buffer b;
+        luaL_buffinit(L, &b);
+        luaL_addlstring(&b, (char *)&msg.msg, sizeof(msg.msg));
+        luaL_pushresult(&b);
+        lua_pushinteger(L, msg.chan);
+        lua_pushinteger(L, msg.timestamp_ms);
+        return 3;
+    } else {
+        // no MAVLink to handle, just return no results
+        return 0;
+    }
+}
+
+int lua_mavlink_register_rx_msgid(lua_State *L) {
+    binding_argcheck(L, 1);
+    
+    const uint32_t msgid = get_uint32(L, -1, 0, (1 << 24) - 1);
+
+    struct AP_Scripting::mavlink &data = AP::scripting()->mavlink_data;
+
+    // check that we aren't currently watching this ID
+    for (uint8_t i = 0; i < data.accept_msg_ids_size; i++) {
+        if (data.accept_msg_ids[i] == msgid) {
+            lua_pushboolean(L, false);
+            return 1;
+        }
+    }
+
+    int i = 0;
+    for (i = 0; i < data.accept_msg_ids_size; i++) {
+        if (data.accept_msg_ids[i] == UINT32_MAX) {
+            break;
+        }
+    }
+
+    if (i >= data.accept_msg_ids_size) {
+        return luaL_error(L, "Out of MAVLink ID's to monitor");
+    }
+
+    {
+        WITH_SEMAPHORE(data.sem);
+        data.accept_msg_ids[i] = msgid;
+    }
+
+    lua_pushboolean(L, true);
+    return 1;
+}
+
+int lua_mavlink_send_chan(lua_State *L) {
+    binding_argcheck(L, 3);
+    
+    const mavlink_channel_t chan = (mavlink_channel_t)get_uint32(L, 1, 0, MAVLINK_COMM_NUM_BUFFERS - 1);
+
+    const uint32_t msgid = get_uint32(L, 2, 0, (1 << 24) - 1);
+
+    const char *packet = luaL_checkstring(L, 3);
+
+    // FIXME: The data that's in this mavlink_msg_entry_t should be provided from the script, which allows
+    //        sending entirely new messages as outputs. At the moment we can only encode messages that
+    //        are known at compile time. This is fine as a starting point as this is symmetrical to the
+    //        decoding side of the scripting support
+    const mavlink_msg_entry_t *entry = mavlink_get_msg_entry(msgid);
+    if (entry == nullptr) {
+        return luaL_error(L, "Unknown MAVLink message ID (%d)", msgid);
+    }
+
+    WITH_SEMAPHORE(comm_chan_lock(chan));
+    if (comm_get_txspace(chan) >= (GCS_MAVLINK::packet_overhead_chan(chan) + entry->max_msg_len)) {
+        _mav_finalize_message_chan_send(chan,
+                                        entry->msgid,
+                                        packet,
+                                        entry->min_msg_len,
+                                        entry->max_msg_len,
+                                        entry->crc_extra);
+
+        lua_pushboolean(L, true);
+    } else {
+        lua_pushboolean(L, false);
+    }
 
     return 1;
 }
@@ -464,7 +590,7 @@ int lua_get_CAN_device(lua_State *L) {
     auto *scripting = AP::scripting();
 
     if (scripting->_CAN_dev == nullptr) {
-        scripting->_CAN_dev = new ScriptingCANSensor(AP_CANManager::Driver_Type::Driver_Type_Scripting);
+        scripting->_CAN_dev = new ScriptingCANSensor(AP_CAN::Protocol::Scripting);
         if (scripting->_CAN_dev == nullptr) {
             return luaL_argerror(L, 1, "CAN device nullptr");
         }
@@ -489,7 +615,7 @@ int lua_get_CAN_device2(lua_State *L) {
     auto *scripting = AP::scripting();
 
     if (scripting->_CAN_dev2 == nullptr) {
-        scripting->_CAN_dev2 = new ScriptingCANSensor(AP_CANManager::Driver_Type::Driver_Type_Scripting2);
+        scripting->_CAN_dev2 = new ScriptingCANSensor(AP_CAN::Protocol::Scripting2);
         if (scripting->_CAN_dev2 == nullptr) {
             return luaL_argerror(L, 1, "CAN device nullptr");
         }
@@ -572,3 +698,11 @@ int lua_get_PWMSource(lua_State *L) {
 
     return 1;
 }
+
+int lua_get_current_ref()
+{
+    auto *scripting = AP::scripting();
+    return scripting->get_current_ref();
+}
+
+#endif  // AP_SCRIPTING_ENABLED

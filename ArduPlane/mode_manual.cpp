@@ -11,3 +11,7 @@ void ModeManual::update()
     plane.nav_pitch_cd = ahrs.pitch_sensor;
 }
 
+void ModeManual::run()
+{
+    reset_controllers();
+}

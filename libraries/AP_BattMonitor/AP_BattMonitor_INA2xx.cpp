@@ -2,23 +2,49 @@
 
 #if AP_BATTERY_INA2XX_ENABLED
 
+/*
+  supports INA226, INA228 and INA238 I2C battery monitors
+ */
+
 #include <AP_HAL/utility/sparse-endian.h>
 
 #include "AP_BattMonitor_INA2xx.h"
 
 extern const AP_HAL::HAL& hal;
 
-#define REG_CONFIG        0x00
-#define REG_SHUNT_VOLTAGE 0x01
-#define REG_BUS_VOLTAGE   0x02
-#define REG_CURRENT       0x04
-#define REG_CALIBRATION   0x05
 
-#define REG_CONFIG_DEFAULT 0x4127
-#define REG_CONFIG_RESET   0x8000
+// INA226 specific registers
+#define REG_226_CONFIG        0x00
+#define  REG_226_CONFIG_DEFAULT 0x4127
+#define  REG_226_CONFIG_RESET   0x8000
+#define REG_226_BUS_VOLTAGE   0x02
+#define REG_226_CURRENT       0x04
+#define REG_226_CALIBRATION   0x05
+#define REG_226_MANUFACT_ID   0xfe
 
-// this should become a parameter in future
-#define MAX_AMPS 90.0
+// INA228 specific registers
+#define REG_228_CONFIG        0x00
+#define  REG_228_CONFIG_RESET   0x8000
+#define REG_228_ADC_CONFIG    0x01
+#define REG_228_SHUNT_CAL     0x02
+#define REG_228_VBUS          0x05
+#define REG_228_CURRENT       0x07
+#define REG_228_MANUFACT_ID   0x3e
+#define REG_228_DEVICE_ID     0x3f
+
+// INA238 specific registers
+#define REG_238_CONFIG        0x00
+#define  REG_238_CONFIG_RESET   0x8000
+#define REG_238_ADC_CONFIG    0x01
+#define REG_238_SHUNT_CAL     0x02
+#define REG_238_VBUS          0x05
+#define REG_238_CURRENT       0x07
+#define REG_238_MANUFACT_ID   0x3e
+#define REG_238_DEVICE_ID     0x3f
+
+#ifndef DEFAULT_BATTMON_INA2XX_MAX_AMPS
+#define DEFAULT_BATTMON_INA2XX_MAX_AMPS 90.0
+#endif
 
 #ifndef HAL_BATTMON_INA2XX_BUS
 #define HAL_BATTMON_INA2XX_BUS 0
@@ -26,6 +52,9 @@ extern const AP_HAL::HAL& hal;
 #ifndef HAL_BATTMON_INA2XX_ADDR
 #define HAL_BATTMON_INA2XX_ADDR 0
 #endif
+
+// list of addresses to probe if I2C_ADDR is zero
+const uint8_t AP_BattMonitor_INA2XX::i2c_probe_addresses[] { 0x41, 0x44, 0x45 };
 
 const AP_Param::GroupInfo AP_BattMonitor_INA2XX::var_info[] = {
 
@@ -39,12 +68,21 @@ const AP_Param::GroupInfo AP_BattMonitor_INA2XX::var_info[] = {
 
     // @Param: I2C_ADDR
     // @DisplayName: Battery monitor I2C address
-    // @Description: Battery monitor I2C address
+    // @Description: Battery monitor I2C address. If this is zero then probe list of supported addresses
     // @Range: 0 127
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("I2C_ADDR", 26, AP_BattMonitor_INA2XX, i2c_address, HAL_BATTMON_INA2XX_ADDR),
 
+    // @Param: MAX_AMPS
+    // @DisplayName: Battery monitor max current
+    // @Description: This controls the maximum current the INS2XX sensor will work with.
+    // @Range: 1 400
+    // @Units: A
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("MAX_AMPS", 27, AP_BattMonitor_INA2XX, max_amps, DEFAULT_BATTMON_INA2XX_MAX_AMPS),
+    
     AP_GROUPEND
 };
 
@@ -67,31 +105,60 @@ void AP_BattMonitor_INA2XX::init(void)
     dev->register_periodic_callback(25000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_INA2XX::timer, void));
 }
 
-void AP_BattMonitor_INA2XX::configure(void)
+bool AP_BattMonitor_INA2XX::configure(DevType dtype)
 {
-    WITH_SEMAPHORE(dev->get_semaphore());
+    switch (dtype) {
+    case DevType::UNKNOWN:
+        return false;
 
-    int16_t config = 0;
-    if (!write_word(REG_CONFIG, REG_CONFIG_RESET) ||
-        !write_word(REG_CONFIG, REG_CONFIG_DEFAULT) ||
-        !read_word(REG_CONFIG, config) ||
-        config != REG_CONFIG_DEFAULT) {
-        return;
+    case DevType::INA226: {
+        // configure for MAX_AMPS
+        const uint16_t conf = (0x2<<9) | (0x5<<6) | (0x5<<3) | 0x7; // 2ms conv time, 16x sampling
+        const float rShunt = 0.0005;
+        current_LSB = max_amps / 32768.0;
+        voltage_LSB = 0.00125; // 1.25mV/bit
+        const uint16_t cal = uint16_t(0.00512 / (current_LSB * rShunt));
+        if (write_word(REG_226_CONFIG, REG_226_CONFIG_RESET) && // reset
+            write_word(REG_226_CONFIG, conf) &&
+            write_word(REG_226_CALIBRATION, cal)) {
+            dev_type = dtype;
+            return true;
+        }
+        break;
     }
 
-    // configure for MAX_AMPS
-    const uint16_t conf = (0x2<<9) | (0x5<<6) | (0x5<<3) | 0x7; // 2ms conv time, 16x sampling
-    const float rShunt = 0.0005;
-    current_LSB = MAX_AMPS / 32768.0;
-    voltage_LSB = 0.00125; // 1.25mV/bit
-    const uint16_t cal = uint16_t(0.00512 / (current_LSB * rShunt));
-    if (!write_word(REG_CONFIG, REG_CONFIG_RESET) || // reset
-        !write_word(REG_CONFIG, conf) ||
-        !write_word(REG_CALIBRATION, cal)) {
-        return;
+    case DevType::INA228: {
+        // configure for MAX_AMPS
+        voltage_LSB = 195.3125e-6; // 195.3125 uV/LSB
+        const float rShunt = 0.0005;
+        current_LSB = max_amps / (1<<19);
+        const uint16_t shunt_cal = uint16_t(13107.2e6 * current_LSB * rShunt) & 0x7FFF;
+        if (write_word(REG_228_CONFIG, REG_228_CONFIG_RESET) && // reset
+            write_word(REG_228_CONFIG, 0) &&
+            write_word(REG_228_SHUNT_CAL, shunt_cal)) {
+            dev_type = dtype;
+            return true;
+        }
+        break;
     }
 
-    configured = true;
+    case DevType::INA238: {
+        // configure for MAX_AMPS
+        voltage_LSB = 3.125e-3; // 3.125mV/LSB
+        const float rShunt = 0.0005;
+        current_LSB = max_amps / (1<<15);
+        const uint16_t shunt_cal = uint16_t(819.2e6 * current_LSB * rShunt) & 0x7FFF;
+        if (write_word(REG_238_CONFIG, REG_238_CONFIG_RESET) && // reset
+            write_word(REG_238_CONFIG, 0) &&
+            write_word(REG_238_SHUNT_CAL, shunt_cal)) {
+            dev_type = dtype;
+            return true;
+        }
+        break;
+    }
+        
+    }
+    return false;
 }
 
 /// read the battery_voltage and current, should be called at 10hz
@@ -119,10 +186,10 @@ void AP_BattMonitor_INA2XX::read(void)
 }
 
 /*
- read word from register
- returns true if read was successful, false if failed
+  read 16 bit word from register
+  returns true if read was successful, false if failed
 */
-bool AP_BattMonitor_INA2XX::read_word(const uint8_t reg, int16_t& data) const
+bool AP_BattMonitor_INA2XX::read_word16(const uint8_t reg, int16_t& data) const
 {
     // read the appropriate register from the device
     if (!dev->read_registers(reg, (uint8_t *)&data, sizeof(data))) {
@@ -131,6 +198,25 @@ bool AP_BattMonitor_INA2XX::read_word(const uint8_t reg, int16_t& data) const
 
     // convert byte order
     data = int16_t(be16toh(uint16_t(data)));
+
+    return true;
+}
+
+/*
+  read 24 bit signed value from register
+  returns true if read was successful, false if failed
+*/
+bool AP_BattMonitor_INA2XX::read_word24(const uint8_t reg, int32_t& data) const
+{
+    // read the appropriate register from the device
+    uint8_t d[3];
+    if (!dev->read_registers(reg, d, sizeof(d))) {
+        return false;
+    }
+    // 24 bit 2s complement data. Shift into upper 24 bits of int32_t then divide by 256
+    // to cope with negative numbers properly
+    data = d[0]<<24 | d[1]<<16 | d[2] << 8;
+    data = data / 256;
 
     return true;
 }
@@ -145,38 +231,114 @@ bool AP_BattMonitor_INA2XX::write_word(const uint8_t reg, const uint16_t data) c
     return dev->transfer(b, sizeof(b), nullptr, 0);
 }
 
+/*
+  detect device type. This may happen well after power on if battery is
+  not plugged in yet
+*/
+bool AP_BattMonitor_INA2XX::detect_device(void)
+{
+    uint32_t now = AP_HAL::millis();
+    if (now - last_detect_ms < 200) {
+        // don't flood the bus
+        return false;
+    }
+    last_detect_ms = now;
+    int16_t id;
+
+    WITH_SEMAPHORE(dev->get_semaphore());
+
+    if (i2c_address.get() == 0) {
+        dev->set_address(i2c_probe_addresses[i2c_probe_next]);
+        i2c_probe_next = (i2c_probe_next+1) % sizeof(i2c_probe_addresses);
+    }
+
+    if (read_word16(REG_228_MANUFACT_ID, id) && id == 0x5449 &&
+        read_word16(REG_228_DEVICE_ID, id) && (id&0xFFF0) == 0x2280) {
+        return configure(DevType::INA228);
+    }
+    if (read_word16(REG_238_MANUFACT_ID, id) && id == 0x5449 &&
+        read_word16(REG_238_DEVICE_ID, id) && (id&0xFFF0) == 0x2380) {
+        return configure(DevType::INA238);
+    }
+    if (read_word16(REG_226_MANUFACT_ID, id) && id == 0x5449 &&
+        write_word(REG_226_CONFIG, REG_226_CONFIG_RESET) &&
+        write_word(REG_226_CONFIG, REG_226_CONFIG_DEFAULT) &&
+        read_word16(REG_226_CONFIG, id) &&
+        id == REG_226_CONFIG_DEFAULT) {
+        return configure(DevType::INA226);
+    }
+    return false;
+}
+
+
 void AP_BattMonitor_INA2XX::timer(void)
 {
-    // allow for power-on after boot
-    if (!configured) {
-        uint32_t now = AP_HAL::millis();
-        if (now - last_configure_ms > 200) {
-            // try contacting the device at 5Hz
-            last_configure_ms = now;
-            configure();
-        }
-        if (!configured) {
-            // waiting for the device to respond
+    if (dev_type == DevType::UNKNOWN) {
+        if (!detect_device()) {
             return;
         }
     }
 
-    int16_t bus_voltage, current;
+    float voltage = 0, current = 0;
 
-    if (!read_word(REG_BUS_VOLTAGE, bus_voltage) ||
-        !read_word(REG_CURRENT, current)) {
-        failed_reads++;
-        if (failed_reads > 10) {
-            // device has disconnected, we need to reconfigure it
-            configured = false;
-        }
+    switch (dev_type) {
+    case DevType::UNKNOWN:
         return;
+
+    case DevType::INA226: {
+        int16_t bus_voltage16, current16;
+        if (!read_word16(REG_226_BUS_VOLTAGE, bus_voltage16) ||
+            !read_word16(REG_226_CURRENT, current16)) {
+            failed_reads++;
+            if (failed_reads > 10) {
+                // device has disconnected, we need to reconfigure it
+                dev_type = DevType::UNKNOWN;
+            }
+            return;
+        }
+        voltage = bus_voltage16 * voltage_LSB;
+        current = current16 * current_LSB;
+        break;
     }
+
+    case DevType::INA228: {
+        int32_t bus_voltage24, current24;
+        if (!read_word24(REG_228_VBUS, bus_voltage24) ||
+            !read_word24(REG_228_CURRENT, current24)) {
+            failed_reads++;
+            if (failed_reads > 10) {
+                // device has disconnected, we need to reconfigure it
+                dev_type = DevType::UNKNOWN;
+            }
+            return;
+        }
+        voltage = (bus_voltage24>>4) * voltage_LSB;
+        current = (current24>>4) * current_LSB;
+        break;
+    }
+
+    case DevType::INA238: {
+        int16_t bus_voltage16, current16;
+        if (!read_word16(REG_238_VBUS, bus_voltage16) ||
+            !read_word16(REG_238_CURRENT, current16)) {
+            failed_reads++;
+            if (failed_reads > 10) {
+                // device has disconnected, we need to reconfigure it
+                dev_type = DevType::UNKNOWN;
+            }
+            return;
+        }
+        voltage = bus_voltage16 * voltage_LSB;
+        current = current16 * current_LSB;
+        break;
+    }
+    }
+
     failed_reads = 0;
 
     WITH_SEMAPHORE(accumulate.sem);
-    accumulate.volt_sum += bus_voltage * voltage_LSB;
-    accumulate.current_sum += current * current_LSB;
+    accumulate.volt_sum += voltage;
+    accumulate.current_sum += current;
     accumulate.count++;
 }
 

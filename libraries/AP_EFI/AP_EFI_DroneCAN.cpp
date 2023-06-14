@@ -5,16 +5,12 @@
 #if AP_EFI_DRONECAN_ENABLED
 
 #include <AP_CANManager/AP_CANManager.h>
-#include <AP_UAVCAN/AP_UAVCAN.h>
-
-#include <uavcan/equipment/ice/reciprocating/Status.hpp>
+#include <AP_DroneCAN/AP_DroneCAN.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 extern const AP_HAL::HAL& hal;
 
 AP_EFI_DroneCAN *AP_EFI_DroneCAN::driver;
-
-// DroneCAN Frontend Registry Binder
-UC_REGISTRY_BINDER(EFIStatusCb, uavcan::equipment::ice::reciprocating::Status);
 
 // constructor
 AP_EFI_DroneCAN::AP_EFI_DroneCAN(AP_EFI &_frontend) :
@@ -24,21 +20,14 @@ AP_EFI_DroneCAN::AP_EFI_DroneCAN(AP_EFI &_frontend) :
 }
 
 // links the DroneCAN message to this backend
-void AP_EFI_DroneCAN::subscribe_msgs(AP_UAVCAN *ap_uavcan)
+void AP_EFI_DroneCAN::subscribe_msgs(AP_DroneCAN *ap_dronecan)
 {
-    if (ap_uavcan == nullptr) {
+    if (ap_dronecan == nullptr) {
         return;
     }
-    auto* node = ap_uavcan->get_node();
 
-    uavcan::Subscriber<uavcan::equipment::ice::reciprocating::Status, EFIStatusCb> *status_listener;
-    status_listener = new uavcan::Subscriber<uavcan::equipment::ice::reciprocating::Status, EFIStatusCb>(*node);
-
-    // Register method to handle incoming status
-    const int status_listener_res = status_listener->start(EFIStatusCb(ap_uavcan, &trampoline_status));
-    if (status_listener_res < 0) {
-        AP_HAL::panic("DroneCAN EFI subscriber start problem\n\r");
-        return;
+    if (Canard::allocate_sub_arg_callback(ap_dronecan, &trampoline_status, ap_dronecan->get_driver_index()) == nullptr) {
+        AP_BoardConfig::allocation_error("status_sub");
     }
 }
 
@@ -48,86 +37,85 @@ void AP_EFI_DroneCAN::update()
 }
 
 // EFI message handler
-void AP_EFI_DroneCAN::trampoline_status(AP_UAVCAN *ap_uavcan, uint8_t node_id, const EFIStatusCb &cb)
+void AP_EFI_DroneCAN::trampoline_status(AP_DroneCAN *ap_dronecan, const CanardRxTransfer& transfer, const uavcan_equipment_ice_reciprocating_Status &msg)
 {
     if (driver == nullptr) {
         return;
     }
-    const uavcan::equipment::ice::reciprocating::Status &pkt = *cb.msg;
-    driver->handle_status(pkt);
+    driver->handle_status(msg);
 }
 
 /*
   handle reciprocating ICE status message from DroneCAN
  */
-void AP_EFI_DroneCAN::handle_status(const uavcan::equipment::ice::reciprocating::Status &pkt)
+void AP_EFI_DroneCAN::handle_status(const uavcan_equipment_ice_reciprocating_Status &pkt)
 {
     auto &istate = internal_state;
 
     // state maps 1:1 from Engine_State
     istate.engine_state = Engine_State(pkt.state);
 
-    if (!(pkt.flags & uavcan::equipment::ice::reciprocating::Status::FLAG_CRANKSHAFT_SENSOR_ERROR_SUPPORTED)) {
+    if (!(pkt.flags & UAVCAN_EQUIPMENT_ICE_RECIPROCATING_STATUS_FLAG_CRANKSHAFT_SENSOR_ERROR_SUPPORTED)) {
         istate.crankshaft_sensor_status = Crankshaft_Sensor_Status::NOT_SUPPORTED;
-    } else if (pkt.flags & uavcan::equipment::ice::reciprocating::Status::FLAG_CRANKSHAFT_SENSOR_ERROR) {
+    } else if (pkt.flags & UAVCAN_EQUIPMENT_ICE_RECIPROCATING_STATUS_FLAG_CRANKSHAFT_SENSOR_ERROR) {
         istate.crankshaft_sensor_status = Crankshaft_Sensor_Status::ERROR;
     } else {
         istate.crankshaft_sensor_status = Crankshaft_Sensor_Status::OK;
     }
 
-    if (!(pkt.flags & uavcan::equipment::ice::reciprocating::Status::FLAG_TEMPERATURE_SUPPORTED)) {
+    if (!(pkt.flags & UAVCAN_EQUIPMENT_ICE_RECIPROCATING_STATUS_FLAG_TEMPERATURE_SUPPORTED)) {
         istate.temperature_status = Temperature_Status::NOT_SUPPORTED;
-    } else if (pkt.flags & uavcan::equipment::ice::reciprocating::Status::FLAG_TEMPERATURE_BELOW_NOMINAL) {
+    } else if (pkt.flags & UAVCAN_EQUIPMENT_ICE_RECIPROCATING_STATUS_FLAG_TEMPERATURE_BELOW_NOMINAL) {
         istate.temperature_status = Temperature_Status::BELOW_NOMINAL;
-    } else if (pkt.flags & uavcan::equipment::ice::reciprocating::Status::FLAG_TEMPERATURE_ABOVE_NOMINAL) {
+    } else if (pkt.flags & UAVCAN_EQUIPMENT_ICE_RECIPROCATING_STATUS_FLAG_TEMPERATURE_ABOVE_NOMINAL) {
         istate.temperature_status = Temperature_Status::ABOVE_NOMINAL;
-    } else if (pkt.flags & uavcan::equipment::ice::reciprocating::Status::FLAG_TEMPERATURE_OVERHEATING) {
+    } else if (pkt.flags & UAVCAN_EQUIPMENT_ICE_RECIPROCATING_STATUS_FLAG_TEMPERATURE_OVERHEATING) {
         istate.temperature_status = Temperature_Status::OVERHEATING;
-    } else if (pkt.flags & uavcan::equipment::ice::reciprocating::Status::FLAG_TEMPERATURE_EGT_ABOVE_NOMINAL) {
+    } else if (pkt.flags & UAVCAN_EQUIPMENT_ICE_RECIPROCATING_STATUS_FLAG_TEMPERATURE_EGT_ABOVE_NOMINAL) {
         istate.temperature_status = Temperature_Status::EGT_ABOVE_NOMINAL;
     } else {
         istate.temperature_status = Temperature_Status::OK;
     }
 
-    if (!(pkt.flags & uavcan::equipment::ice::reciprocating::Status::FLAG_FUEL_PRESSURE_SUPPORTED)) {
+    if (!(pkt.flags & UAVCAN_EQUIPMENT_ICE_RECIPROCATING_STATUS_FLAG_FUEL_PRESSURE_SUPPORTED)) {
         istate.fuel_pressure_status = Fuel_Pressure_Status::NOT_SUPPORTED;
-    } else if (pkt.flags & uavcan::equipment::ice::reciprocating::Status::FLAG_FUEL_PRESSURE_BELOW_NOMINAL) {
+    } else if (pkt.flags & UAVCAN_EQUIPMENT_ICE_RECIPROCATING_STATUS_FLAG_FUEL_PRESSURE_BELOW_NOMINAL) {
         istate.fuel_pressure_status = Fuel_Pressure_Status::BELOW_NOMINAL;
-    } else if (pkt.flags & uavcan::equipment::ice::reciprocating::Status::FLAG_FUEL_PRESSURE_ABOVE_NOMINAL) {
+    } else if (pkt.flags & UAVCAN_EQUIPMENT_ICE_RECIPROCATING_STATUS_FLAG_FUEL_PRESSURE_ABOVE_NOMINAL) {
         istate.fuel_pressure_status = Fuel_Pressure_Status::ABOVE_NOMINAL;
     } else {
         istate.fuel_pressure_status = Fuel_Pressure_Status::OK;
     }
 
-    if (!(pkt.flags & uavcan::equipment::ice::reciprocating::Status::FLAG_OIL_PRESSURE_SUPPORTED)) {
+    if (!(pkt.flags & UAVCAN_EQUIPMENT_ICE_RECIPROCATING_STATUS_FLAG_OIL_PRESSURE_SUPPORTED)) {
         istate.oil_pressure_status = Oil_Pressure_Status::NOT_SUPPORTED;
-    } else if (pkt.flags & uavcan::equipment::ice::reciprocating::Status::FLAG_OIL_PRESSURE_BELOW_NOMINAL) {
+    } else if (pkt.flags & UAVCAN_EQUIPMENT_ICE_RECIPROCATING_STATUS_FLAG_OIL_PRESSURE_BELOW_NOMINAL) {
         istate.oil_pressure_status = Oil_Pressure_Status::BELOW_NOMINAL;
-    } else if (pkt.flags & uavcan::equipment::ice::reciprocating::Status::FLAG_OIL_PRESSURE_ABOVE_NOMINAL) {
+    } else if (pkt.flags & UAVCAN_EQUIPMENT_ICE_RECIPROCATING_STATUS_FLAG_OIL_PRESSURE_ABOVE_NOMINAL) {
         istate.oil_pressure_status = Oil_Pressure_Status::ABOVE_NOMINAL;
     } else {
         istate.oil_pressure_status = Oil_Pressure_Status::OK;
     }
 
-    if (!(pkt.flags & uavcan::equipment::ice::reciprocating::Status::FLAG_DETONATION_SUPPORTED)) {
+    if (!(pkt.flags & UAVCAN_EQUIPMENT_ICE_RECIPROCATING_STATUS_FLAG_DETONATION_SUPPORTED)) {
         istate.detonation_status = Detonation_Status::NOT_SUPPORTED;
-    } else if (pkt.flags & uavcan::equipment::ice::reciprocating::Status::FLAG_DETONATION_OBSERVED) {
+    } else if (pkt.flags & UAVCAN_EQUIPMENT_ICE_RECIPROCATING_STATUS_FLAG_DETONATION_OBSERVED) {
         istate.detonation_status = Detonation_Status::OBSERVED;
     } else {
         istate.detonation_status = Detonation_Status::NOT_OBSERVED;
     }
 
-    if (!(pkt.flags & uavcan::equipment::ice::reciprocating::Status::FLAG_MISFIRE_SUPPORTED)) {
+    if (!(pkt.flags & UAVCAN_EQUIPMENT_ICE_RECIPROCATING_STATUS_FLAG_MISFIRE_SUPPORTED)) {
         istate.misfire_status = Misfire_Status::NOT_SUPPORTED;
-    } else if (pkt.flags & uavcan::equipment::ice::reciprocating::Status::FLAG_MISFIRE_OBSERVED) {
+    } else if (pkt.flags & UAVCAN_EQUIPMENT_ICE_RECIPROCATING_STATUS_FLAG_MISFIRE_OBSERVED) {
         istate.misfire_status = Misfire_Status::OBSERVED;
     } else {
         istate.misfire_status = Misfire_Status::NOT_OBSERVED;
     }
     
-    if (!(pkt.flags & uavcan::equipment::ice::reciprocating::Status::FLAG_DEBRIS_SUPPORTED)) {
+    if (!(pkt.flags & UAVCAN_EQUIPMENT_ICE_RECIPROCATING_STATUS_FLAG_DEBRIS_SUPPORTED)) {
         istate.debris_status = Debris_Status::NOT_SUPPORTED;
-    } else if (pkt.flags & uavcan::equipment::ice::reciprocating::Status::FLAG_DEBRIS_DETECTED) {
+    } else if (pkt.flags & UAVCAN_EQUIPMENT_ICE_RECIPROCATING_STATUS_FLAG_DEBRIS_DETECTED) {
         istate.debris_status = Debris_Status::DETECTED;
     } else {
         istate.debris_status = Debris_Status::NOT_DETECTED;
@@ -152,8 +140,8 @@ void AP_EFI_DroneCAN::handle_status(const uavcan::equipment::ice::reciprocating:
     istate.spark_plug_usage = Spark_Plug_Usage(pkt.spark_plug_usage);
 
     // assume max one cylinder status
-    if (pkt.cylinder_status.size() > 0) {
-        const auto &cs = pkt.cylinder_status[0];
+    if (pkt.cylinder_status.len > 0) {
+        const auto &cs = pkt.cylinder_status.data[0];
         auto &c = istate.cylinder_status;
         c.ignition_timing_deg = cs.ignition_timing_deg;
         c.injection_time_ms = cs.injection_time_ms;

@@ -104,8 +104,8 @@ PC4 MPU9250_DRDY INPUT
 # use active buzzer instead
 PA1 BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
-define HAL_BUZZER_ON 1
-define HAL_BUZZER_OFF 0
+
+
 
 # I2C
 PB6 I2C1_SCL I2C1
@@ -136,9 +136,6 @@ BARO BMP280 SPI:bmp280
 COMPASS AK8963:probe_mpu9250 0 ROTATION_YAW_90
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 0
-
-# external baro probing
-define HAL_PROBE_EXTERNAL_I2C_BAROS
 
 # no onboard SD, filesystem support disabled until flash logging implemented
 #define HAL_OS_FATFS_IO 1

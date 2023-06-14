@@ -160,8 +160,8 @@ define RELAY2_PIN_DEFAULT  34
 #define RELAY3_PIN_DEFAULT  35
 
 define HAL_BUZZER_PIN 32
-define HAL_BUZZER_ON  1
-define HAL_BUZZER_OFF 0
+
+
 
 # battery setup
 define HAL_BATT_VOLT_PIN 10
@@ -173,9 +173,8 @@ define STM32_PWM_USE_ADVANCED TRUE
 
 # save some flash
 include ../include/save_some_flash.inc
-define HAL_RUNCAM_ENABLED 0
 define HAL_SPEKTRUM_TELEM_ENABLED 0
-define HAL_SOARING_ENABLED 0
 
 # minimal drivers to reduce flash usage
 include ../include/minimal.inc
+include ../include/minimize_features.inc

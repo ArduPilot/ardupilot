@@ -23,9 +23,9 @@ else
     if  [ ! `ls  esp_idf/install.sh 2>/dev/null` ]; then
         echo "found empty IDF, cloning"
         # add esp_idf as almost submodule, depths  uses less space
-        #git clone -b v4.2 --single-branch --depth 10 https://github.com/espressif/esp-idf.git esp_idf
-        git clone -b 'release/v4.2'  https://github.com/espressif/esp-idf.git esp_idf
-        # check if we've got v4.2 checked out, only this version of esp_idf is tested and works?
+        #git clone -b v4.4 --single-branch --depth 10 https://github.com/espressif/esp-idf.git esp_idf
+        git clone -b 'release/v4.4'  https://github.com/espressif/esp-idf.git esp_idf
+        # check if we've got v4.4 checked out, only this version of esp_idf is tested and works?
         
     fi
 fi
@@ -33,23 +33,25 @@ fi
 echo "inspecting possible IDF... "
 cd esp_idf
 echo `git rev-parse HEAD`
-# these are a selection of possible specific commit/s that represent v4.2 branch of the esp_idf 
-if [ `git rev-parse HEAD` == 'f370d5089f61ac39f183109b6b2908700cfe3b0a' ]; then 
-    echo "IDF version 'release/4.2' found OK, great."; 
-elif [ `git rev-parse HEAD` == 'c40f2590bf759ff60ef122afa79b4ec04e7633d2' ]; then 
-    echo "IDF version 'v4.2' found OK, great."; 
+# these are a selection of possible specific commit/s that represent v4.4 branch of the esp_idf 
+if [ `git rev-parse HEAD` == 'f98ec313f2a9bc50151349c404a8f2f10ed99649' ]; then 
+    echo "IDF version 'release/4.4' found OK, great."; 
 else
-    echo "looks like an idf, but not v4.2 branch, trying to switch branch and reflect upstream";
+    echo "looks like an idf, but not v4.4 branch, trying to switch branch and reflect upstream";
     ../../Tools/gittools/submodule-sync.sh >/dev/null
-    git fetch ; git checkout -f release/v4.2
+    git fetch ; git checkout -f release/v4.4 
 
     # retry same as above
     echo `git rev-parse HEAD`
-    if [ `git rev-parse HEAD` == 'f370d5089f61ac39f183109b6b2908700cfe3b0a' ]; then 
-        echo "IDF version 'release/4.2' found OK, great."; 
-    elif [ `git rev-parse HEAD` == 'c40f2590bf759ff60ef122afa79b4ec04e7633d2' ]; then 
-        echo "IDF version 'v4.2' found OK, great."; 
+    if [ `git rev-parse HEAD` == 'f98ec313f2a9bc50151349c404a8f2f10ed99649' ]; then 
+        echo "IDF version 'release/4.4' found OK, great."; 
     fi
 fi
-cd ..
+cd ../..
 
+cd modules/esp_idf 
+git submodule update --init --recursive
+cd ../..
+echo "after changing IDF versions [ such as between 4.2 and 4.4 ] you should re-run these in your console:"
+echo "./modules/esp_idf/install.sh"
+echo "source ./modules/esp_idf/export.sh"

@@ -14,6 +14,10 @@
  */
 #pragma once
 
+#include "AP_Scripting_config.h"
+
+#if AP_SCRIPTING_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <setjmp.h>
@@ -23,32 +27,9 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_Common/MultiHeap.h>
+#include "lua_common_defs.h"
 
 #include "lua/src/lua.hpp"
-
-#ifndef REPL_DIRECTORY
-  #if HAL_OS_FATFS_IO
-    #define REPL_DIRECTORY "/APM/repl"
-  #else
-    #define REPL_DIRECTORY "./repl"
-  #endif //HAL_OS_FATFS_IO
-#endif // REPL_DIRECTORY
-
-#ifndef SCRIPTING_DIRECTORY
-  #if HAL_OS_FATFS_IO
-    #define SCRIPTING_DIRECTORY "/APM/scripts"
-  #else
-    #define SCRIPTING_DIRECTORY "./scripts"
-  #endif //HAL_OS_FATFS_IO
-#endif // SCRIPTING_DIRECTORY
-
-#ifndef REPL_IN
-  #define REPL_IN REPL_DIRECTORY "/in"
-#endif // REPL_IN
-
-#ifndef REPL_OUT
-  #define REPL_OUT REPL_DIRECTORY "/out"
-#endif // REPL_OUT
 
 class lua_scripts
 {
@@ -78,7 +59,6 @@ public:
 private:
 
     void create_sandbox(lua_State *L);
-
     void repl_cleanup(void);
 
     typedef struct script_info {
@@ -143,6 +123,7 @@ private:
     static HAL_Semaphore error_msg_buf_sem;
     static uint8_t print_error_count;
     static uint32_t last_print_ms;
+    int current_ref;
 
 public:
     // must be static for use in atpanic, public to allow bindings to issue none fatal warnings
@@ -155,3 +136,5 @@ public:
     static AP_HAL::Semaphore* get_last_error_semaphore() { return &error_msg_buf_sem; }
 
 };
+
+#endif  // AP_SCRIPTING_ENABLED

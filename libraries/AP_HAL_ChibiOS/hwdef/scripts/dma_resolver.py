@@ -15,7 +15,7 @@ def check_possibility(periph, dma_stream, curr_dict, dma_map, check_list, cannot
     global ignore_list
     if debug:
         print('............ Checking ', periph, dma_stream, 'without', cannot_use_stream)
-    for other_periph in curr_dict:
+    for other_periph in sorted(curr_dict.keys()):
         if other_periph != periph:
             if curr_dict[other_periph] == dma_stream:
                 if other_periph in forbidden_map[periph]:
@@ -240,7 +240,7 @@ def generate_DMAMUX_map(peripheral_list, noshare_list, dma_exclude, stream_ofs):
     # static allocation is in stm32h7_mcuconf.h
     map2 = generate_DMAMUX_map_mask(dmamux2_peripherals, 0xff, noshare_list, dma_exclude, stream_ofs)
     # translate entries from map2 to "DMA controller 3", which is used for BDMA
-    for p in map2.keys():
+    for p in sorted(map2.keys()):
         streams = []
         for (controller,stream) in map2[p]:
             streams.append((3,stream))
@@ -374,7 +374,7 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
 
     # now look for shared DMA possibilities
     stream_assign = {}
-    for k in curr_dict.keys():
+    for k in sorted(curr_dict.keys()):
         p = curr_dict[k]
         if not p in stream_assign:
             stream_assign[p] = [k]
@@ -471,7 +471,7 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
                     f.write("#define %-30s STM32_DMA_STREAM_ID(%u, %u)%s\n" %
                         (chibios_dma_define_name(chkey)+'STREAM', dma_controller,
                             curr_dict[key][1], shared))
-        for streamchan in dma_map[key]:
+        for streamchan in sorted(dma_map[key]):
             if stream == (streamchan[0], streamchan[1]):
                 if have_DMAMUX:
                     chan = dmamux_channel(key)

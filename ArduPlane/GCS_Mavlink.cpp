@@ -133,7 +133,7 @@ void GCS_MAVLINK_Plane::send_attitude() const
     float p = ahrs.pitch;
     float y = ahrs.yaw;
 
-    if (!(plane.g2.flight_options & FlightOptions::GCS_REMOVE_TRIM_PITCH_CD)) {
+    if (!(plane.flight_option_enabled(FlightOptions::GCS_REMOVE_TRIM_PITCH_CD))) {
         p -= radians(plane.g.pitch_trim_cd * 0.01f);
     }
 
@@ -1316,6 +1316,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_do_set_mission_current(const mavlin
     return result;
 }
 
+#if AP_MAVLINK_MISSION_SET_CURRENT_ENABLED
 void GCS_MAVLINK_Plane::handle_mission_set_current(AP_Mission &mission, const mavlink_message_t &msg)
 {
     // if you change this you must change handle_command_do_set_mission_current
@@ -1325,6 +1326,7 @@ void GCS_MAVLINK_Plane::handle_mission_set_current(AP_Mission &mission, const ma
         plane.mission.resume();
     }
 }
+#endif
 
 uint64_t GCS_MAVLINK_Plane::capabilities() const
 {

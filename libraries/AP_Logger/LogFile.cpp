@@ -129,6 +129,7 @@ bool AP_Logger_Backend::Write_Parameter(const AP_Param *ap,
     return Write_Parameter(name, ap->cast_to_float(type), default_val);
 }
 
+#if AP_RC_CHANNEL_ENABLED
 // Write an RCIN packet
 void AP_Logger::Write_RCIN(void)
 {
@@ -179,6 +180,7 @@ void AP_Logger::Write_RCIN(void)
     };
     WriteBlock(&pkt2, sizeof(pkt2));
 }
+#endif  // AP_RC_CHANNEL_ENABLED
 
 // Write an SERVO packet
 void AP_Logger::Write_RCOUT(void)
@@ -186,23 +188,25 @@ void AP_Logger::Write_RCOUT(void)
     const uint32_t enabled_mask = ~SRV_Channels::get_output_channel_mask(SRV_Channel::k_GPIO);
 
     if ((enabled_mask & 0x3FFF) != 0) {
+        uint16_t channels[14] {};
+        hal.rcout->read(channels, ARRAY_SIZE(channels));
         const struct log_RCOUT pkt{
             LOG_PACKET_HEADER_INIT(LOG_RCOUT_MSG),
             time_us       : AP_HAL::micros64(),
-            chan1         : hal.rcout->read(0),
-            chan2         : hal.rcout->read(1),
-            chan3         : hal.rcout->read(2),
-            chan4         : hal.rcout->read(3),
-            chan5         : hal.rcout->read(4),
-            chan6         : hal.rcout->read(5),
-            chan7         : hal.rcout->read(6),
-            chan8         : hal.rcout->read(7),
-            chan9         : hal.rcout->read(8),
-            chan10        : hal.rcout->read(9),
-            chan11        : hal.rcout->read(10),
-            chan12        : hal.rcout->read(11),
-            chan13        : hal.rcout->read(12),
-            chan14        : hal.rcout->read(13)
+            chan1         : channels[0],
+            chan2         : channels[1],
+            chan3         : channels[2],
+            chan4         : channels[3],
+            chan5         : channels[4],
+            chan6         : channels[5],
+            chan7         : channels[6],
+            chan8         : channels[7],
+            chan9         : channels[8],
+            chan10        : channels[9],
+            chan11        : channels[10],
+            chan12        : channels[11],
+            chan13        : channels[12],
+            chan14        : channels[13]
         };
         WriteBlock(&pkt, sizeof(pkt));
     }
@@ -447,7 +451,8 @@ bool AP_Logger_Backend::Write_Mode(uint8_t mode, const ModeReason reason)
 /*
   write servo status from CAN servo
  */
-void AP_Logger::Write_ServoStatus(uint64_t time_us, uint8_t id, float position, float force, float speed, uint8_t power_pct)
+void AP_Logger::Write_ServoStatus(uint64_t time_us, uint8_t id, float position, float force, float speed, uint8_t power_pct,
+                                  float pos_cmd, float voltage, float current, float mot_temp, float pcb_temp, uint8_t error)
 {
     const struct log_CSRV pkt {
         LOG_PACKET_HEADER_INIT(LOG_CSRV_MSG),
@@ -456,7 +461,13 @@ void AP_Logger::Write_ServoStatus(uint64_t time_us, uint8_t id, float position, 
         position    : position,
         force       : force,
         speed       : speed,
-        power_pct   : power_pct
+        power_pct   : power_pct,
+        pos_cmd     : pos_cmd,
+        voltage     : voltage,
+        current     : current,
+        mot_temp    : mot_temp,
+        pcb_temp    : pcb_temp,
+        error       : error,
     };
     WriteBlock(&pkt, sizeof(pkt));
 }

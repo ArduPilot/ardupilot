@@ -267,8 +267,8 @@ void AP_Mission::reset()
 ///     returns true if mission was running so it could not be cleared
 bool AP_Mission::clear()
 {
-    // do not allow clearing the mission while it is running
-    if (_flags.state == MISSION_RUNNING) {
+    // do not allow clearing the mission while it is running unless disarmed
+    if (hal.util->get_soft_armed() && _flags.state == MISSION_RUNNING) {
         return false;
     }
 
@@ -280,7 +280,7 @@ bool AP_Mission::clear()
     _do_cmd.index = AP_MISSION_CMD_INDEX_NONE;
     _flags.nav_cmd_loaded = false;
     _flags.do_cmd_loaded = false;
-
+    _flags.state = MISSION_STOPPED;
     // return success
     return true;
 }

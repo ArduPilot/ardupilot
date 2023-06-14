@@ -83,8 +83,8 @@ PB3 LED_EXT1 OUTPUT GPIO(30)
 # Buzzer
 PC13 BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
-define HAL_BUZZER_ON 1
-define HAL_BUZZER_OFF 0
+
+
 
 # Note that this board needs PULLUP on I2C pins
 PB8 I2C1_SCL I2C1 PULLUP

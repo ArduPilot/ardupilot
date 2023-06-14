@@ -1,6 +1,3 @@
-[submodule "modules/uavcan"]
-	path = modules/uavcan
-	url = https://github.com/DroneCAN/libuavcan.git
 [submodule "modules/waf"]
 	path = modules/waf
 	url = https://github.com/ArduPilot/waf.git
@@ -37,8 +34,8 @@
 [submodule "modules/Micro-XRCE-DDS-Client"]
 	path = modules/Micro-XRCE-DDS-Client
 	url = https://github.com/ardupilot/Micro-XRCE-DDS-Client.git
-	branch = develop
+	branch = master
 [submodule "modules/Micro-CDR"]
 	path = modules/Micro-CDR
 	url = https://github.com/ardupilot/Micro-CDR.git
-	branch = develop
+	branch = master

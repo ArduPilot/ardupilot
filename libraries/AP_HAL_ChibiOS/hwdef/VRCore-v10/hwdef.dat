@@ -155,8 +155,8 @@ define RELAY2_PIN_DEFAULT  34
 define RELAY3_PIN_DEFAULT  35
 
 define HAL_BUZZER_PIN 32
-define HAL_BUZZER_ON  1
-define HAL_BUZZER_OFF 0
+
+
 
 # battery setup
 define HAL_BATT_VOLT_PIN 10

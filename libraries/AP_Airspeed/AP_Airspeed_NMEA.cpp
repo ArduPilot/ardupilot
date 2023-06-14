@@ -30,13 +30,6 @@
 
 #define TIMEOUT_MS 2000
 
-extern const AP_HAL::HAL &hal;
-
-AP_Airspeed_NMEA::AP_Airspeed_NMEA(AP_Airspeed &_frontend, uint8_t _instance) :
-    AP_Airspeed_Backend(_frontend, _instance)
-{
-}
-
 bool AP_Airspeed_NMEA::init()
 {
     const AP_SerialManager& serial_manager = AP::serialmanager();

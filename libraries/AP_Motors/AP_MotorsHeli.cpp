@@ -617,3 +617,16 @@ bool AP_MotorsHeli::arming_checks(size_t buflen, char *buffer) const
 
     return true;
 }
+
+// get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
+//  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
+uint32_t AP_MotorsHeli::get_motor_mask()
+{
+    return _main_rotor.get_output_mask();
+}
+
+// set_desired_rotor_speed
+void AP_MotorsHeli::set_desired_rotor_speed(float desired_speed)
+{
+    _main_rotor.set_desired_speed(desired_speed);
+}

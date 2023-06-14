@@ -18,8 +18,13 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
+
+// Reference: https://linux.die.net/man/3/be16toh
+
 #pragma once
 
+#include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>
 #include <byteswap.h>
 #include <endian.h>
 #include <stdint.h>
@@ -93,6 +98,13 @@ static inline uint16_t be16toh_ptr(const uint8_t *p) { return p[1] | (p[0]<<8U);
 static inline uint32_t be24toh_ptr(const uint8_t *p) { return p[2] | (p[1]<<8U) | (p[0]<<16U); }
 static inline uint32_t be32toh_ptr(const uint8_t *p) { return p[3] | (p[2]<<8U) | (p[1]<<16U) | (p[0]<<24U); }
 static inline uint64_t be64toh_ptr(const uint8_t *p) { return (uint64_t) p[7] | ((uint64_t) p[6]<<8ULL) | ((uint64_t) p[5]<<16U) | ((uint64_t) p[4]<<24U) | ((uint64_t) p[3]<<32U) | ((uint64_t) p[2]<<40U) | ((uint64_t) p[1]<<48U) | ((uint64_t) p[0]<<56U); }
+
+static inline float be32tofloat_ptr(const uint8_t *p) { return int32_to_float_le(be32toh_ptr(p)); }
+static inline float be32tofloat_ptr(const uint8_t *p, const uint8_t offset) { return be32tofloat_ptr(&p[offset]); }
+#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+static inline float be64todouble_ptr(const uint8_t *p) { return uint64_to_double_le(be64toh_ptr(p)); }
+static inline float be64todouble_ptr(const uint8_t *p, const uint8_t offset) { return be64todouble_ptr(&p[offset]); }
+#endif
 
 static inline void put_le16_ptr(uint8_t *p, uint16_t v) { p[0] = (v&0xFF); p[1] = (v>>8); }
 static inline void put_le24_ptr(uint8_t *p, uint32_t v) { p[0] = (v&0xFF); p[1] = (v>>8)&0xFF; p[2] = (v>>16)&0xFF; }

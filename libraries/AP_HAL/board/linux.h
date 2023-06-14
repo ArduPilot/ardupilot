@@ -3,7 +3,6 @@
 #define HAL_BOARD_NAME "Linux"
 #define HAL_CPU_CLASS HAL_CPU_CLASS_1000
 #define HAL_MEM_CLASS HAL_MEM_CLASS_1000
-#define HAL_OS_POSIX_IO 1
 #define HAL_OS_SOCKETS 1
 #define HAL_STORAGE_SIZE            16384
 #define HAL_STORAGE_SIZE_AVAILABLE  HAL_STORAGE_SIZE
@@ -82,7 +81,7 @@
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_VNAV
     // linux SBC with VectorNav AHRS
     #define HAL_EXTERNAL_AHRS_DEFAULT 1
-    #define HAL_SERIAL3_PROTOCOL 36
+    #define DEFAULT_SERIAL3_PROTOCOL 36
     #define HAL_AIRSPEED_TYPE_DEFAULT 0
     #define HAL_GPS_TYPE_DEFAULT 21
     #define HAL_AHRS_EKF_TYPE_DEFAULT 11
@@ -380,10 +379,13 @@
     #define HAL_LINUX_I2C_EXTERNAL_BUS_MASK 0xFFFF
 #endif
 
+// only include if compiling C++ code
+#ifdef __cplusplus
 #include <AP_HAL_Linux/Semaphores.h>
 #define HAL_Semaphore Linux::Semaphore
 #include <AP_HAL/EventHandle.h>
 #define HAL_EventHandle AP_HAL::EventHandle
+#endif
 
 #ifndef HAL_HAVE_HARDWARE_DOUBLE
 #define HAL_HAVE_HARDWARE_DOUBLE 1
@@ -395,4 +397,11 @@
 
 #ifndef HAL_GYROFFT_ENABLED
 #define HAL_GYROFFT_ENABLED 0
+#endif
+
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NONE
+// we can use virtual CAN on native builds
+#define HAL_LINUX_USE_VIRTUAL_CAN 1
+#else
+#define HAL_LINUX_USE_VIRTUAL_CAN 0
 #endif

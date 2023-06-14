@@ -252,17 +252,40 @@ bool AR_PosControl::init()
     return true;
 }
 
-// methods to adjust position, velocity and acceleration targets smoothly using input shaping
-// pos should be the target position as an offset from the EKF origin (in meters)
+// adjust position, velocity and acceleration targets smoothly using input shaping
+// pos is the target position as an offset from the EKF origin (in meters)
+// vel is the target velocity in m/s. accel is the target acceleration in m/s/s
 // dt should be the update rate in seconds
+// init should be called once before starting to use these methods
 void AR_PosControl::input_pos_target(const Vector2p &pos, float dt)
+{
+    Vector2f vel;
+    Vector2f accel;
+    input_pos_vel_accel_target(pos, vel, accel, dt);
+}
+
+// adjust position, velocity and acceleration targets smoothly using input shaping
+// pos is the target position as an offset from the EKF origin (in meters)
+// vel is the target velocity in m/s. accel is the target acceleration in m/s/s
+// dt should be the update rate in seconds
+// init should be called once before starting to use these methods
+void AR_PosControl::input_pos_vel_target(const Vector2p &pos, const Vector2f &vel, float dt)
+{
+    Vector2f accel;
+    input_pos_vel_accel_target(pos, vel, accel, dt);
+}
+
+// adjust position, velocity and acceleration targets smoothly using input shaping
+// pos is the target position as an offset from the EKF origin (in meters)
+// vel is the target velocity in m/s. accel is the target acceleration in m/s/s
+// dt should be the update rate in seconds
+// init should be called once before starting to use these methods
+void AR_PosControl::input_pos_vel_accel_target(const Vector2p &pos, const Vector2f &vel, const Vector2f &accel, float dt)
 {
     // adjust target position, velocity and acceleration forward by dt
     update_pos_vel_accel_xy(_pos_target, _vel_desired, _accel_desired, dt, Vector2f(), Vector2f(), Vector2f());
 
     // call shape_pos_vel_accel_xy to pull target towards final destination
-    Vector2f vel;
-    Vector2f accel;
     const float accel_max = MIN(_accel_max, _lat_accel_max);
     shape_pos_vel_accel_xy(pos, vel, accel, _pos_target, _vel_desired, _accel_desired,
                            _speed_max, accel_max, _jerk_max, dt, false);

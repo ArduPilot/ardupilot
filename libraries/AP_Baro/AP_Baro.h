@@ -28,6 +28,7 @@ class AP_Baro
 {
     friend class AP_Baro_Backend;
     friend class AP_Baro_SITL; // for access to sensors[]
+    friend class AP_Baro_DroneCAN; // for access to sensors[]
 
 public:
     AP_Baro();
@@ -57,9 +58,9 @@ public:
     bool healthy(void) const { return healthy(_primary); }
 #ifdef HAL_BUILD_AP_PERIPH
     // calibration and alt check not valid for AP_Periph
-    bool healthy(uint8_t instance) const { return sensors[instance].healthy; }
+    bool healthy(uint8_t instance) const;
 #else
-    bool healthy(uint8_t instance) const { return sensors[instance].healthy && sensors[instance].alt_ok && sensors[instance].calibrated; }
+    bool healthy(uint8_t instance) const;
 #endif
 
     // check if all baros are healthy - used for SYS_STATUS report

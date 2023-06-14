@@ -24,7 +24,7 @@
 
 #include "AP_Filesystem.h"
 
-#if HAVE_FILESYSTEM_SUPPORT
+#if AP_FILESYSTEM_FATFS_ENABLED || AP_FILESYSTEM_POSIX_ENABLED || AP_FILESYSTEM_ESP32_ENABLED || AP_FILESYSTEM_ROMFS_ENABLED
 
 #include "posix_compat.h"
 #include <stdarg.h>
@@ -268,4 +268,4 @@ int apfs_remove(const char *pathname)
     return AP::FS().unlink(pathname);
 }
 
-#endif // HAVE_FILESYSTEM_SUPPORT
+#endif // AP_FILESYSTEM_POSIX_ENABLED

@@ -31,6 +31,7 @@
 
 #include "AP_AHRS_DCM.h"
 #include "AP_AHRS_SIM.h"
+#include "AP_AHRS_External.h"
 
 // forward declare view class
 class AP_AHRS_View;
@@ -193,6 +194,17 @@ public:
     // from which to decide the origin on its own
     bool set_origin(const Location &loc) WARN_IF_UNUSED;
 
+#if AP_AHRS_POSITION_RESET_ENABLED
+    // Set the EKF's NE horizontal position states and their corresponding variances from the supplied WGS-84 location
+    // and 1-sigma horizontal position uncertainty. This can be used when the EKF is dead reckoning to periodically
+    // correct the position. If the EKF is is still using data from a postion sensor such as GPS, the position set
+    // will not be performed.
+    // pos_accuracy is the standard deviation of the horizontal position uncertainty in metres.
+    // The altitude element of the location is not used.
+    // Returns true if the set was successful.
+    bool handle_external_position_estimate(const Location &loc, float pos_accuracy, uint32_t timestamp_);
+#endif
+
     // returns the inertial navigation origin in lat/lon/alt
     bool get_origin(Location &ret) const WARN_IF_UNUSED;
 
@@ -217,7 +229,7 @@ public:
 
     // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
     // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
-    bool get_vert_pos_rate(float &velocity) const;
+    bool get_vert_pos_rate_D(float &velocity) const;
 
     // write optical flow measurements to EKF
     void writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, const float heightOverride);
@@ -809,6 +821,11 @@ private:
     AP_AHRS_SIM sim;
 #endif
     struct AP_AHRS_Backend::Estimates sim_estimates;
+#endif
+
+#if HAL_EXTERNAL_AHRS_ENABLED
+    AP_AHRS_External external;
+    struct AP_AHRS_Backend::Estimates external_estimates;
 #endif
 
     /*

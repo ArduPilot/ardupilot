@@ -1,9 +1,12 @@
 #pragma once
+
+#include "AP_Mount_config.h"
+
+#if HAL_SOLO_GIMBAL_ENABLED
+
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include "AP_Mount.h"
-#if HAL_SOLO_GIMBAL_ENABLED
 
 enum gmb_param_state_t {
     GMB_PARAMSTATE_NOT_YET_READ=0, // parameter has yet to be initialized

@@ -26,6 +26,7 @@
 #include "SIM_IntelligentEnergy24.h"
 #include "SIM_Ship.h"
 #include "SIM_GPS.h"
+#include "SIM_DroneCANDevice.h"
 
 namespace SITL {
 
@@ -448,6 +449,9 @@ public:
     RichenPower richenpower_sim;
     IntelligentEnergy24 ie24_sim;
     FETtecOneWireESC fetteconewireesc_sim;
+#if AP_TEST_DRONECAN_DRIVERS
+    DroneCANDevice dronecan_sim;
+#endif
 
     // ESC telemetry
     AP_Int8 esc_telem;

@@ -1,0 +1,22 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from builtin_interfaces/msg/Time.msg
+// generated code does not contain a copyright notice
+
+
+module builtin_interfaces {
+  module msg {
+    @verbatim (language="comment", text=
+      "This message communicates ROS Time defined here:" "\n"
+      "https://design.ros2.org/articles/clock_and_time.html")
+    struct Time {
+      @verbatim (language="comment", text=
+        "The seconds component, valid over all int32 values.")
+      int32 sec;
+
+      @verbatim (language="comment", text=
+        "The nanoseconds component, valid in the range [0, 10e9).")
+      uint32 nanosec;
+    };
+  };
+};
+

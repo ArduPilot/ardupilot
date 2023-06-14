@@ -372,7 +372,7 @@ void RCOutput::bdshot_config_icu_dshot(stm32_tim_t* TIMx, uint8_t chan, uint8_t 
 /*
   unlock DMA channel after a bi-directional dshot transaction completes
  */
-__RAMFUNC__ void RCOutput::bdshot_finish_dshot_gcr_transaction(void *p)
+__RAMFUNC__ void RCOutput::bdshot_finish_dshot_gcr_transaction(virtual_timer_t* vt, void *p)
 {
     pwm_group *group = (pwm_group *)p;
     chSysLockFromISR();

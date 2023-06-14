@@ -163,7 +163,7 @@ extern AP_FlashIface_JEDEC ext_flash;
 /*
   1ms timer tick callback
  */
-static void sys_tick_handler(void *ctx)
+static void sys_tick_handler(virtual_timer_t* vt, void *ctx)
 {
     chSysLockFromISR();
     chVTSetI(&systick_vt, chTimeMS2I(1), sys_tick_handler, nullptr);
@@ -316,12 +316,17 @@ jump_to_app()
 #elif defined(STM32L4)
     rccDisableAPB1R1(~0);
     rccDisableAPB1R2(~0);
+#elif defined(STM32L4PLUS)
+    rccDisableAPB1R1(~0);
+    rccDisableAPB1R2(~0);
 #else
     rccDisableAPB1(~0);
 #endif
     rccDisableAPB2(~0);
-#if HAL_USE_SERIAL_USB == TRUE    
+#if HAL_USE_SERIAL_USB == TRUE
+#if !defined(STM32_OTG2_IS_OTG1)
     rccResetOTG_FS();
+#endif
 #if defined(rccResetOTG_HS)
     rccResetOTG_HS();
 #endif

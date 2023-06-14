@@ -205,7 +205,7 @@ void GPIO::pinMode(uint8_t pin, uint8_t output)
             return;
         }
         g->mode = output?PAL_MODE_OUTPUT_PUSHPULL:PAL_MODE_INPUT;
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
         if (g->mode == PAL_MODE_OUTPUT_PUSHPULL) {
             // retain OPENDRAIN if already set
             iomode_t old_mode = palReadLineMode(g->pal_line);
@@ -550,7 +550,7 @@ bool GPIO::pin_to_servo_channel(uint8_t pin, uint8_t& servo_ch) const
     return false;
 }
 
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
 
 // allow for save and restore of pin settings
 bool GPIO::get_mode(uint8_t pin, uint32_t &mode)

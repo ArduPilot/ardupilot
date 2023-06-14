@@ -3,7 +3,6 @@
 #define HAL_BOARD_NAME "SITL"
 #define HAL_CPU_CLASS HAL_CPU_CLASS_1000
 #define HAL_MEM_CLASS HAL_MEM_CLASS_1000
-#define HAL_OS_POSIX_IO 1
 #define HAL_OS_SOCKETS 1
 
 #define AP_FLASHSTORAGE_TYPE 3
@@ -50,12 +49,15 @@
 #define HAL_HAVE_SERVO_VOLTAGE 1
 #define HAL_HAVE_SAFETY_SWITCH 0
 
+// only include if compiling C++ code
+#ifdef __cplusplus
 // allow for static semaphores
 #include <AP_HAL_SITL/Semaphores.h>
 #define HAL_Semaphore HALSITL::Semaphore
 
 #include <AP_HAL/EventHandle.h>
 #define HAL_EventHandle AP_HAL::EventHandle
+#endif
 
 #ifndef HAL_NUM_CAN_IFACES
 #define HAL_NUM_CAN_IFACES 0
@@ -71,4 +73,8 @@
 
 #ifndef HAL_WITH_EKF_DOUBLE
 #define HAL_WITH_EKF_DOUBLE HAL_HAVE_HARDWARE_DOUBLE
+#endif
+
+#ifndef HAL_CAN_DRIVER_DEFAULT
+#define HAL_CAN_DRIVER_DEFAULT 0
 #endif
