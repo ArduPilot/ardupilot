@@ -13,7 +13,7 @@
 MCU STM32F4xx STM32F405xx
 
 # board ID for firmware load
-APJ_BOARD_ID 1828
+APJ_BOARD_ID 1106
 
 # crystal frequency
 OSCILLATOR_HZ 16000000
@@ -199,8 +199,6 @@ define STM32_PWM_USE_ADVANCED TRUE
 include ../include/minimize_features.inc
 # only include ublox GPS driver
 #include ../include/minimal_GPS.inc
-
-# reduce max size of embedded params for apj_tool.py
 define AP_PARAM_MAX_EMBEDDED_PARAM 1024
 #define HAL_GENERATOR_ENABLED 0
 #define AC_OAPATHPLANNER_ENABLED 0
