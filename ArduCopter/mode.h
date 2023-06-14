@@ -484,10 +484,6 @@ public:
 
     bool requires_terrain_failsafe() const override { return true; }
 
-    // return true if this flight mode supports user takeoff
-    //  must_nagivate is true if mode must also control horizontal position
-    virtual bool has_user_takeoff(bool must_navigate) const override { return false; }
-
     void payload_place_start();
 
     // for GCS_MAVLink to call:
