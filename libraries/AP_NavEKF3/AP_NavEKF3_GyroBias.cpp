@@ -9,7 +9,7 @@ void NavEKF3_core::resetGyroBias(void)
     zeroRows(P,10,12);
     zeroCols(P,10,12);
 
-    P[10][10] = sq(radians(0.5f * dtIMUavg));
+    P[10][10] = sq(radians(0.5f));
     P[11][11] = P[10][10];
     P[12][12] = P[10][10];
 }

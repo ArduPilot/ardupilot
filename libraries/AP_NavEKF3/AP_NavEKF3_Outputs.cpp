@@ -99,7 +99,7 @@ void NavEKF3_core::getGyroBias(Vector3f &gyroBias) const
         gyroBias.zero();
         return;
     }
-    gyroBias = (stateStruct.gyro_bias / dtEkfAvg).tofloat();
+    gyroBias = stateStruct.gyro_bias.tofloat();
 }
 
 // return accelerometer bias in m/s/s
@@ -109,7 +109,7 @@ void NavEKF3_core::getAccelBias(Vector3f &accelBias) const
         accelBias.zero();
         return;
     }
-    accelBias = (stateStruct.accel_bias / dtEkfAvg).tofloat();
+    accelBias = stateStruct.accel_bias.tofloat();
 }
 
 // return the transformation matrix from XYZ (body) to NED axes

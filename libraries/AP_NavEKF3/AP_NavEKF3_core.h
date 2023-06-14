@@ -1113,7 +1113,7 @@ private:
     bool lastInhibitMagStates;      // previous inhibitMagStates
     bool needMagBodyVarReset;       // we need to reset mag body variances at next CovariancePrediction
     bool needEarthBodyVarReset;     // we need to reset mag earth variances at next CovariancePrediction
-    bool inhibitDelAngBiasStates;   // true when IMU delta angle bias states are inactive
+    bool inhibitGyroBiasStates;   // true when IMU delta angle bias states are inactive
     bool gpsIsInUse;                // bool true when GPS data is being used to correct states estimates
     Location EKF_origin;     // LLH origin of the NED axis system, internal only
     Location &public_origin; // LLH origin of the NED axis system, public functions
@@ -1419,7 +1419,7 @@ private:
     uint32_t lastMoveCheckLogTime_ms;   // last time the movement check data was logged (msec)
 
 	// variables used to inhibit accel bias learning
-    bool inhibitDelVelBiasStates;       // true when all IMU delta velocity bias states are de-activated
+    bool inhibitAccelBiasStates;       // true when all IMU delta velocity bias states are de-activated
     bool dvelBiasAxisInhibit[3] {};		// true when IMU delta velocity bias states for a specific axis is de-activated
 	Vector3F dvelBiasAxisVarPrev;		// saved delta velocity XYZ bias variances (m/sec)**2
 

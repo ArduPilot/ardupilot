@@ -1257,8 +1257,8 @@ void NavEKF3_core::learnInactiveBiases(void)
             // get filtered gyro and use the difference between the
             // corrected gyro on the active IMU and the inactive IMU
             // to move the inactive bias towards the right value
-            Vector3F filtered_gyro_active = ins.get_gyro(gyro_index_active).toftype() - (stateStruct.gyro_bias/dtEkfAvg);
-            Vector3F filtered_gyro_inactive = ins.get_gyro(i).toftype() - (inactiveBias[i].gyro_bias/dtEkfAvg);
+            Vector3F filtered_gyro_active = ins.get_gyro(gyro_index_active).toftype() - stateStruct.gyro_bias;
+            Vector3F filtered_gyro_inactive = ins.get_gyro(i).toftype() - inactiveBias[i].gyro_bias;
             Vector3F error = filtered_gyro_active - filtered_gyro_inactive;
 
             // prevent a single large error from contaminating bias estimate
@@ -1269,7 +1269,7 @@ void NavEKF3_core::learnInactiveBiases(void)
 
             // slowly bring the inactive gyro in line with the active gyro. This corrects a 5 deg/sec
             // gyro bias error in around 1 minute
-            inactiveBias[i].gyro_bias -= error * (1.0e-4f * dtEkfAvg);
+            inactiveBias[i].gyro_bias -= error * 1.0e-4f;
         }
     }
 
@@ -1286,8 +1286,8 @@ void NavEKF3_core::learnInactiveBiases(void)
             // get filtered accel and use the difference between the
             // corrected accel on the active IMU and the inactive IMU
             // to move the inactive bias towards the right value
-            Vector3F filtered_accel_active = ins.get_accel(accel_index_active).toftype() - (stateStruct.accel_bias/dtEkfAvg);
-            Vector3F filtered_accel_inactive = ins.get_accel(i).toftype() - (inactiveBias[i].accel_bias/dtEkfAvg);
+            Vector3F filtered_accel_active = ins.get_accel(accel_index_active).toftype() - stateStruct.accel_bias;
+            Vector3F filtered_accel_inactive = ins.get_accel(i).toftype() - inactiveBias[i].accel_bias;
             Vector3F error = filtered_accel_active - filtered_accel_inactive;
 
             // prevent a single large error from contaminating bias estimate
@@ -1299,7 +1299,7 @@ void NavEKF3_core::learnInactiveBiases(void)
             // slowly bring the inactive accel in line with the active
             // accel. This corrects a 0.5 m/s/s accel bias error in
             // around 1 minute
-            inactiveBias[i].accel_bias -= error * (1.0e-4f * dtEkfAvg);
+            inactiveBias[i].accel_bias -= error * 1.0e-4f;
         }
     }
 #endif
@@ -1347,8 +1347,8 @@ void NavEKF3_core::updateMovementCheck(void)
 
     // get latest bias corrected gyro and accelerometer data
     const auto &ins = dal.ins();
-    Vector3F gyro = ins.get_gyro(gyro_index_active).toftype() - stateStruct.gyro_bias * dtEkfAvgInv;
-    Vector3F accel = ins.get_accel(accel_index_active).toftype() - stateStruct.accel_bias * dtEkfAvgInv;
+    Vector3F gyro = ins.get_gyro(gyro_index_active).toftype() - stateStruct.gyro_bias;
+    Vector3F accel = ins.get_accel(accel_index_active).toftype() - stateStruct.accel_bias;
 
     if (!prevOnGround) {
         gyro_prev = gyro;

@@ -153,24 +153,24 @@ void NavEKF3_core::setWindMagStateLearningMode()
     }
 
     // inhibit delta velocity bias learning if we have not yet aligned the tilt
-    if (tiltAlignComplete && inhibitDelVelBiasStates) {
+    if (tiltAlignComplete && inhibitAccelBiasStates) {
         // activate the states
-        inhibitDelVelBiasStates = false;
+        inhibitAccelBiasStates = false;
         updateStateIndexLim();
 
         // set the initial covariance values
-        P[13][13] = sq(ACCEL_BIAS_LIM_SCALER * frontend->_accBiasLim * dtEkfAvg);
+        P[13][13] = sq(ACCEL_BIAS_LIM_SCALER * frontend->_accBiasLim );
         P[14][14] = P[13][13];
         P[15][15] = P[13][13];
     }
 
-    if (tiltAlignComplete && inhibitDelAngBiasStates) {
+    if (tiltAlignComplete && inhibitGyroBiasStates) {
         // activate the states
-        inhibitDelAngBiasStates = false;
+        inhibitGyroBiasStates = false;
         updateStateIndexLim();
 
         // set the initial covariance values
-        P[10][10] = sq(radians(InitialGyroBiasUncertainty() * dtEkfAvg));
+        P[10][10] = sq(radians(InitialGyroBiasUncertainty()));
         P[11][11] = P[10][10];
         P[12][12] = P[10][10];
     }
@@ -192,8 +192,8 @@ void NavEKF3_core::updateStateIndexLim()
 {
     if (inhibitWindStates) {
         if (inhibitMagStates) {
-            if (inhibitDelVelBiasStates) {
-                if (inhibitDelAngBiasStates) {
+            if (inhibitAccelBiasStates) {
+                if (inhibitGyroBiasStates) {
                     stateIndexLim = 9;
                 } else {
                     stateIndexLim = 12;
@@ -684,7 +684,7 @@ void NavEKF3_core::recordYawReset()
 void NavEKF3_core::checkGyroCalStatus(void)
 {
     // check delta angle bias variances
-    const ftype delAngBiasVarMax = sq(radians(0.15 * dtEkfAvg));
+    const ftype delAngBiasVarMax = sq(radians(0.15));
     const AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
     if (!use_compass() && (yaw_source != AP_NavEKF_Source::SourceYaw::GPS) && (yaw_source != AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) &&
         (yaw_source != AP_NavEKF_Source::SourceYaw::EXTNAV)) {

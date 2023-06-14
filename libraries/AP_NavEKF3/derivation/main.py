@@ -603,15 +603,15 @@ def generate_code():
     px, py, pz = symbols("pn pe pd", real=True)
     p = Matrix([px,py,pz])
 
-    # delta angle bias x y z
-    d_ang_bx, d_ang_by, d_ang_bz = symbols("dax_b day_b daz_b", real=True)
-    d_ang_b = Matrix([d_ang_bx, d_ang_by, d_ang_bz])
-    d_ang_true = d_ang - d_ang_b
+    # rate gyro bias x y z
+    gx_b, gy_b, gz_b = symbols("gx_b gy_b gz_b", real=True)
+    gyro_b = Matrix([gx_b, gy_b, gz_b])
+    d_ang_true = d_ang - gyro_b * dt
 
-    # delta velocity bias x y z
-    d_vel_bx, d_vel_by, d_vel_bz = symbols("dvx_b dvy_b dvz_b", real=True)
-    d_vel_b = Matrix([d_vel_bx, d_vel_by, d_vel_bz])
-    d_vel_true = d_v - d_vel_b
+    # accelerometer bias x y z
+    ax_b, ay_b, az_b = symbols("ax_b ay_b az_b", real=True)
+    accel_b = Matrix([ax_b, ay_b, az_b])
+    d_vel_true = d_v - accel_b * dt
 
     # earth magnetic field vector x y z
     ix, iy, iz = symbols("magN magE magD", real=True)
@@ -627,7 +627,7 @@ def generate_code():
     w = Matrix([wx,wy])
 
     # state vector at arbitrary time t
-    state = Matrix([q, v, p, d_ang_b, d_vel_b, i, ib, w])
+    state = Matrix([q, v, p, gyro_b, accel_b, i, ib, w])
 
     print('Defining state propagation ...')
     # kinematic processes driven by IMU 'control inputs'
@@ -636,14 +636,14 @@ def generate_code():
     p_new = p + v * dt
 
     # static processes
-    d_ang_b_new = d_ang_b
-    d_vel_b_new = d_vel_b
+    gyro_b_new = gyro_b
+    accel_b_new = accel_b
     i_new = i
     ib_new = ib
     w_new = w
 
     # predicted state vector at time t + dt
-    state_new = Matrix([q_new, v_new, p_new, d_ang_b_new, d_vel_b_new, i_new, ib_new, w_new])
+    state_new = Matrix([q_new, v_new, p_new, gyro_b_new, accel_b_new, i_new, ib_new, w_new])
 
     print('Computing state propagation jacobian ...')
     A = state_new.jacobian(state)
