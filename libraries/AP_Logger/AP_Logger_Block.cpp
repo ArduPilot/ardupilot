@@ -880,9 +880,7 @@ void AP_Logger_Block::io_timer(void)
             io_timer_heartbeat = AP_HAL::millis();
             next_sector++;
         }
-        uint16_t blocks_erased = 0;
         while (next_sector < sectors) {
-            blocks_erased++;
             SectorErase(next_sector / sectors_in_block);
             io_timer_heartbeat = AP_HAL::millis();
             next_sector += sectors_in_block;
