@@ -53,7 +53,6 @@ private:
     AP_Int8 i2c_bus;
     AP_Int8 i2c_address;
     AP_Float max_amps;
-    bool callback_registered;
     uint32_t failed_reads;
 
     struct {
