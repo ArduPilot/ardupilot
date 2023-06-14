@@ -83,9 +83,13 @@ void ModeAuto::update()
         case Auto_WP:
         {
             // check if we've reached the destination
-            if (!g2.wp_nav.reached_destination() || g2.wp_nav.is_fast_waypoint()) {
-                // update navigation controller
-                navigate_to_waypoint();
+          if (!g2.wp_nav.reached_destination()) {
+        if(rover.gps.status() != GPS::GPS_OK_FIX_3D_RTK_FIXED){
+            stop_vehicle();
+        } else {
+            // update navigation controller
+            navigate_to_waypoint();
+        }
             } else {
                 // we have reached the destination so stay here
                 if (rover.is_boat()) {
