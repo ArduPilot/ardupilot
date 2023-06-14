@@ -133,7 +133,6 @@ private:
     void check_reload_dref(void);
 
     uint32_t xplane_version;
-    bool have_ref_lat;
 };
 
 
