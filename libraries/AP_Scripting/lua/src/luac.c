@@ -189,21 +189,21 @@ static int pmain(lua_State* L)
  return 0;
 }
 
-int main(int argc, char* argv[])
-{
- lua_State* L;
- int i=doargs(argc,argv);
- argc-=i; argv+=i;
- if (argc<=0) usage("no input files given");
- L=luaL_newstate();
- if (L==NULL) fatal("cannot create state: not enough memory");
- lua_pushcfunction(L,&pmain);
- lua_pushinteger(L,argc);
- lua_pushlightuserdata(L,argv);
- if (lua_pcall(L,2,0,0)!=LUA_OK) fatal(lua_tostring(L,-1));
- lua_close(L);
- return EXIT_SUCCESS;
-}
+// int main(int argc, char* argv[])
+// {
+//  lua_State* L;
+//  int i=doargs(argc,argv);
+//  argc-=i; argv+=i;
+//  if (argc<=0) usage("no input files given");
+//  L=luaL_newstate();
+//  if (L==NULL) fatal("cannot create state: not enough memory");
+//  lua_pushcfunction(L,&pmain);
+//  lua_pushinteger(L,argc);
+//  lua_pushlightuserdata(L,argv);
+//  if (lua_pcall(L,2,0,0)!=LUA_OK) fatal(lua_tostring(L,-1));
+//  lua_close(L);
+//  return EXIT_SUCCESS;
+// }
 
 /*
 ** $Id: luac.c,v 1.76 2018/06/19 01:32:02 lhf Exp $
