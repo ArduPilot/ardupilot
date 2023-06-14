@@ -1034,13 +1034,12 @@ class ChibiOSHWDef(object):
                 if offset > bl_offset:
                     flash_reserve_end = flash_size - offset
 
-        if flash_size >= 2048 and not args.bootloader:
-            # lets pick a flash sector for Crash log
-            f.write('#define AP_CRASHDUMP_ENABLED 1\n')
-            self.env_vars['ENABLE_CRASHDUMP'] = 1
-        else:
-            f.write('#define AP_CRASHDUMP_ENABLED 0\n')
-            self.env_vars['ENABLE_CRASHDUMP'] = 0
+        crashdump_enabled = bool(self.intdefines.get('AP_CRASHDUMP_ENABLED', (flash_size >= 2048 and not args.bootloader)))
+        # lets pick a flash sector for Crash log
+        f.write('#ifndef AP_CRASHDUMP_ENABLED\n')
+        f.write('#define AP_CRASHDUMP_ENABLED %u\n' % crashdump_enabled)
+        f.write('#endif\n')
+        self.env_vars['ENABLE_CRASHDUMP'] = crashdump_enabled
 
         if args.bootloader:
             if self.env_vars['EXT_FLASH_SIZE_MB'] and not self.env_vars['INT_FLASH_PRIMARY']:
