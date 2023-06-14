@@ -152,6 +152,11 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 extern AP_IOMCU iomcu;
 #endif
 
+#pragma GCC diagnostic push
+#if defined (__clang__)
+#pragma GCC diagnostic ignored "-Wbitwise-instead-of-logical"
+#endif
+
 AP_Arming::AP_Arming()
 {
     if (_singleton) {
@@ -1846,3 +1851,5 @@ AP_Arming &arming()
 }
 
 };
+
+#pragma GCC diagnostic pop
