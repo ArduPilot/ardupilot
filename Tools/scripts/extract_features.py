@@ -193,6 +193,7 @@ class ExtractFeatures(object):
             ('AP_FILESYSTEM_FORMAT_ENABLED', r'AP_Filesystem::format'),
 
             ('AP_INERTIALSENSOR_KILL_IMU_ENABLED', r'AP_InertialSensor::kill_imu'),
+            ('AP_CRASHDUMP_ENABLED', 'CrashCatcher_DumpMemory'),
         ]
 
     def progress(self, msg):
