@@ -17,10 +17,7 @@ uint32_t coerce_to_uint32_t(lua_State *L, int arg) {
         }
     }
     { // integer
-
-        // if this assert fails, you will need to add an upper bounds
-        // check that ensures the value isn't greater then UINT32_MAX
-        static_assert(sizeof(lua_Number) == sizeof(uint32_t), "32 bit integers are only supported");
+        static_assert(sizeof(lua_Number) == sizeof(lua_Integer), "sizes of lua_Number and lua_Integer must match");
 
         int success;
         const lua_Integer v = lua_tointegerx(L, arg, &success);

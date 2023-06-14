@@ -31,7 +31,7 @@ local EFISIM_TYPE  = bind_add_param('TYPE', 1, 0)
 local EFISIM_RATE_HZ  = bind_add_param('RATE_HZ', 2, 100)
 
 function get_time_sec()
-   return millis():tofloat() * 0.001
+   return seconds_since_boot()
 end
 
 local FRM_100 = uint32_t(0x80000100)

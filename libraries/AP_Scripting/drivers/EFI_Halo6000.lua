@@ -31,7 +31,7 @@ function bind_add_param(name, idx, default_value)
 end
 
 function get_time_sec()
-    return millis():tofloat() * 0.001
+   return seconds_since_boot()
 end
 
 -- Type conversion functions

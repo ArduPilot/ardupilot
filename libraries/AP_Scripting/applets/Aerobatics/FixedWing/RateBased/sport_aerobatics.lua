@@ -174,7 +174,7 @@ local function PI_controller(kP,kI,iMax)
 
    -- update the controller.
    function self.update(target, current)
-      local now = millis():tofloat() * 0.001
+      local now = seconds_since_boot()
       if not _last_t then
          _last_t = now
       end
@@ -460,7 +460,7 @@ end
 local knife_edge_ms = 0
 function do_knife_edge(arg1,arg2)
   -- arg1 is angle +/-180, duration is arg2
-    local now = millis():tofloat() * 0.001
+    local now = seconds_since_boot()
     if not running then
         running = true
         height_PI.reset()
@@ -498,7 +498,7 @@ end
 -- fly level for a time..allows full altitude recovery after trick
 function do_pause(arg1,arg2)
     -- arg1 is time of pause in sec, arg2 is unused
-    local now = millis():tofloat() * 0.001
+    local now = seconds_since_boot()
     if not running then
         running = true
         height_PI.reset()

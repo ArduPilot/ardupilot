@@ -69,7 +69,7 @@
 /*
 ** Common type for all collectable objects
 */
-typedef struct GCObject GCObject;
+typedef struct GCObject GCObject ALIGNED_NUMBER;
 
 
 /*
@@ -84,7 +84,7 @@ typedef struct GCObject GCObject;
 */
 struct GCObject {
   CommonHeader;
-};
+} ALIGNED_NUMBER;
 
 
 
@@ -104,15 +104,15 @@ typedef union Value {
   lua_CFunction f; /* light C functions */
   lua_Integer i;   /* integer numbers */
   lua_Number n;    /* float numbers */
-} Value;
+} Value ALIGNED_NUMBER;
 
 
 #define TValuefields	Value value_; int tt_
 
 
 typedef struct lua_TValue {
-  TValuefields;
-} TValue;
+    TValuefields;
+} TValue ALIGNED_NUMBER;
 
 
 
@@ -309,7 +309,7 @@ typedef struct TString {
     size_t lnglen;  /* length for long strings */
     struct TString *hnext;  /* linked list for hash table */
   } u;
-} TString;
+} TString ALIGNED_NUMBER;
 
 
 /*
@@ -318,7 +318,7 @@ typedef struct TString {
 typedef union UTString {
   L_Umaxalign dummy;  /* ensures maximum alignment for strings */
   TString tsv;
-} UTString;
+} UTString ALIGNED_NUMBER;
 
 
 /*
@@ -349,7 +349,7 @@ typedef struct Udata {
   struct Table *metatable;
   size_t len;  /* number of bytes */
   union Value user_;  /* user value */
-} Udata;
+} Udata ALIGNED_NUMBER;
 
 
 /*
@@ -358,7 +358,7 @@ typedef struct Udata {
 typedef union UUdata {
   L_Umaxalign dummy;  /* ensures maximum alignment for 'local' udata */
   Udata uv;
-} UUdata;
+} UUdata ALIGNED_NUMBER;
 
 
 /*
@@ -387,7 +387,7 @@ typedef struct Upvaldesc {
   TString *name;  /* upvalue name (for debug information) */
   lu_byte instack;  /* whether it is in stack (register) */
   lu_byte idx;  /* index of upvalue (in stack or in outer function's list) */
-} Upvaldesc;
+} Upvaldesc ALIGNED_NUMBER;
 
 
 /*
@@ -398,7 +398,7 @@ typedef struct LocVar {
   TString *varname;
   int startpc;  /* first point where variable is active */
   int endpc;    /* first point where variable is dead */
-} LocVar;
+} LocVar ALIGNED_NUMBER;
 
 
 /*
@@ -426,7 +426,7 @@ typedef struct Proto {
   struct LClosure *cache;  /* last-created closure with this prototype */
   TString  *source;  /* used for debug information */
   GCObject *gclist;
-} Proto;
+} Proto ALIGNED_NUMBER;
 
 
 
@@ -441,26 +441,26 @@ typedef struct UpVal UpVal;
 */
 
 #define ClosureHeader \
-	CommonHeader; lu_byte nupvalues; GCObject *gclist
+    CommonHeader; lu_byte nupvalues; GCObject *gclist ALIGNED_NUMBER
 
 typedef struct CClosure {
   ClosureHeader;
   lua_CFunction f;
   TValue upvalue[1];  /* list of upvalues */
-} CClosure;
+} CClosure ALIGNED_NUMBER;
 
 
 typedef struct LClosure {
   ClosureHeader;
   struct Proto *p;
   UpVal *upvals[1];  /* list of upvalues */
-} LClosure;
+} LClosure ALIGNED_NUMBER;
 
 
 typedef union Closure {
   CClosure c;
   LClosure l;
-} Closure;
+} Closure ALIGNED_NUMBER;
 
 
 #define isLfunction(o)	ttisLclosure(o)
@@ -478,7 +478,7 @@ typedef union TKey {
     int next;  /* for chaining (offset for next node) */
   } nk;
   TValue tvk;
-} TKey;
+} TKey ALIGNED_NUMBER;
 
 
 /* copy a value into a key without messing up field 'next' */
@@ -491,7 +491,7 @@ typedef union TKey {
 typedef struct Node {
   TValue i_val;
   TKey i_key;
-} Node;
+} Node ALIGNED_NUMBER;
 
 
 typedef struct Table {
@@ -504,7 +504,7 @@ typedef struct Table {
   Node *lastfree;  /* any free position is before this position */
   struct Table *metatable;
   GCObject *gclist;
-} Table;
+} Table ALIGNED_NUMBER;
 
 
 

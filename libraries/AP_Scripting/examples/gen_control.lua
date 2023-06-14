@@ -101,7 +101,7 @@ local function PI_controller(kP,kI,iMax,min,max)
 
    -- update the controller.
    function self.update(target, current)
-      local now = millis():tofloat() * 0.001
+      local now = seconds_since_boot()
       if not _last_t then
          _last_t = now
       end

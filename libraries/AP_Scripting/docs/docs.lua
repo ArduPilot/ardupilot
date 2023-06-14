@@ -36,6 +36,10 @@ function millis() end
 ---@return uint32_t_ud -- microseconds
 function micros() end
 
+-- system time in seconds
+---@return number -- seconds
+function seconds_since_boot() end
+
 -- receive mission command from running mission
 ---@return uint32_t_ud|nil -- command start time milliseconds
 ---@return integer|nil -- command param 1

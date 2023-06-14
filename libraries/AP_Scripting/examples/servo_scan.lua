@@ -4,7 +4,7 @@ local SERVO_FUNCTION = 94
 local PERIOD = 0.5
 
 function update() -- this is the loop which periodically runs
-  local t = 0.001 * millis():tofloat()
+  local t = seconds_since_boot()
   local pi = 3.1415
   local output = math.sin(pi * t * PERIOD * 2.0)
   local pwm = math.floor(1500 + 500 * output)

@@ -77,7 +77,7 @@ typedef struct stringtable {
   TString **hash;
   int nuse;  /* number of elements */
   int size;
-} stringtable;
+} stringtable ALIGNED_NUMBER;
 
 
 /*
@@ -107,7 +107,7 @@ typedef struct CallInfo {
   ptrdiff_t extra;
   short nresults;  /* expected number of results from this function */
   unsigned short callstatus;
-} CallInfo;
+} CallInfo ALIGNED_NUMBER;
 
 
 /*
@@ -169,7 +169,7 @@ typedef struct global_State {
   TString *tmname[TM_N];  /* array with tag-method names */
   struct Table *mt[LUA_NUMTAGS];  /* metatables for basic types */
   TString *strcache[STRCACHE_N][STRCACHE_M];  /* cache for strings in API */
-} global_State;
+} global_State ALIGNED_NUMBER;
 
 
 /*
@@ -199,7 +199,7 @@ struct lua_State {
   unsigned short nCcalls;  /* number of nested C calls */
   l_signalT hookmask;
   lu_byte allowhook;
-};
+} ALIGNED_NUMBER;
 
 
 #define G(L)	(L->l_G)
@@ -216,7 +216,7 @@ union GCUnion {
   struct Table h;
   struct Proto p;
   struct lua_State th;  /* thread */
-};
+} ALIGNED_NUMBER;
 
 
 #define cast_u(o)	cast(union GCUnion *, (o))

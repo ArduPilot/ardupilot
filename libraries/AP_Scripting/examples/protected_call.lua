@@ -6,7 +6,7 @@
 
 -- example main loop function
 function update()
-   local t = 0.001 * millis():tofloat()
+   local t = seconds_since_boot()
    gcs:send_text(0, string.format("TICK %.1fs", t))
    if math.floor(t) % 10 == 0 then
       -- deliberately make a bad call to cause a fault, asking for the 6th GPS status

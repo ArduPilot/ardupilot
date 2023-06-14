@@ -19,6 +19,20 @@
 #endif
 #include <AP_Scripting/lua_common_defs.h>
 
+// use 32 bit number and integer types if we don't have hardware double supportx
+#if !HAL_HAVE_HARDWARE_DOUBLE
+#define LUA_32BITS 1
+#define ALIGNED_NUMBER
+#else
+// ChibiOS does not define LLONG_MAX
+#ifndef LLONG_MAX
+#define LLONG_MAX 9223372036854775807LL
+#define LLONG_MIN (-LLONG_MAX - 1)
+#endif
+#pragma GCC diagnostic error "-Wframe-larger-than=3000"
+#define ALIGNED_NUMBER __attribute__((aligned(8)))
+#endif // HAL_HAVE_HARDWARE_DOUBLE
+
 /*
 ** ===================================================================
 ** Search for "@@" to find all configurable definitions.
