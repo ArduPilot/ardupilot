@@ -721,12 +721,8 @@ uint16_t UARTDriver::read_from_async_csv(uint8_t *buffer, uint16_t space)
         return 0;
     }
 
-    static uint32_t frame_number;
-    frame_number++;
-
     uint8_t i;
     for (i=0; i<space; i++) {
-        static uint32_t count;
         if (logic_async_csv.loaded) {
             const uint32_t emit_timestamp_us = micros - logic_async_csv.first_emit_micros_us;
             const uint32_t data_timestamp_us = logic_async_csv.loaded_data.timestamp_us - logic_async_csv.first_timestamp_us;
@@ -734,7 +730,6 @@ uint16_t UARTDriver::read_from_async_csv(uint8_t *buffer, uint16_t space)
                 return i;
             }
             buffer[i] = logic_async_csv.loaded_data.b;
-            count++;
             logic_async_csv.loaded = false;
         }
 
