@@ -243,7 +243,6 @@ private:
     Vector3f start_angles;                          // aircraft attitude at the start of test
     uint32_t settle_time;                           // time in ms for allowing aircraft to stabilize before initiating test
     uint32_t phase_out_time;                        // time in ms to phase out response
-    float    waveform_freq_rads;                    //current frequency for chirp waveform
     float    trim_pff_out;                          // trim output of the PID rate controller for P, I and FF terms
     float    trim_meas_rate;                        // trim measured gyro rate
 
