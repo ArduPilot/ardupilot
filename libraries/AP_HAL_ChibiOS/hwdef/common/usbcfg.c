@@ -183,7 +183,13 @@ static USBDescriptor vcom_strings[] = {
   {0, NULL}, // version
 };
 
-static uint8_t vcom_buffers[3][2+2*USB_DESC_MAX_STRLEN];
+#if CH_CFG_USE_HEAP == TRUE
+#define VCOM_BUF_LEN 0
+#else
+#define VCOM_BUF_LEN 2+2*USB_DESC_MAX_STRLEN
+#endif
+
+static uint8_t vcom_buffers[3][VCOM_BUF_LEN];
 
 /*
   dynamically allocate a USB descriptor string
@@ -194,6 +200,13 @@ static void setup_usb_string(USBDescriptor *desc, const char *str, uint8_t *b)
     string_substitute(str, str2);
     uint8_t len = strlen(str2);
     desc->ud_size = 2+2*len;
+#if CH_CFG_USE_HEAP == TRUE
+    b = malloc(desc->ud_size);
+    if (b == NULL) {
+        desc->ud_size = 0;
+        return;
+    }
+#endif
     desc->ud_string = (const uint8_t *)b;
     b[0] = USB_DESC_BYTE(desc->ud_size);
     b[1] = USB_DESC_BYTE(USB_DESCRIPTOR_STRING);
