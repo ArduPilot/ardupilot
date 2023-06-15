@@ -70,7 +70,9 @@ mcu = {
     'DEFINES' : {
         'HAL_HAVE_HARDWARE_DOUBLE' : '1',
         'STM32H7' : '1',
-    }
+    },
+
+    'LINKER_CONFIG' : 'common_extf_h750.ld'
 }
 
 pincount = {
