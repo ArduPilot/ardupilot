@@ -14,10 +14,13 @@
  */
 
 /*
- *  main loop scheduler for APM
+ *  main loop scheduler for ArduPilot
  *  Author: Andrew Tridgell, January 2013
  *
  */
+
+#include "AP_Scheduler_config.h"
+
 #include "AP_Scheduler.h"
 
 #include <AP_HAL/AP_HAL.h>

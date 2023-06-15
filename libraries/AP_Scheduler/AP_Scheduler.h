@@ -20,11 +20,7 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
-
-#ifndef AP_SCHEDULER_ENABLED
-#define AP_SCHEDULER_ENABLED 1
-#endif
+#include "AP_Scheduler_config.h"
 
 #include <AP_Param/AP_Param.h>
 #include <AP_HAL/Semaphores.h>
