@@ -1292,34 +1292,22 @@ MEMORY
 
 INCLUDE common.ld
 ''' % (flash_base, flash_length, ram0_start, ram0_len))
-    elif int_flash_primary:
+    else:
         if ext_flash_size > 32:
             error("We only support 24bit addressing over external flash")
         env_vars['HAS_EXTERNAL_FLASH_SECTIONS'] = 1
-        f.write('''/* generated ldscript.ld */
-MEMORY
-{
-    flash : org = 0x%08x, len = %uK
-    ext_flash : org = 0x%08x, len = %uK
-    ram0  : org = 0x%08x, len = %u
-}
-
-INCLUDE common_mixf.ld
-''' % (flash_base, flash_length, ext_flash_base, ext_flash_length, ram0_start, ram0_len))
-    else:
-        self.env_vars['HAS_EXTERNAL_FLASH_SECTIONS'] = 1
-        self.build_flags.append('COPY_VECTORS_TO_RAM=yes')
+        build_flags.append('COPY_VECTORS_TO_RAM=yes')
         f.write('''/* generated ldscript.ld */
 MEMORY
 {
     default_flash (rx) : org = 0x%08x, len = %uK
     instram : org = 0x%08x, len = %uK
     ram0  : org = 0x%08x, len = %u
-    ram1  : org = 0x%08x, len = %u
-    ram2  : org = 0x%08x, len = %u
+    flashram : org = 0x%08x, len = %u
+    dataram : org = 0x%08x, len = %u
 }
 
-INCLUDE common_extf.ld
+INCLUDE common.ld
 ''' % (ext_flash_base, ext_flash_length,
        instruction_ram_base, instruction_ram_length,
        ram0_start, ram0_len,
@@ -1328,12 +1316,18 @@ INCLUDE common_extf.ld
 
 def copy_common_linkerscript(outdir):
     dirpath = os.path.dirname(os.path.realpath(__file__))
-    if not get_config('EXT_FLASH_SIZE_MB', default=0, type=int) or args.bootloader:
-        shutil.copy(os.path.join(dirpath, "../common/common.ld"),
-                    os.path.join(outdir, "common.ld"))
+
+    if args.bootloader:
+        linker = 'common.ld'
     else:
-        shutil.copy(os.path.join(dirpath, "../common/common_extf.ld"),
-                    os.path.join(outdir, "common_extf.ld"))
+        linker = get_mcu_config('LINKER_CONFIG')
+    if linker is None:
+        if not get_config('EXT_FLASH_SIZE_MB', default=0, type=int):
+            linker = 'common.ld'
+        else:
+            linker = 'common_extf.ld'
+    shutil.copy(os.path.join(dirpath, "../common", linker),
+                os.path.join(outdir, "common.ld"))
 
 def get_USB_IDs():
     '''return tuple of USB VID/PID'''
