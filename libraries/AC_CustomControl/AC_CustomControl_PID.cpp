@@ -290,9 +290,9 @@ Vector3f AC_CustomControl_PID::update()
     // run rate controller
     Vector3f gyro_latest = _ahrs->get_gyro_latest();
     Vector3f motor_out;
-    motor_out.x = _pid_atti_rate_roll.update_all(target_rate[0], gyro_latest[0], _dt, true);
-    motor_out.y = _pid_atti_rate_pitch.update_all(target_rate[1], gyro_latest[1], _dt, true);
-    motor_out.z = _pid_atti_rate_yaw.update_all(target_rate[2], gyro_latest[2], _dt, true);
+    motor_out.x = _pid_atti_rate_roll.update_all(target_rate[0], gyro_latest[0], _dt, false);
+    motor_out.y = _pid_atti_rate_pitch.update_all(target_rate[1], gyro_latest[1], _dt, false);
+    motor_out.z = _pid_atti_rate_yaw.update_all(target_rate[2], gyro_latest[2], _dt, false);
 
     return motor_out;
 }
