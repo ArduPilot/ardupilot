@@ -53,23 +53,24 @@ class SolutionStatusChange(object):
         old_message_per_core = {}
         while True:
             m = self.conn.recv_match(type=desired_type)
+            if m.C != 0:
+                continue
             if m is None:
                 break
             if m.C not in old_message_per_core:
                 old_message_per_core[m.C] = m
                 continue
-            ss = m.SS
             current = old_message_per_core[m.C]
-            if ss == current.SS:
+            if m.SS == current.SS:
                 continue
             line = ""
-            for bit in bit_descriptions.keys():
-                old_bit_set = current.SS & (1 << bit_descriptions[bit])
-                new_bit_set = ss & (1 << bit_descriptions[bit])
+            for (name, bit) in bit_descriptions.items():
+                old_bit_set = current.SS & (1 << bit)
+                new_bit_set = m.SS & (1 << bit)
                 if new_bit_set and not old_bit_set:
-                    line += " +%s" % bit
+                    line += " +%s" % name
                 elif not new_bit_set and old_bit_set:
-                    line += " -%s" % bit
+                    line += " -%s" % name
 
             old_message_per_core[m.C] = m
 
