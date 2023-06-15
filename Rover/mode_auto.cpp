@@ -84,9 +84,9 @@ void ModeAuto::update()
         {
             // check if we've reached the destination
           if (!g2.wp_nav.reached_destination()) {
-        if(rover.gps.status() != GPS::GPS_OK_FIX_3D_RTK_FIXED){
-            stop_vehicle();
-        } else {
+              if(rover.gps.status() != GPS::GPS_OK_FIX_3D_RTK_FIXED){
+                  stop_vehicle();
+              } else {
             // update navigation controller
             navigate_to_waypoint();
         }
