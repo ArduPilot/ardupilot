@@ -3162,6 +3162,16 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
 #endif
         }
 #endif
+        if (is_equal(packet.param4, 100.0f)) {
+            send_text(MAV_SEVERITY_WARNING,"Creating mutex deadlock");
+            hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&GCS_MAVLINK::deadlock_sem, void));
+            while (!_deadlock_sem.taken) {
+                hal.scheduler->delay(1);
+            }
+            WITH_SEMAPHORE(_deadlock_sem.sem);
+            send_text(MAV_SEVERITY_WARNING,"deadlock passed");
+            return MAV_RESULT_ACCEPTED;
+        }
     }
 
     // refuse reboot when armed:
@@ -3203,6 +3213,17 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
     AP::vehicle()->reboot(hold_in_bootloader);  // not expected to return
 
     return MAV_RESULT_FAILED;
+}
+
+/*
+  take a semaphore and do not release it, triggering a deadlock
+ */
+void GCS_MAVLINK::deadlock_sem(void)
+{
+    if (!_deadlock_sem.taken) {
+        _deadlock_sem.taken = true;
+        _deadlock_sem.sem.take_blocking();
+    }
 }
 
 /*
