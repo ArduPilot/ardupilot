@@ -3079,6 +3079,10 @@ INCLUDE common.ld
 #define AP_ROBOTISSERVO_ENABLED 0
 #endif
 
+#ifndef AP_SBUSOUTPUT_ENABLED
+#define AP_SBUSOUTPUT_ENABLED 0
+#endif
+
 // by default an AP_Periph defines as many servo output channels as
 // there are PWM outputs:
 #ifndef NUM_SERVO_CHANNELS
