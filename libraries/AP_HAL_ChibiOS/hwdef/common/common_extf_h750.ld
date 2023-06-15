@@ -63,9 +63,10 @@ __ram2_size__           = LENGTH(dataram);
 __ram2_end__            = __ram2_start__ + __ram2_size__;
 
 /* ITCM for RAM functions */
-__ram3_start__          = ORIGIN(instram);
-__ram3_size__           = LENGTH(instram);
-__ram3_end__            = __ram3_start__ + __ram3_size__;
+__instram_start__      = ORIGIN(instram);
+__instram_size__       = LENGTH(instram);
+__instram_end__        = __instram_start__ + __instram_size__;
+
 
 ENTRY(Reset_Handler)
 
@@ -103,8 +104,8 @@ SECTIONS
     .fastramfunc : ALIGN(4) SUBALIGN(4)
     {
         . = ALIGN(4);
-        __ram3_init_text__ = LOADADDR(.fastramfunc);
-        __ram3_init__ = .;
+        __instram_init_text__ = LOADADDR(.fastramfunc);
+        __instram_init__ = .;
         /* performance critical sections of ChibiOS */
         /* ChibiOS won't boot unless these are excluded */
         EXCLUDE_FILE (*vectors.o *crt0_v7m.o *crt1.o) *libch.a:ch*.*(.text*)
@@ -132,6 +133,7 @@ SECTIONS
         *libstdc++_nano.a:(.text* .rodata*)*/
         *(.fastramfunc)
         . = ALIGN(4);
+        __instram_end__ = .;
     } > instram AT > default_flash
 
     .ram3 (NOLOAD) : ALIGN(4)
