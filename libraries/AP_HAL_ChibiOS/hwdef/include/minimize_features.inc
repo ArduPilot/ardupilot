@@ -114,3 +114,6 @@ define AP_INERTIALSENSOR_KILL_IMU_ENABLED 0
 
 # no MSP:
 define HAL_MSP_ENABLED 0
+
+# shortened names in @SYS/taskinfo.txt
+define AP_SCHEDULER_EXTENDED_TASKINFO_ENABLED 0
