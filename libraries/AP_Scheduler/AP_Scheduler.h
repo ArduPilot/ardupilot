@@ -28,12 +28,12 @@
 #include <AP_Math/AP_Math.h>
 #include "PerfInfo.h"       // loop perf monitoring
 
-#if HAL_MINIMIZE_FEATURES
-#define AP_SCHEDULER_NAME_INITIALIZER(_clazz,_name) .name = #_name,
-#define AP_FAST_NAME_INITIALIZER(_clazz,_name) .name = #_name "*",
-#else
+#if AP_SCHEDULER_EXTENDED_TASKINFO_ENABLED
 #define AP_SCHEDULER_NAME_INITIALIZER(_clazz,_name) .name = #_clazz "::" #_name,
 #define AP_FAST_NAME_INITIALIZER(_clazz,_name) .name = #_clazz "::" #_name "*",
+#else
+#define AP_SCHEDULER_NAME_INITIALIZER(_clazz,_name) .name = #_name,
+#define AP_FAST_NAME_INITIALIZER(_clazz,_name) .name = #_name "*",
 #endif
 #define LOOP_RATE 0
 
