@@ -110,6 +110,14 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("VEC_ANGLEMAX", 13, AP_MotorsUGV, _vector_angle_max, 0.0f),
 
+    // @Param: SKID_MIXER_TYPE
+    // @DisplayName: SKID MIXER TYPE
+    // @Description: Selecet mixer controller for two throttle 
+    // @Values: 0:Normal,1:vector
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("SKD_MIXE_TYP", 14, AP_MotorsUGV, _skid_mixer_type, 0),
+
     AP_GROUPEND
 };
 
@@ -733,6 +741,16 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     steering_scaled = constrain_float(steering_scaled, -1.0f, 1.0f);
     throttle_scaled = constrain_float(throttle_scaled, -1.0f, 1.0f);
 
+    if(_skid_mixer_type == skid_mixer_type::SKID_MIXER_VECTOR){
+        float th_l =0;
+        float th_r = 0;
+        output_skid_steering(throttle_scaled,steering_scaled,th_l,th_r,-1.0f,1.0f);
+        // send pwm value to each motor
+        output_throttle(SRV_Channel::k_throttleLeft, 100.0f * th_l, dt);
+        output_throttle(SRV_Channel::k_throttleRight, 100.0f * th_r, dt);
+        return;
+    } 
+
     // check for saturation and scale back throttle and steering proportionally
     const float saturation_value = fabsf(steering_scaled) + fabsf(throttle_scaled);
     if (saturation_value > 1.0f) {
@@ -771,6 +789,73 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     output_throttle(SRV_Channel::k_throttleLeft, 100.0f * motor_left, dt);
     output_throttle(SRV_Channel::k_throttleRight, 100.0f * motor_right, dt);
 }
+
+
+void AP_MotorsUGV::output_skid_steering(float throttle,float steering,float &throttle_left,float &throttle_right,float umin, float umax)
+{
+     // vertex matrix,each row is a vertex coordinate.
+	float u_v[4][2]        = {{umax,umin},
+	                           {umin,umin},
+	                           {umin,umax},
+	                           {umax,umax}};
+
+	float m_v[4][2]        = {{0.5f*(umax+umin),0.5f*(umax-umin)},
+							   {umin,0.0f},
+							   {0.5f*(umax+umin),0.5f*(umin-umax)},
+						       {umax,0.0f}};
+
+	float r[2][2]         = {{0.0f,0.0f},{0.0f,0.0f}};
+
+	float mdes[2]         = {throttle,steering};
+
+	// vertex index
+	uint16_t i =0,j = 0;
+	float m1[2] = {0,0},m2[2] = {0,0};
+	float a = 0,b = 0;
+	float det = 0;
+	float u0[2]   = {0,0};
+
+	while(i < 4){
+		// get current vertex index
+		j = i+1;
+		if(j== 4){
+			j = 0;
+		}
+
+		// get adjacent vertex coordinates
+		m1[0] = m_v[i][0];m1[1] = m_v[i][1];
+		m2[0] = m_v[j][0];m2[1] = m_v[j][1];
+
+		// compute det(R)
+		r[0][0] = mdes[0];r[0][1] = -(m2[0] - m1[0]);
+		r[1][0] = mdes[1];r[1][1] = -(m2[1] - m1[1]);
+
+		det = r[0][0]*r[1][1] - r[0][1]*r[1][0];
+		if(!is_zero(det)){
+			a = (r[1][1]*m1[0] + (-r[0][1])*m1[1])/det;
+			b = (-r[1][0]*m1[0] + r[0][0]*m1[1])/det;
+
+			if( a > 0 && b >=0 && b <= 1){
+				u0[0] = u_v[i][0] + b*(u_v[j][0] - u_v[i][0]);
+				u0[1] = u_v[i][1] + b*(u_v[j][1] - u_v[i][1]);
+
+				if( is_equal(a,1.0f) ||  a< 1.0f){
+					throttle_left = u0[0];
+					throttle_right = u0[1];
+				}
+				else{
+					throttle_left  = u0[0]/a;
+					throttle_right = u0[1]/a;
+				}
+				return;
+			}
+		}
+
+		// shift i
+		i++;
+	}
+}
+
 
 // output for omni frames
 void AP_MotorsUGV::output_omni(bool armed, float steering, float throttle, float lateral)

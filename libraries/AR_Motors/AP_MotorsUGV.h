@@ -140,6 +140,11 @@ private:
         PWM_TYPE_DSHOT1200 = 8
     };
 
+    enum class skid_mixer_type : uint8_t {
+        SKID_MIXER_DEFAULT = 0,
+        SKID_MIXER_VECTOR  = 1,
+    };
+
     // sanity check parameters
     void sanity_check_parameters();
 
@@ -163,6 +168,8 @@ private:
 
     // output to skid steering channels
     void output_skid_steering(bool armed, float steering, float throttle, float dt);
+
+    void output_skid_steering(float throttle,float steering,float &throttle_left,float &throttle_right,float umin, float umax);
 
     // output for omni motors
     void output_omni(bool armed, float steering, float throttle, float lateral);
@@ -206,6 +213,7 @@ private:
     AP_Float _vector_angle_max;  // angle between steering's middle position and maximum position when using vectored thrust.  zero to disable vectored thrust
     AP_Float _speed_scale_base;  // speed above which steering is scaled down when using regular steering/throttle vehicles.  zero to disable speed scaling
     AP_Float _steering_throttle_mix; // Steering vs Throttle priorisation.  Higher numbers prioritise steering, lower numbers prioritise throttle.  Only valid for Skid Steering vehicles
+    AP_Enum<skid_mixer_type>  _skid_mixer_type; // skid mixer type
 
     // internal variables
     float   _steering;  // requested steering as a value from -4500 to +4500
