@@ -601,11 +601,11 @@ private:
     static AP_Volz_Protocol *volz_ptr;
 #endif
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_SBUSOUTPUT_ENABLED
     // support for SBUS protocol
     AP_SBusOut sbus;
     static AP_SBusOut *sbus_ptr;
-#endif // HAL_BUILD_AP_PERIPH
+#endif
 
 #if AP_ROBOTISSERVO_ENABLED
     // support for Robotis servo protocol

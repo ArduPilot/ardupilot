@@ -45,7 +45,7 @@ SRV_Channels *SRV_Channels::_singleton;
 AP_Volz_Protocol *SRV_Channels::volz_ptr;
 #endif
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_SBUSOUTPUT_ENABLED
 AP_SBusOut *SRV_Channels::sbus_ptr;
 #endif
 
@@ -195,11 +195,11 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     AP_SUBGROUPINFO(volz, "_VOLZ_",  19, SRV_Channels, AP_Volz_Protocol),
 #endif
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_SBUSOUTPUT_ENABLED
     // @Group: _SBUS_
     // @Path: ../AP_SBusOut/AP_SBusOut.cpp
     AP_SUBGROUPINFO(sbus, "_SBUS_",  20, SRV_Channels, AP_SBusOut),
-#endif // HAL_BUILD_AP_PERIPH
+#endif
 
 #if HAL_SUPPORT_RCOUT_SERIAL
     // @Group: _BLH_
@@ -379,7 +379,7 @@ SRV_Channels::SRV_Channels(void)
     volz_ptr = &volz;
 #endif
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_SBUSOUTPUT_ENABLED
     sbus_ptr = &sbus;
 #endif
 
@@ -511,10 +511,10 @@ void SRV_Channels::push()
     volz_ptr->update();
 #endif
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_SBUSOUTPUT_ENABLED
     // give sbus library a chance to update
     sbus_ptr->update();
-#endif // HAL_BUILD_AP_PERIPH
+#endif
 
 #if AP_ROBOTISSERVO_ENABLED
     // give robotis library a chance to update
