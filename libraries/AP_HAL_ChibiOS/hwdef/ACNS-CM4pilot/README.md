@@ -2,8 +2,9 @@
 
 The CM4PILOT is a low-cost and compact flight controller which integrated a Raspberry Pi CM4 in the cockpit.
 
-![image](https://github.com/robinluojl/ardupilot/blob/add_fmu2/libraries/AP_HAL_ChibiOS/hwdef/ACNS-CM4pilot/CM4pilot_inshell.png)
-![image](https://github.com/robinluojl/ardupilot/blob/add_fmu2/libraries/AP_HAL_ChibiOS/hwdef/ACNS-CM4pilot/CM4Pilot_structure.jpg)
+![CM4PILOT](CM4pilot_inshell.png "CM4PILOT")
+![CM4Pilot_structure](CM4Pilot_structure.jpg "CM4Pilot_structure")
+
 
 
 ## Features
@@ -64,7 +65,7 @@ The CM4PILOT flight controller has 3 analog inputs
 
 
 
-![image](https://github.com/robinluojl/ardupilot/blob/add_fmu2/libraries/AP_HAL_ChibiOS/hwdef/ACNS-CM4pilot/CM4Pilot.jpg) 
-![image](https://github.com/robinluojl/ardupilot/blob/add_fmu2/libraries/AP_HAL_ChibiOS/hwdef/ACNS-CM4pilot/CM4Pilot_up.jpg)
-![image](https://github.com/robinluojl/ardupilot/blob/add_fmu2/libraries/AP_HAL_ChibiOS/hwdef/ACNS-CM4pilot/CM4pilot_size.png)
-![image](https://github.com/robinluojl/ardupilot/blob/add_fmu2/libraries/AP_HAL_ChibiOS/hwdef/ACNS-CM4pilot/CM4pilot_weight.png)
+![CM4Pilot](CM4Pilot.jpg "CM4Pilot")
+![CM4Pilot_up](CM4Pilot_up.jpg "CM4Pilot_up")
+![CM4pilot_size](CM4pilot_size.png "CM4pilot_size")
+![CM4pilot_weight](CM4pilot_weight.png "CM4pilot_weight")
