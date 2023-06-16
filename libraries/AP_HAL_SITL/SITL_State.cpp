@@ -259,6 +259,12 @@ SITL::SerialDevice *SITL_State::create_serial_sim(const char *name, const char *
         }
         benewake_tfmini = new SITL::RF_Benewake_TFmini();
         return benewake_tfmini;
+    } else if (streq(name, "nooploop_tofsense")) {
+        if (nooploop != nullptr) {
+            AP_HAL::panic("Only one nooploop_tofsense at a time");
+        }
+        nooploop = new SITL::RF_Nooploop();
+        return nooploop;
     } else if (streq(name, "teraranger_serial")) {
         if (teraranger_serial != nullptr) {
             AP_HAL::panic("Only one teraranger_serial at a time");
@@ -617,6 +623,9 @@ void SITL_State::_fdm_input_local(void)
     }
     if (benewake_tfmini != nullptr) {
         benewake_tfmini->update(sitl_model->rangefinder_range());
+    }
+    if (nooploop != nullptr) {
+        nooploop->update(sitl_model->rangefinder_range());
     }
     if (teraranger_serial != nullptr) {
         teraranger_serial->update(sitl_model->rangefinder_range());
