@@ -2,9 +2,9 @@
 
 The CM4PILOT is a low-cost and compact flight controller which integrated a Raspberry Pi CM4 in the cockpit.
 
-![CM4PILOT](CM4pilot_inshell.png "CM4PILOT")
-![CM4Pilot_structure](CM4Pilot_structure.jpg "CM4Pilot_structure")
+<div align=center><img width="600"  src=CM4pilot_inshell.png/></div>
 
+<div align=center><img width="600"  src=CM4Pilot_structure.jpg/></div>
 
 
 ## Features
@@ -37,7 +37,7 @@ The CM4PILOT is a low-cost and compact flight controller which integrated a Rasp
  - SERIAL2 -> USART3 (CM4)(DMA capable)
  - SERIAL3 -> UART4 (GPS)(DMA capable)
  - SERIAL4 -> UART6 (GPS2)(DMA capable)
- - SERIAL5 -> USART2 (SBUS)(SBUS RC input, no DMA capable)
+ - SERIAL5 -> USART2 (SBUS)(RC input, no DMA capable)
 
 ## RC Input
 
@@ -94,7 +94,7 @@ Subsequently, you can update firmware with Mission Planner.
 
 ## Pinout and Size
 
-![CM4Pilot](CM4Pilot.jpg "CM4Pilot")
-![CM4Pilot_up](CM4Pilot_up.jpg "CM4Pilot_up")
-![CM4pilot_size](CM4pilot_size.png "CM4pilot_size")
-![CM4pilot_weight](CM4pilot_weight.png "CM4pilot_weight")
+<div align=center><img width="600"  src=CM4Pilot.jpg/></div>
+<div align=center><img width="600"  src=CM4Pilot_up.jpg/></div>
+<div align=center><img width="600"  src=CM4pilot_size.png/></div>
+<div align=center><img width="600"  src=CM4pilot_weight.png/></div>
