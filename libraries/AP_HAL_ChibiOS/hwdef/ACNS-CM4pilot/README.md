@@ -1,12 +1,13 @@
 # CM4PILOT Integrated Flight Controller
 
 The CM4PILOT is a low-cost and compact flight controller which integrated a Raspberry Pi CM4 in the cockpit.
+![image](libraries/AP_HAL_ChibiOS/hwdef/ACNS-CM4pilot/CM4Pilot_structure.jpg)
 
 ## Features
 
- - Raspberry Pi CM4 + Ardupilot, Companion Computers in conckpit structure
- - Small Footprint and Light weight, 58mm X 50mm X 18mm，26g(without shell)
- - Broadcom BCM2711, quad core Cortex-A72 (ARM v8) 64-bit SoC @ 1.5GHz
+ - Raspberry Pi CM4 + Ardupilot, Companion Computers in cockpit structure
+ - Small Footprint and Lightweight, 58mm X 50mm X 18mm，26g(without shell)
+ - Broadcom BCM2711, quad-core Cortex-A72 (ARM v8) 64-bit SoC @ 1.5GHz
  - STM32F405 microcontroller
  - IMU: BMI088
  - Mag: LIS3MDLTR
@@ -56,4 +57,6 @@ The CM4PILOT flight controller has 3 analog inputs
  - ADC Pin11  -> Battery Current 
  - ADC Pin12  -> Battery Voltage 
  - ADC Pin10  -> RSSI voltage monitoring
-
+![image](libraries/AP_HAL_ChibiOS/hwdef/ACNS-CM4pilot/CM4Pilot.jpg)
+![image](libraries/AP_HAL_ChibiOS/hwdef/ACNS-CM4pilot/CM4Pilot_up.jpg)
+![image](libraries/AP_HAL_ChibiOS/hwdef/ACNS-CM4pilot/CM4pilot_size.jpg)
