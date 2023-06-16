@@ -1,11 +1,11 @@
 # ACNS_F405AIO Integrated Flight Controller
 
-The ACNS_F405AIO is a low-cost compact flight controller for multi-rotor UAV which integrated 4 BLheli_s ESCs on board.
+The ACNS_F405AIO is a low-cost compact flight controller for multi-rotor UAVs which integrated 4 BLheli_s ESCs on board.
 
 ## Features
 
- - STM32F405 microcontroller
- - IMU: BMI160,ICM42688
+ - STM32F405RET microcontroller
+ - IMU: BMI160, ICM42688
  - Mag: LIS3MDLTR
  - Baro: BMP280
  - 1 microSD card slot port
@@ -16,8 +16,8 @@ The ACNS_F405AIO is a low-cost compact flight controller for multi-rotor UAV whi
  - External SPI port
  - GRB LED on board
  - 128M flash on board
- - 4 BLheli_s ESCs, 3-4s, 30A, The motor oder matches the Arducotper X frame type config
- - Small footprint and Light weight, 39mm X 39mm X 10mm, 9g(without shell)
+ - 4 BLheli_s ESCs, 3-4s, 30A, The motor order matches the Arducotper X frame type config
+ - Small footprint and Lightweight, 39mm X 39mm X 10mm, 9g(without shell)
  - 
 ## UART Mapping
 
@@ -49,5 +49,6 @@ The ACNS_F405AIO flight controller has 3 analog inputs
  - ADC Pin10  -> RSSI voltage monitoring
 
 
-![image](https://github.com/robinluojl/ardupilot/blob/add_fmu2/libraries/AP_HAL_ChibiOS/hwdef/ACNS-F405AIO/F405AIO_top.jpg)
-![image](https://github.com/robinluojl/ardupilot/blob/add_fmu2/libraries/AP_HAL_ChibiOS/hwdef/ACNS-F405AIO/F405AIO_bottom.jpg)
+![F405AIO_top](F405AIO_top.jpg "F405AIO_top")
+![F405AIO_bottom](F405AIO_bottom.jpg "F405AIO_bottom")
+
