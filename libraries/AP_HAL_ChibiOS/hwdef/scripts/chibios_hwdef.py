@@ -966,14 +966,12 @@ def write_mcu_config(f):
     env_vars['EXT_FLASH_SIZE_MB'] = get_config('EXT_FLASH_SIZE_MB', default=0, type=int)
 
     if env_vars['EXT_FLASH_SIZE_MB'] and not args.bootloader:
-        f.write('#define CRT1_AREAS_NUMBER 3\n')
-        f.write('#define CRT1_RAMFUNC_ENABLE TRUE\n') # this will enable loading program sections to RAM
+        f.write('#define CRT0_AREAS_NUMBER 4\n')
         f.write('#define __FASTRAMFUNC__ __attribute__ ((__section__(".fastramfunc")))\n')
         f.write('#define __RAMFUNC__ __attribute__ ((__section__(".ramfunc")))\n')
         f.write('#define PORT_IRQ_ATTRIBUTES __FASTRAMFUNC__\n')
     else:
-        f.write('#define CRT1_AREAS_NUMBER 1\n')
-        f.write('#define CRT1_RAMFUNC_ENABLE FALSE\n')
+        f.write('#define CRT0_AREAS_NUMBER 1\n')
 
     storage_flash_page = get_storage_flash_page()
     flash_reserve_end = get_config('FLASH_RESERVE_END_KB', default=0, type=int)
