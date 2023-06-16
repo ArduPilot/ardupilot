@@ -23,6 +23,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_LocationDB/AP_LocationDB.h>
 
 // parameter defaults
 const float OA_BENDYRULER_LOOKAHEAD_DEFAULT = 15.0f;
@@ -426,7 +427,13 @@ float AP_OABendyRuler::calc_avoidance_margin(const Location &start, const Locati
     if (calc_margin_from_object_database(start, end, latest_margin)) {
         margin_min = MIN(margin_min, latest_margin);
     }
-    
+
+#if AP_LOCATIONDB_ENABLED
+    if (calc_margin_from_location_database(start, end, latest_margin)) {
+        margin_min = MIN(margin_min, latest_margin);
+    }
+#endif
+
     if (proximity_only) {
         // only need margin from proximity data
         return margin_min;
@@ -712,5 +719,64 @@ bool AP_OABendyRuler::calc_margin_from_object_database(const Location &start, co
 
     return false;
 }
+
+#if AP_LOCATIONDB_ENABLED
+// calculate minimum distance between a path and local vehicles
+// on success returns true and updates margin
+bool AP_OABendyRuler::calc_margin_from_location_database(const Location &start, const Location &end, float &margin) const
+{
+    // exit immediately if db is empty
+    AP_LocationDB *locdb = AP::locationdb();
+    if (locdb == nullptr || !locdb->healthy() || locdb->size() == 0) {
+        return false;
+    }
+
+    // convert start and end to offsets (in cm) from EKF origin
+    Vector3f start_NEU,end_NEU;
+    if (!start.get_vector_from_origin_NEU(start_NEU) || !end.get_vector_from_origin_NEU(end_NEU)) {
+        return false;
+    }
+    if (start_NEU == end_NEU) {
+        return false;
+    }
+
+    // check each obstacle's distance from segment
+    float smallest_margin = FLT_MAX;
+    for (uint16_t i=0; i<locdb->size(); i++) {
+        AP_LocationDB_Item item;
+        Vector3f pos;
+        if (!locdb->get_item_at_index(i, item) || !item.get_pos_cm_NEU(pos)) {
+            continue;
+        }
+
+        Vector3f vel{0, 0, 0};
+        Vector3f acc{0, 0, 0};
+        IGNORE_RETURN(item.get_vel_cm_NEU(vel));
+        IGNORE_RETURN(item.get_acc_cm_NEU(acc));
+
+        float t = (AP_HAL::millis() - item.get_timestamp_ms()) * 0.001;
+        pos += (vel * t + acc * t * t * 0.5);
+
+        float item_radius;
+        if (!item.get_radius_cm(item_radius)) {
+            item_radius = 0;
+        }
+
+        // margin is distance between line segment and obstacle minus obstacle's radius
+        const float m = (Vector3f::closest_distance_between_line_and_point(start_NEU, end_NEU, pos) - item_radius) * 0.01f;
+        if (m < smallest_margin) {
+            smallest_margin = m;
+        }
+    }
+
+    // return smallest margin
+    if (smallest_margin < FLT_MAX) {
+        margin = smallest_margin;
+        return true;
+    }
+
+    return false;
+}
+#endif // AP_LOCATIONDB_ENABLED
 
 #endif // AP_OAPATHPLANNER_BENDYRULER_ENABLED
