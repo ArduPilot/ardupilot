@@ -4,9 +4,9 @@ The CM4PILOT is a low-cost and compact flight controller which integrated a Rasp
 
 ## Features
 
- - Raspberry Pi CM4 + Ardupilot, Companion Computers in conckpit structure
+ - Raspberry Pi CM4 + Ardupilot, Companion Computers in cockpit structure
  - Small Footprint and weight, 58mm×50mm×18mm，26g(without shell)
- - Broadcom BCM2711, quad core Cortex-A72 (ARM v8) 64-bit SoC @ 1.5GHz
+ - Broadcom BCM2711, quad-core Cortex-A72 (ARM v8) 64-bit SoC @ 1.5GHz
  - STM32F405 microcontroller
  - IMU: BMI088
  - Mag: LIS3MDLTR
@@ -51,7 +51,7 @@ The pin numbers for these PWM channels in ArduPilot are shown below:
 
 ## Analog inputs
 
-The A6 flight controller has 5 analog inputs
+The CM4PILOT flight controller has 3 analog inputs
 
  - ADC Pin11  -> Battery Current 
  - ADC Pin12  -> Battery Voltage 
