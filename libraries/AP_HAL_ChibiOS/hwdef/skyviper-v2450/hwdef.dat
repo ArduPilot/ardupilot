@@ -208,4 +208,8 @@ define HAL_BUTTON_ENABLED 0
 // disable scripting on SkyViper (should we enable this?)
 define AP_SCRIPTING_ENABLED 0
 
+// SkyViper does not have a second battery....
+define AP_BATT_MONITOR_MAX_INSTANCES 1
+define AP_MAVLINK_BATTERY2_ENABLED 0
+
 AUTOBUILD_TARGETS Copter
