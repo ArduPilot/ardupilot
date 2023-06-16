@@ -42,7 +42,7 @@ The pin numbers for these PWM channels in ArduPilot are shown below:
 
 ## Analog inputs
 
-The A6 flight controller has 5 analog inputs
+The ACNS_F405AIO flight controller has 3 analog inputs
 
  - ADC Pin11  -> Battery Current 
  - ADC Pin12  -> Battery Voltage 
