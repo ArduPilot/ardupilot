@@ -1,7 +1,7 @@
 # CM4PILOT Integrated Flight Controller
 
 The CM4PILOT is a low-cost and compact flight controller which integrated a Raspberry Pi CM4 in the cockpit.
-![image](libraries/AP_HAL_ChibiOS/hwdef/ACNS-CM4pilot/CM4Pilot_structure.jpg)
+![image](ardupilot/libraries/AP_HAL_ChibiOS/hwdef/ACNS-CM4pilot/CM4Pilot_structure.jpg)
 
 ## Features
 
