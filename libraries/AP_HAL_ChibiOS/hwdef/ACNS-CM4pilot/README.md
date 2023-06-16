@@ -2,9 +2,8 @@
 
 The CM4PILOT is a low-cost and compact flight controller which integrated a Raspberry Pi CM4 in the cockpit.
 
-<div align=center><img width="600"  src=CM4pilot_inshell.png/></div>
-
-<div align=center><img width="600"  src=CM4Pilot_structure.jpg/></div>
+<div align=left><img width="600"  src=CM4pilot_inshell.png/></div>
+<div align=left><img width="600"  src=CM4Pilot_structure.jpg/></div>
 
 
 ## Features
@@ -94,7 +93,7 @@ Subsequently, you can update firmware with Mission Planner.
 
 ## Pinout and Size
 
-<div align=center><img width="600"  src=CM4Pilot.jpg/></div>
-<div align=center><img width="600"  src=CM4Pilot_up.jpg/></div>
-<div align=center><img width="600"  src=CM4pilot_size.png/></div>
-<div align=center><img width="600"  src=CM4pilot_weight.png/></div>
+<div align=left><img width="600"  src=CM4Pilot.jpg/></div>
+<div align=left><img width="600"  src=CM4Pilot_up.jpg/></div>
+<div align=left><img width="600"  src=CM4pilot_size.png/></div>
+<div align=left><img width="600"  src=CM4pilot_weight.png/></div>
