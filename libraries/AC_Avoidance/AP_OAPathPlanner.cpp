@@ -37,7 +37,7 @@ const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
     // @Description: Enabled/disable path planning around obstacles
     // @Values: 0:Disabled,1:BendyRuler,2:Dijkstra,3:Dijkstra with BendyRuler
     // @User: Standard
-    AP_GROUPINFO_FLAGS("TYPE", 1,  AP_OAPathPlanner, _type, OA_PATHPLAN_DISABLED, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO("TYPE", 1,  AP_OAPathPlanner, _type, OA_PATHPLAN_DISABLED),
 
     // Note: Do not use Index "2" for any new parameter
     //       It was being used by _LOOKAHEAD which was later moved to AP_OABendyRuler 
@@ -85,7 +85,6 @@ void AP_OAPathPlanner::init()
     switch (_type) {
     case OA_PATHPLAN_DISABLED:
         // do nothing
-        return;
     case OA_PATHPLAN_BENDYRULER:
         if (_oabendyruler == nullptr) {
             _oabendyruler = new AP_OABendyRuler();
@@ -152,9 +151,6 @@ bool AP_OAPathPlanner::start_thread()
 
     if (_thread_created) {
         return true;
-    }
-    if (_type == OA_PATHPLAN_DISABLED) {
-        return false;
     }
 
     // create the avoidance thread as low priority. It should soak
