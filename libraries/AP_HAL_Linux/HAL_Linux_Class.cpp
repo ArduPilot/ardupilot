@@ -276,7 +276,7 @@ HAL_Linux::HAL_Linux() :
 void _usage(void)
 {
     printf("Usage: --serial0 serial0Path --serial1 serial2Path \n");
-    printf("Options:\n");
+    printf("Examples:\n");
     printf("\tserial (0 through 9 available):\n");
     printf("\t                  --serial0 /dev/ttyO4\n");
     printf("\t                  --serial3 /dev/ttyS1\n");
