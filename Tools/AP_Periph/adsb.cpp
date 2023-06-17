@@ -20,7 +20,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include "AP_Periph.h"
 
-#ifdef HAL_PERIPH_ENABLE_ADSB
+#if HAL_ADSB_ENABLED
 
 #include <AP_SerialManager/AP_SerialManager.h>
 
@@ -84,4 +84,4 @@ void AP_Periph_FW::adsb_update(void)
     }
 }
 
-#endif // HAL_PERIPH_ENABLE_ADSB
+#endif // HAL_ADSB_ENABLED

@@ -171,7 +171,7 @@ void AP_Periph_FW::init()
     rcout_init();
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_ADSB
+#if HAL_ADSB_ENABLED
     adsb_init();
 #endif
 
@@ -479,7 +479,7 @@ void AP_Periph_FW::update()
 #if (defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) && HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY == 8) || defined(HAL_PERIPH_ENABLE_NOTIFY)
     update_rainbow();
 #endif
-#ifdef HAL_PERIPH_ENABLE_ADSB
+#if HAL_ADSB_ENABLED
     adsb_update();
 #endif
 }

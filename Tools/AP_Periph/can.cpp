@@ -2456,7 +2456,7 @@ void AP_Periph_FW::can_proximity_update()
 #endif
 }
 
-#ifdef HAL_PERIPH_ENABLE_ADSB
+#if HAL_ADSB_ENABLED
 /*
   map an ADSB_VEHICLE MAVLink message to a UAVCAN TrafficReport message
  */
@@ -2514,7 +2514,7 @@ void AP_Periph_FW::can_send_ADSB(struct __mavlink_adsb_vehicle_t &msg)
                     &buffer[0],
                     total_size);
 }
-#endif // HAL_PERIPH_ENABLE_ADSB
+#endif // HAL_ADSB_ENABLED
 
 
 #ifdef HAL_PERIPH_ENABLE_EFI

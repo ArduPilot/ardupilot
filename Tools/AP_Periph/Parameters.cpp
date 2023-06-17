@@ -298,7 +298,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(rangefinder, "RNGFND", RangeFinder),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_ADSB
+#if HAL_ADSB_ENABLED
     // @Param: ADSB_BAUDRATE
     // @DisplayName: ADSB serial baudrate
     // @Description: ADSB serial baudrate.
