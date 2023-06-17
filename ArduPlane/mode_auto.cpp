@@ -159,3 +159,25 @@ bool ModeAuto::_pre_arm_checks(size_t buflen, char *buffer) const
     // Note that this bypasses the base class checks
     return true;
 }
+
+bool ModeAuto::is_landing() const
+{
+    switch(plane.mission.get_current_nav_cmd().id) {
+    case MAV_CMD_NAV_LAND:
+    case MAV_CMD_NAV_VTOL_LAND:
+    case MAV_CMD_DO_VTOL_TRANSITION:
+        return true;
+    }
+    return false;
+}
+
+bool ModeAuto::is_taking_off() const
+{
+    switch(plane.mission.get_current_nav_cmd().id) {
+    case MAV_CMD_NAV_TAKEOFF:
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
+    case MAV_CMD_DO_VTOL_TRANSITION:
+        return true;
+    }
+    return false;
+}

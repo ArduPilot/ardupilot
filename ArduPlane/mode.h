@@ -128,6 +128,13 @@ public:
     // handle a guided target request from GCS
     virtual bool handle_guided_request(Location target_loc) { return false; }
 
+    // true if is landing 
+    virtual bool is_landing() const { return false; }
+
+    // true if is taking 
+    virtual bool is_taking_off() const { return false; }
+
+
 protected:
 
     // subclasses override this to perform checks before entering the mode
@@ -208,6 +215,10 @@ public:
     bool does_auto_throttle() const override;
     
     bool mode_allows_autotuning() const override { return true; }
+
+    bool is_landing() const override;
+    
+    bool is_taking_off() const override;
 
 protected:
 
@@ -744,6 +755,8 @@ public:
     bool does_auto_navigation() const override { return true; }
 
     bool does_auto_throttle() const override { return true; }
+
+    bool is_taking_off() const override { return true; }
 
     // var_info for holding parameter information
     static const struct AP_Param::GroupInfo var_info[];
