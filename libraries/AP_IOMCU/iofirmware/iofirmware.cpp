@@ -38,6 +38,9 @@ static AP_IOMCU_FW iomcu;
 void setup();
 void loop();
 
+#undef CH_DBG_ENABLE_STACK_CHECK
+#define CH_DBG_ENABLE_STACK_CHECK FALSE
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 /*
@@ -198,11 +201,8 @@ using namespace ChibiOS;
  copy of uart_lld_serve_tx_end_irq() from ChibiOS hal_uart_lld
  that is re-instated upon switching the DMA channel
  */
-static void uart_lld_serve_tx_end_irq(hal_uart_driver *uart, uint32_t flags) {
-    /* DMA errors handling.*/
-    if ((flags & (STM32_DMA_ISR_TEIF | STM32_DMA_ISR_DMEIF)) != 0) {
-    }
-
+static void uart_lld_serve_tx_end_irq(hal_uart_driver *uart, uint32_t flags)
+{
     dmaStreamDisable(uart->dmatx);
 
     /* A callback is generated, if enabled, after a completed transfer.*/
@@ -288,6 +288,13 @@ void AP_IOMCU_FW::init()
     // old NuttX based firmwares
     config.protocol_version = IOMCU_PROTOCOL_VERSION;
     config.protocol_version2 = IOMCU_PROTOCOL_VERSION2;
+#if defined(STM32F103xB) || defined(STM32F103x8)
+    // Errata 2.2.2 - Debug registers cannot be read by user software
+    config.mcuid = 0x20036410;  // STM32F10x (Medium Density) rev Y
+#else
+    config.mcuid = (*(uint32_t *)DBGMCU_BASE);
+#endif
+
 
     thread_ctx = chThdGetSelfX();
 
@@ -430,7 +437,6 @@ void AP_IOMCU_FW::update()
     // send a response if required
     if (mask & IOEVENT_TX_BEGIN) {
         chSysLock();
-        reg_status.deferred_locks++;
         setup_tx_dma(&UARTD2);
         chSysUnlock();
     }
@@ -1081,6 +1087,10 @@ void AP_IOMCU_FW::rcout_config_update(void)
         hal.rcout->set_output_mode(mode_out.mask, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
         hal.rcout->set_freq(mode_out.mask, reg_setup.pwm_altrate);
     }
+
+    uint32_t output_mask = 0;
+    reg_status.rcout_mode = hal.rcout->get_output_mode(output_mask);
+    reg_status.rcout_mask = uint8_t(0xFF & output_mask);
 }
 
 /*

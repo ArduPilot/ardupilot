@@ -58,7 +58,7 @@ AP_IOMCU::AP_IOMCU(AP_HAL::UARTDriver &_uart) :
     singleton = this;
 }
 
-#define IOMCU_DEBUG_ENABLE 1
+#define IOMCU_DEBUG_ENABLE 0
 
 #if IOMCU_DEBUG_ENABLE
 #include <stdio.h>
@@ -139,6 +139,8 @@ void AP_IOMCU::thread_main(void)
             }
             is_chibios_backend = (config.protocol_version == IOMCU_PROTOCOL_VERSION &&
                                   config.protocol_version2 == IOMCU_PROTOCOL_VERSION2);
+
+            DEV_PRINTF("IOMCU: 0x%lx\n", config.mcuid);
 
             // set IO_ARM_OK and FMU_ARMED
             if (!modify_register(PAGE_SETUP, PAGE_REG_SETUP_ARMING, 0,
@@ -861,6 +863,12 @@ void AP_IOMCU::set_output_mode(uint16_t mask, uint16_t mode)
     mode_out.mask = mask;
     mode_out.mode = mode;
     trigger_event(IOEVENT_SET_OUTPUT_MODE);
+}
+
+AP_HAL::RCOutput::output_mode AP_IOMCU::get_output_mode(uint8_t& mask) const
+{
+    mask = reg_status.rcout_mask;
+    return AP_HAL::RCOutput::output_mode(reg_status.rcout_mode);
 }
 
 // setup channels

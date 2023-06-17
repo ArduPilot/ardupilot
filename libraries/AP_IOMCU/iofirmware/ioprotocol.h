@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <AP_Common/AP_Common.h>
+
 /*
   common protocol definitions between AP_IOMCU and iofirmware
  */
@@ -106,6 +107,7 @@ enum iopage {
 struct page_config {
     uint16_t protocol_version;
     uint16_t protocol_version2;
+    uint32_t mcuid;
 };
 
 struct page_reg_status {
@@ -119,8 +121,9 @@ struct page_reg_status {
     uint32_t total_pkts;
     uint32_t total_ticks;
     uint32_t total_events;
-    uint32_t deferred_locks;
     uint8_t flag_safety_off;
+    uint8_t rcout_mask;
+    uint8_t rcout_mode;
     uint8_t err_crc;
     uint8_t err_bad_opcode;
     uint8_t err_read;
