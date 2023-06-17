@@ -523,6 +523,7 @@ private:
         float rudder_offset_pct;
         bool run_yaw_rate_controller;
     } nav_scripting;
+
 #endif
 
     struct {
@@ -1245,6 +1246,8 @@ public:
 
     // allow for landing descent rate to be overridden by a script, may be -ve to climb
     bool set_land_descent_rate(float descent_rate) override;
+    bool is_landing() const override;
+    bool is_taking_off() const override;
 #endif // AP_SCRIPTING_ENABLED
 
 };
