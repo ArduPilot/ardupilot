@@ -3264,6 +3264,10 @@ INCLUDE common.ld
 #define AP_SCRIPTING_ENABLED 0
 #endif
 
+#ifndef HAL_ADSB_ENABLED
+#define HAL_ADSB_ENABLED 0
+#endif
+
 // end AP_Periph defaults
 ''')
 
