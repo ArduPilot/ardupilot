@@ -168,7 +168,7 @@ bool ModeAuto::is_landing() const
     case MAV_CMD_DO_VTOL_TRANSITION:
         return true;
     }
-    return false;
+    return plane.mission.get_in_landing_sequence_flag();
 }
 
 bool ModeAuto::is_taking_off() const
