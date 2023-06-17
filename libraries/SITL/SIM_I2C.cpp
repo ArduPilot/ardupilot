@@ -117,8 +117,10 @@ void I2C::init()
         i.device.init();
     }
 
+#if AP_SIM_IS31FL3195_ENABLED
     // IS31FL3195 needs to know its own address:
     is31fl3195.set_product_id(SIM_IS31FL3195_ADDR);
+#endif
 
     // sanity check the i2c_devices structure to ensure we don't have
     // two devices at the same address on the same bus:
