@@ -12,6 +12,7 @@
 
 #include "iofirmware/ioprotocol.h"
 #include <AP_RCMapper/AP_RCMapper.h>
+#include <AP_HAL/RCOutput.h>
 
 typedef uint32_t eventmask_t;
 typedef struct ch_thread thread_t;
@@ -100,6 +101,12 @@ public:
 
     // set output mode
     void set_output_mode(uint16_t mask, uint16_t mode);
+
+    // get output mode
+    AP_HAL::RCOutput::output_mode get_output_mode(uint8_t& mask) const;
+
+    // MCUID
+    uint32_t get_mcu_id() const { return config.mcuid; }
 
 #if HAL_DSHOT_ENABLED
     // set dshot output period
