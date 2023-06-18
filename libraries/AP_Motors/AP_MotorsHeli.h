@@ -159,6 +159,9 @@ public:
     // Run arming checks
     bool arming_checks(size_t buflen, char *buffer) const override;
 
+    // Tell user motor test is disabled on heli
+    bool motor_test_checks(size_t buflen, char *buffer) const override;
+
     // output_test_seq - disabled on heli, do nothing
     void _output_test_seq(uint8_t motor_seq, int16_t pwm) override {};
 
