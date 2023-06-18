@@ -223,6 +223,40 @@ static bool mode_reason_is_landing_sequence(const ModeReason reason)
 }
 #endif // AP_FENCE_ENABLED
 
+// Check if this mode can be entered from the GCS
+bool Plane::gcs_mode_enabled(const Mode::Number mode_num) const
+{
+    // List of modes that can be blocked, index is bit number in parameter bitmask
+    static const uint8_t mode_list [] {
+        (uint8_t)Mode::Number::MANUAL,
+        (uint8_t)Mode::Number::CIRCLE,
+        (uint8_t)Mode::Number::STABILIZE,
+        (uint8_t)Mode::Number::TRAINING,
+        (uint8_t)Mode::Number::ACRO,
+        (uint8_t)Mode::Number::FLY_BY_WIRE_A,
+        (uint8_t)Mode::Number::FLY_BY_WIRE_B,
+        (uint8_t)Mode::Number::CRUISE,
+        (uint8_t)Mode::Number::AUTOTUNE,
+        (uint8_t)Mode::Number::AUTO,
+        (uint8_t)Mode::Number::LOITER,
+        (uint8_t)Mode::Number::TAKEOFF,
+        (uint8_t)Mode::Number::AVOID_ADSB,
+        (uint8_t)Mode::Number::GUIDED,
+        (uint8_t)Mode::Number::THERMAL,
+#if HAL_QUADPLANE_ENABLED
+        (uint8_t)Mode::Number::QSTABILIZE,
+        (uint8_t)Mode::Number::QHOVER,
+        (uint8_t)Mode::Number::QLOITER,
+        (uint8_t)Mode::Number::QACRO,
+#if QAUTOTUNE_ENABLED
+        (uint8_t)Mode::Number::QAUTOTUNE
+#endif
+#endif
+    };
+
+    return !block_GCS_mode_change((uint8_t)mode_num, mode_list, ARRAY_SIZE(mode_list));
+}
+
 bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
 {
 
@@ -271,6 +305,12 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
         return false;
     }
 #endif
+
+    // Check if GCS mode change is disabled via parameter
+    if ((reason == ModeReason::GCS_COMMAND) && !gcs_mode_enabled(new_mode.mode_number())) {
+        gcs().send_text(MAV_SEVERITY_NOTICE,"Mode change to %s denied, GCS entry disabled (FLTMODE_GCSBLOCK)", new_mode.name());
+        return false;
+    }
 
     // backup current control_mode and previous_mode
     Mode &old_previous_mode = *previous_mode;
