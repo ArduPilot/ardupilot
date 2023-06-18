@@ -159,6 +159,9 @@ public:
     // Run arming checks
     bool arming_checks(size_t buflen, char *buffer) const override;
 
+    // output_test_seq - disabled on heli, do nothing
+    void _output_test_seq(uint8_t motor_seq, int16_t pwm) override {};
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
