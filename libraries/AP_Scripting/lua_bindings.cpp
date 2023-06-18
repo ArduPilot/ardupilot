@@ -180,6 +180,39 @@ int lua_mavlink_send_chan(lua_State *L) {
     return 1;
 }
 
+int lua_mavlink_block_command(lua_State *L) {
+
+    // Allow : and . access
+    const int arg_offset = (luaL_testudata(L, 1, "mavlnk") != NULL) ? 1 : 0;
+
+    binding_argcheck(L, 1+arg_offset);
+
+    const uint16_t id = get_uint16_t(L, 1+arg_offset);
+
+    // Check if ID is already registered
+    if (AP::scripting()->is_handling_command(id)) {
+        lua_pushboolean(L, true);
+        return 1;
+    }
+
+    // Add new list item
+    AP_Scripting::command_block_list *new_item = new AP_Scripting::command_block_list;
+    if (new_item == nullptr) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
+    new_item->id = id;
+
+    {
+        WITH_SEMAPHORE(AP::scripting()->mavlink_command_block_list_sem);
+        new_item->next = AP::scripting()->mavlink_command_block_list;
+        AP::scripting()->mavlink_command_block_list = new_item;
+    }
+
+    lua_pushboolean(L, true);
+    return 1;
+}
+
 int lua_mission_receive(lua_State *L) {
     binding_argcheck(L, 0);
 
