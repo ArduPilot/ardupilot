@@ -730,3 +730,4 @@ singleton mavlink manual init lua_mavlink_init 2
 singleton mavlink manual register_rx_msgid lua_mavlink_register_rx_msgid 1
 singleton mavlink manual send_chan lua_mavlink_send_chan 3
 singleton mavlink manual receive_chan lua_mavlink_receive_chan 0
+singleton mavlink manual block_command lua_mavlink_block_command 1

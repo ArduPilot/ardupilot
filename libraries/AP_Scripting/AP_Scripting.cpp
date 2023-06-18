@@ -259,6 +259,16 @@ void AP_Scripting::thread(void) {
         }
         num_pwm_source = 0;
 
+        // Clear blocked commands
+        {
+            WITH_SEMAPHORE(mavlink_command_block_list_sem);
+            while (mavlink_command_block_list != nullptr) {
+                command_block_list *next_item = mavlink_command_block_list->next;
+                delete mavlink_command_block_list;
+                mavlink_command_block_list = next_item;
+            }
+        }
+
         bool cleared = false;
         while(true) {
             // 1hz check if we should restart
@@ -359,6 +369,22 @@ void AP_Scripting::handle_message(const mavlink_message_t &msg, const mavlink_ch
             return;
         }
     }
+}
+
+bool AP_Scripting::is_handling_command(uint16_t cmd_id)
+{
+    WITH_SEMAPHORE(mavlink_command_block_list_sem);
+
+    // Look in linked list to see if id is registered
+    if (mavlink_command_block_list != nullptr) {
+        for (command_block_list *item = mavlink_command_block_list; item; item = item->next) {
+            if (item->id == cmd_id) {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 AP_Scripting *AP_Scripting::_singleton = nullptr;

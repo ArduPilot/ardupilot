@@ -45,6 +45,9 @@ public:
 
     void handle_message(const mavlink_message_t &msg, const mavlink_channel_t chan);
 
+    // Check if command ID is blocked
+    bool is_handling_command(uint16_t cmd_id);
+
     static AP_Scripting * get_singleton(void) { return _singleton; }
 
     static const struct AP_Param::GroupInfo var_info[];
@@ -111,6 +114,13 @@ public:
         uint16_t accept_msg_ids_size;
         HAL_Semaphore sem;
     } mavlink_data;
+
+    struct command_block_list {
+        uint16_t id;
+        command_block_list *next;
+    };
+    command_block_list *mavlink_command_block_list;
+    HAL_Semaphore mavlink_command_block_list_sem;
 
 private:
 
