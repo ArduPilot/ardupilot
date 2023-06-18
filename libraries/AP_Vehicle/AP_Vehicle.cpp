@@ -137,6 +137,71 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(kdecan, "KDE_",  19, AP_Vehicle, AP_KDECAN),
 #endif
 
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
+    // @Param: FLTMODE_GCSBLOCK
+    // @DisplayName: Flight mode block from GCS
+    // @Description: Bitmask of flight modes to disable for GCS selection. Mode can still be accessed via RC or failsafe.
+    // @Bitmask{Copter}: 0:Stabilize
+    // @Bitmask{Copter}: 1:Acro
+    // @Bitmask{Copter}: 2:AltHold
+    // @Bitmask{Copter}: 3:Auto
+    // @Bitmask{Copter}: 4:Guided
+    // @Bitmask{Copter}: 5:Loiter
+    // @Bitmask{Copter}: 6:Circle
+    // @Bitmask{Copter}: 7:Drift
+    // @Bitmask{Copter}: 8:Sport
+    // @Bitmask{Copter}: 9:Flip
+    // @Bitmask{Copter}: 10:AutoTune
+    // @Bitmask{Copter}: 11:PosHold
+    // @Bitmask{Copter}: 12:Brake
+    // @Bitmask{Copter}: 13:Throw
+    // @Bitmask{Copter}: 14:Avoid_ADSB
+    // @Bitmask{Copter}: 15:Guided_NoGPS
+    // @Bitmask{Copter}: 16:Smart_RTL
+    // @Bitmask{Copter}: 17:FlowHold
+    // @Bitmask{Copter}: 18:Follow
+    // @Bitmask{Copter}: 19:ZigZag
+    // @Bitmask{Copter}: 20:SystemID
+    // @Bitmask{Copter}: 21:Heli_Autorotate
+    // @Bitmask{Copter}: 22:Auto RTL
+    // @Bitmask{Copter}: 23:Turtle
+    // @Bitmask{Plane}: 0:Manual
+    // @Bitmask{Plane}: 1:Circle
+    // @Bitmask{Plane}: 2:Stabilize
+    // @Bitmask{Plane}: 3:Training
+    // @Bitmask{Plane}: 4:ACRO
+    // @Bitmask{Plane}: 5:FBWA
+    // @Bitmask{Plane}: 6:FBWB
+    // @Bitmask{Plane}: 7:CRUISE
+    // @Bitmask{Plane}: 8:AUTOTUNE
+    // @Bitmask{Plane}: 9:Auto
+    // @Bitmask{Plane}: 10:Loiter
+    // @Bitmask{Plane}: 11:Takeoff
+    // @Bitmask{Plane}: 12:AVOID_ADSB
+    // @Bitmask{Plane}: 13:Guided
+    // @Bitmask{Plane}: 14:THERMAL
+    // @Bitmask{Plane}: 15:QSTABILIZE
+    // @Bitmask{Plane}: 16:QHOVER
+    // @Bitmask{Plane}: 17:QLOITER
+    // @Bitmask{Plane}: 18:QACRO
+    // @Bitmask{Plane}: 19:QAUTOTUNE
+    // @Bitmask{Rover}: 0:Manual
+    // @Bitmask{Rover}: 1:Acro
+    // @Bitmask{Rover}: 2:Steering
+    // @Bitmask{Rover}: 3:Loiter
+    // @Bitmask{Rover}: 4:Follow
+    // @Bitmask{Rover}: 5:Simple
+    // @Bitmask{Rover}: 6:Circle
+    // @Bitmask{Rover}: 7:Auto
+    // @Bitmask{Rover}: 8:RTL
+    // @Bitmask{Rover}: 9:SmartRTL
+    // @Bitmask{Rover}: 10:Guided
+    // @Bitmask{Rover}: 11:Dock
+    // @User: Standard
+    AP_GROUPINFO("FLTMODE_GCSBLOCK", 20, AP_Vehicle, flight_mode_GCS_block, 0),
+#endif // APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
+
+
     AP_GROUPEND
 };
 
@@ -851,6 +916,26 @@ bool AP_Vehicle::init_dds_client()
     return dds_client->start();
 }
 #endif // AP_DDS_ENABLED
+
+// Check if this mode can be entered from the GCS
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
+bool AP_Vehicle::block_GCS_mode_change(uint8_t mode_num, const uint8_t *mode_list, uint8_t mode_list_length) const
+{
+    if (mode_list == nullptr) {
+        return false;
+    }
+
+    for (uint8_t i = 0; i < mode_list_length; i++) {
+        // Find index of mode
+        if (mode_list[i] == mode_num) {
+            const uint32_t mask = 1U << i;
+            return (uint32_t(flight_mode_GCS_block) & mask) != 0;
+        }
+    }
+
+    return false;
+}
+#endif
 
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;
 
