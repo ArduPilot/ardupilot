@@ -57,6 +57,7 @@
 #include <RC_Channel/RC_Channel.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_KDECAN/AP_KDECAN.h>
+#include <AP_LandingGear/AP_LandingGear.h>
 
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"
@@ -4540,6 +4541,31 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_sprayer(const mavlink_command_long_t &
 }
 #endif
 
+#if AP_LANDINGGEAR_ENABLED
+/*
+  handle MAV_CMD_AIRFRAME_CONFIGURATION for landing gear control
+ */
+MAV_RESULT GCS_MAVLINK::handle_command_airframe_configuration(const mavlink_command_long_t &packet)
+{
+    // Param 1: Select which gear, not used in ArduPilot
+    // Param 2: 0 = Deploy, 1 = Retract
+    // For safety, anything other than 1 will deploy
+    AP_LandingGear *lg = AP_LandingGear::get_singleton();
+    if (lg == nullptr) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+    switch ((uint8_t)packet.param2) {
+    case 1:
+        lg->set_position(AP_LandingGear::LandingGear_Retract);
+        return MAV_RESULT_ACCEPTED;
+    default:
+        lg->set_position(AP_LandingGear::LandingGear_Deploy);
+        return MAV_RESULT_ACCEPTED;
+    }
+    return MAV_RESULT_FAILED;
+}
+#endif
+
 #if HAL_INS_ACCELCAL_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_accelcal_vehicle_pos(const mavlink_command_long_t &packet)
 {
@@ -4798,6 +4824,12 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
     case MAV_CMD_FIXED_MAG_CAL_YAW:
         result = handle_fixed_mag_cal_yaw(packet);
         break;
+
+#if AP_LANDINGGEAR_ENABLED
+        case MAV_CMD_AIRFRAME_CONFIGURATION:
+            result = handle_command_airframe_configuration(packet);
+            break;
+#endif
 
     default:
         result = MAV_RESULT_UNSUPPORTED;
