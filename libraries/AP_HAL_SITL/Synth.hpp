@@ -29,7 +29,13 @@ struct sTone
     double dEndFrequency = 440.0;
     double dAmplitude = 1.0;
 };
-    
+
+double w(const double dHertz);
+double osc(double dHertz, double dTime, eWaveType waveType);
+double amplitude(double dTime, sEnvelope env);
+bool generate(sf::SoundBuffer* buffer, sEnvelope env, std::vector<sTone> tones, unsigned uMasterVol, unsigned uSampleRate);
+bool generate(sf::SoundBuffer* buffer, sEnvelope env, sTone tone, unsigned uMasterVol, unsigned uSampleRate);
+
 ////////////////////////////////////////////////////////////
 // Converts frequency (Hz) to angular velocity
 ////////////////////////////////////////////////////////////
