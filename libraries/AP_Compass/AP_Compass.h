@@ -607,7 +607,9 @@ private:
     // bitmask of options
     enum class Option : uint16_t {
         CAL_REQUIRE_GPS = (1U<<0),
+        ALLOW_DRONECAN_AUTO_REPLACEMENT = (1U<<1),
     };
+    bool option_set(Option opt) const { return (_options.get() & uint16_t(opt)) != 0; }
     AP_Int16 _options;
 
 #if COMPASS_CAL_ENABLED
