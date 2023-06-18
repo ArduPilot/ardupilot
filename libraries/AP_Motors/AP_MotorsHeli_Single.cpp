@@ -248,46 +248,6 @@ bool AP_MotorsHeli_Single::init_outputs()
     return true;
 }
 
-// output_test_seq - spin a motor at the pwm value specified
-//  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
-//  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-void AP_MotorsHeli_Single::_output_test_seq(uint8_t motor_seq, int16_t pwm)
-{
-    // output to motors and servos
-    switch (motor_seq) {
-        case 1:
-            // swash servo 1
-            rc_write(AP_MOTORS_MOT_1, pwm);
-            break;
-        case 2:
-            // swash servo 2
-            rc_write(AP_MOTORS_MOT_2, pwm);
-            break;
-        case 3:
-            // swash servo 3
-            rc_write(AP_MOTORS_MOT_3, pwm);
-            break;
-        case 4:
-            // external gyro & tail servo
-            if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
-                if (_acro_tail && _ext_gyro_gain_acro > 0) {
-                    rc_write(AP_MOTORS_HELI_SINGLE_EXTGYRO, _ext_gyro_gain_acro);
-                } else {
-                    rc_write(AP_MOTORS_HELI_SINGLE_EXTGYRO, _ext_gyro_gain_std);
-                }
-            }
-            rc_write(AP_MOTORS_MOT_4, pwm);
-            break;
-        case 5:
-            // main rotor
-            rc_write(AP_MOTORS_HELI_RSC, pwm);
-            break;
-        default:
-            // do nothing
-            break;
-    }
-}
-
 // set_desired_rotor_speed
 void AP_MotorsHeli_Single::set_desired_rotor_speed(float desired_speed)
 {
