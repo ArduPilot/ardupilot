@@ -418,6 +418,9 @@ protected:
     bool init_dds_client() WARN_IF_UNUSED;
 #endif
 
+    // Check if this mode can be entered from the GCS
+    bool block_GCS_mode_change(uint8_t mode_num, const uint8_t *mode_list, uint8_t mode_list_length) const;
+
 private:
 
     // delay() callback that processing MAVLink packets
@@ -457,6 +460,9 @@ private:
     uint32_t _last_internal_errors;  // backup of AP_InternalError::internal_errors bitmask
 
     AP_CustomRotations custom_rotations;
+
+    // Bitmask of modes to disable from gcs
+    AP_Int32 flight_mode_GCS_block;
 };
 
 namespace AP {
