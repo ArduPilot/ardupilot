@@ -1,10 +1,6 @@
 # hw definition file for processing by chibios_pins.py
 # CM4pilot, developed by Robin Luo luojinglinemail@gmail.com
 
-
-# Note: UART4/Serial4, USART6/Serial6 have no DMA on RX (TX always DMA).
-# If sending highspeed serial data (eg. 921600 baud) to the board, use Serial1/Serial3.
-
 #################################################
 ###             MCU CONFIGURATION             ###
 #################################################
