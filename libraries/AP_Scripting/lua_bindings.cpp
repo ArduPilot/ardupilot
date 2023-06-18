@@ -183,7 +183,7 @@ int lua_mavlink_send_chan(lua_State *L) {
 int lua_mavlink_block_command(lua_State *L) {
 
     // Allow : and . access
-    const int arg_offset = (luaL_testudata(L, 1, "mavlnk") != NULL) ? 1 : 0;
+    const int arg_offset = (luaL_testudata(L, 1, "mavlink") != NULL) ? 1 : 0;
 
     binding_argcheck(L, 1+arg_offset);
 
