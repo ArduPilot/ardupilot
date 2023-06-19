@@ -3335,10 +3335,10 @@ void AP_AHRS::request_yaw_reset(void)
 }
 
 // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
-void AP_AHRS::set_posvelyaw_source_set(uint8_t source_set_idx)
+void AP_AHRS::set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection source_set_idx)
 {
 #if HAL_NAVEKF3_AVAILABLE
-    EKF3.setPosVelYawSourceSet(source_set_idx);
+    EKF3.setPosVelYawSourceSet((uint8_t)source_set_idx);
 #endif
 }
 

@@ -417,7 +417,7 @@ public:
     void request_yaw_reset(void);
 
     // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
-    void set_posvelyaw_source_set(uint8_t source_set_idx);
+    void set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection source_set_idx);
 
     //returns index of active source set used, 0=primary, 1=secondary, 2=tertiary
     uint8_t get_posvelyaw_source_set() const;
