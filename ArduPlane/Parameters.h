@@ -43,7 +43,7 @@ public:
         //
         k_param_format_version = 0,
         k_param_software_type, // unused;
-        k_param_num_resets,
+        k_param_num_resets, // unused
         k_param_NavEKF2,
         k_param_g2,
         k_param_avoidance_adsb,
@@ -434,7 +434,6 @@ public:
     AP_Float mixing_gain;
     AP_Int16 mixing_offset;
     AP_Int16 dspoiler_rud_rate;
-    AP_Int16 num_resets;
     AP_Int32 log_bitmask;
     AP_Int32 RTL_altitude_cm;
     AP_Int16 pitch_trim_cd;
