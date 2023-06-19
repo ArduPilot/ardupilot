@@ -103,7 +103,7 @@ public:
 #endif
 
      // for Logger_MAVlink
-    virtual void remote_log_block_status_msg(const GCS_MAVLINK &link,
+    virtual void remote_log_block_status_msg(GCS_MAVLINK &link,
                                              const mavlink_message_t &msg) { }
     // end for Logger_MAVlink
 

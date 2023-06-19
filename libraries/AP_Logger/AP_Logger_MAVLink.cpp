@@ -220,7 +220,7 @@ void AP_Logger_MAVLink::stop_logging()
     }
 }
 
-void AP_Logger_MAVLink::handle_ack(const GCS_MAVLINK &link,
+void AP_Logger_MAVLink::handle_ack(GCS_MAVLINK &link,
                                    const mavlink_message_t &msg,
                                    uint32_t seqno)
 {
@@ -266,7 +266,7 @@ void AP_Logger_MAVLink::handle_ack(const GCS_MAVLINK &link,
     }
 }
 
-void AP_Logger_MAVLink::remote_log_block_status_msg(const GCS_MAVLINK &link,
+void AP_Logger_MAVLink::remote_log_block_status_msg(GCS_MAVLINK &link,
                                                     const mavlink_message_t& msg)
 {
     mavlink_remote_log_block_status_t packet;
@@ -581,7 +581,7 @@ bool AP_Logger_MAVLink::send_log_block(struct dm_block &block)
 // DM_packing: 267039 events, 0 overruns, 8440834us elapsed, 31us avg, min 31us max 32us 0.488us rms
 
     mavlink_message_t msg;
-    mavlink_status_t *chan_status = mavlink_get_channel_status(_link->get_chan());
+    mavlink_status_t *chan_status = _link->channel_status();
     uint8_t saved_seq = chan_status->current_tx_seq;
     chan_status->current_tx_seq = mavlink_seq++;
     // Debug("Sending block (%d)", block.seqno);

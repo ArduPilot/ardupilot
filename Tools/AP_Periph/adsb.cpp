@@ -53,14 +53,7 @@ void AP_Periph_FW::adsb_init(void)
 }
 
 static mavlink_message_t chan_buffer;
-mavlink_message_t* mavlink_get_channel_buffer(uint8_t chan) {
-    return &chan_buffer;
-}
-
 static mavlink_status_t chan_status;
-mavlink_status_t* mavlink_get_channel_status(uint8_t chan) {
-    return &chan_status;
-}
 
 /*
   update ADSB subsystem
@@ -82,7 +75,7 @@ void AP_Periph_FW::adsb_update(void)
         const uint8_t c = (uint8_t)uart->read();
 
         // Try to get a new message
-        if (mavlink_parse_char(MAVLINK_COMM_0, c, &adsb.msg, &adsb.status)) {
+        if (mavlink_parse_char_buffer(&chan_buffer, &chan_status, c, &adsb.msg, &adsb.status)) {
             if (adsb.msg.msgid == MAVLINK_MSG_ID_ADSB_VEHICLE) {
                 // decode and send as UAVCAN TrafficReport
                 static mavlink_adsb_vehicle_t msg;

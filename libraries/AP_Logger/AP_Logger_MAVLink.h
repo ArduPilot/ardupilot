@@ -58,7 +58,7 @@ public:
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) override { return 0; }
     uint16_t get_num_logs(void) override { return 0; }
 
-    void remote_log_block_status_msg(const GCS_MAVLINK &link, const mavlink_message_t& msg) override;
+    void remote_log_block_status_msg(GCS_MAVLINK &link, const mavlink_message_t& msg) override;
     void vehicle_was_disarmed() override {}
 
 protected:
@@ -75,7 +75,7 @@ private:
         struct dm_block *next;
     };
     bool send_log_block(struct dm_block &block);
-    void handle_ack(const GCS_MAVLINK &link, const mavlink_message_t &msg, uint32_t seqno);
+    void handle_ack(GCS_MAVLINK &link, const mavlink_message_t &msg, uint32_t seqno);
     void handle_retry(uint32_t block_num);
     void do_resends(uint32_t now);
     void free_all_blocks();
@@ -122,7 +122,7 @@ private:
     bool logging_enabled() const override { return true; }
     bool logging_failed() const override;
 
-    const GCS_MAVLINK *_link;
+    GCS_MAVLINK *_link;
 
     uint8_t _target_system_id;
     uint8_t _target_component_id;
