@@ -1112,7 +1112,7 @@ void NavEKF3::setPosVelYawSourceSet(uint8_t source_set_idx)
     if (source_set_idx < AP_NAKEKF_SOURCE_SET_MAX) {
         dal.log_event3(AP_DAL::Event(uint8_t(AP_DAL::Event::setSourceSet0)+source_set_idx));
     }
-    sources.setPosVelYawSourceSet(source_set_idx);
+    sources.setPosVelYawSourceSet((AP_NavEKF_Source::SourceSetSelection)source_set_idx);
 }
 
 // Check basic filter health metrics and return a consolidated health status
