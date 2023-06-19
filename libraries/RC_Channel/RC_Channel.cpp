@@ -1627,23 +1627,23 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
 #endif
 
     case AUX_FUNC::EKF_POS_SOURCE: {
-        uint8_t source_set = 0;
+        AP_NavEKF_Source::SourceSetSelection source_set = AP_NavEKF_Source::SourceSetSelection::PRIMARY;
         switch (ch_flag) {
         case AuxSwitchPos::LOW:
             // low switches to primary source
-            source_set = 0;
+            source_set = AP_NavEKF_Source::SourceSetSelection::PRIMARY;
             break;
         case AuxSwitchPos::MIDDLE:
             // middle switches to secondary source
-            source_set = 1;
+            source_set = AP_NavEKF_Source::SourceSetSelection::SECONDARY;
             break;
         case AuxSwitchPos::HIGH:
             // high switches to tertiary source
-            source_set = 2;
+            source_set = AP_NavEKF_Source::SourceSetSelection::TERTIARY;
             break;
         }
         AP::ahrs().set_posvelyaw_source_set(source_set);
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Using EKF Source Set %u", source_set+1);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Using EKF Source Set %u", uint8_t(source_set)+1);
         break;
     }
 
