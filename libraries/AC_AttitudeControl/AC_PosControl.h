@@ -434,6 +434,9 @@ protected:
     AC_PID_2D       _pid_vel_xy;        // XY axis velocity controller to convert velocity error to desired acceleration
     AC_PID_Basic    _pid_vel_z;         // Z axis velocity controller to convert climb rate error to desired acceleration
     AC_PID          _pid_accel_z;       // Z axis acceleration controller to convert desired acceleration to throttle output
+    AP_Float        _speed_up_max;      // Hard climb rate limit
+    AP_Float        _speed_down_max;    // Hard climb rate limit
+    AP_Float        _accel_z_max;       // Hard vertical acceleration limit
 
     // internal variables
     float       _dt;                    // time difference (in seconds) since the last loop time
@@ -447,6 +450,8 @@ protected:
     float       _jerk_max_xy_cmsss;       // Jerk limit of the xy kinematic path generation in cm/s^3 used to determine how quickly the aircraft varies the acceleration target
     float       _jerk_max_z_cmsss;        // Jerk limit of the z kinematic path generation in cm/s^3 used to determine how quickly the aircraft varies the acceleration target
     float       _vel_z_control_ratio = 2.0f;    // confidence that we have control in the vertical axis
+    bool        _accel_max_limit;       // true if accel is limited by positive _accel_z_max
+    bool        _accel_min_limit;       // true if accel is limited by negative _accel_z_max
 
     // output from controller
     float       _roll_target;           // desired roll angle in centi-degrees calculated by position controller

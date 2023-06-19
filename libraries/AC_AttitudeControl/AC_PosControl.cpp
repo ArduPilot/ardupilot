@@ -293,6 +293,33 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_JERK_Z", 11, AC_PosControl, _shaping_jerk_z, POSCONTROL_JERK_Z),
 
+    // @Param: _SPEED_UP_MAX
+    // @DisplayName: Maximin climb rate
+    // @Description: Hard climb rate limit, must be larger than waypoint and pilot targets, 0 disables
+    // @Units: m/s
+    // @Range: 0 5
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("_SPEED_UP_MAX", 12, AC_PosControl, _speed_up_max, 0),
+
+    // @Param: _SPEED_DN_MAX
+    // @DisplayName: Maximin descent rate
+    // @Description: Hard descent rate limit, must be larger than waypoint and pilot targets, 0 disables
+    // @Units: m/s
+    // @Range: 0 10
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("_SPEED_DN_MAX", 13, AC_PosControl, _speed_down_max, 0),
+
+    // @Param: _ACCEL_Z_MAX
+    // @DisplayName: Maximin vertical acceleration
+    // @Description: Hard vertical acceleration limit, must be larger than waypoint and pilot targets, 0 disables
+    // @Units: m/s/s
+    // @Range: 0.5 5
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("_ACCEL_Z_MAX", 14, AC_PosControl, _accel_z_max, 0),
+
     AP_GROUPEND
 };
 
@@ -778,6 +805,10 @@ void AC_PosControl::init_z_controller()
     // initialise ekf z reset handler
     init_ekf_z_reset();
 
+    // Clear anti-wind up flags
+    _accel_max_limit = false;
+    _accel_min_limit = false;
+
     // initialise z_controller time out
     _last_update_z_ticks = AP::scheduler().ticks32();
 }
@@ -940,14 +971,38 @@ void AC_PosControl::update_z_controller()
 
     // Velocity Controller
 
+    // Constrain to configured hard limits
+    // No I term in Z pos controller, so we don't need to do anti windup
+    if (is_positive(_speed_up_max)) {
+        _vel_target.z = MIN(_vel_target.z, _speed_up_max * 100.0);
+    }
+    if (is_positive(_speed_down_max)) {
+        _vel_target.z = MAX(_vel_target.z, _speed_down_max * -100.0);
+    }
+
     const float curr_vel_z = _inav.get_velocity_z_up_cms();
-    _accel_target.z = _pid_vel_z.update_all(_vel_target.z, curr_vel_z, _dt, _motors.limit.throttle_lower, _motors.limit.throttle_upper);
+    _accel_target.z = _pid_vel_z.update_all(_vel_target.z, curr_vel_z, _dt, _motors.limit.throttle_lower || _accel_min_limit, _motors.limit.throttle_upper || _accel_max_limit);
     _accel_target.z *= AP::ahrs().getControlScaleZ();
 
     // add feed forward component
     _accel_target.z += _accel_desired.z;
 
     // Acceleration Controller
+
+    // Constrain to hard Z acceleration limit and set flags for anti windup
+    _accel_max_limit = false;
+    _accel_min_limit = false;
+    if (is_positive(_accel_z_max)) {
+        const float accel_z_max_cmss = _accel_z_max * 100.0;
+        if (_accel_target.z > accel_z_max_cmss) {
+            _accel_target.z = accel_z_max_cmss;
+            _accel_max_limit = true;
+        }
+        if (_accel_target.z < -accel_z_max_cmss) {
+            _accel_target.z = -accel_z_max_cmss;
+            _accel_min_limit = true;
+        }
+    }
 
     // Calculate vertical acceleration
     const float z_accel_meas = get_z_accel_cmss();
