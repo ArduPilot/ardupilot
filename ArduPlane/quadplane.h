@@ -47,6 +47,7 @@ public:
     friend class Tailsitter_Transition;
 
     friend class Mode;
+    friend class ModeManual;
     friend class ModeAuto;
     friend class ModeRTL;
     friend class ModeAvoidADSB;
