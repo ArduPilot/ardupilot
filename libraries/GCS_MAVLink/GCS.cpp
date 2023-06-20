@@ -149,9 +149,12 @@ void GCS::update_sensor_status_flags()
     control_sensors_enabled = 0;
     control_sensors_health = 0;
 
-#if AP_AHRS_ENABLED
-    AP_AHRS &ahrs = AP::ahrs();
+#if AP_INERTIALSENSOR_ENABLED
     const AP_InertialSensor &ins = AP::ins();
+#endif
+
+#if AP_AHRS_ENABLED && AP_INERTIALSENSOR_ENABLED
+    AP_AHRS &ahrs = AP::ahrs();
 
     control_sensors_present |= MAV_SYS_STATUS_AHRS;
     if (ahrs.initialised()) {
@@ -206,7 +209,7 @@ void GCS::update_sensor_status_flags()
     }
 #endif
 
-#if AP_AHRS_ENABLED
+#if AP_INERTIALSENSOR_ENABLED
     control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_GYRO;
     control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_ACCEL;
     if (!ins.calibrating()) {
