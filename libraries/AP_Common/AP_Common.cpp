@@ -22,6 +22,9 @@
 
 extern const AP_HAL::HAL& hal;
 
+/* assert that const vals are float, not double. so 100.0 means 100.0f */
+static_assert(sizeof(1e6) == sizeof(float), "Compilation needs to use single-precision constants");
+
 /*
   Return true if value is between lower and upper bound inclusive.
   False otherwise.
