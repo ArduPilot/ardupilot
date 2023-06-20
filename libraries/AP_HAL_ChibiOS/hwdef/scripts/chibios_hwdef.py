@@ -3274,6 +3274,7 @@ INCLUDE common.ld
 
 #define AP_BATTERY_ENABLED defined(HAL_PERIPH_ENABLE_BATTERY)
 #define AP_AHRS_ENABLED defined(HAL_PERIPH_ENABLE_AHRS)
+#define AP_COMPASS_ENABLED defined(HAL_PERIPH_ENABLE_MAG)
 
 // end AP_Periph defaults
 ''')
