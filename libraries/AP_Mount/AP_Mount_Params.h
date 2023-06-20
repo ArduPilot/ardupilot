@@ -14,7 +14,7 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(AP_Mount_Params);
 
-    AP_Int8     type;               // mount type (see MountType enum)
+    AP_Int8     type;               // mount type (see Mount::Type enum)
     AP_Int8     default_mode;       // default mode on startup and when control is returned from autopilot
     AP_Int16    rc_rate_max;        // Pilot rate control's maximum rate.  Set to zero to use angle control
     AP_Int16    roll_angle_min;     // roll angle min in degrees
