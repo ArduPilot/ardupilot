@@ -20,6 +20,7 @@
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Arming/AP_Arming.h>
 
 #include "lua_scripts.h"
 
@@ -177,8 +178,13 @@ MAV_RESULT AP_Scripting::handle_command_int_packet(const mavlink_command_int_t &
             _stop = true;
             return MAV_RESULT_ACCEPTED;
         case SCRIPTING_CMD_STOP_AND_RESTART:
-            _restart = true;
+            _restart = false;
             _stop = true;
+            if (AP::arming().is_armed()) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting: %s", "disarm for restart");
+                return MAV_RESULT_FAILED;
+            }
+            _restart = true;
             return MAV_RESULT_ACCEPTED;
         case SCRIPTING_CMD_ENUM_END: // cope with MAVLink generator appending to our enum
             break;
@@ -269,7 +275,7 @@ void AP_Scripting::thread(void) {
                 continue;
             }
             // must be enabled to get this far
-            if (cleared || _restart) {
+            if ((cleared || _restart) && !AP::arming().is_armed()) {
                 gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting: %s", "restarted");
                 break;
             }
