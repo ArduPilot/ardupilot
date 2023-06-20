@@ -149,7 +149,7 @@ void GCS::update_sensor_status_flags()
     control_sensors_enabled = 0;
     control_sensors_health = 0;
 
-#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_AHRS)
+#if AP_AHRS_ENABLED
     AP_AHRS &ahrs = AP::ahrs();
     const AP_InertialSensor &ins = AP::ins();
 
@@ -206,7 +206,7 @@ void GCS::update_sensor_status_flags()
     }
 #endif
 
-#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_AHRS)
+#if AP_AHRS_ENABLED
     control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_GYRO;
     control_sensors_present |= MAV_SYS_STATUS_SENSOR_3D_ACCEL;
     if (!ins.calibrating()) {
