@@ -42,17 +42,15 @@ void Plane::init_ardupilot()
 #endif
     rc().init();
 
+#if AP_RELAY_ENABLED
     relay.init();
+#endif
 
     // initialise notify system
     notify.init();
     notify_mode(*control_mode);
 
     init_rc_out_main();
-    
-    // keep a record of how many resets have happened. This can be
-    // used to detect in-flight resets
-    g.num_resets.set_and_save(g.num_resets+1);
 
     // init baro
     barometer.init();

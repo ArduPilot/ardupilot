@@ -1065,6 +1065,7 @@ void RC_Channel::do_aux_function_clear_wp(const AuxSwitchPos ch_flag)
     }
 }
 
+#if AP_SERVORELAYEVENTS_ENABLED && AP_RELAY_ENABLED
 void RC_Channel::do_aux_function_relay(const uint8_t relay, bool val)
 {
     AP_ServoRelayEvents *servorelayevents = AP::servorelayevents();
@@ -1073,6 +1074,7 @@ void RC_Channel::do_aux_function_relay(const uint8_t relay, bool val)
     }
     servorelayevents->do_set_relay(relay, val);
 }
+#endif
 
 #if HAL_GENERATOR_ENABLED
 void RC_Channel::do_aux_function_generator(const AuxSwitchPos ch_flag)
@@ -1252,6 +1254,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         do_aux_function_avoid_proximity(ch_flag);
         break;
 
+#if AP_SERVORELAYEVENTS_ENABLED && AP_RELAY_ENABLED
     case AUX_FUNC::RELAY:
         do_aux_function_relay(0, ch_flag == AuxSwitchPos::HIGH);
         break;
@@ -1270,6 +1273,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
     case AUX_FUNC::RELAY6:
         do_aux_function_relay(5, ch_flag == AuxSwitchPos::HIGH);
         break;
+#endif  // AP_SERVORELAYEVENTS_ENABLED && AP_RELAY_ENABLED
 
     case AUX_FUNC::RUNCAM_CONTROL:
         do_aux_function_runcam_control(ch_flag);

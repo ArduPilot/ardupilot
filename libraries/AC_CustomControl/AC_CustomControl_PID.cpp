@@ -239,10 +239,11 @@ AC_CustomControl_PID::AC_CustomControl_PID(AC_CustomControl& frontend, AP_AHRS_V
     _p_angle_roll2(AC_ATTITUDE_CONTROL_ANGLE_P * 0.90f),
     _p_angle_pitch2(AC_ATTITUDE_CONTROL_ANGLE_P * 0.90f),
     _p_angle_yaw2(AC_ATTITUDE_CONTROL_ANGLE_P * 0.90f),
-    _pid_atti_rate_roll(AC_ATC_MULTI_RATE_RP_P * 0.90f, AC_ATC_MULTI_RATE_RP_I * 0.90f, AC_ATC_MULTI_RATE_RP_D * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX * 0.90f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f, dt),
-    _pid_atti_rate_pitch(AC_ATC_MULTI_RATE_RP_P * 0.90f, AC_ATC_MULTI_RATE_RP_I * 0.90f, AC_ATC_MULTI_RATE_RP_D * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX * 0.90f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f, dt),
-    _pid_atti_rate_yaw(AC_ATC_MULTI_RATE_YAW_P * 0.90f, AC_ATC_MULTI_RATE_YAW_I * 0.90f, AC_ATC_MULTI_RATE_YAW_D * 0.90f, 0.0f, AC_ATC_MULTI_RATE_YAW_IMAX * 0.90f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f, AC_ATC_MULTI_RATE_YAW_FILT_HZ * 0.90f, 0.0f, dt)
+    _pid_atti_rate_roll(AC_ATC_MULTI_RATE_RP_P * 0.90f, AC_ATC_MULTI_RATE_RP_I * 0.90f, AC_ATC_MULTI_RATE_RP_D * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX * 0.90f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f),
+    _pid_atti_rate_pitch(AC_ATC_MULTI_RATE_RP_P * 0.90f, AC_ATC_MULTI_RATE_RP_I * 0.90f, AC_ATC_MULTI_RATE_RP_D * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX * 0.90f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f),
+    _pid_atti_rate_yaw(AC_ATC_MULTI_RATE_YAW_P * 0.90f, AC_ATC_MULTI_RATE_YAW_I * 0.90f, AC_ATC_MULTI_RATE_YAW_D * 0.90f, 0.0f, AC_ATC_MULTI_RATE_YAW_IMAX * 0.90f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f, AC_ATC_MULTI_RATE_YAW_FILT_HZ * 0.90f, 0.0f)
 {
+    _dt = dt;
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -289,9 +290,9 @@ Vector3f AC_CustomControl_PID::update()
     // run rate controller
     Vector3f gyro_latest = _ahrs->get_gyro_latest();
     Vector3f motor_out;
-    motor_out.x = _pid_atti_rate_roll.update_all(target_rate[0], gyro_latest[0], 1);
-    motor_out.y = _pid_atti_rate_pitch.update_all(target_rate[1], gyro_latest[1], 1);
-    motor_out.z = _pid_atti_rate_yaw.update_all(target_rate[2], gyro_latest[2], 1);
+    motor_out.x = _pid_atti_rate_roll.update_all(target_rate[0], gyro_latest[0], _dt, false);
+    motor_out.y = _pid_atti_rate_pitch.update_all(target_rate[1], gyro_latest[1], _dt, false);
+    motor_out.z = _pid_atti_rate_yaw.update_all(target_rate[2], gyro_latest[2], _dt, false);
 
     return motor_out;
 }

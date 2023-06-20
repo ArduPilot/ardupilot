@@ -307,9 +307,13 @@ protected:
 #endif
     AP_SerialManager serial_manager;
 
+#if AP_RELAY_ENABLED
     AP_Relay relay;
+#endif
 
+#if AP_SERVORELAYEVENTS_ENABLED
     AP_ServoRelayEvents ServoRelayEvents;
+#endif
 
     // notification object for LEDs, buzzers etc (parameter set to
     // false disables external leds)
