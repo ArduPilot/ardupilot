@@ -190,7 +190,7 @@ void CANIface::handleBusOffInterrupt()
     _detected_bus_off = true;
 }
 
-bool CANIface::computeTimings(const uint32_t target_bitrate, Timings& out_timings)
+bool CANIface::computeTimings(const uint32_t target_bitrate, Timings& out_timings) const
 {
     if (target_bitrate < 1) {
         return false;
@@ -316,11 +316,44 @@ bool CANIface::computeTimings(const uint32_t target_bitrate, Timings& out_timing
     }
 
     out_timings.sample_point_permill = solution.sample_point_permill;
-    out_timings.prescaler = uint16_t(prescaler - 1U);
-    out_timings.sjw = 0;                                        // Which means one
-    out_timings.bs1 = uint8_t(solution.bs1 - 1);
-    out_timings.bs2 = uint8_t(solution.bs2 - 1);
+    out_timings.prescaler = uint16_t(prescaler);
+    out_timings.sjw = 1;
+    out_timings.bs1 = uint8_t(solution.bs1);
+    out_timings.bs2 = uint8_t(solution.bs2);
     return true;
+}
+
+/*
+  table driven timings for CANFD
+ */
+bool CANIface::computeFDTimings(const uint32_t target_bitrate, Timings& out_timings) const
+{
+    static const struct {
+        uint8_t bitrate_mbaud;
+        uint8_t prescaler;
+        uint8_t bs1;
+        uint8_t bs2;
+        uint8_t sjw;
+        uint8_t sample_point_pct;
+    } CANFD_timings[] {
+        { 1, 5, 15, 6, 6, 75},
+        { 2, 3, 15, 6, 6, 75},
+        { 4, 2, 15, 6, 6, 75},
+        { 5, 2, 12, 5, 5, 75},
+        { 8, 2,  8, 3, 3, 80},
+    };
+    for (const auto &t : CANFD_timings) {
+        if (t.bitrate_mbaud*1000U*1000U == target_bitrate) {
+            // out_timings has the register bits, which are the actual value minus 1
+            out_timings.prescaler = t.prescaler;
+            out_timings.bs1 = t.bs1;
+            out_timings.bs2 = t.bs2;
+            out_timings.sjw = t.sjw;
+            out_timings.sample_point_permill = t.sample_point_pct*10;
+            return true;
+        }
+    }
+    return false;
 }
 
 int16_t CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadline,
@@ -666,13 +699,13 @@ bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate, const Oper
           unsigned(timings.prescaler), unsigned(timings.sjw), unsigned(timings.bs1), unsigned(timings.bs2));
 
     //setup timing register
-    can_->NBTP = ((timings.sjw << FDCAN_NBTP_NSJW_Pos)   |
-                  (timings.bs1 << FDCAN_NBTP_NTSEG1_Pos) |
-                  (timings.bs2 << FDCAN_NBTP_NTSEG2_Pos)  |
-                  (timings.prescaler << FDCAN_NBTP_NBRP_Pos));
+    can_->NBTP = (((timings.sjw-1) << FDCAN_NBTP_NSJW_Pos)   |
+                  ((timings.bs1-1) << FDCAN_NBTP_NTSEG1_Pos) |
+                  ((timings.bs2-1) << FDCAN_NBTP_NTSEG2_Pos)  |
+                  ((timings.prescaler-1) << FDCAN_NBTP_NBRP_Pos));
 
     if (fdbitrate) {
-        if (!computeTimings(fdbitrate, fdtimings)) {
+        if (!computeFDTimings(fdbitrate, fdtimings)) {
             can_->CCCR &= ~FDCAN_CCCR_INIT;
             uint32_t while_start_ms = AP_HAL::millis();
             while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {
@@ -685,9 +718,10 @@ bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate, const Oper
         _fdbitrate = fdbitrate;
         Debug("CANFD Timings: presc=%u bs1=%u bs2=%u\n",
               unsigned(fdtimings.prescaler), unsigned(fdtimings.bs1), unsigned(fdtimings.bs2));
-        can_->DBTP = ((fdtimings.bs1 << FDCAN_DBTP_DTSEG1_Pos) |
-                     (fdtimings.bs2 << FDCAN_DBTP_DTSEG2_Pos)  |
-                     (fdtimings.prescaler << FDCAN_DBTP_DBRP_Pos));
+        can_->DBTP = (((fdtimings.bs1-1) << FDCAN_DBTP_DTSEG1_Pos) |
+                      ((fdtimings.bs2-1) << FDCAN_DBTP_DTSEG2_Pos)  |
+                      ((fdtimings.prescaler-1) << FDCAN_DBTP_DBRP_Pos) |
+                      ((fdtimings.sjw-1) << FDCAN_DBTP_DSJW_Pos));
     }
 
     //RX Config
@@ -1111,7 +1145,7 @@ void CANIface::get_stats(ExpandingString &str)
                unsigned(timings.bs2), timings.sample_point_permill/10.0f,
                _fdbitrate, unsigned(fdtimings.prescaler),
                unsigned(fdtimings.sjw), unsigned(fdtimings.bs1),
-               unsigned(fdtimings.bs2), timings.sample_point_permill/10.0f,
+               unsigned(fdtimings.bs2), fdtimings.sample_point_permill/10.0f,
                stats.tx_requests,
                stats.tx_rejected,
                stats.tx_overflow,
