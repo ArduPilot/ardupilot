@@ -184,7 +184,7 @@ void GCS::update_sensor_status_flags()
     }
 #endif
 
-#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_GPS)
+#if AP_GPS_ENABLED
     const AP_GPS &gps = AP::gps();
     if (gps.status() > AP_GPS::NO_GPS) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
@@ -226,7 +226,7 @@ void GCS::update_sensor_status_flags()
     bool logging_present = logger.logging_present();
     bool logging_enabled = logger.logging_enabled();
     bool logging_healthy = !logger.logging_failed();
-#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_GPS)
+#if AP_GPS_ENABLED
     // some GPS units do logging, so they have to be healthy too:
     logging_present |= gps.logging_present();
     logging_enabled |= gps.logging_enabled();
