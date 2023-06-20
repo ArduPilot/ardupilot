@@ -271,10 +271,12 @@ def double_precision_check(tasks):
 
             src = str(t.inputs[0]).split('/')[-2:]
             if src in double_tasks:
-                single_precision_option='-fsingle-precision-constant'
                 t.env.CXXFLAGS = t.env.CXXFLAGS[:]
-                if single_precision_option in t.env.CXXFLAGS:
-                    t.env.CXXFLAGS.remove(single_precision_option)
+                for opt in ['-fsingle-precision-constant', '-cl-single-precision-constant']:
+                    try:
+                        t.env.CXXFLAGS.remove(opt)
+                    except ValueError:
+                        pass
                 t.env.CXXFLAGS.append("-DALLOW_DOUBLE_MATH_FUNCTIONS")
 
 
