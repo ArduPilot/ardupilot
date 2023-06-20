@@ -243,16 +243,20 @@ class Board:
         if 'clang' in cfg.env.COMPILER_CC:
             env.CFLAGS += [
                 '-fcolor-diagnostics',
-
                 '-Wno-gnu-designator',
                 '-Wno-inconsistent-missing-override',
                 '-Wno-mismatched-tags',
                 '-Wno-gnu-variable-sized-type-not-at-end',
                 '-Werror=implicit-fallthrough',
+                '-cl-single-precision-constant',
+            ]
+            env.CXXFLAGS += [
+                '-cl-single-precision-constant',
             ]
         else:
             env.CFLAGS += [
                 '-Wno-format-contains-nul',
+                '-fsingle-precision-constant', # force const vals to be float , not double. so 100.0 means 100.0f
             ]
             if self.cc_version_gte(cfg, 7, 4):
                 env.CXXFLAGS += [
@@ -260,6 +264,7 @@ class Board:
                 ]
             env.CXXFLAGS += [
                 '-fcheck-new',
+                '-fsingle-precision-constant',
             ]
 
         if cfg.env.DEBUG:
@@ -878,7 +883,6 @@ class esp32(Board):
         env.CFLAGS += [
             '-fno-inline-functions',
             '-mlongcalls',
-            '-fsingle-precision-constant',
         ]
         env.CFLAGS.remove('-Werror=undef')
 
@@ -894,7 +898,6 @@ class esp32(Board):
                          '-Wno-sign-compare',
                          '-fno-inline-functions',
                          '-mlongcalls',
-                         '-fsingle-precision-constant', # force const vals to be float , not double. so 100.0 means 100.0f 
                          '-fno-threadsafe-statics',
                          '-DCYGWIN_BUILD']
         env.CXXFLAGS.remove('-Werror=undef')
@@ -957,7 +960,6 @@ class chibios(Board):
         env.CFLAGS += cfg.env.CPU_FLAGS + [
             '-Wlogical-op',
             '-Wframe-larger-than=1300',
-            '-fsingle-precision-constant',
             '-Wno-attributes',
             '-fno-exceptions',
             '-Wall',
