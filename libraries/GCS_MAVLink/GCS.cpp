@@ -195,7 +195,7 @@ void GCS::update_sensor_status_flags()
     }
 #endif
 
-#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BATTERY)
+#if AP_BATTERY_ENABLED
     const AP_BattMonitor &battery = AP::battery();
     control_sensors_present |= MAV_SYS_STATUS_SENSOR_BATTERY;
     if (battery.num_instances() > 0) {
