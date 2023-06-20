@@ -3272,6 +3272,8 @@ INCLUDE common.ld
 #define AP_SCRIPTING_ENABLED 0
 #endif
 
+#define AP_BATTERY_ENABLED defined(HAL_PERIPH_ENABLE_BATTERY)
+
 // end AP_Periph defaults
 ''')
 
