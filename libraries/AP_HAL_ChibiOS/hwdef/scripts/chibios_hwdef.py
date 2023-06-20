@@ -3276,6 +3276,7 @@ INCLUDE common.ld
 #define AP_AHRS_ENABLED defined(HAL_PERIPH_ENABLE_AHRS)
 #define AP_COMPASS_ENABLED defined(HAL_PERIPH_ENABLE_MAG)
 #define AP_BARO_ENABLED defined(HAL_PERIPH_ENABLE_BARO)
+#define AP_GPS_ENABLED defined(HAL_PERIPH_ENABLE_GPS)
 
 // end AP_Periph defaults
 ''')
