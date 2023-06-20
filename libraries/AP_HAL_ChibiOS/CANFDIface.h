@@ -123,7 +123,8 @@ class ChibiOS::CANIface : public AP_HAL::CANIface
 
     const uint8_t self_index_;
 
-    bool computeTimings(uint32_t target_bitrate, Timings& out_timings);
+    bool computeTimings(uint32_t target_bitrate, Timings& out_timings) const;
+    bool computeFDTimings(uint32_t target_bitrate, Timings& out_timings) const;
 
     void setupMessageRam(void);
 
