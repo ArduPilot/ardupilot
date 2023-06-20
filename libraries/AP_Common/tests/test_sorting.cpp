@@ -10,6 +10,8 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
+typedef int (*compare_fn_t)(const void*, const void*);
+
 static int comp16(const uint16_t *v1, const uint16_t *v2) {
     return int32_t(*v1) - int32_t(*v2);
 }
@@ -32,7 +34,7 @@ TEST(Sorting, sort)
             a1[j] = a2[j] = unsigned(random()) % maxval;
         }
         insertion_sort_uint16(a1, n);
-        qsort(a2, n, sizeof(uint16_t), (__compar_fn_t)comp16);
+        qsort(a2, n, sizeof(uint16_t), (compare_fn_t)comp16);
         check_equal(a1, a2, n);
     }
 }
