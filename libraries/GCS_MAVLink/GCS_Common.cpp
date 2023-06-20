@@ -1384,7 +1384,7 @@ void GCS_MAVLINK_InProgress::check_tasks()
 
 void GCS_MAVLINK::update_send()
 {
-#if !defined(HAL_BUILD_AP_PERIPH) || HAL_LOGGING_ENABLED
+#if HAL_LOGGING_ENABLED
     if (!hal.scheduler->in_delay_callback()) {
         // AP_Logger will not send log data if we are armed.
         AP::logger().handle_log_send();
