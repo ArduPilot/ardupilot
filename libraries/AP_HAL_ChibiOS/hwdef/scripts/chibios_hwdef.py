@@ -3273,6 +3273,7 @@ INCLUDE common.ld
 #endif
 
 #define AP_BATTERY_ENABLED defined(HAL_PERIPH_ENABLE_BATTERY)
+#define AP_AHRS_ENABLED defined(HAL_PERIPH_ENABLE_AHRS)
 
 // end AP_Periph defaults
 ''')
