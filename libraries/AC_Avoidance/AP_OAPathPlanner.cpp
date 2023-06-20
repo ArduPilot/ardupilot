@@ -35,9 +35,9 @@ const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Object Avoidance Path Planning algorithm to use
     // @Description: Enabled/disable path planning around obstacles
-    // @Values: 0:Disabled,1:BendyRuler,2:Dijkstra,3:Dijkstra with BendyRuler
+    // @Values: 0:Report Only,1:BendyRuler,2:Dijkstra,3:Dijkstra with BendyRuler
     // @User: Standard
-    AP_GROUPINFO("TYPE", 1,  AP_OAPathPlanner, _type, OA_PATHPLAN_DISABLED),
+    AP_GROUPINFO("TYPE", 1,  AP_OAPathPlanner, _type, OA_PATHPLAN_REPORT_ONLY),
 
     // Note: Do not use Index "2" for any new parameter
     //       It was being used by _LOOKAHEAD which was later moved to AP_OABendyRuler 
@@ -83,7 +83,7 @@ void AP_OAPathPlanner::init()
 {
     // run background task looking for best alternative destination
     switch (_type) {
-    case OA_PATHPLAN_DISABLED:
+    case OA_PATHPLAN_REPORT_ONLY:
         // do nothing
     case OA_PATHPLAN_BENDYRULER:
         if (_oabendyruler == nullptr) {
@@ -120,7 +120,7 @@ bool AP_OAPathPlanner::pre_arm_check(char *failure_msg, uint8_t failure_msg_len)
 {
     // check if initialisation has succeeded
     switch (_type) {
-    case OA_PATHPLAN_DISABLED:
+    case OA_PATHPLAN_REPORT_ONLY:
         // do nothing
         break;
     case OA_PATHPLAN_BENDYRULER:
@@ -191,7 +191,7 @@ AP_OAPathPlanner::OA_RetState AP_OAPathPlanner::mission_avoidance(const Location
                                          OAPathPlannerUsed &path_planner_used)
 {
     // exit immediately if disabled or thread is not running from a failed init
-    if (_type == OA_PATHPLAN_DISABLED || !_thread_created) {
+    if (_type == OA_PATHPLAN_REPORT_ONLY || !_thread_created) {
         return OA_NOT_REQUIRED;
     }
 
@@ -281,7 +281,7 @@ void AP_OAPathPlanner::avoidance_thread()
         OA_RetState res = OA_NOT_REQUIRED;
         OAPathPlannerUsed path_planner_used = OAPathPlannerUsed::None;
         switch (_type) {
-        case OA_PATHPLAN_DISABLED:
+        case OA_PATHPLAN_REPORT_ONLY:
             continue;
         case OA_PATHPLAN_BENDYRULER: {
             if (_oabendyruler == nullptr) {
