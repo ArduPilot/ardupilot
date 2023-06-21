@@ -559,12 +559,6 @@ void AP_Mount_Siyi::rotate_gimbal(int8_t pitch_scalar, int8_t yaw_scalar, bool y
     send_packet(SiyiCommandId::GIMBAL_ROTATION, yaw_and_pitch_rates, ARRAY_SIZE(yaw_and_pitch_rates));
 }
 
-// center gimbal
-void AP_Mount_Siyi::center_gimbal()
-{
-    send_1byte_packet(SiyiCommandId::CENTER, 1);
-}
-
 // set gimbal's lock vs follow mode
 // lock should be true if gimbal should maintain an earth-frame target
 // lock is false to follow / maintain a body-frame target
