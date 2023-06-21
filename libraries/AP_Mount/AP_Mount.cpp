@@ -742,11 +742,11 @@ bool AP_Mount::set_zoom(uint8_t instance, ZoomType zoom_type, float zoom_value)
 
 // set focus specified as rate, percentage or auto
 // focus in = -1, focus hold = 0, focus out = 1
-bool AP_Mount::set_focus(uint8_t instance, FocusType focus_type, float focus_value)
+SetFocusResult AP_Mount::set_focus(uint8_t instance, FocusType focus_type, float focus_value)
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
-        return false;
+        return SetFocusResult::FAILED;
     }
     return backend->set_focus(focus_type, focus_value);
 }
