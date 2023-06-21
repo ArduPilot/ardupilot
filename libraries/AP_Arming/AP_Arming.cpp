@@ -635,7 +635,7 @@ bool AP_Arming::gps_checks(bool report)
         if (gps.first_unconfigured_gps(first_unconfigured)) {
             check_failed(ARMING_CHECK_GPS_CONFIG,
                          report,
-                         "GPS %d failing configuration checks",
+                         "GPS %d still configuring this GPS",
                          first_unconfigured + 1);
             if (report) {
                 gps.broadcast_first_configuration_failure_reason();
