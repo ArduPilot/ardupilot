@@ -119,7 +119,9 @@ void AP_EFI::init(void)
 #endif
         break;
     case Type::MAV:
+#if AP_EFI_MAV_ENABLED
             backend = new AP_EFI_MAV(*this);
+#endif
             break;
     default:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Unknown EFI type");

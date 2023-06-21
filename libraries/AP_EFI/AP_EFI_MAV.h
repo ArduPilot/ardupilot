@@ -13,6 +13,10 @@
 
 #pragma once
 
+#include "AP_EFI_config.h"
+
+#if AP_EFI_MAV_ENABLED
+
 #include "AP_EFI.h"
 #include "AP_EFI_Backend.h"
 
@@ -24,3 +28,5 @@ public:
 
     void handle_EFI_message(const mavlink_message_t &msg) override;
 };
+
+#endif  // AP_EFI_MAV_ENABLED

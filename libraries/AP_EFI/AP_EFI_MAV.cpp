@@ -11,6 +11,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_EFI_config.h"
+
+#if AP_EFI_MAV_ENABLED
+
 #include "AP_EFI_MAV.h"
 #include <AP_Math/AP_Math.h>
 
@@ -47,3 +51,5 @@ void AP_EFI_MAV::handle_EFI_message(const mavlink_message_t &msg) {
     //internal_state.??? = state.health;
     internal_state.ignition_voltage = state.ignition_voltage;
 }
+
+#endif  // AP_EFI_MAV_ENABLED
