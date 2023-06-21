@@ -68,7 +68,7 @@ public:
 
     // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
-    virtual bool set_focus(FocusType focus_type, float focus_value) { return false; }
+    virtual SetFocusResult set_focus(FocusType focus_type, float focus_value) { return SetFocusResult::UNSUPPORTED; }
 
     // set tracking to none, point or rectangle (see TrackingType enum)
     // if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
