@@ -274,6 +274,12 @@ public:
 
     virtual void    set_output_mode(uint32_t mask, enum output_mode mode) {}
 
+    virtual enum output_mode get_output_mode(uint32_t& mask) {
+      mask = 0;
+      return MODE_PWM_NORMAL;
+    }
+
+
     /*
      * get output mode banner to inform user of how outputs are configured
      */
