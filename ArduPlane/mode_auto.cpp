@@ -162,22 +162,5 @@ bool ModeAuto::_pre_arm_checks(size_t buflen, char *buffer) const
 
 bool ModeAuto::is_landing() const
 {
-    switch(plane.mission.get_current_nav_cmd().id) {
-    case MAV_CMD_NAV_LAND:
-    case MAV_CMD_NAV_VTOL_LAND:
-    case MAV_CMD_DO_VTOL_TRANSITION:
-        return true;
-    }
-    return plane.mission.get_in_landing_sequence_flag();
-}
-
-bool ModeAuto::is_taking_off() const
-{
-    switch(plane.mission.get_current_nav_cmd().id) {
-    case MAV_CMD_NAV_TAKEOFF:
-    case MAV_CMD_NAV_VTOL_TAKEOFF:
-    case MAV_CMD_DO_VTOL_TRANSITION:
-        return true;
-    }
-    return false;
+    return (plane.flight_stage == AP_FixedWing::FlightStage::LAND);
 }

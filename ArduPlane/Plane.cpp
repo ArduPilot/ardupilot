@@ -32,25 +32,3 @@ Plane::Plane(void)
 
 Plane plane;
 AP_Vehicle& vehicle = plane;
-
-#if AP_SCRIPTING_ENABLED
-
-// returns true if vehicle is landing. Only used by Lua scripts
-bool Plane::is_landing() const
-{
-#if HAL_QUADPLANE_ENABLED
-    if (plane.quadplane.in_vtol_land_descent()) {
-        return true;
-    }
-#endif
-
-    return control_mode->is_landing();
-}
-
-// returns true if vehicle is taking off. Only used by Lua scripts
-bool Plane::is_taking_off() const
-{
-    return control_mode->is_taking_off() || (started_flying_ms > 0 && millis() - started_flying_ms < 30000);
-}
-
-#endif // AP_SCRIPTING_ENABLED
