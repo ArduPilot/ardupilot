@@ -97,26 +97,26 @@ void AP_EFI::init(void)
         backend = new AP_EFI_Serial_Lutan(*this);
         break;
 #endif
-    case Type::NWPMU:
 #if AP_EFI_NWPWU_ENABLED
+    case Type::NWPMU:
         backend = new AP_EFI_NWPMU(*this);
-#endif
         break;
-    case Type::DroneCAN:
+#endif
 #if AP_EFI_DRONECAN_ENABLED
+    case Type::DroneCAN:
         backend = new AP_EFI_DroneCAN(*this);
-#endif
         break;
-    case Type::CurrawongECU:
+#endif
 #if AP_EFI_CURRAWONG_ECU_ENABLED
+    case Type::CurrawongECU:
         backend = new AP_EFI_Currawong_ECU(*this);
-#endif
         break;
-    case Type::SCRIPTING:
+#endif
 #if AP_EFI_SCRIPTING_ENABLED
+    case Type::SCRIPTING:
         backend = new AP_EFI_Scripting(*this);
-#endif
         break;
+#endif
     default:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Unknown EFI type");
         break;
