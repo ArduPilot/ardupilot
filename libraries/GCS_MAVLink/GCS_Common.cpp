@@ -3100,6 +3100,7 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
     if (is_equal(packet.param1, 42.0f) &&
         is_equal(packet.param2, 24.0f) &&
         is_equal(packet.param3, 71.0f)) {
+#if AP_MAVLINK_FAILURE_CREATION_ENABLED
         if (is_equal(packet.param4, 93.0f)) {
             // this is a magic sequence to force the main loop to
             // lockup. This is for testing the stm32 watchdog
@@ -3153,6 +3154,8 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             return MAV_RESULT_ACCEPTED;
         }
+#endif  // AP_MAVLINK_FAILURE_CREATION_ENABLED
+
 #if HAL_ENABLE_DFU_BOOT
         if (is_equal(packet.param4, 99.0f)) {
 #if AP_SIGNED_FIRMWARE
