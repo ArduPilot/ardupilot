@@ -150,15 +150,15 @@ bool AP_Mission::start_command_camera(const AP_Mission::Mission_Command& cmd)
         if ((cmd.content.set_camera_focus.focus_type == FOCUS_TYPE_AUTO) ||
             (cmd.content.set_camera_focus.focus_type == FOCUS_TYPE_AUTO_SINGLE) ||
             (cmd.content.set_camera_focus.focus_type == FOCUS_TYPE_AUTO_CONTINUOUS)) {
-            return camera->set_focus(FocusType::AUTO, 0);
+            return camera->set_focus(FocusType::AUTO, 0) == SetFocusResult::ACCEPTED;
         }
         // accept continuous manual focus
         if (cmd.content.set_camera_focus.focus_type == FOCUS_TYPE_CONTINUOUS) {
-            return camera->set_focus(FocusType::RATE, cmd.content.set_camera_focus.focus_value);
+            return camera->set_focus(FocusType::RATE, cmd.content.set_camera_focus.focus_value) == SetFocusResult::ACCEPTED;
         }
         // accept range manual focus
         if (cmd.content.set_camera_focus.focus_type == FOCUS_TYPE_RANGE) {
-            return camera->set_focus(FocusType::PCT, cmd.content.set_camera_focus.focus_value);
+            return camera->set_focus(FocusType::PCT, cmd.content.set_camera_focus.focus_value) == SetFocusResult::ACCEPTED;
         }
         return false;
 
