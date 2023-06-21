@@ -53,7 +53,7 @@ public:
 
     // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
-    bool set_focus(FocusType focus_type, float focus_value) override;
+    SetFocusResult set_focus(FocusType focus_type, float focus_value) override;
 
     // send camera information message to GCS
     void send_camera_information(mavlink_channel_t chan) const override;

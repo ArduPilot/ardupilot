@@ -164,10 +164,10 @@ bool AP_Mount_Xacti::record_video(bool start_recording)
 
 // set focus specified as rate, percentage or auto
 // focus in = -1, focus hold = 0, focus out = 1
-bool AP_Mount_Xacti::set_focus(FocusType focus_type, float focus_value)
+SetFocusResult AP_Mount_Xacti::set_focus(FocusType focus_type, float focus_value)
 {
     if (_detected_modules[_instance].ap_dronecan == nullptr) {
-        return false;
+        return SetFocusResult::FAILED;
     }
 
     // convert focus type and value to parameter value
@@ -185,11 +185,14 @@ bool AP_Mount_Xacti::set_focus(FocusType focus_type, float focus_value)
         break;
     default:
         // unsupported forucs mode
-        return false;
+        return SetFocusResult::INVALID_PARAMETERS;
     }
 
     // set FocusMode parameter
-    return _detected_modules[_instance].ap_dronecan->set_parameter_on_node(_detected_modules[_instance].node_id, XACTI_PARAM_FOCUSMODE, focus_param_value, &param_int_cb);
+    if (!_detected_modules[_instance].ap_dronecan->set_parameter_on_node(_detected_modules[_instance].node_id, XACTI_PARAM_FOCUSMODE, focus_param_value, &param_int_cb)) {
+        return SetFocusResult::FAILED;
+    }
+    return SetFocusResult::ACCEPTED;
 }
 
 // send camera information message to GCS
