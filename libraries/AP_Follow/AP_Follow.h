@@ -44,6 +44,12 @@ public:
         YAW_BEHAVE_DIR_OF_FLIGHT = 3
     };
 
+    // enum for target type
+    enum class TargetSource : uint8_t {
+        MAVLINK_ONLY = 0,
+        LOCATIONDB = 1
+    };
+
     // constructor
     AP_Follow();
 
@@ -52,11 +58,19 @@ public:
         return _singleton;
     }
 
+    void update();
+
     // returns true if library is enabled
     bool enabled() const { return _enabled; }
 
-    // set which target to follow
+    // set target source
+    void set_target_source(TargetSource src) { _src.set((uint8_t(src))); }
+
+    // set which mavlink target to follow
     void set_target_sysid(uint8_t sysid) { _sysid.set(sysid); }
+
+    // set which location db item to follow
+    void set_target_locationdb_key(uint32_t key) { _locdb_key_param.set(key); }
 
     // restore offsets to zero if necessary, should be called when vehicle exits follow mode
     void clear_offsets_if_required();
@@ -93,9 +107,6 @@ public:
     // get target's heading in degrees (0 = north, 90 = east)
     bool get_target_heading_deg(float &heading) const;
 
-    // parse mavlink messages which may hold target's position, velocity and attitude
-    void handle_msg(const mavlink_message_t &msg);
-
     //
     // GCS reporting functions
     //
@@ -107,7 +118,7 @@ public:
     float get_bearing_to_target() const { return _bearing_to_target; }
 
     // get system time of last position update
-    uint32_t get_last_update_ms() const { return _last_location_update_ms; }
+    uint32_t get_last_update_ms() const;
 
     // returns true if a follow option enabled
     bool option_is_enabled(Option option) const { return (_options.get() & (uint16_t)option) != 0; }
@@ -118,11 +129,11 @@ public:
 private:
     static AP_Follow *_singleton;
 
-    // get velocity estimate in m/s in NED frame using dt since last update
-    bool get_velocity_ned(Vector3f &vel_ned, float dt) const;
-
     // initialise offsets to provided distance vector to other vehicle (in meters in NED frame) if required
     void init_offsets_if_required(const Vector3f &dist_vec_ned);
+
+    // get target's estimated position and velocity (in NED)
+    bool get_target_position_and_velocity(Vector3f &pos_ned, Vector3f &vel_ned) const;
 
     // get offsets in meters in NED frame
     bool get_offsets_ned(Vector3f &offsets) const;
@@ -132,6 +143,15 @@ private:
 
     // set recorded distance and bearing to target to zero
     void clear_dist_and_bearing_to_target();
+
+    // returns true if we have a valid target key
+    bool have_target_key() const;
+
+    // reconstruct target key from parameters
+    void refresh_target_key();
+
+    // return true if we are following a target other than the specified one
+    bool target_mismatch();
 
     // parameters
     AP_Int8     _enabled;           // 1 if this subsystem is enabled
@@ -143,14 +163,12 @@ private:
     AP_Int8     _alt_type;          // altitude source for follow mode
     AC_P        _p_pos;             // position error P controller
     AP_Int16    _options;           // options for mount behaviour follow mode
+    AP_Int8     _src;               // information source for candiate vehicles to be followed
+    AP_Int32    _locdb_key_param;   // database item key if location db is selected as a source (0 to use first candidate in db)
 
     // local variables
-    uint32_t _last_location_update_ms;  // system time of last position update
-    Location _target_location;      // last known location of target
-    Vector3f _target_velocity_ned;  // last known velocity of target in NED frame in m/s
-    Vector3f _target_accel_ned;     // last known acceleration of target in NED frame in m/s/s
-    uint32_t _last_heading_update_ms;   // system time of last heading update
-    float _target_heading;          // heading in degrees
+    bool _healthy;                  // true if we are receiving mavlink messages (regardless of whether they have target position info within them)
+    uint32_t _locdb_key = 0;        // location db item key for target
     bool _automatic_sysid;          // did we lock onto a sysid automatically?
     float _dist_to_target;          // latest distance to target in meters (for reporting purposes)
     float _bearing_to_target;       // latest bearing to target in degrees (for reporting purposes)

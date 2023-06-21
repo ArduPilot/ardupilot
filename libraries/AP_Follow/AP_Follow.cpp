@@ -26,11 +26,11 @@
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_LocationDB/AP_LocationDB.h>
 
 extern const AP_HAL::HAL& hal;
 
 #define AP_FOLLOW_TIMEOUT_MS    3000    // position estimate timeout after 1 second
-#define AP_FOLLOW_SYSID_TIMEOUT_MS 10000 // forget sysid we are following if we haave not heard from them in 10 seconds
 
 #define AP_FOLLOW_OFFSET_TYPE_NED       0   // offsets are in north-east-down frame
 #define AP_FOLLOW_OFFSET_TYPE_RELATIVE  1   // offsets are relative to lead vehicle's heading
@@ -72,9 +72,9 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @DisplayName: Follow distance maximum
     // @Description: Follow distance maximum.  targets further than this will be ignored
     // @Units: m
-    // @Range: 1 1000
+    // @Range: 1 10000
     // @User: Standard
-    AP_GROUPINFO("_DIST_MAX", 5, AP_Follow, _dist_max, 100),
+    AP_GROUPINFO("_DIST_MAX", 5, AP_Follow, _dist_max, 1000),
 
     // @Param: _OFS_TYPE
     // @DisplayName: Follow offset type
@@ -141,6 +141,20 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 11, AP_Follow, _options, 0),
 
+    // @Param: _SRC
+    // @DisplayName: Follow vehicle information source
+    // @Description: Follow vehicle information source
+    // @Values: 0:MAVLINK SYSID, 1:LocationDB Key
+    // @User: Standard
+    AP_GROUPINFO("_SRC", 12, AP_Follow, _src, 0),
+
+    // @Param: _DBITM_KEY
+    // @DisplayName: LocationDB item key for the object to be followed
+    // @Description: LocationDB item key for the object to be followed
+    // @Range: 0 4294967295
+    // @User: Standard
+    AP_GROUPINFO("_DBITM_KEY", 13, AP_Follow, _locdb_key_param, 0),
+
     AP_GROUPEND
 };
 
@@ -156,6 +170,66 @@ AP_Follow::AP_Follow() :
     AP_Param::setup_object_defaults(this, var_info);
 }
 
+void AP_Follow::update() {
+    // exit immediately if not enabled
+    if (!_enabled) {
+        return;
+    }
+
+    if (!have_target_key() || target_mismatch()) {
+        refresh_target_key();
+        return;
+    }
+
+    // get estimated location and velocity
+    Location loc_estimate{};
+    Vector3f vel_estimate;
+    AP_LocationDB_Item target;
+    Vector3f target_pos_NEU;
+    Vector3f target_vel_NEU;
+    if (!AP::locationdb()->get_item(_locdb_key, target) ||
+         !target.get_pos_cm_NEU(target_pos_NEU) ||
+         !target.get_vel_cm_NEU(target_vel_NEU) ||
+         !get_target_location_and_velocity(loc_estimate, vel_estimate)) {
+        // not able to retrive information about the target
+        // try resetting it
+        _locdb_key = 0;
+        return;
+    }
+    Location target_location(target_pos_NEU, Location::AltFrame::ABOVE_ORIGIN);
+    IGNORE_RETURN(target_location.change_alt_frame(Location::AltFrame::ABSOLUTE));
+
+    // log lead's estimated vs reported position
+// @LoggerMessage: FOLL
+// @Description: Follow library diagnostic data
+// @Field: TimeUS: Time since system startup
+// @Field: Lat: Target latitude
+// @Field: Lon: Target longitude
+// @Field: Alt: Target absolute altitude
+// @Field: VelN: Target earth-frame velocity, North
+// @Field: VelE: Target earth-frame velocity, East
+// @Field: VelD: Target earth-frame velocity, Down
+// @Field: LatE: Vehicle latitude
+// @Field: LonE: Vehicle longitude
+// @Field: AltE: Vehicle absolute altitude
+    AP::logger().WriteStreaming("FOLL",
+                                "TimeUS,Lat,Lon,Alt,VelN,VelE,VelD,LatE,LonE,AltE",  // labels
+                                "sDUmnnnDUm",    // units
+                                "F--B000--B",    // mults
+                                "QLLifffLLi",    // fmt
+                                AP_HAL::micros64(),
+                                target_location.lat,
+                                target_location.lng,
+                                target_location.alt,
+                                (double)target_vel_NEU.x,
+                                (double)target_vel_NEU.y,
+                                (double)-target_vel_NEU.z,
+                                loc_estimate.lat,
+                                loc_estimate.lng,
+                                loc_estimate.alt
+                                );
+}
+
 // restore offsets to zero if necessary, should be called when vehicle exits follow mode
 void AP_Follow::clear_offsets_if_required()
 {
@@ -165,62 +239,170 @@ void AP_Follow::clear_offsets_if_required()
     _offsets_were_zero = false;
 }
 
-// get target's estimated location
-bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) const
+// reconstruct target key from parameters
+void AP_Follow::refresh_target_key()
+{
+    // exit immediately if not enabled
+    if (!_enabled) {
+        return;
+    }
+
+    switch(_src.get()) {
+    case uint8_t(TargetSource::MAVLINK_ONLY) :
+    {
+        uint8_t sysid = _sysid.get();
+        // check if we are getting FOLLOW_TARGET or GLOBAL_POSITION_INT message from any of the componenets of given sysid
+        for (uint16_t compid = 0; compid <= 255U; compid++) {
+            if (AP::locationdb()->item_exists(AP_LocationDB::construct_key_mavlink(sysid, compid, MAVLINK_MSG_ID_FOLLOW_TARGET))) {
+                // we are getting a FOLLOW_TARGET message
+                _locdb_key = AP_LocationDB::construct_key_mavlink(sysid, compid, MAVLINK_MSG_ID_FOLLOW_TARGET);
+                return;
+            } else if (AP::locationdb()->item_exists(AP_LocationDB::construct_key_mavlink(sysid, compid, MAVLINK_MSG_ID_GLOBAL_POSITION_INT))) {
+                // we are getting a GLOBAL_POSITION_INT message
+                _locdb_key = AP_LocationDB::construct_key_mavlink(sysid, compid, MAVLINK_MSG_ID_GLOBAL_POSITION_INT);
+                return;
+            }
+        }
+        break;
+    }
+    case uint8_t(TargetSource::LOCATIONDB):
+        if (AP::locationdb()->item_exists(_locdb_key_param.get())) {
+            _locdb_key = _locdb_key_param.get();
+            return;
+        }
+        break;
+    };
+
+    // no key constructed
+    _locdb_key = 0;
+}
+
+// return true if we are following a target other than the specified one
+bool AP_Follow::target_mismatch() {
+    switch(_src.get()) {
+    case uint8_t(TargetSource::MAVLINK_ONLY) :
+        // location db keys for mavlink items have structure: DOMAIN (8 bits) | SYSID (8 bits) | COMPID (8bits) | SHORT MSD ID (8 bits)
+        // we check if the set key has matching domain and sysid with the target we are following
+        if ((uint8_t(_locdb_key >> 24) != uint8_t(AP_LocationDB::KeyDomain::MAVLINK)) || (uint8_t(_locdb_key >> 16) != _sysid.get())) {
+            return true;
+        }
+        break;
+    case uint8_t(TargetSource::LOCATIONDB):
+        if (_locdb_key != uint32_t(_locdb_key_param.get())) {
+            return true;
+        }
+        break;
+    };
+
+    return false;
+}
+
+// returns true if we have the target key
+bool AP_Follow::have_target_key() const {
+    if (_locdb_key == 0) {
+        return false;
+    }
+
+    return true;
+}
+
+// get target's estimated position and velocity (in NED)
+bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) const {
+    // exit immediately if not enabled
+    if (!_enabled) {
+        return false;
+    }
+
+    Vector3f target_pos_ned_m;
+    Vector3f target_vel_ned_m;
+
+    if (!get_target_position_and_velocity(target_pos_ned_m, target_vel_ned_m)) {
+        return false;
+    }
+
+    // Location() accepts ekf offset in NEU cms
+    target_pos_ned_m = target_pos_ned_m * 100;
+    target_pos_ned_m.z = -target_pos_ned_m.z;
+
+    loc = Location(target_pos_ned_m, Location::AltFrame::ABOVE_ORIGIN);
+
+    if (!loc.change_alt_frame(Location::AltFrame::ABSOLUTE)) {
+        return false;
+    }
+
+    return true;
+}
+
+// get target's estimated position and velocity
+bool AP_Follow::get_target_position_and_velocity(Vector3f &pos_ned_m, Vector3f &vel_ned) const
 {
     // exit immediately if not enabled
     if (!_enabled) {
         return false;
     }
 
+    // return false if we do not have the target key or we fail to retrive the target with that key
+    AP_LocationDB_Item target;
+    if (!have_target_key() || !AP::locationdb()->get_item(_locdb_key, target)) {
+        return false;
+    }
+
     // check for timeout
-    if ((_last_location_update_ms == 0) || (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
+    if (AP_HAL::millis() - target.get_timestamp_ms() > AP_FOLLOW_TIMEOUT_MS) {
         return false;
     }
 
     // calculate time since last actual position update
-    const float dt = (AP_HAL::millis() - _last_location_update_ms) * 0.001f;
+    const float dt = (AP_HAL::millis() - target.get_timestamp_ms()) * 0.001f;
 
-    // get velocity estimate
-    if (!get_velocity_ned(vel_ned, dt)) {
+    Vector3f target_pos, target_vel, target_accel;
+    if (!target.get_pos_cm_NEU(target_pos) || !target.get_vel_cm_NEU(target_vel)) {
         return false;
     }
 
+    // calculate velocity estimate if we are able to get target acceleration
+    if (target.get_acc_cm_NEU(target_accel)) {
+        target_vel += (target_accel * dt);
+    }
+
     // project the vehicle position
-    Location last_loc = _target_location;
-    last_loc.offset(vel_ned.x * dt, vel_ned.y * dt);
-    last_loc.alt -= vel_ned.z * 100.0f * dt; // convert m/s to cm/s, multiply by dt.  minus because NED
+    target_pos += (target_vel * dt);
+
+    // NEU to NED
+    target_pos.z = -target_pos.z;
+    target_vel.z = -target_vel.z;
 
     // return latest position estimate
-    loc = last_loc;
+    pos_ned_m = target_pos * 0.01; // in m
+    vel_ned = target_vel * 0.01; // in m
     return true;
 }
 
 // get distance vector to target (in meters) and target's velocity all in NED frame
 bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_with_offs, Vector3f &vel_ned)
 {
-    // get our location
-    Location current_loc;
-    if (!AP::ahrs().get_location(current_loc)) {
-        clear_dist_and_bearing_to_target();
-         return false;
+    // exit immediately if not enabled
+    if (!_enabled) {
+        return false;
     }
 
-    // get target location and velocity
-    Location target_loc;
-    Vector3f veh_vel;
-    if (!get_target_location_and_velocity(target_loc, veh_vel)) {
+    // get our location
+    Vector3f our_pos_from_origin_ned;
+    if (!AP::ahrs().get_relative_position_NED_origin(our_pos_from_origin_ned)) {
         clear_dist_and_bearing_to_target();
         return false;
     }
 
-    // change to altitude above home if relative altitude is being used
-    if (target_loc.relative_alt == 1) {
-        current_loc.alt -= AP::ahrs().get_home().alt;
+    // get target location and velocity
+    Vector3f veh_pos_ned;
+    Vector3f veh_vel_ned;
+    if (!get_target_position_and_velocity(veh_pos_ned, veh_vel_ned)) {
+        clear_dist_and_bearing_to_target();
+        return false;
     }
 
     // calculate difference
-    const Vector3f dist_vec = current_loc.get_distance_NED(target_loc);
+    const Vector3f dist_vec = veh_pos_ned - our_pos_from_origin_ned;
 
     // fail if too far
     if (is_positive(_dist_max.get()) && (dist_vec.length() > _dist_max)) {
@@ -241,7 +423,7 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
     // calculate results
     dist_ned = dist_vec;
     dist_with_offs = dist_vec + offsets;
-    vel_ned = veh_vel;
+    vel_ned = veh_vel_ned;
 
     // record distance and heading for reporting purposes
     if (is_zero(dist_with_offs.x) && is_zero(dist_with_offs.y)) {
@@ -262,182 +444,23 @@ bool AP_Follow::get_target_heading_deg(float &heading) const
         return false;
     }
 
-    // check for timeout
-    if ((_last_heading_update_ms == 0) || (AP_HAL::millis() - _last_heading_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
+    AP_LocationDB_Item target;
+    if (!have_target_key() || !AP::locationdb()->get_item(_locdb_key, target)) {
         return false;
     }
 
-    // return latest heading estimate
-    heading = _target_heading;
-    return true;
-}
-
-// handle mavlink DISTANCE_SENSOR messages
-void AP_Follow::handle_msg(const mavlink_message_t &msg)
-{
-    // exit immediately if not enabled
-    if (!_enabled) {
-        return;
+    // check for timeout
+    if (AP_HAL::millis() - target.get_timestamp_ms() > AP_FOLLOW_TIMEOUT_MS) {
+        return false;
     }
 
-    // skip our own messages
-    if (msg.sysid == mavlink_system.sysid) {
-        return;
+    float target_heading;
+    if (!target.get_heading_cdeg(target_heading) || target_heading > 36000) {
+        return false;
     }
 
-    // skip message if not from our target
-    if (_sysid != 0 && msg.sysid != _sysid) {
-        if (_automatic_sysid) {
-            // maybe timeout who we were following...
-            if ((_last_location_update_ms == 0) || (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_SYSID_TIMEOUT_MS)) {
-                _sysid.set(0);
-            }
-        }
-        return;
-    }
-
-    // decode global-position-int message
-    bool updated = false;
-
-    switch (msg.msgid) {
-    case MAVLINK_MSG_ID_GLOBAL_POSITION_INT: {
-        // decode message
-        mavlink_global_position_int_t packet;
-        mavlink_msg_global_position_int_decode(&msg, &packet);
-
-        // ignore message if lat and lon are (exactly) zero
-        if ((packet.lat == 0 && packet.lon == 0)) {
-            return;
-        }
-
-        _target_location.lat = packet.lat;
-        _target_location.lng = packet.lon;
-
-        // select altitude source based on FOLL_ALT_TYPE param 
-        if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
-            // above home alt
-            _target_location.set_alt_cm(packet.relative_alt / 10, Location::AltFrame::ABOVE_HOME);
-        } else {
-            // absolute altitude
-            _target_location.set_alt_cm(packet.alt / 10, Location::AltFrame::ABSOLUTE);
-        }
-
-        _target_velocity_ned.x = packet.vx * 0.01f; // velocity north
-        _target_velocity_ned.y = packet.vy * 0.01f; // velocity east
-        _target_velocity_ned.z = packet.vz * 0.01f; // velocity down
-
-        // get a local timestamp with correction for transport jitter
-        _last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.time_boot_ms, AP_HAL::millis());
-        if (packet.hdg <= 36000) {                  // heading (UINT16_MAX if unknown)
-            _target_heading = packet.hdg * 0.01f;   // convert centi-degrees to degrees
-            _last_heading_update_ms = _last_location_update_ms;
-        }
-        // initialise _sysid if zero to sender's id
-        if (_sysid == 0) {
-            _sysid.set(msg.sysid);
-            _automatic_sysid = true;
-        }
-        updated = true;
-        break;
-    }
-    case MAVLINK_MSG_ID_FOLLOW_TARGET: {
-        // decode message
-        mavlink_follow_target_t packet;
-        mavlink_msg_follow_target_decode(&msg, &packet);
-
-        // ignore message if lat and lon are (exactly) zero
-        if ((packet.lat == 0 && packet.lon == 0)) {
-            return;
-        }
-        // require at least position
-        if ((packet.est_capabilities & (1<<0)) == 0) {
-            return;
-        }
-
-        Location new_loc = _target_location;
-        new_loc.lat = packet.lat;
-        new_loc.lng = packet.lon;
-        new_loc.set_alt_cm(packet.alt*100, Location::AltFrame::ABSOLUTE);
-
-        // FOLLOW_TARGET is always AMSL, change the provided alt to
-        // above home if we are configured for relative alt
-        if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE &&
-            !new_loc.change_alt_frame(Location::AltFrame::ABOVE_HOME)) {
-            return;
-        }
-        _target_location = new_loc;
-
-        if (packet.est_capabilities & (1<<1)) {
-            _target_velocity_ned.x = packet.vel[0]; // velocity north
-            _target_velocity_ned.y = packet.vel[1]; // velocity east
-            _target_velocity_ned.z = packet.vel[2]; // velocity down
-        } else {
-            _target_velocity_ned.zero();
-        }
-
-        // get a local timestamp with correction for transport jitter
-        _last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.timestamp, AP_HAL::millis());
-
-        if (packet.est_capabilities & (1<<3)) {
-            Quaternion q{packet.attitude_q[0], packet.attitude_q[1], packet.attitude_q[2], packet.attitude_q[3]};
-            float r, p, y;
-            q.to_euler(r,p,y);
-            _target_heading = degrees(y);
-            _last_heading_update_ms = _last_location_update_ms;
-        }
-
-        // initialise _sysid if zero to sender's id
-        if (_sysid == 0) {
-            _sysid.set(msg.sysid);
-            _automatic_sysid = true;
-        }
-        updated = true;
-        break;
-    }
-    }
-    
-    if (updated) {
-        // get estimated location and velocity
-        Location loc_estimate{};
-        Vector3f vel_estimate;
-        UNUSED_RESULT(get_target_location_and_velocity(loc_estimate, vel_estimate));
-
-        // log lead's estimated vs reported position
-// @LoggerMessage: FOLL
-// @Description: Follow library diagnostic data
-// @Field: TimeUS: Time since system startup
-// @Field: Lat: Target latitude
-// @Field: Lon: Target longitude
-// @Field: Alt: Target absolute altitude
-// @Field: VelN: Target earth-frame velocity, North
-// @Field: VelE: Target earth-frame velocity, East
-// @Field: VelD: Target earth-frame velocity, Down
-// @Field: LatE: Vehicle latitude
-// @Field: LonE: Vehicle longitude
-// @Field: AltE: Vehicle absolute altitude
-        AP::logger().WriteStreaming("FOLL",
-                                               "TimeUS,Lat,Lon,Alt,VelN,VelE,VelD,LatE,LonE,AltE",  // labels
-                                               "sDUmnnnDUm",    // units
-                                               "F--B000--B",    // mults
-                                               "QLLifffLLi",    // fmt
-                                               AP_HAL::micros64(),
-                                               _target_location.lat,
-                                               _target_location.lng,
-                                               _target_location.alt,
-                                               (double)_target_velocity_ned.x,
-                                               (double)_target_velocity_ned.y,
-                                               (double)_target_velocity_ned.z,
-                                               loc_estimate.lat,
-                                               loc_estimate.lng,
-                                               loc_estimate.alt
-                                               );
-    }
-}
-
-// get velocity estimate in m/s in NED frame using dt since last update
-bool AP_Follow::get_velocity_ned(Vector3f &vel_ned, float dt) const
-{
-    vel_ned = _target_velocity_ned + (_target_accel_ned * dt);
+    // return heading estimate in degrees
+    heading = target_heading * 0.01f;
     return true;
 }
 
@@ -523,11 +546,26 @@ bool AP_Follow::have_target(void) const
         return false;
     }
 
+    AP_LocationDB_Item target;
+    if (!AP::locationdb()->get_item(_locdb_key, target)) {
+        return false;
+    }
+
     // check for timeout
-    if ((_last_location_update_ms == 0) || (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
+    if (AP_HAL::millis() - target.get_timestamp_ms() > AP_FOLLOW_TIMEOUT_MS) {
         return false;
     }
     return true;
+}
+
+uint32_t AP_Follow::get_last_update_ms() const {
+    AP_LocationDB_Item target;
+    if (AP::locationdb() && AP::locationdb()->get_item(_locdb_key, target)) {
+        return target.get_timestamp_ms();
+    }
+
+    // target not retrieved
+    return 0;
 }
 
 namespace AP {
