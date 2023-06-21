@@ -58,7 +58,13 @@
 #define STM32_PLL3MUL_VALUE                 16
 #elif STM32_HSECLK == 24000000U
 #define STM32_SW                            STM32_SW_HSE
+/* 24Mhz crystal on F103 is strictly illegal, but some boards (Pixhwak6X) have this.
+   Since PLL clock is not used we can work around ChibiOS constraints by using HSI. */
+#ifdef STM32F103_MCUCONF
+#define STM32_PLLSRC                        STM32_PLLSRC_HSI
+#else
 #define STM32_PLLSRC                        STM32_PLLSRC_HSE
+#endif
 #define STM32_PLLXTPRE                      STM32_PLLXTPRE_DIV1
 #define STM32_PLLMUL_VALUE                  9
 #define STM32_PPRE1                         STM32_PPRE1_DIV1
@@ -135,10 +141,12 @@
 #define STM32_PWM_TIM5_IRQ_PRIORITY         7
 #define STM32_PWM_TIM8_IRQ_PRIORITY         7
 
+#ifdef STM32F100_MCUCONF
 #define STM32_TIM15_NUMBER                  24
 #define STM32_TIM15_HANDLER                 VectorA0
 #define STM32_TIM17_NUMBER                  26
 #define STM32_TIM17_HANDLER                 VectorA8
+#endif
 
 /*
  * RTC driver system settings.

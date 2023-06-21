@@ -69,6 +69,7 @@ public:
     }
 #endif
     void set_output_mode(uint32_t mask, const enum output_mode mode) override;
+    enum output_mode get_output_mode(uint32_t& mask) override;
     bool get_output_mode_banner(char banner_msg[], uint8_t banner_msg_len) const override;
 
     /*
@@ -601,9 +602,6 @@ private:
     uint16_t trigger_widest_pulse;
 
     bool dshot_timer_setup;
-
-    // iomcu output mode (pwm, oneshot or oneshot125)
-    enum output_mode iomcu_mode = MODE_PWM_NORMAL;
 
     volatile bool _initialised;
 
