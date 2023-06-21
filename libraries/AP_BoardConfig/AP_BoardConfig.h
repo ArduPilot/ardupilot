@@ -93,7 +93,7 @@ public:
     }
 
     static bool io_dshot(void) {
-#if HAL_WITH_IO_MCU
+#if HAL_WITH_IO_MCU_DSHOT
         return io_enabled() && _singleton?_singleton->state.io_dshot.get():false;
 #else
         return false;

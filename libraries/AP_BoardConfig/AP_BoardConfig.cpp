@@ -359,14 +359,14 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // index 27 used by SER4_RTSCTS
 
     
-#if HAL_WITH_IO_MCU
+#if HAL_WITH_IO_MCU_DSHOT
     // @Param: IO_DSHOT
     // @DisplayName: Load DShot FW on IO
     // @Description: This loads the DShot firmware on the IO co-processor
     // @Values: 0:StandardFW,1:DshotFW
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("IO_DSHOT", 25, AP_BoardConfig, state.io_dshot, 0),
+    AP_GROUPINFO("IO_DSHOT", 28, AP_BoardConfig, state.io_dshot, 0),
 #endif
     AP_GROUPEND
 };
