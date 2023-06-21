@@ -3,7 +3,6 @@
 // you're doing when directly comparing floats:
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-equal"
-#define ALLOW_DOUBLE_MATH_FUNCTIONS
 #include <AP_gtest.h>
 
 #include <AP_Math/AP_Math.h>
@@ -187,8 +186,8 @@ TEST(MathWrapTest, Angle2PIDouble)
     const double accuracy = 1.0e-5;
 
     EXPECT_NEAR(M_PI, wrap_2PI((double)M_PI), accuracy);
-    EXPECT_NEAR(0.0,  wrap_2PI((double)M_2PI), accuracy);
-    EXPECT_NEAR(0.0,  wrap_2PI((double)M_PI * 10.0), accuracy);
+    EXPECT_NEAR(0.0,  wrap_PI((double)M_2PI), accuracy);
+    EXPECT_NEAR(0.0,  wrap_PI((double)M_PI * 10.0), accuracy);
     EXPECT_NEAR(0.0,  wrap_2PI(0.0), accuracy);
     EXPECT_NEAR(M_PI, wrap_2PI((double)-M_PI), accuracy);
     EXPECT_NEAR(0,    wrap_2PI((double)-M_2PI), accuracy);
