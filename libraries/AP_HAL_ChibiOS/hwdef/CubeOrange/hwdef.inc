@@ -322,7 +322,10 @@ define HAL_GPIO_PWM_VOLT_3v3 1
 # is "ROMFS ROMFS-filename source-filename". Paths are relative to the
 # ardupilot root.
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_highpolh.bin
+
+# enable support for dshot on iomcu
 ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_dshot_highpolh.bin
+define HAL_WITH_IO_MCU_DSHOT 1
 
 DMA_NOSHARE SPI1* SPI4* USART6*
 

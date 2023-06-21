@@ -2538,14 +2538,17 @@ INCLUDE common.ld
             # add in ADC3 on H7 to get MCU temperature and reference voltage
             self.periph_list.append('ADC3')
 
-        dma_unassigned, ordered_timers = dma_resolver.write_dma_header(
-            f,
-            self.periph_list,
-            self.mcu_type,
-            dma_exclude=self.get_dma_exclude(self.periph_list),
-            dma_priority=self.get_config('DMA_PRIORITY', default='TIM* SPI*', spaces=True),
-            dma_noshare=self.dma_noshare
-        )
+        if self.get_config('DMA_NOMAP', required=False) is not None:
+            dma_unassigned, ordered_timers = [], []
+        else:
+            dma_unassigned, ordered_timers = dma_resolver.write_dma_header(
+                f,
+                self.periph_list,
+                self.mcu_type,
+                dma_exclude=self.get_dma_exclude(self.periph_list),
+                dma_priority=self.get_config('DMA_PRIORITY', default='TIM* SPI*', spaces=True),
+                dma_noshare=self.dma_noshare
+            )
 
         if not args.bootloader:
             self.write_PWM_config(f, ordered_timers)
@@ -2949,12 +2952,13 @@ INCLUDE common.ld
                 self.bylabel.pop(u, '')
                 self.alttype.pop(u, '')
                 self.altlabel.pop(u, '')
+                self.intdefines.pop(u, '')
                 for dev in self.spidev:
                     if u == dev[0]:
                         self.spidev.remove(dev)
                 # also remove all occurences of defines in previous lines if any
                 for line in self.alllines[:]:
-                    if line.startswith('define') and u == line.split()[1]:
+                    if line.startswith('define') and u == line.split()[1] or line.startswith('STM32_') and u == line.split()[0]:
                         self.alllines.remove(line)
                 newpins = []
                 for pin in self.allpins:

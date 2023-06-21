@@ -1166,11 +1166,31 @@ void RCOutput::set_output_mode(uint32_t mask, const enum output_mode mode)
          (mode >= MODE_PWM_DSHOT150 && mode <= MODE_PWM_DSHOT600)) &&
         (mask & ((1U<<chan_offset)-1)) &&
         AP_BoardConfig::io_enabled()) {
-        iomcu_mode = mode;
         iomcu.set_output_mode(mask, mode);
         return;
     }
 #endif
+}
+
+/*
+ Get current non-PWM output mode for all channels
+ */
+RCOutput::output_mode RCOutput::get_output_mode(uint32_t& mask)
+{
+    enum output_mode mode = MODE_PWM_NONE;
+
+    for (auto &group : pwm_group_list) {
+        if (group.current_mode == MODE_PWM_NONE) {
+            continue;
+        }
+
+        if (group.current_mode != MODE_PWM_NORMAL) {
+            mode = group.current_mode;
+            mask |= group.en_mask;
+        }
+    }
+
+    return mode;
 }
 
 /*
@@ -1205,8 +1225,14 @@ bool RCOutput::get_output_mode_banner(char banner_msg[], uint8_t banner_msg_len)
 #if HAL_WITH_IO_MCU
     // fill in ch_mode array for IOMCU channels
     if (AP_BoardConfig::io_enabled()) {
+        uint8_t iomcu_mask;
+        const output_mode iomcu_mode = iomcu.get_output_mode(iomcu_mask);
         for (uint8_t i = 0; i < chan_offset; i++ ) {
-            ch_mode[i] = iomcu_mode;
+            if (iomcu_mask & 1U<<i) {
+                ch_mode[i] = iomcu_mode;
+            } else {
+                ch_mode[i] = MODE_PWM_NORMAL;
+            }
         }
         have_nonzero_modes = (chan_offset > 0) && (iomcu_mode != MODE_PWM_NONE);
     }
