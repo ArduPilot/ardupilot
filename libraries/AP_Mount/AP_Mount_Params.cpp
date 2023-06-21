@@ -158,6 +158,14 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO("_SYSID_DFLT", 14, AP_Mount_Params, sysid_default, 0),
+
+    // @Param: _DEVID
+    // @DisplayName: Mount Device ID
+    // @Description: Mount device ID, taking into account its type, bus and instance
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS("_DEVID", 15, AP_Mount_Params, dev_id, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
+
     AP_GROUPEND
 };
 
