@@ -225,3 +225,8 @@ void Mode::reset_controllers()
     plane.steer_state.locked_course = false;
     plane.steer_state.locked_course_err = 0;
 }
+
+bool Mode::is_taking_off() const
+{
+    return (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF);
+}

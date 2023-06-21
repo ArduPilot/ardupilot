@@ -132,7 +132,7 @@ public:
     virtual bool is_landing() const { return false; }
 
     // true if is taking 
-    virtual bool is_taking_off() const { return false; }
+    virtual bool is_taking_off() const;
 
 
 protected:
@@ -218,8 +218,6 @@ public:
 
     bool is_landing() const override;
     
-    bool is_taking_off() const override;
-
 protected:
 
     bool _enter() override;
@@ -755,8 +753,6 @@ public:
     bool does_auto_navigation() const override { return true; }
 
     bool does_auto_throttle() const override { return true; }
-
-    bool is_taking_off() const override { return true; }
 
     // var_info for holding parameter information
     static const struct AP_Param::GroupInfo var_info[];
