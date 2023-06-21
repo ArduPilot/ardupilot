@@ -127,7 +127,8 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
 	uint32_t dt = tnow - _last_t;
 	if (_last_t == 0 || dt > 1000) {
 		dt = 0;
-	}
+        _pid_info.I = 0.0f;
+    }
 	_last_t = tnow;
 
     AP_AHRS &_ahrs = AP::ahrs();
@@ -163,7 +164,7 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
 	
 	// Multiply yaw rate error by _ki_rate and integrate
 	// Don't integrate if in stabilize mode as the integrator will wind up against the pilots inputs
-	if (ki_rate > 0 && speed >= _minspeed) {
+	if (ki_rate > 0 && speed > _minspeed) {
 		// only integrate if gain and time step are positive.
 		if (dt > 0) {
 		    float integrator_delta = rate_error * ki_rate * delta_time * scaler;
@@ -225,6 +226,12 @@ int32_t AP_SteerController::get_steering_out_lat_accel(float desired_accel)
     if (_reverse) {
         desired_rate *= -1;
     }
+
+    // Add recent pilot rate bias demand allowing for a minimum 10Hz pilot update rate plus jitter margin
+    if (_last_t - _last_rate_bias_updated_t < 150) {
+        desired_rate += _last_rate_bias;
+    }
+
     return get_steering_out_rate(desired_rate);
 }
 
@@ -240,6 +247,11 @@ int32_t AP_SteerController::get_steering_out_angle_error(int32_t angle_err)
 	
 	// Calculate the desired steering rate (deg/sec) from the angle error
 	float desired_rate = angle_err * 0.01f / _tau;
+
+    // Add recent pilot rate bias demand allowing for a minimum 10Hz pilot update rate plus jitter margin
+    if (_last_t - _last_rate_bias_updated_t < 150) {
+        desired_rate += _last_rate_bias;
+    }
 
     return get_steering_out_rate(desired_rate);
 }
