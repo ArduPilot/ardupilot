@@ -523,7 +523,6 @@ private:
         float rudder_offset_pct;
         bool run_yaw_rate_controller;
     } nav_scripting;
-
 #endif
 
     struct {

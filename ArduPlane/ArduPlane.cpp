@@ -851,6 +851,28 @@ bool Plane::set_land_descent_rate(float descent_rate)
     return false;
 }
 
+// returns true if vehicle is landing.
+bool Plane::is_landing() const
+{
+#if HAL_QUADPLANE_ENABLED
+    if (plane.quadplane.in_vtol_land_descent()) {
+        return true;
+    }
+#endif
+    return control_mode->is_landing();
+}
+
+// returns true if vehicle is taking off.
+bool Plane::is_taking_off() const
+{
+#if HAL_QUADPLANE_ENABLED
+    if (plane.quadplane.in_vtol_takeoff()) {
+        return true;
+    }
+#endif
+    return control_mode->is_taking_off();
+}
+
 #endif // AP_SCRIPTING_ENABLED
 
 // correct AHRS pitch for TRIM_PITCH_CD in non-VTOL modes, and return VTOL view in VTOL
