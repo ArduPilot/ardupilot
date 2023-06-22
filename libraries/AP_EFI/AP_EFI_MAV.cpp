@@ -19,12 +19,15 @@
 #include <AP_Math/AP_Math.h>
 
 AP_EFI_MAV::AP_EFI_MAV(AP_EFI &_frontend) :  AP_EFI_Backend(_frontend) {
-    //Nothing to do here
+	receivedNewData = false;
 }
 
 //Called from frontend to update with the readings received by handler
 void AP_EFI_MAV::update() {
-    copy_to_frontend();
+    if(receivedNewData == true) {
+    	copy_to_frontend();
+    	receivedNewData = false;
+    }
 }
 
 //Decode MavLink message
@@ -50,6 +53,8 @@ void AP_EFI_MAV::handle_EFI_message(const mavlink_message_t &msg) {
     internal_state.pt_compensation = state.pt_compensation;
     //internal_state.??? = state.health;
     internal_state.ignition_voltage = state.ignition_voltage;
+
+    receivedNewData = true;
 }
 
 #endif  // AP_EFI_MAV_ENABLED

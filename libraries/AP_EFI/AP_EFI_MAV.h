@@ -27,6 +27,9 @@ public:
     void update() override;
 
     void handle_EFI_message(const mavlink_message_t &msg) override;
+
+private:
+    bool receivedNewData;
 };
 
 #endif  // AP_EFI_MAV_ENABLED
