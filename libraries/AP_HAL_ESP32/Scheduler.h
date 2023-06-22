@@ -67,17 +67,23 @@ public:
     static const int IO_PRIO = 6;
     static const int STORAGE_PRIO = 6; */
 
-    static const int SPI_PRIORITY = 24; //      if your primary imu is spi, this should be above the i2c value, spi is better.
-    static const int MAIN_PRIO    = 22; //	cpu0: we want schuler running at full tilt.
-    static const int I2C_PRIORITY = 5;  //      if your primary imu is i2c, this should be above the spi value, i2c is not preferred.
-    static const int TIMER_PRIO   = 22; //      a low priority mere might cause wifi thruput to suffer
-    static const int RCIN_PRIO    = 15;
-    static const int RCOUT_PRIO   = 10;
-    static const int WIFI_PRIO1   = 20; //cpu1:
-    static const int WIFI_PRIO2   = 12; //cpu1:
-    static const int UART_PRIO    = 24; //cpu1: a low priority mere might cause wifi thruput to suffer, as wifi gets passed its data frim the uart subsustem in _writebuf/_readbuf
-    static const int IO_PRIO      = 5;
-    static const int STORAGE_PRIO = 4;
+    // Research in documention from IDF. Wifi and LWIP Threads are pinned to core 0. 
+    // no thread on core 0 should have higher prio then these and the prio should be 19
+    // so I try to set all prio below 19 on both cores. Also the documentation states
+    // that task with the same prio geht time slicing. Pinning UART to core 0 as it is
+    // needed for MAVLink. 
+
+    static const int SPI_PRIORITY = 18; //cpu1: 
+    static const int MAIN_PRIO    = 18; //cpu1:
+    static const int I2C_PRIORITY = 18; //cpu1:
+    static const int TIMER_PRIO   = 18; //cpu1:
+    static const int RCIN_PRIO    = 17; //cpu1:
+    static const int RCOUT_PRIO   = 17; //cpu1:
+    static const int WIFI_PRIO1   = 18; //cpu0:
+    static const int WIFI_PRIO2   = 18; //cpu0:
+    static const int UART_PRIO    = 18; //cpu1: a low priority mere might cause wifi thruput to suffer, as wifi gets passed its data frim the uart subsustem in _writebuf/_readbuf
+    static const int IO_PRIO      = 15; //cpu1:
+    static const int STORAGE_PRIO = 15; //cpu1:
 
     static const int TIMER_SS 	  = 4096;
     static const int MAIN_SS      = 8192;

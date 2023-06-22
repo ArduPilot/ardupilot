@@ -94,6 +94,10 @@
 #define HAL_BARO_BMP085_NAME 				"bmp180"
 #define HAL_BARO_PROBE_LIST 				PROBE_BARO_I2C(BMP085, 0, 0x77)
 
+//Ranger
+#define HAL_PROXIMITY_ENABLED				true
+#define AP_PROXIMITY_RPLIDARA2_ENABLED			true
+
 //I2C Buses
 #define HAL_ESP32_I2C_BUSES				{.port=I2C_NUM_0, .sda=GPIO_NUM_21, .scl=GPIO_NUM_22, .speed=400*KHZ, .internal=true}
 
