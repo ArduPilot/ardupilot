@@ -3,7 +3,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
-#include <time.h>
+#include <AP_Common/time.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -209,7 +209,7 @@ uint32_t AP_RTC::get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms
 /*
   mktime replacement from Samba
  */
-time_t AP_RTC::mktime(const struct tm *t)
+time_t ap_mktime(const struct tm *t)
 {
     time_t epoch = 0;
     int n;
