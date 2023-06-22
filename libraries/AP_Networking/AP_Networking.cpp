@@ -285,6 +285,7 @@ AP_Networking::AP_Networking(void)
 void AP_Networking::init()
 {
 #ifdef HAL_GPIO_ETH_ENABLE
+    hal.gpio->pinMode(HAL_GPIO_ETH_ENABLE, HAL_GPIO_OUTPUT);
     hal.gpio->write(HAL_GPIO_ETH_ENABLE, _param.enabled ? 1 : 0);
 #endif
 
