@@ -124,7 +124,7 @@ static struct dronecan_protocol_t {
     uint8_t dna_interface = 1;
 } dronecan;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && defined(HAL_GPIO_PIN_TERMCAN1)
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && defined(HAL_GPIO_PIN_TERMCAN1) && (HAL_NUM_CAN_IFACES >= 2)
 static ioline_t can_term_lines[] = {
 HAL_GPIO_PIN_TERMCAN1
 
