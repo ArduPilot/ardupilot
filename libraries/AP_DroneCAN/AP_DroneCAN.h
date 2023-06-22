@@ -220,8 +220,6 @@ private:
         uint32_t last_lib_yaw_time_ms;
     } _gnss;
 #endif
-    
-    static HAL_Semaphore _telem_sem;
 
     // node status send
     uint32_t _node_status_last_send_ms;
