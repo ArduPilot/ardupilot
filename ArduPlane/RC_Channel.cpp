@@ -16,9 +16,14 @@ int8_t RC_Channels_Plane::flight_mode_channel_number() const
     return plane.g.flight_mode_channel.get();
 }
 
+bool RC_Channels_Plane::in_rc_failsafe() const
+{
+    return (plane.rc_failsafe_active() || plane.failsafe.rc_failsafe);
+}
+
 bool RC_Channels_Plane::has_valid_input() const
 {
-    if (plane.rc_failsafe_active() || plane.failsafe.rc_failsafe) {
+    if (in_rc_failsafe()) {
         return false;
     }
     if (plane.failsafe.throttle_counter != 0) {
