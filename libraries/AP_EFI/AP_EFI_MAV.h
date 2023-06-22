@@ -22,7 +22,7 @@
 
 class AP_EFI_MAV : public AP_EFI_Backend {
 public:
-    AP_EFI_MAV(AP_EFI &_frontend);
+	using AP_EFI_Backend::AP_EFI_Backend;
 
     void update() override;
 

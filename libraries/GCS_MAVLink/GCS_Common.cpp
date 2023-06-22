@@ -4092,7 +4092,7 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         break;
 #endif
 
-#if HAL_EFI_ENABLED
+#if AP_EFI_MAV_ENABLED
     case MAVLINK_MSG_ID_EFI_STATUS:
             AP_EFI *efi = AP::EFI();
             if (efi) {

@@ -18,20 +18,18 @@
 #include "AP_EFI_MAV.h"
 #include <AP_Math/AP_Math.h>
 
-AP_EFI_MAV::AP_EFI_MAV(AP_EFI &_frontend) :  AP_EFI_Backend(_frontend) {
-	receivedNewData = false;
-}
-
 //Called from frontend to update with the readings received by handler
-void AP_EFI_MAV::update() {
-    if(receivedNewData == true) {
+void AP_EFI_MAV::update()
+{
+    if (receivedNewData) {
     	copy_to_frontend();
     	receivedNewData = false;
     }
 }
 
 //Decode MavLink message
-void AP_EFI_MAV::handle_EFI_message(const mavlink_message_t &msg) {
+void AP_EFI_MAV::handle_EFI_message(const mavlink_message_t &msg)
+{
     mavlink_efi_status_t state;
     mavlink_msg_efi_status_decode(&msg, &state);
 
