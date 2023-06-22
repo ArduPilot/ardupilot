@@ -88,6 +88,11 @@
 #endif
 #include <AP_GPS/AP_GPS.h>
 
+#if HAL_WITH_IO_MCU
+#include <AP_IOMCU/AP_IOMCU.h>
+extern AP_IOMCU iomcu;
+#endif
+
 #include <ctype.h>
 
 extern const AP_HAL::HAL& hal;
@@ -4209,6 +4214,16 @@ void GCS_MAVLINK::send_banner()
     if (hal.util->get_system_id(sysid)) {
         send_text(MAV_SEVERITY_INFO, "%s", sysid);
     }
+
+    // send MCUID if we can
+#if HAL_WITH_IO_MCU
+#define REVID_MASK	0xFFFF0000
+#define DEVID_MASK	0xFFF
+    if (AP_BoardConfig::io_enabled()) {
+        uint32_t mcuid = iomcu.get_mcu_id();
+        send_text(MAV_SEVERITY_INFO, "IOMCU: %x %x", uint16_t(mcuid & DEVID_MASK), uint16_t((mcuid & REVID_MASK) >> 16U));
+    }
+#endif
 
     // send RC output mode info if available
     char banner_msg[50];
