@@ -113,6 +113,12 @@ void AP_IOMCU::thread_main(void)
     uart.begin(1500*1000, 128, 128);
     uart.set_unbuffered_writes(true);
 
+    AP_BLHeli* blh = AP_BLHeli::get_singleton();
+    uint16_t erpm_period_ms = 10; // default 100Hz
+    if (blh && blh->get_telemetry_rate() > 0) {
+        erpm_period_ms = constrain_int16(1000 / blh->get_telemetry_rate(), 1, 1000);
+    }
+
     trigger_event(IOEVENT_INIT);
 
     while (!do_shutdown) {
@@ -308,6 +314,22 @@ void AP_IOMCU::thread_main(void)
             last_servo_read_ms = AP_HAL::millis();
         }
 
+        if (AP_BoardConfig::io_dshot() && now - last_erpm_read_ms > erpm_period_ms) {
+            // read erpm at configured rate. A more efficient scheme might be to 
+            // send erpm info back with the response from a PWM send, but that would
+            // require a reworking of the registers model
+            read_erpm();
+            last_erpm_read_ms = AP_HAL::millis();
+        }
+
+        if (AP_BoardConfig::io_dshot() && now - last_telem_read_ms > 100) {
+            // read dshot telemetry at 10Hz
+            // needs to be at least 4Hz since each ESC updates at ~1Hz and we
+            // are reading 4 at a time
+            read_telem();
+            last_telem_read_ms = AP_HAL::millis();
+        }
+
         if (now - last_safety_option_check_ms > 1000) {
             update_safety_options();
             last_safety_option_check_ms = now;
@@ -369,6 +391,66 @@ void AP_IOMCU::read_rc_input()
     if (rc_input.flags_rc_ok && !rc_input.flags_failsafe) {
         rc_last_input_ms = AP_HAL::millis();
     }
+}
+
+/*
+  read dshot erpm
+ */
+void AP_IOMCU::read_erpm()
+{
+    uint16_t *r = (uint16_t *)&dshot_erpm;
+    if (!read_registers(PAGE_RAW_DSHOT_ERPM, 0, sizeof(dshot_erpm)/2, r)) {
+        return;
+    }
+    uint8_t motor_poles = 14;
+    AP_BLHeli* blh = AP_BLHeli::get_singleton();
+    if (blh) {
+        motor_poles = blh->get_motor_poles();
+    }
+    for (uint8_t i = 0; i < IOMCU_MAX_CHANNELS/4; i++) {
+        for (uint8_t j = 0; j < 4; j++) {
+            const uint8_t esc_id = (i * 4 + j);
+            if (dshot_erpm.update_mask & 1U<<esc_id) {
+                update_rpm(esc_id, dshot_erpm.erpm[esc_id] * 200U / motor_poles, dshot_telem[i].error_rate[j] / 100.0);
+            }
+        }
+    }
+}
+
+/*
+  read dshot telemetry
+ */
+void AP_IOMCU::read_telem()
+{
+    struct page_dshot_telem* telem = &dshot_telem[esc_group];
+    uint16_t *r = (uint16_t *)telem;
+    iopage page = PAGE_RAW_DSHOT_TELEM_1_4;
+    switch (esc_group) {
+    case 1:
+        page = PAGE_RAW_DSHOT_TELEM_5_8;
+        break;
+    case 2:
+        page = PAGE_RAW_DSHOT_TELEM_9_12;
+        break;
+    case 3:
+        page = PAGE_RAW_DSHOT_TELEM_13_16;
+        break;
+    default:
+        break;
+    }
+
+    if (!read_registers(page, 0, sizeof(page_dshot_telem)/2, r)) {
+        return;
+    }
+    for (uint i = 0; i<4; i++) {
+        TelemetryData t {
+            .temperature_cdeg = int16_t(telem->temperature_cdeg[i]),
+            .voltage = float(telem->voltage_cvolts[i]) * 0.01,
+            .current = float(telem->current_camps[i]) * 0.01
+        };
+        update_telem_data(esc_group * 4 + i, t, telem->types[i]);
+    }
+    esc_group = (esc_group + 1) % 4;
 }
 
 /*
@@ -841,6 +923,13 @@ void AP_IOMCU::set_dshot_period(uint16_t period_us, uint8_t drate)
     trigger_event(IOEVENT_SET_DSHOT_PERIOD);
 }
 
+// set the dshot esc_type
+void AP_IOMCU::set_dshot_esc_type(AP_HAL::RCOutput::DshotEscType dshot_esc_type)
+{
+    mode_out.esc_type = uint16_t(dshot_esc_type);
+    trigger_event(IOEVENT_SET_OUTPUT_MODE);
+}
+
 // set output mode
 void AP_IOMCU::set_telem_request_mask(uint32_t mask)
 {
@@ -870,6 +959,13 @@ void AP_IOMCU::set_output_mode(uint16_t mask, uint16_t mode)
 {
     mode_out.mask = mask;
     mode_out.mode = mode;
+    trigger_event(IOEVENT_SET_OUTPUT_MODE);
+}
+
+// set output mode
+void AP_IOMCU::set_bidir_dshot_mask(uint16_t mask)
+{
+    mode_out.bdmask = mask;
     trigger_event(IOEVENT_SET_OUTPUT_MODE);
 }
 
