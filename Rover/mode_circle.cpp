@@ -2,7 +2,7 @@
 
 #define AR_CIRCLE_ACCEL_DEFAULT         1.0 // default acceleration in m/s/s if not specified by user
 #define AR_CIRCLE_RADIUS_MIN            0.5 // minimum radius in meters
-#define AR_CIRCLE_REACHED_EDGE_DIST     1.0 // vehicle has reached edge if within 1m
+#define AR_CIRCLE_REACHED_EDGE_DIST     0.2 // vehicle has reached edge if within 0.2m
 
 const AP_Param::GroupInfo ModeCircle::var_info[] = {
 
