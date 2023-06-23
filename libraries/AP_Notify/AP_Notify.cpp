@@ -20,6 +20,7 @@
 #include "Buzzer.h"
 #include "Display.h"
 #include "ExternalLED.h"
+#include "IS31FL3195.h"
 #include "PCA9685LED_I2C.h"
 #include "NavigatorLED.h"
 #include "NeoPixel.h"
@@ -74,6 +75,11 @@ AP_Notify *AP_Notify::_singleton;
 // all I2C_LEDS
 #define I2C_LEDS (ALL_TOSHIBALED_I2C | ALL_NCP5623_I2C | ALL_LP5562_I2C)
 
+#if AP_NOTIFY_DRONECAN_LED_ENABLED
+#define DRONECAN_LEDS Notify_LED_DroneCAN
+#else
+#define DRONECAN_LEDS 0
+#endif
 
 #ifndef DEFAULT_NTF_LED_TYPES
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
@@ -90,7 +96,7 @@ AP_Notify *AP_Notify::_singleton;
 
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
     #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS |\
-                                    Notify_LED_DroneCAN)
+                                    DRONECAN_LEDS)
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE || \
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET || \
@@ -346,30 +352,28 @@ void AP_Notify::add_backends(void)
                 ADD_BACKEND(new ProfiLED_SPI());
                 break;
 #endif
-            case Notify_LED_OreoLED:
 #if AP_NOTIFY_OREOLED_ENABLED
+            case Notify_LED_OreoLED:
                 if (_oreo_theme) {
                     ADD_BACKEND(new OreoLED_I2C(0, _oreo_theme));
                 }
-#endif
                 break;
+#endif
+#if AP_NOTIFY_DRONECAN_LED_ENABLED
             case Notify_LED_DroneCAN:
-#if HAL_ENABLE_DRONECAN_DRIVERS
                 ADD_BACKEND(new DroneCAN_RGB_LED());
-#endif // HAL_ENABLE_DRONECAN_DRIVERS
                 break;
-
+#endif // AP_NOTIFY_DRONECAN_LED_ENABLED
+#if AP_NOTIFY_SCRIPTING_LED_ENABLED
             case Notify_LED_Scripting:
-#if AP_SCRIPTING_ENABLED
                 ADD_BACKEND(new ScriptingLED());
-#endif
                 break;
-
+#endif
+#if AP_NOTIFY_DSHOT_LED_ENABLED
             case Notify_LED_DShot:
-#if HAL_SUPPORT_RCOUT_SERIAL
                 ADD_BACKEND(new DShotLED());
-#endif
                 break;
+#endif
 #if AP_NOTIFY_LP5562_ENABLED
             case Notify_LED_LP5562_I2C_External:
                 FOREACH_I2C_EXTERNAL(b) {
@@ -379,6 +383,18 @@ void AP_Notify::add_backends(void)
             case Notify_LED_LP5562_I2C_Internal:
                 FOREACH_I2C_INTERNAL(b) {
                     ADD_BACKEND(new LP5562(b, 0x30));
+                }
+                break;
+#endif
+#if AP_NOTIFY_IS31FL3195_ENABLED
+            case Notify_LED_IS31FL3195_I2C_External:
+                FOREACH_I2C_EXTERNAL(b) {
+                    ADD_BACKEND(new IS31FL3195(b, 0x54));
+                }
+                break;
+            case Notify_LED_IS31FL3195_I2C_Internal:
+                FOREACH_I2C_INTERNAL(b) {
+                    ADD_BACKEND(new IS31FL3195(b, 0x54));
                 }
                 break;
 #endif

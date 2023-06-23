@@ -195,6 +195,10 @@ public:
     GCS_MAVLINK(GCS_MAVLINK_Parameters &parameters, AP_HAL::UARTDriver &uart);
     virtual ~GCS_MAVLINK() {}
 
+    // accessors used to retrieve objects used for parsing incoming messages:
+    mavlink_message_t *channel_buffer() { return &_channel_buffer; }
+    mavlink_status_t *channel_status() { return &_channel_status; }
+
     void        update_receive(uint32_t max_time_us=1000);
     void        update_send();
     bool        init(uint8_t instance);
@@ -655,6 +659,7 @@ protected:
     MAV_RESULT handle_command_do_fence_enable(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_debug_trap(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_set_ekf_source_set(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_airframe_configuration(const mavlink_command_long_t &packet);
 
     /*
       handle MAV_CMD_CAN_FORWARD and CAN_FRAME messages for CAN over MAVLink
@@ -725,6 +730,10 @@ protected:
     bool location_from_command_t(const mavlink_command_int_t &in, Location &out);
 
 private:
+
+    // define the two objects used for parsing incoming messages:
+    mavlink_message_t _channel_buffer;
+    mavlink_status_t _channel_status;
 
     const AP_SerialManager::UARTState *uartstate;
 

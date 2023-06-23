@@ -32,10 +32,9 @@ private:
     void handleMessage(const mavlink_message_t &msg) override { handle_common_message(msg); }
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override { return true; }
     MAV_RESULT handle_preflight_reboot(const mavlink_command_long_t &packet, const mavlink_message_t &msg) override;
+    uint8_t sysid_my_gcs() const override;
 
 protected:
-
-    uint8_t sysid_my_gcs() const override;
 
     // Periph information:
     MAV_MODE base_mode() const override { return (MAV_MODE)MAV_MODE_FLAG_CUSTOM_MODE_ENABLED; }

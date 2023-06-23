@@ -152,7 +152,13 @@ class AutoTestHelicopter(AutoTestCopter):
         self.progress("Raising rotor speed")
         self.set_rc(8, 2000)
         self.progress("wait for rotor runup to complete")
-        self.wait_servo_channel_value(8, 1659, timeout=10)
+        if self.get_parameter("H_RSC_MODE") == 4:
+            self.context_collect('STATUSTEXT')
+            self.wait_statustext("Governor Engaged", check_context=True)
+        elif self.get_parameter("H_RSC_MODE") == 3:
+            self.wait_rpm(1, 1300, 1400)
+        else:
+            self.wait_servo_channel_value(8, 1659, timeout=10)
 
         # wait for motor runup
         self.delay_sim_time(20)
@@ -198,6 +204,18 @@ class AutoTestHelicopter(AutoTestCopter):
             self.takeoff(10)
             self.do_RTL()
             self.set_rc(8, 1000)
+
+    def governortest(self):
+        '''Test Heli Internal Throttle Curve and Governor'''
+        self.customise_SITL_commandline(
+            ["--defaults", ','.join(self.model_defaults_filepath('heli-gas')), ],
+            model="heli-gas",
+            wipe=True,
+        )
+        self.set_parameter("H_RSC_MODE", 4)
+        self.takeoff(10)
+        self.do_RTL()
+        self.set_rc(8, 1000)
 
     def hover(self):
         self.progress("Setting hover collective")
@@ -793,6 +811,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.SplineWaypoint,
             self.AutoRotation,
             self.ManAutoRotation,
+            self.governortest,
             self.FlyEachFrame,
             self.AirspeedDrivers,
             self.TurbineStart,

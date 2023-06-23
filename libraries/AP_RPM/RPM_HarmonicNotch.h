@@ -29,7 +29,7 @@ public:
     void update(void) override;
 
 private:
-    uint8_t instance;
+
 };
 
 #endif  // AP_RPM_HARMONICNOTCH_ENABLED

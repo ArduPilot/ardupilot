@@ -212,7 +212,7 @@ Next, follow the associated section for your chosen transport, and finally you c
   * /rosout [rcl_interfaces/msg/Log] 1 publisher
 
   Subscribed topics:
-
+  * /ap/joy [sensor_msgs/msg/Joy] 1 subscriber
 
   $ ros2 topic hz /ap/time
   average rate: 50.115

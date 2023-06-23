@@ -310,11 +310,17 @@ void AP_Mount_Siyi::process_packet()
         // set hardware version based on message length
         _hardware_model = (_parsed_msg.data_bytes_received <= 8) ? HardwareModel::A8 : HardwareModel::ZR10;
 
-        // display camera firmware version
-        debug("Mount: SiyiCam fw:%u.%u.%u",
-              (unsigned)_msg_buff[_msg_buff_data_start+2],      // firmware major version
-              (unsigned)_msg_buff[_msg_buff_data_start+1],      // firmware minor version
-              (unsigned)_msg_buff[_msg_buff_data_start+0]);     // firmware revision
+        // consume and display camera firmware version
+        _cam_firmware_version = {
+            _msg_buff[_msg_buff_data_start+2],      // firmware major version
+            _msg_buff[_msg_buff_data_start+1],      // firmware minor version
+            _msg_buff[_msg_buff_data_start+0]       // firmware revision (aka patch)
+        };
+
+        gcs().send_text(MAV_SEVERITY_INFO, "Mount: SiyiCam fw:%u.%u.%u",
+                (unsigned)_cam_firmware_version.major,          // firmware major version
+                (unsigned)_cam_firmware_version.minor,          // firmware minor version
+                (unsigned)_cam_firmware_version.patch);         // firmware revision
 
         // display gimbal info to user
         gcs().send_text(MAV_SEVERITY_INFO, "Mount: Siyi fw:%u.%u.%u",
@@ -598,8 +604,18 @@ void AP_Mount_Siyi::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_
     const float pitch_err_rad = (pitch_rad - current_angle_transformed.y);
     const float pitch_rate_scalar = constrain_float(100.0 * pitch_err_rad * AP_MOUNT_SIYI_PITCH_P / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
 
-    // convert yaw angle to body-frame the use simple P controller to convert yaw angle error to a target rate scalar (-100 to +100)
-    const float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().yaw) : yaw_rad;
+    // convert yaw angle to body-frame
+    float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().yaw) : yaw_rad;
+
+    // enforce body-frame yaw angle limits.  If beyond limits always use body-frame control
+    const float yaw_bf_min = radians(_params.yaw_angle_min);
+    const float yaw_bf_max = radians(_params.yaw_angle_max);
+    if (yaw_bf_rad < yaw_bf_min || yaw_bf_rad > yaw_bf_max) {
+        yaw_bf_rad = constrain_float(yaw_bf_rad, yaw_bf_min, yaw_bf_max);
+        yaw_is_ef = false;
+    }
+
+    // use simple P controller to convert yaw angle error to a target rate scalar (-100 to +100)
     const float yaw_err_rad = (yaw_bf_rad - current_angle_transformed.z);
     const float yaw_rate_scalar = constrain_float(100.0 * yaw_err_rad * AP_MOUNT_SIYI_YAW_P / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
 
@@ -767,6 +783,75 @@ bool AP_Mount_Siyi::set_focus(FocusType focus_type, float focus_value)
 
     // unsupported focus type
     return false;
+}
+
+// send camera information message to GCS
+void AP_Mount_Siyi::send_camera_information(mavlink_channel_t chan) const
+{
+    // exit immediately if not initialised
+    if (!_initialised || !_got_firmware_version) {
+        return;
+    }
+
+    static const uint8_t vendor_name[32] = "Siyi";
+    static uint8_t model_name[32] = "Unknown";
+    const uint32_t fw_version = _cam_firmware_version.major | (_cam_firmware_version.minor << 8) | (_cam_firmware_version.patch << 16);
+    const char cam_definition_uri[140] {};
+
+    // focal length
+    float focal_length_mm = 0;
+    switch (_hardware_model) {
+    case HardwareModel::UNKNOWN:
+        break;
+    case HardwareModel::A8:
+        strncpy((char *)model_name, "A8", sizeof(model_name));
+        focal_length_mm = 21;
+        break;
+    case HardwareModel::ZR10:
+        strncpy((char *)model_name, "ZR10", sizeof(model_name));
+        // focal length range from 5.15 ~ 47.38
+        focal_length_mm = 5.15;
+        break;
+    }
+
+    // capability flags
+    const uint32_t flags = CAMERA_CAP_FLAGS_CAPTURE_VIDEO |
+                           CAMERA_CAP_FLAGS_CAPTURE_IMAGE |
+                           CAMERA_CAP_FLAGS_HAS_BASIC_ZOOM |
+                           CAMERA_CAP_FLAGS_HAS_BASIC_FOCUS;
+
+    // send CAMERA_INFORMATION message
+    mavlink_msg_camera_information_send(
+        chan,
+        AP_HAL::millis(),       // time_boot_ms
+        vendor_name,            // vendor_name uint8_t[32]
+        model_name,             // model_name uint8_t[32]
+        fw_version,             // firmware version uint32_t
+        focal_length_mm,        // focal_length float (mm)
+        0,                      // sensor_size_h float (mm)
+        0,                      // sensor_size_v float (mm)
+        0,                      // resolution_h uint16_t (pix)
+        0,                      // resolution_v uint16_t (pix)
+        0,                      // lens_id uint8_t
+        flags,                  // flags uint32_t (CAMERA_CAP_FLAGS)
+        0,                      // cam_definition_version uint16_t
+        cam_definition_uri);    // cam_definition_uri char[140]
+}
+
+// send camera settings message to GCS
+void AP_Mount_Siyi::send_camera_settings(mavlink_channel_t chan) const
+{
+    const float NaN = nanf("0x4152");
+    const float zoom_mult_max = get_zoom_mult_max();
+    const float zoom_pct = is_positive(zoom_mult_max) ? (_zoom_mult / zoom_mult_max * 100) : 0;
+
+    // send CAMERA_SETTINGS message
+    mavlink_msg_camera_settings_send(
+        chan,
+        AP_HAL::millis(),   // time_boot_ms
+        _last_record_video ? CAMERA_MODE_VIDEO : CAMERA_MODE_IMAGE, // camera mode (0:image, 1:video, 2:image survey)
+        zoom_pct,           // zoomLevel float, percentage from 0 to 100, NaN if unknown
+        NaN);               // focusLevel float, percentage from 0 to 100, NaN if unknown
 }
 
 #endif // HAL_MOUNT_SIYI_ENABLED

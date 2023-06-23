@@ -484,10 +484,6 @@ public:
 
     bool requires_terrain_failsafe() const override { return true; }
 
-    // return true if this flight mode supports user takeoff
-    //  must_nagivate is true if mode must also control horizontal position
-    virtual bool has_user_takeoff(bool must_navigate) const override { return false; }
-
     void payload_place_start();
 
     // for GCS_MAVLink to call:
@@ -1786,6 +1782,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override { return true; }
     bool is_autopilot() const override { return true; }
+    bool has_user_takeoff(bool must_navigate) const override { return true; }
 
     // save current position as A or B.  If both A and B have been saved move to the one specified
     void save_or_move_to_destination(Destination ab_dest);

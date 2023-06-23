@@ -25,7 +25,7 @@
 
 //#define ESC_TELEM_DEBUG
 
-#define ESC_RPM_CHECK_TIMEOUT_US 100000UL   // timeout for motor running validity
+#define ESC_RPM_CHECK_TIMEOUT_US 210000UL   // timeout for motor running validity
 
 extern const AP_HAL::HAL& hal;
 

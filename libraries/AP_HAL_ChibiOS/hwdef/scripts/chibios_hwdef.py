@@ -1034,13 +1034,12 @@ class ChibiOSHWDef(object):
                 if offset > bl_offset:
                     flash_reserve_end = flash_size - offset
 
-        if flash_size >= 2048 and not args.bootloader:
-            # lets pick a flash sector for Crash log
-            f.write('#define AP_CRASHDUMP_ENABLED 1\n')
-            self.env_vars['ENABLE_CRASHDUMP'] = 1
-        else:
-            f.write('#define AP_CRASHDUMP_ENABLED 0\n')
-            self.env_vars['ENABLE_CRASHDUMP'] = 0
+        crashdump_enabled = bool(self.intdefines.get('AP_CRASHDUMP_ENABLED', (flash_size >= 2048 and not args.bootloader)))
+        # lets pick a flash sector for Crash log
+        f.write('#ifndef AP_CRASHDUMP_ENABLED\n')
+        f.write('#define AP_CRASHDUMP_ENABLED %u\n' % crashdump_enabled)
+        f.write('#endif\n')
+        self.env_vars['ENABLE_CRASHDUMP'] = crashdump_enabled
 
         if args.bootloader:
             if self.env_vars['EXT_FLASH_SIZE_MB'] and not self.env_vars['INT_FLASH_PRIMARY']:
@@ -3124,6 +3123,14 @@ INCLUDE common.ld
 
 #define HAL_CRSF_TELEM_ENABLED 0
 
+#ifndef AP_SERVORELAYEVENTS_ENABLED
+#define AP_SERVORELAYEVENTS_ENABLED 0
+#endif
+
+#ifndef AP_RELAY_ENABLED
+#define AP_RELAY_ENABLED 0
+#endif
+
 /*
  * GPS Backends - we selectively turn backends on.
  *   Note also that f103-GPS explicitly disables some of these backends.
@@ -3264,6 +3271,12 @@ INCLUDE common.ld
 #ifndef AP_SCRIPTING_ENABLED
 #define AP_SCRIPTING_ENABLED 0
 #endif
+
+#define AP_BATTERY_ENABLED defined(HAL_PERIPH_ENABLE_BATTERY)
+#define AP_AHRS_ENABLED defined(HAL_PERIPH_ENABLE_AHRS)
+#define AP_COMPASS_ENABLED defined(HAL_PERIPH_ENABLE_MAG)
+#define AP_BARO_ENABLED defined(HAL_PERIPH_ENABLE_BARO)
+#define AP_GPS_ENABLED defined(HAL_PERIPH_ENABLE_GPS)
 
 // end AP_Periph defaults
 ''')

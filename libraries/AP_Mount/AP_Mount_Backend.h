@@ -154,6 +154,12 @@ public:
     // focus in = -1, focus hold = 0, focus out = 1
     virtual bool set_focus(FocusType focus_type, float focus_value) { return false; }
 
+    // send camera information message to GCS
+    virtual void send_camera_information(mavlink_channel_t chan) const {}
+
+    // send camera settings message to GCS
+    virtual void send_camera_settings(mavlink_channel_t chan) const {}
+
 protected:
 
     enum class MountTargetType {
