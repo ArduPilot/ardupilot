@@ -10,7 +10,7 @@ extern const AP_HAL::HAL& hal;
 *                   RESET FUNCTIONS                     *
 ********************************************************/
 
-// Reset velocity states to last GPS measurement if available or to zero if in constant position mode or if PV aiding is not absolute
+// Reset XY velocity states to last GPS measurement if available or to zero if in constant position mode or if PV aiding is not absolute
 // Do not reset vertical velocity using GPS as there is baro alt available to constrain drift
 void NavEKF2_core::ResetVelocity(void)
 {
@@ -23,7 +23,7 @@ void NavEKF2_core::ResetVelocity(void)
     zeroCols(P,3,4);
     
     if (PV_AidingMode != AID_ABSOLUTE) {
-        stateStruct.velocity.zero();
+        stateStruct.velocity.xy().zero();
         // set the variances using the measurement noise parameter
         P[4][4] = P[3][3] = sq(frontend->_gpsHorizVelNoise);
     } else {
