@@ -150,7 +150,8 @@ bool AP_Mount_Siyi::healthy() const
     }
 
     // unhealthy if attitude information NOT received recently
-    if (AP_HAL::millis() - _last_current_angle_rad_ms > 1000) {
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - _last_current_angle_rad_ms > 1000) {
         return false;
     }
 
