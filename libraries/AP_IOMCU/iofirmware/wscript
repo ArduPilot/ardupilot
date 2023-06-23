@@ -12,6 +12,7 @@ def build(bld):
         'AP_Math',
         'AP_RCProtocol',
         'AP_BoardConfig',
+        'AP_ESC_Telem',
         'AP_SBusOut'
         ],
         exclude_src=[

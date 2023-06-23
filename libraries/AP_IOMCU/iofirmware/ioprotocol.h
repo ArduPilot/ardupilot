@@ -58,6 +58,11 @@ enum iopage {
     PAGE_MIXING = 200,
     PAGE_GPIO = 201,
     PAGE_DSHOT = 202,
+    PAGE_RAW_DSHOT_ERPM = 203,
+    PAGE_RAW_DSHOT_TELEM_1_4 = 204,
+    PAGE_RAW_DSHOT_TELEM_5_8 = 205,
+    PAGE_RAW_DSHOT_TELEM_9_12 = 206,
+    PAGE_RAW_DSHOT_TELEM_13_16 = 207,
 };
 
 // setup page registers
@@ -184,6 +189,13 @@ struct __attribute__((packed, aligned(2))) page_GPIO {
     uint8_t output_mask;
 };
 
+struct __attribute__((packed, aligned(2))) page_mode_out {
+    uint16_t mask;
+    uint16_t mode;
+    uint16_t bdmask;
+    uint16_t esc_type;
+};
+
 struct __attribute__((packed, aligned(2))) page_dshot {
     uint16_t telem_mask;
     uint8_t command;
@@ -191,4 +203,18 @@ struct __attribute__((packed, aligned(2))) page_dshot {
     uint32_t command_timeout_ms;
     uint8_t repeat_count;
     uint8_t priority;
+};
+
+struct __attribute__((packed, aligned(2))) page_dshot_erpm {
+    uint16_t erpm[IOMCU_MAX_CHANNELS];
+    uint32_t update_mask;
+};
+
+// separate telemetry packet because (a) it's too big otherwise and (b) slower update rate
+struct __attribute__((packed, aligned(2))) page_dshot_telem {
+    uint16_t  error_rate[4]; // as a centi-percentage
+    uint16_t  voltage_cvolts[4];
+    uint16_t  current_camps[4];
+    uint16_t  temperature_cdeg[4];
+    uint16_t  types[4];
 };
