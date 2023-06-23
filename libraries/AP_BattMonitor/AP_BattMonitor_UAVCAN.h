@@ -60,6 +60,9 @@ public:
 
     void mppt_set_powered_state(bool power_on) override;
 
+    // reset remaining percentage to given value
+    bool reset_remaining(float percentage) override;
+
 private:
     void handle_battery_info(const BattInfoCb &cb);
     void handle_battery_info_aux(const BattInfoAuxCb &cb);
@@ -84,6 +87,10 @@ private:
     static void mppt_report_faults(const uint8_t instance, const uint8_t fault_flags);
     static const char* mppt_fault_string(const MPPT_FaultFlags fault);
 #endif
+
+    // Return true if the DroneCAN state of charge should be used.
+    // Return false if state of charge should be calculated locally by counting mah.
+    bool use_CAN_SoC() const;
 
     AP_BattMonitor::BattMonitor_State _interim_state;
     BattMonitor_UAVCAN_Type _type;
