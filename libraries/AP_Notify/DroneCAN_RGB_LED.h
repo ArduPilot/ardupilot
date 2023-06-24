@@ -11,9 +11,7 @@ public:
                    uint8_t led_medium, uint8_t led_dim);
     DroneCAN_RGB_LED();
     bool init() override;
-    void update() override;
 protected:
     virtual bool hw_set_rgb(uint8_t red, uint8_t green, uint8_t blue) override;
-    uavcan_equipment_indication_LightsCommand msg;
 };
 #endif
