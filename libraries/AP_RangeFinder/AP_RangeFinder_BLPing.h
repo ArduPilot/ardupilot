@@ -1,10 +1,6 @@
 #pragma once
 
-#include "AP_RangeFinder.h"
-
-#ifndef AP_RANGEFINDER_BLPING_ENABLED
-#define AP_RANGEFINDER_BLPING_ENABLED AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
-#endif
+#include "AP_RangeFinder_config.h"
 
 #if AP_RANGEFINDER_BLPING_ENABLED
 
