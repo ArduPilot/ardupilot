@@ -2,10 +2,12 @@
   block based logging, for boards with flash logging
  */
 
-#include "AP_Logger_Block.h"
+#include "AP_Logger_config.h"
 
 #if HAL_LOGGING_BLOCK_ENABLED
 
+#include "AP_Logger_Block.h"
+#include "AP_Logger.h"
 #include <AP_HAL/AP_HAL.h>
 #include <stdio.h>
 #include <AP_RTC/AP_RTC.h>
