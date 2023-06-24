@@ -606,10 +606,6 @@ void GCS_MAVLINK_Copter::packetReceived(const mavlink_status_t &status,
         copter.avoidance_adsb.handle_msg(msg);
     }
 #endif
-#if MODE_FOLLOW_ENABLED == ENABLED
-    // pass message to follow library
-    copter.g2.follow.handle_msg(msg);
-#endif
     GCS_MAVLINK::packetReceived(status, msg);
 }
 
