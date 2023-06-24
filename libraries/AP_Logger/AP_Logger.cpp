@@ -15,6 +15,10 @@
 #include <AP_Rally/AP_Rally.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
+#if HAL_LOGGER_FENCE_ENABLED
+    #include <AC_Fence/AC_Fence.h>
+#endif
+
 AP_Logger *AP_Logger::_singleton;
 
 extern const AP_HAL::HAL& hal;
