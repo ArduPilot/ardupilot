@@ -820,6 +820,7 @@ void Rover::load_parameters(void)
     if (!g.format_version.load() ||
          g.format_version != Parameters::k_format_version) {
         // erase all parameters
+	hal.console->printf("g.fmt: %d pkfmt: %d\n", (int)g.format_version, (int)Parameters::k_format_version);
         hal.console->printf("Firmware change: erasing EEPROM...\n");
         StorageManager::erase();
         AP_Param::erase_all();

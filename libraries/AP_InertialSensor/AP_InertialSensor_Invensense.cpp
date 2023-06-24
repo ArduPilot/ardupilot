@@ -1045,6 +1045,11 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
         if ((_dev->bus_type() == AP_HAL::Device::BUS_TYPE_I2C) && (_mpu_type == Invensense_MPU6500 || _mpu_type == Invensense_MPU6000 || _mpu_type == Invensense_MPU9250 || _mpu_type == Invensense_ICM20789)) {
             /* Enable I2C bypass to access internal device */
             _register_write(MPUREG_INT_PIN_CFG, BIT_BYPASS_EN);
+           if((_dev->bus_type() == AP_HAL::Device::BUS_TYPE_I2C) && (_mpu_type == Invensense_MPU6500 || _mpu_type == Invensense_MPU6000)) {
+		_register_write(0x6A, 0x00);
+		_register_write(0x6B, 0x00);
+	   }	 
+           hal.scheduler->delay(5);
         }
 
 

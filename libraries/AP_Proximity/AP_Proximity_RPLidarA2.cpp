@@ -39,7 +39,7 @@
 #include <ctype.h>
 #include <stdio.h>
 
-#define RP_DEBUG_LEVEL 0
+#define RP_DEBUG_LEVEL 1
 
 #include <GCS_MAVLink/GCS.h>
 #if RP_DEBUG_LEVEL

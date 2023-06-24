@@ -38,42 +38,6 @@
 #define PROBE_MAG_IMU_I2C(driver, imudev, bus, addr, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe_ ## imudev(GET_I2C_DEVICE(bus,addr),##args))
 //------------------------------------
 
-
-//Protocols
-//list of protocols/enum:	ardupilot/libraries/AP_SerialManager/AP_SerialManager.h
-//default protocols:		ardupilot/libraries/AP_SerialManager/AP_SerialManager.cpp
-//ESP32 serials:		AP_HAL_ESP32/HAL_ESP32_Class.cpp
-
-//#define HAL_SERIAL0_PROTOCOL				SerialProtocol_MAVLink2			//A	UART0: Always: Console, MAVLink2
-//#define HAL_SERIAL0_BAUD				AP_SERIALMANAGER_CONSOLE_BAUD/1000	//115200
-
-//#define HAL_SERIAL1_PROTOCOL				SerialProtocol_MAVLink2			//C	WiFi:  TCP, UDP, or disable (depends on HAL_ESP32_WIFI)
-//#define HAL_SERIAL1_BAUD				AP_SERIALMANAGER_MAVLINK_BAUD/1000	//57600
-
-//#define HAL_SERIAL2_PROTOCOL				SerialProtocol_GPS			//D	UART2: Always: MAVLink2 on ESP32
-//#define HAL_SERIAL2_BAUD				AP_SERIALMANAGER_GPS_BAUD/1000		//38400
-
-//#define HAL_SERIAL3_PROTOCOL				SerialProtocol_GPS			//B	UART1: GPS1
-//#define HAL_SERIAL4_BAUD				AP_SERIALMANAGER_GPS_BAUD/1000		//38400, Can not define default baudrate here (by config only)
-
-//#define HAL_SERIAL4_PROTOCOL				SerialProtocol_None			//E
-//#define HAL_SERIAL4_BAUD				AP_SERIALMANAGER_GPS_BAUD/1000		//38400, Can not define default baudrate here (by config only)
-
-/*#define HAL_SERIAL5_PROTOCOL				SerialProtocol_None			//F
-#define HAL_SERIAL5_BAUD				(115200/1000)
-
-#define HAL_SERIAL6_PROTOCOL				SerialProtocol_None			//G
-#define HAL_SERIAL6_BAUD				(115200/1000)
-
-#define HAL_SERIAL7_PROTOCOL				SerialProtocol_None			//H
-#define HAL_SERIAL7_BAUD				(115200/1000)
-
-#define HAL_SERIAL8_PROTOCOL				SerialProtocol_None			//I
-#define HAL_SERIAL8_BAUD				(115200/1000)
-
-#define HAL_SERIAL9_PROTOCOL				SerialProtocol_None			//J
-#define HAL_SERIAL9_BAUD				(115200/1000)*/
-
 // Inertial sensors
 // Maybe needed for external compass in Beitian BE-252i
 
@@ -84,7 +48,7 @@
 
 #define HAL_INS_DEFAULT                              	HAL_INS_MPU6050_I2C
 #define HAL_INS_PROBE_LIST 			     	PROBE_IMU_I2C(Invensense, 0, 0x68, ROTATION_NONE)
-#define HAL_MAG_PROBE1					PROBE_MAG_I2C(HMC5843, 0, 0x1E, 0, ROTATION_NONE)
+#define HAL_MAG_PROBE1					PROBE_MAG_I2C(HMC5843, 0, 0x1E, 0, ROTATION_YAW_270)
 #define HAL_MAG_PROBE2					PROBE_MAG_I2C(IST8310, 0, 0x0e, 1, ROTATION_NONE)
 #define HAL_MAG_PROBE_LIST				HAL_MAG_PROBE1; HAL_MAG_PROBE2;
 #define HAL_INS_MPU6050_NAME 				"mpu6050"
@@ -154,7 +118,8 @@
 
 #define HAL_BOARD_LOG_DIRECTORY				"/SDCARD/APM/LOGS"
 #define HAL_BOARD_STORAGE_DIRECTORY			"/SDCARD/APM/STORAGE"
-#define HAL_BOARD_LOG_DIRECTORY				"/SDCARD/APM/LOGS"
 #define HAL_BOARD_TERRAIN_DIRECTORY			"/SDCARD/APM/TERRAIN"
+
+//#define STORAGEDEBUG 					1
 
 #define HAL_LOGGING_BACKENDS_DEFAULT			1
