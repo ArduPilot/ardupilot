@@ -17,13 +17,7 @@ class AP_Logger_MAVLink : public AP_Logger_Backend
 {
 public:
     // constructor
-    AP_Logger_MAVLink(AP_Logger &front, LoggerMessageWriter_DFLogStart *writer) :
-        AP_Logger_Backend(front, writer),
-        _max_blocks_per_send_blocks(8)
-        {
-            _blockcount = 1024*((uint8_t)_front._params.mav_bufsize) / sizeof(struct dm_block);
-            // ::fprintf(stderr, "DM: Using %u blocks\n", _blockcount);
-        }
+    AP_Logger_MAVLink(class AP_Logger &front, LoggerMessageWriter_DFLogStart *writer);
 
     static AP_Logger_Backend  *probe(AP_Logger &front,
                                      LoggerMessageWriter_DFLogStart *ls) {

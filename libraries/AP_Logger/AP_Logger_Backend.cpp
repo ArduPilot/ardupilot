@@ -11,6 +11,7 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Rally/AP_Rally.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include "AP_Logger.h"
 
 #if HAL_LOGGER_FENCE_ENABLED
     #include <AC_Fence/AC_Fence.h>
