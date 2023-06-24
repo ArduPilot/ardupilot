@@ -108,6 +108,9 @@ public:
     // MCUID
     uint32_t get_mcu_id() const { return config.mcuid; }
 
+    // CPUID
+    uint32_t get_cpu_id() const { return config.cpuid; }
+
 #if HAL_DSHOT_ENABLED
     // set dshot output period
     void set_dshot_period(uint16_t period_us, uint8_t drate);

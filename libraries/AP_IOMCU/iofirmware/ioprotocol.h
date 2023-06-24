@@ -108,6 +108,7 @@ struct page_config {
     uint16_t protocol_version;
     uint16_t protocol_version2;
     uint32_t mcuid;
+    uint32_t cpuid;
 };
 
 struct page_reg_status {
