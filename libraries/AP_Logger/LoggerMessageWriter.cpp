@@ -3,6 +3,10 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
+#if HAL_LOGGER_FENCE_ENABLED
+    #include <AC_Fence/AC_Fence.h>
+#endif
+
 #define FORCE_VERSION_H_INCLUDE
 #include "ap_version.h"
 #undef FORCE_VERSION_H_INCLUDE

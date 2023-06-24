@@ -12,10 +12,6 @@
 #include <AP_Logger/LogStructure.h>
 #include <AP_Vehicle/ModeReason.h>
 
-#if HAL_LOGGER_FENCE_ENABLED
-    #include <AC_Fence/AC_Fence.h>
-#endif
-
 #include <stdint.h>
 
 #include "LoggerMessageWriter.h"
