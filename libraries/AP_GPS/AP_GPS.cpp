@@ -2123,14 +2123,17 @@ bool AP_GPS::is_healthy(uint8_t instance) const
     bool delay_ok = (t.delayed_count < delay_threshold) &&
         t.average_delta_ms < delay_avg_max &&
         state[instance].lagged_sample_count < 5;
+    if (!delay_ok) {
+        return false;
+    }
 
 #if defined(GPS_BLENDED_INSTANCE)
     if (instance == GPS_BLENDED_INSTANCE) {
-        return delay_ok && blend_health_check();
+        return blend_health_check();
     }
 #endif
 
-    return delay_ok && drivers[instance] != nullptr &&
+    return drivers[instance] != nullptr &&
            drivers[instance]->is_healthy();
 #endif // HAL_BUILD_AP_PERIPH
 }
