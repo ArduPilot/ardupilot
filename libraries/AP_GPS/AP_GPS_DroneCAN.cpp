@@ -798,8 +798,10 @@ void AP_GPS_DroneCAN::inject_data(const uint8_t *data, uint16_t len)
     // using a different uavcan instance than the first GPS, as we
     // send the data as broadcast on all DroneCAN devive ports and we
     // don't want to send duplicates
+    const uint32_t now_ms = AP_HAL::millis();
     if (_detected_module == 0 ||
-        _detected_modules[_detected_module].ap_dronecan != _detected_modules[0].ap_dronecan) {
+        _detected_modules[_detected_module].ap_dronecan != _detected_modules[0].ap_dronecan ||
+        now_ms - _detected_modules[0].last_inject_ms > 2000) {
         if (_rtcm_stream.buf == nullptr) {
             // give enough space for a full round from a NTRIP server with all
             // constellations
@@ -808,6 +810,7 @@ void AP_GPS_DroneCAN::inject_data(const uint8_t *data, uint16_t len)
                 return;
             }
         }
+        _detected_modules[_detected_module].last_inject_ms = now_ms;
         _rtcm_stream.buf->write(data, len);
         send_rtcm();
     }
