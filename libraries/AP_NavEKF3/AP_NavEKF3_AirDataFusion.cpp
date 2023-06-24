@@ -72,8 +72,11 @@ void NavEKF3_core::FuseAirspeed()
         // When dead reckoning, scale up innovation variance if innovations are larger than the gate
         // and do not reject the observation to reduce the impact of bad airspeed data or sudden
         // wind speed changes on the ability to continue dead reckoning navigation.
-        tasTestRatio = sq(innovVtas) / (sq(MAX(0.01f * (ftype)frontend->_tasInnovGate, 1.0f)) * varInnovVtas);
         const bool doingAirDataDeadReckoning = posTimeout || (PV_AidingMode != AID_ABSOLUTE);
+        // Use a smaller gate when dead reckoning to prevent rapid changes to velocity states
+        // due to gusts or airspeed errors.
+        const ftype gateStdDev = doingAirDataDeadReckoning ? 1.0f : MAX(0.01f * (ftype)frontend->_tasInnovGate, 1.0f);
+        tasTestRatio = sq(innovVtas) / (sq(gateStdDev) * varInnovVtas);
         if (doingAirDataDeadReckoning && tasTestRatio > 1.0f) {
             // Adjust the Kalman gains equivalent to increasing the observation noise variance to the
             // smallest value that would result in the observation being accepted.
