@@ -140,8 +140,7 @@ static void dma_tx_end_cb(hal_uart_driver *uart)
     TOGGLE_PIN_DEBUG(108);
     TOGGLE_PIN_DEBUG(108);
 
-    chEvtSignalI(iomcu.thread_ctx, iomcu.fmu_events | IOEVENT_TX_END);
-    iomcu.fmu_events = 0;
+    chEvtSignalI(iomcu.thread_ctx, IOEVENT_TX_END);
 }
 
 /* replacement for ChibiOS uart_lld_serve_interrupt() */
@@ -294,7 +293,7 @@ void AP_IOMCU_FW::init()
 #else
     config.mcuid = (*(uint32_t *)DBGMCU_BASE);
 #endif
-
+    config.cpuid = SCB->CPUID;
 
     thread_ctx = chThdGetSelfX();
 
@@ -491,7 +490,8 @@ void AP_IOMCU_FW::update()
     }
 
     // run fast loop functions at 1Khz
-    if (now_us - last_fast_loop_us > 1000) {
+    if (now_us - last_fast_loop_us >= 1000)
+    {
         last_fast_loop_us = now_us;
         rcin_update();
         rcin_serial_update();
@@ -877,7 +877,7 @@ bool AP_IOMCU_FW::handle_code_write()
             i++;
         }
         fmu_data_received_time = last_ms;
-        fmu_events |= IOEVENT_PWM;
+        chEvtSignalI(thread_ctx, IOEVENT_PWM);
         break;
     }
 
@@ -1062,30 +1062,36 @@ void AP_IOMCU_FW::rcout_config_update(void)
         last_channel_mask = reg_setup.channel_mask;
     }
 
-    bool use_dshot = mode_out.mode >= AP_HAL::RCOutput::MODE_PWM_DSHOT150 
-        && mode_out.mode <= AP_HAL::RCOutput::MODE_PWM_DSHOT300;
-    if (use_dshot && !dshot_enabled) {
-        dshot_enabled = true;
+    // see if there is anything to do, we only support setting the mode for a particular channel once
+    if ((last_output_mode_mask & ~mode_out.mask) == mode_out.mask) {
+        return;
+    }
+
+    switch (mode_out.mode) {
+    case AP_HAL::RCOutput::MODE_PWM_DSHOT150:
+    case AP_HAL::RCOutput::MODE_PWM_DSHOT300:
         hal.rcout->set_output_mode(mode_out.mask, (AP_HAL::RCOutput::output_mode)mode_out.mode);
         // enabling dshot changes the memory allocation
         reg_status.freemem = hal.util->available_memory();
-    }
-    bool use_oneshot = (mode_out.mode == AP_HAL::RCOutput::MODE_PWM_ONESHOT
-        || mode_out.mode == AP_HAL::RCOutput::MODE_PWM_ONESHOT125);
-    if (use_oneshot && !oneshot_enabled) {
-        oneshot_enabled = true;
+        last_output_mode_mask |= mode_out.mask;
+        break;
+    case AP_HAL::RCOutput::MODE_PWM_ONESHOT:
+    case AP_HAL::RCOutput::MODE_PWM_ONESHOT125:
         // setup to use a 1Hz frequency, so we only get output when we trigger
         hal.rcout->set_freq(mode_out.mask, 1);
         hal.rcout->set_output_mode(mode_out.mask, (AP_HAL::RCOutput::output_mode)mode_out.mode);
-    }
-    bool use_brushed = mode_out.mode == AP_HAL::RCOutput::MODE_PWM_BRUSHED;
-    if (use_brushed && !brushed_enabled) {
-        brushed_enabled = true;
+        last_output_mode_mask |= mode_out.mask;
+        break;
+    case AP_HAL::RCOutput::MODE_PWM_BRUSHED:
         // default to 2kHz for all channels for brushed output
         hal.rcout->set_freq(mode_out.mask, 2000);
         hal.rcout->set_esc_scaling(1000, 2000);
         hal.rcout->set_output_mode(mode_out.mask, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
         hal.rcout->set_freq(mode_out.mask, reg_setup.pwm_altrate);
+        last_output_mode_mask |= mode_out.mask;
+        break;
+    default:
+        break;
     }
 
     uint32_t output_mask = 0;

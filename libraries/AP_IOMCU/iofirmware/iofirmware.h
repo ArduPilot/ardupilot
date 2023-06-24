@@ -112,10 +112,12 @@ public:
     } rate;
 
     // output mode values
-     struct {
-         uint16_t mask;
-         uint16_t mode;
-     } mode_out;
+    struct {
+        uint16_t mask;
+        uint16_t mode;
+    } mode_out;
+
+    uint16_t last_output_mode_mask;
 
     // MIXER values
     struct page_mixing mixing;
@@ -144,9 +146,6 @@ public:
 
     uint32_t fmu_data_received_time;
 
-    // events that will be signaled on transaction completion;
-    eventmask_t fmu_events;
-
     bool pwm_update_pending;
     uint32_t last_heater_ms;
     uint32_t reboot_time;
@@ -161,9 +160,6 @@ public:
     uint8_t led_counter;
     uint32_t last_slow_loop_ms;
     uint32_t last_fast_loop_us;
-    bool dshot_enabled;
-    bool oneshot_enabled;
-    bool brushed_enabled;
     thread_t *thread_ctx;
     bool last_safety_off;
     uint32_t last_status_ms;
