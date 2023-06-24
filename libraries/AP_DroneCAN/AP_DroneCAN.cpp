@@ -309,6 +309,9 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
     node_status.set_priority(CANARD_TRANSFER_PRIORITY_LOWEST);
     node_status.set_timeout_ms(1000);
 
+    rgb_led.set_timeout_ms(20);
+    rgb_led.set_priority(CANARD_TRANSFER_PRIORITY_LOW);
+    
     node_info_server.set_timeout_ms(20);
 
     // setup node status
