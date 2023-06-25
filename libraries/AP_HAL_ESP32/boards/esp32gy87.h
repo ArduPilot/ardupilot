@@ -60,7 +60,7 @@
 
 //Ranger
 #define HAL_PROXIMITY_ENABLED				true
-#define AP_PROXIMITY_RPLIDARA2_ENABLED			true
+#define AP_PROXIMITY_LD19_ENABLED			true
 
 //I2C Buses
 #define HAL_ESP32_I2C_BUSES				{.port=I2C_NUM_0, .sda=GPIO_NUM_21, .scl=GPIO_NUM_22, .speed=400*KHZ, .internal=true}

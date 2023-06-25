@@ -81,6 +81,9 @@ public:
 #if AP_PROXIMITY_DRONECAN_ENABLED
         DroneCAN = 14,
 #endif
+#if AP_PROXIMITY_LD19_ENABLED
+        LD19 = 15,
+#endif
     };
 
     enum class Status {

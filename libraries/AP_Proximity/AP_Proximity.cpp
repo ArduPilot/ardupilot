@@ -28,6 +28,7 @@
 #include "AP_Proximity_AirSimSITL.h"
 #include "AP_Proximity_Cygbot_D1.h"
 #include "AP_Proximity_DroneCAN.h"
+#include "AP_Proximity_LD19.h"
 
 #include <AP_Logger/AP_Logger.h>
 
@@ -147,6 +148,15 @@ void AP_Proximity::init()
             if (AP_Proximity_TeraRangerTower::detect(serial_instance)) {
                 state[instance].instance = instance;
                 drivers[instance] = new AP_Proximity_TeraRangerTower(*this, state[instance], params[instance], serial_instance);
+                serial_instance++;
+            }
+            break;
+#endif
+#if AP_PROXIMITY_LD19_ENABLED
+        case Type::LD19:
+            if (AP_Proximity_LD19::detect(serial_instance)) {
+                state[instance].instance = instance;
+                drivers[instance] = new AP_Proximity_LD19(*this, state[instance], params[instance], serial_instance);
                 serial_instance++;
             }
             break;
