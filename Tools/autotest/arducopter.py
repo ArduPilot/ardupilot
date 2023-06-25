@@ -8843,10 +8843,10 @@ class AutoTestCopter(AutoTest):
         '''Refind the GPS and attempt to RTL rather than continue to land'''
         # https://github.com/ArduPilot/ardupilot/issues/14236
         self.progress("arm the vehicle and takeoff in Guided")
-        self.takeoff(20, mode='GUIDED')
+        self.takeoff(50, mode='GUIDED')
         self.progress("fly 50m North (or whatever)")
         old_pos = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-        self.fly_guided_move_global_relative_alt(50, 0, 20)
+        self.fly_guided_move_global_relative_alt(50, 0, 50)
         self.set_parameter('GPS_TYPE', 0)
         self.drain_mav()
         tstart = self.get_sim_time()
