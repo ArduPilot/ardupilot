@@ -59,6 +59,8 @@ extern AP_Periph_FW periph;
 #ifndef HAL_CAN_POOL_SIZE
 #if HAL_CANFD_SUPPORTED
     #define HAL_CAN_POOL_SIZE 16000
+#elif GPS_MOVING_BASELINE
+    #define HAL_CAN_POOL_SIZE 8000
 #else
     #define HAL_CAN_POOL_SIZE 4000
 #endif
@@ -2151,9 +2153,11 @@ void AP_Periph_FW::send_moving_baseline_msg()
     } else 
 #endif
     {
+        // we use MEDIUM priority on this data as we need to get all
+        // the data through for RTK moving baseline yaw to work
         canard_broadcast(ARDUPILOT_GNSS_MOVINGBASELINEDATA_SIGNATURE,
                         ARDUPILOT_GNSS_MOVINGBASELINEDATA_ID,
-                        CANARD_TRANSFER_PRIORITY_LOW,
+                        CANARD_TRANSFER_PRIORITY_MEDIUM,
                         &buffer[0],
                         total_size);
     }
