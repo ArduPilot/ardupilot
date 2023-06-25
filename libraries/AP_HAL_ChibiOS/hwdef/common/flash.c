@@ -306,24 +306,35 @@ void stm32_flash_lock(void)
 #endif
 }
 
-#if defined(STM32H7) && HAL_FLASH_PROTECTION
+#if (defined(STM32H7) && HAL_FLASH_PROTECTION) || defined(HAL_FLASH_SET_NRST_MODE)
 static void stm32_flash_wait_opt_idle(void)
 {
     __DSB();
+#if defined(STM32H7)
     while (FLASH->OPTSR_CUR & FLASH_OPTSR_OPT_BUSY) {
         // nop
     }
+#else
+    while (FLASH->SR & FLASH_SR_BSY) {
+        // nop
+    }
+#endif
 }
 
 static void stm32_flash_opt_clear_errors(void)
 {
+#if defined(STM32H7)
     FLASH->OPTCCR = FLASH_OPTCCR_CLR_OPTCHANGEERR;
+#else
+    FLASH->SR |= FLASH_SR_OPERR;
+#endif
 }
 
 static bool stm32_flash_unlock_options(void)
 {
     stm32_flash_wait_opt_idle();
 
+#if defined(STM32H7)
     if (FLASH->OPTCR & FLASH_OPTCR_OPTLOCK) {
         /* Unlock sequence */
         FLASH->OPTKEYR = FLASH_OPTKEY1;
@@ -333,6 +344,11 @@ static bool stm32_flash_unlock_options(void)
     if (FLASH->OPTSR_CUR & FLASH_OPTSR_OPTCHANGEERR) {
         return false;
     }
+#else
+    FLASH->OPTKEYR = FLASH_OPTKEY1;
+    FLASH->OPTKEYR = FLASH_OPTKEY2;
+    stm32_flash_wait_opt_idle();
+#endif
     return true;
 }
 
@@ -340,11 +356,15 @@ static bool stm32_flash_lock_options(void)
 {
     stm32_flash_wait_opt_idle();
 
+#if defined(STM32H7)
     FLASH->OPTCR |= FLASH_OPTCR_OPTLOCK;
 
     if (FLASH->OPTSR_CUR & FLASH_OPTSR_OPTCHANGEERR) {
         return false;
     }
+#else
+    FLASH->CR |= FLASH_CR_OPTLOCK;
+#endif
     return true;
 }
 #endif
@@ -1037,6 +1057,28 @@ void stm32_flash_unprotect_flash()
     }
 #endif
 }
+
+#if defined(HAL_FLASH_SET_NRST_MODE)
+/*
+  set NRST_MODE bits if not already set
+ */
+void stm32_flash_set_NRST_MODE(uint8_t nrst_mode)
+{
+    if ((FLASH->OPTR & FLASH_OPTR_NRST_MODE_Msk) == (((uint32_t)nrst_mode)<<FLASH_OPTR_NRST_MODE_Pos)) {
+        // already set correctly
+        return;
+    }
+    stm32_flash_unlock();
+    stm32_flash_opt_clear_errors();
+    if (stm32_flash_unlock_options()) {
+        FLASH->OPTR = (FLASH->OPTR & ~FLASH_OPTR_NRST_MODE_Msk) | (((uint32_t)nrst_mode)<<FLASH_OPTR_NRST_MODE_Pos);
+        FLASH->CR |= FLASH_CR_OPTSTRT;
+        stm32_flash_wait_opt_idle();
+        stm32_flash_lock_options();
+    }
+    stm32_flash_lock();
+}
+#endif // HAL_FLASH_SET_NRST_MODE
 
 #ifndef HAL_BOOTLOADER_BUILD
 /*
