@@ -18,6 +18,7 @@
 #include "hal.h"
 #include "usbcfg.h"
 #include "stm32_util.h"
+#include "flash.h"
 #include "watchdog.h"
 
 
@@ -293,6 +294,11 @@ void __late_init(void) {
 #endif
 #ifdef HAL_USB_PRODUCT_ID
   setup_usb_strings();
+#endif
+
+#ifdef HAL_FLASH_SET_NRST_MODE
+  // ensure NRST_MODE is set correctly
+  stm32_flash_set_NRST_MODE(HAL_FLASH_SET_NRST_MODE);
 #endif
 }
 
