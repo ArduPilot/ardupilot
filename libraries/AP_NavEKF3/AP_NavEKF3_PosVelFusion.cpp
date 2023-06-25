@@ -771,13 +771,13 @@ void NavEKF3_core::FuseVelPosNED()
                 posCheckPassed = true;
                 lastPosPassTime_ms = imuSampleTime_ms;
             } else if ((frontend->_gpsGlitchRadiusMax <= 0) && (PV_AidingMode != AID_NONE)) {
-                // handle special case where the glitch radius parameter has been set to a non-positive number
-                // to indicate that large velocity and position innovations should be clipped instead of rejected.
+                // Handle the special case where the glitch radius parameter has been set to a non-positive number.
+                // The innovation variance is increased to limit the state update to an amount corresponding
+                // to a test ratio of 1.
                 posCheckPassed = true;
                 lastPosPassTime_ms = imuSampleTime_ms;
-                const ftype scaleFactor = 1.0F / sqrtF(posTestRatio);
-                innovVelPos[3] *= scaleFactor;
-                innovVelPos[4] *= scaleFactor;
+                varInnovVelPos[3] *= posTestRatio;
+                varInnovVelPos[4] *= posTestRatio;
                 posCheckPassed = true;
                 lastPosPassTime_ms = imuSampleTime_ms;
             }
@@ -846,15 +846,14 @@ void NavEKF3_core::FuseVelPosNED()
                 velCheckPassed = true;
                 lastVelPassTime_ms = imuSampleTime_ms;
             } else if (frontend->_gpsGlitchRadiusMax <= 0) {
-                // handle special case where the glitch radius parameter has been set to a non-positive number
-                // to indicate that large velocity and position innovations should be clipped instead of rejected.
+                // Handle the special case where the glitch radius parameter has been set to a non-positive number.
+                // The innovation variance is increased to limit the state update to an amount corresponding
+                // to a test ratio of 1.
                 posCheckPassed = true;
                 lastPosPassTime_ms = imuSampleTime_ms;
-                const ftype scaleFactor = 1.0F / sqrtF(velTestRatio);
                 for (uint8_t i = 0; i<=imax; i++) {
-                    innovVelPos[i] *= scaleFactor;
+                    varInnovVelPos[i] *= velTestRatio;
                 }
-                innovVelPos[4] *= scaleFactor;
                 velCheckPassed = true;
                 lastVelPassTime_ms = imuSampleTime_ms;
             }
@@ -889,17 +888,18 @@ void NavEKF3_core::FuseVelPosNED()
 
             // When on ground we accept a larger test ratio to allow the filter to handle large switch on IMU
             // bias errors without rejecting the height sensor.
-            const float maxTestRatio = (PV_AidingMode == AID_NONE && onGround)? 3.0f : 1.0f;
+            const bool onGroundNotNavigating = (PV_AidingMode == AID_NONE) && onGround;
+            const float maxTestRatio = onGroundNotNavigating ? 3.0f : 1.0f;
             if (hgtTestRatio < maxTestRatio) {
                 hgtCheckPassed = true;
                 lastHgtPassTime_ms = imuSampleTime_ms;
-            } else if ((frontend->_gpsGlitchRadiusMax <= 0) && (activeHgtSource == AP_NavEKF_Source::SourceZ::GPS)) {
-                // handle special case where the glitch radius parameter has been set to a non-positive number
-                // to indicate that large GPS velocity and position innovations should be clipped instead of rejected.
+            } else if ((frontend->_gpsGlitchRadiusMax <= 0) && !onGroundNotNavigating && (activeHgtSource == AP_NavEKF_Source::SourceZ::GPS)) {
+                // Handle the special case where the glitch radius parameter has been set to a non-positive number.
+                // The innovation variance is increased to limit the state update to an amount corresponding
+                // to a test ratio of 1.
                 posCheckPassed = true;
                 lastPosPassTime_ms = imuSampleTime_ms;
-                const ftype scaleFactor = 1.0F / sqrtF(hgtTestRatio);
-                innovVelPos[5] *= scaleFactor;
+                varInnovVelPos[5] *= hgtTestRatio;
                 hgtCheckPassed = true;
                 lastHgtPassTime_ms = imuSampleTime_ms;
             }
