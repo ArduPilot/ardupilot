@@ -679,9 +679,9 @@ private:
     // lua scripts use this to retrieve EKF failsafe state
     // returns true if the EKF failsafe has triggered
     bool has_ekf_failsafed() const override;
+#endif // AP_SCRIPTING_ENABLED
     bool is_landing() const override;
     bool is_taking_off() const override;
-#endif // AP_SCRIPTING_ENABLED
     void rc_loop();
     void throttle_loop();
     void update_batt_compass(void);
