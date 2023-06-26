@@ -25,39 +25,18 @@ public:
         _listen_fd = -1;
     }
 
-    /* Implementations of UARTDriver virtual methods */
-    void begin(uint32_t b) override {
-        begin(b, 0, 0);
-    }
-    void begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
-    void end() override;
-    void flush() override;
     bool is_initialized() override {
         return true;
     }
 
     ssize_t get_system_outqueue_length() const;
 
-    void set_blocking_writes(bool blocking) override
-    {
-        _nonblocking_writes = !blocking;
-    }
-
     bool tx_pending() override {
         return false;
     }
 
     /* Implementations of Stream virtual methods */
-    uint32_t available() override;
     uint32_t txspace() override;
-    bool read(uint8_t &b) override WARN_IF_UNUSED;
-    ssize_t read(uint8_t *buffer, uint16_t count) override;
-
-    bool discard_input() override;
-
-    /* Implementations of Print virtual methods */
-    size_t write(uint8_t c) override;
-    size_t write(const uint8_t *buffer, size_t size) override;
 
     bool _unbuffered_writes;
 
@@ -83,7 +62,7 @@ public:
       A return value of zero means the HAL does not support this API
      */
     uint64_t receive_time_constraint_us(uint16_t nbytes) override;
-    
+
 private:
 
     int _fd;
@@ -98,7 +77,6 @@ private:
     struct sockaddr_in _listen_sockaddr;
     int _serial_port;
     static bool _console;
-    bool _nonblocking_writes;
     ByteBuffer _readbuffer{16384};
     ByteBuffer _writebuffer{16384};
 
@@ -147,6 +125,15 @@ private:
         uint32_t first_emit_micros_us;
     } logic_async_csv;
     uint16_t read_from_async_csv(uint8_t *buffer, uint16_t space);
+
+protected:
+    void _begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
+    size_t _write(const uint8_t *buffer, size_t size) override;
+    ssize_t _read(uint8_t *buffer, uint16_t count) override;
+    uint32_t _available() override;
+    void _end() override;
+    void _flush() override;
+    bool _discard_input() override;
 };
 
 #endif
