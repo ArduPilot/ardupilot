@@ -77,6 +77,9 @@ extern "C" {
 void can_printf(const char *fmt, ...) FMT_PRINTF(1,2);
 }
 
+struct CanardInstance;
+struct CanardRxTransfer;
+
 class AP_Periph_FW {
 public:
     AP_Periph_FW();
@@ -340,6 +343,23 @@ public:
                                  uint8_t priority,
                                  const void* payload,
                                  uint16_t payload_len);
+
+#if AP_UART_MONITOR_ENABLED
+    void handle_tunnel_Targetted(CanardInstance* ins, CanardRxTransfer* transfer);
+    void send_serial_monitor_data();
+    int8_t get_default_tunnel_serial_port(void) const;
+
+    struct {
+        ByteBuffer *buffer;
+        uint32_t last_request_ms;
+        AP_HAL::UARTDriver *uart;
+        int8_t uart_num;
+        uint8_t node_id;
+        uint8_t protocol;
+        uint32_t baudrate;
+        bool locked;
+    } uart_monitor;
+#endif
 };
 
 namespace AP
