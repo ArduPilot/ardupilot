@@ -1237,6 +1237,8 @@ private:
 
 public:
     void failsafe_check(void);
+    bool is_landing() const override;
+    bool is_taking_off() const override;
 #if AP_SCRIPTING_ENABLED
     bool set_target_location(const Location& target_loc) override;
     bool get_target_location(Location& target_loc) override;
@@ -1245,8 +1247,6 @@ public:
 
     // allow for landing descent rate to be overridden by a script, may be -ve to climb
     bool set_land_descent_rate(float descent_rate) override;
-    bool is_landing() const override;
-    bool is_taking_off() const override;
 #endif // AP_SCRIPTING_ENABLED
 
 };
