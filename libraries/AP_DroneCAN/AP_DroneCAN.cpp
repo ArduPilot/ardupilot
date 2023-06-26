@@ -29,6 +29,7 @@
 #include <AP_GPS/AP_GPS_DroneCAN.h>
 #include <AP_Compass/AP_Compass_DroneCAN.h>
 #include <AP_Baro/AP_Baro_DroneCAN.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_BattMonitor/AP_BattMonitor_DroneCAN.h>
 #include <AP_Airspeed/AP_Airspeed_DroneCAN.h>
 #include <AP_OpticalFlow/AP_OpticalFlow_HereFlow.h>
@@ -812,6 +813,18 @@ void AP_DroneCAN::notify_state_send()
     if (AP_Notify::flags.waiting_for_throw) {
         msg.vehicle_state |= 1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_THROW_READY;
     }
+
+#ifndef HAL_BUILD_AP_PERIPH
+    const AP_Vehicle* vehicle = AP::vehicle();
+    if (vehicle != nullptr) {
+        if (vehicle->is_landing()) {
+            msg.vehicle_state |= 1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_IS_LANDING;
+        }
+        if (vehicle->is_taking_off()) {
+            msg.vehicle_state |= 1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_IS_TAKING_OFF;
+        }
+    }
+#endif // HAL_BUILD_AP_PERIPH
 
     msg.aux_data_type = ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_YAW_EARTH_CENTIDEGREES;
     uint16_t yaw_cd = (uint16_t)(360.0f - degrees(AP::ahrs().get_yaw()))*100.0f;
