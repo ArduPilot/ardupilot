@@ -6,7 +6,7 @@
 
 #include "AP_Proximity_Backend_Serial.h"
 
-#define PROXIMITY_LD19_TIMEOUT_MS            300                               // requests timeout after 0.3 seconds
+#define PROXIMITY_LD19_TIMEOUT_MS            500                               // requests timeout after 0.3 seconds
 #define PROXIMITY_LD19_POINT_PER_PACK 	     12
 #define PROXIMITY_LD19_HEADER 		     0x54
 
@@ -31,8 +31,9 @@ private:
     void update_sector_data(int16_t angle_deg, uint16_t distance_mm);
 
     // reply related variables
-    uint8_t buffer[60]; // buffer where to store data from serial
+    uint8_t buffer[50]; // buffer where to store data from serial
     uint8_t buffer_count;
+    uint8_t post_header;
 
     // crc calculation according to datasheet
     uint8_t CalCRC8(uint8_t *p, uint8_t len);
