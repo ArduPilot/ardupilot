@@ -287,11 +287,12 @@ void AP_IOMCU_FW::init()
     // old NuttX based firmwares
     config.protocol_version = IOMCU_PROTOCOL_VERSION;
     config.protocol_version2 = IOMCU_PROTOCOL_VERSION2;
-#if defined(STM32F103xB) || defined(STM32F103x8)
-    // Errata 2.2.2 - Debug registers cannot be read by user software
-    config.mcuid = 0x20036410;  // STM32F10x (Medium Density) rev Y
-#else
     config.mcuid = (*(uint32_t *)DBGMCU_BASE);
+#if defined(STM32F103xB) || defined(STM32F103x8)
+    if (config.mcuid == 0) {
+        // Errata 2.2.2 - Debug registers cannot be read by user software
+        config.mcuid = 0x20036410;  // STM32F10x (Medium Density) rev Y
+    }
 #endif
     config.cpuid = SCB->CPUID;
 
