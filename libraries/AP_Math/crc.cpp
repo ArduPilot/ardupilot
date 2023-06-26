@@ -578,3 +578,14 @@ uint8_t parity(uint8_t byte)
 
     return p;
 }
+
+// sums the bytes in the supplied buffer, returns that sum mod 256
+// (i.e. shoved into a uint8_t)
+uint8_t sum_of_bytes_in_buffer_mod_256(uint8_t *data, uint16_t count)
+{
+    uint8_t ret = 0;
+    for (uint8_t i=0; i<count; i++) {
+        ret += data[i];
+    }
+    return ret;
+}
