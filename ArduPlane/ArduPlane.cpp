@@ -863,6 +863,7 @@ bool Plane::set_land_descent_rate(float descent_rate)
 #endif
     return false;
 }
+#endif // AP_SCRIPTING_ENABLED
 
 // returns true if vehicle is landing.
 bool Plane::is_landing() const
@@ -885,8 +886,6 @@ bool Plane::is_taking_off() const
 #endif
     return control_mode->is_taking_off();
 }
-
-#endif // AP_SCRIPTING_ENABLED
 
 // correct AHRS pitch for TRIM_PITCH_CD in non-VTOL modes, and return VTOL view in VTOL
 void Plane::get_osd_roll_pitch_rad(float &roll, float &pitch) const
