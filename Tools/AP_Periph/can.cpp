@@ -968,8 +968,14 @@ static void onTransferReceived(CanardInstance* ins,
         handle_MovingBaselineData(ins, transfer);
         break;
 #endif
+#endif // HAL_PERIPH_ENABLE_GPS
+
+#if AP_UART_MONITOR_ENABLED
+    case UAVCAN_TUNNEL_TARGETTED_ID:
+        periph.handle_tunnel_Targetted(ins, transfer);
+        break;
 #endif
-        
+
 #if defined(AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NOTIFY)
     case UAVCAN_EQUIPMENT_INDICATION_LIGHTSCOMMAND_ID:
         handle_lightscommand(ins, transfer);
@@ -1068,7 +1074,14 @@ static bool shouldAcceptTransfer(const CanardInstance* ins,
         *out_data_type_signature = ARDUPILOT_GNSS_MOVINGBASELINEDATA_SIGNATURE;
         return true;
 #endif
+#endif // HAL_PERIPH_ENABLE_GPS
+
+#if AP_UART_MONITOR_ENABLED
+    case UAVCAN_TUNNEL_TARGETTED_ID:
+        *out_data_type_signature = UAVCAN_TUNNEL_TARGETTED_SIGNATURE;
+        return true;
 #endif
+
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
     case UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_ID:
         *out_data_type_signature = UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_SIGNATURE;
@@ -1845,6 +1858,9 @@ void AP_Periph_FW::can_update()
     {
         can_mag_update();
         can_gps_update();
+#if AP_UART_MONITOR_ENABLED
+        send_serial_monitor_data();
+#endif
         can_battery_update();
         can_baro_update();
         can_airspeed_update();
