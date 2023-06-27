@@ -157,12 +157,23 @@ void AR_PosControl::update(float dt)
         _vel_target.y = vel_3d_cms.y * 0.01;
     }
 
+    // calculate limit vector based on steering limits
+    Vector2f steering_limit_vec;
+    if (_atc.steering_limit_left()) {
+        steering_limit_vec = AP::ahrs().body_to_earth2D(Vector2f{0, _reversed ? 1.0f : -1.0f});
+    } else if (_atc.steering_limit_right()) {
+        steering_limit_vec = AP::ahrs().body_to_earth2D(Vector2f{0, _reversed ? -1.0f : 1.0f});
+    }
+
     // calculate desired acceleration
-    // To-Do: fixup _limit_vel used below
-    _accel_target = _pid_vel.update_all(_vel_target, curr_vel_NED.xy(), dt, _limit_vel);
+    _accel_target = _pid_vel.update_all(_vel_target, curr_vel_NED.xy(), dt, steering_limit_vec);
     if (_accel_desired_valid) {
         _accel_target += _accel_desired;
     }
+    // velocity controller I-term zeroed in forward-back direction
+    const Vector2f lat_vec_ef = AP::ahrs().body_to_earth2D(Vector2f{0, 1});
+    const Vector2f vel_i = _pid_vel.get_i().projected(lat_vec_ef);
+    _pid_vel.set_integrator(vel_i);
 
     // convert desired acceleration to desired forward-back speed, desired lateral speed and desired turn rate
 

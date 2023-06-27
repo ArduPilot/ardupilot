@@ -98,7 +98,6 @@ private:
     float _lat_accel_max;           // lateral acceleration maximum in m/s/s
     float _jerk_max;                // maximum jerk in m/s/s/s (used for both forward and lateral input shaping)
     float _turn_radius;             // vehicle turn radius in meters
-    Vector2f _limit_vel;            // To-Do: explain what this is
 
     // position and velocity targets
     Vector2p _pos_target;           // position target as an offset (in meters) from the EKF origin
