@@ -295,7 +295,7 @@ void Vector2<T>::project(const Vector2<T> &v)
 
 // returns this vector projected onto v
 template <typename T>
-Vector2<T> Vector2<T>::projected(const Vector2<T> &v)
+Vector2<T> Vector2<T>::projected(const Vector2<T> &v) const
 {
     return v * (*this * v)/(v*v);
 }

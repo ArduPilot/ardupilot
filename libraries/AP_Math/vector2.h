@@ -161,7 +161,7 @@ struct Vector2
     void project(const Vector2<T> &v);
 
     // returns this vector projected onto v
-    Vector2<T> projected(const Vector2<T> &v);
+    Vector2<T> projected(const Vector2<T> &v) const;
 
     // adjust position by a given bearing (in degrees) and distance
     void offset_bearing(T bearing, T distance);
