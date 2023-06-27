@@ -50,6 +50,7 @@ private:
     DevType dev_type;
     uint32_t last_detect_ms;
 
+    AP_Float ina_shunt;
     AP_Int8 i2c_bus;
     AP_Int8 i2c_address;
     AP_Float max_amps;
