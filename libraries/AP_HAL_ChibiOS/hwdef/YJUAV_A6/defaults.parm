@@ -1,0 +1,16 @@
+# setup the heater temperature to 45 degree
+BRD_HEAT_TARG 45
+
+# turn on the CAN power monitoring(default)
+CAN_P1_DRIVER 1
+BATT_MONITOR 8
+
+# setup the parameter for the ADC power module
+BATT_VOLT_PIN 11
+BATT_CURR_PIN 10
+BATT_VOLT_MULT 18.000
+BATT_AMP_PERVLT 24.000
+
+# setup the parameter for the ADC rssi 
+RSSI_ANA_PIN 18
+
