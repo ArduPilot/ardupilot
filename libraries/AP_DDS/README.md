@@ -223,6 +223,9 @@ Next, follow the associated section for your chosen transport, and finally you c
   $ ros2 topic echo /ap/time
   sec: 1678668735
   nanosec: 729410000
+
+  $ ros2 service list
+  /arm_motors
   ---
   ```
 
@@ -232,7 +235,34 @@ Next, follow the associated section for your chosen transport, and finally you c
   ```
   In order to consume the transforms, it's highly recommended to [create and run a transform broadcaster in ROS 2](https://docs.ros.org/en/humble/Concepts/About-Tf2.html#tutorials).
 
+## Using ROS 2 services (with Integration Services)
 
+### Prerequisites
+- Install and setup [Micro-XRCE Agent](https://micro-xrce-dds.docs.eprosima.com/en/latest/installation.html#installing-the-agent-standalone)
+- Install and setup [Integration Services](https://integration-service.docs.eprosima.com/en/latest/installation_manual/installation.html) (it would be good to have a separate workspace for this)
+  - Get System Handles for [ROS 2](https://github.com/eProsima/ROS2-SH)
+  - Get System Handles for [Fast-DDS](https://github.com/eProsima/FastDDS-SH)
+- Once the above-mentioned System Handles have been cloned, build the Integration Services with the following command : 
+`colcon build --cmake-args -DMIX_ROS_PACKAGES="example_interfaces ardupilot_msgs"`
+
+### Setup
+- The necessary ROS 2 messages and service defintions (especially for the Arming/Disarming Services) are already defined in the `ardupilot_msgs` folder in the `Tools` directory.
+
+### Terminal 1 (XRCE Agent)
+- Move to the **AP_DDS** folder and run the XRCE Agent as follows `MicroXRCEAgent udp4 -p 2019 -r dds_xrce_profile.xml`
+
+### Terminal 2 (Integration Service)
+- Source ROS 2 installation
+- Source Integration Service installation
+- Move to the **AP_DDS** folder and run the following command `integration-service Is-Config/Arm_Motors_DDS_IS_config.yaml`
+
+### Terminal 3 (Ardupilot)
+- Make sure you have successfully setup Ardupilot and the `DDS_ENABLE` param is set to 1
+- Run SITL with the following command `sim_vehicle.py -v ArduPlane -DG --console --enable-dds`
+
+### Terminal 4 (ROS 2 Client)
+- Run the following command : `ros2 service call /arm_motors ardupilot_msgs/srv/ArmMotors "{arm: True}"`
+ 
 ## Contributing to AP_DDS library
 ### Adding DDS messages to Ardupilot
 
