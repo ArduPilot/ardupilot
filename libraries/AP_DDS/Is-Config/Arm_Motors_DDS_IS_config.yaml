@@ -1,0 +1,36 @@
+types:
+    idls:
+        - >
+            struct ArmMotors_Request
+            {
+                boolean arm;
+            };
+
+            struct ArmMotors_Response
+            {
+                boolean result;
+            };
+systems:
+    dds: { type: fastdds }
+    ros2: { type: ros2 }
+
+routes:
+    dds_server:
+        server: dds
+        clients: ros2
+
+services:
+    arm_motors: {
+        request_type: ArmMotors_Request,
+        reply_type: ArmMotors_Response,
+        route: dds_server,
+        remap: {
+            dds: {
+                topic: ArmMotorsService,
+            },
+            ros2: {
+                request_type: "ardupilot_msgs/ArmMotors:request",
+                reply_type: "ardupilot_msgs/ArmMotors:response"
+            }
+        }
+    }

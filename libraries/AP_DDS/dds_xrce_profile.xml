@@ -268,4 +268,6 @@
       <dataType>geometry_msgs::msg::dds_::TwistStamped_</dataType>
     </topic>
   </data_reader>
+  <replier profile_name="ArmMotors_Replier" service_name="ArmMotorsService" request_type="ArmMotors_Request" reply_type="ArmMotors_Response">
+  </replier>
 </profiles>
