@@ -23,6 +23,7 @@
 #include "AP_EFI_DroneCAN.h"
 #include "AP_EFI_Currawong_ECU.h"
 #include "AP_EFI_Scripting.h"
+#include "AP_EFI_MAV.h"
 
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
@@ -38,7 +39,7 @@ const AP_Param::GroupInfo AP_EFI::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: EFI communication type
     // @Description: What method of communication is used for EFI #1
-    // @Values: 0:None,1:Serial-MS,2:NWPMU,3:Serial-Lutan,5:DroneCAN,6:Currawong-ECU,7:Scripting
+    // @Values: 0:None,1:Serial-MS,2:NWPMU,3:Serial-Lutan,5:DroneCAN,6:Currawong-ECU,7:Scripting,9:MAV
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_EFI, type, 0, AP_PARAM_FLAG_ENABLE),
@@ -116,6 +117,11 @@ void AP_EFI::init(void)
     case Type::SCRIPTING:
         backend = new AP_EFI_Scripting(*this);
         break;
+#endif
+#if AP_EFI_MAV_ENABLED
+    case Type::MAV:
+            backend = new AP_EFI_MAV(*this);
+            break;
 #endif
     default:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Unknown EFI type");
@@ -300,6 +306,12 @@ void AP_EFI::get_state(EFI_State &_state)
 {
     WITH_SEMAPHORE(sem);
     _state = state;
+}
+
+void AP_EFI::handle_EFI_message(const mavlink_message_t &msg) {
+    if (backend != nullptr) {
+        backend->handle_EFI_message(msg);
+    }
 }
 
 namespace AP {
