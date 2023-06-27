@@ -150,7 +150,8 @@ bool AP_Mount_Siyi::healthy() const
     }
 
     // unhealthy if attitude information NOT received recently
-    if (AP_HAL::millis() - _last_current_angle_rad_ms > 1000) {
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - _last_current_angle_rad_ms > 1000) {
         return false;
     }
 
@@ -557,12 +558,6 @@ void AP_Mount_Siyi::rotate_gimbal(int8_t pitch_scalar, int8_t yaw_scalar, bool y
 
     const uint8_t yaw_and_pitch_rates[] {(uint8_t)yaw_scalar, (uint8_t)pitch_scalar};
     send_packet(SiyiCommandId::GIMBAL_ROTATION, yaw_and_pitch_rates, ARRAY_SIZE(yaw_and_pitch_rates));
-}
-
-// center gimbal
-void AP_Mount_Siyi::center_gimbal()
-{
-    send_1byte_packet(SiyiCommandId::CENTER, 1);
 }
 
 // set gimbal's lock vs follow mode

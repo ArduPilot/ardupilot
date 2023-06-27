@@ -205,6 +205,29 @@ uint32_t AP_RTC::get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms
     return static_cast<uint32_t>(total_delay_ms);
 }
 
+// get date and time.  Returns true on success and fills in year, month, day, hour, min, sec and ms
+// year is the regular Gregorian year, month is 0~11, day is 1~31, hour is 0~23, minute is 0~59, second is 0~60 (1 leap second)
+bool AP_RTC::get_date_and_time_utc(uint16_t& year, uint8_t& month, uint8_t& day, uint8_t &hour, uint8_t &min, uint8_t &sec) const
+{
+    // get local time of day in ms
+    uint64_t time_us = 0;
+    if (!get_utc_usec(time_us)) {
+        return false;
+    }
+    time_t utc_sec = time_us / (1000U * 1000U);
+    struct tm* tm = gmtime(&utc_sec);
+    if (tm == nullptr) {
+        return false;
+    }
+    year = tm->tm_year+1900;    /* Year	- 1900.  */
+    month = tm->tm_mon;         /* Month.	[0-11] */
+    day = tm->tm_mday;          /* Day.		[1-31] */
+    hour = tm->tm_hour;         /* Hours.	[0-23] */
+    min = tm->tm_min;           /* Minutes.	[0-59] */
+    sec = tm->tm_sec;           /* Seconds.	[0-60] (1 leap second) */
+    return true;
+}
+
 // singleton instance
 AP_RTC *AP_RTC::_singleton;
 

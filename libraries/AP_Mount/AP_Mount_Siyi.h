@@ -172,9 +172,6 @@ private:
     // yaw_is_ef should be true if gimbal should maintain an earth-frame target (aka lock)
     void rotate_gimbal(int8_t pitch_scalar, int8_t yaw_scalar, bool yaw_is_ef);
 
-    // center gimbal
-    void center_gimbal();
-
     // set gimbal's lock vs follow mode
     // lock should be true if gimbal should maintain an earth-frame target
     // lock is false to follow / maintain a body-frame target

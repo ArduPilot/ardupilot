@@ -32,7 +32,7 @@ public:
 
     static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
 
-    static AP_Airspeed_Backend* probe(AP_Airspeed &_fronted, uint8_t _instance, uint32_t previous_devid);
+    static AP_Airspeed_Backend* probe(AP_Airspeed &_frontend, uint8_t _instance, uint32_t previous_devid);
 
 private:
 

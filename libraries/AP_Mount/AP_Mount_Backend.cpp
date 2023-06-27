@@ -14,6 +14,12 @@ void AP_Mount_Backend::init()
     _target_sysid = _params.sysid_default.get();
 }
 
+// set device id of this instance, for MNTx_DEVID parameter
+void AP_Mount_Backend::set_dev_id(uint32_t id)
+{
+    _params.dev_id.set_and_save(int32_t(id));
+}
+
 // return true if this mount accepts roll targets
 bool AP_Mount_Backend::has_roll_control() const
 {
