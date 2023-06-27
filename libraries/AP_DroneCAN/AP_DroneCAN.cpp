@@ -377,21 +377,19 @@ void AP_DroneCAN::loop(void)
 #if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
         hobbywing_ESC_update();
 #endif
-        if (_SRV_armed) {
-            if (_servo_bm > 0) {
-                // if we have any Servos in bitmask
-                uint32_t now = AP_HAL::native_micros();
-                const uint32_t servo_period_us = 1000000UL / unsigned(_servo_rate_hz.get());
-                if (now - _SRV_last_send_us >= servo_period_us) {
-                    _SRV_last_send_us = now;
-                    if (option_is_set(Options::USE_HIMARK_SERVO)) {
-                        SRV_send_himark();
-                    } else {
-                        SRV_send_actuator();
-                    }
-                    for (uint8_t i = 0; i < DRONECAN_SRV_NUMBER; i++) {
-                        _SRV_conf[i].servo_pending = false;
-                    }
+        if (_SRV_armed_mask != 0) {
+            // we have active servos
+            uint32_t now = AP_HAL::native_micros();
+            const uint32_t servo_period_us = 1000000UL / unsigned(_servo_rate_hz.get());
+            if (now - _SRV_last_send_us >= servo_period_us) {
+                _SRV_last_send_us = now;
+                if (option_is_set(Options::USE_HIMARK_SERVO)) {
+                    SRV_send_himark();
+                } else {
+                    SRV_send_actuator();
+                }
+                for (uint8_t i = 0; i < DRONECAN_SRV_NUMBER; i++) {
+                    _SRV_conf[i].servo_pending = false;
                 }
             }
         }
@@ -520,7 +518,7 @@ void AP_DroneCAN::SRV_send_actuator(void)
              * physically possible throws at [-1:1] limits.
              */
 
-            if (_SRV_conf[starting_servo].servo_pending && ((((uint32_t) 1) << starting_servo) & _servo_bm)) {
+            if (_SRV_conf[starting_servo].servo_pending && ((((uint32_t) 1) << starting_servo) & _SRV_armed_mask)) {
                 cmd.actuator_id = starting_servo + 1;
 
                 if (option_is_set(Options::USE_ACTUATOR_PWM)) {
@@ -561,7 +559,7 @@ void AP_DroneCAN::SRV_send_himark(void)
     // ServoCmd can hold maximum of 17 commands. First find the highest pending servo < 17
     int8_t highest_to_send = -1;
     for (int8_t i = 16; i >= 0; i--) {
-        if (_SRV_conf[i].servo_pending && ((1U<<i) & _servo_bm) != 0) {
+        if (_SRV_conf[i].servo_pending && ((1U<<i) & _SRV_armed_mask) != 0) {
             highest_to_send = i;
             break;
         }
@@ -573,7 +571,7 @@ void AP_DroneCAN::SRV_send_himark(void)
     com_himark_servo_ServoCmd msg {};
 
     for (uint8_t i = 0; i <= highest_to_send; i++) {
-        if ((1U<<i) & _servo_bm) {
+        if ((1U<<i) & _SRV_armed_mask) {
             const uint16_t pulse = constrain_int16(_SRV_conf[i].pulse - 1000, 0, 1000);
             msg.cmd.data[i] = pulse;
         }
@@ -596,7 +594,7 @@ void AP_DroneCAN::SRV_send_esc(void)
 
     // find out how many esc we have enabled and if they are active at all
     for (uint8_t i = esc_offset; i < DRONECAN_SRV_NUMBER; i++) {
-        if ((((uint32_t) 1) << i) & _esc_bm) {
+        if ((((uint32_t) 1) << i) & _ESC_armed_mask) {
             max_esc_num = i + 1;
             if (_SRV_conf[i].esc_pending) {
                 active_esc_num++;
@@ -609,7 +607,7 @@ void AP_DroneCAN::SRV_send_esc(void)
         k = 0;
 
         for (uint8_t i = esc_offset; i < max_esc_num && k < 20; i++) {
-            if ((((uint32_t) 1) << i) & _esc_bm) {
+            if ((((uint32_t) 1) << i) & _ESC_armed_mask) {
                 // TODO: ESC negative scaling for reverse thrust and reverse rotation
                 float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse) + 1.0) / 2.0;
 
@@ -655,7 +653,7 @@ void AP_DroneCAN::SRV_send_esc_hobbywing(void)
 
     // find out how many esc we have enabled and if they are active at all
     for (uint8_t i = esc_offset; i < DRONECAN_SRV_NUMBER; i++) {
-        if ((((uint32_t) 1) << i) & _esc_bm) {
+        if ((((uint32_t) 1) << i) & _ESC_armed_mask) {
             max_esc_num = i + 1;
             if (_SRV_conf[i].esc_pending) {
                 active_esc_num++;
@@ -668,7 +666,7 @@ void AP_DroneCAN::SRV_send_esc_hobbywing(void)
         k = 0;
 
         for (uint8_t i = esc_offset; i < max_esc_num && k < 20; i++) {
-            if ((((uint32_t) 1) << i) & _esc_bm) {
+            if ((((uint32_t) 1) << i) & _ESC_armed_mask) {
                 // TODO: ESC negative scaling for reverse thrust and reverse rotation
                 float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse) + 1.0) / 2.0;
 
@@ -707,19 +705,32 @@ void AP_DroneCAN::SRV_push_servos()
         }
     }
 
-    _SRV_armed = hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED;
+    uint32_t servo_armed_mask = _servo_bm;
+    uint32_t esc_armed_mask = _esc_bm;
+    const bool safety_off = hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED;
+    if (!safety_off) {
+        AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
+        if (boardconfig != nullptr) {
+            const uint32_t safety_mask = boardconfig->get_safety_mask();
+            servo_armed_mask &= safety_mask;
+            esc_armed_mask &= safety_mask;
+        } else {
+            servo_armed_mask = 0;
+            esc_armed_mask = 0;
+        }
+    }
+    _SRV_armed_mask = servo_armed_mask;
+    _ESC_armed_mask = esc_armed_mask;
 
-    if (_SRV_armed) {
-        if (_esc_bm > 0) {
-            // push ESCs as fast as we can
+    if (_ESC_armed_mask != 0) {
+        // push ESCs as fast as we can
 #if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
-            if (option_is_set(Options::USE_HOBBYWING_ESC)) {
-                SRV_send_esc_hobbywing();
-            } else
+        if (option_is_set(Options::USE_HOBBYWING_ESC)) {
+            SRV_send_esc_hobbywing();
+        } else
 #endif
-            {
-                SRV_send_esc();
-            }
+        {
+            SRV_send_esc();
         }
     }
 }
@@ -974,7 +985,15 @@ void AP_DroneCAN::safety_state_send()
 
     { // handle SafetyState
         ardupilot_indication_SafetyState safety_msg;
-        switch (hal.util->safety_switch_state()) {
+        auto state = hal.util->safety_switch_state();
+        if (_SRV_armed_mask != 0 || _ESC_armed_mask != 0) {
+            // if we are outputting any servos or ESCs due to
+            // BRD_SAFETY_MASK then we need to advertise safety as
+            // off, this changes LEDs to indicate unsafe and allows
+            // AP_Periph ESCs and servos to run
+            state = AP_HAL::Util::SAFETY_ARMED;
+        }
+        switch (state) {
         case AP_HAL::Util::SAFETY_ARMED:
             safety_msg.status = ARDUPILOT_INDICATION_SAFETYSTATE_STATUS_SAFETY_OFF;
             safety_state.broadcast(safety_msg);

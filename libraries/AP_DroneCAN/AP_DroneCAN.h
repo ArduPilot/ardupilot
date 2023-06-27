@@ -201,7 +201,8 @@ private:
     uint32_t _srv_send_count;
     uint32_t _fail_send_count;
 
-    uint8_t _SRV_armed;
+    uint32_t _SRV_armed_mask; // mask of servo outputs that are active
+    uint32_t _ESC_armed_mask; // mask of ESC outputs that are active
     uint32_t _SRV_last_send_us;
     HAL_Semaphore SRV_sem;
 
