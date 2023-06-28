@@ -828,6 +828,7 @@ class sitl_periph_gps(sitl):
             AP_CAN_SLCAN_ENABLED = 0,
             HAL_PROXIMITY_ENABLED = 0,
             AP_SCRIPTING_ENABLED = 0,
+            AP_AHRS_ENABLED = 0,
         )
 
 
