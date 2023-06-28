@@ -402,9 +402,8 @@ bool AP_DDS_Client::start(void)
 }
 
 // read function triggered at every subscription callback
-void AP_DDS_Client::on_topic (uxrSession* uxr_session, uxrObjectId object_id, uint16_t request_id, uxrStreamId stream_id, struct ucdrBuffer* ub, uint16_t length, void* args)
+void AP_DDS_Client::on_topic ([[maybe_unused]] uxrSession* uxr_session, uxrObjectId object_id, [[maybe_unused]] uint16_t request_id, [[maybe_unused]] uxrStreamId stream_id, struct ucdrBuffer* ub, [[maybe_unused]] uint16_t length, void* args)
 {
-    (void) uxr_session; (void) object_id; (void) request_id; (void) stream_id; (void) length;
     /*
     TEMPLATE for reading to the subscribed topics
     1) Store the read contents into the ucdr buffer

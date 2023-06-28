@@ -79,7 +79,7 @@ private:
     static void update_topic(rosgraph_msgs_msg_Clock& msg);
 
     // subscription callback function
-    static void on_topic(uxrSession* session, uxrObjectId object_id, uint16_t request_id, uxrStreamId stream_id, struct ucdrBuffer* ub, uint16_t length, void* args);
+    static void on_topic([[maybe_unused]] uxrSession* uxr_session, uxrObjectId object_id, [[maybe_unused]] uint16_t request_id, [[maybe_unused]] uxrStreamId stream_id, struct ucdrBuffer* ub, [[maybe_unused]] uint16_t length, void* args);
 
     // count of subscribed samples
     uint32_t count;
