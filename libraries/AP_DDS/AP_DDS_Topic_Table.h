@@ -20,6 +20,7 @@ enum class TopicIndex: uint8_t {
     GEOPOSE_PUB,
     CLOCK_PUB,
     JOY_SUB,
+    DYNAMIC_TRANSFORMS_SUB,
 };
 
 static inline constexpr uint8_t to_underlying(const TopicIndex index)
@@ -119,5 +120,15 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .topic_profile_label = "joy__t",
         .dw_profile_label = "",
         .dr_profile_label = "joy__dr",
+    },
+    {
+        .topic_id = to_underlying(TopicIndex::DYNAMIC_TRANSFORMS_SUB),
+        .pub_id = to_underlying(TopicIndex::DYNAMIC_TRANSFORMS_SUB),
+        .sub_id = to_underlying(TopicIndex::DYNAMIC_TRANSFORMS_SUB),
+        .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::DYNAMIC_TRANSFORMS_SUB), .type=UXR_DATAWRITER_ID},
+        .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::DYNAMIC_TRANSFORMS_SUB), .type=UXR_DATAREADER_ID},
+        .topic_profile_label = "dynamictf__t",
+        .dw_profile_label = "",
+        .dr_profile_label = "dynamictf__dr",
     },
 };
