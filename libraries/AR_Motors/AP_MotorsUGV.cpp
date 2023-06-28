@@ -110,6 +110,13 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("VEC_ANGLEMAX", 13, AP_MotorsUGV, _vector_angle_max, 0.0f),
 
+    // @Param: THST_ASYM
+    // @DisplayName: Motor Thrust Asymmetry
+    // @Description: Thrust Asymetry. Used for skid-steering. 2.0 means your motors move twice as fast forward than they do backwards.
+    // @Range: 1.0 10.0
+    // @User: Advanced
+    AP_GROUPINFO("THST_ASYM", 14, AP_MotorsUGV, _thrust_asymmetry, 1.0f),
+
     AP_GROUPEND
 };
 
@@ -729,12 +736,43 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     float steering_scaled = steering / 4500.0f; // steering scaled -1 to +1
     float throttle_scaled = throttle * 0.01f;  // throttle scaled -1 to +1
 
+    // sanitize values for asymmetry of thrust, mixer assumes forward thrust is always larger than reverse
+    const float thrust_asymmetry = MAX(_thrust_asymmetry, 1.0);
+    const float lower_throttle_limit = -1.0 / thrust_asymmetry;
+
+    // Maximum steering is half way between upper and lower limits
+    const float best_steering_throttle = (1.0 + lower_throttle_limit) * 0.5;
+    float steering_range;
+    if (throttle_scaled < best_steering_throttle) {
+        // steering range is reduced as throttle will never be increased by mixer
+        steering_range = MAX(throttle_scaled,0.0) - lower_throttle_limit;
+    } else {
+        // full range available, throttle can always be lowered down to best_steering_throttle
+        steering_range = 1 - best_steering_throttle;
+    }
+
     // apply constraints
-    steering_scaled = constrain_float(steering_scaled, -1.0f, 1.0f);
-    throttle_scaled = constrain_float(throttle_scaled, -1.0f, 1.0f);
+    if (steering_scaled > steering_range) {
+        limit.steer_right = true;
+        steering_scaled = steering_range;
+    } else if (steering_scaled < -steering_range) {
+        limit.steer_left = true;
+        steering_scaled = -steering_range;
+    }
+    if (throttle_scaled > 1.0) {
+        limit.throttle_upper = true;
+        throttle_scaled = 1.0;
+    } else if (throttle_scaled < lower_throttle_limit) {
+        limit.throttle_lower = true;
+        throttle_scaled = lower_throttle_limit;
+    }
+
+    // All throttle or all steering will now fit, check if they will both fit together
+    const float max_output = throttle_scaled + fabsf(steering_scaled);
+    const float min_output = throttle_scaled - fabsf(steering_scaled);
 
     // check for saturation and scale back throttle and steering proportionally
-    const float saturation_value = fabsf(steering_scaled) + fabsf(throttle_scaled);
+    const float saturation_value = MAX(max_output, min_output / lower_throttle_limit);
     if (saturation_value > 1.0f) {
         // store pre-scaled values so we can set limit flags afterwards
         const float steering_scaled_orig = steering_scaled;
@@ -745,11 +783,25 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
         if (str_thr_mix >= 0.5f) {
             // prioritise steering over throttle
             steering_scaled *= linear_interpolate(fair_scaler, 1.0f, str_thr_mix, 0.5f, 1.0f);
-            throttle_scaled = (1.0f - fabsf(steering_scaled)) * (is_negative(throttle_scaled) ? -1.0f : 1.0f);
+            if (throttle_scaled >= best_steering_throttle) {
+                // constrained by upper limit
+                throttle_scaled = 1.0 - fabsf(steering_scaled);
+            } else {
+                // constrained by lower limit
+                throttle_scaled = fabsf(steering_scaled) + lower_throttle_limit;
+            }
+
         } else {
             // prioritise throttle over steering
             throttle_scaled *= linear_interpolate(fair_scaler, 1.0f, 0.5f - str_thr_mix, 0.0f, 0.5f);
-            steering_scaled = (1.0f - fabsf(throttle_scaled)) * (is_negative(steering_scaled) ? -1.0f : 1.0f);
+            const float steering_sign = is_positive(steering_scaled) ? 1.0 : -1.0;
+            if (throttle_scaled >= best_steering_throttle) {
+                // constrained by upper limit
+                steering_scaled = (1.0 - throttle_scaled) * steering_sign;
+            } else {
+                // constrained by lower limit
+                steering_scaled = (throttle_scaled - lower_throttle_limit) * steering_sign;
+            }
         }
 
         // update limits if either steering or throttle has been reduced
@@ -764,8 +816,16 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     }
 
     // add in throttle and steering
-    const float motor_left = throttle_scaled + steering_scaled;
-    const float motor_right = throttle_scaled - steering_scaled;
+    float motor_left = throttle_scaled + steering_scaled;
+    float motor_right = throttle_scaled - steering_scaled;
+
+    // Apply asymmetry correction
+    if (is_negative(motor_right)) {
+        motor_right *= thrust_asymmetry;
+    }
+    if (is_negative(motor_left)) {
+        motor_left *= thrust_asymmetry;
+    }
 
     // send pwm value to each motor
     output_throttle(SRV_Channel::k_throttleLeft, 100.0f * motor_left, dt);
