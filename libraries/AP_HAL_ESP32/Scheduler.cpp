@@ -510,7 +510,7 @@ void IRAM_ATTR Scheduler::_main_thread(void *arg)
     printf("%s:%d start\n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     Scheduler *sched = (Scheduler *)arg;
-    hal.serial(0)->begin(115200);
+    hal.serial(0)->begin(230400);
     hal.serial(1)->begin(57600);
     hal.serial(2)->begin(57600);
     //hal.uartC->begin(921600);
