@@ -238,4 +238,19 @@
       <dataType>sensor_msgs::msg::dds_::Joy_</dataType>
     </topic>
   </data_reader>
+  <topic profile_name="dynamictf__t">
+    <name>rt/ap/tf</name>
+    <dataType>tf2_msgs::msg::dds_::TFMessage_</dataType>
+    <historyQos>
+      <kind>KEEP_LAST</kind>
+      <depth>5</depth>
+    </historyQos>
+  </topic>
+  <data_reader profile_name="dynamictf__dr">
+    <topic>
+      <kind>NO_KEY</kind>
+      <name>rt/ap/tf</name>
+      <dataType>tf2_msgs::msg::dds_::TFMessage_</dataType>
+    </topic>
+  </data_reader>
 </profiles>

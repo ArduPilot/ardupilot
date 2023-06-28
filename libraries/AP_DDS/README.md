@@ -213,6 +213,7 @@ Next, follow the associated section for your chosen transport, and finally you c
 
   Subscribed topics:
   * /ap/joy [sensor_msgs/msg/Joy] 1 subscriber
+  * /ap/tf [tf2_msgs/msg/TFMessage] 1 subscriber
 
   $ ros2 topic hz /ap/time
   average rate: 50.115
