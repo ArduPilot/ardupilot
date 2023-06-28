@@ -1603,7 +1603,7 @@ bool RCOutput::serial_led_send(pwm_group &group)
     }
 
 #ifndef DISABLE_DSHOT
-    if (irq.waiter || (group.dshot_state != DshotState::IDLE && group.dshot_state != DshotState::RECV_COMPLETE)) {
+    if (irq.waiter) {
         // doing serial output or DMAR input, don't send DShot pulses
         return false;
     }
