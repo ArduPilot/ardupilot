@@ -135,16 +135,26 @@ bool AP_Proximity_LD19::read_sensor_data()
             // check if message has right CRC
             if (CalCRC8(buffer,payload_len) == buffer[46]){
 		good_crc++;
+
                 //hal.console->printf("LD19 Data received, CRC OK.\n");
 		//uint16_t test = UINT16_VALUE(buffer[3],  buffer[2]);
 		//hal.console->printf("Hz: %f\n",(float)(test/360));
+
 		uint16_t start_angle = UINT16_VALUE(buffer[5],  buffer[4]);
+
 		//hal.console->printf("Start: %f\n",(float)(start_angle*0.01));
+
 		uint16_t end_angle = UINT16_VALUE(buffer[43],  buffer[42]);
+
                 //hal.console->printf("End: %f\n",(float)(end_angle*0.01));
+
 		if(start_angle > 36000 || end_angle > 36000) {
 			hal.console->printf("Insane start/stop_angle. start: %f stop: %f\n",(float)(start_angle*0.01),(float)(end_angle*0.01));
 		}
+
+		uint16_t final_distance = INT16_MAX;
+		uint16_t final_angle	= 0;
+
 		for(uint8_t i=0;i<=11;i++) {
 			// FIXME. need to find a better way to deal with angle rollover
 			if(end_angle < start_angle) {
@@ -152,27 +162,28 @@ bool AP_Proximity_LD19::read_sensor_data()
 			}
 			uint16_t step = (end_angle - start_angle)/(12-1);
 			uint16_t angle = start_angle + step*i;
- 			uint16_t distance = UINT16_VALUE(buffer[7+i*3],  buffer[6+i*3]);
+ 			uint16_t distance = UINT16_VALUE(buffer[7+i*3], buffer[6+i*3]);
                         uint8_t confidence = buffer[8+i*3];
 			if(confidence > 190) {
-				update_sector_data(angle,distance);
-				message_count++;
-				//hal.console->printf("s: %d a: %f d: %f c: %d\n",step,(float)(angle*0.01),(float)(distance/100),confidence);
+				if(distance < final_distance) {
+					final_distance = distance;
+					final_angle = angle*0.01;
+				}	
 			} else {
-				//hal.console-> printf("low confidence\n");
 				low_conf++;
 			}
 		}
+
+	 	// update the shortest value extracted from 12 value block		
+		//hal.console->printf("ang: %d dist: %d\n", final_angle,final_distance);
+	        update_sector_data(final_angle,final_distance);
+		message_count++;	
+
             } else {
+
 		bad_crc++;
-		//hal.console->printf("LD19 crc failed\n");
-		//for(uint8_t j=0;j<=46;j++) {
-			//hal.console->printf("index: %d hex: %x ",j,buffer[j]);
-		//}
-		//hal.console->printf("\n");
 	    }
         }
-	//message_count++;
     }
     //hal.console->printf("ubuf: %d gcrc: %d bcrc: %d lco: %d pkg: %d msg: %d\n",uart_buf_bytes,good_crc,bad_crc,low_conf,pkg_count,message_count);
     return (message_count > 0);
