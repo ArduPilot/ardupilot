@@ -81,6 +81,9 @@ public:
 #if AP_PROXIMITY_DRONECAN_ENABLED
         DroneCAN = 14,
 #endif
+#if AP_PROXIMITY_ARS408_CAN_ENABLED
+        ARS408 = 15,
+#endif
     };
 
     enum class Status {

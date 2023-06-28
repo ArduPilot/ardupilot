@@ -27,5 +27,6 @@ public:
         Scripting = 10,
         Benewake = 11,
         Scripting2 = 12,
+        ARS408 = 13,
     };
 };
