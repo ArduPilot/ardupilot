@@ -66,6 +66,8 @@ public:
 private:
     static AP_ICEngine *_singleton;
 
+    void ignition_relay_set(bool on);
+
     enum ICE_State state;
 
 #if AP_RPM_ENABLED
@@ -127,7 +129,10 @@ private:
     // Idle Controller Slew Rate
     AP_Float idle_slew;
 #endif
-    
+
+    // relay number for ignition
+    AP_Int8 ignition_relay;
+
     // height when we enter ICE_START_HEIGHT_DELAY
     float initial_height;
 

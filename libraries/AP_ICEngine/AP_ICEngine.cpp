@@ -24,6 +24,7 @@
 #include <AP_Notify/AP_Notify.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_RPM/AP_RPM.h>
+#include <AP_Relay/AP_Relay.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -162,6 +163,13 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     AP_GROUPINFO("REDLINE_RPM", 17, AP_ICEngine, redline_rpm, 0),
 #endif
 
+    // @Param: IGNITION_RLY
+    // @DisplayName: Ignition relay channel
+    // @Description: This is a a relay channel to use for ignition control
+    // @User: Standard
+    // @Values: 0:None, 1:Relay1,2:Relay2,3:Relay3,4:Relay4,5:Relay5,6:Relay6
+    AP_GROUPINFO("IGNITION_RLY", 18, AP_ICEngine, ignition_relay, 0),
+    
     AP_GROUPEND
 };
 
@@ -350,6 +358,7 @@ void AP_ICEngine::update(void)
     case ICE_OFF:
         SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_off);
         SRV_Channels::set_output_pwm(SRV_Channel::k_starter,  pwm_starter_off);
+        ignition_relay_set(false);
         starter_start_time_ms = 0;
         break;
 
@@ -357,11 +366,13 @@ void AP_ICEngine::update(void)
     case ICE_START_DELAY:
         SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_on);
         SRV_Channels::set_output_pwm(SRV_Channel::k_starter,  pwm_starter_off);
+        ignition_relay_set(false);
         break;
 
     case ICE_STARTING:
         SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_on);
         SRV_Channels::set_output_pwm(SRV_Channel::k_starter,  pwm_starter_on);
+        ignition_relay_set(true);
         if (starter_start_time_ms == 0) {
             starter_start_time_ms = now;
         }
@@ -371,6 +382,7 @@ void AP_ICEngine::update(void)
     case ICE_RUNNING:
         SRV_Channels::set_output_pwm(SRV_Channel::k_ignition, pwm_ignition_on);
         SRV_Channels::set_output_pwm(SRV_Channel::k_starter,  pwm_starter_off);
+        ignition_relay_set(true);
         starter_start_time_ms = 0;
         break;
     }
@@ -555,6 +567,24 @@ void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
 #endif // AP_RPM_ENABLED
 }
 
+/*
+  control relay for ICE ignition
+ */
+void AP_ICEngine::ignition_relay_set(bool on)
+{
+#if AP_RELAY_ENABLED
+    if (ignition_relay > 0) {
+        auto *relay = AP::relay();
+        if (relay != nullptr) {
+            if (on) {
+                relay->on(ignition_relay-1);
+            } else {
+                relay->off(ignition_relay-1);
+            }
+        }
+    }
+#endif
+}
 
 // singleton instance. Should only ever be set in the constructor.
 AP_ICEngine *AP_ICEngine::_singleton;
