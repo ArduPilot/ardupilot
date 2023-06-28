@@ -1144,7 +1144,9 @@ void SIM::sim_state_send(mavlink_channel_t chan) const
             0.0,
             state.speedN,
             state.speedE,
-            state.speedD);
+            state.speedD,
+	        (int32_t)(state.latitude*1.0e7),
+            (int32_t)(state.longitude*1.0e7));
 }
 
 /* report SITL state to AP_Logger */
