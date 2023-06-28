@@ -56,6 +56,7 @@ bool ModeCircle::set_center(const Location& center_loc, float radius_m, bool dir
 
     // set radius
     config.radius = MAX(fabsf(radius_m), AR_CIRCLE_RADIUS_MIN);
+    check_config_radius();
 
     // set direction
     config.dir = dir_ccw ? Direction::CCW : Direction::CW;
@@ -77,10 +78,15 @@ bool ModeCircle::_enter()
         return false;
     }
     config.radius = MAX(fabsf(radius), AR_CIRCLE_RADIUS_MIN);
+    check_config_radius();
+
     config.dir = (direction == 1) ? Direction::CCW : Direction::CW;
     config.speed = is_positive(speed) ? speed : g2.wp_nav.get_default_speed();
     target.yaw_rad = AP::ahrs().get_yaw();
     target.speed = 0;
+
+    // check speed around circle does not lead to excessive lateral acceleration
+    check_config_speed();
 
     // calculate speed, accel and jerk limits
     // otherwise the vehicle uses wp_nav default speed limit
@@ -219,6 +225,9 @@ bool ModeCircle::set_desired_speed(float speed_ms)
     if (is_positive(speed_ms)) {
         config.speed = speed_ms;
 
+        // check desired speed does not lead to excessive lateral acceleration
+        check_config_speed();
+
         // update position controller limits if required
         if (config.speed > g2.pos_control.get_speed_max()) {
             g2.pos_control.set_limits(config.speed, g2.pos_control.get_accel_max(), g2.pos_control.get_lat_accel_max(), g2.pos_control.get_jerk_max());
@@ -234,4 +243,30 @@ bool ModeCircle::get_desired_location(Location& destination) const
 {
     destination = config.center_loc;
     return true;
+}
+
+// limit config speed so that lateral acceleration is within limits
+// assumes that config.radius and attitude controller lat accel max have been set
+// outputs warning to user if speed is reduced
+void ModeCircle::check_config_speed()
+{
+    // calculate maximum speed based on radius and max lateral acceleration max
+    const float speed_max = MAX(safe_sqrt(g2.attitude_control.get_turn_lat_accel_max() * config.radius), 0);
+
+    if (config.speed > speed_max) {
+        config.speed = speed_max;
+        gcs().send_text(MAV_SEVERITY_WARNING, "Circle: max speed is %4.1f", (double)config.speed);
+    }
+}
+
+// ensure config radius is no smaller then vehicle's TURN_RADIUS
+// assumes that config.radius has been set
+// radius is increased if necessary and warning is output to the user
+void ModeCircle::check_config_radius()
+{
+    // ensure radius is at least as large as vehicle's turn radius
+    if (config.radius < rover.g2.turn_radius) {
+        config.radius = rover.g2.turn_radius;
+        gcs().send_text(MAV_SEVERITY_WARNING, "Circle: radius increased to TURN_RADIUS (%4.1f)", (double)rover.g2.turn_radius);
+    }
 }
