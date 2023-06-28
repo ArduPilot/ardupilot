@@ -54,16 +54,21 @@ private:
     uxrStreamId reliable_in;
     uxrStreamId reliable_out;
 
-    // Topic
+    // Outgoing Sensor and AHRS data
     builtin_interfaces_msg_Time time_topic;
-    sensor_msgs_msg_NavSatFix nav_sat_fix_topic;
-    tf2_msgs_msg_TFMessage static_transforms_topic;
-    sensor_msgs_msg_BatteryState battery_state_topic;
-    sensor_msgs_msg_Joy joy_topic;
+    geographic_msgs_msg_GeoPoseStamped geo_pose_topic;
     geometry_msgs_msg_PoseStamped local_pose_topic;
     geometry_msgs_msg_TwistStamped local_velocity_topic;
-    geographic_msgs_msg_GeoPoseStamped geo_pose_topic;
+    sensor_msgs_msg_BatteryState battery_state_topic;
+    sensor_msgs_msg_NavSatFix nav_sat_fix_topic;
     rosgraph_msgs_msg_Clock clock_topic;
+    // incoming joystick data
+    static sensor_msgs_msg_Joy rx_joy_topic;
+    // outgoing transforms
+    tf2_msgs_msg_TFMessage tx_static_transforms_topic;
+    tf2_msgs_msg_TFMessage tx_dynamic_transforms_topic;
+    // incoming transforms
+    static tf2_msgs_msg_TFMessage rx_dynamic_transforms_topic;
 
     HAL_Semaphore csem;
 

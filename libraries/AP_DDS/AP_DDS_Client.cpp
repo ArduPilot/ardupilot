@@ -22,6 +22,12 @@ static char WGS_84_FRAME_ID[] = "WGS-84";
 // https://www.ros.org/reps/rep-0105.html#base-link
 static char BASE_LINK_FRAME_ID[] = "base_link";
 
+// Define the subscriber data members, which are static class scope.
+// If these are created on the stack in the subscriber,
+// the AP_DDS_Client::on_topic frame size is exceeded.
+sensor_msgs_msg_Joy AP_DDS_Client::rx_joy_topic {};
+tf2_msgs_msg_TFMessage AP_DDS_Client::rx_dynamic_transforms_topic {};
+
 const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
 
     // @Param: _ENABLE
@@ -412,9 +418,8 @@ void AP_DDS_Client::on_topic (uxrSession* uxr_session, uxrObjectId object_id, ui
     */
 
     switch (object_id.id) {
-    case topics[to_underlying(TopicIndex::JOY_SUB)].dr_id.id:
-        sensor_msgs_msg_Joy topic;
-        const bool success = sensor_msgs_msg_Joy_deserialize_topic(ub, &topic);
+    case topics[to_underlying(TopicIndex::JOY_SUB)].dr_id.id: {
+        const bool success = sensor_msgs_msg_Joy_deserialize_topic(ub, &rx_joy_topic);
 
         if (success == false) {
             break;
@@ -422,13 +427,28 @@ void AP_DDS_Client::on_topic (uxrSession* uxr_session, uxrObjectId object_id, ui
 
         uint32_t* count_ptr = (uint32_t*) args;
         (*count_ptr)++;
-        if (topic.axes_size >= 4) {
+        if (rx_joy_topic.axes_size >= 4) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Received sensor_msgs/Joy: %f, %f, %f, %f",
-                          topic.axes[0], topic.axes[1], topic.axes[2], topic.axes[3]);
+                          rx_joy_topic.axes[0], rx_joy_topic.axes[1], rx_joy_topic.axes[2], rx_joy_topic.axes[3]);
         } else {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Received sensor_msgs/Joy: Insufficient axes size ");
         }
         break;
+    }
+    case topics[to_underlying(TopicIndex::DYNAMIC_TRANSFORMS_SUB)].dr_id.id: {
+        const bool success = tf2_msgs_msg_TFMessage_deserialize_topic(ub, &rx_dynamic_transforms_topic);
+        if (success == false) {
+            break;
+        }
+        uint32_t* count_ptr = (uint32_t*) args;
+        (*count_ptr)++;
+        if (rx_dynamic_transforms_topic.transforms_size > 0) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Received tf2_msgs/TFMessage of length: %u",
+                          static_cast<unsigned>(rx_dynamic_transforms_topic.transforms_size));
+        } else {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Received tf2_msgs/TFMessage: Insufficient size ");
+        }
+    }
     }
 
 }
@@ -444,7 +464,7 @@ void AP_DDS_Client::main_loop(void)
     }
     GCS_SEND_TEXT(MAV_SEVERITY_INFO,"DDS Client: Initialization passed");
 
-    populate_static_transforms(static_transforms_topic);
+    populate_static_transforms(tx_static_transforms_topic);
     write_static_transforms();
 
     while (true) {
@@ -636,9 +656,9 @@ void AP_DDS_Client::write_static_transforms()
     WITH_SEMAPHORE(csem);
     if (connected) {
         ucdrBuffer ub {};
-        const uint32_t topic_size = tf2_msgs_msg_TFMessage_size_of_topic(&static_transforms_topic, 0);
+        const uint32_t topic_size = tf2_msgs_msg_TFMessage_size_of_topic(&tx_static_transforms_topic, 0);
         uxr_prepare_output_stream(&session,reliable_out,topics[2].dw_id,&ub,topic_size);
-        const bool success = tf2_msgs_msg_TFMessage_serialize_topic(&ub, &static_transforms_topic);
+        const bool success = tf2_msgs_msg_TFMessage_serialize_topic(&ub, &tx_static_transforms_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
             // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
