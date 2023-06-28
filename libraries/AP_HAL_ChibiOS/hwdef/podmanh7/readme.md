@@ -3,29 +3,29 @@
 The podmanH7  flight controller is manufactured and sold by [makermare](http://www.makermare.com).
 
 ## Features
-    Processor
-        STM32H743 microcontroller 2MB 32-bit processor
-        AT7456E OSD
-    Sensors
-	    Three IMUs: BMI270, ICM42688 and IIM42652
-	    BMI270 Acc/Gyro
+	Processor
+		STM32H743 microcontroller 2MB 32-bit processor
+		AT7456E OSD
+	Sensors
+		Three IMUs: BMI270, ICM42688 and IIM42652
+		BMI270 Acc/Gyro
 		Internal vibration isolation for 2 IMUs
-	    IIM42652 Acc/Gyro
-        ICM42688P Acc/Gyro
-        SPL06 barometer
-    Power
-        2S - 6S Lipo input voltage with voltage monitoring(2 power analog ports)
-    Interfaces
-        16x PWM outputs DShot capable (8 PWM protocols as well as DShot)
-        1x RC input (SBUS and PPM signals)
-        6x UARTs/serial for GPS and other peripherals, 
+		IIM42652 Acc/Gyro
+		ICM42688P Acc/Gyro
+		SPL06 barometer
+	Power
+		2S - 6S Lipo input voltage with voltage monitoring(2 power analog ports)
+	Interfaces
+		16x PWM outputs DShot capable (8 PWM protocols as well as DShot)
+		1x RC input (SBUS and PPM signals)
+		6x UARTs/serial for GPS and other peripherals, 
 		6th UART internally tied to Wireless board)
 		USART1, USART2, USART3, UART4, UART7, UART8 and OTG1 have full DMA (RX and TX).
-        3 I2C ports for external compass, airspeed, etc.
+		3 I2C ports for external compass, airspeed, etc.
 		I2C_ORDER: I2C1 I2C2 I2C4
-        microSDCard for logging, etc.
+		microSDCard for logging, etc.
 		Internal RGB LED
-        USB-C port
+		USB-C port
 		Safety switch port
 		Buzzer port
 
