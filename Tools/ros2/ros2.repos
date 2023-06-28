@@ -7,3 +7,15 @@ repositories:
     type: git
     url: https://github.com/micro-ROS/micro-ROS-Agent.git
     version: humble
+  integration_service:
+    type: git
+    url: https://github.com/eProsima/Integration-Service.git
+    version: main
+  fastdds_sh:
+    type: git
+    url: https://github.com/eProsima/FastDDS-SH
+    version: main
+  ros2_sh:
+    type: git
+    url: https://github.com/eProsima/ROS2-SH.git
+    version: main

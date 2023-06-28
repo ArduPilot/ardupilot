@@ -1,12 +1,12 @@
 repositories:
   ardupilot:
     type: git
-    url: https://github.com/srmainwaring/ardupilot.git
-    version: pr/pr-dds-launch-tests
+    url: https://github.com/ArduPilot/ardupilot.git
+    version: master
   microxrcedds_gen:
     type: git
     url: https://github.com/eProsima/Micro-XRCE-DDS-Gen.git
-    version: develop
+    version: master
   micro_ros_agent:
     type: git
     url: https://github.com/srmainwaring/micro-ROS-Agent.git
@@ -15,3 +15,15 @@ repositories:
     type: git
     url: https://github.com/micro-ROS/micro_ros_msgs.git
     version: humble
+  integration_service:
+    type: git
+    url: https://github.com/eProsima/Integration-Service.git
+    version: main
+  fastdds_sh:
+    type: git
+    url: https://github.com/eProsima/FastDDS-SH
+    version: main
+  ros2_sh:
+    type: git
+    url: https://github.com/eProsima/ROS2-SH.git
+    version: main

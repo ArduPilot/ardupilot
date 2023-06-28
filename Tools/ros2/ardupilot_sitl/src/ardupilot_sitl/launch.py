@@ -655,3 +655,101 @@ class SITLLaunch:
             serial_args.append(arg)
 
         return launch_args + uart_args + serial_args
+
+
+class IntegrationServiceLaunch:
+    """Launch functions for the eProsima Integration Service."""
+
+    @staticmethod
+    def generate_action(context: LaunchContext, *args, **kwargs) -> ExecuteProcess:
+        """Launch the eProsima Integration Service."""
+        # Declare the command.
+        command = "integration-service"
+
+        # Arguments.
+        config_file = LaunchConfiguration("config_file").perform(context)
+
+        # Display launch arguments.
+        print(f"command:          {command}")
+        print(f"config_file:      {config_file}")
+
+        # Required arguments
+        # - `config_file` is a positional argument
+        args = [
+            f"{command} ",
+            f"{config_file} ",
+        ]
+
+        # Optional arguments.
+        # - `is_prefix_path` is a colon delimited list of paths
+        is_prefix_path = LaunchConfiguration("is_prefix_path").perform(context)
+        if is_prefix_path:
+            for path in is_prefix_path.split(":"):
+                args.append("--is-prefix-path ")
+                args.append(f"{path} ")
+                print(f"is_prefix_path:   {path}")
+
+        # debug information
+        # print()
+        # print(f"cmd: {args}")
+        # print()
+
+        # Create action.
+        action = ExecuteProcess(
+            cmd=[args],
+            shell=True,
+            output="both",
+            respawn=False,
+            cached_output=True,
+        )
+        return action
+
+    @staticmethod
+    def generate_launch_description_with_actions() -> (
+        Tuple[LaunchDescription, Dict[Text, ExecuteFunction]]
+    ):
+        """Generate a launch description with actions."""
+        launch_arguments = IntegrationServiceLaunch.generate_launch_arguments()
+
+        action = ExecuteFunction(function=IntegrationServiceLaunch.generate_action)
+
+        ld = LaunchDescription(
+            launch_arguments
+            + [
+                action,
+            ]
+        )
+        actions = {
+            "integration_service": action,
+        }
+        return ld, actions
+
+    @staticmethod
+    def generate_launch_description() -> LaunchDescription:
+        """Generate a launch description."""
+        ld, _ = IntegrationServiceLaunch.generate_launch_description_with_actions()
+        return ld
+
+    @staticmethod
+    def generate_launch_arguments() -> List[DeclareLaunchArgument]:
+        """Generate a list of launch arguments."""
+        return [
+            # Required launch arguments.
+            DeclareLaunchArgument(
+                "config_file",
+                default_value="",
+                description="The YAML file that describes how this instance "
+                "of the eProsima Integration Service "
+                "should be configured.",
+            ),
+            # Optional launch arguments.
+            DeclareLaunchArgument(
+                "is_prefix_path",
+                default_value="",
+                description="Specify a list of the eProsima "
+                "Integration Service prefix paths to use when searching "
+                "for Middleware Interface eXtension (.mix) files. "
+                "The environment variable IS_PREFIX_PATH can be set to "
+                "a colon-separated list instead of using this flag.",
+            ),
+        ]
