@@ -1071,6 +1071,9 @@ void AP_IOMCU_FW::rcout_config_update(void)
     switch (mode_out.mode) {
     case AP_HAL::RCOutput::MODE_PWM_DSHOT150:
     case AP_HAL::RCOutput::MODE_PWM_DSHOT300:
+#if defined(STM32F103xB) || defined(STM32F103x8)
+    case AP_HAL::RCOutput::MODE_PWM_DSHOT600:
+#endif
         hal.rcout->set_output_mode(mode_out.mask, (AP_HAL::RCOutput::output_mode)mode_out.mode);
         // enabling dshot changes the memory allocation
         reg_status.freemem = hal.util->available_memory();
