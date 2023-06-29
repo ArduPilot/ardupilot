@@ -7,5 +7,3 @@ include ../iomcu/hwdef.inc
 
 # directly define DMA channels
 DMA_NOMAP 1
-
-MCU_CLOCKRATE_MHZ 24
