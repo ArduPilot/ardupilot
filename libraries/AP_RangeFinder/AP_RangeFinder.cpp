@@ -54,6 +54,7 @@
 #include "AP_RangeFinder_Lua.h"
 #include "AP_RangeFinder_NoopLoop.h"
 #include "AP_RangeFinder_TOFSenseP_CAN.h"
+#include "AP_RangeFinder_NRA24_CAN.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
@@ -548,6 +549,11 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     case Type::TOFSenseP_CAN:
 #if AP_RANGEFINDER_TOFSENSEP_CAN_ENABLED
         _add_backend(new AP_RangeFinder_TOFSenseP_CAN(state[instance], params[instance]), instance);
+#endif
+        break;
+    case Type::NRA24_CAN:
+#if AP_RANGEFINDER_NRA24_CAN_ENABLED
+        _add_backend(new AP_RangeFinder_NRA24_CAN(state[instance], params[instance]), instance);
 #endif
         break;
 
