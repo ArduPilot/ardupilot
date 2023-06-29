@@ -57,19 +57,21 @@
 #define STM32_PLL2MUL_VALUE                 16
 #define STM32_PLL3MUL_VALUE                 16
 #elif STM32_HSECLK == 24000000U
-#define STM32_SW                            STM32_SW_HSE
-/* 24Mhz crystal on F103 is strictly illegal, but some boards (Pixhwak6X) have this.
-   Since PLL clock is not used we can work around ChibiOS constraints by using HSI. */
-#ifdef STM32F103_MCUCONF
-#define STM32_PLLSRC                        STM32_PLLSRC_HSI
-#else
+/* 24Mhz crystal on F103 is strictly illegal, but some boards (Pixhwak6X) have this. */
 #define STM32_PLLSRC                        STM32_PLLSRC_HSE
-#endif
-#define STM32_PLLXTPRE                      STM32_PLLXTPRE_DIV1
-#define STM32_PLLMUL_VALUE                  9
+#define STM32_PLLMUL_VALUE                  3
+#ifdef STM32F103_MCUCONF
+#define STM32_SW                            STM32_SW_PLL
+#define STM32_PPRE1                         STM32_PPRE1_DIV2
+#define STM32_PPRE2                         STM32_PPRE2_DIV2
+#define STM32_ADCPRE                        STM32_ADCPRE_DIV4
+#else
+#define STM32_SW                            STM32_SW_HSE
 #define STM32_PPRE1                         STM32_PPRE1_DIV1
 #define STM32_PPRE2                         STM32_PPRE2_DIV1
 #define STM32_ADCPRE                        STM32_ADCPRE_DIV2
+#endif
+#define STM32_PLLXTPRE                      STM32_PLLXTPRE_DIV1
 #define STM32_HPRE                          STM32_HPRE_DIV1
 #else
 #error "Unsupported STM32F1xx clock frequency"

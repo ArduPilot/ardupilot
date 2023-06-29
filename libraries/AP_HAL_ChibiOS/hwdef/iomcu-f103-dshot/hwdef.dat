@@ -12,4 +12,3 @@ DMA_NOMAP 1
 
 # only four timers on F103xB so use TIM1 for system timer
 STM32_ST_USE_TIMER 1
-MCU_CLOCKRATE_MHZ 24
