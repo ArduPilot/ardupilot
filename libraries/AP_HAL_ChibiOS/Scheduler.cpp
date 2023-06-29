@@ -505,9 +505,22 @@ void Scheduler::_rcin_thread(void *arg)
     while (!sched->_hal_initialized) {
         sched->delay_microseconds(20000);
     }
+    uint32_t prev_run_us = 0;
     while (true) {
-        sched->delay_microseconds(1000);
+        // ELRS can run at 500Hz and with a fixed delay the variability can be quite large 1-2ms
+        // meaning it is easy to miss frames, this ensures a regular 1Khz check which also allows
+        // a lower timeout in frame decoding
+        const uint32_t last_run_us = AP_HAL::micros();
+        const uint32_t last_period_us = last_run_us - prev_run_us;
+        prev_run_us = last_run_us;
         ((RCInput *)hal.rcin)->_timer_tick();
+
+        uint32_t delay = AP_HAL::micros() - last_run_us;
+        if (last_period_us > 1000) {
+            delay += (last_period_us - 1000);
+        }
+        delay = MIN(delay, 1000 - CH_CFG_ST_TIMEDELTA);
+        sched->delay_microseconds(1000 - delay);
     }
 }
 
