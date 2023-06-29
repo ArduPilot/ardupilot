@@ -146,11 +146,12 @@ static const char* get_frame_type(uint8_t byte, uint8_t subtype = 0)
 # define debug(fmt, args...)	do {} while(0)
 #endif
 
-#define CRSF_FRAME_TIMEOUT_US      10000U // 10ms to account for scheduling delays
 #define CRSF_INTER_FRAME_TIME_US_250HZ    4000U // At fastest, frames are sent by the transmitter every 4 ms, 250 Hz
 #define CRSF_INTER_FRAME_TIME_US_150HZ    6667U // At medium, frames are sent by the transmitter every 6.667 ms, 150 Hz
 #define CRSF_INTER_FRAME_TIME_US_50HZ    20000U // At slowest, frames are sent by the transmitter every 20ms, 50 Hz
+#define ELRS_INTER_FRAME_TIME_US_500HZ    2000U // At fastest (CRSF), frames are sent by the transmitter every 2 ms, 500 Hz
 #define CSRF_HEADER_TYPE_LEN     (CSRF_HEADER_LEN + 1)           // header length including type
+#define CRSF_FRAME_TIMEOUT_US           ELRS_INTER_FRAME_TIME_US_500HZ // set to the shortest inter-frame time
 
 #define CRSF_DIGITAL_CHANNEL_MIN 172
 #define CRSF_DIGITAL_CHANNEL_MAX 1811
