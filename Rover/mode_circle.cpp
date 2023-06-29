@@ -177,7 +177,7 @@ void ModeCircle::update()
     target.accel = Vector2f(sq(target.speed) / config.radius, 0);
     target.accel.rotate(target.yaw_rad + radians(180));
 
-    g2.pos_control.input_pos_vel_accel_target(target.pos, target.vel, target.accel, rover.G_Dt);
+    g2.pos_control.set_pos_vel_accel_target(target.pos, target.vel, target.accel);
     g2.pos_control.update(rover.G_Dt);
 
     // get desired speed and turn rate from pos_control
