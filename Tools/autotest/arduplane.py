@@ -1963,6 +1963,7 @@ class AutoTestPlane(AutoTest):
         self.fly_home_land_and_disarm()
 
     def deadreckoning_main(self, disable_airspeed_sensor=False):
+        self.reboot_sitl()
         self.wait_ready_to_arm()
         self.gpi = None
         self.simstate = None
