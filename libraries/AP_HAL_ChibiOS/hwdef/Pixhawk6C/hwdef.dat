@@ -1,6 +1,10 @@
 # hw definition file for processing by chibios_hwdef.py
 # for the HolybroV6C hardware
 
+
+# default to all pins low to avoid ESD issues
+#DEFAULTGPIO OUTPUT LOW PULLDOWN
+
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
 
@@ -35,9 +39,6 @@ SERIAL_ORDER OTG1 UART7 UART5 USART1 UART8 USART2 USART3 OTG2
 # default the 2nd interface to MAVLink2
 define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
 
-# default to all pins low to avoid ESD issues
-DEFAULTGPIO OUTPUT LOW PULLDOWN
-
 # USB
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
@@ -50,13 +51,13 @@ PA14 JTCK-SWCLK SWD
 # telem1
 PE8  UART7_TX UART7
 PE7  UART7_RX UART7
-PE9  UART7_RTS UART7
+PE9  UART7_RTS UART7 LOW PULLDOWN
 PE10 UART7_CTS UART7
 
 # telem2
 PC12 UART5_TX UART5
 PD2 UART5_RX UART5
-PC8 UART5_RTS UART5
+PC8 UART5_RTS UART5 LOW PULLDOWN
 PC9 UART5_CTS UART5
 
 # GPS1
