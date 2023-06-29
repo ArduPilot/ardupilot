@@ -37,3 +37,7 @@ define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 # produce this error if we are on a 1M board
 undef BOARD_CHECK_F427_USE_1M
 define BOARD_CHECK_F427_USE_1M "ERROR: 1M flash use Pixhawk1-1M"
+
+# enable support for dshot on iomcu
+ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_dshot_lowpolh.bin
+define HAL_WITH_IO_MCU_DSHOT 1
