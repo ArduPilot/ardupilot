@@ -1228,6 +1228,7 @@ bool AP_Arming::can_checks(bool report)
                 case AP_CAN::Protocol::Benewake:
                 case AP_CAN::Protocol::KDECAN:
                 case AP_CAN::Protocol::TOFSenseP:
+                case AP_CAN::Protocol::NanoRadar_NRA24:
                     break;
             }
         }
