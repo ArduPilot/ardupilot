@@ -301,6 +301,9 @@ DMA_PRIORITY SDMMC* UART8* ADC* SPI* TIM*
 define HAL_OS_FATFS_IO 1
 
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
+# enable support for dshot on iomcu
+ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_dshot_lowpolh.bin
+define HAL_WITH_IO_MCU_DSHOT 1
 
 # uncomment block below to enable a 2nd MS5611 baro on SPI5
 #PF7 SPI5_SCK SPI5
