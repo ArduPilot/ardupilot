@@ -200,7 +200,7 @@ void AP_MotorsHeli_Single::set_update_rate( uint16_t speed_hz )
 }
 
 // init_outputs - initialise Servo/PWM ranges and endpoints
-bool AP_MotorsHeli_Single::init_outputs()
+void AP_MotorsHeli_Single::init_outputs()
 {
     if (!initialised_ok()) {
         // map primary swash servos
@@ -244,8 +244,6 @@ bool AP_MotorsHeli_Single::init_outputs()
     }
 
     set_initialised_ok(_frame_class == MOTOR_FRAME_HELI);
-
-    return true;
 }
 
 // set_desired_rotor_speed
