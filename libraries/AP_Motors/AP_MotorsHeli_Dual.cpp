@@ -230,7 +230,7 @@ void AP_MotorsHeli_Dual::set_update_rate( uint16_t speed_hz )
 }
 
 // init_outputs
-bool AP_MotorsHeli_Dual::init_outputs()
+void AP_MotorsHeli_Dual::init_outputs()
 {
     if (!initialised_ok()) {
         // make sure 6 output channels are mapped
@@ -261,8 +261,6 @@ bool AP_MotorsHeli_Dual::init_outputs()
     }
 
     set_initialised_ok(_frame_class == MOTOR_FRAME_HELI_DUAL);
-
-    return true;
 }
 
 // calculate_armed_scalars

@@ -46,10 +46,10 @@ void AP_MotorsHeli_Quad::set_update_rate( uint16_t speed_hz )
 }
 
 // init_outputs
-bool AP_MotorsHeli_Quad::init_outputs()
+void AP_MotorsHeli_Quad::init_outputs()
 {
     if (initialised_ok()) {
-        return true;
+        return;
     }
 
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
@@ -61,8 +61,6 @@ bool AP_MotorsHeli_Quad::init_outputs()
     _main_rotor.init_servo();
 
     set_initialised_ok(_frame_class == MOTOR_FRAME_HELI_QUAD);
-
-    return true;
 }
 
 // calculate_armed_scalars

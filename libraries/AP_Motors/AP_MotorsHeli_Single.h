@@ -89,7 +89,7 @@ public:
 protected:
 
     // init_outputs - initialise Servo/PWM ranges and endpoints
-    bool init_outputs() override;
+    void init_outputs() override;
 
     // update_motor_controls - sends commands to motor controllers
     void update_motor_control(RotorControlState state) override;
