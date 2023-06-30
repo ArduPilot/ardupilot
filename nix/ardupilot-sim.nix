@@ -2,10 +2,11 @@
   let supported-systems = with flake-utils.lib.system; [
     x86_64-linux
     aarch64-linux
+    aarch64-darwin
   ];
 in flake-utils.lib.eachSystem supported-systems (system:
-    let:
-        pkgs = import nixpkgs { inherit system overlays; };
+    let
+        pkgs = import nixpkgs { inherit system; };
         inherit (pkgs) lib;
         python = (pkgs.python39.withPackages
         (ps: with ps; [ setuptools future pexpect empy ]));
