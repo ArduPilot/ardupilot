@@ -12,7 +12,8 @@ STORAGE_FLASH_PAGE 1
 define HAL_STORAGE_SIZE 15360
 
 # board ID for firmware load
-APJ_BOARD_ID 1119
+# DO NOT MERGE - this is the MatekF405-TE board id that allows us to upload the new bootloader with the correct board id (1119)
+APJ_BOARD_ID 1054
 
 define STM32_ST_USE_TIMER 5
 define CH_CFG_ST_RESOLUTION 32
