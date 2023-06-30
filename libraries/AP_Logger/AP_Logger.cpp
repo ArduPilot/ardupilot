@@ -160,7 +160,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
 #if HAL_LOGGING_BLOCK_ENABLED
     // @Param: _BLK_RATEMAX
     // @DisplayName: Maximum logging rate for block backend
-    // @Description: This sets the maximum rate that streaming log messages will be logged to the mavlink backend. A value of zero means that rate limiting is disabled.
+    // @Description: This sets the maximum rate that streaming log messages will be logged to the block backend. A value of zero means that rate limiting is disabled.
     // @Units: Hz
     // @Range: 0 1000
     // @Increment: 0.1
