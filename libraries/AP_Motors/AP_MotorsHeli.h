@@ -211,7 +211,7 @@ protected:
 
     // init_outputs - initialise Servo/PWM ranges and endpoints.  This
     // method also updates the initialised flag.
-    virtual bool init_outputs() = 0;
+    virtual void init_outputs() = 0;
 
     // calculate_armed_scalars - must be implemented by child classes
     virtual void calculate_armed_scalars() = 0;
