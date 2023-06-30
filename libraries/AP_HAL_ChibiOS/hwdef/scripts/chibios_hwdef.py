@@ -2737,27 +2737,28 @@ INCLUDE common.ld
         return peripherals
 
 
-    def write_env_py(self, filename):
-        '''write out env.py for environment variables to control the build process'''
-
+    def write_processed_defaults_file(self, filepath):
         # see if board has a defaults.parm file or a --default-parameters file was specified
         defaults_filename = os.path.join(os.path.dirname(args.hwdef[0]), 'defaults.parm')
         defaults_path = os.path.join(os.path.dirname(args.hwdef[0]), args.params)
 
-        if not args.bootloader:
-            defaults_abspath = None
-            if os.path.exists(defaults_path):
-                defaults_abspath = os.path.abspath(self.default_params_filepath)
-                print("Default parameters path from command line: %s" % self.default_params_filepath)
-            elif os.path.exists(defaults_filename):
-                defaults_abspath = os.path.abspath(defaults_filename)
-                print("Default parameters path from hwdef: %s" % defaults_filename)
+        defaults_abspath = None
+        if os.path.exists(defaults_path):
+            defaults_abspath = os.path.abspath(self.default_params_filepath)
+            print("Default parameters path from command line: %s" % self.default_params_filepath)
+        elif os.path.exists(defaults_filename):
+            defaults_abspath = os.path.abspath(defaults_filename)
+            print("Default parameters path from hwdef: %s" % defaults_filename)
 
-            if defaults_abspath is not None:
-                self.env_vars['DEFAULT_PARAMETERS'] = defaults_abspath
-            else:
-                print("No default parameter file found")
+        if defaults_abspath is None:
+            print("No default parameter file found")
+            return
 
+        self.env_vars['DEFAULT_PARAMETERS'] = defaults_abspath
+
+
+    def write_env_py(self, filename):
+        '''write out env.py for environment variables to control the build process'''
         # CHIBIOS_BUILD_FLAGS is passed to the ChibiOS makefile
         self.env_vars['CHIBIOS_BUILD_FLAGS'] = ' '.join(self.build_flags)
         pickle.dump(self.env_vars, open(filename, "wb"))
@@ -3448,6 +3449,9 @@ INCLUDE common.ld
         # copy the shared linker script into the build directory; it must
         # exist in the same directory as the ldscript.ld file we generate.
         self.copy_common_linkerscript(self.outdir)
+
+        if not args.bootloader:
+            self.write_processed_defaults_file(os.path.join(self.outdir, "processed_defaults.parm"))
 
         self.write_env_py(os.path.join(self.outdir, "env.py"))
 
