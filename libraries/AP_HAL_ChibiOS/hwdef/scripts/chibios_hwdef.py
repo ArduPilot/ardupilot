@@ -2736,6 +2736,32 @@ INCLUDE common.ld
             done.add(type)
         return peripherals
 
+    def get_processed_defaults_file(self, defaults_filepath, depth=0):
+        '''reads defaults_filepath, expanding any @include lines to include
+        the contents of the so-references file - recursively.'''
+        if depth > 10:
+            raise Exception("include loop")
+        ret = ""
+        with open(defaults_filepath, 'r') as defaults_fh:
+            while True:
+                line = defaults_fh.readline()
+                if line == "":
+                    break
+                m = re.match("^@include\s*([^\s]+)", line)
+                if m is None:
+                    ret += line
+                    continue
+                # we've found an include; do that...
+                include_filepath = os.path.join(os.path.dirname(defaults_filepath), m.group(1))
+                try:
+#                    ret += "# Begin included file (%s)" % include_filepath
+                    ret += self.get_processed_defaults_file(include_filepath, depth=depth+1)
+#                    ret += "# End included file (%s)" % include_filepath
+                except FileNotFoundError:
+                    raise Exception("%s includes %s but that filepath was not found" %
+                                    (defaults_filepath, include_filepath))
+        return ret
+
 
     def write_processed_defaults_file(self, filepath):
         # see if board has a defaults.parm file or a --default-parameters file was specified
@@ -2754,7 +2780,12 @@ INCLUDE common.ld
             print("No default parameter file found")
             return
 
-        self.env_vars['DEFAULT_PARAMETERS'] = defaults_abspath
+        content = self.get_processed_defaults_file(defaults_abspath)
+
+        with open(filepath, "w") as processed_defaults_fh:
+            processed_defaults_fh.write(content)
+
+        self.env_vars['DEFAULT_PARAMETERS'] = filepath
 
 
     def write_env_py(self, filename):
