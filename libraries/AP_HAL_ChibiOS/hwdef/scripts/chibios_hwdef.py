@@ -2745,12 +2745,16 @@ INCLUDE common.ld
         defaults_path = os.path.join(os.path.dirname(args.hwdef[0]), args.params)
 
         if not args.bootloader:
+            defaults_abspath = None
             if os.path.exists(defaults_path):
-                self.env_vars['DEFAULT_PARAMETERS'] = os.path.abspath(self.default_params_filepath)
+                defaults_abspath = os.path.abspath(self.default_params_filepath)
                 print("Default parameters path from command line: %s" % self.default_params_filepath)
             elif os.path.exists(defaults_filename):
-                self.env_vars['DEFAULT_PARAMETERS'] = os.path.abspath(defaults_filename)
+                defaults_abspath = os.path.abspath(defaults_filename)
                 print("Default parameters path from hwdef: %s" % defaults_filename)
+
+            if defaults_abspath is not None:
+                self.env_vars['DEFAULT_PARAMETERS'] = defaults_abspath
             else:
                 print("No default parameter file found")
 
