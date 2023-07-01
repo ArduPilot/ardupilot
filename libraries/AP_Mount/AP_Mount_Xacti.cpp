@@ -288,11 +288,6 @@ void AP_Mount_Xacti::subscribe_msgs(AP_DroneCAN* ap_dronecan)
         AP_BoardConfig::allocation_error("gnss_status_req_sub");
         _subscribed = false;
     }
-
-    // debug
-    if (_subscribed) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Xacti: DroneCAN subscribe succeeded!");
-    }
 }
 
 // register backend in detected modules array used to map DroneCAN port and node id to backend
