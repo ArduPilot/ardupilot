@@ -21,7 +21,7 @@ const AP_Param::GroupInfo Tiltrotor::var_info[] = {
 
     // @Param: RATE_UP
     // @DisplayName: Tiltrotor upwards tilt rate
-    // @Description: This is the maximum speed at which the motor angle will change for a tiltrotor when moving from forward flight to hover
+    // @Description: This is the maximum speed at which the motor angle will change for a tiltrotor when moving from forward flight to hover. Default is 40deg/s.
     // @Units: deg/s
     // @Increment: 1
     // @Range: 10 300
