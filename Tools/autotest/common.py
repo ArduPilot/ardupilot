@@ -3968,13 +3968,27 @@ class AutoTest(ABC):
             else:
                 equal = got == value
 
+            value_string = value
+            got_string = got
+            enum_name = m.fieldenums_by_name.get(fieldname, None)
+            if enum_name is not None:
+                enum = mavutil.mavlink.enums[enum_name]
+                if value not in enum:
+                    raise ValueError("Expected value %s not in enum %s" % (value, enum_name))
+                if got not in enum:
+                    raise ValueError("Received value %s not in enum %s" % (value, enum_name))
+                value_string = "%s (%s)" % (value, enum[value].name)
+                got_string = "%s (%s)" % (got, enum[got].name)
+
             if not equal:
+                # see if this is an enumerated field:
+                self.progress(self.dump_message_verbose(m))
                 self.progress("Expected %s.%s to be %s, got %s" %
-                              (m.get_type(), fieldname, value, got))
+                              (m.get_type(), fieldname, value_string, got_string))
                 return False
             if verbose:
                 self.progress("%s.%s has expected value %s" %
-                              (m.get_type(), fieldname, value))
+                              (m.get_type(), fieldname, value_string))
         return True
 
     def assert_message_field_values(self, m, fieldvalues, verbose=True, epsilon=None):
