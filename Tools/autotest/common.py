@@ -10139,16 +10139,11 @@ Also, ignores heartbeats not from our target system'''
                                         target_component,
                                         0,
                                         mission_type)
-        m = self.assert_receive_message('MISSION_ACK', timeout=5)
-        if m.target_system != self.mav.mav.srcSystem:
-            raise NotAchievedException("ACK not targetted at correct system want=%u got=%u" %
-                                       (self.mav.mav.srcSystem, m.target_system))
-        if m.target_component != self.mav.mav.srcComponent:
-            raise NotAchievedException("ACK not targetted at correct component want=%u got=%u" %
-                                       (self.mav.mav.srcComponent, m.target_component))
-        if m.type != mavutil.mavlink.MAV_MISSION_ACCEPTED:
-            raise NotAchievedException("Expected MAV_MISSION_ACCEPTED got %s" %
-                                       (mavutil.mavlink.enums["MAV_MISSION_RESULT"][m.type].name,))
+        self.assert_received_message_field_values('MISSION_ACK', {
+            "target_system": self.mav.mav.srcSystem,
+            "target_component": self.mav.mav.srcComponent,
+            "type": mavutil.mavlink.MAV_MISSION_ACCEPTED,
+        })
 
         if mission_type == mavutil.mavlink.MAV_MISSION_TYPE_MISSION:
             self.last_wp_load = time.time()
