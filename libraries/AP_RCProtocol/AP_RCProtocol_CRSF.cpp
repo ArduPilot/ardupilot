@@ -203,6 +203,8 @@ const char* AP_RCProtocol_CRSF::get_protocol_string(ProtocolType protocol) const
 uint16_t AP_RCProtocol_CRSF::get_link_rate(ProtocolType protocol) const {
     if (protocol == ProtocolType::PROTOCOL_ELRS) {
         return RF_MODE_RATES[_link_status.rf_mode + RFMode::ELRS_RF_MODE_4HZ];
+    } else if (protocol == ProtocolType::PROTOCOL_TRACER) {
+        return 250;
     } else {
         return RF_MODE_RATES[_link_status.rf_mode];
     }
