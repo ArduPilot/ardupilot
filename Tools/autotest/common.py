@@ -7247,6 +7247,10 @@ class AutoTest(ABC):
         raise WaitWaypointTimeout("Timed out waiting for waypoint %u of %u" %
                                   (wpnum_end, wpnum_end))
 
+    def get_cached_message(self, message_type):
+        '''returns the most-recently received instance of message_type'''
+        return self.mav.messages[message_type]
+
     def mode_is(self, mode, cached=False, drain_mav=True):
         if not cached:
             self.wait_heartbeat(drain_mav=drain_mav)
