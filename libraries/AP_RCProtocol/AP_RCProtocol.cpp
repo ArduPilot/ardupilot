@@ -293,8 +293,12 @@ static const AP_RCProtocol::SerialConfig serial_configs[] {
     // FastSBUS:
     { 200000,  2,   2, true },
 #endif
+#if AP_RCPROTOCOL_CRSF_ENABLED
     // CrossFire:
     { 416666,  0,   1, false },
+    // CRSFv3 can negotiate higher rates which are sticky on soft reboot
+    { 2000000, 0,   1, false },
+#endif
 };
 
 static_assert(ARRAY_SIZE(serial_configs) > 1, "must have at least one serial config");

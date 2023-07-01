@@ -155,6 +155,8 @@ static const char* get_frame_type(uint8_t byte, uint8_t subtype = 0)
 #define CRSF_DIGITAL_CHANNEL_MIN 172
 #define CRSF_DIGITAL_CHANNEL_MAX 1811
 
+#define CRSF_BAUDRATE_1MBIT      1000000U
+#define CRSF_BAUDRATE_2MBIT      2000000U
 
 const uint16_t AP_RCProtocol_CRSF::RF_MODE_RATES[RFMode::RF_MODE_MAX_MODES] = {
     4, 50, 150, 250,    // CRSF
@@ -568,7 +570,7 @@ void AP_RCProtocol_CRSF::process_link_stats_tx_frame(const void* data)
 void AP_RCProtocol_CRSF::process_byte(uint8_t byte, uint32_t baudrate)
 {
     // reject RC data if we have been configured for standalone mode
-    if (baudrate != CRSF_BAUDRATE || _uart) {
+    if ((baudrate != CRSF_BAUDRATE && baudrate != CRSF_BAUDRATE_1MBIT && baudrate != CRSF_BAUDRATE_2MBIT) || _uart) {
         return;
     }
     _process_byte(AP_HAL::micros(), byte);
@@ -596,7 +598,7 @@ bool AP_RCProtocol_CRSF::change_baud_rate(uint32_t baudrate)
         return false;
     }
 #endif
-    if (baudrate > 2000000) {
+    if (baudrate > CRSF_BAUDRATE_2MBIT) {
         return false;
     }
 
