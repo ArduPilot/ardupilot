@@ -3996,7 +3996,16 @@ class AutoTest(ABC):
             return
         raise NotAchievedException("Did not get expected field values")
 
-    def assert_received_message_field_values(self, message, fieldvalues, verbose=True, very_verbose=False, epsilon=None):
+    def assert_cached_message_field_values(self, message, fieldvalues, verbose=True, very_verbose=False, epsilon=None):
+        '''checks the most-recently received instance of message to ensure it
+        has the correct field values'''
+        m = self.get_cached_message(message)
+        self.assert_message_field_values(m, fieldvalues, verbose=verbose, epsilon=epsilon)
+        return m
+
+    def assert_received_message_field_values(self, message, fieldvalues, verbose=True, very_verbose=False, epsilon=None, poll=False):  # noqa
+        if poll:
+            self.poll_message(message)
         m = self.assert_receive_message(message, verbose=verbose, very_verbose=very_verbose)
         self.assert_message_field_values(m, fieldvalues, verbose=verbose, epsilon=epsilon)
         return m
