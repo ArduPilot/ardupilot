@@ -195,7 +195,7 @@ void AP_Mount_Backend::send_gimbal_manager_status(mavlink_channel_t chan)
     uint32_t flags = GIMBAL_MANAGER_FLAGS_ROLL_LOCK | GIMBAL_MANAGER_FLAGS_PITCH_LOCK;
 
     if (_yaw_lock) {
-        flags |= GIMBAL_MANAGER_FLAGS_PITCH_LOCK;
+        flags |= GIMBAL_MANAGER_FLAGS_YAW_LOCK;
     }
 
     mavlink_msg_gimbal_manager_status_send(chan,
