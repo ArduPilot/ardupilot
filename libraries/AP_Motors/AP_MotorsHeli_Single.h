@@ -106,11 +106,6 @@ protected:
     // servo_test - move servos through full range of movement
     void servo_test() override;
 
-    // output_test_seq - spin a motor at the pwm value specified
-    //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
-    //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-    virtual void _output_test_seq(uint8_t motor_seq, int16_t pwm) override;
-
     // external objects we depend upon
     AP_MotorsHeli_RSC   _tail_rotor;            // tail rotor
     AP_MotorsHeli_Swash _swashplate;            // swashplate

@@ -70,7 +70,7 @@ bool Compass::_start_calibration(uint8_t i, bool retry, float delay)
         }
     }
 
-    if (_options.get() & uint16_t(Option::CAL_REQUIRE_GPS)) {
+    if (option_set(Option::CAL_REQUIRE_GPS)) {
         if (AP::gps().status() < AP_GPS::GPS_OK_FIX_2D) {
             gcs().send_text(MAV_SEVERITY_ERROR, "Compass cal requires GPS lock");
             return false;

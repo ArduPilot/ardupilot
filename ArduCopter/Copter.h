@@ -857,6 +857,9 @@ private:
     void update_flight_mode();
     void notify_flight_mode();
 
+    // Check if this mode can be entered from the GCS
+    bool gcs_mode_enabled(const Mode::Number mode_num);
+
     // mode_land.cpp
     void set_mode_land_with_pause(ModeReason reason);
     bool landing_with_GPS();

@@ -618,6 +618,13 @@ bool AP_MotorsHeli::arming_checks(size_t buflen, char *buffer) const
     return true;
 }
 
+// Tell user motor test is disabled on heli
+bool AP_MotorsHeli::motor_test_checks(size_t buflen, char *buffer) const
+{
+    hal.util->snprintf(buffer, buflen, "Disabled on heli");
+    return false;
+}
+
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
 //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
 uint32_t AP_MotorsHeli::get_motor_mask()

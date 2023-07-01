@@ -1074,6 +1074,7 @@ private:
     bool should_log(uint32_t mask);
     int8_t throttle_percentage(void);
     void notify_mode(const Mode& mode);
+    bool gcs_mode_enabled(const Mode::Number mode_num) const;
 
     // takeoff.cpp
     bool auto_takeoff_check(void);
@@ -1089,7 +1090,6 @@ private:
     // servos.cpp
     void set_servos_idle(void);
     void set_servos();
-    void set_servos_manual_passthrough(void);
     void set_servos_controlled(void);
     void set_servos_old_elevons(void);
     void set_servos_flaps(void);
@@ -1245,6 +1245,8 @@ public:
 
     // allow for landing descent rate to be overridden by a script, may be -ve to climb
     bool set_land_descent_rate(float descent_rate) override;
+    bool is_landing() const override;
+    bool is_taking_off() const override;
 #endif // AP_SCRIPTING_ENABLED
 
 };

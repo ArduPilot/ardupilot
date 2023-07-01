@@ -3968,13 +3968,27 @@ class AutoTest(ABC):
             else:
                 equal = got == value
 
+            value_string = value
+            got_string = got
+            enum_name = m.fieldenums_by_name.get(fieldname, None)
+            if enum_name is not None:
+                enum = mavutil.mavlink.enums[enum_name]
+                if value not in enum:
+                    raise ValueError("Expected value %s not in enum %s" % (value, enum_name))
+                if got not in enum:
+                    raise ValueError("Received value %s not in enum %s" % (value, enum_name))
+                value_string = "%s (%s)" % (value, enum[value].name)
+                got_string = "%s (%s)" % (got, enum[got].name)
+
             if not equal:
+                # see if this is an enumerated field:
+                self.progress(self.dump_message_verbose(m))
                 self.progress("Expected %s.%s to be %s, got %s" %
-                              (m.get_type(), fieldname, value, got))
+                              (m.get_type(), fieldname, value_string, got_string))
                 return False
             if verbose:
                 self.progress("%s.%s has expected value %s" %
-                              (m.get_type(), fieldname, value))
+                              (m.get_type(), fieldname, value_string))
         return True
 
     def assert_message_field_values(self, m, fieldvalues, verbose=True, epsilon=None):
@@ -3982,7 +3996,16 @@ class AutoTest(ABC):
             return
         raise NotAchievedException("Did not get expected field values")
 
-    def assert_received_message_field_values(self, message, fieldvalues, verbose=True, very_verbose=False, epsilon=None):
+    def assert_cached_message_field_values(self, message, fieldvalues, verbose=True, very_verbose=False, epsilon=None):
+        '''checks the most-recently received instance of message to ensure it
+        has the correct field values'''
+        m = self.get_cached_message(message)
+        self.assert_message_field_values(m, fieldvalues, verbose=verbose, epsilon=epsilon)
+        return m
+
+    def assert_received_message_field_values(self, message, fieldvalues, verbose=True, very_verbose=False, epsilon=None, poll=False):  # noqa
+        if poll:
+            self.poll_message(message)
         m = self.assert_receive_message(message, verbose=verbose, very_verbose=very_verbose)
         self.assert_message_field_values(m, fieldvalues, verbose=verbose, epsilon=epsilon)
         return m
@@ -7224,6 +7247,10 @@ class AutoTest(ABC):
         raise WaitWaypointTimeout("Timed out waiting for waypoint %u of %u" %
                                   (wpnum_end, wpnum_end))
 
+    def get_cached_message(self, message_type):
+        '''returns the most-recently received instance of message_type'''
+        return self.mav.messages[message_type]
+
     def mode_is(self, mode, cached=False, drain_mav=True):
         if not cached:
             self.wait_heartbeat(drain_mav=drain_mav)
@@ -10112,16 +10139,11 @@ Also, ignores heartbeats not from our target system'''
                                         target_component,
                                         0,
                                         mission_type)
-        m = self.assert_receive_message('MISSION_ACK', timeout=5)
-        if m.target_system != self.mav.mav.srcSystem:
-            raise NotAchievedException("ACK not targetted at correct system want=%u got=%u" %
-                                       (self.mav.mav.srcSystem, m.target_system))
-        if m.target_component != self.mav.mav.srcComponent:
-            raise NotAchievedException("ACK not targetted at correct component want=%u got=%u" %
-                                       (self.mav.mav.srcComponent, m.target_component))
-        if m.type != mavutil.mavlink.MAV_MISSION_ACCEPTED:
-            raise NotAchievedException("Expected MAV_MISSION_ACCEPTED got %s" %
-                                       (mavutil.mavlink.enums["MAV_MISSION_RESULT"][m.type].name,))
+        self.assert_received_message_field_values('MISSION_ACK', {
+            "target_system": self.mav.mav.srcSystem,
+            "target_component": self.mav.mav.srcComponent,
+            "type": mavutil.mavlink.MAV_MISSION_ACCEPTED,
+        })
 
         if mission_type == mavutil.mavlink.MAV_MISSION_TYPE_MISSION:
             self.last_wp_load = time.time()

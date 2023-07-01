@@ -43,6 +43,9 @@ public:
     // init - performs any required initialisation for this instance
     virtual void init();
 
+    // set device id of this instance, for MNTx_DEVID parameter
+    void set_dev_id(uint32_t id);
+
     // update mount position - should be called periodically
     virtual void update() = 0;
 

@@ -111,7 +111,7 @@ libraries = []
 
 # AP_Vehicle also has parameters rooted at "", but isn't referenced
 # from the vehicle in any way:
-ap_vehicle_lib = Library("") # the "" is tacked onto the front of param name
+ap_vehicle_lib = Library("", reference="VEHICLE") # the "" is tacked onto the front of param name
 setattr(ap_vehicle_lib, "Path", os.path.join('..', 'libraries', 'AP_Vehicle', 'AP_Vehicle.cpp'))
 libraries.append(ap_vehicle_lib)
 

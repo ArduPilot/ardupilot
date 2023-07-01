@@ -194,6 +194,52 @@ void Copter::mode_change_failed(const Mode *mode, const char *reason)
     }
 }
 
+// Check if this mode can be entered from the GCS
+bool Copter::gcs_mode_enabled(const Mode::Number mode_num)
+{
+    // List of modes that can be blocked, index is bit number in parameter bitmask
+    static const uint8_t mode_list [] {
+        (uint8_t)Mode::Number::STABILIZE,
+        (uint8_t)Mode::Number::ACRO,
+        (uint8_t)Mode::Number::ALT_HOLD,
+        (uint8_t)Mode::Number::AUTO,
+        (uint8_t)Mode::Number::GUIDED,
+        (uint8_t)Mode::Number::LOITER,
+        (uint8_t)Mode::Number::CIRCLE,
+        (uint8_t)Mode::Number::DRIFT,
+        (uint8_t)Mode::Number::SPORT,
+        (uint8_t)Mode::Number::FLIP,
+        (uint8_t)Mode::Number::AUTOTUNE,
+        (uint8_t)Mode::Number::POSHOLD,
+        (uint8_t)Mode::Number::BRAKE,
+        (uint8_t)Mode::Number::THROW,
+        (uint8_t)Mode::Number::AVOID_ADSB,
+        (uint8_t)Mode::Number::GUIDED_NOGPS,
+        (uint8_t)Mode::Number::SMART_RTL,
+        (uint8_t)Mode::Number::FLOWHOLD,
+        (uint8_t)Mode::Number::FOLLOW,
+        (uint8_t)Mode::Number::ZIGZAG,
+        (uint8_t)Mode::Number::SYSTEMID,
+        (uint8_t)Mode::Number::AUTOROTATE,
+        (uint8_t)Mode::Number::AUTO_RTL,
+        (uint8_t)Mode::Number::TURTLE
+    };
+
+    if (!block_GCS_mode_change((uint8_t)mode_num, mode_list, ARRAY_SIZE(mode_list))) {
+        return true;
+    }
+
+    // Mode disabled, try and grab a mode name to give a better warning.
+    Mode *new_flightmode = mode_from_mode_num(mode_num);
+    if (new_flightmode != nullptr) {
+        mode_change_failed(new_flightmode, "GCS entry disabled (FLTMODE_GCSBLOCK)");
+    } else {
+        notify_no_such_mode((uint8_t)mode_num);
+    }
+
+    return false;
+}
+
 // set_mode - change flight mode and perform any necessary initialisation
 // optional force parameter used to force the flight mode change (used only first time mode is set)
 // returns true if mode was successfully set
@@ -216,6 +262,11 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
             AP_Notify::events.user_mode_change = 1;
         }
         return true;
+    }
+
+    // Check if GCS mode change is disabled via parameter
+    if ((reason == ModeReason::GCS_COMMAND) && !gcs_mode_enabled(mode)) {
+        return false;
     }
 
 #if MODE_AUTO_ENABLED == ENABLED

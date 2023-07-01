@@ -20,6 +20,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
 #include <RC_Channel/RC_Channel.h>
+#include <GCS_MAVLink/GCS.h>
 
 #if NUM_SERVO_CHANNELS == 0
 #pragma GCC diagnostic ignored "-Wtype-limits"
@@ -58,7 +59,11 @@ void SRV_Channel::output_ch(void)
                 // non-mapped rc passthrough
                 int16_t radio_in = c->get_radio_in();
                 if (passthrough_mapped) {
-                    radio_in = pwm_from_angle(c->norm_input_dz() * 4500);
+                    if ( ((1U<<passthrough_from) & SRV_Channels::get_rc_fs_mask()) && rc().in_rc_failsafe()) {
+                        radio_in = pwm_from_angle(0);
+                    } else {
+                        radio_in = pwm_from_angle(c->norm_input_dz() * 4500);
+                    }
                 }
                 if (!ign_small_rcin_changes) {
                     output_pwm = radio_in;
