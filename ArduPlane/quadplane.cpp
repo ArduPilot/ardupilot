@@ -4550,4 +4550,20 @@ bool QuadPlane::abort_landing(void)
     return true;
 }
 
+/*
+  return true if we should disable TECS in the current flight state
+  this ensures that TECS resets when we change height in a VTOL mode
+ */
+bool QuadPlane::should_disable_TECS() const
+{
+    if (in_vtol_land_descent()) {
+        return true;
+    }
+    if (plane.control_mode == &plane.mode_guided &&
+        plane.auto_state.vtol_loiter) {
+        return true;
+    }
+    return false;
+}
+
 #endif  // HAL_QUADPLANE_ENABLED
