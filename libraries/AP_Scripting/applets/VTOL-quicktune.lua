@@ -484,6 +484,9 @@ end
 -- main update function
 local last_warning = get_time()
 function update()
+   if QUIK_ENABLE:get() < 1 then
+      return
+   end
    if have_pilot_input() then
       last_pilot_input = get_time()
    end
