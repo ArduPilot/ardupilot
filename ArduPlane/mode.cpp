@@ -191,8 +191,6 @@ void Mode::update_target_altitude()
     } else {
         plane.set_target_altitude_location(plane.next_WP_loc);
     }
-
-    plane.altitude_error_cm = plane.calc_altitude_error_cm();
 }
 
 // returns true if the vehicle can be armed in this mode
