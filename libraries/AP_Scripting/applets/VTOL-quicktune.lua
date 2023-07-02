@@ -39,7 +39,7 @@ function bind_add_param(name, idx, default_value)
 end
 
 -- setup quicktune specific parameters
-assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 12), 'could not add param table')
+assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 13), 'could not add param table')
 
 --[[
   // @Param: QUIK_ENABLE
@@ -149,6 +149,16 @@ local QUIK_AUTO_SAVE   = bind_add_param('AUTO_SAVE',     11, 0)
   // @User: Standard
 --]]
 local QUIK_RC_FUNC     = bind_add_param('RC_FUNC',       12, 300)
+
+--[[
+  // @Param: QUIK_MAX_REDUCE
+  // @DisplayName: Quicktune maximum gain reduction
+  // @Description: This controls how much quicktune is allowed to lower gains from the original gains. If the vehicle already has a reasonable tune and is not oscillating then you can set this to zero to prevent gain reductions. The default of 20% is reasonable for most vehicles. Using a maximum gain reduction lowers the chance of an angle P oscillation happening if quicktune gets a false positive oscillation at a low gain, which can result in very low rate gains and a dangerous angle P oscillation.
+  // @Units: %
+  // @Range: 0 100
+  // @User: Standard
+--]]
+local QUIK_MAX_REDUCE  = bind_add_param('MAX_REDUCE',    13, 20)
 
 local INS_GYRO_FILTER  = bind_param("INS_GYRO_FILTER")
 
@@ -396,6 +406,28 @@ function adjust_gain(pname, value)
    end
 end
 
+-- limit a gain change to QUIK_MAX_REDUCE
+function limit_gain(pname, value)
+   local P = params[pname]
+   local saved_value = param_saved[pname]
+   local max_reduction = QUIK_MAX_REDUCE:get()
+   if max_reduction >= 0 and max_reduction < 100 and saved_value > 0 then
+      -- check if we exceeded gain reduction
+      local reduction_pct = 100.0 * (saved_value - value) / saved_value
+      if reduction_pct > max_reduction then
+         local new_value = saved_value * (100 - max_reduction) * 0.01
+         gcs:send_text(MAV_SEVERITY_INFO, string.format("limiting %s %.3f -> %.3f", pname, value, new_value))
+         value = new_value
+      end
+   end
+   return value
+end
+
+-- change a gain, limiting to QUIK_MAX_REDUCE
+function adjust_gain_limited(pname, value)
+   adjust_gain(pname, limit_gain(pname, value))
+end
+
 -- return gain multipler for one loop
 function get_gain_mul()
    return math.exp(math.log(2.0)/(UPDATE_RATE_HZ*QUIK_DOUBLE_TIME:get()))
@@ -403,9 +435,9 @@ end
 
 function setup_slew_gain(pname, gain)
    slew_parm = pname
-   slew_target = gain
+   slew_target = limit_gain(pname, gain)
    slew_steps = UPDATE_RATE_HZ/2
-   slew_delta = (gain - params[pname]:get()) / slew_steps
+   slew_delta = (slew_target - params[pname]:get()) / slew_steps
 end
 
 function update_slew_gain()
@@ -547,7 +579,7 @@ function update()
          local old_P = params[P_name]:get()
          local new_P = old_P * ratio
          gcs:send_text(MAV_SEVERITY_INFO, string.format("adjusting %s %.3f -> %.3f", P_name, old_P, new_P))
-         adjust_gain(P_name, new_P)
+         adjust_gain_limited(P_name, new_P)
       end
       setup_slew_gain(pname, new_gain)
       logger.write('QUIK','SRate,Gain,Param', 'ffn', srate, P:get(), axis .. stage)
@@ -559,7 +591,7 @@ function update()
       if new_gain <= 0.0001 then
          new_gain = 0.001
       end
-      adjust_gain(pname, new_gain)
+      adjust_gain_limited(pname, new_gain)
       logger.write('QUIK','SRate,Gain,Param', 'ffn', srate, P:get(), axis .. stage)
       if get_time() - last_gain_report > 3 then
          last_gain_report = get_time()
