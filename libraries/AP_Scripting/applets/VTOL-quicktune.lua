@@ -5,7 +5,6 @@
  for copters, although it will work in other VTOL modes
 
 --]]
--- luacheck: only 0
 
 
 --[[
@@ -22,7 +21,6 @@ local MAV_SEVERITY_EMERGENCY = 0
 local PARAM_TABLE_KEY = 8
 local PARAM_TABLE_PREFIX = "QUIK_"
 
-local is_quadplane = false
 local atc_prefix = "ATC"
 
 -- bind a parameter to a variable
@@ -206,7 +204,6 @@ local stage = stages[1]
 local last_stage_change = get_time()
 local last_gain_report = get_time()
 local last_pilot_input = get_time()
-local last_notice = get_time()
 local tune_done_time = nil
 local slew_parm = nil
 local slew_target = 0
@@ -222,8 +219,8 @@ local param_saved = {}
 local param_changed = {}
 local need_restore = false
 
-for i, axis in ipairs(axis_names) do
-   for j, suffix in ipairs(param_suffixes) do
+for _, axis in ipairs(axis_names) do
+   for _, suffix in ipairs(param_suffixes) do
       local pname = axis .. "_" .. suffix
       params[pname] = bind_param(atc_prefix .. "_" .. "RAT_" .. pname)
       param_changed[pname] = false
@@ -232,7 +229,7 @@ end
 
 -- reset to start
 function reset_axes_done()
-   for i, axis in ipairs(axis_names) do
+   for _, axis in ipairs(axis_names) do
       axes_done[axis] = false
       filters_done[axis] = false
    end
@@ -249,7 +246,6 @@ end
 -- restore all param values from param_saved dictionary
 function restore_all_params()
    for pname in pairs(params) do
-      local changed = param_changed[pname] and 1 or 0
       if param_changed[pname] then
          params[pname]:set(param_saved[pname])
          param_changed[pname] = false
@@ -270,7 +266,7 @@ end
 
 -- setup a default SMAX if zero
 function setup_SMAX()
-   for i, axis in ipairs(axis_names) do
+   for _, axis in ipairs(axis_names) do
       local smax = axis .. "_SMAX"
       if params[smax]:get() <= 0 then
          adjust_gain(smax, DEFAULT_SMAX)
@@ -362,8 +358,8 @@ function advance_stage(axis)
 end
 
 -- get param name, such as RLL_P, used as index into param dictionaries
-function get_pname(axis, stage)
-   return axis .. "_" .. stage
+function get_pname(axis, tstage)
+   return axis .. "_" .. tstage
 end
 
 -- get axis name from parameter name
@@ -408,7 +404,6 @@ end
 
 -- limit a gain change to QUIK_MAX_REDUCE
 function limit_gain(pname, value)
-   local P = params[pname]
    local saved_value = param_saved[pname]
    local max_reduction = QUIK_MAX_REDUCE:get()
    if max_reduction >= 0 and max_reduction < 100 and saved_value > 0 then
