@@ -258,15 +258,15 @@ bool AP_VisualOdom::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) co
         return true;
     }
 
-    // check healthy
-    if (!healthy()) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "not healthy");
-        return false;
-    }
-
     // if no backend we must have failed to create because out of memory
     if (_driver == nullptr) {
         hal.util->snprintf(failure_msg, failure_msg_len, "out of memory");
+        return false;
+    }
+
+    // check healthy
+    if (!healthy()) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "not healthy");
         return false;
     }
 
