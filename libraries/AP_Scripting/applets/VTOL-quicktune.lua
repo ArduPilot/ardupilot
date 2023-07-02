@@ -404,6 +404,7 @@ end
 
 -- limit a gain change to QUIK_MAX_REDUCE
 function limit_gain(pname, value)
+   local P = params[pname]
    local saved_value = param_saved[pname]
    local max_reduction = QUIK_MAX_REDUCE:get()
    if max_reduction >= 0 and max_reduction < 100 and saved_value > 0 then
