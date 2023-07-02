@@ -180,6 +180,12 @@ public:
      */
     bool in_vtol_land_descent(void) const;
 
+    /*
+      should we disable the TECS controller?
+      only called when in an auto-throttle mode
+     */
+    bool should_disable_TECS() const;
+
 private:
     AP_AHRS &ahrs;
 
