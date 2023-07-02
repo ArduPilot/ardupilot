@@ -450,6 +450,18 @@ void AP_BLHeli::msp_process_command(void)
         break;
     }
 
+    case MSP_BATTERY_STATE: {
+        debug("MSP_BATTERY_STATE");
+        uint8_t buf[8];
+        buf[0] = 4; // cell count
+        putU16(&buf[1], 1500); // mAh
+        buf[3] = 16; // V
+        putU16(&buf[4], 1500); // mAh
+        putU16(&buf[6], 1); // A
+        msp_send_reply(msp.cmdMSP, buf, sizeof(buf));
+        break;
+    }
+
     case MSP_MOTOR_CONFIG: {
         debug("MSP_MOTOR_CONFIG");
         uint8_t buf[10];
