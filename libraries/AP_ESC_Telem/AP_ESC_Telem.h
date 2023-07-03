@@ -127,6 +127,7 @@ private:
     bool _have_data;
 
     AP_Int8 mavlink_offset;
+    AP_Int32 logging_bitmask;
 
     static AP_ESC_Telem *_singleton;
 };

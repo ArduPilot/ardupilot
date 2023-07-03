@@ -39,7 +39,15 @@ const AP_Param::GroupInfo AP_ESC_Telem::var_info[] = {
     // @Range: 0 31
     // @User: Standard
     AP_GROUPINFO("_MAV_OFS", 1, AP_ESC_Telem, mavlink_offset, 0),
-    
+
+    // @Param: _LOG_MASK
+    // @DisplayName: ESC Telemetry logging bitmask
+    // @Description: A bitmask describing which motors will be logged when their telemetry gets updated. This allows to decrease the log file sizes when, for instance, telemetry-based filtering is working, and logging is no longer needed. Bit 0 corresponds to motor 1, bit 1 corresponds to motor 2, and so on.
+    // @Increment: 1
+    // @Range: 0 2147483647
+    // @User: Standard
+    AP_GROUPINFO("_LOG_MASK", 2, AP_ESC_Telem, logging_bitmask, 0xFFFF),
+
     AP_GROUPEND
 };
 
@@ -494,8 +502,9 @@ void AP_ESC_Telem::update()
     if (logger && logger->logging_enabled()) {
 
         for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
-            if (_telem_data[i].last_update_ms != _last_telem_log_ms[i]
-                || _rpm_data[i].last_update_us != _last_rpm_log_us[i]) {
+            if ((logging_bitmask & (1UL << i)) != 0 &&
+                (_telem_data[i].last_update_ms != _last_telem_log_ms[i]
+                 || _rpm_data[i].last_update_us != _last_rpm_log_us[i])) {
 
                 float rpm = 0.0f;
                 get_rpm(i, rpm);
