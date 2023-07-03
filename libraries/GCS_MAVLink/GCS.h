@@ -740,7 +740,7 @@ private:
     mavlink_message_t _channel_buffer;
     mavlink_status_t _channel_status;
 
-    const AP_SerialManager::UARTState *uartstate;
+    const AP_SerialManager::SerialState *uartstate;
 
     // last time we got a non-zero RSSI from RADIO_STATUS
     static struct LastRadioStatus {
