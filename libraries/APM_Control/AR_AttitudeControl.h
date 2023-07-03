@@ -31,6 +31,7 @@ public:
     // return a steering servo output given a desired yaw rate in radians/sec.
     // positive yaw is to the right
     // return value is normally in range -1.0 to +1.0 but can be higher or lower
+    // also sets steering_limit_left and steering_limit_right flags
     float get_steering_out_rate(float desired_rate, bool motor_limit_left, bool motor_limit_right, float dt);
 
     // get latest desired turn rate in rad/sec recorded during calls to get_steering_out_rate.  For reporting purposes only
@@ -47,6 +48,11 @@ public:
 
     // get the lateral acceleration limit (in m/s/s).  Returns at least 0.1G or approximately 1 m/s/s
     float get_turn_lat_accel_max() const { return MAX(_turn_lateral_G_max, 0.1f) * GRAVITY_MSS; }
+
+    // returns true if the steering has been limited which can be caused by the physical steering surface
+    // reaching its physical limits (aka motor limits) or acceleration or turn rate limits being applied
+    bool steering_limit_left() const { return _steering_limit_left; }
+    bool steering_limit_right() const { return _steering_limit_right; }
 
     //
     // throttle / speed controller
@@ -143,6 +149,8 @@ private:
     uint32_t _steer_turn_last_ms;   // system time of last call to steering rate controller
     float    _desired_lat_accel;    // desired lateral acceleration (in m/s/s) from latest call to get_steering_out_lat_accel (for reporting purposes)
     float    _desired_turn_rate;    // desired turn rate (in radians/sec) either from external caller or from lateral acceleration controller
+    bool     _steering_limit_left;  // true when the steering control has reached its left limit (e.g. motor has reached limits or accel or turn rate limits applied)
+    bool     _steering_limit_right; // true when the steering control has reached its right limit (e.g. motor has reached limits or accel or turn rate limits applied)
 
     // throttle control
     uint32_t _speed_last_ms;        // system time of last call to get_throttle_out_speed
