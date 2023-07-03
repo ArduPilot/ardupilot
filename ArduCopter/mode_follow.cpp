@@ -24,8 +24,11 @@ bool ModeFollow::init(const bool ignore_checks)
 #if HAL_MOUNT_ENABLED
     AP_Mount *mount = AP_Mount::get_singleton();
     // follow the lead vehicle using sysid
-    if (g2.follow.option_is_enabled(AP_Follow::Option::MOUNT_FOLLOW_ON_ENTER) && mount != nullptr) {
-        mount->set_target_sysid(g2.follow.get_target_sysid());
+    if (mount != nullptr && g2.follow.option_is_enabled(AP_Follow::Option::MOUNT_FOLLOW_ON_ENTER)) {
+        uint8_t follow_mav_sysid;
+        if (g2.follow.get_mav_target_sysid(follow_mav_sysid)) {
+            mount->set_target_sysid(follow_mav_sysid);
+        }
     }
 #endif
 

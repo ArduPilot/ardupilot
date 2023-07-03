@@ -91,8 +91,8 @@ public:
     // get distance vector to target (in meters), target plus offsets, and target's velocity all in NED frame
     bool get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_with_ofs, Vector3f &vel_ned);
 
-    // get target sysid
-    uint8_t get_target_sysid() const { return _sysid.get(); }
+    // get mav target sysid
+    bool get_mav_target_sysid(uint8_t &sysid) const;
 
     // get position controller.  this controller is not used within this library but it is convenient to hold it here
     const AC_P& get_pos_p() const { return _p_pos; }

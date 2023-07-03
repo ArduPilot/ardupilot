@@ -568,6 +568,16 @@ uint32_t AP_Follow::get_last_update_ms() const {
     return 0;
 }
 
+bool AP_Follow::get_mav_target_sysid(uint8_t &sysid) const {
+    if (uint8_t(_locdb_key >> 24) != uint8_t(AP_LocationDB::KeyDomain::MAVLINK)) {
+        // the current target is not a mavlink source
+        return false;
+    }
+
+    sysid = uint8_t(_locdb_key >> 16);
+    return true;
+}
+
 namespace AP {
 
 AP_Follow &follow()
