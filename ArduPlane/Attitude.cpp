@@ -131,6 +131,16 @@ float Plane::stabilize_roll_get_roll_out()
     if (!quadplane.use_fw_attitude_controllers()) {
         // use the VTOL rate for control, to ensure consistency
         const auto &pid_info = quadplane.attitude_control->get_rate_roll_pid().get_pid_info();
+
+        // scale FF to angle P
+        if (quadplane.option_is_set(QuadPlane::OPTION::SCALE_FF_ANGLE_P)) {
+            const float mc_angR = quadplane.attitude_control->get_angle_roll_p().kP()
+                * quadplane.attitude_control->get_last_angle_P_scale().x;
+            if (is_positive(mc_angR)) {
+                rollController.set_ff_scale(MIN(1.0, 1.0 / (mc_angR * rollController.tau())));
+            }
+        }
+
         const float roll_out = rollController.get_rate_out(degrees(pid_info.target), speed_scaler);
         /* when slaving fixed wing control to VTOL control we need to decay the integrator to prevent
            opposing integrators balancing between the two controllers
@@ -174,6 +184,16 @@ float Plane::stabilize_pitch_get_pitch_out()
     if (!quadplane.use_fw_attitude_controllers()) {
         // use the VTOL rate for control, to ensure consistency
         const auto &pid_info = quadplane.attitude_control->get_rate_pitch_pid().get_pid_info();
+
+        // scale FF to angle P
+        if (quadplane.option_is_set(QuadPlane::OPTION::SCALE_FF_ANGLE_P)) {
+            const float mc_angP = quadplane.attitude_control->get_angle_pitch_p().kP()
+                * quadplane.attitude_control->get_last_angle_P_scale().y;
+            if (is_positive(mc_angP)) {
+                pitchController.set_ff_scale(MIN(1.0, 1.0 / (mc_angP * pitchController.tau())));
+            }
+        }
+
         const int32_t pitch_out = pitchController.get_rate_out(degrees(pid_info.target), speed_scaler);
         /* when slaving fixed wing control to VTOL control we need to decay the integrator to prevent
            opposing integrators balancing between the two controllers
