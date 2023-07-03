@@ -74,6 +74,13 @@ const AP_Param::GroupInfo AP_Camera_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_FEEDBAK_POL", 9, AP_Camera_Params, feedback_polarity, 1),
 
+    // @Param: _OPTIONS
+    // @DisplayName: Camera options
+    // @Description: Camera options bitmask
+    // @Bitmask: 0:None,1: Recording Starts at arming and stops at disarming
+    // @User: Standard
+    AP_GROUPINFO("_OPTIONS", 10, AP_Camera_Params, options, 0),
+
     AP_GROUPEND
 
 };

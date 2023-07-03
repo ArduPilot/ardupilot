@@ -16,6 +16,14 @@ AP_Camera_Backend::AP_Camera_Backend(AP_Camera &frontend, AP_Camera_Params &para
 // update - should be called at 50hz
 void AP_Camera_Backend::update()
 {
+    // Check CAMx_OPTIONS and start/stop recording based on arm/disarm
+    if (_params.options.get() & CAMOPTIONS::REC_ARM_DISARM) {
+        if (hal.util->get_soft_armed() != last_is_armed) {
+            last_is_armed = hal.util->get_soft_armed();
+            record_video(last_is_armed);
+        }
+    }
+
     // try to take picture if pending
     if (trigger_pending) {
         take_picture();
