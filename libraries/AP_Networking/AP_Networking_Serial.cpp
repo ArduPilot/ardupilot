@@ -151,7 +151,7 @@ void AP_Networking_Serial::thread()
                     if (uart_to_ip_min_len > 0) {
                         // we've seen data!
                         _passthrough_has_seen_data = true;
-                        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,"NET: Serial %d <-> UDP:%d", _params.passthru.get(), _params.port.get());
+                        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,"NET: Serial %d <-> UDP:%d", (int)_params.passthru.get(), (int)_params.port.get());
                     } else {
                         // still haven't seen data. re-init the UART until we do
                         uart->begin(uart->get_baud_rate());
@@ -182,7 +182,7 @@ void AP_Networking_Serial::thread()
                         _writebuf.advance(bytes_sent);
                     } else {
                         // TODO: send failure error handling
-                        // GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,"NET: send_udp err: %d", bytes_sent);
+                        // GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,"NET: send_udp err: %d", (int)bytes_sent);
                     }
                 }
             } // send_it
