@@ -30,6 +30,7 @@ void SITL_State::init(int argc, char * const argv[]) {
         {"help",            false,  0, 'h'},
         {"instance",        true,   0, 'I'},
         {"maintenance",     false,  0, 'M'},
+        {0, false, 0, 0}
     };
 
     setvbuf(stdout, (char *)0, _IONBF, 0);
