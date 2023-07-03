@@ -198,6 +198,10 @@
 #define HAL_SIM_GPS_ENABLED (AP_SIM_ENABLED && defined(HAL_PERIPH_ENABLE_GPS))
 #endif
 
+#ifndef GPS_MAX_RECEIVERS
+#define GPS_MAX_RECEIVERS 1
+#endif
+
 /*
  * Airspeed Backends - we selectively turn backends *off*
  */
