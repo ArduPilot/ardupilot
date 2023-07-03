@@ -581,6 +581,7 @@ private:
         TRANS_FAIL_TO_FW=(1<<19),
         FS_RTL=(1<<20),
         DISARMED_TILT_UP=(1<<21),
+        SCALE_FF_ANGLE_P=(1<<22),
     };
     bool option_is_set(OPTION option) const {
         return (options.get() & int32_t(option)) != 0;
