@@ -6,6 +6,13 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_DAL/AP_DAL.h>
 
+// minimum GPS horizontal speed required to use GPS ground course for yaw alignment (m/s)
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+  #define GPS_VEL_YAW_ALIGN_MIN_SPD 5.0F
+#else
+  #define GPS_VEL_YAW_ALIGN_MIN_SPD 1.0F
+#endif
+
 /********************************************************
 *                   RESET FUNCTIONS                     *
 ********************************************************/
