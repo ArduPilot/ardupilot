@@ -8,10 +8,15 @@ Changes from 4.4.0-beta2
     - Pixhawk1-bdshot support
     - Pixhawk6X-bdshot support
     - SpeedyBeeF4 loses bdshot support
-2) TradHeli gets minor fix to RSC servo output range
-3) Camera and Gimbal related changes
+2) Device drivers
+    - added LP5562 I2C LED driver
+    - added IS31FL3195 LED driver
+3) TradHeli gets minor fix to RSC servo output range
+4) Camera and Gimbal related changes
     - DO_SET_ROI_NONE command support added
-4) Bug fixes
+5) Applet changes
+    - added QUIK_MAX_REDUCE parameter to VTOL quicktune lua applet
+6) Bug fixes
     - ADSB sensor loss of transceiver message less spammy 
     - AutoTune Yaw rate max fixed
     - EKF vertical velocity reset fixed on loss of GPS
