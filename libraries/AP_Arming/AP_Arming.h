@@ -5,6 +5,7 @@
 #include <AP_Param/AP_Param.h>
 
 #include "AP_Arming_config.h"
+#include "AP_InertialSensor/AP_InertialSensor_config.h"
 
 class AP_Arming {
 public:
@@ -163,7 +164,9 @@ protected:
 
     bool logging_checks(bool report);
 
+#if AP_INERTIALSENSOR_ENABLED
     virtual bool ins_checks(bool report);
+#endif
 
     bool compass_checks(bool report);
 
@@ -249,8 +252,10 @@ private:
 
     static AP_Arming *_singleton;
 
+#if AP_INERTIALSENSOR_ENABLED
     bool ins_accels_consistent(const class AP_InertialSensor &ins);
     bool ins_gyros_consistent(const class AP_InertialSensor &ins);
+#endif
 
     // check if we should keep logging after disarming
     void check_forced_logging(const AP_Arming::Method method);
