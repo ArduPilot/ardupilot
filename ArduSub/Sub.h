@@ -459,6 +459,7 @@ private:
 
     // Handles attitude control for stabilize and althold modes
     void handle_attitude();
+    void handle_mavlink_attitude_target();
     bool auto_init(void);
     void auto_run();
     void auto_wp_start(const Vector3f& destination);
