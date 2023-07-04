@@ -24,6 +24,7 @@ Changes from 4.4.0-beta2
     - SERVOx_PROTOCOL "SToRM32 Gimbal Serial" value renamed to "Gimbal" because also used by Siyi
     - SERIALx_OPTION "Swap" renamed to "SwapTXRX" for clarity
     - SBF GPS ellipsoid height fixed
+    - Scripting restart memory corruption bug fixed
     - Ublox M10S GPS auto configuration fixed
     - ZigZag mode user takeoff fixed (users could not takeoff in ZigZag mode previously)
 ------------------------------------------------------------------
