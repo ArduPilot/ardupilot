@@ -65,11 +65,10 @@
 /*
  * Memory attributes settings.
  */
-//  Disable ChibiOS memory protection which is fixed to SRAM1-3
-#define STM32_NOCACHE_ENABLE                FALSE
-//#define STM32_NOCACHE_MPU_REGION            MPU_REGION_6
-//#define STM32_NOCACHE_RBAR                  0x24000000U
-//#define STM32_NOCACHE_RASR                  MPU_RASR_SIZE_16K
+#define STM32_NOCACHE_ENABLE                TRUE
+#define STM32_NOCACHE_MPU_REGION            MPU_REGION_6
+#define STM32_NOCACHE_RBAR                  0x30040000U
+#define STM32_NOCACHE_RASR                  MPU_RASR_SIZE_32K
 
 // enable memory protection on SRAM4, used for bdshot
 #define STM32_NOCACHE_MPU_REGION_1          MPU_REGION_5
