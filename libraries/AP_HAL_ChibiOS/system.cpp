@@ -304,6 +304,13 @@ void __entry_hook()
 }
 #endif
 
+uint32_t chibios_rand_generate()
+{
+    uint32_t val;
+    hal.util->get_random_vals((uint8_t*)&val, sizeof(val));
+    return val;
+}
+
 }
 namespace AP_HAL {
 
