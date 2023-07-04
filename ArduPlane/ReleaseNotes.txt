@@ -24,6 +24,7 @@ fixes since beta2
  - SBF GPS ellipsoid height fixed
  - Ublox M10S GPS auto configuration fixed
  - ZigZag mode user takeoff fixed (users could not takeoff in ZigZag mode previously)
+ - fixed memory corruption bug with scripting restart
 
 5) Device drivers
  - added LP5562 I2C LED driver
