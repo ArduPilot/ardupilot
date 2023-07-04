@@ -168,6 +168,11 @@ class NotAchievedException(ErrorException):
     pass
 
 
+class OldpymavlinkException(ErrorException):
+    """Thrown when a new feature is required from pymavlink"""
+    pass
+
+
 class YawSpeedNotAchievedException(NotAchievedException):
     """Thrown when fails to achieve given yaw speed."""
     pass
