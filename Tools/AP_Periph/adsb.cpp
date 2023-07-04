@@ -23,6 +23,7 @@
 #ifdef HAL_PERIPH_ENABLE_ADSB
 
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <dronecan_msgs.h>
 
 extern const AP_HAL::HAL &hal;
 

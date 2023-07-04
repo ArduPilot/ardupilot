@@ -426,11 +426,6 @@ static void handle_param_executeopcode(CanardInstance* ins, CanardRxTransfer* tr
 );
 }
 
-static void canard_broadcast(uint64_t data_type_signature,
-                                uint16_t data_type_id,
-                                uint8_t priority,
-                                const void* payload,
-                                uint16_t payload_len);
 static void processTx(void);
 static void processRx(void);
 
@@ -882,11 +877,11 @@ static void can_safety_button_update(void)
     uint8_t buffer[ARDUPILOT_INDICATION_BUTTON_MAX_SIZE] {};
     uint16_t total_size = ardupilot_indication_Button_encode(&pkt, buffer, !periph.canfdout());
 
-    canard_broadcast(ARDUPILOT_INDICATION_BUTTON_SIGNATURE,
-                    ARDUPILOT_INDICATION_BUTTON_ID,
-                    CANARD_TRANSFER_PRIORITY_LOW,
-                    &buffer[0],
-                    total_size);
+    periph.canard_broadcast(ARDUPILOT_INDICATION_BUTTON_SIGNATURE,
+                            ARDUPILOT_INDICATION_BUTTON_ID,
+                            CANARD_TRANSFER_PRIORITY_LOW,
+                            &buffer[0],
+                            total_size);
 }
 #endif // HAL_GPIO_PIN_SAFE_BUTTON
 
@@ -1136,11 +1131,11 @@ static uint8_t* get_tid_ptr(uint32_t transfer_desc)
     return &tid_map_ptr->next->tid;
 }
 
-static void canard_broadcast(uint64_t data_type_signature,
-                                uint16_t data_type_id,
-                                uint8_t priority,
-                                const void* payload,
-                                uint16_t payload_len)
+void AP_Periph_FW::canard_broadcast(uint64_t data_type_signature,
+                                    uint16_t data_type_id,
+                                    uint8_t priority,
+                                    const void* payload,
+                                    uint16_t payload_len)
 {
     if (canardGetLocalNodeID(&dronecan.canard) == CANARD_BROADCAST_NODE_ID) {
         return;
@@ -1295,11 +1290,11 @@ static void node_status_send(void)
 
     uint32_t len = uavcan_protocol_NodeStatus_encode(&node_status, buffer, !periph.canfdout());
 
-    canard_broadcast(UAVCAN_PROTOCOL_NODESTATUS_SIGNATURE,
-                    UAVCAN_PROTOCOL_NODESTATUS_ID,
-                    CANARD_TRANSFER_PRIORITY_LOW,
-                    buffer,
-                    len);
+    periph.canard_broadcast(UAVCAN_PROTOCOL_NODESTATUS_SIGNATURE,
+                            UAVCAN_PROTOCOL_NODESTATUS_ID,
+                            CANARD_TRANSFER_PRIORITY_LOW,
+                            buffer,
+                            len);
 }
 
 
@@ -2674,11 +2669,11 @@ void can_printf(const char *fmt, ...)
         uint8_t buffer_packet[UAVCAN_PROTOCOL_DEBUG_LOGMESSAGE_MAX_SIZE] {};
         const uint32_t len = uavcan_protocol_debug_LogMessage_encode(&pkt, buffer_packet, !periph.canfdout());
 
-        canard_broadcast(UAVCAN_PROTOCOL_DEBUG_LOGMESSAGE_SIGNATURE,
-                        UAVCAN_PROTOCOL_DEBUG_LOGMESSAGE_ID,
-                        CANARD_TRANSFER_PRIORITY_LOW,
-                        buffer_packet,
-                        len);
+        periph.canard_broadcast(UAVCAN_PROTOCOL_DEBUG_LOGMESSAGE_SIGNATURE,
+                                UAVCAN_PROTOCOL_DEBUG_LOGMESSAGE_ID,
+                                CANARD_TRANSFER_PRIORITY_LOW,
+                                buffer_packet,
+                                len);
     }
     
 #else
@@ -2692,11 +2687,11 @@ void can_printf(const char *fmt, ...)
 
     uint32_t len = uavcan_protocol_debug_LogMessage_encode(&pkt, buffer, !periph.canfdout());
 
-    canard_broadcast(UAVCAN_PROTOCOL_DEBUG_LOGMESSAGE_SIGNATURE,
-                    UAVCAN_PROTOCOL_DEBUG_LOGMESSAGE_ID,
-                    CANARD_TRANSFER_PRIORITY_LOW,
-                    buffer,
-                    len);
+    periph.canard_broadcast(UAVCAN_PROTOCOL_DEBUG_LOGMESSAGE_SIGNATURE,
+                            UAVCAN_PROTOCOL_DEBUG_LOGMESSAGE_ID,
+                            CANARD_TRANSFER_PRIORITY_LOW,
+                            buffer,
+                            len);
 
 #endif
 }
