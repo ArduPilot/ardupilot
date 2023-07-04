@@ -177,6 +177,9 @@ bool stm32_rand_generate_blocking(unsigned char* output, unsigned int sz, uint32
 unsigned int stm32_rand_generate_nonblocking(unsigned char* output, unsigned int sz);
 #endif
 
+// To be defined in HAL code
+extern uint32_t chibios_rand_generate(void);
+
 void stm32_flash_protect_flash(bool bootloader, bool protect);
 void stm32_flash_unprotect_flash(void);
 
