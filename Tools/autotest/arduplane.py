@@ -20,6 +20,7 @@ from common import AutoTestTimeoutException
 from common import NotAchievedException
 from common import PreconditionFailedException
 from common import WaitModeTimeout
+from common import OldpymavlinkException
 from pymavlink.rotmat import Vector3
 from pysim import vehicleinfo
 
@@ -582,7 +583,7 @@ class AutoTestPlane(AutoTest):
     def ExternalPositionEstimate(self):
         '''Test mavlink EXTERNAL_POSITION_ESTIMATE command'''
         if not hasattr(mavutil.mavlink, 'MAV_CMD_EXTERNAL_POSITION_ESTIMATE'):
-            return
+            raise OldpymavlinkException("pymavlink too old; upgrade pymavlink to get MAV_CMD_EXTERNAL_POSITION_ESTIMATE")  # noqa
         self.change_mode("TAKEOFF")
         self.wait_ready_to_arm()
         self.arm_vehicle()
