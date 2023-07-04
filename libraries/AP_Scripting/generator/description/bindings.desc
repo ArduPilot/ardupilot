@@ -169,14 +169,23 @@ singleton AP_Notify method handle_rgb void uint8_t'skip_check uint8_t'skip_check
 singleton AP_Notify method handle_rgb_id void uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check uint8_t'skip_check
 
 include AP_Proximity/AP_Proximity.h
+include AP_Proximity/AP_Proximity_Backend.h
 
 singleton AP_Proximity depends HAL_PROXIMITY_ENABLED == 1
+ap_object AP_Proximity_Backend depends HAL_PROXIMITY_ENABLED == 1
+ap_object AP_Proximity_Backend method handle_script_distance_msg boolean float'skip_check float'skip_check float'skip_check boolean
+ap_object AP_Proximity_Backend method handle_script_3d_msg boolean Vector3f boolean
+ap_object AP_Proximity_Backend method type uint8_t
+ap_object AP_Proximity_Backend method set_distance_min_max boolean float'skip_check float'skip_check
+ap_object AP_Proximity_Backend method update_virtual_boundary boolean
+
 singleton AP_Proximity rename proximity
 singleton AP_Proximity method get_status uint8_t
 singleton AP_Proximity method num_sensors uint8_t
 singleton AP_Proximity method get_object_count uint8_t
 singleton AP_Proximity method get_closest_object boolean float'Null float'Null
 singleton AP_Proximity method get_object_angle_and_distance boolean uint8_t'skip_check float'Null float'Null
+singleton AP_Proximity method get_backend AP_Proximity_Backend uint8_t'skip_check
 
 include AP_RangeFinder/AP_RangeFinder.h
 include AP_RangeFinder/AP_RangeFinder_Backend.h
