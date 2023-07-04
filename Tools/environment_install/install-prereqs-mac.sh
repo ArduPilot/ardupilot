@@ -104,6 +104,7 @@ function maybe_prompt_user() {
 find /usr/local/bin -lname '*/Library/Frameworks/Python.framework/*' -delete
 
 brew update
+brew update-reset
 brew install gawk curl coreutils wget
 
 PIP=pip
