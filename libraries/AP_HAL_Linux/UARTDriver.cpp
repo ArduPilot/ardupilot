@@ -23,7 +23,6 @@
 #include "TCPServerDevice.h"
 #include "UARTDevice.h"
 #include "UDPDevice.h"
-
 #include <GCS_MAVLink/GCS.h>
 #if HAL_GCS_ENABLED
 #include <AP_HAL/utility/packetise.h>

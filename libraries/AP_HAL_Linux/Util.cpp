@@ -10,7 +10,6 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "Heat_Pwm.h"
-#include "ToneAlarm_Disco.h"
 #include "Util.h"
 
 using namespace Linux;
