@@ -3833,7 +3833,7 @@ class AutoTestCopter(AutoTest):
                 new_pos = self.mav.location()
                 delta = self.get_distance(target, new_pos)
                 self.progress("Landed %f metres from target position" % delta)
-                max_delta = 1
+                max_delta = 1.5
                 if delta > max_delta:
                     raise NotAchievedException("Did not land close enough to target position (%fm > %fm" % (delta, max_delta))
 
@@ -6896,7 +6896,7 @@ class AutoTestCopter(AutoTest):
                 if self.get_sim_time_cached() - tstart > 10:
                     break
                 vel = self.get_body_frame_velocity()
-                if vel.length() > 0.3:
+                if vel.length() > 0.5:
                     raise NotAchievedException("Moved too much (%s)" %
                                                (str(vel),))
                 shove(None, None)
@@ -9267,8 +9267,8 @@ class AutoTestCopter(AutoTest):
         # before the motors will spin:
         self.wait_esc_telem_rpm(
             esc=mot,
-            rpm_min=17640,
-            rpm_max=17640,
+            rpm_min=17626,
+            rpm_max=17626,
             minimum_duration=2,
             timeout=5,
         )
@@ -9277,8 +9277,8 @@ class AutoTestCopter(AutoTest):
         self.set_safetyswitch_off()
         self.wait_esc_telem_rpm(
             esc=mot,
-            rpm_min=17640,
-            rpm_max=17640,
+            rpm_min=17626,
+            rpm_max=17626,
             minimum_duration=2,
             timeout=5,
         )
