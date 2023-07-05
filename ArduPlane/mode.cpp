@@ -230,3 +230,10 @@ bool Mode::is_taking_off() const
 {
     return (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF);
 }
+
+// Helper to output to both k_rudder and k_steering servo functions
+void Mode::output_rudder_and_steering(float val)
+{
+    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, val);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_steering, val);
+}

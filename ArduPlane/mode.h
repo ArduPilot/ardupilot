@@ -146,6 +146,9 @@ protected:
     // mode specific pre-arm checks
     virtual bool _pre_arm_checks(size_t buflen, char *buffer) const;
 
+    // Helper to output to both k_rudder and k_steering servo functions
+    void output_rudder_and_steering(float val);
+
 #if HAL_QUADPLANE_ENABLED
     // References for convenience, used by QModes
     AC_PosControl*& pos_control;

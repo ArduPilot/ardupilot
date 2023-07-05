@@ -211,16 +211,6 @@ private:
     bool training_manual_roll;  // user has manual roll control
     bool training_manual_pitch; // user has manual pitch control
 
-    /*
-      keep steering and rudder control separated until we update servos,
-      to allow for a separate wheel servo from rudder servo
-    */
-    struct {
-        bool ground_steering; // are we doing ground steering?
-        int16_t steering; // value for nose/tail wheel
-        int16_t rudder;   // value for rudder
-    } steering_control;
-
     // should throttle be pass-thru in guided?
     bool guided_throttle_passthru;
 
@@ -871,9 +861,9 @@ private:
     float stabilize_pitch_get_pitch_out();
     void stabilize_stick_mixing_fbw();
     void stabilize_yaw();
-    void calc_nav_yaw_coordinated();
-    void calc_nav_yaw_course(void);
-    void calc_nav_yaw_ground(void);
+    int16_t calc_nav_yaw_coordinated();
+    int16_t calc_nav_yaw_course(void);
+    int16_t calc_nav_yaw_ground(void);
 
     // Log.cpp
     uint32_t last_log_fast_ms;

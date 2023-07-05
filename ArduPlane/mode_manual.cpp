@@ -5,9 +5,7 @@ void ModeManual::update()
 {
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.roll_in_expo(false));
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, plane.pitch_in_expo(false));
-    //rudder in sets rudder, but is also assigned to steering values used later in servos.cpp for steering
-    plane.steering_control.steering = plane.steering_control.rudder = plane.rudder_in_expo(false);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, plane.steering_control.steering);
+    output_rudder_and_steering(plane.rudder_in_expo(false));
     float throttle = plane.get_throttle_input(true);
 
 
