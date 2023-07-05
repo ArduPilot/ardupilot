@@ -19,7 +19,7 @@ class ChibiOSHWDef(object):
     # output variables for each pin
     f4f7_vtypes = ['MODER', 'OTYPER', 'OSPEEDR', 'PUPDR', 'ODR', 'AFRL', 'AFRH']
     f1_vtypes = ['CRL', 'CRH', 'ODR']
-    af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN', 'QUADSPI', 'OCTOSPI']
+    af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN', 'QUADSPI', 'OCTOSPI', 'ETH']
 
     def __init__(self, bootloader=False, signed_fw=False, outdir=None, hwdef=[], default_params_filepath=None):
         self.outdir = outdir
@@ -931,6 +931,20 @@ class ChibiOSHWDef(object):
         if 'OTG2' in self.bytype:
             f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
 
+        if 'ETH1' in self.bytype:
+            f.write('// Configure for Ethernet support\n')
+            f.write('#define CH_CFG_USE_MAILBOXES                TRUE\n')
+            f.write('#define HAL_USE_MAC                         TRUE\n')
+            f.write('#define MAC_USE_EVENTS                      TRUE\n')
+            f.write('#define STM32_NOCACHE_SRAM3                 TRUE\n')
+            f.write('#define AP_NETWORKING_ENABLED               TRUE\n')
+            self.build_flags.append('USE_LWIP=yes')
+            self.env_vars['WITH_NETWORKING'] = True
+        else:
+            f.write('#define AP_NETWORKING_ENABLED               FALSE\n')
+            self.build_flags.append('USE_LWIP=no')
+            self.env_vars['WITH_NETWORKING'] = False
+
         defines = self.get_mcu_config('DEFINES', False)
         if defines is not None:
             for d in defines.keys():
@@ -1314,6 +1328,13 @@ class ChibiOSHWDef(object):
         ext_flash_size = self.get_config('EXT_FLASH_SIZE_MB', default=0, type=int)
         int_flash_primary = self.get_config('INT_FLASH_PRIMARY', default=False, type=int)
 
+        ethernet_ram = self.get_mcu_config('ETHERNET_RAM', False)
+        if ethernet_ram is None and self.env_vars['WITH_NETWORKING']:
+            self.error("No ethernet ram defined in mcu config")
+        elif self.env_vars['WITH_NETWORKING']:
+            ethernet_ram_base = ethernet_ram[0]
+            ethernet_ram_length = ethernet_ram[1]
+
         if not args.bootloader:
             flash_length = flash_size - (flash_reserve_start + flash_reserve_end)
             ext_flash_length = ext_flash_size * 1024 - (ext_flash_reserve_start + ext_flash_reserve_end)
@@ -1378,6 +1399,16 @@ INCLUDE common.ld
            ram0_start, ram0_len,
            ram1_start, ram1_len,
            ram2_start, ram2_len))
+        if self.env_vars['WITH_NETWORKING']:
+            f.write('''
+/* Ethernet RAM */
+MEMORY
+{
+    eth_ram : org = 0x%08x, len = %uK
+}
+INCLUDE common_eth.ld
+''' % (ethernet_ram_base, ethernet_ram_length))
+        f.close()
 
     def copy_common_linkerscript(self, outdir):
         dirpath = os.path.dirname(os.path.realpath(__file__))
@@ -2826,7 +2857,7 @@ INCLUDE common.ld
         '''check type of a pin line is valid'''
         patterns = [ 'INPUT', 'OUTPUT', 'TIM\d+', 'USART\d+', 'UART\d+', 'ADC\d+',
                     'SPI\d+', 'OTG\d+', 'SWD', 'CAN\d?', 'I2C\d+', 'CS',
-                    'SDMMC\d+', 'SDIO', 'QUADSPI\d', 'OCTOSPI\d'  ]
+                    'SDMMC\d+', 'SDIO', 'QUADSPI\d', 'OCTOSPI\d', 'ETH\d'  ]
         matches = False
         for p in patterns:
             if re.match(p, ptype):
