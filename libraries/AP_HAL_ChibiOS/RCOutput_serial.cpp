@@ -138,14 +138,14 @@ void RCOutput::send_dshot_command(uint8_t command, uint8_t chan, uint32_t comman
 // The chanmask passed is added (ORed) into any existing mask.
 // The mask uses servo channel numbering
 void RCOutput::set_reversed_mask(uint32_t chanmask) {
-    _reversed_mask |= (chanmask >> chan_offset);
+    _reversed_mask |= chanmask;
 }
 
 // Set the dshot outputs that should be reversible/3D
 // The chanmask passed is added (ORed) into any existing mask.
 // The mask uses servo channel numbering
 void RCOutput::set_reversible_mask(uint32_t chanmask) {
-    _reversible_mask |= (chanmask >> chan_offset);
+    _reversible_mask |= chanmask;
 }
 
 // Update the dshot outputs that should be reversible/3D at 1Hz
@@ -164,10 +164,10 @@ void RCOutput::update_channel_masks() {
             case DSHOT_ESC_BLHELI_EDT:
             case DSHOT_ESC_BLHELI_EDT_S:
                 if (_reversible_mask & (1U<<i)) {
-                    send_dshot_command(DSHOT_3D_ON, i + chan_offset, 0, 10, true);
+                    send_dshot_command(DSHOT_3D_ON, i, 0, 10, true);
                 }
                 if (_reversed_mask & (1U<<i)) {
-                    send_dshot_command(DSHOT_REVERSE, i + chan_offset, 0, 10, true);
+                    send_dshot_command(DSHOT_REVERSE, i, 0, 10, true);
                 }
                 break;
             default:

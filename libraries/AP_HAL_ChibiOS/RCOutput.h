@@ -229,7 +229,7 @@ public:
      * The mask uses servo channel numbering
      */
     void set_reversed_mask(uint32_t chanmask) override;
-    uint32_t get_reversed_mask() override { return _reversed_mask << chan_offset; }
+    uint32_t get_reversed_mask() override { return _reversed_mask; }
 
     /*
       mark escs as active for the purpose of sending dshot commands
