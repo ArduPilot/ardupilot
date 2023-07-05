@@ -14,6 +14,7 @@
 #include "AP_Mount_Siyi.h"
 #include "AP_Mount_Scripting.h"
 #include "AP_Mount_Xacti.h"
+#include "AP_Mount_Viewpro.h"
 #include <stdio.h>
 #include <AP_Math/location.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -140,6 +141,14 @@ void AP_Mount::init()
             _num_instances++;
             break;
 #endif // HAL_MOUNT_XACTI_ENABLED
+
+#if HAL_MOUNT_VIEWPRO_ENABLED
+        // check for Xacti gimbal
+        case Type::Viewpro:
+            _backends[instance] = new AP_Mount_Viewpro(*this, _params[instance], instance);
+            _num_instances++;
+            break;
+#endif // HAL_MOUNT_VIEWPRO_ENABLED
         }
 
         // init new instance

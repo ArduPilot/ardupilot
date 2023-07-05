@@ -45,6 +45,7 @@ class AP_Mount_Gremsy;
 class AP_Mount_Siyi;
 class AP_Mount_Scripting;
 class AP_Mount_Xacti;
+class AP_Mount_Viewpro;
 
 /*
   This is a workaround to allow the MAVLink backend access to the
@@ -64,6 +65,7 @@ class AP_Mount
     friend class AP_Mount_Siyi;
     friend class AP_Mount_Scripting;
     friend class AP_Mount_Xacti;
+    friend class AP_Mount_Viewpro;
 
 public:
     AP_Mount();
@@ -108,6 +110,9 @@ public:
 #endif
 #if HAL_MOUNT_XACTI_ENABLED
         Xacti = 10,          /// Xacti DroneCAN gimbal driver
+#endif
+#if HAL_MOUNT_VIEWPRO_ENABLED
+        Viewpro = 11,        /// Viewpro gimbal using a custom serial protocol
 #endif
     };
 
