@@ -540,6 +540,8 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         serial_create_fn = AP_RangeFinder_NoopLoop::create;
 #endif
         break;
+    case Type::JRE_Serial:
+        break;
 
     case Type::NONE:
         break;
