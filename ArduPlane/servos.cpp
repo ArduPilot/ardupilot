@@ -819,28 +819,6 @@ void Plane::set_servos(void)
         return;
     }
 
-    /*
-      see if we are doing ground steering.
-     */
-    if (!steering_control.ground_steering) {
-        // we are not at an altitude for ground steering. Set the nose
-        // wheel to the rudder just in case the barometer has drifted
-        // a lot
-        steering_control.steering = steering_control.rudder;
-    } else if (!SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
-        // we are within the ground steering altitude but don't have a
-        // dedicated steering channel. Set the rudder to the ground
-        // steering output
-        steering_control.rudder = steering_control.steering;
-    }
-
-    // clear ground_steering to ensure manual control if the yaw stabilizer doesn't run
-    steering_control.ground_steering = false;
-
-
-    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, steering_control.rudder);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering_control.steering);
-
     if (control_mode != &mode_manual) {
         set_servos_controlled();
     }

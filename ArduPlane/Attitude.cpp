@@ -307,38 +307,57 @@ void Plane::stabilize_stick_mixing_fbw()
  */
 void Plane::stabilize_yaw()
 {
+    bool ground_steering = false;
     if (landing.is_flaring()) {
         // in flaring then enable ground steering
-        steering_control.ground_steering = true;
+        ground_steering = true;
     } else {
         // otherwise use ground steering when no input control and we
         // are below the GROUND_STEER_ALT
-        steering_control.ground_steering = (channel_roll->get_control_in() == 0 && 
+        ground_steering = (channel_roll->get_control_in() == 0 && 
                                             fabsf(relative_altitude) < g.ground_steer_alt);
         if (!landing.is_ground_steering_allowed()) {
             // don't use ground steering on landing approach
-            steering_control.ground_steering = false;
+            ground_steering = false;
         }
     }
 
 
     /*
-      first calculate steering_control.steering for a nose or tail
+      first calculate steering for a nose or tail
       wheel. We use "course hold" mode for the rudder when either performing
       a flare (when the wings are held level) or when in course hold in
       FBWA mode (when we are below GROUND_STEER_ALT)
      */
+    float steering_output = 0.0;
     if (landing.is_flaring() ||
-        (steer_state.hold_course_cd != -1 && steering_control.ground_steering)) {
-        calc_nav_yaw_course();
-    } else if (steering_control.ground_steering) {
-        calc_nav_yaw_ground();
+        (steer_state.hold_course_cd != -1 && ground_steering)) {
+        steering_output = calc_nav_yaw_course();
+    } else if (ground_steering) {
+        steering_output = calc_nav_yaw_ground();
     }
 
     /*
-      now calculate steering_control.rudder for the rudder
+      now calculate rudder for the rudder
      */
-    calc_nav_yaw_coordinated();
+    const float rudder_output = calc_nav_yaw_coordinated();
+
+    if (!ground_steering) {
+        // Not doing ground steering, output rudder on steering channel
+        SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, rudder_output);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, rudder_output);
+
+    } else if (!SRV_Channels::function_assigned(SRV_Channel::k_steering)) {
+        // Ground steering active but no steering output configured, output steering on rudder channel
+        SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, steering_output);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering_output);
+
+    } else {
+        // Ground steering with both steering and rudder channels
+        SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, rudder_output);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, steering_output);
+    }
+
 }
 
 /*
@@ -370,15 +389,17 @@ void Plane::stabilize()
         const float elevator = pitchController.get_rate_out(nav_scripting.pitch_rate_dps, speed_scaler);
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron);
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elevator);
+        float rudder = 0;
         if (yawController.rate_control_enabled()) {
-            float rudder = nav_scripting.rudder_offset_pct * 45;
+            rudder = nav_scripting.rudder_offset_pct * 45;
             if (nav_scripting.run_yaw_rate_controller) {
                 rudder += yawController.get_rate_out(nav_scripting.yaw_rate_dps, speed_scaler, false);
             } else {
                 yawController.reset_I();
             }
-            steering_control.rudder = rudder;
         }
+        SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, rudder);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_steering, rudder);
 #endif
     } else {
         plane.control_mode->run();
@@ -427,7 +448,7 @@ void Plane::calc_throttle()
 /*
   calculate yaw control for coordinated flight
  */
-void Plane::calc_nav_yaw_coordinated()
+int16_t Plane::calc_nav_yaw_coordinated()
 {
     const float speed_scaler = get_speed_scaler();
     bool disable_integrator = false;
@@ -461,35 +482,35 @@ void Plane::calc_nav_yaw_coordinated()
         commanded_rudder += rudder_in;
     }
 
-    steering_control.rudder = constrain_int16(commanded_rudder, -4500, 4500);
-
     if (!using_rate_controller) {
         /*
           When not running the yaw rate controller, we need to reset the rate
         */
         yawController.reset_rate_PID();
     }
+
+    return constrain_int16(commanded_rudder, -4500, 4500);
 }
 
 /*
   calculate yaw control for ground steering with specific course
  */
-void Plane::calc_nav_yaw_course(void)
+int16_t Plane::calc_nav_yaw_course(void)
 {
     // holding a specific navigation course on the ground. Used in
     // auto-takeoff and landing
     int32_t bearing_error_cd = nav_controller->bearing_error_cd();
-    steering_control.steering = steerController.get_steering_out_angle_error(bearing_error_cd);
+    int16_t steering = steerController.get_steering_out_angle_error(bearing_error_cd);
     if (stick_mixing_enabled()) {
-        steering_control.steering = channel_rudder->stick_mixing(steering_control.steering);
+        steering = channel_rudder->stick_mixing(steering);
     }
-    steering_control.steering = constrain_int16(steering_control.steering, -4500, 4500);
+    return constrain_int16(steering, -4500, 4500);
 }
 
 /*
   calculate yaw control for ground steering
  */
-void Plane::calc_nav_yaw_ground(void)
+int16_t Plane::calc_nav_yaw_ground(void)
 {
     if (gps.ground_speed() < 1 && 
         is_zero(get_throttle_input()) &&
@@ -498,8 +519,7 @@ void Plane::calc_nav_yaw_ground(void)
         // manual rudder control while still
         steer_state.locked_course = false;
         steer_state.locked_course_err = 0;
-        steering_control.steering = rudder_input();
-        return;
+        return rudder_input();
     }
 
     // if we haven't been steering for 1s then clear locked course
@@ -526,15 +546,16 @@ void Plane::calc_nav_yaw_ground(void)
         }
     }
 
+    int16_t steering;
     if (!steer_state.locked_course) {
         // use a rate controller at the pilot specified rate
-        steering_control.steering = steerController.get_steering_out_rate(steer_rate);
+        steering = steerController.get_steering_out_rate(steer_rate);
     } else {
         // use a error controller on the summed error
         int32_t yaw_error_cd = -ToDeg(steer_state.locked_course_err)*100;
-        steering_control.steering = steerController.get_steering_out_angle_error(yaw_error_cd);
+        steering = steerController.get_steering_out_angle_error(yaw_error_cd);
     }
-    steering_control.steering = constrain_int16(steering_control.steering, -4500, 4500);
+    return constrain_int16(steering, -4500, 4500);
 }
 
 
