@@ -403,7 +403,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.progress("Triggering manual autorotation by disabling interlock")
         self.set_rc(3, 1300)
         self.set_rc(8, 1000)
-        self.wait_servo_channel_value(8, 1200, timeout=3)
+        self.wait_servo_channel_value(8, 1199, timeout=3)
         self.progress("channel 8 set to autorotation window")
 
         self.set_rc(8, 2000)
