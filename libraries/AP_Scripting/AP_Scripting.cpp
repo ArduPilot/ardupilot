@@ -222,6 +222,15 @@ void AP_Scripting::repl_stop(void) {
     // can't do any more cleanup here, closing the open FD's is the REPL's responsibility
 }
 
+/*
+  avoid optimisation of the thread function. This avoids nasty traps
+  where setjmp/longjmp does not properly handle save/restore of
+  floating point registers on exceptions. This is an extra protection
+  over the top of the fix in luaD_rawrunprotected() for the same issue
+ */
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
+
 void AP_Scripting::thread(void) {
     while (true) {
         // reset flags
@@ -289,6 +298,7 @@ void AP_Scripting::thread(void) {
         }
     }
 }
+#pragma GCC pop_options
 
 void AP_Scripting::handle_mission_command(const AP_Mission::Mission_Command& cmd_in)
 {
