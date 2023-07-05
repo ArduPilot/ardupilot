@@ -64,9 +64,6 @@ void ModeTraining::run()
     }
 
     // Always manual rudder control
-    const float pilot_rudder = plane.rudder_in_expo(false);
-    plane.steering_control.rudder = pilot_rudder;
-    plane.steering_control.steering = pilot_rudder;
-    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, pilot_rudder);
+    output_rudder_and_steering(plane.rudder_in_expo(false));
 
 }
