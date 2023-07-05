@@ -183,7 +183,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     
     // @Param: BAT_IDX
     // @DisplayName: Battery compensation index
-    // @Description: Which battery monitor should be used for doing compensation
+    // @Description: Which battery monitor should be used for doing compensation. Set to -1 to disable pre-arm warning.
     // @Values: 0:First battery, 1:Second battery
     // @User: Advanced
     AP_GROUPINFO("BAT_IDX", 39, AP_MotorsMulticopter, thr_lin.batt_idx, 0),
@@ -765,16 +765,17 @@ bool AP_MotorsMulticopter::arming_checks(size_t buflen, char *buffer) const
     }
 
     // Check param config
-    if (thr_lin.get_spin_min() > 0.3) {
-        hal.util->snprintf(buffer, buflen, "%sSPIN_MIN too high %.2f > 0.3", AP_MOTORS_PARAM_PREFIX, thr_lin.get_spin_min());
-        return false;
-    }
     if (_spin_arm > thr_lin.get_spin_min()) {
         hal.util->snprintf(buffer, buflen, "%sSPIN_ARM > %sSPIN_MIN", AP_MOTORS_PARAM_PREFIX, AP_MOTORS_PARAM_PREFIX);
         return false;
     }
     if (!check_mot_pwm_params()) {
         hal.util->snprintf(buffer, buflen, "Check %sPWM_MIN and %sPWM_MAX", AP_MOTORS_PARAM_PREFIX, AP_MOTORS_PARAM_PREFIX);
+        return false;
+    }
+
+    // Check Linearization setup
+    if (!thr_lin.arming_checks(buflen, buffer)) {
         return false;
     }
 

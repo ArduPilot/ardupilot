@@ -30,6 +30,12 @@
     #define THRST_LIN_BAT_VOLT_MIN_DEFAULT  0.0f    // voltage limiting min default (voltage dropping below this level will have no effect)
 #endif
 
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    #define AP_MOTORS_PARAM_PREFIX "Q_M_"
+#else
+    #define AP_MOTORS_PARAM_PREFIX "MOT_"
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -154,7 +160,7 @@ void Thrust_Linearization::update_lift_max_from_batt_voltage()
     // if disabled or misconfigured exit immediately
     float _batt_voltage = motors.has_option(AP_Motors::MotorOptions::BATT_RAW_VOLTAGE) ? AP::battery().voltage(batt_idx) : AP::battery().voltage_resting_estimate(batt_idx);
 
-    if ((batt_voltage_max <= 0) || (batt_voltage_min >= batt_voltage_max) || (_batt_voltage < 0.25 * batt_voltage_min)) {
+    if (!battery_voltage_config_valid() || (_batt_voltage < 0.25 * batt_voltage_min)) {
         batt_voltage_filt.reset(1.0);
         lift_max = 1.0;
         return;
@@ -196,4 +202,26 @@ float Thrust_Linearization::get_compensation_gain() const
     }
 #endif
     return ret;
+}
+
+// Check the voltage scale configuration
+bool Thrust_Linearization::battery_voltage_config_valid() const
+{
+    return (batt_voltage_max > 0) && (batt_voltage_min < batt_voltage_max);
+}
+
+bool Thrust_Linearization::arming_checks(size_t buflen, char *buffer) const
+{
+    if (get_spin_min() > 0.3) {
+        hal.util->snprintf(buffer, buflen, "%sSPIN_MIN too high %.2f > 0.3", AP_MOTORS_PARAM_PREFIX, get_spin_min());
+        return false;
+    }
+
+    if (is_positive(AP::battery().voltage(batt_idx)) && !battery_voltage_config_valid()) {
+        // If there is a valid voltage reading battery voltage scaling should be setup
+        hal.util->snprintf(buffer, buflen, "Set %sBAT_VOLT_MIN and %sBAT_VOLT_MAX", AP_MOTORS_PARAM_PREFIX, AP_MOTORS_PARAM_PREFIX);
+        return false;
+    }
+
+    return true;
 }

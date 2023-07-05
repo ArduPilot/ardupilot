@@ -44,6 +44,9 @@ public:
     // Get lift max
     float get_lift_max() const { return lift_max; }
 
+    // Run arming checks
+    bool arming_checks(size_t buflen, char *buffer) const;
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -56,6 +59,10 @@ protected:
     AP_Float batt_voltage_min; // minimum voltage used to scale lift
 
 private:
+
+    // Check the voltage scale configuration
+    bool battery_voltage_config_valid() const;
+
     float               lift_max;          // maximum lift ratio from battery voltage
     float               throttle_limit;    // ratio of throttle limit between hover and maximum
     LowPassFilterFloat  batt_voltage_filt; // filtered battery voltage expressed as a percentage (0 ~ 1.0) of batt_voltage_max
