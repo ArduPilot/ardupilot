@@ -100,6 +100,10 @@ void AP_Periph_FW::init()
 
     can_start();
 
+#if AP_NETWORKING_ENABLED
+    networking.init();
+#endif
+
 #if HAL_GCS_ENABLED
     stm32_watchdog_pat();
     gcs().init();
@@ -475,6 +479,10 @@ void AP_Periph_FW::update()
 #endif
 
     can_update();
+
+#if AP_NETWORKING_ENABLED
+    networking.update();
+#endif
 
 #if (defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) && HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY == 8) || defined(HAL_PERIPH_ENABLE_NOTIFY)
     update_rainbow();
