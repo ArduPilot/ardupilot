@@ -485,6 +485,11 @@ def run_step(step):
         return util.build_replay(board='SITL')
 
     if vehicle_binary is not None:
+        try:
+            binary = binary_path(step, debug=opts.debug)
+            os.unlink(binary)
+        except (FileNotFoundError, ValueError):
+            pass
         if len(vehicle_binary.split(".")) == 1:
             return util.build_SITL(vehicle_binary, **build_opts)
         else:
