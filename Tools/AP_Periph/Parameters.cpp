@@ -551,6 +551,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
   #endif
 #endif
 
+#if AP_NETWORKING_ENABLED
+    // @Group: NET_
+    // @Path: ../libraries/AP_Networking/AP_Networking.cpp
+    GOBJECT(networking, "NET_", AP_Networking),
+#endif
+
     AP_VAREND
 };
 
