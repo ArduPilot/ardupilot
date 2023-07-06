@@ -1,13 +1,10 @@
 #pragma once
 
-#include "AP_RangeFinder_Backend.h"
-
-#ifndef AP_RANGEFINDER_DRONECAN_ENABLED
-#define AP_RANGEFINDER_DRONECAN_ENABLED (HAL_ENABLE_DRONECAN_DRIVERS && AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED)
-#endif
+#include "AP_RangeFinder_config.h"
 
 #if AP_RANGEFINDER_DRONECAN_ENABLED
 
+#include "AP_RangeFinder_Backend.h"
 #include <AP_DroneCAN/AP_DroneCAN.h>
 
 class MeasurementCb;
