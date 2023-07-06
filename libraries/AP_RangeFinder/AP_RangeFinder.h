@@ -41,10 +41,6 @@
 #define RANGEFINDER_PREARM_REQUIRED_CHANGE_CM   50
 #endif
 
-#ifndef HAL_MSP_RANGEFINDER_ENABLED
-#define HAL_MSP_RANGEFINDER_ENABLED HAL_MSP_ENABLED
-#endif
-
 class AP_RangeFinder_Backend;
 
 class RangeFinder
