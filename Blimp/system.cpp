@@ -89,11 +89,6 @@ void Blimp::init_ardupilot()
     g2.scripting.init();
 #endif // AP_SCRIPTING_ENABLED
 
-    // we don't want writes to the serial port to cause us to pause
-    // mid-flight, so set the serial ports non-blocking once we are
-    // ready to fly
-    serial_manager.set_blocking_writes_all(false);
-
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
     // setup fin output
