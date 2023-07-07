@@ -595,19 +595,6 @@ void AP_OSD_ParamScreen::draw(void)
 }
 #endif
 
-// pre_arm_check - returns true if all pre-takeoff checks have completed successfully
-bool AP_OSD::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) const
-{
-    // currently in the OSD menu, do not allow arming
-    if (!is_readonly_screen()) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "In OSD menu");
-        return false;
-    }
-
-    // if we got this far everything must be ok
-    return true;
-}
-
 #endif // OSD_ENABLED
 
 // save all of the parameters
