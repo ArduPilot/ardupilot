@@ -15,13 +15,9 @@
 // Below are default params
 // ---------------------------
 
-#ifndef AP_NETWORKING_DEFAULT_OPTIONS
-    #define AP_NETWORKING_DEFAULT_OPTIONS 0
-#endif
-
 // Default DHCP
 #ifndef AP_NETWORKING_DEFAULT_DHCP_ENABLE
-#define AP_NETWORKING_DEFAULT_DHCP_ENABLE 0
+#define AP_NETWORKING_DEFAULT_DHCP_ENABLE 1
 #endif
 
 // Default Static IP Address: 192.168.13.13
@@ -41,8 +37,8 @@
 // Default Netmask: 24
 // Note, the netmask is the number of consecutive bits
 #ifndef AP_NETWORKING_DEFAULT_NETMASK
-    #define AP_NETWORKING_DEFAULT_NETMASK       24 // 255.255.255.0
-    // #define AP_NETWORKING_DEFAULT_NETMASK    16 // 255.255.0.0
+    #define AP_NETWORKING_DEFAULT_NETMASK       24 // 255.255.255.0 (for 10.0.xxx.xxx or 172.xxx.xxx.xxx type networks)
+    // #define AP_NETWORKING_DEFAULT_NETMASK    16 // 255.255.0.0 (for 192.168.xxx.xxxx type networks)
 #endif
 
 
