@@ -113,7 +113,7 @@ const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     // @Param: OPTION
     // @DisplayName: DroneCAN options
     // @Description: Option flags
-    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM,5:SendGNSS,6:UseHimarkServo
+    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM,5:SendGNSS,6:UseHimarkServo,7:HobbyWingESC,8:EnableStats
     // @User: Advanced
     AP_GROUPINFO("OPTION", 5, AP_DroneCAN, _options, 0),
     
@@ -323,6 +323,12 @@ void AP_DroneCAN::init(uint8_t driver_index, bool enable_filters)
     node_status.set_priority(CANARD_TRANSFER_PRIORITY_LOWEST);
     node_status.set_timeout_ms(1000);
 
+    protocol_stats.set_priority(CANARD_TRANSFER_PRIORITY_LOWEST);
+    protocol_stats.set_timeout_ms(3000);
+
+    can_stats.set_priority(CANARD_TRANSFER_PRIORITY_LOWEST);
+    can_stats.set_timeout_ms(3000);
+
     rgb_led.set_timeout_ms(20);
     rgb_led.set_priority(CANARD_TRANSFER_PRIORITY_LOW);
     
@@ -481,6 +487,42 @@ void AP_DroneCAN::send_node_status(void)
     _node_status_last_send_ms = now;
     node_status_msg.uptime_sec = now / 1000;
     node_status.broadcast(node_status_msg);
+
+    if (option_is_set(Options::ENABLE_STATS)) {
+        // also send protocol and can stats
+        protocol_stats.broadcast(canard_iface.protocol_stats);
+
+        // get can stats
+        for (uint8_t i=0; i<canard_iface.num_ifaces; i++) {
+            if (canard_iface.ifaces[i] == nullptr) {
+                continue;
+            }
+            auto* iface = hal.can[0]; 
+            for (uint8_t j=0; j<HAL_NUM_CAN_IFACES; j++) {
+                if (hal.can[j] == canard_iface.ifaces[i]) {
+                    iface = hal.can[j];
+                    break;
+                }
+            }
+            auto* bus_stats = iface->get_statistics();
+            if (bus_stats == nullptr) {
+                continue;
+            }
+            dronecan_protocol_CanStats can_stats_msg;
+            can_stats_msg.interface = i;
+            can_stats_msg.tx_requests = bus_stats->tx_requests;
+            can_stats_msg.tx_rejected = bus_stats->tx_rejected;
+            can_stats_msg.tx_overflow = bus_stats->tx_overflow;
+            can_stats_msg.tx_success = bus_stats->tx_success;
+            can_stats_msg.tx_timedout = bus_stats->tx_timedout;
+            can_stats_msg.tx_abort = bus_stats->tx_abort;
+            can_stats_msg.rx_received = bus_stats->rx_received;
+            can_stats_msg.rx_overflow = bus_stats->rx_overflow;
+            can_stats_msg.rx_errors = bus_stats->rx_errors;
+            can_stats_msg.busoff_errors = bus_stats->num_busoff_err;
+            can_stats.broadcast(can_stats_msg);
+        }
+    }
 }
 
 void AP_DroneCAN::handle_node_info_request(const CanardRxTransfer& transfer, const uavcan_protocol_GetNodeInfoRequest& req)
