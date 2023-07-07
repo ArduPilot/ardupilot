@@ -114,6 +114,7 @@ public:
         SEND_GNSS                 = (1U<<5),
         USE_HIMARK_SERVO          = (1U<<6),
         USE_HOBBYWING_ESC         = (1U<<7),
+        ENABLE_STATS              = (1U<<8),
     };
 
     // check if a option is set
@@ -235,6 +236,8 @@ private:
     CanardInterface canard_iface;
 
     Canard::Publisher<uavcan_protocol_NodeStatus> node_status{canard_iface};
+    Canard::Publisher<dronecan_protocol_CanStats> can_stats{canard_iface};
+    Canard::Publisher<dronecan_protocol_Stats> protocol_stats{canard_iface};
     Canard::Publisher<uavcan_equipment_actuator_ArrayCommand> act_out_array{canard_iface};
     Canard::Publisher<uavcan_equipment_esc_RawCommand> esc_raw{canard_iface};
     Canard::Publisher<ardupilot_indication_SafetyState> safety_state{canard_iface};
