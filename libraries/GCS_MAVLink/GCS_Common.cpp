@@ -6451,34 +6451,27 @@ void GCS::passthru_timer(void)
     if (_passthru.baud2 != baud && baud != 0) {
         _passthru.baud2 = baud;
         _passthru.port2->end();
-        _passthru.port2->begin_locked(baud, lock_key);
+        _passthru.port2->begin_locked(baud, 0, 0, lock_key);
     }
 
     baud = _passthru.port2->get_usb_baud();
     if (_passthru.baud1 != baud && baud != 0) {
         _passthru.baud1 = baud;
         _passthru.port1->end();
-        _passthru.port1->begin_locked(baud, lock_key);
+        _passthru.port1->begin_locked(baud, 0, 0, lock_key);
     }
 
-    uint8_t b;
     uint8_t buf[64];
-    uint8_t nbytes = 0;
 
     // read from port1, and write to port2
-    while (nbytes < sizeof(buf) && _passthru.port1->read_locked(lock_key, b)) {
-        buf[nbytes++] = b;
-    }
+    int16_t nbytes = _passthru.port1->read_locked(buf, sizeof(buf), lock_key);
     if (nbytes > 0) {
         _passthru.last_port1_data_ms = AP_HAL::millis();
         _passthru.port2->write_locked(buf, nbytes, lock_key);
     }
 
     // read from port2, and write to port1
-    nbytes = 0;
-    while (nbytes < sizeof(buf) && _passthru.port2->read_locked(lock_key, b)) {
-        buf[nbytes++] = b;
-    }
+    nbytes = _passthru.port2->read_locked(buf, sizeof(buf), lock_key);
     if (nbytes > 0) {
         _passthru.port1->write_locked(buf, nbytes, lock_key);
     }
