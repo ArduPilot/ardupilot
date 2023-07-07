@@ -39,6 +39,7 @@ public:
         ARMING_CHECK_AUX_AUTH    = (1U << 17),
         ARMING_CHECK_VISION      = (1U << 18),
         ARMING_CHECK_FFT         = (1U << 19),
+        ARMING_CHECK_OSD         = (1U << 20),
     };
 
     enum class Method {

@@ -1253,20 +1253,20 @@ bool AP_Arming::camera_checks(bool display_failure)
 
 bool AP_Arming::osd_checks(bool display_failure) const
 {
-#if OSD_PARAM_ENABLED && OSD_ENABLED 
-    if (check_enabled(ARMING_CHECK_CAMERA)) {
+#if OSD_ENABLED 
+    if (check_enabled(ARMING_CHECK_OSD)) {
+        // if no OSD then pass
         const AP_OSD *osd = AP::osd();
         if (osd == nullptr) {
             return true;
         }
-
-        // check camera is ready
+        // do osd checks for configuration
         char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
         if (!osd->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
-            check_failed(ARMING_CHECK_CAMERA, display_failure, "%s", fail_msg);
+            check_failed(ARMING_CHECK_OSD, display_failure, "%s", fail_msg);
             return false;
         }
-    }
+   }
 #endif
     return true;
 }
