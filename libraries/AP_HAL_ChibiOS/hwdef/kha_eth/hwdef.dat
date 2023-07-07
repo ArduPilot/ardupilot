@@ -104,14 +104,6 @@ define BOARD_PHY_RMII
 
 ###################
 
-# Refer to https://maclookup.app/vendors/cubepilot-pty-ltd
-# A8-B0-28-??-??-?? where the ?? is the lower 3 bytes from the STM32 UUID
-define AP_NETWORKING_DEFAULT_MAC_ADDR0   0xA8
-define AP_NETWORKING_DEFAULT_MAC_ADDR1   0xB0
-define AP_NETWORKING_DEFAULT_MAC_ADDR2   0x28
-
-###################
-
 #Communications and debug
 # use DNA
 define HAL_CAN_DEFAULT_NODE_ID 0
