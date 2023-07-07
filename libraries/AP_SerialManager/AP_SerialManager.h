@@ -201,9 +201,6 @@ public:
     // find_portnum - find port number (SERIALn index) for a protocol and instance, -1 for not found
     int8_t find_portnum(enum SerialProtocol protocol, uint8_t instance) const;
 
-    // set_blocking_writes_all - sets block_writes on or off for all serial channels
-    void set_blocking_writes_all(bool blocking);
-
     // get the passthru ports if enabled
     bool get_passthru(AP_HAL::UARTDriver *&port1, AP_HAL::UARTDriver *&port2, uint8_t &timeout_s,
                       uint32_t &baud1, uint32_t &baud2) const;

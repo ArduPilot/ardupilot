@@ -649,18 +649,6 @@ AP_HAL::UARTDriver *AP_SerialManager::get_serial_by_id(uint8_t id)
     return nullptr;
 }
 
-// set_blocking_writes_all - sets block_writes on or off for all serial channels
-void AP_SerialManager::set_blocking_writes_all(bool blocking)
-{
-    // set block_writes for all initialised serial ports
-    for (uint8_t i=0; i<SERIALMANAGER_NUM_PORTS; i++) {
-        auto *uart = hal.serial(i);
-        if (uart != nullptr) {
-            uart->set_blocking_writes(blocking);
-        }
-    }
-}
-
 /*
  *  map from a 16 bit EEPROM baud rate to a real baud rate.  For
  *  stm32-based boards we can do 1.5MBit, although 921600 is more
