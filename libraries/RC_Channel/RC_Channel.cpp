@@ -238,6 +238,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane, Blimp}: 172:Battery MPPT Enable
     // @Values{Plane}: 173:Plane AUTO Mode Landing Abort
     // @Values{Copter, Rover, Plane, Blimp}: 174:Camera Image Tracking
+    // @Values{Plane}: 175: Mode QAUTOTUNE
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
     // @Values{Rover}: 207:MainSail
