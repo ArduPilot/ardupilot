@@ -36,13 +36,7 @@ void UARTDriver::vprintf(const char *fmt, va_list ap)
     }
 }
 
-void UARTDriver::begin(uint32_t b)
-{
-    begin(b, 0, 0);
-}
-
-
-void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
+void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     if (uart_num < ARRAY_SIZE(uart_desc)) {
         uart_port_t p = uart_desc[uart_num].port;
@@ -75,7 +69,7 @@ void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     _baudrate = b;
 }
 
-void UARTDriver::end()
+void UARTDriver::_end()
 {
     if (_initialized) {
         uart_driver_delete(uart_desc[uart_num].port);
@@ -85,7 +79,7 @@ void UARTDriver::end()
     _initialized = false;
 }
 
-void UARTDriver::flush()
+void UARTDriver::_flush()
 {
     uart_port_t p = uart_desc[uart_num].port;
     uart_flush(p);
@@ -96,18 +90,13 @@ bool UARTDriver::is_initialized()
     return _initialized;
 }
 
-void UARTDriver::set_blocking_writes(bool blocking)
-{
-    //blocking writes do not used anywhere
-}
-
 bool UARTDriver::tx_pending()
 {
     return (_writebuf.available() > 0);
 }
 
 
-uint32_t UARTDriver::available()
+uint32_t UARTDriver::_available()
 {
     if (!_initialized) {
         return 0;
@@ -126,7 +115,7 @@ uint32_t UARTDriver::txspace()
 
 }
 
-ssize_t IRAM_ATTR UARTDriver::read(uint8_t *buffer, uint16_t count)
+ssize_t IRAM_ATTR UARTDriver::_read(uint8_t *buffer, uint16_t count)
 {
     if (!_initialized) {
         return -1;
@@ -141,22 +130,6 @@ ssize_t IRAM_ATTR UARTDriver::read(uint8_t *buffer, uint16_t count)
     _receive_timestamp_update();
 
     return ret;
-}
-
-bool IRAM_ATTR UARTDriver::read(uint8_t &byte)
-{
-
-    if (!_initialized) {
-        return false;
-    }
-    if (!_readbuf.read_byte(&byte)) {
-        return false;
-    }
-
-    _receive_timestamp_update();
-
-    return true;
-
 }
 
 void IRAM_ATTR UARTDriver::_timer_tick(void)
@@ -195,12 +168,7 @@ void IRAM_ATTR UARTDriver::write_data()
     _write_mutex.give();
 }
 
-size_t IRAM_ATTR UARTDriver::write(uint8_t c)
-{
-    return write(&c,1);
-}
-
-size_t IRAM_ATTR UARTDriver::write(const uint8_t *buffer, size_t size)
+size_t IRAM_ATTR UARTDriver::_write(const uint8_t *buffer, size_t size)
 {
     if (!_initialized) {
         return 0;
@@ -214,7 +182,7 @@ size_t IRAM_ATTR UARTDriver::write(const uint8_t *buffer, size_t size)
     return ret;
 }
 
-bool UARTDriver::discard_input()
+bool UARTDriver::_discard_input()
 {
     //uart_port_t p = uart_desc[uart_num].port;
     //return uart_flush_input(p) == ESP_OK;

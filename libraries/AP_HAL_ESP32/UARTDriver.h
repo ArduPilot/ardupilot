@@ -47,39 +47,18 @@ public:
 
     void vprintf(const char *fmt, va_list ap) override;
 
-    void begin(uint32_t b) override;
-    void begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
-    void end() override;
-    void flush() override;
     bool is_initialized() override;
-    void set_blocking_writes(bool blocking) override;
     bool tx_pending() override;
-
-    uint32_t available() override;
-    //uint32_t available_locked(uint32_t key) override;
 
     uint32_t txspace() override;
 
-    ssize_t read(uint8_t *buffer, uint16_t count) override;
-    bool read(uint8_t &b) override WARN_IF_UNUSED;
-    //ssize_t read(uint8_t *buffer, uint16_t count) override;
-    //int16_t read_locked(uint32_t key) override;
-
     void _timer_tick(void) override;
 
-    size_t write(uint8_t c) override;
-    size_t write(const uint8_t *buffer, size_t size) override;
-
-    bool discard_input() override; // discard all bytes available for reading
     uint32_t bw_in_bytes_per_second() const override
     {
         return 10*1024;
     }
 
-    //bool lock_port(uint32_t write_key, uint32_t read_key) override;
-
-    //size_t write_locked(const uint8_t *buffer, size_t size, uint32_t key) override;
-    //
     /*
       return timestamp estimate in microseconds for when the start of
       a nbytes packet arrived on the uart. This should be treated as a
@@ -111,6 +90,15 @@ private:
     uint32_t _baudrate;
 
     void _receive_timestamp_update(void);
+
+protected:
+    void _begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
+    void _end() override;
+    void _flush() override;
+    uint32_t _available() override;
+    ssize_t _read(uint8_t *buffer, uint16_t count) override;
+    size_t _write(const uint8_t *buffer, size_t size) override;
+    bool _discard_input() override; // discard all bytes available for reading
 };
 
 }
