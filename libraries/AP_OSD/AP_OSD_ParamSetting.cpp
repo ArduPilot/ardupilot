@@ -21,14 +21,16 @@
   parameter object for one setting in AP_OSD
  */
 
+#include "AP_OSD_config.h"
+
+#if OSD_PARAM_ENABLED
+
 #include "AP_OSD.h"
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <GCS_MAVLink/GCS.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <ctype.h>
-
-#if OSD_PARAM_ENABLED
 
 const AP_Param::GroupInfo AP_OSD_ParamSetting::var_info[] = {
     // @Param: _EN
