@@ -49,6 +49,7 @@ class AP_MSP;
 #define PARAM_TOKEN_INDEX(token) PARAM_INDEX(AP_Param::get_persistent_key(token.key), token.idx, token.group_element)
 
 #define AP_OSD_NUM_SYMBOLS 91
+#define OSD_MAX_INSTANCES 2
 /*
   class to hold one setting
  */
@@ -506,6 +507,9 @@ public:
         OSD_TXONLY=4,
         OSD_MSP_DISPLAYPORT=5
     };
+
+    bool init_backend(const osd_types type, const uint8_t instance);
+
     enum switch_method {
         TOGGLE=0,
         PWM_RANGE=1,
@@ -513,6 +517,7 @@ public:
     };
 
     AP_Int8 osd_type;
+    AP_Int8 osd_type2; // additional backend active in parallel
     AP_Int8 font_num;
     AP_Int32 options;
 
@@ -649,7 +654,8 @@ private:
 
     StatsInfo _stats;
 #endif
-    AP_OSD_Backend *backend;
+    AP_OSD_Backend *_backends[OSD_MAX_INSTANCES];
+    uint8_t _backend_count;
 
     static AP_OSD *_singleton;
     // multi-thread access support
