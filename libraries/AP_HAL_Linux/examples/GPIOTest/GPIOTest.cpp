@@ -113,7 +113,6 @@ MENU(main_menu, "GPIOTest: Please select one of the operations followed by the G
 void setup(void)
 {
     Menu::set_port(hal.console);
-    hal.console->set_blocking_writes(true);
 
     while (1) {
         main_menu.run();
