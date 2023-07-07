@@ -9,12 +9,12 @@
 
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-    #include "lwipthread.h"
-    #include "lwip/udp.h"
-    #include <lwip/ip_addr.h>
+#include "lwipthread.h"
+#include "lwip/udp.h"
+#include <lwip/ip_addr.h>
 #else
-    #include <AP_Common/missing/byteswap.h>
-    #define IP4_ADDR_VALUE(a,b,c,d) be32toh(UINT32_VALUE(a,b,c,d))
+#include <AP_Common/missing/byteswap.h>
+#define IP4_ADDR_VALUE(a,b,c,d) be32toh(UINT32_VALUE(a,b,c,d))
 #endif
 
 #define IP4_ADDR_VALUE_FROM_ARRAY(array) IP4_ADDR_VALUE(array[0],array[1],array[2],array[3])
@@ -33,44 +33,106 @@ public:
 
     void update();
 
-    static AP_Networking *get_singleton(void) { return _singleton; }
+    static AP_Networking *get_singleton(void)
+    {
+        return _singleton;
+    }
 
-    bool is_healthy() const { return _param.enabled && _init.done; }
-    bool get_dhcp_enabled() const { return _param.dhcp; }
-    void set_dhcp_enable(const bool enable) { _param.dhcp.set(enable); }
+    bool is_healthy() const
+    {
+        return _param.enabled && _init.done;
+    }
+    bool get_dhcp_enabled() const
+    {
+        return _param.dhcp;
+    }
+    void set_dhcp_enable(const bool enable)
+    {
+        _param.dhcp.set(enable);
+    }
 
-    uint32_t get_ip_active() const { return _activeSettings.ip; }
-    uint32_t get_ip_param() const { return IP4_ADDR_VALUE_FROM_ARRAY(_param.ipaddr); }
-    char*    get_ip_active_str() const { return convert_ip_to_str(get_ip_active()); }
-    char*    get_ip_param_str() const { return convert_ip_to_str(get_ip_param()); }
-    void     set_ip_param_str(const char* ip_str) { set_ip_param(convert_str_to_ip((char*)ip_str)); }
-    void     set_ip_param(const uint32_t ip) {
-                //put_le32_ptr(_param.ipaddr->get(), ip);
-                _param.ipaddr[3].set_and_save((ip >> 24) & 0xff);
-                _param.ipaddr[2].set_and_save((ip >> 16) & 0xff);
-                _param.ipaddr[1].set_and_save((ip >> 8) & 0xff);
-                _param.ipaddr[0].set_and_save(ip & 0xff);
-            }
+    uint32_t get_ip_active() const
+    {
+        return _activeSettings.ip;
+    }
+    uint32_t get_ip_param() const
+    {
+        return IP4_ADDR_VALUE_FROM_ARRAY(_param.ipaddr);
+    }
+    char*    get_ip_active_str() const
+    {
+        return convert_ip_to_str(get_ip_active());
+    }
+    char*    get_ip_param_str() const
+    {
+        return convert_ip_to_str(get_ip_param());
+    }
+    void     set_ip_param_str(const char* ip_str)
+    {
+        set_ip_param(convert_str_to_ip((char*)ip_str));
+    }
+    void     set_ip_param(const uint32_t ip)
+    {
+        //put_le32_ptr(_param.ipaddr->get(), ip);
+        _param.ipaddr[3].set_and_save((ip >> 24) & 0xff);
+        _param.ipaddr[2].set_and_save((ip >> 16) & 0xff);
+        _param.ipaddr[1].set_and_save((ip >> 8) & 0xff);
+        _param.ipaddr[0].set_and_save(ip & 0xff);
+    }
 
-    uint32_t get_netmask_active() const { return _activeSettings.nm; }
-    uint32_t get_netmask_param() const { return convert_netmask_bitcount_to_ip(_param.netmask.get()); }
-    char*    get_netmask_active_str() { return convert_ip_to_str(get_netmask_active()); }
-    char*    get_netmask_param_str() { return convert_ip_to_str(get_netmask_param()); }
-    void     set_netmask_param_str(const char* nm_str) { set_netmask_param(convert_str_to_ip((char*)nm_str)); }
-    void     set_netmask_param(const uint32_t nm) { _param.netmask.set(convert_netmask_ip_to_bitcount(nm)); }
+    uint32_t get_netmask_active() const
+    {
+        return _activeSettings.nm;
+    }
+    uint32_t get_netmask_param() const
+    {
+        return convert_netmask_bitcount_to_ip(_param.netmask.get());
+    }
+    char*    get_netmask_active_str()
+    {
+        return convert_ip_to_str(get_netmask_active());
+    }
+    char*    get_netmask_param_str()
+    {
+        return convert_ip_to_str(get_netmask_param());
+    }
+    void     set_netmask_param_str(const char* nm_str)
+    {
+        set_netmask_param(convert_str_to_ip((char*)nm_str));
+    }
+    void     set_netmask_param(const uint32_t nm)
+    {
+        _param.netmask.set(convert_netmask_ip_to_bitcount(nm));
+    }
 
-    uint32_t get_gateway_active() const { return _activeSettings.gw; }
-    uint32_t get_gateway_param() const { return IP4_ADDR_VALUE_FROM_ARRAY(_param.gwaddr); }
-    char*    get_gateway_active_str() { return convert_ip_to_str(get_gateway_active()); }
-    char*    get_gateway_param_str() { return convert_ip_to_str(get_gateway_param()); }
-    void     set_gateway_param_str(const char* gw_str) { set_gateway_param(convert_str_to_ip((char*)gw_str)); }
-    void     set_gateway_param(const uint32_t gw) {
-                //put_le32_ptr(_param.gwaddr->get(), gw);
-                _param.gwaddr[3].set_and_save((gw >> 24) & 0xff);
-                _param.gwaddr[2].set_and_save((gw >> 16) & 0xff);
-                _param.gwaddr[1].set_and_save((gw >> 8) & 0xff);
-                _param.gwaddr[0].set_and_save(gw & 0xff);
-            }
+    uint32_t get_gateway_active() const
+    {
+        return _activeSettings.gw;
+    }
+    uint32_t get_gateway_param() const
+    {
+        return IP4_ADDR_VALUE_FROM_ARRAY(_param.gwaddr);
+    }
+    char*    get_gateway_active_str()
+    {
+        return convert_ip_to_str(get_gateway_active());
+    }
+    char*    get_gateway_param_str()
+    {
+        return convert_ip_to_str(get_gateway_param());
+    }
+    void     set_gateway_param_str(const char* gw_str)
+    {
+        set_gateway_param(convert_str_to_ip((char*)gw_str));
+    }
+    void     set_gateway_param(const uint32_t gw)
+    {
+        //put_le32_ptr(_param.gwaddr->get(), gw);
+        _param.gwaddr[3].set_and_save((gw >> 24) & 0xff);
+        _param.gwaddr[2].set_and_save((gw >> 16) & 0xff);
+        _param.gwaddr[1].set_and_save((gw >> 8) & 0xff);
+        _param.gwaddr[0].set_and_save(gw & 0xff);
+    }
 
 
     static uint32_t convert_str_to_ip(char* ip_str);
@@ -107,7 +169,7 @@ private:
         AP_Int8 dhcp;
         AP_Int16 macaddr[6];
         AP_Int8 enabled;
-        AP_Int32 options;        
+        AP_Int32 options;
     } _param;
 
     struct {
@@ -121,8 +183,9 @@ private:
     HAL_Semaphore _sem;
 };
 
-namespace AP {
-    AP_Networking &network();
+namespace AP
+{
+AP_Networking &network();
 };
 
 #endif // AP_NETWORKING_ENABLED
