@@ -164,3 +164,6 @@ define AP_BATTERY_SYNTHETIC_CURRENT_ENABLED 0
 
 # enable IMU fast sampling
 define HAL_DEFAULT_INS_FAST_SAMPLE 1
+
+# no space for bootloader:
+define AP_BOOTLOADER_FLASHING_ENABLED 0
