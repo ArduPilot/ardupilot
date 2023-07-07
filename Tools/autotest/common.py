@@ -2505,7 +2505,6 @@ class AutoTest(ABC):
             "SIM_RC_CHANCOUNT",
             "SIM_RICH_CTRL",
             "SIM_RICH_ENABLE",
-            "SIM_SAFETY_STATE",
             "SIM_SERVO_SPEED",
             "SIM_SHIP_DSIZE",
             "SIM_SHIP_ENABLE",
