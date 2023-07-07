@@ -594,7 +594,7 @@ function send_tracking_control2(tracking_command2, param1, param2)
   write_byte(HEADER2, 0)
   write_byte(HEADER3, 0)
   local checksum = write_byte(length_and_frame_counter, 0)  -- length and frame count
-  checksum = write_byte(0x2E, checksum)             -- 0x1E: E1 FrameId
+  checksum = write_byte(0x2E, checksum)             -- 0x2E: E2 FrameId
   checksum = write_byte(tracking_command2 & 0xFF, checksum) -- tracking command2
   checksum = write_byte(highbyte(param1), checksum) -- param1 msb
   checksum = write_byte(lowbyte(param1), checksum)  -- param1 lsb
