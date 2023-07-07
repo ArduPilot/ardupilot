@@ -45,12 +45,7 @@ WiFiDriver::WiFiDriver()
     }
 }
 
-void WiFiDriver::begin(uint32_t b)
-{
-    begin(b, 0, 0);
-}
-
-void WiFiDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
+void WiFiDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     if (_state == NOT_INITIALIZED) {
         initialize_wifi();
@@ -67,12 +62,12 @@ void WiFiDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     }
 }
 
-void WiFiDriver::end()
+void WiFiDriver::_end()
 {
     //TODO
 }
 
-void WiFiDriver::flush()
+void WiFiDriver::_flush()
 {
 }
 
@@ -81,17 +76,12 @@ bool WiFiDriver::is_initialized()
     return _state != NOT_INITIALIZED;
 }
 
-void WiFiDriver::set_blocking_writes(bool blocking)
-{
-    //blocking writes do not used anywhere
-}
-
 bool WiFiDriver::tx_pending()
 {
     return (_writebuf.available() > 0);
 }
 
-uint32_t WiFiDriver::available()
+uint32_t WiFiDriver::_available()
 {
     if (_state != CONNECTED) {
         return 0;
@@ -109,15 +99,12 @@ uint32_t WiFiDriver::txspace()
     return MAX(result, 0);
 }
 
-bool WiFiDriver::read(uint8_t &byte)
+ssize_t WiFiDriver::_read(uint8_t *buf, uint16_t count)
 {
     if (_state != CONNECTED) {
-        return false;
+        return 0;
     }
-    if (!_readbuf.read_byte(&byte)) {
-        return false;
-    }
-    return true;
+    return _readbuf.read(buf, count);
 }
 
 bool WiFiDriver::start_listen()
@@ -243,12 +230,7 @@ void WiFiDriver::initialize_wifi()
     esp_wifi_start();
 }
 
-size_t WiFiDriver::write(uint8_t c)
-{
-    return write(&c,1);
-}
-
-size_t WiFiDriver::write(const uint8_t *buffer, size_t size)
+size_t WiFiDriver::_write(const uint8_t *buffer, size_t size)
 {
     if (_state != CONNECTED) {
         return 0;
@@ -290,7 +272,7 @@ void WiFiDriver::_wifi_thread(void *arg)
     }
 }
 
-bool WiFiDriver::discard_input()
+bool WiFiDriver::_discard_input()
 {
     return false;
 }
