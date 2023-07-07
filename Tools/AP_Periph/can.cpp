@@ -182,7 +182,9 @@ SLCAN::CANIface AP_Periph_FW::slcan_interface;
  * Node status variables
  */
 static uavcan_protocol_NodeStatus node_status;
-
+#if HAL_ENABLE_SENDING_STATS
+static dronecan_protocol_Stats protocol_stats;
+#endif
 /**
  * Returns a pseudo random integer in a given range
  */
@@ -1131,24 +1133,22 @@ static uint8_t* get_tid_ptr(uint32_t transfer_desc)
     return &tid_map_ptr->next->tid;
 }
 
-void AP_Periph_FW::canard_broadcast(uint64_t data_type_signature,
+bool AP_Periph_FW::canard_broadcast(uint64_t data_type_signature,
                                     uint16_t data_type_id,
                                     uint8_t priority,
                                     const void* payload,
                                     uint16_t payload_len)
 {
     if (canardGetLocalNodeID(&dronecan.canard) == CANARD_BROADCAST_NODE_ID) {
-        return;
+        return false;
     }
 
     uint8_t *tid_ptr = get_tid_ptr(MAKE_TRANSFER_DESCRIPTOR(data_type_signature, data_type_id, 0, CANARD_BROADCAST_NODE_ID));
     if (tid_ptr == nullptr) {
-        return;
+        return false;
     }
-#if DEBUG_PKTS
-    const int16_t res = 
-#endif
-    canardBroadcast(&dronecan.canard,
+
+    const int16_t res = canardBroadcast(&dronecan.canard,
                     data_type_signature,
                     data_type_id,
                     tid_ptr,
@@ -1168,6 +1168,14 @@ void AP_Periph_FW::canard_broadcast(uint64_t data_type_signature,
         can_printf("Tx error %d\n", res);
     }
 #endif
+#if HAL_ENABLE_SENDING_STATS
+    if (res <= 0) {
+        protocol_stats.tx_errors++;
+    } else {
+        protocol_stats.tx_frames += res;
+    }
+#endif
+    return res > 0;
 }
 
 static void processTx(void)
@@ -1211,12 +1219,60 @@ static void processTx(void)
             if (dronecan.tx_fail_count < 8) {
                 dronecan.tx_fail_count++;
             } else {
+#if HAL_ENABLE_SENDING_STATS
+                protocol_stats.tx_errors++;
+#endif
                 canardPopTxQueue(&dronecan.canard);
             }
             break;
         }
     }
 }
+
+#if HAL_ENABLE_SENDING_STATS
+static void update_rx_protocol_stats(int16_t res)
+{
+    switch (res) {
+    case CANARD_OK:
+        protocol_stats.rx_frames++;
+        break;
+    case -CANARD_ERROR_OUT_OF_MEMORY:
+        protocol_stats.rx_error_oom++;
+        break;
+    case -CANARD_ERROR_INTERNAL:
+        protocol_stats.rx_error_internal++;
+        break;
+    case -CANARD_ERROR_RX_INCOMPATIBLE_PACKET:
+        protocol_stats.rx_ignored_not_wanted++;
+        break;
+    case -CANARD_ERROR_RX_WRONG_ADDRESS:
+        protocol_stats.rx_ignored_wrong_address++;
+        break;
+    case -CANARD_ERROR_RX_NOT_WANTED:
+        protocol_stats.rx_ignored_not_wanted++;
+        break;
+    case -CANARD_ERROR_RX_MISSED_START:
+        protocol_stats.rx_error_missed_start++;
+        break;
+    case -CANARD_ERROR_RX_WRONG_TOGGLE:
+        protocol_stats.rx_error_wrong_toggle++;
+        break;
+    case -CANARD_ERROR_RX_UNEXPECTED_TID:
+        protocol_stats.rx_ignored_unexpected_tid++;
+        break;
+    case -CANARD_ERROR_RX_SHORT_FRAME:
+        protocol_stats.rx_error_short_frame++;
+        break;
+    case -CANARD_ERROR_RX_BAD_CRC:
+        protocol_stats.rx_error_bad_crc++;
+        break;
+    default:
+        // mark all other errors as internal
+        protocol_stats.rx_error_internal++;
+        break;
+    }
+}
+#endif
 
 static void processRx(void)
 {
@@ -1254,21 +1310,26 @@ static void processRx(void)
 #if CANARD_MULTI_IFACE
             rx_frame.iface_id = ins.index;
 #endif
-#if DEBUG_PKTS
-            const int16_t res = 
-#endif
-            canardHandleRxFrame(&dronecan.canard, &rx_frame, timestamp);
-#if DEBUG_PKTS
-            if (res < 0 &&
-                res != -CANARD_ERROR_RX_NOT_WANTED &&
-                res != -CANARD_ERROR_RX_WRONG_ADDRESS &&
-                res != -CANARD_ERROR_RX_MISSED_START) {
-                printf("Rx error %d, IF%d %lx: ", res, ins.index, rx_frame.id);
-                for (uint8_t i = 0; i < rx_frame.data_len; i++) {
-                    printf("%02x", rx_frame.data[i]);
+
+            const int16_t res = canardHandleRxFrame(&dronecan.canard, &rx_frame, timestamp);
+#if HAL_ENABLE_SENDING_STATS
+            if (res == -CANARD_ERROR_RX_MISSED_START) {
+                // this might remaining frames from a message that we don't accept, so check
+                uint64_t dummy_signature;
+                if (shouldAcceptTransfer(&dronecan.canard,
+                                     &dummy_signature,
+                                     extractDataType(rx_frame.id),
+                                     extractTransferType(rx_frame.id),
+                                     1)) { // doesn't matter what we pass here
+                    update_rx_protocol_stats(res);
+                } else {
+                    protocol_stats.rx_ignored_not_wanted++;
                 }
-                printf("\n");
+            } else {
+                update_rx_protocol_stats(res);
             }
+#else
+            (void)res;
 #endif
         }
     }
@@ -1283,18 +1344,58 @@ static uint16_t pool_peak_percent()
 
 static void node_status_send(void)
 {
-    uint8_t buffer[UAVCAN_PROTOCOL_NODESTATUS_MAX_SIZE];
-    node_status.uptime_sec = AP_HAL::millis() / 1000U;
+    {
+        uint8_t buffer[UAVCAN_PROTOCOL_NODESTATUS_MAX_SIZE];
+        node_status.uptime_sec = AP_HAL::millis() / 1000U;
 
-    node_status.vendor_specific_status_code = hal.util->available_memory();
+        node_status.vendor_specific_status_code = hal.util->available_memory();
 
-    uint32_t len = uavcan_protocol_NodeStatus_encode(&node_status, buffer, !periph.canfdout());
+        uint32_t len = uavcan_protocol_NodeStatus_encode(&node_status, buffer, !periph.canfdout());
 
-    periph.canard_broadcast(UAVCAN_PROTOCOL_NODESTATUS_SIGNATURE,
-                            UAVCAN_PROTOCOL_NODESTATUS_ID,
-                            CANARD_TRANSFER_PRIORITY_LOW,
+        periph.canard_broadcast(UAVCAN_PROTOCOL_NODESTATUS_SIGNATURE,
+                                UAVCAN_PROTOCOL_NODESTATUS_ID,
+                                CANARD_TRANSFER_PRIORITY_LOW,
+                                buffer,
+                                len);
+    }
+#if HAL_ENABLE_SENDING_STATS
+    if (periph.debug_option_is_set(AP_Periph_FW::DebugOptions::ENABLE_STATS)) {
+        {
+            uint8_t buffer[DRONECAN_PROTOCOL_STATS_MAX_SIZE];
+            uint32_t len = dronecan_protocol_Stats_encode(&protocol_stats, buffer, !periph.canfdout());
+            periph.canard_broadcast(DRONECAN_PROTOCOL_STATS_SIGNATURE,
+                                    DRONECAN_PROTOCOL_STATS_ID,
+                                    CANARD_TRANSFER_PRIORITY_LOWEST,
+                                    buffer,
+                                    len);
+        }
+        for (auto &ins : instances) {
+            uint8_t buffer[DRONECAN_PROTOCOL_CANSTATS_MAX_SIZE];
+            dronecan_protocol_CanStats can_stats;
+            const AP_HAL::CANIface::bus_stats_t *bus_stats = ins.iface->get_statistics();
+            if (bus_stats == nullptr) {
+                return;
+            }
+            can_stats.interface = ins.index;
+            can_stats.tx_requests = bus_stats->tx_requests;
+            can_stats.tx_rejected = bus_stats->tx_rejected;
+            can_stats.tx_overflow = bus_stats->tx_overflow;
+            can_stats.tx_success = bus_stats->tx_success;
+            can_stats.tx_timedout = bus_stats->tx_timedout;
+            can_stats.tx_abort = bus_stats->tx_abort;
+            can_stats.rx_received = bus_stats->rx_received;
+            can_stats.rx_overflow = bus_stats->rx_overflow;
+            can_stats.rx_errors = bus_stats->rx_errors;
+            can_stats.busoff_errors = bus_stats->num_busoff_err;
+            uint32_t len = dronecan_protocol_CanStats_encode(&can_stats, buffer, !periph.canfdout());
+            periph.canard_broadcast(DRONECAN_PROTOCOL_CANSTATS_SIGNATURE,
+                            DRONECAN_PROTOCOL_CANSTATS_ID,
+                            CANARD_TRANSFER_PRIORITY_LOWEST,
                             buffer,
                             len);
+        }
+    }
+#endif
 }
 
 

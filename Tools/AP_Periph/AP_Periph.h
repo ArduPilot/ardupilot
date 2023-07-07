@@ -318,18 +318,24 @@ public:
 
     static AP_Periph_FW *_singleton;
 
-    enum {
-        DEBUG_SHOW_STACK,
-        DEBUG_AUTOREBOOT
+    enum class DebugOptions {
+        SHOW_STACK = 0,
+        AUTOREBOOT = 1,
+        ENABLE_STATS = 2,
     };
 
+    // check if an option is set
+    bool debug_option_is_set(const DebugOptions option) const {
+        return (uint8_t(g.debug.get()) & (1U<<uint8_t(option))) != 0;
+    }
+    
     // show stack as DEBUG msgs
     void show_stack_free();
 
     static bool no_iface_finished_dna;
     static constexpr auto can_printf = ::can_printf;
 
-    static void canard_broadcast(uint64_t data_type_signature,
+    static bool canard_broadcast(uint64_t data_type_signature,
                                  uint16_t data_type_id,
                                  uint8_t priority,
                                  const void* payload,

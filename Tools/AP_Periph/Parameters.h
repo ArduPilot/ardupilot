@@ -188,6 +188,7 @@ public:
 #else
     static constexpr uint8_t can_fdmode = 0;
 #endif
+    AP_Int8 node_stats;
     Parameters() {}
 };
 
