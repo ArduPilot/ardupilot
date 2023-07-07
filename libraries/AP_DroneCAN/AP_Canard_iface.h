@@ -2,6 +2,7 @@
 #include <AP_HAL/AP_HAL.h>
 #if HAL_ENABLE_DRONECAN_DRIVERS
 #include <canard/interface.h>
+#include <dronecan_msgs.h>
 
 class AP_DroneCAN;
 class CanardInterface : public Canard::Interface {
@@ -52,6 +53,8 @@ public:
     static void processTestRx();
 #endif
 
+    void update_rx_protocol_stats(int16_t res);
+
     uint8_t get_node_id() const override { return canard.node_id; }
 private:
     CanardInstance canard;
@@ -66,5 +69,6 @@ private:
     HAL_Semaphore _sem_tx;
     HAL_Semaphore _sem_rx;
     CanardTxTransfer tx_transfer;
+    dronecan_protocol_Stats protocol_stats;
 };
 #endif // HAL_ENABLE_DRONECAN_DRIVERS
