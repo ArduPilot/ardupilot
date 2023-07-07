@@ -7,12 +7,12 @@
 #include <GCS_MAVLink/GCS.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-    #include <hal_mii.h>
-    #include <lwip/sockets.h>
+#include <hal_mii.h>
+#include <lwip/sockets.h>
 #else
-    #include <arpa/inet.h>
-    #include <sys/socket.h>
-   
+#include <arpa/inet.h>
+#include <sys/socket.h>
+
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -203,11 +203,12 @@ void AP_Networking::init()
                                         (uint8_t)_param.macaddr[2].get(),
                                         (uint8_t)_param.macaddr[3].get(),
                                         (uint8_t)_param.macaddr[4].get(),
-                                        (uint8_t)_param.macaddr[5].get() };
+                                        (uint8_t)_param.macaddr[5].get()
+                                       };
 
 #if !AP_NETWORKING_DHCP_AVAILABLE
-        set_dhcp_enable(false);
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: DHCP Not Supported");
+    set_dhcp_enable(false);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: DHCP Not Supported");
 #endif
 
     net_addr_mode_t addrMode;
@@ -224,10 +225,11 @@ void AP_Networking::init()
     }
 
     struct lwipthread_opts netOptions = { (uint8_t *) localMACAddress,
-                                        _activeSettings.ip,
-                                        _activeSettings.nm,
-                                        _activeSettings.gw,
-                                        addrMode };
+               _activeSettings.ip,
+               _activeSettings.nm,
+               _activeSettings.gw,
+               addrMode
+    };
 
     lwipInit(&netOptions);
 #endif
@@ -268,8 +270,7 @@ void AP_Networking::announce_address_changes()
     if (_activeSettings.announce_at_boot_done &&
         ip == _activeSettings.ip &&
         nm == _activeSettings.nm &&
-        gw == _activeSettings.gw)
-    {
+        gw == _activeSettings.gw) {
         // nothing changed and we've already printed it at least once. Nothing to do.
         return;
     }
@@ -343,10 +344,10 @@ char* AP_Networking::convert_ip_to_str(const uint8_t ip[4])
 char* AP_Networking::convert_ip_to_str(const uint32_t ip)
 {
     uint8_t ip_array[4];
-        ip_array[3] = ((ip >> 24) & 0xff);
-        ip_array[2] = ((ip >> 16) & 0xff);
-        ip_array[1] = ((ip >> 8) & 0xff);
-        ip_array[0] = (ip & 0xff);
+    ip_array[3] = ((ip >> 24) & 0xff);
+    ip_array[2] = ((ip >> 16) & 0xff);
+    ip_array[1] = ((ip >> 8) & 0xff);
+    ip_array[0] = (ip & 0xff);
 
     return convert_ip_to_str(ip_array);
 }
@@ -361,7 +362,7 @@ int32_t AP_Networking::send_udp(struct udp_pcb *pcb, const ip4_addr_t &ip4_addr,
     if (pcb == nullptr) {
         return ERR_ARG;
     }
-    
+
     data_len = (data == nullptr) ? 0 : data_len;
 
     struct pbuf *p = pbuf_alloc(PBUF_TRANSPORT, data_len, PBUF_RAM);
@@ -384,10 +385,12 @@ int32_t AP_Networking::send_udp(struct udp_pcb *pcb, const ip4_addr_t &ip4_addr,
 #endif // #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 
 AP_Networking *AP_Networking::_singleton;
-namespace AP { 
-    AP_Networking &network() {
-        return *AP_Networking::get_singleton();
-    }
+namespace AP
+{
+AP_Networking &network()
+{
+    return *AP_Networking::get_singleton();
+}
 }
 
 #endif // AP_NETWORKING_ENABLED
