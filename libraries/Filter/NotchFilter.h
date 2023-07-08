@@ -41,9 +41,9 @@ public:
 protected:
 
     bool initialised, need_reset;
-    float b0, b1, b2, a1, a2, a0_inv;
+    float b0, b1, b2, a1, a2;
     float _center_freq_hz, _sample_freq_hz;
-    T ntchsig, ntchsig1, ntchsig2, signal2, signal1;
+    T ntchsig1, ntchsig2, signal2, signal1;
 };
 
 /*
