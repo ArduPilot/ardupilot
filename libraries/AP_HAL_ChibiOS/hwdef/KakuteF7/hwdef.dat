@@ -144,22 +144,17 @@ define STM32_PWM_USE_ADVANCED TRUE
 define HAL_PARACHUTE_ENABLED 0
 
 # save FLASH, but leave above when flash issue is fixed
-include ../include/minimize_features.inc
+include ../include/minimize_common.inc
+include ../include/no_bootloader_DFU.inc
 
 # disable SMBUS battery monitors to save flash
 undef AP_BATTERY_SMBUS_ENABLED
 define AP_BATTERY_SMBUS_ENABLED 0
 
-# setup for OSD
-undef OSD_ENABLED  # minimize_features.inc removes this
-define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
-# make sure MSP HD Goggle support remains
-undef HAL_WITH_MSP_DISPLAYPORT
 define HAL_WITH_MSP_DISPLAYPORT 1
-undef HAL_MSP_ENABLED
 define HAL_MSP_ENABLED 1
 
 # need to probe external baros even 'though we're minimised:
