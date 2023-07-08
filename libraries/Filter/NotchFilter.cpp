@@ -77,9 +77,18 @@ void NotchFilter<T>::init_with_A_and_Q(float sample_freq_hz, float center_freq_h
         b0 =  1.0 + alpha*sq(A);
         b1 = -2.0 * cosf(omega);
         b2 =  1.0 - alpha*sq(A);
-        a0_inv =  1.0/(1.0 + alpha);
         a1 = b1;
         a2 =  1.0 - alpha;
+
+        const float a0_inv =  1.0/(1.0 + alpha);
+
+        // Pre-multiply to save runtime calc
+        b0 *= a0_inv;
+        b1 *= a0_inv;
+        b2 *= a0_inv;
+        a1 *= a0_inv;
+        a2 *= a0_inv;
+
         _center_freq_hz = new_center_freq;
         _sample_freq_hz = sample_freq_hz;
         initialised = true;
@@ -100,16 +109,17 @@ T NotchFilter<T>::apply(const T &sample)
         // sample as output and update delayed samples
         signal1 = sample;
         signal2 = sample;
-        ntchsig = sample;
         ntchsig1 = sample;
         ntchsig2 = sample;
         need_reset = false;
         return sample;
     }
+
+    T output = sample*b0 + ntchsig1*b1 + ntchsig2*b2 - signal1*a1 - signal2*a2;
+
     ntchsig2 = ntchsig1;
-    ntchsig1 = ntchsig;
-    ntchsig = sample;
-    T output = (ntchsig*b0 + ntchsig1*b1 + ntchsig2*b2 - signal1*a1 - signal2*a2) * a0_inv;
+    ntchsig1 = sample;
+
     signal2 = signal1;
     signal1 = output;
     return output;
