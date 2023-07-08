@@ -132,13 +132,13 @@ void Helicopter::update(const struct sitl_input &input)
         float Lv = -0.006;
         float Xu = -0.125;
         float Yv = -0.375;
-        float Zw = -0.375;
+        float Zw = -2.25;
 
         float tail_rotor = (_servos_delayed[3]-1000) / 1000.0f;
 
         // thrust calculated based on 5 deg hover collective for 10lb aircraft at 1500RPM
         float coll = 50.0f * (swash1+swash2+swash3) / 3.0f - 25.0f;
-        thrust = thrust_scale * sq(rpm[0] * 0.104667f) * (0.25* (coll - hover_coll) + hover_coll);
+        thrust = (rpm[0] / nominal_rpm) * thrust_scale * sq(nominal_rpm * 0.104667f) * coll;
 
         // determine RPM
         rpm[0] = update_rpm(rpm[0], rsc, eng_torque, coll, dt);
@@ -224,7 +224,7 @@ void Helicopter::update(const struct sitl_input &input)
         float Lv = -0.006f;
         float Xu = -0.125f;
         float Yv = -0.375f;
-        float Zw = -0.375f;
+        float Zw = -2.25f;
         float hub_dist = 1.8f; //meters
 
         float swash4 = (_servos_delayed[3]-1000) / 1000.0f;
@@ -254,12 +254,12 @@ void Helicopter::update(const struct sitl_input &input)
         // determine RPM
         rpm[0] = update_rpm(rpm[0], rsc, eng_torque, (coll_1 + coll_2) * 0.5f, dt);
 
-        thrust_1 = 0.5f * thrust_scale * sq(rpm[0] * 0.104667f) * (0.25* (coll_1 - hover_coll) + hover_coll);
-        thrust_2 = 0.5f * thrust_scale * sq(rpm[0] * 0.104667f) * (0.25* (coll_2 - hover_coll) + hover_coll);
+        thrust_1 = 0.5f * thrust_scale * sq(rpm[0] * 0.104667f) * coll_1;
+        thrust_2 = 0.5f * thrust_scale * sq(rpm[0] * 0.104667f) * coll_2;
 
         // rotational acceleration, in rad/s/s, in body frame
         rot_accel.x = (_tpp_angle_1.x + _tpp_angle_2.x) * Lb1s + Lv * velocity_air_bf.y;
-        rot_accel.y = (_tpp_angle_1.y + _tpp_angle_2.y) * Ma1s + (thrust_1 - thrust_2) * hub_dist / iyy + Mu * velocity_air_bf.x;
+        rot_accel.y = (_tpp_angle_1.y + _tpp_angle_2.y) * Ma1s + (thrust_1 - thrust_2) * hub_dist / iyy + Mu * velocity_air_bf.x + hub_dist * gyro.y * Zw;
         rot_accel.z = (_tpp_angle_1.x * thrust_1 - _tpp_angle_2.x * thrust_2) * hub_dist / (iyy * 2.0f) - 0.5f * gyro.z;
 
         lateral_y_thrust = GRAVITY_MSS * (_tpp_angle_1.x + _tpp_angle_2.x) + Yv * velocity_air_bf.y;
@@ -279,11 +279,11 @@ void Helicopter::update(const struct sitl_input &input)
         float Lv = -0.006;
         float Xu = -0.125;
         float Yv = -0.375;
-        float Zw = -0.375;
+        float Zw = -2.25;
 
         // thrust calculated based on 5 deg hover collective for 10lb aircraft at 1500RPM
         float coll = 50.0f * (swash1+swash2+swash3) / 3.0f - 25.0f;
-        thrust = thrust_scale * sq(rpm[0] * 0.104667f) * (0.25* (coll - hover_coll) + hover_coll);
+        thrust = thrust_scale * sq(rpm[0] * 0.104667f) * coll;
 
         // determine RPM
         rpm[0] = update_rpm(rpm[0], rsc, eng_torque, coll, dt);
@@ -396,9 +396,9 @@ float Helicopter::update_rpm(float curr_rpm, float throttle, float &engine_torqu
     rotor_torque = (sq(curr_rpm * 0.104667f) * (torque_mpog + torque_scale * powf(fabsf(collective),1.5f))) / izz;
 
     // Calculate autorotation effect on rotor
-    auto_ss_torque = sq(nominal_rpm * 0.104667f) * torque_mpog / izz;
+    auto_ss_torque = sq(nominal_rpm * 0.104667f) * (torque_mpog + torque_scale * powf(fabsf(-1.0f),1.5f)) / izz;
     if (is_positive(velocity_air_bf.z)) {
-        descent_torque = (velocity_air_bf.z - 7.0) * auto_ss_torque / 7.0f + auto_ss_torque;
+        descent_torque = (velocity_air_bf.z - 5.3) * auto_ss_torque / 5.3f + auto_ss_torque;
     } else {
         descent_torque = 0.0f;
     }
