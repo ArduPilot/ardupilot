@@ -74,6 +74,10 @@ extern const AP_HAL::HAL& hal;
 #define POSCONTROL_VIBE_COMP_P_GAIN 0.250f
 #define POSCONTROL_VIBE_COMP_I_GAIN 0.125f
 
+// target must be at least this much above hard limit
+// used for pre-arm checks
+#define POSCONTROL_TARGET_HEADROOM 1.1
+
 const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // 0 was used for HOVER
 
@@ -1371,4 +1375,35 @@ bool AC_PosControl::has_good_timing(void) const
 #endif
     // real boards are assumed to have good timing
     return true;
+}
+
+// Checker make sure there is sufficient headroom between target speed up and hard limit
+bool AC_PosControl::target_speed_up_within_limit(const float target_speed) const
+{
+    if (!is_positive(_speed_up_max)) {
+        // limit not enabled
+        return true;
+    }
+    return target_speed * POSCONTROL_TARGET_HEADROOM < _speed_up_max;
+}
+
+
+// Checker make sure there is sufficient headroom between target speed down and hard limit
+bool AC_PosControl::target_speed_down_within_limit(const float target_speed) const
+{
+    if (!is_positive(_speed_down_max)) {
+        // limit not enabled
+        return true;
+    }
+    return target_speed * POSCONTROL_TARGET_HEADROOM < _speed_down_max;
+}
+
+// Checker make sure there is sufficient headroom between target accel Z and hard limit
+bool AC_PosControl::target_accel_z_within_limit(const float target_accel) const
+{
+    if (!is_positive(_accel_z_max)) {
+        // limit not enabled
+        return true;
+    }
+    return target_accel * POSCONTROL_TARGET_HEADROOM < _accel_z_max;
 }

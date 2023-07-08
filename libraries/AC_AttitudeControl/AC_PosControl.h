@@ -394,6 +394,11 @@ public:
     // get earth-frame Z-axis acceleration with gravity removed in cm/s/s with +ve being up
     float get_z_accel_cmss() const { return -(_ahrs.get_accel_ef().z + GRAVITY_MSS) * 100.0f; }
 
+    // Checker make sure there is sufficient headroom between target and hard limit
+    bool target_speed_up_within_limit(const float target_speed) const;
+    bool target_speed_down_within_limit(const float target_speed) const;
+    bool target_accel_z_within_limit(const float target_accel) const;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
