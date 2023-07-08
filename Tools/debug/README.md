@@ -97,6 +97,36 @@ arm-none-eabi-gdb in the same manner.
 To see ChibiOS threads use the "info threads" command. See the gdb
 documentation for more information.
 
+## Debugging with JLink
+
+To debug with JLink install the tools from here:
+
+  https://www.segger.com/downloads/jlink/
+
+then install this plugin for ChibiOS 21.x support:
+
+  https://github.com/andyp1per/JLinkGDBServer_RTOSPlugin_ChibiOS
+
+Clone it then run "make -f RTOSPlugin_Linux.mk"
+
+then copy to the JLink install location:
+
+  cp Release/x86_64/RTOSPlugin_ChibiOS.so /opt/SEGGER/JLink_V788k/GDBServer/
+
+You can start JLink either with command line options or the GUI tool.
+
+To start JLink for a H743 on the command line run this:
+
+  JLinkGDBServerCLExe -select USB -device STM32H743ZI -endian little -if SWD -speed auto -noir -noLocalhostOnly -nologtofile -port 2331 -rtos /opt/SEGGER/JLink/GDBServer/RTOSPlugin_ChibiOS
+
+To start JLink with the GUI run JLinkGDBServerExe. Running with the
+GUI is useful for finding the right MCU name.
+
+Once JLink is started then start gdb like this:
+
+ arm-none-eabi-gdb -x Tools/debug/gdb-jlink.init build/BOARDNAME/bin/BINARY
+
+
 # Debugging Hardfaults
 
 ## Getting fault dump via Serial
