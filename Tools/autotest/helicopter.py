@@ -303,7 +303,7 @@ class AutoTestHelicopter(AutoTestCopter):
             if abs(m.relative_alt) > 100:
                 raise NotAchievedException("Took off prematurely")
             self.progress("Pushing throttle past half-way")
-            self.set_rc(3, 1600)
+            self.set_rc(3, 1650)
 
             self.progress("Monitoring takeoff")
             self.wait_altitude(6.9, 8, relative=True)
@@ -401,20 +401,27 @@ class AutoTestHelicopter(AutoTestCopter):
         self.context_collect('STATUSTEXT')
         self.change_mode('STABILIZE')
         self.progress("Triggering manual autorotation by disabling interlock")
-        self.set_rc(3, 1300)
+        self.set_rc(3, 1000)
         self.set_rc(8, 1000)
         self.wait_servo_channel_value(8, 1199, timeout=3)
         self.progress("channel 8 set to autorotation window")
 
+        # wait to establish autorotation
+        self.delay_sim_time(2)
+
         self.set_rc(8, 2000)
         self.wait_servo_channel_value(8, 1659, timeout=AROT_RAMP_TIME * 1.1)
 
+        # give time for engine to power up
+        self.set_rc(3, 1400)
+        self.delay_sim_time(2)
+
         self.progress("in-flight power recovery")
-        self.set_rc(3, 1700)
+        self.set_rc(3, 1500)
         self.delay_sim_time(5)
 
         # initiate autorotation again
-        self.set_rc(3, 1200)
+        self.set_rc(3, 1000)
         self.set_rc(8, 1000)
 
         self.wait_statustext(r"SIM Hit ground at ([0-9.]+) m/s",
