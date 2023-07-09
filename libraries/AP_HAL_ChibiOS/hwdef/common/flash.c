@@ -853,6 +853,8 @@ static bool stm32_flash_write_g4(uint32_t addr, const void *buf, uint32_t count)
 
         stm32_flash_wait_idle();
 
+        FLASH->SR |= FLASH_SR_EOP;
+        
         FLASH->CR = 0;
 
         if (getreg32(addr+0) != b[0] ||
