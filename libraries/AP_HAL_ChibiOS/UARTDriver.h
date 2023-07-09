@@ -35,47 +35,23 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(UARTDriver);
 
-    void begin(uint32_t b) override;
-    void begin_locked(uint32_t b, uint32_t write_key) override;
-    void begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
-    void end() override;
-    void flush() override;
     bool is_initialized() override;
-    void set_blocking_writes(bool blocking) override;
     bool tx_pending() override;
     uint32_t get_usb_baud() const override;
 
     // disable TX/RX pins for unusued uart
     void disable_rxtx(void) const override;
     
-    uint32_t available() override;
-    uint32_t available_locked(uint32_t key) override;
-
     uint32_t txspace() override;
-    bool read(uint8_t &data) override WARN_IF_UNUSED;
-    ssize_t read(uint8_t *buffer, uint16_t count) override;
-    bool read_locked(uint32_t key, uint8_t &b) override WARN_IF_UNUSED;
     void _rx_timer_tick(void);
     void _tx_timer_tick(void);
 #if HAL_FORWARD_OTG2_SERIAL
     void fwd_otg2_serial(void);
 #endif
 
-    bool discard_input() override;
-
-    size_t write(uint8_t c) override;
-    size_t write(const uint8_t *buffer, size_t size) override;
-
-    // lock a port for exclusive use. Use a key of 0 to unlock
-    bool lock_port(uint32_t write_key, uint32_t read_key) override;
-
     // control optional features
     bool set_options(uint16_t options) override;
     uint16_t get_options(void) const override;
-
-    // write to a locked port. If port is locked and key is not correct then 0 is returned
-    // and write is discarded
-    size_t write_locked(const uint8_t *buffer, size_t size, uint32_t key) override;
 
     struct SerialDef {
         BaseSequentialStream* serial;
@@ -181,10 +157,6 @@ private:
     // index into uart_drivers table
     uint8_t serial_num;
 
-    // key for a locked port
-    uint32_t lock_write_key;
-    uint32_t lock_read_key;
-
     uint32_t _baudrate;
 #if HAL_USE_SERIAL == TRUE
     SerialConfig sercfg;
@@ -215,7 +187,6 @@ private:
 #endif
     volatile bool _in_rx_timer;
     volatile bool _in_tx_timer;
-    bool _blocking_writes;
     volatile bool _rx_initialised;
     volatile bool _tx_initialised;
     volatile bool _device_initialised;
@@ -295,6 +266,15 @@ private:
     void uart_thread();
     static void uart_rx_thread(void* arg);
     static void uart_thread_trampoline(void* p);
+
+protected:
+    void _begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
+    void _end() override;
+    void _flush() override;
+    size_t _write(const uint8_t *buffer, size_t size) override;
+    ssize_t _read(uint8_t *buffer, uint16_t count) override;
+    uint32_t _available() override;
+    bool _discard_input() override;
 };
 
 // access to usb init for stdio.cpp
