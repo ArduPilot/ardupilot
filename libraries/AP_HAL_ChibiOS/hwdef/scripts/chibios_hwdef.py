@@ -3318,6 +3318,10 @@ INCLUDE common.ld
 #define AP_BARO_ENABLED defined(HAL_PERIPH_ENABLE_BARO)
 #define AP_GPS_ENABLED defined(HAL_PERIPH_ENABLE_GPS)
 
+#ifndef AP_BOOTLOADER_ALWAYS_ERASE
+#define AP_BOOTLOADER_ALWAYS_ERASE 1
+#endif
+
 // end AP_Periph defaults
 ''')
 
