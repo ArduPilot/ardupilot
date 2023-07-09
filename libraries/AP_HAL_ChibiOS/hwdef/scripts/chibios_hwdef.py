@@ -3322,6 +3322,14 @@ INCLUDE common.ld
 #define AP_BOOTLOADER_ALWAYS_ERASE 1
 #endif
 
+#ifndef GPS_MOVING_BASELINE
+#define GPS_MOVING_BASELINE 0
+#endif
+
+#ifndef AP_UART_MONITOR_ENABLED
+#define AP_UART_MONITOR_ENABLED AP_GPS_ENABLED && (GPS_MOVING_BASELINE || BOARD_FLASH_SIZE>=256)
+#endif
+
 // end AP_Periph defaults
 ''')
 
