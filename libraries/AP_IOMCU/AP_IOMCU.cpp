@@ -279,8 +279,8 @@ void AP_IOMCU::thread_main(void)
         }
 
         if (mask & EVENT_MASK(IOEVENT_DSHOT)) {
-            if (!write_registers(PAGE_DSHOT, 0, sizeof(dshot)/sizeof(uint16_t), (const uint16_t*)&dshot)) {
-                memset(&dshot, 0, sizeof(dshot));
+            page_dshot dshot;
+            if (!dshot_command_queue.pop(dshot) || !write_registers(PAGE_DSHOT, 0, sizeof(dshot)/sizeof(uint16_t), (const uint16_t*)&dshot)) {
                 event_failed(mask);
                 continue;
             }
@@ -842,17 +842,23 @@ void AP_IOMCU::set_dshot_period(uint16_t period_us, uint8_t drate)
 // set output mode
 void AP_IOMCU::set_telem_request_mask(uint32_t mask)
 {
-    dshot.telem_mask = mask;
+    page_dshot dshot {
+        .telem_mask = uint16_t(mask)
+    };
+    dshot_command_queue.push(dshot);
     trigger_event(IOEVENT_DSHOT);
 }
 
 void AP_IOMCU::send_dshot_command(uint8_t command, uint8_t chan, uint32_t command_timeout_ms, uint16_t repeat_count, bool priority)
 {
-    dshot.command = command;
-    dshot.chan = chan;
-    dshot.command_timeout_ms = command_timeout_ms;
-    dshot.repeat_count = repeat_count;
-    dshot.priority = priority;
+    page_dshot dshot {
+        .command = command,
+        .chan = chan,
+        .command_timeout_ms = command_timeout_ms,
+        .repeat_count = uint8_t(repeat_count),
+        .priority = priority
+    };
+    dshot_command_queue.push(dshot);
     trigger_event(IOEVENT_DSHOT);
 }
 #endif
