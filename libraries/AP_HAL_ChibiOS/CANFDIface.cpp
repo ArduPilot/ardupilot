@@ -721,7 +721,9 @@ bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate, const Oper
 #endif
     can_->ILE = 0x3;
 
+#if HAL_CANFD_SUPPORTED
     can_->CCCR |= FDCAN_CCCR_FDOE | FDCAN_CCCR_BRSE; // enable sending CAN FD frames, and Bitrate switching
+#endif
 
     // If mode is Filtered then we finish the initialisation in configureFilter method
     // otherwise we finish here
