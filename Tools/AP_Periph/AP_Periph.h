@@ -25,7 +25,11 @@
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_HAL/CANIface.h>
 #include <AP_Stats/AP_Stats.h>
-
+#include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_ESC_Telem/AP_ESC_Telem_config.h>
+#if HAL_WITH_ESC_TELEM
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
+#endif
 
 #include <AP_NMEA_Output/AP_NMEA_Output.h>
 #if HAL_NMEA_OUTPUT_ENABLED && !(HAL_GCS_ENABLED && defined(HAL_PERIPH_ENABLE_GPS))
@@ -36,6 +40,8 @@
 #if HAL_GCS_ENABLED
 #include "GCS_MAVLink.h"
 #endif
+
+#include "esc_apd_telem.h"
 
 #if defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NCP5623_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NCP5623_BGR_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_TOSHIBA_LED_WITHOUT_NOTIFY)
 #define AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
@@ -203,7 +209,7 @@ public:
     uint32_t last_sample_ms;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_PRX
+#if HAL_PROXIMITY_ENABLED
     AP_Proximity proximity;
 #endif
 
@@ -232,6 +238,11 @@ public:
 
 #if AP_KDECAN_ENABLED
     AP_KDECAN kdecan;
+#endif
+    
+#ifdef HAL_PERIPH_ENABLE_ESC_APD
+    ESC_APD_Telem *apd_esc_telem[APD_ESC_INSTANCES];
+    void apd_esc_telem_update();
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
@@ -307,16 +318,28 @@ public:
 
     static AP_Periph_FW *_singleton;
 
-    enum {
-        DEBUG_SHOW_STACK,
-        DEBUG_AUTOREBOOT
+    enum class DebugOptions {
+        SHOW_STACK = 0,
+        AUTOREBOOT = 1,
+        ENABLE_STATS = 2,
     };
 
+    // check if an option is set
+    bool debug_option_is_set(const DebugOptions option) const {
+        return (uint8_t(g.debug.get()) & (1U<<uint8_t(option))) != 0;
+    }
+    
     // show stack as DEBUG msgs
     void show_stack_free();
 
     static bool no_iface_finished_dna;
     static constexpr auto can_printf = ::can_printf;
+
+    static bool canard_broadcast(uint64_t data_type_signature,
+                                 uint16_t data_type_id,
+                                 uint8_t priority,
+                                 const void* payload,
+                                 uint16_t payload_len);
 };
 
 namespace AP
@@ -325,5 +348,3 @@ namespace AP
 }
 
 extern AP_Periph_FW periph;
-
-

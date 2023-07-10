@@ -114,6 +114,10 @@ public:
         return uint32_t(state.ignore_safety_channels.get());
     }
 
+    uint32_t get_serial_number() const {
+        return (uint32_t)vehicleSerialNumber.get();
+    }
+
 #if HAL_HAVE_BOARD_VOLTAGE
     // get minimum board voltage
     static float get_minimum_board_voltage(void) {
@@ -142,6 +146,7 @@ public:
         UNLOCK_FLASH = (1<<4),
         WRITE_PROTECT_FLASH = (1<<5),
         WRITE_PROTECT_BOOTLOADER = (1<<6),
+        SKIP_BOARD_VALIDATION = (1<<7)
     };
 
     // return true if ftp is disabled

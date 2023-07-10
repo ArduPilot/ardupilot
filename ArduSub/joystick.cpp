@@ -359,6 +359,7 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
             controls_reset_since_input_hold = !input_hold_engaged;
         }
         break;
+#if AP_RELAY_ENABLED
     case JSButton::button_function_t::k_relay_1_on:
         relay.on(0);
         break;
@@ -423,10 +424,12 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
             relay.on(3);
         }
         break;
+#endif
 
     ////////////////////////////////////////////////
     // Servo functions
     // TODO: initialize
+#if AP_SERVORELAYEVENTS_ENABLED
     case JSButton::button_function_t::k_servo_1_inc:
     {
         SRV_Channel* chan = SRV_Channels::srv_channel(SERVO_CHAN_1 - 1); // 0-indexed
@@ -557,6 +560,7 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
         ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_trim()); // 1-indexed
     }
         break;
+#endif  // AP_SERVORELAYEVENTS_ENABLED
 
     case JSButton::button_function_t::k_roll_pitch_toggle:
         if (!held) {
@@ -595,6 +599,7 @@ void Sub::handle_jsbutton_release(uint8_t _button, bool shift) {
 
     // Act based on the function assigned to this button
     switch (get_button(_button)->function(shift)) {
+#if AP_RELAY_ENABLED
     case JSButton::button_function_t::k_relay_1_momentary:
         relay.off(0);
         break;
@@ -607,6 +612,8 @@ void Sub::handle_jsbutton_release(uint8_t _button, bool shift) {
     case JSButton::button_function_t::k_relay_4_momentary:
         relay.off(3);
         break;
+#endif
+#if AP_SERVORELAYEVENTS_ENABLED
     case JSButton::button_function_t::k_servo_1_min_momentary:
     case JSButton::button_function_t::k_servo_1_max_momentary:
     {
@@ -628,6 +635,7 @@ void Sub::handle_jsbutton_release(uint8_t _button, bool shift) {
         ServoRelayEvents.do_set_servo(SERVO_CHAN_3, chan->get_trim()); // 1-indexed
     }
         break;
+#endif
     }
 }
 

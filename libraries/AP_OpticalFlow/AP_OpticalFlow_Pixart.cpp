@@ -20,9 +20,11 @@
   timing for register reads and writes is critical
  */
 
-#include "AP_OpticalFlow_Pixart.h"
+#include "AP_OpticalFlow_config.h"
 
 #if AP_OPTICALFLOW_PIXART_ENABLED
+
+#include "AP_OpticalFlow_Pixart.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/crc.h>

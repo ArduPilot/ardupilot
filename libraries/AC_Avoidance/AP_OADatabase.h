@@ -74,18 +74,18 @@ private:
     bool is_close_to_item_in_database(const uint16_t index, const OA_DbItem &item) const;
 
     // enum for use with _OUTPUT parameter
-    enum class OA_DbOutputLevel {
-        OUTPUT_LEVEL_DISABLED = 0,
-        OUTPUT_LEVEL_SEND_HIGH = 1,
-        OUTPUT_LEVEL_SEND_HIGH_AND_NORMAL = 2,
-        OUTPUT_LEVEL_SEND_ALL = 3
+    enum class OutputLevel {
+        NONE = 0,
+        HIGH = 1,
+        HIGH_AND_NORMAL = 2,
+        ALL = 3
     };
 
     // parameters
     AP_Int16        _queue_size_param;                      // queue size
     AP_Int16        _database_size_param;                   // db size
     AP_Int8         _database_expiry_seconds;               // objects expire after this timeout
-    AP_Int8         _output_level;                          // controls which items should be sent to GCS
+    AP_Enum<OutputLevel> _output_level;                     // controls which items should be sent to GCS
     AP_Float        _beam_width;                            // beam width used when converting lidar readings to object radius
     AP_Float        _radius_min;                            // objects minimum radius (in meters)
     AP_Float        _dist_max;                              // objects maximum distance (in meters)

@@ -79,6 +79,9 @@ public:
     // returns true if the vehicle can be armed in this mode
     bool pre_arm_checks(size_t buflen, char *buffer) const;
 
+    // Reset rate and steering controllers
+    void reset_controllers();
+
     //
     // methods that sub classes should override to affect movement of the vehicle in this mode
     //
@@ -124,6 +127,13 @@ public:
 
     // handle a guided target request from GCS
     virtual bool handle_guided_request(Location target_loc) { return false; }
+
+    // true if is landing 
+    virtual bool is_landing() const { return false; }
+
+    // true if is taking 
+    virtual bool is_taking_off() const;
+
 
 protected:
 
@@ -206,6 +216,8 @@ public:
     
     bool mode_allows_autotuning() const override { return true; }
 
+    bool is_landing() const override;
+    
 protected:
 
     bool _enter() override;
@@ -355,6 +367,8 @@ public:
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
+
+    void run() override;
 };
 
 

@@ -16,7 +16,8 @@
 //
 //  Trimble GPS driver for ArduPilot.
 //	Code by Michael Oborne
-//
+//  https://receiverhelp.trimble.com/oem-gnss/index.html#Welcome.html?TocPath=_____1
+
 #pragma once
 
 #include "AP_GPS.h"
@@ -28,30 +29,30 @@ class AP_GPS_GSOF : public AP_GPS_Backend
 public:
     AP_GPS_GSOF(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
-    AP_GPS::GPS_Status highest_supported_status(void) override {
+    AP_GPS::GPS_Status highest_supported_status(void) override WARN_IF_UNUSED {
         return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
     }
 
     // Methods
-    bool read() override;
+    bool read() override WARN_IF_UNUSED;
 
     const char *name() const override { return "GSOF"; }
 
 private:
 
-    bool parse(uint8_t temp);
-    bool process_message();
-    void requestBaud(uint8_t portindex);
-    void requestGSOF(uint8_t messagetype, uint8_t portindex);
-    double SwapDouble(uint8_t* src, uint32_t pos);
-    float SwapFloat(uint8_t* src, uint32_t pos);
-    uint32_t SwapUint32(uint8_t* src, uint32_t pos);
-    uint16_t SwapUint16(uint8_t* src, uint32_t pos);
+    bool parse(const uint8_t temp) WARN_IF_UNUSED;
+    bool process_message() WARN_IF_UNUSED;
+    void requestBaud(const uint8_t portindex);
+    void requestGSOF(const uint8_t messagetype, const uint8_t portindex);
+    double SwapDouble(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
+    float SwapFloat(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
+    uint32_t SwapUint32(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
+    uint16_t SwapUint16(const uint8_t* src, const uint32_t pos) const WARN_IF_UNUSED;
 
-
-    struct gsof_msg_parser_t
+    struct Msg_Parser
     {
-        enum
+
+        enum class State
         {
             STARTTX = 0,
             STATUS,
@@ -60,9 +61,10 @@ private:
             DATA,
             CHECKSUM,
             ENDTX
-        } gsof_state;
+        };
 
-        uint8_t starttx;
+        State state;
+
         uint8_t status;
         uint8_t packettype;
         uint8_t length;
@@ -72,15 +74,14 @@ private:
 
         uint16_t read;
         uint8_t checksumcalc;
-    } gsof_msg;
+    } msg;
 
-    static const uint8_t GSOF_STX = 0x02;
-    static const uint8_t GSOF_ETX = 0x03;
+    static const uint8_t STX = 0x02;
+    static const uint8_t ETX = 0x03;
 
-    uint8_t packetcount = 0;
-
-    uint32_t gsofmsg_time = 0;
-    uint8_t gsofmsgreq_index = 0;
-    uint8_t gsofmsgreq[5] = {1,2,8,9,12};
+    uint8_t packetcount;
+    uint32_t gsofmsg_time;
+    uint8_t gsofmsgreq_index;
+    const uint8_t gsofmsgreq[5] = {1,2,8,9,12};
 };
 #endif

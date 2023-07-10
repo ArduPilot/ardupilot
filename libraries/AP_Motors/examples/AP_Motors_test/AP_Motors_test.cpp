@@ -17,6 +17,7 @@
 #include <AP_Motors/AP_Motors.h>
 #include <RC_Channel/RC_Channel.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <stdio.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
@@ -27,16 +28,23 @@ void loop();
 void motor_order_test();
 void stability_test();
 void update_motors();
+void print_all_motor_matrix();
 
 #define HELI_TEST       0   // set to 1 to test helicopters
 #define NUM_OUTPUTS     4   // set to 6 for hexacopter, 8 for octacopter and heli
+
+#if HAL_WITH_ESC_TELEM
+AP_ESC_Telem esc_telem;
+#endif
+
+#define VERSION "AP_Motors library test ver 1.1"
 
 SRV_Channels srvs;
 
 // uncomment the row below depending upon what frame you are using
 //AP_MotorsTri  motors(400);
 AP_MotorsMatrix   motors(400);
-//AP_MotorsHeli_Single motors(rc7, rsc, h1, h2, h3, h4, 400);
+//AP_MotorsHeli_Single motors(400);
 //AP_MotorsSingle motors(400);
 //AP_MotorsCoax motors(400);
 
@@ -47,12 +55,14 @@ bool thrust_boost = false;
 // setup
 void setup()
 {
-    hal.console->printf("AP_Motors library test ver 1.0\n");
 
     // motor initialisation
     motors.set_dt(1.0/400.0);
     motors.set_update_rate(490);
 
+#if HELI_TEST
+    motors.init(AP_Motors::MOTOR_FRAME_HELI, AP_Motors::MOTOR_FRAME_TYPE_PLUS);
+#else
 #if NUM_OUTPUTS == 8
     motors.init(AP_Motors::MOTOR_FRAME_OCTA, AP_Motors::MOTOR_FRAME_TYPE_X);
 #elif NUM_OUTPUTS == 6
@@ -60,10 +70,7 @@ void setup()
 #else
     motors.init(AP_Motors::MOTOR_FRAME_QUAD, AP_Motors::MOTOR_FRAME_TYPE_X);
 #endif
-
-    char frame_and_type_string[30];
-    motors.get_frame_and_type_string(frame_and_type_string, ARRAY_SIZE(frame_and_type_string));
-    hal.console->printf("%s\n", frame_and_type_string);
+#endif // HELI_TEST == 0
 
 #if HELI_TEST == 0
     motors.update_throttle_range();
@@ -76,6 +83,7 @@ void setup()
     char * const *argv;
     hal.util->commandline_arguments(argc, argv);
     if (argc > 1) {
+#if HELI_TEST == 0
         for (uint8_t i = 2; i < argc; i++) {
             const char* arg = argv[i];
 
@@ -102,14 +110,19 @@ void setup()
             }
 
         }
+#endif
         if (strcmp(argv[1],"t") == 0) {
             motor_order_test();
 
         } else if (strcmp(argv[1],"s") == 0) {
             stability_test();
 
+#if HELI_TEST == 0
+        } else if (strcmp(argv[1],"p") == 0) {
+            print_all_motor_matrix();
+#endif
         } else {
-            ::printf("Expected first argument, 't' or 's'\n");
+            ::printf("Expected first argument: 't', 's' or 'p'\n");
 
         }
         hal.scheduler->delay(1000);
@@ -146,6 +159,83 @@ void loop()
     }
 }
 
+// print motor layout for all frame types in json format
+void print_all_motor_matrix()
+{
+    hal.console->printf("{\n");
+    hal.console->printf("\t\"Version\": \"%s\",\n", VERSION);
+    hal.console->printf("\t\"layouts\": [\n");
+
+    bool first_layout = true;
+    char frame_and_type_string[30];
+
+    for (uint8_t frame_class=0; frame_class <= AP_Motors::MOTOR_FRAME_DECA; frame_class++) {
+        for (uint8_t frame_type=0; frame_type < AP_Motors::MOTOR_FRAME_TYPE_Y4; frame_type++) {
+            if (frame_type == AP_Motors::MOTOR_FRAME_TYPE_VTAIL ||
+                frame_type == AP_Motors::MOTOR_FRAME_TYPE_ATAIL) {
+                // Skip the none planar motors types
+                continue;
+            }
+            motors.init((AP_Motors::motor_frame_class)frame_class, (AP_Motors::motor_frame_type)frame_type);
+            if (motors.initialised_ok()) {
+                if (!first_layout) {
+                    hal.console->printf(",\n");
+                }
+                first_layout = false;
+
+                // Grab full frame string and strip "Frame: " and split
+                // This is the long way round, motors does have direct getters, but there protected
+                motors.get_frame_and_type_string(frame_and_type_string, ARRAY_SIZE(frame_and_type_string));
+                char *frame_string = strchr(frame_and_type_string, ':');
+                char *type_string = strchr(frame_and_type_string, '/');
+                if (type_string != nullptr) {
+                    *type_string = 0;
+                }
+
+                hal.console->printf("\t\t{\n");
+                hal.console->printf("\t\t\t\"Class\": %i,\n", frame_class);
+                hal.console->printf("\t\t\t\"ClassName\": \"%s\",\n", frame_string+2);
+                hal.console->printf("\t\t\t\"Type\": %i,\n", frame_type);
+                hal.console->printf("\t\t\t\"TypeName\": \"%s\",\n", (type_string != nullptr) ? type_string + 1 : "?");
+                hal.console->printf("\t\t\t\"motors\": [\n");
+                bool first_motor = true;
+                for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
+                    float roll, pitch, yaw, throttle;
+                    uint8_t testing_order;
+                    if (motors.get_factors(i, roll, pitch, yaw, throttle, testing_order)) {
+                        if (!first_motor) {
+                            hal.console->printf(",\n");
+                        }
+                        first_motor = false;
+                        hal.console->printf("\t\t\t\t{\n");
+                        hal.console->printf("\t\t\t\t\t\"Number\": %i,\n", i+1);
+                        hal.console->printf("\t\t\t\t\t\"TestOrder\": %i,\n", testing_order);
+                        hal.console->printf("\t\t\t\t\t\"Rotation\": ");
+                        if (is_positive(yaw)) {
+                            hal.console->printf("\"CCW\",\n");
+                        } else if (is_negative(yaw)) {
+                            hal.console->printf("\"CW\",\n");
+                        } else {
+                            hal.console->printf("\"?\",\n");
+                        }
+                        hal.console->printf("\t\t\t\t\t\"Roll\": %0.4f,\n", roll);
+                        hal.console->printf("\t\t\t\t\t\"Pitch\": %0.4f\n", pitch);
+                        hal.console->printf("\t\t\t\t}");
+                    }
+                }
+                hal.console->printf("\n");
+                hal.console->printf("\t\t\t]\n");
+                hal.console->printf("\t\t}");
+
+            }
+        }
+    }
+
+    hal.console->printf("\n");
+    hal.console->printf("\t]\n");
+    hal.console->printf("}\n");
+}
+
 // stability_test
 void motor_order_test()
 {
@@ -165,9 +255,15 @@ void motor_order_test()
 // stability_test
 void stability_test()
 {
+    hal.console->printf("%s\n", VERSION);
+    char frame_and_type_string[30];
+    motors.get_frame_and_type_string(frame_and_type_string, ARRAY_SIZE(frame_and_type_string));
+    hal.console->printf("%s\n", frame_and_type_string);
+#if HELI_TEST == 0
     hal.console->printf("Throttle average max: %0.4f\n",  motors.get_throttle_avg_max());
     hal.console->printf("Yaw headroom: %i\n", motors.get_yaw_headroom());
     hal.console->printf("Thrust boost: %s\n", thrust_boost?"True":"False");
+#endif
 
     const float throttle_tests[] = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
     const uint8_t throttle_tests_num = ARRAY_SIZE(throttle_tests);
@@ -183,9 +279,11 @@ void stability_test()
     for (uint8_t i=0; i<NUM_OUTPUTS; i++) {
         hal.console->printf("Mot%i,",i+1);
     }
+#if HELI_TEST == 0
     for (uint8_t i=0; i<NUM_OUTPUTS; i++) {
         hal.console->printf("Mot%i_norm,",i+1);
     }
+#endif
     hal.console->printf("LimR,LimP,LimY,LimThD,LimThU\n");
 
     // run stability test
@@ -203,14 +301,17 @@ void stability_test()
                     motors.set_throttle(throttle_in);
                     motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
                     update_motors();
+                    SRV_Channels::calc_pwm();
                     // display input and output
                     hal.console->printf("%0.2f,%0.2f,%0.2f,%0.2f,", roll_in, pitch_in, yaw_in, throttle_in);
                     for (uint8_t i=0; i<NUM_OUTPUTS; i++) {
                         hal.console->printf("%d,",(int)hal.rcout->read(i));
                     }
+#if HELI_TEST == 0
                     for (uint8_t i=0; i<NUM_OUTPUTS; i++) {
                         hal.console->printf("%0.4f,", motors.get_thrust_rpyt_out(i));
                     }
+#endif
                     hal.console->printf("%d,%d,%d,%d,%d\n",
                             (int)motors.limit.roll,
                             (int)motors.limit.pitch,

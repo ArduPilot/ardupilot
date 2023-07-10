@@ -28,8 +28,9 @@ from launch.substitutions import PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 
 
-def generate_launch_description():
+def generate_launch_description() -> LaunchDescription:
     """Generate a launch description for combined SITL and MAVProxy."""
+    # Compose launch files.
     sitl = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             [

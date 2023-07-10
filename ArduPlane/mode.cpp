@@ -212,3 +212,21 @@ void Mode::run()
     plane.stabilize_pitch();
     plane.stabilize_yaw();
 }
+
+// Reset rate and steering controllers
+void Mode::reset_controllers()
+{
+    // reset integrators
+    plane.rollController.reset_I();
+    plane.pitchController.reset_I();
+    plane.yawController.reset_I();
+
+    // reset steering controls
+    plane.steer_state.locked_course = false;
+    plane.steer_state.locked_course_err = 0;
+}
+
+bool Mode::is_taking_off() const
+{
+    return (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF);
+}

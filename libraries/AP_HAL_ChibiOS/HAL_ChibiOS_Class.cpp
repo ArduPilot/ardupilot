@@ -38,8 +38,10 @@
 
 #include <hwdef.h>
 
-#ifndef HAL_SERIAL0_BAUD_DEFAULT
-#define HAL_SERIAL0_BAUD_DEFAULT 115200
+#ifndef DEFAULT_SERIAL0_BAUD
+#define SERIAL0_BAUD 115200
+#else
+#define SERIAL0_BAUD DEFAULT_SERIAL0_BAUD
 #endif
 
 #ifndef HAL_NO_UARTDRIVER
@@ -223,7 +225,7 @@ static void main_loop()
 
     peripheral_power_enable();
 
-    hal.serial(0)->begin(HAL_SERIAL0_BAUD_DEFAULT);
+    hal.serial(0)->begin(SERIAL0_BAUD);
 
 #ifdef HAL_SPI_CHECK_CLOCK_FREQ
     // optional test of SPI clock frequencies
@@ -265,7 +267,7 @@ static void main_loop()
 #if !defined(DISABLE_WATCHDOG)
 #ifdef IOMCU_FW
     stm32_watchdog_init();
-#else
+#elif !defined(HAL_BOOTLOADER_BUILD)
     // setup watchdog to reset if main loop stops
     if (AP_BoardConfig::watchdog_enabled()) {
         stm32_watchdog_init();

@@ -12,10 +12,6 @@
 #include <AP_Logger/LogStructure.h>
 #include <AP_Vehicle/ModeReason.h>
 
-#if HAL_LOGGER_FENCE_ENABLED
-    #include <AC_Fence/AC_Fence.h>
-#endif
-
 #include <stdint.h>
 
 #include "LoggerMessageWriter.h"
@@ -255,7 +251,8 @@ public:
     void Write_Radio(const mavlink_radio_t &packet);
     void Write_Message(const char *message);
     void Write_MessageF(const char *fmt, ...);
-    void Write_ServoStatus(uint64_t time_us, uint8_t id, float position, float force, float speed, uint8_t power_pct);
+    void Write_ServoStatus(uint64_t time_us, uint8_t id, float position, float force, float speed, uint8_t power_pct,
+                           float pos_cmd, float voltage, float current, float mot_temp, float pcb_temp, uint8_t error);
     void Write_Compass();
     void Write_Mode(uint8_t mode, const ModeReason reason);
 

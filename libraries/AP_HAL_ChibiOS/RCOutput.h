@@ -222,7 +222,7 @@ public:
       Send a dshot command, if command timout is 0 then 10 commands are sent
       chan is the servo channel to send the command to
      */
-    void send_dshot_command(uint8_t command, uint8_t chan, uint32_t command_timeout_ms = 0, uint16_t repeat_count = 10, bool priority = false) override;
+    void send_dshot_command(uint8_t command, uint8_t chan = ALL_CHANNELS, uint32_t command_timeout_ms = 0, uint16_t repeat_count = 10, bool priority = false) override;
 
     /*
      * Update channel masks at 1Hz allowing for actions such as dshot commands to be sent
@@ -644,6 +644,7 @@ private:
     void bdshot_ic_dma_allocate(Shared_DMA *ctx);
     void bdshot_ic_dma_deallocate(Shared_DMA *ctx);
     static uint32_t bdshot_decode_telemetry_packet(uint32_t* buffer, uint32_t count);
+    bool bdshot_decode_telemetry_from_erpm(uint16_t erpm, uint8_t chan);
     bool bdshot_decode_dshot_telemetry(pwm_group& group, uint8_t chan);
     static uint8_t bdshot_find_next_ic_channel(const pwm_group& group);
     static void bdshot_dma_ic_irq_callback(void *p, uint32_t flags);

@@ -4,9 +4,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_OS_POSIX_IO
 #include <stdio.h>
-#endif
 
 void setup();
 void loop();
@@ -61,9 +59,7 @@ void loop(void)
 
     // also do a raw printf() on some platforms, which prints to the
     // debug console
-#if HAL_OS_POSIX_IO
     ::printf("Hello on debug console at %.3f seconds\n", (double)(AP_HAL::millis() * 0.001f));
-#endif
 
     hal.scheduler->delay(1000);
 }

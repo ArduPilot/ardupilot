@@ -479,16 +479,6 @@ MAV_RESULT GCS_MAVLINK_Blimp::handle_command_int_packet(const mavlink_command_in
     }
 }
 
-MAV_RESULT GCS_MAVLINK_Blimp::handle_command_mount(const mavlink_command_long_t &packet)
-{
-    // if the mount doesn't do pan control then yaw the entire vehicle instead:
-    switch (packet.command) {
-    default:
-        break;
-    }
-    return GCS_MAVLINK::handle_command_mount(packet);
-}
-
 MAV_RESULT GCS_MAVLINK_Blimp::handle_command_long_packet(const mavlink_command_long_t &packet)
 {
     switch (packet.command) {

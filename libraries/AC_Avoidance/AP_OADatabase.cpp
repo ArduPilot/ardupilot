@@ -68,7 +68,7 @@ const AP_Param::GroupInfo AP_OADatabase::var_info[] = {
     // @Description: OADatabase output level to configure which database objects are sent to the ground station. All data is always available internally for avoidance algorithms.
     // @Values: 0:Disabled,1:Send only HIGH importance items,2:Send HIGH and NORMAL importance items,3:Send all items
     // @User: Advanced
-    AP_GROUPINFO("OUTPUT", 4, AP_OADatabase, _output_level, (float)OA_DbOutputLevel::OUTPUT_LEVEL_SEND_HIGH),
+    AP_GROUPINFO("OUTPUT", 4, AP_OADatabase, _output_level, (float)OutputLevel::HIGH),
 
     // @Param: BEAM_WIDTH
     // @DisplayName: OADatabase beam width
@@ -97,7 +97,7 @@ const AP_Param::GroupInfo AP_OADatabase::var_info[] = {
 
     // @Param{Copter}: ALT_MIN
     // @DisplayName: OADatabase minimum altitude above home before storing obstacles
-    // @Description: OADatabase will reject obstacle's if vehicle's altitude above home is below this parameter, in a 3 meter radius around home. Set 0 to disable this feature.
+    // @Description: OADatabase will reject obstacles if vehicle's altitude above home is below this parameter, in a 3 meter radius around home. Set 0 to disable this feature.
     // @Units: m
     // @Range: 0 4
     // @User: Advanced
@@ -210,19 +210,19 @@ uint8_t AP_OADatabase::get_send_to_gcs_flags(const OA_DbItemImportance importanc
 {
     switch (importance) {
     case OA_DbItemImportance::Low:
-        if (_output_level.get() >= (int8_t)OA_DbOutputLevel::OUTPUT_LEVEL_SEND_ALL) {
+        if (_output_level >= OutputLevel::ALL) {
             return 0xFF;
         }
         break;
 
     case OA_DbItemImportance::Normal:
-        if (_output_level.get() >= (int8_t)OA_DbOutputLevel::OUTPUT_LEVEL_SEND_HIGH_AND_NORMAL) {
+        if (_output_level >= OutputLevel::HIGH_AND_NORMAL) {
             return 0xFF;
         }
         break;
 
     case OA_DbItemImportance::High:
-        if (_output_level.get() >= (int8_t)OA_DbOutputLevel::OUTPUT_LEVEL_SEND_HIGH) {
+        if (_output_level >= OutputLevel::HIGH) {
             return 0xFF;
         }
         break;
@@ -372,7 +372,7 @@ void AP_OADatabase::send_adsb_vehicle(mavlink_channel_t chan, uint16_t interval_
     static_assert(MAVLINK_COMM_NUM_BUFFERS <= sizeof(OA_DbItem::send_to_gcs) * 8,
                   "AP_OADatabase's OA_DBItem.send_to_gcs bitmask must be large enough to hold MAVLINK_COMM_NUM_BUFFERS");
 
-    if ((_output_level.get() <= (int8_t)OA_DbOutputLevel::OUTPUT_LEVEL_DISABLED) || !healthy()) {
+    if ((_output_level <= OutputLevel::NONE) || !healthy()) {
         return;
     }
 

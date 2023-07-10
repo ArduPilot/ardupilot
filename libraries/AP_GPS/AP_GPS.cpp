@@ -763,7 +763,14 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
             dstate->current_baud = 0;
         }
         uint32_t baudrate = _baudrates[dstate->current_baud];
-        _port[instance]->begin(baudrate);
+        uint16_t rx_size=0, tx_size=0;
+        if (_type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) {
+            tx_size = 2048;
+        }
+        if (_type[instance] == GPS_TYPE_UBLOX_RTK_BASE) {
+            rx_size = 2048;
+        }
+        _port[instance]->begin(baudrate, rx_size, tx_size);
         _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
         dstate->last_baud_change_ms = now;
 
@@ -1584,6 +1591,7 @@ void AP_GPS::handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_
         // we have one or more partial fragments already received
         // which conflict with the new fragment, discard previous fragments
         rtcm_buffer->fragment_count = 0;
+        rtcm_stats.fragments_discarded += rtcm_buffer->fragments_received;
         rtcm_buffer->fragments_received = 0;
     }
 
@@ -1612,6 +1620,7 @@ void AP_GPS::handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_
     if (rtcm_buffer->fragment_count != 0 &&
         rtcm_buffer->fragments_received == (1U << rtcm_buffer->fragment_count) - 1) {
         // we have them all, inject
+        rtcm_stats.fragments_used += rtcm_buffer->fragments_received;
         inject_data(rtcm_buffer->buffer, rtcm_buffer->total_length);
         rtcm_buffer->fragment_count = 0;
         rtcm_buffer->fragments_received = 0;
@@ -2114,14 +2123,17 @@ bool AP_GPS::is_healthy(uint8_t instance) const
     bool delay_ok = (t.delayed_count < delay_threshold) &&
         t.average_delta_ms < delay_avg_max &&
         state[instance].lagged_sample_count < 5;
+    if (!delay_ok) {
+        return false;
+    }
 
 #if defined(GPS_BLENDED_INSTANCE)
     if (instance == GPS_BLENDED_INSTANCE) {
-        return delay_ok && blend_health_check();
+        return blend_health_check();
     }
 #endif
 
-    return delay_ok && drivers[instance] != nullptr &&
+    return drivers[instance] != nullptr &&
            drivers[instance]->is_healthy();
 #endif // HAL_BUILD_AP_PERIPH
 }
@@ -2252,6 +2264,8 @@ void AP_GPS::Write_GPS(uint8_t i)
         sample_ms     : last_message_time_ms(i),
         delta_ms      : last_message_delta_time_ms(i),
         undulation    : undulation,
+        rtcm_fragments_used: rtcm_stats.fragments_used,
+        rtcm_fragments_discarded: rtcm_stats.fragments_discarded
     };
     AP::logger().WriteBlock(&pkt2, sizeof(pkt2));
 }

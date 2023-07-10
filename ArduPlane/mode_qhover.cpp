@@ -24,6 +24,13 @@ void ModeQHover::update()
  */
 void ModeQHover::run()
 {
+    const uint32_t now = AP_HAL::millis();
+    if (quadplane.tailsitter.in_vtol_transition(now)) {
+        // Tailsitters in FW pull up phase of VTOL transition run FW controllers
+        Mode::run();
+        return;
+    }
+
     if (quadplane.throttle_wait) {
         quadplane.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0, true, 0);
@@ -32,6 +39,10 @@ void ModeQHover::run()
     } else {
         quadplane.hold_hover(quadplane.get_pilot_desired_climb_rate_cms());
     }
+
+    // Stabilize with fixed wing surfaces
+    plane.stabilize_roll();
+    plane.stabilize_pitch();
 }
 
 #endif

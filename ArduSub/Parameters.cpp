@@ -409,9 +409,11 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(camera, "CAM", AP_Camera),
 #endif
 
+#if AP_RELAY_ENABLED
     // @Group: RELAY_
     // @Path: ../libraries/AP_Relay/AP_Relay.cpp
     GOBJECT(relay,                  "RELAY_", AP_Relay),
+#endif
 
     // @Group: COMPASS_
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp

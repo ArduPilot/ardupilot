@@ -86,6 +86,13 @@ void ModeQRTL::update()
  */
 void ModeQRTL::run()
 {
+    const uint32_t now = AP_HAL::millis();
+    if (quadplane.tailsitter.in_vtol_transition(now)) {
+        // Tailsitters in FW pull up phase of VTOL transition run FW controllers
+        Mode::run();
+        return;
+    }
+
     switch (submode) {
         case SubMode::climb: {
             // request zero velocity
@@ -165,6 +172,10 @@ void ModeQRTL::run()
             break;
         }
     }
+
+    // Stabilize with fixed wing surfaces
+    plane.stabilize_roll();
+    plane.stabilize_pitch();
 }
 
 /*

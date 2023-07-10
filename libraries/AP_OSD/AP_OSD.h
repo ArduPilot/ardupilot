@@ -28,6 +28,7 @@
 #include <AP_OLC/AP_OLC.h>
 #include <AP_MSP/msp.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_RPM/AP_RPM_config.h>
 #if HAL_GCS_ENABLED
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #endif
@@ -87,7 +88,7 @@ public:
 
 protected:
     bool check_option(uint32_t option);
-#ifdef HAL_WITH_MSP_DISPLAYPORT
+#if HAL_WITH_MSP_DISPLAYPORT
     virtual uint8_t get_txt_resolution() const {
         return 0;
     }
@@ -134,7 +135,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Param::GroupInfo var_info2[];
 
-#ifdef HAL_WITH_MSP_DISPLAYPORT
+#if HAL_WITH_MSP_DISPLAYPORT
     uint8_t get_txt_resolution() const override {
         return txt_resolution;
     }
@@ -185,6 +186,9 @@ private:
     AP_OSD_Setting aspd1;
     AP_OSD_Setting aspd2;
     AP_OSD_Setting vspeed{true, 24, 9};
+#if AP_RPM_ENABLED
+    AP_OSD_Setting rrpm{false, 2, 2};
+#endif
 #if HAL_WITH_ESC_TELEM
     AP_OSD_Setting esc_temp {false, 24, 13};
     AP_OSD_Setting esc_rpm{false, 22, 12};
@@ -230,7 +234,7 @@ private:
     AP_OSD_Setting batt_bar{true, 1, 1};
     AP_OSD_Setting arming{true, 1, 1};
 
-#ifdef HAL_WITH_MSP_DISPLAYPORT
+#if HAL_WITH_MSP_DISPLAYPORT
     // Per screen HD resolution options (currently supported only by DisplayPort)
     AP_Int8 txt_resolution;
     AP_Int8 font_index;
@@ -256,6 +260,9 @@ private:
     void draw_home(uint8_t x, uint8_t y);
     void draw_throttle(uint8_t x, uint8_t y);
     void draw_heading(uint8_t x, uint8_t y);
+#if AP_RPM_ENABLED
+    void draw_rrpm(uint8_t x, uint8_t y);
+#endif
 #ifdef HAL_OSD_SIDEBAR_ENABLE
     void draw_sidebars(uint8_t x, uint8_t y);
 #endif

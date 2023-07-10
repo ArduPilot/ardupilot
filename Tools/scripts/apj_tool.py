@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 tool to manipulate ArduPilot firmware files, changing default parameters
 '''

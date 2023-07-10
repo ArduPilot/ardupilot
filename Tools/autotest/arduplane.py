@@ -20,6 +20,7 @@ from common import AutoTestTimeoutException
 from common import NotAchievedException
 from common import PreconditionFailedException
 from common import WaitModeTimeout
+from common import OldpymavlinkException
 from pymavlink.rotmat import Vector3
 from pysim import vehicleinfo
 
@@ -577,6 +578,95 @@ class AutoTestPlane(AutoTest):
         )
         self.wait_altitude(new_alt-10, new_alt, timeout=30, relative=True)
 
+        self.fly_home_land_and_disarm()
+
+    def ExternalPositionEstimate(self):
+        '''Test mavlink EXTERNAL_POSITION_ESTIMATE command'''
+        if not hasattr(mavutil.mavlink, 'MAV_CMD_EXTERNAL_POSITION_ESTIMATE'):
+            raise OldpymavlinkException("pymavlink too old; upgrade pymavlink to get MAV_CMD_EXTERNAL_POSITION_ESTIMATE")  # noqa
+        self.change_mode("TAKEOFF")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_altitude(48, 52, relative=True)
+
+        loc = self.mav.location()
+        self.location_offset_ne(loc, 2000, 2000)
+
+        # setting external position fail while we have GPS lock
+        self.progress("set new position with GPS")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_EXTERNAL_POSITION_ESTIMATE,
+            self.get_sim_time()-1, # transmit time
+            0.5, # processing delay
+            50, # accuracy
+            0,
+            int(loc.lat * 1e7),
+            int(loc.lng * 1e7),
+            float("NaN"),    # alt
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+
+        self.progress("disable the GPS")
+        self.run_auxfunc(
+            65,
+            2,
+            want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED
+        )
+
+        # fly for a bit to get into non-aiding state
+        self.progress("waiting 20 seconds")
+        tstart = self.get_sim_time()
+        while self.get_sim_time() < tstart + 20:
+            self.wait_heartbeat()
+
+        self.progress("getting base position")
+        gpi = self.mav.recv_match(
+            type='GLOBAL_POSITION_INT',
+            blocking=True,
+            timeout=5
+        )
+        loc = mavutil.location(gpi.lat*1e-7, gpi.lon*1e-7, 0, 0)
+
+        self.progress("set new position with no GPS")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_EXTERNAL_POSITION_ESTIMATE,
+            self.get_sim_time()-1, # transmit time
+            0.5, # processing delay
+            50, # accuracy
+            0,
+            gpi.lat+1,
+            gpi.lon+1,
+            float("NaN"),    # alt
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
+            want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED
+        )
+
+        self.progress("waiting 3 seconds")
+        tstart = self.get_sim_time()
+        while self.get_sim_time() < tstart + 3:
+            self.wait_heartbeat()
+
+        gpi2 = self.mav.recv_match(
+            type='GLOBAL_POSITION_INT',
+            blocking=True,
+            timeout=5
+        )
+        loc2 = mavutil.location(gpi2.lat*1e-7, gpi2.lon*1e-7, 0, 0)
+        dist = self.get_distance(loc, loc2)
+
+        self.progress("dist is %.1f" % dist)
+        if dist > 200:
+            raise NotAchievedException("Position error dist=%.1f" % dist)
+
+        self.progress("re-enable the GPS")
+        self.run_auxfunc(
+            65,
+            0,
+            want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED
+        )
+
+        self.progress("flying home")
         self.fly_home_land_and_disarm()
 
     def DeepStall(self):
@@ -1874,6 +1964,7 @@ class AutoTestPlane(AutoTest):
         self.fly_home_land_and_disarm()
 
     def deadreckoning_main(self, disable_airspeed_sensor=False):
+        self.reboot_sitl()
         self.wait_ready_to_arm()
         self.gpi = None
         self.simstate = None
@@ -4496,7 +4587,7 @@ class AutoTestPlane(AutoTest):
         self.start_subtest('0 airspeed sensors')
         self.set_parameter('ARSPD_TYPE', 0)
         self.reboot_sitl()
-        self.wait_statustext('No airspeed sensor present or enabled', check_context=True)
+        self.wait_statustext('No airspeed sensor', check_context=True)
         self.trigger_airspeed_cal()
         self.delay_sim_time(5)
         if self.statustext_in_collections('Airspeed 1 calibrated'):
@@ -4603,6 +4694,7 @@ class AutoTestPlane(AutoTest):
             self.SDCardWPTest,
             self.NoArmWithoutMissionItems,
             self.MODE_SWITCH_RESET,
+            self.ExternalPositionEstimate,
         ])
         return ret
 

@@ -346,7 +346,7 @@ void AC_AutoTune_Multi::load_test_gains()
         attitude_control->get_rate_yaw_pid().kI(tune_yaw_rp*0.01f);
         attitude_control->get_rate_yaw_pid().ff(0.0f);
         if (axis == YAW_D) {
-            attitude_control->get_rate_pitch_pid().kD(tune_yaw_rd);
+            attitude_control->get_rate_yaw_pid().kD(tune_yaw_rd);
         } else {
             attitude_control->get_rate_yaw_pid().filt_E_hz(tune_yaw_rLPF);
         }
@@ -1110,7 +1110,7 @@ void AC_AutoTune_Multi::twitch_test_init()
     }
     case YAW:
     case YAW_D: {
-        target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, step_scaler*AUTOTUNE_TARGET_RATE_YAW_CDS);
+        target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_YAW_CDS, step_scaler*AUTOTUNE_TARGET_RATE_YAW_CDS);
         target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_yaw()*0.75f)*100.0f, AUTOTUNE_TARGET_MIN_RATE_YAW_CDS, target_max_rate);
         target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_yaw()*0.75f)*100.0f, AUTOTUNE_TARGET_MIN_ANGLE_YAW_CD, AUTOTUNE_TARGET_ANGLE_YAW_CD);
         if (axis == YAW_D) {

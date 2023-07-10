@@ -42,7 +42,7 @@
 #endif
 
 #ifndef HAL_MSP_RANGEFINDER_ENABLED
-#define HAL_MSP_RANGEFINDER_ENABLED HAL_MSP_ENABLED && !HAL_MINIMIZE_FEATURES
+#define HAL_MSP_RANGEFINDER_ENABLED HAL_MSP_ENABLED
 #endif
 
 class AP_RangeFinder_Backend;
@@ -97,6 +97,7 @@ public:
         Benewake_CAN = 34,
         TeraRanger_Serial = 35,
         Lua_Scripting = 36,
+        NoopLoop_P = 37,
         SIM = 100,
     };
 

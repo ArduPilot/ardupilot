@@ -25,7 +25,7 @@
 #define GYRO_P_NSE_DEFAULT      1.5E-02f
 #define ACC_P_NSE_DEFAULT       3.5E-01f
 #define GBIAS_P_NSE_DEFAULT     1.0E-03f
-#define ABIAS_P_NSE_DEFAULT     3.0E-03f
+#define ABIAS_P_NSE_DEFAULT     2.0E-02f
 #define MAGB_P_NSE_DEFAULT      1.0E-04f
 #define MAGE_P_NSE_DEFAULT      1.0E-03f
 #define VEL_I_GATE_DEFAULT      500
@@ -51,7 +51,7 @@
 #define GYRO_P_NSE_DEFAULT      1.5E-02f
 #define ACC_P_NSE_DEFAULT       3.5E-01f
 #define GBIAS_P_NSE_DEFAULT     1.0E-03f
-#define ABIAS_P_NSE_DEFAULT     3.0E-03f
+#define ABIAS_P_NSE_DEFAULT     2.0E-02f
 #define MAGB_P_NSE_DEFAULT      1.0E-04f
 #define MAGE_P_NSE_DEFAULT      1.0E-03f
 #define VEL_I_GATE_DEFAULT      500
@@ -77,7 +77,7 @@
 #define GYRO_P_NSE_DEFAULT      1.5E-02f
 #define ACC_P_NSE_DEFAULT       3.5E-01f
 #define GBIAS_P_NSE_DEFAULT     1.0E-03f
-#define ABIAS_P_NSE_DEFAULT     3.0E-03f
+#define ABIAS_P_NSE_DEFAULT     2.0E-02f
 #define MAGB_P_NSE_DEFAULT      1.0E-04f
 #define MAGE_P_NSE_DEFAULT      1.0E-03f
 #define VEL_I_GATE_DEFAULT      500
@@ -103,7 +103,7 @@
 #define GYRO_P_NSE_DEFAULT      1.5E-02f
 #define ACC_P_NSE_DEFAULT       3.5E-01f
 #define GBIAS_P_NSE_DEFAULT     1.0E-03f
-#define ABIAS_P_NSE_DEFAULT     3.0E-03f
+#define ABIAS_P_NSE_DEFAULT     2.0E-02f
 #define MAGB_P_NSE_DEFAULT      1.0E-04f
 #define MAGE_P_NSE_DEFAULT      1.0E-03f
 #define VEL_I_GATE_DEFAULT      500
@@ -803,6 +803,7 @@ bool NavEKF3::InitialiseFilter(void)
         if (AP::dal().available_memory() < sizeof(NavEKF3_core)*num_cores + 4096) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF3 not enough memory");
             _enable.set(0);
+            num_cores = 0;
             return false;
         }
 
@@ -810,6 +811,7 @@ bool NavEKF3::InitialiseFilter(void)
         core = (NavEKF3_core*)AP::dal().malloc_type(sizeof(NavEKF3_core)*num_cores, AP::dal().MEM_FAST);
         if (core == nullptr) {
             _enable.set(0);
+            num_cores = 0;
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF3 allocation failed");
             return false;
         }
@@ -1405,6 +1407,26 @@ bool NavEKF3::setOriginLLH(const Location &loc)
     // return true if any core accepts the new origin
     return ret;
 }
+
+bool NavEKF3::setLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms)
+{
+#if EK3_FEATURE_POSITION_RESET
+    AP::dal().log_SetLatLng(loc, posAccuracy, timestamp_ms);
+
+    if (!core) {
+        return false;
+    }
+    bool ret = false;
+    for (uint8_t i=0; i<num_cores; i++) {
+        ret |= core[i].setLatLng(loc, posAccuracy, timestamp_ms);
+    }
+    // return true if any core accepts the new origin
+    return ret;
+#else
+    return false;
+#endif // EK3_FEATURE_POSITION_RESET
+}
+
 
 // return estimated height above ground level
 // return false if ground height is not being estimated.

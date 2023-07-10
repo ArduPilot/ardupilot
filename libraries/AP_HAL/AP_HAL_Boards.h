@@ -65,6 +65,8 @@
 #define HAL_BOARD_SUBTYPE_ESP32_BUZZ            6003
 #define HAL_BOARD_SUBTYPE_ESP32_EMPTY           6004
 #define HAL_BOARD_SUBTYPE_ESP32_TOMTE76         6005
+#define HAL_BOARD_SUBTYPE_ESP32_NICK            6006
+#define HAL_BOARD_SUBTYPE_ESP32_S3DEVKIT        6007
 
 /* InertialSensor driver types */
 #define HAL_INS_NONE         0
@@ -141,10 +143,6 @@
 
 #ifndef CONFIG_HAL_BOARD_SUBTYPE
 #error "No CONFIG_HAL_BOARD_SUBTYPE set"
-#endif
-
-#ifndef HAL_OS_POSIX_IO
-#define HAL_OS_POSIX_IO 0
 #endif
 
 #ifndef HAL_OS_SOCKETS
@@ -343,4 +341,8 @@
 // things:
 #if HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
 #error "2MB board with minimize features?!"
+#endif
+
+#ifndef HAL_ENABLE_SENDING_STATS
+#define HAL_ENABLE_SENDING_STATS BOARD_FLASH_SIZE >= 256
 #endif

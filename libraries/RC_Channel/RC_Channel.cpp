@@ -149,7 +149,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane}: 41:ArmDisarm (4.1 and lower)
     // @Values{Copter, Rover}: 42:SmartRTL
     // @Values{Copter, Plane}: 43:InvertedFlight
-    // @Values{Copter}: 44:Winch Enable
+    // @Values{Copter}: 44:Winch Enable, 45:Winch Control
     // @Values{Copter, Rover, Plane, Blimp}: 46:RC Override Enable
     // @Values{Copter}: 47:User Function 1, 48:User Function 2, 49:User Function 3
     // @Values{Rover}: 50:LearnCruise
@@ -237,6 +237,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane, Blimp}: 171:Calibrate Compasses
     // @Values{Copter, Rover, Plane, Blimp}: 172:Battery MPPT Enable
     // @Values{Plane}: 173:Plane AUTO Mode Landing Abort
+    // @Values{Copter, Rover, Plane, Blimp}: 174:Camera Image Tracking
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
     // @Values{Rover}: 207:MainSail
@@ -284,9 +285,9 @@ bool RC_Channel::get_reverse(void) const
 // read input from hal.rcin or overrides
 bool RC_Channel::update(void)
 {
-    if (has_override() && !rc().ignore_overrides()) {
+    if (has_override() && !rc().option_is_enabled(RC_Channels::Option::IGNORE_OVERRIDES)) {
         radio_in = override_value;
-    } else if (rc().has_had_rc_receiver() && !rc().ignore_receiver()) {
+    } else if (rc().has_had_rc_receiver() && !rc().option_is_enabled(RC_Channels::Option::IGNORE_RECEIVER)) {
         radio_in = hal.rcin->read(ch_in);
     } else {
         return false;
@@ -678,9 +679,11 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
 #if AP_GRIPPER_ENABLED
     case AUX_FUNC::GRIPPER:
 #endif
+#if AP_INERTIALSENSOR_KILL_IMU_ENABLED
     case AUX_FUNC::KILL_IMU1:
     case AUX_FUNC::KILL_IMU2:
     case AUX_FUNC::KILL_IMU3:
+#endif
     case AUX_FUNC::MISSION_RESET:
     case AUX_FUNC::MOTOR_ESTOP:
     case AUX_FUNC::RC_OVERRIDE_ENABLE:
@@ -765,6 +768,7 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::CAMERA_ZOOM, "Camera Zoom"},
     { AUX_FUNC::CAMERA_MANUAL_FOCUS, "Camera Manual Focus"},
     { AUX_FUNC::CAMERA_AUTO_FOCUS, "Camera Auto Focus"},
+    { AUX_FUNC::CAMERA_IMAGE_TRACKING, "Camera Image Tracking"},
 };
 
 /* lookup the announcement for switch change */
@@ -968,7 +972,7 @@ bool RC_Channel::do_aux_function_camera_manual_focus(const AuxSwitchPos ch_flag)
         focus_step = -1;
         break;
     }
-    return camera->set_focus(FocusType::RATE, focus_step);
+    return camera->set_focus(FocusType::RATE, focus_step) == SetFocusResult::ACCEPTED;
 }
 
 bool RC_Channel::do_aux_function_camera_auto_focus(const AuxSwitchPos ch_flag)
@@ -978,9 +982,20 @@ bool RC_Channel::do_aux_function_camera_auto_focus(const AuxSwitchPos ch_flag)
         if (camera == nullptr) {
             return false;
         }
-        return camera->set_focus(FocusType::AUTO, 0);
+        return camera->set_focus(FocusType::AUTO, 0) == SetFocusResult::ACCEPTED;
     }
     return false;
+}
+
+bool RC_Channel::do_aux_function_camera_image_tracking(const AuxSwitchPos ch_flag)
+{
+    AP_Camera *camera = AP::camera();
+    if (camera == nullptr) {
+        return false;
+    }
+    // High position enables tracking a POINT in middle of image
+    // Low or Mediums disables tracking.  (0.5,0.5) is still passed in but ignored
+    return camera->set_tracking(ch_flag == AuxSwitchPos::HIGH ? TrackingType::TRK_POINT : TrackingType::TRK_NONE, Vector2f{0.5, 0.5}, Vector2f{});
 }
 #endif
 
@@ -1050,6 +1065,7 @@ void RC_Channel::do_aux_function_clear_wp(const AuxSwitchPos ch_flag)
     }
 }
 
+#if AP_SERVORELAYEVENTS_ENABLED && AP_RELAY_ENABLED
 void RC_Channel::do_aux_function_relay(const uint8_t relay, bool val)
 {
     AP_ServoRelayEvents *servorelayevents = AP::servorelayevents();
@@ -1058,6 +1074,7 @@ void RC_Channel::do_aux_function_relay(const uint8_t relay, bool val)
     }
     servorelayevents->do_set_relay(relay, val);
 }
+#endif
 
 #if HAL_GENERATOR_ENABLED
 void RC_Channel::do_aux_function_generator(const AuxSwitchPos ch_flag)
@@ -1237,6 +1254,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         do_aux_function_avoid_proximity(ch_flag);
         break;
 
+#if AP_SERVORELAYEVENTS_ENABLED && AP_RELAY_ENABLED
     case AUX_FUNC::RELAY:
         do_aux_function_relay(0, ch_flag == AuxSwitchPos::HIGH);
         break;
@@ -1255,6 +1273,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
     case AUX_FUNC::RELAY6:
         do_aux_function_relay(5, ch_flag == AuxSwitchPos::HIGH);
         break;
+#endif  // AP_SERVORELAYEVENTS_ENABLED && AP_RELAY_ENABLED
 
     case AUX_FUNC::RUNCAM_CONTROL:
         do_aux_function_runcam_control(ch_flag);
@@ -1427,7 +1446,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
     }
 #endif
 
-#if !HAL_MINIMIZE_FEATURES
+#if AP_INERTIALSENSOR_KILL_IMU_ENABLED
     case AUX_FUNC::KILL_IMU1:
         AP::ins().kill_imu(0, ch_flag == AuxSwitchPos::HIGH);
         break;
@@ -1439,7 +1458,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
     case AUX_FUNC::KILL_IMU3:
         AP::ins().kill_imu(2, ch_flag == AuxSwitchPos::HIGH);
         break;
-#endif // HAL_MINIMIZE_FEATURES
+#endif  // AP_INERTIALSENSOR_KILL_IMU_ENABLED
 
 #if AP_CAMERA_ENABLED
     case AUX_FUNC::CAMERA_TRIGGER:
@@ -1477,6 +1496,8 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
     case AUX_FUNC::CAMERA_AUTO_FOCUS:
         return do_aux_function_camera_auto_focus(ch_flag);
 
+    case AUX_FUNC::CAMERA_IMAGE_TRACKING:
+        return do_aux_function_camera_image_tracking(ch_flag);
 #endif
 
 #if HAL_MOUNT_ENABLED
@@ -1639,7 +1660,7 @@ bool RC_Channel::read_3pos_switch(RC_Channel::AuxSwitchPos &ret) const
     }
 
     // switch is reversed if 'reversed' option set on channel and switches reverse is allowed by RC_OPTIONS
-    bool switch_reversed = reversed && rc().switch_reverse_allowed();
+    bool switch_reversed = reversed && rc().option_is_enabled(RC_Channels::Option::ALLOW_SWITCH_REV);
 
     if (in < AUX_SWITCH_PWM_TRIGGER_LOW) {
         ret = switch_reversed ? AuxSwitchPos::HIGH : AuxSwitchPos::LOW;

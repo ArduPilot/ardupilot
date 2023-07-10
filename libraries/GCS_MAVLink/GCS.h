@@ -21,7 +21,7 @@
 #include <AP_Filesystem/AP_Filesystem_config.h>
 #include <AP_Frsky_Telem/AP_Frsky_config.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_Mount/AP_Mount.h>
+#include <AP_Mount/AP_Mount_config.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
 #include "ap_message.h"
@@ -30,10 +30,6 @@
 
 #ifndef HAL_HIGH_LATENCY2_ENABLED
 #define HAL_HIGH_LATENCY2_ENABLED 1
-#endif
-
-#ifndef HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
-#define HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED (HAVE_FILESYSTEM_SUPPORT && BOARD_FLASH_SIZE > 1024)
 #endif
 
 // macros used to determine if a message will fit in the space available.
@@ -198,6 +194,10 @@ public:
 
     GCS_MAVLINK(GCS_MAVLINK_Parameters &parameters, AP_HAL::UARTDriver &uart);
     virtual ~GCS_MAVLINK() {}
+
+    // accessors used to retrieve objects used for parsing incoming messages:
+    mavlink_message_t *channel_buffer() { return &_channel_buffer; }
+    mavlink_status_t *channel_status() { return &_channel_status; }
 
     void        update_receive(uint32_t max_time_us=1000);
     void        update_send();
@@ -372,6 +372,7 @@ public:
     void send_vibration() const;
     void send_gimbal_device_attitude_status() const;
     void send_gimbal_manager_information() const;
+    void send_gimbal_manager_status() const;
     void send_named_float(const char *name, float value) const;
     void send_home_position() const;
     void send_gps_global_origin() const;
@@ -519,6 +520,7 @@ protected:
 
     MAV_RESULT handle_command_int_do_set_home(const mavlink_command_int_t &packet);
     virtual MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_int_external_position_estimate(const mavlink_command_int_t &packet);
 
     virtual bool set_home_to_current_location(bool lock) = 0;
     virtual bool set_home(const Location& loc, bool lock) = 0;
@@ -576,6 +578,11 @@ protected:
     void handle_set_gps_global_origin(const mavlink_message_t &msg);
     void handle_setup_signing(const mavlink_message_t &msg) const;
     virtual MAV_RESULT handle_preflight_reboot(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
+    struct {
+        HAL_Semaphore sem;
+        bool taken;
+    } _deadlock_sem;
+    void deadlock_sem(void);
 
     // reset a message interval via mavlink:
     MAV_RESULT handle_command_set_message_interval(const mavlink_command_long_t &packet);
@@ -642,7 +649,7 @@ protected:
     MAV_RESULT handle_command_do_set_roi_sysid(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_set_roi_none();
 
-    virtual MAV_RESULT handle_command_mount(const mavlink_command_long_t &packet);
+    virtual MAV_RESULT handle_command_mount(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
     MAV_RESULT handle_command_mag_cal(const mavlink_command_long_t &packet);
     virtual MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_camera(const mavlink_command_long_t &packet);
@@ -657,6 +664,7 @@ protected:
     MAV_RESULT handle_command_do_fence_enable(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_debug_trap(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_set_ekf_source_set(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_airframe_configuration(const mavlink_command_long_t &packet);
 
     /*
       handle MAV_CMD_CAN_FORWARD and CAN_FRAME messages for CAN over MAVLink
@@ -727,6 +735,10 @@ protected:
     bool location_from_command_t(const mavlink_command_int_t &in, Location &out);
 
 private:
+
+    // define the two objects used for parsing incoming messages:
+    mavlink_message_t _channel_buffer;
+    mavlink_status_t _channel_status;
 
     const AP_SerialManager::UARTState *uartstate;
 

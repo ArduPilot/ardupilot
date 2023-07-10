@@ -23,6 +23,7 @@
 
 #if HAL_MOUNT_ENABLED
 
+#include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
@@ -43,6 +44,7 @@ class AP_Mount_SToRM32_serial;
 class AP_Mount_Gremsy;
 class AP_Mount_Siyi;
 class AP_Mount_Scripting;
+class AP_Mount_Xacti;
 
 /*
   This is a workaround to allow the MAVLink backend access to the
@@ -61,6 +63,7 @@ class AP_Mount
     friend class AP_Mount_Gremsy;
     friend class AP_Mount_Siyi;
     friend class AP_Mount_Scripting;
+    friend class AP_Mount_Xacti;
 
 public:
     AP_Mount();
@@ -74,17 +77,38 @@ public:
     }
 
     // Enums
-    enum MountType {
-        Mount_Type_None = 0,            /// no mount
-        Mount_Type_Servo = 1,           /// servo controlled mount
-        Mount_Type_SoloGimbal = 2,      /// Solo's gimbal
-        Mount_Type_Alexmos = 3,         /// Alexmos mount
-        Mount_Type_SToRM32 = 4,         /// SToRM32 mount using MAVLink protocol
-        Mount_Type_SToRM32_serial = 5,  /// SToRM32 mount using custom serial protocol
-        Mount_Type_Gremsy = 6,          /// Gremsy gimbal using MAVLink v2 Gimbal protocol
-        Mount_Type_BrushlessPWM = 7,    /// Brushless (stabilized) gimbal using PWM protocol
-        Mount_Type_Siyi = 8,            /// Siyi gimbal using custom serial protocol
-        Mount_Type_Scripting = 9,       /// Scripting gimbal driver
+    enum class Type {
+        None = 0,            /// no mount
+#if HAL_MOUNT_SERVO_ENABLED
+        Servo = 1,           /// servo controlled mount
+#endif
+#if HAL_SOLO_GIMBAL_ENABLED
+        SoloGimbal = 2,      /// Solo's gimbal
+#endif
+#if HAL_MOUNT_ALEXMOS_ENABLED
+        Alexmos = 3,         /// Alexmos mount
+#endif
+#if HAL_MOUNT_STORM32MAVLINK_ENABLED
+        SToRM32 = 4,         /// SToRM32 mount using MAVLink protocol
+#endif
+#if HAL_MOUNT_STORM32SERIAL_ENABLED
+        SToRM32_serial = 5,  /// SToRM32 mount using custom serial protocol
+#endif
+#if HAL_MOUNT_GREMSY_ENABLED
+        Gremsy = 6,          /// Gremsy gimbal using MAVLink v2 Gimbal protocol
+#endif
+#if HAL_MOUNT_SERVO_ENABLED
+        BrushlessPWM = 7,    /// Brushless (stabilized) gimbal using PWM protocol
+#endif
+#if HAL_MOUNT_SIYI_ENABLED
+        Siyi = 8,            /// Siyi gimbal using custom serial protocol
+#endif
+#if HAL_MOUNT_SCRIPTING_ENABLED
+        Scripting = 9,       /// Scripting gimbal driver
+#endif
+#if HAL_MOUNT_XACTI_ENABLED
+        Xacti = 10,          /// Xacti DroneCAN gimbal driver
+#endif
     };
 
     // init - detect and initialise all mounts
@@ -100,8 +124,8 @@ public:
     uint8_t get_primary_instance() const { return _primary; }
 
     // get_mount_type - returns the type of mount
-    AP_Mount::MountType get_mount_type() const { return get_mount_type(_primary); }
-    AP_Mount::MountType get_mount_type(uint8_t instance) const;
+    Type get_mount_type() const { return get_mount_type(_primary); }
+    Type get_mount_type(uint8_t instance) const;
 
     // has_pan_control - returns true if the mount has yaw control (required for copters)
     bool has_pan_control() const { return has_pan_control(_primary); }
@@ -149,7 +173,7 @@ public:
     void set_target_sysid(uint8_t instance, uint8_t sysid);
 
     // mavlink message handling:
-    MAV_RESULT handle_command_long(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_long(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
     void handle_param_value(const mavlink_message_t &msg);
     void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg);
 
@@ -158,6 +182,9 @@ public:
 
     // send a GIMBAL_MANAGER_INFORMATION message to GCS
     void send_gimbal_manager_information(mavlink_channel_t chan);
+
+    // send a GIMBAL_MANAGER_STATUS message to GCS
+    void send_gimbal_manager_status(mavlink_channel_t chan);
 
     // get mount's current attitude in euler angles in degrees.  yaw angle is in body-frame
     // returns true on success
@@ -189,7 +216,13 @@ public:
 
     // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
-    bool set_focus(uint8_t instance, FocusType focus_type, float focus_value);
+    SetFocusResult set_focus(uint8_t instance, FocusType focus_type, float focus_value);
+
+    // send camera information message to GCS
+    void send_camera_information(mavlink_channel_t chan) const;
+
+    // send camera settings message to GCS
+    void send_camera_settings(mavlink_channel_t chan) const;
 
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];
@@ -218,7 +251,9 @@ private:
     MAV_RESULT handle_command_do_mount_configure(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_mount_control(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_gimbal_manager_pitchyaw(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_do_gimbal_manager_configure(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
     void handle_gimbal_manager_set_attitude(const mavlink_message_t &msg);
+    void handle_command_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg);
     void handle_global_position_int(const mavlink_message_t &msg);
     void handle_gimbal_device_information(const mavlink_message_t &msg);
     void handle_gimbal_device_attitude_status(const mavlink_message_t &msg);

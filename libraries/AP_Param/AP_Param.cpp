@@ -1549,7 +1549,7 @@ void AP_Param::reload_defaults_file(bool last_pass)
     }
 #endif
 
-#if HAL_OS_POSIX_IO == 1
+#if AP_FILESYSTEM_POSIX_ENABLED
     /*
       if the HAL specifies a defaults parameter file then override
       defaults using that file
@@ -2135,7 +2135,8 @@ bool AP_Param::parse_param_line(char *line, char **vname, float &value, bool &re
 }
 
 
-#if HAVE_FILESYSTEM_SUPPORT
+// FIXME: make this AP_FILESYSTEM_FILE_READING_ENABLED
+#if AP_FILESYSTEM_FATFS_ENABLED || AP_FILESYSTEM_POSIX_ENABLED
 
 // increments num_defaults for each default found in filename
 bool AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaults)
@@ -2276,7 +2277,7 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
     return true;
 }
 
-#endif // HAVE_FILESYSTEM_SUPPORT
+#endif // AP_FILESYSTEM_FATFS_ENABLED || AP_FILESYSTEM_POSIX_ENABLED
 
 #if AP_PARAM_MAX_EMBEDDED_PARAM > 0
 /*
@@ -3017,8 +3018,8 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
     }
 
     // check CRC
-    auto &hinfo = const_cast<GroupInfo*>(info.group_info)[0];
-    const int32_t crc = *(const int32_t *)(&hinfo.def_value);
+    const auto &hinfo = const_cast<GroupInfo*>(info.group_info)[0];
+    const int32_t crc = float_to_int32_le(hinfo.def_value);
 
     int32_t current_crc;
     if (load_int32(key, 0, current_crc) && current_crc != crc) {

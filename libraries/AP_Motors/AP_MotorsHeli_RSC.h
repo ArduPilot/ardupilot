@@ -128,6 +128,9 @@ public:
     // Return mask of output channels which the RSC is outputting on
     uint32_t    get_output_mask() const;
 
+    // rotor_speed_above_critical - return true if rotor speed is above that critical for flight
+    bool        rotor_speed_above_critical(void) const { return get_rotor_speed() > get_critical_speed(); }
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 

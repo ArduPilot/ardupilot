@@ -17,11 +17,7 @@
 #endif
 
 #ifndef HAL_LOGGING_FILESYSTEM_ENABLED
-    #if HAVE_FILESYSTEM_SUPPORT
-        #define HAL_LOGGING_FILESYSTEM_ENABLED HAL_LOGGING_ENABLED
-    #else
-        #define HAL_LOGGING_FILESYSTEM_ENABLED 0
-    #endif
+#define HAL_LOGGING_FILESYSTEM_ENABLED HAL_LOGGING_ENABLED && AP_FILESYSTEM_FILE_WRITING_ENABLED
 #endif
 
 #if HAL_LOGGING_DATAFLASH_ENABLED
@@ -34,10 +30,6 @@
 
 #if !defined (HAL_BOARD_LOG_DIRECTORY)
 #error Need HAL_BOARD_LOG_DIRECTORY for filesystem backend support
-#endif
-
-#if !defined (HAVE_FILESYSTEM_SUPPORT)
-#error Need HAVE_FILESYSTEM_SUPPORT for filesystem backend support
 #endif
 
 #endif
@@ -53,4 +45,4 @@
 #define REPLAY_LOG_NEW_MSG_MIN 220
 
 #include <AC_Fence/AC_Fence_config.h>
-#define HAL_LOGGER_FENCE_ENABLED (AP_FENCE_ENABLED && !defined(HAL_BUILD_AP_PERIPH))
+#define HAL_LOGGER_FENCE_ENABLED AP_FENCE_ENABLED

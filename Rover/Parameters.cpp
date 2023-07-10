@@ -27,7 +27,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: INITIAL_MODE
     // @DisplayName: Initial driving mode
     // @Description: This selects the mode to start in on boot. This is useful for when you want to start in AUTO mode on boot without a receiver. Usually used in combination with when AUTO_TRIGGER_PIN or AUTO_KICKSTART.
-    // @Values: 0:Manual,1:Acro,3:Steering,4:Hold,5:Loiter,6:Follow,7:Simple,8:Dock,10:Auto,11:RTL,12:SmartRTL,15:Guided
+    // @CopyValuesFrom: MODE1
     // @User: Advanced
     GSCALAR(initial_mode,        "INITIAL_MODE",     Mode::Number::MANUAL),
 
@@ -171,7 +171,7 @@ const AP_Param::Info Rover::var_info[] = {
 
     // @Param: MODE1
     // @DisplayName: Mode1
-    // @Values: 0:Manual,1:Acro,3:Steering,4:Hold,5:Loiter,6:Follow,7:Simple,8:Dock,10:Auto,11:RTL,12:SmartRTL,15:Guided
+    // @Values: 0:Manual,1:Acro,3:Steering,4:Hold,5:Loiter,6:Follow,7:Simple,8:Dock,9:Circle,10:Auto,11:RTL,12:SmartRTL,15:Guided
     // @User: Standard
     // @Description: Driving mode for switch position 1 (910 to 1230 and above 2049)
     GSCALAR(mode1,           "MODE1",         Mode::Number::MANUAL),
@@ -221,9 +221,11 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: ../libraries/AP_Baro/AP_Baro.cpp
     GOBJECT(barometer, "BARO", AP_Baro),
 
+#if AP_RELAY_ENABLED
     // @Group: RELAY_
     // @Path: ../libraries/AP_Relay/AP_Relay.cpp
     GOBJECT(relay,                  "RELAY_", AP_Relay),
+#endif
 
     // @Group: RCMAP_
     // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
@@ -694,6 +696,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("FS_GCS_TIMEOUT", 56, ParametersG2, fs_gcs_timeout, 5),
 
+    // @Group: CIRC
+    // @Path: mode_circle.cpp
+    AP_SUBGROUPINFO(mode_circle, "CIRC", 57, ParametersG2, ModeCircle),
+
     AP_GROUPEND
 };
 
@@ -735,7 +741,7 @@ ParametersG2::ParametersG2(void)
 #if AP_BEACON_ENABLED
     beacon(),
 #endif
-    motors(rover.ServoRelayEvents, wheel_rate_control),
+    motors(wheel_rate_control),
     wheel_rate_control(wheel_encoder),
     attitude_control(),
     smart_rtl(),

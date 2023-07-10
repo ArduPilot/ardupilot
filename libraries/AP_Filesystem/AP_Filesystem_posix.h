@@ -15,6 +15,10 @@
 
 #pragma once
 
+#include "AP_Filesystem_config.h"
+
+#if AP_FILESYSTEM_POSIX_ENABLED
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -53,3 +57,4 @@ public:
     bool set_mtime(const char *filename, const uint32_t mtime_sec) override;
 };
 
+#endif  // AP_FILESYSTEM_POSIX_ENABLED

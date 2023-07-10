@@ -346,13 +346,6 @@ void Plane::stabilize_yaw()
  */
 void Plane::stabilize()
 {
-    if (control_mode == &mode_manual) {
-        // reset steering controls
-        steer_state.locked_course = false;
-        steer_state.locked_course_err = 0;
-        return;
-    }
-
     uint32_t now = AP_HAL::millis();
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.available()) {
@@ -361,19 +354,13 @@ void Plane::stabilize()
 #endif
 
     if (now - last_stabilize_ms > 2000) {
-        // if we haven't run the rate controllers for 2 seconds then
-        // reset the integrators
-        rollController.reset_I();
-        pitchController.reset_I();
-        yawController.reset_I();
-
-        // and reset steering controls
-        steer_state.locked_course = false;
-        steer_state.locked_course_err = 0;
+        // if we haven't run the rate controllers for 2 seconds then reset
+        control_mode->reset_controllers();
     }
     last_stabilize_ms = now;
 
-    if (control_mode == &mode_training) {
+    if (control_mode == &mode_training ||
+            control_mode == &mode_manual) {
         plane.control_mode->run();
 #if AP_SCRIPTING_ENABLED
     } else if (nav_scripting_active()) {
@@ -391,22 +378,6 @@ void Plane::stabilize()
                 yawController.reset_I();
             }
             steering_control.rudder = rudder;
-        }
-#endif
-    } else if (control_mode == &mode_acro ||
-                control_mode == &mode_stabilize) {
-        plane.control_mode->run();
-#if HAL_QUADPLANE_ENABLED
-    } else if (control_mode->is_vtol_mode() && !quadplane.tailsitter.in_vtol_transition(now)) {
-        // run controlers specific to this mode
-        plane.control_mode->run();
-
-        // we also stabilize using fixed wing surfaces
-        if (plane.control_mode->mode_number() == Mode::Number::QACRO) {
-            plane.mode_acro.run();
-        } else {
-            stabilize_roll();
-            stabilize_pitch();
         }
 #endif
     } else {

@@ -77,13 +77,25 @@ public:
     // Backend driver types
     enum class Type : uint8_t {
         NONE       = 0,
+#if AP_EFI_SERIAL_MS_ENABLED
         MegaSquirt = 1,
+#endif
+#if AP_EFI_NWPWU_ENABLED
         NWPMU      = 2,
+#endif
+#if AP_EFI_SERIAL_LUTAN_ENABLED
         Lutan      = 3,
+#endif
         // LOWEHEISER = 4,
+#if AP_EFI_DRONECAN_ENABLED
         DroneCAN = 5,
+#endif
+#if AP_EFI_CURRAWONG_ECU_ENABLED
         CurrawongECU = 6,
+#endif
+#if AP_EFI_SCRIPTING_ENABLED
         SCRIPTING  = 7,
+#endif
         // Hirth      = 8 /* Reserved for future implementation */
     };
 

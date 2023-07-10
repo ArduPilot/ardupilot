@@ -41,10 +41,13 @@ public:
     bool init();
 
     // adjust position, velocity and acceleration targets smoothly using input shaping
-    // pos should be the target position as an offset from the EKF origin (in meters)
+    // pos is the target position as an offset from the EKF origin (in meters)
+    // vel is the target velocity in m/s. accel is the target acceleration in m/s/s
     // dt should be the update rate in seconds
     // init should be called once before starting to use these methods
     void input_pos_target(const Vector2p &pos, float dt);
+    void input_pos_vel_target(const Vector2p &pos, const Vector2f &vel, float dt);
+    void input_pos_vel_accel_target(const Vector2p &pos, const Vector2f &vel, const Vector2f &accel, float dt);
 
     // set target position, desired velocity and acceleration.  These should be from an externally created path and are not "input shaped"
     void set_pos_vel_accel_target(const Vector2p &pos, const Vector2f &vel, const Vector2f &accel);
@@ -95,7 +98,6 @@ private:
     float _lat_accel_max;           // lateral acceleration maximum in m/s/s
     float _jerk_max;                // maximum jerk in m/s/s/s (used for both forward and lateral input shaping)
     float _turn_radius;             // vehicle turn radius in meters
-    Vector2f _limit_vel;            // To-Do: explain what this is
 
     // position and velocity targets
     Vector2p _pos_target;           // position target as an offset (in meters) from the EKF origin

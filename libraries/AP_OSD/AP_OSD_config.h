@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_Filesystem/AP_Filesystem_config.h>
 
 #ifndef OSD_ENABLED
 #define OSD_ENABLED 1
@@ -16,4 +17,8 @@
 
 #ifndef HAL_OSD_SIDEBAR_ENABLE
 #define HAL_OSD_SIDEBAR_ENABLE 1
+#endif
+
+#ifndef AP_OSD_CALLSIGN_FROM_SD_ENABLED
+#define AP_OSD_CALLSIGN_FROM_SD_ENABLED (AP_FILESYSTEM_POSIX_ENABLED || AP_FILESYSTEM_FATFS_ENABLED)
 #endif

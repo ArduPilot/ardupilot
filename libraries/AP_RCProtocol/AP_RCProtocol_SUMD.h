@@ -17,7 +17,11 @@
 
 #pragma once
 
-#include "AP_RCProtocol.h"
+#include "AP_RCProtocol_config.h"
+
+#if AP_RCPROTOCOL_SUMD_ENABLED
+
+#include "AP_RCProtocol_Backend.h"
 #include "SoftSerial.h"
 
 #define SUMD_MAX_CHANNELS	32
@@ -30,20 +34,13 @@ public:
 
 private:
     void _process_byte(uint32_t timestamp_us, uint8_t byte);
-    static uint8_t sumd_crc8(uint8_t crc, uint8_t value);
 
-#pragma pack(push, 1)
     typedef struct {
-        uint8_t	header;							///< 0xA8 for a valid packet
         uint8_t	status;							///< 0x01 valid and live SUMD data frame / 0x00 = SUMH / 0x81 = Failsafe
         uint8_t	length;							///< Channels
         uint8_t	sumd_data[(SUMD_MAX_CHANNELS+1) * 2];	///< ChannelData (High Byte/ Low Byte)
         uint8_t	crc16_high;						///< High Byte of 16 Bit CRC
-        uint8_t	crc16_low;						///< Low Byte of 16 Bit CRC
-        uint8_t	telemetry;						///< Telemetry request
-        uint8_t	crc8;							///< SUMH CRC8
     } ReceiverFcPacketHoTT;
-#pragma pack(pop)
 
 
     enum SUMD_DECODE_STATE {
@@ -53,18 +50,15 @@ private:
         SUMD_DECODE_STATE_GOT_LEN,
         SUMD_DECODE_STATE_GOT_DATA,
         SUMD_DECODE_STATE_GOT_CRC,
-        SUMD_DECODE_STATE_GOT_CRC16_BYTE_1,
-        SUMD_DECODE_STATE_GOT_CRC16_BYTE_2
     };
 
     enum SUMD_DECODE_STATE _decode_state = SUMD_DECODE_STATE_UNSYNCED;
     uint8_t _rxlen;
     ReceiverFcPacketHoTT _rxpacket;
-    uint8_t 	_crc8 	= 0x00;
-    uint16_t 	_crc16  = 0x0000;
-    bool 		_sumd	= true;
-    bool		_crcOK	= false;
+    uint16_t 	_crc16;
     uint32_t last_packet_us;
 
     SoftSerial ss{115200, SoftSerial::SERIAL_CONFIG_8N1};
 };
+
+#endif  // AP_RCPROTOCOL_SUMD_ENABLED

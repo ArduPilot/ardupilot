@@ -64,7 +64,6 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Logger,   &tracker.logger, periodic_tasks, 50,  300, 65),
 #endif
     SCHED_TASK_CLASS(AP_InertialSensor, &tracker.ins,       periodic,       50,   50, 70),
-    SCHED_TASK_CLASS(AP_Notify,         &tracker.notify,    update,         50,  100, 75),
     SCHED_TASK(one_second_loop,         1,   3900, 80),
     SCHED_TASK(stats_update,            1,    200, 90),
 };

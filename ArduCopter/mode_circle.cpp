@@ -1,4 +1,5 @@
 #include "Copter.h"
+#include <AP_Mount/AP_Mount.h>
 
 #if MODE_CIRCLE_ENABLED == ENABLED
 
@@ -19,6 +20,18 @@ bool ModeCircle::init(bool ignore_checks)
 
     // initialise circle controller including setting the circle center based on vehicle speed
     copter.circle_nav->init();
+
+#if HAL_MOUNT_ENABLED
+    AP_Mount *s = AP_Mount::get_singleton();
+
+    // Check if the CIRCLE_OPTIONS parameter have roi_at_center
+    if (copter.circle_nav->roi_at_center()) {
+        Vector3p loc = copter.circle_nav->get_center();
+        loc.z = 0;
+        Location circle_center(loc, Location::AltFrame::ABOVE_TERRAIN);
+        s->set_roi_target(circle_center);
+    }
+#endif
 
     // set auto yaw circle mode
     auto_yaw.set_mode(AutoYaw::Mode::CIRCLE);

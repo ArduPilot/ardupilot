@@ -30,7 +30,7 @@ protected:
     MAV_RESULT handle_command_do_set_roi(const Location &roi_loc) override;
     MAV_RESULT handle_preflight_reboot(const mavlink_command_long_t &packet, const mavlink_message_t &msg) override;
 #if HAL_MOUNT_ENABLED
-    MAV_RESULT handle_command_mount(const mavlink_command_long_t &packet) override;
+    MAV_RESULT handle_command_mount(const mavlink_command_long_t &packet, const mavlink_message_t &msg) override;
 #endif
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet) override;
     MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet) override;
@@ -54,6 +54,11 @@ protected:
     void handle_manual_control_axes(const mavlink_manual_control_t &packet, const uint32_t tnow) override;
 
 private:
+
+    // sanity check velocity or acceleration vector components are numbers
+    // (e.g. not NaN) and below 1000. vec argument units are in meters/second or
+    // metres/second/second
+    bool sane_vel_or_acc_vector(const Vector3f &vec) const;
 
     MISSION_STATE mission_state(const class AP_Mission &mission) const override;
 

@@ -19,3 +19,20 @@ enum class FocusType : uint8_t {
     PCT = 2,    // focus to a percentage (from 0 to 100) of the full range. Same as FOCUS_TYPE_RANGE
     AUTO = 4    // focus automatically. Same as FOCUS_TYPE_AUTO
 };
+
+// result type of set_focus.  Assumptions are made that this
+// enumeration can be cast directly to MAV_RESULT.
+enum class SetFocusResult : uint8_t {
+    ACCEPTED = 0,
+    INVALID_PARAMETERS = 2,  // supported but invalid parameters, like MAV_RESULT_DENIED
+    UNSUPPORTED = 3,
+    FAILED = 4,
+};
+
+// tracking types when tracking an object in the video stream
+enum class TrackingType : uint8_t {
+    TRK_NONE = 0,       // tracking is inactive
+    TRK_POINT = 1,      // tracking a point
+    TRK_RECTANGLE = 2   // tracking a rectangle
+};
+

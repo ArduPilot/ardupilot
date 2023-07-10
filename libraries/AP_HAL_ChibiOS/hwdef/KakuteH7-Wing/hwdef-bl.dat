@@ -1,0 +1,49 @@
+# hw definition file for processing by chibios_pins.py
+# for Holybro KakuteH7-WING bootloader
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# board ID for firmware load
+APJ_BOARD_ID 1105
+
+# crystal frequency, setup to use external oscillator
+OSCILLATOR_HZ 16000000
+
+FLASH_SIZE_KB 2048
+
+# bootloader starts at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+# the H743 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 128
+
+
+# order of UARTs (and USB). Allow bootloading on USB and telem1
+SERIAL_ORDER OTG1 UART7
+
+# UART7 (telem1)
+PE7 UART7_RX UART7 NODMA
+PE8 UART7_TX UART7 NODMA
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# make sure Vsw is on during bootloader
+PE3   PINIO2 OUTPUT LOW
+
+PC15 LED_BOOTLOADER OUTPUT LOW
+define HAL_LED_ON 0
+
+# Add CS pins to ensure they are high in bootloader
+PE12 ICM42688_CS CS
+PB12 MAX7456_CS CS
+PC8 BMI088_A_CS CS
+PC9 BMI088_G_CS CS
+
+#silence buzzer during boot
+PB9 BUZZER OUTPUT GPIO(80) LOW

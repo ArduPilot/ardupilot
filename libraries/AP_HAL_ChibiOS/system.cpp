@@ -53,8 +53,9 @@ static_assert(HAL_EXPECTED_SYSCLOCK == STM32_HCLK, "unexpected STM32_HCLK value"
 #define AP_FAULTHANDLER_DEBUG_VARIABLES_ENABLED 1
 #endif
 
-#define QUOTE(str) #str
-#define EXPAND_AND_QUOTE(str) QUOTE(str)
+#define QUOTE1(str) #str
+#define QUOTE2(str) QUOTE1(str)
+#define EXPAND_AND_QUOTE(str) QUOTE2(str)
 #define ASSERT_CLOCK(clk) static_assert(HAL_EXPECTED_ ##clk == (clk), "unexpected " #clk " value: '" EXPAND_AND_QUOTE(clk) "'")
 
 #if defined(HAL_EXPECTED_STM32_SYS_CK) && defined(STM32_SYS_CK)

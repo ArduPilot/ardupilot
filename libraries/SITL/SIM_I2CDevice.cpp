@@ -147,7 +147,7 @@ int SITL::I2CRegisters_8Bit::rdwr(I2C::i2c_rdwr_ioctl_data *&data)
                 AP_HAL::panic("Register 0x%02x is not writable!", reg_addr);
             }
             const uint8_t register_value = data->msgs[0].buf[1+bytes_copied];
-            byte[reg_addr] = register_value;
+            rdwr_store_register_value(reg_addr, register_value);
             bytes_copied++;
         }
         return 0;

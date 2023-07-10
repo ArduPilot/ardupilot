@@ -3,3 +3,6 @@
 namespace Canard {
 typedef ::HAL_Semaphore Semaphore;
 }
+
+#define CANARD_MALLOC malloc
+#define CANARD_FREE free

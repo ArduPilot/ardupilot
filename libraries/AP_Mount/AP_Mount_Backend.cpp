@@ -14,6 +14,12 @@ void AP_Mount_Backend::init()
     _target_sysid = _params.sysid_default.get();
 }
 
+// set device id of this instance, for MNTx_DEVID parameter
+void AP_Mount_Backend::set_dev_id(uint32_t id)
+{
+    _params.dev_id.set_and_save(int32_t(id));
+}
+
 // return true if this mount accepts roll targets
 bool AP_Mount_Backend::has_roll_control() const
 {
@@ -30,6 +36,18 @@ bool AP_Mount_Backend::has_pitch_control() const
 // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
 void AP_Mount_Backend::set_angle_target(float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame)
 {
+    // enforce angle limits
+    roll_deg = constrain_float(roll_deg, _params.roll_angle_min, _params.roll_angle_max);
+    pitch_deg = constrain_float(pitch_deg, _params.pitch_angle_min, _params.pitch_angle_max);
+    if (!yaw_is_earth_frame) {
+        // only limit yaw if in body-frame.  earth-frame yaw limiting is backend specific
+        // custom wrap code (instead of wrap_180) to better handle yaw of <= -180
+        if (yaw_deg > 180) {
+            yaw_deg -= 360;
+        }
+        yaw_deg = constrain_float(yaw_deg, _params.yaw_angle_min, _params.yaw_angle_max);
+    }
+
     // set angle targets
     mavt_target.target_type = MountTargetType::ANGLE;
     mavt_target.angle_rad.roll = radians(roll_deg);
@@ -162,13 +180,32 @@ void AP_Mount_Backend::send_gimbal_manager_information(mavlink_channel_t chan)
     mavlink_msg_gimbal_manager_information_send(chan,
                                                 AP_HAL::millis(),                       // autopilot system time
                                                 get_gimbal_manager_capability_flags(),  // bitmap of gimbal manager capability flags
-                                                _instance,                              // gimbal device id
+                                                _instance + 1,                          // gimbal device id
                                                 radians(_params.roll_angle_min),        // roll_min in radians
                                                 radians(_params.roll_angle_max),        // roll_max in radians
                                                 radians(_params.pitch_angle_min),       // pitch_min in radians
                                                 radians(_params.pitch_angle_max),       // pitch_max in radians
                                                 radians(_params.yaw_angle_min),         // yaw_min in radians
                                                 radians(_params.yaw_angle_max));        // yaw_max in radians
+}
+
+// send a GIMBAL_MANAGER_STATUS message to GCS
+void AP_Mount_Backend::send_gimbal_manager_status(mavlink_channel_t chan)
+{
+    uint32_t flags = GIMBAL_MANAGER_FLAGS_ROLL_LOCK | GIMBAL_MANAGER_FLAGS_PITCH_LOCK;
+
+    if (_yaw_lock) {
+        flags |= GIMBAL_MANAGER_FLAGS_YAW_LOCK;
+    }
+
+    mavlink_msg_gimbal_manager_status_send(chan,
+                                           AP_HAL::millis(),    // autopilot system time
+                                           flags,               // bitmap of gimbal manager flags
+                                           _instance + 1,       // gimbal device id
+                                           mavlink_control_id.sysid,    // primary control system id
+                                           mavlink_control_id.compid,   // primary control component id
+                                           0,                           // secondary control system id
+                                           0);                          // secondary control component id
 }
 
 // process MOUNT_CONTROL messages received from GCS. deprecated.
@@ -265,6 +302,42 @@ MAV_RESULT AP_Mount_Backend::handle_command_do_mount_control(const mavlink_comma
         // invalid mode
         return MAV_RESULT_FAILED;
     }
+}
+
+// handle do_gimbal_manager_configure.  Returns MAV_RESULT_ACCEPTED on success
+// requires original message in order to extract caller's sysid and compid
+MAV_RESULT AP_Mount_Backend::handle_command_do_gimbal_manager_configure(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+{
+    // sanity check param1 and param2 values
+    if ((packet.param1 < -3) || (packet.param1 > UINT8_MAX) || (packet.param2 < -3) || (packet.param2 > UINT8_MAX)) {
+        return MAV_RESULT_FAILED;
+    }
+
+    // convert negative packet1 and packet2 values
+    int16_t new_sysid = packet.param1;
+    switch (new_sysid) {
+        case -1:
+            // leave unchanged
+            break;
+        case -2:
+            // set itself in control
+            mavlink_control_id.sysid = msg.sysid;
+            mavlink_control_id.compid = msg.compid;
+            break;
+        case -3:
+            // remove control if currently in control
+            if ((mavlink_control_id.sysid == msg.sysid) && (mavlink_control_id.compid == msg.compid)) {
+                mavlink_control_id.sysid = 0;
+                mavlink_control_id.compid = 0;
+            }
+            break;
+        default:
+            mavlink_control_id.sysid = packet.param1;
+            mavlink_control_id.compid = packet.param2;
+            break;
+    }
+
+    return MAV_RESULT_ACCEPTED;
 }
 
 // handle a GLOBAL_POSITION_INT message
@@ -411,27 +484,27 @@ bool AP_Mount_Backend::get_angle_target_to_roi(MountTarget& angle_rad) const
 }
 
 // return body-frame yaw angle from a mount target
-float AP_Mount_Backend::get_bf_yaw_angle(const MountTarget& angle_rad) const
+float AP_Mount_Backend::MountTarget::get_bf_yaw() const
 {
-    if (angle_rad.yaw_is_ef) {
+    if (yaw_is_ef) {
         // convert to body-frame
-        return wrap_PI(angle_rad.yaw - AP::ahrs().yaw);
+        return wrap_PI(yaw - AP::ahrs().yaw);
     }
 
     // target is already body-frame
-    return angle_rad.yaw;
+    return yaw;
 }
 
 // return earth-frame yaw angle from a mount target
-float AP_Mount_Backend::get_ef_yaw_angle(const MountTarget& angle_rad) const
+float AP_Mount_Backend::MountTarget::get_ef_yaw() const
 {
-    if (angle_rad.yaw_is_ef) {
+    if (yaw_is_ef) {
         // target is already earth-frame
-        return angle_rad.yaw;
+        return yaw;
     }
 
     // convert to earth-frame
-    return wrap_PI(angle_rad.yaw + AP::ahrs().yaw);
+    return wrap_PI(yaw + AP::ahrs().yaw);
 }
 
 // update angle targets using a given rate target
@@ -446,9 +519,9 @@ void AP_Mount_Backend::update_angle_target_from_rate(const MountTarget& rate_rad
     // ensure angle yaw frames matches rate yaw frame
     if (angle_rad.yaw_is_ef != rate_rad.yaw_is_ef) {
         if (rate_rad.yaw_is_ef) {
-            angle_rad.yaw = get_ef_yaw_angle(angle_rad);
+            angle_rad.yaw = angle_rad.get_ef_yaw();
         } else {
-            angle_rad.yaw = get_bf_yaw_angle(angle_rad);
+            angle_rad.yaw = angle_rad.get_bf_yaw();
         }
         angle_rad.yaw_is_ef = rate_rad.yaw_is_ef;
     }

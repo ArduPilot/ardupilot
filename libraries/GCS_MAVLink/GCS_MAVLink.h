@@ -14,14 +14,11 @@
 #define MAVLINK_START_UART_SEND(chan, size) comm_send_lock(chan, size)
 #define MAVLINK_END_UART_SEND(chan, size) comm_send_unlock(chan)
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-// allow extra mavlink channels in SITL for:
-//    Vicon, ship
-#define MAVLINK_COMM_NUM_BUFFERS 7
-#else
 // allow five telemetry ports
 #define MAVLINK_COMM_NUM_BUFFERS 5
-#endif
+
+#define MAVLINK_GET_CHANNEL_BUFFER 1
+#define MAVLINK_GET_CHANNEL_STATUS 1
 
 /*
   The MAVLink protocol code generator does its own alignment, so
@@ -57,6 +54,9 @@ static inline bool valid_channel(mavlink_channel_t chan)
     return chan < MAVLINK_COMM_NUM_BUFFERS;
 #pragma clang diagnostic pop
 }
+
+mavlink_message_t* mavlink_get_channel_buffer(uint8_t chan);
+mavlink_status_t* mavlink_get_channel_status(uint8_t chan);
 
 void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len);
 

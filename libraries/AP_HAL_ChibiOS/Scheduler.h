@@ -193,5 +193,13 @@ private:
 
     // check for free stack space
     void check_stack_free(void);
+
+#if defined(HAL_GPIO_PIN_EXT_WDOG)
+    // external watchdog GPIO support
+    void ext_watchdog_pat(uint32_t now_ms);
+    uint32_t last_ext_watchdog_ms;
+#endif
+
+    static void try_force_mutex(void);
 };
 #endif

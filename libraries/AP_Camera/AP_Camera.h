@@ -80,10 +80,20 @@ public:
     // update - to be called periodically at 50Hz
     void update();
 
-    // MAVLink methods
+    // handle MAVLink messages from the camera
     void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg);
+
+    // handle MAVLink command from GCS to control the camera
     MAV_RESULT handle_command_long(const mavlink_command_long_t &packet);
+
+    // send camera feedback message to GCS
     void send_feedback(mavlink_channel_t chan);
+
+    // send camera information message to GCS
+    void send_camera_information(mavlink_channel_t chan);
+
+    // send camera settings message to GCS
+    void send_camera_settings(mavlink_channel_t chan);
 
     // configure camera
     void configure(float shooting_mode, float shutter_speed, float aperture, float ISO, float exposure_type, float cmd_id, float engine_cutoff_time);
@@ -116,8 +126,14 @@ public:
 
     // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
-    bool set_focus(FocusType focus_type, float focus_value);
-    bool set_focus(uint8_t instance, FocusType focus_type, float focus_value);
+    SetFocusResult set_focus(FocusType focus_type, float focus_value);
+    SetFocusResult set_focus(uint8_t instance, FocusType focus_type, float focus_value);
+
+    // set tracking to none, point or rectangle (see TrackingType enum)
+    // if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
+    // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
+    bool set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2);
+    bool set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2);
 
     // set if vehicle is in AUTO mode
     void set_is_auto_mode(bool enable) { _is_in_auto_mode = enable; }
@@ -131,7 +147,9 @@ public:
         float zoom_value;       // percentage or zoom out = -1, hold = 0, zoom in = 1
         uint8_t focus_type;     // see FocusType enum (1:Rate, 2:Pct, 4:Auto)
         float focus_value;      // If Rate, focus in = -1, focus hold = 0, focus out = 1.  If PCT 0 to 100
-        bool auto_focus;        // true when auto focusing
+        uint8_t tracking_type;  // see TrackingType enum (0:NONE, 1:POINT, 2:RECTANGLE)
+        Vector2f tracking_p1;   // center or top-left tracking point. x left-right, y is top-bottom. range is 0 to 1
+        Vector2f tracking_p2;   // bottom-right tracking point. x left-right, y is top-bottom. range is 0 to 1
     } camera_state_t;
 
     // accessor to allow scripting backend to retrieve state

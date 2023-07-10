@@ -16,7 +16,11 @@
  */
 #pragma once
 
-#include "AP_RCProtocol.h"
+#include "AP_RCProtocol_config.h"
+
+#if AP_RCPROTOCOL_PPMSUM_ENABLED
+
+#include "AP_RCProtocol_Backend.h"
 
 class AP_RCProtocol_PPMSum : public AP_RCProtocol_Backend {
 public:
@@ -29,3 +33,5 @@ private:
         uint16_t _pulse_capt[MAX_RCIN_CHANNELS];
     } ppm_state;
 };
+
+#endif  // AP_RCPROTOCOL_PPMSUM_ENABLED

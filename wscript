@@ -126,7 +126,7 @@ def options(opt):
         default=False,
         help='Configure as debug variant.')
 
-    g.add_option('-g',
+    g.add_option('--debug-symbols', '-g',
         action='store_true',
         default=False,
         help='Add debug symbolds to build.')
@@ -145,6 +145,11 @@ def options(opt):
         action='store_true',
         default=False,
         help='build with -Werror.')
+
+    g.add_option('--disable-Werror',
+        action='store_true',
+        default=True,
+        help='Disable -Werror.')
     
     g.add_option('--toolchain',
         action='store',
@@ -224,6 +229,10 @@ submodules at specific revisions.
     g.add_option('--disable-scripting', action='store_true',
                  default=False,
                  help="Disable onboard scripting engine")
+
+    g.add_option('--enable-scripting', action='store_true',
+                 default=False,
+                 help="Enable onboard scripting engine")
 
     g.add_option('--no-gcs', action='store_true',
                  default=False,
@@ -432,6 +441,7 @@ def configure(cfg):
         
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
+    cfg.env.DEBUG_SYMBOLS = cfg.options.debug_symbols
     cfg.env.COVERAGE = cfg.options.coverage
     cfg.env.AUTOCONFIG = cfg.options.autoconfig
 
@@ -444,6 +454,7 @@ def configure(cfg):
 
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug
+    cfg.env.DEBUG_SYMBOLS = cfg.options.debug_symbols
     cfg.env.COVERAGE = cfg.options.coverage
     cfg.env.FORCE32BIT = cfg.options.force_32bit
     cfg.env.ENABLE_ASSERTS = cfg.options.enable_asserts
@@ -477,7 +488,7 @@ def configure(cfg):
 
     # require python 3.8.x or later
     cfg.load('python')
-    cfg.check_python_version(minver=(3,8,0))
+    cfg.check_python_version(minver=(3,6,9))
 
     cfg.load('ap_library')
 
@@ -522,9 +533,11 @@ def configure(cfg):
     cfg.start_msg('Scripting')
     if cfg.options.disable_scripting:
         cfg.end_msg('disabled', color='YELLOW')
-    else:
+    elif cfg.options.enable_scripting:
         cfg.end_msg('enabled')
-        cfg.recurse('libraries/AP_Scripting')
+    else:
+        cfg.end_msg('maybe')
+    cfg.recurse('libraries/AP_Scripting')
 
     cfg.recurse('libraries/AP_GPS')
 
@@ -577,6 +590,11 @@ def configure(cfg):
 
     # Always use system extensions
     cfg.define('_GNU_SOURCE', 1)
+
+    if cfg.options.Werror:
+        # print(cfg.options.Werror)
+        if cfg.options.disable_Werror:
+            cfg.options.Werror = False
 
     cfg.write_config_header(os.path.join(cfg.variant, 'ap_config.h'), guard='_AP_CONFIG_H_')
 

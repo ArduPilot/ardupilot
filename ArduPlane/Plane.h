@@ -387,6 +387,7 @@ private:
     // Ground speed
     // The amount current ground speed is below min ground speed.  Centimeters per second
     int32_t groundspeed_undershoot;
+    bool groundspeed_undershoot_is_valid;
 
     // Difference between current altitude and desired altitude.  Centimeters
     int32_t altitude_error_cm;
@@ -689,6 +690,9 @@ private:
 
         // The amount of time we should stay in a loiter for the Loiter Time command.  Milliseconds.
         uint32_t time_max_ms;
+
+        // current value of loiter radius in metres used by the controller
+        float radius;
     } loiter;
 
     // Conditional command
@@ -1070,6 +1074,7 @@ private:
     bool should_log(uint32_t mask);
     int8_t throttle_percentage(void);
     void notify_mode(const Mode& mode);
+    bool gcs_mode_enabled(const Mode::Number mode_num) const;
 
     // takeoff.cpp
     bool auto_takeoff_check(void);
@@ -1085,7 +1090,6 @@ private:
     // servos.cpp
     void set_servos_idle(void);
     void set_servos();
-    void set_servos_manual_passthrough(void);
     void set_servos_controlled(void);
     void set_servos_old_elevons(void);
     void set_servos_flaps(void);
@@ -1233,6 +1237,8 @@ private:
 
 public:
     void failsafe_check(void);
+    bool is_landing() const override;
+    bool is_taking_off() const override;
 #if AP_SCRIPTING_ENABLED
     bool set_target_location(const Location& target_loc) override;
     bool get_target_location(Location& target_loc) override;

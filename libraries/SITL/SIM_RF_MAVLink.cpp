@@ -27,15 +27,6 @@ using namespace SITL;
 
 uint32_t RF_MAVLink::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
 {
-    // we share channels with the ArduPilot binary!
-
-    // we're swiping the Vicon's channel here.  If it causes issues we
-    // may need to allocate an additional mavlink channel for the rangefinder
-    const mavlink_channel_t mavlink_ch = (mavlink_channel_t)(MAVLINK_COMM_0+5);
-    if (!valid_channel(mavlink_ch)) {
-        AP_HAL::panic("Invalid mavlink channel");
-    }
-
     mavlink_message_t msg;
     const uint8_t system_id = 32;
     const uint8_t component_id = 32;

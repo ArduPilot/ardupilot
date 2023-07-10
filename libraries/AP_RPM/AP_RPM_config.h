@@ -3,7 +3,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #include <AP_EFI/AP_EFI_config.h>
-#include <AP_Generator/AP_Generator.h>
+#include <AP_Generator/AP_Generator_config.h>
 
 #ifndef AP_RPM_ENABLED
 #define AP_RPM_ENABLED 1

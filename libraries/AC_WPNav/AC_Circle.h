@@ -89,6 +89,9 @@ public:
     /// true if pilot control of radius and turn rate is enabled
     bool pilot_control_enabled() const { return (_options.get() & CircleOptions::MANUAL_CONTROL) != 0; }
 
+    /// true if mount roi is at circle center
+    bool roi_at_center() const { return (_options.get() & CircleOptions::ROI_AT_CENTER) != 0; }
+
     /// provide rangefinder based terrain offset
     /// terrain offset is the terrain's height above the EKF origin
     void set_rangefinder_terrain_offset(bool use, bool healthy, float terrain_offset_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_terrain_offset_cm = terrain_offset_cm;}
@@ -136,6 +139,7 @@ private:
         MANUAL_CONTROL           = 1U << 0,
         FACE_DIRECTION_OF_TRAVEL = 1U << 1,
         INIT_AT_CENTER           = 1U << 2, // true then the circle center will be the current location, false and the center will be 1 radius ahead
+        ROI_AT_CENTER            = 1U << 3, // true when the mount roi is at circle center
     };
 
     // parameters

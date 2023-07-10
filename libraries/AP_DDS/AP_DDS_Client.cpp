@@ -17,6 +17,7 @@ static constexpr uint16_t DELAY_BATTERY_STATE_TOPIC_MS = 1000;
 static constexpr uint16_t DELAY_LOCAL_POSE_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = 33;
 static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = 33;
+static constexpr uint16_t DELAY_CLOCK_TOPIC_MS = 10;
 static char WGS_84_FRAME_ID[] = "WGS-84";
 // https://www.ros.org/reps/rep-0105.html#base-link
 static char BASE_LINK_FRAME_ID[] = "base_link";
@@ -131,7 +132,7 @@ bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
         msg.position_covariance_type = 0; // COVARIANCE_TYPE_UNKNOWN
         return true;
     }
-    msg.altitude = alt_cm / 100.0;
+    msg.altitude = alt_cm * 0.01;
 
     // ROS allows double precision, ArduPilot exposes float precision today
     Matrix3f cov;
@@ -212,13 +213,13 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_BatteryState& msg, const uint8_
     float current;
     msg.current = (battery.current_amps(current, instance)) ? -1 * current : NAN;
 
-    const float design_capacity = (float)battery.pack_capacity_mah(instance)/1000.0;
+    const float design_capacity = (float)battery.pack_capacity_mah(instance) * 0.001;
     msg.design_capacity = design_capacity;
 
     uint8_t percentage;
     if (battery.capacity_remaining_pct(percentage, instance)) {
-        msg.percentage = percentage/100.0;
-        msg.charge = (percentage * design_capacity)/100.0;
+        msg.percentage = percentage * 0.01;
+        msg.charge = (percentage * design_capacity) * 0.01;
     } else {
         msg.percentage = NAN;
         msg.charge = NAN;
@@ -288,7 +289,7 @@ void AP_DDS_Client::update_topic(geometry_msgs_msg_PoseStamped& msg)
     Quaternion orientation;
     if (ahrs.get_quaternion(orientation)) {
         Quaternion aux(orientation[0], orientation[2], orientation[1], -orientation[3]); //NED to ENU transformation
-        Quaternion transformation (sqrt(2)/2,0,0,sqrt(2)/2); // Z axis 90 degree rotation
+        Quaternion transformation (sqrtF(2) * 0.5,0,0,sqrtF(2) * 0.5); // Z axis 90 degree rotation
         orientation = aux * transformation;
         msg.pose.orientation.w = orientation[0];
         msg.pose.orientation.x = orientation[1];
@@ -351,7 +352,7 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
     if (ahrs.get_location(loc)) {
         msg.pose.position.latitude = loc.lat * 1E-7;
         msg.pose.position.longitude = loc.lng * 1E-7;
-        msg.pose.position.altitude = loc.alt / 100.0; // Transform from cm to m
+        msg.pose.position.altitude = loc.alt * 0.01; // Transform from cm to m
     }
 
     // In ROS REP 103, axis orientation uses the following convention:
@@ -365,13 +366,18 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
     Quaternion orientation;
     if (ahrs.get_quaternion(orientation)) {
         Quaternion aux(orientation[0], orientation[2], orientation[1], -orientation[3]); //NED to ENU transformation
-        Quaternion transformation(sqrt(2) / 2, 0, 0, sqrt(2) / 2); // Z axis 90 degree rotation
+        Quaternion transformation(sqrtF(2) * 0.5, 0, 0, sqrtF(2) * 0.5); // Z axis 90 degree rotation
         orientation = aux * transformation;
         msg.pose.orientation.w = orientation[0];
         msg.pose.orientation.x = orientation[1];
         msg.pose.orientation.y = orientation[2];
         msg.pose.orientation.z = orientation[3];
     }
+}
+
+void AP_DDS_Client::update_topic(rosgraph_msgs_msg_Clock& msg)
+{
+    update_topic(msg.clock);
 }
 
 /*
@@ -393,6 +399,38 @@ bool AP_DDS_Client::start(void)
         return false;
     }
     return true;
+}
+
+// read function triggered at every subscription callback
+void AP_DDS_Client::on_topic (uxrSession* uxr_session, uxrObjectId object_id, uint16_t request_id, uxrStreamId stream_id, struct ucdrBuffer* ub, uint16_t length, void* args)
+{
+    (void) uxr_session; (void) object_id; (void) request_id; (void) stream_id; (void) length;
+    /*
+    TEMPLATE for reading to the subscribed topics
+    1) Store the read contents into the ucdr buffer
+    2) Deserialize the said contents into the topic instance
+    */
+
+    switch (object_id.id) {
+    case topics[to_underlying(TopicIndex::JOY_SUB)].dr_id.id:
+        sensor_msgs_msg_Joy topic;
+        const bool success = sensor_msgs_msg_Joy_deserialize_topic(ub, &topic);
+
+        if (success == false) {
+            break;
+        }
+
+        uint32_t* count_ptr = (uint32_t*) args;
+        (*count_ptr)++;
+        if (topic.axes_size >= 4) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Received sensor_msgs/Joy: %f, %f, %f, %f",
+                          topic.axes[0], topic.axes[1], topic.axes[2], topic.axes[3]);
+        } else {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Received sensor_msgs/Joy: Insufficient axes size ");
+        }
+        break;
+    }
+
 }
 
 /*
@@ -432,6 +470,10 @@ bool AP_DDS_Client::init()
         GCS_SEND_TEXT(MAV_SEVERITY_INFO,"DDS Client: Transport Initialization failed");
         return false;
     }
+
+    // Register topic callbacks
+    uxr_set_topic_callback(&session, AP_DDS_Client::on_topic, &count);
+
     while (!uxr_create_session(&session)) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO,"DDS Client: Initialization waiting...");
         hal.scheduler->delay(1000);
@@ -473,8 +515,8 @@ bool AP_DDS_Client::create()
     constexpr uint8_t nRequestsParticipant = 1;
     const uint16_t requestsParticipant[nRequestsParticipant] = {participant_req_id};
 
-    constexpr int maxTimeMsPerRequestMs = 250;
-    constexpr int requestTimeoutParticipantMs = nRequestsParticipant * maxTimeMsPerRequestMs;
+    constexpr uint8_t maxTimeMsPerRequestMs = 250;
+    constexpr uint16_t requestTimeoutParticipantMs = (uint16_t) nRequestsParticipant * maxTimeMsPerRequestMs;
     uint8_t statusParticipant[nRequestsParticipant];
     if (!uxr_run_session_until_all_status(&session, requestTimeoutParticipantMs, requestsParticipant, statusParticipant, nRequestsParticipant)) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Participant session request failure");
@@ -491,35 +533,71 @@ bool AP_DDS_Client::create()
         const char* topic_ref = topics[i].topic_profile_label;
         const auto topic_req_id = uxr_buffer_create_topic_ref(&session,reliable_out,topic_id,participant_id,topic_ref,UXR_REPLACE);
 
-        // Publisher
-        const uxrObjectId pub_id = {
-            .id = topics[i].pub_id,
-            .type = UXR_PUBLISHER_ID
-        };
-        const char* pub_xml = "";
-        const auto pub_req_id = uxr_buffer_create_publisher_xml(&session,reliable_out,pub_id,participant_id,pub_xml,UXR_REPLACE);
-
-        // Data Writer
-        const char* data_writer_ref = topics[i].dw_profile_label;
-        const auto dwriter_req_id = uxr_buffer_create_datawriter_ref(&session,reliable_out,topics[i].dw_id,pub_id,data_writer_ref,UXR_REPLACE);
-
         // Status requests
         constexpr uint8_t nRequests = 3;
-        const uint16_t requests[nRequests] = {topic_req_id, pub_req_id, dwriter_req_id};
-        constexpr int requestTimeoutMs = nRequests * maxTimeMsPerRequestMs;
+        uint16_t requests[nRequests];
+        constexpr uint16_t requestTimeoutMs = (uint8_t) nRequests * maxTimeMsPerRequestMs;
         uint8_t status[nRequests];
-        if (!uxr_run_session_until_all_status(&session, requestTimeoutMs, requests, status, nRequests)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Topic/Pub/Writer session request failure for index 'TODO'");
-            for (int s = 0 ; s < nRequests; s++) {
-                GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Status '%d' result '%u'", s, status[s]);
+
+        if (strlen(topics[i].dw_profile_label) > 0) {
+            // Publisher
+            const uxrObjectId pub_id = {
+                .id = topics[i].pub_id,
+                .type = UXR_PUBLISHER_ID
+            };
+            const char* pub_xml = "";
+            const auto pub_req_id = uxr_buffer_create_publisher_xml(&session,reliable_out,pub_id,participant_id,pub_xml,UXR_REPLACE);
+
+            // Data Writer
+            const char* data_writer_ref = topics[i].dw_profile_label;
+            const auto dwriter_req_id = uxr_buffer_create_datawriter_ref(&session,reliable_out,topics[i].dw_id,pub_id,data_writer_ref,UXR_REPLACE);
+
+            // save the request statuses
+            requests[0] = topic_req_id;
+            requests[1] = pub_req_id;
+            requests[2] = dwriter_req_id;
+
+            if (!uxr_run_session_until_all_status(&session, requestTimeoutMs, requests, status, nRequests)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Topic/Pub/Writer session request failure for index 'TODO'");
+                for (uint8_t s = 0 ; s < nRequests; s++) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Status '%d' result '%u'", s, status[s]);
+                }
+                // TODO add a failure log message sharing the status results
+                return false;
+            } else {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO,"XRCE Client: Topic/Pub/Writer session pass for index 'TOOO'");
             }
-            // TODO add a failure log message sharing the status results
-            return false;
-        } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"XRCE Client: Topic/Pub/Writer session pass for index 'TOOO'");
+        } else if (strlen(topics[i].dr_profile_label) > 0) {
+            // Subscriber
+            const uxrObjectId sub_id = {
+                .id = topics[i].sub_id,
+                .type = UXR_SUBSCRIBER_ID
+            };
+            const char* sub_xml = "";
+            const auto sub_req_id = uxr_buffer_create_subscriber_xml(&session,reliable_out,sub_id,participant_id,sub_xml,UXR_REPLACE);
+
+            // Data Reader
+            const char* data_reader_ref = topics[i].dr_profile_label;
+            const auto dreader_req_id = uxr_buffer_create_datareader_ref(&session,reliable_out,topics[i].dr_id,sub_id,data_reader_ref,UXR_REPLACE);
+
+            // save the request statuses
+            requests[0] = topic_req_id;
+            requests[1] = sub_req_id;
+            requests[2] = dreader_req_id;
+
+            if (!uxr_run_session_until_all_status(&session, requestTimeoutMs, requests, status, nRequests)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Topic/Sub/Reader session request failure for index '%d'",(int)i);
+                for (uint8_t s = 0 ; s < nRequests; s++) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Status '%d' result '%u'", s, status[s]);
+                }
+                // TODO add a failure log message sharing the status results
+                return false;
+            } else {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO,"XRCE Client: Topic/Sub/Reader session pass for index '%d'",(int)i);
+                uxr_buffer_request_data(&session, reliable_out, topics[i].dr_id, reliable_in, &delivery_control);
+            }
         }
     }
-
     return true;
 }
 
@@ -527,7 +605,7 @@ void AP_DDS_Client::write_time_topic()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
-        ucdrBuffer ub;
+        ucdrBuffer ub {};
         const uint32_t topic_size = builtin_interfaces_msg_Time_size_of_topic(&time_topic, 0);
         uxr_prepare_output_stream(&session,reliable_out,topics[0].dw_id,&ub,topic_size);
         const bool success = builtin_interfaces_msg_Time_serialize_topic(&ub, &time_topic);
@@ -542,7 +620,7 @@ void AP_DDS_Client::write_nav_sat_fix_topic()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
-        ucdrBuffer ub;
+        ucdrBuffer ub {};
         const uint32_t topic_size = sensor_msgs_msg_NavSatFix_size_of_topic(&nav_sat_fix_topic, 0);
         uxr_prepare_output_stream(&session,reliable_out,topics[1].dw_id,&ub,topic_size);
         const bool success = sensor_msgs_msg_NavSatFix_serialize_topic(&ub, &nav_sat_fix_topic);
@@ -557,7 +635,7 @@ void AP_DDS_Client::write_static_transforms()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
-        ucdrBuffer ub;
+        ucdrBuffer ub {};
         const uint32_t topic_size = tf2_msgs_msg_TFMessage_size_of_topic(&static_transforms_topic, 0);
         uxr_prepare_output_stream(&session,reliable_out,topics[2].dw_id,&ub,topic_size);
         const bool success = tf2_msgs_msg_TFMessage_serialize_topic(&ub, &static_transforms_topic);
@@ -572,7 +650,7 @@ void AP_DDS_Client::write_battery_state_topic()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
-        ucdrBuffer ub;
+        ucdrBuffer ub {};
         const uint32_t topic_size = sensor_msgs_msg_BatteryState_size_of_topic(&battery_state_topic, 0);
         uxr_prepare_output_stream(&session,reliable_out,topics[3].dw_id,&ub,topic_size);
         const bool success = sensor_msgs_msg_BatteryState_serialize_topic(&ub, &battery_state_topic);
@@ -586,7 +664,7 @@ void AP_DDS_Client::write_local_pose_topic()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
-        ucdrBuffer ub;
+        ucdrBuffer ub {};
         const uint32_t topic_size = geometry_msgs_msg_PoseStamped_size_of_topic(&local_pose_topic, 0);
         uxr_prepare_output_stream(&session,reliable_out,topics[4].dw_id,&ub,topic_size);
         const bool success = geometry_msgs_msg_PoseStamped_serialize_topic(&ub, &local_pose_topic);
@@ -601,7 +679,7 @@ void AP_DDS_Client::write_local_velocity_topic()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
-        ucdrBuffer ub;
+        ucdrBuffer ub {};
         const uint32_t topic_size = geometry_msgs_msg_TwistStamped_size_of_topic(&local_velocity_topic, 0);
         uxr_prepare_output_stream(&session,reliable_out,topics[5].dw_id,&ub,topic_size);
         const bool success = geometry_msgs_msg_TwistStamped_serialize_topic(&ub, &local_velocity_topic);
@@ -616,10 +694,25 @@ void AP_DDS_Client::write_geo_pose_topic()
 {
     WITH_SEMAPHORE(csem);
     if (connected) {
-        ucdrBuffer ub;
+        ucdrBuffer ub {};
         const uint32_t topic_size = geographic_msgs_msg_GeoPoseStamped_size_of_topic(&geo_pose_topic, 0);
         uxr_prepare_output_stream(&session,reliable_out,topics[6].dw_id,&ub,topic_size);
         const bool success = geographic_msgs_msg_GeoPoseStamped_serialize_topic(&ub, &geo_pose_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        }
+    }
+}
+
+void AP_DDS_Client::write_clock_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub {};
+        const uint32_t topic_size = rosgraph_msgs_msg_Clock_size_of_topic(&clock_topic, 0);
+        uxr_prepare_output_stream(&session,reliable_out,topics[7].dw_id,&ub,topic_size);
+        const bool success = rosgraph_msgs_msg_Clock_serialize_topic(&ub, &clock_topic);
         if (!success) {
             // TODO sometimes serialization fails on bootup. Determine why.
             // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
@@ -666,6 +759,12 @@ void AP_DDS_Client::update()
         update_topic(geo_pose_topic);
         last_geo_pose_time_ms = cur_time_ms;
         write_geo_pose_topic();
+    }
+
+    if (cur_time_ms - last_clock_time_ms > DELAY_CLOCK_TOPIC_MS) {
+        update_topic(clock_topic);
+        last_clock_time_ms = cur_time_ms;
+        write_clock_topic();
     }
 
     connected = uxr_run_session_time(&session, 1);

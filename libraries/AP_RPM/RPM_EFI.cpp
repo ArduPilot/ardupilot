@@ -24,7 +24,6 @@
 AP_RPM_EFI::AP_RPM_EFI(AP_RPM &_ap_rpm, uint8_t _instance, AP_RPM::RPM_State &_state) :
     AP_RPM_Backend(_ap_rpm, _instance, _state)
 {
-    instance = _instance;
 }
 
 void AP_RPM_EFI::update(void)

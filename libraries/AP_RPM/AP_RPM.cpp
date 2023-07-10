@@ -282,7 +282,7 @@ bool AP_RPM::arming_checks(size_t buflen, char *buffer) const
 }
 
 #if HAL_LOGGING_ENABLED
-void AP_RPM::Log_RPM()
+void AP_RPM::Log_RPM() const
 {
     float rpm1 = -1, rpm2 = -1;
 

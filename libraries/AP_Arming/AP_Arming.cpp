@@ -326,6 +326,7 @@ bool AP_Arming::logging_checks(bool report)
     return true;
 }
 
+#if AP_INERTIALSENSOR_ENABLED
 bool AP_Arming::ins_accels_consistent(const AP_InertialSensor &ins)
 {
     const uint8_t accel_count = ins.get_accel_count();
@@ -488,6 +489,7 @@ bool AP_Arming::ins_checks(bool report)
 
     return true;
 }
+#endif // AP_INERTIALSENSOR_ENABLED
 
 bool AP_Arming::compass_checks(bool report)
 {
@@ -635,7 +637,7 @@ bool AP_Arming::gps_checks(bool report)
         if (gps.first_unconfigured_gps(first_unconfigured)) {
             check_failed(ARMING_CHECK_GPS_CONFIG,
                          report,
-                         "GPS %d failing configuration checks",
+                         "GPS %d still configuring this GPS",
                          first_unconfigured + 1);
             if (report) {
                 gps.broadcast_first_configuration_failure_reason();
@@ -700,7 +702,7 @@ bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
     }
     const RCMapper * rcmap = AP::rcmap();
     if (rcmap != nullptr) {
-        if (!rc().arming_skip_checks_rpy()) {
+        if (!rc().option_is_enabled(RC_Channels::Option::ARMING_SKIP_CHECK_RPY)) {
             const char *names[3] = {"Roll", "Pitch", "Yaw"};
             const uint8_t channels[3] = {rcmap->roll(), rcmap->pitch(), rcmap->yaw()};
             for (uint8_t i = 0; i < ARRAY_SIZE(channels); i++) {
@@ -1047,11 +1049,13 @@ bool AP_Arming::system_checks(bool report)
             return false;
         }
 #endif
+#if AP_RELAY_ENABLED
         auto *relay = AP::relay();
         if (relay && !relay->arming_checks(sizeof(buffer), buffer)) {
             check_failed(ARMING_CHECK_PARAMETERS, report, "%s", buffer);
             return false;
         }
+#endif
 #if HAL_PARACHUTE_ENABLED
         auto *chute = AP::parachute();
         if (chute && !chute->arming_checks(sizeof(buffer), buffer)) {
@@ -1493,7 +1497,9 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  heater_min_temperature_checks(report)
 #endif
         &  barometer_checks(report)
+#if AP_INERTIALSENSOR_ENABLED
         &  ins_checks(report)
+#endif
         &  compass_checks(report)
         &  gps_checks(report)
         &  battery_checks(report)
@@ -1796,6 +1802,7 @@ void AP_Arming::check_forced_logging(const AP_Arming::Method method)
         case Method::GCS_FAILSAFE_HOLDFAILED:
         case Method::PILOT_INPUT_FAILSAFE:
         case Method::DEADRECKON_FAILSAFE:
+        case Method::BLACKBOX:
             // keep logging for longer if disarmed for a bad reason
             AP::logger().set_long_log_persist(true);
             return;
@@ -1824,7 +1831,7 @@ void AP_Arming::check_forced_logging(const AP_Arming::Method method)
 AP_Arming *AP_Arming::_singleton = nullptr;
 
 /*
- * Get the AP_InertialSensor singleton
+ * Get the AP_Arming singleton
  */
 AP_Arming *AP_Arming::get_singleton()
 {

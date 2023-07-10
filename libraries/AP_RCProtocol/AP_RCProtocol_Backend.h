@@ -18,6 +18,9 @@
 #pragma once
 
 #include "AP_RCProtocol.h"
+
+#if AP_RCPROTOCOL_ENABLED
+
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_VideoTX/AP_VideoTX_config.h>
 
@@ -131,3 +134,5 @@ private:
     int16_t rssi = -1;
     int16_t rx_link_quality = -1;
 };
+
+#endif  // AP_RCPROTOCOL_ENABLED

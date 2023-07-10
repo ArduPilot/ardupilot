@@ -20,6 +20,7 @@
 #include "Buzzer.h"
 #include "Display.h"
 #include "ExternalLED.h"
+#include "IS31FL3195.h"
 #include "PCA9685LED_I2C.h"
 #include "NavigatorLED.h"
 #include "NeoPixel.h"
@@ -28,6 +29,7 @@
 #include "RCOutputRGBLed.h"
 #include "ToneAlarm.h"
 #include "ToshibaLED_I2C.h"
+#include "LP5562.h"
 #include "VRBoard_LED.h"
 #include "DiscreteRGBLed.h"
 #include "DiscoLED.h"
@@ -44,7 +46,11 @@ extern const AP_HAL::HAL& hal;
 
 AP_Notify *AP_Notify::_singleton;
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#define CONFIG_NOTIFY_DEVICES_MAX 12
+#else
 #define CONFIG_NOTIFY_DEVICES_MAX 6
+#endif
 
 #if AP_NOTIFY_TOSHIBALED_ENABLED
 #define TOSHIBA_LED_I2C_BUS_INTERNAL    0
@@ -60,9 +66,20 @@ AP_Notify *AP_Notify::_singleton;
 #define ALL_NCP5623_I2C 0
 #endif
 
-// all I2C_LEDS
-#define I2C_LEDS (ALL_TOSHIBALED_I2C | ALL_NCP5623_I2C)
+#if AP_NOTIFY_LP5562_ENABLED
+#define ALL_LP5562_I2C (Notify_LED_LP5562_I2C_Internal | Notify_LED_LP5562_I2C_External)
+#else
+#define ALL_LP5562_I2C 0
+#endif
 
+// all I2C_LEDS
+#define I2C_LEDS (ALL_TOSHIBALED_I2C | ALL_NCP5623_I2C | ALL_LP5562_I2C)
+
+#if AP_NOTIFY_DRONECAN_LED_ENABLED
+#define DRONECAN_LEDS Notify_LED_DroneCAN
+#else
+#define DRONECAN_LEDS 0
+#endif
 
 #ifndef DEFAULT_NTF_LED_TYPES
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
@@ -79,7 +96,7 @@ AP_Notify *AP_Notify::_singleton;
 
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
     #define DEFAULT_NTF_LED_TYPES (Notify_LED_Board | I2C_LEDS |\
-                                    Notify_LED_DroneCAN)
+                                    DRONECAN_LEDS)
   #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE || \
         CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET || \
@@ -123,11 +140,7 @@ AP_Notify *AP_Notify::_singleton;
 #endif
 
 #ifndef NOTIFY_LED_OVERRIDE_DEFAULT
-#ifdef HAL_BUILD_AP_PERIPH
-    #define NOTIFY_LED_OVERRIDE_DEFAULT 1       // rgb_source_t::mavlink
-#else
-    #define NOTIFY_LED_OVERRIDE_DEFAULT 0       // rgb_source_t::standard
-#endif
+#define NOTIFY_LED_OVERRIDE_DEFAULT 0       // rgb_source_t::standard
 #endif
 
 #ifndef NOTIFY_LED_LEN_DEFAULT
@@ -194,7 +207,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Param: LED_TYPES
     // @DisplayName: LED Driver Types
     // @Description: Controls what types of LEDs will be enabled
-    // @Bitmask: 0:Built-in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:DroneCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel, 9:ProfiLED, 10:Scripting, 11:DShot, 12:ProfiLED_SPI
+    // @Bitmask: 0:Built-in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:DroneCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel, 9:ProfiLED, 10:Scripting, 11:DShot, 12:ProfiLED_SPI, 13:LP5562 External, 14: LP5562 Internal
     // @User: Advanced
     AP_GROUPINFO("LED_TYPES", 6, AP_Notify, _led_type, DEFAULT_NTF_LED_TYPES),
 
@@ -339,30 +352,52 @@ void AP_Notify::add_backends(void)
                 ADD_BACKEND(new ProfiLED_SPI());
                 break;
 #endif
-            case Notify_LED_OreoLED:
 #if AP_NOTIFY_OREOLED_ENABLED
+            case Notify_LED_OreoLED:
                 if (_oreo_theme) {
                     ADD_BACKEND(new OreoLED_I2C(0, _oreo_theme));
                 }
-#endif
                 break;
+#endif
+#if AP_NOTIFY_DRONECAN_LED_ENABLED
             case Notify_LED_DroneCAN:
-#if HAL_ENABLE_DRONECAN_DRIVERS
-                ADD_BACKEND(new DroneCAN_RGB_LED(0));
-#endif // HAL_ENABLE_DRONECAN_DRIVERS
+                ADD_BACKEND(new DroneCAN_RGB_LED());
                 break;
-
+#endif // AP_NOTIFY_DRONECAN_LED_ENABLED
+#if AP_NOTIFY_SCRIPTING_LED_ENABLED
             case Notify_LED_Scripting:
-#if AP_SCRIPTING_ENABLED
                 ADD_BACKEND(new ScriptingLED());
-#endif
                 break;
-
+#endif
+#if AP_NOTIFY_DSHOT_LED_ENABLED
             case Notify_LED_DShot:
-#if HAL_SUPPORT_RCOUT_SERIAL
                 ADD_BACKEND(new DShotLED());
-#endif
                 break;
+#endif
+#if AP_NOTIFY_LP5562_ENABLED
+            case Notify_LED_LP5562_I2C_External:
+                FOREACH_I2C_EXTERNAL(b) {
+                    ADD_BACKEND(new LP5562(b, 0x30));
+                }
+                break;
+            case Notify_LED_LP5562_I2C_Internal:
+                FOREACH_I2C_INTERNAL(b) {
+                    ADD_BACKEND(new LP5562(b, 0x30));
+                }
+                break;
+#endif
+#if AP_NOTIFY_IS31FL3195_ENABLED
+            case Notify_LED_IS31FL3195_I2C_External:
+                FOREACH_I2C_EXTERNAL(b) {
+                    ADD_BACKEND(new IS31FL3195(b, 0x54));
+                }
+                break;
+            case Notify_LED_IS31FL3195_I2C_Internal:
+                FOREACH_I2C_INTERNAL(b) {
+                    ADD_BACKEND(new IS31FL3195(b, 0x54));
+                }
+                break;
+#endif
         }
     }
 

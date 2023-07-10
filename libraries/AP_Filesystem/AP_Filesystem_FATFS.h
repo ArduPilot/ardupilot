@@ -11,6 +11,8 @@
 #include <stddef.h>
 #include "AP_Filesystem_backend.h"
 
+#if AP_FILESYSTEM_FATFS_ENABLED
+
 // Seek offset macros
 #define SEEK_SET 0
 #define SEEK_CUR 1
@@ -57,3 +59,5 @@ private:
     void format_handler(void);
     FormatStatus format_status;
 };
+
+#endif  // #if AP_FILESYSTEM_FATFS_ENABLED

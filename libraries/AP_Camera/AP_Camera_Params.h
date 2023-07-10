@@ -21,6 +21,7 @@ public:
     AP_Float trigg_dist;        // distance between trigger points (meters)
     AP_Int8 relay_on;           // relay value to trigger camera
     AP_Float interval_min;      // minimum time (in seconds) between shots required by camera
+    AP_Int8 options;            // whether to start recording when armed and stop when disarmed
 
     // pin number for accurate camera feedback messages
     AP_Int8 feedback_pin;

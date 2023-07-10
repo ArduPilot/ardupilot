@@ -17,27 +17,23 @@
 
 #include "AP_Filesystem_config.h"
 #include <AP_HAL/HAL.h>
+#include <AP_HAL/Util.h>
 
 static AP_Filesystem fs;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-#if HAVE_FILESYSTEM_SUPPORT
+// create exactly one "local" filesystem:
+#if AP_FILESYSTEM_FATFS_ENABLED
 #include "AP_Filesystem_FATFS.h"
 static AP_Filesystem_FATFS fs_local;
+#elif AP_FILESYSTEM_ESP32_ENABLED
+#include "AP_Filesystem_ESP32.h"
+static AP_Filesystem_ESP32 fs_local;
+#elif AP_FILESYSTEM_POSIX_ENABLED
+#include "AP_Filesystem_posix.h"
+static AP_Filesystem_Posix fs_local;
 #else
 static AP_Filesystem_Backend fs_local;
 int errno;
-#endif // HAVE_FILESYSTEM_SUPPORT
-#endif // HAL_BOARD_CHIBIOS
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
-#include "AP_Filesystem_ESP32.h"
-static AP_Filesystem_ESP32 fs_local;
-#endif // HAL_BOARD_ESP32
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include "AP_Filesystem_posix.h"
-static AP_Filesystem_Posix fs_local;
 #endif
 
 #if AP_FILESYSTEM_ROMFS_ENABLED
@@ -290,26 +286,20 @@ bool AP_Filesystem::fgets(char *buf, uint8_t buflen, int fd)
     return true;
 }
 
+#if AP_FILESYSTEM_FORMAT_ENABLED
 // format filesystem
 bool AP_Filesystem::format(void)
 {
-#if AP_FILESYSTEM_FORMAT_ENABLED
     if (hal.util->get_soft_armed()) {
         return false;
     }
     return LOCAL_BACKEND.fs.format();
-#else
-    return false;
-#endif
 }
 AP_Filesystem_Backend::FormatStatus AP_Filesystem::get_format_status(void) const
 {
-#if AP_FILESYSTEM_FORMAT_ENABLED
     return LOCAL_BACKEND.fs.get_format_status();
-#else
-    return AP_Filesystem_Backend::FormatStatus::NOT_STARTED;
-#endif
 }
+#endif
 
 namespace AP
 {

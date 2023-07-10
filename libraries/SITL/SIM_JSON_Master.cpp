@@ -70,7 +70,7 @@ void JSON_Master::receive(struct sitl_input &input)
             uint16_t frame_rate;
             uint32_t frame_count;
             uint16_t pwm[16];
-        } buffer;
+        } buffer{};
 
         while (true) {
             ssize_t ret = list->sock_in.recv(&buffer, sizeof(buffer), 100);
@@ -183,6 +183,7 @@ void JSON_Master::send(const struct sitl_fdm &output, const Vector3d &position)
     for (socket_list *list = &_list; list->next; list=list->next) {
         list->sock_out.send(json_out,length);
     }
+    free(json_out);
 }
 
 

@@ -18,6 +18,7 @@
 #include "hal.h"
 #include "usbcfg.h"
 #include "stm32_util.h"
+#include "flash.h"
 #include "watchdog.h"
 
 
@@ -236,7 +237,7 @@ void __early_init(void) {
 #if !defined(STM32F1)
   stm32_gpio_init();
 #endif
-#if !HAL_XIP_ENABLED
+#if !HAL_XIP_ENABLED || defined(HAL_FORCE_CLOCK_INIT)
   // if running from external flash then the clocks must not be reset - instead rely on the bootloader to setup
   stm32_clock_init();
 #endif
@@ -293,6 +294,11 @@ void __late_init(void) {
 #endif
 #ifdef HAL_USB_PRODUCT_ID
   setup_usb_strings();
+#endif
+
+#ifdef HAL_FLASH_SET_NRST_MODE
+  // ensure NRST_MODE is set correctly
+  stm32_flash_set_NRST_MODE(HAL_FLASH_SET_NRST_MODE);
 #endif
 }
 

@@ -8,6 +8,7 @@
 #include "AP_MotorsHeli.h"
 #include "AP_MotorsHeli_RSC.h"
 #include "AP_MotorsHeli_Swash.h"
+#include "AP_Motors_Thrust_Linearization.h"
 
 // rsc and extgyro function output channels.
 #define AP_MOTORS_HELI_SINGLE_EXTGYRO                          CH_7
@@ -55,21 +56,6 @@ public:
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1
     void set_desired_rotor_speed(float desired_speed) override;
 
-    // get_main_rotor_speed - estimated rotor speed when no speed sensor or governor is used
-    float get_main_rotor_speed() const  override { return _main_rotor.get_rotor_speed(); }
-
-    // get_desired_rotor_speed - gets target rotor speed as a number from 0 ~ 1
-    float get_desired_rotor_speed() const  override { return _main_rotor.get_desired_speed(); }
-
-    // rotor_speed_above_critical - return true if rotor speed is above that critical for flight
-    bool rotor_speed_above_critical() const  override { return _main_rotor.get_rotor_speed() > _main_rotor.get_critical_speed(); }
-
-    // get_governor_output
-    float get_governor_output() const override { return _main_rotor.get_governor_output(); }
-
-    // get_control_output
-    float get_control_output() const override{ return _main_rotor.get_control_output(); }
-
     // calculate_scalars - recalculates various scalars used
     void calculate_scalars() override;
 
@@ -94,13 +80,16 @@ public:
     // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
     bool parameter_check(bool display_msg) const override;
 
+    // Thrust Linearization handling
+    Thrust_Linearization thr_lin {*this};
+
     // var_info
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
 
     // init_outputs - initialise Servo/PWM ranges and endpoints
-    bool init_outputs() override;
+    void init_outputs() override;
 
     // update_motor_controls - sends commands to motor controllers
     void update_motor_control(RotorControlState state) override;
@@ -111,13 +100,11 @@ protected:
     // move_yaw - moves the yaw servo
     void move_yaw(float yaw_out);
 
+    // calculate the motor output for DDFP tails from yaw_out
+    uint16_t calculate_ddfp_output(float yaw_out);
+
     // servo_test - move servos through full range of movement
     void servo_test() override;
-
-    // output_test_seq - spin a motor at the pwm value specified
-    //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
-    //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-    virtual void _output_test_seq(uint8_t motor_seq, int16_t pwm) override;
 
     // external objects we depend upon
     AP_MotorsHeli_RSC   _tail_rotor;            // tail rotor
@@ -135,6 +122,9 @@ protected:
     float _servo3_out = 0.0f;                   // output value sent to motor
     float _servo4_out = 0.0f;                   // output value sent to motor
     float _servo5_out = 0.0f;                   // output value sent to motor
+    uint16_t _ddfp_pwm_min = 0;                 // minimum ddfp servo min
+    uint16_t _ddfp_pwm_max = 0;                 // minimum ddfp servo max
+    uint16_t _ddfp_pwm_trim = 0;                // minimum ddfp servo trim
 
     // parameters
     AP_Int16        _tail_type;                 // Tail type used: Servo, Servo with external gyro, direct drive variable pitch or direct drive fixed pitch

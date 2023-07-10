@@ -15,7 +15,7 @@
 /*
   Simulator for the RPLidarA2 proximity sensor
 
-./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:rplidara2 --speedup=1 -l 51.8752066,14.6487840,54.15,0 --map
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:rplidara2 --speedup=1 -l 51.8752066,14.6487840,0,0 --map
 
 param set SERIAL5_PROTOCOL 11
 param set PRX1_TYPE 5
@@ -43,97 +43,20 @@ rc 2 1450
 
 #pragma once
 
-#include "SIM_SerialProximitySensor.h"
-
-#ifndef HAL_SIM_PS_RPLIDARA2_ENABLED
-#define HAL_SIM_PS_RPLIDARA2_ENABLED HAL_SIM_SERIALPROXIMITYSENSOR_ENABLED
-#endif
+#include "SIM_config.h"
 
 #if HAL_SIM_PS_RPLIDARA2_ENABLED
 
-#include <stdio.h>
+#include "SIM_PS_RPLidar.h"
 
 namespace SITL {
 
-class PS_RPLidarA2 : public SerialProximitySensor {
+class PS_RPLidarA2 : public PS_RPLidar {
 public:
-
-    using SerialProximitySensor::SerialProximitySensor;
-
-    uint32_t packet_for_location(const Location &location,
-                                 uint8_t *data,
-                                 uint8_t buflen) override;
-
-    void update(const Location &location) override;
-
-private:
-
-    void update_input();
-    void update_output(const Location &location);
-    void update_output_scan(const Location &location);
-
-    uint32_t last_scan_output_time_ms;
-
-    float last_degrees_bf;
-
-    char _buffer[256]; // from-autopilot
-    uint8_t _buflen;
-
-    // TODO: see what happens on real device on partial input
-    enum class State {
-        IDLE = 17,
-        SCANNING = 18,
-    };
-    State _state = State::IDLE;
-    void set_state(State newstate) {
-        ::fprintf(stderr, "Moving from state (%u) to (%u)\n", (uint8_t)_state, (uint8_t)newstate);
-        _state = newstate;
-    }
-
-    enum class InputState {
-        WAITING_FOR_PREAMBLE = 45,
-        GOT_PREAMBLE = 46,
-        RESETTING_START = 47,
-        RESETTING_SEND_FIRMWARE_INFO = 48,
-    };
-    InputState _inputstate = InputState::WAITING_FOR_PREAMBLE;
-    void set_inputstate(InputState newstate) {
-        ::fprintf(stderr, "Moving from inputstate (%u) to (%u)\n", (uint8_t)_inputstate, (uint8_t)newstate);
-        _inputstate = newstate;
-    }
-
-    static const uint8_t PREAMBLE = 0xA5;
-
-    enum class Command {
-        STOP = 0x25,
-        SCAN = 0x20,
-        FORCE_SCAN = 0x21,
-        RESET = 0x40,
-        GET_HEALTH = 0x52,
-    };
-
-    void move_preamble_in_buffer();
-
-    enum class DataType {
-        Unknown06 = 0x06, // uint8_t ?!
-        Unknown81 = 0x81, // uint8_t ?!
-    };
-
-    enum class SendMode {
-        SRSR = 0x00,
-        SRMR = 0x40,  // no idea why this isn't 0x01
-    };
-
-    void send_response_descriptor(uint32_t data_response_length,
-                                  SendMode sendmode,
-                                  DataType datatype);
-
-
-    // the driver expects to see an "R" followed by 62 bytes more crap.
-    static const constexpr char *FIRMWARE_INFO = "R12345678901234567890123456789012345678901234567890123456789012";
-    uint8_t _firmware_info_offset;
+    uint8_t device_info_model() const override { return 0x28; }
+    uint8_t max_range() const override { return 16.0f; };
 };
 
-};
+}
 
 #endif  // HAL_SIM_PS_RPLIDARA2_ENABLED

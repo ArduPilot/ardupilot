@@ -16,9 +16,11 @@
   simulate ship takeoff/landing
 */
 
-#include "SIM_Ship.h"
+#include "SIM_config.h"
 
 #if AP_SIM_SHIP_ENABLED
+
+#include "SIM_Ship.h"
 
 #include "SITL.h"
 
@@ -27,10 +29,6 @@
 #include "SIM_Aircraft.h"
 #include <AP_HAL_SITL/SITL_State.h>
 #include <AP_Terrain/AP_Terrain.h>
-
-// use a spare channel for send. This is static to avoid mavlink
-// header import in SIM_Ship.h
-static const mavlink_channel_t mavlink_ch = (mavlink_channel_t)(MAVLINK_COMM_0+6);
 
 using namespace SITL;
 
@@ -74,9 +72,6 @@ void Ship::update(float delta_t)
 
 ShipSim::ShipSim()
 {
-    if (!valid_channel(mavlink_ch)) {
-        AP_HAL::panic("Invalid mavlink channel for ShipSim");
-    }
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -171,24 +166,25 @@ void ShipSim::send_report(void)
     }
 
     uint32_t now = AP_HAL::millis();
-    mavlink_message_t msg;
-    uint16_t len;
-    uint8_t buf[300];
 
     const uint8_t component_id = MAV_COMP_ID_USER10;
 
     if (now - last_heartbeat_ms >= 1000) {
         last_heartbeat_ms = now;
-        mavlink_msg_heartbeat_pack_chan(sys_id.get(),
-                                        component_id,
-                                        mavlink_ch,
-                                        &msg,
-                                        MAV_TYPE_SURFACE_BOAT,
-                                        MAV_AUTOPILOT_INVALID,
-                                        0,
-                                        0,
-                                        0);
-        len = mavlink_msg_to_send_buffer(buf, &msg);
+        const mavlink_heartbeat_t heartbeat{
+            MAV_TYPE_SURFACE_BOAT,
+            MAV_AUTOPILOT_INVALID,
+            0,
+            0,
+            0};
+        mavlink_message_t msg;
+        mavlink_msg_heartbeat_encode(
+            sys_id.get(),
+            component_id,
+            &msg,
+            &heartbeat);
+        uint8_t buf[300];
+        const uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
         mav_socket.send(buf, len);
     }
 
@@ -209,38 +205,51 @@ void ShipSim::send_report(void)
     }
 #endif
 
-    Vector2f vel(ship.speed, 0);
-    vel.rotate(radians(ship.heading_deg));
+    {  // send position
+        Vector2f vel(ship.speed, 0);
+        vel.rotate(radians(ship.heading_deg));
 
-    mavlink_msg_global_position_int_pack_chan(sys_id,
-                                              component_id,
-                                              mavlink_ch,
-                                              &msg,
-                                              now,
-                                              loc.lat,
-                                              loc.lng,
-                                              alt_mm,
-                                              0,
-                                              vel.x*100,
-                                              vel.y*100,
-                                              0,
-                                              ship.heading_deg*100);
-    len = mavlink_msg_to_send_buffer(buf, &msg);
-    if (len > 0) {
-        mav_socket.send(buf, len);
+        const mavlink_global_position_int_t global_position_int{
+            now,
+            loc.lat,
+            loc.lng,
+            alt_mm,
+            0,
+            int16_t(vel.x*100),
+            int16_t(vel.y*100),
+            0,
+            uint16_t(ship.heading_deg*100)
+        };
+        mavlink_message_t msg;
+        mavlink_msg_global_position_int_encode(
+            sys_id,
+            component_id,
+            &msg,
+            &global_position_int);
+        uint8_t buf[300];
+        const uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
+        if (len > 0) {
+            mav_socket.send(buf, len);
+        }
     }
 
-    // also set ATTITUDE so MissionPlanner can display ship orientation
-    mavlink_msg_attitude_pack_chan(sys_id,
-                                   component_id,
-                                   mavlink_ch,
-                                   &msg,
-                                   now,
-                                   0, 0, radians(ship.heading_deg),
-                                   0, 0, ship.yaw_rate);
-    len = mavlink_msg_to_send_buffer(buf, &msg);
-    if (len > 0) {
-        mav_socket.send(buf, len);
+    { // also set ATTITUDE so MissionPlanner can display ship orientation
+        const mavlink_attitude_t attitude{
+            now,
+            0, 0, float(radians(ship.heading_deg)),
+            0, 0, ship.yaw_rate
+        };
+        mavlink_message_t msg;
+        mavlink_msg_attitude_encode(
+            sys_id,
+            component_id,
+            &msg,
+            &attitude);
+        uint8_t buf[300];
+        const uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
+        if (len > 0) {
+            mav_socket.send(buf, len);
+        }
     }
 }
 

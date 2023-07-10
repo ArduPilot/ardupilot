@@ -28,7 +28,6 @@ public:
     // update state
     void update(void) override;
 private:
-    uint8_t instance;
 };
 
 #endif  // AP_RPM_ESC_TELEM_ENABLED

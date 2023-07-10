@@ -71,7 +71,6 @@ private:
 
     // The TemperatureSensor_State structure is filled in by the backend driver
     struct TemperatureSensor_State {
-        const struct AP_Param::GroupInfo *var_info;
         uint32_t    last_time_ms;              // time when the sensor was last read in milliseconds
         float       temperature;               // temperature (deg C)
         uint8_t     instance;                  // instance number

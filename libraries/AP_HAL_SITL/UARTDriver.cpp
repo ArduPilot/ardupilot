@@ -568,6 +568,14 @@ void UARTDriver::_udp_start_multicast(const char *address, uint16_t port)
     // close on exec, to allow reboot
     fcntl(_mc_fd, F_SETFD, FD_CLOEXEC);
 
+#if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(CYGWIN_BUILD)
+    /*
+      on cygwin you need to bind to INADDR_ANY then use the multicast
+      IP_ADD_MEMBERSHIP to get on the right address
+     */
+    sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+#endif
+    
     ret = bind(_mc_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
     if (ret == -1) {
         fprintf(stderr, "multicast bind failed on port %u - %s\n",
