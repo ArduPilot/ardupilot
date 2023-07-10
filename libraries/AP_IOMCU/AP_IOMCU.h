@@ -256,7 +256,8 @@ private:
         uint16_t rate;
     } dshot_rate;
 
-    struct page_dshot dshot;
+    // queue of dshot commands that need sending
+    ObjectBuffer<page_dshot> dshot_command_queue{8};
 
     struct page_GPIO GPIO;
     // output mode values
