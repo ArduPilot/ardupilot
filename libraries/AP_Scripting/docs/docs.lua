@@ -1528,6 +1528,13 @@ function MotorsMatrix:add_motor_raw(motor_num, roll_factor, pitch_factor, yaw_fa
 ---@return boolean
 function MotorsMatrix:init(expected_num_motors) end
 
+-- desc get index (starting at 0) of lost motor
+---@return integer
+function MotorsMatrix:get_lost_motor() end
+
+-- desc return true if we are in thrust boost due to possible lost motor
+---@return boolean
+function MotorsMatrix:get_thrust_boost() end
 
 -- desc
 ---@class quadplane
