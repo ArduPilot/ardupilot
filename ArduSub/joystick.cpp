@@ -1,6 +1,6 @@
 #include "Sub.h"
 
-#define TRIM_STEP 0.5 // trim step in degrees
+#define TRIM_STEP 1.0 // trim step in degrees
 
 // Functions that will handle joystick/gamepad input
 // ----------------------------------------------------------------------------
