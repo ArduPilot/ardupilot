@@ -1,6 +1,12 @@
 APM:Sub Release Notes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.1 Beta6 10-July-2023
+
+ - Fix roll/pitch drift in stabilized modes
+ - Fix Python 3.11 compatibility
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 4.1.1 Beta5 10-April-2023
 
  - drop MMC5xx3 sample rate to 100Hz
