@@ -794,6 +794,7 @@ bool RangeFinder::prearm_healthy(char *failure_msg, const uint8_t failure_msg_le
 
         // backend-specific checks.  This might end up drivers[i]->arming_checks(...).
         switch (drivers[i]->allocated_type()) {
+#if AP_RANGEFINDER_PWM_ENABLED || AP_RANGEFINDER_ANALOG_ENABLED
         case Type::ANALOG:
         case Type::PX4_PWM:
         case Type::PWM: {
@@ -819,7 +820,21 @@ bool RangeFinder::prearm_healthy(char *failure_msg, const uint8_t failure_msg_le
             }
             break;
         }
-default:
+#endif
+
+#if AP_RANGEFINDER_NRA24_CAN_ENABLED
+        case Type::NRA24_CAN: {
+            if (drivers[i]->status() == Status::NoData) {
+                // This sensor stops sending data if there is no relative motion. This will mostly happen during takeoff, before arming
+                // To avoid pre-arm failure, return true even though there is no data.
+                // This sensor also sends a "heartbeat" so we can differentiate between  "NoData" and "NotConnected"
+                return true;
+            }
+            break;
+        }
+#endif
+
+        default:
             break;
         }
 
@@ -832,7 +847,7 @@ default:
             return false;
         case Status::OutOfRangeLow:
         case Status::OutOfRangeHigh:
-        case Status::Good:  
+        case Status::Good:
             break;
         }
     }
