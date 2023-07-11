@@ -4924,6 +4924,7 @@ bool GCS_MAVLINK::command_long_stores_location(const MAV_CMD command)
 
 void GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame)
 {
+    out = {};
     out.target_system = in.target_system;
     out.target_component = in.target_component;
     out.frame = frame;
