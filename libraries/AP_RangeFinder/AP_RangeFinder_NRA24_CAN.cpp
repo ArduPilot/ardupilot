@@ -36,11 +36,13 @@ void AP_RangeFinder_NRA24_CAN::update(void)
         state.last_reading_ms = AP_HAL::millis();
         update_status();
     } else if (AP_HAL::millis() - state.last_reading_ms > read_timeout_ms()) {
-        if (AP_HAL::millis() - last_heartbeat_ms < read_timeout_ms()) {
-            // don't have distance data but sensor is connected. This is a known issue when sensor is in static condition (example Copter waiting to take off). Set status to out of range to avoid pre arm error
-            set_status(RangeFinder::Status::OutOfRangeLow);
-        } else {
+        if (AP_HAL::millis() - last_heartbeat_ms > read_timeout_ms()) {
+            // no heartbeat, must be disconnected
             set_status(RangeFinder::Status::NotConnected);
+        } else {
+            // Have heartbeat, just no data. Probably because this sensor doesn't output data when there is no relative motion infront of the radar.
+            // This case has special pre-arm check handling
+            set_status(RangeFinder::Status::NoData);
         }
     }
 }
