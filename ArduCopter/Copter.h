@@ -226,6 +226,7 @@ public:
     friend class ModeZigZag;
     friend class ModeAutorotate;
     friend class ModeTurtle;
+    friend class ModePesticide;
 
     Copter(void);
 
@@ -960,6 +961,9 @@ private:
 #endif
 #endif
     ModeAltHold mode_althold;
+#if MODE_PESTICIDE_ENABLED == ENABLED     
+    ModePesticide mode_pesticide;
+#endif
 #if MODE_AUTO_ENABLED == ENABLED
     ModeAuto mode_auto;
 #endif

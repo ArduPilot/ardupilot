@@ -175,6 +175,12 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
             break;
 #endif
 
+#if MODE_PESTICIDE_ENABLE == ENABLED
+        case Mode::Number::PESTICIDE:
+            ret = &mode_pesticide;
+            break;
+#endif
+
         default:
             break;
     }

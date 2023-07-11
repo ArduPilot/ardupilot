@@ -39,6 +39,7 @@ public:
         AUTOROTATE =   26,  // Autonomous autorotation
         AUTO_RTL =     27,  // Auto RTL, this is not a true mode, AUTO will report as this mode if entered to perform a DO_LAND_START Landing sequence
         TURTLE =       28,  // Flip over after crash
+        PESTICIDE =    29,  // İlaçlama modu biz yaptık
 
         // Mode number 127 reserved for the "drone show mode" in the Skybrush
         // fork at https://github.com/skybrush-io/ardupilot
@@ -424,6 +425,319 @@ private:
 
 
 class ModeAuto : public Mode {
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+    Number mode_number() const override { return auto_RTL? Number::AUTO_RTL : Number::AUTO; }
+
+    bool init(bool ignore_checks) override;
+    void exit() override;
+    void run() override;
+
+    bool requires_GPS() const override;
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(AP_Arming::Method method) const override;
+    bool is_autopilot() const override { return true; }
+    bool in_guided_mode() const override { return _mode == SubMode::NAVGUIDED || _mode == SubMode::NAV_SCRIPT_TIME; }
+
+    // Auto modes
+    enum class SubMode : uint8_t {
+        TAKEOFF,
+        WP,
+        LAND,
+        RTL,
+        CIRCLE_MOVE_TO_EDGE,
+        CIRCLE,
+        NAVGUIDED,
+        LOITER,
+        LOITER_TO_ALT,
+        NAV_PAYLOAD_PLACE,
+        NAV_SCRIPT_TIME,
+        NAV_ATTITUDE_TIME,
+    };
+
+    // set submode.  returns true on success, false on failure
+    void set_submode(SubMode new_submode);
+
+    // pause continue in auto mode
+    bool pause() override;
+    bool resume() override;
+    bool paused() const;
+
+    bool loiter_start();
+    void rtl_start();
+    void takeoff_start(const Location& dest_loc);
+    bool wp_start(const Location& dest_loc);
+    void land_start();
+    void circle_movetoedge_start(const Location &circle_center, float radius_m, bool ccw_turn);
+    void circle_start();
+    void nav_guided_start();
+
+    bool is_landing() const override;
+
+    bool is_taking_off() const override;
+    bool use_pilot_yaw() const override;
+
+    bool set_speed_xy(float speed_xy_cms) override;
+    bool set_speed_up(float speed_up_cms) override;
+    bool set_speed_down(float speed_down_cms) override;
+
+    bool requires_terrain_failsafe() const override { return true; }
+
+    void payload_place_start();
+
+    // for GCS_MAVLink to call:
+    bool do_guided(const AP_Mission::Mission_Command& cmd);
+
+    // Go straight to landing sequence via DO_LAND_START, if succeeds pretend to be Auto RTL mode
+    bool jump_to_landing_sequence_auto_RTL(ModeReason reason);
+
+    // lua accessors for nav script time support
+    bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4);
+    void nav_script_time_done(uint16_t id);
+
+    AP_Mission mission{
+        FUNCTOR_BIND_MEMBER(&ModeAuto::start_command, bool, const AP_Mission::Mission_Command &),
+        FUNCTOR_BIND_MEMBER(&ModeAuto::verify_command, bool, const AP_Mission::Mission_Command &),
+        FUNCTOR_BIND_MEMBER(&ModeAuto::exit_mission, void)};
+
+    // Mission change detector
+    AP_Mission_ChangeDetector mis_change_detector;
+
+    // true if weathervaning is allowed in auto
+#if WEATHERVANE_ENABLED == ENABLED
+    bool allows_weathervaning(void) const override;
+#endif
+
+protected:
+
+    const char *name() const override { return auto_RTL? "AUTO RTL" : "AUTO"; }
+    const char *name4() const override { return auto_RTL? "ARTL" : "AUTO"; }
+
+    uint32_t wp_distance() const override;
+    int32_t wp_bearing() const override;
+    float crosstrack_error() const override { return wp_nav->crosstrack_error();}
+    bool get_wp(Location &loc) const override;
+
+private:
+
+    enum class Options : int32_t {
+        AllowArming                        = (1 << 0U),
+        AllowTakeOffWithoutRaisingThrottle = (1 << 1U),
+        IgnorePilotYaw                     = (1 << 2U),
+        AllowWeatherVaning                 = (1 << 7U),
+    };
+
+    bool start_command(const AP_Mission::Mission_Command& cmd);
+    bool verify_command(const AP_Mission::Mission_Command& cmd);
+    void exit_mission();
+
+    bool check_for_mission_change();    // detect external changes to mission
+
+    void takeoff_run();
+    void wp_run();
+    void land_run();
+    void rtl_run();
+    void circle_run();
+    void nav_guided_run();
+    void loiter_run();
+    void loiter_to_alt_run();
+    void nav_attitude_time_run();
+
+    Location loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc) const;
+
+    void payload_place_run();
+    bool payload_place_run_should_run();
+    void payload_place_run_hover();
+    void payload_place_run_descent();
+    void payload_place_run_release();
+
+    SubMode _mode = SubMode::TAKEOFF;   // controls which auto controller is run
+
+    bool shift_alt_to_current_alt(Location& target_loc) const;
+
+    void do_takeoff(const AP_Mission::Mission_Command& cmd);
+    void do_nav_wp(const AP_Mission::Mission_Command& cmd);
+    bool set_next_wp(const AP_Mission::Mission_Command& current_cmd, const Location &default_loc);
+    void do_land(const AP_Mission::Mission_Command& cmd);
+    void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
+    void do_circle(const AP_Mission::Mission_Command& cmd);
+    void do_loiter_time(const AP_Mission::Mission_Command& cmd);
+    void do_loiter_to_alt(const AP_Mission::Mission_Command& cmd);
+    void do_spline_wp(const AP_Mission::Mission_Command& cmd);
+    void get_spline_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc, Location& dest_loc, Location& next_dest_loc, bool& next_dest_loc_is_spline);
+#if NAV_GUIDED == ENABLED
+    void do_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
+    void do_guided_limits(const AP_Mission::Mission_Command& cmd);
+#endif
+    void do_nav_delay(const AP_Mission::Mission_Command& cmd);
+    void do_wait_delay(const AP_Mission::Mission_Command& cmd);
+    void do_within_distance(const AP_Mission::Mission_Command& cmd);
+    void do_yaw(const AP_Mission::Mission_Command& cmd);
+    void do_change_speed(const AP_Mission::Mission_Command& cmd);
+    void do_set_home(const AP_Mission::Mission_Command& cmd);
+    void do_roi(const AP_Mission::Mission_Command& cmd);
+    void do_mount_control(const AP_Mission::Mission_Command& cmd);
+#if PARACHUTE == ENABLED
+    void do_parachute(const AP_Mission::Mission_Command& cmd);
+#endif
+#if AP_WINCH_ENABLED
+    void do_winch(const AP_Mission::Mission_Command& cmd);
+#endif
+    void do_payload_place(const AP_Mission::Mission_Command& cmd);
+    void do_RTL(void);
+#if AP_SCRIPTING_ENABLED
+    void do_nav_script_time(const AP_Mission::Mission_Command& cmd);
+#endif
+    void do_nav_attitude_time(const AP_Mission::Mission_Command& cmd);
+
+    bool verify_takeoff();
+    bool verify_land();
+    bool verify_payload_place();
+    bool verify_loiter_unlimited();
+    bool verify_loiter_time(const AP_Mission::Mission_Command& cmd);
+    bool verify_loiter_to_alt() const;
+    bool verify_RTL();
+    bool verify_wait_delay();
+    bool verify_within_distance();
+    bool verify_yaw();
+    bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
+    bool verify_circle(const AP_Mission::Mission_Command& cmd);
+    bool verify_spline_wp(const AP_Mission::Mission_Command& cmd);
+#if NAV_GUIDED == ENABLED
+    bool verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
+#endif
+    bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
+#if AP_SCRIPTING_ENABLED
+    bool verify_nav_script_time();
+#endif
+    bool verify_nav_attitude_time(const AP_Mission::Mission_Command& cmd);
+
+    // Loiter control
+    uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
+    uint32_t loiter_time;                    // How long have we been loitering - The start time in millis
+
+    struct {
+        bool reached_destination_xy : 1;
+        bool loiter_start_done : 1;
+        bool reached_alt : 1;
+        float alt_error_cm;
+        int32_t alt;
+    } loiter_to_alt;
+
+    // Delay the next navigation command
+    uint32_t nav_delay_time_max_ms;  // used for delaying the navigation commands (eg land,takeoff etc.)
+    uint32_t nav_delay_time_start_ms;
+
+    // Delay Mission Scripting Command
+    int32_t condition_value;  // used in condition commands (eg delay, change alt, etc.)
+    uint32_t condition_start;
+
+    enum class State {
+        FlyToLocation = 0,
+        Descending = 1
+    };
+    State state = State::FlyToLocation;
+
+    struct {
+        PayloadPlaceStateType state = PayloadPlaceStateType_Descent_Start; // records state of payload place
+        uint32_t descent_established_time_ms; // milliseconds
+        uint32_t place_start_time_ms; // milliseconds
+        float descent_thrust_level;
+        float descent_start_altitude_cm;
+        float descent_speed_cms;
+        float descent_max_cm;
+    } nav_payload_place;
+
+    bool waiting_to_start;  // true if waiting for vehicle to be armed or EKF origin before starting mission
+
+    // True if we have entered AUTO to perform a DO_LAND_START landing sequence and we should report as AUTO RTL mode
+    bool auto_RTL;
+
+#if AP_SCRIPTING_ENABLED
+    // nav_script_time command variables
+    struct {
+        bool done;          // true once lua script indicates it has completed
+        uint16_t id;        // unique id to avoid race conditions between commands and lua scripts
+        uint32_t start_ms;  // system time nav_script_time command was received (used for timeout)
+        uint8_t command;    // command number provided by mission command
+        uint8_t timeout_s;  // timeout (in seconds) provided by mission command
+        float arg1;         // 1st argument provided by mission command
+        float arg2;         // 2nd argument provided by mission command
+        int16_t arg3;       // 3rd argument provided by mission command
+        int16_t arg4;       // 4th argument provided by mission command
+    } nav_scripting;
+#endif
+
+    // nav attitude time command variables
+    struct {
+        int16_t roll_deg;   // target roll angle in degrees.  provided by mission command
+        int8_t pitch_deg;   // target pitch angle in degrees.  provided by mission command
+        int16_t yaw_deg;    // target yaw angle in degrees.  provided by mission command
+        float climb_rate;   // climb rate in m/s. provided by mission command
+        uint32_t start_ms;  // system time that nav attitude time command was received (used for timeout)
+    } nav_attitude_time;
+};
+
+#if AUTOTUNE_ENABLED == ENABLED
+/*
+  wrapper class for AC_AutoTune
+ */
+
+#if FRAME_CONFIG == HELI_FRAME
+class AutoTune : public AC_AutoTune_Heli
+#else
+class AutoTune : public AC_AutoTune_Multi
+#endif
+{
+public:
+    bool init() override;
+    void run() override;
+
+protected:
+    bool position_ok() override;
+    float get_pilot_desired_climb_rate_cms(void) const override;
+    void get_pilot_desired_rp_yrate_cd(float &roll_cd, float &pitch_cd, float &yaw_rate_cds) override;
+    void init_z_limits() override;
+    void log_pids() override;
+};
+
+class ModeAutoTune : public Mode {
+
+    // ParametersG2 sets a pointer within our autotune object:
+    friend class ParametersG2;
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+    Number mode_number() const override { return Number::AUTOTUNE; }
+
+    bool init(bool ignore_checks) override;
+    void exit() override;
+    void run() override;
+
+    bool requires_GPS() const override { return false; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(AP_Arming::Method method) const override { return false; }
+    bool is_autopilot() const override { return false; }
+
+    void save_tuning_gains();
+    void reset();
+
+protected:
+
+    const char *name() const override { return "AUTOTUNE"; }
+    const char *name4() const override { return "ATUN"; }
+
+private:
+
+    AutoTune autotune;
+
+};
+#endif
+
+class ModePesticide : public Mode {
 
 public:
     // inherit constructor
