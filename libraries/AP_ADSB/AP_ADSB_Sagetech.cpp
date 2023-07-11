@@ -73,7 +73,7 @@ void AP_ADSB_Sagetech::update()
         if (!_port->read(data)) {
             break;
         }
-        if (parse_byte_XP((uint8_t)data)) {
+        if (parse_byte_XP(data)) {
             handle_packet_XP(message_in.packet);
         }
     } // while nbytes
