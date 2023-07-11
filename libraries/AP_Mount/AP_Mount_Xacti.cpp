@@ -382,7 +382,7 @@ void AP_Mount_Xacti::handle_gnss_status_req(AP_DroneCAN* ap_dronecan, const Cana
     }
 
     // get current location
-    uint8_t gps_status = 3;
+    uint8_t gps_status = 2;
     Location loc;
     if (!AP::ahrs().get_location(loc)) {
         gps_status = 0;
@@ -401,7 +401,7 @@ void AP_Mount_Xacti::handle_gnss_status_req(AP_DroneCAN* ap_dronecan, const Cana
     xacti_gnss_status_msg.order = msg.requirement;
     xacti_gnss_status_msg.remain_buffer = 1;
     xacti_gnss_status_msg.utc_year = year;
-    xacti_gnss_status_msg.utc_month = month;
+    xacti_gnss_status_msg.utc_month = month + 1;
     xacti_gnss_status_msg.utc_day = day;
     xacti_gnss_status_msg.utc_hour = hour;
     xacti_gnss_status_msg.utc_minute = min;
