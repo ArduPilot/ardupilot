@@ -76,12 +76,11 @@ void AP_ADSB_uAvionix_UCP::update()
     // -----------------------------
     uint32_t nbytes = MIN(_port->available(), 10UL * GDL90_RX_MAX_PACKET_LENGTH);
     while (nbytes-- > 0) {
-        const int16_t data = (uint8_t)_port->read();
-        if (data < 0) {
+        uint8_t data;
+        if (!_port->read(data)) {
             break;
         }
-
-        if (parseByte((uint8_t)data, rx.msg, rx.status)) {
+        if (parseByte(data, rx.msg, rx.status)) {
             rx.last_msg_ms = now_ms;
             handle_msg(rx.msg);
         }
