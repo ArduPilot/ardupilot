@@ -78,11 +78,11 @@ void AP_ADSB_Sagetech_MXS::update()
     // -----------------------------
     uint32_t nbytes = MIN(_port->available(), 10 * PAYLOAD_MXS_MAX_SIZE);
     while (nbytes-- > 0) {
-        const int16_t data = _port->read();
-        if (data < 0) {
+        uint8_t data;
+        if (!_port->read(data)) {
             break;
         }
-        parse_byte((uint8_t)data);
+        parse_byte(data);
     }
 
     const uint32_t now_ms = AP_HAL::millis();
