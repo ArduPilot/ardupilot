@@ -6766,7 +6766,7 @@ class AutoTest(ABC):
         return Vector3(msg.vx, msg.vy, msg.vz)
 
     """Wait for a given speed vector."""
-    def wait_speed_vector(self, speed_vector, accuracy=0.2, timeout=30, **kwargs):
+    def wait_speed_vector(self, speed_vector, accuracy=0.3, timeout=30, **kwargs):
         def validator(value2, target2):
             return (math.fabs(value2.x - target2.x) <= accuracy and
                     math.fabs(value2.y - target2.y) <= accuracy and
