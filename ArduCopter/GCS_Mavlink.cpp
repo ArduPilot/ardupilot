@@ -737,9 +737,23 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
     switch(packet.command) {
 #if MODE_FOLLOW_ENABLED == ENABLED
     case MAV_CMD_DO_FOLLOW:
-        // param1: sysid of target to follow
-        if ((packet.param1 > 0) && (packet.param1 <= 255)) {
-            copter.g2.follow.set_target_sysid((uint8_t)packet.param1);
+        if (isnan(packet.param2) || is_zero(packet.param2)) {
+            if ((packet.param1 > 0) && (packet.param1 <= 255)) {
+                copter.g2.follow.set_target_sysid((uint8_t)packet.param1);
+                return MAV_RESULT_ACCEPTED;
+            }
+        } else {
+            switch (int(packet.param2)) {
+            case 1:
+                copter.g2.follow.set_target_source(AP_Follow::TargetSource::MAVLINK_ONLY);
+                copter.g2.follow.set_target_sysid(packet.y);
+                break;
+            case 2:
+                copter.g2.follow.set_target_source(AP_Follow::TargetSource::LOCATIONDB);
+                copter.g2.follow.set_target_locationdb_key(packet.y);
+                break;
+            }
+
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_DENIED;
@@ -827,6 +841,12 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
+
+#if MODE_FOLLOW_ENABLED == ENABLED
+    case MAV_CMD_DO_FOLLOW:
+        // only support int command
+        return MAV_RESULT_UNSUPPORTED;
+#endif
 
     case MAV_CMD_CONDITION_YAW:
         // param1 : target angle [0-360]
