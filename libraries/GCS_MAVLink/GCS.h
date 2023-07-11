@@ -728,6 +728,8 @@ protected:
     // converts a COMMAND_LONG packet to a COMMAND_INT packet, where
     // the command-long packet is assumed to be in the supplied frame.
     // If location is not present in the command then just omit frame.
+    // this method ensures the passed-in structure is entirely
+    // initialised.
     static void convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame = MAV_FRAME_GLOBAL_RELATIVE_ALT);
 
     // methods to extract a Location object from a command_long or command_int
