@@ -25,11 +25,21 @@ MAV_COLLISION_ACTION AP_Avoidance_Copter::handle_avoidance(const AP_Avoidance::O
 
     // take no action in some flight modes
     if (copter.flightmode->mode_number() == Mode::Number::LAND ||
+        copter.flightmode->mode_number() == Mode::Number::STABILIZE ||
+        copter.flightmode->mode_number() == Mode::Number::LOITER ||
 #if MODE_THROW_ENABLED == ENABLED
         copter.flightmode->mode_number() == Mode::Number::THROW ||
 #endif
         copter.flightmode->mode_number() == Mode::Number::FLIP) {
         actual_action = MAV_COLLISION_ACTION_NONE;
+    }
+
+    // take no action if in RTL and already started descending
+    if (copter.flightmode->mode_number() == Mode::Number::RTL) {
+        if (copter.mode_rtl.state() == ModeRTL::SubMode::FINAL_DESCENT ||
+            copter.mode_rtl.state() == ModeRTL::SubMode::LAND) {
+            actual_action = MAV_COLLISION_ACTION_NONE;
+        }
     }
 
     // if landed and we will take some kind of action, just disarm
@@ -75,6 +85,12 @@ MAV_COLLISION_ACTION AP_Avoidance_Copter::handle_avoidance(const AP_Avoidance::O
 
             case MAV_COLLISION_ACTION_MOVE_PERPENDICULAR:
                 if (!handle_avoidance_perpendicular(obstacle, failsafe_state_change)) {
+                    actual_action = MAV_COLLISION_ACTION_NONE;
+                }
+                break;
+
+            case MAV_COLLISION_ACTION_BRAKE:
+                if (!handle_brake(failsafe_state_change)) {
                     actual_action = MAV_COLLISION_ACTION_NONE;
                 }
                 break;
@@ -260,5 +276,35 @@ bool AP_Avoidance_Copter::handle_avoidance_perpendicular(const AP_Avoidance::Obs
 
     // if we got this far we failed to set the new target
     return false;
+}
+
+bool AP_Avoidance_Copter::handle_brake(bool allow_mode_change)
+{
+    // ensure copter is in avoid_adsb mode
+    if (!check_flightmode(allow_mode_change)) {
+        return false;
+    }
+
+    Vector3f velocity_neu;
+    if (_use_brake_alt && copter.current_loc.alt > _brake_altitude*100) {
+        
+        if (_descend_speed > 0) {
+            velocity_neu.z = -_descend_speed;
+        }
+        else {
+            velocity_neu.z = -copter.wp_nav->get_default_speed_down();
+        }
+
+        // send target velocity
+        copter.mode_avoid_adsb.set_velocity(velocity_neu);
+    
+    }
+    else {
+        // Set the velocity to 0 prior to switching to BRAKE just in case
+        copter.mode_avoid_adsb.set_velocity(velocity_neu);
+        copter.set_mode(Mode::Number::BRAKE, ModeReason::AVOIDANCE);
+    }
+
+    return true;
 }
 #endif
