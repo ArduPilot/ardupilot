@@ -485,6 +485,9 @@ void AP_Mount_Siyi::process_packet()
 // returns true on success, false if outgoing serial buffer is full
 bool AP_Mount_Siyi::send_packet(SiyiCommandId cmd_id, const uint8_t* databuff, uint8_t databuff_len)
 {
+    if (!_initialised) {
+        return false;
+    }
     // calculate and sanity check packet size
     const uint16_t packet_size = AP_MOUNT_SIYI_PACKETLEN_MIN + databuff_len;
     if (packet_size > AP_MOUNT_SIYI_PACKETLEN_MAX) {
