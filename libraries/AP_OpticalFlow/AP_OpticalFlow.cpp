@@ -270,9 +270,12 @@ void AP_OpticalFlow::update_state(const OpticalFlow_state &state)
                                 _last_update_ms,
                                 get_pos_offset(),
                                 get_height_override());
+#if HAL_LOGGING_ENABLED
     Log_Write_Optflow();
+#endif
 }
 
+#if HAL_LOGGING_ENABLED
 void AP_OpticalFlow::Log_Write_Optflow()
 {
     AP_Logger *logger = AP_Logger::get_singleton();
@@ -295,7 +298,7 @@ void AP_OpticalFlow::Log_Write_Optflow()
     };
     logger->WriteBlock(&pkt, sizeof(pkt));
 }
-
+#endif  // HAL_LOGGING_ENABLED
 
 
 // singleton instance
