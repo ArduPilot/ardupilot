@@ -62,6 +62,9 @@ void Plane::Log_Write_FullRate(void)
     if (should_log(MASK_LOG_ATTITUDE_FULLRATE)) {
         Log_Write_Attitude();
     }
+    if (should_log(MASK_LOG_NOTCH_FULLRATE)) {
+        AP::ins().write_notch_log_messages();
+    }
 }
 
 
