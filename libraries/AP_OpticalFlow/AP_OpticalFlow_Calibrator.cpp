@@ -13,7 +13,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "AP_OpticalFlow_config.h"
+
+#if AP_OPTICALFLOW_CALIBRATOR_ENABLED
+
 #include "AP_OpticalFlow_Calibrator.h"
+
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 
@@ -329,3 +334,5 @@ void AP_OpticalFlow_Calibrator::log_sample(uint8_t axis, uint8_t sample_num, flo
         (double)los_pred);
 }
 #endif  // HAL_LOGGING_ENABLED
+
+#endif  // AP_OPTICALFLOW_CALIBRATOR_ENABLED
