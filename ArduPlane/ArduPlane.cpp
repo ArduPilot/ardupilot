@@ -262,7 +262,9 @@ void Plane::update_logging25(void)
 
     if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
-        AP::ins().write_notch_log_messages();
+        if (!should_log(MASK_LOG_NOTCH_FULLRATE)) {
+            AP::ins().write_notch_log_messages();
+        }
 #if HAL_GYROFFT_ENABLED
         gyro_fft.write_log_messages();
 #endif
