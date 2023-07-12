@@ -159,15 +159,14 @@ static void send_fw_read(void)
     }
     fw_update.last_ms = now;
 
+    uavcan_protocol_file_ReadRequest pkt {};
+    pkt.offset = fw_update.ofs;
+    pkt.path.path.len = strlen((const char *)fw_update.path);
+    memcpy(pkt.path.path.data, fw_update.path, pkt.path.path.len);
+
     uint8_t buffer[UAVCAN_PROTOCOL_FILE_READ_REQUEST_MAX_SIZE];
-    canardEncodeScalar(buffer, 0, 40, &fw_update.ofs);
-    uint32_t offset = 40;
-    uint8_t len = strlen((const char *)fw_update.path);
-    for (uint8_t i=0; i<len; i++) {
-        canardEncodeScalar(buffer, offset, 8, &fw_update.path[i]);
-        offset += 8;
-    }
-    uint32_t total_size = (offset+7)/8;
+    uint16_t total_size = uavcan_protocol_file_ReadRequest_encode(&pkt, buffer, true);
+
     canardRequestOrRespond(&canard,
                            fw_update.node_id,
                            UAVCAN_PROTOCOL_FILE_READ_SIGNATURE,
@@ -184,33 +183,31 @@ static void send_fw_read(void)
  */
 static void handle_file_read_response(CanardInstance* ins, CanardRxTransfer* transfer)
 {
-    if ((transfer->transfer_id+1)%256 != fw_update.transfer_id ||
+    const uint8_t tx_id = fw_update.transfer_id;
+    if ((transfer->transfer_id+1)%256 != tx_id ||
         transfer->source_node_id != fw_update.node_id) {
         return;
     }
-    int16_t error = 0;
-    canardDecodeScalar(transfer, 0, 16, true, (void*)&error);
-    uint16_t len = transfer->payload_len - 2;
-
-    uint32_t offset = 16;
-    uint32_t buf32[(len+3)/4];
-    uint8_t *buf = (uint8_t *)&buf32[0];
-    for (uint16_t i=0; i<len; i++) {
-        canardDecodeScalar(transfer, offset, 8, false, (void*)&buf[i]);
-        offset += 8;
+    uavcan_protocol_file_ReadResponse pkt;
+    if (uavcan_protocol_file_ReadResponse_decode(transfer, &pkt)) {
+        return;
     }
+    const uint16_t len = pkt.data.len;
+    const uint16_t len_words = (len+3)/4;
+    const uint8_t *buf = (uint8_t *)pkt.data.data;
+    uint32_t buf32[len_words] {};
+    memcpy((uint8_t*)buf32, buf, len);
 
     const uint32_t sector_size = flash_func_sector_size(fw_update.sector);
-
     if (fw_update.sector_ofs == 0) {
         flash_func_erase_sector(fw_update.sector);
     }
     if (fw_update.sector_ofs+len > sector_size) {
         flash_func_erase_sector(fw_update.sector+1);
     }
-    for (uint16_t i=0; i<len/4; i++) {
-        flash_write_buffer(fw_update.ofs+i*4, &buf32[i], 1);
-    }
+
+    flash_write_buffer(fw_update.ofs, buf32, len_words);
+
     fw_update.ofs += len;
     fw_update.sector_ofs += len;
     if (fw_update.sector_ofs >= flash_func_sector_size(fw_update.sector)) {
@@ -238,19 +235,18 @@ static void handle_file_read_response(CanardInstance* ins, CanardRxTransfer* tra
  */
 static void handle_begin_firmware_update(CanardInstance* ins, CanardRxTransfer* transfer)
 {
-    // manual decoding due to TAO bug in libcanard generated code
-    if (transfer->payload_len < 1 || transfer->payload_len > sizeof(fw_update.path)+1) {
-        return;
-    }
-
     if (fw_update.node_id == 0) {
-        uint32_t offset = 0;
-        canardDecodeScalar(transfer, 0, 8, false, (void*)&fw_update.node_id);
-        offset += 8;
-        for (uint8_t i=0; i<transfer->payload_len-1; i++) {
-            canardDecodeScalar(transfer, offset, 8, false, (void*)&fw_update.path[i]);
-            offset += 8;
+        uavcan_protocol_file_BeginFirmwareUpdateRequest pkt;
+        if (uavcan_protocol_file_BeginFirmwareUpdateRequest_decode(transfer, &pkt)) {
+            return;
         }
+        if (pkt.image_file_remote_path.path.len > sizeof(fw_update.path)-1) {
+            return;
+        }
+        memcpy(fw_update.path, pkt.image_file_remote_path.path.data, pkt.image_file_remote_path.path.len);
+        fw_update.path[pkt.image_file_remote_path.path.len] = 0;
+
+        fw_update.node_id = pkt.source_node_id;
         fw_update.ofs = 0;
         fw_update.last_ms = 0;
         fw_update.sector = 0;
@@ -291,35 +287,28 @@ static void handle_allocation_response(CanardInstance* ins, CanardRxTransfer* tr
         return;
     }
 
-    // Copying the unique ID from the message
-    static const uint8_t UniqueIDBitOffset = 8;
-    uint8_t received_unique_id[sizeof(uavcan_protocol_dynamic_node_id_Allocation::unique_id.data)];
-    uint8_t received_unique_id_len = 0;
-    for (; received_unique_id_len < (transfer->payload_len - (UniqueIDBitOffset / 8U)); received_unique_id_len++) {
-        const uint8_t bit_offset = (uint8_t)(UniqueIDBitOffset + received_unique_id_len * 8U);
-        (void) canardDecodeScalar(transfer, bit_offset, 8, false, &received_unique_id[received_unique_id_len]);
+    struct uavcan_protocol_dynamic_node_id_Allocation msg;
+    if (uavcan_protocol_dynamic_node_id_Allocation_decode(transfer, &msg)) {
+        return;
     }
-
+    
     // Obtaining the local unique ID
     uint8_t my_unique_id[sizeof(uavcan_protocol_dynamic_node_id_Allocation::unique_id.data)];
     readUniqueID(my_unique_id);
 
     // Matching the received UID against the local one
-    if (memcmp(received_unique_id, my_unique_id, received_unique_id_len) != 0) {
+    if (memcmp(msg.unique_id.data, my_unique_id, msg.unique_id.len) != 0) {
         node_id_allocation_unique_id_offset = 0;
         return;         // No match, return
     }
 
-    if (received_unique_id_len < sizeof(uavcan_protocol_dynamic_node_id_Allocation::unique_id.data)) {
+    if (msg.unique_id.len < sizeof(msg.unique_id.data)) {
         // The allocator has confirmed part of unique ID, switching to the next stage and updating the timeout.
-        node_id_allocation_unique_id_offset = received_unique_id_len;
+        node_id_allocation_unique_id_offset = msg.unique_id.len;
         send_next_node_id_allocation_request_at_ms -= UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MIN_REQUEST_PERIOD_MS;
     } else {
         // Allocation complete - copying the allocated node ID from the message
-        uint8_t allocated_node_id = 0;
-        (void) canardDecodeScalar(transfer, 0, 7, false, &allocated_node_id);
-
-        canardSetLocalNodeID(ins, allocated_node_id);
+        canardSetLocalNodeID(ins, msg.node_id);
     }
 }
 
