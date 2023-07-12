@@ -389,9 +389,9 @@ void AP_Mount_Xacti::handle_gnss_status_req(AP_DroneCAN* ap_dronecan, const Cana
     }
 
     // get date and time
-    uint16_t year;
+    uint16_t year, ms;
     uint8_t month, day, hour, min, sec;
-    if (!AP::rtc().get_date_and_time_utc(year, month, day, hour, min, sec)) {
+    if (!AP::rtc().get_date_and_time_utc(year, month, day, hour, min, sec, ms)) {
         year = month = day = hour = min = sec = 0;
     }
 
