@@ -13,6 +13,9 @@ You can also read more about the build system in the
 
 waf should always be called from the locally cloned ardupilot root directory for the local branch you are trying to build from.
 
+**Note**
+Do not run `waf` with `sudo`!  This leads to permission and environment problems.
+
 ## Basic usage ##
 
 There are several commands in the build system for advanced usage, but here we
