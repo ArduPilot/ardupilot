@@ -210,6 +210,8 @@ public:
 
     bool have_inertial_nav() const;
 
+    // return a ground velocity in meters/second, North/East/Down
+    // order. Must only be called if have_inertial_nav() is true
     bool get_velocity_NED(Vector3f &vec) const WARN_IF_UNUSED;
 
     // return the relative position NED to either home or origin
