@@ -67,6 +67,12 @@ install(FILES
   DESTINATION share/${PROJECT_NAME}/config
 )
 
+# Install Integration-Services profile.
+install(FILES
+  ${ARDUPILOT_ROOT}/libraries/AP_DDS/Is-Config/DDS_Service_IS_config.yaml
+  DESTINATION share/${PROJECT_NAME}/config
+)
+
 # Install additional default params.
 install(DIRECTORY
   config/default_params
