@@ -139,9 +139,10 @@ private:
     void Log_Write_Optflow();
     uint32_t _log_bit = -1;     // bitmask bit which indicates if we should log.  -1 means we always log
 
+#if AP_OPTICALFLOW_CALIBRATOR_ENABLED
     // calibrator
     AP_OpticalFlow_Calibrator *_calibrator;
-
+#endif
 };
 
 namespace AP {
