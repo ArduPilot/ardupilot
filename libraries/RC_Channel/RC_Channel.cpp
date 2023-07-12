@@ -1430,7 +1430,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         }
         break;
 
-#if AP_OPTICALFLOW_ENABLED
+#if AP_OPTICALFLOW_CALIBRATOR_ENABLED
     case AUX_FUNC::OPTFLOW_CAL: {
         AP_OpticalFlow *optflow = AP::opticalflow();
         if (optflow == nullptr) {
