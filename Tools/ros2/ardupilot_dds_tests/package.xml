@@ -4,7 +4,7 @@
   <name>ardupilot_dds_tests</name>
   <version>0.0.0</version>
   <description>Tests for the ArduPilot AP_DDS library</description>
-  <maintainer email="rhys.mainwaring@me.com">rhys</maintainer>
+  <maintainer email="rhys.mainwaring@me.com">Rhys Mainwaring</maintainer>
   <license>GLP-3.0</license>
 
   <exec_depend>ament_index_python</exec_depend>
