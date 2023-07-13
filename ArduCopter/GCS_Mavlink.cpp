@@ -925,7 +925,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
 #if AP_WINCH_ENABLED
     case MAV_CMD_DO_WINCH:
         // param1 : winch number (ignored)
-        // param2 : action (0=relax, 1=relative length control, 2=rate control). See WINCH_ACTIONS enum.
+        // param2 : action (0=relax, 1=relative length control, 2=rate control, 4=winch deliver). See WINCH_ACTIONS enum.
         if (!copter.g2.winch.enabled()) {
             return MAV_RESULT_FAILED;
         }
@@ -939,6 +939,9 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         }
         case WINCH_RATE_CONTROL:
             copter.g2.winch.set_desired_rate(packet.param4);
+            return MAV_RESULT_ACCEPTED;
+        case WINCH_DELIVER:
+            copter.g2.winch.deliver_package();
             return MAV_RESULT_ACCEPTED;
         default:
             break;
