@@ -269,29 +269,27 @@ size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
             close(_fd);
             _fd = -1;
             _connected = false;
+            return 0;
         }
         // these have no effect
         tcdrain(_fd);
+        return nwritten;
     } else {
         /*
           simulate byte loss at the link layer
          */
-        size_t nwrite = size;
+        uint8_t lost_byte = 0;
 #if !defined(HAL_BUILD_AP_PERIPH)
         SITL::SIM *_sitl = AP::sitl();
 
         if (_sitl && _sitl->uart_byte_loss_pct > 0) {
             if (fabsf(rand_float()) < _sitl->uart_byte_loss_pct.get() * 0.01 * size) {
-                nwrite--;
-            }
-            if (nwrite == 0) {
-                return size;
+                lost_byte = 1;
             }
         }
 #endif // HAL_BUILD_AP_PERIPH
-        _writebuffer.write(buffer, nwrite);
+        return _writebuffer.write(buffer, size - lost_byte) + lost_byte;
     }
-    return size;
 }
 
     
