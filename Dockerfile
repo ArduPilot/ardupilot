@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 WORKDIR /ardupilot
 
 ARG DEBIAN_FRONTEND=noninteractive
