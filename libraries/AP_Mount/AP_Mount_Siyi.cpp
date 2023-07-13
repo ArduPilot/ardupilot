@@ -31,7 +31,6 @@ void AP_Mount_Siyi::init()
     _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Gimbal, 0);
     if (_uart != nullptr) {
         _initialised = true;
-        set_mode((enum MAV_MOUNT_MODE)_params.default_mode.get());
     }
     AP_Mount_Backend::init();
 }
