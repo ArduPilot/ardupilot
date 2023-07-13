@@ -256,8 +256,9 @@ void UARTDriver::_flush(void)
 
 size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
 {
-    if (txspace() <= size) {
-        size = txspace();
+    const auto _txspace = txspace();
+    if (_txspace < size) {
+        size = _txspace;
     }
     if (size <= 0) {
         return 0;
