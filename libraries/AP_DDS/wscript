@@ -16,6 +16,8 @@ def configure(cfg):
         'modules/Micro-CDR/src/c/common.c',
     ]
 
+    cfg.env.AP_LIB_EXTRA_CXXFLAGS['AP_DDS'] = ['-std=c++17']
+
     cfg.env.AP_LIB_EXTRA_SOURCES['AP_DDS'] = []
     for pattern in extra_src:
         s = cfg.srcnode.ant_glob(pattern, dir=False, src=True)
