@@ -1,5 +1,6 @@
 {
     "recommendations": [
+        "bierner.markdown-mermaid",
         "ms-vscode.cpptools",
         "sumneko.lua",
         "ms-python.python",
