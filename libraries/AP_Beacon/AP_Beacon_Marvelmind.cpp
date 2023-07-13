@@ -203,15 +203,13 @@ void AP_Beacon_Marvelmind::update(void)
         return;
     }
     // read any available characters
-    int32_t num_bytes_read = uart->available();
-    uint8_t received_char = 0;
-    if (num_bytes_read < 0) {
-        return;
-    }
+    uint16_t num_bytes_read = MIN(uart->available(), 16384U);
     while (num_bytes_read-- > 0) {
         bool good_byte = false;
-        received_char = uart->read();
-        input_buffer[num_bytes_in_block_received] = received_char;
+        if (!uart->read(input_buffer[num_bytes_in_block_received])) {
+            break;
+        }
+        const uint8_t received_char = input_buffer[num_bytes_in_block_received];
         switch (parse_state) {
         case RECV_HDR:
             switch (num_bytes_in_block_received) {
