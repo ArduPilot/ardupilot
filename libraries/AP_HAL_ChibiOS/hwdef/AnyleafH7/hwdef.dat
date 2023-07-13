@@ -27,12 +27,12 @@ PC4 IMU1_CS CS
 I2C_ORDER I2C2 I2C1
 
 # I2C1
-PB8 I2C1_SCL I2C1
-PB9 I2C1_SDA I2C1
+PB8 I2C1_SCL I2C1 PULLUP
+PB9 I2C1_SDA I2C1 PULLUP
 
 # I2C2
-PB10 I2C2_SCL I2C2
-PB11 I2C2_SDA I2C2
+PB10 I2C2_SCL I2C2 PULLUP
+PB11 I2C2_SDA I2C2 PULLUP
 
 # ADC
 PA4 BATT_VOLTAGE_SENS ADC1 SCALE(1)
@@ -74,7 +74,7 @@ PE0 UART8_RX UART8
 PD0 CAN1_RX CAN1
 PD1 CAN1_TX CAN1
 
-# Motors. todo: Configure bidir DSHOT?
+# Motors. # todo: COnfigure bidir (append BIDIR at the end)
 PC6  TIM3_CH1 TIM3  PWM(1)  GPIO(50)
 PC7  TIM3_CH2 TIM3  PWM(2)  GPIO(51)
 PC8  TIM3_CH3  TIM3  PWM(3)  GPIO(52)
@@ -91,16 +91,22 @@ DMA_PRIORITY S*
 
 DMA_NOSHARE SPI1*
 
-# spi devices
+# SPI devices
 SPIDEV icm42688  SPI1 DEVID1 IMU1_CS      MODE3  2*MHZ 16*MHZ   # Clock is 100Mhz so highest clock <= 24Mhz is 100Mhz/8
 
 # IMU
-IMU Invensensev3 SPI:icm42688 ROTATION_YAW_180 # todo?
+IMU Invensensev3 SPI:icm42688 ROTATION_YAW_180
+# todo: 1 or 3?
 define HAL_DEFAULT_INS_FAST_SAMPLE 1
 
 # DPS310 integrated on I2C2 bus, multiple possible choices for external barometer
+# todo: Put this back once the IMU works.
 BARO DPS310 I2C:0:0x77
 
 # setup for OSD
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
+
+# You can remove this line once QSPI is set up; required to prevent a logging error
+# when no SD card or external flash is present.
+define AP_SCRIPTING_ENABLED 0
