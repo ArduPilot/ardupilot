@@ -58,7 +58,7 @@ private:
     sensor_msgs_msg_NavSatFix nav_sat_fix_topic;
     tf2_msgs_msg_TFMessage static_transforms_topic;
     sensor_msgs_msg_BatteryState battery_state_topic;
-    sensor_msgs_msg_Joy joy_topic;
+    static sensor_msgs_msg_Joy joy_topic;
     geometry_msgs_msg_PoseStamped local_pose_topic;
     geometry_msgs_msg_TwistStamped local_velocity_topic;
     geographic_msgs_msg_GeoPoseStamped geo_pose_topic;
