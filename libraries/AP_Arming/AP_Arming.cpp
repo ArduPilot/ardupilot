@@ -152,6 +152,11 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
 extern AP_IOMCU iomcu;
 #endif
 
+#pragma GCC diagnostic push
+#if defined (__clang__)
+#pragma GCC diagnostic ignored "-Wbitwise-instead-of-logical"
+#endif
+
 AP_Arming::AP_Arming()
 {
     if (_singleton) {
@@ -326,6 +331,7 @@ bool AP_Arming::logging_checks(bool report)
     return true;
 }
 
+#if AP_INERTIALSENSOR_ENABLED
 bool AP_Arming::ins_accels_consistent(const AP_InertialSensor &ins)
 {
     const uint8_t accel_count = ins.get_accel_count();
@@ -488,6 +494,7 @@ bool AP_Arming::ins_checks(bool report)
 
     return true;
 }
+#endif // AP_INERTIALSENSOR_ENABLED
 
 bool AP_Arming::compass_checks(bool report)
 {
@@ -1246,20 +1253,20 @@ bool AP_Arming::camera_checks(bool display_failure)
 
 bool AP_Arming::osd_checks(bool display_failure) const
 {
-#if OSD_PARAM_ENABLED && OSD_ENABLED 
-    if (check_enabled(ARMING_CHECK_CAMERA)) {
+#if OSD_ENABLED 
+    if (check_enabled(ARMING_CHECK_OSD)) {
+        // if no OSD then pass
         const AP_OSD *osd = AP::osd();
         if (osd == nullptr) {
             return true;
         }
-
-        // check camera is ready
+        // do osd checks for configuration
         char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
         if (!osd->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
-            check_failed(ARMING_CHECK_CAMERA, display_failure, "%s", fail_msg);
+            check_failed(ARMING_CHECK_OSD, display_failure, "%s", fail_msg);
             return false;
         }
-    }
+   }
 #endif
     return true;
 }
@@ -1495,7 +1502,9 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  heater_min_temperature_checks(report)
 #endif
         &  barometer_checks(report)
+#if AP_INERTIALSENSOR_ENABLED
         &  ins_checks(report)
+#endif
         &  compass_checks(report)
         &  gps_checks(report)
         &  battery_checks(report)
@@ -1827,7 +1836,7 @@ void AP_Arming::check_forced_logging(const AP_Arming::Method method)
 AP_Arming *AP_Arming::_singleton = nullptr;
 
 /*
- * Get the AP_InertialSensor singleton
+ * Get the AP_Arming singleton
  */
 AP_Arming *AP_Arming::get_singleton()
 {
@@ -1842,3 +1851,5 @@ AP_Arming &arming()
 }
 
 };
+
+#pragma GCC diagnostic pop

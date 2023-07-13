@@ -13,6 +13,7 @@
 #include "AP_Mount_Gremsy.h"
 #include "AP_Mount_Siyi.h"
 #include "AP_Mount_Scripting.h"
+#include "AP_Mount_Xacti.h"
 #include <stdio.h>
 #include <AP_Math/location.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -131,6 +132,14 @@ void AP_Mount::init()
             _num_instances++;
             break;
 #endif // HAL_MOUNT_SCRIPTING_ENABLED
+
+#if HAL_MOUNT_XACTI_ENABLED
+        // check for Xacti gimbal
+        case Type::Xacti:
+            _backends[instance] = new AP_Mount_Xacti(*this, _params[instance], instance);
+            _num_instances++;
+            break;
+#endif // HAL_MOUNT_XACTI_ENABLED
         }
 
         // init new instance
@@ -733,11 +742,11 @@ bool AP_Mount::set_zoom(uint8_t instance, ZoomType zoom_type, float zoom_value)
 
 // set focus specified as rate, percentage or auto
 // focus in = -1, focus hold = 0, focus out = 1
-bool AP_Mount::set_focus(uint8_t instance, FocusType focus_type, float focus_value)
+SetFocusResult AP_Mount::set_focus(uint8_t instance, FocusType focus_type, float focus_value)
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
-        return false;
+        return SetFocusResult::FAILED;
     }
     return backend->set_focus(focus_type, focus_value);
 }

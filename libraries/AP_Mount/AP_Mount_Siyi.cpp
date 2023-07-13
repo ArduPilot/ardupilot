@@ -150,7 +150,8 @@ bool AP_Mount_Siyi::healthy() const
     }
 
     // unhealthy if attitude information NOT received recently
-    if (AP_HAL::millis() - _last_current_angle_rad_ms > 1000) {
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - _last_current_angle_rad_ms > 1000) {
         return false;
     }
 
@@ -484,6 +485,9 @@ void AP_Mount_Siyi::process_packet()
 // returns true on success, false if outgoing serial buffer is full
 bool AP_Mount_Siyi::send_packet(SiyiCommandId cmd_id, const uint8_t* databuff, uint8_t databuff_len)
 {
+    if (!_initialised) {
+        return false;
+    }
     // calculate and sanity check packet size
     const uint16_t packet_size = AP_MOUNT_SIYI_PACKETLEN_MIN + databuff_len;
     if (packet_size > AP_MOUNT_SIYI_PACKETLEN_MAX) {
@@ -557,12 +561,6 @@ void AP_Mount_Siyi::rotate_gimbal(int8_t pitch_scalar, int8_t yaw_scalar, bool y
 
     const uint8_t yaw_and_pitch_rates[] {(uint8_t)yaw_scalar, (uint8_t)pitch_scalar};
     send_packet(SiyiCommandId::GIMBAL_ROTATION, yaw_and_pitch_rates, ARRAY_SIZE(yaw_and_pitch_rates));
-}
-
-// center gimbal
-void AP_Mount_Siyi::center_gimbal()
-{
-    send_1byte_packet(SiyiCommandId::CENTER, 1);
 }
 
 // set gimbal's lock vs follow mode
@@ -761,7 +759,7 @@ void AP_Mount_Siyi::update_zoom_control()
 
 // set focus specified as rate, percentage or auto
 // focus in = -1, focus hold = 0, focus out = 1
-bool AP_Mount_Siyi::set_focus(FocusType focus_type, float focus_value)
+SetFocusResult AP_Mount_Siyi::set_focus(FocusType focus_type, float focus_value)
 {
     switch (focus_type) {
     case FocusType::RATE: {
@@ -772,17 +770,23 @@ bool AP_Mount_Siyi::set_focus(FocusType focus_type, float focus_value)
             // Siyi API specifies -1 should be sent as 255
             focus_step = UINT8_MAX;
         }
-        return send_1byte_packet(SiyiCommandId::MANUAL_FOCUS, (uint8_t)focus_step);
+        if (!send_1byte_packet(SiyiCommandId::MANUAL_FOCUS, (uint8_t)focus_step)) {
+            return SetFocusResult::FAILED;
+        }
+        return SetFocusResult::ACCEPTED;
     }
     case FocusType::PCT:
         // not supported
-        return false;
+        return SetFocusResult::INVALID_PARAMETERS;
     case FocusType::AUTO:
-        return send_1byte_packet(SiyiCommandId::AUTO_FOCUS, 1);
+        if (!send_1byte_packet(SiyiCommandId::AUTO_FOCUS, 1)) {
+            return SetFocusResult::FAILED;
+        }
+        return SetFocusResult::ACCEPTED;
     }
 
     // unsupported focus type
-    return false;
+    return SetFocusResult::INVALID_PARAMETERS;
 }
 
 // send camera information message to GCS

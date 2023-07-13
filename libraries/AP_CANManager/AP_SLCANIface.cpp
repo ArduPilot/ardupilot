@@ -722,7 +722,7 @@ int16_t SLCAN::CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& rx_time,
         // flush bytes from port
         while (num_bytes--) {
             uint8_t b;
-            if (!_port->read_locked(_serial_lock_key, b)) {
+            if (!_port->read_locked(&b, 1, _serial_lock_key)) {
                 break;
             }
             addByte(b);

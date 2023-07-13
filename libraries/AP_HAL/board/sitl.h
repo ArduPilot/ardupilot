@@ -47,7 +47,7 @@
 
 #define HAL_HAVE_BOARD_VOLTAGE 1
 #define HAL_HAVE_SERVO_VOLTAGE 1
-#define HAL_HAVE_SAFETY_SWITCH 0
+#define HAL_HAVE_SAFETY_SWITCH 1
 
 // only include if compiling C++ code
 #ifdef __cplusplus
@@ -77,4 +77,8 @@
 
 #ifndef HAL_CAN_DRIVER_DEFAULT
 #define HAL_CAN_DRIVER_DEFAULT 0
+#endif
+
+#ifndef AP_UART_MONITOR_ENABLED
+#define AP_UART_MONITOR_ENABLED 1
 #endif

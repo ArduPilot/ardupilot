@@ -450,6 +450,8 @@ singleton AP_MotorsMatrix rename MotorsMatrix
 singleton AP_MotorsMatrix method init boolean uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
 singleton AP_MotorsMatrix method add_motor_raw void int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float'skip_check float'skip_check float'skip_check uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
 singleton AP_MotorsMatrix method set_throttle_factor boolean int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float 0 FLT_MAX
+singleton AP_MotorsMatrix method get_lost_motor uint8_t
+singleton AP_MotorsMatrix method get_thrust_boost boolean
 
 include AP_Frsky_Telem/AP_Frsky_SPort.h
 singleton AP_Frsky_SPort rename frsky_sport
@@ -730,3 +732,4 @@ singleton mavlink manual init lua_mavlink_init 2
 singleton mavlink manual register_rx_msgid lua_mavlink_register_rx_msgid 1
 singleton mavlink manual send_chan lua_mavlink_send_chan 3
 singleton mavlink manual receive_chan lua_mavlink_receive_chan 0
+singleton mavlink manual block_command lua_mavlink_block_command 1

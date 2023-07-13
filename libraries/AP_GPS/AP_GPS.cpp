@@ -763,7 +763,14 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
             dstate->current_baud = 0;
         }
         uint32_t baudrate = _baudrates[dstate->current_baud];
-        _port[instance]->begin(baudrate);
+        uint16_t rx_size=0, tx_size=0;
+        if (_type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) {
+            tx_size = 2048;
+        }
+        if (_type[instance] == GPS_TYPE_UBLOX_RTK_BASE) {
+            rx_size = 2048;
+        }
+        _port[instance]->begin(baudrate, rx_size, tx_size);
         _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
         dstate->last_baud_change_ms = now;
 
@@ -2116,14 +2123,17 @@ bool AP_GPS::is_healthy(uint8_t instance) const
     bool delay_ok = (t.delayed_count < delay_threshold) &&
         t.average_delta_ms < delay_avg_max &&
         state[instance].lagged_sample_count < 5;
+    if (!delay_ok) {
+        return false;
+    }
 
 #if defined(GPS_BLENDED_INSTANCE)
     if (instance == GPS_BLENDED_INSTANCE) {
-        return delay_ok && blend_health_check();
+        return blend_health_check();
     }
 #endif
 
-    return delay_ok && drivers[instance] != nullptr &&
+    return drivers[instance] != nullptr &&
            drivers[instance]->is_healthy();
 #endif // HAL_BUILD_AP_PERIPH
 }

@@ -46,10 +46,10 @@ void AP_MotorsHeli_Quad::set_update_rate( uint16_t speed_hz )
 }
 
 // init_outputs
-bool AP_MotorsHeli_Quad::init_outputs()
+void AP_MotorsHeli_Quad::init_outputs()
 {
     if (initialised_ok()) {
-        return true;
+        return;
     }
 
     for (uint8_t i=0; i<AP_MOTORS_HELI_QUAD_NUM_MOTORS; i++) {
@@ -61,28 +61,6 @@ bool AP_MotorsHeli_Quad::init_outputs()
     _main_rotor.init_servo();
 
     set_initialised_ok(_frame_class == MOTOR_FRAME_HELI_QUAD);
-
-    return true;
-}
-
-// output_test_seq - spin a motor at the pwm value specified
-//  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
-//  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-void AP_MotorsHeli_Quad::_output_test_seq(uint8_t motor_seq, int16_t pwm)
-{
-    // output to motors and servos
-    switch (motor_seq) {
-    case 1 ... AP_MOTORS_HELI_QUAD_NUM_MOTORS:
-        rc_write(AP_MOTORS_MOT_1 + (motor_seq-1), pwm);
-        break;
-    case AP_MOTORS_HELI_QUAD_NUM_MOTORS+1:
-        // main rotor
-        rc_write(AP_MOTORS_HELI_RSC, pwm);
-        break;
-    default:
-        // do nothing
-        break;
-    }
 }
 
 // calculate_armed_scalars

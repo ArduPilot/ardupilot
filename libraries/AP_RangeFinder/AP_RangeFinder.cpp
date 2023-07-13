@@ -52,11 +52,13 @@
 #include "AP_RangeFinder_USD1_CAN.h"
 #include "AP_RangeFinder_Benewake_CAN.h"
 #include "AP_RangeFinder_Lua.h"
+#include "AP_RangeFinder_NoopLoop.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_HAL/I2CDevice.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -532,6 +534,11 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     case Type::Lua_Scripting:
 #if AP_SCRIPTING_ENABLED
         _add_backend(new AP_RangeFinder_Lua(state[instance], params[instance]), instance);
+#endif
+        break;
+    case Type::NoopLoop_P:
+#if AP_RANGEFINDER_NOOPLOOP_ENABLED
+        serial_create_fn = AP_RangeFinder_NoopLoop::create;
 #endif
         break;
 

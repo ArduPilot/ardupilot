@@ -318,7 +318,6 @@ void AP_RCProtocol_SRXL2::change_baud_rate(uint32_t baudrate)
         uart->begin(baudrate);
         uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
         uart->set_unbuffered_writes(true);
-        uart->set_blocking_writes(false);
     }
 }
 

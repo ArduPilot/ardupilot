@@ -229,7 +229,7 @@ static int hal_console_vprintf(const char *fmt, va_list arg)
 }
 #endif
 
-void UARTDriver::begin(uint32_t b, uint16_t rxS, uint16_t txS)
+void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     thread_rx_init();
 
@@ -599,23 +599,7 @@ __RAMFUNC__ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
 }
 #endif // HAL_UART_NODMA
 
-void UARTDriver::begin(uint32_t b)
-{
-    if (lock_write_key != 0) {
-        return;
-    }
-    begin(b, 0, 0);
-}
-
-void UARTDriver::begin_locked(uint32_t b, uint32_t key)
-{
-    if (lock_write_key != 0 && key != lock_write_key) {
-        return;
-    }
-    begin(b, 0, 0);
-}
-
-void UARTDriver::end()
+void UARTDriver::_end()
 {
     while (_in_rx_timer) hal.scheduler->delay(1);
     _rx_initialised = false;
@@ -637,7 +621,7 @@ void UARTDriver::end()
     _writebuf.set_size(0);
 }
 
-void UARTDriver::flush()
+void UARTDriver::_flush()
 {
     if (sdef.is_usb) {
 #ifdef HAVE_USB_SERIAL
@@ -652,11 +636,6 @@ void UARTDriver::flush()
 bool UARTDriver::is_initialized()
 {
     return _tx_initialised && _rx_initialised;
-}
-
-void UARTDriver::set_blocking_writes(bool blocking)
-{
-    _blocking_writes = blocking;
 }
 
 bool UARTDriver::tx_pending() { return _writebuf.available() > 0; }
@@ -675,18 +654,10 @@ uint32_t UARTDriver::get_usb_baud() const
     return 0;
 }
 
-uint32_t UARTDriver::available() {
+uint32_t UARTDriver::_available()
+{
     if (!_rx_initialised || _uart_owner_thd != chThdGetSelfX()) {
         return 0;
-    }
-
-    return UARTDriver::available_locked(0);
-}
-
-uint32_t UARTDriver::available_locked(uint32_t key)
-{
-    if (lock_read_key != 0 && key != lock_read_key) {
-        return -1;
     }
     if (sdef.is_usb) {
 #ifdef HAVE_USB_SERIAL
@@ -707,9 +678,9 @@ uint32_t UARTDriver::txspace()
     return _writebuf.space();
 }
 
-bool UARTDriver::discard_input()
+bool UARTDriver::_discard_input()
 {
-    if (lock_read_key != 0 || _uart_owner_thd != chThdGetSelfX()){
+    if (_uart_owner_thd != chThdGetSelfX()){
         return false;
     }
     if (!_rx_initialised) {
@@ -725,9 +696,9 @@ bool UARTDriver::discard_input()
     return true;
 }
 
-ssize_t UARTDriver::read(uint8_t *buffer, uint16_t count)
+ssize_t UARTDriver::_read(uint8_t *buffer, uint16_t count)
 {
-    if (lock_read_key != 0 || _uart_owner_thd != chThdGetSelfX()){
+    if (_uart_owner_thd != chThdGetSelfX()){
         return -1;
     }
     if (!_rx_initialised) {
@@ -746,83 +717,12 @@ ssize_t UARTDriver::read(uint8_t *buffer, uint16_t count)
     return ret;
 }
 
-bool UARTDriver::read(uint8_t &b)
-{
-    if (_uart_owner_thd != chThdGetSelfX()) {
-        return false;
-    }
-
-    return UARTDriver::read_locked(0, b);
-}
-
-bool UARTDriver::read_locked(uint32_t key, uint8_t &b)
-{
-    if (lock_read_key != 0 && key != lock_read_key) {
-        return false;
-    }
-    if (!_rx_initialised) {
-        return false;
-    }
-    uint8_t byte;
-    if (!_readbuf.read_byte(&byte)) {
-        return false;
-    }
-    if (!_rts_is_active) {
-        update_rts_line();
-    }
-    b = byte;
-    return true;
-}
-
-/* write one byte to the port */
-size_t UARTDriver::write(uint8_t c)
-{
-    if (lock_write_key != 0) {
-        return 0;
-    }
-    _write_mutex.take_blocking();
-
-    if (!_tx_initialised) {
-        _write_mutex.give();
-        return 0;
-    }
-
-    while (_writebuf.space() == 0) {
-        if (!_blocking_writes || unbuffered_writes) {
-            _write_mutex.give();
-            return 0;
-        }
-        // release the semaphore while sleeping
-        _write_mutex.give();
-        hal.scheduler->delay(1);
-        _write_mutex.take_blocking();
-    }
-    size_t ret = _writebuf.write(&c, 1);
-    if (unbuffered_writes) {
-        chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
-    }
-    _write_mutex.give();
-    return ret;
-}
-
 /* write a block of bytes to the port */
-size_t UARTDriver::write(const uint8_t *buffer, size_t size)
+size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
 {
-    if (!_tx_initialised || lock_write_key != 0) {
+    if (!_tx_initialised) {
 		return 0;
 	}
-
-    if (_blocking_writes && !unbuffered_writes) {
-        /*
-          use the per-byte delay loop in write() above for blocking writes
-         */
-        size_t ret = 0;
-        while (size--) {
-            if (write(*buffer++) != 1) break;
-            ret++;
-        }
-        return ret;
-    }
 
     WITH_SEMAPHORE(_write_mutex);
 
@@ -831,37 +731,6 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
         chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
     }
     return ret;
-}
-
-/*
-  lock the uart for exclusive use by write_locked() and read_locked() with the right key
- */
-bool UARTDriver::lock_port(uint32_t write_key, uint32_t read_key)
-{
-    if (lock_write_key && write_key != lock_write_key && read_key != 0) {
-        // someone else is using it
-        return false;
-    }
-    if (lock_read_key && read_key != lock_read_key && read_key != 0) {
-        // someone else is using it
-        return false;
-    }
-    lock_write_key = write_key;
-    lock_read_key = read_key;
-    return true;
-}
-
-/*
-   write to a locked port. If port is locked and key is not correct then 0 is returned
-   and write is discarded. All writes are non-blocking
-*/
-size_t UARTDriver::write_locked(const uint8_t *buffer, size_t size, uint32_t key)
-{
-    if (lock_write_key != 0 && key != lock_write_key) {
-        return 0;
-    }
-    WITH_SEMAPHORE(_write_mutex);
-    return _writebuf.write(buffer, size);
 }
 
 /*

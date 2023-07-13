@@ -47,6 +47,7 @@ public:
     friend class Tailsitter_Transition;
 
     friend class Mode;
+    friend class ModeManual;
     friend class ModeAuto;
     friend class ModeRTL;
     friend class ModeAvoidADSB;
@@ -182,6 +183,12 @@ public:
 
     // Should we allow stick mixing from the pilot
     bool allow_stick_mixing() const;
+
+    /*
+      should we disable the TECS controller?
+      only called when in an auto-throttle mode
+     */
+    bool should_disable_TECS() const;
 
 private:
     AP_AHRS &ahrs;

@@ -1,3 +1,47 @@
+Release 4.4.0 beta3
+-------------------
+
+This is the third beta of plane 4.4.0. This includes some important
+fixes since beta2
+
+1) flight controller specific changes
+ - Holybro KakuteH7-Wing support
+ - JFB100 external watchdog GPIO support added
+ - Pixhawk1-bdshot support
+ - Pixhawk6X-bdshot support
+ - SpeedyBeeF4 loses bdshot support
+
+3) Camera and Gimbal related changes
+ - DO_SET_ROI_NONE command support added
+
+4) Bug fixes
+ - ADSB sensor loss of transceiver message less spammy
+ - AutoTune Yaw rate max fixed
+ - EKF vertical velocity reset fixed on loss of GPS
+ - GPS pre-arm failure message clarified
+ - SERVOx_PROTOCOL "SToRM32 Gimbal Serial" value renamed to "Gimbal" because also used by Siyi
+ - SERIALx_OPTION "Swap" renamed to "SwapTXRX" for clarity
+ - SBF GPS ellipsoid height fixed
+ - Ublox M10S GPS auto configuration fixed
+ - ZigZag mode user takeoff fixed (users could not takeoff in ZigZag mode previously)
+ - fixed memory corruption bug with scripting restart
+
+5) Device drivers
+ - added LP5562 I2C LED driver
+ - added IS31FL3195 LED driver
+
+6) Applet changes
+ - added QUIK_MAX_REDUCE parameter to VTOL quicktune lua applet
+
+7) Plane specific changes
+ - fixed takeoff mode to ensure climb to takeoff alt before turning
+ - fixed error in quadplane wait for rudder neutral
+ - improved handling of forward throttle during VTOL landing
+ - fixed TECS state reset in VTOL auto modes
+ - fixed early exit from loiter to alt
+ - fixed display of started airspeed wait on forward transition
+
+
 Release 4.4.0 beta2
 -------------------
 

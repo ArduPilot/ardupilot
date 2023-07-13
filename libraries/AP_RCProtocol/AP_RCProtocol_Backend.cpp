@@ -179,6 +179,11 @@ void AP_RCProtocol_Backend::configure_vtx(uint8_t band, uint8_t channel, uint8_t
 void AP_RCProtocol_Backend::log_data(AP_RCProtocol::rcprotocol_t prot, uint32_t timestamp, const uint8_t *data, uint8_t len) const
 {
 #if HAL_LOGGING_ENABLED
+#if (CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX)
+    if (&rc() == nullptr) { // allow running without RC_Channels if we are doing the examples
+        return;
+    }
+#endif
     if (rc().option_is_enabled(RC_Channels::Option::LOG_RAW_DATA)) {
         uint32_t u32[10] {};
         if (len > sizeof(u32)) {

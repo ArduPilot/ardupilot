@@ -1,5 +1,10 @@
 #include "Copter.h"
 
+#pragma GCC diagnostic push
+#if defined(__clang__)
+#pragma GCC diagnostic ignored "-Wbitwise-instead-of-logical"
+#endif
+
 bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
 {
     const bool passed = run_pre_arm_checks(display_failure);
@@ -49,6 +54,7 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
         return mandatory_checks(display_failure);
     }
 
+    // bitwise & ensures all checks are run
     return parameter_checks(display_failure)
         & oa_checks(display_failure)
         & gcs_failsafe_check(display_failure)
@@ -332,6 +338,7 @@ bool AP_Arming_Copter::rc_calibration_checks(bool display_failure)
         copter.channel_yaw
     };
 
+    // bitwise & ensures all checks are run
     copter.ap.pre_arm_rc_check = rc_checks_copter_sub(display_failure, channels)
         & AP_Arming::rc_calibration_checks(display_failure);
 
@@ -845,3 +852,5 @@ bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_che
 
     return true;
 }
+
+#pragma GCC diagnostic pop

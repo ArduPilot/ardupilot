@@ -34,6 +34,10 @@ static uint8_t last_uart;
 #define BOOTLOADER_BAUDRATE 115200
 #endif
 
+#ifndef AP_BOOTLOADER_ALWAYS_ERASE
+#define AP_BOOTLOADER_ALWAYS_ERASE 0
+#endif
+
 // #pragma GCC optimize("O0")
 
 static bool cin_data(uint8_t *data, uint8_t len, unsigned timeout_ms)
@@ -141,10 +145,14 @@ uint32_t flash_func_sector_size(uint32_t sector)
 
 bool flash_func_erase_sector(uint32_t sector, bool force_erase)
 {
+#if AP_BOOTLOADER_ALWAYS_ERASE
+    return stm32_flash_erasepage(flash_base_page+sector);
+#else
     if (force_erase || !stm32_flash_ispageerased(flash_base_page+sector)) {
         return stm32_flash_erasepage(flash_base_page+sector);
     }
     return true;
+#endif
 }
 
 // read one-time programmable memory

@@ -96,13 +96,18 @@ bool CanardInterface::broadcast(const Canard::Transfer &bcast_transfer) {
 #endif
     };
     // do canard broadcast
-    bool success = canardBroadcastObj(&canard, &tx_transfer) > 0;
+    int16_t ret = canardBroadcastObj(&canard, &tx_transfer);
 #if AP_TEST_DRONECAN_DRIVERS
     if (this == &test_iface) {
         test_iface_sem.give();
     }
 #endif
-    return success;
+    if (ret <= 0) {
+        protocol_stats.tx_errors++;
+    } else {
+        protocol_stats.tx_frames += ret;
+    }
+    return ret > 0;
 }
 
 bool CanardInterface::request(uint8_t destination_node_id, const Canard::Transfer &req_transfer) {
@@ -128,7 +133,13 @@ bool CanardInterface::request(uint8_t destination_node_id, const Canard::Transfe
 #endif
     };
     // do canard request
-    return canardRequestOrRespondObj(&canard, destination_node_id, &tx_transfer) > 0;
+    int16_t ret = canardRequestOrRespondObj(&canard, destination_node_id, &tx_transfer);
+    if (ret <= 0) {
+        protocol_stats.tx_errors++;
+    } else {
+        protocol_stats.tx_frames += ret;
+    }
+    return ret > 0;
 }
 
 bool CanardInterface::respond(uint8_t destination_node_id, const Canard::Transfer &res_transfer) {
@@ -154,7 +165,13 @@ bool CanardInterface::respond(uint8_t destination_node_id, const Canard::Transfe
 #endif
     };
     // do canard respond
-    return canardRequestOrRespondObj(&canard, destination_node_id, &tx_transfer) > 0;
+    int16_t ret = canardRequestOrRespondObj(&canard, destination_node_id, &tx_transfer);
+    if (ret <= 0) {
+        protocol_stats.tx_errors++;
+    } else {
+        protocol_stats.tx_frames += ret;
+    }
+    return ret > 0;
 }
 
 void CanardInterface::onTransferReception(CanardInstance* ins, CanardRxTransfer* transfer) {
@@ -244,6 +261,49 @@ void CanardInterface::processTx(bool raw_commands_only = false) {
 
 }
 
+void CanardInterface::update_rx_protocol_stats(int16_t res)
+{
+    switch (res) {
+    case CANARD_OK:
+        protocol_stats.rx_frames++;
+        break;
+    case -CANARD_ERROR_OUT_OF_MEMORY:
+        protocol_stats.rx_error_oom++;
+        break;
+    case -CANARD_ERROR_INTERNAL:
+        protocol_stats.rx_error_internal++;
+        break;
+    case -CANARD_ERROR_RX_INCOMPATIBLE_PACKET:
+        protocol_stats.rx_ignored_not_wanted++;
+        break;
+    case -CANARD_ERROR_RX_WRONG_ADDRESS:
+        protocol_stats.rx_ignored_wrong_address++;
+        break;
+    case -CANARD_ERROR_RX_NOT_WANTED:
+        protocol_stats.rx_ignored_not_wanted++;
+        break;
+    case -CANARD_ERROR_RX_MISSED_START:
+        protocol_stats.rx_error_missed_start++;
+        break;
+    case -CANARD_ERROR_RX_WRONG_TOGGLE:
+        protocol_stats.rx_error_wrong_toggle++;
+        break;
+    case -CANARD_ERROR_RX_UNEXPECTED_TID:
+        protocol_stats.rx_ignored_unexpected_tid++;
+        break;
+    case -CANARD_ERROR_RX_SHORT_FRAME:
+        protocol_stats.rx_error_short_frame++;
+        break;
+    case -CANARD_ERROR_RX_BAD_CRC:
+        protocol_stats.rx_error_bad_crc++;
+        break;
+    default:
+        // mark all other errors as internal
+        protocol_stats.rx_error_internal++;
+        break;
+    }
+}
+
 void CanardInterface::processRx() {
     AP_HAL::CANFrame rxmsg;
     for (uint8_t i=0; i<num_ifaces; i++) {
@@ -277,23 +337,22 @@ void CanardInterface::processRx() {
             {
                 WITH_SEMAPHORE(_sem_rx);
 
-#if DEBUG_PKTS
-                const int16_t res = 
-#endif
-                canardHandleRxFrame(&canard, &rx_frame, timestamp);
-#if DEBUG_PKTS
-                // hal.console->printf("DTID: %u\n", extractDataType(rx_frame.id));
-                // hal.console->printf("Rx %d, IF%d %lx: ", res, i, rx_frame.id);
-                if (res < 0 &&
-                    res != -CANARD_ERROR_RX_NOT_WANTED &&
-                    res != -CANARD_ERROR_RX_WRONG_ADDRESS) {
-                    hal.console->printf("Rx error %d, IF%d %lx: \n", res, i, rx_frame.id);
-                    // for (uint8_t index = 0; index < rx_frame.data_len; index++) {
-                    //     hal.console->printf("%02x", rx_frame.data[index]);
-                    // }
-                    // hal.console->printf("\n");
+                const int16_t res = canardHandleRxFrame(&canard, &rx_frame, timestamp);
+                if (res == -CANARD_ERROR_RX_MISSED_START) {
+                    // this might remaining frames from a message that we don't accept, so check
+                    uint64_t dummy_signature;
+                    if (shouldAcceptTransfer(&canard,
+                                        &dummy_signature,
+                                        extractDataType(rx_frame.id),
+                                        extractTransferType(rx_frame.id),
+                                        1)) { // doesn't matter what we pass here
+                        update_rx_protocol_stats(res);
+                    } else {
+                        protocol_stats.rx_ignored_not_wanted++;
+                    }
+                } else {
+                    update_rx_protocol_stats(res);
                 }
-#endif
             }
         }
     }

@@ -69,11 +69,11 @@ void AP_ADSB_Sagetech::update()
     // -----------------------------
     uint32_t nbytes = MIN(_port->available(), 10 * PAYLOAD_XP_MAX_SIZE);
     while (nbytes-- > 0) {
-        const int16_t data = (uint8_t)_port->read();
-        if (data < 0) {
+        uint8_t data;
+        if (!_port->read(data)) {
             break;
         }
-        if (parse_byte_XP((uint8_t)data)) {
+        if (parse_byte_XP(data)) {
             handle_packet_XP(message_in.packet);
         }
     } // while nbytes

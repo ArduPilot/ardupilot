@@ -2308,9 +2308,9 @@ local function mavlink_receiver()
       local msg,_,timestamp_ms = mavlink.receive_chan()
       if msg then
          local parsed_msg = mavlink_msgs.decode(msg, msg_map)
-         if parsed_msg.msgid == NAMED_VALUE_FLOAT_msgid then
+         if (parsed_msg ~= nil) and (parsed_msg.msgid == NAMED_VALUE_FLOAT_msgid) then
             -- convert remote timestamp to local timestamp with jitter correction
-            local time_boot_ms = jitter_correction.correct_offboard_timestamp_msec(parsed_msg.time_boot_ms, timestamp_ms)
+            local time_boot_ms = jitter_correction.correct_offboard_timestamp_msec(parsed_msg.time_boot_ms, timestamp_ms:toint())
             local value = parsed_msg.value
             local name = bytes_to_string(parsed_msg.name)
             return time_boot_ms, name, value, parsed_msg.sysid

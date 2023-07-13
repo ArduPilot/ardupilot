@@ -14,6 +14,12 @@ void AP_Mount_Backend::init()
     _target_sysid = _params.sysid_default.get();
 }
 
+// set device id of this instance, for MNTx_DEVID parameter
+void AP_Mount_Backend::set_dev_id(uint32_t id)
+{
+    _params.dev_id.set_and_save(int32_t(id));
+}
+
 // return true if this mount accepts roll targets
 bool AP_Mount_Backend::has_roll_control() const
 {
@@ -189,7 +195,7 @@ void AP_Mount_Backend::send_gimbal_manager_status(mavlink_channel_t chan)
     uint32_t flags = GIMBAL_MANAGER_FLAGS_ROLL_LOCK | GIMBAL_MANAGER_FLAGS_PITCH_LOCK;
 
     if (_yaw_lock) {
-        flags |= GIMBAL_MANAGER_FLAGS_PITCH_LOCK;
+        flags |= GIMBAL_MANAGER_FLAGS_YAW_LOCK;
     }
 
     mavlink_msg_gimbal_manager_status_send(chan,

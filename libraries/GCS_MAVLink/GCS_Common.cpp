@@ -542,8 +542,8 @@ void GCS_MAVLINK::send_ahrs2()
     Vector3f euler;
     Location loc {};
     // we want one or both of these, use | to avoid short-circuiting:
-    if (ahrs.get_secondary_attitude(euler) |
-        ahrs.get_secondary_position(loc)) {
+    if (uint8_t(ahrs.get_secondary_attitude(euler)) |
+        uint8_t(ahrs.get_secondary_position(loc))) {
         mavlink_msg_ahrs2_send(chan,
                                euler.x,
                                euler.y,
@@ -3162,6 +3162,16 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
 #endif
         }
 #endif
+        if (is_equal(packet.param4, 100.0f)) {
+            send_text(MAV_SEVERITY_WARNING,"Creating mutex deadlock");
+            hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&GCS_MAVLINK::deadlock_sem, void));
+            while (!_deadlock_sem.taken) {
+                hal.scheduler->delay(1);
+            }
+            WITH_SEMAPHORE(_deadlock_sem.sem);
+            send_text(MAV_SEVERITY_WARNING,"deadlock passed");
+            return MAV_RESULT_ACCEPTED;
+        }
     }
 
     // refuse reboot when armed:
@@ -3203,6 +3213,17 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
     AP::vehicle()->reboot(hold_in_bootloader);  // not expected to return
 
     return MAV_RESULT_FAILED;
+}
+
+/*
+  take a semaphore and do not release it, triggering a deadlock
+ */
+void GCS_MAVLINK::deadlock_sem(void)
+{
+    if (!_deadlock_sem.taken) {
+        _deadlock_sem.taken = true;
+        _deadlock_sem.sem.take_blocking();
+    }
 }
 
 /*
@@ -3694,7 +3715,7 @@ void GCS_MAVLINK::handle_optical_flow(const mavlink_message_t &msg)
 /*
   handle MAV_CMD_FIXED_MAG_CAL_YAW
  */
-MAV_RESULT GCS_MAVLINK::handle_fixed_mag_cal_yaw(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_fixed_mag_cal_yaw(const mavlink_command_int_t &packet)
 {
 #if COMPASS_CAL_ENABLED
     Compass &compass = AP::compass();
@@ -4072,6 +4093,15 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_SECURE_COMMAND_REPLY:
         AP_CheckFirmware::handle_msg(chan, msg);
         break;
+#endif
+
+#if AP_EFI_MAV_ENABLED
+    case MAVLINK_MSG_ID_EFI_STATUS:
+            AP_EFI *efi = AP::EFI();
+            if (efi) {
+                efi->handle_EFI_message(msg);
+            }
+        	break;
 #endif
     }
 
@@ -4597,7 +4627,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_home(const mavlink_command_long_t 
     return MAV_RESULT_ACCEPTED;
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_command_int_t &packet)
 {
     if (is_equal(packet.param1,1.0f)) {
         if (AP::arming().is_armed()) {
@@ -4623,6 +4653,42 @@ MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_comman
     }
 
     return MAV_RESULT_UNSUPPORTED;
+}
+
+MAV_RESULT GCS_MAVLINK::try_command_long_as_command_int(const mavlink_command_long_t &packet)
+{
+    MAV_FRAME frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
+    if (command_long_stores_location((MAV_CMD)packet.command)) {
+        // we must be able to supply a frame for the location:
+        static const struct {
+            uint32_t command;
+            MAV_FRAME frame;
+        } frame_map[] {
+            { MAV_CMD_FIXED_MAG_CAL_YAW, MAV_FRAME_GLOBAL_RELATIVE_ALT },
+            { MAV_CMD_DO_SET_ROI, MAV_FRAME_GLOBAL_RELATIVE_ALT },
+            { MAV_CMD_DO_SET_ROI_LOCATION, MAV_FRAME_GLOBAL_RELATIVE_ALT },
+        };
+
+        // map from command to frame:
+        bool found = false;
+        for (const auto &map : frame_map) {
+            if (map.command != packet.command) {
+                continue;
+            }
+            frame = map.frame;
+            found = true;
+            break;
+        }
+        if (!found) {
+            return MAV_RESULT_UNSUPPORTED;
+        }
+    }
+
+    // convert and run the command
+    mavlink_command_int_t command_int;
+    convert_COMMAND_LONG_to_COMMAND_INT(packet, command_int, frame);
+
+    return handle_command_int_packet(command_int);
 }
 
 MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t &packet)
@@ -4711,11 +4777,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
     case MAV_CMD_DO_SET_ROI_SYSID:
         return handle_command_do_set_roi_sysid(packet);
 
-    case MAV_CMD_DO_SET_ROI_LOCATION:
-    case MAV_CMD_DO_SET_ROI:
-        result = handle_command_do_set_roi(packet);
-        break;
-
     case MAV_CMD_DO_JUMP_TAG:
     case MAV_CMD_DO_SET_MISSION_CURRENT:
         result = handle_command_do_set_mission_current(packet);
@@ -4798,14 +4859,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         result = handle_flight_termination(packet);
         break;
 
-    case MAV_CMD_COMPONENT_ARM_DISARM:
-        result = handle_command_component_arm_disarm(packet);
-        break;
-
-    case MAV_CMD_FIXED_MAG_CAL_YAW:
-        result = handle_fixed_mag_cal_yaw(packet);
-        break;
-
 #if AP_LANDINGGEAR_ENABLED
         case MAV_CMD_AIRFRAME_CONFIGURATION:
             result = handle_command_airframe_configuration(packet);
@@ -4813,7 +4866,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
 #endif
 
     default:
-        result = MAV_RESULT_UNSUPPORTED;
+        result = try_command_long_as_command_int(packet);
         break;
     }
 
@@ -4871,6 +4924,7 @@ bool GCS_MAVLINK::command_long_stores_location(const MAV_CMD command)
 
 void GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame)
 {
+    out = {};
     out.target_system = in.target_system;
     out.target_component = in.target_component;
     out.frame = frame;
@@ -4896,6 +4950,14 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
     // decode packet
     mavlink_command_long_t packet;
     mavlink_msg_command_long_decode(&msg, &packet);
+
+#if AP_SCRIPTING_ENABLED
+    AP_Scripting *scripting = AP_Scripting::get_singleton();
+    if (scripting != nullptr && scripting->is_handling_command(packet.command)) {
+        // Scripting has registered to receive this command, do not procces it internaly
+        return;
+    }
+#endif
 
     hal.util->persistent_data.last_mavlink_cmd = packet.command;
 
@@ -5090,20 +5152,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_int_t &p
     return handle_command_do_set_roi(roi_loc);
 }
 
-MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_long_t &packet)
-{
-    // be aware that this method is called for both MAV_CMD_DO_SET_ROI
-    // and MAV_CMD_DO_SET_ROI_LOCATION.  If you intend to support any
-    // of the extra fields in the former then you will need to split
-    // off support for MAV_CMD_DO_SET_ROI_LOCATION (which doesn't
-    // support the extra fields).
-    Location roi_loc;
-    if (!location_from_command_t(packet, MAV_FRAME_GLOBAL_RELATIVE_ALT, roi_loc)) {
-        return MAV_RESULT_DENIED;
-    }
-    return handle_command_do_set_roi(roi_loc);
-}
-
 #if AP_FILESYSTEM_FORMAT_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_storage_format(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
@@ -5139,6 +5187,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     case MAV_CMD_EXTERNAL_POSITION_ESTIMATE:
         return handle_command_int_external_position_estimate(packet);
 #endif
+    case MAV_CMD_COMPONENT_ARM_DISARM:
+        return handle_command_component_arm_disarm(packet);
+    case MAV_CMD_FIXED_MAG_CAL_YAW:
+        return handle_command_fixed_mag_cal_yaw(packet);
 
 #if AP_SCRIPTING_ENABLED
     case MAV_CMD_SCRIPTING:
@@ -5161,6 +5213,14 @@ void GCS_MAVLINK::handle_command_int(const mavlink_message_t &msg)
     // decode packet
     mavlink_command_int_t packet;
     mavlink_msg_command_int_decode(&msg, &packet);
+
+#if AP_SCRIPTING_ENABLED
+    AP_Scripting *scripting = AP_Scripting::get_singleton();
+    if (scripting != nullptr && scripting->is_handling_command(packet.command)) {
+        // Scripting has registered to receive this command, do not procces it internaly
+        return;
+    }
+#endif
 
     hal.util->persistent_data.last_mavlink_cmd = packet.command;
 
@@ -6405,34 +6465,27 @@ void GCS::passthru_timer(void)
     if (_passthru.baud2 != baud && baud != 0) {
         _passthru.baud2 = baud;
         _passthru.port2->end();
-        _passthru.port2->begin_locked(baud, lock_key);
+        _passthru.port2->begin_locked(baud, 0, 0, lock_key);
     }
 
     baud = _passthru.port2->get_usb_baud();
     if (_passthru.baud1 != baud && baud != 0) {
         _passthru.baud1 = baud;
         _passthru.port1->end();
-        _passthru.port1->begin_locked(baud, lock_key);
+        _passthru.port1->begin_locked(baud, 0, 0, lock_key);
     }
 
-    uint8_t b;
     uint8_t buf[64];
-    uint8_t nbytes = 0;
 
     // read from port1, and write to port2
-    while (nbytes < sizeof(buf) && _passthru.port1->read_locked(lock_key, b)) {
-        buf[nbytes++] = b;
-    }
+    int16_t nbytes = _passthru.port1->read_locked(buf, sizeof(buf), lock_key);
     if (nbytes > 0) {
         _passthru.last_port1_data_ms = AP_HAL::millis();
         _passthru.port2->write_locked(buf, nbytes, lock_key);
     }
 
     // read from port2, and write to port1
-    nbytes = 0;
-    while (nbytes < sizeof(buf) && _passthru.port2->read_locked(lock_key, b)) {
-        buf[nbytes++] = b;
-    }
+    nbytes = _passthru.port2->read_locked(buf, sizeof(buf), lock_key);
     if (nbytes > 0) {
         _passthru.port1->write_locked(buf, nbytes, lock_key);
     }

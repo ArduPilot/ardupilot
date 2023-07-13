@@ -42,7 +42,8 @@ local function MAVLinkProcessor()
         COMMAND_LONG = 76,
         COMMAND_INT = 75,
         HIGH_LATENCY2 = 235,
-        MISSION_ITEM_INT = 73
+        MISSION_ITEM_INT = 73,
+        SET_MODE = 11
     }
 
     -- private fields
@@ -60,6 +61,7 @@ local function MAVLinkProcessor()
     _crc_extra[76] = 0x98
     _crc_extra[235] = 0xb3
     _crc_extra[73] = 0x26
+    _crc_extra[11] = 0x59
 
     local _messages = {}
     _messages[75] = { -- COMMAND_INT
@@ -92,7 +94,9 @@ local function MAVLinkProcessor()
         {"command", "<I2"}, {"target_system", "<B"}, {"target_component", "<B"},
         {"frame", "<B"}, {"current", "<B"}, {"autocontinue", "<B"}
     }
-
+    _messages[11] = { -- SET_MODE
+        { "custom_mode", "<I4" }, { "target_system", "<B" }, { "base_mode", "<B" },
+    }
     function self.getSeqID() return _txseqid end
 
     function self.generateCRC(buffer)
@@ -205,6 +209,8 @@ local function MAVLinkProcessor()
                     end
                     vehicle:set_target_location(loc)
                 end
+            elseif _mavresult.msgid == self.SET_MODE then
+                vehicle:set_mode(_mavresult.custom_mode)
             elseif _mavresult.msgid == self.COMMAND_LONG or _mavresult.msgid ==
                 self.COMMAND_INT then
                 if _mavresult.command == 400 then -- MAV_CMD_COMPONENT_ARM_DISARM

@@ -1,9 +1,10 @@
 #pragma once
 
-#include "AP_RangeFinder.h"
-#include "AP_RangeFinder_Backend.h"
+#include "AP_RangeFinder_config.h"
 
-#if AP_SCRIPTING_ENABLED
+#if AP_RANGEFINDER_LUA_ENABLED
+
+#include "AP_RangeFinder_Backend.h"
 
 // Data timeout
 #define AP_RANGEFINDER_LUA_TIMEOUT_MS 500
@@ -30,4 +31,4 @@ private:
     float _distance_m;   // stored data from lua script:
 };
 
-#endif
+#endif  // AP_RANGEFINDER_LUA_ENABLED

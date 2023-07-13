@@ -70,7 +70,7 @@ public:
 
     // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
-    bool set_focus(FocusType focus_type, float focus_value) override;
+    SetFocusResult set_focus(FocusType focus_type, float focus_value) override;
 
     // send camera information message to GCS
     void send_camera_information(mavlink_channel_t chan) const override;
@@ -171,9 +171,6 @@ private:
     // rotate gimbal.  pitch_rate and yaw_rate are scalars in the range -100 ~ +100
     // yaw_is_ef should be true if gimbal should maintain an earth-frame target (aka lock)
     void rotate_gimbal(int8_t pitch_scalar, int8_t yaw_scalar, bool yaw_is_ef);
-
-    // center gimbal
-    void center_gimbal();
 
     // set gimbal's lock vs follow mode
     // lock should be true if gimbal should maintain an earth-frame target

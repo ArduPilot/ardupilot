@@ -214,13 +214,13 @@ public:
     // returns true on success and control_value is set to a value in the range -1 to +1
     virtual bool get_control_output(AP_Vehicle::ControlOutput control_output, float &control_value) { return false; }
 
+#endif // AP_SCRIPTING_ENABLED
+
     // returns true if vehicle is in the process of landing
     virtual bool is_landing() const { return false; }
 
     // returns true if vehicle is in the process of taking off
     virtual bool is_taking_off() const { return false; }
-
-#endif // AP_SCRIPTING_ENABLED
 
     // zeroing the RC outputs can prevent unwanted motor movement:
     virtual bool should_zero_rc_outputs_on_reboot() const { return false; }
@@ -418,6 +418,9 @@ protected:
     bool init_dds_client() WARN_IF_UNUSED;
 #endif
 
+    // Check if this mode can be entered from the GCS
+    bool block_GCS_mode_change(uint8_t mode_num, const uint8_t *mode_list, uint8_t mode_list_length) const;
+
 private:
 
     // delay() callback that processing MAVLink packets
@@ -457,6 +460,9 @@ private:
     uint32_t _last_internal_errors;  // backup of AP_InternalError::internal_errors bitmask
 
     AP_CustomRotations custom_rotations;
+
+    // Bitmask of modes to disable from gcs
+    AP_Int32 flight_mode_GCS_block;
 };
 
 namespace AP {

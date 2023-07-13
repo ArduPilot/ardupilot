@@ -1,14 +1,11 @@
 #pragma once
 
-#include "AP_RangeFinder.h"
-
-#ifndef AP_RANGEFINDER_BENEWAKE_ENABLED
-#define AP_RANGEFINDER_BENEWAKE_ENABLED AP_RANGEFINDER_ENABLED
-#endif
+#include "AP_RangeFinder_config.h"
 
 #if AP_RANGEFINDER_BENEWAKE_ENABLED
 
 #include "AP_RangeFinder_Backend_Serial.h"
+#include "AP_RangeFinder.h"
 
 class AP_RangeFinder_Benewake : public AP_RangeFinder_Backend_Serial
 {

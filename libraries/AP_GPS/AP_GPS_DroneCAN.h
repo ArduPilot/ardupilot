@@ -119,6 +119,7 @@ private:
         AP_DroneCAN* ap_dronecan;
         uint8_t node_id;
         uint8_t instance;
+        uint32_t last_inject_ms;
         AP_GPS_DroneCAN* driver;
     } _detected_modules[GPS_MAX_RECEIVERS];
 

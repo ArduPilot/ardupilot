@@ -717,6 +717,7 @@ def build(bld):
                 'fopen', 'fflush', 'fwrite', 'fread', 'fputs', 'fgets',
                 'clearerr', 'fseek', 'ferror', 'fclose', 'tmpfile', 'getc', 'ungetc', 'feof',
                 'ftell', 'freopen', 'remove', 'vfprintf', 'fscanf',
-                '_gettimeofday', '_times', '_times_r', '_gettimeofday_r', 'time', 'clock' ]
+                '_gettimeofday', '_times', '_times_r', '_gettimeofday_r', 'time', 'clock',
+                '_sbrk', '_sbrk_r', '_malloc_r', '_calloc_r', '_free_r']
     for w in wraplist:
         bld.env.LINKFLAGS += ['-Wl,--wrap,%s' % w]

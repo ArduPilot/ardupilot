@@ -43,6 +43,9 @@ public:
     // init - performs any required initialisation for this instance
     virtual void init();
 
+    // set device id of this instance, for MNTx_DEVID parameter
+    void set_dev_id(uint32_t id);
+
     // update mount position - should be called periodically
     virtual void update() = 0;
 
@@ -152,7 +155,7 @@ public:
 
     // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
-    virtual bool set_focus(FocusType focus_type, float focus_value) { return false; }
+    virtual SetFocusResult set_focus(FocusType focus_type, float focus_value) { return SetFocusResult::UNSUPPORTED; }
 
     // send camera information message to GCS
     virtual void send_camera_information(mavlink_channel_t chan) const {}

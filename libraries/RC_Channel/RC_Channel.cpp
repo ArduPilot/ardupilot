@@ -972,7 +972,7 @@ bool RC_Channel::do_aux_function_camera_manual_focus(const AuxSwitchPos ch_flag)
         focus_step = -1;
         break;
     }
-    return camera->set_focus(FocusType::RATE, focus_step);
+    return camera->set_focus(FocusType::RATE, focus_step) == SetFocusResult::ACCEPTED;
 }
 
 bool RC_Channel::do_aux_function_camera_auto_focus(const AuxSwitchPos ch_flag)
@@ -982,7 +982,7 @@ bool RC_Channel::do_aux_function_camera_auto_focus(const AuxSwitchPos ch_flag)
         if (camera == nullptr) {
             return false;
         }
-        return camera->set_focus(FocusType::AUTO, 0);
+        return camera->set_focus(FocusType::AUTO, 0) == SetFocusResult::ACCEPTED;
     }
     return false;
 }
@@ -1430,7 +1430,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         }
         break;
 
-#if AP_OPTICALFLOW_ENABLED
+#if AP_OPTICALFLOW_CALIBRATOR_ENABLED
     case AUX_FUNC::OPTFLOW_CAL: {
         AP_OpticalFlow *optflow = AP::opticalflow();
         if (optflow == nullptr) {

@@ -360,6 +360,7 @@ private:
     void init_ardupilot() override;
     void startup_ground(void);
     void update_ahrs_flyforward();
+    bool gcs_mode_enabled(const Mode::Number mode_num) const;
     bool set_mode(Mode &new_mode, ModeReason reason);
     bool set_mode(const uint8_t new_mode, ModeReason reason) override;
     uint8_t get_mode() const override { return (uint8_t)control_mode->mode_number(); }

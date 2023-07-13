@@ -13,10 +13,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_RangeFinder_config.h"
+
+#if AP_RANGEFINDER_LUA_ENABLED
+
 #include "AP_RangeFinder_Lua.h"
 #include <AP_HAL/AP_HAL.h>
-
-#if AP_SCRIPTING_ENABLED
 
 // constructor
 AP_RangeFinder_Lua::AP_RangeFinder_Lua(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
@@ -49,4 +51,4 @@ void AP_RangeFinder_Lua::update(void)
     }
 }
 
-#endif
+#endif  // AP_RANGEFINDER_LUA_ENABLED

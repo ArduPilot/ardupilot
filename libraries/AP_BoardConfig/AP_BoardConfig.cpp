@@ -138,7 +138,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Values: 0:Disabled,1:Enabled,2:Auto
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("SER3_RTSCTS",    23, AP_BoardConfig, state.ser_rtscts[3], 2),
+    AP_GROUPINFO("SER3_RTSCTS",    26, AP_BoardConfig, state.ser_rtscts[3], 2),
 #endif
 
 #ifdef HAL_HAVE_RTSCTS_SERIAL4
@@ -148,7 +148,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Values: 0:Disabled,1:Enabled,2:Auto
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("SER4_RTSCTS",    24, AP_BoardConfig, state.ser_rtscts[4], 2),
+    AP_GROUPINFO("SER4_RTSCTS",    27, AP_BoardConfig, state.ser_rtscts[4], 2),
 #endif
 
 #ifdef HAL_HAVE_RTSCTS_SERIAL5
@@ -353,7 +353,11 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SD_MISSION", 24, AP_BoardConfig, sdcard_storage.mission_kb, 0),
 #endif
-    
+
+    // index 25 used by SER5_RTSCTS
+    // index 26 used by SER3_RTSCTS
+    // index 27 used by SER4_RTSCTS
+
     AP_GROUPEND
 };
 

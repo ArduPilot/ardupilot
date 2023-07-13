@@ -173,16 +173,10 @@ void AP_MotorsHeli::init(motor_frame_class frame_class, motor_frame_type frame_t
     _throttle_radio_passthrough = 0.5f;
 
     // initialise Servo/PWM ranges and endpoints
-    if (!init_outputs()) {
-        // don't set initialised_ok
-        return;
-    }
+    init_outputs();
 
     // calculate all scalars
     calculate_scalars();
-
-    // record successful initialisation if what we setup was the desired frame_class
-    set_initialised_ok(frame_class == MOTOR_FRAME_HELI);
 
     // set flag to true so targets are initialized once aircraft is armed for first time
     _heliflags.init_targets_on_arming = true;
@@ -616,6 +610,13 @@ bool AP_MotorsHeli::arming_checks(size_t buflen, char *buffer) const
     }
 
     return true;
+}
+
+// Tell user motor test is disabled on heli
+bool AP_MotorsHeli::motor_test_checks(size_t buflen, char *buffer) const
+{
+    hal.util->snprintf(buffer, buflen, "Disabled on heli");
+    return false;
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)

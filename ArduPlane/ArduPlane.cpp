@@ -204,7 +204,13 @@ void Plane::ahrs_update()
  */
 void Plane::update_speed_height(void)
 {
-    if (control_mode->does_auto_throttle()) {
+    bool should_run_tecs = control_mode->does_auto_throttle();
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.should_disable_TECS()) {
+        should_run_tecs = false;
+    }
+#endif
+    if (should_run_tecs) {
 	    // Call TECS 50Hz update. Note that we call this regardless of
 	    // throttle suppressed, as this needs to be running for
 	    // takeoff detection
@@ -538,7 +544,14 @@ void Plane::update_alt()
     }
 #endif
 
-    if (control_mode->does_auto_throttle() && !throttle_suppressed) {
+    bool should_run_tecs = control_mode->does_auto_throttle();
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.should_disable_TECS()) {
+        should_run_tecs = false;
+    }
+#endif
+    
+    if (should_run_tecs && !throttle_suppressed) {
 
         float distance_beyond_land_wp = 0;
         if (flight_stage == AP_FixedWing::FlightStage::LAND &&
@@ -850,6 +863,7 @@ bool Plane::set_land_descent_rate(float descent_rate)
 #endif
     return false;
 }
+#endif // AP_SCRIPTING_ENABLED
 
 // returns true if vehicle is landing.
 bool Plane::is_landing() const
@@ -872,8 +886,6 @@ bool Plane::is_taking_off() const
 #endif
     return control_mode->is_taking_off();
 }
-
-#endif // AP_SCRIPTING_ENABLED
 
 // correct AHRS pitch for TRIM_PITCH_CD in non-VTOL modes, and return VTOL view in VTOL
 void Plane::get_osd_roll_pitch_rad(float &roll, float &pitch) const

@@ -33,30 +33,18 @@ class ESP32::WiFiDriver : public AP_HAL::UARTDriver
 public:
     WiFiDriver();
 
-    void begin(uint32_t b) override;
-    void begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
-    void end() override;
-    void flush() override;
     bool is_initialized() override;
-    void set_blocking_writes(bool blocking) override;
     bool tx_pending() override;
 
-    uint32_t available() override;
     uint32_t txspace() override;
-    bool read(uint8_t &c) override;
-
-    size_t write(uint8_t c) override;
-    size_t write(const uint8_t *buffer, size_t size) override;
 
     uint32_t bw_in_bytes_per_second() const override
     {
         return 1000*1024;
     }
 
-
-    bool discard_input() override;
-
     bool _more_data;
+
 private:
     enum ConnectionState {
         NOT_INITIALIZED,
@@ -80,4 +68,13 @@ private:
     bool try_accept();
     static void _wifi_thread(void* arg);
     unsigned short available_socket();
+
+protected:
+    void _begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
+    size_t _write(const uint8_t *buffer, size_t size) override;
+    ssize_t _read(uint8_t *buffer, uint16_t size) override;
+    void _end() override;
+    void _flush() override;
+    bool _discard_input() override;
+    uint32_t _available() override;
 };

@@ -36,6 +36,11 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(AP_Camera_Backend);
 
+    enum CAMOPTIONS {
+        NONE = 0,
+        REC_ARM_DISARM = 1, // Recording start/stop on Arm/Disarm
+    };
+
     // init - performs any required initialisation
     virtual void init() {};
 
@@ -63,7 +68,7 @@ public:
 
     // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
-    virtual bool set_focus(FocusType focus_type, float focus_value) { return false; }
+    virtual SetFocusResult set_focus(FocusType focus_type, float focus_value) { return SetFocusResult::UNSUPPORTED; }
 
     // set tracking to none, point or rectangle (see TrackingType enum)
     // if POINT only p1 is used, if RECTANGLE then p1 is top-left, p2 is bottom-right
@@ -138,6 +143,7 @@ protected:
     uint32_t last_photo_time_ms;    // system time that photo was last taken
     Location last_location;         // Location that last picture was taken at (used for trigg_dist calculation)
     uint16_t image_index;           // number of pictures taken since boot
+    bool last_is_armed;             // stores last arm/disarm state. true if it was armed lastly
 };
 
 #endif // AP_CAMERA_ENABLED

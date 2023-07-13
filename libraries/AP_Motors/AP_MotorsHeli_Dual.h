@@ -46,9 +46,6 @@ public:
     // set_update_rate - set update rate to motors
     void set_update_rate( uint16_t speed_hz ) override;
 
-    // output_test_seq - spin a motor at the pwm value specified
-    virtual void _output_test_seq(uint8_t motor_seq, int16_t pwm) override;
-
     // output_to_motors - sends values out to the motors
     void output_to_motors() override;
 
@@ -76,7 +73,7 @@ public:
 protected:
 
     // init_outputs
-    bool init_outputs () override;
+    void init_outputs () override;
 
     // update_motor_controls - sends commands to motor controllers
     void update_motor_control(RotorControlState state) override;

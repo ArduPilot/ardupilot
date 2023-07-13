@@ -29,8 +29,9 @@ int16_t AP_HAL::BetterStream::read()
     return b;
 }
 
-ssize_t AP_HAL::BetterStream::read(uint8_t *buffer, uint16_t count) {
-    uint16_t offset = 0;
+ssize_t AP_HAL::BetterStream::read(uint8_t *buffer, uint16_t count)
+{
+    size_t offset = 0;
     while (count--) {
         const int16_t x = read();
         if (x == -1) {

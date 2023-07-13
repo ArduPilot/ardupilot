@@ -19,6 +19,11 @@ void Sub::init_ardupilot()
     can_mgr.init();
 #endif
 
+#if STATS_ENABLED == ENABLED
+    // initialise stats module
+    g2.stats.init();
+#endif
+
     // init cargo gripper
 #if AP_GRIPPER_ENABLED
     g2.gripper.init();
@@ -165,11 +170,6 @@ void Sub::init_ardupilot()
 #if AP_SCRIPTING_ENABLED
     g2.scripting.init();
 #endif // AP_SCRIPTING_ENABLED
-
-    // we don't want writes to the serial port to cause us to pause
-    // mid-flight, so set the serial ports non-blocking once we are
-    // ready to fly
-    serial_manager.set_blocking_writes_all(false);
 
     // enable CPU failsafe
     mainloop_failsafe_enable();

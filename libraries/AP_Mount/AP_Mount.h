@@ -23,6 +23,7 @@
 
 #if HAL_MOUNT_ENABLED
 
+#include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
@@ -43,6 +44,7 @@ class AP_Mount_SToRM32_serial;
 class AP_Mount_Gremsy;
 class AP_Mount_Siyi;
 class AP_Mount_Scripting;
+class AP_Mount_Xacti;
 
 /*
   This is a workaround to allow the MAVLink backend access to the
@@ -61,6 +63,7 @@ class AP_Mount
     friend class AP_Mount_Gremsy;
     friend class AP_Mount_Siyi;
     friend class AP_Mount_Scripting;
+    friend class AP_Mount_Xacti;
 
 public:
     AP_Mount();
@@ -102,6 +105,9 @@ public:
 #endif
 #if HAL_MOUNT_SCRIPTING_ENABLED
         Scripting = 9,       /// Scripting gimbal driver
+#endif
+#if HAL_MOUNT_XACTI_ENABLED
+        Xacti = 10,          /// Xacti DroneCAN gimbal driver
 #endif
     };
 
@@ -210,7 +216,7 @@ public:
 
     // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
-    bool set_focus(uint8_t instance, FocusType focus_type, float focus_value);
+    SetFocusResult set_focus(uint8_t instance, FocusType focus_type, float focus_value);
 
     // send camera information message to GCS
     void send_camera_information(mavlink_channel_t chan) const;

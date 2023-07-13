@@ -240,7 +240,7 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
 
     AP_GROUPINFO("EFI_TYPE",    58, SIM,  efi_type,  SIM::EFI_TYPE_NONE),
 
-    AP_GROUPINFO("SAFETY_STATE",    59, SIM,  _safety_switch_state, 0),
+    // 59 was SAFETY_STATE
 
     // motor harmonics
     AP_GROUPINFO("VIB_MOT_HMNC", 60, SIM,  vibe_motor_harmonics, 1),
