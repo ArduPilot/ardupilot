@@ -15,7 +15,6 @@ AP_Mount_SoloGimbal::AP_Mount_SoloGimbal(AP_Mount &frontend, AP_Mount_Params &pa
 void AP_Mount_SoloGimbal::init()
 {
     _initialised = true;
-    set_mode((enum MAV_MOUNT_MODE)_params.default_mode.get());
     AP_Mount_Backend::init();
 }
 
