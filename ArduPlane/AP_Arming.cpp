@@ -397,7 +397,9 @@ void AP_Arming_Plane::update_soft_armed()
 #endif
 
     hal.util->set_soft_armed(_armed);
+#if HAL_LOGGING_ENABLED
     AP::logger().set_vehicle_armed(hal.util->get_soft_armed());
+#endif
 
     // update delay_arming oneshot
     if (delay_arming &&

@@ -1230,7 +1230,11 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_RADIO:
     case MAVLINK_MSG_ID_RADIO_STATUS:
     {
+#if HAL_LOGGING_ENABLED
         handle_radio_status(msg, plane.should_log(MASK_LOG_PM));
+#else
+        handle_radio_status(msg, false);
+#endif
         break;
     }
 
