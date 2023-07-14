@@ -257,7 +257,4 @@ DMA_PRIORITY SDMMC* USART6* ADC* UART* USART* SPI* TIM*
 # enable FAT filesystem support (needs a microSD defined via SDMMC)
 define HAL_OS_FATFS_IO 1
 
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin

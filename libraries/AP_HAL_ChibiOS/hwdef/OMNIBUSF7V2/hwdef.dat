@@ -115,8 +115,6 @@ SPIDEV sdcard  SPI4 DEVID1 SDCARD_CS MODE0 400*KHZ 25*MHZ
 SPIDEV osd     SPI2 DEVID1 MAX7456_CS MODE0 10*MHZ 10*MHZ
 
 define HAL_OS_FATFS_IO 1
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types

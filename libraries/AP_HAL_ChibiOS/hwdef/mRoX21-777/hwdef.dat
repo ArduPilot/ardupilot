@@ -384,10 +384,6 @@ SPIDEV ramtron        SPI2 DEVID10 FRAM_CS      MODE3  8*MHZ  8*MHZ
 # a #define in the hwdef.h header
 define HAL_CHIBIOS_ARCH_FMUV3 1
 
-# now some defines for logging and terrain data files
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
 # we need to tell HAL_ChibiOS/Storage.cpp how much storage is
 # available (in bytes)
 define HAL_STORAGE_SIZE 32768

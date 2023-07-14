@@ -284,10 +284,6 @@ define HAL_CHIBIOS_ARCH_FMUV3 1
 
 define BOARD_TYPE_DEFAULT 3
 
-# Nnow some defines for logging and terrain data files.
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
 # allow to have have a dedicated safety switch pin
 define HAL_HAVE_SAFETY_SWITCH 1
 

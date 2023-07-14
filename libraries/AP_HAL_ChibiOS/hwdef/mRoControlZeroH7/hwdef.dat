@@ -223,10 +223,6 @@ SPIDEV bmi088_a    SPI5 DEVID2  BMI088_ACCEL_CS   MODE3  5*MHZ  5*MHZ
 SPIDEV icm20608    SPI1 DEVID2  ICM_20602_CS      MODE3  2*MHZ  4*MHZ
 SPIDEV icm20948    SPI1 DEVID1  ICM_20948_CS      MODE3  2*MHZ  4*MHZ
 
-# Now some defines for logging and terrain data files.
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
 # Enable RAMTROM parameter storage.
 define HAL_WITH_RAMTRON 1
 
