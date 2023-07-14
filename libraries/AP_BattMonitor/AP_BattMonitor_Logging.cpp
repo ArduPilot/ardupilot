@@ -1,3 +1,7 @@
+#include <AP_Logger/AP_Logger_config.h>
+
+#if HAL_LOGGING_ENABLED
+
 #include "AP_BattMonitor_Backend.h"
 #include <AP_Logger/AP_Logger.h>
 
@@ -83,3 +87,5 @@ void AP_BattMonitor_Backend::Log_Write_BCL(const uint8_t instance, const uint64_
     }
 #endif
 }
+
+#endif  // HAL_LOGGING_ENABLED
