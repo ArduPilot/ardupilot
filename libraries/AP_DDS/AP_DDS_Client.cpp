@@ -415,7 +415,7 @@ bool AP_DDS_Client::start(void)
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_DDS_Client::main_loop, void),
                                       "DDS",
                                       8192, AP_HAL::Scheduler::PRIORITY_IO, 1)) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"DDS Client: thread create failed");
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Thread create failed", msg_prefix);
         return false;
     }
     return true;
@@ -449,11 +449,11 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         }
 
         if (rx_joy_topic.axes_size >= 4) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Received sensor_msgs/Joy: %f, %f, %f, %f",
-                          rx_joy_topic.axes[0], rx_joy_topic.axes[1], rx_joy_topic.axes[2], rx_joy_topic.axes[3]);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Received sensor_msgs/Joy: %f, %f, %f, %f",
+                          msg_prefix, rx_joy_topic.axes[0], rx_joy_topic.axes[1], rx_joy_topic.axes[2], rx_joy_topic.axes[3]);
             // TODO implement joystick RC control to AP
         } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Received sensor_msgs/Joy: Insufficient axes size ");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Received sensor_msgs/Joy. Axes size must be >= 4", msg_prefix);
         }
         break;
     }
@@ -469,7 +469,7 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
 #endif // AP_DDS_VISUALODOM_ENABLED
 
         } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Received tf2_msgs/TFMessage: Insufficient size ");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Received tf2_msgs/TFMessage: TF is empty", msg_prefix);
         }
         break;
     }
@@ -513,10 +513,10 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         }
 
         if (arm_motors_request.arm) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Request for arming received");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for arming received", msg_prefix);
             arm_motors_response.result = AP::arming().arm(AP_Arming::Method::DDS);
         } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Request for disarming received");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for disarming received", msg_prefix);
             arm_motors_response.result = AP::arming().disarm(AP_Arming::Method::DDS);
         }
 
@@ -536,9 +536,9 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
 
         uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
         if (arm_motors_response.result) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "DDS Client: Request for Arming/Disarming : SUCCESS");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for Arming/Disarming : SUCCESS", msg_prefix);
         } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "DDS Client: Request for Arming/Disarming : FAIL");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for Arming/Disarming : FAIL", msg_prefix);
         }
         break;
     }
@@ -568,9 +568,9 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
 
         uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
         if (mode_switch_response.status) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "DDS Client: Request for Mode Switch : SUCCESS");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for Mode Switch : SUCCESS", msg_prefix);
         } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "DDS Client: Request for Mode Switch : FAIL");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for Mode Switch : FAIL", msg_prefix);
         }
         break;
     }
@@ -583,10 +583,10 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
 void AP_DDS_Client::main_loop(void)
 {
     if (!init() || !create()) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"DDS Client: Creation Requests failed");
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Creation Requests failed", msg_prefix);
         return;
     }
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO,"DDS Client: Initialization passed");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Initialization passed", msg_prefix);
 
     populate_static_transforms(tx_static_transforms_topic);
     write_static_transforms();
@@ -611,7 +611,7 @@ bool AP_DDS_Client::init()
 #endif
 
     if (!initTransportStatus) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"DDS Client: Transport Initialization failed");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Transport initialization failed", msg_prefix);
         return false;
     }
 
@@ -622,26 +622,26 @@ bool AP_DDS_Client::init()
     uxr_set_request_callback(&session, AP_DDS_Client::on_request_trampoline, this);
 
     while (!uxr_create_session(&session)) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO,"DDS Client: Initialization waiting...");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Initialization waiting...", msg_prefix);
         hal.scheduler->delay(1000);
     }
 
     // setup reliable stream buffers
     input_reliable_stream = new uint8_t[DDS_BUFFER_SIZE];
     if (input_reliable_stream == nullptr) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"DDS Client: allocation failed");
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Allocation failed", msg_prefix);
         return false;
     }
     output_reliable_stream = new uint8_t[DDS_BUFFER_SIZE];
     if (output_reliable_stream == nullptr) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"DDS Client: allocation failed");
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Allocation failed", msg_prefix);
         return false;
     }
 
     reliable_in = uxr_create_input_reliable_stream(&session, input_reliable_stream, DDS_BUFFER_SIZE, DDS_STREAM_HISTORY);
     reliable_out = uxr_create_output_reliable_stream(&session, output_reliable_stream, DDS_BUFFER_SIZE, DDS_STREAM_HISTORY);
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO,"DDS Client: Init Complete");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Init complete", msg_prefix);
 
     return true;
 }
@@ -666,7 +666,7 @@ bool AP_DDS_Client::create()
     constexpr uint16_t requestTimeoutParticipantMs = (uint16_t) nRequestsParticipant * maxTimeMsPerRequestMs;
     uint8_t statusParticipant[nRequestsParticipant];
     if (!uxr_run_session_until_all_status(&session, requestTimeoutParticipantMs, requestsParticipant, statusParticipant, nRequestsParticipant)) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Participant session request failure");
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Participant session request failure", msg_prefix);
         // TODO add a failure log message sharing the status results
         return false;
     }
@@ -705,14 +705,14 @@ bool AP_DDS_Client::create()
             requests[2] = dwriter_req_id;
 
             if (!uxr_run_session_until_all_status(&session, requestTimeoutMs, requests, status, nRequests)) {
-                GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Topic/Pub/Writer session request failure for index '%u'",i);
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Topic/Pub/Writer session request failure for index '%u'", msg_prefix, i);
                 for (uint8_t s = 0 ; s < nRequests; s++) {
-                    GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Status '%d' result '%u'", s, status[s]);
+                    GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Status '%d' result '%u'", msg_prefix, s, status[s]);
                 }
                 // TODO add a failure log message sharing the status results
                 return false;
             } else {
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO,"XRCE Client: Topic/Pub/Writer session pass for index '%u'",i);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Topic/Pub/Writer session pass for index '%u'", msg_prefix, i);
             }
         } else if (strlen(topics[i].dr_profile_label) > 0) {
             // Subscriber
@@ -733,14 +733,14 @@ bool AP_DDS_Client::create()
             requests[2] = dreader_req_id;
 
             if (!uxr_run_session_until_all_status(&session, requestTimeoutMs, requests, status, nRequests)) {
-                GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Topic/Sub/Reader session request failure for index '%u'",i);
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Topic/Sub/Reader session request failure for index '%u'", msg_prefix, i);
                 for (uint8_t s = 0 ; s < nRequests; s++) {
-                    GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Status '%d' result '%u'", s, status[s]);
+                    GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Status '%d' result '%u'", msg_prefix, s, status[s]);
                 }
                 // TODO add a failure log message sharing the status results
                 return false;
             } else {
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO,"XRCE Client: Topic/Sub/Reader session pass for index '%u'",i);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Topic/Sub/Reader session pass for index '%u'", msg_prefix, i);
                 uxr_buffer_request_data(&session, reliable_out, topics[i].dr_id, reliable_in, &delivery_control);
             }
         }
@@ -764,12 +764,12 @@ bool AP_DDS_Client::create()
             uint8_t status;
 
             if (!uxr_run_session_until_all_status(&session, requestTimeoutMs, &request, &status, 1)) {
-                GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Service/Replier session request failure for index '%u'",i);
-                GCS_SEND_TEXT(MAV_SEVERITY_ERROR,"XRCE Client: Status result '%u'", status);
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Service/Replier session request failure for index '%u'", msg_prefix, i);
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Status result '%u'", msg_prefix, status);
                 // TODO add a failure log message sharing the status results
                 return false;
             } else {
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO,"XRCE Client: Service/Replier session pass for index '%u'",i);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Service/Replier session pass for index '%u'", msg_prefix, i);
                 uxr_buffer_request_data(&session, reliable_out, rep_id, reliable_in, &delivery_control);
             }
 
