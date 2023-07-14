@@ -1,6 +1,7 @@
 #define AP_INLINE_VECTOR_OPS
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_AHRS/AP_AHRS.h>
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
 #include <AP_Logger/AP_Logger.h>
@@ -816,6 +817,7 @@ void AP_InertialSensor_Backend::update_accel(uint8_t instance) /* front end */
     }
 }
 
+#if HAL_LOGGING_ENABLED
 bool AP_InertialSensor_Backend::should_log_imu_raw() const
 {
     if (_imu._log_raw_bit == (uint32_t)-1) {
@@ -831,6 +833,7 @@ bool AP_InertialSensor_Backend::should_log_imu_raw() const
     }
     return true;
 }
+#endif  // HAL_LOGGING_ENABLED
 
 // log an unexpected change in a register for an IMU
 void AP_InertialSensor_Backend::log_register_change(uint32_t bus_id, const AP_HAL::Device::checkreg &reg)
