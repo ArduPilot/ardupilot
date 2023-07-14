@@ -40,6 +40,7 @@ bool AP_TemperatureSensor_Backend::healthy(void) const
     return (_state.last_time_ms > 0) && (AP_HAL::millis() - _state.last_time_ms < 5000);
 }
 
+#if HAL_LOGGING_ENABLED
 void AP_TemperatureSensor_Backend::Log_Write_TEMP() const
 {
     AP::logger().Write("TEMP",
@@ -49,6 +50,7 @@ void AP_TemperatureSensor_Backend::Log_Write_TEMP() const
             "Q"               "B"           "f"    , // types
      AP_HAL::micros64(), _state.instance, _state.temperature);
 }
+#endif
 
 void AP_TemperatureSensor_Backend::set_temperature(const float temperature)
 {
