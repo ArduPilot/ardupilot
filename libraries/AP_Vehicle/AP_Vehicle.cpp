@@ -656,7 +656,7 @@ void AP_Vehicle::update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch)
             float rpm;
             if (rpm_sensor != nullptr && rpm_sensor->get_rpm(sensor, rpm)) {
                 // set the harmonic notch filter frequency from the main rotor rpm
-                notch.update_freq_hz(MAX(ref_freq, rpm * ref * (1.0/60)));
+                notch.update_freq_hz(MAX(ref_freq * notch.params.freq_min_ratio(), rpm * ref * (1.0/60)));
             } else {
                 notch.update_freq_hz(ref_freq);
             }
