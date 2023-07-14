@@ -1,0 +1,3 @@
+# hw definition file for HEEWING F405
+
+include ../HEEWING-F405/hwdef-bl.dat
