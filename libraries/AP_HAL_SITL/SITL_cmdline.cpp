@@ -203,6 +203,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 {
     int opt;
     float speedup = 1.0f;
+    float sim_rate_hz = 0;
     _instance = 0;
     _synthetic_clock_mode = false;
     // default to CMAC
@@ -380,6 +381,12 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             temp_cmdline_param = {"SIM_SPEEDUP", speedup};
             cmdline_param.push_back(temp_cmdline_param);
             printf("Setting SIM_SPEEDUP=%f\n", speedup);
+            break;
+        case 'r':
+            sim_rate_hz = strtof(gopt.optarg, nullptr);
+            temp_cmdline_param = {"SIM_RATE_HZ", sim_rate_hz};
+            cmdline_param.push_back(temp_cmdline_param);
+            printf("Setting SIM_RATE_HZ=%f\n", sim_rate_hz);
             break;
         case 'C':
             HALSITL::UARTDriver::_console = true;
