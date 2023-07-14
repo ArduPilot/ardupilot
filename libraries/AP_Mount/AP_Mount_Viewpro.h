@@ -75,6 +75,9 @@ public:
     // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
     bool set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2) override;
 
+    // set camera lens as a value from 0 to 5
+    bool set_lens(uint8_t lens) override;
+
     // send camera information message to GCS
     void send_camera_information(mavlink_channel_t chan) const override;
 
@@ -94,14 +97,22 @@ private:
     // packet frame ids
     enum class FrameId : uint8_t {
         HANDSHAKE = 0x00,       // handshake sent to gimbal
+        U = 0x01,               // communication configuration control (this packet is sent to gimbal)
+        V = 0x02,               // communication configuration status (this is the reply to U)
         HEARTBEAT = 0x10,       // heartbeat received from gimbal
-        A1 = 0x1A,              // target angles (this packet is sent)
+        A1 = 0x1A,              // target angles (sent)
         C1 = 0x1C,              // camera controls commonly used (sent)
         E1 = 0x1E,              // tracking controls commonly used (sent)
         C2 = 0x2C,              // camera controls infrequently used (sent)
         E2 = 0x2E,              // tracking controls infrequently used (sent)
         T1_F1_B1_D1 = 0x40,     // actual roll, pitch, yaw angles (received)
         M_AHRS = 0xB1,          // vehicle attitude and position (sent)
+    };
+
+    // U communication configuration control commands
+    enum class CommConfigCmd : uint8_t {
+        QUERY_FIRMWARE_VER = 0xD0,
+        QUERY_MODEL = 0xE4,
     };
 
     // A1 servo status enum (used in A1, B1 packets)
@@ -126,7 +137,7 @@ private:
 
     // C1 camera commands
     enum class CameraCommand : uint8_t {
-        NO_ACTION = 0,
+        NO_ACTION = 0x00,
         STOP_FOCUS_AND_ZOOM = 0x01,
         ZOOM_OUT = 0x08,
         ZOOM_IN = 0x09,
@@ -142,6 +153,13 @@ private:
     // C2 camera commands
     enum class CameraCommand2 : uint8_t {
         SET_EO_ZOOM = 0x53
+    };
+
+    // D1 recording status (received from gimbal)
+    enum class RecordingStatus : uint8_t {
+        RECORDING_STOPPED = 0x00,
+        RECORDING = 0x01,
+        PICTURE_MODE = 0x02
     };
 
     // E1 tracking commands
@@ -191,6 +209,17 @@ private:
         struct {
             FrameId frame_id;           // always 0x00
             uint8_t unused;             // always 0x00
+        } content;
+        uint8_t bytes[sizeof(content)];
+    };
+
+    // U packed used to send communication configuration control commands
+    // gimbal replies with V packet
+    union UPacket {
+        struct {
+            FrameId frame_id;           // always 0x01
+            CommConfigCmd control_cmd;  // see CommConfigCmd enum above
+            uint8_t params[9];          // parameters (unused)
         } content;
         uint8_t bytes[sizeof(content)];
     };
@@ -291,13 +320,16 @@ private:
     // returns true on success, false if outgoing serial buffer is full
     bool send_packet(const uint8_t* databuff, uint8_t databuff_len);
 
-    // send handshake, gimbal will respond with T1_F1_B1_D1 paket that includes current angles
+    // send handshake, gimbal will respond with T1_F1_B1_D1 packet that includes current angles
     void send_handshake();
 
     // set gimbal's lock vs follow mode
     // lock should be true if gimbal should maintain an earth-frame target
     // lock is false to follow / maintain a body-frame target
     bool set_lock(bool lock);
+
+    // send communication configuration command (aka U packet), gimbal will respond with a V packet
+    bool send_comm_config_cmd(CommConfigCmd cmd);
 
     // send target pitch and yaw rates to gimbal
     // yaw_is_ef should be true if yaw_rads target is an earth frame rate, false if body_frame
@@ -307,8 +339,8 @@ private:
     // yaw_is_ef should be true if yaw_rad target is an earth frame angle, false if body_frame
     bool send_target_angles(float pitch_rad, float yaw_rad, bool yaw_is_ef);
 
-    // send camera command and corresponding value (e.g. zoom speed)
-    bool send_camera_command(CameraCommand cmd, uint8_t value);
+    // send camera command, affected image sensor and value (e.g. zoom speed)
+    bool send_camera_command(ImageSensor img_sensor, CameraCommand cmd, uint8_t value);
 
     // send camera command2 and corresponding value (e.g. zoom as absolute value)
     bool send_camera_command2(CameraCommand2 cmd, uint16_t value);
@@ -343,9 +375,15 @@ private:
     uint32_t _last_update_ms;                       // system time (in milliseconds) that angle or rate targets were last sent
     Vector3f _current_angle_rad;                    // current angles in radians received from gimbal (x=roll, y=pitch, z=yaw)
     uint32_t _last_current_angle_rad_ms;            // system time _current_angle_rad was updated (used for health reporting)
-    bool _last_record_video;                        // last record_video state sent to gimbal
+    bool _recording;                                // recording status received from gimbal
     bool _last_lock;                                // last lock mode sent to gimbal
     TrackingStatus _last_tracking_status;           // last tracking status received from gimbal (used to notify users)
+    ImageSensor _image_sensor;                      // user selected image sensor (aka camera lens)
+    float _zoom_times;                              // zoom times received from gimbal
+    uint32_t _firmware_version;                     // firmware version from gimbal
+    bool _got_firmware_version;                     // true once we have received the firmware version
+    uint8_t _model_name[11] {};                     // model name received from gimbal
+    bool _got_model_name;                           // true once we have received model name
 };
 
 #endif // HAL_MOUNT_VIEWPRO_ENABLED

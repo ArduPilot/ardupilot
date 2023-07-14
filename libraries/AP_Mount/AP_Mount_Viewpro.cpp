@@ -19,7 +19,7 @@ extern const AP_HAL::HAL& hal;
 #define AP_MOUNT_VIEWPRO_HEALTH_TIMEOUT_MS 1000 // state will become unhealthy if no attitude is received within this timeout
 #define AP_MOUNT_VIEWPRO_UPDATE_INTERVAL_MS 100 // resend angle or rate targets to gimbal at this interval
 #define AP_MOUNT_VIEWPRO_ZOOM_SPEED     0x07    // hard-coded zoom speed (fast)
-#define AP_MOUNT_VIEWPRO_ZOOM_MAX       20      // hard-coded absolute zoom times max
+#define AP_MOUNT_VIEWPRO_ZOOM_MAX       10      // hard-coded absolute zoom times max
 #define AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT  (65536.0 / 360.0)   // scalar to convert degrees to the viewpro angle scaling
 #define AP_MOUNT_VIEWPRO_OUTPUT_TO_DEG  (360.0 / 65536.0)   // scalar to convert viewpro angle scaling to degrees
 
@@ -59,6 +59,16 @@ void AP_Mount_Viewpro::update()
 
     // reading incoming packets from gimbal
     read_incoming_packets();
+
+    // request model name
+    if (!_got_model_name) {
+        send_comm_config_cmd(CommConfigCmd::QUERY_MODEL);
+    }
+
+    // request firmware version
+    if (!_got_firmware_version) {
+        send_comm_config_cmd(CommConfigCmd::QUERY_FIRMWARE_VER);
+    }
 
     // send handshake
     send_handshake();
@@ -287,6 +297,35 @@ void AP_Mount_Viewpro::process_packet()
     case FrameId::HANDSHAKE:
         break;
 
+    case FrameId::V: {
+        const CommConfigCmd control_cmd = (CommConfigCmd)_msg_buff[_msg_buff_data_start];
+        switch (control_cmd) {
+        case CommConfigCmd::QUERY_FIRMWARE_VER: {
+            // firmware version, length is 20 bytes but we expect format of "S" + yyyymmdd
+            const uint8_t fw_major_str[3] {_msg_buff[_msg_buff_data_start+4], _msg_buff[_msg_buff_data_start+5], 0x0};
+            const uint8_t fw_minor_str[3] {_msg_buff[_msg_buff_data_start+6], _msg_buff[_msg_buff_data_start+7], 0x0};
+            const uint8_t fw_patch_str[3] {_msg_buff[_msg_buff_data_start+8], _msg_buff[_msg_buff_data_start+9], 0x0};
+            const uint8_t major_ver = atoi((const char*)fw_major_str) & 0xFF;
+            const uint8_t minor_ver = atoi((const char*)fw_minor_str) & 0xFF;
+            const uint8_t patch_ver = atoi((const char*)fw_patch_str) & 0xFF;
+            _firmware_version = (patch_ver << 16) | (minor_ver << 8) | major_ver;
+            _got_firmware_version = true;
+            gcs().send_text(MAV_SEVERITY_INFO, "%s fw:%u.%u.%u", send_text_prefix, (unsigned)major_ver, (unsigned)minor_ver, (unsigned)patch_ver);
+            break;
+        }
+        case CommConfigCmd::QUERY_MODEL:
+            // gimbal model, length is 10 bytes
+            strncpy((char *)_model_name, (const char *)&_msg_buff[_msg_buff_data_start+1], sizeof(_model_name)-1);
+            _got_model_name = true;
+            gcs().send_text(MAV_SEVERITY_INFO, "%s %s", send_text_prefix, (const char*)_model_name);
+            break;
+        default:
+            // unsupported control command
+            break;
+        }
+        break;
+    }
+
     case FrameId::T1_F1_B1_D1: {
         // T1 holds target info including target lean angles
         // F1 holds tracker sensor status (which camera, tracking vs lost)
@@ -317,6 +356,20 @@ void AP_Mount_Viewpro::process_packet()
         _current_angle_rad.z = radians((int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+25], _msg_buff[_msg_buff_data_start+26]) * AP_MOUNT_VIEWPRO_OUTPUT_TO_DEG); // yaw angle
         _current_angle_rad.y = -radians((int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+27], _msg_buff[_msg_buff_data_start+28]) * AP_MOUNT_VIEWPRO_OUTPUT_TO_DEG); // pitch angle
         debug("r:%4.1f p:%4.1f y:%4.1f", (double)degrees(_current_angle_rad.x), (double)degrees(_current_angle_rad.y), (double)degrees(_current_angle_rad.z));
+
+        // get active image sensor. D1's image sensor values are one value lower than C1's
+        _image_sensor = ImageSensor((_msg_buff[_msg_buff_data_start+29] & 0x07) + 1);
+
+        // get recording status
+        const RecordingStatus recording_status = (RecordingStatus)(_msg_buff[_msg_buff_data_start+32] & 0x07);
+        const bool recording = (recording_status == RecordingStatus::RECORDING);
+        if (recording != _recording) {
+            _recording = recording;
+            gcs().send_text(MAV_SEVERITY_INFO,  "%s recording %s", send_text_prefix, _recording ? "ON" : "OFF");
+        }
+
+        // get optical zoom times
+        _zoom_times = UINT16_VALUE(_msg_buff[_msg_buff_data_start+39], _msg_buff[_msg_buff_data_start+40]) * 0.1;
         break;
     }
 
@@ -425,6 +478,18 @@ bool AP_Mount_Viewpro::set_lock(bool lock)
     return false;
 }
 
+// send communication configuration command (aka U packet), gimbal will respond with a V packet
+bool AP_Mount_Viewpro::send_comm_config_cmd(CommConfigCmd cmd)
+{
+    // fill in packet
+    UPacket u_packet {};
+    u_packet.content.frame_id = FrameId::U;
+    u_packet.content.control_cmd = cmd;
+
+    // send targets to gimbal
+    return send_packet(u_packet.bytes, sizeof(u_packet.bytes));
+}
+
 // send target pitch and yaw rates to gimbal
 // yaw_is_ef should be true if yaw_rads target is an earth frame rate, false if body_frame
 bool AP_Mount_Viewpro::send_target_rates(float pitch_rads, float yaw_rads, bool yaw_is_ef)
@@ -484,8 +549,8 @@ bool AP_Mount_Viewpro::send_target_angles(float pitch_rad, float yaw_rad, bool y
     return send_packet(a1_packet.bytes, sizeof(a1_packet.bytes));
 }
 
-// send camera command and corresponding value (e.g. zoom speed)
-bool AP_Mount_Viewpro::send_camera_command(CameraCommand cmd, uint8_t value)
+// send camera command, affected image sensor and value (e.g. zoom speed)
+bool AP_Mount_Viewpro::send_camera_command(ImageSensor img_sensor, CameraCommand cmd, uint8_t value)
 {
     // fill in packet
     C1Packet c1_packet {};
@@ -496,7 +561,7 @@ bool AP_Mount_Viewpro::send_camera_command(CameraCommand cmd, uint8_t value)
     // bit3~5: zoom speed
     // bit6~12: operation command no
     // bit13~15: LRF command (unused)
-    const uint16_t sensor_id = (uint16_t)ImageSensor::EO1;
+    const uint16_t sensor_id = (uint16_t)img_sensor;
     const uint16_t zoom_speed = ((uint16_t)value & 0x07) << 3;
     const uint16_t operation_cmd = ((uint16_t)cmd & 0x7F) << 6;
     c1_packet.content.sensor_zoom_cmd_be =  htobe16(sensor_id | zoom_speed | operation_cmd);
@@ -521,10 +586,27 @@ bool AP_Mount_Viewpro::send_camera_command2(CameraCommand2 cmd, uint16_t value)
 // send tracking command and corresponding value (normally zero)
 bool AP_Mount_Viewpro::send_tracking_command(TrackingCommand cmd, uint8_t value)
 {
+    // convert image sensor to tracking source
+    TrackingSource tracking_source = TrackingSource::EO1;
+    switch (_image_sensor) {
+    case ImageSensor::NO_ACTION:    
+    case ImageSensor::EO1:
+    case ImageSensor::EO1_IR_PIP:
+    case ImageSensor::FUSION:
+        tracking_source = TrackingSource::EO1;
+        break;
+    case ImageSensor::IR:
+    case ImageSensor::IR_EO1_PIP:
+    case ImageSensor::IR1_13MM:
+    case ImageSensor::IR2_52MM:
+        tracking_source = TrackingSource::IR;
+        break;    
+    }
+
     // fill in packet
     E1Packet e1_packet {};
     e1_packet.content.frame_id = FrameId::E1;
-    e1_packet.content.source = TrackingSource::EO1; // hard-coded to only affect RGB sensor for now
+    e1_packet.content.source = tracking_source;
     e1_packet.content.cmd = cmd;
     e1_packet.content.param2 = value;               // normally zero
 
@@ -606,7 +688,7 @@ bool AP_Mount_Viewpro::take_picture()
         return false;
     }
 
-    return send_camera_command(CameraCommand::TAKE_PICTURE, 0);
+    return send_camera_command(_image_sensor, CameraCommand::TAKE_PICTURE, 0);
 }
 
 // start or stop video recording.  returns true on success
@@ -618,13 +700,7 @@ bool AP_Mount_Viewpro::record_video(bool start_recording)
         return false;
     }
 
-    if (!send_camera_command(start_recording ? CameraCommand::START_RECORD : CameraCommand::STOP_RECORD, 0)) {
-        return false;
-    }
-
-    gcs().send_text(MAV_SEVERITY_INFO, "%s recording %s", send_text_prefix, start_recording ? "ON": "OFF");
-    _last_record_video = start_recording;
-    return true;
+    return send_camera_command(_image_sensor, start_recording ? CameraCommand::START_RECORD : CameraCommand::STOP_RECORD, 0);
 }
 
 // set zoom specified as a rate or percentage
@@ -643,7 +719,7 @@ bool AP_Mount_Viewpro::set_zoom(ZoomType zoom_type, float zoom_value)
         } else if (zoom_value > 0) {
             zoom_cmd = CameraCommand::ZOOM_IN;
         }
-        return send_camera_command(zoom_cmd, AP_MOUNT_VIEWPRO_ZOOM_SPEED);
+        return send_camera_command(_image_sensor, zoom_cmd, AP_MOUNT_VIEWPRO_ZOOM_SPEED);
     }
 
     // zoom percentage
@@ -673,7 +749,7 @@ SetFocusResult AP_Mount_Viewpro::set_focus(FocusType focus_type, float focus_val
         } else if (focus_value > 0) {
             focus_cmd = CameraCommand::FOCUS_PLUS;
         }
-        if (!send_camera_command(focus_cmd, 0)) {
+        if (!send_camera_command(_image_sensor, focus_cmd, 0)) {
             return SetFocusResult::FAILED;
         }
         return SetFocusResult::ACCEPTED;
@@ -682,7 +758,7 @@ SetFocusResult AP_Mount_Viewpro::set_focus(FocusType focus_type, float focus_val
         // not supported
         return SetFocusResult::INVALID_PARAMETERS;
     case FocusType::AUTO:
-        if (!send_camera_command(CameraCommand::AUTO_FOCUS, 0)) {
+        if (!send_camera_command(_image_sensor, CameraCommand::AUTO_FOCUS, 0)) {
             return SetFocusResult::FAILED;
         }
         return SetFocusResult::ACCEPTED;
@@ -722,6 +798,25 @@ bool AP_Mount_Viewpro::set_tracking(TrackingType tracking_type, const Vector2f& 
     return false;
 }
 
+// set camera lens as a value from 0 to 5
+bool AP_Mount_Viewpro::set_lens(uint8_t lens)
+{
+    // exit immediately if not initialised
+    if (!_initialised) {
+        return false;
+    }
+
+    // match lens to ImageSensor enum values and sanity check
+    lens++;
+    if (lens > (uint8_t)ImageSensor::IR2_52MM) {
+        return false;
+    }
+
+    // if lens is zero use default lens
+    ImageSensor new_image_sensor = ImageSensor(lens);
+    return send_camera_command(new_image_sensor, CameraCommand::NO_ACTION, 0);
+}
+
 // send camera information message to GCS
 void AP_Mount_Viewpro::send_camera_information(mavlink_channel_t chan) const
 {
@@ -731,7 +826,10 @@ void AP_Mount_Viewpro::send_camera_information(mavlink_channel_t chan) const
     }
 
     static const uint8_t vendor_name[32] = "Viewpro";
-    static uint8_t model_name[32] = "Unknown";
+    uint8_t model_name[32] {};
+    if (_got_model_name) {
+        strncpy((char *)model_name, (const char*)_model_name, MIN(sizeof(model_name), sizeof(_model_name)));
+    }
     const char cam_definition_uri[140] {};
 
     // capability flags
@@ -747,8 +845,8 @@ void AP_Mount_Viewpro::send_camera_information(mavlink_channel_t chan) const
         chan,
         AP_HAL::millis(),       // time_boot_ms
         vendor_name,            // vendor_name uint8_t[32]
-        model_name,             // model_name uint8_t[32]
-        0,                      // firmware version uint32_t
+        _model_name,            // model_name uint8_t[32]
+        _firmware_version,      // firmware version uint32_t
         0,                      // focal_length float (mm)
         0,                      // sensor_size_h float (mm)
         0,                      // sensor_size_v float (mm)
@@ -770,12 +868,15 @@ void AP_Mount_Viewpro::send_camera_settings(mavlink_channel_t chan) const
 
     const float NaN = nanf("0x4152");
 
+    // convert zoom times (e.g. 1x ~ 20x) to target zoom level (e.g. 0 to 100)
+    const float zoom_level = linear_interpolate(0, 100, _zoom_times, 1, AP_MOUNT_VIEWPRO_ZOOM_MAX);
+
     // send CAMERA_SETTINGS message
     mavlink_msg_camera_settings_send(
         chan,
         AP_HAL::millis(),   // time_boot_ms
-        _last_record_video ? CAMERA_MODE_VIDEO : CAMERA_MODE_IMAGE, // camera mode (0:image, 1:video, 2:image survey)
-        NaN,                // zoomLevel float, percentage from 0 to 100, NaN if unknown
+        _recording ? CAMERA_MODE_VIDEO : CAMERA_MODE_IMAGE, // camera mode (0:image, 1:video, 2:image survey)
+        zoom_level,         // zoomLevel float, percentage from 0 to 100, NaN if unknown
         NaN);               // focusLevel float, percentage from 0 to 100, NaN if unknown
 }
 
