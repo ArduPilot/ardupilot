@@ -755,6 +755,7 @@ void AP_Airspeed::handle_external(const AP_ExternalAHRS::airspeed_data_message_t
 }
 #endif 
 
+#if HAL_LOGGING_ENABLED
 // @LoggerMessage: HYGR
 // @Description: Hygrometer data
 // @Field: TimeUS: Time since system startup
@@ -812,6 +813,7 @@ void AP_Airspeed::Log_Airspeed()
 #endif
     }
 }
+#endif
 
 bool AP_Airspeed::use(uint8_t i) const
 {
