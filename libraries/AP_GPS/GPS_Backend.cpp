@@ -23,6 +23,7 @@
 #include <time.h>
 #include <AP_Common/time.h>
 #include <AP_InternalError/AP_InternalError.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 #define GPS_BACKEND_DEBUGGING 0
 
