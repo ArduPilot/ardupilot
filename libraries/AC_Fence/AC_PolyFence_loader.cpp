@@ -1121,8 +1121,10 @@ bool AC_PolyFence_loader::write_fence(const AC_PolyFenceItem *new_items, uint16_
     gcs().send_text(MAV_SEVERITY_DEBUG, "Fence Indexed OK");
 #endif
 
+#if HAL_LOGGING_ENABLED
     // start logger logging new fence
     AP::logger().Write_Fence();
+#endif
 
     void_index();
 
