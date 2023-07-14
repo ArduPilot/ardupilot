@@ -324,9 +324,11 @@ public:
     // map core number for replay
     uint8_t logging_core(uint8_t c) const;
 
+#if HAL_LOGGING_ENABLED
     // write out a DAL log message. If old_msg is non-null, then
     // only write if the content has changed
     static void WriteLogMessage(enum LogMessages msg_type, void *msg, const void *old_msg, uint8_t msg_size);
+#endif
 
 private:
 
@@ -376,10 +378,15 @@ private:
     bool init_done;
 };
 
+#if HAL_LOGGING_ENABLED
 #define WRITE_REPLAY_BLOCK(sname,v) AP_DAL::WriteLogMessage(LOG_## sname ##_MSG, &v, nullptr, offsetof(log_ ##sname, _end))
 #define WRITE_REPLAY_BLOCK_IFCHANGED(sname,v,old) do { static_assert(sizeof(v) == sizeof(old), "types must match"); \
                                                       AP_DAL::WriteLogMessage(LOG_## sname ##_MSG, &v, &old, offsetof(log_ ##sname, _end)); } \
                                                  while (0)
+#else
+#define WRITE_REPLAY_BLOCK(sname,v) do { (void)v; } while (false)
+#define WRITE_REPLAY_BLOCK_IFCHANGED(sname,v,old) do { (void)old; } while (false)
+#endif
 
 namespace AP {
     AP_DAL &dal();
