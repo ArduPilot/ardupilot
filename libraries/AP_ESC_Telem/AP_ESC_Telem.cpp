@@ -490,11 +490,14 @@ void AP_ESC_Telem::update_rpm(const uint8_t esc_index, const float new_rpm, cons
 
 void AP_ESC_Telem::update()
 {
+#if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
+#endif
 
     const uint32_t now_us = AP_HAL::micros();
 
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
+#if HAL_LOGGING_ENABLED
         // Push received telemetry data into the logging system
         if (logger && logger->logging_enabled()) {
             if (_telem_data[i].last_update_ms != _last_telem_log_ms[i]
@@ -532,6 +535,7 @@ void AP_ESC_Telem::update()
                 _last_rpm_log_us[i] = _rpm_data[i].last_update_us;
             }
         }
+#endif  // HAL_LOGGING_ENABLED
 
         if ((now_us - _rpm_data[i].last_update_us) > ESC_RPM_DATA_TIMEOUT_US) {
             _rpm_data[i].data_valid = false;
