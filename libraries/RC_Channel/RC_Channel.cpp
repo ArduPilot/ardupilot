@@ -877,14 +877,14 @@ void RC_Channel::do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag)
             return;
         }
         avoidance->enable();
-        AP::logger().Write_Event(LogEvent::AVOIDANCE_ADSB_ENABLE);
+        LOGGER_WRITE_EVENT(LogEvent::AVOIDANCE_ADSB_ENABLE);
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ADSB Avoidance Enabled");
         return;
     }
 
     // disable AP_Avoidance
     avoidance->disable();
-    AP::logger().Write_Event(LogEvent::AVOIDANCE_ADSB_DISABLE);
+    LOGGER_WRITE_EVENT(LogEvent::AVOIDANCE_ADSB_DISABLE);
     GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ADSB Avoidance Disabled");
 #endif
 }
@@ -1216,6 +1216,7 @@ bool RC_Channel::run_aux_function(aux_func_t ch_option, AuxSwitchPos pos, AuxFun
 #endif
     const bool ret = do_aux_function(ch_option, pos);
 
+#if HAL_LOGGING_ENABLED
     // @LoggerMessage: AUXF
     // @Description: Auxiliary function invocation information
     // @Field: TimeUS: Time since system startup
@@ -1238,6 +1239,8 @@ bool RC_Channel::run_aux_function(aux_func_t ch_option, AuxSwitchPos pos, AuxFun
         uint8_t(source),
         uint8_t(ret)
     );
+#endif
+
     return ret;
 }
 
@@ -1544,6 +1547,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
     }
 #endif
 
+#if HAL_LOGGING_ENABLED
     case AUX_FUNC::LOG_PAUSE: {
         AP_Logger *logger = AP_Logger::get_singleton();
         switch (ch_flag) {
@@ -1559,6 +1563,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         }
         break;
     }
+#endif
 
 #if COMPASS_CAL_ENABLED
     case AUX_FUNC::MAG_CAL: {
