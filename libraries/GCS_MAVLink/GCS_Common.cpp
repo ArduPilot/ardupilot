@@ -872,10 +872,12 @@ void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg, bool log_rad
     }
 #endif
 
+#if HAL_LOGGING_ENABLED
     //log rssi, noise, etc if logging Performance monitoring data
     if (log_radio) {
         AP::logger().Write_Radio(packet);
     }
+#endif
 }
 
 void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
@@ -1838,6 +1840,7 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
         }
     }
 
+#if HAL_LOGGING_ENABLED
     // consider logging mavlink stats:
     if (is_active() || is_streaming()) {
         if (tnow - last_mavlink_stats_logged > 1000) {
@@ -1845,6 +1848,7 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
             last_mavlink_stats_logged = tnow;
         }
     }
+#endif
 
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
 
@@ -1921,6 +1925,7 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
 #endif
 }
 
+#if HAL_LOGGING_ENABLED
 /*
   record stats about this link to logger
 */
@@ -1957,6 +1962,7 @@ void GCS_MAVLINK::log_mavlink_stats()
 
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
+#endif
 
 /*
   send the SYSTEM_TIME message
@@ -2279,12 +2285,14 @@ void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, u
         }
     } while (false);
 
+#if HAL_LOGGING_ENABLED
     // given we don't really know what these methods get up to, we
     // don't hold the statustext semaphore while doing them:
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger != nullptr) {
         logger->Write_Message(first_piece_of_text);
     }
+#endif
 
 #if AP_FRSKY_TELEM_ENABLED
     frsky = AP::frsky_telem();
@@ -3394,13 +3402,15 @@ void GCS_MAVLINK::handle_timesync(const mavlink_message_t &msg)
             // response to an ancient request...
             return;
         }
-        const uint64_t round_trip_time_us = (timesync_receive_timestamp_ns() - _timesync_request.sent_ts1)*0.001f;
 #if 0
         gcs().send_text(MAV_SEVERITY_INFO,
                         "timesync response sysid=%u (latency=%fms)",
                         msg.sysid,
                         round_trip_time_us*0.001f);
 #endif
+
+#if HAL_LOGGING_ENABLED
+        const uint64_t round_trip_time_us = (timesync_receive_timestamp_ns() - _timesync_request.sent_ts1)*0.001f;
         AP_Logger *logger = AP_Logger::get_singleton();
         if (logger != nullptr) {
             AP::logger().Write(
@@ -3414,6 +3424,7 @@ void GCS_MAVLINK::handle_timesync(const mavlink_message_t &msg)
                 round_trip_time_us
                 );
         }
+#endif  // HAL_LOGGING_ENABLED
         return;
     }
 
@@ -3452,6 +3463,7 @@ void GCS_MAVLINK::send_timesync()
 
 void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg) const
 {
+#if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger == nullptr) {
         return;
@@ -3476,6 +3488,7 @@ void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg) const
     memcpy(&text[offset], packet.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
 
     logger->Write_Message(text);
+#endif
 }
 
 
@@ -3484,6 +3497,7 @@ void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg) const
  */
 void GCS_MAVLINK::handle_named_value(const mavlink_message_t &msg) const
 {
+#if HAL_LOGGING_ENABLED
     auto *logger = AP_Logger::get_singleton();
     if (logger == nullptr) {
         return;
@@ -3499,6 +3513,7 @@ void GCS_MAVLINK::handle_named_value(const mavlink_message_t &msg) const
                   p.value,
                   msg.sysid,
                   msg.compid);
+#endif
 }
 
 #if AP_RTC_ENABLED
@@ -3546,7 +3561,9 @@ void GCS_MAVLINK::set_ekf_origin(const Location& loc)
         return;
     }
 
+#if HAL_LOGGING_ENABLED
     ahrs.Log_Write_Home_And_Origin();
+#endif
 
     // send ekf origin to GCS
     if (!try_send_message(MSG_ORIGIN)) {
@@ -3961,6 +3978,7 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_TIMESYNC:
         handle_timesync(msg);
         break;
+#if HAL_LOGGING_ENABLED
     case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
     case MAVLINK_MSG_ID_LOG_REQUEST_DATA:
     case MAVLINK_MSG_ID_LOG_ERASE:
@@ -3968,6 +3986,7 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
         AP::logger().handle_mavlink_msg(*this, msg);
         break;
+#endif
 
     case MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL:
         handle_file_transfer_protocol(msg);
@@ -4923,10 +4942,12 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
                                  msg.sysid,
                                  msg.compid);
 
+#if HAL_LOGGING_ENABLED
     // log the packet:
     mavlink_command_int_t packet_int;
     convert_COMMAND_LONG_to_COMMAND_INT(packet, packet_int);
     AP::logger().Write_Command(packet_int, msg.sysid, msg.compid, result, true);
+#endif
 
     hal.util->persistent_data.last_mavlink_cmd = 0;
 }
@@ -5313,7 +5334,9 @@ void GCS_MAVLINK::handle_command_int(const mavlink_message_t &msg)
                                  msg.sysid,
                                  msg.compid);
 
+#if HAL_LOGGING_ENABLED
     AP::logger().Write_Command(packet, msg.sysid, msg.compid, result);
+#endif
 
     hal.util->persistent_data.last_mavlink_cmd = 0;
 }
