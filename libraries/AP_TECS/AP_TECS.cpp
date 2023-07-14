@@ -788,6 +788,7 @@ void AP_TECS::_update_throttle_with_airspeed(void)
         // Sum the components.
         _throttle_dem = _throttle_dem + _integTHR_state;
 
+#if HAL_LOGGING_ENABLED
         if (AP::logger().should_log(_log_bitmask)){
             AP::logger().WriteStreaming("TEC3","TimeUS,KED,PED,KEDD,PEDD,TEE,TEDE,FFT,Imin,Imax,I,Emin,Emax",
                                         "Qffffffffffff",
@@ -805,6 +806,7 @@ void AP_TECS::_update_throttle_with_airspeed(void)
                                         (double)SPE_err_min,
                                         (double)SPE_err_max);
         }
+#endif
     }
 
     // Constrain throttle demand and record clipping
@@ -1057,6 +1059,7 @@ void AP_TECS::_update_pitch(void)
 
     _last_pitch_dem = _pitch_dem;
 
+#if HAL_LOGGING_ENABLED
     if (AP::logger().should_log(_log_bitmask)){
         // log to AP_Logger
         // @LoggerMessage: TEC2
@@ -1094,6 +1097,7 @@ void AP_TECS::_update_pitch(void)
                                     (double)_PITCHminf,
                                     (double)_PITCHmaxf);
     }
+#endif
 }
 
 void AP_TECS::_initialise_states(int32_t ptchMinCO_cd, float hgt_afe)
@@ -1372,6 +1376,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         _flags.badDescent = false;
     }
 
+#if HAL_LOGGING_ENABLED
     if (AP::logger().should_log(_log_bitmask)){
         // log to AP_Logger
         // @LoggerMessage: TECS
@@ -1414,4 +1419,5 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
                                     (double)_TAS_rate_dem,
                                     _flags_byte);
     }
+#endif
 }
