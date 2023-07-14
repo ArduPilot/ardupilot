@@ -1,6 +1,7 @@
 #include "AP_VisualOdom_Backend.h"
+#include <AP_Logger/AP_Logger_config.h>
 
-#if HAL_VISUALODOM_ENABLED
+#if HAL_VISUALODOM_ENABLED && HAL_LOGGING_ENABLED
 
 #include <AP_Logger/AP_Logger.h>
 

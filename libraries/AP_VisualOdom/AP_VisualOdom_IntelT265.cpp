@@ -72,8 +72,10 @@ void AP_VisualOdom_IntelT265::handle_pose_estimate(uint64_t remote_time_us, uint
     float yaw;
     att.to_euler(roll, pitch, yaw);
 
+#if HAL_LOGGING_ENABLED
     // log sensor data
     Write_VisualPosition(remote_time_us, time_ms, pos.x, pos.y, pos.z, degrees(roll), degrees(pitch), wrap_360(degrees(yaw)), posErr, angErr, reset_counter, !consume);
+#endif
 
     // store corrected attitude for use in pre-arm checks
     _attitude_last = att;
@@ -99,7 +101,9 @@ void AP_VisualOdom_IntelT265::handle_vision_speed_estimate(uint64_t remote_time_
     // record time for health monitoring
     _last_update_ms = AP_HAL::millis();
 
+#if HAL_LOGGING_ENABLED
     Write_VisualVelocity(remote_time_us, time_ms, vel_corrected, reset_counter, !consume);
+#endif
 }
 
 // apply rotation and correction to position
