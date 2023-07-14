@@ -1666,6 +1666,7 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
     // the arming check flag is set - disabling the arming check
     // should not stop logging from working.
 
+#if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger->logging_present()) {
         // If we're configured to log, prep it
@@ -1676,6 +1677,8 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
             return false;
         }
     }
+#endif  // HAL_LOGGING_ENABLED
+
     return true;
 }
 
