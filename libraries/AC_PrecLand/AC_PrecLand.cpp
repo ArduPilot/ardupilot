@@ -310,11 +310,13 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
     // check the status of the landing target location
     check_target_status(rangefinder_alt_m, rangefinder_alt_valid);
 
+#if HAL_LOGGING_ENABLED
     const uint32_t now = AP_HAL::millis();
     if (now - last_log_ms > 40) {  // 25Hz
         last_log_ms = now;
         Write_Precland();
     }
+#endif
 }
 
 // check the status of the target
@@ -740,6 +742,7 @@ void AC_PrecLand::run_output_prediction()
     _last_valid_target_ms = AP_HAL::millis();
 }
 
+#if HAL_LOGGING_ENABLED
 // Write a precision landing entry
 void AC_PrecLand::Write_Precland()
 {
@@ -773,6 +776,7 @@ void AC_PrecLand::Write_Precland()
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
+#endif
 
 // singleton instance
 AC_PrecLand *AC_PrecLand::_singleton;
