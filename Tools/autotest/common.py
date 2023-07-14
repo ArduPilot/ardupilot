@@ -4547,14 +4547,12 @@ class AutoTest(ABC):
 
     def load_generic_mission(self, filename, strict=True):
         return self.load_mission_from_filepath(
-            os.path.join(testdir, "Generic_Missions"),
-            filename,
+            os.path.join(testdir, "Generic_Missions", filename),
             strict=strict)
 
     def load_mission(self, filename, strict=True):
         return self.load_mission_from_filepath(
-            self.current_test_name_directory,
-            filename,
+            os.path.join(testdir, self.current_test_name_directory, filename),
             strict=strict)
 
     def wp_to_mission_item_int(self, wp):
@@ -4581,40 +4579,54 @@ class AutoTest(ABC):
             wp.z)
         return wp_int
 
-    def mission_from_filepath(self, filepath, filename, target_system=1, target_component=1):
+    def mission_from_filepath(self, filepath, target_system=1, target_component=1):
         '''returns a list of mission-item-ints from filepath'''
-        self.progress("Loading mission (%s)" % filename)
-        path = os.path.join(testdir, filepath, filename)
+        print("filepath: %s" % filepath)
+        self.progress("Loading mission (%s)" % os.path.basename(filepath))
         wploader = mavwp.MAVWPLoader(
             target_system=target_system,
             target_component=target_component
         )
-        wploader.load(path)
+        wploader.load(filepath)
         return [self.wp_to_mission_item_int(x) for x in wploader.wpoints]
+
+    def sitl_home_string_from_mission(self, filename):
+        '''return a string of the form "lat,lng,yaw,alt" from the home
+        location in a mission file'''
+        return "%s,%s,%s,%s" % self.get_home_tuple_from_mission(filename)
+
+    def sitl_home_string_from_mission_filepath(self, filepath):
+        '''return a string of the form "lat,lng,yaw,alt" from the home
+        location in a mission file'''
+        return "%s,%s,%s,%s" % self.get_home_tuple_from_mission_filepath(filepath)
 
     def get_home_tuple_from_mission(self, filename):
         '''gets item 0 from the mission file, returns a tuple suitable for
         passing to customise_SITL_commandline as --home.  Yaw will be
         0, so the caller may want to fill that in
         '''
-        items = self.mission_from_filepath(
-            self.current_test_name_directory,
-            filename,
+        return self.get_home_tuple_from_mission_filepath(
+            os.path.join(testdir, self.current_test_name_directory, filename)
         )
+
+    def get_home_tuple_from_mission_filepath(self, filepath):
+        '''gets item 0 from the mission file, returns a tuple suitable for
+        passing to customise_SITL_commandline as --home.  Yaw will be
+        0, so the caller may want to fill that in
+        '''
+        items = self.mission_from_filepath(filepath)
         home_item = items[0]
         return (home_item.x * 1e-7, home_item.y * 1e-7, home_item.z, 0)
 
     # TODO: rename the following to "upload_mission_from_filepath"
     def load_mission_from_filepath(self,
                                    filepath,
-                                   filename,
                                    target_system=1,
                                    target_component=1,
                                    strict=True,
                                    reset_current_wp=True):
         wpoints_int = self.mission_from_filepath(
             filepath,
-            filename,
             target_system=target_system,
             target_component=target_component
         )
@@ -8121,7 +8133,9 @@ Also, ignores heartbeats not from our target system'''
         util.pexpect_close(mavproxy)
         self._mavproxy = None
 
-    def start_SITL(self, binary=None, **sitl_args):
+    def start_SITL(self, binary=None, sitl_home=None, **sitl_args):
+        if sitl_home is None:
+            sitl_home = self.sitl_home()
         start_sitl_args = {
             "breakpoints": self.breakpoints,
             "disable_breakpoints": self.disable_breakpoints,
@@ -8129,7 +8143,7 @@ Also, ignores heartbeats not from our target system'''
             "gdb_no_tui": self.gdb_no_tui,
             "gdbserver": self.gdbserver,
             "lldb": self.lldb,
-            "home": self.sitl_home(),
+            "home": sitl_home,
             "speedup": self.speedup,
             "valgrind": self.valgrind,
             "callgrind": self.callgrind,

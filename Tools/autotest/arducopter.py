@@ -9173,9 +9173,6 @@ class AutoTestCopter(AutoTest):
 
     def AUTO_LAND_TO_BRAKE(self):
         '''ensure terrain altitude is taken into account when braking'''
-        self.load_mission('mission.txt')
-        home_loc = self.get_home_tuple_from_mission("mission.txt")
-
         self.set_parameters({
             "PLND_ACC_P_NSE": 2.500000,
             "PLND_ALT_MAX": 8.000000,
@@ -9213,8 +9210,9 @@ class AutoTestCopter(AutoTest):
 
         self.set_analog_rangefinder_parameters()
 
+        self.load_mission('mission.txt')
         self.customise_SITL_commandline([
-            "--home", "%s,%s,%s,%s" % home_loc
+            "--home", self.sitl_home_string_from_mission("mission.txt"),
         ])
 
         self.set_parameter('AUTO_OPTIONS', 3)
