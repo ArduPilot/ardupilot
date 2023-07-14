@@ -13,7 +13,7 @@
 #include "AP_Rally.h"
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_Stats/AP_Stats.h>
-#include "AP_Torqeedo/AP_Torqeedo.h"
+#include <AP_Torqeedo/AP_Torqeedo.h>
 #include <AP_WindVane/AP_WindVane.h>
 
 #define AP_PARAM_VEHICLE_NAME rover
