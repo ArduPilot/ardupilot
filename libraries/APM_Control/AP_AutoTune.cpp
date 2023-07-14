@@ -247,6 +247,7 @@ void AP_AutoTune::update(AP_PIDInfo &pinfo, float scaler, float angle_err_deg)
 
     const uint32_t now = AP_HAL::millis();
 
+#if HAL_LOGGING_ENABLED
     if (now - last_log_ms >= 40) {
         // log at 25Hz
         struct log_ATRP pkt = {
@@ -269,6 +270,7 @@ void AP_AutoTune::update(AP_PIDInfo &pinfo, float scaler, float angle_err_deg)
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
         last_log_ms = now;
     }
+#endif
 
     if (new_state == state) {
         if (state == ATState::IDLE &&
