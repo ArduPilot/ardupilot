@@ -139,8 +139,6 @@ define HAL_I2C_INTERNAL_MASK 0
 
 # no onboard SD, filesystem support disabled until flash logging implemented
 #define HAL_OS_FATFS_IO 1
-#define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-#define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # OSD support
 define OSD_ENABLED 1

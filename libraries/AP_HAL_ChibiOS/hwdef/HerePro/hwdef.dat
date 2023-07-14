@@ -64,7 +64,6 @@ FLASH_RESERVE_START_KB 256
 define GPS_UBLOX_MOVING_BASELINE TRUE
 define HAL_GCS_ENABLED 1
 define HAL_LOGGING_ENABLED TRUE
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
 define HAL_NO_MONITOR_THREAD
 
 
@@ -197,8 +196,6 @@ PB2 BOOT1 INPUT
 
 
 define CAN_APP_NODE_NAME "com.cubepilot.herepro"
-
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # disabled compass cal as it doesn't work for now
 # define COMPASS_CAL_ENABLED 1

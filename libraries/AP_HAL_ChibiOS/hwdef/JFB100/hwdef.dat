@@ -313,9 +313,6 @@ DMA_PRIORITY SDMMC* UART8* ADC* SPI* TIM*
 # enable FAT filesystem support (needs a microSD defined via SDMMC)
 define HAL_OS_FATFS_IO 1
 
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
 # uncomment block below to enable a 2nd MS5611 baro on SPI5
 #PF7 SPI5_SCK SPI5
 #PF8 SPI5_MISO SPI5
