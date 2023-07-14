@@ -79,6 +79,7 @@ void Variometer::update(const float thermal_bank)
 
     _expected_thermalling_sink = calculate_aircraft_sinkrate(radians(thermal_bank));
 
+#if HAL_LOGGING_ENABLED
 // @LoggerMessage: VAR
 // @Vehicles: Plane
 // @Description: Variometer data
@@ -107,8 +108,11 @@ void Variometer::update(const float thermal_bank)
                        (double)_expected_thermalling_sink,
                        (double)dsp,
                        (double)dsp_bias);
+#else
+    (void)filtered_reading;
+    (void)smoothed_climb_rate;
+#endif
 }
-
 
 float Variometer::calculate_aircraft_sinkrate(float phi) const
 {
