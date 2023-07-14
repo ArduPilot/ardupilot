@@ -60,6 +60,17 @@ bool AP_Camera_Mount::set_tracking(TrackingType tracking_type, const Vector2f& p
     return false;
 }
 
+
+// set camera lens as a value from 0 to 5
+bool AP_Camera_Mount::set_lens(uint8_t lens)
+{
+    AP_Mount* mount = AP::mount();
+    if (mount != nullptr) {
+        return mount->set_lens(0, lens);
+    }
+    return false;
+}
+
 // send camera information message to GCS
 void AP_Camera_Mount::send_camera_information(mavlink_channel_t chan) const
 {

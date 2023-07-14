@@ -529,6 +529,30 @@ bool AP_Camera::set_tracking(uint8_t instance, TrackingType tracking_type, const
     return backend->set_tracking(tracking_type, p1, p2);
 }
 
+// set camera lens as a value from 0 to 5
+bool AP_Camera::set_lens(uint8_t lens)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    if (primary == nullptr) {
+        return false;
+    }
+    return primary->set_lens(lens);
+}
+
+bool AP_Camera::set_lens(uint8_t instance, uint8_t lens)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+
+    // call instance
+    return backend->set_lens(lens);
+}
+
 #if AP_CAMERA_SCRIPTING_ENABLED
 // accessor to allow scripting backend to retrieve state
 // returns true on success and cam_state is filled in
