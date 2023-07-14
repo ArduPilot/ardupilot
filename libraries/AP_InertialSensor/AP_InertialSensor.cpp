@@ -895,6 +895,11 @@ AP_InertialSensor::init(uint16_t loop_rate)
     // cause divergence of state estimators
     _loop_delta_t_max = 10 * _loop_delta_t;
 
+    // Initialize notch params
+    for (auto &notch : harmonic_notches) {
+        notch.params.init();
+    }
+
     if (_gyro_count == 0 && _accel_count == 0) {
         _start_backends();
     }
