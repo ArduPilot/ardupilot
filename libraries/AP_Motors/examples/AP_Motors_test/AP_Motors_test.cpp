@@ -85,6 +85,42 @@ void setup()
             } else if (strcmp(cmd,"thrust_boost") == 0) {
                 thrust_boost = value > 0.0;
 
+            } else if (strcmp(cmd,"swash") == 0) {
+                if (frame_class == AP_Motors::MOTOR_FRAME_HELI) {
+                    // This is a extremely complicated and unsafe way to get at the swash type parameter
+                    // without adding helpers to both AP_MotorsHeli_Single and AP_MotorsHeli_Swash
+                    // This works in the same way as AP_Param
+                    char *swash = (char*)motors + AP_MotorsHeli_Single::var_info[6].offset;
+                    AP_Int8 *swash_type = (AP_Int8*)swash + AP_MotorsHeli_Swash::var_info[0].offset;
+                    swash_type->set(value);
+
+                } else if (frame_class == AP_Motors::MOTOR_FRAME_HELI_DUAL) {
+                    // More param hacking, its only a example
+                    char *swash1 = (char*)motors + AP_MotorsHeli_Dual::var_info[7].offset;
+                    char *swash2 = (char*)motors + AP_MotorsHeli_Dual::var_info[8].offset;
+                    AP_Int8 *swash_type1 = (AP_Int8*)swash1 + AP_MotorsHeli_Swash::var_info[0].offset;
+                    AP_Int8 *swash_type2 = (AP_Int8*)swash2 + AP_MotorsHeli_Swash::var_info[0].offset;
+                    swash_type1->set(value);
+                    swash_type2->set(value);
+
+                } else {
+                    ::printf("frame_class %i does not support swash\n", frame_class);
+                    exit(1);
+                }
+                // Re-init motors to switch to the new swash type
+                // Have to do this twice to make sure the swash type sticks
+                motors->set_initialised_ok(false);
+                motors->init(frame_class, AP_Motors::MOTOR_FRAME_TYPE_X);
+                motors->set_initialised_ok(false);
+                motors->init(frame_class, AP_Motors::MOTOR_FRAME_TYPE_X);
+
+                // Check that init worked
+                if (!motors->initialised_ok()) {
+                    ::printf("ERROR: swash=%0.0f re-initialisation failed\n", value);
+                    exit(1);
+                }
+
+
             } else if (strcmp(cmd,"frame_class") == 0) {
                 // We must have the frame_class argument 2nd as resulting class is used to determine if
                 // we have access to certain functions in the multicopter motors child class
@@ -107,12 +143,14 @@ void setup()
 
                     case AP_Motors::MOTOR_FRAME_HELI:
                         motors = new AP_MotorsHeli_Single(400);
-                        num_outputs = 4; // Currently only does default config. In future need to test all types: Mot 1-3 swashplate, mot 4 tail rotor pitch, mot 5 for 4th servo in H4-90 swash
+                        // Mot 1-3 swashplate, mot 4 tail rotor pitch, mot 5 for 4th servo in H4-90 swash
+                        num_outputs = 5;
                         break;
 
                     case AP_Motors::MOTOR_FRAME_HELI_DUAL:
                         motors = new AP_MotorsHeli_Dual(400);
-                        num_outputs = 6; // Currently only does default config. In future need to test all types: Mot 1-3 swashplate 1, mot 4-6 swashplate 2, mot 7 and 8 for 4th servos on H4-90 swash plates front and back, respectively
+                        // Mot 1-3 swashplate 1, mot 4-6 swashplate 2, mot 7 and 8 for 4th servos on H4-90 swash plates front and back, respectively
+                        num_outputs = 8;
                         break;
 
                     case AP_Motors::MOTOR_FRAME_HELI_QUAD:
