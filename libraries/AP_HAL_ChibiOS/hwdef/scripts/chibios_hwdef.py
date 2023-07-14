@@ -3473,6 +3473,9 @@ INCLUDE common.ld
 #define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 #endif
 
+// enable terrain only if there's an SD card available:
+#define AP_TERRAIN_AVAILABLE HAL_OS_FATFS_IO
+
 // end firmware defaults
 ''')
 
