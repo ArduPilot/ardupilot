@@ -200,6 +200,7 @@ void ModeThrow::run()
         break;
     }
 
+#if HAL_LOGGING_ENABLED
     // log at 10hz or if stage changes
     uint32_t now = AP_HAL::millis();
     if ((stage != prev_stage) || (now - last_log_ms) > 100) {
@@ -213,7 +214,7 @@ void ModeThrow::run()
         const bool attitude_ok = (stage > Throw_Uprighting) || throw_attitude_good();
         const bool height_ok = (stage > Throw_HgtStabilise) || throw_height_good();
         const bool pos_ok = (stage > Throw_PosHold) || throw_position_good();
-        
+
 // @LoggerMessage: THRO
 // @Description: Throw Mode messages
 // @URL: https://ardupilot.org/copter/docs/throw-mode.html
@@ -227,7 +228,7 @@ void ModeThrow::run()
 // @Field: AttOk: True if the vehicle is upright 
 // @Field: HgtOk: True if the vehicle is within 50cm of the demanded height
 // @Field: PosOk: True if the vehicle is within 50cm of the demanded horizontal position
-        
+
         AP::logger().WriteStreaming(
             "THRO",
             "TimeUS,Stage,Vel,VelZ,Acc,AccEfZ,Throw,AttOk,HgtOk,PosOk",
@@ -245,6 +246,7 @@ void ModeThrow::run()
             height_ok,
             pos_ok);
     }
+#endif  // HAL_LOGGING_ENABLED
 }
 
 bool ModeThrow::throw_detected()
