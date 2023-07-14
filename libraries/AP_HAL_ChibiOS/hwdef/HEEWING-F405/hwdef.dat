@@ -1,4 +1,4 @@
-# hw definition file for MATEK M9N-F405
+# hw definition file for HEEWING F405
 
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
