@@ -1354,6 +1354,7 @@ void AP_DroneCAN::handle_traffic_report(const CanardRxTransfer& transfer, const 
  */
 void AP_DroneCAN::handle_actuator_status(const CanardRxTransfer& transfer, const uavcan_equipment_actuator_Status& msg)
 {
+#if HAL_LOGGING_ENABLED
     // log as CSRV message
     AP::logger().Write_ServoStatus(AP_HAL::micros64(),
                                    msg.actuator_id,
@@ -1362,6 +1363,7 @@ void AP_DroneCAN::handle_actuator_status(const CanardRxTransfer& transfer, const
                                    msg.speed,
                                    msg.power_rating_pct,
                                    0, 0, 0, 0, 0, 0);
+#endif
 }
 
 #if AP_DRONECAN_HIMARK_SERVO_SUPPORT
@@ -1370,6 +1372,7 @@ void AP_DroneCAN::handle_actuator_status(const CanardRxTransfer& transfer, const
  */
 void AP_DroneCAN::handle_himark_servoinfo(const CanardRxTransfer& transfer, const com_himark_servo_ServoInfo &msg)
 {
+#if HAL_LOGGING_ENABLED
     // log as CSRV message
     AP::logger().Write_ServoStatus(AP_HAL::micros64(),
                                    msg.servo_id,
@@ -1383,12 +1386,14 @@ void AP_DroneCAN::handle_himark_servoinfo(const CanardRxTransfer& transfer, cons
                                    msg.motor_temp*0.2-40,
                                    msg.pcb_temp*0.2-40,
                                    msg.error_status);
+#endif
 }
 #endif // AP_DRONECAN_HIMARK_SERVO_SUPPORT
 
 #if AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
 void AP_DroneCAN::handle_actuator_status_Volz(const CanardRxTransfer& transfer, const com_volz_servo_ActuatorStatus& msg)
 {
+#if HAL_LOGGING_ENABLED
     AP::logger().WriteStreaming(
         "CVOL",
         "TimeUS,Id,Pos,Cur,V,Pow,T",
@@ -1402,6 +1407,7 @@ void AP_DroneCAN::handle_actuator_status_Volz(const CanardRxTransfer& transfer, 
         msg.voltage * 0.2f,
         msg.motor_pwm * (100.0/255.0),
         int16_t(msg.motor_temperature) - 50);
+#endif
 }
 #endif
 
