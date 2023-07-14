@@ -93,7 +93,7 @@ void AP_Parachute::enabled(bool on_off)
     // clear release_time
     _release_time = 0;
 
-    AP::logger().Write_Event(_enabled ? LogEvent::PARACHUTE_ENABLED : LogEvent::PARACHUTE_DISABLED);
+    LOGGER_WRITE_EVENT(_enabled ? LogEvent::PARACHUTE_ENABLED : LogEvent::PARACHUTE_DISABLED);
 }
 
 /// release - release parachute
@@ -105,7 +105,7 @@ void AP_Parachute::release()
     }
 
     GCS_SEND_TEXT(MAV_SEVERITY_INFO,"Parachute: Released");
-    AP::logger().Write_Event(LogEvent::PARACHUTE_RELEASED);
+    LOGGER_WRITE_EVENT(LogEvent::PARACHUTE_RELEASED);
 
     // set release time to current system time
     if (_release_time == 0) {
