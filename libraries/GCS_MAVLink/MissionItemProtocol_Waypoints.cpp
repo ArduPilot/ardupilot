@@ -58,7 +58,9 @@ bool MissionItemProtocol_Waypoints::clear_all_items()
 MAV_MISSION_RESULT MissionItemProtocol_Waypoints::complete(const GCS_MAVLINK &_link)
 {
     _link.send_text(MAV_SEVERITY_INFO, "Flight plan received");
+#if HAL_LOGGING_ENABLED
     AP::logger().Write_EntireMission();
+#endif
     return MAV_MISSION_ACCEPTED;
 }
 
