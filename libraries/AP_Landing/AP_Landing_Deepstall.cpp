@@ -456,6 +456,7 @@ const AP_PIDInfo& AP_Landing_Deepstall::get_pid_info(void) const
     return ds_PID.get_pid_info();
 }
 
+#if HAL_LOGGING_ENABLED
 void AP_Landing_Deepstall::Log(void) const {
     const AP_PIDInfo& pid_info = ds_PID.get_pid_info();
     struct log_DSTL pkt = {
@@ -479,6 +480,7 @@ void AP_Landing_Deepstall::Log(void) const {
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
+#endif
 
 // termination handling, expected to set the servo outputs
 bool AP_Landing_Deepstall::terminate(void) {
