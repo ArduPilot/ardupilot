@@ -41,12 +41,7 @@ void OpticalFlow_backend::_applyYaw(Vector2f &v)
     if (is_zero(yawAngleRad)) {
         return;
     }
-    float cosYaw = cosf(yawAngleRad);
-    float sinYaw = sinf(yawAngleRad);
-    float x = v.x;
-    float y = v.y;
-    v.x = cosYaw * x - sinYaw * y;
-    v.y = sinYaw * x + cosYaw * y;
+    v.rotate(yawAngleRad);
 }
 
 #endif
