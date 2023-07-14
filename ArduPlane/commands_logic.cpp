@@ -12,10 +12,12 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     plane.target_altitude.terrain_following_pending = false;
 #endif
 
+#if HAL_LOGGING_ENABLED
     // log when new commands start
     if (should_log(MASK_LOG_CMD)) {
         logger.Write_Mission_Cmd(mission, cmd);
     }
+#endif
 
     // special handling for nav vs non-nav commands
     if (AP_Mission::is_nav_cmd(cmd)) {
@@ -359,7 +361,9 @@ void Plane::do_RTL(int32_t rtl_altitude_AMSL_cm)
     setup_glide_slope();
     setup_turn_angle();
 
+#if HAL_LOGGING_ENABLED
     logger.Write_Mode(control_mode->mode_number(), control_mode_reason);
+#endif
 }
 
 Location Plane::calc_best_rally_or_home_location(const Location &_current_loc, float rtl_home_alt_amsl_cm) const

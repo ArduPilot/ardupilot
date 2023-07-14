@@ -193,7 +193,9 @@ private:
     RC_Channel *channel_flap;
     RC_Channel *channel_airbrake;
 
+#if HAL_LOGGING_ENABLED
     AP_Logger logger;
+#endif
 
     // scaled roll limit based on pitch
     int32_t roll_limit_cd;

@@ -170,7 +170,9 @@ void Plane::update_is_flying_5Hz(void)
 
     crash_detection_update();
 
+#if HAL_LOGGING_ENABLED
     Log_Write_Status();
+#endif
 
     // tell AHRS flying state
     set_likely_flying(new_is_flying);

@@ -26,7 +26,9 @@ protected:
     float get_pilot_desired_climb_rate_cms(void) const override;
     void get_pilot_desired_rp_yrate_cd(float &roll_cd, float &pitch_cd, float &yaw_rate_cds) override;
     void init_z_limits() override;
+#if HAL_LOGGING_ENABLED
     void log_pids() override;
+#endif
 };
 
 #endif // QAUTOTUNE_ENABLED

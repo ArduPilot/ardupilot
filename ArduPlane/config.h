@@ -186,10 +186,6 @@
 // Logging control
 //
 
-#ifndef LOGGING_ENABLED
- # define LOGGING_ENABLED                ENABLED
-#endif
-
 #define DEFAULT_LOG_BITMASK   0xffff
 
 
