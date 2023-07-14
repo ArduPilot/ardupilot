@@ -874,6 +874,7 @@ void AP_Baro::_probe_i2c_barometers(void)
     }
 }
 
+#if HAL_LOGGING_ENABLED
 bool AP_Baro::should_log() const
 {
     AP_Logger *logger = AP_Logger::get_singleton();
@@ -888,6 +889,7 @@ bool AP_Baro::should_log() const
     }
     return true;
 }
+#endif
 
 /*
   call update on all drivers
