@@ -231,6 +231,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane, Blimp}: 172:Battery MPPT Enable
     // @Values{Plane}: 173:Plane AUTO Mode Landing Abort
     // @Values{Copter, Rover, Plane, Blimp}: 174:Camera Image Tracking
+    // @Values{Copter, Rover, Plane, Blimp}: 175:Camera Lens
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
     // @Values{Rover}: 207:MainSail
@@ -762,6 +763,7 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::CAMERA_MANUAL_FOCUS, "Camera Manual Focus"},
     { AUX_FUNC::CAMERA_AUTO_FOCUS, "Camera Auto Focus"},
     { AUX_FUNC::CAMERA_IMAGE_TRACKING, "Camera Image Tracking"},
+    { AUX_FUNC::CAMERA_LENS, "Camera Lens"},
 };
 
 /* lookup the announcement for switch change */
@@ -989,6 +991,16 @@ bool RC_Channel::do_aux_function_camera_image_tracking(const AuxSwitchPos ch_fla
     // High position enables tracking a POINT in middle of image
     // Low or Mediums disables tracking.  (0.5,0.5) is still passed in but ignored
     return camera->set_tracking(ch_flag == AuxSwitchPos::HIGH ? TrackingType::TRK_POINT : TrackingType::TRK_NONE, Vector2f{0.5, 0.5}, Vector2f{});
+}
+
+bool RC_Channel::do_aux_function_camera_lens(const AuxSwitchPos ch_flag)
+{
+    AP_Camera *camera = AP::camera();
+    if (camera == nullptr) {
+        return false;
+    }
+    // Low selects lens 0 (default), Mediums selects lens1, High selects lens2
+    return camera->set_lens((uint8_t)ch_flag);
 }
 #endif
 
@@ -1491,6 +1503,9 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
 
     case AUX_FUNC::CAMERA_IMAGE_TRACKING:
         return do_aux_function_camera_image_tracking(ch_flag);
+
+    case AUX_FUNC::CAMERA_LENS:
+        return do_aux_function_camera_lens(ch_flag);
 #endif
 
 #if HAL_MOUNT_ENABLED
