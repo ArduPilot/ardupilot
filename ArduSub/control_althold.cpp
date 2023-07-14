@@ -65,49 +65,6 @@ void Sub::handle_mavlink_attitude_target(){
     }
 }
 
-void Sub::handle_attitude()
-{
-    float desired_roll_rate, desired_pitch_rate, desired_yaw_rate;
-    // initialize vertical speeds and acceleration
-    pos_control.set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-
-    handle_mavlink_attitude_target();
-
-    get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), desired_roll_rate, desired_pitch_rate, attitude_control.get_althold_lean_angle_max());
-    float yaw_input =  channel_yaw->pwm_to_angle_dz_trim(channel_yaw->get_dead_zone() * gain, channel_yaw->get_radio_trim());
-    desired_yaw_rate = get_pilot_desired_yaw_rate(yaw_input);
-
-    switch (g.control_frame) {
-      case MAV_FRAME_BODY_FRD:
-      {
-        if (abs(desired_roll_rate) > 50 || abs(desired_pitch_rate) > 50 || abs(desired_yaw_rate) > 50) {
-            attitude_control.input_rate_bf_roll_pitch_yaw(desired_roll_rate, desired_pitch_rate, desired_yaw_rate);
-            Quaternion attitude_target = attitude_control.get_attitude_target_quat();
-            last_roll = degrees(attitude_target.get_euler_roll()) * 100;
-            last_pitch = degrees(attitude_target.get_euler_pitch()) * 100;
-            last_pilot_heading = degrees(attitude_target.get_euler_yaw()) * 100;
-        } else {
-            attitude_control.input_euler_angle_roll_pitch_yaw(last_roll, last_pitch, last_pilot_heading, true);
-        }
-      }
-      break;
-      default:
-      {
-        if (!is_zero(desired_roll_rate) || !is_zero(desired_pitch_rate) || !is_zero(desired_yaw_rate)) {
-            attitude_control.input_euler_rate_roll_pitch_yaw(desired_roll_rate, desired_pitch_rate, desired_yaw_rate);
-            Vector3f attitude_target = attitude_control.get_att_target_euler_cd();
-            last_roll = attitude_target.x;
-            last_pitch = attitude_target.y;
-            last_pilot_heading = attitude_target.z;
-            last_input_ms = AP_HAL::millis();
-            return;
-        }
-        attitude_control.input_euler_angle_roll_pitch_yaw(last_roll, last_pitch, last_pilot_heading, true);
-      }
-    }
-}
-
 // althold_run - runs the althold controller
 // should be called at 100hz or more
 void Sub::althold_run()
