@@ -4,6 +4,7 @@
 #include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_OAVisGraph.h"
+#include <AP_Logger/AP_Logger_config.h>
 
 /*
  * Dijkstra's algorithm for path planning around polygon fence
@@ -204,9 +205,14 @@ private:
     AP_OADijkstra_Error _error_last_id;                 // last error id sent to GCS
     uint32_t _error_last_report_ms;                     // last time an error message was sent to GCS
 
+#if HAL_LOGGING_ENABLED
     // Logging functions
     void Write_OADijkstra(const uint8_t state, const uint8_t error_id, const uint8_t curr_point, const uint8_t tot_points, const Location &final_dest, const Location &oa_dest) const;
     void Write_Visgraph_point(const uint8_t version, const uint8_t point_num, const int32_t Lat, const int32_t Lon) const;
+#else
+    void Write_OADijkstra(const uint8_t state, const uint8_t error_id, const uint8_t curr_point, const uint8_t tot_points, const Location &final_dest, const Location &oa_dest) const {}
+    void Write_Visgraph_point(const uint8_t version, const uint8_t point_num, const int32_t Lat, const int32_t Lon) const {}
+#endif
     uint8_t _log_num_points;
     uint8_t _log_visgraph_version;
 
