@@ -559,6 +559,7 @@ void AP_AHRS::update_EKF2(void)
         if (start_time_ms == 0) {
             start_time_ms = AP_HAL::millis();
         }
+#if HAL_LOGGING_ENABLED
         // if we're doing Replay logging then don't allow any data
         // into the EKF yet.  Don't allow it to block us for long.
         if (!hal.util->was_watchdog_reset()) {
@@ -568,6 +569,7 @@ void AP_AHRS::update_EKF2(void)
                 }
             }
         }
+#endif
 
         if (AP_HAL::millis() - start_time_ms > startup_delay_ms) {
             _ekf2_started = EKF2.InitialiseFilter();
@@ -626,6 +628,7 @@ void AP_AHRS::update_EKF3(void)
         if (start_time_ms == 0) {
             start_time_ms = AP_HAL::millis();
         }
+#if HAL_LOGGING_ENABLED
         // if we're doing Replay logging then don't allow any data
         // into the EKF yet.  Don't allow it to block us for long.
         if (!hal.util->was_watchdog_reset()) {
@@ -635,6 +638,7 @@ void AP_AHRS::update_EKF3(void)
                 }
             }
         }
+#endif
         if (AP_HAL::millis() - start_time_ms > startup_delay_ms) {
             _ekf3_started = EKF3.InitialiseFilter();
         }
@@ -2896,7 +2900,7 @@ bool AP_AHRS::set_home(const Location &loc)
         return false;
     }
 
-#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && HAL_LOGGING_ENABLED
     if (!_home_is_set) {
         // record home is set
         AP::logger().Write_Event(LogEvent::SET_HOME);
@@ -2906,7 +2910,9 @@ bool AP_AHRS::set_home(const Location &loc)
     _home = tmp;
     _home_is_set = true;
 
+#if HAL_LOGGING_ENABLED
     Log_Write_Home_And_Origin();
+#endif
 
     // send new home and ekf origin to GCS
     GCS_SEND_MESSAGE(MSG_HOME);
