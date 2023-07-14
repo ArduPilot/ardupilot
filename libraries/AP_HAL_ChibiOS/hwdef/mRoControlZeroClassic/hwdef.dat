@@ -258,10 +258,6 @@ SPIDEV icm20948 SPI1 DEVID1  ICM_20948_CS    MODE3  2*MHZ  4*MHZ
 SPIDEV dps310   SPI2 DEVID3  BARO_CS         MODE3  5*MHZ  5*MHZ
 SPIDEV ramtron  SPI2 DEVID10 FRAM_CS         MODE3  8*MHZ  8*MHZ
 
-# Now some defines for logging and terrain data files.
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
 # allow to have have a dedicated safety switch pin
 define HAL_HAVE_SAFETY_SWITCH 1
 

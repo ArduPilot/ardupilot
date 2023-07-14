@@ -223,8 +223,6 @@ PE6  EXTERN_GPIO4 OUTPUT GPIO(4)
 
 # enable FAT filesystem support
 define HAL_OS_FATFS_IO 1
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 # enable RAMTROM parameter storage
 define HAL_STORAGE_SIZE 32768
