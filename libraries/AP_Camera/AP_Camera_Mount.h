@@ -51,6 +51,9 @@ public:
     // p1,p2 are in range 0 to 1.  0 is left or top, 1 is right or bottom
     bool set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2) override;
 
+    // set camera lens as a value from 0 to 5
+    bool set_lens(uint8_t lens) override;
+
     // send camera information message to GCS
     void send_camera_information(mavlink_channel_t chan) const override;
 

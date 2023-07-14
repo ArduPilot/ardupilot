@@ -135,6 +135,10 @@ public:
     bool set_tracking(TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2);
     bool set_tracking(uint8_t instance, TrackingType tracking_type, const Vector2f& p1, const Vector2f& p2);
 
+    // set camera lens as a value from 0 to 5
+    bool set_lens(uint8_t lens);
+    bool set_lens(uint8_t instance, uint8_t lens);
+
     // set if vehicle is in AUTO mode
     void set_is_auto_mode(bool enable) { _is_in_auto_mode = enable; }
 
