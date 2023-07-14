@@ -794,6 +794,16 @@ bool AP_Mount::set_tracking(uint8_t instance, TrackingType tracking_type, const 
     return backend->set_tracking(tracking_type, p1, p2);
 }
 
+// set camera lens as a value from 0 to 5
+bool AP_Mount::set_lens(uint8_t instance, uint8_t lens)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+    return backend->set_lens(lens);
+}
+
 // send camera information message to GCS
 void AP_Mount::send_camera_information(mavlink_channel_t chan) const
 {
