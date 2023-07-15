@@ -5074,36 +5074,24 @@ class AutoTest(ABC):
         return self.mav.motors_armed()
 
     def send_mavlink_arm_command(self):
-        target_sysid = 1
-        target_compid = 1
-        self.mav.mav.command_long_send(
-            target_sysid,
-            target_compid,
-            mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
-            1, # confirmation
-            1,  # ARM
-            0,
-            0,
-            0,
-            0,
-            0,
-            0)
+        self.send_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+                      1,  # ARM
+                      0,
+                      0,
+                      0,
+                      0,
+                      0,
+                      0)
 
     def send_mavlink_run_prearms_command(self):
-        target_sysid = 1
-        target_compid = 1
-        self.mav.mav.command_long_send(
-            target_sysid,
-            target_compid,
-            mavutil.mavlink.MAV_CMD_RUN_PREARM_CHECKS,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0)
+        self.send_cmd(mavutil.mavlink.MAV_CMD_RUN_PREARM_CHECKS,
+                      0,
+                      0,
+                      0,
+                      0,
+                      0,
+                      0,
+                      0)
 
     def analog_rangefinder_parameters(self):
         return {
