@@ -310,6 +310,9 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
     }
 
     if (clear_buffers) {
+        _frame.idle = false;
+        _frame.bounce_len[0] = _frame.bounce_len[1] = 0;
+        _frame.bounce_idx = _frame.read_bounce_idx = 0;
         _readbuf.clear();
     }
 
@@ -444,19 +447,22 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
 #ifndef HAL_UART_NODMA
             if (rx_dma_enabled) {
-                sercfg.cr1 |= USART_CR1_IDLEIE;
                 sercfg.cr3 |= USART_CR3_DMAR;
             }
             if (tx_dma_enabled) {
                 sercfg.cr3 |= USART_CR3_DMAT;
             }
-            sercfg.irq_cb = rx_irq_cb;
 #endif // HAL_UART_NODMA
+            sercfg.cr1 |= USART_CR1_IDLEIE;
+            sercfg.irq_cb = rx_irq_cb;
+
             if (!(sercfg.cr2 & USART_CR2_STOP2_BITS)) {
                 sercfg.cr2 |= USART_CR2_STOP1_BITS;
             }
             sercfg.ctx = (void*)this;
 
+            sdStop((SerialDriver*)sdef.serial);
+            _frame.idle = false;
             sdStart((SerialDriver*)sdef.serial, &sercfg);
 
 #ifndef HAL_UART_NODMA
@@ -496,6 +502,93 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
     }
 }
 
+/*
+  begin framing. Data from _readbuf is read into _frame.readbuf when an idle ISR is detected.
+  _frame.reabounce_buf is sized to be able to accommodate at frames of at most max_frame_size
+ */
+bool UARTDriver::_begin_framing(uint16_t max_frame_size)
+{
+    // disallow framing from a different thread
+    if (_uart_owner_thd != chThdGetSelfX()) {
+        return false;
+    }
+
+    if (!_framing_initialised || frame_size != max_frame_size) {
+        hal.util->free_type(_frame.bounce_buf[0], max_frame_size, AP_HAL::Util::MEM_DMA_SAFE);
+        hal.util->free_type(_frame.bounce_buf[1], max_frame_size, AP_HAL::Util::MEM_DMA_SAFE);
+        _frame.bounce_buf[0] = (uint8_t *)hal.util->malloc_type(max_frame_size, AP_HAL::Util::MEM_DMA_SAFE);
+        _frame.bounce_buf[1] = (uint8_t *)hal.util->malloc_type(max_frame_size, AP_HAL::Util::MEM_DMA_SAFE);
+    }
+    _frame.bounce_len[0] = 0;
+    _frame.bounce_len[1] = 0;
+    _frame.bounce_idx = _frame.read_bounce_idx = 0;
+
+    _framing_initialised = true;
+
+    return true;
+}
+
+void UARTDriver::_end_framing()
+{
+    // clean up frame read buffer
+    hal.util->free_type(_frame.bounce_buf[0], frame_size, AP_HAL::Util::MEM_DMA_SAFE);
+    hal.util->free_type(_frame.bounce_buf[1], frame_size, AP_HAL::Util::MEM_DMA_SAFE);
+    _frame.bounce_buf[0] = _frame.bounce_buf[1] = nullptr;
+    _frame.bounce_len[0] = _frame.bounce_len[1] = 0;
+    _frame.bounce_idx = _frame.read_bounce_idx = 0;
+    _framing_initialised = false;
+    _frame.idle = false;
+}
+
+bool UARTDriver::_frame_available()
+{
+    if (!_framing_initialised) {
+        return false;
+    }
+
+    // if there is any data then a frame must be available
+    return _frame.bounce_len[_frame.read_bounce_idx] > 0;
+}
+
+/*
+  read a frame from _frame.readbuf into buffer. if the size of the frame to be
+  read exceeds buf_size then remaining bytes are discarded. returns the number of
+  read bytes (usually the size of the frame) or 0 if no frames are available
+  or -1 if an error occurs
+ */
+ssize_t UARTDriver::_read_frame(uint8_t *buffer, uint16_t buf_size)
+{
+    if (_uart_owner_thd != chThdGetSelfX()){
+        return -1;
+    }
+
+    if (!_rx_initialised) {
+        return -1;
+    }
+
+    if (!_framing_initialised) {
+        return -1;
+    }
+
+    const uint8_t bounce_idx = _frame.read_bounce_idx;
+    _frame.read_bounce_idx ^= 1;
+
+    uint16_t flen = _frame.bounce_len[bounce_idx];
+    if (flen == 0) {
+        return 0;
+    }
+
+    memcpy(buffer, _frame.bounce_buf[bounce_idx], MIN(buf_size, flen));
+
+    _frame.bounce_len[bounce_idx] = 0;
+
+    if (!_rts_is_active) {
+        update_rts_line();
+    }
+
+    return MIN(buf_size, flen);
+}
+
 #ifndef HAL_UART_NODMA
 void UARTDriver::dma_tx_allocate(Shared_DMA *ctx)
 {
@@ -521,7 +614,6 @@ void UARTDriver::dma_tx_allocate(Shared_DMA *ctx)
 #endif // HAL_USE_SERIAL
 }
 
-#ifndef HAL_UART_NODMA
 void UARTDriver::dma_rx_enable(void)
 {
     uint32_t dmamode = STM32_DMA_CR_DMEIE | STM32_DMA_CR_TEIE;
@@ -538,7 +630,6 @@ void UARTDriver::dma_rx_enable(void)
                      STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
     dmaStreamEnable(rxdma);
 }
-#endif
 
 void UARTDriver::dma_tx_deallocate(Shared_DMA *ctx)
 {
@@ -547,15 +638,49 @@ void UARTDriver::dma_tx_deallocate(Shared_DMA *ctx)
     txdma = nullptr;
     chSysUnlock();
 }
+#endif
 
-#ifndef HAL_UART_NODMA
+// transfer a frame from _readbuf to _frame.bounce_buf by reading all of
+// the available bytes. the API only works if _readbuf contains 
+// only a single complete frame. if any kind of data errors occurs _readbuf and
+// _frame.buf are reset.
+void UARTDriver::transfer_frame()
+{
+    const uint32_t fsize = MIN(_readbuf.available(), frame_size);
+    const uint8_t frame_bounce_idx = _frame.bounce_idx;
+    // no data
+    if (fsize == 0 || _frame.bounce_buf[frame_bounce_idx] == nullptr) {
+        return;
+    }
+
+    _frame.bounce_len[frame_bounce_idx] = _readbuf.read(_frame.bounce_buf[frame_bounce_idx], fsize);
+    _frame.bounce_idx ^= 1;
+    _frame.idle = false;
+}
+
+// UART idle ISR, only ever called if IDLEIE has been set
+// this callback is always executed in order to support the
+// framing API. Note that start and stopping the serial device
+// will also generate an IDLE interrupt even though there is no
+// data.
 void UARTDriver::rx_irq_cb(void* self)
 {
 #if HAL_USE_SERIAL == TRUE
     UARTDriver* uart_drv = (UARTDriver*)self;
+
+#ifndef HAL_UART_NODMA
     if (!uart_drv->rx_dma_enabled) {
+#endif
+        // this is only ever called if IDLEIE is set
+        if (uart_drv->_framing_initialised) {
+            uart_drv->transfer_frame();
+        }
+#ifndef HAL_UART_NODMA
         return;
     }
+
+    uart_drv->_frame.idle = true;
+
 #if defined(STM32F7) || defined(STM32H7)
     //disable dma, triggering DMA transfer complete interrupt
     uart_drv->rxdma->stream->CR &= ~STM32_DMA_CR_EN;
@@ -572,13 +697,14 @@ void UARTDriver::rx_irq_cb(void* self)
         uart_drv->rxdma->stream->CR &= ~STM32_DMA_CR_EN;
     }
 #endif // STM32F7
+#endif // HAL_UART_NODMA
 #endif // HAL_USE_SERIAL
 }
-#endif
 
 /*
   handle a RX DMA full interrupt
  */
+ #ifndef HAL_UART_NODMA
 __RAMFUNC__ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
 {
 #if HAL_USE_SERIAL == TRUE
@@ -586,6 +712,7 @@ __RAMFUNC__ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
     if (!uart_drv->rx_dma_enabled) {
         return;
     }
+
     uint16_t len = RX_BOUNCE_BUFSIZE - dmaStreamGetTransactionSize(uart_drv->rxdma);
     const uint8_t bounce_idx = uart_drv->rx_bounce_idx;
 
@@ -603,6 +730,10 @@ __RAMFUNC__ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
         uart_drv->_readbuf.write(uart_drv->rx_bounce_buf[bounce_idx], len);
         uart_drv->_rx_stats_bytes += len;
         uart_drv->receive_timestamp_update();
+    }
+
+    if (uart_drv->_framing_initialised && uart_drv->_frame.idle) {
+        uart_drv->transfer_frame();
     }
 
     if (uart_drv->_wait.thread_ctx && uart_drv->_readbuf.available() >= uart_drv->_wait.n) {
@@ -637,6 +768,8 @@ void UARTDriver::_end()
 
     _readbuf.set_size(0);
     _writebuf.set_size(0);
+
+    _end_framing();
 }
 
 void UARTDriver::_flush()
@@ -685,7 +818,11 @@ uint32_t UARTDriver::_available()
         }
 #endif
     }
-    return _readbuf.available();
+    if (_framing_initialised) {
+        return _frame.bounce_len[_frame.read_bounce_idx];
+    } else {
+        return _readbuf.available();
+    }
 }
 
 uint32_t UARTDriver::txspace()
@@ -719,7 +856,12 @@ ssize_t UARTDriver::_read(uint8_t *buffer, uint16_t count)
     if (_uart_owner_thd != chThdGetSelfX()){
         return -1;
     }
+
     if (!_rx_initialised) {
+        return -1;
+    }
+
+    if (_framing_initialised) {
         return -1;
     }
 
@@ -1403,6 +1545,9 @@ void UARTDriver::configure_parity(uint8_t v)
         return;
     }
 #if HAL_USE_SERIAL == TRUE
+    const bool frminit = _framing_initialised;
+    _framing_initialised = false;
+
     // stop and start to take effect
     sdStop((SerialDriver*)sdef.serial);
 
@@ -1432,7 +1577,12 @@ void UARTDriver::configure_parity(uint8_t v)
         break;
     }
 
+    // restarting the serial device results in a spurious IDLE interrupt
+    _frame.idle = false;
+
     sdStart((SerialDriver*)sdef.serial, &sercfg);
+
+    _framing_initialised = frminit;
 
 #if CH_CFG_USE_EVENTS == TRUE
     if (parity_enabled) {
@@ -1467,6 +1617,8 @@ void UARTDriver::set_stop_bits(int n)
         return;
     }
 #if HAL_USE_SERIAL
+    const bool frminit = _framing_initialised;
+    _framing_initialised = false;
     // stop and start to take effect
     sdStop((SerialDriver*)sdef.serial);
 
@@ -1482,7 +1634,13 @@ void UARTDriver::set_stop_bits(int n)
     }
     sercfg.cr2 = _cr2_options;
 
+    _frame.idle = false;
+
     sdStart((SerialDriver*)sdef.serial, &sercfg);
+
+    // restarting the serial device results in a spurious IDLE interrupt
+    _framing_initialised = frminit;
+
 #ifndef HAL_UART_NODMA
     if (rx_dma_enabled) {
         //Configure serial driver to skip handling RX packets

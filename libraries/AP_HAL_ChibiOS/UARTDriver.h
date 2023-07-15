@@ -180,6 +180,17 @@ private:
 #endif
     ByteBuffer _readbuf{0};
     ByteBuffer _writebuf{0};
+
+    // A/B buffers for reading UART frames
+    struct {
+        volatile uint8_t bounce_idx;
+        volatile uint8_t read_bounce_idx;
+        volatile bool idle;
+        uint8_t *bounce_buf[2];
+        uint16_t bounce_len[2];
+    } _frame;
+
+    volatile bool _framing_initialised;
     HAL_Semaphore _write_mutex;
 #ifndef HAL_UART_NODMA
     const stm32_dma_stream_t* rxdma;
@@ -235,9 +246,7 @@ private:
     bool parity_enabled;
 #endif
 
-#ifndef HAL_UART_NODMA
     static void rx_irq_cb(void* sd);
-#endif
     static void rxbuff_full_irq(void* self, uint32_t flags);
     static void tx_complete(void* self, uint32_t flags);
 
@@ -275,6 +284,15 @@ protected:
     ssize_t _read(uint8_t *buffer, uint16_t count) override;
     uint32_t _available() override;
     bool _discard_input() override;
+
+    // frame based operations
+    bool _begin_framing(uint16_t frame_size) override;
+    void _end_framing() override;
+    ssize_t _read_frame(uint8_t *buffer, uint16_t buf_size) override;
+    bool _frame_available() override;
+
+private:
+    void transfer_frame();
 };
 
 // access to usb init for stdio.cpp
