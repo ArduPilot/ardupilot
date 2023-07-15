@@ -26,21 +26,21 @@ mcu = {
     # flags of 2 means faster memory for CPU intensive work
     # flags of 4 means memory can be used for SDMMC DMA
     'RAM_MAP' : [
-        (0x30000000, 256, 0), # SRAM1, SRAM2
+        (0x30000000, 256, 8), # SRAM1, SRAM2
         (0x20000000, 128, 2), # DTCM, tightly coupled, no DMA, fast
         (0x24000000, 512, 4), # AXI SRAM.
 		(0x00000400,  63, 2), # ITCM (first 1k removed, to keep address 0 unused)
-        #(0x30040000,  32, 0), # SRAM3.
+        (0x30040000,  32, 8), # SRAM3.
         (0x38000000,  64, 1), # SRAM4.
     ],
 
     # alternative RAM_MAP needed for px4 bootloader compatibility
     'ALT_RAM_MAP' : [
         (0x24000000, 512, 4), # AXI SRAM.
-        (0x30000000, 256, 0), # SRAM1, SRAM2
+        (0x30000000, 256, 8), # SRAM1, SRAM2
         (0x20000000, 128, 2), # DTCM, tightly coupled, no DMA, fast
         (0x00000400,  63, 2), # ITCM (first 1k removed, to keep address 0 unused)
-        #(0x30040000,  32, 0), # SRAM3.
+        (0x30040000,  32, 8), # SRAM3.
         (0x38000000,  64, 1), # SRAM4.
     ],
 
@@ -49,14 +49,13 @@ mcu = {
     # we can't use DTCM first for main firmware as some builds overflow the first segment
     'RAM_MAP_BOOTLOADER' : [
         (0x20000000, 128, 2), # DTCM, tightly coupled, no DMA, fast
-        (0x30000000, 256, 0), # SRAM1, SRAM2
+        (0x30000000, 256, 8), # SRAM1, SRAM2
         (0x24000000, 512, 4), # AXI SRAM. Use this for SDMMC IDMA ops
         (0x00000400,  63, 2), # ITCM (first 1k removed, to keep address 0 unused)
-        #(0x30040000,  32, 0), # SRAM3.
+        (0x30040000,  32, 8), # SRAM3.
         (0x38000000,  64, 1), # SRAM4.
     ],
     
-    'ETHERNET_RAM' : (0x30040000, 32, 0), # SRAM3
     'EXPECTED_CLOCK' : 400000000,
 
 	'EXPECTED_CLOCKS' : [
