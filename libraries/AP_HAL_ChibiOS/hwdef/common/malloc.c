@@ -39,6 +39,7 @@
 #define MEM_REGION_FLAG_DMA_OK 1
 #define MEM_REGION_FLAG_FAST   2
 #define MEM_REGION_FLAG_AXI_BUS 4
+#define MEM_REGION_FLAG_ETH_SAFE 8
 
 #ifdef HAL_CHIBIOS_ENABLE_MALLOC_GUARD
 static mutex_t mem_mutex;
@@ -125,7 +126,7 @@ static void *malloc_flags(size_t size, uint32_t flags)
     if (size == 0) {
         return NULL;
     }
-    const uint8_t dma_flags = (MEM_REGION_FLAG_DMA_OK | MEM_REGION_FLAG_AXI_BUS);
+    const uint8_t dma_flags = (MEM_REGION_FLAG_DMA_OK | MEM_REGION_FLAG_AXI_BUS | MEM_REGION_FLAG_ETH_SAFE);
     const uint8_t alignment = (flags&dma_flags?DMA_ALIGNMENT:MIN_ALIGNMENT);
     void *p = NULL;
     uint8_t i;
@@ -157,6 +158,10 @@ static void *malloc_flags(size_t size, uint32_t flags)
         }
         if ((flags & MEM_REGION_FLAG_FAST) &&
             !(memory_regions[i].flags & MEM_REGION_FLAG_FAST)) {
+            continue;
+        }
+        if ((flags & MEM_REGION_FLAG_ETH_SAFE) &&
+            !(memory_regions[i].flags & MEM_REGION_FLAG_ETH_SAFE)) {
             continue;
         }
         p = chHeapAllocAligned(&heaps[i], size, alignment);
@@ -368,6 +373,18 @@ void *malloc_axi_sram(size_t size)
     return malloc_flags(size, MEM_REGION_FLAG_AXI_BUS);
 #else
     return malloc_flags(size, MEM_REGION_FLAG_DMA_OK);
+#endif
+}
+
+/*
+  allocate memory for ethernet DMA
+*/
+void *malloc_eth_safe(size_t size)
+{
+#if defined(STM32H7)
+    return malloc_flags(size, MEM_REGION_FLAG_ETH_SAFE);
+#else
+    return NULL;
 #endif
 }
 

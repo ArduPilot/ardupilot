@@ -936,7 +936,7 @@ class ChibiOSHWDef(object):
             f.write('#define CH_CFG_USE_MAILBOXES                TRUE\n')
             f.write('#define HAL_USE_MAC                         TRUE\n')
             f.write('#define MAC_USE_EVENTS                      TRUE\n')
-            f.write('#define STM32_NOCACHE_SRAM3                 TRUE\n')
+            f.write('#define STM32_ETH_BUFFERS_EXTERN\n')
             f.write('#define AP_NETWORKING_ENABLED               TRUE\n')
             self.build_flags.append('USE_LWIP=yes')
             self.env_vars['WITH_NETWORKING'] = True
@@ -1328,13 +1328,6 @@ class ChibiOSHWDef(object):
         ext_flash_size = self.get_config('EXT_FLASH_SIZE_MB', default=0, type=int)
         int_flash_primary = self.get_config('INT_FLASH_PRIMARY', default=False, type=int)
 
-        ethernet_ram = self.get_mcu_config('ETHERNET_RAM', False)
-        if ethernet_ram is None and self.env_vars['WITH_NETWORKING']:
-            self.error("No ethernet ram defined in mcu config")
-        elif self.env_vars['WITH_NETWORKING']:
-            ethernet_ram_base = ethernet_ram[0]
-            ethernet_ram_length = ethernet_ram[1]
-
         if not args.bootloader:
             flash_length = flash_size - (flash_reserve_start + flash_reserve_end)
             ext_flash_length = ext_flash_size * 1024 - (ext_flash_reserve_start + ext_flash_reserve_end)
@@ -1399,15 +1392,6 @@ INCLUDE common.ld
            ram0_start, ram0_len,
            ram1_start, ram1_len,
            ram2_start, ram2_len))
-        if self.env_vars['WITH_NETWORKING']:
-            f.write('''
-/* Ethernet RAM */
-MEMORY
-{
-    eth_ram : org = 0x%08x, len = %uK
-}
-INCLUDE common_eth.ld
-''' % (ethernet_ram_base, ethernet_ram_length))
         f.close()
 
     def copy_common_linkerscript(self, outdir):
