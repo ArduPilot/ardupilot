@@ -9,12 +9,45 @@ void AP_HAL::UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace
         // silently fail
         return;
     }
-    return _begin(baud, rxSpace, txSpace);
+    _begin(baud, rxSpace, txSpace);
 }
 
 void AP_HAL::UARTDriver::begin(uint32_t baud)
 {
     return begin(baud, 0, 0);
+}
+
+/*
+    begin in frame-based mode. the framing API works on top of the 
+    existing UART infrastructure and framing can be started at any
+    time after the UART has been started. Consumed frames can be at most frame_size
+    bytes long, frames longer than this will be considered corrupt and the
+    framing buffer will be reset. The framing buffer holds at most
+    frames_in_buffer frames, the frames are stored in a ring buffer and so
+    older frames that have not been read will be overwritten.
+    Returns true if the framing API could be started, false otherwise
+ */
+bool AP_HAL::UARTDriver::begin_framing(uint16_t max_frame_size)
+{
+    if (lock_write_key != 0) {
+        // silently fail
+        return false;
+    }
+
+    const bool ret = _begin_framing(max_frame_size);
+    frame_size = max_frame_size;
+    return ret;
+}
+
+void AP_HAL::UARTDriver::end_framing()
+{
+    if (lock_write_key != 0) {
+        // silently fail
+        return;
+    }
+
+    _end_framing();
+    frame_size = 1;
 }
 
 /*
@@ -111,6 +144,27 @@ bool AP_HAL::UARTDriver::read(uint8_t &b)
     return n > 0;
 }
 
+/*
+    frame-based read. An entire frame will be read into buffer. count indicates the size of the
+    buffer and if this is less than the size of the frame to be read, the remaining bytes in the frame will
+    be discarded. returns the size of the frame that was read or 0 if no frames are available to
+    be read.
+*/
+ssize_t AP_HAL::UARTDriver::read_frame(uint8_t *buf, uint16_t buf_size)
+{
+    if (lock_read_key != 0) {
+        return 0;
+    }
+    ssize_t ret = _read_frame(buf, buf_size);
+#if AP_UART_MONITOR_ENABLED
+    auto monitor = _monitor_read_buffer;
+    if (monitor != nullptr && ret > 0) {
+        monitor->write(buf, ret);
+    }
+#endif
+    return ret;
+}
+
 int16_t AP_HAL::UARTDriver::read(void)
 {
     uint8_t b;
@@ -127,6 +181,14 @@ uint32_t AP_HAL::UARTDriver::available()
         return 0;
     }
     return _available();
+}
+
+bool AP_HAL::UARTDriver::frame_available()
+{
+    if (lock_read_key != 0) {
+        return 0;
+    }
+    return _frame_available();
 }
 
 void AP_HAL::UARTDriver::end()

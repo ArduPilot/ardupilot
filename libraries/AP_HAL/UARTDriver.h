@@ -35,6 +35,18 @@ public:
     void begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace);
 
     /*
+      begin in frame-based mode. the framing API works on top of the 
+      existing UART infrastructure and framing can be started at any
+      time after the UART has been started. Consumed frames can be at most frame_size
+      bytes long, frames longer than this will be considered corrupt and the
+      framing buffer will be reset. The framing buffer holds at most
+      frames_in_buffer frames, the frames are stored in a ring buffer and so
+      older frames that have not been read will be overwritten.
+      Returns true if the framing API could be started, false otherwise
+     */
+    bool begin_framing(uint16_t max_frame_size);
+
+    /*
       begin for use when the port is write locked. Note that this does
       not lock the port, an existing write_key from lock_port() must
       be used
@@ -54,8 +66,17 @@ public:
     int16_t read(void) override;
     bool read(uint8_t &b) override WARN_IF_UNUSED;
     ssize_t read(uint8_t *buffer, uint16_t count) override;
-    
+
+    /*
+      frame-based read. An entire frame will be read into buffer. count indicates the size of the
+      buffer and if this is less than the size of the frame to be read, the remaining bytes in the frame will
+      be discarded. returns the size of the frame that was read or 0 if no frames are available to
+      be read.
+     */
+    ssize_t read_frame(uint8_t *buffer, uint16_t count);
+
     void end();
+    void end_framing();
     void flush();
 
     virtual bool is_initialized() = 0;
@@ -67,6 +88,7 @@ public:
     // check data available for read, return 0 is not available
     uint32_t available() override;
     uint32_t available_locked(uint32_t key);
+    bool frame_available();
 
     // discard any pending input
     bool discard_input() override;
@@ -189,11 +211,21 @@ protected:
     // key for a locked port
     uint32_t lock_write_key;
     uint32_t lock_read_key;
+    uint16_t frame_size = 1;
 
     /*
       backend begin method
      */
     virtual void _begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace) = 0;
+
+    /*
+      backend begin in frame-based mode. see the documentation for begin_framing()
+     */
+    virtual bool _begin_framing(uint16_t max_frame_size) {
+      return false;
+    }
+
+    virtual void _end_framing() { }
 
     /*
       backend write method
@@ -204,6 +236,14 @@ protected:
       backend read method
      */
     virtual ssize_t _read(uint8_t *buffer, uint16_t count)  WARN_IF_UNUSED = 0;
+
+      /*
+      frame-based read. see the documentation for read_frame()
+     */
+    virtual ssize_t _read_frame(uint8_t *buffer, uint16_t buf_size) {
+      // a simplistic implementation that simply reads bytes using _read()
+      return _read(buffer, buf_size < frame_size ? buf_size : frame_size);
+    }
 
     /*
       end control of the port, freeing buffers
@@ -217,6 +257,9 @@ protected:
 
     // check available data on the port
     virtual uint32_t _available() = 0;
+
+    // check for available frames
+    virtual bool _frame_available() { return available() != 0; }
 
     // discard incoming data on the port
     virtual bool _discard_input(void) = 0;
