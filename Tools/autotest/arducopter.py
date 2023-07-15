@@ -6985,20 +6985,9 @@ class AutoTestCopter(AutoTest):
 
     def AC_Avoidance_Fence(self):
         '''Test fence avoidance slide behaviour'''
-        self.context_push()
-        ex = None
-        try:
-            self.load_fence("copter-avoidance-fence.txt")
-            self.set_parameter("FENCE_ENABLE", 1)
-            self.check_avoidance_corners()
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-        self.context_pop()
-        self.clear_fence()
-        self.disarm_vehicle(force=True)
-        if ex is not None:
-            raise ex
+        self.load_fence("copter-avoidance-fence.txt")
+        self.set_parameter("FENCE_ENABLE", 1)
+        self.check_avoidance_corners()
 
     def global_position_int_for_location(self, loc, time_boot, heading=0):
         return self.mav.mav.global_position_int_encode(
