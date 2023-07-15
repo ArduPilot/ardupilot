@@ -247,6 +247,7 @@ public:
 #if HAL_LOGGER_FENCE_ENABLED
     void Write_Fence();
 #endif
+    void Write_NamedValueFloat(const char *name, float value);
     void Write_Power(void);
     void Write_Radio(const mavlink_radio_t &packet);
     void Write_Message(const char *message);

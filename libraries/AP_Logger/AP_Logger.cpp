@@ -912,6 +912,20 @@ void AP_Logger::Write_Fence()
 }
 #endif
 
+void AP_Logger::Write_NamedValueFloat(const char *name, float value)
+{
+    WriteStreaming(
+        "NVF",
+        "TimeUS,Name,Value",
+        "s#-",
+        "F--",
+        "QNf",
+        AP_HAL::micros(),
+        name,
+        value
+        );
+}
+
 // output a FMT message for each backend if not already done so
 void AP_Logger::Safe_Write_Emit_FMT(log_write_fmt *f)
 {
