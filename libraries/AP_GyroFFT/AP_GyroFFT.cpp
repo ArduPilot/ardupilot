@@ -273,7 +273,7 @@ void AP_GyroFFT::init(uint16_t loop_rate_hz)
 
     // check for harmonics across all harmonic notch filters
     // note that we only allow one harmonic notch filter linked to the FFT code
-    uint8_t harmonics = 0;
+    uint32_t harmonics = 0;
     uint8_t num_notches = 0;
     for (auto &notch : _ins->harmonic_notches) {
         if (notch.params.enabled()) {
