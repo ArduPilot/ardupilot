@@ -85,7 +85,9 @@ class DataPoints:
         return self.data.keys()
 
 
-frame_class_lookup = {6: 'Single_Heli', 11: 'Dual_Heli'}
+frame_class_lookup = {6: 'Single_Heli',
+                      11: 'Dual_Heli',
+                      13: 'Heli_Quad'}
 
 swash_type_lookup = {0: 'H3',
                      1: 'H1',
@@ -105,12 +107,19 @@ def run_sweep(frame_class, swash_type, dir_name):
     # Run sweep
     for fc in frame_class:
         for swash in swash_type:
-            print('Running motors test for frame class = %s (%i), swash = %s (%i)' % (frame_class_lookup[fc], fc, swash_type_lookup[swash], swash))
+            if swash is not None:
+                name = 'frame class = %s (%i), swash = %s (%i)' % (frame_class_lookup[fc], fc, swash_type_lookup[swash], swash)
+                filename = '%s_%s_motor_test.csv' % (frame_class_lookup[fc], swash_type_lookup[swash])
+                swash_cmd = 'swash=%d' % swash
 
-            filename = '%s_%s_motor_test.csv' % (frame_class_lookup[fc], swash_type_lookup[swash])
-            os.system('./build/linux/examples/AP_Motors_test s frame_class=%d swash=%d > %s/%s' % (fc, swash, dir_name, filename))
+            else:
+                name = 'frame class = %s (%i)' % (frame_class_lookup[fc], fc)
+                filename = '%s_motor_test.csv' % (frame_class_lookup[fc])
+                swash_cmd = ''
 
-            print('Frame class = %s, swash = %s complete\n' % (frame_class_lookup[fc], swash_type_lookup[swash]))
+            print('Running motors test for %s' % name)
+            os.system('./build/linux/examples/AP_Motors_test s frame_class=%d %s > %s/%s' % (fc, swash_cmd, dir_name, filename))
+            print('%s complete\n' % name)
 
 
 if __name__ == '__main__':
@@ -122,11 +131,21 @@ if __name__ == '__main__':
     # Build input parser
     parser = ArgumentParser(description='Find logs in which the input string is found in messages')
     parser.add_argument("-H", "--head", type=int, help='number of commits to roll back the head for comparing the work done')
-    parser.add_argument("-f", "--frame-class", type=int, dest='frame_class', nargs="+", default=(6, 11), help="list of frame classes to run comparison on. Defaults to test all helis.")
-    parser.add_argument("-s", "--swash-type", type=int, dest='swash_type', nargs="+", default=(0, 1, 2, 3, 4, 5), help="list of swashplate types to run comparison on. Defaults to test all types.")
+    parser.add_argument("-f", "--frame-class", type=int, dest='frame_class', nargs="+", default=(6, 11), help="list of frame classes to run comparison on. Defaults to test single and dual helis.")
+    parser.add_argument("-s", "--swash-type", type=int, dest='swash_type', nargs="+", help="list of swashplate types to run comparison on. Defaults to test all types. Invalid for heli quad")
     parser.add_argument("-c", "--compare", action='store_true', help='Compare only, do not re-run tests')
     parser.add_argument("-p", "--plot", action='store_true', help='Plot comparison results')
     args = parser.parse_args()
+
+    if 13 in args.frame_class:
+        if args.swash_type:
+            print('Frame %s (%i) does not support swash' % (frame_class_lookup[13], 13))
+            quit()
+        args.swash_type = [None]
+
+    else:
+        if not args.swash_type:
+            args.swash_type = (0, 1, 2, 3, 4, 5)
 
     dir_name = 'motors_comparison'
 
@@ -195,11 +214,17 @@ if __name__ == '__main__':
     for fc in args.frame_class:
         for sw in args.swash_type:
             frame = frame_class_lookup[fc]
-            swash = swash_type_lookup[sw]
-            name = frame + ' ' + swash
+            if sw is not None:
+                swash = swash_type_lookup[sw]
+                name = frame + ' ' + swash
+                filename = '%s_%s_motor_test.csv' % (frame, swash)
+
+            else:
+                name = frame
+                filename = '%s_motor_test.csv' % (frame)
+
             print('%s:' % name)
 
-            filename = '%s_%s_motor_test.csv' % (frame, swash)
             new_points = DataPoints(os.path.join(dir_name, 'new/%s' % filename))
             old_points = DataPoints(os.path.join(dir_name, 'original/%s' % filename))
 
