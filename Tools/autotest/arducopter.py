@@ -6933,14 +6933,7 @@ class AutoTestCopter(AutoTest):
                     mavutil.mavlink.MAV_SENSOR_ROTATION_NONE, # orientation
                     255  # covariance
                 )
-                self.send_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
-                              1,  # ARM
-                              0,
-                              0,
-                              0,
-                              0,
-                              0,
-                              0)
+                self.send_mavlink_arm_command()
             self.takeoff(15, mode='LOITER')
             self.progress("Poking vehicle; should avoid")
 
