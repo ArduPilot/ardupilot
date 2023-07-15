@@ -170,6 +170,58 @@ AP_Networking::AP_Networking(void)
     AP_Param::setup_object_defaults(this, var_info);
 }
 
+#ifdef STM32_ETH_BUFFERS_EXTERN
+stm32_eth_rx_descriptor_t *__eth_rd;
+stm32_eth_tx_descriptor_t *__eth_td;
+uint32_t **__eth_rb;
+uint32_t **__eth_tb;
+#endif
+
+
+static bool allocate_buffers()
+{
+#ifdef STM32_ETH_BUFFERS_EXTERN
+    #define BUFFER_SIZE ((((STM32_MAC_BUFFERS_SIZE - 1) | 3) + 1) / 4)
+    // check total size of buffers
+    const uint32_t total_size = sizeof(stm32_eth_rx_descriptor_t)*STM32_MAC_RECEIVE_BUFFERS +
+                                sizeof(stm32_eth_tx_descriptor_t)*STM32_MAC_TRANSMIT_BUFFERS +
+                                sizeof(uint32_t)*STM32_MAC_RECEIVE_BUFFERS*BUFFER_SIZE +
+                                sizeof(uint32_t)*STM32_MAC_TRANSMIT_BUFFERS*BUFFER_SIZE;
+    // ensure that we allocate 32-bit aligned memory, and mark it non-cacheable
+    uint32_t size = 0;
+    uint8_t rasr = 0;
+    // find size closest to power of 2
+    while (size < total_size) {
+        size = size << 1;
+        rasr++;
+    }
+    void *mem = malloc_eth_safe(size);
+    if (mem == nullptr) {
+        return false;
+    }
+    uint32_t rasr_size = MPU_RASR_SIZE(rasr-1);
+
+    // set up MPU region for buffers
+    mpuConfigureRegion(STM32_NOCACHE_MPU_REGION,
+                       (uint32_t)mem,
+                       MPU_RASR_ATTR_AP_RW_RW |
+                       MPU_RASR_ATTR_NON_CACHEABLE |
+                       MPU_RASR_ATTR_S |
+                       rasr_size |
+                       MPU_RASR_ENABLE);
+    mpuEnable(MPU_CTRL_PRIVDEFENA);
+    SCB_CleanInvalidateDCache();
+
+    // assign buffers
+    __eth_rd = (stm32_eth_rx_descriptor_t *)mem;
+    __eth_td = (stm32_eth_tx_descriptor_t *)&__eth_rd[STM32_MAC_RECEIVE_BUFFERS];
+    __eth_rb = (uint32_t **)&__eth_td[STM32_MAC_TRANSMIT_BUFFERS];
+    __eth_tb = (uint32_t **)&__eth_rb[STM32_MAC_RECEIVE_BUFFERS][BUFFER_SIZE];
+    return true;
+#else
+    return true;
+#endif
+}
 
 void AP_Networking::init()
 {
@@ -193,6 +245,10 @@ void AP_Networking::init()
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    if (!allocate_buffers()) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "NET: Failed to allocate buffers");
+        return;
+    }
     if (!macInit()) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "NET: macInit failed");
         return;
