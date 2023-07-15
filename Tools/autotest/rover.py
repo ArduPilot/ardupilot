@@ -320,27 +320,13 @@ class AutoTestRover(AutoTest):
             self.start_subtest("Checking mavlink commands")
             self.change_mode("MANUAL")
             self.progress("Starting Sprayer")
-            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SPRAYER,
-                         1,  # p1
-                         0,  # p2
-                         0,  # p3
-                         0,  # p4
-                         0,  # p5
-                         0,  # p6
-                         0)  # p7
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SPRAYER, p1=1)
 
             self.progress("Testing speed-ramping")
             self.set_rc(3, 1700) # start driving forward
             self.wait_servo_channel_value(pump_ch, 1690, timeout=60, comparator=operator.gt)
             self.start_subtest("Stopping Sprayer")
-            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SPRAYER,
-                         0,  # p1
-                         0,  # p2
-                         0,  # p3
-                         0,  # p4
-                         0,  # p5
-                         0,  # p6
-                         0)  # p7
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SPRAYER, p1=0)
             self.wait_servo_channel_value(pump_ch, pump_ch_min)
             self.set_rc(3, 1000) # start driving forward
 
@@ -4773,13 +4759,12 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_ready_to_arm()
         self.run_cmd(
             mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST,
-            1, # p1 - motor instance
-            mavutil.mavlink.MOTOR_TEST_THROTTLE_PWM, # p2 - throttle type
-            magic_throttle_value, # p3 - throttle
-            5, # p4 - timeout
-            1, # p5 - motor count
-            0, # p6 - test order (see MOTOR_TEST_ORDER)
-            0, # p7
+            p1=1, # motor instance
+            p2=mavutil.mavlink.MOTOR_TEST_THROTTLE_PWM, # throttle type
+            p3=magic_throttle_value, # throttle
+            p4=5, # timeout
+            p5=1, # motor count
+            p6=0, # test order (see MOTOR_TEST_ORDER)
         )
         self.wait_armed()
         self.progress("Waiting for magic throttle value")
@@ -5929,18 +5914,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.set_current_waypoint_using_mav_cmd_do_set_mission_current(2)
 
-        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MISSION_CURRENT,
-                     17,
-                     0,
-                     0,
-                     0,
-                     0,
-                     0,
-                     0,
-                     timeout=1,
-                     target_sysid=target_sysid,
-                     target_compid=target_compid,
-                     want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_SET_MISSION_CURRENT,
+            p1=17,
+            timeout=1,
+            target_sysid=target_sysid,
+            target_compid=target_compid,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
 
     def FlashStorage(self):
         '''Test flash storage (for parameters etc)'''
