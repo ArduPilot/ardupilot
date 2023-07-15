@@ -99,6 +99,11 @@ public:
         return frontend._detected_protocol != AP_RCProtocol::NONE && frontend.backend[frontend._detected_protocol] == this;
     }
 
+    // framing API
+    virtual void frame_input_enabled(AP_HAL::UARTDriver* uart, bool onoff) { _framing_enabled = onoff; }
+    bool frame_input_enabled() const { return _framing_enabled; }
+    virtual void process_frame(const uint8_t* buffer, uint16_t buflen) { }
+
 #if AP_VIDEOTX_ENABLED
     // called by static methods to confiig video transmitters:
     static void configure_vtx(uint8_t band, uint8_t channel, uint8_t power, uint8_t pitmode);
@@ -132,11 +137,14 @@ private:
     uint32_t rc_input_count;
     uint32_t last_rc_input_count;
     uint32_t rc_frame_count;
+    bool _framing_enabled;
 
     uint16_t _pwm_values[MAX_RCIN_CHANNELS];
     uint8_t  _num_channels;
     int16_t rssi = -1;
     int16_t rx_link_quality = -1;
 };
+
+#define PROTOCOL_MAX_FRAME_SIZE 64
 
 #endif  // AP_RCPROTOCOL_ENABLED

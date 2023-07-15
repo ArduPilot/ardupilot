@@ -231,10 +231,24 @@ void AP_RCProtocol_CRSF::_process_byte(uint32_t timestamp_us, uint8_t byte)
         _start_frame_time_us = timestamp_us;
     }
 
+    _process_raw_byte(timestamp_us, byte);
+}
+
+void AP_RCProtocol_CRSF::_process_raw_byte(uint32_t timestamp_us, uint8_t byte)
+{
+    // overflow check
+    if (_frame_ofs >= CRSF_FRAMELEN_MAX) {
+        _frame_ofs = 0;
+    }
+
     add_to_buffer(_frame_ofs++, byte);
 
     // need a header to get the length
     if (_frame_ofs < CSRF_HEADER_TYPE_LEN) {
+        return;
+    }
+
+    if (_frame.device_address != DeviceAddress::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
         return;
     }
 
@@ -277,6 +291,34 @@ void AP_RCProtocol_CRSF::_process_byte(uint32_t timestamp_us, uint8_t byte)
             _last_tx_frame_time_us = timestamp_us;  // we have received a frame from the transmitter
             add_input(MAX_CHANNELS, _channels, false, _link_status.rssi, _link_status.link_quality);
         }
+    }
+}
+
+void AP_RCProtocol_CRSF::frame_input_enabled(AP_HAL::UARTDriver* uart, bool onoff)
+{
+    // nothing to do
+    if (onoff == AP_RCProtocol_Backend::frame_input_enabled()) {
+        return;
+    }
+
+    // due to bugs in CRSFv3, framing is not possible at higher baudrates
+    if (onoff && uart->get_baud_rate() > CRSF_BAUDRATE) {
+        return;
+    }
+
+    AP_RCProtocol_Backend::frame_input_enabled(uart, onoff);
+    if (onoff) {
+        uart->begin_framing(CRSF_FRAMELEN_MAX);
+    } else {
+        uart->end_framing();
+    }
+}
+
+void AP_RCProtocol_CRSF::process_frame(const uint8_t* buffer, uint16_t buflen)
+{
+    uint32_t now_us = AP_HAL::micros();
+    for (uint8_t i = 0; i < buflen; i++) {
+        _process_raw_byte(now_us, buffer[i]);
     }
 }
 
@@ -412,6 +454,9 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
             hal.scheduler->delay(4);
             // change the baud rate
             uart->begin(_new_baud_rate);
+            if (!AP_RCProtocol_Backend::frame_input_enabled()) {
+                uart->begin_framing(CRSF_FRAMELEN_MAX);
+            }
         }
         _new_baud_rate = 0;
     }
@@ -598,6 +643,11 @@ bool AP_RCProtocol_CRSF::change_baud_rate(uint32_t baudrate)
         return false;
     }
 #endif
+
+    if (AP_RCProtocol_Backend::frame_input_enabled()) {
+        return false;
+    }
+
     if (baudrate > CRSF_BAUDRATE_2MBIT) {
         return false;
     }

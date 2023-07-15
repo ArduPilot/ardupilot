@@ -54,6 +54,9 @@ public:
 #endif
     }
 
+    void frame_input_enabled(AP_HAL::UARTDriver* uart, bool onoff) override;
+    void process_frame(const uint8_t* buffer, uint16_t buflen) override;
+
     // is the receiver active, used to detect power loss and baudrate changes
     bool is_rx_active() const override {
         // later versions of CRSFv3 will send link rate frames every 200ms
@@ -298,6 +301,7 @@ private:
     static AP_RCProtocol_CRSF* _singleton;
 
     void _process_byte(uint32_t timestamp_us, uint8_t byte);
+    void _process_raw_byte(uint32_t timestamp_us, uint8_t byte);
     bool decode_crsf_packet();
     bool process_telemetry(bool check_constraint = true);
     void process_link_stats_frame(const void* data);

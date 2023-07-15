@@ -147,6 +147,7 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
             // this protocol is disabled for pulse input
             continue;
         }
+
         if (backend[i] != nullptr) {
             if (!protocol_enabled(rcprotocol_t(i))) {
                 continue;
@@ -197,6 +198,33 @@ void AP_RCProtocol::process_pulse_list(const uint32_t *widths, uint16_t n, bool 
     }
 }
 
+bool AP_RCProtocol::process_frame(const uint8_t* buf, ssize_t nbytes)
+{
+    uint32_t now = AP_HAL::millis();
+    bool searching = should_search(now);
+
+#if AP_RC_CHANNEL_ENABLED
+    rc_protocols_mask = rc().enabled_protocols();
+#endif
+
+    if (_detected_protocol != AP_RCProtocol::NONE &&
+        !protocol_enabled(_detected_protocol)) {
+        _detected_protocol = AP_RCProtocol::NONE;
+    }
+
+    // first try current protocol
+    if (_detected_protocol != AP_RCProtocol::NONE && !searching) {
+        backend[_detected_protocol]->process_frame(buf, nbytes);
+        if (backend[_detected_protocol]->new_input()) {
+            _new_input = true;
+            _last_input_ms = now;
+        }
+        return true;
+    }
+
+    return false;
+}
+
 bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
 {
     uint32_t now = AP_HAL::millis();
@@ -226,12 +254,14 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
         return true;
     }
 
+
     // otherwise scan all protocols
     for (uint8_t i = 0; i < ARRAY_SIZE(backend); i++) {
         if (backend[i] != nullptr) {
             if (!protocol_enabled(rcprotocol_t(i))) {
                 continue;
             }
+
             const uint32_t frame_count = backend[i]->get_rc_frame_count();
             const uint32_t input_count = backend[i]->get_rc_input_count();
             backend[i]->process_byte(byte, baudrate);
@@ -309,7 +339,7 @@ static const AP_RCProtocol::SerialConfig serial_configs[] {
 #endif
 };
 
-static_assert(ARRAY_SIZE(serial_configs) > 1, "must have at least one serial config");
+static_assert(ARRAY_SIZE(serial_configs) > 0, "must have at least one serial config");
 
 void AP_RCProtocol::check_added_uart(void)
 {
@@ -333,14 +363,32 @@ void AP_RCProtocol::check_added_uart(void)
     const uint32_t current_baud = serial_configs[added.config_num].baud;
     process_handshake(current_baud);
 
-    uint32_t n = added.uart->available();
-    n = MIN(n, 255U);
-    for (uint8_t i=0; i<n; i++) {
-        int16_t b = added.uart->read();
-        if (b >= 0) {
-            process_byte(uint8_t(b), current_baud);
+    // processing in frame-based mode
+    if (!searching && backend[_detected_protocol]->frame_input_enabled()) {
+        uint8_t buf[PROTOCOL_MAX_FRAME_SIZE];
+        while (added.uart->frame_available()) {
+            ssize_t nbytes = added.uart->read_frame(buf, PROTOCOL_MAX_FRAME_SIZE);
+            process_frame(buf, nbytes);
+        }
+    } else { // processing in byte-based mode
+        if (_detected_protocol != AP_RCProtocol::NONE
+            && backend[_detected_protocol]->frame_input_enabled()) {
+            // searching again, make sure we are in byte mode
+            backend[_detected_protocol]->frame_input_enabled(added.uart, false);
+        }
+
+        uint32_t n = added.uart->available();
+        n = MIN(n, 255U);
+        for (uint8_t i=0; i<n; i++) {
+            int16_t b = added.uart->read();
+            if (b >= 0) {
+                if (process_byte(uint8_t(b), current_baud)) {
+                    backend[_detected_protocol]->frame_input_enabled(added.uart, true);
+                }
+            }
         }
     }
+
     if (searching) {
         if (now - added.last_config_change_ms > 1000) {
             // change configs if not detected once a second
