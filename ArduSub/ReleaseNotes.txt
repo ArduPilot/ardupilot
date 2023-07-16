@@ -1,6 +1,11 @@
 APM:Sub Release Notes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.1 Beta7 16-July-2023
+
+ - Revert attitude control to 3.5 implementation, hopefully resolving the roll/pitch drift for good.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 4.1.1 Beta6 10-July-2023
 
  - Fix roll/pitch drift in stabilized modes
