@@ -403,7 +403,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     }
 
     // scale power to unity
-    for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
+    for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (!is_zero(total_power)) {
             _power_out[i] /= total_power;
         }
