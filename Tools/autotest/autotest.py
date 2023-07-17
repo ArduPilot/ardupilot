@@ -399,7 +399,7 @@ tester_class_map = {
     "test.CAN": arducopter.AutoTestCAN,
 }
 
-suplementary_test_binary_map = {
+supplementary_test_binary_map = {
     "test.CAN": ["sitl_periph_gps.AP_Periph", "sitl_periph_gps.AP_Periph.1"],
 }
 
@@ -504,24 +504,28 @@ def run_step(step):
     if step.startswith("defaults"):
         vehicle = step[9:]
         return get_default_params(vehicle, binary)
+
+    # see if we need any supplementary binaries
     supplementary_binaries = []
-    if step in suplementary_test_binary_map:
-        for supplementary_test_binary in suplementary_test_binary_map[step]:
-            config_name = supplementary_test_binary.split('.')[0]
-            binary_name = supplementary_test_binary.split('.')[1]
-            instance_num = 0
-            if len(supplementary_test_binary.split('.')) >= 3:
-                instance_num = int(supplementary_test_binary.split('.')[2])
-            supplementary_binaries.append([util.reltopdir(os.path.join('build',
-                                                                       config_name,
-                                                                       'bin',
-                                                                       binary_name)),
-                                          '-I {}'.format(instance_num)])
-        # we are running in conjunction with a supplementary app
-        # can't have speedup
-        opts.speedup = 1.0
-    else:
-        supplementary_binaries = []
+    for k in supplementary_test_binary_map.keys():
+        if step.startswith(k):
+            # this test needs to use supplementary binaries
+            for supplementary_test_binary in supplementary_test_binary_map[k]:
+                config_name = supplementary_test_binary.split('.')[0]
+                binary_name = supplementary_test_binary.split('.')[1]
+                instance_num = 0
+                if len(supplementary_test_binary.split('.')) >= 3:
+                    instance_num = int(supplementary_test_binary.split('.')[2])
+                supplementary_binaries.append([util.reltopdir(os.path.join('build',
+                                                                           config_name,
+                                                                           'bin',
+                                                                           binary_name)),
+                                              '-I {}'.format(instance_num)])
+            # we are running in conjunction with a supplementary app
+            # can't have speedup
+            opts.speedup = 1.0
+            break
+
     fly_opts = {
         "viewerip": opts.viewerip,
         "use_map": opts.map,
