@@ -144,15 +144,13 @@ define STM32_PWM_USE_ADVANCED TRUE
 define HAL_PARACHUTE_ENABLED 0
 
 # save FLASH, but leave above when flash issue is fixed
-include ../include/minimize_features.inc
+include ../include/minimize_fpv_osd.inc
 
 # disable SMBUS battery monitors to save flash
 undef AP_BATTERY_SMBUS_ENABLED
 define AP_BATTERY_SMBUS_ENABLED 0
 
 # setup for OSD
-undef OSD_ENABLED  # minimize_features.inc removes this
-define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 

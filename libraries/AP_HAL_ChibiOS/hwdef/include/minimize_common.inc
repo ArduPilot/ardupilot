@@ -50,12 +50,6 @@ define HAL_SPEKTRUM_TELEM_ENABLED 0
 # various structures increase the flash size when using >16 servos:
 define NUM_SERVO_CHANNELS 16
 
-# remove various OSD features by default:
-define OSD_ENABLED 0
-define HAL_PLUSCODE_ENABLE 0
-define HAL_OSD_SIDEBAR_ENABLE 0
-define OSD_PARAM_ENABLED 0
-
 # no Winch if minimized:
 define AP_WINCH_ENABLED 0
 
