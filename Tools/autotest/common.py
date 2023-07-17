@@ -8089,7 +8089,7 @@ Also, ignores heartbeats not from our target system'''
         if self.mav is not None:
             self.mav.reconnect()
 
-    def get_suplementary_programs(self):
+    def get_supplementary_programs(self):
         return self.sup_prog
 
     def stop_sup_program(self, instance=None):
