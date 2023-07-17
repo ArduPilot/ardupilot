@@ -291,7 +291,7 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
     }
     if (rxS != _readbuf.get_size()) {
         _rx_initialised = false;
-        _readbuf.set_size(rxS);
+        _readbuf.set_size_best(rxS);
     }
 
     bool clear_buffers = false;
@@ -354,7 +354,7 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
     }
     if (txS != _writebuf.get_size()) {
         _tx_initialised = false;
-        _writebuf.set_size(txS);
+        _writebuf.set_size_best(txS);
     }
 
     if (clear_buffers) {
