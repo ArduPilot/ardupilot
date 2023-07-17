@@ -28,9 +28,11 @@ void ModeTraining::update()
         plane.training_manual_pitch = true;
         plane.nav_pitch_cd = 0;
     }
+#if AP_INVERTED_FLIGHT_ENABLED
     if (plane.fly_inverted()) {
         plane.nav_pitch_cd = -plane.nav_pitch_cd;
     }
+#endif
 }
 
 /*
