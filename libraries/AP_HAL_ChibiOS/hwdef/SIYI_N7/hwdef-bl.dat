@@ -1,0 +1,8 @@
+include ../Durandal/hwdef-bl.dat
+
+# board ID for firmware load
+APJ_BOARD_ID 1123
+
+undef USB_VENDOR
+undef USB_PRODUCT
+undef USB_STRING_MANUFACTURER
