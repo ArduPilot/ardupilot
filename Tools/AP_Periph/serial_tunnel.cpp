@@ -113,6 +113,7 @@ void AP_Periph_FW::handle_tunnel_Targetted(CanardInstance* ins, CanardRxTransfer
       allow for locked state to change at any time, so users can
       switch between locked and unlocked while connected
      */
+    const bool was_locked = uart_monitor.locked;
     uart_monitor.locked = (pkt.options & UAVCAN_TUNNEL_TARGETTED_OPTION_LOCK_PORT) != 0;
     if (uart_monitor.locked) {
         uart_monitor.uart->lock_port(TUNNEL_LOCK_KEY, TUNNEL_LOCK_KEY);
@@ -121,9 +122,10 @@ void AP_Periph_FW::handle_tunnel_Targetted(CanardInstance* ins, CanardRxTransfer
     }
     uart_monitor.node_id = transfer->source_node_id;
     uart_monitor.protocol = pkt.protocol.protocol;
-    if (pkt.baudrate != uart_monitor.baudrate) {
+    if (pkt.baudrate != uart_monitor.baudrate || !was_locked) {
         if (uart_monitor.locked && pkt.baudrate != 0) {
-            uart_monitor.uart->begin_locked(pkt.baudrate, 0, 0, TUNNEL_LOCK_KEY);
+            // ensure we have enough buffer space for a uBlox fw update and fast uCenter data
+            uart_monitor.uart->begin_locked(pkt.baudrate, 2048, 2048, TUNNEL_LOCK_KEY);
             debug("begin_locked %u", unsigned(pkt.baudrate));
         }
         uart_monitor.baudrate = pkt.baudrate;
