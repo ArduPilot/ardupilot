@@ -31,9 +31,11 @@ bool Mode::enter()
     plane.nav_scripting.enabled = false;
 #endif
 
+#if AP_INVERTED_FLIGHT_ENABLED
     // cancel inverted flight
     plane.auto_state.inverted_flight = false;
-    
+#endif
+
     // cancel waiting for rudder neutral
     plane.takeoff_state.waiting_for_rudder_neutral = false;
 
@@ -160,11 +162,13 @@ bool Mode::enter()
             quadplane.assisted_flight = quadplane.assist.should_assist(aspeed, have_airspeed);
         }
 
+#if AP_INVERTED_FLIGHT_ENABLED
         if (is_vtol_mode() && !quadplane.tailsitter.enabled()) {
             // if flying inverted and entering a VTOL mode cancel
             // inverted flight
             plane.inverted_flight = false;
         }
+#endif  // AP_INVERTED_FLIGHT_ENABLED
 #endif
     }
 

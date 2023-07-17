@@ -112,7 +112,11 @@ bool VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
         }
     }
 
-    if (angle <= 0 || plane.fly_inverted()) {
+    if (angle <= 0
+#if AP_INVERTED_FLIGHT_ENABLED
+        || plane.fly_inverted()
+#endif
+        ) {
         // Angle assist disabled
         angle_error.reset();
 
