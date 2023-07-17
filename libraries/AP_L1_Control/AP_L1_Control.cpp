@@ -79,7 +79,14 @@ int32_t AP_L1_Control::get_yaw_sensor() const
 int32_t AP_L1_Control::nav_roll_cd(void) const
 {
     float ret;
-    ret = cosf(_ahrs.pitch)*degrees(atanf(_latAccDem * (1.0f/GRAVITY_MSS)) * 100.0f);
+	/*
+		formula can be obtained through equations of balanced spiral:
+		liftForce * cos(roll) = gravityForce * cos(pitch);
+		liftForce * sin(roll) = gravityForce * lateralAcceleration / gravityAcceleration; // as mass = gravityForce/gravityAcceleration
+		see issue 24319 [https://github.com/ArduPilot/ardupilot/issues/24319]
+		Multiplier 100.0f is for converting degrees to centidegrees 
+	*/ 
+    ret = degrees(atanf(_latAccDem * (1.0f/(GRAVITY_MSS * cosf(_ahrs.pitch))))) * 100.0f;
     ret = constrain_float(ret, -9000, 9000);
     return ret;
 }
