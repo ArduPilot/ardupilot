@@ -233,6 +233,7 @@ AP_HW_HEEWING_F405                   1119
 AP_HW_PodmanH7                       1120
 AP_HW_mRo-M10053                     1121
 AP_HW_mRo-M10044                     1122
+AP_HW_SIYI_N7                        1123
 
 AP_HW_ESP32_PERIPH                   1205
 AP_HW_ESP32S3_PERIPH                 1206
