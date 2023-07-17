@@ -81,9 +81,11 @@ public:
 
     // Command an euler roll, pitch and yaw angle with angular velocity feedforward and smoothing
     void input_euler_angle_roll_pitch_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw) override;
-    
+
+#if AP_INVERTED_FLIGHT_ENABLED
     // enable/disable inverted flight
     void set_inverted_flight(bool inverted) override;
+#endif
 
     // set the PID notch sample rates
     void set_notch_sample_rate(float sample_rate) override;
