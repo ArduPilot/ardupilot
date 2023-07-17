@@ -1297,9 +1297,11 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.p1 = packet.param1;                        // action 0=disable, 1=enable, 2=release.  See PARACHUTE_ACTION enum
         break;
 
+#if AP_INVERTED_FLIGHT_ENABLED
     case MAV_CMD_DO_INVERTED_FLIGHT:                    // MAV ID: 210
         cmd.p1 = packet.param1;                         // normal=0 inverted=1
         break;
+#endif
 
 #if AP_GRIPPER_ENABLED
     case MAV_CMD_DO_GRIPPER:                            // MAV ID: 211
@@ -1816,9 +1818,11 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param2 = cmd.content.auxfunction.switchpos;
         break;
 
+#if AP_INVERTED_FLIGHT_ENABLED
     case MAV_CMD_DO_INVERTED_FLIGHT:                    // MAV ID: 210
         packet.param1 = cmd.p1;                         // normal=0 inverted=1
         break;
+#endif
 
 #if AP_GRIPPER_ENABLED
     case MAV_CMD_DO_GRIPPER:                            // MAV ID: 211
@@ -2842,8 +2846,10 @@ const char *AP_Mission::Mission_Command::type() const
         return "VTOLTakeoff";
     case MAV_CMD_NAV_VTOL_LAND:
         return "VTOLLand";
+#if AP_INVERTED_FLIGHT_ENABLED
     case MAV_CMD_DO_INVERTED_FLIGHT:
         return "InvertedFlight";
+#endif
     case MAV_CMD_DO_FENCE_ENABLE:
         return "FenceEnable";
     case MAV_CMD_DO_AUTOTUNE_ENABLE:
