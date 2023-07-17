@@ -5,9 +5,6 @@ define AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED 0
 # things like satellite communications are required:
 define HAL_HIGH_LATENCY2_ENABLED 0
 
-# Crossfire telemetry must be explicitly enabled on minimized boards:
-define HAL_CRSF_TELEM_ENABLED 0
-
 # Gripper isn't a vital feature for smaller boards
 define AP_GRIPPER_ENABLED 0
 
@@ -22,9 +19,6 @@ define HAL_GYROFFT_ENABLED 0
 
 # several notify backends are rare and not supported by default on smaller boards:
 define AP_NOTIFY_NCP5623_ENABLED 0
-
-# Soaring is off by defauult on of smaller boards.
-define HAL_SOARING_ENABLED 0
 
 # HOTT telemetry is quite rare, so we don't include it on smaller boards
 define HAL_HOTT_TELEM_ENABLED 0
