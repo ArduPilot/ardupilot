@@ -134,12 +134,14 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         do_set_home(cmd);
         break;
 
+#if AP_INVERTED_FLIGHT_ENABLED
     case MAV_CMD_DO_INVERTED_FLIGHT:
         if (cmd.p1 == 0 || cmd.p1 == 1) {
             auto_state.inverted_flight = (bool)cmd.p1;
             gcs().send_text(MAV_SEVERITY_INFO, "Set inverted %u", cmd.p1);
         }
         break;
+#endif
 
     case MAV_CMD_DO_LAND_START:
         break;
@@ -319,7 +321,9 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
     case MAV_CMD_DO_SET_HOME:
+#if AP_INVERTED_FLIGHT_ENABLED
     case MAV_CMD_DO_INVERTED_FLIGHT:
+#endif
     case MAV_CMD_DO_LAND_START:
     case MAV_CMD_DO_FENCE_ENABLE:
     case MAV_CMD_DO_AUTOTUNE_ENABLE:

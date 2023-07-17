@@ -110,6 +110,7 @@ bool Plane::stick_mixing_enabled(void)
  */
 void Plane::stabilize_roll()
 {
+#if AP_INVERTED_FLIGHT_ENABLED
     if (fly_inverted()) {
         // we want to fly upside down. We need to cope with wrap of
         // the roll_sensor interfering with wrap of nav_roll, which
@@ -119,6 +120,7 @@ void Plane::stabilize_roll()
         nav_roll_cd += 18000;
         if (ahrs.roll_sensor < 0) nav_roll_cd -= 36000;
     }
+#endif
 
     const float roll_out = stabilize_roll_get_roll_out();
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, roll_out);
@@ -306,9 +308,11 @@ void Plane::stabilize_stick_mixing_fbw()
     } else if (pitch_input < -0.5f) {
         pitch_input = (3*pitch_input + 1);
     }
+#if AP_INVERTED_FLIGHT_ENABLED
     if (fly_inverted()) {
         pitch_input = -pitch_input;
     }
+#endif
     if (pitch_input > 0) {
         nav_pitch_cd += pitch_input * aparm.pitch_limit_max*100;
     } else {
@@ -641,10 +645,12 @@ void Plane::update_load_factor(void)
         // stall prevention is disabled
         return;
     }
+#if AP_INVERTED_FLIGHT_ENABLED
     if (fly_inverted()) {
         // no roll limits when inverted
         return;
     }
+#endif
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.tailsitter.active()) {
         // no limits while hovering

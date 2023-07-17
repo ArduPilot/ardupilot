@@ -30,9 +30,11 @@ bool Mode::enter()
     plane.nav_scripting.enabled = false;
 #endif
 
+#if AP_INVERTED_FLIGHT_ENABLED
     // cancel inverted flight
     plane.auto_state.inverted_flight = false;
-    
+#endif
+
     // cancel waiting for rudder neutral
     plane.takeoff_state.waiting_for_rudder_neutral = false;
 
