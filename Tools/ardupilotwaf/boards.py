@@ -325,7 +325,7 @@ class Board:
             env.PRIVATE_KEY = cfg.options.private_key
             
         env.CXXFLAGS += [
-            '-std=gnu++11',
+            '-std=gnu++17',
 
             '-fdata-sections',
             '-ffunction-sections',
