@@ -24,7 +24,7 @@ enum class TopicIndex: uint8_t {
 
 static inline constexpr uint8_t to_underlying(const TopicIndex index)
 {
-    static_assert(sizeof(index) == sizeof(uint8_t));
+    static_assert(sizeof(index) == sizeof(uint8_t), "");
     return static_cast<uint8_t>(index);
 }
 
