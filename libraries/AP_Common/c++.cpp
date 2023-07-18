@@ -19,10 +19,13 @@ void * operator new(size_t size)
     return(calloc(size, 1));
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsized-deallocation"
 void operator delete(void *p)
 {
     if (p) free(p);
 }
+#pragma GCC diagnostic pop
 
 void * operator new[](size_t size)
 {
@@ -32,7 +35,10 @@ void * operator new[](size_t size)
     return(calloc(size, 1));
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsized-deallocation"
 void operator delete[](void * ptr)
 {
     if (ptr) free(ptr);
 }
+#pragma GCC diagnostic pop
