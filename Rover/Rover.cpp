@@ -421,6 +421,11 @@ void Rover::update_logging2(void)
         gyro_fft.write_log_messages();
 #endif
     }
+#if HAL_MOUNT_ENABLED
+    if (should_log(MASK_LOG_CAMERA)) {
+        camera_mount.write_log();
+    }
+#endif
 }
 
 
