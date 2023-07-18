@@ -1220,15 +1220,25 @@ bool AP_Arming::can_checks(bool report)
 #endif
                     break;
                 }
-                case AP_CAN::Protocol::EFI_NWPMU:
                 case AP_CAN::Protocol::USD1:
+                case AP_CAN::Protocol::TOFSenseP:
+                case AP_CAN::Protocol::NanoRadar_NRA24:
+                case AP_CAN::Protocol::Benewake:
+                {
+                    for (uint8_t j = i; j; j--) {
+                        if (AP::can().get_driver_type(i) == AP::can().get_driver_type(j-1)) {
+                            check_failed(ARMING_CHECK_SYSTEM, report, "Same rfnd on different CAN ports");
+                            return false;
+                        }
+                    }
+                    break;
+                }
+                case AP_CAN::Protocol::EFI_NWPMU:
                 case AP_CAN::Protocol::None:
                 case AP_CAN::Protocol::Scripting:
                 case AP_CAN::Protocol::Scripting2:
-                case AP_CAN::Protocol::Benewake:
                 case AP_CAN::Protocol::KDECAN:
-                case AP_CAN::Protocol::TOFSenseP:
-                case AP_CAN::Protocol::NanoRadar_NRA24:
+
                     break;
             }
         }
