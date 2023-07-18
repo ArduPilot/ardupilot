@@ -24,8 +24,9 @@
 
 #include <AP_Param/AP_Param.h>
 
-#define DDS_STREAM_HISTORY 8
-#define DDS_BUFFER_SIZE 512
+#define DDS_MTU             512
+#define DDS_STREAM_HISTORY  8
+#define DDS_BUFFER_SIZE     DDS_MTU * DDS_STREAM_HISTORY
 
 // UDP only on SITL for now
 #define AP_DDS_UDP_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
