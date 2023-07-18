@@ -470,8 +470,10 @@ void AP_GPS::init(const AP_SerialManager& serial_manager)
     }
     _last_instance_swap_ms = 0;
 
+#if defined(GPS_BLENDED_INSTANCE)
     // Initialise class variables used to do GPS blending
     _omega_lpf = 1.0f / constrain_float(_blend_tc, 5.0f, 30.0f);
+#endif
 
     // prep the state instance fields
     for (uint8_t i = 0; i < GPS_MAX_INSTANCES; i++) {
@@ -491,11 +493,12 @@ void AP_GPS::init(const AP_SerialManager& serial_manager)
 // GPS solution is treated as an additional sensor.
 uint8_t AP_GPS::num_sensors(void) const
 {
-    if (!_output_is_blended) {
-        return num_instances;
-    } else {
+#if defined(GPS_BLENDED_INSTANCE)
+    if (_output_is_blended) {
         return num_instances+1;
     }
+#endif
+    return num_instances;
 }
 
 bool AP_GPS::speed_accuracy(uint8_t instance, float &sacc) const
@@ -1542,11 +1545,13 @@ bool AP_GPS::all_consistent(float &distance) const
     return (distance < 50);
 }
 
+#if defined(GPS_BLENDED_INSTANCE)
 // pre-arm check of GPS blending.  True means healthy or that blending is not being used
 bool AP_GPS::blend_health_check() const
 {
     return (_blend_health_counter < 50);
 }
+#endif
 
 /*
    re-assemble fragmented RTCM data
