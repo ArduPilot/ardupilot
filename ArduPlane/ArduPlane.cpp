@@ -245,7 +245,12 @@ void Plane::update_logging10(void)
         ahrs.Write_AOA_SSA();
     } else if (log_faster) {
         ahrs.Write_AOA_SSA();
-    } 
+    }
+#if HAL_MOUNT_ENABLED
+    if (should_log(MASK_LOG_CAMERA)) {
+        camera_mount.write_log();
+    }
+#endif
 }
 
 /*
