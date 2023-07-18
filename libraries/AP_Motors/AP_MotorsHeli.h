@@ -66,9 +66,6 @@ public:
     // heli specific methods
     //
 
-    // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
-    virtual bool parameter_check(bool display_msg) const;
-
     //set turbine start flag on to initiaize starting sequence
     void set_turb_start(bool turb_start) { _heliflags.start_engine = turb_start; }
 
