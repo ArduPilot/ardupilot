@@ -73,7 +73,6 @@ void AP_MotorsHeli_Quad::calculate_armed_scalars()
     // keeps user from changing RSC mode while armed
     if (_main_rotor._rsc_mode.get() != _main_rotor.get_control_mode()) {
         _main_rotor.reset_rsc_mode_param();
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "RSC control mode change failed");
         _heliflags.save_rsc_mode = true;
     }
     // saves rsc mode parameter when disarmed if it had been reset while armed
