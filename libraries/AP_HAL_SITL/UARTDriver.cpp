@@ -263,18 +263,7 @@ size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
     if (size <= 0) {
         return 0;
     }
-    if (_unbuffered_writes) {
-        const ssize_t nwritten = ::write(_fd, buffer, size);
-        if (nwritten == -1 && errno != EAGAIN && _uart_path) {
-            close(_fd);
-            _fd = -1;
-            _connected = false;
-            return 0;
-        }
-        // these have no effect
-        tcdrain(_fd);
-        return nwritten;
-    } else {
+
         /*
           simulate byte loss at the link layer
          */
@@ -288,8 +277,13 @@ size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
             }
         }
 #endif // HAL_BUILD_AP_PERIPH
-        return _writebuffer.write(buffer, size - lost_byte) + lost_byte;
+
+
+    const size_t ret = _writebuffer.write(buffer, size - lost_byte) + lost_byte;
+    if (_unbuffered_writes) {
+        handle_writing_from_writebuffer_to_device();
     }
+    return ret;
 }
 
     

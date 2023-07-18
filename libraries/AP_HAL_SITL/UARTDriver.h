@@ -139,7 +139,7 @@ protected:
     bool _discard_input() override;
 
 private:
-    void handle_writing_from_writebuffer_to_output();
+    void handle_writing_from_writebuffer_to_device();
     void handle_reading_from_device_to_readbuffer();
 };
 
