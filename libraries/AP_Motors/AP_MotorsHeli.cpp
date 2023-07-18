@@ -440,69 +440,6 @@ void AP_MotorsHeli::output_logic()
     }
 }
 
-// parameter_check - check if helicopter specific parameters are sensible
-bool AP_MotorsHeli::parameter_check(bool display_msg) const
-{
-    // returns false if RSC Mode is not set to a valid control mode
-    if (_main_rotor._rsc_mode.get() <= (int8_t)ROTOR_CONTROL_MODE_DISABLED || _main_rotor._rsc_mode.get() > (int8_t)ROTOR_CONTROL_MODE_AUTOTHROTTLE) {
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_MODE invalid");
-        }
-        return false;
-    }
-
-    // returns false if rsc_setpoint is out of range
-    if ( _main_rotor._rsc_setpoint.get() > 100 || _main_rotor._rsc_setpoint.get() < 10){
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_SETPOINT out of range");
-        }
-        return false;
-    }
-
-    // returns false if idle output is out of range
-    if ( _main_rotor._idle_output.get() > 100 || _main_rotor._idle_output.get() < 0){
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_IDLE out of range");
-        }
-        return false;
-    }
-
-    // returns false if _rsc_critical is not between 0 and 100
-    if (_main_rotor._critical_speed.get() > 100 || _main_rotor._critical_speed.get() < 0) {
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RSC_CRITICAL out of range");
-        }
-        return false;
-    }
-
-    // returns false if RSC Runup Time is less than Ramp time as this could cause undesired behaviour of rotor speed estimate
-    if (_main_rotor._runup_time.get() <= _main_rotor._ramp_time.get()){
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_RUNUP_TIME too small");
-        }
-        return false;
-    }
-
-    // returns false if _collective_min_deg is not default value which indicates users set parameter
-    if (is_equal((float)_collective_min_deg, (float)AP_MOTORS_HELI_COLLECTIVE_MIN_DEG)) {
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Set H_COL_ANG_MIN to measured min blade pitch in deg");
-        }
-        return false;
-    }
-
-    // returns false if _collective_max_deg is not default value which indicates users set parameter
-    if (is_equal((float)_collective_max_deg, (float)AP_MOTORS_HELI_COLLECTIVE_MAX_DEG)) {
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Set H_COL_ANG_MAX to measured max blade pitch in deg");
-        }
-        return false;
-    }
-
-    // all other cases parameters are OK
-    return true;
-}
-
 // update the throttle input filter
 void AP_MotorsHeli::update_throttle_filter()
 {
@@ -576,6 +513,7 @@ void AP_MotorsHeli::update_turbine_start()
     }
 }
 
+// Run arming checks
 bool AP_MotorsHeli::arming_checks(size_t buflen, char *buffer) const
 {
     // run base class checks
@@ -585,6 +523,48 @@ bool AP_MotorsHeli::arming_checks(size_t buflen, char *buffer) const
 
     if (_heliflags.servo_test_running) {
         hal.util->snprintf(buffer, buflen, "Servo Test is still running");
+        return false;
+    }
+
+    // returns false if RSC Mode is not set to a valid control mode
+    if (_main_rotor._rsc_mode.get() <= (int8_t)ROTOR_CONTROL_MODE_DISABLED || _main_rotor._rsc_mode.get() > (int8_t)ROTOR_CONTROL_MODE_AUTOTHROTTLE) {
+        hal.util->snprintf(buffer, buflen, "H_RSC_MODE invalid");
+        return false;
+    }
+
+    // returns false if rsc_setpoint is out of range
+    if ( _main_rotor._rsc_setpoint.get() > 100 || _main_rotor._rsc_setpoint.get() < 10){
+        hal.util->snprintf(buffer, buflen, "H_RSC_SETPOINT out of range");
+        return false;
+    }
+
+    // returns false if idle output is out of range
+    if ( _main_rotor._idle_output.get() > 100 || _main_rotor._idle_output.get() < 0){
+        hal.util->snprintf(buffer, buflen, "H_RSC_IDLE out of range");
+        return false;
+    }
+
+    // returns false if _rsc_critical is not between 0 and 100
+    if (_main_rotor._critical_speed.get() > 100 || _main_rotor._critical_speed.get() < 0) {
+        hal.util->snprintf(buffer, buflen, "H_RSC_CRITICAL out of range");
+        return false;
+    }
+
+    // returns false if RSC Runup Time is less than Ramp time as this could cause undesired behaviour of rotor speed estimate
+    if (_main_rotor._runup_time.get() <= _main_rotor._ramp_time.get()){
+        hal.util->snprintf(buffer, buflen, "H_RUNUP_TIME too small");
+        return false;
+    }
+
+    // returns false if _collective_min_deg is not default value which indicates users set parameter
+    if (is_equal((float)_collective_min_deg, (float)AP_MOTORS_HELI_COLLECTIVE_MIN_DEG)) {
+        hal.util->snprintf(buffer, buflen, "Set H_COL_ANG_MIN to measured min blade pitch in deg");
+        return false;
+    }
+
+    // returns false if _collective_max_deg is not default value which indicates users set parameter
+    if (is_equal((float)_collective_max_deg, (float)AP_MOTORS_HELI_COLLECTIVE_MAX_DEG)) {
+        hal.util->snprintf(buffer, buflen, "Set H_COL_ANG_MAX to measured max blade pitch in deg");
         return false;
     }
 

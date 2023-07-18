@@ -602,41 +602,37 @@ void AP_MotorsHeli_Single::servo_test()
     _yaw_in = constrain_float(_yaw_test, -1.0f, 1.0f);
 }
 
-// parameter_check - check if helicopter specific parameters are sensible
-bool AP_MotorsHeli_Single::parameter_check(bool display_msg) const
+// Run arming checks
+bool AP_MotorsHeli_Single::arming_checks(size_t buflen, char *buffer) const
 {
+    // run base class checks
+    if (!AP_MotorsHeli::arming_checks(buflen, buffer)) {
+        return false;
+    }
+
     // returns false if direct drive tailspeed is outside of range
-    if ((_direct_drive_tailspeed < 0) || (_direct_drive_tailspeed > 100)){
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_TAIL_SPEED out of range");
-        }
+    if ((_direct_drive_tailspeed < 0) || (_direct_drive_tailspeed > 100)) {
+        hal.util->snprintf(buffer, buflen, "H_TAIL_SPEED out of range");
         return false;
     }
 
     // returns false if Phase Angle is outside of range for H3 swashplate
     if (_swashplate.get_swash_type() == SWASHPLATE_TYPE_H3 && (_swashplate.get_phase_angle() > 30 || _swashplate.get_phase_angle() < -30)){
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_H3_PHANG out of range");
-        }
+        hal.util->snprintf(buffer, buflen, "H_SW_H3_PHANG out of range");
         return false;
     }
 
     // returns false if Acro External Gyro Gain is outside of range
-    if ((_ext_gyro_gain_acro < 0) || (_ext_gyro_gain_acro > 1000)){
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_GYR_GAIN_ACRO out of range");
-        }
+    if ((_ext_gyro_gain_acro < 0) || (_ext_gyro_gain_acro > 1000)) {
+        hal.util->snprintf(buffer, buflen, "H_GYR_GAIN_ACRO out of range");
         return false;
     }
 
     // returns false if Standard External Gyro Gain is outside of range
-    if ((_ext_gyro_gain_std < 0) || (_ext_gyro_gain_std > 1000)){
-        if (display_msg) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: H_GYR_GAIN out of range");
-        }
+    if ((_ext_gyro_gain_std < 0) || (_ext_gyro_gain_std > 1000)) {
+        hal.util->snprintf(buffer, buflen, "H_GYR_GAIN out of range");
         return false;
     }
 
-    // check parent class parameters
-    return AP_MotorsHeli::parameter_check(display_msg);
+    return true;
 }

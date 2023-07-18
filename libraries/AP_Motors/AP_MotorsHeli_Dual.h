@@ -64,8 +64,8 @@ public:
     // servo_test - move servos through full range of movement
     void servo_test() override;
 
-    // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
-    bool parameter_check(bool display_msg) const override;
+    // Run arming checks
+    bool arming_checks(size_t buflen, char *buffer) const override;
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
