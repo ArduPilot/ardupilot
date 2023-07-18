@@ -191,7 +191,7 @@ void AP_Mount_Viewpro::read_incoming_packets()
         _msg_buff[_msg_buff_len++] = b;
 
         // protect against overly long messages
-        if (_msg_buff_len >= AP_MOUNT_VIEWPRO_PACKETLEN_MAX) {
+        if (_msg_buff_len > AP_MOUNT_VIEWPRO_PACKETLEN_MAX) {
             reset_parser = true;
             debug("vp buff full s:%u len:%u", (unsigned)_parsed_msg.state, (unsigned)_msg_buff_len);
         }
@@ -233,12 +233,7 @@ void AP_Mount_Viewpro::read_incoming_packets()
             // length held in bits 0 ~ 5.  length includes this length byte, frame id and final crc
             // ignore frame counter held in bits 6~7
             _parsed_msg.data_len = b & 0x3F;
-            if (_parsed_msg.data_len <= AP_MOUNT_VIEWPRO_DATALEN_MAX) {
-                _parsed_msg.state = ParseState::WAITING_FOR_FRAMEID;
-            } else {
-                reset_parser = true;
-                debug("data len too long:%u (>%u)", (unsigned)_parsed_msg.data_len, (unsigned)AP_MOUNT_VIEWPRO_DATALEN_MAX);
-            }
+            _parsed_msg.state = ParseState::WAITING_FOR_FRAMEID;
             break;
 
         case ParseState::WAITING_FOR_FRAMEID:
@@ -327,7 +322,7 @@ void AP_Mount_Viewpro::process_packet()
 }
 
 // calculate crc of the received message
-uint8_t AP_Mount_Viewpro::calc_crc(const uint8_t *buf, uint32_t len) const
+uint8_t AP_Mount_Viewpro::calc_crc(const uint8_t *buf, uint8_t len) const
 {
     uint8_t res = 0;
     for (uint8_t i=0; i<len; i++) {
