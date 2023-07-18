@@ -583,6 +583,11 @@ void Copter::ten_hz_logging_loop()
         g2.winch.write_log();
     }
 #endif
+#if HAL_MOUNT_ENABLED
+    if (should_log(MASK_LOG_CAMERA)) {
+        camera_mount.write_log();
+    }
+#endif
 }
 
 // twentyfive_hz_logging - should be run at 25hz
