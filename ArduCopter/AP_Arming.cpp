@@ -23,11 +23,12 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
 
     // check if motor interlock and either Emergency Stop aux switches are used
     // at the same time.  This cannot be allowed.
+    bool passed = true;
     if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_INTERLOCK) &&
         (rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_ESTOP) || 
         rc().find_channel_for_option(RC_Channel::AUX_FUNC::ARM_EMERGENCY_STOP))){
         check_failed(display_failure, "Interlock/E-Stop Conflict");
-        return false;
+        passed = false;
     }
 
     // check if motor interlock aux switch is in use
@@ -35,17 +36,22 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
     // otherwise exit immediately.
     if (copter.ap.using_interlock && copter.ap.motor_interlock_switch) {
         check_failed(display_failure, "Motor Interlock Enabled");
-        return false;
+        passed = false;
     }
 
     if (!disarm_switch_checks(display_failure)) {
-        return false;
+        passed = false;
     }
 
     // always check motors
     char failure_msg[50] {};
     if (!copter.motors->arming_checks(ARRAY_SIZE(failure_msg), failure_msg)) {
         check_failed(display_failure, "Motors: %s", failure_msg);
+        passed = false;
+    }
+
+    // If not passed all checks return false
+    if (!passed) {
         return false;
     }
 
