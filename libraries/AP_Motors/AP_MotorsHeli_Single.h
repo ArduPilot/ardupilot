@@ -77,8 +77,8 @@ public:
 
     void set_acro_tail(bool set) override { _acro_tail = set; }
 
-    // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
-    bool parameter_check(bool display_msg) const override;
+    // Run arming checks
+    bool arming_checks(size_t buflen, char *buffer) const override;
 
     // Thrust Linearization handling
     Thrust_Linearization thr_lin {*this};
