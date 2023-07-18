@@ -2257,6 +2257,11 @@ void AP_AHRS::getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const
     ret.z += GRAVITY_MSS*dt;
 }
 
+void AP_AHRS::set_failure_inconsistent_message(const char *estimator, const char *axis, float diff_rad, char *failure_msg, const uint8_t failure_msg_len) const
+{
+    hal.util->snprintf(failure_msg, failure_msg_len, "%s %s inconsistent %d deg. Wait or reboot", estimator, axis, (int)degrees(diff_rad));
+}
+
 // check all cores providing consistent attitudes for prearm checks
 bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_len) const
 {
@@ -2277,7 +2282,7 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
             // check roll and pitch difference
             const float rp_diff_rad = primary_quat.roll_pitch_difference(ekf2_quat);
             if (rp_diff_rad > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
-                hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 Roll/Pitch inconsistent by %d deg", (int)degrees(rp_diff_rad));
+                set_failure_inconsistent_message("EKF2", "Roll/Pitch", rp_diff_rad, failure_msg, failure_msg_len);
                 return false;
             }
 
@@ -2286,7 +2291,7 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
             primary_quat.angular_difference(ekf2_quat).to_axis_angle(angle_diff);
             const float yaw_diff = fabsf(angle_diff.z);
             if (check_yaw && (yaw_diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
-                hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 Yaw inconsistent by %d deg", (int)degrees(yaw_diff));
+                set_failure_inconsistent_message("EKF2", "Yaw", yaw_diff, failure_msg, failure_msg_len);
                 return false;
             }
         }
@@ -2304,7 +2309,7 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
             // check roll and pitch difference
             const float rp_diff_rad = primary_quat.roll_pitch_difference(ekf3_quat);
             if (rp_diff_rad > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
-                hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 Roll/Pitch inconsistent by %d deg", (int)degrees(rp_diff_rad));
+                set_failure_inconsistent_message("EKF3", "Roll/Pitch", rp_diff_rad, failure_msg, failure_msg_len);
                 return false;
             }
 
@@ -2313,7 +2318,7 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
             primary_quat.angular_difference(ekf3_quat).to_axis_angle(angle_diff);
             const float yaw_diff = fabsf(angle_diff.z);
             if (check_yaw && (yaw_diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
-                hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 Yaw inconsistent by %d deg", (int)degrees(yaw_diff));
+                set_failure_inconsistent_message("EKF3", "Yaw", yaw_diff, failure_msg, failure_msg_len);
                 return false;
             }
         }
@@ -2329,7 +2334,7 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
         // check roll and pitch difference
         const float rp_diff_rad = primary_quat.roll_pitch_difference(dcm_quat);
         if (rp_diff_rad > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "DCM Roll/Pitch inconsistent by %d deg", (int)degrees(rp_diff_rad));
+            set_failure_inconsistent_message("DCM", "Roll/Pitch", rp_diff_rad, failure_msg, failure_msg_len);
             return false;
         }
 
@@ -2344,7 +2349,7 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
             primary_quat.angular_difference(dcm_quat).to_axis_angle(angle_diff);
             const float yaw_diff = fabsf(angle_diff.z);
             if (check_yaw && (yaw_diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
-                hal.util->snprintf(failure_msg, failure_msg_len, "DCM Yaw inconsistent by %d deg", (int)degrees(yaw_diff));
+                set_failure_inconsistent_message("DCM", "Yaw", yaw_diff, failure_msg, failure_msg_len);
                 return false;
             }
         }

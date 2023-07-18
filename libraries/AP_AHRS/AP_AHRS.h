@@ -672,6 +672,8 @@ private:
 
     // check all cores providing consistent attitudes for prearm checks
     bool attitudes_consistent(char *failure_msg, const uint8_t failure_msg_len) const;
+    // convenience method for setting error string:
+    void set_failure_inconsistent_message(const char *estimator, const char *axis, float diff_rad, char *failure_msg, const uint8_t failure_msg_len) const;
 
     /*
      * Attitude-related private methods and attributes:
