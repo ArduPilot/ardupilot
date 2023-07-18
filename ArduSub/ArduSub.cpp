@@ -210,6 +210,11 @@ void Sub::ten_hz_logging_loop()
     if (should_log(MASK_LOG_CTUN)) {
         attitude_control.control_monitor_log();
     }
+#if HAL_MOUNT_ENABLED
+    if (should_log(MASK_LOG_CAMERA)) {
+        camera_mount.write_log();
+    }
+#endif
 }
 
 // twentyfive_hz_logging_loop
