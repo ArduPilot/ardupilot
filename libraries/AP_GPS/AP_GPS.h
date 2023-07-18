@@ -730,6 +730,7 @@ private:
     void inject_data(const uint8_t *data, uint16_t len);
     void inject_data(uint8_t instance, const uint8_t *data, uint16_t len);
 
+#if defined(GPS_BLENDED_INSTANCE)
     // GPS blending and switching
     Vector3f _blended_antenna_offset; // blended antenna offset
     float _blended_lag_sec; // blended receiver lag in seconds
@@ -743,6 +744,7 @@ private:
 
     // calculate the blended state
     void calc_blended_state(void);
+#endif
 
     bool should_log() const;
 
