@@ -2422,10 +2422,46 @@ function rangefinder:has_orientation(orientation) end
 ---@return integer
 function rangefinder:num_sensors() end
 
+-- Proximity backend methods
+---@class AP_Proximity_Backend_ud
+local AP_Proximity_Backend_ud = {}
+
+-- Push virtual proximity boundary into actual boundary
+---@return boolean
+function AP_Proximity_Backend_ud:update_virtual_boundary() end
+
+-- Set sensor min and max. Only need to do it once
+---@param min number
+---@param max number
+---@return boolean
+function AP_Proximity_Backend_ud:set_distance_min_max(min, max) end
+
+-- type of backend
+---@return integer
+function AP_Proximity_Backend_ud:type() end
+
+-- send 3d object as 3d vector
+---@param vector_3d Vector3f_ud
+---@param update_boundary boolean
+---@return boolean
+function AP_Proximity_Backend_ud:handle_script_3d_msg(vector_3d, update_boundary) end
+
+-- send 3d object as angles
+---@param dist_m number
+---@param yaw_deg number
+---@param pitch_deg number
+---@param update_boundary boolean
+---@return boolean
+function AP_Proximity_Backend_ud:handle_script_distance_msg(dist_m, yaw_deg, pitch_deg, update_boundary) end
 
 -- desc
 ---@class proximity
 proximity = {}
+
+-- get backend based on proximity instance provided
+---@param instance integer
+---@return AP_Proximity_Backend_ud
+function proximity:get_backend(instance) end
 
 -- desc
 ---@param object_number integer
