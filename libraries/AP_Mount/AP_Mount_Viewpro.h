@@ -281,7 +281,7 @@ private:
     void process_packet();
 
     // calculate crc of the received message
-    uint8_t calc_crc(const uint8_t *buf, uint32_t length) const;
+    uint8_t calc_crc(const uint8_t *buf, uint8_t length) const;
 
     // get the length and frame count byte (3rd byte of all messages)
     // length is all bytes after the header including CRC
