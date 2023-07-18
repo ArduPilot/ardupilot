@@ -113,6 +113,7 @@ void Plane::Log_Write_Control_Tuning()
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
+#if OFFBOARD_GUIDED == ENABLED
 struct PACKED log_OFG_Guided {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -128,7 +129,6 @@ struct PACKED log_OFG_Guided {
 // Write a OFG Guided packet.
 void Plane::Log_Write_OFG_Guided()
 {
-#if OFFBOARD_GUIDED == ENABLED
     struct log_OFG_Guided pkt = {
         LOG_PACKET_HEADER_INIT(LOG_OFG_MSG),
         time_us                : AP_HAL::micros64(),
@@ -141,8 +141,8 @@ void Plane::Log_Write_OFG_Guided()
         target_heading_limit   : guided_state.target_heading_accel_limit
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
-#endif
 }
+#endif
 
 struct PACKED log_Nav_Tuning {
     LOG_PACKET_HEADER;
@@ -434,6 +434,7 @@ const struct LogStructure Plane::log_structure[] = {
     { LOG_AETR_MSG, sizeof(log_AETR),
       "AETR", "Qffffff",  "TimeUS,Ail,Elev,Thr,Rudd,Flap,SS", "s------", "F------" , true },
 
+#if OFFBOARD_GUIDED == ENABLED
 // @LoggerMessage: OFG
 // @Description: OFfboard-Guided - an advanced version of GUIDED for companion computers that includes rate/s.  
 // @Field: TimeUS: Time since system startup
@@ -446,6 +447,7 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: HdgA: target heading lim
     { LOG_OFG_MSG, sizeof(log_OFG_Guided),     
       "OFG", "QffffBff",    "TimeUS,Arsp,ArspA,Alt,AltA,AltF,Hdg,HdgA", "s-------", "F-------" , true }, 
+#endif
 };
 
 void Plane::Log_Write_Vehicle_Startup_Messages()
