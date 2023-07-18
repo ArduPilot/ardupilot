@@ -107,6 +107,7 @@ public:
         Analog_Volt_Synthetic_Current  = 25,
         INA239_SPI                     = 26,
         EFI                            = 27,
+        // AD7091R5_I2C_Analog         = 28, reserve ID for future use
     };
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
