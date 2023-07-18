@@ -106,7 +106,10 @@ private:
     bool _is_udp;
     bool _packetise;
     uint16_t _mc_myport;
-    uint32_t last_tick_us;
+
+    // for baud-rate limiting:
+    uint32_t last_read_tick_us;
+    uint32_t last_write_tick_us;
 
     SITL::SerialDevice *_sim_serial_device;
 
@@ -134,6 +137,10 @@ protected:
     void _end() override;
     void _flush() override;
     bool _discard_input() override;
+
+private:
+    void handle_writing_from_writebuffer_to_output();
+    void handle_reading_from_device_to_readbuffer();
 };
 
 #endif
