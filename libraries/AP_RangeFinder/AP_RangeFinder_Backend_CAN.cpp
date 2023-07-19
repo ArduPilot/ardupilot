@@ -86,7 +86,7 @@ bool AP_RangeFinder_Backend_CAN::is_correct_id(uint32_t id) const
 void RangeFinder_MultiCAN::handle_frame(AP_HAL::CANFrame &frame)
 {
     WITH_SEMAPHORE(sem);
-    for (auto *d = drivers; d; d=d->next) {
+    for (auto *d = drivers; d != nullptr; d=d->next) {
         if (d->handle_frame(frame)) {
             break;
         }

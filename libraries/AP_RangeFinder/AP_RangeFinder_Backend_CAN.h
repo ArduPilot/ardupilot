@@ -42,7 +42,7 @@ protected:
     bool is_correct_id(uint32_t can_id) const;
 
     // set distance and count
-    void set_distance_m(float distance_m) {
+    void accumulate_distance_m(float distance_m) {
         _distance_sum += distance_m;
         _distance_count++;
     };

@@ -39,7 +39,7 @@ bool AP_RangeFinder_USD1_CAN::handle_frame(AP_HAL::CANFrame &frame)
     }
 
     const uint16_t dist_cm = (frame.data[0]<<8) | frame.data[1];
-    set_distance_m(dist_cm * 0.01);
+    accumulate_distance_m(dist_cm * 0.01);
     return true;
 }
 
