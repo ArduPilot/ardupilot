@@ -117,10 +117,10 @@ private:
 
     // A1 servo status enum (used in A1, B1 packets)
     enum class ServoStatus : uint8_t {
-        manual_speed_mode = 0x01,
-        follow_yaw = 0x03,
-        manual_absolute_angle_mode = 0x0B,
-        follow_yaw_disable = 0x0A,
+        MANUAL_SPEED_MODE = 0x01,
+        FOLLOW_YAW = 0x03,
+        MANUAL_ABSOLUTE_ANGLE_MODE = 0x0B,
+        FOLLOW_YAW_DISABLE = 0x0A,
     };
 
     // C1 image sensor choice

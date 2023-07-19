@@ -474,7 +474,7 @@ bool AP_Mount_Viewpro::set_lock(bool lock)
     const A1Packet a1_packet {
         .content = {
             frame_id: FrameId::A1,
-            servo_status: lock ? ServoStatus::follow_yaw_disable : ServoStatus::follow_yaw
+            servo_status: lock ? ServoStatus::FOLLOW_YAW_DISABLE : ServoStatus::FOLLOW_YAW
         }
     };
 
@@ -518,7 +518,7 @@ bool AP_Mount_Viewpro::send_target_rates(float pitch_rads, float yaw_rads, bool 
     const A1Packet a1_packet {
         .content = {
             frame_id: FrameId::A1,
-            servo_status: ServoStatus::manual_speed_mode,
+            servo_status: ServoStatus::MANUAL_SPEED_MODE,
             yaw_be: htobe16(yaw_rate_output),
             pitch_be: htobe16(pitch_rate_output)
         }
@@ -556,7 +556,7 @@ bool AP_Mount_Viewpro::send_target_angles(float pitch_rad, float yaw_rad, bool y
     const A1Packet a1_packet {
         .content = {
             frame_id: FrameId::A1,
-            servo_status: ServoStatus::manual_absolute_angle_mode,
+            servo_status: ServoStatus::MANUAL_ABSOLUTE_ANGLE_MODE,
             yaw_be: htobe16(yaw_angle_output),
             pitch_be: htobe16(pitch_angle_output)
         }
