@@ -11,12 +11,12 @@
 extern const AP_HAL::HAL &hal;
 
 const AP_Param::GroupInfo Compass_PerMotor::var_info[] = {
-    // @Param: _EN
+    // @Param: EN
     // @DisplayName: per-motor compass correction enable
     // @Description: This enables per-motor compass corrections
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("_EN",  1, Compass_PerMotor, enable, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("EN",  1, Compass_PerMotor, enable, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: _EXP
     // @DisplayName: per-motor exponential correction
