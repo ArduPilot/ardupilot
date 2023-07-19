@@ -147,6 +147,9 @@ private:
     void SRV_send_esc();
     void SRV_send_himark();
 
+    //scale servo output appropriately before sending
+    int16_t scale_esc_output(uint8_t idx);
+
     // SafetyState
     void safety_state_send();
 
@@ -188,6 +191,7 @@ private:
     AP_Int16 _options;
     AP_Int16 _notify_state_hz;
     AP_Int16 _pool_size;
+    AP_Int32 _esc_rv;
 
     uint32_t *mem_pool;
 
