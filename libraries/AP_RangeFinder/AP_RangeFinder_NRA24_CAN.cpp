@@ -1,8 +1,8 @@
 #include "AP_RangeFinder_NRA24_CAN.h"
-#include <AP_BoardConfig/AP_BoardConfig.h>
 
 #if AP_RANGEFINDER_NRA24_CAN_ENABLED
 
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_HAL/AP_HAL.h>
 
 RangeFinder_MultiCAN *AP_RangeFinder_NRA24_CAN::multican_NRA24;
@@ -73,7 +73,7 @@ bool AP_RangeFinder_NRA24_CAN::handle_frame(AP_HAL::CANFrame &frame)
                 // too low signal strength
                 return false;
             }
-            set_distance_m(dist_m);
+            accumulate_distance_m(dist_m);
         }
             break;
 

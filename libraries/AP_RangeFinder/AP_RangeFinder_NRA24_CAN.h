@@ -1,12 +1,8 @@
 #pragma once
-
-#include "AP_RangeFinder_Backend_CAN.h"
-
-#ifndef AP_RANGEFINDER_NRA24_CAN_ENABLED
-#define AP_RANGEFINDER_NRA24_CAN_ENABLED (HAL_MAX_CAN_PROTOCOL_DRIVERS && AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED)
-#endif
+#include "AP_RangeFinder_config.h"
 
 #if AP_RANGEFINDER_NRA24_CAN_ENABLED
+#include "AP_RangeFinder_Backend_CAN.h"
 
 class AP_RangeFinder_NRA24_CAN : public AP_RangeFinder_Backend_CAN {
 public:

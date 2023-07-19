@@ -1,10 +1,10 @@
 #include "AP_RangeFinder_TOFSenseP_CAN.h"
-#include <GCS_MAVLink/GCS.h>
-#include <AP_BoardConfig/AP_BoardConfig.h>
-#include <AP_HAL/utility/sparse-endian.h>
 
 #if AP_RANGEFINDER_TOFSENSEP_CAN_ENABLED
 
+#include <GCS_MAVLink/GCS.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_HAL/utility/sparse-endian.h>
 #include <AP_HAL/AP_HAL.h>
 
 RangeFinder_MultiCAN *AP_RangeFinder_TOFSenseP_CAN::multican_TOFSenseP;
@@ -51,7 +51,7 @@ bool AP_RangeFinder_TOFSenseP_CAN::handle_frame(AP_HAL::CANFrame &frame)
         return false;
     }
 
-    set_distance_m(dist_cm * 0.01);
+    accumulate_distance_m(dist_cm * 0.01);
     return true;
 }
 
