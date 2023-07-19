@@ -174,7 +174,8 @@ void AP_Camera_Backend::send_camera_information(mavlink_channel_t chan) const
         0,                      // lens_id, uint8_t
         cap_flags,              // flags uint32_t (CAMERA_CAP_FLAGS)
         0,                      // cam_definition_version uint16_t
-        cam_definition_uri);    // cam_definition_uri char[140]
+        cam_definition_uri,     // cam_definition_uri char[140]
+        0);                     // gimbal_device_id uint8_t
 }
 
 // send camera settings message to GCS
