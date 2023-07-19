@@ -649,7 +649,8 @@ class sitl(Board):
             cfg.define('HAL_NUM_CAN_IFACES', 2)
             env.DEFINES.update(CANARD_MULTI_IFACE=1,
                                CANARD_IFACE_ALL = 0x3,
-                                CANARD_ENABLE_CANFD = 1)
+                                CANARD_ENABLE_CANFD = 1,
+                                CANARD_ENABLE_ASSERTS = 1)
 
         env.CXXFLAGS += [
             '-Werror=float-equal',
