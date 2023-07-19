@@ -55,9 +55,6 @@ public:
     // passthrough_bf_roll_pitch_rate_yaw - roll and pitch are passed through directly, body-frame rate target for yaw
     void passthrough_bf_roll_pitch_rate_yaw(float roll_passthrough, float pitch_passthrough, float yaw_rate_bf_cds) override;
 
-    // Integrate vehicle rate into _att_error_rot_vec_rad
-    void integrate_bf_rate_error_to_angle_errors();
-
     // subclass non-passthrough too, for external gyro, no flybar
     void input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds) override;
 
@@ -109,6 +106,9 @@ private:
         uint8_t flybar_passthrough  :   1;  // 1 if we should pass through pilots roll & pitch input directly to swash-plate
         uint8_t tail_passthrough    :   1;  // 1 if we should pass through pilots yaw input to tail
     } _flags_heli;
+
+    // Integrate vehicle rate into _att_error_rot_vec_rad
+    void integrate_bf_rate_error_to_angle_errors();
 
     //
     // body-frame rate controller
