@@ -5600,7 +5600,8 @@ void GCS_MAVLINK::send_autopilot_state_for_gimbal_device() const
         0,      // velocity estimated delay in micros
         rate_ef_targets.z,  // feed forward angular velocity z
         est_status_flags,   // estimator status
-        0);     // landed_state (see MAV_LANDED_STATE)
+        0,      // landed_state (see MAV_LANDED_STATE)
+        AP::ahrs().get_yaw_rate_earth());   // [rad/s] Z component of angular velocity in NED (North, East, Down). NaN if unknown
 }
 
 void GCS_MAVLINK::send_received_message_deprecation_warning(const char * message)
