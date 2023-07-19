@@ -25,6 +25,11 @@ public:
         AUTOTUNE_YAW = 2,
     };
 
+    enum Options {
+        DISABLE_FLTD_UPDATE = 0,
+        DISABLE_FLTT_UPDATE = 1
+    };
+
     struct PACKED log_ATRP {
         LOG_PACKET_HEADER;
         uint64_t time_us;
@@ -115,6 +120,10 @@ private:
 
     // update rmax and tau towards target
     void update_rmax();
+
+    bool has_option(Options option) {
+        return (aparm.autotune_options.get() & uint32_t(1<<uint32_t(option))) != 0;
+    }
 
     // 5 point mode filter for FF estimate
     ModeFilterFloat_Size5 ff_filter;
