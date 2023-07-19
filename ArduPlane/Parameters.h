@@ -356,6 +356,7 @@ public:
         k_param_fence,         // vehicle fence - unused
         k_param_acro_yaw_rate,
         k_param_takeoff_throttle_max_t,
+        k_param_autotune_options,
     };
 
     AP_Int16 format_version;
