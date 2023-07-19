@@ -176,7 +176,8 @@ void AP_Camera_MAVLinkCamV2::send_camera_information(mavlink_channel_t chan) con
         _cam_info.lens_id,          // lens_id, uint8_t
         _cam_info.flags,            // flags uint32_t (CAMERA_CAP_FLAGS)
         _cam_info.cam_definition_version,   // cam_definition_version uint16_t
-        _cam_info.cam_definition_uri);      // cam_definition_uri char[140]
+        _cam_info.cam_definition_uri,       // cam_definition_uri char[140]
+        get_gimbal_device_id());    // gimbal_device_id uint8_t
 }
 
 // search for camera in GCS_MAVLink routing table
