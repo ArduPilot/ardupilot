@@ -15,7 +15,7 @@
 
 class AC_CustomControl_PID : public AC_CustomControl_Backend {
 public:
-    AC_CustomControl_PID(AC_CustomControl& frontend, AP_AHRS_View*& ahrs, AC_AttitudeControl_Multi*& att_control, AP_MotorsMulticopter*& motors, float dt);
+    AC_CustomControl_PID(AC_CustomControl& frontend, AP_AHRS_View*& ahrs, AC_AttitudeControl*& att_control, AP_MotorsMulticopter*& motors, float dt);
 
     // run lowest level body-frame rate controller and send outputs to the motors
     Vector3f update() override;
