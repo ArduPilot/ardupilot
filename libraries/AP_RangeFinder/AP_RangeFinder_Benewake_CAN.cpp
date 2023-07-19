@@ -44,7 +44,7 @@ bool AP_RangeFinder_Benewake_CAN::handle_frame_H30(AP_HAL::CANFrame &frame)
     //uint16_t target2 = be16toh_ptr(&frame.data[2]);
     //uint16_t target3 = be16toh_ptr(&frame.data[4]);
 
-    set_distance_m(target1_cm * 0.01);
+    accumulate_distance_m(target1_cm * 0.01);
 
     return true;
 }
@@ -74,7 +74,7 @@ bool AP_RangeFinder_Benewake_CAN::handle_frame(AP_HAL::CANFrame &frame)
         return true;
     }
 
-    set_distance_m(dist_cm * 0.01);
+    accumulate_distance_m(dist_cm * 0.01);
     return true;
 }
 
