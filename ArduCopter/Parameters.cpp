@@ -498,11 +498,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Group: ATC_
     // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp,../libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp,../libraries/AC_AttitudeControl/AC_AttitudeControl_Heli.cpp
-#if FRAME_CONFIG == HELI_FRAME
-    GOBJECTPTR(attitude_control, "ATC_", AC_AttitudeControl_Heli),
-#else
-    GOBJECTPTR(attitude_control, "ATC_", AC_AttitudeControl_Multi),
-#endif
+    GOBJECTVARPTR(attitude_control, "ATC_", &copter.attitude_control_var_info),
 
     // @Group: PSC
     // @Path: ../libraries/AC_AttitudeControl/AC_PosControl.cpp
