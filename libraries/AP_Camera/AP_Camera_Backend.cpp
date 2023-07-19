@@ -3,6 +3,7 @@
 #if AP_CAMERA_ENABLED
 #include <GCS_MAVLink/GCS.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_Mount/AP_Mount.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -102,6 +103,22 @@ uint8_t AP_Camera_Backend::get_mount_instance() const
     }
     return _params.mount_instance.get() - 1;
 }
+
+// get mavlink gimbal device id which is normally mount_instance+1
+uint8_t AP_Camera_Backend::get_gimbal_device_id() const
+{
+#if HAL_MOUNT_ENABLED
+    const uint8_t mount_instance = get_mount_instance();
+    AP_Mount* mount = AP::mount();
+    if (mount != nullptr) {
+        if (mount->get_mount_type(mount_instance) != AP_Mount::Type::None) {
+            return (mount_instance + 1);
+        }
+    }
+#endif
+    return 0;
+}
+
 
 // take a picture.  returns true on success
 bool AP_Camera_Backend::take_picture()
@@ -206,7 +223,8 @@ void AP_Camera_Backend::send_camera_information(mavlink_channel_t chan) const
         0,                      // lens_id, uint8_t
         cap_flags,              // flags uint32_t (CAMERA_CAP_FLAGS)
         0,                      // cam_definition_version uint16_t
-        cam_definition_uri);    // cam_definition_uri char[140]
+        cam_definition_uri,     // cam_definition_uri char[140]
+        get_gimbal_device_id());// gimbal_device_id uint8_t
 }
 
 // send camera settings message to GCS
