@@ -451,7 +451,12 @@ bool AP_Mount_Viewpro::send_packet(const uint8_t* databuff, uint8_t databuff_len
 // send handshake, gimbal will respond with T1_F1_B1_D1 paket that includes current angles
 void AP_Mount_Viewpro::send_handshake()
 {
-    HandshakePacket hs_packet {FrameId::HANDSHAKE, 0};
+    const HandshakePacket hs_packet {
+        .content = {
+            frame_id: FrameId::HANDSHAKE,
+            unused: 0
+        }
+    };
     send_packet(hs_packet.bytes, sizeof(hs_packet.bytes));
 }
 
@@ -466,9 +471,12 @@ bool AP_Mount_Viewpro::set_lock(bool lock)
     }
 
     // fill in packet
-    A1Packet a1_packet {};
-    a1_packet.content.frame_id = FrameId::A1;
-    a1_packet.content.servo_status = lock ? ServoStatus::follow_yaw_disable : ServoStatus::follow_yaw;
+    const A1Packet a1_packet {
+        .content = {
+            frame_id: FrameId::A1,
+            servo_status: lock ? ServoStatus::follow_yaw_disable : ServoStatus::follow_yaw
+        }
+    };
 
     // send targets to gimbal
     if (send_packet(a1_packet.bytes, sizeof(a1_packet.bytes))) {
@@ -482,9 +490,12 @@ bool AP_Mount_Viewpro::set_lock(bool lock)
 bool AP_Mount_Viewpro::send_comm_config_cmd(CommConfigCmd cmd)
 {
     // fill in packet
-    UPacket u_packet {};
-    u_packet.content.frame_id = FrameId::U;
-    u_packet.content.control_cmd = cmd;
+    const UPacket u_packet {
+        .content = {
+            frame_id: FrameId::U,
+            control_cmd: cmd
+        }
+    };
 
     // send targets to gimbal
     return send_packet(u_packet.bytes, sizeof(u_packet.bytes));
@@ -504,11 +515,14 @@ bool AP_Mount_Viewpro::send_target_rates(float pitch_rads, float yaw_rads, bool 
     const int16_t yaw_rate_output = degrees(yaw_rads) * 100.0;
 
     // fill in packet
-    A1Packet a1_packet {};
-    a1_packet.content.frame_id = FrameId::A1;
-    a1_packet.content.servo_status = ServoStatus::manual_speed_mode;
-    a1_packet.content.yaw_be = htobe16(yaw_rate_output);
-    a1_packet.content.pitch_be = htobe16(pitch_rate_output);
+    const A1Packet a1_packet {
+        .content = {
+            frame_id: FrameId::A1,
+            servo_status: ServoStatus::manual_speed_mode,
+            yaw_be: htobe16(yaw_rate_output),
+            pitch_be: htobe16(pitch_rate_output)
+        }
+    };
 
     // send targets to gimbal
     return send_packet(a1_packet.bytes, sizeof(a1_packet.bytes));
@@ -539,11 +553,14 @@ bool AP_Mount_Viewpro::send_target_angles(float pitch_rad, float yaw_rad, bool y
     const int16_t yaw_angle_output = degrees(yaw_bf_rad) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT;
 
     // fill in packet
-    A1Packet a1_packet {};
-    a1_packet.content.frame_id = FrameId::A1;
-    a1_packet.content.servo_status = ServoStatus::manual_absolute_angle_mode;
-    a1_packet.content.yaw_be = htobe16(yaw_angle_output);
-    a1_packet.content.pitch_be = htobe16(pitch_angle_output);
+    const A1Packet a1_packet {
+        .content = {
+            frame_id: FrameId::A1,
+            servo_status: ServoStatus::manual_absolute_angle_mode,
+            yaw_be: htobe16(yaw_angle_output),
+            pitch_be: htobe16(pitch_angle_output)
+        }
+    };
 
     // send targets to gimbal
     return send_packet(a1_packet.bytes, sizeof(a1_packet.bytes));
@@ -552,10 +569,6 @@ bool AP_Mount_Viewpro::send_target_angles(float pitch_rad, float yaw_rad, bool y
 // send camera command, affected image sensor and value (e.g. zoom speed)
 bool AP_Mount_Viewpro::send_camera_command(ImageSensor img_sensor, CameraCommand cmd, uint8_t value)
 {
-    // fill in packet
-    C1Packet c1_packet {};
-    c1_packet.content.frame_id = FrameId::C1;
-
     // fill in 2 bytes containing sensor, zoom speed, operation command and LRF
     // bit0~2: sensor
     // bit3~5: zoom speed
@@ -564,7 +577,14 @@ bool AP_Mount_Viewpro::send_camera_command(ImageSensor img_sensor, CameraCommand
     const uint16_t sensor_id = (uint16_t)img_sensor;
     const uint16_t zoom_speed = ((uint16_t)value & 0x07) << 3;
     const uint16_t operation_cmd = ((uint16_t)cmd & 0x7F) << 6;
-    c1_packet.content.sensor_zoom_cmd_be =  htobe16(sensor_id | zoom_speed | operation_cmd);
+
+    // fill in packet
+    const C1Packet c1_packet {
+        .content = {
+            frame_id: FrameId::C1,
+            sensor_zoom_cmd_be:  htobe16(sensor_id | zoom_speed | operation_cmd)
+        }
+    };
 
     // send packet to gimbal
     return send_packet(c1_packet.bytes, sizeof(c1_packet.bytes));
@@ -574,10 +594,13 @@ bool AP_Mount_Viewpro::send_camera_command(ImageSensor img_sensor, CameraCommand
 bool AP_Mount_Viewpro::send_camera_command2(CameraCommand2 cmd, uint16_t value)
 {
     // fill in packet
-    C2Packet c2_packet {};
-    c2_packet.content.frame_id = FrameId::C2;
-    c2_packet.content.cmd = cmd;
-    c2_packet.content.value_be = htobe16(value);
+    const C2Packet c2_packet {
+        .content = {
+            frame_id: FrameId::C2,
+            cmd: cmd,
+            value_be: htobe16(value)
+        }
+    };
 
     // send packet to gimbal
     return send_packet(c2_packet.bytes, sizeof(c2_packet.bytes));
@@ -604,11 +627,14 @@ bool AP_Mount_Viewpro::send_tracking_command(TrackingCommand cmd, uint8_t value)
     }
 
     // fill in packet
-    E1Packet e1_packet {};
-    e1_packet.content.frame_id = FrameId::E1;
-    e1_packet.content.source = tracking_source;
-    e1_packet.content.cmd = cmd;
-    e1_packet.content.param2 = value;               // normally zero
+    const E1Packet e1_packet {
+        .content = {
+            frame_id: FrameId::E1,
+            source: tracking_source,
+            cmd: cmd,
+            param2: value   // normally zero
+        }
+    };
 
     // send packet to gimbal
     return send_packet(e1_packet.bytes, sizeof(e1_packet.bytes));
@@ -618,11 +644,14 @@ bool AP_Mount_Viewpro::send_tracking_command(TrackingCommand cmd, uint8_t value)
 bool AP_Mount_Viewpro::send_tracking_command2(TrackingCommand2 cmd, uint16_t param1, uint16_t param2)
 {
     // fill in packet
-    E2Packet e2_packet {};
-    e2_packet.content.frame_id = FrameId::E2;
-    e2_packet.content.cmd = cmd;
-    e2_packet.content.param1_be = htobe16(param1);
-    e2_packet.content.param2_be = htobe16(param2);
+    const E2Packet e2_packet {
+        .content = {
+            frame_id: FrameId::E2,
+            cmd: cmd,
+            param1_be: htobe16(param1),
+            param2_be: htobe16(param2),
+        }
+    };
 
     // send packet to gimbal
     return send_packet(e2_packet.bytes, sizeof(e2_packet.bytes));
@@ -656,25 +685,28 @@ bool AP_Mount_Viewpro::send_m_ahrs()
     uint16_t gps_vdop = AP::gps().get_vdop();
 
     // fill in packet
-    M_AHRSPacket mahrs_packet{};
-    mahrs_packet.content.frame_id = FrameId::M_AHRS;
-    mahrs_packet.content.data_type = 0x07;  // Bit0: Attitude, Bit1: GPS, Bit2 Gyro
-    mahrs_packet.content.pitch_be = htobe16(-degrees(AP::ahrs().get_pitch()) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT); // vehicle pitch angle.  1bit=360deg/65536
-    mahrs_packet.content.roll_be = htobe16(degrees(AP::ahrs().get_roll()) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT);    // vehicle roll angle.  1bit=360deg/65536
-    mahrs_packet.content.yaw_be = htobe16(degrees(AP::ahrs().get_yaw()) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT);      // vehicle yaw angle.  1bit=360deg/65536
-    mahrs_packet.content.date_be = htobe16(date);           // bit0~6:year, bit7~10:month, bit11~15:day
-    mahrs_packet.content.seconds_utc[0] = uint8_t((second_hundredths & 0xFF0000ULL) >> 16); // seconds * 100 MSB.  1bit = 0.01sec
-    mahrs_packet.content.seconds_utc[1] = uint8_t((second_hundredths & 0xFF00ULL) >> 8);    // seconds * 100 next MSB.  1bit = 0.01sec
-    mahrs_packet.content.seconds_utc[2] = uint8_t(second_hundredths & 0xFFULL);             // seconds * 100 LSB.  1bit = 0.01sec
-    mahrs_packet.content.gps_yaw_be = htobe16(vel_yaw_deg * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT); // GPS yaw
-    mahrs_packet.content.position_mark_bitmask = 0x0F;      // bit0:new position, bit1:clock fix calced, bit2:horiz calced, bit3:alt calced
-    mahrs_packet.content.latitude_be = htobe32(loc.lat);    // latitude.  1bit = 10e-7
-    mahrs_packet.content.longitude_be = htobe32(loc.lng);   // longitude.  1bit = 10e-7
-    mahrs_packet.content.height_be = htobe32(alt_amsl_cm * 10); // height.  1bit = 1mm
-    mahrs_packet.content.ground_speed_N_be = htobe16(vel_NED.x * 100);  // ground speed in North direction. 1bit = 0.01m/s
-    mahrs_packet.content.ground_speed_E_be = htobe16(vel_NED.y * 100);  // ground speed in East direction. 1bit = 0.01m/s
-    mahrs_packet.content.vdop_be = htobe16(gps_vdop);       // GPS vdop. 1bit = 0.01
-    mahrs_packet.content.ground_speed_D_be = htobe16(vel_NED.z * 100);  // speed downwards. 1bit = 0.01m/s
+    const M_AHRSPacket mahrs_packet {
+        .content = {
+            frame_id: FrameId::M_AHRS,
+            data_type: 0x07,                        // Bit0: Attitude, Bit1: GPS, Bit2 Gyro
+            pitch_be: htobe16(-degrees(AP::ahrs().get_pitch()) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),   // vehicle pitch angle.  1bit=360deg/65536
+            roll_be: htobe16(degrees(AP::ahrs().get_roll()) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),      // vehicle roll angle.  1bit=360deg/65536
+            yaw_be: htobe16(degrees(AP::ahrs().get_yaw()) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),        // vehicle yaw angle.  1bit=360deg/65536
+            date_be: htobe16(date),                 // bit0~6:year, bit7~10:month, bit11~15:day
+            seconds_utc: {uint8_t((second_hundredths & 0xFF0000ULL) >> 16), // seconds * 100 MSB.  1bit = 0.01sec
+                          uint8_t((second_hundredths & 0xFF00ULL) >> 8),    // seconds * 100 next MSB.  1bit = 0.01sec
+                          uint8_t(second_hundredths & 0xFFULL)},            // seconds * 100 LSB.  1bit = 0.01sec
+            gps_yaw_be: htobe16(vel_yaw_deg * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),  // GPS yaw
+            position_mark_bitmask: 0x0F,            // bit0:new position, bit1:clock fix calced, bit2:horiz calced, bit3:alt calced
+            latitude_be: htobe32(loc.lat),          // latitude.  1bit = 10e-7
+            longitude_be: htobe32(loc.lng),         // longitude.  1bit = 10e-7
+            height_be: htobe32(alt_amsl_cm * 10),   // height.  1bit = 1mm
+            ground_speed_N_be: htobe16(vel_NED.x * 100),    // ground speed in North direction. 1bit = 0.01m/s
+            ground_speed_E_be: htobe16(vel_NED.y * 100),    // ground speed in East direction. 1bit = 0.01m/s
+            vdop_be: htobe16(gps_vdop),             // GPS vdop. 1bit = 0.01
+            ground_speed_D_be: htobe16(vel_NED.z * 100)     // speed downwards. 1bit = 0.01m/s
+        }
+    };
 
     // send packet to gimbal
     return send_packet(mahrs_packet.bytes, sizeof(mahrs_packet.bytes));
