@@ -1536,6 +1536,22 @@ function MotorsMatrix:get_lost_motor() end
 ---@return boolean
 function MotorsMatrix:get_thrust_boost() end
 
+
+-- Sub singleton
+---@class sub
+sub = {}
+
+-- Return true if joystick button is currently pressed
+---@param index integer
+---@return boolean
+function sub:is_button_pressed(index) end
+
+-- Get count of joystick button presses, then clear count
+---@param index integer
+---@return integer
+function sub:get_and_clear_button_count(index) end
+
+
 -- desc
 ---@class quadplane
 quadplane = {}
