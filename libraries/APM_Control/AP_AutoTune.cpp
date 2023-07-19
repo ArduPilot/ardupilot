@@ -424,9 +424,17 @@ void AP_AutoTune::update(AP_PIDInfo &pinfo, float scaler, float angle_err_deg)
     }
 
     // setup filters to be suitable for time constant and gyro filter
-    rpid.filt_T_hz().set(10.0/(current.tau * 2 * M_PI));
+    // filtering T can  prevent P/D oscillation being seen, so allow the
+    // user to switch it off
+    if (!has_option(DISABLE_FLTT_UPDATE)) {
+        rpid.filt_T_hz().set(10.0/(current.tau * 2 * M_PI));
+    }
     rpid.filt_E_hz().set(0);
-    rpid.filt_D_hz().set(AP::ins().get_gyro_filter_hz()*0.5);
+    // filtering D at the same level as VTOL can allow unwanted oscillations to be seen,
+    // so allow the user to switch it off and select their own (usually lower) value
+    if (!has_option(DISABLE_FLTD_UPDATE)) {
+        rpid.filt_D_hz().set(AP::ins().get_gyro_filter_hz()*0.5);
+    }
 
     current.FF = FF;
     current.P = P;
