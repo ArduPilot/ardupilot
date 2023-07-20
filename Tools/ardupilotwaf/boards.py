@@ -84,6 +84,18 @@ class Board:
             env.ENABLE_DDS = False
             env.DEFINES.update(AP_DDS_ENABLED = 0)
 
+        # configurations for UROS
+        if cfg.options.enable_uros:
+            cfg.recurse('libraries/AP_UROS')
+            env.ENABLE_UROS = True
+            env.AP_LIBRARIES += [
+                'AP_UROS'
+            ]
+            env.DEFINES.update(AP_UROS_ENABLED = 1)
+        else:
+            env.ENABLE_UROS = False
+            env.DEFINES.update(AP_UROS_ENABLED = 0)
+
         # setup for supporting onvif cam control
         if cfg.options.enable_onvif:
             cfg.recurse('libraries/AP_ONVIF')
