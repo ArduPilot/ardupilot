@@ -128,12 +128,6 @@ bool AP_Mount_Gremsy::healthy() const
 // get attitude as a quaternion.  returns true on success
 bool AP_Mount_Gremsy::get_attitude_quaternion(Quaternion& att_quat)
 {
-    // check we have received an updated message
-    if (_gimbal_device_attitude_status.time_boot_ms == _sent_gimbal_device_attitude_status_ms) {
-        return false;
-    }
-    _sent_gimbal_device_attitude_status_ms = _gimbal_device_attitude_status.time_boot_ms;
-
     att_quat = _gimbal_device_attitude_status.q;
     return true;
 }
