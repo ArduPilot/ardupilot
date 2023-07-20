@@ -239,8 +239,28 @@ master:=tcp:127.0.0.1:5760 \
 sitl:=127.0.0.1:5501
 ```
 
-UDP version
+### DDS UDP version
 
-```
+```bash
 ros2 launch ardupilot_sitl sitl_dds_udp.launch.py transport:=udp4 refs:=$(ros2 pkg prefix ardupilot_sitl)/share/ardupilot_sitl/config/dds_xrce_profile.xml synthetic_clock:=True wipe:=False model:=quad speedup:=1 slave:=0 instance:=0 defaults:=$(ros2 pkg prefix ardupilot_sitl)/share/ardupilot_sitl/config/default_params/copter.parm,$(ros2 pkg prefix ardupilot_sitl)/share/ardupilot_sitl/config/default_params/dds_udp.parm sim_address:=127.0.0.1 master:=tcp:127.0.0.1:5760 sitl:=127.0.0.1:5501
+```
+
+### UROS UDP
+
+Launch agent:
+
+```bash
+ros2 launch ardupilot_sitl micro_ros_agent.launch.py transport:=udp4 port:=2019 verbose:=6
+```
+
+Launch SITL:
+
+```bash
+ros2 launch ardupilot_sitl sitl.launch.py synthetic_clock:=True wipe:=False model:=quad speedup:=1 slave:=0 instance:=0 defaults:=$(ros2 pkg prefix ardupilot_sitl)/share/ardupilot_sitl/config/default_params/copter.parm,$(ros2 pkg prefix ardupilot_sitl)/share/ardupilot_sitl/config/default_params/dds_udp.parm sim_address:=127.0.0.1
+```
+
+Launch non-interactive MAVProxy:
+
+```bash
+ros2 launch ardupilot_sitl mavproxy.launch.py master:=tcp:127.0.0.1:5760 sitl:=127.0.0.1:5501
 ```
