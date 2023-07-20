@@ -315,7 +315,7 @@ void AP_Mount_Viewpro::process_packet()
         _last_current_angle_rad_ms = AP_HAL::millis();
         _current_angle_rad.x = radians((int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+23] & 0x0F, _msg_buff[_msg_buff_data_start+24]) * (180.0/4095.0) - 90.0);   // roll angle
         _current_angle_rad.z = radians((int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+25], _msg_buff[_msg_buff_data_start+26]) * AP_MOUNT_VIEWPRO_OUTPUT_TO_DEG); // yaw angle
-        _current_angle_rad.y = radians((int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+27], _msg_buff[_msg_buff_data_start+28]) * AP_MOUNT_VIEWPRO_OUTPUT_TO_DEG); // pitch angle
+        _current_angle_rad.y = -radians((int16_t)UINT16_VALUE(_msg_buff[_msg_buff_data_start+27], _msg_buff[_msg_buff_data_start+28]) * AP_MOUNT_VIEWPRO_OUTPUT_TO_DEG); // pitch angle
         debug("r:%4.1f p:%4.1f y:%4.1f", (double)degrees(_current_angle_rad.x), (double)degrees(_current_angle_rad.y), (double)degrees(_current_angle_rad.z));
         break;
     }
