@@ -18,6 +18,7 @@
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
 #endif
 #include <AP_DDS/AP_DDS_Client.h>
+#include <AP_UROS/AP_UROS_Client.h>
 #if HAL_WITH_IO_MCU
 #include <AP_IOMCU/AP_IOMCU.h>
 extern AP_IOMCU iomcu;
@@ -205,6 +206,11 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_GROUPINFO("FLTMODE_GCSBLOCK", 20, AP_Vehicle, flight_mode_GCS_block, 0),
 #endif // APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
 
+#if AP_UROS_ENABLED
+    // @Group: UROS
+    // @Path: ../AP_UROS/AP_UROS_Client.cpp
+    AP_SUBGROUPPTR(uros_client, "UROS", 21, AP_Vehicle, AP_UROS_Client),
+#endif // AP_UROS_ENABLED
 
 #if AP_NETWORKING_ENABLED
     // @Group: NET_
@@ -405,6 +411,12 @@ void AP_Vehicle::setup()
 #if AP_DDS_ENABLED
     if (!init_dds_client()) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "DDS Client: Failed to Initialize");
+    }
+#endif
+
+#if AP_UROS_ENABLED
+    if (!init_uros_client()) {
+        gcs().send_text(MAV_SEVERITY_ERROR, "UROS: Failed to initialize");
     }
 #endif
 }
@@ -944,6 +956,17 @@ bool AP_Vehicle::init_dds_client()
     return dds_client->start();
 }
 #endif // AP_DDS_ENABLED
+
+#if AP_UROS_ENABLED
+bool AP_Vehicle::init_uros_client()
+{
+    uros_client = new AP_UROS_Client();
+    if (uros_client == nullptr) {
+        return false;
+    }
+    return uros_client->start();
+}
+#endif // AP_UROS_ENABLED
 
 // Check if this mode can be entered from the GCS
 #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
