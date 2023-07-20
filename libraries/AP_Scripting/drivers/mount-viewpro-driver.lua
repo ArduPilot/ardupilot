@@ -379,7 +379,7 @@ function parse_byte(b)
             local servo_status = (parse_data_buff[24] & 0xF0 >> 4)
             local roll_deg = int16_value(parse_data_buff[24] & 0x0F, parse_data_buff[25]) * (180.0/4095.0) - 90.0
             local yaw_deg = int16_value(parse_data_buff[26], parse_data_buff[27]) * (360.0 / 65536.0)
-            local pitch_deg = int16_value(parse_data_buff[28], parse_data_buff[29]) * (360.0 / 65536.0)
+            local pitch_deg = -int16_value(parse_data_buff[28], parse_data_buff[29]) * (360.0 / 65536.0)
             mount:set_attitude_euler(MOUNT_INSTANCE, roll_deg, pitch_deg, yaw_deg)
 
             if VIEP_DEBUG:get() > 0 then
