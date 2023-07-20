@@ -181,14 +181,16 @@ uint32_t **__eth_tb;
 static bool allocate_buffers()
 {
 #ifdef STM32_ETH_BUFFERS_EXTERN
-    #define BUFFER_SIZE ((((STM32_MAC_BUFFERS_SIZE - 1) | 3) + 1) / 4)
+    #define BUFFER_SIZE ((((STM32_MAC_BUFFERS_SIZE - 1) | 3) + 1) / 4) // == 381
     // check total size of buffers
-    const uint32_t total_size = sizeof(stm32_eth_rx_descriptor_t)*STM32_MAC_RECEIVE_BUFFERS +
-                                sizeof(stm32_eth_tx_descriptor_t)*STM32_MAC_TRANSMIT_BUFFERS +
-                                sizeof(uint32_t)*STM32_MAC_RECEIVE_BUFFERS*BUFFER_SIZE +
-                                sizeof(uint32_t)*STM32_MAC_TRANSMIT_BUFFERS*BUFFER_SIZE;
+    const uint32_t eth_rd_size = sizeof(stm32_eth_rx_descriptor_t)*STM32_MAC_RECEIVE_BUFFERS;
+    const uint32_t eth_td_size = sizeof(stm32_eth_tx_descriptor_t)*STM32_MAC_TRANSMIT_BUFFERS;
+    const uint32_t eth_rb_size = sizeof(uint32_t)*STM32_MAC_RECEIVE_BUFFERS*BUFFER_SIZE;
+    const uint32_t eth_tb_size = sizeof(uint32_t)*STM32_MAC_TRANSMIT_BUFFERS*BUFFER_SIZE;
+    const uint32_t total_size = eth_rd_size + eth_rd_size + eth_rb_size + eth_tb_size; // == 9240
+
     // ensure that we allocate 32-bit aligned memory, and mark it non-cacheable
-    uint32_t size = 0;
+    uint32_t size = 2;
     uint8_t rasr = 0;
     // find size closest to power of 2
     while (size < total_size) {
@@ -199,10 +201,12 @@ static bool allocate_buffers()
     if (mem == nullptr) {
         return false;
     }
+
+    // for total_size == 9240, size should be 16384 and (rasr-1) should be 13 (MPU_RASR_SIZE_16K)
     uint32_t rasr_size = MPU_RASR_SIZE(rasr-1);
 
     // set up MPU region for buffers
-    mpuConfigureRegion(STM32_NOCACHE_MPU_REGION,
+    mpuConfigureRegion(STM32_NOCACHE_MPU_REGION_ETH,
                        (uint32_t)mem,
                        MPU_RASR_ATTR_AP_RW_RW |
                        MPU_RASR_ATTR_NON_CACHEABLE |
@@ -215,12 +219,11 @@ static bool allocate_buffers()
     // assign buffers
     __eth_rd = (stm32_eth_rx_descriptor_t *)mem;
     __eth_td = (stm32_eth_tx_descriptor_t *)&__eth_rd[STM32_MAC_RECEIVE_BUFFERS];
-    __eth_rb = (uint32_t **)&__eth_td[STM32_MAC_TRANSMIT_BUFFERS];
-    __eth_tb = (uint32_t **)&__eth_rb[STM32_MAC_RECEIVE_BUFFERS][BUFFER_SIZE];
-    return true;
-#else
-    return true;
+    __eth_rb = (uint32_t **)((uint32_t)__eth_td + eth_td_size);
+    __eth_tb = (uint32_t **)((uint32_t)__eth_rb + eth_rb_size);
 #endif
+
+    return true;
 }
 
 void AP_Networking::init()
