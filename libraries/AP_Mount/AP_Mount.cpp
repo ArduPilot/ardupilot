@@ -646,7 +646,7 @@ bool AP_Mount::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
     return true;
 }
 
-// accessors for scripting backends
+// get target rate in deg/sec. returns true on success
 bool AP_Mount::get_rate_target(uint8_t instance, float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame)
 {
     auto *backend = get_instance(instance);
@@ -656,6 +656,7 @@ bool AP_Mount::get_rate_target(uint8_t instance, float& roll_degs, float& pitch_
     return backend->get_rate_target(roll_degs, pitch_degs, yaw_degs, yaw_is_earth_frame);
 }
 
+// get target angle in deg. returns true on success
 bool AP_Mount::get_angle_target(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame)
 {
     auto *backend = get_instance(instance);
@@ -665,6 +666,7 @@ bool AP_Mount::get_angle_target(uint8_t instance, float& roll_deg, float& pitch_
     return backend->get_angle_target(roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame);
 }
 
+// accessors for scripting backends and logging
 bool AP_Mount::get_location_target(uint8_t instance, Location& target_loc)
 {
     auto *backend = get_instance(instance);
@@ -681,6 +683,26 @@ void AP_Mount::set_attitude_euler(uint8_t instance, float roll_deg, float pitch_
         return;
     }
     backend->set_attitude_euler(roll_deg, pitch_deg, yaw_bf_deg);
+}
+
+// write mount log packet for all backends
+void AP_Mount::write_log()
+{
+    // each instance writes log
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        if (_backends[instance] != nullptr) {
+            _backends[instance]->write_log(0);
+        }
+    }
+}
+
+void AP_Mount::write_log(uint8_t instance, uint64_t timestamp_us)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
+    }
+    backend->write_log(timestamp_us);
 }
 
 // point at system ID sysid

@@ -112,8 +112,6 @@ private:
     // read_incoming - detect and read the header of the incoming message from the gimbal
     void read_incoming();
 
-    MountTarget _angle_rad;         // latest angle target
-
     // structure for the Serial Protocol
 
     // CMD_BOARD_INFO

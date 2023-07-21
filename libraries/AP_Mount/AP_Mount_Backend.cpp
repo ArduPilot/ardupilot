@@ -2,6 +2,7 @@
 #if HAL_MOUNT_ENABLED
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -49,11 +50,11 @@ void AP_Mount_Backend::set_angle_target(float roll_deg, float pitch_deg, float y
     }
 
     // set angle targets
-    mavt_target.target_type = MountTargetType::ANGLE;
-    mavt_target.angle_rad.roll = radians(roll_deg);
-    mavt_target.angle_rad.pitch = radians(pitch_deg);
-    mavt_target.angle_rad.yaw = radians(yaw_deg);
-    mavt_target.angle_rad.yaw_is_ef = yaw_is_earth_frame;
+    mnt_target.target_type = MountTargetType::ANGLE;
+    mnt_target.angle_rad.roll = radians(roll_deg);
+    mnt_target.angle_rad.pitch = radians(pitch_deg);
+    mnt_target.angle_rad.yaw = radians(yaw_deg);
+    mnt_target.angle_rad.yaw_is_ef = yaw_is_earth_frame;
 
     // set the mode to mavlink targeting
     set_mode(MAV_MOUNT_MODE_MAVLINK_TARGETING);
@@ -64,11 +65,11 @@ void AP_Mount_Backend::set_angle_target(float roll_deg, float pitch_deg, float y
 void AP_Mount_Backend::set_rate_target(float roll_degs, float pitch_degs, float yaw_degs, bool yaw_is_earth_frame)
 {
     // set rate targets
-    mavt_target.target_type = MountTargetType::RATE;
-    mavt_target.rate_rads.roll = radians(roll_degs);
-    mavt_target.rate_rads.pitch = radians(pitch_degs);
-    mavt_target.rate_rads.yaw = radians(yaw_degs);
-    mavt_target.rate_rads.yaw_is_ef = yaw_is_earth_frame;
+    mnt_target.target_type = MountTargetType::RATE;
+    mnt_target.rate_rads.roll = radians(roll_degs);
+    mnt_target.rate_rads.pitch = radians(pitch_degs);
+    mnt_target.rate_rads.yaw = radians(yaw_degs);
+    mnt_target.rate_rads.yaw_is_ef = yaw_is_earth_frame;
 
     // set the mode to mavlink targeting
     set_mode(MAV_MOUNT_MODE_MAVLINK_TARGETING);
@@ -356,6 +357,49 @@ bool AP_Mount_Backend::handle_global_position_int(uint8_t msg_sysid, const mavli
     return true;
 }
 
+// write mount log packet
+void AP_Mount_Backend::write_log(uint64_t timestamp_us)
+{
+    // return immediately if no yaw estimate
+    float ahrs_yaw = AP::ahrs().yaw;
+    if (isnan(ahrs_yaw)) {
+        return;
+    }
+
+    const auto nanf = AP::logger().quiet_nanf();
+
+    // get_attitude_quaternion and convert to Euler angles
+    float roll = nanf;
+    float pitch = nanf;
+    float yaw_bf = nanf;
+    float yaw_ef = nanf;
+    if (_frontend.get_attitude_euler(_instance, roll, pitch, yaw_bf)) {
+        yaw_ef = wrap_180(yaw_bf + degrees(ahrs_yaw));
+    }
+
+    // get mount's target (desired) angles and convert yaw to earth frame
+    float target_roll = nanf;
+    float target_pitch = nanf;
+    float target_yaw = nanf;
+    bool target_yaw_is_ef = false;
+    IGNORE_RETURN(get_angle_target(target_roll, target_pitch, target_yaw, target_yaw_is_ef));
+
+    const struct log_Mount pkt {
+        LOG_PACKET_HEADER_INIT(static_cast<uint8_t>(LOG_MOUNT_MSG)),
+        time_us       : (timestamp_us > 0) ? timestamp_us : AP_HAL::micros64(),
+        instance      : _instance,
+        desired_roll  : target_roll,
+        actual_roll   : roll,
+        desired_pitch : target_pitch,
+        actual_pitch  : pitch,
+        desired_yaw_bf: target_yaw_is_ef ? nanf : target_yaw,
+        actual_yaw_bf : yaw_bf,
+        desired_yaw_ef: target_yaw_is_ef ? target_yaw : nanf,
+        actual_yaw_ef : yaw_ef,
+    };
+    AP::logger().WriteCriticalBlock(&pkt, sizeof(pkt));
+}
+
 // get pilot input (in the range -1 to +1) received through RC
 void AP_Mount_Backend::get_rc_input(float& roll_in, float& pitch_in, float& yaw_in) const
 {
@@ -379,61 +423,44 @@ void AP_Mount_Backend::get_rc_input(float& roll_in, float& pitch_in, float& yaw_
     }
 }
 
-// get rate targets (in rad/s) from pilot RC
-// returns true on success (RC is providing rate targets), false on failure (RC is providing angle targets)
-bool AP_Mount_Backend::get_rc_rate_target(MountTarget& rate_rads) const
+// get angle or rate targets from pilot RC
+// target_type will be either ANGLE or RATE, rpy will be the target angle in deg or rate in deg/s
+void AP_Mount_Backend::get_rc_target(MountTargetType& target_type, MountTarget& target_rpy) const
 {
-    // exit immediately if RC is not providing rate targets
-    if (_params.rc_rate_max <= 0) {
-        return false;
-    }
-
     // get RC input from pilot
     float roll_in, pitch_in, yaw_in;
     get_rc_input(roll_in, pitch_in, yaw_in);
-
-    // calculate rates
-    const float rc_rate_max_rads = radians(_params.rc_rate_max.get());
-    rate_rads.roll = roll_in * rc_rate_max_rads;
-    rate_rads.pitch = pitch_in * rc_rate_max_rads;
-    rate_rads.yaw = yaw_in * rc_rate_max_rads;
 
     // yaw frame
-    rate_rads.yaw_is_ef = _yaw_lock;
+    target_rpy.yaw_is_ef = _yaw_lock;
 
-    return true;
-}
+    // if RC_RATE is zero, targets are angle
+    if (_params.rc_rate_max <= 0) {
+        target_type = MountTargetType::ANGLE;
 
-// get angle targets (in radians) from pilot RC
-// returns true on success (RC is providing angle targets), false on failure (RC is providing rate targets)
-bool AP_Mount_Backend::get_rc_angle_target(MountTarget& angle_rad) const
-{
-    // exit immediately if RC is not providing angle targets
-    if (_params.rc_rate_max > 0) {
-        return false;
+        // roll angle
+        target_rpy.roll = radians(((roll_in + 1.0f) * 0.5f * (_params.roll_angle_max - _params.roll_angle_min) + _params.roll_angle_min));
+
+        // pitch angle
+        target_rpy.pitch = radians(((pitch_in + 1.0f) * 0.5f * (_params.pitch_angle_max - _params.pitch_angle_min) + _params.pitch_angle_min));
+
+        // yaw angle
+        if (target_rpy.yaw_is_ef) {
+            // if yaw is earth-frame pilot yaw input control angle from -180 to +180 deg
+            target_rpy.yaw = yaw_in * M_PI;
+        } else {
+            // yaw target in body frame so apply body frame limits
+            target_rpy.yaw = radians(((yaw_in + 1.0f) * 0.5f * (_params.yaw_angle_max - _params.yaw_angle_min) + _params.yaw_angle_min));
+        }
+        return;
     }
 
-    // get RC input from pilot
-    float roll_in, pitch_in, yaw_in;
-    get_rc_input(roll_in, pitch_in, yaw_in);
-
-    // roll angle
-    angle_rad.roll = radians(((roll_in + 1.0f) * 0.5f * (_params.roll_angle_max - _params.roll_angle_min) + _params.roll_angle_min));
-
-    // pitch angle
-    angle_rad.pitch = radians(((pitch_in + 1.0f) * 0.5f * (_params.pitch_angle_max - _params.pitch_angle_min) + _params.pitch_angle_min));
-
-    // yaw angle
-    angle_rad.yaw_is_ef = _yaw_lock;
-    if (angle_rad.yaw_is_ef) {
-        // if yaw is earth-frame pilot yaw input control angle from -180 to +180 deg
-        angle_rad.yaw = yaw_in * M_PI;
-    } else {
-        // yaw target in body frame so apply body frame limits
-        angle_rad.yaw = radians(((yaw_in + 1.0f) * 0.5f * (_params.yaw_angle_max - _params.yaw_angle_min) + _params.yaw_angle_min));
-    }
-
-    return true;
+    // calculate rate targets
+    target_type = MountTargetType::RATE;
+    const float rc_rate_max_rads = radians(_params.rc_rate_max.get());
+    target_rpy.roll = roll_in * rc_rate_max_rads;
+    target_rpy.pitch = pitch_in * rc_rate_max_rads;
+    target_rpy.yaw = yaw_in * rc_rate_max_rads;
 }
 
 // get angle targets (in radians) to a Location
@@ -507,6 +534,15 @@ float AP_Mount_Backend::MountTarget::get_ef_yaw() const
     return wrap_PI(yaw + AP::ahrs().yaw);
 }
 
+// sets roll, pitch, yaw and yaw_is_ef
+void AP_Mount_Backend::MountTarget::set(const Vector3f& rpy, bool yaw_is_ef_in)
+{
+    roll  = rpy.x;
+    pitch = rpy.y;
+    yaw   = rpy.z;
+    yaw_is_ef = yaw_is_ef_in;
+}
+
 // update angle targets using a given rate target
 // the resulting angle_rad yaw frame will match the rate_rad yaw frame
 // assumes a 50hz update rate
@@ -570,6 +606,32 @@ bool AP_Mount_Backend::get_angle_target_to_sysid(MountTarget& angle_rad) const
         return false;
     }
     return get_angle_target_to_location(_target_sysid_location, angle_rad);
+}
+
+// get target rate in deg/sec. returns true on success
+bool AP_Mount_Backend::get_rate_target(float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame)
+{
+    if (mnt_target.target_type == MountTargetType::RATE) {
+        roll_degs = degrees(mnt_target.rate_rads.roll);
+        pitch_degs = degrees(mnt_target.rate_rads.pitch);
+        yaw_degs = degrees(mnt_target.rate_rads.yaw);
+        yaw_is_earth_frame = mnt_target.rate_rads.yaw_is_ef;
+        return true;
+    }
+    return false;
+}
+
+// get target angle in deg. returns true on success
+bool AP_Mount_Backend::get_angle_target(float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame)
+{
+    if (mnt_target.target_type == MountTargetType::ANGLE) {
+        roll_deg = degrees(mnt_target.angle_rad.roll);
+        pitch_deg = degrees(mnt_target.angle_rad.pitch);
+        yaw_deg = degrees(mnt_target.angle_rad.yaw);
+        yaw_is_earth_frame = mnt_target.angle_rad.yaw_is_ef;
+        return true;
+    }
+    return false;
 }
 
 // sent warning to GCS.  Warnings are throttled to at most once every 30 seconds
