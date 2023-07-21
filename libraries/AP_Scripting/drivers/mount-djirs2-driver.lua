@@ -462,7 +462,7 @@ function send_target_angles(roll_angle_deg, pitch_angle_deg, yaw_angle_deg, time
   end
 
   -- ensure angles are integers
-  roll_angle_deg = -math.floor(roll_angle_deg + 0.5)
+  roll_angle_deg = math.floor(roll_angle_deg + 0.5)
   pitch_angle_deg = math.floor(pitch_angle_deg + 0.5)
   yaw_angle_deg = math.floor(yaw_angle_deg + 0.5)
   time_sec = math.floor(time_sec + 0.5)
@@ -657,8 +657,8 @@ function parse_byte(b)
             local ret_code = parse_buff[13]
             if ret_code == RETURN_CODE.SUCCESS then
               local yaw_deg = int16_value(parse_buff[16],parse_buff[15]) * 0.1
-              local roll_deg = -int16_value(parse_buff[18],parse_buff[17]) * 0.1
-              local pitch_deg = int16_value(parse_buff[20],parse_buff[19]) * 0.1
+              local pitch_deg = int16_value(parse_buff[18],parse_buff[17]) * 0.1
+              local roll_deg = int16_value(parse_buff[20],parse_buff[19]) * 0.1
               mount:set_attitude_euler(MOUNT_INSTANCE, roll_deg, pitch_deg, yaw_deg)
               if DJIR_DEBUG:get() > 1 then
                 gcs:send_text(MAV_SEVERITY.INFO, string.format("DJIR: roll:%4.1f pitch:%4.1f yaw:%4.1f", roll_deg, pitch_deg, yaw_deg))
