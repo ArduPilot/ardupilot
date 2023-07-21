@@ -199,11 +199,21 @@ public:
     // any failure_msg returned will not include a prefix
     bool pre_arm_checks(char *failure_msg, uint8_t failure_msg_len);
 
-    // accessors for scripting backends
+    // get target rate in deg/sec. returns true on success
     bool get_rate_target(uint8_t instance, float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame);
+
+    // get target angle in deg. returns true on success
     bool get_angle_target(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame);
+
+    // accessors for scripting backends and logging
     bool get_location_target(uint8_t instance, Location& target_loc);
     void set_attitude_euler(uint8_t instance, float roll_deg, float pitch_deg, float yaw_bf_deg);
+
+    // write mount log packet for all backends
+    void write_log();
+
+    // write mount log packet for a single backend (called by camera library)
+    void write_log(uint8_t instance, uint64_t timestamp_us);
 
     //
     // camera controls for gimbals that include a camera
