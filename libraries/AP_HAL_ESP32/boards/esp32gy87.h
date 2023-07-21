@@ -72,7 +72,7 @@
 #define HAL_ESP32_SPI_DEVICES				{}
 
 //RCIN
-#define HAL_ESP32_RCIN					GPIO_NUM_4
+#define HAL_ESP32_RCIN					GPIO_NUM_5
 
 //RCOUT
 #define HAL_ESP32_RCOUT					{ GPIO_NUM_25, GPIO_NUM_27, GPIO_NUM_33, GPIO_NUM_32 }
@@ -90,8 +90,8 @@
 
 //UARTs
 #define HAL_ESP32_UART_DEVICES 				{.port=UART_NUM_0, .rx=GPIO_NUM_3 , .tx=GPIO_NUM_1},\
-    							{.port=UART_NUM_1, .rx=GPIO_NUM_16, .tx=GPIO_NUM_17}
-							//{.port=UART_NUM_2, .rx=GPIO_NUM_9, .tx=GPIO_NUM_10}
+    							{.port=UART_NUM_1, .rx=GPIO_NUM_16, .tx=GPIO_NUM_17},\
+							{.port=UART_NUM_2, .rx=GPIO_NUM_4, .tx=GPIO_NUM_2}
 
 //ADC
 #define HAL_DISABLE_ADC_DRIVER				1
