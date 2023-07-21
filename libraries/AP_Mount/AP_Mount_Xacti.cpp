@@ -54,69 +54,72 @@ void AP_Mount_Xacti::update()
         // move mount to a "retracted" position.  To-Do: remove support and replace with a relaxed mode?
         case MAV_MOUNT_MODE_RETRACT: {
             const Vector3f &angle_bf_target = _params.retract_angles.get();
-            send_target_angles(ToRad(angle_bf_target.y), ToRad(angle_bf_target.z), false);
+            mnt_target.target_type = MountTargetType::ANGLE;
+            mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
             break;
         }
 
-        // move mount to a neutral position, typically pointing forward
         case MAV_MOUNT_MODE_NEUTRAL: {
             const Vector3f &angle_bf_target = _params.neutral_angles.get();
-            send_target_rates(ToRad(angle_bf_target.y), ToRad(angle_bf_target.z), false);
+            mnt_target.target_type = MountTargetType::ANGLE;
+            mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
             break;
         }
 
-        // point to the angles given by a mavlink message
-        case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-            switch (mavt_target.target_type) {
+        case MAV_MOUNT_MODE_MAVLINK_TARGETING: {
+            // mavlink targets are set while handling the incoming message
+            break;
+        }
+
+        case MAV_MOUNT_MODE_RC_TARGETING: {
+            // update targets using pilot's RC inputs
+            MountTarget rc_target;
+            get_rc_target(mnt_target.target_type, rc_target);
+            switch (mnt_target.target_type) {
             case MountTargetType::ANGLE:
-                send_target_angles(mavt_target.angle_rad.pitch, mavt_target.angle_rad.yaw, mavt_target.angle_rad.yaw_is_ef);
+                mnt_target.angle_rad = rc_target;
                 break;
             case MountTargetType::RATE:
-                send_target_rates(mavt_target.rate_rads.pitch, mavt_target.rate_rads.yaw, mavt_target.rate_rads.yaw_is_ef);
+                mnt_target.rate_rads = rc_target;
                 break;
-            }
-            break;
-
-        // RC radio manual angle control, but with stabilization from the AHRS
-        case MAV_MOUNT_MODE_RC_TARGETING: {
-            // update targets using pilot's rc inputs
-            MountTarget rc_target {};
-            if (get_rc_rate_target(rc_target)) {
-                send_target_rates(rc_target.pitch, rc_target.yaw, rc_target.yaw_is_ef);
-            } else if (get_rc_angle_target(rc_target)) {
-                send_target_angles(rc_target.pitch, rc_target.yaw, rc_target.yaw_is_ef);
             }
             break;
         }
 
         // point mount to a GPS point given by the mission planner
-        case MAV_MOUNT_MODE_GPS_POINT: {
-            MountTarget angle_target_rad {};
-            if (get_angle_target_to_roi(angle_target_rad)) {
-                send_target_angles(angle_target_rad.pitch, angle_target_rad.yaw, angle_target_rad.yaw_is_ef);
+        case MAV_MOUNT_MODE_GPS_POINT:
+            if (get_angle_target_to_roi(mnt_target.angle_rad)) {
+                mnt_target.target_type = MountTargetType::ANGLE;
             }
             break;
-        }
 
-        case MAV_MOUNT_MODE_HOME_LOCATION: {
-            MountTarget angle_target_rad {};
-            if (get_angle_target_to_home(angle_target_rad)) {
-                send_target_angles(angle_target_rad.pitch, angle_target_rad.yaw, angle_target_rad.yaw_is_ef);
+        // point mount to Home location
+        case MAV_MOUNT_MODE_HOME_LOCATION:
+            if (get_angle_target_to_home(mnt_target.angle_rad)) {
+                mnt_target.target_type = MountTargetType::ANGLE;
             }
             break;
-        }
 
-        case MAV_MOUNT_MODE_SYSID_TARGET:{
-            MountTarget angle_target_rad {};
-            if (get_angle_target_to_sysid(angle_target_rad)) {
-                send_target_angles(angle_target_rad.pitch, angle_target_rad.yaw, angle_target_rad.yaw_is_ef);
+        // point mount to another vehicle
+        case MAV_MOUNT_MODE_SYSID_TARGET:
+            if (get_angle_target_to_sysid(mnt_target.angle_rad)) {
+                mnt_target.target_type = MountTargetType::ANGLE;
             }
             break;
-        }
 
         default:
             // we do not know this mode so raise internal error
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            break;
+    }
+
+    // send target angles or rates depending on the target type
+    switch (mnt_target.target_type) {
+        case MountTargetType::ANGLE:
+            send_target_angles(mnt_target.angle_rad.pitch, mnt_target.angle_rad.yaw, mnt_target.angle_rad.yaw_is_ef);
+            break;
+        case MountTargetType::RATE:
+            send_target_rates(mnt_target.rate_rads.pitch, mnt_target.rate_rads.yaw, mnt_target.rate_rads.yaw_is_ef);
             break;
     }
 }

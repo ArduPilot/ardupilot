@@ -30,58 +30,59 @@ void AP_Mount_Alexmos::update()
         // move mount to a "retracted" position.  we do not implement a separate servo based retract mechanism
         case MAV_MOUNT_MODE_RETRACT: {
             const Vector3f &target = _params.retract_angles.get();
-            _angle_rad.roll = radians(target.x);
-            _angle_rad.pitch = radians(target.y);
-            _angle_rad.yaw = radians(target.z);
-            _angle_rad.yaw_is_ef = false;
+            mnt_target.target_type = MountTargetType::ANGLE;
+            mnt_target.angle_rad.set(target*DEG_TO_RAD, false);
             break;
         }
 
         // move mount to a neutral position, typically pointing forward
         case MAV_MOUNT_MODE_NEUTRAL: {
             const Vector3f &target = _params.neutral_angles.get();
-            _angle_rad.roll = radians(target.x);
-            _angle_rad.pitch = radians(target.y);
-            _angle_rad.yaw = radians(target.z);
-            _angle_rad.yaw_is_ef = false;
+            mnt_target.target_type = MountTargetType::ANGLE;
+            mnt_target.angle_rad.set(target*DEG_TO_RAD, false);
             break;
         }
 
         // point to the angles given by a mavlink message
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-            switch (mavt_target.target_type) {
-            case MountTargetType::ANGLE:
-                _angle_rad = mavt_target.angle_rad;
-                break;
-            case MountTargetType::RATE:
-                update_angle_target_from_rate(mavt_target.rate_rads, _angle_rad);
-                break;
-            }
+            // mavlink targets are stored while handling the incoming message
             break;
 
         // RC radio manual angle control, but with stabilization from the AHRS
         case MAV_MOUNT_MODE_RC_TARGETING: {
             // update targets using pilot's RC inputs
-            MountTarget rc_target {};
-            if (get_rc_rate_target(rc_target)) {
-                update_angle_target_from_rate(rc_target, _angle_rad);
-            } else if (get_rc_angle_target(rc_target)) {
-                _angle_rad = rc_target;
+            MountTarget rc_target;
+            get_rc_target(mnt_target.target_type, rc_target);
+            switch (mnt_target.target_type) {
+            case MountTargetType::ANGLE:
+                mnt_target.angle_rad = rc_target;
+                break;
+            case MountTargetType::RATE:
+                mnt_target.rate_rads = rc_target;
+                break;
             }
             break;
         }
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
-            IGNORE_RETURN(get_angle_target_to_roi(_angle_rad));
+            if (get_angle_target_to_roi(mnt_target.angle_rad)) {
+                mnt_target.target_type = MountTargetType::ANGLE;
+            }
             break;
 
+        // point mount to Home location
         case MAV_MOUNT_MODE_HOME_LOCATION:
-            IGNORE_RETURN(get_angle_target_to_home(_angle_rad));
+            if (get_angle_target_to_home(mnt_target.angle_rad)) {
+                mnt_target.target_type = MountTargetType::ANGLE;
+            }
             break;
 
+        // point mount to another vehicle
         case MAV_MOUNT_MODE_SYSID_TARGET:
-            IGNORE_RETURN(get_angle_target_to_sysid(_angle_rad));
+            if (get_angle_target_to_sysid(mnt_target.angle_rad)) {
+                mnt_target.target_type = MountTargetType::ANGLE;
+            }
             break;
 
         default:
@@ -89,8 +90,16 @@ void AP_Mount_Alexmos::update()
             break;
     }
 
-    // send latest targets to gimbal
-    control_axis(_angle_rad);
+    // send target angles or rates depending on the target type
+    switch (mnt_target.target_type) {
+        case MountTargetType::RATE:
+            update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
+            FALLTHROUGH;
+        case MountTargetType::ANGLE:
+            // send latest angle targets to gimbal
+            control_axis(mnt_target.angle_rad);
+            break;
+    }
 }
 
 // has_pan_control - returns true if this mount can control its pan (required for multicopters)
