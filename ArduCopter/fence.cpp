@@ -24,7 +24,14 @@ void Copter::fence_check()
     if (new_breaches) {
 
         if (!copter.ap.land_complete) {
-            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence Breached");
+            if (new_breaches & AC_FENCE_TYPE_CIRCLE) {
+                Vector2f home;
+                if (AP::ahrs().get_relative_position_NE_home(home)) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence Breached %.2fm", home.length());
+                }
+            } else { 
+                GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence Breached");
+            }
         }
 
         // if the user wants some kind of response and motors are armed
