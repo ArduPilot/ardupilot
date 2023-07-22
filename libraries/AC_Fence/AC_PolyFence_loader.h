@@ -46,8 +46,9 @@ class AC_PolyFence_loader
 
 public:
 
-    AC_PolyFence_loader(AP_Int8 &total) :
-        _total(total) {}
+    AC_PolyFence_loader(AP_Int8 &total, const AP_Int16 &options) :
+        _total(total),
+        _options(options) {}
 
     /* Do not allow copies */
     CLASS_NO_COPY(AC_PolyFence_loader);
@@ -397,6 +398,7 @@ private:
     // _total - reference to FENCE_TOTAL parameter.  This is used
     // solely for compatability with the FENCE_POINT protocol
     AP_Int8 &_total;
+    const AP_Int16 &_options;
     uint8_t _old_total;
 
 
