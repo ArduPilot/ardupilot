@@ -1,3 +1,19 @@
+Release 1.5.1 23rd July 2023
+---------------------------
+
+This is a major release with the following changes:
+
+- support serial tunnelling over DroneCAN
+- raised CAN priority of MovingBaseline data
+- support APD ESC telemetry
+- support DroneCAN and CAN statistics reporting
+- support KDECAN to DroneCAN translation
+
+The serial tunnelling support allows for uCenter to be used over
+DroneCAN with the serial tunnelling panel in the DroneCAN GUI
+tool. This allows for monitoring of uBlox GPS over a telemetry link,
+and update of F9P firmware over DroneCAN
+
 Release 1.5.0 27th Mar 2023
 ---------------------------
 
