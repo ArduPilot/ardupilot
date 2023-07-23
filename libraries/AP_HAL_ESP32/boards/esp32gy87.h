@@ -122,7 +122,7 @@
 
 //#define HAL_ESP32_SDCARD //after enabled, uncomment one of below
 //#define HAL_ESP32_SDMMC
-#define HAL_ESP32_SDCARD 				1
+//#define HAL_ESP32_SDCARD 				1
 #define HAL_ESP32_SDSPI 				{.host=HSPI_HOST, .dma_ch=1, .mosi=GPIO_NUM_13, .miso=GPIO_NUM_12, .sclk=GPIO_NUM_14, .cs=GPIO_NUM_15}
 
 #define HAL_LOGGING_FILESYSTEM_ENABLED			1
@@ -135,4 +135,4 @@
 
 //#define STORAGEDEBUG 					1
 
-#define HAL_LOGGING_BACKENDS_DEFAULT			1
+#define HAL_LOGGING_BACKENDS_DEFAULT			2
