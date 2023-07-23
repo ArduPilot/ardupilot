@@ -38,7 +38,7 @@
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
-#define ANALOGIN_DEBUGGING 0
+#define ANALOGIN_DEBUGGING 1
 
 // base voltage scaling for 12 bit 3.3V ADC
 #define VOLTAGE_SCALING (3.3f/4096.0f)
