@@ -77,6 +77,18 @@
 //RCOUT
 #define HAL_ESP32_RCOUT					{ GPIO_NUM_25, GPIO_NUM_27, GPIO_NUM_33, GPIO_NUM_32 }
 
+// ADC
+#define HAL_USE_ADC TRUE
+// the pin number, the gain/multiplier associated with it, the ardupilot name for the pin in parameter/s.
+#define HAL_ESP32_ADC_PINS_OPTION2 {\
+        {ADC1_GPIO35_CHANNEL, 11, 35},\
+        {ADC1_GPIO34_CHANNEL, 11, 34},\
+        {ADC1_GPIO39_CHANNEL, 11, 39},\
+        {ADC1_GPIO36_CHANNEL, 11, 36}\
+}
+#define HAL_ESP32_ADC_PINS HAL_ESP32_ADC_PINS_OPTION2
+
+
 //BAROMETER
 #define HAL_BARO_ALLOW_INIT_NO_BARO			1
 
