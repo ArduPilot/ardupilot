@@ -80,7 +80,9 @@
 #define HAL_ESP32_RCOUT					{ GPIO_NUM_25, GPIO_NUM_27, GPIO_NUM_33, GPIO_NUM_32 }
 
 // ADC
-#define HAL_USE_ADC TRUE
+//#define HAL_DISABLE_ADC_DRIVER                          TRUE
+//#define HAL_USE_ADC                                     FALSE
+#define HAL_USE_ADC 					TRUE
 // the pin number, the gain/multiplier associated with it, the ardupilot name for the pin in parameter/s.
 #define HAL_ESP32_ADC_PINS_OPTION2 {\
         {ADC1_GPIO35_CHANNEL, 11, 35},\
@@ -106,10 +108,6 @@
 #define HAL_ESP32_UART_DEVICES 				{.port=UART_NUM_0, .rx=GPIO_NUM_3 , .tx=GPIO_NUM_1},\
     							{.port=UART_NUM_1, .rx=GPIO_NUM_16, .tx=GPIO_NUM_17},\
 							{.port=UART_NUM_2, .rx=GPIO_NUM_4, .tx=GPIO_NUM_2}
-
-//ADC
-#define HAL_DISABLE_ADC_DRIVER				1
-#define HAL_USE_ADC					0
 
 //LED
 #define BUILD_DEFAULT_LED_TYPE				Notify_LED_None
