@@ -49,7 +49,7 @@
 #define HAL_INS_DEFAULT                              	HAL_INS_MPU6050_I2C
 #define HAL_INS_PROBE_LIST 			     	PROBE_IMU_I2C(Invensense, 0, 0x68, ROTATION_NONE)
 #define HAL_MAG_PROBE1					PROBE_MAG_I2C(HMC5843, 0, 0x1E, 0, ROTATION_YAW_270)
-#define HAL_MAG_PROBE2					PROBE_MAG_I2C(IST8310, 0, 0x0e, 1, ROTATION_NONE)
+#define HAL_MAG_PROBE2					PROBE_MAG_I2C(IST8310, 1, 0x0e, 1, ROTATION_NONE)
 #define HAL_MAG_PROBE_LIST				HAL_MAG_PROBE1; HAL_MAG_PROBE2;
 #define HAL_INS_MPU6050_NAME 				"mpu6050"
 
@@ -63,10 +63,12 @@
 #define AP_PROXIMITY_LD19_ENABLED			true
 
 //I2C Buses
-#define HAL_ESP32_I2C_BUSES				{.port=I2C_NUM_0, .sda=GPIO_NUM_21, .scl=GPIO_NUM_22, .speed=400*KHZ, .internal=true}
+#define HAL_ESP32_I2C_BUSES				{.port=I2C_NUM_0, .sda=GPIO_NUM_21, .scl=GPIO_NUM_22, .speed=400*KHZ, .internal=true}, \
+							{.port=I2C_NUM_1, .sda=GPIO_NUM_18, .scl=GPIO_NUM_19, .speed=400*KHZ, .internal=true}
 
 //SPI Buses
-#define HAL_ESP32_SPI_BUSES				{.host=VSPI_HOST, .dma_ch=2, .mosi=GPIO_NUM_23, .miso=GPIO_NUM_19, .sclk=GPIO_NUM_18}
+//#define HAL_ESP32_SPI_BUSES				{.host=VSPI_HOST, .dma_ch=2, .mosi=GPIO_NUM_23, .miso=GPIO_NUM_19, .sclk=GPIO_NUM_18}
+#define HAL_ESP32_SPI_BUSES                             {} 
 
 //SPI Devices
 #define HAL_ESP32_SPI_DEVICES				{}
