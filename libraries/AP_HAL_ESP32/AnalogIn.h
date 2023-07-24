@@ -51,7 +51,7 @@ private:
     //human readable Pin number used in ardu params
     int16_t _ardupin;
     //scaling from ADC count to Volts
-    int16_t _scaler;
+    float _scaler;
     // gpio pin number on esp32:
     gpio_num_t _gpio;
 

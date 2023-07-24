@@ -13,6 +13,10 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * Code by Charles Villard
+ *
+ * https://github.com/espressif/arduino-esp32/issues/1804
+ * https://docs.espressif.com/projects/esp-idf/en/release-v3.3/api-reference/peripherals/adc.html#_CPPv411adc_atten_t
+ *
  */
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL_ESP32/Semaphores.h>
@@ -41,6 +45,9 @@
 #define ANALOGIN_DEBUGGING 1
 
 // base voltage scaling for 12 bit 3.3V ADC
+// according to the espressif documentation the full scale voltage at 11db 3.9v. But
+// limited to VDD_A which is 3.3V. as of my measurements 3.6 is better then 3.9 and
+// 3.3v.
 #define VOLTAGE_SCALING (3.3f/4096.0f)
 
 #if ANALOGIN_DEBUGGING
@@ -66,8 +73,9 @@ const AnalogIn::pin_info AnalogIn::pin_config[] = HAL_ESP32_ADC_PINS;
 
 #define ADC_GRP1_NUM_CHANNELS   ARRAY_SIZE(AnalogIn::pin_config)
 
-
-#define DEFAULT_VREF    1100       //Use adc2_vref_to_gpio() to obtain a better estimate
+// getting adc calib value for your device from efuse
+// espefuse.py adc_info
+#define DEFAULT_VREF    1135         //Use adc2_vref_to_gpio() to obtain a better estimate
 #define NO_OF_SAMPLES   256          //Multisampling
 
 static const adc_atten_t atten = ADC_ATTEN_DB_11;
@@ -153,6 +161,8 @@ float AnalogSource::read_latest()
    */
 float AnalogSource::voltage_average()
 {
+    _scaler = VOLTAGE_SCALING;
+    hal.console->printf("read: %f \n",(_scaler * read_average()));
     return _scaler * read_average();
 }
 
@@ -252,6 +262,8 @@ void AnalogSource::_add_value()
         _sum_value /= 2;
         _sum_count /= 2;
     }
+
+    //hal.console->printf("add value: %i %f %f \n",_ardupin,_latest_value,_sum_value);
 }
 
 static void check_efuse()
@@ -290,7 +302,8 @@ void AnalogIn::_timer_tick()
         ESP32::AnalogSource *c = _channels[j];
         if (c != nullptr) {
             // add a value
-            //c->_add_value();
+            c->_add_value();
+	    // hal.console->printf("ADC tick occured\n");
         }
     }
 
