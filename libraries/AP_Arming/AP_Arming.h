@@ -78,6 +78,7 @@ public:
         LANDING = 32, // only disarm uses this...
         DEADRECKON_FAILSAFE = 33, // only disarm uses this...
         BLACKBOX = 34,
+        DDS = 35,
         UNKNOWN = 100,
     };
 
@@ -144,6 +145,9 @@ public:
         return (_arming_options & uint32_t(option)) != 0;
     }
 
+    static bool method_is_GCS(Method method) {
+        return (method == Method::MAVLINK || method == Method::DDS);
+    }
 protected:
 
     // Parameters
