@@ -325,7 +325,7 @@ bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_c
 bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_checks)
 {
     if (do_disarm_checks &&
-        (method == AP_Arming::Method::MAVLINK ||
+        (AP_Arming::method_is_GCS(method) ||
          method == AP_Arming::Method::RUDDER)) {
         if (plane.is_flying()) {
             // don't allow mavlink or rudder disarm while flying
