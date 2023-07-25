@@ -5060,17 +5060,19 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_external_position_estimate(const mavl
 }
 #endif // AP_AHRS_POSITION_RESET_ENABLED
 
-#if HAL_MOUNT_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_none()
 {
+#if HAL_MOUNT_ENABLED
     AP_Mount *mount = AP::mount();
     if (mount == nullptr) {
         return MAV_RESULT_UNSUPPORTED;
     }
     mount->set_mode_to_default();
     return MAV_RESULT_ACCEPTED;
-}
+#else
+    return MAV_RESULT_UNSUPPORTED;
 #endif
+}
 
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_sysid(const uint8_t sysid)
 {
@@ -5145,10 +5147,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_do_set_roi(packet);
     case MAV_CMD_DO_SET_ROI_SYSID:
         return handle_command_do_set_roi_sysid(packet);
-#if HAL_MOUNT_ENABLED
     case MAV_CMD_DO_SET_ROI_NONE:
         return handle_command_do_set_roi_none();
-#endif
     case MAV_CMD_DO_SET_HOME:
         return handle_command_do_set_home(packet);
 #if AP_AHRS_POSITION_RESET_ENABLED
