@@ -886,6 +886,20 @@ singleton AP_Camera method set_camera_information depends AP_CAMERA_INFO_FROM_SC
 singleton AP_Camera method set_stream_information void uint8_t'skip_check mavlink_video_stream_information_t
 singleton AP_Camera method set_stream_information depends AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
 
+include AP_LocationDB/AP_LocationDB.h
+userdata AP_LocationDB_Item depends AP_LOCATIONDB_ENABLED
+userdata AP_LocationDB_Item rename DBItem
+userdata AP_LocationDB_Item method init void uint32_t'skip_check uint32_t'skip_check Vector3f Vector3f Vector3f float'skip_check float'skip_check uint8_t'skip_check
+
+singleton AP_LocationDB depends AP_LOCATIONDB_ENABLED
+singleton AP_LocationDB rename locdb
+singleton AP_LocationDB method construct_key_scripting uint32_t uint32_t'skip_check
+singleton AP_LocationDB method healthy boolean
+singleton AP_LocationDB method remove_item boolean uint32_t'skip_check
+singleton AP_LocationDB method add_item boolean AP_LocationDB_Item
+singleton AP_LocationDB method get_item boolean uint32_t'skip_check AP_LocationDB_Item
+singleton AP_LocationDB method update_item boolean uint32_t'skip_check AP_LocationDB_Item
+
 include AP_Winch/AP_Winch.h
 singleton AP_Winch depends AP_WINCH_ENABLED && APM_BUILD_COPTER_OR_HELI
 singleton AP_Winch rename winch
