@@ -199,11 +199,13 @@ void Scheduler::delay(uint16_t ms)
 
 void Scheduler::delay_microseconds(uint16_t us)
 {
-    if (us < 100) {
+    if (us < 10) {
         ets_delay_us(us);
     } else { // Minimum delay for FreeRTOS is 1ms
         uint32_t tick = portTICK_PERIOD_MS * 1000;
+	//hal.console->printf("U: %d T: %d C: %d D: %d \n", us, portTICK_PERIOD_MS, configTICK_RATE_HZ, pdMS_TO_TICKS(us/1000));
         vTaskDelay((us+tick-1)/tick);
+	//vTaskDelay(pdMS_TO_TICKS(us/1000));
     }
 }
 
@@ -501,7 +503,7 @@ void Scheduler::print_stats(void)
         last_run = AP_HAL::millis64();
     }
 
-    // printf("loop_rate_hz: %d",get_loop_rate_hz());
+     //printf("loop_rate_hz: %d",get_loop_rate_hz());
 }
 
 void IRAM_ATTR Scheduler::_main_thread(void *arg)

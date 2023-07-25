@@ -162,7 +162,7 @@ float AnalogSource::read_latest()
 float AnalogSource::voltage_average()
 {
     _scaler = VOLTAGE_SCALING;
-    hal.console->printf("read: %f \n",(_scaler * read_average()));
+    //hal.console->printf("read: %f \n",(_scaler * read_average()));
     return _scaler * read_average();
 }
 
