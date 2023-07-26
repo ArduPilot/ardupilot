@@ -213,6 +213,39 @@ bool ModeGuided::guided_set_destination(const Location& dest_loc)
     return true;
 }
 
+// guided_set_destination - sets guided mode's target destination and target heading
+// Returns true if the fence is enabled and guided waypoint is within the fence
+// else return false if the waypoint is outside the fence
+bool ModeGuided::guided_set_destination(const Vector3f& destination, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
+{
+    // ensure we are in position control mode
+    if (sub.guided_mode != Guided_WP) {
+        guided_pos_control_start();
+    }
+
+#if AP_FENCE_ENABLED
+    // reject destination if outside the fence
+    const Location dest_loc(destination, Location::AltFrame::ABOVE_ORIGIN);
+    if (!sub.fence.check_destination_within_fence(dest_loc)) {
+        AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
+        // failure is propagated to GCS with NAK
+        return false;
+    }
+#endif
+
+    // set yaw state
+    guided_set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+
+    update_time_ms = AP_HAL::millis();
+
+    // no need to check return status because terrain data is not used
+    sub.wp_nav.set_wp_destination(destination, false);
+
+    // log target
+    sub.Log_Write_GuidedTarget(sub.guided_mode, destination, Vector3f());
+    return true;
+}
+
 // guided_set_velocity - sets guided mode's target velocity
 void ModeGuided::guided_set_velocity(const Vector3f& velocity)
 {
@@ -365,6 +398,12 @@ void ModeGuided::guided_pos_control_run()
         target_yaw_rate = sub.get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
+        } else{
+            if (sub.yaw_rate_only){
+                set_auto_yaw_mode(AUTO_YAW_RATE);
+            } else{
+                set_auto_yaw_mode(AUTO_YAW_LOOK_AT_HEADING);
+            }
         }
     }
 
@@ -388,6 +427,14 @@ void ModeGuided::guided_pos_control_run()
     // call attitude controller
     if (sub.auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch & yaw rate from pilot
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_yaw_rate);
+    } else if (sub.auto_yaw_mode == AUTO_YAW_LOOK_AT_HEADING) {
+        // roll, pitch from pilot, yaw & yaw_rate from auto_control
+        target_yaw_rate = sub.yaw_look_at_heading_slew * 100.0;
+        attitude_control->input_euler_angle_roll_pitch_slew_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), get_auto_heading(), target_yaw_rate);
+    } else if (sub.auto_yaw_mode == AUTO_YAW_RATE) {
+        // roll, pitch from pilot, yaw_rate from auto_control
+        target_yaw_rate = sub.yaw_look_at_heading_slew * 100.0;
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_yaw_rate);
     } else {
         // roll, pitch from pilot, yaw heading from auto_heading()
