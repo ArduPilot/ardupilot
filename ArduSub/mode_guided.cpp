@@ -577,6 +577,10 @@ void ModeGuided::set_auto_yaw_mode(autopilot_yaw_mode yaw_mode)
     case AUTO_YAW_RESETTOARMEDYAW:
         // initial_armed_bearing will be set during arming so no init required
         break;
+    
+    case AUTO_YAW_RATE:
+        // set target yaw rate to yaw_look_at_heading_slew
+        break;
     }
 }
 

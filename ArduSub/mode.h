@@ -297,6 +297,7 @@ public:
     float get_auto_heading();
     void guided_limit_clear();
     void set_auto_yaw_mode(autopilot_yaw_mode yaw_mode);
+    void set_yaw_rate(float turn_rate_dps);
 
 protected:
 
