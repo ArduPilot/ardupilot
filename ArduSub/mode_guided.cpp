@@ -277,6 +277,44 @@ void ModeGuided::guided_set_angle(const Quaternion &q, float climb_rate_cms)
     guided_angle_state.update_time_ms = AP_HAL::millis();
 }
 
+// helper function to set yaw state and targets
+void ModeGuided::guided_set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle)
+{    
+    float current_yaw = wrap_2PI(AP::ahrs().get_yaw());
+    float euler_yaw_angle;
+    float yaw_error;
+
+    euler_yaw_angle = wrap_2PI((yaw_cd * 0.01f));
+    yaw_error = wrap_PI(euler_yaw_angle - current_yaw);
+
+    int direction = 0;
+    if (yaw_error < 0){
+        direction = -1;
+    } else {
+        direction = 1;
+    }
+
+    /*
+    case 1: target yaw only
+    case 2: target yaw and yaw rate
+    case 3: target yaw rate only
+    case 4: hold current yaw
+    */
+    if (use_yaw && !use_yaw_rate) {
+        sub.yaw_rate_only = false;
+        sub.mode_auto.set_auto_yaw_look_at_heading(yaw_cd * 0.01f, 0.0f, direction, relative_angle);
+    } else if (use_yaw && use_yaw_rate) { 
+        sub.yaw_rate_only = false;
+        sub.mode_auto.set_auto_yaw_look_at_heading(yaw_cd * 0.01f, yaw_rate_cds * 0.01f, direction, relative_angle);
+    } else if (!use_yaw && use_yaw_rate) {
+        sub.yaw_rate_only = true;
+        sub.mode_auto.set_yaw_rate(yaw_rate_cds * 0.01f);
+    } else{
+        sub.yaw_rate_only = false;
+        set_auto_yaw_mode(AUTO_YAW_HOLD);
+    }
+}
+
 // guided_run - runs the guided controller
 // should be called at 100hz or more
 void ModeGuided::run()
@@ -554,6 +592,10 @@ void ModeGuided::set_auto_yaw_mode(autopilot_yaw_mode yaw_mode)
 
     // perform initialisation
     switch (sub.auto_yaw_mode) {
+    
+    case AUTO_YAW_HOLD:
+        // pilot controls the heading
+        break;
 
     case AUTO_YAW_LOOK_AT_NEXT_WP:
         // wpnav will initialise heading when wpnav's set_destination method is called

@@ -295,6 +295,9 @@ private:
     // Navigation Yaw control
     // auto flight mode's yaw mode
     uint8_t auto_yaw_mode;
+    
+    // Parameter to set yaw rate only
+    bool yaw_rate_only;
 
     // Yaw will point at this location if auto_yaw_mode is set to AUTO_YAW_ROI
     Vector3f roi_WP;

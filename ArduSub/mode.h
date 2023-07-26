@@ -294,10 +294,10 @@ public:
     bool guided_set_destination(const Vector3f& destination);
     bool guided_set_destination(const Location&);
     void guided_set_velocity(const Vector3f& velocity);
+    void guided_set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
     float get_auto_heading();
     void guided_limit_clear();
     void set_auto_yaw_mode(autopilot_yaw_mode yaw_mode);
-    void set_yaw_rate(float turn_rate_dps);
 
 protected:
 
@@ -341,6 +341,7 @@ public:
     void auto_nav_guided_start();
     void set_auto_yaw_roi(const Location &roi_location);
     void set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps, int8_t direction, uint8_t relative_angle);
+    void set_yaw_rate(float turn_rate_dps);
     bool auto_terrain_recover_start();
 
 protected:
