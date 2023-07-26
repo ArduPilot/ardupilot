@@ -109,6 +109,9 @@ void ModeGuided::guided_vel_control_start()
     // initialise velocity controller
     position_control->init_z_controller();
     position_control->init_xy_controller();
+
+    // pilot always controls yaw
+    set_auto_yaw_mode(AUTO_YAW_HOLD);
 }
 
 // initialise guided mode's posvel controller
@@ -258,6 +261,24 @@ void ModeGuided::guided_set_velocity(const Vector3f& velocity)
 
     // set position controller velocity target
     position_control->set_vel_desired_cms(velocity);
+}
+
+// guided_set_velocity - sets guided mode's target velocity
+void ModeGuided::guided_set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
+{
+   // check we are in velocity control mode
+    if (sub.guided_mode != Guided_Velocity) {
+        guided_vel_control_start();
+    }
+
+    // set yaw state
+    guided_set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+
+    update_time_ms = AP_HAL::millis();
+
+    // set position controller velocity target
+    position_control->set_vel_desired_cms(velocity);
+
 }
 
 // set guided mode posvel target
@@ -465,6 +486,12 @@ void ModeGuided::guided_vel_control_run()
         target_yaw_rate = sub.get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
+        } else{
+            if (sub.yaw_rate_only){
+                set_auto_yaw_mode(AUTO_YAW_RATE);
+            } else{
+                set_auto_yaw_mode(AUTO_YAW_LOOK_AT_HEADING);
+            }
         }
     }
 
@@ -480,6 +507,8 @@ void ModeGuided::guided_vel_control_run()
     position_control->stop_pos_xy_stabilisation();
     // call velocity controller which includes z axis controller
     position_control->update_xy_controller();
+
+    position_control->set_pos_target_z_from_climb_rate_cm(position_control->get_vel_desired_cms().z);
     position_control->update_z_controller();
 
     float lateral_out, forward_out;
@@ -492,6 +521,14 @@ void ModeGuided::guided_vel_control_run()
     // call attitude controller
     if (sub.auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch & yaw rate from pilot
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_yaw_rate);
+    } else if (sub.auto_yaw_mode == AUTO_YAW_LOOK_AT_HEADING) {
+        // roll, pitch from pilot, yaw & yaw_rate from auto_control
+        target_yaw_rate = sub.yaw_look_at_heading_slew * 100.0;
+        attitude_control->input_euler_angle_roll_pitch_slew_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), get_auto_heading(), target_yaw_rate);
+    } else if (sub.auto_yaw_mode == AUTO_YAW_RATE) {
+        // roll, pitch from pilot, yaw_rate from auto_control
+        target_yaw_rate = sub.yaw_look_at_heading_slew * 100.0;
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_yaw_rate);
     } else {
         // roll, pitch from pilot, yaw heading from auto_heading()
