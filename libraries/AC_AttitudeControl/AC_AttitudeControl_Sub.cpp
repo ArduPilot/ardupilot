@@ -378,3 +378,33 @@ void AC_AttitudeControl_Sub::parameter_sanity_check()
         _thr_mix_max.set_and_save(AC_ATTITUDE_CONTROL_MAX_DEFAULT);
     }
 }
+
+// This function ensures that the ROV reaches the target orientation with the desired yaw rate
+void AC_AttitudeControl_Sub::input_euler_angle_roll_pitch_slew_yaw(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, float target_yaw_rate)
+{
+    // Convert from centidegrees on public interface to radians
+    const float euler_yaw_angle = wrap_PI(radians(euler_yaw_angle_cd * 0.01f));
+
+    const float current_yaw = AP::ahrs().get_yaw();
+
+    // Compute angle error
+    const float yaw_error = wrap_PI(euler_yaw_angle - current_yaw);
+    
+    int direction = 0;
+    if (yaw_error < 0){
+        direction = -1;
+    } else {
+        direction = 1;
+    }
+
+    target_yaw_rate *= direction;
+
+
+    if (fabsf(yaw_error) > MAX_YAW_ERROR) {
+        // rotate the rov with desired yaw rate towards the target yaw
+        input_euler_angle_roll_pitch_euler_rate_yaw(euler_roll_angle_cd, euler_pitch_angle_cd, target_yaw_rate);
+    } else {
+        // holds the rov's angles
+        input_euler_angle_roll_pitch_yaw(euler_roll_angle_cd, euler_pitch_angle_cd, euler_yaw_angle_cd, true);
+    }
+}
