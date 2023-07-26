@@ -377,6 +377,17 @@ void ModeAuto::set_auto_yaw_look_at_heading(float angle_deg, float turn_rate_dps
     // TO-DO: restore support for clockwise and counter clockwise rotation held in cmd.content.yaw.direction.  1 = clockwise, -1 = counterclockwise
 }
 
+
+// sets the desired yaw rate
+void ModeGuided::set_yaw_rate(float turn_rate_dps)
+{    
+    // set sub to desired yaw rate
+    sub.yaw_look_at_heading_slew = MIN(turn_rate_dps, AUTO_YAW_SLEW_RATE);    // deg / sec
+
+    // set yaw mode
+    set_auto_yaw_mode(AUTO_YAW_RATE);
+}
+
 // set_auto_yaw_roi - sets the yaw to look at roi for auto mode
 void ModeAuto::set_auto_yaw_roi(const Location &roi_location)
 {

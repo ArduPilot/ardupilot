@@ -26,7 +26,8 @@ enum autopilot_yaw_mode {
     AUTO_YAW_LOOK_AT_HEADING =   3,  // point towards a particular angle (not pilot input accepted)
     AUTO_YAW_LOOK_AHEAD =        4,  // point in the direction the vehicle is moving
     AUTO_YAW_RESETTOARMEDYAW =   5,  // point towards heading at time motors were armed
-    AUTO_YAW_CORRECT_XTRACK =    6   // steer the sub in order to correct for crosstrack error during line following
+    AUTO_YAW_CORRECT_XTRACK =    6,  // steer the sub in order to correct for crosstrack error during line following
+    AUTO_YAW_RATE =              7   // steer the sub with the desired yaw rate 
 };
 
 // Acro Trainer types
