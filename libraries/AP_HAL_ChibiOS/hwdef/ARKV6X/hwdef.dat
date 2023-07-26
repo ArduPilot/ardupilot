@@ -82,10 +82,9 @@ PD9 USART3_RX USART3
 # USART6 is for IOMCU
 PC6 USART6_TX USART6
 PC7 USART6_RX USART6
-IOMCU_UART USART6
 
-# uart6, RX only, RC input, if no IOMCU
-# PC7 USART6_RX USART6
+# Uncomment this line for carriers boards with an IO MCU
+# IOMCU_UART USART6
 
 # ethernet (not implemented yet)
 #PA1 ETH_REF_CLK
