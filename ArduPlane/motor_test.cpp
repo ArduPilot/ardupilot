@@ -24,7 +24,11 @@ void QuadPlane::motor_test_output()
         if (motor_test.motor_count > 1) {
             if (now - motor_test.start_ms < motor_test.timeout_ms*1.5) {
                 // output zero for 0.5s
-                motors->output_min();
+                if (motor_test.seq == 0) {
+                    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
+                } else {
+                    motors->output_min();
+                }
             } else {
                 // move onto next motor
                 motor_test.seq++;
@@ -48,15 +52,27 @@ void QuadPlane::motor_test_output()
     case MOTOR_TEST_THROTTLE_PERCENT:
         // sanity check motor_test.throttle value
         if (motor_test.throttle_value <= 100) {
+            if (motor_test.seq == 0) {
+                SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, motor_test.throttle_value);
+                return;
+            }
             pwm = thr_min_pwm + (thr_max_pwm - thr_min_pwm) * (float)motor_test.throttle_value*0.01f;
         }
         break;
 
     case MOTOR_TEST_THROTTLE_PWM:
+        if (motor_test.seq == 0) {
+            SRV_Channels::set_output_pwm(SRV_Channel::k_throttle, motor_test.throttle_value);
+            return;
+        }
         pwm = motor_test.throttle_value;
         break;
 
     case MOTOR_TEST_THROTTLE_PILOT:
+        if (motor_test.seq == 0) {
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.get_throttle_input());
+            return;
+        }
         pwm = thr_min_pwm + (thr_max_pwm - thr_min_pwm) * plane.get_throttle_input()*0.01f;
         break;
 
