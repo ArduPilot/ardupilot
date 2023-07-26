@@ -679,10 +679,13 @@ bool AP_Mount_Viewpro::send_m_ahrs()
     // get vehicle velocity in m/s in NED Frame
     Vector3f vel_NED;
     IGNORE_RETURN(AP::ahrs().get_velocity_NED(vel_NED));
-    float vel_yaw_deg = degrees(vel_NED.xy().angle());
+    float vel_yaw_deg = wrap_360(degrees(vel_NED.xy().angle()));
 
     // get GPS vdop
     uint16_t gps_vdop = AP::gps().get_vdop();
+
+    // get vehicle yaw in the range 0 to 360
+    const uint16_t veh_yaw_deg = wrap_360(degrees(AP::ahrs().get_yaw()));
 
     // fill in packet
     const M_AHRSPacket mahrs_packet {
@@ -691,7 +694,7 @@ bool AP_Mount_Viewpro::send_m_ahrs()
             data_type: 0x07,                        // Bit0: Attitude, Bit1: GPS, Bit2 Gyro
             pitch_be: htobe16(-degrees(AP::ahrs().get_pitch()) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),   // vehicle pitch angle.  1bit=360deg/65536
             roll_be: htobe16(degrees(AP::ahrs().get_roll()) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),      // vehicle roll angle.  1bit=360deg/65536
-            yaw_be: htobe16(degrees(AP::ahrs().get_yaw()) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),        // vehicle yaw angle.  1bit=360deg/65536
+            yaw_be: htobe16(veh_yaw_deg * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),                          // vehicle yaw angle.  1bit=360deg/65536
             date_be: htobe16(date),                 // bit0~6:year, bit7~10:month, bit11~15:day
             seconds_utc: {uint8_t((second_hundredths & 0xFF0000ULL) >> 16), // seconds * 100 MSB.  1bit = 0.01sec
                           uint8_t((second_hundredths & 0xFF00ULL) >> 8),    // seconds * 100 next MSB.  1bit = 0.01sec
